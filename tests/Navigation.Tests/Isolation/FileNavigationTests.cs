@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using Elastic.Documentation.Configuration.DocSet;
+using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation.Isolated;
 using FluentAssertions;
 
@@ -23,8 +24,8 @@ public class FileNavigationTests(ITestOutputHelper output) : DocumentationSetNav
 
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddDirectory("/docs");
-		var docSet = DocumentationSetFile.LoadAndResolve(yaml, fileSystem.DirectoryInfo.New("/docs"), fileSystem);
 		var context = CreateContext(fileSystem);
+		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
@@ -48,8 +49,8 @@ public class FileNavigationTests(ITestOutputHelper output) : DocumentationSetNav
 
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddDirectory("/docs");
-		var docSet = DocumentationSetFile.LoadAndResolve(yaml, fileSystem.DirectoryInfo.New("/docs"), fileSystem);
 		var context = CreateContext(fileSystem);
+		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
@@ -82,8 +83,8 @@ public class FileNavigationTests(ITestOutputHelper output) : DocumentationSetNav
 
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddDirectory("/docs");
-		var docSet = DocumentationSetFile.LoadAndResolve(yaml, fileSystem.DirectoryInfo.New("/docs"), fileSystem);
 		var context = CreateContext(fileSystem);
+		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
@@ -117,8 +118,8 @@ public class FileNavigationTests(ITestOutputHelper output) : DocumentationSetNav
 
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddDirectory("/docs");
-		var docSet = DocumentationSetFile.LoadAndResolve(yaml, fileSystem.DirectoryInfo.New("/docs"), fileSystem);
 		var context = CreateContext(fileSystem);
+		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
@@ -151,8 +152,8 @@ public class FileNavigationTests(ITestOutputHelper output) : DocumentationSetNav
 
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddDirectory("/docs");
-		var docSet = DocumentationSetFile.LoadAndResolve(yaml, fileSystem.DirectoryInfo.New("/docs"), fileSystem);
 		var context = CreateContext(fileSystem);
+		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 		var fileNav = navigation.NavigationItems.First() as INodeNavigationItem<IDocumentationFile, INavigationItem>;
@@ -187,8 +188,8 @@ public class FileNavigationTests(ITestOutputHelper output) : DocumentationSetNav
 
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddDirectory("/docs");
-		var docSet = DocumentationSetFile.LoadAndResolve(yaml, fileSystem.DirectoryInfo.New("/docs"), fileSystem);
 		var context = CreateContext(fileSystem);
+		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 

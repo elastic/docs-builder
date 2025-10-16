@@ -43,6 +43,17 @@ public static class IFileInfoExtensions
 	}
 }
 
+public static class IFileSystemExtensions
+{
+	public static IDirectoryInfo NewDirInfo(this IFileSystem fs, string path) => fs.DirectoryInfo.New(path);
+
+	public static IDirectoryInfo NewDirInfo(this IFileSystem fs, params string[] paths) => fs.DirectoryInfo.New(Path.Combine(paths));
+
+	public static IFileInfo NewFileInfo(this IFileSystem fs, string path) => fs.FileInfo.NewCombine(path);
+
+	public static IFileInfo NewFileInfo(this IFileSystem fs, params string[] paths) => fs.FileInfo.NewCombine(paths);
+}
+
 public static class IDirectoryInfoExtensions
 {
 	private static bool? CaseSensitiveOsCheck;

@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using Elastic.Documentation.Configuration.DocSet;
+using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation.Isolated;
 using FluentAssertions;
 
@@ -25,8 +26,8 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddDirectory("/docs");
-		var docSet = DocumentationSetFile.LoadAndResolve(yaml, fileSystem.DirectoryInfo.New("/docs"), fileSystem);
 		var context = CreateContext(fileSystem);
+		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance);
 
@@ -53,8 +54,8 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddDirectory("/docs");
-		var docSet = DocumentationSetFile.LoadAndResolve(yaml, fileSystem.DirectoryInfo.New("/docs"), fileSystem);
 		var context = CreateContext(fileSystem);
+		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		// Create navigation using the covariant factory interface
 		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance);
@@ -144,8 +145,8 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		fileSystem.AddFile("/docs/setup/advanced/performance/index.md", new MockFileData("# Performance"));
 		fileSystem.AddFile("/docs/setup/advanced/performance/tuning.md", new MockFileData("# Tuning"));
 		fileSystem.AddFile("/docs/setup/advanced/performance/benchmarks.md", new MockFileData("# Benchmarks"));
-		var docSet = DocumentationSetFile.LoadAndResolve(yaml, fileSystem.DirectoryInfo.New("/docs"), fileSystem);
 		var context = CreateContext(fileSystem);
+		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
 
 		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance);
@@ -232,8 +233,8 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		fileSystem.AddFile("/docs/setup/advanced/performance/index.md", new MockFileData("# Performance"));
 		fileSystem.AddFile("/docs/setup/advanced/performance/toc.yml", new MockFileData(performanceTocYaml));
 
-		var docSet = DocumentationSetFile.LoadAndResolve(yaml, fileSystem.DirectoryInfo.New("/docs"), fileSystem);
 		var context = CreateContext(fileSystem);
+		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance);
 

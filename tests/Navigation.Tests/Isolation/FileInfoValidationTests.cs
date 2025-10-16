@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using Elastic.Documentation.Configuration.DocSet;
+using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation.Isolated;
 using FluentAssertions;
 
@@ -32,8 +33,8 @@ public class FileInfoValidationTests(ITestOutputHelper output) : DocumentationSe
 			"/docs/installation.md",
 			"/docs/configuration.md"
 		]);
-		var docSet = DocumentationSetFile.LoadAndResolve(yaml, fileSystem.DirectoryInfo.New("/docs"), fileSystem);
 		var context = CreateContext(fileSystem);
+		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
@@ -76,8 +77,8 @@ public class FileInfoValidationTests(ITestOutputHelper output) : DocumentationSe
 			"/docs/advanced/topics.md",
 			"/docs/advanced/patterns.md"
 		]);
-		var docSet = DocumentationSetFile.LoadAndResolve(yaml, fileSystem.DirectoryInfo.New("/docs"), fileSystem);
 		var context = CreateContext(fileSystem);
+		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
@@ -120,8 +121,8 @@ public class FileInfoValidationTests(ITestOutputHelper output) : DocumentationSe
 			"/docs/advanced/index.md",
 			"/docs/advanced/topics.md"
 		]);
-		var docSet = DocumentationSetFile.LoadAndResolve(yaml, fileSystem.DirectoryInfo.New("/docs"), fileSystem);
 		var context = CreateContext(fileSystem);
+		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
@@ -207,8 +208,8 @@ public class FileInfoValidationTests(ITestOutputHelper output) : DocumentationSe
 		fileSystem.File.WriteAllText("/docs/guides/advanced/toc.yml", advancedTocYaml);
 		fileSystem.File.WriteAllText("/docs/guides/advanced/performance/toc.yml", performanceTocYaml);
 
-		var docSet = DocumentationSetFile.LoadAndResolve(docsetYaml, fileSystem.DirectoryInfo.New("/docs"), fileSystem);
 		var context = CreateContext(fileSystem);
+		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, docsetYaml, fileSystem.NewDirInfo("docs"));
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
@@ -304,9 +305,9 @@ public class FileInfoValidationTests(ITestOutputHelper output) : DocumentationSe
 		fileSystem.File.WriteAllText("/docs/reference/toc.yml", referenceTocYaml);
 
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(docsetYaml, fileSystem.DirectoryInfo.New("/docs"), fileSystem);
+		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, docsetYaml, fileSystem.NewDirInfo("docs"));
 
-		var setup = docSet.TableOfContents.OfType<FolderRef>().FirstOrDefault(f=>f.Path == "setup");
+		var setup = docSet.TableOfContents.OfType<FolderRef>().FirstOrDefault(f => f.Path == "setup");
 		setup.Should().NotBeNull("setup folder should exist");
 		setup.Children.Count.Should().Be(3, "should include 2 children");
 		var advanced = setup.Children.OfType<IsolatedTableOfContentsRef>().FirstOrDefault();
@@ -361,8 +362,8 @@ public class FileInfoValidationTests(ITestOutputHelper output) : DocumentationSe
 			"/docs/docs/guides/basics.md",
 			"/docs/docs/guides/advanced/expert.md"
 		]);
-		var docSet = DocumentationSetFile.LoadAndResolve(yaml, fileSystem.DirectoryInfo.New("/docs"), fileSystem);
 		var context = CreateContext(fileSystem);
+		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
@@ -402,8 +403,8 @@ public class FileInfoValidationTests(ITestOutputHelper output) : DocumentationSe
 			"/docs/guide/chapter1/section1.md",
 			"/docs/guide/chapter1/section1/subsection1.md"
 		]);
-		var docSet = DocumentationSetFile.LoadAndResolve(yaml, fileSystem.DirectoryInfo.New("/docs"), fileSystem);
 		var context = CreateContext(fileSystem);
+		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 

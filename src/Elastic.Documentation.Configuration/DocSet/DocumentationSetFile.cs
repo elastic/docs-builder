@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Diagnostics;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
@@ -70,24 +71,27 @@ public class DocumentationSetFile : TableOfContentsFile
 	/// <summary>
 	/// Loads a DocumentationSetFile and recursively resolves all IsolatedTableOfContentsRef items,
 	/// replacing them with their resolved children and ensuring file paths carry over parent paths.
+	/// Validates the table of contents structure and emits diagnostics for issues.
 	/// </summary>
-	public static DocumentationSetFile LoadAndResolve(IFileInfo docsetPath, IFileSystem? fileSystem = null)
+	public static DocumentationSetFile LoadAndResolve(IDiagnosticsCollector collector, IFileInfo docsetPath, IFileSystem? fileSystem = null)
 	{
 		fileSystem ??= docsetPath.FileSystem;
 		var yaml = fileSystem.File.ReadAllText(docsetPath.FullName);
 		var sourceDirectory = docsetPath.Directory!;
-		return LoadAndResolve(yaml, sourceDirectory, fileSystem);
+		return LoadAndResolve(collector, yaml, sourceDirectory, fileSystem);
 	}
 
 	/// <summary>
 	/// Loads a DocumentationSetFile from YAML string and recursively resolves all IsolatedTableOfContentsRef items,
 	/// replacing them with their resolved children and ensuring file paths carry over parent paths.
+	/// Validates the table of contents structure and emits diagnostics for issues.
 	/// </summary>
-	public static DocumentationSetFile LoadAndResolve(string yaml, IDirectoryInfo sourceDirectory, IFileSystem fileSystem)
+	public static DocumentationSetFile LoadAndResolve(IDiagnosticsCollector collector, string yaml, IDirectoryInfo sourceDirectory, IFileSystem? fileSystem = null)
 	{
+		fileSystem ??= sourceDirectory.FileSystem;
 		var docSet = Deserialize(yaml);
 		var docsetPath = fileSystem.Path.Combine(sourceDirectory.FullName, "docset.yml");
-		docSet.TableOfContents = ResolveTableOfContents(docSet.TableOfContents, sourceDirectory, fileSystem, parentPath: "", context: docsetPath);
+		docSet.TableOfContents = ResolveTableOfContents(collector, docSet.TableOfContents, sourceDirectory, fileSystem, parentPath: "", context: docsetPath);
 		return docSet;
 	}
 
@@ -96,8 +100,10 @@ public class DocumentationSetFile : TableOfContentsFile
 	/// Recursively resolves all IsolatedTableOfContentsRef items in a table of contents,
 	/// loading nested TOC files and prepending parent paths to all file references.
 	/// Preserves the hierarchy structure without flattening.
+	/// Validates items and emits diagnostics for issues.
 	/// </summary>
 	private static TableOfContents ResolveTableOfContents(
+		IDiagnosticsCollector collector,
 		IReadOnlyCollection<ITableOfContentsItem> items,
 		IDirectoryInfo baseDirectory,
 		IFileSystem fileSystem,
@@ -111,10 +117,10 @@ public class DocumentationSetFile : TableOfContentsFile
 		{
 			var resolvedItem = item switch
 			{
-				IsolatedTableOfContentsRef tocRef => ResolveIsolatedToc(tocRef, baseDirectory, fileSystem, parentPath, context),
-				FileRef fileRef => ResolveFileRef(fileRef, baseDirectory, fileSystem, parentPath, context),
-				FolderRef folderRef => ResolveFolderRef(folderRef, baseDirectory, fileSystem, parentPath, context),
-				CrossLinkRef crossLink => ResolveCrossLinkRef(crossLink, baseDirectory, fileSystem, parentPath, context),
+				IsolatedTableOfContentsRef tocRef => ResolveIsolatedToc(collector, tocRef, baseDirectory, fileSystem, parentPath, context),
+				FileRef fileRef => ResolveFileRef(collector, fileRef, baseDirectory, fileSystem, parentPath, context),
+				FolderRef folderRef => ResolveFolderRef(collector, folderRef, baseDirectory, fileSystem, parentPath, context),
+				CrossLinkRef crossLink => ResolveCrossLinkRef(collector, crossLink, baseDirectory, fileSystem, parentPath, context),
 				_ => null
 			};
 
@@ -127,11 +133,11 @@ public class DocumentationSetFile : TableOfContentsFile
 
 	/// <summary>
 	/// Resolves an IsolatedTableOfContentsRef by loading the TOC file and returning a new ref with resolved children.
-	/// If the TOC has children defined in parent YAML (tocRef.Children), those are preserved so DocumentationSetNavigation
-	/// can emit a validation error. Otherwise, children are loaded from toc.yml and resolved with parent paths prepended.
+	/// Validates that the TOC has no children in parent YAML and that toc.yml exists.
 	/// The TOC's path is set to the full path (including parent path) for consistency with files and folders.
 	/// </summary>
 	private static ITableOfContentsItem? ResolveIsolatedToc(
+		IDiagnosticsCollector collector,
 		IsolatedTableOfContentsRef tocRef,
 		IDirectoryInfo baseDirectory,
 		IFileSystem fileSystem,
@@ -142,17 +148,25 @@ public class DocumentationSetFile : TableOfContentsFile
 		// Calculate the full path for file system operations and child resolution
 		var fullTocPath = string.IsNullOrEmpty(parentPath) ? tocRef.Path : $"{parentPath}/{tocRef.Path}";
 
-		// If TOC has children in parent YAML, preserve them for validation
-		// DocumentationSetNavigation will emit an error for this case
-		if (tocRef.Children.Count > 0)
-			return new IsolatedTableOfContentsRef(fullTocPath, tocRef.Children, parentContext);
-
-		// Load and resolve children from toc.yml file
 		var tocDirectory = fileSystem.DirectoryInfo.New(fileSystem.Path.Combine(baseDirectory.FullName, fullTocPath));
 		var tocFilePath = fileSystem.Path.Combine(tocDirectory.FullName, "toc.yml");
+		var tocYmlExists = fileSystem.File.Exists(tocFilePath);
 
-		if (!fileSystem.File.Exists(tocFilePath))
-			return new IsolatedTableOfContentsRef(fullTocPath, [], parentContext); // Return empty children, DocumentationSetNavigation will emit error
+		// Validate: TOC should not have children defined in parent YAML
+		if (tocRef.Children.Count > 0)
+		{
+			collector.EmitError(parentContext,
+				$"TableOfContents '{fullTocPath}' may not contain children, define children in '{fullTocPath}/toc.yml' instead.");
+			return null;
+		}
+
+		// If TOC has children in parent YAML, still try to load from toc.yml (prefer toc.yml over parent YAML)
+		if (!tocYmlExists)
+		{
+			// Validate: toc.yml file must exist
+			collector.EmitError(parentContext, $"Table of contents file not found: {fullTocPath}/toc.yml");
+			return new IsolatedTableOfContentsRef(fullTocPath, [], parentContext);
+		}
 
 		var tocYaml = fileSystem.File.ReadAllText(tocFilePath);
 		var tocFile = TableOfContentsFile.Deserialize(tocYaml);
@@ -160,7 +174,13 @@ public class DocumentationSetFile : TableOfContentsFile
 		// Recursively resolve children with the FULL TOC path as the parent path
 		// This ensures all file paths within the TOC include the TOC directory path
 		// The context for children is the toc.yml file that defines them
-		var resolvedChildren = ResolveTableOfContents(tocFile.TableOfContents, baseDirectory, fileSystem, fullTocPath, tocFilePath);
+		var resolvedChildren = ResolveTableOfContents(collector, tocFile.TableOfContents, baseDirectory, fileSystem, fullTocPath, tocFilePath);
+
+		// Validate: TOC must have at least one child
+		if (resolvedChildren.Count == 0)
+		{
+			collector.EmitError(tocFilePath, $"Table of contents '{fullTocPath}' has no children defined");
+		}
 
 		// Return TOC ref with FULL path and resolved children
 		// The context remains the parent context (where this TOC was referenced)
@@ -172,6 +192,7 @@ public class DocumentationSetFile : TableOfContentsFile
 	/// The parent path provides the correct context for child resolution.
 	/// </summary>
 	private static ITableOfContentsItem ResolveFileRef(
+		IDiagnosticsCollector collector,
 		FileRef fileRef,
 		IDirectoryInfo baseDirectory,
 		IFileSystem fileSystem,
@@ -195,7 +216,7 @@ public class DocumentationSetFile : TableOfContentsFile
 		if (parentPathForChildren.EndsWith("/index", StringComparison.OrdinalIgnoreCase))
 			parentPathForChildren = parentPathForChildren[..^6];
 
-		var resolvedChildren = ResolveTableOfContents(fileRef.Children, baseDirectory, fileSystem, parentPathForChildren, context);
+		var resolvedChildren = ResolveTableOfContents(collector, fileRef.Children, baseDirectory, fileSystem, parentPathForChildren, context);
 
 		return fileRef is IndexFileRef
 			? new IndexFileRef(fullPath, fileRef.Hidden, resolvedChildren, context)
@@ -207,6 +228,7 @@ public class DocumentationSetFile : TableOfContentsFile
 	/// If no children are defined, auto-discovers .md files in the folder directory.
 	/// </summary>
 	private static ITableOfContentsItem ResolveFolderRef(
+		IDiagnosticsCollector collector,
 		FolderRef folderRef,
 		IDirectoryInfo baseDirectory,
 		IFileSystem fileSystem,
@@ -218,12 +240,12 @@ public class DocumentationSetFile : TableOfContentsFile
 		// If children are explicitly defined, resolve them
 		if (folderRef.Children.Count > 0)
 		{
-			var resolvedChildren = ResolveTableOfContents(folderRef.Children, baseDirectory, fileSystem, fullPath, context);
+			var resolvedChildren = ResolveTableOfContents(collector, folderRef.Children, baseDirectory, fileSystem, fullPath, context);
 			return new FolderRef(fullPath, resolvedChildren, context);
 		}
 
 		// No children defined - auto-discover .md files in the folder
-		var autoDiscoveredChildren = AutoDiscoverFolderFiles(fullPath, baseDirectory, fileSystem, context);
+		var autoDiscoveredChildren = AutoDiscoverFolderFiles(collector, fullPath, baseDirectory, fileSystem, context);
 		return new FolderRef(fullPath, autoDiscoveredChildren, context);
 	}
 
@@ -233,6 +255,7 @@ public class DocumentationSetFile : TableOfContentsFile
 	/// Files starting with '_' or '.' are excluded.
 	/// </summary>
 	private static TableOfContents AutoDiscoverFolderFiles(
+		IDiagnosticsCollector collector,
 		string folderPath,
 		IDirectoryInfo baseDirectory,
 		IFileSystem fileSystem,
@@ -278,13 +301,14 @@ public class DocumentationSetFile : TableOfContentsFile
 		}
 
 		// Resolve the children with the folder path as parent to get correct full paths
-		return ResolveTableOfContents(children, baseDirectory, fileSystem, folderPath, context);
+		return ResolveTableOfContents(collector, children, baseDirectory, fileSystem, folderPath, context);
 	}
 
 	/// <summary>
 	/// Resolves a CrossLinkRef by recursively resolving children (though cross-links typically don't have children).
 	/// </summary>
 	private static ITableOfContentsItem ResolveCrossLinkRef(
+		IDiagnosticsCollector collector,
 		CrossLinkRef crossLinkRef,
 		IDirectoryInfo baseDirectory,
 		IFileSystem fileSystem,
@@ -294,7 +318,7 @@ public class DocumentationSetFile : TableOfContentsFile
 		if (crossLinkRef.Children.Count == 0)
 			return new CrossLinkRef(crossLinkRef.CrossLinkUri, crossLinkRef.Title, crossLinkRef.Hidden, [], context);
 
-		var resolvedChildren = ResolveTableOfContents(crossLinkRef.Children, baseDirectory, fileSystem, parentPath, context);
+		var resolvedChildren = ResolveTableOfContents(collector, crossLinkRef.Children, baseDirectory, fileSystem, parentPath, context);
 
 		return new CrossLinkRef(crossLinkRef.CrossLinkUri, crossLinkRef.Title, crossLinkRef.Hidden, resolvedChildren, context);
 	}

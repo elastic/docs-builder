@@ -49,7 +49,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 				? $"{repo.FullName}/docs/docset.yml"
 				: $"{repo.FullName}/docs/_docset.yml";
 
-			var docset = DocumentationSetFile.LoadAndResolve(fileSystem.FileInfo.New(docsetPath), fileSystem);
+			var docset = DocumentationSetFile.LoadAndResolve(context.Collector, fileSystem.FileInfo.New(docsetPath), fileSystem);
 
 			var navigation = new DocumentationSetNavigation<IDocumentationFile>(docset, context, GenericDocumentationFileFactory.Instance);
 			documentationSets.Add(navigation);
@@ -123,7 +123,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 
 		var platformContext = SiteNavigationTestFixture.CreateContext(
 			fileSystem, "/checkouts/current/platform", output);
-		var platformDocset = DocumentationSetFile.LoadAndResolve(
+		var platformDocset = DocumentationSetFile.LoadAndResolve(platformContext.Collector,
 			fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"), fileSystem);
 
 		var documentationSets = new List<IDocumentationSetNavigation>
@@ -171,7 +171,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 
 		var platformContext = SiteNavigationTestFixture.CreateContext(
 			fileSystem, "/checkouts/current/platform", output);
-		var platformDocset = DocumentationSetFile.LoadAndResolve(
+		var platformDocset = DocumentationSetFile.LoadAndResolve(platformContext.Collector,
 			fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"), fileSystem);
 
 		var documentationSets = new List<IDocumentationSetNavigation>
@@ -228,7 +228,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 
 		var platformContext = SiteNavigationTestFixture.CreateContext(
 			fileSystem, "/checkouts/current/platform", output);
-		var platformDocset = DocumentationSetFile.LoadAndResolve(
+		var platformDocset = DocumentationSetFile.LoadAndResolve(platformContext.Collector,
 			fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"), fileSystem);
 
 		var documentationSets = new List<IDocumentationSetNavigation>

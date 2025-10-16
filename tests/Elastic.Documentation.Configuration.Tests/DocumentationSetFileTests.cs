@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using Elastic.Documentation.Configuration.DocSet;
+using Elastic.Documentation.Diagnostics;
 using FluentAssertions;
 
 namespace Elastic.Documentation.Configuration.Tests;
@@ -629,7 +630,8 @@ public class DocumentationSetFileTests
 		fileSystem.AddFile("/docs/guides/advanced/toc.yml", new MockFileData(advancedTocYaml));
 
 		var docsetPath = fileSystem.FileInfo.New("/docs/docset.yml");
-		var result = DocumentationSetFile.LoadAndResolve(docsetPath, fileSystem);
+		var collector = new DiagnosticsCollector([]);
+		var result = DocumentationSetFile.LoadAndResolve(collector, docsetPath, fileSystem);
 
 		// Verify TOC references have been preserved (not flattened)
 		// We have 3 top-level items: index.md, development TOC, and guides folder
@@ -699,7 +701,8 @@ public class DocumentationSetFileTests
 		fileSystem.AddFile("/docs/docset.yml", new MockFileData(docsetYaml));
 
 		var docsetPath = fileSystem.FileInfo.New("/docs/docset.yml");
-		var result = DocumentationSetFile.LoadAndResolve(docsetPath, fileSystem);
+		var collector = new DiagnosticsCollector([]);
+		var result = DocumentationSetFile.LoadAndResolve(collector, docsetPath, fileSystem);
 
 		result.TableOfContents.Should().HaveCount(2);
 
@@ -754,7 +757,8 @@ public class DocumentationSetFileTests
 		fileSystem.AddFile("/docs/development/toc.yml", new MockFileData(developmentTocYaml));
 
 		var docsetPath = fileSystem.FileInfo.New("/docs/docset.yml");
-		var result = DocumentationSetFile.LoadAndResolve(docsetPath, fileSystem);
+		var collector = new DiagnosticsCollector([]);
+		var result = DocumentationSetFile.LoadAndResolve(collector, docsetPath, fileSystem);
 
 		// All items from docset.yml should have context = /docs/docset.yml
 		result.TableOfContents.ElementAt(0).Should().BeOfType<IndexFileRef>()

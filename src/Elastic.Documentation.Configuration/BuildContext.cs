@@ -113,7 +113,7 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 
 		// Load and resolve the docset file, or create an empty one if it doesn't exist
 		ConfigurationYaml = ConfigurationPath.Exists
-			? DocumentationSetFile.LoadAndResolve(ConfigurationPath, readFileSystem)
+			? DocumentationSetFile.LoadAndResolve(collector, ConfigurationPath, readFileSystem)
 			: new DocumentationSetFile();
 
 		Configuration = new ConfigurationFile(ConfigurationYaml, this, VersionsConfiguration, ProductsConfiguration);
