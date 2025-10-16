@@ -145,8 +145,26 @@ public class DocumentationSetFile : TableOfContentsFile
 		string parentContext
 	)
 	{
-		// Calculate the full path for file system operations and child resolution
-		var fullTocPath = string.IsNullOrEmpty(parentPath) ? tocRef.Path : $"{parentPath}/{tocRef.Path}";
+		// TOC paths containing '/' are treated as relative to the context file's directory (full paths).
+		// Simple TOC names (no '/') are resolved relative to the parent path in the navigation hierarchy.
+		string fullTocPath;
+		if (tocRef.Path.Contains('/'))
+		{
+			// Path contains '/', treat as context-relative (full path from the context file's directory)
+			var contextDir = fileSystem.Path.GetDirectoryName(parentContext) ?? "";
+			var contextRelativePath = fileSystem.Path.GetRelativePath(baseDirectory.FullName, contextDir);
+			if (contextRelativePath == ".")
+				contextRelativePath = "";
+
+			fullTocPath = string.IsNullOrEmpty(contextRelativePath)
+				? tocRef.Path
+				: $"{contextRelativePath}/{tocRef.Path}";
+		}
+		else
+		{
+			// Simple name, resolve relative to parent path
+			fullTocPath = string.IsNullOrEmpty(parentPath) ? tocRef.Path : $"{parentPath}/{tocRef.Path}";
+		}
 
 		var tocDirectory = fileSystem.DirectoryInfo.New(fileSystem.Path.Combine(baseDirectory.FullName, fullTocPath));
 		var tocFilePath = fileSystem.Path.Combine(tocDirectory.FullName, "toc.yml");
