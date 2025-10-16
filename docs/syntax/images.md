@@ -41,16 +41,28 @@ Images that are not full width are automatically centered within their container
 ```markdown
 :::{image} /syntax/images/apm.png
 :alt: APM Logo
-:width: 200px
+:width: 400px
 :::
 ```
 
 :::{image} /syntax/images/apm.png
 :alt: APM Logo
-:width: 200px
+:width: 400px
 :::
 
-The image above is centered because it has a width of 200px, which is less than the full container width.
+The image above is centered because it has a width of 400px, which is less than the full container width.
+
+Note that images nested within other content (like lists or admonitions) are not centered:
+
+- First item in the list
+- Second item with an image:
+
+    :::{image} /syntax/images/apm.png
+    :alt: APM Logo in list
+    :width: 400px
+    :::
+
+- Third item in the list
 
 ## Screenshots
 
