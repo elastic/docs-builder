@@ -430,6 +430,7 @@ public class DocumentationSetNavigation<TModel>
 			folderPath
 		);
 
+		// LoadAndResolve has already populated children (either from YAML or auto-discovered)
 		foreach (var child in folderRef.Children)
 		{
 			var childNav = ConvertToNavigationItem(
@@ -447,18 +448,8 @@ public class DocumentationSetNavigation<TModel>
 				children.Add(childNav);
 		}
 
-		// If no children defined in YAML, auto-discover .md files in the folder
-		if (children.Count == 0 && folderRef.Children.Count == 0)
-		{
-			children = AutoDiscoverFolderFiles(folderPath, context, placeholderNavigation, root, prefixProvider);
-
-			if (children.Count == 0)
-			{
-				context.EmitError(context.ConfigurationPath, $"Folder navigation '{folderPath}' has no children defined and no .md files found in directory");
-				return null;
-			}
-		}
-		else if (children.Count == 0)
+		// Validate that we have children (LoadAndResolve should have ensured this)
+		if (children.Count == 0)
 		{
 			context.EmitError(context.ConfigurationPath, $"Folder navigation '{folderPath}' has children defined but none could be created");
 			return null;
@@ -475,91 +466,6 @@ public class DocumentationSetNavigation<TModel>
 			child.Parent = finalFolderNavigation;
 
 		return finalFolderNavigation;
-	}
-
-	/// <summary>
-	/// Auto-discovers .md files in a folder and creates navigation items for them.
-	/// If index.md exists, it's placed first. Otherwise, files are sorted alphabetically.
-	/// </summary>
-	private List<INavigationItem> AutoDiscoverFolderFiles(
-		string folderPath,
-		IDocumentationSetContext context,
-		INodeNavigationItem<INavigationModel, INavigationItem> parent,
-		IRootNavigationItem<INavigationModel, INavigationItem> root,
-		IPathPrefixProvider prefixProvider)
-	{
-		var children = new List<INavigationItem>();
-
-		// Determine the actual directory path
-		var tocDirectory = prefixProvider switch
-		{
-			TableOfContentsNavigation toc => toc.TableOfContentsDirectory,
-			TemporaryNavigationPlaceholder placeholder when placeholder.TableOfContentsDirectory != null => placeholder.TableOfContentsDirectory,
-			_ => null
-		};
-
-		var directoryPath = tocDirectory != null
-			? context.ReadFileSystem.Path.Combine(tocDirectory.FullName, folderPath)
-			: context.ReadFileSystem.Path.Combine(context.DocumentationSourceDirectory.FullName, folderPath);
-
-		var directory = context.ReadFileSystem.DirectoryInfo.New(directoryPath);
-		if (!directory.Exists)
-			return children;
-
-		// Find all .md files in the directory (not recursive)
-		var mdFiles = context.ReadFileSystem.Directory
-			.GetFiles(directoryPath, "*.md")
-			.Select(f => context.ReadFileSystem.FileInfo.New(f))
-			.Where(f => !f.Name.StartsWith('_') && !f.Name.StartsWith('.'))
-			.OrderBy(f => f.Name)
-			.ToList();
-
-		// Find index.md if it exists
-		var indexFile = mdFiles.FirstOrDefault(f => f.Name.Equals("index.md", StringComparison.OrdinalIgnoreCase));
-		var otherFiles = mdFiles.Where(f => !f.Name.Equals("index.md", StringComparison.OrdinalIgnoreCase)).ToList();
-
-		var childIndex = 0;
-
-		// Add index.md first if it exists
-		if (indexFile != null)
-		{
-			var indexNav = CreateFileNavigationFromFileInfo(indexFile, folderPath, childIndex++, context, parent, root, prefixProvider);
-			if (indexNav != null)
-				children.Add(indexNav);
-		}
-
-		// Add other files
-		foreach (var file in otherFiles)
-		{
-			var fileNav = CreateFileNavigationFromFileInfo(file, folderPath, childIndex++, context, parent, root, prefixProvider);
-			if (fileNav != null)
-				children.Add(fileNav);
-		}
-
-		return children;
-	}
-
-	/// <summary>
-	/// Creates a file navigation item from a file info object.
-	/// </summary>
-	private INavigationItem? CreateFileNavigationFromFileInfo(
-		IFileInfo fileInfo,
-		string folderPath,
-		int index,
-		IDocumentationSetContext context,
-		INodeNavigationItem<INavigationModel, INavigationItem> parent,
-		IRootNavigationItem<INavigationModel, INavigationItem> root,
-		IPathPrefixProvider prefixProvider)
-	{
-		var fileName = fileInfo.Name;
-		var fullPath = $"{folderPath}/{fileName}";
-
-		var documentationFile = CreateDocumentationFile(fileInfo, context.ReadFileSystem, context, fullPath);
-		if (documentationFile == null)
-			return null;
-
-		var leafNavigationArgs = new FileNavigationArgs(fullPath, false, index, parent, root, prefixProvider);
-		return DocumentationNavigationFactory.CreateFileNavigationLeaf(documentationFile, fileInfo, leafNavigationArgs);
 	}
 
 	private INavigationItem? CreateTocNavigation(
@@ -658,6 +564,14 @@ public class DocumentationSetNavigation<TModel>
 		// Convert children
 		var children = new List<INavigationItem>();
 		var childIndex = 0;
+
+		// Validate that TOC references don't have children in parent YAML
+		// Children should be defined in the toc.yml file, not in the parent YAML
+		if (tocRef.Children.Count > 0)
+		{
+			context.EmitError(context.ConfigurationPath,
+				$"TableOfContents '{tocRef.Path}' may not contain children, define children in '{tocRef.Path}/toc.yml' instead.");
+		}
 
 		// Always use tocFile.TableOfContents which contains unresolved children from toc.yml
 		// LoadAndResolve resolves children relative to the base directory, but TOC navigation

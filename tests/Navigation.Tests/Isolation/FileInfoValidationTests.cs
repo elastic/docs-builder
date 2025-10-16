@@ -303,8 +303,17 @@ public class FileInfoValidationTests(ITestOutputHelper output) : DocumentationSe
 		fileSystem.File.WriteAllText("/docs/setup/advanced/toc.yml", setupAdvancedTocYaml);
 		fileSystem.File.WriteAllText("/docs/reference/toc.yml", referenceTocYaml);
 
-		var docSet = DocumentationSetFile.LoadAndResolve(docsetYaml, fileSystem.DirectoryInfo.New("/docs"), fileSystem);
 		var context = CreateContext(fileSystem);
+		var docSet = DocumentationSetFile.LoadAndResolve(docsetYaml, fileSystem.DirectoryInfo.New("/docs"), fileSystem);
+
+		var fileRefs = docSet.TableOfContents.SelectMany(DocumentationSetFile.GetFileRefs).ToList();
+		foreach (var fileRef in fileRefs)
+		{
+			var path = fileSystem.FileInfo.New(Path.Combine(context.DocumentationSourceDirectory.FullName, fileRef.Path));
+			path.Exists.Should().BeTrue($"Expected file {path.FullName} to exist");
+		}
+		fileRefs.Count.Should().Be(fileRefs.Distinct().Count(), "should not have duplicate file references");
+
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 

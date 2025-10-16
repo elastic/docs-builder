@@ -125,32 +125,26 @@ public class DocumentationSetFile : TableOfContentsFile
 
 	/// <summary>
 	/// Resolves an IsolatedTableOfContentsRef by loading the TOC file and returning a new ref with resolved children.
+	/// Preserves the original children from parent YAML (tocRef.Children) for validation purposes.
+	/// DocumentationSetNavigation will emit an error if tocRef.Children.Count > 0, since children
+	/// should be defined in the toc.yml file, not in the parent YAML.
+	/// Always returns a valid IsolatedTableOfContentsRef (even if toc.yml doesn't exist) so that
+	/// DocumentationSetNavigation can perform validation and emit appropriate errors.
 	/// </summary>
 	private static ITableOfContentsItem? ResolveIsolatedToc(
 		IsolatedTableOfContentsRef tocRef,
-		IDirectoryInfo baseDirectory,
-		IFileSystem fileSystem,
+		IDirectoryInfo _,
+		IFileSystem __,
 		string parentPath
 	)
 	{
 		var tocPath = string.IsNullOrEmpty(parentPath) ? tocRef.Path : $"{parentPath}/{tocRef.Path}";
 
-		var tocDirectory = fileSystem.DirectoryInfo.New(fileSystem.Path.Combine(baseDirectory.FullName, tocPath));
-
-		var tocFilePath = fileSystem.Path.Combine(tocDirectory.FullName, "toc.yml");
-
-		if (!fileSystem.File.Exists(tocFilePath))
-			return null;
-
-		var tocYaml = fileSystem.File.ReadAllText(tocFilePath);
-		var tocFile = TableOfContentsFile.Deserialize(tocYaml);
-
-		// Recursively resolve children with the TOC path as the parent path
-		// This ensures all file paths within the TOC include the TOC directory path
-		var resolvedChildren = ResolveTableOfContents(tocFile.TableOfContents, baseDirectory, fileSystem, tocPath);
-
-		// Return a new IsolatedTableOfContentsRef with the resolved children
-		return new IsolatedTableOfContentsRef(tocPath, resolvedChildren);
+		// Always preserve the original children from parent YAML for validation
+		// DocumentationSetNavigation will check if tocRef.Children.Count > 0 and emit an error
+		// We return the IsolatedTableOfContentsRef even if toc.yml doesn't exist so that
+		// DocumentationSetNavigation can validate it and emit appropriate errors
+		return new IsolatedTableOfContentsRef(tocPath, tocRef.Children);
 	}
 
 	/// <summary>
@@ -189,6 +183,7 @@ public class DocumentationSetFile : TableOfContentsFile
 
 	/// <summary>
 	/// Resolves a FolderRef by prepending the parent path to the folder path and recursively resolving children.
+	/// If no children are defined, auto-discovers .md files in the folder directory.
 	/// </summary>
 	private static ITableOfContentsItem ResolveFolderRef(
 		FolderRef folderRef,
@@ -198,12 +193,69 @@ public class DocumentationSetFile : TableOfContentsFile
 	{
 		var fullPath = string.IsNullOrEmpty(parentPath) ? folderRef.Path : $"{parentPath}/{folderRef.Path}";
 
-		if (folderRef.Children.Count == 0)
-			return new FolderRef(fullPath, []);
+		// If children are explicitly defined, resolve them
+		if (folderRef.Children.Count > 0)
+		{
+			var resolvedChildren = ResolveTableOfContents(folderRef.Children, baseDirectory, fileSystem, fullPath);
+			return new FolderRef(fullPath, resolvedChildren);
+		}
 
-		var resolvedChildren = ResolveTableOfContents(folderRef.Children, baseDirectory, fileSystem, fullPath);
+		// No children defined - auto-discover .md files in the folder
+		var autoDiscoveredChildren = AutoDiscoverFolderFiles(fullPath, baseDirectory, fileSystem);
+		return new FolderRef(fullPath, autoDiscoveredChildren);
+	}
 
-		return new FolderRef(fullPath, resolvedChildren);
+	/// <summary>
+	/// Auto-discovers .md files in a folder directory and creates FileRef items for them.
+	/// If index.md exists, it's placed first. Otherwise, files are sorted alphabetically.
+	/// Files starting with '_' or '.' are excluded.
+	/// </summary>
+	private static TableOfContents AutoDiscoverFolderFiles(
+		string folderPath,
+		IDirectoryInfo baseDirectory,
+		IFileSystem fileSystem)
+	{
+		var directoryPath = fileSystem.Path.Combine(baseDirectory.FullName, folderPath);
+		var directory = fileSystem.DirectoryInfo.New(directoryPath);
+
+		if (!directory.Exists)
+			return [];
+
+		// Find all .md files in the directory (not recursive)
+		var mdFiles = fileSystem.Directory
+			.GetFiles(directoryPath, "*.md")
+			.Select(f => fileSystem.FileInfo.New(f))
+			.Where(f => !f.Name.StartsWith('_') && !f.Name.StartsWith('.'))
+			.OrderBy(f => f.Name)
+			.ToList();
+
+		if (mdFiles.Count == 0)
+			return [];
+
+		// Separate index.md from other files
+		var indexFile = mdFiles.FirstOrDefault(f => f.Name.Equals("index.md", StringComparison.OrdinalIgnoreCase));
+		var otherFiles = mdFiles.Where(f => !f.Name.Equals("index.md", StringComparison.OrdinalIgnoreCase)).ToList();
+
+		var children = new TableOfContents();
+
+		// Add index.md first if it exists
+		if (indexFile != null)
+		{
+			var indexRef = indexFile.Name.Equals("index.md", StringComparison.OrdinalIgnoreCase)
+				? new IndexFileRef(indexFile.Name, false, [])
+				: new FileRef(indexFile.Name, false, []);
+			children.Add(indexRef);
+		}
+
+		// Add other files sorted alphabetically
+		foreach (var file in otherFiles)
+		{
+			var fileRef = new FileRef(file.Name, false, []);
+			children.Add(fileRef);
+		}
+
+		// Resolve the children with the folder path as parent to get correct full paths
+		return ResolveTableOfContents(children, baseDirectory, fileSystem, folderPath);
 	}
 
 	/// <summary>
