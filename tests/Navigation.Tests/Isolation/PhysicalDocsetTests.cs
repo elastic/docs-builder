@@ -38,6 +38,49 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		// Assert navigation was built successfully
 		navigation.NavigationItems.Should().NotBeEmpty();
 	}
+	//
+
+	[Fact]
+	public async Task BeatsHasNoErrors()
+	{
+		var fileSystem = new FileSystem();
+		var folder = "/Users/mpdreamz/Projects/docs-builder-navigation/.artifacts/checkouts/current/beats/docs";
+		var docsetPath = Path.Combine(folder, "docset.yml");
+		File.Exists(docsetPath).Should().BeTrue($"Expected docset file to exist at {docsetPath}");
+
+		var docSet = DocumentationSetFile.LoadAndResolve(fileSystem.FileInfo.New(docsetPath), fileSystem);
+		docSet.TableOfContents.Should().NotBeEmpty();
+		var fileRefs = docSet.TableOfContents.SelectMany(GetFileRefs).ToList();
+
+		var docsDir = fileSystem.DirectoryInfo.New(folder);
+		var outputDir = fileSystem.DirectoryInfo.New(Path.Combine(folder, "..", ".artifacts", "test-output"));
+		var configPath = fileSystem.FileInfo.New(docsetPath);
+
+		var context = new TestDocumentationSetContext(fileSystem, docsDir, outputDir, configPath, output, "beats");
+		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
+
+		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance);
+
+		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+
+		context.Collector.Errors.Should().Be(0);
+
+		// Assert navigation was built successfully
+		navigation.NavigationItems.Should().NotBeEmpty();
+
+		static FileRef[] GetFileRefs(ITableOfContentsItem item)
+		{
+			if (item is FileRef fileRef)
+				return [fileRef];
+			if (item is FolderRef folderRef)
+				return folderRef.Children.SelectMany(GetFileRefs).ToArray();
+			if (item is IsolatedTableOfContentsRef tocRef)
+				return tocRef.Children.SelectMany(GetFileRefs).ToArray();
+			if (item is CrossLinkRef crossLinkRef)
+				return [];
+			throw new Exception($"Unexpected item type {item.GetType().Name}");
+		}
+	}
 
 	[Fact]
 	public async Task PhysicalDocsetCanBeNavigated()

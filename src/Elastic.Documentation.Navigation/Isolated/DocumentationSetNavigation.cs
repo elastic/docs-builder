@@ -302,9 +302,10 @@ public class DocumentationSetNavigation<TModel>
 		IDocumentationSetContext context,
 		string fullPath)
 	{
+		var relativePath = Path.GetRelativePath(context.DocumentationSourceDirectory.FullName, fileInfo.FullName);
 		var documentationFile = _factory.TryCreateDocumentationFile(fileInfo, fileSystem);
 		if (documentationFile == null)
-			context.EmitError(context.ConfigurationPath, $"File navigation '{fullPath}' could not be created");
+			context.EmitError(context.ConfigurationPath, $"File navigation '{relativePath}' could not be created. {fullPath}");
 
 		return documentationFile;
 	}
@@ -406,6 +407,10 @@ public class DocumentationSetNavigation<TModel>
 		string parentPath
 	)
 	{
+		var test = "config-file-format-type.md";
+		if (fileRef.Path.EndsWith(test, StringComparison.OrdinalIgnoreCase))
+		{
+		}
 		// Resolve paths
 		var relativePathForUrl = ResolveFileRelativePath(fileRef.Path, parentPath);
 		var fullPath = CreateFullFilePath(relativePathForUrl, parentPath);

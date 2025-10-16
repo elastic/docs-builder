@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.IO.Abstractions;
 using Elastic.Documentation.Configuration.Products;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
@@ -52,6 +53,159 @@ public class DocumentationSetFile : TableOfContentsFile
 
 	public static new DocumentationSetFile Deserialize(string json) =>
 		ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(json);
+
+	/// <summary>
+	/// Loads a DocumentationSetFile and recursively resolves all IsolatedTableOfContentsRef items,
+	/// replacing them with their resolved children and ensuring file paths carry over parent paths.
+	/// </summary>
+	public static DocumentationSetFile LoadAndResolve(IFileInfo docsetPath, IFileSystem fileSystem)
+	{
+		var yaml = fileSystem.File.ReadAllText(docsetPath.FullName);
+		var docSet = Deserialize(yaml);
+
+		var sourceDirectory = docsetPath.Directory!;
+		docSet.TableOfContents = ResolveTableOfContents(docSet.TableOfContents, sourceDirectory, fileSystem, parentPath: "");
+
+		return docSet;
+	}
+
+	/// <summary>
+	/// Recursively resolves all IsolatedTableOfContentsRef items in a table of contents,
+	/// loading nested TOC files and prepending parent paths to all file references.
+	/// Preserves the hierarchy structure without flattening.
+	/// </summary>
+	private static TableOfContents ResolveTableOfContents(
+		IReadOnlyCollection<ITableOfContentsItem> items,
+		IDirectoryInfo baseDirectory,
+		IFileSystem fileSystem,
+		string parentPath)
+	{
+		var resolved = new TableOfContents();
+
+		foreach (var item in items)
+		{
+			var resolvedItem = item switch
+			{
+				IsolatedTableOfContentsRef tocRef => ResolveIsolatedToc(tocRef, baseDirectory, fileSystem, parentPath),
+				FileRef fileRef => ResolveFileRef(fileRef, baseDirectory, fileSystem, parentPath),
+				FolderRef folderRef => ResolveFolderRef(folderRef, baseDirectory, fileSystem, parentPath),
+				CrossLinkRef crossLink => ResolveCrossLinkRef(crossLink, baseDirectory, fileSystem, parentPath),
+				_ => null
+			};
+
+			if (resolvedItem != null)
+				resolved.Add(resolvedItem);
+		}
+
+		return resolved;
+	}
+
+	/// <summary>
+	/// Resolves an IsolatedTableOfContentsRef by loading the TOC file and returning a new ref with resolved children.
+	/// </summary>
+	private static ITableOfContentsItem? ResolveIsolatedToc(
+		IsolatedTableOfContentsRef tocRef,
+		IDirectoryInfo baseDirectory,
+		IFileSystem fileSystem,
+		string parentPath)
+	{
+		// Compute TOC path
+		var tocPath = string.IsNullOrEmpty(parentPath)
+			? tocRef.Source
+			: $"{parentPath}/{tocRef.Source}";
+
+		var tocDirectory = fileSystem.DirectoryInfo.New(
+			fileSystem.Path.Combine(baseDirectory.FullName, tocPath)
+		);
+
+		var tocFilePath = fileSystem.Path.Combine(tocDirectory.FullName, "toc.yml");
+
+		if (!fileSystem.File.Exists(tocFilePath))
+			return null;
+
+		var tocYaml = fileSystem.File.ReadAllText(tocFilePath);
+		var tocFile = TableOfContentsFile.Deserialize(tocYaml);
+
+		// Recursively resolve children with the TOC path as the parent path
+		// This ensures all file paths within the TOC include the TOC directory path
+		var resolvedChildren = ResolveTableOfContents(tocFile.TableOfContents, baseDirectory, fileSystem, tocPath);
+
+		// Return a new IsolatedTableOfContentsRef with the resolved children
+		return new IsolatedTableOfContentsRef(tocRef.Source, resolvedChildren);
+	}
+
+	/// <summary>
+	/// Resolves a FileRef by prepending the parent path to the file path and recursively resolving children.
+	/// </summary>
+	private static ITableOfContentsItem ResolveFileRef(
+		FileRef fileRef,
+		IDirectoryInfo baseDirectory,
+		IFileSystem fileSystem,
+		string parentPath)
+	{
+		var fullPath = string.IsNullOrEmpty(parentPath)
+			? fileRef.Path
+			: $"{parentPath}/{fileRef.Path}";
+
+		if (fileRef.Children.Count == 0)
+		{
+			return fileRef is IndexFileRef
+				? new IndexFileRef(fullPath, fileRef.Hidden, [])
+				: new FileRef(fullPath, fileRef.Hidden, []);
+		}
+
+		// Determine parent path for children (strip .md extension and /index suffix)
+		var parentPathForChildren = fullPath.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
+			? fullPath[..^3]
+			: fullPath;
+
+		if (parentPathForChildren.EndsWith("/index", StringComparison.OrdinalIgnoreCase))
+			parentPathForChildren = parentPathForChildren[..^6];
+
+		var resolvedChildren = ResolveTableOfContents(fileRef.Children, baseDirectory, fileSystem, parentPathForChildren);
+
+		return fileRef is IndexFileRef
+			? new IndexFileRef(fullPath, fileRef.Hidden, resolvedChildren)
+			: new FileRef(fullPath, fileRef.Hidden, resolvedChildren);
+	}
+
+	/// <summary>
+	/// Resolves a FolderRef by prepending the parent path to the folder path and recursively resolving children.
+	/// </summary>
+	private static ITableOfContentsItem ResolveFolderRef(
+		FolderRef folderRef,
+		IDirectoryInfo baseDirectory,
+		IFileSystem fileSystem,
+		string parentPath)
+	{
+		var fullPath = string.IsNullOrEmpty(parentPath)
+			? folderRef.Path
+			: $"{parentPath}/{folderRef.Path}";
+
+		if (folderRef.Children.Count == 0)
+			return new FolderRef(fullPath, []);
+
+		var resolvedChildren = ResolveTableOfContents(folderRef.Children, baseDirectory, fileSystem, fullPath);
+
+		return new FolderRef(fullPath, resolvedChildren);
+	}
+
+	/// <summary>
+	/// Resolves a CrossLinkRef by recursively resolving children (though cross-links typically don't have children).
+	/// </summary>
+	private static ITableOfContentsItem ResolveCrossLinkRef(
+		CrossLinkRef crossLinkRef,
+		IDirectoryInfo baseDirectory,
+		IFileSystem fileSystem,
+		string parentPath)
+	{
+		if (crossLinkRef.Children.Count == 0)
+			return crossLinkRef;
+
+		var resolvedChildren = ResolveTableOfContents(crossLinkRef.Children, baseDirectory, fileSystem, parentPath);
+
+		return new CrossLinkRef(crossLinkRef.CrossLinkUri, crossLinkRef.Title, crossLinkRef.Hidden, resolvedChildren);
+	}
 }
 
 [YamlSerializable]

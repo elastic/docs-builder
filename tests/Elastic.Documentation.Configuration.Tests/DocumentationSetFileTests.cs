@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.IO.Abstractions.TestingHelpers;
 using Elastic.Documentation.Configuration.DocSet;
 using FluentAssertions;
 
@@ -581,5 +582,146 @@ public class DocumentationSetFileTests
 		apiFolder.Children.ElementAt(0).Should().BeOfType<IndexFileRef>();
 		apiFolder.Children.ElementAt(1).Should().BeOfType<FolderRef>();
 		apiFolder.Children.ElementAt(2).Should().BeOfType<FileRef>();
+	}
+
+	[Fact]
+	public void LoadAndResolveResolvesIsolatedTocReferences()
+	{
+		// Create a mock file system with docset and nested TOC files
+		var fileSystem = new MockFileSystem();
+
+		// Main docset.yml
+		// language=yaml
+		var docsetYaml = """
+		                 project: 'test-project'
+		                 toc:
+		                   - file: index.md
+		                   - toc: development
+		                   - folder: guides
+		                     children:
+		                       - file: getting-started.md
+		                       - toc: advanced
+		                 """;
+
+		// development/toc.yml
+		// language=yaml
+		var developmentTocYaml = """
+		                         toc:
+		                           - file: index.md
+		                           - file: contributing.md
+		                           - folder: internals
+		                             children:
+		                               - file: architecture.md
+		                         """;
+
+		// guides/advanced/toc.yml
+		// language=yaml
+		var advancedTocYaml = """
+		                      toc:
+		                        - file: index.md
+		                        - file: patterns.md
+		                      """;
+
+		fileSystem.AddFile("/docs/docset.yml", new MockFileData(docsetYaml));
+		fileSystem.AddFile("/docs/development/toc.yml", new MockFileData(developmentTocYaml));
+		fileSystem.AddFile("/docs/guides/advanced/toc.yml", new MockFileData(advancedTocYaml));
+
+		var docsetPath = fileSystem.FileInfo.New("/docs/docset.yml");
+		var result = DocumentationSetFile.LoadAndResolve(docsetPath, fileSystem);
+
+		// Verify TOC references have been preserved (not flattened)
+		// We have 3 top-level items: index.md, development TOC, and guides folder
+		result.TableOfContents.Should().HaveCount(3);
+
+		// First item: file from main docset
+		result.TableOfContents.ElementAt(0).Should().BeOfType<IndexFileRef>()
+			.Which.Path.Should().Be("index.md");
+
+		// Second item: development TOC (preserved as IsolatedTableOfContentsRef with resolved children)
+		var developmentToc = result.TableOfContents.ElementAt(1).Should().BeOfType<IsolatedTableOfContentsRef>().Subject;
+		developmentToc.Source.Should().Be("development");
+		developmentToc.Children.Should().HaveCount(3, "should have index, contributing file, and internals folder");
+
+		developmentToc.Children.ElementAt(0).Should().BeOfType<IndexFileRef>()
+			.Which.Path.Should().Be("development/index.md", "TOC path should be prepended");
+
+		developmentToc.Children.ElementAt(1).Should().BeOfType<FileRef>()
+			.Which.Path.Should().Be("development/contributing.md");
+
+		var internalsFolder = developmentToc.Children.ElementAt(2).Should().BeOfType<FolderRef>().Subject;
+		internalsFolder.Path.Should().Be("development/internals");
+		internalsFolder.Children.Should().HaveCount(1);
+		internalsFolder.Children.ElementAt(0).Should().BeOfType<FileRef>()
+			.Which.Path.Should().Be("development/internals/architecture.md");
+
+		// Third item: guides folder (preserved with its children including nested advanced TOC)
+		var guidesFolder = result.TableOfContents.ElementAt(2).Should().BeOfType<FolderRef>().Subject;
+		guidesFolder.Path.Should().Be("guides");
+		guidesFolder.Children.Should().HaveCount(2, "should have getting-started file and advanced TOC");
+
+		guidesFolder.Children.ElementAt(0).Should().BeOfType<FileRef>()
+			.Which.Path.Should().Be("guides/getting-started.md");
+
+		// Advanced TOC preserved as IsolatedTableOfContentsRef within guides folder
+		var advancedToc = guidesFolder.Children.ElementAt(1).Should().BeOfType<IsolatedTableOfContentsRef>().Subject;
+		advancedToc.Source.Should().Be("advanced");
+		advancedToc.Children.Should().HaveCount(2);
+
+		advancedToc.Children.ElementAt(0).Should().BeOfType<IndexFileRef>()
+			.Which.Path.Should().Be("guides/advanced/index.md");
+
+		advancedToc.Children.ElementAt(1).Should().BeOfType<FileRef>()
+			.Which.Path.Should().Be("guides/advanced/patterns.md");
+	}
+
+	[Fact]
+	public void LoadAndResolvePrependsParentPathsToFileReferences()
+	{
+		var fileSystem = new MockFileSystem();
+
+		// language=yaml
+		var docsetYaml = """
+		                 project: 'test-project'
+		                 toc:
+		                   - file: guide.md
+		                     children:
+		                       - file: chapter1.md
+		                         children:
+		                           - file: section1.md
+		                   - folder: api
+		                     children:
+		                       - file: index.md
+		                       - file: reference.md
+		                 """;
+
+		fileSystem.AddFile("/docs/docset.yml", new MockFileData(docsetYaml));
+
+		var docsetPath = fileSystem.FileInfo.New("/docs/docset.yml");
+		var result = DocumentationSetFile.LoadAndResolve(docsetPath, fileSystem);
+
+		result.TableOfContents.Should().HaveCount(2);
+
+		// First item: file with nested children
+		var guide = result.TableOfContents.ElementAt(0).Should().BeOfType<FileRef>().Subject;
+		guide.Path.Should().Be("guide.md");
+		guide.Children.Should().HaveCount(1);
+
+		var chapter1 = guide.Children.ElementAt(0).Should().BeOfType<FileRef>().Subject;
+		chapter1.Path.Should().Be("guide/chapter1.md", "parent path 'guide' should be prepended");
+		chapter1.Children.Should().HaveCount(1);
+
+		var section1 = chapter1.Children.ElementAt(0).Should().BeOfType<FileRef>().Subject;
+		section1.Path.Should().Be("guide/chapter1/section1.md", "full parent path 'guide/chapter1' should be prepended");
+
+		// Second item: folder with children
+		var apiFolder = result.TableOfContents.ElementAt(1).Should().BeOfType<FolderRef>().Subject;
+		apiFolder.Path.Should().Be("api");
+		apiFolder.Children.Should().HaveCount(2);
+
+		apiFolder.Children.ElementAt(0).Should().BeOfType<IndexFileRef>()
+			.Which.Path.Should().Be("api/index.md", "folder path 'api' should be prepended");
+
+		apiFolder.Children.ElementAt(1).Should().BeOfType<FileRef>()
+			.Which.Path.Should().Be("api/reference.md", "folder path 'api' should be prepended");
 	}
 }

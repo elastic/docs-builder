@@ -72,6 +72,7 @@ public class MarkdownFileFactory : IDocumentationFileFactory<MarkdownFile>
 			if (file is MarkdownFile markdown)
 				return markdown;
 		}
+
 		return null;
 	}
 
