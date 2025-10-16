@@ -166,6 +166,14 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 
 		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
 
+		var fileRefs = docSet.TableOfContents.SelectMany(DocumentationSetFile.GetFileRefs).ToList();
+		foreach (var fileRef in fileRefs)
+		{
+			var path = fileSystem.FileInfo.New(Path.Combine(configPath.Directory!.FullName, fileRef.Path));
+			path.Exists.Should().BeTrue($"Expected file {path.FullName} to exist");
+		}
+		fileRefs.Count.Should().Be(fileRefs.Distinct().Count(), "should not have duplicate file references");
+
 		// Find TOC references in the navigation
 		var tocNavs = navigation.NavigationItems.OfType<TableOfContentsNavigation>().ToList();
 		tocNavs.Should().NotBeEmpty();

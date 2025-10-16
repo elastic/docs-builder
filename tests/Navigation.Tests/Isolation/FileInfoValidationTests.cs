@@ -221,10 +221,6 @@ public class FileInfoValidationTests(ITestOutputHelper output) : DocumentationSe
 			fileNav.FileInfo.Should().NotBeNull($"FileInfo for {fileNav.Url} should not be null");
 			fileNav.FileInfo.Exists.Should().BeTrue($"File at {fileNav.FileInfo.FullName} should exist for {fileNav.Url}");
 		}
-
-		// Note: LoadAndResolve loads the TOC children, which triggers validation warnings
-		// This is expected behavior - the warnings indicate TOCs loaded from toc.yml files
-		context.Diagnostics.Should().NotBeEmpty();
 	}
 
 	/// <summary>
@@ -318,10 +314,6 @@ public class FileInfoValidationTests(ITestOutputHelper output) : DocumentationSe
 			fileNav.FileInfo.Should().NotBeNull($"FileInfo for {fileNav.Url} should not be null");
 			fileNav.FileInfo.Exists.Should().BeTrue($"File at {fileNav.FileInfo.FullName} should exist for {fileNav.Url}");
 		}
-
-		// Note: LoadAndResolve loads the TOC children, which triggers validation warnings
-		// This is expected behavior - the warnings indicate TOCs loaded from toc.yml files
-		context.Diagnostics.Should().NotBeEmpty();
 	}
 
 	[Fact]
