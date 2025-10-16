@@ -8,7 +8,7 @@
 		}
 		/* Override centering for images in lists */
 		li a.image-reference > img {
-			@apply ml-0 mr-0;
+			@apply mr-0 ml-0;
 		}
 		/*
 		 * tailwind reset makes all images `display: block`
