@@ -20,7 +20,7 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 
 		var fileSystem = new FileSystem();
 		var configPath = fileSystem.FileInfo.New(docsetPath);
-		var context = new TestDocumentationSetContext(fileSystem, configPath.Directory!, fileSystem.DirectoryInfo.New(Path.Combine(configPath.Directory!.FullName, ".artifacts", "test-output")), configPath, null, "docs-content");
+		var context = new TestDocumentationSetContext(fileSystem, configPath.Directory!, fileSystem.DirectoryInfo.New(Path.Combine(configPath.Directory!.FullName, ".artifacts", "test-output")), configPath, output, "docs-content");
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, configPath);
 		var fileRefs = docSet.TableOfContents.SelectMany(DocumentationSetFile.GetFileRefs).ToList();
 		foreach (var fileRef in fileRefs)

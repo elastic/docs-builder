@@ -253,7 +253,26 @@ public class DocumentationSetFile : TableOfContentsFile
 		string parentPath,
 		string context)
 	{
-		var fullPath = string.IsNullOrEmpty(parentPath) ? folderRef.Path : $"{parentPath}/{folderRef.Path}";
+		// Folder paths containing '/' are treated as relative to the context file's directory (full paths).
+		// Simple folder names (no '/') are resolved relative to the parent path in the navigation hierarchy.
+		string fullPath;
+		if (folderRef.Path.Contains('/'))
+		{
+			// Path contains '/', treat as context-relative (full path from the context file's directory)
+			var contextDir = fileSystem.Path.GetDirectoryName(context) ?? "";
+			var contextRelativePath = fileSystem.Path.GetRelativePath(baseDirectory.FullName, contextDir);
+			if (contextRelativePath == ".")
+				contextRelativePath = "";
+
+			fullPath = string.IsNullOrEmpty(contextRelativePath)
+				? folderRef.Path
+				: $"{contextRelativePath}/{folderRef.Path}";
+		}
+		else
+		{
+			// Simple name, resolve relative to parent path
+			fullPath = string.IsNullOrEmpty(parentPath) ? folderRef.Path : $"{parentPath}/{folderRef.Path}";
+		}
 
 		// If children are explicitly defined, resolve them
 		if (folderRef.Children.Count > 0)
