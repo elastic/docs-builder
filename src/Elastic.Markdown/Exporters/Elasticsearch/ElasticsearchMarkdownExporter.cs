@@ -49,7 +49,8 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 					? new BasicAuthentication(username, password)
 					: null,
 			EnableHttpCompression = true,
-			DebugMode = _endpoint.DebugMode,
+			//DebugMode = _endpoint.DebugMode,
+			DebugMode = true,
 			CertificateFingerprint = _endpoint.CertificateFingerprint,
 			ProxyAddress = _endpoint.ProxyAddress,
 			ProxyPassword = _endpoint.ProxyPassword,
@@ -161,11 +162,12 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 			}
 		});
 		var reindexUrl = $"/{lexicalWriteAlias}/_delete_by_query?wait_for_completion=false";
-		var reindexNewChanges = await _transport.PostAsync<DynamicResponse>(reindexUrl, request, ctx);
-		var taskId = reindexNewChanges.Body.Get<string>("task");
+		var deleteOldLexicalDocs = await _transport.PostAsync<DynamicResponse>(reindexUrl, request, ctx);
+		var taskId = deleteOldLexicalDocs.Body.Get<string>("task");
 		if (string.IsNullOrWhiteSpace(taskId))
 		{
 			_collector.EmitGlobalError($"Failed to delete data in '{lexicalWriteAlias}' not part of batch date: {_batchIndexDate:o}");
+			_logger.LogError("Failed to delete data to '{LexicalWriteAlias}' {Response}", lexicalWriteAlias, deleteOldLexicalDocs);
 			return;
 		}
 		_logger.LogInformation("_delete_by_query task id: {TaskId}", taskId);
@@ -196,6 +198,7 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 		var taskId = reindexNewChanges.Body.Get<string>("task");
 		if (string.IsNullOrWhiteSpace(taskId))
 		{
+			_logger.LogError("Failed to reindex {Type} data to '{SemanticWriteAlias}' {Response}", typeOfSync, semanticWriteAlias, reindexNewChanges);
 			_collector.EmitGlobalError($"Failed to reindex {typeOfSync} data to '{semanticWriteAlias}'");
 			return;
 		}
