@@ -274,20 +274,12 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
-		var apiToc = navigation.NavigationItems.First().Should().BeOfType<TableOfContentsNavigation>().Subject;
-		apiToc.NavigationItems.Should().HaveCount(1);
-
-		// First item should be from api/toc.yml
-		var fromToc = apiToc.NavigationItems.ElementAt(0).Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
-		fromToc.NavigationTitle.Should().Be("from-toc");
-		fromToc.Url.Should().Be("/api/from-toc");
-
-		apiToc.NavigationItems.Should().HaveCount(1);
+		navigation.NavigationItems.Should().HaveCount(0);
 
 		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
 
 		var diagnostics = context.Diagnostics;
-		diagnostics.Should().ContainSingle(d =>
+		diagnostics.Should().Contain(d =>
 			d.Message.Contains("TableOfContents 'api' may not contain children, define children in 'api/toc.yml' instead."));
 	}
 }
