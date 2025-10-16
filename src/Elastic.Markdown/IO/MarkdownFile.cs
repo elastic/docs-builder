@@ -12,6 +12,7 @@ using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.Directives;
+using Elastic.Markdown.Myst.Directives.Admonition;
 using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Stepper;
 using Elastic.Markdown.Myst.FrontMatter;
@@ -178,6 +179,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 			_ = await MinimalParseAsync(ctx);
 
 		var document = await GetParseDocumentAsync(ctx);
+		ValidateDuplicateAnchors(document);
 		return document;
 	}
 
@@ -192,6 +194,68 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 		foreach (var (key, value) in globalSubstitutions)
 			allProperties[key] = value;
 		return allProperties;
+	}
+
+	private void ValidateDuplicateAnchors(MarkdownDocument document)
+	{
+		// Collect all anchors with their source blocks
+		var anchorSources = new List<(string Anchor, int Line, int Column, int Length, string Type)>();
+
+		// Collect dropdown anchors
+		foreach (var dropdown in document.Descendants<DropdownBlock>())
+		{
+			if (!string.IsNullOrEmpty(dropdown.CrossReferenceName))
+			{
+				anchorSources.Add((
+					dropdown.CrossReferenceName,
+					dropdown.Line + 1,
+					dropdown.Column + 1, // Column is 0-indexed, add 1
+					dropdown.OpeningLength,
+					"dropdown"
+				));
+			}
+		}
+
+		// Collect heading anchors
+		foreach (var heading in document.Descendants<HeadingBlock>())
+		{
+			var header = heading.GetData("header") as string;
+			var anchor = heading.GetData("anchor") as string;
+			var slugTarget = (anchor ?? header) ?? string.Empty;
+			if (!string.IsNullOrEmpty(slugTarget))
+			{
+				var slug = slugTarget.Slugify();
+				anchorSources.Add((
+					slug,
+					heading.Line + 1,
+					heading.Column + 1, // Column is 0-indexed, add 1
+					1, // heading length
+					"heading"
+				));
+			}
+		}
+
+		// Group by anchor and find duplicates
+		var duplicateGroups = anchorSources
+			.GroupBy(a => a.Anchor, StringComparer.OrdinalIgnoreCase)
+			.Where(g => g.Count() > 1);
+
+		foreach (var group in duplicateGroups)
+		{
+			var anchor = group.Key;
+			foreach (var (_, line, column, length, type) in group)
+			{
+				Collector.Write(new Diagnostic
+				{
+					Severity = Severity.Hint,
+					File = SourceFile.FullName,
+					Line = line,
+					Column = column,
+					Length = length,
+					Message = $"Duplicate anchor '{anchor}' found in {type}. Multiple elements with the same anchor may cause linking issues."
+				});
+			}
+		}
 	}
 
 	protected void ReadDocumentInstructions(MarkdownDocument document)

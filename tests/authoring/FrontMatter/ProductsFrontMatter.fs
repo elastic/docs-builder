@@ -66,7 +66,7 @@ This is a test page without products frontmatter.
         // Test that the products frontmatter is correctly processed by checking the file
         let results = markdownWithProducts.Value
         let defaultFile = results.MarkdownResults |> Seq.find (fun r -> r.File.RelativePath = "index.md")
-        
+
         // Test that the file has the correct products
         test <@ defaultFile.File.YamlFrontMatter <> null @>
         match defaultFile.File.YamlFrontMatter with
@@ -81,19 +81,18 @@ This is a test page without products frontmatter.
                 test <@ productIds.Contains("ecctl") @>
             | _ -> ()
         | _ -> ()
-        
 
     [<Fact>]
     let ``does not include products in frontmatter when no products are specified`` () =
         // Test that pages without products frontmatter don't have products
         let results = markdownWithoutProducts.Value
         let defaultFile = results.MarkdownResults |> Seq.find (fun r -> r.File.RelativePath = "index.md")
-        
+
         // Test that the file has no products
         match defaultFile.File.YamlFrontMatter with
         | NonNull frontMatter ->
             match frontMatter.Products with
-            | NonNull products -> 
+            | NonNull products ->
                 test <@ products.Count = 0 @>
             | _ -> ()
         | _ -> ()
