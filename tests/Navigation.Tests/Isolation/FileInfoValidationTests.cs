@@ -221,6 +221,9 @@ public class FileInfoValidationTests(ITestOutputHelper output) : DocumentationSe
 			fileNav.FileInfo.Should().NotBeNull($"FileInfo for {fileNav.Url} should not be null");
 			fileNav.FileInfo.Exists.Should().BeTrue($"File at {fileNav.FileInfo.FullName} should exist for {fileNav.Url}");
 		}
+
+		// Validate no errors or warnings were emitted
+		context.Diagnostics.Should().BeEmpty("navigation construction should not emit any diagnostics");
 	}
 
 	/// <summary>
@@ -314,6 +317,9 @@ public class FileInfoValidationTests(ITestOutputHelper output) : DocumentationSe
 			fileNav.FileInfo.Should().NotBeNull($"FileInfo for {fileNav.Url} should not be null");
 			fileNav.FileInfo.Exists.Should().BeTrue($"File at {fileNav.FileInfo.FullName} should exist for {fileNav.Url}");
 		}
+
+		// Validate no errors or warnings were emitted
+		context.Diagnostics.Should().BeEmpty("navigation construction should not emit any diagnostics");
 	}
 
 	[Fact]
