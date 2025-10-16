@@ -102,15 +102,36 @@ jobs:
 To set up the tool to publish to GitHub Pages, use the following configuration.
 
 ```yaml
-environment:
-  name: github-pages
-  url: ${{ steps.deployment.outputs.page_url }}
-steps:
-  - uses: actions/checkout@v4
-    
-  - name: Publish Github
-    uses: elastic/docs-builder/actions/publish@main
-    id: deployment
+name: Build the docs
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+
+      - name: Publish Github
+        uses: elastic/docs-builder/actions/publish@main
+        id: deployment
+        with:
+          continue-on-error: "true"
+          private: true
 ```
 
 This single action will build and validate the documentation before publishing.
