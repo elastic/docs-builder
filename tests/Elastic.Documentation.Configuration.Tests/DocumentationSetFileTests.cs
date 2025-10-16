@@ -726,4 +726,51 @@ public class DocumentationSetFileTests
 		apiFolder.Children.ElementAt(1).Should().BeOfType<FileRef>()
 			.Which.Path.Should().Be("api/reference.md", "folder path 'api' should be prepended");
 	}
+
+	[Fact]
+	public void LoadAndResolveSetsContextForAllItems()
+	{
+		var fileSystem = new MockFileSystem();
+
+		// language=yaml
+		var docsetYaml = """
+		                 project: 'test-project'
+		                 toc:
+		                   - file: index.md
+		                   - folder: guides
+		                     children:
+		                       - file: getting-started.md
+		                   - toc: development
+		                 """;
+
+		// development/toc.yml
+		// language=yaml
+		var developmentTocYaml = """
+		                         toc:
+		                           - file: contributing.md
+		                         """;
+
+		fileSystem.AddFile("/docs/docset.yml", new MockFileData(docsetYaml));
+		fileSystem.AddFile("/docs/development/toc.yml", new MockFileData(developmentTocYaml));
+
+		var docsetPath = fileSystem.FileInfo.New("/docs/docset.yml");
+		var result = DocumentationSetFile.LoadAndResolve(docsetPath, fileSystem);
+
+		// All items from docset.yml should have context = /docs/docset.yml
+		result.TableOfContents.ElementAt(0).Should().BeOfType<IndexFileRef>()
+			.Which.Context.Should().Be("/docs/docset.yml");
+
+		var guidesFolder = result.TableOfContents.ElementAt(1).Should().BeOfType<FolderRef>().Subject;
+		guidesFolder.Context.Should().Be("/docs/docset.yml");
+		guidesFolder.Children.ElementAt(0).Should().BeOfType<FileRef>()
+			.Which.Context.Should().Be("/docs/docset.yml");
+
+		// The TOC ref itself has context = /docs/docset.yml (where it was referenced)
+		var developmentToc = result.TableOfContents.ElementAt(2).Should().BeOfType<IsolatedTableOfContentsRef>().Subject;
+		developmentToc.Context.Should().Be("/docs/docset.yml");
+
+		// But children of the TOC ref should have context = /docs/development/toc.yml (where they were defined)
+		developmentToc.Children.ElementAt(0).Should().BeOfType<FileRef>()
+			.Which.Context.Should().Be("/docs/development/toc.yml");
+	}
 }

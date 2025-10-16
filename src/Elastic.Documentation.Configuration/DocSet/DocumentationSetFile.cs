@@ -86,7 +86,8 @@ public class DocumentationSetFile : TableOfContentsFile
 	public static DocumentationSetFile LoadAndResolve(string yaml, IDirectoryInfo sourceDirectory, IFileSystem fileSystem)
 	{
 		var docSet = Deserialize(yaml);
-		docSet.TableOfContents = ResolveTableOfContents(docSet.TableOfContents, sourceDirectory, fileSystem, parentPath: "");
+		var docsetPath = fileSystem.Path.Combine(sourceDirectory.FullName, "docset.yml");
+		docSet.TableOfContents = ResolveTableOfContents(docSet.TableOfContents, sourceDirectory, fileSystem, parentPath: "", context: docsetPath);
 		return docSet;
 	}
 
@@ -100,7 +101,8 @@ public class DocumentationSetFile : TableOfContentsFile
 		IReadOnlyCollection<ITableOfContentsItem> items,
 		IDirectoryInfo baseDirectory,
 		IFileSystem fileSystem,
-		string parentPath
+		string parentPath,
+		string context
 	)
 	{
 		var resolved = new TableOfContents();
@@ -109,10 +111,10 @@ public class DocumentationSetFile : TableOfContentsFile
 		{
 			var resolvedItem = item switch
 			{
-				IsolatedTableOfContentsRef tocRef => ResolveIsolatedToc(tocRef, baseDirectory, fileSystem, parentPath),
-				FileRef fileRef => ResolveFileRef(fileRef, baseDirectory, fileSystem, parentPath),
-				FolderRef folderRef => ResolveFolderRef(folderRef, baseDirectory, fileSystem, parentPath),
-				CrossLinkRef crossLink => ResolveCrossLinkRef(crossLink, baseDirectory, fileSystem, parentPath),
+				IsolatedTableOfContentsRef tocRef => ResolveIsolatedToc(tocRef, baseDirectory, fileSystem, parentPath, context),
+				FileRef fileRef => ResolveFileRef(fileRef, baseDirectory, fileSystem, parentPath, context),
+				FolderRef folderRef => ResolveFolderRef(folderRef, baseDirectory, fileSystem, parentPath, context),
+				CrossLinkRef crossLink => ResolveCrossLinkRef(crossLink, baseDirectory, fileSystem, parentPath, context),
 				_ => null
 			};
 
@@ -125,26 +127,45 @@ public class DocumentationSetFile : TableOfContentsFile
 
 	/// <summary>
 	/// Resolves an IsolatedTableOfContentsRef by loading the TOC file and returning a new ref with resolved children.
-	/// Preserves the original children from parent YAML (tocRef.Children) for validation purposes.
-	/// DocumentationSetNavigation will emit an error if tocRef.Children.Count > 0, since children
-	/// should be defined in the toc.yml file, not in the parent YAML.
-	/// Always returns a valid IsolatedTableOfContentsRef (even if toc.yml doesn't exist) so that
-	/// DocumentationSetNavigation can perform validation and emit appropriate errors.
+	/// If the TOC has children defined in parent YAML (tocRef.Children), those are preserved so DocumentationSetNavigation
+	/// can emit a validation error. Otherwise, children are loaded from toc.yml and resolved with parent paths prepended.
+	/// Unlike folders and files, TOC refs keep their relative path (not prepended with parent path) because they
+	/// establish a new navigation context. However, their children DO get the full path prepended.
 	/// </summary>
 	private static ITableOfContentsItem? ResolveIsolatedToc(
 		IsolatedTableOfContentsRef tocRef,
-		IDirectoryInfo _,
-		IFileSystem __,
-		string parentPath
+		IDirectoryInfo baseDirectory,
+		IFileSystem fileSystem,
+		string parentPath,
+		string parentContext
 	)
 	{
-		var tocPath = string.IsNullOrEmpty(parentPath) ? tocRef.Path : $"{parentPath}/{tocRef.Path}";
+		// Calculate the full path for file system operations and child resolution
+		var fullTocPath = string.IsNullOrEmpty(parentPath) ? tocRef.Path : $"{parentPath}/{tocRef.Path}";
 
-		// Always preserve the original children from parent YAML for validation
-		// DocumentationSetNavigation will check if tocRef.Children.Count > 0 and emit an error
-		// We return the IsolatedTableOfContentsRef even if toc.yml doesn't exist so that
-		// DocumentationSetNavigation can validate it and emit appropriate errors
-		return new IsolatedTableOfContentsRef(tocPath, tocRef.Children);
+		// If TOC has children in parent YAML, preserve them for validation
+		// DocumentationSetNavigation will emit an error for this case
+		if (tocRef.Children.Count > 0)
+			return new IsolatedTableOfContentsRef(tocRef.Path, tocRef.Children, parentContext);
+
+		// Load and resolve children from toc.yml file
+		var tocDirectory = fileSystem.DirectoryInfo.New(fileSystem.Path.Combine(baseDirectory.FullName, fullTocPath));
+		var tocFilePath = fileSystem.Path.Combine(tocDirectory.FullName, "toc.yml");
+
+		if (!fileSystem.File.Exists(tocFilePath))
+			return new IsolatedTableOfContentsRef(tocRef.Path, [], parentContext); // Return empty children, DocumentationSetNavigation will emit error
+
+		var tocYaml = fileSystem.File.ReadAllText(tocFilePath);
+		var tocFile = TableOfContentsFile.Deserialize(tocYaml);
+
+		// Recursively resolve children with the FULL TOC path as the parent path
+		// This ensures all file paths within the TOC include the TOC directory path
+		// The context for children is the toc.yml file that defines them
+		var resolvedChildren = ResolveTableOfContents(tocFile.TableOfContents, baseDirectory, fileSystem, fullTocPath, tocFilePath);
+
+		// Return TOC ref with original relative path, but with resolved children
+		// The context remains the parent context (where this TOC was referenced)
+		return new IsolatedTableOfContentsRef(tocRef.Path, resolvedChildren, parentContext);
 	}
 
 	/// <summary>
@@ -155,15 +176,16 @@ public class DocumentationSetFile : TableOfContentsFile
 		FileRef fileRef,
 		IDirectoryInfo baseDirectory,
 		IFileSystem fileSystem,
-		string parentPath)
+		string parentPath,
+		string context)
 	{
 		var fullPath = string.IsNullOrEmpty(parentPath) ? fileRef.Path : $"{parentPath}/{fileRef.Path}";
 
 		if (fileRef.Children.Count == 0)
 		{
 			return fileRef is IndexFileRef
-				? new IndexFileRef(fullPath, fileRef.Hidden, [])
-				: new FileRef(fullPath, fileRef.Hidden, []);
+				? new IndexFileRef(fullPath, fileRef.Hidden, [], context)
+				: new FileRef(fullPath, fileRef.Hidden, [], context);
 		}
 
 		// Determine parent path for children (strip .md extension and /index suffix)
@@ -174,11 +196,11 @@ public class DocumentationSetFile : TableOfContentsFile
 		if (parentPathForChildren.EndsWith("/index", StringComparison.OrdinalIgnoreCase))
 			parentPathForChildren = parentPathForChildren[..^6];
 
-		var resolvedChildren = ResolveTableOfContents(fileRef.Children, baseDirectory, fileSystem, parentPathForChildren);
+		var resolvedChildren = ResolveTableOfContents(fileRef.Children, baseDirectory, fileSystem, parentPathForChildren, context);
 
 		return fileRef is IndexFileRef
-			? new IndexFileRef(fullPath, fileRef.Hidden, resolvedChildren)
-			: new FileRef(fullPath, fileRef.Hidden, resolvedChildren);
+			? new IndexFileRef(fullPath, fileRef.Hidden, resolvedChildren, context)
+			: new FileRef(fullPath, fileRef.Hidden, resolvedChildren, context);
 	}
 
 	/// <summary>
@@ -189,20 +211,21 @@ public class DocumentationSetFile : TableOfContentsFile
 		FolderRef folderRef,
 		IDirectoryInfo baseDirectory,
 		IFileSystem fileSystem,
-		string parentPath)
+		string parentPath,
+		string context)
 	{
 		var fullPath = string.IsNullOrEmpty(parentPath) ? folderRef.Path : $"{parentPath}/{folderRef.Path}";
 
 		// If children are explicitly defined, resolve them
 		if (folderRef.Children.Count > 0)
 		{
-			var resolvedChildren = ResolveTableOfContents(folderRef.Children, baseDirectory, fileSystem, fullPath);
-			return new FolderRef(fullPath, resolvedChildren);
+			var resolvedChildren = ResolveTableOfContents(folderRef.Children, baseDirectory, fileSystem, fullPath, context);
+			return new FolderRef(fullPath, resolvedChildren, context);
 		}
 
 		// No children defined - auto-discover .md files in the folder
-		var autoDiscoveredChildren = AutoDiscoverFolderFiles(fullPath, baseDirectory, fileSystem);
-		return new FolderRef(fullPath, autoDiscoveredChildren);
+		var autoDiscoveredChildren = AutoDiscoverFolderFiles(fullPath, baseDirectory, fileSystem, context);
+		return new FolderRef(fullPath, autoDiscoveredChildren, context);
 	}
 
 	/// <summary>
@@ -213,7 +236,8 @@ public class DocumentationSetFile : TableOfContentsFile
 	private static TableOfContents AutoDiscoverFolderFiles(
 		string folderPath,
 		IDirectoryInfo baseDirectory,
-		IFileSystem fileSystem)
+		IFileSystem fileSystem,
+		string context)
 	{
 		var directoryPath = fileSystem.Path.Combine(baseDirectory.FullName, folderPath);
 		var directory = fileSystem.DirectoryInfo.New(directoryPath);
@@ -242,20 +266,20 @@ public class DocumentationSetFile : TableOfContentsFile
 		if (indexFile != null)
 		{
 			var indexRef = indexFile.Name.Equals("index.md", StringComparison.OrdinalIgnoreCase)
-				? new IndexFileRef(indexFile.Name, false, [])
-				: new FileRef(indexFile.Name, false, []);
+				? new IndexFileRef(indexFile.Name, false, [], context)
+				: new FileRef(indexFile.Name, false, [], context);
 			children.Add(indexRef);
 		}
 
 		// Add other files sorted alphabetically
 		foreach (var file in otherFiles)
 		{
-			var fileRef = new FileRef(file.Name, false, []);
+			var fileRef = new FileRef(file.Name, false, [], context);
 			children.Add(fileRef);
 		}
 
 		// Resolve the children with the folder path as parent to get correct full paths
-		return ResolveTableOfContents(children, baseDirectory, fileSystem, folderPath);
+		return ResolveTableOfContents(children, baseDirectory, fileSystem, folderPath, context);
 	}
 
 	/// <summary>
@@ -265,14 +289,15 @@ public class DocumentationSetFile : TableOfContentsFile
 		CrossLinkRef crossLinkRef,
 		IDirectoryInfo baseDirectory,
 		IFileSystem fileSystem,
-		string parentPath)
+		string parentPath,
+		string context)
 	{
 		if (crossLinkRef.Children.Count == 0)
-			return crossLinkRef;
+			return new CrossLinkRef(crossLinkRef.CrossLinkUri, crossLinkRef.Title, crossLinkRef.Hidden, [], context);
 
-		var resolvedChildren = ResolveTableOfContents(crossLinkRef.Children, baseDirectory, fileSystem, parentPath);
+		var resolvedChildren = ResolveTableOfContents(crossLinkRef.Children, baseDirectory, fileSystem, parentPath, context);
 
-		return new CrossLinkRef(crossLinkRef.CrossLinkUri, crossLinkRef.Title, crossLinkRef.Hidden, resolvedChildren);
+		return new CrossLinkRef(crossLinkRef.CrossLinkUri, crossLinkRef.Title, crossLinkRef.Hidden, resolvedChildren, context);
 	}
 }
 
@@ -293,21 +318,43 @@ public class TableOfContents : List<ITableOfContentsItem>
 }
 
 
-public interface ITableOfContentsItem;
+/// <summary>
+/// Represents an item in a table of contents (file, folder, or TOC reference).
+/// </summary>
+public interface ITableOfContentsItem
+{
+	/// <summary>
+	/// The full path of this item relative to the documentation source directory.
+	/// For files: includes .md extension (e.g., "guides/getting-started.md")
+	/// For folders: the folder path (e.g., "guides/advanced")
+	/// For TOCs: the path to the toc.yml directory (e.g., "development" or "guides/advanced")
+	/// </summary>
+	string Path { get; }
 
-public record FileRef(string Path, bool Hidden, IReadOnlyCollection<ITableOfContentsItem> Children)
+	/// <summary>
+	/// The path to the YAML file (docset.yml or toc.yml) that defined this item.
+	/// This provides context for where the item was declared in the configuration.
+	/// </summary>
+	string Context { get; }
+}
+
+public record FileRef(string Path, bool Hidden, IReadOnlyCollection<ITableOfContentsItem> Children, string Context)
 	: ITableOfContentsItem;
 
-public record IndexFileRef(string Path, bool Hidden, IReadOnlyCollection<ITableOfContentsItem> Children)
-	: FileRef(Path, Hidden, Children);
+public record IndexFileRef(string Path, bool Hidden, IReadOnlyCollection<ITableOfContentsItem> Children, string Context)
+	: FileRef(Path, Hidden, Children, Context);
 
-public record CrossLinkRef(Uri CrossLinkUri, string? Title, bool Hidden, IReadOnlyCollection<ITableOfContentsItem> Children)
+public record CrossLinkRef(Uri CrossLinkUri, string? Title, bool Hidden, IReadOnlyCollection<ITableOfContentsItem> Children, string Context)
+	: ITableOfContentsItem
+{
+	// CrossLinks don't have a file system path, so we use the CrossLinkUri as the Path
+	public string Path => CrossLinkUri.ToString();
+}
+
+public record FolderRef(string Path, IReadOnlyCollection<ITableOfContentsItem> Children, string Context)
 	: ITableOfContentsItem;
 
-public record FolderRef(string Path, IReadOnlyCollection<ITableOfContentsItem> Children)
-	: ITableOfContentsItem;
-
-public record IsolatedTableOfContentsRef(string Path, IReadOnlyCollection<ITableOfContentsItem> Children)
+public record IsolatedTableOfContentsRef(string Path, IReadOnlyCollection<ITableOfContentsItem> Children, string Context)
 	: ITableOfContentsItem;
 
 
@@ -391,28 +438,31 @@ public class TocItemYamlConverter : IYamlTypeConverter
 
 		var children = GetChildren(dictionary);
 
+		// Context will be set during LoadAndResolve, use empty string as placeholder during deserialization
+		const string placeholderContext = "";
+
 		// Check for file reference (file: or hidden:)
 		if (dictionary.TryGetValue("file", out var filePath) && filePath is string file)
-			return file == "index.md" ? new IndexFileRef(file, false, children) : new FileRef(file, false, children);
+			return file == "index.md" ? new IndexFileRef(file, false, children, placeholderContext) : new FileRef(file, false, children, placeholderContext);
 
 		if (dictionary.TryGetValue("hidden", out var hiddenPath) && hiddenPath is string p)
-			return p == "index.md" ? new IndexFileRef(p, true, children) : new FileRef(p, true, children);
+			return p == "index.md" ? new IndexFileRef(p, true, children, placeholderContext) : new FileRef(p, true, children, placeholderContext);
 
 		// Check for crosslink reference
 		if (dictionary.TryGetValue("crosslink", out var crosslink) && crosslink is string crosslinkStr)
 		{
 			var title = dictionary.TryGetValue("title", out var t) && t is string titleStr ? titleStr : null;
 			var isHidden = dictionary.TryGetValue("hidden", out var h) && h is bool hiddenBool && hiddenBool;
-			return new CrossLinkRef(new Uri(crosslinkStr), title, isHidden, children);
+			return new CrossLinkRef(new Uri(crosslinkStr), title, isHidden, children, placeholderContext);
 		}
 
 		// Check for folder reference
 		if (dictionary.TryGetValue("folder", out var folderPath) && folderPath is string folder)
-			return new FolderRef(folder, children);
+			return new FolderRef(folder, children, placeholderContext);
 
 		// Check for toc reference
 		if (dictionary.TryGetValue("toc", out var tocPath) && tocPath is string source)
-			return new IsolatedTableOfContentsRef(source, children);
+			return new IsolatedTableOfContentsRef(source, children, placeholderContext);
 
 		return null;
 	}

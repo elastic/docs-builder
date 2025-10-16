@@ -108,7 +108,15 @@ public class SiteTableOfContents : List<SiteTableOfContentsRef>
 }
 
 public record SiteTableOfContentsRef(Uri Source, string PathPrefix, IReadOnlyCollection<SiteTableOfContentsRef> Children)
-	: ITableOfContentsItem;
+	: ITableOfContentsItem
+{
+	// For site-level TOC refs, the Path is the path prefix (where it will be mounted in the site)
+	public string Path => PathPrefix;
+
+	// For site-level TOC refs, the Context is the navigation.yml file path
+	// This will be set during site navigation loading
+	public string Context { get; init; } = "";
+}
 
 public class SiteTableOfContentsCollectionYamlConverter : IYamlTypeConverter
 {

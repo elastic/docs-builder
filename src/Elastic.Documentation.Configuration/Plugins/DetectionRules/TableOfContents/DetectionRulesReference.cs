@@ -15,17 +15,20 @@ public record RuleOverviewReference : FileRef
 	public IReadOnlyCollection<string> DetectionRuleFolders { get; init; }
 
 	private string ParentPath { get; }
+	private string TocContext { get; }
 
 	public RuleOverviewReference(
 		string overviewFilePath,
 		string parentPath,
 		ConfigurationFile configuration,
 		IDocumentationSetContext context,
-		IReadOnlyCollection<string> detectionRuleFolders
+		IReadOnlyCollection<string> detectionRuleFolders,
+		string tocContext
 	)
-		: base(overviewFilePath, false, [])
+		: base(overviewFilePath, false, [], tocContext)
 	{
 		ParentPath = parentPath;
+		TocContext = tocContext;
 		DetectionRuleFolders = detectionRuleFolders;
 		Children = CreateTableOfContentItems(configuration, context);
 	}
@@ -64,10 +67,10 @@ public record RuleOverviewReference : FileRef
 				if (f.Extension == ".toml")
 				{
 					var rule = DetectionRule.From(f);
-					return new RuleReference(relativePath, detectionRuleFolder, true, [], rule);
+					return new RuleReference(relativePath, detectionRuleFolder, true, [], rule, TocContext);
 				}
 
-				return new FileRef(relativePath, false, []);
+				return new FileRef(relativePath, false, [], TocContext);
 			})
 			.ToArray();
 

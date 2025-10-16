@@ -11,6 +11,7 @@ public record RuleReference(
 	string SourceDirectory,
 	bool Found,
 	IReadOnlyCollection<ITableOfContentsItem> Children,
-	DetectionRule Rule
+	DetectionRule Rule,
+	string Context
 )
-	: FileRef(RelativePath, true, Children);
+	: FileRef(RelativePath, true, Children, Context);
