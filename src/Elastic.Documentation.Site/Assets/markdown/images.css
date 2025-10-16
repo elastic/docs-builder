@@ -3,10 +3,10 @@
 		a.image-reference {
 			@apply mt-4 block align-middle;
 			& > img {
-				@apply block;
+				@apply mx-auto block;
 			}
 		}
-		/* 
+		/*
 		 * tailwind reset makes all images `display: block`
 		 * this resets it to `display: initial`
 		 */

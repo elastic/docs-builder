@@ -34,6 +34,24 @@ Or, use the `image` directive.
 :width: 250px
 :::
 
+### Image centering
+
+Images that are not full width are automatically centered within their container. This is particularly useful when you specify a width constraint:
+
+```markdown
+:::{image} /syntax/images/apm.png
+:alt: APM Logo
+:width: 200px
+:::
+```
+
+:::{image} /syntax/images/apm.png
+:alt: APM Logo
+:width: 200px
+:::
+
+The image above is centered because it has a width of 200px, which is less than the full container width.
+
 ## Screenshots
 
 Screenshots are images displayed with a box-shadow. Define a screenshot by adding the `:screenshot:` attribute to a block-level image directive.
