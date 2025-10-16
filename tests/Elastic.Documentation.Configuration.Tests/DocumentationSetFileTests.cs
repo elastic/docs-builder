@@ -666,7 +666,7 @@ public class DocumentationSetFileTests
 
 		// Advanced TOC preserved as IsolatedTableOfContentsRef within guides folder
 		var advancedToc = guidesFolder.Children.ElementAt(1).Should().BeOfType<IsolatedTableOfContentsRef>().Subject;
-		advancedToc.Path.Should().Be("advanced");
+		advancedToc.Path.Should().Be("guides/advanced");
 		advancedToc.Children.Should().HaveCount(2);
 
 		advancedToc.Children.ElementAt(0).Should().BeOfType<IndexFileRef>()

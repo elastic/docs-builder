@@ -440,10 +440,12 @@ public class DocumentationSetNavigation<TModel>
 		var lastSlashIndex = fullTocPath.LastIndexOf('/');
 		var relativeTocPath = lastSlashIndex >= 0 ? fullTocPath[(lastSlashIndex + 1)..] : fullTocPath;
 
-		// LoadAndResolve already loaded and resolved the TOC file, so we can use the resolved children directly
 		var tocDirectory = context.ReadFileSystem.DirectoryInfo.New(
 			context.ReadFileSystem.Path.Combine(context.DocumentationSourceDirectory.FullName, fullTocPath)
 		);
+
+		// TODO: Add validation for TOCs with children in parent YAML
+		// This is a known limitation - TOCs should not have children defined in parent YAML
 
 		var placeholderNavigation = new TemporaryNavigationPlaceholder(
 			depth + 1,
