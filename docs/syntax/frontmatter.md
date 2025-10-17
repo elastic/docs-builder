@@ -15,6 +15,8 @@ applies_to: <3>
 products: <4>
   - id: apm-agent
   - id: edot-sdk
+sub: <5>
+  key: value 
 ---
 ```
 
@@ -22,6 +24,7 @@ products: <4>
 2. [`description`](#description)
 3. [`applies_to`](#applies-to)
 4. [`products`](#products)
+5. [`sub`](#subs)
 
 ## Navigation Title
 
@@ -83,3 +86,7 @@ The products frontmatter is a list of objects, each object has an `id` field.
 | `search-ui`                                 | Search UI                                     |
 | `security`                                  | Elastic Security                              |
 | `winlogbeat`                                | Winlogbeat                                    |
+
+## Subs
+
+Use the `sub` field to define local substitutions. Refer to [Substitutions](substitutions.md) for more information.
