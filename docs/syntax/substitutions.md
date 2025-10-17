@@ -222,7 +222,7 @@ Regular inline code (without the `{subs}` role) will not process substitutions a
 
 ## Products
 
-Product substitutions use `products.yml` to determine what will be displayed. Use the product's key to get its display name.
+Product substitutions use [`products.yml`](https://github.com/elastic/docs-builder/blob/main/config/products.yml) to determine what will be displayed. Use the product's key to get its display name.
 
 ```yaml 
 # products.yml
