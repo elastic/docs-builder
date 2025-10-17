@@ -50,7 +50,7 @@ versioning_systems:
     current: 1.55.1
   apm-agent-node:
     base: 4.0
-    current: 4.14.0
+    current: 4.15.0
   apm-agent-php:
     base: 1.0
     current: 1.15.1
