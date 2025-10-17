@@ -22,24 +22,7 @@ toc:
   - toc: deploy-manage
   - toc: cloud-account
   - toc: troubleshoot
-  - toc: contribute-docs
 
-  ##########
-  # EXTEND #
-  ##########
-  # I didn't touch this section (yet?)
-  - toc: extend
-    children:
-      - toc: kibana://extend
-        path_prefix: extend/kibana
-      - toc: logstash://extend
-        path_prefix: extend/logstash
-      - toc: beats://extend
-        path_prefix: extend/beats
-      - toc: elasticsearch://extend
-        path_prefix: extend/elasticsearch
-      - toc: integrations://extend
-        path_prefix: extend/integrations
 
   #################
   # RELEASE NOTES #
@@ -605,3 +588,24 @@ toc:
       # https://github.com/elastic/docs-content/blob/main/reference/glossary/toc.yml
       - toc: docs-content://reference/glossary
         path_prefix: reference/glossary
+
+  ##########
+  # EXTEND #
+  ##########
+  - toc: extend
+    children:
+      - toc: kibana://extend
+        path_prefix: extend/kibana
+      - toc: logstash://extend
+        path_prefix: extend/logstash
+      - toc: beats://extend
+        path_prefix: extend/beats
+      - toc: elasticsearch://extend
+        path_prefix: extend/elasticsearch
+      - toc: integrations://extend
+        path_prefix: extend/integrations
+
+  #############
+  # CONTRIBUTE 2 DOCS #
+  #############
+  - toc: contribute-docs
