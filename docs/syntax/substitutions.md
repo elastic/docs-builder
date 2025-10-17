@@ -18,7 +18,7 @@ In both cases the yaml to define them is as followed:
 
 
 ```yaml
-subs:
+sub:
   key: value
   another-var: Another Value
 ```
