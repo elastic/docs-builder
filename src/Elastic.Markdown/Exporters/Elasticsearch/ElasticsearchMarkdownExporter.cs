@@ -7,14 +7,19 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Search;
 using Elastic.Ingest.Elasticsearch;
+using Elastic.Ingest.Elasticsearch.Indices;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.IO;
 using Elastic.Transport;
 using Elastic.Transport.Products.Elasticsearch;
 using Markdig.Syntax;
 using Microsoft.Extensions.Logging;
+using NetEscapades.EnumGenerators;
 
 namespace Elastic.Markdown.Exporters.Elasticsearch;
+
+[EnumExtensions]
+public enum IngestStrategy { Reindex, Multiplex }
 
 public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 {
@@ -27,6 +32,7 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 
 	private readonly DateTimeOffset _batchIndexDate = DateTimeOffset.UtcNow;
 	private readonly DistributedTransport _transport;
+	private IngestStrategy _indexStrategy;
 
 	public ElasticsearchMarkdownExporter(
 		ILoggerFactory logFactory,
@@ -38,6 +44,7 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 		_collector = collector;
 		_logger = logFactory.CreateLogger<ElasticsearchMarkdownExporter>();
 		_endpoint = endpoints.Elasticsearch;
+		_indexStrategy = IngestStrategy.Reindex;
 
 		var es = endpoints.Elasticsearch;
 
@@ -66,34 +73,76 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 
 		_transport = new DistributedTransport(configuration);
 
-		_lexicalChannel = new ElasticsearchLexicalExporter(logFactory, collector, es, indexNamespace, _transport, _batchIndexDate);
+		_lexicalChannel = new ElasticsearchLexicalExporter(logFactory, collector, es, indexNamespace, _transport);
 		_semanticChannel = new ElasticsearchSemanticExporter(logFactory, collector, es, indexNamespace, _transport);
-
 	}
 
 	/// <inheritdoc />
-	public async ValueTask StartAsync(Cancel ctx = default) =>
-		await _lexicalChannel.Channel.BootstrapElasticsearchAsync(BootstrapMethod.Failure, null, ctx);
+	public async ValueTask StartAsync(Cancel ctx = default)
+	{
+		_ = await _lexicalChannel.Channel.BootstrapElasticsearchAsync(BootstrapMethod.Failure, null, ctx);
+
+		var semanticIndex = _semanticChannel.Channel.IndexName;
+		var semanticWriteAlias = string.Format(_semanticChannel.Channel.Options.IndexFormat, "latest");
+		var semanticIndexHead = await _transport.HeadAsync(semanticWriteAlias, ctx);
+		if (!semanticIndexHead.ApiCallDetails.HasSuccessfulStatusCode)
+		{
+			_logger.LogInformation("No semantic index exists yet, creating index {Index} for semantic search", semanticIndex);
+			_ = await _semanticChannel.Channel.BootstrapElasticsearchAsync(BootstrapMethod.Failure, null, ctx);
+			var semanticIndexPut = await _transport.PutAsync<StringResponse>(semanticIndex, PostData.String("{}"), ctx);
+			if (!semanticIndexPut.ApiCallDetails.HasSuccessfulStatusCode)
+				throw new Exception($"Failed to create index {semanticIndex}: {semanticIndexPut}");
+			_ = await _semanticChannel.Channel.ApplyAliasesAsync(ctx);
+			if (!_endpoint.ForceReindex)
+			{
+				_indexStrategy = IngestStrategy.Multiplex;
+				_logger.LogInformation("Index strategy set to multiplex because {SemanticIndex} does not exist, pass --force-reindex to always use reindex", semanticIndex);
+			}
+		}
+		_logger.LogInformation("Using {IndexStrategy} to sync lexical index to semantic index", _indexStrategy.ToStringFast(true));
+	}
+
+	private async ValueTask<long> CountAsync(string index, string body, Cancel ctx = default)
+	{
+		var countResponse = await _transport.PostAsync<DynamicResponse>($"/{index}/_count", PostData.String(body), ctx);
+		return countResponse.Body.Get<long>("count");
+	}
 
 	/// <inheritdoc />
 	public async ValueTask StopAsync(Cancel ctx = default)
 	{
 		var semanticWriteAlias = string.Format(_semanticChannel.Channel.Options.IndexFormat, "latest");
 		var lexicalWriteAlias = string.Format(_lexicalChannel.Channel.Options.IndexFormat, "latest");
-
 		var semanticIndex = _semanticChannel.Channel.IndexName;
-		var semanticIndexHead = await _transport.HeadAsync(semanticWriteAlias, ctx);
-
-		if (_endpoint.NoSemantic)
-		{
-			_logger.LogInformation("--no-semantic was specified so exiting early before syncing to {Index}", semanticIndex);
-			return;
-		}
 
 		var stopped = await _lexicalChannel.StopAsync(ctx);
 		if (!stopped)
 			throw new Exception($"Failed to stop {_lexicalChannel.GetType().Name}");
 
+		await QueryIngestStatistics(lexicalWriteAlias, ctx);
+
+		if (_indexStrategy == IngestStrategy.Multiplex)
+		{
+			if (!_endpoint.NoSemantic)
+				_ = await _semanticChannel.StopAsync(ctx);
+			else
+				_logger.LogInformation("--no-semantic was specified when doing multiplex writes, not rolling over {SemanticIndex}", semanticIndex);
+
+			// cleanup lexical index of old data
+			await DoDeleteByQuery(lexicalWriteAlias, ctx);
+			_ = await _lexicalChannel.RefreshAsync(ctx);
+			_logger.LogInformation("Finish sync to semantic index using {IndexStrategy} strategy", _indexStrategy.ToStringFast(true));
+			await QueryDocumentCounts(ctx);
+			return;
+		}
+
+		if (_endpoint.NoSemantic)
+		{
+			_logger.LogInformation("--no-semantic was specified so exiting early before reindexing to {Index}", semanticIndex);
+			return;
+		}
+
+		var semanticIndexHead = await _transport.HeadAsync(semanticWriteAlias, ctx);
 		if (!semanticIndexHead.ApiCallDetails.HasSuccessfulStatusCode)
 		{
 			_logger.LogInformation("No semantic index exists yet, creating index {Index} for semantic search", semanticIndex);
@@ -148,6 +197,35 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 		await DoReindex(request, lexicalWriteAlias, semanticWriteAlias, "deletions", ctx);
 
 		await DoDeleteByQuery(lexicalWriteAlias, ctx);
+
+		_ = await _lexicalChannel.RefreshAsync(ctx);
+		_ = await _semanticChannel.RefreshAsync(ctx);
+
+		_logger.LogInformation("Finish sync to semantic index using {IndexStrategy} strategy", _indexStrategy.ToStringFast(true));
+		await QueryDocumentCounts(ctx);
+	}
+
+	private async ValueTask QueryIngestStatistics(string lexicalWriteAlias, Cancel ctx)
+	{
+		var lexicalSearchAlias = _lexicalChannel.Channel.Options.ActiveSearchAlias;
+		var updated = await CountAsync(lexicalSearchAlias, $$""" { "query": { "range": { "last_updated": { "gte": "{{_batchIndexDate:o}}" } } } }""", ctx);
+		var total = await CountAsync(lexicalSearchAlias, $$""" { "query": { "range": { "batch_index_date": { "gte": "{{_batchIndexDate:o}}" } } } }""", ctx);
+		var deleted = await CountAsync(lexicalSearchAlias, $$""" { "query": { "range": { "batch_index_date": { "lt": "{{_batchIndexDate:o}}" } } } }""", ctx);
+
+		// TODO emit these as metrics
+		_logger.LogInformation("Exported {Total}, Updated {Updated}, Deleted, {Deleted} documents to {LexicalIndex}", total, updated, deleted, lexicalWriteAlias);
+		_logger.LogInformation("Syncing to semantic index using {IndexStrategy} strategy", _indexStrategy.ToStringFast(true));
+	}
+
+	private async ValueTask QueryDocumentCounts(Cancel ctx)
+	{
+		var semanticWriteAlias = string.Format(_semanticChannel.Channel.Options.IndexFormat, "latest");
+		var lexicalWriteAlias = string.Format(_lexicalChannel.Channel.Options.IndexFormat, "latest");
+		var totalLexical = await CountAsync(lexicalWriteAlias, "{}", ctx);
+		var totalSemantic = await CountAsync(semanticWriteAlias, "{}", ctx);
+
+		// TODO emit these as metrics
+		_logger.LogInformation("Document counts -> Semantic Index: {TotalSemantic}, Lexical Index: {TotalLexical}", totalSemantic, totalLexical);
 	}
 
 	private async ValueTask DoDeleteByQuery(string lexicalWriteAlias, Cancel ctx)
@@ -275,6 +353,18 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 			}).Reverse().ToArray(),
 			Headings = headings
 		};
+
+		var semanticHash = _semanticChannel.Channel.Options.ChannelHash;
+		var lexicalHash = _lexicalChannel.Channel.Options.ChannelHash;
+		var hash = HashedBulkUpdate.CreateHash(semanticHash, lexicalHash,
+			doc.Url, doc.Body ?? string.Empty, string.Join(",", doc.Headings.OrderBy(h => h))
+		);
+		doc.Hash = hash;
+		doc.LastUpdated = _batchIndexDate;
+		doc.BatchIndexDate = _batchIndexDate;
+
+		if (_indexStrategy == IngestStrategy.Multiplex)
+			return await _lexicalChannel.TryWrite(doc, ctx) && await _semanticChannel.TryWrite(doc, ctx);
 		return await _lexicalChannel.TryWrite(doc, ctx);
 	}
 
