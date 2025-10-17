@@ -102,10 +102,9 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 		_logger.LogInformation("Using {IndexStrategy} to sync lexical index to semantic index", _indexStrategy.ToStringFast(true));
 	}
 
-	public async ValueTask<long> CountAsync(string body, Cancel ctx = default)
+	private async ValueTask<long> CountAsync(string index, string body, Cancel ctx = default)
 	{
-		var lexicalSearchAlias = _lexicalChannel.Channel.Options.ActiveSearchAlias;
-		var countResponse = await _transport.PostAsync<DynamicResponse>($"/{lexicalSearchAlias}/_count", PostData.String(body), ctx);
+		var countResponse = await _transport.PostAsync<DynamicResponse>($"/{index}/_count", PostData.String(body), ctx);
 		return countResponse.Body.Get<long>("count");
 	}
 
@@ -114,20 +113,13 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 	{
 		var semanticWriteAlias = string.Format(_semanticChannel.Channel.Options.IndexFormat, "latest");
 		var lexicalWriteAlias = string.Format(_lexicalChannel.Channel.Options.IndexFormat, "latest");
-
 		var semanticIndex = _semanticChannel.Channel.IndexName;
 
 		var stopped = await _lexicalChannel.StopAsync(ctx);
 		if (!stopped)
 			throw new Exception($"Failed to stop {_lexicalChannel.GetType().Name}");
 
-		var updated = await CountAsync($$""" { "query": { "range": { "last_updated": { "gte": "{{_batchIndexDate:o}}" } } } }""", ctx);
-		var total = await CountAsync($$""" { "query": { "range": { "batch_index_date": { "gte": "{{_batchIndexDate:o}}" } } } }""", ctx);
-		var deleted = await CountAsync($$""" { "query": { "range": { "batch_index_date": { "lt": "{{_batchIndexDate:o}}" } } } }""", ctx);
-
-		// TODO emit these as metrics
-		_logger.LogInformation("Exported {Total}, Updated {Updated}, Deleted, {Deleted} documents to {LexicalIndex}", total, updated, deleted, lexicalWriteAlias);
-		_logger.LogInformation("Syncing to semantic index using {IndexStrategy} strategy", _indexStrategy.ToStringFast(true));
+		await QueryIngestStatistics(lexicalWriteAlias, ctx);
 
 		if (_indexStrategy == IngestStrategy.Multiplex)
 		{
@@ -138,6 +130,9 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 
 			// cleanup lexical index of old data
 			await DoDeleteByQuery(lexicalWriteAlias, ctx);
+			_ = await _lexicalChannel.RefreshAsync(ctx);
+			_logger.LogInformation("Finish sync to semantic index using {IndexStrategy} strategy", _indexStrategy.ToStringFast(true));
+			await QueryDocumentCounts(ctx);
 			return;
 		}
 
@@ -203,7 +198,34 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 
 		await DoDeleteByQuery(lexicalWriteAlias, ctx);
 
+		_ = await _lexicalChannel.RefreshAsync(ctx);
+		_ = await _semanticChannel.RefreshAsync(ctx);
+
 		_logger.LogInformation("Finish sync to semantic index using {IndexStrategy} strategy", _indexStrategy.ToStringFast(true));
+		await QueryDocumentCounts(ctx);
+	}
+
+	private async ValueTask QueryIngestStatistics(string lexicalWriteAlias, Cancel ctx)
+	{
+		var lexicalSearchAlias = _lexicalChannel.Channel.Options.ActiveSearchAlias;
+		var updated = await CountAsync(lexicalSearchAlias, $$""" { "query": { "range": { "last_updated": { "gte": "{{_batchIndexDate:o}}" } } } }""", ctx);
+		var total = await CountAsync(lexicalSearchAlias, $$""" { "query": { "range": { "batch_index_date": { "gte": "{{_batchIndexDate:o}}" } } } }""", ctx);
+		var deleted = await CountAsync(lexicalSearchAlias, $$""" { "query": { "range": { "batch_index_date": { "lt": "{{_batchIndexDate:o}}" } } } }""", ctx);
+
+		// TODO emit these as metrics
+		_logger.LogInformation("Exported {Total}, Updated {Updated}, Deleted, {Deleted} documents to {LexicalIndex}", total, updated, deleted, lexicalWriteAlias);
+		_logger.LogInformation("Syncing to semantic index using {IndexStrategy} strategy", _indexStrategy.ToStringFast(true));
+	}
+
+	private async ValueTask QueryDocumentCounts(Cancel ctx)
+	{
+		var semanticWriteAlias = string.Format(_semanticChannel.Channel.Options.IndexFormat, "latest");
+		var lexicalWriteAlias = string.Format(_lexicalChannel.Channel.Options.IndexFormat, "latest");
+		var totalLexical = await CountAsync(lexicalWriteAlias, "{}", ctx);
+		var totalSemantic = await CountAsync(semanticWriteAlias, "{}", ctx);
+
+		// TODO emit these as metrics
+		_logger.LogInformation("Document counts -> Semantic Index: {TotalSemantic}, Lexical Index: {TotalLexical}", totalSemantic, totalLexical);
 	}
 
 	private async ValueTask DoDeleteByQuery(string lexicalWriteAlias, Cancel ctx)
