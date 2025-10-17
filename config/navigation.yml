@@ -590,10 +590,10 @@ toc:
                 path_prefix: reference/ecs/logging/ruby
                 # Children include the entire AsciiDoc book
 
-      # Data analysis
-      # https://github.com/elastic/docs-content/blob/main/reference/data-analysis/toc.yml
-      - toc: docs-content://reference/data-analysis
-        path_prefix: reference/data-analysis
+      # Machine learning (FKA Data analysis)
+      # https://github.com/elastic/docs-content/blob/main/reference/machine-learning/toc.yml
+      - toc: docs-content://reference/machine-learning
+        path_prefix: reference/machine-learning
 
       # Search UI
       # https://github.com/elastic/search-ui/blob/main/docs/reference/toc.yml
