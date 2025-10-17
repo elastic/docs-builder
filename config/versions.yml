@@ -19,7 +19,7 @@ versioning_systems:
   ech: *all
   eck:
     base: 3.0
-    current: 3.1.0
+    current: 3.2.0
   ess: *all
   ecs:
     base: 9.0
