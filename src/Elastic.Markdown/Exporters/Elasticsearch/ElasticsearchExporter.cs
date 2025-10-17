@@ -20,27 +20,18 @@ public class ElasticsearchLexicalExporter(
 	IDiagnosticsCollector collector,
 	ElasticsearchEndpoint endpoint,
 	string indexNamespace,
-	DistributedTransport transport,
-	DateTimeOffset batchIndexDate
+	DistributedTransport transport
 )
 	: ElasticsearchExporter<CatalogIndexChannelOptions<DocumentationDocument>, CatalogIndexChannel<DocumentationDocument>>
 	(logFactory, collector, endpoint, transport, o => new(o), t => new(t)
 	{
 		BulkOperationIdLookup = d => d.Url,
-		ScriptedHashBulkUpsertLookup = (d, channelHash) =>
-		{
-			var rand = string.Empty;
-			//if (d.Url.StartsWith("/docs/reference/search-connectors"))
-			//	rand = Guid.NewGuid().ToString("N");
-			d.Hash = HashedBulkUpdate.CreateHash(channelHash, rand, d.Url, d.Body ?? string.Empty, string.Join(",", d.Headings.OrderBy(h => h)));
-			d.LastUpdated = batchIndexDate;
-			d.BatchIndexDate = batchIndexDate;
-			return new HashedBulkUpdate("hash", d.Hash, "ctx._source.batch_index_date = params.batch_index_date",
-				new Dictionary<string, string>
-				{
-					{ "batch_index_date", d.BatchIndexDate.ToString("o") }
-				});
-		},
+		// hash, last_updated and batch_index_date are all set before the docs are written to the channel
+		ScriptedHashBulkUpsertLookup = (d, _) => new HashedBulkUpdate("hash", d.Hash, "ctx._source.batch_index_date = params.batch_index_date",
+			new Dictionary<string, string>
+			{
+				{ "batch_index_date", d.BatchIndexDate.ToString("o") }
+			}),
 		GetMapping = () => CreateMapping(null),
 		GetMappingSettings = CreateMappingSetting,
 		IndexFormat =

@@ -40,6 +40,9 @@ docs-builder index [options...] [-h|--help] [--version]
 `--index-name-prefix` `<string>`
 :   The prefix for the computed index/alias names. Defaults:   semantic-docs (optional)
 
+`--force-reindex` `<bool?>`
+:   Force reindex strategy to semantic index, by default, we multiplex writes if the semantic index does not exist yet (optional)
+
 `--buffer-size` `<int?>`
 :   The number of documents to send to ES as part of the bulk. Defaults:   100 (optional)
 
