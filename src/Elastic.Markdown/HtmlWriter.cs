@@ -7,6 +7,7 @@ using System.Text.Json;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Configuration.TableOfContents;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
@@ -102,9 +103,27 @@ public class HtmlWriter(
 			fullNavigationRenderResult
 		);
 
-		var currentBaseVersion = legacyPages is { Count: > 0 }
-			? $"{legacyPages.ElementAt(0).Product.VersioningSystem?.Base.Major}.{legacyPages.ElementAt(0).Product.VersioningSystem?.Base.Minor}+"
-			: $"{DocumentationSet.Context.VersionsConfiguration.VersioningSystems[VersioningSystemId.Stack].Base.Major}.{DocumentationSet.Context.VersionsConfiguration.VersioningSystems[VersioningSystemId.Stack].Base.Minor}+";
+		// Acquiring the versioning system for the current page:
+		// 1. If the page has a legacy page mapping, use the versioning system of the legacy page
+		// 2. If the page's docset has a name with a direct product maatch, use the versioning system of the product
+		// 3. If the page's docset has a table of contents entry with a direct product match, use the versioning system of the product
+		// 4. Fallback to the stack versioning system
+		VersioningSystem pageVersioning = null!;
+		if (legacyPages is not null && legacyPages.Count > 0)
+			pageVersioning = legacyPages.ElementAt(0).Product.VersioningSystem!;
+		else if (DocumentationSet.Context.ProductsConfiguration.Products.TryGetValue(DocumentationSet.Name, out var belonging))
+			pageVersioning = belonging.VersioningSystem!;
+		else if (DocumentationSet.Configuration.TableOfContents.FirstOrDefault(t => t is TocReference tRef && !tRef.Source.LocalPath.Equals("/")) is TocReference tocRef)
+		{
+			var productFound = DocumentationSet.Context.ProductsConfiguration.Products.TryGetValue(tocRef.Source.LocalPath.Trim('/'), out var tocProduct);
+			if (productFound && tocProduct is not null)
+				pageVersioning = tocProduct.VersioningSystem!;
+		}
+		else
+			pageVersioning = DocumentationSet.Context.VersionsConfiguration.VersioningSystems[VersioningSystemId.Stack];
+
+		var currentBaseVersion = $"{pageVersioning.Base.Major}.{pageVersioning.Base.Minor}+";
+
 		//TODO should we even distinctby
 		var breadcrumbs = parents.Reverse().DistinctBy(p => p.Url).ToArray();
 		var breadcrumbsList = CreateStructuredBreadcrumbsData(markdown, breadcrumbs);
