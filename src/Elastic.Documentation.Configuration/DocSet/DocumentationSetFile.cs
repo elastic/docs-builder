@@ -516,9 +516,21 @@ public class TocItemYamlConverter : IYamlTypeConverter
 		// Context will be set during LoadAndResolve, use empty string as placeholder during deserialization
 		const string placeholderContext = "";
 
+		// Check for folder+file combination (e.g., folder: path, file: index.md)
+		// This represents a folder with an index file - treat as FileRef with combined path
+		if (dictionary.TryGetValue("folder", out var folderPath) && folderPath is string folder &&
+			dictionary.TryGetValue("file", out var filePath) && filePath is string file)
+		{
+			// Combine folder and file paths
+			var combinedPath = $"{folder}/{file}";
+			return file == "index.md"
+				? new IndexFileRef(combinedPath, false, children, placeholderContext)
+				: new FileRef(combinedPath, false, children, placeholderContext);
+		}
+
 		// Check for file reference (file: or hidden:)
-		if (dictionary.TryGetValue("file", out var filePath) && filePath is string file)
-			return file == "index.md" ? new IndexFileRef(file, false, children, placeholderContext) : new FileRef(file, false, children, placeholderContext);
+		if (dictionary.TryGetValue("file", out var filePathOnly) && filePathOnly is string fileOnly)
+			return fileOnly == "index.md" ? new IndexFileRef(fileOnly, false, children, placeholderContext) : new FileRef(fileOnly, false, children, placeholderContext);
 
 		if (dictionary.TryGetValue("hidden", out var hiddenPath) && hiddenPath is string p)
 			return p == "index.md" ? new IndexFileRef(p, true, children, placeholderContext) : new FileRef(p, true, children, placeholderContext);
@@ -532,8 +544,8 @@ public class TocItemYamlConverter : IYamlTypeConverter
 		}
 
 		// Check for folder reference
-		if (dictionary.TryGetValue("folder", out var folderPath) && folderPath is string folder)
-			return new FolderRef(folder, children, placeholderContext);
+		if (dictionary.TryGetValue("folder", out var folderPathOnly) && folderPathOnly is string folderOnly)
+			return new FolderRef(folderOnly, children, placeholderContext);
 
 		// Check for toc reference
 		if (dictionary.TryGetValue("toc", out var tocPath) && tocPath is string source)
