@@ -712,11 +712,11 @@ public class DocumentationSetFileTests
 		guide.Children.Should().HaveCount(1);
 
 		var chapter1 = guide.Children.ElementAt(0).Should().BeOfType<FileRef>().Subject;
-		chapter1.Path.Should().Be("guide/chapter1.md", "parent path 'guide' should be prepended");
+		chapter1.Path.Should().Be("chapter1.md", "children of files stay in the same directory");
 		chapter1.Children.Should().HaveCount(1);
 
 		var section1 = chapter1.Children.ElementAt(0).Should().BeOfType<FileRef>().Subject;
-		section1.Path.Should().Be("guide/chapter1/section1.md", "full parent path 'guide/chapter1' should be prepended");
+		section1.Path.Should().Be("section1.md", "children of files stay in the same directory");
 
 		// Second item: folder with children
 		var apiFolder = result.TableOfContents.ElementAt(1).Should().BeOfType<FolderRef>().Subject;

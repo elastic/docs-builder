@@ -90,8 +90,8 @@ public class DocumentationSetNavigation<TModel>
 	private readonly string _pathPrefix;
 
 	/// <summary>
-	/// Gets the path prefix. When PathPrefixProvider is set to a different instance, returns that provider's prefix.
-	/// Otherwise returns the prefix set during construction.
+	/// Gets the path prefix. When PathPrefixProvider is set to a different instance, it returns that provider's prefix.
+	/// Otherwise, returns the prefix set during construction.
 	/// </summary>
 	public string PathPrefix => PathPrefixProvider == this ? _pathPrefix : PathPrefixProvider.PathPrefix;
 

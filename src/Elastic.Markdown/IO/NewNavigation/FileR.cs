@@ -6,6 +6,7 @@ using System.Collections.Frozen;
 using System.Diagnostics;
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Markdown.Extensions;
 using Elastic.Markdown.Myst;
@@ -25,8 +26,8 @@ public partial record FilePath
 
 	public FilePath(string relativePath, IDirectoryInfo sourceDirectory)
 	{
-		FileInfo = sourceDirectory.FileSystem.FileInfo.New(Path.Combine(sourceDirectory.FullName, relativePath));
-		RelativePath = Path.GetRelativePath(sourceDirectory.FullName, FileInfo.FullName);
+		FileInfo = sourceDirectory.FileSystem.NewFileInfo(sourceDirectory.FullName, relativePath);
+		RelativePath = relativePath;
 	}
 
 	[StringEquality(StringComparison.OrdinalIgnoreCase)]

@@ -226,13 +226,25 @@ public class DocumentationSetFile : TableOfContentsFile
 				: new FileRef(fullPath, fileRef.Hidden, [], context);
 		}
 
-		// Determine parent path for children (strip .md extension and /index suffix)
-		var parentPathForChildren = fullPath.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
-			? fullPath[..^3]
-			: fullPath;
-
-		if (parentPathForChildren.EndsWith("/index", StringComparison.OrdinalIgnoreCase))
-			parentPathForChildren = parentPathForChildren[..^6];
+		// Children of a file should be resolved in the same directory as the parent file.
+		// If we're at top level (parentPath is empty), extract directory from the file path.
+		// If we're in a folder/TOC context (parentPath is non-empty), use parentPath directly.
+		// Examples:
+		// - Top level: "nest/guide.md" (parentPath="") → children resolve to "nest/"
+		// - In folder: folder "guides" with "clients/getting-started.md" (parentPath="guides") → children resolve to "guides/"
+		// This ensures parent file's subdirectory path doesn't affect children when inside a folder/TOC.
+		string parentPathForChildren;
+		if (string.IsNullOrEmpty(parentPath))
+		{
+			// Top level - extract directory from file path
+			var lastSlashIndex = fullPath.LastIndexOf('/');
+			parentPathForChildren = lastSlashIndex >= 0 ? fullPath[..lastSlashIndex] : "";
+		}
+		else
+		{
+			// In folder/TOC context - use parentPath directly, ignoring any subdirectory in the file reference
+			parentPathForChildren = parentPath;
+		}
 
 		var resolvedChildren = ResolveTableOfContents(collector, fileRef.Children, baseDirectory, fileSystem, parentPathForChildren, context);
 

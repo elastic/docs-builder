@@ -140,7 +140,7 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 		gettingStarted.Url.Should().Be("/guides/getting-started");
 		var advanced = gettingStarted.NavigationItems.First() as FileNavigationLeaf<IDocumentationFile>;
 		advanced.Should().NotBeNull();
-		advanced.Url.Should().Be("/guides/getting-started/advanced");
+		advanced.Url.Should().Be("/guides/advanced");
 
 		advanced.Parent.Should().BeSameAs(gettingStarted);
 		gettingStarted.Parent.Should().BeSameAs(folder);
@@ -176,7 +176,7 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 		gettingStarted.Url.Should().Be("/guides/clients/getting-started");
 		var advanced = gettingStarted.NavigationItems.First() as FileNavigationLeaf<IDocumentationFile>;
 		advanced.Should().NotBeNull();
-		advanced.Url.Should().Be("/guides/clients/getting-started/advanced");
+		advanced.Url.Should().Be("/guides/advanced");
 
 		advanced.Parent.Should().BeSameAs(gettingStarted);
 		gettingStarted.Parent.Should().BeSameAs(folder);
@@ -212,7 +212,7 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 		gettingStarted.Url.Should().Be("/guides/clients");
 		var advanced = gettingStarted.NavigationItems.First() as FileNavigationLeaf<IDocumentationFile>;
 		advanced.Should().NotBeNull();
-		advanced.Url.Should().Be("/guides/clients/advanced");
+		advanced.Url.Should().Be("/guides/advanced");
 
 		advanced.Parent.Should().BeSameAs(gettingStarted);
 		gettingStarted.Parent.Should().BeSameAs(folder);

@@ -71,11 +71,11 @@ public class FileInfoValidationTests(ITestOutputHelper output) : DocumentationSe
 
 		var fileSystem = CreateMockFileSystemWithFiles([
 			"/docs/guide.md",
-			"/docs/guide/section1.md",
-			"/docs/guide/section2.md",
+			"/docs/section1.md",
+			"/docs/section2.md",
 			"/docs/advanced.md",
-			"/docs/advanced/topics.md",
-			"/docs/advanced/patterns.md"
+			"/docs/topics.md",
+			"/docs/patterns.md"
 		]);
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
@@ -281,8 +281,8 @@ public class FileInfoValidationTests(ITestOutputHelper output) : DocumentationSe
 		var fileSystem = CreateMockFileSystemWithFiles([
 			"/docs/index.md",
 			"/docs/quick-start.md",
-			"/docs/quick-start/step1.md",
-			"/docs/quick-start/step2.md",
+			"/docs/step1.md",
+			"/docs/step2.md",
 			"/docs/setup/installation.md",
 			"/docs/setup/configuration.md",
 			"/docs/setup/advanced/toc.yml",
@@ -291,13 +291,13 @@ public class FileInfoValidationTests(ITestOutputHelper output) : DocumentationSe
 			"/docs/reference/toc.yml",
 			"/docs/reference/index.md",
 			"/docs/reference/api.md",
-			"/docs/reference/api/endpoints.md",
+			"/docs/reference/endpoints.md",
 			"/docs/reference/cli/index.md",
 			"/docs/reference/cli/commands.md",
 			"/docs/faq.md",
-			"/docs/faq/general.md",
-			"/docs/faq/troubleshooting/index.md",
-			"/docs/faq/troubleshooting/common-issues.md"
+			"/docs/general.md",
+			"/docs/troubleshooting/index.md",
+			"/docs/troubleshooting/common-issues.md"
 		]);
 
 		// Add TOC file contents
@@ -399,9 +399,9 @@ public class FileInfoValidationTests(ITestOutputHelper output) : DocumentationSe
 
 		var fileSystem = CreateMockFileSystemWithFiles([
 			"/docs/guide.md",
-			"/docs/guide/chapter1.md",
-			"/docs/guide/chapter1/section1.md",
-			"/docs/guide/chapter1/section1/subsection1.md"
+			"/docs/chapter1.md",
+			"/docs/section1.md",
+			"/docs/subsection1.md"
 		]);
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));

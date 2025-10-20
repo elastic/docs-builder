@@ -216,7 +216,12 @@ public static class SiteNavigationTestFixture
 		fileSystem.AddFile($"{baseDir}/docs/query-dsl/full-text-queries.md", new MockFileData("# Full Text Queries"));
 	}
 
-	public static TestDocumentationSetContext CreateContext(MockFileSystem fileSystem, string repositoryPath, ITestOutputHelper output)
+	public static TestDocumentationSetContext CreateContext(
+		MockFileSystem fileSystem,
+		string repositoryPath,
+		ITestOutputHelper output,
+		TestDiagnosticsCollector? collector = null
+	)
 	{
 		var sourceDir = fileSystem.DirectoryInfo.New($"{repositoryPath}/docs");
 		var outputDir = fileSystem.DirectoryInfo.New("/output");
@@ -229,6 +234,6 @@ public static class SiteNavigationTestFixture
 		// Extract repository name from path (e.g., "/checkouts/current/platform" -> "platform")
 		var repositoryName = fileSystem.Path.GetFileName(repositoryPath);
 
-		return new TestDocumentationSetContext(fileSystem, sourceDir, outputDir, configPath, output, repositoryName);
+		return new TestDocumentationSetContext(fileSystem, sourceDir, outputDir, configPath, output, repositoryName, collector);
 	}
 }

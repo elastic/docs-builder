@@ -37,13 +37,13 @@ public class TestDiagnosticsCollector(ITestOutputHelper output)
 
 public class TestDocumentationSetContext : IDocumentationSetContext
 {
-	public TestDocumentationSetContext(
-		IFileSystem fileSystem,
+	public TestDocumentationSetContext(IFileSystem fileSystem,
 		IDirectoryInfo sourceDirectory,
 		IDirectoryInfo outputDirectory,
 		IFileInfo configPath,
 		ITestOutputHelper output,
-		string? repository = null
+		string? repository = null,
+		TestDiagnosticsCollector? collector = null
 	)
 	{
 		ReadFileSystem = fileSystem;
@@ -51,7 +51,7 @@ public class TestDocumentationSetContext : IDocumentationSetContext
 		DocumentationSourceDirectory = sourceDirectory;
 		OutputDirectory = outputDirectory;
 		ConfigurationPath = configPath;
-		Collector = new TestDiagnosticsCollector(output);
+		Collector = collector ?? new TestDiagnosticsCollector(output);
 		Git = repository is null ? GitCheckoutInformation.Unavailable : new GitCheckoutInformation
 		{
 			Branch = "main",

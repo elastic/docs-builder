@@ -29,13 +29,15 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 			"platform",
 			"elasticsearch-reference"
 		]);
+		var collector = new TestDiagnosticsCollector(output);
+		_ = collector.StartAsync(TestContext.Current.CancellationToken);
 
 		// Create DocumentationSetNavigation for each repository
 		var documentationSets = new List<IDocumentationSetNavigation>();
 
 		foreach (var repo in repositories)
 		{
-			var context = SiteNavigationTestFixture.CreateContext(fileSystem, repo.FullName, output);
+			var context = SiteNavigationTestFixture.CreateContext(fileSystem, repo.FullName, output, collector);
 
 			// Read the docset file
 			var docsetPath = fileSystem.File.Exists($"{repo.FullName}/docs/docset.yml")
@@ -53,6 +55,9 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		// Verify each documentation set has navigation items
 		foreach (var docSet in documentationSets)
 			docSet.NavigationItems.Should().NotBeEmpty();
+
+		collector.Errors.Should().Be(0, "there should be no errors when loading observability documentation set");
+		collector.Warnings.Should().Be(0, "there should be no warnings when loading observability documentation set");
 	}
 
 	[Fact]
@@ -398,5 +403,189 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		var toc = siteNavigation.NavigationItems.First() as SiteTableOfContentsNavigation<IDocumentationFile>;
 		toc.Should().NotBeNull();
 		toc.PathPrefixProvider.PathPrefix.Should().Be("observability"); //constructed from toc URI as fallback
+	}
+
+	[Fact]
+	public void ObservabilityDocumentationSetNavigationHasNoDiagnostics()
+	{
+		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
+		var context = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
+
+		var docsetPath = fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml");
+		var docset = DocumentationSetFile.LoadAndResolve(context.Collector, docsetPath, fileSystem);
+
+		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docset, context, GenericDocumentationFileFactory.Instance);
+
+		// Assert navigation was created successfully
+		navigation.Should().NotBeNull();
+		navigation.NavigationItems.Should().NotBeEmpty();
+
+		// Assert no diagnostic errors or warnings
+		context.Collector.Errors.Should().Be(0, "there should be no errors when loading observability documentation set");
+		context.Collector.Warnings.Should().Be(0, "there should be no warnings when loading observability documentation set");
+	}
+
+	[Fact]
+	public void ServerlessSearchDocumentationSetNavigationHasNoDiagnostics()
+	{
+		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
+		var context = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/serverless-search", output);
+
+		var docsetPath = fileSystem.FileInfo.New("/checkouts/current/serverless-search/docs/docset.yml");
+		var docset = DocumentationSetFile.LoadAndResolve(context.Collector, docsetPath, fileSystem);
+
+		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docset, context, GenericDocumentationFileFactory.Instance);
+
+		// Assert navigation was created successfully
+		navigation.Should().NotBeNull();
+		navigation.NavigationItems.Should().NotBeEmpty();
+
+		// Assert no diagnostic errors or warnings
+		context.Collector.Errors.Should().Be(0, "there should be no errors when loading serverless-search documentation set");
+		context.Collector.Warnings.Should().Be(0, "there should be no warnings when loading serverless-search documentation set");
+	}
+
+	[Fact]
+	public void ServerlessSecurityDocumentationSetNavigationHasNoDiagnostics()
+	{
+		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
+		var context = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/serverless-security", output);
+
+		var docsetPath = fileSystem.FileInfo.New("/checkouts/current/serverless-security/docs/_docset.yml");
+		var docset = DocumentationSetFile.LoadAndResolve(context.Collector, docsetPath, fileSystem);
+
+		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docset, context, GenericDocumentationFileFactory.Instance);
+
+		// Assert navigation was created successfully
+		navigation.Should().NotBeNull();
+		navigation.NavigationItems.Should().NotBeEmpty();
+
+		// Assert no diagnostic errors or warnings
+		context.Collector.Errors.Should().Be(0, "there should be no errors when loading serverless-security documentation set");
+		context.Collector.Warnings.Should().Be(0, "there should be no warnings when loading serverless-security documentation set");
+	}
+
+	[Fact]
+	public void PlatformDocumentationSetNavigationHasNoDiagnostics()
+	{
+		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
+		var context = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform", output);
+
+		var docsetPath = fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml");
+		var docset = DocumentationSetFile.LoadAndResolve(context.Collector, docsetPath, fileSystem);
+
+		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docset, context, GenericDocumentationFileFactory.Instance);
+
+		// Assert navigation was created successfully
+		navigation.Should().NotBeNull();
+		navigation.NavigationItems.Should().NotBeEmpty();
+
+		// Assert no diagnostic errors or warnings
+		context.Collector.Errors.Should().Be(0, "there should be no errors when loading platform documentation set");
+		context.Collector.Warnings.Should().Be(0, "there should be no warnings when loading platform documentation set");
+	}
+
+	[Fact]
+	public void ElasticsearchReferenceDocumentationSetNavigationHasNoDiagnostics()
+	{
+		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
+		var context = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/elasticsearch-reference", output);
+
+		var docsetPath = fileSystem.FileInfo.New("/checkouts/current/elasticsearch-reference/docs/docset.yml");
+		var docset = DocumentationSetFile.LoadAndResolve(context.Collector, docsetPath, fileSystem);
+
+		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docset, context, GenericDocumentationFileFactory.Instance);
+
+		// Assert navigation was created successfully
+		navigation.Should().NotBeNull();
+		navigation.NavigationItems.Should().NotBeEmpty();
+
+		// Assert no diagnostic errors or warnings
+		context.Collector.Errors.Should().Be(0, "there should be no errors when loading elasticsearch-reference documentation set");
+		context.Collector.Warnings.Should().Be(0, "there should be no warnings when loading elasticsearch-reference documentation set");
+	}
+
+	[Fact]
+	public void AllDocumentationSetsHaveNoDiagnostics()
+	{
+		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
+		var checkoutDir = fileSystem.DirectoryInfo.New("/checkouts/current");
+		var repositories = checkoutDir.GetDirectories();
+
+		repositories.Should().HaveCount(5);
+
+		foreach (var repo in repositories)
+		{
+			var context = SiteNavigationTestFixture.CreateContext(fileSystem, repo.FullName, output);
+
+			// Read the docset file
+			var docsetPath = fileSystem.File.Exists($"{repo.FullName}/docs/docset.yml")
+				? $"{repo.FullName}/docs/docset.yml"
+				: $"{repo.FullName}/docs/_docset.yml";
+
+			var docset = DocumentationSetFile.LoadAndResolve(context.Collector, fileSystem.FileInfo.New(docsetPath), fileSystem);
+
+			var navigation = new DocumentationSetNavigation<IDocumentationFile>(docset, context, GenericDocumentationFileFactory.Instance);
+
+			// Assert navigation was created successfully
+			navigation.Should().NotBeNull($"navigation for {repo.Name} should be created");
+			navigation.NavigationItems.Should().NotBeEmpty($"navigation for {repo.Name} should have items");
+
+			// Assert no diagnostic errors or warnings
+			context.Collector.Errors.Should().Be(0, $"there should be no errors when loading {repo.Name} documentation set");
+			context.Collector.Warnings.Should().Be(0, $"there should be no warnings when loading {repo.Name} documentation set");
+		}
+	}
+
+	[Fact]
+	public void DocumentationSetNavigationWithNestedTocsHasNoDiagnostics()
+	{
+		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
+		var context = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform", output);
+
+		var docsetPath = fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml");
+		var docset = DocumentationSetFile.LoadAndResolve(context.Collector, docsetPath, fileSystem);
+
+		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docset, context, GenericDocumentationFileFactory.Instance);
+
+		// Assert navigation was created successfully with nested TOCs
+		navigation.Should().NotBeNull();
+		navigation.NavigationItems.Should().HaveCount(3); // index.md, deployment-guide TOC, cloud-guide TOC
+
+		var deploymentGuide = navigation.NavigationItems.ElementAt(1);
+		deploymentGuide.Should().BeOfType<TableOfContentsNavigation>();
+
+		var cloudGuide = navigation.NavigationItems.ElementAt(2);
+		cloudGuide.Should().BeOfType<TableOfContentsNavigation>();
+
+		// Assert no diagnostic errors or warnings
+		context.Collector.Errors.Should().Be(0, "there should be no errors when loading platform documentation set with nested TOCs");
+		context.Collector.Warnings.Should().Be(0, "there should be no warnings when loading platform documentation set with nested TOCs");
+	}
+
+	[Fact]
+	public void DocumentationSetNavigationWithFoldersHasNoDiagnostics()
+	{
+		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
+		var context = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
+
+		var docsetPath = fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml");
+		var docset = DocumentationSetFile.LoadAndResolve(context.Collector, docsetPath, fileSystem);
+
+		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docset, context, GenericDocumentationFileFactory.Instance);
+
+		// Assert navigation was created successfully with folders
+		navigation.Should().NotBeNull();
+		navigation.NavigationItems.Should().HaveCount(3); // index.md, getting-started folder, monitoring folder
+
+		var gettingStarted = navigation.NavigationItems.ElementAt(1);
+		gettingStarted.Should().BeOfType<FolderNavigation>();
+
+		var monitoring = navigation.NavigationItems.ElementAt(2);
+		monitoring.Should().BeOfType<FolderNavigation>();
+
+		// Assert no diagnostic errors or warnings
+		context.Collector.Errors.Should().Be(0, "there should be no errors when loading documentation set with folders");
+		context.Collector.Warnings.Should().Be(0, "there should be no warnings when loading documentation set with folders");
 	}
 }
