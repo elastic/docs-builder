@@ -125,7 +125,7 @@ export const useLlmGateway = (props: Props): UseLlmGatewayResponse => {
 
     const { processMessage, clearQueue } =
         useMessageThrottling<LlmGatewayMessage>({
-            delayInMs: 20, // Configurable typing delay
+            delayInMs: 10, // Configurable typing delay
             onMessage: (message) => {
                 setMessages((prev) => [...prev, message])
                 props.onMessage?.(message)

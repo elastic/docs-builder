@@ -78,12 +78,23 @@ public static class ServicesExtension
 			case AppEnv.Edge:
 				{
 					logger?.LogInformation("Configuring LambdaExtensionParameterProvider for environment {AppEnvironment}", appEnv);
-					_ = services.AddHttpClient(LambdaExtensionParameterProvider.HttpClientName, client =>
+					try
 					{
-						client.BaseAddress = new Uri("http://localhost:2773");
-						client.DefaultRequestHeaders.Add("X-Aws-Parameters-Secrets-Token", Environment.GetEnvironmentVariable("AWS_SESSION_TOKEN"));
-					});
-					_ = services.AddSingleton<IParameterProvider, LambdaExtensionParameterProvider>();
+						_ = services.AddHttpClient(LambdaExtensionParameterProvider.HttpClientName, client =>
+						{
+							client.BaseAddress = new Uri("http://localhost:2773");
+							client.DefaultRequestHeaders.Add("X-Aws-Parameters-Secrets-Token", Environment.GetEnvironmentVariable("AWS_SESSION_TOKEN"));
+						});
+						logger?.LogInformation("Lambda extension HTTP client configured");
+
+						_ = services.AddSingleton<IParameterProvider, LambdaExtensionParameterProvider>();
+						logger?.LogInformation("LambdaExtensionParameterProvider registered successfully");
+					}
+					catch (Exception ex)
+					{
+						logger?.LogError(ex, "Failed to configure LambdaExtensionParameterProvider for environment {AppEnvironment}", appEnv);
+						throw;
+					}
 					break;
 				}
 			case AppEnv.Dev:
@@ -104,10 +115,26 @@ public static class ServicesExtension
 	{
 		var logger = GetLogger(services);
 		logger?.LogInformation("Configuring AskAi use case for environment {AppEnvironment}", appEnv);
-		_ = services.AddSingleton<GcpIdTokenProvider>();
-		_ = services.AddScoped<LlmGatewayOptions>();
-		_ = services.AddScoped<AskAiUsecase>();
-		_ = services.AddScoped<IAskAiGateway<Stream>, LlmGatewayAskAiGateway>();
+
+		try
+		{
+			_ = services.AddSingleton<GcpIdTokenProvider>();
+			logger?.LogInformation("GcpIdTokenProvider registered successfully");
+
+			_ = services.AddScoped<LlmGatewayOptions>();
+			logger?.LogInformation("LlmGatewayOptions registered successfully");
+
+			_ = services.AddScoped<AskAiUsecase>();
+			logger?.LogInformation("AskAiUsecase registered successfully");
+
+			_ = services.AddScoped<IAskAiGateway<Stream>, LlmGatewayAskAiGateway>();
+			logger?.LogInformation("LlmGatewayAskAiGateway registered successfully");
+		}
+		catch (Exception ex)
+		{
+			logger?.LogError(ex, "Failed to configure AskAi use case for environment {AppEnvironment}", appEnv);
+			throw;
+		}
 	}
 	private static void AddSearchUsecase(IServiceCollection services, AppEnv appEnv)
 	{

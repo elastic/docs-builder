@@ -40,7 +40,7 @@ public class DiagnosticLinkInlineExtensions : IMarkdownExtension
 
 internal sealed partial class LinkRegexExtensions
 {
-	[GeneratedRegex(@"\s\=(?<width>\d+%?)(?:x(?<height>\d+%?))?$", RegexOptions.IgnoreCase, "en-US")]
+	[GeneratedRegex(@"(?:^|\s)\=(?<width>\d+%?)(?:x(?<height>\d+%?))?$", RegexOptions.IgnoreCase, "en-US")]
 	public static partial Regex MatchTitleStylingInstructions();
 }
 
@@ -92,7 +92,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			attributes.AddProperty("width", width);
 			attributes.AddProperty("height", height);
 
-			title = title[..matches.Index];
+			title = title[..matches.Index].TrimEnd();
 		}
 		link.Title = title.ReplaceSubstitutions(context);
 	}
@@ -184,6 +184,12 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 				uri, out var resolvedUri)
 			 )
 			link.Url = resolvedUri.ToString();
+
+		// Emit error for empty link text in crosslinks
+		if (link.FirstChild == null)
+		{
+			processor.EmitError(link, $"Crosslink '{url}' has empty link text. Please provide explicit link text.");
+		}
 	}
 
 	private static void ProcessInternalLink(LinkInline link, InlineProcessor processor, ParserContext context)

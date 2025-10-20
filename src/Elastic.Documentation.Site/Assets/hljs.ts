@@ -176,3 +176,6 @@ export function initHighlight() {
         hljs.highlightElement
     )
 }
+
+// Export the configured hljs instance for reuse
+export { hljs }

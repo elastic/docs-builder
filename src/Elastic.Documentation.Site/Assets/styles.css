@@ -18,6 +18,7 @@
 @import './markdown/definition-list.css';
 @import './markdown/images.css';
 @import './markdown/image-carousel.css';
+@import './markdown/hr.css';
 @import './modal.css';
 @import './archive.css';
 @import './markdown/stepper.css';
@@ -27,6 +28,7 @@
 html {
 	/* We need to use 14px because EUI works best with a 14px base */
 	font-size: 14px;
+	@apply font-body;
 }
 
 body {

@@ -43,4 +43,6 @@ public class ElasticsearchEndpoint
 	public X509Certificate? Certificate { get; set; }
 	public bool CertificateIsNotRoot { get; set; }
 	public int? BootstrapTimeout { get; set; }
+	public bool NoSemantic { get; set; }
+	public bool ForceReindex { get; set; }
 }

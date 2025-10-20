@@ -23,6 +23,15 @@ public record DocumentationDocument
 	[JsonPropertyName("url")]
 	public string Url { get; set; } = string.Empty;
 
+	/// The date of the batch update this document was part of last.
+	/// This date could be higher than the date_last_updated.
+	[JsonPropertyName("batch_index_date")]
+	public DateTimeOffset BatchIndexDate { get; set; }
+
+	/// The date this document was last updated,
+	[JsonPropertyName("last_updated")]
+	public DateTimeOffset LastUpdated { get; set; }
+
 	// TODO make this required once all doc_sets have published again
 	[JsonPropertyName("hash")]
 	public string Hash { get; set; } = string.Empty;
@@ -45,7 +54,7 @@ public record DocumentationDocument
 	[JsonPropertyName("body")]
 	public string? Body { get; set; }
 
-	// Stripped body is the body with markdown removed, suitable for search indexing
+	// Stripped body is the body with Markdown removed, suitable for search indexing
 	[JsonPropertyName("stripped_body")]
 	public string? StrippedBody { get; set; }
 

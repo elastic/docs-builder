@@ -34,6 +34,7 @@ internal sealed class AssemblerIndexCommand(
 	/// <param name="searchNumThreads">The number of search threads the inference endpoint should use. Defaults: 8</param>
 	/// <param name="indexNumThreads">The number of index threads the inference endpoint should use. Defaults: 8</param>
 	/// <param name="indexNamePrefix">The prefix for the computed index/alias names. Defaults: semantic-docs</param>
+	/// <param name="forceReindex">Force reindex strategy to semantic index</param>
 	/// <param name="bootstrapTimeout">Timeout in minutes for the inference endpoint creation. Defaults: 4</param>
 	/// <param name="bufferSize">The number of documents to send to ES as part of the bulk. Defaults: 100</param>
 	/// <param name="maxRetries">The number of times failed bulk items should be retried. Defaults: 3</param>
@@ -63,6 +64,7 @@ internal sealed class AssemblerIndexCommand(
 
 		// index options
 		string? indexNamePrefix = null,
+		bool? forceReindex = null,
 
 		// channel buffer options
 		int? bufferSize = null,
@@ -93,7 +95,7 @@ internal sealed class AssemblerIndexCommand(
 				// inference options
 				noSemantic, indexNumThreads, searchNumThreads, bootstrapTimeout,
 				// channel and connection options
-				indexNamePrefix, bufferSize, maxRetries, debugMode,
+				indexNamePrefix, forceReindex, bufferSize, maxRetries, debugMode,
 				// proxy options
 				proxyAddress, proxyPassword, proxyUsername,
 				// certificate options
@@ -106,7 +108,7 @@ internal sealed class AssemblerIndexCommand(
 				// inference options
 				state.noSemantic, state.searchNumThreads, state.indexNumThreads, state.bootstrapTimeout,
 				// channel and connection options
-				state.indexNamePrefix, state.bufferSize, state.maxRetries, state.debugMode,
+				state.indexNamePrefix, state.forceReindex, state.bufferSize, state.maxRetries, state.debugMode,
 				// proxy options
 				state.proxyAddress, state.proxyPassword, state.proxyUsername,
 				// certificate options
