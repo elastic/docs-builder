@@ -26,6 +26,7 @@ public class ImageViewModel : DirectiveViewModel
 			? Guid.NewGuid().ToString("N")[..8] // fallback to a random ID if ImageUrl is null or empty
 			: ShortId.Create(ImageUrl);
 	public required string? Screenshot { get; init; }
+	public required string? Border { get; init; }
 
 	public string Style
 	{

@@ -77,6 +77,30 @@ Screenshots are images displayed with a box-shadow. Define a screenshot by addin
 :screenshot:
 :::
 
+## Borders
+
+Images can have a border to improve contrast with the page background. Add the `:border:` attribute to a block-level image directive to add a 1px border.
+
+```markdown
+:::{image} /syntax/images/observability.png
+:alt: Elasticsearch with border
+:width: 400px
+:border:
+:::
+```
+
+:::{image} /syntax/images/observability.png
+:alt: Elasticsearch with border
+:width: 400px
+:border:
+:::
+
+The border is especially useful for screenshots with white or light backgrounds that might blend with the documentation page.
+
+:::{note}
+The `:border:` option only applies to images used with the image directive. Inline images do not support borders.
+:::
+
 ## Inline images
 
 ```markdown

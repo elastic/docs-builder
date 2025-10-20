@@ -46,6 +46,11 @@ public class ImageBlock(DirectiveBlockParser parser, ParserContext context)
 	public string? Screenshot { get; set; }
 
 	/// <summary>
+	/// When set, adds a border to the image.
+	/// </summary>
+	public string? Border { get; set; }
+
+	/// <summary>
 	/// The uniform scaling factor of the image. The default is “100 %”, i.e. no scaling.
 	/// </summary>
 	public string? Scale { get; set; }
@@ -87,6 +92,9 @@ public class ImageBlock(DirectiveBlockParser parser, ParserContext context)
 
 		// Set Screenshot to "screenshot" if the :screenshot: option is present
 		Screenshot = Prop("screenshot") != null ? "screenshot" : null;
+
+		// Set Border to "border" if the :border: option is present
+		Border = Prop("border") != null ? "border" : null;
 
 		ExtractImageUrl(context);
 	}
