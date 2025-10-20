@@ -39,6 +39,9 @@ public class DocumentationSetFile : TableOfContentsFile
 	[YamlMember(Alias = "exclude")]
 	public List<string> Exclude { get; set; } = [];
 
+	[YamlMember(Alias = "extensions")]
+	public List<string> Extensions { get; set; } = [];
+
 	[YamlMember(Alias = "subs")]
 	public Dictionary<string, string> Subs { get; set; } = [];
 
