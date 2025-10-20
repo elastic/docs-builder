@@ -452,6 +452,10 @@ jobs:
           && (steps.docs-build.outputs.skip != 'true' || steps.internal-docs-build.outputs.skip != 'true')
           && steps.deployment.outputs.result
           && (steps.docs-build.outcome == 'success' || steps.internal-docs-build.outcome == 'success')
+        env:
+          # https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-retries.html#cli-usage-retries-configure
+          AWS_RETRY_MODE: standard
+          AWS_MAX_ATTEMPTS: 6
         run: |
           aws s3 sync .artifacts/docs/html "s3://elastic-docs-v3-website-preview${PATH_PREFIX}" --delete --no-follow-symlinks
           aws cloudfront create-invalidation \
