@@ -354,8 +354,8 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 			Headings = headings
 		};
 
-		var semanticHash = _semanticChannel.Channel.Options.ChannelHash;
-		var lexicalHash = _lexicalChannel.Channel.Options.ChannelHash;
+		var semanticHash = _semanticChannel.Channel.ChannelHash;
+		var lexicalHash = _lexicalChannel.Channel.ChannelHash;
 		var hash = HashedBulkUpdate.CreateHash(semanticHash, lexicalHash,
 			doc.Url, doc.Body ?? string.Empty, string.Join(",", doc.Headings.OrderBy(h => h))
 		);
