@@ -3,10 +3,14 @@
 		a.image-reference {
 			@apply mt-4 block align-middle;
 			& > img {
-				@apply block;
+				@apply mx-auto block;
 			}
 		}
-		/* 
+		/* Override centering for images in lists */
+		li a.image-reference > img {
+			@apply mr-0 ml-0;
+		}
+		/*
 		 * tailwind reset makes all images `display: block`
 		 * this resets it to `display: initial`
 		 */
