@@ -166,16 +166,16 @@ public partial class ConfigurationFileProvider
 			// language=yaml
 			_fileSystem.File.AppendAllText(tempFile,
 				"""
-				      - toc: docs-builder://
-				        path_prefix: reference/docs-builder
-				        children:
-				          - toc: docs-builder://development
-				            path_prefix: reference/docs-builder/dev
-				            children:
-				              - toc: docs-builder://development/link-validation
-				                path_prefix: reference/docs-builder/dev/link-val
 
-				""");
+						  - toc: docs-builder://
+						    path_prefix: reference/docs-builder
+						    children:
+						      - toc: docs-builder://development
+						        path_prefix: reference/docs-builder/dev
+						        children:
+						          - toc: docs-builder://development/link-validation
+						            path_prefix: reference/docs-builder/dev/link-val
+						""");
 		}
 		NavigationFile = _fileSystem.FileInfo.New(tempFile);
 		return NavigationFile;
