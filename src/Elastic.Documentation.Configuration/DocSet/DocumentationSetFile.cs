@@ -222,16 +222,55 @@ public class DocumentationSetFile : TableOfContentsFile
 	{
 		var fullPath = string.IsNullOrEmpty(parentPath) ? fileRef.Path : $"{parentPath}/{fileRef.Path}";
 
+		// Special validation for FolderIndexFileRef (folder+file combination)
+		// Validate BEFORE early return so we catch cases with no children
+		if (fileRef is FolderIndexFileRef)
+		{
+			var fileName = fileRef.Path;
+			var fileWithoutExtension = fileName.Replace(".md", "");
+
+			// Validate: deep linking is NOT supported for folder+file combination
+			// The file path should be simple (no '/'), or at most folder/file.md after prepending
+			if (fileName.Contains('/'))
+			{
+				collector.EmitError(context,
+					$"Deep linking on folder 'file' is not supported. Found file path '{fileName}' with '/'. Use simple file name only.");
+			}
+
+			// Best practice: file name should match folder name (from parentPath)
+			// Only check if we're in a folder context (parentPath is not empty)
+			if (!string.IsNullOrEmpty(parentPath) && fileName != "index.md")
+			{
+				// Extract just the folder name from parentPath (in case it's nested like "guides/getting-started")
+				var folderName = parentPath.Contains('/') ? parentPath.Split('/')[^1] : parentPath;
+
+				// Normalize for comparison: remove hyphens, underscores, and lowercase
+				// This allows "getting-started" to match "GettingStarted" or "getting_started"
+				var normalizedFile = fileWithoutExtension.Replace("-", "", StringComparison.Ordinal).Replace("_", "", StringComparison.Ordinal).ToLowerInvariant();
+				var normalizedFolder = folderName.Replace("-", "", StringComparison.Ordinal).Replace("_", "", StringComparison.Ordinal).ToLowerInvariant();
+
+				if (!normalizedFile.Equals(normalizedFolder, StringComparison.Ordinal))
+				{
+					collector.EmitHint(context,
+						$"File name '{fileName}' does not match folder name '{folderName}'. Best practice is to name the file the same as the folder (e.g., 'folder: {folderName}, file: {folderName}.md').");
+				}
+			}
+		}
+
 		if (fileRef.Children.Count == 0)
 		{
-			return fileRef is IndexFileRef
-				? new IndexFileRef(fullPath, fileRef.Hidden, [], context)
-				: new FileRef(fullPath, fileRef.Hidden, [], context);
+			// Preserve specific types even when there are no children
+			return fileRef switch
+			{
+				FolderIndexFileRef => new FolderIndexFileRef(fullPath, fileRef.Hidden, [], context),
+				IndexFileRef => new IndexFileRef(fullPath, fileRef.Hidden, [], context),
+				_ => new FileRef(fullPath, fileRef.Hidden, [], context)
+			};
 		}
 
 		// Emit hint if file has children and uses deep-linking (path contains '/')
 		// This suggests using 'folder' instead of 'file' would be better
-		if (fileRef.Path.Contains('/') && fileRef.Children.Count > 0)
+		if (fileRef.Path.Contains('/') && fileRef.Children.Count > 0 && fileRef is not FolderIndexFileRef)
 		{
 			collector.EmitHint(context,
 				$"File '{fileRef.Path}' uses deep-linking with children. Consider using 'folder' instead of 'file' for better navigation structure. Virtual files are primarily intended to group sibling files together.");
@@ -543,18 +582,24 @@ public class TocItemYamlConverter : IYamlTypeConverter
 		// Context will be set during LoadAndResolve, use empty string as placeholder during deserialization
 		const string placeholderContext = "";
 
-		// Check for folder+file combination (e.g., folder: path, file: index.md)
-		// This represents a folder with an index file - treat as FolderIndexFileRef with combined path
-		// This special type ensures children resolve relative to the folder path
+		// Check for folder+file combination (e.g., folder: getting-started, file: getting-started.md)
+		// This represents a folder with a specific index file
+		// The file becomes a child of the folder (as FolderIndexFileRef), and user-specified children follow
 		if (dictionary.TryGetValue("folder", out var folderPath) && folderPath is string folder &&
 			dictionary.TryGetValue("file", out var filePath) && filePath is string file)
 		{
-			// Combine folder and file paths
-			var combinedPath = $"{folder}/{file}";
-			// Use FolderIndexFileRef for index.md, regular FileRef for other files
-			return file == "index.md"
-				? new FolderIndexFileRef(combinedPath, false, children, placeholderContext)
-				: new FileRef(combinedPath, false, children, placeholderContext);
+			// Create the index file reference (FolderIndexFileRef to mark it as the folder's index)
+			// Store ONLY the file name - the folder path will be prepended during resolution
+			// This allows validation to check if the file itself has deep paths
+			var indexFile = new FolderIndexFileRef(file, false, [], placeholderContext);
+
+			// Create a list with the index file first, followed by user-specified children
+			var folderChildren = new List<ITableOfContentsItem> { indexFile };
+			folderChildren.AddRange(children);
+
+			// Return a FolderRef with the index file and children
+			// The folder path can be deep (e.g., "guides/getting-started"), that's OK
+			return new FolderRef(folder, folderChildren, placeholderContext);
 		}
 
 		// Check for file reference (file: or hidden:)

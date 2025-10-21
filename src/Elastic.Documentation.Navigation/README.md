@@ -43,6 +43,33 @@ toc:
 * `children` paths are scope to the folder.
   * Here we are including the files `blocks.md` and `index.md` in the `syntax` folder.
 
+### Folders with a file
+
+If you don't want to follow the `folder/index.md` pattern but instead want to have the index file one level up e.g
+
+```
+getting-started.md
+getting-started/
+  install.md
+```
+
+You can do this by specifying the `file` property directly on the folder.
+
+
+```yaml
+toc:
+  - folder: getting-started # /getting-started
+    file: getting-started.md
+    children: 
+      - file: install.md # /getting-started/install
+```
+
+* `file` is the index file for the folder.
+* `children` paths are scope to the folder.
+  * Here we are including the files `install.md` in the `getting-started` folder.
+* deep linking on the folder `file` is NOT supported
+* It's best practice to name the file like the folder. We emit a hint if this is not the case.
+
 ### Virtual Files
 
 ```yaml
@@ -79,7 +106,7 @@ toc:
 While supported, this is not recommended.
 * Favor `folder` over `file` when possible.
 * Navigation should follow the file structure as much as possible.
-* Virtual files are primarely intended to group sibling files together.
+* Virtual files are primarily intended to group sibling files together.
 
 `docs-builder` will hint when these guidelines are not followed.
 
