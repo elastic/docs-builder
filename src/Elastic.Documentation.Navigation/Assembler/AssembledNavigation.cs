@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.DocSet;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation.Isolated;
@@ -116,7 +117,10 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		// Validate that path_prefix is set
 		if (string.IsNullOrWhiteSpace(pathPrefix))
 		{
-			context.EmitError(context.ConfigurationPath, $"path_prefix is required for TOC reference: {tocRef.Source}");
+			// we allow not setting path prefixes for toc references from the narrative repository
+			if (tocRef.Source.Scheme != NarrativeRepository.RepositoryName)
+				context.EmitError(context.ConfigurationPath, $"path_prefix is required for TOC reference: {tocRef.Source}");
+
 			pathPrefix = tocRef.Source.Scheme;
 			if (!string.IsNullOrEmpty(tocRef.Source.Host))
 				pathPrefix += $"/{tocRef.Source.Host}";
