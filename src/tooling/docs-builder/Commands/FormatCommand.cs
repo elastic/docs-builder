@@ -14,7 +14,8 @@ namespace Documentation.Builder.Commands;
 
 internal sealed class FormatCommand(
 	ILoggerFactory logFactory,
-	IDiagnosticsCollector collector
+	IDiagnosticsCollector collector,
+	IConfigurationContext configurationContext
 )
 {
 	/// <summary>
@@ -32,7 +33,7 @@ internal sealed class FormatCommand(
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var service = new FormatService(logFactory);
+		var service = new FormatService(logFactory, configurationContext);
 		var fs = new FileSystem();
 
 		serviceInvoker.AddCommand(service, (path, dryRun, fs),

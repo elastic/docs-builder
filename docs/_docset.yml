@@ -123,6 +123,7 @@ toc:
           - file: index.md
           - file: build.md
           - file: diff-validate.md
+          - file: format.md
           - file: index-command.md
           - file: mv.md
           - file: serve.md

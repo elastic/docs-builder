@@ -7,13 +7,16 @@ using System.IO.Abstractions;
 using System.Text;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Services;
+using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Refactor;
 
 public class FormatService(
-	ILoggerFactory logFactory
+	ILoggerFactory logFactory,
+	IConfigurationContext configurationContext
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<FormatService>();
@@ -58,37 +61,33 @@ public class FormatService(
 	)
 	{
 		var isDryRun = dryRun ?? false;
-		var rootPath = string.IsNullOrEmpty(path) ? fs.Directory.GetCurrentDirectory() : path;
-		var rootDir = fs.DirectoryInfo.New(rootPath);
 
-		if (!rootDir.Exists)
-		{
-			collector.EmitError(string.Empty, $"Directory not found: {rootPath}");
-			return false;
-		}
+		// Create BuildContext to load the documentation set
+		var context = new BuildContext(collector, fs, fs, configurationContext, ExportOptions.MetadataOnly, path, null);
+		var set = new DocumentationSet(context, logFactory, NoopCrossLinkResolver.Instance);
 
-		_logger.LogInformation("Formatting documentation in: {Path}", rootDir.FullName);
+		_logger.LogInformation("Formatting documentation in: {Path}", set.SourceDirectory.FullName);
 		if (isDryRun)
 			_logger.LogInformation("Running in dry-run mode - no files will be modified");
 
-		var markdownFiles = rootDir.GetFiles("*.md", SearchOption.AllDirectories);
 		var totalFilesProcessed = 0;
 		var totalFilesModified = 0;
 		var totalReplacements = 0;
 
-		foreach (var file in markdownFiles)
+		// Only process markdown files that are part of the documentation set
+		foreach (var docFile in set.Files.OfType<MarkdownFile>())
 		{
 			if (ctx.IsCancellationRequested)
 				break;
 
 			totalFilesProcessed++;
-			var (modified, replacements) = await ProcessFile(file, isDryRun, fs);
+			var (modified, replacements) = await ProcessFile(docFile.SourceFile, isDryRun, fs);
 
 			if (modified)
 			{
 				totalFilesModified++;
 				totalReplacements += replacements;
-				_logger.LogInformation("Fixed {Count} irregular whitespace(s) in: {File}", replacements, GetRelativePath(rootDir, file));
+				_logger.LogInformation("Fixed {Count} irregular whitespace(s) in: {File}", replacements, docFile.RelativePath);
 			}
 		}
 
@@ -139,18 +138,5 @@ public class FormatService(
 		}
 
 		return (modified, replacements);
-	}
-
-	private static string GetRelativePath(IDirectoryInfo root, IFileInfo file)
-	{
-		var rootPath = root.FullName.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-		var filePath = file.FullName;
-
-		if (filePath.StartsWith(rootPath, StringComparison.OrdinalIgnoreCase))
-		{
-			return filePath.Substring(rootPath.Length).TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-		}
-
-		return filePath;
 	}
 }

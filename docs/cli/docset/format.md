@@ -18,7 +18,9 @@ docs-builder format [options...] [-h|--help] [--version]
 
 ## Description
 
-The `format` command automatically detects and fixes formatting issues in your documentation files. Currently, it handles irregular whitespace characters that may impair Markdown rendering.
+The `format` command automatically detects and fixes formatting issues in your documentation files. The command only processes Markdown files (`.md`) that are included in your `_docset.yml` table of contents, ensuring that only intentional documentation files are modified.
+
+Currently, it handles irregular whitespace characters that may impair Markdown rendering.
 
 ### Irregular Whitespace Detection
 
