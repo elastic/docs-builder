@@ -11,10 +11,13 @@ namespace Elastic.Markdown.Tests.AppliesTo;
 
 public class ApplicableToJsonConverterSerializationTests
 {
-	private readonly JsonSerializerOptions _options = new() { WriteIndented = true };
+	private readonly JsonSerializerOptions _options = new()
+	{
+		WriteIndented = true
+	};
 
 	[Fact]
-	public void Serialize_Stack_ProducesCorrectJson()
+	public void SerializeStackProducesCorrectJson()
 	{
 		var applicableTo = new ApplicableTo
 		{
@@ -23,202 +26,274 @@ public class ApplicableToJsonConverterSerializationTests
 
 		var json = JsonSerializer.Serialize(applicableTo, _options);
 
-		json.Should().Be("""
-[
-  {
-    "type": "stack",
-    "sub_type": "stack",
-    "lifecycle": "ga",
-    "version": "9999.9999.9999"
-  }
-]
-""");
-	}
-
-	[Fact]
-	public void Serialize_StackWithVersion_ProducesCorrectJson()
-	{
-		var applicableTo = new ApplicableTo
-		{
-			Stack = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (SemVersion)"8.0.0" }])
-		};
-
-		var json = JsonSerializer.Serialize(applicableTo, _options);
-
-		json.Should().Be("""
-[
-  {
-    "type": "stack",
-    "sub_type": "stack",
-    "lifecycle": "beta",
-    "version": "8.0.0"
-  }
-]
-""");
-	}
-
-	[Fact]
-	public void Serialize_MultipleApplicabilities_ProducesCorrectJson()
-	{
-		var applicableTo = new ApplicableTo
-		{
-			Stack = new AppliesCollection(
+		// language=json
+		json.Should().Be(
+			"""
 			[
-				new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (SemVersion)"8.0.0" },
-				new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (SemVersion)"7.17.0" }
+			  {
+			    "type": "stack",
+			    "sub_type": "stack",
+			    "lifecycle": "ga",
+			    "version": "9999.9999.9999"
+			  }
+			]
+			""");
+	}
+
+	[Fact]
+	public void SerializeStackWithVersionProducesCorrectJson()
+	{
+		var applicableTo = new ApplicableTo
+		{
+			Stack = new AppliesCollection([
+				new Applicability
+				{
+					Lifecycle = ProductLifecycle.Beta,
+					Version = (SemVersion)"8.0.0"
+				}
 			])
 		};
 
 		var json = JsonSerializer.Serialize(applicableTo, _options);
 
-		json.Should().Be("""
-[
-  {
-    "type": "stack",
-    "sub_type": "stack",
-    "lifecycle": "ga",
-    "version": "8.0.0"
-  },
-  {
-    "type": "stack",
-    "sub_type": "stack",
-    "lifecycle": "beta",
-    "version": "7.17.0"
-  }
-]
-""");
+		// language=json
+		json.Should().Be(
+			"""
+			[
+			  {
+			    "type": "stack",
+			    "sub_type": "stack",
+			    "lifecycle": "beta",
+			    "version": "8.0.0"
+			  }
+			]
+			""");
 	}
 
 	[Fact]
-	public void Serialize_Deployment_ProducesCorrectJson()
+	public void SerializeMultipleApplicabilitiesProducesCorrectJson()
+	{
+		var applicableTo = new ApplicableTo
+		{
+			Stack = new AppliesCollection(
+			[
+				new Applicability
+				{
+					Lifecycle = ProductLifecycle.GenerallyAvailable,
+					Version = (SemVersion)"8.0.0"
+				},
+				new Applicability
+				{
+					Lifecycle = ProductLifecycle.Beta,
+					Version = (SemVersion)"7.17.0"
+				}
+			])
+		};
+
+		var json = JsonSerializer.Serialize(applicableTo, _options);
+
+		// language=json
+		json.Should().Be(
+			"""
+			[
+			  {
+			    "type": "stack",
+			    "sub_type": "stack",
+			    "lifecycle": "ga",
+			    "version": "8.0.0"
+			  },
+			  {
+			    "type": "stack",
+			    "sub_type": "stack",
+			    "lifecycle": "beta",
+			    "version": "7.17.0"
+			  }
+			]
+			""");
+	}
+
+	[Fact]
+	public void SerializeDeploymentProducesCorrectJson()
 	{
 		var applicableTo = new ApplicableTo
 		{
 			Deployment = new DeploymentApplicability
 			{
-				Ece = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (SemVersion)"3.0.0" }]),
+				Ece = new AppliesCollection([
+					new Applicability
+					{
+						Lifecycle = ProductLifecycle.GenerallyAvailable,
+						Version = (SemVersion)"3.0.0"
+					}
+				]),
 				Ess = AppliesCollection.GenerallyAvailable
 			}
 		};
 
 		var json = JsonSerializer.Serialize(applicableTo, _options);
 
-		json.Should().Be("""
-[
-  {
-    "type": "deployment",
-    "sub_type": "ece",
-    "lifecycle": "ga",
-    "version": "3.0.0"
-  },
-  {
-    "type": "deployment",
-    "sub_type": "ess",
-    "lifecycle": "ga",
-    "version": "9999.9999.9999"
-  }
-]
-""");
+		// language=json
+		json.Should().Be(
+			"""
+			[
+			  {
+			    "type": "deployment",
+			    "sub_type": "ece",
+			    "lifecycle": "ga",
+			    "version": "3.0.0"
+			  },
+			  {
+			    "type": "deployment",
+			    "sub_type": "ess",
+			    "lifecycle": "ga",
+			    "version": "9999.9999.9999"
+			  }
+			]
+			""");
 	}
 
 	[Fact]
-	public void Serialize_Serverless_ProducesCorrectJson()
+	public void SerializeServerlessProducesCorrectJson()
 	{
 		var applicableTo = new ApplicableTo
 		{
 			Serverless = new ServerlessProjectApplicability
 			{
-				Elasticsearch = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (SemVersion)"1.0.0" }]),
+				Elasticsearch = new AppliesCollection([
+					new Applicability
+					{
+						Lifecycle = ProductLifecycle.Beta,
+						Version = (SemVersion)"1.0.0"
+					}
+				]),
 				Security = AppliesCollection.GenerallyAvailable
 			}
 		};
 
 		var json = JsonSerializer.Serialize(applicableTo, _options);
 
-		json.Should().Be("""
-[
-  {
-    "type": "serverless",
-    "sub_type": "elasticsearch",
-    "lifecycle": "beta",
-    "version": "1.0.0"
-  },
-  {
-    "type": "serverless",
-    "sub_type": "security",
-    "lifecycle": "ga",
-    "version": "9999.9999.9999"
-  }
-]
-""");
+		// language=json
+		json.Should().Be(
+			"""
+			[
+			  {
+			    "type": "serverless",
+			    "sub_type": "elasticsearch",
+			    "lifecycle": "beta",
+			    "version": "1.0.0"
+			  },
+			  {
+			    "type": "serverless",
+			    "sub_type": "security",
+			    "lifecycle": "ga",
+			    "version": "9999.9999.9999"
+			  }
+			]
+			""");
 	}
 
 	[Fact]
-	public void Serialize_Product_ProducesCorrectJson()
+	public void SerializeProductProducesCorrectJson()
 	{
 		var applicableTo = new ApplicableTo
 		{
-			Product = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.TechnicalPreview, Version = (SemVersion)"0.5.0" }])
+			Product = new AppliesCollection([
+				new Applicability
+				{
+					Lifecycle = ProductLifecycle.TechnicalPreview,
+					Version = (SemVersion)"0.5.0"
+				}
+			])
 		};
 
 		var json = JsonSerializer.Serialize(applicableTo, _options);
 
-		json.Should().Be("""
-[
-  {
-    "type": "product",
-    "sub_type": "product",
-    "lifecycle": "preview",
-    "version": "0.5.0"
-  }
-]
-""");
+		// language=json
+		json.Should().Be(
+			"""
+			[
+			  {
+			    "type": "product",
+			    "sub_type": "product",
+			    "lifecycle": "preview",
+			    "version": "0.5.0"
+			  }
+			]
+			""");
 	}
 
 	[Fact]
-	public void Serialize_ProductApplicability_ProducesCorrectJson()
+	public void SerializeProductApplicabilityProducesCorrectJson()
 	{
 		var applicableTo = new ApplicableTo
 		{
 			ProductApplicability = new ProductApplicability
 			{
-				Ecctl = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Deprecated, Version = (SemVersion)"5.0.0" }]),
+				Ecctl = new AppliesCollection([
+					new Applicability
+					{
+						Lifecycle = ProductLifecycle.Deprecated,
+						Version = (SemVersion)"5.0.0"
+					}
+				]),
 				ApmAgentDotnet = AppliesCollection.GenerallyAvailable
 			}
 		};
 
 		var json = JsonSerializer.Serialize(applicableTo, _options);
 
-		json.Should().Be("""
-[
-  {
-    "type": "product",
-    "sub_type": "ecctl",
-    "lifecycle": "deprecated",
-    "version": "5.0.0"
-  },
-  {
-    "type": "product",
-    "sub_type": "apm-agent-dotnet",
-    "lifecycle": "ga",
-    "version": "9999.9999.9999"
-  }
-]
-""");
+		// language=json
+		json.Should().Be(
+			"""
+			[
+			  {
+			    "type": "product",
+			    "sub_type": "ecctl",
+			    "lifecycle": "deprecated",
+			    "version": "5.0.0"
+			  },
+			  {
+			    "type": "product",
+			    "sub_type": "apm-agent-dotnet",
+			    "lifecycle": "ga",
+			    "version": "9999.9999.9999"
+			  }
+			]
+			""");
 	}
 
 	[Fact]
-	public void Serialize_AllLifecycles_ProducesCorrectJson()
+	public void SerializeAllLifecyclesProducesCorrectJson()
 	{
 		var applicableTo = new ApplicableTo
 		{
 			Stack = new AppliesCollection(
 			[
-				new Applicability { Lifecycle = ProductLifecycle.TechnicalPreview, Version = (SemVersion)"1.0.0" },
-				new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (SemVersion)"1.0.0" },
-				new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (SemVersion)"1.0.0" },
-				new Applicability { Lifecycle = ProductLifecycle.Deprecated, Version = (SemVersion)"1.0.0" },
-				new Applicability { Lifecycle = ProductLifecycle.Removed, Version = (SemVersion)"1.0.0" }
+				new Applicability
+				{
+					Lifecycle = ProductLifecycle.TechnicalPreview,
+					Version = (SemVersion)"1.0.0"
+				},
+				new Applicability
+				{
+					Lifecycle = ProductLifecycle.Beta,
+					Version = (SemVersion)"1.0.0"
+				},
+				new Applicability
+				{
+					Lifecycle = ProductLifecycle.GenerallyAvailable,
+					Version = (SemVersion)"1.0.0"
+				},
+				new Applicability
+				{
+					Lifecycle = ProductLifecycle.Deprecated,
+					Version = (SemVersion)"1.0.0"
+				},
+				new Applicability
+				{
+					Lifecycle = ProductLifecycle.Removed,
+					Version = (SemVersion)"1.0.0"
+				}
 			])
 		};
 
@@ -232,11 +307,17 @@ public class ApplicableToJsonConverterSerializationTests
 	}
 
 	[Fact]
-	public void Serialize_Complex_ProducesCorrectJson()
+	public void SerializeComplexProducesCorrectJson()
 	{
 		var applicableTo = new ApplicableTo
 		{
-			Stack = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (SemVersion)"8.0.0" }]),
+			Stack = new AppliesCollection([
+				new Applicability
+				{
+					Lifecycle = ProductLifecycle.GenerallyAvailable,
+					Version = (SemVersion)"8.0.0"
+				}
+			]),
 			Deployment = new DeploymentApplicability
 			{
 				Ece = AppliesCollection.GenerallyAvailable
@@ -262,7 +343,7 @@ public class ApplicableToJsonConverterSerializationTests
 	}
 
 	[Fact]
-	public void Serialize_Empty_ProducesEmptyArray()
+	public void SerializeEmptyProducesEmptyArray()
 	{
 		var applicableTo = new ApplicableTo();
 
@@ -272,14 +353,20 @@ public class ApplicableToJsonConverterSerializationTests
 	}
 
 	[Fact]
-	public void Serialize_ValidatesJsonStructure()
+	public void SerializeValidatesJsonStructure()
 	{
 		var original = new ApplicableTo
 		{
 			Stack = AppliesCollection.GenerallyAvailable,
 			Deployment = new DeploymentApplicability
 			{
-				Ece = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (SemVersion)"3.0.0" }])
+				Ece = new AppliesCollection([
+					new Applicability
+					{
+						Lifecycle = ProductLifecycle.Beta,
+						Version = (SemVersion)"3.0.0"
+					}
+				])
 			}
 		};
 

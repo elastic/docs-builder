@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Globalization;
 using System.Text.Json;
 using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
@@ -16,7 +17,7 @@ public class DocumentationDocumentSerializationTests
 	private readonly JsonSerializerOptions _options = new(SourceGenerationContext.Default.Options);
 
 	[Fact]
-	public void Serialize_DocumentWithStackAppliesTo_ProducesCorrectJson()
+	public void SerializeDocumentWithStackAppliesToProducesCorrectJson()
 	{
 		var doc = new DocumentationDocument
 		{
@@ -32,7 +33,7 @@ public class DocumentationDocumentSerializationTests
 		var jsonDoc = JsonDocument.Parse(json);
 		var root = jsonDoc.RootElement;
 
-		// Verify applies_to exists
+		// Verify applies_to existing
 		root.TryGetProperty("applies_to", out var appliesTo).Should().BeTrue();
 		appliesTo.ValueKind.Should().Be(JsonValueKind.Array);
 
@@ -48,7 +49,7 @@ public class DocumentationDocumentSerializationTests
 	}
 
 	[Fact]
-	public void Serialize_DocumentWithDeploymentAppliesTo_ProducesCorrectJson()
+	public void SerializeDocumentWithDeploymentAppliesToProducesCorrectJson()
 	{
 		var doc = new DocumentationDocument
 		{
@@ -88,7 +89,7 @@ public class DocumentationDocumentSerializationTests
 	}
 
 	[Fact]
-	public void Serialize_DocumentWithServerlessAppliesTo_ProducesCorrectJson()
+	public void SerializeDocumentWithServerlessAppliesToProducesCorrectJson()
 	{
 		var doc = new DocumentationDocument
 		{
@@ -128,7 +129,7 @@ public class DocumentationDocumentSerializationTests
 	}
 
 	[Fact]
-	public void Serialize_DocumentWithProductAppliesTo_ProducesCorrectJson()
+	public void SerializeDocumentWithProductAppliesToProducesCorrectJson()
 	{
 		var doc = new DocumentationDocument
 		{
@@ -156,7 +157,7 @@ public class DocumentationDocumentSerializationTests
 	}
 
 	[Fact]
-	public void Serialize_DocumentWithProductApplicability_ProducesCorrectJson()
+	public void SerializeDocumentWithProductApplicabilityProducesCorrectJson()
 	{
 		var doc = new DocumentationDocument
 		{
@@ -196,7 +197,7 @@ public class DocumentationDocumentSerializationTests
 	}
 
 	[Fact]
-	public void Serialize_DocumentWithComplexAppliesTo_ProducesCorrectJson()
+	public void SerializeDocumentWithComplexAppliesToProducesCorrectJson()
 	{
 		var doc = new DocumentationDocument
 		{
@@ -231,7 +232,7 @@ public class DocumentationDocumentSerializationTests
 	}
 
 	[Fact]
-	public void Serialize_DocumentWithNullAppliesTo_OmitsField()
+	public void SerializeDocumentWithNullAppliesToOmitsField()
 	{
 		var doc = new DocumentationDocument
 		{
@@ -247,9 +248,7 @@ public class DocumentationDocumentSerializationTests
 		// With default JSON options, null values might be omitted or serialized as null
 		// Let's check both possibilities
 		if (root.TryGetProperty("applies_to", out var appliesTo))
-		{
 			appliesTo.ValueKind.Should().Be(JsonValueKind.Null);
-		}
 		else
 		{
 			// Field is omitted, which is also acceptable
@@ -258,7 +257,7 @@ public class DocumentationDocumentSerializationTests
 	}
 
 	[Fact]
-	public void Serialize_DocumentWithEmptyAppliesTo_ProducesEmptyArray()
+	public void SerializeDocumentWithEmptyAppliesToProducesEmptyArray()
 	{
 		var doc = new DocumentationDocument
 		{
@@ -277,15 +276,15 @@ public class DocumentationDocumentSerializationTests
 	}
 
 	[Fact]
-	public void RoundTrip_DocumentWithAppliesTo_PreservesData()
+	public void RoundTripDocumentWithAppliesToPreservesData()
 	{
 		var original = new DocumentationDocument
 		{
 			Url = "/test/roundtrip",
 			Title = "Round Trip Test",
 			Hash = "abc123",
-			BatchIndexDate = DateTimeOffset.Parse("2024-01-15T10:00:00Z"),
-			LastUpdated = DateTimeOffset.Parse("2024-01-15T09:00:00Z"),
+			BatchIndexDate = DateTimeOffset.Parse("2024-01-15T10:00:00Z", CultureInfo.InvariantCulture),
+			LastUpdated = DateTimeOffset.Parse("2024-01-15T09:00:00Z", CultureInfo.InvariantCulture),
 			Applies = new ApplicableTo
 			{
 				Stack = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (SemVersion)"8.5.0" }]),
@@ -305,7 +304,7 @@ public class DocumentationDocumentSerializationTests
 		var deserialized = JsonSerializer.Deserialize<DocumentationDocument>(json, _options);
 
 		deserialized.Should().NotBeNull();
-		deserialized!.Url.Should().Be(original.Url);
+		deserialized.Url.Should().Be(original.Url);
 		deserialized.Title.Should().Be(original.Title);
 		deserialized.Applies.Should().NotBeNull();
 		deserialized.Applies!.Stack.Should().BeEquivalentTo(original.Applies!.Stack);
@@ -314,7 +313,7 @@ public class DocumentationDocumentSerializationTests
 	}
 
 	[Fact]
-	public void Serialize_DocumentWithMultipleApplicabilitiesPerType_ProducesMultipleArrayEntries()
+	public void SerializeDocumentWithMultipleApplicabilitiesPerTypeProducesMultipleArrayEntries()
 	{
 		var doc = new DocumentationDocument
 		{

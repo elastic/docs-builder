@@ -13,7 +13,7 @@ namespace Elastic.Markdown.Tests.AppliesTo;
 public class ProductApplicabilityToStringTests
 {
 	[Fact]
-	public void ProductApplicability_ToString_IncludesAllProperties()
+	public void ProductApplicabilityToStringIncludesAllProperties()
 	{
 		// Create a ProductApplicability with all properties set
 		var productApplicability = new ProductApplicability();
@@ -45,7 +45,7 @@ public class ProductApplicabilityToStringTests
 	}
 
 	[Fact]
-	public void ProductApplicability_ToString_WithSomeProperties_OnlyIncludesSetProperties()
+	public void ProductApplicabilityToStringWithSomePropertiesOnlyIncludesSetProperties()
 	{
 		var productApplicability = new ProductApplicability
 		{
@@ -65,7 +65,7 @@ public class ProductApplicabilityToStringTests
 	}
 
 	[Fact]
-	public void ProductApplicability_ToString_Empty_ReturnsEmptyString()
+	public void ProductApplicabilityToStringEmptyReturnsEmptyString()
 	{
 		var productApplicability = new ProductApplicability();
 
@@ -75,7 +75,7 @@ public class ProductApplicabilityToStringTests
 	}
 
 	[Fact]
-	public void ProductApplicability_ToString_PropertyOrder_MatchesReflectionOrder()
+	public void ProductApplicabilityToStringPropertyOrderMatchesReflectionOrder()
 	{
 		// This test ensures that properties appear in the order they are defined
 		var productApplicability = new ProductApplicability

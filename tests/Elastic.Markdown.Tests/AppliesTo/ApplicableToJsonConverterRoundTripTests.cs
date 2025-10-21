@@ -14,7 +14,7 @@ public class ApplicableToJsonConverterRoundTripTests
 	private readonly JsonSerializerOptions _options = new() { WriteIndented = true };
 
 	[Fact]
-	public void RoundTrip_Stack_Simple()
+	public void RoundTripStackSimple()
 	{
 		var original = new ApplicableTo
 		{
@@ -30,7 +30,7 @@ public class ApplicableToJsonConverterRoundTripTests
 	}
 
 	[Fact]
-	public void RoundTrip_Stack_WithVersion()
+	public void RoundTripStackWithVersion()
 	{
 		var original = new ApplicableTo
 		{
@@ -50,7 +50,7 @@ public class ApplicableToJsonConverterRoundTripTests
 	}
 
 	[Fact]
-	public void RoundTrip_Deployment_AllProperties()
+	public void RoundTripDeploymentAllProperties()
 	{
 		var original = new ApplicableTo
 		{
@@ -75,7 +75,7 @@ public class ApplicableToJsonConverterRoundTripTests
 	}
 
 	[Fact]
-	public void RoundTrip_Serverless_AllProperties()
+	public void RoundTripServerlessAllProperties()
 	{
 		var original = new ApplicableTo
 		{
@@ -98,7 +98,7 @@ public class ApplicableToJsonConverterRoundTripTests
 	}
 
 	[Fact]
-	public void RoundTrip_Product_Simple()
+	public void RoundTripProductSimple()
 	{
 		var original = new ApplicableTo
 		{
@@ -114,7 +114,7 @@ public class ApplicableToJsonConverterRoundTripTests
 	}
 
 	[Fact]
-	public void RoundTrip_ProductApplicability_SingleProduct()
+	public void RoundTripProductApplicabilitySingleProduct()
 	{
 		var original = new ApplicableTo
 		{
@@ -133,7 +133,7 @@ public class ApplicableToJsonConverterRoundTripTests
 	}
 
 	[Fact]
-	public void RoundTrip_ProductApplicability_MultipleProducts()
+	public void RoundTripProductApplicabilityMultipleProducts()
 	{
 		var original = new ApplicableTo
 		{
@@ -158,7 +158,7 @@ public class ApplicableToJsonConverterRoundTripTests
 	}
 
 	[Fact]
-	public void RoundTrip_AllProductApplicability_Properties()
+	public void RoundTripAllProductApplicabilityProperties()
 	{
 		var original = new ApplicableTo
 		{
@@ -219,7 +219,7 @@ public class ApplicableToJsonConverterRoundTripTests
 	}
 
 	[Fact]
-	public void RoundTrip_Complex_AllFieldsPopulated()
+	public void RoundTripComplexAllFieldsPopulated()
 	{
 		var original = new ApplicableTo
 		{
@@ -270,7 +270,7 @@ public class ApplicableToJsonConverterRoundTripTests
 	}
 
 	[Fact]
-	public void RoundTrip_AllLifecycles()
+	public void RoundTripAllLifecycles()
 	{
 		var lifecycles = Enum.GetValues<ProductLifecycle>();
 		var applicabilities = lifecycles.Select(lc =>
@@ -291,7 +291,7 @@ public class ApplicableToJsonConverterRoundTripTests
 	}
 
 	[Fact]
-	public void RoundTrip_MultipleApplicabilitiesInCollection()
+	public void RoundTripMultipleApplicabilitiesInCollection()
 	{
 		var original = new ApplicableTo
 		{
@@ -314,7 +314,7 @@ public class ApplicableToJsonConverterRoundTripTests
 	}
 
 	[Fact]
-	public void RoundTrip_EmptyApplicableTo()
+	public void RoundTripEmptyApplicableTo()
 	{
 		var original = new ApplicableTo();
 
@@ -330,7 +330,7 @@ public class ApplicableToJsonConverterRoundTripTests
 	}
 
 	[Fact]
-	public void RoundTrip_Null_ReturnsNull()
+	public void RoundTripNullReturnsNull()
 	{
 		ApplicableTo? original = null;
 
@@ -341,7 +341,7 @@ public class ApplicableToJsonConverterRoundTripTests
 	}
 
 	[Fact]
-	public void RoundTrip_AllVersions_SerializesAsSemanticVersion()
+	public void RoundTripAllVersionsSerializesAsSemanticVersion()
 	{
 		var original = new ApplicableTo
 		{
@@ -358,7 +358,7 @@ public class ApplicableToJsonConverterRoundTripTests
 	}
 
 	[Fact]
-	public void RoundTrip_ProductAndProductApplicability_BothPresent()
+	public void RoundTripProductAndProductApplicabilityBothPresent()
 	{
 		var original = new ApplicableTo
 		{
