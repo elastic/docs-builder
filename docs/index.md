@@ -4,7 +4,7 @@ navigation_title: Elastic Docs v3
 
 # Welcome to Elastic Docs v3
 
-Elastic Docs V3 is our next-generation documentation platform designed to improve the experience of learning, using, and contributing to Elastic products. Built on a foundation of modern authoring tools and scalable infrastructure, V3 offers faster builds, streamlined versioning, and enhanced navigation to guide users through Elastic’s complex ecosystem.
+Elastic Docs V3 is our next-generation documentation platform designed to improve the experience of learning, using, and contributing to Elastic products. Built on a foundation of modern authoring tools and scalable infrastructure, V3 offers faster builds, streamlined versioning, and enhanced navigation to guide users through Elastic’s complex ecosystem.
 
 ## What do you want to do today?
 
