@@ -27,7 +27,7 @@ public class ApplicableToJsonConverterSerializationTests
 [
   {
     "type": "stack",
-    "sub-type": "stack",
+    "sub_type": "stack",
     "lifecycle": "ga",
     "version": "9999.9999.9999"
   }
@@ -49,7 +49,7 @@ public class ApplicableToJsonConverterSerializationTests
 [
   {
     "type": "stack",
-    "sub-type": "stack",
+    "sub_type": "stack",
     "lifecycle": "beta",
     "version": "8.0.0"
   }
@@ -75,13 +75,13 @@ public class ApplicableToJsonConverterSerializationTests
 [
   {
     "type": "stack",
-    "sub-type": "stack",
+    "sub_type": "stack",
     "lifecycle": "ga",
     "version": "8.0.0"
   },
   {
     "type": "stack",
-    "sub-type": "stack",
+    "sub_type": "stack",
     "lifecycle": "beta",
     "version": "7.17.0"
   }
@@ -107,13 +107,13 @@ public class ApplicableToJsonConverterSerializationTests
 [
   {
     "type": "deployment",
-    "sub-type": "ece",
+    "sub_type": "ece",
     "lifecycle": "ga",
     "version": "3.0.0"
   },
   {
     "type": "deployment",
-    "sub-type": "ess",
+    "sub_type": "ess",
     "lifecycle": "ga",
     "version": "9999.9999.9999"
   }
@@ -139,13 +139,13 @@ public class ApplicableToJsonConverterSerializationTests
 [
   {
     "type": "serverless",
-    "sub-type": "elasticsearch",
+    "sub_type": "elasticsearch",
     "lifecycle": "beta",
     "version": "1.0.0"
   },
   {
     "type": "serverless",
-    "sub-type": "security",
+    "sub_type": "security",
     "lifecycle": "ga",
     "version": "9999.9999.9999"
   }
@@ -167,7 +167,7 @@ public class ApplicableToJsonConverterSerializationTests
 [
   {
     "type": "product",
-    "sub-type": "product",
+    "sub_type": "product",
     "lifecycle": "preview",
     "version": "0.5.0"
   }
@@ -193,13 +193,13 @@ public class ApplicableToJsonConverterSerializationTests
 [
   {
     "type": "product",
-    "sub-type": "ecctl",
+    "sub_type": "ecctl",
     "lifecycle": "deprecated",
     "version": "5.0.0"
   },
   {
     "type": "product",
-    "sub-type": "apm-agent-dotnet",
+    "sub_type": "apm-agent-dotnet",
     "lifecycle": "ga",
     "version": "9999.9999.9999"
   }
@@ -255,10 +255,10 @@ public class ApplicableToJsonConverterSerializationTests
 		json.Should().Contain("\"type\": \"deployment\"");
 		json.Should().Contain("\"type\": \"product\"");
 
-		// Verify sub-types
-		json.Should().Contain("\"sub-type\": \"stack\"");
-		json.Should().Contain("\"sub-type\": \"ece\"");
-		json.Should().Contain("\"sub-type\": \"product\"");
+		// Verify sub_types
+		json.Should().Contain("\"sub_type\": \"stack\"");
+		json.Should().Contain("\"sub_type\": \"ece\"");
+		json.Should().Contain("\"sub_type\": \"product\"");
 	}
 
 	[Fact]
@@ -294,13 +294,13 @@ public class ApplicableToJsonConverterSerializationTests
 
 		var stackEntry = array[0];
 		stackEntry.GetProperty("type").GetString().Should().Be("stack");
-		stackEntry.GetProperty("sub-type").GetString().Should().Be("stack");
+		stackEntry.GetProperty("sub_type").GetString().Should().Be("stack");
 		stackEntry.GetProperty("lifecycle").GetString().Should().Be("ga");
 		stackEntry.GetProperty("version").GetString().Should().Be("9999.9999.9999");
 
 		var deploymentEntry = array[1];
 		deploymentEntry.GetProperty("type").GetString().Should().Be("deployment");
-		deploymentEntry.GetProperty("sub-type").GetString().Should().Be("ece");
+		deploymentEntry.GetProperty("sub_type").GetString().Should().Be("ece");
 		deploymentEntry.GetProperty("lifecycle").GetString().Should().Be("beta");
 		deploymentEntry.GetProperty("version").GetString().Should().Be("3.0.0");
 	}

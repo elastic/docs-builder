@@ -193,6 +193,15 @@ public abstract class ElasticsearchExporter<TChannelOptions, TChannel> : IDispos
 		          "prefix": { "type": "text", "analyzer" : "hierarchy_analyzer" }
 		        }
 		      },
+		      "applies" : {
+		        "type" : "nested"
+		        "properties" : {
+		          "type" : { "type" : "keyword" },
+		          "sub-type" : { "type" : "keyword" },
+		          "lifecycle" : { "type" : "keyword" },
+		          "version" : { "type" : "version" },
+		        }
+		      },
 		      "hash" : { "type" : "keyword" },
 		      "title": {
 		        "type": "text",

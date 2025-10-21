@@ -62,7 +62,7 @@ public class ApplicableToJsonConverter : JsonConverter<ApplicableTo>
 					case "type":
 						type = reader.GetString();
 						break;
-					case "sub-type":
+					case "sub_type":
 						subType = reader.GetString();
 						break;
 					case "lifecycle":
@@ -243,7 +243,7 @@ public class ApplicableToJsonConverter : JsonConverter<ApplicableTo>
 		{
 			writer.WriteStartObject();
 			writer.WriteString("type", type);
-			writer.WriteString("sub-type", subType);
+			writer.WriteString("sub_type", subType);
 
 			// Write lifecycle
 			var lifecycleName = applicability.Lifecycle switch
