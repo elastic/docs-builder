@@ -33,20 +33,17 @@ public class FormatService(
 	public async Task<bool> Format(
 		IDiagnosticsCollector collector,
 		string? path,
-		bool? dryRun,
+		bool checkOnly,
 		IFileSystem fs,
 		Cancel ctx
 	)
 	{
-		var isDryRun = dryRun ?? false;
-
 		// Create BuildContext to load the documentation set
 		var context = new BuildContext(collector, fs, fs, configurationContext, ExportOptions.MetadataOnly, path, null);
 		var set = new DocumentationSet(context, logFactory, NoopCrossLinkResolver.Instance);
 
-		_logger.LogInformation("Formatting documentation in: {Path}", set.SourceDirectory.FullName);
-		if (isDryRun)
-			_logger.LogInformation("Running in dry-run mode - no files will be modified");
+		var mode = checkOnly ? "Checking" : "Formatting";
+		_logger.LogInformation("{Mode} documentation in: {Path}", mode, set.SourceDirectory.FullName);
 
 		var totalFilesProcessed = 0;
 		var totalFilesModified = 0;
@@ -63,36 +60,55 @@ public class FormatService(
 				break;
 
 			totalFilesProcessed++;
-			var (modified, changes) = await ProcessFile(docFile.SourceFile, isDryRun, fs, formatterStats);
+			var (modified, changes) = await ProcessFile(docFile.SourceFile, checkOnly, fs, formatterStats);
 
 			if (modified)
-			{
 				totalFilesModified++;
-				_logger.LogInformation("Formatted {File} ({Changes} change(s))", docFile.RelativePath, changes);
-			}
 		}
 
 		_logger.LogInformation("");
-		_logger.LogInformation("Formatting complete:");
-		_logger.LogInformation("  Files processed: {Processed}", totalFilesProcessed);
-		_logger.LogInformation("  Files modified: {Modified}", totalFilesModified);
 
-		// Log stats for each formatter that made changes
-		foreach (var (formatterName, changeCount) in formatterStats.Where(kvp => kvp.Value > 0))
-			_logger.LogInformation("  {Formatter} fixes: {Count}", formatterName, changeCount);
-
-		if (isDryRun && totalFilesModified > 0)
+		if (checkOnly)
 		{
-			_logger.LogInformation("");
-			_logger.LogInformation("Run without --dry-run to apply changes");
-		}
+			if (totalFilesModified > 0)
+			{
+				_logger.LogInformation("Formatting needed:");
+				_logger.LogInformation("  Files needing formatting: {Modified}", totalFilesModified);
 
-		return true;
+				// Log stats for each formatter that would make changes
+				foreach (var (formatterName, changeCount) in formatterStats.Where(kvp => kvp.Value > 0))
+					_logger.LogInformation("  {Formatter} fixes needed: {Count}", formatterName, changeCount);
+
+				_logger.LogInformation("");
+
+				// Emit error to trigger exit code 1
+				collector.EmitError(string.Empty, $"{totalFilesModified} file(s) need formatting. Run 'docs-builder format --write' to apply changes.");
+
+				return false;
+			}
+			else
+			{
+				_logger.LogInformation("All files are properly formatted");
+				return true;
+			}
+		}
+		else
+		{
+			_logger.LogInformation("Formatting complete:");
+			_logger.LogInformation("  Files processed: {Processed}", totalFilesProcessed);
+			_logger.LogInformation("  Files modified: {Modified}", totalFilesModified);
+
+			// Log stats for each formatter that made changes
+			foreach (var (formatterName, changeCount) in formatterStats.Where(kvp => kvp.Value > 0))
+				_logger.LogInformation("  {Formatter} fixes: {Count}", formatterName, changeCount);
+
+			return true;
+		}
 	}
 
 	private static async Task<(bool modified, int totalChanges)> ProcessFile(
 		IFileInfo file,
-		bool isDryRun,
+		bool checkOnly,
 		IFileSystem fs,
 		Dictionary<string, int> stats
 	)
@@ -116,8 +132,8 @@ public class FormatService(
 
 		var modified = content != originalContent;
 
-		// Only write if content changed and not in dry-run mode
-		if (modified && !isDryRun)
+		// Only write if content changed and in write mode
+		if (modified && !checkOnly)
 			await fs.File.WriteAllTextAsync(file.FullName, content);
 
 		return (modified, totalChanges);

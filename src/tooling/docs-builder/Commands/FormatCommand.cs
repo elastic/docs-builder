@@ -19,25 +19,34 @@ internal sealed class FormatCommand(
 )
 {
 	/// <summary>
-	/// Format documentation files by fixing common issues like irregular whitespace
+	/// Format documentation files by fixing common issues like irregular space
 	/// </summary>
 	/// <param name="path"> -p, Path to the documentation folder, defaults to pwd</param>
-	/// <param name="dryRun">Preview changes without modifying files</param>
+	/// <param name="check">Check if files need formatting without modifying them (exits with code 1 if formatting needed)</param>
+	/// <param name="write">Write formatting changes to files</param>
 	/// <param name="ctx"></param>
 	[Command("")]
 	public async Task<int> Format(
 		string? path = null,
-		bool? dryRun = null,
+		bool check = false,
+		bool write = false,
 		Cancel ctx = default
 	)
 	{
+		// Validate that exactly one of --check or --write is specified
+		if (check == write)
+		{
+			collector.EmitError(string.Empty, "Must specify exactly one of --check or --write");
+			return 1;
+		}
+
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
 		var service = new FormatService(logFactory, configurationContext);
 		var fs = new FileSystem();
 
-		serviceInvoker.AddCommand(service, (path, dryRun, fs),
-			async static (s, collector, state, ctx) => await s.Format(collector, state.path, state.dryRun, state.fs, ctx)
+		serviceInvoker.AddCommand(service, (path, check, fs),
+			async static (s, collector, state, ctx) => await s.Format(collector, state.path, state.check, state.fs, ctx)
 		);
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
