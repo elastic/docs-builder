@@ -229,6 +229,14 @@ public class DocumentationSetFile : TableOfContentsFile
 				: new FileRef(fullPath, fileRef.Hidden, [], context);
 		}
 
+		// Emit hint if file has children and uses deep-linking (path contains '/')
+		// This suggests using 'folder' instead of 'file' would be better
+		if (fileRef.Path.Contains('/') && fileRef.Children.Count > 0)
+		{
+			collector.EmitHint(context,
+				$"File '{fileRef.Path}' uses deep-linking with children. Consider using 'folder' instead of 'file' for better navigation structure. Virtual files are primarily intended to group sibling files together.");
+		}
+
 		// Children of a file should be resolved in the same directory as the parent file.
 		// Special handling for FolderIndexFileRef (folder+file combinations from YAML):
 		// - These are created when both folder and file keys exist (e.g., "folder: path/to/dir, file: index.md")

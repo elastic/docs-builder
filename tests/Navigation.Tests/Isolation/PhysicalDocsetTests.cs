@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.DocSet;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Navigation.Isolated;
 using FluentAssertions;
 
@@ -118,8 +119,17 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		var folderUrls = folders.Select(f => f.Url).ToList();
 		folderUrls.Should().Contain("/contribute");
 
-		// No errors should be emitted during navigation construction
-		context.Diagnostics.Should().BeEmpty();
+		// No errors or warnings should be emitted during navigation construction
+		// Hints are acceptable for best practice guidance
+		context.Collector.Errors.Should().Be(0, "no errors should be emitted");
+		context.Collector.Warnings.Should().Be(0, "no warnings should be emitted");
+
+		// Verify that the hint about deep-linking virtual file was emitted
+		var hints = context.Diagnostics.Where(d => d.Severity == Severity.Hint).ToList();
+		hints.Should().Contain(d =>
+			d.Message.Contains("nest-under-index/index.md") &&
+			d.Message.Contains("deep-linking"),
+			"should emit hint for deep-linking virtual file");
 	}
 
 	[Fact]

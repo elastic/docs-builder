@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using Elastic.Documentation.Configuration.DocSet;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation.Isolated;
 using FluentAssertions;
@@ -168,5 +169,120 @@ public class ValidationTests(ITestOutputHelper output) : DocumentationSetNavigat
 		diagnostics.Should().ContainSingle(d =>
 			d.Message.Contains("Table of contents file not found") &&
 			d.Message.Contains("api/toc.yml"));
+	}
+
+	[Fact]
+	public async Task ValidationEmitsHintForDeepLinkingVirtualFiles()
+	{
+		// language=yaml
+		var yaml = """
+		           project: 'test-project'
+		           toc:
+		             - file: a/b/c/getting-started.md
+		               children:
+		                 - file: a/b/c/setup.md
+		                 - file: a/b/c/install.md
+		           """;
+
+		var fileSystem = new MockFileSystem();
+		fileSystem.AddDirectory("/docs");
+		var context = CreateContext(fileSystem);
+		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
+
+		_ = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
+
+		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+
+		context.Collector.Hints.Should().BeGreaterThan(0, "should have emitted a hint for deep-linking virtual file");
+		var diagnostics = context.Diagnostics;
+		diagnostics.Should().Contain(d =>
+			d.Severity == Severity.Hint &&
+			d.Message.Contains("a/b/c/getting-started.md") &&
+			d.Message.Contains("deep-linking") &&
+			d.Message.Contains("folder"));
+	}
+
+	[Fact]
+	public async Task ValidationEmitsHintForNestedPathVirtualFiles()
+	{
+		// language=yaml
+		var yaml = """
+		           project: 'test-project'
+		           toc:
+		             - file: guides/api/overview.md
+		               children:
+		                 - file: guides/api/authentication.md
+		                 - file: guides/api/endpoints.md
+		           """;
+
+		var fileSystem = new MockFileSystem();
+		fileSystem.AddDirectory("/docs");
+		var context = CreateContext(fileSystem);
+		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
+
+		_ = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
+
+		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+
+		context.Collector.Hints.Should().BeGreaterThan(0);
+		var diagnostics = context.Diagnostics;
+		diagnostics.Should().Contain(d =>
+			d.Severity == Severity.Hint &&
+			d.Message.Contains("guides/api/overview.md") &&
+			d.Message.Contains("Virtual files are primarily intended to group sibling files together"));
+	}
+
+	[Fact]
+	public async Task ValidationDoesNotEmitHintForSimpleVirtualFiles()
+	{
+		// language=yaml
+		var yaml = """
+		           project: 'test-project'
+		           toc:
+		             - file: guide.md
+		               children:
+		                 - file: chapter1.md
+		                 - file: chapter2.md
+		           """;
+
+		var fileSystem = new MockFileSystem();
+		fileSystem.AddDirectory("/docs");
+		var context = CreateContext(fileSystem);
+		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
+
+		_ = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
+
+		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+
+		context.Collector.Hints.Should().Be(0, "simple virtual files without deep-linking should not trigger hints");
+		context.Diagnostics.Should().BeEmpty();
+	}
+
+	[Fact]
+	public async Task ValidationDoesNotEmitHintForFilesWithoutChildren()
+	{
+		// language=yaml
+		var yaml = """
+		           project: 'test-project'
+		           toc:
+		             - file: a/b/c/getting-started.md
+		             - file: guides/setup.md
+		           """;
+
+		var fileSystem = new MockFileSystem();
+		fileSystem.AddDirectory("/docs");
+		var context = CreateContext(fileSystem);
+		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
+
+		_ = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
+
+		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+
+		context.Collector.Hints.Should().Be(0, "files without children should not trigger hints, even with deep paths");
+		context.Diagnostics.Should().BeEmpty();
 	}
 }
