@@ -3,7 +3,7 @@
 This section will help you understand how to update and contribute to our documentation post-migration.
 
 :::{tip}
-Every documentation page includes a **Learn how to contribute** link in the sidebar that takes you to the [Elastic Docs contribution guide](https://www.elastic.co/docs/contribute-docs/). Use it whenever you want to contribute!
+Every documentation page includes a **Learn how to contribute** link in the sidebar that takes you to the [Elastic Docs contribution guide](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/contribute/). Use it whenever you want to contribute!
 :::
 
 ## Updating documentation
