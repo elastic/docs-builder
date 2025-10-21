@@ -167,9 +167,7 @@ public class ApplicableToJsonConverter : JsonConverter<ApplicableTo>
 
 		// Stack
 		if (value.Stack != null)
-		{
 			WriteApplicabilityEntries(writer, "stack", "stack", value.Stack);
-		}
 
 		// Deployment
 		if (value.Deployment != null)
@@ -197,9 +195,7 @@ public class ApplicableToJsonConverter : JsonConverter<ApplicableTo>
 
 		// Product (simple)
 		if (value.Product != null)
-		{
 			WriteApplicabilityEntries(writer, "product", "product", value.Product);
-		}
 
 		// ProductApplicability (specific products)
 		if (value.ProductApplicability != null)
@@ -210,8 +206,7 @@ public class ApplicableToJsonConverter : JsonConverter<ApplicableTo>
 				var yamlAlias = property.GetCustomAttribute<YamlMemberAttribute>()?.Alias;
 				if (yamlAlias != null)
 				{
-					var propertyValue = property.GetValue(value.ProductApplicability) as AppliesCollection;
-					if (propertyValue != null)
+					if (property.GetValue(value.ProductApplicability) is AppliesCollection propertyValue)
 						WriteApplicabilityEntries(writer, "product", yamlAlias, propertyValue);
 				}
 			}
@@ -220,22 +215,19 @@ public class ApplicableToJsonConverter : JsonConverter<ApplicableTo>
 		writer.WriteEndArray();
 	}
 
-	private static ProductLifecycle ParseLifecycle(string lifecycleStr)
+	private static ProductLifecycle ParseLifecycle(string lifecycleStr) => lifecycleStr.ToLowerInvariant() switch
 	{
-		return lifecycleStr.ToLowerInvariant() switch
-		{
-			"preview" => ProductLifecycle.TechnicalPreview,
-			"beta" => ProductLifecycle.Beta,
-			"ga" => ProductLifecycle.GenerallyAvailable,
-			"deprecated" => ProductLifecycle.Deprecated,
-			"removed" => ProductLifecycle.Removed,
-			"unavailable" => ProductLifecycle.Unavailable,
-			"development" => ProductLifecycle.Development,
-			"planned" => ProductLifecycle.Planned,
-			"discontinued" => ProductLifecycle.Discontinued,
-			_ => ProductLifecycle.GenerallyAvailable
-		};
-	}
+		"preview" => ProductLifecycle.TechnicalPreview,
+		"beta" => ProductLifecycle.Beta,
+		"ga" => ProductLifecycle.GenerallyAvailable,
+		"deprecated" => ProductLifecycle.Deprecated,
+		"removed" => ProductLifecycle.Removed,
+		"unavailable" => ProductLifecycle.Unavailable,
+		"development" => ProductLifecycle.Development,
+		"planned" => ProductLifecycle.Planned,
+		"discontinued" => ProductLifecycle.Discontinued,
+		_ => ProductLifecycle.GenerallyAvailable
+	};
 
 	private static void WriteApplicabilityEntries(Utf8JsonWriter writer, string type, string subType, AppliesCollection collection)
 	{
@@ -261,7 +253,7 @@ public class ApplicableToJsonConverter : JsonConverter<ApplicableTo>
 			};
 			writer.WriteString("lifecycle", lifecycleName);
 
-			// Write version
+			// Write the version
 			if (applicability.Version is not null)
 				writer.WriteString("version", applicability.Version.ToString());
 

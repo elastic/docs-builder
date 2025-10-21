@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Search;
@@ -82,17 +83,16 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 	{
 		_ = await _lexicalChannel.Channel.BootstrapElasticsearchAsync(BootstrapMethod.Failure, null, ctx);
 
-		var semanticIndex = _semanticChannel.Channel.IndexName;
 		var semanticWriteAlias = string.Format(_semanticChannel.Channel.Options.IndexFormat, "latest");
-		var semanticIndexHead = await _transport.HeadAsync(semanticWriteAlias, ctx);
-		if (!semanticIndexHead.ApiCallDetails.HasSuccessfulStatusCode)
+		var semanticIndexAvailable = await _transport.HeadAsync(semanticWriteAlias, ctx);
+		_ = await _semanticChannel.Channel.BootstrapElasticsearchAsync(BootstrapMethod.Failure, null, ctx);
+		var semanticIndex = _semanticChannel.Channel.IndexName;
+		if (!semanticIndexAvailable.ApiCallDetails.HasSuccessfulStatusCode)
 		{
-			_logger.LogInformation("No semantic index exists yet, creating index {Index} for semantic search", semanticIndex);
-			_ = await _semanticChannel.Channel.BootstrapElasticsearchAsync(BootstrapMethod.Failure, null, ctx);
+			_logger.LogInformation("No semantic index existed yet, creating index {Index} for semantic search", semanticIndex);
 			var semanticIndexPut = await _transport.PutAsync<StringResponse>(semanticIndex, PostData.String("{}"), ctx);
 			if (!semanticIndexPut.ApiCallDetails.HasSuccessfulStatusCode)
 				throw new Exception($"Failed to create index {semanticIndex}: {semanticIndexPut}");
-			_ = await _semanticChannel.Channel.ApplyAliasesAsync(ctx);
 			if (!_endpoint.ForceReindex)
 			{
 				_indexStrategy = IngestStrategy.Multiplex;
@@ -152,12 +152,13 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 				throw new Exception($"Failed to create index {semanticIndex}: {semanticIndexPut}");
 			_ = await _semanticChannel.Channel.ApplyAliasesAsync(ctx);
 		}
+		var destinationIndex = _semanticChannel.Channel.IndexName;
 
-		_logger.LogInformation("_reindex updates: '{SourceIndex}' => '{DestinationIndex}'", lexicalWriteAlias, semanticWriteAlias);
+		_logger.LogInformation("_reindex updates: '{SourceIndex}' => '{DestinationIndex}'", lexicalWriteAlias, destinationIndex);
 		var request = PostData.String(@"
 		{
 			""dest"": {
-				""index"": """ + semanticWriteAlias + @"""
+				""index"": """ + destinationIndex + @"""
 			},
 			""source"": {
 				""index"": """ + lexicalWriteAlias + @""",
@@ -171,13 +172,13 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 				}
 			}
 		}");
-		await DoReindex(request, lexicalWriteAlias, semanticWriteAlias, "updates", ctx);
+		await DoReindex(request, lexicalWriteAlias, destinationIndex, "updates", ctx);
 
-		_logger.LogInformation("_reindex deletions: '{SourceIndex}' => '{DestinationIndex}'", lexicalWriteAlias, semanticWriteAlias);
+		_logger.LogInformation("_reindex deletions: '{SourceIndex}' => '{DestinationIndex}'", lexicalWriteAlias, destinationIndex);
 		request = PostData.String(@"
 		{
 			""dest"": {
-				""index"": """ + semanticWriteAlias + @"""
+				""index"": """ + destinationIndex + @"""
 			},
 			""script"": {
 				""source"": ""ctx.op = \""delete\""""
@@ -194,7 +195,7 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 				}
 			}
 		}");
-		await DoReindex(request, lexicalWriteAlias, semanticWriteAlias, "deletions", ctx);
+		await DoReindex(request, lexicalWriteAlias, destinationIndex, "deletions", ctx);
 
 		await DoDeleteByQuery(lexicalWriteAlias, ctx);
 
@@ -336,6 +337,10 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 			? body[..Math.Min(body.Length, 400)] + " " + string.Join(" \n- ", headings)
 			: string.Empty;
 
+		// this is temporary until https://github.com/elastic/docs-builder/pull/2070 lands
+		// this PR will add a service for us to resolve to a versioning scheme.
+		var appliesTo = fileContext.SourceFile.YamlFrontMatter?.AppliesTo ?? ApplicableTo.Default;
+
 		var doc = new DocumentationDocument
 		{
 			Url = url,
@@ -344,7 +349,7 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 			StrippedBody = body.StripMarkdown(),
 			Description = fileContext.SourceFile.YamlFrontMatter?.Description,
 			Abstract = @abstract,
-			Applies = fileContext.SourceFile.YamlFrontMatter?.AppliesTo,
+			Applies = appliesTo,
 			UrlSegmentCount = url.Split('/', StringSplitOptions.RemoveEmptyEntries).Length,
 			Parents = navigation.GetParentsOfMarkdownFile(file).Select(i => new ParentDocument
 			{
@@ -357,7 +362,7 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 		var semanticHash = _semanticChannel.Channel.ChannelHash;
 		var lexicalHash = _lexicalChannel.Channel.ChannelHash;
 		var hash = HashedBulkUpdate.CreateHash(semanticHash, lexicalHash,
-			doc.Url, doc.Body ?? string.Empty, string.Join(",", doc.Headings.OrderBy(h => h))
+			doc.Url, doc.Body ?? string.Empty, string.Join(",", doc.Headings.OrderBy(h => h)), doc.Url
 		);
 		doc.Hash = hash;
 		doc.LastUpdated = _batchIndexDate;
