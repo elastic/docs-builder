@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Search;
@@ -33,6 +34,8 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 	private readonly DateTimeOffset _batchIndexDate = DateTimeOffset.UtcNow;
 	private readonly DistributedTransport _transport;
 	private IngestStrategy _indexStrategy;
+	private string _currentLexicalHash = string.Empty;
+	private string _currentSemanticHash = string.Empty;
 
 	public ElasticsearchMarkdownExporter(
 		ILoggerFactory logFactory,
@@ -80,26 +83,53 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 	/// <inheritdoc />
 	public async ValueTask StartAsync(Cancel ctx = default)
 	{
+		_currentLexicalHash = await _lexicalChannel.Channel.GetIndexTemplateHashAsync(ctx) ?? string.Empty;
+		_currentSemanticHash = await _semanticChannel.Channel.GetIndexTemplateHashAsync(ctx) ?? string.Empty;
+
 		_ = await _lexicalChannel.Channel.BootstrapElasticsearchAsync(BootstrapMethod.Failure, null, ctx);
 
-		var semanticIndex = _semanticChannel.Channel.IndexName;
-		var semanticWriteAlias = string.Format(_semanticChannel.Channel.Options.IndexFormat, "latest");
-		var semanticIndexHead = await _transport.HeadAsync(semanticWriteAlias, ctx);
-		if (!semanticIndexHead.ApiCallDetails.HasSuccessfulStatusCode)
+		// if the previous hash does not match the current hash, we know already we want to multiplex to a new index
+		if (_currentLexicalHash != _lexicalChannel.Channel.ChannelHash)
+			_indexStrategy = IngestStrategy.Multiplex;
+
+		if (!_endpoint.NoSemantic)
 		{
-			_logger.LogInformation("No semantic index exists yet, creating index {Index} for semantic search", semanticIndex);
-			_ = await _semanticChannel.Channel.BootstrapElasticsearchAsync(BootstrapMethod.Failure, null, ctx);
-			var semanticIndexPut = await _transport.PutAsync<StringResponse>(semanticIndex, PostData.String("{}"), ctx);
-			if (!semanticIndexPut.ApiCallDetails.HasSuccessfulStatusCode)
-				throw new Exception($"Failed to create index {semanticIndex}: {semanticIndexPut}");
-			_ = await _semanticChannel.Channel.ApplyAliasesAsync(ctx);
-			if (!_endpoint.ForceReindex)
+			var semanticWriteAlias = string.Format(_semanticChannel.Channel.Options.IndexFormat, "latest");
+			var semanticIndexAvailable = await _transport.HeadAsync(semanticWriteAlias, ctx);
+			if (!semanticIndexAvailable.ApiCallDetails.HasSuccessfulStatusCode && _endpoint is { ForceReindex: false, NoSemantic: false })
 			{
 				_indexStrategy = IngestStrategy.Multiplex;
-				_logger.LogInformation("Index strategy set to multiplex because {SemanticIndex} does not exist, pass --force-reindex to always use reindex", semanticIndex);
+				_logger.LogInformation("Index strategy set to multiplex because {SemanticIndex} does not exist, pass --force-reindex to always use reindex", semanticWriteAlias);
 			}
+
+			//try re-use index if we are re-indexing. Multiplex should always go to a new index
+			_semanticChannel.Channel.Options.TryReuseIndex = _indexStrategy == IngestStrategy.Reindex;
+			_ = await _semanticChannel.Channel.BootstrapElasticsearchAsync(BootstrapMethod.Failure, null, ctx);
 		}
+
+		var lexicalIndexExists = await IndexExists(_lexicalChannel.Channel.IndexName) ? "existing" : "new";
+		var semanticIndexExists = await IndexExists(_semanticChannel.Channel.IndexName) ? "existing" : "new";
+		if (_currentLexicalHash != _lexicalChannel.Channel.ChannelHash)
+		{
+			_indexStrategy = IngestStrategy.Multiplex;
+			_logger.LogInformation("Multiplexing lexical new index: '{Index}' since current hash on server '{HashCurrent}' does not match new '{HashNew}'",
+				_lexicalChannel.Channel.IndexName, _currentLexicalHash, _lexicalChannel.Channel.ChannelHash);
+		}
+		else
+			_logger.LogInformation("Targeting {State} lexical: '{Index}'", lexicalIndexExists, _lexicalChannel.Channel.IndexName);
+
+		if (!_endpoint.NoSemantic && _currentSemanticHash != _semanticChannel.Channel.ChannelHash)
+		{
+			_indexStrategy = IngestStrategy.Multiplex;
+			_logger.LogInformation("Multiplexing new index '{Index}' since current hash on server '{HashCurrent}' does not match new '{HashNew}'",
+				_semanticChannel.Channel.IndexName, _currentSemanticHash, _semanticChannel.Channel.ChannelHash);
+		}
+		else if (!_endpoint.NoSemantic)
+			_logger.LogInformation("Targeting {State} semantical: '{Index}'", semanticIndexExists, _semanticChannel.Channel.IndexName);
+
 		_logger.LogInformation("Using {IndexStrategy} to sync lexical index to semantic index", _indexStrategy.ToStringFast(true));
+
+		async ValueTask<bool> IndexExists(string name) => (await _transport.HeadAsync(name, ctx)).ApiCallDetails.HasSuccessfulStatusCode;
 	}
 
 	private async ValueTask<long> CountAsync(string index, string body, Cancel ctx = default)
@@ -113,7 +143,6 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 	{
 		var semanticWriteAlias = string.Format(_semanticChannel.Channel.Options.IndexFormat, "latest");
 		var lexicalWriteAlias = string.Format(_lexicalChannel.Channel.Options.IndexFormat, "latest");
-		var semanticIndex = _semanticChannel.Channel.IndexName;
 
 		var stopped = await _lexicalChannel.StopAsync(ctx);
 		if (!stopped)
@@ -125,23 +154,28 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 		{
 			if (!_endpoint.NoSemantic)
 				_ = await _semanticChannel.StopAsync(ctx);
-			else
-				_logger.LogInformation("--no-semantic was specified when doing multiplex writes, not rolling over {SemanticIndex}", semanticIndex);
 
 			// cleanup lexical index of old data
 			await DoDeleteByQuery(lexicalWriteAlias, ctx);
+			// need to refresh the lexical index to ensure that the delete by query is available
 			_ = await _lexicalChannel.RefreshAsync(ctx);
-			_logger.LogInformation("Finish sync to semantic index using {IndexStrategy} strategy", _indexStrategy.ToStringFast(true));
 			await QueryDocumentCounts(ctx);
+			// ReSharper disable once ConvertIfStatementToConditionalTernaryExpression
+			if (_endpoint.NoSemantic)
+				_logger.LogInformation("Finish indexing {IndexStrategy} strategy", _indexStrategy.ToStringFast(true));
+			else
+				_logger.LogInformation("Finish syncing to semantic in {IndexStrategy} strategy", _indexStrategy.ToStringFast(true));
 			return;
 		}
 
 		if (_endpoint.NoSemantic)
 		{
-			_logger.LogInformation("--no-semantic was specified so exiting early before reindexing to {Index}", semanticIndex);
+			_logger.LogInformation("--no-semantic was specified so exiting early before reindexing to {Index}", lexicalWriteAlias);
 			return;
 		}
 
+		var semanticIndex = _semanticChannel.Channel.IndexName;
+		// check if the alias exists
 		var semanticIndexHead = await _transport.HeadAsync(semanticWriteAlias, ctx);
 		if (!semanticIndexHead.ApiCallDetails.HasSuccessfulStatusCode)
 		{
@@ -150,14 +184,14 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 			var semanticIndexPut = await _transport.PutAsync<StringResponse>(semanticIndex, PostData.String("{}"), ctx);
 			if (!semanticIndexPut.ApiCallDetails.HasSuccessfulStatusCode)
 				throw new Exception($"Failed to create index {semanticIndex}: {semanticIndexPut}");
-			_ = await _semanticChannel.Channel.ApplyAliasesAsync(ctx);
 		}
+		var destinationIndex = _semanticChannel.Channel.IndexName;
 
-		_logger.LogInformation("_reindex updates: '{SourceIndex}' => '{DestinationIndex}'", lexicalWriteAlias, semanticWriteAlias);
+		_logger.LogInformation("_reindex updates: '{SourceIndex}' => '{DestinationIndex}'", lexicalWriteAlias, destinationIndex);
 		var request = PostData.String(@"
 		{
 			""dest"": {
-				""index"": """ + semanticWriteAlias + @"""
+				""index"": """ + destinationIndex + @"""
 			},
 			""source"": {
 				""index"": """ + lexicalWriteAlias + @""",
@@ -171,13 +205,13 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 				}
 			}
 		}");
-		await DoReindex(request, lexicalWriteAlias, semanticWriteAlias, "updates", ctx);
+		await DoReindex(request, lexicalWriteAlias, destinationIndex, "updates", ctx);
 
-		_logger.LogInformation("_reindex deletions: '{SourceIndex}' => '{DestinationIndex}'", lexicalWriteAlias, semanticWriteAlias);
+		_logger.LogInformation("_reindex deletions: '{SourceIndex}' => '{DestinationIndex}'", lexicalWriteAlias, destinationIndex);
 		request = PostData.String(@"
 		{
 			""dest"": {
-				""index"": """ + semanticWriteAlias + @"""
+				""index"": """ + destinationIndex + @"""
 			},
 			""script"": {
 				""source"": ""ctx.op = \""delete\""""
@@ -194,9 +228,12 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 				}
 			}
 		}");
-		await DoReindex(request, lexicalWriteAlias, semanticWriteAlias, "deletions", ctx);
+		await DoReindex(request, lexicalWriteAlias, destinationIndex, "deletions", ctx);
 
 		await DoDeleteByQuery(lexicalWriteAlias, ctx);
+
+		_ = await _lexicalChannel.Channel.ApplyLatestAliasAsync(ctx);
+		_ = await _semanticChannel.Channel.ApplyAliasesAsync(ctx);
 
 		_ = await _lexicalChannel.RefreshAsync(ctx);
 		_ = await _semanticChannel.RefreshAsync(ctx);
@@ -275,7 +312,7 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 
 	private async ValueTask DoReindex(PostData request, string lexicalWriteAlias, string semanticWriteAlias, string typeOfSync, Cancel ctx)
 	{
-		var reindexUrl = "/_reindex?wait_for_completion=false&require_alias=true&scroll=10m";
+		var reindexUrl = "/_reindex?wait_for_completion=false&scroll=10m";
 		var reindexNewChanges = await _transport.PostAsync<DynamicResponse>(reindexUrl, request, ctx);
 		var taskId = reindexNewChanges.Body.Get<string>("task");
 		if (string.IsNullOrWhiteSpace(taskId))
@@ -336,6 +373,10 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 			? body[..Math.Min(body.Length, 400)] + " " + string.Join(" \n- ", headings)
 			: string.Empty;
 
+		// this is temporary until https://github.com/elastic/docs-builder/pull/2070 lands
+		// this PR will add a service for us to resolve to a versioning scheme.
+		var appliesTo = fileContext.SourceFile.YamlFrontMatter?.AppliesTo ?? ApplicableTo.Default;
+
 		var doc = new DocumentationDocument
 		{
 			Url = url,
@@ -344,7 +385,7 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 			StrippedBody = body.StripMarkdown(),
 			Description = fileContext.SourceFile.YamlFrontMatter?.Description,
 			Abstract = @abstract,
-			Applies = fileContext.SourceFile.YamlFrontMatter?.AppliesTo,
+			Applies = appliesTo,
 			UrlSegmentCount = url.Split('/', StringSplitOptions.RemoveEmptyEntries).Length,
 			Parents = navigation.GetParentsOfMarkdownFile(file).Select(i => new ParentDocument
 			{
@@ -357,7 +398,7 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 		var semanticHash = _semanticChannel.Channel.ChannelHash;
 		var lexicalHash = _lexicalChannel.Channel.ChannelHash;
 		var hash = HashedBulkUpdate.CreateHash(semanticHash, lexicalHash,
-			doc.Url, doc.Body ?? string.Empty, string.Join(",", doc.Headings.OrderBy(h => h))
+			doc.Url, doc.Body ?? string.Empty, string.Join(",", doc.Headings.OrderBy(h => h)), doc.Url
 		);
 		doc.Hash = hash;
 		doc.LastUpdated = _batchIndexDate;
