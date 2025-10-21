@@ -20,4 +20,4 @@ not a{'\u000B'}space
 
     [<Fact>]
     let ``emits a hint when a bad space is used`` () =
-        markdown |> hasHint "Irregular space detected. Run 'docs-builder format' to automatically fix all instances."
+        markdown |> hasHint "Irregular space detected. Run 'docs-builder format --write' to automatically fix all instances."

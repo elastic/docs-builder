@@ -87,7 +87,7 @@ public class SpaceNormalizerParser : InlineParser
 			if (!FilesWithHintEmitted.Contains(filePath))
 			{
 				_ = FilesWithHintEmitted.Add(filePath);
-				processor.EmitHint(processor.Inline, 1, "Irregular space detected. Run 'docs-builder format' to automatically fix all instances.");
+				processor.EmitHint(processor.Inline, 1, "Irregular space detected. Run 'docs-builder format --write' to automatically fix all instances.");
 			}
 		}
 

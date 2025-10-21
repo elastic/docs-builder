@@ -45,11 +45,11 @@ public class IrregularSpaceFormatter : IFormatter
 
 	private static readonly SearchValues<char> IrregularSpaceSearchValues = SearchValues.Create(IrregularSpaceChars);
 
-	public (string content, int changes) Format(string content)
+	public FormatResult Format(string content)
 	{
 		// Quick check - if no irregular space, return original
 		if (content.AsSpan().IndexOfAny(IrregularSpaceSearchValues) == -1)
-			return (content, 0);
+			return new FormatResult(content, 0);
 
 		// Replace irregular space with regular spaces
 		var sb = new StringBuilder(content.Length);
@@ -68,6 +68,6 @@ public class IrregularSpaceFormatter : IFormatter
 			}
 		}
 
-		return (sb.ToString(), replacements);
+		return new FormatResult(sb.ToString(), replacements);
 	}
 }

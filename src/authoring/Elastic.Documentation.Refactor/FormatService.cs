@@ -120,13 +120,13 @@ public class FormatService(
 		// Apply each formatter in sequence
 		foreach (var formatter in Formatters)
 		{
-			var (formattedContent, changes) = formatter.Format(content);
+			var result = formatter.Format(content);
 
-			if (changes > 0)
+			if (result.Changes > 0)
 			{
-				content = formattedContent;
-				totalChanges += changes;
-				stats[formatter.Name] += changes;
+				content = result.Content;
+				totalChanges += result.Changes;
+				stats[formatter.Name] += result.Changes;
 			}
 		}
 
