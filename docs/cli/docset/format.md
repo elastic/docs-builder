@@ -1,6 +1,6 @@
 # format
 
-Format documentation files by fixing common issues like irregular whitespace
+Format documentation files by fixing common issues like irregular space
 
 ## Usage
 
@@ -20,11 +20,11 @@ docs-builder format [options...] [-h|--help] [--version]
 
 The `format` command automatically detects and fixes formatting issues in your documentation files. The command only processes Markdown files (`.md`) that are included in your `_docset.yml` table of contents, ensuring that only intentional documentation files are modified.
 
-Currently, it handles irregular whitespace characters that may impair Markdown rendering.
+Currently, it handles irregular space characters that may impair Markdown rendering.
 
-### Irregular Whitespace Detection
+### Irregular Space Detection
 
-The format command detects and replaces 24 types of irregular whitespace characters with regular spaces, including:
+The format command detects and replaces 24 types of irregular space characters with regular spaces, including:
 
 - No-Break Space (U+00A0)
 - En Space (U+2002)
@@ -32,7 +32,7 @@ The format command detects and replaces 24 types of irregular whitespace charact
 - Zero Width Space (U+200B)
 - Line Separator (U+2028)
 - Paragraph Separator (U+2029)
-- And 18 other irregular whitespace variants
+- And 18 other irregular space variants
 
 These characters can cause unexpected rendering issues in Markdown and are often introduced accidentally through copy-paste operations from other applications.
 
@@ -62,8 +62,8 @@ The command provides detailed feedback about the formatting process:
 
 ```
 Formatting documentation in: /path/to/docs
-Fixed 2 irregular whitespace(s) in: guide/setup.md
-Fixed 1 irregular whitespace(s) in: api/endpoints.md
+Fixed 2 irregular space(s) in: guide/setup.md
+Fixed 1 irregular space(s) in: api/endpoints.md
 
 Formatting complete:
   Files processed: 155

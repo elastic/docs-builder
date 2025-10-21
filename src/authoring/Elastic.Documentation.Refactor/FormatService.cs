@@ -2,12 +2,11 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Buffers;
 using System.IO.Abstractions;
-using System.Text;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Links.CrossLinks;
+using Elastic.Documentation.Refactor.Formatters;
 using Elastic.Documentation.Services;
 using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
@@ -21,36 +20,15 @@ public class FormatService(
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<FormatService>();
 
-	// Collection of irregular whitespace characters that may impair Markdown rendering
-	private static readonly char[] IrregularWhitespaceChars =
+	// List of formatters to apply - easily extensible for future formatting operations
+	private static readonly IFormatter[] Formatters =
 	[
-		'\u000B', // Line Tabulation (\v) - <VT>
-		'\u000C', // Form Feed (\f) - <FF>
-		'\u00A0', // No-Break Space - <NBSP>
-		'\u0085', // Next Line
-		'\u1680', // Ogham Space Mark
-		'\u180E', // Mongolian Vowel Separator - <MVS>
-		'\ufeff', // Zero Width No-Break Space - <BOM>
-		'\u2000', // En Quad
-		'\u2001', // Em Quad
-		'\u2002', // En Space - <ENSP>
-		'\u2003', // Em Space - <EMSP>
-		'\u2004', // Tree-Per-Em
-		'\u2005', // Four-Per-Em
-		'\u2006', // Six-Per-Em
-		'\u2007', // Figure Space
-		'\u2008', // Punctuation Space - <PUNCSP>
-		'\u2009', // Thin Space
-		'\u200A', // Hair Space
-		'\u200B', // Zero Width Space - <ZWSP>
-		'\u2028', // Line Separator
-		'\u2029', // Paragraph Separator
-		'\u202F', // Narrow No-Break Space
-		'\u205F', // Medium Mathematical Space
-		'\u3000'  // Ideographic Space
+		new IrregularSpaceFormatter()
+		// Future formatters can be added here:
+		// new TrailingWhitespaceFormatter(),
+		// new LineEndingFormatter(),
+		// etc.
 	];
-
-	private static readonly SearchValues<char> IrregularWhitespaceSearchValues = SearchValues.Create(IrregularWhitespaceChars);
 
 	public async Task<bool> Format(
 		IDiagnosticsCollector collector,
@@ -72,7 +50,11 @@ public class FormatService(
 
 		var totalFilesProcessed = 0;
 		var totalFilesModified = 0;
-		var totalReplacements = 0;
+		var formatterStats = new Dictionary<string, int>();
+
+		// Initialize stats for each formatter
+		foreach (var formatter in Formatters)
+			formatterStats[formatter.Name] = 0;
 
 		// Only process markdown files that are part of the documentation set
 		foreach (var docFile in set.Files.OfType<MarkdownFile>())
@@ -81,13 +63,12 @@ public class FormatService(
 				break;
 
 			totalFilesProcessed++;
-			var (modified, replacements) = await ProcessFile(docFile.SourceFile, isDryRun, fs);
+			var (modified, changes) = await ProcessFile(docFile.SourceFile, isDryRun, fs, formatterStats);
 
 			if (modified)
 			{
 				totalFilesModified++;
-				totalReplacements += replacements;
-				_logger.LogInformation("Fixed {Count} irregular whitespace(s) in: {File}", replacements, docFile.RelativePath);
+				_logger.LogInformation("Formatted {File} ({Changes} change(s))", docFile.RelativePath, changes);
 			}
 		}
 
@@ -95,7 +76,10 @@ public class FormatService(
 		_logger.LogInformation("Formatting complete:");
 		_logger.LogInformation("  Files processed: {Processed}", totalFilesProcessed);
 		_logger.LogInformation("  Files modified: {Modified}", totalFilesModified);
-		_logger.LogInformation("  Total replacements: {Replacements}", totalReplacements);
+
+		// Log stats for each formatter that made changes
+		foreach (var (formatterName, changeCount) in formatterStats.Where(kvp => kvp.Value > 0))
+			_logger.LogInformation("  {Formatter} fixes: {Count}", formatterName, changeCount);
 
 		if (isDryRun && totalFilesModified > 0)
 		{
@@ -106,37 +90,36 @@ public class FormatService(
 		return true;
 	}
 
-	private static async Task<(bool modified, int replacements)> ProcessFile(IFileInfo file, bool isDryRun, IFileSystem fs)
+	private static async Task<(bool modified, int totalChanges)> ProcessFile(
+		IFileInfo file,
+		bool isDryRun,
+		IFileSystem fs,
+		Dictionary<string, int> stats
+	)
 	{
 		var content = await fs.File.ReadAllTextAsync(file.FullName);
-		var modified = false;
-		var replacements = 0;
+		var originalContent = content;
+		var totalChanges = 0;
 
-		// Check if file contains any irregular whitespace
-		if (content.AsSpan().IndexOfAny(IrregularWhitespaceSearchValues) == -1)
-			return (false, 0);
-
-		// Replace irregular whitespace with regular spaces
-		var sb = new StringBuilder(content.Length);
-		foreach (var c in content)
+		// Apply each formatter in sequence
+		foreach (var formatter in Formatters)
 		{
-			if (IrregularWhitespaceSearchValues.Contains(c))
+			var (formattedContent, changes) = formatter.Format(content);
+
+			if (changes > 0)
 			{
-				_ = sb.Append(' ');
-				replacements++;
-				modified = true;
-			}
-			else
-			{
-				_ = sb.Append(c);
+				content = formattedContent;
+				totalChanges += changes;
+				stats[formatter.Name] += changes;
 			}
 		}
 
+		var modified = content != originalContent;
+
+		// Only write if content changed and not in dry-run mode
 		if (modified && !isDryRun)
-		{
-			await fs.File.WriteAllTextAsync(file.FullName, sb.ToString());
-		}
+			await fs.File.WriteAllTextAsync(file.FullName, content);
 
-		return (modified, replacements);
+		return (modified, totalChanges);
 	}
 }

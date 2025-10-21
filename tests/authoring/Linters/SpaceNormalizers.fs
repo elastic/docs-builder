@@ -2,13 +2,13 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-module ``AuthoringTests``.``linters``.``white space normalizers``
+module ``AuthoringTests``.``linters``.``space normalizers``
 
 open Xunit
 open authoring
 
 
-type ``white space detection`` () =
+type ``space detection`` () =
 
     static let markdown = Setup.Markdown $"""
 not a{'\u000B'}space
@@ -20,4 +20,4 @@ not a{'\u000B'}space
 
     [<Fact>]
     let ``emits a hint when a bad space is used`` () =
-        markdown |> hasHint "Irregular whitespace character detected: U+000B (Line Tabulation (VT)). This may impair Markdown rendering."
+        markdown |> hasHint "Irregular space detected. Run 'docs-builder format' to automatically fix all instances."
