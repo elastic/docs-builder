@@ -82,13 +82,15 @@ public class SpaceNormalizerParser : InlineParser
 		var context = processor.GetContext();
 		var filePath = context.MarkdownSourcePath.FullName;
 
+		if (FilesWithHintEmitted.Contains(filePath))
+        	return;
 		lock (FilesWithHintEmitted)
 		{
-			if (!FilesWithHintEmitted.Contains(filePath))
-			{
-				_ = FilesWithHintEmitted.Add(filePath);
-				processor.EmitHint(processor.Inline, 1, "Irregular space detected. Run 'docs-builder format' to automatically fix all instances.");
-			}
+			if (FilesWithHintEmitted.Contains(filePath))
+				return;
+			
+			_ = FilesWithHintEmitted.Add(filePath);
+			processor.EmitHint(processor.Inline, 1, "Irregular space detected. Run 'docs-builder format' to automatically fix all instances.");
 		}
 
 		slice.SkipChar();
