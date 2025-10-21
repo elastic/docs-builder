@@ -2,6 +2,10 @@
 
 This section will help you understand how to update and contribute to our documentation post-migration.
 
+:::{tip}
+Every documentation page includes a **Learn how to contribute** link in the sidebar that brings you directly to this guide. Use it whenever you want to contribute!
+:::
+
 ## Updating documentation
 
 :::{include} _snippets/two-systems.md
