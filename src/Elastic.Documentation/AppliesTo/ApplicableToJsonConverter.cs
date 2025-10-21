@@ -74,8 +74,6 @@ public class ApplicableToJsonConverter : JsonConverter<ApplicableTo>
 						var versionStr = reader.GetString();
 						if (versionStr != null && SemVersionConverter.TryParse(versionStr, out var v))
 							version = v;
-						else if (versionStr == "all" || string.IsNullOrEmpty(versionStr))
-							version = AllVersions.Instance;
 						break;
 				}
 			}
@@ -264,11 +262,8 @@ public class ApplicableToJsonConverter : JsonConverter<ApplicableTo>
 			writer.WriteString("lifecycle", lifecycleName);
 
 			// Write version
-			var isAllVersions = applicability.Version is null || ReferenceEquals(applicability.Version, AllVersions.Instance);
-			if (!isAllVersions)
-				writer.WriteString("version", applicability.Version!.ToString());
-			else
-				writer.WriteString("version", "all");
+			if (applicability.Version is not null)
+				writer.WriteString("version", applicability.Version.ToString());
 
 			writer.WriteEndObject();
 		}

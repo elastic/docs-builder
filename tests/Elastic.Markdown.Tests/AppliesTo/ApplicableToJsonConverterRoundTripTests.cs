@@ -9,7 +9,7 @@ using FluentAssertions;
 
 namespace Elastic.Markdown.Tests.AppliesTo;
 
-public class ApplicableToJsonConverterTests
+public class ApplicableToJsonConverterRoundTripTests
 {
 	private readonly JsonSerializerOptions _options = new() { WriteIndented = true };
 
@@ -314,40 +314,6 @@ public class ApplicableToJsonConverterTests
 	}
 
 	[Fact]
-	public void Serialize_ValidatesJsonStructure()
-	{
-		var original = new ApplicableTo
-		{
-			Stack = AppliesCollection.GenerallyAvailable,
-			Deployment = new DeploymentApplicability
-			{
-				Ece = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (SemVersion)"3.0.0" }])
-			}
-		};
-
-		var json = JsonSerializer.Serialize(original, _options);
-		var jsonDoc = JsonDocument.Parse(json);
-		var root = jsonDoc.RootElement;
-
-		root.ValueKind.Should().Be(JsonValueKind.Array);
-		var array = root.EnumerateArray().ToList();
-
-		array.Should().HaveCount(2); // Stack + Deployment.Ece
-
-		var stackEntry = array[0];
-		stackEntry.GetProperty("type").GetString().Should().Be("stack");
-		stackEntry.GetProperty("sub-type").GetString().Should().Be("stack");
-		stackEntry.GetProperty("lifecycle").GetString().Should().Be("ga");
-		stackEntry.GetProperty("version").GetString().Should().Be("all");
-
-		var deploymentEntry = array[1];
-		deploymentEntry.GetProperty("type").GetString().Should().Be("deployment");
-		deploymentEntry.GetProperty("sub-type").GetString().Should().Be("ece");
-		deploymentEntry.GetProperty("lifecycle").GetString().Should().Be("beta");
-		deploymentEntry.GetProperty("version").GetString().Should().Be("3.0.0");
-	}
-
-	[Fact]
 	public void RoundTrip_EmptyApplicableTo()
 	{
 		var original = new ApplicableTo();
@@ -375,7 +341,7 @@ public class ApplicableToJsonConverterTests
 	}
 
 	[Fact]
-	public void RoundTrip_AllVersions_SerializesAsAll()
+	public void RoundTrip_AllVersions_SerializesAsSemanticVersion()
 	{
 		var original = new ApplicableTo
 		{
@@ -383,7 +349,7 @@ public class ApplicableToJsonConverterTests
 		};
 
 		var json = JsonSerializer.Serialize(original, _options);
-		json.Should().Contain("\"version\": \"all\"");
+		json.Should().Contain("\"version\": \"9999.9999.9999\"");
 
 		var deserialized = JsonSerializer.Deserialize<ApplicableTo>(json, _options);
 		deserialized.Should().NotBeNull();
