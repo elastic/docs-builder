@@ -230,14 +230,22 @@ public class DocumentationSetFile : TableOfContentsFile
 		}
 
 		// Children of a file should be resolved in the same directory as the parent file.
-		// If we're at top level (parentPath is empty), extract directory from the file path.
-		// If we're in a folder/TOC context (parentPath is non-empty), use parentPath directly.
+		// Special handling for FolderIndexFileRef (folder+file combinations from YAML):
+		// - These are created when both folder and file keys exist (e.g., "folder: path/to/dir, file: index.md")
+		// - Children should resolve to the folder path, not the parent TOC path
 		// Examples:
 		// - Top level: "nest/guide.md" (parentPath="") → children resolve to "nest/"
-		// - In folder: folder "guides" with "clients/getting-started.md" (parentPath="guides") → children resolve to "guides/"
-		// This ensures parent file's subdirectory path doesn't affect children when inside a folder/TOC.
+		// - Simple file in folder: "guide.md" (parentPath="guides") → children resolve to "guides/"
+		// - User file with subpath: "clients/getting-started.md" (parentPath="guides") → children resolve to "guides/"
+		// - Folder+file (FolderIndexFileRef): "observability/apm/apm-server/index.md" → children resolve to directory of fullPath
 		string parentPathForChildren;
-		if (string.IsNullOrEmpty(parentPath))
+		if (fileRef is FolderIndexFileRef)
+		{
+			// Folder+file combination - extract directory from fullPath
+			var lastSlashIndex = fullPath.LastIndexOf('/');
+			parentPathForChildren = lastSlashIndex >= 0 ? fullPath[..lastSlashIndex] : "";
+		}
+		else if (string.IsNullOrEmpty(parentPath))
 		{
 			// Top level - extract directory from file path
 			var lastSlashIndex = fullPath.LastIndexOf('/');
@@ -251,9 +259,13 @@ public class DocumentationSetFile : TableOfContentsFile
 
 		var resolvedChildren = ResolveTableOfContents(collector, fileRef.Children, baseDirectory, fileSystem, parentPathForChildren, context);
 
-		return fileRef is IndexFileRef
-			? new IndexFileRef(fullPath, fileRef.Hidden, resolvedChildren, context)
-			: new FileRef(fullPath, fileRef.Hidden, resolvedChildren, context);
+		// Preserve the specific type when creating the resolved reference
+		return fileRef switch
+		{
+			FolderIndexFileRef => new FolderIndexFileRef(fullPath, fileRef.Hidden, resolvedChildren, context),
+			IndexFileRef => new IndexFileRef(fullPath, fileRef.Hidden, resolvedChildren, context),
+			_ => new FileRef(fullPath, fileRef.Hidden, resolvedChildren, context)
+		};
 	}
 
 	/// <summary>
@@ -419,6 +431,13 @@ public record FileRef(string Path, bool Hidden, IReadOnlyCollection<ITableOfCont
 public record IndexFileRef(string Path, bool Hidden, IReadOnlyCollection<ITableOfContentsItem> Children, string Context)
 	: FileRef(Path, Hidden, Children, Context);
 
+/// <summary>
+/// Represents a file reference created from a folder+file combination in YAML (e.g., "folder: path/to/dir, file: index.md").
+/// Children of this file should resolve relative to the folder path, not the parent TOC path.
+/// </summary>
+public record FolderIndexFileRef(string Path, bool Hidden, IReadOnlyCollection<ITableOfContentsItem> Children, string Context)
+	: IndexFileRef(Path, Hidden, Children, Context);
+
 public record CrossLinkRef(Uri CrossLinkUri, string? Title, bool Hidden, IReadOnlyCollection<ITableOfContentsItem> Children, string Context)
 	: ITableOfContentsItem
 {
@@ -517,14 +536,16 @@ public class TocItemYamlConverter : IYamlTypeConverter
 		const string placeholderContext = "";
 
 		// Check for folder+file combination (e.g., folder: path, file: index.md)
-		// This represents a folder with an index file - treat as FileRef with combined path
+		// This represents a folder with an index file - treat as FolderIndexFileRef with combined path
+		// This special type ensures children resolve relative to the folder path
 		if (dictionary.TryGetValue("folder", out var folderPath) && folderPath is string folder &&
 			dictionary.TryGetValue("file", out var filePath) && filePath is string file)
 		{
 			// Combine folder and file paths
 			var combinedPath = $"{folder}/{file}";
+			// Use FolderIndexFileRef for index.md, regular FileRef for other files
 			return file == "index.md"
-				? new IndexFileRef(combinedPath, false, children, placeholderContext)
+				? new FolderIndexFileRef(combinedPath, false, children, placeholderContext)
 				: new FileRef(combinedPath, false, children, placeholderContext);
 		}
 
