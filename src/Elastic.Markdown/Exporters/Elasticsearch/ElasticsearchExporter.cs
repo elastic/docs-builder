@@ -183,7 +183,7 @@ public abstract class ElasticsearchExporter<TChannelOptions, TChannel> : IDispos
 		""";
 
 	protected static string CreateMapping(string? inferenceId) =>
-		$$$$""""
+		$$"""
 		  {
 		    "properties": {
 		      "url" : {
@@ -229,7 +229,7 @@ public abstract class ElasticsearchExporter<TChannelOptions, TChannel> : IDispos
 		          "keyword": {
 		            "type": "keyword"
 		          }
-		          {{{{(!string.IsNullOrWhiteSpace(inferenceId) ? $$""", "semantic_text": {{{InferenceMapping(inferenceId)}}}""" : "")}}}}
+		          {{(!string.IsNullOrWhiteSpace(inferenceId) ? $$""", "semantic_text": {{{InferenceMapping(inferenceId)}}}""" : "")}}
 		        }
 		      },
 		      "url_segment_count": {
@@ -243,10 +243,10 @@ public abstract class ElasticsearchExporter<TChannelOptions, TChannel> : IDispos
 		        "search_analyzer": "highlight_analyzer",
 		        "term_vector": "with_positions_offsets"
 		      }
-		      {{{{(!string.IsNullOrWhiteSpace(inferenceId) ? AbstractInferenceMapping(inferenceId) : AbstractMapping())}}}}
+		      {{(!string.IsNullOrWhiteSpace(inferenceId) ? AbstractInferenceMapping(inferenceId) : AbstractMapping())}}
 		    }
 		  }
-		  """";
+		  """;
 
 	private static string AbstractMapping() =>
 		"""
