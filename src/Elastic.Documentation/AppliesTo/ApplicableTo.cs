@@ -34,6 +34,7 @@ public interface IApplicableToElement
 }
 
 [YamlSerializable]
+[JsonConverter(typeof(ApplicableToJsonConverter))]
 public record ApplicableTo
 {
 	[YamlMember(Alias = "stack")]
