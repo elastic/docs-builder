@@ -4,7 +4,6 @@
 
 using System.Text.Json.Serialization;
 using Elastic.Documentation.AppliesTo;
-using Elastic.Documentation.Extensions;
 
 namespace Elastic.Documentation.Search;
 
