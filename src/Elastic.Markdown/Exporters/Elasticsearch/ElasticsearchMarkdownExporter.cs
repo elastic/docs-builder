@@ -3,9 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using Elastic.Documentation.AppliesTo;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Synonyms;
 using Elastic.Documentation.Diagnostics;
