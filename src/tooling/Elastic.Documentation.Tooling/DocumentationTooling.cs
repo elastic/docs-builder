@@ -77,7 +77,7 @@ public static class DocumentationTooling
 				var versionsConfiguration = sp.GetRequiredService<VersionsConfiguration>();
 				var products = sp.GetRequiredService<ProductsConfiguration>();
 				var legacyUrlMappings = sp.GetRequiredService<LegacyUrlMappingConfiguration>();
-				var synonyms = sp.GetRequiredService<SynonymsConfiguration>(); // Add this line
+				var synonyms = sp.GetRequiredService<SynonymsConfiguration>();
 				return new ConfigurationContext
 				{
 					ConfigurationFileProvider = configurationFileProvider,
