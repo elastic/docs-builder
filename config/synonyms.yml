@@ -10,6 +10,7 @@ synonyms:
   - [ "apm", "application performance monitoring" ]
   - [ "ecctl", "elastic cloud control" ]
   - [ "opentelemetry", "otel" ]
+  - [ "elastic distributions of opentelemetry", "edot" ]
   - [ "eck", "elastic cloud on kubernetes" ]
   - [ "ece", "elastic cloud enterprise" ]
   - [ "elv2", "elastic license v2" ]
