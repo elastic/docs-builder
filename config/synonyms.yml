@@ -6,6 +6,7 @@ synonyms:
   - [ "es", "elasticsearch" ]
   - [ "elastic learned sparse encoder", "elser" ]
   - [ "ccs", "cross cluster search", "cross-cluster search", "spaghetti" ]
+  - [ "cps", "cross project search", "cross-project search" ]
   - [ "apm", "application performance monitoring" ]
   - [ "ecctl", "elastic cloud control" ]
   - [ "opentelemetry", "otel" ]
