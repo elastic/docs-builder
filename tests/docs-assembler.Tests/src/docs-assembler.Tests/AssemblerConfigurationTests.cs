@@ -71,6 +71,7 @@ public class AssemblerConfigurationTests
 		Context.ConfigurationFileProvider.NavigationFile.Name.Should().Be("navigation.yml");
 		Context.ConfigurationFileProvider.AssemblerFile.Name.Should().Be("assembler.yml");
 		Context.ConfigurationFileProvider.LegacyUrlMappingsFile.Name.Should().Be("legacy-url-mappings.yml");
+		Context.ConfigurationFileProvider.SynonymsFile.Name.Should().Be("synonyms.yml");
 	}
 
 	[Fact]

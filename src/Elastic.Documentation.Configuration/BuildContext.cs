@@ -8,6 +8,7 @@ using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Configuration.Synonyms;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 
@@ -34,6 +35,7 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 
 	public ProductsConfiguration ProductsConfiguration { get; }
 	public LegacyUrlMappingConfiguration LegacyUrlMappings { get; }
+	public SynonymsConfiguration SynonymsConfiguration { get; }
 
 	public IFileInfo ConfigurationPath { get; }
 
@@ -85,6 +87,7 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 		ReadFileSystem = readFileSystem;
 		WriteFileSystem = writeFileSystem;
 		AvailableExporters = availableExporters;
+		SynonymsConfiguration = configurationContext.SynonymsConfiguration;
 		VersionsConfiguration = configurationContext.VersionsConfiguration;
 		ConfigurationFileProvider = configurationContext.ConfigurationFileProvider;
 		ProductsConfiguration = configurationContext.ProductsConfiguration;

@@ -8,6 +8,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Configuration.Synonyms;
 using Elastic.Documentation.Configuration.Versions;
 
 namespace Elastic.Markdown.Tests;
@@ -60,6 +61,7 @@ public static class TestHelpers
 				}
 			}.ToFrozenDictionary()
 		};
+		var synonyms = new SynonymsConfiguration { Synonyms = [] };
 		return new ConfigurationContext
 		{
 			Endpoints = new DocumentationEndpoints
@@ -69,6 +71,7 @@ public static class TestHelpers
 			ConfigurationFileProvider = new ConfigurationFileProvider(new TestLoggerFactory(TestContext.Current.TestOutputHelper), fileSystem),
 			VersionsConfiguration = versionsConfiguration,
 			ProductsConfiguration = productsConfiguration,
+			SynonymsConfiguration = synonyms,
 			LegacyUrlMappings = new LegacyUrlMappingConfiguration { Mappings = [] },
 		};
 	}
