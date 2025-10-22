@@ -44,18 +44,18 @@ public class DocumentationSetNavigation<TModel>
 		IDocumentationFileFactory<TModel> factory,
 		IRootNavigationItem<INavigationModel, INavigationItem>? parent = null,
 		IRootNavigationItem<INavigationModel, INavigationItem>? root = null,
-		IPathPrefixProvider? pathPrefixProvider = null
+		string? pathPrefix = null
 	)
 	{
 		_factory = factory;
+		_pathPrefix = pathPrefix ?? string.Empty;
 		// Initialize root properties
 		NavigationRoot = root ?? this;
 		Parent = parent;
 		Depth = 0;
 		Hidden = false;
 		IsCrossLink = false;
-		PathPrefixProvider = pathPrefixProvider ?? this;
-		_pathPrefix = pathPrefixProvider?.PathPrefix ?? string.Empty;
+		PathPrefixProvider = this;
 		Id = ShortId.Create(documentationSet.Project ?? "root");
 		IsUsingNavigationDropdown = documentationSet.Features.PrimaryNav ?? false;
 		Git = context.Git;

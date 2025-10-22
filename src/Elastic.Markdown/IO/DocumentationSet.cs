@@ -5,6 +5,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Frozen;
 using System.IO.Abstractions;
+using System.Net.Mime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Elastic.Documentation;
@@ -74,7 +75,7 @@ public class DocumentationSet : IPositionalNavigation
 		MarkdownParser = new MarkdownParser(context, resolver);
 
 		var fileFactory = new MarkdownFileFactory(context, MarkdownParser, EnabledExtensions);
-		Navigation = new DocumentationSetNavigation<MarkdownFile>(context.ConfigurationYaml, context, fileFactory);
+		Navigation = new DocumentationSetNavigation<MarkdownFile>(context.ConfigurationYaml, context, fileFactory, pathPrefix: context.UrlPathPrefix);
 
 		Name = Context.Git != GitCheckoutInformation.Unavailable
 			? Context.Git.RepositoryName
