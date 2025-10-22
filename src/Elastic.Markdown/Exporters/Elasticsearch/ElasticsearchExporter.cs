@@ -93,8 +93,8 @@ public abstract class ElasticsearchExporter<TChannelOptions, TChannel> : IDispos
 		options.ExportBufferCallback = () =>
 		{
 			var count = Interlocked.Increment(ref i);
-			_logger.LogInformation("Exported {Count} documents to Elasticsearch index {Format}",
-				count * endpoint.BufferSize, string.Format(options.IndexFormat, "latest"));
+			_logger.LogInformation("Exported {Count} documents to Elasticsearch index {IndexName}",
+				count * endpoint.BufferSize, Channel?.IndexName ?? string.Format(options.IndexFormat, "latest"));
 		};
 		options.ExportExceptionCallback = e =>
 		{
@@ -103,7 +103,7 @@ public abstract class ElasticsearchExporter<TChannelOptions, TChannel> : IDispos
 		};
 		options.ServerRejectionCallback = items => _logger.LogInformation("Server rejection: {Rejection}", items.First().Item2);
 		Channel = createChannel(options);
-		_logger.LogInformation($"Bootstrapping {nameof(SemanticIndexChannel<DocumentationDocument>)} Elasticsearch target for indexing");
+		_logger.LogInformation("Created {Channel} Elasticsearch target for indexing", typeof(TChannel).Name);
 	}
 
 	public async ValueTask<bool> StopAsync(Cancel ctx = default)
@@ -190,6 +190,34 @@ public abstract class ElasticsearchExporter<TChannelOptions, TChannel> : IDispos
 		        "fields": {
 		          "match": { "type": "text" },
 		          "prefix": { "type": "text", "analyzer" : "hierarchy_analyzer" }
+		        }
+		      },
+		      "applies_to" : {
+		        "type" : "nested",
+		        "properties" : {
+		          "type" : { "type" : "keyword" },
+		          "sub-type" : { "type" : "keyword" },
+		          "lifecycle" : { "type" : "keyword" },
+		          "version" : { "type" : "version" }
+		        }
+		      },
+		      "parents" : {
+		        "type" : "object",
+		        "properties" : {
+		          "url" : {
+		            "type": "keyword",
+		            "fields": {
+		              "match": { "type": "text" },
+		              "prefix": { "type": "text", "analyzer" : "hierarchy_analyzer" }
+		            }
+		          },
+		          "title": {
+		            "type": "text",
+		            "search_analyzer": "synonyms_analyzer",
+		            "fields": {
+		              "keyword": { "type": "keyword" }
+		            }
+		          }
 		        }
 		      },
 		      "hash" : { "type" : "keyword" },
