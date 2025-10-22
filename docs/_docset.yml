@@ -70,6 +70,7 @@ toc:
           - file: products.md
           - file: versions.md
           - file: legacy-url-mappings.md
+          - file: synonyms.md
       - folder: content-set
         children:
           - file: index.md
