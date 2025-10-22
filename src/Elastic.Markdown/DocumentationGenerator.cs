@@ -7,6 +7,7 @@ using System.Text.Json;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
+using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Serialization;
@@ -72,7 +73,7 @@ public class DocumentationGenerator
 		Context = docSet.Context;
 		CrossLinkResolver = docSet.CrossLinkResolver;
 		HtmlWriter = new HtmlWriter(DocumentationSet, _writeFileSystem, new DescriptionGenerator(), navigationHtmlWriter, legacyUrlMapper,
-			positionalNavigation);
+			positionalNavigation, new ProductVersionInferrerService(DocumentationSet.Context.ProductsConfiguration, DocumentationSet.Context.VersionsConfiguration, DocumentationSet.Context.Git.RepositoryName));
 		_documentationFileExporter =
 			docSet.Context.AvailableExporters.Contains(Exporter.Html)
 				? docSet.EnabledExtensions.FirstOrDefault(e => e.FileExporter != null)?.FileExporter
