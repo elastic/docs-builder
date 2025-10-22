@@ -38,7 +38,7 @@ function initMath() {
         content.includes("\n");
 
       // Clean up common LaTeX delimiters
-      let cleanContent = content
+      const cleanContent = content
         .replace(/^\$\$|\$\$$/g, "") // Remove $$ delimiters
         .replace(/^\\\[|\\\]$/g, "") // Remove \[ \] delimiters
         .trim();
