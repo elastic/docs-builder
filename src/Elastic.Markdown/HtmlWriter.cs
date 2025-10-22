@@ -25,7 +25,8 @@ public class HtmlWriter(
 	IDescriptionGenerator descriptionGenerator,
 	INavigationHtmlWriter? navigationHtmlWriter = null,
 	ILegacyUrlMapper? legacyUrlMapper = null,
-	IPositionalNavigation? positionalNavigation = null
+	IPositionalNavigation? positionalNavigation = null,
+	IVersionInferrerService? versionInferrerService = null
 )
 	: IMarkdownStringRenderer
 {
@@ -37,6 +38,8 @@ public class HtmlWriter(
 	private StaticFileContentHashProvider StaticFileContentHashProvider { get; } = new(new EmbeddedOrPhysicalFileProvider(documentationSet.Context));
 	private ILegacyUrlMapper LegacyUrlMapper { get; } = legacyUrlMapper ?? new NoopLegacyUrlMapper();
 	private IPositionalNavigation PositionalNavigation { get; } = positionalNavigation ?? documentationSet;
+
+	private IVersionInferrerService VersionInferrerService { get; } = versionInferrerService ?? new NoopVersionInferrer();
 
 	/// <inheritdoc />
 	public string Render(string markdown, IFileInfo? source)
@@ -102,9 +105,10 @@ public class HtmlWriter(
 			fullNavigationRenderResult
 		);
 
-		var currentBaseVersion = legacyPages is { Count: > 0 }
-			? $"{legacyPages.ElementAt(0).Product.VersioningSystem?.Base.Major}.{legacyPages.ElementAt(0).Product.VersioningSystem?.Base.Minor}+"
-			: $"{DocumentationSet.Context.VersionsConfiguration.VersioningSystems[VersioningSystemId.Stack].Base.Major}.{DocumentationSet.Context.VersionsConfiguration.VersioningSystems[VersioningSystemId.Stack].Base.Minor}+";
+		var pageVersioning = VersionInferrerService.InferVersion(DocumentationSet.Context.Git.RepositoryName, legacyPages);
+
+		var currentBaseVersion = $"{pageVersioning.Base.Major}.{pageVersioning.Base.Minor}+";
+
 		//TODO should we even distinctby
 		var breadcrumbs = parents.Reverse().DistinctBy(p => p.Url).ToArray();
 		var breadcrumbsList = CreateStructuredBreadcrumbsData(markdown, breadcrumbs);
