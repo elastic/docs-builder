@@ -28,4 +28,5 @@ namespace Elastic.Documentation.Serialization;
 [JsonSerializable(typeof(Applicability))]
 [JsonSerializable(typeof(ProductLifecycle))]
 [JsonSerializable(typeof(SemVersion))]
+[JsonSerializable(typeof(string[]))]
 public sealed partial class SourceGenerationContext : JsonSerializerContext;

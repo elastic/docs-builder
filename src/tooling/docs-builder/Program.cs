@@ -38,6 +38,7 @@ app.Add<DiffCommands>("diff");
 app.Add<MoveCommand>("mv");
 app.Add<ServeCommand>("serve");
 app.Add<IndexCommand>("index");
+app.Add<FormatCommand>("format");
 
 //assembler commands
 

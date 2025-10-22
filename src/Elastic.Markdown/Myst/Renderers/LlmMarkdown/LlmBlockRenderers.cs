@@ -9,6 +9,7 @@ using Elastic.Markdown.Myst.Directives.Admonition;
 using Elastic.Markdown.Myst.Directives.Diagram;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
+using Elastic.Markdown.Myst.Directives.Math;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Markdig.Extensions.DefinitionLists;
 using Markdig.Extensions.Tables;
@@ -393,6 +394,9 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 			case SettingsBlock settingsBlock:
 				WriteSettingsBlock(renderer, settingsBlock);
 				return;
+			case MathBlock mathBlock:
+				WriteMathBlock(renderer, mathBlock);
+				return;
 		}
 
 		// Ensure single empty line before directive
@@ -602,6 +606,32 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 					renderer.EnsureBlockSpacing();
 				}
 			}
+		}
+
+		renderer.EnsureLine();
+	}
+
+	private static void WriteMathBlock(LlmMarkdownRenderer renderer, MathBlock block)
+	{
+		renderer.EnsureBlockSpacing();
+
+		// Render math content in a format that's clear for LLMs
+		// Use LaTeX notation that LLMs can understand and process
+		var mathContent = block.Content ?? "";
+
+		// For display math, use block-level formatting
+		if (block.IsDisplayMath)
+		{
+			renderer.WriteLine("```math");
+			renderer.WriteLine(mathContent);
+			renderer.WriteLine("```");
+		}
+		else
+		{
+			// For inline math, use inline code formatting
+			renderer.Write("`");
+			renderer.Write(mathContent);
+			renderer.Write("`");
 		}
 
 		renderer.EnsureLine();
