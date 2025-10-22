@@ -18,7 +18,7 @@ Redirects are also configured at the site-level. See [](../../contribute/redirec
 
 ## Synonyms
 
-Synonyms applied to our Serverless observability project are declared as a site-level configuration. See [](../../contribute/synonyms.md) for more information.
+Synonyms applied to our Serverless observability project are declared as a site-level configuration. See [](./synonyms.md) for more information.
 
 ## V3 site-level diagram
 
