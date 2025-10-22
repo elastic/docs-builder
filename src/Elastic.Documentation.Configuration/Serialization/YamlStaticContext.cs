@@ -5,6 +5,7 @@
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Configuration.Synonyms;
 using Elastic.Documentation.Configuration.Versions;
 using YamlDotNet.Serialization;
 
@@ -23,4 +24,5 @@ namespace Elastic.Documentation.Configuration.Serialization;
 [YamlSerializable(typeof(ProductDto))]
 [YamlSerializable(typeof(LegacyUrlMappingDto))]
 [YamlSerializable(typeof(LegacyUrlMappingConfigDto))]
+[YamlSerializable(typeof(SynonymsConfigDto))] // Add this line
 public partial class YamlStaticContext;

@@ -9,6 +9,7 @@ using Actions.Core.Services;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Configuration.Synonyms;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ServiceDefaults;
@@ -76,13 +77,15 @@ public static class DocumentationTooling
 				var versionsConfiguration = sp.GetRequiredService<VersionsConfiguration>();
 				var products = sp.GetRequiredService<ProductsConfiguration>();
 				var legacyUrlMappings = sp.GetRequiredService<LegacyUrlMappingConfiguration>();
+				var synonyms = sp.GetRequiredService<SynonymsConfiguration>(); // Add this line
 				return new ConfigurationContext
 				{
 					ConfigurationFileProvider = configurationFileProvider,
 					VersionsConfiguration = versionsConfiguration,
 					Endpoints = endpoints,
 					ProductsConfiguration = products,
-					LegacyUrlMappings = legacyUrlMappings
+					LegacyUrlMappings = legacyUrlMappings,
+					SynonymsConfiguration = synonyms
 				};
 			});
 

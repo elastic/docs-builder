@@ -3,7 +3,10 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Synonyms;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Search;
 using Elastic.Ingest.Elasticsearch;
@@ -21,6 +24,16 @@ namespace Elastic.Markdown.Exporters.Elasticsearch;
 [EnumExtensions]
 public enum IngestStrategy { Reindex, Multiplex }
 
+internal sealed record SynonymSetRequest
+{
+	[JsonPropertyName("synonyms")]
+	public required string[] Synonyms { get; init; }
+}
+
+[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower)]
+[JsonSerializable(typeof(SynonymSetRequest))]
+internal sealed partial class SynonymSerializerContext : JsonSerializerContext { };
+
 public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 {
 	private readonly IDiagnosticsCollector _collector;
@@ -34,11 +47,14 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 	private readonly DistributedTransport _transport;
 	private IngestStrategy _indexStrategy;
 
+	private readonly IReadOnlyCollection<string> _synonyms;
+
 	public ElasticsearchMarkdownExporter(
 		ILoggerFactory logFactory,
 		IDiagnosticsCollector collector,
 		DocumentationEndpoints endpoints,
-		string indexNamespace
+		string indexNamespace,
+		SynonymsConfiguration synonyms
 	)
 	{
 		_collector = collector;
@@ -72,7 +88,7 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 		};
 
 		_transport = new DistributedTransport(configuration);
-
+		_synonyms = synonyms.Synonyms;
 		_lexicalChannel = new ElasticsearchLexicalExporter(logFactory, collector, es, indexNamespace, _transport);
 		_semanticChannel = new ElasticsearchSemanticExporter(logFactory, collector, es, indexNamespace, _transport);
 	}
@@ -80,6 +96,7 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 	/// <inheritdoc />
 	public async ValueTask StartAsync(Cancel ctx = default)
 	{
+		await PublishSynonymsAsync("docs", ctx);
 		_ = await _lexicalChannel.Channel.BootstrapElasticsearchAsync(BootstrapMethod.Failure, null, ctx);
 
 		var semanticIndex = _semanticChannel.Channel.IndexName;
@@ -100,6 +117,25 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 			}
 		}
 		_logger.LogInformation("Using {IndexStrategy} to sync lexical index to semantic index", _indexStrategy.ToStringFast(true));
+	}
+
+	private async Task PublishSynonymsAsync(string name, CancellationToken ctx)
+	{
+		_logger.LogInformation("Publishing synonym set '{Name}' to Elasticsearch", name);
+
+		var requestBody = new SynonymSetRequest { Synonyms = _synonyms.ToArray() };
+		var json = JsonSerializer.Serialize(requestBody, SynonymSerializerContext.Default.SynonymSetRequest);
+
+		var response = await _transport.PutAsync<StringResponse>($"_synonyms/{name}", PostData.String(json), ctx);
+
+		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
+		{
+			_collector.EmitGlobalError($"Failed to publish synonym set '{name}'. Reason: {response.ApiCallDetails.OriginalException?.Message ?? response.ToString()}");
+		}
+		else
+		{
+			_logger.LogInformation("Successfully published synonym set '{Name}'.", name);
+		}
 	}
 
 	private async ValueTask<long> CountAsync(string index, string body, Cancel ctx = default)

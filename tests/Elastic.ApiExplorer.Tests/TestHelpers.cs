@@ -8,6 +8,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Configuration.Synonyms;
 using Elastic.Documentation.Configuration.Versions;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -15,7 +16,7 @@ namespace Elastic.ApiExplorer.Tests;
 
 public static class TestHelpers
 {
-	public static IConfigurationContext CreateConfigurationContext(IFileSystem fileSystem, VersionsConfiguration? versionsConfiguration = null, ProductsConfiguration? productsConfiguration = null)
+	public static IConfigurationContext CreateConfigurationContext(IFileSystem fileSystem, VersionsConfiguration? versionsConfiguration = null, ProductsConfiguration? productsConfiguration = null, SynonymsConfiguration? synonyms = null)
 	{
 		versionsConfiguration ??= new VersionsConfiguration
 		{
@@ -45,6 +46,7 @@ public static class TestHelpers
 				}
 			}.ToFrozenDictionary()
 		};
+		synonyms = new SynonymsConfiguration { Synonyms = [] };
 		return new ConfigurationContext
 		{
 			Endpoints = new DocumentationEndpoints
@@ -55,6 +57,7 @@ public static class TestHelpers
 			VersionsConfiguration = versionsConfiguration,
 			ProductsConfiguration = productsConfiguration,
 			LegacyUrlMappings = new LegacyUrlMappingConfiguration { Mappings = [] },
+			SynonymsConfiguration = synonyms
 		};
 	}
 }

@@ -33,7 +33,7 @@ public class ElasticsearchLexicalExporter(
 				{ "batch_index_date", d.BatchIndexDate.ToString("o") }
 			}),
 		GetMapping = () => CreateMapping(null),
-		GetMappingSettings = CreateMappingSetting,
+		GetMappingSettings = () => CreateMappingSetting("docs"),
 		IndexFormat =
 			$"{endpoint.IndexNamePrefix.Replace("semantic", "lexical").ToLowerInvariant()}-{indexNamespace.ToLowerInvariant()}-{{0:yyyy.MM.dd.HHmmss}}",
 		ActiveSearchAlias = $"{endpoint.IndexNamePrefix.Replace("semantic", "lexical").ToLowerInvariant()}-{indexNamespace.ToLowerInvariant()}"
@@ -51,7 +51,7 @@ public class ElasticsearchSemanticExporter(
 	{
 		BulkOperationIdLookup = d => d.Url,
 		GetMapping = (inferenceId, _) => CreateMapping(inferenceId),
-		GetMappingSettings = (_, _) => CreateMappingSetting(),
+		GetMappingSettings = (_, _) => CreateMappingSetting("docs"),
 		IndexFormat = $"{endpoint.IndexNamePrefix.ToLowerInvariant()}-{indexNamespace.ToLowerInvariant()}-{{0:yyyy.MM.dd.HHmmss}}",
 		ActiveSearchAlias = $"{endpoint.IndexNamePrefix}-{indexNamespace.ToLowerInvariant()}",
 		IndexNumThreads = endpoint.IndexNumThreads,
@@ -139,9 +139,9 @@ public abstract class ElasticsearchExporter<TChannelOptions, TChannel> : IDispos
 	}
 
 
-	protected static string CreateMappingSetting() =>
+	protected static string CreateMappingSetting(string synonymSetName) =>
 		// language=json
-		"""
+		$$"""
 		{
 		  "analysis": {
 		    "analyzer": {
@@ -163,10 +163,9 @@ public abstract class ElasticsearchExporter<TChannelOptions, TChannel> : IDispos
 		    },
 		    "filter": {
 		      "synonyms_filter": {
-		        "type": "synonym",
-		        "synonyms_set": "docs",
-		        "updateable": true
-		      },
+				  "type": "synonym_graph",
+				  "synonyms_set": "{{synonymSetName}}"
+				  },
 		      "english_stop": {
 		        "type": "stop",
 		        "stopwords": "_english_"
