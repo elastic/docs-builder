@@ -22,7 +22,7 @@ public static class ProductExtensions
 				Id = kvp.Key,
 				DisplayName = kvp.Value.Display,
 				VersioningSystem = versionsConfiguration.GetVersioningSystem(VersionsConfigurationExtensions.ToVersioningSystemId(kvp.Value.Versioning ?? kvp.Key)),
-				Repository = kvp.Value.Repository
+				Repository = kvp.Value.Repository ?? kvp.Key
 			});
 
 		return new ProductsConfiguration
