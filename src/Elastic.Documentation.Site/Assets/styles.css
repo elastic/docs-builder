@@ -224,3 +224,7 @@ body {
 	user-select: none;
 	pointer-events: none;
 }
+
+math {
+	margin-top: 1.5rem;
+}

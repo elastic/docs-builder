@@ -75,7 +75,7 @@ public class AppliesItemBlock(DirectiveBlockParser parser, ParserContext context
 			if (applicableTo != null)
 			{
 				// Use the object's hash for a consistent, unique identifier
-				return $"applies-{Math.Abs(applicableTo.GetHashCode())}";
+				return $"applies-{System.Math.Abs(applicableTo.GetHashCode())}";
 			}
 		}
 		catch

@@ -59,7 +59,7 @@ public class StepBlock(DirectiveBlockParser parser, ParserContext context) : Dir
 			if (allBlocks[i] is HeadingBlock heading)
 			{
 				// Step should be one level deeper than the preceding heading
-				return Math.Min(heading.Level + 1, 6); // Cap at h6
+				return System.Math.Min(heading.Level + 1, 6); // Cap at h6
 			}
 		}
 
