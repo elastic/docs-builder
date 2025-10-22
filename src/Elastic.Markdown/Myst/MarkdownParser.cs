@@ -173,7 +173,7 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 				.UseEnhancedCodeBlocks()
 				.UseHtmxLinkInlineRenderer()
 				.DisableHtml()
-				.UseWhiteSpaceNormalizer()
+				.UseSpaceNormalizer()
 				.UseHardBreaks();
 			_ = builder.BlockParsers.TryRemove<IndentedCodeBlockParser>();
 			PipelineCached = builder.Build();

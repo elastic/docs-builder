@@ -18,6 +18,23 @@ public record ParentDocument
 
 public record DocumentationDocument
 {
+	// TODO make this required once all doc_sets have published again
+	[JsonPropertyName("url")]
+	public string Url { get; set; } = string.Empty;
+
+	/// The date of the batch update this document was part of last.
+	/// This date could be higher than the date_last_updated.
+	[JsonPropertyName("batch_index_date")]
+	public DateTimeOffset BatchIndexDate { get; set; }
+
+	/// The date this document was last updated,
+	[JsonPropertyName("last_updated")]
+	public DateTimeOffset LastUpdated { get; set; }
+
+	// TODO make this required once all doc_sets have published again
+	[JsonPropertyName("hash")]
+	public string Hash { get; set; } = string.Empty;
+
 	[JsonPropertyName("title")]
 	public string? Title { get; set; }
 
@@ -30,14 +47,15 @@ public record DocumentationDocument
 	[JsonPropertyName("links")]
 	public string[] Links { get; set; } = [];
 
-	[JsonPropertyName("url")]
-	public string? Url { get; set; }
-
 	[JsonPropertyName("applies_to")]
 	public ApplicableTo? Applies { get; set; }
 
 	[JsonPropertyName("body")]
 	public string? Body { get; set; }
+
+	// Stripped body is the body with Markdown removed, suitable for search indexing
+	[JsonPropertyName("stripped_body")]
+	public string? StrippedBody { get; set; }
 
 	[JsonPropertyName("url_segment_count")]
 	public int? UrlSegmentCount { get; set; }

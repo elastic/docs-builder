@@ -35,6 +35,7 @@ public class IsolatedIndexService(
 	/// <param name="indexNumThreads">The number of index threads the inference endpoint should use. Defaults: 8</param>
 	/// <param name="bootstrapTimeout">Timeout in minutes for the inference endpoint creation. Defaults: 4</param>
 	/// <param name="indexNamePrefix">The prefix for the computed index/alias names. Defaults: semantic-docs</param>
+	/// <param name="forceReindex">Force reindex strategy to semantic index</param>
 	/// <param name="bufferSize">The number of documents to send to ES as part of the bulk. Defaults: 100</param>
 	/// <param name="maxRetries">The number of times failed bulk items should be retried. Defaults: 3</param>
 	/// <param name="debugMode">Buffer ES request/responses for better error messages and pass ?pretty to all requests</param>
@@ -61,6 +62,7 @@ public class IsolatedIndexService(
 		int? bootstrapTimeout = null,
 		// index options
 		string? indexNamePrefix = null,
+		bool? forceReindex = null,
 		// channel buffer options
 		int? bufferSize = null,
 		int? maxRetries = null,
@@ -128,7 +130,12 @@ public class IsolatedIndexService(
 		if (bootstrapTimeout.HasValue)
 			cfg.BootstrapTimeout = bootstrapTimeout.Value;
 
-		var exporters = new HashSet<Exporter> { noSemantic.GetValueOrDefault(false) ? ElasticsearchNoSemantic : Elasticsearch };
+		if (noSemantic.HasValue)
+			cfg.NoSemantic = noSemantic.Value;
+		if (forceReindex.HasValue)
+			cfg.ForceReindex = forceReindex.Value;
+
+		var exporters = new HashSet<Exporter> { Elasticsearch };
 
 		return await Build(collector, fileSystem,
 			metadataOnly: true, strict: false, path: path, output: null, pathPrefix: null,

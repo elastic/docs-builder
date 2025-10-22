@@ -181,6 +181,9 @@ public class DocumentationGenerator
 		var keysNotInUse = definedKeys.Except(inUse)
 				// versions keys are injected
 				.Where(key => !key.StartsWith("version."))
+				// product keys are injected
+				.Where(key => !key.StartsWith("product."))
+				.Where(key => !key.StartsWith('.'))
 				// reserving context namespace
 				.Where(key => !key.StartsWith("context."))
 				.ToArray();

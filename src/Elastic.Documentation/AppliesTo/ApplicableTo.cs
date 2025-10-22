@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections;
+using System.Text;
 using System.Text.Json.Serialization;
 using Elastic.Documentation.Diagnostics;
 using YamlDotNet.Serialization;
@@ -34,6 +35,7 @@ public interface IApplicableToElement
 }
 
 [YamlSerializable]
+[JsonConverter(typeof(ApplicableToJsonConverter))]
 public record ApplicableTo
 {
 	[YamlMember(Alias = "stack")]
@@ -61,6 +63,58 @@ public record ApplicableTo
 		Deployment = DeploymentApplicability.All,
 		Product = AppliesCollection.GenerallyAvailable
 	};
+
+	public static ApplicableTo Default { get; } = new()
+	{
+		Stack = new AppliesCollection([new Applicability { Version = new SemVersion(9, 0, 0), Lifecycle = ProductLifecycle.GenerallyAvailable }]),
+		Serverless = ServerlessProjectApplicability.All
+	};
+
+	/// <inheritdoc />
+	public override string ToString()
+	{
+		var sb = new StringBuilder();
+		var hasContent = false;
+
+		if (Stack is not null)
+		{
+			_ = sb.Append("stack: ").Append(Stack);
+			hasContent = true;
+		}
+
+		if (Deployment is not null)
+		{
+			if (hasContent)
+				_ = sb.Append(", ");
+			_ = sb.Append("deployment: ").Append(Deployment);
+			hasContent = true;
+		}
+
+		if (Serverless is not null)
+		{
+			if (hasContent)
+				_ = sb.Append(", ");
+			_ = sb.Append("serverless: ").Append(Serverless);
+			hasContent = true;
+		}
+
+		if (Product is not null)
+		{
+			if (hasContent)
+				_ = sb.Append(", ");
+			_ = sb.Append("product: ").Append(Product);
+			hasContent = true;
+		}
+
+		if (ProductApplicability is not null)
+		{
+			if (hasContent)
+				_ = sb.Append(", ");
+			_ = sb.Append("products: ").Append(ProductApplicability);
+		}
+
+		return sb.ToString();
+	}
 }
 
 [YamlSerializable]
@@ -85,6 +139,44 @@ public record DeploymentApplicability
 		Ess = AppliesCollection.GenerallyAvailable,
 		Self = AppliesCollection.GenerallyAvailable
 	};
+
+	/// <inheritdoc />
+	public override string ToString()
+	{
+		var sb = new StringBuilder();
+		var hasContent = false;
+
+		if (Self is not null)
+		{
+			_ = sb.Append("self=").Append(Self);
+			hasContent = true;
+		}
+
+		if (Ece is not null)
+		{
+			if (hasContent)
+				_ = sb.Append(", ");
+			_ = sb.Append("ece=").Append(Ece);
+			hasContent = true;
+		}
+
+		if (Eck is not null)
+		{
+			if (hasContent)
+				_ = sb.Append(", ");
+			_ = sb.Append("eck=").Append(Eck);
+			hasContent = true;
+		}
+
+		if (Ess is not null)
+		{
+			if (hasContent)
+				_ = sb.Append(", ");
+			_ = sb.Append("ess=").Append(Ess);
+		}
+
+		return sb.ToString();
+	}
 }
 
 [YamlSerializable]
@@ -113,6 +205,36 @@ public record ServerlessProjectApplicability
 		Observability = AppliesCollection.GenerallyAvailable,
 		Security = AppliesCollection.GenerallyAvailable
 	};
+
+	/// <inheritdoc />
+	public override string ToString()
+	{
+		var sb = new StringBuilder();
+		var hasContent = false;
+
+		if (Elasticsearch is not null)
+		{
+			_ = sb.Append("elasticsearch=").Append(Elasticsearch);
+			hasContent = true;
+		}
+
+		if (Observability is not null)
+		{
+			if (hasContent)
+				_ = sb.Append(", ");
+			_ = sb.Append("observability=").Append(Observability);
+			hasContent = true;
+		}
+
+		if (Security is not null)
+		{
+			if (hasContent)
+				_ = sb.Append(", ");
+			_ = sb.Append("security=").Append(Security);
+		}
+
+		return sb.ToString();
+	}
 }
 
 [YamlSerializable]
@@ -183,4 +305,46 @@ public record ProductApplicability
 
 	[YamlMember(Alias = "edot-collector")]
 	public AppliesCollection? EdotCollector { get; set; }
+
+	/// <inheritdoc />
+	public override string ToString()
+	{
+		var sb = new StringBuilder();
+		var hasContent = false;
+
+		void AppendProduct(string name, AppliesCollection? value)
+		{
+			if (value is null)
+				return;
+			if (hasContent)
+				_ = sb.Append(", ");
+			_ = sb.Append(name).Append('=').Append(value);
+			hasContent = true;
+		}
+
+		AppendProduct("ecctl", Ecctl);
+		AppendProduct("curator", Curator);
+		AppendProduct("apm-agent-android", ApmAgentAndroid);
+		AppendProduct("apm-agent-dotnet", ApmAgentDotnet);
+		AppendProduct("apm-agent-go", ApmAgentGo);
+		AppendProduct("apm-agent-ios", ApmAgentIos);
+		AppendProduct("apm-agent-java", ApmAgentJava);
+		AppendProduct("apm-agent-node", ApmAgentNode);
+		AppendProduct("apm-agent-php", ApmAgentPhp);
+		AppendProduct("apm-agent-python", ApmAgentPython);
+		AppendProduct("apm-agent-ruby", ApmAgentRuby);
+		AppendProduct("apm-agent-rum-js", ApmAgentRumJs);
+		AppendProduct("edot-ios", EdotIos);
+		AppendProduct("edot-android", EdotAndroid);
+		AppendProduct("edot-dotnet", EdotDotnet);
+		AppendProduct("edot-java", EdotJava);
+		AppendProduct("edot-node", EdotNode);
+		AppendProduct("edot-php", EdotPhp);
+		AppendProduct("edot-python", EdotPython);
+		AppendProduct("edot-cf-aws", EdotCfAws);
+		AppendProduct("edot-cf-azure", EdotCfAzure);
+		AppendProduct("edot-collector", EdotCollector);
+
+		return sb.ToString();
+	}
 }
