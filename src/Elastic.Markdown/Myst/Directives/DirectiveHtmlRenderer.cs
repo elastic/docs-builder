@@ -13,6 +13,7 @@ using Elastic.Markdown.Myst.Directives.Diagram;
 using Elastic.Markdown.Myst.Directives.Dropdown;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
+using Elastic.Markdown.Myst.Directives.Math;
 using Elastic.Markdown.Myst.Directives.Mermaid;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.Directives.Stepper;
@@ -92,6 +93,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 				return;
 			case CsvIncludeBlock csvIncludeBlock:
 				WriteCsvIncludeBlock(renderer, csvIncludeBlock);
+				return;
+			case MathBlock mathBlock:
+				WriteMathBlock(renderer, mathBlock);
 				return;
 			case StepperBlock stepperBlock:
 				WriteStepperBlock(renderer, stepperBlock);
@@ -475,5 +479,27 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		var viewModel = CsvIncludeViewModel.Create(block);
 		var slice = CsvIncludeView.Create(viewModel);
 		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteMathBlock(HtmlRenderer renderer, MathBlock block)
+	{
+		// Output HTML that KaTeX can render client-side
+		var labelAttr = !string.IsNullOrEmpty(block.Label) ? $" id=\"{block.Label}\"" : "";
+
+		if (block.IsDisplayMath)
+		{
+			// Display math should be a block element
+			_ = renderer.Write($"<div class=\"math\"{labelAttr}>");
+			_ = renderer.WriteEscape(block.Content ?? "");
+			_ = renderer.Write("</div>");
+		}
+		else
+		{
+			// Inline math should be a span element to behave like text
+			_ = renderer.Write($"<span class=\"math\"{labelAttr}>");
+			_ = renderer.WriteEscape(block.Content ?? "");
+			_ = renderer.Write("</span>");
+		}
+		_ = renderer.EnsureLine();
 	}
 }

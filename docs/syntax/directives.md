@@ -72,6 +72,7 @@ The following directives are available:
 - [Dropdowns](dropdowns.md) - Collapsible content
 - [Images](images.md) - Enhanced image handling
 - [Include](file_inclusion.md) - Include content from other files
+- [Math](math.md) - Mathematical expressions and equations
 - [Settings](automated_settings.md) - Configuration blocks
 - [Stepper](stepper.md) - Step-by-step content
 - [Tabs](tabs.md) - Tabbed content organization
