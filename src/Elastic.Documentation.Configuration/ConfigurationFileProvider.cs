@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using System.Text.RegularExpressions;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Converters;
 using Elastic.Documentation.Configuration.DocSet;
 using Elastic.Documentation.Configuration.Serialization;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,6 +23,7 @@ public partial class ConfigurationFileProvider
 
 	public static IDeserializer Deserializer { get; } = new StaticDeserializerBuilder(new YamlStaticContext())
 		.WithNamingConvention(UnderscoredNamingConvention.Instance)
+		.WithTypeConverter(new HintTypeSetConverter())
 		.WithTypeConverter(new TocItemCollectionYamlConverter())
 		.WithTypeConverter(new TocItemYamlConverter())
 		.WithTypeConverter(new SiteTableOfContentsCollectionYamlConverter())

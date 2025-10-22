@@ -191,8 +191,9 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		var developmentToc = tocNavs.FirstOrDefault(t => t.Url == "/development");
 		developmentToc.Should().NotBeNull();
 
-		developmentToc.NavigationItems.Should().HaveCount(2);
+		developmentToc.NavigationItems.Should().HaveCount(3);
 		developmentToc.NavigationItems.OfType<FileNavigationLeaf<TestDocumentationFile>>().Should().HaveCount(1);
+		developmentToc.NavigationItems.OfType<FolderNavigation>().Should().HaveCount(1);
 		developmentToc.NavigationItems.OfType<TableOfContentsNavigation>().Should().HaveCount(1);
 
 		var developmentIndex = developmentToc.NavigationItems.OfType<FileNavigationLeaf<TestDocumentationFile>>().First();

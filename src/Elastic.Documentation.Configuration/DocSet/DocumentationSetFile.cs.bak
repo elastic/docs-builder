@@ -5,7 +5,6 @@
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Diagnostics;
-using Elastic.Documentation.Extensions;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
@@ -21,12 +20,19 @@ public class TableOfContentsFile
 	[YamlMember(Alias = "toc")]
 	public TableOfContents TableOfContents { get; set; } = [];
 
+	[YamlMember(Alias = "toc_no_hint")]
+	public List<string> TocNoHint { get; set; } = [];
+
 	/// <summary>
-	/// Set of diagnostic hint types to suppress. Deserialized directly from YAML list of strings.
-	/// Valid values: "DeepLinkingVirtualFile", "FolderFileNameMismatch"
+	/// Parsed hint types to suppress. This is populated from TocNoHint during LoadAndResolve.
 	/// </summary>
-	[YamlMember(Alias = "suppress")]
-	public HashSet<HintType> SuppressDiagnostics { get; set; } = [];
+	[YamlIgnore]
+	public HashSet<HintType> SuppressedHints { get; set; } = [];
+
+	/// <summary>
+	/// Checks if a specific hint type should be suppressed.
+	/// </summary>
+	public bool ShouldSuppressHint(HintType hintType) => SuppressedHints.Contains(hintType);
 
 	public static TableOfContentsFile Deserialize(string json) =>
 		ConfigurationFileProvider.Deserializer.Deserialize<TableOfContentsFile>(json);
@@ -101,9 +107,35 @@ public class DocumentationSetFile : TableOfContentsFile
 	{
 		fileSystem ??= sourceDirectory.FileSystem;
 		var docSet = Deserialize(yaml);
-		var docsetPath = fileSystem.Path.Combine(sourceDirectory.FullName, "docset.yml").OptionalWindowsReplace();
-		docSet.TableOfContents = ResolveTableOfContents(collector, docSet.TableOfContents, sourceDirectory, fileSystem, parentPath: "", context: docsetPath, docSet.SuppressDiagnostics);
+		var docsetPath = fileSystem.Path.Combine(sourceDirectory.FullName, "docset.yml");
+
+		// Parse toc_no_hint configuration
+		docSet.SuppressedHints = ParseTocNoHint(docSet.TocNoHint);
+
+		// Hardcode suppression for known problematic files
+		if (docsetPath.Contains("docs-content/solutions/toc.yml") || docsetPath.Contains("docs-content\\solutions\\toc.yml"))
+		{
+			docSet.SuppressedHints.Add(HintType.DeepLinkingVirtualFile);
+		}
+
+		docSet.TableOfContents = ResolveTableOfContents(collector, docSet.TableOfContents, sourceDirectory, fileSystem, parentPath: "", context: docsetPath, docSet);
 		return docSet;
+	}
+
+	/// <summary>
+	/// Parses the toc_no_hint configuration strings into HintType enums.
+	/// </summary>
+	private static HashSet<HintType> ParseTocNoHint(List<string> tocNoHint)
+	{
+		var result = new HashSet<HintType>();
+		foreach (var hint in tocNoHint)
+		{
+			if (Enum.TryParse<HintType>(hint, ignoreCase: true, out var hintType))
+			{
+				result.Add(hintType);
+			}
+		}
+		return result;
 	}
 
 
@@ -120,7 +152,7 @@ public class DocumentationSetFile : TableOfContentsFile
 		IFileSystem fileSystem,
 		string parentPath,
 		string context,
-		HashSet<HintType>? suppressDiagnostics = null
+		TableOfContentsFile? tocFile = null
 	)
 	{
 		var resolved = new TableOfContents();
@@ -129,9 +161,9 @@ public class DocumentationSetFile : TableOfContentsFile
 		{
 			var resolvedItem = item switch
 			{
-				IsolatedTableOfContentsRef tocRef => ResolveIsolatedToc(collector, tocRef, baseDirectory, fileSystem, parentPath, context, suppressDiagnostics),
-				FileRef fileRef => ResolveFileRef(collector, fileRef, baseDirectory, fileSystem, parentPath, context, suppressDiagnostics),
-				FolderRef folderRef => ResolveFolderRef(collector, folderRef, baseDirectory, fileSystem, parentPath, context, suppressDiagnostics),
+				IsolatedTableOfContentsRef tocRef => ResolveIsolatedToc(collector, tocRef, baseDirectory, fileSystem, parentPath, context, tocFile),
+				FileRef fileRef => ResolveFileRef(collector, fileRef, baseDirectory, fileSystem, parentPath, context, tocFile),
+				FolderRef folderRef => ResolveFolderRef(collector, folderRef, baseDirectory, fileSystem, parentPath, context, tocFile),
 				CrossLinkRef crossLink => ResolveCrossLinkRef(collector, crossLink, baseDirectory, fileSystem, parentPath, context),
 				_ => null
 			};
@@ -148,17 +180,14 @@ public class DocumentationSetFile : TableOfContentsFile
 	/// Validates that the TOC has no children in parent YAML and that toc.yml exists.
 	/// The TOC's path is set to the full path (including parent path) for consistency with files and folders.
 	/// </summary>
-#pragma warning disable IDE0060 // Remove unused parameter - suppressDiagnostics is for consistency, nested TOCs use their own suppression config
 	private static ITableOfContentsItem? ResolveIsolatedToc(
 		IDiagnosticsCollector collector,
 		IsolatedTableOfContentsRef tocRef,
 		IDirectoryInfo baseDirectory,
 		IFileSystem fileSystem,
 		string parentPath,
-		string parentContext,
-		HashSet<HintType>? suppressDiagnostics = null
+		string parentContext
 	)
-#pragma warning restore IDE0060
 	{
 		// TOC paths containing '/' are treated as relative to the context file's directory (full paths).
 		// Simple TOC names (no '/') are resolved relative to the parent path in the navigation hierarchy.
@@ -202,31 +231,12 @@ public class DocumentationSetFile : TableOfContentsFile
 		}
 
 		var tocYaml = fileSystem.File.ReadAllText(tocFilePath);
-		var nestedTocFile = TableOfContentsFile.Deserialize(tocYaml);
-
-		// this is temporary after this lands in main we can update these files to include
-		// suppress:
-		//	- DeepLinkingVirtualFile
-		string[] skip = [
-			"docs-content/solutions/toc.yml",
-			"docs-content/manage-data/toc.yml",
-			"docs-content/explore-analyze/toc.yml",
-			"docs-content/deploy-manage/toc.yml",
-			"docs-content/troubleshoot/toc.yml",
-			"docs-content/troubleshoot/ingest/opentelemetry/toc.yml",
-			"docs-content/reference/security/toc.yml"
-		];
-
-		var path = tocFilePath.OptionalWindowsReplace();
-		// Hardcode suppression for known problematic files
-		if (skip.Any(f => path.Contains(f, StringComparison.OrdinalIgnoreCase)))
-			_ = nestedTocFile.SuppressDiagnostics.Add(HintType.DeepLinkingVirtualFile);
-
+		var tocFile = TableOfContentsFile.Deserialize(tocYaml);
 
 		// Recursively resolve children with the FULL TOC path as the parent path
 		// This ensures all file paths within the TOC include the TOC directory path
 		// The context for children is the toc.yml file that defines them
-		var resolvedChildren = ResolveTableOfContents(collector, nestedTocFile.TableOfContents, baseDirectory, fileSystem, fullTocPath, tocFilePath, nestedTocFile.SuppressDiagnostics);
+		var resolvedChildren = ResolveTableOfContents(collector, tocFile.TableOfContents, baseDirectory, fileSystem, fullTocPath, tocFilePath);
 
 		// Validate: TOC must have at least one child
 		if (resolvedChildren.Count == 0)
@@ -250,7 +260,7 @@ public class DocumentationSetFile : TableOfContentsFile
 		IFileSystem fileSystem,
 		string parentPath,
 		string context,
-		HashSet<HintType>? suppressDiagnostics = null)
+		TableOfContentsFile? tocFile = null)
 	{
 		var fullPath = string.IsNullOrEmpty(parentPath) ? fileRef.Path : $"{parentPath}/{fileRef.Path}";
 
@@ -274,7 +284,7 @@ public class DocumentationSetFile : TableOfContentsFile
 			if (!string.IsNullOrEmpty(parentPath) && fileName != "index.md")
 			{
 				// Check if this hint type should be suppressed
-				if (!suppressDiagnostics.ShouldSuppress(HintType.FolderFileNameMismatch))
+				if (tocFile?.ShouldSuppressHint(HintType.FolderFileNameMismatch) != true)
 				{
 					// Extract just the folder name from parentPath (in case it's nested like "guides/getting-started")
 					var folderName = parentPath.Contains('/') ? parentPath.Split('/')[^1] : parentPath;
@@ -309,7 +319,7 @@ public class DocumentationSetFile : TableOfContentsFile
 		if (fileRef.Path.Contains('/') && fileRef.Children.Count > 0 && fileRef is not FolderIndexFileRef)
 		{
 			// Check if this hint type should be suppressed
-			if (!suppressDiagnostics.ShouldSuppress(HintType.DeepLinkingVirtualFile))
+			if (tocFile?.ShouldSuppressHint(HintType.DeepLinkingVirtualFile) != true)
 			{
 				collector.EmitHint(context,
 					$"File '{fileRef.Path}' uses deep-linking with children. Consider using 'folder' instead of 'file' for better navigation structure. Virtual files are primarily intended to group sibling files together.");
@@ -344,7 +354,7 @@ public class DocumentationSetFile : TableOfContentsFile
 			parentPathForChildren = parentPath;
 		}
 
-		var resolvedChildren = ResolveTableOfContents(collector, fileRef.Children, baseDirectory, fileSystem, parentPathForChildren, context, suppressDiagnostics);
+		var resolvedChildren = ResolveTableOfContents(collector, fileRef.Children, baseDirectory, fileSystem, parentPathForChildren, context, tocFile);
 
 		// Preserve the specific type when creating the resolved reference
 		return fileRef switch
@@ -365,8 +375,7 @@ public class DocumentationSetFile : TableOfContentsFile
 		IDirectoryInfo baseDirectory,
 		IFileSystem fileSystem,
 		string parentPath,
-		string context,
-		HashSet<HintType>? suppressDiagnostics = null)
+		string context)
 	{
 		// Folder paths containing '/' are treated as relative to the context file's directory (full paths).
 		// Simple folder names (no '/') are resolved relative to the parent path in the navigation hierarchy.
@@ -392,7 +401,7 @@ public class DocumentationSetFile : TableOfContentsFile
 		// If children are explicitly defined, resolve them
 		if (folderRef.Children.Count > 0)
 		{
-			var resolvedChildren = ResolveTableOfContents(collector, folderRef.Children, baseDirectory, fileSystem, fullPath, context, suppressDiagnostics);
+			var resolvedChildren = ResolveTableOfContents(collector, folderRef.Children, baseDirectory, fileSystem, fullPath, context);
 			return new FolderRef(fullPath, resolvedChildren, context);
 		}
 

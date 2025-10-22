@@ -345,7 +345,9 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 	public async ValueTask<bool> ExportAsync(MarkdownExportFileContext fileContext, Cancel ctx)
 	{
 		var file = fileContext.SourceFile;
-		var url = file.Url;
+		IPositionalNavigation navigation = fileContext.DocumentationSet;
+		var currentNavigation = navigation.GetCurrent(file);
+		var url = currentNavigation.Url;
 
 		if (url is "/docs" or "/docs/404")
 		{
@@ -354,7 +356,6 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 			return true;
 		}
 
-		IPositionalNavigation navigation = fileContext.DocumentationSet;
 
 		// Remove the first h1 because we already have the title
 		// and we don't want it to appear in the body
