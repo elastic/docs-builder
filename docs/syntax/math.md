@@ -1,4 +1,4 @@
-# Math directive
+# Math
 
 The `math` directive renders mathematical expressions using LaTeX syntax. Mathematical expressions are rendered client-side using KaTeX for fast, accurate display.
 
