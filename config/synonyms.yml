@@ -23,3 +23,7 @@ synonyms:
   - [ "javascript", "js", "node", "nodejs", "node.js" ]
   - [ "edot", "elastic distribution of opentelemetry" ]
   - [ "k8s", "kubernetes" ]
+  - [ "ecs", "elastic common schema" ]
+  - [ "ml", "machine learning" ]
+  - [ "eis", "elastic inference service" ]
+  - [ "traffic filter", "network security" ]
