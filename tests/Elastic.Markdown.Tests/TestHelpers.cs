@@ -15,7 +15,7 @@ namespace Elastic.Markdown.Tests;
 
 public static class TestHelpers
 {
-	public static IConfigurationContext CreateConfigurationContext(IFileSystem fileSystem, VersionsConfiguration? versionsConfiguration = null, ProductsConfiguration? productsConfiguration = null, SynonymsConfiguration synonyms = null)
+	public static IConfigurationContext CreateConfigurationContext(IFileSystem fileSystem, VersionsConfiguration? versionsConfiguration = null, ProductsConfiguration? productsConfiguration = null)
 	{
 		versionsConfiguration ??= new VersionsConfiguration
 		{
@@ -61,7 +61,7 @@ public static class TestHelpers
 				}
 			}.ToFrozenDictionary()
 		};
-		synonyms = new SynonymsConfiguration{ Synonyms = [] };
+		var synonyms = new SynonymsConfiguration { Synonyms = [] };
 		return new ConfigurationContext
 		{
 			Endpoints = new DocumentationEndpoints

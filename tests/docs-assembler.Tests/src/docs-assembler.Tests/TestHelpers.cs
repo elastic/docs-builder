@@ -20,8 +20,7 @@ public static class TestHelpers
 		IFileSystem fileSystem,
 		VersionsConfiguration? versionsConfiguration = null,
 		ConfigurationFileProvider? configurationFileProvider = null,
-		ProductsConfiguration? productsConfiguration = null,
-		SynonymsConfiguration? synonyms = null
+		ProductsConfiguration? productsConfiguration = null
 	)
 	{
 		configurationFileProvider ??= new ConfigurationFileProvider(NullLoggerFactory.Instance, fileSystem);
@@ -53,7 +52,7 @@ public static class TestHelpers
 				}
 			}.ToFrozenDictionary()
 		};
-		synonyms = new SynonymsConfiguration { Synonyms = [] };
+		var synonyms = new SynonymsConfiguration { Synonyms = [] };
 		return new ConfigurationContext
 		{
 			Endpoints = new DocumentationEndpoints
