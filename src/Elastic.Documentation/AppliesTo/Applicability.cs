@@ -220,15 +220,29 @@ public record Applicability : IComparable<Applicability>, IComparable
 		if (deprecatedLifecycles.Contains(lifecycle))
 			diagnostics.Add((Severity.Hint, $"The '{lookup}' lifecycle is deprecated and will be removed in a future release."));
 
-		var version = tokens.Length < 2
-			? null
-			: tokens[1] switch
+		SemVersion? version = null;
+		if (tokens.Length < 2)
+		{
+			// No version token provided, treat as "all" versions
+			version = AllVersions.Instance;
+		}
+		else
+		{
+			version = tokens[1] switch
 			{
 				null => AllVersions.Instance,
 				"all" => AllVersions.Instance,
 				"" => AllVersions.Instance,
 				var t => SemVersionConverter.TryParse(t, out var v) ? v : null
 			};
+			if (version is null)
+			{
+				diagnostics.Add((Severity.Error, $"'{tokens[1]}' is not a valid version."));
+				availability = null;
+				return false;
+			}
+		}
+
 		availability = new Applicability { Version = version, Lifecycle = lifecycle };
 		return true;
 	}
