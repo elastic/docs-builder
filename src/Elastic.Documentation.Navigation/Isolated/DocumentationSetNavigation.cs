@@ -493,7 +493,7 @@ public class DocumentationSetNavigation<TModel>
 		var finalTocNavigation = new TableOfContentsNavigation(
 			tocDirectory,
 			depth + 1,
-			relativeTocPath, // Use relative path (last segment) for URL construction
+			fullTocPath, // Use full path for identifier registration
 			parent,
 			prefixProvider,
 			children,

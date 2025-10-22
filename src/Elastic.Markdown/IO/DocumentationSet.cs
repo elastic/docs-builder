@@ -120,19 +120,20 @@ public class DocumentationSet : IPositionalNavigation
 
 	private IReadOnlyCollection<INavigationItem> CreateNavigationLookup(INavigationItem item)
 	{
+		// warning emit an error again
 		switch (item)
 		{
 			case ILeafNavigationItem<MarkdownFile> markdownLeaf:
 				var added = MarkdownNavigationLookup.TryAdd(markdownLeaf.Model, markdownLeaf);
 				if (!added)
-					Context.EmitError(Configuration.SourceFile, $"Duplicate navigation item {markdownLeaf.Model.CrossLink}");
+					Context.EmitWarning(Configuration.SourceFile, $"Duplicate navigation item {markdownLeaf.Model.CrossLink}");
 				return [markdownLeaf];
 			case ILeafNavigationItem<INavigationModel> leaf:
 				return [leaf];
 			case INodeNavigationItem<MarkdownFile, INavigationItem> node:
 				var addedNode = MarkdownNavigationLookup.TryAdd(node.Index.Model, node);
 				if (!addedNode)
-					Context.EmitError(Configuration.SourceFile, $"Duplicate navigation item {node.Index.Model.CrossLink}");
+					Context.EmitWarning(Configuration.SourceFile, $"Duplicate navigation item {node.Index.Model.CrossLink}");
 				var nodeItems = node.NavigationItems.SelectMany(CreateNavigationLookup);
 				return nodeItems.Concat([node]).ToArray();
 			case INodeNavigationItem<INavigationModel, INavigationItem> node:

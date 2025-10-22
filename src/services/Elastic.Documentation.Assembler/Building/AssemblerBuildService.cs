@@ -73,7 +73,7 @@ public class AssemblerBuildService(
 		var navigationFileInfo = configurationContext.ConfigurationFileProvider.NavigationFile;
 		var siteNavigationFile = SiteNavigationFile.Deserialize(await fs.File.ReadAllTextAsync(navigationFileInfo.FullName, ctx));
 		var documentationSets = assembleSources.AssembleSets.Values.Select(s => s.DocumentationSet.Navigation).ToArray();
-		var navigation = new SiteNavigation(siteNavigationFile, assembleContext, documentationSets);
+		var navigation = new SiteNavigation(siteNavigationFile, assembleContext, documentationSets, assembleContext.Environment.PathPrefix);
 
 		_logger.LogInformation("Validating navigation.yml does not contain colliding path prefixes");
 		// this validates all path prefixes are unique, early exit if duplicates are detected

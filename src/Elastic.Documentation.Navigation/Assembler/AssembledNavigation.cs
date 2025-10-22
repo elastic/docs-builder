@@ -14,12 +14,16 @@ public record SiteNavigationNoIndexFile(string NavigationTitle) : IDocumentation
 
 public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigationItem>
 {
-	public SiteNavigation(
-		SiteNavigationFile siteNavigationFile,
+	private readonly string? _sitePrefix;
+
+	public SiteNavigation(SiteNavigationFile siteNavigationFile,
 		IDocumentationContext context,
-		IReadOnlyCollection<IDocumentationSetNavigation> documentationSetNavigations
+		IReadOnlyCollection<IDocumentationSetNavigation> documentationSetNavigations,
+		string? sitePrefix
 	)
 	{
+		// Normalize sitePrefix to ensure it has a leading slash and no trailing slash
+		_sitePrefix = NormalizeSitePrefix(sitePrefix);
 		// Initialize root properties
 		NavigationRoot = this;
 		Parent = null;
@@ -72,7 +76,7 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		NavigationItems.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>().ToList();
 
 	/// <inheritdoc />
-	public string Url { get; set; } = "/";
+	public string Url => string.IsNullOrEmpty(_sitePrefix) ? "/" : _sitePrefix;
 
 	/// <inheritdoc />
 	public string NavigationTitle => Index.NavigationTitle;
@@ -107,6 +111,27 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 	/// <inheritdoc />
 	public IReadOnlyCollection<INavigationItem> NavigationItems { get; }
 
+	/// <summary>
+	/// Normalizes the site prefix to ensure it has a leading slash and no trailing slash.
+	/// Returns null for null or empty/whitespace input.
+	/// </summary>
+	private static string? NormalizeSitePrefix(string? sitePrefix)
+	{
+		if (string.IsNullOrWhiteSpace(sitePrefix))
+			return null;
+
+		var normalized = sitePrefix.Trim();
+
+		// Ensure leading slash
+		if (!normalized.StartsWith('/'))
+			normalized = "/" + normalized;
+
+		// Remove trailing slash
+		normalized = normalized.TrimEnd('/');
+
+		return normalized;
+	}
+
 	private INavigationItem? CreateSiteTableOfContentsNavigation(
 		SiteTableOfContentsRef tocRef,
 		int index,
@@ -127,6 +152,14 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 			if (!string.IsNullOrEmpty(tocRef.Source.AbsolutePath) && tocRef.Source.AbsolutePath != "/")
 				pathPrefix += $"/{tocRef.Source.AbsolutePath}";
 		}
+
+		// Normalize pathPrefix to remove leading/trailing slashes for consistent combination
+		pathPrefix = pathPrefix.Trim('/');
+
+		// Combine with site prefix if present, otherwise ensure leading slash
+		pathPrefix = !string.IsNullOrWhiteSpace(_sitePrefix)
+			? $"{_sitePrefix}/{pathPrefix}"
+			: "/" + pathPrefix;
 
 		// Look up the node in the collected nodes
 		if (!_nodes.TryGetValue(tocRef.Source, out var node))

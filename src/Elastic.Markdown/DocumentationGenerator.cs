@@ -168,9 +168,9 @@ public class DocumentationGenerator
 			}
 
 			if (processedFiles % 100 == 0)
-				_logger.LogInformation("-> Processed {ProcessedFiles}/{TotalFileCount} files", processedFiles, totalFileCount);
+				_logger.LogInformation(" {Name} -> Processed {ProcessedFiles}/{TotalFileCount} files", Context.Git.RepositoryName, processedFiles, totalFileCount);
 		});
-		_logger.LogInformation("-> Processed {ProcessedFileCount}/{TotalFileCount} files", processedFileCount, totalFileCount);
+		_logger.LogInformation(" {Name} -> Processed {ProcessedFileCount}/{TotalFileCount} files", Context.Git.RepositoryName, processedFileCount, totalFileCount);
 
 	}
 

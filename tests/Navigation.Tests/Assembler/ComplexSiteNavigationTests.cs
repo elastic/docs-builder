@@ -58,7 +58,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		var siteContext = SiteNavigationTestFixture.CreateContext(
 			fileSystem, "/checkouts/current/observability", output);
 
-		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets);
+		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
 		// Verify we have all expected top-level items
 		siteNavigation.NavigationItems.Should().HaveCount(4);
@@ -134,7 +134,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		var siteContext = SiteNavigationTestFixture.CreateContext(
 			fileSystem, "/checkouts/current/platform", output);
 
-		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets);
+		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
 		var platform = siteNavigation.NavigationItems.First() as INodeNavigationItem<INavigationModel, INavigationItem>;
 		platform.Should().NotBeNull();
@@ -182,7 +182,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		var siteContext = SiteNavigationTestFixture.CreateContext(
 			fileSystem, "/checkouts/current/platform", output);
 
-		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets);
+		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
 		var platform = siteNavigation.NavigationItems.First() as INodeNavigationItem<INavigationModel, INavigationItem>;
 		platform.Should().NotBeNull();
@@ -239,7 +239,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		var siteContext = SiteNavigationTestFixture.CreateContext(
 			fileSystem, "/checkouts/current/platform", output);
 
-		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets);
+		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
 		var platform = siteNavigation.NavigationItems.First() as INodeNavigationItem<INavigationModel, INavigationItem>;
 		platform.Should().NotBeNull();

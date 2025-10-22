@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Text;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Assembler;
+using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Myst.Renderers.LlmMarkdown;
 
@@ -89,11 +90,15 @@ public class LlmsNavigationEnhancer
 		INodeNavigationItem<MarkdownFile, INavigationItem> markdownNodeNavigation =>
 			markdownNodeNavigation.Index.Model.YamlFrontMatter?.Description,
 
+		// we only know about MarkdownFiles for now
+		ILeafNavigationItem<IDocumentationFile> => null,
+		INodeNavigationItem<IDocumentationFile, INavigationItem> => null,
+
 		// API-related navigation items (these don't have markdown frontmatter)
 		// Check by namespace to avoid direct assembly references
 		{ } item when item.GetType().FullName?.StartsWith("Elastic.ApiExplorer.", StringComparison.Ordinal) == true => null,
 
 		// Throw exception for any unhandled navigation item types
-		_ => throw new InvalidOperationException($"Unhandled navigation item type: {navigationItem.GetType().FullName}")
+		_ => throw new InvalidOperationException($"{nameof(LlmsNavigationEnhancer)}.{nameof(GetDescription)}: Unhandled navigation item type: {navigationItem.GetType().FullName}")
 	};
 }

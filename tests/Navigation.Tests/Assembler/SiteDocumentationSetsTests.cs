@@ -95,7 +95,7 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		// Create site navigation context (using any repository's filesystem)
 		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
 
-		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets);
+		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
 		siteNavigation.Should().NotBeNull();
 		siteNavigation.NavigationItems.Should().HaveCount(3);
@@ -138,7 +138,7 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 
 		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform", output);
 
-		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets);
+		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
 		siteNavigation.NavigationItems.Should().HaveCount(1);
 
@@ -203,7 +203,7 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		var siteContext = SiteNavigationTestFixture.CreateContext(
 			fileSystem, "/checkouts/current/observability", output);
 
-		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets);
+		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
 		siteNavigation.Should().NotBeNull();
 		siteNavigation.NavigationItems.Should().HaveCount(5);
@@ -327,7 +327,7 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		var documentationSets = new List<IDocumentationSetNavigation> { new DocumentationSetNavigation<IDocumentationFile>(observabilityDocset, observabilityContext, GenericDocumentationFileFactory.Instance) };
 
 		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
-		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets);
+		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
 		// Verify root URL has path prefix
 		var root = siteNavigation.NavigationItems.First();
@@ -364,7 +364,7 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		var documentationSets = new List<IDocumentationSetNavigation> { new DocumentationSetNavigation<IDocumentationFile>(platformDocset, platformContext, GenericDocumentationFileFactory.Instance) };
 
 		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform", output);
-		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets);
+		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
 		var platform = siteNavigation.NavigationItems.First() as INodeNavigationItem<INavigationModel, INavigationItem>;
 		platform.Should().NotBeNull();
@@ -395,14 +395,14 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		var documentationSets = new List<IDocumentationSetNavigation> { new DocumentationSetNavigation<IDocumentationFile>(observabilityDocset, observabilityContext, GenericDocumentationFileFactory.Instance) };
 
 		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
-		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets);
+		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
 		// navigation will still be build
 		siteNavigation.NavigationItems.Should().NotBeEmpty();
 
 		var toc = siteNavigation.NavigationItems.First() as SiteTableOfContentsNavigation<IDocumentationFile>;
 		toc.Should().NotBeNull();
-		toc.PathPrefixProvider.PathPrefix.Should().Be("observability"); //constructed from toc URI as fallback
+		toc.PathPrefixProvider.PathPrefix.Should().Be("/observability"); //constructed from toc URI as fallback, normalized with leading slash
 	}
 
 	[Fact]
