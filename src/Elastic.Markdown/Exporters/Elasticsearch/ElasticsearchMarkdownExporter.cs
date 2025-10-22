@@ -119,22 +119,22 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 		_logger.LogInformation("Using {IndexStrategy} to sync lexical index to semantic index", _indexStrategy.ToStringFast(true));
 	}
 
-	private async Task PublishSynonymsAsync(string name, CancellationToken ctx)
+	private async Task PublishSynonymsAsync(string setName, CancellationToken ctx)
 	{
-		_logger.LogInformation("Publishing synonym set '{Name}' to Elasticsearch", name);
+		_logger.LogInformation("Publishing synonym set '{SetName}' to Elasticsearch", setName);
 
 		var requestBody = new SynonymSetRequest { Synonyms = _synonyms.ToArray() };
 		var json = JsonSerializer.Serialize(requestBody, SynonymSerializerContext.Default.SynonymSetRequest);
 
-		var response = await _transport.PutAsync<StringResponse>($"_synonyms/{name}", PostData.String(json), ctx);
+		var response = await _transport.PutAsync<StringResponse>($"_synonyms/{setName}", PostData.String(json), ctx);
 
 		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
 		{
-			_collector.EmitGlobalError($"Failed to publish synonym set '{name}'. Reason: {response.ApiCallDetails.OriginalException?.Message ?? response.ToString()}");
+			_collector.EmitGlobalError($"Failed to publish synonym set '{setName}'. Reason: {response.ApiCallDetails.OriginalException?.Message ?? response.ToString()}");
 		}
 		else
 		{
-			_logger.LogInformation("Successfully published synonym set '{Name}'.", name);
+			_logger.LogInformation("Successfully published synonym set '{SetName}'.", setName);
 		}
 	}
 
