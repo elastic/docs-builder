@@ -72,8 +72,9 @@ public class DocumentationGenerator
 		DocumentationSet = docSet;
 		Context = docSet.Context;
 		CrossLinkResolver = docSet.CrossLinkResolver;
+		var productVersionInferrer = new ProductVersionInferrerService(DocumentationSet.Context.ProductsConfiguration, DocumentationSet.Context.VersionsConfiguration);
 		HtmlWriter = new HtmlWriter(DocumentationSet, _writeFileSystem, new DescriptionGenerator(), navigationHtmlWriter, legacyUrlMapper,
-			positionalNavigation, new ProductVersionInferrerService(DocumentationSet.Context.ProductsConfiguration, DocumentationSet.Context.VersionsConfiguration, DocumentationSet.Context.Git.RepositoryName));
+			positionalNavigation, productVersionInferrer);
 		_documentationFileExporter =
 			docSet.Context.AvailableExporters.Contains(Exporter.Html)
 				? docSet.EnabledExtensions.FirstOrDefault(e => e.FileExporter != null)?.FileExporter
