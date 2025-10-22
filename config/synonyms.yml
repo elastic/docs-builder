@@ -17,6 +17,7 @@ synonyms:
   - [ "esaas", "elastic stack as a service" ]
   - [ "knn", "k-nearest neighbors" ]
   - [ "ech", "elastic cloud hosted", "ess" ]
+  - [ "elasticsearch service", "elastic cloud" ]
   - [ "aws", "amazon" ]
   - [ "ilm", "index lifecycle management" ]
   - [ "javascript", "js", "node", "nodejs", "node.js" ]
