@@ -57,7 +57,7 @@ public class ServiceInvoker(IDiagnosticsCollector collector) : IAsyncDisposable
 				if (!success && task.Strict && collector.Errors + collector.Warnings == 0)
 					collector.EmitGlobalError($"Service {task.ServiceName} registered as strict but returned false without emitting errors or warnings ");
 				if (!success && !task.Strict && collector.Errors == 0)
-					collector.EmitGlobalError($"Service {task.ServiceName} but returned false without emitting errors");
+					collector.EmitGlobalError($"Service {task.ServiceName} returned false without emitting errors");
 			}
 			catch (Exception ex)
 			{

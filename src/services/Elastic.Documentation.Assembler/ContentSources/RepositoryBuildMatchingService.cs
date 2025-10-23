@@ -41,7 +41,8 @@ public class RepositoryBuildMatchingService(
 
 		// environment does not matter to check the configuration, defaulting to dev
 		var assembleContext = new AssembleContext(configuration, configurationContext, "dev", collector, fileSystem, fileSystem, null, null);
-		var matches = assembleContext.Configuration.Match(repo, refName);
+		var product = assembleContext.ProductsConfiguration.GetProductByRepositoryName(repo);
+		var matches = assembleContext.Configuration.Match(logFactory, repo, refName, product);
 		if (matches is { Current: null, Next: null, Edge: null, Speculative: false })
 		{
 			_logger.LogInformation("'{Repository}' '{BranchOrTag}' combination not found in configuration.", repo, refName);
