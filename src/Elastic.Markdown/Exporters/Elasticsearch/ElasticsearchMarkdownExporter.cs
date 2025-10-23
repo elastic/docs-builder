@@ -25,17 +25,6 @@ namespace Elastic.Markdown.Exporters.Elasticsearch;
 [EnumExtensions]
 public enum IngestStrategy { Reindex, Multiplex }
 
-internal sealed record SynonymSetRequest
-{
-	[JsonPropertyName("synonyms")]
-	public required string[] Synonyms { get; init; }
-}
-
-[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower)]
-[JsonSerializable(typeof(SynonymsSet))]
-[JsonSerializable(typeof(SynonymRule))]
-internal sealed partial class SynonymSerializerContext : JsonSerializerContext { };
-
 public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 {
 	private readonly IDiagnosticsCollector _collector;
@@ -483,3 +472,8 @@ internal sealed record SynonymRule
 	public required string Id { get; init; }
 	public required string Synonyms { get; init; }
 }
+
+[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower)]
+[JsonSerializable(typeof(SynonymsSet))]
+[JsonSerializable(typeof(SynonymRule))]
+internal sealed partial class SynonymSerializerContext : JsonSerializerContext;
