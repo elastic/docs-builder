@@ -53,7 +53,7 @@ Dropdown content
 
 ## With applies_to badge
 
-:::{include} _snippets/applies-to-admonitions.md
+:::{include} _snippets/applies-to-dropdowns.md
 :::
 
 ## Multiple applies_to definitions
