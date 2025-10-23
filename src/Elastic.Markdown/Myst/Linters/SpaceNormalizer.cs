@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Buffers;
+using System.Linq;
 using Elastic.Markdown.Diagnostics;
 using Markdig;
 using Markdig.Helpers;
@@ -35,16 +36,23 @@ public class SpaceNormalizerBuilderExtension : IMarkdownExtension
 
 public class SpaceNormalizerParser : InlineParser
 {
-	// Collection of irregular space characters that may impair Markdown rendering
-	private static readonly char[] IrregularSpaceChars =
+	// Characters that should be removed entirely (invisible/problematic)
+	private static readonly char[] CharactersToRemove =
 	[
 		'\u000B', // Line Tabulation (\v) - <VT>
 		'\u000C', // Form Feed (\f) - <FF>
-		'\u00A0', // No-Break Space - <NBSP>
 		'\u0085', // Next Line
 		'\u1680', // Ogham Space Mark
 		'\u180E', // Mongolian Vowel Separator - <MVS>
 		'\ufeff', // Zero Width No-Break Space - <BOM>
+		'\u200B', // Zero Width Space - <ZWSP>
+		'\u2028', // Line Separator
+		'\u2029'  // Paragraph Separator
+	];
+
+	// Characters to replace with regular spaces (visible but problematic)
+	private static readonly char[] CharactersToReplace =
+	[
 		'\u2000', // En Quad
 		'\u2001', // Em Quad
 		'\u2002', // En Space - <ENSP>
@@ -52,23 +60,20 @@ public class SpaceNormalizerParser : InlineParser
 		'\u2004', // Tree-Per-Em
 		'\u2005', // Four-Per-Em
 		'\u2006', // Six-Per-Em
-		'\u2007', // Figure Space
 		'\u2008', // Punctuation Space - <PUNCSP>
 		'\u2009', // Thin Space
 		'\u200A', // Hair Space
-		'\u200B', // Zero Width Space - <ZWSP>
-		'\u2028', // Line Separator
-		'\u2029', // Paragraph Separator
-		'\u202F', // Narrow No-Break Space
-		'\u205F', // Medium Mathematical Space
 		'\u3000'  // Ideographic Space
 	];
-	private static readonly SearchValues<char> SpaceSearchValues = SearchValues.Create(IrregularSpaceChars);
+
+	// Combined list of characters that need fixing (removed or replaced)
+	private static readonly char[] CharactersToFix = CharactersToRemove.Concat(CharactersToReplace).ToArray();
+	private static readonly SearchValues<char> SpaceSearchValues = SearchValues.Create(CharactersToFix);
 
 	// Track which files have already had the hint emitted to avoid duplicates
 	private static readonly HashSet<string> FilesWithHintEmitted = [];
 
-	public SpaceNormalizerParser() => OpeningCharacters = IrregularSpaceChars;
+	public SpaceNormalizerParser() => OpeningCharacters = CharactersToFix;
 
 	public override bool Match(InlineProcessor processor, ref StringSlice slice)
 	{
