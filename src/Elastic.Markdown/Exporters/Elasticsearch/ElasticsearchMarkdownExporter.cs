@@ -37,7 +37,7 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 	private readonly DateTimeOffset _batchIndexDate = DateTimeOffset.UtcNow;
 	private readonly DistributedTransport _transport;
 	private IngestStrategy _indexStrategy;
-	private string _indexNamespace;
+	private readonly string _indexNamespace;
 	private string _currentLexicalHash = string.Empty;
 	private string _currentSemanticHash = string.Empty;
 
