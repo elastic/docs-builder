@@ -164,8 +164,9 @@ public abstract class ElasticsearchExporter<TChannelOptions, TChannel> : IDispos
 		    "filter": {
 		      "synonyms_filter": {
 				  "type": "synonym_graph",
-				  "synonyms_set": "{{synonymSetName}}"
-				  },
+				  "synonyms_set": "{{synonymSetName}}",
+				  "updateable": true
+			  },
 		      "english_stop": {
 		        "type": "stop",
 		        "stopwords": "_english_"
