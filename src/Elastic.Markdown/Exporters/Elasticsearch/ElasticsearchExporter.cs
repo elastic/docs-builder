@@ -33,7 +33,7 @@ public class ElasticsearchLexicalExporter(
 				{ "batch_index_date", d.BatchIndexDate.ToString("o") }
 			}),
 		GetMapping = () => CreateMapping(null),
-		GetMappingSettings = () => CreateMappingSetting("docs"),
+		GetMappingSettings = () => CreateMappingSetting($"docs-{indexNamespace}"),
 		IndexFormat =
 			$"{endpoint.IndexNamePrefix.Replace("semantic", "lexical").ToLowerInvariant()}-{indexNamespace.ToLowerInvariant()}-{{0:yyyy.MM.dd.HHmmss}}",
 		ActiveSearchAlias = $"{endpoint.IndexNamePrefix.Replace("semantic", "lexical").ToLowerInvariant()}-{indexNamespace.ToLowerInvariant()}"

@@ -25,16 +25,6 @@ namespace Elastic.Markdown.Exporters.Elasticsearch;
 [EnumExtensions]
 public enum IngestStrategy { Reindex, Multiplex }
 
-internal sealed record SynonymSetRequest
-{
-	[JsonPropertyName("synonyms")]
-	public required string[] Synonyms { get; init; }
-}
-
-[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower)]
-[JsonSerializable(typeof(SynonymSetRequest))]
-internal sealed partial class SynonymSerializerContext : JsonSerializerContext { };
-
 public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 {
 	private readonly IDiagnosticsCollector _collector;
@@ -47,6 +37,7 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 	private readonly DateTimeOffset _batchIndexDate = DateTimeOffset.UtcNow;
 	private readonly DistributedTransport _transport;
 	private IngestStrategy _indexStrategy;
+	private readonly string _indexNamespace;
 	private string _currentLexicalHash = string.Empty;
 	private string _currentSemanticHash = string.Empty;
 
@@ -64,7 +55,7 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 		_logger = logFactory.CreateLogger<ElasticsearchMarkdownExporter>();
 		_endpoint = endpoints.Elasticsearch;
 		_indexStrategy = IngestStrategy.Reindex;
-
+		_indexNamespace = indexNamespace;
 		var es = endpoints.Elasticsearch;
 
 		var configuration = new ElasticsearchConfiguration(es.Uri)
@@ -102,7 +93,7 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 		_currentLexicalHash = await _lexicalChannel.Channel.GetIndexTemplateHashAsync(ctx) ?? string.Empty;
 		_currentSemanticHash = await _semanticChannel.Channel.GetIndexTemplateHashAsync(ctx) ?? string.Empty;
 
-		await PublishSynonymsAsync("docs", ctx);
+		await PublishSynonymsAsync($"docs-{_indexNamespace}", ctx);
 		_ = await _lexicalChannel.Channel.BootstrapElasticsearchAsync(BootstrapMethod.Failure, null, ctx);
 
 		// if the previous hash does not match the current hash, we know already we want to multiplex to a new index
@@ -153,8 +144,22 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 	{
 		_logger.LogInformation("Publishing synonym set '{SetName}' to Elasticsearch", setName);
 
-		var requestBody = new SynonymSetRequest { Synonyms = _synonyms.ToArray() };
-		var json = JsonSerializer.Serialize(requestBody, SynonymSerializerContext.Default.SynonymSetRequest);
+		var synonymRules = _synonyms.Aggregate(new List<SynonymRule>(), (acc, synonym) =>
+		{
+			acc.Add(new SynonymRule
+			{
+				Id = synonym.Split(",", StringSplitOptions.RemoveEmptyEntries)[0].Trim(),
+				Synonyms = synonym
+			});
+			return acc;
+		});
+
+		var synonymsSet = new SynonymsSet
+		{
+			Synonyms = synonymRules
+		};
+
+		var json = JsonSerializer.Serialize(synonymsSet, SynonymSerializerContext.Default.SynonymsSet);
 
 		var response = await _transport.PutAsync<StringResponse>($"_synonyms/{setName}", PostData.String(json), ctx);
 
@@ -456,3 +461,20 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 		GC.SuppressFinalize(this);
 	}
 }
+
+internal sealed record SynonymsSet
+{
+	[JsonPropertyName("synonyms_set")]
+	public required List<SynonymRule> Synonyms { get; init; } = [];
+}
+
+internal sealed record SynonymRule
+{
+	public required string Id { get; init; }
+	public required string Synonyms { get; init; }
+}
+
+[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower)]
+[JsonSerializable(typeof(SynonymsSet))]
+[JsonSerializable(typeof(SynonymRule))]
+internal sealed partial class SynonymSerializerContext : JsonSerializerContext;
