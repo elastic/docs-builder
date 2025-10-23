@@ -32,7 +32,8 @@ internal sealed record SynonymSetRequest
 }
 
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower)]
-[JsonSerializable(typeof(SynonymSetRequest))]
+[JsonSerializable(typeof(SynonymsSet))]
+[JsonSerializable(typeof(SynonymRule))]
 internal sealed partial class SynonymSerializerContext : JsonSerializerContext { };
 
 public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
@@ -153,8 +154,22 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 	{
 		_logger.LogInformation("Publishing synonym set '{SetName}' to Elasticsearch", setName);
 
-		var requestBody = new SynonymSetRequest { Synonyms = _synonyms.ToArray() };
-		var json = JsonSerializer.Serialize(requestBody, SynonymSerializerContext.Default.SynonymSetRequest);
+		var synonymRules = _synonyms.Aggregate(new List<SynonymRule>(), (acc, synonym) =>
+		{
+			acc.Add(new SynonymRule
+			{
+				Id = synonym.Split(",", StringSplitOptions.RemoveEmptyEntries)[0].Trim(),
+				Synonyms = synonym
+			});
+			return acc;
+		});
+
+		var synonymsSet = new SynonymsSet
+		{
+			Synonyms = synonymRules
+		};
+
+		var json = JsonSerializer.Serialize(synonymsSet, SynonymSerializerContext.Default.SynonymsSet);
 
 		var response = await _transport.PutAsync<StringResponse>($"_synonyms/{setName}", PostData.String(json), ctx);
 
@@ -455,4 +470,16 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 		_semanticChannel.Dispose();
 		GC.SuppressFinalize(this);
 	}
+}
+
+internal sealed record SynonymsSet
+{
+	[JsonPropertyName("synonyms_set")]
+	public required List<SynonymRule> Synonyms { get; init; } = [];
+}
+
+internal sealed record SynonymRule
+{
+	public required string Id { get; init; }
+	public required string Synonyms { get; init; }
 }
