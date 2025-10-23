@@ -32,15 +32,46 @@ Currently, it handles irregular space characters that may impair Markdown render
 
 ### Irregular Space Detection
 
-The format command detects and replaces 24 types of irregular space characters with regular spaces, including:
+The format command intelligently handles irregular space characters by categorizing them into three groups:
 
-- No-Break Space (U+00A0)
-- En Space (U+2002)
-- Em Space (U+2003)
+#### Characters removed entirely
+
+These characters are removed completely as they serve no visual purpose and can cause rendering issues:
+
+- Line Tabulation (U+000B)
+- Form Feed (U+000C) 
+- Next Line (U+0085)
+- Ogham Space Mark (U+1680)
+- Mongolian Vowel Separator (U+180E)
+- Zero Width No-Break Space/BOM (U+FEFF)
 - Zero Width Space (U+200B)
 - Line Separator (U+2028)
 - Paragraph Separator (U+2029)
-- And 18 other irregular space variants
+
+#### Characters preserved
+
+These characters are preserved as they serve important typographic or functional purposes:
+
+- No-Break Space (U+00A0) - Prevents line breaks
+- Figure Space (U+2007) - Aligns numbers in tables
+- Narrow No-Break Space (U+202F) - French typography
+- Medium Mathematical Space (U+205F) - Mathematical expressions
+
+#### Characters replaced with regular spaces
+
+These characters are replaced with standard spaces (U+0020) as they can cause inconsistent rendering:
+
+- En Quad (U+2000)
+- Em Quad (U+2001)
+- En Space (U+2002)
+- Em Space (U+2003)
+- Tree-Per-Em (U+2004)
+- Four-Per-Em (U+2005)
+- Six-Per-Em (U+2006)
+- Punctuation Space (U+2008)
+- Thin Space (U+2009)
+- Hair Space (U+200A)
+- Ideographic Space (U+3000)
 
 These characters can cause unexpected rendering issues in Markdown and are often introduced accidentally through copy-paste operations from other applications.
 

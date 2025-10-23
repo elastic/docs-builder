@@ -8,22 +8,41 @@ using System.Text;
 namespace Elastic.Documentation.Refactor.Formatters;
 
 /// <summary>
-/// Formatter that replaces irregular space characters with regular spaces
+/// Formatter that handles irregular space characters appropriately:
+/// - Removes invisible characters entirely
+/// - Preserves semantically meaningful spaces
+/// - Replaces problematic spaces with regular spaces
 /// </summary>
 public class IrregularSpaceFormatter : IFormatter
 {
 	public string Name => "irregular space";
 
-	// Collection of irregular space characters that may impair Markdown rendering
-	private static readonly char[] IrregularSpaceChars =
+	// Characters to remove entirely (invisible/problematic)
+	private static readonly char[] CharactersToRemove =
 	[
 		'\u000B', // Line Tabulation (\v) - <VT>
 		'\u000C', // Form Feed (\f) - <FF>
-		'\u00A0', // No-Break Space - <NBSP>
 		'\u0085', // Next Line
 		'\u1680', // Ogham Space Mark
 		'\u180E', // Mongolian Vowel Separator - <MVS>
 		'\ufeff', // Zero Width No-Break Space - <BOM>
+		'\u200B', // Zero Width Space - <ZWSP>
+		'\u2028', // Line Separator
+		'\u2029'  // Paragraph Separator
+	];
+
+	// Characters to preserve (semantically meaningful)
+	private static readonly char[] CharactersToPreserve =
+	[
+		'\u00A0', // No-Break Space - <NBSP>
+		'\u2007', // Figure Space
+		'\u202F', // Narrow No-Break Space
+		'\u205F'  // Medium Mathematical Space
+	];
+
+	// Characters to replace with regular spaces (visible but problematic)
+	private static readonly char[] CharactersToReplace =
+	[
 		'\u2000', // En Quad
 		'\u2001', // Em Quad
 		'\u2002', // En Space - <ENSP>
@@ -31,39 +50,50 @@ public class IrregularSpaceFormatter : IFormatter
 		'\u2004', // Tree-Per-Em
 		'\u2005', // Four-Per-Em
 		'\u2006', // Six-Per-Em
-		'\u2007', // Figure Space
 		'\u2008', // Punctuation Space - <PUNCSP>
 		'\u2009', // Thin Space
 		'\u200A', // Hair Space
-		'\u200B', // Zero Width Space - <ZWSP>
-		'\u2028', // Line Separator
-		'\u2029', // Paragraph Separator
-		'\u202F', // Narrow No-Break Space
-		'\u205F', // Medium Mathematical Space
 		'\u3000'  // Ideographic Space
 	];
 
-	private static readonly SearchValues<char> IrregularSpaceSearchValues = SearchValues.Create(IrregularSpaceChars);
+	private static readonly SearchValues<char> CharactersToRemoveValues = SearchValues.Create(CharactersToRemove);
+	private static readonly SearchValues<char> CharactersToPreserveValues = SearchValues.Create(CharactersToPreserve);
+	private static readonly SearchValues<char> CharactersToReplaceValues = SearchValues.Create(CharactersToReplace);
 
 	public FormatResult Format(string content)
 	{
-		// Quick check - if no irregular space, return original
-		if (content.AsSpan().IndexOfAny(IrregularSpaceSearchValues) == -1)
+		// Quick check - if no irregular space characters, return original
+		var span = content.AsSpan();
+		if (span.IndexOfAny(CharactersToRemoveValues) == -1 &&
+			span.IndexOfAny(CharactersToPreserveValues) == -1 &&
+			span.IndexOfAny(CharactersToReplaceValues) == -1)
 			return new FormatResult(content, 0);
 
-		// Replace irregular space with regular spaces
+		// Process each character with appropriate handling
 		var sb = new StringBuilder(content.Length);
 		var replacements = 0;
 
 		foreach (var c in content)
 		{
-			if (IrregularSpaceSearchValues.Contains(c))
+			if (CharactersToRemoveValues.Contains(c))
 			{
+				// Remove invisible/problematic characters entirely
+				replacements++;
+			}
+			else if (CharactersToPreserveValues.Contains(c))
+			{
+				// Preserve semantically meaningful characters
+				_ = sb.Append(c);
+			}
+			else if (CharactersToReplaceValues.Contains(c))
+			{
+				// Replace problematic visible characters with regular spaces
 				_ = sb.Append(' ');
 				replacements++;
 			}
 			else
 			{
+				// Keep regular characters as-is
 				_ = sb.Append(c);
 			}
 		}
