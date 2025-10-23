@@ -47,6 +47,32 @@ sources:
       versionfilter:
         kind: latest
 
+  latest-edot-cf-aws-version:
+    name: Get latest release version for the edot-cf-aws
+    kind: githubrelease
+    transformers:
+      - trimprefix: v
+    spec:
+      owner: elastic
+      repository: edot-cloud-forwarder-aws
+      token: '{{ requiredEnv "GITHUB_TOKEN" }}'
+      username: '{{ requiredEnv "GITHUB_ACTOR" }}'
+      versionfilter:
+        kind: latest
+
+  latest-edot-cf-azure-version:
+    name: Get latest release version for the edot-cf-azure
+    kind: githubrelease
+    transformers:
+      - trimprefix: v
+    spec:
+      owner: elastic
+      repository: edot-cloud-forwarder-azure
+      token: '{{ requiredEnv "GITHUB_TOKEN" }}'
+      username: '{{ requiredEnv "GITHUB_ACTOR" }}'
+      versionfilter:
+        kind: latest
+
   latest-edot-collector-version:
     name: Get latest major release version for the elastic-agent
     kind: githubrelease
@@ -304,6 +330,24 @@ targets:
     spec:
       file: config/versions.yml
       key: versioning_systems.edot-android.current
+
+  update-docs-docset-cf-aws:
+    name: 'Update config/versions.yml edot-cf-aws {{ source "latest-edot-cf-aws-version" }}'
+    scmid: githubConfig
+    sourceid: latest-edot-cf-aws-version
+    kind: yaml
+    spec:
+      file: config/versions.yml
+      key: versioning_systems.edot-cf-aws.current
+
+  update-docs-docset-cf-azure:
+    name: 'Update config/versions.yml edot-cf-azure {{ source "latest-edot-cf-azure-version" }}'
+    scmid: githubConfig
+    sourceid: latest-edot-cf-azure-version
+    kind: yaml
+    spec:
+      file: config/versions.yml
+      key: versioning_systems.edot-cf-azure.current
 
   update-docs-docset-collector:
     name: 'Update config/versions.yml edot-collector {{ source "latest-edot-collector-version" }}'

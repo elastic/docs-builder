@@ -1,5 +1,8 @@
 scm:
   enabled: true
   owner: elastic
-  repository: docs-builder
+  repositories: |
+    docs-builder
+    edot-cloud-forwarder-aws
+    edot-cloud-forwarder-azure
   branch: main
