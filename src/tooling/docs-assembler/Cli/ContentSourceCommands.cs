@@ -47,8 +47,13 @@ internal sealed class ContentSourceCommands(
 		var fs = new FileSystem();
 		var service = new RepositoryBuildMatchingService(logFactory, configuration, configurationContext, githubActionsService, fs);
 		serviceInvoker.AddCommand(service, (repository, branchOrTag),
-			static async (s, collector, state, _) => await s.ShouldBuild(collector, state.repository, state.branchOrTag)
-		);
+			static async (s, collector, state, ctx) =>
+			{
+				_ = await s.ShouldBuild(collector, state.repository, state.branchOrTag);
+				// ShouldBuild throws an exception on bad args and will return false if it has no matches
+				// We return true to the service invoker to continue
+				return true;
+			});
 
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
