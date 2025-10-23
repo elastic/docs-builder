@@ -79,39 +79,59 @@ jobs:
       pull-requests: none
       id-token: none
     outputs:
-      content-source-match: ${{ steps.event-check.outputs.content-source-match != '' && steps.event-check.outputs.content-source-match || steps.match.outputs.content-source-match }}
-      content-source-next: ${{ steps.event-check.outputs.content-source-next != '' && steps.event-check.outputs.content-source-next || steps.match.outputs.content-source-next }}
-      content-source-current: ${{ steps.event-check.outputs.content-source-current != '' && steps.event-check.outputs.content-source-current || steps.match.outputs.content-source-current }}
-      content-source-edge: ${{ steps.event-check.outputs.content-source-edge != '' && steps.event-check.outputs.content-source-edge || steps.match.outputs.content-source-edge }}
-      content-source-speculative: ${{ steps.event-check.outputs.content-source-speculative != '' && steps.event-check.outputs.content-source-speculative || steps.match.outputs.content-source-speculative }}
+      content-source-match: ${{ format('{0}{1}{2}', steps.pr-check.outputs.content-source-match, steps.push-check.outputs.content-source-match, steps.merge-group-check.outputs.content-source-match) }}
+      content-source-next: ${{ format('{0}{1}{2}', steps.pr-check.outputs.content-source-next, steps.push-check.outputs.content-source-next, steps.merge-group-check.outputs.content-source-next) }}
+      content-source-current: ${{ format('{0}{1}{2}', steps.pr-check.outputs.content-source-current, steps.push-check.outputs.content-source-current, steps.merge-group-check.outputs.content-source-current) }}
+      content-source-edge: ${{ format('{0}{1}{2}', steps.pr-check.outputs.content-source-edge, steps.push-check.outputs.content-source-edge, steps.merge-group-check.outputs.content-source-edge) }}
+      content-source-speculative: ${{ format('{0}{1}{2}', steps.pr-check.outputs.content-source-speculative, steps.push-check.outputs.content-source-speculative, steps.merge-group-check.outputs.content-source-speculative) }}
     steps:
-      - name: Not a push event
-        id: event-check
-        if: contains(fromJSON('["merge_group", "pull_request", "pull_request_target"]'), github.event_name)
-        # we always want to run for pull requests, but we do not want to indicate its either content source
+      - name: Find merge-group base branch
+        if: contains(fromJSON('["merge_group"]'), github.event_name)
+        id: merge-group-base-branch
         run: |
-          echo "content-source-match=true" >> $GITHUB_OUTPUT
-          echo "content-source-next=false" >> $GITHUB_OUTPUT
-          echo "content-source-current=false" >> $GITHUB_OUTPUT
-          echo "content-source-edge=false" >> $GITHUB_OUTPUT
-          echo "content-source-speculative=false" >> $GITHUB_OUTPUT
+          BASE_BRANCH=$(basename "${{ github.event.merge_group.base_ref }}")
+          echo "base_ref=${BASE_BRANCH}" >> $GITHUB_OUTPUT
+      - name: Match for merge-group events
+        id: merge-group-check
+        if: contains(fromJSON('["merge_group"]'), github.event_name)
+        uses: elastic/docs-builder/actions/assembler-match@main
+        with:
+          ref_name: ${{ steps.merge-group-base-branch.outputs.base_ref }}
+          repository: ${{ github.repository }}
+          
+      - name: Match for PR events
+        id: pr-check
+        if: contains(fromJSON('["pull_request", "pull_request_target"]'), github.event_name)
+        uses: elastic/docs-builder/actions/assembler-match@main
+        with:
+          ref_name: ${{ github.base_ref }}
+          repository: ${{ github.repository }}
+      - name: Match for PR events debug
+        if: contains(fromJSON('["pull_request", "pull_request_target"]'), github.event_name)
+        run: |
+          echo "ref=${{ github.base_ref }}"
+          echo "repo=${{ github.repository }}"
+          
       - name: Match for push events
-        id: match
+        id: push-check
         if: contains(fromJSON('["push"]'), github.event_name)
         uses: elastic/docs-builder/actions/assembler-match@main
         with:
           ref_name: ${{ github.ref_name }}
           repository: ${{ github.repository }}
-      - name: Debug
+      - name: Match for push events debug
+        if: contains(fromJSON('["push"]'), github.event_name)
         run: |
-          echo "Non sensitive data, echo'ing here temporarily to validate this job before connecting it further into the build job"
-          echo "content-source-match=${{ steps.event-check.outputs.content-source-match != '' && steps.event-check.outputs.content-source-match || steps.match.outputs.content-source-match }}"
-          echo "content-source-next=${{ steps.event-check.outputs.content-source-next != '' && steps.event-check.outputs.content-source-next || steps.match.outputs.content-source-next }}"
-          echo "content-source-current=${{ steps.event-check.outputs.content-source-current != '' && steps.event-check.outputs.content-source-current || steps.match.outputs.content-source-current }}"
-          echo "content-source-current=${{ steps.event-check.outputs.content-source-edge != '' && steps.event-check.outputs.content-source-edge || steps.match.outputs.content-source-edge }}"
-          echo "content-source-speculative=${{ steps.event-check.outputs.content-source-speculative != '' && steps.event-check.outputs.content-source-speculative || steps.match.outputs.content-source-speculative }}"
           echo "ref=${{ github.ref_name }}"
           echo "repo=${{ github.repository }}"
+          
+      - name: Debug outputs
+        run: |
+          echo "content-source-match: ${{ format('{0}{1}{2}', steps.pr-check.outputs.content-source-match, steps.push-check.outputs.content-source-match, steps.merge-group-check.outputs.content-source-match) }}"
+          echo "content-source-next: ${{ format('{0}{1}{2}', steps.pr-check.outputs.content-source-next, steps.push-check.outputs.content-source-next, steps.merge-group-check.outputs.content-source-next) }}"
+          echo "content-source-current: ${{ format('{0}{1}{2}', steps.pr-check.outputs.content-source-current, steps.push-check.outputs.content-source-current, steps.merge-group-check.outputs.content-source-current) }}"
+          echo "content-source-edge: ${{ format('{0}{1}{2}', steps.pr-check.outputs.content-source-edge, steps.push-check.outputs.content-source-edge, steps.merge-group-check.outputs.content-source-edge) }}"
+          echo "content-source-speculative: ${{ format('{0}{1}{2}', steps.pr-check.outputs.content-source-speculative, steps.push-check.outputs.content-source-speculative, steps.merge-group-check.outputs.content-source-speculative) }}"
 
   check:
     runs-on: ubuntu-latest
