@@ -92,7 +92,7 @@ jobs:
           BASE_BRANCH=$(basename "${{ github.event.merge_group.base_ref }}")
           echo "base_ref=${BASE_BRANCH}" >> $GITHUB_OUTPUT
       - name: Match for merge-group events
-        id: pr-check
+        id: merge-group-check
         if: contains(fromJSON('["pull_request", "pull_request_target"]'), github.event_name)
         uses: elastic/docs-builder/actions/assembler-match@main
         with:
