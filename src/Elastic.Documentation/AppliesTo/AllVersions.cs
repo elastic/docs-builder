@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Diagnostics;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
@@ -38,6 +39,25 @@ public class SemVersionConverter : IYamlTypeConverter
 			"" => AllVersions.Instance,
 			_ => SemVersion.TryParse(value, out var v) ? v : SemVersion.TryParse(value + ".0", out v) ? v : null
 		};
+		return version is not null;
+	}
+
+	public static bool TryParse(string? value, IList<(Severity, string)> diagnostics, out SemVersion? version)
+	{
+		version = value?.Trim().ToLowerInvariant() switch
+		{
+			null => AllVersions.Instance,
+			"all" => AllVersions.Instance,
+			"" => AllVersions.Instance,
+			_ => SemVersion.TryParse(value, out var v) ? v : SemVersion.TryParse(value + ".0", out v) ? v : null
+		};
+
+		// Emit warning if version parsing failed
+		if (version is null && !string.IsNullOrWhiteSpace(value) && !string.Equals(value.Trim(), "all", StringComparison.OrdinalIgnoreCase))
+		{
+			diagnostics.Add((Severity.Warning, $"Invalid version format '{value}'. Expected semantic version format (e.g., '9.1.0' or '9.1'). Version will be ignored."));
+		}
+
 		return version is not null;
 	}
 }

@@ -227,7 +227,7 @@ public record Applicability : IComparable<Applicability>, IComparable
 				null => AllVersions.Instance,
 				"all" => AllVersions.Instance,
 				"" => AllVersions.Instance,
-				var t => SemVersionConverter.TryParse(t, out var v) ? v : null
+				var t => SemVersionConverter.TryParse(t, diagnostics, out var v) ? v : null
 			};
 		availability = new Applicability { Version = version, Lifecycle = lifecycle };
 		return true;

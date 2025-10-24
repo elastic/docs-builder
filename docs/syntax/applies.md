@@ -245,17 +245,17 @@ applies_to:
 :::::{dropdown} Block examples
 
 ```{applies_to}
-stack: preview 9.1
+stack: preview >=9.1
 serverless: ga
 
-apm_agent_dotnet: ga 1.0.0
+apm_agent_dotnet: ga 1.0.0`
 apm_agent_java: beta 1.0.0
 edot_dotnet: preview 1.0.0
 edot_python:
 edot_node: ga 1.0.0
-elasticsearch: preview 9.0.0
+elasticsearch: preview 9.0.0a
 security: removed 9.0.0
-observability: deprecated 9.0.0
+observability: deprecated 9.0.0beta
 ```
 :::::
 
