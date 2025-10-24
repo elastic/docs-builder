@@ -4,6 +4,7 @@
 
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Text;
 using Elastic.Documentation.Diagnostics;
 using YamlDotNet.Serialization;
@@ -170,8 +171,12 @@ public record Applicability : IComparable<Applicability>, IComparable
 	{
 		var diagnostics = new List<(Severity, string)>();
 		var productAvailability = TryParse(b, diagnostics, out var version) ? version : TryParse(b + ".0", diagnostics, out version) ? version : null;
-		if (diagnostics.Count > 0)
-			throw new ArgumentException("Explicit conversion from string to AppliesCollection failed." + string.Join(Environment.NewLine, diagnostics));
+
+		// Only throw exceptions for errors, not warnings
+		var errors = diagnostics.Where(d => d.Item1 == Severity.Error).ToList();
+		if (errors.Count > 0)
+			throw new ArgumentException("Explicit conversion from string to AppliesCollection failed." + string.Join(Environment.NewLine, errors.Select(e => e.Item2)));
+
 		return productAvailability ?? throw new ArgumentException($"'{b}' is not a valid applicability string.");
 	}
 
