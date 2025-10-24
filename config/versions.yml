@@ -23,7 +23,7 @@ versioning_systems:
   ess: *all
   ecs:
     base: 9.0
-    current: 9.1.0
+    current: 9.2.0
   self: *stack
   ecctl:
     base: 1.0
