@@ -14,7 +14,7 @@ namespace Elastic.Markdown.Tests.AppliesTo;
 public class VersionWarningTests
 {
 	[Fact]
-	public void ValidVersion_NoWarning()
+	public void ValidVersionNoWarning()
 	{
 		var diagnostics = new List<(Severity, string)>();
 		var success = SemVersionConverter.TryParse("9.1.0", diagnostics, out var version);
@@ -26,7 +26,7 @@ public class VersionWarningTests
 	}
 
 	[Fact]
-	public void ValidVersionWithFallback_NoWarning()
+	public void ValidVersionWithFallbackNoWarning()
 	{
 		var diagnostics = new List<(Severity, string)>();
 		var success = SemVersionConverter.TryParse("9.1", diagnostics, out var version);
@@ -38,7 +38,7 @@ public class VersionWarningTests
 	}
 
 	[Fact]
-	public void InvalidVersionWithOperator_WarningEmitted()
+	public void InvalidVersionWithOperatorWarningEmitted()
 	{
 		var diagnostics = new List<(Severity, string)>();
 		var success = SemVersionConverter.TryParse(">=9.1.0", diagnostics, out var version);
@@ -52,7 +52,7 @@ public class VersionWarningTests
 	}
 
 	[Fact]
-	public void InvalidVersionWithBacktick_WarningEmitted()
+	public void InvalidVersionWithBacktickWarningEmitted()
 	{
 		var diagnostics = new List<(Severity, string)>();
 		var success = SemVersionConverter.TryParse("9.1`", diagnostics, out var version);
@@ -66,7 +66,7 @@ public class VersionWarningTests
 	}
 
 	[Fact]
-	public void InvalidVersionFormat_WarningEmitted()
+	public void InvalidVersionFormatWarningEmitted()
 	{
 		var diagnostics = new List<(Severity, string)>();
 		var success = SemVersionConverter.TryParse("invalid-version", diagnostics, out var version);
@@ -79,7 +79,7 @@ public class VersionWarningTests
 	}
 
 	[Fact]
-	public void EmptyVersion_NoWarning()
+	public void EmptyVersionNoWarning()
 	{
 		var diagnostics = new List<(Severity, string)>();
 		var success = SemVersionConverter.TryParse("", diagnostics, out var version);
@@ -90,7 +90,7 @@ public class VersionWarningTests
 	}
 
 	[Fact]
-	public void AllVersion_NoWarning()
+	public void AllVersionNoWarning()
 	{
 		var diagnostics = new List<(Severity, string)>();
 		var success = SemVersionConverter.TryParse("all", diagnostics, out var version);
@@ -101,7 +101,7 @@ public class VersionWarningTests
 	}
 
 	[Fact]
-	public void NullVersion_NoWarning()
+	public void NullVersionNoWarning()
 	{
 		var diagnostics = new List<(Severity, string)>();
 		var success = SemVersionConverter.TryParse(null, diagnostics, out var version);
