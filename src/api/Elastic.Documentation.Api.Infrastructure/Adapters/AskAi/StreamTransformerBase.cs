@@ -50,16 +50,46 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 		{
 			await ProcessStreamAsync(reader, writer, cancellationToken);
 		}
+		catch (OperationCanceledException ex)
+		{
+			// Cancellation is expected and not an error - log as debug
+			Logger.LogDebug("Stream processing was cancelled.");
+			try
+			{
+				await writer.CompleteAsync(ex);
+				await reader.CompleteAsync(ex);
+			}
+			catch (Exception completeEx)
+			{
+				Logger.LogError(completeEx, "Error completing pipe after cancellation");
+			}
+			return;
+		}
 		catch (Exception ex)
 		{
 			Logger.LogError(ex, "Error transforming stream. Stream processing will be terminated.");
-			await writer.CompleteAsync(ex);
-			await reader.CompleteAsync(ex);
+			try
+			{
+				await writer.CompleteAsync(ex);
+				await reader.CompleteAsync(ex);
+			}
+			catch (Exception completeEx)
+			{
+				Logger.LogError(completeEx, "Error completing pipe after transformation error");
+			}
 			return;
 		}
 
-		await writer.CompleteAsync();
-		await reader.CompleteAsync();
+		// Normal completion - ensure cleanup happens
+		try
+		{
+			await writer.CompleteAsync();
+			await reader.CompleteAsync();
+		}
+		catch (Exception ex)
+		{
+			Logger.LogError(ex, "Error completing pipe after successful transformation");
+		}
 	}
 
 	/// <summary>
