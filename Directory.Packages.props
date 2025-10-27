@@ -83,7 +83,7 @@
   <!-- Test packages -->
   <ItemGroup>
     <PackageVersion Include="Aspire.Hosting.AppHost" Version="9.4.2" />
-    <PackageVersion Include="AngleSharp.Diffing" Version="1.0.0" />
+    <PackageVersion Include="AngleSharp.Diffing" Version="1.1.0" />
     <PackageVersion Include="DiffPlex" Version="1.7.2" />
     <PackageVersion Include="FluentAssertions" Version="7.2.0" />
     <PackageVersion Include="FsUnit.xUnit" Version="7.0.1" />
