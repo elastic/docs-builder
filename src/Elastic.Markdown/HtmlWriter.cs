@@ -147,6 +147,7 @@ public class HtmlWriter(
 			LegacyPages = legacyPages?.ToArray(),
 			VersionDropdownItems = VersionDropDownItemViewModel.FromLegacyPageMappings(legacyPages?.ToArray()),
 			Products = pageProducts,
+			VersioningSystem = pageVersioning,
 			VersionsConfig = DocumentationSet.Context.VersionsConfiguration,
 			StructuredBreadcrumbsJson = structuredBreadcrumbsJsonString
 		});

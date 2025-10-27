@@ -12,7 +12,6 @@ using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.IO;
-using Elastic.Markdown.IO.Navigation;
 
 namespace Elastic.Markdown.Page;
 
@@ -55,6 +54,7 @@ public class IndexViewModel
 
 	public required HashSet<Product> Products { get; init; }
 
+	public required VersioningSystem VersioningSystem { get; init; }
 	public required VersionsConfiguration VersionsConfig { get; init; }
 
 	// https://developers.google.com/search/docs/appearance/structured-data/breadcrumb#json-ld
