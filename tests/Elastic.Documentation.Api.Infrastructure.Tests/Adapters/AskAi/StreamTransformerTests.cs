@@ -29,10 +29,10 @@ public class AgentBuilderStreamTransformerTests
 			: keepalive
 
 			event: reasoning
-			data: {"data":{"status":"Searching for relevant documents..."}}
+			data: {"data":{"reasoning":"Searching for relevant documents..."}}
 
-		event: tool_call
-		data: {"data":{"tool_call_id":"tooluse_abc123","tool_id":"docs-esql","params":{"keyword_query":"semantic search","abstract_query":"natural language understanding vector search embeddings similarity"}}}
+			event: tool_call
+			data: {"data":{"tool_call_id":"tooluse_abc123","tool_id":"docs-esql","params":{"keyword_query":"semantic search","abstract_query":"natural language understanding vector search embeddings similarity"}}}
 
 			event: tool_result
 			data: {"data":{"tool_call_id":"tooluse_abc123","tool_id":"docs-esql","results":[{"type":"query","data":{"esql":"FROM semantic-docs-prod-latest | WHERE MATCH(title.semantic_text, \"semantic search\")"},"tool_result_id":"result1"}]}}
@@ -190,18 +190,25 @@ public class LlmGatewayStreamTransformerTests
 	{
 		// Arrange - Real LLM Gateway SSE stream
 		var sseData = """
+			event: agent_stream_output
 			data: [null, {"type":"agent_start","id":"1","timestamp":1234567890,"data":{}}]
 
+			event: agent_stream_output
 			data: [null, {"type":"ai_message_chunk","id":"2","timestamp":1234567891,"data":{"content":"Hello"}}]
 
+			event: agent_stream_output
 			data: [null, {"type":"ai_message_chunk","id":"3","timestamp":1234567892,"data":{"content":" world"}}]
 
+			event: agent_stream_output
 			data: [null, {"type":"tool_call","id":"4","timestamp":1234567893,"data":{"toolCalls":[{"id":"tool1","name":"ragSearch","args":{"searchQuery":"Index Lifecycle Management (ILM) Elasticsearch documentation"}}]}}]
 
+			event: agent_stream_output
 			data: [null, {"type":"tool_message","id":"5","timestamp":1234567894,"data":{"toolCallId":"tool1","result":"Found 10 docs"}}]
 
+			event: agent_stream_output
 			data: [null, {"type":"ai_message","id":"6","timestamp":1234567895,"data":{"content":"Hello world"}}]
 
+			event: agent_stream_output
 			data: [null, {"type":"agent_end","id":"7","timestamp":1234567896,"data":{}}]
 
 			""";
@@ -257,12 +264,16 @@ public class LlmGatewayStreamTransformerTests
 	{
 		// Arrange
 		var sseData = """
+			event: agent_stream_output
 			data: 
 
+			event: agent_stream_output
 			data: [null, {"type":"agent_start","id":"1","timestamp":1234567890,"data":{}}]
 
+			event: agent_stream_output
 			data: 
 
+			event: agent_stream_output
 			data: [null, {"type":"agent_end","id":"2","timestamp":1234567891,"data":{}}]
 
 			""";
