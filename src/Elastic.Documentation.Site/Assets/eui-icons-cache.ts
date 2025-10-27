@@ -7,6 +7,8 @@ import { icon as EuiIconCopy } from '@elastic/eui/es/components/icon/assets/copy
 import { icon as EuiIconCopyClipboard } from '@elastic/eui/es/components/icon/assets/copy_clipboard'
 import { icon as EuiIconCross } from '@elastic/eui/es/components/icon/assets/cross'
 import { icon as EuiIconDocument } from '@elastic/eui/es/components/icon/assets/document'
+import { icon as EuiIconDot } from '@elastic/eui/es/components/icon/assets/dot'
+import { icon as EuiIconEmpty } from '@elastic/eui/es/components/icon/assets/empty'
 import { icon as EuiIconError } from '@elastic/eui/es/components/icon/assets/error'
 import { icon as EuiIconFaceHappy } from '@elastic/eui/es/components/icon/assets/face_happy'
 import { icon as EuiIconFaceSad } from '@elastic/eui/es/components/icon/assets/face_sad'
@@ -32,6 +34,8 @@ appendIconComponentCache({
     arrowLeft: EuiIconArrowLeft,
     arrowRight: EuiIconArrowRight,
     document: EuiIconDocument,
+    dot: EuiIconDot,
+    empty: EuiIconEmpty,
     search: EuiIconSearch,
     trash: EuiIconTrash,
     user: EuiIconUser,
