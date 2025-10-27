@@ -1,6 +1,6 @@
 /** @jsxImportSource @emotion/react */
-import { AskAiSuggestions } from './AskAiSuggestions'
 import { AiProviderSelector } from './AiProviderSelector'
+import { AskAiSuggestions } from './AskAiSuggestions'
 import { ChatMessageList } from './ChatMessageList'
 import { useChatActions, useChatMessages } from './chat.store'
 import {
@@ -142,8 +142,9 @@ export const Chat = () => {
                                     <p>
                                         I can help answer your questions about
                                         Elastic documentation. <br />
-                                        Ask me anything about Elasticsearch, Kibana,
-                                        Observability, Security, and more.
+                                        Ask me anything about Elasticsearch,
+                                        Kibana, Observability, Security, and
+                                        more.
                                     </p>
                                     <EuiSpacer size="m" />
                                     <AiProviderSelector />

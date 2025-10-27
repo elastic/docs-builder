@@ -69,7 +69,8 @@ export const useAskAi = (props: Props): UseAskAiResponse => {
             } catch (error) {
                 console.error('[AI Provider] Failed to parse SSE event:', {
                     eventData: sseEvent.data,
-                    error: error instanceof Error ? error.message : String(error),
+                    error:
+                        error instanceof Error ? error.message : String(error),
                 })
                 // Re-throw to trigger onError handler
                 throw new Error(

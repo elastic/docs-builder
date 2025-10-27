@@ -1,8 +1,8 @@
 /** @jsxImportSource @emotion/react */
+import { useAiProviderStore } from './aiProviderStore'
 import { EuiRadioGroup } from '@elastic/eui'
 import type { EuiRadioGroupOption } from '@elastic/eui'
 import { css } from '@emotion/react'
-import { useAiProviderStore } from './aiProviderStore'
 
 const containerStyles = css`
     padding: 1rem;
@@ -29,7 +29,9 @@ export const AiProviderSelector = () => {
             <EuiRadioGroup
                 options={options}
                 idSelected={provider}
-                onChange={(id) => setProvider(id as 'AgentBuilder' | 'LlmGateway')}
+                onChange={(id) =>
+                    setProvider(id as 'AgentBuilder' | 'LlmGateway')
+                }
                 name="aiProvider"
                 legend={{
                     children: 'AI Provider',
