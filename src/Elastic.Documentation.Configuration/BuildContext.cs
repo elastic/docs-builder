@@ -110,7 +110,7 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 			DocumentationSourceDirectory = ConfigurationPath.Directory!;
 
 		Git = gitCheckoutInformation ?? GitCheckoutInformation.Create(DocumentationCheckoutDirectory, ReadFileSystem);
-		Configuration = new ConfigurationFile(this, VersionsConfiguration, ProductsConfiguration);
+		Configuration = new ConfigurationFile(this, VersionsConfiguration, ProductsConfiguration, LegacyUrlMappings);
 		GoogleTagManager = new GoogleTagManagerConfiguration
 		{
 			Enabled = false

@@ -8,6 +8,7 @@ using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Suggestions;
 using Elastic.Documentation.Configuration.TableOfContents;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Navigation;
 using YamlDotNet.RepresentationModel;
@@ -63,7 +64,7 @@ public record ConfigurationFile : ITableOfContentsScope
 		Project is not null
 		&& Project.Equals("Elastic documentation", StringComparison.OrdinalIgnoreCase);
 
-	public ConfigurationFile(IDocumentationSetContext context, VersionsConfiguration versionsConfig, ProductsConfiguration productsConfig)
+	public ConfigurationFile(IDocumentationSetContext context, VersionsConfiguration versionsConfig, ProductsConfiguration productsConfig, LegacyUrlMappingConfiguration legacyUrlMappingsConfig)
 	{
 		_context = context;
 		ScopeDirectory = context.ConfigurationPath.Directory!;
@@ -167,7 +168,11 @@ public record ConfigurationFile : ITableOfContentsScope
 				}
 			}
 
-			foreach (var (id, system) in versionsConfig.VersioningSystems)
+			foreach (var (id, system, previousVersion) in
+					 versionsConfig.VersioningSystems.Select(kvp =>
+						 (kvp.Key, kvp.Value,
+							 legacyUrlMappingsConfig.Mappings.FirstOrDefault(m =>
+								 m.Product.VersioningSystem == kvp.Value)?.LegacyVersions.FirstOrDefault() ?? string.Empty)))
 			{
 				var name = id.ToStringFast(true);
 				var alternativeName = name.Replace('-', '_');
@@ -175,8 +180,9 @@ public record ConfigurationFile : ITableOfContentsScope
 				_substitutions[$"version.{alternativeName}"] = system.Current;
 				_substitutions[$"version.{name}.base"] = system.Base;
 				_substitutions[$"version.{alternativeName}.base"] = system.Base;
+				_substitutions[$"version.{name}.previous"] = previousVersion;
+				_substitutions[$"version.{alternativeName}.previous"] = previousVersion;
 			}
-
 			foreach (var product in productsConfig.Products.Values)
 			{
 				var alternativeProductId = product.Id.Replace('-', '_');

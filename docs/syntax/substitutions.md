@@ -236,3 +236,9 @@ id:
 ```
 
 A shorthand format is also available. Using `{{.id}}` is equivalent to `{{product.id}}`.
+
+## Previous stack version
+
+Products with a matching legacy URL mapping can access their previous version:
+
+Example: `{{version.stack.previous}}` produces {{version.stack.previous}}.
