@@ -105,7 +105,7 @@ public class HtmlWriter(
 			fullNavigationRenderResult
 		);
 
-		var pageVersioning = VersionInferrerService.InferVersion(DocumentationSet.Context.Git.RepositoryName, legacyPages);
+		var pageVersioning = VersionInferrerService.InferVersion(DocumentationSet.Context.Git.RepositoryName, legacyPages, markdown.YamlFrontMatter?.Products, markdown.YamlFrontMatter?.AppliesTo);
 
 		var currentBaseVersion = $"{pageVersioning.Base.Major}.{pageVersioning.Base.Minor}+";
 
