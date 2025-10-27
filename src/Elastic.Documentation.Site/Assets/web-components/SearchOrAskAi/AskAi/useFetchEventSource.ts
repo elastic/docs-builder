@@ -8,6 +8,7 @@ import { useRef, useCallback } from 'react'
 // Simple wrapper interface around fetch-event-source
 export interface UseFetchEventSourceOptions {
     apiEndpoint: string
+    headers?: Record<string, string>
     onMessage?: (event: EventSourceMessage) => void
     onError?: (error: Error) => void
     onOpen?: (response: Response) => Promise<void>
@@ -23,6 +24,7 @@ class FatalError extends Error {}
 
 export function useFetchEventSource<TPayload>({
     apiEndpoint,
+    headers,
     onMessage,
     onError,
     onOpen,
@@ -49,6 +51,7 @@ export function useFetchEventSource<TPayload>({
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        ...headers,
                     },
                     body: JSON.stringify(payload),
                     signal: controller.signal, // Use local controller, not ref
@@ -93,7 +96,7 @@ export function useFetchEventSource<TPayload>({
                 }
             }
         },
-        [apiEndpoint, onMessage, onError, onOpen, onClose]
+        [apiEndpoint, headers, onMessage, onError, onOpen, onClose]
     )
 
     return {

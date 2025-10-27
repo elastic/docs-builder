@@ -30,6 +30,14 @@ public class LocalParameterProvider : IParameterProvider
 				{
 					return GetEnv("DOCUMENTATION_ELASTIC_APIKEY");
 				}
+			case "docs-kibana-url":
+				{
+					return GetEnv("DOCUMENTATION_KIBANA_URL");
+				}
+			case "docs-kibana-apikey":
+				{
+					return GetEnv("DOCUMENTATION_KIBANA_APIKEY");
+				}
 			case "docs-elasticsearch-index":
 				{
 					return GetEnv("DOCUMENTATION_ELASTIC_INDEX", "semantic-docs-dev-latest");
