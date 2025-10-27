@@ -11,9 +11,10 @@ using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Assembler.Navigation;
 
-public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigation globalNavigation, IDiagnosticsCollector collector) : INavigationHtmlWriter
+public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigation globalNavigation, IDiagnosticsCollector collector) : INavigationHtmlWriter, IDisposable
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<GlobalNavigationHtmlWriter>();
+	private readonly SemaphoreSlim _semaphore = new(1, 1);
 
 	private readonly ConcurrentDictionary<(string, int), string> _renderedNavigationCache = [];
 
@@ -23,27 +24,33 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 			collector.EmitGlobalError($"Passed root is not actually a top level navigation item {currentRootNavigation.NavigationTitle} ({currentRootNavigation.Id}) in {currentRootNavigation.Url}");
 
 		if (_renderedNavigationCache.TryGetValue((currentRootNavigation.Id, maxLevel), out var html))
+			return new NavigationRenderResult { Html = html, Id = currentRootNavigation.Id };
+
+		if (currentRootNavigation is not INodeNavigationItem<INavigationModel, INavigationItem> group)
+			return NavigationRenderResult.Empty;
+
+		await _semaphore.WaitAsync(ctx);
+
+		try
 		{
+			if (_renderedNavigationCache.TryGetValue((currentRootNavigation.Id, maxLevel), out html))
+				return new NavigationRenderResult { Html = html, Id = currentRootNavigation.Id };
+
+			_logger.LogInformation("Rendering navigation for {NavigationTitle} ({Id})", currentRootNavigation.NavigationTitle, currentRootNavigation.Id);
+
+			var model = CreateNavigationModel(group, maxLevel);
+			html = await ((INavigationHtmlWriter)this).Render(model, ctx);
+			_renderedNavigationCache[(currentRootNavigation.Id, maxLevel)] = html;
 			return new NavigationRenderResult
 			{
 				Html = html,
 				Id = currentRootNavigation.Id
 			};
 		}
-
-		_logger.LogInformation("Rendering navigation for {NavigationTitle} ({Id})", currentRootNavigation.NavigationTitle, currentRootNavigation.Id);
-
-		if (currentRootNavigation is not INodeNavigationItem<INavigationModel, INavigationItem> group)
-			return NavigationRenderResult.Empty;
-
-		var model = CreateNavigationModel(group, maxLevel);
-		html = await ((INavigationHtmlWriter)this).Render(model, ctx);
-		_renderedNavigationCache[(currentRootNavigation.Id, maxLevel)] = html;
-		return new NavigationRenderResult
+		finally
 		{
-			Html = html,
-			Id = currentRootNavigation.Id
-		};
+			_ = _semaphore.Release();
+		}
 	}
 
 	private NavigationViewModel CreateNavigationModel(INodeNavigationItem<INavigationModel, INavigationItem> group, int maxLevel)
@@ -60,5 +67,11 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 			TopLevelItems = topLevelItems,
 			MaxLevel = maxLevel
 		};
+	}
+
+	public void Dispose()
+	{
+		_semaphore.Dispose();
+		GC.SuppressFinalize(this);
 	}
 }

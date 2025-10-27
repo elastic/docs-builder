@@ -5,7 +5,6 @@
 using System.Collections.Immutable;
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration.Assembler;
-using Elastic.Documentation.Configuration.Serialization;
 using Elastic.Documentation.Diagnostics;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;

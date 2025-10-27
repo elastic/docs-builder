@@ -2,10 +2,12 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Diagnostics;
 using Elastic.Documentation.Extensions;
 
 namespace Elastic.Documentation.Navigation.Isolated;
 
+[DebuggerDisplay("{Url}")]
 public class FolderNavigation : INodeNavigationItem<IDocumentationFile, INavigationItem>
 {
 	public FolderNavigation(

@@ -230,9 +230,7 @@ public class DocumentationSetFile : TableOfContentsFile
 
 		// Validate: TOC must have at least one child
 		if (resolvedChildren.Count == 0)
-		{
 			collector.EmitError(tocFilePath, $"Table of contents '{fullTocPath}' has no children defined");
-		}
 
 		// Return TOC ref with FULL path and resolved children
 		// The context remains the parent context (where this TOC was referenced)

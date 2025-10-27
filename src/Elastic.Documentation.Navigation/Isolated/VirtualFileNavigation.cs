@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Diagnostics;
 using System.IO.Abstractions;
 using Elastic.Documentation.Extensions;
 
@@ -19,6 +20,7 @@ public record VirtualFileNavigationArgs(
 );
 
 /// Represents a file navigation item that defines children which are not part of the file tree.
+[DebuggerDisplay("{Url}")]
 public class VirtualFileNavigation<TModel>(TModel model, IFileInfo fileInfo, VirtualFileNavigationArgs args)
 	: INodeNavigationItem<TModel, INavigationItem>
 	where TModel : IDocumentationFile

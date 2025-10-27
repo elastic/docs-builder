@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Diagnostics;
 using System.IO.Abstractions;
 
 namespace Elastic.Documentation.Navigation.Isolated;
@@ -11,6 +12,7 @@ namespace Elastic.Documentation.Navigation.Isolated;
 /// before the final navigation item is created with its children collection.
 /// This placeholder should never appear in the final navigation tree.
 /// </summary>
+[DebuggerDisplay("{Url}")]
 internal sealed class TemporaryNavigationPlaceholder(
 	int depth,
 	string id,

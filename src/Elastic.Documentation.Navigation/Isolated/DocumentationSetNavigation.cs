@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Diagnostics;
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration.DocSet;
 using Elastic.Documentation.Extensions;
@@ -31,6 +32,7 @@ public interface IDocumentationSetNavigation : IRootNavigationItem<IDocumentatio
 	IReadOnlyDictionary<Uri, INodeNavigationItem<IDocumentationFile, INavigationItem>> TableOfContentNodes { get; }
 }
 
+[DebuggerDisplay("{Url}")]
 public class DocumentationSetNavigation<TModel>
 	: IDocumentationSetNavigation, INavigationPathPrefixProvider, IPathPrefixProvider
 

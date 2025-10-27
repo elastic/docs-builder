@@ -14,8 +14,7 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNaviga
 {
 	private readonly ConcurrentDictionary<(string, int), string> _renderedNavigationCache = [];
 
-	public async Task<NavigationRenderResult> RenderNavigation(
-		IRootNavigationItem<INavigationModel, INavigationItem> currentRootNavigation, int maxLevel, Cancel ctx = default
+	public async Task<NavigationRenderResult> RenderNavigation(IRootNavigationItem<INavigationModel, INavigationItem> currentRootNavigation, int maxLevel, Cancel ctx = default
 	)
 	{
 		var navigation = context.Configuration.Features.PrimaryNavEnabled || currentRootNavigation.IsUsingNavigationDropdown

@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Diagnostics;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.DocSet;
 using Elastic.Documentation.Extensions;
@@ -12,6 +13,7 @@ namespace Elastic.Documentation.Navigation.Assembler;
 public record SiteNavigationNoIndexFile(string NavigationTitle) : IDocumentationFile;
 
 
+[DebuggerDisplay("{Url}")]
 public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigationItem>
 {
 	private readonly string? _sitePrefix;
@@ -45,6 +47,7 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 				}
 			}
 		}
+		UnseenNodes = [.. _nodes.Keys];
 
 		// Build NavigationItems from SiteTableOfContentsRef items
 		var items = new List<INavigationItem>();
@@ -54,7 +57,9 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 			var navItem = CreateSiteTableOfContentsNavigation(
 				tocRef,
 				index++,
-				context
+				context,
+				this,
+				null
 			);
 
 			if (navItem != null)
@@ -63,11 +68,15 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 
 		NavigationItems = items;
 		_ = this.UpdateNavigationIndex(context);
+		var count = UnseenNodes.Count;
+		var unseen = string.Join(", ", UnseenNodes);
 		Index = this.FindIndex<IDocumentationFile>(new NotFoundModel("/index.md"));
 	}
 
 	private readonly Dictionary<Uri, INodeNavigationItem<IDocumentationFile, INavigationItem>> _nodes;
 	public IReadOnlyDictionary<Uri, INodeNavigationItem<IDocumentationFile, INavigationItem>> Nodes => _nodes;
+
+	private HashSet<Uri> UnseenNodes { get; }
 
 	public IReadOnlyCollection<PhantomRegistration> Phantoms { get; }
 
@@ -135,7 +144,9 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 	private INavigationItem? CreateSiteTableOfContentsNavigation(
 		SiteTableOfContentsRef tocRef,
 		int index,
-		IDocumentationContext context
+		IDocumentationContext context,
+		INodeNavigationItem<INavigationModel, INavigationItem> parent,
+		IRootNavigationItem<INavigationModel, INavigationItem>? root
 	)
 	{
 		var pathPrefix = tocRef.PathPrefix;
@@ -146,14 +157,13 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 			if (tocRef.Source.Scheme != NarrativeRepository.RepositoryName)
 				context.EmitError(context.ConfigurationPath, $"path_prefix is required for TOC reference: {tocRef.Source}");
 
-			pathPrefix = tocRef.Source.Scheme;
 			if (!string.IsNullOrEmpty(tocRef.Source.Host))
 				pathPrefix += $"/{tocRef.Source.Host}";
 			if (!string.IsNullOrEmpty(tocRef.Source.AbsolutePath) && tocRef.Source.AbsolutePath != "/")
 				pathPrefix += $"/{tocRef.Source.AbsolutePath}";
 		}
 
-		// Normalize pathPrefix to remove leading/trailing slashes for consistent combination
+		// Normalize pathPrefix to remove leading/trailing slashes for a consistent combination
 		pathPrefix = pathPrefix.Trim('/');
 
 		// Combine with site prefix if present, otherwise ensure leading slash
@@ -173,12 +183,25 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 			return null;
 		}
 
+		_ = UnseenNodes.Remove(tocRef.Source);
 		// Set the navigation index
 		node.NavigationIndex = index;
 		prefixProvider.PathPrefixProvider = new PathPrefixProvider(pathPrefix);
 
-		// Recursively create child navigation items if children are specified
+		var wrapped = new SiteTableOfContentsNavigation<IDocumentationFile>(node, prefixProvider.PathPrefixProvider, parent, root);
+		parent = wrapped;
+		root ??= wrapped.NavigationRoot;
+
 		var children = new List<INavigationItem>();
+		var nodeChildren = node.NavigationItems;
+		foreach (var nodeChild in nodeChildren)
+		{
+			nodeChild.Parent = parent;
+			if (nodeChild is IRootNavigationItem<IDocumentationFile, INavigationItem>)
+				continue;
+			children.Add(nodeChild);
+		}
+		// Recursively create child navigation items if children are specified
 		if (tocRef.Children.Count > 0)
 		{
 			var childIndex = 0;
@@ -187,20 +210,18 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 				var childItem = CreateSiteTableOfContentsNavigation(
 					child,
 					childIndex++,
-					context
+					context,
+					parent,
+					root
 				);
 				if (childItem != null)
 					children.Add(childItem);
 			}
 		}
-		else
-		{
-			// If no children specified, use the node's original children
-			children = node.NavigationItems.ToList();
-		}
 
+		wrapped.NavigationItems = children;
 		// Always return a wrapper to ensure path_prefix is the URL (not path_prefix + node's URL)
-		return new SiteTableOfContentsNavigation<IDocumentationFile>(node, prefixProvider.PathPrefixProvider, children);
+		return wrapped;
 	}
 }
 
@@ -212,10 +233,12 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 /// Wrapper for a navigation node that applies a path prefix to URLs and optionally
 /// overrides the children to show only the children specified in the site navigation configuration.
 /// </remarks>
+[DebuggerDisplay("{Url}")]
 public sealed class SiteTableOfContentsNavigation<TModel>(
 	INodeNavigationItem<TModel, INavigationItem> wrappedNode,
 	IPathPrefixProvider pathPrefixProvider,
-	IReadOnlyCollection<INavigationItem> children
+	INodeNavigationItem<INavigationModel, INavigationItem> parent,
+	IRootNavigationItem<INavigationModel, INavigationItem>? root
 	) : INodeNavigationItem<TModel, INavigationItem>, INavigationPathPrefixProvider
 	where TModel : IDocumentationFile
 {
@@ -231,12 +254,13 @@ public sealed class SiteTableOfContentsNavigation<TModel>(
 	}
 
 	public string NavigationTitle => wrappedNode.NavigationTitle;
-	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => wrappedNode.NavigationRoot;
+	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot =>
+		root ?? wrappedNode as IRootNavigationItem<INavigationModel, INavigationItem> ?? parent.NavigationRoot;
 
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent
 	{
-		get => wrappedNode.Parent;
-		set => wrappedNode.Parent = value;
+		get => parent;
+		set { }
 	}
 
 	public bool Hidden => wrappedNode.Hidden;
@@ -255,7 +279,7 @@ public sealed class SiteTableOfContentsNavigation<TModel>(
 	// Override to return the specified children from site navigation
 	// Wrap children to apply path prefix recursively - but don't wrap children that are
 	// already SiteTableOfContentsNavigation (they have their own path prefix)
-	public IReadOnlyCollection<INavigationItem> NavigationItems { get; } = children;
+	public IReadOnlyCollection<INavigationItem> NavigationItems { get; set; } = [];
 
 	/// <inheritdoc />
 	public IPathPrefixProvider PathPrefixProvider { get; set; } = pathPrefixProvider;
