@@ -11,7 +11,6 @@ import { initTocNav } from './toc-nav'
 import 'htmx-ext-head-support'
 import 'htmx-ext-preload'
 import katex from 'katex'
-import 'katex/dist/katex.min.css'
 import { $, $$ } from 'select-dom'
 import { UAParser } from 'ua-parser-js'
 
