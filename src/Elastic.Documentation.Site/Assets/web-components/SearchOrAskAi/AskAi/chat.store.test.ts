@@ -95,7 +95,7 @@ describe('chat.store', () => {
 
         // Verify fresh state
         expect(chatStore.getState().chatMessages).toHaveLength(0)
-        expect(chatStore.getState().threadId).not.toBe(oldThreadId)
+        expect(chatStore.getState().threadId).toBeNull()
 
         // Start new conversation
         act(() => {
