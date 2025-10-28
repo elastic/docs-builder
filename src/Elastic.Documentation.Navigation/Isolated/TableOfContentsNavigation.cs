@@ -26,7 +26,8 @@ public class TableOfContentsNavigation : IRootNavigationItem<IDocumentationFile,
 		string pathPrefix,
 		IReadOnlyCollection<INavigationItem> navigationItems,
 		GitCheckoutInformation git,
-		Dictionary<Uri, INodeNavigationItem<IDocumentationFile, INavigationItem>> tocNodes
+		Dictionary<Uri, INodeNavigationItem<IDocumentationFile, INavigationItem>> tocNodes,
+		INavigationHomeProvider homeProvider
 	)
 	{
 		TableOfContentsDirectory = tableOfContentsDirectory;
@@ -38,10 +39,11 @@ public class TableOfContentsNavigation : IRootNavigationItem<IDocumentationFile,
 		Id = ShortId.Create(parentPath);
 		Depth = depth;
 		ParentPath = parentPath;
-		_pathPrefix = pathPrefix;
+		PathPrefix = pathPrefix;
 
-		// Initialize _homeProvider to this - it will be updated in assembler builds if needed
-		_homeProvider = this;
+		// Initialize _homeProvider from the provided homeProvider
+		// According to url-building.md: "In isolated builds the NavigationRoot is always the DocumentationSetNavigation"
+		_homeProvider = homeProvider;
 
 		// Create an identifier for this TOC
 		Identifier = new Uri($"{git.RepositoryName}://{parentPath}");
@@ -51,20 +53,17 @@ public class TableOfContentsNavigation : IRootNavigationItem<IDocumentationFile,
 		Index = this.FindIndex<IDocumentationFile>(new NotFoundModel($"{parentPath}/index.md"));
 	}
 
-	private readonly string _pathPrefix;
-
 	/// <summary>
-	/// Internal HomeProvider - defaults to this, but can be updated in assembler builds.
+	/// Internal HomeProvider - can be updated in assembler builds for rehoming.
 	/// </summary>
 	private INavigationHomeProvider _homeProvider { get; set; }
 
 	/// <summary>
-	/// The composed path prefix for this TOC, which is the parent's prefix + this TOC's parent path.
-	/// This is used by children to build their URLs.
-	/// Implements INavigationHomeProvider.PathPrefix
-	/// When HomeProvider is set (during assembler), this returns the external provider's PathPrefix.
+	/// The path prefix for this TOC - same as parent per url-building.md.
+	/// Implements INavigationHomeProvider.PathPrefix.
+	/// TOC doesn't change PathPrefix from parent.
 	/// </summary>
-	public string PathPrefix => _homeProvider == this ? _pathPrefix : _homeProvider.PathPrefix;
+	public string PathPrefix { get; }
 
 	/// <inheritdoc />
 	public string Url => Index.Url;
@@ -73,11 +72,11 @@ public class TableOfContentsNavigation : IRootNavigationItem<IDocumentationFile,
 	public string NavigationTitle => Index.NavigationTitle;
 
 	/// <summary>
-	/// TableOfContentsNavigation is its own NavigationRoot in isolated builds.
-	/// In assembler builds, this can be overridden via HomeProvider.
+	/// TableOfContentsNavigation's NavigationRoot comes from its HomeProvider.
+	/// According to url-building.md: "In isolated builds the NavigationRoot is always the DocumentationSetNavigation"
 	/// This satisfies both INavigationItem.NavigationRoot and INavigationHomeProvider.NavigationRoot.
 	/// </summary>
-	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => _homeProvider == this ? this : _homeProvider.NavigationRoot;
+	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => _homeProvider.NavigationRoot;
 
 	/// <inheritdoc />
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }

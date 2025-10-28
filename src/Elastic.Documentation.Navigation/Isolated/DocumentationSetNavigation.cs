@@ -399,34 +399,23 @@ public class DocumentationSetNavigation<TModel>
 			context.ReadFileSystem.Path.Combine(context.DocumentationSourceDirectory.FullName, fullTocPath)
 		);
 
-		// TODO: Add validation for TOCs with children in parent YAML
-		// This is a known limitation - TOCs should not have children defined in parent YAML
-
-		// According to url-building.md line 19-21: "We are not actually changing the PathPrefix,
-		// we create the scope to be able to rehome during Assembler builds."
-		// So TOC uses the SAME PathPrefix as its parent - it only creates a scope for rehoming
-		var scopedPathPrefix = homeProvider.PathPrefix;
-
 		// Create the TOC navigation with empty children initially
 		// We use null parent temporarily - we'll set it properly at the end using the public setter
+		// Pass tocHomeProvider so the TOC uses parent's NavigationRoot (enables dynamic URL updates)
 		var tocNavigation = new TableOfContentsNavigation(
 			tocDirectory,
 			depth + 1,
 			fullTocPath,
 			null, // Temporary null parent
-			scopedPathPrefix,
+			homeProvider.PathPrefix,
 			[],
 			Git,
-			_tableOfContentNodes
+			_tableOfContentNodes,
+			homeProvider
 		)
 		{
 			NavigationIndex = index
 		};
-
-		// Create a scoped HomeProvider for TOC children
-		// According to url-building.md: "In isolated builds the NavigationRoot is always the DocumentationSetNavigation"
-		// So we use the parent's NavigationRoot, not the TOC itself
-		var tocHomeProvider = new NavigationHomeProvider(scopedPathPrefix, homeProvider.NavigationRoot);
 
 		// Convert children - pass tocNavigation as parent and tocHomeProvider as HomeProvider (TOC creates new scope)
 		var children = new List<INavigationItem>();
@@ -441,7 +430,7 @@ public class DocumentationSetNavigation<TModel>
 				childIndex++,
 				context,
 				tocNavigation,
-				tocHomeProvider, // Use the scoped HomeProvider with correct NavigationRoot
+				homeProvider, // Use the scoped HomeProvider with correct NavigationRoot
 				depth + 1
 			);
 
@@ -470,10 +459,11 @@ public class DocumentationSetNavigation<TModel>
 			depth + 1,
 			fullTocPath,
 			parent, // Now set the correct parent
-			scopedPathPrefix,
+			homeProvider.PathPrefix,
 			children,
 			Git,
-			_tableOfContentNodes
+			_tableOfContentNodes,
+			homeProvider // Pass same HomeProvider to final TOC
 		)
 		{
 			NavigationIndex = index

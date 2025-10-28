@@ -340,12 +340,12 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		gettingStarted.NavigationRoot.Should().BeSameAs(navigation);
 
 		// According to url-building.md: "In isolated builds the NavigationRoot is always the DocumentationSetNavigation"
-		// Items in advanced TOC should point to DocumentationSetNavigation, not the TOC
+		// ALL items including TOCs should point to DocumentationSetNavigation as NavigationRoot
 		var advancedToc = setupFolder.NavigationItems.ElementAt(1).Should().BeOfType<TableOfContentsNavigation>().Subject;
-		advancedToc.NavigationRoot.Should().BeSameAs(advancedToc, "TableOfContentsNavigation is its own root when not rehomed");
+		advancedToc.NavigationRoot.Should().BeSameAs(navigation, "TOC NavigationRoot should be DocumentationSetNavigation in isolated builds");
 
 		var advancedIndex = advancedToc.NavigationItems.First();
-		advancedIndex.NavigationRoot.Should().BeSameAs(navigation, "Items within TOC should point to DocumentationSetNavigation in isolated builds");
+		advancedIndex.NavigationRoot.Should().BeSameAs(navigation, "TOC children should point to DocumentationSetNavigation in isolated builds");
 
 		// Items in file with children should point to DocumentationSetNavigation
 		var guideFile = navigation.NavigationItems.ElementAt(2).Should().BeOfType<VirtualFileNavigation<TestDocumentationFile>>().Subject;
