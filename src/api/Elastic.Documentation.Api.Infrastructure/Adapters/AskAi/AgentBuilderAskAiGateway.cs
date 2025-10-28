@@ -15,6 +15,15 @@ namespace Elastic.Documentation.Api.Infrastructure.Adapters.AskAi;
 
 public class AgentBuilderAskAiGateway(HttpClient httpClient, IParameterProvider parameterProvider, ILogger<AgentBuilderAskAiGateway> logger) : IAskAiGateway<Stream>
 {
+	/// <summary>
+	/// Model name used by Agent Builder (from AgentId)
+	/// </summary>
+	public const string ModelName = "docs-agent";
+
+	/// <summary>
+	/// Provider name for tracing
+	/// </summary>
+	public const string ProviderName = "agent-builder";
 	public async Task<Stream> AskAi(AskAiRequest askAiRequest, Cancel ctx = default)
 	{
 		// Only include conversation_id if threadId is provided (subsequent requests)

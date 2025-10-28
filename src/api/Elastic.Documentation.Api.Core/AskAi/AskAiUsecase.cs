@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Api.Core.AskAi;
@@ -11,11 +12,43 @@ public class AskAiUsecase(
 	IStreamTransformer streamTransformer,
 	ILogger<AskAiUsecase> logger)
 {
+	private static readonly ActivitySource AskAiActivitySource = new("Elastic.Documentation.Api.AskAi");
+
+	private static string GetModelNameFromProvider(string provider) => provider switch
+	{
+		"LlmGateway" => "docs_assistant",
+		"AgentBuilder" => "docs-agent",
+		_ => "elastic-docs-rag"
+	};
+
 	public async Task<Stream> AskAi(AskAiRequest askAiRequest, Cancel ctx)
 	{
+		using var activity = AskAiActivitySource.StartActivity("gen_ai.agent");
+
+		// We'll determine the actual agent name after we know which provider is being used
+		_ = (activity?.SetTag("gen_ai.request.input", askAiRequest.Message));
+		_ = (activity?.SetTag("gen_ai.request.conversation_id", askAiRequest.ThreadId ?? "new-conversation"));
+
+		// Add GenAI inference operation details event
+		_ = (activity?.AddEvent(new ActivityEvent("gen_ai.client.inference.operation.details",
+			timestamp: DateTimeOffset.UtcNow,
+			tags:
+			[
+				new KeyValuePair<string, object?>("gen_ai.operation.name", "chat"),
+				new KeyValuePair<string, object?>("gen_ai.request.model", GetModelNameFromProvider("Unknown")), // Will be updated by transformer
+				new KeyValuePair<string, object?>("gen_ai.conversation.id", askAiRequest.ThreadId ?? "pending"), // Will be updated when we receive ConversationStart
+				new KeyValuePair<string, object?>("gen_ai.input.messages", $"[{{\"role\":\"user\",\"content\":\"{askAiRequest.Message}\"}}]"),
+				new KeyValuePair<string, object?>("gen_ai.system_instructions", $"[{{\"type\":\"text\",\"content\":\"{AskAiRequest.SystemPrompt}\"}}]")
+			])));
+
 		logger.LogDebug("Processing AskAiRequest: {Request}", askAiRequest);
+
 		var rawStream = await askAiGateway.AskAi(askAiRequest, ctx);
-		return await streamTransformer.TransformAsync(rawStream, ctx);
+
+		// The stream transformer will set the correct agent name, model name and provider
+		var transformedStream = await streamTransformer.TransformAsync(rawStream, ctx);
+
+		return transformedStream;
 	}
 }
 

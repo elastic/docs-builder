@@ -27,7 +27,16 @@ public static class MappingsExtension
 		_ = askAiGroup.MapPost("/stream", async (AskAiRequest askAiRequest, AskAiUsecase askAiUsecase, Cancel ctx) =>
 		{
 			var stream = await askAiUsecase.AskAi(askAiRequest, ctx);
-			return Results.Stream(stream, "text/event-stream");
+
+			// Configure response headers for optimal streaming
+			var response = Results.Stream(stream, "text/event-stream");
+
+			// Add headers to prevent buffering
+			response.Response.Headers.Add("Cache-Control", "no-cache");
+			response.Response.Headers.Add("Connection", "keep-alive");
+			response.Response.Headers.Add("X-Accel-Buffering", "no"); // Disable nginx buffering
+
+			return response;
 		});
 	}
 
