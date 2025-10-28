@@ -108,7 +108,8 @@ Do not merge the production PR until release day!
 
 _This action must be performed by docs engineering or docs tech leads._
 
-Approve and merge [the `staging` configuration update PR](https://github.com/elastic/docs-internal-workflows/pulls).
+1. Approve and merge [the `staging` configuration update PR](https://github.com/elastic/docs-internal-workflows/pulls).
+2. Optionally, manually [invoke the release automation to staging](https://github.com/elastic/docs-internal-workflows/actions/workflows/assembler-build.staging.yml).
 
 :::{important}
 Do not merge the production PR until release day!
@@ -121,7 +122,7 @@ Do not merge the production PR until release day!
 _This action must be performed by docs engineering or docs tech leads. For most products, this change must be merged on release day._
 
 1. Approve and merge [the `prod` configuration update PR](https://github.com/elastic/docs-internal-workflows/pulls).
-2. Manually [invoke the release automation to production](https://github.com/elastic/docs-internal-workflows/actions/workflows/assembler-build.prod.yml).
+2. Manually [invoke the release automation to production](https://github.com/elastic/docs-internal-workflows/actions/workflows/assembler-build.prod.yml). Monitor it to make sure that it's green.
 3. Let the requester or docs release coordinator know the docs have been updated.
 
 ::::
