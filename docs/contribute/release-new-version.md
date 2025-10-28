@@ -113,7 +113,7 @@ _This action must be performed by docs engineering or docs tech leads._
 
    This action also runs on a cron job, but can be triggered manually if the change is time-sensitive.
 
-If you need to release to production right away, make sure that the workflow run is green before proceeding.
+If you need to release to production right away, make sure that the workflow run is green and wait for 10 to 15 minutes for any alerts to be raised. Docs tech leads should check with docs eng before proceeding.
 
 :::{important}
 Do not merge the production PR until release day!
