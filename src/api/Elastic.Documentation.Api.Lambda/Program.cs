@@ -33,7 +33,9 @@ try
 			{
 				_ = tracing
 					.AddAspNetCoreInstrumentation()
-					.AddHttpClientInstrumentation();
+					.AddHttpClientInstrumentation()
+					.AddSource("Elastic.Documentation.Api.AskAi")
+					.AddSource("Elastic.Documentation.Api.StreamTransformer");
 			})
 			.WithElasticLogging()
 			.WithElasticMetrics(metrics =>

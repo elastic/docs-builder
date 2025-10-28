@@ -42,7 +42,9 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 
 	public Task<Stream> TransformAsync(Stream rawStream, CancellationToken cancellationToken = default)
 	{
-		using var activity = StreamTransformerActivitySource.StartActivity("gen_ai.agent");
+		using var activity = StreamTransformerActivitySource.StartActivity($"chat {GetAgentId()}", ActivityKind.Client);
+		_ = (activity?.SetTag("gen_ai.operation.name", "chat"));
+		_ = (activity?.SetTag("gen_ai.request.model", GetAgentId()));
 		_ = (activity?.SetTag("gen_ai.agent.name", GetAgentId()));
 		_ = (activity?.SetTag("gen_ai.provider.name", GetAgentProvider()));
 
@@ -74,7 +76,7 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 	/// </summary>
 	private async Task ProcessPipeAsync(PipeReader reader, PipeWriter writer, Activity? parentActivity, CancellationToken cancellationToken)
 	{
-		using var activity = StreamTransformerActivitySource.StartActivity("StreamTransformer.ProcessPipeAsync");
+		using var activity = StreamTransformerActivitySource.StartActivity("gen_ai.agent.pipe");
 		_ = (activity?.SetTag("transformer.type", GetType().Name));
 
 		try
@@ -204,14 +206,12 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 		_ = (activity?.SetTag("gen_ai.provider.name", GetAgentProvider()));
 		_ = (activity?.SetTag("gen_ai.response.token_type", transformedEvent.GetType().Name));
 
-		// Add GenAI response event for each token/chunk
-		_ = (activity?.AddEvent(new ActivityEvent("gen_ai.client.inference.operation.details",
+		// Add GenAI completion event for each token/chunk
+		_ = (activity?.AddEvent(new ActivityEvent("gen_ai.content.completion",
 			timestamp: DateTimeOffset.UtcNow,
 			tags:
 			[
-				new KeyValuePair<string, object?>("gen_ai.operation.name", "chat"),
-				new KeyValuePair<string, object?>("gen_ai.response.model", GetAgentId()),
-				new KeyValuePair<string, object?>("gen_ai.output.messages", JsonSerializer.Serialize(transformedEvent, AskAiEventJsonContext.Default.AskAiEvent))
+				new KeyValuePair<string, object?>("gen_ai.completion", JsonSerializer.Serialize(transformedEvent, AskAiEventJsonContext.Default.AskAiEvent))
 			])));
 
 		// Serialize as base AskAiEvent type to include the type discriminator

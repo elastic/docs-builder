@@ -16,20 +16,22 @@ public class AskAiUsecase(
 
 	public async Task<Stream> AskAi(AskAiRequest askAiRequest, Cancel ctx)
 	{
-		using var activity = AskAiActivitySource.StartActivity("gen_ai.agent");
+		// Start with a placeholder model name - will be updated by transformer
+		using var activity = AskAiActivitySource.StartActivity("chat unknown", ActivityKind.Client);
 
-		// We'll determine the actual agent name after we know which provider is being used
-		_ = (activity?.SetTag("gen_ai.request.input", askAiRequest.Message));
+		// Set required GenAI semantic convention attributes
+		_ = (activity?.SetTag("gen_ai.operation.name", "chat"));
+		_ = (activity?.SetTag("gen_ai.request.model", "unknown")); // Will be updated by transformer
 		_ = (activity?.SetTag("gen_ai.conversation.id", askAiRequest.ThreadId ?? "pending")); // Will be updated when we receive ConversationStart
+		_ = (activity?.SetTag("gen_ai.usage.input_tokens", askAiRequest.Message.Length)); // Approximate token count
 
-		// Add GenAI inference operation details event
-		_ = (activity?.AddEvent(new ActivityEvent("gen_ai.client.inference.operation.details",
+		// Add GenAI prompt event
+		_ = (activity?.AddEvent(new ActivityEvent("gen_ai.content.prompt",
 			timestamp: DateTimeOffset.UtcNow,
 			tags:
 			[
-				new KeyValuePair<string, object?>("gen_ai.operation.name", "chat"),
-				new KeyValuePair<string, object?>("gen_ai.input.messages", $"[{{\"role\":\"user\",\"content\":\"{askAiRequest.Message}\"}}]"),
-				new KeyValuePair<string, object?>("gen_ai.system_instructions", $"[{{\"type\":\"text\",\"content\":\"{AskAiRequest.SystemPrompt}\"}}]")
+				new KeyValuePair<string, object?>("gen_ai.prompt", askAiRequest.Message),
+				new KeyValuePair<string, object?>("gen_ai.system_instructions", AskAiRequest.SystemPrompt)
 			])));
 
 		logger.LogDebug("Processing AskAiRequest: {Request}", askAiRequest);
