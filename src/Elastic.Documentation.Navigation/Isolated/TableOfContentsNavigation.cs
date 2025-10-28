@@ -18,8 +18,6 @@ public class TableOfContentsNavigation : IRootNavigationItem<IDocumentationFile,
 	, INavigationHomeAccessor
 	, INavigationHomeProvider
 {
-	private INavigationHomeProvider? _homeProvider;
-
 	public TableOfContentsNavigation(
 		IDirectoryInfo tableOfContentsDirectory,
 		int depth,
@@ -33,7 +31,6 @@ public class TableOfContentsNavigation : IRootNavigationItem<IDocumentationFile,
 	{
 		TableOfContentsDirectory = tableOfContentsDirectory;
 		NavigationItems = navigationItems;
-		Index = this.FindIndex<IDocumentationFile>(new NotFoundModel($"{parentPath}/index.md"));
 		Parent = parent;
 		Hidden = false;
 		IsUsingNavigationDropdown = false;
@@ -43,12 +40,23 @@ public class TableOfContentsNavigation : IRootNavigationItem<IDocumentationFile,
 		ParentPath = parentPath;
 		_pathPrefix = pathPrefix;
 
+		// Initialize _homeProvider to this - it will be updated in assembler builds if needed
+		_homeProvider = this;
+
 		// Create an identifier for this TOC
 		Identifier = new Uri($"{git.RepositoryName}://{parentPath}");
 		_ = tocNodes.TryAdd(Identifier, this);
+
+		// FindIndex must be called after _homeProvider is set
+		Index = this.FindIndex<IDocumentationFile>(new NotFoundModel($"{parentPath}/index.md"));
 	}
 
 	private readonly string _pathPrefix;
+
+	/// <summary>
+	/// Internal HomeProvider - defaults to this, but can be updated in assembler builds.
+	/// </summary>
+	private INavigationHomeProvider _homeProvider { get; set; }
 
 	/// <summary>
 	/// The composed path prefix for this TOC, which is the parent's prefix + this TOC's parent path.
@@ -56,7 +64,7 @@ public class TableOfContentsNavigation : IRootNavigationItem<IDocumentationFile,
 	/// Implements INavigationHomeProvider.PathPrefix
 	/// When HomeProvider is set (during assembler), this returns the external provider's PathPrefix.
 	/// </summary>
-	public string PathPrefix => _homeProvider?.PathPrefix ?? _pathPrefix;
+	public string PathPrefix => _homeProvider == this ? _pathPrefix : _homeProvider.PathPrefix;
 
 	/// <inheritdoc />
 	public string Url => Index.Url;
@@ -69,7 +77,7 @@ public class TableOfContentsNavigation : IRootNavigationItem<IDocumentationFile,
 	/// In assembler builds, this can be overridden via HomeProvider.
 	/// This satisfies both INavigationItem.NavigationRoot and INavigationHomeProvider.NavigationRoot.
 	/// </summary>
-	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => _homeProvider?.NavigationRoot ?? this;
+	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => _homeProvider == this ? this : _homeProvider.NavigationRoot;
 
 	/// <inheritdoc />
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
@@ -81,7 +89,7 @@ public class TableOfContentsNavigation : IRootNavigationItem<IDocumentationFile,
 	/// </summary>
 	public INavigationHomeProvider HomeProvider
 	{
-		get => _homeProvider ?? this;
+		get => _homeProvider;
 		set => _homeProvider = value;
 	}
 

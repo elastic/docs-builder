@@ -85,7 +85,7 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		fileNav.Url.Should().Be("/getting-started");
 		fileNav.Hidden.Should().BeFalse();
 		fileNav.NavigationRoot.Should().BeSameAs(navigation);
-		fileNav.Parent.Should().BeNull();
+		fileNav.Parent.Should().BeSameAs(navigation); // Top-level files have DocumentationSetNavigation as parent
 	}
 
 	[Fact]

@@ -393,10 +393,7 @@ public class DocumentationSetNavigation<TModel>
 	)
 	{
 		// tocRef.Path is now the FULL path (e.g., "guides/api" or "setup/advanced") after LoadAndResolve
-		// Extract just the last segment (relative part) for the URL path prefix
 		var fullTocPath = tocRef.Path;
-		var lastSlashIndex = fullTocPath.LastIndexOf('/');
-		var relativeTocPath = lastSlashIndex >= 0 ? fullTocPath[(lastSlashIndex + 1)..] : fullTocPath;
 
 		var tocDirectory = context.ReadFileSystem.DirectoryInfo.New(
 			context.ReadFileSystem.Path.Combine(context.DocumentationSourceDirectory.FullName, fullTocPath)
@@ -405,9 +402,10 @@ public class DocumentationSetNavigation<TModel>
 		// TODO: Add validation for TOCs with children in parent YAML
 		// This is a known limitation - TOCs should not have children defined in parent YAML
 
-		// Create a scoped path prefix for this TOC
-		var parentPrefix = homeProvider.PathPrefix.TrimEnd('/');
-		var scopedPathPrefix = string.IsNullOrEmpty(parentPrefix) ? $"/{relativeTocPath}" : $"{parentPrefix}/{relativeTocPath}";
+		// According to url-building.md line 19-21: "We are not actually changing the PathPrefix,
+		// we create the scope to be able to rehome during Assembler builds."
+		// So TOC uses the SAME PathPrefix as its parent - it only creates a scope for rehoming
+		var scopedPathPrefix = homeProvider.PathPrefix;
 
 		// Create the TOC navigation with empty children initially
 		// We use null parent temporarily - we'll set it properly at the end using the public setter
@@ -425,12 +423,17 @@ public class DocumentationSetNavigation<TModel>
 			NavigationIndex = index
 		};
 
-		// Convert children - pass tocNavigation as parent and as HomeProvider (TOC creates new scope)
+		// Create a scoped HomeProvider for TOC children
+		// According to url-building.md: "In isolated builds the NavigationRoot is always the DocumentationSetNavigation"
+		// So we use the parent's NavigationRoot, not the TOC itself
+		var tocHomeProvider = new NavigationHomeProvider(scopedPathPrefix, homeProvider.NavigationRoot);
+
+		// Convert children - pass tocNavigation as parent and tocHomeProvider as HomeProvider (TOC creates new scope)
 		var children = new List<INavigationItem>();
 		var childIndex = 0;
 
 		// LoadAndResolve has already resolved children from the toc.yml file and prepended full paths.
-		// Children have full paths (e.g., "guides/api/reference.md"), so they should use tocNavigation as their HomeProvider
+		// Children have full paths (e.g., "guides/api/reference.md"), so they should use the TOC's scoped HomeProvider
 		foreach (var child in tocRef.Children)
 		{
 			var childNav = ConvertToNavigationItem(
@@ -438,7 +441,7 @@ public class DocumentationSetNavigation<TModel>
 				childIndex++,
 				context,
 				tocNavigation,
-				tocNavigation, // TOC implements INavigationHomeProvider
+				tocHomeProvider, // Use the scoped HomeProvider with correct NavigationRoot
 				depth + 1
 			);
 
@@ -476,14 +479,11 @@ public class DocumentationSetNavigation<TModel>
 			NavigationIndex = index
 		};
 
-		// Update children to point to the final TOC navigation
-		// This includes both Parent and HomeProvider (via INavigationHomeAccessor)
+		// Update children's Parent to point to the final TOC navigation
+		// Note: We don't update HomeProvider here because children already have the correct tocHomeProvider
+		// which provides the scoped PathPrefix and correct NavigationRoot
 		foreach (var child in children)
-		{
 			child.Parent = finalTocNavigation;
-			if (child is INavigationHomeAccessor accessor)
-				accessor.HomeProvider = finalTocNavigation; // TOC implements INavigationHomeProvider
-		}
 
 		return finalTocNavigation;
 	}
