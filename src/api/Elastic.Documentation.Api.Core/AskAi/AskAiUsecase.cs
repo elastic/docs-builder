@@ -20,7 +20,7 @@ public class AskAiUsecase(
 
 		// We'll determine the actual agent name after we know which provider is being used
 		_ = (activity?.SetTag("gen_ai.request.input", askAiRequest.Message));
-		_ = (activity?.SetTag("gen_ai.request.conversation_id", askAiRequest.ThreadId ?? "new-conversation"));
+		_ = (activity?.SetTag("gen_ai.conversation.id", askAiRequest.ThreadId ?? "pending")); // Will be updated when we receive ConversationStart
 
 		// Add GenAI inference operation details event
 		_ = (activity?.AddEvent(new ActivityEvent("gen_ai.client.inference.operation.details",
@@ -28,7 +28,6 @@ public class AskAiUsecase(
 			tags:
 			[
 				new KeyValuePair<string, object?>("gen_ai.operation.name", "chat"),
-				new KeyValuePair<string, object?>("gen_ai.conversation.id", askAiRequest.ThreadId ?? "pending"), // Will be updated when we receive ConversationStart
 				new KeyValuePair<string, object?>("gen_ai.input.messages", $"[{{\"role\":\"user\",\"content\":\"{askAiRequest.Message}\"}}]"),
 				new KeyValuePair<string, object?>("gen_ai.system_instructions", $"[{{\"type\":\"text\",\"content\":\"{AskAiRequest.SystemPrompt}\"}}]")
 			])));

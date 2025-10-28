@@ -60,7 +60,7 @@ public static class ServicesExtension
 		});
 
 		// Configure HttpClient for streaming optimization
-		_ = services.AddHttpClient(client =>
+		_ = services.AddHttpClient("StreamingHttpClient", client =>
 		{
 			// Disable response buffering for streaming
 			client.DefaultRequestHeaders.Connection.Add("keep-alive");
