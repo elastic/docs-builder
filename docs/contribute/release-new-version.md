@@ -111,6 +111,10 @@ _This action must be performed by docs engineering or docs tech leads._
 1. Approve and merge [the `staging` configuration update PR](https://github.com/elastic/docs-internal-workflows/pulls).
 2. Optionally, manually [invoke the release automation to staging](https://github.com/elastic/docs-internal-workflows/actions/workflows/assembler-build.staging.yml).
 
+   This action also runs on a cron job, but can be triggered manually if the change is time-sensitive.
+
+If you need to release to production right away, make sure that the workflow run is green before proceeding.
+
 :::{important}
 Do not merge the production PR until release day!
 :::
