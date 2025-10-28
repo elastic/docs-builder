@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.Json.Serialization;
-using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Serialization.SystemTextJson;
 using Elastic.Documentation.Api.Core.AskAi;
 using Elastic.Documentation.Api.Core.Search;
@@ -49,7 +48,7 @@ try
 	process.Refresh();
 	Console.WriteLine($"Elastic OTel configured. Memory: {process.WorkingSet64 / 1024 / 1024} MB");
 
-	_ = builder.Services.AddAWSLambdaHosting(LambdaEventSource.RestApi, new SourceGeneratorLambdaJsonSerializer<LambdaJsonSerializerContext>());
+	_ = builder.Services.AddAWSLambdaHosting(LambdaEventSource.HttpApi);
 	process.Refresh();
 	Console.WriteLine($"AWS Lambda hosting configured. Memory: {process.WorkingSet64 / 1024 / 1024} MB");
 
@@ -83,8 +82,6 @@ catch (Exception ex)
 	throw;
 }
 
-[JsonSerializable(typeof(APIGatewayProxyRequest))]
-[JsonSerializable(typeof(APIGatewayProxyResponse))]
 [JsonSerializable(typeof(AskAiRequest))]
 [JsonSerializable(typeof(SearchRequest))]
 [JsonSerializable(typeof(SearchResponse))]

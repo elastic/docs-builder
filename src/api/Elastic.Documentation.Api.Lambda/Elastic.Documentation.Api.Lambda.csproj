@@ -9,6 +9,7 @@
 
     <AssemblyName>bootstrap</AssemblyName>
     <AWSProjectType>Lambda</AWSProjectType>
+    <!-- Configured for Lambda Function URLs with CloudFront OAC -->
 
     <IsPublishable>true</IsPublishable>
     <PublishAot>true</PublishAot>
