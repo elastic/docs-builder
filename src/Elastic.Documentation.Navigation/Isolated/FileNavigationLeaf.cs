@@ -12,13 +12,12 @@ public record FileNavigationArgs(
 	bool Hidden,
 	int NavigationIndex,
 	INodeNavigationItem<INavigationModel, INavigationItem>? Parent,
-	IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot,
-	IPathPrefixProvider PrefixProvider
+	INavigationHomeProvider HomeProvider
 );
 
 [DebuggerDisplay("{Url}")]
 public class FileNavigationLeaf<TModel>(TModel model, IFileInfo fileInfo, FileNavigationArgs args)
-	: ILeafNavigationItem<TModel>
+	: ILeafNavigationItem<TModel>, INavigationHomeAccessor
 	where TModel : IDocumentationFile
 {
 	public IFileInfo FileInfo { get; } = fileInfo;
@@ -31,7 +30,7 @@ public class FileNavigationLeaf<TModel>(TModel model, IFileInfo fileInfo, FileNa
 	{
 		get
 		{
-			var rootUrl = args.PrefixProvider.PathPrefix.TrimEnd('/');
+			var rootUrl = HomeProvider.PathPrefix.TrimEnd('/');
 			// Remove extension while preserving the directory path
 			var relativePath = args.RelativePath;
 			var path = relativePath.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
@@ -55,10 +54,13 @@ public class FileNavigationLeaf<TModel>(TModel model, IFileInfo fileInfo, FileNa
 	public bool Hidden { get; init; } = args.Hidden;
 
 	/// <inheritdoc />
-	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; init; } = args.NavigationRoot;
+	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => HomeProvider.NavigationRoot;
 
 	/// <inheritdoc />
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; } = args.Parent;
+
+	/// <inheritdoc />
+	public INavigationHomeProvider HomeProvider { get; set; } = args.HomeProvider;
 
 	/// <inheritdoc />
 	public string NavigationTitle => Model.NavigationTitle;

@@ -402,7 +402,7 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 
 		var toc = siteNavigation.NavigationItems.First() as SiteTableOfContentsNavigation<IDocumentationFile>;
 		toc.Should().NotBeNull();
-		toc.PathPrefixProvider.PathPrefix.Should().Be("/observability"); //constructed from toc URI as fallback, normalized with leading slash
+		toc.HomeProvider.PathPrefix.Should().Be("/observability"); //constructed from toc URI as fallback, normalized with leading slash
 	}
 
 	[Fact]

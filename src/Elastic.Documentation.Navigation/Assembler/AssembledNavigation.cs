@@ -177,18 +177,18 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 			context.EmitError(context.ConfigurationPath, $"Could not find navigation node for identifier: {tocRef.Source} (from source: {tocRef.Source})");
 			return null;
 		}
-		if (node is not INavigationPathPrefixProvider prefixProvider)
+		if (node is not INavigationHomeAccessor homeAccessor)
 		{
-			context.EmitError(context.ConfigurationPath, $"Navigation contains an node navigation that does not implement: {nameof(IPathPrefixProvider)} (from source: {tocRef.Source})");
+			context.EmitError(context.ConfigurationPath, $"Navigation contains an node navigation that does not implement: {nameof(INavigationHomeAccessor)} (from source: {tocRef.Source})");
 			return null;
 		}
 
 		_ = UnseenNodes.Remove(tocRef.Source);
 		// Set the navigation index
 		node.NavigationIndex = index;
-		prefixProvider.PathPrefixProvider = new PathPrefixProvider(pathPrefix);
+		homeAccessor.HomeProvider = new NavigationHomeProvider(pathPrefix, root ?? homeAccessor.HomeProvider.NavigationRoot);
 
-		var wrapped = new SiteTableOfContentsNavigation<IDocumentationFile>(node, prefixProvider.PathPrefixProvider, parent, root);
+		var wrapped = new SiteTableOfContentsNavigation<IDocumentationFile>(node, homeAccessor.HomeProvider, parent, root);
 		parent = wrapped;
 		root ??= wrapped.NavigationRoot;
 
@@ -236,10 +236,10 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 [DebuggerDisplay("{Url}")]
 public sealed class SiteTableOfContentsNavigation<TModel>(
 	INodeNavigationItem<TModel, INavigationItem> wrappedNode,
-	IPathPrefixProvider pathPrefixProvider,
+	INavigationHomeProvider homeProvider,
 	INodeNavigationItem<INavigationModel, INavigationItem> parent,
 	IRootNavigationItem<INavigationModel, INavigationItem>? root
-	) : INodeNavigationItem<TModel, INavigationItem>, INavigationPathPrefixProvider
+	) : INodeNavigationItem<TModel, INavigationItem>, INavigationHomeAccessor
 	where TModel : IDocumentationFile
 {
 	// For site navigation TOC references, the path_prefix IS the URL
@@ -248,7 +248,7 @@ public sealed class SiteTableOfContentsNavigation<TModel>(
 	{
 		get
 		{
-			var url = PathPrefixProvider.PathPrefix.TrimEnd('/');
+			var url = HomeProvider.PathPrefix.TrimEnd('/');
 			return string.IsNullOrEmpty(url) ? "/" : url;
 		}
 	}
@@ -282,6 +282,6 @@ public sealed class SiteTableOfContentsNavigation<TModel>(
 	public IReadOnlyCollection<INavigationItem> NavigationItems { get; set; } = [];
 
 	/// <inheritdoc />
-	public IPathPrefixProvider PathPrefixProvider { get; set; } = pathPrefixProvider;
+	public INavigationHomeProvider HomeProvider { get; set; } = homeProvider;
 }
 

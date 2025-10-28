@@ -4,19 +4,23 @@
 
 namespace Elastic.Documentation.Navigation.Isolated;
 
-public interface IPathPrefixProvider
+public interface INavigationHomeProvider
 {
 	string PathPrefix { get; }
+	IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }
 }
 
-public interface INavigationPathPrefixProvider
+public interface INavigationHomeAccessor
 {
-	IPathPrefixProvider PathPrefixProvider { get; set; }
+	INavigationHomeProvider HomeProvider { get; set; }
 }
 
-public class PathPrefixProvider(string pathPrefix) : IPathPrefixProvider
+public class NavigationHomeProvider(string pathPrefix, IRootNavigationItem<INavigationModel, INavigationItem> navigationRoot) : INavigationHomeProvider
 {
 	/// <inheritdoc />
 	public string PathPrefix { get; } = pathPrefix;
+
+	/// <inheritdoc />
+	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; } = navigationRoot;
 }
 

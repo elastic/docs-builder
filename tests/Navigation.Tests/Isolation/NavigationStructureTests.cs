@@ -257,4 +257,106 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 
 		context.Diagnostics.Should().BeEmpty();
 	}
+
+	[Fact]
+	public void AllNavigationItemsHaveNavigationRootSet()
+	{
+		// language=yaml
+		var yaml = """
+		           project: 'test-project'
+		           toc:
+		             - file: index.md
+		             - folder: setup
+		               children:
+		                 - file: getting-started.md
+		                 - toc: advanced
+		             - file: guide.md
+		               children:
+		                 - file: section1.md
+		                 - file: section2.md
+		             - title: "External"
+		               crosslink: other://link.md
+		           """;
+
+		// language=yaml
+		var advancedTocYaml = """
+		                      toc:
+		                        - file: index.md
+		                        - file: configuration.md
+		                      """;
+
+		var fileSystem = new MockFileSystem();
+		fileSystem.AddFile("/docs/setup/getting-started.md", new MockFileData("# Getting Started"));
+		fileSystem.AddFile("/docs/setup/advanced/index.md", new MockFileData("# Advanced"));
+		fileSystem.AddFile("/docs/setup/advanced/configuration.md", new MockFileData("# Configuration"));
+		fileSystem.AddFile("/docs/setup/advanced/toc.yml", new MockFileData(advancedTocYaml));
+
+		var context = CreateContext(fileSystem);
+		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+
+		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance);
+
+		// Helper to recursively visit all navigation items
+		var allItems = new List<INavigationItem>();
+		void VisitNavigationItems(INavigationItem item)
+		{
+			allItems.Add(item);
+			if (item is INodeNavigationItem<IDocumentationFile, INavigationItem> node)
+			{
+				foreach (var child in node.NavigationItems)
+					VisitNavigationItems(child);
+			}
+		}
+
+		// Add root and visit all children
+		allItems.Add(navigation);
+		foreach (var item in navigation.NavigationItems)
+			VisitNavigationItems(item);
+
+		// Verify we have a good number of items (should be > 10 with all the nested structure)
+		allItems.Should().HaveCountGreaterThan(10);
+
+		// Verify EVERY navigation item has NavigationRoot set (not null)
+		foreach (var item in allItems)
+		{
+			item.NavigationRoot.Should().NotBeNull($"NavigationRoot should be set for {item.GetType().Name} at URL: {item.Url}");
+
+			// Verify NavigationRoot is actually a root item
+			item.NavigationRoot.Should().BeAssignableTo<IRootNavigationItem<IDocumentationFile, INavigationItem>>(
+				$"NavigationRoot should be a root navigation item for {item.GetType().Name} at URL: {item.Url}");
+		}
+
+		// Verify specific cases:
+
+		// All items should point to either DocumentationSetNavigation or a TableOfContentsNavigation as root
+		var rootItem = navigation.NavigationItems.First();
+		rootItem.NavigationRoot.Should().BeSameAs(navigation, "Root navigation items should point to DocumentationSetNavigation");
+
+		// Items in the setup folder should point to DocumentationSetNavigation
+		var setupFolder = navigation.NavigationItems.ElementAt(1).Should().BeOfType<FolderNavigation>().Subject;
+		setupFolder.NavigationRoot.Should().BeSameAs(navigation);
+
+		var gettingStarted = setupFolder.NavigationItems.First();
+		gettingStarted.NavigationRoot.Should().BeSameAs(navigation);
+
+		// Items in advanced TOC should point to the TableOfContentsNavigation
+		var advancedToc = setupFolder.NavigationItems.ElementAt(1).Should().BeOfType<TableOfContentsNavigation>().Subject;
+		advancedToc.NavigationRoot.Should().BeSameAs(advancedToc, "TableOfContentsNavigation should be its own root");
+
+		var advancedIndex = advancedToc.NavigationItems.First();
+		advancedIndex.NavigationRoot.Should().BeSameAs(advancedToc, "Items within TOC should point to the TOC as their root");
+
+		// Items in file with children should point to DocumentationSetNavigation
+		var guideFile = navigation.NavigationItems.ElementAt(2).Should().BeOfType<VirtualFileNavigation<TestDocumentationFile>>().Subject;
+		guideFile.NavigationRoot.Should().BeSameAs(navigation);
+
+		var section1 = guideFile.NavigationItems.First();
+		section1.NavigationRoot.Should().BeSameAs(navigation);
+
+		// CrossLink should point to DocumentationSetNavigation
+		var crosslink = navigation.NavigationItems.ElementAt(3).Should().BeOfType<CrossLinkNavigationLeaf>().Subject;
+		crosslink.NavigationRoot.Should().BeSameAs(navigation);
+
+		context.Diagnostics.Should().BeEmpty();
+	}
 }

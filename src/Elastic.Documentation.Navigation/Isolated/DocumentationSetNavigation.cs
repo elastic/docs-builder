@@ -34,7 +34,7 @@ public interface IDocumentationSetNavigation : IRootNavigationItem<IDocumentatio
 
 [DebuggerDisplay("{Url}")]
 public class DocumentationSetNavigation<TModel>
-	: IDocumentationSetNavigation, INavigationPathPrefixProvider, IPathPrefixProvider
+	: IDocumentationSetNavigation, INavigationHomeAccessor, INavigationHomeProvider
 
 	where TModel : IDocumentationFile
 {
@@ -52,12 +52,12 @@ public class DocumentationSetNavigation<TModel>
 		_factory = factory;
 		_pathPrefix = pathPrefix ?? string.Empty;
 		// Initialize root properties
-		NavigationRoot = root ?? this;
+		_navigationRoot = root ?? this;
 		Parent = parent;
 		Depth = 0;
 		Hidden = false;
 		IsCrossLink = false;
-		PathPrefixProvider = this;
+		HomeProvider = this;
 		Id = ShortId.Create(documentationSet.Project ?? "root");
 		IsUsingNavigationDropdown = documentationSet.Features.PrimaryNav ?? false;
 		Git = context.Git;
@@ -73,9 +73,8 @@ public class DocumentationSetNavigation<TModel>
 				tocItem,
 				index++,
 				context,
-				parent: null,
-				root: NavigationRoot,
-				prefixProvider: PathPrefixProvider,
+				parent: this,
+				homeProvider: HomeProvider,
 				depth: Depth
 			);
 
@@ -90,14 +89,15 @@ public class DocumentationSetNavigation<TModel>
 	}
 
 	private readonly string _pathPrefix;
+	private readonly IRootNavigationItem<INavigationModel, INavigationItem> _navigationRoot;
 
 	/// <summary>
-	/// Gets the path prefix. When PathPrefixProvider is set to a different instance, it returns that provider's prefix.
+	/// Gets the path prefix. When HomeProvider is set to a different instance, it returns that provider's prefix.
 	/// Otherwise, returns the prefix set during construction.
 	/// </summary>
-	public string PathPrefix => PathPrefixProvider == this ? _pathPrefix : PathPrefixProvider.PathPrefix;
+	public string PathPrefix => HomeProvider == this ? _pathPrefix : HomeProvider.PathPrefix;
 
-	public IPathPrefixProvider PathPrefixProvider { get; set; }
+	public INavigationHomeProvider HomeProvider { get; set; }
 
 	public GitCheckoutInformation Git { get; }
 
@@ -111,7 +111,7 @@ public class DocumentationSetNavigation<TModel>
 	{
 		get
 		{
-			var rootUrl = PathPrefixProvider.PathPrefix.TrimEnd('/');
+			var rootUrl = HomeProvider.PathPrefix.TrimEnd('/');
 			return string.IsNullOrEmpty(rootUrl) ? "/" : rootUrl;
 		}
 	}
@@ -120,7 +120,8 @@ public class DocumentationSetNavigation<TModel>
 	public string NavigationTitle => Index.NavigationTitle;
 
 	/// <inheritdoc />
-	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }
+	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot =>
+		HomeProvider == this ? _navigationRoot : HomeProvider.NavigationRoot;
 
 	/// <inheritdoc />
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
@@ -154,38 +155,19 @@ public class DocumentationSetNavigation<TModel>
 		int index,
 		IDocumentationSetContext context,
 		INodeNavigationItem<INavigationModel, INavigationItem>? parent,
-		IRootNavigationItem<INavigationModel, INavigationItem> root,
-		IPathPrefixProvider prefixProvider,
+		INavigationHomeProvider homeProvider,
 		int depth
 	) =>
 		tocItem switch
 		{
-			FileRef fileRef => CreateFileNavigation(fileRef, index, context, parent, root, prefixProvider),
-			CrossLinkRef crossLinkRef => CreateCrossLinkNavigation(crossLinkRef, index, parent, root),
-			FolderRef folderRef => CreateFolderNavigation(folderRef, index, context, parent, root, prefixProvider, depth),
-			IsolatedTableOfContentsRef tocRef => CreateTocNavigation(tocRef, index, context, parent, root, prefixProvider, depth),
+			FileRef fileRef => CreateFileNavigation(fileRef, index, context, parent, homeProvider),
+			CrossLinkRef crossLinkRef => CreateCrossLinkNavigation(crossLinkRef, index, parent, homeProvider),
+			FolderRef folderRef => CreateFolderNavigation(folderRef, index, context, parent, homeProvider, depth),
+			IsolatedTableOfContentsRef tocRef => CreateTocNavigation(tocRef, index, context, parent, homeProvider, depth),
 			_ => null
 		};
 
 	#region CreateFileNavigation Helper Methods
-
-	/// <summary>
-	/// Creates a temporary file navigation placeholder used during construction before children are processed.
-	/// This is distinct from the factory method to make it clear this is a temporary instance.
-	/// </summary>
-	private INodeNavigationItem<TModel, INavigationItem> CreateTemporaryFileNavigation(
-		TModel documentationFile,
-		IFileInfo fileInfo,
-		string fullPath,
-		bool hidden,
-		int index,
-		INodeNavigationItem<INavigationModel, INavigationItem>? parent,
-		IRootNavigationItem<INavigationModel, INavigationItem> root,
-		IPathPrefixProvider prefixProvider)
-	{
-		var virtualFileNavigationArgs = new VirtualFileNavigationArgs(fullPath, hidden, index, 0, parent, root, prefixProvider, []);
-		return new VirtualFileNavigation<TModel>(documentationFile, fileInfo, virtualFileNavigationArgs);
-	}
 
 	/// <summary>
 	/// Resolves the file info based on the file path. Since LoadAndResolve has already processed paths,
@@ -216,36 +198,6 @@ public class DocumentationSetNavigation<TModel>
 	}
 
 	/// <summary>
-	/// Processes children recursively and returns the list of navigation items.
-	/// Since LoadAndResolve has already prepended parent paths to all children,
-	/// we don't need to calculate paths here.
-	/// </summary>
-	private List<INavigationItem> ProcessFileChildren(
-		FileRef fileRef,
-		IDocumentationSetContext context,
-		INodeNavigationItem<TModel, INavigationItem> tempFileNavigation,
-		IRootNavigationItem<INavigationModel, INavigationItem> root,
-		IPathPrefixProvider prefixProvider)
-	{
-		var children = new List<INavigationItem>();
-		var childIndex = 0;
-
-		foreach (var child in fileRef.Children)
-		{
-			var childNav = ConvertToNavigationItem(
-				child, childIndex++, context,
-				(INodeNavigationItem<INavigationModel, INavigationItem>)tempFileNavigation, root,
-				prefixProvider, // Files don't change the URL root
-				0 // Depth will be set by child
-			);
-			if (childNav != null)
-				children.Add(childNav);
-		}
-
-		return children;
-	}
-
-	/// <summary>
 	/// Ensures the first item in the navigation items is the index file (index.md or the first file in the list).
 	/// </summary>
 	private static void EnsureIndexIsFirst(List<INavigationItem> children)
@@ -268,21 +220,6 @@ public class DocumentationSetNavigation<TModel>
 		}
 	}
 
-	/// <summary>
-	/// Validates that navigation items has at least one item, emitting an error if not.
-	/// </summary>
-	private static void ValidateNavigationItems(
-		List<INavigationItem> children,
-		IDocumentationSetContext context,
-		string fullPath)
-	{
-		if (children.Count < 1)
-		{
-			context.EmitError(context.ConfigurationPath,
-				$"File navigation '{fullPath}' has children defined but none could be created");
-		}
-	}
-
 	#endregion
 
 	private INavigationItem? CreateFileNavigation(
@@ -290,8 +227,7 @@ public class DocumentationSetNavigation<TModel>
 		int index,
 		IDocumentationSetContext context,
 		INodeNavigationItem<INavigationModel, INavigationItem>? parent,
-		IRootNavigationItem<INavigationModel, INavigationItem> root,
-		IPathPrefixProvider prefixProvider
+		INavigationHomeProvider homeProvider
 	)
 	{
 		// FileRef.Path already contains the correct path from LoadAndResolve
@@ -306,34 +242,60 @@ public class DocumentationSetNavigation<TModel>
 		// Handle leaf case (no children)
 		if (fileRef.Children.Count <= 0)
 		{
-			var leafNavigationArgs = new FileNavigationArgs(fullPath, fileRef.Hidden, index, parent, root, prefixProvider);
+			var leafNavigationArgs = new FileNavigationArgs(fullPath, fileRef.Hidden, index, parent, homeProvider);
 			return DocumentationNavigationFactory.CreateFileNavigationLeaf(documentationFile, fileInfo, leafNavigationArgs);
 		}
 
-		// Create temporary file navigation for children to reference
-		var tempFileNavigation = CreateTemporaryFileNavigation(documentationFile, fileInfo, fullPath, fileRef.Hidden, index, parent, root, prefixProvider);
-
-		// Process children recursively
-		// Note: LoadAndResolve has already prepended parent paths to all children, so we don't need to calculate parentPathForChildren
-		var children = ProcessFileChildren(fileRef, context, tempFileNavigation, root, prefixProvider);
-
-		// Validate and order children
-		ValidateNavigationItems(children, context, fullPath);
-		EnsureIndexIsFirst(children);
-
-		// Create final file navigation with actual children
+		// Create file navigation with empty children initially
 		var virtualFileNavigationArgs = new VirtualFileNavigationArgs(
 			fullPath,
 			fileRef.Hidden,
 			index,
 			parent?.Depth + 1 ?? 0,
+			null, // Parent will be set after processing children
+			homeProvider,
+			[]
+		);
+		var fileNavigation = DocumentationNavigationFactory.CreateVirtualFileNavigation(documentationFile, fileInfo, virtualFileNavigationArgs);
+
+		// Process children recursively
+		var children = new List<INavigationItem>();
+		var childIndex = 0;
+
+		foreach (var child in fileRef.Children)
+		{
+			var childNav = ConvertToNavigationItem(
+				child, childIndex++, context,
+				(INodeNavigationItem<INavigationModel, INavigationItem>)fileNavigation,
+				homeProvider, // Files don't change the URL root
+				0 // Depth will be set by child
+			);
+			if (childNav != null)
+				children.Add(childNav);
+		}
+
+		// Validate and order children
+		if (children.Count < 1)
+		{
+			context.EmitError(context.ConfigurationPath,
+				$"File navigation '{fullPath}' has children defined but none could be created");
+			return null;
+		}
+
+		EnsureIndexIsFirst(children);
+
+		// Create final file navigation with actual children and correct parent
+		var finalVirtualFileNavigationArgs = new VirtualFileNavigationArgs(
+			fullPath,
+			fileRef.Hidden,
+			index,
+			parent?.Depth + 1 ?? 0,
 			parent,
-			root,
-			prefixProvider,
+			homeProvider,
 			children
 		);
 
-		var finalFileNavigation = DocumentationNavigationFactory.CreateVirtualFileNavigation(documentationFile, fileInfo, virtualFileNavigationArgs);
+		var finalFileNavigation = DocumentationNavigationFactory.CreateVirtualFileNavigation(documentationFile, fileInfo, finalVirtualFileNavigationArgs);
 
 		// Update children's Parent to point to the final file navigation
 		foreach (var child in children)
@@ -346,7 +308,7 @@ public class DocumentationSetNavigation<TModel>
 		CrossLinkRef crossLinkRef,
 		int index,
 		INodeNavigationItem<INavigationModel, INavigationItem>? parent,
-		IRootNavigationItem<INavigationModel, INavigationItem> root)
+		INavigationHomeProvider homeProvider)
 	{
 		var title = crossLinkRef.Title ?? crossLinkRef.CrossLinkUri.OriginalString;
 		var model = new CrossLinkModel(crossLinkRef.CrossLinkUri, title);
@@ -356,7 +318,7 @@ public class DocumentationSetNavigation<TModel>
 			crossLinkRef.CrossLinkUri.OriginalString,
 			crossLinkRef.Hidden,
 			parent,
-			root
+			homeProvider
 		)
 		{
 			NavigationIndex = index
@@ -368,26 +330,22 @@ public class DocumentationSetNavigation<TModel>
 		int index,
 		IDocumentationSetContext context,
 		INodeNavigationItem<INavigationModel, INavigationItem>? parent,
-		IRootNavigationItem<INavigationModel, INavigationItem> root,
-		IPathPrefixProvider prefixProvider,
+		INavigationHomeProvider homeProvider,
 		int depth
 	)
 	{
 		// FolderRef.Path already contains the correct path from LoadAndResolve
 		var folderPath = folderRef.Path;
 
-		// Create temporary placeholder for parent reference
+		// Create folder navigation with null parent initially - we'll pass it to children but set it properly after
+		var folderNavigation = new FolderNavigation(depth + 1, folderPath, null, homeProvider, [])
+		{
+			NavigationIndex = index
+		};
+
+		// Process children - they can reference folderNavigation as their parent
 		var children = new List<INavigationItem>();
 		var childIndex = 0;
-
-		var placeholderNavigation = new TemporaryNavigationPlaceholder(
-			depth + 1,
-			ShortId.Create(folderPath),
-			parent,
-			root,
-			prefixProvider,
-			folderPath
-		);
 
 		// LoadAndResolve has already populated children (either from YAML or auto-discovered)
 		foreach (var child in folderRef.Children)
@@ -396,9 +354,8 @@ public class DocumentationSetNavigation<TModel>
 				child,
 				childIndex++,
 				context,
-				placeholderNavigation,
-				root,
-				prefixProvider, // Keep parent's prefix provider
+				folderNavigation,
+				homeProvider, // Keep parent's home provider
 				depth + 1
 			);
 
@@ -413,8 +370,8 @@ public class DocumentationSetNavigation<TModel>
 			return null;
 		}
 
-		// Create folder navigation with actual children
-		var finalFolderNavigation = new FolderNavigation(depth + 1, folderPath, parent, root, children)
+		// Now create the final folder navigation with the correct parent and children
+		var finalFolderNavigation = new FolderNavigation(depth + 1, folderPath, parent, homeProvider, children)
 		{
 			NavigationIndex = index
 		};
@@ -431,8 +388,7 @@ public class DocumentationSetNavigation<TModel>
 		int index,
 		IDocumentationSetContext context,
 		INodeNavigationItem<INavigationModel, INavigationItem>? parent,
-		IRootNavigationItem<INavigationModel, INavigationItem> root,
-		IPathPrefixProvider prefixProvider,
+		INavigationHomeProvider homeProvider,
 		int depth
 	)
 	{
@@ -449,32 +405,40 @@ public class DocumentationSetNavigation<TModel>
 		// TODO: Add validation for TOCs with children in parent YAML
 		// This is a known limitation - TOCs should not have children defined in parent YAML
 
-		var placeholderNavigation = new TemporaryNavigationPlaceholder(
-			depth + 1,
-			ShortId.Create(fullTocPath),
-			parent,
-			root,
-			prefixProvider,
-			relativeTocPath, // Use relative path (last segment) for URL construction
-			tocDirectory
-		);
+		// Create a scoped path prefix for this TOC
+		var parentPrefix = homeProvider.PathPrefix.TrimEnd('/');
+		var scopedPathPrefix = string.IsNullOrEmpty(parentPrefix) ? $"/{relativeTocPath}" : $"{parentPrefix}/{relativeTocPath}";
 
-		// Convert children
+		// Create the TOC navigation with empty children initially
+		// We use null parent temporarily - we'll set it properly at the end using the public setter
+		var tocNavigation = new TableOfContentsNavigation(
+			tocDirectory,
+			depth + 1,
+			fullTocPath,
+			null, // Temporary null parent
+			scopedPathPrefix,
+			[],
+			Git,
+			_tableOfContentNodes
+		)
+		{
+			NavigationIndex = index
+		};
+
+		// Convert children - pass tocNavigation as parent and as HomeProvider (TOC creates new scope)
 		var children = new List<INavigationItem>();
 		var childIndex = 0;
 
 		// LoadAndResolve has already resolved children from the toc.yml file and prepended full paths.
-		// Children have full paths (e.g., "guides/api/reference.md"), so they should use the same prefix provider
-		// as the TOC (not the TOC itself as prefix provider) to avoid double-prepending the TOC path.
+		// Children have full paths (e.g., "guides/api/reference.md"), so they should use tocNavigation as their HomeProvider
 		foreach (var child in tocRef.Children)
 		{
 			var childNav = ConvertToNavigationItem(
 				child,
 				childIndex++,
 				context,
-				placeholderNavigation,
-				root,
-				prefixProvider, // Use same prefix provider as TOC, since children already have full paths from LoadAndResolve
+				tocNavigation,
+				tocNavigation, // TOC implements INavigationHomeProvider
 				depth + 1
 			);
 
@@ -492,12 +456,18 @@ public class DocumentationSetNavigation<TModel>
 			return null;
 		}
 
+		// Now recreate the TOC navigation with the actual children
+		// Unfortunately we need to create it twice because NavigationItems is readonly
+		// But this time we need to remove the old one from _tableOfContentNodes first
+		var identifier = new Uri($"{Git.RepositoryName}://{fullTocPath}");
+		_ = _tableOfContentNodes.Remove(identifier);
+
 		var finalTocNavigation = new TableOfContentsNavigation(
 			tocDirectory,
 			depth + 1,
-			fullTocPath, // Use full path for identifier registration
-			parent,
-			prefixProvider,
+			fullTocPath,
+			parent, // Now set the correct parent
+			scopedPathPrefix,
 			children,
 			Git,
 			_tableOfContentNodes
@@ -506,9 +476,14 @@ public class DocumentationSetNavigation<TModel>
 			NavigationIndex = index
 		};
 
-		// Update children's Parent to point to the final TOC navigation
+		// Update children to point to the final TOC navigation
+		// This includes both Parent and HomeProvider (via INavigationHomeAccessor)
 		foreach (var child in children)
+		{
 			child.Parent = finalTocNavigation;
+			if (child is INavigationHomeAccessor accessor)
+				accessor.HomeProvider = finalTocNavigation; // TOC implements INavigationHomeProvider
+		}
 
 		return finalTocNavigation;
 	}

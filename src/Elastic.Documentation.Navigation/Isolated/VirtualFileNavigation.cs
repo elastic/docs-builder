@@ -14,15 +14,14 @@ public record VirtualFileNavigationArgs(
 	int NavigationIndex,
 	int Depth,
 	INodeNavigationItem<INavigationModel, INavigationItem>? Parent,
-	IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot,
-	IPathPrefixProvider PrefixProvider,
+	INavigationHomeProvider HomeProvider,
 	IReadOnlyCollection<INavigationItem> NavigationItems
 );
 
 /// Represents a file navigation item that defines children which are not part of the file tree.
 [DebuggerDisplay("{Url}")]
 public class VirtualFileNavigation<TModel>(TModel model, IFileInfo fileInfo, VirtualFileNavigationArgs args)
-	: INodeNavigationItem<TModel, INavigationItem>
+	: INodeNavigationItem<TModel, INavigationItem>, INavigationHomeAccessor
 	where TModel : IDocumentationFile
 {
 	/// <inheritdoc />
@@ -32,10 +31,13 @@ public class VirtualFileNavigation<TModel>(TModel model, IFileInfo fileInfo, Vir
 	public string NavigationTitle => Index.NavigationTitle;
 
 	/// <inheritdoc />
-	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; init; } = args.NavigationRoot;
+	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => HomeProvider.NavigationRoot;
 
 	/// <inheritdoc />
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; } = args.Parent;
+
+	/// <inheritdoc />
+	public INavigationHomeProvider HomeProvider { get; set; } = args.HomeProvider;
 
 	/// <inheritdoc />
 	public bool Hidden { get; init; } = args.Hidden;
@@ -54,7 +56,7 @@ public class VirtualFileNavigation<TModel>(TModel model, IFileInfo fileInfo, Vir
 
 	/// <inheritdoc />
 	public ILeafNavigationItem<TModel> Index { get; init; } =
-		new FileNavigationLeaf<TModel>(model, fileInfo, new FileNavigationArgs(args.RelativePath, args.Hidden, args.NavigationIndex, args.Parent, args.NavigationRoot, args.PrefixProvider));
+		new FileNavigationLeaf<TModel>(model, fileInfo, new FileNavigationArgs(args.RelativePath, args.Hidden, args.NavigationIndex, args.Parent, args.HomeProvider));
 
 	public IReadOnlyCollection<INavigationItem> NavigationItems { get; init; } = args.NavigationItems;
 }

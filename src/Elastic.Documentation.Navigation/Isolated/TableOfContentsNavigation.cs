@@ -15,15 +15,17 @@ public interface IDocumentationFile : INavigationModel
 
 [DebuggerDisplay("{Url}")]
 public class TableOfContentsNavigation : IRootNavigationItem<IDocumentationFile, INavigationItem>
-	, INavigationPathPrefixProvider
-	, IPathPrefixProvider
+	, INavigationHomeAccessor
+	, INavigationHomeProvider
 {
+	private INavigationHomeProvider? _homeProvider;
+
 	public TableOfContentsNavigation(
 		IDirectoryInfo tableOfContentsDirectory,
 		int depth,
 		string parentPath,
 		INodeNavigationItem<INavigationModel, INavigationItem>? parent,
-		IPathPrefixProvider pathPrefixProvider,
+		string pathPrefix,
 		IReadOnlyCollection<INavigationItem> navigationItems,
 		GitCheckoutInformation git,
 		Dictionary<Uri, INodeNavigationItem<IDocumentationFile, INavigationItem>> tocNodes
@@ -33,32 +35,28 @@ public class TableOfContentsNavigation : IRootNavigationItem<IDocumentationFile,
 		NavigationItems = navigationItems;
 		Index = this.FindIndex<IDocumentationFile>(new NotFoundModel($"{parentPath}/index.md"));
 		Parent = parent;
-		PathPrefixProvider = pathPrefixProvider;
-		NavigationRoot = this;
 		Hidden = false;
 		IsUsingNavigationDropdown = false;
 		IsCrossLink = false;
 		Id = ShortId.Create(parentPath);
 		Depth = depth;
 		ParentPath = parentPath;
+		_pathPrefix = pathPrefix;
 
 		// Create an identifier for this TOC
 		Identifier = new Uri($"{git.RepositoryName}://{parentPath}");
 		_ = tocNodes.TryAdd(Identifier, this);
 	}
 
+	private readonly string _pathPrefix;
+
 	/// <summary>
 	/// The composed path prefix for this TOC, which is the parent's prefix + this TOC's parent path.
 	/// This is used by children to build their URLs.
+	/// Implements INavigationHomeProvider.PathPrefix
+	/// When HomeProvider is set (during assembler), this returns the external provider's PathPrefix.
 	/// </summary>
-	public string PathPrefix
-	{
-		get
-		{
-			var parentPrefix = PathPrefixProvider.PathPrefix.TrimEnd('/');
-			return string.IsNullOrEmpty(parentPrefix) ? $"/{ParentPath}" : $"{parentPrefix}/{ParentPath}";
-		}
-	}
+	public string PathPrefix => _homeProvider?.PathPrefix ?? _pathPrefix;
 
 	/// <inheritdoc />
 	public string Url => Index.Url;
@@ -66,13 +64,26 @@ public class TableOfContentsNavigation : IRootNavigationItem<IDocumentationFile,
 	/// <inheritdoc />
 	public string NavigationTitle => Index.NavigationTitle;
 
-	/// <inheritdoc />
-	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }
+	/// <summary>
+	/// TableOfContentsNavigation is its own NavigationRoot in isolated builds.
+	/// In assembler builds, this can be overridden via HomeProvider.
+	/// This satisfies both INavigationItem.NavigationRoot and INavigationHomeProvider.NavigationRoot.
+	/// </summary>
+	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => _homeProvider?.NavigationRoot ?? this;
 
 	/// <inheritdoc />
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
 
-	public IPathPrefixProvider PathPrefixProvider { get; set; }
+	/// <summary>
+	/// TableOfContentsNavigation implements INavigationHomeProvider and provides itself
+	/// as the home provider for its children by default. This creates the scoped navigation context.
+	/// The setter is used in assembler builds to rehome the navigation.
+	/// </summary>
+	public INavigationHomeProvider HomeProvider
+	{
+		get => _homeProvider ?? this;
+		set => _homeProvider = value;
+	}
 
 	/// <inheritdoc />
 	public bool Hidden { get; }

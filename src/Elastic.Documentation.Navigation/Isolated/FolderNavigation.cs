@@ -10,23 +10,25 @@ namespace Elastic.Documentation.Navigation.Isolated;
 [DebuggerDisplay("{Url}")]
 public class FolderNavigation : INodeNavigationItem<IDocumentationFile, INavigationItem>
 {
+	private readonly INavigationHomeProvider _homeProvider;
+
 	public FolderNavigation(
 		int depth,
 		string parentPath,
 		INodeNavigationItem<INavigationModel, INavigationItem>? parent,
-		IRootNavigationItem<INavigationModel, INavigationItem> navigationRoot,
+		INavigationHomeProvider homeProvider,
 		IReadOnlyCollection<INavigationItem> navigationItems
 	)
 	{
 		FolderPath = parentPath;
 		NavigationItems = navigationItems;
-		Index = this.FindIndex<IDocumentationFile>(new NotFoundModel($"{FolderPath}/index.md"));
-		NavigationRoot = navigationRoot;
 		Parent = parent;
+		_homeProvider = homeProvider; // Must be set before FindIndex, which accesses NavigationRoot
 		Depth = depth;
 		Hidden = false;
 		IsCrossLink = false;
 		Id = ShortId.Create(parentPath);
+		Index = this.FindIndex<IDocumentationFile>(new NotFoundModel($"{FolderPath}/index.md"));
 	}
 
 	public string FolderPath { get; }
@@ -38,7 +40,7 @@ public class FolderNavigation : INodeNavigationItem<IDocumentationFile, INavigat
 	public string NavigationTitle => Index.NavigationTitle;
 
 	/// <inheritdoc />
-	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }
+	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => _homeProvider.NavigationRoot;
 
 	/// <inheritdoc />
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
