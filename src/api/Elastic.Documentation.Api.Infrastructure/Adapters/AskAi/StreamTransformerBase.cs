@@ -163,10 +163,13 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 
 			if (transformedEvent != null)
 			{
-				// Update parent activity with conversation ID when we receive ConversationStart events
+				// Update parent activity with conversation ID and model info when we receive ConversationStart events
 				if (transformedEvent is AskAiEvent.ConversationStart conversationStart)
 				{
 					_ = (parentActivity?.SetTag("gen_ai.conversation.id", conversationStart.ConversationId));
+					_ = (parentActivity?.SetTag("gen_ai.request.model", GetAgentId()));
+					_ = (parentActivity?.SetTag("gen_ai.agent.name", GetAgentId()));
+					_ = (parentActivity?.SetTag("gen_ai.provider.name", GetAgentProvider()));
 					_ = (activity?.SetTag("gen_ai.conversation.id", conversationStart.ConversationId));
 				}
 

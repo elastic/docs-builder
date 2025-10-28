@@ -14,13 +14,6 @@ public class AskAiUsecase(
 {
 	private static readonly ActivitySource AskAiActivitySource = new("Elastic.Documentation.Api.AskAi");
 
-	private static string GetModelNameFromProvider(string provider) => provider switch
-	{
-		"LlmGateway" => "docs_assistant",
-		"AgentBuilder" => "docs-agent",
-		_ => "elastic-docs-rag"
-	};
-
 	public async Task<Stream> AskAi(AskAiRequest askAiRequest, Cancel ctx)
 	{
 		using var activity = AskAiActivitySource.StartActivity("gen_ai.agent");
@@ -35,7 +28,6 @@ public class AskAiUsecase(
 			tags:
 			[
 				new KeyValuePair<string, object?>("gen_ai.operation.name", "chat"),
-				new KeyValuePair<string, object?>("gen_ai.request.model", GetModelNameFromProvider("Unknown")), // Will be updated by transformer
 				new KeyValuePair<string, object?>("gen_ai.conversation.id", askAiRequest.ThreadId ?? "pending"), // Will be updated when we receive ConversationStart
 				new KeyValuePair<string, object?>("gen_ai.input.messages", $"[{{\"role\":\"user\",\"content\":\"{askAiRequest.Message}\"}}]"),
 				new KeyValuePair<string, object?>("gen_ai.system_instructions", $"[{{\"type\":\"text\",\"content\":\"{AskAiRequest.SystemPrompt}\"}}]")
