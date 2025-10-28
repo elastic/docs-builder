@@ -48,7 +48,7 @@ try
 	process.Refresh();
 	Console.WriteLine($"Elastic OTel configured. Memory: {process.WorkingSet64 / 1024 / 1024} MB");
 
-	_ = builder.Services.AddAWSLambdaHosting(LambdaEventSource.HttpApi);
+	_ = builder.Services.AddAWSLambdaHosting(LambdaEventSource.HttpApi, new SourceGeneratorLambdaJsonSerializer<LambdaJsonSerializerContext>());
 	process.Refresh();
 	Console.WriteLine($"AWS Lambda hosting configured. Memory: {process.WorkingSet64 / 1024 / 1024} MB");
 
