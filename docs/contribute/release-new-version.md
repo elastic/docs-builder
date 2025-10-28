@@ -2,6 +2,17 @@
 
 When a new version of the Elastic Stack (or another versioned product) is released, the docs site must be updated to recognize it. This process primarily involves updating version metadata in the shared site configuration.
 
+## Who needs to be involved
+
+Generally, each release requires the following people:
+
+* A member of the **docs team** to make the config changes in a docs-builder PR
+* A member of the **docs engineering** or **docs tech leads** team to support publishing those changes to staging and prod.
+
+Before you start your release, you should identify who from each of these teams will facilitate the release.
+
+## Release process
+
 Follow these steps to release a new documentation version.
 
 :::{tip}
@@ -79,15 +90,13 @@ See [`legacy-url-mappings.yml`](../configure/site/legacy-url-mappings.md) for mo
 
 ::::
 
-::::{step} [docs-builder PR] Approve and merge the config change
+::::{step} [docs-builder PR] Merge the config change
 
-_This action must be performed by docs engineering._
+Merge the `versions.yml` changes and any assembler and legacy URL mapping changes. Anyone from the docs team can merge the PR, but it must be approved by docs engineering or docs tech leads.
 
-Merge the `versions.yml` changes and any assembler and legacy URL mapping changes.
+Optionally, docs engineering can invoke the [Synchronize version & config updates](https://github.com/elastic/docs-internal-workflows/actions/workflows/update-assembler-version.yml) action manually on `docs-internal-workflows`, which opens two configuration update PRs: `staging` and `prod`.
 
-Optionally, invoke the [Synchronize version & config updates](https://github.com/elastic/docs-internal-workflows/actions/workflows/update-assembler-version.yml) action manually on `docs-internal-workflows`, which opens two configuration update PRs: `staging` and `prod`.
-
-This action also runs on a cron job, but you can trigger it manually if needed.
+This action also runs on a cron job, but can be triggered manually if the change is time-sensitive.
 
 :::{important}
 Do not merge the production PR until release day!
@@ -97,9 +106,9 @@ Do not merge the production PR until release day!
 
 ::::{step} After feature freeze: merge the config change to staging
 
-_This action must be performed by docs engineering._
+_This action must be performed by docs engineering or docs tech leads._
 
-Merge [the `staging` configuration update PR](https://github.com/elastic/docs-internal-workflows/pulls).
+Approve and merge [the `staging` configuration update PR](https://github.com/elastic/docs-internal-workflows/pulls).
 
 :::{important}
 Do not merge the production PR until release day!
@@ -109,9 +118,9 @@ Do not merge the production PR until release day!
 
 ::::{step} Release day: merge the config change to prod and release to production
 
-_This action must be performed by docs engineering. For most products, this change must be merged on release day._
+_This action must be performed by docs engineering or docs tech leads. For most products, this change must be merged on release day._
 
-1. Merge [the `prod` configuration update PR](https://github.com/elastic/docs-internal-workflows/pulls).
+1. Approve and merge [the `prod` configuration update PR](https://github.com/elastic/docs-internal-workflows/pulls).
 2. Manually [invoke the release automation to production](https://github.com/elastic/docs-internal-workflows/actions/workflows/assembler-build.prod.yml).
 3. Let the requester or docs release coordinator know the docs have been updated.
 
