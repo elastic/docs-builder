@@ -24,12 +24,21 @@ public static class MappingsExtension
 	private static void MapAskAiEndpoint(IEndpointRouteBuilder group)
 	{
 		var askAiGroup = group.MapGroup("/ask-ai");
-		_ = askAiGroup.MapPost("/stream", async (AskAiRequest askAiRequest, AskAiUsecase askAiUsecase, Cancel ctx) =>
+		_ = askAiGroup.MapPost("/stream", async (HttpContext context, AskAiRequest askAiRequest, AskAiUsecase askAiUsecase, Cancel ctx) =>
 		{
+			// Set response headers IMMEDIATELY before calling the usecase
+			// This makes the browser show the request as "active" instead of "pending"
+			context.Response.ContentType = "text/event-stream";
+			context.Response.Headers.CacheControl = "no-cache";
+			context.Response.Headers.Connection = "keep-alive";
+
+			// Flush headers to the client immediately
+			await context.Response.StartAsync(ctx);
+
 			var stream = await askAiUsecase.AskAi(askAiRequest, ctx);
 
-			// Configure response headers for optimal streaming
-			return Results.Stream(stream, "text/event-stream");
+			// Stream the response
+			await stream.CopyToAsync(context.Response.Body, ctx);
 		});
 	}
 
