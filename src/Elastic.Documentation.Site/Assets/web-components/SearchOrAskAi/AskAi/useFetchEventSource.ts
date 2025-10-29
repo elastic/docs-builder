@@ -5,6 +5,19 @@ import {
 } from '@microsoft/fetch-event-source'
 import { useRef, useCallback } from 'react'
 
+/**
+ * Computes SHA256 hash of the request body for CloudFront + Lambda Function URL with OAC.
+ * Required by AWS CloudFront when using Origin Access Control with Lambda Function URLs.
+ * See: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-restricting-access-to-lambda.html
+ */
+async function computeSHA256(data: string): Promise<string> {
+    const encoder = new TextEncoder()
+    const dataBuffer = encoder.encode(data)
+    const hashBuffer = await crypto.subtle.digest('SHA-256', dataBuffer)
+    const hashArray = Array.from(new Uint8Array(hashBuffer))
+    return hashArray.map((b) => ('0' + b.toString(16)).slice(-2)).join('')
+}
+
 // Simple wrapper interface around fetch-event-source
 export interface UseFetchEventSourceOptions {
     apiEndpoint: string
@@ -47,13 +60,21 @@ export function useFetchEventSource<TPayload>({
             abortControllerRef.current = controller
 
             try {
+                // Stringify payload once to ensure hash matches the exact body sent
+                const bodyString = JSON.stringify(payload)
+
+                // Compute SHA256 hash for CloudFront + Lambda Function URL with OAC
+                // This proves body integrity from client to CloudFront
+                const contentHash = await computeSHA256(bodyString)
+
                 await fetchEventSource(apiEndpoint, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'x-amz-content-sha256': contentHash, // Required for CloudFront OAC
                         ...headers,
                     },
-                    body: JSON.stringify(payload),
+                    body: bodyString,
                     signal: controller.signal, // Use local controller, not ref
                     onopen: async (response: Response) => {
                         if (
