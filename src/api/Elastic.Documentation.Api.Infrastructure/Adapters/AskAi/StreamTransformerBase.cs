@@ -86,9 +86,20 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 		catch (OperationCanceledException ex)
 		{
 			// Cancellation is expected and not an error - log as debug
-			Logger.LogDebug("Stream processing was cancelled.");
+			Logger.LogDebug(ex, "Stream processing was cancelled for transformer {TransformerType}", GetType().Name);
 			_ = (activity?.SetTag("gen_ai.response.error", true));
 			_ = (activity?.SetTag("gen_ai.response.error_type", "OperationCanceledException"));
+
+			// Add error event to activity
+			_ = (activity?.AddEvent(new ActivityEvent("gen_ai.error",
+				timestamp: DateTimeOffset.UtcNow,
+				tags:
+				[
+					new KeyValuePair<string, object?>("gen_ai.error.type", "OperationCanceledException"),
+					new KeyValuePair<string, object?>("gen_ai.error.message", "Stream processing was cancelled"),
+					new KeyValuePair<string, object?>("gen_ai.transformer.type", GetType().Name)
+				])));
+
 			try
 			{
 				await writer.CompleteAsync(ex);
@@ -96,16 +107,28 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 			}
 			catch (Exception completeEx)
 			{
-				Logger.LogError(completeEx, "Error completing pipe after cancellation");
+				Logger.LogError(completeEx, "Error completing pipe after cancellation for transformer {TransformerType}", GetType().Name);
 			}
 			return;
 		}
 		catch (Exception ex)
 		{
-			Logger.LogError(ex, "Error transforming stream. Stream processing will be terminated.");
+			Logger.LogError(ex, "Error transforming stream for transformer {TransformerType}. Stream processing will be terminated.", GetType().Name);
 			_ = (activity?.SetTag("gen_ai.response.error", true));
 			_ = (activity?.SetTag("gen_ai.response.error_type", ex.GetType().Name));
 			_ = (activity?.SetTag("gen_ai.response.error_message", ex.Message));
+
+			// Add error event to activity
+			_ = (activity?.AddEvent(new ActivityEvent("gen_ai.error",
+				timestamp: DateTimeOffset.UtcNow,
+				tags:
+				[
+					new KeyValuePair<string, object?>("gen_ai.error.type", ex.GetType().Name),
+					new KeyValuePair<string, object?>("gen_ai.error.message", ex.Message),
+					new KeyValuePair<string, object?>("gen_ai.transformer.type", GetType().Name),
+					new KeyValuePair<string, object?>("gen_ai.error.stack_trace", ex.StackTrace ?? "")
+				])));
+
 			try
 			{
 				await writer.CompleteAsync(ex);
@@ -113,7 +136,7 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 			}
 			catch (Exception completeEx)
 			{
-				Logger.LogError(completeEx, "Error completing pipe after transformation error");
+				Logger.LogError(completeEx, "Error completing pipe after transformation error for transformer {TransformerType}", GetType().Name);
 			}
 			return;
 		}
@@ -160,7 +183,20 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 			catch (JsonException ex)
 			{
 				jsonParseErrors++;
-				Logger.LogError(ex, "Failed to parse JSON from SSE event: {Data}", sseEvent.Data);
+				Logger.LogError(ex, "Failed to parse JSON from SSE event for transformer {TransformerType}. EventType: {EventType}, Data: {Data}",
+					GetType().Name, sseEvent.EventType, sseEvent.Data);
+
+				// Add error event to activity for JSON parsing failures
+				_ = (activity?.AddEvent(new ActivityEvent("gen_ai.error",
+					timestamp: DateTimeOffset.UtcNow,
+					tags:
+					[
+						new KeyValuePair<string, object?>("gen_ai.error.type", "JsonException"),
+						new KeyValuePair<string, object?>("gen_ai.error.message", ex.Message),
+						new KeyValuePair<string, object?>("gen_ai.transformer.type", GetType().Name),
+						new KeyValuePair<string, object?>("gen_ai.sse.event_type", sseEvent.EventType ?? "unknown"),
+						new KeyValuePair<string, object?>("gen_ai.sse.data", sseEvent.Data)
+					])));
 			}
 
 			if (transformedEvent != null)
@@ -206,24 +242,45 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 		_ = (activity?.SetTag("gen_ai.provider.name", GetAgentProvider()));
 		_ = (activity?.SetTag("gen_ai.response.token_type", transformedEvent.GetType().Name));
 
-		// Add GenAI completion event for each token/chunk
-		_ = (activity?.AddEvent(new ActivityEvent("gen_ai.content.completion",
-			timestamp: DateTimeOffset.UtcNow,
-			tags:
-			[
-				new KeyValuePair<string, object?>("gen_ai.completion", JsonSerializer.Serialize(transformedEvent, AskAiEventJsonContext.Default.AskAiEvent))
-			])));
+		try
+		{
+			// Add GenAI completion event for each token/chunk
+			_ = (activity?.AddEvent(new ActivityEvent("gen_ai.content.completion",
+				timestamp: DateTimeOffset.UtcNow,
+				tags:
+				[
+					new KeyValuePair<string, object?>("gen_ai.completion", JsonSerializer.Serialize(transformedEvent, AskAiEventJsonContext.Default.AskAiEvent))
+				])));
 
-		// Serialize as base AskAiEvent type to include the type discriminator
-		var json = JsonSerializer.Serialize<AskAiEvent>(transformedEvent, AskAiEventJsonContext.Default.AskAiEvent);
-		var sseData = $"data: {json}\n\n";
-		var bytes = Encoding.UTF8.GetBytes(sseData);
+			// Serialize as base AskAiEvent type to include the type discriminator
+			var json = JsonSerializer.Serialize<AskAiEvent>(transformedEvent, AskAiEventJsonContext.Default.AskAiEvent);
+			var sseData = $"data: {json}\n\n";
+			var bytes = Encoding.UTF8.GetBytes(sseData);
 
-		_ = (activity?.SetTag("gen_ai.response.token_size", bytes.Length));
+			_ = (activity?.SetTag("gen_ai.response.token_size", bytes.Length));
 
-		// Write to pipe and flush immediately for real-time streaming
-		_ = await writer.WriteAsync(bytes, cancellationToken);
-		_ = await writer.FlushAsync(cancellationToken);
+			// Write to pipe and flush immediately for real-time streaming
+			_ = await writer.WriteAsync(bytes, cancellationToken);
+			_ = await writer.FlushAsync(cancellationToken);
+		}
+		catch (Exception ex)
+		{
+			Logger.LogError(ex, "Error writing event to stream for transformer {TransformerType}. EventType: {EventType}",
+				GetType().Name, transformedEvent.GetType().Name);
+
+			// Add error event to activity
+			_ = (activity?.AddEvent(new ActivityEvent("gen_ai.error",
+				timestamp: DateTimeOffset.UtcNow,
+				tags:
+				[
+					new KeyValuePair<string, object?>("gen_ai.error.type", ex.GetType().Name),
+					new KeyValuePair<string, object?>("gen_ai.error.message", ex.Message),
+					new KeyValuePair<string, object?>("gen_ai.transformer.type", GetType().Name),
+					new KeyValuePair<string, object?>("gen_ai.event.type", transformedEvent.GetType().Name)
+				])));
+
+			throw; // Re-throw to be handled by caller
+		}
 	}
 
 	/// <summary>
