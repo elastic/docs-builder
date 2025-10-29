@@ -94,89 +94,82 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 
 		try
 		{
-			await ProcessStreamAsync(reader, writer, parentActivity, cancellationToken);
-		}
-		catch (OperationCanceledException ex)
-		{
-			// Cancellation is expected and not an error - log as debug
-			Logger.LogDebug(ex, "Stream processing was cancelled for transformer {TransformerType}", GetType().Name);
-			_ = (activity?.SetTag("gen_ai.response.error", true));
-			_ = (activity?.SetTag("gen_ai.response.error_type", "OperationCanceledException"));
-
-			// Add error event to activity
-			_ = (activity?.AddEvent(new ActivityEvent("gen_ai.error",
-				timestamp: DateTimeOffset.UtcNow,
-				tags:
-				[
-					new KeyValuePair<string, object?>("gen_ai.error.type", "OperationCanceledException"),
-					new KeyValuePair<string, object?>("gen_ai.error.message", "Stream processing was cancelled"),
-					new KeyValuePair<string, object?>("gen_ai.transformer.type", GetType().Name)
-				])));
-
 			try
 			{
-				await writer.CompleteAsync(ex);
-				await reader.CompleteAsync(ex);
+				await ProcessStreamAsync(reader, writer, parentActivity, cancellationToken);
 			}
-			catch (Exception completeEx)
+			catch (OperationCanceledException ex)
 			{
-				Logger.LogError(completeEx, "Error completing pipe after cancellation for transformer {TransformerType}", GetType().Name);
+				// Cancellation is expected and not an error - log as debug
+				Logger.LogDebug(ex, "Stream processing was cancelled for transformer {TransformerType}", GetType().Name);
+				_ = (activity?.SetTag("gen_ai.response.error", true));
+				_ = (activity?.SetTag("gen_ai.response.error_type", "OperationCanceledException"));
+
+				// Add error event to activity
+				_ = (activity?.AddEvent(new ActivityEvent("gen_ai.error",
+					timestamp: DateTimeOffset.UtcNow,
+					tags:
+					[
+						new KeyValuePair<string, object?>("gen_ai.error.type", "OperationCanceledException"),
+						new KeyValuePair<string, object?>("gen_ai.error.message", "Stream processing was cancelled"),
+						new KeyValuePair<string, object?>("gen_ai.transformer.type", GetType().Name)
+					])));
+
+				try
+				{
+					await writer.CompleteAsync(ex);
+					await reader.CompleteAsync(ex);
+				}
+				catch (Exception completeEx)
+				{
+					Logger.LogError(completeEx, "Error completing pipe after cancellation for transformer {TransformerType}", GetType().Name);
+				}
+				return;
+			}
+			catch (Exception ex)
+			{
+				Logger.LogError(ex, "Error transforming stream for transformer {TransformerType}. Stream processing will be terminated.", GetType().Name);
+				_ = (activity?.SetTag("gen_ai.response.error", true));
+				_ = (activity?.SetTag("gen_ai.response.error_type", ex.GetType().Name));
+				_ = (activity?.SetTag("gen_ai.response.error_message", ex.Message));
+
+				// Add error event to activity
+				_ = (activity?.AddEvent(new ActivityEvent("gen_ai.error",
+					timestamp: DateTimeOffset.UtcNow,
+					tags:
+					[
+						new KeyValuePair<string, object?>("gen_ai.error.type", ex.GetType().Name),
+						new KeyValuePair<string, object?>("gen_ai.error.message", ex.Message),
+						new KeyValuePair<string, object?>("gen_ai.transformer.type", GetType().Name),
+						new KeyValuePair<string, object?>("gen_ai.error.stack_trace", ex.StackTrace ?? "")
+					])));
+
+				try
+				{
+					await writer.CompleteAsync(ex);
+					await reader.CompleteAsync(ex);
+				}
+				catch (Exception completeEx)
+				{
+					Logger.LogError(completeEx, "Error completing pipe after transformation error for transformer {TransformerType}", GetType().Name);
+				}
+				return;
 			}
 
-			// Dispose activities on error
-			transformActivity?.Dispose();
-			parentActivity?.Dispose();
-			return;
-		}
-		catch (Exception ex)
-		{
-			Logger.LogError(ex, "Error transforming stream for transformer {TransformerType}. Stream processing will be terminated.", GetType().Name);
-			_ = (activity?.SetTag("gen_ai.response.error", true));
-			_ = (activity?.SetTag("gen_ai.response.error_type", ex.GetType().Name));
-			_ = (activity?.SetTag("gen_ai.response.error_message", ex.Message));
-
-			// Add error event to activity
-			_ = (activity?.AddEvent(new ActivityEvent("gen_ai.error",
-				timestamp: DateTimeOffset.UtcNow,
-				tags:
-				[
-					new KeyValuePair<string, object?>("gen_ai.error.type", ex.GetType().Name),
-					new KeyValuePair<string, object?>("gen_ai.error.message", ex.Message),
-					new KeyValuePair<string, object?>("gen_ai.transformer.type", GetType().Name),
-					new KeyValuePair<string, object?>("gen_ai.error.stack_trace", ex.StackTrace ?? "")
-				])));
-
+			// Normal completion - ensure cleanup happens
 			try
 			{
-				await writer.CompleteAsync(ex);
-				await reader.CompleteAsync(ex);
+				await writer.CompleteAsync();
+				await reader.CompleteAsync();
 			}
-			catch (Exception completeEx)
+			catch (Exception ex)
 			{
-				Logger.LogError(completeEx, "Error completing pipe after transformation error for transformer {TransformerType}", GetType().Name);
+				Logger.LogError(ex, "Error completing pipe after successful transformation");
 			}
-
-			// Dispose activities on error
-			transformActivity?.Dispose();
-			parentActivity?.Dispose();
-			return;
 		}
-
-		// Normal completion - ensure cleanup happens
-		try
+		finally
 		{
-			await writer.CompleteAsync();
-			await reader.CompleteAsync();
-
-			// Dispose activities on success
-			transformActivity?.Dispose();
-			parentActivity?.Dispose();
-		}
-		catch (Exception ex)
-		{
-			Logger.LogError(ex, "Error completing pipe after successful transformation");
-
-			// Still dispose activities even if completion fails
+			// Always dispose activities, regardless of how we exit
 			transformActivity?.Dispose();
 			parentActivity?.Dispose();
 		}
