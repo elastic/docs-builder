@@ -16,8 +16,9 @@ public class AskAiUsecase(
 
 	public async Task<Stream> AskAi(AskAiRequest askAiRequest, Cancel ctx)
 	{
-		// Start activity for the chat request - model name will be set by transformer
-		using var activity = AskAiActivitySource.StartActivity("chat", ActivityKind.Client);
+		// Start activity for the chat request - DO NOT use 'using' because the stream is consumed later
+		// The activity will be passed to the transformer which will dispose it when the stream completes
+		var activity = AskAiActivitySource.StartActivity("chat", ActivityKind.Client);
 
 		// Generate a correlation ID for tracking if this is a new conversation
 		// For first messages (no ThreadId), generate a temporary ID that will be updated when the provider responds
@@ -47,8 +48,8 @@ public class AskAiUsecase(
 
 		var rawStream = await askAiGateway.AskAi(askAiRequest, ctx);
 
-		// The stream transformer will set the correct agent name, model name and provider
-		var transformedStream = await streamTransformer.TransformAsync(rawStream, ctx);
+		// The stream transformer will handle disposing the activity when streaming completes
+		var transformedStream = await streamTransformer.TransformAsync(rawStream, activity, ctx);
 
 		return transformedStream;
 	}

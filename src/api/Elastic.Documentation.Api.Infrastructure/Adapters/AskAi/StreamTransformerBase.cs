@@ -50,9 +50,10 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 	/// </summary>
 	public string AgentProvider => GetAgentProvider();
 
-	public Task<Stream> TransformAsync(Stream rawStream, CancellationToken cancellationToken = default)
+	public Task<Stream> TransformAsync(Stream rawStream, Activity? parentActivity, CancellationToken cancellationToken = default)
 	{
-		using var activity = StreamTransformerActivitySource.StartActivity($"chat {GetAgentId()}", ActivityKind.Client);
+		// Create a child activity for the transformation - DO NOT use 'using' because streaming happens asynchronously
+		var activity = StreamTransformerActivitySource.StartActivity($"chat {GetAgentId()}", ActivityKind.Client);
 		_ = (activity?.SetTag("gen_ai.operation.name", "chat"));
 
 		// Custom attributes for tracking our abstraction layer
@@ -75,7 +76,8 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 		// Start processing task to transform and write events to pipe
 		// Note: We intentionally don't await this task as we need to return the stream immediately
 		// The pipe handles synchronization and backpressure between producer and consumer
-		_ = ProcessPipeAsync(reader, pipe.Writer, activity, cancellationToken);
+		// Pass both parent and child activities - they will be disposed when streaming completes
+		_ = ProcessPipeAsync(reader, pipe.Writer, parentActivity, activity, cancellationToken);
 
 		// Return the read side of the pipe as a stream
 		return Task.FromResult(pipe.Reader.AsStream());
@@ -85,7 +87,7 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 	/// Process the pipe reader and write transformed events to the pipe writer.
 	/// This runs concurrently with the consumer reading from the output stream.
 	/// </summary>
-	private async Task ProcessPipeAsync(PipeReader reader, PipeWriter writer, Activity? parentActivity, CancellationToken cancellationToken)
+	private async Task ProcessPipeAsync(PipeReader reader, PipeWriter writer, Activity? parentActivity, Activity? transformActivity, CancellationToken cancellationToken)
 	{
 		using var activity = StreamTransformerActivitySource.StartActivity("gen_ai.agent.pipe");
 		_ = (activity?.SetTag("transformer.type", GetType().Name));
@@ -120,6 +122,10 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 			{
 				Logger.LogError(completeEx, "Error completing pipe after cancellation for transformer {TransformerType}", GetType().Name);
 			}
+
+			// Dispose activities on error
+			transformActivity?.Dispose();
+			parentActivity?.Dispose();
 			return;
 		}
 		catch (Exception ex)
@@ -149,6 +155,10 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 			{
 				Logger.LogError(completeEx, "Error completing pipe after transformation error for transformer {TransformerType}", GetType().Name);
 			}
+
+			// Dispose activities on error
+			transformActivity?.Dispose();
+			parentActivity?.Dispose();
 			return;
 		}
 
@@ -157,10 +167,18 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 		{
 			await writer.CompleteAsync();
 			await reader.CompleteAsync();
+
+			// Dispose activities on success
+			transformActivity?.Dispose();
+			parentActivity?.Dispose();
 		}
 		catch (Exception ex)
 		{
 			Logger.LogError(ex, "Error completing pipe after successful transformation");
+
+			// Still dispose activities even if completion fails
+			transformActivity?.Dispose();
+			parentActivity?.Dispose();
 		}
 	}
 
