@@ -64,7 +64,6 @@ public abstract class ExternalCommandExecutor(IDiagnosticsCollector collector, I
 			}
 			catch (Exception ex)
 			{
-				collector.EmitGlobalWarning($"An exception occurred on attempt {i} to capture output of {binary}: {ex?.Message}");
 				if (ex is not null)
 					e = ex;
 			}
@@ -84,7 +83,8 @@ public abstract class ExternalCommandExecutor(IDiagnosticsCollector collector, I
 				WorkingDirectory = workingDirectory.FullName,
 				Timeout = TimeSpan.FromSeconds(3),
 				WaitForExit = TimeSpan.FromSeconds(3),
-				ConsoleOutWriter = new ConsoleOutWriter()
+				// Capture the output of the command if it's the last iteration
+				ConsoleOutWriter = iteration == max ? new ConsoleOutWriter() : NoopConsoleWriter.Instance,
 			};
 			var result = Proc.Start(arguments);
 

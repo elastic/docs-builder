@@ -39,8 +39,8 @@ environments:
 
 shared_configuration:
   stack: &stack
-    current:  9.1
-    next: 9.2
+    current:  9.2
+    next: main
     edge: main
 
   master: &master
@@ -82,7 +82,7 @@ references:
   apm-aws-lambda:
   apm-k8s-attacher:
   ecs:
-    current: 9.1 # releases do not always align with the Stack version
+    current: 9.2 # releases do not always align with the Stack version
     next: main
   ecs-dotnet:
   ecs-logging-go-logrus:

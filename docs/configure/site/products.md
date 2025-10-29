@@ -10,6 +10,7 @@ products:
   edot-collector:
     display: 'Elastic Distribution of OpenTelemetry Collector'
     versioning: 'stack'
+    repository: 'elastic-edot-collector'
 #...
 ```
 
@@ -19,6 +20,7 @@ products:
 :   A YAML mapping where each key is an Elastic product.
 * `display`: A friendly name for the product.
 * `versioning`: The versioning system used by the project. The value for this field must match one of the versioning systems defined in [`versions.yml`](https://github.com/elastic/docs-builder/blob/main/config/versions.yml)
+* `repository`: The repository name for the product. It's optional and primarily intended for handling edge cases where there is a mismatch between the repository name and the product identifier.
 
 
 

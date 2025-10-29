@@ -10,6 +10,7 @@ import { initTabs } from './tabs'
 import { initTocNav } from './toc-nav'
 import 'htmx-ext-head-support'
 import 'htmx-ext-preload'
+import katex from 'katex'
 import { $, $$ } from 'select-dom'
 import { UAParser } from 'ua-parser-js'
 
@@ -17,12 +18,66 @@ const { getOS } = new UAParser()
 const isLazyLoadNavigationEnabled =
     $('meta[property="docs:feature:lazy-load-navigation"]')?.content === 'true'
 
+/**
+ * Initialize KaTeX math rendering for elements with class 'math'
+ */
+function initMath() {
+    const mathElements = $$('.math:not([data-katex-processed])')
+    mathElements.forEach((element) => {
+        try {
+            const content = element.textContent?.trim()
+            if (!content) return
+
+            // Determine if this is display math based on content and element type
+            const isDisplayMath =
+                element.tagName === 'DIV' ||
+                content.includes('\\[') ||
+                content.includes('$$') ||
+                content.includes('\\begin{') ||
+                content.includes('\n')
+
+            // Clean up common LaTeX delimiters
+            const cleanContent = content
+                .replace(/^\$\$|\$\$$/g, '') // Remove $$ delimiters
+                .replace(/^\\\[|\\\]$/g, '') // Remove \[ \] delimiters
+                .trim()
+
+            // Clear the element content before rendering
+            element.innerHTML = ''
+
+            katex.render(cleanContent, element, {
+                throwOnError: false,
+                displayMode: isDisplayMath,
+                strict: false, // Allow some LaTeX extensions
+                trust: false, // Security: don't trust arbitrary commands
+                output: 'mathml', // Only render MathML, not HTML
+                macros: {
+                    // Add common macros if needed
+                },
+            })
+
+            // Mark as processed to prevent double processing
+            element.setAttribute('data-katex-processed', 'true')
+        } catch (error) {
+            console.warn('KaTeX rendering error:', error)
+            // Fallback: keep the original content
+            element.innerHTML = element.textContent || ''
+        }
+    })
+}
+
+// Initialize math on initial page load
+document.addEventListener('DOMContentLoaded', function () {
+    initMath()
+})
+
 document.addEventListener('htmx:load', function (event) {
     initTocNav()
     initHighlight()
     initCopyButton()
     initTabs()
     initAppliesSwitch()
+    initMath()
 
     // We do this so that the navigation is not initialized twice
     if (isLazyLoadNavigationEnabled) {

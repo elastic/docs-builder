@@ -55,6 +55,8 @@
       <EmbeddedResource Include="_static/*.css.map" Watch="false" />
       <EmbeddedResource Include="_static/*.svg" Watch="false" />
       <EmbeddedResource Include="_static/*.png" Watch="false" />
+      <EmbeddedResource Include="_static/*.ttf" Watch="false" />
+      <EmbeddedResource Include="_static/*.woff" Watch="false" />
       <EmbeddedResource Include="_static/*.woff2" Watch="false" />
     </ItemGroup>
   </Target>

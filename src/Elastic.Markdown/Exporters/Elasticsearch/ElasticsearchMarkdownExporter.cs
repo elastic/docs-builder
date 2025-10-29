@@ -3,8 +3,11 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Synonyms;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Search;
 using Elastic.Ingest.Elasticsearch;
@@ -34,21 +37,25 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 	private readonly DateTimeOffset _batchIndexDate = DateTimeOffset.UtcNow;
 	private readonly DistributedTransport _transport;
 	private IngestStrategy _indexStrategy;
+	private readonly string _indexNamespace;
 	private string _currentLexicalHash = string.Empty;
 	private string _currentSemanticHash = string.Empty;
+
+	private readonly IReadOnlyCollection<string> _synonyms;
 
 	public ElasticsearchMarkdownExporter(
 		ILoggerFactory logFactory,
 		IDiagnosticsCollector collector,
 		DocumentationEndpoints endpoints,
-		string indexNamespace
+		string indexNamespace,
+		SynonymsConfiguration synonyms
 	)
 	{
 		_collector = collector;
 		_logger = logFactory.CreateLogger<ElasticsearchMarkdownExporter>();
 		_endpoint = endpoints.Elasticsearch;
 		_indexStrategy = IngestStrategy.Reindex;
-
+		_indexNamespace = indexNamespace;
 		var es = endpoints.Elasticsearch;
 
 		var configuration = new ElasticsearchConfiguration(es.Uri)
@@ -75,7 +82,7 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 		};
 
 		_transport = new DistributedTransport(configuration);
-
+		_synonyms = synonyms.Synonyms;
 		_lexicalChannel = new ElasticsearchLexicalExporter(logFactory, collector, es, indexNamespace, _transport);
 		_semanticChannel = new ElasticsearchSemanticExporter(logFactory, collector, es, indexNamespace, _transport);
 	}
@@ -86,6 +93,7 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 		_currentLexicalHash = await _lexicalChannel.Channel.GetIndexTemplateHashAsync(ctx) ?? string.Empty;
 		_currentSemanticHash = await _semanticChannel.Channel.GetIndexTemplateHashAsync(ctx) ?? string.Empty;
 
+		await PublishSynonymsAsync($"docs-{_indexNamespace}", ctx);
 		_ = await _lexicalChannel.Channel.BootstrapElasticsearchAsync(BootstrapMethod.Failure, null, ctx);
 
 		// if the previous hash does not match the current hash, we know already we want to multiplex to a new index
@@ -130,6 +138,39 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 		_logger.LogInformation("Using {IndexStrategy} to sync lexical index to semantic index", _indexStrategy.ToStringFast(true));
 
 		async ValueTask<bool> IndexExists(string name) => (await _transport.HeadAsync(name, ctx)).ApiCallDetails.HasSuccessfulStatusCode;
+	}
+
+	private async Task PublishSynonymsAsync(string setName, CancellationToken ctx)
+	{
+		_logger.LogInformation("Publishing synonym set '{SetName}' to Elasticsearch", setName);
+
+		var synonymRules = _synonyms.Aggregate(new List<SynonymRule>(), (acc, synonym) =>
+		{
+			acc.Add(new SynonymRule
+			{
+				Id = synonym.Split(",", StringSplitOptions.RemoveEmptyEntries)[0].Trim(),
+				Synonyms = synonym
+			});
+			return acc;
+		});
+
+		var synonymsSet = new SynonymsSet
+		{
+			Synonyms = synonymRules
+		};
+
+		var json = JsonSerializer.Serialize(synonymsSet, SynonymSerializerContext.Default.SynonymsSet);
+
+		var response = await _transport.PutAsync<StringResponse>($"_synonyms/{setName}", PostData.String(json), ctx);
+
+		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
+		{
+			_collector.EmitGlobalError($"Failed to publish synonym set '{setName}'. Reason: {response.ApiCallDetails.OriginalException?.Message ?? response.ToString()}");
+		}
+		else
+		{
+			_logger.LogInformation("Successfully published synonym set '{SetName}'.", setName);
+		}
 	}
 
 	private async ValueTask<long> CountAsync(string index, string body, Cancel ctx = default)
@@ -421,3 +462,20 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 		GC.SuppressFinalize(this);
 	}
 }
+
+internal sealed record SynonymsSet
+{
+	[JsonPropertyName("synonyms_set")]
+	public required List<SynonymRule> Synonyms { get; init; } = [];
+}
+
+internal sealed record SynonymRule
+{
+	public required string Id { get; init; }
+	public required string Synonyms { get; init; }
+}
+
+[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower)]
+[JsonSerializable(typeof(SynonymsSet))]
+[JsonSerializable(typeof(SynonymRule))]
+internal sealed partial class SynonymSerializerContext : JsonSerializerContext;

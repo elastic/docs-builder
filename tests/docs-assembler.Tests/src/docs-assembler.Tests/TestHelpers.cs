@@ -8,6 +8,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Configuration.Synonyms;
 using Elastic.Documentation.Configuration.Versions;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -51,6 +52,7 @@ public static class TestHelpers
 				}
 			}.ToFrozenDictionary()
 		};
+		var synonyms = new SynonymsConfiguration { Synonyms = [] };
 		return new ConfigurationContext
 		{
 			Endpoints = new DocumentationEndpoints
@@ -60,6 +62,7 @@ public static class TestHelpers
 			ConfigurationFileProvider = configurationFileProvider,
 			VersionsConfiguration = versionsConfiguration,
 			ProductsConfiguration = productsConfiguration,
+			SynonymsConfiguration = synonyms,
 			LegacyUrlMappings = new LegacyUrlMappingConfiguration { Mappings = [] },
 		};
 	}

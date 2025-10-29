@@ -22,7 +22,8 @@ public static class ProductExtensions
 			{
 				Id = kvp.Key,
 				DisplayName = kvp.Value.Display,
-				VersioningSystem = versionsConfiguration.GetVersioningSystem(VersionsConfigurationExtensions.ToVersioningSystemId(kvp.Value.Versioning ?? kvp.Key))
+				VersioningSystem = versionsConfiguration.GetVersioningSystem(VersionsConfigurationExtensions.ToVersioningSystemId(kvp.Value.Versioning ?? kvp.Key)),
+				Repository = kvp.Value.Repository ?? kvp.Key
 			});
 
 		return new ProductsConfiguration
@@ -46,4 +47,5 @@ internal sealed record ProductDto
 
 	[YamlMember(Alias = "versioning")]
 	public string? Versioning { get; set; }
+	public string? Repository { get; set; }
 }

@@ -17,6 +17,7 @@
 @import './markdown/table.css';
 @import './markdown/definition-list.css';
 @import './markdown/images.css';
+@import './markdown/math.css';
 @import './markdown/image-carousel.css';
 @import './markdown/hr.css';
 @import './modal.css';
@@ -223,4 +224,8 @@ body {
 .icon > * {
 	user-select: none;
 	pointer-events: none;
+}
+
+math {
+	margin-top: 1.5rem;
 }

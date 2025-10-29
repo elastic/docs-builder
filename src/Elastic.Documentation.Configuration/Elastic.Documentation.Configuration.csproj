@@ -24,5 +24,6 @@
     <EmbeddedResource Include="$(SolutionRoot)\config\assembler.yml" />
     <EmbeddedResource Include="$(SolutionRoot)\config\navigation.yml" />
     <EmbeddedResource Include="$(SolutionRoot)\config\legacy-url-mappings.yml" />
+    <EmbeddedResource Include="$(SolutionRoot)\config\synonyms.yml" />
   </ItemGroup>
 </Project>

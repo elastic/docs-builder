@@ -9,6 +9,7 @@ using Elastic.Markdown.Myst.Directives.CsvInclude;
 using Elastic.Markdown.Myst.Directives.Diagram;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
+using Elastic.Markdown.Myst.Directives.Math;
 using Elastic.Markdown.Myst.Directives.Mermaid;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.Directives.Stepper;
@@ -133,6 +134,9 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		if (info.IndexOf("{csv-include}") > 0)
 			return new CsvIncludeBlock(this, context);
 
+		if (info.IndexOf("{math}") > 0)
+			return new MathBlock(this, context);
+
 		foreach (var admonition in _admonitions)
 		{
 			if (info.IndexOf($"{{{admonition}}}") > 0)
@@ -186,7 +190,7 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 			return BlockState.None;
 
 		var span = line.AsSpan();
-		var lastIndent = Math.Max(span.LastIndexOf("`"), span.LastIndexOf(":"));
+		var lastIndent = System.Math.Max(span.LastIndexOf("`"), span.LastIndexOf(":"));
 		var startApplies = span.IndexOf("{applies_to}");
 		var startOpen = span.IndexOf("{");
 		if (startOpen > lastIndent + 1 || startApplies != -1)

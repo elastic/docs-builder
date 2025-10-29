@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.RegularExpressions;
+using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Extensions;
+using Microsoft.Extensions.Logging;
 using YamlDotNet.Serialization;
 
 namespace Elastic.Documentation.Configuration.Assembler;
@@ -131,112 +133,110 @@ public record AssemblyConfiguration
 
 	/// Returns whether the <paramref name="branchOrTag"/> is configured as an integration branch or tag for the given
 	/// <paramref name="repository"/>.
-	public ContentSourceMatch Match(string repository, string branchOrTag)
+	public ContentSourceMatch Match(ILoggerFactory logFactory, string repository, string branchOrTag, Product? product)
 	{
+		var logger = logFactory.CreateLogger<ContentSourceMatch>();
 		var match = new ContentSourceMatch(null, null, null, false);
 		var tokens = repository.Split('/');
 		var repositoryName = tokens.Last();
 		var owner = tokens.First();
+		var isVersionBranch = ContentSourceRegex.MatchVersionBranch().IsMatch(branchOrTag);
 
 		if (tokens.Length < 2 || owner != "elastic")
-			return match;
-
-		if (ReferenceRepositories.TryGetValue(repositoryName, out var r))
 		{
-			var current = r.GetBranch(ContentSource.Current);
-			var next = r.GetBranch(ContentSource.Next);
-			var edge = r.GetBranch(ContentSource.Edge);
-			var isVersionBranch = ContentSourceRegex.MatchVersionBranch().IsMatch(branchOrTag);
-			if (current == branchOrTag)
-			{
-				match = match with
-				{
-					Current = ContentSource.Current
-				};
-			}
-
-			if (next == branchOrTag)
-			{
-				match = match with
-				{
-					Next = ContentSource.Next
-				};
-			}
-
-			if (edge == branchOrTag)
-			{
-				match = match with
-				{
-					Edge = ContentSource.Edge
-				};
-			}
-
-			if (isVersionBranch && SemVersion.TryParse(branchOrTag + ".0", out var v))
-			{
-				// if the current branch is a version, only speculatively match if branch is actually a new version
-				if (SemVersion.TryParse(current + ".0", out var currentVersion))
-				{
-					if (v >= currentVersion)
-					{
-						match = match with
-						{
-							Speculative = true
-						};
-					}
-				}
-				// assume we are newly onboarding the repository to current/next
-				else
-				{
-					match = match with
-					{
-						Speculative = true
-					};
-				}
-			}
-
+			logger.LogInformation("Repository {Repository} is not a valid elastic repository but {Owner}", repository, owner);
 			return match;
 		}
 
-		if (repositoryName != NarrativeRepository.RepositoryName)
+		// Check for new repositories
+		if (!AvailableRepositories.TryGetValue(repositoryName, out var r))
 		{
+			logger.LogInformation("Repository {Repository} has not yet been onboarded into assembler.yml", repository);
 			// this is an unknown new elastic repository
-			var isVersionBranch = ContentSourceRegex.MatchVersionBranch().IsMatch(branchOrTag);
 			if (isVersionBranch || branchOrTag == "main" || branchOrTag == "master")
 			{
+				logger.LogInformation("Speculatively building {Repository} since it looks like an integration branch", repository);
 				return match with
 				{
 					Speculative = true
 				};
 			}
+			logger.LogInformation("{Repository} on '{Branch}' does not look like it needs a speculative build", repository, branchOrTag);
+			return match;
 		}
 
-		if (Narrative.GetBranch(ContentSource.Current) == branchOrTag)
+		var current = r.GetBranch(ContentSource.Current);
+		var next = r.GetBranch(ContentSource.Next);
+		var edge = r.GetBranch(ContentSource.Edge);
+		logger.LogInformation("Active content-sources for {Repository}. current: {Current}, next: {Next}, edge: {Edge}' ", repository, current, next, edge);
+		if (current == branchOrTag)
 		{
+			logger.LogInformation("Content-Source current: {Current} matches: {Branch}", current, branchOrTag);
 			match = match with
 			{
 				Current = ContentSource.Current
 			};
 		}
 
-		if (Narrative.GetBranch(ContentSource.Next) == branchOrTag)
+		if (next == branchOrTag)
 		{
+			logger.LogInformation("Content-Source next: {Next} matches: {Branch}", next, branchOrTag);
 			match = match with
 			{
 				Next = ContentSource.Next
 			};
 		}
 
-		if (Narrative.GetBranch(ContentSource.Edge) == branchOrTag)
+		if (edge == branchOrTag)
 		{
+			logger.LogInformation("Content-Source edge: {Edge} matches: {Branch}", edge, branchOrTag);
 			match = match with
 			{
 				Edge = ContentSource.Edge
 			};
 		}
 
+		// check version branches
+		if (isVersionBranch && SemVersion.TryParse(branchOrTag + ".0", out var v))
+		{
+			logger.LogInformation("Branch or tag {Branch} is a versioned branch", branchOrTag);
+			// if the current branch is a version, only speculatively match if branch is actually a new version
+			if (SemVersion.TryParse(current + ".0", out var currentVersion))
+			{
+				logger.LogInformation("Current is already using versioned branches {Current}", currentVersion);
+				if (v >= currentVersion)
+				{
+					logger.LogInformation("Speculative build because {Branch} is gte current {Current}", branchOrTag, currentVersion);
+					match = match with
+					{
+						Speculative = true
+					};
+				}
+				else
+					logger.LogInformation("NO speculative build because {Branch} is lt {Current}", branchOrTag, currentVersion);
+			}
+			// assume we are newly onboarding the repository to current/next
+			else if (product?.VersioningSystem is { } versioningSystem)
+			{
+				logger.LogInformation("Current is not using versioned branches checking product info");
+				var productCurrentVersion = versioningSystem.Current;
+				if (v >= productCurrentVersion)
+				{
+					logger.LogInformation("Speculative build {Branch} is gte product current '{ProductCurrent}'", branchOrTag, productCurrentVersion);
+					match = match with
+					{
+						Speculative = true
+					};
+				}
+				else
+					logger.LogInformation("NO speculative build {Branch} is lte product current '{ProductCurrent}'", branchOrTag, productCurrentVersion);
+			}
+			else
+				logger.LogInformation("No versioning system found for {Repository} on {Branch}", repository, branchOrTag);
+		}
+
 		// if we haven't matched anything yet, and the branch is 'main' or 'master' always build
-		if (match is { Current: null, Next: null, Edge: null, Speculative: false }
-			&& branchOrTag is "main" or "master")
+		if (match is { Current: null, Next: null, Edge: null, Speculative: false } && branchOrTag is "main" or "master")
 		{
 			return match with
 			{

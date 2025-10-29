@@ -94,6 +94,16 @@ Property {preview}`<version>`
 
 For more examples, refer to [Inline annotation examples](#inline-annotation-examples).
 
+### On specific components
+
+Several components have built-in support for `applies_to` and allow to surface version information in an optimized way:
+
+- [applies-switch](applies-switch.md), a component similar to tabs but with specific support to show version badges as tab titles
+- [admonitions](admonitions.md)
+- [dropdowns](dropdowns.md)
+
+Refer to these component pages to learn about the required `applies_to` syntax.
+
 ## Key-value reference
 
 Use the following key-value reference to find the appropriate key and value for your applicability statements.

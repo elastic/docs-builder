@@ -56,7 +56,7 @@ public partial class ConfigurationFileProvider
 			ConfigurationSource = source;
 		else
 		{
-			string[] spotChecks = ["navigation.yml", "versions.yml", "products.yml", "assembler.yml"];
+			string[] spotChecks = ["navigation.yml", "versions.yml", "products.yml", "assembler.yml", "synonyms.yml"];
 			var defaultSource =
 				fileSystem.Directory.Exists(LocalConfigurationDirectory)
 					&& spotChecks.All(f => fileSystem.File.Exists(Path.Combine(LocalConfigurationDirectory, f)))
@@ -99,6 +99,7 @@ public partial class ConfigurationFileProvider
 		AssemblerFile = CreateTemporaryConfigurationFile("assembler.yml");
 		NavigationFile = CreateTemporaryConfigurationFile("navigation.yml");
 		LegacyUrlMappingsFile = CreateTemporaryConfigurationFile("legacy-url-mappings.yml");
+		SynonymsFile = CreateTemporaryConfigurationFile("synonyms.yml");
 	}
 
 	public bool SkipPrivateRepositories { get; }
@@ -115,6 +116,7 @@ public partial class ConfigurationFileProvider
 
 	public IFileInfo LegacyUrlMappingsFile { get; }
 
+	public IFileInfo SynonymsFile { get; }
 	public IFileInfo CreateNavigationFile(AssemblyConfiguration configuration)
 	{
 		var privateRepositories = configuration.PrivateRepositories;

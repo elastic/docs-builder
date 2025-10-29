@@ -91,18 +91,25 @@ products:
     versioning: 'stack'
   edot-ios:
     display: 'Elastic Distribution of OpenTelemetry iOS'
+    repository: 'apm-agent-ios'
   edot-android:
     display: 'Elastic Distribution of OpenTelemetry Android'
+    repository: 'apm-agent-android'
   edot-dotnet:
     display: 'Elastic Distribution of OpenTelemetry .NET'
+    repository: 'elastic-otel-dotnet'
   edot-java:
     display: 'Elastic Distribution of OpenTelemetry Java'
+    repository: 'elastic-otel-java'
   edot-node:
     display: 'Elastic Distribution of OpenTelemetry Node'
+    repository: 'elastic-otel-node'
   edot-php:
     display: 'Elastic Distribution of OpenTelemetry PHP'
+    repository: 'elastic-otel-php'
   edot-python:
     display: 'Elastic Distribution of OpenTelemetry Python'
+    repository: 'elastic-otel-python'
   edot-cf-aws:
     display: 'EDOT Cloud Forwarder for AWS'
   edot-cf-azure:

@@ -56,6 +56,7 @@
     "@testing-library/user-event": "14.6.1",
     "@trivago/prettier-plugin-sort-imports": "5.2.2",
     "@types/jest": "30.0.0",
+    "@types/katex": "^0.16.7",
     "@types/testing-library__jest-dom": "6.0.0",
     "babel-jest": "30.2.0",
     "eslint": "9.37.0",
@@ -73,14 +74,14 @@
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "text-diff": "1.0.1",
-    "typescript-eslint": "8.45.0",
+    "typescript-eslint": "8.46.0",
     "wait-on": "9.0.1"
   },
   "browserslist": [
     "defaults"
   ],
   "dependencies": {
-    "@elastic/eui": "106.6.0",
+    "@elastic/eui": "106.7.0",
     "@elastic/highlightjs-esql": "1.2.0",
     "@emotion/css": "11.13.5",
     "@emotion/react": "11.14.0",
@@ -93,13 +94,14 @@
     "htmx-ext-head-support": "2.0.4",
     "htmx-ext-preload": "2.1.1",
     "htmx.org": "2.0.7",
+    "katex": "^0.16.25",
     "marked": "16.4.0",
     "select-dom": "9.4.0",
     "tailwindcss": "4.1.14",
     "tippy.js": "6.3.7",
-    "ua-parser-js": "2.0.5",
+    "ua-parser-js": "2.0.6",
     "uuid": "11.1.0",
-    "zod": "4.1.11",
+    "zod": "4.1.12",
     "zustand": "5.0.8"
   }
 }
