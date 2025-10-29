@@ -79,8 +79,8 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
-		navigation.NavigationItems.Should().HaveCount(1);
-		var fileNav = navigation.NavigationItems.First().Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
+		navigation.NavigationItems.Should().HaveCount(0);
+		var fileNav = navigation.Index.Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
 		fileNav.NavigationTitle.Should().Be("getting-started");
 		fileNav.Url.Should().Be("/getting-started");
 		fileNav.Hidden.Should().BeFalse();
@@ -105,8 +105,8 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
-		navigation.NavigationItems.Should().HaveCount(1);
-		var fileNav = navigation.NavigationItems.First().Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
+		navigation.NavigationItems.Should().HaveCount(0);
+		var fileNav = navigation.Index.Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
 		fileNav.Hidden.Should().BeTrue();
 		fileNav.Url.Should().Be("/404");
 	}
@@ -129,8 +129,8 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
-		navigation.NavigationItems.Should().HaveCount(1);
-		var crossLink = navigation.NavigationItems.First().Should().BeOfType<CrossLinkNavigationLeaf>().Subject;
+		navigation.NavigationItems.Should().HaveCount(0);
+		var crossLink = navigation.Index.Should().BeOfType<CrossLinkNavigationLeaf>().Subject;
 		crossLink.NavigationTitle.Should().Be("External Guide");
 		crossLink.Url.Should().Be("docs-content://guide.md");
 		crossLink.IsCrossLink.Should().BeTrue();
@@ -236,12 +236,12 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 
 		navigation.NavigationItems.Should().HaveCount(1);
 		var toc = navigation.NavigationItems.First().Should().BeOfType<TableOfContentsNavigation>().Subject;
-		toc.NavigationItems.Should().HaveCount(2);
+		toc.NavigationItems.Should().HaveCount(1);
 
-		var overview = toc.NavigationItems.ElementAt(0).Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
+		var overview = toc.Index.Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
 		overview.Url.Should().Be("/api/overview");
 
-		var reference = toc.NavigationItems.ElementAt(1).Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
+		var reference = toc.NavigationItems.ElementAt(0).Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
 		reference.Url.Should().Be("/api/reference");
 	}
 

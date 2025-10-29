@@ -42,7 +42,8 @@ public class FolderIndexFileRefTests(ITestOutputHelper output) : DocumentationSe
 		var folder = navigation.NavigationItems.First().Should().BeOfType<FolderNavigation>().Subject;
 
 		// Children should be scoped to the folder
-		folder.NavigationItems.Should().HaveCount(3); // getting-started.md, install.md, configure.md
+		folder.Url.Should().Be("/getting-started/getting-started");
+		folder.NavigationItems.Should().HaveCount(2); // install.md, configure.md
 
 		// Verify no errors
 		context.Collector.Errors.Should().Be(0);

@@ -32,9 +32,9 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance);
 
 		navigation.NavigationIndex.Should().Be(0);
+		navigation.Index.NavigationIndex.Should().Be(0);
 		navigation.NavigationItems.ElementAt(0).NavigationIndex.Should().Be(1);
 		navigation.NavigationItems.ElementAt(1).NavigationIndex.Should().Be(2);
-		navigation.NavigationItems.ElementAt(2).NavigationIndex.Should().Be(3);
 	}
 
 	[Fact]
@@ -61,9 +61,9 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance);
 
 		// Query for all leaf items using the base interface type
-		var allLeafItems = navigation.NavigationItems
+		var allLeafItems = navigation.NavigationItems.Concat([navigation.Index])
 			.SelectMany(item => item is INodeNavigationItem<IDocumentationFile, INavigationItem> node
-				? node.NavigationItems.OfType<ILeafNavigationItem<IDocumentationFile>>()
+				? node.NavigationItems.OfType<ILeafNavigationItem<IDocumentationFile>>().Concat([node.Index])
 				: item is ILeafNavigationItem<IDocumentationFile> leaf
 					? [leaf]
 					: [])
@@ -303,6 +303,7 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 			allItems.Add(item);
 			if (item is INodeNavigationItem<IDocumentationFile, INavigationItem> node)
 			{
+				allItems.AddRange(node.Index);
 				foreach (var child in node.NavigationItems)
 					VisitNavigationItems(child);
 			}
@@ -333,7 +334,7 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		rootItem.NavigationRoot.Should().BeSameAs(navigation, "Root navigation items should point to DocumentationSetNavigation");
 
 		// Items in the setup folder should point to DocumentationSetNavigation
-		var setupFolder = navigation.NavigationItems.ElementAt(1).Should().BeOfType<FolderNavigation>().Subject;
+		var setupFolder = navigation.NavigationItems.ElementAt(0).Should().BeOfType<FolderNavigation>().Subject;
 		setupFolder.NavigationRoot.Should().BeSameAs(navigation);
 
 		var gettingStarted = setupFolder.NavigationItems.First();
@@ -341,21 +342,21 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 
 		// According to url-building.md: "In isolated builds the NavigationRoot is always the DocumentationSetNavigation"
 		// ALL items including TOCs should point to DocumentationSetNavigation as NavigationRoot
-		var advancedToc = setupFolder.NavigationItems.ElementAt(1).Should().BeOfType<TableOfContentsNavigation>().Subject;
+		var advancedToc = setupFolder.NavigationItems.ElementAt(0).Should().BeOfType<TableOfContentsNavigation>().Subject;
 		advancedToc.NavigationRoot.Should().BeSameAs(navigation, "TOC NavigationRoot should be DocumentationSetNavigation in isolated builds");
 
 		var advancedIndex = advancedToc.NavigationItems.First();
 		advancedIndex.NavigationRoot.Should().BeSameAs(navigation, "TOC children should point to DocumentationSetNavigation in isolated builds");
 
 		// Items in file with children should point to DocumentationSetNavigation
-		var guideFile = navigation.NavigationItems.ElementAt(2).Should().BeOfType<VirtualFileNavigation<TestDocumentationFile>>().Subject;
+		var guideFile = navigation.NavigationItems.ElementAt(1).Should().BeOfType<VirtualFileNavigation<TestDocumentationFile>>().Subject;
 		guideFile.NavigationRoot.Should().BeSameAs(navigation);
 
 		var section1 = guideFile.NavigationItems.First();
 		section1.NavigationRoot.Should().BeSameAs(navigation);
 
 		// CrossLink should point to DocumentationSetNavigation
-		var crosslink = navigation.NavigationItems.ElementAt(3).Should().BeOfType<CrossLinkNavigationLeaf>().Subject;
+		var crosslink = navigation.NavigationItems.ElementAt(2).Should().BeOfType<CrossLinkNavigationLeaf>().Subject;
 		crosslink.NavigationRoot.Should().BeSameAs(navigation);
 
 		context.Diagnostics.Should().BeEmpty();

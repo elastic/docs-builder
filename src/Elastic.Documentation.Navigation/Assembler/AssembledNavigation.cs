@@ -219,7 +219,7 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		//parent = wrapped;
 
 		var children = new List<INavigationItem>();
-		var nodeChildren = node.NavigationItems;
+		INavigationItem[] nodeChildren = [.. node.NavigationItems, node.Index];
 		foreach (var nodeChild in nodeChildren)
 		{
 			nodeChild.Parent = node;

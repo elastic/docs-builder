@@ -39,7 +39,7 @@ public class FileInfoValidationTests(ITestOutputHelper output) : DocumentationSe
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
 		// Validate all file navigation items have valid FileInfo
-		var fileNavigationItems = GetAllFileNavigationItems(navigation.NavigationItems);
+		var fileNavigationItems = GetAllFileNavigationItems(navigation);
 		fileNavigationItems.Should().HaveCount(3);
 
 		foreach (var fileNav in fileNavigationItems)
@@ -83,7 +83,7 @@ public class FileInfoValidationTests(ITestOutputHelper output) : DocumentationSe
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
 		// Validate all file navigation items (including virtual files and their children)
-		var fileNavigationItems = GetAllFileNavigationItems(navigation.NavigationItems);
+		var fileNavigationItems = GetAllFileNavigationItems(navigation);
 		fileNavigationItems.Should().HaveCount(6, "should include 2 virtual files and 4 child files");
 
 		foreach (var fileNav in fileNavigationItems)
@@ -127,7 +127,7 @@ public class FileInfoValidationTests(ITestOutputHelper output) : DocumentationSe
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
 		// Validate all file navigation items within folders
-		var fileNavigationItems = GetAllFileNavigationItems(navigation.NavigationItems);
+		var fileNavigationItems = GetAllFileNavigationItems(navigation);
 		fileNavigationItems.Should().HaveCount(5, "should include all files within folders");
 
 		foreach (var fileNav in fileNavigationItems)
@@ -214,7 +214,7 @@ public class FileInfoValidationTests(ITestOutputHelper output) : DocumentationSe
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
 		// Validate all file navigation items across all nested TOCs
-		var fileNavigationItems = GetAllFileNavigationItems(navigation.NavigationItems);
+		var fileNavigationItems = GetAllFileNavigationItems(navigation);
 		fileNavigationItems.Count.Should().Be(9, "should include all files from main TOC and nested TOCs");
 
 		foreach (var fileNav in fileNavigationItems)
@@ -320,13 +320,14 @@ public class FileInfoValidationTests(ITestOutputHelper output) : DocumentationSe
 			var path = fileSystem.FileInfo.New(Path.Combine(context.DocumentationSourceDirectory.FullName, fileRef.PathRelativeToDocumentationSet));
 			path.Exists.Should().BeTrue($"Expected file {path.FullName} to exist");
 		}
+
 		fileRefs.Count.Should().Be(fileRefs.Distinct().Count(), "should not have duplicate file references");
 
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
 		// Validate all file navigation items in this complex structure
-		var fileNavigationItems = GetAllFileNavigationItems(navigation.NavigationItems);
+		var fileNavigationItems = GetAllFileNavigationItems(navigation);
 		fileNavigationItems.Count.Should().Be(15, "should include all files from all structures");
 
 		foreach (var fileNav in fileNavigationItems)
@@ -368,7 +369,7 @@ public class FileInfoValidationTests(ITestOutputHelper output) : DocumentationSe
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
 		// Validate all file navigation items in nested folders
-		var fileNavigationItems = GetAllFileNavigationItems(navigation.NavigationItems);
+		var fileNavigationItems = GetAllFileNavigationItems(navigation);
 		fileNavigationItems.Should().HaveCount(3);
 
 		foreach (var fileNav in fileNavigationItems)
@@ -409,7 +410,7 @@ public class FileInfoValidationTests(ITestOutputHelper output) : DocumentationSe
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
 		// Validate all file navigation items in deeply nested virtual file structure
-		var fileNavigationItems = GetAllFileNavigationItems(navigation.NavigationItems);
+		var fileNavigationItems = GetAllFileNavigationItems(navigation);
 		fileNavigationItems.Should().HaveCount(4);
 
 		foreach (var fileNav in fileNavigationItems)
@@ -450,28 +451,22 @@ public class FileInfoValidationTests(ITestOutputHelper output) : DocumentationSe
 	/// Recursively collects all FileNavigationLeaf instances from the navigation tree.
 	/// For VirtualFileNavigation items, extracts the Index (which is a FileNavigationLeaf).
 	/// </summary>
-	private static List<FileNavigationLeaf<IDocumentationFile>> GetAllFileNavigationItems(IReadOnlyCollection<INavigationItem> items)
+	private static HashSet<FileNavigationLeaf<IDocumentationFile>> GetAllFileNavigationItems(INodeNavigationItem<INavigationModel, INavigationItem> node)
 	{
-		var result = new List<FileNavigationLeaf<IDocumentationFile>>();
+		var result = new HashSet<FileNavigationLeaf<IDocumentationFile>>();
+		if (node.Index is FileNavigationLeaf<IDocumentationFile> index)
+			result.Add(index);
 
-		foreach (var item in items)
+		foreach (var item in node.NavigationItems)
 		{
 			// Collect direct file navigation leafs
 			if (item is FileNavigationLeaf<IDocumentationFile> fileLeaf)
 				result.Add(fileLeaf);
-			// For virtual file navigation, get the index file
-			else if (item is VirtualFileNavigation<IDocumentationFile> virtualFile)
-			{
-				if (virtualFile.Index is FileNavigationLeaf<IDocumentationFile> indexLeaf)
-				{
-					result.Add(indexLeaf);
-				}
-			}
-
 			// Recursively process children
-			if (item is INodeNavigationItem<INavigationModel, INavigationItem> node)
+			else if (item is INodeNavigationItem<INavigationModel, INavigationItem> childNode)
 			{
-				result.AddRange(GetAllFileNavigationItems(node.NavigationItems));
+				foreach (var f in GetAllFileNavigationItems(childNode))
+					result.Add(f);
 			}
 		}
 

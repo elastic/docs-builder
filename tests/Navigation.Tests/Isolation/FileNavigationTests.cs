@@ -29,8 +29,8 @@ public class FileNavigationTests(ITestOutputHelper output) : DocumentationSetNav
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
-		navigation.NavigationItems.Should().HaveCount(1);
-		var fileNav = navigation.NavigationItems.First().Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
+		navigation.NavigationItems.Should().HaveCount(0);
+		var fileNav = navigation.Index.Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
 		fileNav.Url.Should().Be("/getting-started");
 	}
 
