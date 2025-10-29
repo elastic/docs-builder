@@ -107,7 +107,7 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		navigation.NavigationItems.Should().NotBeEmpty();
 
 		// Assert index.md is first
-		var firstItem = navigation.NavigationItems.ElementAt(0);
+		var firstItem = navigation.Index;
 		firstItem.Should().BeOfType<FileNavigationLeaf<TestDocumentationFile>>();
 		firstItem.Url.Should().Be("/"); // index.md becomes /
 
@@ -191,12 +191,14 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		var developmentToc = tocNavs.FirstOrDefault(t => t.Url == "/development");
 		developmentToc.Should().NotBeNull();
 
-		developmentToc.NavigationItems.Should().HaveCount(3);
-		developmentToc.NavigationItems.OfType<FileNavigationLeaf<TestDocumentationFile>>().Should().HaveCount(1);
+		developmentToc.NavigationItems.Should().HaveCount(2);
+		developmentToc.Index.Should().NotBeNull();
+		developmentToc.NavigationItems.OfType<FileNavigationLeaf<TestDocumentationFile>>().Should().HaveCount(0);
 		developmentToc.NavigationItems.OfType<FolderNavigation>().Should().HaveCount(1);
 		developmentToc.NavigationItems.OfType<TableOfContentsNavigation>().Should().HaveCount(1);
 
-		var developmentIndex = developmentToc.NavigationItems.OfType<FileNavigationLeaf<TestDocumentationFile>>().First();
+		var developmentIndex = developmentToc.Index as FileNavigationLeaf<TestDocumentationFile>;
+		developmentIndex.Should().NotBeNull();
 		developmentIndex.FileInfo.FullName.Should().Be(Path.Combine(docsDir.FullName, "development", "index.md"));
 
 

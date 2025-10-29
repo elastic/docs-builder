@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.IO.Abstractions;
 using Elastic.Documentation.Navigation.Isolated;
 
 namespace Elastic.Documentation.Navigation;
@@ -40,19 +41,29 @@ public class NotFoundLeafNavigationItem<TModel>(TModel model, INodeNavigationIte
 
 public static class NavigationItemExtensions
 {
-	public static ILeafNavigationItem<TModel> FindIndex<TModel>(this INodeNavigationItem<INavigationModel, INavigationItem> node, TModel fallback)
+	public static ILeafNavigationItem<IDocumentationFile> QueryIndex<TModel>(
+		this IReadOnlyCollection<INavigationItem> items, INodeNavigationItem<INavigationModel, INavigationItem> node, TModel fallback, out IReadOnlyCollection<INavigationItem> children
+	)
 		where TModel : IDocumentationFile
 	{
-		var leaf = node.NavigationItems.OfType<ILeafNavigationItem<TModel>>().FirstOrDefault();
-		if (leaf is not null)
-			return leaf;
+		var index = LookupIndex();
 
-		var nodes = node.NavigationItems.OfType<INodeNavigationItem<TModel, INavigationItem>>().ToList();
-		if (nodes.Count == 0)
-			return new NotFoundLeafNavigationItem<TModel>(fallback, node);
+		children = items.Except([index]).ToArray();
 
-		return nodes.First().Index;
+		return index;
 
+		ILeafNavigationItem<IDocumentationFile> LookupIndex()
+		{
+			var leaf = items.OfType<ILeafNavigationItem<IDocumentationFile>>().FirstOrDefault();
+			if (leaf is not null)
+				return leaf;
+
+			var nodes = items.OfType<INodeNavigationItem<IDocumentationFile, INavigationItem>>().ToList();
+			if (nodes.Count == 0)
+				return new NotFoundLeafNavigationItem<IDocumentationFile>(fallback, node);
+
+			return nodes.First().Index;
+		}
 	}
 
 	public static int UpdateNavigationIndex(this IRootNavigationItem<INavigationModel, INavigationItem> node, IDocumentationContext context)
@@ -80,6 +91,7 @@ public static class NavigationItemExtensions
 			case INodeNavigationItem<INavigationModel, INavigationItem> node:
 				var groupIndex = Interlocked.Increment(ref navigationIndex);
 				node.NavigationIndex = groupIndex;
+				node.Index.NavigationIndex = groupIndex;
 				UpdateNavigationIndex(node.NavigationItems, context, ref navigationIndex);
 				break;
 			default:

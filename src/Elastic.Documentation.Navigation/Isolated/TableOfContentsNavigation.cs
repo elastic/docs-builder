@@ -50,7 +50,9 @@ public class TableOfContentsNavigation : IRootNavigationItem<IDocumentationFile,
 		_ = tocNodes.TryAdd(Identifier, this);
 
 		// FindIndex must be called after _homeProvider is set
-		Index = this.FindIndex<IDocumentationFile>(new NotFoundModel($"{parentPath}/index.md"));
+		var indexNavigation = navigationItems.QueryIndex(this, new NotFoundModel($"{parentPath}/index.md"), out navigationItems);
+		Index = indexNavigation;
+		NavigationItems = navigationItems;
 	}
 
 	/// <summary>
@@ -115,7 +117,8 @@ public class TableOfContentsNavigation : IRootNavigationItem<IDocumentationFile,
 	void IAssignableChildrenNavigation.SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems) => SetNavigationItems(navigationItems);
 	internal void SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems)
 	{
+		var indexNavigation = navigationItems.QueryIndex(this, new NotFoundModel($"{ParentPath}/index.md"), out navigationItems);
+		Index = indexNavigation;
 		NavigationItems = navigationItems;
-		Index = this.FindIndex<IDocumentationFile>(new NotFoundModel($"{PathPrefix}/index.md"));
 	}
 }

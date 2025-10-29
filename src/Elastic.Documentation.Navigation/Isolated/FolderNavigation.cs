@@ -28,7 +28,9 @@ public class FolderNavigation : INodeNavigationItem<IDocumentationFile, INavigat
 		Hidden = false;
 		IsCrossLink = false;
 		Id = ShortId.Create(parentPath);
-		Index = this.FindIndex<IDocumentationFile>(new NotFoundModel($"{FolderPath}/index.md"));
+		var indexNavigation = navigationItems.QueryIndex(this, new NotFoundModel($"{FolderPath}/index.md"), out navigationItems);
+		Index = indexNavigation;
+		NavigationItems = navigationItems;
 	}
 
 	public string FolderPath { get; }
@@ -68,7 +70,8 @@ public class FolderNavigation : INodeNavigationItem<IDocumentationFile, INavigat
 	void IAssignableChildrenNavigation.SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems) => SetNavigationItems(navigationItems);
 	internal void SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems)
 	{
+		var indexNavigation = navigationItems.QueryIndex(this, new NotFoundModel($"{FolderPath}/index.md"), out navigationItems);
+		Index = indexNavigation;
 		NavigationItems = navigationItems;
-		Index = this.FindIndex<IDocumentationFile>(new NotFoundModel($"{FolderPath}/index.md"));
 	}
 }

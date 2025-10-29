@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Diagnostics;
+using Elastic.Documentation.Navigation.Assembler;
 
 namespace Elastic.Documentation.Navigation.Isolated;
 
@@ -11,6 +12,8 @@ public interface INavigationHomeProvider
 	string PathPrefix { get; }
 	IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }
 	string Id { get; }
+
+	bool IsAssemblerBuild() => NavigationRoot.Parent is SiteNavigation;
 }
 
 public interface INavigationHomeAccessor

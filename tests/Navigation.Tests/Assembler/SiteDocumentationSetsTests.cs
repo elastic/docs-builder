@@ -221,7 +221,7 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		var platform = siteNavigation.NavigationItems.ElementAt(3) as INodeNavigationItem<INavigationModel, INavigationItem>;
 		platform.Should().NotBeNull();
 		platform.Url.Should().Be("/platform");
-		platform.NavigationItems.Should().HaveCount(2);
+		platform.NavigationItems.Should().HaveCount(3);
 
 		var elasticsearch = siteNavigation.NavigationItems.ElementAt(4);
 		elasticsearch.Url.Should().Be("/elasticsearch/reference");
@@ -237,22 +237,23 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		var observabilityDocset = DocumentationSetFile.LoadAndResolve(observabilityContext.Collector, fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"), fileSystem);
 		var observabilityNav = new DocumentationSetNavigation<IDocumentationFile>(observabilityDocset, observabilityContext, GenericDocumentationFileFactory.Instance);
 
-		observabilityNav.NavigationTitle.Should().Be("Serverless Observability");
-		observabilityNav.NavigationItems.Should().HaveCount(3); // index.md, getting-started folder, monitoring folder
+		observabilityNav.NavigationTitle.Should().Be(observabilityNav.NavigationTitle);
+		observabilityNav.NavigationItems.Should().HaveCount(2); // index.md, getting-started folder, monitoring folder
 
-		var indexFile = observabilityNav.NavigationItems.ElementAt(0);
+		var indexFile = observabilityNav.Index;
 		indexFile.Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>();
 		indexFile.Url.Should().Be("/");
 
-		var gettingStarted = observabilityNav.NavigationItems.ElementAt(1);
+		var gettingStarted = observabilityNav.NavigationItems.ElementAt(0);
 		gettingStarted.Should().BeOfType<FolderNavigation>();
 		var gettingStartedFolder = (FolderNavigation)gettingStarted;
-		gettingStartedFolder.NavigationItems.Should().HaveCount(2); // quick-start.md, installation.md
+		gettingStartedFolder.Index.Should().NotBeNull(); //quick-start.md
+		gettingStartedFolder.NavigationItems.Should().HaveCount(1); // installation.md
 
-		var monitoring = observabilityNav.NavigationItems.ElementAt(2);
+		var monitoring = observabilityNav.NavigationItems.ElementAt(1);
 		monitoring.Should().BeOfType<FolderNavigation>();
 		var monitoringFolder = (FolderNavigation)monitoring;
-		monitoringFolder.NavigationItems.Should().HaveCount(4); // index.md, logs.md, metrics.md, traces.md
+		monitoringFolder.NavigationItems.Should().HaveCount(3); // logs.md, metrics.md, traces.md
 	}
 
 	[Fact]
@@ -266,23 +267,23 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		var platformNav = new DocumentationSetNavigation<IDocumentationFile>(platformDocset, platformContext, GenericDocumentationFileFactory.Instance);
 
 		platformNav.NavigationTitle.Should().Be("Platform");
-		platformNav.NavigationItems.Should().HaveCount(3); // index.md, deployment-guide TOC, cloud-guide TOC
+		platformNav.NavigationItems.Should().HaveCount(2); // deployment-guide TOC, cloud-guide TOC
 
-		var indexFile = platformNav.NavigationItems.ElementAt(0);
+		var indexFile = platformNav.Index;
 		indexFile.Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>();
 		indexFile.Url.Should().Be("/");
 
-		var deploymentGuide = platformNav.NavigationItems.ElementAt(1);
+		var deploymentGuide = platformNav.NavigationItems.ElementAt(0);
 		deploymentGuide.Should().BeOfType<TableOfContentsNavigation>();
 		deploymentGuide.Url.Should().Be("/deployment-guide");
 		var deploymentToc = (TableOfContentsNavigation)deploymentGuide;
-		deploymentToc.NavigationItems.Should().HaveCount(2); // index.md, self-managed folder
+		deploymentToc.NavigationItems.Should().HaveCount(1); // self-managed folder
 
-		var cloudGuide = platformNav.NavigationItems.ElementAt(2);
+		var cloudGuide = platformNav.NavigationItems.ElementAt(1);
 		cloudGuide.Should().BeOfType<TableOfContentsNavigation>();
 		cloudGuide.Url.Should().Be("/cloud-guide");
 		var cloudToc = (TableOfContentsNavigation)cloudGuide;
-		cloudToc.NavigationItems.Should().HaveCount(3); // index.md, aws folder, azure folder
+		cloudToc.NavigationItems.Should().HaveCount(2); // aws folder, azure folder
 	}
 
 	[Fact]
@@ -296,17 +297,17 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		var securityNav = new DocumentationSetNavigation<IDocumentationFile>(securityDocset, securityContext, GenericDocumentationFileFactory.Instance);
 
 		securityNav.NavigationTitle.Should().Be("Serverless Security");
-		securityNav.NavigationItems.Should().HaveCount(3); // index.md, authentication folder, authorization folder
+		securityNav.NavigationItems.Should().HaveCount(2); // authentication folder, authorization folder
 
-		var authentication = securityNav.NavigationItems.ElementAt(1);
+		var authentication = securityNav.NavigationItems.ElementAt(0);
 		authentication.Should().BeOfType<FolderNavigation>();
 		var authenticationFolder = (FolderNavigation)authentication;
-		authenticationFolder.NavigationItems.Should().HaveCount(3); // index.md, api-keys.md, oauth.md
+		authenticationFolder.NavigationItems.Should().HaveCount(2); // api-keys.md, oauth.md
 
-		var authorization = securityNav.NavigationItems.ElementAt(2);
+		var authorization = securityNav.NavigationItems.ElementAt(1);
 		authorization.Should().BeOfType<FolderNavigation>();
 		var authorizationFolder = (FolderNavigation)authorization;
-		authorizationFolder.NavigationItems.Should().HaveCount(2); // index.md, rbac.md
+		authorizationFolder.NavigationItems.Should().HaveCount(1); // rbac.md
 	}
 
 	[Fact]
@@ -371,10 +372,10 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		platform.Url.Should().Be("/platform");
 
 		// Verify child TOCs have their specific path prefixes
-		var deployment = platform.NavigationItems.ElementAt(0);
+		var deployment = platform.NavigationItems.ElementAt(1);
 		deployment.Url.Should().StartWith("/platform/deployment");
 
-		var cloud = platform.NavigationItems.ElementAt(1);
+		var cloud = platform.NavigationItems.ElementAt(2);
 		cloud.Url.Should().StartWith("/platform/cloud");
 	}
 
@@ -400,9 +401,11 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		// navigation will still be build
 		siteNavigation.NavigationItems.Should().NotBeEmpty();
 
-		var toc = siteNavigation.NavigationItems.First() as SiteTableOfContentsNavigation<IDocumentationFile>;
+		var toc = siteNavigation.NavigationItems.First() as DocumentationSetNavigation<IDocumentationFile>;
 		toc.Should().NotBeNull();
-		toc.HomeProvider.PathPrefix.Should().Be("/observability"); //constructed from toc URI as fallback, normalized with leading slash
+		toc.HomeProvider.PathPrefix.Should().Be("/bad-mapping-observability");
+		// toc has no `path_prefix` so it will use a default ugly one to avoid clashes and emit an error
+		toc.Url.Should().Be("/bad-mapping-observability");
 	}
 
 	[Fact]

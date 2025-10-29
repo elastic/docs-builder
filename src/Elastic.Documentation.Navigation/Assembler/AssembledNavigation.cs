@@ -71,11 +71,12 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 				items.Add(navItem);
 		}
 
-		NavigationItems = items;
+		var indexNavigation = items.QueryIndex(this, new NotFoundModel("/index.md"), out var navigationItems);
+		Index = indexNavigation;
+		NavigationItems = navigationItems;
 		_ = this.UpdateNavigationIndex(context);
 		var count = UnseenNodes.Count;
 		var unseen = string.Join(", ", UnseenNodes);
-		Index = this.FindIndex<IDocumentationFile>(new NotFoundModel("/index.md"));
 	}
 
 	public HashSet<Uri> DeclaredPhantoms { get; }
@@ -171,7 +172,10 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		{
 			// we allow not setting path prefixes for toc references from the narrative repository
 			if (tocRef.Source.Scheme != NarrativeRepository.RepositoryName)
+			{
 				context.EmitError(context.ConfigurationPath, $"path_prefix is required for TOC reference: {tocRef.Source}");
+				pathPrefix += $"bad-mapping-{tocRef.Source.Scheme}-{tocRef.Source.Host}-{tocRef.Source.AbsolutePath}".TrimEnd('/').TrimEnd('-');
+			}
 			else
 			{
 				if (!string.IsNullOrEmpty(tocRef.Source.Host))
@@ -265,64 +269,3 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		return node;
 	}
 }
-
-/// <summary>
-/// Wrapper for a navigation node that applies a path prefix to URLs and optionally
-/// overrides the children to show only the children specified in the site navigation configuration.
-/// </summary>
-/// <remarks>
-/// Wrapper for a navigation node that applies a path prefix to URLs and optionally
-/// overrides the children to show only the children specified in the site navigation configuration.
-/// </remarks>
-[DebuggerDisplay("{Url}")]
-public sealed class SiteTableOfContentsNavigation<TModel>(
-	INodeNavigationItem<TModel, INavigationItem> wrappedNode,
-	INavigationHomeProvider homeProvider,
-	INodeNavigationItem<INavigationModel, INavigationItem> parent,
-	IRootNavigationItem<INavigationModel, INavigationItem>? root
-	) : INodeNavigationItem<TModel, INavigationItem>, INavigationHomeAccessor
-	where TModel : IDocumentationFile
-{
-	// For site navigation TOC references, the path_prefix IS the URL
-	// We don't append the wrapped node's URL
-	public string Url
-	{
-		get
-		{
-			var url = HomeProvider.PathPrefix.TrimEnd('/');
-			return string.IsNullOrEmpty(url) ? "/" : url;
-		}
-	}
-
-	public string NavigationTitle => wrappedNode.NavigationTitle;
-	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot =>
-		root ?? wrappedNode as IRootNavigationItem<INavigationModel, INavigationItem> ?? parent.NavigationRoot;
-
-	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent
-	{
-		get => parent;
-		set { }
-	}
-
-	public bool Hidden => wrappedNode.Hidden;
-
-	public int NavigationIndex
-	{
-		get => wrappedNode.NavigationIndex;
-		set => wrappedNode.NavigationIndex = value;
-	}
-
-	public bool IsCrossLink => wrappedNode.IsCrossLink;
-	public int Depth => wrappedNode.Depth;
-	public string Id => wrappedNode.Id;
-	public ILeafNavigationItem<TModel> Index => wrappedNode.Index;
-
-	// Override to return the specified children from site navigation
-	// Wrap children to apply path prefix recursively - but don't wrap children that are
-	// already SiteTableOfContentsNavigation (they have their own path prefix)
-	public IReadOnlyCollection<INavigationItem> NavigationItems { get; set; } = [];
-
-	/// <inheritdoc />
-	public INavigationHomeProvider HomeProvider { get; set; } = homeProvider;
-}
-

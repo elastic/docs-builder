@@ -48,6 +48,7 @@ public class DocumentationSetNavigation<TModel>
 		string? pathPrefix = null
 	)
 	{
+		_context = context;
 		_factory = factory;
 		_pathPrefix = pathPrefix ?? string.Empty;
 		// Initialize root properties
@@ -81,9 +82,10 @@ public class DocumentationSetNavigation<TModel>
 				items.Add(navItem);
 		}
 
-		NavigationItems = items;
+		var indexNavigation = items.QueryIndex(this, new NotFoundModel($"{PathPrefix}/index.md"), out var navigationItems);
+		Index = indexNavigation;
+		NavigationItems = navigationItems;
 		_ = this.UpdateNavigationIndex(context);
-		Index = this.FindIndex<IDocumentationFile>(new NotFoundModel($"{PathPrefix}/index.md"));
 
 	}
 
@@ -101,6 +103,7 @@ public class DocumentationSetNavigation<TModel>
 	public GitCheckoutInformation Git { get; }
 
 	private readonly Dictionary<Uri, IRootNavigationItem<IDocumentationFile, INavigationItem>> _tableOfContentNodes = [];
+	private readonly IDocumentationSetContext _context;
 	public IReadOnlyDictionary<Uri, IRootNavigationItem<IDocumentationFile, INavigationItem>> TableOfContentNodes => _tableOfContentNodes;
 
 	public Uri Identifier { get; }
@@ -152,8 +155,10 @@ public class DocumentationSetNavigation<TModel>
 	void IAssignableChildrenNavigation.SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems) => SetNavigationItems(navigationItems);
 	internal void SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems)
 	{
+		var indexNavigation = navigationItems.QueryIndex(this, new NotFoundModel($"{PathPrefix}/index.md"), out navigationItems);
+		Index = indexNavigation;
 		NavigationItems = navigationItems;
-		Index = this.FindIndex<IDocumentationFile>(new NotFoundModel($"{PathPrefix}/index.md"));
+		_ = this.UpdateNavigationIndex(_context);
 	}
 
 
@@ -377,7 +382,11 @@ public class DocumentationSetNavigation<TModel>
 			context.ReadFileSystem.Path.Combine(context.DocumentationSourceDirectory.FullName, fullTocPath)
 		);
 
-		var isolatedHomeProvider = new NavigationHomeProvider(homeAccessor.HomeProvider.PathPrefix, homeAccessor.HomeProvider.NavigationRoot);
+		var assemblerBuild = homeAccessor.HomeProvider.IsAssemblerBuild();
+		// for assembler builds we ensure toc's create their own home provider sot that they can be re-homed easily
+		var isolatedHomeProvider = assemblerBuild
+			? new NavigationHomeProvider(homeAccessor.HomeProvider.PathPrefix, homeAccessor.HomeProvider.NavigationRoot)
+			: homeAccessor.HomeProvider;
 
 		// Create the TOC navigation with empty children initially
 		// We use null parent temporarily - we'll set it properly at the end using the public setter
@@ -401,8 +410,9 @@ public class DocumentationSetNavigation<TModel>
 		var children = new List<INavigationItem>();
 		var childIndex = 0;
 
-		// LoadAndResolve has already resolved children from the toc.yml file and prepended full paths.
-		// Children have full paths (e.g., "guides/api/reference.md"), so they should use the TOC's scoped HomeProvider
+		//children scoped to documentation-set in isolated builds, to docset in assembler builds
+		var childHomeAccessor = assemblerBuild ? tocNavigation : homeAccessor;
+
 		foreach (var child in tocRef.Children)
 		{
 			var childNav = ConvertToNavigationItem(
@@ -410,7 +420,7 @@ public class DocumentationSetNavigation<TModel>
 				childIndex++,
 				context,
 				tocNavigation,
-				tocNavigation,
+				childHomeAccessor,
 				depth + 1
 			);
 
@@ -421,10 +431,10 @@ public class DocumentationSetNavigation<TModel>
 		// Validate TOCs have children
 		if (children.Count == 0)
 		{
-			if (tocRef.Children.Count == 0)
-				context.Collector.EmitError(tocRef.Context, $"Table of contents navigation '{fullTocPath}' has no children defined ({tocRef.Context}:)");
-			else
-				context.Collector.EmitError(tocRef.Context, $"Table of contents navigation '{fullTocPath}' has children defined but none could be created ({tocRef.Context}:)");
+			context.Collector.EmitError(tocRef.Context,
+				tocRef.Children.Count == 0
+					? $"Table of contents navigation '{fullTocPath}' has no children defined ({tocRef.Context}:)"
+					: $"Table of contents navigation '{fullTocPath}' has children defined but none could be created ({tocRef.Context}:)");
 			return null;
 		}
 		tocNavigation.SetNavigationItems(children);

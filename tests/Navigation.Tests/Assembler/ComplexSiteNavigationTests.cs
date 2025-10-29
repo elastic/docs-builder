@@ -230,10 +230,10 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		siteNavigation.NavigationItems.Should().HaveCount(4);
 
 		// Test 1: Observability - verify root URL has path prefix
-		var observability = siteNavigation.NavigationItems.ElementAt(0);
+		var observability = siteNavigation.NavigationItems.ElementAt(0) as INodeNavigationItem<INavigationModel, INavigationItem>;
 		observability.Should().NotBeNull();
 		observability.Url.Should().Be("/serverless/observability");
-		observability.NavigationTitle.Should().Be("Serverless Observability");
+		observability.NavigationTitle.Should().Be(observability.Index.NavigationTitle);
 
 		// Test 2: Serverless Search - verify root URL has path prefix
 		var search = siteNavigation.NavigationItems.ElementAt(1);
@@ -247,10 +247,10 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		platform.NavigationItems.Should().HaveCount(2, "platform should only show the two nested TOCs as children");
 
 		// Verify nested TOC URLs have their specified path prefixes
-		var deploymentGuide = platform.NavigationItems.ElementAt(0);
+		var deploymentGuide = platform.NavigationItems.ElementAt(0) as INodeNavigationItem<INavigationModel, INavigationItem>;
 		deploymentGuide.Should().NotBeNull();
 		deploymentGuide.Url.Should().Be("/platform/deployment");
-		deploymentGuide.NavigationTitle.Should().Be("Deployment Guide");
+		deploymentGuide.NavigationTitle.Should().Be(platform.Index.NavigationTitle);
 
 		var cloudGuide = platform.NavigationItems.ElementAt(1);
 		cloudGuide.Should().NotBeNull();

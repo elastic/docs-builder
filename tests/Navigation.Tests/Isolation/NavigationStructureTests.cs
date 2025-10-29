@@ -153,44 +153,44 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 
 		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
 
-		navigation.NavigationItems.Should().HaveCount(3);
+		navigation.NavigationItems.Should().HaveCount(2);
 		navigation.IsUsingNavigationDropdown.Should().BeTrue();
 
 		// First item: simple file
-		var indexFile = navigation.NavigationItems.ElementAt(0).Should().BeOfType<FileNavigationLeaf<TestDocumentationFile>>().Subject;
+		var indexFile = navigation.Index.Should().BeOfType<FileNavigationLeaf<TestDocumentationFile>>().Subject;
 		indexFile.Url.Should().Be("/"); // index.md becomes /
 
 		// Second item: complex nested structure
-		var setupFolder = navigation.NavigationItems.ElementAt(1).Should().BeOfType<FolderNavigation>().Subject;
-		setupFolder.NavigationItems.Should().HaveCount(2);
+		var setupFolder = navigation.NavigationItems.ElementAt(0).Should().BeOfType<FolderNavigation>().Subject;
+		setupFolder.NavigationItems.Should().HaveCount(1);
 		setupFolder.Url.Should().Be("/setup");
 
-		var setupIndex = setupFolder.NavigationItems.ElementAt(0).Should().BeOfType<FileNavigationLeaf<TestDocumentationFile>>().Subject;
+		var setupIndex = setupFolder.Index.Should().BeOfType<FileNavigationLeaf<TestDocumentationFile>>().Subject;
 		setupIndex.Url.Should().Be("/setup"); // index.md becomes /setup
 
-		var advancedToc = setupFolder.NavigationItems.ElementAt(1).Should().BeOfType<TableOfContentsNavigation>().Subject;
+		var advancedToc = setupFolder.NavigationItems.ElementAt(0).Should().BeOfType<TableOfContentsNavigation>().Subject;
 		advancedToc.Url.Should().Be("/setup/advanced");
 		// Advanced TOC has index.md and the nested performance TOC as children
-		advancedToc.NavigationItems.Should().HaveCount(2);
+		advancedToc.NavigationItems.Should().HaveCount(1);
 
-		var advancedIndex = advancedToc.NavigationItems.ElementAt(0).Should().BeOfType<FileNavigationLeaf<TestDocumentationFile>>().Subject;
+		var advancedIndex = advancedToc.Index.Should().BeOfType<FileNavigationLeaf<TestDocumentationFile>>().Subject;
 		advancedIndex.Url.Should().Be("/setup/advanced");
 
-		var performanceToc = advancedToc.NavigationItems.ElementAt(1).Should().BeOfType<TableOfContentsNavigation>().Subject;
+		var performanceToc = advancedToc.NavigationItems.ElementAt(0).Should().BeOfType<TableOfContentsNavigation>().Subject;
 		performanceToc.Url.Should().Be("/setup/advanced/performance");
-		performanceToc.NavigationItems.Should().HaveCount(3);
+		performanceToc.NavigationItems.Should().HaveCount(2);
 
-		var performanceIndex = performanceToc.NavigationItems.ElementAt(0).Should().BeOfType<FileNavigationLeaf<TestDocumentationFile>>().Subject;
+		var performanceIndex = performanceToc.Index.Should().BeOfType<FileNavigationLeaf<TestDocumentationFile>>().Subject;
 		performanceIndex.Url.Should().Be("/setup/advanced/performance");
 
-		var tuning = performanceToc.NavigationItems.ElementAt(1).Should().BeOfType<FileNavigationLeaf<TestDocumentationFile>>().Subject;
+		var tuning = performanceToc.NavigationItems.ElementAt(0).Should().BeOfType<FileNavigationLeaf<TestDocumentationFile>>().Subject;
 		tuning.Url.Should().Be("/setup/advanced/performance/tuning");
 
-		var benchmarks = performanceToc.NavigationItems.ElementAt(2).Should().BeOfType<FileNavigationLeaf<TestDocumentationFile>>().Subject;
+		var benchmarks = performanceToc.NavigationItems.ElementAt(1).Should().BeOfType<FileNavigationLeaf<TestDocumentationFile>>().Subject;
 		benchmarks.Url.Should().Be("/setup/advanced/performance/benchmarks");
 
 		// Third item: crosslink
-		var crosslink = navigation.NavigationItems.ElementAt(2).Should().BeOfType<CrossLinkNavigationLeaf>().Subject;
+		var crosslink = navigation.NavigationItems.ElementAt(1).Should().BeOfType<CrossLinkNavigationLeaf>().Subject;
 		crosslink.IsCrossLink.Should().BeTrue();
 
 		// Verify no errors were emitted
@@ -242,16 +242,16 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		setupFolder.Url.Should().Be("/setup");
 
 		// Setup folder has index.md and advanced TOC
-		setupFolder.NavigationItems.Should().HaveCount(2);
+		setupFolder.NavigationItems.Should().HaveCount(1);
 
-		var advancedToc = setupFolder.NavigationItems.ElementAt(1).Should().BeOfType<TableOfContentsNavigation>().Subject;
+		var advancedToc = setupFolder.NavigationItems.ElementAt(0).Should().BeOfType<TableOfContentsNavigation>().Subject;
 		// Verify the URL is /setup/advanced and not /setup/setup/advanced
 		advancedToc.Url.Should().Be("/setup/advanced");
 
 		// Advanced TOC has index.md and performance TOC
-		advancedToc.NavigationItems.Should().HaveCount(2);
+		advancedToc.NavigationItems.Should().HaveCount(1);
 
-		var performanceToc = advancedToc.NavigationItems.ElementAt(1).Should().BeOfType<TableOfContentsNavigation>().Subject;
+		var performanceToc = advancedToc.NavigationItems.ElementAt(0).Should().BeOfType<TableOfContentsNavigation>().Subject;
 		// Verify the URL is /setup/advanced/performance and not /setup/advanced/setup/advanced/performance
 		performanceToc.Url.Should().Be("/setup/advanced/performance");
 

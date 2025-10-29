@@ -201,9 +201,9 @@ public class FileNavigationTests(ITestOutputHelper output) : DocumentationSetNav
 
 		var advancedFolder = guideFile.NavigationItems.ElementAt(1).Should().BeOfType<FolderNavigation>().Subject;
 		advancedFolder.Url.Should().Be("/advanced/topics"); // No index, uses first child
-		advancedFolder.NavigationItems.Should().HaveCount(1);
+		advancedFolder.NavigationItems.Should().HaveCount(0);
 
-		var topics = advancedFolder.NavigationItems.First().Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
+		var topics = advancedFolder.Index.Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
 		topics.Url.Should().Be("/advanced/topics");
 	}
 }

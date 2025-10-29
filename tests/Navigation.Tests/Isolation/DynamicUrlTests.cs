@@ -31,7 +31,8 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 		var folder = navigation.NavigationItems.First() as FolderNavigation;
-		var file = folder!.NavigationItems.First();
+		folder.Should().NotBeNull();
+		var file = folder.Index;
 
 		// Initial URL
 		file.Url.Should().Be("/setup/install");
@@ -75,7 +76,7 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 		var outerFolder = navigation.NavigationItems.First() as FolderNavigation;
 		var innerFolder = outerFolder!.NavigationItems.First() as FolderNavigation;
-		var file = innerFolder!.NavigationItems.First();
+		var file = innerFolder!.Index;
 
 		file.Url.Should().Be("/outer/inner/deep");
 
@@ -270,7 +271,7 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 		var folder = navigation.NavigationItems.First() as FolderNavigation;
 		var toc = folder!.NavigationItems.First() as TableOfContentsNavigation;
-		var file = toc!.NavigationItems.First();
+		var file = toc!.Index;
 
 		// The TOC becomes the new URL root, so the file URL is based on TOC's URL
 		toc.Url.Should().Be("/guides/api/reference");
@@ -280,6 +281,7 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 		navigation.HomeProvider = new NavigationHomeProvider("/v2", navigation.NavigationRoot);
 
 		// Both TOC and file URLs should update
+		navigation.Url.Should().Be("/v2");
 		toc.Url.Should().Be("/v2/guides/api/reference");
 		file.Url.Should().Be("/v2/guides/api/reference");
 	}
