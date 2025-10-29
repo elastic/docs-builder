@@ -7,11 +7,11 @@ using Elastic.Documentation.Configuration.DocSet;
 namespace Elastic.Documentation.Configuration.Plugins.DetectionRules.TableOfContents;
 
 public record RuleReference(
-	string RelativePath,
+	string RelativePathRelativeToDocumentationSet,
 	string SourceDirectory,
 	bool Found,
 	IReadOnlyCollection<ITableOfContentsItem> Children,
 	DetectionRule Rule,
 	string Context
 )
-	: FileRef(RelativePath, true, Children, Context);
+	: FileRef(RelativePathRelativeToDocumentationSet, RelativePathRelativeToDocumentationSet, true, Children, Context);

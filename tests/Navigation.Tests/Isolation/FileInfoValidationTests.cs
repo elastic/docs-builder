@@ -307,17 +307,17 @@ public class FileInfoValidationTests(ITestOutputHelper output) : DocumentationSe
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, docsetYaml, fileSystem.NewDirInfo("docs"));
 
-		var setup = docSet.TableOfContents.OfType<FolderRef>().FirstOrDefault(f => f.Path == "setup");
+		var setup = docSet.TableOfContents.OfType<FolderRef>().FirstOrDefault(f => f.PathRelativeToDocumentationSet == "setup");
 		setup.Should().NotBeNull("setup folder should exist");
 		setup.Children.Count.Should().Be(3, "should include 2 children");
 		var advanced = setup.Children.OfType<IsolatedTableOfContentsRef>().FirstOrDefault();
 		advanced.Should().NotBeNull("advanced TOC should exist");
-		advanced.Path.Should().Be("setup/advanced");
+		advanced.PathRelativeToDocumentationSet.Should().Be("setup/advanced");
 
 		var fileRefs = docSet.TableOfContents.SelectMany(DocumentationSetFile.GetFileRefs).ToList();
 		foreach (var fileRef in fileRefs)
 		{
-			var path = fileSystem.FileInfo.New(Path.Combine(context.DocumentationSourceDirectory.FullName, fileRef.Path));
+			var path = fileSystem.FileInfo.New(Path.Combine(context.DocumentationSourceDirectory.FullName, fileRef.PathRelativeToDocumentationSet));
 			path.Exists.Should().BeTrue($"Expected file {path.FullName} to exist");
 		}
 		fileRefs.Count.Should().Be(fileRefs.Distinct().Count(), "should not have duplicate file references");

@@ -53,7 +53,7 @@ public class VirtualFileNavigation<TModel>(TModel model, IFileInfo fileInfo, Vir
 
 	/// <inheritdoc />
 	public ILeafNavigationItem<TModel> Index { get; } =
-		new FileNavigationLeaf<TModel>(model, fileInfo, new FileNavigationArgs(args.RelativePathToDocumentationSet, args.RelativePathToDocumentationSet, args.Hidden, args.NavigationIndex, args.Parent, args.HomeAccessor));
+		new FileNavigationLeaf<TModel>(model, fileInfo, new FileNavigationArgs(args.RelativePathToDocumentationSet, args.RelativePathToTableOfContents, args.Hidden, args.NavigationIndex, args.Parent, args.HomeAccessor));
 
 	public IReadOnlyCollection<INavigationItem> NavigationItems { get; private set; } = [];
 

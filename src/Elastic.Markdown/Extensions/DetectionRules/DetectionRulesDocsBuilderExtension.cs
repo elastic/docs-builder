@@ -71,7 +71,7 @@ public class DetectionRulesDocsBuilderExtension(BuildContext build) : IDocsBuild
 		var sourceDirectory = Build.ReadFileSystem.DirectoryInfo.New(sourcePath);
 		return rules.Select(r =>
 		{
-			var file = Build.ReadFileSystem.FileInfo.New(Path.Combine(sourceDirectory.FullName, r.RelativePath));
+			var file = Build.ReadFileSystem.FileInfo.New(Path.Combine(sourceDirectory.FullName, r.RelativePathRelativeToDocumentationSet));
 			return (file, defaultFileHandling(file, sourceDirectory));
 
 		}).ToArray();

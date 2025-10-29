@@ -128,7 +128,11 @@ public record SiteTableOfContentsRef(Uri Source, string PathPrefix, IReadOnlyCol
 	: ITableOfContentsItem
 {
 	// For site-level TOC refs, the Path is the path prefix (where it will be mounted in the site)
-	public string Path => PathPrefix;
+	public string PathRelativeToDocumentationSet => PathPrefix;
+
+	// For site-level TOC refs, PathRelativeToContainer is the same as PathRelativeToDocumentationSet
+	// since they're all defined in the same navigation.yml file
+	public string PathRelativeToContainer => PathPrefix;
 
 	// For site-level TOC refs, the Context is the navigation.yml file path
 	// This will be set during site navigation loading

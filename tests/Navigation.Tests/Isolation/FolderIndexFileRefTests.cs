@@ -76,10 +76,10 @@ public class FolderIndexFileRefTests(ITestOutputHelper output) : DocumentationSe
 		folderItem.Children.Should().HaveCount(2); // getting-started.md and install.md
 
 		var indexFile = folderItem.Children.First().Should().BeOfType<FolderIndexFileRef>().Subject;
-		indexFile.Path.Should().Be("getting-started/getting-started.md");
+		indexFile.PathRelativeToDocumentationSet.Should().Be("getting-started/getting-started.md");
 
 		var childFile = folderItem.Children.ElementAt(1).Should().BeOfType<FileRef>().Subject;
-		childFile.Path.Should().Be("getting-started/install.md");
+		childFile.PathRelativeToDocumentationSet.Should().Be("getting-started/install.md");
 	}
 
 	[Fact]

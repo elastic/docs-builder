@@ -23,7 +23,7 @@ public record DetectionRuleOverviewFile : MarkdownFile
 
 	private Dictionary<string, DetectionRuleFile> Files { get; } = [];
 
-	public void AddDetectionRuleFile(DetectionRuleFile df, RuleReference ruleReference) => Files[ruleReference.RelativePath] = df;
+	public void AddDetectionRuleFile(DetectionRuleFile df, RuleReference ruleReference) => Files[ruleReference.RelativePathRelativeToDocumentationSet] = df;
 
 	protected override Task<MarkdownDocument> GetMinimalParseDocumentAsync(Cancel ctx)
 	{

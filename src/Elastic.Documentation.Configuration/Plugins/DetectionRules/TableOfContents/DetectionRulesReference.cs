@@ -18,14 +18,14 @@ public record RuleOverviewReference : FileRef
 	private string TocContext { get; }
 
 	public RuleOverviewReference(
-		string overviewFilePath,
+		string overviewFilePathRelativeToDocumentationSet,
 		string parentPath,
 		ConfigurationFile configuration,
 		IDocumentationSetContext context,
 		IReadOnlyCollection<string> detectionRuleFolders,
 		string tocContext
 	)
-		: base(overviewFilePath, false, [], tocContext)
+		: base(overviewFilePathRelativeToDocumentationSet, overviewFilePathRelativeToDocumentationSet, false, [], tocContext)
 	{
 		ParentPath = parentPath;
 		TocContext = tocContext;
@@ -70,7 +70,7 @@ public record RuleOverviewReference : FileRef
 					return new RuleReference(relativePath, detectionRuleFolder, true, [], rule, TocContext);
 				}
 
-				return new FileRef(relativePath, false, [], TocContext);
+				return new FileRef(relativePath, relativePath, false, [], TocContext);
 			})
 			.ToArray();
 

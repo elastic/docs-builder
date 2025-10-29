@@ -46,27 +46,27 @@ public class PhysicalDocsetTests
 
 		// First item should be index.md
 		var firstItem = docSet.TableOfContents.ElementAt(0).Should().BeOfType<IndexFileRef>().Subject;
-		firstItem.Path.Should().Be("index.md");
+		firstItem.PathRelativeToDocumentationSet.Should().Be("index.md");
 		firstItem.Hidden.Should().BeFalse();
 
 		// Should have hidden files (404.md, developer-notes.md)
 		var hiddenFiles = docSet.TableOfContents.OfType<FileRef>().Where(f => f.Hidden).ToList();
-		hiddenFiles.Should().Contain(f => f.Path == "404.md");
-		hiddenFiles.Should().Contain(f => f.Path == "developer-notes.md");
+		hiddenFiles.Should().Contain(f => f.PathRelativeToDocumentationSet == "404.md");
+		hiddenFiles.Should().Contain(f => f.PathRelativeToDocumentationSet == "developer-notes.md");
 
 		// Should have folders
 		docSet.TableOfContents.OfType<FolderRef>().Should().NotBeEmpty();
-		var contributeFolder = docSet.TableOfContents.OfType<FolderRef>().FirstOrDefault(f => f.Path == "contribute");
+		var contributeFolder = docSet.TableOfContents.OfType<FolderRef>().FirstOrDefault(f => f.PathRelativeToDocumentationSet == "contribute");
 		contributeFolder.Should().NotBeNull();
 		contributeFolder.Children.Should().NotBeEmpty();
 
 		// Should have TOC references
 		var tocRefs = docSet.TableOfContents.OfType<IsolatedTableOfContentsRef>().ToList();
 		tocRefs.Should().NotBeEmpty();
-		tocRefs.Should().Contain(toc => toc.Path == "development");
+		tocRefs.Should().Contain(toc => toc.PathRelativeToDocumentationSet == "development");
 
 		// Should have deeply nested structures
-		var testingFolder = docSet.TableOfContents.OfType<FolderRef>().FirstOrDefault(f => f.Path == "testing");
+		var testingFolder = docSet.TableOfContents.OfType<FolderRef>().FirstOrDefault(f => f.PathRelativeToDocumentationSet == "testing");
 		testingFolder.Should().NotBeNull();
 		testingFolder.Children.Should().NotBeEmpty();
 	}
@@ -79,7 +79,7 @@ public class PhysicalDocsetTests
 		// Tests use direct deserialization to test YAML parsing without TOC loading/resolution
 		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(yaml);
 
-		var folderNames = docSet.TableOfContents.OfType<FolderRef>().Select(f => f.Path).ToList();
+		var folderNames = docSet.TableOfContents.OfType<FolderRef>().Select(f => f.PathRelativeToDocumentationSet).ToList();
 
 		// Assert expected folders exist
 		folderNames.Should().Contain("contribute");
@@ -100,17 +100,17 @@ public class PhysicalDocsetTests
 		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(yaml);
 
 		// Test the configure folder has nested folders
-		var configureFolder = docSet.TableOfContents.OfType<FolderRef>().First(f => f.Path == "configure");
+		var configureFolder = docSet.TableOfContents.OfType<FolderRef>().First(f => f.PathRelativeToDocumentationSet == "configure");
 		configureFolder.Children.Should().NotBeEmpty();
 
 		// Should have site and content-set folders
-		var nestedFolders = configureFolder.Children.OfType<FolderRef>().Select(f => f.Path).ToList();
+		var nestedFolders = configureFolder.Children.OfType<FolderRef>().Select(f => f.PathRelativeToDocumentationSet).ToList();
 		nestedFolders.Should().Contain("site");
 		nestedFolders.Should().Contain("content-set");
 
 		// Test the cli folder has nested folders
-		var cliFolder = docSet.TableOfContents.OfType<FolderRef>().First(f => f.Path == "cli");
-		var cliNestedFolders = cliFolder.Children.OfType<FolderRef>().Select(f => f.Path).ToList();
+		var cliFolder = docSet.TableOfContents.OfType<FolderRef>().First(f => f.PathRelativeToDocumentationSet == "cli");
+		var cliNestedFolders = cliFolder.Children.OfType<FolderRef>().Select(f => f.PathRelativeToDocumentationSet).ToList();
 		cliNestedFolders.Should().Contain("docset");
 		cliNestedFolders.Should().Contain("assembler");
 		cliNestedFolders.Should().Contain("links");
@@ -125,11 +125,11 @@ public class PhysicalDocsetTests
 		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(yaml);
 
 		// Find testing folder
-		var testingFolder = docSet.TableOfContents.OfType<FolderRef>().First(f => f.Path == "testing");
+		var testingFolder = docSet.TableOfContents.OfType<FolderRef>().First(f => f.PathRelativeToDocumentationSet == "testing");
 
 		// Look for file with children (cross-links.md with crosslink children)
 		var fileWithChildren = testingFolder.Children.OfType<FileRef>()
-			.FirstOrDefault(f => f.Path == "cross-links.md" && f.Children.Count > 0);
+			.FirstOrDefault(f => f.PathRelativeToDocumentationSet == "cross-links.md" && f.Children.Count > 0);
 
 		fileWithChildren.Should().NotBeNull();
 		fileWithChildren.Children.Should().NotBeEmpty();

@@ -164,7 +164,7 @@ public class FileNavigationTests(ITestOutputHelper output) : DocumentationSetNav
 		child.Url.Should().Be("/section1");
 
 		// Change root URL
-		navigation.HomeProvider = new NavigationHomeProvider("/v2", navigation.NavigationRoot);
+		navigation.HomeProvider = new NavigationHomeProvider("/v2", navigation.NavigationRoot, false);
 
 		// URLs should update dynamically
 		fileNav.Url.Should().Be("/v2/guide");

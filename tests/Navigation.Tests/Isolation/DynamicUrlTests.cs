@@ -37,7 +37,7 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 		file.Url.Should().Be("/setup/install");
 
 		// Change root URL
-		navigation.HomeProvider = new NavigationHomeProvider("/v8.0", navigation.NavigationRoot);
+		navigation.HomeProvider = new NavigationHomeProvider("/v8.0", navigation.NavigationRoot, false);
 
 		// URLs should update dynamically
 		// Since folder has no index child, its URL is the first child's URL
@@ -45,7 +45,7 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 		file.Url.Should().Be("/v8.0/setup/install");
 
 		// Change root URL
-		navigation.HomeProvider = new NavigationHomeProvider("/v9.0", navigation.NavigationRoot);
+		navigation.HomeProvider = new NavigationHomeProvider("/v9.0", navigation.NavigationRoot, false);
 
 		// URLs should update dynamically
 		// Since folder has no index child, its URL is the first child's URL
@@ -80,7 +80,7 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 		file.Url.Should().Be("/outer/inner/deep");
 
 		// Change root URL
-		navigation.HomeProvider = new NavigationHomeProvider("/base", navigation.NavigationRoot);
+		navigation.HomeProvider = new NavigationHomeProvider("/base", navigation.NavigationRoot, false);
 
 		file.Url.Should().Be("/base/outer/inner/deep");
 	}
@@ -277,7 +277,7 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 		file.Url.Should().Be("/guides/api/reference");
 
 		// Change root URL
-		navigation.HomeProvider = new NavigationHomeProvider("/v2", navigation.NavigationRoot);
+		navigation.HomeProvider = new NavigationHomeProvider("/v2", navigation.NavigationRoot, false);
 
 		// Both TOC and file URLs should update
 		toc.Url.Should().Be("/v2/guides/api/reference");

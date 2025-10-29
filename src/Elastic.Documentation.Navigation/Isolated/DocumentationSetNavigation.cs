@@ -236,7 +236,7 @@ public class DocumentationSetNavigation<TModel>
 	)
 	{
 		// FileRef.Path already contains the correct path from LoadAndResolve
-		var fullPath = fileRef.Path;
+		var fullPath = fileRef.PathRelativeToDocumentationSet;
 
 		// Create file info and documentation file
 		var fileInfo = ResolveFileInfo(context, fullPath);
@@ -247,13 +247,14 @@ public class DocumentationSetNavigation<TModel>
 		// Handle leaf case (no children)
 		if (fileRef.Children.Count <= 0)
 		{
-			var leafNavigationArgs = new FileNavigationArgs(fullPath, fileRef.Hidden, index, parent, homeAccessor);
+			var leafNavigationArgs = new FileNavigationArgs(fullPath, fileRef.PathRelativeToContainer, fileRef.Hidden, index, parent, homeAccessor);
 			return DocumentationNavigationFactory.CreateFileNavigationLeaf(documentationFile, fileInfo, leafNavigationArgs);
 		}
 
 		// Create file navigation with empty children initially
 		var virtualFileNavigationArgs = new VirtualFileNavigationArgs(
 			fullPath,
+			fileRef.PathRelativeToContainer,
 			fileRef.Hidden,
 			index,
 			parent?.Depth + 1 ?? 0,
@@ -324,7 +325,7 @@ public class DocumentationSetNavigation<TModel>
 	)
 	{
 		// FolderRef.Path already contains the correct path from LoadAndResolve
-		var folderPath = folderRef.Path;
+		var folderPath = folderRef.PathRelativeToDocumentationSet;
 
 		// Create folder navigation with null parent initially - we'll pass it to children but set it properly after
 		var folderNavigation = new FolderNavigation(depth + 1, folderPath, parent, homeAccessor, [])
@@ -372,7 +373,7 @@ public class DocumentationSetNavigation<TModel>
 	)
 	{
 		// tocRef.Path is now the FULL path (e.g., "guides/api" or "setup/advanced") after LoadAndResolve
-		var fullTocPath = tocRef.Path;
+		var fullTocPath = tocRef.PathRelativeToDocumentationSet;
 
 		var tocDirectory = context.ReadFileSystem.DirectoryInfo.New(
 			context.ReadFileSystem.Path.Combine(context.DocumentationSourceDirectory.FullName, fullTocPath)

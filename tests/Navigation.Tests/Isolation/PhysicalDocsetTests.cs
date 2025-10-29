@@ -26,7 +26,7 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		var fileRefs = docSet.TableOfContents.SelectMany(DocumentationSetFile.GetFileRefs).ToList();
 		foreach (var fileRef in fileRefs)
 		{
-			var path = fileSystem.FileInfo.New(Path.Combine(configPath.Directory!.FullName, fileRef.Path));
+			var path = fileSystem.FileInfo.New(Path.Combine(configPath.Directory!.FullName, fileRef.PathRelativeToDocumentationSet));
 			path.Exists.Should().BeTrue($"Expected file {path.FullName} to exist");
 		}
 	}
@@ -178,7 +178,7 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		var fileRefs = docSet.TableOfContents.SelectMany(DocumentationSetFile.GetFileRefs).ToList();
 		foreach (var fileRef in fileRefs)
 		{
-			var path = fileSystem.FileInfo.New(Path.Combine(configPath.Directory!.FullName, fileRef.Path));
+			var path = fileSystem.FileInfo.New(Path.Combine(configPath.Directory!.FullName, fileRef.PathRelativeToDocumentationSet));
 			path.Exists.Should().BeTrue($"Expected file {path.FullName} to exist");
 		}
 		fileRefs.Count.Should().Be(fileRefs.Distinct().Count(), "should not have duplicate file references");
