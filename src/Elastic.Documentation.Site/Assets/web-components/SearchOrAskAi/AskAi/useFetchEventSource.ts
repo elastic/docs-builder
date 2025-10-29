@@ -62,7 +62,7 @@ export function useFetchEventSource<TPayload>({
             try {
                 // Stringify payload once to ensure hash matches the exact body sent
                 const bodyString = JSON.stringify(payload)
-                
+
                 // Compute SHA256 hash for CloudFront + Lambda Function URL with OAC
                 // This proves body integrity from client to CloudFront
                 const contentHash = await computeSHA256(bodyString)
