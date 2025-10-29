@@ -14,14 +14,13 @@ public record VirtualFileNavigationArgs(
 	int NavigationIndex,
 	int Depth,
 	INodeNavigationItem<INavigationModel, INavigationItem>? Parent,
-	INavigationHomeProvider HomeProvider,
-	IReadOnlyCollection<INavigationItem> NavigationItems
+	INavigationHomeAccessor HomeAccessor
 );
 
 /// Represents a file navigation item that defines children which are not part of the file tree.
 [DebuggerDisplay("{Url}")]
 public class VirtualFileNavigation<TModel>(TModel model, IFileInfo fileInfo, VirtualFileNavigationArgs args)
-	: INodeNavigationItem<TModel, INavigationItem>, INavigationHomeAccessor
+	: INodeNavigationItem<TModel, INavigationItem>, IAssignableChildrenNavigation
 	where TModel : IDocumentationFile
 {
 	/// <inheritdoc />
@@ -31,13 +30,10 @@ public class VirtualFileNavigation<TModel>(TModel model, IFileInfo fileInfo, Vir
 	public string NavigationTitle => Index.NavigationTitle;
 
 	/// <inheritdoc />
-	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => HomeProvider.NavigationRoot;
+	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => args.HomeAccessor.HomeProvider.NavigationRoot;
 
 	/// <inheritdoc />
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; } = args.Parent;
-
-	/// <inheritdoc />
-	public INavigationHomeProvider HomeProvider { get; set; } = args.HomeProvider;
 
 	/// <inheritdoc />
 	public bool Hidden { get; init; } = args.Hidden;
@@ -55,8 +51,11 @@ public class VirtualFileNavigation<TModel>(TModel model, IFileInfo fileInfo, Vir
 	public string Id { get; } = ShortId.Create(args.RelativePath);
 
 	/// <inheritdoc />
-	public ILeafNavigationItem<TModel> Index { get; init; } =
-		new FileNavigationLeaf<TModel>(model, fileInfo, new FileNavigationArgs(args.RelativePath, args.Hidden, args.NavigationIndex, args.Parent, args.HomeProvider));
+	public ILeafNavigationItem<TModel> Index { get; } =
+		new FileNavigationLeaf<TModel>(model, fileInfo, new FileNavigationArgs(args.RelativePath, args.Hidden, args.NavigationIndex, args.Parent, args.HomeAccessor));
 
-	public IReadOnlyCollection<INavigationItem> NavigationItems { get; init; } = args.NavigationItems;
+	public IReadOnlyCollection<INavigationItem> NavigationItems { get; private set; } = [];
+
+	void IAssignableChildrenNavigation.SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems) => SetNavigationItems(navigationItems);
+	internal void SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems) => NavigationItems = navigationItems;
 }

@@ -8,22 +8,22 @@ using Elastic.Documentation.Extensions;
 namespace Elastic.Documentation.Navigation.Isolated;
 
 [DebuggerDisplay("{Url}")]
-public class FolderNavigation : INodeNavigationItem<IDocumentationFile, INavigationItem>
+public class FolderNavigation : INodeNavigationItem<IDocumentationFile, INavigationItem>, IAssignableChildrenNavigation
 {
-	private readonly INavigationHomeProvider _homeProvider;
+	private readonly INavigationHomeAccessor _homeAccessor;
 
 	public FolderNavigation(
 		int depth,
 		string parentPath,
 		INodeNavigationItem<INavigationModel, INavigationItem>? parent,
-		INavigationHomeProvider homeProvider,
+		INavigationHomeAccessor homeAccessor,
 		IReadOnlyCollection<INavigationItem> navigationItems
 	)
 	{
+		_homeAccessor = homeAccessor;
 		FolderPath = parentPath;
 		NavigationItems = navigationItems;
 		Parent = parent;
-		_homeProvider = homeProvider; // Must be set before FindIndex, which accesses NavigationRoot
 		Depth = depth;
 		Hidden = false;
 		IsCrossLink = false;
@@ -40,7 +40,7 @@ public class FolderNavigation : INodeNavigationItem<IDocumentationFile, INavigat
 	public string NavigationTitle => Index.NavigationTitle;
 
 	/// <inheritdoc />
-	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => _homeProvider.NavigationRoot;
+	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => _homeAccessor.HomeProvider.NavigationRoot;
 
 	/// <inheritdoc />
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
@@ -61,7 +61,14 @@ public class FolderNavigation : INodeNavigationItem<IDocumentationFile, INavigat
 	public string Id { get; }
 
 	/// <inheritdoc />
-	public ILeafNavigationItem<IDocumentationFile> Index { get; }
+	public ILeafNavigationItem<IDocumentationFile> Index { get; private set; }
 
-	public IReadOnlyCollection<INavigationItem> NavigationItems { get; }
+	public IReadOnlyCollection<INavigationItem> NavigationItems { get; private set; }
+
+	void IAssignableChildrenNavigation.SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems) => SetNavigationItems(navigationItems);
+	internal void SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems)
+	{
+		NavigationItems = navigationItems;
+		Index = this.FindIndex<IDocumentationFile>(new NotFoundModel($"{FolderPath}/index.md"));
+	}
 }

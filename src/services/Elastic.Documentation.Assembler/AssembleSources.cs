@@ -47,6 +47,7 @@ public class AssembleSources
 		var crossLinkFetcher = new AssemblerCrossLinkFetcher(logFactory, context.Configuration, context.Environment, linkIndexProvider);
 		var crossLinks = await crossLinkFetcher.FetchCrossLinks(ctx);
 		var crossLinkResolver = new CrossLinkResolver(crossLinks, uriResolver);
+		var logger = logFactory.CreateLogger<AssembleSources>();
 
 		var sources = new AssembleSources(
 			logFactory,
@@ -60,7 +61,10 @@ public class AssembleSources
 			availableExporters
 		);
 		foreach (var (_, set) in sources.AssembleSets)
+		{
+			logger.LogInformation("Resolving directory tree for {RepositoryName}", set.Checkout.Repository.Name);
 			await set.DocumentationSet.ResolveDirectoryTree(ctx);
+		}
 		return sources;
 	}
 

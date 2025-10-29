@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Immutable;
 using System.Diagnostics;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.DocSet;
@@ -18,7 +19,8 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 {
 	private readonly string? _sitePrefix;
 
-	public SiteNavigation(SiteNavigationFile siteNavigationFile,
+	public SiteNavigation(
+		SiteNavigationFile siteNavigationFile,
 		IDocumentationContext context,
 		IReadOnlyCollection<IDocumentationSetNavigation> documentationSetNavigations,
 		string? sitePrefix
@@ -35,6 +37,9 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		Id = ShortId.Create("site");
 		IsUsingNavigationDropdown = false;
 		Phantoms = siteNavigationFile.Phantoms;
+		DeclaredPhantoms = [.. siteNavigationFile.Phantoms.Select(p => new Uri(p.Source))];
+		DeclaredTableOfContents = SiteNavigationFile.GetAllDeclaredSources(siteNavigationFile);
+
 		_nodes = [];
 		foreach (var setNavigation in documentationSetNavigations)
 		{
@@ -73,12 +78,20 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		Index = this.FindIndex<IDocumentationFile>(new NotFoundModel("/index.md"));
 	}
 
-	private readonly Dictionary<Uri, INodeNavigationItem<IDocumentationFile, INavigationItem>> _nodes;
-	public IReadOnlyDictionary<Uri, INodeNavigationItem<IDocumentationFile, INavigationItem>> Nodes => _nodes;
+	public HashSet<Uri> DeclaredPhantoms { get; }
+
+	/// <summary> All the table of contents explicitly declared in the navigation</summary>
+	public ImmutableHashSet<Uri> DeclaredTableOfContents { get; set; }
+
+	private readonly Dictionary<Uri, IRootNavigationItem<IDocumentationFile, INavigationItem>> _nodes;
+	public IReadOnlyDictionary<Uri, IRootNavigationItem<IDocumentationFile, INavigationItem>> Nodes => _nodes;
 
 	private HashSet<Uri> UnseenNodes { get; }
 
 	public IReadOnlyCollection<PhantomRegistration> Phantoms { get; }
+
+	/// <inheritdoc />
+	public Uri Identifier { get; } = new Uri("site://");
 
 	//TODO Obsolete?
 	public IReadOnlyCollection<INodeNavigationItem<INavigationModel, INavigationItem>> TopLevelItems =>
@@ -120,6 +133,9 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 	/// <inheritdoc />
 	public IReadOnlyCollection<INavigationItem> NavigationItems { get; }
 
+	void IAssignableChildrenNavigation.SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems) =>
+		throw new NotSupportedException("SetNavigationItems is not supported on SiteNavigation");
+
 	/// <summary>
 	/// Normalizes the site prefix to ensure it has a leading slash and no trailing slash.
 	/// Returns null for null or empty/whitespace input.
@@ -156,20 +172,20 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 			// we allow not setting path prefixes for toc references from the narrative repository
 			if (tocRef.Source.Scheme != NarrativeRepository.RepositoryName)
 				context.EmitError(context.ConfigurationPath, $"path_prefix is required for TOC reference: {tocRef.Source}");
-
-			if (!string.IsNullOrEmpty(tocRef.Source.Host))
-				pathPrefix += $"/{tocRef.Source.Host}";
-			if (!string.IsNullOrEmpty(tocRef.Source.AbsolutePath) && tocRef.Source.AbsolutePath != "/")
-				pathPrefix += $"/{tocRef.Source.AbsolutePath}";
+			else
+			{
+				if (!string.IsNullOrEmpty(tocRef.Source.Host))
+					pathPrefix += $"/{tocRef.Source.Host}";
+				if (!string.IsNullOrEmpty(tocRef.Source.AbsolutePath) && tocRef.Source.AbsolutePath != "/")
+					pathPrefix += $"/{tocRef.Source.AbsolutePath}";
+			}
 		}
 
 		// Normalize pathPrefix to remove leading/trailing slashes for a consistent combination
 		pathPrefix = pathPrefix.Trim('/');
 
 		// Combine with site prefix if present, otherwise ensure leading slash
-		pathPrefix = !string.IsNullOrWhiteSpace(_sitePrefix)
-			? $"{_sitePrefix}/{pathPrefix}"
-			: "/" + pathPrefix;
+		pathPrefix = !string.IsNullOrWhiteSpace(_sitePrefix) ? $"{_sitePrefix}/{pathPrefix}" : "/" + pathPrefix;
 
 		// Look up the node in the collected nodes
 		if (!_nodes.TryGetValue(tocRef.Source, out var node))
@@ -183,25 +199,33 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 			return null;
 		}
 
+		if (node.Identifier == new Uri("docs-content://reference/glossary"))
+		{
+		}
+
+		root ??= node;
+
 		_ = UnseenNodes.Remove(tocRef.Source);
 		// Set the navigation index
+		node.Parent = parent;
 		node.NavigationIndex = index;
-		homeAccessor.HomeProvider = new NavigationHomeProvider(pathPrefix, root ?? homeAccessor.HomeProvider.NavigationRoot);
+		homeAccessor.HomeProvider = new NavigationHomeProvider(pathPrefix, root);
 
-		var wrapped = new SiteTableOfContentsNavigation<IDocumentationFile>(node, homeAccessor.HomeProvider, parent, root);
-		parent = wrapped;
-		root ??= wrapped.NavigationRoot;
+		//var wrapped = new SiteTableOfContentsNavigation<IDocumentationFile>(node, homeAccessor.HomeProvider, parent, root);
+		//parent = wrapped;
 
 		var children = new List<INavigationItem>();
 		var nodeChildren = node.NavigationItems;
 		foreach (var nodeChild in nodeChildren)
 		{
-			nodeChild.Parent = parent;
-			if (nodeChild is IRootNavigationItem<IDocumentationFile, INavigationItem>)
+			nodeChild.Parent = node;
+			if (nodeChild is INavigationHomeAccessor childAccessor)
+				childAccessor.HomeProvider = homeAccessor.HomeProvider;
+
+			if (nodeChild is IRootNavigationItem<INavigationModel, INavigationItem>)
 				continue;
 			children.Add(nodeChild);
 		}
-		// Recursively create child navigation items if children are specified
 		if (tocRef.Children.Count > 0)
 		{
 			var childIndex = 0;
@@ -218,10 +242,27 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 					children.Add(childItem);
 			}
 		}
+		foreach (var nodeChild in nodeChildren)
+		{
+			if (nodeChild is not IRootNavigationItem<INavigationModel, INavigationItem> rootChild)
+				continue;
+			if (DeclaredTableOfContents.Contains(rootChild.Identifier) || DeclaredPhantoms.Contains(rootChild.Identifier))
+				continue;
 
-		wrapped.NavigationItems = children;
-		// Always return a wrapper to ensure path_prefix is the URL (not path_prefix + node's URL)
-		return wrapped;
+			context.EmitWarning(context.ConfigurationPath, $"Navigation does not explicitly declare: {rootChild.Identifier}");
+		}
+
+		switch (node)
+		{
+			case SiteNavigation:
+				break;
+			case IAssignableChildrenNavigation documentationSetNavigation:
+				documentationSetNavigation.SetNavigationItems(children);
+				break;
+			default:
+				throw new Exception($"node is not a known type: {node.GetType().Name}");
+		}
+		return node;
 	}
 }
 

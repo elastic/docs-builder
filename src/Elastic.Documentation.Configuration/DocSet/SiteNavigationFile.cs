@@ -52,6 +52,24 @@ public class SiteNavigationFile
 		return valid;
 	}
 
+	public static ImmutableHashSet<Uri> GetAllDeclaredSources(SiteNavigationFile siteNavigation)
+	{
+		var set = new HashSet<Uri>();
+
+		foreach (var tocRef in siteNavigation.TableOfContents)
+			CollectSource(tocRef, set);
+
+		return set.ToImmutableHashSet();
+	}
+	private static void CollectSource(SiteTableOfContentsRef tocRef, HashSet<Uri> set)
+	{
+		_ = set.Add(tocRef.Source);
+		// Recursively collect from children
+		foreach (var child in tocRef.Children)
+			CollectSource(child, set);
+	}
+
+
 	public static ImmutableHashSet<Uri> GetAllPathPrefixes(SiteNavigationFile siteNavigation)
 	{
 		var set = new HashSet<Uri>();

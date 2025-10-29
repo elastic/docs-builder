@@ -71,9 +71,16 @@ public interface INodeNavigationItem<out TIndex, out TChildNavigation> : INaviga
 	IReadOnlyCollection<TChildNavigation> NavigationItems { get; }
 }
 
-public interface IRootNavigationItem<out TIndex, out TChildNavigation> : INodeNavigationItem<TIndex, TChildNavigation>
+public interface IAssignableChildrenNavigation
+{
+	void SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems);
+}
+
+public interface IRootNavigationItem<out TIndex, out TChildNavigation> : INodeNavigationItem<TIndex, TChildNavigation>, IAssignableChildrenNavigation
 	where TIndex : INavigationModel
 	where TChildNavigation : INavigationItem
 {
 	bool IsUsingNavigationDropdown { get; }
+
+	Uri Identifier { get; }
 }

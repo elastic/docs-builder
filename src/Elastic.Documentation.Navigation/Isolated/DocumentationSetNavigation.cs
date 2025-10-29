@@ -21,15 +21,14 @@ public static class DocumentationNavigationFactory
 		where TModel : IDocumentationFile =>
 		new FileNavigationLeaf<TModel>(model, fileInfo, args) { NavigationIndex = args.NavigationIndex };
 
-	public static INodeNavigationItem<TModel, INavigationItem> CreateVirtualFileNavigation<TModel>(TModel model, IFileInfo fileInfo,
-		VirtualFileNavigationArgs args)
+	public static VirtualFileNavigation<TModel> CreateVirtualFileNavigation<TModel>(TModel model, IFileInfo fileInfo, VirtualFileNavigationArgs args)
 		where TModel : IDocumentationFile =>
-		new VirtualFileNavigation<TModel>(model, fileInfo, args) { NavigationIndex = args.NavigationIndex };
+		new(model, fileInfo, args) { NavigationIndex = args.NavigationIndex };
 }
 
 public interface IDocumentationSetNavigation : IRootNavigationItem<IDocumentationFile, INavigationItem>
 {
-	IReadOnlyDictionary<Uri, INodeNavigationItem<IDocumentationFile, INavigationItem>> TableOfContentNodes { get; }
+	IReadOnlyDictionary<Uri, IRootNavigationItem<IDocumentationFile, INavigationItem>> TableOfContentNodes { get; }
 }
 
 [DebuggerDisplay("{Url}")]
@@ -74,7 +73,7 @@ public class DocumentationSetNavigation<TModel>
 				index++,
 				context,
 				parent: this,
-				homeProvider: HomeProvider,
+				homeAccessor: this,
 				depth: Depth
 			);
 
@@ -101,8 +100,8 @@ public class DocumentationSetNavigation<TModel>
 
 	public GitCheckoutInformation Git { get; }
 
-	private readonly Dictionary<Uri, INodeNavigationItem<IDocumentationFile, INavigationItem>> _tableOfContentNodes = [];
-	public IReadOnlyDictionary<Uri, INodeNavigationItem<IDocumentationFile, INavigationItem>> TableOfContentNodes => _tableOfContentNodes;
+	private readonly Dictionary<Uri, IRootNavigationItem<IDocumentationFile, INavigationItem>> _tableOfContentNodes = [];
+	public IReadOnlyDictionary<Uri, IRootNavigationItem<IDocumentationFile, INavigationItem>> TableOfContentNodes => _tableOfContentNodes;
 
 	public Uri Identifier { get; }
 
@@ -142,32 +141,38 @@ public class DocumentationSetNavigation<TModel>
 	public string Id { get; }
 
 	/// <inheritdoc />
-	public ILeafNavigationItem<IDocumentationFile> Index { get; }
+	public ILeafNavigationItem<IDocumentationFile> Index { get; private set; }
 
 	/// <inheritdoc />
 	public bool IsUsingNavigationDropdown { get; }
 
 	/// <inheritdoc />
-	public IReadOnlyCollection<INavigationItem> NavigationItems { get; }
+	public IReadOnlyCollection<INavigationItem> NavigationItems { get; private set; }
+
+	void IAssignableChildrenNavigation.SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems) => SetNavigationItems(navigationItems);
+	internal void SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems)
+	{
+		NavigationItems = navigationItems;
+		Index = this.FindIndex<IDocumentationFile>(new NotFoundModel($"{PathPrefix}/index.md"));
+	}
+
 
 	private INavigationItem? ConvertToNavigationItem(
 		ITableOfContentsItem tocItem,
 		int index,
 		IDocumentationSetContext context,
 		INodeNavigationItem<INavigationModel, INavigationItem>? parent,
-		INavigationHomeProvider homeProvider,
+		INavigationHomeAccessor homeAccessor,
 		int depth
 	) =>
 		tocItem switch
 		{
-			FileRef fileRef => CreateFileNavigation(fileRef, index, context, parent, homeProvider),
-			CrossLinkRef crossLinkRef => CreateCrossLinkNavigation(crossLinkRef, index, parent, homeProvider),
-			FolderRef folderRef => CreateFolderNavigation(folderRef, index, context, parent, homeProvider, depth),
-			IsolatedTableOfContentsRef tocRef => CreateTocNavigation(tocRef, index, context, parent, homeProvider, depth),
+			FileRef fileRef => CreateFileNavigation(fileRef, index, context, parent, homeAccessor),
+			CrossLinkRef crossLinkRef => CreateCrossLinkNavigation(crossLinkRef, index, parent, homeAccessor),
+			FolderRef folderRef => CreateFolderNavigation(folderRef, index, context, parent, homeAccessor, depth),
+			IsolatedTableOfContentsRef tocRef => CreateTocNavigation(tocRef, index, context, parent, homeAccessor, depth),
 			_ => null
 		};
-
-	#region CreateFileNavigation Helper Methods
 
 	/// <summary>
 	/// Resolves the file info based on the file path. Since LoadAndResolve has already processed paths,
@@ -220,14 +225,12 @@ public class DocumentationSetNavigation<TModel>
 		}
 	}
 
-	#endregion
-
 	private INavigationItem? CreateFileNavigation(
 		FileRef fileRef,
 		int index,
 		IDocumentationSetContext context,
 		INodeNavigationItem<INavigationModel, INavigationItem>? parent,
-		INavigationHomeProvider homeProvider
+		INavigationHomeAccessor homeAccessor
 	)
 	{
 		// FileRef.Path already contains the correct path from LoadAndResolve
@@ -242,7 +245,7 @@ public class DocumentationSetNavigation<TModel>
 		// Handle leaf case (no children)
 		if (fileRef.Children.Count <= 0)
 		{
-			var leafNavigationArgs = new FileNavigationArgs(fullPath, fileRef.Hidden, index, parent, homeProvider);
+			var leafNavigationArgs = new FileNavigationArgs(fullPath, fileRef.Hidden, index, parent, homeAccessor);
 			return DocumentationNavigationFactory.CreateFileNavigationLeaf(documentationFile, fileInfo, leafNavigationArgs);
 		}
 
@@ -252,9 +255,8 @@ public class DocumentationSetNavigation<TModel>
 			fileRef.Hidden,
 			index,
 			parent?.Depth + 1 ?? 0,
-			null, // Parent will be set after processing children
-			homeProvider,
-			[]
+			parent,
+			homeAccessor
 		);
 		var fileNavigation = DocumentationNavigationFactory.CreateVirtualFileNavigation(documentationFile, fileInfo, virtualFileNavigationArgs);
 
@@ -267,7 +269,7 @@ public class DocumentationSetNavigation<TModel>
 			var childNav = ConvertToNavigationItem(
 				child, childIndex++, context,
 				(INodeNavigationItem<INavigationModel, INavigationItem>)fileNavigation,
-				homeProvider, // Files don't change the URL root
+				homeAccessor, // Files don't change the URL root
 				0 // Depth will be set by child
 			);
 			if (childNav != null)
@@ -283,32 +285,17 @@ public class DocumentationSetNavigation<TModel>
 		}
 
 		EnsureIndexIsFirst(children);
+		fileNavigation.SetNavigationItems(children);
 
-		// Create final file navigation with actual children and correct parent
-		var finalVirtualFileNavigationArgs = new VirtualFileNavigationArgs(
-			fullPath,
-			fileRef.Hidden,
-			index,
-			parent?.Depth + 1 ?? 0,
-			parent,
-			homeProvider,
-			children
-		);
-
-		var finalFileNavigation = DocumentationNavigationFactory.CreateVirtualFileNavigation(documentationFile, fileInfo, finalVirtualFileNavigationArgs);
-
-		// Update children's Parent to point to the final file navigation
-		foreach (var child in children)
-			child.Parent = (INodeNavigationItem<INavigationModel, INavigationItem>)finalFileNavigation;
-
-		return finalFileNavigation;
+		return fileNavigation;
 	}
 
 	private INavigationItem CreateCrossLinkNavigation(
 		CrossLinkRef crossLinkRef,
 		int index,
 		INodeNavigationItem<INavigationModel, INavigationItem>? parent,
-		INavigationHomeProvider homeProvider)
+		INavigationHomeAccessor homeAccessor
+	)
 	{
 		var title = crossLinkRef.Title ?? crossLinkRef.CrossLinkUri.OriginalString;
 		var model = new CrossLinkModel(crossLinkRef.CrossLinkUri, title);
@@ -318,7 +305,7 @@ public class DocumentationSetNavigation<TModel>
 			crossLinkRef.CrossLinkUri.OriginalString,
 			crossLinkRef.Hidden,
 			parent,
-			homeProvider
+			homeAccessor
 		)
 		{
 			NavigationIndex = index
@@ -330,7 +317,7 @@ public class DocumentationSetNavigation<TModel>
 		int index,
 		IDocumentationSetContext context,
 		INodeNavigationItem<INavigationModel, INavigationItem>? parent,
-		INavigationHomeProvider homeProvider,
+		INavigationHomeAccessor homeAccessor,
 		int depth
 	)
 	{
@@ -338,7 +325,7 @@ public class DocumentationSetNavigation<TModel>
 		var folderPath = folderRef.Path;
 
 		// Create folder navigation with null parent initially - we'll pass it to children but set it properly after
-		var folderNavigation = new FolderNavigation(depth + 1, folderPath, null, homeProvider, [])
+		var folderNavigation = new FolderNavigation(depth + 1, folderPath, parent, homeAccessor, [])
 		{
 			NavigationIndex = index
 		};
@@ -355,7 +342,7 @@ public class DocumentationSetNavigation<TModel>
 				childIndex++,
 				context,
 				folderNavigation,
-				homeProvider, // Keep parent's home provider
+				homeAccessor, // Keep parent's home provider
 				depth + 1
 			);
 
@@ -369,18 +356,8 @@ public class DocumentationSetNavigation<TModel>
 			context.Collector.EmitError(folderRef.Context, $"Folder navigation '{folderPath}' has children defined but none could be created ({folderRef.Context}:)");
 			return null;
 		}
-
-		// Now create the final folder navigation with the correct parent and children
-		var finalFolderNavigation = new FolderNavigation(depth + 1, folderPath, parent, homeProvider, children)
-		{
-			NavigationIndex = index
-		};
-
-		// Update children's Parent to point to the final folder navigation
-		foreach (var child in children)
-			child.Parent = finalFolderNavigation;
-
-		return finalFolderNavigation;
+		folderNavigation.SetNavigationItems(children);
+		return folderNavigation;
 	}
 
 	private INavigationItem? CreateTocNavigation(
@@ -388,7 +365,7 @@ public class DocumentationSetNavigation<TModel>
 		int index,
 		IDocumentationSetContext context,
 		INodeNavigationItem<INavigationModel, INavigationItem>? parent,
-		INavigationHomeProvider homeProvider,
+		INavigationHomeAccessor homeAccessor,
 		int depth
 	)
 	{
@@ -399,6 +376,8 @@ public class DocumentationSetNavigation<TModel>
 			context.ReadFileSystem.Path.Combine(context.DocumentationSourceDirectory.FullName, fullTocPath)
 		);
 
+		var isolatedHomeProvider = new NavigationHomeProvider(homeAccessor.HomeProvider.PathPrefix, homeAccessor.HomeProvider.NavigationRoot);
+
 		// Create the TOC navigation with empty children initially
 		// We use null parent temporarily - we'll set it properly at the end using the public setter
 		// Pass tocHomeProvider so the TOC uses parent's NavigationRoot (enables dynamic URL updates)
@@ -406,12 +385,12 @@ public class DocumentationSetNavigation<TModel>
 			tocDirectory,
 			depth + 1,
 			fullTocPath,
-			null, // Temporary null parent
-			homeProvider.PathPrefix,
+			parent, // Temporary null parent
+			isolatedHomeProvider.PathPrefix,
 			[],
 			Git,
 			_tableOfContentNodes,
-			homeProvider
+			isolatedHomeProvider
 		)
 		{
 			NavigationIndex = index
@@ -430,7 +409,7 @@ public class DocumentationSetNavigation<TModel>
 				childIndex++,
 				context,
 				tocNavigation,
-				homeProvider, // Use the scoped HomeProvider with correct NavigationRoot
+				tocNavigation,
 				depth + 1
 			);
 
@@ -447,35 +426,9 @@ public class DocumentationSetNavigation<TModel>
 				context.Collector.EmitError(tocRef.Context, $"Table of contents navigation '{fullTocPath}' has children defined but none could be created ({tocRef.Context}:)");
 			return null;
 		}
+		tocNavigation.SetNavigationItems(children);
 
-		// Now recreate the TOC navigation with the actual children
-		// Unfortunately we need to create it twice because NavigationItems is readonly
-		// But this time we need to remove the old one from _tableOfContentNodes first
-		var identifier = new Uri($"{Git.RepositoryName}://{fullTocPath}");
-		_ = _tableOfContentNodes.Remove(identifier);
-
-		var finalTocNavigation = new TableOfContentsNavigation(
-			tocDirectory,
-			depth + 1,
-			fullTocPath,
-			parent, // Now set the correct parent
-			homeProvider.PathPrefix,
-			children,
-			Git,
-			_tableOfContentNodes,
-			homeProvider // Pass same HomeProvider to final TOC
-		)
-		{
-			NavigationIndex = index
-		};
-
-		// Update children's Parent to point to the final TOC navigation
-		// Note: We don't update HomeProvider here because children already have the correct tocHomeProvider
-		// which provides the scoped PathPrefix and correct NavigationRoot
-		foreach (var child in children)
-			child.Parent = finalTocNavigation;
-
-		return finalTocNavigation;
+		return tocNavigation;
 	}
 
 }

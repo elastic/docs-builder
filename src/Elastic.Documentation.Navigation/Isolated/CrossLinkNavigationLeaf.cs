@@ -14,12 +14,10 @@ public class CrossLinkNavigationLeaf(
 	string url,
 	bool hidden,
 	INodeNavigationItem<INavigationModel, INavigationItem>? parent,
-	INavigationHomeProvider homeProvider
+	INavigationHomeAccessor homeAccessor
 )
 	: ILeafNavigationItem<CrossLinkModel>
 {
-	private readonly INavigationHomeProvider _homeProvider = homeProvider;
-
 	/// <inheritdoc />
 	public CrossLinkModel Model { get; init; } = model;
 
@@ -30,7 +28,7 @@ public class CrossLinkNavigationLeaf(
 	public bool Hidden { get; init; } = hidden;
 
 	/// <inheritdoc />
-	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => _homeProvider.NavigationRoot;
+	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => homeAccessor.HomeProvider.NavigationRoot;
 
 	/// <inheritdoc />
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; } = parent;

@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Diagnostics;
+
 namespace Elastic.Documentation.Navigation.Isolated;
 
 public interface INavigationHomeProvider
@@ -15,6 +17,7 @@ public interface INavigationHomeAccessor
 	INavigationHomeProvider HomeProvider { get; set; }
 }
 
+[DebuggerDisplay("{PathPrefix} => {NavigationRoot.Url}")]
 public class NavigationHomeProvider(string pathPrefix, IRootNavigationItem<INavigationModel, INavigationItem> navigationRoot) : INavigationHomeProvider
 {
 	/// <inheritdoc />
@@ -22,5 +25,7 @@ public class NavigationHomeProvider(string pathPrefix, IRootNavigationItem<INavi
 
 	/// <inheritdoc />
 	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; } = navigationRoot;
+
+	public override string ToString() => $"{PathPrefix} => {NavigationRoot.Url}";
 }
 

@@ -26,7 +26,7 @@ public class TableOfContentsNavigation : IRootNavigationItem<IDocumentationFile,
 		string pathPrefix,
 		IReadOnlyCollection<INavigationItem> navigationItems,
 		GitCheckoutInformation git,
-		Dictionary<Uri, INodeNavigationItem<IDocumentationFile, INavigationItem>> tocNodes,
+		Dictionary<Uri, IRootNavigationItem<IDocumentationFile, INavigationItem>> tocNodes,
 		INavigationHomeProvider homeProvider
 	)
 	{
@@ -43,7 +43,7 @@ public class TableOfContentsNavigation : IRootNavigationItem<IDocumentationFile,
 
 		// Initialize _homeProvider from the provided homeProvider
 		// According to url-building.md: "In isolated builds the NavigationRoot is always the DocumentationSetNavigation"
-		_homeProvider = homeProvider;
+		HomeProvider = homeProvider;
 
 		// Create an identifier for this TOC
 		Identifier = new Uri($"{git.RepositoryName}://{parentPath}");
@@ -52,11 +52,6 @@ public class TableOfContentsNavigation : IRootNavigationItem<IDocumentationFile,
 		// FindIndex must be called after _homeProvider is set
 		Index = this.FindIndex<IDocumentationFile>(new NotFoundModel($"{parentPath}/index.md"));
 	}
-
-	/// <summary>
-	/// Internal HomeProvider - can be updated in assembler builds for rehoming.
-	/// </summary>
-	private INavigationHomeProvider _homeProvider { get; set; }
 
 	/// <summary>
 	/// The path prefix for this TOC - same as parent per url-building.md.
@@ -76,7 +71,7 @@ public class TableOfContentsNavigation : IRootNavigationItem<IDocumentationFile,
 	/// According to url-building.md: "In isolated builds the NavigationRoot is always the DocumentationSetNavigation"
 	/// This satisfies both INavigationItem.NavigationRoot and INavigationHomeProvider.NavigationRoot.
 	/// </summary>
-	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => _homeProvider.NavigationRoot;
+	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => HomeProvider.NavigationRoot;
 
 	/// <inheritdoc />
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
@@ -86,11 +81,7 @@ public class TableOfContentsNavigation : IRootNavigationItem<IDocumentationFile,
 	/// as the home provider for its children by default. This creates the scoped navigation context.
 	/// The setter is used in assembler builds to rehome the navigation.
 	/// </summary>
-	public INavigationHomeProvider HomeProvider
-	{
-		get => _homeProvider;
-		set => _homeProvider = value;
-	}
+	public INavigationHomeProvider HomeProvider { get; set; }
 
 	/// <inheritdoc />
 	public bool Hidden { get; }
@@ -110,7 +101,7 @@ public class TableOfContentsNavigation : IRootNavigationItem<IDocumentationFile,
 	public string Id { get; }
 
 	/// <inheritdoc />
-	public ILeafNavigationItem<IDocumentationFile> Index { get; }
+	public ILeafNavigationItem<IDocumentationFile> Index { get; private set; }
 
 	/// <inheritdoc />
 	public bool IsUsingNavigationDropdown { get; }
@@ -119,5 +110,12 @@ public class TableOfContentsNavigation : IRootNavigationItem<IDocumentationFile,
 
 	public Uri Identifier { get; }
 
-	public IReadOnlyCollection<INavigationItem> NavigationItems { get; }
+	public IReadOnlyCollection<INavigationItem> NavigationItems { get; private set; }
+
+	void IAssignableChildrenNavigation.SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems) => SetNavigationItems(navigationItems);
+	internal void SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems)
+	{
+		NavigationItems = navigationItems;
+		Index = this.FindIndex<IDocumentationFile>(new NotFoundModel($"{PathPrefix}/index.md"));
+	}
 }

@@ -36,6 +36,7 @@ public class LandingNavigationItem : IApiGroupingNavigationItem<ApiLanding, INav
 	public bool IsCrossLink => false; // API landing items are never cross-links
 	public string Url => Index.Url;
 	public bool Hidden => false;
+	public Uri Identifier { get; } = new Uri("todo://");
 
 	public string NavigationTitle => Index.NavigationTitle;
 
@@ -50,6 +51,9 @@ public class LandingNavigationItem : IApiGroupingNavigationItem<ApiLanding, INav
 
 	/// <inheritdoc />
 	public bool IsUsingNavigationDropdown => false;
+
+	void IAssignableChildrenNavigation.SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems) =>
+		throw new NotSupportedException($"{nameof(IAssignableChildrenNavigation.SetNavigationItems)} is not supported on ${nameof(ClassificationNavigationItem)}");
 }
 
 public interface IApiGroupingNavigationItem<out TGroupingModel, out TNavigationItem> : INodeNavigationItem<TGroupingModel, TNavigationItem>
@@ -64,6 +68,7 @@ public abstract class ApiGroupingNavigationItem<TGroupingModel, TNavigationItem>
 	: IApiGroupingNavigationItem<TGroupingModel, TNavigationItem>
 	where TGroupingModel : IApiGroupingModel
 	where TNavigationItem : INavigationItem
+
 {
 	/// <inheritdoc />
 	public string Url => NavigationItems.First().Url;
@@ -82,6 +87,8 @@ public abstract class ApiGroupingNavigationItem<TGroupingModel, TNavigationItem>
 	/// <inheritdoc />
 	public int NavigationIndex { get; set; }
 	public bool IsCrossLink => false; // API grouping items are never cross-links
+
+	public Uri Identifier { get; } = new Uri("todo://");
 
 	/// <inheritdoc />
 	public int Depth => 0;
@@ -108,6 +115,9 @@ public class ClassificationNavigationItem(ApiClassification classification, Land
 
 	/// <inheritdoc />
 	public bool IsUsingNavigationDropdown => false;
+
+	void IAssignableChildrenNavigation.SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems) =>
+		throw new NotSupportedException($"{nameof(IAssignableChildrenNavigation.SetNavigationItems)} is not supported on ${nameof(ClassificationNavigationItem)}");
 }
 
 public class TagNavigationItem(ApiTag tag, IRootNavigationItem<IApiGroupingModel, INavigationItem> rootNavigation, INodeNavigationItem<INavigationModel, INavigationItem> parent)
