@@ -10,7 +10,7 @@ public interface INavigationHomeProvider
 {
 	string PathPrefix { get; }
 	IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }
-	bool RelativeToTableOfContents { get; }
+	string Id { get; }
 }
 
 public interface INavigationHomeAccessor
@@ -19,19 +19,15 @@ public interface INavigationHomeAccessor
 }
 
 [DebuggerDisplay("{PathPrefix} => {NavigationRoot.Url}")]
-public class NavigationHomeProvider(
-	string pathPrefix,
-	IRootNavigationItem<INavigationModel, INavigationItem> navigationRoot,
-	bool relativeToTableOfContents
-) : INavigationHomeProvider
+public class NavigationHomeProvider(string pathPrefix, IRootNavigationItem<INavigationModel, INavigationItem> navigationRoot) : INavigationHomeProvider
 {
 	/// <inheritdoc />
 	public string PathPrefix { get; } = pathPrefix;
 
-	public bool RelativeToTableOfContents { get; } = relativeToTableOfContents;
-
 	/// <inheritdoc />
 	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; } = navigationRoot;
+
+	public string Id { get; } = Guid.NewGuid().ToString("N");
 
 	public override string ToString() => $"{PathPrefix} => {NavigationRoot.Url}";
 }

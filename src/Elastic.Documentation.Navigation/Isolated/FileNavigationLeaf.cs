@@ -24,13 +24,19 @@ public class FileNavigationLeaf<TModel>(TModel model, IFileInfo fileInfo, FileNa
 	public IFileInfo FileInfo { get; } = fileInfo;
 
 	/// <inheritdoc />
-	public TModel Model { get; init; } = model;
+	public TModel Model { get; } = model;
+
+	private string? _homeProviderCache;
+	private string? _urlCache;
 
 	/// <inheritdoc />
 	public string Url
 	{
 		get
 		{
+			if (_homeProviderCache is not null && _homeProviderCache == args.HomeAccessor.HomeProvider.Id && _urlCache is not null)
+				return _urlCache;
+
 			var rootUrl = args.HomeAccessor.HomeProvider.PathPrefix.TrimEnd('/');
 			var relativeToContainer = args.HomeAccessor.HomeProvider.NavigationRoot.Parent is SiteNavigation;
 
@@ -49,12 +55,15 @@ public class FileNavigationLeaf<TModel>(TModel model, IFileInfo fileInfo, FileNa
 			if (string.IsNullOrEmpty(path))
 				return string.IsNullOrEmpty(rootUrl) ? "/" : rootUrl;
 
-			return $"{rootUrl}/{path}";
+			_homeProviderCache = args.HomeAccessor.HomeProvider.Id;
+			_urlCache = $"{rootUrl}/{path}";
+
+			return _urlCache;
 		}
 	}
 
 	/// <inheritdoc />
-	public bool Hidden { get; init; } = args.Hidden;
+	public bool Hidden { get; } = args.Hidden;
 
 	/// <inheritdoc />
 	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => args.HomeAccessor.HomeProvider.NavigationRoot;

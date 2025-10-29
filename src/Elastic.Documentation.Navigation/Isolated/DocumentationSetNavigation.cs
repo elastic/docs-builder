@@ -96,8 +96,6 @@ public class DocumentationSetNavigation<TModel>
 	/// </summary>
 	public string PathPrefix => HomeProvider == this ? _pathPrefix : HomeProvider.PathPrefix;
 
-	bool INavigationHomeProvider.RelativeToTableOfContents => false;
-
 	public INavigationHomeProvider HomeProvider { get; set; }
 
 	public GitCheckoutInformation Git { get; }
@@ -379,7 +377,7 @@ public class DocumentationSetNavigation<TModel>
 			context.ReadFileSystem.Path.Combine(context.DocumentationSourceDirectory.FullName, fullTocPath)
 		);
 
-		var isolatedHomeProvider = new NavigationHomeProvider(homeAccessor.HomeProvider.PathPrefix, homeAccessor.HomeProvider.NavigationRoot, homeAccessor.HomeProvider.RelativeToTableOfContents);
+		var isolatedHomeProvider = new NavigationHomeProvider(homeAccessor.HomeProvider.PathPrefix, homeAccessor.HomeProvider.NavigationRoot);
 
 		// Create the TOC navigation with empty children initially
 		// We use null parent temporarily - we'll set it properly at the end using the public setter
