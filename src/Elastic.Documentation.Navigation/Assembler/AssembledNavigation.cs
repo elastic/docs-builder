@@ -209,7 +209,7 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		// Set the navigation index
 		node.Parent = parent;
 		node.NavigationIndex = index;
-		homeAccessor.HomeProvider = new NavigationHomeProvider(pathPrefix, root);
+		homeAccessor.HomeProvider = new NavigationHomeProvider(pathPrefix, root, true);
 
 		//var wrapped = new SiteTableOfContentsNavigation<IDocumentationFile>(node, homeAccessor.HomeProvider, parent, root);
 		//parent = wrapped;

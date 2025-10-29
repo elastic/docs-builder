@@ -8,7 +8,8 @@ using System.IO.Abstractions;
 namespace Elastic.Documentation.Navigation.Isolated;
 
 public record FileNavigationArgs(
-	string RelativePath,
+	string RelativePathToDocumentationSet,
+	string RelativePathToTableOfContents,
 	bool Hidden,
 	int NavigationIndex,
 	INodeNavigationItem<INavigationModel, INavigationItem>? Parent,
@@ -31,7 +32,7 @@ public class FileNavigationLeaf<TModel>(TModel model, IFileInfo fileInfo, FileNa
 		{
 			var rootUrl = args.HomeAccessor.HomeProvider.PathPrefix.TrimEnd('/');
 			// Remove extension while preserving the directory path
-			var relativePath = args.RelativePath;
+			var relativePath = args.RelativePathToDocumentationSet;
 			var path = relativePath.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
 				? relativePath[..^3]  // Remove last 3 characters (.md)
 				: relativePath;

@@ -60,6 +60,8 @@ public class TableOfContentsNavigation : IRootNavigationItem<IDocumentationFile,
 	/// </summary>
 	public string PathPrefix { get; }
 
+	bool INavigationHomeProvider.RelativeToTableOfContents => false;
+
 	/// <inheritdoc />
 	public string Url => Index.Url;
 
