@@ -10,6 +10,16 @@ namespace Elastic.Documentation.Api.Core.AskAi;
 public interface IStreamTransformer
 {
 	/// <summary>
+	/// Get the agent/model identifier for this transformer
+	/// </summary>
+	string AgentId { get; }
+
+	/// <summary>
+	/// Get the agent provider/platform for this transformer
+	/// </summary>
+	string AgentProvider { get; }
+
+	/// <summary>
 	/// Transforms a raw SSE stream into a stream of AskAiEvent objects
 	/// </summary>
 	/// <param name="rawStream">Raw SSE stream from gateway (Agent Builder, LLM Gateway, etc.)</param>

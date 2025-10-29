@@ -40,13 +40,24 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 	/// </summary>
 	protected abstract string GetAgentProvider();
 
+	/// <summary>
+	/// Public property to expose agent ID (implements IStreamTransformer)
+	/// </summary>
+	public string AgentId => GetAgentId();
+
+	/// <summary>
+	/// Public property to expose agent provider (implements IStreamTransformer)
+	/// </summary>
+	public string AgentProvider => GetAgentProvider();
+
 	public Task<Stream> TransformAsync(Stream rawStream, CancellationToken cancellationToken = default)
 	{
 		using var activity = StreamTransformerActivitySource.StartActivity($"chat {GetAgentId()}", ActivityKind.Client);
 		_ = (activity?.SetTag("gen_ai.operation.name", "chat"));
-		_ = (activity?.SetTag("gen_ai.request.model", GetAgentId()));
-		_ = (activity?.SetTag("gen_ai.agent.name", GetAgentId()));
-		_ = (activity?.SetTag("gen_ai.provider.name", GetAgentProvider()));
+
+		// Custom attributes for tracking our abstraction layer
+		_ = (activity?.SetTag("docs.ai.gateway", GetAgentProvider()));
+		_ = (activity?.SetTag("docs.ai.agent_name", GetAgentId()));
 
 		// Configure pipe for low-latency streaming
 		var pipeOptions = new PipeOptions(
@@ -160,8 +171,10 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 	protected virtual async Task ProcessStreamAsync(PipeReader reader, PipeWriter writer, Activity? parentActivity, CancellationToken cancellationToken)
 	{
 		using var activity = StreamTransformerActivitySource.StartActivity("gen_ai.agent.stream");
-		_ = (activity?.SetTag("gen_ai.agent.name", GetAgentId()));
-		_ = (activity?.SetTag("gen_ai.provider.name", GetAgentProvider()));
+
+		// Custom attributes for tracking our abstraction layer
+		_ = (activity?.SetTag("docs.ai.gateway", GetAgentProvider()));
+		_ = (activity?.SetTag("docs.ai.agent_name", GetAgentId()));
 
 		var eventCount = 0;
 		var jsonParseErrors = 0;
@@ -201,13 +214,10 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 
 			if (transformedEvent != null)
 			{
-				// Update parent activity with conversation ID and model info when we receive ConversationStart events
+				// Update parent activity with conversation ID when we receive ConversationStart events
 				if (transformedEvent is AskAiEvent.ConversationStart conversationStart)
 				{
 					_ = (parentActivity?.SetTag("gen_ai.conversation.id", conversationStart.ConversationId));
-					_ = (parentActivity?.SetTag("gen_ai.request.model", GetAgentId()));
-					_ = (parentActivity?.SetTag("gen_ai.agent.name", GetAgentId()));
-					_ = (parentActivity?.SetTag("gen_ai.provider.name", GetAgentProvider()));
 					_ = (activity?.SetTag("gen_ai.conversation.id", conversationStart.ConversationId));
 				}
 
@@ -238,8 +248,10 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 			return;
 
 		using var activity = StreamTransformerActivitySource.StartActivity("gen_ai.agent.token");
-		_ = (activity?.SetTag("gen_ai.agent.name", GetAgentId()));
-		_ = (activity?.SetTag("gen_ai.provider.name", GetAgentProvider()));
+
+		// Custom attributes for tracking our abstraction layer
+		_ = (activity?.SetTag("docs.ai.gateway", GetAgentProvider()));
+		_ = (activity?.SetTag("docs.ai.agent_name", GetAgentId()));
 		_ = (activity?.SetTag("gen_ai.response.token_type", transformedEvent.GetType().Name));
 
 		try

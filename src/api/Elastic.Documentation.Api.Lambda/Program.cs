@@ -9,6 +9,7 @@ using Elastic.Documentation.Api.Core.AskAi;
 using Elastic.Documentation.Api.Core.Search;
 using Elastic.Documentation.Api.Infrastructure;
 using Elastic.Documentation.ServiceDefaults;
+using Microsoft.Extensions.Logging;
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
@@ -22,9 +23,10 @@ try
 	process.Refresh();
 	Console.WriteLine($"WebApplication builder created. Memory: {process.WorkingSet64 / 1024 / 1024} MB");
 
-	_ = builder.AddDocumentationServiceDefaults(ref args);
+	// Add logging configuration for Lambda
+	_ = builder.Services.AddElasticDocumentationLogging(LogLevel.Information);
 	process.Refresh();
-	Console.WriteLine($"Documentation service defaults added. Memory: {process.WorkingSet64 / 1024 / 1024} MB");
+	Console.WriteLine($"Logging configured. Memory: {process.WorkingSet64 / 1024 / 1024} MB");
 
 	_ = builder.AddElasticOpenTelemetry(edotBuilder =>
 	{

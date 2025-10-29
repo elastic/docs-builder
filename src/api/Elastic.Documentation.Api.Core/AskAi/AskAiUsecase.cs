@@ -16,14 +16,23 @@ public class AskAiUsecase(
 
 	public async Task<Stream> AskAi(AskAiRequest askAiRequest, Cancel ctx)
 	{
-		// Start with a placeholder model name - will be updated by transformer
-		using var activity = AskAiActivitySource.StartActivity("chat unknown", ActivityKind.Client);
+		// Start activity for the chat request - model name will be set by transformer
+		using var activity = AskAiActivitySource.StartActivity("chat", ActivityKind.Client);
 
-		// Set required GenAI semantic convention attributes
+		// Generate a correlation ID for tracking if this is a new conversation
+		// For first messages (no ThreadId), generate a temporary ID that will be updated when the provider responds
+		var correlationId = askAiRequest.ThreadId ?? $"temp-{Guid.NewGuid()}";
+
+		// Set GenAI semantic convention attributes
 		_ = (activity?.SetTag("gen_ai.operation.name", "chat"));
-		_ = (activity?.SetTag("gen_ai.request.model", "unknown")); // Will be updated by transformer
-		_ = (activity?.SetTag("gen_ai.conversation.id", askAiRequest.ThreadId ?? "pending")); // Will be updated when we receive ConversationStart
+		_ = (activity?.SetTag("gen_ai.conversation.id", correlationId)); // Will be updated when we receive ConversationStart with actual ID
 		_ = (activity?.SetTag("gen_ai.usage.input_tokens", askAiRequest.Message.Length)); // Approximate token count
+
+		// Custom attributes for tracking our abstraction layer
+		// We use custom attributes because we don't know the actual GenAI provider (OpenAI, Anthropic, etc.)
+		// or model (gpt-4, claude, etc.) - those are abstracted by AgentBuilder/LlmGateway
+		_ = (activity?.SetTag("docs.ai.gateway", streamTransformer.AgentProvider)); // agent-builder or llm-gateway
+		_ = (activity?.SetTag("docs.ai.agent_name", streamTransformer.AgentId)); // docs-agent or docs_assistant
 
 		// Add GenAI prompt event
 		_ = (activity?.AddEvent(new ActivityEvent("gen_ai.content.prompt",
