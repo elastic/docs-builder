@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions.TestingHelpers;
+using System.Runtime.InteropServices;
 using Elastic.Documentation.Configuration.DocSet;
 using Elastic.Documentation.Diagnostics;
 using FluentAssertions;
@@ -760,22 +761,25 @@ public class DocumentationSetFileTests
 		var collector = new DiagnosticsCollector([]);
 		var result = DocumentationSetFile.LoadAndResolve(collector, docsetPath, fileSystem);
 
+		var docset = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "C:/docs/docset.yml" : "/docs/docset.yml";
+		var toc = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "C:/docs/development/toc.yml" : "/docs/development/toc.yml";
+
 		// All items from docset.yml should have context = /docs/docset.yml
 		result.TableOfContents.ElementAt(0).Should().BeOfType<IndexFileRef>()
-			.Which.Context.Should().Be("/docs/docset.yml");
+			.Which.Context.Should().Be(docset);
 
 		var guidesFolder = result.TableOfContents.ElementAt(1).Should().BeOfType<FolderRef>().Subject;
-		guidesFolder.Context.Should().Be("/docs/docset.yml");
+		guidesFolder.Context.Should().Be(docset);
 		guidesFolder.Children.ElementAt(0).Should().BeOfType<FileRef>()
-			.Which.Context.Should().Be("/docs/docset.yml");
+			.Which.Context.Should().Be(docset);
 
 		// The TOC ref itself has context = /docs/docset.yml (where it was referenced)
 		var developmentToc = result.TableOfContents.ElementAt(2).Should().BeOfType<IsolatedTableOfContentsRef>().Subject;
-		developmentToc.Context.Should().Be("/docs/docset.yml");
+		developmentToc.Context.Should().Be(docset);
 
 		// But children of the TOC ref should have context = /docs/development/toc.yml (where they were defined)
 		developmentToc.Children.ElementAt(0).Should().BeOfType<FileRef>()
-			.Which.Context.Should().Be("/docs/development/toc.yml");
+			.Which.Context.Should().Be(toc);
 	}
 
 	[Fact]
