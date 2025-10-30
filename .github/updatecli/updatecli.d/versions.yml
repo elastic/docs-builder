@@ -8,7 +8,7 @@ scms:
       user: '{{ requiredEnv "GITHUB_ACTOR" }}'
       username: '{{ requiredEnv "GITHUB_ACTOR" }}'
       owner: '{{ .scm.owner }}'
-      repository: '{{ .scm.repository }}'
+      repository: docs-builder
       token: '{{ requiredEnv "GITHUB_TOKEN" }}'
       commitusingapi: true
       branch: '{{ .scm.branch }}'
