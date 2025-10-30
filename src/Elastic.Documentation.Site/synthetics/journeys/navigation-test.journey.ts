@@ -44,7 +44,7 @@ journey('navigation test', ({ page, params }) => {
             .first()
             .click()
         await expect(page).toHaveURL(
-            `${host}/docs/get-started/deployment-options`
+            `${host}/docs/get-started/deployment-options/`
         )
         await expect(page).toHaveTitle(/Deployment options/)
         await expect(
@@ -59,7 +59,7 @@ journey('navigation test', ({ page, params }) => {
             .first()
             .click()
         await expect(page).toHaveURL(
-            `${host}/docs/deploy-manage/deploy/elastic-cloud`
+            `${host}/docs/deploy-manage/deploy/elastic-cloud/`
         )
         await expect(page).toHaveTitle(/Elastic Cloud/)
     })
