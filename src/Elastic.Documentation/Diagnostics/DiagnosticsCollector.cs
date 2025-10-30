@@ -31,7 +31,7 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 
 	public bool NoHints { get; set; }
 
-	public DiagnosticsCollector StartAsync(Cancel ctx)
+	public virtual DiagnosticsCollector StartAsync(Cancel ctx)
 	{
 		_ = ((IHostedService)this).StartAsync(ctx);
 		return this;
@@ -75,7 +75,7 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 		}
 	}
 
-	private void IncrementSeverityCount(Diagnostic item)
+	protected void IncrementSeverityCount(Diagnostic item)
 	{
 		if (item.Severity == Severity.Error)
 			_ = Interlocked.Increment(ref _errors);

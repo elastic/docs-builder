@@ -32,7 +32,17 @@ public class TestDiagnosticsCollector(ITestOutputHelper output)
 
 	public IReadOnlyCollection<Diagnostic> Diagnostics => _diagnostics;
 
-	protected override void HandleItem(Diagnostic diagnostic) => _diagnostics.Add(diagnostic);
+	protected override void HandleItem(Diagnostic diagnostic)
+	{
+		_diagnostics.Add(diagnostic);
+		IncrementSeverityCount(diagnostic);
+	}
+
+	/// <inheritdoc />
+	public override DiagnosticsCollector StartAsync(CancellationToken ctx) => this;
+
+	/// <inheritdoc />
+	public override Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 }
 
 public class TestDocumentationSetContext : IDocumentationSetContext
@@ -61,7 +71,7 @@ public class TestDocumentationSetContext : IDocumentationSetContext
 		};
 
 		// Start the diagnostics collector to process messages
-		_ = Collector.StartAsync(CancellationToken.None);
+		_ = Collector.StartAsync(Cancel.None);
 	}
 
 	public IDiagnosticsCollector Collector { get; }

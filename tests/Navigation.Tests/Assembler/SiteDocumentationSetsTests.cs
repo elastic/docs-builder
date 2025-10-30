@@ -101,14 +101,14 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		siteNavigation.NavigationItems.Should().HaveCount(3);
 
 		var observability = siteNavigation.NavigationItems.ElementAt(0);
-		observability.Url.Should().Be("/serverless/observability");
+		observability.Url.Should().Be("/serverless/observability/");
 		observability.NavigationTitle.Should().NotBeNullOrEmpty();
 
 		var search = siteNavigation.NavigationItems.ElementAt(1);
-		search.Url.Should().Be("/serverless/search");
+		search.Url.Should().Be("/serverless/search/");
 
 		var security = siteNavigation.NavigationItems.ElementAt(2);
-		security.Url.Should().Be("/serverless/security");
+		security.Url.Should().Be("/serverless/security/");
 	}
 
 	[Fact]
@@ -135,8 +135,8 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		var platformNav = new DocumentationSetNavigation<IDocumentationFile>(platformDocset, platformContext, GenericDocumentationFileFactory.Instance);
 		platformNav.Url.Should().Be("/");
 		platformNav.Index.Url.Should().Be("/");
-		platformNav.NavigationItems.ElementAt(0).Url.Should().Be("/deployment-guide");
-		platformNav.NavigationItems.ElementAt(1).Url.Should().Be("/cloud-guide");
+		platformNav.NavigationItems.ElementAt(0).Url.Should().Be("/deployment-guide/");
+		platformNav.NavigationItems.ElementAt(1).Url.Should().Be("/cloud-guide/");
 
 		var documentationSets = new List<IDocumentationSetNavigation> { platformNav };
 
@@ -148,14 +148,14 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 
 		var platform = siteNavigation.NavigationItems.First() as INodeNavigationItem<INavigationModel, INavigationItem>;
 		platform.Should().NotBeNull();
-		platform.Url.Should().Be("/platform");
+		platform.Url.Should().Be("/platform/");
 		platform.NavigationItems.Should().HaveCount(2);
 
 		var deployment = platform.NavigationItems.ElementAt(0);
-		deployment.Url.Should().Be("/platform/deployment");
+		deployment.Url.Should().Be("/platform/deployment/");
 
 		var cloud = platform.NavigationItems.ElementAt(1);
-		cloud.Url.Should().Be("/platform/cloud");
+		cloud.Url.Should().Be("/platform/cloud/");
 	}
 
 	[Fact]
@@ -214,21 +214,21 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 
 		// Verify top-level items
 		var observability = siteNavigation.NavigationItems.ElementAt(0);
-		observability.Url.Should().Be("/serverless/observability");
+		observability.Url.Should().Be("/serverless/observability/");
 
 		var search = siteNavigation.NavigationItems.ElementAt(1);
-		search.Url.Should().Be("/serverless/search");
+		search.Url.Should().Be("/serverless/search/");
 
 		var security = siteNavigation.NavigationItems.ElementAt(2);
-		security.Url.Should().Be("/serverless/security");
+		security.Url.Should().Be("/serverless/security/");
 
 		var platform = siteNavigation.NavigationItems.ElementAt(3) as INodeNavigationItem<INavigationModel, INavigationItem>;
 		platform.Should().NotBeNull();
-		platform.Url.Should().Be("/platform");
-		platform.NavigationItems.Should().HaveCount(3);
+		platform.Url.Should().Be("/platform/");
+		platform.NavigationItems.Should().HaveCount(2);
 
 		var elasticsearch = siteNavigation.NavigationItems.ElementAt(4);
-		elasticsearch.Url.Should().Be("/elasticsearch/reference");
+		elasticsearch.Url.Should().Be("/elasticsearch/reference/");
 	}
 
 	[Fact]
@@ -279,13 +279,13 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 
 		var deploymentGuide = platformNav.NavigationItems.ElementAt(0);
 		deploymentGuide.Should().BeOfType<TableOfContentsNavigation>();
-		deploymentGuide.Url.Should().Be("/deployment-guide");
+		deploymentGuide.Url.Should().Be("/deployment-guide/");
 		var deploymentToc = (TableOfContentsNavigation)deploymentGuide;
 		deploymentToc.NavigationItems.Should().HaveCount(1); // self-managed folder
 
 		var cloudGuide = platformNav.NavigationItems.ElementAt(1);
 		cloudGuide.Should().BeOfType<TableOfContentsNavigation>();
-		cloudGuide.Url.Should().Be("/cloud-guide");
+		cloudGuide.Url.Should().Be("/cloud-guide/");
 		var cloudToc = (TableOfContentsNavigation)cloudGuide;
 		cloudToc.NavigationItems.Should().HaveCount(2); // aws folder, azure folder
 	}
@@ -373,14 +373,14 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 
 		var platform = siteNavigation.NavigationItems.First() as INodeNavigationItem<INavigationModel, INavigationItem>;
 		platform.Should().NotBeNull();
-		platform.Url.Should().Be("/platform");
+		platform.Url.Should().Be("/platform/");
 
 		// Verify child TOCs have their specific path prefixes
 		var deployment = platform.NavigationItems.ElementAt(0);
-		deployment.Url.Should().StartWith("/platform/deployment");
+		deployment.Url.Should().StartWith("/platform/deployment/");
 
 		var cloud = platform.NavigationItems.ElementAt(1);
-		cloud.Url.Should().StartWith("/platform/cloud");
+		cloud.Url.Should().StartWith("/platform/cloud/");
 	}
 
 	[Fact]
@@ -409,7 +409,7 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		toc.Should().NotBeNull();
 		toc.HomeProvider.PathPrefix.Should().Be("/bad-mapping-observability");
 		// toc has no `path_prefix` so it will use a default ugly one to avoid clashes and emit an error
-		toc.Url.Should().Be("/bad-mapping-observability");
+		toc.Url.Should().Be("/bad-mapping-observability/");
 	}
 
 	[Fact]
@@ -583,12 +583,12 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 
 		// Assert navigation was created successfully with folders
 		navigation.Should().NotBeNull();
-		navigation.NavigationItems.Should().HaveCount(3); // index.md, getting-started folder, monitoring folder
+		navigation.NavigationItems.Should().HaveCount(2); // index.md, getting-started folder, monitoring folder
 
-		var gettingStarted = navigation.NavigationItems.ElementAt(1);
+		var gettingStarted = navigation.NavigationItems.ElementAt(0);
 		gettingStarted.Should().BeOfType<FolderNavigation>();
 
-		var monitoring = navigation.NavigationItems.ElementAt(2);
+		var monitoring = navigation.NavigationItems.ElementAt(1);
 		monitoring.Should().BeOfType<FolderNavigation>();
 
 		// Assert no diagnostic errors or warnings

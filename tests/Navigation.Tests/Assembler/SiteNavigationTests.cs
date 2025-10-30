@@ -129,16 +129,16 @@ public class SiteNavigationTests(ITestOutputHelper output)
 	}
 
 	[Theory]
-	[InlineData(null, "/observability")]
-	[InlineData("", "/observability")]
-	[InlineData("docs", "/docs/observability")]
-	[InlineData("/docs", "/docs/observability")]
-	[InlineData("docs/", "/docs/observability")]
-	[InlineData("/docs/", "/docs/observability")]
-	[InlineData("api/docs", "/api/docs/observability")]
-	[InlineData("/api/docs", "/api/docs/observability")]
-	[InlineData("api/docs/", "/api/docs/observability")]
-	[InlineData("/api/docs/", "/api/docs/observability")]
+	[InlineData(null, "/observability/")]
+	[InlineData("", "/observability/")]
+	[InlineData("docs", "/docs/observability/")]
+	[InlineData("/docs", "/docs/observability/")]
+	[InlineData("docs/", "/docs/observability/")]
+	[InlineData("/docs/", "/docs/observability/")]
+	[InlineData("api/docs", "/api/docs/observability/")]
+	[InlineData("/api/docs", "/api/docs/observability/")]
+	[InlineData("api/docs/", "/api/docs/observability/")]
+	[InlineData("/api/docs/", "/api/docs/observability/")]
 	public void SitePrefixAppliedToNavigationItemUrls(string? sitePrefix, string expectedObservabilityUrl)
 	{
 		// language=yaml
@@ -166,11 +166,11 @@ public class SiteNavigationTests(ITestOutputHelper output)
 	}
 
 	[Theory]
-	[InlineData(null, "/observability", "/search")]
-	[InlineData("docs", "/docs/observability", "/docs/search")]
-	[InlineData("/docs", "/docs/observability", "/docs/search")]
-	[InlineData("docs/", "/docs/observability", "/docs/search")]
-	[InlineData("/docs/", "/docs/observability", "/docs/search")]
+	[InlineData(null, "/observability/", "/search/")]
+	[InlineData("docs", "/docs/observability/", "/docs/search/")]
+	[InlineData("/docs", "/docs/observability/", "/docs/search/")]
+	[InlineData("docs/", "/docs/observability/", "/docs/search/")]
+	[InlineData("/docs/", "/docs/observability/", "/docs/search/")]
 	public void SitePrefixAppliedToMultipleNavigationItems(string? sitePrefix, string expectedObsUrl, string expectedSearchUrl)
 	{
 		// language=yaml

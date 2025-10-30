@@ -35,23 +35,23 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 		var file = folder.Index;
 
 		// Initial URL
-		file.Url.Should().Be("/setup/install");
+		file.Url.Should().Be("/setup/install/");
 
 		// Change root URL
 		navigation.HomeProvider = new NavigationHomeProvider("/v8.0", navigation.NavigationRoot);
 
 		// URLs should update dynamically
 		// Since folder has no index child, its URL is the first child's URL
-		folder.Url.Should().Be("/v8.0/setup/install");
-		file.Url.Should().Be("/v8.0/setup/install");
+		folder.Url.Should().Be("/v8.0/setup/install/");
+		file.Url.Should().Be("/v8.0/setup/install/");
 
 		// Change root URL
 		navigation.HomeProvider = new NavigationHomeProvider("/v9.0", navigation.NavigationRoot);
 
 		// URLs should update dynamically
 		// Since folder has no index child, its URL is the first child's URL
-		folder.Url.Should().Be("/v9.0/setup/install");
-		file.Url.Should().Be("/v9.0/setup/install");
+		folder.Url.Should().Be("/v9.0/setup/install/");
+		file.Url.Should().Be("/v9.0/setup/install/");
 	}
 
 	[Fact]
@@ -78,12 +78,12 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 		var innerFolder = outerFolder!.NavigationItems.First() as FolderNavigation;
 		var file = innerFolder!.Index;
 
-		file.Url.Should().Be("/outer/inner/deep");
+		file.Url.Should().Be("/outer/inner/deep/");
 
 		// Change root URL
 		navigation.HomeProvider = new NavigationHomeProvider("/base", navigation.NavigationRoot);
 
-		file.Url.Should().Be("/base/outer/inner/deep");
+		file.Url.Should().Be("/base/outer/inner/deep/");
 	}
 
 	[Fact]
@@ -108,7 +108,7 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 		var folder = navigation.NavigationItems.First() as FolderNavigation;
 
 		// Folder has no index.md, so URL should be the first child's URL
-		folder!.Url.Should().Be("/guides/getting-started");
+		folder!.Url.Should().Be("/guides/getting-started/");
 	}
 
 	[Fact]
@@ -134,14 +134,14 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 		var folder = navigation.NavigationItems.First() as FolderNavigation;
 
 		// Folder has no index.md, so URL should be the first child's URL
-		folder!.Url.Should().Be("/guides/getting-started");
+		folder!.Url.Should().Be("/guides/getting-started/");
 
 		var gettingStarted = folder.NavigationItems.First() as VirtualFileNavigation<IDocumentationFile>;
 		gettingStarted.Should().NotBeNull();
-		gettingStarted.Url.Should().Be("/guides/getting-started");
+		gettingStarted.Url.Should().Be("/guides/getting-started/");
 		var advanced = gettingStarted.NavigationItems.First() as FileNavigationLeaf<IDocumentationFile>;
 		advanced.Should().NotBeNull();
-		advanced.Url.Should().Be("/guides/advanced");
+		advanced.Url.Should().Be("/guides/advanced/");
 
 		advanced.Parent.Should().BeSameAs(gettingStarted);
 		gettingStarted.Parent.Should().BeSameAs(folder);
@@ -170,14 +170,14 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 		var folder = navigation.NavigationItems.First() as FolderNavigation;
 
 		// Folder has no index.md, so URL should be the first child's URL
-		folder!.Url.Should().Be("/guides/clients/getting-started");
+		folder!.Url.Should().Be("/guides/clients/getting-started/");
 
 		var gettingStarted = folder.NavigationItems.First() as VirtualFileNavigation<IDocumentationFile>;
 		gettingStarted.Should().NotBeNull();
-		gettingStarted.Url.Should().Be("/guides/clients/getting-started");
+		gettingStarted.Url.Should().Be("/guides/clients/getting-started/");
 		var advanced = gettingStarted.NavigationItems.First() as FileNavigationLeaf<IDocumentationFile>;
 		advanced.Should().NotBeNull();
-		advanced.Url.Should().Be("/guides/advanced");
+		advanced.Url.Should().Be("/guides/advanced/");
 
 		advanced.Parent.Should().BeSameAs(gettingStarted);
 		gettingStarted.Parent.Should().BeSameAs(folder);
@@ -206,14 +206,14 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 		var folder = navigation.NavigationItems.First() as FolderNavigation;
 
 		// Folder has no index.md, so URL should be the first child's URL
-		folder!.Url.Should().Be("/guides/clients");
+		folder!.Url.Should().Be("/guides/clients/");
 
 		var gettingStarted = folder.NavigationItems.First() as VirtualFileNavigation<IDocumentationFile>;
 		gettingStarted.Should().NotBeNull();
-		gettingStarted.Url.Should().Be("/guides/clients");
+		gettingStarted.Url.Should().Be("/guides/clients/");
 		var advanced = gettingStarted.NavigationItems.First() as FileNavigationLeaf<IDocumentationFile>;
 		advanced.Should().NotBeNull();
-		advanced.Url.Should().Be("/guides/advanced");
+		advanced.Url.Should().Be("/guides/advanced/");
 
 		advanced.Parent.Should().BeSameAs(gettingStarted);
 		gettingStarted.Parent.Should().BeSameAs(folder);
@@ -241,7 +241,7 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 		var folder = navigation.NavigationItems.First() as FolderNavigation;
 
 		// Folder has index.md, so URL should be the folder path
-		folder!.Url.Should().Be("/guides");
+		folder!.Url.Should().Be("/guides/");
 	}
 
 	[Fact]
@@ -274,15 +274,15 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 		var file = toc!.Index;
 
 		// The TOC becomes the new URL root, so the file URL is based on TOC's URL
-		toc.Url.Should().Be("/guides/api/reference");
-		file.Url.Should().Be("/guides/api/reference");
+		toc.Url.Should().Be("/guides/api/reference/");
+		file.Url.Should().Be("/guides/api/reference/");
 
 		// Change root URL
 		navigation.HomeProvider = new NavigationHomeProvider("/v2", navigation.NavigationRoot);
 
 		// Both TOC and file URLs should update
-		navigation.Url.Should().Be("/v2");
-		toc.Url.Should().Be("/v2/guides/api/reference");
-		file.Url.Should().Be("/v2/guides/api/reference");
+		navigation.Url.Should().Be("/v2/");
+		toc.Url.Should().Be("/v2/guides/api/reference/");
+		file.Url.Should().Be("/v2/guides/api/reference/");
 	}
 }

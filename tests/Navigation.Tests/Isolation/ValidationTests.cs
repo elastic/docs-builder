@@ -95,11 +95,8 @@ public class ValidationTests(ITestOutputHelper output) : DocumentationSetNavigat
 		fileSystem.AddDirectory("/docs");
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
-		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
 
 		_ = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
-
-		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
 
 		// Nested TOC under a root-level TOC should not allow file children
 		var diagnostics = context.Diagnostics;

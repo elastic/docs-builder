@@ -46,7 +46,7 @@ public class TableOfContentsNavigation : IRootNavigationItem<IDocumentationFile,
 		HomeProvider = homeProvider;
 
 		// Create an identifier for this TOC
-		Identifier = new Uri($"{git.RepositoryName}://{parentPath}");
+		Identifier = new Uri($"{git.RepositoryName}://{parentPath.TrimEnd('/')}");
 		_ = tocNodes.TryAdd(Identifier, this);
 
 		// FindIndex must be called after _homeProvider is set

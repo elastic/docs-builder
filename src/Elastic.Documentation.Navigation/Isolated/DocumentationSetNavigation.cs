@@ -114,7 +114,7 @@ public class DocumentationSetNavigation<TModel>
 		get
 		{
 			var rootUrl = HomeProvider.PathPrefix.TrimEnd('/');
-			return string.IsNullOrEmpty(rootUrl) ? "/" : rootUrl;
+			return string.IsNullOrEmpty(rootUrl) ? "/" : $"{rootUrl}/";
 		}
 	}
 

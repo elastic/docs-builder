@@ -46,7 +46,7 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 
 		// Check by URL since folder names derive from index file titles
 		var folderUrls = folders.Select(f => f.Url).ToList();
-		folderUrls.Should().Contain("/contribute");
+		folderUrls.Should().Contain("/contribute/");
 
 		// No errors or warnings should be emitted during navigation construction
 		// Hints are acceptable for best practice guidance
@@ -80,7 +80,7 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 
 		// Find the contribute folder by URL
 		var contributeFolder = navigation.NavigationItems.OfType<FolderNavigation>()
-			.FirstOrDefault(f => f.Url == "/contribute");
+			.FirstOrDefault(f => f.Url == "/contribute/");
 		contributeFolder.Should().NotBeNull();
 
 		// Verify nested structure
@@ -117,7 +117,7 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		tocNavs.Should().NotBeEmpty();
 
 		// development TOC should exist (check by URL)
-		var developmentToc = tocNavs.FirstOrDefault(t => t.Url == "/development");
+		var developmentToc = tocNavs.FirstOrDefault(t => t.Url == "/development/");
 		developmentToc.Should().NotBeNull();
 
 		developmentToc.NavigationItems.Should().HaveCount(2);

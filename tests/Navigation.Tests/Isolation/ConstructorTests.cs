@@ -82,7 +82,7 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		navigation.NavigationItems.Should().HaveCount(0);
 		var fileNav = navigation.Index.Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
 		fileNav.NavigationTitle.Should().Be("getting-started");
-		fileNav.Url.Should().Be("/getting-started");
+		fileNav.Url.Should().Be("/getting-started/");
 		fileNav.Hidden.Should().BeFalse();
 		fileNav.NavigationRoot.Should().BeSameAs(navigation);
 		fileNav.Parent.Should().BeSameAs(navigation); // Top-level files have DocumentationSetNavigation as parent
@@ -108,7 +108,7 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		navigation.NavigationItems.Should().HaveCount(0);
 		var fileNav = navigation.Index.Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
 		fileNav.Hidden.Should().BeTrue();
-		fileNav.Url.Should().Be("/404");
+		fileNav.Url.Should().Be("/404/");
 	}
 
 	[Fact]
@@ -159,15 +159,15 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		navigation.NavigationItems.Should().HaveCount(1);
 		var folder = navigation.NavigationItems.First().Should().BeOfType<FolderNavigation>().Subject;
 		folder.Depth.Should().Be(1);
-		folder.Url.Should().Be("/setup");
+		folder.Url.Should().Be("/setup/");
 		folder.NavigationItems.Should().HaveCount(1);
 
 		var firstFile = folder.Index.Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
-		firstFile.Url.Should().Be("/setup"); // index.md becomes /setup
+		firstFile.Url.Should().Be("/setup/"); // index.md becomes /setup
 		firstFile.Parent.Should().BeSameAs(folder);
 
 		var secondFile = folder.NavigationItems.ElementAt(0).Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
-		secondFile.Url.Should().Be("/setup/install");
+		secondFile.Url.Should().Be("/setup/install/");
 	}
 
 	[Fact]
@@ -198,11 +198,11 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		navigation.NavigationItems.Should().HaveCount(1);
 		var toc = navigation.NavigationItems.First().Should().BeOfType<TableOfContentsNavigation>().Subject;
 		toc.Depth.Should().Be(1);
-		toc.Url.Should().Be("/api");
+		toc.Url.Should().Be("/api/");
 		toc.NavigationItems.Should().HaveCount(0);
 
 		var file = toc.Index.Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
-		file.Url.Should().Be("/api"); // index.md becomes /api
+		file.Url.Should().Be("/api/"); // index.md becomes /api
 		file.Parent.Should().BeSameAs(toc);
 		file.NavigationRoot.Should().BeSameAs(navigation);
 	}
@@ -239,10 +239,10 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		toc.NavigationItems.Should().HaveCount(1);
 
 		var overview = toc.Index.Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
-		overview.Url.Should().Be("/api/overview");
+		overview.Url.Should().Be("/api/overview/");
 
 		var reference = toc.NavigationItems.ElementAt(0).Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
-		reference.Url.Should().Be("/api/reference");
+		reference.Url.Should().Be("/api/reference/");
 	}
 
 	[Fact]
