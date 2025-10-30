@@ -369,7 +369,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			var path = Path.GetFullPath(fi.FileSystem.Path.Combine(fi.Directory!.FullName, newUrl));
 			var pathInfo = fi.FileSystem.FileInfo.New(path);
 			pathInfo = pathInfo.EnsureSubPathOf(context.Configuration.ScopeDirectory, newUrl);
-			var relativePath = fi.FileSystem.Path.GetRelativePath(context.Configuration.ScopeDirectory.FullName, pathInfo.FullName);
+			var relativePath = fi.FileSystem.Path.GetRelativePath(context.Configuration.ScopeDirectory.FullName, pathInfo.FullName).OptionalWindowsReplace();
 
 			// if we are trying to resolve a relative url from a _snippet folder ensure we eat the _snippet folder
 			// as it's not part of url by chopping of the extra parent navigation
@@ -393,7 +393,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 				}
 			}
 			else
-				newUrl = $"/{Path.Combine(urlPathPrefix, relativePath).TrimStart('/')}";
+				newUrl = $"/{Path.Combine(urlPathPrefix, relativePath).OptionalWindowsReplace().TrimStart('/')}";
 
 		}
 		// When running on Windows, path traversal results must be normalized prior to being used in a URL
