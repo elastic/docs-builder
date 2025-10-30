@@ -14,9 +14,12 @@ using Elastic.Documentation.Configuration.DocSet;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Navigation.Isolated;
+using Elastic.Documentation.ServiceDefaults;
 using Elastic.Documentation.Site.Navigation;
+using Elastic.Documentation.Tooling;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using RazorSlices;
 
 namespace Elastic.Assembler.IntegrationTests;
@@ -26,9 +29,17 @@ public class NavigationBuildingTests(DocumentationFixture fixture, ITestOutputHe
 	[Fact]
 	public async Task AssertRealNavigation()
 	{
-		var services = fixture.DistributedApplication.Services;
+		string[] args = [];
+		var builder = Host.CreateApplicationBuilder()
+			.AddDocumentationServiceDefaults(ref args, (s, p) =>
+			{
+				_ = s.AddSingleton(AssemblyConfiguration.Create(p));
+			})
+			.AddDocumentationToolingDefaults();
+		var host = builder.Build();
 
-		var configurationContext = services.GetRequiredService<IConfigurationContext>();
+		var configurationContext = host.Services.GetRequiredService<IConfigurationContext>();
+
 		var assemblyConfiguration = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
 		var collector = new TestDiagnosticsCollector(TestContext.Current.TestOutputHelper!);
 		var fs = new FileSystem();
