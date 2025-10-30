@@ -28,7 +28,8 @@ public class NestedTocTests(ITestOutputHelper output) : NavigationTestsBase(outp
 		parent.Should().NotBeNull();
 
 		// its parent should be null
-		parent.Parent.Should().BeNull();
+		parent.Parent.Should().NotBeNull();
+		parent.Parent.Parent.Should().BeNull();
 
 		// its parent should point to an index
 		var index = (parent as TableOfContentsNavigation)?.Index;

@@ -557,12 +557,12 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 
 		// Assert navigation was created successfully with nested TOCs
 		navigation.Should().NotBeNull();
-		navigation.NavigationItems.Should().HaveCount(3); // index.md, deployment-guide TOC, cloud-guide TOC
+		navigation.NavigationItems.Should().HaveCount(2); // deployment-guide TOC, cloud-guide TOC (index.md is in Index property)
 
-		var deploymentGuide = navigation.NavigationItems.ElementAt(1);
+		var deploymentGuide = navigation.NavigationItems.ElementAt(0);
 		deploymentGuide.Should().BeOfType<TableOfContentsNavigation>();
 
-		var cloudGuide = navigation.NavigationItems.ElementAt(2);
+		var cloudGuide = navigation.NavigationItems.ElementAt(1);
 		cloudGuide.Should().BeOfType<TableOfContentsNavigation>();
 
 		// Assert no diagnostic errors or warnings

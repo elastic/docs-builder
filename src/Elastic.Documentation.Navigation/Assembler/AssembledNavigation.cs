@@ -219,6 +219,8 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		//parent = wrapped;
 
 		var children = new List<INavigationItem>();
+
+		// Always start with the node's existing children and update their HomeProvider
 		INavigationItem[] nodeChildren = [.. node.NavigationItems, node.Index];
 		foreach (var nodeChild in nodeChildren)
 		{
@@ -226,10 +228,10 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 			if (nodeChild is INavigationHomeAccessor childAccessor)
 				childAccessor.HomeProvider = homeAccessor.HomeProvider;
 
-			if (nodeChild is IRootNavigationItem<INavigationModel, INavigationItem>)
-				continue;
 			children.Add(nodeChild);
 		}
+
+		// If there are additional children defined in the site navigation, add those too
 		if (tocRef.Children.Count > 0)
 		{
 			var childIndex = 0;
@@ -239,14 +241,17 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 					child,
 					childIndex++,
 					context,
-					parent,
+					node,
 					root
 				);
 				if (childItem != null)
 					children.Add(childItem);
 			}
 		}
-		foreach (var nodeChild in nodeChildren)
+
+		// Check for any undeclared nested TOCs in the node's children
+		INavigationItem[] allNodeChildren = [.. node.NavigationItems, node.Index];
+		foreach (var nodeChild in allNodeChildren)
 		{
 			if (nodeChild is not IRootNavigationItem<INavigationModel, INavigationItem> rootChild)
 				continue;

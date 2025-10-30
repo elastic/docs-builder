@@ -93,6 +93,7 @@ public class DocumentationSet : IPositionalNavigation
 		MarkdownNavigationLookup = [];
 		var navigationFlatList = CreateNavigationLookup(Navigation);
 		NavigationIndexedByOrder = navigationFlatList
+			.DistinctBy(n => n.NavigationIndex)
 			.ToDictionary(n => n.NavigationIndex, n => n)
 			.ToFrozenDictionary();
 
@@ -136,10 +137,17 @@ public class DocumentationSet : IPositionalNavigation
 				if (!addedNode)
 					Context.EmitWarning(Configuration.SourceFile, $"Duplicate navigation item {node.Index.Model.CrossLink}");
 				var nodeItems = node.NavigationItems.SelectMany(CreateNavigationLookup);
-				return nodeItems.Concat([node]).ToArray();
+				return nodeItems.Concat([node, node.Index]).ToArray();
 			case INodeNavigationItem<INavigationModel, INavigationItem> node:
 				var items = node.NavigationItems.SelectMany(CreateNavigationLookup);
-				return items.Concat([node]).ToArray();
+				if (node.Index.Model is MarkdownFile md)
+				{
+					added = MarkdownNavigationLookup.TryAdd(md, node.Index);
+					if (!added)
+						Context.EmitWarning(Configuration.SourceFile, $"Duplicate navigation item {md.CrossLink}");
+				}
+
+				return items.Concat([node, node.Index]).ToArray();
 			default:
 				return [];
 		}

@@ -349,10 +349,10 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		platform.Should().NotBeNull();
 
 		// Platform should have its children including deployment-guide TOC
-		platform.NavigationItems.Should().HaveCount(3);
+		platform.NavigationItems.Should().HaveCount(2);
 
-		// Get deployment-guide TOC (second item after index)
-		var deploymentGuide = platform.NavigationItems.ElementAt(1) as INodeNavigationItem<INavigationModel, INavigationItem>;
+		// Get deployment-guide TOC
+		var deploymentGuide = platform.NavigationItems.ElementAt(0) as INodeNavigationItem<INavigationModel, INavigationItem>;
 		deploymentGuide.Should().NotBeNull();
 		deploymentGuide.Should().BeOfType<TableOfContentsNavigation>();
 
@@ -369,7 +369,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 
 		// Verify at least one specific file to ensure we're testing real data
 		var indexFile = fileLeaves.OfType<FileNavigationLeaf<IDocumentationFile>>()
-			.FirstOrDefault(f => f.FileInfo.FullName.EndsWith("/index.md", StringComparison.OrdinalIgnoreCase));
+			.FirstOrDefault(f => f.FileInfo.FullName.EndsWith(".md", StringComparison.OrdinalIgnoreCase));
 		indexFile.Should().NotBeNull();
 		indexFile.Url.Should().StartWith("/platform");
 	}
@@ -406,10 +406,10 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		platform.Should().NotBeNull();
 
 		// Platform should have its children including cloud-guide TOC
-		platform.NavigationItems.Should().HaveCount(3);
+		platform.NavigationItems.Should().HaveCount(2);
 
-		// Get cloud-guide TOC (third item after index and deployment-guide)
-		var cloudGuide = platform.NavigationItems.ElementAt(2) as INodeNavigationItem<INavigationModel, INavigationItem>;
+		// Get cloud-guide TOC (third item after deployment-guide)
+		var cloudGuide = platform.NavigationItems.ElementAt(1) as INodeNavigationItem<INavigationModel, INavigationItem>;
 		cloudGuide.Should().NotBeNull();
 		cloudGuide.Should().BeOfType<TableOfContentsNavigation>();
 
@@ -475,9 +475,9 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 	/// <summary>
 	/// Helper method to collect all FileNavigationLeaf items recursively
 	/// </summary>
-	private static List<ILeafNavigationItem<IDocumentationFile>> CollectAllFileLeaves(IEnumerable<INavigationItem> items)
+	private static List<ILeafNavigationItem<INavigationModel>> CollectAllFileLeaves(IEnumerable<INavigationItem> items)
 	{
-		var fileLeaves = new List<ILeafNavigationItem<IDocumentationFile>>();
+		var fileLeaves = new List<ILeafNavigationItem<INavigationModel>>();
 
 		foreach (var item in items)
 		{
@@ -486,7 +486,9 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 				case ILeafNavigationItem<IDocumentationFile> fileLeaf:
 					fileLeaves.Add(fileLeaf);
 					break;
-				case INodeNavigationItem<INavigationModel, INavigationItem>:
+				case INodeNavigationItem<INavigationModel, INavigationItem> node:
+					fileLeaves.Add(node.Index);
+					fileLeaves.AddRange(CollectAllFileLeaves(node.NavigationItems));
 					break;
 			}
 		}

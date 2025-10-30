@@ -66,7 +66,8 @@ public static class NavigationItemExtensions
 		}
 	}
 
-	public static int UpdateNavigationIndex(this IRootNavigationItem<INavigationModel, INavigationItem> node, IDocumentationContext context)
+	public static int UpdateNavigationIndex<TModel>(this IRootNavigationItem<TModel, INavigationItem> node, IDocumentationContext context)
+		where TModel : IDocumentationFile
 	{
 		var navigationIndex = -1;
 		ProcessNavigationItem(context, ref navigationIndex, node);

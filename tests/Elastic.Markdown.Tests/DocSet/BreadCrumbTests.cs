@@ -36,9 +36,11 @@ public class BreadCrumbTests(ITestOutputHelper output) : NavigationTestsBase(out
 
 		nav.Parent.Should().NotBeNull();
 
+		_ = positionalNavigation.MarkdownNavigationLookup.TryGetValue(doc, out var docNavigation);
+		docNavigation.Should().NotBeNull();
 		var parents = positionalNavigation.GetParentsOfMarkdownFile(doc);
 
-		parents.Should().HaveCount(2);
+		parents.Should().HaveCount(3);
 
 	}
 }
