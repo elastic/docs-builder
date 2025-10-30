@@ -73,6 +73,19 @@ sources:
       versionfilter:
         kind: latest
 
+  # latest-edot-cf-gcp-version:
+  #   name: Get latest release version for the edot-cf-gcp
+  #   kind: githubrelease
+  #   transformers:
+  #     - trimprefix: v
+  #   spec:
+  #     owner: elastic
+  #     repository: edot-cloud-forwarder-gcp
+  #     token: '{{ requiredEnv "GITHUB_TOKEN" }}'
+  #     username: '{{ requiredEnv "GITHUB_ACTOR" }}'
+  #     versionfilter:
+  #       kind: latest
+
   latest-edot-collector-version:
     name: Get latest major release version for the elastic-agent
     kind: githubrelease
@@ -348,6 +361,15 @@ targets:
     spec:
       file: config/versions.yml
       key: versioning_systems.edot-cf-azure.current
+
+  # update-docs-docset-cf-gcp:
+  #   name: 'Update config/versions.yml edot-cf-gcp {{ source "latest-edot-cf-gcp-version" }}'
+  #   scmid: githubConfig
+  #   sourceid: latest-edot-cf-gcp-version
+  #   kind: yaml
+  #   spec:
+  #     file: config/versions.yml
+  #     key: versioning_systems.edot-cf-gcp.current
 
   update-docs-docset-collector:
     name: 'Update config/versions.yml edot-collector {{ source "latest-edot-collector-version" }}'

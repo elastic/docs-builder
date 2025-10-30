@@ -101,6 +101,9 @@ versioning_systems:
   edot-cf-azure:
     base: 0.1
     current: 0.6.0
+#  edot-cf-gcp:
+#    base: 0.1
+#    current: 0.1.0
 
   # Logging
   ecs-logging-dotnet:
