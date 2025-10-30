@@ -109,14 +109,7 @@ public class DocumentationSetNavigation<TModel>
 	public Uri Identifier { get; }
 
 	/// <inheritdoc />
-	public string Url
-	{
-		get
-		{
-			var rootUrl = HomeProvider.PathPrefix.TrimEnd('/');
-			return string.IsNullOrEmpty(rootUrl) ? "/" : $"{rootUrl}/";
-		}
-	}
+	public string Url => Index.Url;
 
 	/// <inheritdoc />
 	public string NavigationTitle => Index.NavigationTitle;

@@ -281,7 +281,7 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 		navigation.HomeProvider = new NavigationHomeProvider("/v2", navigation.NavigationRoot);
 
 		// Both TOC and file URLs should update
-		navigation.Url.Should().Be("/v2/");
+		navigation.Url.Should().Be("/v2/guides/api/reference/");
 		toc.Url.Should().Be("/v2/guides/api/reference/");
 		file.Url.Should().Be("/v2/guides/api/reference/");
 	}
