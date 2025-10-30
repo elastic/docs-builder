@@ -209,7 +209,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 
 		foreach (var repo in repositories)
 		{
-			var context = SiteNavigationTestFixture.CreateContext(fileSystem, repo.FullName, output);
+			var context = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, repo.FullName, output);
 
 			var docsetPath = fileSystem.File.Exists($"{repo.FullName}/docs/docset.yml")
 				? $"{repo.FullName}/docs/docset.yml"
@@ -221,8 +221,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 			documentationSets.Add(navigation);
 		}
 
-		var siteContext = SiteNavigationTestFixture.CreateContext(
-			fileSystem, "/checkouts/current/observability", output);
+		var siteContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/observability", output);
 
 		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
@@ -250,7 +249,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		var deploymentGuide = platform.NavigationItems.ElementAt(0) as INodeNavigationItem<INavigationModel, INavigationItem>;
 		deploymentGuide.Should().NotBeNull();
 		deploymentGuide.Url.Should().Be("/platform/deployment");
-		deploymentGuide.NavigationTitle.Should().Be(platform.Index.NavigationTitle);
+		deploymentGuide.NavigationTitle.Should().Be(deploymentGuide.Index.NavigationTitle);
 
 		var cloudGuide = platform.NavigationItems.ElementAt(1);
 		cloudGuide.Should().NotBeNull();
@@ -261,15 +260,15 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		var elasticsearch = siteNavigation.NavigationItems.ElementAt(3) as INodeNavigationItem<INavigationModel, INavigationItem>;
 		elasticsearch.Should().NotBeNull();
 		elasticsearch.Url.Should().Be("/elasticsearch/reference");
-		elasticsearch.NavigationItems.Should().HaveCount(3, "elasticsearch should have read its toc");
+		elasticsearch.NavigationItems.Should().HaveCount(2, "elasticsearch should have read its toc");
 
 		// rest-apis is a folder (not a TOC)
-		var restApis = elasticsearch.NavigationItems.ElementAt(1).Should().BeOfType<FolderNavigation>().Subject;
+		var restApis = elasticsearch.NavigationItems.ElementAt(0).Should().BeOfType<FolderNavigation>().Subject;
 		restApis.Url.Should().Be("/elasticsearch/reference/rest-apis");
-		restApis.NavigationItems.Should().HaveCount(3, "rest-apis folder should have 3 files");
+		restApis.NavigationItems.Should().HaveCount(2, "rest-apis folder should have 2 files");
 
 		// Verify the file inside the folder has the correct path prefix
-		var documentApisFile = restApis.NavigationItems.ElementAt(1).Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
+		var documentApisFile = restApis.NavigationItems.ElementAt(0).Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
 		documentApisFile.Url.Should().Be("/elasticsearch/reference/rest-apis/document-apis");
 		documentApisFile.NavigationTitle.Should().Be("Document APIs");
 	}
@@ -287,8 +286,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
-		var platformContext = SiteNavigationTestFixture.CreateContext(
-			fileSystem, "/checkouts/current/platform", output);
+		var platformContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/platform", output);
 		var platformDocset = DocumentationSetFile.LoadAndResolve(platformContext.Collector,
 			fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"), fileSystem);
 
@@ -297,8 +295,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 			new DocumentationSetNavigation<IDocumentationFile>(platformDocset, platformContext, GenericDocumentationFileFactory.Instance)
 		};
 
-		var siteContext = SiteNavigationTestFixture.CreateContext(
-			fileSystem, "/checkouts/current/platform", output);
+		var siteContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/platform", output);
 
 		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
@@ -306,11 +303,11 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		platform.Should().NotBeNull();
 		platform.Url.Should().Be("/docs/platform");
 
-		// Platform should have its children (index, deployment-guide, cloud-guide)
-		platform.NavigationItems.Should().HaveCount(3);
+		// Platform should have its children (deployment-guide, cloud-guide)
+		platform.NavigationItems.Should().HaveCount(2);
 
 		// Find the deployment-guide TOC (it's the second item after index)
-		var deploymentGuide = platform.NavigationItems.ElementAt(1) as INodeNavigationItem<INavigationModel, INavigationItem>;
+		var deploymentGuide = platform.NavigationItems.ElementAt(0) as INodeNavigationItem<INavigationModel, INavigationItem>;
 		deploymentGuide.Should().NotBeNull();
 		deploymentGuide.Should().BeOfType<TableOfContentsNavigation>();
 		deploymentGuide.Url.Should().StartWith("/docs/platform");
@@ -335,8 +332,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
-		var platformContext = SiteNavigationTestFixture.CreateContext(
-			fileSystem, "/checkouts/current/platform", output);
+		var platformContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/platform", output);
 		var platformDocset = DocumentationSetFile.LoadAndResolve(platformContext.Collector,
 			fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"), fileSystem);
 
@@ -345,8 +341,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 			new DocumentationSetNavigation<IDocumentationFile>(platformDocset, platformContext, GenericDocumentationFileFactory.Instance)
 		};
 
-		var siteContext = SiteNavigationTestFixture.CreateContext(
-			fileSystem, "/checkouts/current/platform", output);
+		var siteContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/platform", output);
 
 		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 

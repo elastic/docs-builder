@@ -130,13 +130,17 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
 		// Create DocumentationSetNavigation for platform
-		var platformContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform", output);
+		var platformContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/platform", output);
 		var platformDocset = DocumentationSetFile.LoadAndResolve(platformContext.Collector, fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"), fileSystem);
 		var platformNav = new DocumentationSetNavigation<IDocumentationFile>(platformDocset, platformContext, GenericDocumentationFileFactory.Instance);
+		platformNav.Url.Should().Be("/");
+		platformNav.Index.Url.Should().Be("/");
+		platformNav.NavigationItems.ElementAt(0).Url.Should().Be("/deployment-guide");
+		platformNav.NavigationItems.ElementAt(1).Url.Should().Be("/cloud-guide");
 
 		var documentationSets = new List<IDocumentationSetNavigation> { platformNav };
 
-		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform", output);
+		var siteContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/platform", output);
 
 		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
@@ -360,11 +364,11 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
-		var platformContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform", output);
+		var platformContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/platform", output);
 		var platformDocset = DocumentationSetFile.LoadAndResolve(platformContext.Collector, fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"), fileSystem);
 		var documentationSets = new List<IDocumentationSetNavigation> { new DocumentationSetNavigation<IDocumentationFile>(platformDocset, platformContext, GenericDocumentationFileFactory.Instance) };
 
-		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform", output);
+		var siteContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/platform", output);
 		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
 		var platform = siteNavigation.NavigationItems.First() as INodeNavigationItem<INavigationModel, INavigationItem>;
@@ -372,10 +376,10 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		platform.Url.Should().Be("/platform");
 
 		// Verify child TOCs have their specific path prefixes
-		var deployment = platform.NavigationItems.ElementAt(1);
+		var deployment = platform.NavigationItems.ElementAt(0);
 		deployment.Url.Should().StartWith("/platform/deployment");
 
-		var cloud = platform.NavigationItems.ElementAt(2);
+		var cloud = platform.NavigationItems.ElementAt(1);
 		cloud.Url.Should().StartWith("/platform/cloud");
 	}
 

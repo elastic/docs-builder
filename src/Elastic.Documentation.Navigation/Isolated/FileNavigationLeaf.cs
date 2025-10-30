@@ -37,28 +37,34 @@ public class FileNavigationLeaf<TModel>(TModel model, IFileInfo fileInfo, FileNa
 			if (_homeProviderCache is not null && _homeProviderCache == args.HomeAccessor.HomeProvider.Id && _urlCache is not null)
 				return _urlCache;
 
-			var rootUrl = args.HomeAccessor.HomeProvider.PathPrefix.TrimEnd('/');
-			var relativeToContainer = args.HomeAccessor.HomeProvider.NavigationRoot.Parent is SiteNavigation;
-
-			// Remove extension while preserving the directory path
-			var relativePath = relativeToContainer ? args.RelativePathToTableOfContents : args.RelativePathToDocumentationSet;
-			var path = relativePath.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
-				? relativePath[..^3]  // Remove last 3 characters (.md)
-				: relativePath;
-
-			// If a path ends with /index or is just index, omit it from the URL
-			if (path.EndsWith("/index", StringComparison.OrdinalIgnoreCase))
-				path = path[..^6]; // Remove "/index"
-			else if (path.Equals("index", StringComparison.OrdinalIgnoreCase))
-				return string.IsNullOrEmpty(rootUrl) ? "/" : rootUrl;
-
-			if (string.IsNullOrEmpty(path))
-				return string.IsNullOrEmpty(rootUrl) ? "/" : rootUrl;
 
 			_homeProviderCache = args.HomeAccessor.HomeProvider.Id;
-			_urlCache = $"{rootUrl}/{path}";
 
+			_urlCache = DetermineUrl();
 			return _urlCache;
+
+			string DetermineUrl()
+			{
+				var rootUrl = args.HomeAccessor.HomeProvider.PathPrefix.TrimEnd('/');
+				var relativeToContainer = args.HomeAccessor.HomeProvider.NavigationRoot.Parent is SiteNavigation;
+
+				// Remove extension while preserving the directory path
+				var relativePath = relativeToContainer ? args.RelativePathToTableOfContents : args.RelativePathToDocumentationSet;
+				var path = relativePath.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
+					? relativePath[..^3]  // Remove last 3 characters (.md)
+					: relativePath;
+
+				// If a path ends with /index or is just index, omit it from the URL
+				if (path.EndsWith("/index", StringComparison.OrdinalIgnoreCase))
+					path = path[..^6]; // Remove "/index"
+				else if (path.Equals("index", StringComparison.OrdinalIgnoreCase))
+					return string.IsNullOrEmpty(rootUrl) ? "/" : rootUrl;
+
+				if (string.IsNullOrEmpty(path))
+					return string.IsNullOrEmpty(rootUrl) ? "/" : rootUrl;
+
+				return $"{rootUrl}/{path}";
+			}
 		}
 	}
 

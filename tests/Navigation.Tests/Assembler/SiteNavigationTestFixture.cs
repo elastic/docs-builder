@@ -216,6 +216,18 @@ public static class SiteNavigationTestFixture
 		fileSystem.AddFile($"{baseDir}/docs/query-dsl/full-text-queries.md", new MockFileData("# Full Text Queries"));
 	}
 
+	public static TestDocumentationSetContext CreateAssemblerContext(
+		MockFileSystem fileSystem,
+		string repositoryPath,
+		ITestOutputHelper output,
+		TestDiagnosticsCollector? collector = null
+	)
+	{
+		var context = CreateContext(fileSystem, repositoryPath, output, collector);
+		context.AssemblerBuild = true;
+		return context;
+	}
+
 	public static TestDocumentationSetContext CreateContext(
 		MockFileSystem fileSystem,
 		string repositoryPath,

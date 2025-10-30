@@ -41,6 +41,9 @@ public class AssembleContext : IDocumentationConfigurationContext
 	/// <inheritdoc />
 	public IFileInfo ConfigurationPath { get; }
 
+	/// <inheritdoc />
+	public bool AssemblerBuild => true;
+
 	public PublishEnvironment Environment { get; }
 
 	public AssembleContext(

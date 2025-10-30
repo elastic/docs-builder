@@ -72,6 +72,9 @@ public class TestDocumentationSetContext : IDocumentationSetContext
 	public GitCheckoutInformation Git { get; }
 	public IFileInfo ConfigurationPath { get; }
 
+	/// <inheritdoc />
+	public bool AssemblerBuild { get; set; }
+
 	public IReadOnlyCollection<Diagnostic> Diagnostics => ((TestDiagnosticsCollector)Collector).Diagnostics;
 }
 

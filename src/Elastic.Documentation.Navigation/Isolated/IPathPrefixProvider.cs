@@ -12,8 +12,6 @@ public interface INavigationHomeProvider
 	string PathPrefix { get; }
 	IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }
 	string Id { get; }
-
-	bool IsAssemblerBuild() => NavigationRoot.Parent is SiteNavigation;
 }
 
 public interface INavigationHomeAccessor
