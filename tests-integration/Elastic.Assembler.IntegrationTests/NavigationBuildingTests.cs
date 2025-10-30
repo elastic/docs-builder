@@ -29,6 +29,8 @@ public class NavigationBuildingTests(DocumentationFixture fixture, ITestOutputHe
 	[Fact]
 	public async Task AssertRealNavigation()
 	{
+		//Skipping on CI since this relies on checking out private repositories
+		Assert.SkipWhen(Environment.GetEnvironmentVariable("CI") == "true", "Skipping in CI");
 		string[] args = [];
 		var builder = Host.CreateApplicationBuilder()
 			.AddDocumentationServiceDefaults(ref args, (s, p) =>
