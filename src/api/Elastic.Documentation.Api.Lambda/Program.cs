@@ -2,11 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Text.Json.Serialization;
-using Amazon.Lambda.APIGatewayEvents;
-using Amazon.Lambda.Serialization.SystemTextJson;
-using Elastic.Documentation.Api.Core.AskAi;
-using Elastic.Documentation.Api.Core.Search;
 using Elastic.Documentation.Api.Infrastructure;
 using Elastic.Documentation.ServiceDefaults;
 using Microsoft.Extensions.Logging;
@@ -53,9 +48,14 @@ try
 	process.Refresh();
 	Console.WriteLine($"Elastic OTel configured. Memory: {process.WorkingSet64 / 1024 / 1024} MB");
 
-	_ = builder.Services.AddAWSLambdaHosting(LambdaEventSource.HttpApi, new SourceGeneratorLambdaJsonSerializer<LambdaJsonSerializerContext>());
+	// Configure Kestrel to listen on port 8080 for Lambda Web Adapter
+	// Lambda Web Adapter expects the app to run as a standard HTTP server on localhost:8080
+	_ = builder.WebHost.ConfigureKestrel(serverOptions =>
+	{
+		serverOptions.ListenLocalhost(8080);
+	});
 	process.Refresh();
-	Console.WriteLine($"AWS Lambda hosting configured. Memory: {process.WorkingSet64 / 1024 / 1024} MB");
+	Console.WriteLine($"Kestrel configured to listen on port 8080. Memory: {process.WorkingSet64 / 1024 / 1024} MB");
 
 	var environment = Environment.GetEnvironmentVariable("ENVIRONMENT");
 	Console.WriteLine($"Environment: {environment}");
@@ -63,10 +63,6 @@ try
 	builder.Services.AddElasticDocsApiUsecases(environment);
 	process.Refresh();
 	Console.WriteLine($"Elastic docs API use cases added. Memory: {process.WorkingSet64 / 1024 / 1024} MB");
-
-	_ = builder.WebHost.UseKestrelHttpsConfiguration();
-	process.Refresh();
-	Console.WriteLine($"Kestrel HTTPS configuration applied. Memory: {process.WorkingSet64 / 1024 / 1024} MB");
 
 	var app = builder.Build();
 	process.Refresh();
@@ -86,10 +82,3 @@ catch (Exception ex)
 	Console.WriteLine($"Stack trace: {ex.StackTrace}");
 	throw;
 }
-
-[JsonSerializable(typeof(APIGatewayHttpApiV2ProxyRequest))]
-[JsonSerializable(typeof(APIGatewayHttpApiV2ProxyResponse))]
-[JsonSerializable(typeof(AskAiRequest))]
-[JsonSerializable(typeof(SearchRequest))]
-[JsonSerializable(typeof(SearchResponse))]
-internal sealed partial class LambdaJsonSerializerContext : JsonSerializerContext;
