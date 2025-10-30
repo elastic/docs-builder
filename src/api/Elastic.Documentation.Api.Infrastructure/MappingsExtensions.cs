@@ -26,27 +26,11 @@ public static class MappingsExtension
 		var askAiGroup = group.MapGroup("/ask-ai");
 		_ = askAiGroup.MapPost("/stream", async (HttpContext context, AskAiRequest askAiRequest, AskAiUsecase askAiUsecase, Cancel ctx) =>
 		{
-			// Set response headers IMMEDIATELY before calling the usecase
-			// This makes the browser show the request as "active" instead of "pending"
 			context.Response.ContentType = "text/event-stream";
 			context.Response.Headers.CacheControl = "no-cache";
 			context.Response.Headers.Connection = "keep-alive";
 
-			// Flush headers to the client immediately
-			await context.Response.StartAsync(ctx);
-
-			// Send an immediate "reasoning" event so the client knows the stream is active
-			// This provides instant feedback before we wait for the AI gateway
-			var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-			var connectionEvent = System.Text.Encoding.UTF8.GetBytes(
-				$"data: {{\"type\":\"reasoning\",\"id\":\"{Guid.NewGuid()}\",\"timestamp\":{timestamp},\"message\":\"Connecting to AI...\"}}\n\n"
-			);
-			await context.Response.Body.WriteAsync(connectionEvent, ctx);
-			await context.Response.Body.FlushAsync(ctx);
-
 			var stream = await askAiUsecase.AskAi(askAiRequest, ctx);
-
-			// Stream the response
 			await stream.CopyToAsync(context.Response.Body, ctx);
 		});
 	}
