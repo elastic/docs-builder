@@ -11,7 +11,6 @@ import { initTocNav } from './toc-nav'
 import 'htmx-ext-head-support'
 import 'htmx-ext-preload'
 import katex from 'katex'
-import 'katex/dist/katex.min.css'
 import { $, $$ } from 'select-dom'
 import { UAParser } from 'ua-parser-js'
 
@@ -23,7 +22,7 @@ const isLazyLoadNavigationEnabled =
  * Initialize KaTeX math rendering for elements with class 'math'
  */
 function initMath() {
-    const mathElements = $$('.math')
+    const mathElements = $$('.math:not([data-katex-processed])')
     mathElements.forEach((element) => {
         try {
             const content = element.textContent?.trim()
@@ -56,6 +55,9 @@ function initMath() {
                     // Add common macros if needed
                 },
             })
+
+            // Mark as processed to prevent double processing
+            element.setAttribute('data-katex-processed', 'true')
         } catch (error) {
             console.warn('KaTeX rendering error:', error)
             // Fallback: keep the original content
@@ -63,6 +65,11 @@ function initMath() {
         }
     })
 }
+
+// Initialize math on initial page load
+document.addEventListener('DOMContentLoaded', function () {
+    initMath()
+})
 
 document.addEventListener('htmx:load', function (event) {
     initTocNav()

@@ -16,7 +16,7 @@ const sentAiMessageIds = new Set<string>()
 
 interface ChatState {
     chatMessages: ChatMessage[]
-    threadId: string
+    threadId: string | null
     actions: {
         submitQuestion: (question: string) => void
         updateAiMessage: (
@@ -24,6 +24,7 @@ interface ChatState {
             content: string,
             status: ChatMessage['status']
         ) => void
+        setThreadId: (threadId: string) => void
         clearChat: () => void
         hasMessageBeenSent: (id: string) => boolean
         markMessageAsSent: (id: string) => void
@@ -32,7 +33,7 @@ interface ChatState {
 
 export const chatStore = create<ChatState>((set) => ({
     chatMessages: [],
-    threadId: uuidv4(),
+    threadId: null, // Start with null - will be set by backend on first request
     actions: {
         submitQuestion: (question: string) => {
             set((state) => {
@@ -40,7 +41,7 @@ export const chatStore = create<ChatState>((set) => ({
                     id: uuidv4(),
                     type: 'user',
                     content: question,
-                    threadId: state.threadId,
+                    threadId: state.threadId ?? '',
                     timestamp: Date.now(),
                 }
 
@@ -49,7 +50,7 @@ export const chatStore = create<ChatState>((set) => ({
                     type: 'ai',
                     content: '',
                     question,
-                    threadId: state.threadId,
+                    threadId: state.threadId ?? '',
                     timestamp: Date.now(),
                     status: 'streaming',
                 }
@@ -76,9 +77,13 @@ export const chatStore = create<ChatState>((set) => ({
             }))
         },
 
+        setThreadId: (threadId: string) => {
+            set({ threadId })
+        },
+
         clearChat: () => {
             sentAiMessageIds.clear()
-            set({ chatMessages: [], threadId: uuidv4() })
+            set({ chatMessages: [], threadId: null })
         },
 
         hasMessageBeenSent: (id: string) => sentAiMessageIds.has(id),

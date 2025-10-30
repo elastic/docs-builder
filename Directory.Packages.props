@@ -13,16 +13,16 @@
   <!-- AWS -->
   <ItemGroup>
     <PackageVersion Include="Amazon.Lambda.AspNetCoreServer.Hosting" Version="1.9.0" />
-    <PackageVersion Include="Amazon.Lambda.RuntimeSupport" Version="1.13.1" />
-    <PackageVersion Include="Amazon.Lambda.Core" Version="2.7.0" />
+    <PackageVersion Include="Amazon.Lambda.RuntimeSupport" Version="1.13.4" />
+    <PackageVersion Include="Amazon.Lambda.Core" Version="2.7.1" />
     <PackageVersion Include="Amazon.Lambda.S3Events" Version="3.1.0" />
     <PackageVersion Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.4.4" />
     <PackageVersion Include="Amazon.Lambda.SQSEvents" Version="2.2.0" />
-    <PackageVersion Include="Aspire.Hosting" Version="9.4.2" />
+    <PackageVersion Include="Aspire.Hosting" Version="9.5.2" />
     <PackageVersion Include="Aspire.Hosting.Testing" Version="9.4.2" />
-    <PackageVersion Include="AWSSDK.Core" Version="4.0.0.2" />
+    <PackageVersion Include="AWSSDK.Core" Version="4.0.1.2" />
     <PackageVersion Include="AWSSDK.SQS" Version="4.0.0.1" />
-    <PackageVersion Include="AWSSDK.S3" Version="4.0.0.1" />
+    <PackageVersion Include="AWSSDK.S3" Version="4.0.7.14" />
     <PackageVersion Include="Elastic.OpenTelemetry" Version="1.1.0" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.12.0" />
     <PackageVersion Include="KubernetesClient" Version="17.0.14" />
@@ -83,7 +83,7 @@
   <!-- Test packages -->
   <ItemGroup>
     <PackageVersion Include="Aspire.Hosting.AppHost" Version="9.4.2" />
-    <PackageVersion Include="AngleSharp.Diffing" Version="1.0.0" />
+    <PackageVersion Include="AngleSharp.Diffing" Version="1.1.0" />
     <PackageVersion Include="DiffPlex" Version="1.7.2" />
     <PackageVersion Include="FluentAssertions" Version="7.2.0" />
     <PackageVersion Include="FsUnit.xUnit" Version="7.0.1" />

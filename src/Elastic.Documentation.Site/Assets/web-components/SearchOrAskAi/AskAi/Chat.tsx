@@ -1,4 +1,5 @@
 /** @jsxImportSource @emotion/react */
+import { AiProviderSelector } from './AiProviderSelector'
 import { AskAiSuggestions } from './AskAiSuggestions'
 import { ChatMessageList } from './ChatMessageList'
 import { useChatActions, useChatMessages } from './chat.store'
@@ -137,12 +138,17 @@ export const Chat = () => {
                                 <h2>Hi! I'm the Elastic Docs AI Assistant</h2>
                             }
                             body={
-                                <p>
-                                    I can help answer your questions about
-                                    Elastic documentation. <br />
-                                    Ask me anything about Elasticsearch, Kibana,
-                                    Observability, Security, and more.
-                                </p>
+                                <>
+                                    <p>
+                                        I can help answer your questions about
+                                        Elastic documentation. <br />
+                                        Ask me anything about Elasticsearch,
+                                        Kibana, Observability, Security, and
+                                        more.
+                                    </p>
+                                    <EuiSpacer size="m" />
+                                    <AiProviderSelector />
+                                </>
                             }
                             footer={
                                 <>

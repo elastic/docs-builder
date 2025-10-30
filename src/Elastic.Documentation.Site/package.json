@@ -74,14 +74,14 @@
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "text-diff": "1.0.1",
-    "typescript-eslint": "8.45.0",
+    "typescript-eslint": "8.46.0",
     "wait-on": "9.0.1"
   },
   "browserslist": [
     "defaults"
   ],
   "dependencies": {
-    "@elastic/eui": "106.6.0",
+    "@elastic/eui": "106.7.0",
     "@elastic/highlightjs-esql": "1.2.0",
     "@emotion/css": "11.13.5",
     "@emotion/react": "11.14.0",
@@ -99,9 +99,9 @@
     "select-dom": "9.4.0",
     "tailwindcss": "4.1.14",
     "tippy.js": "6.3.7",
-    "ua-parser-js": "2.0.5",
+    "ua-parser-js": "2.0.6",
     "uuid": "11.1.0",
-    "zod": "4.1.11",
+    "zod": "4.1.12",
     "zustand": "5.0.8"
   }
 }
