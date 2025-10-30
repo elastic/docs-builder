@@ -50,19 +50,50 @@ jobs:
           role-to-assume: arn:aws:iam::197730964718:role/elastic-docs-v3-api-deployer-${{ inputs.environment }}
           aws-region: us-east-1
 
-      - name: Upload Lambda function
+      - name: Upload to S3 and Deploy Lambda Functions
         run: |
-          NEW_VERSION=$(aws lambda update-function-code \
-            --function-name "elastic-docs-v3-${ENVIRONMENT}-api" \
-            --zip-file "fileb://${ZIP_FILE}" \
-            --publish \
+          # Upload once to S3 with git SHA for traceability
+          S3_KEY="${ENVIRONMENT}/${GITHUB_SHA}/api-lambda.zip"
+          aws s3 cp "${ZIP_FILE}" "s3://${S3_BUCKET}/${S3_KEY}"
+          
+          # Deploy to streaming-optimized Lambda
+          aws lambda update-function-code \
+            --function-name "elastic-docs-v3-${ENVIRONMENT}-lambda-stream-optimized" \
+            --s3-bucket "${S3_BUCKET}" \
+            --s3-key "${S3_KEY}"
+          
+          STREAM_VERSION=$(aws lambda publish-version \
+            --function-name "elastic-docs-v3-${ENVIRONMENT}-lambda-stream-optimized" \
+            --description "Deployed from ${GITHUB_SHA}" \
             --query 'Version' \
             --output text)
-
+          
           aws lambda update-alias \
-          --function-name "elastic-docs-v3-${ENVIRONMENT}-api" \
-          --name live \
-          --function-version $NEW_VERSION
+            --function-name "elastic-docs-v3-${ENVIRONMENT}-lambda-stream-optimized" \
+            --name live \
+            --function-version $STREAM_VERSION
+          
+          # Deploy to API Gateway-optimized Lambda
+          aws lambda update-function-code \
+            --function-name "elastic-docs-v3-${ENVIRONMENT}-lambda-api-gateway-optimized" \
+            --s3-bucket "${S3_BUCKET}" \
+            --s3-key "${S3_KEY}"
+          
+          API_GW_VERSION=$(aws lambda publish-version \
+            --function-name "elastic-docs-v3-${ENVIRONMENT}-lambda-api-gateway-optimized" \
+            --description "Deployed from ${GITHUB_SHA}" \
+            --query 'Version' \
+            --output text)
+          
+          aws lambda update-alias \
+            --function-name "elastic-docs-v3-${ENVIRONMENT}-lambda-api-gateway-optimized" \
+            --name live \
+            --function-version $API_GW_VERSION
+          
+          echo "✅ Deployed to both Lambda functions from S3: ${S3_KEY}"
+          echo "   Stream Lambda: version $STREAM_VERSION (${GITHUB_SHA})"
+          echo "   API Gateway Lambda: version $API_GW_VERSION (${GITHUB_SHA})"
           
         env:
           ENVIRONMENT: ${{ inputs.environment }}
+          S3_BUCKET: elastic-docs-v3-api-lambda-artifacts

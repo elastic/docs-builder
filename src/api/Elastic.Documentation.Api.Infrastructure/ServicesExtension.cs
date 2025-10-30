@@ -58,7 +58,14 @@ public static class ServicesExtension
 		{
 			options.SerializerOptions.TypeInfoResolverChain.Insert(0, ApiJsonContext.Default);
 		});
-		_ = services.AddHttpClient();
+
+		// Configure HttpClient for streaming optimization
+		_ = services.AddHttpClient("StreamingHttpClient", client =>
+		{
+			// Disable response buffering for streaming
+			client.DefaultRequestHeaders.Connection.Add("keep-alive");
+			client.Timeout = TimeSpan.FromMinutes(10); // Longer timeout for streaming
+		});
 		// Register AppEnvironment as a singleton for dependency injection
 		_ = services.AddSingleton(new AppEnvironment { Current = appEnv });
 		AddParameterProvider(services, appEnv);

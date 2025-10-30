@@ -16,6 +16,8 @@ namespace Elastic.Documentation.Api.Infrastructure.Adapters.AskAi;
 /// </summary>
 public class AgentBuilderStreamTransformer(ILogger<AgentBuilderStreamTransformer> logger) : StreamTransformerBase(logger)
 {
+	protected override string GetAgentId() => AgentBuilderAskAiGateway.ModelName;
+	protected override string GetAgentProvider() => AgentBuilderAskAiGateway.ProviderName;
 	protected override AskAiEvent? TransformJsonEvent(string? eventType, JsonElement json)
 	{
 		var type = eventType ?? "message";
