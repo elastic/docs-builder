@@ -272,12 +272,18 @@ public class DocumentationSet : IPositionalNavigation
 	{
 		var redirects = Configuration.Redirects;
 		var crossLinks = Context.Collector.CrossLinks.ToHashSet().ToArray();
-		var markdownInNavigation = NavigationIndexedByOrder.Values
-			.OfType<ILeafNavigationItem<MarkdownFile>>()
+
+		var leafs = NavigationIndexedByOrder.Values
+			.OfType<ILeafNavigationItem<MarkdownFile>>().ToArray();
+		var nodes = NavigationIndexedByOrder.Values
+			.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>()
+			.ToArray();
+
+		var markdownInNavigation =
+			leafs
 			.Select(m => (Markdown: m.Model, Navigation: (INavigationItem)m))
-			.Concat(NavigationIndexedByOrder.Values
-				.OfType<INodeNavigationItem<MarkdownFile, INavigationItem>>()
-				.Select(g => (Markdown: g.Index.Model, Navigation: (INavigationItem)g))
+			.Concat(nodes
+				.Select(g => (Markdown: (MarkdownFile)g.Index.Model, Navigation: (INavigationItem)g))
 			)
 			.ToList();
 

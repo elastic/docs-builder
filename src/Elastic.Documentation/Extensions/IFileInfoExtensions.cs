@@ -28,6 +28,22 @@ public static class IFileInfoExtensions
 		return parent is not null && parent.IsSubPathOf(parentDirectory);
 	}
 
+	public static IFileInfo EnsureSubPathOf(this IFileInfo file, IDirectoryInfo parentDirectory, string relativePath)
+	{
+		var fs = file.FileSystem;
+		var path = Path.GetFullPath(fs.Path.Combine(parentDirectory.FullName, relativePath));
+		var pathInfo = fs.FileInfo.New(path);
+		List<string> intermediaryDirectories = ["x"];
+		while (!pathInfo.IsSubPathOf(parentDirectory))
+		{
+			path = Path.GetFullPath(fs.Path.Combine([parentDirectory.FullName, .. intermediaryDirectories, relativePath]));
+			pathInfo = fs.FileInfo.New(path);
+			intermediaryDirectories.Add("x");
+		}
+
+		return pathInfo;
+	}
+
 	/// Checks if <paramref name="file"/> has parent directory <paramref name="parentName"/>, defaults to OrdinalIgnoreCase comparison
 	public static bool HasParent(this IFileInfo file, string parentName)
 	{

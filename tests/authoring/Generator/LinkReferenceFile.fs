@@ -63,7 +63,6 @@ Through various means $$$including-this-inline-syntax$$$
          },
          "url_path_prefix": "",
          "links": {
-           "file.md": {},
            "index.md": {
              "anchors": [
                "including-this-inline-syntax",
@@ -82,7 +81,8 @@ Through various means $$$including-this-inline-syntax$$$
            },
            "testing/redirects/first-page.md": {
              "anchors": [ "has-an-anchor-as-well" ]
-           }
+           },
+           "file.md": {}
          },
          "cross_links": [],
          "redirects": {

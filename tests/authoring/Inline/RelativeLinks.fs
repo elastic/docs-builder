@@ -47,9 +47,9 @@ Through various means $$$including-this-inline-syntax$$$
     let ``validate index.md HTML`` () =
         generator |> converts "deeply/nested/file.md" |> toHtml """
              <p><a href="/#and-anchored">link to root</a></p>
-             <p><a href="/deeply/parent">link to parent</a></p>
-             <p><a href="/deeply/parent#some-header">link to parent</a></p>
-             <p><a href="/deeply/nested/file2">link to sibling</a></p>
+             <p><a href="/deeply/parent/">link to parent</a></p>
+             <p><a href="/deeply/parent/#some-header">link to parent</a></p>
+             <p><a href="/deeply/nested/file2/">link to sibling</a></p>
          """
 
     [<Fact>]

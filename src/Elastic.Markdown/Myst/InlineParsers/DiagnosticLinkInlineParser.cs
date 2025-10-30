@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Links;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
@@ -359,12 +360,16 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 	public static string UpdateRelativeUrl(ParserContext context, string url)
 	{
 		var urlPathPrefix = context.Build.UrlPathPrefix ?? string.Empty;
+
+		var fi = context.MarkdownSourcePath;
+
 		var newUrl = url;
 		if (!newUrl.StartsWith('/') && !string.IsNullOrEmpty(newUrl))
 		{
-			var subPrefix = context.CurrentUrlPath.Length >= urlPathPrefix.Length
-				? context.CurrentUrlPath[urlPathPrefix.Length..]
-				: urlPathPrefix;
+			var path = Path.GetFullPath(fi.FileSystem.Path.Combine(fi.Directory!.FullName, newUrl));
+			var pathInfo = fi.FileSystem.FileInfo.New(path);
+			pathInfo = pathInfo.EnsureSubPathOf(context.Configuration.ScopeDirectory, newUrl);
+			var relativePath = fi.FileSystem.Path.GetRelativePath(context.Configuration.ScopeDirectory.FullName, pathInfo.FullName);
 
 			// if we are trying to resolve a relative url from a _snippet folder ensure we eat the _snippet folder
 			// as it's not part of url by chopping of the extra parent navigation
@@ -387,17 +392,8 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 					offset--;
 				}
 			}
-
-			// TODO check through context.DocumentationFileLookup if file is index vs "index.md" check
-			var markdownPath = context.MarkdownSourcePath;
-			// if the current path is an index e.g /reference/cloud-k8s/
-			// './' current path lookups should be relative to sub-path.
-			// If it's not e.g /reference/cloud-k8s/api-docs/ these links should resolve on folder up.
-			var lastIndexPath = subPrefix.LastIndexOf('/');
-			if (lastIndexPath >= 0 && markdownPath.Name != "index.md")
-				subPrefix = subPrefix[..lastIndexPath];
-			var combined = '/' + Path.Combine(subPrefix, newUrl).TrimStart('/');
-			newUrl = Path.GetFullPath(combined);
+			else
+				newUrl = $"/{Path.Combine(urlPathPrefix, relativePath).TrimStart('/')}";
 
 		}
 		// When running on Windows, path traversal results must be normalized prior to being used in a URL
