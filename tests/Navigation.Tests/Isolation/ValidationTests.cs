@@ -75,7 +75,7 @@ public class ValidationTests(ITestOutputHelper output) : DocumentationSetNavigat
 	}
 
 	[Fact]
-	public async Task ValidationEmitsErrorForNestedTocWithFileChildren()
+	public void ValidationEmitsErrorForNestedTocWithFileChildren()
 	{
 		// language=yaml
 		var yaml = """
