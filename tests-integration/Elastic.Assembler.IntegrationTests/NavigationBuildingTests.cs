@@ -128,12 +128,6 @@ public class NavigationBuildingTests(DocumentationFixture fixture, ITestOutputHe
 				if (nav.NavigationRoot.Parent is null or not SiteNavigation && nav is not CrossLinkNavigationLeaf)
 				{
 				}
-				// currently this uses an odd construction:
-				// https://github.com/elastic/docs-content/blob/main/troubleshoot/toc.yml#L146
-				// working to smooth this out upstream
-				// https://github.com/elastic/docs-content/pull/3730
-				if (nav.Url == "/docs/troubleshoot/ingest/opentelemetry")
-					continue;
 				nav.NavigationRoot.Parent.Should().NotBeNull($"{nav.Url}");
 				nav.NavigationRoot.Parent.Should().BeOfType<SiteNavigation>($"{nav.Url}");
 			}

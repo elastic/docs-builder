@@ -2,10 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.IO.Abstractions;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.DocSet;
-using Elastic.Documentation.Navigation;
 
 namespace Elastic.Documentation.Configuration.Plugins.DetectionRules.TableOfContents;
 
@@ -50,7 +48,7 @@ public record RuleOverviewReference : FileRef
 
 	private IReadOnlyCollection<ITableOfContentsItem> ReadDetectionRuleFolder(IDocumentationSetContext context, string detectionRuleFolder)
 	{
-		var detectionRulesFolder = System.IO.Path.Combine(ParentPath, detectionRuleFolder).TrimStart(System.IO.Path.DirectorySeparatorChar);
+		var detectionRulesFolder = Path.Combine(ParentPath, detectionRuleFolder).TrimStart(Path.DirectorySeparatorChar);
 		var fs = context.ReadFileSystem;
 		var sourceDirectory = context.DocumentationSourceDirectory;
 		var directory = fs.DirectoryInfo.New(fs.Path.GetFullPath(fs.Path.Combine(sourceDirectory.FullName, detectionRulesFolder)));
@@ -60,10 +58,10 @@ public record RuleOverviewReference : FileRef
 			.Where(f => !f.Directory!.Attributes.HasFlag(FileAttributes.Hidden) && !f.Directory!.Attributes.HasFlag(FileAttributes.System))
 			.Where(f => f.Extension is ".md" or ".toml")
 			.Where(f => f.Name != "README.md")
-			.Where(f => !f.FullName.Contains($"{System.IO.Path.DirectorySeparatorChar}_deprecated{System.IO.Path.DirectorySeparatorChar}"))
+			.Where(f => !f.FullName.Contains($"{Path.DirectorySeparatorChar}_deprecated{Path.DirectorySeparatorChar}"))
 			.Select(f =>
 			{
-				var relativePath = System.IO.Path.GetRelativePath(sourceDirectory.FullName, f.FullName);
+				var relativePath = Path.GetRelativePath(sourceDirectory.FullName, f.FullName);
 				if (f.Extension == ".toml")
 				{
 					var rule = DetectionRule.From(f);
