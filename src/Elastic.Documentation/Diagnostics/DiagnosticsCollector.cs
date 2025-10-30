@@ -97,7 +97,7 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 
 	public void EmitCrossLink(string link) => CrossLinks.Add(link);
 
-	public void Write(Diagnostic diagnostic)
+	public virtual void Write(Diagnostic diagnostic)
 	{
 		IncrementSeverityCount(diagnostic);
 		Channel.Write(diagnostic);

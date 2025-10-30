@@ -32,17 +32,18 @@ public class TestDiagnosticsCollector(ITestOutputHelper output)
 
 	public IReadOnlyCollection<Diagnostic> Diagnostics => _diagnostics;
 
-	protected override void HandleItem(Diagnostic diagnostic)
+	/// <inheritdoc />
+	public override void Write(Diagnostic diagnostic)
 	{
-		_diagnostics.Add(diagnostic);
 		IncrementSeverityCount(diagnostic);
+		_diagnostics.Add(diagnostic);
 	}
 
 	/// <inheritdoc />
-	public override DiagnosticsCollector StartAsync(CancellationToken ctx) => this;
+	public override DiagnosticsCollector StartAsync(Cancel ctx) => this;
 
 	/// <inheritdoc />
-	public override Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+	public override Task StopAsync(Cancel cancellationToken) => Task.CompletedTask;
 }
 
 public class TestDocumentationSetContext : IDocumentationSetContext

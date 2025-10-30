@@ -280,6 +280,7 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
 
 		var diagnostics = context.Diagnostics;
+		context.Diagnostics.Should().HaveCount(1);
 		diagnostics.Should().Contain(d =>
 			d.Message.Contains("TableOfContents 'api' may not contain children, define children in 'api/toc.yml' instead."));
 	}
