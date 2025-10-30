@@ -12,6 +12,7 @@
   </ItemGroup>
   <!-- AWS -->
   <ItemGroup>
+    <PackageVersion Include="Amazon.Lambda.APIGatewayEvents" Version="2.7.1" />
     <PackageVersion Include="Amazon.Lambda.AspNetCoreServer.Hosting" Version="1.9.0" />
     <PackageVersion Include="Amazon.Lambda.RuntimeSupport" Version="1.13.4" />
     <PackageVersion Include="Amazon.Lambda.Core" Version="2.7.1" />

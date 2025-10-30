@@ -10,10 +10,21 @@ namespace Elastic.Documentation.Api.Core.AskAi;
 public interface IStreamTransformer
 {
 	/// <summary>
+	/// Get the agent/model identifier for this transformer
+	/// </summary>
+	string AgentId { get; }
+
+	/// <summary>
+	/// Get the agent provider/platform for this transformer
+	/// </summary>
+	string AgentProvider { get; }
+
+	/// <summary>
 	/// Transforms a raw SSE stream into a stream of AskAiEvent objects
 	/// </summary>
 	/// <param name="rawStream">Raw SSE stream from gateway (Agent Builder, LLM Gateway, etc.)</param>
+	/// <param name="parentActivity">Parent activity to track the streaming operation (will be disposed when stream completes)</param>
 	/// <param name="cancellationToken">Cancellation token</param>
 	/// <returns>Stream containing SSE-formatted AskAiEvent objects</returns>
-	Task<Stream> TransformAsync(Stream rawStream, CancellationToken cancellationToken = default);
+	Task<Stream> TransformAsync(Stream rawStream, System.Diagnostics.Activity? parentActivity, CancellationToken cancellationToken = default);
 }

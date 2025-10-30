@@ -16,6 +16,8 @@ namespace Elastic.Documentation.Api.Infrastructure.Adapters.AskAi;
 /// </summary>
 public class LlmGatewayStreamTransformer(ILogger<LlmGatewayStreamTransformer> logger) : StreamTransformerBase(logger)
 {
+	protected override string GetAgentId() => LlmGatewayAskAiGateway.ModelName;
+	protected override string GetAgentProvider() => LlmGatewayAskAiGateway.ProviderName;
 	protected override AskAiEvent? TransformJsonEvent(string? eventType, JsonElement json)
 	{
 		// LLM Gateway format: ["custom", {type: "...", ...}]

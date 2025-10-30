@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Buffers;
+using System.Diagnostics;
 using System.IO.Pipelines;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -26,15 +27,57 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 {
 	protected ILogger Logger { get; } = logger;
 
-	public Task<Stream> TransformAsync(Stream rawStream, CancellationToken cancellationToken = default)
+	// ActivitySource for tracing streaming operations
+	private static readonly ActivitySource StreamTransformerActivitySource = new("Elastic.Documentation.Api.StreamTransformer");
+
+	/// <summary>
+	/// Get the agent ID for this transformer
+	/// </summary>
+	protected abstract string GetAgentId();
+
+	/// <summary>
+	/// Get the agent provider/platform for this transformer
+	/// </summary>
+	protected abstract string GetAgentProvider();
+
+	/// <summary>
+	/// Public property to expose agent ID (implements IStreamTransformer)
+	/// </summary>
+	public string AgentId => GetAgentId();
+
+	/// <summary>
+	/// Public property to expose agent provider (implements IStreamTransformer)
+	/// </summary>
+	public string AgentProvider => GetAgentProvider();
+
+	public Task<Stream> TransformAsync(Stream rawStream, Activity? parentActivity, CancellationToken cancellationToken = default)
 	{
-		var pipe = new Pipe();
+		// Create a child activity for the transformation - DO NOT use 'using' because streaming happens asynchronously
+		var activity = StreamTransformerActivitySource.StartActivity($"chat {GetAgentId()}", ActivityKind.Client);
+		_ = (activity?.SetTag("gen_ai.operation.name", "chat"));
+
+		// Custom attributes for tracking our abstraction layer
+		_ = (activity?.SetTag("docs.ai.gateway", GetAgentProvider()));
+		_ = (activity?.SetTag("docs.ai.agent_name", GetAgentId()));
+
+		// Configure pipe for low-latency streaming
+		var pipeOptions = new PipeOptions(
+			minimumSegmentSize: 1024, // Smaller segments for faster processing
+			pauseWriterThreshold: 64 * 1024, // 64KB high water mark
+			resumeWriterThreshold: 32 * 1024, // 32KB low water mark
+			readerScheduler: PipeScheduler.Inline,
+			writerScheduler: PipeScheduler.Inline,
+			useSynchronizationContext: false
+		);
+
+		var pipe = new Pipe(pipeOptions);
 		var reader = PipeReader.Create(rawStream);
 
 		// Start processing task to transform and write events to pipe
 		// Note: We intentionally don't await this task as we need to return the stream immediately
 		// The pipe handles synchronization and backpressure between producer and consumer
-		_ = ProcessPipeAsync(reader, pipe.Writer, cancellationToken);
+		// Pass both parent and child activities - they will be disposed when streaming completes
+		_ = ProcessPipeAsync(reader, pipe.Writer, parentActivity, activity, cancellationToken);
 
 		// Return the read side of the pipe as a stream
 		return Task.FromResult(pipe.Reader.AsStream());
@@ -44,51 +87,91 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 	/// Process the pipe reader and write transformed events to the pipe writer.
 	/// This runs concurrently with the consumer reading from the output stream.
 	/// </summary>
-	private async Task ProcessPipeAsync(PipeReader reader, PipeWriter writer, CancellationToken cancellationToken)
+	private async Task ProcessPipeAsync(PipeReader reader, PipeWriter writer, Activity? parentActivity, Activity? transformActivity, CancellationToken cancellationToken)
 	{
-		try
-		{
-			await ProcessStreamAsync(reader, writer, cancellationToken);
-		}
-		catch (OperationCanceledException ex)
-		{
-			// Cancellation is expected and not an error - log as debug
-			Logger.LogDebug("Stream processing was cancelled.");
-			try
-			{
-				await writer.CompleteAsync(ex);
-				await reader.CompleteAsync(ex);
-			}
-			catch (Exception completeEx)
-			{
-				Logger.LogError(completeEx, "Error completing pipe after cancellation");
-			}
-			return;
-		}
-		catch (Exception ex)
-		{
-			Logger.LogError(ex, "Error transforming stream. Stream processing will be terminated.");
-			try
-			{
-				await writer.CompleteAsync(ex);
-				await reader.CompleteAsync(ex);
-			}
-			catch (Exception completeEx)
-			{
-				Logger.LogError(completeEx, "Error completing pipe after transformation error");
-			}
-			return;
-		}
+		using var activity = StreamTransformerActivitySource.StartActivity("gen_ai.agent.pipe");
+		_ = (activity?.SetTag("transformer.type", GetType().Name));
 
-		// Normal completion - ensure cleanup happens
 		try
 		{
-			await writer.CompleteAsync();
-			await reader.CompleteAsync();
+			try
+			{
+				await ProcessStreamAsync(reader, writer, parentActivity, cancellationToken);
+			}
+			catch (OperationCanceledException ex)
+			{
+				// Cancellation is expected and not an error - log as debug
+				Logger.LogDebug(ex, "Stream processing was cancelled for transformer {TransformerType}", GetType().Name);
+				_ = (activity?.SetTag("gen_ai.response.error", true));
+				_ = (activity?.SetTag("gen_ai.response.error_type", "OperationCanceledException"));
+
+				// Add error event to activity
+				_ = (activity?.AddEvent(new ActivityEvent("gen_ai.error",
+					timestamp: DateTimeOffset.UtcNow,
+					tags:
+					[
+						new KeyValuePair<string, object?>("gen_ai.error.type", "OperationCanceledException"),
+						new KeyValuePair<string, object?>("gen_ai.error.message", "Stream processing was cancelled"),
+						new KeyValuePair<string, object?>("gen_ai.transformer.type", GetType().Name)
+					])));
+
+				try
+				{
+					await writer.CompleteAsync(ex);
+					await reader.CompleteAsync(ex);
+				}
+				catch (Exception completeEx)
+				{
+					Logger.LogError(completeEx, "Error completing pipe after cancellation for transformer {TransformerType}", GetType().Name);
+				}
+				return;
+			}
+			catch (Exception ex)
+			{
+				Logger.LogError(ex, "Error transforming stream for transformer {TransformerType}. Stream processing will be terminated.", GetType().Name);
+				_ = (activity?.SetTag("gen_ai.response.error", true));
+				_ = (activity?.SetTag("gen_ai.response.error_type", ex.GetType().Name));
+				_ = (activity?.SetTag("gen_ai.response.error_message", ex.Message));
+
+				// Add error event to activity
+				_ = (activity?.AddEvent(new ActivityEvent("gen_ai.error",
+					timestamp: DateTimeOffset.UtcNow,
+					tags:
+					[
+						new KeyValuePair<string, object?>("gen_ai.error.type", ex.GetType().Name),
+						new KeyValuePair<string, object?>("gen_ai.error.message", ex.Message),
+						new KeyValuePair<string, object?>("gen_ai.transformer.type", GetType().Name),
+						new KeyValuePair<string, object?>("gen_ai.error.stack_trace", ex.StackTrace ?? "")
+					])));
+
+				try
+				{
+					await writer.CompleteAsync(ex);
+					await reader.CompleteAsync(ex);
+				}
+				catch (Exception completeEx)
+				{
+					Logger.LogError(completeEx, "Error completing pipe after transformation error for transformer {TransformerType}", GetType().Name);
+				}
+				return;
+			}
+
+			// Normal completion - ensure cleanup happens
+			try
+			{
+				await writer.CompleteAsync();
+				await reader.CompleteAsync();
+			}
+			catch (Exception ex)
+			{
+				Logger.LogError(ex, "Error completing pipe after successful transformation");
+			}
 		}
-		catch (Exception ex)
+		finally
 		{
-			Logger.LogError(ex, "Error completing pipe after successful transformation");
+			// Always dispose activities, regardless of how we exit
+			transformActivity?.Dispose();
+			parentActivity?.Dispose();
 		}
 	}
 
@@ -96,10 +179,20 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 	/// Process the raw stream and write transformed events to the pipe writer.
 	/// Default implementation parses SSE events and JSON, then calls TransformJsonEvent.
 	/// </summary>
-	protected virtual async Task ProcessStreamAsync(PipeReader reader, PipeWriter writer, CancellationToken cancellationToken)
+	protected virtual async Task ProcessStreamAsync(PipeReader reader, PipeWriter writer, Activity? parentActivity, CancellationToken cancellationToken)
 	{
+		using var activity = StreamTransformerActivitySource.StartActivity("gen_ai.agent.stream");
+
+		// Custom attributes for tracking our abstraction layer
+		_ = (activity?.SetTag("docs.ai.gateway", GetAgentProvider()));
+		_ = (activity?.SetTag("docs.ai.agent_name", GetAgentId()));
+
+		var eventCount = 0;
+		var jsonParseErrors = 0;
+
 		await foreach (var sseEvent in ParseSseEventsAsync(reader, cancellationToken))
 		{
+			eventCount++;
 			AskAiEvent? transformedEvent = null;
 
 			try
@@ -113,14 +206,39 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 			}
 			catch (JsonException ex)
 			{
-				Logger.LogError(ex, "Failed to parse JSON from SSE event: {Data}", sseEvent.Data);
+				jsonParseErrors++;
+				Logger.LogError(ex, "Failed to parse JSON from SSE event for transformer {TransformerType}. EventType: {EventType}, Data: {Data}",
+					GetType().Name, sseEvent.EventType, sseEvent.Data);
+
+				// Add error event to activity for JSON parsing failures
+				_ = (activity?.AddEvent(new ActivityEvent("gen_ai.error",
+					timestamp: DateTimeOffset.UtcNow,
+					tags:
+					[
+						new KeyValuePair<string, object?>("gen_ai.error.type", "JsonException"),
+						new KeyValuePair<string, object?>("gen_ai.error.message", ex.Message),
+						new KeyValuePair<string, object?>("gen_ai.transformer.type", GetType().Name),
+						new KeyValuePair<string, object?>("gen_ai.sse.event_type", sseEvent.EventType ?? "unknown"),
+						new KeyValuePair<string, object?>("gen_ai.sse.data", sseEvent.Data)
+					])));
 			}
 
 			if (transformedEvent != null)
 			{
+				// Update parent activity with conversation ID when we receive ConversationStart events
+				if (transformedEvent is AskAiEvent.ConversationStart conversationStart)
+				{
+					_ = (parentActivity?.SetTag("gen_ai.conversation.id", conversationStart.ConversationId));
+					_ = (activity?.SetTag("gen_ai.conversation.id", conversationStart.ConversationId));
+				}
+
 				await WriteEventAsync(transformedEvent, writer, cancellationToken);
 			}
 		}
+
+		// Set metrics on the activity using GenAI conventions
+		_ = (activity?.SetTag("gen_ai.response.token_count", eventCount));
+		_ = (activity?.SetTag("gen_ai.response.error_count", jsonParseErrors));
 	}
 
 	/// <summary>
@@ -140,14 +258,52 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 		if (transformedEvent == null)
 			return;
 
-		// Serialize as base AskAiEvent type to include the type discriminator
-		var json = JsonSerializer.Serialize<AskAiEvent>(transformedEvent, AskAiEventJsonContext.Default.AskAiEvent);
-		var sseData = $"data: {json}\n\n";
-		var bytes = Encoding.UTF8.GetBytes(sseData);
+		using var activity = StreamTransformerActivitySource.StartActivity("gen_ai.agent.token");
 
-		// Write to pipe and flush immediately for real-time streaming
-		_ = await writer.WriteAsync(bytes, cancellationToken);
-		_ = await writer.FlushAsync(cancellationToken);
+		// Custom attributes for tracking our abstraction layer
+		_ = (activity?.SetTag("docs.ai.gateway", GetAgentProvider()));
+		_ = (activity?.SetTag("docs.ai.agent_name", GetAgentId()));
+		_ = (activity?.SetTag("gen_ai.response.token_type", transformedEvent.GetType().Name));
+
+		try
+		{
+			// Add GenAI completion event for each token/chunk
+			_ = (activity?.AddEvent(new ActivityEvent("gen_ai.content.completion",
+				timestamp: DateTimeOffset.UtcNow,
+				tags:
+				[
+					new KeyValuePair<string, object?>("gen_ai.completion", JsonSerializer.Serialize(transformedEvent, AskAiEventJsonContext.Default.AskAiEvent))
+				])));
+
+			// Serialize as base AskAiEvent type to include the type discriminator
+			var json = JsonSerializer.Serialize<AskAiEvent>(transformedEvent, AskAiEventJsonContext.Default.AskAiEvent);
+			var sseData = $"data: {json}\n\n";
+			var bytes = Encoding.UTF8.GetBytes(sseData);
+
+			_ = (activity?.SetTag("gen_ai.response.token_size", bytes.Length));
+
+			// Write to pipe and flush immediately for real-time streaming
+			_ = await writer.WriteAsync(bytes, cancellationToken);
+			_ = await writer.FlushAsync(cancellationToken);
+		}
+		catch (Exception ex)
+		{
+			Logger.LogError(ex, "Error writing event to stream for transformer {TransformerType}. EventType: {EventType}",
+				GetType().Name, transformedEvent.GetType().Name);
+
+			// Add error event to activity
+			_ = (activity?.AddEvent(new ActivityEvent("gen_ai.error",
+				timestamp: DateTimeOffset.UtcNow,
+				tags:
+				[
+					new KeyValuePair<string, object?>("gen_ai.error.type", ex.GetType().Name),
+					new KeyValuePair<string, object?>("gen_ai.error.message", ex.Message),
+					new KeyValuePair<string, object?>("gen_ai.transformer.type", GetType().Name),
+					new KeyValuePair<string, object?>("gen_ai.event.type", transformedEvent.GetType().Name)
+				])));
+
+			throw; // Re-throw to be handled by caller
+		}
 	}
 
 	/// <summary>
@@ -158,13 +314,22 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 		PipeReader reader,
 		[EnumeratorCancellation] CancellationToken cancellationToken)
 	{
+		using var activity = StreamTransformerActivitySource.StartActivity("gen_ai.agent.parse");
+		_ = (activity?.SetTag("gen_ai.agent.name", GetAgentId()));
+		_ = (activity?.SetTag("gen_ai.provider.name", GetAgentProvider()));
+
 		string? currentEvent = null;
 		var dataBuilder = new StringBuilder();
+		var eventsParsed = 0;
+		var readOperations = 0;
+		var totalBytesRead = 0L;
 
 		while (!cancellationToken.IsCancellationRequested)
 		{
+			readOperations++;
 			var result = await reader.ReadAsync(cancellationToken);
 			var buffer = result.Buffer;
+			totalBytesRead += buffer.Length;
 
 			// Process all complete lines in the buffer
 			while (TryReadLine(ref buffer, out var line))
@@ -188,6 +353,7 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 				{
 					if (dataBuilder.Length > 0)
 					{
+						eventsParsed++;
 						yield return new SseEvent(currentEvent, dataBuilder.ToString());
 						currentEvent = null;
 						_ = dataBuilder.Clear();
@@ -204,11 +370,17 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 				// Yield any remaining event that hasn't been terminated with an empty line
 				if (dataBuilder.Length > 0)
 				{
+					eventsParsed++;
 					yield return new SseEvent(currentEvent, dataBuilder.ToString());
 				}
 				break;
 			}
 		}
+
+		// Set metrics on the activity using GenAI conventions
+		_ = (activity?.SetTag("gen_ai.response.token_count", eventsParsed));
+		_ = (activity?.SetTag("gen_ai.request.input_size", totalBytesRead));
+		_ = (activity?.SetTag("gen_ai.model.operation_count", readOperations));
 	}
 
 	/// <summary>

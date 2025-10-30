@@ -15,12 +15,11 @@ versioning_systems:
   # Ece version updates are manual
   ece:
     base: 4.0
-    current: 4.0.2
+    current: 4.0.3
   ech: *all
   eck:
     base: 3.0
-    current: 3.1.0
-    
+    current: 3.2.0
   ess: *all
   ecs:
     base: 9.0
@@ -102,6 +101,9 @@ versioning_systems:
   edot-cf-azure:
     base: 0.1
     current: 0.6.0
+#  edot-cf-gcp:
+#    base: 0.1
+#    current: 0.1.0
 
   # Logging
   ecs-logging-dotnet:

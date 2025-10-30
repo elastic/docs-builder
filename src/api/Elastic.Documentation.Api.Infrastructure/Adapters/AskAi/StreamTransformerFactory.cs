@@ -16,18 +16,32 @@ public class StreamTransformerFactory(
 	AskAiProviderResolver providerResolver,
 	ILogger<StreamTransformerFactory> logger) : IStreamTransformer
 {
-	public async Task<Stream> TransformAsync(Stream rawStream, CancellationToken cancellationToken = default)
+	private IStreamTransformer? _resolvedTransformer;
+
+	private IStreamTransformer GetTransformer()
 	{
+		if (_resolvedTransformer != null)
+			return _resolvedTransformer;
+
 		var provider = providerResolver.ResolveProvider();
 
-		IStreamTransformer transformer = provider switch
+		_resolvedTransformer = provider switch
 		{
 			"LlmGateway" => serviceProvider.GetRequiredService<LlmGatewayStreamTransformer>(),
 			"AgentBuilder" => serviceProvider.GetRequiredService<AgentBuilderStreamTransformer>(),
 			_ => throw new InvalidOperationException($"Unknown AI provider: {provider}. Valid values are 'AgentBuilder' or 'LlmGateway'")
 		};
 
-		logger.LogDebug("Using stream transformer for provider: {Provider}", provider);
-		return await transformer.TransformAsync(rawStream, cancellationToken);
+		logger.LogDebug("Resolved stream transformer for provider: {Provider}", provider);
+		return _resolvedTransformer;
+	}
+
+	public string AgentId => GetTransformer().AgentId;
+	public string AgentProvider => GetTransformer().AgentProvider;
+
+	public async Task<Stream> TransformAsync(Stream rawStream, System.Diagnostics.Activity? parentActivity, CancellationToken cancellationToken = default)
+	{
+		var transformer = GetTransformer();
+		return await transformer.TransformAsync(rawStream, parentActivity, cancellationToken);
 	}
 }
