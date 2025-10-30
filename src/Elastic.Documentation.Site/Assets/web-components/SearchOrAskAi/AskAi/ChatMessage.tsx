@@ -1,9 +1,10 @@
 import { initCopyButton } from '../../../copybutton'
 import { hljs } from '../../../hljs'
+import { AskAiEvent, EventTypes } from './AskAiEvent'
 import { GeneratingStatus } from './GeneratingStatus'
 import { References } from './RelatedResources'
 import { ChatMessage as ChatMessageType } from './chat.store'
-import { LlmGatewayMessage } from './useLlmGateway'
+import { useStatusMinDisplay } from './useStatusMinDisplay'
 import {
     EuiButtonIcon,
     EuiCallOut,
@@ -56,16 +57,16 @@ const markedInstance = createMarkedInstance()
 
 interface ChatMessageProps {
     message: ChatMessageType
-    llmMessages?: LlmGatewayMessage[]
+    events?: AskAiEvent[]
     streamingContent?: string
     error?: Error | null
     onRetry?: () => void
 }
 
-const getAccumulatedContent = (messages: LlmGatewayMessage[]) => {
+const getAccumulatedContent = (messages: AskAiEvent[]) => {
     return messages
-        .filter((m) => m.type === 'ai_message_chunk')
-        .map((m) => m.data.content)
+        .filter((m) => m.type === 'chunk')
+        .map((m) => m.content)
         .join('')
 }
 
@@ -100,57 +101,86 @@ const getMessageState = (message: ChatMessageType) => ({
     hasError: message.status === 'error',
 })
 
-// Helper functions for computing AI status
-const getToolCallSearchQuery = (
-    messages: LlmGatewayMessage[]
-): string | null => {
-    const toolCallMessage = messages.find((m) => m.type === 'tool_call')
-    if (!toolCallMessage) return null
+// Status message constants
+const STATUS_MESSAGES = {
+    THINKING: 'Thinking',
+    ANALYZING: 'Analyzing results',
+    GATHERING: 'Gathering resources',
+    GENERATING: 'Generating',
+} as const
 
+// Helper to extract search query from tool call arguments
+const tryParseSearchQuery = (argsJson: string): string | null => {
     try {
-        const toolCalls = toolCallMessage.data?.toolCalls
-        if (toolCalls && toolCalls.length > 0) {
-            const firstToolCall = toolCalls[0]
-            return firstToolCall.args?.searchQuery || null
-        }
-    } catch (e) {
-        console.error('Error extracting search query from tool call:', e)
+        const args = JSON.parse(argsJson)
+        return args.searchQuery || args.query || null
+    } catch {
+        return null
+    }
+}
+
+// Helper to get tool call status message
+const getToolCallStatus = (event: AskAiEvent): string => {
+    if (event.type !== EventTypes.TOOL_CALL) {
+        return STATUS_MESSAGES.THINKING
     }
 
-    return null
+    const query = tryParseSearchQuery(event.arguments)
+    return query ? `Searching for "${query}"` : `Using ${event.toolName}`
 }
 
-const hasContentStarted = (messages: LlmGatewayMessage[]): boolean => {
-    return messages.some((m) => m.type === 'ai_message_chunk' && m.data.content)
-}
-
-const hasReachedReferences = (messages: LlmGatewayMessage[]): boolean => {
-    const accumulatedContent = messages
-        .filter((m) => m.type === 'ai_message_chunk')
-        .map((m) => m.data.content)
-        .join('')
-    return accumulatedContent.includes('<!--REFERENCES')
-}
-
+// Helper function for computing AI status - time-based latest status
 const computeAiStatus = (
-    llmMessages: LlmGatewayMessage[],
+    events: AskAiEvent[],
     isComplete: boolean
 ): string | null => {
     if (isComplete) return null
 
-    const searchQuery = getToolCallSearchQuery(llmMessages)
-    const contentStarted = hasContentStarted(llmMessages)
-    const reachedReferences = hasReachedReferences(llmMessages)
+    // Get events sorted by timestamp (most recent last)
+    const statusEvents = events
+        .filter(
+            (m) =>
+                m.type === EventTypes.REASONING ||
+                m.type === EventTypes.SEARCH_TOOL_CALL ||
+                m.type === EventTypes.TOOL_CALL ||
+                m.type === EventTypes.TOOL_RESULT ||
+                m.type === EventTypes.CHUNK
+        )
+        .sort((a, b) => a.timestamp - b.timestamp)
 
-    if (reachedReferences) {
-        return 'Gathering resources'
-    } else if (contentStarted) {
-        return 'Generating'
-    } else if (searchQuery) {
-        return `Searching for "${searchQuery}"`
+    // Get the most recent status-worthy event
+    const latestEvent = statusEvents[statusEvents.length - 1]
+
+    if (!latestEvent) return STATUS_MESSAGES.THINKING
+
+    switch (latestEvent.type) {
+        case EventTypes.REASONING:
+            return latestEvent.message || STATUS_MESSAGES.THINKING
+
+        case EventTypes.SEARCH_TOOL_CALL:
+            return `Searching Elastic's Docs for "${latestEvent.searchQuery}"`
+
+        case EventTypes.TOOL_CALL:
+            return getToolCallStatus(latestEvent)
+
+        case EventTypes.TOOL_RESULT:
+            return STATUS_MESSAGES.ANALYZING
+
+        case EventTypes.CHUNK: {
+            const allContent = events
+                .filter((m) => m.type === EventTypes.CHUNK)
+                .map((m) => m.content)
+                .join('')
+
+            if (allContent.includes('<!--REFERENCES')) {
+                return STATUS_MESSAGES.GATHERING
+            }
+            return STATUS_MESSAGES.GENERATING
+        }
+
+        default:
+            return STATUS_MESSAGES.THINKING
     }
-
-    return 'Thinking'
 }
 
 // Action bar for complete AI messages
@@ -215,7 +245,7 @@ const ActionBar = ({
 
 export const ChatMessage = ({
     message,
-    llmMessages = [],
+    events = [],
     streamingContent,
     error,
     onRetry,
@@ -251,9 +281,7 @@ export const ChatMessage = ({
 
     const content =
         streamingContent ||
-        (llmMessages.length > 0
-            ? getAccumulatedContent(llmMessages)
-            : message.content)
+        (events.length > 0 ? getAccumulatedContent(events) : message.content)
 
     const hasError = message.status === 'error' || !!error
 
@@ -279,10 +307,13 @@ export const ChatMessage = ({
         return DOMPurify.sanitize(html)
     }, [mainContent])
 
-    const aiStatus = useMemo(
-        () => computeAiStatus(llmMessages, isComplete),
-        [llmMessages, isComplete]
+    const rawAiStatus = useMemo(
+        () => computeAiStatus(events, isComplete),
+        [events, isComplete]
     )
+
+    // Apply minimum display time to prevent status flickering
+    const aiStatus = useStatusMinDisplay(rawAiStatus)
 
     const ref = React.useRef<HTMLDivElement>(null)
 
