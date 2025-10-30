@@ -31,4 +31,6 @@ public static class DocumentationContextExtensions
 	public static void EmitWarning(this IDocumentationContext context, IFileInfo file, string message) =>
 		context.Collector.EmitWarning(file, message);
 
+	public static void EmitHint(this IDocumentationContext context, IFileInfo file, string message) =>
+		context.Collector.EmitHint(file, message);
 }

@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using System.Reflection.Metadata;
 using System.Text.Json;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
@@ -65,8 +64,8 @@ public class HtmlWriter(
 		var root = navigationItem.NavigationRoot;
 
 		var navigationHtmlRenderResult = DocumentationSet.Context.Configuration.Features.LazyLoadNavigation
-			? await NavigationHtmlWriter.RenderNavigation(root, 1, ctx)
-			: await NavigationHtmlWriter.RenderNavigation(root, INavigationHtmlWriter.AllLevels, ctx);
+			? await NavigationHtmlWriter.RenderNavigation(root, navigationItem, 1, ctx)
+			: await NavigationHtmlWriter.RenderNavigation(root, navigationItem, INavigationHtmlWriter.AllLevels, ctx);
 
 		var current = PositionalNavigation.GetCurrent(markdown);
 		var previous = PositionalNavigation.GetPrevious(markdown);
@@ -102,7 +101,7 @@ public class HtmlWriter(
 		var navigationFileName = $"{navigationHtmlRenderResult.Id}.nav.html";
 		if (DocumentationSet.Configuration.Features.LazyLoadNavigation)
 		{
-			var fullNavigationRenderResult = await NavigationHtmlWriter.RenderNavigation(root, INavigationHtmlWriter.AllLevels, ctx);
+			var fullNavigationRenderResult = await NavigationHtmlWriter.RenderNavigation(root, navigationItem, INavigationHtmlWriter.AllLevels, ctx);
 			navigationFileName = $"{fullNavigationRenderResult.Id}.nav.html";
 
 			_ = DocumentationSet.NavigationRenderResults.TryAdd(

@@ -53,7 +53,6 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 			}
 		}
 		UnseenNodes = [.. _nodes.Keys];
-
 		// Build NavigationItems from SiteTableOfContentsRef items
 		var items = new List<INavigationItem>();
 		var index = 0;
@@ -77,6 +76,18 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		_ = this.UpdateNavigationIndex(context);
 		var count = UnseenNodes.Count;
 		var unseen = string.Join(", ", UnseenNodes);
+		foreach (var node in UnseenNodes)
+		{
+			// impossible since unseen nodes are build from _nodes
+			if (!_nodes.TryGetValue(node, out var value))
+				continue;
+			if (!DeclaredPhantoms.Contains(node))
+				context.EmitHint(context.ConfigurationPath, $"Navigation does not explicitly declare: {node} as a phantom");
+
+			// ensure the parent of phantom nodes is `SiteNavigation`
+			value.Parent = this;
+		}
+
 	}
 
 	public HashSet<Uri> DeclaredPhantoms { get; }
@@ -203,10 +214,6 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 			return null;
 		}
 
-		if (node.Identifier == new Uri("docs-content://reference/glossary"))
-		{
-		}
-
 		root ??= node;
 
 		_ = UnseenNodes.Remove(tocRef.Source);
@@ -221,7 +228,7 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		var children = new List<INavigationItem>();
 
 		// Always start with the node's existing children and update their HomeProvider
-		INavigationItem[] nodeChildren = [.. node.NavigationItems, node.Index];
+		INavigationItem[] nodeChildren = [node.Index, .. node.NavigationItems];
 		foreach (var nodeChild in nodeChildren)
 		{
 			nodeChild.Parent = node;

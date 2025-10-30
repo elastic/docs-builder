@@ -197,7 +197,8 @@ public class DocumentationSetNavigation<TModel>
 		IFileInfo fileInfo,
 		IFileSystem fileSystem,
 		IDocumentationSetContext context,
-		string fullPath)
+		string fullPath
+	)
 	{
 		var relativePath = Path.GetRelativePath(context.DocumentationSourceDirectory.FullName, fileInfo.FullName);
 		var documentationFile = _factory.TryCreateDocumentationFile(fileInfo, fileSystem);

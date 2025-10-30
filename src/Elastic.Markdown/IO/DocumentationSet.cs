@@ -128,24 +128,20 @@ public class DocumentationSet : IPositionalNavigation
 			case ILeafNavigationItem<MarkdownFile> markdownLeaf:
 				var added = MarkdownNavigationLookup.TryAdd(markdownLeaf.Model, markdownLeaf);
 				if (!added)
-					Context.EmitWarning(Configuration.SourceFile, $"Duplicate navigation item {markdownLeaf.Model.CrossLink}");
+					Context.EmitWarning(Configuration.SourceFile, $"1. Duplicate navigation item {markdownLeaf.Model.CrossLink}");
 				return [markdownLeaf];
 			case ILeafNavigationItem<INavigationModel> leaf:
 				return [leaf];
 			case INodeNavigationItem<MarkdownFile, INavigationItem> node:
 				var addedNode = MarkdownNavigationLookup.TryAdd(node.Index.Model, node);
 				if (!addedNode)
-					Context.EmitWarning(Configuration.SourceFile, $"Duplicate navigation item {node.Index.Model.CrossLink}");
+					Context.EmitWarning(Configuration.SourceFile, $"2. Duplicate navigation item {node.Index.Model.CrossLink}");
 				var nodeItems = node.NavigationItems.SelectMany(CreateNavigationLookup);
 				return nodeItems.Concat([node, node.Index]).ToArray();
 			case INodeNavigationItem<INavigationModel, INavigationItem> node:
 				var items = node.NavigationItems.SelectMany(CreateNavigationLookup);
 				if (node.Index.Model is MarkdownFile md)
-				{
-					added = MarkdownNavigationLookup.TryAdd(md, node.Index);
-					if (!added)
-						Context.EmitWarning(Configuration.SourceFile, $"Duplicate navigation item {md.CrossLink}");
-				}
+					_ = MarkdownNavigationLookup.TryAdd(md, node.Index);
 
 				return items.Concat([node, node.Index]).ToArray();
 			default:
