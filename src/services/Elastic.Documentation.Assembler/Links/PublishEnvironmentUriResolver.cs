@@ -141,10 +141,7 @@ public class PublishEnvironmentUriResolver : IUriEnvironmentResolver
 		var mapping = FindBestMatchForSource(crossLinkUri);
 
 		if (mapping == null)
-		{
-			// No mapping found - return the path as-is
-			return [path];
-		}
+			return [];
 
 		// Get the source prefix to calculate the relative path
 		var sourcePrefix = $"{mapping.Source.Host}/{mapping.Source.AbsolutePath.TrimStart('/')}".Trim('/');

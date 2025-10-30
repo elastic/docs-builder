@@ -92,16 +92,36 @@ public class NavigationPrefixChecker
 		var dictionary = new Dictionary<string, SeenPaths>();
 		if (!string.IsNullOrEmpty(updateRepository) && updateReference is not null)
 			crossLinks = crossLinkResolver.UpdateLinkReference(updateRepository, updateReference);
+
+		var skippedPhantoms = 0;
 		foreach (var (repository, linkReference) in crossLinks.LinkReferences)
 		{
 			if (!_repositories.Contains(repository))
 				continue;
 
+			_logger.LogInformation("Validating '{Repository}'", repository);
 			// Todo publish all relative folders as part of the link reference
 			// That way we don't need to iterate over all links and find all permutations of their relative paths
 			foreach (var (relativeLink, _) in linkReference.Links)
 			{
-				var navigationPaths = _uriResolver.ResolveToSubPaths(new Uri($"{repository}://{relativeLink}"), relativeLink);
+				var crossLink = new Uri($"{repository}://{relativeLink.TrimEnd('/')}");
+				var navigationPaths = _uriResolver.ResolveToSubPaths(crossLink, relativeLink);
+				if (navigationPaths.Length == 0)
+				{
+					var path = relativeLink.Split('/').SkipLast(1);
+					var pathUri = new Uri($"{repository}://{string.Join('/', path)}");
+
+					var baseOfAPhantom = _phantoms.Any(p => p == pathUri);
+					if (baseOfAPhantom)
+					{
+						skippedPhantoms++;
+						if (skippedPhantoms > _phantoms.Count * 3)
+							collector.EmitError(repository, $"Too many items are being marked as part of a phantom this looks like a bug. ({skippedPhantoms})");
+						continue;
+					}
+					collector.EmitError(repository, $"'Can not validate '{crossLink}' it's not declared in any link reference nor is it a phantom");
+					continue;
+				}
 				foreach (var navigationPath in navigationPaths)
 				{
 					if (dictionary.TryGetValue(navigationPath, out var seen))
