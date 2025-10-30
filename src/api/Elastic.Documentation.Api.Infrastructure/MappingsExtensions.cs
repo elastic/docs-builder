@@ -35,6 +35,15 @@ public static class MappingsExtension
 			// Flush headers to the client immediately
 			await context.Response.StartAsync(ctx);
 
+			// Send an immediate "reasoning" event so the client knows the stream is active
+			// This provides instant feedback before we wait for the AI gateway
+			var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+			var connectionEvent = System.Text.Encoding.UTF8.GetBytes(
+				$"data: {{\"type\":\"reasoning\",\"id\":\"{Guid.NewGuid()}\",\"timestamp\":{timestamp},\"message\":\"Connecting to AI...\"}}\n\n"
+			);
+			await context.Response.Body.WriteAsync(connectionEvent, ctx);
+			await context.Response.Body.FlushAsync(ctx);
+
 			var stream = await askAiUsecase.AskAi(askAiRequest, ctx);
 
 			// Stream the response
