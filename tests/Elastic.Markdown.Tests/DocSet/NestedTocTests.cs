@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Markdown.IO;
@@ -36,7 +37,7 @@ public class NestedTocTests(ITestOutputHelper output) : NavigationTestsBase(outp
 		index.Should().NotBeNull();
 		var fileNav = index as FileNavigationLeaf<MarkdownFile>;
 		fileNav.Should().NotBeNull();
-		fileNav.Model.RelativePath.Should().Be("development/index.md");
+		fileNav.Model.RelativePath.OptionalWindowsReplace().Should().Be("development/index.md");
 
 	}
 }

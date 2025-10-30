@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.IO.Abstractions;
+using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation.Assembler;
 
 namespace Elastic.Documentation.Navigation.Isolated;
@@ -50,6 +51,7 @@ public class FileNavigationLeaf<TModel>(TModel model, IFileInfo fileInfo, FileNa
 
 				// Remove extension while preserving the directory path
 				var relativePath = relativeToContainer ? args.RelativePathToTableOfContents : args.RelativePathToDocumentationSet;
+				relativePath = relativePath.OptionalWindowsReplace();
 				var path = relativePath.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
 					? relativePath[..^3]  // Remove last 3 characters (.md)
 					: relativePath;
