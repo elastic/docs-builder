@@ -3,9 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using System.Diagnostics;
-using Elastic.Documentation.Navigation.Assembler;
 
-namespace Elastic.Documentation.Navigation.Isolated;
+namespace Elastic.Documentation.Navigation;
 
 public interface INavigationHomeProvider
 {

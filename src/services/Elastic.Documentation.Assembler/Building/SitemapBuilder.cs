@@ -7,6 +7,7 @@ using System.IO.Abstractions;
 using System.Xml.Linq;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Isolated;
+using Elastic.Documentation.Navigation.Isolated.Leaf;
 using Elastic.Markdown.Extensions.DetectionRules;
 
 namespace Elastic.Documentation.Assembler.Building;

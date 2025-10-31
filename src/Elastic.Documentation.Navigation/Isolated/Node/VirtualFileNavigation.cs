@@ -5,17 +5,9 @@
 using System.Diagnostics;
 using System.IO.Abstractions;
 using Elastic.Documentation.Extensions;
+using Elastic.Documentation.Navigation.Isolated.Leaf;
 
-namespace Elastic.Documentation.Navigation.Isolated;
-
-public record VirtualFileNavigationArgs(
-	string RelativePathToDocumentationSet,
-	string RelativePathToTableOfContents,
-	bool Hidden,
-	int NavigationIndex,
-	INodeNavigationItem<INavigationModel, INavigationItem>? Parent,
-	INavigationHomeAccessor HomeAccessor
-);
+namespace Elastic.Documentation.Navigation.Isolated.Node;
 
 /// Represents a file navigation item that defines children which are not part of the file tree.
 [DebuggerDisplay("{Url}")]

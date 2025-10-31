@@ -14,6 +14,7 @@ using Elastic.Documentation.Configuration.DocSet;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Navigation.Isolated;
+using Elastic.Documentation.Navigation.Isolated.Leaf;
 using Elastic.Documentation.ServiceDefaults;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Documentation.Tooling;

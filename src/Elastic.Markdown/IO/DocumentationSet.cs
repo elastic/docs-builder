@@ -14,6 +14,8 @@ using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Isolated;
+using Elastic.Documentation.Navigation.Isolated.Leaf;
+using Elastic.Documentation.Navigation.Isolated.Node;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.Extensions;
 using Elastic.Markdown.Extensions.DetectionRules;

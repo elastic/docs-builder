@@ -6,25 +6,9 @@ using System.Diagnostics;
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration.DocSet;
 using Elastic.Documentation.Extensions;
+using Elastic.Documentation.Navigation.Isolated.Leaf;
 
-namespace Elastic.Documentation.Navigation.Isolated;
-
-// A model for nodes in the navigation representing directories e.g., sets, toc's and folders.
-public interface IDocumentationFileFactory<out TModel> where TModel : IDocumentationFile
-{
-	TModel? TryCreateDocumentationFile(IFileInfo path, IFileSystem readFileSystem);
-}
-
-public static class DocumentationNavigationFactory
-{
-	public static ILeafNavigationItem<TModel> CreateFileNavigationLeaf<TModel>(TModel model, IFileInfo fileInfo, FileNavigationArgs args)
-		where TModel : IDocumentationFile =>
-		new FileNavigationLeaf<TModel>(model, fileInfo, args) { NavigationIndex = args.NavigationIndex };
-
-	public static VirtualFileNavigation<TModel> CreateVirtualFileNavigation<TModel>(TModel model, IFileInfo fileInfo, VirtualFileNavigationArgs args)
-		where TModel : IDocumentationFile =>
-		new(model, fileInfo, args) { NavigationIndex = args.NavigationIndex };
-}
+namespace Elastic.Documentation.Navigation.Isolated.Node;
 
 public interface IDocumentationSetNavigation
 {

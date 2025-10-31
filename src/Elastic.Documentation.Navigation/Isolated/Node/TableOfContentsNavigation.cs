@@ -6,12 +6,7 @@ using System.Diagnostics;
 using System.IO.Abstractions;
 using Elastic.Documentation.Extensions;
 
-namespace Elastic.Documentation.Navigation.Isolated;
-
-public interface IDocumentationFile : INavigationModel
-{
-	string NavigationTitle { get; }
-}
+namespace Elastic.Documentation.Navigation.Isolated.Node;
 
 [DebuggerDisplay("{Url}")]
 public class TableOfContentsNavigation<TModel> : IRootNavigationItem<TModel, INavigationItem>

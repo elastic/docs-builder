@@ -4,8 +4,13 @@
 
 using System.Diagnostics;
 
-namespace Elastic.Documentation.Navigation.Isolated;
+namespace Elastic.Documentation.Navigation.Isolated.Leaf;
 
+/// <summary>
+/// Represents a cross-link to an external documentation resource.
+/// </summary>
+/// <param name="CrossLinkUri">The URI pointing to the external resource</param>
+/// <param name="NavigationTitle">The title to display in navigation</param>
 public record CrossLinkModel(Uri CrossLinkUri, string NavigationTitle) : IDocumentationFile;
 
 [DebuggerDisplay("{Url}")]
@@ -19,13 +24,13 @@ public class CrossLinkNavigationLeaf(
 	: ILeafNavigationItem<CrossLinkModel>
 {
 	/// <inheritdoc />
-	public CrossLinkModel Model { get; init; } = model;
+	public CrossLinkModel Model { get; } = model;
 
 	/// <inheritdoc />
-	public string Url { get; init; } = url;
+	public string Url { get; } = url;
 
 	/// <inheritdoc />
-	public bool Hidden { get; init; } = hidden;
+	public bool Hidden { get; } = hidden;
 
 	/// <inheritdoc />
 	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => homeAccessor.HomeProvider.NavigationRoot;
@@ -38,8 +43,5 @@ public class CrossLinkNavigationLeaf(
 
 	/// <inheritdoc />
 	public int NavigationIndex { get; set; }
-
-	/// <inheritdoc />
-	public bool IsCrossLink => true;
 
 }

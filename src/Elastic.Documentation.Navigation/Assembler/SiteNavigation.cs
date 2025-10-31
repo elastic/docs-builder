@@ -8,11 +8,9 @@ using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.DocSet;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation.Isolated;
+using Elastic.Documentation.Navigation.Isolated.Node;
 
 namespace Elastic.Documentation.Navigation.Assembler;
-
-public record SiteNavigationNoIndexFile(string NavigationTitle) : IDocumentationFile;
-
 
 [DebuggerDisplay("{Url}")]
 public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigationItem>

@@ -5,6 +5,8 @@
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Isolated;
+using Elastic.Documentation.Navigation.Isolated.Leaf;
+using Elastic.Documentation.Navigation.Isolated.Node;
 using Elastic.Markdown.IO;
 using FluentAssertions;
 

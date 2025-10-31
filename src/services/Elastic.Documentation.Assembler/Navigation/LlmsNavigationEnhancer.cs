@@ -7,6 +7,7 @@ using System.Text;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Navigation.Isolated;
+using Elastic.Documentation.Navigation.Isolated.Leaf;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Myst.Renderers.LlmMarkdown;
 

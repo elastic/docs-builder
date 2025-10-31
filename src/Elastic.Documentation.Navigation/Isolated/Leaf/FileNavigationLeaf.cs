@@ -7,16 +7,7 @@ using System.IO.Abstractions;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation.Assembler;
 
-namespace Elastic.Documentation.Navigation.Isolated;
-
-public record FileNavigationArgs(
-	string RelativePathToDocumentationSet,
-	string RelativePathToTableOfContents,
-	bool Hidden,
-	int NavigationIndex,
-	INodeNavigationItem<INavigationModel, INavigationItem>? Parent,
-	INavigationHomeAccessor HomeAccessor
-);
+namespace Elastic.Documentation.Navigation.Isolated.Leaf;
 
 [DebuggerDisplay("{Url}")]
 public class FileNavigationLeaf<TModel>(TModel model, IFileInfo fileInfo, FileNavigationArgs args) : ILeafNavigationItem<TModel>

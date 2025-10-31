@@ -5,7 +5,7 @@
 using System.Diagnostics;
 using Elastic.Documentation.Extensions;
 
-namespace Elastic.Documentation.Navigation.Isolated;
+namespace Elastic.Documentation.Navigation.Isolated.Node;
 
 [DebuggerDisplay("{Url}")]
 public class FolderNavigation<TModel>(

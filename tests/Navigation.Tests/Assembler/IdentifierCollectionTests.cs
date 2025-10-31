@@ -4,6 +4,7 @@
 
 using Elastic.Documentation.Configuration.DocSet;
 using Elastic.Documentation.Navigation.Isolated;
+using Elastic.Documentation.Navigation.Isolated.Node;
 using FluentAssertions;
 
 namespace Elastic.Documentation.Navigation.Tests.Assembler;

@@ -7,6 +7,8 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.DocSet;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Navigation.Isolated;
+using Elastic.Documentation.Navigation.Isolated.Leaf;
+using Elastic.Documentation.Navigation.Isolated.Node;
 using FluentAssertions;
 
 namespace Elastic.Documentation.Navigation.Tests.Isolation;
