@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using System.Diagnostics;
+using System.Text.Json;
+using Elastic.Documentation.Api.Core;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Api.Core.AskAi;
@@ -16,41 +18,22 @@ public class AskAiUsecase(
 
 	public async Task<Stream> AskAi(AskAiRequest askAiRequest, Cancel ctx)
 	{
-		// Start activity for the chat request - DO NOT use 'using' because the stream is consumed later
-		// The activity will be passed to the transformer which will dispose it when the stream completes
-		var activity = AskAiActivitySource.StartActivity("chat", ActivityKind.Client);
-
-		// Generate a correlation ID for tracking if this is a new conversation
-		// For first messages (no ThreadId), generate a temporary ID that will be updated when the provider responds
-		var correlationId = askAiRequest.ThreadId ?? $"temp-{Guid.NewGuid()}";
-
-		// Set GenAI semantic convention attributes
-		_ = (activity?.SetTag("gen_ai.operation.name", "chat"));
-		_ = (activity?.SetTag("gen_ai.conversation.id", correlationId)); // Will be updated when we receive ConversationStart with actual ID
-		_ = (activity?.SetTag("gen_ai.usage.input_tokens", askAiRequest.Message.Length)); // Approximate token count
-
-		// Custom attributes for tracking our abstraction layer
-		// We use custom attributes because we don't know the actual GenAI provider (OpenAI, Anthropic, etc.)
-		// or model (gpt-4, claude, etc.) - those are abstracted by AgentBuilder/LlmGateway
-		_ = (activity?.SetTag("docs.ai.gateway", streamTransformer.AgentProvider)); // agent-builder or llm-gateway
-		_ = (activity?.SetTag("docs.ai.agent_name", streamTransformer.AgentId)); // docs-agent or docs_assistant
-
-		// Add GenAI prompt event
-		_ = (activity?.AddEvent(new ActivityEvent("gen_ai.content.prompt",
-			timestamp: DateTimeOffset.UtcNow,
-			tags:
-			[
-				new KeyValuePair<string, object?>("gen_ai.prompt", askAiRequest.Message),
-				new KeyValuePair<string, object?>("gen_ai.system_instructions", AskAiRequest.SystemPrompt)
-			])));
-
-		logger.LogDebug("Processing AskAiRequest: {Request}", askAiRequest);
-
+		logger.LogInformation("Starting AskAI chat with {AgentProvider} and {AgentId}", streamTransformer.AgentProvider, streamTransformer.AgentId);
+		var activity = AskAiActivitySource.StartActivity($"chat", ActivityKind.Client);
+		_ = activity?.SetTag("gen_ai.operation.name", "chat");
+		_ = activity?.SetTag("gen_ai.provider.name", streamTransformer.AgentProvider); // agent-builder or llm-gateway
+		_ = activity?.SetTag("gen_ai.agent.id", streamTransformer.AgentId); // docs-agent or docs_assistant
+		var inputMessages = new[]
+		{
+			new InputMessage("user", [new MessagePart("text", askAiRequest.Message)])
+		};
+		var inputMessagesJson = JsonSerializer.Serialize(inputMessages, ApiJsonContext.Default.InputMessageArray);
+		_ = activity?.SetTag("gen_ai.input.messages", inputMessagesJson);
+		logger.LogInformation("AskAI input message: {InputMessage}", askAiRequest.Message);
+		logger.LogInformation("Streaming AskAI response");
 		var rawStream = await askAiGateway.AskAi(askAiRequest, ctx);
-
 		// The stream transformer will handle disposing the activity when streaming completes
 		var transformedStream = await streamTransformer.TransformAsync(rawStream, activity, ctx);
-
 		return transformedStream;
 	}
 }

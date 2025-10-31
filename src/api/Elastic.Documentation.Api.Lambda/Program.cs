@@ -8,49 +8,12 @@ using Amazon.Lambda.Serialization.SystemTextJson;
 using Elastic.Documentation.Api.Core.AskAi;
 using Elastic.Documentation.Api.Core.Search;
 using Elastic.Documentation.Api.Infrastructure;
-using Elastic.Documentation.ServiceDefaults;
-using OpenTelemetry;
-using OpenTelemetry.Metrics;
-using OpenTelemetry.Trace;
 
 try
 {
-	var process = System.Diagnostics.Process.GetCurrentProcess();
-	Console.WriteLine($"Starting Lambda application... Memory: {process.WorkingSet64 / 1024 / 1024} MB");
-
 	var builder = WebApplication.CreateSlimBuilder(args);
-	process.Refresh();
-	Console.WriteLine($"WebApplication builder created. Memory: {process.WorkingSet64 / 1024 / 1024} MB");
-
 	// Add logging configuration for Lambda
-	_ = builder.Services.AddElasticDocumentationLogging(LogLevel.Information);
-	process.Refresh();
-	Console.WriteLine($"Logging configured. Memory: {process.WorkingSet64 / 1024 / 1024} MB");
-
-	_ = builder.AddElasticOpenTelemetry(edotBuilder =>
-	{
-		_ = edotBuilder
-			.WithElasticTracing(tracing =>
-			{
-				_ = tracing
-					.AddAspNetCoreInstrumentation()
-					.AddHttpClientInstrumentation()
-					.AddSource("Elastic.Documentation.Api.AskAi")
-					.AddSource("Elastic.Documentation.Api.StreamTransformer");
-			})
-			.WithElasticLogging()
-			.WithElasticMetrics(metrics =>
-			{
-				_ = metrics
-					.AddAspNetCoreInstrumentation()
-					.AddHttpClientInstrumentation()
-					.AddProcessInstrumentation()
-					.AddRuntimeInstrumentation();
-			});
-	});
-
-	process.Refresh();
-	Console.WriteLine($"Elastic OTel configured. Memory: {process.WorkingSet64 / 1024 / 1024} MB");
+	_ = builder.AddDocsApiOpenTelemetry();
 
 	// If we are running in Lambda Web Adapter response_stream mode, configure Kestrel to listen on port 8080
 	// Otherwise, configure AWS Lambda hosting for API Gateway HTTP API
@@ -69,21 +32,11 @@ try
 		_ = builder.Services.AddAWSLambdaHosting(LambdaEventSource.HttpApi, new SourceGeneratorLambdaJsonSerializer<LambdaJsonSerializerContext>());
 		_ = builder.WebHost.UseKestrelHttpsConfiguration();
 	}
-
-	process.Refresh();
-	Console.WriteLine($"Kestrel configured to listen on port 8080. Memory: {process.WorkingSet64 / 1024 / 1024} MB");
-
 	var environment = Environment.GetEnvironmentVariable("ENVIRONMENT");
-	Console.WriteLine($"Environment: {environment}");
+	Console.WriteLine($"Docs Environment: {environment}");
 
 	builder.Services.AddElasticDocsApiUsecases(environment);
-	process.Refresh();
-	Console.WriteLine($"Elastic docs API use cases added. Memory: {process.WorkingSet64 / 1024 / 1024} MB");
-
 	var app = builder.Build();
-	process.Refresh();
-	Console.WriteLine($"Application built successfully. Memory: {process.WorkingSet64 / 1024 / 1024} MB");
-
 	var v1 = app.MapGroup("/docs/_api/v1");
 	v1.MapElasticDocsApiEndpoints();
 	Console.WriteLine("API endpoints mapped");

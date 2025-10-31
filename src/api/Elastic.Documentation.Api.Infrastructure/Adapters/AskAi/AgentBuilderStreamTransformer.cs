@@ -26,9 +26,7 @@ public class AgentBuilderStreamTransformer(ILogger<AgentBuilderStreamTransformer
 
 		// Special handling for error events - they may have a different structure
 		if (type == "error")
-		{
 			return ParseErrorEventFromRoot(id, timestamp, json);
-		}
 
 		// Most Agent Builder events have data nested in a "data" property
 		if (!json.TryGetProperty("data", out var innerData))
@@ -43,10 +41,10 @@ public class AgentBuilderStreamTransformer(ILogger<AgentBuilderStreamTransformer
 				new AskAiEvent.ConversationStart(id, timestamp, convId.GetString()!),
 
 			"message_chunk" when innerData.TryGetProperty("text_chunk", out var textChunk) =>
-				new AskAiEvent.Chunk(id, timestamp, textChunk.GetString()!),
+				new AskAiEvent.MessageChunk(id, timestamp, textChunk.GetString()!),
 
 			"message_complete" when innerData.TryGetProperty("message_content", out var fullContent) =>
-				new AskAiEvent.ChunkComplete(id, timestamp, fullContent.GetString()!),
+				new AskAiEvent.MessageComplete(id, timestamp, fullContent.GetString()!),
 
 			"reasoning" =>
 				// Parse reasoning message if available
@@ -76,7 +74,7 @@ public class AgentBuilderStreamTransformer(ILogger<AgentBuilderStreamTransformer
 		return null;
 	}
 
-	private AskAiEvent.Reasoning ParseReasoningEvent(string id, long timestamp, JsonElement innerData)
+	private static AskAiEvent.Reasoning ParseReasoningEvent(string id, long timestamp, JsonElement innerData)
 	{
 		// Agent Builder sends: {"data":{"reasoning":"..."}}
 		var message = innerData.TryGetProperty("reasoning", out var reasoningProp)
@@ -86,7 +84,7 @@ public class AgentBuilderStreamTransformer(ILogger<AgentBuilderStreamTransformer
 		return new AskAiEvent.Reasoning(id, timestamp, message ?? "Thinking...");
 	}
 
-	private AskAiEvent.ToolResult ParseToolResultEvent(string id, long timestamp, JsonElement innerData)
+	private static AskAiEvent.ToolResult ParseToolResultEvent(string id, long timestamp, JsonElement innerData)
 	{
 		// Extract tool_call_id and results
 		var toolCallId = innerData.TryGetProperty("tool_call_id", out var tcId) ? tcId.GetString() : id;
@@ -99,7 +97,7 @@ public class AgentBuilderStreamTransformer(ILogger<AgentBuilderStreamTransformer
 		return new AskAiEvent.ToolResult(id, timestamp, toolCallId ?? id, result);
 	}
 
-	private AskAiEvent ParseToolCallEvent(string id, long timestamp, JsonElement innerData)
+	private static AskAiEvent ParseToolCallEvent(string id, long timestamp, JsonElement innerData)
 	{
 		// Extract fields from Agent Builder's tool_call structure
 		var toolCallId = innerData.TryGetProperty("tool_call_id", out var tcId) ? tcId.GetString() : id;
@@ -128,16 +126,13 @@ public class AgentBuilderStreamTransformer(ILogger<AgentBuilderStreamTransformer
 		return new AskAiEvent.ToolCall(id, timestamp, toolCallId ?? id, toolId ?? "unknown", args);
 	}
 
-	private AskAiEvent.ErrorEvent ParseErrorEventFromRoot(string id, long timestamp, JsonElement root)
+	private static AskAiEvent.ErrorEvent ParseErrorEventFromRoot(string id, long timestamp, JsonElement root)
 	{
 		// Agent Builder sends: {"error":{"code":"...","message":"...","meta":{...}}}
 		var errorMessage = root.TryGetProperty("error", out var errorProp) &&
 						   errorProp.TryGetProperty("message", out var msgProp)
 			? msgProp.GetString()
 			: null;
-
-		Logger.LogError("Error event received from Agent Builder: {ErrorMessage}", errorMessage ?? "Unknown error");
-
 		return new AskAiEvent.ErrorEvent(id, timestamp, errorMessage ?? "Unknown error occurred");
 	}
 }

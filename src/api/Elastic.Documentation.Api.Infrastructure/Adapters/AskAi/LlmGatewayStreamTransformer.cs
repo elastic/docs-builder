@@ -41,10 +41,10 @@ public class LlmGatewayStreamTransformer(ILogger<LlmGatewayStreamTransformer> lo
 				new AskAiEvent.ConversationStart(id, timestamp, Guid.NewGuid().ToString()),
 
 			"ai_message_chunk" when messageData.TryGetProperty("content", out var content) =>
-				new AskAiEvent.Chunk(id, timestamp, content.GetString()!),
+				new AskAiEvent.MessageChunk(id, timestamp, content.GetString()!),
 
 			"ai_message" when messageData.TryGetProperty("content", out var fullContent) =>
-				new AskAiEvent.ChunkComplete(id, timestamp, fullContent.GetString()!),
+				new AskAiEvent.MessageComplete(id, timestamp, fullContent.GetString()!),
 
 			"tool_call" when messageData.TryGetProperty("toolCalls", out var toolCalls) =>
 				TransformToolCall(id, timestamp, toolCalls),
@@ -55,6 +55,8 @@ public class LlmGatewayStreamTransformer(ILogger<LlmGatewayStreamTransformer> lo
 
 			"agent_end" =>
 				new AskAiEvent.ConversationEnd(id, timestamp),
+
+			"error" => ParseErrorEvent(id, timestamp, messageData),
 
 			"chat_model_start" or "chat_model_end" =>
 				null, // Skip model lifecycle events
@@ -109,5 +111,19 @@ public class LlmGatewayStreamTransformer(ILogger<LlmGatewayStreamTransformer> lo
 	{
 		Logger.LogWarning("Unknown LLM Gateway event type: {Type}", type);
 		return null;
+	}
+
+	private AskAiEvent.ErrorEvent ParseErrorEvent(string id, long timestamp, JsonElement messageData)
+	{
+		// LLM Gateway error format: {error: "...", message: "..."}
+		var errorMessage = messageData.TryGetProperty("message", out var msgProp)
+			? msgProp.GetString()
+			: messageData.TryGetProperty("error", out var errProp)
+				? errProp.GetString()
+				: null;
+
+		Logger.LogError("Error event received from LLM Gateway: {ErrorMessage}", errorMessage ?? "Unknown error");
+
+		return new AskAiEvent.ErrorEvent(id, timestamp, errorMessage ?? "Unknown error occurred");
 	}
 }

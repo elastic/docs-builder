@@ -35,7 +35,7 @@ export const StreamingAiMessage = ({
                 if (event.conversationId && !threadId) {
                     setThreadId(event.conversationId)
                 }
-            } else if (event.type === EventTypes.CHUNK) {
+            } else if (event.type === EventTypes.MESSAGE_CHUNK) {
                 contentRef.current += event.content
             } else if (event.type === EventTypes.ERROR) {
                 // Handle error events from the stream
