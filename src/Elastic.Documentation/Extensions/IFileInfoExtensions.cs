@@ -31,17 +31,15 @@ public static class IFileInfoExtensions
 	public static IFileInfo EnsureSubPathOf(this IFileInfo file, IDirectoryInfo parentDirectory, string relativePath)
 	{
 		var fs = file.FileSystem;
-		var path = Path.GetFullPath(fs.Path.Combine(parentDirectory.FullName, relativePath));
-		var pathInfo = fs.FileInfo.New(path);
 		List<string> intermediaryDirectories = ["x"];
-		while (!pathInfo.IsSubPathOf(parentDirectory))
+		while (!file.IsSubPathOf(parentDirectory))
 		{
-			path = Path.GetFullPath(fs.Path.Combine([parentDirectory.FullName, .. intermediaryDirectories, relativePath]));
-			pathInfo = fs.FileInfo.New(path);
+			var path = Path.GetFullPath(fs.Path.Combine([parentDirectory.FullName, .. intermediaryDirectories, relativePath]));
+			file = fs.FileInfo.New(path);
 			intermediaryDirectories.Add("x");
 		}
 
-		return pathInfo;
+		return file;
 	}
 
 	/// Checks if <paramref name="file"/> has parent directory <paramref name="parentName"/>, defaults to OrdinalIgnoreCase comparison

@@ -193,6 +193,7 @@ public class DocumentationWebHost
 		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 			slug = slug.Replace('/', Path.DirectorySeparatorChar);
 
+		slug = slug.TrimEnd('/');
 		var s = Path.GetExtension(slug) == string.Empty ? Path.Combine(slug, "index.md") : slug;
 		var fp = new FilePath(s, generator.DocumentationSet.SourceDirectory);
 
