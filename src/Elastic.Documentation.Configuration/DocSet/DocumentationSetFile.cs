@@ -71,7 +71,7 @@ public class DocumentationSetFile : TableOfContentsFile
 			return folderRef.Children.SelectMany(GetFileRefs).ToArray();
 		if (item is IsolatedTableOfContentsRef tocRef)
 			return tocRef.Children.SelectMany(GetFileRefs).ToArray();
-		if (item is CrossLinkRef crossLinkRef)
+		if (item is CrossLinkRef)
 			return [];
 		throw new Exception($"Unexpected item type {item.GetType().Name}");
 	}

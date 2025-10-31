@@ -190,8 +190,7 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		benchmarks.Url.Should().Be("/setup/advanced/performance/benchmarks/");
 
 		// Third item: crosslink
-		var crosslink = navigation.NavigationItems.ElementAt(1).Should().BeOfType<CrossLinkNavigationLeaf>().Subject;
-		crosslink.IsCrossLink.Should().BeTrue();
+		_ = navigation.NavigationItems.ElementAt(1).Should().BeOfType<CrossLinkNavigationLeaf>().Subject;
 
 		// Verify no errors were emitted
 		context.Diagnostics.Should().BeEmpty();

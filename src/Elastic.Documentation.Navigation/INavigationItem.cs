@@ -2,8 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.IO.Abstractions;
-
 namespace Elastic.Documentation.Navigation;
 
 /// Represents navigation model data for documentation elements.
@@ -28,17 +26,11 @@ public interface INavigationItem
 	/// <summary>
 	/// Gets or sets the parent navigation item.
 	/// </summary>
-	/// <remarks>
-	/// TODO: This should be read-only however currently needs the setter in assembler.
-	/// </remarks>
 	INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
 
 	bool Hidden { get; }
 
 	int NavigationIndex { get; set; }
-
-	/// Gets whether this navigation item is a cross-link to another repository.
-	bool IsCrossLink { get; }
 }
 
 /// Represents a leaf node in the navigation tree with associated model data.
@@ -58,9 +50,6 @@ public interface INodeNavigationItem<out TIndex, out TChildNavigation> : INaviga
 	where TIndex : INavigationModel
 	where TChildNavigation : INavigationItem
 {
-	/// Gets the depth level in the navigation hierarchy.
-	int Depth { get; }
-
 	/// Gets the unique identifier for this node.
 	string Id { get; }
 

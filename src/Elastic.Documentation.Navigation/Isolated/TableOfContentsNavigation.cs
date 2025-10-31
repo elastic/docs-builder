@@ -21,7 +21,6 @@ public class TableOfContentsNavigation<TModel> : IRootNavigationItem<TModel, INa
 {
 	public TableOfContentsNavigation(
 		IDirectoryInfo tableOfContentsDirectory,
-		int depth,
 		string parentPath,
 		INodeNavigationItem<INavigationModel, INavigationItem>? parent,
 		string pathPrefix,
@@ -34,9 +33,7 @@ public class TableOfContentsNavigation<TModel> : IRootNavigationItem<TModel, INa
 		Parent = parent;
 		Hidden = false;
 		IsUsingNavigationDropdown = false;
-		IsCrossLink = false;
 		Id = ShortId.Create(parentPath);
-		Depth = depth;
 		ParentPath = parentPath;
 		PathPrefix = pathPrefix;
 
@@ -88,12 +85,6 @@ public class TableOfContentsNavigation<TModel> : IRootNavigationItem<TModel, INa
 
 	/// <inheritdoc />
 	public int NavigationIndex { get; set; }
-
-	/// <inheritdoc />
-	public bool IsCrossLink { get; }
-
-	/// <inheritdoc />
-	public int Depth { get; }
 
 	public string ParentPath { get; }
 

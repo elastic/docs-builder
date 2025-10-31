@@ -80,7 +80,7 @@ public class LlmsNavigationEnhancer
 	private static string? GetDescription(INavigationItem navigationItem) => navigationItem switch
 	{
 		// Cross-repository links don't have descriptions in frontmatter
-		ILeafNavigationItem<INavigationModel> { IsCrossLink: true } => null,
+		ILeafNavigationItem<CrossLinkModel> => null,
 
 		// For file navigation items, extract from frontmatter
 		ILeafNavigationItem<MarkdownFile> markdownNavigation =>

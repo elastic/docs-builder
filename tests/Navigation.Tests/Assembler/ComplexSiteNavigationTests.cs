@@ -115,6 +115,11 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		                  toc:
 		                    - toc: platform://
 		                      path_prefix: /docs/platform
+		                      children:
+		                        - toc: platform://deployment-guide
+		                          path_prefix: /docs/platform/deployment-guide
+		                        - toc: platform://cloud-guide
+		                          path_prefix: /docs/platform/cloud-guide
 		                  """;
 
 		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
@@ -161,6 +166,11 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		                  toc:
 		                    - toc: platform://
 		                      path_prefix: /platform
+		                      children:
+		                        - toc: platform://deployment-guide
+		                          path_prefix: /platform/deployment-guide
+		                        - toc: platform://cloud-guide
+		                          path_prefix: /platform/cloud-guide
 		                  """;
 
 		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
@@ -216,6 +226,12 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		                  toc:
 		                    - toc: platform://
 		                      path_prefix: /platform/cloud
+		                      children:
+		                        - toc: platform://deployment-guide
+		                          path_prefix: /platform/deployment-guide
+		                        - toc: platform://cloud-guide
+		                          path_prefix: /platform/cloud-guide
+
 		                  """;
 
 		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);

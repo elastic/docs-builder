@@ -34,11 +34,8 @@ public class HintTypeSetConverter : IYamlTypeConverter
 			if (parser.Current is Scalar scalar)
 			{
 				var value = scalar.Value;
-				if (!string.IsNullOrWhiteSpace(value) &&
-					Enum.TryParse<HintType>(value, ignoreCase: true, out var hintType))
-				{
+				if (!string.IsNullOrWhiteSpace(value) && Enum.TryParse<HintType>(value, ignoreCase: true, out var hintType))
 					_ = result.Add(hintType);
-				}
 			}
 			_ = parser.MoveNext();
 		}
@@ -59,9 +56,7 @@ public class HintTypeSetConverter : IYamlTypeConverter
 
 		emitter.Emit(new SequenceStart(null, null, false, SequenceStyle.Block));
 		foreach (var hint in set)
-		{
 			emitter.Emit(new Scalar(hint.ToString()));
-		}
 		emitter.Emit(new SequenceEnd());
 	}
 }

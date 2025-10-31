@@ -13,7 +13,6 @@ public record VirtualFileNavigationArgs(
 	string RelativePathToTableOfContents,
 	bool Hidden,
 	int NavigationIndex,
-	int Depth,
 	INodeNavigationItem<INavigationModel, INavigationItem>? Parent,
 	INavigationHomeAccessor HomeAccessor
 );
@@ -41,12 +40,6 @@ public class VirtualFileNavigation<TModel>(TModel model, IFileInfo fileInfo, Vir
 
 	/// <inheritdoc />
 	public int NavigationIndex { get; set; }
-
-	/// <inheritdoc />
-	public bool IsCrossLink { get; }
-
-	/// <inheritdoc />
-	public int Depth { get; init; } = args.Depth;
 
 	/// <inheritdoc />
 	public string Id { get; } = ShortId.Create(args.RelativePathToDocumentationSet);

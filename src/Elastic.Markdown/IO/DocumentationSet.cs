@@ -144,29 +144,6 @@ public class DocumentationSet : IPositionalNavigation
 		}
 	}
 
-	public static (string, INavigationItem)[] Pairs(INavigationItem item)
-	{
-		//TODO add crosslink to navigation if still necessary later
-		switch (item)
-		{
-			case ILeafNavigationItem<IDocumentationFile> { IsCrossLink: true } f:
-				return [(f.Url, item)];
-			case ILeafNavigationItem<IDocumentationFile> f:
-				return [(f.Url, item)];
-			case INodeNavigationItem<INavigationModel, INavigationItem> g:
-				var index = new List<(string, INavigationItem)>
-				{
-					(g.Url, g)
-				};
-
-				return index.Concat(g.NavigationItems.SelectMany(Pairs).ToArray())
-					.DistinctBy(kv => kv.Item1)
-					.ToArray();
-			default:
-				return [];
-		}
-	}
-
 	private void ValidateRedirectsExists()
 	{
 		if (Configuration.Redirects is null || Configuration.Redirects.Count == 0)

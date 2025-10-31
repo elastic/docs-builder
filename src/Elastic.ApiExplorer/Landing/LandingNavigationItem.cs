@@ -28,7 +28,6 @@ public class LandingNavigationItem : IApiGroupingNavigationItem<ApiLanding, INav
 {
 	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }
 	public string Id { get; }
-	public int Depth { get; }
 	public ILeafNavigationItem<ApiLanding> Index { get; }
 	public IReadOnlyCollection<INavigationItem> NavigationItems { get; set; } = [];
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
@@ -42,7 +41,6 @@ public class LandingNavigationItem : IApiGroupingNavigationItem<ApiLanding, INav
 
 	public LandingNavigationItem(string url)
 	{
-		Depth = 0;
 		NavigationRoot = this;
 		Id = ShortId.Create("root");
 		var landing = new ApiLanding();
@@ -89,9 +87,6 @@ public abstract class ApiGroupingNavigationItem<TGroupingModel, TNavigationItem>
 	public bool IsCrossLink => false; // API grouping items are never cross-links
 
 	public Uri Identifier { get; } = new Uri("todo://");
-
-	/// <inheritdoc />
-	public int Depth => 0;
 
 	/// <inheritdoc />
 	public abstract string Id { get; }
@@ -153,9 +148,6 @@ public class EndpointNavigationItem(ApiEndpoint endpoint, IRootNavigationItem<IA
 	/// <inheritdoc />
 	public int NavigationIndex { get; set; }
 	public bool IsCrossLink => false; // API endpoint items are never cross-links
-
-	/// <inheritdoc />
-	public int Depth => 0;
 
 	/// <inheritdoc />
 	public string Id { get; } = ShortId.Create(nameof(EndpointNavigationItem), endpoint.Operations.First().ApiName, endpoint.Operations.First().Route);

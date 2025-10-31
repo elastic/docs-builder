@@ -54,9 +54,7 @@ public class DocumentationSetNavigation<TModel>
 		// Initialize root properties
 		_navigationRoot = root ?? this;
 		Parent = parent;
-		Depth = 0;
 		Hidden = false;
-		IsCrossLink = false;
 		HomeProvider = this;
 		Id = ShortId.Create(documentationSet.Project ?? "root");
 		IsUsingNavigationDropdown = documentationSet.Features.PrimaryNav ?? false;
@@ -74,8 +72,7 @@ public class DocumentationSetNavigation<TModel>
 				index++,
 				context,
 				parent: this,
-				homeAccessor: this,
-				depth: Depth
+				homeAccessor: this
 			);
 
 			if (navItem != null)
@@ -134,7 +131,6 @@ public class DocumentationSetNavigation<TModel>
 	/// <inheritdoc />
 	public string NavigationTitle => Index.NavigationTitle;
 
-	/// <inheritdoc />
 	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot =>
 		HomeProvider == this ? _navigationRoot : HomeProvider.NavigationRoot;
 
@@ -147,13 +143,6 @@ public class DocumentationSetNavigation<TModel>
 	/// <inheritdoc />
 	public int NavigationIndex { get; set; }
 
-	/// <inheritdoc />
-	public bool IsCrossLink { get; }
-
-	/// <inheritdoc />
-	public int Depth { get; }
-
-	/// <inheritdoc />
 	public string Id { get; }
 
 	/// <inheritdoc />
@@ -180,15 +169,14 @@ public class DocumentationSetNavigation<TModel>
 		int index,
 		IDocumentationSetContext context,
 		INodeNavigationItem<INavigationModel, INavigationItem>? parent,
-		INavigationHomeAccessor homeAccessor,
-		int depth
+		INavigationHomeAccessor homeAccessor
 	) =>
 		tocItem switch
 		{
 			FileRef fileRef => CreateFileNavigation(fileRef, index, context, parent, homeAccessor),
 			CrossLinkRef crossLinkRef => CreateCrossLinkNavigation(crossLinkRef, index, parent, homeAccessor),
-			FolderRef folderRef => CreateFolderNavigation(folderRef, index, context, parent, homeAccessor, depth),
-			IsolatedTableOfContentsRef tocRef => CreateTocNavigation(tocRef, index, context, parent, homeAccessor, depth),
+			FolderRef folderRef => CreateFolderNavigation(folderRef, index, context, parent, homeAccessor),
+			IsolatedTableOfContentsRef tocRef => CreateTocNavigation(tocRef, index, context, parent, homeAccessor),
 			_ => null
 		};
 
@@ -274,7 +262,6 @@ public class DocumentationSetNavigation<TModel>
 			fileRef.PathRelativeToContainer,
 			fileRef.Hidden,
 			index,
-			parent?.Depth + 1 ?? 0,
 			parent,
 			homeAccessor
 		);
@@ -289,8 +276,7 @@ public class DocumentationSetNavigation<TModel>
 			var childNav = ConvertToNavigationItem(
 				child, childIndex++, context,
 				fileNavigation,
-				homeAccessor, // Files don't change the URL root
-				0 // Depth will be set by child
+				homeAccessor // Depth will be set by child
 			);
 			if (childNav != null)
 				children.Add(childNav);
@@ -337,15 +323,14 @@ public class DocumentationSetNavigation<TModel>
 		int index,
 		IDocumentationSetContext context,
 		INodeNavigationItem<INavigationModel, INavigationItem>? parent,
-		INavigationHomeAccessor homeAccessor,
-		int depth
+		INavigationHomeAccessor homeAccessor
 	)
 	{
 		// FolderRef.Path already contains the correct path from LoadAndResolve
 		var folderPath = folderRef.PathRelativeToDocumentationSet;
 
 		// Create folder navigation with null parent initially - we'll pass it to children but set it properly after
-		var folderNavigation = new FolderNavigation<TModel>(depth + 1, folderPath, parent, homeAccessor)
+		var folderNavigation = new FolderNavigation<TModel>(folderPath, parent, homeAccessor)
 		{
 			NavigationIndex = index
 		};
@@ -362,8 +347,7 @@ public class DocumentationSetNavigation<TModel>
 				childIndex++,
 				context,
 				folderNavigation,
-				homeAccessor, // Keep parent's home provider
-				depth + 1
+				homeAccessor
 			);
 
 			if (childNav != null)
@@ -385,8 +369,7 @@ public class DocumentationSetNavigation<TModel>
 		int index,
 		IDocumentationSetContext context,
 		INodeNavigationItem<INavigationModel, INavigationItem>? parent,
-		INavigationHomeAccessor homeAccessor,
-		int depth
+		INavigationHomeAccessor homeAccessor
 	)
 	{
 		// tocRef.Path is now the FULL path (e.g., "guides/api" or "setup/advanced") after LoadAndResolve
@@ -407,7 +390,6 @@ public class DocumentationSetNavigation<TModel>
 		// Pass tocHomeProvider so the TOC uses parent's NavigationRoot (enables dynamic URL updates)
 		var tocNavigation = new TableOfContentsNavigation<TModel>(
 			tocDirectory,
-			depth + 1,
 			fullTocPath,
 			parent, // Temporary null parent
 			isolatedHomeProvider.PathPrefix,
@@ -433,8 +415,7 @@ public class DocumentationSetNavigation<TModel>
 				childIndex++,
 				context,
 				tocNavigation,
-				childHomeAccessor,
-				depth + 1
+				childHomeAccessor
 			);
 
 			if (childNav != null)

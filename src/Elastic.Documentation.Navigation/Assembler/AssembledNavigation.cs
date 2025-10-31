@@ -31,9 +31,7 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		// Initialize root properties
 		NavigationRoot = this;
 		Parent = null;
-		Depth = 0;
 		Hidden = false;
-		IsCrossLink = false;
 		Id = ShortId.Create("site");
 		IsUsingNavigationDropdown = false;
 		Phantoms = siteNavigationFile.Phantoms;
@@ -74,8 +72,6 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		Index = indexNavigation;
 		NavigationItems = navigationItems;
 		_ = this.UpdateNavigationIndex(context);
-		var count = UnseenNodes.Count;
-		var unseen = string.Join(", ", UnseenNodes);
 		foreach (var node in UnseenNodes)
 		{
 			// impossible since unseen nodes are build from _nodes
@@ -126,12 +122,6 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 
 	/// <inheritdoc />
 	public int NavigationIndex { get; set; }
-
-	/// <inheritdoc />
-	public bool IsCrossLink { get; }
-
-	/// <inheritdoc />
-	public int Depth { get; }
 
 	/// <inheritdoc />
 	public string Id { get; }

@@ -23,21 +23,19 @@ public class NestedTocTests(ITestOutputHelper output) : NavigationTestsBase(outp
 		if (!positionalNavigation.MarkdownNavigationLookup.TryGetValue(doc, out var nav))
 			throw new Exception($"Could not find nav item for {doc.CrossLink}");
 
+		nav.Should().BeOfType<TableOfContentsNavigation<MarkdownFile>>();
 		var parent = nav.Parent;
 
 		// ensure we link back up to the main toc in docset yaml
 		parent.Should().NotBeNull();
-
-		// its parent should be null
-		parent.Parent.Should().NotBeNull();
-		parent.Parent.Parent.Should().BeNull();
+		parent.Should().BeOfType<DocumentationSetNavigation<MarkdownFile>>();
 
 		// its parent should point to an index
-		var index = (parent as TableOfContentsNavigation<MarkdownFile>)?.Index;
+		var index = (parent as DocumentationSetNavigation<MarkdownFile>)?.Index;
 		index.Should().NotBeNull();
 		var fileNav = index as FileNavigationLeaf<MarkdownFile>;
 		fileNav.Should().NotBeNull();
-		fileNav.Model.RelativePath.OptionalWindowsReplace().Should().Be("development/index.md");
+		fileNav.Model.RelativePath.OptionalWindowsReplace().Should().Be("index.md");
 
 	}
 }

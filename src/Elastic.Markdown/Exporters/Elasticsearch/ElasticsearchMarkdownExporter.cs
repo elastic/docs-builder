@@ -164,13 +164,9 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 		var response = await _transport.PutAsync<StringResponse>($"_synonyms/{setName}", PostData.String(json), ctx);
 
 		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
-		{
 			_collector.EmitGlobalError($"Failed to publish synonym set '{setName}'. Reason: {response.ApiCallDetails.OriginalException?.Message ?? response.ToString()}");
-		}
 		else
-		{
 			_logger.LogInformation("Successfully published synonym set '{SetName}'.", setName);
-		}
 	}
 
 	private async ValueTask<long> CountAsync(string index, string body, Cancel ctx = default)

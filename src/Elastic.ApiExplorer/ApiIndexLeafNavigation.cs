@@ -32,8 +32,5 @@ public class ApiIndexLeafNavigation<TModel>(
 	public int NavigationIndex { get; set; }
 
 	/// <inheritdoc />
-	public bool IsCrossLink { get; }
-
-	/// <inheritdoc />
 	public TModel Model { get; } = model;
 }

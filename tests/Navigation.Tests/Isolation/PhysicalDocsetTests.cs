@@ -177,7 +177,6 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		var allItems = GetAllNavigationItems(navigation.NavigationItems);
 		var crossLinks = allItems.OfType<CrossLinkNavigationLeaf>().ToList();
 		crossLinks.Should().NotBeEmpty();
-		crossLinks.Should().AllSatisfy(cl => cl.IsCrossLink.Should().BeTrue());
 	}
 
 	[Fact]

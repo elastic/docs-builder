@@ -19,14 +19,10 @@ public class BreadCrumbTests(ITestOutputHelper output) : NavigationTestsBase(out
 		allKeys.Should().Contain("docs-builder://testing/nest-under-index/index.md");
 
 		var lookup = Path.Combine("testing", "nested", "index.md");
-		var folder = Path.Combine(Generator.Context.DocumentationSourceDirectory.FullName, "testing");
-		var testingFiles = Generator.DocumentationSet.MarkdownFiles
-			.Where(f => f.SourceFile.IsSubPathOf(f.SourceFile.FileSystem.DirectoryInfo.New(folder)));
 		var doc = Generator.DocumentationSet.MarkdownFiles
 			.FirstOrDefault(f => f.SourceFile.FullName.EndsWith(lookup, StringComparison.OrdinalIgnoreCase));
 
 		doc.Should().NotBeNull();
-
 
 		var f = positionalNavigation.NavigationIndexedByCrossLink.FirstOrDefault(kv => kv.Key == "docs-builder://testing/deeply-nested/foo.md");
 		f.Should().NotBeNull();
@@ -40,7 +36,7 @@ public class BreadCrumbTests(ITestOutputHelper output) : NavigationTestsBase(out
 		docNavigation.Should().NotBeNull();
 		var parents = positionalNavigation.GetParentsOfMarkdownFile(doc);
 
-		parents.Should().HaveCount(3);
+		parents.Should().HaveCount(2);
 
 	}
 }

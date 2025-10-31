@@ -6,6 +6,7 @@ using System.Globalization;
 using System.IO.Abstractions;
 using System.Xml.Linq;
 using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Markdown.Extensions.DetectionRules;
 
 namespace Elastic.Documentation.Assembler.Building;
@@ -63,13 +64,11 @@ public class SitemapBuilder(
 		{
 			switch (item)
 			{
+				case ILeafNavigationItem<CrossLinkModel>:
+				case ILeafNavigationItem<DetectionRuleFile>:
+				case ILeafNavigationItem<INavigationModel> { Hidden: true }:
+					continue;
 				case ILeafNavigationItem<INavigationModel> file:
-					// these are hidden from the navigation programatically.
-					// TODO find a cleaner way to model this.
-					if (item.Hidden && file.Model is not DetectionRuleFile)
-						continue;
-					if (file.IsCrossLink)
-						continue;
 					result.Add(file);
 					break;
 				case INodeNavigationItem<INavigationModel, INavigationItem> group:

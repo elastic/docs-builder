@@ -31,9 +31,7 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 
 		navigation.NavigationRoot.Should().BeSameAs(navigation);
 		navigation.Parent.Should().BeNull();
-		navigation.Depth.Should().Be(0);
 		navigation.Hidden.Should().BeFalse();
-		navigation.IsCrossLink.Should().BeFalse();
 		navigation.Id.Should().NotBeNullOrEmpty();
 		navigation.NavigationTitle.Should().Be("index");
 		navigation.IsUsingNavigationDropdown.Should().BeFalse();
@@ -133,7 +131,6 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		var crossLink = navigation.Index.Should().BeOfType<CrossLinkNavigationLeaf>().Subject;
 		crossLink.NavigationTitle.Should().Be("External Guide");
 		crossLink.Url.Should().Be("docs-content://guide.md");
-		crossLink.IsCrossLink.Should().BeTrue();
 	}
 
 	[Fact]
@@ -158,7 +155,6 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 
 		navigation.NavigationItems.Should().HaveCount(1);
 		var folder = navigation.NavigationItems.First().Should().BeOfType<FolderNavigation<IDocumentationFile>>().Subject;
-		folder.Depth.Should().Be(1);
 		folder.Url.Should().Be("/setup/");
 		folder.NavigationItems.Should().HaveCount(1);
 
@@ -197,7 +193,6 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 
 		navigation.NavigationItems.Should().HaveCount(1);
 		var toc = navigation.NavigationItems.First().Should().BeOfType<TableOfContentsNavigation<IDocumentationFile>>().Subject;
-		toc.Depth.Should().Be(1);
 		toc.Url.Should().Be("/api/");
 		toc.NavigationItems.Should().HaveCount(0);
 

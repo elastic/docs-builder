@@ -9,7 +9,6 @@ namespace Elastic.Documentation.Navigation.Isolated;
 
 [DebuggerDisplay("{Url}")]
 public class FolderNavigation<TModel>(
-	int depth,
 	string parentPath,
 	INodeNavigationItem<INavigationModel, INavigationItem>? parent,
 	INavigationHomeAccessor homeAccessor)
@@ -37,12 +36,6 @@ public class FolderNavigation<TModel>(
 
 	/// <inheritdoc />
 	public int NavigationIndex { get; set; }
-
-	/// <inheritdoc />
-	public bool IsCrossLink { get; }
-
-	/// <inheritdoc />
-	public int Depth { get; } = depth;
 
 	/// <inheritdoc />
 	public string Id { get; } = ShortId.Create(parentPath);

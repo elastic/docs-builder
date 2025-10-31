@@ -85,6 +85,4 @@ public class FileNavigationLeaf<TModel>(TModel model, IFileInfo fileInfo, FileNa
 	/// <inheritdoc />
 	public int NavigationIndex { get; set; }
 
-	/// <inheritdoc />
-	public bool IsCrossLink { get; }
 }
