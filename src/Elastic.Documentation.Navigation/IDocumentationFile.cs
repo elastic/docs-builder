@@ -4,14 +4,10 @@
 
 namespace Elastic.Documentation.Navigation;
 
-/// <summary>
 /// Represents a documentation file that can be used in navigation.
 /// Extends <see cref="INavigationModel"/> with a navigation title.
-/// </summary>
 public interface IDocumentationFile : INavigationModel
 {
-	/// <summary>
 	/// Gets the title to display in navigation for this documentation file.
-	/// </summary>
 	string NavigationTitle { get; }
 }

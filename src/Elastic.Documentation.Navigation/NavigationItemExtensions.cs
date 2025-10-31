@@ -23,7 +23,7 @@ public static class NavigationItemExtensions
 		{
 			foreach (var item in items)
 			{
-				// Check for exact type match
+				// Check for the exact type match
 				if (item is ILeafNavigationItem<TModel> leaf)
 					return leaf;
 

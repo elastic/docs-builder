@@ -23,9 +23,7 @@ public interface INavigationItem
 	/// Gets the root navigation item.
 	IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }
 
-	/// <summary>
 	/// Gets or sets the parent navigation item.
-	/// </summary>
 	INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
 
 	bool Hidden { get; }
@@ -56,9 +54,7 @@ public interface INodeNavigationItem<out TIndex, out TChildNavigation> : INaviga
 	/// Gets the index model associated with this node.
 	ILeafNavigationItem<TIndex> Index { get; }
 
-	/// <summary>
 	/// Gets the collection of child navigation items.
-	/// </summary>
 	IReadOnlyCollection<TChildNavigation> NavigationItems { get; }
 }
 

@@ -7,7 +7,6 @@ using System.Diagnostics;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.DocSet;
 using Elastic.Documentation.Extensions;
-using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Documentation.Navigation.Isolated.Node;
 
 namespace Elastic.Documentation.Navigation.Assembler;
@@ -210,9 +209,6 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		node.Parent = parent;
 		node.NavigationIndex = index;
 		homeAccessor.HomeProvider = new NavigationHomeProvider(pathPrefix, root);
-
-		//var wrapped = new SiteTableOfContentsNavigation<IDocumentationFile>(node, homeAccessor.HomeProvider, parent, root);
-		//parent = wrapped;
 
 		var children = new List<INavigationItem>();
 
