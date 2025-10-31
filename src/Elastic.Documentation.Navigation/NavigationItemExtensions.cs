@@ -41,10 +41,10 @@ public class NotFoundLeafNavigationItem<TModel>(TModel model, INodeNavigationIte
 
 public static class NavigationItemExtensions
 {
-	public static ILeafNavigationItem<IDocumentationFile> QueryIndex<TModel>(
-		this IReadOnlyCollection<INavigationItem> items, INodeNavigationItem<INavigationModel, INavigationItem> node, TModel fallback, out IReadOnlyCollection<INavigationItem> children
+	public static ILeafNavigationItem<TModel> QueryIndex<TModel>(
+		this IReadOnlyCollection<INavigationItem> items, INodeNavigationItem<INavigationModel, INavigationItem> node, string fallbackPath, out IReadOnlyCollection<INavigationItem> children
 	)
-		where TModel : IDocumentationFile
+		where TModel : class, IDocumentationFile
 	{
 		var index = LookupIndex();
 
@@ -52,17 +52,21 @@ public static class NavigationItemExtensions
 
 		return index;
 
-		ILeafNavigationItem<IDocumentationFile> LookupIndex()
+		ILeafNavigationItem<TModel> LookupIndex()
 		{
-			var leaf = items.OfType<ILeafNavigationItem<IDocumentationFile>>().FirstOrDefault();
-			if (leaf is not null)
-				return leaf;
+			foreach (var item in items)
+			{
+				// Check for exact type match
+				if (item is ILeafNavigationItem<TModel> leaf)
+					return leaf;
 
-			var nodes = items.OfType<INodeNavigationItem<IDocumentationFile, INavigationItem>>().ToList();
-			if (nodes.Count == 0)
-				return new NotFoundLeafNavigationItem<IDocumentationFile>(fallback, node);
+				// Check if this is a node navigation item and return its index
+				if (item is INodeNavigationItem<TModel, INavigationItem> nodeItem)
+					return nodeItem.Index;
+			}
 
-			return nodes.First().Index;
+			// If no index is found, throw an exception
+			throw new InvalidOperationException($"No index found for navigation node '{node.GetType().Name}' at path '{fallbackPath}'");
 		}
 	}
 

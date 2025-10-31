@@ -97,7 +97,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		elasticsearch.NavigationItems.Should().HaveCount(2, "elasticsearch should have read its toc");
 
 		// rest-apis is a folder (not a TOC)
-		var restApis = elasticsearch.NavigationItems.ElementAt(0).Should().BeOfType<FolderNavigation>().Subject;
+		var restApis = elasticsearch.NavigationItems.ElementAt(0).Should().BeOfType<FolderNavigation<IDocumentationFile>>().Subject;
 		restApis.Url.Should().Be("/elasticsearch/reference/rest-apis/");
 		restApis.NavigationItems.Should().HaveCount(2, "rest-apis folder should have 2 files");
 
@@ -143,7 +143,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		// Find the deployment-guide TOC (it's the second item after index)
 		var deploymentGuide = platform.NavigationItems.ElementAt(0) as INodeNavigationItem<INavigationModel, INavigationItem>;
 		deploymentGuide.Should().NotBeNull();
-		deploymentGuide.Should().BeOfType<TableOfContentsNavigation>();
+		deploymentGuide.Should().BeOfType<TableOfContentsNavigation<IDocumentationFile>>();
 		deploymentGuide.Url.Should().StartWith("/docs/platform/");
 
 		// Walk through the entire tree and verify every single URL starts with a path prefix
@@ -188,7 +188,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		// Get deployment-guide TOC
 		var deploymentGuide = platform.NavigationItems.ElementAt(0) as INodeNavigationItem<INavigationModel, INavigationItem>;
 		deploymentGuide.Should().NotBeNull();
-		deploymentGuide.Should().BeOfType<TableOfContentsNavigation>();
+		deploymentGuide.Should().BeOfType<TableOfContentsNavigation<IDocumentationFile>>();
 
 		// Find all FileNavigationLeaf items recursively
 		var fileLeaves = CollectAllFileLeaves(deploymentGuide.NavigationItems);
@@ -245,11 +245,11 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		// Get cloud-guide TOC (third item after deployment-guide)
 		var cloudGuide = platform.NavigationItems.ElementAt(1) as INodeNavigationItem<INavigationModel, INavigationItem>;
 		cloudGuide.Should().NotBeNull();
-		cloudGuide.Should().BeOfType<TableOfContentsNavigation>();
+		cloudGuide.Should().BeOfType<TableOfContentsNavigation<IDocumentationFile>>();
 
 		// cloud-guide should have folders (index, aws, azure)
 		var folders = cloudGuide.NavigationItems
-			.OfType<FolderNavigation>()
+			.OfType<FolderNavigation<IDocumentationFile>>()
 			.ToList();
 
 		folders.Should().NotBeEmpty("cloud-guide should contain folders");

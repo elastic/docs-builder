@@ -26,16 +26,16 @@ public static class DocumentationNavigationFactory
 		new(model, fileInfo, args) { NavigationIndex = args.NavigationIndex };
 }
 
-public interface IDocumentationSetNavigation : IRootNavigationItem<IDocumentationFile, INavigationItem>
+public interface IDocumentationSetNavigation
 {
 	IReadOnlyDictionary<Uri, IRootNavigationItem<IDocumentationFile, INavigationItem>> TableOfContentNodes { get; }
 }
 
 [DebuggerDisplay("{Url}")]
 public class DocumentationSetNavigation<TModel>
-	: IDocumentationSetNavigation, INavigationHomeAccessor, INavigationHomeProvider
+	: IDocumentationSetNavigation, IRootNavigationItem<TModel, INavigationItem>, INavigationHomeAccessor, INavigationHomeProvider
 
-	where TModel : IDocumentationFile
+	where TModel : class, IDocumentationFile
 {
 	private readonly IDocumentationFileFactory<TModel> _factory;
 
@@ -82,10 +82,29 @@ public class DocumentationSetNavigation<TModel>
 				items.Add(navItem);
 		}
 
-		var indexNavigation = items.QueryIndex(this, new NotFoundModel($"{PathPrefix}/index.md"), out var navigationItems);
-		Index = indexNavigation;
-		NavigationItems = navigationItems;
-		_ = this.UpdateNavigationIndex(context);
+		// Handle empty TOC - emit errors and create a minimal structure
+		if (items.Count == 0)
+		{
+			var setName = documentationSet.Project ?? "unnamed";
+			var setPath = context.ConfigurationPath.FullName;
+
+			// Emit error if TOC was defined but no items could be created
+			if (documentationSet.TableOfContents.Count > 0)
+				context.EmitError(context.ConfigurationPath, $"Documentation set '{setName}' ({setPath}) table of contents has items defined but none could be created");
+			// Emit error if TOC was never defined
+			else
+				context.EmitError(context.ConfigurationPath, $"Documentation set '{setName}' ({setPath}) has no table of contents defined");
+
+			Index = null!;
+			NavigationItems = [];
+		}
+		else
+		{
+			var indexNavigation = items.QueryIndex<TModel>(this, $"{PathPrefix}/index.md", out var navigationItems);
+			Index = indexNavigation;
+			NavigationItems = navigationItems;
+			_ = this.UpdateNavigationIndex(context);
+		}
 
 	}
 
@@ -102,9 +121,10 @@ public class DocumentationSetNavigation<TModel>
 
 	public GitCheckoutInformation Git { get; }
 
-	private readonly Dictionary<Uri, IRootNavigationItem<IDocumentationFile, INavigationItem>> _tableOfContentNodes = [];
+	private readonly Dictionary<Uri, IRootNavigationItem<TModel, INavigationItem>> _tableOfContentNodes = [];
 	private readonly IDocumentationSetContext _context;
-	public IReadOnlyDictionary<Uri, IRootNavigationItem<IDocumentationFile, INavigationItem>> TableOfContentNodes => _tableOfContentNodes;
+	public IReadOnlyDictionary<Uri, IRootNavigationItem<IDocumentationFile, INavigationItem>> TableOfContentNodes =>
+		_tableOfContentNodes.ToDictionary(kvp => kvp.Key, IRootNavigationItem<IDocumentationFile, INavigationItem> (kvp) => kvp.Value);
 
 	public Uri Identifier { get; }
 
@@ -137,7 +157,7 @@ public class DocumentationSetNavigation<TModel>
 	public string Id { get; }
 
 	/// <inheritdoc />
-	public ILeafNavigationItem<IDocumentationFile> Index { get; private set; }
+	public ILeafNavigationItem<TModel> Index { get; private set; }
 
 	/// <inheritdoc />
 	public bool IsUsingNavigationDropdown { get; }
@@ -148,7 +168,7 @@ public class DocumentationSetNavigation<TModel>
 	void IAssignableChildrenNavigation.SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems) => SetNavigationItems(navigationItems);
 	internal void SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems)
 	{
-		var indexNavigation = navigationItems.QueryIndex(this, new NotFoundModel($"{PathPrefix}/index.md"), out navigationItems);
+		var indexNavigation = navigationItems.QueryIndex<TModel>(this, $"{PathPrefix}/index.md", out navigationItems);
 		Index = indexNavigation;
 		NavigationItems = navigationItems;
 		_ = this.UpdateNavigationIndex(_context);
@@ -268,7 +288,7 @@ public class DocumentationSetNavigation<TModel>
 		{
 			var childNav = ConvertToNavigationItem(
 				child, childIndex++, context,
-				(INodeNavigationItem<INavigationModel, INavigationItem>)fileNavigation,
+				fileNavigation,
 				homeAccessor, // Files don't change the URL root
 				0 // Depth will be set by child
 			);
@@ -325,7 +345,7 @@ public class DocumentationSetNavigation<TModel>
 		var folderPath = folderRef.PathRelativeToDocumentationSet;
 
 		// Create folder navigation with null parent initially - we'll pass it to children but set it properly after
-		var folderNavigation = new FolderNavigation(depth + 1, folderPath, parent, homeAccessor, [])
+		var folderNavigation = new FolderNavigation<TModel>(depth + 1, folderPath, parent, homeAccessor)
 		{
 			NavigationIndex = index
 		};
@@ -385,13 +405,12 @@ public class DocumentationSetNavigation<TModel>
 		// Create the TOC navigation with empty children initially
 		// We use null parent temporarily - we'll set it properly at the end using the public setter
 		// Pass tocHomeProvider so the TOC uses parent's NavigationRoot (enables dynamic URL updates)
-		var tocNavigation = new TableOfContentsNavigation(
+		var tocNavigation = new TableOfContentsNavigation<TModel>(
 			tocDirectory,
 			depth + 1,
 			fullTocPath,
 			parent, // Temporary null parent
 			isolatedHomeProvider.PathPrefix,
-			[],
 			Git,
 			_tableOfContentNodes,
 			isolatedHomeProvider

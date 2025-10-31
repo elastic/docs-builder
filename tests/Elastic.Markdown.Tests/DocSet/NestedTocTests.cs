@@ -33,7 +33,7 @@ public class NestedTocTests(ITestOutputHelper output) : NavigationTestsBase(outp
 		parent.Parent.Parent.Should().BeNull();
 
 		// its parent should point to an index
-		var index = (parent as TableOfContentsNavigation)?.Index;
+		var index = (parent as TableOfContentsNavigation<MarkdownFile>)?.Index;
 		index.Should().NotBeNull();
 		var fileNav = index as FileNavigationLeaf<MarkdownFile>;
 		fileNav.Should().NotBeNull();

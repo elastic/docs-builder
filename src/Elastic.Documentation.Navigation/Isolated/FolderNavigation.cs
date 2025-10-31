@@ -8,32 +8,17 @@ using Elastic.Documentation.Extensions;
 namespace Elastic.Documentation.Navigation.Isolated;
 
 [DebuggerDisplay("{Url}")]
-public class FolderNavigation : INodeNavigationItem<IDocumentationFile, INavigationItem>, IAssignableChildrenNavigation
+public class FolderNavigation<TModel>(
+	int depth,
+	string parentPath,
+	INodeNavigationItem<INavigationModel, INavigationItem>? parent,
+	INavigationHomeAccessor homeAccessor)
+	: INodeNavigationItem<TModel, INavigationItem>, IAssignableChildrenNavigation
+	where TModel : class, IDocumentationFile
 {
-	private readonly INavigationHomeAccessor _homeAccessor;
+	// Will be set by SetNavigationItems
 
-	public FolderNavigation(
-		int depth,
-		string parentPath,
-		INodeNavigationItem<INavigationModel, INavigationItem>? parent,
-		INavigationHomeAccessor homeAccessor,
-		IReadOnlyCollection<INavigationItem> navigationItems
-	)
-	{
-		_homeAccessor = homeAccessor;
-		FolderPath = parentPath;
-		NavigationItems = navigationItems;
-		Parent = parent;
-		Depth = depth;
-		Hidden = false;
-		IsCrossLink = false;
-		Id = ShortId.Create(parentPath);
-		var indexNavigation = navigationItems.QueryIndex(this, new NotFoundModel($"{FolderPath}/index.md"), out navigationItems);
-		Index = indexNavigation;
-		NavigationItems = navigationItems;
-	}
-
-	public string FolderPath { get; }
+	public string FolderPath { get; } = parentPath;
 
 	/// <inheritdoc />
 	public string Url => Index.Url;
@@ -42,10 +27,10 @@ public class FolderNavigation : INodeNavigationItem<IDocumentationFile, INavigat
 	public string NavigationTitle => Index.NavigationTitle;
 
 	/// <inheritdoc />
-	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => _homeAccessor.HomeProvider.NavigationRoot;
+	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => homeAccessor.HomeProvider.NavigationRoot;
 
 	/// <inheritdoc />
-	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
+	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; } = parent;
 
 	/// <inheritdoc />
 	public bool Hidden { get; }
@@ -57,20 +42,20 @@ public class FolderNavigation : INodeNavigationItem<IDocumentationFile, INavigat
 	public bool IsCrossLink { get; }
 
 	/// <inheritdoc />
-	public int Depth { get; }
+	public int Depth { get; } = depth;
 
 	/// <inheritdoc />
-	public string Id { get; }
+	public string Id { get; } = ShortId.Create(parentPath);
 
 	/// <inheritdoc />
-	public ILeafNavigationItem<IDocumentationFile> Index { get; private set; }
+	public ILeafNavigationItem<TModel> Index { get; private set; } = null!;
 
-	public IReadOnlyCollection<INavigationItem> NavigationItems { get; private set; }
+	public IReadOnlyCollection<INavigationItem> NavigationItems { get; private set; } = [];
 
 	void IAssignableChildrenNavigation.SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems) => SetNavigationItems(navigationItems);
 	internal void SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems)
 	{
-		var indexNavigation = navigationItems.QueryIndex(this, new NotFoundModel($"{FolderPath}/index.md"), out navigationItems);
+		var indexNavigation = navigationItems.QueryIndex<TModel>(this, $"{FolderPath}/index.md", out navigationItems);
 		Index = indexNavigation;
 		NavigationItems = navigationItems;
 	}

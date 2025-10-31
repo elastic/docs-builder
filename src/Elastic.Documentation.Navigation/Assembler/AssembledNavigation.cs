@@ -70,7 +70,7 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 				items.Add(navItem);
 		}
 
-		var indexNavigation = items.QueryIndex(this, new NotFoundModel("/index.md"), out var navigationItems);
+		var indexNavigation = items.QueryIndex<IDocumentationFile>(this, "/index.md", out var navigationItems);
 		Index = indexNavigation;
 		NavigationItems = navigationItems;
 		_ = this.UpdateNavigationIndex(context);
@@ -235,6 +235,10 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 			nodeChild.Parent = node;
 			if (nodeChild is INavigationHomeAccessor childAccessor)
 				childAccessor.HomeProvider = homeAccessor.HomeProvider;
+
+			// roots are only added if configured by navigation.yml (tocRef)
+			if (nodeChild is IRootNavigationItem<INavigationModel, INavigationItem>)
+				continue;
 
 			children.Add(nodeChild);
 		}

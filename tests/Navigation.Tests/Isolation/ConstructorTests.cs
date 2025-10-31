@@ -157,7 +157,7 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
 		navigation.NavigationItems.Should().HaveCount(1);
-		var folder = navigation.NavigationItems.First().Should().BeOfType<FolderNavigation>().Subject;
+		var folder = navigation.NavigationItems.First().Should().BeOfType<FolderNavigation<IDocumentationFile>>().Subject;
 		folder.Depth.Should().Be(1);
 		folder.Url.Should().Be("/setup/");
 		folder.NavigationItems.Should().HaveCount(1);
@@ -196,7 +196,7 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
 		navigation.NavigationItems.Should().HaveCount(1);
-		var toc = navigation.NavigationItems.First().Should().BeOfType<TableOfContentsNavigation>().Subject;
+		var toc = navigation.NavigationItems.First().Should().BeOfType<TableOfContentsNavigation<IDocumentationFile>>().Subject;
 		toc.Depth.Should().Be(1);
 		toc.Url.Should().Be("/api/");
 		toc.NavigationItems.Should().HaveCount(0);
@@ -235,7 +235,7 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
 		navigation.NavigationItems.Should().HaveCount(1);
-		var toc = navigation.NavigationItems.First().Should().BeOfType<TableOfContentsNavigation>().Subject;
+		var toc = navigation.NavigationItems.First().Should().BeOfType<TableOfContentsNavigation<IDocumentationFile>>().Subject;
 		toc.NavigationItems.Should().HaveCount(1);
 
 		var overview = toc.Index.Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
@@ -280,8 +280,12 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
 
 		var diagnostics = context.Diagnostics;
-		context.Diagnostics.Should().HaveCount(1);
+		// We expect 2 errors: one for the TOC validation error, and one from navigation constructor
+		// After LoadAndResolve removes the invalid TOC item, the navigation sees an empty TOC
+		context.Diagnostics.Should().HaveCount(2);
 		diagnostics.Should().Contain(d =>
 			d.Message.Contains("TableOfContents 'api' may not contain children, define children in 'api/toc.yml' instead."));
+		diagnostics.Should().Contain(d =>
+			d.Message.Contains("has no table of contents defined"));
 	}
 }

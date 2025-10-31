@@ -39,7 +39,7 @@ public class FolderIndexFileRefTests(ITestOutputHelper output) : DocumentationSe
 
 		// Should create a FolderNavigation with the file as index
 		navigation.NavigationItems.Should().HaveCount(1);
-		var folder = navigation.NavigationItems.First().Should().BeOfType<FolderNavigation>().Subject;
+		var folder = navigation.NavigationItems.First().Should().BeOfType<FolderNavigation<IDocumentationFile>>().Subject;
 
 		// Children should be scoped to the folder
 		folder.Url.Should().Be("/getting-started/getting-started/");

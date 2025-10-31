@@ -20,6 +20,7 @@ using Elastic.Markdown.Extensions.DetectionRules;
 using Elastic.Markdown.IO.NewNavigation;
 using Elastic.Markdown.Myst;
 using Microsoft.Extensions.Logging;
+using YamlDotNet.Serialization.TypeInspectors;
 
 namespace Elastic.Markdown.IO;
 
@@ -121,28 +122,23 @@ public class DocumentationSet : IPositionalNavigation
 
 	private IReadOnlyCollection<INavigationItem> CreateNavigationLookup(INavigationItem item)
 	{
-		// warning emit an error again
 		switch (item)
 		{
 			case ILeafNavigationItem<MarkdownFile> markdownLeaf:
 				var added = MarkdownNavigationLookup.TryAdd(markdownLeaf.Model, markdownLeaf);
 				if (!added)
-					Context.EmitWarning(Configuration.SourceFile, $"1. Duplicate navigation item {markdownLeaf.Model.CrossLink}");
+					Context.EmitWarning(Configuration.SourceFile, $"Duplicate navigation item {markdownLeaf.Model.CrossLink}");
 				return [markdownLeaf];
+			case ILeafNavigationItem<CrossLinkModel> crossLink:
+				return [crossLink];
 			case ILeafNavigationItem<INavigationModel> leaf:
-				return [leaf];
+				throw new Exception($"Should not be possible to have a leaf navigation item that is not a markdown file: {leaf.Model.GetType().FullName}");
 			case INodeNavigationItem<MarkdownFile, INavigationItem> node:
-				var addedNode = MarkdownNavigationLookup.TryAdd(node.Index.Model, node);
-				if (!addedNode)
-					Context.EmitWarning(Configuration.SourceFile, $"2. Duplicate navigation item {node.Index.Model.CrossLink}");
+				_ = MarkdownNavigationLookup.TryAdd(node.Index.Model, node);
 				var nodeItems = node.NavigationItems.SelectMany(CreateNavigationLookup);
 				return nodeItems.Concat([node, node.Index]).ToArray();
 			case INodeNavigationItem<INavigationModel, INavigationItem> node:
-				var items = node.NavigationItems.SelectMany(CreateNavigationLookup);
-				if (node.Index.Model is MarkdownFile md)
-					_ = MarkdownNavigationLookup.TryAdd(md, node.Index);
-
-				return items.Concat([node, node.Index]).ToArray();
+				throw new Exception($"Should not be possible to have a leaf navigation item that is not a markdown file: {node.GetType().FullName}");
 			default:
 				return [];
 		}

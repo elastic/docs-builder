@@ -76,12 +76,12 @@ public class IdentifierCollectionTests(ITestOutputHelper output)
 		var platformNav = new DocumentationSetNavigation<IDocumentationFile>(platformDocset, platformContext, GenericDocumentationFileFactory.Instance);
 
 		// Get the deployment-guide TOC
-		var deploymentGuide = platformNav.NavigationItems.ElementAt(0) as TableOfContentsNavigation;
+		var deploymentGuide = platformNav.NavigationItems.ElementAt(0) as TableOfContentsNavigation<IDocumentationFile>;
 		deploymentGuide.Should().NotBeNull();
 		deploymentGuide.Identifier.Should().Be(new Uri("platform://deployment-guide"));
 
 		// Get the cloud-guide TOC
-		var cloudGuide = platformNav.NavigationItems.ElementAt(1) as TableOfContentsNavigation;
+		var cloudGuide = platformNav.NavigationItems.ElementAt(1) as TableOfContentsNavigation<IDocumentationFile>;
 		cloudGuide.Should().NotBeNull();
 		cloudGuide.Identifier.Should().Be(new Uri("platform://cloud-guide"));
 	}

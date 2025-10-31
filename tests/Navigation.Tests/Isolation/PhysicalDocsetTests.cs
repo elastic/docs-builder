@@ -41,7 +41,7 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		firstItem.Url.Should().Be("/"); // index.md becomes /
 
 		// Assert folders exist
-		var folders = navigation.NavigationItems.OfType<FolderNavigation>().ToList();
+		var folders = navigation.NavigationItems.OfType<FolderNavigation<TestDocumentationFile>>().ToList();
 		folders.Should().NotBeEmpty();
 
 		// Check by URL since folder names derive from index file titles
@@ -79,7 +79,7 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
 
 		// Find the contribute folder by URL
-		var contributeFolder = navigation.NavigationItems.OfType<FolderNavigation>()
+		var contributeFolder = navigation.NavigationItems.OfType<FolderNavigation<TestDocumentationFile>>()
 			.FirstOrDefault(f => f.Url == "/contribute/");
 		contributeFolder.Should().NotBeNull();
 
@@ -113,7 +113,7 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		fileRefs.Count.Should().Be(fileRefs.Distinct().Count(), "should not have duplicate file references");
 
 		// Find TOC references in the navigation
-		var tocNavs = navigation.NavigationItems.OfType<TableOfContentsNavigation>().ToList();
+		var tocNavs = navigation.NavigationItems.OfType<TableOfContentsNavigation<TestDocumentationFile>>().ToList();
 		tocNavs.Should().NotBeEmpty();
 
 		// development TOC should exist (check by URL)
@@ -123,8 +123,8 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		developmentToc.NavigationItems.Should().HaveCount(2);
 		developmentToc.Index.Should().NotBeNull();
 		developmentToc.NavigationItems.OfType<FileNavigationLeaf<TestDocumentationFile>>().Should().HaveCount(0);
-		developmentToc.NavigationItems.OfType<FolderNavigation>().Should().HaveCount(1);
-		developmentToc.NavigationItems.OfType<TableOfContentsNavigation>().Should().HaveCount(1);
+		developmentToc.NavigationItems.OfType<FolderNavigation<TestDocumentationFile>>().Should().HaveCount(1);
+		developmentToc.NavigationItems.OfType<TableOfContentsNavigation<TestDocumentationFile>>().Should().HaveCount(1);
 
 		var developmentIndex = developmentToc.Index as FileNavigationLeaf<TestDocumentationFile>;
 		developmentIndex.Should().NotBeNull();
@@ -178,6 +178,43 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		var crossLinks = allItems.OfType<CrossLinkNavigationLeaf>().ToList();
 		crossLinks.Should().NotBeEmpty();
 		crossLinks.Should().AllSatisfy(cl => cl.IsCrossLink.Should().BeTrue());
+	}
+
+	[Fact]
+	public void CovarianceOfNavigationItemsIsRespected()
+	{
+		var docsetPath = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
+		var fileSystem = new FileSystem();
+		var docsDir = fileSystem.DirectoryInfo.New(Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs"));
+		var outputDir = fileSystem.DirectoryInfo.New(Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "test-output"));
+		var configPath = fileSystem.FileInfo.New(docsetPath);
+
+		var context = new TestDocumentationSetContext(fileSystem, docsDir, outputDir, configPath, output, "docs-builder");
+		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, configPath);
+
+		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance);
+
+		// Find cross-link items
+		var baseInterfaces = QueryAllAdheringTo<INavigationModel>(navigation);
+		var interfaces = QueryAllAdheringTo<IDocumentationFile>(navigation);
+		// ReSharper disable once RedundantTypeArgumentsOfMethod
+		var concrete = QueryAllAdheringTo<TestDocumentationFile>(navigation);
+
+		baseInterfaces.Count.Should().Be(interfaces.Count);
+		interfaces.Count.Should().Be(concrete.Count);
+	}
+
+	private static List<INavigationItem> QueryAllAdheringTo<TModel>(INodeNavigationItem<TModel, INavigationItem> navigation)
+		where TModel : class, INavigationModel
+	{
+		var result = new List<INavigationItem> { navigation, navigation.Index };
+		foreach (var item in navigation.NavigationItems)
+		{
+			result.Add(item);
+			if (item is INodeNavigationItem<TModel, INavigationItem> node)
+				result.AddRange(QueryAllAdheringTo(node));
+		}
+		return result;
 	}
 
 	private static List<INavigationItem> GetAllNavigationItems(IReadOnlyCollection<INavigationItem> items)

@@ -161,14 +161,14 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		indexFile.Url.Should().Be("/"); // index.md becomes /
 
 		// Second item: complex nested structure
-		var setupFolder = navigation.NavigationItems.ElementAt(0).Should().BeOfType<FolderNavigation>().Subject;
+		var setupFolder = navigation.NavigationItems.ElementAt(0).Should().BeOfType<FolderNavigation<TestDocumentationFile>>().Subject;
 		setupFolder.NavigationItems.Should().HaveCount(1);
 		setupFolder.Url.Should().Be("/setup/");
 
 		var setupIndex = setupFolder.Index.Should().BeOfType<FileNavigationLeaf<TestDocumentationFile>>().Subject;
 		setupIndex.Url.Should().Be("/setup/"); // index.md becomes /setup
 
-		var advancedToc = setupFolder.NavigationItems.ElementAt(0).Should().BeOfType<TableOfContentsNavigation>().Subject;
+		var advancedToc = setupFolder.NavigationItems.ElementAt(0).Should().BeOfType<TableOfContentsNavigation<TestDocumentationFile>>().Subject;
 		advancedToc.Url.Should().Be("/setup/advanced/");
 		// Advanced TOC has index.md and the nested performance TOC as children
 		advancedToc.NavigationItems.Should().HaveCount(1);
@@ -176,7 +176,7 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		var advancedIndex = advancedToc.Index.Should().BeOfType<FileNavigationLeaf<TestDocumentationFile>>().Subject;
 		advancedIndex.Url.Should().Be("/setup/advanced/");
 
-		var performanceToc = advancedToc.NavigationItems.ElementAt(0).Should().BeOfType<TableOfContentsNavigation>().Subject;
+		var performanceToc = advancedToc.NavigationItems.ElementAt(0).Should().BeOfType<TableOfContentsNavigation<TestDocumentationFile>>().Subject;
 		performanceToc.Url.Should().Be("/setup/advanced/performance/");
 		performanceToc.NavigationItems.Should().HaveCount(2);
 
@@ -238,20 +238,20 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 
 		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance);
 
-		var setupFolder = navigation.NavigationItems.First().Should().BeOfType<FolderNavigation>().Subject;
+		var setupFolder = navigation.NavigationItems.First().Should().BeOfType<FolderNavigation<TestDocumentationFile>>().Subject;
 		setupFolder.Url.Should().Be("/setup/");
 
 		// Setup folder has index.md and advanced TOC
 		setupFolder.NavigationItems.Should().HaveCount(1);
 
-		var advancedToc = setupFolder.NavigationItems.ElementAt(0).Should().BeOfType<TableOfContentsNavigation>().Subject;
+		var advancedToc = setupFolder.NavigationItems.ElementAt(0).Should().BeOfType<TableOfContentsNavigation<TestDocumentationFile>>().Subject;
 		// Verify the URL is /setup/advanced and not /setup/setup/advanced
 		advancedToc.Url.Should().Be("/setup/advanced/");
 
 		// Advanced TOC has index.md and performance TOC
 		advancedToc.NavigationItems.Should().HaveCount(1);
 
-		var performanceToc = advancedToc.NavigationItems.ElementAt(0).Should().BeOfType<TableOfContentsNavigation>().Subject;
+		var performanceToc = advancedToc.NavigationItems.ElementAt(0).Should().BeOfType<TableOfContentsNavigation<TestDocumentationFile>>().Subject;
 		// Verify the URL is /setup/advanced/performance and not /setup/advanced/setup/advanced/performance
 		performanceToc.Url.Should().Be("/setup/advanced/performance/");
 
@@ -334,7 +334,7 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		rootItem.NavigationRoot.Should().BeSameAs(navigation, "Root navigation items should point to DocumentationSetNavigation");
 
 		// Items in the setup folder should point to DocumentationSetNavigation
-		var setupFolder = navigation.NavigationItems.ElementAt(0).Should().BeOfType<FolderNavigation>().Subject;
+		var setupFolder = navigation.NavigationItems.ElementAt(0).Should().BeOfType<FolderNavigation<TestDocumentationFile>>().Subject;
 		setupFolder.NavigationRoot.Should().BeSameAs(navigation);
 
 		var gettingStarted = setupFolder.NavigationItems.First();
@@ -342,7 +342,7 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 
 		// According to url-building.md: "In isolated builds the NavigationRoot is always the DocumentationSetNavigation"
 		// ALL items including TOCs should point to DocumentationSetNavigation as NavigationRoot
-		var advancedToc = setupFolder.NavigationItems.ElementAt(0).Should().BeOfType<TableOfContentsNavigation>().Subject;
+		var advancedToc = setupFolder.NavigationItems.ElementAt(0).Should().BeOfType<TableOfContentsNavigation<TestDocumentationFile>>().Subject;
 		advancedToc.NavigationRoot.Should().BeSameAs(navigation, "TOC NavigationRoot should be DocumentationSetNavigation in isolated builds");
 
 		var advancedIndex = advancedToc.NavigationItems.First();

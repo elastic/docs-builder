@@ -14,9 +14,10 @@ public interface IDocumentationFile : INavigationModel
 }
 
 [DebuggerDisplay("{Url}")]
-public class TableOfContentsNavigation : IRootNavigationItem<IDocumentationFile, INavigationItem>
+public class TableOfContentsNavigation<TModel> : IRootNavigationItem<TModel, INavigationItem>
 	, INavigationHomeAccessor
 	, INavigationHomeProvider
+	where TModel : class, IDocumentationFile
 {
 	public TableOfContentsNavigation(
 		IDirectoryInfo tableOfContentsDirectory,
@@ -24,14 +25,12 @@ public class TableOfContentsNavigation : IRootNavigationItem<IDocumentationFile,
 		string parentPath,
 		INodeNavigationItem<INavigationModel, INavigationItem>? parent,
 		string pathPrefix,
-		IReadOnlyCollection<INavigationItem> navigationItems,
 		GitCheckoutInformation git,
-		Dictionary<Uri, IRootNavigationItem<IDocumentationFile, INavigationItem>> tocNodes,
+		Dictionary<Uri, IRootNavigationItem<TModel, INavigationItem>> tocNodes,
 		INavigationHomeProvider homeProvider
 	)
 	{
 		TableOfContentsDirectory = tableOfContentsDirectory;
-		NavigationItems = navigationItems;
 		Parent = parent;
 		Hidden = false;
 		IsUsingNavigationDropdown = false;
@@ -49,10 +48,9 @@ public class TableOfContentsNavigation : IRootNavigationItem<IDocumentationFile,
 		Identifier = new Uri($"{git.RepositoryName}://{parentPath.TrimEnd('/')}");
 		_ = tocNodes.TryAdd(Identifier, this);
 
-		// FindIndex must be called after _homeProvider is set
-		var indexNavigation = navigationItems.QueryIndex(this, new NotFoundModel($"{parentPath}/index.md"), out navigationItems);
-		Index = indexNavigation;
-		NavigationItems = navigationItems;
+		// Will be set by SetNavigationItems
+		Index = null!;
+		NavigationItems = [];
 	}
 
 	/// <summary>
@@ -103,7 +101,7 @@ public class TableOfContentsNavigation : IRootNavigationItem<IDocumentationFile,
 	public string Id { get; }
 
 	/// <inheritdoc />
-	public ILeafNavigationItem<IDocumentationFile> Index { get; private set; }
+	public ILeafNavigationItem<TModel> Index { get; private set; }
 
 	/// <inheritdoc />
 	public bool IsUsingNavigationDropdown { get; }
@@ -117,7 +115,7 @@ public class TableOfContentsNavigation : IRootNavigationItem<IDocumentationFile,
 	void IAssignableChildrenNavigation.SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems) => SetNavigationItems(navigationItems);
 	internal void SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems)
 	{
-		var indexNavigation = navigationItems.QueryIndex(this, new NotFoundModel($"{ParentPath}/index.md"), out navigationItems);
+		var indexNavigation = navigationItems.QueryIndex<TModel>(this, $"{ParentPath}/index.md", out navigationItems);
 		Index = indexNavigation;
 		NavigationItems = navigationItems;
 	}

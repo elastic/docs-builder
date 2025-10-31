@@ -33,7 +33,7 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		_ = collector.StartAsync(TestContext.Current.CancellationToken);
 
 		// Create DocumentationSetNavigation for each repository
-		var documentationSets = new List<IDocumentationSetNavigation>();
+		var documentationSets = new List<DocumentationSetNavigation<IDocumentationFile>>();
 
 		foreach (var repo in repositories)
 		{
@@ -249,14 +249,14 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		indexFile.Url.Should().Be("/");
 
 		var gettingStarted = observabilityNav.NavigationItems.ElementAt(0);
-		gettingStarted.Should().BeOfType<FolderNavigation>();
-		var gettingStartedFolder = (FolderNavigation)gettingStarted;
+		gettingStarted.Should().BeOfType<FolderNavigation<IDocumentationFile>>();
+		var gettingStartedFolder = (FolderNavigation<IDocumentationFile>)gettingStarted;
 		gettingStartedFolder.Index.Should().NotBeNull(); //quick-start.md
 		gettingStartedFolder.NavigationItems.Should().HaveCount(1); // installation.md
 
 		var monitoring = observabilityNav.NavigationItems.ElementAt(1);
-		monitoring.Should().BeOfType<FolderNavigation>();
-		var monitoringFolder = (FolderNavigation)monitoring;
+		monitoring.Should().BeOfType<FolderNavigation<IDocumentationFile>>();
+		var monitoringFolder = (FolderNavigation<IDocumentationFile>)monitoring;
 		monitoringFolder.NavigationItems.Should().HaveCount(3); // logs.md, metrics.md, traces.md
 	}
 
@@ -278,15 +278,15 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		indexFile.Url.Should().Be("/");
 
 		var deploymentGuide = platformNav.NavigationItems.ElementAt(0);
-		deploymentGuide.Should().BeOfType<TableOfContentsNavigation>();
+		deploymentGuide.Should().BeOfType<TableOfContentsNavigation<IDocumentationFile>>();
 		deploymentGuide.Url.Should().Be("/deployment-guide/");
-		var deploymentToc = (TableOfContentsNavigation)deploymentGuide;
+		var deploymentToc = (TableOfContentsNavigation<IDocumentationFile>)deploymentGuide;
 		deploymentToc.NavigationItems.Should().HaveCount(1); // self-managed folder
 
 		var cloudGuide = platformNav.NavigationItems.ElementAt(1);
-		cloudGuide.Should().BeOfType<TableOfContentsNavigation>();
+		cloudGuide.Should().BeOfType<TableOfContentsNavigation<IDocumentationFile>>();
 		cloudGuide.Url.Should().Be("/cloud-guide/");
-		var cloudToc = (TableOfContentsNavigation)cloudGuide;
+		var cloudToc = (TableOfContentsNavigation<IDocumentationFile>)cloudGuide;
 		cloudToc.NavigationItems.Should().HaveCount(2); // aws folder, azure folder
 	}
 
@@ -304,13 +304,13 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		securityNav.NavigationItems.Should().HaveCount(2); // authentication folder, authorization folder
 
 		var authentication = securityNav.NavigationItems.ElementAt(0);
-		authentication.Should().BeOfType<FolderNavigation>();
-		var authenticationFolder = (FolderNavigation)authentication;
+		authentication.Should().BeOfType<FolderNavigation<IDocumentationFile>>();
+		var authenticationFolder = (FolderNavigation<IDocumentationFile>)authentication;
 		authenticationFolder.NavigationItems.Should().HaveCount(2); // api-keys.md, oauth.md
 
 		var authorization = securityNav.NavigationItems.ElementAt(1);
-		authorization.Should().BeOfType<FolderNavigation>();
-		var authorizationFolder = (FolderNavigation)authorization;
+		authorization.Should().BeOfType<FolderNavigation<IDocumentationFile>>();
+		var authorizationFolder = (FolderNavigation<IDocumentationFile>)authorization;
 		authorizationFolder.NavigationItems.Should().HaveCount(1); // rbac.md
 	}
 
@@ -560,10 +560,10 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		navigation.NavigationItems.Should().HaveCount(2); // deployment-guide TOC, cloud-guide TOC (index.md is in Index property)
 
 		var deploymentGuide = navigation.NavigationItems.ElementAt(0);
-		deploymentGuide.Should().BeOfType<TableOfContentsNavigation>();
+		deploymentGuide.Should().BeOfType<TableOfContentsNavigation<IDocumentationFile>>();
 
 		var cloudGuide = navigation.NavigationItems.ElementAt(1);
-		cloudGuide.Should().BeOfType<TableOfContentsNavigation>();
+		cloudGuide.Should().BeOfType<TableOfContentsNavigation<IDocumentationFile>>();
 
 		// Assert no diagnostic errors or warnings
 		context.Collector.Errors.Should().Be(0, "there should be no errors when loading platform documentation set with nested TOCs");
@@ -586,10 +586,10 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		navigation.NavigationItems.Should().HaveCount(2); // index.md, getting-started folder, monitoring folder
 
 		var gettingStarted = navigation.NavigationItems.ElementAt(0);
-		gettingStarted.Should().BeOfType<FolderNavigation>();
+		gettingStarted.Should().BeOfType<FolderNavigation<IDocumentationFile>>();
 
 		var monitoring = navigation.NavigationItems.ElementAt(1);
-		monitoring.Should().BeOfType<FolderNavigation>();
+		monitoring.Should().BeOfType<FolderNavigation<IDocumentationFile>>();
 
 		// Assert no diagnostic errors or warnings
 		context.Collector.Errors.Should().Be(0, "there should be no errors when loading documentation set with folders");
