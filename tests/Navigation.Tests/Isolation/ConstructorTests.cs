@@ -132,7 +132,7 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		navigation.NavigationItems.Should().HaveCount(0);
 		var crossLink = navigation.Index.Should().BeOfType<CrossLinkNavigationLeaf>().Subject;
 		crossLink.NavigationTitle.Should().Be("External Guide");
-		crossLink.Url.Should().Be("docs-content://guide.md");
+		crossLink.Url.Should().Be("https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main");
 	}
 
 	[Fact]
