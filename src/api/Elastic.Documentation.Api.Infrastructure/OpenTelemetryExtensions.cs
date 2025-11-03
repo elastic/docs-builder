@@ -24,7 +24,11 @@ public static class OpenTelemetryExtensions
 	{
 		var options = new ElasticOpenTelemetryOptions
 		{
-			SkipOtlpExporter = true, // Disable OTLP exporter
+			// TODO: I don't think we really want to set `SkipOtlpExporter=true`.
+			// But without it, EDOT is sending duplicated traces and spans to the OTLP endpoint.
+			// Needs investigation.
+			// *However*, this makes it work correctly.
+			SkipOtlpExporter = true,
 			SkipInstrumentationAssemblyScanning = true // Disable instrumentation assembly scanning for AOT
 		};
 
