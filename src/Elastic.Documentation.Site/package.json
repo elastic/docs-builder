@@ -87,7 +87,7 @@
     "@emotion/react": "11.14.0",
     "@microsoft/fetch-event-source": "2.0.1",
     "@r2wc/react-to-web-component": "2.1.0",
-    "@tanstack/react-query": "^5.90.2",
+    "@tanstack/react-query": "^5.90.5",
     "@uidotdev/usehooks": "2.4.1",
     "dompurify": "3.2.7",
     "highlight.js": "11.11.1",
