@@ -11,8 +11,8 @@
     <ProjectReference Include="$(SolutionRoot)\src\tooling\docs-builder\docs-builder.csproj"/>
     <ProjectReference Include="$(SolutionRoot)\aspire\aspire.csproj" />
   </ItemGroup>
-
   <ItemGroup>
+    <PackageReference Include="FakeItEasy" />
     <PackageReference Include="Aspire.Hosting.Testing"/>
     <PackageReference Include="InMemoryLogger"/>
   </ItemGroup>

@@ -17,7 +17,7 @@ using Elastic.Markdown.IO.Navigation;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 
-namespace Documentation.Assembler.Tests;
+namespace Elastic.Assembler.IntegrationTests;
 
 public class GlobalNavigationPathProviderTests
 {

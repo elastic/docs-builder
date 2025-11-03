@@ -12,7 +12,7 @@ using Elastic.Documentation.Configuration.Synonyms;
 using Elastic.Documentation.Configuration.Versions;
 using Microsoft.Extensions.Logging.Abstractions;
 
-namespace Documentation.Assembler.Tests;
+namespace Elastic.Assembler.IntegrationTests;
 
 public static class TestHelpers
 {

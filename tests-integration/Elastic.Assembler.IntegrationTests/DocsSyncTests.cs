@@ -15,7 +15,7 @@ using FakeItEasy;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 
-namespace Documentation.Assembler.Tests;
+namespace Elastic.Assembler.IntegrationTests;
 
 public class DocsSyncTests
 {
