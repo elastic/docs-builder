@@ -85,7 +85,10 @@ export const useAskAi = (props: Props): UseAskAiResponse => {
                 processMessage(result.data)
             } catch (error) {
                 // Handle JSON parsing errors or other unexpected errors
-                if (error instanceof Error && error.message.includes('Event validation failed')) {
+                if (
+                    error instanceof Error &&
+                    error.message.includes('Event validation failed')
+                ) {
                     // Already logged above, just re-throw
                     throw error
                 }
@@ -95,8 +98,10 @@ export const useAskAi = (props: Props): UseAskAiResponse => {
                     eventId: sseEvent.id || 'unknown',
                     eventType: sseEvent.event || 'unknown',
                     rawEventData: sseEvent.data,
-                    error: error instanceof Error ? error.message : String(error),
-                    errorStack: error instanceof Error ? error.stack : undefined,
+                    error:
+                        error instanceof Error ? error.message : String(error),
+                    errorStack:
+                        error instanceof Error ? error.stack : undefined,
                 })
 
                 throw new Error(
