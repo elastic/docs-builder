@@ -209,10 +209,10 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 						_ = parseActivity?.SetTag("tool.result_summary", toolResult.Result);
 						break;
 					}
-				case AskAiEvent.MessageComplete chunkComplete:
+				case AskAiEvent.MessageComplete messageComplete:
 					{
-						outputMessageParts.Add(new MessagePart("text", chunkComplete.FullContent));
-						Logger.LogInformation("AskAI output message: {OutputMessage}", chunkComplete.FullContent);
+						outputMessageParts.Add(new MessagePart("text", messageComplete.FullContent));
+						Logger.LogInformation("AskAI output message: {OutputMessage}", messageComplete.FullContent);
 						break;
 					}
 				case AskAiEvent.ConversationEnd:

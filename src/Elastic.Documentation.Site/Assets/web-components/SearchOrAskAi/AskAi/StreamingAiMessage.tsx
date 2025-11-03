@@ -48,7 +48,14 @@ export const StreamingAiMessage = ({
                 updateAiMessage(message.id, contentRef.current, 'complete')
             }
         },
-        onError: () => {
+        onError: (error) => {
+            console.error('[AI Provider] Error in StreamingAiMessage:', {
+                messageId: message.id,
+                errorMessage: error.message,
+                errorStack: error.stack,
+                errorName: error.name,
+                fullError: error,
+            })
             updateAiMessage(
                 message.id,
                 message.content || 'Error occurred',
