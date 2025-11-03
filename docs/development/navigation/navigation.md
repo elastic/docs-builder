@@ -1,65 +1,68 @@
 # Navigation
 
-## File Navigation types
+This document provides an overview of how `Elastic.Documentation.Navigation` works.
 
-### Isolated builds
+## Documentation Structure
 
-When building a signle repository's documentation, we are building the table of contents defined in `docset.yml` the root of which is represented by ![DocumentationSetNavigation](images/bullet-documentation-set-navigation.svg) `DocumentationSetNavigation`
+For deeper dives into specific topics, see:
 
-The table of contents is composed of a number of `NavigationItem`s.
+- **[Visual Walkthrough](visual-walkthrough.md)** - Visual tour with diagrams showing navigation structures in both build modes
+- **[First Principles](first-principles.md)** - Core design principles and invariants that guide the navigation architecture
+- **[Two-Phase Loading](two-phase-loading.md)** - Why configuration resolution and navigation construction are separate phases
+- **[Home Provider Architecture](home-provider-architecture.md)** - The pattern that enables O(1) re-homing of navigation subtrees
+- **[Node Types](node-types.md)** - Detailed reference for each navigation node type (leaves, nodes, roots)
+- **[Assembler Process](assembler-process.md)** - How multiple repositories are combined into a unified site
 
-- `folder:` ![FolderNavigation](images/bullet-folder-navigation.svg) `FolderNavigation`
-- `file:` ![FileNavigationLeaf](images/bullet-file-navigation-leaf.svg) `FileNavigationLeaf`
+## Quick Start
 
-`docset.yml` may break up it's table of contents into multiple sub navigation's using nested `toc.yml` files.
+### Core Concepts
 
-- `toc:` ![TableOfContentsNavigation](images/bullet-table-of-contents-navigation.svg) TableOfContentsNavigation
+The navigation system builds hierarchical trees for documentation sites with these key features:
 
-### Assembler builds
+1. **Two Build Modes:**
+   - **Isolated** - Single repository (e.g., `docs-builder isolated build`)
+   - **Assembler** - Multi-repository site (e.g., `docs-builder assemble`)
 
-The assembler build takes multiple `Isolated Build` navigations and recomposes it into a single ![SiteNavigation](images//bullet-site-navigation.svg) `SiteNavigation` navigation.
+2. **Two-Phase Loading:**
+   - **Phase 1**: Parse YAML, resolve paths → Configuration
+   - **Phase 2**: Build tree, calculate URLs → Navigation
 
-This navigation is defined in [`navigation.yml`](https://github.com/elastic/docs-builder/blob/main/config/navigation.yml)
+3. **Re-homing:**
+   - Build navigation in isolation with URLs like `/api/rest/`
+   - Re-home during assembly to URLs like `/elasticsearch/api/rest/`
+   - **O(1) operation** - no tree traversal needed!
 
-An assembler build can only reference:
+### How Re-homing Works
 
-- ![DocumentationSetNavigation](images/bullet-documentation-set-navigation.svg) `DocumentationSetNavigation` (using `<repository>://` crosslink)
-- ![TableOfContentsNavigation](images/bullet-table-of-contents-navigation.svg) `TableOfContentsNavigation` (using `<repository>://<path/toc/folder>` crosslink)
+The key innovation is the [Home Provider pattern](home-provider-architecture.md):
 
-A new special root is created for asssembler builds:
+```csharp
+// Isolated build
+DocumentationSetNavigation
+{
+    HomeProvider: self,
+    PathPrefix: ""
+}
+// Child URL: /api/rest/
 
-- ![SiteNavigation](images//bullet-site-navigation.svg) `SiteNavigation`
+// Re-home for assembler build (ONE LINE!)
+docset.HomeProvider = new NavigationHomeProvider("/guide", siteNav);
 
-## A Visual Example
+// Child URL: /guide/api/rest/  ✨ All URLs updated!
+```
 
-### Isolated builds
+This is possible because URLs are **calculated dynamically** from the HomeProvider, not stored. Changing the provider instantly updates all descendant URLs without any tree traversal.
 
-Imagine we have the following `docset.yml` that defines two nested `toc.yml` files.
+See [Home Provider Architecture](home-provider-architecture.md) for the complete explanation.
 
-![Isolated Build](images/isolated-build-tree.svg)
+## Visual Examples
 
-### Assembler builds
+For a visual tour of navigation structures with diagrams showing both isolated and assembler builds, see the **[Visual Walkthrough](visual-walkthrough.md)**.
 
-Now we can break that navigation up into multiple sections of the wider site navigation.
-
-- ![TableOfContentsNavigation](images/bullet-table-of-contents-navigation.svg)`docs-content://api`
-  - ![TableOfContentsNavigation](images/bullet-table-of-contents-navigation.svg)**`elastic-project://api`**
-- ![TableOfContentsNavigation](images/bullet-table-of-contents-navigation.svg)`docs-content://guides`
-  - ![TableOfContentsNavigation](images/bullet-table-of-contents-navigation.svg)**`elastic-project://guides`**
-- ![DocumentationSetNavigation](images/bullet-documentation-set-navigation.svg) `elastic-client://`
-  - ![DocumentationSetNavigation](images/bullet-documentation-set-navigation.svg) `elastic-client-node://`
-  - ![DocumentationSetNavigation](images/bullet-documentation-set-navigation.svg) `elastic-client-dotnet://`
-  - ![DocumentationSetNavigation](images/bullet-documentation-set-navigation.svg) `elastic-client-java://`
-
-
-![DocumentationSetNavigation](images/bullet-documentation-set-navigation.svg) `DocumentationSetNavigation` may arbitrary nest other
-![TableOfContentsNavigation](images/bullet-table-of-contents-navigation.svg) `TableOfContentsNavigation` and visa versa.
-
-The only requirement is that each node in the navigation **MUST** define a unique `path_prefix`.
-
-#### A fully resolved navigation.
-
-When resolving the navigation, all the child navigation items will be included and the url will dynamically be `re-homed` to the root ![DocumentationSetNavigation](images/bullet-documentation-set-navigation.svg) `DocumentationSetNavigation` or ![TableOfContentsNavigation](images/bullet-table-of-contents-navigation.svg) `TableOfContentsNavigation` that defines it. 
-
-![Assembler Build](images/assembler-build-tree.svg)
+The walkthrough covers:
+- What nodes look like in isolated vs assembler builds
+- How the same content appears with different URLs
+- How to split and reorganize documentation across the site
+- Common patterns for organizing multi-repository sites
+- Examples with the actual tree diagrams from this repository
 

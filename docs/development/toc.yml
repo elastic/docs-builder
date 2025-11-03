@@ -6,4 +6,10 @@ toc:
   - folder: navigation
     children:
       - file: navigation.md
+      - file: visual-walkthrough.md
+      - file: first-principles.md
+      - file: two-phase-loading.md
+      - file: home-provider-architecture.md
+      - file: node-types.md
+      - file: assembler-process.md
   - toc: link-validation
