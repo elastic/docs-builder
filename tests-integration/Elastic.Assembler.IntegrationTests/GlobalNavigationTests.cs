@@ -19,17 +19,21 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Assembler.IntegrationTests;
 
-public class GlobalNavigationPathProviderTests
+public class GlobalNavigationPathProviderTests : IAsyncLifetime
 {
+	private readonly DocumentationFixture _fixture;
+	private readonly ITestOutputHelper _output;
 	private DiagnosticsCollector Collector { get; }
 	private AssembleContext Context { get; }
 	private FileSystem FileSystem { get; }
-	private IDirectoryInfo CheckoutDirectory { get; set; }
+	private IDirectoryInfo CheckoutDirectory { get; }
 
 	private bool HasCheckouts() => CheckoutDirectory.Exists;
 
-	public GlobalNavigationPathProviderTests()
+	public GlobalNavigationPathProviderTests(DocumentationFixture fixture, ITestOutputHelper output)
 	{
+		_fixture = fixture;
+		_output = output;
 		FileSystem = new FileSystem();
 		var checkoutDirectory = FileSystem.DirectoryInfo.New(
 			FileSystem.Path.Combine(Paths.GetSolutionDirectory()!.FullName, ".artifacts", "checkouts")
@@ -303,4 +307,18 @@ public class GlobalNavigationPathProviderTests
 		resolvedUri = uriResolver.Resolve(new Uri("elasticsearch://extend/c/file.md"), "/extend/c/file");
 		resolvedUri.Should().Be("https://www.elastic.co/docs/extend/elasticsearch/c/file");
 	}
+
+	/// <inheritdoc />
+	public ValueTask DisposeAsync()
+	{
+		GC.SuppressFinalize(this);
+		if (TestContext.Current.TestState?.Result is TestResult.Passed)
+			return default;
+		foreach (var resource in _fixture.InMemoryLogger.RecordedLogs)
+			_output.WriteLine(resource.Message);
+		return default;
+	}
+
+	/// <inheritdoc />
+	public ValueTask InitializeAsync() => default;
 }
