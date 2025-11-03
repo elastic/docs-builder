@@ -40,6 +40,8 @@ public class LandingNavigationItem : IApiGroupingNavigationItem<ApiLanding, INav
 	//TODO
 	public string NavigationTitle { get; } = "API Overview";
 
+	public string? NavigationTooltip => null; // API landing items don't have tooltips
+
 	public LandingNavigationItem(string url)
 	{
 		Depth = 0;
@@ -73,6 +75,9 @@ public abstract class ApiGroupingNavigationItem<TGroupingModel, TNavigationItem>
 
 	/// <inheritdoc />
 	public abstract string NavigationTitle { get; }
+
+	/// <inheritdoc />
+	public string? NavigationTooltip => null; // API grouping items don't have tooltips
 
 	/// <inheritdoc />
 	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; } = rootNavigation;
@@ -131,6 +136,9 @@ public class EndpointNavigationItem(ApiEndpoint endpoint, IRootNavigationItem<IA
 
 	/// <inheritdoc />
 	public string NavigationTitle { get; } = endpoint.Operations.First().ApiName;
+
+	/// <inheritdoc />
+	public string? NavigationTooltip => null; // API endpoint items don't have tooltips
 
 	/// <inheritdoc />
 	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; } = rootNavigation;

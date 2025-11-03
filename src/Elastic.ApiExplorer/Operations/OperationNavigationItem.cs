@@ -67,6 +67,8 @@ public class OperationNavigationItem : ILeafNavigationItem<ApiOperation>, IEndpo
 
 	public string NavigationTitle { get; }
 
+	public string? NavigationTooltip => null; // API operations don't have tooltips
+
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
 
 	public int NavigationIndex { get; set; }

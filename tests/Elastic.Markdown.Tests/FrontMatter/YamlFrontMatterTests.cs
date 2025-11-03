@@ -336,3 +336,102 @@ public class MappedPagesNotAbsoluteUri(ITestOutputHelper output) : DirectiveTest
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Invalid mapped_pages URL: \"not-a-uri-at-all\". All mapped_pages URLs must start with \"https://www.elastic.co/guide\""));
 	}
 }
+
+public class NavigationTooltipExplicit(ITestOutputHelper output) : DirectiveTest(output,
+	"""
+	---
+	navigation_tooltip: "This is a custom tooltip"
+	---
+
+	# Test Page
+	"""
+)
+{
+	[Fact]
+	public void ReadsNavigationTooltip() => File.NavigationTooltip.Should().Be("This is a custom tooltip");
+}
+
+public class NavigationTooltipFallbackToDescription(ITestOutputHelper output) : DirectiveTest(output,
+	"""
+	---
+	description: "This is a description"
+	---
+
+	# Test Page
+	"""
+)
+{
+	[Fact]
+	public void ReadsNavigationTooltipFromDescription() => File.NavigationTooltip.Should().Be("This is a description");
+}
+
+public class NavigationTooltipNullWhenNeitherExists(ITestOutputHelper output) : DirectiveTest(output,
+	"""
+	---
+	---
+
+	# Test Page
+	"""
+)
+{
+	[Fact]
+	public void ReadsNavigationTooltipAsNull() => File.NavigationTooltip.Should().BeNull();
+}
+
+public class NavigationTooltipWithDoubleQuotes(ITestOutputHelper output) : DirectiveTest(output,
+	"""
+	---
+	navigation_tooltip: "Learn about \"elastic solutions\" here"
+	---
+
+	# Test Page
+	"""
+)
+{
+	[Fact]
+	public void ReplacesDoubleQuotesWithSingleQuotes() => File.NavigationTooltip.Should().Be("Learn about 'elastic solutions' here");
+}
+
+public class NavigationTooltipDescriptionWithDoubleQuotes(ITestOutputHelper output) : DirectiveTest(output,
+	"""
+	---
+	description: "This is a \"description\" with quotes"
+	---
+
+	# Test Page
+	"""
+)
+{
+	[Fact]
+	public void ReplacesDoubleQuotesInDescriptionFallback() => File.NavigationTooltip.Should().Be("This is a 'description' with quotes");
+}
+
+public class NavigationTooltipStripsMarkdown(ITestOutputHelper output) : DirectiveTest(output,
+	"""
+	---
+	navigation_tooltip: "This has **bold** and *italic* text"
+	---
+
+	# Test Page
+	"""
+)
+{
+	[Fact]
+	public void StripsMarkdownFromTooltip() => File.NavigationTooltip.Should().Be("This has bold and italic text");
+}
+
+public class NavigationTooltipSupportsSubstitutions(ITestOutputHelper output) : DirectiveTest(output,
+	"""
+	---
+	navigation_tooltip: "Guide for {{product}}"
+	sub:
+	  product: "Elasticsearch"
+	---
+
+	# Test Page
+	"""
+)
+{
+	[Fact]
+	public void ReplacesSubstitutionsInTooltip() => File.NavigationTooltip.Should().Be("Guide for Elasticsearch");
+}

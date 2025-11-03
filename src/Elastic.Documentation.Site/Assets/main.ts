@@ -3,6 +3,7 @@ import { initCopyButton } from './copybutton'
 import { initHighlight } from './hljs'
 import { initImageCarousel } from './image-carousel'
 import './markdown/applies-to'
+import { initNavigationTooltips } from './navigation-tooltip'
 import { openDetailsWithAnchor } from './open-details-with-anchor'
 import { initNav } from './pages-nav'
 import { initSmoothScroll } from './smooth-scroll'
@@ -78,6 +79,7 @@ document.addEventListener('htmx:load', function (event) {
     initTabs()
     initAppliesSwitch()
     initMath()
+    initNavigationTooltips()
 
     // We do this so that the navigation is not initialized twice
     if (isLazyLoadNavigationEnabled) {

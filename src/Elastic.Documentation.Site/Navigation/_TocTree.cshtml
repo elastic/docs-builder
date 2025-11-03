@@ -14,7 +14,8 @@
 							<a
 								class="pages-dropdown_active hover:underline text-blue-elastic hover:text-blue-elastic-100"
 								href="@currentTopLevelItem.Url"
-								@Htmx.GetNavHxAttributes(true)>
+								@Htmx.GetNavHxAttributes(true)
+								data-nav-tooltip="@currentTopLevelItem.NavigationTooltip">
 								@currentTopLevelItem.NavigationTitle
 							</a>
 						</div>
@@ -38,7 +39,8 @@
 								<a
 									class="block py-2 px-4 hover:underline hover:text-black hover:bg-grey-10 active:bg-blue-elastic-70 active:text-white font-semibold @(item.NavigationRoot.Id == Model.Tree.Id ? "text-blue-elastic" : "")"
 									href="@item.Url"
-									@Htmx.GetNavHxAttributes(false, "mouseover")>
+									@Htmx.GetNavHxAttributes(false, "mouseover")
+									data-nav-tooltip="@item.NavigationTooltip">
 						@item.NavigationTitle
 					</a>
 				</li>
@@ -53,7 +55,8 @@
 		<a
 			href="@Model.TitleUrl"
 			@Htmx.GetNavHxAttributes(Model.Tree.Id == currentTopLevelItem.Id)
-			class="inline-block mx-4 mt-6 font-semibold text-ink hover:text-black">
+			class="inline-block mx-4 mt-6 font-semibold text-ink hover:text-black"
+			data-nav-tooltip="@Model.Tree.NavigationTooltip">
 			@Model.Title
 		</a>
 	}

@@ -16,6 +16,7 @@
 				href="@group.Url"
 				@Htmx.GetNavHxAttributes(Model.IsPrimaryNavEnabled && group.NavigationRoot.Id == Model.RootNavigationId || true)
 				class="sidebar-link group-[.current]/li:text-blue-elastic!"
+				data-nav-tooltip="@group.NavigationTooltip"
 			>
 				@group.NavigationTitle
 			</a>
@@ -30,7 +31,8 @@
 				<a
 					href="@(g.Url)"
 					@Htmx.GetNavHxAttributes(Model.IsPrimaryNavEnabled && g.NavigationRoot.Id == Model.RootNavigationId || true)
-					class="sidebar-link pr-2 content-center @(isTopLevel ? "font-semibold" : "") group-[.current]/li:text-blue-elastic!">
+					class="sidebar-link pr-2 content-center @(isTopLevel ? "font-semibold" : "") group-[.current]/li:text-blue-elastic!"
+					data-nav-tooltip="@g.NavigationTooltip">
 					@(g.NavigationTitle)
 				</a>
 				@if (!allHidden)
@@ -85,6 +87,7 @@
 				href="@leaf.Url"
 				@Htmx.GetNavHxAttributes(hasSameTopLevelGroup)
 				class="sidebar-link grow group-[.current]/li:text-blue-elastic!"
+				data-nav-tooltip="@leaf.NavigationTooltip"
 			>
 				@leaf.NavigationTitle
 			</a>

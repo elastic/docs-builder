@@ -27,6 +27,7 @@ public record CrossLinkNavigationItem : ILeafNavigationItem<INavigationModel>
 	public Uri CrossLink { get; }
 	public string Url { get; }
 	public string NavigationTitle { get; }
+	public string? NavigationTooltip => null; // Cross-links don't have tooltips
 	public int NavigationIndex { get; set; }
 	public bool Hidden { get; }
 	public bool IsCrossLink => true; // This is always a cross-link

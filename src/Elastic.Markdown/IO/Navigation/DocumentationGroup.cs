@@ -28,6 +28,8 @@ public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationI
 
 	public string NavigationTitle => Index.NavigationTitle;
 
+	public string? NavigationTooltip => Index.NavigationTooltip;
+
 	public bool Hidden { get; set; }
 
 	public int NavigationIndex { get; set; }

@@ -25,6 +25,7 @@ namespace Elastic.Markdown.IO;
 public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigationModel
 {
 	private string? _navigationTitle;
+	private string? _navigationTooltip;
 
 	private readonly DocumentationSet _set;
 
@@ -84,6 +85,23 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 	{
 		get => !string.IsNullOrEmpty(_navigationTitle) ? _navigationTitle : Title ?? string.Empty;
 		private set => _navigationTitle = value.StripMarkdown();
+	}
+
+	public string? NavigationTooltip
+	{
+		get
+		{
+			if (!string.IsNullOrEmpty(_navigationTooltip))
+				return _navigationTooltip;
+
+			var description = YamlFrontMatter?.Description;
+			if (string.IsNullOrEmpty(description))
+				return null;
+
+			// Strip markdown and replace quotes to prevent HTML attribute issues
+			return description.StripMarkdown().Replace("\"", "'");
+		}
+		private set => _navigationTooltip = value?.StripMarkdown().Replace("\"", "'");
 	}
 
 
@@ -204,6 +222,8 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 		YamlFrontMatter = yamlFrontMatter;
 		if (yamlFrontMatter.NavigationTitle is not null)
 			NavigationTitle = yamlFrontMatter.NavigationTitle;
+		if (yamlFrontMatter.NavigationTooltip is not null)
+			NavigationTooltip = yamlFrontMatter.NavigationTooltip;
 
 		var subs = GetSubstitutions();
 
@@ -211,6 +231,12 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 		{
 			if (NavigationTitle.AsSpan().ReplaceSubstitutions(subs, Collector, out var replacement))
 				NavigationTitle = replacement;
+		}
+
+		if (!string.IsNullOrEmpty(NavigationTooltip))
+		{
+			if (NavigationTooltip.AsSpan().ReplaceSubstitutions(subs, Collector, out var replacement))
+				NavigationTooltip = replacement;
 		}
 
 		if (string.IsNullOrEmpty(Title))

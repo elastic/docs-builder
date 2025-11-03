@@ -20,6 +20,9 @@ public interface INavigationItem
 	/// Gets the title displayed in navigation.
 	string NavigationTitle { get; }
 
+	/// Gets the tooltip text displayed on hover for navigation items.
+	string? NavigationTooltip { get; }
+
 	/// Gets the root navigation item.
 	IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }
 
