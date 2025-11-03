@@ -27,6 +27,8 @@ outputs:
 
 runs:
   using: 'docker'
-  image: "docker://ghcr.io/elastic/docs-assembler:edge"
-  env:
-    INPUT_COMMAND: "content-source match"
+  image: "docker://ghcr.io/elastic/docs-builder:edge"
+  args:
+    - "assembler"
+    - "content-source"
+    - "validate"
