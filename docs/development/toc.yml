@@ -3,4 +3,7 @@ toc:
   - folder: ingest
     children:
       - file: index.md
+  - folder: navigation
+    children:
+      - file: navigation.md
   - toc: link-validation
