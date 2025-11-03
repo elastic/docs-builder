@@ -78,6 +78,7 @@ toc:
       - file: content-sources.md
   - folder: syntax
     children:
+      - file: index.md
       - file: quick-ref.md
   - folder: cli
     children:
