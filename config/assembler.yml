@@ -39,7 +39,7 @@ environments:
 
 shared_configuration:
   stack: &stack
-    current:  9.2
+    current:  9.2.1
     next: main
     edge: main
 
