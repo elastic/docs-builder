@@ -2,7 +2,7 @@
 
 The Home Provider pattern enables O(1) re-homing of navigation subtrees through indirection.
 
-> **Overview:** For high-level concepts, see [Functional Principles #3-5](functional-principles.md#3-url-building-is-dynamic-and-cheap). This document explains the implementation.
+> **Overview:** For high-level concepts, see [Functional Principles #3-5](functional-principles.md#3.-url-building-is-dynamic-and-cheap). This document explains the implementation.
 
 ## The Problem
 

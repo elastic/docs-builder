@@ -1,173 +1,331 @@
-# Elastic.Documentation.Navigation
+# Navigation Documentation
 
-This library provides a way to build navigation trees for documentation sets.
+Welcome to the documentation for `Elastic.Documentation.Navigation`, the library that powers documentation navigation for Elastic's documentation sites.
 
-## Documentation Sets
+## What This Is
 
-When building single documentation sets you use docset.yml to declare the toc.
+This library builds hierarchical navigation trees for documentation sites with a unique capability: navigation built for isolated repositories can be **efficiently re-homed** during site assembly without rebuilding the entire tree.
 
-When we mention urls these are rooted at `/` unless `--canonical-base-url` is specified in which case the root is `/<canonical-base-url>`
+**Why does this matter?**
 
-```yaml
-toc:
-  - file: index.md
+Individual documentation teams can build and test their docs in isolation with URLs like `/api/overview/`, then those same docs can be assembled into a unified site with URLs like `/elasticsearch/api/overview/` - with **zero tree reconstruction**. It's an O(1) operation.
+
+## Documentation Map
+
+Start with any document based on what you want to learn:
+
+### 🎯 [navigation.md](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/development/navigation/navigation.md) - Start Here
+**Overview of the navigation system**
+
+Read this first to understand:
+- The two build modes (isolated vs assembler)
+- Core concepts at a high level
+- Quick introduction to re-homing
+- Links to detailed documentation
+
+### 🎨 [visual-walkthrough.md](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/development/navigation/visual-walkthrough.md) - See It In Action
+**Visual tour with diagrams showing navigation structures**
+
+Read this to understand:
+- What different node types look like in the tree
+- How isolated builds differ from assembler builds visually
+- How the same content appears with different URLs
+- How to split and reorganize documentation across sites
+- Common patterns for multi-repository organization
+- Includes actual tree diagrams from this repository
+
+### 🧭 [first-principles.md](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/development/navigation/first-principles.md) - Design Philosophy
+**Core principles that guide the architecture**
+
+Read this to understand:
+- Why two-phase loading (configuration → navigation)
+- Why URLs are calculated dynamically, not stored
+- Why navigation roots can be re-homed
+- Design patterns used (factory, provider, visitor)
+- Performance characteristics and invariants
+
+### 🔄 [two-phase-loading.md](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/development/navigation/two-phase-loading.md) - The Loading Process
+**Deep dive into Phase 1 (configuration) and Phase 2 (navigation)**
+
+Read this to understand:
+- What happens in Phase 1: Configuration resolution
+- What happens in Phase 2: Navigation construction
+- Why these phases are separate
+- Data flow diagrams
+- How to test each phase independently
+
+### 🏠 [home-provider-architecture.md](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/development/navigation/home-provider-architecture.md) - The Re-homing Magic
+**How O(1) re-homing works**
+
+Read this to understand:
+- The problem: naive re-homing requires O(n) tree traversal
+- The solution: HomeProvider pattern with indirection
+- How `INavigationHomeProvider` and `INavigationHomeAccessor` work
+- Why URLs are lazily calculated and cached
+- Detailed examples of re-homing in action
+- Performance analysis
+
+**This is the most important technical concept in the system.**
+
+### 📦 [node-types.md](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/development/navigation/node-types.md) - Node Type Reference
+**Complete reference for every navigation node type**
+
+Read this to understand:
+- All 7 node types in detail:
+  - **Leaves**: FileNavigationLeaf, CrossLinkNavigationLeaf
+  - **Nodes**: FolderNavigation, VirtualFileNavigation
+  - **Roots**: DocumentationSetNavigation, TableOfContentsNavigation, SiteNavigation
+- Constructor signatures
+- URL calculation for each type
+- Factory methods
+- Model types (IDocumentationFile)
+
+### 🔨 [assembler-process.md](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/development/navigation/assembler-process.md) - Building Unified Sites
+**How multiple repositories become one site**
+
+Read this to understand:
+- The assembler build process step-by-step
+- How `SiteNavigation` works
+- Re-homing in practice during assembly
+- Path prefix requirements
+- Phantom nodes
+- Nested re-homing
+- Error handling
+
+## Suggested Reading Order
+
+**If you're new to the codebase:**
+1. [navigation.md](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/development/navigation/navigation.md) - Get the overview
+2. [visual-walkthrough.md](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/development/navigation/visual-walkthrough.md) - See it visually
+3. [first-principles.md](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/development/navigation/first-principles.md) - Understand the why
+4. [home-provider-architecture.md](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/development/navigation/home-provider-architecture.md) - Understand the how
+5. [node-types.md](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/development/navigation/node-types.md) - Reference as needed
+
+**If you're debugging an issue:**
+1. [node-types.md](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/development/navigation/node-types.md) - Find the node type
+2. [home-provider-architecture.md](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/development/navigation/home-provider-architecture.md) - Understand URL calculation
+3. [two-phase-loading.md](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/development/navigation/two-phase-loading.md) - Check which phase
+
+**If you're adding a feature:**
+1. [first-principles.md](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/development/navigation/first-principles.md) - Ensure design consistency
+2. [node-types.md](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/development/navigation/node-types.md) - See existing patterns
+3. [two-phase-loading.md](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/development/navigation/two-phase-loading.md) - Determine which phase
+4. [assembler-process.md](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/development/navigation/assembler-process.md) - Consider assembler impact
+
+**If you're optimizing performance:**
+1. [home-provider-architecture.md](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/development/navigation/home-provider-architecture.md) - Understand caching
+2. [first-principles.md](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/development/navigation/first-principles.md) - See performance characteristics
+3. [two-phase-loading.md](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/development/navigation/two-phase-loading.md) - Find expensive operations
+
+## Key Concepts Summary
+
+### Two Build Modes
+
+1. **Isolated Build**
+   - Single repository
+   - URLs relative to `/`
+   - `DocumentationSetNavigation` is the root
+   - Fast iteration for doc teams
+
+2. **Assembler Build**
+   - Multiple repositories
+   - Custom URL prefixes
+   - `SiteNavigation` is the root
+   - Docsets/TOCs are re-homed
+
+### Two-Phase Loading
+
+1. **Phase 1: Configuration** (`Elastic.Documentation.Configuration`)
+   - Parse YAML files
+   - Resolve all relative paths to absolute paths from docset root
+   - Validate structure and file references
+   - Load nested `toc.yml` files
+   - Output: Fully resolved configuration
+
+2. **Phase 2: Navigation** (`Elastic.Documentation.Navigation`)
+   - Build tree from resolved configuration
+   - Establish parent-child relationships
+   - Set up home providers
+   - Calculate navigation indexes
+   - Output: Complete navigation tree
+
+### Home Provider Pattern
+
+The secret to O(1) re-homing:
+
+```csharp
+// Provider defines URL context
+public interface INavigationHomeProvider
+{
+    string PathPrefix { get; }
+    IRootNavigationItem<...> NavigationRoot { get; }
+}
+
+// Accessor references provider
+public interface INavigationHomeAccessor
+{
+    INavigationHomeProvider HomeProvider { get; set; }
+}
+
+// Nodes calculate URLs from current provider
+public string Url =>
+    $"{_homeAccessor.HomeProvider.PathPrefix}/{_relativePath}/";
 ```
 
-It supports the following children
-
-### A single file
-
-```yaml
-toc:
-  - file: index.md
-  - file: getting-started.md
-```
-These would result in the following Url's `/` and `/getting-started`
-
-From here on out the expected url appears as comment in the example
-
-### Folders
-
-```yaml
-toc:
-  - folder: getting-started # /getting-started
-  - folder: syntax # /syntax
-    children: 
-      - file: index.md #/syntax
-      - file: blocks.md #/syntax/blocks
+**Re-homing:**
+```csharp
+// Change provider → all URLs update instantly!
+node.HomeProvider = new NavigationHomeProvider("/new-prefix", newRoot);
 ```
 
-* if `folder` does not specify children the folder will be scanned for Markdown files.
-* The url for the folder is the same as its index.
-* The index is determined by having an `index.md` otherwise it's the first file that is listed/found.
-* `children` paths are scope to the folder.
-  * Here we are including the files `blocks.md` and `index.md` in the `syntax` folder.
+### Node Types
 
-### Folders with a file
+7 types organized by capabilities:
 
-If you don't want to follow the `folder/index.md` pattern but instead want to have the index file one level up e.g
+**Leaves** (no children):
+- `FileNavigationLeaf<TModel>` - Markdown file
+- `CrossLinkNavigationLeaf` - External link
 
-```
-getting-started.md
-getting-started/
-  install.md
-```
+**Nodes** (have children):
+- `FolderNavigation<TModel>` - Directory
+- `VirtualFileNavigation<TModel>` - File with YAML-defined children
 
-You can do this by specifying the `file` property directly on the folder.
+**Roots** (can be re-homed):
+- `DocumentationSetNavigation<TModel>` - Docset root
+- `TableOfContentsNavigation<TModel>` - Nested TOC
+- `SiteNavigation` - Assembled site root
 
+## Code Organization
 
-```yaml
-toc:
-  - folder: getting-started # /getting-started
-    file: getting-started.md
-    children: 
-      - file: install.md # /getting-started/install
-```
+The library is organized into:
 
-* `file` is the index file for the folder.
-* `children` paths are scope to the folder.
-  * Here we are including the files `install.md` in the `getting-started` folder.
-* deep linking on the folder `file` is NOT supported
-* It's best practice to name the file like the folder. We emit a hint if this is not the case.
+### `Elastic.Documentation.Navigation/`
+Root namespace - shared types:
+- `IDocumentationFile.cs` - Base interface for documentation files
+- `NavigationModels.cs` - Common model types (CrossLinkModel, SiteNavigationNoIndexFile)
 
-### Virtual Files
+### `Elastic.Documentation.Navigation/Isolated/`
+Isolated build navigation:
+- `DocumentationSetNavigation.cs` - Docset root
+- `TableOfContentsNavigation.cs` - Nested TOC
+- `FolderNavigation.cs` - Folder nodes
+- `FileNavigationLeaf.cs` - File leaves
+- `VirtualFileNavigation.cs` - Virtual file nodes
+- `CrossLinkNavigationLeaf.cs` - Crosslink leaves
+- `DocumentationNavigationFactory.cs` - Factory for creating nodes
+- `NavigationArguments.cs` - Constructor argument records
+- `NavigationHomeProvider.cs` - Home provider implementation
 
-```yaml
-toc:
-  - file: index.md # /
-    children:
-      - file: getting-started.md # /getting-started
-      - file: setup.md # /setup
-      - folder: syntax # /syntax
-        children:
-          - file: blocks.md # /syntax/blocks
-          - file: index.md # /syntax
-```
+### `Elastic.Documentation.Navigation/Assembler/`
+Assembler build navigation:
+- `SiteNavigation.cs` - Unified site root
 
-A file can specify `children` without having baring on it's children path on disk or url structure
+### Supporting Files
+- `README.md` - High-level overview (in src/)
+- `url-building.md` - URL building rules (in src/)
 
-```yaml
-toc:
-  - file: getting-started.md # /getting-started
-    children:
-      - file: setup.md # /setup
-```
+## Testing
 
-#### Deeplinking virtual files
+Tests are in `tests/Navigation.Tests/`:
 
-```yaml
-toc:
-  - file: a/b/c/getting-started.md # /a/b/c/getting-started
-    children:
-      - file: a/b/c/setup.md # /a/b/c/setup
-      - file: c/b/c/setup.md # /c/b/c/setup
-```
+**Isolated build tests:**
+- `Isolation/ConstructorTests.cs` - Basic navigation construction
+- `Isolation/FileNavigationTests.cs` - File leaf behavior
+- `Isolation/FolderIndexFileRefTests.cs` - Folder navigation
+- `Isolation/PhysicalDocsetTests.cs` - Real docset loading
 
-While supported, this is not recommended.
-* Favor `folder` over `file` when possible.
-* Navigation should follow the file structure as much as possible.
-* Virtual files are primarily intended to group sibling files together.
+**Assembler build tests:**
+- `Assembler/SiteNavigationTests.cs` - Site assembly
+- `Assembler/SiteDocumentationSetsTests.cs` - Multiple docsets
+- `Assembler/ComplexSiteNavigationTests.cs` - Complex scenarios
 
-`docs-builder` will hint when these guidelines are not followed.
+**Test pattern:**
+```csharp
+[Fact]
+public void FeatureUnderTest_Scenario_ExpectedBehavior()
+{
+    // Arrange: Create mock file system and configuration
+    var fileSystem = new MockFileSystem();
+    var config = CreateConfig(...);
 
+    // Act: Build navigation
+    var nav = new DocumentationSetNavigation<IDocumentationFile>(...);
 
-### Nested Table Of Contents
-
-A `docset.yml` may include a `toc.yml` that itself contains a `toc` and may include more `toc.yml` files.
-
-Given this `docset.yml`
-```yaml
-toc:
-  - toc: getting-started # /getting-started
-  - file: index.md # /
+    // Assert: Verify behavior
+    Assert.Equal("/expected/url/", nav.Index.Url);
+}
 ```
 
-`docs-builder` will include the `getting-started/toc.yml` file.
+## Common Tasks
 
-```yaml
-toc:
-  - file: index.md # / getting-started
-  - file: install.md # / getting-started/install
-```
+### Adding a New Node Type
 
-Note that the `toc` creates a scope both for paths and urls.
+1. Create class in `Isolated/` namespace
+2. Implement appropriate interface (`ILeafNavigationItem` or `INodeNavigationItem`)
+3. Add factory method if needed
+4. Update `ConvertToNavigationItem` in `DocumentationSetNavigation`
+5. Add tests in `Isolation/`
+6. Update [node-types.md](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/development/navigation/node-types.md)
 
-A `toc` reference may **NOT** have children of its own and must appear at the top level of a `toc:` section inside a `docset.yml` or `toc.yml` file.
+### Changing URL Calculation
 
-`docset.yml` defines how many levels deep we may include a `toc` reference. The default is `1`
+1. Review [first-principles.md](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/development/navigation/first-principles.md) - ensure consistency
+2. Update `FileNavigationLeaf.Url` property
+3. Consider cache invalidation
+4. Update tests
+5. Update [home-provider-architecture.md](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/development/navigation/home-provider-architecture.md)
 
-```yaml
-max_toc_depth: 2
-```
+### Modifying Configuration
 
+1. Update classes in `Elastic.Documentation.Configuration`
+2. Update `LoadAndResolve` methods
+3. Update Phase 2 consumption in navigation classes
+4. Update tests for both phases
+5. Update [two-phase-loading.md](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/development/navigation/two-phase-loading.md)
 
-## Global Navigation.
+### Debugging Re-homing Issues
 
-The global navigation is defined in `config/navigation.yml` and is used to build a single global navigation for all documentation sets defined in `config/assembler.yml`.
+1. Check `HomeProvider` assignments in [assembler-process.md](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/development/navigation/assembler-process.md)
+2. Verify `PathPrefix` values
+3. Check `NavigationRoot` points to correct root
+4. Look for cache issues (HomeProvider ID changed?)
+5. Review [home-provider-architecture.md](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/development/navigation/home-provider-architecture.md)
 
-The global navigation is built by
-* `docs-builder assemble` 
-* or calling `docs-builder assmembler clone` and `docs-builder assmembler build`
+## Related Documentation
 
-`config/navigation.yml` links ALL `docset.yml` and `toc.yml` files. 
+- `Elastic.Documentation.Configuration` - Phase 1 (configuration resolution)
+- `Elastic.Documentation.Links` - Cross-link resolution
+- `Elastic.Markdown` - Markdown processing
 
-Repositories in `config/assembler.yml` MAY be included in the global navigation. Once they do ALL their `docset.yml` and `toc.yml` files MUST be configured.
+## Source Reference
 
-```yaml
-toc:
-  - toc: get-started
-  - toc: extend
-    children:
-      - toc: kibana://extend
-        path_prefix: extend/kibana
-      - toc: logstash://extend
-        path_prefix: extend/logstash
-```
+For the actual implementation, see:
+- Library: `src/Elastic.Documentation.Navigation/`
+- Tests: `tests/Navigation.Tests/`
+- Configuration: `src/Elastic.Documentation.Configuration/`
 
-The toc follows a `<repository>://<path>` scheme. 
+## Contributing
 
-* If `<repository>` is not defined it's the narrative repository (`docs-builder`).
-`path_prefix` is mandatory.
-  * unless `<repository>` is not defined in which it defaults to `<path>`.
-* `path_prefix`'s MUST be unique
+When making changes:
 
+1. **Maintain invariants** from [first-principles.md](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/development/navigation/first-principles.md)
+2. **Keep phases separate** - don't mix configuration and navigation
+3. **Preserve O(1) re-homing** - don't add tree traversals
+4. **Add tests** for both isolated and assembler scenarios
+5. **Update documentation** in `docs/development/navigation/`
+6. **Run all 111+ tests** - they should all pass
+
+## Questions?
+
+- **"How do URLs get calculated?"** → [home-provider-architecture.md](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/development/navigation/home-provider-architecture.md)
+- **"Why two phases?"** → [two-phase-loading.md](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/development/navigation/two-phase-loading.md)
+- **"What is re-homing?"** → [navigation.md](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/development/navigation/navigation.md) then [home-provider-architecture.md](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/development/navigation/home-provider-architecture.md)
+- **"Which node type do I need?"** → [node-types.md](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/development/navigation/node-types.md)
+- **"How does the assembler work?"** → [assembler-process.md](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/development/navigation/assembler-process.md)
+- **"What are the design principles?"** → [first-principles.md](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/development/navigation/first-principles.md)
+
+---
+
+**Welcome to Elastic.Documentation.Navigation!**
+
+The library that makes it possible to build documentation in isolation and efficiently assemble it into unified sites with custom URL structures - no rebuilding required. 🚀

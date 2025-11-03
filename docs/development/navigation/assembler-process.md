@@ -2,7 +2,7 @@
 
 The assembler combines multiple documentation repositories into a unified site with custom URL prefixes.
 
-> **Prerequisites:** Read [Functional Principles #4](functional-principles.md#4-navigation-roots-can-be-re-homed) and [Home Provider Architecture](home-provider-architecture.md) first to understand re-homing.
+> **Prerequisites:** Read [Functional Principles #4](functional-principles.md#4.-navigation-roots-can-be-re-homed) and [Home Provider Architecture](home-provider-architecture.md) first to understand re-homing.
 
 ## The Challenge
 
