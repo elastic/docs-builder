@@ -1,0 +1,73 @@
+/* Licensed to Elasticsearch B.V under one or more agreements.
+ * Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+ * See the LICENSE file in the project root for more information
+ */
+
+/**
+ * Navigation Tooltip Styles
+ * Viewport-positioned tooltips for navigation items
+ */
+
+.nav-tooltip {
+  position: fixed;
+  padding: 8px 12px;
+  background-color: #1a1c21;
+  color: #ffffff;
+  font-size: 13px;
+  line-height: 1.4;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  max-width: 320px;
+  word-wrap: break-word;
+  white-space: normal;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
+  pointer-events: none;
+  z-index: 10000;
+}
+
+.nav-tooltip--visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Arrow indicator pointing to the nav item */
+.nav-tooltip::before {
+  content: '';
+  position: absolute;
+  left: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 6px 6px 6px 0;
+  border-color: transparent #1a1c21 transparent transparent;
+}
+
+/* Light theme support */
+@media (prefers-color-scheme: light) {
+  .nav-tooltip {
+    background-color: #343741;
+    color: #ffffff;
+  }
+
+  .nav-tooltip::before {
+    border-color: transparent #343741 transparent transparent;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .nav-tooltip {
+    border: 1px solid currentColor;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .nav-tooltip {
+    transition: none;
+  }
+}
