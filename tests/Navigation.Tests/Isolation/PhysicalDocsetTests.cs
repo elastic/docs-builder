@@ -6,7 +6,6 @@ using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.DocSet;
 using Elastic.Documentation.Diagnostics;
-using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Documentation.Navigation.Isolated.Leaf;
 using Elastic.Documentation.Navigation.Isolated.Node;
 using FluentAssertions;
@@ -30,7 +29,7 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, configPath, fileSystem);
 		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
 
-		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance);
+		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance, crossLinkResolver: TestCrossLinkResolver.Instance);
 
 		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
 
@@ -171,7 +170,7 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, configPath);
 		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
 
-		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance);
+		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance, crossLinkResolver: TestCrossLinkResolver.Instance);
 
 		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
 

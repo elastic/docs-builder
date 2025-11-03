@@ -127,7 +127,7 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
-		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
+		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance, crossLinkResolver: TestCrossLinkResolver.Instance);
 
 		navigation.NavigationItems.Should().HaveCount(0);
 		var crossLink = navigation.Index.Should().BeOfType<CrossLinkNavigationLeaf>().Subject;

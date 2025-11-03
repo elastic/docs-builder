@@ -2,10 +2,12 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using Elastic.Documentation;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
+using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation.Isolated;
 using Markdig;
 using Markdig.Parsers;
@@ -44,6 +46,25 @@ public class TestDiagnosticsCollector(ITestOutputHelper output)
 
 	/// <inheritdoc />
 	public override Task StopAsync(Cancel cancellationToken) => Task.CompletedTask;
+}
+
+/// <summary>A cross link resolver that always resolves to a fixed URL </summary>
+public class TestCrossLinkResolver : ICrossLinkResolver
+{
+	public static TestCrossLinkResolver Instance { get; } = new();
+
+	/// <inheritdoc />
+	public bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri)
+	{
+		resolvedUri = new Uri("https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main");
+		return true;
+	}
+
+	/// <inheritdoc />
+	public IUriEnvironmentResolver UriResolver { get; } = new IsolatedBuildEnvironmentUriResolver();
+
+	private TestCrossLinkResolver() { }
+
 }
 
 public class TestDocumentationSetContext : IDocumentationSetContext

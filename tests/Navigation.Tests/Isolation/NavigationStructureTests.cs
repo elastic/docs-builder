@@ -151,7 +151,7 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
 
-		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance);
+		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance, crossLinkResolver: TestCrossLinkResolver.Instance);
 
 		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
 
@@ -295,7 +295,7 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
-		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance);
+		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance, crossLinkResolver: TestCrossLinkResolver.Instance);
 
 		// Helper to recursively visit all navigation items
 		var allItems = new List<INavigationItem>();
