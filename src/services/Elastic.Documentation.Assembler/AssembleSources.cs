@@ -86,8 +86,7 @@ public class AssembleSources
 		AssembleContext = assembleContext;
 		AssembleSets = checkouts
 			.Where(c => c.Repository is { Skip: false })
-			.Select(c => new AssemblerDocumentationSet(logFactory, assembleContext, c, crossLinkResolver, configurationContext,
-				availableExporters))
+			.Select(c => new AssemblerDocumentationSet(logFactory, assembleContext, c, crossLinkResolver, configurationContext, availableExporters))
 			.ToDictionary(s => s.Checkout.Repository.Name, s => s)
 			.ToFrozenDictionary();
 	}

@@ -8,6 +8,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Elastic.Documentation.Configuration\Elastic.Documentation.Configuration.csproj" />
+      <ProjectReference Include="..\Elastic.Documentation.Links\Elastic.Documentation.Links.csproj" />
     </ItemGroup>
 
 </Project>

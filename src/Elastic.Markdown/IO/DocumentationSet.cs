@@ -13,7 +13,6 @@ using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation;
-using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Documentation.Navigation.Isolated.Leaf;
 using Elastic.Documentation.Navigation.Isolated.Node;
 using Elastic.Documentation.Site.Navigation;
@@ -22,7 +21,6 @@ using Elastic.Markdown.Extensions.DetectionRules;
 using Elastic.Markdown.IO.NewNavigation;
 using Elastic.Markdown.Myst;
 using Microsoft.Extensions.Logging;
-using YamlDotNet.Serialization.TypeInspectors;
 
 namespace Elastic.Markdown.IO;
 
@@ -77,7 +75,7 @@ public class DocumentationSet : IPositionalNavigation
 		MarkdownParser = new MarkdownParser(context, resolver);
 
 		var fileFactory = new MarkdownFileFactory(context, MarkdownParser, EnabledExtensions);
-		Navigation = new DocumentationSetNavigation<MarkdownFile>(context.ConfigurationYaml, context, fileFactory, pathPrefix: context.UrlPathPrefix);
+		Navigation = new DocumentationSetNavigation<MarkdownFile>(context.ConfigurationYaml, context, fileFactory, null, null, context.UrlPathPrefix, CrossLinkResolver);
 
 		Name = Context.Git != GitCheckoutInformation.Unavailable
 			? Context.Git.RepositoryName

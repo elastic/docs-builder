@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration.DocSet;
 using Elastic.Documentation.Extensions;
+using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation.Isolated.Leaf;
 
 namespace Elastic.Documentation.Navigation.Isolated.Node;
@@ -22,6 +23,7 @@ public class DocumentationSetNavigation<TModel>
 	where TModel : class, IDocumentationFile
 {
 	private readonly IDocumentationFileFactory<TModel> _factory;
+	private readonly ICrossLinkResolver _crossLinkResolver;
 
 	public DocumentationSetNavigation(
 		DocumentationSetFile documentationSet,
@@ -29,11 +31,13 @@ public class DocumentationSetNavigation<TModel>
 		IDocumentationFileFactory<TModel> factory,
 		IRootNavigationItem<INavigationModel, INavigationItem>? parent = null,
 		IRootNavigationItem<INavigationModel, INavigationItem>? root = null,
-		string? pathPrefix = null
+		string? pathPrefix = null,
+		ICrossLinkResolver? crossLinkResolver = null
 	)
 	{
 		_context = context;
 		_factory = factory;
+		_crossLinkResolver = crossLinkResolver ?? NoopCrossLinkResolver.Instance;
 		_pathPrefix = pathPrefix ?? string.Empty;
 		// Initialize root properties
 		_navigationRoot = root ?? this;
@@ -139,7 +143,7 @@ public class DocumentationSetNavigation<TModel>
 	public IReadOnlyCollection<INavigationItem> NavigationItems { get; private set; }
 
 	void IAssignableChildrenNavigation.SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems) => SetNavigationItems(navigationItems);
-	internal void SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems)
+	private void SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems)
 	{
 		var indexNavigation = navigationItems.QueryIndex<TModel>(this, $"{PathPrefix}/index.md", out navigationItems);
 		Index = indexNavigation;
@@ -280,7 +284,7 @@ public class DocumentationSetNavigation<TModel>
 		return fileNavigation;
 	}
 
-	private INavigationItem CreateCrossLinkNavigation(
+	private INavigationItem? CreateCrossLinkNavigation(
 		CrossLinkRef crossLinkRef,
 		int index,
 		INodeNavigationItem<INavigationModel, INavigationItem>? parent,
@@ -288,11 +292,13 @@ public class DocumentationSetNavigation<TModel>
 	)
 	{
 		var title = crossLinkRef.Title ?? crossLinkRef.CrossLinkUri.OriginalString;
-		var model = new CrossLinkModel(crossLinkRef.CrossLinkUri, title);
+		if (!_crossLinkResolver.TryResolve(s => _context.EmitError(_context.ConfigurationPath, s), crossLinkRef.CrossLinkUri, out var resolvedUri))
+			return null;
+		var model = new CrossLinkModel(resolvedUri, title);
 
 		return new CrossLinkNavigationLeaf(
 			model,
-			crossLinkRef.CrossLinkUri.OriginalString,
+			resolvedUri.ToString(),
 			crossLinkRef.Hidden,
 			parent,
 			homeAccessor
