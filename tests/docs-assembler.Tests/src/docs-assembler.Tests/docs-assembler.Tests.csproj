@@ -14,8 +14,4 @@
   <ItemGroup>
     <PackageReference Include="FakeItEasy" />
   </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\..\..\..\src\tooling\docs-assembler\docs-assembler.csproj" />
-  </ItemGroup>
 </Project>

@@ -21,7 +21,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\src\api\Elastic.Documentation.Api.Lambda\Elastic.Documentation.Api.Lambda.csproj" />
-    <ProjectReference Include="..\src\tooling\docs-assembler\docs-assembler.csproj"/>
     <ProjectReference Include="..\src\tooling\docs-builder\docs-builder.csproj"/>
     
     <ProjectReference Include="..\src\tooling\Elastic.Documentation.Tooling\Elastic.Documentation.Tooling.csproj"  IsAspireProjectResource="false" />

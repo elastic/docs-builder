@@ -8,7 +8,6 @@
 
   <ItemGroup>
     <ProjectReference Include="$(SolutionRoot)\src\Elastic.Documentation\Elastic.Documentation.csproj"/>
-    <ProjectReference Include="$(SolutionRoot)\src\tooling\docs-assembler\docs-assembler.csproj"/>
     <ProjectReference Include="$(SolutionRoot)\src\tooling\docs-builder\docs-builder.csproj"/>
     <ProjectReference Include="$(SolutionRoot)\aspire\aspire.csproj" />
   </ItemGroup>
