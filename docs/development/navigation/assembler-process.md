@@ -1,137 +1,84 @@
 # Assembler Process
 
-This document explains how the assembler builds a unified site navigation from multiple documentation repositories.
+The assembler combines multiple documentation repositories into a unified site with custom URL prefixes.
 
-## Overview
-
-The assembler combines multiple isolated documentation repositories into a single site with:
-- Unified navigation structure
-- Custom URL prefixes for each repository
-- Cross-repository linking
-- Phantom node tracking
+> **Prerequisites:** Read [Functional Principles #4](functional-principles.md#4-navigation-roots-can-be-re-homed) and [Home Provider Architecture](home-provider-architecture.md) first to understand re-homing.
 
 ## The Challenge
 
-Given:
-- `elastic-docs` repository (guides, API reference, tutorials)
-- `elasticsearch` repository (ES-specific docs)
-- `kibana` repository (Kibana-specific docs)
-- `logstash` repository (Logstash-specific docs)
+Multiple repositories need to appear as one site:
+- `elastic-docs` with `/api/` and `/guides/`
+- Assembled site needs `/elasticsearch/api/` and `/elasticsearch/guides/`
+- Same content, different URLs, no rebuilding
 
-Build a site where:
-- Each repository maintains its own `docset.yml`
-- URLs are organized by product/section (not repository)
-- Same TOC can appear in multiple places
-- Navigation structure is defined centrally
+## The Solution
 
-**Example:**
+Four-phase process:
+
+### Phase 1: Build with AssemblerBuild Flag
+
+```csharp
+public AssemblerDocumentationSet(
+    ILoggerFactory logFactory,
+    AssembleContext context,
+    Checkout checkout,
+    ICrossLinkResolver crossLinkResolver,
+    IConfigurationContext configurationContext,
+    IReadOnlySet<Exporter> availableExporters)
+{
+    // For each repository:
+    // 1. Load and resolve docset.yml
+    var buildContext = new BuildContext(...)
+    {
+        AssemblerBuild = true  // ← CRITICAL!
+    };
+
+    // 2. Build DocumentationSetNavigation with assembler context
+    DocumentationSet = new DocumentationSet(buildContext, logFactory, crossLinkResolver);
+}
 ```
-elastic-docs has:
-  - /api/
-  - /guides/
 
-We want site to have:
-  - /elasticsearch/api/    (from elastic-docs://api)
-  - /elasticsearch/guides/ (from elastic-docs://guides)
-  - /kibana/api/           (from kibana://)
-  - /logstash/              (from logstash://)
+**Why `AssemblerBuild = true` matters:**
+```csharp
+// DocumentationSetNavigation constructor when creating TOCs:
+var assemblerBuild = context.AssemblerBuild;
+
+var tocHomeProvider = assemblerBuild
+    ? new NavigationHomeProvider(...)  // Create NEW scope
+    : parentHomeProvider;              // Inherit parent's scope
+
+// Result: Each TOC gets its own HomeProvider instance
 ```
 
-## The Solution: Site Navigation
+**Without this flag:**
+```
+DocumentationSetNavigation
+  └─ TableOfContentsNavigation (api)
+      HomeProvider: INHERITED ← shares parent's provider
+```
+Can't re-home independently.
 
-`config/navigation.yml` defines the site structure:
+**With this flag:**
+```
+DocumentationSetNavigation
+  └─ TableOfContentsNavigation (api)
+      HomeProvider: NEW INSTANCE ← own provider!
+```
+Can re-home independently!
+
+### Phase 2: Load navigation.yml
 
 ```yaml
 toc:
-  - toc: elasticsearch
-    children:
-      - toc: elastic-docs://api
-        path_prefix: elasticsearch/api
-      - toc: elastic-docs://guides
-        path_prefix: elasticsearch/guides
-
-  - toc: kibana://
-    path_prefix: kibana
-
-  - toc: logstash://
-    path_prefix: logstash
-
-phantoms:
-  - source: plugins://
-    # Declared but not included in navigation
+  - toc: elastic-docs://api
+    path_prefix: elasticsearch/api
+  - toc: elastic-docs://guides
+    path_prefix: elasticsearch/guides
 ```
 
-## Assembler Build Process
+Defines where each TOC appears in the site.
 
-### Phase 1: Build Isolated Navigations
-
-```csharp
-// For each repository in assembler.yml
-foreach (var repo in repositories)
-{
-    // Load docset configuration
-    var docsetYaml = LoadFile($"{repo}/docset.yml");
-    var docsetConfig = DocumentationSetFile.LoadAndResolve(
-        collector,
-        docsetYaml,
-        fileSystem.DirectoryInfo.New(repo)
-    );
-
-    // Build isolated navigation
-    var navigation = new DocumentationSetNavigation<IDocumentationFile>(
-        docsetConfig,
-        CreateContext(repo),
-        GenericDocumentationFileFactory.Instance
-    );
-
-    // Store for later assembly
-    isolatedNavigations[repo] = navigation;
-}
-```
-
-**Result:** Each repository has its own navigation tree with URLs relative to `/`.
-
-### Phase 2: Load Site Navigation Configuration
-
-```csharp
-// Load navigation.yml
-var navigationYaml = LoadFile("config/navigation.yml");
-var siteConfig = SiteNavigationFile.LoadAndResolve(
-    collector,
-    navigationYaml,
-    fileSystem
-);
-```
-
-**`SiteNavigationFile` contains:**
-```csharp
-public class SiteNavigationFile
-{
-    public List<SiteTableOfContentsRef> TableOfContents { get; set; }
-    public List<PhantomRegistration> Phantoms { get; set; }
-}
-
-public class SiteTableOfContentsRef
-{
-    public Uri Source { get; set; }              // e.g., elastic-docs://api
-    public string PathPrefix { get; set; }       // e.g., "elasticsearch/api"
-    public List<SiteTableOfContentsRef> Children { get; set; }
-}
-```
-
-### Phase 3: Assemble Site Navigation
-
-```csharp
-// Create site navigation - this does the re-homing!
-var siteNavigation = new SiteNavigation(
-    siteConfig,
-    context,
-    isolatedNavigations.Values,  // All isolated navigations
-    sitePrefix: null  // Or custom prefix like "/docs"
-);
-```
-
-**What `SiteNavigation` constructor does:**
+### Phase 3: Create SiteNavigation
 
 ```csharp
 public SiteNavigation(
@@ -140,62 +87,29 @@ public SiteNavigation(
     IReadOnlyCollection<IDocumentationSetNavigation> documentationSetNavigations,
     string? sitePrefix)
 {
-    _sitePrefix = NormalizeSitePrefix(sitePrefix);
-
-    // 1. Initialize root properties
+    // 1. Initialize SiteNavigation as root
     NavigationRoot = this;
-    Parent = null;
-    Hidden = false;
-    Id = ShortId.Create("site");
-    Identifier = new Uri("site://");
 
-    // 2. Collect all root nodes (docsets and TOCs) into _nodes
-    _nodes = [];
+    // 2. Collect all docset/TOC nodes into dictionary
     foreach (var setNavigation in documentationSetNavigations)
     {
         foreach (var (identifier, node) in setNavigation.TableOfContentNodes)
-        {
-            if (!_nodes.TryAdd(identifier, node))
-            {
-                context.EmitError(
-                    context.ConfigurationPath,
-                    $"Duplicate navigation identifier: {identifier}"
-                );
-            }
-        }
+            _nodes.TryAdd(identifier, node);
     }
 
-    // 3. Build site navigation by re-homing nodes
-    var items = new List<INavigationItem>();
-    var index = 0;
+    // 3. Process each navigation.yml reference
     foreach (var tocRef in siteNavigationFile.TableOfContents)
     {
-        var navItem = CreateSiteTableOfContentsNavigation(
-            tocRef,
-            index++,
-            context,
-            parent: this,
-            root: null
-        );
-
+        var navItem = CreateSiteTableOfContentsNavigation(tocRef, index++, context, this, null);
         if (navItem != null)
             items.Add(navItem);
     }
-
-    // 4. Set index and navigation items
-    var indexNavigation = items.QueryIndex<IDocumentationFile>(
-        this,
-        "/index.md",
-        out var navigationItems
-    );
-    Index = indexNavigation;
-    NavigationItems = navigationItems;
 }
 ```
 
-### Phase 4: Re-home Individual Nodes
+### Phase 4: Re-home Each Reference
 
-The magic happens in `CreateSiteTableOfContentsNavigation`:
+For each entry in `navigation.yml`:
 
 ```csharp
 private INavigationItem? CreateSiteTableOfContentsNavigation(
@@ -205,454 +119,186 @@ private INavigationItem? CreateSiteTableOfContentsNavigation(
     INodeNavigationItem<INavigationModel, INavigationItem> parent,
     IRootNavigationItem<INavigationModel, INavigationItem>? root)
 {
-    // 1. Calculate path prefix
-    var pathPrefix = tocRef.PathPrefix;
-    if (string.IsNullOrWhiteSpace(pathPrefix))
-    {
-        // Handle narrative repository special case
-        if (tocRef.Source.Scheme != NarrativeRepository.RepositoryName)
-        {
-            context.EmitError(
-                context.ConfigurationPath,
-                $"path_prefix is required for TOC reference: {tocRef.Source}"
-            );
-            return null;
-        }
-    }
-
-    // Normalize path prefix
-    pathPrefix = pathPrefix.Trim('/');
-    pathPrefix = !string.IsNullOrWhiteSpace(_sitePrefix)
-        ? $"{_sitePrefix}/{pathPrefix}"
-        : "/" + pathPrefix;
-
-    // 2. Look up the node
-    if (!_nodes.TryGetValue(tocRef.Source, out var node))
-    {
-        context.EmitError(
-            context.ConfigurationPath,
-            $"Could not find navigation node for identifier: {tocRef.Source}"
-        );
-        return null;
-    }
-
-    if (node is not INavigationHomeAccessor homeAccessor)
-    {
-        context.EmitError(
-            context.ConfigurationPath,
-            $"Navigation node does not implement INavigationHomeAccessor: {tocRef.Source}"
-        );
-        return null;
-    }
-
-    root ??= node;
-
-    // 3. RE-HOME THE NODE! ⚡
-    node.Parent = parent;
-    node.NavigationIndex = index;
-    homeAccessor.HomeProvider = new NavigationHomeProvider(pathPrefix, root);
-
-    // 4. Process children (may include re-homing nested nodes)
-    var children = new List<INavigationItem>();
-
-    // First, add node's existing children
-    INavigationItem[] nodeChildren = [node.Index, .. node.NavigationItems];
-    foreach (var nodeChild in nodeChildren)
-    {
-        nodeChild.Parent = node;
-        if (nodeChild is INavigationHomeAccessor childAccessor)
-            childAccessor.HomeProvider = homeAccessor.HomeProvider;
-
-        // Don't add root nodes unless explicitly declared
-        if (nodeChild is IRootNavigationItem<INavigationModel, INavigationItem>)
-            continue;
-
-        children.Add(nodeChild);
-    }
-
-    // Then, add any additional children from navigation.yml
-    if (tocRef.Children.Count > 0)
-    {
-        var childIndex = 0;
-        foreach (var child in tocRef.Children)
-        {
-            var childItem = CreateSiteTableOfContentsNavigation(
-                child,
-                childIndex++,
-                context,
-                node,
-                root
-            );
-            if (childItem != null)
-                children.Add(childItem);
-        }
-    }
-
-    // 5. Set children on the node
-    switch (node)
-    {
-        case IAssignableChildrenNavigation documentationSetNavigation:
-            documentationSetNavigation.SetNavigationItems(children);
-            break;
-    }
-
-    return node;
+    // 1. Calculate final path_prefix
+    // 2. Look up node by identifier (elastic-docs://api)
+    // 3. Replace node's HomeProvider ← THE MAGIC! ⚡
+    // 4. Update parent/index
+    // 5. Process children (skip nested root nodes)
 }
 ```
 
-## Detailed Example
-
-### Input: Isolated Navigation
-
-```
-elastic-docs repository:
-DocumentationSetNavigation (elastic-docs://)
-  PathPrefix: ""
-  NavigationRoot: self
-  Index: /
-  NavigationItems:
-    - TableOfContentsNavigation (elastic-docs://api)
-        PathPrefix: ""
-        NavigationRoot: DocumentationSetNavigation
-        Index: /api/
-        NavigationItems:
-          - FileNavigationLeaf (api/rest.md)
-              Url: /api/rest/
-              NavigationRoot: DocumentationSetNavigation
-
-    - TableOfContentsNavigation (elastic-docs://guides)
-        PathPrefix: ""
-        NavigationRoot: DocumentationSetNavigation
-        Index: /guides/
-        NavigationItems:
-          - FileNavigationLeaf (guides/getting-started.md)
-              Url: /guides/getting-started/
-              NavigationRoot: DocumentationSetNavigation
+**The critical line:**
+```csharp
+private INavigationItem? CreateSiteTableOfContentsNavigation(...)
+{
+    // ...
+    homeAccessor.HomeProvider = new NavigationHomeProvider(pathPrefix, siteRoot);
+}
 ```
 
-### Configuration: navigation.yml
+This single assignment updates all descendant URLs instantly (O(1)).
+
+## How It Works: Example
+
+**Input: Built with AssemblerBuild = true**
+```
+elastic-docs://
+  HomeProvider: self
+  └─ elastic-docs://api
+      HomeProvider: Instance A (PathPrefix = "")
+      └─ api/rest.md → URL: /api/rest/
+  └─ elastic-docs://guides
+      HomeProvider: Instance B (PathPrefix = "")
+      └─ guides/start.md → URL: /guides/start/
+```
+
+**navigation.yml:**
+```yaml
+- toc: elastic-docs://api
+  path_prefix: elasticsearch/api
+- toc: elastic-docs://guides
+  path_prefix: elasticsearch/guides
+```
+
+**After Re-homing:**
+```
+SiteNavigation
+  └─ elastic-docs://api
+      HomeProvider: NEW (PathPrefix = "elasticsearch/api") ← Replaced!
+      └─ api/rest.md → URL: /elasticsearch/api/rest/ ✓
+  └─ elastic-docs://guides
+      HomeProvider: NEW (PathPrefix = "elasticsearch/guides") ← Replaced!
+      └─ guides/start.md → URL: /elasticsearch/guides/start/ ✓
+```
+
+## Why Separate Scopes Matter
+
+**Scenario:** Split a docset across the site.
 
 ```yaml
+# elastic-docs has both api/ and guides/ TOCs
 toc:
-  - toc: elasticsearch
-    children:
-      - toc: elastic-docs://api
-        path_prefix: elasticsearch/api
-
-      - toc: elastic-docs://guides
-        path_prefix: elasticsearch/guides
+  - toc: elastic-docs://api
+    path_prefix: reference/api       # Goes here
+  - toc: elastic-docs://guides
+    path_prefix: learn/guides        # Goes there
 ```
 
-### Output: Assembled Site Navigation
+If TOCs shared their parent's provider, both would get the same prefix. Separate providers enable different prefixes from the same repository.
 
-```
-SiteNavigation (site://)
-  PathPrefix: ""
-  NavigationRoot: self
-  Identifier: site://
+## Key Architecture Points
 
-  Nodes:
-    [elastic-docs://] = DocumentationSetNavigation
-    [elastic-docs://api] = TableOfContentsNavigation
-    [elastic-docs://guides] = TableOfContentsNavigation
+**1. AssemblerBuild Flag Controls Scope Creation**
+- True: TOCs create own HomeProvider
+- False: TOCs inherit parent's HomeProvider
 
-  NavigationItems:
-    - VirtualFolderNode ("elasticsearch")
-        NavigationItems:
+**2. HomeProvider is the Re-homing Mechanism**
+- URLs calculated from `HomeProvider.PathPrefix`
+- Changing provider changes all descendant URLs
+- No tree traversal needed
 
-          - TableOfContentsNavigation (elastic-docs://api) RE-HOMED! ⚡
-              PathPrefix: "elasticsearch/api"           ← Changed!
-              NavigationRoot: SiteNavigation            ← Changed!
-              Parent: VirtualFolderNode                 ← Changed!
-              HomeProvider: new NavigationHomeProvider(
-                  "/elasticsearch/api",
-                  SiteNavigation
-              )
-              Index: /elasticsearch/api/                ← Changed!
-              NavigationItems:
-                - FileNavigationLeaf (api/rest.md)
-                    Url: /elasticsearch/api/rest/       ← Changed!
-                    NavigationRoot: SiteNavigation      ← Changed!
+**3. Root Nodes Can Be Re-homed**
+- `DocumentationSetNavigation` - Entire docset
+- `TableOfContentsNavigation` - Individual TOC
+- Must have own provider (not inherited)
 
-          - TableOfContentsNavigation (elastic-docs://guides) RE-HOMED! ⚡
-              PathPrefix: "elasticsearch/guides"        ← Changed!
-              NavigationRoot: SiteNavigation            ← Changed!
-              Parent: VirtualFolderNode                 ← Changed!
-              HomeProvider: new NavigationHomeProvider(
-                  "/elasticsearch/guides",
-                  SiteNavigation
-              )
-              Index: /elasticsearch/guides/             ← Changed!
-              NavigationItems:
-                - FileNavigationLeaf (guides/getting-started.md)
-                    Url: /elasticsearch/guides/getting-started/ ← Changed!
-                    NavigationRoot: SiteNavigation      ← Changed!
+**4. Non-Root Nodes Inherit**
+- `FileNavigationLeaf`, `FolderNavigation`, etc.
+- Use parent's HomeProvider
+- Re-home automatically when parent re-homed
+
+## Path Prefix Requirements
+
+```yaml
+# Required
+- toc: elastic-docs://api
+  path_prefix: elasticsearch/api  # Must be unique!
+
+# Exception: narrative repository
+- toc: docs-content://guides
+  # path_prefix defaults to "guides"
 ```
 
-**Key Changes:**
-1. `HomeProvider` replaced → new path prefix and navigation root
-2. All URLs automatically updated (lazy calculation)
-3. Parent relationships updated
-4. NavigationRoot points to SiteNavigation
-
-## Re-homing Performance
-
-**Cost of re-homing a subtree with 10,000 nodes:**
-```csharp
-// This single line re-homes all 10,000 nodes!
-homeAccessor.HomeProvider = new NavigationHomeProvider(pathPrefix, root);
-```
-
-**Time complexity:** O(1)
-- No tree traversal
-- No URL updates
-- Just reference assignment
-
-**When URLs are accessed later:**
-- First access: O(path depth) calculation
-- Subsequent: O(1) from cache
-- Cache invalidated automatically (HomeProvider ID changed)
+All `path_prefix` values must be unique across the site.
 
 ## Phantom Nodes
 
-Phantoms are nodes declared in navigation.yml but not included in the tree:
+Declared but not included:
 
 ```yaml
 phantoms:
   - source: plugins://
-  - source: cloud://monitoring
 ```
 
-**Purpose:**
-- Document intentionally excluded content
-- Prevent "undeclared navigation" warnings
-- Enable validation of cross-links to phantom content
+Prevents "undeclared navigation" warnings for excluded content.
 
-**Tracking:**
+## The Re-homing Flow
+
+```
+1. Build with AssemblerBuild = true
+   → TOCs get own HomeProvider
+
+2. Collect all nodes into dictionary
+   → Indexed by identifier (elastic-docs://api)
+
+3. For each navigation.yml entry:
+   → Look up node
+   → Replace HomeProvider ← O(1) operation
+   → All URLs update automatically
+
+4. Result: Unified site with custom structure
+```
+
+## What Makes This Fast
+
+**O(1) Re-homing:**
 ```csharp
-// SiteNavigation tracks phantoms
-public IReadOnlyCollection<PhantomRegistration> Phantoms { get; }
-public HashSet<Uri> DeclaredPhantoms { get; }
-
-// After assembly, check for unseen nodes
-foreach (var node in UnseenNodes)
-{
-    if (!DeclaredPhantoms.Contains(node))
-        context.EmitHint(
-            context.ConfigurationPath,
-            $"Navigation does not explicitly declare: {node} as a phantom"
-        );
-}
-```
-
-## Path Prefix Requirements
-
-In assembler builds, `path_prefix` is **mandatory** (with one exception):
-
-```yaml
-toc:
-  - toc: elastic-docs://api
-    path_prefix: elasticsearch/api  # Required!
-
-  - toc: docs-content://guides
-    # path_prefix not required for narrative repository
-    # Will default to "guides"
+// This updates 10,000 URLs instantly:
+node.HomeProvider = new NavigationHomeProvider(newPrefix, newRoot);
 ```
 
 **Why?**
-- Prevents URL collisions
-- Makes routing explicit
-- Enables flexible reorganization
+- URLs calculated on-demand from HomeProvider
+- Not stored in nodes
+- Changing provider = all URLs recalculate next access
+- Smart caching invalidates on provider change
 
-**Validation:**
-```csharp
-if (string.IsNullOrWhiteSpace(pathPrefix))
-{
-    if (tocRef.Source.Scheme != NarrativeRepository.RepositoryName)
-    {
-        context.EmitError(
-            context.ConfigurationPath,
-            $"path_prefix is required for TOC reference: {tocRef.Source}"
-        );
-    }
-}
-```
+## Common Patterns
 
-## Nested Re-homing
-
-Assembler builds can have nested structures where nodes are re-homed multiple times:
-
+**Pattern 1: Keep docset together**
 ```yaml
-toc:
-  - toc: products
-    children:
-      - toc: elasticsearch
-        path_prefix: products/elasticsearch
-        children:
-          - toc: elastic-docs://api
-            path_prefix: products/elasticsearch/api
+- toc: elastic-docs://
+  path_prefix: elasticsearch
 ```
 
-**How it works:**
-
-1. Create virtual `products` node
-2. Re-home `elasticsearch` to `/products/elasticsearch`
-3. Re-home `elastic-docs://api` to `/products/elasticsearch/api`
-
-Each level creates a new scope with its own HomeProvider.
-
-## Error Handling
-
-The assembler emits errors for common issues:
-
-### Duplicate Identifiers
-```csharp
-// Two docsets with same identifier
-if (!_nodes.TryAdd(identifier, node))
-{
-    context.EmitError(
-        context.ConfigurationPath,
-        $"Duplicate navigation identifier: {identifier}"
-    );
-}
+**Pattern 2: Split docset apart**
+```yaml
+- toc: elastic-docs://api
+  path_prefix: reference/api
+- toc: elastic-docs://guides
+  path_prefix: learn/guides
 ```
 
-### Missing Nodes
-```csharp
-// Referenced node doesn't exist
-if (!_nodes.TryGetValue(tocRef.Source, out var node))
-{
-    context.EmitError(
-        context.ConfigurationPath,
-        $"Could not find navigation node for identifier: {tocRef.Source}"
-    );
-}
-```
-
-### Undeclared Nested TOCs
-```csharp
-// Found a nested TOC that wasn't declared in navigation.yml
-if (!DeclaredTableOfContents.Contains(rootChild.Identifier) &&
-    !DeclaredPhantoms.Contains(rootChild.Identifier))
-{
-    context.EmitWarning(
-        context.ConfigurationPath,
-        $"Navigation does not explicitly declare: {rootChild.Identifier}"
-    );
-}
-```
-
-## Site Prefix
-
-The entire site can have a global prefix:
-
-```csharp
-var siteNavigation = new SiteNavigation(
-    siteConfig,
-    context,
-    documentationSetNavigations,
-    sitePrefix: "/docs"  // All URLs start with /docs
-);
-```
-
-**Example:**
-```
-Without site prefix:
-  /elasticsearch/api/rest/
-
-With sitePrefix="/docs":
-  /docs/elasticsearch/api/rest/
-```
-
-**Normalization:**
-```csharp
-private static string? NormalizeSitePrefix(string? sitePrefix)
-{
-    if (string.IsNullOrWhiteSpace(sitePrefix))
-        return null;
-
-    var normalized = sitePrefix.Trim();
-
-    // Ensure leading slash
-    if (!normalized.StartsWith('/'))
-        normalized = "/" + normalized;
-
-    // Remove trailing slash
-    normalized = normalized.TrimEnd('/');
-
-    return normalized;
-}
-```
-
-## Testing Assembler Builds
-
-```csharp
-[Fact]
-public void AssemblerRehomesNavigationUrls()
-{
-    // Arrange: Build isolated navigation
-    var docset = DocumentationSetFile.LoadAndResolve(
-        collector,
-        yaml,
-        fileSystem.NewDirInfo("/elastic-docs")
-    );
-    var isolatedNav = new DocumentationSetNavigation<IDocumentationFile>(
-        docset,
-        isolatedContext,
-        factory
-    );
-
-    // Assert: URLs in isolated build
-    var apiLeaf = FindLeaf(isolatedNav, "api/rest.md");
-    Assert.Equal("/api/rest/", apiLeaf.Url);
-
-    // Act: Assemble site
-    var siteConfig = new SiteNavigationFile
-    {
-        TableOfContents = [
-            new SiteTableOfContentsRef
-            {
-                Source = new Uri("elastic-docs://api"),
-                PathPrefix = "elasticsearch/api"
-            }
-        ]
-    };
-
-    var siteNav = new SiteNavigation(
-        siteConfig,
-        assemblerContext,
-        [isolatedNav],
-        sitePrefix: null
-    );
-
-    // Assert: URLs in assembled site
-    var apiLeafInSite = FindLeaf(siteNav, "api/rest.md");
-    Assert.Equal("/elasticsearch/api/rest/", apiLeafInSite.Url);
-
-    // The same leaf object! Just re-homed!
-    Assert.Same(apiLeaf, apiLeafInSite);
-}
+**Pattern 3: Nest docsets**
+```yaml
+- toc: products
+  children:
+    - toc: elasticsearch://
+      path_prefix: products/elasticsearch
+    - toc: kibana://
+      path_prefix: products/kibana
 ```
 
 ## Summary
 
-The assembler process:
+**The assembler enables:**
+- Build repositories independently (isolated)
+- Combine into unified site (assembled)
+- Custom URL structure per site
+- Split single docset across multiple sections
+- O(1) re-homing (no tree reconstruction)
 
-1. **Builds isolated navigations** - Each repository with URLs relative to `/`
-2. **Loads site configuration** - `navigation.yml` with path prefixes
-3. **Re-homes nodes** - O(1) operation to change URL prefix
-4. **Assembles site tree** - Unified navigation with custom structure
-5. **Tracks phantoms** - Documents excluded content
-6. **Validates** - Catches duplicates, missing nodes, undeclared TOCs
+**The critical piece:**
+`AssemblerBuild = true` causes `TableOfContentsNavigation` to create own `HomeProvider`, enabling independent re-homing of TOCs within a docset.
 
-**Key Innovation:** Re-homing via HomeProvider pattern enables:
-- O(1) URL prefix changes
-- No tree reconstruction
-- Lazy URL calculation
-- Same node in multiple contexts
-
-This makes it possible to:
-- Build repositories independently
-- Test in isolation
-- Assemble flexibly into unified site
-- Reorganize without rebuilding
+Without this, you can only re-home entire docsets. With it, you can split a docset anywhere.

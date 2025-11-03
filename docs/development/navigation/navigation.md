@@ -4,14 +4,21 @@ This document provides an overview of how `Elastic.Documentation.Navigation` wor
 
 ## Documentation Structure
 
-For deeper dives into specific topics, see:
+**Start here:**
+- **[Visual Walkthrough](visual-walkthrough.md)** - Visual tour with diagrams (best for first-time readers)
+- **[First Principles](first-principles.md)** - Core design principles (functional and technical)
 
-- **[Visual Walkthrough](visual-walkthrough.md)** - Visual tour with diagrams showing navigation structures in both build modes
-- **[First Principles](first-principles.md)** - Core design principles and invariants that guide the navigation architecture
-- **[Two-Phase Loading](two-phase-loading.md)** - Why configuration resolution and navigation construction are separate phases
-- **[Home Provider Architecture](home-provider-architecture.md)** - The pattern that enables O(1) re-homing of navigation subtrees
-- **[Node Types](node-types.md)** - Detailed reference for each navigation node type (leaves, nodes, roots)
-- **[Assembler Process](assembler-process.md)** - How multiple repositories are combined into a unified site
+**Learn the architecture:**
+- **[Functional Principles](functional-principles.md)** - What the system does and why
+- **[Two-Phase Loading](two-phase-loading.md)** - Configuration resolution vs navigation construction
+- **[Node Types](node-types.md)** - Reference for each navigation node type
+
+**Understand key mechanisms:**
+- **[Home Provider Architecture](home-provider-architecture.md)** - How O(1) re-homing works
+- **[Assembler Process](assembler-process.md)** - How multiple repositories combine into one site
+
+**Implementation details:**
+- **[Technical Principles](technical-principles.md)** - How the system is implemented
 
 ## Quick Start
 

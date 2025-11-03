@@ -2,6 +2,8 @@
 
 Navigation construction splits into two distinct phases: configuration resolution and navigation building.
 
+> **Overview:** For a high-level understanding, see [Functional Principles #1](functional-principles.md#1-two-phase-loading). This document provides detailed implementation information.
+
 ## Why Two Phases?
 
 Building navigation requires two fundamentally different operations:

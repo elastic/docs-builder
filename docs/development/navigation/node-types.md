@@ -2,6 +2,8 @@
 
 This document provides a detailed reference for each navigation node type in `Elastic.Documentation.Navigation`.
 
+> **Context:** For the acyclic graph structure that these nodes form, see [Functional Principles #8](functional-principles.md#8-acyclic-graph-structure).
+
 ## Type Hierarchy
 
 ```

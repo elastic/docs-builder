@@ -1,6 +1,8 @@
 # Home Provider Architecture
 
-The Home Provider pattern is the secret sauce that makes re-homing navigation subtrees a cheap O(1) operation.
+The Home Provider pattern enables O(1) re-homing of navigation subtrees through indirection.
+
+> **Overview:** For high-level concepts, see [Functional Principles #3-5](functional-principles.md#3-url-building-is-dynamic-and-cheap). This document explains the implementation.
 
 ## The Problem
 
@@ -9,12 +11,12 @@ When building assembled documentation sites, we need to:
 2. Combine them into a single site with custom URL prefixes
 3. Update all URLs in a subtree efficiently
 
-**Naive Approach (doesn't work):**
+**Naive approach:**
 ```csharp
-// Bad: Traverse entire subtree to update URLs
+// Traverse entire subtree to update URLs
 void UpdateUrlPrefix(INavigationItem root, string newPrefix)
 {
-    // O(n) - have to visit every node!
+    // O(n) - visit every node
     foreach (var item in TraverseTree(root))
     {
         item.UrlPrefix = newPrefix;
@@ -22,15 +24,15 @@ void UpdateUrlPrefix(INavigationItem root, string newPrefix)
 }
 ```
 
-**Problems with naive approach:**
+**Issues:**
 - O(n) traversal for every prefix change
-- Have to store URL prefix at every node (memory waste)
-- Hard to keep URLs consistent
-- Can't lazily calculate URLs
+- URL prefix stored at every node
+- URLs calculated at construction time
+- Changes require tree reconstruction
 
-## The Solution: Home Provider Pattern
+## The Solution: Provider Pattern
 
-Instead of storing URL information at each node, we use a **provider pattern** with indirection:
+Instead of storing URL information at each node, use indirection through a provider:
 
 ```csharp
 // The provider defines the URL context for a scope
@@ -48,9 +50,7 @@ public interface INavigationHomeAccessor
 }
 ```
 
-### Key Insight
-
-Nodes don't store URL information. Instead they **reference** a provider:
+Nodes reference a provider instead of storing URL information:
 
 ```csharp
 public class FileNavigationLeaf<TModel>
@@ -61,7 +61,7 @@ public class FileNavigationLeaf<TModel>
     {
         get
         {
-            // Dynamically calculate from current provider!
+            // Calculate from current provider
             var prefix = _homeAccessor.HomeProvider.PathPrefix;
             return $"{prefix}/{_relativePath}/";
         }
@@ -69,10 +69,10 @@ public class FileNavigationLeaf<TModel>
 }
 ```
 
-Now re-homing is O(1):
+Re-homing becomes a single assignment:
 
 ```csharp
-// Change the provider → all descendants instantly use new prefix!
+// Change the provider → all descendants use new prefix
 docsetNavigation.HomeProvider = new NavigationHomeProvider("/guide", siteNav);
 ```
 
@@ -80,16 +80,15 @@ docsetNavigation.HomeProvider = new NavigationHomeProvider("/guide", siteNav);
 
 ### 1. Scope Creation
 
-Certain navigation types create scopes by implementing `INavigationHomeProvider`:
+Navigation types that can be re-homed implement `INavigationHomeProvider`:
 
 ```csharp
 public class DocumentationSetNavigation<TModel>
     : INavigationHomeProvider, INavigationHomeAccessor
 {
-    // This node IS a provider (creates scope)
     private string _pathPrefix;
 
-    // Properties for being a provider
+    // Provider properties
     public string PathPrefix => HomeProvider == this
         ? _pathPrefix
         : HomeProvider.PathPrefix;
@@ -99,14 +98,14 @@ public class DocumentationSetNavigation<TModel>
             ? this
             : HomeProvider.NavigationRoot;
 
-    // Property for accessing current provider
+    // Accessor property
     public INavigationHomeProvider HomeProvider { get; set; }
 
-    // Initially, it's its own provider
+    // Initially self-referential
     public DocumentationSetNavigation(...)
     {
         _pathPrefix = pathPrefix ?? "";
-        HomeProvider = this; // I am my own provider!
+        HomeProvider = this;
     }
 }
 ```
@@ -126,7 +125,7 @@ var fileNav = new FileNavigationLeaf<TModel>(
         hidden,
         index,
         parent,
-        homeAccessor: this // Pass down the accessor!
+        homeAccessor: this // Pass down the accessor
     )
 );
 ```
@@ -147,7 +146,7 @@ public class FileNavigationLeaf<TModel>
             // Get prefix from current provider
             var rootUrl = _args.HomeAccessor.HomeProvider.PathPrefix.TrimEnd('/');
 
-            // Determine if we're relative to container or docset
+            // Determine path based on context
             var relativeToContainer =
                 _args.HomeAccessor.HomeProvider.NavigationRoot.Parent is SiteNavigation;
 
@@ -155,41 +154,37 @@ public class FileNavigationLeaf<TModel>
                 ? _args.RelativePathToTableOfContents
                 : _args.RelativePathToDocumentationSet;
 
-            // Calculate URL
             return BuildUrl(rootUrl, relativePath);
         }
     }
 }
 ```
 
-### 4. Re-homing (The Magic!)
+### 4. Re-homing
 
-In assembler builds, `SiteNavigation` re-homes subtrees:
+In assembler builds, `SiteNavigation` replaces the provider:
 
 ```csharp
-// SiteNavigation.cs:211
-private INavigationItem? CreateSiteTableOfContentsNavigation(...)
-{
-    // Calculate new path prefix for this subtree
-    var pathPrefix = $"{_sitePrefix}/{tocRef.PathPrefix}".Trim('/');
+// CreateSiteTableOfContentsNavigation(...):
+// Calculate new path prefix for this subtree
+var pathPrefix = $"{_sitePrefix}/{tocRef.PathPrefix}".Trim('/');
 
-    // Create new provider with custom prefix
-    var newProvider = new NavigationHomeProvider(pathPrefix, root);
+// Create new provider with custom prefix
+var newProvider = new NavigationHomeProvider(pathPrefix, root);
 
-    // Re-home the entire subtree with one assignment!
-    homeAccessor.HomeProvider = newProvider;
+// Replace provider - this is the magic! ⚡
+homeAccessor.HomeProvider = newProvider;
 
-    // All descendants now use the new prefix! ✨
-}
+// All descendants now use the new prefix
 ```
 
 **What happens:**
-1. `homeAccessor.HomeProvider` is set to new provider
+1. `homeAccessor.HomeProvider` is assigned a new provider
 2. Provider has `PathPrefix = "/guide"` and `NavigationRoot = SiteNavigation`
-3. Every URL calculation in that subtree now uses "/guide" prefix
-4. No tree traversal needed!
+3. Every URL calculation in that subtree now uses the "/guide" prefix
+4. No tree traversal needed
 
-## Detailed Example
+## Example: Isolated to Assembled
 
 ### Isolated Build
 
@@ -212,16 +207,6 @@ DocumentationSetNavigation (elastic-docs)
          url = "/api/rest/"
 ```
 
-### Assembler Build - Before Re-homing
-
-```
-SiteNavigation
-├─ HomeProvider: self
-├─ PathPrefix: ""
-│
-└─ (About to add elastic-docs with prefix "/guide")
-```
-
 ### Assembler Build - After Re-homing
 
 ```
@@ -232,45 +217,49 @@ SiteNavigation
 │
 └─ DocumentationSetNavigation (elastic-docs)
    ├─ HomeProvider: NEW NavigationHomeProvider("/guide", SiteNavigation) ⚡
-   ├─ PathPrefix: "/guide" (from NEW provider)
-   ├─ NavigationRoot: SiteNavigation (from NEW provider)
+   ├─ PathPrefix: "/guide" (from new provider)
+   ├─ NavigationRoot: SiteNavigation (from new provider)
    │
    └─ TableOfContentsNavigation (api/)
-      ├─ HomeProvider: same as parent = NEW provider ⚡
-      ├─ PathPrefix: "/guide" (inherited from NEW provider)
-      ├─ NavigationRoot: SiteNavigation (inherited from NEW provider)
+      ├─ HomeProvider: inherited = new provider ⚡
+      ├─ PathPrefix: "/guide" (from new provider)
+      ├─ NavigationRoot: SiteNavigation (from new provider)
       │
       └─ FileNavigationLeaf (api/rest.md)
-         ├─ HomeAccessor.HomeProvider: NEW provider ⚡
+         ├─ HomeAccessor.HomeProvider: new provider ⚡
          └─ URL calculation:
             prefix = HomeProvider.PathPrefix = "/guide"
             path = "api/rest.md"
             url = "/guide/api/rest/" ✨
 ```
 
-**The re-homing happened at line marked with ⚡ - a single assignment!**
+**The re-homing happened at lines marked with ⚡ - a single assignment!**
 
-## Why This Is Brilliant
+## Key Characteristics
 
-### 1. O(1) Re-homing
+### O(1) Re-homing
 
 ```csharp
-// This is ALL it takes to update thousands of URLs!
+// This updates ALL URLs in the subtree - regardless of size!
 node.HomeProvider = new NavigationHomeProvider("/new-prefix", newRoot);
 ```
 
+**Time complexity: O(1)**
+
+This isn't marketing - it's a fact. Whether the subtree has 10 nodes or 10,000 nodes, re-homing takes the same amount of time because it's a single reference assignment.
+
 **Compare to naive approach:**
-- Naive: O(n) traversal of entire subtree
-- Provider: O(1) single reference assignment
+- Naive: O(n) - must visit every node
+- Provider: O(1) - single assignment
 
-### 2. Lazy Evaluation
+### Lazy Evaluation
 
-URLs are only calculated when accessed:
-- Don't pay for URLs you never request
-- Memory efficient - no stored URL strings
+URLs calculated on-demand:
+- Not calculated until accessed
 - Always reflects current provider state
+- Memory efficient - no stored URL strings
 
-### 3. Smart Caching
+### Smart Caching
 
 ```csharp
 private string? _homeProviderCache;
@@ -285,7 +274,7 @@ public string Url
             _homeProviderCache == _args.HomeAccessor.HomeProvider.Id &&
             _urlCache != null)
         {
-            return _urlCache; // Cache hit!
+            return _urlCache;
         }
 
         // Recalculate and cache
@@ -296,30 +285,17 @@ public string Url
 }
 ```
 
-**Benefits:**
-- First access: O(path depth) calculation
+Caching strategy:
+- First access: O(depth) calculation
 - Subsequent accesses: O(1) cache lookup
-- Cache invalidates automatically when provider changes (via Id)
-- No manual cache management needed
+- Cache invalidates automatically when provider changes (via Id comparison)
 
-### 4. Scope Isolation
+### Scope Isolation
 
 Each provider creates an isolated scope:
 - Changes to one scope don't affect others
 - Clear ownership of URL context
-- Easy to reason about URL calculation
-- Enables multiple "views" of same navigation tree
-
-### 5. Type Safety
-
-```csharp
-// Can't forget to pass the accessor - it's in the constructor!
-public FileNavigationLeaf(
-    TModel model,
-    IFileInfo fileInfo,
-    FileNavigationArgs args // Contains HomeAccessor
-)
-```
+- Enables independent re-homing of subtrees
 
 ## Implementation Details
 
@@ -334,29 +310,28 @@ public class NavigationHomeProvider : INavigationHomeProvider
 }
 ```
 
-When a provider changes, the ID changes, invalidating all cached URLs.
+When a provider changes, the ID changes, invalidating cached URLs.
 
 ### Accessor vs Provider
 
-**Why separate interfaces?**
+**Provider:** Nodes that create scopes (`DocumentationSetNavigation`, `TableOfContentsNavigation`)
 
-- **Provider**: Nodes that CREATE scopes (DocumentationSetNavigation, TableOfContentsNavigation)
-- **Accessor**: Nodes that USE scopes (all nodes)
+**Accessor:** All nodes that need to calculate URLs
 
-Some nodes are both:
+Some nodes implement both:
 ```csharp
 public class DocumentationSetNavigation<TModel>
     : INavigationHomeProvider, INavigationHomeAccessor
 {
-    // I can be a provider AND access a different provider
+    // Can be a provider AND access a different provider
 }
 ```
 
-This enables re-homing!
+This dual implementation is what enables re-homing.
 
-### Passing Accessors Down the Tree
+### Passing Accessors Down
 
-During construction, accessors flow down:
+During construction, accessors flow down the tree:
 
 ```csharp
 // Parent creates child, passes its accessor
@@ -365,11 +340,11 @@ var childNav = ConvertToNavigationItem(
     index,
     context,
     parent: this,
-    homeAccessor: this // Pass down the accessor chain
+    homeAccessor: this // Pass down accessor
 );
 ```
 
-Children inherit their parent's accessor, creating a chain back to the scope provider.
+Children inherit their parent's accessor, creating a reference chain back to the scope provider.
 
 ### Assembler-Specific Provider Behavior
 
@@ -378,7 +353,6 @@ In assembler builds, TOCs create isolated providers:
 ```csharp
 var assemblerBuild = context.AssemblerBuild;
 
-// For assembler builds, TOCs create their own home provider
 var isolatedHomeProvider = assemblerBuild
     ? new NavigationHomeProvider(
         homeAccessor.HomeProvider.PathPrefix,
@@ -387,7 +361,9 @@ var isolatedHomeProvider = assemblerBuild
     : homeAccessor.HomeProvider;
 ```
 
-**Why?** This ensures TOCs can be re-homed independently during site assembly.
+This ensures TOCs can be re-homed independently during site assembly.
+
+> See [Assembler Process](assembler-process.md) for details on how this flag controls scope creation.
 
 ## Performance Analysis
 
@@ -396,7 +372,7 @@ var isolatedHomeProvider = assemblerBuild
 **Per Node:**
 - Provider: ~48 bytes (string, reference, guid)
 - Accessor: 8 bytes (reference)
-- Cache: ~32 bytes (2 strings) - only on leaf nodes
+- Cache: ~32 bytes (2 strings) - leaf nodes only
 
 **For 10,000 nodes:**
 - Without caching: ~560 KB
@@ -410,19 +386,22 @@ var isolatedHomeProvider = assemblerBuild
 - Cache miss: O(depth) - string concatenation + path processing
 - Re-homing: O(1) - reference assignment
 
-**Typical Access Pattern:**
-- First access: Pay calculation cost
-- Subsequent: Free cache lookups
-- Re-home: Invalidate caches (cheap), recalculate on next access (lazy)
+**Access Pattern:**
+- First access: Calculate and cache
+- Subsequent: Return cached value
+- After re-homing: Recalculate on next access
 
 ### Scalability
 
-The pattern scales beautifully:
-- 100 nodes: Re-home in 1μs
-- 10,000 nodes: Re-home in 1μs
-- 1,000,000 nodes: Re-home in 1μs
+Re-homing time is constant regardless of subtree size:
 
-**Because it's always O(1)!**
+| Subtree Size | Re-homing Time |
+|--------------|----------------|
+| 100 nodes | O(1) |
+| 10,000 nodes | O(1) |
+| 1,000,000 nodes | O(1) |
+
+This is O(1) because re-homing is a single reference assignment, regardless of how many nodes reference that provider.
 
 ## Common Patterns
 
@@ -436,14 +415,11 @@ public class MyNavigation : INavigationHomeProvider, INavigationHomeAccessor
     public MyNavigation(string pathPrefix)
     {
         _pathPrefix = pathPrefix;
-        HomeProvider = this; // I am my own provider initially
+        HomeProvider = this; // Self-referential initially
     }
 
-    // Provider implementation
     public string PathPrefix => HomeProvider == this ? _pathPrefix : HomeProvider.PathPrefix;
     public IRootNavigationItem<...> NavigationRoot => /* ... */;
-
-    // Accessor implementation
     public INavigationHomeProvider HomeProvider { get; set; }
 }
 ```
@@ -468,18 +444,17 @@ public class MyLeaf
 ### Pattern 3: Re-homing
 
 ```csharp
-// In SiteNavigation or other assembler code
 void RehomeSubtree(
     INavigationHomeAccessor subtree,
     string newPrefix,
     IRootNavigationItem<...> newRoot)
 {
     subtree.HomeProvider = new NavigationHomeProvider(newPrefix, newRoot);
-    // Done! All URLs updated.
+    // ✅ All URLs updated
 }
 ```
 
-## Testing the Pattern
+## Testing
 
 ### Unit Test Example
 
@@ -487,31 +462,29 @@ void RehomeSubtree(
 [Fact]
 public void RehomingUpdatesUrlsDynamically()
 {
-    // Arrange: Create isolated navigation
+    // Create isolated navigation
     var docset = new DocumentationSetNavigation<IDocumentationFile>(...);
     var leaf = docset.NavigationItems.First() as FileNavigationLeaf<IDocumentationFile>;
 
     // Initial URL
     Assert.Equal("/api/rest/", leaf.Url);
 
-    // Act: Re-home the docset
+    // Re-home the docset
     docset.HomeProvider = new NavigationHomeProvider("/guide", siteNav);
 
-    // Assert: URL updated automatically!
+    // URL updated ✨
     Assert.Equal("/guide/api/rest/", leaf.Url);
 }
 ```
 
 ## Summary
 
-The Home Provider pattern achieves:
+The Home Provider pattern provides:
 
-✅ **O(1) re-homing** - single reference assignment
-✅ **Lazy evaluation** - calculate URLs only when needed
-✅ **Smart caching** - O(1) repeated access
-✅ **Memory efficient** - no stored URLs
-✅ **Type safe** - compiler-enforced accessor passing
-✅ **Scope isolation** - changes don't leak
-✅ **Elegant code** - simple, understandable
+✅ **O(1) re-homing** - Single reference assignment updates entire subtree
+✅ **Lazy URL evaluation** - URLs calculated on-demand
+✅ **Automatic cache invalidation** - Via provider ID comparison
+✅ **Memory efficiency** - No stored URL strings
+✅ **Scope isolation** - Changes don't leak between scopes
 
-This pattern is what makes it possible to build isolated documentation repositories and then efficiently assemble them into a unified site with custom URL prefixes. Without it, we'd be stuck with expensive tree traversals or rigid, non-rehomable navigation structures.
+This enables building isolated documentation repositories and efficiently assembling them into a unified site with custom URL prefixes. The O(1) re-homing is what makes the assembler build practical - without it, combining large documentation sites would require expensive tree traversal for every URL prefix change.
