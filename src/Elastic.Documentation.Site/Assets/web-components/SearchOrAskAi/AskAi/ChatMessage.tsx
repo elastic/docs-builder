@@ -65,7 +65,7 @@ interface ChatMessageProps {
 
 const getAccumulatedContent = (messages: AskAiEvent[]) => {
     return messages
-        .filter((m) => m.type === 'chunk')
+        .filter((m) => m.type === EventTypes.MESSAGE_CHUNK)
         .map((m) => m.content)
         .join('')
 }
