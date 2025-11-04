@@ -18,7 +18,7 @@ public class LlmGatewayStreamTransformer(ILogger<LlmGatewayStreamTransformer> lo
 {
 	protected override string GetAgentId() => LlmGatewayAskAiGateway.ModelName;
 	protected override string GetAgentProvider() => LlmGatewayAskAiGateway.ProviderName;
-	protected override AskAiEvent? TransformJsonEvent(string? threadId, string? eventType, JsonElement json)
+	protected override AskAiEvent? TransformJsonEvent(string? conversationId, string? eventType, JsonElement json)
 	{
 		// LLM Gateway format: ["custom", {type: "...", ...}]
 		if (json.ValueKind != JsonValueKind.Array || json.GetArrayLength() < 2)
@@ -36,7 +36,7 @@ public class LlmGatewayStreamTransformer(ILogger<LlmGatewayStreamTransformer> lo
 
 		// LLM gateway does not emit conversation start events with thread IDs
 		// so we create a synthetic conversation start event here
-		if (threadId is null)
+		if (conversationId is null)
 			return new AskAiEvent.ConversationStart(id, timestamp, Guid.NewGuid().ToString());
 
 		return type switch

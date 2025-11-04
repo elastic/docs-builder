@@ -3,7 +3,7 @@ import { ChatMessage } from './ChatMessage'
 import {
     ChatMessage as ChatMessageType,
     useChatActions,
-    useThreadId,
+    useConversationId,
 } from './chat.store'
 import { useAskAi } from './useAskAi'
 import * as React from 'react'
@@ -22,18 +22,18 @@ export const StreamingAiMessage = ({
         updateAiMessage,
         hasMessageBeenSent,
         markMessageAsSent,
-        setThreadId,
+        setConversationId,
     } = useChatActions()
-    const threadId = useThreadId()
+    const conversationId = useConversationId()
     const contentRef = useRef('')
 
     const { events, sendQuestion } = useAskAi({
-        threadId: threadId ?? undefined,
+        conversationId: conversationId ?? undefined,
         onEvent: (event) => {
             if (event.type === EventTypes.CONVERSATION_START) {
                 // Capture conversationId from backend on first request
-                if (event.conversationId && !threadId) {
-                    setThreadId(event.conversationId)
+                if (event.conversationId && !conversationId) {
+                    setConversationId(event.conversationId)
                 }
             } else if (event.type === EventTypes.MESSAGE_CHUNK) {
                 contentRef.current += event.content

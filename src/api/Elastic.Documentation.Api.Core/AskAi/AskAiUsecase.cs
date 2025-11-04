@@ -22,8 +22,8 @@ public class AskAiUsecase(
 		_ = activity?.SetTag("gen_ai.operation.name", "chat");
 		_ = activity?.SetTag("gen_ai.provider.name", streamTransformer.AgentProvider); // agent-builder or llm-gateway
 		_ = activity?.SetTag("gen_ai.agent.id", streamTransformer.AgentId); // docs-agent or docs_assistant
-		if (askAiRequest.ThreadId is not null)
-			_ = activity?.SetTag("gen_ai.conversation.id", askAiRequest.ThreadId);
+		if (askAiRequest.ConversationId is not null)
+			_ = activity?.SetTag("gen_ai.conversation.id", askAiRequest.ConversationId);
 		var inputMessages = new[]
 		{
 			new InputMessage("user", [new MessagePart("text", askAiRequest.Message)])
@@ -34,12 +34,12 @@ public class AskAiUsecase(
 		logger.LogInformation("Streaming AskAI response");
 		var rawStream = await askAiGateway.AskAi(askAiRequest, ctx);
 		// The stream transformer will handle disposing the activity when streaming completes
-		var transformedStream = await streamTransformer.TransformAsync(rawStream, askAiRequest.ThreadId, activity, ctx);
+		var transformedStream = await streamTransformer.TransformAsync(rawStream, askAiRequest.ConversationId, activity, ctx);
 		return transformedStream;
 	}
 }
 
-public record AskAiRequest(string Message, string? ThreadId)
+public record AskAiRequest(string Message, string? ConversationId)
 {
 	public static string SystemPrompt =>
 """

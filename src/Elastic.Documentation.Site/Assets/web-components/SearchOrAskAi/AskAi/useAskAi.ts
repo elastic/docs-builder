@@ -11,7 +11,7 @@ const MESSAGE_THROTTLE_MS = 25 // Throttle messages to prevent UI flooding
 
 export const AskAiRequestSchema = z.object({
     message: z.string(),
-    threadId: z.string().optional(),
+    conversationId: z.string().optional(),
 })
 
 export type AskAiRequest = z.infer<typeof AskAiRequestSchema>
@@ -26,7 +26,7 @@ export interface UseAskAiResponse {
 interface Props {
     onEvent?: (event: AskAiEvent) => void
     onError?: (error: Error) => void
-    threadId?: string
+    conversationId?: string
 }
 
 export const useAskAi = (props: Props): UseAskAiResponse => {
@@ -136,7 +136,7 @@ export const useAskAi = (props: Props): UseAskAiResponse => {
                 setEvents([])
                 clearQueue()
                 lastSentQuestionRef.current = question
-                const payload = createAskAiRequest(question, props.threadId)
+                const payload = createAskAiRequest(question, props.conversationId)
 
                 try {
                     await sendMessage(payload)
@@ -148,7 +148,7 @@ export const useAskAi = (props: Props): UseAskAiResponse => {
                 }
             }
         },
-        [props.threadId, sendMessage, abort, clearQueue]
+        [props.conversationId, sendMessage, abort, clearQueue]
     )
 
     useEffect(() => {
