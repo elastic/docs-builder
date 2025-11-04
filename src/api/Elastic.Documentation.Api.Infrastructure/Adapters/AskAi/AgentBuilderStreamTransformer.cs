@@ -18,7 +18,7 @@ public class AgentBuilderStreamTransformer(ILogger<AgentBuilderStreamTransformer
 {
 	protected override string GetAgentId() => AgentBuilderAskAiGateway.ModelName;
 	protected override string GetAgentProvider() => AgentBuilderAskAiGateway.ProviderName;
-	protected override AskAiEvent? TransformJsonEvent(string? eventType, JsonElement json)
+	protected override AskAiEvent? TransformJsonEvent(string? threadId, string? eventType, JsonElement json)
 	{
 		var type = eventType ?? "message";
 		var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();

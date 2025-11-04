@@ -51,7 +51,7 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 	/// </summary>
 	public string AgentProvider => GetAgentProvider();
 
-	public Task<Stream> TransformAsync(Stream rawStream, Activity? parentActivity, Cancel cancellationToken = default)
+	public Task<Stream> TransformAsync(Stream rawStream, string? threadId, Activity? parentActivity, Cancel cancellationToken = default)
 	{
 		// Configure pipe for low-latency streaming
 		var pipeOptions = new PipeOptions(
@@ -70,7 +70,7 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 		// Note: We intentionally don't await this task as we need to return the stream immediately
 		// The pipe handles synchronization and backpressure between producer and consumer
 		// Pass parent activity - it will be disposed when streaming completes
-		_ = ProcessPipeAsync(reader, pipe.Writer, parentActivity, cancellationToken);
+		_ = ProcessPipeAsync(reader, pipe.Writer, threadId, parentActivity, cancellationToken);
 
 		// Return the read side of the pipe as a stream
 		return Task.FromResult(pipe.Reader.AsStream());
@@ -80,13 +80,13 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 	/// Process the pipe reader and write transformed events to the pipe writer.
 	/// This runs concurrently with the consumer reading from the output stream.
 	/// </summary>
-	private async Task ProcessPipeAsync(PipeReader reader, PipeWriter writer, Activity? parentActivity, CancellationToken cancellationToken)
+	private async Task ProcessPipeAsync(PipeReader reader, PipeWriter writer, string? threadId, Activity? parentActivity, CancellationToken cancellationToken)
 	{
 		try
 		{
 			try
 			{
-				await ProcessStreamAsync(reader, writer, parentActivity, cancellationToken);
+				await ProcessStreamAsync(reader, writer, threadId, parentActivity, cancellationToken);
 			}
 			catch (OperationCanceledException ex)
 			{
@@ -131,7 +131,7 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 	/// Default implementation parses SSE events and JSON, then calls TransformJsonEvent.
 	/// </summary>
 	/// <returns>Stream processing result with metrics and captured output</returns>
-	private async Task ProcessStreamAsync(PipeReader reader, PipeWriter writer, Activity? parentActivity, CancellationToken cancellationToken)
+	private async Task ProcessStreamAsync(PipeReader reader, PipeWriter writer, string? threadId, Activity? parentActivity, CancellationToken cancellationToken)
 	{
 		using var activity = StreamTransformerActivitySource.StartActivity(nameof(ProcessStreamAsync));
 
@@ -141,7 +141,6 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 		List<MessagePart> outputMessageParts = [];
 		await foreach (var sseEvent in ParseSseEventsAsync(reader, cancellationToken))
 		{
-			using var parseActivity = StreamTransformerActivitySource.StartActivity("AskAI Event");
 			AskAiEvent? transformedEvent;
 			try
 			{
@@ -150,7 +149,7 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 				var root = doc.RootElement;
 
 				// Subclass transforms JsonElement to AskAiEvent
-				transformedEvent = TransformJsonEvent(sseEvent.EventType, root);
+				transformedEvent = TransformJsonEvent(threadId, sseEvent.EventType, root);
 			}
 			catch (JsonException ex)
 			{
@@ -166,9 +165,11 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 				continue;
 			}
 
+			using var parseActivity = StreamTransformerActivitySource.StartActivity("AskAI Event");
+
 			// Set event type tag on parse_event activity
 			_ = parseActivity?.SetTag("ask_ai.event.type", transformedEvent.GetType().Name);
-			_ = parseActivity?.SetTag("gen_ai.respone.id", transformedEvent.Id);
+			_ = parseActivity?.SetTag("gen_ai.response.id", transformedEvent.Id);
 
 			switch (transformedEvent)
 			{
@@ -247,10 +248,11 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 	/// Transform a parsed JSON event into an AskAiEvent.
 	/// Subclasses implement provider-specific transformation logic.
 	/// </summary>
+	/// <param name="threadId">The conversation/thread ID, if available</param>
 	/// <param name="eventType">The SSE event type (from "event:" field), or null if not present</param>
 	/// <param name="json">The parsed JSON data from the "data:" field</param>
 	/// <returns>The transformed AskAiEvent, or null to skip this event</returns>
-	protected abstract AskAiEvent? TransformJsonEvent(string? eventType, JsonElement json);
+	protected abstract AskAiEvent? TransformJsonEvent(string? threadId, string? eventType, JsonElement json);
 
 	/// <summary>
 	/// Write a transformed event to the output stream
