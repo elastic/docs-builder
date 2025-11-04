@@ -66,6 +66,7 @@ public class GlobalNavigationPathProviderTests : IAsyncLifetime
 		string[] nar = [NarrativeRepository.RepositoryName];
 		var repos = nar.Concat(Context.Configuration.AvailableRepositories
 				.Where(kv => !kv.Value.Skip)
+				.Where(kv => !kv.Value.Private)
 				.Select(kv => kv.Value.Name)
 			)
 			.ToArray();
