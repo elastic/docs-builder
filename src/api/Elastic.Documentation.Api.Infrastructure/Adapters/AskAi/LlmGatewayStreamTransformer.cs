@@ -2,9 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Buffers;
-using System.IO.Pipelines;
-using System.Text;
 using System.Text.Json;
 using Elastic.Documentation.Api.Core.AskAi;
 using Microsoft.Extensions.Logging;
@@ -33,11 +30,6 @@ public class LlmGatewayStreamTransformer(ILogger<LlmGatewayStreamTransformer> lo
 		var timestamp = message.GetProperty("timestamp").GetInt64();
 		var id = message.GetProperty("id").GetString()!;
 		var messageData = message.GetProperty("data");
-
-		// LLM gateway does not emit conversation start events with thread IDs
-		// so we create a synthetic conversation start event here
-		if (conversationId is null)
-			return new AskAiEvent.ConversationStart(id, timestamp, Guid.NewGuid().ToString());
 
 		return type switch
 		{

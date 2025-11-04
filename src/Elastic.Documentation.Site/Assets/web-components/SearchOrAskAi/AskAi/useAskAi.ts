@@ -136,7 +136,10 @@ export const useAskAi = (props: Props): UseAskAiResponse => {
                 setEvents([])
                 clearQueue()
                 lastSentQuestionRef.current = question
-                const payload = createAskAiRequest(question, props.conversationId)
+                const payload = createAskAiRequest(
+                    question,
+                    props.conversationId
+                )
 
                 try {
                     await sendMessage(payload)

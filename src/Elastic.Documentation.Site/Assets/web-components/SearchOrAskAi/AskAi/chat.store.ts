@@ -95,5 +95,6 @@ export const chatStore = create<ChatState>((set) => ({
 }))
 
 export const useChatMessages = () => chatStore((state) => state.chatMessages)
-export const useConversationId = () => chatStore((state) => state.conversationId)
+export const useConversationId = () =>
+    chatStore((state) => state.conversationId)
 export const useChatActions = () => chatStore((state) => state.actions)
