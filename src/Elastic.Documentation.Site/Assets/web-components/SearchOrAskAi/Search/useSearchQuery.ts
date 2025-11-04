@@ -3,6 +3,8 @@ import { useDebounce } from '@uidotdev/usehooks'
 import * as z from 'zod'
 import { createApiErrorFromResponse, shouldRetry } from '../errorHandling'
 import { ApiError } from '../errorHandling'
+import { useCooldown } from '../modal.store'
+import { useRef, useEffect } from 'react'
 
 const SearchResultItemParent = z.object({
     url: z.string(),
@@ -38,6 +40,35 @@ type Props = {
 export const useSearchQuery = ({ searchTerm, pageNumber = 1 }: Props) => {
     const trimmedSearchTerm = searchTerm.trim()
     const debouncedSearchTerm = useDebounce(trimmedSearchTerm, 300)
+    const cooldown = useCooldown()
+    const isCooldownActive = cooldown !== null && cooldown > 0
+    const lastSearchTermRef = useRef<string>(debouncedSearchTerm)
+    const hasChangedSinceCooldownRef = useRef<boolean>(true) // Start as true for initial search
+    
+    // Track if search term changed since cooldown ended
+    useEffect(() => {
+        if (debouncedSearchTerm !== lastSearchTermRef.current) {
+            hasChangedSinceCooldownRef.current = true
+            lastSearchTermRef.current = debouncedSearchTerm
+        }
+    }, [debouncedSearchTerm])
+    
+    // Reset the flag when cooldown becomes active
+    useEffect(() => {
+        if (isCooldownActive) {
+            hasChangedSinceCooldownRef.current = false
+        }
+    }, [isCooldownActive])
+    
+    // Only enable query if:
+    // 1. There's a search term
+    // 2. No cooldown is active
+    // 3. The search term has changed since cooldown ended (or there was no cooldown)
+    const shouldEnable = !!trimmedSearchTerm && 
+                         trimmedSearchTerm.length >= 1 && 
+                         !isCooldownActive && 
+                         hasChangedSinceCooldownRef.current
+    
     return useQuery<SearchResponse, ApiError>({
         queryKey: [
             'search',
@@ -61,7 +92,7 @@ export const useSearchQuery = ({ searchTerm, pageNumber = 1 }: Props) => {
             const data = await response.json()
             return SearchResponse.parse(data)
         },
-        enabled: !!trimmedSearchTerm && trimmedSearchTerm.length >= 1,
+        enabled: shouldEnable,
         refetchOnWindowFocus: false,
         placeholderData: keepPreviousData,
         staleTime: 1000 * 60 * 5, // 5 minutes

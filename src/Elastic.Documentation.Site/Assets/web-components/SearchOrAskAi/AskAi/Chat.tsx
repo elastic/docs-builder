@@ -3,6 +3,8 @@ import { AiProviderSelector } from './AiProviderSelector'
 import { AskAiSuggestions } from './AskAiSuggestions'
 import { ChatMessageList } from './ChatMessageList'
 import { useChatActions, useChatMessages } from './chat.store'
+import { useCooldown, useModalActions, modalStore } from '../modal.store'
+import { ApiError, getErrorMessage } from '../errorHandling'
 import {
     useEuiOverflowScroll,
     EuiButtonEmpty,
@@ -13,6 +15,7 @@ import {
     EuiEmptyPrompt,
     EuiSpacer,
     EuiTitle,
+    EuiCallOut,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -74,12 +77,14 @@ const NewConversationHeader = ({
 export const Chat = () => {
     const messages = useChatMessages()
     const { submitQuestion, clearChat } = useChatActions()
+    const { setCooldown } = useModalActions()
+    const countdown = useCooldown()
     const inputRef = useRef<HTMLInputElement>(null)
     const scrollRef = useRef<HTMLDivElement>(null)
     const lastMessageStatusRef = useRef<string | null>(null)
     const abortFunctionRef = useRef<(() => void) | null>(null)
+    const cooldownTimerRef = useRef<number | null>(null)
     const [inputValue, setInputValue] = useState('')
-    const [countdown, setCountdown] = useState<number | null>(null)
 
     const dynamicScrollableStyles = css`
         ${scrollableStyles}
@@ -98,8 +103,48 @@ export const Chat = () => {
 
     // Handle countdown changes from error messages
     const handleCountdownChange = useCallback((newCountdown: number | null) => {
-        setCountdown(newCountdown)
-    }, [])
+        setCooldown(newCountdown)
+    }, [setCooldown])
+
+    // Start/stop timer for cooldown when on initial page (no messages)
+    useEffect(() => {
+        // Only manage timer if there are no messages (initial page)
+        if (messages.length === 0) {
+            if (countdown !== null && countdown > 0 && cooldownTimerRef.current === null) {
+                // Start timer to update store countdown
+                cooldownTimerRef.current = setInterval(() => {
+                    const currentCountdown = modalStore.getState().cooldown
+                    if (currentCountdown === null || currentCountdown <= 0) {
+                        if (cooldownTimerRef.current) {
+                            clearInterval(cooldownTimerRef.current)
+                            cooldownTimerRef.current = null
+                        }
+                        setCooldown(null)
+                    } else {
+                        setCooldown(currentCountdown - 1)
+                    }
+                }, 1000) as unknown as number
+            } else if ((countdown === null || countdown <= 0) && cooldownTimerRef.current !== null) {
+                // Stop timer if cooldown expired
+                clearInterval(cooldownTimerRef.current)
+                cooldownTimerRef.current = null
+            }
+        } else {
+            // Clean up timer when messages appear (ChatMessage will handle it)
+            if (cooldownTimerRef.current !== null) {
+                clearInterval(cooldownTimerRef.current)
+                cooldownTimerRef.current = null
+            }
+        }
+        
+        return () => {
+            // Clean up timer on unmount
+            if (cooldownTimerRef.current !== null) {
+                clearInterval(cooldownTimerRef.current)
+                cooldownTimerRef.current = null
+            }
+        }
+    }, [countdown, messages.length, setCooldown])
 
     // Clear abort function when streaming ends
     useEffect(() => {
@@ -186,34 +231,58 @@ export const Chat = () => {
             <EuiFlexItem grow={true} css={scrollContainerStyles}>
                 <div ref={scrollRef} css={dynamicScrollableStyles}>
                     {messages.length === 0 ? (
-                        <EuiEmptyPrompt
-                            iconType="logoElastic"
-                            title={
-                                <h2>Hi! I'm the Elastic Docs AI Assistant</h2>
-                            }
-                            body={
+                        <>
+                            <EuiEmptyPrompt
+                                iconType="logoElastic"
+                                title={
+                                    <h2>Hi! I'm the Elastic Docs AI Assistant</h2>
+                                }
+                                body={
+                                    <>
+                                        <p>
+                                            I can help answer your questions about
+                                            Elastic documentation. <br />
+                                            Ask me anything about Elasticsearch,
+                                            Kibana, Observability, Security, and
+                                            more.
+                                        </p>
+                                        <EuiSpacer size="m" />
+                                        <AiProviderSelector />
+                                    </>
+                                }
+                                footer={
+                                    <>
+                                        <EuiTitle size="xxs">
+                                            <h3>Try asking me:</h3>
+                                        </EuiTitle>
+                                        <EuiSpacer size="s" />
+                                        <AskAiSuggestions disabled={countdown !== null && countdown > 0} />
+                                    </>
+                                }
+                            />
+                            {/* Show error callout when there's a cooldown, even on initial page */}
+                            {countdown !== null && countdown > 0 && (
                                 <>
-                                    <p>
-                                        I can help answer your questions about
-                                        Elastic documentation. <br />
-                                        Ask me anything about Elasticsearch,
-                                        Kibana, Observability, Security, and
-                                        more.
-                                    </p>
                                     <EuiSpacer size="m" />
-                                    <AiProviderSelector />
+                                    <div css={messagesStyles}>
+                                        <EuiCallOut
+                                            title="Sorry, there was an error"
+                                            color="danger"
+                                            iconType="error"
+                                            size="s"
+                                        >
+                                            {(() => {
+                                                const syntheticError = new Error('Rate limit exceeded. Please wait before trying again.') as ApiError
+                                                syntheticError.name = 'ApiError'
+                                                syntheticError.statusCode = 429
+                                                syntheticError.retryAfter = countdown
+                                                return getErrorMessage(syntheticError)
+                                            })()}
+                                        </EuiCallOut>
+                                    </div>
                                 </>
-                            }
-                            footer={
-                                <>
-                                    <EuiTitle size="xxs">
-                                        <h3>Try asking me:</h3>
-                                    </EuiTitle>
-                                    <EuiSpacer size="s" />
-                                    <AskAiSuggestions />
-                                </>
-                            }
-                        />
+                            )}
+                        </>
                     ) : (
                         <div css={messagesStyles}>
                             <ChatMessageList 

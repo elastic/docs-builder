@@ -2,6 +2,7 @@ import { AskAiEvent, AskAiEventSchema } from './AskAiEvent'
 import { useAiProvider } from './aiProviderStore'
 import { useFetchEventSource } from './useFetchEventSource'
 import { useMessageThrottling } from './useMessageThrottling'
+import { useCooldown, useModalActions } from '../modal.store'
 import { EventSourceMessage } from '@microsoft/fetch-event-source'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import * as z from 'zod'
@@ -32,9 +33,9 @@ interface Props {
 export const useAskAi = (props: Props): UseAskAiResponse => {
     const [events, setEvents] = useState<AskAiEvent[]>([])
     const [error, setError] = useState<ApiError | Error | null>(null)
-    const [cooldown, setCooldown] = useState<number | null>(null)
+    const storeCooldown = useCooldown()
+    const { setCooldown } = useModalActions()
     const lastSentQuestionRef = useRef<string>('')
-    const cooldownIntervalRef = useRef<number | null>(null)
 
     // Get AI provider from store (user-controlled via UI)
     const aiProvider = useAiProvider()
@@ -83,45 +84,12 @@ export const useAskAi = (props: Props): UseAskAiResponse => {
         [processMessage]
     )
 
-    // Handle cooldown timer for 429 errors
-    useEffect(() => {
-        if (cooldown === null || cooldown <= 0) {
-            if (cooldownIntervalRef.current) {
-                clearInterval(cooldownIntervalRef.current)
-                cooldownIntervalRef.current = null
-            }
-            return
-        }
-
-        // Set up countdown timer
-        cooldownIntervalRef.current = setInterval(() => {
-            setCooldown((prev) => {
-                if (prev === null || prev <= 1) {
-                    if (cooldownIntervalRef.current) {
-                        clearInterval(cooldownIntervalRef.current)
-                        cooldownIntervalRef.current = null
-                    }
-                    return null
-                }
-                return prev - 1
-            })
-        }, 1000)
-
-        return () => {
-            if (cooldownIntervalRef.current) {
-                clearInterval(cooldownIntervalRef.current)
-                cooldownIntervalRef.current = null
-            }
-        }
-    }, [cooldown])
-
     const { sendMessage, abort } = useFetchEventSource<AskAiRequest>({
         apiEndpoint: '/docs/_api/v1/ask-ai/stream',
         headers,
         onMessage,
         onError: (error) => {
             setError(error)
-            // Set cooldown if it's a 429 error with retryAfter
             if (isApiError(error)) {
                 const apiError = error as ApiError
                 if (apiError.statusCode === 429 && apiError.retryAfter) {
@@ -134,8 +102,8 @@ export const useAskAi = (props: Props): UseAskAiResponse => {
 
     const sendQuestion = useCallback(
         async (question: string) => {
-            // Prevent sending during cooldown period
-            if (cooldown !== null && cooldown > 0) {
+            // Prevent sending during cooldown period (check store cooldown)
+            if (storeCooldown !== null && storeCooldown > 0) {
                 return
             }
 
@@ -157,7 +125,7 @@ export const useAskAi = (props: Props): UseAskAiResponse => {
                 }
             }
         },
-        [props.threadId, sendMessage, abort, clearQueue, cooldown]
+        [props.threadId, sendMessage, abort, clearQueue, storeCooldown]
     )
 
     useEffect(() => {
@@ -165,10 +133,6 @@ export const useAskAi = (props: Props): UseAskAiResponse => {
             setError(null)
             setEvents([])
             clearQueue()
-            if (cooldownIntervalRef.current) {
-                clearInterval(cooldownIntervalRef.current)
-                cooldownIntervalRef.current = null
-            }
         }
     }, [clearQueue])
 

@@ -6,6 +6,7 @@ import { References } from './RelatedResources'
 import { ChatMessage as ChatMessageType } from './chat.store'
 import { useStatusMinDisplay } from './useStatusMinDisplay'
 import { ApiError, getErrorMessage, isApiError } from '../errorHandling'
+import { useCooldown } from '../modal.store'
 import {
     EuiButtonIcon,
     EuiCallOut,
@@ -259,50 +260,99 @@ const ErrorMessageDisplay = ({
     onCountdownChange?: (countdown: number | null) => void
     inline?: boolean
 }) => {
-    const [countdown, setCountdown] = useState<number | null>(null)
+    const storeCooldown = useCooldown()
+    const [countdown, setCountdown] = useState<number | null>(storeCooldown)
+    const intervalRef = useRef<number | null>(null)
     
+    // Handle new 429 errors
     useEffect(() => {
-        if (!error) {
-            setCountdown(null)
-            onCountdownChange?.(null)
-            return
-        }
-
-        if (isApiError(error)) {
+        if (error && isApiError(error)) {
             const apiError = error as ApiError
             if (apiError.statusCode === 429 && apiError.retryAfter) {
-                setCountdown(apiError.retryAfter)
-                onCountdownChange?.(apiError.retryAfter)
-                const interval = setInterval(() => {
-                    setCountdown((prev) => {
-                        if (prev === null || prev <= 1) {
-                            clearInterval(interval)
-                            const newValue = null
-                            onCountdownChange?.(newValue)
-                            return newValue
-                        }
-                        const newValue = prev - 1
-                        onCountdownChange?.(newValue)
-                        return newValue
-                    })
-                }, 1000)
-                return () => clearInterval(interval)
+                // New 429 error - start countdown if not already active
+                if (storeCooldown === null || storeCooldown < apiError.retryAfter) {
+                    const initialCountdown = apiError.retryAfter
+                    setCountdown(initialCountdown)
+                    onCountdownChange?.(initialCountdown)
+                }
             }
         }
-        setCountdown(null)
-        onCountdownChange?.(null)
-    }, [error, onCountdownChange])
+    }, [error, onCountdownChange, storeCooldown])
     
-    if (!error) return null
+    // Start/stop timer based on store cooldown
+    useEffect(() => {
+        // If there's an active cooldown in the store and no timer running, start one
+        if (storeCooldown !== null && storeCooldown > 0 && intervalRef.current === null) {
+            setCountdown(storeCooldown)
+            intervalRef.current = setInterval(() => {
+                setCountdown((prev) => {
+                    if (prev === null || prev <= 0) {
+                        if (intervalRef.current) {
+                            clearInterval(intervalRef.current)
+                            intervalRef.current = null
+                        }
+                        const newValue = null
+                        onCountdownChange?.(newValue)
+                        return newValue
+                    }
+                    const newValue = prev - 1
+                    onCountdownChange?.(newValue)
+                    return newValue
+                })
+            }, 1000) as unknown as number
+        } else if ((storeCooldown === null || storeCooldown <= 0) && intervalRef.current !== null) {
+            // Stop timer if cooldown expired
+            clearInterval(intervalRef.current)
+            intervalRef.current = null
+            setCountdown(null)
+        }
+        
+        return () => {
+            // Clean up interval on unmount
+            if (intervalRef.current !== null) {
+                clearInterval(intervalRef.current)
+                intervalRef.current = null
+            }
+        }
+    }, [storeCooldown, onCountdownChange])
+    
+    useEffect(() => {
+        if (intervalRef.current === null) {
+            if (storeCooldown !== countdown) {
+                if (storeCooldown !== null && storeCooldown > 0) {
+                    setCountdown(storeCooldown)
+                } else if (storeCooldown === null && countdown !== null) {
+                    setCountdown(null)
+                }
+            }
+        }
+    }, [storeCooldown, countdown])
+    
+    const displayCountdown: number | null = storeCooldown ?? countdown ?? (error && isApiError(error) ? (error as ApiError).retryAfter ?? null : null)
+    
+    const shouldShowError = error !== null || (displayCountdown !== null && displayCountdown > 0)
+    
+    if (!shouldShowError) return null
 
-    if ((error as ApiError)?.statusCode === 429 && (countdown === null || countdown <= 0)) {
+    // For 429 errors, only hide if countdown has expired
+    if (error && isApiError(error) && (error as ApiError).statusCode === 429 && (displayCountdown === null || displayCountdown <= 0)) {
         return null
     }
-
-    if (countdown !== null && isApiError(error)) {
-        (error as ApiError).retryAfter = countdown
+    
+    // Create a synthetic error for display if we only have cooldown but no error
+    let displayError: ApiError | Error | null = error
+    if (!displayError && displayCountdown !== null && displayCountdown > 0) {
+        const syntheticError = new Error('Rate limit exceeded. Please wait before trying again.') as ApiError
+        syntheticError.name = 'ApiError'
+        syntheticError.statusCode = 429
+        syntheticError.retryAfter = displayCountdown
+        displayError = syntheticError
     }
-    const errorMessage = getErrorMessage(error)
+    
+    if (displayCountdown !== null && displayError && isApiError(displayError)) {
+        (displayError as ApiError).retryAfter = displayCountdown
+    }
+    const errorMessage = getErrorMessage(displayError)
     
     return (
         <>
@@ -527,3 +577,4 @@ export const ChatMessage = ({
         </EuiFlexGroup>
     )
 }
+

@@ -1,11 +1,11 @@
 /** @jsxImportSource @emotion/react */
 import { useChatActions } from '../AskAi/chat.store'
-import { useModalActions } from '../modal.store'
+import { useModalActions, useCooldown } from '../modal.store'
 import { SearchResults } from './SearchResults'
 import { useSearchActions, useSearchTerm } from './search.store'
-import { EuiFieldSearch, EuiSpacer, EuiButton } from '@elastic/eui'
+import { EuiFieldText, EuiSpacer, EuiButton, EuiButtonIcon } from '@elastic/eui'
 import { css } from '@emotion/react'
-import { useState, useCallback } from 'react'
+import { useCallback, useRef, useState, useEffect } from 'react'
 
 const askAiButtonStyles = css`
     font-weight: bold;
@@ -15,36 +15,77 @@ export const Search = () => {
     const searchTerm = useSearchTerm()
     const { setSearchTerm } = useSearchActions()
     const { submitQuestion, clearChat } = useChatActions()
-    const { setModalMode } = useModalActions()
-    const [countdown, setCountdown] = useState<number | null>(null)
+    const { setModalMode, setCooldown } = useModalActions()
+    const countdown = useCooldown()
+    const inputRef = useRef<HTMLInputElement>(null)
+    const [inputValue, setInputValue] = useState(searchTerm)
 
     const handleCountdownChange = useCallback((newCountdown: number | null) => {
-        setCountdown(newCountdown)
-    }, [])
+        setCooldown(newCountdown)
+    }, [setCooldown])
+
+    const handleSearch = useCallback(() => {
+        if (searchTerm.trim()) {
+            // Prevent submission during countdown
+            if (countdown !== null && countdown > 0) {
+                return
+            }
+            // Always start a new conversation
+            clearChat()
+            submitQuestion(searchTerm)
+            setModalMode('askAi')
+        }
+    }, [searchTerm, countdown, clearChat, submitQuestion, setModalMode])
+
+    // Sync inputValue with searchTerm from store (when cleared externally)
+    useEffect(() => {
+        if (searchTerm === '' && inputValue !== '') {
+            setInputValue('')
+        }
+    }, [searchTerm, inputValue])
+
     return (
         <>
             <EuiSpacer size="m" />
-            <EuiFieldSearch
-                autoFocus
-                fullWidth
-                placeholder="Search the docs as you type"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                onSearch={(e) => {
-                    if (e.trim()) {
-                        // Prevent submission during countdown
-                        if (countdown !== null && countdown > 0) {
-                            return
+            <div
+                css={css`
+                    position: relative;
+                `}
+            >
+                <EuiFieldText
+                    autoFocus
+                    inputRef={inputRef}
+                    fullWidth
+                    placeholder="Search the docs as you type"
+                    value={inputValue}
+                    onChange={(e) => {
+                        const newValue = e.target.value
+                        setInputValue(newValue)
+                        setSearchTerm(newValue)
+                    }}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                            handleSearch()
                         }
-                        // Always start a new conversation
-                        clearChat()
-                        submitQuestion(e)
-                        setModalMode('askAi')
-                    }
-                }}
-                isClearable
-                disabled={countdown !== null && countdown > 0}
-            />
+                    }}
+                    disabled={countdown !== null && countdown > 0}
+                />
+                <EuiButtonIcon
+                    aria-label="Search"
+                    css={css`
+                        position: absolute;
+                        right: 8px;
+                        top: 50%;
+                        transform: translateY(-50%);
+                        border-radius: 9999px;
+                    `}
+                    color="primary"
+                    iconType="sortUp"
+                    display={inputValue.trim() ? 'fill' : 'base'}
+                    onClick={handleSearch}
+                    disabled={countdown !== null && countdown > 0}
+                />
+            </div>
             {searchTerm && (
                 <>
                     <EuiSpacer size="s" />
