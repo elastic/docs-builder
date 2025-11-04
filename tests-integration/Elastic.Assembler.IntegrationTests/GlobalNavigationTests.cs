@@ -64,7 +64,7 @@ public class GlobalNavigationPathProviderTests : IAsyncLifetime
 		_ = Collector.StartAsync(TestContext.Current.CancellationToken);
 
 		string[] nar = [NarrativeRepository.RepositoryName];
-		var repos = nar.Concat(Context.Configuration.ReferenceRepositories
+		var repos = nar.Concat(Context.Configuration.AvailableRepositories
 				.Where(kv => !kv.Value.Skip)
 				.Select(kv => kv.Value.Name)
 			)
@@ -197,7 +197,7 @@ public class GlobalNavigationPathProviderTests : IAsyncLifetime
 		assembleSources.NavigationTocMappings[kibanaExtendMoniker].TopLevelSource.Should().Be(expectedRoot);
 		assembleSources.NavigationTocMappings.Should().NotBeEmpty().And.ContainKey(new Uri("docs-content://reference/apm/"));
 
-		var uri = new Uri("integration-docs://reference/");
+		var uri = new Uri("integrations://reference/");
 		assembleSources.TreeCollector.Should().NotBeNull();
 		_ = assembleSources.TreeCollector.TryGetTableOfContentsTree(uri, out var tree);
 		tree.Should().NotBeNull();
