@@ -12,7 +12,7 @@ On this page, you'll learn how to choose the right branching strategy for your r
 
 The main reasons for this choice are:
 
-* With Docs V3, there is no longer a different version of each page for each minor release. Instead, the same page [covers all versions](https://www.elastic.co/docs/contribute-docs/contribute/how-to/cumulative-docs), and any changes are indicated throughout the content.
+* With Docs V3, there is no longer a different version of each page for each minor release. Instead, the same page [covers all versions](https://www.elastic.co/docs/contribute-docs/how-to/cumulative-docs), and any changes are indicated throughout the content.
 * More and more products are released from `main` branches, making these branches the most up to date at any given time. This is especially true for {{serverless-full}} and {{ecloud}}.
 
 
@@ -25,9 +25,9 @@ Publishing from the main branch isn’t the best option for all repositories.
 
 If you choose this publication model for your repository AND that repository includes {{serverless-short}} or {{ecloud}} documentation, you will need to make sure that {{serverless-short}}- and {{ecloud}}-related changes are also backported to the branch that is publishing to the public docs site.
 
-You **don't** need to change your branching strategy to enable writing docs about future versions. Review the [continuous deployment workflow](#workflow-1-default-continuous-deployment) and [Write cumulative documentation](https://www.elastic.co/docs/contribute-docs/contribute/how-to/cumulative-docs) to learn more.
+You **don't** need to change your branching strategy to enable writing docs about future versions. Review the [continuous deployment workflow](#workflow-1-default-continuous-deployment) and [Write cumulative documentation](https://www.elastic.co/docs/contribute-docs/how-to/cumulative-docs) to learn more.
 
-Note that regardless of the publication branch that is set, the documentation must still flag all changes introduced so far since the last major release. This is NOT an alternative to [writing docs cumulatively](https://www.elastic.co/docs/contribute-docs/contribute/how-to/cumulative-docs).
+Note that regardless of the publication branch that is set, the documentation must still flag all changes introduced so far since the last major release. This is NOT an alternative to [writing docs cumulatively](https://www.elastic.co/docs/contribute-docs/how-to/cumulative-docs).
 
 ## How to change the published branch
 
@@ -77,7 +77,7 @@ Initiate the changes by opening a PR against the `main` branch of the repo.
 
 ### How to write those changes [write-changes-cd]
 
-In elastic.co/docs (Docs V3), we [write docs cumulatively](https://www.elastic.co/docs/contribute-docs/contribute/how-to/cumulative-docs) regardless of the branching strategy selected.
+In elastic.co/docs (Docs V3), we [write docs cumulatively](https://www.elastic.co/docs/contribute-docs/how-to/cumulative-docs) regardless of the branching strategy selected.
 
 ### Merging and backporting [merge-backport-cd]
 
@@ -86,8 +86,8 @@ When a repo publishes docs from its `main` branch, any merged changes are publis
 | | Case | Approach |
 | --- | --- | --- |
 | 1 | You are documenting changes for an unversioned product (typically Serverless or Elastic Cloud), and the changes should only go live when the corresponding code or feature is available to users. | The PR should be merged on or after the release date of the feature. |
-| 2 | You are documenting changes for a versioned product (any Stack components, ECE, ECK, etc.). | You have the choice between merging the PR as soon as it is approved, or merging it only on release day.<br><br>We have an automatic mechanism in place as part of the [cumulative docs strategy](https://www.elastic.co/docs/contribute-docs/contribute/how-to/cumulative-docs) that will show any changes published before its associated code or feature is available as `Planned`. |
-| 3 | You are documenting changes that apply to both versioned and unversioned products (typically a change that is being released for both Serverless and an upcoming Stack release). | The PR should only be merged on or after the release date of the feature in Serverless.<br><br>For versioned products, we have an automatic mechanism in place as part of the [cumulative docs strategy](https://www.elastic.co/docs/contribute-docs/contribute/how-to/cumulative-docs) that will show any changes published before its associated code or feature is available as `Planned`. |
+| 2 | You are documenting changes for a versioned product (any Stack components, ECE, ECK, etc.). | You have the choice between merging the PR as soon as it is approved, or merging it only on release day.<br><br>We have an automatic mechanism in place as part of the [cumulative docs strategy](https://www.elastic.co/docs/contribute-docs/how-to/cumulative-docs) that will show any changes published before its associated code or feature is available as `Planned`. |
+| 3 | You are documenting changes that apply to both versioned and unversioned products (typically a change that is being released for both Serverless and an upcoming Stack release). | The PR should only be merged on or after the release date of the feature in Serverless.<br><br>For versioned products, we have an automatic mechanism in place as part of the [cumulative docs strategy](https://www.elastic.co/docs/contribute-docs/how-to/cumulative-docs) that will show any changes published before its associated code or feature is available as `Planned`. |
 
 When a repo is publishing docs from its `main` branch, no backporting is needed.
 
@@ -105,7 +105,7 @@ Initiate the changes by opening a PR against the `main` branch of the repo, and 
 
 ### How to write those changes [write-changes-td]
 
-In elastic.co/docs (Docs V3), we [write docs cumulatively](https://www.elastic.co/docs/contribute-docs/contribute/how-to/cumulative-docs) regardless of the branching strategy selected.
+In elastic.co/docs (Docs V3), we [write docs cumulatively](https://www.elastic.co/docs/contribute-docs/how-to/cumulative-docs) regardless of the branching strategy selected.
 
 ### Merging and backporting [merge-backport-td]
 
@@ -116,8 +116,8 @@ The changes must then be backported to their relevant version branches, and no f
 | | Case | Approach |
 | --- | --- | --- |
 | 1 | You are documenting changes for an unversioned product (typically Serverless or Elastic Cloud), the changes should go live when the corresponding code or feature is available to users. | The PR should be backported to the docs `current` branch, and any intermediate version branches that already exist between `current` and `main`. Merge the backport PR for `current` only when you’re sure the corresponding feature is released. |
-| 2 | You are documenting changes for a versioned product (any Stack components, ECE, ECK, etc.). | Backport the PR to the relevant version branch and to any intermediate version branch that already exists. The changes will go live whenever these branches become the `current` docs branch.<br><br>We have an automatic mechanism in place as part of the [cumulative docs strategy](https://www.elastic.co/docs/contribute-docs/contribute/how-to/cumulative-docs) that will show any changes published before its associated code or feature is available as `Planned`. |
-| 3 | You are documenting changes that apply to both versioned and unversioned products (typically a change that is being released for both Serverless and an upcoming Stack release). | The PR should be backported to the docs `current` branch, and any intermediate version branches that already exist between `current` and `main`. Merge the backport PR for `current` only when you're sure the corresponding feature is released. <br><br>For versioned products, we have an automatic mechanism in place as part of the [cumulative docs strategy](https://www.elastic.co/docs/contribute-docs/contribute/how-to/cumulative-docs) that will show any changes published before its associated code or feature is available as `Planned`. |
+| 2 | You are documenting changes for a versioned product (any Stack components, ECE, ECK, etc.). | Backport the PR to the relevant version branch and to any intermediate version branch that already exists. The changes will go live whenever these branches become the `current` docs branch.<br><br>We have an automatic mechanism in place as part of the [cumulative docs strategy](https://www.elastic.co/docs/contribute-docs/how-to/cumulative-docs) that will show any changes published before its associated code or feature is available as `Planned`. |
+| 3 | You are documenting changes that apply to both versioned and unversioned products (typically a change that is being released for both Serverless and an upcoming Stack release). | The PR should be backported to the docs `current` branch, and any intermediate version branches that already exist between `current` and `main`. Merge the backport PR for `current` only when you're sure the corresponding feature is released. <br><br>For versioned products, we have an automatic mechanism in place as part of the [cumulative docs strategy](https://www.elastic.co/docs/contribute-docs/how-to/cumulative-docs) that will show any changes published before its associated code or feature is available as `Planned`. |
 
 #### Example [example-td]
 

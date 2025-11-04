@@ -16,4 +16,4 @@ Versions set in this file are surfaced to the user via `applies_to` tags.
 :::{include} /contribute/_snippets/tag-processing.md
 :::
 
-See [Write cumulative documentation](https://www.elastic.co/docs/contribute-docs/contribute/how-to/cumulative-docs) for more information.
+See [Write cumulative documentation](https://www.elastic.co/docs/contribute-docs/how-to/cumulative-docs) for more information.
