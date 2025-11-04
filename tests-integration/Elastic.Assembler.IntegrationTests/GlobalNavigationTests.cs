@@ -47,8 +47,13 @@ public class GlobalNavigationPathProviderTests : IAsyncLifetime
 		Context = new AssembleContext(config, configurationContext, "dev", Collector, FileSystem, FileSystem, CheckoutDirectory.FullName, null);
 	}
 
-	private Checkout CreateCheckout(IFileSystem fs, string name) =>
-		new()
+	private Checkout CreateCheckout(IFileSystem fs, Repository repository)
+	{
+		var name = repository.Name;
+		var path = repository.Path is { } p
+			? fs.DirectoryInfo.New(p)
+			: fs.DirectoryInfo.New(fs.Path.Combine(Path.Combine(CheckoutDirectory.FullName, name)));
+		return new Checkout
 		{
 			Repository = new Repository
 			{
@@ -56,19 +61,17 @@ public class GlobalNavigationPathProviderTests : IAsyncLifetime
 				Origin = $"elastic/{name}"
 			},
 			HeadReference = Guid.NewGuid().ToString(),
-			Directory = fs.DirectoryInfo.New(fs.Path.Combine(Path.Combine(CheckoutDirectory.FullName, name)))
+			Directory = path
 		};
+	}
 
 	private async Task<AssembleSources> Setup()
 	{
 		_ = Collector.StartAsync(TestContext.Current.CancellationToken);
 
-		string[] nar = [NarrativeRepository.RepositoryName];
-		var repos = nar.Concat(Context.Configuration.AvailableRepositories
-				.Where(kv => !kv.Value.Skip)
-				.Where(kv => !kv.Value.Private)
-				.Select(kv => kv.Value.Name)
-			)
+		var repos = Context.Configuration.AvailableRepositories
+			.Where(kv => !kv.Value.Skip)
+			.Select(kv => kv.Value)
 			.ToArray();
 		var checkouts = repos.Select(r => CreateCheckout(FileSystem, r)).ToArray();
 		var configurationContext = TestHelpers.CreateConfigurationContext(new FileSystem());
@@ -198,7 +201,7 @@ public class GlobalNavigationPathProviderTests : IAsyncLifetime
 		assembleSources.NavigationTocMappings[kibanaExtendMoniker].TopLevelSource.Should().Be(expectedRoot);
 		assembleSources.NavigationTocMappings.Should().NotBeEmpty().And.ContainKey(new Uri("docs-content://reference/apm/"));
 
-		var uri = new Uri("integrations://reference/");
+		var uri = new Uri("integrations://extend");
 		assembleSources.TreeCollector.Should().NotBeNull();
 		_ = assembleSources.TreeCollector.TryGetTableOfContentsTree(uri, out var tree);
 		tree.Should().NotBeNull();
@@ -277,10 +280,9 @@ public class GlobalNavigationPathProviderTests : IAsyncLifetime
 		var configurationContext = TestHelpers.CreateConfigurationContext(fs);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
 		var assembleContext = new AssembleContext(config, configurationContext, "prod", collector, fs, fs, null, null);
-		var repos = assembleContext.Configuration.ReferenceRepositories
+		var repos = assembleContext.Configuration.AvailableRepositories
 			.Where(kv => !kv.Value.Skip)
-			.Select(kv => kv.Value.Name)
-			.Concat([NarrativeRepository.RepositoryName])
+			.Select(kv => kv.Value)
 			.ToArray();
 		var checkouts = repos.Select(r => CreateCheckout(fs, r)).ToArray();
 		var assembleSources = await AssembleSources.AssembleAsync(

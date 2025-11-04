@@ -35,9 +35,7 @@ public class PublicOnlyAssemblerConfigurationTests
 	public void ReadsPrivateRepositories()
 	{
 		var config = Context.Configuration;
-#pragma warning disable IDE0058
 		config.ReferenceRepositories.Should().NotBeEmpty().And.NotContainKey("cloud");
-#pragma warning restore IDE0058
 		config.PrivateRepositories.Should().NotBeEmpty().And.ContainKey("cloud");
 		var cloud = config.PrivateRepositories["cloud"];
 		cloud.Should().NotBeNull();
@@ -120,8 +118,8 @@ public class AssemblerConfigurationTests : IAsyncLifetime
 		beats.GitReferenceCurrent.Should().NotBeNullOrEmpty()
 			.And.NotBe("main");
 
-		var cloud = config.ReferenceRepositories["cloud"];
-		cloud.GitReferenceCurrent.Should().NotBeNullOrEmpty()
+		var curator = config.ReferenceRepositories["curator"];
+		curator.GitReferenceCurrent.Should().NotBeNullOrEmpty()
 			.And.Be("master");
 	}
 
