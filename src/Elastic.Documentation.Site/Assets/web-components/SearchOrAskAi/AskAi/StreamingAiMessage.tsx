@@ -6,7 +6,6 @@ import {
     useConversationId,
 } from './chat.store'
 import { useAskAi } from './useAskAi'
-import * as React from 'react'
 import { useEffect, useRef } from 'react'
 
 interface StreamingAiMessageProps {
@@ -45,7 +44,7 @@ export const StreamingAiMessage = ({
                     'error'
                 )
             } else if (event.type === EventTypes.CONVERSATION_END) {
-                updateAiMessage(message.id, contentRef.current, 'complete')
+                updateAiMessage(message.id, message.content || contentRef.current, 'complete')
             }
         },
         onError: (error) => {
@@ -85,15 +84,16 @@ export const StreamingAiMessage = ({
         markMessageAsSent,
     ])
 
+    // Always use contentRef.current if it has content (regardless of status)
+    // This way we don't need to save to message.content and can just use streamingContent
+    const streamingContentToPass =
+        isLast && contentRef.current ? contentRef.current : undefined
+
     return (
         <ChatMessage
             message={message}
             events={isLast ? events : []}
-            streamingContent={
-                isLast && message.status === 'streaming'
-                    ? contentRef.current
-                    : undefined
-            }
+            streamingContent={streamingContentToPass}
         />
     )
 }

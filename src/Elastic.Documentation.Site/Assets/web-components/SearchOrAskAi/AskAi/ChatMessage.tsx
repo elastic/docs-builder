@@ -63,13 +63,6 @@ interface ChatMessageProps {
     onRetry?: () => void
 }
 
-const getAccumulatedContent = (messages: AskAiEvent[]) => {
-    return messages
-        .filter((m) => m.type === EventTypes.MESSAGE_CHUNK)
-        .map((m) => m.content)
-        .join('')
-}
-
 const splitContentAndReferences = (
     content: string
 ): { mainContent: string; referencesJson: string | null } => {
@@ -279,9 +272,9 @@ export const ChatMessage = ({
         )
     }
 
-    const content =
-        streamingContent ||
-        (events.length > 0 ? getAccumulatedContent(events) : message.content)
+    // Use streamingContent during streaming, otherwise use message.content from store
+    // message.content is updated atomically with status when CONVERSATION_END arrives
+    const content = streamingContent || message.content
 
     const hasError = message.status === 'error' || !!error
 
