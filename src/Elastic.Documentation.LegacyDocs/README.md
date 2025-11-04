@@ -10,7 +10,7 @@ It uses a checked-in bloom filter file loaded into memory to check if an URL exi
 The bloom filter file is created by running the following command:
 
 ```
-dotnet run --project src/tooling/docs-assembler -- legacy-docs create-bloom-bin --built-docs-dir /path/to/elastic/built-docs
+dotnet run --project src/tooling/docs-builder -- assembler bloom-filter create --built-docs-dir /path/to/elastic/built-docs
 ```
 
 1. The `--built-docs-dir` option is the path to the locally checked-out [elastic/built-docs](https://github.com/elastic/built-docs) repository.

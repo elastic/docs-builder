@@ -10,7 +10,7 @@ using Elastic.Documentation.Diagnostics;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 
-namespace Documentation.Assembler.Tests;
+namespace Elastic.Assembler.IntegrationTests;
 
 public class PublicOnlyAssemblerConfigurationTests
 {
@@ -45,14 +45,18 @@ public class PublicOnlyAssemblerConfigurationTests
 
 }
 
-public class AssemblerConfigurationTests
+public class AssemblerConfigurationTests : IAsyncLifetime
 {
+	private readonly DocumentationFixture _fixture;
+	private readonly ITestOutputHelper _output;
 	private DiagnosticsCollector Collector { get; }
 	private AssembleContext Context { get; }
 	private FileSystem FileSystem { get; }
 	private IDirectoryInfo CheckoutDirectory { get; set; }
-	public AssemblerConfigurationTests()
+	public AssemblerConfigurationTests(DocumentationFixture fixture, ITestOutputHelper output)
 	{
+		_fixture = fixture;
+		_output = output;
 		FileSystem = new FileSystem();
 		CheckoutDirectory = FileSystem.DirectoryInfo.New(
 			FileSystem.Path.Combine(Paths.GetSolutionDirectory()!.FullName, ".artifacts", "checkouts")
@@ -114,8 +118,22 @@ public class AssemblerConfigurationTests
 		beats.GitReferenceCurrent.Should().NotBeNullOrEmpty()
 			.And.NotBe("main");
 
-		var cloud = config.ReferenceRepositories["cloud"];
-		cloud.GitReferenceCurrent.Should().NotBeNullOrEmpty()
+		var curator = config.ReferenceRepositories["curator"];
+		curator.GitReferenceCurrent.Should().NotBeNullOrEmpty()
 			.And.Be("master");
 	}
+
+	/// <inheritdoc />
+	public ValueTask DisposeAsync()
+	{
+		GC.SuppressFinalize(this);
+		if (TestContext.Current.TestState?.Result is TestResult.Passed)
+			return default;
+		foreach (var resource in _fixture.InMemoryLogger.RecordedLogs)
+			_output.WriteLine(resource.Message);
+		return default;
+	}
+
+	/// <inheritdoc />
+	public ValueTask InitializeAsync() => default;
 }

@@ -3,8 +3,7 @@
 **ALWAYS reference these instructions first and fallback to search or bash commands only when you encounter unexpected information that does not match the info here.**
 
 Elastic's distributed documentation tooling system built on .NET 9, consisting of:
-- **docs-builder**: CLI tool for building single documentation sets
-- **docs-assembler**: CLI tool for assembling multiple doc sets
+- **docs-builder**: CLI tool for building single documentation sets or assembling or assembling multiple documentation sets
 - Written in C# and F# with extensive Markdown processing capabilities
 
 ## Working Effectively
@@ -77,10 +76,10 @@ dotnet run --project src/tooling/docs-builder -- serve
 dotnet run --project src/tooling/docs-builder -- --help
 
 # Get help for docs-assembler
-dotnet run --project src/tooling/docs-assembler -- --help
+dotnet run --project src/tooling/docs-builder -- assemble --help
 
 # Validate assembler configuration - takes 15 seconds
-dotnet run --project src/tooling/docs-assembler -c release -- navigation validate
+dotnet run --project src/tooling/docs-builder -c release -- assembler navigation validate
 ```
 
 ### Local Development Orchestration
@@ -126,7 +125,6 @@ src/
   ├── Elastic.Markdown/              # Core Markdown processing engine
   ├── tooling/
   │   ├── docs-builder/               # Main CLI application
-  │   └── docs-assembler/             # Assembly tool
   ├── Elastic.Documentation.Site/    # Web rendering components (TypeScript/CSS)
   └── Elastic.Documentation.Configuration/  # Configuration handling
 
@@ -142,7 +140,7 @@ config/                               # YAML configuration files
 
 ### Adding New Features
 - **Markdown Extensions**: Add to `src/Elastic.Markdown/Myst/`
-- **CLI Commands**: Extend `src/tooling/docs-builder/Cli/` or `docs-assembler/Cli/`
+- **CLI Commands**: Extend `src/tooling/docs-builder/Commands/` 
 - **Web Components**: Add to `src/Elastic.Documentation.Site/`
 - **Configuration**: Modify `src/Elastic.Documentation.Configuration/`
 

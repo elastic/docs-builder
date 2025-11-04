@@ -12,7 +12,7 @@ using Elastic.Documentation.Configuration.Synonyms;
 using Elastic.Documentation.Configuration.Versions;
 using Microsoft.Extensions.Logging.Abstractions;
 
-namespace Documentation.Assembler.Tests;
+namespace Elastic.Assembler.IntegrationTests;
 
 public static class TestHelpers
 {
@@ -23,7 +23,7 @@ public static class TestHelpers
 		ProductsConfiguration? productsConfiguration = null
 	)
 	{
-		configurationFileProvider ??= new ConfigurationFileProvider(NullLoggerFactory.Instance, fileSystem);
+		configurationFileProvider ??= new ConfigurationFileProvider(NullLoggerFactory.Instance, fileSystem, skipPrivateRepositories: true);
 		versionsConfiguration ??= new VersionsConfiguration
 		{
 			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
