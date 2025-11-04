@@ -15,7 +15,6 @@ import {
     EuiTitle,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
-import * as React from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 const containerStyles = css`
@@ -67,16 +66,47 @@ export const Chat = () => {
     const inputRef = useRef<HTMLInputElement>(null)
     const scrollRef = useRef<HTMLDivElement>(null)
     const lastMessageStatusRef = useRef<string | null>(null)
+    const abortFunctionRef = useRef<(() => void) | null>(null)
     const [inputValue, setInputValue] = useState('')
+    const [countdown, setCountdown] = useState<number | null>(null)
 
     const dynamicScrollableStyles = css`
         ${scrollableStyles}
         ${useEuiOverflowScroll('y', true)}
     `
 
+    // Check if there's an active streaming query
+    const isStreaming = messages.length > 0 && 
+        messages[messages.length - 1].type === 'ai' &&
+        messages[messages.length - 1].status === 'streaming'
+
+    // Handle abort function from StreamingAiMessage
+    const handleAbortReady = useCallback((abort: () => void) => {
+        abortFunctionRef.current = abort
+    }, [])
+
+    // Handle countdown changes from error messages
+    const handleCountdownChange = useCallback((newCountdown: number | null) => {
+        setCountdown(newCountdown)
+    }, [])
+
+    // Clear abort function when streaming ends
+    useEffect(() => {
+        if (!isStreaming) {
+            abortFunctionRef.current = null
+        }
+    }, [isStreaming])
+
+    // Handle countdown for 429 errors - removed redundant useEffect
+
     const handleSubmit = useCallback(
         (question: string) => {
             if (!question.trim()) return
+            
+            // Prevent submission during countdown
+            if (countdown !== null && countdown > 0) {
+                return
+            }
 
             submitQuestion(question.trim())
 
@@ -88,8 +118,18 @@ export const Chat = () => {
             // Scroll to bottom after new message
             setTimeout(() => scrollToBottom(scrollRef.current), 100)
         },
-        [submitQuestion]
+        [submitQuestion, countdown]
     )
+
+    const handleButtonClick = useCallback(() => {
+        if (isStreaming && abortFunctionRef.current) {
+            // Interrupt current query
+            abortFunctionRef.current()
+            abortFunctionRef.current = null
+        } else if (inputRef.current) {
+            handleSubmit(inputRef.current.value)
+        }
+    }, [isStreaming, handleSubmit])
 
     // Refocus input when AI answer transitions to complete
     useEffect(() => {
@@ -162,7 +202,11 @@ export const Chat = () => {
                         />
                     ) : (
                         <div css={messagesStyles}>
-                            <ChatMessageList messages={messages} />
+                            <ChatMessageList 
+                                messages={messages} 
+                                onAbortReady={handleAbortReady}
+                                onCountdownChange={handleCountdownChange}
+                            />
                         </div>
                     )}
                 </div>
@@ -187,9 +231,10 @@ export const Chat = () => {
                                 handleSubmit(e.currentTarget.value)
                             }
                         }}
+                        disabled={countdown !== null && countdown > 0}
                     />
                     <EuiButtonIcon
-                        aria-label="Send message"
+                        aria-label={isStreaming ? "Interrupt query" : "Send message"}
                         css={css`
                             position: absolute;
                             right: 8px;
@@ -198,13 +243,10 @@ export const Chat = () => {
                             border-radius: 9999px;
                         `}
                         color="primary"
-                        iconType="sortUp"
-                        display={inputValue.trim() ? 'fill' : 'base'}
-                        onClick={() => {
-                            if (inputRef.current) {
-                                handleSubmit(inputRef.current.value)
-                            }
-                        }}
+                        iconType={isStreaming ? "cross" : "sortUp"}
+                        display={inputValue.trim() || isStreaming ? 'fill' : 'base'}
+                        onClick={handleButtonClick}
+                        disabled={countdown !== null && countdown > 0}
                     ></EuiButtonIcon>
                 </div>
                 <EuiSpacer size="m" />

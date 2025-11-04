@@ -5,7 +5,7 @@ import { useMessageThrottling } from './useMessageThrottling'
 import { EventSourceMessage } from '@microsoft/fetch-event-source'
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import * as z from 'zod'
-
+import { ApiError, isApiError } from '../errorHandling'
 // Constants
 const MESSAGE_THROTTLE_MS = 25 // Throttle messages to prevent UI flooding
 
@@ -19,20 +19,22 @@ export type AskAiRequest = z.infer<typeof AskAiRequestSchema>
 export interface UseAskAiResponse {
     events: AskAiEvent[]
     abort: () => void
-    error: Error | null
+    error: ApiError | Error | null
     sendQuestion: (question: string) => Promise<void>
 }
 
 interface Props {
     onEvent?: (event: AskAiEvent) => void
-    onError?: (error: Error) => void
+    onError?: (error: ApiError | Error | null) => void
     threadId?: string
 }
 
 export const useAskAi = (props: Props): UseAskAiResponse => {
     const [events, setEvents] = useState<AskAiEvent[]>([])
-    const [error, setError] = useState<Error | null>(null)
+    const [error, setError] = useState<ApiError | Error | null>(null)
+    const [cooldown, setCooldown] = useState<number | null>(null)
     const lastSentQuestionRef = useRef<string>('')
+    const cooldownIntervalRef = useRef<number | null>(null)
 
     // Get AI provider from store (user-controlled via UI)
     const aiProvider = useAiProvider()
@@ -81,18 +83,62 @@ export const useAskAi = (props: Props): UseAskAiResponse => {
         [processMessage]
     )
 
+    // Handle cooldown timer for 429 errors
+    useEffect(() => {
+        if (cooldown === null || cooldown <= 0) {
+            if (cooldownIntervalRef.current) {
+                clearInterval(cooldownIntervalRef.current)
+                cooldownIntervalRef.current = null
+            }
+            return
+        }
+
+        // Set up countdown timer
+        cooldownIntervalRef.current = setInterval(() => {
+            setCooldown((prev) => {
+                if (prev === null || prev <= 1) {
+                    if (cooldownIntervalRef.current) {
+                        clearInterval(cooldownIntervalRef.current)
+                        cooldownIntervalRef.current = null
+                    }
+                    return null
+                }
+                return prev - 1
+            })
+        }, 1000)
+
+        return () => {
+            if (cooldownIntervalRef.current) {
+                clearInterval(cooldownIntervalRef.current)
+                cooldownIntervalRef.current = null
+            }
+        }
+    }, [cooldown])
+
     const { sendMessage, abort } = useFetchEventSource<AskAiRequest>({
         apiEndpoint: '/docs/_api/v1/ask-ai/stream',
         headers,
         onMessage,
         onError: (error) => {
             setError(error)
+            // Set cooldown if it's a 429 error with retryAfter
+            if (isApiError(error)) {
+                const apiError = error as ApiError
+                if (apiError.statusCode === 429 && apiError.retryAfter) {
+                    setCooldown(apiError.retryAfter)
+                }
+            }
             props.onError?.(error)
         },
     })
 
     const sendQuestion = useCallback(
         async (question: string) => {
+            // Prevent sending during cooldown period
+            if (cooldown !== null && cooldown > 0) {
+                return
+            }
+
             if (question.trim() && question !== lastSentQuestionRef.current) {
                 abort()
                 setError(null)
@@ -111,7 +157,7 @@ export const useAskAi = (props: Props): UseAskAiResponse => {
                 }
             }
         },
-        [props.threadId, sendMessage, abort, clearQueue]
+        [props.threadId, sendMessage, abort, clearQueue, cooldown]
     )
 
     useEffect(() => {
@@ -119,6 +165,10 @@ export const useAskAi = (props: Props): UseAskAiResponse => {
             setError(null)
             setEvents([])
             clearQueue()
+            if (cooldownIntervalRef.current) {
+                clearInterval(cooldownIntervalRef.current)
+                cooldownIntervalRef.current = null
+            }
         }
     }, [clearQueue])
 

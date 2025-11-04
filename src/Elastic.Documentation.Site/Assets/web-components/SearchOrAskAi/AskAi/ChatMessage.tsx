@@ -1,10 +1,11 @@
 import { initCopyButton } from '../../../copybutton'
 import { hljs } from '../../../hljs'
-import { AskAiEvent, EventTypes } from './AskAiEvent'
+import { AskAiEvent, ChunkEvent, EventTypes } from './AskAiEvent'
 import { GeneratingStatus } from './GeneratingStatus'
 import { References } from './RelatedResources'
 import { ChatMessage as ChatMessageType } from './chat.store'
 import { useStatusMinDisplay } from './useStatusMinDisplay'
+import { ApiError, getErrorMessage, isApiError } from '../errorHandling'
 import {
     EuiButtonIcon,
     EuiCallOut,
@@ -22,8 +23,7 @@ import {
 import { css } from '@emotion/react'
 import DOMPurify from 'dompurify'
 import { Marked, RendererObject, Tokens } from 'marked'
-import * as React from 'react'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 // Create the marked instance once globally (renderer never changes)
 const createMarkedInstance = () => {
@@ -59,14 +59,15 @@ interface ChatMessageProps {
     message: ChatMessageType
     events?: AskAiEvent[]
     streamingContent?: string
-    error?: Error | null
+    error?: ApiError | Error | null
     onRetry?: () => void
+    onCountdownChange?: (countdown: number | null) => void
 }
 
 const getAccumulatedContent = (messages: AskAiEvent[]) => {
     return messages
-        .filter((m) => m.type === 'chunk')
-        .map((m) => m.content)
+        .filter((m) => m.type === EventTypes.CHUNK)
+        .map((m) => (m as ChunkEvent).content)
         .join('')
 }
 
@@ -169,7 +170,7 @@ const computeAiStatus = (
         case EventTypes.CHUNK: {
             const allContent = events
                 .filter((m) => m.type === EventTypes.CHUNK)
-                .map((m) => m.content)
+                .map((m) => (m as ChunkEvent).content)
                 .join('')
 
             if (allContent.includes('<!--REFERENCES')) {
@@ -243,12 +244,82 @@ const ActionBar = ({
     </EuiFlexGroup>
 )
 
+// Error message display component with countdown for 429 errors
+const ErrorMessageDisplay = ({ 
+    error,
+    onCountdownChange,
+}: { 
+    error: ApiError | Error | null
+    onCountdownChange?: (countdown: number | null) => void
+}) => {
+    const [countdown, setCountdown] = useState<number | null>(null)
+    
+    useEffect(() => {
+        if (!error) {
+            setCountdown(null)
+            onCountdownChange?.(null)
+            return
+        }
+
+        if (isApiError(error)) {
+            const apiError = error as ApiError
+            if (apiError.statusCode === 429 && apiError.retryAfter) {
+                setCountdown(apiError.retryAfter)
+                onCountdownChange?.(apiError.retryAfter)
+                const interval = setInterval(() => {
+                    setCountdown((prev) => {
+                        if (prev === null || prev <= 1) {
+                            clearInterval(interval)
+                            const newValue = null
+                            onCountdownChange?.(newValue)
+                            return newValue
+                        }
+                        const newValue = prev - 1
+                        onCountdownChange?.(newValue)
+                        return newValue
+                    })
+                }, 1000)
+                return () => clearInterval(interval)
+            }
+        }
+        setCountdown(null)
+        onCountdownChange?.(null)
+    }, [error, onCountdownChange])
+    
+    if (!error) return null
+
+    if ((error as ApiError)?.statusCode === 429 && (countdown === null || countdown <= 0)) {
+        return null
+    }
+
+    if (countdown !== null && isApiError(error)) {
+        (error as ApiError).retryAfter = countdown
+    }
+    const errorMessage = getErrorMessage(error)
+    
+    return (
+        <>
+            <EuiSpacer size="m" />
+            <EuiCallOut
+                title="Sorry, there was an error"
+                color="danger"
+                iconType="error"
+                size="s"
+            >
+                {errorMessage}
+            </EuiCallOut>
+            <EuiSpacer size="s" />
+        </>
+    )
+}
+
 export const ChatMessage = ({
     message,
     events = [],
     streamingContent,
     error,
     onRetry,
+    onCountdownChange,
 }: ChatMessageProps) => {
     const { euiTheme } = useEuiTheme()
     const { isUser, isLoading, isComplete } = getMessageState(message)
@@ -315,7 +386,7 @@ export const ChatMessage = ({
     // Apply minimum display time to prevent status flickering
     const aiStatus = useStatusMinDisplay(rawAiStatus)
 
-    const ref = React.useRef<HTMLDivElement>(null)
+    const ref = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
         if (isComplete && ref.current) {
@@ -410,20 +481,10 @@ export const ChatMessage = ({
                     )}
 
                     {hasError && (
-                        <>
-                            <EuiSpacer size="m" />
-                            <EuiCallOut
-                                title="Sorry, there was an error"
-                                color="danger"
-                                iconType="error"
-                                size="s"
-                            >
-                                <p>
-                                    The Elastic Docs AI Assistant encountered an
-                                    error. Please try again.
-                                </p>
-                            </EuiCallOut>
-                        </>
+                        <ErrorMessageDisplay 
+                            error={error as ApiError | Error | null} 
+                            onCountdownChange={onCountdownChange}
+                        />
                     )}
                 </EuiPanel>
             </EuiFlexItem>

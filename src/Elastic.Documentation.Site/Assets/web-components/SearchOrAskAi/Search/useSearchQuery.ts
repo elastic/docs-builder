@@ -1,6 +1,8 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useDebounce } from '@uidotdev/usehooks'
 import * as z from 'zod'
+import { createApiErrorFromResponse, shouldRetry } from '../errorHandling'
+import { ApiError } from '../errorHandling'
 
 const SearchResultItemParent = z.object({
     url: z.string(),
@@ -36,7 +38,7 @@ type Props = {
 export const useSearchQuery = ({ searchTerm, pageNumber = 1 }: Props) => {
     const trimmedSearchTerm = searchTerm.trim()
     const debouncedSearchTerm = useDebounce(trimmedSearchTerm, 300)
-    return useQuery<SearchResponse>({
+    return useQuery<SearchResponse, ApiError>({
         queryKey: [
             'search',
             { searchTerm: debouncedSearchTerm.toLowerCase(), pageNumber },
@@ -54,9 +56,7 @@ export const useSearchQuery = ({ searchTerm, pageNumber = 1 }: Props) => {
                 '/docs/_api/v1/search?' + params.toString()
             )
             if (!response.ok) {
-                throw new Error(
-                    'Failed to fetch search results: ' + response.statusText
-                )
+                throw await createApiErrorFromResponse(response)
             }
             const data = await response.json()
             return SearchResponse.parse(data)
@@ -65,5 +65,6 @@ export const useSearchQuery = ({ searchTerm, pageNumber = 1 }: Props) => {
         refetchOnWindowFocus: false,
         placeholderData: keepPreviousData,
         staleTime: 1000 * 60 * 5, // 5 minutes
+        retry: shouldRetry,
     })
 }

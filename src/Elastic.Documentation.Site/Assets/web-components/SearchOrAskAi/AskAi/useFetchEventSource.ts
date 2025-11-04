@@ -4,6 +4,7 @@ import {
     EventStreamContentType,
 } from '@microsoft/fetch-event-source'
 import { useRef, useCallback } from 'react'
+import { createApiErrorFromResponse, ApiError, isApiError } from '../errorHandling'
 
 /**
  * Computes SHA256 hash of the request body for CloudFront + Lambda Function URL with OAC.
@@ -23,7 +24,7 @@ export interface UseFetchEventSourceOptions {
     apiEndpoint: string
     headers?: Record<string, string>
     onMessage?: (event: EventSourceMessage) => void
-    onError?: (error: Error) => void
+    onError?: (error: ApiError | Error | null) => void
     onOpen?: (response: Response) => Promise<void>
     onClose?: () => void
 }
@@ -85,12 +86,11 @@ export function useFetchEventSource<TPayload>({
                         ) {
                             onOpen?.(response)
                             return
-                        } else if (
-                            response.status >= 400 &&
-                            response.status < 500 &&
-                            response.status !== 429
-                        ) {
-                            throw new FatalError()
+                        } else if (!response.ok) {
+                            // Create an error with status code and headers
+                            const error = await createApiErrorFromResponse(response)
+                            onError?.(error)
+                            throw error
                         } else {
                             throw new FatalError()
                         }
@@ -105,14 +105,22 @@ export function useFetchEventSource<TPayload>({
                         onMessage?.(msg)
                     },
                     onerror: (err) => {
-                        throw new FatalError(err?.message || 'Connection error')
+                        if (isApiError(err as ApiError | Error | null)) {
+                            onError?.(err as ApiError)
+                        } else {
+                            const error = err instanceof Error ? err : new Error(err?.message || 'Connection error') as ApiError
+                            onError?.(error)
+                            throw new FatalError(error.message)
+                        }
                     },
                     onclose: () => {
                         onClose?.()
                     },
                 })
             } catch (error) {
-                if (error instanceof Error && error.name !== 'AbortError') {
+                if (isApiError(error as ApiError | Error | null)) {
+                    onError?.(error as ApiError)
+                } else if (error instanceof Error && error.name !== 'AbortError') {
                     onError?.(error)
                 }
             }

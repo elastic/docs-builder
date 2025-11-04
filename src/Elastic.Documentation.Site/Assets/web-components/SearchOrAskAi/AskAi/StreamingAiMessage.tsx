@@ -6,17 +6,22 @@ import {
     useThreadId,
 } from './chat.store'
 import { useAskAi } from './useAskAi'
+import { ApiError } from '../errorHandling'
 import * as React from 'react'
 import { useEffect, useRef } from 'react'
 
 interface StreamingAiMessageProps {
     message: ChatMessageType
     isLast: boolean
+    onAbortReady?: (abort: () => void) => void
+    onCountdownChange?: (countdown: number | null) => void
 }
 
 export const StreamingAiMessage = ({
     message,
     isLast,
+    onAbortReady,
+    onCountdownChange,
 }: StreamingAiMessageProps) => {
     const {
         updateAiMessage,
@@ -27,7 +32,7 @@ export const StreamingAiMessage = ({
     const threadId = useThreadId()
     const contentRef = useRef('')
 
-    const { events, sendQuestion } = useAskAi({
+    const { events, sendQuestion, abort, error } = useAskAi({
         threadId: threadId ?? undefined,
         onEvent: (event) => {
             if (event.type === EventTypes.CONVERSATION_START) {
@@ -48,14 +53,21 @@ export const StreamingAiMessage = ({
                 updateAiMessage(message.id, contentRef.current, 'complete')
             }
         },
-        onError: () => {
+        onError: (error: ApiError | Error | null) => {
             updateAiMessage(
                 message.id,
-                message.content || 'Error occurred',
+                message.content || error?.message || 'Error occurred',
                 'error'
             )
         },
     })
+
+    // Expose abort function to parent when this is the last message
+    useEffect(() => {
+        if (isLast && message.status === 'streaming') {
+            onAbortReady?.(abort)
+        }
+    }, [isLast, message.status, abort, onAbortReady])
 
     useEffect(() => {
         if (
@@ -87,6 +99,8 @@ export const StreamingAiMessage = ({
                     ? contentRef.current
                     : undefined
             }
+            error={isLast ? error : null}
+            onCountdownChange={onCountdownChange}
         />
     )
 }

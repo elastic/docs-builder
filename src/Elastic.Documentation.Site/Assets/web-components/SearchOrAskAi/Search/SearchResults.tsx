@@ -10,16 +10,24 @@ import {
     EuiIcon,
     EuiPagination,
     EuiHorizontalRule,
+    EuiCallOut,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
 import { useDebounce } from '@uidotdev/usehooks'
 import DOMPurify from 'dompurify'
 import { useEffect, useMemo, useState, memo } from 'react'
+import { ApiError, getErrorMessage, isApiError } from '../errorHandling'
 
-export const SearchResults = () => {
+interface SearchResultsProps {
+    onCountdownChange?: (countdown: number | null) => void
+}
+
+export const SearchResults = ({ onCountdownChange }: SearchResultsProps) => {
     const searchTerm = useSearchTerm()
     const [activePage, setActivePage] = useState(0)
     const debouncedSearchTerm = useDebounce(searchTerm, 300)
+    const [countdown, setCountdown] = useState<number | null>(null)
+
     useEffect(() => {
         setActivePage(0)
     }, [debouncedSearchTerm])
@@ -29,12 +37,55 @@ export const SearchResults = () => {
     })
     const { euiTheme } = useEuiTheme()
 
+    useEffect(() => {
+        if (error && isApiError(error) && error.statusCode === 429 && error.retryAfter) {
+            setCountdown(error.retryAfter)
+            onCountdownChange?.(error.retryAfter)
+            const interval = setInterval(() => {
+                setCountdown((prev) => {
+                    if (prev === null || prev <= 1) {
+                        clearInterval(interval)
+                        const newValue = null
+                        onCountdownChange?.(newValue)
+                        return newValue
+                    }
+                    const newValue = prev - 1
+                    onCountdownChange?.(newValue)
+                    return newValue
+                })
+            }, 1000)
+            return () => clearInterval(interval)
+        }
+        setCountdown(null)
+        onCountdownChange?.(null)
+    }, [error, onCountdownChange])
+
     if (!searchTerm) {
         return
     }
 
     if (error) {
-        return <div>Error loading search results: {error.message}</div>
+        if ((error as ApiError)?.statusCode === 429 && (countdown === null || countdown <= 0)) {
+            return null
+        }
+    
+        if (countdown !== null) {
+            (error as ApiError).retryAfter = countdown
+        }
+        const errorMessage = getErrorMessage(error)
+        return (
+            <>
+            <EuiCallOut
+                title="Error loading search results"
+                color="danger"
+                iconType="error"
+                size="s"
+            >
+                {errorMessage}
+            </EuiCallOut>
+            <EuiSpacer size="s" />
+            </>
+         )
     }
 
     return (
