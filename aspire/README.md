@@ -27,8 +27,8 @@ dotnet run --project aspire
 
 This will automatically:
 
-* clone all repositories according to `config/assembler.yml` using `docs-assembler repo clone-all`
-* do a full site build of all repositories using `docs-assembler repo build-all`
+* clone all repositories according to `config/assembler.yml` using `docs-builder assembler clone`
+* do a full site build of all repositories using `docs-builder assembler build`
 * Serve a copy of the fully assembled documentation using `docs-builder serve-static`.
 
 This should start a management UI over at: https://localhost:17166. This UI exposes all logs, traces, and metrics for each service

@@ -456,7 +456,7 @@ jobs:
             )
           )
         run: |
-          dotnet run --project src/tooling/docs-assembler -- navigation validate-link-reference
+          dotnet run --project src/tooling/docs-builder -- assembler navigation validate-link-reference
 
       - uses: elastic/docs-builder/.github/actions/aws-auth@main
         if: >

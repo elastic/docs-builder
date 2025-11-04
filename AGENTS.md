@@ -6,8 +6,7 @@ This file contains instructions and guidance for AIs when working with the docs-
 
 This is Elastic's distributed documentation tooling system built on .NET 9, consisting of:
 
-- **docs-builder**: CLI tool for building single documentation sets
-- **docs-assembler**: CLI tool for assembling multiple doc sets
+- **docs-builder**: CLI tool for building documentation sets (either individual or assembled)
 - Written in C# and F# with extensive Markdown processing capabilities
 
 ## Essential commands
@@ -50,7 +49,6 @@ dotnet test --logger "console;verbosity=detailed"
 
 - `src/Elastic.Markdown/` - Core Markdown processing engine
 - `src/tooling/docs-builder/` - Main CLI application
-- `src/tooling/docs-assembler/` - Assembly tool
 - `src/Elastic.Documentation.Site/` - Web rendering components
 
 ### Testing Structure
@@ -70,7 +68,7 @@ dotnet test --logger "console;verbosity=detailed"
 ### Adding New Features
 
 1. **Markdown Extensions**: Add to `src/Elastic.Markdown/Myst/`
-2. **CLI Commands**: Extend `src/tooling/docs-builder/Cli/` or `docs-assembler/Cli/`
+2. **CLI Commands**: Extend `src/tooling/docs-builder/Commands/` 
 3. **Web Components**: Add to `src/Elastic.Documentation.Site/`
 4. **Configuration**: Modify `src/Elastic.Documentation.Configuration/`
 
@@ -99,7 +97,7 @@ You MUST update the documentation when there are changes in the markdown syntax 
 
 ## Useful file locations
 
-- Entry points: `src/tooling/docs-builder/Program.cs`, `src/tooling/docs-assembler/Program.cs`
+- Entry points: `src/tooling/docs-builder/Program.cs`
 - Markdown processing: `src/Elastic.Markdown/Myst/`
 - Web assets: `src/Elastic.Documentation.Site/Assets/`
 - Configuration schemas: `src/Elastic.Documentation.Configuration/`
