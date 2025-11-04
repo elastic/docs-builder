@@ -24,10 +24,6 @@ public class AgentBuilderStreamTransformer(ILogger<AgentBuilderStreamTransformer
 		var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 		var id = Guid.NewGuid().ToString();
 
-		// Special handling for error events - they may have a different structure
-		if (type == "error")
-			return ParseErrorEventFromRoot(id, timestamp, json);
-
 		// Most Agent Builder events have data nested in a "data" property
 		if (!json.TryGetProperty("data", out var innerData))
 		{
@@ -37,6 +33,9 @@ public class AgentBuilderStreamTransformer(ILogger<AgentBuilderStreamTransformer
 
 		return type switch
 		{
+			"error" =>
+				ParseErrorEvent(id, timestamp, json),
+
 			"conversation_id_set" when innerData.TryGetProperty("conversation_id", out var convId) =>
 				new AskAiEvent.ConversationStart(id, timestamp, convId.GetString()!),
 
@@ -126,7 +125,7 @@ public class AgentBuilderStreamTransformer(ILogger<AgentBuilderStreamTransformer
 		return new AskAiEvent.ToolCall(id, timestamp, toolCallId ?? id, toolId ?? "unknown", args);
 	}
 
-	private static AskAiEvent.ErrorEvent ParseErrorEventFromRoot(string id, long timestamp, JsonElement root)
+	private static AskAiEvent.ErrorEvent ParseErrorEvent(string id, long timestamp, JsonElement root)
 	{
 		// Agent Builder sends: {"error":{"code":"...","message":"...","meta":{...}}}
 		var errorMessage = root.TryGetProperty("error", out var errorProp) &&

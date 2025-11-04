@@ -133,7 +133,7 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 	/// <returns>Stream processing result with metrics and captured output</returns>
 	private async Task ProcessStreamAsync(PipeReader reader, PipeWriter writer, Activity? parentActivity, CancellationToken cancellationToken)
 	{
-		using var activity = StreamTransformerActivitySource.StartActivity("transform_stream");
+		using var activity = StreamTransformerActivitySource.StartActivity(nameof(ProcessStreamAsync));
 
 		if (parentActivity?.Id != null)
 			_ = activity?.SetParentId(parentActivity.Id);
@@ -141,9 +141,7 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 		List<MessagePart> outputMessageParts = [];
 		await foreach (var sseEvent in ParseSseEventsAsync(reader, cancellationToken))
 		{
-			using var parseActivity = StreamTransformerActivitySource.StartActivity("parse_event");
-			// parseActivity automatically inherits from Activity.Current (transform_stream)
-
+			using var parseActivity = StreamTransformerActivitySource.StartActivity("AskAI Event");
 			AskAiEvent? transformedEvent;
 			try
 			{
@@ -162,10 +160,15 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 			}
 
 			if (transformedEvent == null)
+			{
+				Logger.LogWarning("Transformed event is null for transformer {TransformerType}. Skipping event. EventType: {EventType}",
+					GetType().Name, sseEvent.EventType);
 				continue;
+			}
 
 			// Set event type tag on parse_event activity
-			_ = parseActivity?.SetTag("ask_ai.event", transformedEvent.GetType().Name);
+			_ = parseActivity?.SetTag("ask_ai.event.type", transformedEvent.GetType().Name);
+			_ = parseActivity?.SetTag("gen_ai.respone.id", transformedEvent.Id);
 
 			switch (transformedEvent)
 			{
@@ -173,15 +176,18 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 					{
 						_ = parentActivity?.SetTag("gen_ai.conversation.id", conversationStart.ConversationId);
 						_ = activity?.SetTag("gen_ai.conversation.id", conversationStart.ConversationId);
+						Logger.LogDebug("AskAI conversation started: {ConversationId}", conversationStart.ConversationId);
 						break;
 					}
 				case AskAiEvent.Reasoning reasoning:
 					{
+						Logger.LogDebug("AskAI reasoning: {ReasoningMessage}", reasoning.Message);
 						outputMessageParts.Add(new MessagePart("reasoning", reasoning.Message ?? string.Empty));
 						break;
 					}
-				case AskAiEvent.MessageChunk:
+				case AskAiEvent.MessageChunk messageChunk:
 					{
+						Logger.LogDebug("AskAI message chunk: {ChunkContent}", messageChunk.Content);
 						// Event type already tagged above
 						break;
 					}
@@ -192,21 +198,24 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 						_ = activity?.SetTag("error.type", "AIProviderError");
 						_ = activity?.SetTag("error.message", errorEvent.Message);
 						_ = parseActivity?.SetStatus(ActivityStatusCode.Error, errorEvent.Message);
+						Logger.LogError("AskAI error event: {Message}", errorEvent.Message);
 						break;
 					}
-				case AskAiEvent.ToolCall:
+				case AskAiEvent.ToolCall toolCall:
 					{
 						// Event type already tagged above
+						Logger.LogDebug("AskAI tool call: {ToolCall}", toolCall.ToolName);
 						break;
 					}
 				case AskAiEvent.SearchToolCall searchToolCall:
 					{
 						_ = parseActivity?.SetTag("search.query", searchToolCall.SearchQuery);
+						Logger.LogDebug("AskAI search tool call: {SearchQuery}", searchToolCall.SearchQuery);
 						break;
 					}
 				case AskAiEvent.ToolResult toolResult:
 					{
-						_ = parseActivity?.SetTag("tool.result_summary", toolResult.Result);
+						Logger.LogDebug("AskAI tool result: {ToolResult}", toolResult.Result);
 						break;
 					}
 				case AskAiEvent.MessageComplete messageComplete:
@@ -215,9 +224,9 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 						Logger.LogInformation("AskAI output message: {OutputMessage}", messageComplete.FullContent);
 						break;
 					}
-				case AskAiEvent.ConversationEnd:
+				case AskAiEvent.ConversationEnd conversationEnd:
 					{
-						// Event type already tagged above
+						Logger.LogDebug("AskAI conversation end: {ConversationId}", conversationEnd.Id);
 						break;
 					}
 			}
@@ -275,7 +284,8 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 	/// </summary>
 	private static async IAsyncEnumerable<SseEvent> ParseSseEventsAsync(
 		PipeReader reader,
-		[EnumeratorCancellation] CancellationToken cancellationToken)
+		[EnumeratorCancellation] Cancel cancellationToken
+	)
 	{
 		string? currentEvent = null;
 		var dataBuilder = new StringBuilder();
