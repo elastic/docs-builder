@@ -31,4 +31,4 @@ runs:
   args:
     - "assembler"
     - "content-source"
-    - "validate"
+    - "match"
