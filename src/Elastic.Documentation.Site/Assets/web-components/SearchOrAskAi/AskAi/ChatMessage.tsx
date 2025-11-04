@@ -137,6 +137,11 @@ const computeAiStatus = (
 ): string | null => {
     if (isComplete) return null
 
+    // Don't show status if there's an error event
+    if (events.some((e) => e.type === EventTypes.ERROR)) {
+        return null
+    }
+
     // Get events sorted by timestamp (most recent last)
     const statusEvents = events
         .filter(
@@ -248,9 +253,11 @@ const ActionBar = ({
 const ErrorMessageDisplay = ({ 
     error,
     onCountdownChange,
+    inline = false,
 }: { 
     error: ApiError | Error | null
     onCountdownChange?: (countdown: number | null) => void
+    inline?: boolean
 }) => {
     const [countdown, setCountdown] = useState<number | null>(null)
     
@@ -299,7 +306,7 @@ const ErrorMessageDisplay = ({
     
     return (
         <>
-            <EuiSpacer size="m" />
+            {!inline && <EuiSpacer size="m" />}
             <EuiCallOut
                 title="Sorry, there was an error"
                 color="danger"
@@ -308,7 +315,7 @@ const ErrorMessageDisplay = ({
             >
                 {errorMessage}
             </EuiCallOut>
-            <EuiSpacer size="s" />
+            {!inline && <EuiSpacer size="s" />}
         </>
     )
 }
@@ -413,6 +420,7 @@ export const ChatMessage = ({
             data-message-type="ai"
             data-message-id={message.id}
         >
+        {!hasError && (
             <EuiFlexItem grow={false}>
                 <div
                     css={css`
@@ -424,7 +432,7 @@ export const ChatMessage = ({
                         justify-content: center;
                     `}
                 >
-                    {isLoading ? (
+                    {isLoading ?(
                         <EuiLoadingElastic
                             size="xl"
                             css={css`
@@ -440,6 +448,8 @@ export const ChatMessage = ({
                     )}
                 </div>
             </EuiFlexItem>
+        )}
+        {!hasError && (
             <EuiFlexItem>
                 <EuiPanel
                     paddingSize="m"
@@ -479,15 +489,41 @@ export const ChatMessage = ({
                             />
                         </>
                     )}
-
-                    {hasError && (
+                </EuiPanel>
+            </EuiFlexItem>
+        )}
+        {hasError && (
+            <EuiFlexItem>
+                <EuiFlexGroup gutterSize="s" alignItems="flexStart" responsive={false}>
+                    <EuiFlexItem grow={false}>
+                        <div
+                            css={css`
+                                block-size: 32px;
+                                inline-size: 32px;
+                                border-radius: 50%;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                            `}
+                        >
+                            <EuiIcon
+                                name="Elastic Docs AI"
+                                size="xl"
+                                type="logoElastic"
+                            />
+                        </div>
+                    </EuiFlexItem>
+                    <EuiFlexItem>
                         <ErrorMessageDisplay 
                             error={error as ApiError | Error | null} 
                             onCountdownChange={onCountdownChange}
+                            inline={true}
                         />
-                    )}
-                </EuiPanel>
+                    </EuiFlexItem>
+                </EuiFlexGroup>
             </EuiFlexItem>
+        )}
+
         </EuiFlexGroup>
     )
 }

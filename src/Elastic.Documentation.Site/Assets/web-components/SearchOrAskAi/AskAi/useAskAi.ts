@@ -3,7 +3,7 @@ import { useAiProvider } from './aiProviderStore'
 import { useFetchEventSource } from './useFetchEventSource'
 import { useMessageThrottling } from './useMessageThrottling'
 import { EventSourceMessage } from '@microsoft/fetch-event-source'
-import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import * as z from 'zod'
 import { ApiError, isApiError } from '../errorHandling'
 // Constants

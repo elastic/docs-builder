@@ -89,6 +89,12 @@ export function useFetchEventSource<TPayload>({
                         } else if (!response.ok) {
                             // Create an error with status code and headers
                             const error = await createApiErrorFromResponse(response)
+                            
+                            // For rate limit errors (429/503), abort immediately to stop retries
+                            if (error && isApiError(error) && (error.statusCode === 429 || error.statusCode === 503)) {
+                                controller.abort()
+                            }
+                            
                             onError?.(error)
                             throw error
                         } else {
@@ -106,11 +112,22 @@ export function useFetchEventSource<TPayload>({
                     },
                     onerror: (err) => {
                         if (isApiError(err as ApiError | Error | null)) {
-                            onError?.(err as ApiError)
+                            const apiError = err as ApiError
+                            // For rate limit errors (429/503), abort immediately to stop retries
+                            if (apiError.statusCode === 429 || apiError.statusCode === 503) {
+                                controller.abort()
+                                onError?.(apiError)
+                                // Return null to stop retrying immediately
+                                return null
+                            }
+                            onError?.(apiError)
+                            // For other errors, return undefined to use default retry behavior
+                            return undefined
                         } else {
                             const error = err instanceof Error ? err : new Error(err?.message || 'Connection error') as ApiError
                             onError?.(error)
-                            throw new FatalError(error.message)
+                            // Return undefined to use default retry behavior for non-API errors
+                            return undefined
                         }
                     },
                     onclose: () => {

@@ -47,11 +47,22 @@ const scrollToBottom = (container: HTMLDivElement | null) => {
 }
 
 // Header shown when a conversation exists
-const NewConversationHeader = ({ onClick }: { onClick: () => void }) => (
+const NewConversationHeader = ({ 
+    onClick, 
+    disabled 
+}: { 
+    onClick: () => void
+    disabled?: boolean 
+}) => (
     <EuiFlexItem grow={false}>
         <EuiFlexGroup justifyContent="flexEnd" alignItems="center">
             <EuiFlexItem grow={false}>
-                <EuiButtonEmpty size="xs" onClick={onClick} iconType="refresh">
+                <EuiButtonEmpty 
+                    size="xs" 
+                    onClick={onClick} 
+                    iconType="refresh"
+                    disabled={disabled}
+                >
                     New conversation
                 </EuiButtonEmpty>
             </EuiFlexItem>
@@ -166,7 +177,10 @@ export const Chat = () => {
             <EuiSpacer size="m" />
 
             {messages.length > 0 && (
-                <NewConversationHeader onClick={clearChat} />
+                <NewConversationHeader 
+                    onClick={clearChat} 
+                    disabled={countdown !== null && countdown > 0}
+                />
             )}
 
             <EuiFlexItem grow={true} css={scrollContainerStyles}>
