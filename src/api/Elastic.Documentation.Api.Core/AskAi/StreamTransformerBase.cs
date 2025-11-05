@@ -8,11 +8,9 @@ using System.IO.Pipelines;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
-using Elastic.Documentation.Api.Core;
-using Elastic.Documentation.Api.Core.AskAi;
 using Microsoft.Extensions.Logging;
 
-namespace Elastic.Documentation.Api.Infrastructure.Adapters.AskAi;
+namespace Elastic.Documentation.Api.Core.AskAi;
 
 /// <summary>
 /// Represents a parsed Server-Sent Event (SSE)
