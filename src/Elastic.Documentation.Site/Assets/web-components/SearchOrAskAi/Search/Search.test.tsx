@@ -26,6 +26,7 @@ jest.mock('../AskAi/chat.store', () => ({
     useChatActions: jest.fn(() => ({
         submitQuestion: jest.fn(),
         clearChat: jest.fn(),
+        clearNon429Errors: jest.fn(),
         setAiProvider: jest.fn(),
     })),
 }))
@@ -34,10 +35,26 @@ jest.mock('../modal.store', () => ({
     useModalActions: jest.fn(() => ({
         setModalMode: jest.fn(),
     })),
+    useIsSearchCooldownActive: jest.fn(() => false),
+    useIsAskAiCooldownActive: jest.fn(() => false),
 }))
 
 jest.mock('./SearchResults', () => ({
     SearchResults: () => <div data-testid="search-results">Search Results</div>,
+}))
+
+// Mock SearchOrAskAiErrorCallout
+jest.mock('../SearchOrAskAiErrorCallout', () => ({
+    SearchOrAskAiErrorCallout: () => null,
+}))
+
+// Mock rate limit handlers
+jest.mock('./useSearchRateLimitHandler', () => ({
+    useSearchRateLimitHandler: jest.fn(),
+}))
+
+jest.mock('../AskAi/useAskAiRateLimitHandler', () => ({
+    useAskAiRateLimitHandler: jest.fn(),
 }))
 
 const mockUseSearchTerm = jest.mocked(

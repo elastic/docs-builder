@@ -1,7 +1,52 @@
+import { ApiError } from '../errorHandling'
 import { ChatMessage } from './ChatMessage'
 import { ChatMessage as ChatMessageType } from './chat.store'
 import { render, screen } from '@testing-library/react'
 import * as React from 'react'
+
+interface MockErrorCalloutProps {
+    error: ApiError | Error | null
+    title?: string
+}
+
+// Mock SearchOrAskAiErrorCallout
+jest.mock('../SearchOrAskAiErrorCallout', () => ({
+    SearchOrAskAiErrorCallout: ({ error, title }: MockErrorCalloutProps) => (
+        <div data-testid="error-callout">
+            <div data-testid="error-title">
+                {title || 'Sorry, there was an error'}
+            </div>
+            {error && (
+                <div data-testid="error-message">
+                    {error.message || String(error)}
+                </div>
+            )}
+        </div>
+    ),
+}))
+
+// Mock modal.store hooks
+jest.mock('../modal.store', () => ({
+    useSearchErrorCalloutState: jest.fn(() => ({
+        hasActiveCooldown: false,
+        countdown: null,
+        cooldownFinishedPendingAcknowledgment: false,
+    })),
+    useAskAiErrorCalloutState: jest.fn(() => ({
+        hasActiveCooldown: false,
+        countdown: null,
+        cooldownFinishedPendingAcknowledgment: false,
+    })),
+}))
+
+// Mock rate limit handlers
+jest.mock('./useAskAiRateLimitHandler', () => ({
+    useAskAiRateLimitHandler: jest.fn(),
+}))
+
+jest.mock('../Search/useSearchRateLimitHandler', () => ({
+    useSearchRateLimitHandler: jest.fn(),
+}))
 
 describe('ChatMessage Component', () => {
     beforeEach(() => {
@@ -138,6 +183,10 @@ describe('ChatMessage Component', () => {
     })
 
     describe('AI messages - error', () => {
+        const testError = new Error('Test error') as ApiError
+        testError.name = 'ApiError'
+        testError.statusCode = 500
+
         const errorMessage: ChatMessageType = {
             id: '4',
             type: 'ai',
@@ -145,6 +194,7 @@ describe('ChatMessage Component', () => {
             conversationId: 'thread-1',
             timestamp: Date.now(),
             status: 'error',
+            error: testError,
         }
 
         it('should show error message', () => {
@@ -152,14 +202,10 @@ describe('ChatMessage Component', () => {
             render(<ChatMessage message={errorMessage} />)
 
             // Assert
-            expect(
-                screen.getByText(/Sorry, there was an error/i)
-            ).toBeInTheDocument()
-            expect(
-                screen.getByText(
-                    /The Elastic Docs AI Assistant encountered an error/i
-                )
-            ).toBeInTheDocument()
+            expect(screen.getByTestId('error-callout')).toBeInTheDocument()
+            expect(screen.getByTestId('error-title')).toHaveTextContent(
+                'Sorry, there was an error'
+            )
         })
 
         it('should display previous content before error occurred', () => {
@@ -167,7 +213,12 @@ describe('ChatMessage Component', () => {
             render(<ChatMessage message={errorMessage} />)
 
             // Assert
-            expect(screen.getByText(/Previous content/i)).toBeInTheDocument()
+            // When there's an error, the content is hidden, only the error callout is shown
+            expect(screen.getByTestId('error-callout')).toBeInTheDocument()
+            // The content is not rendered when hasError is true
+            expect(
+                screen.queryByText(/Previous content/i)
+            ).not.toBeInTheDocument()
         })
     })
 
