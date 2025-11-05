@@ -35,7 +35,7 @@ export const useAskAi = (props: Props): UseAskAiResponse => {
     const [events, setEvents] = useState<AskAiEvent[]>([])
     const [error, setError] = useState<ApiError | Error | null>(null)
     const storeCooldown = useAskAiCooldown()
-    const { setAskAiCooldown } = useModalActions()
+    const { setCooldown } = useModalActions()
     const lastSentQuestionRef = useRef<string>('')
 
     // Get AI provider from store (user-controlled via UI)
@@ -129,7 +129,7 @@ export const useAskAi = (props: Props): UseAskAiResponse => {
             })
             setError(error)
             if (isRateLimitError(error) && error.retryAfter) {
-                setAskAiCooldown(error.retryAfter)
+                setCooldown('askAi', error.retryAfter)
             }
             props.onError?.(error)
         },

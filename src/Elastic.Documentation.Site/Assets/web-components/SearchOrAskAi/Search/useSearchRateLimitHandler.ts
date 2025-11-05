@@ -13,7 +13,7 @@ export function useSearchRateLimitHandler(error: ApiError | Error | null) {
     const storeCooldown = useSearchCooldown()
     const cooldownFinishedPendingAcknowledgment =
         useSearchCooldownFinishedPendingAcknowledgment()
-    const { setSearchCooldown } = useModalActions()
+    const { setCooldown } = useModalActions()
     const previousErrorRetryAfterRef = useRef<number | null>(null)
 
     useEffect(() => {
@@ -33,7 +33,7 @@ export function useSearchRateLimitHandler(error: ApiError | Error | null) {
                         (storeCooldown !== null && storeCooldown < retryAfter))
 
                 if (shouldSetCooldown) {
-                    setSearchCooldown(retryAfter)
+                    setCooldown('search', retryAfter)
                     previousErrorRetryAfterRef.current = retryAfter
                 }
             }
@@ -43,7 +43,7 @@ export function useSearchRateLimitHandler(error: ApiError | Error | null) {
     }, [
         error,
         storeCooldown,
-        setSearchCooldown,
+        setCooldown,
         cooldownFinishedPendingAcknowledgment,
     ])
 }

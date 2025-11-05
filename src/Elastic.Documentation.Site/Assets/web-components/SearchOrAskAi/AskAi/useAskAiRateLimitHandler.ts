@@ -13,7 +13,7 @@ export function useAskAiRateLimitHandler(error: ApiError | Error | null) {
     const storeCooldown = useAskAiCooldown()
     const cooldownFinishedPendingAcknowledgment =
         useAskAiCooldownFinishedPendingAcknowledgment()
-    const { setAskAiCooldown } = useModalActions()
+    const { setCooldown } = useModalActions()
     const previousErrorRetryAfterRef = useRef<number | null>(null)
 
     useEffect(() => {
@@ -33,7 +33,7 @@ export function useAskAiRateLimitHandler(error: ApiError | Error | null) {
                         (storeCooldown !== null && storeCooldown < retryAfter))
 
                 if (shouldSetCooldown) {
-                    setAskAiCooldown(retryAfter)
+                    setCooldown('askAi', retryAfter)
                     previousErrorRetryAfterRef.current = retryAfter
                 }
             }
@@ -43,7 +43,7 @@ export function useAskAiRateLimitHandler(error: ApiError | Error | null) {
     }, [
         error,
         storeCooldown,
-        setAskAiCooldown,
+        setCooldown,
         cooldownFinishedPendingAcknowledgment,
     ])
 }

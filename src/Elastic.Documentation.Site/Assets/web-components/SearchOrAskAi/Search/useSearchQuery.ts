@@ -47,20 +47,20 @@ export const useSearchQuery = ({ searchTerm, pageNumber = 1 }: Props) => {
     const isCooldownActive = useIsSearchCooldownActive()
     const cooldownFinishedPendingAcknowledgment =
         useSearchCooldownFinishedPendingAcknowledgment()
-    const { acknowledgeSearchCooldownFinished } = useModalActions()
+    const { acknowledgeCooldownFinished } = useModalActions()
     const previousSearchTermRef = useRef(debouncedSearchTerm)
 
     useEffect(() => {
         if (previousSearchTermRef.current !== debouncedSearchTerm) {
             if (cooldownFinishedPendingAcknowledgment) {
-                acknowledgeSearchCooldownFinished()
+                acknowledgeCooldownFinished('search')
             }
         }
         previousSearchTermRef.current = debouncedSearchTerm
     }, [
         debouncedSearchTerm,
         cooldownFinishedPendingAcknowledgment,
-        acknowledgeSearchCooldownFinished,
+        acknowledgeCooldownFinished,
     ])
 
     const shouldEnable =
