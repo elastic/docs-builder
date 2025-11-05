@@ -19,5 +19,5 @@ In this new system, documentation is written **cumulatively**. This means that a
 
 In Docs V3, a single branch is published per repository. This branch is set to `main` by default, but it is possible to instead publish a different branch by changing your repository's branching strategy. You might want to change your branching strategy so you can have more control over when content added for a specific release is published.
 
-* [Learn how to choose the right branching strategy for your repository](/contribute/branching-strategy.md)
+* [Learn how to choose the right branching strategy for your repository](/how-to/branching-strategy.md)
 * [Learn how to set up your selected branching strategy](/configure/content-sources.md)

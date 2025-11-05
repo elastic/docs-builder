@@ -14,7 +14,7 @@ Configure the documentation site in these files:
 
 ## Redirects
 
-Redirects are also configured at the site-level. See [](../../contribute/redirects.md) for more information.
+Redirects are also configured at the site-level. See [](../../how-to/redirects.md) for more information.
 
 ## Synonyms
 

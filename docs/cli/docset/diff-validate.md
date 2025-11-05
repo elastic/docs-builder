@@ -4,7 +4,7 @@ Gathers the local changes by inspecting the git log, stashed and unstashed chang
 
 It currently validates the following:
 
-* Ensures that renames and deletions are reflected in [redirects.yml](../../contribute/redirects.md).
+* Ensures that renames and deletions are reflected in [redirects.yml](../../how-to/redirects.md).
 
 ## Usage
 

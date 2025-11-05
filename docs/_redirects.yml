@@ -24,3 +24,8 @@ redirects:
   'testing/redirects/third-page.md':
     anchors:
       'removed-anchor':
+  'contribute/move.md': 'how-to/move.md'
+  'contribute/redirects.md': 'how-to/redirects.md'
+  'contribute/branching-strategy.md': 'how-to/branching-strategy.md'
+  'contribute/add-repo.md': 'how-to/add-repo.md'
+  'contribute/release-new-version.md': 'how-to/release-new-version.md'
