@@ -7,10 +7,9 @@ import * as React from 'react'
 interface ChatMessageListProps {
     messages: ChatMessageType[]
     onAbortReady?: (abort: () => void) => void
-    onCountdownChange?: (countdown: number | null) => void
 }
 
-export const ChatMessageList = ({ messages, onAbortReady, onCountdownChange }: ChatMessageListProps) => {
+export const ChatMessageList = ({ messages, onAbortReady }: ChatMessageListProps) => {
     return (
         <>
             {messages.map((message, index) => (
@@ -22,7 +21,6 @@ export const ChatMessageList = ({ messages, onAbortReady, onCountdownChange }: C
                             message={message}
                             isLast={index === messages.length - 1}
                             onAbortReady={onAbortReady}
-                            onCountdownChange={onCountdownChange}
                         />
                     )}
                     {index < messages.length - 1 && <EuiSpacer size="l" />}

@@ -18,11 +18,7 @@ import DOMPurify from 'dompurify'
 import { useEffect, useMemo, useState, memo } from 'react'
 import { ApiError } from '../errorHandling'
 
-interface SearchResultsProps {
-    onCountdownChange?: (countdown: number | null) => void
-}
-
-export const SearchResults = ({ onCountdownChange }: SearchResultsProps) => {
+export const SearchResults = () => {
     const searchTerm = useSearchTerm()
     const [activePage, setActivePage] = useState(0)
     const debouncedSearchTerm = useDebounce(searchTerm, 300)
@@ -41,73 +37,76 @@ export const SearchResults = ({ onCountdownChange }: SearchResultsProps) => {
         return null
     }
 
-    // Show error callout if there's an error
-    if (error) {
-        return (
+    return (
+        <>
             <SearchOrAskAiErrorCallout
                 error={error as ApiError | Error | null}
-                onCountdownChange={onCountdownChange}
-                title="Error loading search results"
+                title={
+                    error
+                        ? 'Error loading search results'
+                        : 'Sorry, there was an error'
+                }
             />
-        )
-    }
-
-    return (
-        <div>
-            <div
-                css={css`
-                    display: flex;
-                    gap: ${euiTheme.size.s};
-                    align-items: center;
-                `}
-            >
-                {isLoading || isFetching ? (
-                    <EuiLoadingSpinner size="s" />
-                ) : (
-                    <EuiIcon type="search" color="subdued" size="s" />
-                )}
-                <EuiText size="xs">
-                    Search results for{' '}
-                    <span
-                        css={css`
-                            font-weight: ${euiTheme.font.weight.bold};
-                        `}
-                    >
-                        {searchTerm}
-                    </span>
-                </EuiText>
-            </div>
-            <EuiSpacer size="s" />
-            {data && (
-                <>
-                    <ul>
-                        {data.results.map((result) => (
-                            <SearchResultListItem
-                                item={result}
-                                key={result.url}
-                            />
-                        ))}
-                    </ul>
-                    <EuiSpacer size="m" />
+            {error && <EuiSpacer size="s" />}
+            
+            {!error && (
+                <div>
                     <div
                         css={css`
                             display: flex;
-                            justify-content: center;
+                            gap: ${euiTheme.size.s};
+                            align-items: center;
                         `}
                     >
-                        <EuiPagination
-                            aria-label="Search results pages"
-                            pageCount={Math.min(data.pageCount, 10)}
-                            activePage={activePage}
-                            onPageClick={(activePage) =>
-                                setActivePage(activePage)
-                            }
-                        />
+                        {isLoading || isFetching ? (
+                            <EuiLoadingSpinner size="s" />
+                        ) : (
+                            <EuiIcon type="search" color="subdued" size="s" />
+                        )}
+                        <EuiText size="xs">
+                            Search results for{' '}
+                            <span
+                                css={css`
+                                    font-weight: ${euiTheme.font.weight.bold};
+                                `}
+                            >
+                                {searchTerm}
+                            </span>
+                        </EuiText>
                     </div>
-                </>
+                    <EuiSpacer size="s" />
+                    {data && (
+                        <>
+                            <ul>
+                                {data.results.map((result) => (
+                                    <SearchResultListItem
+                                        item={result}
+                                        key={result.url}
+                                    />
+                                ))}
+                            </ul>
+                            <EuiSpacer size="m" />
+                            <div
+                                css={css`
+                                    display: flex;
+                                    justify-content: center;
+                                `}
+                            >
+                                <EuiPagination
+                                    aria-label="Search results pages"
+                                    pageCount={Math.min(data.pageCount, 10)}
+                                    activePage={activePage}
+                                    onPageClick={(activePage) =>
+                                        setActivePage(activePage)
+                                    }
+                                />
+                            </div>
+                        </>
+                    )}
+                    <EuiHorizontalRule margin="m" />
+                </div>
             )}
-            <EuiHorizontalRule margin="m" />
-        </div>
+        </>
     )
 }
 

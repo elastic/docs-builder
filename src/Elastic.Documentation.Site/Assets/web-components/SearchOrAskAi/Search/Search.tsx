@@ -20,10 +20,6 @@ export const Search = () => {
     const inputRef = useRef<HTMLInputElement>(null)
     const [inputValue, setInputValue] = useState(searchTerm)
 
-    const handleCountdownChange = useCallback((newCountdown: number | null) => {
-        setCooldown(newCountdown)
-    }, [setCooldown])
-
     const handleSearch = useCallback(() => {
         if (searchTerm.trim()) {
             // Prevent submission during countdown
@@ -106,7 +102,7 @@ export const Search = () => {
             )}
 
             <EuiSpacer size="m" />
-            <SearchResults onCountdownChange={handleCountdownChange} />
+            <SearchResults />
         </>
     )
 }

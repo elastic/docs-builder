@@ -3,7 +3,11 @@ import { useDebounce } from '@uidotdev/usehooks'
 import * as z from 'zod'
 import { createApiErrorFromResponse, shouldRetry } from '../errorHandling'
 import { ApiError } from '../errorHandling'
-import { useCooldown } from '../modal.store'
+import {
+    useCooldown,
+    useCooldownJustFinished,
+    useModalActions,
+} from '../modal.store'
 import { useRef, useEffect } from 'react'
 
 const SearchResultItemParent = z.object({
@@ -42,33 +46,25 @@ export const useSearchQuery = ({ searchTerm, pageNumber = 1 }: Props) => {
     const debouncedSearchTerm = useDebounce(trimmedSearchTerm, 300)
     const cooldown = useCooldown()
     const isCooldownActive = cooldown !== null && cooldown > 0
-    const lastSearchTermRef = useRef<string>(debouncedSearchTerm)
-    const hasChangedSinceCooldownRef = useRef<boolean>(true) // Start as true for initial search
-    
-    // Track if search term changed since cooldown ended
+    const cooldownJustFinished = useCooldownJustFinished()
+    const { acknowledgeCooldownFinished } = useModalActions()
+    const previousSearchTermRef = useRef(debouncedSearchTerm)
+
     useEffect(() => {
-        if (debouncedSearchTerm !== lastSearchTermRef.current) {
-            hasChangedSinceCooldownRef.current = true
-            lastSearchTermRef.current = debouncedSearchTerm
+        if (previousSearchTermRef.current !== debouncedSearchTerm) {
+            if (cooldownJustFinished) {
+                acknowledgeCooldownFinished()
+            }
         }
-    }, [debouncedSearchTerm])
-    
-    // Reset the flag when cooldown becomes active
-    useEffect(() => {
-        if (isCooldownActive) {
-            hasChangedSinceCooldownRef.current = false
-        }
-    }, [isCooldownActive])
-    
-    // Only enable query if:
-    // 1. There's a search term
-    // 2. No cooldown is active
-    // 3. The search term has changed since cooldown ended (or there was no cooldown)
-    const shouldEnable = !!trimmedSearchTerm && 
-                         trimmedSearchTerm.length >= 1 && 
-                         !isCooldownActive && 
-                         hasChangedSinceCooldownRef.current
-    
+        previousSearchTermRef.current = debouncedSearchTerm
+    }, [debouncedSearchTerm, cooldownJustFinished, acknowledgeCooldownFinished])
+
+    const shouldEnable =
+        !!trimmedSearchTerm &&
+        trimmedSearchTerm.length >= 1 &&
+        !isCooldownActive &&
+        !cooldownJustFinished
+
     return useQuery<SearchResponse, ApiError>({
         queryKey: [
             'search',

@@ -14,14 +14,12 @@ interface StreamingAiMessageProps {
     message: ChatMessageType
     isLast: boolean
     onAbortReady?: (abort: () => void) => void
-    onCountdownChange?: (countdown: number | null) => void
 }
 
 export const StreamingAiMessage = ({
     message,
     isLast,
     onAbortReady,
-    onCountdownChange,
 }: StreamingAiMessageProps) => {
     const {
         updateAiMessage,
@@ -44,10 +42,13 @@ export const StreamingAiMessage = ({
                 contentRef.current += event.content
             } else if (event.type === EventTypes.ERROR) {
                 // Handle error events from the stream
+                const error = new Error(event.message || 'An error occurred') as ApiError
+                error.statusCode = 500
                 updateAiMessage(
                     message.id,
                     event.message || 'An error occurred',
-                    'error'
+                    'error',
+                    error
                 )
             } else if (event.type === EventTypes.CONVERSATION_END) {
                 updateAiMessage(message.id, contentRef.current, 'complete')
@@ -57,7 +58,8 @@ export const StreamingAiMessage = ({
             updateAiMessage(
                 message.id,
                 message.content || error?.message || 'Error occurred',
-                'error'
+                'error',
+                error
             )
         },
     })
@@ -99,8 +101,7 @@ export const StreamingAiMessage = ({
                     ? contentRef.current
                     : undefined
             }
-            error={isLast ? error : null}
-            onCountdownChange={onCountdownChange}
+            error={message.error ?? (isLast ? error : null)}
         />
     )
 }

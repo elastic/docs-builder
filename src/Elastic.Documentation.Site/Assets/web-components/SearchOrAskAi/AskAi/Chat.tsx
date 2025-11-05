@@ -3,7 +3,7 @@ import { AiProviderSelector } from './AiProviderSelector'
 import { AskAiSuggestions } from './AskAiSuggestions'
 import { ChatMessageList } from './ChatMessageList'
 import { useChatActions, useChatMessages } from './chat.store'
-import { useCooldown, useModalActions, modalStore } from '../modal.store'
+import { useCooldown, useModalActions } from '../modal.store'
 import { SearchOrAskAiErrorCallout } from '../SearchOrAskAiErrorCallout'
 import {
     useEuiOverflowScroll,
@@ -82,7 +82,6 @@ export const Chat = () => {
     const scrollRef = useRef<HTMLDivElement>(null)
     const lastMessageStatusRef = useRef<string | null>(null)
     const abortFunctionRef = useRef<(() => void) | null>(null)
-    const cooldownTimerRef = useRef<number | null>(null)
     const [inputValue, setInputValue] = useState('')
 
     const dynamicScrollableStyles = css`
@@ -99,51 +98,6 @@ export const Chat = () => {
     const handleAbortReady = useCallback((abort: () => void) => {
         abortFunctionRef.current = abort
     }, [])
-
-    // Handle countdown changes from error messages
-    const handleCountdownChange = useCallback((newCountdown: number | null) => {
-        setCooldown(newCountdown)
-    }, [setCooldown])
-
-    // Start/stop timer for cooldown when on initial page (no messages)
-    useEffect(() => {
-        // Only manage timer if there are no messages (initial page)
-        if (messages.length === 0) {
-            if (countdown !== null && countdown > 0 && cooldownTimerRef.current === null) {
-                // Start timer to update store countdown
-                cooldownTimerRef.current = setInterval(() => {
-                    const currentCountdown = modalStore.getState().cooldown
-                    if (currentCountdown === null || currentCountdown <= 0) {
-                        if (cooldownTimerRef.current) {
-                            clearInterval(cooldownTimerRef.current)
-                            cooldownTimerRef.current = null
-                        }
-                        setCooldown(null)
-                    } else {
-                        setCooldown(currentCountdown - 1)
-                    }
-                }, 1000) as unknown as number
-            } else if ((countdown === null || countdown <= 0) && cooldownTimerRef.current !== null) {
-                // Stop timer if cooldown expired
-                clearInterval(cooldownTimerRef.current)
-                cooldownTimerRef.current = null
-            }
-        } else {
-            // Clean up timer when messages appear (ChatMessage will handle it)
-            if (cooldownTimerRef.current !== null) {
-                clearInterval(cooldownTimerRef.current)
-                cooldownTimerRef.current = null
-            }
-        }
-        
-        return () => {
-            // Clean up timer on unmount
-            if (cooldownTimerRef.current !== null) {
-                clearInterval(cooldownTimerRef.current)
-                cooldownTimerRef.current = null
-            }
-        }
-    }, [countdown, messages.length, setCooldown])
 
     // Clear abort function when streaming ends
     useEffect(() => {
@@ -263,7 +217,6 @@ export const Chat = () => {
                             <div css={messagesStyles}>
                                 <SearchOrAskAiErrorCallout 
                                     error={null}
-                                    onCountdownChange={handleCountdownChange}
                                 />
                             </div>
                         </>
@@ -272,7 +225,6 @@ export const Chat = () => {
                             <ChatMessageList 
                                 messages={messages} 
                                 onAbortReady={handleAbortReady}
-                                onCountdownChange={handleCountdownChange}
                             />
                         </div>
                     )}

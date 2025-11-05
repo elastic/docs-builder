@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from 'uuid'
 import { create } from 'zustand/react'
+import { ApiError } from '../errorHandling'
 
 export interface ChatMessage {
     id: string
@@ -9,6 +10,7 @@ export interface ChatMessage {
     timestamp: number
     status?: 'streaming' | 'complete' | 'error'
     question?: string // For AI messages, store the question
+    error?: ApiError | Error | null
 }
 
 // Track which AI messages have had their requests sent (persists across remounts)
@@ -22,7 +24,8 @@ interface ChatState {
         updateAiMessage: (
             id: string,
             content: string,
-            status: ChatMessage['status']
+            status: ChatMessage['status'],
+            error?: ApiError | Error | null
         ) => void
         setThreadId: (threadId: string) => void
         clearChat: () => void
@@ -68,11 +71,12 @@ export const chatStore = create<ChatState>((set) => ({
         updateAiMessage: (
             id: string,
             content: string,
-            status: ChatMessage['status']
+            status: ChatMessage['status'],
+            error: ApiError | Error | null = null
         ) => {
             set((state) => ({
                 chatMessages: state.chatMessages.map((msg) =>
-                    msg.id === id ? { ...msg, content, status } : msg
+                    msg.id === id ? { ...msg, content, status, error } : msg
                 ),
             }))
         },

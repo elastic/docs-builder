@@ -1,49 +1,49 @@
 import { useEffect, useRef, useState } from 'react'
-import { useCooldown } from '../modal.store'
+import { useCooldown, useModalActions } from '../modal.store'
 
 /**
  * Hook to manage countdown timer synchronization with the store cooldown.
- * Automatically starts/stops timer and syncs with store state.
- * 
- * @param onCountdownChange - Optional callback when countdown changes
- * @returns Object with countdown value and cooldownFinished flag
  */
-export function useCountdownTimer(
-    onCountdownChange?: (countdown: number | null) => void
-): { countdown: number | null; cooldownFinished: boolean } {
+export function useCountdownTimer(initialCooldown?: number | null): {
+    countdown: number | null
+    cooldownFinished: boolean
+} {
     const storeCooldown = useCooldown()
-    const [countdown, setCountdown] = useState<number | null>(storeCooldown)
+    const { notifyCooldownFinished } = useModalActions()
+    const cooldownSource = initialCooldown ?? storeCooldown
+    const [countdown, setCountdown] = useState<number | null>(cooldownSource)
     const intervalRef = useRef<number | null>(null)
-    const previousCountdownRef = useRef<number | null>(storeCooldown)
+    const previousCountdownRef = useRef<number | null>(cooldownSource)
     const [cooldownFinished, setCooldownFinished] = useState(false)
     
-    // Handle new 429 errors and initialize countdown from store
     useEffect(() => {
-        if (storeCooldown !== null && storeCooldown > 0) {
-            // Only update if this is a new/longer cooldown
-            if (countdown === null || storeCooldown > countdown) {
-                setCountdown(storeCooldown)
+        if (intervalRef.current !== null) {
+            return
+        }
+        
+        if (cooldownSource !== null && cooldownSource > 0) {
+            if (countdown === null || cooldownSource > countdown) {
+                setCountdown(cooldownSource)
             }
-        } else if (storeCooldown === null) {
-            // Store cleared, reset countdown
+        } else if (cooldownSource === null) {
             setCountdown(null)
         }
-    }, [storeCooldown])
+    }, [cooldownSource])
     
-    // Start/stop timer based on store cooldown
     useEffect(() => {
-        // If there's an active cooldown in the store and no timer running, start one
-        if (storeCooldown !== null && storeCooldown > 0 && intervalRef.current === null) {
-            setCountdown(storeCooldown)
+        if (
+            cooldownSource !== null &&
+            cooldownSource > 0 &&
+            intervalRef.current === null
+        ) {
+            setCountdown(cooldownSource)
             intervalRef.current = setInterval(() => {
                 setCountdown((prev) => {
-                    // If already cleared or invalid, stop timer
                     if (prev === null || prev <= 0) {
                         if (intervalRef.current) {
                             clearInterval(intervalRef.current)
                             intervalRef.current = null
                         }
-                        onCountdownChange?.(null)
                         return null
                     }
                     const newValue = prev - 1
@@ -53,19 +53,21 @@ export function useCountdownTimer(
                             clearInterval(intervalRef.current)
                             intervalRef.current = null
                         }
-                        onCountdownChange?.(null)
+                        notifyCooldownFinished()
                         return null
                     }
-                    onCountdownChange?.(newValue)
                     return newValue
                 })
             }, 1000) as unknown as number
-        } else if ((storeCooldown === null || storeCooldown <= 0) && intervalRef.current !== null) {
+        } else if (
+            (cooldownSource === null || cooldownSource <= 0) &&
+            intervalRef.current !== null
+        ) {
             // Stop timer if cooldown expired
             clearInterval(intervalRef.current)
             intervalRef.current = null
             setCountdown(null)
-            onCountdownChange?.(null)
+            notifyCooldownFinished()
         }
         
         return () => {
@@ -75,23 +77,8 @@ export function useCountdownTimer(
                 intervalRef.current = null
             }
         }
-    }, [storeCooldown, onCountdownChange])
+    }, [cooldownSource])
     
-    // Sync local countdown with store when store changes externally (only when timer not running)
-    useEffect(() => {
-        // Only sync if timer is not running to avoid interfering with active countdown
-        if (intervalRef.current === null) {
-            if (storeCooldown !== countdown) {
-                // Only sync if store has a value - if store is null, countdown should stay null (cooldown expired)
-                if (storeCooldown !== null && storeCooldown > 0) {
-                    setCountdown(storeCooldown)
-                } else if (storeCooldown === null) {
-                    // Store is cleared, ensure countdown is also cleared
-                    setCountdown(null)
-                }
-            }
-        }
-    }, [storeCooldown, countdown])
     
     // Track when cooldown transitions from non-null to null
     useEffect(() => {
