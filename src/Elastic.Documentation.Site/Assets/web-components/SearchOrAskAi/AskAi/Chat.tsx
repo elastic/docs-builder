@@ -96,9 +96,9 @@ export const Chat = () => {
         messages[messages.length - 1].status === 'streaming'
 
     // Handle abort function from StreamingAiMessage
-    const handleAbortReady = useCallback((abort: () => void) => {
+    const handleAbortReady = (abort: () => void) => {
         abortFunctionRef.current = abort
-    }, [])
+    }
 
     // Clear abort function when streaming ends
     useEffect(() => {
