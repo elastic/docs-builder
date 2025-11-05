@@ -1,10 +1,14 @@
 import {
+    createApiErrorFromResponse,
+    ApiError,
+    isApiError,
+} from '../errorHandling'
+import {
     fetchEventSource,
     EventSourceMessage,
     EventStreamContentType,
 } from '@microsoft/fetch-event-source'
 import { useRef, useCallback } from 'react'
-import { createApiErrorFromResponse, ApiError, isApiError } from '../errorHandling'
 
 /**
  * Computes SHA256 hash of the request body for CloudFront + Lambda Function URL with OAC.
@@ -88,13 +92,19 @@ export function useFetchEventSource<TPayload>({
                             return
                         } else if (!response.ok) {
                             // Create an error with status code and headers
-                            const error = await createApiErrorFromResponse(response)
-                            
+                            const error =
+                                await createApiErrorFromResponse(response)
+
                             // For rate limit errors (429/503), abort immediately to stop retries
-                            if (error && isApiError(error) && (error.statusCode === 429 || error.statusCode === 503)) {
+                            if (
+                                error &&
+                                isApiError(error) &&
+                                (error.statusCode === 429 ||
+                                    error.statusCode === 503)
+                            ) {
                                 controller.abort()
                             }
-                            
+
                             onError?.(error)
                             throw error
                         } else {
@@ -114,7 +124,10 @@ export function useFetchEventSource<TPayload>({
                         if (isApiError(err as ApiError | Error | null)) {
                             const apiError = err as ApiError
                             // For rate limit errors (429/503), abort immediately to stop retries
-                            if (apiError.statusCode === 429 || apiError.statusCode === 503) {
+                            if (
+                                apiError.statusCode === 429 ||
+                                apiError.statusCode === 503
+                            ) {
                                 controller.abort()
                                 onError?.(apiError)
                                 // Return null to stop retrying immediately
@@ -124,7 +137,12 @@ export function useFetchEventSource<TPayload>({
                             // For other errors, return undefined to use default retry behavior
                             return undefined
                         } else {
-                            const error = err instanceof Error ? err : new Error(err?.message || 'Connection error') as ApiError
+                            const error =
+                                err instanceof Error
+                                    ? err
+                                    : (new Error(
+                                          err?.message || 'Connection error'
+                                      ) as ApiError)
                             onError?.(error)
                             // Return undefined to use default retry behavior for non-API errors
                             return undefined
@@ -137,7 +155,10 @@ export function useFetchEventSource<TPayload>({
             } catch (error) {
                 if (isApiError(error as ApiError | Error | null)) {
                     onError?.(error as ApiError)
-                } else if (error instanceof Error && error.name !== 'AbortError') {
+                } else if (
+                    error instanceof Error &&
+                    error.name !== 'AbortError'
+                ) {
                     onError?.(error)
                 }
             }

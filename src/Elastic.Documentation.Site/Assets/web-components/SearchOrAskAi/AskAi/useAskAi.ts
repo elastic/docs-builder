@@ -1,12 +1,13 @@
+import { ApiError, isApiError } from '../errorHandling'
+import { useCooldown, useModalActions } from '../modal.store'
 import { AskAiEvent, AskAiEventSchema } from './AskAiEvent'
 import { useAiProvider } from './aiProviderStore'
 import { useFetchEventSource } from './useFetchEventSource'
 import { useMessageThrottling } from './useMessageThrottling'
-import { useCooldown, useModalActions } from '../modal.store'
 import { EventSourceMessage } from '@microsoft/fetch-event-source'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import * as z from 'zod'
-import { ApiError, isApiError } from '../errorHandling'
+
 // Constants
 const MESSAGE_THROTTLE_MS = 25 // Throttle messages to prevent UI flooding
 

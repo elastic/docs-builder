@@ -1,3 +1,4 @@
+import { ApiError } from '../errorHandling'
 import { EventTypes } from './AskAiEvent'
 import { ChatMessage } from './ChatMessage'
 import {
@@ -6,7 +7,6 @@ import {
     useThreadId,
 } from './chat.store'
 import { useAskAi } from './useAskAi'
-import { ApiError } from '../errorHandling'
 import * as React from 'react'
 import { useEffect, useRef } from 'react'
 
@@ -44,7 +44,9 @@ export const StreamingAiMessage = ({
                 contentRef.current += event.content
             } else if (event.type === EventTypes.ERROR) {
                 // Handle error events from the stream
-                const error = new Error(event.message || 'An error occurred') as ApiError
+                const error = new Error(
+                    event.message || 'An error occurred'
+                ) as ApiError
                 error.statusCode = 500
                 updateAiMessage(
                     message.id,

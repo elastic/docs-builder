@@ -1,5 +1,5 @@
+import { ReactNode } from 'react'
 import * as z from 'zod'
-import {ReactNode} from "react";
 
 export type ErrorCode = '429' | '503' | '4xx' | '5xx' | 'unknown'
 
@@ -25,36 +25,65 @@ export function getErrorMessage(error: ApiError | Error | null): ReactNode {
         const apiError = error as ApiError
         switch (getErrorCode(apiError.statusCode)) {
             case '429':
-                return ( <p>You have reached the temporary request limit. Wait {apiError.retryAfter}{' '}second{apiError.retryAfter !== 1 ? 's' : ''}, then try again.</p> )
+                return (
+                    <p>
+                        You have reached the temporary request limit. Wait{' '}
+                        {apiError.retryAfter} second
+                        {apiError.retryAfter !== 1 ? 's' : ''}, then try again.
+                    </p>
+                )
             case '503':
-                return ( <p>An unexpected error occurred. Wait a few seconds, then try again.</p> )
+                return (
+                    <p>
+                        An unexpected error occurred. Wait a few seconds, then
+                        try again.
+                    </p>
+                )
             case '4xx':
                 return (
                     <>
-                        <p>We are unable to process your request.<br/>
-                        Try rephrasing your question. For example, &quot;How do I configure an index in Elasticsearch?&quot;</p>
-                        <p>If you think this is a bug, open a{' '}
-                            <a href="https://github.com/elastic/docs-builder/issues/new?template=bug-report.yaml" target="_blank" rel="noopener noreferrer">
-                            GitHub issue.</a>
+                        <p>
+                            We are unable to process your request.
+                            <br />
+                            Try rephrasing your question. For example, &quot;How
+                            do I configure an index in Elasticsearch?&quot;
+                        </p>
+                        <p>
+                            If you think this is a bug, open a{' '}
+                            <a
+                                href="https://github.com/elastic/docs-builder/issues/new?template=bug-report.yaml"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                GitHub issue.
+                            </a>
                         </p>
                     </>
-            )
+                )
             case '5xx':
                 return (
                     <>
                         <p>We are unable to process your request.</p>
-                        <p>If you think this is a bug, open a{' '}
-                            <a href="https://github.com/elastic/docs-builder/issues/new?template=bug-report.yaml" target="_blank" rel="noopener noreferrer">
-                                GitHub issue.</a>
+                        <p>
+                            If you think this is a bug, open a{' '}
+                            <a
+                                href="https://github.com/elastic/docs-builder/issues/new?template=bug-report.yaml"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                GitHub issue.
+                            </a>
                         </p>
                     </>
-            )
+                )
         }
     }
     return <p>An unexpected error occurred. Please try again.</p>
 }
 
-export async function createApiErrorFromResponse(response: Response): Promise<ApiError | null> {
+export async function createApiErrorFromResponse(
+    response: Response
+): Promise<ApiError | null> {
     const statusCode = response.status
 
     try {
@@ -66,14 +95,22 @@ export async function createApiErrorFromResponse(response: Response): Promise<Ap
         })
         if (statusCode === 429 || statusCode === 503) {
             const retryAfterHeader = response.headers.get('Retry-After')
-            const rateLimitScopeHeader = response.headers.get('X-Rate-Limit-Scope')
+            const rateLimitScopeHeader =
+                response.headers.get('X-Rate-Limit-Scope')
 
             if (retryAfterHeader != null) {
                 errorSchema.retryAfter = parseInt(retryAfterHeader, 10)
             }
             if (rateLimitScopeHeader != null) {
-                const rateLimitScope = rateLimitScopeHeader === 'per-user' || rateLimitScopeHeader === 'global' ? rateLimitScopeHeader : undefined
-                errorSchema.rateLimitScope = rateLimitScope as 'per-user' | 'global' | undefined
+                const rateLimitScope =
+                    rateLimitScopeHeader === 'per-user' ||
+                    rateLimitScopeHeader === 'global'
+                        ? rateLimitScopeHeader
+                        : undefined
+                errorSchema.rateLimitScope = rateLimitScope as
+                    | 'per-user'
+                    | 'global'
+                    | undefined
             }
         }
 
@@ -104,17 +141,19 @@ export function shouldRetry(
     // Don't retry if we've exhausted retries
     if (failureCount >= 3) return false
     // Don't retry for 429 (rate limit) or 503 (service unavailable)
-            if (error && isApiError(error)) {
-                if (error.statusCode === 429 || error.statusCode === 503) {
-                    return false
-                }
-            }
+    if (error && isApiError(error)) {
+        if (error.statusCode === 429 || error.statusCode === 503) {
+            return false
+        }
+    }
     // Retry for other errors (up to 3 times)
     return true
 }
 
 export function isApiError(error: ApiError | Error | null): boolean {
     return (
-        error instanceof Error && 'statusCode' in error && error.name === 'ApiError'
+        error instanceof Error &&
+        'statusCode' in error &&
+        error.name === 'ApiError'
     )
 }

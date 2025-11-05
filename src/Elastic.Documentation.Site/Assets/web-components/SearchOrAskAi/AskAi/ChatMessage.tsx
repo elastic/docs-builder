@@ -1,12 +1,12 @@
 import { initCopyButton } from '../../../copybutton'
 import { hljs } from '../../../hljs'
+import { SearchOrAskAiErrorCallout } from '../SearchOrAskAiErrorCallout'
+import { ApiError } from '../errorHandling'
 import { AskAiEvent, ChunkEvent, EventTypes } from './AskAiEvent'
 import { GeneratingStatus } from './GeneratingStatus'
 import { References } from './RelatedResources'
 import { ChatMessage as ChatMessageType } from './chat.store'
 import { useStatusMinDisplay } from './useStatusMinDisplay'
-import { ApiError } from '../errorHandling'
-import { SearchOrAskAiErrorCallout } from '../SearchOrAskAiErrorCallout'
 import {
     EuiButtonIcon,
     EuiCopy,
@@ -250,14 +250,12 @@ const ActionBar = ({
     </EuiFlexGroup>
 )
 
-
 export const ChatMessage = ({
     message,
     events = [],
     streamingContent,
     error,
     onRetry,
-    onCountdownChange,
     showError = true,
 }: ChatMessageProps) => {
     const { euiTheme } = useEuiTheme()
@@ -352,110 +350,112 @@ export const ChatMessage = ({
             data-message-type="ai"
             data-message-id={message.id}
         >
-        {!hasError && (
-            <EuiFlexItem grow={false}>
-                <div
-                    css={css`
-                        block-size: 32px;
-                        inline-size: 32px;
-                        border-radius: 50%;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                    `}
-                >
-                    {isLoading ?(
-                        <EuiLoadingElastic
-                            size="xl"
-                            css={css`
-                                margin-top: -1px;
-                            `}
-                        />
-                    ) : (
-                        <EuiIcon
-                            name="Elastic Docs AI"
-                            size="xl"
-                            type="logoElastic"
-                        />
-                    )}
-                </div>
-            </EuiFlexItem>
-        )}
-        {!hasError && (
-            <EuiFlexItem>
-                <EuiPanel
-                    paddingSize="m"
-                    hasShadow={false}
-                    hasBorder={false}
-                    css={css`
-                        padding-top: 8px;
-                    `}
-                >
-                    {content && (
-                        <div
-                            ref={ref}
-                            className="markdown-content"
-                            css={css`
-                                font-size: 14px;
-                                & > *:first-child {
-                                    margin-top: 0;
-                                }
-                            `}
-                            dangerouslySetInnerHTML={{ __html: parsed }}
-                        />
-                    )}
-
-                    {referencesJson && (
-                        <References referencesJson={referencesJson} />
-                    )}
-
-                    {content && isLoading && <EuiSpacer size="m" />}
-                    <GeneratingStatus status={aiStatus} />
-
-                    {isComplete && content && (
-                        <>
-                            <EuiSpacer size="m" />
-                            <ActionBar
-                                content={mainContent}
-                                onRetry={onRetry}
+            {!hasError && (
+                <EuiFlexItem grow={false}>
+                    <div
+                        css={css`
+                            block-size: 32px;
+                            inline-size: 32px;
+                            border-radius: 50%;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                        `}
+                    >
+                        {isLoading ? (
+                            <EuiLoadingElastic
+                                size="xl"
+                                css={css`
+                                    margin-top: -1px;
+                                `}
                             />
-                        </>
-                    )}
-                </EuiPanel>
-            </EuiFlexItem>
-        )}
-        {hasError && (
-            <EuiFlexItem>
-                <EuiFlexGroup gutterSize="s" alignItems="flexStart" responsive={false}>
-                    <EuiFlexItem grow={false}>
-                        <div
-                            css={css`
-                                block-size: 32px;
-                                inline-size: 32px;
-                                border-radius: 50%;
-                                display: flex;
-                                align-items: center;
-                                justify-content: center;
-                            `}
-                        >
+                        ) : (
                             <EuiIcon
                                 name="Elastic Docs AI"
                                 size="xl"
                                 type="logoElastic"
                             />
-                        </div>
-                    </EuiFlexItem>
-                    <EuiFlexItem>
-                        <SearchOrAskAiErrorCallout 
-                            error={error as ApiError | Error | null} 
-                            inline={true}
-                        />
-                    </EuiFlexItem>
-                </EuiFlexGroup>
-            </EuiFlexItem>
-        )}
+                        )}
+                    </div>
+                </EuiFlexItem>
+            )}
+            {!hasError && (
+                <EuiFlexItem>
+                    <EuiPanel
+                        paddingSize="m"
+                        hasShadow={false}
+                        hasBorder={false}
+                        css={css`
+                            padding-top: 8px;
+                        `}
+                    >
+                        {content && (
+                            <div
+                                ref={ref}
+                                className="markdown-content"
+                                css={css`
+                                    font-size: 14px;
+                                    & > *:first-child {
+                                        margin-top: 0;
+                                    }
+                                `}
+                                dangerouslySetInnerHTML={{ __html: parsed }}
+                            />
+                        )}
 
+                        {referencesJson && (
+                            <References referencesJson={referencesJson} />
+                        )}
+
+                        {content && isLoading && <EuiSpacer size="m" />}
+                        <GeneratingStatus status={aiStatus} />
+
+                        {isComplete && content && (
+                            <>
+                                <EuiSpacer size="m" />
+                                <ActionBar
+                                    content={mainContent}
+                                    onRetry={onRetry}
+                                />
+                            </>
+                        )}
+                    </EuiPanel>
+                </EuiFlexItem>
+            )}
+            {hasError && (
+                <EuiFlexItem>
+                    <EuiFlexGroup
+                        gutterSize="s"
+                        alignItems="flexStart"
+                        responsive={false}
+                    >
+                        <EuiFlexItem grow={false}>
+                            <div
+                                css={css`
+                                    block-size: 32px;
+                                    inline-size: 32px;
+                                    border-radius: 50%;
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                `}
+                            >
+                                <EuiIcon
+                                    name="Elastic Docs AI"
+                                    size="xl"
+                                    type="logoElastic"
+                                />
+                            </div>
+                        </EuiFlexItem>
+                        <EuiFlexItem>
+                            <SearchOrAskAiErrorCallout
+                                error={error as ApiError | Error | null}
+                                inline={true}
+                            />
+                        </EuiFlexItem>
+                    </EuiFlexGroup>
+                </EuiFlexItem>
+            )}
         </EuiFlexGroup>
     )
 }
-

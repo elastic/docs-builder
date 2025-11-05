@@ -1,6 +1,7 @@
+import { SearchOrAskAiErrorCallout } from '../SearchOrAskAiErrorCallout'
+import { ApiError } from '../errorHandling'
 import { useSearchTerm } from './search.store'
 import { SearchResultItem, useSearchQuery } from './useSearchQuery'
-import { SearchOrAskAiErrorCallout } from '../SearchOrAskAiErrorCallout'
 import {
     useEuiFontSize,
     EuiLink,
@@ -16,17 +17,16 @@ import { css } from '@emotion/react'
 import { useDebounce } from '@uidotdev/usehooks'
 import DOMPurify from 'dompurify'
 import { useEffect, useMemo, useState, memo } from 'react'
-import { ApiError } from '../errorHandling'
 
 export const SearchResults = () => {
     const searchTerm = useSearchTerm()
     const [activePage, setActivePage] = useState(0)
     const debouncedSearchTerm = useDebounce(searchTerm, 300)
-    
+
     useEffect(() => {
         setActivePage(0)
     }, [debouncedSearchTerm])
-    
+
     const { data, error, isLoading, isFetching } = useSearchQuery({
         searchTerm,
         pageNumber: activePage + 1,
@@ -44,7 +44,7 @@ export const SearchResults = () => {
                 title="Error loading search results"
             />
             {error && <EuiSpacer size="s" />}
-            
+
             {!error && (
                 <div>
                     <div

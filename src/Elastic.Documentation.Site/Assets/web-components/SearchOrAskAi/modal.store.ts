@@ -1,5 +1,5 @@
-import { create } from 'zustand/react'
 import { ApiError } from './errorHandling'
+import { create } from 'zustand/react'
 
 export type ModalMode = 'search' | 'askAi'
 
@@ -33,7 +33,10 @@ const modalStore = create<ModalState>((set, get) => ({
         openModal: () => set({ isOpen: true }),
         closeModal: () => set({ isOpen: false }),
         toggleModal: () => set((state) => ({ isOpen: !state.isOpen })),
-        setCooldown: (cooldown: number | null, error: ApiError | null = null) => {
+        setCooldown: (
+            cooldown: number | null,
+            error: ApiError | null = null
+        ) => {
             if (cooldownInterval) {
                 clearInterval(cooldownInterval)
                 cooldownInterval = null

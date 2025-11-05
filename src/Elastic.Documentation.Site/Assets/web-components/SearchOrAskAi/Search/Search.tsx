@@ -1,7 +1,8 @@
 /** @jsxImportSource @emotion/react */
 import { useChatActions } from '../AskAi/chat.store'
-import { useModalActions, useCooldown } from '../modal.store'
 import { SearchOrAskAiErrorCallout } from '../SearchOrAskAiErrorCallout'
+import { useModalActions } from '../modal.store'
+import { useIsCooldownActive } from '../hooks/useIsCooldownActive'
 import { SearchResults } from './SearchResults'
 import { useSearchActions, useSearchTerm } from './search.store'
 import { EuiFieldText, EuiSpacer, EuiButton, EuiButtonIcon } from '@elastic/eui'
@@ -17,14 +18,14 @@ export const Search = () => {
     const { setSearchTerm } = useSearchActions()
     const { submitQuestion, clearChat } = useChatActions()
     const { setModalMode } = useModalActions()
-    const countdown = useCooldown()
+    const isCooldownActive = useIsCooldownActive()
     const inputRef = useRef<HTMLInputElement>(null)
     const [inputValue, setInputValue] = useState(searchTerm)
 
     const handleSearch = useCallback(() => {
         if (searchTerm.trim()) {
             // Prevent submission during countdown
-            if (countdown !== null && countdown > 0) {
+            if (isCooldownActive) {
                 return
             }
             // Always start a new conversation
@@ -32,7 +33,7 @@ export const Search = () => {
             submitQuestion(searchTerm)
             setModalMode('askAi')
         }
-    }, [searchTerm, countdown, clearChat, submitQuestion, setModalMode])
+    }, [searchTerm, isCooldownActive, clearChat, submitQuestion, setModalMode])
 
     // Sync inputValue with searchTerm from store (when cleared externally)
     useEffect(() => {
@@ -66,7 +67,7 @@ export const Search = () => {
                             handleSearch()
                         }
                     }}
-                    disabled={countdown !== null && countdown > 0}
+                    disabled={isCooldownActive}
                 />
                 <EuiButtonIcon
                     aria-label="Search"
@@ -81,7 +82,7 @@ export const Search = () => {
                     iconType="sortUp"
                     display={inputValue.trim() ? 'fill' : 'base'}
                     onClick={handleSearch}
-                    disabled={countdown !== null && countdown > 0}
+                    disabled={isCooldownActive}
                 />
             </div>
             {searchTerm && (
@@ -91,14 +92,14 @@ export const Search = () => {
                         term={searchTerm}
                         onAsk={() => {
                             // Prevent submission during countdown
-                            if (countdown !== null && countdown > 0) {
+                            if (isCooldownActive) {
                                 return
                             }
                             clearChat()
                             if (searchTerm.trim()) submitQuestion(searchTerm)
                             setModalMode('askAi')
                         }}
-                        disabled={countdown !== null && countdown > 0}
+                        disabled={isCooldownActive}
                     />
                 </>
             )}
@@ -109,9 +110,22 @@ export const Search = () => {
     )
 }
 
-const AskAiButton = ({ term, onAsk, disabled }: { term: string; onAsk: () => void; disabled?: boolean }) => {
+const AskAiButton = ({
+    term,
+    onAsk,
+    disabled,
+}: {
+    term: string
+    onAsk: () => void
+    disabled?: boolean
+}) => {
     return (
-        <EuiButton iconType="newChat" fullWidth onClick={onAsk} disabled={disabled}>
+        <EuiButton
+            iconType="newChat"
+            fullWidth
+            onClick={onAsk}
+            disabled={disabled}
+        >
             Ask AI about <span css={askAiButtonStyles}>"{term}"</span>
         </EuiButton>
     )

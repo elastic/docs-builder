@@ -1,10 +1,10 @@
 /** @jsxImportSource @emotion/react */
+import { SearchOrAskAiErrorCallout } from '../SearchOrAskAiErrorCallout'
+import { useIsCooldownActive } from '../hooks/useIsCooldownActive'
 import { AiProviderSelector } from './AiProviderSelector'
 import { AskAiSuggestions } from './AskAiSuggestions'
 import { ChatMessageList } from './ChatMessageList'
 import { useChatActions, useChatMessages } from './chat.store'
-import { useCooldown } from '../modal.store'
-import { SearchOrAskAiErrorCallout } from '../SearchOrAskAiErrorCallout'
 import {
     useEuiOverflowScroll,
     EuiButtonEmpty,
@@ -49,19 +49,19 @@ const scrollToBottom = (container: HTMLDivElement | null) => {
 }
 
 // Header shown when a conversation exists
-const NewConversationHeader = ({ 
-    onClick, 
-    disabled 
-}: { 
+const NewConversationHeader = ({
+    onClick,
+    disabled,
+}: {
     onClick: () => void
-    disabled?: boolean 
+    disabled?: boolean
 }) => (
     <EuiFlexItem grow={false}>
         <EuiFlexGroup justifyContent="flexEnd" alignItems="center">
             <EuiFlexItem grow={false}>
-                <EuiButtonEmpty 
-                    size="xs" 
-                    onClick={onClick} 
+                <EuiButtonEmpty
+                    size="xs"
+                    onClick={onClick}
                     iconType="refresh"
                     disabled={disabled}
                 >
@@ -76,7 +76,7 @@ const NewConversationHeader = ({
 export const Chat = () => {
     const messages = useChatMessages()
     const { submitQuestion, clearChat, clearNon429Errors } = useChatActions()
-    const countdown = useCooldown()
+    const isCooldownActive = useIsCooldownActive()
     const inputRef = useRef<HTMLInputElement>(null)
     const scrollRef = useRef<HTMLDivElement>(null)
     const lastMessageStatusRef = useRef<string | null>(null)
@@ -90,7 +90,8 @@ export const Chat = () => {
     `
 
     // Check if there's an active streaming query
-    const isStreaming = messages.length > 0 && 
+    const isStreaming =
+        messages.length > 0 &&
         messages[messages.length - 1].type === 'ai' &&
         messages[messages.length - 1].status === 'streaming'
 
@@ -120,9 +121,9 @@ export const Chat = () => {
     const handleSubmit = useCallback(
         (question: string) => {
             if (!question.trim()) return
-            
+
             // Prevent submission during countdown
-            if (countdown !== null && countdown > 0) {
+            if (isCooldownActive) {
                 return
             }
 
@@ -136,7 +137,7 @@ export const Chat = () => {
             // Scroll to bottom after new message
             setTimeout(() => scrollToBottom(scrollRef.current), 100)
         },
-        [submitQuestion, countdown]
+        [submitQuestion, isCooldownActive]
     )
 
     const handleButtonClick = useCallback(() => {
@@ -184,9 +185,9 @@ export const Chat = () => {
             <EuiSpacer size="m" />
 
             {messages.length > 0 && (
-                <NewConversationHeader 
-                    onClick={clearChat} 
-                    disabled={countdown !== null && countdown > 0}
+                <NewConversationHeader
+                    onClick={clearChat}
+                    disabled={isCooldownActive}
                 />
             )}
 
@@ -197,13 +198,15 @@ export const Chat = () => {
                             <EuiEmptyPrompt
                                 iconType="logoElastic"
                                 title={
-                                    <h2>Hi! I'm the Elastic Docs AI Assistant</h2>
+                                    <h2>
+                                        Hi! I'm the Elastic Docs AI Assistant
+                                    </h2>
                                 }
                                 body={
                                     <>
                                         <p>
-                                            I can help answer your questions about
-                                            Elastic documentation. <br />
+                                            I can help answer your questions
+                                            about Elastic documentation. <br />
                                             Ask me anything about Elasticsearch,
                                             Kibana, Observability, Security, and
                                             more.
@@ -218,21 +221,21 @@ export const Chat = () => {
                                             <h3>Try asking me:</h3>
                                         </EuiTitle>
                                         <EuiSpacer size="s" />
-                                        <AskAiSuggestions disabled={countdown !== null && countdown > 0} />
+                                        <AskAiSuggestions
+                                            disabled={isCooldownActive}
+                                        />
                                     </>
                                 }
                             />
                             {/* Show error callout when there's a cooldown, even on initial page */}
                             <div css={messagesStyles}>
-                                <SearchOrAskAiErrorCallout 
-                                    error={null}
-                                />
+                                <SearchOrAskAiErrorCallout error={null} />
                             </div>
                         </>
                     ) : (
                         <div css={messagesStyles}>
-                            <ChatMessageList 
-                                messages={messages} 
+                            <ChatMessageList
+                                messages={messages}
                                 onAbortReady={handleAbortReady}
                             />
                         </div>
@@ -259,10 +262,12 @@ export const Chat = () => {
                                 handleSubmit(e.currentTarget.value)
                             }
                         }}
-                        disabled={countdown !== null && countdown > 0}
+                        disabled={isCooldownActive}
                     />
                     <EuiButtonIcon
-                        aria-label={isStreaming ? "Interrupt query" : "Send message"}
+                        aria-label={
+                            isStreaming ? 'Interrupt query' : 'Send message'
+                        }
                         css={css`
                             position: absolute;
                             right: 8px;
@@ -271,10 +276,12 @@ export const Chat = () => {
                             border-radius: 9999px;
                         `}
                         color="primary"
-                        iconType={isStreaming ? "cross" : "sortUp"}
-                        display={inputValue.trim() || isStreaming ? 'fill' : 'base'}
+                        iconType={isStreaming ? 'cross' : 'sortUp'}
+                        display={
+                            inputValue.trim() || isStreaming ? 'fill' : 'base'
+                        }
                         onClick={handleButtonClick}
-                        disabled={countdown !== null && countdown > 0}
+                        disabled={isCooldownActive}
                     ></EuiButtonIcon>
                 </div>
                 <EuiSpacer size="m" />

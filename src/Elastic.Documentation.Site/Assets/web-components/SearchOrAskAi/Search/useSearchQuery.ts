@@ -1,14 +1,14 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { useDebounce } from '@uidotdev/usehooks'
-import * as z from 'zod'
 import { createApiErrorFromResponse, shouldRetry } from '../errorHandling'
 import { ApiError } from '../errorHandling'
 import {
-    useCooldown,
     useCooldownJustFinished,
     useModalActions,
 } from '../modal.store'
+import { useIsCooldownActive } from '../hooks/useIsCooldownActive'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { useDebounce } from '@uidotdev/usehooks'
 import { useRef, useEffect } from 'react'
+import * as z from 'zod'
 
 const SearchResultItemParent = z.object({
     url: z.string(),
@@ -44,8 +44,7 @@ type Props = {
 export const useSearchQuery = ({ searchTerm, pageNumber = 1 }: Props) => {
     const trimmedSearchTerm = searchTerm.trim()
     const debouncedSearchTerm = useDebounce(trimmedSearchTerm, 300)
-    const cooldown = useCooldown()
-    const isCooldownActive = cooldown !== null && cooldown > 0
+    const isCooldownActive = useIsCooldownActive()
     const cooldownJustFinished = useCooldownJustFinished()
     const { acknowledgeCooldownFinished } = useModalActions()
     const previousSearchTermRef = useRef(debouncedSearchTerm)

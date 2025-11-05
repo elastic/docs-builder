@@ -1,11 +1,12 @@
-import { EuiCallOut, EuiSpacer } from '@elastic/eui'
 import { ApiError, getErrorMessage, isApiError } from './errorHandling'
 import { useRateLimitHandler } from './hooks/useRateLimitHandler'
+import { useIsCooldownActive } from './hooks/useIsCooldownActive'
 import {
     useCooldown,
     useCooldownJustFinished,
     useLast429Error,
 } from './modal.store'
+import { EuiCallOut, EuiSpacer } from '@elastic/eui'
 
 interface SearchOrAskAiErrorCalloutProps {
     error: ApiError | Error | null
@@ -33,8 +34,7 @@ export function SearchOrAskAiErrorCallout({
 
     const countdown = useCooldown()
     const cooldownJustFinished = useCooldownJustFinished()
-
-    const hasActiveCooldown = countdown !== null && countdown > 0
+    const hasActiveCooldown = useIsCooldownActive()
 
     if (is429Error && (!hasActiveCooldown || cooldownJustFinished)) {
         return null
@@ -70,12 +70,12 @@ export function SearchOrAskAiErrorCallout({
         ) as ApiError
         newSyntheticError.name = 'ApiError'
         newSyntheticError.statusCode = 429
-        newSyntheticError.retryAfter = countdown
+        newSyntheticError.retryAfter = countdown ?? undefined
         syntheticError = newSyntheticError
     }
 
     if (hasActiveCooldown && syntheticError && isApiError(syntheticError)) {
-        ;(syntheticError as ApiError).retryAfter = countdown
+        (syntheticError as ApiError).retryAfter = countdown ?? undefined
     }
 
     const errorMessage = getErrorMessage(syntheticError)
@@ -97,4 +97,3 @@ export function SearchOrAskAiErrorCallout({
         </>
     )
 }
-
