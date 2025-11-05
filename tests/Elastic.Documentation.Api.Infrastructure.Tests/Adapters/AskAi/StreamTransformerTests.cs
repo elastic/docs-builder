@@ -2,127 +2,36 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Buffers;
 using System.IO.Pipelines;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using Elastic.Documentation.Api.Core.AskAi;
 using Elastic.Documentation.Api.Infrastructure.Adapters.AskAi;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
-using Xunit;
 
 namespace Elastic.Documentation.Api.Infrastructure.Tests.Adapters.AskAi;
 
 /// <summary>
-/// Shared test helpers for stream transformer tests.
-/// Reuses the same SSE parsing approach as StreamTransformerBase for consistency.
+/// Test helper to parse AskAiEvents from transformer output streams.
+/// Uses the production SseParser to read SSE format.
 /// </summary>
-public static class StreamTransformerTestHelpers
+internal static class StreamTransformerTestHelpers
 {
 	/// <summary>
-	/// Represents a parsed Server-Sent Event (SSE) - matches StreamTransformerBase.SseEvent
+	/// Parse AskAiEvents from a transformer output stream for test assertions.
 	/// </summary>
-	private sealed record SseEvent(string? EventType, string Data);
-
-	/// <summary>
-	/// Parses SSE events from a stream and deserializes them into AskAiEvent objects.
-	/// Uses the same SSE parsing logic as StreamTransformerBase for consistency.
-	/// The stream contains Server-Sent Events (SSE) format with lines like "data: {...json...}".
-	/// </summary>
-	public static async Task<List<AskAiEvent>> ParseEventsFromStream(Stream stream)
+	public static async Task<List<AskAiEvent>> ParseAskAiEventsAsync(Stream stream)
 	{
 		var events = new List<AskAiEvent>();
-
-		// Use PipeReader like the production code does for consistency
 		var reader = PipeReader.Create(stream);
-		await foreach (var sseEvent in ParseSseEventsAsync(reader, CancellationToken.None))
+		await foreach (var sseEvent in SseParser.ParseAsync(reader, CancellationToken.None))
 		{
-			// Deserialize the JSON data to AskAiEvent
 			var evt = JsonSerializer.Deserialize<AskAiEvent>(sseEvent.Data, AskAiEventJsonContext.Default.AskAiEvent);
 			if (evt != null)
 				events.Add(evt);
 		}
-
 		return events;
-	}
-
-	/// <summary>
-	/// Parse Server-Sent Events (SSE) from a PipeReader following the W3C SSE specification.
-	/// This is the same logic as StreamTransformerBase.ParseSseEventsAsync for consistency.
-	/// </summary>
-	private static async IAsyncEnumerable<SseEvent> ParseSseEventsAsync(
-		PipeReader reader,
-		[EnumeratorCancellation] CancellationToken cancellationToken)
-	{
-		string? currentEvent = null;
-		var dataBuilder = new StringBuilder();
-
-		while (!cancellationToken.IsCancellationRequested)
-		{
-			var result = await reader.ReadAsync(cancellationToken);
-			var buffer = result.Buffer;
-
-			// Process all complete lines in the buffer
-			while (TryReadLine(ref buffer, out var line))
-			{
-				// SSE comment line - skip
-				if (line.Length > 0 && line[0] == ':')
-					continue;
-
-				// Event type line
-				if (line.StartsWith("event:", StringComparison.Ordinal))
-					currentEvent = line[6..].Trim();
-				// Data line
-				else if (line.StartsWith("data:", StringComparison.Ordinal))
-					_ = dataBuilder.Append(line[5..].Trim());
-				// Empty line - marks end of event
-				else if (string.IsNullOrEmpty(line))
-				{
-					if (dataBuilder.Length <= 0)
-						continue;
-					yield return new SseEvent(currentEvent, dataBuilder.ToString());
-					currentEvent = null;
-					_ = dataBuilder.Clear();
-				}
-			}
-
-			// Tell the PipeReader how much of the buffer we consumed
-			reader.AdvanceTo(buffer.Start, buffer.End);
-
-			// Stop reading if there's no more data coming
-			if (!result.IsCompleted)
-				continue;
-
-			// Yield any remaining event that hasn't been terminated with an empty line
-			if (dataBuilder.Length > 0)
-				yield return new SseEvent(currentEvent, dataBuilder.ToString());
-			break;
-		}
-	}
-
-	/// <summary>
-	/// Try to read a single line from the buffer - same logic as StreamTransformerBase
-	/// </summary>
-	private static bool TryReadLine(ref ReadOnlySequence<byte> buffer, out string line)
-	{
-		// Look for a line ending
-		var position = buffer.PositionOf((byte)'\n');
-
-		if (position == null)
-		{
-			line = string.Empty;
-			return false;
-		}
-
-		// Extract the line (excluding the \n)
-		var lineSlice = buffer.Slice(0, position.Value);
-		line = Encoding.UTF8.GetString(lineSlice).TrimEnd('\r');
-
-		// Skip past the line + \n
-		buffer = buffer.Slice(buffer.GetPosition(1, position.Value));
-		return true;
 	}
 }
 
@@ -169,7 +78,7 @@ public class AgentBuilderStreamTransformerTests
 
 		// Act
 		var outputStream = await _transformer.TransformAsync(inputStream, null, null, CancellationToken.None);
-		var events = await StreamTransformerTestHelpers.ParseEventsFromStream(outputStream);
+		var events = await StreamTransformerTestHelpers.ParseAskAiEventsAsync(outputStream);
 
 		// Assert
 		// Note: Due to async streaming, the final event might not be written before the input stream closes
@@ -231,7 +140,7 @@ public class AgentBuilderStreamTransformerTests
 
 		// Act
 		var outputStream = await _transformer.TransformAsync(inputStream, null, null, CancellationToken.None);
-		var events = await StreamTransformerTestHelpers.ParseEventsFromStream(outputStream);
+		var events = await StreamTransformerTestHelpers.ParseAskAiEventsAsync(outputStream);
 
 		// Assert - Should have at least 1 event (round_complete might not be written in time)
 		events.Should().HaveCountGreaterOrEqualTo(1);
@@ -254,7 +163,7 @@ public class AgentBuilderStreamTransformerTests
 
 		// Act
 		var outputStream = await _transformer.TransformAsync(inputStream, null, null, CancellationToken.None);
-		var events = await StreamTransformerTestHelpers.ParseEventsFromStream(outputStream);
+		var events = await StreamTransformerTestHelpers.ParseAskAiEventsAsync(outputStream);
 
 
 		// Assert - This test has malformed SSE data (missing proper blank line terminator)
@@ -303,7 +212,7 @@ public class LlmGatewayStreamTransformerTests
 
 		// Act
 		var outputStream = await _transformer.TransformAsync(inputStream, null, null, CancellationToken.None);
-		var events = await StreamTransformerTestHelpers.ParseEventsFromStream(outputStream);
+		var events = await StreamTransformerTestHelpers.ParseAskAiEventsAsync(outputStream);
 
 		// Assert
 		events.Should().HaveCount(7);
@@ -372,7 +281,7 @@ public class LlmGatewayStreamTransformerTests
 
 		// Act
 		var outputStream = await _transformer.TransformAsync(inputStream, null, null, CancellationToken.None);
-		var events = await StreamTransformerTestHelpers.ParseEventsFromStream(outputStream);
+		var events = await StreamTransformerTestHelpers.ParseAskAiEventsAsync(outputStream);
 
 		// Assert - Should only have 2 events
 		events.Should().HaveCount(2);
@@ -397,7 +306,7 @@ public class LlmGatewayStreamTransformerTests
 
 		// Act
 		var outputStream = await _transformer.TransformAsync(inputStream, null, null, CancellationToken.None);
-		var events = await StreamTransformerTestHelpers.ParseEventsFromStream(outputStream);
+		var events = await StreamTransformerTestHelpers.ParseAskAiEventsAsync(outputStream);
 
 		// Assert - Should only have the message chunk, model events skipped
 		events.Should().HaveCount(2);
@@ -412,36 +321,36 @@ public class LlmGatewayStreamTransformerTests
 /// These tests ensure consistency across different transformer implementations.
 /// Adding a new transformer? Just add it to StreamTransformerTestCases() and these tests will automatically run against it.
 /// </summary>
+#pragma warning disable xUnit1045 // IStreamTransformer is not serializable but tests work fine
 public class StreamTransformerCommonBehaviorTests
 {
-	public static IEnumerable<object[]> StreamTransformerTestCases()
-	{
-		yield return new object[]
+	public static TheoryData<string, IStreamTransformer, string> StreamTransformerTestCases() =>
+		new()
 		{
-			"AgentBuilderStreamTransformer",
-			new AgentBuilderStreamTransformer(NullLogger<AgentBuilderStreamTransformer>.Instance),
-			// Agent Builder SSE format for conversation_id_set
-			"""
-			event: conversation_id_set
-			data: {"data":{"conversation_id":"360222c5-76aa-405a-8316-703e1061b621"}}
+			{
+				"AgentBuilderStreamTransformer",
+				new AgentBuilderStreamTransformer(NullLogger<AgentBuilderStreamTransformer>.Instance),
+				// Agent Builder SSE format for conversation_id_set
+				"""
+				event: conversation_id_set
+				data: {"data":{"conversation_id":"360222c5-76aa-405a-8316-703e1061b621"}}
 
-			event: message_chunk
-			data: {"data":{"text_chunk":"test"}}
+				event: message_chunk
+				data: {"data":{"text_chunk":"test"}}
 
-			"""
+				"""
+			},
+			{
+				"LlmGatewayStreamTransformer",
+				new LlmGatewayStreamTransformer(NullLogger<LlmGatewayStreamTransformer>.Instance),
+				// LLM Gateway SSE format - minimal events
+				"""
+				event: agent_stream_output
+				data: [null, {"type":"ai_message_chunk","id":"1","timestamp":1234567890,"data":{"content":"test"}}]
+
+				"""
+			}
 		};
-		yield return new object[]
-		{
-			"LlmGatewayStreamTransformer",
-			new LlmGatewayStreamTransformer(NullLogger<LlmGatewayStreamTransformer>.Instance),
-			// LLM Gateway SSE format - minimal events
-			"""
-			event: agent_stream_output
-			data: [null, {"type":"ai_message_chunk","id":"1","timestamp":1234567890,"data":{"content":"test"}}]
-
-			"""
-		};
-	}
 
 	[Theory]
 	[MemberData(nameof(StreamTransformerTestCases))]
@@ -455,7 +364,7 @@ public class StreamTransformerCommonBehaviorTests
 
 		// Act - Pass null conversationId to simulate new conversation
 		var outputStream = await transformer.TransformAsync(inputStream, null, null, CancellationToken.None);
-		var events = await StreamTransformerTestHelpers.ParseEventsFromStream(outputStream);
+		var events = await StreamTransformerTestHelpers.ParseAskAiEventsAsync(outputStream);
 
 		// Assert - Should have ConversationStart event
 		events.Should().ContainSingle(e => e is AskAiEvent.ConversationStart,
@@ -486,7 +395,14 @@ public class StreamTransformerCommonBehaviorTests
 
 		// Act
 		var outputStream = await transformer.TransformAsync(inputStream, null, null, CancellationToken.None);
-		var events = await StreamTransformerTestHelpers.ParseEventsFromStream(outputStream);
+		var events = new List<AskAiEvent>();
+		var reader = PipeReader.Create(outputStream);
+		await foreach (var sseEvent in SseParser.ParseAsync(reader, CancellationToken.None))
+		{
+			var evt = JsonSerializer.Deserialize<AskAiEvent>(sseEvent.Data, AskAiEventJsonContext.Default.AskAiEvent);
+			if (evt != null)
+				events.Add(evt);
+		}
 
 		// Assert
 		var conversationStart = events.OfType<AskAiEvent.ConversationStart>().FirstOrDefault();
@@ -509,7 +425,14 @@ public class StreamTransformerCommonBehaviorTests
 
 		// Act
 		var outputStream = await transformer.TransformAsync(inputStream, null, null, CancellationToken.None);
-		var events = await StreamTransformerTestHelpers.ParseEventsFromStream(outputStream);
+		var events = new List<AskAiEvent>();
+		var reader = PipeReader.Create(outputStream);
+		await foreach (var sseEvent in SseParser.ParseAsync(reader, CancellationToken.None))
+		{
+			var evt = JsonSerializer.Deserialize<AskAiEvent>(sseEvent.Data, AskAiEventJsonContext.Default.AskAiEvent);
+			if (evt != null)
+				events.Add(evt);
+		}
 
 		// Assert
 		var conversationStart = events.OfType<AskAiEvent.ConversationStart>().FirstOrDefault();
@@ -521,3 +444,4 @@ public class StreamTransformerCommonBehaviorTests
 	}
 
 }
+#pragma warning restore xUnit1045
