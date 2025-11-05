@@ -9,9 +9,11 @@ jest.mock('./chat.store', () => ({
         getState: jest.fn(),
     },
     useChatMessages: jest.fn(() => []),
+    useAiProvider: jest.fn(() => 'LlmGateway'),
     useChatActions: jest.fn(() => ({
         submitQuestion: jest.fn(),
         clearChat: jest.fn(),
+        setAiProvider: jest.fn(),
     })),
 }))
 

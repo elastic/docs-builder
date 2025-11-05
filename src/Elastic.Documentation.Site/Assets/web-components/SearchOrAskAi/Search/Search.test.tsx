@@ -26,6 +26,7 @@ jest.mock('../AskAi/chat.store', () => ({
     useChatActions: jest.fn(() => ({
         submitQuestion: jest.fn(),
         clearChat: jest.fn(),
+        setAiProvider: jest.fn(),
     })),
 }))
 
@@ -66,6 +67,7 @@ describe('Search Component', () => {
         mockUseChatActions.mockReturnValue({
             submitQuestion: mockSubmitQuestion,
             clearChat: mockClearChat,
+            setAiProvider: jest.fn(),
         })
         mockUseModalActions.mockReturnValue({
             setModalMode: mockSetModalMode,
