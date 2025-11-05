@@ -115,9 +115,7 @@ export const Chat = () => {
             setHasClearedError(false)
         }
     }, [inputValue, clearNon429Errors, hasClearedError])
-
-    // Handle countdown for 429 errors - removed redundant useEffect
-
+    
     const handleSubmit = useCallback(
         (question: string) => {
             if (!question.trim()) return
