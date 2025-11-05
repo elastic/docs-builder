@@ -1,5 +1,5 @@
 import { AskAiEvent, AskAiEventSchema } from './AskAiEvent'
-import { useAiProvider } from './aiProviderStore'
+import { useAiProvider } from './chat.store'
 import { useFetchEventSource } from './useFetchEventSource'
 import { useMessageThrottling } from './useMessageThrottling'
 import { EventSourceMessage } from '@microsoft/fetch-event-source'

@@ -1,6 +1,8 @@
 import { v4 as uuidv4 } from 'uuid'
 import { create } from 'zustand/react'
 
+export type AiProvider = 'AgentBuilder' | 'LlmGateway'
+
 export interface ChatMessage {
     id: string
     type: 'user' | 'ai'
@@ -17,6 +19,7 @@ const sentAiMessageIds = new Set<string>()
 interface ChatState {
     chatMessages: ChatMessage[]
     conversationId: string | null
+    aiProvider: AiProvider
     actions: {
         submitQuestion: (question: string) => void
         updateAiMessage: (
@@ -25,6 +28,7 @@ interface ChatState {
             status: ChatMessage['status']
         ) => void
         setConversationId: (conversationId: string) => void
+        setAiProvider: (provider: AiProvider) => void
         clearChat: () => void
         hasMessageBeenSent: (id: string) => boolean
         markMessageAsSent: (id: string) => void
@@ -34,6 +38,7 @@ interface ChatState {
 export const chatStore = create<ChatState>((set) => ({
     chatMessages: [],
     conversationId: null, // Start with null - will be set by backend on first request
+    aiProvider: 'LlmGateway', // Default to LLM Gateway
     actions: {
         submitQuestion: (question: string) => {
             set((state) => {
@@ -81,6 +86,10 @@ export const chatStore = create<ChatState>((set) => ({
             set({ conversationId })
         },
 
+        setAiProvider: (provider: AiProvider) => {
+            set({ aiProvider: provider })
+        },
+
         clearChat: () => {
             sentAiMessageIds.clear()
             set({ chatMessages: [], conversationId: null })
@@ -97,4 +106,5 @@ export const chatStore = create<ChatState>((set) => ({
 export const useChatMessages = () => chatStore((state) => state.chatMessages)
 export const useConversationId = () =>
     chatStore((state) => state.conversationId)
+export const useAiProvider = () => chatStore((state) => state.aiProvider)
 export const useChatActions = () => chatStore((state) => state.actions)
