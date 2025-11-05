@@ -68,7 +68,7 @@ public record LlmGatewayRequest(
 				new ChatInput("user", AskAiRequest.SystemPrompt),
 				new ChatInput("user", request.Message)
 			],
-			ThreadId: request.ThreadId ?? "elastic-docs-" + Guid.NewGuid()
+			ThreadId: request.ConversationId ?? "elastic-docs-" + Guid.NewGuid()
 		);
 }
 

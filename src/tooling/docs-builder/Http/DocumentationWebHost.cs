@@ -44,6 +44,7 @@ public class DocumentationWebHost
 		_writeFileSystem = writeFs;
 		var builder = WebApplication.CreateSlimBuilder();
 		_ = builder.AddDocumentationServiceDefaults();
+
 #if DEBUG
 		builder.Services.AddElasticDocsApiUsecases("dev");
 #endif

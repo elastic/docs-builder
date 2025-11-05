@@ -63,13 +63,6 @@ interface ChatMessageProps {
     onRetry?: () => void
 }
 
-const getAccumulatedContent = (messages: AskAiEvent[]) => {
-    return messages
-        .filter((m) => m.type === 'chunk')
-        .map((m) => m.content)
-        .join('')
-}
-
 const splitContentAndReferences = (
     content: string
 ): { mainContent: string; referencesJson: string | null } => {
@@ -144,7 +137,7 @@ const computeAiStatus = (
                 m.type === EventTypes.SEARCH_TOOL_CALL ||
                 m.type === EventTypes.TOOL_CALL ||
                 m.type === EventTypes.TOOL_RESULT ||
-                m.type === EventTypes.CHUNK
+                m.type === EventTypes.MESSAGE_CHUNK
         )
         .sort((a, b) => a.timestamp - b.timestamp)
 
@@ -166,9 +159,9 @@ const computeAiStatus = (
         case EventTypes.TOOL_RESULT:
             return STATUS_MESSAGES.ANALYZING
 
-        case EventTypes.CHUNK: {
+        case EventTypes.MESSAGE_CHUNK: {
             const allContent = events
-                .filter((m) => m.type === EventTypes.CHUNK)
+                .filter((m) => m.type === EventTypes.MESSAGE_CHUNK)
                 .map((m) => m.content)
                 .join('')
 
@@ -279,9 +272,9 @@ export const ChatMessage = ({
         )
     }
 
-    const content =
-        streamingContent ||
-        (events.length > 0 ? getAccumulatedContent(events) : message.content)
+    // Use streamingContent during streaming, otherwise use message.content from store
+    // message.content is updated atomically with status when CONVERSATION_END arrives
+    const content = streamingContent || message.content
 
     const hasError = message.status === 'error' || !!error
 

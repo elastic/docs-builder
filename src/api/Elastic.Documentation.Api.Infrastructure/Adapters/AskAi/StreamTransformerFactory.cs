@@ -39,9 +39,9 @@ public class StreamTransformerFactory(
 	public string AgentId => GetTransformer().AgentId;
 	public string AgentProvider => GetTransformer().AgentProvider;
 
-	public async Task<Stream> TransformAsync(Stream rawStream, System.Diagnostics.Activity? parentActivity, CancellationToken cancellationToken = default)
+	public async Task<Stream> TransformAsync(Stream rawStream, string? conversationId, System.Diagnostics.Activity? parentActivity, Cancel cancellationToken = default)
 	{
 		var transformer = GetTransformer();
-		return await transformer.TransformAsync(rawStream, parentActivity, cancellationToken);
+		return await transformer.TransformAsync(rawStream, conversationId, parentActivity, cancellationToken);
 	}
 }
