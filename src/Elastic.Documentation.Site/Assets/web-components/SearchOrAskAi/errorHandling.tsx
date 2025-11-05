@@ -92,7 +92,8 @@ export async function createApiErrorFromResponse(
             message: message ?? '',
             statusCode: statusCode,
         })
-        if (statusCode === 429 || statusCode === 503) { // Check raw statusCode for retryable errors
+        if (statusCode === 429 || statusCode === 503) {
+            // Check raw statusCode for retryable errors
             const retryAfterHeader = response.headers.get('Retry-After')
             const rateLimitScopeHeader =
                 response.headers.get('X-Rate-Limit-Scope')
@@ -166,5 +167,8 @@ export function isRateLimitError(error: ApiError | Error | null): boolean {
  * Checks if an error is retryable (429 or 503).
  */
 export function isRetryableError(error: ApiError | Error | null): boolean {
-    return isApiError(error) && (error.statusCode === 429 || error.statusCode === 503)
+    return (
+        isApiError(error) &&
+        (error.statusCode === 429 || error.statusCode === 503)
+    )
 }

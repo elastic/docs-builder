@@ -1,6 +1,6 @@
+import { ApiError, isRateLimitError } from '../errorHandling'
 import { v4 as uuidv4 } from 'uuid'
 import { create } from 'zustand/react'
-import { ApiError, isRateLimitError } from '../errorHandling'
 
 export type AiProvider = 'AgentBuilder' | 'LlmGateway'
 

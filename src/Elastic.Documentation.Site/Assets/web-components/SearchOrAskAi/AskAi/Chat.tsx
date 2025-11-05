@@ -115,7 +115,7 @@ export const Chat = () => {
             setHasClearedError(false)
         }
     }, [inputValue, clearNon429Errors, hasClearedError])
-    
+
     const handleSubmit = useCallback(
         (question: string) => {
             if (!question.trim()) return
@@ -227,7 +227,10 @@ export const Chat = () => {
                             />
                             {/* Show error callout when there's a cooldown, even on initial page */}
                             <div css={messagesStyles}>
-                                <SearchOrAskAiErrorCallout error={null} domain="askAi" />
+                                <SearchOrAskAiErrorCallout
+                                    error={null}
+                                    domain="askAi"
+                                />
                             </div>
                         </>
                     ) : (

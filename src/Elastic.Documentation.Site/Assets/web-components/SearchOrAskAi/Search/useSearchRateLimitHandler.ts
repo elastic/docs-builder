@@ -11,7 +11,8 @@ import { useEffect, useRef } from 'react'
  */
 export function useSearchRateLimitHandler(error: ApiError | Error | null) {
     const storeCooldown = useSearchCooldown()
-    const cooldownFinishedPendingAcknowledgment = useSearchCooldownFinishedPendingAcknowledgment()
+    const cooldownFinishedPendingAcknowledgment =
+        useSearchCooldownFinishedPendingAcknowledgment()
     const { setSearchCooldown } = useModalActions()
     const previousErrorRetryAfterRef = useRef<number | null>(null)
 
@@ -39,6 +40,10 @@ export function useSearchRateLimitHandler(error: ApiError | Error | null) {
         } else if (!error) {
             previousErrorRetryAfterRef.current = null
         }
-    }, [error, storeCooldown, setSearchCooldown, cooldownFinishedPendingAcknowledgment])
+    }, [
+        error,
+        storeCooldown,
+        setSearchCooldown,
+        cooldownFinishedPendingAcknowledgment,
+    ])
 }
-

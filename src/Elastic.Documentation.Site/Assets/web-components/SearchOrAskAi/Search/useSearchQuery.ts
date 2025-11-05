@@ -45,7 +45,8 @@ export const useSearchQuery = ({ searchTerm, pageNumber = 1 }: Props) => {
     const trimmedSearchTerm = searchTerm.trim()
     const debouncedSearchTerm = useDebounce(trimmedSearchTerm, 300)
     const isCooldownActive = useIsSearchCooldownActive()
-    const cooldownFinishedPendingAcknowledgment = useSearchCooldownFinishedPendingAcknowledgment()
+    const cooldownFinishedPendingAcknowledgment =
+        useSearchCooldownFinishedPendingAcknowledgment()
     const { acknowledgeSearchCooldownFinished } = useModalActions()
     const previousSearchTermRef = useRef(debouncedSearchTerm)
 
@@ -56,7 +57,11 @@ export const useSearchQuery = ({ searchTerm, pageNumber = 1 }: Props) => {
             }
         }
         previousSearchTermRef.current = debouncedSearchTerm
-    }, [debouncedSearchTerm, cooldownFinishedPendingAcknowledgment, acknowledgeSearchCooldownFinished])
+    }, [
+        debouncedSearchTerm,
+        cooldownFinishedPendingAcknowledgment,
+        acknowledgeSearchCooldownFinished,
+    ])
 
     const shouldEnable =
         !!trimmedSearchTerm &&

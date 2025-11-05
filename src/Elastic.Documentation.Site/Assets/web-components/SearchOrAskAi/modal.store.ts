@@ -101,9 +101,9 @@ const modalStore = create<ModalState>((set, get) => ({
                 askAiCooldown: null,
                 askAiCooldownFinishedPendingAcknowledgment: true,
             }),
-        acknowledgeSearchCooldownFinished: () => 
+        acknowledgeSearchCooldownFinished: () =>
             set({ searchCooldownFinishedPendingAcknowledgment: false }),
-        acknowledgeAskAiCooldownFinished: () => 
+        acknowledgeAskAiCooldownFinished: () =>
             set({ askAiCooldownFinishedPendingAcknowledgment: false }),
     },
 }))
@@ -114,7 +114,8 @@ export const useModalMode = () =>
     modalStore((state: ModalState): ModalMode => state.mode)
 
 // Search cooldown hooks
-export const useSearchCooldown = () => modalStore((state) => state.searchCooldown)
+export const useSearchCooldown = () =>
+    modalStore((state) => state.searchCooldown)
 export const useSearchCooldownFinishedPendingAcknowledgment = () =>
     modalStore((state) => state.searchCooldownFinishedPendingAcknowledgment)
 export const useIsSearchCooldownActive = () => {
@@ -135,8 +136,9 @@ export const useIsAskAiCooldownActive = () => {
 export const useSearchErrorCalloutState = () => {
     const countdown = useSearchCooldown()
     const hasActiveCooldown = useIsSearchCooldownActive()
-    const cooldownFinishedPendingAcknowledgment = useSearchCooldownFinishedPendingAcknowledgment()
-    
+    const cooldownFinishedPendingAcknowledgment =
+        useSearchCooldownFinishedPendingAcknowledgment()
+
     return {
         countdown,
         hasActiveCooldown,
@@ -147,8 +149,9 @@ export const useSearchErrorCalloutState = () => {
 export const useAskAiErrorCalloutState = () => {
     const countdown = useAskAiCooldown()
     const hasActiveCooldown = useIsAskAiCooldownActive()
-    const cooldownFinishedPendingAcknowledgment = useAskAiCooldownFinishedPendingAcknowledgment()
-    
+    const cooldownFinishedPendingAcknowledgment =
+        useAskAiCooldownFinishedPendingAcknowledgment()
+
     return {
         countdown,
         hasActiveCooldown,

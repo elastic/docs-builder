@@ -1,7 +1,11 @@
 /** @jsxImportSource @emotion/react */
 import { useChatActions } from '../AskAi/chat.store'
 import { SearchOrAskAiErrorCallout } from '../SearchOrAskAiErrorCallout'
-import { useModalActions, useIsSearchCooldownActive, useIsAskAiCooldownActive } from '../modal.store'
+import {
+    useModalActions,
+    useIsSearchCooldownActive,
+    useIsAskAiCooldownActive,
+} from '../modal.store'
 import { SearchResults } from './SearchResults'
 import { useSearchActions, useSearchTerm } from './search.store'
 import { EuiFieldText, EuiSpacer, EuiButton, EuiButtonIcon } from '@elastic/eui'
@@ -33,7 +37,13 @@ export const Search = () => {
             submitQuestion(searchTerm)
             setModalMode('askAi')
         }
-    }, [searchTerm, isSearchCooldownActive, clearChat, submitQuestion, setModalMode])
+    }, [
+        searchTerm,
+        isSearchCooldownActive,
+        clearChat,
+        submitQuestion,
+        setModalMode,
+    ])
 
     // Sync inputValue with searchTerm from store (when cleared externally)
     useEffect(() => {
@@ -45,7 +55,9 @@ export const Search = () => {
     return (
         <>
             <EuiSpacer size="m" />
-            {!searchTerm.trim() && <SearchOrAskAiErrorCallout error={null} domain="search" />}
+            {!searchTerm.trim() && (
+                <SearchOrAskAiErrorCallout error={null} domain="search" />
+            )}
             <div
                 css={css`
                     position: relative;
@@ -109,13 +121,7 @@ export const Search = () => {
     )
 }
 
-const AskAiButton = ({
-    term,
-    onAsk,
-}: {
-    term: string
-    onAsk: () => void
-}) => {
+const AskAiButton = ({ term, onAsk }: { term: string; onAsk: () => void }) => {
     const isAskAiCooldownActive = useIsAskAiCooldownActive()
     return (
         <EuiButton

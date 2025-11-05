@@ -11,7 +11,8 @@ import { useEffect, useRef } from 'react'
  */
 export function useAskAiRateLimitHandler(error: ApiError | Error | null) {
     const storeCooldown = useAskAiCooldown()
-    const cooldownFinishedPendingAcknowledgment = useAskAiCooldownFinishedPendingAcknowledgment()
+    const cooldownFinishedPendingAcknowledgment =
+        useAskAiCooldownFinishedPendingAcknowledgment()
     const { setAskAiCooldown } = useModalActions()
     const previousErrorRetryAfterRef = useRef<number | null>(null)
 
@@ -39,6 +40,10 @@ export function useAskAiRateLimitHandler(error: ApiError | Error | null) {
         } else if (!error) {
             previousErrorRetryAfterRef.current = null
         }
-    }, [error, storeCooldown, setAskAiCooldown, cooldownFinishedPendingAcknowledgment])
+    }, [
+        error,
+        storeCooldown,
+        setAskAiCooldown,
+        cooldownFinishedPendingAcknowledgment,
+    ])
 }
-
