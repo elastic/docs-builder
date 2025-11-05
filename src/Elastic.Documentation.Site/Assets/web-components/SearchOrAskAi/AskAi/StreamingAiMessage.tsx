@@ -14,12 +14,14 @@ interface StreamingAiMessageProps {
     message: ChatMessageType
     isLast: boolean
     onAbortReady?: (abort: () => void) => void
+    showError?: boolean
 }
 
 export const StreamingAiMessage = ({
     message,
     isLast,
     onAbortReady,
+    showError,
 }: StreamingAiMessageProps) => {
     const {
         updateAiMessage,
@@ -102,6 +104,7 @@ export const StreamingAiMessage = ({
                     : undefined
             }
             error={message.error ?? (isLast ? error : null)}
+            showError={showError}
         />
     )
 }

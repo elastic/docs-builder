@@ -1,6 +1,7 @@
 /** @jsxImportSource @emotion/react */
 import { useChatActions } from '../AskAi/chat.store'
 import { useModalActions, useCooldown } from '../modal.store'
+import { SearchOrAskAiErrorCallout } from '../SearchOrAskAiErrorCallout'
 import { SearchResults } from './SearchResults'
 import { useSearchActions, useSearchTerm } from './search.store'
 import { EuiFieldText, EuiSpacer, EuiButton, EuiButtonIcon } from '@elastic/eui'
@@ -15,7 +16,7 @@ export const Search = () => {
     const searchTerm = useSearchTerm()
     const { setSearchTerm } = useSearchActions()
     const { submitQuestion, clearChat } = useChatActions()
-    const { setModalMode, setCooldown } = useModalActions()
+    const { setModalMode } = useModalActions()
     const countdown = useCooldown()
     const inputRef = useRef<HTMLInputElement>(null)
     const [inputValue, setInputValue] = useState(searchTerm)
@@ -43,6 +44,7 @@ export const Search = () => {
     return (
         <>
             <EuiSpacer size="m" />
+            {!searchTerm.trim() && <SearchOrAskAiErrorCallout error={null} />}
             <div
                 css={css`
                     position: relative;

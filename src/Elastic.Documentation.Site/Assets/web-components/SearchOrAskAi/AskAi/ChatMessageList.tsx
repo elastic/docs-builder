@@ -3,13 +3,24 @@ import { StreamingAiMessage } from './StreamingAiMessage'
 import { ChatMessage as ChatMessageType } from './chat.store'
 import { EuiSpacer } from '@elastic/eui'
 import * as React from 'react'
+import { useMemo } from 'react'
 
 interface ChatMessageListProps {
     messages: ChatMessageType[]
     onAbortReady?: (abort: () => void) => void
 }
 
-export const ChatMessageList = ({ messages, onAbortReady }: ChatMessageListProps) => {
+export const ChatMessageList = ({
+    messages,
+    onAbortReady,
+}: ChatMessageListProps) => {
+    const lastErrorMessageId = useMemo(() => {
+        const errorMessages = messages.filter((m) => m.status === 'error')
+        return errorMessages.length > 0
+            ? errorMessages[errorMessages.length - 1].id
+            : null
+    }, [messages])
+
     return (
         <>
             {messages.map((message, index) => (
@@ -21,6 +32,7 @@ export const ChatMessageList = ({ messages, onAbortReady }: ChatMessageListProps
                             message={message}
                             isLast={index === messages.length - 1}
                             onAbortReady={onAbortReady}
+                            showError={message.id === lastErrorMessageId}
                         />
                     )}
                     {index < messages.length - 1 && <EuiSpacer size="l" />}

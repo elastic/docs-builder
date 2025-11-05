@@ -3,7 +3,7 @@ import { AiProviderSelector } from './AiProviderSelector'
 import { AskAiSuggestions } from './AskAiSuggestions'
 import { ChatMessageList } from './ChatMessageList'
 import { useChatActions, useChatMessages } from './chat.store'
-import { useCooldown, useModalActions } from '../modal.store'
+import { useCooldown } from '../modal.store'
 import { SearchOrAskAiErrorCallout } from '../SearchOrAskAiErrorCallout'
 import {
     useEuiOverflowScroll,
@@ -75,14 +75,14 @@ const NewConversationHeader = ({
 
 export const Chat = () => {
     const messages = useChatMessages()
-    const { submitQuestion, clearChat } = useChatActions()
-    const { setCooldown } = useModalActions()
+    const { submitQuestion, clearChat, clearNon429Errors } = useChatActions()
     const countdown = useCooldown()
     const inputRef = useRef<HTMLInputElement>(null)
     const scrollRef = useRef<HTMLDivElement>(null)
     const lastMessageStatusRef = useRef<string | null>(null)
     const abortFunctionRef = useRef<(() => void) | null>(null)
     const [inputValue, setInputValue] = useState('')
+    const [hasClearedError, setHasClearedError] = useState(false)
 
     const dynamicScrollableStyles = css`
         ${scrollableStyles}
@@ -105,6 +105,15 @@ export const Chat = () => {
             abortFunctionRef.current = null
         }
     }, [isStreaming])
+
+    useEffect(() => {
+        if (inputValue && !hasClearedError) {
+            clearNon429Errors()
+            setHasClearedError(true)
+        } else if (!inputValue) {
+            setHasClearedError(false)
+        }
+    }, [inputValue, clearNon429Errors, hasClearedError])
 
     // Handle countdown for 429 errors - removed redundant useEffect
 

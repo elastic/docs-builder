@@ -1,5 +1,9 @@
 import { useEffect, useRef } from 'react'
-import { useCooldown, useModalActions, useCooldownJustFinished } from '../modal.store'
+import {
+    useCooldown,
+    useModalActions,
+    useCooldownJustFinished,
+} from '../modal.store'
 import { ApiError, isApiError } from '../errorHandling'
 
 /**
@@ -10,7 +14,7 @@ export function useRateLimitHandler(error: ApiError | Error | null) {
     const cooldownJustFinished = useCooldownJustFinished()
     const { setCooldown } = useModalActions()
     const previousErrorRetryAfterRef = useRef<number | null>(null)
-    
+
     useEffect(() => {
         if (cooldownJustFinished) {
             return
@@ -20,14 +24,15 @@ export function useRateLimitHandler(error: ApiError | Error | null) {
             const retryAfter = apiError.retryAfter
             if (retryAfter !== undefined && retryAfter !== null) {
                 const isNewError = previousErrorRetryAfterRef.current !== retryAfter
-                
-                const shouldSetCooldown = isNewError && (
-                    (storeCooldown === null && previousErrorRetryAfterRef.current === null) ||
-                    (storeCooldown !== null && storeCooldown < retryAfter)
-                )
-                
+
+                const shouldSetCooldown =
+                    isNewError &&
+                    ((storeCooldown === null &&
+                        previousErrorRetryAfterRef.current === null) ||
+                        (storeCooldown !== null && storeCooldown < retryAfter))
+
                 if (shouldSetCooldown) {
-                    setCooldown(retryAfter)
+                    setCooldown(retryAfter, apiError)
                     previousErrorRetryAfterRef.current = retryAfter
                 }
             }

@@ -1,8 +1,11 @@
 import { EuiCallOut, EuiSpacer } from '@elastic/eui'
 import { ApiError, getErrorMessage, isApiError } from './errorHandling'
-import { useCountdownTimer } from './hooks/useCountdownTimer'
 import { useRateLimitHandler } from './hooks/useRateLimitHandler'
-import { useCooldownJustFinished } from './modal.store'
+import {
+    useCooldown,
+    useCooldownJustFinished,
+    useLast429Error,
+} from './modal.store'
 
 interface SearchOrAskAiErrorCalloutProps {
     error: ApiError | Error | null
@@ -18,12 +21,17 @@ export function SearchOrAskAiErrorCallout({
     inline = false,
     title = 'Sorry, there was an error',
 }: SearchOrAskAiErrorCalloutProps) {
+    const last429Error = useLast429Error()
+    const displayError = error || last429Error
+
     const is429Error =
-        error && isApiError(error) && (error as ApiError).statusCode === 429
+        displayError &&
+        isApiError(displayError) &&
+        (displayError as ApiError).statusCode === 429
 
-    useRateLimitHandler(is429Error ? error : null)
+    useRateLimitHandler(is429Error ? displayError : null)
 
-    const { countdown } = useCountdownTimer()
+    const countdown = useCooldown()
     const cooldownJustFinished = useCooldownJustFinished()
 
     const hasActiveCooldown = countdown !== null && countdown > 0
@@ -32,8 +40,8 @@ export function SearchOrAskAiErrorCallout({
         return null
     }
 
-    if (!is429Error && error) {
-        const errorMessage = getErrorMessage(error)
+    if (!is429Error && displayError) {
+        const errorMessage = getErrorMessage(displayError)
         return (
             <>
                 {!inline && <EuiSpacer size="m" />}
@@ -50,33 +58,35 @@ export function SearchOrAskAiErrorCallout({
         )
     }
 
-    if (!error && !hasActiveCooldown) {
+    if (!displayError && !hasActiveCooldown) {
         return null
     }
 
-    let displayError: ApiError | Error | null = error
+    let syntheticError: ApiError | Error | null = displayError
 
-    if (!displayError && hasActiveCooldown) {
-        const syntheticError = new Error(
+    if (!syntheticError && hasActiveCooldown) {
+        const newSyntheticError = new Error(
             'Rate limit exceeded. Please wait before trying again.'
         ) as ApiError
-        syntheticError.name = 'ApiError'
-        syntheticError.statusCode = 429
-        syntheticError.retryAfter = countdown
-        displayError = syntheticError
+        newSyntheticError.name = 'ApiError'
+        newSyntheticError.statusCode = 429
+        newSyntheticError.retryAfter = countdown
+        syntheticError = newSyntheticError
     }
 
-    if (hasActiveCooldown && displayError && isApiError(displayError)) {
-        ;(displayError as ApiError).retryAfter = countdown
+    if (hasActiveCooldown && syntheticError && isApiError(syntheticError)) {
+        ;(syntheticError as ApiError).retryAfter = countdown
     }
 
-    const errorMessage = getErrorMessage(displayError)
+    const errorMessage = getErrorMessage(syntheticError)
+
+    const calloutTitle = is429Error ? 'Rate limit exceeded' : title
 
     return (
         <>
             {!inline && <EuiSpacer size="m" />}
             <EuiCallOut
-                title={title}
+                title={calloutTitle}
                 color="danger"
                 iconType="error"
                 size="s"

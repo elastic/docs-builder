@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid'
 import { create } from 'zustand/react'
-import { ApiError } from '../errorHandling'
+import { ApiError, isApiError } from '../errorHandling'
 
 export interface ChatMessage {
     id: string
@@ -29,6 +29,7 @@ interface ChatState {
         ) => void
         setThreadId: (threadId: string) => void
         clearChat: () => void
+        clearNon429Errors: () => void
         hasMessageBeenSent: (id: string) => boolean
         markMessageAsSent: (id: string) => void
     }
@@ -88,6 +89,22 @@ export const chatStore = create<ChatState>((set) => ({
         clearChat: () => {
             sentAiMessageIds.clear()
             set({ chatMessages: [], threadId: null })
+        },
+
+        clearNon429Errors: () => {
+            set((state) => ({
+                chatMessages: state.chatMessages.map((msg) => {
+                    if (
+                        msg.status === 'error' &&
+                        msg.error &&
+                        (!isApiError(msg.error) ||
+                            (msg.error as ApiError).statusCode !== 429)
+                    ) {
+                        return { ...msg, status: 'complete', error: null }
+                    }
+                    return msg
+                }),
+            }))
         },
 
         hasMessageBeenSent: (id: string) => sentAiMessageIds.has(id),

@@ -41,11 +41,7 @@ export const SearchResults = () => {
         <>
             <SearchOrAskAiErrorCallout
                 error={error as ApiError | Error | null}
-                title={
-                    error
-                        ? 'Error loading search results'
-                        : 'Sorry, there was an error'
-                }
+                title="Error loading search results"
             />
             {error && <EuiSpacer size="s" />}
             

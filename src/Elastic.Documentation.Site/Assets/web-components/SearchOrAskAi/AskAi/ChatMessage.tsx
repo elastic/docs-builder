@@ -62,6 +62,7 @@ interface ChatMessageProps {
     error?: ApiError | Error | null
     onRetry?: () => void
     onCountdownChange?: (countdown: number | null) => void
+    showError?: boolean
 }
 
 const getAccumulatedContent = (messages: AskAiEvent[]) => {
@@ -98,7 +99,7 @@ const splitContentAndReferences = (
 const getMessageState = (message: ChatMessageType) => ({
     isUser: message.type === 'user',
     isLoading: message.status === 'streaming',
-    isComplete: message.status === 'complete',
+    isComplete: message.status === 'complete' || message.status === 'error',
     hasError: message.status === 'error',
 })
 
@@ -257,6 +258,7 @@ export const ChatMessage = ({
     error,
     onRetry,
     onCountdownChange,
+    showError = true,
 }: ChatMessageProps) => {
     const { euiTheme } = useEuiTheme()
     const { isUser, isLoading, isComplete } = getMessageState(message)
@@ -291,7 +293,7 @@ export const ChatMessage = ({
         streamingContent ||
         (events.length > 0 ? getAccumulatedContent(events) : message.content)
 
-    const hasError = message.status === 'error' || !!error
+    const hasError = (message.status === 'error' || !!error) && showError
 
     // Only split content and references when complete for better performance
     const { mainContent, referencesJson } = useMemo(() => {
