@@ -1,10 +1,10 @@
 import { createApiErrorFromResponse, shouldRetry } from '../errorHandling'
 import { ApiError } from '../errorHandling'
 import {
-    useCooldownJustFinished,
+    useSearchCooldownFinishedPendingAcknowledgment,
     useModalActions,
+    useIsSearchCooldownActive,
 } from '../modal.store'
-import { useIsCooldownActive } from '../hooks/useIsCooldownActive'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useDebounce } from '@uidotdev/usehooks'
 import { useRef, useEffect } from 'react'
@@ -44,25 +44,25 @@ type Props = {
 export const useSearchQuery = ({ searchTerm, pageNumber = 1 }: Props) => {
     const trimmedSearchTerm = searchTerm.trim()
     const debouncedSearchTerm = useDebounce(trimmedSearchTerm, 300)
-    const isCooldownActive = useIsCooldownActive()
-    const cooldownJustFinished = useCooldownJustFinished()
-    const { acknowledgeCooldownFinished } = useModalActions()
+    const isCooldownActive = useIsSearchCooldownActive()
+    const cooldownFinishedPendingAcknowledgment = useSearchCooldownFinishedPendingAcknowledgment()
+    const { acknowledgeSearchCooldownFinished } = useModalActions()
     const previousSearchTermRef = useRef(debouncedSearchTerm)
 
     useEffect(() => {
         if (previousSearchTermRef.current !== debouncedSearchTerm) {
-            if (cooldownJustFinished) {
-                acknowledgeCooldownFinished()
+            if (cooldownFinishedPendingAcknowledgment) {
+                acknowledgeSearchCooldownFinished()
             }
         }
         previousSearchTermRef.current = debouncedSearchTerm
-    }, [debouncedSearchTerm, cooldownJustFinished, acknowledgeCooldownFinished])
+    }, [debouncedSearchTerm, cooldownFinishedPendingAcknowledgment, acknowledgeSearchCooldownFinished])
 
     const shouldEnable =
         !!trimmedSearchTerm &&
         trimmedSearchTerm.length >= 1 &&
         !isCooldownActive &&
-        !cooldownJustFinished
+        !cooldownFinishedPendingAcknowledgment
 
     return useQuery<SearchResponse, ApiError>({
         queryKey: [

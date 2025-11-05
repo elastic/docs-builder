@@ -1,4 +1,6 @@
 import { icon as EuiIconVisualizeApp } from '@elastic/eui/es/components/icon/assets/app_visualize'
+import { icon as EuiIconArrowEnd } from '@elastic/eui/es/components/icon/assets/arrowEnd'
+import { icon as EuiIconArrowStart } from '@elastic/eui/es/components/icon/assets/arrowStart'
 import { icon as EuiIconArrowDown } from '@elastic/eui/es/components/icon/assets/arrow_down'
 import { icon as EuiIconArrowLeft } from '@elastic/eui/es/components/icon/assets/arrow_left'
 import { icon as EuiIconArrowRight } from '@elastic/eui/es/components/icon/assets/arrow_right'
@@ -26,8 +28,6 @@ import { icon as EuiIconThumbUp } from '@elastic/eui/es/components/icon/assets/t
 import { icon as EuiIconTrash } from '@elastic/eui/es/components/icon/assets/trash'
 import { icon as EuiIconUser } from '@elastic/eui/es/components/icon/assets/user'
 import { icon as EuiIconWrench } from '@elastic/eui/es/components/icon/assets/wrench'
-import { icon as EuiIconArrowStart } from '@elastic/eui/es/components/icon/assets/arrowStart'
-import { icon as EuiIconArrowEnd } from '@elastic/eui/es/components/icon/assets/arrowEnd'
 import { appendIconComponentCache } from '@elastic/eui/es/components/icon/icon'
 
 appendIconComponentCache({

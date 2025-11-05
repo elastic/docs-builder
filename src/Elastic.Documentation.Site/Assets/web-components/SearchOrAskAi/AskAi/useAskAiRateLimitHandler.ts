@@ -1,22 +1,22 @@
 import { ApiError, isRateLimitError } from '../errorHandling'
 import {
-    useCooldown,
+    useAskAiCooldown,
     useModalActions,
-    useCooldownJustFinished,
+    useAskAiCooldownFinishedPendingAcknowledgment,
 } from '../modal.store'
 import { useEffect, useRef } from 'react'
 
 /**
- * Hook to handle rate limit errors (429) and manage cooldown state.
+ * Hook to handle Ask AI rate limit errors (429) and manage cooldown state.
  */
-export function useRateLimitHandler(error: ApiError | Error | null) {
-    const storeCooldown = useCooldown()
-    const cooldownJustFinished = useCooldownJustFinished()
-    const { setCooldown } = useModalActions()
+export function useAskAiRateLimitHandler(error: ApiError | Error | null) {
+    const storeCooldown = useAskAiCooldown()
+    const cooldownFinishedPendingAcknowledgment = useAskAiCooldownFinishedPendingAcknowledgment()
+    const { setAskAiCooldown } = useModalActions()
     const previousErrorRetryAfterRef = useRef<number | null>(null)
 
     useEffect(() => {
-        if (cooldownJustFinished) {
+        if (cooldownFinishedPendingAcknowledgment) {
             return
         }
         if (error && isRateLimitError(error)) {
@@ -32,12 +32,13 @@ export function useRateLimitHandler(error: ApiError | Error | null) {
                         (storeCooldown !== null && storeCooldown < retryAfter))
 
                 if (shouldSetCooldown) {
-                    setCooldown(retryAfter, error)
+                    setAskAiCooldown(retryAfter)
                     previousErrorRetryAfterRef.current = retryAfter
                 }
             }
         } else if (!error) {
             previousErrorRetryAfterRef.current = null
         }
-    }, [error, storeCooldown, setCooldown, cooldownJustFinished])
+    }, [error, storeCooldown, setAskAiCooldown, cooldownFinishedPendingAcknowledgment])
 }
+

@@ -40,6 +40,7 @@ export const SearchResults = () => {
         <>
             <SearchOrAskAiErrorCallout
                 error={error}
+                domain="search"
                 title="Error loading search results"
             />
             {error && <EuiSpacer size="s" />}

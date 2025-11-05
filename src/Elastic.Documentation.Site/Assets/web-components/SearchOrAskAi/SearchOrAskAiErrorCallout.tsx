@@ -1,15 +1,15 @@
 import { ApiError, getErrorMessage, isApiError, isRateLimitError } from './errorHandling'
-import { useRateLimitHandler } from './hooks/useRateLimitHandler'
-import { useIsCooldownActive } from './hooks/useIsCooldownActive'
-import {
-    useCooldown,
-    useCooldownJustFinished,
-    useLast429Error,
+import { useSearchRateLimitHandler } from './Search/useSearchRateLimitHandler'
+import { useAskAiRateLimitHandler } from './AskAi/useAskAiRateLimitHandler'
+import { 
+    useSearchErrorCalloutState, 
+    useAskAiErrorCalloutState 
 } from './modal.store'
 import { EuiCallOut, EuiSpacer } from '@elastic/eui'
 
 interface SearchOrAskAiErrorCalloutProps {
     error: ApiError | Error | null
+    domain: 'search' | 'askAi'
     inline?: boolean
     title?: string
 }
@@ -19,26 +19,29 @@ interface SearchOrAskAiErrorCalloutProps {
  */
 export function SearchOrAskAiErrorCallout({
     error,
+    domain,
     inline = false,
     title = 'Sorry, there was an error',
 }: SearchOrAskAiErrorCalloutProps) {
-    const last429Error = useLast429Error()
-    const displayError = error || last429Error
+    // Use domain-specific hooks based on the domain prop
+    const searchState = useSearchErrorCalloutState()
+    const askAiState = useAskAiErrorCalloutState()
+    const state = domain === 'search' ? searchState : askAiState
+    
+    // Use domain-specific rate limit handler
+    useSearchRateLimitHandler(domain === 'search' ? error : null)
+    useAskAiRateLimitHandler(domain === 'askAi' ? error : null)
+    
+    const is429Error = error && isRateLimitError(error)
 
-    const is429Error = displayError && isRateLimitError(displayError)
-
-    useRateLimitHandler(is429Error ? displayError : null)
-
-    const countdown = useCooldown()
-    const cooldownJustFinished = useCooldownJustFinished()
-    const hasActiveCooldown = useIsCooldownActive()
-
-    if (is429Error && (!hasActiveCooldown || cooldownJustFinished)) {
+    // Hide 429 errors when cooldown finished (user can retry)
+    if (is429Error && (!state.hasActiveCooldown || state.cooldownFinishedPendingAcknowledgment)) {
         return null
     }
 
-    if (!is429Error && displayError) {
-        const errorMessage = getErrorMessage(displayError)
+    // Show non-429 errors immediately
+    if (!is429Error && error) {
+        const errorMessage = getErrorMessage(error)
         return (
             <>
                 {!inline && <EuiSpacer size="m" />}
@@ -55,29 +58,30 @@ export function SearchOrAskAiErrorCallout({
         )
     }
 
-    if (!displayError && !hasActiveCooldown) {
+    // Show cooldown message when active (even if no error prop)
+    if (!error && !state.hasActiveCooldown) {
         return null
     }
 
-    let syntheticError: ApiError | Error | null = displayError
+    // Create synthetic 429 error for cooldown display
+    let syntheticError: ApiError | Error | null = error
 
-    if (!syntheticError && hasActiveCooldown) {
+    if (!syntheticError && state.hasActiveCooldown) {
         const newSyntheticError = new Error(
             'Rate limit exceeded. Please wait before trying again.'
         ) as ApiError
         newSyntheticError.name = 'ApiError'
         newSyntheticError.statusCode = 429
-        newSyntheticError.retryAfter = countdown ?? undefined
+        newSyntheticError.retryAfter = state.countdown ?? undefined
         syntheticError = newSyntheticError
     }
 
-    if (hasActiveCooldown && isApiError(syntheticError)) {
-        syntheticError.retryAfter = countdown ?? undefined
+    if (state.hasActiveCooldown && isApiError(syntheticError)) {
+        syntheticError.retryAfter = state.countdown ?? undefined
     }
 
     const errorMessage = getErrorMessage(syntheticError)
-
-    const calloutTitle = is429Error ? 'Rate limit exceeded' : title
+    const calloutTitle = is429Error || state.hasActiveCooldown ? 'Rate limit exceeded' : title
 
     return (
         <>

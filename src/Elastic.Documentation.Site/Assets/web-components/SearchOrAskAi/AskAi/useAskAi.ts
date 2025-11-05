@@ -1,5 +1,5 @@
 import { ApiError, isRateLimitError } from '../errorHandling'
-import { useCooldown, useModalActions } from '../modal.store'
+import { useAskAiCooldown, useModalActions } from '../modal.store'
 import { AskAiEvent, AskAiEventSchema } from './AskAiEvent'
 import { useAiProvider } from './chat.store'
 import { useFetchEventSource } from './useFetchEventSource'
@@ -34,8 +34,8 @@ interface Props {
 export const useAskAi = (props: Props): UseAskAiResponse => {
     const [events, setEvents] = useState<AskAiEvent[]>([])
     const [error, setError] = useState<ApiError | Error | null>(null)
-    const storeCooldown = useCooldown()
-    const { setCooldown } = useModalActions()
+    const storeCooldown = useAskAiCooldown()
+    const { setAskAiCooldown } = useModalActions()
     const lastSentQuestionRef = useRef<string>('')
 
     // Get AI provider from store (user-controlled via UI)
@@ -129,7 +129,7 @@ export const useAskAi = (props: Props): UseAskAiResponse => {
             })
             setError(error)
             if (isRateLimitError(error) && error.retryAfter) {
-                setCooldown(error.retryAfter)
+                setAskAiCooldown(error.retryAfter)
             }
             props.onError?.(error)
         },

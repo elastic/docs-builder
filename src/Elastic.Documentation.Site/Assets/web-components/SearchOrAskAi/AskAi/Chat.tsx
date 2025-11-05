@@ -1,6 +1,6 @@
 /** @jsxImportSource @emotion/react */
 import { SearchOrAskAiErrorCallout } from '../SearchOrAskAiErrorCallout'
-import { useIsCooldownActive } from '../hooks/useIsCooldownActive'
+import { useIsAskAiCooldownActive } from '../modal.store'
 import { AiProviderSelector } from './AiProviderSelector'
 import { AskAiSuggestions } from './AskAiSuggestions'
 import { ChatMessageList } from './ChatMessageList'
@@ -76,7 +76,7 @@ const NewConversationHeader = ({
 export const Chat = () => {
     const messages = useChatMessages()
     const { submitQuestion, clearChat, clearNon429Errors } = useChatActions()
-    const isCooldownActive = useIsCooldownActive()
+    const isCooldownActive = useIsAskAiCooldownActive()
     const inputRef = useRef<HTMLInputElement>(null)
     const scrollRef = useRef<HTMLDivElement>(null)
     const lastMessageStatusRef = useRef<string | null>(null)
@@ -227,7 +227,7 @@ export const Chat = () => {
                             />
                             {/* Show error callout when there's a cooldown, even on initial page */}
                             <div css={messagesStyles}>
-                                <SearchOrAskAiErrorCallout error={null} />
+                                <SearchOrAskAiErrorCallout error={null} domain="askAi" />
                             </div>
                         </>
                     ) : (

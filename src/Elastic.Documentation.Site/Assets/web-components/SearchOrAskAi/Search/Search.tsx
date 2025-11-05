@@ -1,8 +1,7 @@
 /** @jsxImportSource @emotion/react */
 import { useChatActions } from '../AskAi/chat.store'
 import { SearchOrAskAiErrorCallout } from '../SearchOrAskAiErrorCallout'
-import { useModalActions } from '../modal.store'
-import { useIsCooldownActive } from '../hooks/useIsCooldownActive'
+import { useModalActions, useIsSearchCooldownActive, useIsAskAiCooldownActive } from '../modal.store'
 import { SearchResults } from './SearchResults'
 import { useSearchActions, useSearchTerm } from './search.store'
 import { EuiFieldText, EuiSpacer, EuiButton, EuiButtonIcon } from '@elastic/eui'
@@ -18,14 +17,15 @@ export const Search = () => {
     const { setSearchTerm } = useSearchActions()
     const { submitQuestion, clearChat } = useChatActions()
     const { setModalMode } = useModalActions()
-    const isCooldownActive = useIsCooldownActive()
+    const isSearchCooldownActive = useIsSearchCooldownActive()
+    const isAskAiCooldownActive = useIsAskAiCooldownActive()
     const inputRef = useRef<HTMLInputElement>(null)
     const [inputValue, setInputValue] = useState(searchTerm)
 
     const handleSearch = useCallback(() => {
         if (searchTerm.trim()) {
             // Prevent submission during countdown
-            if (isCooldownActive) {
+            if (isSearchCooldownActive) {
                 return
             }
             // Always start a new conversation
@@ -33,7 +33,7 @@ export const Search = () => {
             submitQuestion(searchTerm)
             setModalMode('askAi')
         }
-    }, [searchTerm, isCooldownActive, clearChat, submitQuestion, setModalMode])
+    }, [searchTerm, isSearchCooldownActive, clearChat, submitQuestion, setModalMode])
 
     // Sync inputValue with searchTerm from store (when cleared externally)
     useEffect(() => {
@@ -45,7 +45,7 @@ export const Search = () => {
     return (
         <>
             <EuiSpacer size="m" />
-            {!searchTerm.trim() && <SearchOrAskAiErrorCallout error={null} />}
+            {!searchTerm.trim() && <SearchOrAskAiErrorCallout error={null} domain="search" />}
             <div
                 css={css`
                     position: relative;
@@ -67,7 +67,7 @@ export const Search = () => {
                             handleSearch()
                         }
                     }}
-                    disabled={isCooldownActive}
+                    disabled={isSearchCooldownActive}
                 />
                 <EuiButtonIcon
                     aria-label="Search"
@@ -82,7 +82,7 @@ export const Search = () => {
                     iconType="sortUp"
                     display={inputValue.trim() ? 'fill' : 'base'}
                     onClick={handleSearch}
-                    disabled={isCooldownActive}
+                    disabled={isSearchCooldownActive}
                 />
             </div>
             {searchTerm && (
@@ -92,14 +92,13 @@ export const Search = () => {
                         term={searchTerm}
                         onAsk={() => {
                             // Prevent submission during countdown
-                            if (isCooldownActive) {
+                            if (isAskAiCooldownActive) {
                                 return
                             }
                             clearChat()
                             if (searchTerm.trim()) submitQuestion(searchTerm)
                             setModalMode('askAi')
                         }}
-                        disabled={isCooldownActive}
                     />
                 </>
             )}
@@ -113,18 +112,17 @@ export const Search = () => {
 const AskAiButton = ({
     term,
     onAsk,
-    disabled,
 }: {
     term: string
     onAsk: () => void
-    disabled?: boolean
 }) => {
+    const isAskAiCooldownActive = useIsAskAiCooldownActive()
     return (
         <EuiButton
             iconType="newChat"
             fullWidth
             onClick={onAsk}
-            disabled={disabled}
+            disabled={isAskAiCooldownActive}
         >
             Ask AI about <span css={askAiButtonStyles}>"{term}"</span>
         </EuiButton>

@@ -443,6 +443,7 @@ export const ChatMessage = ({
                         <EuiFlexItem>
                             <SearchOrAskAiErrorCallout
                                 error={error}
+                                domain="askAi"
                                 inline={true}
                             />
                         </EuiFlexItem>
