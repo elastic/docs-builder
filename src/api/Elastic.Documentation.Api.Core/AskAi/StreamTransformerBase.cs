@@ -129,7 +129,7 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 	/// Default implementation parses SSE events and JSON, then calls TransformJsonEvent.
 	/// </summary>
 	/// <returns>Stream processing result with metrics and captured output</returns>
-	private async Task ProcessStreamAsync(PipeReader reader, PipeWriter writer, string? conversationId, Activity? parentActivity, CancellationToken cancellationToken)
+	protected virtual async Task ProcessStreamAsync(PipeReader reader, PipeWriter writer, string? conversationId, Activity? parentActivity, CancellationToken cancellationToken)
 	{
 		using var activity = StreamTransformerActivitySource.StartActivity(nameof(ProcessStreamAsync));
 
@@ -255,7 +255,7 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 	/// <summary>
 	/// Write a transformed event to the output stream
 	/// </summary>
-	private async Task WriteEventAsync(AskAiEvent? transformedEvent, PipeWriter writer, CancellationToken cancellationToken)
+	protected async Task WriteEventAsync(AskAiEvent? transformedEvent, PipeWriter writer, CancellationToken cancellationToken)
 	{
 		if (transformedEvent == null)
 			return;

@@ -54,7 +54,7 @@ public class AgentBuilderStreamTransformerTests
 		var inputStream = new MemoryStream(Encoding.UTF8.GetBytes(sseData));
 
 		// Act
-		var outputStream = await _transformer.TransformAsync(inputStream, CancellationToken.None);
+		var outputStream = await _transformer.TransformAsync(inputStream, null, null, CancellationToken.None);
 		var events = await ParseEventsFromStream(outputStream);
 
 		// Assert
@@ -67,8 +67,8 @@ public class AgentBuilderStreamTransformerTests
 		events.Should().ContainSingle(e => e is AskAiEvent.Reasoning);
 		events.Should().ContainSingle(e => e is AskAiEvent.SearchToolCall);
 		events.Should().ContainSingle(e => e is AskAiEvent.ToolResult);
-		events.Should().Contain(e => e is AskAiEvent.Chunk);
-		events.Should().ContainSingle(e => e is AskAiEvent.ChunkComplete);
+		events.Should().Contain(e => e is AskAiEvent.MessageChunk);
+		events.Should().ContainSingle(e => e is AskAiEvent.MessageComplete);
 
 		// Verify specific content
 		var convStart = events.OfType<AskAiEvent.ConversationStart>().First();
@@ -87,12 +87,12 @@ public class AgentBuilderStreamTransformerTests
 		toolResult.ToolCallId.Should().Be("tooluse_abc123");
 		toolResult.Result.Should().Contain("semantic-docs-prod-latest");
 
-		var chunks = events.OfType<AskAiEvent.Chunk>().ToList();
+		var chunks = events.OfType<AskAiEvent.MessageChunk>().ToList();
 		chunks.Should().HaveCount(2);
 		chunks[0].Content.Should().Be("Hello");
 		chunks[1].Content.Should().Be(" world");
 
-		var complete = events.OfType<AskAiEvent.ChunkComplete>().First();
+		var complete = events.OfType<AskAiEvent.MessageComplete>().First();
 		complete.FullContent.Should().Be("Hello world");
 	}
 
@@ -116,12 +116,12 @@ public class AgentBuilderStreamTransformerTests
 		var inputStream = new MemoryStream(Encoding.UTF8.GetBytes(sseData));
 
 		// Act
-		var outputStream = await _transformer.TransformAsync(inputStream, CancellationToken.None);
+		var outputStream = await _transformer.TransformAsync(inputStream, null, null, CancellationToken.None);
 		var events = await ParseEventsFromStream(outputStream);
 
 		// Assert - Should have at least 1 event (round_complete might not be written in time)
 		events.Should().HaveCountGreaterOrEqualTo(1);
-		events[0].Should().BeOfType<AskAiEvent.Chunk>();
+		events[0].Should().BeOfType<AskAiEvent.MessageChunk>();
 	}
 
 	[Fact]
@@ -139,7 +139,7 @@ public class AgentBuilderStreamTransformerTests
 		var inputStream = new MemoryStream(Encoding.UTF8.GetBytes(sseData));
 
 		// Act
-		var outputStream = await _transformer.TransformAsync(inputStream, CancellationToken.None);
+		var outputStream = await _transformer.TransformAsync(inputStream, null, null, CancellationToken.None);
 		var events = await ParseEventsFromStream(outputStream);
 
 
@@ -152,12 +152,12 @@ public class AgentBuilderStreamTransformerTests
 	private static async Task<List<AskAiEvent>> ParseEventsFromStream(Stream stream)
 	{
 		var events = new List<AskAiEvent>();
-		
+
 		// Copy to memory stream to ensure all data is available
 		var ms = new MemoryStream();
 		await stream.CopyToAsync(ms);
 		ms.Position = 0;
-		
+
 		using var reader = new StreamReader(ms, Encoding.UTF8);
 
 		while (!reader.EndOfStream)
@@ -216,7 +216,7 @@ public class LlmGatewayStreamTransformerTests
 		var inputStream = new MemoryStream(Encoding.UTF8.GetBytes(sseData));
 
 		// Act
-		var outputStream = await _transformer.TransformAsync(inputStream, CancellationToken.None);
+		var outputStream = await _transformer.TransformAsync(inputStream, null, null, CancellationToken.None);
 		var events = await ParseEventsFromStream(outputStream);
 
 		// Assert
@@ -226,16 +226,20 @@ public class LlmGatewayStreamTransformerTests
 		events[0].Should().BeOfType<AskAiEvent.ConversationStart>();
 		var convStart = events[0] as AskAiEvent.ConversationStart;
 		convStart!.ConversationId.Should().NotBeNullOrEmpty();
-		Guid.TryParse(convStart.ConversationId, out _).Should().BeTrue();
+
+		// convStart!.ConversationId.Should().Be("1");
+
+		_ = Guid.TryParse(convStart.ConversationId, out _).Should().BeTrue();
+
 
 		// Event 2: ai_message_chunk (first)
-		events[1].Should().BeOfType<AskAiEvent.Chunk>();
-		var chunk1 = events[1] as AskAiEvent.Chunk;
+		events[1].Should().BeOfType<AskAiEvent.MessageChunk>();
+		var chunk1 = events[1] as AskAiEvent.MessageChunk;
 		chunk1!.Content.Should().Be("Hello");
 
 		// Event 3: ai_message_chunk (second)
-		events[2].Should().BeOfType<AskAiEvent.Chunk>();
-		var chunk2 = events[2] as AskAiEvent.Chunk;
+		events[2].Should().BeOfType<AskAiEvent.MessageChunk>();
+		var chunk2 = events[2] as AskAiEvent.MessageChunk;
 		chunk2!.Content.Should().Be(" world");
 
 		// Event 4: tool_call -> Should be SearchToolCall with extracted query
@@ -251,8 +255,8 @@ public class LlmGatewayStreamTransformerTests
 		toolResult.Result.Should().Contain("Found 10 docs");
 
 		// Event 6: ai_message
-		events[5].Should().BeOfType<AskAiEvent.ChunkComplete>();
-		var complete = events[5] as AskAiEvent.ChunkComplete;
+		events[5].Should().BeOfType<AskAiEvent.MessageComplete>();
+		var complete = events[5] as AskAiEvent.MessageComplete;
 		complete!.FullContent.Should().Be("Hello world");
 
 		// Event 7: agent_end
@@ -265,13 +269,13 @@ public class LlmGatewayStreamTransformerTests
 		// Arrange
 		var sseData = """
 			event: agent_stream_output
-			data: 
+			data:
 
 			event: agent_stream_output
 			data: [null, {"type":"agent_start","id":"1","timestamp":1234567890,"data":{}}]
 
 			event: agent_stream_output
-			data: 
+			data:
 
 			event: agent_stream_output
 			data: [null, {"type":"agent_end","id":"2","timestamp":1234567891,"data":{}}]
@@ -281,7 +285,7 @@ public class LlmGatewayStreamTransformerTests
 		var inputStream = new MemoryStream(Encoding.UTF8.GetBytes(sseData));
 
 		// Act
-		var outputStream = await _transformer.TransformAsync(inputStream, CancellationToken.None);
+		var outputStream = await _transformer.TransformAsync(inputStream, null, null, CancellationToken.None);
 		var events = await ParseEventsFromStream(outputStream);
 
 		// Assert - Should only have 2 events
@@ -306,23 +310,167 @@ public class LlmGatewayStreamTransformerTests
 		var inputStream = new MemoryStream(Encoding.UTF8.GetBytes(sseData));
 
 		// Act
-		var outputStream = await _transformer.TransformAsync(inputStream, CancellationToken.None);
+		var outputStream = await _transformer.TransformAsync(inputStream, null, null, CancellationToken.None);
 		var events = await ParseEventsFromStream(outputStream);
 
 		// Assert - Should only have the message chunk, model events skipped
-		events.Should().HaveCount(1);
-		events[0].Should().BeOfType<AskAiEvent.Chunk>();
+		events.Should().HaveCount(2);
+		events[0].Should().BeOfType<AskAiEvent.ConversationStart>();
+		events[1].Should().BeOfType<AskAiEvent.MessageChunk>();
 	}
 
 	private static async Task<List<AskAiEvent>> ParseEventsFromStream(Stream stream)
 	{
 		var events = new List<AskAiEvent>();
-		
+
 		// Copy to memory stream to ensure all data is available
 		var ms = new MemoryStream();
 		await stream.CopyToAsync(ms);
 		ms.Position = 0;
-		
+
+		using var reader = new StreamReader(ms, Encoding.UTF8);
+
+		while (!reader.EndOfStream)
+		{
+			var line = await reader.ReadLineAsync();
+			if (line == null)
+				break;
+
+			if (line.StartsWith("data: ", StringComparison.Ordinal))
+			{
+				var json = line.Substring(6);
+				var evt = JsonSerializer.Deserialize<AskAiEvent>(json, AskAiEventJsonContext.Default.AskAiEvent);
+				if (evt != null)
+					events.Add(evt);
+			}
+		}
+
+		return events;
+	}
+}
+
+/// <summary>
+/// Parameterized tests for common behaviors expected from all stream transformers.
+/// These tests ensure consistency across different transformer implementations.
+/// Adding a new transformer? Just add it to StreamTransformerTestCases() and these tests will automatically run against it.
+/// </summary>
+public class StreamTransformerCommonBehaviorTests
+{
+	public static IEnumerable<object[]> StreamTransformerTestCases()
+	{
+		yield return new object[]
+		{
+			"AgentBuilderStreamTransformer",
+			new AgentBuilderStreamTransformer(NullLogger<AgentBuilderStreamTransformer>.Instance),
+			// Agent Builder SSE format for conversation_id_set
+			"""
+			event: conversation_id_set
+			data: {"data":{"conversation_id":"360222c5-76aa-405a-8316-703e1061b621"}}
+
+			event: message_chunk
+			data: {"data":{"text_chunk":"test"}}
+
+			"""
+		};
+		yield return new object[]
+		{
+			"LlmGatewayStreamTransformer",
+			new LlmGatewayStreamTransformer(NullLogger<LlmGatewayStreamTransformer>.Instance),
+			// LLM Gateway SSE format - minimal events
+			"""
+			event: agent_stream_output
+			data: [null, {"type":"ai_message_chunk","id":"1","timestamp":1234567890,"data":{"content":"test"}}]
+
+			"""
+		};
+	}
+
+	[Theory]
+	[MemberData(nameof(StreamTransformerTestCases))]
+	public async Task TransformAsync_WhenConversationIdIsNull_EmitsConversationStartEvent(
+		string transformerName,
+		IStreamTransformer transformer,
+		string sseData)
+	{
+		// Arrange
+		var inputStream = new MemoryStream(Encoding.UTF8.GetBytes(sseData));
+
+		// Act - Pass null conversationId to simulate new conversation
+		var outputStream = await transformer.TransformAsync(inputStream, null, null, CancellationToken.None);
+		var events = await ParseEventsFromStream(outputStream);
+
+		// Assert - Should have ConversationStart event
+		events.Should().ContainSingle(e => e is AskAiEvent.ConversationStart,
+			$"{transformerName} should emit ConversationStart when conversationId is null");
+
+		var conversationStart = events.OfType<AskAiEvent.ConversationStart>().First();
+		conversationStart.ConversationId.Should().NotBeNullOrEmpty(
+			$"{transformerName} should have a non-empty conversation ID in ConversationStart event");
+
+		// For LlmGateway, when conversationId is null, we generate it with "elastic-docs-" prefix
+		// For AgentBuilder, the conversation ID comes from the SSE event and may have a different format
+		if (transformerName == "LlmGatewayStreamTransformer")
+		{
+			conversationStart.ConversationId.Should().StartWith("elastic-docs-",
+				$"{transformerName} should generate conversation ID with 'elastic-docs-' prefix when conversationId is null");
+		}
+	}
+
+	[Theory]
+	[MemberData(nameof(StreamTransformerTestCases))]
+	public async Task TransformAsync_ConversationStartEvent_HasValidTimestamp(
+		string transformerName,
+		IStreamTransformer transformer,
+		string sseData)
+	{
+		// Arrange
+		var inputStream = new MemoryStream(Encoding.UTF8.GetBytes(sseData));
+
+		// Act
+		var outputStream = await transformer.TransformAsync(inputStream, null, null, CancellationToken.None);
+		var events = await ParseEventsFromStream(outputStream);
+
+		// Assert
+		var conversationStart = events.OfType<AskAiEvent.ConversationStart>().FirstOrDefault();
+		conversationStart.Should().NotBeNull(
+			$"{transformerName} should emit ConversationStart event");
+
+		conversationStart!.Timestamp.Should().BeGreaterThan(0,
+			$"{transformerName} ConversationStart should have a valid timestamp");
+	}
+
+	[Theory]
+	[MemberData(nameof(StreamTransformerTestCases))]
+	public async Task TransformAsync_ConversationStartEvent_HasValidId(
+		string transformerName,
+		IStreamTransformer transformer,
+		string sseData)
+	{
+		// Arrange
+		var inputStream = new MemoryStream(Encoding.UTF8.GetBytes(sseData));
+
+		// Act
+		var outputStream = await transformer.TransformAsync(inputStream, null, null, CancellationToken.None);
+		var events = await ParseEventsFromStream(outputStream);
+
+		// Assert
+		var conversationStart = events.OfType<AskAiEvent.ConversationStart>().FirstOrDefault();
+		conversationStart.Should().NotBeNull(
+			$"{transformerName} should emit ConversationStart event");
+
+		conversationStart!.Id.Should().NotBeNullOrEmpty(
+			$"{transformerName} ConversationStart should have a non-empty event ID");
+	}
+
+	private static async Task<List<AskAiEvent>> ParseEventsFromStream(Stream stream)
+	{
+		var events = new List<AskAiEvent>();
+
+		// Copy to memory stream to ensure all data is available
+		var ms = new MemoryStream();
+		await stream.CopyToAsync(ms);
+		ms.Position = 0;
+
 		using var reader = new StreamReader(ms, Encoding.UTF8);
 
 		while (!reader.EndOfStream)
