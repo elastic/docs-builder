@@ -1,5 +1,5 @@
 import { AskAiEvent, AskAiEventSchema } from './AskAiEvent'
-import { useAiProvider } from './aiProviderStore'
+import { useAiProvider } from './chat.store'
 import { useFetchEventSource } from './useFetchEventSource'
 import { useMessageThrottling } from './useMessageThrottling'
 import { EventSourceMessage } from '@microsoft/fetch-event-source'
@@ -11,7 +11,7 @@ const MESSAGE_THROTTLE_MS = 25 // Throttle messages to prevent UI flooding
 
 export const AskAiRequestSchema = z.object({
     message: z.string(),
-    threadId: z.string().optional(),
+    conversationId: z.string().optional(),
 })
 
 export type AskAiRequest = z.infer<typeof AskAiRequestSchema>
@@ -26,7 +26,7 @@ export interface UseAskAiResponse {
 interface Props {
     onEvent?: (event: AskAiEvent) => void
     onError?: (error: Error) => void
-    threadId?: string
+    conversationId?: string
 }
 
 export const useAskAi = (props: Props): UseAskAiResponse => {
@@ -61,18 +61,49 @@ export const useAskAi = (props: Props): UseAskAiResponse => {
     const onMessage = useCallback(
         (sseEvent: EventSourceMessage) => {
             try {
-                // Parse and validate the canonical AskAiEvent format
+                // Parse JSON first
                 const rawData = JSON.parse(sseEvent.data)
-                const askAiEvent = AskAiEventSchema.parse(rawData)
 
-                processMessage(askAiEvent)
+                // Use safeParse with reportInput to include input data in validation errors
+                const result = AskAiEventSchema.safeParse(rawData, {
+                    reportInput: true,
+                })
+
+                if (!result.success) {
+                    // Log detailed validation errors with input data
+                    console.error('[AI Provider] Failed to parse SSE event:', {
+                        eventId: sseEvent.id || 'unknown',
+                        eventType: sseEvent.event || 'unknown',
+                        rawEventData: sseEvent.data,
+                        validationErrors: result.error.issues,
+                    })
+                    throw new Error(
+                        `Event validation failed: ${result.error.issues.map((e) => `${e.path.join('.')}: ${e.message}`).join('; ')}`
+                    )
+                }
+
+                processMessage(result.data)
             } catch (error) {
+                // Handle JSON parsing errors or other unexpected errors
+                if (
+                    error instanceof Error &&
+                    error.message.includes('Event validation failed')
+                ) {
+                    // Already logged above, just re-throw
+                    throw error
+                }
+
+                // Log JSON parsing or other errors
                 console.error('[AI Provider] Failed to parse SSE event:', {
-                    eventData: sseEvent.data,
+                    eventId: sseEvent.id || 'unknown',
+                    eventType: sseEvent.event || 'unknown',
+                    rawEventData: sseEvent.data,
                     error:
                         error instanceof Error ? error.message : String(error),
+                    errorStack:
+                        error instanceof Error ? error.stack : undefined,
                 })
-                // Re-throw to trigger onError handler
+
                 throw new Error(
                     `Event parsing failed: ${error instanceof Error ? error.message : String(error)}`
                 )
@@ -86,6 +117,12 @@ export const useAskAi = (props: Props): UseAskAiResponse => {
         headers,
         onMessage,
         onError: (error) => {
+            console.error('[AI Provider] Error in useFetchEventSource:', {
+                errorMessage: error.message,
+                errorStack: error.stack,
+                errorName: error.name,
+                fullError: error,
+            })
             setError(error)
             props.onError?.(error)
         },
@@ -99,7 +136,10 @@ export const useAskAi = (props: Props): UseAskAiResponse => {
                 setEvents([])
                 clearQueue()
                 lastSentQuestionRef.current = question
-                const payload = createAskAiRequest(question, props.threadId)
+                const payload = createAskAiRequest(
+                    question,
+                    props.conversationId
+                )
 
                 try {
                     await sendMessage(payload)
@@ -111,7 +151,7 @@ export const useAskAi = (props: Props): UseAskAiResponse => {
                 }
             }
         },
-        [props.threadId, sendMessage, abort, clearQueue]
+        [props.conversationId, sendMessage, abort, clearQueue]
     )
 
     useEffect(() => {

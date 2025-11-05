@@ -11,8 +11,8 @@ namespace Elastic.Documentation.Api.Core.AskAi;
 /// </summary>
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
 [JsonDerivedType(typeof(ConversationStart), typeDiscriminator: "conversation_start")]
-[JsonDerivedType(typeof(Chunk), typeDiscriminator: "chunk")]
-[JsonDerivedType(typeof(ChunkComplete), typeDiscriminator: "chunk_complete")]
+[JsonDerivedType(typeof(MessageChunk), typeDiscriminator: "message_chunk")]
+[JsonDerivedType(typeof(MessageComplete), typeDiscriminator: "message_complete")]
 [JsonDerivedType(typeof(SearchToolCall), typeDiscriminator: "search_tool_call")]
 [JsonDerivedType(typeof(ToolCall), typeDiscriminator: "tool_call")]
 [JsonDerivedType(typeof(ToolResult), typeDiscriminator: "tool_result")]
@@ -33,7 +33,7 @@ public abstract record AskAiEvent(string Id, long Timestamp)
 	/// <summary>
 	/// Streaming text chunk from AI
 	/// </summary>
-	public sealed record Chunk(
+	public sealed record MessageChunk(
 		string Id,
 		long Timestamp,
 		string Content
@@ -42,7 +42,7 @@ public abstract record AskAiEvent(string Id, long Timestamp)
 	/// <summary>
 	/// Complete message when streaming is done
 	/// </summary>
-	public sealed record ChunkComplete(
+	public sealed record MessageComplete(
 		string Id,
 		long Timestamp,
 		string FullContent
@@ -111,8 +111,8 @@ public abstract record AskAiEvent(string Id, long Timestamp)
 /// </summary>
 [JsonSerializable(typeof(AskAiEvent))]
 [JsonSerializable(typeof(AskAiEvent.ConversationStart))]
-[JsonSerializable(typeof(AskAiEvent.Chunk))]
-[JsonSerializable(typeof(AskAiEvent.ChunkComplete))]
+[JsonSerializable(typeof(AskAiEvent.MessageChunk))]
+[JsonSerializable(typeof(AskAiEvent.MessageComplete))]
 [JsonSerializable(typeof(AskAiEvent.SearchToolCall))]
 [JsonSerializable(typeof(AskAiEvent.ToolCall))]
 [JsonSerializable(typeof(AskAiEvent.ToolResult))]

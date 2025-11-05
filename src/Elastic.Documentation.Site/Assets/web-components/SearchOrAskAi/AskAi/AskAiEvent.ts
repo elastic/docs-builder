@@ -4,8 +4,8 @@ import * as z from 'zod'
 // Event type constants for type-safe referencing
 export const EventTypes = {
     CONVERSATION_START: 'conversation_start',
-    CHUNK: 'chunk',
-    CHUNK_COMPLETE: 'chunk_complete',
+    MESSAGE_CHUNK: 'message_chunk',
+    MESSAGE_COMPLETE: 'message_complete',
     SEARCH_TOOL_CALL: 'search_tool_call',
     TOOL_CALL: 'tool_call',
     TOOL_RESULT: 'tool_result',
@@ -23,14 +23,14 @@ export const ConversationStartEventSchema = z.object({
 })
 
 export const ChunkEventSchema = z.object({
-    type: z.literal(EventTypes.CHUNK),
+    type: z.literal(EventTypes.MESSAGE_CHUNK),
     id: z.string(),
     timestamp: z.number(),
     content: z.string(),
 })
 
 export const ChunkCompleteEventSchema = z.object({
-    type: z.literal(EventTypes.CHUNK_COMPLETE),
+    type: z.literal(EventTypes.MESSAGE_COMPLETE),
     id: z.string(),
     timestamp: z.number(),
     fullContent: z.string(),

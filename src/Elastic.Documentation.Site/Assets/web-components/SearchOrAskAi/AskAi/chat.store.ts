@@ -1,11 +1,13 @@
 import { v4 as uuidv4 } from 'uuid'
 import { create } from 'zustand/react'
 
+export type AiProvider = 'AgentBuilder' | 'LlmGateway'
+
 export interface ChatMessage {
     id: string
     type: 'user' | 'ai'
     content: string
-    threadId: string
+    conversationId: string
     timestamp: number
     status?: 'streaming' | 'complete' | 'error'
     question?: string // For AI messages, store the question
@@ -16,7 +18,8 @@ const sentAiMessageIds = new Set<string>()
 
 interface ChatState {
     chatMessages: ChatMessage[]
-    threadId: string | null
+    conversationId: string | null
+    aiProvider: AiProvider
     actions: {
         submitQuestion: (question: string) => void
         updateAiMessage: (
@@ -24,7 +27,8 @@ interface ChatState {
             content: string,
             status: ChatMessage['status']
         ) => void
-        setThreadId: (threadId: string) => void
+        setConversationId: (conversationId: string) => void
+        setAiProvider: (provider: AiProvider) => void
         clearChat: () => void
         hasMessageBeenSent: (id: string) => boolean
         markMessageAsSent: (id: string) => void
@@ -33,7 +37,8 @@ interface ChatState {
 
 export const chatStore = create<ChatState>((set) => ({
     chatMessages: [],
-    threadId: null, // Start with null - will be set by backend on first request
+    conversationId: null, // Start with null - will be set by backend on first request
+    aiProvider: 'LlmGateway', // Default to LLM Gateway
     actions: {
         submitQuestion: (question: string) => {
             set((state) => {
@@ -41,7 +46,7 @@ export const chatStore = create<ChatState>((set) => ({
                     id: uuidv4(),
                     type: 'user',
                     content: question,
-                    threadId: state.threadId ?? '',
+                    conversationId: state.conversationId ?? '',
                     timestamp: Date.now(),
                 }
 
@@ -50,7 +55,7 @@ export const chatStore = create<ChatState>((set) => ({
                     type: 'ai',
                     content: '',
                     question,
-                    threadId: state.threadId ?? '',
+                    conversationId: state.conversationId ?? '',
                     timestamp: Date.now(),
                     status: 'streaming',
                 }
@@ -77,13 +82,17 @@ export const chatStore = create<ChatState>((set) => ({
             }))
         },
 
-        setThreadId: (threadId: string) => {
-            set({ threadId })
+        setConversationId: (conversationId: string) => {
+            set({ conversationId })
+        },
+
+        setAiProvider: (provider: AiProvider) => {
+            set({ aiProvider: provider })
         },
 
         clearChat: () => {
             sentAiMessageIds.clear()
-            set({ chatMessages: [], threadId: null })
+            set({ chatMessages: [], conversationId: null })
         },
 
         hasMessageBeenSent: (id: string) => sentAiMessageIds.has(id),
@@ -95,5 +104,7 @@ export const chatStore = create<ChatState>((set) => ({
 }))
 
 export const useChatMessages = () => chatStore((state) => state.chatMessages)
-export const useThreadId = () => chatStore((state) => state.threadId)
+export const useConversationId = () =>
+    chatStore((state) => state.conversationId)
+export const useAiProvider = () => chatStore((state) => state.aiProvider)
 export const useChatActions = () => chatStore((state) => state.actions)

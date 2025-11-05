@@ -1,5 +1,5 @@
 /** @jsxImportSource @emotion/react */
-import { useAiProviderStore } from './aiProviderStore'
+import { useChatActions, useAiProvider, type AiProvider } from './chat.store'
 import { EuiRadioGroup } from '@elastic/eui'
 import type { EuiRadioGroupOption } from '@elastic/eui'
 import { css } from '@emotion/react'
@@ -22,16 +22,15 @@ const options: EuiRadioGroupOption[] = [
 ]
 
 export const AiProviderSelector = () => {
-    const { provider, setProvider } = useAiProviderStore()
+    const provider = useAiProvider()
+    const { setAiProvider } = useChatActions()
 
     return (
         <div css={containerStyles}>
             <EuiRadioGroup
                 options={options}
                 idSelected={provider}
-                onChange={(id) =>
-                    setProvider(id as 'AgentBuilder' | 'LlmGateway')
-                }
+                onChange={(id) => setAiProvider(id as AiProvider)}
                 name="aiProvider"
                 legend={{
                     children: 'AI Provider',

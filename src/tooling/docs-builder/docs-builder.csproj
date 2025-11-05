@@ -23,6 +23,8 @@
     <PackageReference Include="ConsoleAppFramework" />
     <PackageReference Include="Westwind.AspNetCore.LiveReload" />
     <PackageReference Include="System.IO.Abstractions.TestingHelpers" />
+    <PackageReference Include="Elastic.OpenTelemetry" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)' == 'Debug'">

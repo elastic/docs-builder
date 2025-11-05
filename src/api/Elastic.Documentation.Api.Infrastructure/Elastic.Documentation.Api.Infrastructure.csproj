@@ -19,6 +19,9 @@
       <FrameworkReference Include="Microsoft.AspNetCore.App" />
       <PackageReference Include="Elastic.Clients.Elasticsearch" />
       <PackageReference Include="NetEscapades.EnumGenerators" />
+      <PackageReference Include="Elastic.OpenTelemetry" />
+      <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" />
+      <PackageReference Include="OpenTelemetry.Instrumentation.Http" />
     </ItemGroup>
   
 </Project>
