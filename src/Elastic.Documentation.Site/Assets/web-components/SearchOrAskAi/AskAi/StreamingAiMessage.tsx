@@ -4,10 +4,9 @@ import { ChatMessage } from './ChatMessage'
 import {
     ChatMessage as ChatMessageType,
     useChatActions,
-    useThreadId,
+    useConversationId,
 } from './chat.store'
 import { useAskAi } from './useAskAi'
-import * as React from 'react'
 import { useEffect, useRef } from 'react'
 
 interface StreamingAiMessageProps {
@@ -27,20 +26,20 @@ export const StreamingAiMessage = ({
         updateAiMessage,
         hasMessageBeenSent,
         markMessageAsSent,
-        setThreadId,
+        setConversationId,
     } = useChatActions()
-    const threadId = useThreadId()
+    const conversationId = useConversationId()
     const contentRef = useRef('')
 
     const { events, sendQuestion, abort, error } = useAskAi({
-        threadId: threadId ?? undefined,
+        conversationId: conversationId ?? undefined,
         onEvent: (event) => {
             if (event.type === EventTypes.CONVERSATION_START) {
                 // Capture conversationId from backend on first request
-                if (event.conversationId && !threadId) {
-                    setThreadId(event.conversationId)
+                if (event.conversationId && !conversationId) {
+                    setConversationId(event.conversationId)
                 }
-            } else if (event.type === EventTypes.CHUNK) {
+            } else if (event.type === EventTypes.MESSAGE_CHUNK) {
                 contentRef.current += event.content
             } else if (event.type === EventTypes.ERROR) {
                 // Handle error events from the stream
@@ -55,10 +54,21 @@ export const StreamingAiMessage = ({
                     error
                 )
             } else if (event.type === EventTypes.CONVERSATION_END) {
-                updateAiMessage(message.id, contentRef.current, 'complete')
+                updateAiMessage(
+                    message.id,
+                    message.content || contentRef.current,
+                    'complete'
+                )
             }
         },
         onError: (error: ApiError | Error | null) => {
+            console.error('[AI Provider] Error in StreamingAiMessage:', {
+                messageId: message.id,
+                errorMessage: error?.message,
+                errorStack: error?.stack,
+                errorName: error?.name,
+                fullError: error,
+            })
             updateAiMessage(
                 message.id,
                 message.content || error?.message || 'Error occurred',
@@ -96,15 +106,16 @@ export const StreamingAiMessage = ({
         markMessageAsSent,
     ])
 
+    // Always use contentRef.current if it has content (regardless of status)
+    // This way we don't need to save to message.content and can just use streamingContent
+    const streamingContentToPass =
+        isLast && contentRef.current ? contentRef.current : undefined
+
     return (
         <ChatMessage
             message={message}
             events={isLast ? events : []}
-            streamingContent={
-                isLast && message.status === 'streaming'
-                    ? contentRef.current
-                    : undefined
-            }
+            streamingContent={streamingContentToPass}
             error={message.error ?? (isLast ? error : null)}
             showError={showError}
         />

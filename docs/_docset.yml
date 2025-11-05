@@ -39,10 +39,10 @@ toc:
       - folder: cumulative-docs
         children:
           - file: index.md
-          - file: guidelines.md
-          - file: badge-placement.md
-          - file: example-scenarios.md
-          - file: reference.md
+          - hidden: guidelines.md
+          - hidden: badge-placement.md
+          - hidden: example-scenarios.md
+          - hidden: reference.md
       - file: branching-strategy.md
       - file: add-repo.md
       - file: release-new-version.md

@@ -2,6 +2,8 @@
 navigation_title: "Quick reference"
 ---
 
+<!-- TODO docs writers: A version of this quick reference also exists at elastic.co/docs. Try to keep these in sync!! -->
+
 # Syntax quick reference
 
 This page offers quick guidance on Elastic Docs v3 syntax, including usage tips. Elements are in alphabetical order. The [full syntax guide](index.md) provides implementation details.
@@ -114,7 +116,7 @@ A default anchor is automatically created for each [heading](#headings), in the 
 
 ## Applies to
 
-Tags that identify technical contexts: the feature base (stack/serverless), deployments, and project types that a piece of content "applies to." Use `applies_to` tags to help users determine whether content is right for their deployments and configuration. These tags are a [version content pattern](/contribute/cumulative-docs/example-scenarios.md) in Elastic Docs v3.
+Tags that identify technical contexts: the feature base (stack/serverless), deployments, and project types that a piece of content "applies to." Use `applies_to` tags to help users determine whether content is right for their deployments and configuration. These tags are a [version content pattern](https://www.elastic.co/docs/contribute-docs/how-to/cumulative-docs/example-scenarios) in Elastic Docs v3.
 
 **Example: Section tag**
 
@@ -391,7 +393,7 @@ Standard Markdown images: `[alt text]` in square brackets, followed by the image
 
 **DOs**<br>
 ✅ **Do:** Store images in a centralized directory<br>
-✅ **Do:** Follow v3 [best practices for screenshots](/contribute/cumulative-docs/badge-placement.md#images)<br>
+✅ **Do:** Follow v3 [best practices for screenshots](https://www.elastic.co/docs/contribute-docs/how-to/cumulative-docs/badge-placement#images)<br>
 ✅ **Do:** Specify `:screenshot:` in an [image directive](images.md#screenshots) to add a border
 
 **DON'Ts**<br>
