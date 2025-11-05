@@ -448,7 +448,6 @@ export const ChatMessage = ({
                     <EuiFlexItem>
                         <SearchOrAskAiErrorCallout 
                             error={error as ApiError | Error | null} 
-                            onCountdownChange={onCountdownChange}
                             inline={true}
                         />
                     </EuiFlexItem>
