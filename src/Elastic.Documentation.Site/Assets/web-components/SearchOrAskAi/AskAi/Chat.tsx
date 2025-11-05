@@ -2,7 +2,11 @@
 import { AiProviderSelector } from './AiProviderSelector'
 import { AskAiSuggestions } from './AskAiSuggestions'
 import { ChatMessageList } from './ChatMessageList'
-import {useChatActions, useChatMessages, useConversationId} from './chat.store'
+import {
+    useChatActions,
+    useChatMessages,
+    useConversationId,
+} from './chat.store'
 import {
     useEuiOverflowScroll,
     EuiButtonEmpty,
@@ -126,11 +130,9 @@ export const Chat = () => {
         >
             <EuiSpacer size="m" />
             ConversationId: {conversationId}
-
             {messages.length > 0 && (
                 <NewConversationHeader onClick={clearChat} />
             )}
-
             <EuiFlexItem grow={true} css={scrollContainerStyles}>
                 <div ref={scrollRef} css={dynamicScrollableStyles}>
                     {messages.length === 0 ? (
@@ -169,7 +171,6 @@ export const Chat = () => {
                     )}
                 </div>
             </EuiFlexItem>
-
             {/* Input */}
             <EuiFlexItem grow={false}>
                 <EuiSpacer size="s" />
