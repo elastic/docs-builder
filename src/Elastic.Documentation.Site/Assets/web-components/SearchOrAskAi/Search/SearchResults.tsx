@@ -1,6 +1,6 @@
 import { useSearchTerm } from './search.store'
 import { SearchResultItem, useSearchQuery } from './useSearchQuery'
-import { useCooldown } from '../modal.store'
+import { SearchOrAskAiErrorCallout } from '../SearchOrAskAiErrorCallout'
 import {
     useEuiFontSize,
     EuiLink,
@@ -11,13 +11,12 @@ import {
     EuiIcon,
     EuiPagination,
     EuiHorizontalRule,
-    EuiCallOut,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
 import { useDebounce } from '@uidotdev/usehooks'
 import DOMPurify from 'dompurify'
-import { useEffect, useMemo, useState, useRef, memo } from 'react'
-import { ApiError, getErrorMessage, isApiError } from '../errorHandling'
+import { useEffect, useMemo, useState, memo } from 'react'
+import { ApiError } from '../errorHandling'
 
 interface SearchResultsProps {
     onCountdownChange?: (countdown: number | null) => void
@@ -27,142 +26,30 @@ export const SearchResults = ({ onCountdownChange }: SearchResultsProps) => {
     const searchTerm = useSearchTerm()
     const [activePage, setActivePage] = useState(0)
     const debouncedSearchTerm = useDebounce(searchTerm, 300)
-    const storeCooldown = useCooldown()
-    const [countdown, setCountdown] = useState<number | null>(storeCooldown)
-    const intervalRef = useRef<number | null>(null)
     
     useEffect(() => {
         setActivePage(0)
     }, [debouncedSearchTerm])
+    
     const { data, error, isLoading, isFetching } = useSearchQuery({
         searchTerm,
         pageNumber: activePage + 1,
     })
     const { euiTheme } = useEuiTheme()
 
-    const previousErrorRetryAfterRef = useRef<number | null>(null)
-    useEffect(() => {
-        if (error && isApiError(error) && error.statusCode === 429) {
-            const apiError = error as ApiError
-            const retryAfter = apiError.retryAfter
-            if (retryAfter !== undefined && retryAfter !== null) {
-                const isNewError = previousErrorRetryAfterRef.current !== retryAfter
-                
-                // Only set cooldown if:
-                // 1. This is a new error (different retryAfter from previous)
-                // 2. AND either:
-                //    - storeCooldown is null AND we haven't processed any error yet (first error)
-                //    - OR storeCooldown exists and is less than this error's retryAfter (update to longer cooldown)
-                // Don't reset if storeCooldown is null AND we've already processed this error (cooldown expired)
-                const shouldSetCooldown = isNewError && (
-                    (storeCooldown === null && previousErrorRetryAfterRef.current === null) ||
-                    (storeCooldown !== null && storeCooldown < retryAfter)
-                )
-                
-                if (shouldSetCooldown) {
-                    setCountdown(retryAfter)
-                    onCountdownChange?.(retryAfter)
-                    previousErrorRetryAfterRef.current = retryAfter
-                }
-            }
-        } else if (!error) {
-            previousErrorRetryAfterRef.current = null
-        }
-    }, [error, onCountdownChange, storeCooldown])
-    
-    // Start/stop timer based on store cooldown
-    useEffect(() => {
-        // If there's an active cooldown in the store and no timer running, start one
-        if (storeCooldown !== null && storeCooldown > 0 && intervalRef.current === null) {
-            setCountdown(storeCooldown)
-            intervalRef.current = setInterval(() => {
-                setCountdown((prev) => {
-                    // If already cleared or invalid, stop timer
-                    if (prev === null || prev <= 0) {
-                        if (intervalRef.current) {
-                            clearInterval(intervalRef.current)
-                            intervalRef.current = null
-                        }
-                        onCountdownChange?.(null)
-                        return null
-                    }
-                    const newValue = prev - 1
-                    // If countdown reaches 0 or below, clear it immediately
-                    if (newValue <= 0) {
-                        if (intervalRef.current) {
-                            clearInterval(intervalRef.current)
-                            intervalRef.current = null
-                        }
-                        onCountdownChange?.(null)
-                        return null
-                    }
-                    onCountdownChange?.(newValue)
-                    return newValue
-                })
-            }, 1000) as unknown as number
-        } else if ((storeCooldown === null || storeCooldown <= 0) && intervalRef.current !== null) {
-            // Stop timer if cooldown expired
-            clearInterval(intervalRef.current)
-            intervalRef.current = null
-            setCountdown(null)
-        }
-        
-        return () => {
-            // Clean up interval on unmount
-            if (intervalRef.current !== null) {
-                clearInterval(intervalRef.current)
-                intervalRef.current = null
-            }
-        }
-    }, [storeCooldown, onCountdownChange])
-    
-    // Sync local countdown with store when store changes externally (only when timer not running)
-    useEffect(() => {
-        // Only sync if timer is not running to avoid interfering with active countdown
-        if (intervalRef.current === null) {
-            if (storeCooldown !== countdown) {
-                // Only sync if store has a value - if store is null, countdown should stay null (cooldown expired)
-                if (storeCooldown !== null && storeCooldown > 0) {
-                    setCountdown(storeCooldown)
-                } else if (storeCooldown === null) {
-                    // Store is cleared, ensure countdown is also cleared
-                    setCountdown(null)
-                }
-            }
-        }
-    }, [storeCooldown, countdown])
-
     if (!searchTerm) {
         return null
     }
 
-    const displayCountdown: number | null = storeCooldown ?? ((error as ApiError)?.retryAfter ?? null)
+    // Show error callout if there's an error
     if (error) {
-        // For 429 errors, hide when countdown has expired
-        if ((error as ApiError)?.statusCode === 429) {
-            if (storeCooldown === null || storeCooldown <= 0 || (countdown === null || countdown <= 0)) {
-                return null
-            }
-        }
-    
-        // Update error's retryAfter with current countdown for display
-        if (displayCountdown !== null && displayCountdown > 0 && isApiError(error)) {
-            (error as ApiError).retryAfter = displayCountdown
-        }
-        const errorMessage = getErrorMessage(error)
         return (
-            <>
-            <EuiCallOut
+            <SearchOrAskAiErrorCallout
+                error={error as ApiError | Error | null}
+                onCountdownChange={onCountdownChange}
                 title="Error loading search results"
-                color="danger"
-                iconType="error"
-                size="s"
-            >
-                {errorMessage}
-            </EuiCallOut>
-            <EuiSpacer size="s" />
-            </>
-         )
+            />
+        )
     }
 
     return (

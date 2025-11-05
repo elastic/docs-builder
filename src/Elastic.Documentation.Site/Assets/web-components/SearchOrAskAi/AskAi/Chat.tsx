@@ -4,7 +4,7 @@ import { AskAiSuggestions } from './AskAiSuggestions'
 import { ChatMessageList } from './ChatMessageList'
 import { useChatActions, useChatMessages } from './chat.store'
 import { useCooldown, useModalActions, modalStore } from '../modal.store'
-import { ApiError, getErrorMessage } from '../errorHandling'
+import { SearchOrAskAiErrorCallout } from '../SearchOrAskAiErrorCallout'
 import {
     useEuiOverflowScroll,
     EuiButtonEmpty,
@@ -15,7 +15,6 @@ import {
     EuiEmptyPrompt,
     EuiSpacer,
     EuiTitle,
-    EuiCallOut,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -261,27 +260,12 @@ export const Chat = () => {
                                 }
                             />
                             {/* Show error callout when there's a cooldown, even on initial page */}
-                            {countdown !== null && countdown > 0 && (
-                                <>
-                                    <EuiSpacer size="m" />
-                                    <div css={messagesStyles}>
-                                        <EuiCallOut
-                                            title="Sorry, there was an error"
-                                            color="danger"
-                                            iconType="error"
-                                            size="s"
-                                        >
-                                            {(() => {
-                                                const syntheticError = new Error('Rate limit exceeded. Please wait before trying again.') as ApiError
-                                                syntheticError.name = 'ApiError'
-                                                syntheticError.statusCode = 429
-                                                syntheticError.retryAfter = countdown
-                                                return getErrorMessage(syntheticError)
-                                            })()}
-                                        </EuiCallOut>
-                                    </div>
-                                </>
-                            )}
+                            <div css={messagesStyles}>
+                                <SearchOrAskAiErrorCallout 
+                                    error={null}
+                                    onCountdownChange={handleCountdownChange}
+                                />
+                            </div>
                         </>
                     ) : (
                         <div css={messagesStyles}>
