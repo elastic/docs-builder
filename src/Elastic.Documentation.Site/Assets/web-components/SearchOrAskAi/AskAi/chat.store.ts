@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid'
 import { create } from 'zustand/react'
-import { ApiError, isApiError } from '../errorHandling'
+import { ApiError, isRateLimitError } from '../errorHandling'
 
 export interface ChatMessage {
     id: string
@@ -97,8 +97,7 @@ export const chatStore = create<ChatState>((set) => ({
                     if (
                         msg.status === 'error' &&
                         msg.error &&
-                        (!isApiError(msg.error) ||
-                            (msg.error as ApiError).statusCode !== 429)
+                        !isRateLimitError(msg.error)
                     ) {
                         return { ...msg, status: 'complete', error: null }
                     }

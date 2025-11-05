@@ -1,5 +1,4 @@
 import { SearchOrAskAiErrorCallout } from '../SearchOrAskAiErrorCallout'
-import { ApiError } from '../errorHandling'
 import { useSearchTerm } from './search.store'
 import { SearchResultItem, useSearchQuery } from './useSearchQuery'
 import {
@@ -40,7 +39,7 @@ export const SearchResults = () => {
     return (
         <>
             <SearchOrAskAiErrorCallout
-                error={error as ApiError | Error | null}
+                error={error}
                 title="Error loading search results"
             />
             {error && <EuiSpacer size="s" />}

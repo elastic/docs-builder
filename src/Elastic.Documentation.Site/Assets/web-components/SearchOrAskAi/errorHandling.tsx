@@ -22,14 +22,13 @@ export function getErrorCode(statusCode: number): ErrorCode {
 
 export function getErrorMessage(error: ApiError | Error | null): ReactNode {
     if (isApiError(error)) {
-        const apiError = error as ApiError
-        switch (getErrorCode(apiError.statusCode)) {
+        switch (getErrorCode(error.statusCode)) {
             case '429':
                 return (
                     <p>
                         You have reached the temporary request limit. Wait{' '}
-                        {apiError.retryAfter} second
-                        {apiError.retryAfter !== 1 ? 's' : ''}, then try again.
+                        {error.retryAfter} second
+                        {error.retryAfter !== 1 ? 's' : ''}, then try again.
                     </p>
                 )
             case '503':
@@ -93,7 +92,7 @@ export async function createApiErrorFromResponse(
             message: message ?? '',
             statusCode: statusCode,
         })
-        if (statusCode === 429 || statusCode === 503) {
+        if (statusCode === 429 || statusCode === 503) { // Check raw statusCode for retryable errors
             const retryAfterHeader = response.headers.get('Retry-After')
             const rateLimitScopeHeader =
                 response.headers.get('X-Rate-Limit-Scope')
@@ -141,19 +140,31 @@ export function shouldRetry(
     // Don't retry if we've exhausted retries
     if (failureCount >= 3) return false
     // Don't retry for 429 (rate limit) or 503 (service unavailable)
-    if (error && isApiError(error)) {
-        if (error.statusCode === 429 || error.statusCode === 503) {
-            return false
-        }
+    if (error && isRetryableError(error)) {
+        return false
     }
     // Retry for other errors (up to 3 times)
     return true
 }
 
-export function isApiError(error: ApiError | Error | null): boolean {
+export function isApiError(error: ApiError | Error | null): error is ApiError {
     return (
         error instanceof Error &&
         'statusCode' in error &&
         error.name === 'ApiError'
     )
+}
+
+/**
+ * Checks if an error is a rate limit error (429).
+ */
+export function isRateLimitError(error: ApiError | Error | null): boolean {
+    return isApiError(error) && error.statusCode === 429
+}
+
+/**
+ * Checks if an error is retryable (429 or 503).
+ */
+export function isRetryableError(error: ApiError | Error | null): boolean {
+    return isApiError(error) && (error.statusCode === 429 || error.statusCode === 503)
 }

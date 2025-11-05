@@ -449,7 +449,7 @@ export const ChatMessage = ({
                         </EuiFlexItem>
                         <EuiFlexItem>
                             <SearchOrAskAiErrorCallout
-                                error={error as ApiError | Error | null}
+                                error={error}
                                 inline={true}
                             />
                         </EuiFlexItem>

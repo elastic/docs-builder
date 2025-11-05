@@ -1,4 +1,4 @@
-import { ApiError, isApiError } from '../errorHandling'
+import { ApiError, isRateLimitError } from '../errorHandling'
 import {
     useCooldown,
     useModalActions,
@@ -19,13 +19,8 @@ export function useRateLimitHandler(error: ApiError | Error | null) {
         if (cooldownJustFinished) {
             return
         }
-        if (
-            error &&
-            isApiError(error) &&
-            (error as ApiError).statusCode === 429
-        ) {
-            const apiError = error as ApiError
-            const retryAfter = apiError.retryAfter
+        if (error && isRateLimitError(error)) {
+            const retryAfter = error.retryAfter
             if (retryAfter !== undefined && retryAfter !== null) {
                 const isNewError =
                     previousErrorRetryAfterRef.current !== retryAfter
@@ -37,7 +32,7 @@ export function useRateLimitHandler(error: ApiError | Error | null) {
                         (storeCooldown !== null && storeCooldown < retryAfter))
 
                 if (shouldSetCooldown) {
-                    setCooldown(retryAfter, apiError)
+                    setCooldown(retryAfter, error)
                     previousErrorRetryAfterRef.current = retryAfter
                 }
             }

@@ -1,4 +1,4 @@
-import { ApiError, getErrorMessage, isApiError } from './errorHandling'
+import { ApiError, getErrorMessage, isApiError, isRateLimitError } from './errorHandling'
 import { useRateLimitHandler } from './hooks/useRateLimitHandler'
 import { useIsCooldownActive } from './hooks/useIsCooldownActive'
 import {
@@ -25,10 +25,7 @@ export function SearchOrAskAiErrorCallout({
     const last429Error = useLast429Error()
     const displayError = error || last429Error
 
-    const is429Error =
-        displayError &&
-        isApiError(displayError) &&
-        (displayError as ApiError).statusCode === 429
+    const is429Error = displayError && isRateLimitError(displayError)
 
     useRateLimitHandler(is429Error ? displayError : null)
 
@@ -74,8 +71,8 @@ export function SearchOrAskAiErrorCallout({
         syntheticError = newSyntheticError
     }
 
-    if (hasActiveCooldown && syntheticError && isApiError(syntheticError)) {
-        (syntheticError as ApiError).retryAfter = countdown ?? undefined
+    if (hasActiveCooldown && isApiError(syntheticError)) {
+        syntheticError.retryAfter = countdown ?? undefined
     }
 
     const errorMessage = getErrorMessage(syntheticError)

@@ -1,4 +1,4 @@
-import { ApiError, isApiError } from '../errorHandling'
+import { ApiError, isRateLimitError } from '../errorHandling'
 import { useCooldown, useModalActions } from '../modal.store'
 import { AskAiEvent, AskAiEventSchema } from './AskAiEvent'
 import { useAiProvider } from './aiProviderStore'
@@ -91,11 +91,8 @@ export const useAskAi = (props: Props): UseAskAiResponse => {
         onMessage,
         onError: (error) => {
             setError(error)
-            if (isApiError(error)) {
-                const apiError = error as ApiError
-                if (apiError.statusCode === 429 && apiError.retryAfter) {
-                    setCooldown(apiError.retryAfter)
-                }
+            if (isRateLimitError(error) && error.retryAfter) {
+                setCooldown(error.retryAfter)
             }
             props.onError?.(error)
         },

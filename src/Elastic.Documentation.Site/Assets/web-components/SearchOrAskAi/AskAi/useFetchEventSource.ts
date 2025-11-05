@@ -2,6 +2,7 @@ import {
     createApiErrorFromResponse,
     ApiError,
     isApiError,
+    isRetryableError,
 } from '../errorHandling'
 import {
     fetchEventSource,
@@ -96,12 +97,7 @@ export function useFetchEventSource<TPayload>({
                                 await createApiErrorFromResponse(response)
 
                             // For rate limit errors (429/503), abort immediately to stop retries
-                            if (
-                                error &&
-                                isApiError(error) &&
-                                (error.statusCode === 429 ||
-                                    error.statusCode === 503)
-                            ) {
+                            if (error && isRetryableError(error)) {
                                 controller.abort()
                             }
 
@@ -121,19 +117,15 @@ export function useFetchEventSource<TPayload>({
                         onMessage?.(msg)
                     },
                     onerror: (err) => {
-                        if (isApiError(err as ApiError | Error | null)) {
-                            const apiError = err as ApiError
+                        if (isApiError(err)) {
                             // For rate limit errors (429/503), abort immediately to stop retries
-                            if (
-                                apiError.statusCode === 429 ||
-                                apiError.statusCode === 503
-                            ) {
+                            if (isRetryableError(err)) {
                                 controller.abort()
-                                onError?.(apiError)
+                                onError?.(err)
                                 // Return null to stop retrying immediately
                                 return null
                             }
-                            onError?.(apiError)
+                            onError?.(err)
                             // For other errors, return undefined to use default retry behavior
                             return undefined
                         } else {
@@ -153,8 +145,8 @@ export function useFetchEventSource<TPayload>({
                     },
                 })
             } catch (error) {
-                if (isApiError(error as ApiError | Error | null)) {
-                    onError?.(error as ApiError)
+                if (isApiError(error)) {
+                    onError?.(error)
                 } else if (
                     error instanceof Error &&
                     error.name !== 'AbortError'
