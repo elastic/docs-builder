@@ -44,7 +44,11 @@ export const StreamingAiMessage = ({
                     'error'
                 )
             } else if (event.type === EventTypes.CONVERSATION_END) {
-                updateAiMessage(message.id, message.content || contentRef.current, 'complete')
+                updateAiMessage(
+                    message.id,
+                    message.content || contentRef.current,
+                    'complete'
+                )
             }
         },
         onError: (error) => {
