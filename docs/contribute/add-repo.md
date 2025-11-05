@@ -1,6 +1,6 @@
 # Add a new repository to the docs
 
-Elastic documentation is built from many assembled repositories using `docs-assembler`. Adding a new repository requires making the assembly process aware of its existence.
+Elastic documentation is built from many assembled repositories using `docs-builder assemble`. Adding a new repository requires making the assembly process aware of its existence.
 
 Follow these instructions to add a new docs repository.
 
