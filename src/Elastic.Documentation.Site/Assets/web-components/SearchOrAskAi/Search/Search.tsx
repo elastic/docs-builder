@@ -4,8 +4,8 @@ import { SearchOrAskAiErrorCallout } from '../SearchOrAskAiErrorCallout'
 import { useModalActions } from '../modal.store'
 import { useIsAskAiCooldownActive } from '../AskAi/useAskAiCooldown'
 import {
-    useIsSearchCooldownActive,
     useSearchCooldown,
+    useIsSearchCooldownActive,
     useSearchCooldownActions,
 } from './useSearchCooldown'
 import { useCooldown } from '../useCooldown'
