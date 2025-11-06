@@ -10,6 +10,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
       - uses: ./.github/actions/bootstrap
+      - run: npm ci
+        working-directory: src/Elastic.Documentation.Site
       - uses: actions/setup-python@v6
-      - uses: pre-commit/action@v3.0.1
+      - name: Run pre-commit on PRs
+        uses: pre-commit/action@2c7b3805fd2a0fd8c1884dcaebf91fc102a13ecd # v3.0.1
+        if: ${{ github.event.pull_request }}
+        with:
+          extra_args: --from-ref ${{ github.event.pull_request.base.sha }} --to-ref ${{ github.event.pull_request.head.sha }}
+      - name: Run pre-commit on branches
+        uses: pre-commit/action@2c7b3805fd2a0fd8c1884dcaebf91fc102a13ecd # v3.0.1
+        if: ${{ ! github.event.pull_request }}
