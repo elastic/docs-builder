@@ -1,9 +1,11 @@
+import { $$ } from 'select-dom'
+
 class ImageCarousel {
     private container: HTMLElement
-    private slides: HTMLElement[]
-    private indicators: HTMLElement[]
-    private prevButton: HTMLElement | null
-    private nextButton: HTMLElement | null
+    private slides: HTMLElement[] = []
+    private indicators: HTMLElement[] = []
+    private prevButton: HTMLElement | null = null
+    private nextButton: HTMLElement | null = null
     private currentIndex: number = 0
     private touchStartX: number = 0
     private touchEndX: number = 0
@@ -245,9 +247,7 @@ export function initImageCarousel(): void {
         if (!section) return
 
         // First, collect all images we want in the carousel
-        const allImageLinks = Array.from(
-            section.querySelectorAll('a[href*="epr.elastic.co"]')
-        )
+        const allImageLinks = $$('a[href*="epr.elastic.co"]', section)
 
         // Track URLs to prevent duplicates
         const processedUrls = new Set()
@@ -329,7 +329,11 @@ export function initImageCarousel(): void {
                             parent.style.display = 'none'
                             break
                         }
-                        parent = parent.parentElement
+
+                        if (parent.parentElement) {
+                            parent = parent.parentElement
+                        }
+
                         maxAttempts--
                     }
 
@@ -397,9 +401,9 @@ export function initImageCarousel(): void {
 
 // Helper to find a suitable container for an image
 function findClosestContainer(
-    element: Element,
-    carousel: Element
-): Element | null {
+    element: HTMLElement,
+    carousel: HTMLElement
+): HTMLElement | null {
     let current = element
     while (
         current &&

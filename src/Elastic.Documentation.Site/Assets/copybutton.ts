@@ -1,3 +1,5 @@
+// @ts-nocheck: This is some legacy code that we just copied over
+// It works, but we should rework this if we ever need to change it
 import { $$ } from 'select-dom'
 
 const DOCUMENTATION_OPTIONS = {
