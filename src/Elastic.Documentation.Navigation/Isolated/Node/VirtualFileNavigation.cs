@@ -28,7 +28,7 @@ public class VirtualFileNavigation<TModel>(TModel model, IFileInfo fileInfo, Vir
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; } = args.Parent;
 
 	/// <inheritdoc />
-	public bool Hidden { get; init; } = args.Hidden;
+	public bool Hidden { get; } = args.Hidden;
 
 	/// <inheritdoc />
 	public int NavigationIndex { get; set; }

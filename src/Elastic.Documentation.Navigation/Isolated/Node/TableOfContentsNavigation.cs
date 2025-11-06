@@ -48,7 +48,7 @@ public class TableOfContentsNavigation<TModel> : IRootNavigationItem<TModel, INa
 	/// <summary>
 	/// The path prefix for this TOC - same as parent per url-building.md.
 	/// Implements INavigationHomeProvider.PathPrefix.
-	/// TOC doesn't change PathPrefix from parent.
+	/// TOC doesn't change PathPrefix from the parent.
 	/// </summary>
 	public string PathPrefix { get; }
 
@@ -83,7 +83,7 @@ public class TableOfContentsNavigation<TModel> : IRootNavigationItem<TModel, INa
 
 	public string ParentPath { get; }
 
-	/// <inheritdoc />
+	/// <inheritdoc cref="INodeNavigationItem{TIndex,TChildNavigation}.Id" />
 	public string Id { get; }
 
 	/// <inheritdoc />

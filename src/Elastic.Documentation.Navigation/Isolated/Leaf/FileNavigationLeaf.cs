@@ -51,12 +51,12 @@ public class FileNavigationLeaf<TModel>(TModel model, IFileInfo fileInfo, FileNa
 				if (path.EndsWith("/index", StringComparison.OrdinalIgnoreCase))
 					path = path[..^6]; // Remove "/index"
 				else if (path.Equals("index", StringComparison.OrdinalIgnoreCase))
-					return string.IsNullOrEmpty(rootUrl) ? "/" : $"{rootUrl}/";
+					return string.IsNullOrEmpty(rootUrl) ? "/" : $"{rootUrl}";
 
 				if (string.IsNullOrEmpty(path))
-					return string.IsNullOrEmpty(rootUrl) ? "/" : $"{rootUrl}/";
+					return string.IsNullOrEmpty(rootUrl) ? "/" : $"{rootUrl}";
 
-				return $"{rootUrl}/{path.TrimEnd('/')}/";
+				return $"{rootUrl}/{path.TrimEnd('/')}";
 			}
 		}
 	}

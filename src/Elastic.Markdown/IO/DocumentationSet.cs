@@ -243,7 +243,7 @@ public class DocumentationSet : IPositionalNavigation
 	public RepositoryLinks CreateLinkReference()
 	{
 		var redirects = Configuration.Redirects;
-		var crossLinks = Context.Collector.CrossLinks.ToHashSet().ToArray();
+		var crossLinks = Context.Collector.CrossLinks.ToHashSet().OrderBy(l => l).ToArray();
 
 		var leafs = NavigationIndexedByOrder.Values
 			.OfType<ILeafNavigationItem<MarkdownFile>>().ToArray();
@@ -268,6 +268,7 @@ public class DocumentationSet : IPositionalNavigation
 				return (Path: path, tuple.Markdown, tuple.Navigation);
 			})
 			.DistinctBy(tuple => tuple.Path)
+			.OrderBy(tuple => tuple.Path)
 			.ToDictionary(
 				tuple => tuple.Path,
 				tuple =>
