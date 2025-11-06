@@ -18,7 +18,7 @@ export function useMessageThrottling<T>({
     onMessage,
 }: UseMessageThrottlingOptions<T>): UseMessageThrottlingReturn<T> {
     const messageQueueRef = useRef<T[]>([])
-    const timerRef = useRef<NodeJS.Timeout | null>(null)
+    const timerRef = useRef<number | null>(null)
     const isProcessingRef = useRef<boolean>(false)
 
     const processNextMessage = useCallback(() => {
