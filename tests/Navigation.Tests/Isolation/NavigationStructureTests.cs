@@ -102,7 +102,7 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		// Demonstrate type-safe LINQ queries work with the interface type
 		var firstItem = allLeafItems.FirstOrDefault(l => l.Model.NavigationTitle == "first");
 		firstItem.Should().NotBeNull();
-		firstItem.Url.Should().Be("/first/");
+		firstItem.Url.Should().Be("/first");
 	}
 
 	[Fact]
@@ -165,31 +165,31 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		// Second item: complex nested structure
 		var setupFolder = navigation.NavigationItems.ElementAt(0).Should().BeOfType<FolderNavigation<TestDocumentationFile>>().Subject;
 		setupFolder.NavigationItems.Should().HaveCount(1);
-		setupFolder.Url.Should().Be("/setup/");
+		setupFolder.Url.Should().Be("/setup");
 
 		var setupIndex = setupFolder.Index.Should().BeOfType<FileNavigationLeaf<TestDocumentationFile>>().Subject;
-		setupIndex.Url.Should().Be("/setup/"); // index.md becomes /setup
+		setupIndex.Url.Should().Be("/setup"); // index.md becomes /setup
 
 		var advancedToc = setupFolder.NavigationItems.ElementAt(0).Should().BeOfType<TableOfContentsNavigation<TestDocumentationFile>>().Subject;
-		advancedToc.Url.Should().Be("/setup/advanced/");
+		advancedToc.Url.Should().Be("/setup/advanced");
 		// Advanced TOC has index.md and the nested performance TOC as children
 		advancedToc.NavigationItems.Should().HaveCount(1);
 
 		var advancedIndex = advancedToc.Index.Should().BeOfType<FileNavigationLeaf<TestDocumentationFile>>().Subject;
-		advancedIndex.Url.Should().Be("/setup/advanced/");
+		advancedIndex.Url.Should().Be("/setup/advanced");
 
 		var performanceToc = advancedToc.NavigationItems.ElementAt(0).Should().BeOfType<TableOfContentsNavigation<TestDocumentationFile>>().Subject;
-		performanceToc.Url.Should().Be("/setup/advanced/performance/");
+		performanceToc.Url.Should().Be("/setup/advanced/performance");
 		performanceToc.NavigationItems.Should().HaveCount(2);
 
 		var performanceIndex = performanceToc.Index.Should().BeOfType<FileNavigationLeaf<TestDocumentationFile>>().Subject;
-		performanceIndex.Url.Should().Be("/setup/advanced/performance/");
+		performanceIndex.Url.Should().Be("/setup/advanced/performance");
 
 		var tuning = performanceToc.NavigationItems.ElementAt(0).Should().BeOfType<FileNavigationLeaf<TestDocumentationFile>>().Subject;
-		tuning.Url.Should().Be("/setup/advanced/performance/tuning/");
+		tuning.Url.Should().Be("/setup/advanced/performance/tuning");
 
 		var benchmarks = performanceToc.NavigationItems.ElementAt(1).Should().BeOfType<FileNavigationLeaf<TestDocumentationFile>>().Subject;
-		benchmarks.Url.Should().Be("/setup/advanced/performance/benchmarks/");
+		benchmarks.Url.Should().Be("/setup/advanced/performance/benchmarks");
 
 		// Third item: crosslink
 		_ = navigation.NavigationItems.ElementAt(1).Should().BeOfType<CrossLinkNavigationLeaf>().Subject;
@@ -240,21 +240,21 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance);
 
 		var setupFolder = navigation.NavigationItems.First().Should().BeOfType<FolderNavigation<TestDocumentationFile>>().Subject;
-		setupFolder.Url.Should().Be("/setup/");
+		setupFolder.Url.Should().Be("/setup");
 
 		// Setup folder has index.md and advanced TOC
 		setupFolder.NavigationItems.Should().HaveCount(1);
 
 		var advancedToc = setupFolder.NavigationItems.ElementAt(0).Should().BeOfType<TableOfContentsNavigation<TestDocumentationFile>>().Subject;
 		// Verify the URL is /setup/advanced and not /setup/setup/advanced
-		advancedToc.Url.Should().Be("/setup/advanced/");
+		advancedToc.Url.Should().Be("/setup/advanced");
 
 		// Advanced TOC has index.md and performance TOC
 		advancedToc.NavigationItems.Should().HaveCount(1);
 
 		var performanceToc = advancedToc.NavigationItems.ElementAt(0).Should().BeOfType<TableOfContentsNavigation<TestDocumentationFile>>().Subject;
 		// Verify the URL is /setup/advanced/performance and not /setup/advanced/setup/advanced/performance
-		performanceToc.Url.Should().Be("/setup/advanced/performance/");
+		performanceToc.Url.Should().Be("/setup/advanced/performance");
 
 		context.Diagnostics.Should().BeEmpty();
 	}

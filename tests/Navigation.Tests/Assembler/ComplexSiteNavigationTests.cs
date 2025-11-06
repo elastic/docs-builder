@@ -67,45 +67,45 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		// Test 1: Observability - verify root URL has path prefix
 		var observability = siteNavigation.NavigationItems.ElementAt(0) as INodeNavigationItem<INavigationModel, INavigationItem>;
 		observability.Should().NotBeNull();
-		observability.Url.Should().Be("/serverless/observability/");
+		observability.Url.Should().Be("/serverless/observability");
 		observability.NavigationTitle.Should().Be(observability.Index.NavigationTitle);
 
 		// Test 2: Serverless Search - verify root URL has path prefix
 		var search = siteNavigation.NavigationItems.ElementAt(1);
 		search.Should().NotBeNull();
-		search.Url.Should().Be("/serverless/search/");
+		search.Url.Should().Be("/serverless/search");
 
 		// Test 3: Platform - verify root URL has path prefix
 		var platform = siteNavigation.NavigationItems.ElementAt(2) as INodeNavigationItem<INavigationModel, INavigationItem>;
 		platform.Should().NotBeNull();
-		platform.Url.Should().Be("/platform/");
+		platform.Url.Should().Be("/platform");
 		platform.NavigationItems.Should().HaveCount(2, "platform should only show the two nested TOCs as children");
 
 		// Verify nested TOC URLs have their specified path prefixes
 		var deploymentGuide = platform.NavigationItems.ElementAt(0) as INodeNavigationItem<INavigationModel, INavigationItem>;
 		deploymentGuide.Should().NotBeNull();
-		deploymentGuide.Url.Should().Be("/platform/deployment/");
+		deploymentGuide.Url.Should().Be("/platform/deployment");
 		deploymentGuide.NavigationTitle.Should().Be(deploymentGuide.Index.NavigationTitle);
 
 		var cloudGuide = platform.NavigationItems.ElementAt(1);
 		cloudGuide.Should().NotBeNull();
-		cloudGuide.Url.Should().Be("/platform/cloud/");
+		cloudGuide.Url.Should().Be("/platform/cloud");
 		cloudGuide.NavigationTitle.Should().Be("Cloud Guide");
 
 		// Test 4: Elasticsearch Reference - verify root URL has path prefix
 		var elasticsearch = siteNavigation.NavigationItems.ElementAt(3) as INodeNavigationItem<INavigationModel, INavigationItem>;
 		elasticsearch.Should().NotBeNull();
-		elasticsearch.Url.Should().Be("/elasticsearch/reference/");
+		elasticsearch.Url.Should().Be("/elasticsearch/reference");
 		elasticsearch.NavigationItems.Should().HaveCount(2, "elasticsearch should have read its toc");
 
 		// rest-apis is a folder (not a TOC)
 		var restApis = elasticsearch.NavigationItems.ElementAt(0).Should().BeOfType<FolderNavigation<IDocumentationFile>>().Subject;
-		restApis.Url.Should().Be("/elasticsearch/reference/rest-apis/");
+		restApis.Url.Should().Be("/elasticsearch/reference/rest-apis");
 		restApis.NavigationItems.Should().HaveCount(2, "rest-apis folder should have 2 files");
 
 		// Verify the file inside the folder has the correct path prefix
 		var documentApisFile = restApis.NavigationItems.ElementAt(0).Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
-		documentApisFile.Url.Should().Be("/elasticsearch/reference/rest-apis/document-apis/");
+		documentApisFile.Url.Should().Be("/elasticsearch/reference/rest-apis/document-apis");
 		documentApisFile.NavigationTitle.Should().Be("Document APIs");
 	}
 
@@ -142,7 +142,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 
 		var platform = siteNavigation.NavigationItems.First() as INodeNavigationItem<INavigationModel, INavigationItem>;
 		platform.Should().NotBeNull();
-		platform.Url.Should().Be("/docs/platform/");
+		platform.Url.Should().Be("/docs/platform");
 
 		// Platform should have its children (deployment-guide, cloud-guide)
 		platform.NavigationItems.Should().HaveCount(2);
@@ -151,7 +151,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		var deploymentGuide = platform.NavigationItems.ElementAt(0) as INodeNavigationItem<INavigationModel, INavigationItem>;
 		deploymentGuide.Should().NotBeNull();
 		deploymentGuide.Should().BeOfType<TableOfContentsNavigation<IDocumentationFile>>();
-		deploymentGuide.Url.Should().StartWith("/docs/platform/");
+		deploymentGuide.Url.Should().StartWith("/docs/platform");
 
 		// Walk through the entire tree and verify every single URL starts with a path prefix
 		var allUrls = CollectAllUrls(platform.NavigationItems);

@@ -33,7 +33,7 @@ public class FileNavigationTests(ITestOutputHelper output) : DocumentationSetNav
 
 		navigation.NavigationItems.Should().HaveCount(0);
 		var fileNav = navigation.Index.Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
-		fileNav.Url.Should().Be("/getting-started/");
+		fileNav.Url.Should().Be("/getting-started");
 	}
 
 	[Fact]
@@ -58,15 +58,15 @@ public class FileNavigationTests(ITestOutputHelper output) : DocumentationSetNav
 
 		navigation.NavigationItems.Should().HaveCount(1);
 		var fileNav = navigation.NavigationItems.First().Should().BeOfType<VirtualFileNavigation<IDocumentationFile>>().Subject;
-		fileNav.Url.Should().Be("/guide/");
+		fileNav.Url.Should().Be("/guide");
 		fileNav.NavigationItems.Should().HaveCount(2);
 
 		var section1 = fileNav.NavigationItems.ElementAt(0).Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
-		section1.Url.Should().Be("/section1/");
+		section1.Url.Should().Be("/section1");
 		section1.Parent.Should().BeSameAs(fileNav);
 
 		var section2 = fileNav.NavigationItems.ElementAt(1).Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
-		section2.Url.Should().Be("/section2/");
+		section2.Url.Should().Be("/section2");
 		section2.Parent.Should().BeSameAs(fileNav);
 	}
 
@@ -92,15 +92,15 @@ public class FileNavigationTests(ITestOutputHelper output) : DocumentationSetNav
 
 		navigation.NavigationItems.Should().HaveCount(1);
 		var fileNav = navigation.NavigationItems.First().Should().BeOfType<VirtualFileNavigation<IDocumentationFile>>().Subject;
-		fileNav.Url.Should().Be("/nest/guide/");
+		fileNav.Url.Should().Be("/nest/guide");
 		fileNav.NavigationItems.Should().HaveCount(2);
 
 		var section1 = fileNav.NavigationItems.ElementAt(0).Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
-		section1.Url.Should().Be("/nest/section1/");
+		section1.Url.Should().Be("/nest/section1");
 		section1.Parent.Should().BeSameAs(fileNav);
 
 		var section2 = fileNav.NavigationItems.ElementAt(1).Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
-		section2.Url.Should().Be("/nest/section2/");
+		section2.Url.Should().Be("/nest/section2");
 		section2.Parent.Should().BeSameAs(fileNav);
 	}
 
@@ -127,16 +127,16 @@ public class FileNavigationTests(ITestOutputHelper output) : DocumentationSetNav
 
 		navigation.NavigationItems.Should().HaveCount(1);
 		var guideFile = navigation.NavigationItems.First().Should().BeOfType<VirtualFileNavigation<IDocumentationFile>>().Subject;
-		guideFile.Url.Should().Be("/guide/");
+		guideFile.Url.Should().Be("/guide");
 		guideFile.NavigationItems.Should().HaveCount(1);
 
 		var chapter1 = guideFile.NavigationItems.First().Should().BeOfType<VirtualFileNavigation<IDocumentationFile>>().Subject;
-		chapter1.Url.Should().Be("/chapter1/");
+		chapter1.Url.Should().Be("/chapter1");
 		chapter1.Parent.Should().BeSameAs(guideFile);
 		chapter1.NavigationItems.Should().HaveCount(1);
 
 		var subsection = chapter1.NavigationItems.First().Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
-		subsection.Url.Should().Be("/subsection/");
+		subsection.Url.Should().Be("/subsection");
 		subsection.Parent.Should().BeSameAs(chapter1);
 	}
 
@@ -162,15 +162,15 @@ public class FileNavigationTests(ITestOutputHelper output) : DocumentationSetNav
 		var child = fileNav!.NavigationItems.First();
 
 		// Initial URLs
-		fileNav.Url.Should().Be("/guide/");
-		child.Url.Should().Be("/section1/");
+		fileNav.Url.Should().Be("/guide");
+		child.Url.Should().Be("/section1");
 
 		// Change root URL
 		navigation.HomeProvider = new NavigationHomeProvider("/v2", navigation.NavigationRoot);
 
 		// URLs should update dynamically
-		fileNav.Url.Should().Be("/v2/guide/");
-		child.Url.Should().Be("/v2/section1/");
+		fileNav.Url.Should().Be("/v2/guide");
+		child.Url.Should().Be("/v2/section1");
 	}
 
 	[Fact]
@@ -199,13 +199,13 @@ public class FileNavigationTests(ITestOutputHelper output) : DocumentationSetNav
 		guideFile.NavigationItems.Should().HaveCount(2);
 
 		var intro = guideFile.NavigationItems.ElementAt(0).Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
-		intro.Url.Should().Be("/intro/");
+		intro.Url.Should().Be("/intro");
 
 		var advancedFolder = guideFile.NavigationItems.ElementAt(1).Should().BeOfType<FolderNavigation<IDocumentationFile>>().Subject;
-		advancedFolder.Url.Should().Be("/advanced/topics/"); // No index, uses first child
+		advancedFolder.Url.Should().Be("/advanced/topics"); // No index, uses first child
 		advancedFolder.NavigationItems.Should().HaveCount(0);
 
 		var topics = advancedFolder.Index.Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
-		topics.Url.Should().Be("/advanced/topics/");
+		topics.Url.Should().Be("/advanced/topics");
 	}
 }
