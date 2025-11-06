@@ -1,9 +1,9 @@
 import { ApiError, isRateLimitError } from '../errorHandling'
 import {
     useAskAiCooldown,
-    useModalActions,
+    useAskAiCooldownActions,
     useAskAiCooldownFinishedPendingAcknowledgment,
-} from '../modal.store'
+} from './useAskAiCooldown'
 import { useEffect, useRef } from 'react'
 
 /**
@@ -13,7 +13,7 @@ export function useAskAiRateLimitHandler(error: ApiError | Error | null) {
     const storeCooldown = useAskAiCooldown()
     const cooldownFinishedPendingAcknowledgment =
         useAskAiCooldownFinishedPendingAcknowledgment()
-    const { setCooldown } = useModalActions()
+    const { setCooldown } = useAskAiCooldownActions()
     const previousErrorRetryAfterRef = useRef<number | null>(null)
 
     useEffect(() => {
@@ -33,7 +33,7 @@ export function useAskAiRateLimitHandler(error: ApiError | Error | null) {
                         (storeCooldown !== null && storeCooldown < retryAfter))
 
                 if (shouldSetCooldown) {
-                    setCooldown('askAi', retryAfter)
+                    setCooldown(retryAfter)
                     previousErrorRetryAfterRef.current = retryAfter
                 }
             }

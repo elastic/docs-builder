@@ -1,9 +1,9 @@
 import { ApiError, isRateLimitError } from '../errorHandling'
 import {
     useSearchCooldown,
-    useModalActions,
+    useSearchCooldownActions,
     useSearchCooldownFinishedPendingAcknowledgment,
-} from '../modal.store'
+} from './useSearchCooldown'
 import { useEffect, useRef } from 'react'
 
 /**
@@ -13,7 +13,7 @@ export function useSearchRateLimitHandler(error: ApiError | Error | null) {
     const storeCooldown = useSearchCooldown()
     const cooldownFinishedPendingAcknowledgment =
         useSearchCooldownFinishedPendingAcknowledgment()
-    const { setCooldown } = useModalActions()
+    const { setCooldown } = useSearchCooldownActions()
     const previousErrorRetryAfterRef = useRef<number | null>(null)
 
     useEffect(() => {
@@ -33,7 +33,7 @@ export function useSearchRateLimitHandler(error: ApiError | Error | null) {
                         (storeCooldown !== null && storeCooldown < retryAfter))
 
                 if (shouldSetCooldown) {
-                    setCooldown('search', retryAfter)
+                    setCooldown(retryAfter)
                     previousErrorRetryAfterRef.current = retryAfter
                 }
             }

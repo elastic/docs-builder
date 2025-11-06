@@ -34,9 +34,29 @@ jest.mock('../AskAi/chat.store', () => ({
 jest.mock('../modal.store', () => ({
     useModalActions: jest.fn(() => ({
         setModalMode: jest.fn(),
+        openModal: jest.fn(),
+        closeModal: jest.fn(),
+        toggleModal: jest.fn(),
     })),
+}))
+
+jest.mock('./useSearchCooldown', () => ({
     useIsSearchCooldownActive: jest.fn(() => false),
+    useSearchCooldown: jest.fn(() => null),
+    useSearchCooldownActions: jest.fn(() => ({
+        setCooldown: jest.fn(),
+        updateCooldown: jest.fn(),
+        notifyCooldownFinished: jest.fn(),
+        acknowledgeCooldownFinished: jest.fn(),
+    })),
+}))
+
+jest.mock('../AskAi/useAskAiCooldown', () => ({
     useIsAskAiCooldownActive: jest.fn(() => false),
+}))
+
+jest.mock('../useCooldown', () => ({
+    useCooldown: jest.fn(),
 }))
 
 jest.mock('./SearchResults', () => ({

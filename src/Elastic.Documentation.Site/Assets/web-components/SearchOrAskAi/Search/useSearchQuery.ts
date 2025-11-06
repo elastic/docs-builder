@@ -2,9 +2,9 @@ import { createApiErrorFromResponse, shouldRetry } from '../errorHandling'
 import { ApiError } from '../errorHandling'
 import {
     useSearchCooldownFinishedPendingAcknowledgment,
-    useModalActions,
+    useSearchCooldownActions,
     useIsSearchCooldownActive,
-} from '../modal.store'
+} from './useSearchCooldown'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useDebounce } from '@uidotdev/usehooks'
 import { useRef, useEffect } from 'react'
@@ -47,13 +47,13 @@ export const useSearchQuery = ({ searchTerm, pageNumber = 1 }: Props) => {
     const isCooldownActive = useIsSearchCooldownActive()
     const cooldownFinishedPendingAcknowledgment =
         useSearchCooldownFinishedPendingAcknowledgment()
-    const { acknowledgeCooldownFinished } = useModalActions()
+    const { acknowledgeCooldownFinished } = useSearchCooldownActions()
     const previousSearchTermRef = useRef(debouncedSearchTerm)
 
     useEffect(() => {
         if (previousSearchTermRef.current !== debouncedSearchTerm) {
             if (cooldownFinishedPendingAcknowledgment) {
-                acknowledgeCooldownFinished('search')
+                acknowledgeCooldownFinished()
             }
         }
         previousSearchTermRef.current = debouncedSearchTerm

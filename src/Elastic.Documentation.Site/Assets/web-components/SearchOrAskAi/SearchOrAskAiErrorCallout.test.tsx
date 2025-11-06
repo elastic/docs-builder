@@ -47,29 +47,32 @@ jest.mock('./AskAi/useAskAiRateLimitHandler', () => ({
         mockUseAskAiRateLimitHandler(error),
 }))
 
-// Mock modal.store hooks
+// Mock cooldown.store hooks
 const mockSearchState = {
-    countdown: null,
+    countdown: null as number | null,
     hasActiveCooldown: false,
     cooldownFinishedPendingAcknowledgment: false,
 }
 
 const mockAskAiState = {
-    countdown: null,
+    countdown: null as number | null,
     hasActiveCooldown: false,
     cooldownFinishedPendingAcknowledgment: false,
 }
 
-jest.mock('./modal.store', () => ({
+jest.mock('./Search/useSearchCooldown', () => ({
     useSearchErrorCalloutState: jest.fn(() => mockSearchState),
+}))
+
+jest.mock('./AskAi/useAskAiCooldown', () => ({
     useAskAiErrorCalloutState: jest.fn(() => mockAskAiState),
 }))
 
 const mockUseSearchErrorCalloutState = jest.mocked(
-    jest.requireMock('./modal.store').useSearchErrorCalloutState
+    jest.requireMock('./Search/useSearchCooldown').useSearchErrorCalloutState
 )
 const mockUseAskAiErrorCalloutState = jest.mocked(
-    jest.requireMock('./modal.store').useAskAiErrorCalloutState
+    jest.requireMock('./AskAi/useAskAiCooldown').useAskAiErrorCalloutState
 )
 
 // Mock errorHandling utilities
@@ -120,14 +123,14 @@ describe('SearchOrAskAiErrorCallout', () => {
         mockAskAiState.cooldownFinishedPendingAcknowledgment = false
         mockUseSearchErrorCalloutState.mockReturnValue(mockSearchState)
         mockUseAskAiErrorCalloutState.mockReturnValue(mockAskAiState)
-        mockGetErrorMessage.mockImplementation((error) => {
+        mockGetErrorMessage.mockImplementation((error: ApiError | Error | null) => {
             if (!error) return 'Unknown error'
             if ('statusCode' in error) {
                 return `Error ${error.statusCode}: ${error.message}`
             }
             return error.message
         })
-        mockIsRateLimitError.mockImplementation((error) => {
+        mockIsRateLimitError.mockImplementation((error: ApiError | Error | null) => {
             return (
                 error instanceof Error &&
                 'statusCode' in error &&

@@ -6,10 +6,8 @@ import {
     isApiError,
     isRateLimitError,
 } from './errorHandling'
-import {
-    useSearchErrorCalloutState,
-    useAskAiErrorCalloutState,
-} from './modal.store'
+import { useSearchErrorCalloutState } from './Search/useSearchCooldown'
+import { useAskAiErrorCalloutState } from './AskAi/useAskAiCooldown'
 import { EuiCallOut, EuiSpacer } from '@elastic/eui'
 
 interface SearchOrAskAiErrorCalloutProps {

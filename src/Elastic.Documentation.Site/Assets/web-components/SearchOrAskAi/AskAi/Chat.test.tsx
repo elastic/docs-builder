@@ -39,7 +39,28 @@ jest.mock('./AiProviderSelector', () => ({
 
 // Mock modal.store
 jest.mock('../modal.store', () => ({
+    useModalActions: jest.fn(() => ({
+        setModalMode: jest.fn(),
+        openModal: jest.fn(),
+        closeModal: jest.fn(),
+        toggleModal: jest.fn(),
+    })),
+}))
+
+// Mock cooldown hooks
+jest.mock('./useAskAiCooldown', () => ({
     useIsAskAiCooldownActive: jest.fn(() => false),
+    useAskAiCooldown: jest.fn(() => null),
+    useAskAiCooldownActions: jest.fn(() => ({
+        setCooldown: jest.fn(),
+        updateCooldown: jest.fn(),
+        notifyCooldownFinished: jest.fn(),
+        acknowledgeCooldownFinished: jest.fn(),
+    })),
+}))
+
+jest.mock('../useCooldown', () => ({
+    useCooldown: jest.fn(),
 }))
 
 // Mock SearchOrAskAiErrorCallout
