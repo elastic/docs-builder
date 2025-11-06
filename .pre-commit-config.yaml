@@ -1,0 +1,35 @@
+repos:
+  - repo: local
+    hooks:
+      - id: dotnet-format
+        name: dotnet format
+        language: system
+        entry: dotnet format --no-restore --verbosity quiet --include
+        files: \.(cs|fs)$
+        pass_filenames: true
+        
+        # Run prettier only for src/Elastic.Documentation.Site
+      - id: prettier
+        name: Prettier Code Formatter
+        language: system
+        entry: bash -c 'cd src/Elastic.Documentation.Site && npx prettier --write "${@#src/Elastic.Documentation.Site/}"' --
+        files: ^src/Elastic\.Documentation\.Site
+        verbose: true
+        pass_filenames: true
+        
+      # Run TypeScript type checking for src/Elastic.Documentation.Site
+      - id: typescript-check
+        name: TypeScript Type Check
+        language: system
+        entry: bash -c 'cd src/Elastic.Documentation.Site && npx tsc --noEmit'
+        files: ^src/Elastic\.Documentation\.Site/.*\.tsx?$
+        pass_filenames: false
+        
+      # Run eslint only for src/Elastic.Documentation.Site
+      - id: eslint
+        name: ESLint
+        language: system
+        entry: bash -c 'cd src/Elastic.Documentation.Site && npx eslint --fix "${@#src/Elastic.Documentation.Site/}"' --
+        files: ^src/Elastic\.Documentation\.Site/.*\.(js|jsx|ts|tsx|mjs)$
+        verbose: true
+        pass_filenames: true
