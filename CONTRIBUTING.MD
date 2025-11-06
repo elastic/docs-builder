@@ -56,6 +56,68 @@ based on the labels of the pull requests merged into the `main` branch.
 
 See the [release-drafter configuration](./.github/release-drafter.yml) for more details.
 
+## Pre-commit Hooks
+
+This repository uses [pre-commit](https://pre-commit.com/) to automatically format and validate code before commits.
+
+### What Gets Checked
+
+The following hooks run automatically on staged files:
+
+- **dotnet format** - Formats C# and F# files
+- **prettier** - Formats TypeScript, JavaScript, CSS, and other files in `src/Elastic.Documentation.Site/`
+- **TypeScript** - Type checks TypeScript files with `tsc --noEmit`
+- **ESLint** - Lints and fixes JavaScript/TypeScript files
+
+### Installation
+
+#### Install pre-commit
+
+```bash
+# macOS/Linux
+pip install pre-commit
+
+# macOS with Homebrew
+brew install pre-commit
+
+# Windows
+pip install pre-commit
+```
+
+#### Install the hooks
+
+```bash
+pre-commit install
+```
+
+### Usage
+
+Once installed, hooks run automatically when you commit:
+
+```bash
+git add .
+git commit -m "your message"
+```
+
+**Note:** If hooks modify files (prettier, eslint, dotnet format), the commit will fail so you can review the changes. Simply run the commit command again to commit the formatted code.
+
+#### Manual Execution
+
+Run hooks on all files:
+```bash
+pre-commit run --all-files
+```
+
+Run a specific hook:
+```bash
+pre-commit run prettier --all-files
+pre-commit run dotnet-format --all-files
+```
+
+#### CI Integration
+
+Pre-commit hooks also run in GitHub Actions on all pull requests to ensure code quality and consistency.
+
 ## Creating a New Release
 
 To create a new release trigger the [release](https://github.com/elastic/docs-builder/actions/workflows/release.yml) workflow on the `main` branch.
