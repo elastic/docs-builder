@@ -648,7 +648,7 @@ jobs:
             </details>
         
             ### 🤔 Need help?
-            - Check out the [cumulative docs guidelines](https://elastic.github.io/docs-builder/contribute/cumulative-docs/)
+            - Check out the [cumulative docs guidelines](https://www.elastic.co/docs/contribute-docs/how-to/cumulative-docs/)
             - Reach out in the [#docs](https://elastic.slack.com/archives/C0JF80CJZ) Slack channel`;
               
             await github.rest.issues.createComment({
