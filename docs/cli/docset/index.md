@@ -22,5 +22,5 @@ locate the `docset.yml` anywhere in the directory tree automatically and build t
 ## Refactor commands
 
 - [mv](mv.md) - move a file or folder to a new location. This will rewrite all links in all files too.
-- [diff validate](diff-validate.md) - validate that local changes are reflected in [redirects.yml](../../how-to/redirects.md)
+- [diff validate](diff-validate.md) - validate that local changes are reflected in [redirects.yml](../../contribute/redirects.md)
 

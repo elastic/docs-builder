@@ -1,9 +1,4 @@
 redirects:
-  'contribute/move.md': 'index.md'
-  'contribute/redirects.md': 'index.md'
-  'contribute/branching-strategy.md': 'index.md'
-  'contribute/add-repo.md': 'index.md'
-  'contribute/release-new-version.md': 'index.md'
   'migration/freeze/gh-action.md' : 'index.md'
   'migration/freeze/index.md' : 'index.md'
   'testing/redirects/4th-page.md': 'testing/redirects/5th-page.md'
