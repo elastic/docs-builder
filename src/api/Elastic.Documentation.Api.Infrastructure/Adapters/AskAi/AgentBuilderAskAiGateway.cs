@@ -26,14 +26,13 @@ public class AgentBuilderAskAiGateway(HttpClient httpClient, IParameterProvider 
 	public const string ProviderName = "agent-builder";
 	public async Task<Stream> AskAi(AskAiRequest askAiRequest, Cancel ctx = default)
 	{
-		// Only include conversation_id if threadId is provided (subsequent requests)
 		var agentBuilderPayload = new AgentBuilderPayload(
 			askAiRequest.Message,
 			"docs-agent",
-			askAiRequest.ThreadId);
+			askAiRequest.ConversationId);
 		var requestBody = JsonSerializer.Serialize(agentBuilderPayload, AgentBuilderContext.Default.AgentBuilderPayload);
 
-		logger.LogInformation("Sending to Agent Builder with conversation_id: {ConversationId}", askAiRequest.ThreadId ?? "(null - first request)");
+		logger.LogInformation("Sending to Agent Builder with conversation_id: {ConversationId}", askAiRequest.ConversationId ?? "(null - first request)");
 
 		var kibanaUrl = await parameterProvider.GetParam("docs-kibana-url", false, ctx);
 		var kibanaApiKey = await parameterProvider.GetParam("docs-kibana-apikey", true, ctx);

@@ -13,7 +13,7 @@ describe('ChatMessage Component', () => {
             id: '1',
             type: 'user',
             content: 'What is Elasticsearch?',
-            threadId: 'thread-1',
+            conversationId: 'thread-1',
             timestamp: Date.now(),
         }
 
@@ -44,7 +44,7 @@ describe('ChatMessage Component', () => {
             id: '2',
             type: 'ai',
             content: 'Elasticsearch is a distributed search engine...',
-            threadId: 'thread-1',
+            conversationId: 'thread-1',
             timestamp: Date.now(),
             status: 'complete',
         }
@@ -102,14 +102,14 @@ describe('ChatMessage Component', () => {
             id: '3',
             type: 'ai',
             content: 'Elasticsearch is...',
-            threadId: 'thread-1',
+            conversationId: 'thread-1',
             timestamp: Date.now(),
             status: 'streaming',
         }
 
         it('should show loading icon when streaming', () => {
             // Act
-            render(<ChatMessage message={streamingMessage} llmMessages={[]} />)
+            render(<ChatMessage message={streamingMessage} />)
 
             // Assert
             // Loading elastic icon should be present
@@ -142,7 +142,7 @@ describe('ChatMessage Component', () => {
             id: '4',
             type: 'ai',
             content: 'Previous content...',
-            threadId: 'thread-1',
+            conversationId: 'thread-1',
             timestamp: Date.now(),
             status: 'error',
         }
@@ -176,7 +176,7 @@ describe('ChatMessage Component', () => {
             id: '5',
             type: 'ai',
             content: '# Heading\n\n**Bold text** and *italic*',
-            threadId: 'thread-1',
+            conversationId: 'thread-1',
             timestamp: Date.now(),
             status: 'complete',
         }

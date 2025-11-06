@@ -36,7 +36,7 @@ export const useStatusMinDisplay = (
     )
     const lastChangeTimeRef = useRef<number>(Date.now())
     const pendingStatusRef = useRef<string | null>(null)
-    const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+    const timeoutRef = useRef<number | null>(null)
 
     useEffect(() => {
         // Clear any pending timeout

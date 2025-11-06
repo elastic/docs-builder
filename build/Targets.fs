@@ -19,7 +19,6 @@ let private clean _ =
     removeArtifacts "release-notes"
     removeArtifacts "tests"
     removeArtifacts "docs-builder"
-    removeArtifacts "docs-assembler"
 
 let private compile _ = exec { run "dotnet" "build" "-c" "release" }
 
@@ -57,7 +56,6 @@ let private pristineCheck (arguments:ParseResults<Build>) =
 
 let private publishBinaries _ =
     exec { run "dotnet" "publish" "src/tooling/docs-builder/docs-builder.csproj" }
-    exec { run "dotnet" "publish" "src/tooling/docs-assembler/docs-assembler.csproj" }
 
 let private publishZip _ =
     let zip tool =
@@ -72,7 +70,6 @@ let private publishZip _ =
                 $".artifacts/publish/{tool}/release/NOTICE.txt"
             ]
     zip "docs-builder"
-    zip "docs-assembler"
     
 let private prNumber () =
     match Environment.environVarOrNone "GITHUB_REF_NAME" with
@@ -128,7 +125,6 @@ let private publishContainers _ =
             | _ -> []
         exec { run "dotnet" (args @ registry) }
     createImage "docs-builder"
-    createImage "docs-assembler"
 
 let private runTests (testSuite: TestSuite) _ =
     let testFilter =

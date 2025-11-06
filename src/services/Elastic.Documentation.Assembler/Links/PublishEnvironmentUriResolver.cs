@@ -84,7 +84,7 @@ public class PublishEnvironmentUriResolver : IUriEnvironmentResolver
 			return new Uri(_baseUri, finalPath);
 		}
 
-		// No mapping found - use path as-is with optional environment prefix
+		// No mapping found - use path as-is with the optional environment prefix
 		var fallbackPath = !string.IsNullOrEmpty(_pathPrefix) ? $"{_pathPrefix}/{path.TrimStart('/')}" : path;
 		return new Uri(_baseUri, fallbackPath);
 	}
