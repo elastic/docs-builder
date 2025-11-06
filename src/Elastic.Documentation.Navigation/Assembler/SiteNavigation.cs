@@ -34,6 +34,7 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		Phantoms = siteNavigationFile.Phantoms;
 		DeclaredPhantoms = [.. siteNavigationFile.Phantoms.Select(p => new Uri(p.Source))];
 		DeclaredTableOfContents = SiteNavigationFile.GetAllDeclaredSources(siteNavigationFile);
+		NavigationTitle = "Elastic Docs";
 
 		_nodes = [];
 		foreach (var setNavigation in documentationSetNavigations)
@@ -106,7 +107,7 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 	public string Url => string.IsNullOrEmpty(_sitePrefix) ? "/" : _sitePrefix;
 
 	/// <inheritdoc />
-	public string NavigationTitle => Index.NavigationTitle;
+	public string NavigationTitle { get; }
 
 	/// <inheritdoc />
 	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }
