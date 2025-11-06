@@ -99,6 +99,9 @@ jobs:
       
       - name: Format
         run: npm run fmt:check
+      
+      - name: Compile
+        run: npm run compile:check
         
       - name: Build
         run: npm run build
