@@ -206,13 +206,13 @@ public class SiteNavigationTests : IAsyncLifetime
 		resolvedUri = uriResolver.Resolve(new Uri("apm-agent-nodejs://reference/instrumentation.md"), "reference/instrumentation");
 		resolvedUri.Should().Be("https://www.elastic.co/docs/reference/apm/agents/nodejs/instrumentation");
 
-		resolvedUri = uriResolver.Resolve(new Uri("apm-agent-dotnet://reference/a/file.md"), "/reference/a/file");
+		resolvedUri = uriResolver.Resolve(new Uri("apm-agent-dotnet://reference/a/file.md"), "reference/a/file");
 		resolvedUri.Should().Be("https://www.elastic.co/docs/reference/apm/agents/dotnet/a/file");
 
-		resolvedUri = uriResolver.Resolve(new Uri("elasticsearch-net://reference/b/file.md"), "/reference/b/file");
+		resolvedUri = uriResolver.Resolve(new Uri("elasticsearch-net://reference/b/file.md"), "reference/b/file");
 		resolvedUri.Should().Be("https://www.elastic.co/docs/reference/elasticsearch/clients/dotnet/b/file");
 
-		resolvedUri = uriResolver.Resolve(new Uri("elasticsearch://extend/c/file.md"), "/extend/c/file");
+		resolvedUri = uriResolver.Resolve(new Uri("elasticsearch://extend/c/file.md"), "extend/c/file");
 		resolvedUri.Should().Be("https://www.elastic.co/docs/extend/elasticsearch/c/file");
 	}
 
