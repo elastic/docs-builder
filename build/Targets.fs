@@ -70,7 +70,6 @@ let private publishZip _ =
                 $".artifacts/publish/{tool}/release/NOTICE.txt"
             ]
     zip "docs-builder"
-    zip "docs-assembler"
     
 let private prNumber () =
     match Environment.environVarOrNone "GITHUB_REF_NAME" with
