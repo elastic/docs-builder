@@ -72,7 +72,7 @@ function ready() {
  *
  * @this {HTMLElement} - The element that was clicked.
  */
-function onSDLabelClick(this: HTMLLabelElement): any {
+function onSDLabelClick(this: HTMLLabelElement) {
     const data = create_key(this)
     if (!data) return
     const [group, id, key] = data

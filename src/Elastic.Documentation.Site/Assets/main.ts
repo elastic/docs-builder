@@ -10,7 +10,7 @@ import { initTabs } from './tabs'
 import { initTocNav } from './toc-nav'
 import 'htmx-ext-head-support'
 import 'htmx-ext-preload'
-import katex from 'katex'
+import * as katex from 'katex'
 import { $, $$ } from 'select-dom'
 import { UAParser } from 'ua-parser-js'
 
@@ -18,7 +18,8 @@ const { getOS } = new UAParser()
 const isLazyLoadNavigationEnabled =
     $('meta[property="docs:feature:lazy-load-navigation"]')?.content === 'true'
 
-type HtmxEvent = any // Using any because htmx doesn't provide official types
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type HtmxEvent = any
 
 /**
  * Initialize KaTeX math rendering for elements with class 'math'
