@@ -106,7 +106,8 @@ const VersionDropdown = ({
             }
         }) ?? []
 
-    const subpanels = (): EuiContextMenuPanelDescriptor[] => convertToPanels(items || [])
+    const subpanels = (): EuiContextMenuPanelDescriptor[] =>
+        convertToPanels(items || [])
 
     const panels = (): EuiContextMenuPanelDescriptor[] => [
         {
