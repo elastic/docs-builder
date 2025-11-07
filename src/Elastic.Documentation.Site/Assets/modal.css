@@ -29,3 +29,35 @@
 		@apply text-ink-dark hover:text-ink text-2xl font-bold no-underline;
 	}
 }
+
+/* Search or Ask AI animation for secondary buttons */
+
+@keyframes slideInFromRight {
+	from {
+		right: 8px;
+		opacity: 0;
+	}
+	to {
+		right: 40px;
+		opacity: 1;
+	}
+}
+
+@keyframes slideOutToRight {
+	from {
+		right: 40px;
+		opacity: 1;
+	}
+	to {
+		right: 8px;
+		opacity: 0;
+	}
+}
+
+.slideInSearchOrAskAiInputAnimation {
+	animation: slideInFromRight 0.2s ease-out forwards;
+}
+
+.slideOutSearchOrAskAiInputAnimation {
+	animation: slideOutToRight 0.2s ease-out forwards;
+}

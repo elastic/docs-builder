@@ -1,4 +1,6 @@
+import { useAskAiErrorCalloutState } from './AskAi/useAskAiCooldown'
 import { useAskAiRateLimitHandler } from './AskAi/useAskAiRateLimitHandler'
+import { useSearchErrorCalloutState } from './Search/useSearchCooldown'
 import { useSearchRateLimitHandler } from './Search/useSearchRateLimitHandler'
 import {
     ApiError,
@@ -6,8 +8,6 @@ import {
     isApiError,
     isRateLimitError,
 } from './errorHandling'
-import { useSearchErrorCalloutState } from './Search/useSearchCooldown'
-import { useAskAiErrorCalloutState } from './AskAi/useAskAiCooldown'
 import { EuiCallOut, EuiSpacer } from '@elastic/eui'
 
 interface SearchOrAskAiErrorCalloutProps {
@@ -38,11 +38,7 @@ export function SearchOrAskAiErrorCallout({
     const is429Error = error && isRateLimitError(error)
 
     // Hide 429 errors when cooldown finished (user can retry)
-    if (
-        is429Error &&
-        (!state.hasActiveCooldown ||
-            state.awaitingNewInput)
-    ) {
+    if (is429Error && (!state.hasActiveCooldown || state.awaitingNewInput)) {
         return null
     }
 

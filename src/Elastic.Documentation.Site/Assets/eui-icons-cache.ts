@@ -5,6 +5,7 @@ import { icon as EuiIconArrowDown } from '@elastic/eui/es/components/icon/assets
 import { icon as EuiIconArrowLeft } from '@elastic/eui/es/components/icon/assets/arrow_left'
 import { icon as EuiIconArrowRight } from '@elastic/eui/es/components/icon/assets/arrow_right'
 import { icon as EuiIconCheck } from '@elastic/eui/es/components/icon/assets/check'
+import { icon as EuiIconComment } from '@elastic/eui/es/components/icon/assets/comment'
 import { icon as EuiIconCopy } from '@elastic/eui/es/components/icon/assets/copy'
 import { icon as EuiIconCopyClipboard } from '@elastic/eui/es/components/icon/assets/copy_clipboard'
 import { icon as EuiIconCross } from '@elastic/eui/es/components/icon/assets/cross'
@@ -61,4 +62,5 @@ appendIconComponentCache({
     sortUp: EuiIconSortUp,
     arrowStart: EuiIconArrowStart,
     arrowEnd: EuiIconArrowEnd,
+    comment: EuiIconComment,
 })

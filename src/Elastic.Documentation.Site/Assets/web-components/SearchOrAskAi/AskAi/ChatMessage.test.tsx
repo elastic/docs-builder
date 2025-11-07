@@ -249,7 +249,10 @@ describe('ChatMessage Component', () => {
             // Assert
             const callout = screen.getByTestId('eui-callout')
             expect(callout).toBeInTheDocument()
-            expect(callout).toHaveAttribute('data-title', 'Sorry, there was an error')
+            expect(callout).toHaveAttribute(
+                'data-title',
+                'Sorry, there was an error'
+            )
             expect(callout).toHaveTextContent('Test error')
         })
 

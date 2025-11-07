@@ -1,6 +1,6 @@
-import { useEffect, useRef } from 'react'
 import { ModalMode } from './callout-state'
 import { useCooldownActions } from './cooldown.store'
+import { useEffect, useRef } from 'react'
 
 interface UseCooldownParams {
     domain: ModalMode
@@ -57,4 +57,3 @@ export function useCooldown({
         }
     }, [domain, cooldown, updateCooldown])
 }
-

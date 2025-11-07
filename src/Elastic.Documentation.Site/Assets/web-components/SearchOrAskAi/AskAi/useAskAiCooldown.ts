@@ -18,8 +18,7 @@ export const useIsAskAiCooldownActive = () => {
 export const useAskAiErrorCalloutState = () => {
     const countdown = useAskAiCooldown()
     const hasActiveCooldown = useIsAskAiCooldownActive()
-    const awaitingNewInput =
-        useIsAskAiAwaitingNewInput()
+    const awaitingNewInput = useIsAskAiAwaitingNewInput()
 
     return {
         countdown,
@@ -40,4 +39,3 @@ export const useAskAiCooldownActions = () => {
             actions.acknowledgeCooldownFinished('askAi'),
     }
 }
-

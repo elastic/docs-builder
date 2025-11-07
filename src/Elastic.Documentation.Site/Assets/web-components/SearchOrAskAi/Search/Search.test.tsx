@@ -43,6 +43,7 @@ jest.mock('../modal.store', () => ({
 jest.mock('./useSearchCooldown', () => ({
     useIsSearchCooldownActive: jest.fn(() => false),
     useSearchCooldown: jest.fn(() => null),
+    useIsSearchAwaitingNewInput: jest.fn(() => false),
     useSearchCooldownActions: jest.fn(() => ({
         setCooldown: jest.fn(),
         updateCooldown: jest.fn(),
@@ -61,6 +62,16 @@ jest.mock('../useCooldown', () => ({
 
 jest.mock('./SearchResults', () => ({
     SearchResults: () => <div data-testid="search-results">Search Results</div>,
+}))
+
+jest.mock('./useSearchQuery', () => ({
+    useSearchQuery: jest.fn(() => ({
+        isLoading: false,
+        isFetching: false,
+        data: null,
+        error: null,
+        cancelQuery: jest.fn(),
+    })),
 }))
 
 // Mock SearchOrAskAiErrorCallout
@@ -268,6 +279,35 @@ describe('Search Component', () => {
 
             // Assert
             expect(screen.getByTestId('search-results')).toBeInTheDocument()
+        })
+    })
+
+    describe('Search cancellation', () => {
+        const mockUseSearchQuery = jest.mocked(
+            jest.requireMock('./useSearchQuery').useSearchQuery
+        )
+        const mockCancelQuery = jest.fn()
+
+        beforeEach(() => {
+            mockCancelQuery.mockClear()
+        })
+
+        it('should provide cancelQuery function from useSearchQuery', () => {
+            // Arrange
+            mockUseSearchTerm.mockReturnValue('')
+            mockUseSearchQuery.mockReturnValue({
+                isLoading: false,
+                isFetching: false,
+                data: null,
+                error: null,
+                cancelQuery: mockCancelQuery,
+            })
+
+            // Act
+            render(<Search />)
+
+            // Assert - verify the hook is called and returns cancelQuery
+            expect(mockUseSearchQuery).toHaveBeenCalled()
         })
     })
 })

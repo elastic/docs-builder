@@ -120,6 +120,16 @@ export const chatStore = create<ChatState>((set) => ({
         markMessageAsSent: (id: string) => {
             sentAiMessageIds.add(id)
         },
+
+        cancelStreaming: () => {
+            set((state) => ({
+                chatMessages: state.chatMessages.map((msg) =>
+                    msg.type === 'ai' && msg.status === 'streaming'
+                        ? { ...msg, status: 'complete' }
+                        : msg
+                ),
+            }))
+        },
     },
 }))
 

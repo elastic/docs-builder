@@ -1,13 +1,12 @@
 /** @jsxImportSource @emotion/react */
 import { useChatActions } from '../AskAi/chat.store'
+import { useIsAskAiCooldownActive } from '../AskAi/useAskAiCooldown'
 import { SearchOrAskAiErrorCallout } from '../SearchOrAskAiErrorCallout'
 import { useModalActions } from '../modal.store'
-import { useIsAskAiCooldownActive } from '../AskAi/useAskAiCooldown'
-import {
-    useIsSearchCooldownActive,
-} from './useSearchCooldown'
 import { SearchResults } from './SearchResults'
 import { useSearchActions, useSearchTerm } from './search.store'
+import { useIsSearchCooldownActive } from './useSearchCooldown'
+import { useSearchQuery } from './useSearchQuery'
 import { EuiFieldText, EuiSpacer, EuiButton, EuiButtonIcon } from '@elastic/eui'
 import { css } from '@emotion/react'
 import { useCallback, useRef, useState, useEffect } from 'react'
@@ -25,33 +24,68 @@ export const Search = () => {
     const isAskAiCooldownActive = useIsAskAiCooldownActive()
     const inputRef = useRef<HTMLInputElement>(null)
     const [inputValue, setInputValue] = useState(searchTerm)
+    const { isLoading, isFetching, cancelQuery } = useSearchQuery({
+        searchTerm,
+    })
+    const [isButtonVisible, setIsButtonVisible] = useState(false)
+    const [isAnimatingOut, setIsAnimatingOut] = useState(false)
 
-    const handleSearch = useCallback(() => {
-        if (searchTerm.trim()) {
-            // Prevent submission during countdown
-            if (isSearchCooldownActive || isAskAiCooldownActive) {
-                return
-            }
-            // Always start a new conversation
-            clearChat()
-            submitQuestion(searchTerm)
-            setModalMode('askAi')
+    const handleSearch = useCallback(
+        (e) => {
+            const newValue = e.target.value
+            setInputValue(newValue)
+            setSearchTerm(newValue)
+        },
+        [
+            searchTerm,
+            isSearchCooldownActive,
+            isAskAiCooldownActive,
+            clearChat,
+            submitQuestion,
+            setModalMode,
+        ]
+    )
+    const handleChat = useCallback(() => {
+        if (isAskAiCooldownActive || searchTerm.trim() === '') {
+            return
         }
+        // Always start a new conversation
+        clearChat()
+        submitQuestion(searchTerm)
+        setModalMode('askAi')
     }, [
         searchTerm,
-        isSearchCooldownActive,
         isAskAiCooldownActive,
         clearChat,
         submitQuestion,
         setModalMode,
     ])
-
     // Sync inputValue with searchTerm from store (when cleared externally)
     useEffect(() => {
         if (searchTerm === '' && inputValue !== '') {
             setInputValue('')
         }
     }, [searchTerm, inputValue])
+
+    // Handle button visibility and animation
+    useEffect(() => {
+        const hasSearchTerm = searchTerm.trim() !== ''
+
+        if (hasSearchTerm && !isButtonVisible) {
+            // Show button with slide in animation
+            setIsButtonVisible(true)
+            setIsAnimatingOut(false)
+        } else if (!hasSearchTerm && isButtonVisible) {
+            // Start exit animation
+            setIsAnimatingOut(true)
+            // Remove button after animation completes
+            const timer = setTimeout(() => {
+                setIsButtonVisible(false)
+                setIsAnimatingOut(false)
+            }, 200) // Match animation duration
+            return () => clearTimeout(timer)
+        }
+    }, [searchTerm, isButtonVisible])
 
     return (
         <>
@@ -70,14 +104,10 @@ export const Search = () => {
                     fullWidth
                     placeholder="Search the docs as you type"
                     value={inputValue}
-                    onChange={(e) => {
-                        const newValue = e.target.value
-                        setInputValue(newValue)
-                        setSearchTerm(newValue)
-                    }}
+                    onChange={handleSearch}
                     onKeyDown={(e) => {
                         if (e.key === 'Enter') {
-                            handleSearch()
+                            handleChat()
                         }
                     }}
                     disabled={isSearchCooldownActive}
@@ -92,11 +122,43 @@ export const Search = () => {
                         border-radius: 9999px;
                     `}
                     color="primary"
-                    iconType="sortUp"
+                    iconType="search"
                     display={inputValue.trim() ? 'fill' : 'base'}
                     onClick={handleSearch}
-                    disabled={isSearchCooldownActive || isAskAiCooldownActive}
+                    disabled={isSearchCooldownActive}
+                    isLoading={isLoading || isFetching}
                 />
+                {isButtonVisible && (
+                    <EuiButtonIcon
+                        aria-label={
+                            isLoading || isFetching
+                                ? 'Cancel search'
+                                : 'Clear search'
+                        }
+                        className={
+                            isAnimatingOut
+                                ? 'slideOutSearchOrAskAiInputAnimation'
+                                : 'slideInSearchOrAskAiInputAnimation'
+                        }
+                        css={css`
+                            position: absolute;
+                            right: 40px;
+                            top: 50%;
+                            transform: translateY(-50%);
+                            border-radius: 9999px;
+                        `}
+                        color="accentSecondary"
+                        iconType={isLoading || isFetching ? 'cross' : 'trash'}
+                        display="fill"
+                        onClick={() => {
+                            if (isLoading || isFetching) {
+                                cancelQuery()
+                            } else {
+                                setSearchTerm('')
+                            }
+                        }}
+                    />
+                )}
             </div>
             {searchTerm && (
                 <>
@@ -134,4 +196,3 @@ const AskAiButton = ({ term, onAsk }: { term: string; onAsk: () => void }) => {
         </EuiButton>
     )
 }
-

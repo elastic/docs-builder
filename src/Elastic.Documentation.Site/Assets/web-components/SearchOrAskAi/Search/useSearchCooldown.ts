@@ -18,8 +18,7 @@ export const useIsSearchCooldownActive = () => {
 export const useSearchErrorCalloutState = () => {
     const countdown = useSearchCooldown()
     const hasActiveCooldown = useIsSearchCooldownActive()
-    const awaitingNewInput =
-        useIsSearchAwaitingNewInput()
+    const awaitingNewInput = useIsSearchAwaitingNewInput()
 
     return {
         countdown,

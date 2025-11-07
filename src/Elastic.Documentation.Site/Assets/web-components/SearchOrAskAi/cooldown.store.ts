@@ -1,5 +1,5 @@
-import { create } from 'zustand/react'
 import { ModalMode } from './callout-state'
+import { create } from 'zustand/react'
 
 interface CooldownStateData {
     cooldown: number | null
@@ -75,8 +75,7 @@ const cooldownStore = create<CooldownState>((set) => ({
     },
 }))
 
-export const useCooldownActions = () =>
-    cooldownStore((state) => state.actions)
+export const useCooldownActions = () => cooldownStore((state) => state.actions)
 
 export const useCooldownState = (domain: ModalMode) =>
     cooldownStore((state) => state.cooldowns[domain])

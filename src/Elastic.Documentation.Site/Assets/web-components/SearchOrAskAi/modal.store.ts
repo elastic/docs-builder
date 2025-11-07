@@ -1,5 +1,5 @@
-import { create } from 'zustand/react'
 import { ModalMode } from './callout-state'
+import { create } from 'zustand/react'
 
 interface ModalState {
     isOpen: boolean

@@ -123,20 +123,24 @@ describe('SearchOrAskAiErrorCallout', () => {
         mockAskAiState.awaitingNewInput = false
         mockUseSearchErrorCalloutState.mockReturnValue(mockSearchState)
         mockUseAskAiErrorCalloutState.mockReturnValue(mockAskAiState)
-        mockGetErrorMessage.mockImplementation((error: ApiError | Error | null) => {
-            if (!error) return 'Unknown error'
-            if ('statusCode' in error) {
-                return `Error ${error.statusCode}: ${error.message}`
+        mockGetErrorMessage.mockImplementation(
+            (error: ApiError | Error | null) => {
+                if (!error) return 'Unknown error'
+                if ('statusCode' in error) {
+                    return `Error ${error.statusCode}: ${error.message}`
+                }
+                return error.message
             }
-            return error.message
-        })
-        mockIsRateLimitError.mockImplementation((error: ApiError | Error | null) => {
-            return (
-                error instanceof Error &&
-                'statusCode' in error &&
-                (error as ApiError).statusCode === 429
-            )
-        })
+        )
+        mockIsRateLimitError.mockImplementation(
+            (error: ApiError | Error | null) => {
+                return (
+                    error instanceof Error &&
+                    'statusCode' in error &&
+                    (error as ApiError).statusCode === 429
+                )
+            }
+        )
     })
 
     describe('Rate limit handler calls', () => {

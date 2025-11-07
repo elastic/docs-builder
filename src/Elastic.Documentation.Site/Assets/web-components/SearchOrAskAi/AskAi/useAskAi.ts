@@ -1,7 +1,7 @@
 import { ApiError, isRateLimitError } from '../errorHandling'
-import { useAskAiCooldown, useAskAiCooldownActions } from './useAskAiCooldown'
 import { AskAiEvent, AskAiEventSchema } from './AskAiEvent'
 import { useAiProvider } from './chat.store'
+import { useAskAiCooldown, useAskAiCooldownActions } from './useAskAiCooldown'
 import { useFetchEventSource } from './useFetchEventSource'
 import { useMessageThrottling } from './useMessageThrottling'
 import { EventSourceMessage } from '@microsoft/fetch-event-source'
@@ -185,7 +185,10 @@ export const useAskAi = (props: Props): UseAskAiResponse => {
     }
 }
 
-function createAskAiRequest(message: string, conversationId?: string): AskAiRequest {
+function createAskAiRequest(
+    message: string,
+    conversationId?: string
+): AskAiRequest {
     return AskAiRequestSchema.parse({
         message,
         conversationId,

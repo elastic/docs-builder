@@ -1,5 +1,9 @@
+import {
+    useCooldownState,
+    useCooldownActions,
+    ModalMode,
+} from './cooldown.store'
 import { ApiError, isRateLimitError } from './errorHandling'
-import { useCooldownState, useCooldownActions, ModalMode } from './cooldown.store'
 import { useEffect, useRef } from 'react'
 
 /**
@@ -31,7 +35,8 @@ export function useRateLimitHandler(
                     isNewError &&
                     ((state.cooldown === null &&
                         previousErrorRetryAfterRef.current === null) ||
-                        (state.cooldown !== null && state.cooldown < retryAfter))
+                        (state.cooldown !== null &&
+                            state.cooldown < retryAfter))
 
                 if (shouldSetCooldown) {
                     setCooldown(domain, retryAfter)
@@ -41,11 +46,5 @@ export function useRateLimitHandler(
         } else if (!error) {
             previousErrorRetryAfterRef.current = null
         }
-    }, [
-        error,
-        domain,
-        state.cooldown,
-        state.awaitingNewInput,
-        setCooldown,
-    ])
+    }, [error, domain, state.cooldown, state.awaitingNewInput, setCooldown])
 }

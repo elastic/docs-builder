@@ -1,12 +1,10 @@
 /** @jsxImportSource @emotion/react */
 import { SearchOrAskAiErrorCallout } from '../SearchOrAskAiErrorCallout'
-import {
-    useIsAskAiCooldownActive,
-} from './useAskAiCooldown'
 import { AiProviderSelector } from './AiProviderSelector'
 import { AskAiSuggestions } from './AskAiSuggestions'
 import { ChatMessageList } from './ChatMessageList'
 import { useChatActions, useChatMessages } from './chat.store'
+import { useIsAskAiCooldownActive } from './useAskAiCooldown'
 import {
     useEuiOverflowScroll,
     EuiButtonEmpty,
@@ -77,7 +75,8 @@ const NewConversationHeader = ({
 
 export const Chat = () => {
     const messages = useChatMessages()
-    const { submitQuestion, clearChat, clearNon429Errors } = useChatActions()
+    const { submitQuestion, clearChat, clearNon429Errors, cancelStreaming } =
+        useChatActions()
     const isCooldownActive = useIsAskAiCooldownActive()
     const inputRef = useRef<HTMLInputElement>(null)
     const scrollRef = useRef<HTMLDivElement>(null)
@@ -279,11 +278,13 @@ export const Chat = () => {
                             border-radius: 9999px;
                         `}
                         color="primary"
-                        iconType={isStreaming ? 'cross' : 'sortUp'}
+                        iconType={isStreaming ? 'cross' : 'comment'}
                         display={
                             inputValue.trim() || isStreaming ? 'fill' : 'base'
                         }
-                        onClick={handleButtonClick}
+                        onClick={
+                            isStreaming ? cancelStreaming : handleButtonClick
+                        }
                         disabled={isCooldownActive}
                     ></EuiButtonIcon>
                 </div>
