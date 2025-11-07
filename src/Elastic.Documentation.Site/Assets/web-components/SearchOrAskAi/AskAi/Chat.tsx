@@ -2,10 +2,7 @@
 import { SearchOrAskAiErrorCallout } from '../SearchOrAskAiErrorCallout'
 import {
     useIsAskAiCooldownActive,
-    useAskAiCooldown,
-    useAskAiCooldownActions,
 } from './useAskAiCooldown'
-import { useCooldown } from '../useCooldown'
 import { AiProviderSelector } from './AiProviderSelector'
 import { AskAiSuggestions } from './AskAiSuggestions'
 import { ChatMessageList } from './ChatMessageList'
@@ -82,21 +79,12 @@ export const Chat = () => {
     const messages = useChatMessages()
     const { submitQuestion, clearChat, clearNon429Errors } = useChatActions()
     const isCooldownActive = useIsAskAiCooldownActive()
-    const askAiCooldown = useAskAiCooldown()
-    const { notifyCooldownFinished } = useAskAiCooldownActions()
     const inputRef = useRef<HTMLInputElement>(null)
     const scrollRef = useRef<HTMLDivElement>(null)
     const lastMessageStatusRef = useRef<string | null>(null)
     const abortFunctionRef = useRef<(() => void) | null>(null)
     const [inputValue, setInputValue] = useState('')
     const [hasClearedError, setHasClearedError] = useState(false)
-
-    // Manage askAi cooldown countdown
-    useCooldown({
-        domain: 'askAi',
-        cooldown: askAiCooldown,
-        onCooldownFinished: () => notifyCooldownFinished(),
-    })
 
     const dynamicScrollableStyles = css`
         ${scrollableStyles}

@@ -94,6 +94,7 @@ export const useSearchQuery = ({ searchTerm, pageNumber = 1 }: Props) => {
         },
         enabled: shouldEnable,
         refetchOnWindowFocus: false,
+        refetchOnMount: false, // Prevent refetch when component mounts during cooldown
         placeholderData: keepPreviousData,
         staleTime: 1000 * 60 * 5, // 5 minutes
         retry: shouldRetry,

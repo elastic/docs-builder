@@ -79,12 +79,14 @@ export function SearchOrAskAiErrorCallout({
         ) as ApiError
         newSyntheticError.name = 'ApiError'
         newSyntheticError.statusCode = 429
-        newSyntheticError.retryAfter = state.countdown ?? undefined
+        newSyntheticError.retryAfter = state.countdown ?? 1
         syntheticError = newSyntheticError
     }
 
     if (state.hasActiveCooldown && isApiError(syntheticError)) {
-        syntheticError.retryAfter = state.countdown ?? undefined
+        if (state.countdown !== null && state.countdown > 0) {
+            syntheticError.retryAfter = state.countdown
+        }
     }
 
     const errorMessage = getErrorMessage(syntheticError)

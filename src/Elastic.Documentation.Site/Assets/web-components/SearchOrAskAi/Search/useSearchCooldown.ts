@@ -15,6 +15,19 @@ export const useIsSearchCooldownActive = () => {
     return countdown !== null && countdown > 0
 }
 
+export const useSearchErrorCalloutState = () => {
+    const countdown = useSearchCooldown()
+    const hasActiveCooldown = useIsSearchCooldownActive()
+    const cooldownFinishedPendingAcknowledgment =
+        useSearchCooldownFinishedPendingAcknowledgment()
+
+    return {
+        countdown,
+        hasActiveCooldown,
+        cooldownFinishedPendingAcknowledgment,
+    }
+}
+
 export const useSearchCooldownActions = () => {
     const actions = useCooldownActions()
     return {

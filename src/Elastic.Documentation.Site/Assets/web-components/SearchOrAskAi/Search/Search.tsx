@@ -4,11 +4,8 @@ import { SearchOrAskAiErrorCallout } from '../SearchOrAskAiErrorCallout'
 import { useModalActions } from '../modal.store'
 import { useIsAskAiCooldownActive } from '../AskAi/useAskAiCooldown'
 import {
-    useSearchCooldown,
     useIsSearchCooldownActive,
-    useSearchCooldownActions,
 } from './useSearchCooldown'
-import { useCooldown } from '../useCooldown'
 import { SearchResults } from './SearchResults'
 import { useSearchActions, useSearchTerm } from './search.store'
 import { EuiFieldText, EuiSpacer, EuiButton, EuiButtonIcon } from '@elastic/eui'
@@ -26,17 +23,8 @@ export const Search = () => {
     const { setModalMode } = useModalActions()
     const isSearchCooldownActive = useIsSearchCooldownActive()
     const isAskAiCooldownActive = useIsAskAiCooldownActive()
-    const searchCooldown = useSearchCooldown()
-    const { notifyCooldownFinished } = useSearchCooldownActions()
     const inputRef = useRef<HTMLInputElement>(null)
     const [inputValue, setInputValue] = useState(searchTerm)
-
-    // Manage search cooldown countdown
-    useCooldown({
-        domain: 'search',
-        cooldown: searchCooldown,
-        onCooldownFinished: () => notifyCooldownFinished(),
-    })
 
     const handleSearch = useCallback(() => {
         if (searchTerm.trim()) {
