@@ -2,56 +2,45 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Documentation.Configuration.Builder;
-using Elastic.Documentation.Configuration.DocSet;
+using System.IO.Abstractions;
+using Elastic.Documentation.Configuration.Toc;
 
 namespace Elastic.Documentation.Configuration.Plugins.DetectionRules.TableOfContents;
 
 public record RuleOverviewReference : FileRef
 {
-
-	public IReadOnlyCollection<string> DetectionRuleFolders { get; init; }
-
-	private string ParentPath { get; }
-	private string TocContext { get; }
+	public IReadOnlyCollection<string> DetectionRuleFolders { get; }
 
 	public RuleOverviewReference(
-		string overviewFilePathRelativeToDocumentationSet,
-		string parentPath,
-		ConfigurationFile configuration,
-		IDocumentationSetContext context,
-		IReadOnlyCollection<string> detectionRuleFolders,
-		string tocContext
-	)
-		: base(overviewFilePathRelativeToDocumentationSet, overviewFilePathRelativeToDocumentationSet, false, [], tocContext)
+		string pathRelativeToDocumentationSet,
+		string pathRelativeToContainer,
+		IReadOnlyCollection<string> detectionRulesFolders,
+		IReadOnlyCollection<ITableOfContentsItem> children,
+		string context
+	) : base(pathRelativeToDocumentationSet, pathRelativeToContainer, false, children, context)
 	{
-		ParentPath = parentPath;
-		TocContext = tocContext;
-		DetectionRuleFolders = detectionRuleFolders;
-		Children = CreateTableOfContentItems(configuration, context);
+		PathRelativeToDocumentationSet = pathRelativeToDocumentationSet;
+		PathRelativeToContainer = pathRelativeToContainer;
+		DetectionRuleFolders = detectionRulesFolders;
+		Children = children;
+		Context = context;
 	}
 
-	private IReadOnlyCollection<ITableOfContentsItem> CreateTableOfContentItems(ConfigurationFile configuration, IDocumentationSetContext context)
+	public static IReadOnlyCollection<ITableOfContentsItem> CreateTableOfContentItems(IReadOnlyCollection<IDirectoryInfo> sourceFolders, string context, IDirectoryInfo baseDirectory)
 	{
-		_ = configuration; // Keep parameter for now for compatibility
 		var tocItems = new List<ITableOfContentsItem>();
-		foreach (var detectionRuleFolder in DetectionRuleFolders)
+		foreach (var detectionRuleFolder in sourceFolders)
 		{
-			var children = ReadDetectionRuleFolder(context, detectionRuleFolder);
+			var children = ReadDetectionRuleFolder(detectionRuleFolder, context, baseDirectory);
 			tocItems.AddRange(children);
 		}
 
 		return tocItems
-			.OrderBy(d => d is RuleReference r ? r.Rule.Name : null, StringComparer.OrdinalIgnoreCase)
 			.ToArray();
 	}
 
-	private IReadOnlyCollection<ITableOfContentsItem> ReadDetectionRuleFolder(IDocumentationSetContext context, string detectionRuleFolder)
+	private static IReadOnlyCollection<ITableOfContentsItem> ReadDetectionRuleFolder(IDirectoryInfo directory, string context, IDirectoryInfo baseDirectory)
 	{
-		var detectionRulesFolder = Path.Combine(ParentPath, detectionRuleFolder).TrimStart(Path.DirectorySeparatorChar);
-		var fs = context.ReadFileSystem;
-		var sourceDirectory = context.DocumentationSourceDirectory;
-		var directory = fs.DirectoryInfo.New(fs.Path.GetFullPath(fs.Path.Combine(sourceDirectory.FullName, detectionRulesFolder)));
 		IReadOnlyCollection<ITableOfContentsItem> children = directory
 			.EnumerateFiles("*.*", SearchOption.AllDirectories)
 			.Where(f => !f.Attributes.HasFlag(FileAttributes.Hidden) && !f.Attributes.HasFlag(FileAttributes.System))
@@ -61,14 +50,12 @@ public record RuleOverviewReference : FileRef
 			.Where(f => !f.FullName.Contains($"{Path.DirectorySeparatorChar}_deprecated{Path.DirectorySeparatorChar}"))
 			.Select(f =>
 			{
-				var relativePath = Path.GetRelativePath(sourceDirectory.FullName, f.FullName);
+				// baseDirectory is 'docs' rules live relative to docs parent '/'
+				var relativePath = Path.GetRelativePath(baseDirectory.Parent!.FullName, f.FullName);
 				if (f.Extension == ".toml")
-				{
-					var rule = DetectionRule.From(f);
-					return new RuleReference(relativePath, detectionRuleFolder, true, [], rule, TocContext);
-				}
+					return new RuleReference(f, relativePath, context);
 
-				return new FileRef(relativePath, relativePath, false, [], TocContext);
+				return new FileRef(relativePath, relativePath, false, [], context);
 			})
 			.ToArray();
 

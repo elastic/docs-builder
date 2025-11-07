@@ -5,7 +5,7 @@
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Plugins.DetectionRules;
-using Elastic.Documentation.Configuration.Plugins.DetectionRules.TableOfContents;
+using Elastic.Documentation.Navigation;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Myst;
 using Markdig.Syntax;
@@ -14,37 +14,52 @@ namespace Elastic.Markdown.Extensions.DetectionRules;
 
 public record DetectionRuleOverviewFile : MarkdownFile
 {
+	private string? _markdown;
+
 	public DetectionRuleOverviewFile(IFileInfo sourceFile, IDirectoryInfo rootPath, MarkdownParser parser, BuildContext build)
 		: base(sourceFile, rootPath, parser, build)
 	{
 	}
 
-	public RuleReference[] Rules { get; set; } = [];
+	private ILeafNavigationItem<IDocumentationFile>[] _ruleNavigations = [];
 
-	private Dictionary<string, DetectionRuleFile> Files { get; } = [];
-
-	public void AddDetectionRuleFile(DetectionRuleFile df, RuleReference ruleReference) => Files[ruleReference.RelativePathRelativeToDocumentationSet] = df;
+	internal ILeafNavigationItem<IDocumentationFile>[] RuleNavigations
+	{
+		get => _ruleNavigations;
+		set
+		{
+			_markdown = null;
+			_ruleNavigations = value;
+		}
+	}
 
 	protected override Task<MarkdownDocument> GetMinimalParseDocumentAsync(Cancel ctx)
 	{
 		Title = "Prebuilt detection rules reference";
-		var markdown = GetMarkdown();
+		var markdown = GetMarkdownCached();
 		var document = MarkdownParser.MinimalParseStringAsync(markdown, SourceFile, null);
 		return Task.FromResult(document);
 	}
 
 	protected override Task<MarkdownDocument> GetParseDocumentAsync(Cancel ctx)
 	{
-		var markdown = GetMarkdown();
+		var markdown = GetMarkdownCached();
 		var document = MarkdownParser.ParseStringAsync(markdown, SourceFile, null);
 		return Task.FromResult(document);
 	}
 
+	private string GetMarkdownCached()
+	{
+		_markdown ??= GetMarkdown();
+		return _markdown;
+	}
+
 	private string GetMarkdown()
 	{
+		var rules = RuleNavigations.Select(navigation => (Navigation: navigation, Model: (DetectionRuleFile)navigation.Model)).ToList();
 		var groupedRules =
-			Rules
-				.GroupBy(r => r.Rule.Domain ?? "Unspecified")
+			rules
+				.GroupBy(r => r.Model.Rule.Domain ?? "Unspecified")
 				.OrderBy(g => g.Key)
 				.ToArray();
 		// language=markdown
@@ -66,13 +81,12 @@ $"""
 ## {group.Key}
 
 """;
-			foreach (var r in group.OrderBy(r => r.Rule.Name))
+			foreach (var (navigation, model) in group.OrderBy(r => r.Model.Rule.Name))
 			{
 				// TODO update this to use the new URL from navigation
-				var url = "does-not-exist-yet";
 				markdown +=
 $"""
-[{r.Rule.Name}](!{url}) <br>
+[{model.Rule.Name}](!{navigation.Url}) <br>
 """;
 
 			}
@@ -87,7 +101,7 @@ $"""
 
 public record DetectionRuleFile : MarkdownFile
 {
-	public DetectionRule? Rule { get; set; }
+	public DetectionRule Rule { get; }
 
 	public override string LinkReferenceRelativePath { get; }
 
@@ -102,6 +116,7 @@ public record DetectionRuleFile : MarkdownFile
 	{
 		RuleSourceMarkdownPath = SourcePath(sourceFile, build);
 		LinkReferenceRelativePath = Path.GetRelativePath(build.DocumentationSourceDirectory.FullName, RuleSourceMarkdownPath.FullName);
+		Rule = DetectionRule.From(sourceFile);
 	}
 
 	private static IFileInfo SourcePath(IFileInfo rulePath, BuildContext build)
@@ -121,11 +136,9 @@ public record DetectionRuleFile : MarkdownFile
 		return rulePath.FileSystem.FileInfo.New(newPath);
 	}
 
-	//protected override string RelativePathUrl => RelativePath.AsSpan().TrimStart("../").ToString();
-
 	protected override Task<MarkdownDocument> GetMinimalParseDocumentAsync(Cancel ctx)
 	{
-		Title = Rule?.Name;
+		Title = Rule.Name;
 		var markdown = GetMarkdown();
 		var document = MarkdownParser.MinimalParseStringAsync(markdown, RuleSourceMarkdownPath, null);
 		return Task.FromResult(document);
@@ -140,8 +153,6 @@ public record DetectionRuleFile : MarkdownFile
 
 	private string GetMarkdown()
 	{
-		if (Rule is null)
-			return $"# {Title}";
 		// language=markdown
 		var markdown =
 $"""

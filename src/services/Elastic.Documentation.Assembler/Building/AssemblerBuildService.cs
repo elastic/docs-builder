@@ -9,7 +9,7 @@ using Elastic.Documentation.Assembler.Navigation;
 using Elastic.Documentation.Assembler.Sourcing;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
-using Elastic.Documentation.Configuration.DocSet;
+using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.LegacyDocs;
 using Elastic.Documentation.Navigation.Assembler;

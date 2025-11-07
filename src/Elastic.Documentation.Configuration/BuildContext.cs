@@ -6,10 +6,10 @@ using System.IO.Abstractions;
 using System.Reflection;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
-using Elastic.Documentation.Configuration.DocSet;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Synonyms;
+using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 

@@ -43,6 +43,7 @@ public class FileNavigationLeaf<TModel>(TModel model, IFileInfo fileInfo, FileNa
 				// Remove extension while preserving the directory path
 				var relativePath = relativeToContainer ? args.RelativePathToTableOfContents : args.RelativePathToDocumentationSet;
 				relativePath = relativePath.OptionalWindowsReplace();
+				relativePath = Path.ChangeExtension(relativePath, "md");
 				var path = relativePath.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
 					? relativePath[..^3]  // Remove last 3 characters (.md)
 					: relativePath;

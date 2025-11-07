@@ -5,7 +5,7 @@
 using System.Collections.Immutable;
 using System.Diagnostics;
 using Elastic.Documentation.Configuration.Assembler;
-using Elastic.Documentation.Configuration.DocSet;
+using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation.Isolated.Node;
 

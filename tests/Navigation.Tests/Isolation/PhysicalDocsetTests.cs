@@ -4,7 +4,7 @@
 
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.DocSet;
+using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Navigation.Isolated.Leaf;
 using Elastic.Documentation.Navigation.Isolated.Node;

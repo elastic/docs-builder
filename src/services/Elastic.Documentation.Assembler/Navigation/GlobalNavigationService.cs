@@ -5,7 +5,7 @@
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
-using Elastic.Documentation.Configuration.DocSet;
+using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;

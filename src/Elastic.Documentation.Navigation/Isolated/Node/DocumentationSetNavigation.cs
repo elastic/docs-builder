@@ -4,7 +4,8 @@
 
 using System.Diagnostics;
 using System.IO.Abstractions;
-using Elastic.Documentation.Configuration.DocSet;
+using Elastic.Documentation.Configuration.Plugins.DetectionRules.TableOfContents;
+using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation.Isolated.Leaf;
@@ -232,7 +233,11 @@ public class DocumentationSetNavigation<TModel>
 		var fullPath = fileRef.PathRelativeToDocumentationSet;
 
 		// Create file info and documentation file
-		var fileInfo = ResolveFileInfo(context, fullPath);
+		var fileInfo = fileRef switch
+		{
+			RuleReference ruleRef => ruleRef.FileInfo,
+			_ => ResolveFileInfo(context, fullPath)
+		};
 		var documentationFile = CreateDocumentationFile(fileInfo, context.ReadFileSystem, context, fullPath);
 		if (documentationFile == null)
 			return null;

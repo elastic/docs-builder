@@ -4,7 +4,7 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using System.Runtime.InteropServices;
-using Elastic.Documentation.Configuration.DocSet;
+using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
 using FluentAssertions;

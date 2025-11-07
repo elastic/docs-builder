@@ -76,6 +76,7 @@ public class DocumentationSet : IPositionalNavigation
 
 		var fileFactory = new MarkdownFileFactory(context, MarkdownParser, EnabledExtensions);
 		Navigation = new DocumentationSetNavigation<MarkdownFile>(context.ConfigurationYaml, context, fileFactory, null, null, context.UrlPathPrefix, CrossLinkResolver);
+		VisitNavigation(Navigation);
 
 		Name = Context.Git != GitCheckoutInformation.Unavailable
 			? Context.Git.RepositoryName
@@ -119,6 +120,23 @@ public class DocumentationSet : IPositionalNavigation
 	public DocumentationSetNavigation<MarkdownFile> Navigation { get; }
 
 	public FrozenDictionary<int, INavigationItem> NavigationIndexedByOrder { get; }
+
+	private void VisitNavigation(INavigationItem item)
+	{
+		switch (item)
+		{
+			case ILeafNavigationItem<IDocumentationFile> markdownLeaf:
+				foreach (var extension in EnabledExtensions)
+					extension.VisitNavigation(item, markdownLeaf.Model);
+				break;
+			case INodeNavigationItem<IDocumentationFile, INavigationItem> node:
+				foreach (var extension in EnabledExtensions)
+					extension.VisitNavigation(node, node.Index.Model);
+				foreach (var child in node.NavigationItems)
+					VisitNavigation(child);
+				break;
+		}
+	}
 
 	private IReadOnlyCollection<INavigationItem> CreateNavigationLookup(INavigationItem item)
 	{
@@ -221,12 +239,6 @@ public class DocumentationSet : IPositionalNavigation
 		if (MarkdownNavigationLookup.TryGetValue(markdown, out var navigation))
 			return navigation;
 		throw new Exception($"Could not find navigation item for {markdown.CrossLink}");
-	}
-	public INavigationItem FindNavigationByCrossLink(string crossLink)
-	{
-		if (NavigationIndexedByCrossLink.TryGetValue(crossLink, out var navigation))
-			return navigation;
-		throw new Exception($"Could not find navigation item for {crossLink}");
 	}
 
 	private bool _resolved;

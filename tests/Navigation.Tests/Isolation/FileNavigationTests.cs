@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions.TestingHelpers;
-using Elastic.Documentation.Configuration.DocSet;
+using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Documentation.Navigation.Isolated.Leaf;

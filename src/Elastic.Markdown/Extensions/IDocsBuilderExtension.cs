@@ -3,7 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using Elastic.Documentation.Configuration.DocSet;
+using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.Navigation;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Myst;
@@ -13,9 +14,6 @@ namespace Elastic.Markdown.Extensions;
 public interface IDocsBuilderExtension
 {
 	IDocumentationFileExporter? FileExporter { get; }
-
-	/// Visit the <paramref name="tocItem"/> and its equivalent <see cref="DocumentationFile"/>
-	void Visit(DocumentationFile file, ITableOfContentsItem tocItem);
 
 	/// Create an instance of <see cref="DocumentationFile"/> if it matches the <paramref name="file"/>.
 	/// Return `null` to let another extension handle this.
@@ -28,4 +26,6 @@ public interface IDocsBuilderExtension
 	IReadOnlyCollection<(IFileInfo, DocumentationFile)> ScanDocumentationFiles(Func<IFileInfo, IDirectoryInfo, DocumentationFile> defaultFileHandling);
 
 	MarkdownFile? CreateMarkdownFile(IFileInfo file, IDirectoryInfo sourceDirectory, MarkdownParser markdownParser);
+
+	void VisitNavigation(INavigationItem navigation, IDocumentationFile model);
 }

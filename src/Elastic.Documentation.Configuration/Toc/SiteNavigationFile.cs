@@ -10,7 +10,7 @@ using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
 
-namespace Elastic.Documentation.Configuration.DocSet;
+namespace Elastic.Documentation.Configuration.Toc;
 
 public record NavigationTocMapping
 {

@@ -8,7 +8,7 @@ using Elastic.Documentation.Assembler;
 using Elastic.Documentation.Assembler.Sourcing;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
-using Elastic.Documentation.Configuration.DocSet;
+using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Markdown.IO;

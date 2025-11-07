@@ -4,8 +4,10 @@
 
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.DocSet;
 using Elastic.Documentation.Configuration.Plugins.DetectionRules.TableOfContents;
+using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Navigation.Isolated.Node;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.NewNavigation;
@@ -19,38 +21,26 @@ public class DetectionRulesDocsBuilderExtension(BuildContext build) : IDocsBuild
 
 	public IDocumentationFileExporter? FileExporter { get; } = new RuleDocumentationFileExporter(build.ReadFileSystem, build.WriteFileSystem);
 
-	private DetectionRuleOverviewFile? _overviewFile;
-	public void Visit(DocumentationFile file, ITableOfContentsItem tocItem)
-	{
-		// TODO the parsing of rules should not happen at ITocItem reading time.
-		// ensure the file has an instance of the rule the reference parsed.
-		if (file is DetectionRuleFile df && tocItem is RuleReference r)
-		{
-			df.Rule = r.Rule;
-			_overviewFile?.AddDetectionRuleFile(df, r);
-
-		}
-
-		if (file is DetectionRuleOverviewFile of && tocItem is RuleOverviewReference or)
-		{
-			var rules = or.Children.OfType<RuleReference>().ToArray();
-			of.Rules = rules;
-			_overviewFile = of;
-		}
-	}
-
-	public DocumentationFile? CreateDocumentationFile(IFileInfo file, MarkdownParser markdownParser)
-	{
-		if (file.Extension != ".toml")
-			return null;
-
-		return new DetectionRuleFile(file, Build.DocumentationSourceDirectory, markdownParser, Build);
-	}
+	public DocumentationFile? CreateDocumentationFile(IFileInfo file, MarkdownParser markdownParser) =>
+		file.Extension != ".toml" ? null : new DetectionRuleFile(file, Build.DocumentationSourceDirectory, markdownParser, Build);
 
 	public MarkdownFile? CreateMarkdownFile(IFileInfo file, IDirectoryInfo sourceDirectory, MarkdownParser markdownParser) =>
-		file.Name == "index.md"
-			? new DetectionRuleOverviewFile(file, sourceDirectory, markdownParser, Build)
-			: null;
+		file.Name != "index.md" ? null : new DetectionRuleOverviewFile(file, sourceDirectory, markdownParser, Build);
+
+	/// <inheritdoc />
+	public void VisitNavigation(INavigationItem navigation, IDocumentationFile model)
+	{
+		if (model is not DetectionRuleOverviewFile overview)
+			return;
+		if (navigation is not VirtualFileNavigation<MarkdownFile> node)
+			return;
+		var detectionRuleNavigations = node.NavigationItems
+			.OfType<ILeafNavigationItem<IDocumentationFile>>()
+			.Where(n => n.Model is DetectionRuleFile)
+			.ToArray();
+
+		overview.RuleNavigations = detectionRuleNavigations;
+	}
 
 	public bool TryGetDocumentationFileBySlug(DocumentationSet documentationSet, string slug, out DocumentationFile? documentationFile)
 	{
@@ -59,22 +49,13 @@ public class DetectionRulesDocsBuilderExtension(BuildContext build) : IDocsBuild
 		return documentationSet.Files.TryGetValue(filePath, out documentationFile);
 	}
 
-	public IReadOnlyCollection<(IFileInfo, DocumentationFile)> ScanDocumentationFiles(
-		Func<IFileInfo, IDirectoryInfo, DocumentationFile> defaultFileHandling
-	)
+	public IReadOnlyCollection<(IFileInfo, DocumentationFile)> ScanDocumentationFiles(Func<IFileInfo, IDirectoryInfo, DocumentationFile> defaultFileHandling)
 	{
 		var rules = Build.ConfigurationYaml.TableOfContents.OfType<FileRef>().First().Children.OfType<RuleReference>().ToArray();
 		if (rules.Length == 0)
 			return [];
 
-		var sourcePath = Path.GetFullPath(Path.Combine(Build.DocumentationSourceDirectory.FullName, rules[0].SourceDirectory));
-		var sourceDirectory = Build.ReadFileSystem.DirectoryInfo.New(sourcePath);
-		return rules.Select(r =>
-		{
-			var file = Build.ReadFileSystem.FileInfo.New(Path.Combine(sourceDirectory.FullName, r.RelativePathRelativeToDocumentationSet));
-			return (file, defaultFileHandling(file, sourceDirectory));
-
-		}).ToArray();
+		return rules.Select(r => (r.FileInfo, defaultFileHandling(r.FileInfo, r.FileInfo.Directory!))).ToArray();
 	}
 
 }

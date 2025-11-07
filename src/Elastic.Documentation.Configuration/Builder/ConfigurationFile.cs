@@ -4,8 +4,8 @@
 
 using System.IO.Abstractions;
 using DotNet.Globbing;
-using Elastic.Documentation.Configuration.DocSet;
 using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Links;
 
@@ -43,20 +43,11 @@ public record ConfigurationFile
 
 	public IReadOnlyDictionary<string, IFileInfo>? OpenApiSpecifications { get; }
 
-	/// This is a documentation set that is not linked to by assembler.
+	/// This is a documentation set not linked to by assembler.
 	/// Setting this to true relaxes a few restrictions such as mixing toc references with file and folder reference
 	public bool DevelopmentDocs { get; }
 
-	// TODO ensure project key is `docs-content`
-	public bool IsNarrativeDocs =>
-		Project is not null
-		&& Project.Equals("Elastic documentation", StringComparison.OrdinalIgnoreCase);
-
-	public ConfigurationFile(
-		DocumentationSetFile docSetFile,
-		IDocumentationSetContext context,
-		VersionsConfiguration versionsConfig,
-		ProductsConfiguration productsConfig)
+	public ConfigurationFile(DocumentationSetFile docSetFile, IDocumentationSetContext context, VersionsConfiguration versionsConfig, ProductsConfiguration productsConfig)
 	{
 		_context = context;
 		ScopeDirectory = context.ConfigurationPath.Directory!;
@@ -85,7 +76,7 @@ public record ConfigurationFile
 			CrossLinkRepositories = [.. docSetFile.CrossLinks];
 
 			// Extensions - assuming they're not in DocumentationSetFile yet
-			Extensions = new([]);
+			Extensions = new EnabledExtensions(docSetFile.Extensions);
 
 			// Read substitutions
 			_substitutions = new(docSetFile.Subs, StringComparer.OrdinalIgnoreCase);

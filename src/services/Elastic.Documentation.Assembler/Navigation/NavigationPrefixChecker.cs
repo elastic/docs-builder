@@ -5,7 +5,7 @@
 using System.Collections.Immutable;
 using Elastic.Documentation.Assembler.Links;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.DocSet;
+using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
