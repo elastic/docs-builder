@@ -692,8 +692,7 @@ public class TocItemYamlConverter : IYamlTypeConverter
 					}
 					value = childrenList;
 				}
-
-				if (key.Value == "detection_rules")
+				else if (key.Value == "detection_rules")
 				{
 					// Parse the children list manually
 					var childrenList = new List<string>();

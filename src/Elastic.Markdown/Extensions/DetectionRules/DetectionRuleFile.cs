@@ -14,44 +14,26 @@ namespace Elastic.Markdown.Extensions.DetectionRules;
 
 public record DetectionRuleOverviewFile : MarkdownFile
 {
-	private string? _markdown;
-
 	public DetectionRuleOverviewFile(IFileInfo sourceFile, IDirectoryInfo rootPath, MarkdownParser parser, BuildContext build)
 		: base(sourceFile, rootPath, parser, build)
 	{
 	}
 
-	private ILeafNavigationItem<IDocumentationFile>[] _ruleNavigations = [];
-
-	internal ILeafNavigationItem<IDocumentationFile>[] RuleNavigations
-	{
-		get => _ruleNavigations;
-		set
-		{
-			_markdown = null;
-			_ruleNavigations = value;
-		}
-	}
+	internal ILeafNavigationItem<IDocumentationFile>[] RuleNavigations { get; set; } = [];
 
 	protected override Task<MarkdownDocument> GetMinimalParseDocumentAsync(Cancel ctx)
 	{
 		Title = "Prebuilt detection rules reference";
-		var markdown = GetMarkdownCached();
+		var markdown = GetMarkdown();
 		var document = MarkdownParser.MinimalParseStringAsync(markdown, SourceFile, null);
 		return Task.FromResult(document);
 	}
 
 	protected override Task<MarkdownDocument> GetParseDocumentAsync(Cancel ctx)
 	{
-		var markdown = GetMarkdownCached();
+		var markdown = GetMarkdown();
 		var document = MarkdownParser.ParseStringAsync(markdown, SourceFile, null);
 		return Task.FromResult(document);
-	}
-
-	private string GetMarkdownCached()
-	{
-		_markdown ??= GetMarkdown();
-		return _markdown;
 	}
 
 	private string GetMarkdown()
