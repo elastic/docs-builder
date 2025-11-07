@@ -29,7 +29,7 @@ export const Search = () => {
     const handleSearch = useCallback(() => {
         if (searchTerm.trim()) {
             // Prevent submission during countdown
-            if (isSearchCooldownActive) {
+            if (isSearchCooldownActive || isAskAiCooldownActive) {
                 return
             }
             // Always start a new conversation
@@ -40,6 +40,7 @@ export const Search = () => {
     }, [
         searchTerm,
         isSearchCooldownActive,
+        isAskAiCooldownActive,
         clearChat,
         submitQuestion,
         setModalMode,
@@ -94,7 +95,7 @@ export const Search = () => {
                     iconType="sortUp"
                     display={inputValue.trim() ? 'fill' : 'base'}
                     onClick={handleSearch}
-                    disabled={isSearchCooldownActive}
+                    disabled={isSearchCooldownActive || isAskAiCooldownActive}
                 />
             </div>
             {searchTerm && (
