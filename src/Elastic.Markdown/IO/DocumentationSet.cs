@@ -18,7 +18,6 @@ using Elastic.Documentation.Navigation.Isolated.Node;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.Extensions;
 using Elastic.Markdown.Extensions.DetectionRules;
-using Elastic.Markdown.IO.NewNavigation;
 using Elastic.Markdown.Myst;
 using Microsoft.Extensions.Logging;
 
