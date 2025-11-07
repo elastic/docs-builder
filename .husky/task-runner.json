@@ -1,0 +1,65 @@
+{
+  "$schema": "https://alirezanet.github.io/Husky.Net/schema.json",
+  "variables": [
+    {
+      "name": "push-files",
+      "command": "bash",
+      "args": [
+        "-c",
+        "git diff --name-only --diff-filter=d @{upstream}..HEAD 2>/dev/null || git diff --name-only --diff-filter=d origin/main..HEAD 2>/dev/null || git diff --name-only --diff-filter=d HEAD~1..HEAD"
+      ]
+    }
+  ],
+  "tasks": [
+    {
+      "name": "dotnet-lint",
+      "group": "pre-push",
+      "command": "bash",
+      "args": ["./build.sh", "lint", "${push-files}"],
+      "include": ["**/*.cs", "**/*.fs"]
+    },
+    {
+      "name": "prettier",
+      "group": "pre-commit",
+      "pathMode": "absolute",
+      "cwd": "src/Elastic.Documentation.Site",
+      "command": "npx",
+      "args": ["prettier", "--write", "${staged}"],
+      "include": [
+        "src/Elastic.Documentation.Site/**/*.ts",
+        "src/Elastic.Documentation.Site/**/*.tsx",
+        "src/Elastic.Documentation.Site/**/*.js",
+        "src/Elastic.Documentation.Site/**/*.jsx",
+        "src/Elastic.Documentation.Site/**/*.css",
+        "src/Elastic.Documentation.Site/**/*.json"
+      ]
+    },
+    {
+      "name": "typescript-check",
+      "group": "pre-commit",
+      "cwd": "src/Elastic.Documentation.Site",
+      "command": "npx",
+      "args": ["tsc", "--noEmit"],
+      "include": [
+        "src/Elastic.Documentation.Site/**/*.ts",
+        "src/Elastic.Documentation.Site/**/*.tsx"
+      ],
+      "filteringRule": "staged"
+    },
+    {
+      "name": "eslint",
+      "group": "pre-commit",
+      "pathMode": "absolute",
+      "cwd": "src/Elastic.Documentation.Site",
+      "command": "npx",
+      "args": ["eslint", "--fix", "${staged}"],
+      "include": [
+        "src/Elastic.Documentation.Site/**/*.ts",
+        "src/Elastic.Documentation.Site/**/*.tsx",
+        "src/Elastic.Documentation.Site/**/*.js",
+        "src/Elastic.Documentation.Site/**/*.jsx",
+        "src/Elastic.Documentation.Site/**/*.mjs"
+      ]
+    }
+  ]
+}
