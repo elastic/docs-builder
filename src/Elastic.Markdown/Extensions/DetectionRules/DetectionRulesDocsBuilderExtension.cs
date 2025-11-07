@@ -4,8 +4,8 @@
 
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.Plugins.DetectionRules.TableOfContents;
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.Configuration.Toc.DetectionRules;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Isolated.Node;
 using Elastic.Markdown.Exporters;
@@ -51,7 +51,7 @@ public class DetectionRulesDocsBuilderExtension(BuildContext build) : IDocsBuild
 
 	public IReadOnlyCollection<(IFileInfo, DocumentationFile)> ScanDocumentationFiles(Func<IFileInfo, IDirectoryInfo, DocumentationFile> defaultFileHandling)
 	{
-		var rules = Build.ConfigurationYaml.TableOfContents.OfType<FileRef>().First().Children.OfType<RuleReference>().ToArray();
+		var rules = Build.ConfigurationYaml.TableOfContents.OfType<FileRef>().First().Children.OfType<DetectionRuleRef>().ToArray();
 		if (rules.Length == 0)
 			return [];
 

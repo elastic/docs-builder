@@ -6,7 +6,7 @@ using System.IO.Abstractions;
 using Tomlet;
 using Tomlet.Models;
 
-namespace Elastic.Documentation.Configuration.Plugins.DetectionRules;
+namespace Elastic.Markdown.Extensions.DetectionRules;
 
 public record DetectionRuleThreat
 {

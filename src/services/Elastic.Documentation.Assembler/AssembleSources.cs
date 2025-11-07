@@ -209,8 +209,6 @@ public class AssembleSources
 			{
 				Source = sourceUri,
 				SourcePathPrefix = pathPrefix,
-				TopLevelSource = topLevelSource,
-				ParentSource = parentSource
 			};
 			entries.Add(new KeyValuePair<Uri, NavigationTocMapping>(sourceUri, tocTopLevelMapping));
 

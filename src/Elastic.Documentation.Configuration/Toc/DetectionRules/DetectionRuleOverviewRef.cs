@@ -3,15 +3,14 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using Elastic.Documentation.Configuration.Toc;
 
-namespace Elastic.Documentation.Configuration.Plugins.DetectionRules.TableOfContents;
+namespace Elastic.Documentation.Configuration.Toc.DetectionRules;
 
-public record RuleOverviewReference : FileRef
+public record DetectionRuleOverviewRef : FileRef
 {
 	public IReadOnlyCollection<string> DetectionRuleFolders { get; }
 
-	public RuleOverviewReference(
+	public DetectionRuleOverviewRef(
 		string pathRelativeToDocumentationSet,
 		string pathRelativeToContainer,
 		IReadOnlyCollection<string> detectionRulesFolders,
@@ -53,7 +52,7 @@ public record RuleOverviewReference : FileRef
 				// baseDirectory is 'docs' rules live relative to docs parent '/'
 				var relativePath = Path.GetRelativePath(baseDirectory.Parent!.FullName, f.FullName);
 				if (f.Extension == ".toml")
-					return new RuleReference(f, relativePath, context);
+					return new DetectionRuleRef(f, relativePath, context);
 
 				return new FileRef(relativePath, relativePath, false, [], context);
 			})

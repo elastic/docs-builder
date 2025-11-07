@@ -4,8 +4,8 @@
 
 using System.Diagnostics;
 using System.IO.Abstractions;
-using Elastic.Documentation.Configuration.Plugins.DetectionRules.TableOfContents;
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.Configuration.Toc.DetectionRules;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation.Isolated.Leaf;
@@ -235,7 +235,7 @@ public class DocumentationSetNavigation<TModel>
 		// Create file info and documentation file
 		var fileInfo = fileRef switch
 		{
-			RuleReference ruleRef => ruleRef.FileInfo,
+			DetectionRuleRef ruleRef => ruleRef.FileInfo,
 			_ => ResolveFileInfo(context, fullPath)
 		};
 		var documentationFile = CreateDocumentationFile(fileInfo, context.ReadFileSystem, context, fullPath);

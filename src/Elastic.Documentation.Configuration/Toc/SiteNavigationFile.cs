@@ -16,8 +16,6 @@ public record NavigationTocMapping
 {
 	public required Uri Source { get; init; }
 	public required string SourcePathPrefix { get; init; }
-	public required Uri TopLevelSource { get; init; }
-	public required Uri ParentSource { get; init; }
 }
 
 [YamlSerializable]
@@ -69,8 +67,7 @@ public class SiteNavigationFile
 			CollectSource(child, set);
 	}
 
-
-	public static ImmutableHashSet<Uri> GetAllPathPrefixes(SiteNavigationFile siteNavigation)
+	private static ImmutableHashSet<Uri> GetAllPathPrefixes(SiteNavigationFile siteNavigation)
 	{
 		var set = new HashSet<Uri>();
 
@@ -117,12 +114,7 @@ public class PhantomRegistration
 	public string Source { get; set; } = null!;
 }
 
-public class SiteTableOfContents : List<SiteTableOfContentsRef>
-{
-	public SiteTableOfContents() { }
-
-	public SiteTableOfContents(IEnumerable<SiteTableOfContentsRef> items) : base(items) { }
-}
+public class SiteTableOfContents : List<SiteTableOfContentsRef>;
 
 public record SiteTableOfContentsRef(Uri Source, string PathPrefix, IReadOnlyCollection<SiteTableOfContentsRef> Children)
 	: ITableOfContentsItem
