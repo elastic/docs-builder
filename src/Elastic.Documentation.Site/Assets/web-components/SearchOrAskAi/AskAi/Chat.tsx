@@ -83,7 +83,6 @@ export const Chat = () => {
     const lastMessageStatusRef = useRef<string | null>(null)
     const abortFunctionRef = useRef<(() => void) | null>(null)
     const [inputValue, setInputValue] = useState('')
-    const [hasClearedError, setHasClearedError] = useState(false)
 
     const dynamicScrollableStyles = css`
         ${scrollableStyles}
@@ -98,6 +97,7 @@ export const Chat = () => {
 
     // Handle abort function from StreamingAiMessage
     const handleAbortReady = (abort: () => void) => {
+        console.log('[Chat] Abort function ready, storing in ref')
         abortFunctionRef.current = abort
     }
 
@@ -108,15 +108,6 @@ export const Chat = () => {
         }
     }, [isStreaming])
 
-    useEffect(() => {
-        if (inputValue && !hasClearedError) {
-            clearNon429Errors()
-            setHasClearedError(true)
-        } else if (!inputValue) {
-            setHasClearedError(false)
-        }
-    }, [inputValue, clearNon429Errors, hasClearedError])
-
     const handleSubmit = useCallback(
         (question: string) => {
             if (!question.trim()) return
@@ -125,6 +116,8 @@ export const Chat = () => {
             if (isCooldownActive) {
                 return
             }
+
+            clearNon429Errors()
 
             submitQuestion(question.trim())
 
@@ -136,18 +129,25 @@ export const Chat = () => {
             // Scroll to bottom after new message
             setTimeout(() => scrollToBottom(scrollRef.current), 100)
         },
-        [submitQuestion, isCooldownActive]
+        [submitQuestion, isCooldownActive, clearNon429Errors]
     )
 
     const handleButtonClick = useCallback(() => {
+        console.log('[Chat] Button clicked', {
+            isStreaming,
+            hasAbortFunction: !!abortFunctionRef.current,
+        })
         if (isStreaming && abortFunctionRef.current) {
             // Interrupt current query
+            console.log('[Chat] Calling abort function')
             abortFunctionRef.current()
             abortFunctionRef.current = null
+            // Update message status from 'streaming' to 'complete'
+            cancelStreaming()
         } else if (inputRef.current) {
             handleSubmit(inputRef.current.value)
         }
-    }, [isStreaming, handleSubmit])
+    }, [isStreaming, handleSubmit, cancelStreaming])
 
     // Refocus input when AI answer transitions to complete
     useEffect(() => {
@@ -282,9 +282,7 @@ export const Chat = () => {
                         display={
                             inputValue.trim() || isStreaming ? 'fill' : 'base'
                         }
-                        onClick={
-                            isStreaming ? cancelStreaming : handleButtonClick
-                        }
+                        onClick={handleButtonClick}
                         disabled={isCooldownActive}
                     ></EuiButtonIcon>
                 </div>

@@ -36,6 +36,7 @@ interface ChatState {
         clearNon429Errors: () => void
         hasMessageBeenSent: (id: string) => boolean
         markMessageAsSent: (id: string) => void
+        cancelStreaming: () => void
     }
 }
 
@@ -108,7 +109,7 @@ export const chatStore = create<ChatState>((set) => ({
                         msg.error &&
                         !isRateLimitError(msg.error)
                     ) {
-                        return { ...msg, status: 'complete', error: null }
+                        return { ...msg, status: 'complete', error: null, content: '' }
                     }
                     return msg
                 }),

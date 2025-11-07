@@ -1,4 +1,4 @@
-import { ApiError, isRateLimitError } from '../errorHandling'
+import { ApiError, isRateLimitError, isApiError } from '../errorHandling'
 import { AskAiEvent, AskAiEventSchema } from './AskAiEvent'
 import { useAiProvider } from './chat.store'
 import { useAskAiCooldown, useAskAiCooldownActions } from './useAskAiCooldown'
@@ -121,6 +121,7 @@ export const useAskAi = (props: Props): UseAskAiResponse => {
         headers,
         onMessage,
         onError: (error) => {
+            if (!error) return
             console.error('[AI Provider] Error in useFetchEventSource:', {
                 errorMessage: error.message,
                 errorStack: error.stack,
@@ -128,10 +129,16 @@ export const useAskAi = (props: Props): UseAskAiResponse => {
                 fullError: error,
             })
             setError(error)
-            if (isRateLimitError(error) && error.retryAfter) {
+            if (
+                isApiError(error) &&
+                isRateLimitError(error) &&
+                error.retryAfter
+            ) {
                 setCooldown(error.retryAfter)
             }
-            props.onError?.(error)
+            if (error) {
+                props.onError?.(error)
+            }
         },
     })
 
@@ -179,6 +186,7 @@ export const useAskAi = (props: Props): UseAskAiResponse => {
         error,
         sendQuestion,
         abort: () => {
+            console.log('[useAskAi] Abort called')
             abort()
             clearQueue()
         },

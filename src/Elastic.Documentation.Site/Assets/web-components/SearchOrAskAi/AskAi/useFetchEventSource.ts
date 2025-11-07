@@ -2,7 +2,6 @@ import {
     createApiErrorFromResponse,
     ApiError,
     isApiError,
-    isRetryableError,
 } from '../errorHandling'
 import {
     fetchEventSource,
@@ -52,7 +51,11 @@ export function useFetchEventSource<TPayload>({
     const abortControllerRef = useRef<AbortController | null>(null)
 
     const abort = useCallback(() => {
+        console.log('[useFetchEventSource] Abort called', {
+            hasController: !!abortControllerRef.current,
+        })
         if (abortControllerRef.current) {
+            console.log('[useFetchEventSource] Aborting controller')
             abortControllerRef.current.abort()
             abortControllerRef.current = null
         }
@@ -96,10 +99,8 @@ export function useFetchEventSource<TPayload>({
                             const error =
                                 await createApiErrorFromResponse(response)
 
-                            // For rate limit errors (429/503), abort immediately to stop retries
-                            if (error && isRetryableError(error)) {
-                                controller.abort()
-                            }
+                            // Abort immediately to stop retries for any API error
+                            controller.abort()
 
                             onError?.(error)
                             throw error
@@ -118,16 +119,11 @@ export function useFetchEventSource<TPayload>({
                     },
                     onerror: (err) => {
                         if (isApiError(err)) {
-                            // For rate limit errors (429/503), abort immediately to stop retries
-                            if (isRetryableError(err)) {
-                                controller.abort()
-                                onError?.(err)
-                                // Return null to stop retrying immediately
-                                return null
-                            }
+                            // Abort immediately to stop retries for any API error
+                            controller.abort()
                             onError?.(err)
-                            // For other errors, return undefined to use default retry behavior
-                            return undefined
+                            // Return null to stop retrying immediately
+                            return null
                         } else {
                             const error =
                                 err instanceof Error
@@ -136,7 +132,6 @@ export function useFetchEventSource<TPayload>({
                                           err?.message || 'Connection error'
                                       ) as ApiError)
                             onError?.(error)
-                            // Return undefined to use default retry behavior for non-API errors
                             return undefined
                         }
                     },
@@ -145,8 +140,8 @@ export function useFetchEventSource<TPayload>({
                     },
                 })
             } catch (error) {
-                if (isApiError(error)) {
-                    onError?.(error)
+                if (isApiError(error as Error | ApiError | null)) {
+                    onError?.(error as ApiError)
                 } else if (
                     error instanceof Error &&
                     error.name !== 'AbortError'

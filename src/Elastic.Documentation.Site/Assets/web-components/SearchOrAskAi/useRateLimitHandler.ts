@@ -3,7 +3,7 @@ import {
     useCooldownActions,
     ModalMode,
 } from './cooldown.store'
-import { ApiError, isRateLimitError } from './errorHandling'
+import { ApiError, isRateLimitError, isApiError } from './errorHandling'
 import { useEffect, useRef } from 'react'
 
 /**
@@ -25,7 +25,7 @@ export function useRateLimitHandler(
             return
         }
 
-        if (error && isRateLimitError(error)) {
+        if (error && isApiError(error) && isRateLimitError(error)) {
             const retryAfter = error.retryAfter
             if (retryAfter !== undefined && retryAfter !== null) {
                 const isNewError =

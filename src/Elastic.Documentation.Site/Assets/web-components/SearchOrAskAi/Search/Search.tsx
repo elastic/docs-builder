@@ -24,15 +24,19 @@ export const Search = () => {
     const isAskAiCooldownActive = useIsAskAiCooldownActive()
     const inputRef = useRef<HTMLInputElement>(null)
     const [inputValue, setInputValue] = useState(searchTerm)
-    const { isLoading, isFetching, cancelQuery } = useSearchQuery({
+    const { isLoading, isFetching, cancelQuery, refetch } = useSearchQuery({
         searchTerm,
     })
     const [isButtonVisible, setIsButtonVisible] = useState(false)
     const [isAnimatingOut, setIsAnimatingOut] = useState(false)
 
+    const triggerSearch = useCallback(() => {
+        refetch()
+    }, [refetch])
+
     const handleSearch = useCallback(
-        (e) => {
-            const newValue = e.target.value
+        (e?: React.ChangeEvent<HTMLInputElement>) => {
+            const newValue = e?.target.value ?? inputRef.current?.value ?? ''
             setInputValue(newValue)
             setSearchTerm(newValue)
         },
@@ -60,6 +64,7 @@ export const Search = () => {
         submitQuestion,
         setModalMode,
     ])
+
     // Sync inputValue with searchTerm from store (when cleared externally)
     useEffect(() => {
         if (searchTerm === '' && inputValue !== '') {
@@ -124,7 +129,7 @@ export const Search = () => {
                     color="primary"
                     iconType="search"
                     display={inputValue.trim() ? 'fill' : 'base'}
-                    onClick={handleSearch}
+                    onClick={triggerSearch}
                     disabled={isSearchCooldownActive}
                     isLoading={isLoading || isFetching}
                 />

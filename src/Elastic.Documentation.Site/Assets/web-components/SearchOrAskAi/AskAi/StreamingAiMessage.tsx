@@ -80,7 +80,14 @@ export const StreamingAiMessage = ({
 
     // Expose abort function to parent when this is the last message
     useEffect(() => {
+        console.log('[StreamingAiMessage] Effect triggered', {
+            isLast,
+            status: message.status,
+            hasAbort: !!abort,
+            hasCallback: !!onAbortReady,
+        })
         if (isLast && message.status === 'streaming') {
+            console.log('[StreamingAiMessage] Calling onAbortReady with abort function')
             onAbortReady?.(abort)
         }
     }, [isLast, message.status, abort, onAbortReady])
@@ -116,7 +123,7 @@ export const StreamingAiMessage = ({
             message={message}
             events={isLast ? events : []}
             streamingContent={streamingContentToPass}
-            error={message.error ?? (isLast ? error : null)}
+            error={message.error || (isLast && error ? error : undefined)}
             showError={showError}
         />
     )

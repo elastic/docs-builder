@@ -59,7 +59,7 @@ interface ChatMessageProps {
     message: ChatMessageType
     events?: AskAiEvent[]
     streamingContent?: string
-    error?: ApiError | Error | null
+    error?: ApiError | Error
     onRetry?: () => void
     onCountdownChange?: (countdown: number | null) => void
     showError?: boolean
@@ -286,6 +286,9 @@ export const ChatMessage = ({
 
     const hasError = (message.status === 'error' || !!error) && showError
 
+    // Don't render content for error messages that aren't being shown
+    const shouldRenderContent = !message.status || message.status !== 'error' || hasError
+
     // Only split content and references when complete for better performance
     const { mainContent, referencesJson } = useMemo(() => {
         if (isComplete) {
@@ -372,7 +375,7 @@ export const ChatMessage = ({
                     </div>
                 </EuiFlexItem>
             )}
-            {!hasError && (
+            {!hasError && shouldRenderContent && (
                 <EuiFlexItem>
                     <EuiPanel
                         paddingSize="m"
@@ -442,7 +445,7 @@ export const ChatMessage = ({
                         </EuiFlexItem>
                         <EuiFlexItem>
                             <SearchOrAskAiErrorCallout
-                                error={message.error || error}
+                                error={message.error || error || null}
                                 domain="askAi"
                                 inline={true}
                             />
