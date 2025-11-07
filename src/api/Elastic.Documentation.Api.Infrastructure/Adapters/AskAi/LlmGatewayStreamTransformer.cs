@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Diagnostics;
+using System.IO.Pipelines;
 using System.Text.Json;
 using Elastic.Documentation.Api.Core.AskAi;
 using Microsoft.Extensions.Logging;
@@ -15,6 +17,36 @@ public class LlmGatewayStreamTransformer(ILogger<LlmGatewayStreamTransformer> lo
 {
 	protected override string GetAgentId() => LlmGatewayAskAiGateway.ModelName;
 	protected override string GetAgentProvider() => LlmGatewayAskAiGateway.ProviderName;
+
+	/// <summary>
+	/// Override to emit ConversationStart event when conversationId is null (new conversation)
+	/// </summary>
+	protected override async Task ProcessStreamAsync(PipeReader reader, PipeWriter writer, string? conversationId, Activity? parentActivity, CancellationToken cancellationToken)
+	{
+		// If conversationId is null, generate a new one and emit ConversationStart event
+		// This matches the ThreadId format used in LlmGatewayAskAiGateway
+		var actualConversationId = conversationId;
+		if (conversationId == null)
+		{
+			actualConversationId = Guid.NewGuid().ToString();
+			var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+			var conversationStartEvent = new AskAiEvent.ConversationStart(
+				Id: Guid.NewGuid().ToString(),
+				Timestamp: timestamp,
+				ConversationId: actualConversationId
+			);
+
+			// Set activity tags for the new conversation
+			_ = parentActivity?.SetTag("gen_ai.conversation.id", actualConversationId);
+			Logger.LogDebug("LLM Gateway conversation started: {ConversationId}", actualConversationId);
+
+			// Write the ConversationStart event to the stream
+			await WriteEventAsync(conversationStartEvent, writer, cancellationToken);
+		}
+
+		// Continue with normal stream processing using the actual conversation ID
+		await base.ProcessStreamAsync(reader, writer, actualConversationId, parentActivity, cancellationToken);
+	}
 	protected override AskAiEvent? TransformJsonEvent(string? conversationId, string? eventType, JsonElement json)
 	{
 		// LLM Gateway format: ["custom", {type: "...", ...}]

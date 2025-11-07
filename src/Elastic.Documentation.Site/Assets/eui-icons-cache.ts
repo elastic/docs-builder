@@ -1,3 +1,5 @@
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-nocheck: EUI icons do not have types
 import { icon as EuiIconVisualizeApp } from '@elastic/eui/es/components/icon/assets/app_visualize'
 import { icon as EuiIconArrowEnd } from '@elastic/eui/es/components/icon/assets/arrowEnd'
 import { icon as EuiIconArrowStart } from '@elastic/eui/es/components/icon/assets/arrowStart'

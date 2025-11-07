@@ -1,5 +1,5 @@
 ---
-navigation_title: "Redirects"
+navigation_title: "Set up redirects"
 ---
 
 # Manage redirects across doc sets

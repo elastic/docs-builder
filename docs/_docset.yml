@@ -29,23 +29,21 @@ toc:
   - file: index.md
   - hidden: 404.md
   - hidden: developer-notes.md
+  - hidden: contribute/cumulative-docs/index.md
+  - hidden: contribute/cumulative-docs/guidelines.md
+  - hidden: contribute/cumulative-docs/badge-placement.md
+  - hidden: contribute/cumulative-docs/example-scenarios.md
+  - hidden: contribute/cumulative-docs/reference.md
   - folder: contribute
     children:
       - file: index.md
-      - file: locally.md
-      - file: on-the-web.md
       - file: move.md
       - file: redirects.md
-      - folder: cumulative-docs
-        children:
-          - file: index.md
-          - hidden: guidelines.md
-          - hidden: badge-placement.md
-          - hidden: example-scenarios.md
-          - hidden: reference.md
       - file: branching-strategy.md
       - file: add-repo.md
       - file: release-new-version.md
+      - hidden: locally.md
+      - hidden: on-the-web.md
   - folder: building-blocks
     children:
       - file: index.md

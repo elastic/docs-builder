@@ -1,5 +1,5 @@
 ---
-navigation_title: Choose a branching strategy
+navigation_title: Choose a repo branch strategy
 ---
 
 # Choose the docs branching strategy for a repository
