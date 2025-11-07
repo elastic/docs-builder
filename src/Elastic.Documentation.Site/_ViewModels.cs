@@ -52,7 +52,7 @@ public record GlobalLayoutViewModel
 
 	public string Link(string path)
 	{
-		path = path.AsSpan().TrimStart('/').ToString();
+		path = path.AsSpan().Trim('/').ToString();
 		return $"{UrlPathPrefix}/{path}";
 	}
 }
