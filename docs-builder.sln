@@ -147,6 +147,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Elastic.Documentation.Isola
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Elastic.Documentation.Api.Infrastructure.Tests", "tests\Elastic.Documentation.Api.Infrastructure.Tests\Elastic.Documentation.Api.Infrastructure.Tests.csproj", "{77BF3BF2-C78B-4B5D-8E7D-DD3716235BF4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Elastic.Documentation.Configuration.Tests", "tests\Elastic.Documentation.Configuration.Tests\Elastic.Documentation.Configuration.Tests.csproj", "{102570C0-1FAD-4DBE-8C7D-234E71BDFF1C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -504,6 +506,18 @@ Global
 		{77BF3BF2-C78B-4B5D-8E7D-DD3716235BF4}.Release|x64.Build.0 = Release|Any CPU
 		{77BF3BF2-C78B-4B5D-8E7D-DD3716235BF4}.Release|x86.ActiveCfg = Release|Any CPU
 		{77BF3BF2-C78B-4B5D-8E7D-DD3716235BF4}.Release|x86.Build.0 = Release|Any CPU
+		{102570C0-1FAD-4DBE-8C7D-234E71BDFF1C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{102570C0-1FAD-4DBE-8C7D-234E71BDFF1C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{102570C0-1FAD-4DBE-8C7D-234E71BDFF1C}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{102570C0-1FAD-4DBE-8C7D-234E71BDFF1C}.Debug|x64.Build.0 = Debug|Any CPU
+		{102570C0-1FAD-4DBE-8C7D-234E71BDFF1C}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{102570C0-1FAD-4DBE-8C7D-234E71BDFF1C}.Debug|x86.Build.0 = Debug|Any CPU
+		{102570C0-1FAD-4DBE-8C7D-234E71BDFF1C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{102570C0-1FAD-4DBE-8C7D-234E71BDFF1C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{102570C0-1FAD-4DBE-8C7D-234E71BDFF1C}.Release|x64.ActiveCfg = Release|Any CPU
+		{102570C0-1FAD-4DBE-8C7D-234E71BDFF1C}.Release|x64.Build.0 = Release|Any CPU
+		{102570C0-1FAD-4DBE-8C7D-234E71BDFF1C}.Release|x86.ActiveCfg = Release|Any CPU
+		{102570C0-1FAD-4DBE-8C7D-234E71BDFF1C}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -546,5 +560,6 @@ Global
 		{153FC4AD-F5B0-4100-990E-0987C86DBF01} = {BE6011CC-1200-4957-B01F-FCCA10C5CF5A}
 		{AABD3EF7-8C86-4981-B1D2-B1F786F33069} = {7AACA67B-3C56-4C7C-9891-558589FC52DB}
 		{77BF3BF2-C78B-4B5D-8E7D-DD3716235BF4} = {67B576EE-02FA-4F9B-94BC-3630BC09ECE5}
+		{102570C0-1FAD-4DBE-8C7D-234E71BDFF1C} = {67B576EE-02FA-4F9B-94BC-3630BC09ECE5}
 	EndGlobalSection
 EndGlobal
