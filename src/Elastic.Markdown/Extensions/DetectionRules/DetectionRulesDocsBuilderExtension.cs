@@ -10,7 +10,6 @@ using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Isolated.Node;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
-using Elastic.Markdown.IO.NewNavigation;
 using Elastic.Markdown.Myst;
 
 namespace Elastic.Markdown.Extensions.DetectionRules;

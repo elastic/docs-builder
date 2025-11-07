@@ -12,7 +12,7 @@ using Elastic.Markdown.Extensions;
 using Elastic.Markdown.Myst;
 using Generator.Equals;
 
-namespace Elastic.Markdown.IO.NewNavigation;
+namespace Elastic.Markdown.IO;
 
 [Equatable]
 [DebuggerDisplay("{RelativePath,nq}")]

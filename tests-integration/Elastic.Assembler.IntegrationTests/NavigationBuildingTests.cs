@@ -128,9 +128,6 @@ public class NavigationBuildingTests(DocumentationFixture fixture, ITestOutputHe
 			if (navigation is not SiteNavigation && nav is not CrossLinkNavigationLeaf)
 			{
 				nav.NavigationRoot.Should().NotBeOfType<SiteNavigation>($"{nav.Url}");
-				if (nav.NavigationRoot.Parent is null or not SiteNavigation && nav is not CrossLinkNavigationLeaf)
-				{
-				}
 				nav.NavigationRoot.Parent.Should().NotBeNull($"{nav.Url}");
 				nav.NavigationRoot.Parent.Should().BeOfType<SiteNavigation>($"{nav.Url}");
 			}

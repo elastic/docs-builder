@@ -60,7 +60,6 @@ public class OperationNavigationItem : ILeafNavigationItem<ApiOperation>, IEndpo
 	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }
 	//TODO enum to string
 	public string Id { get; }
-	public int Depth { get; } = 1;
 	public ApiOperation Model { get; }
 	public string Url { get; }
 	public bool Hidden { get; set; }
@@ -70,6 +69,5 @@ public class OperationNavigationItem : ILeafNavigationItem<ApiOperation>, IEndpo
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
 
 	public int NavigationIndex { get; set; }
-	public bool IsCrossLink => false; // API operations are never cross-links
 
 }

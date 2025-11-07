@@ -17,7 +17,7 @@
 	{
 		continue;
 	}
-	if (item is INodeNavigationItem<INavigationModel, INavigationItem> { NavigationItems.Count: 0, Index: not null } group)
+	if (item is INodeNavigationItem<INavigationModel, INavigationItem> { NavigationItems.Count: 0 } group)
 	{
 		<li class="flex group/li pr-8 @(isTopLevel ? "font-semibold mt-6" : "mt-4")">
 			<a

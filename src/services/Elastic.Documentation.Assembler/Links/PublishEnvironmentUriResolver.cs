@@ -68,7 +68,7 @@ public class PublishEnvironmentUriResolver : IUriEnvironmentResolver
 			if (!string.IsNullOrEmpty(sourcePrefix) && path.StartsWith(sourcePrefix, StringComparison.Ordinal))
 			{
 				remainingPath = path.Length > sourcePrefix.Length
-					? path.Substring(sourcePrefix.Length).TrimStart('/')
+					? path[sourcePrefix.Length..].TrimStart('/')
 					: string.Empty;
 			}
 

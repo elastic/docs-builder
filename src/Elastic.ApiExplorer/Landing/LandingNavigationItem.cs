@@ -32,7 +32,6 @@ public class LandingNavigationItem : IApiGroupingNavigationItem<ApiLanding, INav
 	public IReadOnlyCollection<INavigationItem> NavigationItems { get; set; } = [];
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
 	public int NavigationIndex { get; set; }
-	public bool IsCrossLink => false; // API landing items are never cross-links
 	public string Url => Index.Url;
 	public bool Hidden => false;
 	public Uri Identifier { get; } = new Uri("todo://");
@@ -84,7 +83,6 @@ public abstract class ApiGroupingNavigationItem<TGroupingModel, TNavigationItem>
 	public bool Hidden => false;
 	/// <inheritdoc />
 	public int NavigationIndex { get; set; }
-	public bool IsCrossLink => false; // API grouping items are never cross-links
 
 	public Uri Identifier { get; } = new Uri("todo://");
 
@@ -147,7 +145,6 @@ public class EndpointNavigationItem(ApiEndpoint endpoint, IRootNavigationItem<IA
 
 	/// <inheritdoc />
 	public int NavigationIndex { get; set; }
-	public bool IsCrossLink => false; // API endpoint items are never cross-links
 
 	/// <inheritdoc />
 	public string Id { get; } = ShortId.Create(nameof(EndpointNavigationItem), endpoint.Operations.First().ApiName, endpoint.Operations.First().Route);

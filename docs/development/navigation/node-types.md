@@ -146,7 +146,6 @@ toc:
 - URL is the crosslink itself (not calculated)
 - Can link to external sites or use crosslink scheme
 - Title is required (no auto-title from file)
-- Always marked as `IsCrossLink = true`
 
 **Constructor:**
 ```csharp
