@@ -1,4 +1,4 @@
-import { ModalMode } from './callout-state'
+import { ModalMode } from './modalmodes'
 import { create } from 'zustand/react'
 
 interface ModalState {
@@ -29,4 +29,4 @@ export const useModalMode = () =>
     modalStore((state: ModalState): ModalMode => state.mode)
 
 export { modalStore }
-export type { ModalMode } from './callout-state'
+export type { ModalMode } from './modalmodes'

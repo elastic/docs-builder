@@ -1,4 +1,4 @@
-import { ModalMode } from './callout-state'
+import { ModalMode } from './modalmodes'
 import { useCooldownActions } from './cooldown.store'
 import { useEffect, useRef } from 'react'
 
