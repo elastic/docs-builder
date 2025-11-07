@@ -109,7 +109,12 @@ export const chatStore = create<ChatState>((set) => ({
                         msg.error &&
                         !isRateLimitError(msg.error)
                     ) {
-                        return { ...msg, status: 'complete', error: null, content: '' }
+                        return {
+                            ...msg,
+                            status: 'complete',
+                            error: null,
+                            content: '',
+                        }
                     }
                     return msg
                 }),
