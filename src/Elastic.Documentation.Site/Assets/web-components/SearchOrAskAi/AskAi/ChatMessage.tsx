@@ -287,7 +287,8 @@ export const ChatMessage = ({
     const hasError = (message.status === 'error' || !!error) && showError
 
     // Don't render content for error messages that aren't being shown
-    const shouldRenderContent = !message.status || message.status !== 'error' || hasError
+    const shouldRenderContent =
+        !message.status || message.status !== 'error' || hasError
 
     // Only split content and references when complete for better performance
     const { mainContent, referencesJson } = useMemo(() => {

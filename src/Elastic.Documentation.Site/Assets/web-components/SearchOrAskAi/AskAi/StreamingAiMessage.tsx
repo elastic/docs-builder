@@ -87,7 +87,9 @@ export const StreamingAiMessage = ({
             hasCallback: !!onAbortReady,
         })
         if (isLast && message.status === 'streaming') {
-            console.log('[StreamingAiMessage] Calling onAbortReady with abort function')
+            console.log(
+                '[StreamingAiMessage] Calling onAbortReady with abort function'
+            )
             onAbortReady?.(abort)
         }
     }, [isLast, message.status, abort, onAbortReady])

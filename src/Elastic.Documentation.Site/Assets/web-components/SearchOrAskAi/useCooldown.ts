@@ -1,5 +1,5 @@
-import { ModalMode } from './modalmodes'
 import { useCooldownActions } from './cooldown.store'
+import { ModalMode } from './modalmodes'
 import { useEffect, useRef } from 'react'
 
 interface UseCooldownParams {
