@@ -51,13 +51,13 @@ jest.mock('./AskAi/useAskAiRateLimitHandler', () => ({
 const mockSearchState = {
     countdown: null as number | null,
     hasActiveCooldown: false,
-    cooldownFinishedPendingAcknowledgment: false,
+    awaitingNewInput: false,
 }
 
 const mockAskAiState = {
     countdown: null as number | null,
     hasActiveCooldown: false,
-    cooldownFinishedPendingAcknowledgment: false,
+    awaitingNewInput: false,
 }
 
 jest.mock('./Search/useSearchCooldown', () => ({
@@ -117,10 +117,10 @@ describe('SearchOrAskAiErrorCallout', () => {
         jest.clearAllMocks()
         mockSearchState.countdown = null
         mockSearchState.hasActiveCooldown = false
-        mockSearchState.cooldownFinishedPendingAcknowledgment = false
+        mockSearchState.awaitingNewInput = false
         mockAskAiState.countdown = null
         mockAskAiState.hasActiveCooldown = false
-        mockAskAiState.cooldownFinishedPendingAcknowledgment = false
+        mockAskAiState.awaitingNewInput = false
         mockUseSearchErrorCalloutState.mockReturnValue(mockSearchState)
         mockUseAskAiErrorCalloutState.mockReturnValue(mockAskAiState)
         mockGetErrorMessage.mockImplementation((error: ApiError | Error | null) => {
@@ -270,7 +270,7 @@ describe('SearchOrAskAiErrorCallout', () => {
             error.retryAfter = 10
             mockIsRateLimitError.mockReturnValue(true)
             mockSearchState.hasActiveCooldown = true
-            mockSearchState.cooldownFinishedPendingAcknowledgment = true
+            mockSearchState.awaitingNewInput = true
 
             const { container } = render(
                 <SearchOrAskAiErrorCallout error={error} domain="search" />

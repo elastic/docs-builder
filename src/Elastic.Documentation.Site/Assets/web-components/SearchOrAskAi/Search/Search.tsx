@@ -121,7 +121,6 @@ export const Search = () => {
         </>
     )
 }
-
 const AskAiButton = ({ term, onAsk }: { term: string; onAsk: () => void }) => {
     const isAskAiCooldownActive = useIsAskAiCooldownActive()
     return (
@@ -135,3 +134,4 @@ const AskAiButton = ({ term, onAsk }: { term: string; onAsk: () => void }) => {
         </EuiButton>
     )
 }
+

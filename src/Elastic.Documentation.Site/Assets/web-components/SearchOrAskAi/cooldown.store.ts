@@ -3,7 +3,7 @@ import { ModalMode } from './callout-state'
 
 interface CooldownStateData {
     cooldown: number | null
-    cooldownFinishedPendingAcknowledgment: boolean
+    awaitingNewInput: boolean
 }
 
 interface CooldownState {
@@ -20,11 +20,11 @@ const cooldownStore = create<CooldownState>((set) => ({
     cooldowns: {
         search: {
             cooldown: null,
-            cooldownFinishedPendingAcknowledgment: false,
+            awaitingNewInput: false,
         },
         askAi: {
             cooldown: null,
-            cooldownFinishedPendingAcknowledgment: false,
+            awaitingNewInput: false,
         },
     },
     actions: {
@@ -34,7 +34,7 @@ const cooldownStore = create<CooldownState>((set) => ({
                     ...state.cooldowns,
                     [domain]: {
                         cooldown,
-                        cooldownFinishedPendingAcknowledgment: false,
+                        awaitingNewInput: false,
                     },
                 },
             }))
@@ -56,7 +56,7 @@ const cooldownStore = create<CooldownState>((set) => ({
                     ...state.cooldowns,
                     [domain]: {
                         cooldown: null,
-                        cooldownFinishedPendingAcknowledgment: true,
+                        awaitingNewInput: true,
                     },
                 },
             }))
@@ -67,7 +67,7 @@ const cooldownStore = create<CooldownState>((set) => ({
                     ...state.cooldowns,
                     [domain]: {
                         ...state.cooldowns[domain],
-                        cooldownFinishedPendingAcknowledgment: false,
+                        awaitingNewInput: false,
                     },
                 },
             }))

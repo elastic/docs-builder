@@ -43,7 +43,7 @@ jest.mock('../Search/useSearchCooldown', () => ({
     useSearchErrorCalloutState: jest.fn(() => ({
         hasActiveCooldown: false,
         countdown: null,
-        cooldownFinishedPendingAcknowledgment: false,
+        awaitingNewInput: false,
     })),
 }))
 
@@ -51,7 +51,7 @@ jest.mock('../AskAi/useAskAiCooldown', () => ({
     useAskAiErrorCalloutState: jest.fn(() => ({
         hasActiveCooldown: false,
         countdown: null,
-        cooldownFinishedPendingAcknowledgment: false,
+        awaitingNewInput: false,
     })),
 }))
 

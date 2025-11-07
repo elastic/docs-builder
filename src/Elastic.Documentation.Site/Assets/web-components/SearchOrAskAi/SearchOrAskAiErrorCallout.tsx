@@ -41,7 +41,7 @@ export function SearchOrAskAiErrorCallout({
     if (
         is429Error &&
         (!state.hasActiveCooldown ||
-            state.cooldownFinishedPendingAcknowledgment)
+            state.awaitingNewInput)
     ) {
         return null
     }

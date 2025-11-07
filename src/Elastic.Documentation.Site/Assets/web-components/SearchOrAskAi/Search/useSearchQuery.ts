@@ -1,7 +1,7 @@
 import { createApiErrorFromResponse, shouldRetry } from '../errorHandling'
 import { ApiError } from '../errorHandling'
 import {
-    useSearchCooldownFinishedPendingAcknowledgment,
+    useIsSearchAwaitingNewInput,
     useSearchCooldownActions,
     useIsSearchCooldownActive,
 } from './useSearchCooldown'
@@ -45,21 +45,21 @@ export const useSearchQuery = ({ searchTerm, pageNumber = 1 }: Props) => {
     const trimmedSearchTerm = searchTerm.trim()
     const debouncedSearchTerm = useDebounce(trimmedSearchTerm, 300)
     const isCooldownActive = useIsSearchCooldownActive()
-    const cooldownFinishedPendingAcknowledgment =
-        useSearchCooldownFinishedPendingAcknowledgment()
+    const awaitingNewInput =
+        useIsSearchAwaitingNewInput()
     const { acknowledgeCooldownFinished } = useSearchCooldownActions()
     const previousSearchTermRef = useRef(debouncedSearchTerm)
 
     useEffect(() => {
         if (previousSearchTermRef.current !== debouncedSearchTerm) {
-            if (cooldownFinishedPendingAcknowledgment) {
+            if (awaitingNewInput) {
                 acknowledgeCooldownFinished()
             }
         }
         previousSearchTermRef.current = debouncedSearchTerm
     }, [
         debouncedSearchTerm,
-        cooldownFinishedPendingAcknowledgment,
+        awaitingNewInput,
         acknowledgeCooldownFinished,
     ])
 
@@ -67,7 +67,7 @@ export const useSearchQuery = ({ searchTerm, pageNumber = 1 }: Props) => {
         !!trimmedSearchTerm &&
         trimmedSearchTerm.length >= 1 &&
         !isCooldownActive &&
-        !cooldownFinishedPendingAcknowledgment
+        !awaitingNewInput
 
     return useQuery<SearchResponse, ApiError>({
         queryKey: [
@@ -94,7 +94,7 @@ export const useSearchQuery = ({ searchTerm, pageNumber = 1 }: Props) => {
         },
         enabled: shouldEnable,
         refetchOnWindowFocus: false,
-        refetchOnMount: false, // Prevent refetch when component mounts during cooldown
+        refetchOnMount: !isCooldownActive,
         placeholderData: keepPreviousData,
         staleTime: 1000 * 60 * 5, // 5 minutes
         retry: shouldRetry,

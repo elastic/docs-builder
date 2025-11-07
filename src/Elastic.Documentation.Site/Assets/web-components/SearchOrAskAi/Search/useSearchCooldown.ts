@@ -5,9 +5,9 @@ export const useSearchCooldown = () => {
     return state.cooldown
 }
 
-export const useSearchCooldownFinishedPendingAcknowledgment = () => {
+export const useIsSearchAwaitingNewInput = () => {
     const state = useCooldownState('search')
-    return state.cooldownFinishedPendingAcknowledgment
+    return state.awaitingNewInput
 }
 
 export const useIsSearchCooldownActive = () => {
@@ -18,13 +18,13 @@ export const useIsSearchCooldownActive = () => {
 export const useSearchErrorCalloutState = () => {
     const countdown = useSearchCooldown()
     const hasActiveCooldown = useIsSearchCooldownActive()
-    const cooldownFinishedPendingAcknowledgment =
-        useSearchCooldownFinishedPendingAcknowledgment()
+    const awaitingNewInput =
+        useIsSearchAwaitingNewInput()
 
     return {
         countdown,
         hasActiveCooldown,
-        cooldownFinishedPendingAcknowledgment,
+        awaitingNewInput,
     }
 }
 
