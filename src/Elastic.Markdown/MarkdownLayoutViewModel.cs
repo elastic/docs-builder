@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Documentation.Configuration.LegacyUrlMappings;
+using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.Navigation;
 
@@ -22,6 +22,8 @@ public record MarkdownLayoutViewModel : GlobalLayoutViewModel
 	public required IReadOnlyCollection<PageTocItem> PageTocItems { get; init; }
 
 	public required MarkdownPageLayout? Layout { get; init; }
+
+	public required VersioningSystem VersioningSystem { get; init; }
 
 	public required string? VersionDropdownSerializedModel { get; init; }
 
