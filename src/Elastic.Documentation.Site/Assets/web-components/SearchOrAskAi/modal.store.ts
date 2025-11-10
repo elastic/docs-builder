@@ -1,6 +1,5 @@
+import { ModalMode } from './modalmodes'
 import { create } from 'zustand/react'
-
-export type ModalMode = 'search' | 'askAi'
 
 interface ModalState {
     isOpen: boolean
@@ -28,3 +27,6 @@ export const useModalIsOpen = () => modalStore((state) => state.isOpen)
 export const useModalActions = () => modalStore((state) => state.actions)
 export const useModalMode = () =>
     modalStore((state: ModalState): ModalMode => state.mode)
+
+export { modalStore }
+export type { ModalMode } from './modalmodes'

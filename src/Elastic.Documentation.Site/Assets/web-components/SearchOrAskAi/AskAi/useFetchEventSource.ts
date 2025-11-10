@@ -1,4 +1,9 @@
 import {
+    createApiErrorFromResponse,
+    ApiError,
+    isApiError,
+} from '../errorHandling'
+import {
     fetchEventSource,
     EventSourceMessage,
     EventStreamContentType,
@@ -23,7 +28,7 @@ export interface UseFetchEventSourceOptions {
     apiEndpoint: string
     headers?: Record<string, string>
     onMessage?: (event: EventSourceMessage) => void
-    onError?: (error: Error) => void
+    onError?: (error: ApiError | Error | null) => void
     onOpen?: (response: Response) => Promise<void>
     onClose?: () => void
 }
@@ -46,7 +51,11 @@ export function useFetchEventSource<TPayload>({
     const abortControllerRef = useRef<AbortController | null>(null)
 
     const abort = useCallback(() => {
+        console.log('[useFetchEventSource] Abort called', {
+            hasController: !!abortControllerRef.current,
+        })
         if (abortControllerRef.current) {
+            console.log('[useFetchEventSource] Aborting controller')
             abortControllerRef.current.abort()
             abortControllerRef.current = null
         }
@@ -85,12 +94,16 @@ export function useFetchEventSource<TPayload>({
                         ) {
                             onOpen?.(response)
                             return
-                        } else if (
-                            response.status >= 400 &&
-                            response.status < 500 &&
-                            response.status !== 429
-                        ) {
-                            throw new FatalError()
+                        } else if (!response.ok) {
+                            // Create an error with status code and headers
+                            const error =
+                                await createApiErrorFromResponse(response)
+
+                            // Abort immediately to stop retries for any API error
+                            controller.abort()
+
+                            onError?.(error)
+                            throw error
                         } else {
                             throw new FatalError()
                         }
@@ -105,14 +118,34 @@ export function useFetchEventSource<TPayload>({
                         onMessage?.(msg)
                     },
                     onerror: (err) => {
-                        throw new FatalError(err?.message || 'Connection error')
+                        if (isApiError(err)) {
+                            // Abort immediately to stop retries for any API error
+                            controller.abort()
+                            onError?.(err)
+                            // Return null to stop retrying immediately
+                            return null
+                        } else {
+                            const error =
+                                err instanceof Error
+                                    ? err
+                                    : (new Error(
+                                          err?.message || 'Connection error'
+                                      ) as ApiError)
+                            onError?.(error)
+                            return undefined
+                        }
                     },
                     onclose: () => {
                         onClose?.()
                     },
                 })
             } catch (error) {
-                if (error instanceof Error && error.name !== 'AbortError') {
+                if (isApiError(error as Error | ApiError | null)) {
+                    onError?.(error as ApiError)
+                } else if (
+                    error instanceof Error &&
+                    error.name !== 'AbortError'
+                ) {
                     onError?.(error)
                 }
             }

@@ -37,7 +37,7 @@ const ALL_SUGGESTIONS: AskAiSuggestion[] = [
     },
 ]
 
-export const AskAiSuggestions = () => {
+export const AskAiSuggestions = ({ disabled }: { disabled?: boolean }) => {
     const { submitQuestion } = useChatActions()
     const { setModalMode } = useModalActions()
     const { euiTheme } = useEuiTheme()
@@ -64,9 +64,12 @@ export const AskAiSuggestions = () => {
                         fullWidth
                         size="s"
                         onClick={() => {
-                            submitQuestion(suggestion.question)
-                            setModalMode('askAi')
+                            if (!disabled) {
+                                submitQuestion(suggestion.question)
+                                setModalMode('askAi')
+                            }
                         }}
+                        disabled={disabled}
                     >
                         {suggestion.question}
                     </EuiButton>
