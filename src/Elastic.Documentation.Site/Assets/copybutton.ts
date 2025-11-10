@@ -1,3 +1,6 @@
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-nocheck
+// This is copied from legacy. It works, but we should rework this if we ever need to change it
 import { $$ } from 'select-dom'
 
 const DOCUMENTATION_OPTIONS = {

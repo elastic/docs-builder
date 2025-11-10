@@ -109,7 +109,7 @@ describe('ChatMessage Component', () => {
 
         it('should show loading icon when streaming', () => {
             // Act
-            render(<ChatMessage message={streamingMessage} llmMessages={[]} />)
+            render(<ChatMessage message={streamingMessage} />)
 
             // Assert
             // Loading elastic icon should be present
