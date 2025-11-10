@@ -91,7 +91,7 @@ versioning_systems:
     current: 1.6.0
   edot-php:
     base: 1.0
-    current: 1.1.1
+    current: 1.2.0
   edot-python:
     base: 1.0
     current: 1.9.0
