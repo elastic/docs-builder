@@ -25,7 +25,7 @@ public class ExporterParserAttribute : Attribute, IArgumentParser<IReadOnlySet<E
 				"es" => Elasticsearch,
 				"elasticsearch" => Elasticsearch,
 				"html" => Html,
-				"config" => Exporter.Configuration,
+				"config" => Configuration,
 				"links" => LinkMetadata,
 				"state" => DocumentationState,
 				"redirects" => Redirects,
