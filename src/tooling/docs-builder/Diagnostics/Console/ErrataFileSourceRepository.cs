@@ -10,7 +10,7 @@ using Errata;
 using Spectre.Console;
 using Diagnostic = Elastic.Documentation.Diagnostics.Diagnostic;
 
-namespace Elastic.Documentation.Tooling.Diagnostics.Console;
+namespace Documentation.Builder.Diagnostics.Console;
 
 public class CustomDiagnosticsFormatter : DiagnosticFormatter
 {

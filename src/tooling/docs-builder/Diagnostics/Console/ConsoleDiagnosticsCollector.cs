@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 using Spectre.Console;
 using Diagnostic = Elastic.Documentation.Diagnostics.Diagnostic;
 
-namespace Elastic.Documentation.Tooling.Diagnostics.Console;
+namespace Documentation.Builder.Diagnostics.Console;
 
 public class ConsoleDiagnosticsCollector(ILoggerFactory logFactory, ICoreService? githubActions = null)
 	: DiagnosticsCollector([new Log(logFactory.CreateLogger<Log>()), new GithubAnnotationOutput(githubActions)])

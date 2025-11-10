@@ -6,10 +6,10 @@ using ConsoleAppFramework;
 using Elastic.Documentation.Diagnostics;
 using Microsoft.Extensions.Logging;
 
-namespace Elastic.Documentation.Tooling.Filters;
+namespace Documentation.Builder.Filters;
 
 
-public sealed class CatchExceptionFilter(ConsoleAppFilter next, ILogger<CatchExceptionFilter> logger, IDiagnosticsCollector collector)
+internal sealed class CatchExceptionFilter(ConsoleAppFilter next, ILogger<CatchExceptionFilter> logger, IDiagnosticsCollector collector)
 	: ConsoleAppFilter(next)
 {
 	private bool _cancelKeyPressed;

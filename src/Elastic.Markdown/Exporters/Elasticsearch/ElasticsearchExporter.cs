@@ -255,10 +255,10 @@ public abstract class ElasticsearchExporter<TChannelOptions, TChannel> : IDispos
 		}
 		""";
 
-	private static string InferenceMapping(string inferenceId) =>
+	private static string InferenceMapping(string _) =>
 		$"""
 		 	"type": "semantic_text",
-		 	"inference_id": "{inferenceId}"
+		 	"inference_id": ".elser-2-elastic"
 		 """;
 
 	private static string AbstractInferenceMapping(string inferenceId) =>
