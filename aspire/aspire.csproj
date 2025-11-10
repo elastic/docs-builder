@@ -14,7 +14,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="ConsoleAppFramework" />
+    <PackageReference Include="ConsoleAppFramework">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="Aspire.Hosting.AppHost"/>
     <PackageReference Include="Elastic.Aspire.Hosting.Elasticsearch"/>
   </ItemGroup>
@@ -22,8 +25,6 @@
   <ItemGroup>
     <ProjectReference Include="..\src\api\Elastic.Documentation.Api.Lambda\Elastic.Documentation.Api.Lambda.csproj" />
     <ProjectReference Include="..\src\tooling\docs-builder\docs-builder.csproj"/>
-    
-    <ProjectReference Include="..\src\tooling\Elastic.Documentation.Tooling\Elastic.Documentation.Tooling.csproj"  IsAspireProjectResource="false" />
     <ProjectReference Include="..\src\Elastic.Documentation\Elastic.Documentation.csproj" IsAspireProjectResource="false" />
   </ItemGroup>
 

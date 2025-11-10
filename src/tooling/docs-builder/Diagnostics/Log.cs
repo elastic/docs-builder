@@ -5,7 +5,7 @@
 using Elastic.Documentation.Diagnostics;
 using Microsoft.Extensions.Logging;
 
-namespace Elastic.Documentation.Tooling.Diagnostics;
+namespace Documentation.Builder.Diagnostics;
 
 // named Log for terseness on console output
 public class Log(ILogger logger) : IDiagnosticsOutput

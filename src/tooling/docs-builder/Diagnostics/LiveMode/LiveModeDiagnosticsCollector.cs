@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Diagnostics;
-using Elastic.Documentation.Tooling.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Diagnostic = Elastic.Documentation.Diagnostics.Diagnostic;
 

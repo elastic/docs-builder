@@ -6,9 +6,9 @@ using System.Diagnostics;
 using ConsoleAppFramework;
 using Microsoft.Extensions.Logging;
 
-namespace Elastic.Documentation.Tooling.Filters;
+namespace Documentation.Builder.Filters;
 
-public class StopwatchFilter(ConsoleAppFilter next, ILogger<StopwatchFilter> logger) : ConsoleAppFilter(next)
+internal sealed class StopwatchFilter(ConsoleAppFilter next, ILogger<StopwatchFilter> logger) : ConsoleAppFilter(next)
 {
 	public override async Task InvokeAsync(ConsoleAppContext context, Cancel cancellationToken)
 	{

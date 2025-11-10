@@ -3,9 +3,10 @@
 // See the LICENSE file in the project root for more information
 
 using ConsoleAppFramework;
+using Elastic.Documentation;
 using static Elastic.Documentation.Exporter;
 
-namespace Elastic.Documentation.Tooling.Arguments;
+namespace Documentation.Builder.Arguments;
 
 [AttributeUsage(AttributeTargets.Parameter)]
 public class ExporterParserAttribute : Attribute, IArgumentParser<IReadOnlySet<Exporter>>
