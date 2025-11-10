@@ -21,8 +21,8 @@
     <PackageVersion Include="Amazon.Lambda.SQSEvents" Version="2.2.0" />
     <PackageVersion Include="Aspire.Hosting" Version="9.5.2" />
     <PackageVersion Include="Aspire.Hosting.Testing" Version="9.4.2" />
-    <PackageVersion Include="AWSSDK.Core" Version="4.0.1.3" />
-    <PackageVersion Include="AWSSDK.SQS" Version="4.0.2" />
+    <PackageVersion Include="AWSSDK.Core" Version="4.0.3" />
+    <PackageVersion Include="AWSSDK.SQS" Version="4.0.2.2" />
     <PackageVersion Include="AWSSDK.S3" Version="4.0.7.14" />
     <PackageVersion Include="Elastic.OpenTelemetry" Version="1.1.0" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.13.0" />
