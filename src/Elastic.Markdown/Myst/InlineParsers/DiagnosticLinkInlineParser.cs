@@ -399,7 +399,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		}
 
 		// CrossLinkResolver gives the navigation-aware path to the URI
-		if (context.TryFindDocument(fi) is MarkdownFile currentMarkdown && context.CrossLinkResolver.TryResolve((err) => context.EmitError(err), new Uri(currentMarkdown.CrossLink), out var resolvedUri))
+		if (context.Build.AssemblerBuild && context.TryFindDocument(fi) is MarkdownFile currentMarkdown && context.CrossLinkResolver.TryResolve((err) => context.EmitError(err), new Uri(currentMarkdown.CrossLink), out var resolvedUri))
 		{
 			if (resolvedUri.AbsolutePath.LastIndexOf('/') > 0)
 				newUrl = Path.GetFullPath(Path.Combine(resolvedUri.AbsolutePath[..resolvedUri.AbsolutePath.LastIndexOf('/')], url));
