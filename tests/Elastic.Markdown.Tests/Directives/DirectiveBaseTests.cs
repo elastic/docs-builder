@@ -72,7 +72,7 @@ $"""
 		var context = new BuildContext(Collector, FileSystem, configurationContext);
 		var linkResolver = new TestCrossLinkResolver();
 		Set = new DocumentationSet(context, logger, linkResolver);
-		File = Set.DocumentationFileLookup(FileSystem.FileInfo.New("docs/index.md")) as MarkdownFile ?? throw new NullReferenceException();
+		File = Set.TryFindDocument(FileSystem.FileInfo.New("docs/index.md")) as MarkdownFile ?? throw new NullReferenceException();
 		Html = default!; //assigned later
 		Document = default!;
 	}
@@ -83,7 +83,7 @@ $"""
 	{
 		_ = Collector.StartAsync(TestContext.Current.CancellationToken);
 
-		Document = await File.ParseFullAsync(TestContext.Current.CancellationToken);
+		Document = await File.ParseFullAsync(Set.TryFindDocumentByRelativePath, TestContext.Current.CancellationToken);
 		var html = MarkdownFile.CreateHtml(Document).AsSpan();
 		var find = "</section>";
 		var start = html.IndexOf(find, StringComparison.Ordinal);

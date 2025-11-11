@@ -5,7 +5,9 @@
 using System.IO.Abstractions;
 using System.Text.RegularExpressions;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Converters;
 using Elastic.Documentation.Configuration.Serialization;
+using Elastic.Documentation.Configuration.Toc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using YamlDotNet.Serialization;
@@ -19,8 +21,13 @@ public partial class ConfigurationFileProvider
 	private readonly string _assemblyName;
 	private readonly ILogger<ConfigurationFileProvider> _logger;
 
-	internal static IDeserializer Deserializer { get; } = new StaticDeserializerBuilder(new YamlStaticContext())
+	public static IDeserializer Deserializer { get; } = new StaticDeserializerBuilder(new YamlStaticContext())
 		.WithNamingConvention(UnderscoredNamingConvention.Instance)
+		.WithTypeConverter(new HintTypeSetConverter())
+		.WithTypeConverter(new TocItemCollectionYamlConverter())
+		.WithTypeConverter(new TocItemYamlConverter())
+		.WithTypeConverter(new SiteTableOfContentsCollectionYamlConverter())
+		.WithTypeConverter(new SiteTableOfContentsRefYamlConverter())
 		.Build();
 
 	public ConfigurationSource ConfigurationSource { get; }

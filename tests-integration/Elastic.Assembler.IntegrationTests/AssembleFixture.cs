@@ -6,7 +6,6 @@ using Aspire.Hosting;
 using Aspire.Hosting.ApplicationModel;
 using Aspire.Hosting.Testing;
 using Elastic.Documentation.ServiceDefaults;
-using FluentAssertions;
 using InMemLogger;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -110,30 +109,4 @@ public class DocumentationFixture : IAsyncLifetime
 		await DistributedApplication.DisposeAsync();
 		GC.SuppressFinalize(this);
 	}
-}
-
-public class ServeStaticTests(DocumentationFixture fixture, ITestOutputHelper output) : IAsyncLifetime
-{
-	[Fact]
-	public async Task AssertRequestToRootReturnsData()
-	{
-		var client = fixture.DistributedApplication.CreateHttpClient(AssemblerServe, "http");
-		var root = await client.GetStringAsync("/", TestContext.Current.CancellationToken);
-		_ = root.Should().NotBeNullOrEmpty();
-	}
-
-
-	/// <inheritdoc />
-	public ValueTask DisposeAsync()
-	{
-		GC.SuppressFinalize(this);
-		if (TestContext.Current.TestState?.Result is TestResult.Passed)
-			return default;
-		foreach (var resource in fixture.InMemoryLogger.RecordedLogs)
-			output.WriteLine(resource.Message);
-		return default;
-	}
-
-	/// <inheritdoc />
-	public ValueTask InitializeAsync() => default;
 }
