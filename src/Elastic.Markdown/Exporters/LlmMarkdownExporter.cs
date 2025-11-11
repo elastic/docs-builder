@@ -6,7 +6,7 @@ using System.IO.Abstractions;
 using System.IO.Compression;
 using System.Text;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.Products;
 using Elastic.Markdown.Helpers;
 using Markdig.Syntax;
 
@@ -17,30 +17,56 @@ namespace Elastic.Markdown.Exporters;
 /// </summary>
 public class LlmMarkdownExporter : IMarkdownExporter
 {
+	private const string LlmsTxtTemplate = """
+		# Elastic Documentation
+
+		> Elastic provides an open source search, analytics, and AI platform, and out-of-the-box solutions for observability and security. The Search AI platform combines the power of search and generative AI to provide near real-time search and analysis with relevance to reduce your time to value.
+		>
+		>Elastic offers the following solutions or types of projects:
+		>
+		>* [Elasticsearch](https://www.elastic.co/docs/solutions/search): Build powerful search and RAG applications using Elasticsearch's vector database, AI toolkit, and advanced retrieval capabilities.
+		>* [Elastic Observability](https://www.elastic.co/docs/solutions/observability): Gain comprehensive visibility into applications, infrastructure, and user experience through logs, metrics, traces, and other telemetry data, all in a single interface.
+		>* [Elastic Security](https://www.elastic.co/docs/solutions/security): Combine SIEM, endpoint security, and cloud security to provide comprehensive tools for threat detection and prevention, investigation, and response.
+
+		The documentation is organized to guide you through your journey with Elastic, from learning the basics to deploying and managing complex solutions. Here is a detailed breakdown of the documentation structure:
+
+		* [**Elastic fundamentals**](https://www.elastic.co/docs/get-started): Understand the basics about the deployment options, platform, and solutions, and features of the documentation.
+		* [**Solutions and use cases**](https://www.elastic.co/docs/solutions): Learn use cases, evaluate, and implement Elastic's solutions: Observability, Search, and Security.
+		* [**Manage data**](https://www.elastic.co/docs/manage-data): Learn about data store primitives, ingestion and enrichment, managing the data lifecycle, and migrating data.
+		* [**Explore and analyze**](https://www.elastic.co/docs/explore-analyze): Get value from data through querying, visualization, machine learning, and alerting.
+		* [**Deploy and manage**](https://www.elastic.co/docs/deploy-manage): Deploy and manage production-ready clusters. Covers deployment options and maintenance tasks.
+		* [**Manage your Cloud account**](https://www.elastic.co/docs/cloud-account): A dedicated section for user-facing cloud account tasks like resetting passwords.
+		* [**Troubleshoot**](https://www.elastic.co/docs/troubleshoot): Identify and resolve problems.
+		* [**Extend and contribute**](https://www.elastic.co/docs/extend): How to contribute to or integrate with Elastic, from open source to plugins to integrations.
+		* [**Release notes**](https://www.elastic.co/docs/release-notes): Contains release notes and changelogs for each new release.
+		* [**Reference**](https://www.elastic.co/docs/reference): Reference material for core tasks and manuals for optional products.
+		""";
 
 	public ValueTask StartAsync(Cancel ctx = default) => ValueTask.CompletedTask;
 
 	public ValueTask StopAsync(Cancel ctx = default) => ValueTask.CompletedTask;
 
-	public ValueTask<bool> FinishExportAsync(IDirectoryInfo outputFolder, Cancel ctx)
+	public async ValueTask<bool> FinishExportAsync(IDirectoryInfo outputFolder, Cancel ctx)
 	{
 		var outputDirectory = Path.Combine(outputFolder.FullName, "docs");
 		var zipPath = Path.Combine(outputDirectory, "llm.zip");
-		using (var zip = ZipFile.Open(zipPath, ZipArchiveMode.Create))
+
+		// Create the llms.txt file with boilerplate content
+		var llmsTxt = Path.Combine(outputDirectory, "llms.txt");
+		await outputFolder.FileSystem.File.WriteAllTextAsync(llmsTxt, LlmsTxtTemplate, ctx);
+
+		using var zip = ZipFile.Open(zipPath, ZipArchiveMode.Create);
+		var llmsTxtRelativePath = Path.GetRelativePath(outputDirectory, llmsTxt);
+		_ = zip.CreateEntryFromFile(llmsTxt, llmsTxtRelativePath);
+
+		var markdownFiles = Directory.GetFiles(outputDirectory, "*.md", SearchOption.AllDirectories);
+
+		foreach (var file in markdownFiles)
 		{
-			var llmsTxt = Path.Combine(outputDirectory, "llms.txt");
-			var llmsTxtRelativePath = Path.GetRelativePath(outputDirectory, llmsTxt);
-			_ = zip.CreateEntryFromFile(llmsTxt, llmsTxtRelativePath);
-
-			var markdownFiles = Directory.GetFiles(outputDirectory, "*.md", SearchOption.AllDirectories);
-
-			foreach (var file in markdownFiles)
-			{
-				var relativePath = Path.GetRelativePath(outputDirectory, file);
-				_ = zip.CreateEntryFromFile(file, relativePath);
-			}
+			var relativePath = Path.GetRelativePath(outputDirectory, file);
+			_ = zip.CreateEntryFromFile(file, relativePath);
 		}
-		return ValueTask.FromResult(true);
+		return true;
 	}
 
 	public async ValueTask<bool> ExportAsync(MarkdownExportFileContext fileContext, Cancel ctx)
@@ -49,10 +75,12 @@ public class LlmMarkdownExporter : IMarkdownExporter
 		var outputFile = GetLlmOutputFile(fileContext);
 		if (outputFile.Directory is { Exists: false })
 			outputFile.Directory.Create();
-		var contentWithMetadata = CreateLlmContentWithMetadata(fileContext, llmMarkdown);
+
+		var content = IsRootIndexFile(fileContext) ? LlmsTxtTemplate : CreateLlmContentWithMetadata(fileContext, llmMarkdown);
+
 		await fileContext.SourceFile.SourceFile.FileSystem.File.WriteAllTextAsync(
 			outputFile.FullName,
-			contentWithMetadata,
+			content,
 			Encoding.UTF8,
 			ctx
 		);
@@ -65,6 +93,12 @@ public class LlmMarkdownExporter : IMarkdownExporter
 			_ = renderer.Render(obj);
 		});
 
+	private static bool IsRootIndexFile(MarkdownExportFileContext fileContext)
+	{
+		var fs = fileContext.BuildContext.ReadFileSystem;
+		var expected = fs.FileInfo.New(Path.Combine(fileContext.BuildContext.OutputDirectory.FullName, "index.html"));
+		return fileContext.DefaultOutputFile.FullName == expected.FullName;
+	}
 	private static IFileInfo GetLlmOutputFile(MarkdownExportFileContext fileContext)
 	{
 		var source = fileContext.SourceFile.SourceFile;
@@ -111,25 +145,14 @@ public class LlmMarkdownExporter : IMarkdownExporter
 			_ = metadata.AppendLine($"description: {generateDescription}");
 		}
 
-		if (!string.IsNullOrEmpty(sourceFile.Url))
-			_ = metadata.AppendLine($"url: {context.BuildContext.CanonicalBaseUrl?.Scheme}://{context.BuildContext.CanonicalBaseUrl?.Host}{sourceFile.Url}");
+		_ = metadata.AppendLine($"url: {context.BuildContext.CanonicalBaseUrl?.Scheme}://{context.BuildContext.CanonicalBaseUrl?.Host}{context.NavigationItem.Url}");
 
-		var configProducts = context.BuildContext.Configuration.Products.Select(p =>
-		{
-			if (Products.AllById.TryGetValue(p, out var product))
-				return product;
-			throw new ArgumentException($"Invalid product id: {p}");
-		});
-		var frontMatterProducts = sourceFile.YamlFrontMatter?.Products ?? [];
-		var allProducts = frontMatterProducts
-			.Union(configProducts)
-			.Distinct()
-			.ToList();
-		if (allProducts.Count > 0)
+		var pageProducts = GetPageProducts(sourceFile.YamlFrontMatter?.Products);
+		if (pageProducts.Count > 0)
 		{
 			_ = metadata.AppendLine("products:");
-			foreach (var product in allProducts.Select(p => p.DisplayName).Order())
-				_ = metadata.AppendLine($"  - {product}");
+			foreach (var item in pageProducts.Select(p => p.DisplayName).Order())
+				_ = metadata.AppendLine($"  - {item}");
 		}
 
 		_ = metadata.AppendLine("---");
@@ -139,6 +162,9 @@ public class LlmMarkdownExporter : IMarkdownExporter
 
 		return metadata.ToString();
 	}
+
+	private static List<Product> GetPageProducts(IReadOnlyCollection<Product>? frontMatterProducts) =>
+		frontMatterProducts?.ToList() ?? [];
 }
 
 public static class LlmMarkdownExporterExtensions

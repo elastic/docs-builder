@@ -8,7 +8,9 @@ using System.Runtime.InteropServices;
 using System.Text;
 using Documentation.Builder.Diagnostics.LiveMode;
 using Elastic.Documentation;
+#if DEBUG
 using Elastic.Documentation.Api.Infrastructure;
+#endif
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.ServiceDefaults;
 using Elastic.Documentation.Site.FileProviders;
@@ -43,7 +45,10 @@ public class DocumentationWebHost
 		var builder = WebApplication.CreateSlimBuilder();
 		_ = builder.AddDocumentationServiceDefaults();
 
+#if DEBUG
 		builder.Services.AddElasticDocsApiUsecases("dev");
+#endif
+
 		_ = builder.Logging
 			.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.Error)
 			.AddFilter("Microsoft.AspNetCore.StaticFiles.StaticFileMiddleware", LogLevel.Error)
@@ -58,7 +63,7 @@ public class DocumentationWebHost
 		_hostedService = collector;
 		Context = new BuildContext(collector, readFs, writeFs, configurationContext, ExportOptions.Default, path, null)
 		{
-			CanonicalBaseUrl = new Uri(hostUrl),
+			CanonicalBaseUrl = new Uri(hostUrl)
 		};
 		GeneratorState = new ReloadableGeneratorState(logFactory, Context.DocumentationSourceDirectory, Context.OutputDirectory, Context);
 		_ = builder.Services
@@ -68,7 +73,7 @@ public class DocumentationWebHost
 				s.ClientFileExtensions = ".md,.yml";
 			})
 			.AddSingleton<ReloadableGeneratorState>(_ => GeneratorState)
-			.AddHostedService<ReloadGeneratorService>();
+			.AddHostedService<ReloadGeneratorService>((_) => new ReloadGeneratorService(GeneratorState, logFactory.CreateLogger<ReloadGeneratorService>()));
 
 		if (IsDotNetWatchBuild())
 			_ = builder.Services.AddHostedService<ParcelWatchService>();
@@ -136,7 +141,9 @@ public class DocumentationWebHost
 			ServeApiFile(holder, slug, ctx));
 
 		var apiV1 = _webApplication.MapGroup("/docs/_api/v1");
+#if DEBUG
 		apiV1.MapElasticDocsApiEndpoints();
+#endif
 
 		_ = _webApplication.MapGet("{**slug}", (string slug, ReloadableGeneratorState holder, Cancel ctx) =>
 			ServeDocumentationFile(holder, slug, ctx));
@@ -186,12 +193,15 @@ public class DocumentationWebHost
 		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 			slug = slug.Replace('/', Path.DirectorySeparatorChar);
 
+		slug = slug.TrimEnd('/');
 		var s = Path.GetExtension(slug) == string.Empty ? Path.Combine(slug, "index.md") : slug;
+		var fp = new FilePath(s, generator.DocumentationSet.SourceDirectory);
 
-		if (!generator.DocumentationSet.FlatMappedFiles.TryGetValue(s, out var documentationFile))
+		if (!generator.DocumentationSet.Files.TryGetValue(fp, out var documentationFile))
 		{
 			s = Path.GetExtension(slug) == string.Empty ? slug + ".md" : s.Replace($"{Path.DirectorySeparatorChar}index.md", ".md");
-			if (!generator.DocumentationSet.FlatMappedFiles.TryGetValue(s, out documentationFile))
+			fp = new FilePath(s, generator.DocumentationSet.SourceDirectory);
+			if (!generator.DocumentationSet.Files.TryGetValue(fp, out documentationFile))
 			{
 				foreach (var extension in holder.Generator.DocumentationSet.EnabledExtensions)
 				{
@@ -219,9 +229,10 @@ public class DocumentationWebHost
 				return Results.File(image.SourceFile.FullName, image.MimeType);
 			default:
 				if (s == "index.md")
-					return Results.Redirect(generator.DocumentationSet.MarkdownFiles.First().Url);
+					return Results.Redirect(generator.DocumentationSet.Navigation.Url);
 
-				if (!generator.DocumentationSet.FlatMappedFiles.TryGetValue("404.md", out var notFoundDocumentationFile))
+				var fp404 = new FilePath("404.md", generator.DocumentationSet.SourceDirectory);
+				if (!generator.DocumentationSet.Files.TryGetValue(fp404, out var notFoundDocumentationFile))
 					return Results.NotFound();
 
 				if (Path.GetExtension(s) is "" or not ".md")

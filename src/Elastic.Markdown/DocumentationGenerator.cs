@@ -6,7 +6,8 @@ using System.IO.Abstractions;
 using System.Text.Json;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Legacy;
+using Elastic.Documentation.Configuration.LegacyUrlMappings;
+using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Serialization;
 using Elastic.Documentation.Site.FileProviders;
@@ -14,7 +15,6 @@ using Elastic.Documentation.Site.Navigation;
 using Elastic.Documentation.State;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
-using Elastic.Markdown.Links.CrossLinks;
 using Markdig.Syntax;
 using Microsoft.Extensions.Logging;
 
@@ -48,7 +48,6 @@ public class DocumentationGenerator
 
 	public DocumentationSet DocumentationSet { get; }
 	public BuildContext Context { get; }
-	public ICrossLinkResolver Resolver { get; }
 	public IMarkdownStringRenderer MarkdownStringRenderer => HtmlWriter;
 
 	public DocumentationGenerator(
@@ -58,8 +57,7 @@ public class DocumentationGenerator
 		IDocumentationFileOutputProvider? documentationFileOutputProvider = null,
 		IMarkdownExporter[]? markdownExporters = null,
 		IConversionCollector? conversionCollector = null,
-		ILegacyUrlMapper? legacyUrlMapper = null,
-		IPositionalNavigation? positionalNavigation = null
+		ILegacyUrlMapper? legacyUrlMapper = null
 	)
 	{
 		_markdownExporters = markdownExporters ?? [];
@@ -70,9 +68,8 @@ public class DocumentationGenerator
 
 		DocumentationSet = docSet;
 		Context = docSet.Context;
-		Resolver = docSet.LinkResolver;
-		HtmlWriter = new HtmlWriter(DocumentationSet, _writeFileSystem, new DescriptionGenerator(), navigationHtmlWriter, legacyUrlMapper,
-			positionalNavigation);
+		var productVersionInferrer = new ProductVersionInferrerService(DocumentationSet.Context.ProductsConfiguration, DocumentationSet.Context.VersionsConfiguration);
+		HtmlWriter = new HtmlWriter(DocumentationSet, _writeFileSystem, new DescriptionGenerator(), navigationHtmlWriter, legacyUrlMapper, productVersionInferrer);
 		_documentationFileExporter =
 			docSet.Context.AvailableExporters.Contains(Exporter.Html)
 				? docSet.EnabledExtensions.FirstOrDefault(e => e.FileExporter != null)?.FileExporter
@@ -97,7 +94,7 @@ public class DocumentationGenerator
 	public async Task ResolveDirectoryTree(Cancel ctx)
 	{
 		_logger.LogInformation("Resolving tree");
-		await DocumentationSet.Tree.Resolve(ctx);
+		await DocumentationSet.ResolveDirectoryTree(ctx);
 		_logger.LogInformation("Resolved tree");
 	}
 
@@ -119,9 +116,6 @@ public class DocumentationGenerator
 
 		if (CompilationNotNeeded(generationState, out var offendingFiles, out var outputSeenChanges))
 			return result;
-
-		_logger.LogInformation($"Fetching external links");
-		_ = await Resolver.FetchLinks(ctx);
 
 		await ResolveDirectoryTree(ctx);
 
@@ -158,9 +152,10 @@ public class DocumentationGenerator
 		await Parallel.ForEachAsync(DocumentationSet.Files, ctx, async (file, token) =>
 		{
 			var processedFiles = Interlocked.Increment(ref processedFileCount);
+			var (fp, doc) = file;
 			try
 			{
-				await ProcessFile(offendingFiles, file, outputSeenChanges, token);
+				await ProcessFile(offendingFiles, doc, outputSeenChanges, token);
 			}
 			catch (Exception e)
 			{
@@ -168,15 +163,15 @@ public class DocumentationGenerator
 				// this is not the main error logging mechanism
 				// if we hit this from too many files fail hard
 				if (currentCount <= 25)
-					Context.Collector.EmitError(file.RelativePath, "Uncaught exception while processing file", e);
+					Context.Collector.EmitError(fp.RelativePath, "Uncaught exception while processing file", e);
 				else
 					throw;
 			}
 
 			if (processedFiles % 100 == 0)
-				_logger.LogInformation("-> Processed {ProcessedFiles}/{TotalFileCount} files", processedFiles, totalFileCount);
+				_logger.LogInformation(" {Name} -> Processed {ProcessedFiles}/{TotalFileCount} files", Context.Git.RepositoryName, processedFiles, totalFileCount);
 		});
-		_logger.LogInformation("-> Processed {ProcessedFileCount}/{TotalFileCount} files", processedFileCount, totalFileCount);
+		_logger.LogInformation(" {Name} -> Processed {ProcessedFileCount}/{TotalFileCount} files", Context.Git.RepositoryName, processedFileCount, totalFileCount);
 
 	}
 
@@ -187,6 +182,9 @@ public class DocumentationGenerator
 		var keysNotInUse = definedKeys.Except(inUse)
 				// versions keys are injected
 				.Where(key => !key.StartsWith("version."))
+				// product keys are injected
+				.Where(key => !key.StartsWith("product."))
+				.Where(key => !key.StartsWith('.'))
 				// reserving context namespace
 				.Where(key => !key.StartsWith("context."))
 				.ToArray();
@@ -255,7 +253,8 @@ public class DocumentationGenerator
 			{
 				foreach (var exporter in _markdownExporters)
 				{
-					var document = context.MarkdownDocument ??= await markdown.ParseFullAsync(ctx);
+					var document = context.MarkdownDocument ??= await markdown.ParseFullAsync(DocumentationSet.TryFindDocumentByRelativePath, ctx);
+					var navigationItem = DocumentationSet.FindNavigationByMarkdown(markdown);
 					_ = await exporter.ExportAsync(new MarkdownExportFileContext
 					{
 						BuildContext = Context,
@@ -263,7 +262,8 @@ public class DocumentationGenerator
 						Document = document,
 						SourceFile = markdown,
 						DefaultOutputFile = outputFile,
-						DocumentationSet = DocumentationSet
+						DocumentationSet = DocumentationSet,
+						NavigationItem = navigationItem
 					}, ctx);
 				}
 			}
@@ -352,14 +352,14 @@ public class DocumentationGenerator
 
 	public async Task<string> RenderLlmMarkdown(MarkdownFile markdown, Cancel ctx)
 	{
-		await DocumentationSet.Tree.Resolve(ctx);
-		var document = await markdown.ParseFullAsync(ctx);
+		await DocumentationSet.ResolveDirectoryTree(ctx);
+		var document = await markdown.ParseFullAsync(DocumentationSet.TryFindDocumentByRelativePath, ctx);
 		return LlmMarkdownExporter.ConvertToLlmMarkdown(document, DocumentationSet.Context);
 	}
 
 	public async Task<RenderResult> RenderLayout(MarkdownFile markdown, Cancel ctx)
 	{
-		await DocumentationSet.Tree.Resolve(ctx);
+		await DocumentationSet.ResolveDirectoryTree(ctx);
 		return await HtmlWriter.RenderLayout(markdown, ctx);
 	}
 }

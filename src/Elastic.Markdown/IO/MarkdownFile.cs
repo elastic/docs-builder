@@ -3,13 +3,11 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using System.Runtime.InteropServices;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Navigation;
-using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.Helpers;
-using Elastic.Markdown.Links.CrossLinks;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Myst.Directives.Include;
@@ -22,11 +20,9 @@ using Markdig.Syntax;
 
 namespace Elastic.Markdown.IO;
 
-public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigationModel
+public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocumentationFile
 {
 	private string? _navigationTitle;
-
-	private readonly DocumentationSet _set;
 
 	private readonly IFileInfo _configurationFile;
 
@@ -36,8 +32,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 		IFileInfo sourceFile,
 		IDirectoryInfo rootPath,
 		MarkdownParser parser,
-		BuildContext build,
-		DocumentationSet set
+		BuildContext build
 	)
 		: base(sourceFile, rootPath, build.Git.RepositoryName)
 	{
@@ -49,19 +44,16 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 		Collector = build.Collector;
 		_configurationFile = build.Configuration.SourceFile;
 		_globalSubstitutions = build.Configuration.Substitutions;
-		_set = set;
 		//may be updated by DocumentationGroup.ProcessTocItems
 		//todo refactor mutability of MarkdownFile as a whole
 		ScopeDirectory = build.Configuration.ScopeDirectory;
+		Products = build.ProductsConfiguration;
 
-		NavigationRoot = set.Tree;
 	}
 
-	public bool PartOfNavigation { get; set; }
+	public ProductsConfiguration Products { get; }
 
 	public IDirectoryInfo ScopeDirectory { get; set; }
-
-	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; set; }
 
 	private IDiagnosticsCollector Collector { get; }
 
@@ -97,45 +89,6 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 	public string FilePath { get; }
 	public string FileName { get; }
 
-	protected virtual string RelativePathUrl => RelativePath;
-
-	private string DefaultUrlPathSuffix
-	{
-		get
-		{
-			var relativePath = RelativePathUrl;
-			if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-				relativePath = relativePath.Replace('\\', '/');
-			return Path.GetFileName(relativePath) == "index.md"
-				? $"/{relativePath.Remove(relativePath.LastIndexOf("index.md", StringComparison.Ordinal), "index.md".Length)}"
-				: $"/{relativePath.Remove(relativePath.LastIndexOf(SourceFile.Extension, StringComparison.Ordinal), SourceFile.Extension.Length)}";
-		}
-	}
-
-	private string DefaultUrlPath => $"{UrlPathPrefix}{DefaultUrlPathSuffix}";
-
-	private string? _url;
-	public string Url
-	{
-		get
-		{
-			if (_url is not null)
-				return _url;
-			if (_set.LinkResolver.UriResolver is IsolatedBuildEnvironmentUriResolver)
-			{
-				_url = DefaultUrlPath;
-				return _url;
-			}
-			var crossLink = new Uri(CrossLink);
-			var uri = _set.LinkResolver.UriResolver.Resolve(crossLink, DefaultUrlPathSuffix);
-			_url = uri.AbsolutePath;
-			return _url;
-
-		}
-	}
-
-	//public int NavigationIndex { get; set; } = -1;
-
 	private bool _instructionsParsed;
 	private string? _title;
 
@@ -164,18 +117,18 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 	protected virtual async Task<MarkdownDocument> GetParseDocumentAsync(Cancel ctx) =>
 		await MarkdownParser.ParseAsync(SourceFile, YamlFrontMatter, ctx);
 
-	public async Task<MarkdownDocument> MinimalParseAsync(Cancel ctx)
+	public async Task<MarkdownDocument> MinimalParseAsync(Func<string, DocumentationFile?> documentationFileLookup, Cancel ctx)
 	{
 		var document = await GetMinimalParseDocumentAsync(ctx);
-		ReadDocumentInstructions(document);
+		ReadDocumentInstructions(document, documentationFileLookup);
 		ValidateAnchorRemapping();
 		return document;
 	}
 
-	public async Task<MarkdownDocument> ParseFullAsync(Cancel ctx)
+	public async Task<MarkdownDocument> ParseFullAsync(Func<string, DocumentationFile?> documentationFileLookup, Cancel ctx)
 	{
 		if (!_instructionsParsed)
-			_ = await MinimalParseAsync(ctx);
+			_ = await MinimalParseAsync(documentationFileLookup, ctx);
 
 		var document = await GetParseDocumentAsync(ctx);
 		return document;
@@ -194,7 +147,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 		return allProperties;
 	}
 
-	protected void ReadDocumentInstructions(MarkdownDocument document)
+	protected void ReadDocumentInstructions(MarkdownDocument document, Func<string, DocumentationFile?> documentationFileLookup)
 	{
 		Title ??= document
 			.FirstOrDefault(block => block is HeadingBlock { Level: 1 })?
@@ -221,7 +174,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 		else if (Title.AsSpan().ReplaceSubstitutions(subs, Collector, out var replacement))
 			Title = replacement;
 
-		var toc = GetAnchors(_set, MarkdownParser, YamlFrontMatter, document, subs, out var anchors);
+		var toc = GetAnchors(Collector, documentationFileLookup, MarkdownParser, YamlFrontMatter, document, subs, out var anchors);
 
 		_pageTableOfContent.Clear();
 		foreach (var t in toc)
@@ -235,7 +188,8 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 	}
 
 	public static List<PageTocItem> GetAnchors(
-		DocumentationSet set,
+		IDiagnosticsCollector collector,
+		Func<string, DocumentationFile?> documentationFileLookup,
 		MarkdownParser parser,
 		YamlFrontMatter? frontMatter,
 		MarkdownDocument document,
@@ -248,17 +202,22 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 			.Select(i =>
 			{
 				var relativePath = i.IncludePathRelativeToSource;
-				if (relativePath is null
-					|| !set.FlatMappedFiles.TryGetValue(relativePath, out var file)
-					|| file is not SnippetFile snippet)
+				if (relativePath is null)
+					return null;
+				var doc = documentationFileLookup(relativePath);
+				if (doc is not SnippetFile snippet)
 					return null;
 
-				return snippet.GetAnchors(set, parser, frontMatter);
+				var anchors = snippet.GetAnchors(collector, documentationFileLookup, parser, frontMatter);
+				return new { Block = i, Anchors = anchors };
 			})
 			.Where(i => i is not null)
 			.ToArray();
 
-		var includedTocs = includes.SelectMany(i => i!.TableOfContentItems).ToArray();
+		var includedTocs = includes
+			.SelectMany(i => i!.Anchors!.TableOfContentItems
+				.Select(item => new { TocItem = item, i.Block.Line }))
+			.ToArray();
 
 		// Collect headings from standard markdown
 		var headingTocs = document
@@ -291,7 +250,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 			{
 				var processedTitle = step.Title;
 				// Apply substitutions to step titles
-				if (subs.Count > 0 && processedTitle.AsSpan().ReplaceSubstitutions(subs, set.Context.Collector, out var replacement))
+				if (subs.Count > 0 && processedTitle.AsSpan().ReplaceSubstitutions(subs, collector, out var replacement))
 					processedTitle = replacement;
 
 				return new
@@ -308,17 +267,17 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 
 		var toc = headingTocs
 			.Concat(stepperTocs)
-			.Concat(includedTocs.Select(item => new { TocItem = item, Line = 0 }))
+			.Concat(includedTocs)
 			.OrderBy(item => item.Line)
 			.Select(item => item.TocItem)
 			.Select(toc => subs.Count == 0
 				? toc
-				: toc.Heading.AsSpan().ReplaceSubstitutions(subs, set.Context.Collector, out var r)
+				: toc.Heading.AsSpan().ReplaceSubstitutions(subs, collector, out var r)
 					? toc with { Heading = r }
 					: toc)
 			.ToList();
 
-		var includedAnchors = includes.SelectMany(i => i!.Anchors).ToArray();
+		var includedAnchors = includes.SelectMany(i => i!.Anchors!.Anchors).ToArray();
 		anchors =
 		[
 			..document.Descendants<DirectiveBlock>()
@@ -359,6 +318,16 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 				Collector.Emit(severity, FilePath, message);
 		}
 
+		// Validate mapped_pages URLs
+		if (fm.MappedPages is not null)
+		{
+			foreach (var url in fm.MappedPages)
+			{
+				if (!string.IsNullOrEmpty(url) && (!url.StartsWith("https://www.elastic.co/guide", StringComparison.OrdinalIgnoreCase) || !Uri.IsWellFormedUriString(url, UriKind.Absolute)))
+					Collector.EmitError(FilePath, $"Invalid mapped_pages URL: \"{url}\". All mapped_pages URLs must start with \"https://www.elastic.co/guide\". Please update the URL to reference content under the Elastic documentation guide.");
+			}
+		}
+
 		// TODO remove when migration tool and our demo content sets are updated
 		var deprecatedTitle = fm.Title;
 		if (!string.IsNullOrEmpty(deprecatedTitle))
@@ -379,7 +348,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 	{
 		try
 		{
-			return YamlSerialization.Deserialize<YamlFrontMatter>(raw);
+			return YamlSerialization.Deserialize<YamlFrontMatter>(raw, Products);
 		}
 		catch (InvalidProductException e)
 		{

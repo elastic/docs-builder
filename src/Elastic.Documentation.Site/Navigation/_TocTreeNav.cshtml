@@ -1,3 +1,6 @@
+@using Elastic.Documentation.Navigation
+@using Elastic.Documentation.Navigation.Isolated
+@using Elastic.Documentation.Navigation.Isolated.Leaf
 @using Elastic.Documentation.Site.Navigation
 @inherits RazorSlice<NavigationTreeItem>
 @{
@@ -9,7 +12,12 @@
 	{
 		continue;
 	}
-	if (item is INodeNavigationItem<INavigationModel, INavigationItem> { NavigationItems.Count: 0, Index: not null } group)
+
+	if (item.Parent is not null && item.Parent.Index == item)
+	{
+		continue;
+	}
+	if (item is INodeNavigationItem<INavigationModel, INavigationItem> { NavigationItems.Count: 0 } group)
 	{
 		<li class="flex group/li pr-8 @(isTopLevel ? "font-semibold mt-6" : "mt-4")">
 			<a
@@ -25,12 +33,12 @@
 	{
 		var g = folder;
 		var allHidden = folder.NavigationItems.All(n => n.Hidden);
-		<li class="flex flex-wrap group-navigation @(isTopLevel ? "mt-6" : "mt-4")">
+		<li class="flex flex-wrap group-navigation @(isTopLevel ? "mt-6" : "mt-4") relative">
 			<div class="peer grid grid-cols-[1fr_auto] w-full">
 				<a
 					href="@(g.Url)"
 					@Htmx.GetNavHxAttributes(Model.IsPrimaryNavEnabled && g.NavigationRoot.Id == Model.RootNavigationId || true)
-					class="sidebar-link pr-2 content-center @(isTopLevel ? "font-semibold" : "")">
+					class="sidebar-link pr-2 content-center @(isTopLevel ? "font-semibold" : "") group-[.current]/li:text-blue-elastic!">
 					@(g.NavigationTitle)
 				</a>
 				@if (!allHidden)
@@ -60,7 +68,7 @@
 				// Only render children if we're within the allowed level depth
 				// MaxLevel of -1 means render all levels
 				bool shouldRenderChildren = Model.MaxLevel == -1 || Model.Level < (Model.MaxLevel);
-				<ul class="w-full hidden peer-has-checked:block ml-4">
+				<ul class="w-full hidden peer-has-checked:block ml-4 relative before:content-[''] before:absolute before:-left-[calc(var(--spacing)*4-1px)] before:top-0 before:bottom-0 before:w-px before:bg-grey-20 before:peer-has-checked:block peer-has-[.current]:before:bg-grey-40 has-[.current]:before:bg-grey-40">
 					@if (shouldRenderChildren)
 					{
 						@await RenderPartialAsync(_TocTreeNav.Create(new NavigationTreeItem
@@ -79,10 +87,11 @@
 	}
 	else if (item is ILeafNavigationItem<INavigationModel> leaf)
 	{
+		var hasSameTopLevelGroup = leaf.Model is not CrossLinkModel && (Model.IsPrimaryNavEnabled && leaf.NavigationRoot.Id == Model.RootNavigationId || true);
 		<li class="flex group/li pr-8 @(isTopLevel ? "font-semibold mt-6" : "mt-4")">
 			<a
 				href="@leaf.Url"
-				@Htmx.GetNavHxAttributes(Model.IsPrimaryNavEnabled && leaf.NavigationRoot.Id == Model.RootNavigationId || true)
+				@Htmx.GetNavHxAttributes(hasSameTopLevelGroup)
 				class="sidebar-link grow group-[.current]/li:text-blue-elastic!"
 			>
 				@leaf.NavigationTitle

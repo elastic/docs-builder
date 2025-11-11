@@ -1,17 +1,30 @@
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-nocheck: EUI icons do not have types
 import { icon as EuiIconVisualizeApp } from '@elastic/eui/es/components/icon/assets/app_visualize'
+import { icon as EuiIconArrowEnd } from '@elastic/eui/es/components/icon/assets/arrowEnd'
+import { icon as EuiIconArrowStart } from '@elastic/eui/es/components/icon/assets/arrowStart'
 import { icon as EuiIconArrowDown } from '@elastic/eui/es/components/icon/assets/arrow_down'
 import { icon as EuiIconArrowLeft } from '@elastic/eui/es/components/icon/assets/arrow_left'
 import { icon as EuiIconArrowRight } from '@elastic/eui/es/components/icon/assets/arrow_right'
 import { icon as EuiIconCheck } from '@elastic/eui/es/components/icon/assets/check'
+import { icon as EuiIconComment } from '@elastic/eui/es/components/icon/assets/comment'
+import { icon as EuiIconCopy } from '@elastic/eui/es/components/icon/assets/copy'
 import { icon as EuiIconCopyClipboard } from '@elastic/eui/es/components/icon/assets/copy_clipboard'
 import { icon as EuiIconCross } from '@elastic/eui/es/components/icon/assets/cross'
 import { icon as EuiIconDocument } from '@elastic/eui/es/components/icon/assets/document'
+import { icon as EuiIconDot } from '@elastic/eui/es/components/icon/assets/dot'
+import { icon as EuiIconEmpty } from '@elastic/eui/es/components/icon/assets/empty'
 import { icon as EuiIconError } from '@elastic/eui/es/components/icon/assets/error'
 import { icon as EuiIconFaceHappy } from '@elastic/eui/es/components/icon/assets/face_happy'
 import { icon as EuiIconFaceSad } from '@elastic/eui/es/components/icon/assets/face_sad'
+import { icon as EuiIconLogoElastic } from '@elastic/eui/es/components/icon/assets/logo_elastic'
 import { icon as EuiIconNewChat } from '@elastic/eui/es/components/icon/assets/new_chat'
+import { icon as EuiIconPlay } from '@elastic/eui/es/components/icon/assets/play'
+import { icon as EuiIconPopout } from '@elastic/eui/es/components/icon/assets/popout'
 import { icon as EuiIconRefresh } from '@elastic/eui/es/components/icon/assets/refresh'
+import { icon as EuiIconReturnKey } from '@elastic/eui/es/components/icon/assets/return_key'
 import { icon as EuiIconSearch } from '@elastic/eui/es/components/icon/assets/search'
+import { icon as EuiIconSortUp } from '@elastic/eui/es/components/icon/assets/sort_up'
 import { icon as EuiIconSparkles } from '@elastic/eui/es/components/icon/assets/sparkles'
 import { icon as EuiIconThumbDown } from '@elastic/eui/es/components/icon/assets/thumbDown'
 import { icon as EuiIconThumbUp } from '@elastic/eui/es/components/icon/assets/thumbUp'
@@ -26,6 +39,8 @@ appendIconComponentCache({
     arrowLeft: EuiIconArrowLeft,
     arrowRight: EuiIconArrowRight,
     document: EuiIconDocument,
+    dot: EuiIconDot,
+    empty: EuiIconEmpty,
     search: EuiIconSearch,
     trash: EuiIconTrash,
     user: EuiIconUser,
@@ -41,4 +56,13 @@ appendIconComponentCache({
     error: EuiIconError,
     thumbUp: EuiIconThumbUp,
     thumbDown: EuiIconThumbDown,
+    popout: EuiIconPopout,
+    returnKey: EuiIconReturnKey,
+    logoElastic: EuiIconLogoElastic,
+    copy: EuiIconCopy,
+    play: EuiIconPlay,
+    sortUp: EuiIconSortUp,
+    arrowStart: EuiIconArrowStart,
+    arrowEnd: EuiIconArrowEnd,
+    comment: EuiIconComment,
 })

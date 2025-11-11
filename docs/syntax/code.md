@@ -135,12 +135,9 @@ render(input2);
 
 ::::
 
+#### Automatic callouts
 
-
-
-#### Magic Callouts
-
-If a code block contains code comments in the form of `//` or `#`, callouts will be magically created 🪄.
+If a code block contains code comments in the form of `//` or `#`, callouts are automatically created.
 
 
 ::::{tab-set}
@@ -231,9 +228,9 @@ bazbazbaz: 3 <3>
 
 ::::
 
-#### Disable callouts
+#### Turn off callouts
 
-You can disable callouts by adding a code block argument `callouts=false`.
+You can turn off callouts by adding a code block argument `callouts=false`.
 
 ::::{tab-set}
 
@@ -267,13 +264,70 @@ project:
 
 ### Console code blocks
 
-:::{note}
-This feature is still being developed.
-:::
-
 We document a lot of API endpoints at Elastic. For these endpoints, we support `console` as a language. The term console relates to the dev console in kibana which users can link to directly from these code snippets.
 
 In a console code block, the first line is highlighted as a dev console string and the remainder as json:
+
+::::{tab-set}
+
+:::{tab-item} Output
+
+```console
+POST _reindex
+{
+  "source": {
+    "remote": {
+      "host": "<OTHER_HOST_URL>",
+      "username": "user",
+      "password": "pass"
+    },
+    "index": "my-index-000001",
+    "query": {
+      "match": {
+        "test": "data"
+      }
+    }
+  },
+  "dest": {
+    "index": "my-new-index-000001"
+  }
+}
+```
+
+
+:::
+
+:::{tab-item} Markdown
+
+````markdown
+```console
+POST _reindex
+{
+  "source": {
+    "remote": {
+      "host": "<OTHER_HOST_URL>",
+      "username": "user",
+      "password": "pass"
+    },
+    "index": "my-index-000001",
+    "query": {
+      "match": {
+        "test": "data"
+      }
+    }
+  },
+  "dest": {
+    "index": "my-new-index-000001"
+  }
+}
+```
+````
+
+:::
+
+::::
+
+Console code blocks now support multiple API calls within a single code block. When you have multiple console commands, they are displayed as separate sections within the same block with proper visual separation:
 
 ::::{tab-set}
 
@@ -286,6 +340,12 @@ GET /mydocuments/_search
     "query": {
         "match_all" {}
     }
+}
+
+POST /mydocuments/_doc
+{
+    "title": "New Document",
+    "content": "This is a sample document"
 }
 ```
 
@@ -301,6 +361,12 @@ GET /mydocuments/_search
     "query": {
         "match_all" {}
     }
+}
+
+POST /mydocuments/_doc
+{
+    "title": "New Document",
+    "content": "This is a sample document"
 }
 ```
 ````
@@ -358,7 +424,7 @@ This `code` is inline.
 
 ::::
 
-## Supported Languages
+## Supported languages
 
-Please refer to [hljs.ts](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Markdown/Assets/hljs.ts)
+Refer to [hljs.ts](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation.Site/Assets/hljs.ts)
 for a complete list of supported languages.

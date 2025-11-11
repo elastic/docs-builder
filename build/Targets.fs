@@ -19,7 +19,6 @@ let private clean _ =
     removeArtifacts "release-notes"
     removeArtifacts "tests"
     removeArtifacts "docs-builder"
-    removeArtifacts "docs-assembler"
 
 let private compile _ = exec { run "dotnet" "build" "-c" "release" }
 
@@ -32,13 +31,22 @@ let private version _ =
     printfn $"Informational version: %s{version.AsString}"
     printfn $"Semantic version: %s{version.Normalize()}"
 
-let private format _ = exec { run "dotnet" "format" "--verbosity" "quiet" }
+let private format (formatArgs: ParseResults<FormatArgs>) =
+    let includeFiles = formatArgs.TryGetResult FormatArgs.Include |> Option.defaultValue []
+    let includeArgs = 
+        if includeFiles.IsEmpty then []
+        else ["--include"] @ includeFiles
+    exec { run "dotnet" (["format"; "--verbosity"; "quiet"] @ includeArgs) }
 
 let private watch _ = exec { run "dotnet" "watch" "--project" "src/tooling/docs-builder" "--configuration" "debug" "--" "serve" }
 
-let private lint _ =
+let private lint (lintArgs: ParseResults<LintArgs>) =
+    let includeFiles = lintArgs.TryGetResult LintArgs.Include |> Option.defaultValue []
+    let includeArgs = 
+        if includeFiles.IsEmpty then []
+        else ["--include"] @ includeFiles
     match exec {
-        exit_code_of "dotnet" "format" "--verify-no-changes"
+        exit_code_of "dotnet" (["format"; "--verify-no-changes"] @ includeArgs)
     } with
     | 0 -> printfn "There are no dotnet formatting violations, continuing the build."
     | _ -> failwithf "There are dotnet formatting violations. Call `dotnet format` to fix or specify -c to ./build.sh to skip this check"
@@ -57,7 +65,6 @@ let private pristineCheck (arguments:ParseResults<Build>) =
 
 let private publishBinaries _ =
     exec { run "dotnet" "publish" "src/tooling/docs-builder/docs-builder.csproj" }
-    exec { run "dotnet" "publish" "src/tooling/docs-assembler/docs-assembler.csproj" }
 
 let private publishZip _ =
     let zip tool =
@@ -72,7 +79,6 @@ let private publishZip _ =
                 $".artifacts/publish/{tool}/release/NOTICE.txt"
             ]
     zip "docs-builder"
-    zip "docs-assembler"
     
 let private prNumber () =
     match Environment.environVarOrNone "GITHUB_REF_NAME" with
@@ -128,13 +134,12 @@ let private publishContainers _ =
             | _ -> []
         exec { run "dotnet" (args @ registry) }
     createImage "docs-builder"
-    createImage "docs-assembler"
 
 let private runTests (testSuite: TestSuite) _ =
     let testFilter =
         match testSuite with
         | All -> []
-        | Unit -> ["--filter"; "FullyQualifiedName~.Tests"]
+        | Unit -> ["--filter"; "FullyQualifiedName~.Tests|FullyQualifiedName~AuthoringTests"]
         | Integration -> ["--filter"; "FullyQualifiedName~.IntegrationTests"]
 
     exec {
@@ -152,6 +157,8 @@ let private validateLicenses _ =
     exec { run "dotnet" (["dotnet-project-licenses"] @ args) }
 
 let Setup (parsed:ParseResults<Build>) =
+    let emptyLintArgs = ArgumentParser.Create<LintArgs>().Parse([||])
+    
     let wireCommandLine (t: Build) =
         match t with
         // commands
@@ -160,7 +167,7 @@ let Setup (parsed:ParseResults<Build>) =
         | Compile -> Build.Step compile
         | Build ->
             Build.Cmd
-                [Clean; Lint; Compile] [] build
+                [Clean; Lint emptyLintArgs; Compile] [] build
         
         | Test -> Build.Cmd [Compile] [] <| runTests TestSuite.All
         | Unit_Test -> Build.Cmd [Compile] [] <| runTests TestSuite.Unit
@@ -178,11 +185,11 @@ let Setup (parsed:ParseResults<Build>) =
                 [PublishBinaries; PublishContainers]
                 release
 
-        | Format -> Build.Step format
+        | Format formatArgs -> Build.Step (fun _ -> format formatArgs)
         | Watch -> Build.Step watch
 
         // steps
-        | Lint -> Build.Step lint
+        | Lint lintArgs -> Build.Step (fun _ -> lint lintArgs)
         | PristineCheck -> Build.Step pristineCheck
         | PublishBinaries -> Build.Step publishBinaries
         | PublishContainers -> Build.Step publishContainers

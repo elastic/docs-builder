@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.IO.Abstractions;
 using Microsoft.Extensions.Hosting;
 
@@ -11,7 +12,7 @@ namespace Elastic.Documentation.Diagnostics;
 public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> outputs)
 	: IDiagnosticsCollector
 {
-	private DiagnosticsChannel Channel { get; } = new();
+	public DiagnosticsChannel Channel { get; } = new();
 
 	private int _errors;
 	private int _warnings;
@@ -28,9 +29,9 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 
 	public ConcurrentBag<string> CrossLinks { get; } = [];
 
-	public bool NoHints { get; init; }
+	public bool NoHints { get; set; }
 
-	public DiagnosticsCollector StartAsync(Cancel ctx)
+	public virtual DiagnosticsCollector StartAsync(Cancel ctx)
 	{
 		_ = ((IHostedService)this).StartAsync(ctx);
 		return this;
@@ -74,7 +75,7 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 		}
 	}
 
-	private void IncrementSeverityCount(Diagnostic item)
+	protected void IncrementSeverityCount(Diagnostic item)
 	{
 		if (item.Severity == Severity.Error)
 			_ = Interlocked.Increment(ref _errors);
@@ -96,7 +97,7 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 
 	public void EmitCrossLink(string link) => CrossLinks.Add(link);
 
-	public void Write(Diagnostic diagnostic)
+	public virtual void Write(Diagnostic diagnostic)
 	{
 		IncrementSeverityCount(diagnostic);
 		Channel.Write(diagnostic);

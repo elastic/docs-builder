@@ -11,12 +11,12 @@ public enum Exporter
 	Html,
 	LLMText,
 	Elasticsearch,
-	SemanticElasticsearch,
 	Configuration,
 	DocumentationState,
 	LinkMetadata,
-	Redirects,
+	Redirects
 }
+
 public static class ExportOptions
 {
 	public static HashSet<Exporter> Default { get; } = [Html, LLMText, Configuration, DocumentationState, LinkMetadata, Redirects];

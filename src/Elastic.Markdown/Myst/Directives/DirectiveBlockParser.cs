@@ -4,10 +4,12 @@
 
 using System.Collections.Frozen;
 using Elastic.Markdown.Myst.Directives.Admonition;
+using Elastic.Markdown.Myst.Directives.AppliesSwitch;
 using Elastic.Markdown.Myst.Directives.CsvInclude;
 using Elastic.Markdown.Myst.Directives.Diagram;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
+using Elastic.Markdown.Myst.Directives.Math;
 using Elastic.Markdown.Myst.Directives.Mermaid;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.Directives.Stepper;
@@ -90,6 +92,12 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		if (info.IndexOf("{tab-item}") > 0)
 			return new TabItemBlock(this, context);
 
+		if (info.IndexOf("{applies-switch}") > 0)
+			return new AppliesSwitchBlock(this, context);
+
+		if (info.IndexOf("{applies-item}") > 0)
+			return new AppliesItemBlock(this, context);
+
 		if (info.IndexOf("{dropdown}") > 0)
 			return new DropdownBlock(this, context);
 
@@ -125,6 +133,9 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 
 		if (info.IndexOf("{csv-include}") > 0)
 			return new CsvIncludeBlock(this, context);
+
+		if (info.IndexOf("{math}") > 0)
+			return new MathBlock(this, context);
 
 		foreach (var admonition in _admonitions)
 		{
@@ -179,7 +190,7 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 			return BlockState.None;
 
 		var span = line.AsSpan();
-		var lastIndent = Math.Max(span.LastIndexOf("`"), span.LastIndexOf(":"));
+		var lastIndent = System.Math.Max(span.LastIndexOf("`"), span.LastIndexOf(":"));
 		var startApplies = span.IndexOf("{applies_to}");
 		var startOpen = span.IndexOf("{");
 		if (startOpen > lastIndent + 1 || startApplies != -1)
@@ -201,12 +212,13 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		if (block is not DirectiveBlock directiveBlock)
 			return base.TryContinue(processor, block);
 
-		var tokens = line.ToString().Split(':', 3, RemoveEmptyEntries | TrimEntries);
+		var tokens = line.ToString().Split(':', 2, RemoveEmptyEntries | TrimEntries);
 		if (tokens.Length < 1)
 			return base.TryContinue(processor, block);
 
 		var name = tokens[0];
-		var data = tokens.Length > 1 ? string.Join(":", tokens[1..]) : string.Empty;
+		var data = tokens.Length > 1 ? tokens[1] : string.Empty;
+
 		directiveBlock.AddProperty(name, data);
 
 		return BlockState.Continue;

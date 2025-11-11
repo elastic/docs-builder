@@ -30,9 +30,17 @@ public class LocalParameterProvider : IParameterProvider
 				{
 					return GetEnv("DOCUMENTATION_ELASTIC_APIKEY");
 				}
+			case "docs-kibana-url":
+				{
+					return GetEnv("DOCUMENTATION_KIBANA_URL");
+				}
+			case "docs-kibana-apikey":
+				{
+					return GetEnv("DOCUMENTATION_KIBANA_APIKEY");
+				}
 			case "docs-elasticsearch-index":
 				{
-					return "semantic-documentation-latest";
+					return GetEnv("DOCUMENTATION_ELASTIC_INDEX", "semantic-docs-dev-latest");
 				}
 			default:
 				{
@@ -41,11 +49,13 @@ public class LocalParameterProvider : IParameterProvider
 		}
 	}
 
-	private static string GetEnv(string name)
+	private static string GetEnv(string name, string? defaultValue = null)
 	{
 		var value = Environment.GetEnvironmentVariable(name);
-		if (string.IsNullOrEmpty(value))
-			throw new ArgumentException($"Environment variable '{name}' not found.");
-		return value;
+		if (!string.IsNullOrEmpty(value))
+			return value;
+		if (defaultValue != null)
+			return defaultValue;
+		throw new ArgumentException($"Environment variable '{name}' not found.");
 	}
 }

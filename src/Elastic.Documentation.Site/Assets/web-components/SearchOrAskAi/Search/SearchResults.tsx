@@ -1,8 +1,8 @@
-import { useSearchTerm } from '../search.store'
+import { SearchOrAskAiErrorCallout } from '../SearchOrAskAiErrorCallout'
+import { useSearchTerm } from './search.store'
 import { SearchResultItem, useSearchQuery } from './useSearchQuery'
 import {
     useEuiFontSize,
-    EuiHighlight,
     EuiLink,
     EuiLoadingSpinner,
     EuiSpacer,
@@ -14,16 +14,18 @@ import {
 } from '@elastic/eui'
 import { css } from '@emotion/react'
 import { useDebounce } from '@uidotdev/usehooks'
-import * as React from 'react'
-import { useEffect, useMemo, useState } from 'react'
+import DOMPurify from 'dompurify'
+import { useEffect, useMemo, useState, memo } from 'react'
 
 export const SearchResults = () => {
     const searchTerm = useSearchTerm()
     const [activePage, setActivePage] = useState(0)
     const debouncedSearchTerm = useDebounce(searchTerm, 300)
+
     useEffect(() => {
         setActivePage(0)
     }, [debouncedSearchTerm])
+
     const { data, error, isLoading, isFetching } = useSearchQuery({
         searchTerm,
         pageNumber: activePage + 1,
@@ -31,69 +33,76 @@ export const SearchResults = () => {
     const { euiTheme } = useEuiTheme()
 
     if (!searchTerm) {
-        return
-    }
-
-    if (error) {
-        return <div>Error loading search results: {error.message}</div>
+        return null
     }
 
     return (
-        <div>
-            <div
-                css={css`
-                    display: flex;
-                    gap: ${euiTheme.size.s};
-                    align-items: center;
-                `}
-            >
-                {isLoading || isFetching ? (
-                    <EuiLoadingSpinner size="s" />
-                ) : (
-                    <EuiIcon type="search" color="subdued" size="s" />
-                )}
-                <EuiText size="xs">
-                    Search results for{' '}
-                    <span
-                        css={css`
-                            font-weight: ${euiTheme.font.weight.bold};
-                        `}
-                    >
-                        {searchTerm}
-                    </span>
-                </EuiText>
-            </div>
-            <EuiSpacer size="s" />
-            {data && (
-                <>
-                    <ul>
-                        {data.results.map((result) => (
-                            <SearchResultListItem
-                                item={result}
-                                key={result.url}
-                            />
-                        ))}
-                    </ul>
-                    <EuiSpacer size="m" />
+        <>
+            <SearchOrAskAiErrorCallout
+                error={error}
+                domain="search"
+                title="Error loading search results"
+            />
+            {error && <EuiSpacer size="s" />}
+
+            {!error && (
+                <div>
                     <div
                         css={css`
                             display: flex;
-                            justify-content: center;
+                            gap: ${euiTheme.size.s};
+                            align-items: center;
                         `}
                     >
-                        <EuiPagination
-                            aria-label="Search results pages"
-                            pageCount={Math.min(data.pageCount, 10)}
-                            activePage={activePage}
-                            onPageClick={(activePage) =>
-                                setActivePage(activePage)
-                            }
-                        />
+                        {isLoading || isFetching ? (
+                            <EuiLoadingSpinner size="s" />
+                        ) : (
+                            <EuiIcon type="search" color="subdued" size="s" />
+                        )}
+                        <EuiText size="xs">
+                            Search results for{' '}
+                            <span
+                                css={css`
+                                    font-weight: ${euiTheme.font.weight.bold};
+                                `}
+                            >
+                                {searchTerm}
+                            </span>
+                        </EuiText>
                     </div>
-                </>
+                    <EuiSpacer size="s" />
+                    {data && (
+                        <>
+                            <ul>
+                                {data.results.map((result) => (
+                                    <SearchResultListItem
+                                        item={result}
+                                        key={result.url}
+                                    />
+                                ))}
+                            </ul>
+                            <EuiSpacer size="m" />
+                            <div
+                                css={css`
+                                    display: flex;
+                                    justify-content: center;
+                                `}
+                            >
+                                <EuiPagination
+                                    aria-label="Search results pages"
+                                    pageCount={Math.min(data.pageCount, 10)}
+                                    activePage={activePage}
+                                    onPageClick={(activePage) =>
+                                        setActivePage(activePage)
+                                    }
+                                />
+                            </div>
+                        </>
+                    )}
+                    <EuiHorizontalRule margin="m" />
+                </div>
             )}
-            <EuiHorizontalRule margin="m" />
-        </div>
+        </>
     )
 }
 
@@ -103,34 +112,23 @@ interface SearchResultListItemProps {
 
 function SearchResultListItem({ item: result }: SearchResultListItemProps) {
     const { euiTheme } = useEuiTheme()
-    const searchTerm = useSearchTerm()
-    const highlightSearchTerms = useMemo(
-        () =>
-            searchTerm
-                .toLowerCase()
-                .split(' ')
-                .filter((i) => i.length > 1),
-        [searchTerm]
-    )
-
-    if (highlightSearchTerms.includes('esql')) {
-        highlightSearchTerms.push('es|ql')
-    }
-
-    if (highlightSearchTerms.includes('dotnet')) {
-        highlightSearchTerms.push('.net')
-    }
+    const titleFontSize = useEuiFontSize('m')
     return (
-        <li>
+        <li
+            tabIndex={0}
+            css={css`
+                :not(:first-child) {
+                    border-top: 1px dotted ${euiTheme.colors.borderBasePrimary};
+                }
+            `}
+        >
             <div
-                tabIndex={0}
                 css={css`
                             display: flex; 
                             align-items: flex-start;
                             gap: ${euiTheme.size.s};
                             padding-inline: ${euiTheme.size.s};
-                            padding-block: ${euiTheme.size.xs};
-                            border-radius: ${euiTheme.border.radius.small};
+                            padding-block: ${euiTheme.size.m};
                             :hover {
                                 background-color: ${euiTheme.colors.backgroundTransparentSubdued};
                         `}
@@ -148,41 +146,55 @@ function SearchResultListItem({ item: result }: SearchResultListItemProps) {
                         text-align: left;
                     `}
                 >
-                    <EuiLink
-                        tabIndex={-1}
-                        href={result.url}
+                    <Breadcrumbs parents={result.parents} />
+                    <div
                         css={css`
-                            .euiMark {
-                                background-color: ${euiTheme.colors
-                                    .backgroundLightWarning};
-                                font-weight: inherit;
-                            }
+                            padding-block: ${euiTheme.size.xs};
+                            font-size: ${titleFontSize.fontSize};
                         `}
                     >
-                        <EuiHighlight
-                            search={highlightSearchTerms}
-                            highlightAll={true}
+                        <EuiLink tabIndex={-1} href={result.url}>
+                            <span>{result.title}</span>
+                        </EuiLink>
+                    </div>
+
+                    <EuiText size="s">
+                        <div
+                            css={css`
+                                font-family: ${euiTheme.font.family};
+                                position: relative;
+
+                                /* 2 lines with ellipsis */
+                                display: -webkit-box;
+                                -webkit-line-clamp: 1;
+                                -webkit-box-orient: vertical;
+                                overflow: hidden;
+
+                                width: 90%;
+
+                                mark {
+                                    background-color: transparent;
+                                    font-weight: ${euiTheme.font.weight.bold};
+                                    color: ${euiTheme.colors.ink};
+                                }
+                            `}
                         >
-                            {result.title}
-                        </EuiHighlight>
-                    </EuiLink>
-                    <Breadcrumbs
-                        parents={result.parents}
-                        highlightSearchTerms={highlightSearchTerms}
-                    />
+                            {result.highlightedBody ? (
+                                <SanitizedHtmlContent
+                                    htmlContent={result.highlightedBody}
+                                />
+                            ) : (
+                                <span>{result.description}</span>
+                            )}
+                        </div>
+                    </EuiText>
                 </div>
             </div>
         </li>
     )
 }
 
-function Breadcrumbs({
-    parents,
-    highlightSearchTerms,
-}: {
-    parents: SearchResultItem['parents']
-    highlightSearchTerms: string[]
-}) {
+function Breadcrumbs({ parents }: { parents: SearchResultItem['parents'] }) {
     const { euiTheme } = useEuiTheme()
     const { fontSize: smallFontsize } = useEuiFontSize('xs')
     return (
@@ -190,46 +202,34 @@ function Breadcrumbs({
             css={css`
                 margin-top: 2px;
                 display: flex;
-                gap: 0 ${euiTheme.size.xs};
+                gap: 0 ${euiTheme.size.s};
                 flex-wrap: wrap;
                 list-style: none;
             `}
         >
             {parents
-                .slice(1) // skip /docs
+                // .slice(1) // skip /docs
                 .map((parent) => (
                     <li
                         key={'breadcrumb-' + parent.url}
                         css={css`
                             &:not(:last-child)::after {
                                 content: '/';
-                                margin-left: ${euiTheme.size.xs};
+                                margin-left: ${euiTheme.size.s};
                                 font-size: ${smallFontsize};
-                                color: ${euiTheme.colors.text};
+                                color: ${euiTheme.colors.textSubdued};
                                 margin-top: -1px;
                             }
                             display: inline-flex;
                         `}
                     >
-                        <EuiLink href={parent.url} color="text" tabIndex={-1}>
-                            <EuiText
-                                size="xs"
-                                color="subdued"
-                                css={css`
-                                    .euiMark {
-                                        background-color: transparent;
-                                        text-decoration: underline;
-                                        color: inherit;
-                                        font-weight: inherit;
-                                    }
-                                `}
-                            >
-                                <EuiHighlight
-                                    search={highlightSearchTerms}
-                                    highlightAll={true}
-                                >
-                                    {parent.title}
-                                </EuiHighlight>
+                        <EuiLink
+                            href={parent.url}
+                            color="subdued"
+                            tabIndex={-1}
+                        >
+                            <EuiText size="xs" color="subdued">
+                                {parent.title}
                             </EuiText>
                         </EuiLink>
                     </li>
@@ -237,3 +237,32 @@ function Breadcrumbs({
         </ul>
     )
 }
+
+const SanitizedHtmlContent = memo(
+    ({ htmlContent }: { htmlContent: string }) => {
+        const processed = useMemo(() => {
+            if (!htmlContent) return ''
+
+            const sanitized = DOMPurify.sanitize(htmlContent, {
+                ALLOWED_TAGS: ['mark'],
+                ALLOWED_ATTR: [],
+                KEEP_CONTENT: true,
+            })
+
+            // Check if text starts mid-sentence (lowercase first letter)
+            const temp = document.createElement('div')
+            temp.innerHTML = sanitized
+            const text = temp.textContent || ''
+            const firstChar = text.trim()[0]
+
+            // Add leading ellipsis if starts with lowercase
+            if (firstChar && /[a-z]/.test(firstChar)) {
+                return '… ' + sanitized
+            }
+
+            return sanitized
+        }, [htmlContent])
+
+        return <div dangerouslySetInnerHTML={{ __html: processed }} />
+    }
+)

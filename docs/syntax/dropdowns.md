@@ -50,3 +50,34 @@ Dropdown content
 ::::
 
 :::::
+
+## With applies_to badge
+
+:::{include} _snippets/applies-to-dropdowns.md
+:::
+
+## Multiple applies_to definitions
+
+You can specify multiple `applies_to` definitions using YAML object notation with curly braces `{}`. This is useful when content applies to multiple deployment types or versions simultaneously.
+
+:::::{tab-set}
+
+::::{tab-item} Output
+
+:::{dropdown} Dropdown Title
+:applies_to: { ece:, ess: }
+Dropdown content for ECE and ECH
+:::
+
+::::
+
+::::{tab-item} Markdown
+```markdown
+:::{dropdown} Dropdown Title
+:applies_to: { ece:, ess: }
+Dropdown content for ECE and ECH
+:::
+```
+::::
+
+:::::

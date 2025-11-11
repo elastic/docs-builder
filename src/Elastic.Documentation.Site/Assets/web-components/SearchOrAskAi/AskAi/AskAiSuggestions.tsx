@@ -1,78 +1,80 @@
-import { useSearchActions, useSearchTerm } from '../search.store'
-import {
-    EuiButton,
-    EuiIcon,
-    EuiSpacer,
-    EuiText,
-    useEuiTheme,
-} from '@elastic/eui'
+import { useModalActions } from '../modal.store'
+import { useChatActions } from './chat.store'
+import { EuiButton, useEuiTheme } from '@elastic/eui'
 import { css } from '@emotion/react'
 import * as React from 'react'
+import { useMemo } from 'react'
 
 export interface AskAiSuggestion {
     question: string
 }
 
-interface Props {
-    suggestions: AskAiSuggestion[]
-}
+// Comprehensive list of AI suggestion questions
+const ALL_SUGGESTIONS: AskAiSuggestion[] = [
+    { question: 'How do I set up a data stream in Elasticsearch?' },
+    { question: 'What are the best practices for indexing performance?' },
+    { question: 'How can I create a dashboard in Kibana?' },
+    { question: 'What is the difference between a keyword and text field?' },
+    { question: 'How do I configure machine learning jobs?' },
+    { question: 'What are aggregations and how do I use them?' },
+    { question: 'How do I set up Elasticsearch security and authentication?' },
+    { question: 'What are the different types of Elasticsearch queries?' },
+    { question: 'How do I monitor cluster health and performance?' },
+    {
+        question:
+            'What is the Elastic Stack and how do the components work together?',
+    },
+    { question: 'How do I create and manage Elasticsearch indices?' },
+    { question: 'What are the best practices for Elasticsearch mapping?' },
+    { question: 'How do I set up log shipping with Beats?' },
+    { question: 'What is APM and how do I use it for application monitoring?' },
+    { question: 'How do I create custom visualizations in Kibana?' },
+    { question: 'What are Elasticsearch snapshots and how do I use them?' },
+    { question: 'How do I configure cross-cluster search?' },
+    {
+        question:
+            'What are the different Elasticsearch node types and their roles?',
+    },
+]
 
-export const AskAiSuggestions = (props: Props) => {
-    const searchTerm = useSearchTerm()
-    const { setSearchTerm, submitAskAiTerm } = useSearchActions()
+export const AskAiSuggestions = ({ disabled }: { disabled?: boolean }) => {
+    const { submitQuestion } = useChatActions()
+    const { setModalMode } = useModalActions()
     const { euiTheme } = useEuiTheme()
-    const buttonCss = css`
-        border: none;
-        & > span {
-            justify-content: flex-start;
-        }
-        svg {
-            color: ${euiTheme.colors.textSubdued};
-        }
-    `
+
+    // Randomly select 3 questions from the comprehensive list
+    const selectedSuggestions = useMemo(() => {
+        // Shuffle the array and take first 3
+        const shuffled = [...ALL_SUGGESTIONS].sort(() => Math.random() - 0.5)
+        return shuffled.slice(0, 3)
+    }, [])
+
     return (
-        <>
-            <div
-                css={css`
-                    display: flex;
-                    gap: ${euiTheme.size.s};
-                    align-items: center;
-                `}
-            >
-                <EuiIcon type="sparkles" color="subdued" size="s" />
-                <EuiText size="xs">Ask Elastic Docs AI Assistant</EuiText>
-            </div>
-            <EuiSpacer size="s" />
-            {searchTerm && (
-                <EuiButton
-                    iconType="newChat"
-                    color="text"
-                    fullWidth
-                    size="s"
-                    css={buttonCss}
-                    onClick={() => {
-                        submitAskAiTerm(searchTerm)
-                    }}
+        <ul>
+            {selectedSuggestions.map((suggestion) => (
+                <li
+                    key={suggestion.question}
+                    css={css`
+                        margin-bottom: ${euiTheme.size.s};
+                    `}
                 >
-                    {searchTerm}
-                </EuiButton>
-            )}
-            {props.suggestions.map((suggestion, index) => (
-                <EuiButton
-                    key={index}
-                    iconType="newChat"
-                    color="text"
-                    fullWidth
-                    size="s"
-                    css={buttonCss}
-                    onClick={() => {
-                        setSearchTerm(suggestion.question)
-                        submitAskAiTerm(suggestion.question)
-                    }}
-                >
-                    {suggestion.question}
-                </EuiButton>
+                    <EuiButton
+                        iconType="newChat"
+                        color="primary"
+                        fullWidth
+                        size="s"
+                        onClick={() => {
+                            if (!disabled) {
+                                submitQuestion(suggestion.question)
+                                setModalMode('askAi')
+                            }
+                        }}
+                        disabled={disabled}
+                    >
+                        {suggestion.question}
+                    </EuiButton>
+                </li>
             ))}
-        </>
+        </ul>
     )
 }

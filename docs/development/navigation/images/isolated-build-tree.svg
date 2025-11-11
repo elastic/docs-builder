@@ -1,0 +1,49 @@
+<svg width="800" height="360" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .node-name { font-family: Arial, sans-serif; font-size: 20px; font-weight: 500; fill: #1a1a1a; }
+      .node-file { font-family: 'Courier New', monospace; font-size: 16px; font-style: italic; fill: #6b7280; }
+      .node-url { font-family: 'Courier New', monospace; font-size: 17px; font-weight: 600; fill: #6b7280; }
+      .path-prefix { font-family: 'Courier New', monospace; font-size: 16px; fill: #4b5563; }
+      .path-prefix-value { font-weight: 600; fill: #10b981; }
+      .url-prefix { fill: #10b981; }
+    </style>
+  </defs>
+  
+  <!-- DocumentationSetNavigation: elastic-project -->
+  <circle cx="26" cy="20" r="6" fill="#10b981"/>
+  <text x="40" y="25" class="node-name">elastic-project:// (docset.yml)</text>
+  <text x="40" y="44" class="path-prefix">path_prefix: "<tspan class="path-prefix-value">documentation</tspan>"</text>
+  
+  <!-- TableOfContentsNavigation: api/ -->
+  <circle cx="46" cy="77" r="6" fill="#9333ea"/>
+  <text x="60" y="82" class="node-name">api/ (api/toc.yml)</text>
+  
+  <!-- FolderNavigation: rest/ -->
+  <circle cx="66" cy="110" r="6" fill="#06b6d4"/>
+  <text x="80" y="115" class="node-name">rest/</text>
+  
+  <!-- FileNavigationLeaf: overview.md -->
+  <circle cx="86" cy="143" r="6" fill="#64748b"/>
+  <text x="100" y="148" class="node-name">overview.md</text>
+  <text x="100" y="167" class="node-url"><tspan class="url-prefix">/documentation</tspan>/api/rest/overview</text>
+  
+  <!-- FileNavigationLeaf: overview.md -->
+  <circle cx="66" cy="200" r="6" fill="#64748b"/>
+  <text x="80" y="205" class="node-name">overview.md</text>
+  <text x="80" y="224" class="node-url"><tspan class="url-prefix">/documentation</tspan>/api/overview</text>
+  
+  <!-- TableOfContentsNavigation: guides/ -->
+  <circle cx="46" cy="257" r="6" fill="#9333ea"/>
+  <text x="60" y="262" class="node-name">guides/ (guides/toc.yml)</text>
+  
+  <!-- FileNavigationLeaf: getting-started.md -->
+  <circle cx="66" cy="290" r="6" fill="#64748b"/>
+  <text x="80" y="295" class="node-name">getting-started.md</text>
+  <text x="80" y="314" class="node-url"><tspan class="url-prefix">/documentation</tspan>/guides/getting-started</text>
+  
+  <!-- FileNavigationLeaf: index.md -->
+  <circle cx="46" cy="347" r="6" fill="#64748b"/>
+  <text x="60" y="352" class="node-name">index.md</text>
+  <text x="60" y="371" class="node-url"><tspan class="url-prefix">/documentation</tspan>/</text>
+</svg>

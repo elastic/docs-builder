@@ -1,3 +1,18 @@
 toc:
   - file: index.md
+  - folder: ingest
+    children:
+      - file: index.md
+  - folder: navigation
+    children:
+      - file: navigation.md
+      - file: visual-walkthrough.md
+      - file: first-principles.md
+        children:
+        - file: functional-principles.md
+        - file: technical-principles.md
+      - file: two-phase-loading.md
+      - file: node-types.md
+      - file: home-provider-architecture.md
+      - file: assembler-process.md
   - toc: link-validation

@@ -4,16 +4,14 @@
 
 using System.IO.Abstractions;
 using DotNet.Globbing;
-using Elastic.Documentation.Configuration.Suggestions;
-using Elastic.Documentation.Configuration.TableOfContents;
+using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Links;
-using Elastic.Documentation.Navigation;
-using YamlDotNet.RepresentationModel;
 
 namespace Elastic.Documentation.Configuration.Builder;
 
-public record ConfigurationFile : ITableOfContentsScope
+public record ConfigurationFile
 {
 	private readonly IDocumentationSetContext _context;
 
@@ -30,17 +28,9 @@ public record ConfigurationFile : ITableOfContentsScope
 
 	public EnabledExtensions Extensions { get; } = new([]);
 
-	public IReadOnlyCollection<ITocItem> TableOfContents { get; } = [];
-
-	public HashSet<string> Files { get; } = new(StringComparer.OrdinalIgnoreCase);
-
 	public Dictionary<string, LinkRedirect>? Redirects { get; }
 
-	public HashSet<string> Products { get; } = new(StringComparer.Ordinal);
-
-	public HashSet<string> ImplicitFolders { get; } = new(StringComparer.OrdinalIgnoreCase);
-
-	public Glob[] Globs { get; } = [];
+	public HashSet<Product> Products { get; } = [];
 
 	private readonly Dictionary<string, string> _substitutions = new(StringComparer.OrdinalIgnoreCase);
 	public IReadOnlyDictionary<string, string> Substitutions => _substitutions;
@@ -53,16 +43,11 @@ public record ConfigurationFile : ITableOfContentsScope
 
 	public IReadOnlyDictionary<string, IFileInfo>? OpenApiSpecifications { get; }
 
-	/// This is a documentation set that is not linked to by assembler.
+	/// This is a documentation set not linked to by assembler.
 	/// Setting this to true relaxes a few restrictions such as mixing toc references with file and folder reference
 	public bool DevelopmentDocs { get; }
 
-	// TODO ensure project key is `docs-content`
-	public bool IsNarrativeDocs =>
-		Project is not null
-		&& Project.Equals("Elastic documentation", StringComparison.OrdinalIgnoreCase);
-
-	public ConfigurationFile(IDocumentationSetContext context, VersionsConfiguration versionsConfig)
+	public ConfigurationFile(DocumentationSetFile docSetFile, IDocumentationSetContext context, VersionsConfiguration versionsConfig, ProductsConfiguration productsConfig)
 	{
 		_context = context;
 		ScopeDirectory = context.ConfigurationPath.Directory!;
@@ -73,119 +58,76 @@ public record ConfigurationFile : ITableOfContentsScope
 			return;
 		}
 
+
 		var redirectFile = new RedirectFile(_context);
 		Redirects = redirectFile.Redirects;
 
-		var sourceFile = context.ConfigurationPath;
-		var reader = new YamlStreamReader(sourceFile, _context.Collector);
 		try
 		{
-			foreach (var entry in reader.Read())
+			// Read values from DocumentationSetFile
+			Project = docSetFile.Project;
+			MaxTocDepth = docSetFile.MaxTocDepth;
+			DevelopmentDocs = docSetFile.DevDocs;
+
+			// Convert exclude patterns to Glob
+			Exclude = [.. docSetFile.Exclude.Where(s => !string.IsNullOrEmpty(s)).Select(Glob.Parse)];
+
+			// Set cross link repositories
+			CrossLinkRepositories = [.. docSetFile.CrossLinks];
+
+			// Extensions - assuming they're not in DocumentationSetFile yet
+			Extensions = new EnabledExtensions(docSetFile.Extensions);
+
+			// Read substitutions
+			_substitutions = new(docSetFile.Subs, StringComparer.OrdinalIgnoreCase);
+
+			// Process API specifications
+			if (docSetFile.Api.Count > 0)
 			{
-				switch (entry.Key)
+				var specs = new Dictionary<string, IFileInfo>(StringComparer.OrdinalIgnoreCase);
+				foreach (var (k, v) in docSetFile.Api)
 				{
-					case "project":
-						Project = reader.ReadString(entry.Entry);
-						break;
-					case "max_toc_depth":
-						MaxTocDepth = int.TryParse(reader.ReadString(entry.Entry), out var maxTocDepth) ? maxTocDepth : 1;
-						break;
-					case "dev_docs":
-						DevelopmentDocs = bool.TryParse(reader.ReadString(entry.Entry), out var devDocs) && devDocs;
-						break;
-					case "exclude":
-						var excludes = YamlStreamReader.ReadStringArray(entry.Entry);
-						Exclude = [.. excludes.Where(s => !string.IsNullOrEmpty(s)).Select(Glob.Parse)];
-						break;
-					case "cross_links":
-						CrossLinkRepositories = [.. YamlStreamReader.ReadStringArray(entry.Entry)];
-						break;
-					case "extensions":
-						Extensions = new([.. YamlStreamReader.ReadStringArray(entry.Entry)]);
-						break;
-					case "subs":
-						_substitutions = reader.ReadDictionary(entry.Entry);
-						break;
-					case "toc":
-						// read this later
-						break;
-					case "api":
-						var configuredApis = reader.ReadDictionary(entry.Entry);
-						if (configuredApis.Count == 0)
-							break;
-
-						var specs = new Dictionary<string, IFileInfo>(StringComparer.OrdinalIgnoreCase);
-						foreach (var (k, v) in configuredApis)
-						{
-							var path = Path.Combine(context.DocumentationSourceDirectory.FullName, v);
-							var fi = context.ReadFileSystem.FileInfo.New(path);
-							specs[k] = fi;
-						}
-						OpenApiSpecifications = specs;
-						break;
-					case "products":
-						if (entry.Entry.Value is not YamlSequenceNode sequence)
-						{
-							reader.EmitError("products must be a sequence", entry.Entry.Value);
-							break;
-						}
-
-						foreach (var node in sequence.Children.OfType<YamlMappingNode>())
-						{
-							YamlScalarNode? productId = null;
-							foreach (var child in node.Children)
-							{
-								if (child is { Key: YamlScalarNode { Value: "id" }, Value: YamlScalarNode scalarNode })
-								{
-									productId = scalarNode;
-									break;
-								}
-							}
-							if (productId?.Value is null)
-							{
-								reader.EmitError("products must contain an id", node);
-								break;
-							}
-
-							if (!Builder.Products.AllById.ContainsKey(productId.Value))
-								reader.EmitError($"Product \"{productId.Value}\" not found in the product list. {new Suggestion(Builder.Products.All.Select(p => p.Id).ToHashSet(), productId.Value).GetSuggestionQuestion()}", node);
-							else
-								_ = Products.Add(productId.Value);
-						}
-						break;
-					case "features":
-						_features = reader.ReadDictionary(entry.Entry).ToDictionary(k => k.Key, v => bool.Parse(v.Value), StringComparer.OrdinalIgnoreCase);
-						break;
-					case "external_hosts":
-						reader.EmitWarning($"{entry.Key} has been deprecated and will be removed", entry.Key);
-						break;
-					default:
-						reader.EmitWarning($"{entry.Key} is not a known configuration", entry.Key);
-						break;
+					var path = Path.Combine(context.DocumentationSourceDirectory.FullName, v);
+					var fi = context.ReadFileSystem.FileInfo.New(path);
+					specs[k] = fi;
 				}
+				OpenApiSpecifications = specs;
 			}
 
+			// Process products - need to parse from docSetFile if they exist
+			// Note: Products parsing would need to be added to DocumentationSetFile if needed
+
+			// Process features
+			_features = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+			if (docSetFile.Features.PrimaryNav.HasValue)
+				_features["primary-nav"] = docSetFile.Features.PrimaryNav.Value;
+
+			// Add version substitutions
 			foreach (var (id, system) in versionsConfig.VersioningSystems)
 			{
 				var name = id.ToStringFast(true);
-				var key = $"version.{name}";
-				_substitutions[key] = system.Current;
-
-				key = $"version.{name}.base";
-				_substitutions[key] = system.Base;
+				var alternativeName = name.Replace('-', '_');
+				_substitutions[$"version.{name}"] = system.Current;
+				_substitutions[$"version.{alternativeName}"] = system.Current;
+				_substitutions[$"version.{name}.base"] = system.Base;
+				_substitutions[$"version.{alternativeName}.base"] = system.Base;
 			}
 
-			var toc = new TableOfContentsConfiguration(this, sourceFile, ScopeDirectory, _context, 0, "");
-			TableOfContents = toc.TableOfContents;
-			Files = toc.Files;
+			// Add product substitutions
+			foreach (var product in productsConfig.Products.Values)
+			{
+				var alternativeProductId = product.Id.Replace('-', '_');
+				_substitutions[$"product.{product.Id}"] = product.DisplayName;
+				_substitutions[$".{product.Id}"] = product.DisplayName;
+				_substitutions[$"product.{alternativeProductId}"] = product.DisplayName;
+				_substitutions[$".{alternativeProductId}"] = product.DisplayName;
+			}
 		}
 		catch (Exception e)
 		{
-			reader.EmitError("Could not load docset.yml", e);
+			context.EmitError(context.ConfigurationPath, $"Could not load docset.yml: {e.Message}");
 			throw;
 		}
-
-		Globs = [.. ImplicitFolders.Select(f => Glob.Parse($"{f}{Path.DirectorySeparatorChar}*.md"))];
 	}
 
 }

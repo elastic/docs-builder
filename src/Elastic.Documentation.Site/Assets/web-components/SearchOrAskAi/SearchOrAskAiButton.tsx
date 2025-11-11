@@ -1,7 +1,7 @@
 /** @jsxImportSource @emotion/react */
 import '../../eui-icons-cache'
+import { useSearchActions, useSearchTerm } from './Search/search.store'
 import { useModalActions, useModalIsOpen } from './modal.store'
-import { useSearchActions, useSearchTerm } from './search.store'
 import {
     EuiButton,
     EuiPortal,
@@ -33,10 +33,10 @@ export const SearchOrAskAiButton = () => {
     const { data: isApiAvailable } = useQuery({
         queryKey: ['api-health'],
         queryFn: async () => {
-            const response = await fetch('/docs/_api/v1/')
+            const response = await fetch('/docs/_api/v1/', { method: 'POST' })
             return response.ok
         },
-        staleTime: 5 * 60 * 1000, // 5 minutes
+        staleTime: 60 * 60 * 1000, // 60 minutes
         retry: false,
     })
 
@@ -87,7 +87,7 @@ export const SearchOrAskAiButton = () => {
             >
                 <EuiText
                     color="subdued"
-                    size="xs"
+                    size="s"
                     style={{ width: 200 }}
                     textAlign="left"
                 >

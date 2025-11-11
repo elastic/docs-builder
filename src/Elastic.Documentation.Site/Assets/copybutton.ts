@@ -1,5 +1,7 @@
-// Localization support
-import * as ClipboardJS from 'clipboard'
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-nocheck
+// This is copied from legacy. It works, but we should rework this if we ever need to change it
+import { $$ } from 'select-dom'
 
 const DOCUMENTATION_OPTIONS = {
     VERSION: '',
@@ -97,16 +99,7 @@ if (!iconCopy) {
 </svg>`
 }
 
-const codeCellId = (index) => `codecell${index}`
-
-// Clears selected text since ClipboardJS will select the text when copying
-const clearSelection = () => {
-    if (window.getSelection) {
-        window.getSelection().removeAllRanges()
-    } else if ('selection' in document) {
-        ;(document.selection as Selection).empty()
-    }
-}
+const codeCellId = (index: number, prefix: string) => `${prefix}${index}`
 
 // Changes tooltip text for a moment, then changes it back
 // We want the timeout of our `success` class to be a bit shorter than the
@@ -131,30 +124,45 @@ const temporarilyChangeIcon = (el) => {
     }, timeoutIcon)
 }
 
-const addCopyButtonToCodeCells = () => {
-    // If ClipboardJS hasn't loaded, wait a bit and try again. This
-    // happens because we load ClipboardJS asynchronously.
-
+const addCopyButtonToCodeCells = (
+    selector: string,
+    baseElement: ParentNode,
+    prefix: string
+) => {
     // Add copybuttons to all of our code cells
-    const COPYBUTTON_SELECTOR = '.highlight pre'
-    const codeCells = document.querySelectorAll(COPYBUTTON_SELECTOR)
+    const codeCells = $$(selector, baseElement)
     codeCells.forEach((codeCell, index) => {
         if (codeCell.id) {
             return
         }
-
-        const id = codeCellId(index)
+        const id = codeCellId(index, prefix)
         codeCell.setAttribute('id', id)
+        const clipboardButton = document.createElement('button')
+        clipboardButton.setAttribute('aria-label', 'Copy code to clipboard')
+        clipboardButton.className = 'copybtn o-tooltip--left'
+        clipboardButton.setAttribute('data-tooltip', messages[locale]['copy'])
+        clipboardButton.setAttribute('data-clipboard-target', `#${id}`)
+        clipboardButton.innerHTML = iconCopy
+        clipboardButton.onclick = async () => {
+            try {
+                const text = copyTargetText(clipboardButton, baseElement)
+                await navigator.clipboard.writeText(text)
+                temporarilyChangeTooltip(
+                    clipboardButton,
+                    messages[locale]['copy'],
+                    messages[locale]['copy_success']
+                )
+                temporarilyChangeIcon(clipboardButton)
+            } catch (error) {
+                console.error(error)
+            }
+        }
 
-        const clipboardButton = (id) =>
-            `<button aria-label="Copy code to clipboard" class="copybtn o-tooltip--left" data-tooltip="${messages[locale]['copy']}" data-clipboard-target="#${id}">
-      ${iconCopy}
-    </button>`
-        codeCell.insertAdjacentHTML('afterend', clipboardButton(id))
+        codeCell.insertAdjacentElement('afterend', clipboardButton)
     })
 
-    function escapeRegExp(string) {
-        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') // $& means the whole matched string
+    function escapeRegExp(str: string) {
+        return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') // $& means the whole matched string
     }
 
     function filterText(target, excludes) {
@@ -228,8 +236,8 @@ const addCopyButtonToCodeCells = () => {
         return textContent
     }
 
-    const copyTargetText = (trigger) => {
-        const target = document.querySelector(
+    const copyTargetText = (trigger, searchElement: ParentNode = document) => {
+        const target = searchElement.querySelector(
             trigger.attributes['data-clipboard-target'].value
         )
         // get filtered text
@@ -239,30 +247,12 @@ const addCopyButtonToCodeCells = () => {
             .join('\n')
         return formatCopyText(text, '', false, true, true, true, '', '')
     }
-
-    // Initialize with a callback so we can modify the text before copy
-    const clipboard = new ClipboardJS('.copybtn', { text: copyTargetText })
-
-    // Update UI with error/success messages
-    clipboard.on('success', (event) => {
-        clearSelection()
-        temporarilyChangeTooltip(
-            event.trigger,
-            messages[locale]['copy'],
-            messages[locale]['copy_success']
-        )
-        temporarilyChangeIcon(event.trigger)
-    })
-
-    clipboard.on('error', (event) => {
-        temporarilyChangeTooltip(
-            event.trigger,
-            messages[locale]['copy'],
-            messages[locale]['copy_failure']
-        )
-    })
 }
 
-export function initCopyButton() {
-    addCopyButtonToCodeCells()
+export function initCopyButton(
+    selector: string = '.highlight pre',
+    baseElement: ParentNode = document,
+    prefix: string = 'markdown-content-codecell-'
+) {
+    addCopyButtonToCodeCells(selector, baseElement, prefix)
 }

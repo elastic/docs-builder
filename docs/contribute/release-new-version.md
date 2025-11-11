@@ -1,3 +1,7 @@
+---
+navigation_title: Release a new docs version
+---
+
 # Release a new documentation version
 
 When a new version of the Elastic Stack (or another versioned product) is released, the docs site must be updated to recognize it. This process primarily involves updating version metadata in the shared site configuration.

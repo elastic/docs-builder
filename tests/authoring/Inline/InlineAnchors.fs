@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-module ``inline elements``.``anchors DEPRECATED``
+module ``AuthoringTests``.``inline elements``.``anchors DEPRECATED``
 
 open Elastic.Markdown.Myst.InlineParsers
 open Markdig.Syntax

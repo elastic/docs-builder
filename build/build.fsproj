@@ -15,10 +15,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\*" LinkBase="_root"/>
-  </ItemGroup>
-
-  <ItemGroup>
     <Compile Include="BuildInformation.fs"/>
     <Compile Include="CommandLine.fs"/>
     <Compile Include="Targets.fs"/>

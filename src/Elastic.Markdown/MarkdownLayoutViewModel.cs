@@ -2,9 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Documentation.Legacy;
+using Elastic.Documentation.Configuration.LegacyUrlMappings;
+using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site;
-using Elastic.Documentation.Site.Navigation;
 
 namespace Elastic.Markdown;
 
@@ -17,9 +17,7 @@ public record MarkdownLayoutViewModel : GlobalLayoutViewModel
 	public required bool HideEditThisPage { get; init; }
 	public required string? ReportIssueUrl { get; init; }
 
-	public required INavigationItem[] Parents { get; init; }
-
-	public required LegacyPageMapping[]? LegacyPages { get; init; }
+	public required INavigationItem[] Breadcrumbs { get; init; }
 
 	public required IReadOnlyCollection<PageTocItem> PageTocItems { get; init; }
 

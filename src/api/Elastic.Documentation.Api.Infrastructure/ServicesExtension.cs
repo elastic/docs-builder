@@ -58,7 +58,14 @@ public static class ServicesExtension
 		{
 			options.SerializerOptions.TypeInfoResolverChain.Insert(0, ApiJsonContext.Default);
 		});
-		_ = services.AddHttpClient();
+
+		// Configure HttpClient for streaming optimization
+		_ = services.AddHttpClient("StreamingHttpClient", client =>
+		{
+			// Disable response buffering for streaming
+			client.DefaultRequestHeaders.Connection.Add("keep-alive");
+			client.Timeout = TimeSpan.FromMinutes(10); // Longer timeout for streaming
+		});
 		// Register AppEnvironment as a singleton for dependency injection
 		_ = services.AddSingleton(new AppEnvironment { Current = appEnv });
 		AddParameterProvider(services, appEnv);
@@ -78,12 +85,23 @@ public static class ServicesExtension
 			case AppEnv.Edge:
 				{
 					logger?.LogInformation("Configuring LambdaExtensionParameterProvider for environment {AppEnvironment}", appEnv);
-					_ = services.AddHttpClient(LambdaExtensionParameterProvider.HttpClientName, client =>
+					try
 					{
-						client.BaseAddress = new Uri("http://localhost:2773");
-						client.DefaultRequestHeaders.Add("X-Aws-Parameters-Secrets-Token", Environment.GetEnvironmentVariable("AWS_SESSION_TOKEN"));
-					});
-					_ = services.AddSingleton<IParameterProvider, LambdaExtensionParameterProvider>();
+						_ = services.AddHttpClient(LambdaExtensionParameterProvider.HttpClientName, client =>
+						{
+							client.BaseAddress = new Uri("http://localhost:2773");
+							client.DefaultRequestHeaders.Add("X-Aws-Parameters-Secrets-Token", Environment.GetEnvironmentVariable("AWS_SESSION_TOKEN"));
+						});
+						logger?.LogInformation("Lambda extension HTTP client configured");
+
+						_ = services.AddSingleton<IParameterProvider, LambdaExtensionParameterProvider>();
+						logger?.LogInformation("LambdaExtensionParameterProvider registered successfully");
+					}
+					catch (Exception ex)
+					{
+						logger?.LogError(ex, "Failed to configure LambdaExtensionParameterProvider for environment {AppEnvironment}", appEnv);
+						throw;
+					}
 					break;
 				}
 			case AppEnv.Dev:
@@ -104,10 +122,46 @@ public static class ServicesExtension
 	{
 		var logger = GetLogger(services);
 		logger?.LogInformation("Configuring AskAi use case for environment {AppEnvironment}", appEnv);
-		_ = services.AddSingleton<GcpIdTokenProvider>();
-		_ = services.AddScoped<LlmGatewayOptions>();
-		_ = services.AddScoped<AskAiUsecase>();
-		_ = services.AddScoped<IAskAiGateway<Stream>, LlmGatewayAskAiGateway>();
+
+		try
+		{
+			_ = services.AddSingleton<GcpIdTokenProvider>();
+			logger?.LogInformation("GcpIdTokenProvider registered successfully");
+
+			_ = services.AddScoped<LlmGatewayOptions>();
+			logger?.LogInformation("LlmGatewayOptions registered successfully");
+
+			_ = services.AddScoped<AskAiUsecase>();
+			logger?.LogInformation("AskAiUsecase registered successfully");
+
+			// Register HttpContextAccessor for provider resolution
+			_ = services.AddHttpContextAccessor();
+			logger?.LogInformation("HttpContextAccessor registered successfully");
+
+			// Register provider resolver
+			_ = services.AddScoped<AskAiProviderResolver>();
+			logger?.LogInformation("AskAiProviderResolver registered successfully");
+
+			// Register both gateways as concrete types
+			_ = services.AddScoped<LlmGatewayAskAiGateway>();
+			_ = services.AddScoped<AgentBuilderAskAiGateway>();
+			logger?.LogInformation("Both AI gateways registered as concrete types");
+
+			// Register both transformers as concrete types
+			_ = services.AddScoped<LlmGatewayStreamTransformer>();
+			_ = services.AddScoped<AgentBuilderStreamTransformer>();
+			logger?.LogInformation("Both stream transformers registered as concrete types");
+
+			// Register factories as interface implementations
+			_ = services.AddScoped<IAskAiGateway<Stream>, AskAiGatewayFactory>();
+			_ = services.AddScoped<IStreamTransformer, StreamTransformerFactory>();
+			logger?.LogInformation("Gateway and transformer factories registered successfully - provider switchable via X-AI-Provider header");
+		}
+		catch (Exception ex)
+		{
+			logger?.LogError(ex, "Failed to configure AskAi use case for environment {AppEnvironment}", appEnv);
+			throw;
+		}
 	}
 	private static void AddSearchUsecase(IServiceCollection services, AppEnv appEnv)
 	{

@@ -2,10 +2,18 @@
 	.admonition {
 		@apply mt-4 rounded-sm border-1 pb-4;
 
-		.admonition-title {
-			@apply flex items-center gap-2 rounded-t-sm px-4 py-2 font-bold;
-			svg {
-				@apply size-6;
+		.admonition-header {
+			@apply flex items-center gap-3 rounded-t-sm px-4 py-2 font-bold;
+		}
+
+		.applies-admonition {
+			@apply flex items-center gap-1 font-normal;
+			.applicable-name,
+			.applicable-meta {
+				@apply text-xs;
+			}
+			.applicable-separator {
+				mix-blend-mode: multiply;
 			}
 		}
 		.admonition-content {
@@ -18,39 +26,57 @@
 
 		&.note {
 			@apply border-blue-elastic-40 bg-blue-elastic-10;
-			.admonition-title {
+
+			.admonition-header {
 				@apply text-blue-elastic-110 bg-blue-elastic-20;
+
+				.applicable-info {
+					@apply border-blue-elastic-40;
+				}
 			}
 		}
 
 		&.tip {
 			@apply border-teal-40 bg-teal-10;
-			.admonition-title {
+			.admonition-header {
 				@apply text-teal-110 bg-teal-20;
+
+				.applicable-info {
+					@apply border-teal-40;
+				}
 			}
 		}
 
 		&.warning {
 			@apply border-yellow-40 bg-yellow-10;
 
-			.admonition-title {
+			.admonition-header {
 				@apply text-yellow-110 bg-yellow-20;
+				.applicable-info {
+					@apply border-yellow-40;
+				}
 			}
 		}
 
 		&.important {
 			@apply border-purple-40 bg-purple-10;
 
-			.admonition-title {
+			.admonition-header {
 				@apply text-purple-110 bg-purple-20;
+				.applicable-info {
+					@apply border-purple-40;
+				}
 			}
 		}
 
 		&.plain {
 			@apply border-grey-40 bg-grey-10;
 
-			.admonition-title {
+			.admonition-header {
 				@apply text-grey-110 bg-grey-20;
+				.applicable-info {
+					@apply border-grey-40;
+				}
 			}
 		}
 	}

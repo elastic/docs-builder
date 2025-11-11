@@ -3,14 +3,17 @@
 // See the LICENSE file in the project root for more information
 
 using System.Diagnostics.CodeAnalysis;
+using Elastic.Documentation.AppliesTo;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Directives.Admonition;
+using Elastic.Markdown.Myst.Directives.AppliesSwitch;
 using Elastic.Markdown.Myst.Directives.CsvInclude;
 using Elastic.Markdown.Myst.Directives.Diagram;
 using Elastic.Markdown.Myst.Directives.Dropdown;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
+using Elastic.Markdown.Myst.Directives.Math;
 using Elastic.Markdown.Myst.Directives.Mermaid;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.Directives.Stepper;
@@ -70,6 +73,12 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			case TabItemBlock tabItem:
 				WriteTabItem(renderer, tabItem);
 				return;
+			case AppliesSwitchBlock appliesSwitch:
+				WriteAppliesSwitch(renderer, appliesSwitch);
+				return;
+			case AppliesItemBlock appliesItem:
+				WriteAppliesItem(renderer, appliesItem);
+				return;
 			case LiteralIncludeBlock literalIncludeBlock:
 				WriteLiteralIncludeBlock(renderer, literalIncludeBlock);
 				return;
@@ -84,6 +93,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 				return;
 			case CsvIncludeBlock csvIncludeBlock:
 				WriteCsvIncludeBlock(renderer, csvIncludeBlock);
+				return;
+			case MathBlock mathBlock:
+				WriteMathBlock(renderer, mathBlock);
 				return;
 			case StepperBlock stepperBlock:
 				WriteStepperBlock(renderer, stepperBlock);
@@ -212,7 +224,10 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			CrossReferenceName = block.CrossReferenceName,
 			Classes = block.Classes,
 			Title = block.Title,
-			Open = block.DropdownOpen.GetValueOrDefault() ? "open" : null
+			Open = block.DropdownOpen.GetValueOrDefault() ? "open" : null,
+			AppliesToDefinition = block.AppliesToDefinition,
+			AppliesTo = block.AppliesTo,
+			BuildContext = block.Build
 		});
 		RenderRazorSlice(slice, renderer);
 	}
@@ -226,7 +241,10 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			CrossReferenceName = block.CrossReferenceName,
 			Classes = block.Classes,
 			Title = block.Title,
-			Open = block.DropdownOpen.GetValueOrDefault() ? "open" : null
+			Open = block.DropdownOpen.GetValueOrDefault() ? "open" : null,
+			AppliesToDefinition = block.AppliesToDefinition,
+			AppliesTo = block.AppliesTo,
+			BuildContext = block.Build
 		});
 		RenderRazorSlice(slice, renderer);
 	}
@@ -249,6 +267,50 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			TabSetGroupKey = block.TabSetGroupKey
 		});
 		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteAppliesSwitch(HtmlRenderer renderer, AppliesSwitchBlock block)
+	{
+		var slice = AppliesSwitchView.Create(new AppliesSwitchViewModel { DirectiveBlock = block });
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteAppliesItem(HtmlRenderer renderer, AppliesItemBlock block)
+	{
+		// Parse the applies_to definition to get the ApplicableTo object
+		var appliesTo = ParseApplicableTo(block.AppliesToDefinition, block);
+		var slice = AppliesItemView.Create(new AppliesItemViewModel
+		{
+			DirectiveBlock = block,
+			Index = block.Index,
+			AppliesToDefinition = block.AppliesToDefinition,
+			AppliesTo = appliesTo,
+			AppliesSwitchIndex = block.AppliesSwitchIndex,
+			SyncKey = block.SyncKey,
+			AppliesSwitchGroupKey = block.AppliesSwitchGroupKey,
+			BuildContext = block.Build
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static ApplicableTo? ParseApplicableTo(string yaml, DirectiveBlock block)
+	{
+		try
+		{
+			var applicableTo = YamlSerialization.Deserialize<ApplicableTo>(yaml, block.Build.ProductsConfiguration);
+			if (applicableTo.Diagnostics is null)
+				return applicableTo;
+			foreach (var (severity, message) in applicableTo.Diagnostics)
+				block.Emit(severity, message);
+			applicableTo.Diagnostics = null;
+			return applicableTo;
+		}
+		catch (Exception e)
+		{
+			block.EmitError($"Unable to parse applies_to definition: {yaml}", e);
+		}
+
+		return null;
 	}
 
 	private static void WriteDiagram(HtmlRenderer renderer, DiagramBlock block)
@@ -283,7 +345,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 				CrossReferenceName = null,
 				Language = block.Language,
 				Caption = null,
-				ApiCallHeader = null,
+				ApiSegments = [],
 				RawIncludedFileContents = content
 			});
 			RenderRazorSlice(slice, renderer);
@@ -316,7 +378,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		try
 		{
 			var yaml = file.FileSystem.File.ReadAllText(file.FullName);
-			settings = YamlSerialization.Deserialize<YamlSettings>(yaml);
+			settings = YamlSerialization.Deserialize<YamlSettings>(yaml, block.Context.Build.ProductsConfiguration);
 		}
 		catch (YamlException e)
 		{
@@ -417,5 +479,27 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		var viewModel = CsvIncludeViewModel.Create(block);
 		var slice = CsvIncludeView.Create(viewModel);
 		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteMathBlock(HtmlRenderer renderer, MathBlock block)
+	{
+		// Output HTML that KaTeX can render client-side
+		var labelAttr = !string.IsNullOrEmpty(block.Label) ? $" id=\"{block.Label}\"" : "";
+
+		if (block.IsDisplayMath)
+		{
+			// Display math should be a block element
+			_ = renderer.Write($"<div class=\"math\"{labelAttr}>");
+			_ = renderer.WriteEscape(block.Content ?? "");
+			_ = renderer.Write("</div>");
+		}
+		else
+		{
+			// Inline math should be a span element to behave like text
+			_ = renderer.Write($"<span class=\"math\"{labelAttr}>");
+			_ = renderer.WriteEscape(block.Content ?? "");
+			_ = renderer.Write("</span>");
+		}
+		_ = renderer.EnsureLine();
 	}
 }

@@ -5,7 +5,7 @@
 using System.IO.Abstractions;
 using Elastic.ApiExplorer.Landing;
 using Elastic.Documentation.Extensions;
-using Elastic.Documentation.Site.Navigation;
+using Elastic.Documentation.Navigation;
 using Microsoft.OpenApi.Models;
 using Microsoft.OpenApi.Models.Interfaces;
 using RazorSlices;
@@ -60,7 +60,6 @@ public class OperationNavigationItem : ILeafNavigationItem<ApiOperation>, IEndpo
 	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }
 	//TODO enum to string
 	public string Id { get; }
-	public int Depth { get; } = 1;
 	public ApiOperation Model { get; }
 	public string Url { get; }
 	public bool Hidden { get; set; }

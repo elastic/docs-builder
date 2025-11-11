@@ -1,5 +1,17 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { createApiErrorFromResponse, shouldRetry } from '../errorHandling'
+import { ApiError } from '../errorHandling'
+import {
+    useIsSearchAwaitingNewInput,
+    useSearchCooldownActions,
+    useIsSearchCooldownActive,
+} from './useSearchCooldown'
+import {
+    keepPreviousData,
+    useQuery,
+    useQueryClient,
+} from '@tanstack/react-query'
 import { useDebounce } from '@uidotdev/usehooks'
+import { useRef, useEffect, useCallback } from 'react'
 import * as z from 'zod'
 
 const SearchResultItemParent = z.object({
@@ -13,6 +25,7 @@ const SearchResultItem = z.object({
     description: z.string(),
     score: z.number(),
     parents: z.array(SearchResultItemParent),
+    highlightedBody: z.string().nullish(),
 })
 
 export type SearchResultItem = z.infer<typeof SearchResultItem>
@@ -35,12 +48,33 @@ type Props = {
 export const useSearchQuery = ({ searchTerm, pageNumber = 1 }: Props) => {
     const trimmedSearchTerm = searchTerm.trim()
     const debouncedSearchTerm = useDebounce(trimmedSearchTerm, 300)
-    return useQuery<SearchResponse>({
+    const isCooldownActive = useIsSearchCooldownActive()
+    const awaitingNewInput = useIsSearchAwaitingNewInput()
+    const { acknowledgeCooldownFinished } = useSearchCooldownActions()
+    const previousSearchTermRef = useRef(debouncedSearchTerm)
+    const queryClient = useQueryClient()
+
+    useEffect(() => {
+        if (previousSearchTermRef.current !== debouncedSearchTerm) {
+            if (awaitingNewInput) {
+                acknowledgeCooldownFinished()
+            }
+        }
+        previousSearchTermRef.current = debouncedSearchTerm
+    }, [debouncedSearchTerm, awaitingNewInput, acknowledgeCooldownFinished])
+
+    const shouldEnable =
+        !!trimmedSearchTerm &&
+        trimmedSearchTerm.length >= 1 &&
+        !isCooldownActive &&
+        !awaitingNewInput
+
+    const query = useQuery<SearchResponse, ApiError>({
         queryKey: [
             'search',
             { searchTerm: debouncedSearchTerm.toLowerCase(), pageNumber },
         ],
-        queryFn: async () => {
+        queryFn: async ({ signal }) => {
             if (!debouncedSearchTerm || debouncedSearchTerm.length < 1) {
                 return SearchResponse.parse({ results: [], totalResults: 0 })
             }
@@ -50,19 +84,34 @@ export const useSearchQuery = ({ searchTerm, pageNumber = 1 }: Props) => {
             })
 
             const response = await fetch(
-                '/docs/_api/v1/search?' + params.toString()
+                '/docs/_api/v1/search?' + params.toString(),
+                { signal }
             )
             if (!response.ok) {
-                throw new Error(
-                    'Failed to fetch search results: ' + response.statusText
-                )
+                throw await createApiErrorFromResponse(response)
             }
             const data = await response.json()
             return SearchResponse.parse(data)
         },
-        enabled: !!trimmedSearchTerm && trimmedSearchTerm.length >= 1,
+        enabled: shouldEnable,
         refetchOnWindowFocus: false,
+        refetchOnMount: !isCooldownActive,
         placeholderData: keepPreviousData,
         staleTime: 1000 * 60 * 5, // 5 minutes
+        retry: shouldRetry,
     })
+
+    const cancelQuery = useCallback(() => {
+        queryClient.cancelQueries({
+            queryKey: [
+                'search',
+                { searchTerm: debouncedSearchTerm.toLowerCase(), pageNumber },
+            ],
+        })
+    }, [queryClient, debouncedSearchTerm, pageNumber])
+
+    return {
+        ...query,
+        cancelQuery,
+    }
 }

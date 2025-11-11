@@ -19,7 +19,6 @@ If a page uses an image that exists outside the folder that contains the `toc.ym
 
 ![APM](/syntax/images/apm.png)
 
-
 Or, use the `image` directive.
 
 ```markdown
@@ -34,12 +33,41 @@ Or, use the `image` directive.
 :width: 250px
 :::
 
+### Image centering
+
+Images that are not full width are automatically centered within their container. This is particularly useful when you specify a width constraint:
+
+```markdown
+:::{image} /syntax/images/apm.png
+:alt: APM Logo
+:width: 400px
+:::
+```
+
+:::{image} /syntax/images/apm.png
+:alt: APM Logo
+:width: 400px
+:::
+
+The image above is centered because it has a width of 400px, which is less than the full container width.
+
+Note that images nested within other content (like lists or admonitions) are not centered:
+
+- First item in the list
+- Second item with an image:
+
+  :::{image} /syntax/images/apm.png
+  :alt: APM Logo in list
+  :width: 400px
+  :::
+
+- Third item in the list
+
 ## Screenshots
 
 Screenshots are images displayed with a box-shadow. Define a screenshot by adding the `:screenshot:` attribute to a block-level image directive.
 
 ```markdown
-
 :::{image} /syntax/images/apm.png
 :screenshot:
 :::
@@ -57,7 +85,6 @@ Here is the same image used inline ![Elasticsearch](/syntax/images/observability
 
 Here is the same image used inline ![Elasticsearch](/syntax/images/observability.png "elasticsearch =50%x50%")
 
-
 ### Inline image titles
 
 Titles are optional making this the minimal syntax required:
@@ -73,7 +100,6 @@ For inline images, the alt text always overrides any title specified in the Mark
 ```
 
 ![Elasticsearch](/syntax/images/observability.png "Different title =50%x50%")
-
 
 ### Inline image sizing
 
@@ -96,13 +122,19 @@ If `H` is omitted `W` is used as the height as well.
 ![alt](img.png "=50%")
 ```
 
+When specifying just the size without a title, no space is required before the `=` sign. When combining a title with sizing, a space is required before the `=`:
 
+```markdown
+![alt](img.png "=50%") <!-- Just size, no space needed -->
+![alt](img.png "My Title =50%") <!-- With title, space required -->
+```
 
-### SVG 
+### SVG
 
 ```markdown
 ![Elasticsearch](/syntax/images/alerts.svg)
 ```
+
 ![Elasticsearch](/syntax/images/alerts.svg)
 
 ### GIF
@@ -110,6 +142,7 @@ If `H` is omitted `W` is used as the height as well.
 ```markdown
 ![Elasticsearch](/syntax/images/timeslider.gif)
 ```
+
 ![Elasticsearch](/syntax/images/timeslider.gif)
 
 ## Asciidoc syntax
@@ -140,11 +173,14 @@ The image carousel directive builds upon the image directive.
 
 :::{image} images/applies.png
 :alt: Second image description
+
 ### Title is optional - alt text will be used as title if not specified
+
 :::
 
 ::::
 ```
+
 ::::{carousel}
 
 :id: nested-carousel-example

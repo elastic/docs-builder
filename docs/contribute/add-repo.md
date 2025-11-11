@@ -1,6 +1,10 @@
+---
+navigation_title: "Add a new repo to the docs"
+---
+
 # Add a new repository to the docs
 
-Elastic documentation is built from many assembled repositories using `docs-assembler`. Adding a new repository requires making the assembly process aware of its existence.
+Elastic documentation is built from many assembled repositories using `docs-builder assemble`. Adding a new repository requires making the assembly process aware of its existence.
 
 Follow these instructions to add a new docs repository.
 
@@ -55,7 +59,7 @@ references:
 ```
 
 :::{tip}
-In this file, you can optionally specify custom branches to deploy docs from, depending on your preferred [branching strategy](/contribute/branching-strategy.md). You might want to change your branching strategy so you can have more control over when content added for a specific release is published.
+In this file, you can optionally specify custom branches to deploy docs from, depending on your preferred [branching strategy](branching-strategy.md). You might want to change your branching strategy so you can have more control over when content added for a specific release is published.
 :::
 
 Then, edit the [`navigation.yml`](https://github.com/elastic/docs-builder/blob/main/config/navigation.yml) file to add the repository to the navigation. Refer to [navigation.yml](../configure/site/navigation.md) for more information.

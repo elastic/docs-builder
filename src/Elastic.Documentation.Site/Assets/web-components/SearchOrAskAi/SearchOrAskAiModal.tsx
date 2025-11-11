@@ -1,97 +1,111 @@
-import { AskAiAnswer } from './AskAi/AskAiAnswer'
-import { AskAiSuggestions } from './AskAi/AskAiSuggestions'
-import { SearchResults } from './Search/SearchResults'
-import { useAskAiTerm, useSearchActions, useSearchTerm } from './search.store'
+import { Chat } from './AskAi/Chat'
 import {
-    EuiFieldSearch,
-    EuiSpacer,
+    useAskAiCooldown,
+    useAskAiCooldownActions,
+} from './AskAi/useAskAiCooldown'
+import { Search } from './Search/Search'
+import {
+    useSearchCooldown,
+    useSearchCooldownActions,
+} from './Search/useSearchCooldown'
+import { useModalActions, useModalMode } from './modal.store'
+import { useCooldown } from './useCooldown'
+import {
     EuiBetaBadge,
     EuiText,
-    EuiHorizontalRule,
-    useEuiOverflowScroll,
+    EuiLink,
+    EuiTabbedContent,
+    EuiIcon,
+    type EuiTabbedContentTab,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
 import * as React from 'react'
+import { useMemo } from 'react'
 
-export const SearchOrAskAiModal = () => {
-    const searchTerm = useSearchTerm()
-    const askAiTerm = useAskAiTerm()
-    const { setSearchTerm, submitAskAiTerm } = useSearchActions()
+export const SearchOrAskAiModal = React.memo(() => {
+    const modalMode = useModalMode()
+    const { setModalMode } = useModalActions()
 
+    // Manage cooldown countdowns at the modal level so they continue running when switching tabs
+    const searchCooldown = useSearchCooldown()
+    const { notifyCooldownFinished: notifySearchCooldownFinished } =
+        useSearchCooldownActions()
+    const askAiCooldown = useAskAiCooldown()
+    const { notifyCooldownFinished: notifyAskAiCooldownFinished } =
+        useAskAiCooldownActions()
+
+    useCooldown({
+        domain: 'search',
+        cooldown: searchCooldown,
+        onCooldownFinished: () => notifySearchCooldownFinished(),
+    })
+
+    useCooldown({
+        domain: 'askAi',
+        cooldown: askAiCooldown,
+        onCooldownFinished: () => notifyAskAiCooldownFinished(),
+    })
+
+    const tabs: EuiTabbedContentTab[] = useMemo(
+        () => [
+            {
+                id: 'search',
+                name: 'Search',
+                prepend: <EuiIcon type="search" />,
+                content: <Search />,
+            },
+            {
+                id: 'askAi',
+                name: 'Ask AI',
+                prepend: <EuiIcon type="sparkles" />,
+                content: <Chat />,
+            },
+        ],
+        []
+    )
+
+    const selectedTab = tabs.find((tab) => tab.id === modalMode) || tabs[0]
+
+    return (
+        <>
+            <EuiTabbedContent
+                tabs={tabs}
+                selectedTab={selectedTab}
+                onTabClick={(tab) => setModalMode(tab.id as 'search' | 'askAi')}
+            />
+            <ModalFooter />
+        </>
+    )
+})
+
+const ModalFooter = () => {
     return (
         <div
             css={css`
                 display: flex;
-                flex-direction: column;
+                align-items: center;
+                gap: calc(var(--spacing) * 2);
             `}
         >
-            <div
+            <EuiBetaBadge
                 css={css`
-                    flex-grow: 0;
+                    display: inline-flex;
                 `}
-            >
-                <EuiFieldSearch
-                    fullWidth
-                    placeholder="Search the docs or ask Elastic Docs AI Assistant"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    onSearch={(e) => {
-                        submitAskAiTerm(e)
-                    }}
-                    isClearable
-                    autoFocus={true}
-                />
-                <EuiSpacer size="m" />
-            </div>
-            <div
-                css={css`
-                    flex-grow: 1;
-                    overflow-y: scroll;
-                    max-height: 80vh;
-                    ${useEuiOverflowScroll('y')}
-                `}
-            >
-                <SearchResults />
-                {askAiTerm ? (
-                    <AskAiAnswer />
-                ) : (
-                    <AskAiSuggestions
-                        suggestions={[
-                            { question: 'What is an index template?' },
-                            { question: 'What is semantic search?' },
-                            {
-                                question:
-                                    'How do I create an elasticsearch index?',
-                            },
-                            { question: 'How do I set up an ingest pipeline?' },
-                        ]}
-                    />
-                )}
-            </div>
-            <EuiHorizontalRule margin="m" />
-            <div
-                css={css`
-                    flex-grow: 0;
-                    display: flex;
-                    align-items: center;
-                    gap: calc(var(--spacing) * 2);
-                `}
-            >
-                <EuiBetaBadge
-                    size="s"
-                    css={css`
-                        block-size: 2em;
-                        display: flex;
-                    `}
-                    label="Beta"
-                    color="accent"
-                    tooltipContent="This feature is in beta. Got feedback? We'd love to hear it!"
-                />
+                label="Alpha"
+                color="accent"
+                tooltipContent="This feature is in private preview and is only enabled if you are in Elastic's Global VPN."
+            />
 
-                <EuiText color="subdued" size="xs">
-                    This feature is in beta. Got feedback? We'd love to hear it!
-                </EuiText>
-            </div>
+            <EuiText color="subdued" size="s">
+                This feature is in private preview (alpha).{' '}
+                <EuiLink
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    href="https://github.com/elastic/docs-eng-team/issues/new?template=search-or-ask-ai-feedback.yml"
+                >
+                    Got feedback? We'd love to hear it!
+                </EuiLink>
+            </EuiText>
         </div>
     )
 }

@@ -1,6 +1,6 @@
 # Applies to
 
-Starting with Elastic Stack 9.0, ECE 4.0, and ECK 3.0, documentation follows a [cumulative approach](/contribute/cumulative-docs/index.md): instead of creating separate pages for each product and release, we update a single page with product- and version-specific details over time.
+Starting with Elastic Stack 9.0, ECE 4.0, and ECK 3.0, documentation follows a [cumulative approach](https://www.elastic.co/docs/contribute-docs/how-to/cumulative-docs): instead of creating separate pages for each product and release, we update a single page with product- and version-specific details over time.
 
 To support this, source files use a tagging system to indicate:
 
@@ -11,7 +11,7 @@ This is what the `applies_to` metadata is for. It can be used at the [page](#pag
 [section](#section-level), or [inline](#inline-level) level to specify applicability with precision.
 
 :::{note}
-For detailed guidance, refer to [](/contribute/cumulative-docs/index.md).
+For detailed guidance, refer to [Write cumulative documentation](https://www.elastic.co/docs/contribute-docs/how-to/cumulative-docs).
 :::
 
 ## Syntax
@@ -52,7 +52,7 @@ All documentation pages must include an `applies_to` tag in the YAML frontmatter
 
 A header can be followed by an `{applies_to}` directive which contextualizes the applicability of the section further.
 
-Section-level `{applies_to}` directives require triple backticks because their content is literal. Refer to [](index.md#literal-directives) for more information.
+Section-level `{applies_to}` directives require triple backticks because their content is literal. Refer to [](directives.md#exception-literal-blocks) for more information.
 
 ````markdown
 ```{applies_to}
@@ -93,6 +93,16 @@ Property {preview}`<version>`
 ```
 
 For more examples, refer to [Inline annotation examples](#inline-annotation-examples).
+
+### On specific components
+
+Several components have built-in support for `applies_to` and allow to surface version information in an optimized way:
+
+- [applies-switch](applies-switch.md), a component similar to tabs but with specific support to show version badges as tab titles
+- [admonitions](admonitions.md)
+- [dropdowns](dropdowns.md)
+
+Refer to these component pages to learn about the required `applies_to` syntax.
 
 ## Key-value reference
 
@@ -223,6 +233,7 @@ applies_to:
     edot_php:
     edot_python:
     edot_cf_aws:
+    edot_cf_azure:
 ---
 ```
 :::::

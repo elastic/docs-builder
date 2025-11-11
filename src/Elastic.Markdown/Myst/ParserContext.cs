@@ -5,9 +5,9 @@
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
-using Elastic.Markdown.Links.CrossLinks;
 using Elastic.Markdown.Myst.FrontMatter;
 using Markdig;
 using Markdig.Parsers;
@@ -28,14 +28,20 @@ public static class ParserContextExtensions
 public interface IParserResolvers
 {
 	ICrossLinkResolver CrossLinkResolver { get; }
-	Func<IFileInfo, DocumentationFile?> DocumentationFileLookup { get; }
+	Func<IFileInfo, DocumentationFile?> TryFindDocument { get; }
+	Func<string, DocumentationFile?> TryFindDocumentByRelativePath { get; }
+	IPositionalNavigation PositionalNavigation { get; }
 }
 
 public record ParserResolvers : IParserResolvers
 {
 	public required ICrossLinkResolver CrossLinkResolver { get; init; }
 
-	public required Func<IFileInfo, DocumentationFile?> DocumentationFileLookup { get; init; }
+	public required Func<IFileInfo, DocumentationFile?> TryFindDocument { get; init; }
+
+	public required Func<string, DocumentationFile?> TryFindDocumentByRelativePath { get; init; }
+
+	public required IPositionalNavigation PositionalNavigation { get; init; }
 }
 
 public record ParserState(BuildContext Build) : ParserResolvers
@@ -59,9 +65,11 @@ public class ParserContext : MarkdownParserContext, IParserResolvers
 	public YamlFrontMatter? YamlFrontMatter { get; }
 	public BuildContext Build { get; }
 	public bool SkipValidation { get; }
-	public Func<IFileInfo, DocumentationFile?> DocumentationFileLookup { get; }
+	public Func<IFileInfo, DocumentationFile?> TryFindDocument { get; }
+	public Func<string, DocumentationFile?> TryFindDocumentByRelativePath { get; }
 	public IReadOnlyDictionary<string, string> Substitutions { get; }
 	public IReadOnlyDictionary<string, string> ContextSubstitutions { get; }
+	public IPositionalNavigation PositionalNavigation { get; }
 
 	public ParserContext(ParserState state)
 	{
@@ -73,11 +81,16 @@ public class ParserContext : MarkdownParserContext, IParserResolvers
 
 		CrossLinkResolver = state.CrossLinkResolver;
 		MarkdownSourcePath = state.MarkdownSourcePath;
-		DocumentationFileLookup = state.DocumentationFileLookup;
+		TryFindDocument = state.TryFindDocument;
+		TryFindDocumentByRelativePath = state.TryFindDocumentByRelativePath;
+		PositionalNavigation = state.PositionalNavigation;
+		CurrentUrlPath = string.Empty;
 
-		CurrentUrlPath = DocumentationFileLookup(state.ParentMarkdownPath ?? MarkdownSourcePath) is MarkdownFile md
-			? md.Url
-			: string.Empty;
+		if (TryFindDocument(state.ParentMarkdownPath ?? MarkdownSourcePath) is MarkdownFile document)
+		{
+			if (PositionalNavigation.MarkdownNavigationLookup.TryGetValue(document, out var navigationLookup))
+				CurrentUrlPath = navigationLookup.Url;
+		}
 
 		if (SkipValidation && string.IsNullOrEmpty(CurrentUrlPath))
 		{
@@ -108,4 +121,5 @@ public class ParserContext : MarkdownParserContext, IParserResolvers
 
 		ContextSubstitutions = contextSubs;
 	}
+
 }

@@ -36,16 +36,16 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 	public Task<MarkdownDocument> MinimalParseAsync(IFileInfo path, Cancel ctx) =>
 		ParseFromFile(path, null, MinimalPipeline, true, ctx);
 
-	private Task<MarkdownDocument> ParseFromFile(
-		IFileInfo path, YamlFrontMatter? matter, MarkdownPipeline pipeline, bool skip, Cancel ctx
-	)
+	private Task<MarkdownDocument> ParseFromFile(IFileInfo path, YamlFrontMatter? matter, MarkdownPipeline pipeline, bool skip, Cancel ctx)
 	{
 		var state = new ParserState(Build)
 		{
 			MarkdownSourcePath = path,
 			YamlFrontMatter = matter,
-			DocumentationFileLookup = Resolvers.DocumentationFileLookup,
+			TryFindDocument = Resolvers.TryFindDocument,
+			TryFindDocumentByRelativePath = Resolvers.TryFindDocumentByRelativePath,
 			CrossLinkResolver = Resolvers.CrossLinkResolver,
+			PositionalNavigation = Resolvers.PositionalNavigation,
 			SkipValidation = skip
 		};
 		var context = new ParserContext(state);
@@ -67,7 +67,9 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 		{
 			MarkdownSourcePath = path,
 			YamlFrontMatter = matter,
-			DocumentationFileLookup = resolvers.DocumentationFileLookup,
+			TryFindDocument = resolvers.TryFindDocument,
+			TryFindDocumentByRelativePath = resolvers.TryFindDocumentByRelativePath,
+			PositionalNavigation = resolvers.PositionalNavigation,
 			CrossLinkResolver = resolvers.CrossLinkResolver
 		};
 		var context = new ParserContext(state);
@@ -86,8 +88,10 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 		{
 			MarkdownSourcePath = path,
 			YamlFrontMatter = matter,
-			DocumentationFileLookup = resolvers.DocumentationFileLookup,
+			TryFindDocument = resolvers.TryFindDocument,
+			TryFindDocumentByRelativePath = resolvers.TryFindDocumentByRelativePath,
 			CrossLinkResolver = resolvers.CrossLinkResolver,
+			PositionalNavigation = resolvers.PositionalNavigation,
 			ParentMarkdownPath = parentPath
 		};
 		var context = new ParserContext(state);
@@ -169,7 +173,7 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 				.UseEnhancedCodeBlocks()
 				.UseHtmxLinkInlineRenderer()
 				.DisableHtml()
-				.UseWhiteSpaceNormalizer()
+				.UseSpaceNormalizer()
 				.UseHardBreaks();
 			_ = builder.BlockParsers.TryRemove<IndentedCodeBlockParser>();
 			PipelineCached = builder.Build();

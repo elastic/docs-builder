@@ -33,7 +33,7 @@ jobs:
         with:
           commitish: ${{ github.sha }}
       - name: Create tag
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             github.rest.git.createRef({
@@ -75,8 +75,19 @@ jobs:
     uses: ./.github/workflows/build-link-index-updater-lambda.yml
     with:
       ref: ${{ needs.release-drafter.outputs.tag_name }}
+      
+  deploy-api-lambda-staging:
+    needs: 
+      - release-drafter
+    uses: ./.github/workflows/deploy-api-lambda.yml
+    permissions:
+      id-token: write
+      contents: read
+    with:
+      environment: staging
+      ref: refs/tags/${{ needs.release-drafter.outputs.tag_name }}
 
-  release-lambda:
+  deploy-link-index-updater-lambda-prod:
     environment: 
       name: link-index-updater-prod
     runs-on: ubuntu-latest
@@ -91,7 +102,7 @@ jobs:
     steps:
 
       - name: Download bootstrap binary
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with: 
           name: link-index-updater-lambda-binary # Defined in build-link-index-updater-lambda.yml
           
@@ -99,7 +110,7 @@ jobs:
         run: |
           zip -j "${ZIP_FILE}" ./bootstrap
 
-      - uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
+      - uses: aws-actions/configure-aws-credentials@00943011d9042930efac3dcd3a170e4273319bc8 # v5.1.0
         with:
           role-to-assume: arn:aws:iam::197730964718:role/elastic-docs-v3-link-index-updater-deployer
           aws-region: us-east-2
@@ -136,6 +147,12 @@ jobs:
       - uses: actions/checkout@v5
         with:
           ref: ${{ needs.release-drafter.outputs.tag_name }}
+      - name: 'Windows only, set TEMP to the same drive'
+        if: ${{ matrix.os == 'windows-latest' }}
+        #  temporary waiting for https://github.com/parcel-bundler/parcel/pull/10095 to fix
+        run: |
+          mkdir "D:\\Temp"
+          echo "TEMP=D:\\Temp" >> $env:GITHUB_ENV
 
       - name: Bootstrap Action Workspace
         id: bootstrap
@@ -150,21 +167,20 @@ jobs:
         with:
           subject-path: |
             .artifacts/publish/docs-builder/release/*.zip
-            .artifacts/publish/docs-assembler/release/*.zip
 
       - name: Attach Distribution to release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release upload ${{ needs.release-drafter.outputs.tag_name }} .artifacts/publish/docs-builder/release/*.zip
-          gh release upload ${{ needs.release-drafter.outputs.tag_name }} .artifacts/publish/docs-assembler/release/*.zip
         shell: bash
 
   publish-release:
     needs:
       - release
-      - release-lambda
       - release-drafter
+      - deploy-api-lambda-staging
+      - deploy-link-index-updater-lambda-prod
     runs-on: ubuntu-latest
     permissions: 
       contents: write
