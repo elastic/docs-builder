@@ -25,6 +25,12 @@ public record ProductsConfiguration
 }
 
 [YamlSerializable]
+public record ProductLink
+{
+	public string Id { get; set; } = string.Empty;
+}
+
+[YamlSerializable]
 public record Product
 {
 	public required string Id { get; init; }

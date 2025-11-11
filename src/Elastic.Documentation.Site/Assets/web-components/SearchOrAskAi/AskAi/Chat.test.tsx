@@ -13,6 +13,7 @@ jest.mock('./chat.store', () => ({
     useChatActions: jest.fn(() => ({
         submitQuestion: jest.fn(),
         clearChat: jest.fn(),
+        clearNon429Errors: jest.fn(),
         setAiProvider: jest.fn(),
     })),
 }))
@@ -29,6 +30,44 @@ jest.mock('./AskAiSuggestions', () => ({
     ),
 }))
 
+// Mock AiProviderSelector
+jest.mock('./AiProviderSelector', () => ({
+    AiProviderSelector: () => (
+        <div data-testid="ai-provider-selector">Provider Selector</div>
+    ),
+}))
+
+// Mock modal.store
+jest.mock('../modal.store', () => ({
+    useModalActions: jest.fn(() => ({
+        setModalMode: jest.fn(),
+        openModal: jest.fn(),
+        closeModal: jest.fn(),
+        toggleModal: jest.fn(),
+    })),
+}))
+
+// Mock cooldown hooks
+jest.mock('./useAskAiCooldown', () => ({
+    useIsAskAiCooldownActive: jest.fn(() => false),
+    useAskAiCooldown: jest.fn(() => null),
+    useAskAiCooldownActions: jest.fn(() => ({
+        setCooldown: jest.fn(),
+        updateCooldown: jest.fn(),
+        notifyCooldownFinished: jest.fn(),
+        acknowledgeCooldownFinished: jest.fn(),
+    })),
+}))
+
+jest.mock('../useCooldown', () => ({
+    useCooldown: jest.fn(),
+}))
+
+// Mock SearchOrAskAiErrorCallout
+jest.mock('../SearchOrAskAiErrorCallout', () => ({
+    SearchOrAskAiErrorCallout: () => null,
+}))
+
 const mockUseChatMessages = jest.mocked(
     jest.requireMock('./chat.store').useChatMessages
 )
@@ -39,12 +78,14 @@ const mockUseChatActions = jest.mocked(
 describe('Chat Component', () => {
     const mockSubmitQuestion = jest.fn()
     const mockClearChat = jest.fn()
+    const mockClearNon429Errors = jest.fn()
 
     beforeEach(() => {
         jest.clearAllMocks()
         mockUseChatActions.mockReturnValue({
             submitQuestion: mockSubmitQuestion,
             clearChat: mockClearChat,
+            clearNon429Errors: mockClearNon429Errors,
         })
     })
 
@@ -196,7 +237,9 @@ describe('Chat Component', () => {
                 /Ask Elastic Docs AI Assistant/i
             )
             await user.type(input, question)
-            await user.click(screen.getByRole('button', { name: /send/i }))
+            await user.click(
+                screen.getByRole('button', { name: /send message/i })
+            )
 
             // Assert
             expect(mockSubmitQuestion).toHaveBeenCalledWith(question)

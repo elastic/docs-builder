@@ -34,6 +34,7 @@ module CrossLinkResolverAssertions =
                 member _.WriteFileSystem = mockFileSystem
                 member _.ConfigurationPath = mockFileSystem.FileInfo.New("mock_docset.yml")
                 member _.OutputDirectory = mockFileSystem.DirectoryInfo.New(".artifacts")
+                member _.AssemblerBuild = false
             }
         let redirectFileParser = RedirectFile(docContext, mockRedirectsFile)
         redirectFileParser.Redirects

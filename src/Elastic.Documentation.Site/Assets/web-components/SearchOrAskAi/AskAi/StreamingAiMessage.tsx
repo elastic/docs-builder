@@ -1,3 +1,4 @@
+import { ApiError } from '../errorHandling'
 import { EventTypes } from './AskAiEvent'
 import { ChatMessage } from './ChatMessage'
 import {
@@ -11,11 +12,15 @@ import { useEffect, useRef } from 'react'
 interface StreamingAiMessageProps {
     message: ChatMessageType
     isLast: boolean
+    onAbortReady?: (abort: () => void) => void
+    showError?: boolean
 }
 
 export const StreamingAiMessage = ({
     message,
     isLast,
+    onAbortReady,
+    showError,
 }: StreamingAiMessageProps) => {
     const {
         updateAiMessage,
@@ -26,7 +31,7 @@ export const StreamingAiMessage = ({
     const conversationId = useConversationId()
     const contentRef = useRef('')
 
-    const { events, sendQuestion } = useAskAi({
+    const { events, sendQuestion, abort, error } = useAskAi({
         conversationId: conversationId ?? undefined,
         onEvent: (event) => {
             if (event.type === EventTypes.CONVERSATION_START) {
@@ -38,10 +43,15 @@ export const StreamingAiMessage = ({
                 contentRef.current += event.content
             } else if (event.type === EventTypes.ERROR) {
                 // Handle error events from the stream
+                const error = new Error(
+                    event.message || 'An error occurred'
+                ) as ApiError
+                error.statusCode = 500
                 updateAiMessage(
                     message.id,
                     event.message || 'An error occurred',
-                    'error'
+                    'error',
+                    error
                 )
             } else if (event.type === EventTypes.CONVERSATION_END) {
                 updateAiMessage(
@@ -51,21 +61,38 @@ export const StreamingAiMessage = ({
                 )
             }
         },
-        onError: (error) => {
+        onError: (error: ApiError | Error | null) => {
             console.error('[AI Provider] Error in StreamingAiMessage:', {
                 messageId: message.id,
-                errorMessage: error.message,
-                errorStack: error.stack,
-                errorName: error.name,
+                errorMessage: error?.message,
+                errorStack: error?.stack,
+                errorName: error?.name,
                 fullError: error,
             })
             updateAiMessage(
                 message.id,
-                message.content || 'Error occurred',
-                'error'
+                message.content || error?.message || 'Error occurred',
+                'error',
+                error
             )
         },
     })
+
+    // Expose abort function to parent when this is the last message
+    useEffect(() => {
+        console.log('[StreamingAiMessage] Effect triggered', {
+            isLast,
+            status: message.status,
+            hasAbort: !!abort,
+            hasCallback: !!onAbortReady,
+        })
+        if (isLast && message.status === 'streaming') {
+            console.log(
+                '[StreamingAiMessage] Calling onAbortReady with abort function'
+            )
+            onAbortReady?.(abort)
+        }
+    }, [isLast, message.status, abort, onAbortReady])
 
     useEffect(() => {
         if (
@@ -98,6 +125,8 @@ export const StreamingAiMessage = ({
             message={message}
             events={isLast ? events : []}
             streamingContent={streamingContentToPass}
+            error={message.error || (isLast && error ? error : undefined)}
+            showError={showError}
         />
     )
 }

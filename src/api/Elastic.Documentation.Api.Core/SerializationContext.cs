@@ -21,7 +21,7 @@ public record OutputMessage(string Role, MessagePart[] Parts, string FinishReaso
 [JsonSerializable(typeof(SearchRequest))]
 [JsonSerializable(typeof(SearchResponse))]
 [JsonSerializable(typeof(InputMessage))]
-[JsonSerializable(typeof(OutputMessage))]
+[JsonSerializable(typeof(OutputMessage[]))]
 [JsonSerializable(typeof(MessagePart))]
 [JsonSerializable(typeof(InputMessage[]))]
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]

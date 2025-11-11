@@ -6,6 +6,7 @@ using System.Buffers;
 using System.IO.Pipelines;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.Json.Serialization;
 
 namespace Elastic.Documentation.Api.Infrastructure.Adapters.AskAi;
 
@@ -99,3 +100,7 @@ public static class SseParser
 		return true;
 	}
 }
+
+
+[JsonSerializable(typeof(SseEvent))]
+internal sealed partial class SseSerializerContext : JsonSerializerContext;

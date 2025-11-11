@@ -5,9 +5,10 @@
 using System.Globalization;
 using System.IO.Abstractions;
 using System.Xml.Linq;
-using Elastic.Documentation.Site.Navigation;
+using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Navigation.Isolated;
+using Elastic.Documentation.Navigation.Isolated.Leaf;
 using Elastic.Markdown.Extensions.DetectionRules;
-using Elastic.Markdown.IO.Navigation;
 
 namespace Elastic.Documentation.Assembler.Building;
 
@@ -38,8 +39,8 @@ public class SitemapBuilder(
 			flattenedNavigationItems
 				.Select(n => n switch
 				{
-					DocumentationGroup group => (group.Index.Url, NavigationItem: group),
-					FileNavigationItem file => (file.Model.Url, NavigationItem: file as INavigationItem),
+					INodeNavigationItem<INavigationModel, INavigationItem> group => (group.Url, NavigationItem: group),
+					ILeafNavigationItem<INavigationModel> file => (file.Url, NavigationItem: file as INavigationItem),
 					_ => throw new Exception($"{nameof(SitemapBuilder)}.{nameof(Generate)}: Unhandled navigation item type: {n.GetType()}")
 				})
 				.Select(n => n.Url)
@@ -64,22 +65,20 @@ public class SitemapBuilder(
 		{
 			switch (item)
 			{
-				case FileNavigationItem file:
-					// these are hidden from the navigation programatically.
-					// TODO find a cleaner way to model this.
-					if (item.Hidden && file.Model is not DetectionRuleFile)
-						continue;
+				case ILeafNavigationItem<CrossLinkModel>:
+				case ILeafNavigationItem<DetectionRuleFile>:
+				case ILeafNavigationItem<INavigationModel> { Hidden: true }:
+					continue;
+				case ILeafNavigationItem<INavigationModel> file:
 					result.Add(file);
 					break;
-				case DocumentationGroup group:
+				case INodeNavigationItem<INavigationModel, INavigationItem> group:
 					if (item.Hidden)
 						continue;
 
 					result.AddRange(GetNavigationItems(group.NavigationItems));
 					result.Add(group);
 					break;
-				case CrossLinkNavigationItem:
-					continue; // we do not emit cross links in the sitemap
 				default:
 					throw new Exception($"{nameof(SitemapBuilder)}.{nameof(GetNavigationItems)}: Unhandled navigation item type: {item.GetType()}");
 			}

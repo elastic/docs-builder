@@ -164,13 +164,9 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 		var response = await _transport.PutAsync<StringResponse>($"_synonyms/{setName}", PostData.String(json), ctx);
 
 		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
-		{
 			_collector.EmitGlobalError($"Failed to publish synonym set '{setName}'. Reason: {response.ApiCallDetails.OriginalException?.Message ?? response.ToString()}");
-		}
 		else
-		{
 			_logger.LogInformation("Successfully published synonym set '{SetName}'.", setName);
-		}
 	}
 
 	private async ValueTask<long> CountAsync(string index, string body, Cancel ctx = default)
@@ -386,7 +382,9 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 	public async ValueTask<bool> ExportAsync(MarkdownExportFileContext fileContext, Cancel ctx)
 	{
 		var file = fileContext.SourceFile;
-		var url = file.Url;
+		IPositionalNavigation navigation = fileContext.DocumentationSet;
+		var currentNavigation = navigation.GetCurrent(file);
+		var url = currentNavigation.Url;
 
 		if (url is "/docs" or "/docs/404")
 		{
@@ -395,7 +393,6 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 			return true;
 		}
 
-		IPositionalNavigation navigation = fileContext.DocumentationSet;
 
 		// Remove the first h1 because we already have the title
 		// and we don't want it to appear in the body

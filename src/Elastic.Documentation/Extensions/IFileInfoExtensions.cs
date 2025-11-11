@@ -28,12 +28,44 @@ public static class IFileInfoExtensions
 		return parent is not null && parent.IsSubPathOf(parentDirectory);
 	}
 
+	public static IFileInfo EnsureSubPathOf(this IFileInfo file, IDirectoryInfo parentDirectory, string relativePath)
+	{
+		var fs = file.FileSystem;
+		List<string> intermediaryDirectories = ["x"];
+		while (!file.IsSubPathOf(parentDirectory))
+		{
+			var path = Path.GetFullPath(fs.Path.Combine([parentDirectory.FullName, .. intermediaryDirectories, relativePath]));
+			file = fs.FileInfo.New(path);
+			intermediaryDirectories.Add("x");
+		}
+
+		return file;
+	}
+
 	/// Checks if <paramref name="file"/> has parent directory <paramref name="parentName"/>, defaults to OrdinalIgnoreCase comparison
 	public static bool HasParent(this IFileInfo file, string parentName)
 	{
 		var parent = file.Directory;
 		return parent is not null && parent.HasParent(parentName);
 	}
+
+	public static IFileInfo NewCombine(this IFileInfoFactory fileInfo, params string[] paths)
+	{
+		paths = paths.Select(f => f.OptionalWindowsReplace()).ToArray();
+		var fi = fileInfo.New(Path.Combine(paths));
+		return fi;
+	}
+}
+
+public static class IFileSystemExtensions
+{
+	public static IDirectoryInfo NewDirInfo(this IFileSystem fs, string path) => fs.DirectoryInfo.New(path);
+
+	public static IDirectoryInfo NewDirInfo(this IFileSystem fs, params string[] paths) => fs.DirectoryInfo.New(Path.Combine(paths));
+
+	public static IFileInfo NewFileInfo(this IFileSystem fs, string path) => fs.FileInfo.NewCombine(path);
+
+	public static IFileInfo NewFileInfo(this IFileSystem fs, params string[] paths) => fs.FileInfo.NewCombine(paths);
 }
 
 public static class IDirectoryInfoExtensions
@@ -94,5 +126,21 @@ public static class IDirectoryInfoExtensions
 		} while (parent != null);
 
 		return false;
+	}
+
+	/// Gets the first  <paramref name="parentName"/>, parent of <paramref name="directory"/>
+	public static IDirectoryInfo? GetParent(this IDirectoryInfo directory, string parentName, StringComparison comparison = OrdinalIgnoreCase)
+	{
+		if (string.Equals(directory.Name, parentName, comparison))
+			return directory;
+		var parent = directory;
+		do
+		{
+			if (string.Equals(parent.Name, parentName, comparison))
+				return parent;
+			parent = parent.Parent;
+		} while (parent != null);
+
+		return null;
 	}
 }

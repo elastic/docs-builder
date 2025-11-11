@@ -38,6 +38,12 @@ public class AssembleContext : IDocumentationConfigurationContext
 
 	public IDirectoryInfo OutputDirectory { get; }
 
+	/// <inheritdoc />
+	public IFileInfo ConfigurationPath { get; }
+
+	/// <inheritdoc />
+	public bool AssemblerBuild => true;
+
 	public PublishEnvironment Environment { get; }
 
 	public AssembleContext(
@@ -57,6 +63,7 @@ public class AssembleContext : IDocumentationConfigurationContext
 
 		Configuration = configuration;
 		ConfigurationFileProvider = configurationContext.ConfigurationFileProvider;
+		ConfigurationPath = ConfigurationFileProvider.AssemblerFile;
 		VersionsConfiguration = configurationContext.VersionsConfiguration;
 		SynonymsConfiguration = configurationContext.SynonymsConfiguration;
 		Endpoints = configurationContext.Endpoints;
