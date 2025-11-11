@@ -398,11 +398,18 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 				newUrl = $"/{Path.Combine(urlPathPrefix, relativePath).OptionalWindowsReplace().TrimStart('/')}";
 		}
 
-		// CrossLinkResolver gives the navigation-aware path to the URI
-		if (context.Build.AssemblerBuild && context.TryFindDocument(fi) is MarkdownFile currentMarkdown && context.CrossLinkResolver.TryResolve((err) => context.EmitError(err), new Uri(currentMarkdown.CrossLink), out var resolvedUri))
+		if (context.Build.AssemblerBuild && context.TryFindDocument(fi) is MarkdownFile currentMarkdown)
 		{
-			if (resolvedUri.AbsolutePath.LastIndexOf('/') > 0)
-				newUrl = Path.GetFullPath(Path.Combine(resolvedUri.AbsolutePath[..resolvedUri.AbsolutePath.LastIndexOf('/')], url));
+			// Acquire navigation-aware path
+			if (context.PositionalNavigation.MarkdownNavigationLookup.TryGetValue(currentMarkdown, out var currentNavigation) && !string.IsNullOrEmpty(currentNavigation.Url))
+			{
+				var currentUrl = currentNavigation.Url;
+				if (currentUrl.LastIndexOf('/') > 0)
+				{
+					var basePath = currentUrl[..currentUrl.LastIndexOf('/')];
+					newUrl = Path.GetFullPath(Path.Combine(basePath, url));
+				}
+			}
 			newUrl = $"/{Path.Combine(newUrl.StartsWith(urlPathPrefix) ? string.Empty : urlPathPrefix, newUrl.TrimStart('/'))
 				.OptionalWindowsReplace().TrimStart('/')}";
 		}
