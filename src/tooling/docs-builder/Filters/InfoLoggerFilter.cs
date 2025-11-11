@@ -4,12 +4,13 @@
 
 using System.Reflection;
 using ConsoleAppFramework;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Microsoft.Extensions.Logging;
 
-namespace Elastic.Documentation.Tooling.Filters;
+namespace Documentation.Builder.Filters;
 
-public class InfoLoggerFilter(
+internal sealed class InfoLoggerFilter(
 	ConsoleAppFilter next,
 	ILogger<InfoLoggerFilter> logger,
 	ConfigurationFileProvider fileProvider,

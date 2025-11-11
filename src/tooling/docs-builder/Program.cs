@@ -3,13 +3,12 @@
 // See the LICENSE file in the project root for more information
 
 using ConsoleAppFramework;
+using Documentation.Builder;
 using Documentation.Builder.Commands;
 using Documentation.Builder.Commands.Assembler;
 using Documentation.Builder.Filters;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.ServiceDefaults;
-using Elastic.Documentation.Tooling;
-using Elastic.Documentation.Tooling.Filters;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -20,11 +19,7 @@ var builder = Host.CreateApplicationBuilder()
 	})
 	.AddDocumentationToolingDefaults();
 
-var app = builder.ToConsoleAppBuilder((s) =>
-{
-	ConsoleApp.ServiceProvider = s;
-	return ConsoleApp.Create();
-});
+var app = builder.ToConsoleAppBuilder();
 
 app.UseFilter<ReplaceLogFilter>();
 app.UseFilter<InfoLoggerFilter>();

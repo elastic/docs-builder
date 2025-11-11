@@ -6,7 +6,7 @@ using Actions.Core;
 using Actions.Core.Services;
 using Elastic.Documentation.Diagnostics;
 
-namespace Elastic.Documentation.Tooling.Diagnostics.Console;
+namespace Documentation.Builder.Diagnostics.Console;
 
 public class GithubAnnotationOutput(ICoreService? githubActions) : IDiagnosticsOutput
 {

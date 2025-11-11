@@ -219,17 +219,26 @@ public record AssemblyConfiguration
 			else if (product?.VersioningSystem is { } versioningSystem)
 			{
 				logger.LogInformation("Current is not using versioned branches checking product info");
-				var productCurrentVersion = versioningSystem.Current;
-				if (v >= productCurrentVersion)
+				var productVersion = versioningSystem.Current;
+				var previousMinorVersion = new SemVersion(productVersion.Major, Math.Max(productVersion.Minor - 1, 0), 0);
+				if (v >= productVersion)
 				{
-					logger.LogInformation("Speculative build {Branch} is gte product current '{ProductCurrent}'", branchOrTag, productCurrentVersion);
+					logger.LogInformation("Speculative build {Branch} is gte product current '{ProductCurrent}'", branchOrTag, productVersion);
+					match = match with
+					{
+						Speculative = true
+					};
+				}
+				else if (v == previousMinorVersion)
+				{
+					logger.LogInformation("Speculative build {Branch} is gte product current previous minor '{ProductPreviousMinor}'", branchOrTag, previousMinorVersion);
 					match = match with
 					{
 						Speculative = true
 					};
 				}
 				else
-					logger.LogInformation("NO speculative build {Branch} is lte product current '{ProductCurrent}'", branchOrTag, productCurrentVersion);
+					logger.LogInformation("NO speculative build {Branch} is lte product current '{ProductCurrent}'", branchOrTag, productVersion);
 			}
 			else
 				logger.LogInformation("No versioning system found for {Repository} on {Branch}", repository, branchOrTag);
