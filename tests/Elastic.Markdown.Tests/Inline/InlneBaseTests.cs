@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 using System.IO.Abstractions.TestingHelpers;
 using System.Runtime.InteropServices;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Markdown.IO;
 using FluentAssertions;
@@ -113,7 +114,14 @@ $"""
 
 		Collector = new TestDiagnosticsCollector(output);
 		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem);
-		var context = new BuildContext(Collector, FileSystem, configurationContext)
+		var gitInfo = new GitCheckoutInformation
+		{
+			Branch = "main",
+			Remote = "elastic/docs-content",
+			Ref = "main",
+			RepositoryName = "docs-content"
+		};
+		var context = new BuildContext(Collector, FileSystem, FileSystem, configurationContext, ExportOptions.Default, null, null, gitInfo)
 		{
 			UrlPathPrefix = "/docs"
 		};

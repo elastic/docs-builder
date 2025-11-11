@@ -391,11 +391,22 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 					newUrl = newUrl[3..];
 					offset--;
 				}
+				newUrl = Path.GetFullPath(Path.Combine(urlPathPrefix, snippet.RelativeFolder, url))
+					.OptionalWindowsReplace().TrimStart('/');
 			}
 			else
 				newUrl = $"/{Path.Combine(urlPathPrefix, relativePath).OptionalWindowsReplace().TrimStart('/')}";
-
 		}
+
+		// CrossLinkResolver gives the navigation-aware path to the URI
+		if (context.TryFindDocument(fi) is MarkdownFile currentMarkdown && context.CrossLinkResolver.TryResolve((err) => context.EmitError(err), new Uri(currentMarkdown.CrossLink), out var resolvedUri))
+		{
+			if (resolvedUri.AbsolutePath.LastIndexOf('/') > 0)
+				newUrl = Path.GetFullPath(Path.Combine(resolvedUri.AbsolutePath[..resolvedUri.AbsolutePath.LastIndexOf('/')], url));
+			newUrl = $"/{Path.Combine(newUrl.StartsWith(urlPathPrefix) ? string.Empty : urlPathPrefix, newUrl.TrimStart('/'))
+				.OptionalWindowsReplace().TrimStart('/')}";
+		}
+
 		// When running on Windows, path traversal results must be normalized prior to being used in a URL
 		// Path.GetFullPath() will result in the drive letter being appended to the path, which needs to be pruned back.
 		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
