@@ -85,6 +85,7 @@ export function useFetchEventSource<TPayload>({
                     },
                     body: bodyString,
                     signal: controller.signal, // Use local controller, not ref
+                    openWhenHidden: true, // Keep connection alive when tab is hidden
                     onopen: async (response: Response) => {
                         if (
                             response.ok &&
