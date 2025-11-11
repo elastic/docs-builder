@@ -73,7 +73,7 @@ versioning_systems:
   # EDOTs
   edot-collector:
     base: 9.0
-    current: 9.2.0
+    current: 9.2.1
   edot-ios:
     base: 1.0
     current: 1.4.0
@@ -85,13 +85,13 @@ versioning_systems:
     current: 1.1.0
   edot-java:
     base: 1.0
-    current: 1.6.0
+    current: 1.7.0
   edot-node:
     base: 1.0
     current: 1.6.0
   edot-php:
     base: 1.0
-    current: 1.1.1
+    current: 1.2.0
   edot-python:
     base: 1.0
     current: 1.9.0
@@ -101,9 +101,9 @@ versioning_systems:
   edot-cf-azure:
     base: 0.1
     current: 0.6.0
-#  edot-cf-gcp:
-#    base: 0.1
-#    current: 0.1.0
+  #  edot-cf-gcp:
+  #    base: 0.1
+  #    current: 0.1.0
 
   # Logging
   ecs-logging-dotnet:
