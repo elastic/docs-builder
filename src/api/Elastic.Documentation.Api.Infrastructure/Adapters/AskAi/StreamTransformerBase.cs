@@ -140,7 +140,7 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 				var root = doc.RootElement;
 
 				// Subclass transforms JsonElement to AskAiEvent
-				transformedEvent = TransformJsonEvent(conversationId, sseEvent.EventType, root);
+				transformedEvent = TransformJsonEvent(sseEvent.EventType, root);
 			}
 			catch (JsonException ex)
 			{
@@ -153,6 +153,7 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 			{
 				Logger.LogWarning("Transformed event is null for transformer {TransformerType}. Skipping event. EventType: {EventType}",
 					GetType().Name, sseEvent.EventType);
+				Logger.LogWarning("Original event: {event}", JsonSerializer.Serialize(sseEvent, SseSerializerContext.Default.SseEvent));
 				continue;
 			}
 
@@ -213,7 +214,7 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 				case AskAiEvent.MessageComplete messageComplete:
 					{
 						outputMessageParts.Add(new MessagePart("text", messageComplete.FullContent));
-						Logger.LogInformation("AskAI output message: {OutputMessage}", messageComplete.FullContent);
+						Logger.LogInformation("AskAI output message: {ask_ai.output.message}", messageComplete.FullContent);
 						break;
 					}
 				case AskAiEvent.ConversationEnd conversationEnd:
@@ -228,10 +229,10 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 		// Set output messages tag once after all events are processed
 		if (outputMessageParts.Count > 0)
 		{
-			var outputMessages = new OutputMessage("assistant", outputMessageParts.ToArray(), "stop");
-			var outputMessagesJson = JsonSerializer.Serialize(outputMessages, ApiJsonContext.Default.OutputMessage);
+			var outputMessage = new OutputMessage("assistant", outputMessageParts.ToArray(), "stop");
+			var outputMessages = new[] { outputMessage };
+			var outputMessagesJson = JsonSerializer.Serialize(outputMessages, ApiJsonContext.Default.OutputMessageArray);
 			_ = parentActivity?.SetTag("gen_ai.output.messages", outputMessagesJson);
-			_ = activity?.SetTag("gen_ai.output.messages", outputMessagesJson);
 		}
 	}
 
@@ -239,11 +240,10 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 	/// Transform a parsed JSON event into an AskAiEvent.
 	/// Subclasses implement provider-specific transformation logic.
 	/// </summary>
-	/// <param name="conversationId">The conversation/thread ID, if available</param>
 	/// <param name="eventType">The SSE event type (from "event:" field), or null if not present</param>
 	/// <param name="json">The parsed JSON data from the "data:" field</param>
 	/// <returns>The transformed AskAiEvent, or null to skip this event</returns>
-	protected abstract AskAiEvent? TransformJsonEvent(string? conversationId, string? eventType, JsonElement json);
+	protected abstract AskAiEvent? TransformJsonEvent(string? eventType, JsonElement json);
 
 	/// <summary>
 	/// Write a transformed event to the output stream
