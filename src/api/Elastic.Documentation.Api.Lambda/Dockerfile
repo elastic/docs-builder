@@ -23,6 +23,7 @@ RUN chmod +x ./dotnet-install.sh
 RUN ./dotnet-install.sh
 ENV PATH="$PATH:/root/.dotnet"
 ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
+# /end temporary
 
 COPY . .
 
