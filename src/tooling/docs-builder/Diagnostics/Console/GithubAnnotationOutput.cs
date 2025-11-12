@@ -21,7 +21,7 @@ public class GithubAnnotationOutput(ICoreService? githubActions) : IDiagnosticsO
 			File = diagnostic.File,
 			StartColumn = diagnostic.Column,
 			StartLine = diagnostic.Line,
-			EndColumn = diagnostic.Column + diagnostic.Length ?? 1
+			EndColumn = (diagnostic.Column + diagnostic.Length) ?? 1
 		};
 		if (diagnostic.Severity == Severity.Error)
 			githubActions.WriteError(diagnostic.Message, properties);

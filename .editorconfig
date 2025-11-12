@@ -246,6 +246,8 @@ dotnet_diagnostic.IDE0305.severity = none
 # CS8509 already warns
 dotnet_diagnostic.IDE0072.severity = none
 
+dotnet_diagnostic.CA1873.severity = suggestion
+
 [src/api/Elastic.Documentation.Api.Lambda/**.cs]
 dotnet_diagnostic.IL3050.severity = none
 dotnet_diagnostic.IL2026.severity = none

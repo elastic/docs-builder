@@ -29,8 +29,10 @@ public static class LiveReloadMiddlewareExtensions
 		var provider = services.BuildServiceProvider();
 		var configuration = provider.GetService<IConfiguration>();
 
+#pragma warning disable syslib1100
 		var config = new LiveReloadConfiguration();
 		configuration!.Bind("LiveReload", config);
+#pragma warning restore syslib1100
 
 		LiveReloadConfiguration.Current = config;
 

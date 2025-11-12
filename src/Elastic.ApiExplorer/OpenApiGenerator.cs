@@ -12,8 +12,7 @@ using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
 using Microsoft.Extensions.Logging;
-using Microsoft.OpenApi.Any;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer;
 
@@ -51,19 +50,19 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 		var rootNavigation = new LandingNavigationItem(url);
 
 		var ops = openApiDocument.Paths
-			.SelectMany(p => p.Value.Operations.Select(op => (Path: p, Operation: op)))
+			.SelectMany(p => (p.Value.Operations ?? []).Select(op => (Path: p, Operation: op)))
 			.Select(pair =>
 			{
 				var op = pair.Operation;
 				var extensions = op.Value.Extensions;
-				var ns = (extensions?.TryGetValue("x-namespace", out var n) ?? false) && n is OpenApiAny anyNs
+				var ns = (extensions?.TryGetValue("x-namespace", out var n) ?? false) && n is JsonNodeExtension anyNs
 					? anyNs.Node.GetValue<string>()
 					: null;
-				var api = (extensions?.TryGetValue("x-api-name", out var a) ?? false) && a is OpenApiAny anyApi
+				var api = (extensions?.TryGetValue("x-api-name", out var a) ?? false) && a is JsonNodeExtension anyApi
 					? anyApi.Node.GetValue<string>()
 					: null;
 				var tag = op.Value.Tags?.FirstOrDefault()?.Reference.Id;
-				var tagClassification = (extensions?.TryGetValue("x-tag-group", out var g) ?? false) && g is OpenApiAny anyTagGroup
+				var tagClassification = (extensions?.TryGetValue("x-tag-group", out var g) ?? false) && g is JsonNodeExtension anyTagGroup
 					? anyTagGroup.Node.GetValue<string>()
 					: openApiDocument.Info.Title == "Elasticsearch Request & Response Specification"
 						? ClassifyElasticsearchTag(tag ?? "unknown")

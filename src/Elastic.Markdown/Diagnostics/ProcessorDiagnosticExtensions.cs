@@ -33,9 +33,9 @@ public static class ProcessorDiagnosticExtensions
 			Severity = severity,
 			File = processor.GetContext().MarkdownSourcePath.FullName,
 			Column = column ?? 1,
-			Line = line ?? processor.LineIndex + 1,
+			Line = line ?? (processor.LineIndex + 1),
 			Message = message,
-			Length = length ?? processor.Line.Length + 1
+			Length = length ?? (processor.Line.Length + 1)
 		};
 		context.Build.Collector.Write(d);
 	}
