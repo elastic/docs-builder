@@ -157,10 +157,11 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 				continue;
 			}
 
-			using var parseActivity = StreamTransformerActivitySource.StartActivity("AskAI Event");
+			var askAiEventType = transformedEvent.GetType().Name;
+			using var parseActivity = StreamTransformerActivitySource.StartActivity($"AskAI Event {askAiEventType}");
 
 			// Set event type tag on parse_event activity
-			_ = parseActivity?.SetTag("ask_ai.event.type", transformedEvent.GetType().Name);
+			_ = parseActivity?.SetTag("ask_ai.event.type", askAiEventType);
 			_ = parseActivity?.SetTag("gen_ai.response.id", transformedEvent.Id);
 
 			switch (transformedEvent)
