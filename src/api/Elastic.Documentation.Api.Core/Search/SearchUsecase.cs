@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Api.Core.Search;
 
-public class SearchUsecase(ISearchGateway searchGateway, ILogger<SearchUsecase> logger)
+public partial class SearchUsecase(ISearchGateway searchGateway, ILogger<SearchUsecase> logger)
 {
 	public async Task<SearchResponse> Search(SearchRequest request, Cancel ctx = default)
 	{
@@ -25,15 +25,21 @@ public class SearchUsecase(ISearchGateway searchGateway, ILogger<SearchUsecase> 
 			PageSize = request.PageSize,
 		};
 
-		logger.LogInformation("Search completed: {search.result.page_size} results for query '{search.query.text}' (Page {search.result.page_number}): {search.result.urls}",
+		LogSearchResults(
+			logger,
 			response.PageSize,
-			request.Query,
 			response.PageNumber,
-			response.Results.Select(result => result.Url)
-			);
+			request.Query,
+			new SearchResultsLogProperties(results.Select(i => i.Url).ToArray())
+		);
 
 		return response;
 	}
+
+	[LoggerMessage(Level = LogLevel.Information, Message = "Search completed with {PageSize} (page {PageNumber}) results for query '{SearchQuery}'")]
+	private static partial void LogSearchResults(ILogger logger, int pageSize, int pageNumber, string searchQuery, [LogProperties] SearchResultsLogProperties result);
+
+	private sealed record SearchResultsLogProperties(string[] Urls);
 }
 
 public record SearchRequest
