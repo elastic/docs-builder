@@ -13,13 +13,15 @@ RUN curl -L https://dot.net/v1/dotnet-install.sh -o dotnet-install.sh
 
 RUN chmod +x ./dotnet-install.sh
 
-RUN ./dotnet-install.sh --version latest
-
 RUN dnf update -y
 #RUN dnf install -y dotnet-sdk-10.0
+RUN dnf install -y find
+RUN dnf install -y tar
 RUN dnf install -y npm
 RUN dnf install -y git
 RUN dnf install -y clang
+
+RUN ./dotnet-install.sh --version latest
 
 COPY . .
 
