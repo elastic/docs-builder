@@ -2,17 +2,14 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Microsoft.Extensions.Logging;
+
 namespace Elastic.Documentation.Api.Core.Search;
 
-public class SearchUsecase(ISearchGateway searchGateway)
+public class SearchUsecase(ISearchGateway searchGateway, Logger<SearchUsecase> logger)
 {
 	public async Task<SearchResponse> Search(SearchRequest request, Cancel ctx = default)
 	{
-
-		// var validationResult = validator.Validate(request);
-		// if (!validationResult.IsValid)
-		// 	throw new ArgumentException(validationResult.Message);
-
 		var (totalHits, results) = await searchGateway.SearchAsync(
 			request.Query,
 			request.PageNumber,
@@ -20,14 +17,22 @@ public class SearchUsecase(ISearchGateway searchGateway)
 			ctx
 		);
 
-
-		return new SearchResponse
+		var response = new SearchResponse
 		{
 			Results = results,
 			TotalResults = totalHits,
 			PageNumber = request.PageNumber,
 			PageSize = request.PageSize,
 		};
+
+		logger.LogInformation("Search completed: {search.result.page_size} results for query '{search.query.text}' (Page {search.result.page_number}): {search.result.urls}",
+			response.PageSize,
+			request.Query,
+			response.PageNumber,
+			response.Results.Select(result => result.Url)
+			);
+
+		return response;
 	}
 }
 
