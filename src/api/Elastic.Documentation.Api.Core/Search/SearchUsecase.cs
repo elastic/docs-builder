@@ -2,18 +2,19 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Diagnostics;
+
 namespace Elastic.Documentation.Api.Core.Search;
 
 public class SearchUsecase(ISearchGateway searchGateway)
 {
+	private static readonly ActivitySource AskAiActivitySource = new("Elastic.Documentation.Api.Search");
+
 	public async Task<SearchResponse> Search(SearchRequest request, Cancel ctx = default)
 	{
-
-		// var validationResult = validator.Validate(request);
-		// if (!validationResult.IsValid)
-		// 	throw new ArgumentException(validationResult.Message);
-
+		using var activity = AskAiActivitySource.StartActivity("Search", ActivityKind.Client);
 		var (totalHits, results) = await searchGateway.SearchAsync(
+			activity,
 			request.Query,
 			request.PageNumber,
 			request.PageSize,

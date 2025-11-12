@@ -35,6 +35,7 @@ public static class OpenTelemetryExtensions
 				{
 					_ = tracing
 						.AddSource("Elastic.Documentation.Api.AskAi")
+						.AddSource("Elastic.Documentation.Api.Search")
 						.AddSource("Elastic.Documentation.Api.StreamTransformer")
 						.AddAspNetCoreInstrumentation()
 						.AddHttpClientInstrumentation();
