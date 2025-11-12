@@ -26,6 +26,7 @@
     <PackageVersion Include="AWSSDK.SQS" Version="4.0.2.2" />
     <PackageVersion Include="AWSSDK.S3" Version="4.0.7.14" />
     <PackageVersion Include="Elastic.OpenTelemetry" Version="1.1.0" />
+    <PackageVersion Include="Microsoft.Extensions.Telemetry.Abstractions" Version="9.7.0" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.13.0" />
     <PackageVersion Include="Generator.Equals" Version="3.2.1" PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
     <PackageVersion Include="KubernetesClient" Version="17.0.14" />
