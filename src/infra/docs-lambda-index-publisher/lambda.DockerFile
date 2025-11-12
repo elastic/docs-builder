@@ -7,7 +7,7 @@ WORKDIR /app
 
 RUN rpm --import https://packages.microsoft.com/keys/microsoft.asc
 
-RUN curl -o /etc/yum.repos.d/microsoft-prod.repo https://packages.microsoft.com/config/fedora/39/prod.repo
+RUN curl -o /etc/yum.repos.d/microsoft-prod.repo https://packages.microsoft.com/config/fedora/43/prod.repo
 
 RUN dnf update -y
 RUN dnf install -y dotnet-sdk-10.0
