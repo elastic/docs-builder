@@ -22,6 +22,7 @@ RUN curl -L https://dot.net/v1/dotnet-install.sh -o dotnet-install.sh
 RUN chmod +x ./dotnet-install.sh
 RUN ./dotnet-install.sh
 ENV PATH="$PATH:/root/.dotnet"
+ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
 
 COPY . .
 
