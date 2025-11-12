@@ -410,6 +410,9 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 					newUrl = Path.GetFullPath(Path.Combine(basePath, url));
 				}
 			}
+			else
+				context.EmitError($"Failed to acquire navigation for current markdown file '{currentMarkdown.FileName}' while resolving relative url '{url}'.");
+
 			newUrl = $"/{Path.Combine(newUrl.StartsWith(urlPathPrefix) ? string.Empty : urlPathPrefix, newUrl.TrimStart('/'))
 				.OptionalWindowsReplace().TrimStart('/')}";
 		}
