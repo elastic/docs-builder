@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Api.Core.Search;
 
-public class SearchUsecase(ISearchGateway searchGateway, Logger<SearchUsecase> logger)
+public class SearchUsecase(ISearchGateway searchGateway, ILogger<SearchUsecase> logger)
 {
 	public async Task<SearchResponse> Search(SearchRequest request, Cancel ctx = default)
 	{
