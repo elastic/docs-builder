@@ -56,6 +56,7 @@ public static class Extensions
 			.WithTracing(tracing =>
 			{
 				_ = tracing.AddSource(builder.Environment.ApplicationName)
+					.AddSource("Elastic.Documentation.Assembler.Deploying.Synchronization.AwsS3SyncApplyStrategy")
 					.AddAspNetCoreInstrumentation(instrumentation =>
 						// Exclude health check requests from tracing
 						instrumentation.Filter = context =>
