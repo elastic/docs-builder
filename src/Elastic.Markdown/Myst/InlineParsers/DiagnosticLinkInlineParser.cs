@@ -438,9 +438,10 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 	/// <summary>
 	/// Joins URL path segments ensuring exactly one '/' between parts and no double slashes.
 	/// </summary>
-	private static string UrlCombine(params string[] parts)
+	private static string UrlCombine(params string[]? parts)
 	{
-		if (parts == null || parts.Length == 0) return string.Empty;
+		if (parts == null || parts.Length == 0)
+			return string.Empty;
 		// Remove any leading/trailing slashes and join
 		return string.Join("/", parts
 			.Where(p => !string.IsNullOrWhiteSpace(p))
