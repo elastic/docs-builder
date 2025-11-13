@@ -124,7 +124,7 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 	/// <returns>Stream processing result with metrics and captured output</returns>
 	protected virtual async Task ProcessStreamAsync(PipeReader reader, PipeWriter writer, string? conversationId, Activity? parentActivity, CancellationToken cancellationToken)
 	{
-		using var activity = StreamTransformerActivitySource.StartActivity(nameof(ProcessStreamAsync));
+		using var activity = StreamTransformerActivitySource.StartActivity("process ask_ai stream", ActivityKind.Internal);
 
 		if (parentActivity?.Id != null)
 			_ = activity?.SetParentId(parentActivity.Id);
@@ -158,7 +158,7 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 			}
 
 			var askAiEventType = transformedEvent.GetType().Name;
-			using var parseActivity = StreamTransformerActivitySource.StartActivity($"AskAI Event {askAiEventType}");
+			using var parseActivity = StreamTransformerActivitySource.StartActivity($"parse ask_ai event {askAiEventType}");
 
 			// Set event type tag on parse_event activity
 			_ = parseActivity?.SetTag("ask_ai.event.type", askAiEventType);
