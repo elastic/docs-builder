@@ -221,7 +221,7 @@ public record AssemblyConfiguration
 				logger.LogInformation("Current is not using versioned branches checking product info");
 				var productVersion = versioningSystem.Current;
 				var previousMinorVersion = new SemVersion(productVersion.Major, Math.Max(productVersion.Minor - 1, 0), 0);
-				if (v >= productVersion)
+				if (v.Minor >= productVersion.Minor)
 				{
 					logger.LogInformation("Speculative build {Branch} is gte product current '{ProductCurrent}'", branchOrTag, productVersion);
 					match = match with
