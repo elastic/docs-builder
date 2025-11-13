@@ -393,7 +393,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 					offset--;
 				}
 
-				newUrl = new Uri(baseUri, Path.Combine(snippet.RelativeFolder, url).OptionalWindowsReplace()).AbsolutePath;
+				newUrl = new Uri(baseUri, $"{snippet.RelativeFolder.TrimEnd('/')}/{url.TrimStart('/')}").AbsolutePath;
 			}
 			else
 				newUrl = new Uri(baseUri, relativePath).AbsolutePath;
