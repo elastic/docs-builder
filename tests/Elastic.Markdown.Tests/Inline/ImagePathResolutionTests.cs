@@ -18,7 +18,7 @@ using Xunit;
 
 namespace Elastic.Markdown.Tests.Inline;
 
-public class AssemblerImagePathTests(ITestOutputHelper output)
+public class ImagePathResolutionTests(ITestOutputHelper output)
 {
 	[Fact]
 	public async Task UpdateRelativeUrlUsesNavigationPathWhenAssemblerBuildEnabled()
