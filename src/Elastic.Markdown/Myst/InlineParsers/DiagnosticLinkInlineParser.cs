@@ -391,8 +391,8 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 					newUrl = newUrl[3..];
 					offset--;
 				}
-				newUrl = Path.GetFullPath(Path.Combine(urlPathPrefix, snippet.RelativeFolder, url))
-					.OptionalWindowsReplace().TrimStart('/');
+				newUrl = UrlCombine(urlPathPrefix, snippet.RelativeFolder, url)
+					.TrimStart('/');
 			}
 			else
 				newUrl = $"/{Path.Combine(urlPathPrefix, relativePath).OptionalWindowsReplace().TrimStart('/')}";
@@ -435,4 +435,16 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 	private static bool IsCrossLink([NotNullWhen(true)] Uri? uri) =>
 		CrossLinkValidator.IsCrossLink(uri);
+	/// <summary>
+	/// Joins URL path segments ensuring exactly one '/' between parts and no double slashes.
+	/// </summary>
+	private static string UrlCombine(params string[] parts)
+	{
+		if (parts == null || parts.Length == 0) return string.Empty;
+		// Remove any leading/trailing slashes and join
+		return string.Join("/", parts
+			.Where(p => !string.IsNullOrWhiteSpace(p))
+			.Select(p => p.Trim('/'))
+		);
+	}
 }
