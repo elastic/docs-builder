@@ -96,8 +96,10 @@ public class ImagePathResolutionTests(ITestOutputHelper output)
 
 		await documentationSet.ResolveDirectoryTree(TestContext.Current.CancellationToken);
 
-		if (documentationSet.TryFindDocumentByRelativePath(guideRelativePath) is not MarkdownFile markdownFile)
-			throw new InvalidOperationException("Failed to resolve markdown file for test.");
+		// Normalize path for cross-platform compatibility (Windows uses backslashes)
+		var normalizedPath = guideRelativePath.Replace('/', Path.DirectorySeparatorChar);
+		if (documentationSet.TryFindDocumentByRelativePath(normalizedPath) is not MarkdownFile markdownFile)
+			throw new InvalidOperationException($"Failed to resolve markdown file for test. Tried path: {normalizedPath}");
 
 		// For assembler builds DocumentationSetNavigation seeds MarkdownNavigationLookup with navigation items whose Url already
 		// includes the computed path_prefix. To exercise the same branch in isolation, inject a stub navigation entry with the
