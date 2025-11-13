@@ -359,7 +359,8 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 	// on `DocumentationFile` that are mostly precomputed
 	public static string UpdateRelativeUrl(ParserContext context, string url)
 	{
-		var urlPathPrefix = context.Build.UrlPathPrefix ?? string.Empty;
+		var urlPathPrefix = !string.IsNullOrWhiteSpace(context.Build.UrlPathPrefix) ? context.Build.UrlPathPrefix : "/";
+		var baseUri = new UriBuilder("http", "localhost", 80, urlPathPrefix[^1] != '/' ? $"{urlPathPrefix}/" : urlPathPrefix).Uri;
 
 		var fi = context.MarkdownSourcePath;
 
@@ -391,34 +392,26 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 					newUrl = newUrl[3..];
 					offset--;
 				}
-				newUrl = UrlCombine(urlPathPrefix, snippet.RelativeFolder, url)
-					.TrimStart('/');
+
+				newUrl = new Uri(baseUri, Path.Combine(snippet.RelativeFolder, url).OptionalWindowsReplace()).AbsolutePath;
 			}
 			else
-				newUrl = $"/{Path.Combine(urlPathPrefix, relativePath).OptionalWindowsReplace().TrimStart('/')}";
+				newUrl = new Uri(baseUri, relativePath).AbsolutePath;
 		}
 
 		if (context.Build.AssemblerBuild && context.TryFindDocument(fi) is MarkdownFile currentMarkdown)
 		{
 			// Acquire navigation-aware path
-			if (context.PositionalNavigation.MarkdownNavigationLookup.TryGetValue(currentMarkdown, out var currentNavigation) && !string.IsNullOrEmpty(currentNavigation.Url))
+			if (context.PositionalNavigation.MarkdownNavigationLookup.TryGetValue(currentMarkdown, out var currentNavigation))
 			{
-				var currentUrl = currentNavigation.Url;
-				if (currentUrl.LastIndexOf('/') > 0)
-				{
-					var basePath = currentUrl[..currentUrl.LastIndexOf('/')];
-					newUrl = Path.GetFullPath(Path.Combine(basePath, url));
-				}
+				var uri = new Uri(new UriBuilder("http", "localhost", 80, currentNavigation.Url).Uri, url);
+				newUrl = uri.AbsolutePath;
 			}
 			else
 				context.EmitError($"Failed to acquire navigation for current markdown file '{currentMarkdown.FileName}' while resolving relative url '{url}'.");
-
-			newUrl = $"/{Path.Combine(newUrl.StartsWith(urlPathPrefix) ? string.Empty : urlPathPrefix, newUrl.TrimStart('/'))
-				.OptionalWindowsReplace().TrimStart('/')}";
 		}
 
 		// When running on Windows, path traversal results must be normalized prior to being used in a URL
-		// Path.GetFullPath() will result in the drive letter being appended to the path, which needs to be pruned back.
 		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 		{
 			newUrl = newUrl.Replace('\\', '/');
@@ -427,7 +420,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		}
 
 		if (!string.IsNullOrWhiteSpace(newUrl) && !string.IsNullOrWhiteSpace(urlPathPrefix) && !newUrl.StartsWith(urlPathPrefix))
-			newUrl = $"{urlPathPrefix.TrimEnd('/')}{newUrl}";
+			newUrl = new Uri(baseUri, newUrl.TrimStart('/')).AbsolutePath;
 
 		// eat overall path prefix since its gets appended later
 		return newUrl;
@@ -435,17 +428,4 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 	private static bool IsCrossLink([NotNullWhen(true)] Uri? uri) =>
 		CrossLinkValidator.IsCrossLink(uri);
-	/// <summary>
-	/// Joins URL path segments ensuring exactly one '/' between parts and no double slashes.
-	/// </summary>
-	private static string UrlCombine(params string[]? parts)
-	{
-		if (parts == null || parts.Length == 0)
-			return string.Empty;
-		// Remove any leading/trailing slashes and join
-		return string.Join("/", parts
-			.Where(p => !string.IsNullOrWhiteSpace(p))
-			.Select(p => p.Trim('/'))
-		);
-	}
 }
