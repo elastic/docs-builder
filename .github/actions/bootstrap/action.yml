@@ -16,7 +16,11 @@ runs:
     # Ensure we fetch all tags
     - shell: bash
       run: |
-        git fetch --prune --unshallow --tags
+        if [ -f .git/shallow ]; then
+          git fetch --prune --unshallow --tags
+        else
+          git fetch --prune --tags
+        fi
         git tag --list
 
     - name: Git config

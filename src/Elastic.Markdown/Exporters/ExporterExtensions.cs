@@ -4,7 +4,6 @@
 
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Markdown.Exporters.Elasticsearch;
 using Microsoft.Extensions.Logging;
 

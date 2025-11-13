@@ -12,11 +12,11 @@ jobs:
       matrix: 
         include:
           - repository: elastic/docs-content
-            landing-page-path-output: /docs/
+            landing-page-path-output: /docs
           - repository: elastic/elasticsearch
-            landing-page-path-output: /docs/reference/
+            landing-page-path-output: /docs/reference
           - repository: elastic/opentelemetry
-            landing-page-path-output: /docs/reference/
+            landing-page-path-output: /docs/reference
             
             # This is a random repository that should not have a docset.yml
           - repository: elastic/oblt-actions

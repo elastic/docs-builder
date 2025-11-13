@@ -12,6 +12,15 @@ namespace Elastic.Documentation.Api.Infrastructure.Adapters.AskAi;
 
 public class LlmGatewayAskAiGateway(HttpClient httpClient, GcpIdTokenProvider tokenProvider, LlmGatewayOptions options) : IAskAiGateway<Stream>
 {
+	/// <summary>
+	/// Model name used by LLM Gateway (from PlatformContext.UseCase)
+	/// </summary>
+	public const string ModelName = "docs_assistant";
+
+	/// <summary>
+	/// Provider name for tracing
+	/// </summary>
+	public const string ProviderName = "llm-gateway";
 	public async Task<Stream> AskAi(AskAiRequest askAiRequest, Cancel ctx = default)
 	{
 		var llmGatewayRequest = LlmGatewayRequest.CreateFromRequest(askAiRequest);
@@ -59,7 +68,7 @@ public record LlmGatewayRequest(
 				new ChatInput("user", AskAiRequest.SystemPrompt),
 				new ChatInput("user", request.Message)
 			],
-			ThreadId: request.ThreadId ?? "elastic-docs-" + Guid.NewGuid()
+			ThreadId: request.ConversationId ?? Guid.NewGuid().ToString()
 		);
 }
 

@@ -1,7 +1,10 @@
 /** @jsxImportSource @emotion/react */
+import { SearchOrAskAiErrorCallout } from '../SearchOrAskAiErrorCallout'
+import { AiProviderSelector } from './AiProviderSelector'
 import { AskAiSuggestions } from './AskAiSuggestions'
 import { ChatMessageList } from './ChatMessageList'
 import { useChatActions, useChatMessages } from './chat.store'
+import { useIsAskAiCooldownActive } from './useAskAiCooldown'
 import {
     useEuiOverflowScroll,
     EuiButtonEmpty,
@@ -14,7 +17,6 @@ import {
     EuiTitle,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
-import * as React from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 const containerStyles = css`
@@ -47,11 +49,22 @@ const scrollToBottom = (container: HTMLDivElement | null) => {
 }
 
 // Header shown when a conversation exists
-const NewConversationHeader = ({ onClick }: { onClick: () => void }) => (
+const NewConversationHeader = ({
+    onClick,
+    disabled,
+}: {
+    onClick: () => void
+    disabled?: boolean
+}) => (
     <EuiFlexItem grow={false}>
         <EuiFlexGroup justifyContent="flexEnd" alignItems="center">
             <EuiFlexItem grow={false}>
-                <EuiButtonEmpty size="xs" onClick={onClick} iconType="refresh">
+                <EuiButtonEmpty
+                    size="xs"
+                    onClick={onClick}
+                    iconType="refresh"
+                    disabled={disabled}
+                >
                     New conversation
                 </EuiButtonEmpty>
             </EuiFlexItem>
@@ -62,10 +75,13 @@ const NewConversationHeader = ({ onClick }: { onClick: () => void }) => (
 
 export const Chat = () => {
     const messages = useChatMessages()
-    const { submitQuestion, clearChat } = useChatActions()
+    const { submitQuestion, clearChat, clearNon429Errors, cancelStreaming } =
+        useChatActions()
+    const isCooldownActive = useIsAskAiCooldownActive()
     const inputRef = useRef<HTMLInputElement>(null)
     const scrollRef = useRef<HTMLDivElement>(null)
     const lastMessageStatusRef = useRef<string | null>(null)
+    const abortFunctionRef = useRef<(() => void) | null>(null)
     const [inputValue, setInputValue] = useState('')
 
     const dynamicScrollableStyles = css`
@@ -73,9 +89,35 @@ export const Chat = () => {
         ${useEuiOverflowScroll('y', true)}
     `
 
+    // Check if there's an active streaming query
+    const isStreaming =
+        messages.length > 0 &&
+        messages[messages.length - 1].type === 'ai' &&
+        messages[messages.length - 1].status === 'streaming'
+
+    // Handle abort function from StreamingAiMessage
+    const handleAbortReady = (abort: () => void) => {
+        console.log('[Chat] Abort function ready, storing in ref')
+        abortFunctionRef.current = abort
+    }
+
+    // Clear abort function when streaming ends
+    useEffect(() => {
+        if (!isStreaming) {
+            abortFunctionRef.current = null
+        }
+    }, [isStreaming])
+
     const handleSubmit = useCallback(
         (question: string) => {
             if (!question.trim()) return
+
+            // Prevent submission during countdown
+            if (isCooldownActive) {
+                return
+            }
+
+            clearNon429Errors()
 
             submitQuestion(question.trim())
 
@@ -87,8 +129,25 @@ export const Chat = () => {
             // Scroll to bottom after new message
             setTimeout(() => scrollToBottom(scrollRef.current), 100)
         },
-        [submitQuestion]
+        [submitQuestion, isCooldownActive, clearNon429Errors]
     )
+
+    const handleButtonClick = useCallback(() => {
+        console.log('[Chat] Button clicked', {
+            isStreaming,
+            hasAbortFunction: !!abortFunctionRef.current,
+        })
+        if (isStreaming && abortFunctionRef.current) {
+            // Interrupt current query
+            console.log('[Chat] Calling abort function')
+            abortFunctionRef.current()
+            abortFunctionRef.current = null
+            // Update message status from 'streaming' to 'complete'
+            cancelStreaming()
+        } else if (inputRef.current) {
+            handleSubmit(inputRef.current.value)
+        }
+    }, [isStreaming, handleSubmit, cancelStreaming])
 
     // Refocus input when AI answer transitions to complete
     useEffect(() => {
@@ -125,38 +184,62 @@ export const Chat = () => {
             <EuiSpacer size="m" />
 
             {messages.length > 0 && (
-                <NewConversationHeader onClick={clearChat} />
+                <NewConversationHeader
+                    onClick={clearChat}
+                    disabled={isCooldownActive}
+                />
             )}
 
             <EuiFlexItem grow={true} css={scrollContainerStyles}>
                 <div ref={scrollRef} css={dynamicScrollableStyles}>
                     {messages.length === 0 ? (
-                        <EuiEmptyPrompt
-                            iconType="logoElastic"
-                            title={
-                                <h2>Hi! I'm the Elastic Docs AI Assistant</h2>
-                            }
-                            body={
-                                <p>
-                                    I can help answer your questions about
-                                    Elastic documentation. <br />
-                                    Ask me anything about Elasticsearch, Kibana,
-                                    Observability, Security, and more.
-                                </p>
-                            }
-                            footer={
-                                <>
-                                    <EuiTitle size="xxs">
-                                        <h3>Try asking me:</h3>
-                                    </EuiTitle>
-                                    <EuiSpacer size="s" />
-                                    <AskAiSuggestions />
-                                </>
-                            }
-                        />
+                        <>
+                            <EuiEmptyPrompt
+                                iconType="logoElastic"
+                                title={
+                                    <h2>
+                                        Hi! I'm the Elastic Docs AI Assistant
+                                    </h2>
+                                }
+                                body={
+                                    <>
+                                        <p>
+                                            I can help answer your questions
+                                            about Elastic documentation. <br />
+                                            Ask me anything about Elasticsearch,
+                                            Kibana, Observability, Security, and
+                                            more.
+                                        </p>
+                                        <EuiSpacer size="m" />
+                                        <AiProviderSelector />
+                                    </>
+                                }
+                                footer={
+                                    <>
+                                        <EuiTitle size="xxs">
+                                            <h3>Try asking me:</h3>
+                                        </EuiTitle>
+                                        <EuiSpacer size="s" />
+                                        <AskAiSuggestions
+                                            disabled={isCooldownActive}
+                                        />
+                                    </>
+                                }
+                            />
+                            {/* Show error callout when there's a cooldown, even on initial page */}
+                            <div css={messagesStyles}>
+                                <SearchOrAskAiErrorCallout
+                                    error={null}
+                                    domain="askAi"
+                                />
+                            </div>
+                        </>
                     ) : (
                         <div css={messagesStyles}>
-                            <ChatMessageList messages={messages} />
+                            <ChatMessageList
+                                messages={messages}
+                                onAbortReady={handleAbortReady}
+                            />
                         </div>
                     )}
                 </div>
@@ -181,9 +264,12 @@ export const Chat = () => {
                                 handleSubmit(e.currentTarget.value)
                             }
                         }}
+                        disabled={isCooldownActive}
                     />
                     <EuiButtonIcon
-                        aria-label="Send message"
+                        aria-label={
+                            isStreaming ? 'Interrupt query' : 'Send message'
+                        }
                         css={css`
                             position: absolute;
                             right: 8px;
@@ -192,13 +278,12 @@ export const Chat = () => {
                             border-radius: 9999px;
                         `}
                         color="primary"
-                        iconType="sortUp"
-                        display={inputValue.trim() ? 'fill' : 'base'}
-                        onClick={() => {
-                            if (inputRef.current) {
-                                handleSubmit(inputRef.current.value)
-                            }
-                        }}
+                        iconType={isStreaming ? 'cross' : 'comment'}
+                        display={
+                            inputValue.trim() || isStreaming ? 'fill' : 'base'
+                        }
+                        onClick={handleButtonClick}
+                        disabled={isCooldownActive}
                     ></EuiButtonIcon>
                 </div>
                 <EuiSpacer size="m" />

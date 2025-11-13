@@ -1,0 +1,84 @@
+import { ModalMode } from './modalmodes'
+import { create } from 'zustand/react'
+
+interface CooldownStateData {
+    cooldown: number | null
+    awaitingNewInput: boolean
+}
+
+interface CooldownState {
+    cooldowns: Record<ModalMode, CooldownStateData>
+    actions: {
+        setCooldown: (domain: ModalMode, cooldown: number | null) => void
+        updateCooldown: (domain: ModalMode, cooldown: number | null) => void
+        notifyCooldownFinished: (domain: ModalMode) => void
+        acknowledgeCooldownFinished: (domain: ModalMode) => void
+    }
+}
+
+const cooldownStore = create<CooldownState>((set) => ({
+    cooldowns: {
+        search: {
+            cooldown: null,
+            awaitingNewInput: false,
+        },
+        askAi: {
+            cooldown: null,
+            awaitingNewInput: false,
+        },
+    },
+    actions: {
+        setCooldown: (domain, cooldown) => {
+            set((state) => ({
+                cooldowns: {
+                    ...state.cooldowns,
+                    [domain]: {
+                        cooldown,
+                        awaitingNewInput: false,
+                    },
+                },
+            }))
+        },
+        updateCooldown: (domain, cooldown) => {
+            set((state) => ({
+                cooldowns: {
+                    ...state.cooldowns,
+                    [domain]: {
+                        ...state.cooldowns[domain],
+                        cooldown,
+                    },
+                },
+            }))
+        },
+        notifyCooldownFinished: (domain) => {
+            set((state) => ({
+                cooldowns: {
+                    ...state.cooldowns,
+                    [domain]: {
+                        cooldown: null,
+                        awaitingNewInput: true,
+                    },
+                },
+            }))
+        },
+        acknowledgeCooldownFinished: (domain) => {
+            set((state) => ({
+                cooldowns: {
+                    ...state.cooldowns,
+                    [domain]: {
+                        ...state.cooldowns[domain],
+                        awaitingNewInput: false,
+                    },
+                },
+            }))
+        },
+    },
+}))
+
+export const useCooldownActions = () => cooldownStore((state) => state.actions)
+
+export const useCooldownState = (domain: ModalMode) =>
+    cooldownStore((state) => state.cooldowns[domain])
+
+export { cooldownStore }
+export type { ModalMode } from './modalmodes'

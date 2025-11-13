@@ -8,6 +8,8 @@
 phantoms:
   - toc: elasticsearch://reference
   - toc: docs-content://release-notes
+  - toc: docs-content://release-notes/elasticsearch-clients
+  - toc: docs-content://release-notes/apm-agents
   - toc: docs-content://
   - toc: cloud://release-notes
 

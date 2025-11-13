@@ -1,15 +1,12 @@
-# docs-builder
+#docs-builder
 
 [![ci](https://github.com/elastic/docs-builder/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/elastic/docs-builder/actions/workflows/ci.yml)
 
 Distributed documentation tooling for a distributed company.
 
-This repository is host to:
-
 * *`docs-builder`* command line tool to generate single doc-sets
-* *`docs-assembler`* command line tool to assemble all the doc sets.
 
-Both get distributed [as native OSX, Linux and Windows binaries for several CPU architectures.](#installation)
+Distributed [as native OSX, Linux and Windows binaries for several CPU architectures.](#installation)
 
 The documentation files:
 * are written in common Markdown with [Additional syntax extensions](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/syntax/) to produce a richer writing and reading experience. 
@@ -23,7 +20,7 @@ This tool builds each repository in isolation and in addition produces a full ma
 Each time a repository successfully builds on its respective main integration branch, our automation will publish its links.json file.
 For example, [Elasticsearch's links.json](https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/elasticsearch/main/links.json) representing all linkable resources in the Elasticsearch repository.
 
-The `docs-assembler` tool then assembles all the repositories in the [link-registry](https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/link-index.json) using their last known good commit.
+The `docs-builder assemble` command then assembles all the repositories in the [link-registry](https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/link-index.json) using their last known good commit.
 
 This allows us to:
 
@@ -58,8 +55,7 @@ Install [.NET 9.0](https://dotnet.microsoft.com/en-us/download/dotnet/9.0), then
 After which the locally built binaries will be available at:
 
 * **docs-builder**: `./.artifacts/publish/docs-builder/release/docs-builder`
-* **docs-assembler**: `./.artifacts/publish/docs-assembler/release/docs-assembler`
- 
+
 ## Getting Started
 
 Our [Documentation](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/contribute/locally) is the best place to learn how to start using the tool locally.

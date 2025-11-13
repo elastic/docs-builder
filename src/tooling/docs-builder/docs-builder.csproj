@@ -6,6 +6,7 @@
     <AssemblyName>docs-builder</AssemblyName>
     <RootNamespace>Documentation.Builder</RootNamespace>
     <InvariantGlobalization>true</InvariantGlobalization>
+    <LangVersion>preview</LangVersion>
 
     <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
     <EnableRequestDelegateGenerator>true</EnableRequestDelegateGenerator>
@@ -19,10 +20,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="ConsoleAppFramework.Abstractions" />
-    <PackageReference Include="ConsoleAppFramework" />
+    <PackageReference Include="ConsoleAppFramework">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.ServiceDiscovery" />
     <PackageReference Include="Westwind.AspNetCore.LiveReload" />
     <PackageReference Include="System.IO.Abstractions.TestingHelpers" />
+    <PackageReference Include="Elastic.OpenTelemetry" />
+    <PackageReference Include="Errata" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)' == 'Debug'">
@@ -32,13 +39,13 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Elastic.ApiExplorer\Elastic.ApiExplorer.csproj" />
+    <ProjectReference Include="..\..\Elastic.Documentation.ServiceDefaults\Elastic.Documentation.ServiceDefaults.csproj" />
     
     <ProjectReference Include="..\..\services\Elastic.Documentation.Assembler\Elastic.Documentation.Assembler.csproj" />
     
     <ProjectReference Include="..\..\services\Elastic.Documentation.Isolated\Elastic.Documentation.Isolated.csproj" />
     
     <ProjectReference Include="..\..\services\Elastic.Documentation.Services\Elastic.Documentation.Services.csproj" />
-    <ProjectReference Include="..\Elastic.Documentation.Tooling\Elastic.Documentation.Tooling.csproj" />
     <ProjectReference Include="..\..\authoring\Elastic.Documentation.Refactor\Elastic.Documentation.Refactor.csproj" />
     <ProjectReference Include="..\..\Elastic.Markdown\Elastic.Markdown.csproj" />
   </ItemGroup>

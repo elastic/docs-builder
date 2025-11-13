@@ -58,7 +58,14 @@ public static class ServicesExtension
 		{
 			options.SerializerOptions.TypeInfoResolverChain.Insert(0, ApiJsonContext.Default);
 		});
-		_ = services.AddHttpClient();
+
+		// Configure HttpClient for streaming optimization
+		_ = services.AddHttpClient("StreamingHttpClient", client =>
+		{
+			// Disable response buffering for streaming
+			client.DefaultRequestHeaders.Connection.Add("keep-alive");
+			client.Timeout = TimeSpan.FromMinutes(10); // Longer timeout for streaming
+		});
 		// Register AppEnvironment as a singleton for dependency injection
 		_ = services.AddSingleton(new AppEnvironment { Current = appEnv });
 		AddParameterProvider(services, appEnv);
@@ -127,8 +134,28 @@ public static class ServicesExtension
 			_ = services.AddScoped<AskAiUsecase>();
 			logger?.LogInformation("AskAiUsecase registered successfully");
 
-			_ = services.AddScoped<IAskAiGateway<Stream>, LlmGatewayAskAiGateway>();
-			logger?.LogInformation("LlmGatewayAskAiGateway registered successfully");
+			// Register HttpContextAccessor for provider resolution
+			_ = services.AddHttpContextAccessor();
+			logger?.LogInformation("HttpContextAccessor registered successfully");
+
+			// Register provider resolver
+			_ = services.AddScoped<AskAiProviderResolver>();
+			logger?.LogInformation("AskAiProviderResolver registered successfully");
+
+			// Register both gateways as concrete types
+			_ = services.AddScoped<LlmGatewayAskAiGateway>();
+			_ = services.AddScoped<AgentBuilderAskAiGateway>();
+			logger?.LogInformation("Both AI gateways registered as concrete types");
+
+			// Register both transformers as concrete types
+			_ = services.AddScoped<LlmGatewayStreamTransformer>();
+			_ = services.AddScoped<AgentBuilderStreamTransformer>();
+			logger?.LogInformation("Both stream transformers registered as concrete types");
+
+			// Register factories as interface implementations
+			_ = services.AddScoped<IAskAiGateway<Stream>, AskAiGatewayFactory>();
+			_ = services.AddScoped<IStreamTransformer, StreamTransformerFactory>();
+			logger?.LogInformation("Gateway and transformer factories registered successfully - provider switchable via X-AI-Provider header");
 		}
 		catch (Exception ex)
 		{

@@ -51,7 +51,7 @@ public class ElasticsearchSemanticExporter(
 	{
 		BulkOperationIdLookup = d => d.Url,
 		GetMapping = (inferenceId, _) => CreateMapping(inferenceId),
-		GetMappingSettings = (_, _) => CreateMappingSetting("docs"),
+		GetMappingSettings = (_, _) => CreateMappingSetting($"docs-{indexNamespace}"),
 		IndexFormat = $"{endpoint.IndexNamePrefix.ToLowerInvariant()}-{indexNamespace.ToLowerInvariant()}-{{0:yyyy.MM.dd.HHmmss}}",
 		ActiveSearchAlias = $"{endpoint.IndexNamePrefix}-{indexNamespace.ToLowerInvariant()}",
 		IndexNumThreads = endpoint.IndexNumThreads,
@@ -255,10 +255,10 @@ public abstract class ElasticsearchExporter<TChannelOptions, TChannel> : IDispos
 		}
 		""";
 
-	private static string InferenceMapping(string inferenceId) =>
+	private static string InferenceMapping(string _) =>
 		$"""
 		 	"type": "semantic_text",
-		 	"inference_id": "{inferenceId}"
+		 	"inference_id": ".elser-2-elastic"
 		 """;
 
 	private static string AbstractInferenceMapping(string inferenceId) =>

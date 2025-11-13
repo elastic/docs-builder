@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Navigation;
 using RazorSlices;
 
 namespace Elastic.Documentation.Site.Navigation;
@@ -10,7 +11,12 @@ public interface INavigationHtmlWriter
 {
 	const int AllLevels = -1;
 
-	Task<NavigationRenderResult> RenderNavigation(IRootNavigationItem<INavigationModel, INavigationItem> currentRootNavigation, int maxLevel, Cancel ctx = default);
+	Task<NavigationRenderResult> RenderNavigation(
+		IRootNavigationItem<INavigationModel, INavigationItem> currentRootNavigation,
+		INavigationItem currentNavigationItem,
+		int maxLevel,
+		Cancel ctx = default
+	);
 
 	async Task<string> Render(NavigationViewModel model, Cancel ctx)
 	{

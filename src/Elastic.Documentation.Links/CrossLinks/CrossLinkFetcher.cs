@@ -39,11 +39,14 @@ public abstract class CrossLinkFetcher(ILoggerFactory logFactory, ILinkIndexRead
 
 	public abstract Task<FetchedCrossLinks> FetchCrossLinks(Cancel ctx);
 
+	private int _logOnce;
 	public async Task<LinkRegistry> FetchLinkRegistry(Cancel ctx)
 	{
+		var result = Interlocked.Increment(ref _logOnce);
 		if (_linkIndex is not null)
 		{
-			Logger.LogTrace("Using cached link index registry (link-index.json)");
+			if (result == 1)
+				Logger.LogTrace("Using cached link index registry (link-index.json)");
 			return _linkIndex;
 		}
 

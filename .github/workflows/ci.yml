@@ -27,10 +27,10 @@ jobs:
         uses: ./.github/actions/bootstrap
 
       - name: Validate Navigation
-        run: dotnet run --project src/tooling/docs-assembler -c release -- navigation validate
+        run: dotnet run --project src/tooling/docs-builder -c release -- assembler navigation validate
 
       - name: Validate Content Sources
-        run: dotnet run --project src/tooling/docs-assembler -c release -- content-source validate
+        run: dotnet run --project src/tooling/docs-builder -c release -- assembler content-source validate
 
   build-link-index-updater-lambda:
     uses: ./.github/workflows/build-link-index-updater-lambda.yml
@@ -99,6 +99,9 @@ jobs:
       
       - name: Format
         run: npm run fmt:check
+      
+      - name: Compile
+        run: npm run compile:check
         
       - name: Build
         run: npm run build

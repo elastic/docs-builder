@@ -15,6 +15,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Elastic.Documentation\Elastic.Documentation.csproj" />
     <ProjectReference Include="..\Elastic.Documentation.Configuration\Elastic.Documentation.Configuration.csproj" />
+    <ProjectReference Include="..\Elastic.Documentation.Navigation\Elastic.Documentation.Navigation.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -54,6 +55,8 @@
       <EmbeddedResource Include="_static/*.css.map" Watch="false" />
       <EmbeddedResource Include="_static/*.svg" Watch="false" />
       <EmbeddedResource Include="_static/*.png" Watch="false" />
+      <EmbeddedResource Include="_static/*.ttf" Watch="false" />
+      <EmbeddedResource Include="_static/*.woff" Watch="false" />
       <EmbeddedResource Include="_static/*.woff2" Watch="false" />
     </ItemGroup>
   </Target>

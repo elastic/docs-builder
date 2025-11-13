@@ -24,10 +24,14 @@ public static class MappingsExtension
 	private static void MapAskAiEndpoint(IEndpointRouteBuilder group)
 	{
 		var askAiGroup = group.MapGroup("/ask-ai");
-		_ = askAiGroup.MapPost("/stream", async (AskAiRequest askAiRequest, AskAiUsecase askAiUsecase, Cancel ctx) =>
+		_ = askAiGroup.MapPost("/stream", async (HttpContext context, AskAiRequest askAiRequest, AskAiUsecase askAiUsecase, Cancel ctx) =>
 		{
+			context.Response.ContentType = "text/event-stream";
+			context.Response.Headers.CacheControl = "no-cache";
+			context.Response.Headers.Connection = "keep-alive";
+
 			var stream = await askAiUsecase.AskAi(askAiRequest, ctx);
-			return Results.Stream(stream, "text/event-stream");
+			await stream.CopyToAsync(context.Response.Body, ctx);
 		});
 	}
 

@@ -15,7 +15,7 @@ max_line_length = 160
 indent_style = space
 indent_size = 4
 
-[*.{md,markdown,json,js,yml,csproj,fsproj,targets,targets,props}]
+[*.{md,markdown,json,js,yml,yaml,csproj,fsproj,targets,targets,props}]
 indent_style = space
 indent_size = 2
 
@@ -239,6 +239,9 @@ dotnet_diagnostic.IDE0051.severity = suggestion
 dotnet_diagnostic.IDE0059.severity = suggestion
 
 dotnet_diagnostic.CA1859.severity = none
+
+# https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/ca1727
+dotnet_diagnostic.CA1727.severity = none
 
 dotnet_diagnostic.IDE0305.severity = none
 

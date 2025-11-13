@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Links;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
@@ -215,12 +216,12 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		UpdateLinkUrl(link, linkMarkdown, url, context, anchor);
 	}
 
-	private static MarkdownFile? SetLinkData(LinkInline link, InlineProcessor processor, ParserContext context,
-		IFileInfo file, string url)
+	private static MarkdownFile? SetLinkData(LinkInline link, InlineProcessor processor, ParserContext context, IFileInfo file, string url)
 	{
-		if (context.DocumentationFileLookup(context.MarkdownSourcePath) is MarkdownFile currentMarkdown)
+		if (context.TryFindDocument(context.MarkdownSourcePath) is MarkdownFile currentMarkdown)
 		{
-			link.SetData(nameof(currentMarkdown.NavigationRoot), currentMarkdown.NavigationRoot);
+			if (context.PositionalNavigation.MarkdownNavigationLookup.TryGetValue(currentMarkdown, out var navigationLookup))
+				link.SetData("NavigationRoot", navigationLookup.NavigationRoot);
 
 			if (link.IsImage)
 			{
@@ -231,9 +232,13 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		}
 
 
-		var linkMarkdown = context.DocumentationFileLookup(file) as MarkdownFile;
+		var linkMarkdown = context.TryFindDocument(file) as MarkdownFile;
 		if (linkMarkdown is not null)
-			link.SetData($"Target{nameof(currentMarkdown.NavigationRoot)}", linkMarkdown.NavigationRoot);
+		{
+			if (context.PositionalNavigation.MarkdownNavigationLookup.TryGetValue(linkMarkdown, out var navigationLookup))
+				link.SetData("TargetNavigationRoot", navigationLookup.NavigationRoot);
+
+		}
 		return linkMarkdown;
 	}
 
@@ -316,9 +321,16 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		var newUrl = url;
 		if (linkMarkdown is not null)
 		{
-			// if url is null it's an anchor link
-			if (!string.IsNullOrEmpty(url))
-				newUrl = linkMarkdown.Url;
+			if (context.PositionalNavigation.MarkdownNavigationLookup.TryGetValue(linkMarkdown, out var navigationLookup)
+				&& !string.IsNullOrEmpty(navigationLookup.Url))
+			{
+				// Navigation URLs are absolute and start with /
+				// Apply the same prefix handling as UpdateRelativeUrl would for absolute paths
+				newUrl = navigationLookup.Url;
+				var urlPathPrefix = context.Build.UrlPathPrefix ?? string.Empty;
+				if (!string.IsNullOrWhiteSpace(urlPathPrefix) && !newUrl.StartsWith(urlPathPrefix))
+					newUrl = $"{urlPathPrefix.TrimEnd('/')}{newUrl}";
+			}
 		}
 		else
 			newUrl = UpdateRelativeUrl(context, url);
@@ -348,16 +360,20 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 	public static string UpdateRelativeUrl(ParserContext context, string url)
 	{
 		var urlPathPrefix = context.Build.UrlPathPrefix ?? string.Empty;
+
+		var fi = context.MarkdownSourcePath;
+
 		var newUrl = url;
 		if (!newUrl.StartsWith('/') && !string.IsNullOrEmpty(newUrl))
 		{
-			var subPrefix = context.CurrentUrlPath.Length >= urlPathPrefix.Length
-				? context.CurrentUrlPath[urlPathPrefix.Length..]
-				: urlPathPrefix;
+			var path = Path.GetFullPath(fi.FileSystem.Path.Combine(fi.Directory!.FullName, newUrl));
+			var pathInfo = fi.FileSystem.FileInfo.New(path);
+			pathInfo = pathInfo.EnsureSubPathOf(context.Configuration.ScopeDirectory, newUrl);
+			var relativePath = fi.FileSystem.Path.GetRelativePath(context.Configuration.ScopeDirectory.FullName, pathInfo.FullName).OptionalWindowsReplace();
 
 			// if we are trying to resolve a relative url from a _snippet folder ensure we eat the _snippet folder
 			// as it's not part of url by chopping of the extra parent navigation
-			if (newUrl.StartsWith("../") && context.DocumentationFileLookup(context.MarkdownSourcePath) is SnippetFile snippet)
+			if (newUrl.StartsWith("../") && context.TryFindDocument(context.MarkdownSourcePath) is SnippetFile snippet)
 			{
 				//figure out how many nested folders inside `_snippets` we need to ignore.
 				var d = snippet.SourceFile.Directory;
@@ -376,17 +392,8 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 					offset--;
 				}
 			}
-
-			// TODO check through context.DocumentationFileLookup if file is index vs "index.md" check
-			var markdownPath = context.MarkdownSourcePath;
-			// if the current path is an index e.g /reference/cloud-k8s/
-			// './' current path lookups should be relative to sub-path.
-			// If it's not e.g /reference/cloud-k8s/api-docs/ these links should resolve on folder up.
-			var lastIndexPath = subPrefix.LastIndexOf('/');
-			if (lastIndexPath >= 0 && markdownPath.Name != "index.md")
-				subPrefix = subPrefix[..lastIndexPath];
-			var combined = '/' + Path.Combine(subPrefix, newUrl).TrimStart('/');
-			newUrl = Path.GetFullPath(combined);
+			else
+				newUrl = $"/{Path.Combine(urlPathPrefix, relativePath).OptionalWindowsReplace().TrimStart('/')}";
 
 		}
 		// When running on Windows, path traversal results must be normalized prior to being used in a URL
@@ -398,7 +405,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 				newUrl = newUrl[2..];
 		}
 
-		if (!string.IsNullOrWhiteSpace(newUrl) && !string.IsNullOrWhiteSpace(urlPathPrefix))
+		if (!string.IsNullOrWhiteSpace(newUrl) && !string.IsNullOrWhiteSpace(urlPathPrefix) && !newUrl.StartsWith(urlPathPrefix))
 			newUrl = $"{urlPathPrefix.TrimEnd('/')}{newUrl}";
 
 		// eat overall path prefix since its gets appended later

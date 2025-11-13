@@ -1,0 +1,101 @@
+<svg width="900" height="900" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .node-name { font-family: Arial, sans-serif; font-size: 18px; font-weight: 500; fill: #1a1a1a; }
+      .node-file { font-family: 'Courier New', monospace; font-size: 14px; font-style: italic; fill: #6b7280; }
+      .node-url { font-family: 'Courier New', monospace; font-size: 15px; font-weight: 600; fill: #6b7280; }
+      .path-prefix { font-family: 'Courier New', monospace; font-size: 14px; fill: #4b5563; }
+      .path-prefix-red { font-weight: 600; fill: #dc2626; }
+      .path-prefix-purple { font-weight: 600; fill: #7c3aed; }
+      .path-prefix-green { font-weight: 600; fill: #10b981; }
+      .url-red { fill: #dc2626; }
+      .url-purple { fill: #7c3aed; }
+      .url-green { fill: #10b981; }
+      .rehomed { font-family: 'Courier New', monospace; font-size: 14px; font-style: italic; fill: #9333ea; }
+    </style>
+  </defs>
+  
+  <!-- SiteNavigation -->
+  <circle cx="26" cy="30" r="6" fill="#f97316"/>
+  <text x="40" y="35" class="node-name">site://</text>
+  <text x="40" y="52" class="path-prefix">path_prefix: "<tspan class="path-prefix-red">docs</tspan>"</text>
+  
+  <!-- TableOfContentsNavigation: api/ (docs-content) -->
+  <circle cx="46" cy="85" r="6" fill="#9333ea"/>
+  <text x="60" y="90" class="node-name">api/ (docs-content://api)</text>
+  <text x="60" y="107" class="path-prefix">path_prefix: "<tspan class="path-prefix-purple">api</tspan>"</text>
+  
+  <!-- TableOfContentsNavigation: api/ (elastic-project) -->
+  <circle cx="66" cy="140" r="6" fill="#9333ea"/>
+  <text x="80" y="145" class="node-name">api/ (elastic-project://api) </text><text x="580" y="145" class="rehomed">[re-homed]</text>
+  <text x="80" y="162" class="path-prefix">path_prefix: "<tspan class="path-prefix-purple">api/elastic-project</tspan>"</text>
+  
+  <!-- FolderNavigation: rest/ -->
+  <circle cx="86" cy="195" r="6" fill="#06b6d4"/>
+  <text x="100" y="200" class="node-name">rest/</text>
+  
+  <!-- FileNavigationLeaf: overview.md -->
+  <circle cx="106" cy="228" r="6" fill="#64748b"/>
+  <text x="120" y="233" class="node-name">overview.md</text>
+  <text x="120" y="250" class="node-url"><tspan class="url-red">/docs</tspan><tspan class="url-purple">/api/elastic-project</tspan>/rest/overview</text>
+  
+  <!-- FileNavigationLeaf: overview.md -->
+  <circle cx="86" cy="283" r="6" fill="#64748b"/>
+  <text x="100" y="288" class="node-name">overview.md</text>
+  <text x="100" y="305" class="node-url"><tspan class="url-red">/docs</tspan><tspan class="url-purple">/api/elastic-project</tspan>/overview</text>
+  
+  <!-- TableOfContentsNavigation: guides/ (docs-content) -->
+  <circle cx="46" cy="343" r="6" fill="#9333ea"/>
+  <text x="60" y="348" class="node-name">guides/ (docs-content://guides)</text>
+  <text x="60" y="365" class="path-prefix">path_prefix: "<tspan class="path-prefix-purple">guides</tspan>"</text>
+  
+  <!-- TableOfContentsNavigation: guides/ (elastic-project) -->
+  <circle cx="66" cy="398" r="6" fill="#9333ea"/>
+  <text x="80" y="403" class="node-name">guides/ (elastic-project://guides) </text><text x="580" y="403" class="rehomed">[re-homed]</text>
+  <text x="80" y="420" class="path-prefix">path_prefix: "<tspan class="path-prefix-purple">guides/elastic-project</tspan>"</text>
+  
+  <!-- FileNavigationLeaf: getting-started.md -->
+  <circle cx="86" cy="453" r="6" fill="#64748b"/>
+  <text x="100" y="458" class="node-name">getting-started.md</text>
+  <text x="100" y="475" class="node-url"><tspan class="url-red">/docs</tspan><tspan class="url-purple">/guides/elastic-project</tspan>/getting-started</text>
+  
+  <!-- DocumentationSetNavigation: elastic-client -->
+  <circle cx="46" cy="513" r="6" fill="#10b981"/>
+  <text x="60" y="518" class="node-name">elastic-client (elastic-client://) </text><text x="580" y="518" class="rehomed">[re-homed]</text>
+  <text x="60" y="535" class="path-prefix">path_prefix: "<tspan class="path-prefix-green">clients</tspan>"</text>
+  
+  <!-- DocumentationSetNavigation: elastic-client-node -->
+  <circle cx="66" cy="568" r="6" fill="#10b981"/>
+  <text x="80" y="573" class="node-name">elastic-client-node (elastic-client-node://) </text><text x="580" y="573" class="rehomed">[re-homed]</text>
+  <text x="80" y="590" class="path-prefix">path_prefix: "<tspan class="path-prefix-green">clients/node</tspan>"</text>
+  
+  <!-- FileNavigationLeaf: index.md -->
+  <circle cx="86" cy="623" r="6" fill="#64748b"/>
+  <text x="100" y="628" class="node-name">index.md</text>
+  <text x="100" y="645" class="node-url"><tspan class="url-red">/docs</tspan><tspan class="url-green">/clients/node</tspan>/</text>
+  
+  <!-- DocumentationSetNavigation: elastic-client-dotnet -->
+  <circle cx="66" cy="683" r="6" fill="#10b981"/>
+  <text x="80" y="688" class="node-name">elastic-client-dotnet (elastic-client-dotnet://) </text><text x="580" y="688" class="rehomed">[re-homed]</text>
+  <text x="80" y="705" class="path-prefix">path_prefix: "<tspan class="path-prefix-green">clients/dotnet</tspan>"</text>
+  
+  <!-- FileNavigationLeaf: index.md -->
+  <circle cx="86" cy="738" r="6" fill="#64748b"/>
+  <text x="100" y="743" class="node-name">index.md</text>
+  <text x="100" y="760" class="node-url"><tspan class="url-red">/docs</tspan><tspan class="url-green">/clients/dotnet</tspan>/</text>
+  
+  <!-- DocumentationSetNavigation: elastic-client-java -->
+  <circle cx="66" cy="798" r="6" fill="#10b981"/>
+  <text x="80" y="803" class="node-name">elastic-client-java (elastic-client-java://) </text><text x="580" y="803" class="rehomed">[re-homed]</text>
+  <text x="80" y="820" class="path-prefix">path_prefix: "<tspan class="path-prefix-green">clients/java</tspan>"</text>
+  
+  <!-- FileNavigationLeaf: index.md -->
+  <circle cx="86" cy="853" r="6" fill="#64748b"/>
+  <text x="100" y="858" class="node-name">index.md</text>
+  <text x="100" y="875" class="node-url"><tspan class="url-red">/docs</tspan><tspan class="url-green">/clients/java</tspan>/</text>
+  
+  <!-- FileNavigationLeaf: index.md (parent) -->
+  <circle cx="66" cy="888" r="6" fill="#64748b"/>
+  <text x="80" y="893" class="node-name">index.md</text>
+  <text x="80" y="910" class="node-url"><tspan class="url-red">/docs</tspan><tspan class="url-green">/clients</tspan>/</text>
+</svg>

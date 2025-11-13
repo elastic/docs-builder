@@ -1,44 +1,98 @@
+import { ApiError } from '../errorHandling'
+import { EventTypes } from './AskAiEvent'
 import { ChatMessage } from './ChatMessage'
 import {
     ChatMessage as ChatMessageType,
     useChatActions,
-    useThreadId,
+    useConversationId,
 } from './chat.store'
-import { useLlmGateway } from './useLlmGateway'
-import * as React from 'react'
+import { useAskAi } from './useAskAi'
 import { useEffect, useRef } from 'react'
 
 interface StreamingAiMessageProps {
     message: ChatMessageType
     isLast: boolean
+    onAbortReady?: (abort: () => void) => void
+    showError?: boolean
 }
 
 export const StreamingAiMessage = ({
     message,
     isLast,
+    onAbortReady,
+    showError,
 }: StreamingAiMessageProps) => {
-    const { updateAiMessage, hasMessageBeenSent, markMessageAsSent } =
-        useChatActions()
-    const threadId = useThreadId()
+    const {
+        updateAiMessage,
+        hasMessageBeenSent,
+        markMessageAsSent,
+        setConversationId,
+    } = useChatActions()
+    const conversationId = useConversationId()
     const contentRef = useRef('')
 
-    const { messages: llmMessages, sendQuestion } = useLlmGateway({
-        threadId,
-        onMessage: (llmMessage) => {
-            if (llmMessage.type === 'ai_message_chunk') {
-                contentRef.current += llmMessage.data.content
-            } else if (llmMessage.type === 'agent_end') {
-                updateAiMessage(message.id, contentRef.current, 'complete')
+    const { events, sendQuestion, abort, error } = useAskAi({
+        conversationId: conversationId ?? undefined,
+        onEvent: (event) => {
+            if (event.type === EventTypes.CONVERSATION_START) {
+                // Capture conversationId from backend on first request
+                if (event.conversationId && !conversationId) {
+                    setConversationId(event.conversationId)
+                }
+            } else if (event.type === EventTypes.MESSAGE_CHUNK) {
+                contentRef.current += event.content
+            } else if (event.type === EventTypes.ERROR) {
+                // Handle error events from the stream
+                const error = new Error(
+                    event.message || 'An error occurred'
+                ) as ApiError
+                error.statusCode = 500
+                updateAiMessage(
+                    message.id,
+                    event.message || 'An error occurred',
+                    'error',
+                    error
+                )
+            } else if (event.type === EventTypes.CONVERSATION_END) {
+                updateAiMessage(
+                    message.id,
+                    message.content || contentRef.current,
+                    'complete'
+                )
             }
         },
-        onError: () => {
+        onError: (error: ApiError | Error | null) => {
+            console.error('[AI Provider] Error in StreamingAiMessage:', {
+                messageId: message.id,
+                errorMessage: error?.message,
+                errorStack: error?.stack,
+                errorName: error?.name,
+                fullError: error,
+            })
             updateAiMessage(
                 message.id,
-                message.content || 'Error occurred',
-                'error'
+                message.content || error?.message || 'Error occurred',
+                'error',
+                error
             )
         },
     })
+
+    // Expose abort function to parent when this is the last message
+    useEffect(() => {
+        console.log('[StreamingAiMessage] Effect triggered', {
+            isLast,
+            status: message.status,
+            hasAbort: !!abort,
+            hasCallback: !!onAbortReady,
+        })
+        if (isLast && message.status === 'streaming') {
+            console.log(
+                '[StreamingAiMessage] Calling onAbortReady with abort function'
+            )
+            onAbortReady?.(abort)
+        }
+    }, [isLast, message.status, abort, onAbortReady])
 
     useEffect(() => {
         if (
@@ -61,15 +115,18 @@ export const StreamingAiMessage = ({
         markMessageAsSent,
     ])
 
+    // Always use contentRef.current if it has content (regardless of status)
+    // This way we don't need to save to message.content and can just use streamingContent
+    const streamingContentToPass =
+        isLast && contentRef.current ? contentRef.current : undefined
+
     return (
         <ChatMessage
             message={message}
-            llmMessages={isLast ? llmMessages : []}
-            streamingContent={
-                isLast && message.status === 'streaming'
-                    ? contentRef.current
-                    : undefined
-            }
+            events={isLast ? events : []}
+            streamingContent={streamingContentToPass}
+            error={message.error || (isLast && error ? error : undefined)}
+            showError={showError}
         />
     )
 }

@@ -1,11 +1,11 @@
 import { $, $$ } from 'select-dom'
 
 function expandAllParents(navItem: HTMLElement) {
-    let parent = navItem?.closest('li')
+    let parent: HTMLLIElement | null | undefined = navItem?.closest('li')
     while (parent) {
         const input = parent.querySelector('input')
-        if (input) {
-            ;(input as HTMLInputElement).checked = true
+        if (input instanceof HTMLInputElement) {
+            input.checked = true
         }
         parent = parent.parentElement?.closest('li')
     }
@@ -13,7 +13,11 @@ function expandAllParents(navItem: HTMLElement) {
 
 function scrollCurrentNaviItemIntoView(nav: HTMLElement) {
     const currentNavItem = $('.current', nav)
-    expandAllParents(currentNavItem)
+
+    if (currentNavItem) {
+        expandAllParents(currentNavItem)
+    }
+
     if (currentNavItem && !isElementInViewport(nav, currentNavItem)) {
         const navRect = nav.getBoundingClientRect()
         const currentNavItemRect = currentNavItem.getBoundingClientRect()
@@ -65,10 +69,13 @@ export function initNav() {
     }
 
     const pagesDropdown = $('#pages-dropdown')
+    if (pagesDropdown) {
+        setDropdown(pagesDropdown)
+    }
     const pageVersionDropdown = $('#page-version-dropdown')
-    setDropdown(pagesDropdown)
-    setDropdown(pageVersionDropdown)
-
+    if (pageVersionDropdown) {
+        setDropdown(pageVersionDropdown)
+    }
     const navItems = $$(
         'a[href="' +
             window.location.pathname +

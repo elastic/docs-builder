@@ -1,12 +1,14 @@
 import { initCopyButton } from '../../../copybutton'
 import { hljs } from '../../../hljs'
+import { SearchOrAskAiErrorCallout } from '../SearchOrAskAiErrorCallout'
+import { ApiError } from '../errorHandling'
+import { AskAiEvent, ChunkEvent, EventTypes } from './AskAiEvent'
 import { GeneratingStatus } from './GeneratingStatus'
 import { References } from './RelatedResources'
 import { ChatMessage as ChatMessageType } from './chat.store'
-import { LlmGatewayMessage } from './useLlmGateway'
+import { useStatusMinDisplay } from './useStatusMinDisplay'
 import {
     EuiButtonIcon,
-    EuiCallOut,
     EuiCopy,
     EuiFlexGroup,
     EuiFlexItem,
@@ -21,8 +23,7 @@ import {
 import { css } from '@emotion/react'
 import DOMPurify from 'dompurify'
 import { Marked, RendererObject, Tokens } from 'marked'
-import * as React from 'react'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 
 // Create the marked instance once globally (renderer never changes)
 const createMarkedInstance = () => {
@@ -56,17 +57,12 @@ const markedInstance = createMarkedInstance()
 
 interface ChatMessageProps {
     message: ChatMessageType
-    llmMessages?: LlmGatewayMessage[]
+    events?: AskAiEvent[]
     streamingContent?: string
-    error?: Error | null
+    error?: ApiError | Error
     onRetry?: () => void
-}
-
-const getAccumulatedContent = (messages: LlmGatewayMessage[]) => {
-    return messages
-        .filter((m) => m.type === 'ai_message_chunk')
-        .map((m) => m.data.content)
-        .join('')
+    onCountdownChange?: (countdown: number | null) => void
+    showError?: boolean
 }
 
 const splitContentAndReferences = (
@@ -96,61 +92,95 @@ const splitContentAndReferences = (
 const getMessageState = (message: ChatMessageType) => ({
     isUser: message.type === 'user',
     isLoading: message.status === 'streaming',
-    isComplete: message.status === 'complete',
+    isComplete: message.status === 'complete' || message.status === 'error',
     hasError: message.status === 'error',
 })
 
-// Helper functions for computing AI status
-const getToolCallSearchQuery = (
-    messages: LlmGatewayMessage[]
-): string | null => {
-    const toolCallMessage = messages.find((m) => m.type === 'tool_call')
-    if (!toolCallMessage) return null
+// Status message constants
+const STATUS_MESSAGES = {
+    THINKING: 'Thinking',
+    ANALYZING: 'Analyzing results',
+    GATHERING: 'Gathering resources',
+    GENERATING: 'Generating',
+} as const
 
+// Helper to extract search query from tool call arguments
+const tryParseSearchQuery = (argsJson: string): string | null => {
     try {
-        const toolCalls = toolCallMessage.data?.toolCalls
-        if (toolCalls && toolCalls.length > 0) {
-            const firstToolCall = toolCalls[0]
-            return firstToolCall.args?.searchQuery || null
-        }
-    } catch (e) {
-        console.error('Error extracting search query from tool call:', e)
+        const args = JSON.parse(argsJson)
+        return args.searchQuery || args.query || null
+    } catch {
+        return null
+    }
+}
+
+// Helper to get tool call status message
+const getToolCallStatus = (event: AskAiEvent): string => {
+    if (event.type !== EventTypes.TOOL_CALL) {
+        return STATUS_MESSAGES.THINKING
     }
 
-    return null
+    const query = tryParseSearchQuery(event.arguments)
+    return query ? `Searching for "${query}"` : `Using ${event.toolName}`
 }
 
-const hasContentStarted = (messages: LlmGatewayMessage[]): boolean => {
-    return messages.some((m) => m.type === 'ai_message_chunk' && m.data.content)
-}
-
-const hasReachedReferences = (messages: LlmGatewayMessage[]): boolean => {
-    const accumulatedContent = messages
-        .filter((m) => m.type === 'ai_message_chunk')
-        .map((m) => m.data.content)
-        .join('')
-    return accumulatedContent.includes('<!--REFERENCES')
-}
-
+// Helper function for computing AI status - time-based latest status
 const computeAiStatus = (
-    llmMessages: LlmGatewayMessage[],
+    events: AskAiEvent[],
     isComplete: boolean
 ): string | null => {
     if (isComplete) return null
 
-    const searchQuery = getToolCallSearchQuery(llmMessages)
-    const contentStarted = hasContentStarted(llmMessages)
-    const reachedReferences = hasReachedReferences(llmMessages)
-
-    if (reachedReferences) {
-        return 'Gathering resources'
-    } else if (contentStarted) {
-        return 'Generating'
-    } else if (searchQuery) {
-        return `Searching for "${searchQuery}"`
+    // Don't show status if there's an error event
+    if (events.some((e) => e.type === EventTypes.ERROR)) {
+        return null
     }
 
-    return 'Thinking'
+    // Get events sorted by timestamp (most recent last)
+    const statusEvents = events
+        .filter(
+            (m) =>
+                m.type === EventTypes.REASONING ||
+                m.type === EventTypes.SEARCH_TOOL_CALL ||
+                m.type === EventTypes.TOOL_CALL ||
+                m.type === EventTypes.TOOL_RESULT ||
+                m.type === EventTypes.MESSAGE_CHUNK
+        )
+        .sort((a, b) => a.timestamp - b.timestamp)
+
+    // Get the most recent status-worthy event
+    const latestEvent = statusEvents[statusEvents.length - 1]
+
+    if (!latestEvent) return STATUS_MESSAGES.THINKING
+
+    switch (latestEvent.type) {
+        case EventTypes.REASONING:
+            return latestEvent.message || STATUS_MESSAGES.THINKING
+
+        case EventTypes.SEARCH_TOOL_CALL:
+            return `Searching Elastic's Docs for "${latestEvent.searchQuery}"`
+
+        case EventTypes.TOOL_CALL:
+            return getToolCallStatus(latestEvent)
+
+        case EventTypes.TOOL_RESULT:
+            return STATUS_MESSAGES.ANALYZING
+
+        case EventTypes.MESSAGE_CHUNK: {
+            const allContent = events
+                .filter((m) => m.type === EventTypes.MESSAGE_CHUNK)
+                .map((m) => (m as ChunkEvent).content)
+                .join('')
+
+            if (allContent.includes('<!--REFERENCES')) {
+                return STATUS_MESSAGES.GATHERING
+            }
+            return STATUS_MESSAGES.GENERATING
+        }
+
+        default:
+            return STATUS_MESSAGES.THINKING
+    }
 }
 
 // Action bar for complete AI messages
@@ -215,10 +245,11 @@ const ActionBar = ({
 
 export const ChatMessage = ({
     message,
-    llmMessages = [],
+    events = [],
     streamingContent,
     error,
     onRetry,
+    showError = true,
 }: ChatMessageProps) => {
     const { euiTheme } = useEuiTheme()
     const { isUser, isLoading, isComplete } = getMessageState(message)
@@ -249,13 +280,15 @@ export const ChatMessage = ({
         )
     }
 
-    const content =
-        streamingContent ||
-        (llmMessages.length > 0
-            ? getAccumulatedContent(llmMessages)
-            : message.content)
+    // Use streamingContent during streaming, otherwise use message.content from store
+    // message.content is updated atomically with status when CONVERSATION_END arrives
+    const content = streamingContent || message.content
 
-    const hasError = message.status === 'error' || !!error
+    const hasError = (message.status === 'error' || !!error) && showError
+
+    // Don't render content for error messages that aren't being shown
+    const shouldRenderContent =
+        !message.status || message.status !== 'error' || hasError
 
     // Only split content and references when complete for better performance
     const { mainContent, referencesJson } = useMemo(() => {
@@ -279,12 +312,15 @@ export const ChatMessage = ({
         return DOMPurify.sanitize(html)
     }, [mainContent])
 
-    const aiStatus = useMemo(
-        () => computeAiStatus(llmMessages, isComplete),
-        [llmMessages, isComplete]
+    const rawAiStatus = useMemo(
+        () => computeAiStatus(events, isComplete),
+        [events, isComplete]
     )
 
-    const ref = React.useRef<HTMLDivElement>(null)
+    // Apply minimum display time to prevent status flickering
+    const aiStatus = useStatusMinDisplay(rawAiStatus)
+
+    const ref = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
         if (isComplete && ref.current) {
@@ -311,91 +347,113 @@ export const ChatMessage = ({
             data-message-type="ai"
             data-message-id={message.id}
         >
-            <EuiFlexItem grow={false}>
-                <div
-                    css={css`
-                        block-size: 32px;
-                        inline-size: 32px;
-                        border-radius: 50%;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                    `}
-                >
-                    {isLoading ? (
-                        <EuiLoadingElastic
-                            size="xl"
-                            css={css`
-                                margin-top: -1px;
-                            `}
-                        />
-                    ) : (
-                        <EuiIcon
-                            name="Elastic Docs AI"
-                            size="xl"
-                            type="logoElastic"
-                        />
-                    )}
-                </div>
-            </EuiFlexItem>
-            <EuiFlexItem>
-                <EuiPanel
-                    paddingSize="m"
-                    hasShadow={false}
-                    hasBorder={false}
-                    css={css`
-                        padding-top: 8px;
-                    `}
-                >
-                    {content && (
-                        <div
-                            ref={ref}
-                            className="markdown-content"
-                            css={css`
-                                font-size: 14px;
-                                & > *:first-child {
-                                    margin-top: 0;
-                                }
-                            `}
-                            dangerouslySetInnerHTML={{ __html: parsed }}
-                        />
-                    )}
-
-                    {referencesJson && (
-                        <References referencesJson={referencesJson} />
-                    )}
-
-                    {content && isLoading && <EuiSpacer size="m" />}
-                    <GeneratingStatus status={aiStatus} />
-
-                    {isComplete && content && (
-                        <>
-                            <EuiSpacer size="m" />
-                            <ActionBar
-                                content={mainContent}
-                                onRetry={onRetry}
+            {!hasError && (
+                <EuiFlexItem grow={false}>
+                    <div
+                        css={css`
+                            block-size: 32px;
+                            inline-size: 32px;
+                            border-radius: 50%;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                        `}
+                    >
+                        {isLoading ? (
+                            <EuiLoadingElastic
+                                size="xl"
+                                css={css`
+                                    margin-top: -1px;
+                                `}
                             />
-                        </>
-                    )}
+                        ) : (
+                            <EuiIcon
+                                name="Elastic Docs AI"
+                                size="xl"
+                                type="logoElastic"
+                            />
+                        )}
+                    </div>
+                </EuiFlexItem>
+            )}
+            {!hasError && shouldRenderContent && (
+                <EuiFlexItem>
+                    <EuiPanel
+                        paddingSize="m"
+                        hasShadow={false}
+                        hasBorder={false}
+                        css={css`
+                            padding-top: 8px;
+                        `}
+                    >
+                        {content && (
+                            <div
+                                ref={ref}
+                                className="markdown-content"
+                                css={css`
+                                    font-size: 14px;
+                                    & > *:first-child {
+                                        margin-top: 0;
+                                    }
+                                `}
+                                dangerouslySetInnerHTML={{ __html: parsed }}
+                            />
+                        )}
 
-                    {hasError && (
-                        <>
-                            <EuiSpacer size="m" />
-                            <EuiCallOut
-                                title="Sorry, there was an error"
-                                color="danger"
-                                iconType="error"
-                                size="s"
+                        {referencesJson && (
+                            <References referencesJson={referencesJson} />
+                        )}
+
+                        {content && isLoading && <EuiSpacer size="m" />}
+                        <GeneratingStatus status={aiStatus} />
+
+                        {isComplete && content && (
+                            <>
+                                <EuiSpacer size="m" />
+                                <ActionBar
+                                    content={mainContent}
+                                    onRetry={onRetry}
+                                />
+                            </>
+                        )}
+                    </EuiPanel>
+                </EuiFlexItem>
+            )}
+            {hasError && (
+                <EuiFlexItem>
+                    <EuiFlexGroup
+                        gutterSize="s"
+                        alignItems="flexStart"
+                        responsive={false}
+                    >
+                        <EuiFlexItem grow={false}>
+                            <div
+                                css={css`
+                                    block-size: 32px;
+                                    inline-size: 32px;
+                                    border-radius: 50%;
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                `}
                             >
-                                <p>
-                                    The Elastic Docs AI Assistant encountered an
-                                    error. Please try again.
-                                </p>
-                            </EuiCallOut>
-                        </>
-                    )}
-                </EuiPanel>
-            </EuiFlexItem>
+                                <EuiIcon
+                                    name="Elastic Docs AI"
+                                    size="xl"
+                                    type="logoElastic"
+                                />
+                            </div>
+                        </EuiFlexItem>
+                        <EuiFlexItem>
+                            <SearchOrAskAiErrorCallout
+                                error={message.error || error || null}
+                                domain="askAi"
+                                inline={true}
+                            />
+                        </EuiFlexItem>
+                    </EuiFlexGroup>
+                </EuiFlexItem>
+            )}
         </EuiFlexGroup>
     )
 }
