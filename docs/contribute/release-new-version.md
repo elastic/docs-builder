@@ -10,18 +10,24 @@ When a new version of the Elastic Stack (or another versioned product) is releas
 
 Generally, each release requires the following people:
 
-* A member of the **docs team** to make the config changes in a docs-builder PR
-* A member of the **docs engineering** or **docs tech leads** team to support publishing those changes to staging and prod.
+* A member of the **docs team** to perform release prep
+* A member of the **docs engineering** team to support publishing those changes to staging and prod.
 
 Before you start your release, you should identify who from each of these teams will facilitate the release.
 
 ## Release process
 
-Follow these steps to release a new documentation version.
+Follow these steps to release a new documentation version. There are two phases to releasing a new version: 
 
-:::{tip}
-The docs-builder PR steps can be bundled into a single PR.
-:::
+* **Release prep**: Prepare the relevant docs-builder changes. This can be done anytime before release day, and can be performed by any member of the docs team.
+* **Release day activities**: Merge your changes and push them to our staging and production environments. These steps must be performed on release day, and require support from docs engineering.
+
+
+### Release prep
+
+Anytime before release day, you can prepare the release-related changes. These changes can be bundled into a single PR. 
+
+Do not merge these changes until release day.
 
 :::::{stepper}
 
@@ -94,40 +100,39 @@ See [`legacy-url-mappings.yml`](../configure/site/legacy-url-mappings.md) for mo
 
 ::::
 
+:::::
+
+### Release day activities
+
+Merge your changes and push them to our staging and production environments on release day.
+
+:::::{stepper}
+
 ::::{step} [docs-builder PR] Merge the config change
 
 Merge the `versions.yml` changes and any assembler and legacy URL mapping changes. Anyone from the docs team can merge the PR, but it must be approved by docs engineering or docs tech leads.
 
-Optionally, docs engineering can invoke the [Synchronize version & config updates](https://github.com/elastic/docs-internal-workflows/actions/workflows/update-assembler-version.yml) action manually on `docs-internal-workflows`, which opens two configuration update PRs: `staging` and `prod`.
+Optionally, docs engineering or docs tech leads can invoke the [Synchronize version & config updates](https://github.com/elastic/docs-internal-workflows/actions/workflows/update-assembler-version.yml) action manually on `docs-internal-workflows`, which opens two configuration update PRs: `staging` and `prod`.
 
 This action also runs on a cron job, but can be triggered manually if the change is time-sensitive.
-
-:::{important}
-Do not merge the production PR until release day!
-:::
-
 ::::
 
-::::{step} After feature freeze: merge the config change to staging
+::::{step} Merge the config change to staging
 
-_This action must be performed by docs engineering or docs tech leads._
+_This action must be performed by docs engineering._
 
 1. Approve and merge [the `staging` configuration update PR](https://github.com/elastic/docs-internal-workflows/pulls).
 2. Optionally, manually [invoke the release automation to staging](https://github.com/elastic/docs-internal-workflows/actions/workflows/assembler-build.staging.yml).
 
    This action also runs on a cron job, but can be triggered manually if the change is time-sensitive.
 
-If you need to release to production right away, make sure that the workflow run is green and wait for 10 to 15 minutes for any alerts to be raised. Docs tech leads should check with docs eng before proceeding.
-
-:::{important}
-Do not merge the production PR until release day!
-:::
+Before you merge the config change to prod in the next step, make sure that the workflow run is green and wait for 10 to 15 minutes for any alerts to be raised.
 
 ::::
 
-::::{step} Release day: merge the config change to prod and release to production
+::::{step} Merge the config change to prod and release to production
 
-_This action must be performed by docs engineering or docs tech leads. For most products, this change must be merged on release day._
+_This action must be performed by docs engineering._
 
 1. Approve and merge [the `prod` configuration update PR](https://github.com/elastic/docs-internal-workflows/pulls).
 2. Manually [invoke the release automation to production](https://github.com/elastic/docs-internal-workflows/actions/workflows/assembler-build.prod.yml). Monitor it to make sure that it's green.
