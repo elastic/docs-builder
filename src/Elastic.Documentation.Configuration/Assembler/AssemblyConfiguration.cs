@@ -220,10 +220,11 @@ public record AssemblyConfiguration
 			{
 				logger.LogInformation("Current is not using versioned branches checking product info");
 				var productVersion = versioningSystem.Current;
+				var anchoredProductVersion = new SemVersion(productVersion.Major, productVersion.Minor, 0);
 				var previousMinorVersion = new SemVersion(productVersion.Major, Math.Max(productVersion.Minor - 1, 0), 0);
-				if (v >= productVersion)
+				if (v >= anchoredProductVersion)
 				{
-					logger.LogInformation("Speculative build {Branch} is gte product current '{ProductCurrent}'", branchOrTag, productVersion);
+					logger.LogInformation("Speculative build {Branch} is gte product current '{ProductCurrent}' anchored at {ProductAnchored}", branchOrTag, productVersion, anchoredProductVersion);
 					match = match with
 					{
 						Speculative = true

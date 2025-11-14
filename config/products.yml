@@ -141,6 +141,9 @@ products:
   fleet:
     display: 'Fleet'
     versioning: 'stack'
+  fleet-server:
+    display: 'Fleet Server'
+    versioning: 'stack'
   heartbeat:
     display: 'Heartbeat'
     versioning: 'stack'
