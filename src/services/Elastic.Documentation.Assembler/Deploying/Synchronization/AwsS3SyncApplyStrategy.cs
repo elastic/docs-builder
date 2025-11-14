@@ -27,33 +27,45 @@ public partial class AwsS3SyncApplyStrategy(
 	// Meter for OpenTelemetry metrics
 	private static readonly Meter SyncMeter = new(TelemetryConstants.AssemblerSyncInstrumentationName);
 
-	// Deployment-level metrics (low cardinality)
-	private static readonly Histogram<long> FilesPerDeploymentHistogram = SyncMeter.CreateHistogram<long>(
+	// Deployment-level metrics (histograms for distribution analysis, counters for totals)
+	// Note: Histograms require delta temporality to work with Elasticsearch
+	// See Extensions.cs where MetricTemporalityPreference.Delta is configured
+	private static readonly Histogram<double> FilesPerDeploymentHistogram = SyncMeter.CreateHistogram<double>(
 		"docs.deployment.files.count",
 		"files",
-		"Number of files synced per deployment operation");
+		"Number of files per deployment operation (added + updated + deleted + skipped)");
 
-	private static readonly Counter<long> FilesAddedCounter = SyncMeter.CreateCounter<long>(
+	private static readonly Counter<double> FilesTotalCounter = SyncMeter.CreateCounter<double>(
+		"docs.deployment.files.total",
+		"files",
+		"Total number of files in deployment (added + updated + deleted + skipped)");
+
+	private static readonly Counter<double> FilesAddedCounter = SyncMeter.CreateCounter<double>(
 		"docs.sync.files.added.total",
 		"files",
 		"Total number of files added to S3");
 
-	private static readonly Counter<long> FilesUpdatedCounter = SyncMeter.CreateCounter<long>(
+	private static readonly Counter<double> FilesUpdatedCounter = SyncMeter.CreateCounter<double>(
 		"docs.sync.files.updated.total",
 		"files",
 		"Total number of files updated in S3");
 
-	private static readonly Counter<long> FilesDeletedCounter = SyncMeter.CreateCounter<long>(
+	private static readonly Counter<double> FilesDeletedCounter = SyncMeter.CreateCounter<double>(
 		"docs.sync.files.deleted.total",
 		"files",
 		"Total number of files deleted from S3");
 
-	private static readonly Histogram<long> FileSizeHistogram = SyncMeter.CreateHistogram<long>(
+	private static readonly Counter<double> FilesSkippedCounter = SyncMeter.CreateCounter<double>(
+		"docs.sync.files.skipped.total",
+		"files",
+		"Total number of files skipped (unchanged)");
+
+	private static readonly Histogram<double> FileSizeHistogram = SyncMeter.CreateHistogram<double>(
 		"docs.sync.file.size",
 		"By",
 		"Distribution of file sizes synced to S3");
 
-	private static readonly Counter<long> FilesByExtensionCounter = SyncMeter.CreateCounter<long>(
+	private static readonly Counter<double> FilesByExtensionCounter = SyncMeter.CreateCounter<double>(
 		"docs.sync.files.by_extension",
 		"files",
 		"File operations grouped by extension");
@@ -95,7 +107,7 @@ public partial class AwsS3SyncApplyStrategy(
 		var updateCount = plan.UpdateRequests.Count;
 		var deleteCount = plan.DeleteRequests.Count;
 		var skipCount = plan.SkipRequests.Count;
-		var totalFiles = addCount + updateCount + deleteCount;
+		var totalFiles = addCount + updateCount + deleteCount + skipCount;
 
 		// Add aggregate metrics to span
 		_ = applyActivity?.SetTag("docs.sync.files.added", addCount);
@@ -105,13 +117,23 @@ public partial class AwsS3SyncApplyStrategy(
 		_ = applyActivity?.SetTag("docs.sync.files.total", totalFiles);
 
 		// Record deployment-level metrics (always emit, even if 0)
+		// Histogram for distribution analysis (p50, p95, p99)
 		FilesPerDeploymentHistogram.Record(totalFiles);
 
-		// Always record per-operation counts (even if 0) so metrics show consistent data
+		// Record per-operation histograms (for distribution analysis by operation type)
 		FilesPerDeploymentHistogram.Record(addCount, [new("operation", "add")]);
 		FilesPerDeploymentHistogram.Record(updateCount, [new("operation", "update")]);
 		FilesPerDeploymentHistogram.Record(deleteCount, [new("operation", "delete")]);
 		FilesPerDeploymentHistogram.Record(skipCount, [new("operation", "skip")]);
+
+		// Counter for simple totals and rates
+		FilesTotalCounter.Add(totalFiles);
+
+		// Record counter versions for easy dashboard queries (always emit, even if 0)
+		FilesAddedCounter.Add(addCount);
+		FilesUpdatedCounter.Add(updateCount);
+		FilesDeletedCounter.Add(deleteCount);
+		FilesSkippedCounter.Add(skipCount);
 
 		_logger.LogInformation(
 			"Deployment sync: {TotalFiles} files ({AddCount} added, {UpdateCount} updated, {DeleteCount} deleted, {SkipCount} skipped) in {Environment}",
@@ -120,9 +142,8 @@ public partial class AwsS3SyncApplyStrategy(
 		await Upload(plan, ctx);
 		await Delete(plan, ctx);
 
-		// Record sync duration
-		SyncDurationHistogram.Record(sw.Elapsed.TotalSeconds,
-			[new("operation", "sync")]);
+		// Record sync duration (both histogram for distribution and counter for total)
+		SyncDurationHistogram.Record(sw.Elapsed.TotalSeconds);
 	}
 
 	private async Task Upload(SyncPlan plan, Cancel ctx)
@@ -147,14 +168,8 @@ public partial class AwsS3SyncApplyStrategy(
 				var fileSize = context.WriteFileSystem.FileInfo.New(upload.LocalPath).Length;
 				var extension = Path.GetExtension(upload.DestinationPath).ToLowerInvariant();
 
-				// Record counters
-				if (operation == "add")
-					FilesAddedCounter.Add(1);
-				else
-					FilesUpdatedCounter.Add(1);
-
-				// Record file size distribution
-				FileSizeHistogram.Record(fileSize, [new("operation", operation)]);
+				// Record file size distribution (histogram for p50, p95, p99 analysis)
+				FileSizeHistogram.Record(fileSize);
 
 				// Record by extension (low cardinality)
 				if (!string.IsNullOrEmpty(extension))
@@ -221,9 +236,6 @@ public partial class AwsS3SyncApplyStrategy(
 			foreach (var delete in deleteRequests)
 			{
 				var extension = Path.GetExtension(delete.DestinationPath).ToLowerInvariant();
-
-				// Record counter
-				FilesDeletedCounter.Add(1);
 
 				// Record by extension (low cardinality)
 				if (!string.IsNullOrEmpty(extension))
