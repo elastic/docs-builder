@@ -36,6 +36,7 @@ public class AssemblerIndexService(
 	/// <param name="noSemantic">Index without semantic fields</param>
 	/// <param name="searchNumThreads">The number of search threads the inference endpoint should use. Defaults: 8</param>
 	/// <param name="indexNumThreads">The number of index threads the inference endpoint should use. Defaults: 8</param>
+	/// <param name="noEis">Do not use the Elastic Inference Service, bootstrap inference endpoint</param>
 	/// <param name="bootstrapTimeout">Timeout in minutes for the inference endpoint creation. Defaults: 4</param>
 	/// <param name="indexNamePrefix">The prefix for the computed index/alias names. Defaults: semantic-docs</param>
 	/// <param name="forceReindex">Force reindex strategy to semantic index</param>
@@ -62,6 +63,7 @@ public class AssemblerIndexService(
 		bool? noSemantic = null,
 		int? searchNumThreads = null,
 		int? indexNumThreads = null,
+		bool? noEis = null,
 		int? bootstrapTimeout = null,
 		// index options
 		string? indexNamePrefix = null,
@@ -101,6 +103,8 @@ public class AssemblerIndexService(
 			cfg.SearchNumThreads = searchNumThreads.Value;
 		if (indexNumThreads.HasValue)
 			cfg.IndexNumThreads = indexNumThreads.Value;
+		if (noEis.HasValue)
+			cfg.NoElasticInferenceService = noEis.Value;
 		if (!string.IsNullOrEmpty(indexNamePrefix))
 			cfg.IndexNamePrefix = indexNamePrefix;
 		if (bufferSize.HasValue)
