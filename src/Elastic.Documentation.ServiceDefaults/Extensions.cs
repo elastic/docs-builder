@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.ServiceDefaults.Telemetry;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.DependencyInjection;
@@ -51,11 +52,13 @@ public static class Extensions
 			{
 				_ = metrics.AddAspNetCoreInstrumentation()
 					.AddHttpClientInstrumentation()
-					.AddRuntimeInstrumentation();
+					.AddRuntimeInstrumentation()
+					.AddMeter(TelemetryConstants.AssemblerSyncInstrumentationName);
 			})
 			.WithTracing(tracing =>
 			{
 				_ = tracing.AddSource(builder.Environment.ApplicationName)
+					.AddSource(TelemetryConstants.AssemblerSyncInstrumentationName)
 					.AddAspNetCoreInstrumentation(instrumentation =>
 						// Exclude health check requests from tracing
 						instrumentation.Filter = context =>
