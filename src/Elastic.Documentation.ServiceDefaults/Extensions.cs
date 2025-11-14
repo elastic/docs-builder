@@ -81,13 +81,14 @@ public static class Extensions
 
 		if (useOtlpExporter)
 		{
-			_ = builder.Services.AddOpenTelemetry()
-				.UseOtlpExporter(otlpExporterOptions =>
-				{
-					// Configure delta temporality for histograms to work with Elasticsearch
-					// See: https://www.elastic.co/docs/reference/opentelemetry/compatibility/limitations#histograms-in-delta-temporality-only
-					otlpExporterOptions.MetricTemporalityPreference = MetricReaderTemporalityPreference.Delta;
-				});
+			// Configure delta temporality for Elasticsearch compatibility
+			// See: https://www.elastic.co/docs/reference/opentelemetry/compatibility/limitations#histograms-in-delta-temporality-only
+			_ = builder.Services.Configure<MetricReaderOptions>(options =>
+			{
+				options.TemporalityPreference = MetricReaderTemporalityPreference.Delta;
+			});
+
+			_ = builder.Services.AddOpenTelemetry().UseOtlpExporter();
 		}
 
 		// Uncomment the following lines to enable the Azure Monitor exporter (requires the Azure.Monitor.OpenTelemetry.AspNetCore package)
