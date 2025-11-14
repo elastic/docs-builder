@@ -33,7 +33,7 @@ public partial class AwsS3SyncApplyStrategy(
 	private static readonly Histogram<double> FilesPerDeploymentHistogram = SyncMeter.CreateHistogram<double>(
 		"docs.deployment.files.count",
 		"files",
-		"Distribution of files per deployment operation");
+		"Number of files per deployment operation (added + updated + deleted + skipped)");
 
 	private static readonly Counter<double> FilesTotalCounter = SyncMeter.CreateCounter<double>(
 		"docs.deployment.files.total",
@@ -73,7 +73,7 @@ public partial class AwsS3SyncApplyStrategy(
 	private static readonly Histogram<double> SyncDurationHistogram = SyncMeter.CreateHistogram<double>(
 		"docs.sync.duration",
 		"s",
-		"Distribution of sync operation durations");
+		"Duration of sync operations");
 
 	private readonly ILogger<AwsS3SyncApplyStrategy> _logger = logFactory.CreateLogger<AwsS3SyncApplyStrategy>();
 
