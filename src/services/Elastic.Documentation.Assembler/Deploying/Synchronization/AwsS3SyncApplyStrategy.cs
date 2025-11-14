@@ -94,38 +94,28 @@ public partial class AwsS3SyncApplyStrategy(
 		var addCount = plan.AddRequests.Count;
 		var updateCount = plan.UpdateRequests.Count;
 		var deleteCount = plan.DeleteRequests.Count;
+		var skipCount = plan.SkipRequests.Count;
 		var totalFiles = addCount + updateCount + deleteCount;
 
 		// Add aggregate metrics to span
 		_ = applyActivity?.SetTag("docs.sync.files.added", addCount);
 		_ = applyActivity?.SetTag("docs.sync.files.updated", updateCount);
 		_ = applyActivity?.SetTag("docs.sync.files.deleted", deleteCount);
+		_ = applyActivity?.SetTag("docs.sync.files.skipped", skipCount);
 		_ = applyActivity?.SetTag("docs.sync.files.total", totalFiles);
 
-		// Record deployment-level metrics
+		// Record deployment-level metrics (always emit, even if 0)
 		FilesPerDeploymentHistogram.Record(totalFiles);
 
-		if (addCount > 0)
-		{
-			FilesPerDeploymentHistogram.Record(addCount,
-				[new("operation", "add")]);
-		}
-
-		if (updateCount > 0)
-		{
-			FilesPerDeploymentHistogram.Record(updateCount,
-				[new("operation", "update")]);
-		}
-
-		if (deleteCount > 0)
-		{
-			FilesPerDeploymentHistogram.Record(deleteCount,
-				[new("operation", "delete")]);
-		}
+		// Always record per-operation counts (even if 0) so metrics show consistent data
+		FilesPerDeploymentHistogram.Record(addCount, [new("operation", "add")]);
+		FilesPerDeploymentHistogram.Record(updateCount, [new("operation", "update")]);
+		FilesPerDeploymentHistogram.Record(deleteCount, [new("operation", "delete")]);
+		FilesPerDeploymentHistogram.Record(skipCount, [new("operation", "skip")]);
 
 		_logger.LogInformation(
-			"Deployment sync: {TotalFiles} files ({AddCount} added, {UpdateCount} updated, {DeleteCount} deleted) in {Environment}",
-			totalFiles, addCount, updateCount, deleteCount, context.Environment.Name);
+			"Deployment sync: {TotalFiles} files ({AddCount} added, {UpdateCount} updated, {DeleteCount} deleted, {SkipCount} skipped) in {Environment}",
+			totalFiles, addCount, updateCount, deleteCount, skipCount, context.Environment.Name);
 
 		await Upload(plan, ctx);
 		await Delete(plan, ctx);
@@ -138,11 +128,13 @@ public partial class AwsS3SyncApplyStrategy(
 	private async Task Upload(SyncPlan plan, Cancel ctx)
 	{
 		var uploadRequests = plan.AddRequests.Cast<UploadRequest>().Concat(plan.UpdateRequests).ToList();
+
+		// Always create activity span (even if 0 files) for consistent tracing
+		using var uploadActivity = ApplyStrategyActivitySource.StartActivity("upload files", ActivityKind.Client);
+		_ = uploadActivity?.SetTag("docs.sync.upload.count", uploadRequests.Count);
+
 		if (uploadRequests.Count > 0)
 		{
-			using var uploadActivity = ApplyStrategyActivitySource.StartActivity("upload files", ActivityKind.Client);
-			_ = uploadActivity?.SetTag("docs.sync.upload.count", uploadRequests.Count);
-
 			var addCount = plan.AddRequests.Count;
 			var updateCount = plan.UpdateRequests.Count;
 
@@ -216,11 +208,13 @@ public partial class AwsS3SyncApplyStrategy(
 	{
 		var deleteCount = 0;
 		var deleteRequests = plan.DeleteRequests.ToList();
+
+		// Always create activity span (even if 0 files) for consistent tracing
+		using var deleteActivity = ApplyStrategyActivitySource.StartActivity("delete files", ActivityKind.Client);
+		_ = deleteActivity?.SetTag("docs.sync.delete.count", deleteRequests.Count);
+
 		if (deleteRequests.Count > 0)
 		{
-			using var deleteActivity = ApplyStrategyActivitySource.StartActivity("delete files", ActivityKind.Client);
-			_ = deleteActivity?.SetTag("docs.sync.delete.count", deleteRequests.Count);
-
 			_logger.LogInformation("Starting to delete {Count} files from S3 bucket {BucketName}", deleteRequests.Count, bucketName);
 
 			// Emit file-level metrics (low cardinality) and logs for each file
