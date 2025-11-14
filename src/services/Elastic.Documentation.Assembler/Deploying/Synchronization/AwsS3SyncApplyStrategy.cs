@@ -55,6 +55,11 @@ public partial class AwsS3SyncApplyStrategy(
 		"files",
 		"Total number of files deleted from S3");
 
+	private static readonly Counter<double> FilesSkippedCounter = SyncMeter.CreateCounter<double>(
+		"docs.sync.files.skipped.total",
+		"files",
+		"Total number of files skipped (unchanged)");
+
 	private static readonly Histogram<double> FileSizeHistogram = SyncMeter.CreateHistogram<double>(
 		"docs.sync.file.size",
 		"By",
@@ -128,6 +133,7 @@ public partial class AwsS3SyncApplyStrategy(
 		FilesAddedCounter.Add(addCount);
 		FilesUpdatedCounter.Add(updateCount);
 		FilesDeletedCounter.Add(deleteCount);
+		FilesSkippedCounter.Add(skipCount);
 
 		_logger.LogInformation(
 			"Deployment sync: {TotalFiles} files ({AddCount} added, {UpdateCount} updated, {DeleteCount} deleted, {SkipCount} skipped) in {Environment}",
