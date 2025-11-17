@@ -339,7 +339,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		var raw = yaml.Lines.Lines is not null
 			? string.Join(Environment.NewLine, yaml.Lines.Lines)
 			: string.Empty;
-		var fm = ReadYamlFrontMatter(raw);
+		var fm = ReadYamlFrontMatter(raw) ?? new YamlFrontMatter();
 
 		if (fm.AppliesTo?.Diagnostics is not null)
 		{
