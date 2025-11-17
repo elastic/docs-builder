@@ -5,6 +5,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Markdown.Diagnostics;
+using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Directives.Admonition;
 using Elastic.Markdown.Myst.Directives.AppliesSwitch;
@@ -398,7 +399,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			{
 				var document = MarkdownParser.ParseMarkdownStringAsync(block.Build, block.Context, s, block.IncludeFrom, block.Context.YamlFrontMatter, MarkdownParser.Pipeline);
 				var html = document.ToHtml(MarkdownParser.Pipeline);
-				return html;
+
+				// Trim to ensure consistent whitespace
+				return html.EnsureTrimmed();
 			}
 		});
 		var html = slice.RenderAsync().GetAwaiter().GetResult();
@@ -406,7 +409,11 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 	}
 
 	[SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly")]
-	private static void RenderRazorSlice<T>(RazorSlice<T> slice, HtmlRenderer renderer) => slice.RenderAsync(renderer.Writer).GetAwaiter().GetResult();
+	private static void RenderRazorSlice<T>(RazorSlice<T> slice, HtmlRenderer renderer)
+	{
+		var html = slice.RenderAsync().GetAwaiter().GetResult();
+		_ = renderer.Write(html.EnsureTrimmed());
+	}
 
 	[SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly")]
 	private static void RenderRazorSliceRawContent<T>(RazorSlice<T> slice, HtmlRenderer renderer, DirectiveBlock obj)

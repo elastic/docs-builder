@@ -28,7 +28,8 @@ internal static class DocumentationObjectPoolProvider
 		try
 		{
 			action(subscription.LlmMarkdownRenderer, context);
-			return subscription.RentedStringBuilder!.ToString();
+			var result = subscription.RentedStringBuilder!.ToString();
+			return result.EnsureTrimmed();
 		}
 		finally
 		{
