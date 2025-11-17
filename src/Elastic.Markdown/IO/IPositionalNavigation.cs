@@ -16,8 +16,7 @@ public interface IPositionalNavigation
 
 	INavigationItem? GetPrevious(MarkdownFile current)
 	{
-		if (!MarkdownNavigationLookup.TryGetValue(current, out var currentNavigation))
-			return null;
+		var currentNavigation = GetCurrent(current);
 		var index = currentNavigation.NavigationIndex;
 		do
 		{
@@ -32,8 +31,7 @@ public interface IPositionalNavigation
 
 	INavigationItem? GetNext(MarkdownFile current)
 	{
-		if (!MarkdownNavigationLookup.TryGetValue(current, out var currentNavigation))
-			return null;
+		var currentNavigation = GetCurrent(current);
 		var index = currentNavigation.NavigationIndex;
 		do
 		{

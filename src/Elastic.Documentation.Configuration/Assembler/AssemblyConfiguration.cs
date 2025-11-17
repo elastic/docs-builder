@@ -204,9 +204,18 @@ public record AssemblyConfiguration
 			if (SemVersion.TryParse(current + ".0", out var currentVersion))
 			{
 				logger.LogInformation("Current is already using versioned branches {Current}", currentVersion);
+				var previousCurrentVersion = new SemVersion(currentVersion.Major, Math.Max(currentVersion.Minor - 1, 0), 0);
 				if (v >= currentVersion)
 				{
 					logger.LogInformation("Speculative build because {Branch} is gte current {Current}", branchOrTag, currentVersion);
+					match = match with
+					{
+						Speculative = true
+					};
+				}
+				else if (v == previousCurrentVersion)
+				{
+					logger.LogInformation("Speculative build {Branch} is the previous minor '{ProductPreviousMinor}' of current {Current}", branchOrTag, previousCurrentVersion, currentVersion);
 					match = match with
 					{
 						Speculative = true
@@ -221,18 +230,9 @@ public record AssemblyConfiguration
 				logger.LogInformation("Current is not using versioned branches checking product info");
 				var productVersion = versioningSystem.Current;
 				var anchoredProductVersion = new SemVersion(productVersion.Major, productVersion.Minor, 0);
-				var previousMinorVersion = new SemVersion(productVersion.Major, Math.Max(productVersion.Minor - 1, 0), 0);
 				if (v >= anchoredProductVersion)
 				{
 					logger.LogInformation("Speculative build {Branch} is gte product current '{ProductCurrent}' anchored at {ProductAnchored}", branchOrTag, productVersion, anchoredProductVersion);
-					match = match with
-					{
-						Speculative = true
-					};
-				}
-				else if (v == previousMinorVersion)
-				{
-					logger.LogInformation("Speculative build {Branch} is gte product current previous minor '{ProductPreviousMinor}'", branchOrTag, previousMinorVersion);
 					match = match with
 					{
 						Speculative = true
