@@ -62,7 +62,6 @@ public class ElasticsearchSemanticExporter(
 		SearchInferenceId = endpoint.NoElasticInferenceService ? null : ".elser-2-elastic"
 	});
 
-
 public abstract class ElasticsearchExporter<TChannelOptions, TChannel> : IDisposable
 	where TChannelOptions : CatalogIndexChannelOptionsBase<DocumentationDocument>
 	where TChannel : CatalogIndexChannel<DocumentationDocument, TChannelOptions>
@@ -148,6 +147,14 @@ public abstract class ElasticsearchExporter<TChannelOptions, TChannel> : IDispos
 		{
 		  "analysis": {
 		    "analyzer": {
+		      "combined_analyzer": {
+		    	"tokenizer": "whitespace",
+		    	"filter": [
+		    	  "lowercase",
+		    	  "synonyms_filter",
+		    	  "english_stop"
+				]
+			  },
 		      "synonyms_analyzer": {
 		        "tokenizer": "whitespace",
 		        "filter": [
@@ -243,7 +250,7 @@ public abstract class ElasticsearchExporter<TChannelOptions, TChannel> : IDispos
 		      },
 		      "stripped_body": {
 		        "type": "text",
-		        "search_analyzer": "highlight_analyzer",
+		        "search_analyzer": "combined_analyzer",
 		        "term_vector": "with_positions_offsets"
 		      }
 		      {{(!string.IsNullOrWhiteSpace(inferenceId) ? AbstractInferenceMapping(inferenceId) : AbstractMapping())}}
@@ -253,7 +260,10 @@ public abstract class ElasticsearchExporter<TChannelOptions, TChannel> : IDispos
 
 	private static string AbstractMapping() =>
 		"""
-		, "abstract": { "type": "text" }
+		, "abstract": {
+		  "type": "text",
+		  "search_analyzer": "combined_analyzer"
+		}
 		""";
 
 	private static string InferenceMapping(string inferenceId) =>
@@ -278,5 +288,4 @@ public abstract class ElasticsearchExporter<TChannelOptions, TChannel> : IDispos
 
 		GC.SuppressFinalize(this);
 	}
-
 }
