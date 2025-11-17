@@ -15,11 +15,17 @@ public class AgentBuilderStreamTransformer(ILogger<AgentBuilderStreamTransformer
 {
 	protected override string GetAgentId() => AgentBuilderAskAiGateway.ModelName;
 	protected override string GetAgentProvider() => AgentBuilderAskAiGateway.ProviderName;
-	protected override AskAiEvent? TransformJsonEvent(string? conversationId, string? eventType, JsonElement json)
+	protected override AskAiEvent? TransformJsonEvent(string? eventType, JsonElement json)
 	{
 		var type = eventType ?? "message";
 		var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 		var id = Guid.NewGuid().ToString();
+
+		// Handle error events first - they have a different structure (no "data" wrapper)
+		if (type == "error")
+		{
+			return ParseErrorEvent(id, timestamp, json);
+		}
 
 		// Most Agent Builder events have data nested in a "data" property
 		if (!json.TryGetProperty("data", out var innerData))
@@ -30,8 +36,6 @@ public class AgentBuilderStreamTransformer(ILogger<AgentBuilderStreamTransformer
 
 		return type switch
 		{
-			"error" =>
-				ParseErrorEvent(id, timestamp, json),
 
 			"conversation_id_set" when innerData.TryGetProperty("conversation_id", out var convId) =>
 				new AskAiEvent.ConversationStart(id, timestamp, convId.GetString()!),

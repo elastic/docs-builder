@@ -81,6 +81,6 @@ public class StepViewModel : DirectiveViewModel
 
 		var result = subscription.RentedStringBuilder?.ToString() ?? Title;
 		DocumentationObjectPoolProvider.HtmlRendererPool.Return(subscription);
-		return new(result);
+		return new HtmlString(result.EnsureTrimmed());
 	}
 }

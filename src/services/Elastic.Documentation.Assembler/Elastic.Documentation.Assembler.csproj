@@ -13,6 +13,7 @@
   <ItemGroup>
     <ProjectReference Include="$(SolutionRoot)\src\Elastic.Documentation\Elastic.Documentation.csproj" />
     <ProjectReference Include="$(SolutionRoot)\src\Elastic.Documentation.Configuration\Elastic.Documentation.Configuration.csproj" />
+    <ProjectReference Include="$(SolutionRoot)\src\Elastic.Documentation.ServiceDefaults\Elastic.Documentation.ServiceDefaults.csproj" />
     <ProjectReference Include="..\..\Elastic.Documentation.LinkIndex\Elastic.Documentation.LinkIndex.csproj" />
     <ProjectReference Include="..\..\Elastic.Documentation.Links\Elastic.Documentation.Links.csproj" />
     <ProjectReference Include="..\..\Elastic.Markdown\Elastic.Markdown.csproj" />

@@ -359,7 +359,8 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 	// on `DocumentationFile` that are mostly precomputed
 	public static string UpdateRelativeUrl(ParserContext context, string url)
 	{
-		var urlPathPrefix = context.Build.UrlPathPrefix ?? string.Empty;
+		var urlPathPrefix = !string.IsNullOrWhiteSpace(context.Build.UrlPathPrefix) ? context.Build.UrlPathPrefix : "/";
+		var baseUri = new UriBuilder("http", "localhost", 80, urlPathPrefix[^1] != '/' ? $"{urlPathPrefix}/" : urlPathPrefix).Uri;
 
 		var fi = context.MarkdownSourcePath;
 
@@ -391,13 +392,26 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 					newUrl = newUrl[3..];
 					offset--;
 				}
+
+				newUrl = new Uri(baseUri, $"{snippet.RelativeFolder.TrimEnd('/')}/{url.TrimStart('/')}").AbsolutePath;
 			}
 			else
-				newUrl = $"/{Path.Combine(urlPathPrefix, relativePath).OptionalWindowsReplace().TrimStart('/')}";
-
+				newUrl = new Uri(baseUri, relativePath).AbsolutePath;
 		}
+
+		if (context.Build.AssemblerBuild && context.TryFindDocument(fi) is MarkdownFile currentMarkdown)
+		{
+			// Acquire navigation-aware path
+			if (context.PositionalNavigation.MarkdownNavigationLookup.TryGetValue(currentMarkdown, out var currentNavigation))
+			{
+				var uri = new Uri(new UriBuilder("http", "localhost", 80, currentNavigation.Url).Uri, url);
+				newUrl = uri.AbsolutePath;
+			}
+			else
+				context.EmitError($"Failed to acquire navigation for current markdown file '{currentMarkdown.FileName}' while resolving relative url '{url}'.");
+		}
+
 		// When running on Windows, path traversal results must be normalized prior to being used in a URL
-		// Path.GetFullPath() will result in the drive letter being appended to the path, which needs to be pruned back.
 		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 		{
 			newUrl = newUrl.Replace('\\', '/');
@@ -406,7 +420,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		}
 
 		if (!string.IsNullOrWhiteSpace(newUrl) && !string.IsNullOrWhiteSpace(urlPathPrefix) && !newUrl.StartsWith(urlPathPrefix))
-			newUrl = $"{urlPathPrefix.TrimEnd('/')}{newUrl}";
+			newUrl = new Uri(baseUri, newUrl.TrimStart('/')).AbsolutePath;
 
 		// eat overall path prefix since its gets appended later
 		return newUrl;

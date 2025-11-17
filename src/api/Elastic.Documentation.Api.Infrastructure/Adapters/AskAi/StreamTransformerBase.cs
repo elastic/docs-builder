@@ -124,7 +124,7 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 	/// <returns>Stream processing result with metrics and captured output</returns>
 	protected virtual async Task ProcessStreamAsync(PipeReader reader, PipeWriter writer, string? conversationId, Activity? parentActivity, CancellationToken cancellationToken)
 	{
-		using var activity = StreamTransformerActivitySource.StartActivity(nameof(ProcessStreamAsync));
+		using var activity = StreamTransformerActivitySource.StartActivity("process ask_ai stream", ActivityKind.Internal);
 
 		if (parentActivity?.Id != null)
 			_ = activity?.SetParentId(parentActivity.Id);
@@ -140,7 +140,7 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 				var root = doc.RootElement;
 
 				// Subclass transforms JsonElement to AskAiEvent
-				transformedEvent = TransformJsonEvent(conversationId, sseEvent.EventType, root);
+				transformedEvent = TransformJsonEvent(sseEvent.EventType, root);
 			}
 			catch (JsonException ex)
 			{
@@ -153,13 +153,15 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 			{
 				Logger.LogWarning("Transformed event is null for transformer {TransformerType}. Skipping event. EventType: {EventType}",
 					GetType().Name, sseEvent.EventType);
+				Logger.LogWarning("Original event: {event}", JsonSerializer.Serialize(sseEvent, SseSerializerContext.Default.SseEvent));
 				continue;
 			}
 
-			using var parseActivity = StreamTransformerActivitySource.StartActivity("AskAI Event");
+			var askAiEventType = transformedEvent.GetType().Name;
+			using var parseActivity = StreamTransformerActivitySource.StartActivity($"parse ask_ai event {askAiEventType}");
 
 			// Set event type tag on parse_event activity
-			_ = parseActivity?.SetTag("ask_ai.event.type", transformedEvent.GetType().Name);
+			_ = parseActivity?.SetTag("ask_ai.event.type", askAiEventType);
 			_ = parseActivity?.SetTag("gen_ai.response.id", transformedEvent.Id);
 
 			switch (transformedEvent)
@@ -213,7 +215,7 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 				case AskAiEvent.MessageComplete messageComplete:
 					{
 						outputMessageParts.Add(new MessagePart("text", messageComplete.FullContent));
-						Logger.LogInformation("AskAI output message: {OutputMessage}", messageComplete.FullContent);
+						Logger.LogInformation("AskAI output message: {ask_ai.output.message}", messageComplete.FullContent);
 						break;
 					}
 				case AskAiEvent.ConversationEnd conversationEnd:
@@ -228,10 +230,10 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 		// Set output messages tag once after all events are processed
 		if (outputMessageParts.Count > 0)
 		{
-			var outputMessages = new OutputMessage("assistant", outputMessageParts.ToArray(), "stop");
-			var outputMessagesJson = JsonSerializer.Serialize(outputMessages, ApiJsonContext.Default.OutputMessage);
+			var outputMessage = new OutputMessage("assistant", outputMessageParts.ToArray(), "stop");
+			var outputMessages = new[] { outputMessage };
+			var outputMessagesJson = JsonSerializer.Serialize(outputMessages, ApiJsonContext.Default.OutputMessageArray);
 			_ = parentActivity?.SetTag("gen_ai.output.messages", outputMessagesJson);
-			_ = activity?.SetTag("gen_ai.output.messages", outputMessagesJson);
 		}
 	}
 
@@ -239,11 +241,10 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 	/// Transform a parsed JSON event into an AskAiEvent.
 	/// Subclasses implement provider-specific transformation logic.
 	/// </summary>
-	/// <param name="conversationId">The conversation/thread ID, if available</param>
 	/// <param name="eventType">The SSE event type (from "event:" field), or null if not present</param>
 	/// <param name="json">The parsed JSON data from the "data:" field</param>
 	/// <returns>The transformed AskAiEvent, or null to skip this event</returns>
-	protected abstract AskAiEvent? TransformJsonEvent(string? conversationId, string? eventType, JsonElement json);
+	protected abstract AskAiEvent? TransformJsonEvent(string? eventType, JsonElement json);
 
 	/// <summary>
 	/// Write a transformed event to the output stream

@@ -240,6 +240,9 @@ dotnet_diagnostic.IDE0059.severity = suggestion
 
 dotnet_diagnostic.CA1859.severity = none
 
+# https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/ca1727
+dotnet_diagnostic.CA1727.severity = none
+
 dotnet_diagnostic.IDE0305.severity = none
 
 # https://github.com/dotnet/roslyn/issues/60784

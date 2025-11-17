@@ -5,6 +5,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Markdown.Diagnostics;
+using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.Comments;
 using Elastic.Markdown.Myst.Directives.AppliesTo;
 using Markdig.Helpers;
@@ -20,8 +21,11 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 	private const int TabWidth = 4;
 
 	[SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly")]
-	private static void RenderRazorSlice<T>(RazorSlice<T> slice, HtmlRenderer renderer) =>
-		slice.RenderAsync(renderer.Writer).GetAwaiter().GetResult();
+	private static void RenderRazorSlice<T>(RazorSlice<T> slice, HtmlRenderer renderer)
+	{
+		var html = slice.RenderAsync().GetAwaiter().GetResult();
+		_ = renderer.Write(html.EnsureTrimmed());
+	}
 
 	/// <summary>
 	/// Renders the code block lines while also removing the common indentation level.
