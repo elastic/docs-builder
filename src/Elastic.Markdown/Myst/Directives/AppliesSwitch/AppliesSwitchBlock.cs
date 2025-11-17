@@ -4,6 +4,7 @@
 
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Extensions;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
 
@@ -67,23 +68,10 @@ public class AppliesItemBlock(DirectiveBlockParser parser, ParserContext context
 
 	public static string GenerateSyncKey(string appliesToDefinition, ProductsConfiguration productsConfiguration)
 	{
-		// Parse the YAML to get the ApplicableTo object, then use its hash
-		// This ensures both simple syntax and YAML objects produce consistent sync keys
-		try
-		{
-			var applicableTo = YamlSerialization.Deserialize<ApplicableTo>(appliesToDefinition, productsConfiguration);
-			if (applicableTo != null)
-			{
-				// Use the object's hash for a consistent, unique identifier
-				return $"applies-{System.Math.Abs(applicableTo.GetHashCode())}";
-			}
-		}
-		catch
-		{
-			// If parsing fails, fall back to the original definition
-		}
-
-		// Fallback to original definition if parsing fails
-		return appliesToDefinition.Slugify().Replace(".", "-");
+		var applicableTo = YamlSerialization.Deserialize<ApplicableTo>(appliesToDefinition, productsConfiguration);
+		// Use ShortId.Create for a stable, deterministic hash based on the normalized ToString()
+		// ToString() normalizes different YAML representations into a canonical form,
+		// ensuring semantically equivalent definitions get the same sync key
+		return $"applies-{ShortId.Create(applicableTo.ToString())}";
 	}
 }
