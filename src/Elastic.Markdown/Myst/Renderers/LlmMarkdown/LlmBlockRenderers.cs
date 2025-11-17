@@ -86,9 +86,6 @@ public static class LlmRenderingHelpers
 			return url;
 		}
 	}
-
-
-
 }
 
 /// <summary>
@@ -140,6 +137,7 @@ public class LlmEnhancedCodeBlockRenderer : MarkdownObjectRenderer<LlmMarkdownRe
 			renderer.Write(obj.Caption);
 			renderer.WriteLine(" -->");
 		}
+
 		renderer.Write("```");
 		if (!string.IsNullOrEmpty(obj.Language))
 			renderer.Write(obj.Language);
@@ -151,6 +149,7 @@ public class LlmEnhancedCodeBlockRenderer : MarkdownObjectRenderer<LlmMarkdownRe
 			renderer.Write(line.ToString());
 			renderer.WriteLine();
 		}
+
 		renderer.WriteLine("```");
 	}
 
@@ -170,32 +169,35 @@ public class LlmListRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, ListB
 {
 	protected override void Write(LlmMarkdownRenderer renderer, ListBlock listBlock)
 	{
-		var baseIndent = CalculateNestedIndentation(listBlock);
-		if (listBlock.Parent is not ListItemBlock)
+		var isNestedList = listBlock.Parent is ListItemBlock;
+
+		// Nested lists don't need base indent - parent's continuation indent positions them correctly
+		var baseIndent = isNestedList ? "" : CalculateNestedIndentation(listBlock);
+
+		// Top-level lists need block spacing before them
+		if (!isNestedList)
 			renderer.EnsureBlockSpacing();
 
 		var isOrdered = listBlock.IsOrdered;
-		var itemIndex = 1;
-		if (isOrdered && int.TryParse(listBlock.DefaultOrderedStart, out var startIndex))
-			itemIndex = startIndex;
+		var itemIndex = listBlock.IsOrdered && int.TryParse(listBlock.DefaultOrderedStart, out var startIndex)
+			? startIndex
+			: 1;
 
-		foreach (var item in listBlock.Cast<ListItemBlock>())
+		var items = listBlock.Cast<ListItemBlock>().ToArray();
+		foreach (var item in items)
 		{
 			renderer.Write(baseIndent);
 			renderer.Write(isOrdered ? $"{itemIndex}. " : "- ");
-			foreach (var block in item)
+			for (var blockIndex = 0; blockIndex < item.Count; blockIndex++)
 			{
-				if (block != item.First())
+				var block = item[blockIndex];
+				if (blockIndex > 0)
 				{
-					var continuationIndent = GetContinuationIndent(baseIndent, isOrdered);
-					renderer.Write(continuationIndent);
+					renderer.EnsureLine();
+					renderer.Write(GetContinuationIndent(baseIndent, isOrdered));
 				}
-
-				if (block != item.First() && block is ListBlock)
-					renderer.WriteLine();
 				RenderBlockWithIndentation(renderer, block, baseIndent, isOrdered);
 			}
-
 			renderer.EnsureLine();
 			if (isOrdered)
 				itemIndex++;
@@ -207,12 +209,22 @@ public class LlmListRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, ListB
 
 	private static void RenderBlockWithIndentation(LlmMarkdownRenderer renderer, Block block, string baseIndent, bool isOrdered)
 	{
+		// Nested lists render in same context to preserve indentation
+		if (block is ListBlock)
+		{
+			_ = renderer.Render(block);
+			return;
+		}
+
+		// Render other blocks in separate context and re-indent each line
 		var blockOutput = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(renderer.BuildContext, block, static (tmpRenderer, obj) =>
 		{
 			_ = tmpRenderer.Render(obj);
 		});
+
 		var continuationIndent = GetContinuationIndent(baseIndent, isOrdered);
 		var lines = blockOutput.Split('\n');
+
 		for (var i = 0; i < lines.Length; i++)
 		{
 			var line = lines[i];
@@ -222,6 +234,7 @@ public class LlmListRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, ListB
 			{
 				renderer.WriteLine();
 				renderer.Write(continuationIndent);
+				// Preserve exact code block formatting, trim other content
 				renderer.Write(block is CodeBlock ? line : line.TrimStart());
 			}
 			else if (i < lines.Length - 1)
@@ -329,6 +342,7 @@ public class LlmTableRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, Tabl
 			renderer.Writer.Write(" |");
 			cellIndex++;
 		}
+
 		renderer.WriteLine();
 	}
 
@@ -665,7 +679,6 @@ public class LlmDefinitionItemRenderer : MarkdownObjectRenderer<LlmMarkdownRende
 {
 	protected override void Write(LlmMarkdownRenderer renderer, DefinitionItem obj)
 	{
-
 		var first = obj.Cast<LeafBlock>().First();
 		renderer.EnsureBlockSpacing();
 		renderer.Write("<definition");
@@ -679,6 +692,7 @@ public class LlmDefinitionItemRenderer : MarkdownObjectRenderer<LlmMarkdownRende
 			var block = obj[index];
 			LlmRenderingHelpers.RenderBlockWithIndentation(renderer, block);
 		}
+
 		renderer.WriteLine("</definition>");
 	}
 

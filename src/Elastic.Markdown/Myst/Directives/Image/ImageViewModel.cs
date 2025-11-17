@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Elastic.Documentation.Extensions;
 
@@ -19,10 +20,9 @@ public class ImageViewModel : DirectiveViewModel
 	public required string? Width { get; init; }
 	public required string? ImageUrl { get; init; }
 
-	private string? _uniqueImageId;
-
+	[field: AllowNull, MaybeNull]
 	public string UniqueImageId =>
-		_uniqueImageId ??= string.IsNullOrEmpty(ImageUrl)
+		field ??= string.IsNullOrEmpty(ImageUrl)
 			? Guid.NewGuid().ToString("N")[..8] // fallback to a random ID if ImageUrl is null or empty
 			: ShortId.Create(ImageUrl);
 	public required string? Screenshot { get; init; }

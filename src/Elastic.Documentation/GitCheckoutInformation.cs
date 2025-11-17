@@ -161,6 +161,6 @@ public partial record GitCheckoutInformation
 		}
 	}
 
-	[GeneratedRegex(@"\.git$", RegexOptions.IgnoreCase, "en-US")]
+	[GeneratedRegex(@"\.git$", RegexOptions.IgnoreCase)]
 	private static partial Regex CutOffGitExtension();
 }

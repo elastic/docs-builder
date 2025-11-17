@@ -11,17 +11,15 @@ public record GoogleTagManager
 	[YamlMember(Alias = "enabled")]
 	public bool Enabled { get; set; }
 
-	private string _id = string.Empty;
-
 	[YamlMember(Alias = "id")]
-	public string Id
+	public string? Id
 	{
-		get => _id;
+		get;
 		set
 		{
 			if (Enabled && string.IsNullOrEmpty(value))
 				throw new ArgumentException("Id is required when Enabled is true.");
-			_id = value;
+			field = value;
 		}
 	}
 

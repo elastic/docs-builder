@@ -306,6 +306,7 @@ public class DocsSyncTests
 		tagObjects.Should().Contain(t => t.Key == "docs.sync.files.added" && Convert.ToInt64(t.Value, System.Globalization.CultureInfo.InvariantCulture) == 3);
 		tagObjects.Should().Contain(t => t.Key == "docs.sync.files.updated" && Convert.ToInt64(t.Value, System.Globalization.CultureInfo.InvariantCulture) == 1);
 		tagObjects.Should().Contain(t => t.Key == "docs.sync.files.deleted" && Convert.ToInt64(t.Value, System.Globalization.CultureInfo.InvariantCulture) == 1);
-		tagObjects.Should().Contain(t => t.Key == "docs.sync.files.total" && Convert.ToInt64(t.Value, System.Globalization.CultureInfo.InvariantCulture) == 5);
+		tagObjects.Should().Contain(t => t.Key == "docs.sync.files.skipped" && Convert.ToInt64(t.Value, System.Globalization.CultureInfo.InvariantCulture) == 1);
+		tagObjects.Should().Contain(t => t.Key == "docs.sync.files.total" && Convert.ToInt64(t.Value, System.Globalization.CultureInfo.InvariantCulture) == 6);
 	}
 }
