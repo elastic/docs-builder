@@ -252,7 +252,11 @@ public abstract class ElasticsearchExporter<TChannelOptions, TChannel> : IDispos
 		        "type": "text",
 		        "search_analyzer": "combined_analyzer",
 		        "term_vector": "with_positions_offsets"
-		      }
+		      },
+		      "headings": {
+		        "type": "text",
+		        "search_analyzer": "synonyms_analyzer"
+		      },
 		      {{(!string.IsNullOrWhiteSpace(inferenceId) ? AbstractInferenceMapping(inferenceId) : AbstractMapping())}}
 		    }
 		  }

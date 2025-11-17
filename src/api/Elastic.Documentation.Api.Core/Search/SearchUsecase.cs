@@ -72,6 +72,7 @@ public record SearchResultItem
 	public required string Title { get; init; }
 	public required string Description { get; init; }
 	public required SearchResultItemParent[] Parents { get; init; }
+	public string[]? Headings { get; init; }
 	public float Score { get; init; }
 	public string? HighlightedBody { get; init; }
 }
