@@ -155,11 +155,14 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		var globalSubstitutions = _globalSubstitutions;
 		var fileSubstitutions = YamlFrontMatter?.Properties;
 		if (fileSubstitutions is not { Count: >= 0 })
-			return globalSubstitutions;
+			return globalSubstitutions ?? new Dictionary<string, string>();
 
 		var allProperties = new Dictionary<string, string>(fileSubstitutions);
-		foreach (var (key, value) in globalSubstitutions)
-			allProperties[key] = value;
+		if (globalSubstitutions is not null)
+		{
+			foreach (var (key, value) in globalSubstitutions)
+				allProperties[key] = value;
+		}
 		return allProperties;
 	}
 
