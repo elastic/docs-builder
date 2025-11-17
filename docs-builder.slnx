@@ -1,0 +1,101 @@
+<Solution>
+  <Folder Name="/actions/" />
+  <Folder Name="/actions/assembler-match/">
+    <File Path="actions/assembler-match/action.yml" />
+  </Folder>
+  <Folder Name="/actions/diff-validate/">
+    <File Path="actions/diff-validate/action.yml" />
+  </Folder>
+  <Folder Name="/actions/publish-vercel/">
+    <File Path="actions/publish-vercel/action.yml" />
+  </Folder>
+  <Folder Name="/actions/publish/">
+    <File Path="actions/publish/action.yml" />
+    <File Path="actions/publish/github-pages.png" />
+  </Folder>
+  <Folder Name="/actions/update-link-index/">
+    <File Path="actions/update-link-index/action.yml" />
+    <File Path="actions/update-link-index/README.md" />
+  </Folder>
+  <Folder Name="/actions/validate-inbound-local/">
+    <File Path="actions/validate-inbound-local/action.yml" />
+  </Folder>
+  <Folder Name="/actions/validate-path-prefixes-local/">
+    <File Path="actions/validate-path-prefixes-local/action.yml" />
+  </Folder>
+  <Folder Name="/config/">
+    <File Path="config/assembler.yml" />
+    <File Path="config/legacy-url-mappings.yml" />
+    <File Path="config/navigation.yml" />
+    <File Path="config/products.yml" />
+    <File Path="config/synonyms.yml" />
+    <File Path="config/versions.yml" />
+  </Folder>
+  <Folder Name="/root/">
+    <File Path="build.bat" />
+    <File Path="build.sh" />
+    <File Path="CONTRIBUTING.MD" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="dotnet-tools.json" />
+    <File Path="global.json" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/src/">
+    <File Path="src/Directory.Build.props" />
+    <Project Path="src/Elastic.ApiExplorer/Elastic.ApiExplorer.csproj" />
+    <Project Path="src/Elastic.Documentation.Configuration/Elastic.Documentation.Configuration.csproj" />
+    <Project Path="src/Elastic.Documentation.LegacyDocs/Elastic.Documentation.LegacyDocs.csproj" />
+    <Project Path="src/Elastic.Documentation.LinkIndex/Elastic.Documentation.LinkIndex.csproj" />
+    <Project Path="src/Elastic.Documentation.Links/Elastic.Documentation.Links.csproj" />
+    <Project Path="src/Elastic.Documentation.Navigation/Elastic.Documentation.Navigation.csproj" />
+    <Project Path="src/Elastic.Documentation.ServiceDefaults/Elastic.Documentation.ServiceDefaults.csproj" />
+    <Project Path="src/Elastic.Documentation.Site/Elastic.Documentation.Site.csproj" />
+    <Project Path="src/Elastic.Documentation/Elastic.Documentation.csproj" />
+    <Project Path="src/Elastic.Markdown/Elastic.Markdown.csproj" />
+  </Folder>
+  <Folder Name="/src/api/">
+    <Project Path="src/api/Elastic.Documentation.Api.Core/Elastic.Documentation.Api.Core.csproj" />
+    <Project Path="src/api/Elastic.Documentation.Api.Infrastructure/Elastic.Documentation.Api.Infrastructure.csproj" />
+    <Project Path="src/api/Elastic.Documentation.Api.Lambda/Elastic.Documentation.Api.Lambda.csproj" />
+  </Folder>
+  <Folder Name="/src/authoring/">
+    <Project Path="src/authoring/Elastic.Documentation.Refactor/Elastic.Documentation.Refactor.csproj" />
+  </Folder>
+  <Folder Name="/src/infra/">
+    <Project Path="src/infra/docs-lambda-index-publisher/docs-lambda-index-publisher.csproj" />
+  </Folder>
+  <Folder Name="/src/services/">
+    <Project Path="src/services/Elastic.Documentation.Assembler/Elastic.Documentation.Assembler.csproj" />
+    <Project Path="src/services/Elastic.Documentation.Isolated/Elastic.Documentation.Isolated.csproj" />
+    <Project Path="src/services/Elastic.Documentation.Services/Elastic.Documentation.Services.csproj" />
+  </Folder>
+  <Folder Name="/src/tooling/">
+    <File Path="src/tooling/Directory.Build.props" />
+    <Project Path="src/tooling/docs-builder/docs-builder.csproj" />
+  </Folder>
+  <Folder Name="/tests-integration/">
+    <File Path="tests-integration/Directory.Build.props" />
+    <Project Path="tests-integration/Elastic.Assembler.IntegrationTests/Elastic.Assembler.IntegrationTests.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <File Path="tests/Directory.Build.props" />
+    <Project Path="tests/authoring/authoring.fsproj" />
+    <Project Path="tests/Elastic.ApiExplorer.Tests/Elastic.ApiExplorer.Tests.csproj" />
+    <Project Path="tests/Elastic.Documentation.Api.Infrastructure.Tests/Elastic.Documentation.Api.Infrastructure.Tests.csproj" />
+    <Project Path="tests/Elastic.Documentation.Configuration.Tests/Elastic.Documentation.Configuration.Tests.csproj" />
+    <Project Path="tests/Elastic.Documentation.LegacyDocs.Tests/Elastic.Documentation.LegacyDocs.Tests.csproj" />
+    <Project Path="tests/Elastic.Markdown.Tests/Elastic.Markdown.Tests.csproj" />
+    <Project Path="tests/Navigation.Tests/Navigation.Tests.csproj" />
+  </Folder>
+  <Project Path=".github/.github.csproj">
+    <Build Project="false" />
+  </Project>
+  <Project Path="aspire/aspire.csproj" />
+  <Project Path="build/build.fsproj">
+    <Build Solution="Release|*" Project="false" />
+  </Project>
+  <Project Path="docs/docs.csproj">
+    <Build Project="false" />
+  </Project>
+</Solution>
