@@ -18,7 +18,7 @@ public static class Paths
 		var directory = new DirectoryInfo(Directory.GetCurrentDirectory());
 		while (directory != null)
 		{
-			if (directory.GetFiles("*.sln").Length > 0)
+			if (directory.GetFiles("*.slnx").Length > 0)
 				break;
 			if (directory.GetDirectories(".git").Length > 0)
 				break;
@@ -52,7 +52,7 @@ public static class Paths
 	public static DirectoryInfo? GetSolutionDirectory()
 	{
 		var directory = new DirectoryInfo(Directory.GetCurrentDirectory());
-		while (directory != null && directory.GetFiles("*.sln").Length == 0)
+		while (directory != null && directory.GetFiles("*.slnx").Length == 0)
 			directory = directory.Parent;
 		return directory;
 	}

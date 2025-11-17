@@ -18,7 +18,7 @@ type Paths =
     static member Root =
         let mutable dir = DirectoryInfo(".")
         let mutable rooted = false
-        while not(rooted) && dir.GetFiles("*.sln").Length = 0 do
+        while not(rooted) && dir.GetFiles("*.slnx").Length = 0 do
             match dir.Parent with
             | NonNull parent -> dir <- parent
             | _ -> rooted <- true
