@@ -170,10 +170,7 @@ Content for removed version
 
 		// Verify all sync keys have the expected hash-based format
 		foreach (var item in items)
-		{
 			item.SyncKey.Should().StartWith("applies-", "Sync key should start with 'applies-' prefix");
-			item.SyncKey.Should().MatchRegex(@"^applies-\d+$", "Sync key should be in format 'applies-{hash}'");
-		}
 
 		// Verify that different applies_to definitions produce different sync keys
 		items[0].SyncKey.Should().NotBe(items[1].SyncKey, "Different applies_to definitions should produce different sync keys");
@@ -220,7 +217,49 @@ Content for removed version
 
 			// Also verify the key has the expected format
 			key1.Should().StartWith("applies-", "Sync key should start with 'applies-' prefix");
-			key1.Should().MatchRegex(@"^applies-\d+$", "Sync key should be in format 'applies-{hash}'");
+			key1.Should().MatchRegex(@"^applies-[0-9A-F]{8}$", "Sync key should be in format 'applies-{8 hex digits}'");
 		}
+	}
+
+	[Fact]
+	public void GeneratesDeterministicSyncKeysAcrossMultipleRuns()
+	{
+		// Test that the same input always produces the same sync key across multiple invocations
+		// This ensures the hash is deterministic and not affected by GetHashCode() instability
+		// The expected values are based on SHA256 hashing of the ToString() output of ApplicableTo
+		var testDefinitions = new[]
+		{
+			"stack: ga 9.1",
+			"stack: preview 9.0",
+			"ess: ga 8.11",
+			"deployment: { ece: ga 9.0, ess: ga 9.1 }",
+			"serverless: all",
+		};
+
+		foreach (var definition in testDefinitions)
+		{
+			// Generate the same key 10 times to prove determinism
+			var keys = Enumerable.Range(0, 10)
+				.Select(_ => AppliesItemBlock.GenerateSyncKey(definition, Block!.Build.ProductsConfiguration))
+				.ToList();
+
+			// All keys should be identical
+			keys.Distinct().Should().HaveCount(1,
+				$"All 10 invocations for '{definition}' should produce the exact same deterministic key");
+
+			// The key should have the expected format
+			var key = keys[0];
+			key.Should().StartWith("applies-", "Sync key should start with 'applies-' prefix");
+			key.Should().MatchRegex(@"^applies-[0-9A-F]{8}$",
+				"Sync key should be in format 'applies-{8 uppercase hex digits}'");
+		}
+
+		// Also verify that different definitions produce different keys
+		var allKeys = testDefinitions
+			.Select(def => AppliesItemBlock.GenerateSyncKey(def, Block!.Build.ProductsConfiguration))
+			.ToList();
+
+		allKeys.Distinct().Should().HaveCount(testDefinitions.Length,
+			"Different applies_to definitions should produce different sync keys");
 	}
 }
