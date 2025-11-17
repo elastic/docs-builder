@@ -39,9 +39,9 @@ public class DocumentationSetNavigation<TModel>
 		_context = context;
 		_factory = factory;
 		_crossLinkResolver = crossLinkResolver ?? NoopCrossLinkResolver.Instance;
-		_pathPrefix = pathPrefix ?? string.Empty;
+		PathPrefix = pathPrefix ?? string.Empty;
 		// Initialize root properties
-		_navigationRoot = root ?? this;
+		NavigationRoot = root ?? this;
 		Parent = parent;
 		Hidden = false;
 		HomeProvider = this;
@@ -94,14 +94,11 @@ public class DocumentationSetNavigation<TModel>
 
 	}
 
-	private readonly string _pathPrefix;
-	private readonly IRootNavigationItem<INavigationModel, INavigationItem> _navigationRoot;
-
 	/// <summary>
 	/// Gets the path prefix. When HomeProvider is set to a different instance, it returns that provider's prefix.
 	/// Otherwise, returns the prefix set during construction.
 	/// </summary>
-	public string PathPrefix => HomeProvider == this ? _pathPrefix : HomeProvider.PathPrefix;
+	public string PathPrefix => HomeProvider == this ? field : HomeProvider.PathPrefix;
 
 	public INavigationHomeProvider HomeProvider { get; set; }
 
@@ -121,7 +118,7 @@ public class DocumentationSetNavigation<TModel>
 	public string NavigationTitle => Index.NavigationTitle;
 
 	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot =>
-		HomeProvider == this ? _navigationRoot : HomeProvider.NavigationRoot;
+		HomeProvider == this ? field : HomeProvider.NavigationRoot;
 
 	/// <inheritdoc />
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }

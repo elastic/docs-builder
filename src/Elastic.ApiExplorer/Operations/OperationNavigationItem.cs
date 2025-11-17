@@ -6,8 +6,7 @@ using System.IO.Abstractions;
 using Elastic.ApiExplorer.Landing;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
-using Microsoft.OpenApi.Models;
-using Microsoft.OpenApi.Models.Interfaces;
+using Microsoft.OpenApi;
 using RazorSlices;
 
 namespace Elastic.ApiExplorer.Operations;
@@ -25,7 +24,7 @@ public record ApiObject
 
 
 
-public record ApiOperation(OperationType OperationType, OpenApiOperation Operation, string Route, IOpenApiPathItem Path, string ApiName) : IApiModel
+public record ApiOperation(HttpMethod OperationType, OpenApiOperation Operation, string Route, IOpenApiPathItem Path, string ApiName) : IApiModel
 {
 	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default)
 	{

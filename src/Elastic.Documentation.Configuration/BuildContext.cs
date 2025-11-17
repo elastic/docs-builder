@@ -58,12 +58,10 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 	// This property is used for the canonical URL
 	public Uri? CanonicalBaseUrl { get; init; }
 
-	private readonly string? _urlPathPrefix;
-
 	public string? UrlPathPrefix
 	{
-		get => string.IsNullOrWhiteSpace(_urlPathPrefix) ? "" : $"/{_urlPathPrefix.Trim('/')}";
-		init => _urlPathPrefix = value;
+		get => string.IsNullOrWhiteSpace(field) ? "" : $"/{field.Trim('/')}";
+		init;
 	}
 
 	public BuildContext(

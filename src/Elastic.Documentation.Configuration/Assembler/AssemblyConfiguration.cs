@@ -262,6 +262,6 @@ public record AssemblyConfiguration
 
 internal static partial class ContentSourceRegex
 {
-	[GeneratedRegex(@"^\d+\.\d+$", RegexOptions.IgnoreCase, "en-US")]
+	[GeneratedRegex(@"^\d+\.\d+$", RegexOptions.IgnoreCase)]
 	public static partial Regex MatchVersionBranch();
 }
