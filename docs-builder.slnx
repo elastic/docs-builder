@@ -92,7 +92,9 @@
     <Build Project="false" />
   </Project>
   <Project Path="aspire/aspire.csproj" />
-  <Project Path="build/build.fsproj" />
+  <Project Path="build/build.fsproj">
+    <Build Solution="Release|*" Project="false" />
+  </Project>
   <Project Path="docs/docs.csproj">
     <Build Project="false" />
   </Project>
