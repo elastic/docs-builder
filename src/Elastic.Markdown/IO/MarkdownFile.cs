@@ -336,7 +336,9 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		if (document.FirstOrDefault() is not YamlFrontMatterBlock yaml)
 			return new YamlFrontMatter { Title = Title };
 
-		var raw = string.Join(Environment.NewLine, yaml.Lines.Lines);
+		var raw = yaml.Lines.Lines is not null
+			? string.Join(Environment.NewLine, yaml.Lines.Lines)
+			: string.Empty;
 		var fm = ReadYamlFrontMatter(raw);
 
 		if (fm.AppliesTo?.Diagnostics is not null)
