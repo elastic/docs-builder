@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.ServiceDefaults.Telemetry;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.DependencyInjection;
@@ -51,11 +52,13 @@ public static class Extensions
 			{
 				_ = metrics.AddAspNetCoreInstrumentation()
 					.AddHttpClientInstrumentation()
-					.AddRuntimeInstrumentation();
+					.AddRuntimeInstrumentation()
+					.AddMeter(TelemetryConstants.AssemblerSyncInstrumentationName);
 			})
 			.WithTracing(tracing =>
 			{
 				_ = tracing.AddSource(builder.Environment.ApplicationName)
+					.AddSource(TelemetryConstants.AssemblerSyncInstrumentationName)
 					.AddAspNetCoreInstrumentation(instrumentation =>
 						// Exclude health check requests from tracing
 						instrumentation.Filter = context =>
@@ -77,7 +80,16 @@ public static class Extensions
 		var useOtlpExporter = !string.IsNullOrWhiteSpace(builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]);
 
 		if (useOtlpExporter)
+		{
+			// Configure delta temporality for Elasticsearch compatibility
+			// See: https://www.elastic.co/docs/reference/opentelemetry/compatibility/limitations#histograms-in-delta-temporality-only
+			_ = builder.Services.Configure<MetricReaderOptions>(options =>
+			{
+				options.TemporalityPreference = MetricReaderTemporalityPreference.Delta;
+			});
+
 			_ = builder.Services.AddOpenTelemetry().UseOtlpExporter();
+		}
 
 		// Uncomment the following lines to enable the Azure Monitor exporter (requires the Azure.Monitor.OpenTelemetry.AspNetCore package)
 		//if (!string.IsNullOrEmpty(builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"]))

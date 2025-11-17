@@ -1,9 +1,11 @@
+import { ApiError, isRateLimitError, isApiError } from '../errorHandling'
 import { AskAiEvent, AskAiEventSchema } from './AskAiEvent'
 import { useAiProvider } from './chat.store'
+import { useAskAiCooldown, useAskAiCooldownActions } from './useAskAiCooldown'
 import { useFetchEventSource } from './useFetchEventSource'
 import { useMessageThrottling } from './useMessageThrottling'
 import { EventSourceMessage } from '@microsoft/fetch-event-source'
-import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import * as z from 'zod'
 
 // Constants
@@ -19,7 +21,7 @@ export type AskAiRequest = z.infer<typeof AskAiRequestSchema>
 export interface UseAskAiResponse {
     events: AskAiEvent[]
     abort: () => void
-    error: Error | null
+    error: ApiError | Error | null
     sendQuestion: (question: string) => Promise<void>
 }
 
@@ -31,7 +33,9 @@ interface Props {
 
 export const useAskAi = (props: Props): UseAskAiResponse => {
     const [events, setEvents] = useState<AskAiEvent[]>([])
-    const [error, setError] = useState<Error | null>(null)
+    const [error, setError] = useState<ApiError | Error | null>(null)
+    const storeCooldown = useAskAiCooldown()
+    const { setCooldown } = useAskAiCooldownActions()
     const lastSentQuestionRef = useRef<string>('')
 
     // Get AI provider from store (user-controlled via UI)
@@ -117,6 +121,7 @@ export const useAskAi = (props: Props): UseAskAiResponse => {
         headers,
         onMessage,
         onError: (error) => {
+            if (!error) return
             console.error('[AI Provider] Error in useFetchEventSource:', {
                 errorMessage: error.message,
                 errorStack: error.stack,
@@ -124,12 +129,26 @@ export const useAskAi = (props: Props): UseAskAiResponse => {
                 fullError: error,
             })
             setError(error)
-            props.onError?.(error)
+            if (
+                isApiError(error) &&
+                isRateLimitError(error) &&
+                error.retryAfter
+            ) {
+                setCooldown(error.retryAfter)
+            }
+            if (error) {
+                props.onError?.(error)
+            }
         },
     })
 
     const sendQuestion = useCallback(
         async (question: string) => {
+            // Prevent sending during cooldown period (check store cooldown)
+            if (storeCooldown !== null && storeCooldown > 0) {
+                return
+            }
+
             if (question.trim() && question !== lastSentQuestionRef.current) {
                 abort()
                 setError(null)
@@ -151,7 +170,7 @@ export const useAskAi = (props: Props): UseAskAiResponse => {
                 }
             }
         },
-        [props.conversationId, sendMessage, abort, clearQueue]
+        [props.conversationId, sendMessage, abort, clearQueue, storeCooldown]
     )
 
     useEffect(() => {
@@ -167,15 +186,19 @@ export const useAskAi = (props: Props): UseAskAiResponse => {
         error,
         sendQuestion,
         abort: () => {
+            console.log('[useAskAi] Abort called')
             abort()
             clearQueue()
         },
     }
 }
 
-function createAskAiRequest(message: string, threadId?: string): AskAiRequest {
+function createAskAiRequest(
+    message: string,
+    conversationId?: string
+): AskAiRequest {
     return AskAiRequestSchema.parse({
         message,
-        threadId,
+        conversationId,
     })
 }

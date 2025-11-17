@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Razor">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <InvariantGlobalization>true</InvariantGlobalization>
@@ -18,6 +18,7 @@
   <ItemGroup>
     <PackageReference Include="DotNet.Glob" />
     <PackageReference Include="Elastic.Ingest.Elasticsearch" />
+    <PackageReference Include="Generator.Equals" />
     <PackageReference Include="Markdig" />
     <PackageReference Include="Microsoft.Extensions.Logging" />
     <PackageReference Include="RazorSlices" />
@@ -37,6 +38,7 @@
     <ProjectReference Include="..\Elastic.Documentation.LinkIndex\Elastic.Documentation.LinkIndex.csproj" />
     <ProjectReference Include="..\Elastic.Documentation\Elastic.Documentation.csproj" />
     <ProjectReference Include="..\Elastic.Documentation.Configuration\Elastic.Documentation.Configuration.csproj" />
+    <ProjectReference Include="..\Elastic.Documentation.Navigation\Elastic.Documentation.Navigation.csproj" />
   </ItemGroup>
 
   <ItemGroup>

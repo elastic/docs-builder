@@ -23,6 +23,7 @@ public class ElasticsearchEndpoint
 	// inference options
 	public int SearchNumThreads { get; set; } = 8;
 	public int IndexNumThreads { get; set; } = 8;
+	public bool NoElasticInferenceService { get; set; }
 
 	// index options
 	public string IndexNamePrefix { get; set; } = "semantic-docs";
@@ -30,7 +31,6 @@ public class ElasticsearchEndpoint
 	// channel buffer options
 	public int BufferSize { get; set; } = 100;
 	public int MaxRetries { get; set; } = 3;
-
 
 	// connection options
 	public bool DebugMode { get; set; }

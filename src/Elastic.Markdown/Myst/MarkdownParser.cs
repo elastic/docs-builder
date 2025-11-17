@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using Cysharp.IO;
 using Elastic.Documentation.Configuration;
@@ -36,16 +37,16 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 	public Task<MarkdownDocument> MinimalParseAsync(IFileInfo path, Cancel ctx) =>
 		ParseFromFile(path, null, MinimalPipeline, true, ctx);
 
-	private Task<MarkdownDocument> ParseFromFile(
-		IFileInfo path, YamlFrontMatter? matter, MarkdownPipeline pipeline, bool skip, Cancel ctx
-	)
+	private Task<MarkdownDocument> ParseFromFile(IFileInfo path, YamlFrontMatter? matter, MarkdownPipeline pipeline, bool skip, Cancel ctx)
 	{
 		var state = new ParserState(Build)
 		{
 			MarkdownSourcePath = path,
 			YamlFrontMatter = matter,
-			DocumentationFileLookup = Resolvers.DocumentationFileLookup,
+			TryFindDocument = Resolvers.TryFindDocument,
+			TryFindDocumentByRelativePath = Resolvers.TryFindDocumentByRelativePath,
 			CrossLinkResolver = Resolvers.CrossLinkResolver,
+			PositionalNavigation = Resolvers.PositionalNavigation,
 			SkipValidation = skip
 		};
 		var context = new ParserContext(state);
@@ -67,7 +68,9 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 		{
 			MarkdownSourcePath = path,
 			YamlFrontMatter = matter,
-			DocumentationFileLookup = resolvers.DocumentationFileLookup,
+			TryFindDocument = resolvers.TryFindDocument,
+			TryFindDocumentByRelativePath = resolvers.TryFindDocumentByRelativePath,
+			PositionalNavigation = resolvers.PositionalNavigation,
 			CrossLinkResolver = resolvers.CrossLinkResolver
 		};
 		var context = new ParserContext(state);
@@ -86,8 +89,10 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 		{
 			MarkdownSourcePath = path,
 			YamlFrontMatter = matter,
-			DocumentationFileLookup = resolvers.DocumentationFileLookup,
+			TryFindDocument = resolvers.TryFindDocument,
+			TryFindDocumentByRelativePath = resolvers.TryFindDocumentByRelativePath,
 			CrossLinkResolver = resolvers.CrossLinkResolver,
+			PositionalNavigation = resolvers.PositionalNavigation,
 			ParentMarkdownPath = parentPath
 		};
 		var context = new ParserContext(state);
@@ -118,15 +123,13 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 		return markdownDocument;
 	}
 
-	// ReSharper disable once InconsistentNaming
-	private static MarkdownPipeline? MinimalPipelineCached;
-
+	[field: AllowNull, MaybeNull]
 	private static MarkdownPipeline MinimalPipeline
 	{
 		get
 		{
-			if (MinimalPipelineCached is not null)
-				return MinimalPipelineCached;
+			if (field is not null)
+				return field;
 			var builder = new MarkdownPipelineBuilder()
 				.UseYamlFrontMatter()
 				.UseInlineAnchors()
@@ -134,20 +137,18 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 				.UseDirectives();
 
 			_ = builder.BlockParsers.TryRemove<IndentedCodeBlockParser>();
-			MinimalPipelineCached = builder.Build();
-			return MinimalPipelineCached;
+			field = builder.Build();
+			return field;
 		}
 	}
 
-	// ReSharper disable once InconsistentNaming
-	private static MarkdownPipeline? PipelineCached;
-
+	[field: AllowNull, MaybeNull]
 	public static MarkdownPipeline Pipeline
 	{
 		get
 		{
-			if (PipelineCached is not null)
-				return PipelineCached;
+			if (field is not null)
+				return field;
 
 			var builder = new MarkdownPipelineBuilder()
 				.UseInlineAnchors()
@@ -172,8 +173,8 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 				.UseSpaceNormalizer()
 				.UseHardBreaks();
 			_ = builder.BlockParsers.TryRemove<IndentedCodeBlockParser>();
-			PipelineCached = builder.Build();
-			return PipelineCached;
+			field = builder.Build();
+			return field;
 		}
 	}
 

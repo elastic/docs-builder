@@ -41,6 +41,8 @@ jobs:
   
   synthetics:
     runs-on: ubuntu-latest
+    env:
+      MSBuildNoWarn: IDE0032
     steps:
       - uses: actions/checkout@v5
         

@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Extensions;
 using Elastic.Markdown.IO;
 using FluentAssertions;
 
@@ -12,23 +13,27 @@ public class BreadCrumbTests(ITestOutputHelper output) : NavigationTestsBase(out
 	[Fact]
 	public void ParsesATableOfContents()
 	{
-		var doc = Generator.DocumentationSet.Files.FirstOrDefault(f => f.RelativePath == Path.Combine("testing", "nested", "index.md")) as MarkdownFile;
+		IPositionalNavigation positionalNavigation = Generator.DocumentationSet;
+		var allKeys = positionalNavigation.NavigationIndexedByCrossLink.Keys;
+		allKeys.Should().Contain("docs-builder://testing/nested/index.md");
+		allKeys.Should().Contain("docs-builder://testing/nest-under-index/index.md");
+
+		var lookup = Path.Combine("testing", "nested", "index.md");
+		var doc = Generator.DocumentationSet.MarkdownFiles
+			.FirstOrDefault(f => f.SourceFile.FullName.EndsWith(lookup, StringComparison.OrdinalIgnoreCase));
 
 		doc.Should().NotBeNull();
 
-		IPositionalNavigation positionalNavigation = Generator.DocumentationSet;
-
-		var allKeys = positionalNavigation.MarkdownNavigationLookup.Keys.ToList();
-		allKeys.Should().Contain("docs-builder://testing/nested/index.md");
-
-		var f = positionalNavigation.MarkdownNavigationLookup.FirstOrDefault(kv => kv.Key == "docs-builder://testing/deeply-nested/foo.md");
+		var f = positionalNavigation.NavigationIndexedByCrossLink.FirstOrDefault(kv => kv.Key == "docs-builder://testing/deeply-nested/foo.md");
 		f.Should().NotBeNull();
 
-		positionalNavigation.MarkdownNavigationLookup.Should().ContainKey(doc.CrossLink);
-		var nav = positionalNavigation.MarkdownNavigationLookup[doc.CrossLink];
+		positionalNavigation.NavigationIndexedByCrossLink.Should().ContainKey(doc.CrossLink);
+		var nav = positionalNavigation.NavigationIndexedByCrossLink[doc.CrossLink];
 
 		nav.Parent.Should().NotBeNull();
 
+		_ = positionalNavigation.MarkdownNavigationLookup.TryGetValue(doc, out var docNavigation);
+		docNavigation.Should().NotBeNull();
 		var parents = positionalNavigation.GetParentsOfMarkdownFile(doc);
 
 		parents.Should().HaveCount(2);

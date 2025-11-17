@@ -24,5 +24,16 @@ public class TestDiagnosticsCollector(ITestOutputHelper output)
 
 	public IReadOnlyCollection<Diagnostic> Diagnostics => _diagnostics;
 
-	protected override void HandleItem(Diagnostic diagnostic) => _diagnostics.Add(diagnostic);
+	/// <inheritdoc />
+	public override void Write(Diagnostic diagnostic)
+	{
+		IncrementSeverityCount(diagnostic);
+		_diagnostics.Add(diagnostic);
+	}
+
+	/// <inheritdoc />
+	public override DiagnosticsCollector StartAsync(Cancel ctx) => this;
+
+	/// <inheritdoc />
+	public override Task StopAsync(Cancel cancellationToken) => Task.CompletedTask;
 }

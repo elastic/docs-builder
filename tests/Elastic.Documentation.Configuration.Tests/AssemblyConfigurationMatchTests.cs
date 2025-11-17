@@ -265,4 +265,136 @@ public class AssemblyConfigurationMatchTests
 		result.Current.Should().Be(ContentSource.Current);
 		result.Speculative.Should().BeTrue();
 	}
+
+	[Theory]
+	[InlineData("9.0", "9.0.0")]   // Matches anchored product version
+	[InlineData("9.1", "9.0.0")]   // Greater than anchored product version
+	[InlineData("9.5", "9.0.0")]   // Much greater than anchored product version
+	public void VersionBranchSpeculativeBuildWhenGreaterThanOrEqualToAnchoredProductVersion(string branch, string productVersion)
+	{
+		var repositories = new Dictionary<string, Repository>
+		{
+			["test-repo"] = CreateRepository(current: "main", next: "main", edge: "main")
+		};
+		var config = CreateConfiguration(repositories);
+		var versionParts = productVersion.Split('.');
+		var product = CreateProduct(new SemVersion(int.Parse(versionParts[0], null), int.Parse(versionParts[1], null), int.Parse(versionParts[2], null)));
+
+		var result = config.Match(LoggerFactory, "elastic/test-repo", branch, product);
+
+		result.Speculative.Should().BeTrue();
+	}
+
+	[Theory]
+	[InlineData("8.15", "9.0.0")]  // Less than anchored product version
+	[InlineData("7.17", "9.0.0")]  // Much less than anchored product version
+	[InlineData("8.0", "9.1.5")]   // Less than anchored product version with patch
+	public void VersionBranchNoSpeculativeBuildWhenLessThanAnchoredProductVersionAndNotPreviousMinor(string branch, string productVersion)
+	{
+		var repositories = new Dictionary<string, Repository>
+		{
+			["test-repo"] = CreateRepository(current: "main", next: "main", edge: "main")
+		};
+		var config = CreateConfiguration(repositories);
+		var versionParts = productVersion.Split('.');
+		var product = CreateProduct(new SemVersion(int.Parse(versionParts[0], null), int.Parse(versionParts[1], null), int.Parse(versionParts[2], null)));
+
+		var result = config.Match(LoggerFactory, "elastic/test-repo", branch, product);
+
+		result.Speculative.Should().BeFalse();
+	}
+
+	[Theory]
+	[InlineData("9.1", "9.2.0")]   // Previous minor version
+	[InlineData("8.14", "8.15.1")] // Previous minor version with patch
+	[InlineData("10.0", "10.1.0")] // Previous minor version at major boundary
+	public void VersionBranchSpeculativeBuildWhenMatchesPreviousMinorVersion(string branch, string productVersion)
+	{
+		var repositories = new Dictionary<string, Repository>
+		{
+			["test-repo"] = CreateRepository(current: "main", next: "main", edge: "main")
+		};
+		var config = CreateConfiguration(repositories);
+		var versionParts = productVersion.Split('.');
+		var product = CreateProduct(new SemVersion(int.Parse(versionParts[0], null), int.Parse(versionParts[1], null), int.Parse(versionParts[2], null)));
+
+		var result = config.Match(LoggerFactory, "elastic/test-repo", branch, product);
+
+		result.Speculative.Should().BeTrue();
+	}
+
+	[Fact]
+	public void VersionBranchNoSpeculativeBuildWhenProductVersioningSystemIsNull()
+	{
+		var repositories = new Dictionary<string, Repository>
+		{
+			["test-repo"] = CreateRepository(current: "main", next: "main", edge: "main")
+		};
+		var config = CreateConfiguration(repositories);
+		var product = new Product
+		{
+			Id = "test-product",
+			DisplayName = "Test Product",
+			VersioningSystem = null // No versioning system
+		};
+
+		var result = config.Match(LoggerFactory, "elastic/test-repo", "9.0", product);
+
+		result.Speculative.Should().BeFalse();
+	}
+
+	[Fact]
+	public void VersionBranchNoSpeculativeBuildWhenProductIsNull()
+	{
+		var repositories = new Dictionary<string, Repository>
+		{
+			["test-repo"] = CreateRepository(current: "main", next: "main", edge: "main")
+		};
+		var config = CreateConfiguration(repositories);
+
+		var result = config.Match(LoggerFactory, "elastic/test-repo", "9.0", null);
+
+		result.Speculative.Should().BeFalse();
+	}
+
+	[Theory]
+	[InlineData("9.0", "9.0.15")]  // Anchored version equals major.minor.0
+	[InlineData("9.0", "9.0.0")]   // Anchored version equals major.minor.0
+	[InlineData("9.0", "9.0.1")]   // Anchored version equals major.minor.0
+	public void VersionBranchAnchorsProductVersionToMinorZero(string branch, string productVersion)
+	{
+		var repositories = new Dictionary<string, Repository>
+		{
+			["test-repo"] = CreateRepository(current: "main", next: "main", edge: "main")
+		};
+		var config = CreateConfiguration(repositories);
+		var versionParts = productVersion.Split('.');
+		var product = CreateProduct(new SemVersion(int.Parse(versionParts[0], null), int.Parse(versionParts[1], null), int.Parse(versionParts[2], null)));
+
+		var result = config.Match(LoggerFactory, "elastic/test-repo", branch, product);
+
+		// Should match because branch 9.0 >= anchored product version 9.0.0
+		result.Speculative.Should().BeTrue();
+	}
+
+	[Theory]
+	[InlineData("8.0", "8.1.0")]  // Previous minor when current is 8.1
+	[InlineData("7.17", "8.0.0")] // Previous minor when current is 8.0 (floor at 0)
+	public void VersionBranchPreviousMinorCalculationHandlesEdgeCases(string branch, string productVersion)
+	{
+		var repositories = new Dictionary<string, Repository>
+		{
+			["test-repo"] = CreateRepository(current: "main", next: "main", edge: "main")
+		};
+		var config = CreateConfiguration(repositories);
+		var versionParts = productVersion.Split('.');
+		var product = CreateProduct(new SemVersion(int.Parse(versionParts[0], null), int.Parse(versionParts[1], null), int.Parse(versionParts[2], null)));
+
+		var result = config.Match(LoggerFactory, "elastic/test-repo", branch, product);
+
+		// 8.0 should match previous minor of 8.1 (which is 8.0)
+		// 7.17 should NOT match previous minor of 8.0 (which is Math.Max(0-1, 0) = 8.0, not 7.17)
+		var expectedSpeculative = branch == "8.0" && productVersion == "8.1.0";
+		result.Speculative.Should().Be(expectedSpeculative);
+	}
 }

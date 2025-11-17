@@ -5,7 +5,7 @@
 using System.IO.Abstractions;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation.Extensions;
-using Elastic.Documentation.Site.Navigation;
+using Elastic.Documentation.Navigation;
 using RazorSlices;
 
 namespace Elastic.ApiExplorer.Landing;
@@ -28,34 +28,31 @@ public class LandingNavigationItem : IApiGroupingNavigationItem<ApiLanding, INav
 {
 	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }
 	public string Id { get; }
-	public int Depth { get; }
-	public ApiLanding Index { get; }
+	public ILeafNavigationItem<ApiLanding> Index { get; }
 	public IReadOnlyCollection<INavigationItem> NavigationItems { get; set; } = [];
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
 	public int NavigationIndex { get; set; }
-	public bool IsCrossLink => false; // API landing items are never cross-links
-	public string Url { get; }
+	public string Url => Index.Url;
 	public bool Hidden => false;
+	public Uri Identifier { get; } = new Uri("todo://");
 
-	//TODO
-	public string NavigationTitle { get; } = "API Overview";
+	public string NavigationTitle => Index.NavigationTitle;
 
 	public string? NavigationTooltip => null; // API landing items don't have tooltips
 
 	public LandingNavigationItem(string url)
 	{
-		Depth = 0;
 		NavigationRoot = this;
 		Id = ShortId.Create("root");
-
 		var landing = new ApiLanding();
-		Url = url;
-
-		Index = landing;
+		Index = new ApiIndexLeafNavigation<ApiLanding>(landing, url, "Api Overview", this);
 	}
 
 	/// <inheritdoc />
 	public bool IsUsingNavigationDropdown => false;
+
+	void IAssignableChildrenNavigation.SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems) =>
+		throw new NotSupportedException($"{nameof(IAssignableChildrenNavigation.SetNavigationItems)} is not supported on ${nameof(ClassificationNavigationItem)}");
 }
 
 public interface IApiGroupingNavigationItem<out TGroupingModel, out TNavigationItem> : INodeNavigationItem<TGroupingModel, TNavigationItem>
@@ -65,10 +62,12 @@ public interface IApiGroupingNavigationItem<out TGroupingModel, out TNavigationI
 public abstract class ApiGroupingNavigationItem<TGroupingModel, TNavigationItem>(
 	TGroupingModel groupingModel,
 	IRootNavigationItem<IApiGroupingModel, INavigationItem> rootNavigation,
-	INodeNavigationItem<INavigationModel, INavigationItem> parent)
+	INodeNavigationItem<INavigationModel, INavigationItem> parent
+)
 	: IApiGroupingNavigationItem<TGroupingModel, TNavigationItem>
 	where TGroupingModel : IApiGroupingModel
 	where TNavigationItem : INavigationItem
+
 {
 	/// <inheritdoc />
 	public string Url => NavigationItems.First().Url;
@@ -89,15 +88,15 @@ public abstract class ApiGroupingNavigationItem<TGroupingModel, TNavigationItem>
 	public bool Hidden => false;
 	/// <inheritdoc />
 	public int NavigationIndex { get; set; }
-	public bool IsCrossLink => false; // API grouping items are never cross-links
 
-	/// <inheritdoc />
-	public int Depth => 0;
+	public Uri Identifier { get; } = new Uri("todo://");
 
 	/// <inheritdoc />
 	public abstract string Id { get; }
+
+	//TODO ensure Index is not newed everytime
 	/// <inheritdoc />
-	public TGroupingModel Index { get; } = groupingModel;
+	public ILeafNavigationItem<TGroupingModel> Index => new ApiIndexLeafNavigation<TGroupingModel>(groupingModel, Url, NavigationTitle, rootNavigation, Parent);
 
 	/// <inheritdoc />
 	public IReadOnlyCollection<TNavigationItem> NavigationItems { get; set; } = [];
@@ -114,6 +113,9 @@ public class ClassificationNavigationItem(ApiClassification classification, Land
 
 	/// <inheritdoc />
 	public bool IsUsingNavigationDropdown => false;
+
+	void IAssignableChildrenNavigation.SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems) =>
+		throw new NotSupportedException($"{nameof(IAssignableChildrenNavigation.SetNavigationItems)} is not supported on ${nameof(ClassificationNavigationItem)}");
 }
 
 public class TagNavigationItem(ApiTag tag, IRootNavigationItem<IApiGroupingModel, INavigationItem> rootNavigation, INodeNavigationItem<INavigationModel, INavigationItem> parent)
@@ -151,16 +153,13 @@ public class EndpointNavigationItem(ApiEndpoint endpoint, IRootNavigationItem<IA
 
 	/// <inheritdoc />
 	public int NavigationIndex { get; set; }
-	public bool IsCrossLink => false; // API endpoint items are never cross-links
-
-	/// <inheritdoc />
-	public int Depth => 0;
 
 	/// <inheritdoc />
 	public string Id { get; } = ShortId.Create(nameof(EndpointNavigationItem), endpoint.Operations.First().ApiName, endpoint.Operations.First().Route);
 
+	//TODO ensure Index is not newed everytime
 	/// <inheritdoc />
-	public ApiEndpoint Index { get; } = endpoint;
+	public ILeafNavigationItem<ApiEndpoint> Index => new ApiIndexLeafNavigation<ApiEndpoint>(endpoint, Url, NavigationTitle, rootNavigation, Parent);
 
 	/// <inheritdoc />
 	public IReadOnlyCollection<OperationNavigationItem> NavigationItems { get; set; } = [];

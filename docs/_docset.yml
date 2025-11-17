@@ -176,6 +176,8 @@ toc:
       - file: index.md
       - file: req.md
       - folder: nested
+        children:
+          - file: index.md
       - file: cross-links.md
         children:
           - title: "Getting Started Guide"

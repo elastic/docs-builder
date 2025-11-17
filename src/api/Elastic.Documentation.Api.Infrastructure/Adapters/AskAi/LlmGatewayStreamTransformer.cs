@@ -47,7 +47,7 @@ public class LlmGatewayStreamTransformer(ILogger<LlmGatewayStreamTransformer> lo
 		// Continue with normal stream processing using the actual conversation ID
 		await base.ProcessStreamAsync(reader, writer, actualConversationId, parentActivity, cancellationToken);
 	}
-	protected override AskAiEvent? TransformJsonEvent(string? conversationId, string? eventType, JsonElement json)
+	protected override AskAiEvent? TransformJsonEvent(string? eventType, JsonElement json)
 	{
 		// LLM Gateway format: ["custom", {type: "...", ...}]
 		if (json.ValueKind != JsonValueKind.Array || json.GetArrayLength() < 2)

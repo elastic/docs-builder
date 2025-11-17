@@ -1,13 +1,14 @@
 import { initCopyButton } from '../../../copybutton'
 import { hljs } from '../../../hljs'
-import { AskAiEvent, EventTypes } from './AskAiEvent'
+import { SearchOrAskAiErrorCallout } from '../SearchOrAskAiErrorCallout'
+import { ApiError } from '../errorHandling'
+import { AskAiEvent, ChunkEvent, EventTypes } from './AskAiEvent'
 import { GeneratingStatus } from './GeneratingStatus'
 import { References } from './RelatedResources'
 import { ChatMessage as ChatMessageType } from './chat.store'
 import { useStatusMinDisplay } from './useStatusMinDisplay'
 import {
     EuiButtonIcon,
-    EuiCallOut,
     EuiCopy,
     EuiFlexGroup,
     EuiFlexItem,
@@ -22,8 +23,7 @@ import {
 import { css } from '@emotion/react'
 import DOMPurify from 'dompurify'
 import { Marked, RendererObject, Tokens } from 'marked'
-import * as React from 'react'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 
 // Create the marked instance once globally (renderer never changes)
 const createMarkedInstance = () => {
@@ -59,8 +59,10 @@ interface ChatMessageProps {
     message: ChatMessageType
     events?: AskAiEvent[]
     streamingContent?: string
-    error?: Error | null
+    error?: ApiError | Error
     onRetry?: () => void
+    onCountdownChange?: (countdown: number | null) => void
+    showError?: boolean
 }
 
 const splitContentAndReferences = (
@@ -90,7 +92,7 @@ const splitContentAndReferences = (
 const getMessageState = (message: ChatMessageType) => ({
     isUser: message.type === 'user',
     isLoading: message.status === 'streaming',
-    isComplete: message.status === 'complete',
+    isComplete: message.status === 'complete' || message.status === 'error',
     hasError: message.status === 'error',
 })
 
@@ -129,6 +131,11 @@ const computeAiStatus = (
 ): string | null => {
     if (isComplete) return null
 
+    // Don't show status if there's an error event
+    if (events.some((e) => e.type === EventTypes.ERROR)) {
+        return null
+    }
+
     // Get events sorted by timestamp (most recent last)
     const statusEvents = events
         .filter(
@@ -162,7 +169,7 @@ const computeAiStatus = (
         case EventTypes.MESSAGE_CHUNK: {
             const allContent = events
                 .filter((m) => m.type === EventTypes.MESSAGE_CHUNK)
-                .map((m) => m.content)
+                .map((m) => (m as ChunkEvent).content)
                 .join('')
 
             if (allContent.includes('<!--REFERENCES')) {
@@ -242,6 +249,7 @@ export const ChatMessage = ({
     streamingContent,
     error,
     onRetry,
+    showError = true,
 }: ChatMessageProps) => {
     const { euiTheme } = useEuiTheme()
     const { isUser, isLoading, isComplete } = getMessageState(message)
@@ -276,7 +284,11 @@ export const ChatMessage = ({
     // message.content is updated atomically with status when CONVERSATION_END arrives
     const content = streamingContent || message.content
 
-    const hasError = message.status === 'error' || !!error
+    const hasError = (message.status === 'error' || !!error) && showError
+
+    // Don't render content for error messages that aren't being shown
+    const shouldRenderContent =
+        !message.status || message.status !== 'error' || hasError
 
     // Only split content and references when complete for better performance
     const { mainContent, referencesJson } = useMemo(() => {
@@ -308,7 +320,7 @@ export const ChatMessage = ({
     // Apply minimum display time to prevent status flickering
     const aiStatus = useStatusMinDisplay(rawAiStatus)
 
-    const ref = React.useRef<HTMLDivElement>(null)
+    const ref = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
         if (isComplete && ref.current) {
@@ -335,91 +347,113 @@ export const ChatMessage = ({
             data-message-type="ai"
             data-message-id={message.id}
         >
-            <EuiFlexItem grow={false}>
-                <div
-                    css={css`
-                        block-size: 32px;
-                        inline-size: 32px;
-                        border-radius: 50%;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                    `}
-                >
-                    {isLoading ? (
-                        <EuiLoadingElastic
-                            size="xl"
-                            css={css`
-                                margin-top: -1px;
-                            `}
-                        />
-                    ) : (
-                        <EuiIcon
-                            name="Elastic Docs AI"
-                            size="xl"
-                            type="logoElastic"
-                        />
-                    )}
-                </div>
-            </EuiFlexItem>
-            <EuiFlexItem>
-                <EuiPanel
-                    paddingSize="m"
-                    hasShadow={false}
-                    hasBorder={false}
-                    css={css`
-                        padding-top: 8px;
-                    `}
-                >
-                    {content && (
-                        <div
-                            ref={ref}
-                            className="markdown-content"
-                            css={css`
-                                font-size: 14px;
-                                & > *:first-child {
-                                    margin-top: 0;
-                                }
-                            `}
-                            dangerouslySetInnerHTML={{ __html: parsed }}
-                        />
-                    )}
-
-                    {referencesJson && (
-                        <References referencesJson={referencesJson} />
-                    )}
-
-                    {content && isLoading && <EuiSpacer size="m" />}
-                    <GeneratingStatus status={aiStatus} />
-
-                    {isComplete && content && (
-                        <>
-                            <EuiSpacer size="m" />
-                            <ActionBar
-                                content={mainContent}
-                                onRetry={onRetry}
+            {!hasError && (
+                <EuiFlexItem grow={false}>
+                    <div
+                        css={css`
+                            block-size: 32px;
+                            inline-size: 32px;
+                            border-radius: 50%;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                        `}
+                    >
+                        {isLoading ? (
+                            <EuiLoadingElastic
+                                size="xl"
+                                css={css`
+                                    margin-top: -1px;
+                                `}
                             />
-                        </>
-                    )}
+                        ) : (
+                            <EuiIcon
+                                name="Elastic Docs AI"
+                                size="xl"
+                                type="logoElastic"
+                            />
+                        )}
+                    </div>
+                </EuiFlexItem>
+            )}
+            {!hasError && shouldRenderContent && (
+                <EuiFlexItem>
+                    <EuiPanel
+                        paddingSize="m"
+                        hasShadow={false}
+                        hasBorder={false}
+                        css={css`
+                            padding-top: 8px;
+                        `}
+                    >
+                        {content && (
+                            <div
+                                ref={ref}
+                                className="markdown-content"
+                                css={css`
+                                    font-size: 14px;
+                                    & > *:first-child {
+                                        margin-top: 0;
+                                    }
+                                `}
+                                dangerouslySetInnerHTML={{ __html: parsed }}
+                            />
+                        )}
 
-                    {hasError && (
-                        <>
-                            <EuiSpacer size="m" />
-                            <EuiCallOut
-                                title="Sorry, there was an error"
-                                color="danger"
-                                iconType="error"
-                                size="s"
+                        {referencesJson && (
+                            <References referencesJson={referencesJson} />
+                        )}
+
+                        {content && isLoading && <EuiSpacer size="m" />}
+                        <GeneratingStatus status={aiStatus} />
+
+                        {isComplete && content && (
+                            <>
+                                <EuiSpacer size="m" />
+                                <ActionBar
+                                    content={mainContent}
+                                    onRetry={onRetry}
+                                />
+                            </>
+                        )}
+                    </EuiPanel>
+                </EuiFlexItem>
+            )}
+            {hasError && (
+                <EuiFlexItem>
+                    <EuiFlexGroup
+                        gutterSize="s"
+                        alignItems="flexStart"
+                        responsive={false}
+                    >
+                        <EuiFlexItem grow={false}>
+                            <div
+                                css={css`
+                                    block-size: 32px;
+                                    inline-size: 32px;
+                                    border-radius: 50%;
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                `}
                             >
-                                <p>
-                                    The Elastic Docs AI Assistant encountered an
-                                    error. Please try again.
-                                </p>
-                            </EuiCallOut>
-                        </>
-                    )}
-                </EuiPanel>
-            </EuiFlexItem>
+                                <EuiIcon
+                                    name="Elastic Docs AI"
+                                    size="xl"
+                                    type="logoElastic"
+                                />
+                            </div>
+                        </EuiFlexItem>
+                        <EuiFlexItem>
+                            <SearchOrAskAiErrorCallout
+                                error={message.error || error || null}
+                                domain="askAi"
+                                inline={true}
+                            />
+                        </EuiFlexItem>
+                    </EuiFlexGroup>
+                </EuiFlexItem>
+            )}
         </EuiFlexGroup>
     )
 }

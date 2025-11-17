@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Diagnostics;
 using System.IO.Abstractions.TestingHelpers;
 using Amazon.S3;
 using Amazon.S3.Model;
@@ -11,9 +12,12 @@ using Elastic.Documentation.Assembler.Deploying.Synchronization;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.ServiceDefaults.Telemetry;
 using FakeItEasy;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
+using OpenTelemetry;
+using OpenTelemetry.Trace;
 
 namespace Elastic.Assembler.IntegrationTests;
 
@@ -268,12 +272,20 @@ public class DocsSyncTests
 			{
 				transferredFiles = fileSystem.Directory.GetFiles(request.Directory, request.SearchPattern, request.SearchOption);
 			});
+
+		// Configure OpenTelemetry to capture telemetry
+		var exportedActivities = new List<Activity>();
+		using var tracerProvider = Sdk.CreateTracerProviderBuilder()
+			.AddSource(TelemetryConstants.AssemblerSyncInstrumentationName)
+			.AddInMemoryExporter(exportedActivities)
+			.Build();
+
 		var applier = new AwsS3SyncApplyStrategy(new LoggerFactory(), moxS3Client, moxTransferUtility, "fake", context, collector);
 
 		// Act
 		await applier.Apply(plan, Cancel.None);
 
-		// Assert
+		// Assert - File operations
 		transferredFiles.Length.Should().Be(4); // 3 add requests + 1 update request
 		transferredFiles.Should().NotContain("docs/skip.md");
 
@@ -282,5 +294,19 @@ public class DocsSyncTests
 
 		A.CallTo(() => moxTransferUtility.UploadDirectoryAsync(A<TransferUtilityUploadDirectoryRequest>._, A<Cancel>._))
 			.MustHaveHappenedOnceExactly();
+
+		// Assert - Telemetry spans are created
+		exportedActivities.Should().Contain(a => a.DisplayName == "sync apply");
+		exportedActivities.Should().Contain(a => a.DisplayName == "upload files");
+		exportedActivities.Should().Contain(a => a.DisplayName == "delete files");
+
+		// Assert - Telemetry tags contain correct aggregate counts
+		var syncActivity = exportedActivities.First(a => a.DisplayName == "sync apply");
+		var tagObjects = syncActivity.TagObjects.ToList();
+		tagObjects.Should().Contain(t => t.Key == "docs.sync.files.added" && Convert.ToInt64(t.Value, System.Globalization.CultureInfo.InvariantCulture) == 3);
+		tagObjects.Should().Contain(t => t.Key == "docs.sync.files.updated" && Convert.ToInt64(t.Value, System.Globalization.CultureInfo.InvariantCulture) == 1);
+		tagObjects.Should().Contain(t => t.Key == "docs.sync.files.deleted" && Convert.ToInt64(t.Value, System.Globalization.CultureInfo.InvariantCulture) == 1);
+		tagObjects.Should().Contain(t => t.Key == "docs.sync.files.skipped" && Convert.ToInt64(t.Value, System.Globalization.CultureInfo.InvariantCulture) == 1);
+		tagObjects.Should().Contain(t => t.Key == "docs.sync.files.total" && Convert.ToInt64(t.Value, System.Globalization.CultureInfo.InvariantCulture) == 6);
 	}
 }

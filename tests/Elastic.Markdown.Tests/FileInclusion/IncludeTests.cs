@@ -173,6 +173,6 @@ public class CanNotIncludeItself(ITestOutputHelper output) : DirectiveTest<Inclu
 		Collector.Diagnostics.Should().NotBeNullOrEmpty().And.HaveCount(1);
 		Collector.Diagnostics.Should().OnlyContain(d => d.Severity == Severity.Error);
 		Collector.Diagnostics.Should()
-			.OnlyContain(d => d.Message.Contains("cyclical include detected"));
+			.Contain(d => d.Message.Contains("cyclical include detected"));
 	}
 }

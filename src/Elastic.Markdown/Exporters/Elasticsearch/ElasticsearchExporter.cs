@@ -56,7 +56,10 @@ public class ElasticsearchSemanticExporter(
 		ActiveSearchAlias = $"{endpoint.IndexNamePrefix}-{indexNamespace.ToLowerInvariant()}",
 		IndexNumThreads = endpoint.IndexNumThreads,
 		SearchNumThreads = endpoint.SearchNumThreads,
-		InferenceCreateTimeout = TimeSpan.FromMinutes(endpoint.BootstrapTimeout ?? 4)
+		InferenceCreateTimeout = TimeSpan.FromMinutes(endpoint.BootstrapTimeout ?? 4),
+		UsePreexistingInferenceIds = !endpoint.NoElasticInferenceService,
+		InferenceId = endpoint.NoElasticInferenceService ? null : ".elser-2-elastic",
+		SearchInferenceId = endpoint.NoElasticInferenceService ? null : ".elser-2-elastic"
 	});
 
 
@@ -250,9 +253,7 @@ public abstract class ElasticsearchExporter<TChannelOptions, TChannel> : IDispos
 
 	private static string AbstractMapping() =>
 		"""
-		, "abstract": {
-			"type": "text"
-		}
+		, "abstract": { "type": "text" }
 		""";
 
 	private static string InferenceMapping(string inferenceId) =>

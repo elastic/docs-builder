@@ -4,8 +4,7 @@
 
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.Plugins.DetectionRules;
-using Elastic.Documentation.Configuration.Plugins.DetectionRules.TableOfContents;
+using Elastic.Documentation.Navigation;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Myst;
 using Markdig.Syntax;
@@ -14,16 +13,12 @@ namespace Elastic.Markdown.Extensions.DetectionRules;
 
 public record DetectionRuleOverviewFile : MarkdownFile
 {
-	public DetectionRuleOverviewFile(IFileInfo sourceFile, IDirectoryInfo rootPath, MarkdownParser parser, BuildContext build, DocumentationSet set)
-		: base(sourceFile, rootPath, parser, build, set)
+	public DetectionRuleOverviewFile(IFileInfo sourceFile, IDirectoryInfo rootPath, MarkdownParser parser, BuildContext build)
+		: base(sourceFile, rootPath, parser, build)
 	{
 	}
 
-	public RuleReference[] Rules { get; set; } = [];
-
-	private Dictionary<string, DetectionRuleFile> Files { get; } = [];
-
-	public void AddDetectionRuleFile(DetectionRuleFile df, RuleReference ruleReference) => Files[ruleReference.RelativePath] = df;
+	internal ILeafNavigationItem<IDocumentationFile>[] RuleNavigations { get; set; } = [];
 
 	protected override Task<MarkdownDocument> GetMinimalParseDocumentAsync(Cancel ctx)
 	{
@@ -42,9 +37,10 @@ public record DetectionRuleOverviewFile : MarkdownFile
 
 	private string GetMarkdown()
 	{
+		var rules = RuleNavigations.Select(navigation => (Navigation: navigation, Model: (DetectionRuleFile)navigation.Model)).ToList();
 		var groupedRules =
-			Rules
-				.GroupBy(r => r.Rule.Domain ?? "Unspecified")
+			rules
+				.GroupBy(r => r.Model.Rule.Domain ?? "Unspecified")
 				.OrderBy(g => g.Key)
 				.ToArray();
 		// language=markdown
@@ -66,12 +62,12 @@ $"""
 ## {group.Key}
 
 """;
-			foreach (var r in group.OrderBy(r => r.Rule.Name))
+			foreach (var (navigation, model) in group.OrderBy(r => r.Model.Rule.Name))
 			{
-				var url = Files[r.RelativePath].Url;
+				// TODO update this to use the new URL from navigation
 				markdown +=
 $"""
-[{r.Rule.Name}](!{url}) <br>
+[{model.Rule.Name}](!{navigation.Url}) <br>
 """;
 
 			}
@@ -86,7 +82,7 @@ $"""
 
 public record DetectionRuleFile : MarkdownFile
 {
-	public DetectionRule? Rule { get; set; }
+	public DetectionRule Rule { get; }
 
 	public override string LinkReferenceRelativePath { get; }
 
@@ -96,12 +92,12 @@ public record DetectionRuleFile : MarkdownFile
 		IFileInfo sourceFile,
 		IDirectoryInfo rootPath,
 		MarkdownParser parser,
-		BuildContext build,
-		DocumentationSet set
-	) : base(sourceFile, rootPath, parser, build, set)
+		BuildContext build
+	) : base(sourceFile, rootPath, parser, build)
 	{
 		RuleSourceMarkdownPath = SourcePath(sourceFile, build);
 		LinkReferenceRelativePath = Path.GetRelativePath(build.DocumentationSourceDirectory.FullName, RuleSourceMarkdownPath.FullName);
+		Rule = DetectionRule.From(sourceFile);
 	}
 
 	private static IFileInfo SourcePath(IFileInfo rulePath, BuildContext build)
@@ -121,11 +117,9 @@ public record DetectionRuleFile : MarkdownFile
 		return rulePath.FileSystem.FileInfo.New(newPath);
 	}
 
-	protected override string RelativePathUrl => RelativePath.AsSpan().TrimStart("../").ToString();
-
 	protected override Task<MarkdownDocument> GetMinimalParseDocumentAsync(Cancel ctx)
 	{
-		Title = Rule?.Name;
+		Title = Rule.Name;
 		var markdown = GetMarkdown();
 		var document = MarkdownParser.MinimalParseStringAsync(markdown, RuleSourceMarkdownPath, null);
 		return Task.FromResult(document);
@@ -140,8 +134,6 @@ public record DetectionRuleFile : MarkdownFile
 
 	private string GetMarkdown()
 	{
-		if (Rule is null)
-			return $"# {Title}";
 		// language=markdown
 		var markdown =
 $"""

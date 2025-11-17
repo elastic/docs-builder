@@ -1,10 +1,13 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck: EUI icons do not have types
 import { icon as EuiIconVisualizeApp } from '@elastic/eui/es/components/icon/assets/app_visualize'
+import { icon as EuiIconArrowEnd } from '@elastic/eui/es/components/icon/assets/arrowEnd'
+import { icon as EuiIconArrowStart } from '@elastic/eui/es/components/icon/assets/arrowStart'
 import { icon as EuiIconArrowDown } from '@elastic/eui/es/components/icon/assets/arrow_down'
 import { icon as EuiIconArrowLeft } from '@elastic/eui/es/components/icon/assets/arrow_left'
 import { icon as EuiIconArrowRight } from '@elastic/eui/es/components/icon/assets/arrow_right'
 import { icon as EuiIconCheck } from '@elastic/eui/es/components/icon/assets/check'
+import { icon as EuiIconComment } from '@elastic/eui/es/components/icon/assets/comment'
 import { icon as EuiIconCopy } from '@elastic/eui/es/components/icon/assets/copy'
 import { icon as EuiIconCopyClipboard } from '@elastic/eui/es/components/icon/assets/copy_clipboard'
 import { icon as EuiIconCross } from '@elastic/eui/es/components/icon/assets/cross'
@@ -59,4 +62,7 @@ appendIconComponentCache({
     copy: EuiIconCopy,
     play: EuiIconPlay,
     sortUp: EuiIconSortUp,
+    arrowStart: EuiIconArrowStart,
+    arrowEnd: EuiIconArrowEnd,
+    comment: EuiIconComment,
 })

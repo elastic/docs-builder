@@ -76,13 +76,13 @@ public class HeadingBlockWithSlugParser : HeadingBlockParser
 
 public static partial class HeadingAnchorParser
 {
-	[GeneratedRegex(@"^.*(?:\[[^[]+\])\s*$", RegexOptions.IgnoreCase, "en-US")]
+	[GeneratedRegex(@"^.*(?:\[[^[]+\])\s*$", RegexOptions.IgnoreCase)]
 	public static partial Regex MatchAnchorLine();
 
-	[GeneratedRegex(@"(?:\[[^[]+\])\s*$", RegexOptions.IgnoreCase, "en-US")]
+	[GeneratedRegex(@"(?:\[[^[]+\])\s*$", RegexOptions.IgnoreCase)]
 	public static partial Regex MatchAnchor();
 
-	[GeneratedRegex(@"\$\$\$[^\$]+\$\$\$", RegexOptions.IgnoreCase, "en-US")]
+	[GeneratedRegex(@"\$\$\$[^\$]+\$\$\$", RegexOptions.IgnoreCase)]
 	public static partial Regex InlineAnchors();
 }
 

@@ -240,11 +240,16 @@ dotnet_diagnostic.IDE0059.severity = suggestion
 
 dotnet_diagnostic.CA1859.severity = none
 
+# https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/ca1727
+dotnet_diagnostic.CA1727.severity = none
+
 dotnet_diagnostic.IDE0305.severity = none
 
 # https://github.com/dotnet/roslyn/issues/60784
 # CS8509 already warns
 dotnet_diagnostic.IDE0072.severity = none
+
+dotnet_diagnostic.CA1873.severity = suggestion
 
 [src/api/Elastic.Documentation.Api.Lambda/**.cs]
 dotnet_diagnostic.IL3050.severity = none

@@ -27,7 +27,7 @@ public class EnhancedCodeBlock(BlockParser parser, ParserContext context)
 
 	public bool SkipValidation { get; } = context.SkipValidation;
 
-	public int OpeningLength => Info?.Length ?? 0 + 3;
+	public int OpeningLength => Info?.Length ?? (0 + 3);
 
 	public List<CallOut> CallOuts { get; set; } = [];
 

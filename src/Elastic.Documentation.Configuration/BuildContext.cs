@@ -9,6 +9,7 @@ using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Synonyms;
+using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 
@@ -28,6 +29,8 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 	public IDirectoryInfo OutputDirectory { get; }
 
 	public ConfigurationFile Configuration { get; }
+
+	public DocumentationSetFile ConfigurationYaml { get; set; }
 
 	public VersionsConfiguration VersionsConfiguration { get; }
 	public ConfigurationFileProvider ConfigurationFileProvider { get; }
@@ -55,12 +58,10 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 	// This property is used for the canonical URL
 	public Uri? CanonicalBaseUrl { get; init; }
 
-	private readonly string? _urlPathPrefix;
-
 	public string? UrlPathPrefix
 	{
-		get => string.IsNullOrWhiteSpace(_urlPathPrefix) ? "" : $"/{_urlPathPrefix.Trim('/')}";
-		init => _urlPathPrefix = value;
+		get => string.IsNullOrWhiteSpace(field) ? "" : $"/{field.Trim('/')}";
+		init;
 	}
 
 	public BuildContext(
@@ -110,10 +111,17 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 			DocumentationSourceDirectory = ConfigurationPath.Directory!;
 
 		Git = gitCheckoutInformation ?? GitCheckoutInformation.Create(DocumentationCheckoutDirectory, ReadFileSystem);
-		Configuration = new ConfigurationFile(this, VersionsConfiguration, ProductsConfiguration);
+
+		// Load and resolve the docset file, or create an empty one if it doesn't exist
+		ConfigurationYaml = ConfigurationPath.Exists
+			? DocumentationSetFile.LoadAndResolve(collector, ConfigurationPath, readFileSystem)
+			: new DocumentationSetFile();
+
+		Configuration = new ConfigurationFile(ConfigurationYaml, this, VersionsConfiguration, ProductsConfiguration);
 		GoogleTagManager = new GoogleTagManagerConfiguration
 		{
 			Enabled = false
 		};
 	}
+
 }

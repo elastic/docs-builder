@@ -4,6 +4,7 @@
 
 using System.Collections.Frozen;
 using Elastic.Documentation.Configuration.Versions;
+using YamlDotNet.Serialization;
 
 namespace Elastic.Documentation.Configuration.Products;
 
@@ -36,11 +37,15 @@ public static class ProductExtensions
 
 internal sealed record ProductConfigDto
 {
+	[YamlMember(Alias = "products")]
 	public Dictionary<string, ProductDto> Products { get; set; } = [];
 }
 internal sealed record ProductDto
 {
+	[YamlMember(Alias = "display")]
 	public string Display { get; set; } = string.Empty;
+
+	[YamlMember(Alias = "versioning")]
 	public string? Versioning { get; set; }
 	public string? Repository { get; set; }
 }

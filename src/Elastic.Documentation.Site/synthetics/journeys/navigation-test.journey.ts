@@ -31,7 +31,7 @@ journey('navigation test', ({ page, params }) => {
             .getByRole('link', { name: 'Elastic Fundamentals' })
             .first()
             .click()
-        await expect(page).toHaveURL(`${host}/docs/get-started/`)
+        await expect(page).toHaveURL(`${host}/docs/get-started`)
         await expect(page).toHaveTitle(/Elastic fundamentals/)
         await expect(
             page.getByRole('heading', { name: 'Elastic fundamentals' })
@@ -71,6 +71,6 @@ journey('navigation test', ({ page, params }) => {
         await pagesDropdown
             .getByRole('link', { name: 'Reference', exact: true })
             .click()
-        await expect(page).toHaveURL(`${host}/docs/reference/`)
+        await expect(page).toHaveURL(`${host}/docs/reference`)
     })
 })

@@ -5,7 +5,7 @@
 	@{
 		var currentTopLevelItem = Model.TopLevelItems.FirstOrDefault(i => i.Id == Model.Tree.Id) ?? Model.Tree;
 	} 
-	@if (Model.IsUsingNavigationDropdown && currentTopLevelItem is { Index: not null })
+	@if (Model.IsUsingNavigationDropdown)
 		{
 			<div class="sticky top-0 py-6 bg-white z-10 border-b-1 border-grey-20 pr-4">
 				<div tabindex="0" id="pages-dropdown" class="block group border-1 border-grey-20 rounded-sm font-sans relative">

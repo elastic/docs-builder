@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <InvariantGlobalization>true</InvariantGlobalization>
@@ -15,6 +15,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Elastic.Documentation\Elastic.Documentation.csproj" />
     <ProjectReference Include="..\Elastic.Documentation.Configuration\Elastic.Documentation.Configuration.csproj" />
+    <ProjectReference Include="..\Elastic.Documentation.Navigation\Elastic.Documentation.Navigation.csproj" />
   </ItemGroup>
 
   <ItemGroup>
