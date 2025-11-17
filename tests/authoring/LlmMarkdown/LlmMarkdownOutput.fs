@@ -327,10 +327,9 @@ type ``directive in list should be indented correctly`` () =
   ```python
   def hello():
       print("Hello, world!")
-```
+  ```
 - List item 2  
   <tip>
-
   - Nested list item 1
   - Nested list item 2
   </tip>
@@ -355,7 +354,6 @@ This is where the content for tab #2 goes.
     let ``rendered correctly`` () =
         markdown |> convertsToNewLLM """
 <tab-set>
-
   <tab-item title="Tab #1 title">
     This is where the content for tab #1 goes.
   </tab-item>
