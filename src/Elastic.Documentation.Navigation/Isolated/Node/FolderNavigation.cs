@@ -26,6 +26,9 @@ public class FolderNavigation<TModel>(
 	public string NavigationTitle => Index.NavigationTitle;
 
 	/// <inheritdoc />
+	public string? NavigationTooltip => Index.NavigationTooltip;
+
+	/// <inheritdoc />
 	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => homeAccessor.HomeProvider.NavigationRoot;
 
 	/// <inheritdoc />

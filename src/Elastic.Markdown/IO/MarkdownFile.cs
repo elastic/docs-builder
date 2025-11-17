@@ -23,9 +23,6 @@ namespace Elastic.Markdown.IO;
 
 public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocumentationFile
 {
-	private string? _navigationTitle;
-	private string? _navigationTooltip;
-
 	private readonly IFileInfo _configurationFile;
 
 	private readonly IReadOnlyDictionary<string, string> _globalSubstitutions;
@@ -85,8 +82,8 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 	{
 		get
 		{
-			if (!string.IsNullOrEmpty(_navigationTooltip))
-				return _navigationTooltip;
+			if (!string.IsNullOrEmpty(field))
+				return field;
 
 			var description = YamlFrontMatter?.Description;
 			if (string.IsNullOrEmpty(description))
@@ -95,7 +92,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 			// Strip markdown and replace quotes to prevent HTML attribute issues
 			return description.StripMarkdown().Replace("\"", "'");
 		}
-		private set => _navigationTooltip = value?.StripMarkdown().Replace("\"", "'");
+		private set => field = value?.StripMarkdown().Replace("\"", "'");
 	}
 
 

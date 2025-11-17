@@ -117,6 +117,9 @@ public class DocumentationSetNavigation<TModel>
 	/// <inheritdoc />
 	public string NavigationTitle => Index.NavigationTitle;
 
+	/// <inheritdoc />
+	public string? NavigationTooltip => Index.NavigationTooltip;
+
 	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot =>
 		HomeProvider == this ? field : HomeProvider.NavigationRoot;
 

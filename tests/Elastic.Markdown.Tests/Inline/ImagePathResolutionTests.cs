@@ -173,6 +173,7 @@ public class ImagePathResolutionTests(ITestOutputHelper output)
 			{
 				public string Url => "/";
 				public string NavigationTitle => "Root";
+				public string? NavigationTooltip => null;
 				public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; } = root;
 				public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
 				public bool Hidden => false;
@@ -184,6 +185,7 @@ public class ImagePathResolutionTests(ITestOutputHelper output)
 
 			public string Url => "/";
 			public string NavigationTitle => "Root";
+			public string? NavigationTooltip => null;
 			public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => this;
 			public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
 			public bool Hidden => false;
@@ -200,6 +202,7 @@ public class ImagePathResolutionTests(ITestOutputHelper output)
 
 		public string Url { get; } = url;
 		public string NavigationTitle => "Stub";
+		public string? NavigationTooltip => null;
 		public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => Root;
 		public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
 		public bool Hidden => false;

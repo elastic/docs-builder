@@ -110,6 +110,9 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 	public string NavigationTitle { get; }
 
 	/// <inheritdoc />
+	public string? NavigationTooltip => null;
+
+	/// <inheritdoc />
 	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }
 
 	/// <inheritdoc />

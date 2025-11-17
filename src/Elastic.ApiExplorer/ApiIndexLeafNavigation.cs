@@ -20,6 +20,9 @@ public class ApiIndexLeafNavigation<TModel>(
 	public string NavigationTitle { get; } = navigationTitle;
 
 	/// <inheritdoc />
+	public string? NavigationTooltip => null;
+
+	/// <inheritdoc />
 	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; } = rootNavigation;
 
 	/// <inheritdoc />

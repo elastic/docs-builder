@@ -58,6 +58,9 @@ public class TableOfContentsNavigation<TModel> : IRootNavigationItem<TModel, INa
 	/// <inheritdoc />
 	public string NavigationTitle => Index.NavigationTitle;
 
+	/// <inheritdoc />
+	public string? NavigationTooltip => Index.NavigationTooltip;
+
 	/// <summary>
 	/// TableOfContentsNavigation's NavigationRoot comes from its HomeProvider.
 	/// According to url-building.md: "In isolated builds the NavigationRoot is always the DocumentationSetNavigation"
