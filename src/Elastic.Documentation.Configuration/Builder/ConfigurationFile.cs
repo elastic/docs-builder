@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using DotNet.Globbing;
 using Elastic.Documentation.Configuration.Products;
@@ -36,8 +37,9 @@ public record ConfigurationFile
 	public IReadOnlyDictionary<string, string> Substitutions => _substitutions;
 
 	private readonly Dictionary<string, bool> _features = new(StringComparer.OrdinalIgnoreCase);
-	private FeatureFlags? _featureFlags;
-	public FeatureFlags Features => _featureFlags ??= new FeatureFlags(_features);
+
+	[field: AllowNull, MaybeNull]
+	public FeatureFlags Features => field ??= new FeatureFlags(_features);
 
 	public IDirectoryInfo ScopeDirectory { get; }
 

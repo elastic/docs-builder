@@ -1,7 +1,6 @@
 @using Elastic.ApiExplorer.Landing
 @using Elastic.ApiExplorer.Operations
-@using Microsoft.OpenApi.Models
-@using Microsoft.OpenApi.Models.Interfaces
+@using Microsoft.OpenApi
 @inherits RazorSliceHttpResult<Elastic.ApiExplorer.Operations.OperationViewModel>
 @implements IUsesLayout<Elastic.ApiExplorer._Layout, GlobalLayoutViewModel>
 @functions {
@@ -47,7 +46,7 @@
 		}
 
 		if (propertyValue.Schema is not null)
-			return propertyValue.Schema;
+			return propertyValue.Schema.ToString();
 
 		if (propertyValue.Enum is { Count: >0 } e)
 			return "enum";
@@ -121,13 +120,13 @@
 	@if (operation.RequestBody is not null)
 	{
 		<h3>Request Body</h3>
-		var content = operation.RequestBody.Content.FirstOrDefault().Value;
+		var content = operation.RequestBody.Content?.FirstOrDefault().Value;
 		if (!string.IsNullOrEmpty(operation.RequestBody.Description))
 		{
 			<p>@operation.RequestBody.Description</p>
 		}
 
-		if (content.Schema is not null)
+		if (content?.Schema?.Properties is not null)
 		{
 		<dl>
 			@foreach (var property in content.Schema.Properties)

@@ -18,6 +18,6 @@ public abstract class DirectiveViewModel
 
 		var result = subscription.RentedStringBuilder?.ToString();
 		DocumentationObjectPoolProvider.HtmlRendererPool.Return(subscription);
-		return new HtmlString(result);
+		return result == null ? HtmlString.Empty : new HtmlString(result.EnsureTrimmed());
 	}
 }

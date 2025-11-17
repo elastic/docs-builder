@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Products;
@@ -22,8 +23,6 @@ namespace Elastic.Markdown.IO;
 
 public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocumentationFile
 {
-	private string? _navigationTitle;
-
 	private readonly IFileInfo _configurationFile;
 
 	private readonly IReadOnlyDictionary<string, string> _globalSubstitutions;
@@ -64,18 +63,19 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 
 	public string? Title
 	{
-		get => _title;
+		get;
 		protected set
 		{
-			_title = value?.StripMarkdown();
+			field = value?.StripMarkdown();
 			TitleRaw = value;
 		}
 	}
 
+	[field: AllowNull, MaybeNull]
 	public string NavigationTitle
 	{
-		get => !string.IsNullOrEmpty(_navigationTitle) ? _navigationTitle : Title ?? string.Empty;
-		private set => _navigationTitle = value.StripMarkdown();
+		get => !string.IsNullOrEmpty(field) ? field : Title ?? string.Empty;
+		private set => field = value.StripMarkdown();
 	}
 
 
@@ -90,7 +90,6 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 	public string FileName { get; }
 
 	private bool _instructionsParsed;
-	private string? _title;
 
 	/// this get set by documentationset when validating redirects
 	/// because we need to minimally parse to see the anchors anchor validation is deferred.
