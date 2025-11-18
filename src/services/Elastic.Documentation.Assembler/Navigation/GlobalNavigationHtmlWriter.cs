@@ -41,6 +41,13 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 
 		await _semaphore.WaitAsync(ctx);
 
+		if (currentNavigationItem.Url == "/docs/versions")
+		{
+		}
+		if (currentNavigationItem.Url == "/docs/reference/ecs/logging/java")
+		{
+		}
+
 		try
 		{
 			if (_renderedNavigationCache.TryGetValue((currentRootNavigation.Id, maxLevel), out html))

@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Extensions;
-using Elastic.Markdown.IO;
+using Elastic.Documentation.Navigation;
 using FluentAssertions;
 
 namespace Elastic.Markdown.Tests.DocSet;
@@ -13,8 +13,8 @@ public class BreadCrumbTests(ITestOutputHelper output) : NavigationTestsBase(out
 	[Fact]
 	public void ParsesATableOfContents()
 	{
-		IPositionalNavigation positionalNavigation = Generator.DocumentationSet;
-		var allKeys = positionalNavigation.NavigationIndexedByCrossLink.Keys;
+		var documentationSet = Generator.DocumentationSet;
+		var allKeys = documentationSet.NavigationIndexedByCrossLink.Keys;
 		allKeys.Should().Contain("docs-builder://testing/nested/index.md");
 		allKeys.Should().Contain("docs-builder://testing/nest-under-index/index.md");
 
@@ -24,17 +24,18 @@ public class BreadCrumbTests(ITestOutputHelper output) : NavigationTestsBase(out
 
 		doc.Should().NotBeNull();
 
-		var f = positionalNavigation.NavigationIndexedByCrossLink.FirstOrDefault(kv => kv.Key == "docs-builder://testing/deeply-nested/foo.md");
+		var f = documentationSet.NavigationIndexedByCrossLink.FirstOrDefault(kv => kv.Key == "docs-builder://testing/deeply-nested/foo.md");
 		f.Should().NotBeNull();
 
-		positionalNavigation.NavigationIndexedByCrossLink.Should().ContainKey(doc.CrossLink);
-		var nav = positionalNavigation.NavigationIndexedByCrossLink[doc.CrossLink];
+		documentationSet.NavigationIndexedByCrossLink.Should().ContainKey(doc.CrossLink);
+		var nav = documentationSet.NavigationIndexedByCrossLink[doc.CrossLink];
 
 		nav.Parent.Should().NotBeNull();
 
-		_ = positionalNavigation.MarkdownNavigationLookup.TryGetValue(doc, out var docNavigation);
+		INavigationTraversable navigationTraversable = documentationSet;
+		var docNavigation = navigationTraversable.GetNavigationItem(doc);
 		docNavigation.Should().NotBeNull();
-		var parents = positionalNavigation.GetParentsOfMarkdownFile(doc);
+		var parents = navigationTraversable.GetParentsOfMarkdownFile(doc);
 
 		parents.Should().HaveCount(2);
 

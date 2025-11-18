@@ -24,6 +24,7 @@ public class HtmlWriter(
 	DocumentationSet documentationSet,
 	IFileSystem writeFileSystem,
 	IDescriptionGenerator descriptionGenerator,
+	INavigationTraversable? positionalNavigation = null,
 	INavigationHtmlWriter? navigationHtmlWriter = null,
 	ILegacyUrlMapper? legacyUrlMapper = null,
 	IVersionInferrerService? versionInferrerService = null
@@ -37,7 +38,7 @@ public class HtmlWriter(
 
 	private StaticFileContentHashProvider StaticFileContentHashProvider { get; } = new(new EmbeddedOrPhysicalFileProvider(documentationSet.Context));
 	private ILegacyUrlMapper LegacyUrlMapper { get; } = legacyUrlMapper ?? new NoopLegacyUrlMapper();
-	private IPositionalNavigation PositionalNavigation { get; } = documentationSet;
+	private INavigationTraversable NavigationTraversable { get; } = positionalNavigation ?? documentationSet;
 
 	private IVersionInferrerService VersionInferrerService { get; } = versionInferrerService ?? new NoopVersionInferrer();
 
@@ -67,10 +68,10 @@ public class HtmlWriter(
 			? await NavigationHtmlWriter.RenderNavigation(root, navigationItem, 1, ctx)
 			: await NavigationHtmlWriter.RenderNavigation(root, navigationItem, INavigationHtmlWriter.AllLevels, ctx);
 
-		var current = PositionalNavigation.GetCurrent(markdown);
-		var previous = PositionalNavigation.GetPrevious(markdown);
-		var next = PositionalNavigation.GetNext(markdown);
-		var parents = PositionalNavigation.GetParentsOfMarkdownFile(markdown);
+		var current = NavigationTraversable.GetCurrent(markdown);
+		var previous = NavigationTraversable.GetPrevious(markdown);
+		var next = NavigationTraversable.GetNext(markdown);
+		var parents = NavigationTraversable.GetParentsOfMarkdownFile(markdown);
 
 		var remote = DocumentationSet.Context.Git.RepositoryName;
 		var branch = DocumentationSet.Context.Git.Branch;

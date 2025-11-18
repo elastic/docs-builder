@@ -46,7 +46,7 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 			TryFindDocument = Resolvers.TryFindDocument,
 			TryFindDocumentByRelativePath = Resolvers.TryFindDocumentByRelativePath,
 			CrossLinkResolver = Resolvers.CrossLinkResolver,
-			PositionalNavigation = Resolvers.PositionalNavigation,
+			NavigationTraversable = Resolvers.NavigationTraversable,
 			SkipValidation = skip
 		};
 		var context = new ParserContext(state);
@@ -70,7 +70,7 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 			YamlFrontMatter = matter,
 			TryFindDocument = resolvers.TryFindDocument,
 			TryFindDocumentByRelativePath = resolvers.TryFindDocumentByRelativePath,
-			PositionalNavigation = resolvers.PositionalNavigation,
+			NavigationTraversable = resolvers.NavigationTraversable,
 			CrossLinkResolver = resolvers.CrossLinkResolver
 		};
 		var context = new ParserContext(state);
@@ -92,7 +92,7 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 			TryFindDocument = resolvers.TryFindDocument,
 			TryFindDocumentByRelativePath = resolvers.TryFindDocumentByRelativePath,
 			CrossLinkResolver = resolvers.CrossLinkResolver,
-			PositionalNavigation = resolvers.PositionalNavigation,
+			NavigationTraversable = resolvers.NavigationTraversable,
 			ParentMarkdownPath = parentPath
 		};
 		var context = new ParserContext(state);

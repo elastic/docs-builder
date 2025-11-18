@@ -220,7 +220,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 	{
 		if (context.TryFindDocument(context.MarkdownSourcePath) is MarkdownFile currentMarkdown)
 		{
-			if (context.PositionalNavigation.MarkdownNavigationLookup.TryGetValue(currentMarkdown, out var navigationLookup))
+			if (context.NavigationTraversable.NavigationDocumentationFileLookup.TryGetValue(currentMarkdown, out var navigationLookup))
 				link.SetData("NavigationRoot", navigationLookup.NavigationRoot);
 
 			if (link.IsImage)
@@ -235,7 +235,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		var linkMarkdown = context.TryFindDocument(file) as MarkdownFile;
 		if (linkMarkdown is not null)
 		{
-			if (context.PositionalNavigation.MarkdownNavigationLookup.TryGetValue(linkMarkdown, out var navigationLookup))
+			if (context.NavigationTraversable.NavigationDocumentationFileLookup.TryGetValue(linkMarkdown, out var navigationLookup))
 				link.SetData("TargetNavigationRoot", navigationLookup.NavigationRoot);
 
 		}
@@ -321,7 +321,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		var newUrl = url;
 		if (linkMarkdown is not null)
 		{
-			if (context.PositionalNavigation.MarkdownNavigationLookup.TryGetValue(linkMarkdown, out var navigationLookup)
+			if (context.NavigationTraversable.NavigationDocumentationFileLookup.TryGetValue(linkMarkdown, out var navigationLookup)
 				&& !string.IsNullOrEmpty(navigationLookup.Url))
 			{
 				// Navigation URLs are absolute and start with /
@@ -402,7 +402,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		if (context.Build.AssemblerBuild && context.TryFindDocument(fi) is MarkdownFile currentMarkdown)
 		{
 			// Acquire navigation-aware path
-			if (context.PositionalNavigation.MarkdownNavigationLookup.TryGetValue(currentMarkdown, out var currentNavigation))
+			if (context.NavigationTraversable.NavigationDocumentationFileLookup.TryGetValue(currentMarkdown, out var currentNavigation))
 			{
 				var uri = new Uri(new UriBuilder("http", "localhost", 80, currentNavigation.Url).Uri, url);
 				newUrl = uri.AbsolutePath;

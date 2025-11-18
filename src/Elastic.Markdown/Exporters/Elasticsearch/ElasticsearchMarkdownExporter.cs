@@ -9,6 +9,7 @@ using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Synonyms;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Search;
 using Elastic.Ingest.Elasticsearch;
 using Elastic.Ingest.Elasticsearch.Indices;
@@ -382,7 +383,7 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 	public async ValueTask<bool> ExportAsync(MarkdownExportFileContext fileContext, Cancel ctx)
 	{
 		var file = fileContext.SourceFile;
-		IPositionalNavigation navigation = fileContext.DocumentationSet;
+		INavigationTraversable navigation = fileContext.DocumentationSet;
 		var currentNavigation = navigation.GetCurrent(file);
 		var url = currentNavigation.Url;
 

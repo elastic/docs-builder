@@ -10,11 +10,10 @@ using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
-using Elastic.Documentation.Navigation.Assembler;
+using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Serialization;
 using Elastic.Markdown;
 using Elastic.Markdown.Exporters;
-using Elastic.Markdown.Helpers;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Assembler.Building;
@@ -22,12 +21,15 @@ namespace Elastic.Documentation.Assembler.Building;
 public class AssemblerBuilder(
 	ILoggerFactory logFactory,
 	AssembleContext context,
+	INavigationTraversable navigationTraversable,
 	GlobalNavigationHtmlWriter writer,
 	GlobalNavigationPathProvider pathProvider,
 	ILegacyUrlMapper? legacyUrlMapper
 )
 {
 	private readonly ILogger<AssemblerBuilder> _logger = logFactory.CreateLogger<AssemblerBuilder>();
+
+	private INavigationTraversable NavigationTraversable { get; } = navigationTraversable;
 
 	private GlobalNavigationHtmlWriter HtmlWriter { get; } = writer;
 
@@ -133,7 +135,7 @@ public class AssemblerBuilder(
 		SetFeatureFlags(set);
 		var generator = new DocumentationGenerator(
 			set.DocumentationSet,
-			logFactory, HtmlWriter,
+			logFactory, NavigationTraversable, HtmlWriter,
 			pathProvider,
 			legacyUrlMapper: LegacyUrlMapper,
 			markdownExporters: markdownExporters
