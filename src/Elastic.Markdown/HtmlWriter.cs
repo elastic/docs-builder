@@ -60,12 +60,7 @@ public class HtmlWriter(
 	{
 		var html = MarkdownFile.CreateHtml(document);
 		await DocumentationSet.ResolveDirectoryTree(ctx);
-		var navigationItem = NavigationTraversable.GetNavigationItem(markdown);
-		if (navigationItem is null)
-		{
-			DocumentationSet.Context.EmitError(markdown.SourceFile, $"Unable to find navigation item for {markdown.RelativePath}");
-			throw new Exception($"Unable to find navigation item for {markdown.RelativePath}");
-		}
+		var navigationItem = NavigationTraversable.GetNavigationFor(markdown);
 
 		var root = navigationItem.NavigationRoot;
 
@@ -73,7 +68,7 @@ public class HtmlWriter(
 			? await NavigationHtmlWriter.RenderNavigation(root, navigationItem, 1, ctx)
 			: await NavigationHtmlWriter.RenderNavigation(root, navigationItem, INavigationHtmlWriter.AllLevels, ctx);
 
-		var current = NavigationTraversable.GetCurrent(markdown);
+		var current = NavigationTraversable.GetNavigationFor(markdown);
 		var previous = NavigationTraversable.GetPrevious(markdown);
 		var next = NavigationTraversable.GetNext(markdown);
 		var parents = NavigationTraversable.GetParentsOfMarkdownFile(markdown);

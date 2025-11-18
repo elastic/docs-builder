@@ -21,8 +21,8 @@ public class NestedTocTests(ITestOutputHelper output) : NavigationTestsBase(outp
 
 		doc.Should().NotBeNull();
 		INavigationTraversable navigationTraversable = Generator.DocumentationSet;
-		navigationTraversable.GetNavigationItem(doc).Should().NotBeNull();
-		var nav = navigationTraversable.GetNavigationItem(doc)
+		navigationTraversable.GetNavigationFor(doc).Should().NotBeNull();
+		var nav = navigationTraversable.GetNavigationFor(doc)
 				  ?? throw new Exception($"Could not find nav item for {doc.CrossLink}");
 
 		nav.Should().BeOfType<TableOfContentsNavigation<MarkdownFile>>();

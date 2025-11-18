@@ -30,11 +30,11 @@ public class BreadCrumbTests(ITestOutputHelper output) : NavigationTestsBase(out
 		f.Should().NotBeNull();
 
 		crossLinks.Should().ContainKey(doc.CrossLink);
-		var nav = navigationTraversable.GetCurrent(crossLinks[doc.CrossLink]);
+		var nav = navigationTraversable.GetNavigationFor(crossLinks[doc.CrossLink]);
 
 		nav.Parent.Should().NotBeNull();
 
-		var docNavigation = navigationTraversable.GetNavigationItem(doc);
+		var docNavigation = navigationTraversable.GetNavigationFor(doc);
 		docNavigation.Should().NotBeNull();
 		var parents = navigationTraversable.GetParentsOfMarkdownFile(doc);
 

@@ -14,6 +14,8 @@ public interface INavigationTraversable
 
 	IEnumerable<INavigationItem> YieldAll()
 	{
+		if (NavigationIndexedByOrder.Count == 0)
+			yield break;
 		var current = NavigationIndexedByOrder.Values.First();
 		yield return current;
 		do
@@ -25,15 +27,9 @@ public interface INavigationTraversable
 		} while (current is not null);
 	}
 
-	/// <summary>
-	/// Type-safe helper to get navigation item for a specific documentation file type
-	/// </summary>
-	INavigationItem? GetNavigationItem<TFile>(TFile file) where TFile : IDocumentationFile =>
-		NavigationDocumentationFileLookup.TryGetValue(file, out var navigation) ? navigation : null;
-
 	INavigationItem? GetPrevious(IDocumentationFile current)
 	{
-		var currentNavigation = GetCurrent(current);
+		var currentNavigation = GetNavigationFor(current);
 		return GetPrevious(currentNavigation);
 	}
 
@@ -53,7 +49,7 @@ public interface INavigationTraversable
 
 	INavigationItem? GetNext(IDocumentationFile current)
 	{
-		var currentNavigation = GetCurrent(current);
+		var currentNavigation = GetNavigationFor(current);
 		return GetNext(currentNavigation);
 	}
 
@@ -71,7 +67,7 @@ public interface INavigationTraversable
 		return null;
 	}
 
-	INavigationItem GetCurrent(IDocumentationFile file) =>
+	INavigationItem GetNavigationFor(IDocumentationFile file) =>
 		NavigationDocumentationFileLookup.TryGetValue(file, out var navigation)
 			? navigation : throw new InvalidOperationException($"Could not find {file.NavigationTitle} in navigation");
 

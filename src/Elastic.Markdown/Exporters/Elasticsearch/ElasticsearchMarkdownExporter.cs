@@ -384,7 +384,7 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 	{
 		var file = fileContext.SourceFile;
 		INavigationTraversable navigation = fileContext.DocumentationSet;
-		var currentNavigation = navigation.GetCurrent(file);
+		var currentNavigation = navigation.GetNavigationFor(file);
 		var url = currentNavigation.Url;
 
 		if (url is "/docs" or "/docs/404")
