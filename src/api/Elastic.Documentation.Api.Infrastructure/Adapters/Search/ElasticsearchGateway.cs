@@ -37,6 +37,9 @@ internal sealed record DocumentDto
 	[JsonPropertyName("url_segment_count")]
 	public int UrlSegmentCount { get; init; }
 
+	[JsonPropertyName("headings")]
+	public string[] Headings { get; init; } = [];
+
 	[JsonPropertyName("parents")]
 	public ParentDocumentDto[] Parents { get; init; } = [];
 
@@ -88,10 +91,15 @@ public partial class ElasticsearchGateway : ISearchGateway
 
 		var lexicalSearchRetriever =
 			((Query)new PrefixQuery(Infer.Field<DocumentDto>(f => f.Title.Suffix("keyword")), searchQuery) { Boost = 10.0f, CaseInsensitive = true }
+				|| new MatchPhrasePrefixQuery(Infer.Field<DocumentDto>(f => f.Title), searchQuery) { Boost = 9.0f }
 				|| new MatchQuery(Infer.Field<DocumentDto>(f => f.Title), searchQuery) { Operator = Operator.And, Boost = 8.0f }
 				|| new MatchBoolPrefixQuery(Infer.Field<DocumentDto>(f => f.Title), searchQuery) { Boost = 6.0f }
-				|| new MatchQuery(Infer.Field<DocumentDto>(f => f.Abstract), searchQuery) { Boost = 4.0f }
-				|| new MatchQuery(Infer.Field<DocumentDto>(f => f.StrippedBody), searchQuery) { Boost = 3.0f }
+				|| new MatchQuery(Infer.Field<DocumentDto>(f => f.Abstract), searchQuery) { Operator = Operator.And, Boost = 5.0f }
+				|| new MatchQuery(Infer.Field<DocumentDto>(f => f.StrippedBody), searchQuery) { Operator = Operator.And, Boost = 4.5f }
+				|| new MatchQuery(Infer.Field<DocumentDto>(f => f.Headings), searchQuery) { Operator = Operator.And, Boost = 4.5f }
+				|| new MatchQuery(Infer.Field<DocumentDto>(f => f.Abstract), searchQuery) { Operator = Operator.Or, Boost = 4.0f }
+				|| new MatchQuery(Infer.Field<DocumentDto>(f => f.StrippedBody), searchQuery) { Operator = Operator.Or, Boost = 3.0f }
+				|| new MatchQuery(Infer.Field<DocumentDto>(f => f.Headings), searchQuery) { Operator = Operator.Or, Boost = 3.0f }
 				|| new MatchQuery(Infer.Field<DocumentDto>(f => f.Parents.First().Title), searchQuery) { Boost = 2.0f }
 				|| new MatchQuery(Infer.Field<DocumentDto>(f => f.Title), searchQuery) { Fuzziness = 1, Boost = 1.0f }
 			)
@@ -129,7 +137,8 @@ public partial class ElasticsearchGateway : ISearchGateway
 					e => e.Title,
 					e => e.Url,
 					e => e.Description,
-					e => e.Parents
+					e => e.Parents,
+					e => e.Headings
 				)
 			)
 		)
@@ -193,6 +202,7 @@ public partial class ElasticsearchGateway : ISearchGateway
 				Url = doc.Url,
 				Title = doc.Title,
 				Description = doc.Description ?? string.Empty,
+				Headings = doc.Headings,
 				Parents = doc.Parents.Select(parent => new SearchResultItemParent
 				{
 					Title = parent.Title,

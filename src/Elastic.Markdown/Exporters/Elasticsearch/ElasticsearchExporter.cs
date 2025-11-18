@@ -62,7 +62,6 @@ public class ElasticsearchSemanticExporter(
 		SearchInferenceId = endpoint.NoElasticInferenceService ? null : ".elser-2-elastic"
 	});
 
-
 public abstract class ElasticsearchExporter<TChannelOptions, TChannel> : IDisposable
 	where TChannelOptions : CatalogIndexChannelOptionsBase<DocumentationDocument>
 	where TChannel : CatalogIndexChannel<DocumentationDocument, TChannelOptions>
@@ -149,14 +148,14 @@ public abstract class ElasticsearchExporter<TChannelOptions, TChannel> : IDispos
 		  "analysis": {
 		    "analyzer": {
 		      "synonyms_analyzer": {
-		        "tokenizer": "whitespace",
+		        "tokenizer": "group_tokenizer",
 		        "filter": [
 		          "lowercase",
 		          "synonyms_filter"
 		        ]
 		      },
 		      "highlight_analyzer": {
-		        "tokenizer": "standard",
+		        "tokenizer": "group_tokenizer",
 		        "filter": [
 		          "lowercase",
 		          "english_stop"
@@ -176,7 +175,11 @@ public abstract class ElasticsearchExporter<TChannelOptions, TChannel> : IDispos
 		      }
 		    },
 		    "tokenizer": {
-		      "path_tokenizer": {
+		      "group_tokenizer": {
+		      	"type": "char_group",
+		      	"tokenize_on_chars": [ "whitespace", ",", ";", "?", "!", "(", ")", "&", "'", "\"", "/", "[", "]", "{", "}" ]
+			  },
+			  "path_tokenizer": {
 		        "type": "path_hierarchy",
 		        "delimiter": "/"
 		      }
@@ -243,9 +246,13 @@ public abstract class ElasticsearchExporter<TChannelOptions, TChannel> : IDispos
 		      },
 		      "stripped_body": {
 		        "type": "text",
-		        "search_analyzer": "highlight_analyzer",
+		        "search_analyzer": "synonyms_analyzer",
 		        "term_vector": "with_positions_offsets"
-		      }
+		      },
+		      "headings": {
+		        "type": "text",
+		        "search_analyzer": "synonyms_analyzer"
+		      },
 		      {{(!string.IsNullOrWhiteSpace(inferenceId) ? AbstractInferenceMapping(inferenceId) : AbstractMapping())}}
 		    }
 		  }
@@ -253,7 +260,10 @@ public abstract class ElasticsearchExporter<TChannelOptions, TChannel> : IDispos
 
 	private static string AbstractMapping() =>
 		"""
-		, "abstract": { "type": "text" }
+		, "abstract": {
+		  "type": "text",
+		  "search_analyzer": "synonyms_analyzer"
+		}
 		""";
 
 	private static string InferenceMapping(string inferenceId) =>
@@ -278,5 +288,4 @@ public abstract class ElasticsearchExporter<TChannelOptions, TChannel> : IDispos
 
 		GC.SuppressFinalize(this);
 	}
-
 }
