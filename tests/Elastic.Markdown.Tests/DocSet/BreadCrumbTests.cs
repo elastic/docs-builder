@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
 using FluentAssertions;
 
@@ -10,11 +11,11 @@ namespace Elastic.Markdown.Tests.DocSet;
 public class BreadCrumbTests(ITestOutputHelper output) : NavigationTestsBase(output)
 {
 	[Fact]
-	public void ParsesATableOfContents()
+	public void CanQueryParentsSuccessfully()
 	{
 		var documentationSet = Generator.DocumentationSet;
 		INavigationTraversable navigationTraversable = documentationSet;
-		var crossLinks = Generator.DocumentationSet.MarkdownFiles.ToDictionary(f => $"docs-builder://{f.RelativePath}");
+		var crossLinks = Generator.DocumentationSet.MarkdownFiles.ToDictionary(f => $"docs-builder://{f.RelativePath.OptionalWindowsReplace()}");
 		var allKeys = crossLinks.Keys.ToList();
 		allKeys.Should().Contain("docs-builder://testing/nested/index.md");
 		allKeys.Should().Contain("docs-builder://testing/nest-under-index/index.md");
