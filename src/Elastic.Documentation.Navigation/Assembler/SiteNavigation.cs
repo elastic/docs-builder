@@ -96,9 +96,7 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 
 		// Build positional navigation lookup tables from all navigation items in a single traversal
 		NavigationDocumentationFileLookup = [];
-		var navigationByOrder = new Dictionary<int, INavigationItem>();
-		BuildNavigationLookups(this, navigationByOrder);
-		NavigationIndexedByOrder = navigationByOrder.ToFrozenDictionary();
+		NavigationIndexedByOrder = this.BuildNavigationLookups(NavigationDocumentationFileLookup);
 	}
 
 	public HashSet<Uri> DeclaredPhantoms { get; }
@@ -178,38 +176,6 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		normalized = normalized.TrimEnd('/');
 
 		return normalized;
-	}
-
-	/// <summary>
-	/// Builds both MarkdownNavigationLookup and NavigationIndexedByOrder in a single traversal
-	/// </summary>
-	private void BuildNavigationLookups(INavigationItem item, Dictionary<int, INavigationItem> navigationByOrder)
-	{
-		switch (item)
-		{
-			// CrossLinkNavigationLeaf is not added to NavigationDocumentationFileLookup or NavigationIndexedByOrder
-			case CrossLinkNavigationLeaf:
-				break;
-			case ILeafNavigationItem<IDocumentationFile> documentationFileLeaf:
-				_ = NavigationDocumentationFileLookup.TryAdd(documentationFileLeaf.Model, documentationFileLeaf);
-				_ = navigationByOrder.TryAdd(documentationFileLeaf.NavigationIndex, documentationFileLeaf);
-				break;
-			case ILeafNavigationItem<INavigationModel> leaf:
-				_ = navigationByOrder.TryAdd(leaf.NavigationIndex, leaf);
-				break;
-			case INodeNavigationItem<IDocumentationFile, INavigationItem> documentationFileNode:
-				_ = NavigationDocumentationFileLookup.TryAdd(documentationFileNode.Index.Model, documentationFileNode);
-				_ = navigationByOrder.TryAdd(documentationFileNode.NavigationIndex, documentationFileNode);
-				_ = navigationByOrder.TryAdd(documentationFileNode.Index.NavigationIndex, documentationFileNode.Index);
-				foreach (var child in documentationFileNode.NavigationItems)
-					BuildNavigationLookups(child, navigationByOrder);
-				break;
-			case INodeNavigationItem<INavigationModel, INavigationItem> node:
-				_ = navigationByOrder.TryAdd(node.NavigationIndex, node);
-				foreach (var child in node.NavigationItems)
-					BuildNavigationLookups(child, navigationByOrder);
-				break;
-		}
 	}
 
 	private INavigationItem? CreateSiteTableOfContentsNavigation(

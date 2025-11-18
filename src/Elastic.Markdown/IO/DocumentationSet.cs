@@ -13,7 +13,6 @@ using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation;
-using Elastic.Documentation.Navigation.Isolated.Leaf;
 using Elastic.Documentation.Navigation.Isolated.Node;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.Extensions;
@@ -91,11 +90,7 @@ public class DocumentationSet : INavigationTraversable
 		MarkdownFiles = markdownFiles.ToFrozenSet();
 
 		NavigationDocumentationFileLookup = [];
-		var navigationFlatList = CreateNavigationLookup(Navigation);
-		NavigationIndexedByOrder = navigationFlatList
-			.DistinctBy(n => n.NavigationIndex)
-			.ToDictionary(n => n.NavigationIndex, n => n)
-			.ToFrozenDictionary();
+		NavigationIndexedByOrder = Navigation.BuildNavigationLookups(NavigationDocumentationFileLookup);
 
 		ValidateRedirectsExists();
 	}
@@ -118,30 +113,6 @@ public class DocumentationSet : INavigationTraversable
 				foreach (var child in node.NavigationItems)
 					VisitNavigation(child);
 				break;
-		}
-	}
-
-	private IReadOnlyCollection<INavigationItem> CreateNavigationLookup(INavigationItem item)
-	{
-		switch (item)
-		{
-			case ILeafNavigationItem<MarkdownFile> markdownLeaf:
-				var added = NavigationDocumentationFileLookup.TryAdd(markdownLeaf.Model, markdownLeaf);
-				if (!added)
-					Context.EmitWarning(Configuration.SourceFile, $"Duplicate navigation item {markdownLeaf.Model.CrossLink}");
-				return [markdownLeaf];
-			case ILeafNavigationItem<CrossLinkModel> crossLink:
-				return [crossLink];
-			case ILeafNavigationItem<INavigationModel> leaf:
-				throw new Exception($"Should not be possible to have a leaf navigation item that is not a markdown file: {leaf.Model.GetType().FullName}");
-			case INodeNavigationItem<MarkdownFile, INavigationItem> node:
-				_ = NavigationDocumentationFileLookup.TryAdd(node.Index.Model, node);
-				var nodeItems = node.NavigationItems.SelectMany(CreateNavigationLookup);
-				return nodeItems.Concat([node, node.Index]).ToArray();
-			case INodeNavigationItem<INavigationModel, INavigationItem> node:
-				throw new Exception($"Should not be possible to have a leaf navigation item that is not a markdown file: {node.GetType().FullName}");
-			default:
-				return [];
 		}
 	}
 
