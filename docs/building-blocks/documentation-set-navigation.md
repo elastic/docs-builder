@@ -168,66 +168,408 @@ When building [assembled documentation](assembled-documentation.md), the documen
 
 Named `toc` sections in `docset.yml` can be referenced and reorganized in the global `navigation.yml` file without affecting the documentation set's internal structure.
 
-## Best practices
+## Common navigation patterns
 
-### Keep it organized
+Understanding the different ways to structure navigation helps you choose the right pattern for your documentation. Each pattern serves a specific purpose and has its own trade-offs.
 
-* Group related content in folders.
-* Use descriptive folder and file names.
-* Maintain a logical hierarchy.
+### Pattern: Single file
 
-The folder names and hierarchy are reflected directly in the URL structure.
-
-### Use index files
-
-Always include an `index.md` in folders:
+The simplest pattern - just reference individual markdown files:
 
 ```yaml
-- folder: api
-  children:
-    - file: index.md      # Overview of API documentation
-    - file: endpoints.md
-    - file: authentication.md
+toc:
+  - file: index.md
+  - file: getting-started.md
+  - file: faq.md
 ```
 
-### Limit nesting depth
+**When to use**: For flat documentation with few pages or when pages don't naturally group together.
 
-Avoid deeply nested structures (more than three to four levels) to maintain navigation clarity.
+**Advantages**: Simple and explicit. No hidden files or automatic inclusion.
 
-### Use toc.yml for large sections
+**Considerations**: Doesn't scale well for large documentation sets.
 
-When a section contains many files or becomes complex, extract it to a dedicated `toc.yml`:
+### Pattern: File with children (virtual grouping)
+
+Group related files under a parent without creating a physical folder structure:
+
+```yaml
+toc:
+  - file: getting-started.md
+    children:
+      - file: installation.md
+      - file: configuration.md
+      - file: first-steps.md
+```
+
+**When to use**: When you want to create a logical grouping without reorganizing files on disk, typically for sibling files in the same directory.
+
+**Advantages**: Creates navigation hierarchy without changing the file system. Useful for grouping related pages that share a parent.
+
+**Considerations**: Children must be siblings of the parent file. The parent can't select files from different directories. Avoid deep-linking (using paths with `/` in the file reference when it has children) - the builder will emit hints suggesting you use folder structures instead.
+
+**Example scenario**: You have several setup guides at the root level that you want to group under a "Getting Started" parent page:
+
+```
+docs/
+├── getting-started.md
+├── installation.md
+├── configuration.md
+└── first-steps.md
+```
+
+### Pattern: Folder without children
+
+Let the builder automatically include all markdown files in a folder:
+
+```yaml
+toc:
+  - folder: tutorials
+  - folder: api
+```
+
+**When to use**: During active development when content is still evolving, or for folders where file order doesn't matter.
+
+**Advantages**: Zero maintenance - new files are automatically included. Perfect for development.
+
+**Considerations**: No control over file order. All markdown files in the folder will be included.
+
+### Pattern: Folder with explicit children
+
+Define exactly which files appear and in what order:
+
+```yaml
+toc:
+  - folder: api
+    children:
+      - file: index.md
+      - file: authentication.md
+      - file: endpoints.md
+      - file: errors.md
+```
+
+**When to use**: When file order matters or when you need precise control over what's included.
+
+**Advantages**: Complete control over structure and ordering. The builder validates that all files are accounted for.
+
+**Considerations**: Requires maintenance. The builder will error if files exist in the folder that aren't listed in children.
+
+### Pattern: Folder with entry file
+
+Combine a folder reference with a specific entry file:
+
+```yaml
+toc:
+  - folder: getting-started
+    file: getting-started.md
+    children:
+      - file: prerequisites.md
+      - file: installation.md
+```
+
+**When to use**: When you want a folder with a main overview file that's not named `index.md`.
+
+**Advantages**: Clear entry point. Works well when the folder name and overview file name match.
+
+**Considerations**: The builder will hint if the file name doesn't match the folder name (unless you use `index.md`). This pattern works best when names align:
+
+**Good examples**:
+```yaml
+# File name matches folder name
+- folder: getting-started
+  file: getting-started.md
+
+# Using index.md always works
+- folder: api-reference
+  file: index.md
+```
+
+**Triggers hints**:
+```yaml
+# File name doesn't match folder name
+- folder: getting-started
+  file: overview.md  # Hint: Consider naming this getting-started.md
+```
+
+### Pattern: Nested toc references
+
+Split large documentation into separate `toc.yml` files:
+
+**In `docset.yml`**:
+```yaml
+toc:
+  - file: index.md
+  - toc: getting-started
+  - toc: api-reference
+  - toc: guides
+```
+
+**In `getting-started/toc.yml`**:
+```yaml
+toc:
+  - file: index.md
+  - file: installation.md
+  - file: configuration.md
+```
+
+**When to use**: For large documentation sets, when different teams own different sections, or when you want to keep `docset.yml` focused and readable.
+
+**Advantages**: Modularity. Each section can evolve independently. Easier folder renames (the folder name isn't repeated in its own toc.yml). Better for team ownership.
+
+**Considerations**: `toc.yml` files can't nest other `toc.yml` files - only `docset.yml` can reference them.
+
+**Example scenario**: You're building product documentation with multiple major sections:
 
 ```
 docs/
 ├── docset.yml
 ├── index.md
-└── development/
-    ├── toc.yml           # Define development section structure here
-    ├── index.md
-    └── link-validation/
-        └── toc.yml       # Nested TOC section
+├── getting-started/
+│   ├── toc.yml
+│   └── ...
+├── api-reference/
+│   ├── toc.yml
+│   └── ...
+└── guides/
+    ├── toc.yml
+    └── ...
 ```
+
+### Mixing patterns
+
+In practice, you'll combine patterns based on your needs:
+
+```yaml
+toc:
+  - file: index.md                    # Single file
+  - file: quick-start.md              # Single file
+  - folder: tutorials                 # Auto-include during development
+  - folder: api
+    children:                         # Explicit control for stability
+      - file: index.md
+      - file: authentication.md
+  - toc: guides                       # Large section in separate file
+```
+
+## Suppressing diagnostic hints
+
+As you build navigation, the docs-builder may emit hints suggesting improvements to your structure. These hints help maintain best practices but can be suppressed when you have valid reasons to deviate.
+
+### Available suppressions
+
+Add a `suppress` section to either `docset.yml` or `toc.yml`:
+
+```yaml
+suppress:
+  - DeepLinkingVirtualFile
+  - FolderFileNameMismatch
+
+toc:
+  - file: index.md
+  # ... rest of your navigation
+```
+
+### DeepLinkingVirtualFile
+
+**What it detects**: Files with children that use paths containing `/`:
+
+```yaml
+toc:
+  - file: guides/advanced/performance.md
+    children:
+      - file: guides/advanced/caching.md
+      - file: guides/advanced/optimization.md
+```
+
+**Why it hints**: Virtual files (files with children) work best for grouping sibling files together. Using deep paths suggests you might benefit from proper folder structures.
+
+**When to suppress**: Rarely. This usually indicates a structural issue. Consider refactoring to use folders or nested toc files instead.
+
+**Better alternative**:
+```yaml
+toc:
+  - folder: guides
+    children:
+      - folder: advanced
+        children:
+          - file: index.md
+          - file: performance.md
+            children:
+              - file: caching.md
+              - file: optimization.md
+```
+
+### FolderFileNameMismatch
+
+**What it detects**: Folder and file combinations where names don't match:
+
+```yaml
+toc:
+  - folder: getting-started
+    file: overview.md      # Doesn't match folder name
+```
+
+**Why it hints**: Matching names create predictable, consistent navigation. When a folder is named "getting-started," readers expect the main file to be either `getting-started.md` or `index.md`.
+
+**When to suppress**: When you have legacy documentation with established naming conventions, or when the file name is intentionally different for clarity.
+
+**Better alternatives**:
+```yaml
+# Option 1: Match the names
+- folder: getting-started
+  file: getting-started.md
+
+# Option 2: Use index.md (conventional and always appropriate)
+- folder: getting-started
+  file: index.md
+
+# Option 3: Just use folder with children
+- folder: getting-started
+  children:
+    - file: index.md
+    - file: prerequisites.md
+```
+
+### When to use suppressions
+
+Suppressions are escape hatches, not defaults. Use them when:
+
+* **Migrating legacy content**: Existing documentation has established patterns that can't be changed immediately
+* **Valid architectural reasons**: Your specific use case genuinely benefits from the flagged pattern
+* **Temporary transitions**: You're in the middle of restructuring and need to suppress hints during the migration
+
+**Example of justified suppression**:
+```yaml
+# This section uses an established URL structure we can't change
+# without breaking external links. Suppressing the hint until we
+# can implement proper redirects.
+suppress:
+  - FolderFileNameMismatch
+
+toc:
+  - folder: install
+    file: setup.md  # External links point to /install/setup
+    children:
+      - file: prerequisites.md
+```
+
+## Best practices
+
+### Keep it organized
+
+* **Group related content** in folders that reflect logical sections
+* **Use descriptive names** - folder and file names become URLs
+* **Maintain hierarchy** - think about how users navigate from general to specific
+
+The folder names and hierarchy translate directly to URL structure. `folder: api/authentication` becomes `/docs/api/authentication/` in the browser.
+
+### Start simple, evolve structure
+
+Begin with automatic folder inclusion during development:
+
+```yaml
+toc:
+  - file: index.md
+  - folder: guides        # Auto-includes everything
+  - folder: api           # Auto-includes everything
+```
+
+As content stabilizes, add explicit children for control:
+
+```yaml
+toc:
+  - file: index.md
+  - folder: guides
+    children:             # Now you control the order
+      - file: index.md
+      - file: getting-started.md
+      - file: advanced-topics.md
+  - toc: api              # Extract to separate toc.yml
+```
+
+### Use index files consistently
+
+Every folder should have an `index.md` that introduces the section:
+
+```yaml
+- folder: api
+  children:
+    - file: index.md        # Overview of the API section
+    - file: authentication.md
+    - file: endpoints.md
+```
+
+The index file provides context before users dive into specific topics. It's also what users see when they navigate to `/docs/api/`.
+
+### Limit nesting depth
+
+Deep navigation hierarchies overwhelm readers. Aim for three to four levels maximum:
+
+**Good** (3 levels):
+```
+Documentation
+  └── Guides
+      └── Installation
+          └── Prerequisites
+```
+
+**Too deep** (6 levels):
+```
+Documentation
+  └── Guides
+      └── Getting Started
+          └── Installation
+              └── Linux
+                  └── Ubuntu
+                      └── Prerequisites
+```
+
+If you need more depth, consider splitting into separate documentation sets or using virtual file grouping for minor subdivisions.
+
+### Extract large sections to toc.yml
+
+When a section grows beyond 5-10 files or has its own internal structure, move it to a dedicated `toc.yml`:
+
+```
+docs/
+├── docset.yml          # High-level structure only
+├── index.md
+└── api-reference/
+    ├── toc.yml         # API section structure
+    ├── index.md
+    └── ...
+```
+
+**Benefits**:
+* Keeps `docset.yml` focused on top-level organization
+* Teams can own their section's navigation
+* Easier to refactor individual sections
+* Folder renames don't require updating the toc.yml (since the folder name isn't repeated inside it)
 
 ### Name TOC sections meaningfully
 
-Use clear, descriptive names for TOC sections:
+TOC section names become part of URLs and navigation structure:
 
-**Good:**
+**Good** (clear and descriptive):
 ```yaml
 - toc: api-reference
 - toc: getting-started
 - toc: troubleshooting
+- toc: user-guide
 ```
 
-**Bad:**
+**Bad** (vague and uninformative):
 ```yaml
 - toc: section1
 - toc: misc
 - toc: other
+- toc: stuff
 ```
 
-These names will end up in the URL structure of the published documentation
+Choose names that:
+* Describe the content clearly
+* Work well in URLs (lowercase, hyphenated)
+* Match user expectations
 
 ## Related concepts
 
