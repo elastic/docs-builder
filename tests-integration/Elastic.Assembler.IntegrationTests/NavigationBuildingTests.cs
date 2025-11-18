@@ -26,7 +26,7 @@ namespace Elastic.Assembler.IntegrationTests;
 
 public class NavigationBuildingTests(DocumentationFixture fixture, ITestOutputHelper output) : IAsyncLifetime
 {
-	[Fact]
+	[Fact(Skip = "Assert.SkipWhen not working on CI")]
 	public async Task AssertRealNavigation()
 	{
 		//Skipping on CI since this relies on checking out private repositories

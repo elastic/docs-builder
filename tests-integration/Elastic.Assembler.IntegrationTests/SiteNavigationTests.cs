@@ -10,6 +10,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Markdown.IO;
 using FluentAssertions;
@@ -171,7 +172,7 @@ public class SiteNavigationTests : IAsyncLifetime
 		navigation.TopLevelItems.Count.Should().BeLessThan(20);
 
 		// Verify parent-child relationships
-		var firstTopLevelItem = navigation.NavigationItems.First();
+		var firstTopLevelItem = navigation.NavigationItems.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>().First();
 		firstTopLevelItem.Should().NotBeNull();
 		firstTopLevelItem.Parent.Should().Be(navigation);
 		firstTopLevelItem.NavigationRoot.Should().Be(firstTopLevelItem);

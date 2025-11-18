@@ -60,9 +60,14 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		{
 			if (root is INavigationHomeAccessor accessor)
 				accessor.HomeProvider = new NavigationHomeProvider(_sitePrefix ?? "/", this);
+			root.Parent = this;
+			root.Index.Parent = this;
 			items.Add(root.Index);
 			foreach (var leaf in root.NavigationItems.OfType<ILeafNavigationItem<INavigationModel>>())
+			{
+				leaf.Parent = root;
 				items.Add(leaf);
+			}
 		}
 
 		var index = items.Count;
