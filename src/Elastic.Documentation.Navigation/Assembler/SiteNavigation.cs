@@ -56,12 +56,14 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		// Build NavigationItems from SiteTableOfContentsRef items
 		var items = new List<INavigationItem>();
 		// The root file leafs of the narrative repository act as root leafs for the overall site
-		var root = _nodes[new Uri($"{NarrativeRepository.RepositoryName}://")];
-		if (root is INavigationHomeAccessor accessor)
-			accessor.HomeProvider = new NavigationHomeProvider(_sitePrefix ?? "/", this);
-		items.Add(root.Index);
-		foreach (var leaf in root.NavigationItems.OfType<ILeafNavigationItem<INavigationModel>>())
-			items.Add(leaf);
+		if (_nodes.TryGetValue(new Uri($"{NarrativeRepository.RepositoryName}://"), out var root))
+		{
+			if (root is INavigationHomeAccessor accessor)
+				accessor.HomeProvider = new NavigationHomeProvider(_sitePrefix ?? "/", this);
+			items.Add(root.Index);
+			foreach (var leaf in root.NavigationItems.OfType<ILeafNavigationItem<INavigationModel>>())
+				items.Add(leaf);
+		}
 
 		var index = items.Count;
 		foreach (var tocRef in siteNavigationFile.TableOfContents)
