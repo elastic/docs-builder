@@ -14,16 +14,15 @@ public interface INavigationTraversable
 
 	IEnumerable<INavigationItem> YieldAll()
 	{
-		var first = NavigationIndexedByOrder.Values.First();
-		yield return first;
-		INavigationItem? next;
+		var current = NavigationIndexedByOrder.Values.First();
+		yield return current;
 		do
 		{
-			next = GetNext(first);
-			if (next is not null)
-				yield return next;
+			current = GetNext(current);
+			if (current is not null)
+				yield return current;
 
-		} while (next is not null);
+		} while (current is not null);
 	}
 
 	/// <summary>

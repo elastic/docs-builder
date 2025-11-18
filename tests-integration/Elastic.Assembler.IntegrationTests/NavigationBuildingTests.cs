@@ -14,7 +14,6 @@ using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Assembler;
-using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Documentation.Navigation.Isolated.Leaf;
 using Elastic.Documentation.ServiceDefaults;
 using Elastic.Documentation.Site.Navigation;
@@ -27,11 +26,11 @@ namespace Elastic.Assembler.IntegrationTests;
 
 public class NavigationBuildingTests(DocumentationFixture fixture, ITestOutputHelper output) : IAsyncLifetime
 {
-	[Fact(Skip = "Disabling this since it can't run on CI, dig in why Assert.SkipWhen doesn't work")]
+	[Fact]
 	public async Task AssertRealNavigation()
 	{
 		//Skipping on CI since this relies on checking out private repositories
-		Assert.SkipWhen(Environment.GetEnvironmentVariable("CI") == "true", "Skipping in CI");
+		Assert.SkipWhen(!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("CI")), "Skipping in CI");
 		string[] args = [];
 		var builder = Host.CreateApplicationBuilder()
 			.AddDocumentationServiceDefaults(ref args, (s, p) =>
@@ -116,9 +115,10 @@ public class NavigationBuildingTests(DocumentationFixture fixture, ITestOutputHe
 
 		await collector.StopAsync(TestContext.Current.CancellationToken);
 
-		collector.Errors.Should().Be(0);
 
+		collector.Errors.Should().Be(0);
 	}
+
 
 	private static void RecurseNav(INodeNavigationItem<INavigationModel, INavigationItem> navigation)
 	{
