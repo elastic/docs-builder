@@ -52,7 +52,7 @@ If you want to manually install the tool you can download the latest release fro
 
 ### Building locally
 
-Install [.NET 9.0](https://dotnet.microsoft.com/en-us/download/dotnet/9.0), then run:
+Install [.NET 10.0](https://dotnet.microsoft.com/en-us/download/dotnet/10.0), then run:
 
 ```bash
 ./build.sh publishbinaries
@@ -79,6 +79,8 @@ The essential commands are:
 * `docs-builder mv` [Move files and folders](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/contribute/move)
 * `docs-builder diff validate` [Manage redirects across doc sets](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/contribute/redirects#validation)
 * `docs-builder inbound-links validate-link-reference` can be used after a build to validate the local `links.json` against all published documentation.
+
+For a complete reference of all available commands, refer to the [CLI documentation](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/cli).
 
 ## Github Action
 
