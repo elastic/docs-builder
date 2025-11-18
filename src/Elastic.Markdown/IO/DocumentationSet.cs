@@ -13,7 +13,6 @@ using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation;
-using Elastic.Documentation.Navigation.Isolated.Leaf;
 using Elastic.Documentation.Navigation.Isolated.Node;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.Extensions;
@@ -23,7 +22,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Elastic.Markdown.IO;
 
-public class DocumentationSet : IPositionalNavigation
+public class DocumentationSet : INavigationTraversable
 {
 	private readonly ILogger<DocumentationSet> _logger;
 	public BuildContext Context { get; }
@@ -44,7 +43,7 @@ public class DocumentationSet : IPositionalNavigation
 
 	public FrozenDictionary<FilePath, DocumentationFile> Files { get; }
 
-	public ConditionalWeakTable<MarkdownFile, INavigationItem> MarkdownNavigationLookup { get; }
+	public ConditionalWeakTable<IDocumentationFile, INavigationItem> NavigationDocumentationFileLookup { get; }
 
 	public IReadOnlyCollection<IDocsBuilderExtension> EnabledExtensions { get; }
 
@@ -69,7 +68,7 @@ public class DocumentationSet : IPositionalNavigation
 			CrossLinkResolver = CrossLinkResolver,
 			TryFindDocument = TryFindDocument,
 			TryFindDocumentByRelativePath = TryFindDocumentByRelativePath,
-			PositionalNavigation = this
+			NavigationTraversable = this
 		};
 		MarkdownParser = new MarkdownParser(context, resolver);
 
@@ -90,31 +89,11 @@ public class DocumentationSet : IPositionalNavigation
 		var markdownFiles = files.OfType<MarkdownFile>().ToArray();
 		MarkdownFiles = markdownFiles.ToFrozenSet();
 
-		MarkdownNavigationLookup = [];
-		var navigationFlatList = CreateNavigationLookup(Navigation);
-		NavigationIndexedByOrder = navigationFlatList
-			.DistinctBy(n => n.NavigationIndex)
-			.ToDictionary(n => n.NavigationIndex, n => n)
-			.ToFrozenDictionary();
-
-		// Build cross-link dictionary including both:
-		// 1. Direct leaf items (files without children)
-		// 2. Index property of node items (files with children)
-		var leafItems = navigationFlatList.OfType<ILeafNavigationItem<MarkdownFile>>();
-		var nodeIndexes = navigationFlatList
-			.OfType<INodeNavigationItem<MarkdownFile, INavigationItem>>()
-			.Select(node => node.Index);
-
-		NavigationIndexedByCrossLink = leafItems
-			.Concat(nodeIndexes)
-			.DistinctBy(n => n.Model.CrossLink)
-			.ToDictionary(n => n.Model.CrossLink, n => n)
-			.ToFrozenDictionary();
+		NavigationDocumentationFileLookup = [];
+		NavigationIndexedByOrder = Navigation.BuildNavigationLookups(NavigationDocumentationFileLookup);
 
 		ValidateRedirectsExists();
 	}
-
-	public FrozenDictionary<string, ILeafNavigationItem<MarkdownFile>> NavigationIndexedByCrossLink { get; }
 
 	public DocumentationSetNavigation<MarkdownFile> Navigation { get; }
 
@@ -134,30 +113,6 @@ public class DocumentationSet : IPositionalNavigation
 				foreach (var child in node.NavigationItems)
 					VisitNavigation(child);
 				break;
-		}
-	}
-
-	private IReadOnlyCollection<INavigationItem> CreateNavigationLookup(INavigationItem item)
-	{
-		switch (item)
-		{
-			case ILeafNavigationItem<MarkdownFile> markdownLeaf:
-				var added = MarkdownNavigationLookup.TryAdd(markdownLeaf.Model, markdownLeaf);
-				if (!added)
-					Context.EmitWarning(Configuration.SourceFile, $"Duplicate navigation item {markdownLeaf.Model.CrossLink}");
-				return [markdownLeaf];
-			case ILeafNavigationItem<CrossLinkModel> crossLink:
-				return [crossLink];
-			case ILeafNavigationItem<INavigationModel> leaf:
-				throw new Exception($"Should not be possible to have a leaf navigation item that is not a markdown file: {leaf.Model.GetType().FullName}");
-			case INodeNavigationItem<MarkdownFile, INavigationItem> node:
-				_ = MarkdownNavigationLookup.TryAdd(node.Index.Model, node);
-				var nodeItems = node.NavigationItems.SelectMany(CreateNavigationLookup);
-				return nodeItems.Concat([node, node.Index]).ToArray();
-			case INodeNavigationItem<INavigationModel, INavigationItem> node:
-				throw new Exception($"Should not be possible to have a leaf navigation item that is not a markdown file: {node.GetType().FullName}");
-			default:
-				return [];
 		}
 	}
 
@@ -235,7 +190,7 @@ public class DocumentationSet : IPositionalNavigation
 
 	public INavigationItem FindNavigationByMarkdown(MarkdownFile markdown)
 	{
-		if (MarkdownNavigationLookup.TryGetValue(markdown, out var navigation))
+		if (NavigationDocumentationFileLookup.TryGetValue(markdown, out var navigation))
 			return navigation;
 		throw new Exception($"Could not find navigation item for {markdown.CrossLink}");
 	}

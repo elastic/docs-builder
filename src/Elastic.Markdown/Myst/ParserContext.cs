@@ -6,6 +6,7 @@ using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Links.CrossLinks;
+using Elastic.Documentation.Navigation;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Myst.FrontMatter;
@@ -30,7 +31,7 @@ public interface IParserResolvers
 	ICrossLinkResolver CrossLinkResolver { get; }
 	Func<IFileInfo, DocumentationFile?> TryFindDocument { get; }
 	Func<string, DocumentationFile?> TryFindDocumentByRelativePath { get; }
-	IPositionalNavigation PositionalNavigation { get; }
+	INavigationTraversable NavigationTraversable { get; }
 }
 
 public record ParserResolvers : IParserResolvers
@@ -41,7 +42,7 @@ public record ParserResolvers : IParserResolvers
 
 	public required Func<string, DocumentationFile?> TryFindDocumentByRelativePath { get; init; }
 
-	public required IPositionalNavigation PositionalNavigation { get; init; }
+	public required INavigationTraversable NavigationTraversable { get; init; }
 }
 
 public record ParserState(BuildContext Build) : ParserResolvers
@@ -69,7 +70,7 @@ public class ParserContext : MarkdownParserContext, IParserResolvers
 	public Func<string, DocumentationFile?> TryFindDocumentByRelativePath { get; }
 	public IReadOnlyDictionary<string, string> Substitutions { get; }
 	public IReadOnlyDictionary<string, string> ContextSubstitutions { get; }
-	public IPositionalNavigation PositionalNavigation { get; }
+	public INavigationTraversable NavigationTraversable { get; }
 
 	public ParserContext(ParserState state)
 	{
@@ -83,12 +84,12 @@ public class ParserContext : MarkdownParserContext, IParserResolvers
 		MarkdownSourcePath = state.MarkdownSourcePath;
 		TryFindDocument = state.TryFindDocument;
 		TryFindDocumentByRelativePath = state.TryFindDocumentByRelativePath;
-		PositionalNavigation = state.PositionalNavigation;
+		NavigationTraversable = state.NavigationTraversable;
 		CurrentUrlPath = string.Empty;
 
 		if (TryFindDocument(state.ParentMarkdownPath ?? MarkdownSourcePath) is MarkdownFile document)
 		{
-			if (PositionalNavigation.MarkdownNavigationLookup.TryGetValue(document, out var navigationLookup))
+			if (NavigationTraversable.NavigationDocumentationFileLookup.TryGetValue(document, out var navigationLookup))
 				CurrentUrlPath = navigationLookup.Url;
 		}
 

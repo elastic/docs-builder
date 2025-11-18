@@ -85,7 +85,7 @@ public class AssemblerBuildService(
 		var legacyPageChecker = new LegacyPageService(logFactory);
 		var historyMapper = new PageLegacyUrlMapper(legacyPageChecker, assembleContext.VersionsConfiguration, assembleSources.LegacyUrlMappings);
 
-		var builder = new AssemblerBuilder(logFactory, assembleContext, htmlWriter, pathProvider, historyMapper);
+		var builder = new AssemblerBuilder(logFactory, assembleContext, navigation, htmlWriter, pathProvider, historyMapper);
 
 		await builder.BuildAllAsync(assembleContext.Environment, assembleSources.AssembleSets, exporters, ctx);
 

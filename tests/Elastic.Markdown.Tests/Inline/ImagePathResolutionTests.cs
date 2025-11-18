@@ -104,9 +104,9 @@ public class ImagePathResolutionTests(ITestOutputHelper output)
 		// For assembler builds DocumentationSetNavigation seeds MarkdownNavigationLookup with navigation items whose Url already
 		// includes the computed path_prefix. To exercise the same branch in isolation, inject a stub navigation entry with the
 		// expected Url (and minimal metadata for the surrounding API contract).
-		_ = documentationSet.MarkdownNavigationLookup.Remove(markdownFile);
-		documentationSet.MarkdownNavigationLookup.Add(markdownFile, new NavigationItemStub(navigationUrl));
-		documentationSet.MarkdownNavigationLookup.TryGetValue(markdownFile, out var navigation).Should()
+		_ = documentationSet.NavigationDocumentationFileLookup.Remove(markdownFile);
+		documentationSet.NavigationDocumentationFileLookup.Add(markdownFile, new NavigationItemStub(navigationUrl));
+		documentationSet.NavigationDocumentationFileLookup.TryGetValue(markdownFile, out var navigation).Should()
 			.BeTrue("navigation lookup should contain current page");
 		navigation?.Url.Should().Be(navigationUrl);
 
@@ -117,7 +117,7 @@ public class ImagePathResolutionTests(ITestOutputHelper output)
 			CrossLinkResolver = documentationSet.CrossLinkResolver,
 			TryFindDocument = file => documentationSet.TryFindDocument(file),
 			TryFindDocumentByRelativePath = path => documentationSet.TryFindDocumentByRelativePath(path),
-			PositionalNavigation = documentationSet
+			NavigationTraversable = documentationSet
 		};
 
 		var context = new ParserContext(parserState);

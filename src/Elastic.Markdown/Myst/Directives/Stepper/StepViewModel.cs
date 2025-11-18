@@ -19,7 +19,7 @@ public class StepViewModel : DirectiveViewModel
 	public required string Anchor { get; init; }
 	public required int HeadingLevel { get; init; }
 
-	public class StepCrossNavigationLookupProvider : IPositionalNavigation
+	public class StepCrossNavigationLookupProvider : INavigationTraversable
 	{
 		public static StepCrossNavigationLookupProvider Instance { get; } = new();
 
@@ -27,11 +27,7 @@ public class StepViewModel : DirectiveViewModel
 		public FrozenDictionary<int, INavigationItem> NavigationIndexedByOrder { get; } = new Dictionary<int, INavigationItem>().ToFrozenDictionary();
 
 		/// <inheritdoc />
-		public FrozenDictionary<string, ILeafNavigationItem<MarkdownFile>> NavigationIndexedByCrossLink { get; } =
-			new Dictionary<string, ILeafNavigationItem<MarkdownFile>>().ToFrozenDictionary();
-
-		/// <inheritdoc />
-		public ConditionalWeakTable<MarkdownFile, INavigationItem> MarkdownNavigationLookup { get; } = [];
+		public ConditionalWeakTable<IDocumentationFile, INavigationItem> NavigationDocumentationFileLookup { get; } = [];
 	}
 
 	public class StepCrossLinkResolver : ICrossLinkResolver
@@ -67,7 +63,7 @@ public class StepViewModel : DirectiveViewModel
 			TryFindDocument = _ => null!,
 			TryFindDocumentByRelativePath = _ => null!,
 			CrossLinkResolver = StepCrossLinkResolver.Instance,
-			PositionalNavigation = StepCrossNavigationLookupProvider.Instance
+			NavigationTraversable = StepCrossNavigationLookupProvider.Instance
 		});
 
 		var document = Markdig.Markdown.Parse(Title, MarkdownParser.Pipeline, context);

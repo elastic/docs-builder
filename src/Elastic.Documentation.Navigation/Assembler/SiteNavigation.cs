@@ -2,17 +2,21 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections;
+using System.Collections.Frozen;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Extensions;
+using Elastic.Documentation.Navigation.Isolated.Leaf;
 using Elastic.Documentation.Navigation.Isolated.Node;
 
 namespace Elastic.Documentation.Navigation.Assembler;
 
 [DebuggerDisplay("{Url}")]
-public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigationItem>
+public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigationItem>, INavigationTraversable
 {
 	private readonly string? _sitePrefix;
 
@@ -51,7 +55,22 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		UnseenNodes = [.. _nodes.Keys];
 		// Build NavigationItems from SiteTableOfContentsRef items
 		var items = new List<INavigationItem>();
-		var index = 0;
+		// The root file leafs of the narrative repository act as root leafs for the overall site
+		if (_nodes.TryGetValue(new Uri($"{NarrativeRepository.RepositoryName}://"), out var root))
+		{
+			if (root is INavigationHomeAccessor accessor)
+				accessor.HomeProvider = new NavigationHomeProvider(_sitePrefix ?? "/", this);
+			root.Parent = this;
+			root.Index.Parent = this;
+			items.Add(root.Index);
+			foreach (var leaf in root.NavigationItems.OfType<ILeafNavigationItem<INavigationModel>>())
+			{
+				leaf.Parent = root;
+				items.Add(leaf);
+			}
+		}
+
+		var index = items.Count;
 		foreach (var tocRef in siteNavigationFile.TableOfContents)
 		{
 			var navItem = CreateSiteTableOfContentsNavigation(
@@ -82,6 +101,9 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 			value.Parent = this;
 		}
 
+		// Build positional navigation lookup tables from all navigation items in a single traversal
+		NavigationDocumentationFileLookup = [];
+		NavigationIndexedByOrder = this.BuildNavigationLookups(NavigationDocumentationFileLookup);
 	}
 
 	public HashSet<Uri> DeclaredPhantoms { get; }
@@ -135,6 +157,12 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 
 	void IAssignableChildrenNavigation.SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems) =>
 		throw new NotSupportedException("SetNavigationItems is not supported on SiteNavigation");
+
+	/// <inheritdoc />
+	public ConditionalWeakTable<IDocumentationFile, INavigationItem> NavigationDocumentationFileLookup { get; }
+
+	/// <inheritdoc />
+	public FrozenDictionary<int, INavigationItem> NavigationIndexedByOrder { get; }
 
 	/// <summary>
 	/// Normalizes the site prefix to ensure it has a leading slash and no trailing slash.
@@ -270,4 +298,5 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		}
 		return node;
 	}
+
 }

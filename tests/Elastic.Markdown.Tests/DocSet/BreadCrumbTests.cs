@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Extensions;
-using Elastic.Markdown.IO;
+using Elastic.Documentation.Navigation;
 using FluentAssertions;
 
 namespace Elastic.Markdown.Tests.DocSet;
@@ -11,10 +11,12 @@ namespace Elastic.Markdown.Tests.DocSet;
 public class BreadCrumbTests(ITestOutputHelper output) : NavigationTestsBase(output)
 {
 	[Fact]
-	public void ParsesATableOfContents()
+	public void CanQueryParentsSuccessfully()
 	{
-		IPositionalNavigation positionalNavigation = Generator.DocumentationSet;
-		var allKeys = positionalNavigation.NavigationIndexedByCrossLink.Keys;
+		var documentationSet = Generator.DocumentationSet;
+		INavigationTraversable navigationTraversable = documentationSet;
+		var crossLinks = Generator.DocumentationSet.MarkdownFiles.ToDictionary(f => $"docs-builder://{f.RelativePath.OptionalWindowsReplace()}");
+		var allKeys = crossLinks.Keys.ToList();
 		allKeys.Should().Contain("docs-builder://testing/nested/index.md");
 		allKeys.Should().Contain("docs-builder://testing/nest-under-index/index.md");
 
@@ -24,17 +26,17 @@ public class BreadCrumbTests(ITestOutputHelper output) : NavigationTestsBase(out
 
 		doc.Should().NotBeNull();
 
-		var f = positionalNavigation.NavigationIndexedByCrossLink.FirstOrDefault(kv => kv.Key == "docs-builder://testing/deeply-nested/foo.md");
+		var f = crossLinks.FirstOrDefault(kv => kv.Key == "docs-builder://testing/deeply-nested/foo.md");
 		f.Should().NotBeNull();
 
-		positionalNavigation.NavigationIndexedByCrossLink.Should().ContainKey(doc.CrossLink);
-		var nav = positionalNavigation.NavigationIndexedByCrossLink[doc.CrossLink];
+		crossLinks.Should().ContainKey(doc.CrossLink);
+		var nav = navigationTraversable.GetNavigationFor(crossLinks[doc.CrossLink]);
 
 		nav.Parent.Should().NotBeNull();
 
-		_ = positionalNavigation.MarkdownNavigationLookup.TryGetValue(doc, out var docNavigation);
+		var docNavigation = navigationTraversable.GetNavigationFor(doc);
 		docNavigation.Should().NotBeNull();
-		var parents = positionalNavigation.GetParentsOfMarkdownFile(doc);
+		var parents = navigationTraversable.GetParentsOfMarkdownFile(doc);
 
 		parents.Should().HaveCount(2);
 
