@@ -1,4 +1,4 @@
-#docs-builder
+# docs-builder
 
 [![ci](https://github.com/elastic/docs-builder/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/elastic/docs-builder/actions/workflows/ci.yml)
 
@@ -6,15 +6,20 @@ Distributed documentation tooling for a distributed company.
 
 * *`docs-builder`* command line tool to generate single doc-sets
 
-Distributed [as native OSX, Linux and Windows binaries for several CPU architectures.](#installation)
+Distributed [as native macOS, Linux, and Windows binaries for several CPU architectures.](#installation)
 
 The documentation files:
 * are written in common Markdown with [Additional syntax extensions](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/syntax/) to produce a richer writing and reading experience. 
 * By conventions the documentation lives in `docs` folder but the tooling will look for any folder holding the `docset.yml` configuration file given the current working directory.
 
+> [!TIP]
+> To learn how to use docs-builder to contribute docs to Elastic, refer to [Contribute to the docs locally](https://www.elastic.co/docs/contribute-docs/locally
+).
+
 ## Distributed documentation
 
 The main driver for folks writing documentation is `docs-builder`. 
+
 This tool builds each repository in isolation and in addition produces a full mapping of all the linkable resources it contains in a `links.json` file.
 
 Each time a repository successfully builds on its respective main integration branch, our automation will publish its links.json file.
@@ -47,7 +52,7 @@ If you want to manually install the tool you can download the latest release fro
 
 ### Building locally
 
-Install [.NET 9.0](https://dotnet.microsoft.com/en-us/download/dotnet/9.0), then run:
+Install [.NET 10.0](https://dotnet.microsoft.com/en-us/download/dotnet/10.0), then run:
 
 ```bash
 ./build.sh publishbinaries
@@ -56,11 +61,11 @@ After which the locally built binaries will be available at:
 
 * **docs-builder**: `./.artifacts/publish/docs-builder/release/docs-builder`
 
-## Getting Started
+## Getting started
 
-Our [Documentation](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/contribute/locally) is the best place to learn how to start using the tool locally.
+Our [Documentation](https://www.elastic.co/docs/contribute-docs/locally) is the best place to learn how to start using the tool locally.
 
-The TLDR, however, is
+The essential commands are:
 
 * Running `docs-builder` from the root of any checkout with a `docs` folder will build the documentation.
   * Running `docs-builder` consecutively will only rebuild the documentation that has changed.
@@ -69,13 +74,13 @@ The TLDR, however, is
 * Running `docs-builder serve` will provide a local server with live reloading.
   * You can leave this command running while you add/remove/rename files in your `docs` folder.
 
-
 ### Other commands to know:
 
 * `docs-builder mv` [Move files and folders](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/contribute/move)
 * `docs-builder diff validate` [Manage redirects across doc sets](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/contribute/redirects#validation)
 * `docs-builder inbound-links validate-link-reference` can be used after a build to validate the local `links.json` against all published documentation.
 
+For a complete reference of all available commands, refer to the [CLI documentation](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/cli).
 
 ## Github Action
 
@@ -141,6 +146,6 @@ https://github.com/elastic/{your-repository}/settings/pages
 
 ---
 
-# Local Development
+# Local development
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for more information on how to develop locally and contribute to the project.
+Refer to [CONTRIBUTING.md](CONTRIBUTING.md) for more information on how to develop locally and contribute to the project.
