@@ -34,6 +34,10 @@ public class AssembleContext : IDocumentationConfigurationContext
 	public LegacyUrlMappingConfiguration LegacyUrlMappings { get; }
 	public SynonymsConfiguration SynonymsConfiguration { get; }
 
+	// Always use the production URL. In case a page is leaked to a search engine, it should point to the production site.
+	/// <inheritdoc />
+	public Uri? CanonicalBaseUrl { get; } = new("https://www.elastic.co");
+
 	public IDirectoryInfo CheckoutDirectory { get; }
 
 	public IDirectoryInfo OutputDirectory { get; }

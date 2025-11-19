@@ -18,6 +18,9 @@ public record ParentDocument
 
 public record DocumentationDocument
 {
+	[JsonPropertyName("type")]
+	public string Type { get; set; } = "doc";
+
 	// TODO make this required once all doc_sets have published again
 	[JsonPropertyName("url")]
 	public string Url { get; set; } = string.Empty;
@@ -56,9 +59,6 @@ public record DocumentationDocument
 	// Stripped body is the body with Markdown removed, suitable for search indexing
 	[JsonPropertyName("stripped_body")]
 	public string? StrippedBody { get; set; }
-
-	[JsonPropertyName("url_segment_count")]
-	public int? UrlSegmentCount { get; set; }
 
 	[JsonPropertyName("abstract")]
 	public string? Abstract { get; set; }

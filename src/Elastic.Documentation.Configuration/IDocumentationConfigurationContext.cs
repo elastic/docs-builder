@@ -17,7 +17,6 @@ public interface IConfigurationContext
 	ProductsConfiguration ProductsConfiguration { get; }
 	LegacyUrlMappingConfiguration LegacyUrlMappings { get; }
 	SynonymsConfiguration SynonymsConfiguration { get; }
-
 }
 
 /// Used only to seed <see cref="IConfigurationContext"/> in DI, you primarily want to depend on <see cref="IDocumentationConfigurationContext"/>
@@ -42,4 +41,7 @@ public class ConfigurationContext : IConfigurationContext
 	public required SynonymsConfiguration SynonymsConfiguration { get; init; }
 }
 
-public interface IDocumentationConfigurationContext : IDocumentationContext, IConfigurationContext;
+public interface IDocumentationConfigurationContext : IDocumentationContext, IConfigurationContext
+{
+	Uri? CanonicalBaseUrl { get; }
+}

@@ -6,6 +6,7 @@ using System.IO.Abstractions;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Elastic.ApiExplorer.Elasticsearch;
+using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Synonyms;
@@ -19,6 +20,7 @@ using Elastic.Markdown.Helpers;
 using Elastic.Markdown.IO;
 using Elastic.Transport;
 using Elastic.Transport.Products.Elasticsearch;
+using Markdig.Parsers;
 using Markdig.Syntax;
 using Microsoft.Extensions.Logging;
 using NetEscapades.EnumGenerators;
@@ -31,6 +33,7 @@ public enum IngestStrategy { Reindex, Multiplex }
 public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 {
 	private readonly IDiagnosticsCollector _collector;
+	private readonly IDocumentationConfigurationContext _context;
 	private readonly ILogger _logger;
 	private readonly ElasticsearchLexicalExporter _lexicalChannel;
 	private readonly ElasticsearchSemanticExporter _semanticChannel;
@@ -52,16 +55,17 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 		IDiagnosticsCollector collector,
 		DocumentationEndpoints endpoints,
 		string indexNamespace,
-		SynonymsConfiguration synonyms,
-		VersionsConfiguration versionsConfiguration
+		IDocumentationConfigurationContext context
 	)
 	{
 		_collector = collector;
+		_context = context;
 		_logger = logFactory.CreateLogger<ElasticsearchMarkdownExporter>();
 		_endpoint = endpoints.Elasticsearch;
 		_indexStrategy = IngestStrategy.Reindex;
 		_indexNamespace = indexNamespace;
-		_versionsConfiguration = versionsConfiguration;
+		_versionsConfiguration = context.VersionsConfiguration;
+		_synonyms = context.SynonymsConfiguration.Synonyms;
 		var es = endpoints.Elasticsearch;
 
 		var configuration = new ElasticsearchConfiguration(es.Uri)
@@ -88,7 +92,6 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 		};
 
 		_transport = new DistributedTransport(configuration);
-		_synonyms = synonyms.Synonyms;
 		_lexicalChannel = new ElasticsearchLexicalExporter(logFactory, collector, es, indexNamespace, _transport);
 		_semanticChannel = new ElasticsearchSemanticExporter(logFactory, collector, es, indexNamespace, _transport);
 	}
@@ -428,8 +431,9 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 			.Where(text => !string.IsNullOrEmpty(text))
 			.ToArray();
 
-		var @abstract = !string.IsNullOrEmpty(body)
-			? body[..Math.Min(body.Length, 400)] + " " + string.Join(" \n- ", headings)
+		var strippedBody = body.StripMarkdown();
+		var @abstract = !string.IsNullOrEmpty(strippedBody)
+			? strippedBody[..Math.Min(strippedBody.Length, 400)] + " " + string.Join(" \n- ", headings)
 			: string.Empty;
 
 		// this is temporary until https://github.com/elastic/docs-builder/pull/2070 lands
@@ -441,11 +445,10 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 			Url = url,
 			Title = file.Title,
 			Body = body,
-			StrippedBody = body.StripMarkdown(),
+			StrippedBody = strippedBody,
 			Description = fileContext.SourceFile.YamlFrontMatter?.Description,
 			Abstract = @abstract,
 			Applies = appliesTo,
-			UrlSegmentCount = url.Split('/', StringSplitOptions.RemoveEmptyEntries).Length,
 			Parents = navigation.GetParentsOfMarkdownFile(file).Select(i => new ParentDocument
 			{
 				Title = i.NavigationTitle,
@@ -464,6 +467,9 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 	/// <inheritdoc />
 	public async ValueTask<bool> FinishExportAsync(IDirectoryInfo outputFolder, Cancel ctx)
 	{
+
+		// this is temporary; once we implement Elastic.ApiExplorer, this should flow through
+		// we'll rename IMarkdownExporter to IDocumentationFileExporter at that point
 		_logger.LogInformation("Exporting OpenAPI documentation to Elasticsearch");
 
 		var exporter = new OpenApiDocumentExporter(_versionsConfiguration);
@@ -471,6 +477,21 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 		await foreach (var doc in exporter.ExportDocuments(limitPerSource: null, ctx))
 		{
 			AssignDocumentMetadata(doc);
+			var document = MarkdownParser.Parse(doc.Body ?? string.Empty);
+
+			doc.Body = LlmMarkdownExporter.ConvertToLlmMarkdown(document, _context);
+
+			var headings = document.Descendants<HeadingBlock>()
+				.Select(h => h.GetData("header") as string ?? string.Empty) // TODO: Confirm that 'header' data is correctly set for all HeadingBlock instances and that this extraction is reliable.
+				.Where(text => !string.IsNullOrEmpty(text))
+				.ToArray();
+
+			doc.StrippedBody = doc.Body.StripMarkdown();
+			var @abstract = !string.IsNullOrEmpty(doc.Body)
+				? doc.Body[..Math.Min(doc.Body.Length, 400)] + " " + string.Join(" \n- ", doc.Headings)
+				: string.Empty;
+			doc.Abstract = @abstract;
+			doc.Headings = headings;
 
 			// Write to channels following the multiplex or reindex strategy
 			if (_indexStrategy == IngestStrategy.Multiplex)

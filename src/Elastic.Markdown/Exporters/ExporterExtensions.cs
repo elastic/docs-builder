@@ -24,7 +24,7 @@ public static class ExporterExtensions
 		if (exportOptions.Contains(Exporter.Configuration))
 			markdownExporters.Add(new ConfigurationExporter(logFactory, context.ConfigurationFileProvider, context));
 		if (exportOptions.Contains(Exporter.Elasticsearch))
-			markdownExporters.Add(new ElasticsearchMarkdownExporter(logFactory, context.Collector, context.Endpoints, indexNamespace, context.SynonymsConfiguration, context.VersionsConfiguration));
+			markdownExporters.Add(new ElasticsearchMarkdownExporter(logFactory, context.Collector, context.Endpoints, indexNamespace, context));
 		return markdownExporters;
 	}
 }

@@ -2,11 +2,13 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Text.Json.Nodes;
 using Elastic.Documentation;
+using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Search;
 using Microsoft.OpenApi;
@@ -115,7 +117,8 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 
 				var url = $"/docs/api/doc/{product}/operation/operation-{operationId.ToLowerInvariant()}";
 
-				var title = operation.Value.Summary ?? operationId;
+				var productName = CultureInfo.InvariantCulture.TextInfo.ToTitleCase(product);
+				var title = $"{productName} - {operation.Value.Summary ?? operationId}";
 				var description = operation.Value.Description;
 
 				// Build body content from operation details
@@ -138,9 +141,7 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 				{
 					_ = bodyBuilder.AppendLine("## Parameters");
 					foreach (var param in operation.Value.Parameters)
-					{
 						_ = bodyBuilder.AppendLine($"- **{param.Name}** ({param.In}): {param.Description}");
-					}
 					_ = bodyBuilder.AppendLine();
 				}
 
@@ -153,16 +154,20 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 					.OfType<string>()
 					.ToArray() ?? [];
 
+				// Extract ApplicableTo from x-state
+				var applies = ExtractApplicableTo(operation.Value);
+
 				yield return new DocumentationDocument
 				{
+					Type = "api",
 					Url = url,
 					Title = title,
 					Description = description,
 					Body = body,
-					StrippedBody = body, // Already plain text, no markdown to strip
-					UrlSegmentCount = url.Split('/', StringSplitOptions.RemoveEmptyEntries).Length,
+					StrippedBody = body,
 					Headings = headings,
 					Links = [],
+					Applies = applies,
 					Parents =
 					[
 						new ParentDocument { Title = "API Reference", Url = "/docs/api" },
@@ -218,5 +223,80 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 	{
 		var cleanPath = path.TrimStart('/').Replace('/', '-').Replace('{', '-').Replace('}', '-');
 		return $"{method.ToString().ToLowerInvariant()}-{cleanPath}";
+	}
+
+	/// <summary>
+	/// Extracts ApplicableTo information from an operation's x-state extension.
+	/// </summary>
+	private static ApplicableTo? ExtractApplicableTo(OpenApiOperation operation)
+	{
+		// Try to get x-state extension
+		if (operation.Extensions == null || !operation.Extensions.TryGetValue("x-state", out var stateExtension))
+			return null;
+
+		// Get the state string value from JsonNodeExtension
+		if (stateExtension is not JsonNodeExtension jsonNodeExtension)
+			return null;
+
+		var stateValue = jsonNodeExtension.Node.GetValue<string>();
+		if (string.IsNullOrEmpty(stateValue))
+			return null;
+
+		// Parse lifecycle from state string (e.g., "Generally available; Added in 9.3.0")
+		var lifecycle = ParseLifecycle(stateValue);
+
+		// Parse version from "Added in X.Y.Z"
+		var version = ParseVersion(stateValue);
+
+		// Create Applicability instance
+		var applicability = new Applicability
+		{
+			Lifecycle = lifecycle,
+			Version = version
+		};
+
+		// Create AppliesCollection
+		var appliesCollection = new AppliesCollection([applicability]);
+
+		// Return ApplicableTo with Stack set
+		return new ApplicableTo
+		{
+			Stack = appliesCollection
+		};
+	}
+
+	/// <summary>
+	/// Parses the product lifecycle from the x-state string.
+	/// </summary>
+	private static ProductLifecycle ParseLifecycle(string stateValue)
+	{
+		var lower = stateValue.ToLowerInvariant();
+
+		if (lower.Contains("generally available"))
+			return ProductLifecycle.GenerallyAvailable;
+		if (lower.Contains("beta"))
+			return ProductLifecycle.Beta;
+		if (lower.Contains("tech") && lower.Contains("preview"))
+			return ProductLifecycle.TechnicalPreview;
+		if (lower.Contains("deprecated"))
+			return ProductLifecycle.Deprecated;
+		if (lower.Contains("removed"))
+			return ProductLifecycle.Removed;
+
+		// Default to GA if we can't parse
+		return ProductLifecycle.GenerallyAvailable;
+	}
+
+	/// <summary>
+	/// Parses the version from "Added in X.Y.Z" pattern in the x-state string.
+	/// </summary>
+	private static SemVersion? ParseVersion(string stateValue)
+	{
+		var match = AddedInVersionRegex().Match(stateValue);
+		if (!match.Success)
+			return null;
+
+		var versionString = match.Groups[1].Value;
+		return SemVersion.TryParse(versionString, out var version) ? version : null;
 	}
 }
