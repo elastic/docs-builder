@@ -17,7 +17,7 @@ public class OpenApiDocumentExporterTests
 	private static readonly HttpClient HttpClient = new();
 	private const string BaseUrl = "https://www.elastic.co";
 
-	[Fact]
+	[Fact(Skip = "This spams elastic.co, run this manually")]
 	public async Task ExportedDocumentUrlsShouldReturnSuccessStatusCode()
 	{
 		// Arrange
