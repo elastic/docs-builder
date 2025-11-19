@@ -74,7 +74,7 @@ public class OpenApiDocumentExporterTests
 
 				try
 				{
-					var request = new HttpRequestMessage(HttpMethod.Head, fullUrl);
+					using var request = new HttpRequestMessage(HttpMethod.Head, fullUrl);
 
 					// Mimic browser headers
 					request.Headers.Add("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
