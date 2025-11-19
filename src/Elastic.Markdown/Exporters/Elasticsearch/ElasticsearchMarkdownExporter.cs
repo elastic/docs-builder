@@ -6,10 +6,8 @@ using System.IO.Abstractions;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Elastic.ApiExplorer.Elasticsearch;
-using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.Synonyms;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Navigation;
@@ -17,7 +15,6 @@ using Elastic.Documentation.Search;
 using Elastic.Ingest.Elasticsearch;
 using Elastic.Ingest.Elasticsearch.Indices;
 using Elastic.Markdown.Helpers;
-using Elastic.Markdown.IO;
 using Elastic.Transport;
 using Elastic.Transport.Products.Elasticsearch;
 using Markdig.Parsers;
@@ -487,8 +484,8 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 				.ToArray();
 
 			doc.StrippedBody = doc.Body.StripMarkdown();
-			var @abstract = !string.IsNullOrEmpty(doc.Body)
-				? doc.Body[..Math.Min(doc.Body.Length, 400)] + " " + string.Join(" \n- ", doc.Headings)
+			var @abstract = !string.IsNullOrEmpty(doc.StrippedBody)
+				? doc.Body[..Math.Min(doc.StrippedBody.Length, 400)] + " " + string.Join(" \n- ", doc.Headings)
 				: string.Empty;
 			doc.Abstract = @abstract;
 			doc.Headings = headings;
