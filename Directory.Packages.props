@@ -37,7 +37,7 @@
     <PackageVersion Include="InMemoryLogger" Version="1.0.66" />
     <PackageVersion Include="MartinCostello.Logging.XUnit.v3" Version="0.6.0" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.0" />
-    <PackageVersion Include="Microsoft.OpenApi" Version="3.0.0" />
+    <PackageVersion Include="Microsoft.OpenApi" Version="3.0.1" />
     <PackageVersion Include="TUnit" Version="0.25.21" />
     <PackageVersion Include="xunit.v3.extensibility.core" Version="2.0.2" />
   </ItemGroup>

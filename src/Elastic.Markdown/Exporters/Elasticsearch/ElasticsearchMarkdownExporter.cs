@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Elastic.ApiExplorer.Elasticsearch;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Synonyms;
@@ -380,6 +381,21 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 		} while (!completed);
 	}
 
+	/// <summary>
+	/// Assigns hash, last updated, and batch index date to a documentation document.
+	/// </summary>
+	private void AssignDocumentMetadata(DocumentationDocument doc)
+	{
+		var semanticHash = _semanticChannel.Channel.ChannelHash;
+		var lexicalHash = _lexicalChannel.Channel.ChannelHash;
+		var hash = HashedBulkUpdate.CreateHash(semanticHash, lexicalHash,
+			doc.Url, doc.Body ?? string.Empty, string.Join(",", doc.Headings.OrderBy(h => h)), doc.Url
+		);
+		doc.Hash = hash;
+		doc.LastUpdated = _batchIndexDate;
+		doc.BatchIndexDate = _batchIndexDate;
+	}
+
 	public async ValueTask<bool> ExportAsync(MarkdownExportFileContext fileContext, Cancel ctx)
 	{
 		var file = fileContext.SourceFile;
@@ -434,14 +450,7 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 			Headings = headings
 		};
 
-		var semanticHash = _semanticChannel.Channel.ChannelHash;
-		var lexicalHash = _lexicalChannel.Channel.ChannelHash;
-		var hash = HashedBulkUpdate.CreateHash(semanticHash, lexicalHash,
-			doc.Url, doc.Body ?? string.Empty, string.Join(",", doc.Headings.OrderBy(h => h)), doc.Url
-		);
-		doc.Hash = hash;
-		doc.LastUpdated = _batchIndexDate;
-		doc.BatchIndexDate = _batchIndexDate;
+		AssignDocumentMetadata(doc);
 
 		if (_indexStrategy == IngestStrategy.Multiplex)
 			return await _lexicalChannel.TryWrite(doc, ctx) && await _semanticChannel.TryWrite(doc, ctx);
@@ -449,7 +458,38 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 	}
 
 	/// <inheritdoc />
-	public ValueTask<bool> FinishExportAsync(IDirectoryInfo outputFolder, Cancel ctx) => ValueTask.FromResult(true);
+	public async ValueTask<bool> FinishExportAsync(IDirectoryInfo outputFolder, Cancel ctx)
+	{
+		_logger.LogInformation("Exporting OpenAPI documentation to Elasticsearch");
+
+		var exporter = new OpenApiDocumentExporter();
+
+		await foreach (var doc in exporter.ExportDocuments(limitPerSource: null, ctx))
+		{
+			AssignDocumentMetadata(doc);
+
+			// Write to channels following the multiplex or reindex strategy
+			if (_indexStrategy == IngestStrategy.Multiplex)
+			{
+				if (!await _lexicalChannel.TryWrite(doc, ctx) || !await _semanticChannel.TryWrite(doc, ctx))
+				{
+					_logger.LogError("Failed to write OpenAPI document {Url}", doc.Url);
+					return false;
+				}
+			}
+			else
+			{
+				if (!await _lexicalChannel.TryWrite(doc, ctx))
+				{
+					_logger.LogError("Failed to write OpenAPI document {Url}", doc.Url);
+					return false;
+				}
+			}
+		}
+
+		_logger.LogInformation("Finished exporting OpenAPI documentation");
+		return true;
+	}
 
 	/// <inheritdoc />
 	public void Dispose()
