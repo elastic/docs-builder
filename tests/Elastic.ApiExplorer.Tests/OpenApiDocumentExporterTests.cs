@@ -4,6 +4,8 @@
 
 using System.Collections.Concurrent;
 using Elastic.ApiExplorer.Elasticsearch;
+using Elastic.Documentation;
+using Elastic.Documentation.Configuration.Versions;
 using FluentAssertions;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -17,8 +19,24 @@ public class OpenApiDocumentExporterTests
 	public async Task ExportedDocumentUrlsShouldReturnSuccessStatusCode()
 	{
 		// Arrange
-		var exporter = new OpenApiDocumentExporter();
-		const int limitPerSource = 50; // Get 50 from each source (Elasticsearch and Kibana)
+		var versionsConfiguration = new VersionsConfiguration
+		{
+			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
+			{
+				{
+					VersioningSystemId.Stack,
+					new VersioningSystem
+					{
+						Id = VersioningSystemId.Stack,
+						Base = new SemVersion(8, 0, 0),
+						Current = new SemVersion(9, 2, 0)
+					}
+				}
+			}
+		};
+
+		var exporter = new OpenApiDocumentExporter(versionsConfiguration);
+		const int limitPerSource = 300; // Get 50 from each source (Elasticsearch and Kibana)
 
 		// Act - Collect all documents, tracking source
 		var documents = new List<(string Url, string Source)>();

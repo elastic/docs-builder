@@ -9,6 +9,7 @@ using Elastic.ApiExplorer.Elasticsearch;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Synonyms;
+using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Search;
@@ -44,13 +45,15 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 	private string _currentSemanticHash = string.Empty;
 
 	private readonly IReadOnlyCollection<string> _synonyms;
+	private readonly VersionsConfiguration _versionsConfiguration;
 
 	public ElasticsearchMarkdownExporter(
 		ILoggerFactory logFactory,
 		IDiagnosticsCollector collector,
 		DocumentationEndpoints endpoints,
 		string indexNamespace,
-		SynonymsConfiguration synonyms
+		SynonymsConfiguration synonyms,
+		VersionsConfiguration versionsConfiguration
 	)
 	{
 		_collector = collector;
@@ -58,6 +61,7 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 		_endpoint = endpoints.Elasticsearch;
 		_indexStrategy = IngestStrategy.Reindex;
 		_indexNamespace = indexNamespace;
+		_versionsConfiguration = versionsConfiguration;
 		var es = endpoints.Elasticsearch;
 
 		var configuration = new ElasticsearchConfiguration(es.Uri)
@@ -462,7 +466,7 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 	{
 		_logger.LogInformation("Exporting OpenAPI documentation to Elasticsearch");
 
-		var exporter = new OpenApiDocumentExporter();
+		var exporter = new OpenApiDocumentExporter(_versionsConfiguration);
 
 		await foreach (var doc in exporter.ExportDocuments(limitPerSource: null, ctx))
 		{

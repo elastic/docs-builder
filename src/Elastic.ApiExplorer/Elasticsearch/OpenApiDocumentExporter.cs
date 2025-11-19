@@ -4,6 +4,10 @@
 
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.RegularExpressions;
+using System.Text.Json.Nodes;
+using Elastic.Documentation;
+using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Search;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Reader;
@@ -13,12 +17,15 @@ namespace Elastic.ApiExplorer.Elasticsearch;
 /// <summary>
 /// Exports OpenAPI specifications from CloudFront URLs and converts them to DocumentationDocument instances.
 /// </summary>
-public class OpenApiDocumentExporter
+public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfiguration)
 {
 	private static readonly HttpClient HttpClient = new();
 
 	private const string ElasticsearchOpenApiUrl = "https://d31bhlox0wglh.cloudfront.net/elasticsearch-openapi-docs.json";
 	private const string KibanaOpenApiUrl = "https://d31bhlox0wglh.cloudfront.net/kibana-openapi.json";
+
+	[GeneratedRegex(@"Added in (\d+\.\d+\.\d+)", RegexOptions.IgnoreCase)]
+	private static partial Regex AddedInVersionRegex();
 
 	/// <summary>
 	/// Fetches and processes both Elasticsearch and Kibana OpenAPI specifications.
@@ -93,9 +100,6 @@ public class OpenApiDocumentExporter
 	/// </summary>
 	private IEnumerable<DocumentationDocument> ConvertToDocuments(OpenApiDocument openApiDocument, string product)
 	{
-		if (openApiDocument.Paths == null)
-			yield break;
-
 		foreach (var path in openApiDocument.Paths)
 		{
 			if (path.Value.Operations == null)
@@ -104,6 +108,11 @@ public class OpenApiDocumentExporter
 			foreach (var operation in path.Value.Operations)
 			{
 				var operationId = operation.Value.OperationId ?? GenerateOperationId(operation.Key, path.Key);
+
+				// Check x-state extension for version filtering
+				if (!ShouldIncludeOperation(operation.Value, product))
+					continue;
+
 				var url = $"/docs/api/doc/{product}/operation/operation-{operationId.ToLowerInvariant()}";
 
 				var title = operation.Value.Summary ?? operationId;
@@ -162,6 +171,44 @@ public class OpenApiDocumentExporter
 				};
 			}
 		}
+	}
+
+	/// <summary>
+	/// Determines if an operation should be included based on its x-state extension.
+	/// </summary>
+	private bool ShouldIncludeOperation(OpenApiOperation operation, string product)
+	{
+		// Try to get x-state extension
+		if (operation.Extensions == null || !operation.Extensions.TryGetValue("x-state", out var stateExtension))
+			return true; // No x-state, safe to include
+
+		// Get the state string value from JsonNodeExtension
+		if (stateExtension is not JsonNodeExtension jsonNodeExtension)
+			return true; // Not a JSON node, safe to include
+
+		var stateValue = jsonNodeExtension.Node.GetValue<string>();
+		if (string.IsNullOrEmpty(stateValue))
+			return true; // Empty state, safe to include
+
+		// Parse version from "Added in X.Y.Z"
+		var match = AddedInVersionRegex().Match(stateValue);
+		if (!match.Success)
+			return true; // No version found, safe to include
+
+		var versionString = match.Groups[1].Value;
+		if (!SemVersion.TryParse(versionString, out var addedInVersion))
+			return true; // Could not parse version, safe to include
+
+		// Get current version for the product
+		var versioningSystemId = product == "elasticsearch"
+			? VersioningSystemId.Stack
+			: VersioningSystemId.Stack; // Both use Stack for now
+
+		var versioningSystem = versionsConfiguration.GetVersioningSystem(versioningSystemId);
+		var currentVersion = versioningSystem.Current;
+
+		// Include if added version is <= current version
+		return addedInVersion <= currentVersion;
 	}
 
 	/// <summary>
