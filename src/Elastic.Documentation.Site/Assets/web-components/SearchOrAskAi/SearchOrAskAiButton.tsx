@@ -14,7 +14,6 @@ import {
 } from '@elastic/eui'
 import { css } from '@emotion/react'
 import { useQuery } from '@tanstack/react-query'
-import * as React from 'react'
 import { useEffect, Suspense, lazy } from 'react'
 
 // Lazy load the modal component
@@ -45,7 +44,7 @@ export const SearchOrAskAiButton = () => {
         left: 50%;
         transform: translateX(-50%);
         top: 48px;
-        width: 90ch;
+        width: 80ch;
         max-width: 100%;
     `
 
