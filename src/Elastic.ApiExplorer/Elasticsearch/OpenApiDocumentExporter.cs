@@ -121,7 +121,8 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 				var url = $"/docs/api/doc/{product}/operation/operation-{operationId.ToLowerInvariant()}";
 
 				var productName = CultureInfo.InvariantCulture.TextInfo.ToTitleCase(product);
-				var title = $"{productName} - {operation.Value.Summary ?? operationId}";
+				// inject product name into title to ensure differentiation and better scoring
+				var title = $"{operation.Value.Summary ?? operationId} - {productName} API ";
 				var description = TransformOperationListToMarkdown(operation.Value.Description);
 
 				// Build body content from operation details
