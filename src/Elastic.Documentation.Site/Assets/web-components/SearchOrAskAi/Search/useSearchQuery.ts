@@ -1,5 +1,6 @@
 import { createApiErrorFromResponse, shouldRetry } from '../errorHandling'
 import { ApiError } from '../errorHandling'
+import { usePageNumber, useSearchTerm } from './search.store'
 import {
     useIsSearchAwaitingNewInput,
     useSearchCooldownActions,
@@ -40,12 +41,9 @@ const SearchResponse = z.object({
 
 export type SearchResponse = z.infer<typeof SearchResponse>
 
-type Props = {
-    searchTerm: string
-    pageNumber?: number
-}
-
-export const useSearchQuery = ({ searchTerm, pageNumber = 1 }: Props) => {
+export const useSearchQuery = () => {
+    const searchTerm = useSearchTerm()
+    const pageNumber = usePageNumber() + 1
     const trimmedSearchTerm = searchTerm.trim()
     const debouncedSearchTerm = useDebounce(trimmedSearchTerm, 300)
     const isCooldownActive = useIsSearchCooldownActive()
