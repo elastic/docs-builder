@@ -25,6 +25,9 @@ internal sealed record DocumentDto
 	[JsonPropertyName("description")]
 	public string? Description { get; init; }
 
+	[JsonPropertyName("type")]
+	public string Type { get; init; } = "doc";
+
 	[JsonPropertyName("body")]
 	public string? Body { get; init; }
 
@@ -134,6 +137,7 @@ public partial class ElasticsearchGateway : ISearchGateway
 		.Source(sf => sf
 			.Filter(f => f
 				.Includes(
+					e => e.Type,
 					e => e.Title,
 					e => e.Url,
 					e => e.Description,
@@ -201,6 +205,7 @@ public partial class ElasticsearchGateway : ISearchGateway
 			{
 				Url = doc.Url,
 				Title = doc.Title,
+				Type = doc.Type,
 				Description = doc.Description ?? string.Empty,
 				Headings = doc.Headings,
 				Parents = doc.Parents.Select(parent => new SearchResultItemParent

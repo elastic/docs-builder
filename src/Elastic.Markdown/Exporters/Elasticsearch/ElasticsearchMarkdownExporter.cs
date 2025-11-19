@@ -393,7 +393,7 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 		var semanticHash = _semanticChannel.Channel.ChannelHash;
 		var lexicalHash = _lexicalChannel.Channel.ChannelHash;
 		var hash = HashedBulkUpdate.CreateHash(semanticHash, lexicalHash,
-			doc.Url, doc.Body ?? string.Empty, string.Join(",", doc.Headings.OrderBy(h => h)), doc.Url
+			doc.Url, doc.Type, doc.Body ?? string.Empty, string.Join(",", doc.Headings.OrderBy(h => h)), doc.Url
 		);
 		doc.Hash = hash;
 		doc.LastUpdated = _batchIndexDate;

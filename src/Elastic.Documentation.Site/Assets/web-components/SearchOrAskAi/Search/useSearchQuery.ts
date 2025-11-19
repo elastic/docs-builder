@@ -21,6 +21,7 @@ const SearchResultItemParent = z.object({
 })
 
 const SearchResultItem = z.object({
+    type: z.string().default('doc'),
     url: z.string(),
     title: z.string(),
     description: z.string(),

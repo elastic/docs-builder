@@ -68,6 +68,7 @@ public record SearchResultItemParent
 
 public record SearchResultItem
 {
+	public required string Type { get; init; }
 	public required string Url { get; init; }
 	public required string Title { get; init; }
 	public required string Description { get; init; }

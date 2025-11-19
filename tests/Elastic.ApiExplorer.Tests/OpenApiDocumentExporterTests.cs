@@ -8,6 +8,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Search;
 using FluentAssertions;
+using static System.StringComparison;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -113,7 +114,7 @@ public class OpenApiDocumentExporterTests
 	}
 
 	[Fact]
-	public async Task DescriptionWithHtmlOperationsList_ShouldTransformToMarkdownAtEnd()
+	public async Task DescriptionWithHtmlOperationsListShouldTransformToMarkdownAtEnd()
 	{
 		// Arrange
 		var versionsConfiguration = new VersionsConfiguration
@@ -161,8 +162,8 @@ public class OpenApiDocumentExporterTests
 			var lines = doc.Description.Split('\n', StringSplitOptions.TrimEntries);
 			var lastNonEmptyLines = lines.Where(l => !string.IsNullOrWhiteSpace(l)).TakeLast(5).ToList();
 
-			// At least one of the last few lines should be a markdown list item
-			var hasMarkdownListAtEnd = lastNonEmptyLines.Any(l => l.StartsWith("- **"));
+			// At least one of the last few lines should be a Markdown list item
+			var hasMarkdownListAtEnd = lastNonEmptyLines.Any(l => l.StartsWith("- **", InvariantCulture));
 			hasMarkdownListAtEnd.Should().BeTrue(
 				$"markdown list should be at the end of the description. Last lines:\n{string.Join("\n", lastNonEmptyLines)}\n\nFull description:\n{doc.Description}"
 			);

@@ -54,9 +54,11 @@ async Task BuildAspireHost(bool startElasticsearch, bool assumeCloned, bool skip
 			.WithEnvironment(context => context.EnvironmentVariables["DOCUMENTATION_ELASTIC_PASSWORD"] = elasticsearchLocal.Resource.PasswordParameter)
 			.WithParentRelationship(elasticsearchLocal)
 			.WaitFor(elasticsearchLocal)
+			.WithExplicitStart()
 		: api.WithReference(elasticsearchRemote)
 			.WithEnvironment("DOCUMENTATION_ELASTIC_URL", elasticsearchUrl)
-			.WithEnvironment("DOCUMENTATION_ELASTIC_APIKEY", elasticsearchApiKey);
+			.WithEnvironment("DOCUMENTATION_ELASTIC_APIKEY", elasticsearchApiKey)
+			.WithExplicitStart();
 
 	var indexElasticsearch = builder.AddProject<Projects.docs_builder>(ElasticsearchIngest)
 		.WithArgs(["assembler", "index", .. globalArguments])
