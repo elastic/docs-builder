@@ -2,7 +2,10 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Diagnostics;
+using Elastic.Documentation.Api.Core;
 using Elastic.OpenTelemetry;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Hosting;
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
@@ -12,6 +15,35 @@ namespace Elastic.Documentation.Api.Infrastructure;
 
 public static class OpenTelemetryExtensions
 {
+	/// <summary>
+	/// Configures tracing for the Docs API with sources, instrumentation, and enrichment.
+	/// This is the shared configuration used in both production and tests.
+	/// </summary>
+	public static TracerProviderBuilder AddDocsApiTracing(this TracerProviderBuilder builder)
+	{
+		_ = builder
+			.AddSource(TelemetryConstants.AskAiSourceName)
+			.AddSource(TelemetryConstants.StreamTransformerSourceName)
+			.AddAspNetCoreInstrumentation(aspNetCoreOptions =>
+			{
+				// Enrich spans with custom attributes from HTTP context
+				aspNetCoreOptions.EnrichWithHttpRequest = (activity, httpRequest) =>
+				{
+					// Add euid cookie value to span attributes and baggage
+					if (httpRequest.Cookies.TryGetValue("euid", out var euid) && !string.IsNullOrEmpty(euid))
+					{
+						_ = activity.SetTag(TelemetryConstants.UserEuidAttributeName, euid);
+						// Add to baggage so it propagates to all child spans
+						_ = activity.AddBaggage(TelemetryConstants.UserEuidAttributeName, euid);
+					}
+				};
+			})
+			.AddProcessor<EuidSpanProcessor>() // Automatically add euid to all child spans
+			.AddHttpClientInstrumentation();
+
+		return builder;
+	}
+
 	/// <summary>
 	/// Configures Elastic OpenTelemetry (EDOT) for the Docs API.
 	/// Only enables if OTEL_EXPORTER_OTLP_ENDPOINT environment variable is set.
@@ -31,14 +63,7 @@ public static class OpenTelemetryExtensions
 		{
 			_ = edotBuilder
 				.WithLogging()
-				.WithTracing(tracing =>
-				{
-					_ = tracing
-						.AddSource("Elastic.Documentation.Api.AskAi")
-						.AddSource("Elastic.Documentation.Api.StreamTransformer")
-						.AddAspNetCoreInstrumentation()
-						.AddHttpClientInstrumentation();
-				})
+				.WithTracing(tracing => tracing.AddDocsApiTracing())
 				.WithMetrics(metrics =>
 				{
 					_ = metrics
