@@ -165,7 +165,6 @@ function Breadcrumbs({ parents }: { parents: SearchResultItem['parents'] }) {
                     <EuiText size="xs" color="subdued">
                         {parent.title}
                     </EuiText>
-                    {/*</EuiLink>*/}
                 </li>
             ))}
         </ul>
