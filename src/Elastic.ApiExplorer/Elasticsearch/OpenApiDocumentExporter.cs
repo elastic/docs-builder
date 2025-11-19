@@ -29,6 +29,9 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 	[GeneratedRegex(@"Added in (\d+\.\d+\.\d+)", RegexOptions.IgnoreCase)]
 	private static partial Regex AddedInVersionRegex();
 
+	[GeneratedRegex(@"<span class=""operation-verb (\w+)"">(\w+)</span>\s*<span class=""operation-path"">([^<]+)</span>", RegexOptions.IgnoreCase)]
+	private static partial Regex OperationVerbPathRegex();
+
 	/// <summary>
 	/// Fetches and processes both Elasticsearch and Kibana OpenAPI specifications.
 	/// </summary>
@@ -119,7 +122,7 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 
 				var productName = CultureInfo.InvariantCulture.TextInfo.ToTitleCase(product);
 				var title = $"{productName} - {operation.Value.Summary ?? operationId}";
-				var description = operation.Value.Description;
+				var description = TransformOperationListToMarkdown(operation.Value.Description);
 
 				// Build body content from operation details
 				var bodyBuilder = new StringBuilder();
@@ -298,5 +301,65 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 
 		var versionString = match.Groups[1].Value;
 		return SemVersion.TryParse(versionString, out var version) ? version : null;
+	}
+
+	/// <summary>
+	/// Transforms HTML operation lists in descriptions to markdown format.
+	/// Detects "**All methods and paths for this operation:**" followed by HTML divs/spans
+	/// and converts them to a markdown list appended at the end.
+	/// </summary>
+	private static string TransformOperationListToMarkdown(string? description)
+	{
+		if (string.IsNullOrEmpty(description))
+			return description ?? string.Empty;
+
+		// Check if description starts with the operations list header
+		if (!description.Contains("**All methods and paths for this operation:**"))
+			return description;
+
+		// Extract all operation verb and path pairs
+		var matches = OperationVerbPathRegex().Matches(description);
+		if (matches.Count == 0)
+			return description;
+
+		// Find where the HTML content starts and ends
+		var htmlStartIndex = description.IndexOf("<div>", StringComparison.Ordinal);
+		var lastMatchEnd = matches[^1].Index + matches[^1].Length;
+
+		// Find the last closing div after the last match
+		var htmlEndIndex = description.IndexOf("</div>", lastMatchEnd, StringComparison.Ordinal);
+		if (htmlEndIndex == -1 || htmlStartIndex == -1)
+			return description;
+
+		// Build the clean description without HTML
+		var beforeHtml = description[..htmlStartIndex].Trim();
+		var afterHtml = description[(htmlEndIndex + 6)..].Trim();
+
+		// Build markdown list
+		var markdownList = new StringBuilder();
+		_ = markdownList.AppendLine();
+		_ = markdownList.AppendLine();
+
+		foreach (Match match in matches)
+		{
+			var verb = match.Groups[2].Value.ToUpperInvariant();
+			var path = match.Groups[3].Value;
+			_ = markdownList.AppendLine($"- **{verb}** `{path}`");
+		}
+
+		// Combine: clean description (before + after HTML) + markdown list at the end
+		var result = new StringBuilder();
+		_ = result.Append(beforeHtml);
+		if (!string.IsNullOrWhiteSpace(afterHtml))
+		{
+			_ = result.AppendLine();
+			_ = result.AppendLine();
+			_ = result.Append(afterHtml);
+		}
+
+		// Append markdown list at the end
+		_ = result.Append(markdownList);
+
+		return result.ToString().Trim();
 	}
 }

@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using Elastic.ApiExplorer.Elasticsearch;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Search;
 using FluentAssertions;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -109,5 +110,62 @@ public class OpenApiDocumentExporterTests
 		failures.Should().BeEmpty(
 			$"all sampled URLs should return 200 OK, but the following failed: {string.Join(", ", failures.Select(f => $"{f.Url} ({f.StatusCode})"))}"
 		);
+	}
+
+	[Fact]
+	public async Task DescriptionWithHtmlOperationsList_ShouldTransformToMarkdownAtEnd()
+	{
+		// Arrange
+		var versionsConfiguration = new VersionsConfiguration
+		{
+			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
+			{
+				{
+					VersioningSystemId.Stack,
+					new VersioningSystem
+					{
+						Id = VersioningSystemId.Stack,
+						Base = new SemVersion(8, 0, 0),
+						Current = new SemVersion(9, 2, 0)
+					}
+				}
+			}
+		};
+
+		var exporter = new OpenApiDocumentExporter(versionsConfiguration);
+
+		// Act - Get some Elasticsearch documents
+		var documents = new List<DocumentationDocument>();
+		await foreach (var doc in exporter.ExportDocuments(limitPerSource: 100, TestContext.Current.CancellationToken))
+		{
+			if (doc.Description != null && doc.Description.Contains("**All methods and paths for this operation:**"))
+			{
+				documents.Add(doc);
+			}
+		}
+
+		// Assert we found at least one document with the pattern
+		documents.Should().NotBeEmpty("there should be at least one document with operation list");
+
+		foreach (var doc in documents)
+		{
+			// Should not contain HTML
+			doc.Description.Should().NotContain("<div>", "HTML should be converted to markdown");
+			doc.Description.Should().NotContain("<span", "HTML should be converted to markdown");
+
+			// Should contain markdown list items
+			doc.Description.Should().Contain("- **", "should have markdown list items");
+			doc.Description.Should().Contain("`", "paths should be in code blocks");
+
+			// Check that the markdown list appears at the end
+			var lines = doc.Description.Split('\n', StringSplitOptions.TrimEntries);
+			var lastNonEmptyLines = lines.Where(l => !string.IsNullOrWhiteSpace(l)).TakeLast(5).ToList();
+
+			// At least one of the last few lines should be a markdown list item
+			var hasMarkdownListAtEnd = lastNonEmptyLines.Any(l => l.StartsWith("- **"));
+			hasMarkdownListAtEnd.Should().BeTrue(
+				$"markdown list should be at the end of the description. Last lines:\n{string.Join("\n", lastNonEmptyLines)}\n\nFull description:\n{doc.Description}"
+			);
+		}
 	}
 }
