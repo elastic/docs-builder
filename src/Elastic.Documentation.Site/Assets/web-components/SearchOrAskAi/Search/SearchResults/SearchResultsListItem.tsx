@@ -131,45 +131,6 @@ export function SearchResultListItem({
                     size="m"
                 />
             </a>
-            {/*<div*/}
-            {/*    css={css`*/}
-            {/*        display: flex;*/}
-            {/*        align-items: flex-start;*/}
-            {/*        gap: ${euiTheme.size.s};*/}
-            {/*        padding-inline: ${euiTheme.size.s};*/}
-            {/*        padding-block: ${euiTheme.size.m};*/}
-            {/*        :hover {*/}
-            {/*            background-color: ${euiTheme.colors*/}
-            {/*                .backgroundBaseSubdued};*/}
-            {/*        }*/}
-            {/*    `}*/}
-            {/*>*/}
-            {/*    <EuiIcon*/}
-            {/*        type="document"*/}
-            {/*        color="subdued"*/}
-            {/*        css={css`*/}
-            {/*            margin-top: ${euiTheme.size.xs};*/}
-            {/*        `}*/}
-            {/*    />*/}
-            {/*    <div*/}
-            {/*        css={css`*/}
-            {/*            width: 100%;*/}
-            {/*            text-align: left;*/}
-            {/*        `}*/}
-            {/*    >*/}
-            {/*        <Breadcrumbs parents={result.parents} />*/}
-            {/*        <div*/}
-            {/*            css={css`*/}
-            {/*                padding-block: ${euiTheme.size.xs};*/}
-            {/*                font-size: ${titleFontSize.fontSize};*/}
-            {/*            `}*/}
-            {/*        >*/}
-            {/*            <EuiLink tabIndex={-1} href={result.url}>*/}
-            {/*                <span>{result.title}</span>*/}
-            {/*            </EuiLink>*/}
-            {/*        </div>*/}
-            {/*    </div>*/}
-            {/*</div>*/}
         </li>
     )
 }
