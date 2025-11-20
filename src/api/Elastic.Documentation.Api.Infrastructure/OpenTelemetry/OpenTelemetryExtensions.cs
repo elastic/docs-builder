@@ -36,6 +36,7 @@ public static class OpenTelemetryExtensions
 		_ = builder
 			.AddSource(TelemetryConstants.AskAiSourceName)
 			.AddSource(TelemetryConstants.StreamTransformerSourceName)
+			.AddSource(TelemetryConstants.OtlpProxySourceName)
 			.AddAspNetCoreInstrumentation(aspNetCoreOptions =>
 			{
 				// Enrich spans with custom attributes from HTTP context

@@ -4,6 +4,7 @@
 
 using Elastic.Documentation.Api.Core.AskAi;
 using Elastic.Documentation.Api.Core.Search;
+using Elastic.Documentation.Api.Core.Telemetry;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -19,6 +20,7 @@ public static class MappingsExtension
 		_ = group.MapPost("/", () => Results.Empty);
 		MapAskAiEndpoint(group);
 		MapSearchEndpoint(group);
+		MapOtlpProxyEndpoint(group);
 	}
 
 	private static void MapAskAiEndpoint(IEndpointRouteBuilder group)
@@ -54,5 +56,44 @@ public static class MappingsExtension
 				var searchResponse = await searchUsecase.Search(searchRequest, ctx);
 				return Results.Ok(searchResponse);
 			});
+	}
+
+	private static void MapOtlpProxyEndpoint(IEndpointRouteBuilder group)
+	{
+		// Use /o/* to avoid adblocker detection (common blocklists target /otlp, /telemetry, etc.)
+		var otlpGroup = group.MapGroup("/o");
+
+		// Proxy endpoint for traces
+		// Frontend: POST /_api/v1/o/t → ADOT: POST localhost:4318/v1/traces
+		_ = otlpGroup.MapPost("/t",
+			async (HttpContext context, OtlpProxyUsecase proxyUsecase, Cancel ctx) =>
+			{
+				var contentType = context.Request.ContentType ?? "application/json";
+				var (statusCode, content) = await proxyUsecase.ProxyOtlp("traces", context.Request.Body, contentType, ctx);
+				return Results.Content(content ?? string.Empty, contentType, statusCode: statusCode);
+			})
+			.DisableAntiforgery(); // Frontend requests won't have antiforgery tokens
+
+		// Proxy endpoint for logs
+		// Frontend: POST /_api/v1/o/l → ADOT: POST localhost:4318/v1/logs
+		_ = otlpGroup.MapPost("/l",
+			async (HttpContext context, OtlpProxyUsecase proxyUsecase, Cancel ctx) =>
+			{
+				var contentType = context.Request.ContentType ?? "application/json";
+				var (statusCode, content) = await proxyUsecase.ProxyOtlp("logs", context.Request.Body, contentType, ctx);
+				return Results.Content(content ?? string.Empty, contentType, statusCode: statusCode);
+			})
+			.DisableAntiforgery();
+
+		// Proxy endpoint for metrics
+		// Frontend: POST /_api/v1/o/m → ADOT: POST localhost:4318/v1/metrics
+		_ = otlpGroup.MapPost("/m",
+			async (HttpContext context, OtlpProxyUsecase proxyUsecase, Cancel ctx) =>
+			{
+				var contentType = context.Request.ContentType ?? "application/json";
+				var (statusCode, content) = await proxyUsecase.ProxyOtlp("metrics", context.Request.Body, contentType, ctx);
+				return Results.Content(content ?? string.Empty, contentType, statusCode: statusCode);
+			})
+			.DisableAntiforgery();
 	}
 }
