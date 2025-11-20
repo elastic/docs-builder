@@ -26,7 +26,10 @@ public class OtlpProxyIntegrationTests
 			.Where(call => call.Method.Name == "SendAsync")
 			.WithReturnType<Task<HttpResponseMessage>>()
 			.Invokes((HttpRequestMessage req, CancellationToken ct) => capturedRequest = req)
-			.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("{}") }));
+			.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+			{
+				Content = new StringContent("{}")
+			}));
 
 		using var factory = ApiWebApplicationFactory.WithMockedServices(services =>
 		{
@@ -49,10 +52,11 @@ public class OtlpProxyIntegrationTests
 			}]
 		}
 		""";
-		var content = new StringContent(otlpPayload, Encoding.UTF8, "application/json");
+
+		using var content = new StringContent(otlpPayload, Encoding.UTF8, "application/json");
 
 		// Act
-		var response = await client.PostAsync("/docs/_api/v1/o/t", content, TestContext.Current.CancellationToken);
+		using var response = await client.PostAsync("/docs/_api/v1/o/t", content, TestContext.Current.CancellationToken);
 
 		// Assert - verify the request was forwarded to the correct URL
 		if (!response.IsSuccessStatusCode)
@@ -81,7 +85,10 @@ public class OtlpProxyIntegrationTests
 			.Where(call => call.Method.Name == "SendAsync")
 			.WithReturnType<Task<HttpResponseMessage>>()
 			.Invokes((HttpRequestMessage req, CancellationToken ct) => capturedRequest = req)
-			.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("{}") }));
+			.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+			{
+				Content = new StringContent("{}")
+			}));
 
 		using var factory = ApiWebApplicationFactory.WithMockedServices(services =>
 		{
@@ -106,10 +113,11 @@ public class OtlpProxyIntegrationTests
 			}]
 		}
 		""";
-		var content = new StringContent(otlpPayload, Encoding.UTF8, "application/json");
+
+		using var content = new StringContent(otlpPayload, Encoding.UTF8, "application/json");
 
 		// Act
-		var response = await client.PostAsync("/docs/_api/v1/o/l", content, TestContext.Current.CancellationToken);
+		using var response = await client.PostAsync("/docs/_api/v1/o/l", content, TestContext.Current.CancellationToken);
 
 		// Assert - verify the enum ToStringFast() generates "logs" (lowercase)
 		response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -128,7 +136,10 @@ public class OtlpProxyIntegrationTests
 			.Where(call => call.Method.Name == "SendAsync")
 			.WithReturnType<Task<HttpResponseMessage>>()
 			.Invokes((HttpRequestMessage req, CancellationToken ct) => capturedRequest = req)
-			.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("{}") }));
+			.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+			{
+				Content = new StringContent("{}")
+			}));
 
 		using var factory = ApiWebApplicationFactory.WithMockedServices(services =>
 		{
@@ -149,10 +160,11 @@ public class OtlpProxyIntegrationTests
 			}]
 		}
 		""";
-		var content = new StringContent(otlpPayload, Encoding.UTF8, "application/json");
+
+		using var content = new StringContent(otlpPayload, Encoding.UTF8, "application/json");
 
 		// Act
-		var response = await client.PostAsync("/docs/_api/v1/o/m", content, TestContext.Current.CancellationToken);
+		using var response = await client.PostAsync("/docs/_api/v1/o/m", content, TestContext.Current.CancellationToken);
 
 		// Assert - verify the enum ToStringFast() generates "metrics" (lowercase)
 		response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -181,10 +193,10 @@ public class OtlpProxyIntegrationTests
 		});
 
 		var client = factory.CreateClient();
-		var content = new StringContent("{}", Encoding.UTF8, "application/json");
+		using var content = new StringContent("{}", Encoding.UTF8, "application/json");
 
 		// Act
-		var response = await client.PostAsync("/docs/_api/v1/o/t", content, TestContext.Current.CancellationToken);
+		using var response = await client.PostAsync("/docs/_api/v1/o/t", content, TestContext.Current.CancellationToken);
 
 		// Assert - verify error responses are properly forwarded
 		response.StatusCode.Should().Be(HttpStatusCode.ServiceUnavailable);
@@ -198,10 +210,10 @@ public class OtlpProxyIntegrationTests
 		// Arrange
 		using var factory = new ApiWebApplicationFactory();
 		using var client = factory.CreateClient();
-		var content = new StringContent("{}", Encoding.UTF8, "application/json");
+		using var content = new StringContent("{}", Encoding.UTF8, "application/json");
 
 		// Act - use invalid signal type
-		var response = await client.PostAsync("/docs/_api/v1/o/invalid", content, TestContext.Current.CancellationToken);
+		using var response = await client.PostAsync("/docs/_api/v1/o/invalid", content, TestContext.Current.CancellationToken);
 
 		// Assert - route doesn't exist
 		response.StatusCode.Should().Be(HttpStatusCode.NotFound);
