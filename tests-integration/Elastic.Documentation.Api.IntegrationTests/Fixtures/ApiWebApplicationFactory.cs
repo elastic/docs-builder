@@ -3,14 +3,18 @@
 // See the LICENSE file in the project root for more information
 
 using System.Diagnostics;
+using System.Text;
 using Elastic.Documentation.Api.Core.AskAi;
 using Elastic.Documentation.Api.Infrastructure;
 using Elastic.Documentation.Api.Infrastructure.Aws;
+using Elastic.Documentation.Api.Infrastructure.OpenTelemetry;
 using FakeItEasy;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using OpenTelemetry;
+using OpenTelemetry.Logs;
 using OpenTelemetry.Trace;
 
 namespace Elastic.Documentation.Api.IntegrationTests.Fixtures;
@@ -22,25 +26,23 @@ namespace Elastic.Documentation.Api.IntegrationTests.Fixtures;
 public class ApiWebApplicationFactory : WebApplicationFactory<Program>
 {
 	public List<Activity> ExportedActivities { get; } = [];
-	public List<TestLogEntry> LogEntries { get; } = [];
+	public List<LogRecord> ExportedLogRecords { get; } = [];
 	private readonly List<MemoryStream> _mockMemoryStreams = [];
 	protected override void ConfigureWebHost(IWebHostBuilder builder) =>
 		builder.ConfigureServices(services =>
 		{
-			// Configure OpenTelemetry with in-memory exporter for testing
-			// Uses the same production configuration via AddDocsApiTracing()
-			_ = services.AddOpenTelemetry()
-				.WithTracing(tracing =>
-				{
-					_ = tracing
-						.AddDocsApiTracing() // Reuses production configuration
-						.AddInMemoryExporter(ExportedActivities);
-				});
-
-			// Configure logging to capture log entries
-			_ = services.AddLogging(logging =>
+			var otelBuilder = services.AddOpenTelemetry();
+			_ = otelBuilder.WithTracing(tracing =>
 			{
-				_ = logging.AddProvider(new TestLoggerProvider(LogEntries));
+				_ = tracing
+					.AddDocsApiTracing() // Reuses production configuration
+					.AddInMemoryExporter(ExportedActivities);
+			});
+			_ = otelBuilder.WithLogging(logging =>
+			{
+				_ = logging
+					.AddDocsApiLogging() // Reuses production configuration
+					.AddInMemoryExporter(ExportedLogRecords);
 			});
 
 			// Mock IParameterProvider to avoid AWS dependencies
@@ -79,64 +81,11 @@ public class ApiWebApplicationFactory : WebApplicationFactory<Program>
 		if (disposing)
 		{
 			foreach (var stream in _mockMemoryStreams)
+			{
 				stream.Dispose();
+			}
 			_mockMemoryStreams.Clear();
 		}
 		base.Dispose(disposing);
 	}
-}
-
-/// <summary>
-/// Test logger provider for capturing log entries with scopes.
-/// </summary>
-internal sealed class TestLoggerProvider(List<TestLogEntry> logEntries) : ILoggerProvider
-{
-	private readonly List<object> _sharedScopes = [];
-
-	public ILogger CreateLogger(string categoryName) => new TestLogger(categoryName, logEntries, _sharedScopes);
-	public void Dispose() { }
-}
-
-/// <summary>
-/// Test logger that captures log entries with their scopes.
-/// </summary>
-internal sealed class TestLogger(string categoryName, List<TestLogEntry> logEntries, List<object> sharedScopes) : ILogger
-{
-	public IDisposable BeginScope<TState>(TState state) where TState : notnull
-	{
-		sharedScopes.Add(state);
-		return new ScopeDisposable(sharedScopes, state);
-	}
-
-	public bool IsEnabled(LogLevel logLevel) => true;
-
-	public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
-	{
-		var entry = new TestLogEntry
-		{
-			CategoryName = categoryName,
-			LogLevel = logLevel,
-			Message = formatter(state, exception),
-			Exception = exception,
-			Scopes = [.. sharedScopes]
-		};
-		logEntries.Add(entry);
-	}
-
-	private sealed class ScopeDisposable(List<object> scopes, object state) : IDisposable
-	{
-		public void Dispose() => scopes.Remove(state);
-	}
-}
-
-/// <summary>
-/// Represents a captured log entry with its scopes.
-/// </summary>
-public sealed class TestLogEntry
-{
-	public required string CategoryName { get; init; }
-	public LogLevel LogLevel { get; init; }
-	public required string Message { get; init; }
-	public Exception? Exception { get; init; }
-	public List<object> Scopes { get; init; } = [];
 }
