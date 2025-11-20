@@ -25,6 +25,7 @@ public class ApiWebApplicationFactory : WebApplicationFactory<Program>
 {
 	public List<Activity> ExportedActivities { get; } = [];
 	public List<TestLogEntry> LogEntries { get; } = [];
+	private readonly List<MemoryStream> MockMemoryStreams = new();
 	protected override void ConfigureWebHost(IWebHostBuilder builder) =>
 		builder.ConfigureServices(services =>
 		{
@@ -53,7 +54,11 @@ public class ApiWebApplicationFactory : WebApplicationFactory<Program>
 			// Mock IAskAiGateway to avoid external AI service calls
 			var mockAskAiGateway = A.Fake<IAskAiGateway<Stream>>();
 			A.CallTo(() => mockAskAiGateway.AskAi(A<AskAiRequest>._, A<Cancel>._))
-				.ReturnsLazily(() => Task.FromResult<Stream>(new MemoryStream(Encoding.UTF8.GetBytes("data: test\n\n"))));
+				.ReturnsLazily(() => {
+					var stream = new MemoryStream(Encoding.UTF8.GetBytes("data: test\n\n"));
+					MockMemoryStreams.Add(stream);
+					return Task.FromResult<Stream>(stream);
+				});
 			_ = services.AddSingleton(mockAskAiGateway);
 
 			// Mock IStreamTransformer
@@ -70,6 +75,18 @@ public class ApiWebApplicationFactory : WebApplicationFactory<Program>
 			_ = services.AddSingleton(mockTransformer);
 		});
 
+	protected override void Dispose(bool disposing)
+	{
+		if (disposing)
+		{
+			foreach (var stream in MockMemoryStreams)
+			{
+				stream.Dispose();
+			}
+			MockMemoryStreams.Clear();
+		}
+		base.Dispose(disposing);
+	}
 }
 
 /// <summary>
