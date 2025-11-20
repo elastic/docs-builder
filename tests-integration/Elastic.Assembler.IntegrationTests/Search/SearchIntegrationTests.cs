@@ -1,0 +1,121 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+using System.Net.Http.Json;
+using Elastic.Documentation.Api.Core.Search;
+using FluentAssertions;
+
+namespace Elastic.Assembler.IntegrationTests.Search;
+
+/// <summary>
+/// Integration tests for the search endpoint exposed through MapSearchEndpoint.
+/// These tests verify that the ElasticsearchGateway correctly processes queries
+/// and returns expected results. Inherits from SearchTestBase which handles
+/// conditional indexing based on remote Elasticsearch state.
+/// </summary>
+[Collection(SearchBootstrapFixture.Collection)]
+public class SearchIntegrationTests(SearchBootstrapFixture searchFixture, ITestOutputHelper output) : SearchTestBase
+{
+	/// <summary>
+	/// Theory data for search queries mapped to expected first hit URLs.
+	/// Format: (query, expectedFirstResultUrl)
+	/// </summary>
+	public static TheoryData<string, string> SearchQueryTestCases => new()
+	{
+		// Elasticsearch specific queries
+		{ "elasticsearch getting started", "/docs/elasticsearch/reference/current/getting-started.html" },
+		{ "apm", "/docs/apm/guide/current/apm-overview.html" },
+		{ "kibana dashboard", "/docs/kibana/current/dashboard.html" },
+
+		// .NET specific queries (testing dotnet -> net replacement)
+		{ "dotnet client", "/docs/elasticsearch/client/net/current/introduction.html" },
+		{ ".net apm agent", "/docs/apm/agent/dotnet/current/intro.html" },
+
+		// General queries
+		{ "machine learning", "/docs/elasticsearch/reference/current/ml-overview.html" },
+		{ "ingest pipeline", "/docs/elasticsearch/reference/current/ingest.html" },
+	};
+
+	[Theory]
+	[MemberData(nameof(SearchQueryTestCases))]
+	public async Task SearchEndpointReturnsExpectedFirstResult(string query, string expectedFirstResultUrl)
+	{
+		// Arrange
+		searchFixture.HttpClient.Should().NotBeNull("HTTP client should be initialized");
+
+		// Act
+		var response = await searchFixture.HttpClient.GetAsync($"/docs/_api/v1/search?q={Uri.EscapeDataString(query)}&page=1", TestContext.Current.CancellationToken);
+
+		// Assert - Response should be successful
+		response.EnsureSuccessStatusCode();
+
+		var searchResponse = await response.Content.ReadFromJsonAsync<SearchResponse>(cancellationToken: TestContext.Current.CancellationToken);
+		searchResponse.Should().NotBeNull("Search response should be deserialized");
+
+		// Log results for debugging
+		output.WriteLine($"Query: {query}");
+		output.WriteLine($"Total results: {searchResponse.TotalResults}");
+		output.WriteLine($"Results returned: {searchResponse.Results.Count()}");
+
+		if (searchResponse.Results.Any())
+		{
+			output.WriteLine("First result:");
+			var firstResult = searchResponse.Results.First();
+			output.WriteLine($"  Title: {firstResult.Title}");
+			output.WriteLine($"  URL: {firstResult.Url}");
+			output.WriteLine($"  Score: {firstResult.Score}");
+		}
+
+		// Assert - Should have at least one result
+		searchResponse.Results.Should().NotBeEmpty($"Search for '{query}' should return results");
+
+		// Assert - First result should match expected URL
+		var actualFirstResultUrl = searchResponse.Results.First().Url;
+		actualFirstResultUrl.Should().Be(expectedFirstResultUrl,
+			$"First result for query '{query}' should be the expected documentation page");
+	}
+
+	[Fact]
+	public async Task SearchEndpointWithPaginationReturnsCorrectPage()
+	{
+		// Arrange
+		searchFixture.HttpClient.Should().NotBeNull("HTTP client should be initialized");
+		const string query = "elasticsearch";
+
+		// Act - Get first page
+		var page1Response = await searchFixture.HttpClient!.GetAsync($"/docs/_api/v1/search?q={Uri.EscapeDataString(query)}&page=1", TestContext.Current.CancellationToken);
+		page1Response.EnsureSuccessStatusCode();
+		var page1Data = await page1Response.Content.ReadFromJsonAsync<SearchResponse>(cancellationToken: TestContext.Current.CancellationToken);
+
+		// Act - Get second page
+		var page2Response = await searchFixture.HttpClient.GetAsync($"/docs/_api/v1/search?q={Uri.EscapeDataString(query)}&page=2", TestContext.Current.CancellationToken);
+		page2Response.EnsureSuccessStatusCode();
+		var page2Data = await page2Response.Content.ReadFromJsonAsync<SearchResponse>(cancellationToken: TestContext.Current.CancellationToken);
+
+		// Assert
+		page1Data.Should().NotBeNull();
+		page2Data.Should().NotBeNull();
+		page1Data.PageNumber.Should().Be(1);
+		page2Data.PageNumber.Should().Be(2);
+		page1Data.TotalResults.Should().Be(page2Data.TotalResults, "Total results should be the same across pages");
+
+		// Results on different pages should be different
+		var page1Urls = page1Data.Results.Select(r => r.Url).ToHashSet();
+		var page2Urls = page2Data.Results.Select(r => r.Url).ToHashSet();
+		page1Urls.Should().NotIntersectWith(page2Urls, "Different pages should contain different results");
+	}
+
+	[Fact]
+	public async Task SearchEndpointWithEmptyQueryReturnsError()
+	{
+		// Arrange
+		searchFixture.HttpClient.Should().NotBeNull("HTTP client should be initialized");
+
+		// Act
+		var response = await searchFixture.HttpClient.GetAsync("/docs/_api/v1/search?q=&page=1", TestContext.Current.CancellationToken);
+
+		// Assert - Should return bad request for empty query
+		response.IsSuccessStatusCode.Should().BeFalse("Empty query should not be allowed");
+	}
+}

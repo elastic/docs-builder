@@ -112,8 +112,7 @@ public static class ServicesExtension
 				}
 			default:
 				{
-					throw new ArgumentOutOfRangeException(nameof(appEnv), appEnv,
-						"Unsupported environment for parameter provider.");
+					throw new ArgumentOutOfRangeException(nameof(appEnv), appEnv, "Unsupported environment for parameter provider.");
 				}
 		}
 	}

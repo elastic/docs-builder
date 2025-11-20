@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.Diagnostics;
-using System.Text;
 using Elastic.Documentation.Api.Core.AskAi;
 using Elastic.Documentation.Api.Infrastructure;
 using Elastic.Documentation.Api.Infrastructure.Aws;
@@ -12,7 +11,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using OpenTelemetry;
 using OpenTelemetry.Trace;
 
 namespace Elastic.Documentation.Api.IntegrationTests.Fixtures;
@@ -25,7 +23,7 @@ public class ApiWebApplicationFactory : WebApplicationFactory<Program>
 {
 	public List<Activity> ExportedActivities { get; } = [];
 	public List<TestLogEntry> LogEntries { get; } = [];
-	private readonly List<MemoryStream> MockMemoryStreams = new();
+	private readonly List<MemoryStream> _mockMemoryStreams = [];
 	protected override void ConfigureWebHost(IWebHostBuilder builder) =>
 		builder.ConfigureServices(services =>
 		{
@@ -54,9 +52,10 @@ public class ApiWebApplicationFactory : WebApplicationFactory<Program>
 			// Mock IAskAiGateway to avoid external AI service calls
 			var mockAskAiGateway = A.Fake<IAskAiGateway<Stream>>();
 			A.CallTo(() => mockAskAiGateway.AskAi(A<AskAiRequest>._, A<Cancel>._))
-				.ReturnsLazily(() => {
-					var stream = new MemoryStream(Encoding.UTF8.GetBytes("data: test\n\n"));
-					MockMemoryStreams.Add(stream);
+				.ReturnsLazily(() =>
+				{
+					var stream = new MemoryStream("data: test\n\n"u8.ToArray());
+					_mockMemoryStreams.Add(stream);
 					return Task.FromResult<Stream>(stream);
 				});
 			_ = services.AddSingleton(mockAskAiGateway);
@@ -68,7 +67,7 @@ public class ApiWebApplicationFactory : WebApplicationFactory<Program>
 			A.CallTo(() => mockTransformer.TransformAsync(A<Stream>._, A<string?>._, A<Activity?>._, A<Cancel>._))
 				.ReturnsLazily((Stream s, string? _, Activity? activity, Cancel _) =>
 				{
-					// Dispose the activity if provided (simulating what the real transformer does)
+					// Dispose of the activity if provided (simulating what the real transformer does)
 					activity?.Dispose();
 					return Task.FromResult(s);
 				});
@@ -79,11 +78,9 @@ public class ApiWebApplicationFactory : WebApplicationFactory<Program>
 	{
 		if (disposing)
 		{
-			foreach (var stream in MockMemoryStreams)
-			{
+			foreach (var stream in _mockMemoryStreams)
 				stream.Dispose();
-			}
-			MockMemoryStreams.Clear();
+			_mockMemoryStreams.Clear();
 		}
 		base.Dispose(disposing);
 	}
