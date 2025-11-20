@@ -84,7 +84,7 @@ public class TableOfContentsNavigation<TModel> : IRootNavigationItem<TModel, INa
 	public string ParentPath { get; }
 
 	/// <inheritdoc cref="INodeNavigationItem{TIndex,TChildNavigation}.Id" />
-	public string Id { get; }
+	public string Id { get; private set; }
 
 	/// <inheritdoc />
 	public ILeafNavigationItem<TModel> Index { get; private set; }
@@ -103,6 +103,7 @@ public class TableOfContentsNavigation<TModel> : IRootNavigationItem<TModel, INa
 	{
 		var indexNavigation = navigationItems.QueryIndex<TModel>(this, $"{ParentPath}/index.md", out navigationItems);
 		Index = indexNavigation;
+		Id = ShortId.Create(indexNavigation.Url);
 		NavigationItems = navigationItems;
 	}
 }
