@@ -27,7 +27,7 @@ public class ServiceMockingExampleTests
 
 		// Configure mock behaviors
 		A.CallTo(() => mockOtlpGateway.ForwardOtlp(
-			A<string>._,
+			A<OtlpSignalType>._,
 			A<Stream>._,
 			A<string>._,
 			A<Cancel>._))
@@ -80,7 +80,7 @@ public class ServiceMockingExampleTests
 	{
 		// Arrange
 		var mockGateway = A.Fake<IOtlpGateway>();
-		A.CallTo(() => mockGateway.ForwardOtlp(A<string>._, A<Stream>._, A<string>._, A<Cancel>._))
+		A.CallTo(() => mockGateway.ForwardOtlp(A<OtlpSignalType>._, A<Stream>._, A<string>._, A<Cancel>._))
 			.Returns(Task.FromResult<(int, string?)>((503, "Unavailable")));
 
 		// Use ReplaceSingleton for services registered as singletons

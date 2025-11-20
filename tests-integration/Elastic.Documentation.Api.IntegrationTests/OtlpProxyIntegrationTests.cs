@@ -4,10 +4,11 @@
 
 using System.Net;
 using System.Text;
-using Elastic.Documentation.Api.Core.Telemetry;
+using Elastic.Documentation.Api.Infrastructure.Adapters.Telemetry;
 using Elastic.Documentation.Api.IntegrationTests.Fixtures;
 using FakeItEasy;
 using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Elastic.Documentation.Api.IntegrationTests;
@@ -15,21 +16,26 @@ namespace Elastic.Documentation.Api.IntegrationTests;
 public class OtlpProxyIntegrationTests
 {
 	[Fact]
-	public async Task OtlpProxyTracesEndpointReturnsSuccess()
+	public async Task OtlpProxyTracesEndpointForwardsToCorrectUrl()
 	{
 		// Arrange
-		var mockGateway = A.Fake<IOtlpGateway>();
-		A.CallTo(() => mockGateway.ForwardOtlp(
-			A<string>._,
-			A<Stream>._,
-			A<string>._,
-			A<Cancel>._))
-			.Returns(Task.FromResult<(int StatusCode, string? Content)>((200, "{}")));
+		var mockHandler = A.Fake<HttpMessageHandler>();
+		var capturedRequest = (HttpRequestMessage?)null;
+
+		A.CallTo(mockHandler)
+			.Where(call => call.Method.Name == "SendAsync")
+			.WithReturnType<Task<HttpResponseMessage>>()
+			.Invokes((HttpRequestMessage req, CancellationToken ct) => capturedRequest = req)
+			.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("{}") }));
 
 		using var factory = ApiWebApplicationFactory.WithMockedServices(services =>
-			services.Replace(mockGateway));
-		using var client = factory.CreateClient();
+		{
+			// Replace the named HttpClient with our mock
+			_ = services.AddHttpClient(AdotOtlpGateway.HttpClientName)
+				.ConfigurePrimaryHttpMessageHandler(() => mockHandler);
+		});
 
+		var client = factory.CreateClient();
 		var otlpPayload = /*lang=json,strict*/ """
 		{
 			"resourceSpans": [{
@@ -48,34 +54,42 @@ public class OtlpProxyIntegrationTests
 		// Act
 		var response = await client.PostAsync("/docs/_api/v1/o/t", content, TestContext.Current.CancellationToken);
 
-		// Assert
-		response.StatusCode.Should().Be(HttpStatusCode.OK);
+		// Assert - verify the request was forwarded to the correct URL
+		if (!response.IsSuccessStatusCode)
+		{
+			var errorBody = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+			throw new Exception($"Test failed with {response.StatusCode}: {errorBody}");
+		}
 
-		// Verify gateway was called
-		A.CallTo(() => mockGateway.ForwardOtlp(
-			"traces",
-			A<Stream>._,
-			A<string>._,
-			A<Cancel>._))
-			.MustHaveHappenedOnceExactly();
+		response.StatusCode.Should().Be(HttpStatusCode.OK);
+		capturedRequest.Should().NotBeNull();
+		capturedRequest!.RequestUri.Should().NotBeNull();
+		capturedRequest.RequestUri!.ToString().Should().Be("http://localhost:4318/v1/traces");
+		capturedRequest.Method.Should().Be(HttpMethod.Post);
+		capturedRequest.Content.Should().NotBeNull();
+		capturedRequest.Content!.Headers.ContentType!.MediaType.Should().Be("application/json");
 	}
 
 	[Fact]
-	public async Task OtlpProxyLogsEndpointReturnsSuccess()
+	public async Task OtlpProxyLogsEndpointForwardsToCorrectUrl()
 	{
 		// Arrange
-		var mockGateway = A.Fake<IOtlpGateway>();
-		A.CallTo(() => mockGateway.ForwardOtlp(
-			A<string>._,
-			A<Stream>._,
-			A<string>._,
-			A<Cancel>._))
-			.Returns(Task.FromResult<(int StatusCode, string? Content)>((200, "{}")));
+		var mockHandler = A.Fake<HttpMessageHandler>();
+		var capturedRequest = (HttpRequestMessage?)null;
+
+		A.CallTo(mockHandler)
+			.Where(call => call.Method.Name == "SendAsync")
+			.WithReturnType<Task<HttpResponseMessage>>()
+			.Invokes((HttpRequestMessage req, CancellationToken ct) => capturedRequest = req)
+			.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("{}") }));
 
 		using var factory = ApiWebApplicationFactory.WithMockedServices(services =>
-			services.Replace(mockGateway));
-		using var client = factory.CreateClient();
+		{
+			_ = services.AddHttpClient(AdotOtlpGateway.HttpClientName)
+				.ConfigurePrimaryHttpMessageHandler(() => mockHandler);
+		});
 
+		var client = factory.CreateClient();
 		var otlpPayload = /*lang=json,strict*/ """
 		{
 			"resourceLogs": [{
@@ -97,34 +111,32 @@ public class OtlpProxyIntegrationTests
 		// Act
 		var response = await client.PostAsync("/docs/_api/v1/o/l", content, TestContext.Current.CancellationToken);
 
-		// Assert
+		// Assert - verify the enum ToStringFast() generates "logs" (lowercase)
 		response.StatusCode.Should().Be(HttpStatusCode.OK);
-
-		// Verify gateway was called
-		A.CallTo(() => mockGateway.ForwardOtlp(
-			"logs",
-			A<Stream>._,
-			A<string>._,
-			A<Cancel>._))
-			.MustHaveHappenedOnceExactly();
+		capturedRequest.Should().NotBeNull();
+		capturedRequest!.RequestUri!.ToString().Should().Be("http://localhost:4318/v1/logs");
 	}
 
 	[Fact]
-	public async Task OtlpProxyMetricsEndpointReturnsSuccess()
+	public async Task OtlpProxyMetricsEndpointForwardsToCorrectUrl()
 	{
 		// Arrange
-		var mockGateway = A.Fake<IOtlpGateway>();
-		A.CallTo(() => mockGateway.ForwardOtlp(
-			A<string>._,
-			A<Stream>._,
-			A<string>._,
-			A<Cancel>._))
-			.Returns(Task.FromResult<(int StatusCode, string? Content)>((200, "{}")));
+		var mockHandler = A.Fake<HttpMessageHandler>();
+		var capturedRequest = (HttpRequestMessage?)null;
+
+		A.CallTo(mockHandler)
+			.Where(call => call.Method.Name == "SendAsync")
+			.WithReturnType<Task<HttpResponseMessage>>()
+			.Invokes((HttpRequestMessage req, CancellationToken ct) => capturedRequest = req)
+			.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("{}") }));
 
 		using var factory = ApiWebApplicationFactory.WithMockedServices(services =>
-			services.Replace(mockGateway));
-		using var client = factory.CreateClient();
+		{
+			_ = services.AddHttpClient(AdotOtlpGateway.HttpClientName)
+				.ConfigurePrimaryHttpMessageHandler(() => mockHandler);
+		});
 
+		var client = factory.CreateClient();
 		var otlpPayload = /*lang=json,strict*/ """
 		{
 			"resourceMetrics": [{
@@ -142,40 +154,39 @@ public class OtlpProxyIntegrationTests
 		// Act
 		var response = await client.PostAsync("/docs/_api/v1/o/m", content, TestContext.Current.CancellationToken);
 
-		// Assert
+		// Assert - verify the enum ToStringFast() generates "metrics" (lowercase)
 		response.StatusCode.Should().Be(HttpStatusCode.OK);
-
-		// Verify gateway was called
-		A.CallTo(() => mockGateway.ForwardOtlp(
-			"metrics",
-			A<Stream>._,
-			A<string>._,
-			A<Cancel>._))
-			.MustHaveHappenedOnceExactly();
+		capturedRequest.Should().NotBeNull();
+		capturedRequest!.RequestUri!.ToString().Should().Be("http://localhost:4318/v1/metrics");
 	}
 
 	[Fact]
-	public async Task OtlpProxyReturnsGatewayErrorStatusCode()
+	public async Task OtlpProxyReturnsCollectorErrorStatusCode()
 	{
 		// Arrange
-		var mockGateway = A.Fake<IOtlpGateway>();
-		A.CallTo(() => mockGateway.ForwardOtlp(
-			A<string>._,
-			A<Stream>._,
-			A<string>._,
-			A<Cancel>._))
-			.Returns(Task.FromResult<(int StatusCode, string? Content)>((503, "Service unavailable")));
+		var mockHandler = A.Fake<HttpMessageHandler>();
+
+		A.CallTo(mockHandler)
+			.Where(call => call.Method.Name == "SendAsync")
+			.WithReturnType<Task<HttpResponseMessage>>()
+			.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.ServiceUnavailable)
+			{
+				Content = new StringContent("Service unavailable")
+			}));
 
 		using var factory = ApiWebApplicationFactory.WithMockedServices(services =>
-			services.Replace(mockGateway));
-		using var client = factory.CreateClient();
+		{
+			_ = services.AddHttpClient(AdotOtlpGateway.HttpClientName)
+				.ConfigurePrimaryHttpMessageHandler(() => mockHandler);
+		});
 
+		var client = factory.CreateClient();
 		var content = new StringContent("{}", Encoding.UTF8, "application/json");
 
 		// Act
 		var response = await client.PostAsync("/docs/_api/v1/o/t", content, TestContext.Current.CancellationToken);
 
-		// Assert
+		// Assert - verify error responses are properly forwarded
 		response.StatusCode.Should().Be(HttpStatusCode.ServiceUnavailable);
 		var responseBody = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
 		responseBody.Should().Contain("Service unavailable");

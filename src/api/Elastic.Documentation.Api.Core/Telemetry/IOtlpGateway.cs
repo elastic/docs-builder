@@ -12,13 +12,13 @@ public interface IOtlpGateway
 	/// <summary>
 	/// Forwards OTLP telemetry data to the collector.
 	/// </summary>
-	/// <param name="signalType">The OTLP signal type: traces, logs, or metrics</param>
+	/// <param name="signalType">The OTLP signal type (traces, logs, or metrics)</param>
 	/// <param name="requestBody">The raw OTLP payload stream</param>
 	/// <param name="contentType">Content-Type of the payload</param>
 	/// <param name="ctx">Cancellation token</param>
 	/// <returns>HTTP status code and response content</returns>
 	Task<(int StatusCode, string? Content)> ForwardOtlp(
-		string signalType,
+		OtlpSignalType signalType,
 		Stream requestBody,
 		string contentType,
 		Cancel ctx = default);

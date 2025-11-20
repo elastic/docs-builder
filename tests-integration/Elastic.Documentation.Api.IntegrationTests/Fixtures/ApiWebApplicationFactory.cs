@@ -51,6 +51,14 @@ public class ApiWebApplicationFactory : WebApplicationFactory<Program>
 		return new ApiWebApplicationFactory(builder.Build());
 	}
 
+	/// <summary>
+	/// Creates a factory with custom service configuration.
+	/// </summary>
+	/// <param name="configureServices">Action to configure services directly</param>
+	/// <returns>New factory instance with custom service configuration</returns>
+	public static ApiWebApplicationFactory WithMockedServices(Action<IServiceCollection> configureServices)
+		=> new(configureServices);
+
 	protected override void ConfigureWebHost(IWebHostBuilder builder) => builder.ConfigureServices(services =>
 																			  {
 																				  var otelBuilder = services.AddOpenTelemetry();

@@ -11,17 +11,16 @@ namespace Elastic.Documentation.Api.Infrastructure.Adapters.Telemetry;
 /// Gateway that forwards OTLP telemetry to the ADOT Lambda Layer collector.
 /// </summary>
 public class AdotOtlpGateway(
+	IHttpClientFactory httpClientFactory,
 	OtlpProxyOptions options,
 	ILogger<AdotOtlpGateway> logger) : IOtlpGateway
 {
-	private static readonly HttpClient HttpClient = new()
-	{
-		Timeout = TimeSpan.FromSeconds(30)
-	};
+	public const string HttpClientName = "OtlpProxy";
+	private readonly HttpClient _httpClient = httpClientFactory.CreateClient(HttpClientName);
 
 	/// <inheritdoc />
 	public async Task<(int StatusCode, string? Content)> ForwardOtlp(
-		string signalType,
+		OtlpSignalType signalType,
 		Stream requestBody,
 		string contentType,
 		Cancel ctx = default)
@@ -29,21 +28,22 @@ public class AdotOtlpGateway(
 		try
 		{
 			// Build the target URL: http://localhost:4318/v1/{signalType}
-			var targetUrl = $"{options.Endpoint.TrimEnd('/')}/v1/{signalType}";
+			// Use ToStringFast(true) from generated enum extensions (returns Display name: "traces", "logs", "metrics")
+			var targetUrl = $"{options.Endpoint.TrimEnd('/')}/v1/{signalType.ToStringFast(true)}";
 
 			logger.LogDebug("Forwarding OTLP {SignalType} to ADOT collector at {TargetUrl}", signalType, targetUrl);
 
 			using var request = new HttpRequestMessage(HttpMethod.Post, targetUrl);
 
-			// Forward the content
+			// Forward the content with the original content type
 			request.Content = new StreamContent(requestBody);
-			request.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(contentType);
+			_ = request.Content.Headers.TryAddWithoutValidation("Content-Type", contentType);
 
 			// No need to add authentication headers - ADOT layer handles auth to backend
 			// Just forward the telemetry to the local collector
 
 			// Forward to ADOT collector
-			using var response = await HttpClient.SendAsync(request, HttpCompletionOption.ResponseContentRead, ctx);
+			using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseContentRead, ctx);
 			var responseContent = response.Content.Headers.ContentLength > 0
 				? await response.Content.ReadAsStringAsync(ctx)
 				: string.Empty;

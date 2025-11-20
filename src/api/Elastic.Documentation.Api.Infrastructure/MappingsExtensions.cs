@@ -69,7 +69,7 @@ public static class MappingsExtension
 			async (HttpContext context, OtlpProxyUsecase proxyUsecase, Cancel ctx) =>
 			{
 				var contentType = context.Request.ContentType ?? "application/json";
-				var (statusCode, content) = await proxyUsecase.ProxyOtlp("traces", context.Request.Body, contentType, ctx);
+				var (statusCode, content) = await proxyUsecase.ProxyOtlp(OtlpSignalType.Traces, context.Request.Body, contentType, ctx);
 				return Results.Content(content ?? string.Empty, contentType, statusCode: statusCode);
 			})
 			.DisableAntiforgery(); // Frontend requests won't have antiforgery tokens
@@ -80,7 +80,7 @@ public static class MappingsExtension
 			async (HttpContext context, OtlpProxyUsecase proxyUsecase, Cancel ctx) =>
 			{
 				var contentType = context.Request.ContentType ?? "application/json";
-				var (statusCode, content) = await proxyUsecase.ProxyOtlp("logs", context.Request.Body, contentType, ctx);
+				var (statusCode, content) = await proxyUsecase.ProxyOtlp(OtlpSignalType.Logs, context.Request.Body, contentType, ctx);
 				return Results.Content(content ?? string.Empty, contentType, statusCode: statusCode);
 			})
 			.DisableAntiforgery();
@@ -91,7 +91,7 @@ public static class MappingsExtension
 			async (HttpContext context, OtlpProxyUsecase proxyUsecase, Cancel ctx) =>
 			{
 				var contentType = context.Request.ContentType ?? "application/json";
-				var (statusCode, content) = await proxyUsecase.ProxyOtlp("metrics", context.Request.Body, contentType, ctx);
+				var (statusCode, content) = await proxyUsecase.ProxyOtlp(OtlpSignalType.Metrics, context.Request.Body, contentType, ctx);
 				return Results.Content(content ?? string.Empty, contentType, statusCode: statusCode);
 			})
 			.DisableAntiforgery();

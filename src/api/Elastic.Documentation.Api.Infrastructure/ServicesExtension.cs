@@ -186,6 +186,14 @@ public static class ServicesExtension
 			var config = sp.GetRequiredService<IConfiguration>();
 			return new OtlpProxyOptions(config);
 		});
+
+		// Register named HttpClient for OTLP proxy
+		_ = services.AddHttpClient(AdotOtlpGateway.HttpClientName)
+			.ConfigureHttpClient(client =>
+			{
+				client.Timeout = TimeSpan.FromSeconds(30);
+			});
+
 		_ = services.AddScoped<IOtlpGateway, AdotOtlpGateway>();
 		_ = services.AddScoped<OtlpProxyUsecase>();
 		logger?.LogInformation("OTLP proxy configured to forward to ADOT Lambda Layer collector");

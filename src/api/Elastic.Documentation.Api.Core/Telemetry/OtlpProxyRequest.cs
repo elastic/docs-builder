@@ -2,7 +2,36 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.ComponentModel.DataAnnotations;
+using NetEscapades.EnumGenerators;
+
 namespace Elastic.Documentation.Api.Core.Telemetry;
+
+/// <summary>
+/// OTLP signal types supported by the proxy.
+/// The Display names match the OTLP path segments (lowercase).
+/// </summary>
+[EnumExtensions]
+public enum OtlpSignalType
+{
+	/// <summary>
+	/// Distributed traces - maps to /v1/traces
+	/// </summary>
+	[Display(Name = "traces")]
+	Traces,
+
+	/// <summary>
+	/// Log records - maps to /v1/logs
+	/// </summary>
+	[Display(Name = "logs")]
+	Logs,
+
+	/// <summary>
+	/// Metrics data - maps to /v1/metrics
+	/// </summary>
+	[Display(Name = "metrics")]
+	Metrics
+}
 
 /// <summary>
 /// Request model for OTLP proxy endpoint.
@@ -15,4 +44,3 @@ public class OtlpProxyRequest
 	/// </summary>
 	public required string SignalType { get; init; }
 }
-

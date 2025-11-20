@@ -12,6 +12,7 @@
       <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" />
       <PackageReference Include="Microsoft.Extensions.Logging" />
       <PackageReference Include="Microsoft.Extensions.Telemetry.Abstractions" />
+      <PackageReference Include="NetEscapades.EnumGenerators" />
     </ItemGroup>
 
 </Project>
