@@ -22,14 +22,17 @@ public class OtlpProxyIntegrationTests
 		var mockHandler = A.Fake<HttpMessageHandler>();
 		var capturedRequest = (HttpRequestMessage?)null;
 
+		// Create mock response (will be disposed by HttpClient)
+		var mockResponse = new HttpResponseMessage(HttpStatusCode.OK)
+		{
+			Content = new StringContent("{}")
+		};
+
 		A.CallTo(mockHandler)
 			.Where(call => call.Method.Name == "SendAsync")
 			.WithReturnType<Task<HttpResponseMessage>>()
 			.Invokes((HttpRequestMessage req, CancellationToken ct) => capturedRequest = req)
-			.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
-			{
-				Content = new StringContent("{}")
-			}));
+			.Returns(Task.FromResult(mockResponse));
 
 		using var factory = ApiWebApplicationFactory.WithMockedServices(services =>
 		{
@@ -72,6 +75,9 @@ public class OtlpProxyIntegrationTests
 		capturedRequest.Method.Should().Be(HttpMethod.Post);
 		capturedRequest.Content.Should().NotBeNull();
 		capturedRequest.Content!.Headers.ContentType!.MediaType.Should().Be("application/json");
+
+		// Cleanup mock response
+		mockResponse.Dispose();
 	}
 
 	[Fact]
@@ -81,14 +87,17 @@ public class OtlpProxyIntegrationTests
 		var mockHandler = A.Fake<HttpMessageHandler>();
 		var capturedRequest = (HttpRequestMessage?)null;
 
+		// Create mock response (will be disposed by HttpClient)
+		var mockResponse = new HttpResponseMessage(HttpStatusCode.OK)
+		{
+			Content = new StringContent("{}")
+		};
+
 		A.CallTo(mockHandler)
 			.Where(call => call.Method.Name == "SendAsync")
 			.WithReturnType<Task<HttpResponseMessage>>()
 			.Invokes((HttpRequestMessage req, CancellationToken ct) => capturedRequest = req)
-			.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
-			{
-				Content = new StringContent("{}")
-			}));
+			.Returns(Task.FromResult(mockResponse));
 
 		using var factory = ApiWebApplicationFactory.WithMockedServices(services =>
 		{
@@ -123,6 +132,9 @@ public class OtlpProxyIntegrationTests
 		response.StatusCode.Should().Be(HttpStatusCode.OK);
 		capturedRequest.Should().NotBeNull();
 		capturedRequest!.RequestUri!.ToString().Should().Be("http://localhost:4318/v1/logs");
+
+		// Cleanup mock response
+		mockResponse.Dispose();
 	}
 
 	[Fact]
@@ -132,14 +144,17 @@ public class OtlpProxyIntegrationTests
 		var mockHandler = A.Fake<HttpMessageHandler>();
 		var capturedRequest = (HttpRequestMessage?)null;
 
+		// Create mock response (will be disposed by HttpClient)
+		var mockResponse = new HttpResponseMessage(HttpStatusCode.OK)
+		{
+			Content = new StringContent("{}")
+		};
+
 		A.CallTo(mockHandler)
 			.Where(call => call.Method.Name == "SendAsync")
 			.WithReturnType<Task<HttpResponseMessage>>()
 			.Invokes((HttpRequestMessage req, CancellationToken ct) => capturedRequest = req)
-			.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
-			{
-				Content = new StringContent("{}")
-			}));
+			.Returns(Task.FromResult(mockResponse));
 
 		using var factory = ApiWebApplicationFactory.WithMockedServices(services =>
 		{
@@ -170,6 +185,9 @@ public class OtlpProxyIntegrationTests
 		response.StatusCode.Should().Be(HttpStatusCode.OK);
 		capturedRequest.Should().NotBeNull();
 		capturedRequest!.RequestUri!.ToString().Should().Be("http://localhost:4318/v1/metrics");
+
+		// Cleanup mock response
+		mockResponse.Dispose();
 	}
 
 	[Fact]
@@ -178,13 +196,16 @@ public class OtlpProxyIntegrationTests
 		// Arrange
 		var mockHandler = A.Fake<HttpMessageHandler>();
 
+		// Create mock response (will be disposed by HttpClient)
+		var mockResponse = new HttpResponseMessage(HttpStatusCode.ServiceUnavailable)
+		{
+			Content = new StringContent("Service unavailable")
+		};
+
 		A.CallTo(mockHandler)
 			.Where(call => call.Method.Name == "SendAsync")
 			.WithReturnType<Task<HttpResponseMessage>>()
-			.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.ServiceUnavailable)
-			{
-				Content = new StringContent("Service unavailable")
-			}));
+			.Returns(Task.FromResult(mockResponse));
 
 		using var factory = ApiWebApplicationFactory.WithMockedServices(services =>
 		{
@@ -202,6 +223,9 @@ public class OtlpProxyIntegrationTests
 		response.StatusCode.Should().Be(HttpStatusCode.ServiceUnavailable);
 		var responseBody = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
 		responseBody.Should().Contain("Service unavailable");
+
+		// Cleanup mock response
+		mockResponse.Dispose();
 	}
 
 	[Fact]
