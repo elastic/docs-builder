@@ -8,7 +8,7 @@ using Amazon.Lambda.Serialization.SystemTextJson;
 using Elastic.Documentation.Api.Core.AskAi;
 using Elastic.Documentation.Api.Core.Search;
 using Elastic.Documentation.Api.Infrastructure;
-using Elastic.Documentation.Api.Infrastructure.Middleware;
+using Elastic.Documentation.Api.Infrastructure.OpenTelemetry;
 
 try
 {
@@ -38,9 +38,6 @@ try
 
 	builder.Services.AddElasticDocsApiUsecases(environment);
 	var app = builder.Build();
-
-	// Add middleware to enrich logs with euid cookie
-	_ = app.UseEuidLogging();
 
 	var v1 = app.MapGroup("/docs/_api/v1");
 	v1.MapElasticDocsApiEndpoints();
