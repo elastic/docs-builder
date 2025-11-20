@@ -25,10 +25,8 @@ public class ApiWebApplicationFactory : WebApplicationFactory<Program>
 {
 	public List<Activity> ExportedActivities { get; } = [];
 	public List<TestLogEntry> LogEntries { get; } = [];
-
-	protected override void ConfigureWebHost(IWebHostBuilder builder)
-	{
-		_ = builder.ConfigureServices(services =>
+	protected override void ConfigureWebHost(IWebHostBuilder builder) =>
+		builder.ConfigureServices(services =>
 		{
 			// Configure OpenTelemetry with in-memory exporter for testing
 			// Uses the same production configuration via AddDocsApiTracing()
@@ -55,7 +53,7 @@ public class ApiWebApplicationFactory : WebApplicationFactory<Program>
 			// Mock IAskAiGateway to avoid external AI service calls
 			var mockAskAiGateway = A.Fake<IAskAiGateway<Stream>>();
 			A.CallTo(() => mockAskAiGateway.AskAi(A<AskAiRequest>._, A<Cancel>._))
-				.Returns(Task.FromResult<Stream>(new MemoryStream(Encoding.UTF8.GetBytes("data: test\n\n"))));
+				.ReturnsLazily(() => Task.FromResult<Stream>(new MemoryStream(Encoding.UTF8.GetBytes("data: test\n\n"))));
 			_ = services.AddSingleton(mockAskAiGateway);
 
 			// Mock IStreamTransformer
@@ -71,7 +69,7 @@ public class ApiWebApplicationFactory : WebApplicationFactory<Program>
 				});
 			_ = services.AddSingleton(mockTransformer);
 		});
-	}
+
 }
 
 /// <summary>

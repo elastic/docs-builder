@@ -29,18 +29,18 @@ public class EuidEnrichmentIntegrationTests(ApiWebApplicationFactory factory) : 
 		const string expectedEuid = "integration-test-euid-12345";
 
 		// Create client
-		var client = _factory.CreateClient();
+		using var client = _factory.CreateClient();
 
 		// Act - Make request to /ask-ai/stream with euid cookie
-		var request = new HttpRequestMessage(HttpMethod.Post, "/docs/_api/v1/ask-ai/stream");
+		using var request = new HttpRequestMessage(HttpMethod.Post, "/docs/_api/v1/ask-ai/stream");
 		request.Headers.Add("Cookie", $"euid={expectedEuid}");
 		request.Content = new StringContent(
-								 """{"message":"test question","conversationId":null}""",
+								"""{"message":"test question","conversationId":null}""",
 			Encoding.UTF8,
 			"application/json"
 		);
 
-		var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+		using var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
 
 		// Assert - Response is successful
 		response.IsSuccessStatusCode.Should().BeTrue();
