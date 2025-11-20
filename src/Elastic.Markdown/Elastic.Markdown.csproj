@@ -32,6 +32,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Elastic.ApiExplorer\Elastic.ApiExplorer.csproj" />
     <ProjectReference Include="..\Elastic.Documentation.LegacyDocs\Elastic.Documentation.LegacyDocs.csproj" />
     <ProjectReference Include="..\Elastic.Documentation.Links\Elastic.Documentation.Links.csproj" />
     <ProjectReference Include="..\Elastic.Documentation.Site\Elastic.Documentation.Site.csproj" />

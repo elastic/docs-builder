@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Globalization;
 using Elastic.Documentation;
 using Elastic.Markdown.Diagnostics;
 using static System.StringSplitOptions;
@@ -34,7 +35,7 @@ public class VersionBlock(DirectiveBlockParser parser, string directive, ParserC
 		}
 
 		Version = version;
-		var title = Thread.CurrentThread.CurrentCulture.TextInfo.ToTitleCase(directive.Replace("version", "version "));
+		var title = CultureInfo.InvariantCulture.TextInfo.ToTitleCase(directive.Replace("version", "version "));
 		title += $" ({Version})";
 		if (tokens.Length > 1 && !string.IsNullOrWhiteSpace(tokens[1]))
 			title += $": {tokens[1]}";

@@ -23,4 +23,8 @@
     <ProjectReference Include="..\Elastic.Documentation.Configuration\Elastic.Documentation.Configuration.csproj"/>
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Elasticsearch\" />
+  </ItemGroup>
+
 </Project>
