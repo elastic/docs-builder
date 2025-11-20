@@ -25,7 +25,7 @@ public class ApiWebApplicationFactory : WebApplicationFactory<Program>
 {
 	public List<Activity> ExportedActivities { get; } = [];
 	public List<TestLogEntry> LogEntries { get; } = [];
-	private readonly List<MemoryStream> MockMemoryStreams = [];
+	private readonly List<MemoryStream> _mockMemoryStreams = [];
 	protected override void ConfigureWebHost(IWebHostBuilder builder) =>
 		builder.ConfigureServices(services =>
 		{
@@ -57,7 +57,7 @@ public class ApiWebApplicationFactory : WebApplicationFactory<Program>
 				.ReturnsLazily(() =>
 				{
 					var stream = new MemoryStream(Encoding.UTF8.GetBytes("data: test\n\n"));
-					MockMemoryStreams.Add(stream);
+					_mockMemoryStreams.Add(stream);
 					return Task.FromResult<Stream>(stream);
 				});
 			_ = services.AddSingleton(mockAskAiGateway);
@@ -80,11 +80,11 @@ public class ApiWebApplicationFactory : WebApplicationFactory<Program>
 	{
 		if (disposing)
 		{
-			foreach (var stream in MockMemoryStreams)
+			foreach (var stream in _mockMemoryStreams)
 			{
 				stream.Dispose();
 			}
-			MockMemoryStreams.Clear();
+			_mockMemoryStreams.Clear();
 		}
 		base.Dispose(disposing);
 	}
