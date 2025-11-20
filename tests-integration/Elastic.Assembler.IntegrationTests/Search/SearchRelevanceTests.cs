@@ -20,8 +20,6 @@ namespace Elastic.Assembler.IntegrationTests.Search;
 [Collection(SearchBootstrapFixture.Collection)]
 public class SearchRelevanceTests(SearchBootstrapFixture searchFixture, DocumentationFixture documentationFixture, ITestOutputHelper output) : SearchTestBase
 {
-	private readonly SearchBootstrapFixture _searchFixture = searchFixture;
-	private readonly DocumentationFixture _documentationFixture = documentationFixture;
 	/// <summary>
 	/// Theory data for search queries mapped to expected first hit URLs.
 	/// Same as SearchIntegrationTests but with detailed explain output on failures.
@@ -48,6 +46,8 @@ public class SearchRelevanceTests(SearchBootstrapFixture searchFixture, Document
 	[MemberData(nameof(SearchQueryTestCases))]
 	public async Task SearchReturnsExpectedFirstResultWithExplain(string query, string expectedFirstResultUrl)
 	{
+		Assert.SkipUnless(searchFixture.Connected, "Elasticsearch is not connected");
+
 		// Arrange - Create ElasticsearchGateway directly
 		var gateway = CreateElasticsearchGateway();
 
@@ -160,8 +160,8 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 	/// </summary>
 	private ElasticsearchGateway CreateElasticsearchGateway()
 	{
-		var configuration = _documentationFixture.DistributedApplication.Services.GetRequiredService<IConfiguration>();
-		var loggerFactory = _documentationFixture.DistributedApplication.Services.GetRequiredService<ILoggerFactory>();
+		var configuration = documentationFixture.DistributedApplication.Services.GetRequiredService<IConfiguration>();
+		var loggerFactory = documentationFixture.DistributedApplication.Services.GetRequiredService<ILoggerFactory>();
 
 		// Build a new ConfigurationBuilder to read user secrets
 		var configBuilder = new ConfigurationBuilder();

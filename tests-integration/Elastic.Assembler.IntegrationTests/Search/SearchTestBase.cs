@@ -24,6 +24,7 @@ public class SearchBootstrapFixture(DocumentationFixture fixture) : IAsyncLifeti
 {
 	public const string Collection = "Search";
 	public HttpClient HttpClient { get; private set; } = null!;
+	public bool Connected { get; private set; }
 
 	/// <summary>
 	/// Initializes the test by ensuring AssemblerServe (which hosts the API) is healthy and Elasticsearch is indexed.
@@ -136,7 +137,8 @@ public class SearchBootstrapFixture(DocumentationFixture fixture) : IAsyncLifeti
 			if (string.IsNullOrEmpty(elasticsearchUrl))
 			{
 				Console.WriteLine("No Elasticsearch URL configured, indexing will be performed.");
-				return true;
+				Connected = false;
+				return false;
 			}
 
 			Console.WriteLine($"Checking remote Elasticsearch at {elasticsearchUrl} for existing data...");
@@ -162,6 +164,7 @@ public class SearchBootstrapFixture(DocumentationFixture fixture) : IAsyncLifeti
 			};
 
 			var transport = new DistributedTransport(configuration);
+			Connected = (await transport.HeadAsync("/", TestContext.Current.CancellationToken)).ApiCallDetails.HasSuccessfulStatusCode;
 
 			// Create a logger factory and diagnostics collector
 			var loggerFactory = fixture.DistributedApplication.Services.GetRequiredService<ILoggerFactory>();
