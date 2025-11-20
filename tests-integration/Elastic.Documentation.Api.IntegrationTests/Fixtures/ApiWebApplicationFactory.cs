@@ -54,9 +54,10 @@ public class ApiWebApplicationFactory : WebApplicationFactory<Program>
 			// Mock IAskAiGateway to avoid external AI service calls
 			var mockAskAiGateway = A.Fake<IAskAiGateway<Stream>>();
 			A.CallTo(() => mockAskAiGateway.AskAi(A<AskAiRequest>._, A<Cancel>._))
-				.ReturnsLazily(() => {
+				.ReturnsLazily(() =>
+				{
 					var stream = new MemoryStream(Encoding.UTF8.GetBytes("data: test\n\n"));
-					MockMemoryStreams.Add(stream);
+					_mockMemoryStreams.Add(stream);
 					return Task.FromResult<Stream>(stream);
 				});
 			_ = services.AddSingleton(mockAskAiGateway);
@@ -79,11 +80,11 @@ public class ApiWebApplicationFactory : WebApplicationFactory<Program>
 	{
 		if (disposing)
 		{
-			foreach (var stream in MockMemoryStreams)
+			foreach (var stream in _mockMemoryStreams)
 			{
 				stream.Dispose();
 			}
-			MockMemoryStreams.Clear();
+			_mockMemoryStreams.Clear();
 		}
 		base.Dispose(disposing);
 	}

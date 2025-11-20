@@ -36,7 +36,8 @@ public class EuidEnrichmentIntegrationTests(ApiWebApplicationFactory factory) : 
 		using var request = new HttpRequestMessage(HttpMethod.Post, "/docs/_api/v1/ask-ai/stream");
 		request.Headers.Add("Cookie", $"euid={expectedEuid}");
 		request.Content = new StringContent(
-								"""{"message":"test question","conversationId":null}""",
+													 /*lang=json,strict*/
+													 """{"message":"test question","conversationId":null}""",
 			Encoding.UTF8,
 			"application/json"
 		);
