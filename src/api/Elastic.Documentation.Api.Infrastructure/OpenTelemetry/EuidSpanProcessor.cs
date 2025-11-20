@@ -6,7 +6,7 @@ using System.Diagnostics;
 using Elastic.Documentation.Api.Core;
 using OpenTelemetry;
 
-namespace Elastic.Documentation.Api.Infrastructure;
+namespace Elastic.Documentation.Api.Infrastructure.OpenTelemetry;
 
 /// <summary>
 /// OpenTelemetry span processor that automatically adds user.euid tag to all spans
