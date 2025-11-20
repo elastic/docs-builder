@@ -46,9 +46,9 @@ After it has been established that a repository should publish from a version br
      * Otherwise, keeping it set to `main` is also an option since this is where the content is initially developed and merged. This is the default.
 4. In the assembler PR, add the `ci` label. After CI runs, confirm that the intended version branches are publishing to the link service. When links are being published as intended, they can be found at the following URL, where `repo` is your repo name and `branch` is your newly configured branch:
 
-  ```text
-  elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/<repo>/<branch>/links.json
-  ```
+    ```text
+    elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/<repo>/<branch>/links.json
+    ```
 5. Rerun the `validate-assembler` check on the PR.
 6. After checks pass and the docs engineering team approves, you can merge the PR.
 
