@@ -19,7 +19,7 @@ using static Elastic.Documentation.Aspire.ResourceNames;
 namespace Elastic.Assembler.IntegrationTests.Search;
 
 
-[CollectionDefinition(SearchBootstrapFixture.Collection)]
+[CollectionDefinition(Collection)]
 public class SearchBootstrapFixture(DocumentationFixture fixture) : IAsyncLifetime
 {
 	public const string Collection = "Search";
@@ -49,6 +49,12 @@ public class SearchBootstrapFixture(DocumentationFixture fixture) : IAsyncLifeti
 			// Check if Elasticsearch already has up-to-date data
 			var indexingNeeded = await IsIndexingNeeded();
 
+			if (!Connected)
+			{
+				Console.WriteLine("Can not connect to Elasticsearch. Skipping indexing.");
+				return;
+			}
+
 			if (!indexingNeeded)
 			{
 				Console.WriteLine("Elasticsearch already has up-to-date data. Skipping indexing.");
@@ -59,11 +65,11 @@ public class SearchBootstrapFixture(DocumentationFixture fixture) : IAsyncLifeti
 
 			// The indexer always has WithExplicitStart(), so we must manually start it
 			// Get the ResourceLoggerService to send the start command
-			var resourceLoggerService = fixture.DistributedApplication.Services
+			fixture.DistributedApplication.Services
 				.GetRequiredService<ResourceLoggerService>();
 
 			// Get the resource notification service to find the resource
-			var resourceNotificationService = fixture.DistributedApplication.Services
+			fixture.DistributedApplication.Services
 				.GetRequiredService<ResourceNotificationService>();
 
 			// Wait for the resource to be available
@@ -76,7 +82,7 @@ public class SearchBootstrapFixture(DocumentationFixture fixture) : IAsyncLifeti
 
 			// Execute the start command using ResourceCommandAnnotation
 			var startCommand = resource.Annotations.OfType<ResourceCommandAnnotation>()
-				.FirstOrDefault(a => a.Name == "start");
+				.FirstOrDefault(a => a.Name == "resource-start");
 
 			if (startCommand != null)
 			{
@@ -85,7 +91,7 @@ public class SearchBootstrapFixture(DocumentationFixture fixture) : IAsyncLifeti
 				// Create ExecuteCommandContext for the start command
 				var commandContext = new ExecuteCommandContext
 				{
-					ResourceName = ElasticsearchIngest,
+					ResourceName = resourceEvent.ResourceId,
 					ServiceProvider = fixture.DistributedApplication.Services,
 					CancellationToken = TestContext.Current.CancellationToken
 				};
