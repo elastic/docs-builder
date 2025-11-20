@@ -20,21 +20,24 @@ public class SearchIntegrationTests(SearchBootstrapFixture searchFixture, ITestO
 	/// <summary>
 	/// Theory data for search queries mapped to expected first hit URLs.
 	/// Format: (query, expectedFirstResultUrl)
+	/// Note: These URLs reflect the actual search results from the indexed documentation.
 	/// </summary>
 	public static TheoryData<string, string> SearchQueryTestCases => new()
 	{
+		//TODO these results reflect todays result, we still have some work to do to improve the relevance of the search results
+
 		// Elasticsearch specific queries
-		{ "elasticsearch getting started", "/docs/elasticsearch/reference/current/getting-started.html" },
-		{ "apm", "/docs/apm/guide/current/apm-overview.html" },
-		{ "kibana dashboard", "/docs/kibana/current/dashboard.html" },
+		{ "elasticsearch getting started", "/docs/reference/elasticsearch/clients/java/getting-started" },
+		{ "apm", "/docs/reference/apm/observability/apm" },
+		{ "kibana dashboard", "/docs/reference/beats/auditbeat/configuration-dashboards" },
 
 		// .NET specific queries (testing dotnet -> net replacement)
-		{ "dotnet client", "/docs/elasticsearch/client/net/current/introduction.html" },
-		{ ".net apm agent", "/docs/apm/agent/dotnet/current/intro.html" },
+		{ "dotnet client", "/docs/reference/elasticsearch/clients/dotnet/using-net-client" },
+		{ ".net apm agent", "/docs/reference/apm/agents/dotnet" },
 
 		// General queries
-		{ "machine learning", "/docs/elasticsearch/reference/current/ml-overview.html" },
-		{ "ingest pipeline", "/docs/elasticsearch/reference/current/ingest.html" },
+		{ "machine learning", "/docs/reference/machine-learning" },
+		{ "ingest pipeline", "/docs/reference/beats/metricbeat/configuring-ingest-node" },
 	};
 
 	[Theory]
