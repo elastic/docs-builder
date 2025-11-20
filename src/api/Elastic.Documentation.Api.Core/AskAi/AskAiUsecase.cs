@@ -13,7 +13,7 @@ public class AskAiUsecase(
 	IStreamTransformer streamTransformer,
 	ILogger<AskAiUsecase> logger)
 {
-	private static readonly ActivitySource AskAiActivitySource = new("Elastic.Documentation.Api.AskAi");
+	private static readonly ActivitySource AskAiActivitySource = new(TelemetryConstants.AskAiSourceName);
 
 	public async Task<Stream> AskAi(AskAiRequest askAiRequest, Cancel ctx)
 	{

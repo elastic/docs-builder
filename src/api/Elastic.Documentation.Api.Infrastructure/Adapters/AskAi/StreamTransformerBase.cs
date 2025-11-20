@@ -20,7 +20,7 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 	protected ILogger Logger { get; } = logger;
 
 	// ActivitySource for tracing streaming operations
-	private static readonly ActivitySource StreamTransformerActivitySource = new("Elastic.Documentation.Api.StreamTransformer");
+	private static readonly ActivitySource StreamTransformerActivitySource = new(TelemetryConstants.StreamTransformerSourceName);
 
 	/// <summary>
 	/// Get the agent ID for this transformer
