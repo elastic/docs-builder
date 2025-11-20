@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.Text;
 using Elastic.Documentation.Api.Core;
+using Elastic.Documentation.Api.Core.AskAi;
 using Elastic.Documentation.Api.IntegrationTests.Fixtures;
 using FluentAssertions;
 
@@ -64,22 +65,19 @@ public class EuidEnrichmentIntegrationTests(ApiWebApplicationFactory factory) : 
 		askAiEuidTag.Should().NotBeNull("AskAi span should have user.euid tag from baggage");
 		askAiEuidTag.Value.Should().Be(expectedEuid, "AskAi span euid should match cookie value");
 
-		// Assert - Verify logs have euid in scope
-		var logEntries = _factory.LogEntries;
-		logEntries.Should().NotBeEmpty("Should have captured log entries");
+		// Assert - Verify logs have euid in attributes
+		var logRecords = _factory.ExportedLogRecords;
+		logRecords.Should().NotBeEmpty("Should have captured log records");
 
 		// Find a log entry from AskAiUsecase
-		var askAiLog = logEntries.FirstOrDefault(e =>
-			e.CategoryName.Contains("AskAiUsecase") &&
-			e.Message.Contains("Starting AskAI"));
-		askAiLog.Should().NotBeNull("Should have logged from AskAiUsecase");
+		var askAiLogRecord = logRecords.FirstOrDefault(r =>
+			string.Equals(r.CategoryName, typeof(AskAiUsecase).FullName, StringComparison.OrdinalIgnoreCase) &&
+			r.FormattedMessage?.Contains("Starting AskAI", StringComparison.OrdinalIgnoreCase) == true);
+		askAiLogRecord.Should().NotBeNull("Should have logged from AskAiUsecase");
 
-		// Verify euid is in the logging scope
-		var hasEuidInScope = askAiLog!.Scopes
-			.Any(scope => scope is IDictionary<string, object> dict &&
-						  dict.TryGetValue(TelemetryConstants.UserEuidAttributeName, out var value) &&
-						  value?.ToString() == expectedEuid);
-
-		hasEuidInScope.Should().BeTrue("Log entry should have user.euid in scope from middleware");
+		// Verify euid is present in OTEL log attributes (mirrors production exporter behavior)
+		var euidAttribute = askAiLogRecord!.Attributes?.FirstOrDefault(a => a.Key == TelemetryConstants.UserEuidAttributeName) ?? default;
+		euidAttribute.Should().NotBe(default(KeyValuePair<string, object?>), "Log record should include user.euid attribute");
+		(euidAttribute.Value?.ToString() ?? string.Empty).Should().Be(expectedEuid, "Log record euid should match cookie value");
 	}
 }

@@ -7,14 +7,26 @@ using Elastic.Documentation.Api.Core;
 using Elastic.OpenTelemetry;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using OpenTelemetry;
+using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
 
-namespace Elastic.Documentation.Api.Infrastructure;
+namespace Elastic.Documentation.Api.Infrastructure.OpenTelemetry;
 
 public static class OpenTelemetryExtensions
 {
+	/// <summary>
+	/// Configures logging for the Docs API with euid enrichment.
+	/// This is the shared configuration used in both production and tests.
+	/// </summary>
+	public static LoggerProviderBuilder AddDocsApiLogging(this LoggerProviderBuilder builder)
+	{
+		_ = builder.AddProcessor<EuidLogProcessor>();
+		return builder;
+	}
+
 	/// <summary>
 	/// Configures tracing for the Docs API with sources, instrumentation, and enrichment.
 	/// This is the shared configuration used in both production and tests.
@@ -62,7 +74,7 @@ public static class OpenTelemetryExtensions
 		_ = builder.AddElasticOpenTelemetry(options, edotBuilder =>
 		{
 			_ = edotBuilder
-				.WithLogging()
+				.WithLogging(logging => logging.AddDocsApiLogging())
 				.WithTracing(tracing => tracing.AddDocsApiTracing())
 				.WithMetrics(metrics =>
 				{
