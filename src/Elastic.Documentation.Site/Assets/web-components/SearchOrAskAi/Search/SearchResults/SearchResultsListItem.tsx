@@ -70,11 +70,11 @@ export function SearchResultListItem({
                 tabIndex={0}
                 href={result.url}
             >
-                <EuiIcon
-                    type="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTQiIGhlaWdodD0iMTMiIHZpZXdCb3g9IjAgMCAxNCAxMyIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTExLjk3NDYgMC4zMTY0MDZMMTEuMDI3MyAzLjE1ODJIMTRWNC4xNTgySDEwLjY5NDNMOS4zNjAzNSA4LjE1ODJIMTJWOS4xNTgySDkuMDI3MzRMNy45NzQ2MSAxMi4zMTY0TDcuMDI1MzkgMTJMNy45NzI2NiA5LjE1ODJINC4wMjczNEwyLjk3NDYxIDEyLjMxNjRMMi4wMjUzOSAxMkwyLjk3MjY2IDkuMTU4MkgwVjguMTU4MkgzLjMwNTY2TDQuNjM5NjUgNC4xNTgySDJWMy4xNTgySDQuOTcyNjZMNi4wMjUzOSAwTDYuOTc0NjEgMC4zMTY0MDZMNi4wMjczNCAzLjE1ODJIOS45NzI2NkwxMS4wMjU0IDBMMTEuOTc0NiAwLjMxNjQwNlpNNC4zNjAzNSA4LjE1ODJIOC4zMDU2Nkw5LjYzOTY1IDQuMTU4Mkg1LjY5NDM0TDQuMzYwMzUgOC4xNTgyWiIgZmlsbD0iIzFEMkEzRSIvPgo8L3N2Zz4="
-                    color="subdued"
-                    size="m"
-                />
+                {/*<EuiIcon*/}
+                {/*    type="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTQiIGhlaWdodD0iMTMiIHZpZXdCb3g9IjAgMCAxNCAxMyIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTExLjk3NDYgMC4zMTY0MDZMMTEuMDI3MyAzLjE1ODJIMTRWNC4xNTgySDEwLjY5NDNMOS4zNjAzNSA4LjE1ODJIMTJWOS4xNTgySDkuMDI3MzRMNy45NzQ2MSAxMi4zMTY0TDcuMDI1MzkgMTJMNy45NzI2NiA5LjE1ODJINC4wMjczNEwyLjk3NDYxIDEyLjMxNjRMMi4wMjUzOSAxMkwyLjk3MjY2IDkuMTU4MkgwVjguMTU4MkgzLjMwNTY2TDQuNjM5NjUgNC4xNTgySDJWMy4xNTgySDQuOTcyNjZMNi4wMjUzOSAwTDYuOTc0NjEgMC4zMTY0MDZMNi4wMjczNCAzLjE1ODJIOS45NzI2NkwxMS4wMjU0IDBMMTEuOTc0NiAwLjMxNjQwNlpNNC4zNjAzNSA4LjE1ODJIOC4zMDU2Nkw5LjYzOTY1IDQuMTU4Mkg1LjY5NDM0TDQuMzYwMzUgOC4xNTgyWiIgZmlsbD0iIzFEMkEzRSIvPgo8L3N2Zz4="*/}
+                {/*    color="subdued"*/}
+                {/*    size="m"*/}
+                {/*/>*/}
                 <div>
                     <div
                         css={css`
