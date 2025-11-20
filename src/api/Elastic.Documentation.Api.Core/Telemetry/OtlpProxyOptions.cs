@@ -8,18 +8,19 @@ namespace Elastic.Documentation.Api.Core.Telemetry;
 
 /// <summary>
 /// Configuration options for the OTLP proxy.
-/// When using ADOT Lambda Layer, the proxy forwards to the local collector at localhost:4318.
-/// The ADOT layer handles authentication and forwarding to the backend (Elastic APM, etc).
+/// The proxy forwards telemetry to a local OTLP collector (typically ADOT Lambda Layer).
 /// </summary>
 /// <remarks>
 /// ADOT Lambda Layer runs a local OpenTelemetry Collector that accepts OTLP/HTTP on:
 /// - localhost:4318 (HTTP/JSON and HTTP/protobuf)
 /// - localhost:4317 (gRPC)
 /// 
-/// The ADOT layer is configured via environment variables:
-/// - OTEL_EXPORTER_OTLP_ENDPOINT: Where ADOT forwards telemetry
-/// - OTEL_EXPORTER_OTLP_HEADERS: Authentication headers ADOT uses
-/// - AWS_LAMBDA_EXEC_WRAPPER: /opt/otel-instrument (enables ADOT)
+/// Configuration priority:
+/// 1. OtlpProxy:Endpoint in IConfiguration (for tests/overrides)
+/// 2. OTEL_EXPORTER_OTLP_ENDPOINT environment variable
+/// 3. Default: http://localhost:4318
+/// 
+/// The proxy will return 503 if the collector is not available.
 /// </remarks>
 public class OtlpProxyOptions
 {
@@ -31,7 +32,7 @@ public class OtlpProxyOptions
 
 	public OtlpProxyOptions(IConfiguration configuration)
 	{
-		// Check for test override first (for integration tests with WireMock)
+		// Check for explicit configuration override first (for tests or custom deployments)
 		var configEndpoint = configuration["OtlpProxy:Endpoint"];
 		if (!string.IsNullOrEmpty(configEndpoint))
 		{
@@ -39,20 +40,9 @@ public class OtlpProxyOptions
 			return;
 		}
 
-		// Check if we're in Lambda with ADOT layer
-		var execWrapper = Environment.GetEnvironmentVariable("AWS_LAMBDA_EXEC_WRAPPER");
-		var isAdotEnabled = execWrapper?.Contains("otel-instrument") == true;
-
-		if (isAdotEnabled)
-		{
-			// ADOT Lambda Layer runs collector on localhost:4318
-			Endpoint = "http://localhost:4318";
-		}
-		else
-		{
-			// Fallback to configured endpoint for local development
-			Endpoint = Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT")
-				?? "http://localhost:4318";
-		}
+		// Default to localhost:4318 - this is where ADOT Lambda Layer collector runs
+		// If ADOT layer is not present, the proxy will fail gracefully and return 503
+		Endpoint = Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT")
+			?? "http://localhost:4318";
 	}
 }
