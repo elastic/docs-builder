@@ -21,14 +21,14 @@ public class OtlpProxyUsecase(IOtlpGateway gateway)
 	/// <param name="requestBody">The raw OTLP payload (JSON or protobuf)</param>
 	/// <param name="contentType">Content-Type header from the original request</param>
 	/// <param name="ctx">Cancellation token</param>
-	/// <returns>HTTP status code and response content</returns>
-	public async Task<(int StatusCode, string? Content)> ProxyOtlp(
+	/// <returns>Result containing HTTP status code and response content</returns>
+	public async Task<OtlpForwardResult> ProxyOtlp(
 		OtlpSignalType signalType,
 		Stream requestBody,
 		string contentType,
 		Cancel ctx = default)
 	{
-		using var activity = ActivitySource.StartActivity("ProxyOtlp", ActivityKind.Client);
+		using var activity = ActivitySource.StartActivity("forward otlp", ActivityKind.Client);
 
 		// Forward to gateway
 		return await gateway.ForwardOtlp(signalType, requestBody, contentType, ctx);

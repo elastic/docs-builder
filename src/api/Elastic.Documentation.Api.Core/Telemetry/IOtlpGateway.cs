@@ -16,8 +16,8 @@ public interface IOtlpGateway
 	/// <param name="requestBody">The raw OTLP payload stream</param>
 	/// <param name="contentType">Content-Type of the payload</param>
 	/// <param name="ctx">Cancellation token</param>
-	/// <returns>HTTP status code and response content</returns>
-	Task<(int StatusCode, string? Content)> ForwardOtlp(
+	/// <returns>Result containing HTTP status code and response content</returns>
+	Task<OtlpForwardResult> ForwardOtlp(
 		OtlpSignalType signalType,
 		Stream requestBody,
 		string contentType,

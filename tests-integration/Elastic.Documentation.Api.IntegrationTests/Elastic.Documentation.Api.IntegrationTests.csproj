@@ -14,7 +14,6 @@
     <PackageReference Include="FakeItEasy" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
     <PackageReference Include="OpenTelemetry.Exporter.InMemory" />
-    <PackageReference Include="WireMock.Net" />
   </ItemGroup>
 
 </Project>

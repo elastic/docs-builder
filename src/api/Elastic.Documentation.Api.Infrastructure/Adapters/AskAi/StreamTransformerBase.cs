@@ -89,8 +89,9 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 				_ = parentActivity?.SetTag("error.type", ex.GetType().Name);
 				try
 				{
+					// Complete writer first, then reader - but don't try to complete reader
+					// if the exception came from reading (would cause "read operation pending" error)
 					await writer.CompleteAsync(ex);
-					await reader.CompleteAsync(ex);
 				}
 				catch (Exception completeEx)
 				{
@@ -103,7 +104,6 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 			try
 			{
 				await writer.CompleteAsync();
-				await reader.CompleteAsync();
 			}
 			catch (Exception ex)
 			{

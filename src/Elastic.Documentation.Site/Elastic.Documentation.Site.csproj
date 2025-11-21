@@ -40,9 +40,14 @@
   <!--
       2. Run npm run build before building the .NET project.
       MSBuild runs NpmInstall before this task because of the DependsOnTargets attribute.
+      DependsOnTargets ensures MinVer runs first so $(MinVerVersion) is available.
    -->
-  <Target Name="NpmRunBuild" DependsOnTargets="NpmInstall" BeforeTargets="BeforeBuild">
-    <Exec Command="npm run build" WorkingDirectory="$(MSBuildThisFileDirectory)" ConsoleToMsBuild="true">
+  <Target Name="NpmRunBuild" DependsOnTargets="NpmInstall;MinVer" BeforeTargets="BeforeBuild">
+    <Message Text="Building frontend with version: $(MinVerVersion)" Importance="high" />
+    <Exec Command="npm run build" 
+          WorkingDirectory="$(MSBuildThisFileDirectory)" 
+          ConsoleToMsBuild="true"
+          EnvironmentVariables="DOCS_BUILDER_VERSION=$(MinVerVersion)">
       <Output TaskParameter="ConsoleOutput" PropertyName="OutputOfExec" />
     </Exec>
   </Target>

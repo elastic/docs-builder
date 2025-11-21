@@ -16,4 +16,22 @@ export default defineConfig([
 		extends: ['js/recommended'],
 	},
 	tseslint.configs.recommended,
+	{
+		files: ['**/*.{js,mjs,cjs,ts}'],
+		rules: {
+			'no-console': [
+				'error',
+				{
+					allow: ['warn', 'error'],
+				},
+			],
+		},
+	},
+	{
+		// Allow console.log in synthetics config (test configuration file)
+		files: ['synthetics/**/*.ts'],
+		rules: {
+			'no-console': 'off',
+		},
+	},
 ])

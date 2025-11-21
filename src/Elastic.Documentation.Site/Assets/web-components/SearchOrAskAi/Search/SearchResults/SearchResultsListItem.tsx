@@ -1,4 +1,16 @@
 /** @jsxImportSource @emotion/react */
+import {
+    ATTR_SEARCH_QUERY,
+    ATTR_SEARCH_RESULT_URL,
+    ATTR_SEARCH_RESULT_TITLE,
+    ATTR_SEARCH_RESULT_POSITION,
+    ATTR_SEARCH_RESULT_POSITION_ON_PAGE,
+    ATTR_SEARCH_RESULT_SCORE,
+    ATTR_SEARCH_PAGE,
+    ATTR_EVENT_NAME,
+    ATTR_EVENT_CATEGORY,
+} from '../../../../telemetry/semconv'
+import { useSearchTerm } from '../search.store'
 import { type SearchResultItem } from '../useSearchQuery'
 import {
     EuiText,
@@ -8,12 +20,42 @@ import {
     EuiSpacer,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
+import { trace } from '@opentelemetry/api'
 import DOMPurify from 'dompurify'
 import { memo, useMemo } from 'react'
+
+function trackSearchResultClick(params: {
+    query: string
+    resultUrl: string
+    resultTitle: string
+    absolutePosition: number
+    positionOnPage: number
+    pageNumber: number
+    score: number
+}): void {
+    const tracer = trace.getTracer('docs-frontend')
+    const span = tracer.startSpan('click search_result')
+
+    span.setAttribute(ATTR_SEARCH_QUERY, params.query)
+    span.setAttribute(ATTR_SEARCH_RESULT_URL, params.resultUrl)
+    span.setAttribute(ATTR_SEARCH_RESULT_TITLE, params.resultTitle)
+    span.setAttribute(ATTR_SEARCH_RESULT_POSITION, params.absolutePosition)
+    span.setAttribute(
+        ATTR_SEARCH_RESULT_POSITION_ON_PAGE,
+        params.positionOnPage
+    )
+    span.setAttribute(ATTR_SEARCH_PAGE, params.pageNumber)
+    span.setAttribute(ATTR_SEARCH_RESULT_SCORE, params.score)
+    span.setAttribute(ATTR_EVENT_NAME, 'search_result_clicked')
+    span.setAttribute(ATTR_EVENT_CATEGORY, 'ui')
+    span.end()
+}
 
 interface SearchResultListItemProps {
     item: SearchResultItem
     index: number
+    pageNumber: number
+    pageSize: number
     onKeyDown?: (e: React.KeyboardEvent<HTMLLIElement>, index: number) => void
     setRef?: (element: HTMLAnchorElement | null, index: number) => void
 }
@@ -21,11 +63,31 @@ interface SearchResultListItemProps {
 export function SearchResultListItem({
     item: result,
     index,
+    pageNumber,
+    pageSize,
     onKeyDown,
     setRef,
 }: SearchResultListItemProps) {
     const { euiTheme } = useEuiTheme()
     const titleFontSize = useEuiFontSize('s')
+    const searchQuery = useSearchTerm()
+
+    // Calculate absolute position across all pages
+    // pageNumber is 0-based, so multiply by pageSize and add the index
+    const absolutePosition = pageNumber * pageSize + index
+
+    const handleClick = () => {
+        trackSearchResultClick({
+            query: searchQuery,
+            resultUrl: result.url,
+            resultTitle: result.title,
+            absolutePosition,
+            positionOnPage: index,
+            pageNumber,
+            score: result.score,
+        })
+    }
+
     return (
         <li
         // css={css`
@@ -36,8 +98,11 @@ export function SearchResultListItem({
         >
             <a
                 ref={(el) => setRef?.(el, index)}
+                onClick={handleClick}
                 onKeyDown={(e) => {
                     if (e.key === 'Enter') {
+                        handleClick()
+                        // Navigate to the result URL
                         window.location.href = result.url
                     } else {
                         // Type mismatch: event is from anchor but handler expects HTMLLIElement

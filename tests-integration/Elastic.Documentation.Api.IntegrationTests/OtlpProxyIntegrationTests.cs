@@ -68,7 +68,7 @@ public class OtlpProxyIntegrationTests
 			throw new Exception($"Test failed with {response.StatusCode}: {errorBody}");
 		}
 
-		response.StatusCode.Should().Be(HttpStatusCode.OK);
+		response.StatusCode.Should().Be(HttpStatusCode.NoContent);
 		capturedRequest.Should().NotBeNull();
 		capturedRequest!.RequestUri.Should().NotBeNull();
 		capturedRequest.RequestUri!.ToString().Should().Be("http://localhost:4318/v1/traces");
@@ -129,7 +129,7 @@ public class OtlpProxyIntegrationTests
 		using var response = await client.PostAsync("/docs/_api/v1/o/l", content, TestContext.Current.CancellationToken);
 
 		// Assert - verify the enum ToStringFast() generates "logs" (lowercase)
-		response.StatusCode.Should().Be(HttpStatusCode.OK);
+		response.StatusCode.Should().Be(HttpStatusCode.NoContent);
 		capturedRequest.Should().NotBeNull();
 		capturedRequest!.RequestUri!.ToString().Should().Be("http://localhost:4318/v1/logs");
 
@@ -182,7 +182,7 @@ public class OtlpProxyIntegrationTests
 		using var response = await client.PostAsync("/docs/_api/v1/o/m", content, TestContext.Current.CancellationToken);
 
 		// Assert - verify the enum ToStringFast() generates "metrics" (lowercase)
-		response.StatusCode.Should().Be(HttpStatusCode.OK);
+		response.StatusCode.Should().Be(HttpStatusCode.NoContent);
 		capturedRequest.Should().NotBeNull();
 		capturedRequest!.RequestUri!.ToString().Should().Be("http://localhost:4318/v1/metrics");
 
@@ -221,8 +221,6 @@ public class OtlpProxyIntegrationTests
 
 		// Assert - verify error responses are properly forwarded
 		response.StatusCode.Should().Be(HttpStatusCode.ServiceUnavailable);
-		var responseBody = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
-		responseBody.Should().Contain("Service unavailable");
 
 		// Cleanup mock response
 		mockResponse.Dispose();
