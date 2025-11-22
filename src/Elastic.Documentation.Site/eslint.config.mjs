@@ -17,7 +17,7 @@ export default defineConfig([
 	},
 	tseslint.configs.recommended,
 	{
-		files: ['**/*.{js,mjs,cjs,ts}'],
+		files: ['**/*.{js,jsx,mjs,cjs,ts,tsx}'],
 		rules: {
 			'no-console': [
 				'error',
