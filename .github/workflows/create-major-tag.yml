@@ -15,7 +15,7 @@ jobs:
   create-major-tag:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Get major version
         run: |
           MAJOR_VERSION=$(echo "${GITHUB_REF#refs/tags/}" | awk -F. '{print $1}')
