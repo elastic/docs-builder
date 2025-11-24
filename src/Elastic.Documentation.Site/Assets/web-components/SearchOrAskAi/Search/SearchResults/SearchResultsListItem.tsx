@@ -171,7 +171,9 @@ const HighlightedContent = memo(
 
             let htmlToSanitize = htmlContent
 
-            // Extract text content by stripping HTML tags (only <mark> are allowed anyway)
+            // Extract text content by stripping HTML tags for lowercase check only
+            // This text is NOT used for rendering - only for ellipsis detection logic
+            // lgtm[js/incomplete-multi-character-sanitization]
             const text = htmlContent.replace(/<[^>]+>/g, '') || ''
             const firstChar = text.trim()[0]
 
@@ -180,6 +182,7 @@ const HighlightedContent = memo(
                 htmlToSanitize = '… ' + htmlContent
             }
 
+            // All content is sanitized by DOMPurify before rendering
             const sanitized = DOMPurify.sanitize(htmlToSanitize, {
                 ALLOWED_TAGS: ['mark'],
                 ALLOWED_ATTR: [],
