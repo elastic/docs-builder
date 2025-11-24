@@ -305,13 +305,10 @@ internal sealed class MockHttpMessageHandler : HttpMessageHandler
 		};
 	}
 
-	public void SetErrorResponse(HttpStatusCode statusCode, string errorMessage)
+	public void SetErrorResponse(HttpStatusCode statusCode, string errorMessage) => _responseToReturn = new HttpResponseMessage(statusCode)
 	{
-		_responseToReturn = new HttpResponseMessage(statusCode)
-		{
-			Content = new StringContent(errorMessage)
-		};
-	}
+		Content = new StringContent(errorMessage)
+	};
 
 	protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
 	{

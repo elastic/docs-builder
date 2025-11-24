@@ -35,7 +35,7 @@ public class LlmGatewayAskAiGateway(HttpClient httpClient, IGcpIdTokenProvider t
 
 		// Use HttpCompletionOption.ResponseHeadersRead to get headers immediately
 		// This allows us to start streaming as soon as headers are received
-		using var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ctx);
+		var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ctx);
 
 		// Ensure the response is successful before streaming
 		if (!response.IsSuccessStatusCode)
