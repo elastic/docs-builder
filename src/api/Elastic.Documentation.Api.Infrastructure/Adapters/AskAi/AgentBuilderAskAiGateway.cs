@@ -43,7 +43,7 @@ public class AgentBuilderAskAiGateway(HttpClient httpClient, IParameterProvider 
 		request.Headers.Add("kbn-xsrf", "true");
 		request.Headers.Authorization = new AuthenticationHeaderValue("ApiKey", kibanaApiKey);
 
-		var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ctx);
+		using var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ctx);
 
 		// Ensure the response is successful before streaming
 		if (!response.IsSuccessStatusCode)

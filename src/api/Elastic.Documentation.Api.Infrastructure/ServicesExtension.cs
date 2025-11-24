@@ -129,7 +129,7 @@ public static class ServicesExtension
 
 		try
 		{
-			_ = services.AddSingleton<GcpIdTokenProvider>();
+			_ = services.AddSingleton<IGcpIdTokenProvider, GcpIdTokenProvider>();
 			logger?.LogInformation("GcpIdTokenProvider registered successfully");
 
 			_ = services.AddScoped<LlmGatewayOptions>();

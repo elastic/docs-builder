@@ -10,7 +10,7 @@ using Elastic.Documentation.Api.Infrastructure.Gcp;
 
 namespace Elastic.Documentation.Api.Infrastructure.Adapters.AskAi;
 
-public class LlmGatewayAskAiGateway(HttpClient httpClient, GcpIdTokenProvider tokenProvider, LlmGatewayOptions options) : IAskAiGateway<Stream>
+public class LlmGatewayAskAiGateway(HttpClient httpClient, IGcpIdTokenProvider tokenProvider, LlmGatewayOptions options) : IAskAiGateway<Stream>
 {
 	/// <summary>
 	/// Model name used by LLM Gateway (from PlatformContext.UseCase)
@@ -35,7 +35,7 @@ public class LlmGatewayAskAiGateway(HttpClient httpClient, GcpIdTokenProvider to
 
 		// Use HttpCompletionOption.ResponseHeadersRead to get headers immediately
 		// This allows us to start streaming as soon as headers are received
-		var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ctx);
+		using var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ctx);
 
 		// Ensure the response is successful before streaming
 		if (!response.IsSuccessStatusCode)
