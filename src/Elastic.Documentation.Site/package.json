@@ -48,7 +48,7 @@
     "@babel/preset-env": "7.28.5",
     "@babel/preset-react": "7.27.1",
     "@babel/preset-typescript": "7.27.1",
-    "@elastic/synthetics": "1.19.0",
+    "@elastic/synthetics": "1.20.0",
     "@eslint/js": "9.39.1",
     "@parcel/reporter-bundle-analyzer": "2.16.0",
     "@tailwindcss/postcss": "4.1.17",
