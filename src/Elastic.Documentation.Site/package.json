@@ -25,10 +25,6 @@
     "synthetics:push:edge": "DOCS_ENV=edge npm run synthetics:push -- --tags=\"env:edge\""
   },
   "targets": {
-    "customElements": {
-      "distDir": "_static",
-      "source": "Assets/custom-elements.ts"
-    },
     "js": {
       "distDir": "_static",
       "source": "Assets/main.ts"
@@ -37,6 +33,9 @@
       "distDir": "_static",
       "source": "Assets/styles.css"
     }
+  },
+  "alias": {
+    "@opentelemetry/otlp-exporter-base/browser-http": "@opentelemetry/otlp-exporter-base/build/esm/index-browser-http.js"
   },
   "repository": {
     "type": "git",
@@ -75,6 +74,7 @@
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "text-diff": "1.0.1",
+    "typescript": "^5.9.3",
     "typescript-eslint": "8.46.3",
     "wait-on": "9.0.1"
   },
@@ -87,6 +87,19 @@
     "@emotion/css": "11.13.5",
     "@emotion/react": "11.14.0",
     "@microsoft/fetch-event-source": "2.0.1",
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/api-logs": "^0.208.0",
+    "@opentelemetry/context-zone": "^2.2.0",
+    "@opentelemetry/core": "^2.2.0",
+    "@opentelemetry/exporter-logs-otlp-http": "^0.208.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.208.0",
+    "@opentelemetry/instrumentation": "^0.208.0",
+    "@opentelemetry/instrumentation-fetch": "^0.208.0",
+    "@opentelemetry/otlp-exporter-base": "^0.208.0",
+    "@opentelemetry/resources": "^2.2.0",
+    "@opentelemetry/sdk-logs": "^0.208.0",
+    "@opentelemetry/sdk-trace-web": "^2.2.0",
+    "@opentelemetry/semantic-conventions": "^1.38.0",
     "@r2wc/react-to-web-component": "2.1.0",
     "@tanstack/react-query": "^5.90.6",
     "@uidotdev/usehooks": "2.4.1",

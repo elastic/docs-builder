@@ -1,3 +1,11 @@
+import {
+    ATTR_SEARCH_QUERY,
+    ATTR_SEARCH_PAGE,
+    ATTR_SEARCH_RESULTS_TOTAL,
+    ATTR_SEARCH_RESULTS_COUNT,
+    ATTR_SEARCH_PAGE_COUNT,
+} from '../../../telemetry/semconv'
+import { traceSpan } from '../../../telemetry/tracing'
 import { createApiErrorFromResponse, shouldRetry } from '../errorHandling'
 import { ApiError } from '../errorHandling'
 import { usePageNumber, useSearchTerm } from './search.store'
@@ -74,23 +82,50 @@ export const useSearchQuery = () => {
             { searchTerm: debouncedSearchTerm.toLowerCase(), pageNumber },
         ],
         queryFn: async ({ signal }) => {
+            // Don't create span for empty searches
             if (!debouncedSearchTerm || debouncedSearchTerm.length < 1) {
-                return SearchResponse.parse({ results: [], totalResults: 0 })
+                return SearchResponse.parse({
+                    results: [],
+                    totalResults: 0,
+                })
             }
-            const params = new URLSearchParams({
-                q: debouncedSearchTerm,
-                page: pageNumber.toString(),
-            })
 
-            const response = await fetch(
-                '/docs/_api/v1/search?' + params.toString(),
-                { signal }
-            )
-            if (!response.ok) {
-                throw await createApiErrorFromResponse(response)
-            }
-            const data = await response.json()
-            return SearchResponse.parse(data)
+            return traceSpan('execute search', async (span) => {
+                // Track frontend search (even if backend response is cached by CloudFront)
+                span.setAttribute(ATTR_SEARCH_QUERY, debouncedSearchTerm)
+                span.setAttribute(ATTR_SEARCH_PAGE, pageNumber)
+
+                const params = new URLSearchParams({
+                    q: debouncedSearchTerm,
+                    page: pageNumber.toString(),
+                })
+
+                const response = await fetch(
+                    '/docs/_api/v1/search?' + params.toString(),
+                    { signal }
+                )
+                if (!response.ok) {
+                    throw await createApiErrorFromResponse(response)
+                }
+                const data = await response.json()
+                const searchResponse = SearchResponse.parse(data)
+
+                // Add result metrics to span
+                span.setAttribute(
+                    ATTR_SEARCH_RESULTS_TOTAL,
+                    searchResponse.totalResults
+                )
+                span.setAttribute(
+                    ATTR_SEARCH_RESULTS_COUNT,
+                    searchResponse.results.length
+                )
+                span.setAttribute(
+                    ATTR_SEARCH_PAGE_COUNT,
+                    searchResponse.pageCount
+                )
+
+                return searchResponse
+            })
         },
         enabled: shouldEnable,
         refetchOnWindowFocus: false,

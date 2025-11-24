@@ -208,11 +208,6 @@ class ImageCarousel {
 
             this.prevButton.style.top = `${controlTop}px`
             this.nextButton.style.top = `${controlTop}px`
-
-            // Debug logging (remove in production)
-            console.log(
-                `Carousel controls positioned: minHeight=${minHeight}px, controlTop=${controlTop}px`
-            )
         }
     }
 }

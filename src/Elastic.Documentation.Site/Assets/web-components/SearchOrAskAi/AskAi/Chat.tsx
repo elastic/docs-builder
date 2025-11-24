@@ -97,7 +97,6 @@ export const Chat = () => {
 
     // Handle abort function from StreamingAiMessage
     const handleAbortReady = (abort: () => void) => {
-        console.log('[Chat] Abort function ready, storing in ref')
         abortFunctionRef.current = abort
     }
 
@@ -133,13 +132,8 @@ export const Chat = () => {
     )
 
     const handleButtonClick = useCallback(() => {
-        console.log('[Chat] Button clicked', {
-            isStreaming,
-            hasAbortFunction: !!abortFunctionRef.current,
-        })
         if (isStreaming && abortFunctionRef.current) {
             // Interrupt current query
-            console.log('[Chat] Calling abort function')
             abortFunctionRef.current()
             abortFunctionRef.current = null
             // Update message status from 'streaming' to 'complete'

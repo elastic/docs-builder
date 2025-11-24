@@ -51,11 +51,7 @@ export function useFetchEventSource<TPayload>({
     const abortControllerRef = useRef<AbortController | null>(null)
 
     const abort = useCallback(() => {
-        console.log('[useFetchEventSource] Abort called', {
-            hasController: !!abortControllerRef.current,
-        })
         if (abortControllerRef.current) {
-            console.log('[useFetchEventSource] Aborting controller')
             abortControllerRef.current.abort()
             abortControllerRef.current = null
         }

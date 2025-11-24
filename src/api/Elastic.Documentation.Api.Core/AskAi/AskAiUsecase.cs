@@ -18,7 +18,7 @@ public class AskAiUsecase(
 	public async Task<Stream> AskAi(AskAiRequest askAiRequest, Cancel ctx)
 	{
 		logger.LogInformation("Starting AskAI chat with {AgentProvider} and {AgentId}", streamTransformer.AgentProvider, streamTransformer.AgentId);
-		var activity = AskAiActivitySource.StartActivity($"chat ${streamTransformer.AgentProvider}", ActivityKind.Client);
+		var activity = AskAiActivitySource.StartActivity($"chat {streamTransformer.AgentProvider}", ActivityKind.Client);
 		_ = activity?.SetTag("gen_ai.operation.name", "chat");
 		_ = activity?.SetTag("gen_ai.provider.name", streamTransformer.AgentProvider); // agent-builder or llm-gateway
 		_ = activity?.SetTag("gen_ai.agent.id", streamTransformer.AgentId); // docs-agent or docs_assistant

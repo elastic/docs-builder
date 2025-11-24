@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Net.Sockets;
 using Elastic.Documentation.Api.Core.Telemetry;
 using Microsoft.Extensions.Logging;
 
@@ -19,7 +20,7 @@ public class AdotOtlpGateway(
 	private readonly HttpClient _httpClient = httpClientFactory.CreateClient(HttpClientName);
 
 	/// <inheritdoc />
-	public async Task<(int StatusCode, string? Content)> ForwardOtlp(
+	public async Task<OtlpForwardResult> ForwardOtlp(
 		OtlpSignalType signalType,
 		Stream requestBody,
 		string contentType,
@@ -27,22 +28,13 @@ public class AdotOtlpGateway(
 	{
 		try
 		{
-			// Build the target URL: http://localhost:4318/v1/{signalType}
-			// Use ToStringFast(true) from generated enum extensions (returns Display name: "traces", "logs", "metrics")
 			var targetUrl = $"{options.Endpoint.TrimEnd('/')}/v1/{signalType.ToStringFast(true)}";
-
 			logger.LogDebug("Forwarding OTLP {SignalType} to ADOT collector at {TargetUrl}", signalType, targetUrl);
 
 			using var request = new HttpRequestMessage(HttpMethod.Post, targetUrl);
-
-			// Forward the content with the original content type
 			request.Content = new StreamContent(requestBody);
 			_ = request.Content.Headers.TryAddWithoutValidation("Content-Type", contentType);
 
-			// No need to add authentication headers - ADOT layer handles auth to backend
-			// Just forward the telemetry to the local collector
-
-			// Forward to ADOT collector
 			using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseContentRead, ctx);
 			var responseContent = response.Content.Headers.ContentLength > 0
 				? await response.Content.ReadAsStringAsync(ctx)
@@ -58,17 +50,43 @@ public class AdotOtlpGateway(
 				logger.LogDebug("Successfully forwarded OTLP {SignalType} to ADOT collector", signalType);
 			}
 
-			return ((int)response.StatusCode, responseContent);
-		}
-		catch (HttpRequestException ex) when (ex.Message.Contains("Connection refused") || ex.InnerException?.Message?.Contains("Connection refused") == true)
-		{
-			logger.LogError(ex, "Failed to connect to ADOT collector at {Endpoint}. Is ADOT Lambda Layer enabled?", options.Endpoint);
-			return (503, "ADOT collector not available. Ensure AWS_LAMBDA_EXEC_WRAPPER=/opt/otel-instrument is set");
+			return new OtlpForwardResult
+			{
+				StatusCode = (int)response.StatusCode,
+				Content = responseContent
+			};
 		}
 		catch (Exception ex)
 		{
-			logger.LogError(ex, "Error forwarding OTLP {SignalType}", signalType);
-			return (500, $"Error forwarding OTLP: {ex.Message}");
+			var (statusCode, message) = MapExceptionToStatusCode(ex);
+			logger.LogError(ex, "Error forwarding OTLP {SignalType}: {ErrorMessage}", signalType, message);
+			return new OtlpForwardResult
+			{
+				StatusCode = statusCode,
+				Content = message
+			};
 		}
 	}
+
+	private static (int StatusCode, string Message) MapExceptionToStatusCode(Exception ex) =>
+		ex switch
+		{
+			// Connection refused - downstream service not available
+			HttpRequestException { InnerException: SocketException { SocketErrorCode: SocketError.ConnectionRefused } }
+				=> (503, "Telemetry collector unavailable"),
+
+			// Timeout - gateway timeout
+			HttpRequestException { InnerException: SocketException { SocketErrorCode: SocketError.TimedOut } }
+				=> (504, "Telemetry collector timeout"),
+
+			TaskCanceledException or OperationCanceledException
+				=> (504, "Request to telemetry collector timed out"),
+
+			// Other HTTP/network errors - bad gateway
+			HttpRequestException
+				=> (502, "Failed to communicate with telemetry collector"),
+
+			// Unknown errors
+			_ => (500, $"Internal error: {ex.Message}")
+		};
 }

@@ -41,11 +41,6 @@ export const useAskAi = (props: Props): UseAskAiResponse => {
     // Get AI provider from store (user-controlled via UI)
     const aiProvider = useAiProvider()
 
-    // Log which provider is being used for this conversation
-    useEffect(() => {
-        console.log(`[AI Provider] Using ${aiProvider} for this conversation`)
-    }, [aiProvider])
-
     // Prepare headers with AI provider
     const headers = useMemo(
         () => ({
@@ -186,7 +181,6 @@ export const useAskAi = (props: Props): UseAskAiResponse => {
         error,
         sendQuestion,
         abort: () => {
-            console.log('[useAskAi] Abort called')
             abort()
             clearQueue()
         },

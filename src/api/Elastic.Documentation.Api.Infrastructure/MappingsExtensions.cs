@@ -63,37 +63,27 @@ public static class MappingsExtension
 		// Use /o/* to avoid adblocker detection (common blocklists target /otlp, /telemetry, etc.)
 		var otlpGroup = group.MapGroup("/o");
 
-		// Proxy endpoint for traces
-		// Frontend: POST /_api/v1/o/t → ADOT: POST localhost:4318/v1/traces
-		_ = otlpGroup.MapPost("/t",
-			async (HttpContext context, OtlpProxyUsecase proxyUsecase, Cancel ctx) =>
-			{
-				var contentType = context.Request.ContentType ?? "application/json";
-				var (statusCode, content) = await proxyUsecase.ProxyOtlp(OtlpSignalType.Traces, context.Request.Body, contentType, ctx);
-				return Results.Content(content ?? string.Empty, contentType, statusCode: statusCode);
-			})
-			.DisableAntiforgery(); // Frontend requests won't have antiforgery tokens
-
-		// Proxy endpoint for logs
-		// Frontend: POST /_api/v1/o/l → ADOT: POST localhost:4318/v1/logs
-		_ = otlpGroup.MapPost("/l",
-			async (HttpContext context, OtlpProxyUsecase proxyUsecase, Cancel ctx) =>
-			{
-				var contentType = context.Request.ContentType ?? "application/json";
-				var (statusCode, content) = await proxyUsecase.ProxyOtlp(OtlpSignalType.Logs, context.Request.Body, contentType, ctx);
-				return Results.Content(content ?? string.Empty, contentType, statusCode: statusCode);
-			})
-			.DisableAntiforgery();
-
-		// Proxy endpoint for metrics
-		// Frontend: POST /_api/v1/o/m → ADOT: POST localhost:4318/v1/metrics
-		_ = otlpGroup.MapPost("/m",
-			async (HttpContext context, OtlpProxyUsecase proxyUsecase, Cancel ctx) =>
-			{
-				var contentType = context.Request.ContentType ?? "application/json";
-				var (statusCode, content) = await proxyUsecase.ProxyOtlp(OtlpSignalType.Metrics, context.Request.Body, contentType, ctx);
-				return Results.Content(content ?? string.Empty, contentType, statusCode: statusCode);
-			})
-			.DisableAntiforgery();
+		MapOtlpSignalEndpoint(otlpGroup, "/t", OtlpSignalType.Traces);
+		MapOtlpSignalEndpoint(otlpGroup, "/l", OtlpSignalType.Logs);
+		MapOtlpSignalEndpoint(otlpGroup, "/m", OtlpSignalType.Metrics);
 	}
+
+	private static void MapOtlpSignalEndpoint(
+		IEndpointRouteBuilder group,
+		string path,
+		OtlpSignalType signalType) =>
+		group.MapPost(path,
+			async (HttpContext context, OtlpProxyUsecase proxyUsecase, Cancel ctx) =>
+			{
+				var contentType = context.Request.ContentType ?? "application/json";
+				var result = await proxyUsecase.ProxyOtlp(
+					signalType,
+					context.Request.Body,
+					contentType,
+					ctx);
+				return result.IsSuccess
+					? Results.NoContent()
+					: Results.StatusCode(result.StatusCode);
+			})
+			.DisableAntiforgery();
 }

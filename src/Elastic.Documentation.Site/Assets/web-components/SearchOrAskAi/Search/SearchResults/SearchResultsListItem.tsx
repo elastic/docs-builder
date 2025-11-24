@@ -1,4 +1,17 @@
 /** @jsxImportSource @emotion/react */
+import { logInfo } from '../../../../telemetry/logging'
+import {
+    ATTR_SEARCH_QUERY,
+    ATTR_SEARCH_RESULT_URL,
+    ATTR_SEARCH_RESULT_TITLE,
+    ATTR_SEARCH_RESULT_POSITION,
+    ATTR_SEARCH_RESULT_POSITION_ON_PAGE,
+    ATTR_SEARCH_RESULT_SCORE,
+    ATTR_SEARCH_PAGE,
+    ATTR_EVENT_NAME,
+    ATTR_EVENT_CATEGORY,
+} from '../../../../telemetry/semconv'
+import { useSearchTerm } from '../search.store'
 import { type SearchResultItem } from '../useSearchQuery'
 import {
     EuiText,
@@ -11,9 +24,33 @@ import { css } from '@emotion/react'
 import DOMPurify from 'dompurify'
 import { memo, useMemo } from 'react'
 
+function trackSearchResultClick(params: {
+    query: string
+    resultUrl: string
+    resultTitle: string
+    absolutePosition: number
+    positionOnPage: number
+    pageNumber: number
+    score: number
+}): void {
+    logInfo('search_result_clicked', {
+        [ATTR_SEARCH_QUERY]: params.query,
+        [ATTR_SEARCH_RESULT_URL]: params.resultUrl,
+        [ATTR_SEARCH_RESULT_TITLE]: params.resultTitle,
+        [ATTR_SEARCH_RESULT_POSITION]: params.absolutePosition,
+        [ATTR_SEARCH_RESULT_POSITION_ON_PAGE]: params.positionOnPage,
+        [ATTR_SEARCH_PAGE]: params.pageNumber,
+        [ATTR_SEARCH_RESULT_SCORE]: params.score,
+        [ATTR_EVENT_NAME]: 'search_result_clicked',
+        [ATTR_EVENT_CATEGORY]: 'ui',
+    })
+}
+
 interface SearchResultListItemProps {
     item: SearchResultItem
     index: number
+    pageNumber: number
+    pageSize: number
     onKeyDown?: (e: React.KeyboardEvent<HTMLLIElement>, index: number) => void
     setRef?: (element: HTMLAnchorElement | null, index: number) => void
 }
@@ -21,11 +58,31 @@ interface SearchResultListItemProps {
 export function SearchResultListItem({
     item: result,
     index,
+    pageNumber,
+    pageSize,
     onKeyDown,
     setRef,
 }: SearchResultListItemProps) {
     const { euiTheme } = useEuiTheme()
     const titleFontSize = useEuiFontSize('s')
+    const searchQuery = useSearchTerm()
+
+    // Calculate absolute position across all pages
+    // pageNumber is 0-based, so multiply by pageSize and add the index
+    const absolutePosition = pageNumber * pageSize + index
+
+    const handleClick = () => {
+        trackSearchResultClick({
+            query: searchQuery,
+            resultUrl: result.url,
+            resultTitle: result.title,
+            absolutePosition,
+            positionOnPage: index,
+            pageNumber,
+            score: result.score,
+        })
+    }
+
     return (
         <li
         // css={css`
@@ -36,8 +93,11 @@ export function SearchResultListItem({
         >
             <a
                 ref={(el) => setRef?.(el, index)}
+                onClick={handleClick}
                 onKeyDown={(e) => {
                     if (e.key === 'Enter') {
+                        handleClick()
+                        // Navigate to the result URL
                         window.location.href = result.url
                     } else {
                         // Type mismatch: event is from anchor but handler expects HTMLLIElement

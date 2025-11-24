@@ -62,13 +62,6 @@ export const StreamingAiMessage = ({
             }
         },
         onError: (error: ApiError | Error | null) => {
-            console.error('[AI Provider] Error in StreamingAiMessage:', {
-                messageId: message.id,
-                errorMessage: error?.message,
-                errorStack: error?.stack,
-                errorName: error?.name,
-                fullError: error,
-            })
             updateAiMessage(
                 message.id,
                 message.content || error?.message || 'Error occurred',
@@ -80,16 +73,7 @@ export const StreamingAiMessage = ({
 
     // Expose abort function to parent when this is the last message
     useEffect(() => {
-        console.log('[StreamingAiMessage] Effect triggered', {
-            isLast,
-            status: message.status,
-            hasAbort: !!abort,
-            hasCallback: !!onAbortReady,
-        })
         if (isLast && message.status === 'streaming') {
-            console.log(
-                '[StreamingAiMessage] Calling onAbortReady with abort function'
-            )
             onAbortReady?.(abort)
         }
     }, [isLast, message.status, abort, onAbortReady])

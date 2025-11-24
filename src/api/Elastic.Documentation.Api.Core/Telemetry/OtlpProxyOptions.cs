@@ -22,27 +22,29 @@ namespace Elastic.Documentation.Api.Core.Telemetry;
 /// 
 /// The proxy will return 503 if the collector is not available.
 /// </remarks>
-public class OtlpProxyOptions
+public class OtlpProxyOptions(IConfiguration configuration)
 {
 	/// <summary>
 	/// OTLP endpoint URL for the local ADOT collector.
 	/// Defaults to localhost:4318 when running in Lambda with ADOT layer.
 	/// </summary>
-	public string Endpoint { get; }
+	public string Endpoint { get; } = ResolveEndpoint(configuration);
 
-	public OtlpProxyOptions(IConfiguration configuration)
+	private static string ResolveEndpoint(IConfiguration configuration)
 	{
-		// Check for explicit configuration override first (for tests or custom deployments)
-		var configEndpoint = configuration["OtlpProxy:Endpoint"];
-		if (!string.IsNullOrEmpty(configEndpoint))
-		{
-			Endpoint = configEndpoint;
-			return;
-		}
+		const string configKey = "OtlpProxy:Endpoint";
+		const string envVarKey = "OTEL_EXPORTER_OTLP_ENDPOINT";
+		const string defaultEndpoint = "http://localhost:4318";
 
-		// Default to localhost:4318 - this is where ADOT Lambda Layer collector runs
-		// If ADOT layer is not present, the proxy will fail gracefully and return 503
-		Endpoint = Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT")
-			?? "http://localhost:4318";
+		// Priority 1: Explicit configuration (for tests or custom deployments)
+		if (!string.IsNullOrEmpty(configuration[configKey]))
+			return configuration[configKey]!;
+
+		// Priority 2: Environment variable (ADOT Lambda Layer standard)
+		if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable(envVarKey)))
+			return Environment.GetEnvironmentVariable(envVarKey)!;
+
+		// Priority 3: Default (ADOT Lambda Layer collector)
+		return defaultEndpoint;
 	}
 }

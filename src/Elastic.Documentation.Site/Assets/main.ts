@@ -7,12 +7,32 @@ import { openDetailsWithAnchor } from './open-details-with-anchor'
 import { initNav } from './pages-nav'
 import { initSmoothScroll } from './smooth-scroll'
 import { initTabs } from './tabs'
+import { initializeOtel } from './telemetry/instrumentation'
 import { initTocNav } from './toc-nav'
 import 'htmx-ext-head-support'
 import 'htmx-ext-preload'
 import * as katex from 'katex'
 import { $, $$ } from 'select-dom'
 import { UAParser } from 'ua-parser-js'
+
+// Injected at build time from MinVer
+const DOCS_BUILDER_VERSION =
+    process.env.DOCS_BUILDER_VERSION?.trim() ?? '0.0.0-dev'
+
+// Initialize OpenTelemetry FIRST, before any other code runs
+// This must happen early so all subsequent code is instrumented
+initializeOtel({
+    serviceName: 'docs-frontend',
+    serviceVersion: DOCS_BUILDER_VERSION,
+    baseUrl: '/docs',
+    debug: false,
+})
+
+// Dynamically import web components after telemetry is initialized
+// This ensures telemetry is available when the components execute
+// Parcel will automatically code-split this into a separate chunk
+import('./web-components/SearchOrAskAi/SearchOrAskAi')
+import('./web-components/VersionDropdown')
 
 const { getOS } = new UAParser()
 const isLazyLoadNavigationEnabled =
