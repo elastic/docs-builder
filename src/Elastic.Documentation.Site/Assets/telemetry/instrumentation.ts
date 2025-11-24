@@ -290,7 +290,6 @@ class EuidSpanProcessor implements SpanProcessor {
 
 /**
  * Detects the deployment environment from the hostname at runtime.
- * This is called when deploymentEnvironment is not explicitly provided to initializeOtel().
  *
  * Since the JavaScript is pre-built and bundled into docs-builder CLI,
  * we detect the environment purely from the runtime hostname in the browser.
