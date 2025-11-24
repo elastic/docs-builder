@@ -16,7 +16,7 @@ en/elasticsearch/reference/:
 ## Structure
 
 `stack anchor`
-:   Defines a reusable list of version strings for "stack" projects, e.g., [ '9.0+', '8.18', ... ].
+:   Defines a reusable list of version strings for "stack" projects, e.g., [ '8.18', ... ].
 
 `mappings`
 :   A YAML mapping where each key is a legacy documentation URL path (like `en/apm/agent/java/`), and each value is a mapping with:

@@ -27,8 +27,8 @@ public class ImagePathResolutionTests(ITestOutputHelper output)
 		var nonAssemblerResult = await ResolveUrlForBuildMode(relativeAssetPath, assemblerBuild: false, pathPrefix: "this-is-not-relevant");
 		var assemblerResult = await ResolveUrlForBuildMode(relativeAssetPath, assemblerBuild: true, pathPrefix: "platform");
 
-		nonAssemblerResult.Should().Be("/docs/setup/images/pic.png");
-		assemblerResult.Should().Be("/docs/platform/setup/images/pic.png");
+		nonAssemblerResult.Should().AllBe("/docs/setup/images/pic.png");
+		assemblerResult.Should().AllBe("/docs/platform/setup/images/pic.png");
 	}
 
 	[Fact]
@@ -37,7 +37,7 @@ public class ImagePathResolutionTests(ITestOutputHelper output)
 		var relativeAssetPath = "images/funny-image.png";
 		var assemblerResult = await ResolveUrlForBuildMode(relativeAssetPath, assemblerBuild: true, pathPrefix: null);
 
-		assemblerResult.Should().Be("/docs/setup/images/funny-image.png");
+		assemblerResult.Should().AllBe("/docs/setup/images/funny-image.png");
 	}
 
 	[Fact]
@@ -46,16 +46,15 @@ public class ImagePathResolutionTests(ITestOutputHelper output)
 		var relativeAssetPath = "images/image.png";
 		var assemblerResult = await ResolveUrlForBuildMode(relativeAssetPath, assemblerBuild: true, pathPrefix: "custom");
 
-		assemblerResult.Should().Be("/docs/custom/setup/images/image.png");
+		assemblerResult.Should().AllBe("/docs/custom/setup/images/image.png");
 	}
 
 	/// <summary>
 	/// Resolves a relative asset URL the same way the assembler would for a single markdown file, using the provided navigation path prefix.
 	/// </summary>
-	private async Task<string> ResolveUrlForBuildMode(string relativeAssetPath, bool assemblerBuild, string? pathPrefix)
+	private async Task<string[]> ResolveUrlForBuildMode(string relativeAssetPath, bool assemblerBuild, string? pathPrefix)
 	{
 		const string guideRelativePath = "setup/guide.md";
-		var navigationUrl = BuildNavigationUrl(pathPrefix, guideRelativePath);
 		var files = new Dictionary<string, MockFileData>
 		{
 			["docs/docset.yml"] = new(
@@ -66,7 +65,13 @@ public class ImagePathResolutionTests(ITestOutputHelper output)
 				  - file: {guideRelativePath}
 				"""
 			),
-			["docs/index.md"] = new("# Home"),
+			["docs/index.md"] = new(
+				$"""
+				 # Home
+
+				 ![Alt](setup/{relativeAssetPath})
+			"""
+			),
 			["docs/" + guideRelativePath] = new(
 				$"""
 				 # Guide
@@ -97,38 +102,45 @@ public class ImagePathResolutionTests(ITestOutputHelper output)
 		await documentationSet.ResolveDirectoryTree(TestContext.Current.CancellationToken);
 
 		// Normalize path for cross-platform compatibility (Windows uses backslashes)
-		var normalizedPath = guideRelativePath.Replace('/', Path.DirectorySeparatorChar);
-		if (documentationSet.TryFindDocumentByRelativePath(normalizedPath) is not MarkdownFile markdownFile)
-			throw new InvalidOperationException($"Failed to resolve markdown file for test. Tried path: {normalizedPath}");
+		(string, string)[] pathsToTest = [(guideRelativePath.Replace('/', Path.DirectorySeparatorChar), relativeAssetPath), ("index.md", $"setup{Path.DirectorySeparatorChar}{relativeAssetPath}")];
+		List<string> toReturn = [];
 
-		// For assembler builds DocumentationSetNavigation seeds MarkdownNavigationLookup with navigation items whose Url already
-		// includes the computed path_prefix. To exercise the same branch in isolation, inject a stub navigation entry with the
-		// expected Url (and minimal metadata for the surrounding API contract).
-		_ = documentationSet.NavigationDocumentationFileLookup.Remove(markdownFile);
-		documentationSet.NavigationDocumentationFileLookup.Add(markdownFile, new NavigationItemStub(navigationUrl));
-		documentationSet.NavigationDocumentationFileLookup.TryGetValue(markdownFile, out var navigation).Should()
-			.BeTrue("navigation lookup should contain current page");
-		navigation?.Url.Should().Be(navigationUrl);
-
-		var parserState = new ParserState(buildContext)
+		foreach (var normalizedPath in pathsToTest)
 		{
-			MarkdownSourcePath = markdownFile.SourceFile,
-			YamlFrontMatter = null,
-			CrossLinkResolver = documentationSet.CrossLinkResolver,
-			TryFindDocument = file => documentationSet.TryFindDocument(file),
-			TryFindDocumentByRelativePath = path => documentationSet.TryFindDocumentByRelativePath(path),
-			NavigationTraversable = documentationSet
-		};
+			if (documentationSet.TryFindDocumentByRelativePath(normalizedPath.Item1) is not MarkdownFile markdownFile)
+				throw new InvalidOperationException($"Failed to resolve markdown file for test. Tried path: {normalizedPath}");
 
-		var context = new ParserContext(parserState);
-		context.TryFindDocument(context.MarkdownSourcePath).Should().BeSameAs(markdownFile);
-		context.Build.AssemblerBuild.Should().Be(assemblerBuild);
+			var navigationUrl = BuildNavigationUrl(pathPrefix, normalizedPath.Item1);
+			// For assembler builds DocumentationSetNavigation seeds MarkdownNavigationLookup with navigation items whose Url already
+			// includes the computed path_prefix. To exercise the same branch in isolation, inject a stub navigation entry with the
+			// expected Url (and minimal metadata for the surrounding API contract).
+			_ = documentationSet.NavigationDocumentationFileLookup.Remove(markdownFile);
+			documentationSet.NavigationDocumentationFileLookup.Add(markdownFile, new NavigationItemStub(navigationUrl));
+			documentationSet.NavigationDocumentationFileLookup.TryGetValue(markdownFile, out var navigation).Should()
+				.BeTrue("navigation lookup should contain current page");
+			navigation?.Url.Should().Be(navigationUrl);
 
-		var resolved = DiagnosticLinkInlineParser.UpdateRelativeUrl(context, relativeAssetPath);
+			var parserState = new ParserState(buildContext)
+			{
+				MarkdownSourcePath = markdownFile.SourceFile,
+				YamlFrontMatter = null,
+				CrossLinkResolver = documentationSet.CrossLinkResolver,
+				TryFindDocument = file => documentationSet.TryFindDocument(file),
+				TryFindDocumentByRelativePath = path => documentationSet.TryFindDocumentByRelativePath(path),
+				NavigationTraversable = documentationSet
+			};
+
+			var context = new ParserContext(parserState);
+			context.TryFindDocument(context.MarkdownSourcePath).Should().BeSameAs(markdownFile);
+			context.Build.AssemblerBuild.Should().Be(assemblerBuild);
+
+			toReturn.Add(DiagnosticLinkInlineParser.UpdateRelativeUrl(context, normalizedPath.Item2));
+
+		}
 
 		await collector.StopAsync(TestContext.Current.CancellationToken);
 
-		return resolved;
+		return toReturn.ToArray();
 	}
 
 	/// <summary>
@@ -141,6 +153,12 @@ public class ImagePathResolutionTests(ITestOutputHelper output)
 		var docPath = docRelativePath.Replace('\\', '/').Trim('/');
 		if (docPath.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
 			docPath = docPath[..^3];
+
+		// Handle index.md
+		if (docPath.EndsWith("/index", StringComparison.OrdinalIgnoreCase))
+			docPath = docPath[..^6];
+		else if (docPath.Equals("index", StringComparison.OrdinalIgnoreCase))
+			docPath = string.Empty;
 
 		var segments = new List<string>();
 		if (!string.IsNullOrWhiteSpace(pathPrefix))

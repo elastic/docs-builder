@@ -25,7 +25,7 @@ public class LlmGatewayAskAiGateway(HttpClient httpClient, GcpIdTokenProvider to
 	{
 		var llmGatewayRequest = LlmGatewayRequest.CreateFromRequest(askAiRequest);
 		var requestBody = JsonSerializer.Serialize(llmGatewayRequest, LlmGatewayContext.Default.LlmGatewayRequest);
-		var request = new HttpRequestMessage(HttpMethod.Post, options.FunctionUrl)
+		using var request = new HttpRequestMessage(HttpMethod.Post, options.FunctionUrl)
 		{
 			Content = new StringContent(requestBody, Encoding.UTF8, "application/json")
 		};
@@ -37,7 +37,7 @@ public class LlmGatewayAskAiGateway(HttpClient httpClient, GcpIdTokenProvider to
 
 		// Use HttpCompletionOption.ResponseHeadersRead to get headers immediately
 		// This allows us to start streaming as soon as headers are received
-		var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ctx);
+		using var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ctx);
 
 		// Ensure the response is successful before streaming
 		if (!response.IsSuccessStatusCode)

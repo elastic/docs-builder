@@ -404,7 +404,12 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			// Acquire navigation-aware path
 			if (context.NavigationTraversable.NavigationDocumentationFileLookup.TryGetValue(currentMarkdown, out var currentNavigation))
 			{
-				var uri = new Uri(new UriBuilder("http", "localhost", 80, currentNavigation.Url).Uri, url);
+				// Check if we're handling relative to an index file, which has an unique URL resolution rule
+				var baseUrl = currentMarkdown.FileName.Equals("index.md", StringComparison.OrdinalIgnoreCase)
+					? $"{currentNavigation.Url.TrimEnd('/')}/"
+					: currentNavigation.Url;
+
+				var uri = new Uri(new UriBuilder("http", "localhost", 80, baseUrl).Uri, url);
 				newUrl = uri.AbsolutePath;
 			}
 			else
