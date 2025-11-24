@@ -1,4 +1,5 @@
 /** @jsxImportSource @emotion/react */
+import { logInfo } from '../../../../telemetry/logging'
 import {
     ATTR_SEARCH_QUERY,
     ATTR_SEARCH_RESULT_URL,
@@ -20,7 +21,6 @@ import {
     EuiSpacer,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
-import { trace } from '@opentelemetry/api'
 import DOMPurify from 'dompurify'
 import { memo, useMemo } from 'react'
 
@@ -33,22 +33,17 @@ function trackSearchResultClick(params: {
     pageNumber: number
     score: number
 }): void {
-    const tracer = trace.getTracer('docs-frontend')
-    const span = tracer.startSpan('click search_result')
-
-    span.setAttribute(ATTR_SEARCH_QUERY, params.query)
-    span.setAttribute(ATTR_SEARCH_RESULT_URL, params.resultUrl)
-    span.setAttribute(ATTR_SEARCH_RESULT_TITLE, params.resultTitle)
-    span.setAttribute(ATTR_SEARCH_RESULT_POSITION, params.absolutePosition)
-    span.setAttribute(
-        ATTR_SEARCH_RESULT_POSITION_ON_PAGE,
-        params.positionOnPage
-    )
-    span.setAttribute(ATTR_SEARCH_PAGE, params.pageNumber)
-    span.setAttribute(ATTR_SEARCH_RESULT_SCORE, params.score)
-    span.setAttribute(ATTR_EVENT_NAME, 'search_result_clicked')
-    span.setAttribute(ATTR_EVENT_CATEGORY, 'ui')
-    span.end()
+    logInfo('search_result_clicked', {
+        [ATTR_SEARCH_QUERY]: params.query,
+        [ATTR_SEARCH_RESULT_URL]: params.resultUrl,
+        [ATTR_SEARCH_RESULT_TITLE]: params.resultTitle,
+        [ATTR_SEARCH_RESULT_POSITION]: params.absolutePosition,
+        [ATTR_SEARCH_RESULT_POSITION_ON_PAGE]: params.positionOnPage,
+        [ATTR_SEARCH_PAGE]: params.pageNumber,
+        [ATTR_SEARCH_RESULT_SCORE]: params.score,
+        [ATTR_EVENT_NAME]: 'search_result_clicked',
+        [ATTR_EVENT_CATEGORY]: 'ui',
+    })
 }
 
 interface SearchResultListItemProps {
