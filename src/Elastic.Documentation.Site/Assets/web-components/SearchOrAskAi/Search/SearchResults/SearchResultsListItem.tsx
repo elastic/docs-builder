@@ -14,7 +14,7 @@ import { memo, useMemo } from 'react'
 interface SearchResultListItemProps {
     item: SearchResultItem
     index: number
-    onKeyDown?: (e: React.KeyboardEvent<HTMLLIElement>, index: number) => void
+    onKeyDown?: (e: React.KeyboardEvent<HTMLAnchorElement>, index: number) => void
     setRef?: (element: HTMLAnchorElement | null, index: number) => void
 }
 
@@ -37,15 +37,8 @@ export function SearchResultListItem({
             <a
                 ref={(el) => setRef?.(el, index)}
                 onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                        window.location.href = result.url
-                    } else {
-                        // Type mismatch: event is from anchor but handler expects HTMLLIElement
-                        onKeyDown?.(
-                            e as unknown as React.KeyboardEvent<HTMLLIElement>,
-                            index
-                        )
-                    }
+                    // Pass key event to parent if needed
+                    onKeyDown?.(e, index)
                 }}
                 css={css`
                     display: flex;
@@ -106,7 +99,7 @@ export function SearchResultListItem({
                             `}
                         >
                             {result.highlightedBody ? (
-                                <SanitizedHtmlContent
+                                <HighlightedContent
                                     htmlContent={result.highlightedBody}
                                 />
                             ) : (
@@ -171,26 +164,30 @@ function Breadcrumbs({ parents }: { parents: SearchResultItem['parents'] }) {
     )
 }
 
-const SanitizedHtmlContent = memo(
+const HighlightedContent = memo(
     ({ htmlContent }: { htmlContent: string }) => {
         const processed = useMemo(() => {
             if (!htmlContent) return ''
 
-            const sanitized = DOMPurify.sanitize(htmlContent, {
-                ALLOWED_TAGS: ['mark'],
-                ALLOWED_ATTR: [],
-                KEEP_CONTENT: true,
-            })
+            let htmlToSanitize = htmlContent
 
-            const temp = document.createElement('div')
-            temp.innerHTML = sanitized
-            const text = temp.textContent || ''
+            // Extract text content by stripping HTML tags for lowercase check only
+            // This text is NOT used for rendering - only for ellipsis detection logic
+            // lgtm[js/incomplete-multi-character-sanitization]
+            const text = htmlContent.replace(/<[^>]+>/g, '') || ''
             const firstChar = text.trim()[0]
 
             // Add ellipsis when text starts mid-sentence to indicate continuation
             if (firstChar && /[a-z]/.test(firstChar)) {
-                return '… ' + sanitized
+                htmlToSanitize = '… ' + htmlContent
             }
+
+            // All content is sanitized by DOMPurify before rendering
+            const sanitized = DOMPurify.sanitize(htmlToSanitize, {
+                ALLOWED_TAGS: ['mark'],
+                ALLOWED_ATTR: [],
+                KEEP_CONTENT: true,
+            })
 
             return sanitized
         }, [htmlContent])
