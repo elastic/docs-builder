@@ -142,12 +142,6 @@ function registerFetchInstrumentation(): void {
                     /_api\/v1\/?$/,
                     /__parcel_code_frame$/,
                 ],
-                applyCustomAttributesOnSpan: (span, request, result) => {
-                    span.setAttribute('http.method', request.method || 'GET')
-                    if (result instanceof Response) {
-                        span.setAttribute('http.status_code', result.status)
-                    }
-                },
             }),
         ],
     })
