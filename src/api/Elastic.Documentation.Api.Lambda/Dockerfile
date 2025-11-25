@@ -30,11 +30,12 @@ RUN curl -L https://dot.net/v1/dotnet-install.sh -o dotnet-install.sh && \
 # dotnet restore only reads project files, so having source files here is fine
 COPY . .
 
-# Restore with cache mount for NuGet packages
-# This layer is cached until any .csproj/.props file changes
+# Restore dependencies
+# Note: We use cache mount for NuGet packages, but don't use --no-restore in publish
+# because Native AOT compilation needs the full MSBuild evaluation
 RUN --mount=type=cache,target=/root/.nuget/packages \
     dotnet restore src/api/Elastic.Documentation.Api.Lambda -r linux-x64
 
-# Build and publish
+# Build and publish (Native AOT requires full evaluation, so we don't use --no-restore)
 RUN --mount=type=cache,target=/root/.nuget/packages \
-    dotnet publish src/api/Elastic.Documentation.Api.Lambda -r linux-x64 -c Release --no-restore
+    dotnet publish src/api/Elastic.Documentation.Api.Lambda -r linux-x64 -c Release
