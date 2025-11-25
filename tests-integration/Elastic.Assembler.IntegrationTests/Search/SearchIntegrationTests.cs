@@ -84,6 +84,8 @@ public class SearchIntegrationTests(SearchBootstrapFixture searchFixture, ITestO
 	[Fact]
 	public async Task SearchEndpointWithPaginationReturnsCorrectPage()
 	{
+		Assert.SkipUnless(searchFixture.Connected, "Elasticsearch is not connected");
+
 		// Arrange
 		searchFixture.HttpClient.Should().NotBeNull("HTTP client should be initialized");
 		const string query = "elasticsearch";
