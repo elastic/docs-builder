@@ -25,4 +25,10 @@ public static class TelemetryConstants
 	/// Tag/baggage name used to annotate spans with the user's EUID value.
 	/// </summary>
 	public const string UserEuidAttributeName = "user.euid";
+
+	/// <summary>
+	/// ActivitySource name for OTLP proxy operations.
+	/// Used to trace frontend telemetry proxying.
+	/// </summary>
+	public const string OtlpProxySourceName = "Elastic.Documentation.Api.OtlpProxy";
 }

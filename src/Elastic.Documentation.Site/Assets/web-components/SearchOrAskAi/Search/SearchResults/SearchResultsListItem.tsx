@@ -1,4 +1,17 @@
 /** @jsxImportSource @emotion/react */
+import { logInfo } from '../../../../telemetry/logging'
+import {
+    ATTR_SEARCH_QUERY,
+    ATTR_SEARCH_RESULT_URL,
+    ATTR_SEARCH_RESULT_TITLE,
+    ATTR_SEARCH_RESULT_POSITION,
+    ATTR_SEARCH_RESULT_POSITION_ON_PAGE,
+    ATTR_SEARCH_RESULT_SCORE,
+    ATTR_SEARCH_PAGE,
+    ATTR_EVENT_NAME,
+    ATTR_EVENT_CATEGORY,
+} from '../../../../telemetry/semconv'
+import { useSearchTerm } from '../search.store'
 import { type SearchResultItem } from '../useSearchQuery'
 import {
     EuiText,
@@ -11,9 +24,33 @@ import { css } from '@emotion/react'
 import DOMPurify from 'dompurify'
 import { memo, useMemo } from 'react'
 
+function trackSearchResultClick(params: {
+    query: string
+    resultUrl: string
+    resultTitle: string
+    absolutePosition: number
+    positionOnPage: number
+    pageNumber: number
+    score: number
+}): void {
+    logInfo('search_result_clicked', {
+        [ATTR_SEARCH_QUERY]: params.query,
+        [ATTR_SEARCH_RESULT_URL]: params.resultUrl,
+        [ATTR_SEARCH_RESULT_TITLE]: params.resultTitle,
+        [ATTR_SEARCH_RESULT_POSITION]: params.absolutePosition,
+        [ATTR_SEARCH_RESULT_POSITION_ON_PAGE]: params.positionOnPage,
+        [ATTR_SEARCH_PAGE]: params.pageNumber,
+        [ATTR_SEARCH_RESULT_SCORE]: params.score,
+        [ATTR_EVENT_NAME]: 'search_result_clicked',
+        [ATTR_EVENT_CATEGORY]: 'ui',
+    })
+}
+
 interface SearchResultListItemProps {
     item: SearchResultItem
     index: number
+    pageNumber: number
+    pageSize: number
     onKeyDown?: (e: React.KeyboardEvent<HTMLLIElement>, index: number) => void
     setRef?: (element: HTMLAnchorElement | null, index: number) => void
 }
@@ -21,11 +58,31 @@ interface SearchResultListItemProps {
 export function SearchResultListItem({
     item: result,
     index,
+    pageNumber,
+    pageSize,
     onKeyDown,
     setRef,
 }: SearchResultListItemProps) {
     const { euiTheme } = useEuiTheme()
     const titleFontSize = useEuiFontSize('s')
+    const searchQuery = useSearchTerm()
+
+    // Calculate absolute position across all pages
+    // pageNumber is 0-based, so multiply by pageSize and add the index
+    const absolutePosition = pageNumber * pageSize + index
+
+    const handleClick = () => {
+        trackSearchResultClick({
+            query: searchQuery,
+            resultUrl: result.url,
+            resultTitle: result.title,
+            absolutePosition,
+            positionOnPage: index,
+            pageNumber,
+            score: result.score,
+        })
+    }
+
     return (
         <li
         // css={css`
@@ -36,8 +93,11 @@ export function SearchResultListItem({
         >
             <a
                 ref={(el) => setRef?.(el, index)}
+                onClick={handleClick}
                 onKeyDown={(e) => {
                     if (e.key === 'Enter') {
+                        handleClick()
+                        // Navigate to the result URL
                         window.location.href = result.url
                     } else {
                         // Type mismatch: event is from anchor but handler expects HTMLLIElement
@@ -70,11 +130,11 @@ export function SearchResultListItem({
                 tabIndex={0}
                 href={result.url}
             >
-                <EuiIcon
-                    type="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTQiIGhlaWdodD0iMTMiIHZpZXdCb3g9IjAgMCAxNCAxMyIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTExLjk3NDYgMC4zMTY0MDZMMTEuMDI3MyAzLjE1ODJIMTRWNC4xNTgySDEwLjY5NDNMOS4zNjAzNSA4LjE1ODJIMTJWOS4xNTgySDkuMDI3MzRMNy45NzQ2MSAxMi4zMTY0TDcuMDI1MzkgMTJMNy45NzI2NiA5LjE1ODJINC4wMjczNEwyLjk3NDYxIDEyLjMxNjRMMi4wMjUzOSAxMkwyLjk3MjY2IDkuMTU4MkgwVjguMTU4MkgzLjMwNTY2TDQuNjM5NjUgNC4xNTgySDJWMy4xNTgySDQuOTcyNjZMNi4wMjUzOSAwTDYuOTc0NjEgMC4zMTY0MDZMNi4wMjczNCAzLjE1ODJIOS45NzI2NkwxMS4wMjU0IDBMMTEuOTc0NiAwLjMxNjQwNlpNNC4zNjAzNSA4LjE1ODJIOC4zMDU2Nkw5LjYzOTY1IDQuMTU4Mkg1LjY5NDM0TDQuMzYwMzUgOC4xNTgyWiIgZmlsbD0iIzFEMkEzRSIvPgo8L3N2Zz4="
-                    color="subdued"
-                    size="m"
-                />
+                {/*<EuiIcon*/}
+                {/*    type="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTQiIGhlaWdodD0iMTMiIHZpZXdCb3g9IjAgMCAxNCAxMyIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTExLjk3NDYgMC4zMTY0MDZMMTEuMDI3MyAzLjE1ODJIMTRWNC4xNTgySDEwLjY5NDNMOS4zNjAzNSA4LjE1ODJIMTJWOS4xNTgySDkuMDI3MzRMNy45NzQ2MSAxMi4zMTY0TDcuMDI1MzkgMTJMNy45NzI2NiA5LjE1ODJINC4wMjczNEwyLjk3NDYxIDEyLjMxNjRMMi4wMjUzOSAxMkwyLjk3MjY2IDkuMTU4MkgwVjguMTU4MkgzLjMwNTY2TDQuNjM5NjUgNC4xNTgySDJWMy4xNTgySDQuOTcyNjZMNi4wMjUzOSAwTDYuOTc0NjEgMC4zMTY0MDZMNi4wMjczNCAzLjE1ODJIOS45NzI2NkwxMS4wMjU0IDBMMTEuOTc0NiAwLjMxNjQwNlpNNC4zNjAzNSA4LjE1ODJIOC4zMDU2Nkw5LjYzOTY1IDQuMTU4Mkg1LjY5NDM0TDQuMzYwMzUgOC4xNTgyWiIgZmlsbD0iIzFEMkEzRSIvPgo8L3N2Zz4="*/}
+                {/*    color="subdued"*/}
+                {/*    size="m"*/}
+                {/*/>*/}
                 <div>
                     <div
                         css={css`

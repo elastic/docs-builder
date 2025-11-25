@@ -36,8 +36,17 @@ public static class OpenTelemetryExtensions
 		_ = builder
 			.AddSource(TelemetryConstants.AskAiSourceName)
 			.AddSource(TelemetryConstants.StreamTransformerSourceName)
+			.AddSource(TelemetryConstants.OtlpProxySourceName)
 			.AddAspNetCoreInstrumentation(aspNetCoreOptions =>
 			{
+				// Don't trace root API endpoint (health check)
+				aspNetCoreOptions.Filter = (httpContext) =>
+				{
+					var path = httpContext.Request.Path.Value ?? string.Empty;
+					// Exclude root API path: /docs/_api/v1
+					return path != "/docs/_api/v1";
+				};
+
 				// Enrich spans with custom attributes from HTTP context
 				aspNetCoreOptions.EnrichWithHttpRequest = (activity, httpRequest) =>
 				{

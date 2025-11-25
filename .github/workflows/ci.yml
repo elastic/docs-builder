@@ -20,7 +20,7 @@ jobs:
   validate-assembler:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Bootstrap Action Workspace
         id: bootstrap
@@ -44,7 +44,7 @@ jobs:
     env:
       MSBuildNoWarn: IDE0032
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         
       - name: Bootstrap Action Workspace
         id: bootstrap
@@ -77,7 +77,7 @@ jobs:
       run: 
         working-directory: src/Elastic.Documentation.Site
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v6
         with:
@@ -122,7 +122,7 @@ jobs:
          - macos-latest
          - windows-latest
     steps:          
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: 'Windows only, set TEMP to the same drive'
         if: ${{ matrix.os == 'windows-latest' }}
         #  temporary waiting for https://github.com/parcel-bundler/parcel/pull/10095 to fix
@@ -161,7 +161,7 @@ jobs:
   integration:
     runs-on: docs-builder-latest-16
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Bootstrap Action Workspace
         id: bootstrap

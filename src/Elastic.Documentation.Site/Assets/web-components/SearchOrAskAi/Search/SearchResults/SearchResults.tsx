@@ -51,6 +51,8 @@ export const SearchResults = ({
                                         item={result}
                                         key={result.url}
                                         index={index}
+                                        pageNumber={data.pageNumber}
+                                        pageSize={data.pageSize}
                                         onKeyDown={onKeyDown}
                                         setRef={setItemRef}
                                     />

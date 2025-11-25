@@ -6,10 +6,13 @@ using System.ComponentModel.DataAnnotations;
 using Elastic.Documentation.Api.Core;
 using Elastic.Documentation.Api.Core.AskAi;
 using Elastic.Documentation.Api.Core.Search;
+using Elastic.Documentation.Api.Core.Telemetry;
 using Elastic.Documentation.Api.Infrastructure.Adapters.AskAi;
 using Elastic.Documentation.Api.Infrastructure.Adapters.Search;
+using Elastic.Documentation.Api.Infrastructure.Adapters.Telemetry;
 using Elastic.Documentation.Api.Infrastructure.Aws;
 using Elastic.Documentation.Api.Infrastructure.Gcp;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NetEscapades.EnumGenerators;
@@ -71,6 +74,7 @@ public static class ServicesExtension
 		AddParameterProvider(services, appEnv);
 		AddAskAiUsecase(services, appEnv);
 		AddSearchUsecase(services, appEnv);
+		AddOtlpProxyUsecase(services, appEnv);
 	}
 
 	// https://docs.aws.amazon.com/systems	-manager/latest/userguide/ps-integration-lambda-extensions.html
@@ -124,7 +128,7 @@ public static class ServicesExtension
 
 		try
 		{
-			_ = services.AddSingleton<GcpIdTokenProvider>();
+			_ = services.AddSingleton<IGcpIdTokenProvider, GcpIdTokenProvider>();
 			logger?.LogInformation("GcpIdTokenProvider registered successfully");
 
 			_ = services.AddScoped<LlmGatewayOptions>();
@@ -169,5 +173,28 @@ public static class ServicesExtension
 		_ = services.AddScoped<ElasticsearchOptions>();
 		_ = services.AddScoped<ISearchGateway, ElasticsearchGateway>();
 		_ = services.AddScoped<SearchUsecase>();
+	}
+
+	private static void AddOtlpProxyUsecase(IServiceCollection services, AppEnv appEnv)
+	{
+		var logger = GetLogger(services);
+		logger?.LogInformation("Configuring OTLP proxy use case for environment {AppEnvironment}", appEnv);
+
+		_ = services.AddSingleton(sp =>
+		{
+			var config = sp.GetRequiredService<IConfiguration>();
+			return new OtlpProxyOptions(config);
+		});
+
+		// Register named HttpClient for OTLP proxy
+		_ = services.AddHttpClient(AdotOtlpGateway.HttpClientName)
+			.ConfigureHttpClient(client =>
+			{
+				client.Timeout = TimeSpan.FromSeconds(30);
+			});
+
+		_ = services.AddScoped<IOtlpGateway, AdotOtlpGateway>();
+		_ = services.AddScoped<OtlpProxyUsecase>();
+		logger?.LogInformation("OTLP proxy configured to forward to ADOT Lambda Layer collector");
 	}
 }

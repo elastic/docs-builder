@@ -10,7 +10,7 @@ using Elastic.Documentation.Api.Infrastructure.Gcp;
 
 namespace Elastic.Documentation.Api.Infrastructure.Adapters.AskAi;
 
-public class LlmGatewayAskAiGateway(HttpClient httpClient, GcpIdTokenProvider tokenProvider, LlmGatewayOptions options) : IAskAiGateway<Stream>
+public class LlmGatewayAskAiGateway(HttpClient httpClient, IGcpIdTokenProvider tokenProvider, LlmGatewayOptions options) : IAskAiGateway<Stream>
 {
 	/// <summary>
 	/// Model name used by LLM Gateway (from PlatformContext.UseCase)
@@ -25,10 +25,8 @@ public class LlmGatewayAskAiGateway(HttpClient httpClient, GcpIdTokenProvider to
 	{
 		var llmGatewayRequest = LlmGatewayRequest.CreateFromRequest(askAiRequest);
 		var requestBody = JsonSerializer.Serialize(llmGatewayRequest, LlmGatewayContext.Default.LlmGatewayRequest);
-		var request = new HttpRequestMessage(HttpMethod.Post, options.FunctionUrl)
-		{
-			Content = new StringContent(requestBody, Encoding.UTF8, "application/json")
-		};
+		using var request = new HttpRequestMessage(HttpMethod.Post, options.FunctionUrl);
+		request.Content = new StringContent(requestBody, Encoding.UTF8, "application/json");
 		var authToken = await tokenProvider.GenerateIdTokenAsync(options.ServiceAccount, options.TargetAudience, ctx);
 		request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken);
 		request.Headers.Add("User-Agent", "elastic-docs-proxy/1.0");

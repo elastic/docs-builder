@@ -4,6 +4,7 @@
 
 using Elastic.Documentation.Api.Core.AskAi;
 using Elastic.Documentation.Api.Core.Search;
+using Elastic.Documentation.Api.Core.Telemetry;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -19,6 +20,7 @@ public static class MappingsExtension
 		_ = group.MapPost("/", () => Results.Empty);
 		MapAskAiEndpoint(group);
 		MapSearchEndpoint(group);
+		MapOtlpProxyEndpoint(group);
 	}
 
 	private static void MapAskAiEndpoint(IEndpointRouteBuilder group)
@@ -55,4 +57,33 @@ public static class MappingsExtension
 				return Results.Ok(searchResponse);
 			});
 	}
+
+	private static void MapOtlpProxyEndpoint(IEndpointRouteBuilder group)
+	{
+		// Use /o/* to avoid adblocker detection (common blocklists target /otlp, /telemetry, etc.)
+		var otlpGroup = group.MapGroup("/o");
+
+		MapOtlpSignalEndpoint(otlpGroup, "/t", OtlpSignalType.Traces);
+		MapOtlpSignalEndpoint(otlpGroup, "/l", OtlpSignalType.Logs);
+		MapOtlpSignalEndpoint(otlpGroup, "/m", OtlpSignalType.Metrics);
+	}
+
+	private static void MapOtlpSignalEndpoint(
+		IEndpointRouteBuilder group,
+		string path,
+		OtlpSignalType signalType) =>
+		group.MapPost(path,
+			async (HttpContext context, OtlpProxyUsecase proxyUsecase, Cancel ctx) =>
+			{
+				var contentType = context.Request.ContentType ?? "application/json";
+				var result = await proxyUsecase.ProxyOtlp(
+					signalType,
+					context.Request.Body,
+					contentType,
+					ctx);
+				return result.IsSuccess
+					? Results.NoContent()
+					: Results.StatusCode(result.StatusCode);
+			})
+			.DisableAntiforgery();
 }
