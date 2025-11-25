@@ -78,6 +78,7 @@ function resolveConfiguration(options: OtelConfigOptions): ResolvedConfig {
     return {
         serviceName: options.serviceName ?? 'docs-frontend',
         serviceVersion: options.serviceVersion ?? '1.0.0',
+        deploymentEnvironment: detectEnvironment(),
         baseUrl: options.baseUrl ?? window.location.origin,
         debug: options.debug ?? false,
     }
@@ -94,6 +95,7 @@ function createSharedResource(config: ResolvedConfig) {
     const resourceAttributes: Record<string, string> = {
         [ATTR_SERVICE_NAME]: config.serviceName,
         [ATTR_SERVICE_VERSION]: config.serviceVersion,
+        ['deployment.environment']: config.deploymentEnvironment,
     }
     return resourceFromAttributes(resourceAttributes)
 }
@@ -248,6 +250,7 @@ function logInitializationSuccess(config: ResolvedConfig): void {
         console.log('[OTEL] OpenTelemetry initialized successfully', {
             serviceName: config.serviceName,
             serviceVersion: config.serviceVersion,
+            deploymentEnvironment: config.deploymentEnvironment,
             traceEndpoint: `${config.baseUrl}/_api/v1/o/t`,
             logEndpoint: `${config.baseUrl}/_api/v1/o/l`,
             autoFlushOnUnload: true,
@@ -285,6 +288,35 @@ class EuidSpanProcessor implements SpanProcessor {
     }
 }
 
+/**
+ * Detects the deployment environment from the hostname at runtime.
+ *
+ * Since the JavaScript is pre-built and bundled into docs-builder CLI,
+ * we detect the environment purely from the runtime hostname in the browser.
+ */
+function detectEnvironment(): string {
+    const hostname = window.location.hostname
+
+    switch (hostname) {
+        case 'www.elastic.co':
+        case 'elastic.co':
+            return 'prod'
+
+        case 'staging-website.elastic.co':
+            return 'staging'
+
+        case 'd34ipnu52o64md.cloudfront.net':
+            return 'edge'
+
+        case 'localhost':
+        case '127.0.0.1':
+            return 'local'
+
+        default:
+            return 'unknown'
+    }
+}
+
 export interface OtelConfigOptions {
     serviceName?: string
     serviceVersion?: string
@@ -295,6 +327,7 @@ export interface OtelConfigOptions {
 interface ResolvedConfig {
     serviceName: string
     serviceVersion: string
+    deploymentEnvironment: string
     baseUrl: string
     debug: boolean
 }
