@@ -38,14 +38,12 @@ public class AgentBuilderAskAiGateway(HttpClient httpClient, IParameterProvider 
 		var kibanaApiKey = await parameterProvider.GetParam("docs-kibana-apikey", true, ctx);
 
 		using var request = new HttpRequestMessage(HttpMethod.Post,
-			$"{kibanaUrl}/api/agent_builder/converse/async")
-		{
-			Content = new StringContent(requestBody, Encoding.UTF8, "application/json")
-		};
+			$"{kibanaUrl}/api/agent_builder/converse/async");
+		request.Content = new StringContent(requestBody, Encoding.UTF8, "application/json");
 		request.Headers.Add("kbn-xsrf", "true");
 		request.Headers.Authorization = new AuthenticationHeaderValue("ApiKey", kibanaApiKey);
 
-		using var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ctx);
+		var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ctx);
 
 		// Ensure the response is successful before streaming
 		if (!response.IsSuccessStatusCode)

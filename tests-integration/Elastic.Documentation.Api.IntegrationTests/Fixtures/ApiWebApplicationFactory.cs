@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using OpenTelemetry;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Trace;
@@ -19,12 +20,18 @@ namespace Elastic.Documentation.Api.IntegrationTests.Fixtures;
 
 /// <summary>
 /// Custom WebApplicationFactory for testing the API with mocked services.
-/// This fixture can be reused across multiple test classes.
-/// Only mocks services that ALL tests need (OpenTelemetry, AWS Parameters).
-/// Test-specific mocks should be configured using WithMockedServices.
+/// Each factory instance gets a unique server to prevent test interference.
+/// 
+/// IMPORTANT: Due to OpenTelemetry SDK limitations in test environments, each factory instance
+/// uses a unique environment identifier to ensure isolated telemetry collection. The ExportedActivities
+/// and ExportedLogRecords lists are specific to each factory instance and its associated server.
 /// </summary>
 public class ApiWebApplicationFactory : WebApplicationFactory<Program>
 {
+	// Use a unique identifier to prevent WebApplicationFactory from caching servers across instances
+	// This ensures each factory gets its own OpenTelemetry configuration and telemetry lists
+	private readonly string _instanceId = Guid.NewGuid().ToString();
+
 	public List<Activity> ExportedActivities { get; } = [];
 	public List<LogRecord> ExportedLogRecords { get; } = [];
 	private readonly Action<IServiceCollection>? _configureServices;
@@ -56,32 +63,40 @@ public class ApiWebApplicationFactory : WebApplicationFactory<Program>
 	public static ApiWebApplicationFactory WithMockedServices(Action<IServiceCollection> configureServices)
 		=> new(configureServices);
 
-	protected override void ConfigureWebHost(IWebHostBuilder builder) => builder.ConfigureServices(services =>
+	protected override void ConfigureWebHost(IWebHostBuilder builder)
 	{
-		// Configure OpenTelemetry with in-memory exporters for all tests
-		var otelBuilder = services.AddOpenTelemetry();
-		_ = otelBuilder.WithTracing(tracing =>
-		{
-			_ = tracing
-				.AddDocsApiTracing() // Reuses production configuration
-				.AddInMemoryExporter(ExportedActivities);
-		});
-		_ = otelBuilder.WithLogging(logging =>
-		{
-			_ = logging
-				.AddDocsApiLogging() // Reuses production configuration
-				.AddInMemoryExporter(ExportedLogRecords);
-		});
+		// Use instance ID in environment name to ensure each factory gets a unique server
+		// This prevents WebApplicationFactory from caching and reusing servers across different factory instances
+		builder.UseEnvironment($"Testing-{_instanceId}");
 
-		// Mock IParameterProvider to avoid AWS dependencies in all tests
-		var mockParameterProvider = A.Fake<IParameterProvider>();
-		A.CallTo(() => mockParameterProvider.GetParam(A<string>._, A<bool>._, A<Cancel>._))
-			.Returns(Task.FromResult("mock-value"));
-		_ = services.AddSingleton(mockParameterProvider);
+		builder.ConfigureServices(services =>
+		{
+			// Configure OpenTelemetry with in-memory exporters for all tests
+			// Each factory instance has its own ExportedActivities and ExportedLogRecords lists
+			var otelBuilder = services.AddOpenTelemetry();
+			_ = otelBuilder.WithTracing(tracing =>
+			{
+				_ = tracing
+					.AddDocsApiTracing() // Reuses production configuration
+					.AddInMemoryExporter(ExportedActivities);
+			});
+			_ = otelBuilder.WithLogging(logging =>
+			{
+				_ = logging
+					.AddDocsApiLogging() // Reuses production configuration
+					.AddInMemoryExporter(ExportedLogRecords);
+			});
 
-		// Apply test-specific service replacements (if any)
-		_configureServices?.Invoke(services);
-	});
+			// Mock IParameterProvider to avoid AWS dependencies in all tests
+			var mockParameterProvider = A.Fake<IParameterProvider>();
+			A.CallTo(() => mockParameterProvider.GetParam(A<string>._, A<bool>._, A<Cancel>._))
+				.Returns(Task.FromResult("mock-value"));
+			_ = services.AddSingleton(mockParameterProvider);
+
+			// Apply test-specific service replacements (if any)
+			_configureServices?.Invoke(services);
+		});
+	}
 }
 
 /// <summary>
