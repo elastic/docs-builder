@@ -105,14 +105,17 @@ public static class OpenTelemetryExtensions
 		where TBuilder : IHostApplicationBuilder
 	{
 
-		var serviceVersion = Assembly.GetExecutingAssembly()
+		var informationalVersion = Assembly.GetExecutingAssembly()
 			.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
 
-		if (serviceVersion is null)
+		if (informationalVersion is null)
 		{
 			Console.WriteLine($"Unable to determine service.version from {nameof(AssemblyInformationalVersionAttribute)}. Skipping setting it.");
 			return;
 		}
+
+		// Extract just major.minor.patch by removing prerelease tags (-) and build metadata (+)
+		var serviceVersion = informationalVersion.Split(['+', '-'])[0];
 
 		var versionAttribute = new KeyValuePair<string, object>("service.version", serviceVersion);
 
