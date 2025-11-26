@@ -97,6 +97,7 @@ toc:
       - file: definition-lists.md
       - file: example_blocks.md
       - file: file_inclusion.md
+      - file: footnotes.md
       - file: frontmatter.md
       - file: icons.md
       - file: images.md
