@@ -1,0 +1,51 @@
+/* Footnotes styling */
+.footnotes {
+	@apply mt-12 pt-6 border-t border-grey-10;
+}
+
+.footnotes hr {
+	@apply hidden;
+}
+
+.footnotes ol {
+	@apply list-decimal pl-6 space-y-3;
+}
+
+.footnotes li {
+	@apply text-sm text-ink-light leading-relaxed;
+}
+
+.footnotes li p {
+	@apply inline;
+}
+
+.footnotes li p:not(:last-child) {
+	@apply mb-3;
+}
+
+/* Footnote reference (superscript link in text) */
+.footnote-ref {
+	@apply text-blue-elastic hover:text-blue-elastic-100 font-semibold no-underline;
+	text-decoration: none;
+}
+
+.footnote-ref sup {
+	@apply font-sans;
+}
+
+/* Back reference (return arrow in footnote) */
+.footnote-back-ref {
+	@apply text-blue-elastic hover:text-blue-elastic-100 ml-2 no-underline;
+	text-decoration: none;
+	font-family: monospace;
+}
+
+.footnote-back-ref::before {
+	content: '↩';
+}
+
+/* Multiple back references */
+.footnote-back-ref + .footnote-back-ref {
+	@apply ml-1;
+}
+
