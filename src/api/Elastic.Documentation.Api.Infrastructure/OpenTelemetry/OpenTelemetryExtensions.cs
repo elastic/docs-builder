@@ -2,15 +2,14 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Diagnostics;
+using System.Reflection;
 using Elastic.Documentation.Api.Core;
 using Elastic.OpenTelemetry;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using OpenTelemetry;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 
 namespace Elastic.Documentation.Api.Infrastructure.OpenTelemetry;
@@ -67,7 +66,6 @@ public static class OpenTelemetryExtensions
 
 	/// <summary>
 	/// Configures Elastic OpenTelemetry (EDOT) for the Docs API.
-	/// Only enables if OTEL_EXPORTER_OTLP_ENDPOINT environment variable is set.
 	/// </summary>
 	/// <param name="builder">The web application builder</param>
 	/// <returns>The builder for chaining</returns>
@@ -77,7 +75,9 @@ public static class OpenTelemetryExtensions
 	{
 		var options = new ElasticOpenTelemetryOptions
 		{
-			SkipInstrumentationAssemblyScanning = true // Disable instrumentation assembly scanning for AOT
+			// In AOT mode, we cannot scan the assembly for attributes, so we skip it
+			// for consistency with the non-AOT mode
+			SkipInstrumentationAssemblyScanning = true
 		};
 
 		_ = builder.AddElasticOpenTelemetry(options, edotBuilder =>
@@ -92,6 +92,46 @@ public static class OpenTelemetryExtensions
 						.AddHttpClientInstrumentation();
 				});
 		});
+
+		ConfigureServiceVersionAttributes(builder);
+
 		return builder;
+	}
+
+	// Configure service.version for ALL signals (traces, metrics, logs)
+	// Only set it if we have a valid version from MinVer
+	// If null, something is wrong with the build and we should see the missing attribute
+	private static void ConfigureServiceVersionAttributes<TBuilder>(TBuilder builder)
+		where TBuilder : IHostApplicationBuilder
+	{
+
+		var serviceVersion = Assembly.GetExecutingAssembly()
+			.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+
+		if (serviceVersion is null)
+		{
+			Console.WriteLine($"Unable to determine service.version from {nameof(AssemblyInformationalVersionAttribute)}. Skipping setting it.");
+			return;
+		}
+
+		var versionAttribute = new KeyValuePair<string, object>("service.version", serviceVersion);
+
+		_ = builder.Services.ConfigureOpenTelemetryTracerProvider(tracerProviderBuilder =>
+		{
+			_ = tracerProviderBuilder.ConfigureResource(resourceBuilder =>
+				_ = resourceBuilder.AddAttributes([versionAttribute]));
+		});
+
+		_ = builder.Services.ConfigureOpenTelemetryMeterProvider(meterProviderBuilder =>
+		{
+			_ = meterProviderBuilder.ConfigureResource(resourceBuilder =>
+				_ = resourceBuilder.AddAttributes([versionAttribute]));
+		});
+
+		_ = builder.Services.ConfigureOpenTelemetryLoggerProvider(loggerProviderBuilder =>
+		{
+			_ = loggerProviderBuilder.ConfigureResource(resourceBuilder =>
+				_ = resourceBuilder.AddAttributes([versionAttribute]));
+		});
 	}
 }
