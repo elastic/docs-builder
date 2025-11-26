@@ -81,9 +81,9 @@ dotnet user-secrets --project aspire list
 
 Should have these secrets
 
-> Parameters:LlmGatewayUrl = https://****  
-> Parameters:LlmGatewayServiceAccountPath = <PATH_TO_GCP_SERVICE_CREDENTIALS_FILE>   
-> Parameters:DocumentationElasticUrl = https://*.elastic.cloud:443  
+> Parameters:LlmGatewayUrl = https://****
+> Parameters:LlmGatewayServiceAccountPath = <PATH_TO_GCP_SERVICE_CREDENTIALS_FILE>
+> Parameters:DocumentationElasticUrl = https://*.elastic.cloud:443
 > Parameters:DocumentationElasticApiKey = ****
 
 To set them:
@@ -93,4 +93,60 @@ dotnet user-secrets --project aspire set Parameters:DocumentationElasticApiKey <
 ```
 
 Do note `dotnet user-secrets` should only be used on local development machines and not on CI.
+
+## Integration Tests
+
+The `Elastic.Assembler.IntegrationTests` project includes integration tests for various components, including the search functionality.
+
+### Search Integration Tests
+
+The search integration tests (`Search/SearchIntegrationTests.cs`) verify that the ElasticsearchGateway correctly processes queries through the `/docs/_api/v1/search` endpoint.
+
+**Optimized Indexing**: The test base class (`SearchTestBase`) intelligently checks if the remote Elasticsearch instance already contains up-to-date indexed data. If the index exists with sufficient documents and a valid template, indexing is automatically skipped to improve test performance. Otherwise, the Elasticsearch indexer runs before the tests execute.
+
+#### Prerequisites
+
+The tests require a valid Elasticsearch instance. Choose one of these options:
+
+1. **External Elasticsearch** - Set up user secrets:
+   ```bash
+   dotnet user-secrets --project aspire set Parameters:DocumentationElasticUrl <YOUR_ELASTICSEARCH_URL>
+   dotnet user-secrets --project aspire set Parameters:DocumentationElasticApiKey <YOUR_API_KEY>
+   ```
+
+2. **Local Elasticsearch** - The `--start-elasticsearch` flag will be automatically handled by the test fixture:
+   ```bash
+   # Tests will use the configured Elasticsearch (local or remote)
+   dotnet test tests-integration/Elastic.Assembler.IntegrationTests --filter "FullyQualifiedName~SearchIntegrationTests"
+   ```
+
+#### Running the Tests
+
+```bash
+# Run all integration tests
+dotnet test tests-integration/Elastic.Assembler.IntegrationTests
+
+# Run only search integration tests
+dotnet test tests-integration/Elastic.Assembler.IntegrationTests --filter "FullyQualifiedName~SearchIntegrationTests"
+```
+
+#### Test Execution Flow
+
+1. The test fixture starts all Aspire resources (clone, build, serve, API)
+2. **Intelligent indexing check**: The test queries the remote Elasticsearch to check:
+   - If the semantic index template exists and has a valid version
+   - If the index contains sufficient documents (> 100)
+   - If both conditions are met, indexing is **skipped** for faster test execution
+3. If indexing is needed, the Elasticsearch indexer runs automatically in test mode (up to 10 minutes timeout)
+4. Search queries are executed against the indexed data
+5. Results are validated against expected URLs
+
+**Notes**:
+- The search tests use data-driven theory tests that verify expected search results
+- Tests may initially fail if:
+  - The Elasticsearch index is empty or not populated correctly
+  - The expected URLs don't match the actual indexed content
+  - Network connectivity issues with Elasticsearch
+- **Performance optimization**: Subsequent test runs against the same Elasticsearch instance are significantly faster because indexing is skipped when data is already up-to-date
+- The base class `SearchTestBase` can be extended for additional search-related tests, providing consistent initialization and intelligent indexing behavior
 

@@ -12,7 +12,7 @@ namespace Elastic.Documentation.Api.Infrastructure.Gcp;
 
 // This is a custom implementation to create an ID token for GCP.
 // Because Google.Api.Auth.OAuth2 is not compatible with AOT
-public class GcpIdTokenProvider(HttpClient httpClient)
+public class GcpIdTokenProvider(HttpClient httpClient) : IGcpIdTokenProvider
 {
 	// Cache tokens by target audience to avoid regenerating them on every request
 	private static readonly ConcurrentDictionary<string, CachedToken> TokenCache = new();

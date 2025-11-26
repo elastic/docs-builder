@@ -116,8 +116,7 @@ public static class ServicesExtension
 				}
 			default:
 				{
-					throw new ArgumentOutOfRangeException(nameof(appEnv), appEnv,
-						"Unsupported environment for parameter provider.");
+					throw new ArgumentOutOfRangeException(nameof(appEnv), appEnv, "Unsupported environment for parameter provider.");
 				}
 		}
 	}
@@ -129,7 +128,7 @@ public static class ServicesExtension
 
 		try
 		{
-			_ = services.AddSingleton<GcpIdTokenProvider>();
+			_ = services.AddSingleton<IGcpIdTokenProvider, GcpIdTokenProvider>();
 			logger?.LogInformation("GcpIdTokenProvider registered successfully");
 
 			_ = services.AddScoped<LlmGatewayOptions>();

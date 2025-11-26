@@ -11,6 +11,9 @@
     <ProjectReference Include="$(SolutionRoot)\src\tooling\docs-builder\docs-builder.csproj"/>
     <ProjectReference Include="$(SolutionRoot)\aspire\aspire.csproj" />
     <ProjectReference Include="$(SolutionRoot)\src\Elastic.Documentation.ServiceDefaults\Elastic.Documentation.ServiceDefaults.csproj" />
+    <ProjectReference Include="$(SolutionRoot)\src\api\Elastic.Documentation.Api.Core\Elastic.Documentation.Api.Core.csproj" />
+    <ProjectReference Include="$(SolutionRoot)\src\api\Elastic.Documentation.Api.Infrastructure\Elastic.Documentation.Api.Infrastructure.csproj" />
+    <ProjectReference Include="$(SolutionRoot)\src\Elastic.Markdown\Elastic.Markdown.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="FakeItEasy" />
