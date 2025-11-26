@@ -196,3 +196,81 @@ public class FootnotesWithNamedReferencesTests(ITestOutputHelper output) : Inlin
 	}
 }
 
+public partial class FootnotesInlineCodeNotParsedTests(ITestOutputHelper output) : InlineTest(output,
+	// language=markdown
+	"""
+	Real reference[^1]. Inline code example: `[^1]` should not be parsed.
+
+	[^1]: This is the footnote.
+	""")
+{
+	[Fact]
+	public void InlineCodeFootnoteSyntaxNotParsed()
+	{
+		// The inline code `[^1]` should render as code, not as a footnote reference
+		Html.Should().Contain("<code>[^1]</code>");
+	}
+
+	[Fact]
+	public void OnlyOneBackReference()
+	{
+		// Should have only ONE back-reference (inline code shouldn't create a reference)
+		var count = BackRefRegex().Count(Html);
+		count.Should().Be(1, "Inline code should not be parsed as footnote references");
+	}
+
+	[System.Text.RegularExpressions.GeneratedRegex("footnote-back-ref")]
+	private static partial System.Text.RegularExpressions.Regex BackRefRegex();
+}
+
+public class FootnotesInsideDirectiveTests(ITestOutputHelper output) : InlineTest(output,
+	// language=markdown
+	"""
+	::::{tab-set}
+
+	:::{tab-item} Output
+
+	Here's a **bold** and a [link](https://example.com) and footnote[^1].
+
+	:::
+
+	:::{tab-item} Markdown
+
+	```markdown
+	Here's footnote[^1].
+
+	[^1]: Example definition in code block.
+	```
+
+	:::
+
+	::::
+
+	[^1]: Footnote definitions must be at the document level, not inside directives.
+	""")
+{
+	[Fact]
+	public void OtherInlineElementsWorkInsideDirectives()
+	{
+		// Do other inline elements work?
+		Html.Should().Contain("<strong>bold</strong>");
+		Html.Should().Contain("href=\"https://example.com\"");
+	}
+
+	[Fact]
+	public void FootnoteReferencesWorkInsideDirectives()
+	{
+		// Footnote REFERENCES work inside directives
+		Html.Should().Contain("footnote-ref");
+		Html.Should().Contain("href=\"#fn:1\"");
+	}
+
+	[Fact]
+	public void FootnoteDefinitionsAreAtDocumentLevel()
+	{
+		// Footnote DEFINITIONS are rendered at the document level
+		Html.Should().Contain("<div class=\"footnotes\">");
+		Html.Should().Contain("Footnote definitions must be at the document level");
+	}
+}
+

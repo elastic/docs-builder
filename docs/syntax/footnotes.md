@@ -12,10 +12,6 @@ Here's a simple footnote[^1] and another one[^2].
 
 You can also use named identifiers[^my-note] which can be more descriptive in your source files.
 
-[^1]: This is the first footnote.
-[^2]: This is the second footnote.
-[^my-note]: This footnote uses a named identifier instead of a number.
-
 :::
 
 :::{tab-item} Markdown
@@ -34,6 +30,10 @@ You can also use named identifiers[^my-note] which can be more descriptive in yo
 
 ::::
 
+[^1]: This is the first footnote.
+[^2]: This is the second footnote.
+[^my-note]: This footnote uses a named identifier instead of a number.
+
 ## Multiple references
 
 You can reference the same footnote multiple times throughout your document.
@@ -43,8 +43,6 @@ You can reference the same footnote multiple times throughout your document.
 :::{tab-item} Output
 
 First reference to the concept[^concept]. Some more text here. Second reference to the same concept[^concept].
-
-[^concept]: This explains an important concept that's referenced multiple times.
 
 :::
 
@@ -59,6 +57,8 @@ First reference to the concept[^concept]. Some more text here. Second reference 
 :::
 
 ::::
+
+[^concept]: This explains an important concept that's referenced multiple times.
 
 ## Complex footnotes
 
@@ -70,24 +70,6 @@ Footnotes can contain multiple paragraphs, lists, blockquotes, and code blocks. 
 
 This has a complex footnote[^complex].
 
-[^complex]: This footnote has multiple elements.
-
-    It has multiple paragraphs with detailed explanations.
-
-    > This is a blockquote inside the footnote.
-    > It can span multiple lines.
-
-    - List item one
-    - List item two
-    - List item three
-
-    You can even include code:
-
-    ```python
-    def example():
-        return "Hello from footnote"
-    ```
-
 :::
 
 :::{tab-item} Markdown
@@ -118,9 +100,27 @@ This has a complex footnote[^complex].
 
 ::::
 
+[^complex]: This footnote has multiple elements.
+
+    It has multiple paragraphs with detailed explanations.
+
+    > This is a blockquote inside the footnote.
+    > It can span multiple lines.
+
+    - List item one
+    - List item two
+    - List item three
+
+    You can even include code:
+
+    ```python
+    def example():
+        return "Hello from footnote"
+    ```
+
 ## Footnote placement
 
-Footnote definitions can be placed anywhere in your document, though it's common to place them near where they're referenced or at the end of the document. The footnote content will always be rendered at the bottom of the page.
+Footnote definitions should be placed at the document level (not inside directives like tab-sets, admonitions, or other containers). Footnote references can be used anywhere in your document, including inside directives. The footnote content will always be rendered at the bottom of the page.
 
 ::::{tab-set}
 
@@ -128,13 +128,9 @@ Footnote definitions can be placed anywhere in your document, though it's common
 
 Here's text with a footnote[^early].
 
-[^early]: This footnote is defined right after the reference.
-
 More content here, and another footnote[^late].
 
 Even more content in between.
-
-[^late]: This footnote is defined later in the document.
 
 :::
 
@@ -155,6 +151,9 @@ Even more content in between.
 :::
 
 ::::
+
+[^early]: This footnote is defined right after the reference.
+[^late]: This footnote is defined later in the document.
 
 ## Best practices
 
@@ -181,6 +180,6 @@ Footnotes are automatically numbered in order of first reference, regardless of 
 
 - Footnote identifiers are case-sensitive.
 - Identifiers can contain letters, numbers, and hyphens.
+- **Footnote definitions must be placed at the document level**, not inside directives (tab-sets, admonitions, etc.). Footnote references can be used anywhere.
 - All footnotes are collected and displayed at the end of the page, regardless of where they're defined in the source.
-- Multiple references to the same footnote will show multiple back-reference links in the footnote itself.
-
+- Multiple references to the same footnote will show multiple back-reference arrows (↩) in the footnote itself.

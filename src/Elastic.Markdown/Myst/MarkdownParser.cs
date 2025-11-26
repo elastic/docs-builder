@@ -153,6 +153,7 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 			var builder = new MarkdownPipelineBuilder()
 				.UseInlineAnchors()
 				.UsePreciseSourceLocation()
+				.UseFootnotes() // Must be before UseDiagnosticLinks to ensure FootnoteLinkParser is inserted correctly
 				.UseDiagnosticLinks()
 				.UseHeadingsWithSlugs()
 				.UseEmphasisExtras(EmphasisExtraOptions.Default)
@@ -167,12 +168,11 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 				.UsePipeTables()
 			.UseDirectives()
 			.UseDefinitionLists()
-			.UseFootnotes()
 			.UseEnhancedCodeBlocks()
 			.UseHtmxLinkInlineRenderer()
-				.DisableHtml()
-				.UseSpaceNormalizer()
-				.UseHardBreaks();
+					.DisableHtml()
+					.UseSpaceNormalizer()
+					.UseHardBreaks();
 			_ = builder.BlockParsers.TryRemove<IndentedCodeBlockParser>();
 			field = builder.Build();
 			return field;
