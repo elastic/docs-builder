@@ -14,7 +14,10 @@ import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-http'
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http'
 import { registerInstrumentations } from '@opentelemetry/instrumentation'
 import { FetchInstrumentation } from '@opentelemetry/instrumentation-fetch'
-import { resourceFromAttributes } from '@opentelemetry/resources'
+import {
+    defaultResource,
+    resourceFromAttributes,
+} from '@opentelemetry/resources'
 import {
     LoggerProvider,
     BatchLogRecordProcessor,
@@ -96,8 +99,10 @@ function createSharedResource(config: ResolvedConfig) {
         [ATTR_SERVICE_NAME]: config.serviceName,
         [ATTR_SERVICE_VERSION]: config.serviceVersion,
         ['deployment.environment']: config.deploymentEnvironment,
+        ['service.language.name']: 'javascript',
     }
-    return resourceFromAttributes(resourceAttributes)
+    // Merge with default resource to preserve telemetry.sdk.* attributes
+    return defaultResource().merge(resourceFromAttributes(resourceAttributes))
 }
 
 function createCommonHeaders(): Record<string, string> {
@@ -107,7 +112,7 @@ function createCommonHeaders(): Record<string, string> {
 }
 
 function initializeTracing(
-    resource: ReturnType<typeof resourceFromAttributes>,
+    resource: ReturnType<typeof defaultResource>,
     config: ResolvedConfig,
     commonHeaders: Record<string, string>
 ): void {
@@ -150,7 +155,7 @@ function registerFetchInstrumentation(): void {
 }
 
 function initializeLogging(
-    resource: ReturnType<typeof resourceFromAttributes>,
+    resource: ReturnType<typeof defaultResource>,
     config: ResolvedConfig,
     commonHeaders: Record<string, string>
 ): void {
