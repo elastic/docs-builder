@@ -131,8 +131,8 @@ public class DocumentationWebHost
 				})
 			.UseRouting();
 
-		_ = _webApplication.MapGet("/", (HttpContext httpContext, ReloadableGeneratorState holder, Cancel ctx) =>
-			ServeDocumentationFile(httpContext, holder, "index", ctx));
+		_ = _webApplication.MapGet("/", (ReloadableGeneratorState holder, Cancel ctx) =>
+			ServeDocumentationFile(holder, "index", ctx));
 
 		_ = _webApplication.MapGet("/api/", (ReloadableGeneratorState holder, Cancel ctx) =>
 			ServeApiFile(holder, "", ctx));
@@ -145,8 +145,8 @@ public class DocumentationWebHost
 		apiV1.MapElasticDocsApiEndpoints();
 #endif
 
-		_ = _webApplication.MapGet("{**slug}", (HttpContext httpContext, string slug, ReloadableGeneratorState holder, Cancel ctx) =>
-			ServeDocumentationFile(httpContext, holder, slug, ctx));
+		_ = _webApplication.MapGet("{**slug}", (string slug, ReloadableGeneratorState holder, Cancel ctx) =>
+			ServeDocumentationFile(holder, slug, ctx));
 	}
 
 	private async Task<IResult> ServeApiFile(ReloadableGeneratorState holder, string slug, Cancel ctx)
@@ -165,7 +165,7 @@ public class DocumentationWebHost
 		return Results.NotFound();
 	}
 
-	private static async Task<IResult> ServeDocumentationFile(HttpContext httpContext, ReloadableGeneratorState holder, string slug, Cancel ctx)
+	private static async Task<IResult> ServeDocumentationFile(ReloadableGeneratorState holder, string slug, Cancel ctx)
 	{
 		if (slug == ".well-known/appspecific/com.chrome.devtools.json")
 			return Results.NotFound();
