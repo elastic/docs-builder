@@ -132,6 +132,7 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 				return field;
 			var builder = new MarkdownPipelineBuilder()
 				.UseYamlFrontMatter()
+				.UseFootnotes() // Must match Pipeline to avoid inconsistent footnote handling
 				.UseInlineAnchors()
 				.UseHeadingsWithSlugs()
 				.UseDirectives();

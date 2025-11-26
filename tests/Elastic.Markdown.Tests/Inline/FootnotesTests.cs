@@ -223,6 +223,86 @@ public partial class FootnotesInlineCodeNotParsedTests(ITestOutputHelper output)
 	private static partial System.Text.RegularExpressions.Regex BackRefRegex();
 }
 
+public partial class FootnotesCodeBlockNotParsedTests(ITestOutputHelper output) : InlineTest(output,
+	// language=markdown
+	"""
+	Real reference[^1].
+
+	```markdown
+	Code block with [^1] reference.
+	```
+
+	[^1]: This is the footnote.
+	""")
+{
+	[Fact]
+	public void CodeBlockRendered()
+	{
+		Html.Should().Contain("language-markdown");
+	}
+
+	[Fact]
+	public void OnlyOneBackReference()
+	{
+		// At document level, code blocks work correctly - only 1 back-reference
+		var count = BackRefRegex().Count(Html);
+		count.Should().Be(1, "Code block content should not be parsed as footnote references");
+	}
+
+	[System.Text.RegularExpressions.GeneratedRegex("footnote-back-ref")]
+	private static partial System.Text.RegularExpressions.Regex BackRefRegex();
+}
+
+public partial class FootnotesCodeBlockInDirectiveTests(ITestOutputHelper output) : InlineTest(output,
+	// language=markdown
+	"""
+	::::{tab-set}
+
+	:::{tab-item} Output
+
+	Here's a simple footnote[^1] and another one[^2].
+
+	:::
+
+	:::{tab-item} Markdown
+
+	```markdown
+	Here's a simple footnote[^1] and another one[^2].
+
+	[^1]: This is the first footnote.
+	[^2]: This is the second footnote.
+	```
+
+	:::
+
+	::::
+
+	[^1]: This is the first footnote.
+	[^2]: This is the second footnote.
+	""")
+{
+	[Fact]
+	public void CodeBlockRendered()
+	{
+		Html.Should().Contain("language-markdown");
+	}
+
+	[Fact]
+	public void CorrectBackReferenceCount()
+	{
+		// Should have exactly 2 back-references (one for [^1] and one for [^2])
+		// If code block content is being parsed, we'd see 4 back-references
+		var count = BackRefRegex().Count(Html);
+		output.WriteLine("=== HTML ===");
+		output.WriteLine(Html);
+		output.WriteLine("=== END ===");
+		count.Should().Be(2, $"Expected 2 back-refs (one per footnote), got {count}. Code block content may be parsed incorrectly.");
+	}
+
+	[System.Text.RegularExpressions.GeneratedRegex("footnote-back-ref")]
+	private static partial System.Text.RegularExpressions.Regex BackRefRegex();
+}
+
 public class FootnotesInsideDirectiveTests(ITestOutputHelper output) : InlineTest(output,
 	// language=markdown
 	"""

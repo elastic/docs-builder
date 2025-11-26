@@ -367,6 +367,8 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		var h1 = document.Descendants<HeadingBlock>().FirstOrDefault(h => h.Level == 1);
 		if (h1 is not null)
 			_ = document.Remove(h1);
-		return document.ToHtml(MarkdownParser.Pipeline);
+
+		var html = document.ToHtml(MarkdownParser.Pipeline);
+		return html;
 	}
 }

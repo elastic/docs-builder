@@ -2,6 +2,12 @@
 
 Footnotes allow you to add notes and references without cluttering the main text. They're automatically numbered and linked, providing an elegant way to include supplementary information, citations, or explanations.
 
+## Plain paragraph test
+
+This is a plain footnote test[^plain]. No directives involved.
+
+[^plain]: This footnote is in a plain paragraph, outside any directive.
+
 ## Basic footnotes
 
 ::::{tab-set}
