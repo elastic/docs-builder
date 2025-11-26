@@ -1,6 +1,6 @@
 /* Footnotes styling */
 .footnotes {
-	@apply mt-12 pt-6 border-t border-grey-10;
+	@apply border-grey-10 mt-12 border-t pt-6;
 }
 
 .footnotes hr {
@@ -8,11 +8,11 @@
 }
 
 .footnotes ol {
-	@apply list-decimal pl-6 space-y-3;
+	@apply list-decimal space-y-3 pl-6;
 }
 
 .footnotes li {
-	@apply text-sm text-ink-light leading-relaxed;
+	@apply text-ink-light text-sm leading-relaxed;
 }
 
 .footnotes li p {
@@ -45,4 +45,3 @@
 .footnote-back-ref + .footnote-back-ref {
 	@apply ml-1;
 }
-
