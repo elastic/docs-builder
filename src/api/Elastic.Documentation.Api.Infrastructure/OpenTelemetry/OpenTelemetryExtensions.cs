@@ -75,7 +75,7 @@ public static class OpenTelemetryExtensions
 	{
 		var options = new ElasticOpenTelemetryOptions
 		{
-			// In AOT mode, we cannot scan the assembly for attributes, so we skip it
+			// In AOT mode, assembly scanning is not supported, so we skip it
 			// for consistency with the non-AOT mode
 			SkipInstrumentationAssemblyScanning = true
 		};
