@@ -26,11 +26,12 @@
 /* Footnote reference (superscript link in text) */
 .footnote-ref {
 	@apply text-blue-elastic hover:text-blue-elastic-100 font-semibold no-underline;
-	text-decoration: none;
+	text-decoration: none !important;
 }
 
 .footnote-ref sup {
 	@apply font-sans;
+	text-decoration: none !important;
 }
 
 /* Back reference (return arrow in footnote) */
