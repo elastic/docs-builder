@@ -368,7 +368,6 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		if (h1 is not null)
 			_ = document.Remove(h1);
 
-		var html = document.ToHtml(MarkdownParser.Pipeline);
-		return html;
+		return document.ToHtml(MarkdownParser.Pipeline);
 	}
 }

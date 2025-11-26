@@ -167,13 +167,13 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 				.UseYamlFrontMatter()
 				.UseGridTables()
 				.UsePipeTables()
-			.UseDirectives()
-			.UseDefinitionLists()
-			.UseEnhancedCodeBlocks()
-			.UseHtmxLinkInlineRenderer()
-					.DisableHtml()
-					.UseSpaceNormalizer()
-					.UseHardBreaks();
+			   .UseDirectives()
+			   .UseDefinitionLists()
+			   .UseEnhancedCodeBlocks()
+			   .UseHtmxLinkInlineRenderer()
+				.DisableHtml()
+				.UseSpaceNormalizer()
+				.UseHardBreaks();
 			_ = builder.BlockParsers.TryRemove<IndentedCodeBlockParser>();
 			field = builder.Build();
 			return field;
