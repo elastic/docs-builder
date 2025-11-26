@@ -41,10 +41,6 @@
 	font-family: monospace;
 }
 
-.footnote-back-ref::before {
-	content: '↩';
-}
-
 /* Multiple back references */
 .footnote-back-ref + .footnote-back-ref {
 	@apply ml-1;
