@@ -57,13 +57,31 @@ public class StaticWebHost
 
 	private void SetUpRoutes()
 	{
+		_ = WebApplication.Use(async (context, next) =>
+		{
+			try
+			{
+				await next(context);
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine($"[UNHANDLED EXCEPTION] {ex.GetType().Name}: {ex.Message}");
+				Console.WriteLine($"[STACK TRACE] {ex.StackTrace}");
+				if (ex.InnerException != null)
+					Console.WriteLine($"[INNER EXCEPTION] {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
+
+				throw; // Re-throw to let ASP.NET Core handle it
+			}
+		});
 		_ =
 			WebApplication
+				.UseDeveloperExceptionPage(new DeveloperExceptionPageOptions())
 				.UseRouting();
 
 		_ = WebApplication.MapGet("/", (Cancel _) => Results.Redirect("docs"));
 
 		_ = WebApplication.MapGet("{**slug}", ServeDocumentationFile);
+
 
 		var apiV1 = WebApplication.MapGroup("/docs/_api/v1");
 #if DEBUG

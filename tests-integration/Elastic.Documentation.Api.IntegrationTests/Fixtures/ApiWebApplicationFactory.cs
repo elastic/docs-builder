@@ -21,7 +21,7 @@ namespace Elastic.Documentation.Api.IntegrationTests.Fixtures;
 /// <summary>
 /// Custom WebApplicationFactory for testing the API with mocked services.
 /// Each factory instance gets a unique server to prevent test interference.
-/// 
+///
 /// IMPORTANT: Due to OpenTelemetry SDK limitations in test environments, each factory instance
 /// uses a unique environment identifier to ensure isolated telemetry collection. The ExportedActivities
 /// and ExportedLogRecords lists are specific to each factory instance and its associated server.

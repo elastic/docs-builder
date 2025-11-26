@@ -33,6 +33,7 @@ public class AssemblerBuildService(
 		bool? metadataOnly,
 		bool? showHints,
 		IReadOnlySet<Exporter>? exporters,
+		bool? assumeBuild,
 		FileSystem fs,
 		Cancel ctx
 	)
@@ -44,6 +45,8 @@ public class AssemblerBuildService(
 		if (exporters.Contains(Exporter.DocumentationState))
 			exporters = new HashSet<Exporter>(exporters.Except([Exporter.DocumentationState]));
 
+		var elasticsearchExportOnly = exporters.SetEquals([Exporter.Elasticsearch]);
+
 		var githubEnvironmentInput = githubActionsService.GetInput("environment");
 		environment ??= !string.IsNullOrEmpty(githubEnvironmentInput) ? githubEnvironmentInput : "dev";
 
@@ -53,10 +56,29 @@ public class AssemblerBuildService(
 
 		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, fs, fs, null, null);
 
+		// Early return if --assume-build is specified and output already exists
+		if (assumeBuild.GetValueOrDefault(false))
+		{
+			var indexHtmlPath = Path.Combine(assembleContext.OutputDirectory.FullName, "docs", "index.html");
+			if (assembleContext.OutputDirectory.Exists && fs.File.Exists(indexHtmlPath))
+			{
+				_logger.LogInformation("Assuming build already exists (--assume-build). Found index.html at {Path}. Skipping build.", indexHtmlPath);
+				return true;
+			}
+			_logger.LogInformation("--assume-build specified but output directory does not exist or is incomplete. Proceeding with build.");
+		}
+
 		if (assembleContext.OutputDirectory.Exists)
 		{
-			_logger.LogInformation("Cleaning target output directory");
-			assembleContext.OutputDirectory.Delete(true);
+			if (elasticsearchExportOnly)
+			{
+				_logger.LogInformation("Elasticsearch export only. Skipping clean up of target output directory");
+			}
+			else
+			{
+				_logger.LogInformation("Cleaning target output directory");
+				assembleContext.OutputDirectory.Delete(true);
+			}
 		}
 
 		_logger.LogInformation("Get all clone directory information");
