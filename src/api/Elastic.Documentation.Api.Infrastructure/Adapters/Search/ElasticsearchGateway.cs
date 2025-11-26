@@ -48,6 +48,9 @@ internal sealed record DocumentDto
 
 	[JsonPropertyName("applies_to")]
 	public ApplicableTo? Applies { get; init; }
+
+	[JsonPropertyName("hidden")]
+	public bool Hidden { get; init; }
 }
 
 internal sealed record ParentDocumentDto
@@ -100,7 +103,8 @@ public partial class ElasticsearchGateway : ISearchGateway
 		 || new MatchQuery(Infer.Field<DocumentDto>(f => f.Parents.First().Title), searchQuery) { Boost = 2.0f }
 		 || new MatchQuery(Infer.Field<DocumentDto>(f => f.Title), searchQuery) { Fuzziness = 1, Boost = 1.0f }
 		)
-		&& !(Query)new TermsQuery(Infer.Field<DocumentDto>(f => f.Url.Suffix("keyword")), new TermsQueryField(["/docs", "/docs/", "/docs/404", "/docs/404/"]));
+		&& !(Query)new TermsQuery(Infer.Field<DocumentDto>(f => f.Url.Suffix("keyword")), new TermsQueryField(["/docs", "/docs/", "/docs/404", "/docs/404/"]))
+		&& !(Query)new TermQuery { Field = Infer.Field<DocumentDto>(f => f.Hidden), Value = true };
 
 	/// <summary>
 	/// Builds the semantic search query for the given search term.
@@ -110,7 +114,8 @@ public partial class ElasticsearchGateway : ISearchGateway
 		 || new SemanticQuery("abstract.semantic_text", searchQuery) { Boost = 3.0f }
 		)
 		&& !(Query)new TermsQuery(Infer.Field<DocumentDto>(f => f.Url.Suffix("keyword")),
-			new TermsQueryField(["/docs", "/docs/", "/docs/404", "/docs/404/"]));
+			new TermsQueryField(["/docs", "/docs/", "/docs/404", "/docs/404/"]))
+		&& !(Query)new TermQuery { Field = Infer.Field<DocumentDto>(f => f.Hidden), Value = true };
 
 	/// <summary>
 	/// Normalizes the search query by replacing "dotnet" with "net".

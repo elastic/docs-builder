@@ -65,4 +65,8 @@ public record DocumentationDocument
 
 	[JsonPropertyName("parents")]
 	public ParentDocument[] Parents { get; set; } = [];
+
+	[JsonPropertyName("hidden")]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+	public bool Hidden { get; set; }
 }
