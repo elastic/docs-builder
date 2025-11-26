@@ -116,7 +116,7 @@ public class AssemblerBuilder(
 			if (Uri.IsWellFormedUriString(path, UriKind.Absolute)) // Cross-repo links
 			{
 				_ = linkResolver.TryResolve(
-					e => _logger.LogError("An error occurred while resolving cross-link {Path}: {Error}", path, e),
+					specificErrorMessage => context.Collector.EmitError(path, $"An error occurred while resolving cross-link {path}", specificErrorMessage),
 					new Uri(path),
 					out uri);
 			}

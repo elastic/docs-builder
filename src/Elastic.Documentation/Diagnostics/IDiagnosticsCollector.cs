@@ -23,6 +23,7 @@ public interface IDiagnosticsCollector : IAsyncDisposable, IHostedService
 
 	void Emit(Severity severity, string file, string message);
 	void EmitError(string file, string message, Exception? e = null);
+	void EmitError(string file, string message, string specificErrorMessage);
 	void EmitWarning(string file, string message);
 	void EmitHint(string file, string message);
 	void Write(Diagnostic diagnostic);
