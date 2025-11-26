@@ -50,7 +50,7 @@ internal sealed record DocumentDto
 	public ApplicableTo? Applies { get; init; }
 
 	[JsonPropertyName("hidden")]
-	public bool Hidden { get; init; }
+	public bool Hidden { get; init; } = false;
 }
 
 internal sealed record ParentDocumentDto
