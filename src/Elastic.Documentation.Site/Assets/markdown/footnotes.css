@@ -1,18 +1,18 @@
 /* Footnotes styling */
 
 .footnotes h4 {
-	@apply mt-8 mb-12;
+	@apply mt-8 mb-10;
 }
 
 .footnotes ol {
 	/* Extra top margin so the gap after the "Footnotes" heading
-	   is more prominent than the gap between individual items. */
-	@apply list-decimal pl-6 mt-4;
+     is more prominent than the gap between individual items. */
+	@apply mt-4 list-decimal pl-6;
 }
 
 .footnotes li {
 	/* Tighter spacing between items than between heading and list. */
-	@apply text-ink-light text-sm leading-relaxed mt-2;
+	@apply text-ink-light mt-2 text-sm leading-relaxed;
 }
 
 .footnotes li p {
@@ -38,9 +38,9 @@
 .footnote-back-ref {
 	@apply text-blue-elastic hover:text-blue-elastic-100 no-underline;
 	font-family: monospace;
-   text-decoration: none !important;
-   vertical-align: super;
-   font-size: x-small;
+	text-decoration: none !important;
+	vertical-align: super;
+	font-size: x-small;
 }
 
 /* Multiple back references */
