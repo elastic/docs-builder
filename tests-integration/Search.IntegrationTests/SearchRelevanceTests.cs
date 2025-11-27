@@ -4,14 +4,11 @@
 
 using Elastic.Documentation.Api.Infrastructure.Adapters.Search;
 using Elastic.Documentation.Api.Infrastructure.Aws;
-using Elastic.Documentation.Configuration;
 using FluentAssertions;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
-namespace Elastic.Assembler.IntegrationTests.Search;
+namespace Search.IntegrationTests;
 
 /// <summary>
 /// Integration tests for search relevance that use ElasticsearchGateway directly
@@ -29,8 +26,20 @@ public class SearchRelevanceTests(ITestOutputHelper output)
 		//TODO these results reflect today's result, we still have some work to do to improve the relevance of the search results
 
 		// Elasticsearch specific queries
-		{ "elasticsearch getting started", "/docs/reference/elasticsearch/clients/java/getting-started", null },
+		{ "elasticsearch get started", "/docs/solutions/search/get-started", null },
+		{ "elasticsearch getting started", "/docs/solutions/search/get-started", null },
 		{ "elastic common schema", "/docs/reference/ecs", null },
+		{ "ecs", "/docs/reference/ecs", null },
+		{ "c# client", "/docs/reference/elasticsearch/clients/dotnet", null },
+		{ "dotnet client", "/docs/reference/elasticsearch/clients/dotnet", null },
+		{ "runscript", "/docs/api/doc/kibana/operation/operation-runscriptaction", [ "/docs/solutions/security/endpoint-response-actions" ] },
+		{ "data-streams", "/docs/manage-data/data-store/data-streams", null },
+		{ "datastream", "/docs/manage-data/data-store/data-streams", null },
+		{ "data stream", "/docs/manage-data/data-store/data-streams", null },
+		{ "saml sso", "/docs/deploy-manage/users-roles/cloud-organization/register-elastic-cloud-saml-in-okta", ["/docs/deploy-manage/users-roles/cloud-organization/configure-saml-authentication"] },
+		{ "templates", "/docs/manage-data/data-store/templates", null},
+		{ "query dsl", "/docs/explore-analyze/query-filter/languages/querydsl", null},
+		{ "querydsl", "/docs/explore-analyze/query-filter/languages/querydsl", null}
 	};
 
 	[Theory]
@@ -66,6 +75,7 @@ public class SearchRelevanceTests(ITestOutputHelper output)
 			// Output the actual top result explanation
 			output.WriteLine("═══════════════════════════════════════════════════════════════");
 			output.WriteLine($"ACTUAL TOP RESULT: {topResultExplain.DocumentUrl}");
+			output.WriteLine($"Search Title: {topResultExplain.SearchTitle}");
 			output.WriteLine($"Score: {topResultExplain.Score:F4}");
 			output.WriteLine($"Matched: {topResultExplain.Matched}");
 			output.WriteLine("───────────────────────────────────────────────────────────────");
@@ -75,6 +85,7 @@ public class SearchRelevanceTests(ITestOutputHelper output)
 			// Output the expected result explanation
 			output.WriteLine("═══════════════════════════════════════════════════════════════");
 			output.WriteLine($"EXPECTED RESULT: {expectedResultExplain.DocumentUrl}");
+			output.WriteLine($"Search Title: {expectedResultExplain.SearchTitle}");
 			output.WriteLine($"Score: {expectedResultExplain.Score:F4}");
 			output.WriteLine($"Matched: {expectedResultExplain.Matched}");
 			output.WriteLine("───────────────────────────────────────────────────────────────");

@@ -78,6 +78,7 @@
     <File Path="tests-integration/Directory.Build.props" />
     <Project Path="tests-integration/Elastic.Assembler.IntegrationTests/Elastic.Assembler.IntegrationTests.csproj" />
 	<Project Path="tests-integration/Elastic.Documentation.Api.IntegrationTests/Elastic.Documentation.Api.IntegrationTests.csproj" />
+    <Project Path="tests-integration/Search.IntegrationTests/Search.IntegrationTests.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <File Path="tests/Directory.Build.props" />

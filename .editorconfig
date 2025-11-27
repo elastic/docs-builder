@@ -172,7 +172,7 @@ csharp_new_line_before_open_brace = all
 csharp_new_line_before_else = true
 csharp_new_line_before_catch = true
 csharp_new_line_before_finally = true
-csharp_new_line_before_members_in_object_initializers = true
+csharp_new_line_before_members_in_object_initializers = false
 
 # just a suggestion do to our JSON tests that use anonymous types to 
 # represent json quite a bit (makes copy paste easier).
@@ -190,6 +190,9 @@ csharp_space_between_method_call_parameter_list_parentheses = false
 #Wrap
 csharp_preserve_single_line_statements = false
 csharp_preserve_single_line_blocks = true
+csharp_place_simple_initializer_on_single_line = true
+csharp_max_initializer_elements_on_line = 5
+csharp_wrap_object_and_collection_initializer_style = wrap_if_long
 resharper_wrap_object_and_collection_initializer_style = chop_always
 
 # Resharper

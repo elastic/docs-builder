@@ -19,6 +19,9 @@ internal sealed record DocumentDto
 	[JsonPropertyName("title")]
 	public required string Title { get; init; }
 
+	[JsonPropertyName("search_title")]
+	public required string SearchTitle { get; init; }
+
 	[JsonPropertyName("url")]
 	public required string Url { get; init; }
 
@@ -86,46 +89,88 @@ public partial class ElasticsearchGateway : ISearchGateway
 	/// <summary>
 	/// Builds the lexical search query for the given search term.
 	/// </summary>
-	private static Query BuildLexicalQuery(string searchQuery) =>
-		((Query)new PrefixQuery(Infer.Field<DocumentDto>(f => f.Title.Suffix("keyword")), searchQuery) { Boost = 10.0f, CaseInsensitive = true }
-		 || new MatchPhrasePrefixQuery(Infer.Field<DocumentDto>(f => f.Title), searchQuery) { Boost = 9.0f }
-		 || new MatchQuery(Infer.Field<DocumentDto>(f => f.Title), searchQuery) { Operator = Operator.And, Boost = 8.0f }
-		 || new MatchBoolPrefixQuery(Infer.Field<DocumentDto>(f => f.Title), searchQuery) { Boost = 6.0f }
-		 || new MatchQuery(Infer.Field<DocumentDto>(f => f.Abstract), searchQuery) { Operator = Operator.And, Boost = 5.0f }
-		 || new MatchQuery(Infer.Field<DocumentDto>(f => f.StrippedBody), searchQuery) { Operator = Operator.And, Boost = 4.5f }
-		 || new MatchQuery(Infer.Field<DocumentDto>(f => f.Headings), searchQuery) { Operator = Operator.And, Boost = 4.5f }
-		 || new MatchQuery(Infer.Field<DocumentDto>(f => f.Abstract), searchQuery) { Operator = Operator.Or, Boost = 4.0f }
-		 || new MatchQuery(Infer.Field<DocumentDto>(f => f.StrippedBody), searchQuery) { Operator = Operator.Or, Boost = 3.0f }
-		 || new MatchQuery(Infer.Field<DocumentDto>(f => f.Headings), searchQuery) { Operator = Operator.Or, Boost = 3.0f }
-		 || new MatchQuery(Infer.Field<DocumentDto>(f => f.Parents.First().Title), searchQuery) { Boost = 2.0f }
-		 || new MatchQuery(Infer.Field<DocumentDto>(f => f.Title), searchQuery) { Fuzziness = 1, Boost = 1.0f }
-		)
-		&& !(Query)new TermsQuery(Infer.Field<DocumentDto>(f => f.Url.Suffix("keyword")), new TermsQueryField(["/docs", "/docs/", "/docs/404", "/docs/404/"]));
+	private static Query BuildLexicalQuery(string searchQuery)
+	{
+		var tokens = searchQuery.Split(" ");
+		if (tokens is ["datastream" or "datastreams" or "data-stream" or "data-streams"])
+		{
+			// /docs/api/doc/kibana/operation/operation-delete-fleet-epm-packages-pkgname-pkgversion-datastream-assets
+			// Is the only page that uses "datastream" instead of "data streams" this gives it an N of 1 in the entire corpus
+			// which is hard to fix through tweaking boosting, should update the page to use "data streams" instead
+			searchQuery = "data streams";
+			tokens = ["data", "streams"];
+		}
+
+		var query =
+			(Query)new MultiMatchQuery
+			{
+				Query = searchQuery, Operator = Operator.And, Type = TextQueryType.BoolPrefix,
+				Analyzer = "synonyms_analyzer",
+				Boost = 2.0f,
+				Fields = new[]
+				{
+					"search_title.completion",
+					"search_title.completion._2gram",
+					"search_title.completion._3gram"
+				}
+			}
+			|| new MultiMatchQuery
+			{
+				Query = searchQuery, Operator = Operator.And, Type = TextQueryType.BestFields,
+				Analyzer = "synonyms_analyzer",
+				Boost = 0.2f,
+				Fields = new[]
+				{
+					"stripped_body"
+				}
+			};
+		// If the search term is a single word, boost the URL match
+		// This is to ensure that URLs that contain the search term are ranked higher than URLs that don't
+		// We dampen the boost by wrapping it in a constant score query
+		// This allows a query for `templates` which is an overloaded term to yield pages that contain `templates` in the URL
+		if (tokens.Length == 1)
+		{
+			query |= new ConstantScoreQuery
+			{
+				Filter = new MatchQuery
+				{
+					Field = Infer.Field<DocumentDto>(f => f.Url.Suffix("match")),
+					Query = searchQuery
+				},
+				Boost = 1
+			};
+		}
+
+		return new BoostingQuery
+		{
+			Positive = query,
+			NegativeBoost = 0.8,
+			Negative = new MultiMatchQuery
+			{
+				Query = "plugin client integration", Operator = Operator.Or, Fields = new[] { "search_title", "headings", "url.match" }
+			}
+		};
+	}
 
 	/// <summary>
 	/// Builds the semantic search query for the given search term.
 	/// </summary>
 	private static Query BuildSemanticQuery(string searchQuery) =>
-		((Query)new SemanticQuery("title.semantic_text", searchQuery) { Boost = 5.0f }
-		 || new SemanticQuery("abstract.semantic_text", searchQuery) { Boost = 3.0f }
-		)
-		&& !(Query)new TermsQuery(Infer.Field<DocumentDto>(f => f.Url.Suffix("keyword")),
-			new TermsQueryField(["/docs", "/docs/", "/docs/404", "/docs/404/"]));
+		(Query)new SemanticQuery("title.semantic_text", searchQuery) { Boost = 5.0f }
+		|| new SemanticQuery("abstract.semantic_text", searchQuery) { Boost = 3.0f };
 
-	/// <summary>
-	/// Normalizes the search query by replacing "dotnet" with "net".
-	/// </summary>
-	private static string NormalizeSearchQuery(string query) =>
-		query.Replace("dotnet", "net", StringComparison.InvariantCultureIgnoreCase);
+	private static Query BuildFilter() => !(Query)new TermsQuery(Infer.Field<DocumentDto>(f => f.Url.Suffix("keyword")),
+		new TermsQueryField(["/docs", "/docs/", "/docs/404", "/docs/404/"]));
 
-	public async Task<(int TotalHits, List<SearchResultItem> Results)> HybridSearchWithRrfAsync(string query, int pageNumber, int pageSize, Cancel ctx = default)
+	public async Task<(int TotalHits, List<SearchResultItem> Results)> HybridSearchWithRrfAsync(string query, int pageNumber, int pageSize,
+		Cancel ctx = default)
 	{
 		_logger.LogInformation("Starting RRF hybrid search for '{Query}' with pageNumber={PageNumber}, pageSize={PageSize}", query, pageNumber, pageSize);
 
 		const string preTag = "<mark>";
 		const string postTag = "</mark>";
 
-		var searchQuery = NormalizeSearchQuery(query);
+		var searchQuery = query;
 		var lexicalSearchRetriever = BuildLexicalQuery(searchQuery);
 		var semanticSearchRetriever = BuildSemanticQuery(searchQuery);
 
@@ -133,52 +178,71 @@ public partial class ElasticsearchGateway : ISearchGateway
 		{
 			var response = await _client.SearchAsync<DocumentDto>(s => s
 				.Indices(_elasticsearchOptions.IndexName)
-				.Retriever(r => r
-					.Rrf(rrf => rrf
-						.Retrievers(
-							// Lexical/Traditional search retriever
-							ret => ret.Standard(std => std.Query(lexicalSearchRetriever)),
-							// Semantic search retriever
-							ret => ret.Standard(std => std.Query(semanticSearchRetriever))
+				.From(Math.Max(pageNumber - 1, 0) * pageSize)
+				.Size(pageSize)
+				.PostFilter(BuildFilter())
+				.Query(BuildLexicalQuery(query))
+				// .Retriever(r => r
+				// 	.Rrf(rrf => rrf
+				// 		.Filter(BuildFilter())
+				// 		.Retrievers(
+				// 			// Lexical/Traditional search retriever
+				// 			ret => ret.Standard(std => std.Query(lexicalSearchRetriever)),
+				// 			// Semantic search retriever
+				// 			ret => ret.Standard(std => std.Query(semanticSearchRetriever))
+				// 		)
+				// 		.RankConstant(60) // Controls how much weight is given to document ranking
+				// 		.RankWindowSize(100)
+				// 	)
+				// )
+				.Source(sf => sf
+					.Filter(f => f
+						.Includes(
+							e => e.Type,
+							e => e.Title,
+							e => e.SearchTitle,
+							e => e.Url,
+							e => e.Description,
+							e => e.Parents,
+							e => e.Headings
 						)
-						.RankConstant(60) // Controls how much weight is given to document ranking
-						.RankWindowSize(100)
 					)
 				)
-		.From((pageNumber - 1) * pageSize)
-		.Size(pageSize)
-		.Source(sf => sf
-			.Filter(f => f
-				.Includes(
-					e => e.Type,
-					e => e.Title,
-					e => e.Url,
-					e => e.Description,
-					e => e.Parents,
-					e => e.Headings
-				)
-			)
-		)
-		.Highlight(h => h
-				.RequireFieldMatch(true)
-				.Fields(f => f
-				.Add(Infer.Field<DocumentDto>(d => d.StrippedBody), hf => hf
-					.FragmentSize(150)
-					.NumberOfFragments(3)
-					.NoMatchSize(150)
-					.BoundaryChars(":.!?\t\n")
-					.BoundaryScanner(BoundaryScanner.Sentence)
-					.BoundaryMaxScan(15)
-					.FragmentOffset(0)
-					.HighlightQuery(q => q.Match(m => m
-						.Field(d => d.StrippedBody)
-						.Query(searchQuery)
-						.Analyzer("highlight_analyzer")
-					))
-					.PreTags(preTag)
-					.PostTags(postTag))
-				)
-			), ctx);
+				.Highlight(h => h
+					.RequireFieldMatch(true)
+					.Fields(f => f
+						.Add(Infer.Field<DocumentDto>(d => d.Title), hf => hf
+							.FragmentSize(150)
+							.NumberOfFragments(3)
+							.NoMatchSize(150)
+							.BoundaryChars(":.!?\t\n")
+							.BoundaryScanner(BoundaryScanner.Sentence)
+							.BoundaryMaxScan(15)
+							.FragmentOffset(0)
+							.HighlightQuery(q => q.Match(m => m
+								.Field(d => d.Title)
+								.Query(searchQuery)
+								.Analyzer("highlight_analyzer")
+							))
+							.PreTags(preTag)
+							.PostTags(postTag))
+						.Add(Infer.Field<DocumentDto>(d => d.StrippedBody), hf => hf
+							.FragmentSize(150)
+							.NumberOfFragments(3)
+							.NoMatchSize(150)
+							.BoundaryChars(":.!?\t\n")
+							.BoundaryScanner(BoundaryScanner.Sentence)
+							.BoundaryMaxScan(15)
+							.FragmentOffset(0)
+							.HighlightQuery(q => q.Match(m => m
+								.Field(d => d.StrippedBody)
+								.Query(searchQuery)
+								.Analyzer("highlight_analyzer")
+							))
+							.PreTags(preTag)
+							.PostTags(postTag))
+					)
+				), ctx);
 
 			if (!response.IsValidResponse)
 			{
@@ -240,14 +304,14 @@ public partial class ElasticsearchGateway : ISearchGateway
 	/// </summary>
 	public async Task<ExplainResult> ExplainDocumentAsync(string query, string documentUrl, Cancel ctx = default)
 	{
-		var searchQuery = NormalizeSearchQuery(query);
+		var searchQuery = query;
 		var lexicalQuery = BuildLexicalQuery(searchQuery);
-		var semanticQuery = BuildSemanticQuery(searchQuery);
+		//var semanticQuery = BuildSemanticQuery(searchQuery);
 
 		// Combine queries with bool should to match RRF behavior
 		var combinedQuery = (Query)new BoolQuery
 		{
-			Should = [lexicalQuery, semanticQuery],
+			Should = [lexicalQuery],
 			MinimumShouldMatch = 1
 		};
 
@@ -263,6 +327,7 @@ public partial class ElasticsearchGateway : ISearchGateway
 			{
 				return new ExplainResult
 				{
+					SearchTitle = "N/A",
 					DocumentUrl = documentUrl,
 					Found = false,
 					Explanation = $"Document with URL '{documentUrl}' not found in index"
@@ -279,6 +344,7 @@ public partial class ElasticsearchGateway : ISearchGateway
 			{
 				return new ExplainResult
 				{
+					SearchTitle = "N/A",
 					DocumentUrl = documentUrl,
 					Found = true,
 					Matched = false,
@@ -289,6 +355,7 @@ public partial class ElasticsearchGateway : ISearchGateway
 			return new ExplainResult
 			{
 				DocumentUrl = documentUrl,
+				SearchTitle = getDocResponse.Documents.First().SearchTitle,
 				Found = true,
 				Matched = explainResponse.Matched,
 				Score = explainResponse.Explanation?.Value ?? 0,
@@ -300,6 +367,7 @@ public partial class ElasticsearchGateway : ISearchGateway
 			_logger.LogError(ex, "Error explaining document '{Url}' for query '{Query}'", documentUrl, query);
 			return new ExplainResult
 			{
+				SearchTitle = "N/A",
 				DocumentUrl = documentUrl,
 				Found = false,
 				Explanation = $"Exception during explain: {ex.Message}"
@@ -346,6 +414,7 @@ public partial class ElasticsearchGateway : ISearchGateway
 		{
 			var emptyResult = new ExplainResult
 			{
+				SearchTitle = "N/A",
 				DocumentUrl = "N/A",
 				Found = false,
 				Explanation = "No search results returned"
@@ -366,6 +435,7 @@ public partial class ElasticsearchGateway : ISearchGateway
 /// </summary>
 public sealed record ExplainResult
 {
+	public required string SearchTitle { get; init; }
 	public required string DocumentUrl { get; init; }
 	public bool Found { get; init; }
 	public bool Matched { get; init; }
