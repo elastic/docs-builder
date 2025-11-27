@@ -30,10 +30,11 @@ public sealed class DynamoDbDistributedCache(IAmazonDynamoDB dynamoDb, string ta
 	private const string AttributeExpiresAt = "ExpiresAt";
 	private const string AttributeTtl = "TTL";
 
-	public async Task<string?> GetAsync(string key, Cancel ct = default)
+	public async Task<string?> GetAsync(CacheKey key, Cancel ct = default)
 	{
+		var hashedKey = key.Value;
 		using var activity = ActivitySource.StartActivity("get cache", ActivityKind.Client);
-		_ = (activity?.SetTag("cache.key", key));
+		_ = (activity?.SetTag("cache.key", hashedKey));
 		_ = (activity?.SetTag("cache.table", _tableName));
 		_ = (activity?.SetTag("cache.backend", "dynamodb"));
 
@@ -44,14 +45,14 @@ public sealed class DynamoDbDistributedCache(IAmazonDynamoDB dynamoDb, string ta
 				TableName = _tableName,
 				Key = new Dictionary<string, AttributeValue>
 				{
-					[AttributeCacheKey] = new AttributeValue { S = key }
+					[AttributeCacheKey] = new AttributeValue { S = hashedKey }
 				}
 			}, ct);
 
 			if (!response.IsItemSet)
 			{
 				_ = (activity?.SetTag("cache.hit", false));
-				_logger.LogDebug("Cache miss for key: {CacheKey}", key);
+				_logger.LogDebug("Cache miss for key: {CacheKey}", hashedKey);
 				return null;
 			}
 
@@ -60,7 +61,7 @@ public sealed class DynamoDbDistributedCache(IAmazonDynamoDB dynamoDb, string ta
 			{
 				_ = (activity?.SetTag("cache.hit", false));
 				_ = (activity?.SetTag("cache.expired", true));
-				_logger.LogDebug("Cache expired for key: {CacheKey}", key);
+				_logger.LogDebug("Cache expired for key: {CacheKey}", hashedKey);
 				return null;
 			}
 
@@ -71,7 +72,7 @@ public sealed class DynamoDbDistributedCache(IAmazonDynamoDB dynamoDb, string ta
 			_ = (activity?.SetTag("cache.hit", value != null));
 			if (value != null)
 			{
-				_logger.LogDebug("Cache hit for key: {CacheKey}", key);
+				_logger.LogDebug("Cache hit for key: {CacheKey}", hashedKey);
 			}
 
 			return value;
@@ -87,15 +88,16 @@ public sealed class DynamoDbDistributedCache(IAmazonDynamoDB dynamoDb, string ta
 		catch (Exception ex)
 		{
 			_ = (activity?.SetStatus(ActivityStatusCode.Error, ex.Message));
-			_logger.LogError(ex, "Error retrieving cache key {CacheKey} from DynamoDB", key);
+			_logger.LogError(ex, "Error retrieving cache key {CacheKey} from DynamoDB", hashedKey);
 			return null; // Fail gracefully
 		}
 	}
 
-	public async Task SetAsync(string key, string value, TimeSpan ttl, Cancel ct = default)
+	public async Task SetAsync(CacheKey key, string value, TimeSpan ttl, Cancel ct = default)
 	{
+		var hashedKey = key.Value;
 		using var activity = ActivitySource.StartActivity("set cache", ActivityKind.Client);
-		_ = (activity?.SetTag("cache.key", key));
+		_ = (activity?.SetTag("cache.key", hashedKey));
 		_ = (activity?.SetTag("cache.table", _tableName));
 		_ = (activity?.SetTag("cache.backend", "dynamodb"));
 		_ = (activity?.SetTag("cache.ttl", ttl.TotalSeconds));
@@ -110,26 +112,26 @@ public sealed class DynamoDbDistributedCache(IAmazonDynamoDB dynamoDb, string ta
 				TableName = _tableName,
 				Item = new Dictionary<string, AttributeValue>
 				{
-					[AttributeCacheKey] = new AttributeValue { S = key },
+					[AttributeCacheKey] = new AttributeValue { S = hashedKey },
 					[AttributeValue] = new AttributeValue { S = value },
 					[AttributeExpiresAt] = new AttributeValue { N = ttlTimestamp.ToString(CultureInfo.InvariantCulture) },
 					[AttributeTtl] = new AttributeValue { N = ttlTimestamp.ToString(CultureInfo.InvariantCulture) }
 				}
 			}, ct);
 
-			_logger.LogDebug("Cache set for key: {CacheKey}, TTL: {TTL}s", key, ttl.TotalSeconds);
+			_logger.LogDebug("Cache set for key: {CacheKey}, TTL: {TTL}s", hashedKey, ttl.TotalSeconds);
 		}
 		catch (ResourceNotFoundException ex)
 		{
 			// Table doesn't exist - fail silently in dev, log in production
 			// Infrastructure should create table before deployment
 			_ = (activity?.SetTag("cache.error", "table_not_found"));
-			_logger.LogWarning(ex, "DynamoDB table {TableName} not found. Unable to cache key {CacheKey}.", _tableName, key);
+			_logger.LogWarning(ex, "DynamoDB table {TableName} not found. Unable to cache key {CacheKey}.", _tableName, hashedKey);
 		}
 		catch (Exception ex)
 		{
 			_ = (activity?.SetStatus(ActivityStatusCode.Error, ex.Message));
-			_logger.LogError(ex, "Error setting cache key {CacheKey} in DynamoDB", key);
+			_logger.LogError(ex, "Error setting cache key {CacheKey} in DynamoDB", hashedKey);
 			// Fail gracefully - don't throw
 		}
 	}

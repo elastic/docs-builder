@@ -21,14 +21,15 @@ public sealed class InMemoryDistributedCache : IDistributedCache
 	/// </summary>
 	private sealed record CacheEntry(string Value, DateTimeOffset ExpiresAt);
 
-	public Task<string?> GetAsync(string key, Cancel ct = default)
+	public Task<string?> GetAsync(CacheKey key, Cancel ct = default)
 	{
-		if (_cache.TryGetValue(key, out var entry))
+		var hashedKey = key.Value;
+		if (_cache.TryGetValue(hashedKey, out var entry))
 		{
 			if (IsExpired(entry))
 			{
 				// Remove expired entry
-				_ = _cache.TryRemove(key, out _);
+				_ = _cache.TryRemove(hashedKey, out _);
 				return Task.FromResult<string?>(null);
 			}
 
@@ -38,11 +39,12 @@ public sealed class InMemoryDistributedCache : IDistributedCache
 		return Task.FromResult<string?>(null);
 	}
 
-	public Task SetAsync(string key, string value, TimeSpan ttl, Cancel ct = default)
+	public Task SetAsync(CacheKey key, string value, TimeSpan ttl, Cancel ct = default)
 	{
+		var hashedKey = key.Value;
 		var expiresAt = DateTimeOffset.UtcNow.Add(ttl);
 		var entry = new CacheEntry(value, expiresAt);
-		_ = _cache.AddOrUpdate(key, entry, (_, _) => entry);
+		_ = _cache.AddOrUpdate(hashedKey, entry, (_, _) => entry);
 		return Task.CompletedTask;
 	}
 

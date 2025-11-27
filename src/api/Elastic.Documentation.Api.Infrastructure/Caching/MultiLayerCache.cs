@@ -33,18 +33,19 @@ public sealed class MultiLayerCache(IDistributedCache l2Cache, ILogger<MultiLaye
 	/// </summary>
 	private sealed record L1CacheEntry(string Value, DateTimeOffset ExpiresAt);
 
-	public async Task<string?> GetAsync(string key, Cancel ct = default)
+	public async Task<string?> GetAsync(CacheKey key, Cancel ct = default)
 	{
+		var hashedKey = key.Value;
 		using var activity = ActivitySource.StartActivity("get cache", ActivityKind.Internal);
-		_ = (activity?.SetTag("cache.key", key));
+		_ = (activity?.SetTag("cache.key", hashedKey));
 		_ = (activity?.SetTag("cache.backend", "multilayer"));
 
 		// L1: Check in-memory cache first (fastest)
-		if (TryGetFromL1(key, out var value))
+		if (TryGetFromL1(hashedKey, out var value))
 		{
 			_ = (activity?.SetTag("cache.l1.hit", true));
 			_ = (activity?.SetTag("cache.l2.hit", false));
-			_logger.LogDebug("L1 cache hit for key: {CacheKey}", key);
+			_logger.LogDebug("L1 cache hit for key: {CacheKey}", hashedKey);
 			return value;
 		}
 
@@ -56,31 +57,32 @@ public sealed class MultiLayerCache(IDistributedCache l2Cache, ILogger<MultiLaye
 		if (l2Value != null)
 		{
 			_ = (activity?.SetTag("cache.l2.hit", true));
-			_logger.LogDebug("L2 cache hit for key: {CacheKey}, populating L1", key);
+			_logger.LogDebug("L2 cache hit for key: {CacheKey}, populating L1", hashedKey);
 
 			// Populate L1 cache for future requests in this container
 			// Use a reasonable TTL for L1 (1 hour) to match ID token lifetime
-			PopulateL1(key, l2Value, TimeSpan.FromHours(1));
+			PopulateL1(hashedKey, l2Value, TimeSpan.FromHours(1));
 		}
 		else
 		{
 			_ = (activity?.SetTag("cache.l2.hit", false));
-			_logger.LogDebug("Cache miss (L1 and L2) for key: {CacheKey}", key);
+			_logger.LogDebug("Cache miss (L1 and L2) for key: {CacheKey}", hashedKey);
 		}
 
 		return l2Value;
 	}
 
-	public async Task SetAsync(string key, string value, TimeSpan ttl, Cancel ct = default)
+	public async Task SetAsync(CacheKey key, string value, TimeSpan ttl, Cancel ct = default)
 	{
+		var hashedKey = key.Value;
 		using var activity = ActivitySource.StartActivity("set cache", ActivityKind.Internal);
-		_ = (activity?.SetTag("cache.key", key));
+		_ = (activity?.SetTag("cache.key", hashedKey));
 		_ = (activity?.SetTag("cache.backend", "multilayer"));
 		_ = (activity?.SetTag("cache.ttl", ttl.TotalSeconds));
 
 		// Write-through: Update both L1 and L2
-		PopulateL1(key, value, ttl);
-		_logger.LogDebug("Writing to L1 and L2 cache for key: {CacheKey}, TTL: {TTL}s", key, ttl.TotalSeconds);
+		PopulateL1(hashedKey, value, ttl);
+		_logger.LogDebug("Writing to L1 and L2 cache for key: {CacheKey}, TTL: {TTL}s", hashedKey, ttl.TotalSeconds);
 
 		await _l2Cache.SetAsync(key, value, ttl, ct);
 	}

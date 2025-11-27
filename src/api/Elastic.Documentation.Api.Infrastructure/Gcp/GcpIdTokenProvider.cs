@@ -12,7 +12,7 @@ namespace Elastic.Documentation.Api.Infrastructure.Gcp;
 
 // This is a custom implementation to create an ID token for GCP.
 // Because Google.Api.Auth.OAuth2 is not compatible with AOT
-// Clean Architecture: Depends on IDistributedCache abstraction from Core layer
+// Clean Architecture: Depends on IDistributedCache abstraction from Infrastructure layer
 public class GcpIdTokenProvider(IHttpClientFactory httpClientFactory, IDistributedCache cache) : IGcpIdTokenProvider
 {
 	private readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
@@ -21,7 +21,8 @@ public class GcpIdTokenProvider(IHttpClientFactory httpClientFactory, IDistribut
 	public async Task<string> GenerateIdTokenAsync(string serviceAccount, string targetAudience, Cancel cancellationToken = default)
 	{
 		// Check distributed cache first (works across all Lambda containers)
-		var cacheKey = $"idtoken:{targetAudience}";
+		// CacheKey automatically hashes the identifier to prevent exposing sensitive data
+		var cacheKey = CacheKey.Create("idtoken", targetAudience);
 		var cachedJson = await _cache.GetAsync(cacheKey, cancellationToken);
 
 		if (cachedJson != null)
@@ -118,6 +119,7 @@ public class GcpIdTokenProvider(IHttpClientFactory httpClientFactory, IDistribut
 		// Convert base64 to base64url encoding
 		return base64.Replace('+', '-').Replace('/', '_').TrimEnd('=');
 	}
+
 }
 
 internal readonly record struct ServiceAccountKey(
