@@ -22,17 +22,15 @@ public class GcpIdTokenProvider(IHttpClientFactory httpClientFactory, IDistribut
 	{
 		// Check distributed cache first (works across all Lambda containers)
 		// CacheKey automatically hashes the identifier to prevent exposing sensitive data
+		// DynamoDB ExpiresAt attribute handles expiration checking
 		var cacheKey = CacheKey.Create("idtoken", targetAudience);
-		var cachedJson = await _cache.GetAsync(cacheKey, cancellationToken);
+		var cachedToken = await _cache.GetAsync(cacheKey, cancellationToken);
 
-		if (cachedJson != null)
+		if (cachedToken != null)
 		{
-			var cachedToken = JsonSerializer.Deserialize(cachedJson, IdTokenCacheJsonContext.Default.CachedIdToken);
-
-			// Check if token is still valid (refresh 1 minute before expiry)
-			var expiresAt = DateTimeOffset.FromUnixTimeSeconds(cachedToken.ExpiresAtUnix);
-			if (expiresAt > DateTimeOffset.UtcNow.AddMinutes(1))
-				return cachedToken.Token;
+			// Cache implementation (DynamoDbDistributedCache) already checked ExpiresAt
+			// If we get here, the token is still valid
+			return cachedToken;
 		}
 
 		// Read and parse service account key file using System.Text.Json source generation (AOT compatible)
@@ -83,10 +81,10 @@ public class GcpIdTokenProvider(IHttpClientFactory httpClientFactory, IDistribut
 
 		// Cache the token in distributed cache (shared across all Lambda containers)
 		// Use 15-minute buffer for maximum safety against clock skew and edge cases
+		// DynamoDB will use ExpiresAt attribute for expiration checking and TTL for cleanup
 		var cacheExpiry = expirationTime.Subtract(TimeSpan.FromMinutes(15));
-		var cacheEntry = new CachedIdToken(idToken, cacheExpiry.ToUnixTimeSeconds());
-		var cacheJson = JsonSerializer.Serialize(cacheEntry, IdTokenCacheJsonContext.Default.CachedIdToken);
-		await _cache.SetAsync(cacheKey, cacheJson, TimeSpan.FromHours(1), cancellationToken);
+		var cacheTtl = cacheExpiry - now;
+		await _cache.SetAsync(cacheKey, idToken, cacheTtl, cancellationToken);
 
 		return idToken;
 	}
@@ -146,12 +144,6 @@ internal readonly record struct JwtPayload(
 	string TargetAudience
 );
 
-/// <summary>
-/// Cached ID token structure for distributed cache storage.
-/// AOT-compatible: Uses source-generated JSON serialization.
-/// </summary>
-internal readonly record struct CachedIdToken(string Token, long ExpiresAtUnix);
-
 [JsonSerializable(typeof(ServiceAccountKey))]
 [JsonSerializable(typeof(JwtPayload))]
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower)]
@@ -160,7 +152,3 @@ internal sealed partial class GcpJsonContext : JsonSerializerContext;
 [JsonSerializable(typeof(JwtHeader))]
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 internal sealed partial class JwtHeaderJsonContext : JsonSerializerContext;
-
-[JsonSerializable(typeof(CachedIdToken))]
-[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
-internal sealed partial class IdTokenCacheJsonContext : JsonSerializerContext;
