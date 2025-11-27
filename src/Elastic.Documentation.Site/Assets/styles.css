@@ -16,6 +16,7 @@
 @import './markdown/dropdown.css';
 @import './markdown/table.css';
 @import './markdown/definition-list.css';
+@import './markdown/footnotes.css';
 @import './markdown/images.css';
 @import './markdown/math.css';
 @import './markdown/image-carousel.css';

@@ -1,0 +1,53 @@
+/* Footnotes styling */
+
+.footnotes h4 {
+	@apply mt-8 mb-10;
+}
+
+.footnotes ol {
+	/* Extra top margin so the gap after the "Footnotes" heading
+     is more prominent than the gap between individual items. */
+	@apply mt-4 list-decimal pl-6;
+}
+
+.footnotes li {
+	/* Tighter spacing between items than between heading and list. */
+	@apply text-ink-light mt-2 text-sm leading-relaxed;
+}
+
+.footnotes li p {
+	@apply inline;
+}
+
+.footnotes li p:not(:last-child) {
+	@apply mb-3;
+}
+
+/* Footnote reference (superscript link in text) */
+.footnote-ref {
+	@apply text-blue-elastic hover:text-blue-elastic-100 font-semibold no-underline;
+	text-decoration: none !important;
+	display: inline-block;
+	padding: 0.15em 0.2em;
+	margin: -0.15em 0;
+	border-radius: 0.15em;
+}
+
+.footnote-ref sup {
+	@apply font-sans;
+	text-decoration: none !important;
+}
+
+/* Back reference (return arrow in footnote) */
+.footnote-back-ref {
+	@apply text-blue-elastic hover:text-blue-elastic-100 no-underline;
+	font-family: monospace;
+	text-decoration: none !important;
+	vertical-align: super;
+	font-size: x-small;
+}
+
+/* Multiple back references */
+.footnote-back-ref + .footnote-back-ref {
+	@apply ml-1;
+}

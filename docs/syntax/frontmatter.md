@@ -8,8 +8,8 @@ In the frontmatter block, you can define the following fields:
 
 ```yaml
 ---
-navigation_title: This is the navigation title <1>
-description: This is a description of the page <2>
+navigation_title: This is the navigation title. <1>
+description: This is a description of the page. <2>
 applies_to: <3>
   serverless: all
 products: <4>
