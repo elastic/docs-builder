@@ -152,7 +152,7 @@ public static class ServicesExtension
 						_ = services.AddSingleton<IDistributedCache>(sp =>
 						{
 							var dynamoDb = sp.GetRequiredService<IAmazonDynamoDB>();
-							var tableName = $"docs-api-cache-{appEnv.ToStringFast()}";
+							var tableName = $"docs-api-cache-{appEnv.ToStringFast(true)}";
 							var dynamoLogger = sp.GetRequiredService<ILogger<DynamoDbDistributedCache>>();
 							var multiLogger = sp.GetRequiredService<ILogger<MultiLayerCache>>();
 
