@@ -268,7 +268,7 @@ public class GcpIdTokenProviderCachingIntegrationTests
 		// Use HttpMessageHandler directly with method name matching to verify ExchangeJwtForIdToken was not called
 		// See: https://fakeiteasy.github.io/docs/8.1.0/Recipes/faking-http-client/
 		var fakeHandler = A.Fake<HttpMessageHandler>();
-		var httpClient = new HttpClient(fakeHandler);
+		using var httpClient = new HttpClient(fakeHandler);
 		var fakeHttpClientFactory = A.Fake<IHttpClientFactory>();
 		A.CallTo(() => fakeHttpClientFactory.CreateClient(A<string>._))
 			.Returns(httpClient);
