@@ -1,11 +1,4 @@
 /* Footnotes styling */
-.footnotes {
-	@apply border-grey-10 mt-12 border-t pt-6;
-}
-
-.footnotes hr {
-	@apply hidden;
-}
 
 .footnotes ol {
 	@apply list-decimal space-y-3 pl-6;
