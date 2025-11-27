@@ -36,6 +36,7 @@ public static class OpenTelemetryExtensions
 			.AddSource(TelemetryConstants.AskAiSourceName)
 			.AddSource(TelemetryConstants.StreamTransformerSourceName)
 			.AddSource(TelemetryConstants.OtlpProxySourceName)
+			.AddSource(TelemetryConstants.CacheSourceName)
 			.AddAspNetCoreInstrumentation(aspNetCoreOptions =>
 			{
 				// Don't trace root API endpoint (health check)
