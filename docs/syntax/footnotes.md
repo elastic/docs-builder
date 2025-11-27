@@ -48,14 +48,22 @@ You can reference the same footnote multiple times throughout your document.
 
 :::{tab-item} Output
 
-First reference to the concept[^concept]. Some more text here. Second reference to the same concept[^concept].
+First reference to the concept[^concept]. Some more text here. 
+
+...
+
+Second reference to the same concept[^concept].
 
 :::
 
 :::{tab-item} Markdown
 
 ```markdown
-First reference to the concept[^concept]. Some more text here. Second reference to the same concept[^concept].
+First reference to the concept[^concept]. Some more text here. 
+
+...
+
+Second reference to the same concept[^concept].
 
 [^concept]: This explains an important concept that's referenced multiple times.
 ```
