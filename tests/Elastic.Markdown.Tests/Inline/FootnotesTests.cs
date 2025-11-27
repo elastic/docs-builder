@@ -56,8 +56,8 @@ public class FootnotesBasicTests(ITestOutputHelper output) : InlineTest(output,
 	[Fact]
 	public void FootnotesHeadingPrecedesFootnoteContainer()
 	{
-		var headingIndex = Html.IndexOf("<h4>Footnotes</h4>");
-		var footnotesIndex = Html.IndexOf("<div class=\"footnotes\">");
+		var headingIndex = Html.IndexOf("<h4>Footnotes</h4>", StringComparison.Ordinal);
+		var footnotesIndex = Html.IndexOf("<div class=\"footnotes\">", StringComparison.Ordinal);
 
 		headingIndex.Should().BeGreaterThanOrEqualTo(0);
 		footnotesIndex.Should().BeGreaterThanOrEqualTo(0);
