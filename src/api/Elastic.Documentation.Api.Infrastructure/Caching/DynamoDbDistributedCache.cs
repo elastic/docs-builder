@@ -142,8 +142,9 @@ public sealed class DynamoDbDistributedCache(IAmazonDynamoDB dynamoDb, string ta
 			_logger.LogWarning(ex, "DynamoDB table {TableName} not found. Unable to cache key {CacheKey}.", _tableName, hashedKey);
 		}
 		catch (ProvisionedThroughputExceededException ex)
+		{
 			_ = (activity?.SetTag("cache.error", "provisioned_throughput_exceeded"));
-		_logger.LogWarning(ex, "Provisioned throughput exceeded for DynamoDB cache table {TableName}. Unable to cache key {CacheKey}.", _tableName, hashedKey);
+			_logger.LogWarning(ex, "Provisioned throughput exceeded for DynamoDB cache table {TableName}. Unable to cache key {CacheKey}.", _tableName, hashedKey);
 		}
 		catch (InternalServerErrorException ex)
 		{
@@ -153,12 +154,11 @@ public sealed class DynamoDbDistributedCache(IAmazonDynamoDB dynamoDb, string ta
 		catch (Exception ex) when (ex is not OperationCanceledException and not TaskCanceledException)
 		{
 			// Allow cancellation exceptions to propagate to respect request lifetimes
-			{
-				_ = (activity?.SetStatus(ActivityStatusCode.Error, ex.Message));
-				_logger.LogError(ex, "Error setting cache key {CacheKey} in DynamoDB", hashedKey);
-				// Fail gracefully - don't throw
-			}
+			_ = activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+			_logger.LogError(ex, "Error setting cache key {CacheKey} in DynamoDB", hashedKey);
+			// Fail gracefully - don't throw
 		}
+	}
 
 	/// <summary>
 	/// Checks if a DynamoDB item has expired based on ExpiresAt attribute.
