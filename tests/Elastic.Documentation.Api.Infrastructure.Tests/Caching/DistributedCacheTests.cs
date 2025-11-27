@@ -320,10 +320,7 @@ public class GcpIdTokenProviderCachingIntegrationTests
 	public async Task GenerateIdTokenAsyncIgnoresExpiredCachedToken()
 	{
 		// Arrange
-		var fakeHttpClientFactory = A.Fake<IHttpClientFactory>();
 		var cache = new InMemoryDistributedCache();
-
-		var provider = new GcpIdTokenProvider(fakeHttpClientFactory, cache);
 		const string targetAudience = "https://test.com";
 
 		// Pre-populate cache with token that has very short TTL (will expire quickly)
@@ -335,13 +332,12 @@ public class GcpIdTokenProviderCachingIntegrationTests
 		// Wait for expiration
 		await Task.Delay(50, TestContext.Current.CancellationToken);
 
-		// Act - Try to get the expired token (should be null, triggering new token generation)
+		// Act - Try to get the expired token
 		var cachedValue = await cache.GetAsync(cacheKey, TestContext.Current.CancellationToken);
 
-		// Assert - Expired cache entry should return null (cache handles expiration via TTL)
-		cachedValue.Should().BeNull("expired cache entries should return null");
-
-		// Since cache returned null, provider should generate a new token
-		// This test verifies that expired cache entries don't prevent new token generation
+		// Assert - Expired cache entry should return null
+		// GcpIdTokenProvider checks `if (cachedToken != null)` - when cache returns null,
+		// it will generate a new token, effectively ignoring the expired cached token
+		cachedValue.Should().BeNull("expired cache entries should return null, allowing provider to generate new token");
 	}
 }
