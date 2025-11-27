@@ -51,6 +51,9 @@ internal sealed record DocumentDto
 
 	[JsonPropertyName("applies_to")]
 	public ApplicableTo? Applies { get; init; }
+
+	[JsonPropertyName("hidden")]
+	public bool Hidden { get; init; } = false;
 }
 
 internal sealed record ParentDocumentDto
@@ -162,7 +165,8 @@ public partial class ElasticsearchGateway : ISearchGateway
 		|| new SemanticQuery("abstract.semantic_text", searchQuery) { Boost = 3.0f };
 
 	private static Query BuildFilter() => !(Query)new TermsQuery(Infer.Field<DocumentDto>(f => f.Url.Suffix("keyword")),
-		new TermsQueryField(["/docs", "/docs/", "/docs/404", "/docs/404/"]));
+		new TermsQueryField(["/docs", "/docs/", "/docs/404", "/docs/404/"]))
+		&& !(Query)new TermQuery { Field = Infer.Field<DocumentDto>(f => f.Hidden), Value = true };
 
 	public async Task<(int TotalHits, List<SearchResultItem> Results)> HybridSearchWithRrfAsync(string query, int pageNumber, int pageSize,
 		Cancel ctx = default)

@@ -457,7 +457,8 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 				Title = i.NavigationTitle,
 				Url = i.Url
 			}).Reverse().ToArray(),
-			Headings = headings
+			Headings = headings,
+			Hidden = fileContext.NavigationItem.Hidden
 		};
 
 		AssignDocumentMetadata(doc);
