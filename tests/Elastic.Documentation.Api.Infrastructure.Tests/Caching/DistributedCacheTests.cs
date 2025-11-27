@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Globalization;
 using System.Text.Json;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
@@ -171,7 +172,7 @@ public class DynamoDbDistributedCacheTests
 			{
 				["CacheKey"] = new AttributeValue { S = "test-key" },
 				["Value"] = new AttributeValue { S = "test-value" },
-				["ExpiresAt"] = new AttributeValue { N = expiresAt.ToString() }
+				["ExpiresAt"] = new AttributeValue { N = expiresAt.ToString(CultureInfo.InvariantCulture) }
 			},
 			IsItemSet = true
 		};
@@ -201,7 +202,7 @@ public class DynamoDbDistributedCacheTests
 			{
 				["CacheKey"] = new AttributeValue { S = "test-key" },
 				["Value"] = new AttributeValue { S = "test-value" },
-				["ExpiresAt"] = new AttributeValue { N = expiresAt.ToString() }
+				["ExpiresAt"] = new AttributeValue { N = expiresAt.ToString(CultureInfo.InvariantCulture) }
 			},
 			IsItemSet = true
 		};
