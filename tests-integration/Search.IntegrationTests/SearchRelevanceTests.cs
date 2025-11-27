@@ -48,6 +48,8 @@ public class SearchRelevanceTests(ITestOutputHelper output)
 	{
 		// Arrange - Create ElasticsearchGateway directly
 		var gateway = CreateElasticsearchGateway();
+		var canConnect = await gateway.CanConnect(TestContext.Current.CancellationToken);
+		Assert.SkipUnless(canConnect, "Elasticsearch is not connected");
 
 		// Act - Perform the search
 		var (totalHits, results) = await gateway.HybridSearchWithRrfAsync(query, 1, 5, TestContext.Current.CancellationToken);
@@ -151,6 +153,9 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 	{
 		// Arrange
 		var gateway = CreateElasticsearchGateway();
+		var canConnect = await gateway.CanConnect(TestContext.Current.CancellationToken);
+		Assert.SkipUnless(canConnect, "Elasticsearch is not connected");
+
 		const string query = "elasticsearch getting started";
 		const string expectedUrl = "/docs/reference/elasticsearch/clients/java/getting-started";
 

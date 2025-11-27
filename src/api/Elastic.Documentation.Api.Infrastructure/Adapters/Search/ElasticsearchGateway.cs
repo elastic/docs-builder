@@ -83,6 +83,8 @@ public partial class ElasticsearchGateway : ISearchGateway
 		_client = new ElasticsearchClient(clientSettings);
 	}
 
+	public async Task<bool> CanConnect(Cancel ctx) => (await _client.PingAsync(ctx)).IsValidResponse;
+
 	public async Task<(int TotalHits, List<SearchResultItem> Results)> SearchAsync(string query, int pageNumber, int pageSize, Cancel ctx = default) =>
 		await HybridSearchWithRrfAsync(query, pageNumber, pageSize, ctx);
 
