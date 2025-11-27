@@ -172,7 +172,7 @@ public class DynamoDbDistributedCacheTests
 		// Arrange
 		var fakeDynamoDb = A.Fake<IAmazonDynamoDB>();
 		var key = CacheKey.Create("test", "test-key");
-		var expiresAt = DateTimeOffset.UtcNow.AddMinutes(30).ToUnixTimeSeconds();
+		// Note: We no longer use ExpiresAt - DynamoDB TTL handles expiration automatically
 
 		var response = new GetItemResponse
 		{
@@ -180,7 +180,7 @@ public class DynamoDbDistributedCacheTests
 			{
 				["CacheKey"] = new AttributeValue { S = key.Value },
 				["Value"] = new AttributeValue { S = "test-value" },
-				["ExpiresAt"] = new AttributeValue { N = expiresAt.ToString(CultureInfo.InvariantCulture) }
+				["TTL"] = new AttributeValue { N = DateTimeOffset.UtcNow.AddMinutes(30).ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture) }
 			},
 			IsItemSet = true
 		};
@@ -195,37 +195,6 @@ public class DynamoDbDistributedCacheTests
 
 		// Assert
 		result.Should().Be("test-value");
-	}
-
-	[Fact]
-	public async Task GetAsyncWhenItemExpiredReturnsNull()
-	{
-		// Arrange
-		var fakeDynamoDb = A.Fake<IAmazonDynamoDB>();
-		var key = CacheKey.Create("test", "test-key");
-		var expiresAt = DateTimeOffset.UtcNow.AddMinutes(-5).ToUnixTimeSeconds(); // Expired 5 min ago
-
-		var response = new GetItemResponse
-		{
-			Item = new Dictionary<string, AttributeValue>
-			{
-				["CacheKey"] = new AttributeValue { S = key.Value },
-				["Value"] = new AttributeValue { S = "test-value" },
-				["ExpiresAt"] = new AttributeValue { N = expiresAt.ToString(CultureInfo.InvariantCulture) }
-			},
-			IsItemSet = true
-		};
-
-		A.CallTo(() => fakeDynamoDb.GetItemAsync(A<GetItemRequest>._, A<Cancel>._))
-			.Returns(response);
-
-		var cache = new DynamoDbDistributedCache(fakeDynamoDb, "test-table", NullLogger<DynamoDbDistributedCache>.Instance);
-
-		// Act
-		var result = await cache.GetAsync(key, TestContext.Current.CancellationToken);
-
-		// Assert
-		result.Should().BeNull("expired items should not be returned");
 	}
 
 	[Fact]

@@ -27,7 +27,6 @@ public sealed class DynamoDbDistributedCache(IAmazonDynamoDB dynamoDb, string ta
 	// DynamoDB attribute names
 	private const string AttributeCacheKey = "CacheKey";
 	private const string AttributeValue = "Value";
-	private const string AttributeExpiresAt = "ExpiresAt";
 	private const string AttributeTtl = "TTL";
 
 	public async Task<string?> GetAsync(CacheKey key, Cancel ct = default)
@@ -56,15 +55,8 @@ public sealed class DynamoDbDistributedCache(IAmazonDynamoDB dynamoDb, string ta
 				return null;
 			}
 
-			// Check if expired (application-level check, DynamoDB TTL is for cleanup)
-			if (IsExpired(response.Item))
-			{
-				_ = (activity?.SetTag("cache.hit", false));
-				_ = (activity?.SetTag("cache.expired", true));
-				_logger.LogDebug("Cache expired for key: {CacheKey}", hashedKey);
-				return null;
-			}
-
+			// DynamoDB TTL handles expiration automatically
+			// Items may still be returned briefly after expiration until DynamoDB deletes them
 			var value = response.Item.TryGetValue(AttributeValue, out var valueAttr)
 				? valueAttr.S
 				: null;
@@ -127,7 +119,6 @@ public sealed class DynamoDbDistributedCache(IAmazonDynamoDB dynamoDb, string ta
 				{
 					[AttributeCacheKey] = new AttributeValue { S = hashedKey },
 					[AttributeValue] = new AttributeValue { S = value },
-					[AttributeExpiresAt] = new AttributeValue { N = ttlTimestamp.ToString(CultureInfo.InvariantCulture) },
 					[AttributeTtl] = new AttributeValue { N = ttlTimestamp.ToString(CultureInfo.InvariantCulture) }
 				}
 			}, ct);
@@ -158,21 +149,5 @@ public sealed class DynamoDbDistributedCache(IAmazonDynamoDB dynamoDb, string ta
 			_logger.LogError(ex, "Error setting cache key {CacheKey} in DynamoDB", hashedKey);
 			// Fail gracefully - don't throw
 		}
-	}
-
-	/// <summary>
-	/// Checks if a DynamoDB item has expired based on ExpiresAt attribute.
-	/// Clean Code: Single-purpose helper method with intention-revealing name.
-	/// </summary>
-	private static bool IsExpired(Dictionary<string, AttributeValue> item)
-	{
-		if (!item.TryGetValue(AttributeExpiresAt, out var expiresAtAttr))
-			return true; // No expiration timestamp = treat as expired
-
-		if (!long.TryParse(expiresAtAttr.N, out var expiresAtUnix))
-			return true; // Invalid timestamp = treat as expired
-
-		var expiresAt = DateTimeOffset.FromUnixTimeSeconds(expiresAtUnix);
-		return expiresAt <= DateTimeOffset.UtcNow;
 	}
 }
