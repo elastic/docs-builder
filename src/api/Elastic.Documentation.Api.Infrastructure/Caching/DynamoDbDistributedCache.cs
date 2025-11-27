@@ -97,7 +97,7 @@ public sealed class DynamoDbDistributedCache(IAmazonDynamoDB dynamoDb, string ta
 			_logger.LogError(ex, "Internal server error retrieving cache key {CacheKey} from DynamoDB", hashedKey);
 			return null;
 		}
-		catch (Exception ex) when (ex is not OperationCanceledException && ex is not TaskCanceledException)
+		catch (Exception ex) when (ex is not OperationCanceledException and not TaskCanceledException)
 		{
 			_ = (activity?.SetStatus(ActivityStatusCode.Error, ex.Message));
 			_logger.LogError(ex, "Error retrieving cache key {CacheKey} from DynamoDB", hashedKey);
@@ -143,22 +143,22 @@ public sealed class DynamoDbDistributedCache(IAmazonDynamoDB dynamoDb, string ta
 		}
 		catch (ProvisionedThroughputExceededException ex)
 			_ = (activity?.SetTag("cache.error", "provisioned_throughput_exceeded"));
-			_logger.LogWarning(ex, "Provisioned throughput exceeded for DynamoDB cache table {TableName}. Unable to cache key {CacheKey}.", _tableName, hashedKey);
+		_logger.LogWarning(ex, "Provisioned throughput exceeded for DynamoDB cache table {TableName}. Unable to cache key {CacheKey}.", _tableName, hashedKey);
 		}
 		catch (InternalServerErrorException ex)
 		{
 			_ = (activity?.SetTag("cache.error", "internal_server_error"));
 			_logger.LogError(ex, "Internal server error setting cache key {CacheKey} in DynamoDB", hashedKey);
 		}
-		catch (Exception ex) when (ex is not OperationCanceledException && ex is not TaskCanceledException)
+		catch (Exception ex) when (ex is not OperationCanceledException and not TaskCanceledException)
 		{
-		// Allow cancellation exceptions to propagate to respect request lifetimes
-		{
-			_ = (activity?.SetStatus(ActivityStatusCode.Error, ex.Message));
-			_logger.LogError(ex, "Error setting cache key {CacheKey} in DynamoDB", hashedKey);
-			// Fail gracefully - don't throw
+			// Allow cancellation exceptions to propagate to respect request lifetimes
+			{
+				_ = (activity?.SetStatus(ActivityStatusCode.Error, ex.Message));
+				_logger.LogError(ex, "Error setting cache key {CacheKey} in DynamoDB", hashedKey);
+				// Fail gracefully - don't throw
+			}
 		}
-	}
 
 	/// <summary>
 	/// Checks if a DynamoDB item has expired based on ExpiresAt attribute.
