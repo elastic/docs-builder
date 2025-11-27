@@ -265,7 +265,14 @@ public class GcpIdTokenProviderCachingIntegrationTests
 	public async Task GenerateIdTokenAsyncUsesCachedTokenWhenValid()
 	{
 		// Arrange
+		// Use HttpMessageHandler directly with method name matching to verify ExchangeJwtForIdToken was not called
+		// See: https://fakeiteasy.github.io/docs/8.1.0/Recipes/faking-http-client/
+		var fakeHandler = A.Fake<HttpMessageHandler>();
+		var httpClient = new HttpClient(fakeHandler);
 		var fakeHttpClientFactory = A.Fake<IHttpClientFactory>();
+		A.CallTo(() => fakeHttpClientFactory.CreateClient(A<string>._))
+			.Returns(httpClient);
+
 		var cache = new InMemoryDistributedCache();
 
 		var provider = new GcpIdTokenProvider(fakeHttpClientFactory, cache);
@@ -281,8 +288,12 @@ public class GcpIdTokenProviderCachingIntegrationTests
 
 		// Assert
 		result.Should().Be("fake-cached-token", "should return cached token without calling Google OAuth");
-		// Note: Can't verify CreateClient() wasn't called because it's an extension method (not interceptable by FakeItEasy)
-		// But the test still validates that cached token is returned correctly
+		// Verify that ExchangeJwtForIdToken was not called (PostAsync -> SendAsync)
+		// Using method name matching since SendAsync is protected
+		A.CallTo(fakeHandler)
+			.WithReturnType<Task<HttpResponseMessage>>()
+			.Where(call => call.Method.Name == "SendAsync")
+			.MustNotHaveHappened();
 	}
 
 	[Fact]
