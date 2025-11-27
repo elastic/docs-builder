@@ -1,11 +1,18 @@
 /* Footnotes styling */
 
+.footnotes h4 {
+	@apply mt-8 mb-12;
+}
+
 .footnotes ol {
-	@apply list-decimal space-y-3 pl-6;
+	/* Extra top margin so the gap after the "Footnotes" heading
+	   is more prominent than the gap between individual items. */
+	@apply list-decimal pl-6 mt-4;
 }
 
 .footnotes li {
-	@apply text-ink-light text-sm leading-relaxed;
+	/* Tighter spacing between items than between heading and list. */
+	@apply text-ink-light text-sm leading-relaxed mt-2;
 }
 
 .footnotes li p {

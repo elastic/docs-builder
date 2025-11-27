@@ -181,12 +181,3 @@ Before adding footnotes, consider whether:
 ### Numbering
 
 Footnotes are automatically numbered in order of first reference, regardless of the identifier you use in your source. This means `[^zebra]` appearing before `[^apple]` will be numbered as footnote 1.
-
-## Technical notes
-
-- Footnote identifiers are case-sensitive.
-- Identifiers can contain letters, numbers, and hyphens.
-- **Footnote definitions must be placed at the document level**, not inside directives (tab-sets, admonitions, etc.). Footnote references can be used anywhere.
-- All footnotes are collected and displayed at the end of the page, regardless of where they're defined in the source.
-- In the rendered HTML, collected footnotes are preceded by a `Footnotes` heading at the end of the page.
-- Multiple references to the same footnote will show multiple back-reference arrows (↩) in the footnote itself.
