@@ -85,12 +85,25 @@ public sealed class DynamoDbDistributedCache(IAmazonDynamoDB dynamoDb, string ta
 			_logger.LogWarning(ex, "DynamoDB table {TableName} not found. Cache operations will fail gracefully.", _tableName);
 			return null;
 		}
-		catch (Exception ex)
+		catch (ProvisionedThroughputExceededException ex)
+		{
+			_ = (activity?.SetTag("cache.error", "provisioned_throughput_exceeded"));
+			_logger.LogWarning(ex, "Provisioned throughput exceeded for DynamoDB cache table {TableName}.", _tableName);
+			return null;
+		}
+		catch (InternalServerErrorException ex)
+		{
+			_ = (activity?.SetTag("cache.error", "internal_server_error"));
+			_logger.LogError(ex, "Internal server error retrieving cache key {CacheKey} from DynamoDB", hashedKey);
+			return null;
+		}
+		catch (Exception ex) when (ex is not OperationCanceledException && ex is not TaskCanceledException)
 		{
 			_ = (activity?.SetStatus(ActivityStatusCode.Error, ex.Message));
 			_logger.LogError(ex, "Error retrieving cache key {CacheKey} from DynamoDB", hashedKey);
 			return null; // Fail gracefully
 		}
+		// Allow cancellation exceptions to propagate to respect request lifetimes
 	}
 
 	public async Task SetAsync(CacheKey key, string value, TimeSpan ttl, Cancel ct = default)
@@ -128,7 +141,18 @@ public sealed class DynamoDbDistributedCache(IAmazonDynamoDB dynamoDb, string ta
 			_ = (activity?.SetTag("cache.error", "table_not_found"));
 			_logger.LogWarning(ex, "DynamoDB table {TableName} not found. Unable to cache key {CacheKey}.", _tableName, hashedKey);
 		}
-		catch (Exception ex)
+		catch (ProvisionedThroughputExceededException ex)
+			_ = (activity?.SetTag("cache.error", "provisioned_throughput_exceeded"));
+			_logger.LogWarning(ex, "Provisioned throughput exceeded for DynamoDB cache table {TableName}. Unable to cache key {CacheKey}.", _tableName, hashedKey);
+		}
+		catch (InternalServerErrorException ex)
+		{
+			_ = (activity?.SetTag("cache.error", "internal_server_error"));
+			_logger.LogError(ex, "Internal server error setting cache key {CacheKey} in DynamoDB", hashedKey);
+		}
+		catch (Exception ex) when (ex is not OperationCanceledException && ex is not TaskCanceledException)
+		{
+		// Allow cancellation exceptions to propagate to respect request lifetimes
 		{
 			_ = (activity?.SetStatus(ActivityStatusCode.Error, ex.Message));
 			_logger.LogError(ex, "Error setting cache key {CacheKey} in DynamoDB", hashedKey);
