@@ -46,6 +46,27 @@ public class FootnotesBasicTests(ITestOutputHelper output) : InlineTest(output,
 		Html.Should().Contain("href=\"#fnref:1\"");
 		Html.Should().Contain("href=\"#fnref:2\"");
 	}
+
+	[Fact]
+	public void RendersFootnotesHeading()
+	{
+		Html.Should().Contain("<h4>Footnotes</h4>");
+	}
+
+	[Fact]
+	public void FootnotesHeadingPrecedesFootnoteContainer()
+	{
+		var headingIndex = Html.IndexOf("<h4>Footnotes</h4>");
+		var footnotesIndex = Html.IndexOf("<div class=\"footnotes\">");
+
+		headingIndex.Should().BeGreaterThanOrEqualTo(0);
+		footnotesIndex.Should().BeGreaterThanOrEqualTo(0);
+		footnotesIndex.Should().BeLessThan(headingIndex);
+
+		var hrIndex = Html.IndexOf("<hr", footnotesIndex, StringComparison.Ordinal);
+		hrIndex.Should().BeGreaterThanOrEqualTo(0);
+		hrIndex.Should().BeLessThan(headingIndex);
+	}
 }
 
 public partial class FootnotesMultipleReferencesTests(ITestOutputHelper output) : InlineTest(output,

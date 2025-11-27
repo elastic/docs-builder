@@ -368,6 +368,26 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		if (h1 is not null)
 			_ = document.Remove(h1);
 
-		return document.ToHtml(MarkdownParser.Pipeline);
+		var html = document.ToHtml(MarkdownParser.Pipeline);
+		return InsertFootnotesHeading(html);
+	}
+
+	private static string InsertFootnotesHeading(string html)
+	{
+		const string footnotesContainer = "<div class=\"footnotes\">";
+
+		var containerIndex = html.IndexOf(footnotesContainer, StringComparison.Ordinal);
+		if (containerIndex < 0)
+			return html;
+
+		var hrIndex = html.IndexOf("<hr", containerIndex, StringComparison.Ordinal);
+		if (hrIndex < 0)
+			return html;
+
+		var endOfHr = html.IndexOf('>', hrIndex);
+		if (endOfHr < 0)
+			return html;
+
+		return html.Insert(endOfHr + 1, "\n<h4>Footnotes</h4>");
 	}
 }

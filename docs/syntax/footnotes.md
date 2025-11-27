@@ -188,4 +188,5 @@ Footnotes are automatically numbered in order of first reference, regardless of 
 - Identifiers can contain letters, numbers, and hyphens.
 - **Footnote definitions must be placed at the document level**, not inside directives (tab-sets, admonitions, etc.). Footnote references can be used anywhere.
 - All footnotes are collected and displayed at the end of the page, regardless of where they're defined in the source.
+- In the rendered HTML, collected footnotes are preceded by a `Footnotes` heading at the end of the page.
 - Multiple references to the same footnote will show multiple back-reference arrows (↩) in the footnote itself.

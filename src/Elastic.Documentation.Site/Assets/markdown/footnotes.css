@@ -29,9 +29,11 @@
 
 /* Back reference (return arrow in footnote) */
 .footnote-back-ref {
-	@apply text-blue-elastic hover:text-blue-elastic-100 ml-2 no-underline;
-	text-decoration: none;
+	@apply text-blue-elastic hover:text-blue-elastic-100 no-underline;
 	font-family: monospace;
+   text-decoration: none !important;
+   vertical-align: super;
+   font-size: x-small;
 }
 
 /* Multiple back references */
