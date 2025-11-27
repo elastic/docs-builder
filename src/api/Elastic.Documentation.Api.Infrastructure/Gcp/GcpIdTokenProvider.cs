@@ -2,29 +2,37 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Elastic.Documentation.Api.Infrastructure.Caching;
 
 namespace Elastic.Documentation.Api.Infrastructure.Gcp;
 
 // This is a custom implementation to create an ID token for GCP.
 // Because Google.Api.Auth.OAuth2 is not compatible with AOT
-public class GcpIdTokenProvider(HttpClient httpClient) : IGcpIdTokenProvider
+// Clean Architecture: Depends on IDistributedCache abstraction from Core layer
+public class GcpIdTokenProvider(IHttpClientFactory httpClientFactory, IDistributedCache cache) : IGcpIdTokenProvider
 {
-	// Cache tokens by target audience to avoid regenerating them on every request
-	private static readonly ConcurrentDictionary<string, CachedToken> TokenCache = new();
-
-	private sealed record CachedToken(string Token, DateTimeOffset ExpiresAt);
+	private readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
+	private readonly IDistributedCache _cache = cache;
 
 	public async Task<string> GenerateIdTokenAsync(string serviceAccount, string targetAudience, Cancel cancellationToken = default)
 	{
-		// Check if we have a valid cached token
-		if (TokenCache.TryGetValue(targetAudience, out var cachedToken) &&
-			cachedToken.ExpiresAt > DateTimeOffset.UtcNow.AddMinutes(1)) // Refresh 1 minute before expiry
-			return cachedToken.Token;
+		// Check distributed cache first (works across all Lambda containers)
+		var cacheKey = $"idtoken:{targetAudience}";
+		var cachedJson = await _cache.GetAsync(cacheKey, cancellationToken);
+
+		if (cachedJson != null)
+		{
+			var cachedToken = JsonSerializer.Deserialize(cachedJson, IdTokenCacheJsonContext.Default.CachedIdToken);
+
+			// Check if token is still valid (refresh 1 minute before expiry)
+			var expiresAt = DateTimeOffset.FromUnixTimeSeconds(cachedToken.ExpiresAtUnix);
+			if (expiresAt > DateTimeOffset.UtcNow.AddMinutes(1))
+				return cachedToken.Token;
+		}
 
 		// Read and parse service account key file using System.Text.Json source generation (AOT compatible)
 		var serviceAccountJson = JsonSerializer.Deserialize(serviceAccount, GcpJsonContext.Default.ServiceAccountKey);
@@ -72,10 +80,12 @@ public class GcpIdTokenProvider(HttpClient httpClient) : IGcpIdTokenProvider
 		// Exchange JWT for ID token
 		var idToken = await ExchangeJwtForIdToken(jwt, targetAudience, cancellationToken);
 
-		var expiresAt = expirationTime.Subtract(TimeSpan.FromMinutes(1));
-		_ = TokenCache.AddOrUpdate(targetAudience,
-			new CachedToken(idToken, expiresAt),
-			(_, _) => new CachedToken(idToken, expiresAt));
+		// Cache the token in distributed cache (shared across all Lambda containers)
+		// Use 15-minute buffer for maximum safety against clock skew and edge cases
+		var cacheExpiry = expirationTime.Subtract(TimeSpan.FromMinutes(15));
+		var cacheEntry = new CachedIdToken(idToken, cacheExpiry.ToUnixTimeSeconds());
+		var cacheJson = JsonSerializer.Serialize(cacheEntry, IdTokenCacheJsonContext.Default.CachedIdToken);
+		await _cache.SetAsync(cacheKey, cacheJson, TimeSpan.FromHours(1), cancellationToken);
 
 		return idToken;
 	}
@@ -89,6 +99,7 @@ public class GcpIdTokenProvider(HttpClient httpClient) : IGcpIdTokenProvider
 			new KeyValuePair<string, string>("target_audience", targetAudience)
 		]);
 
+		var httpClient = _httpClientFactory.CreateClient();
 		var response = await httpClient.PostAsync("https://oauth2.googleapis.com/token", requestContent, cancellationToken);
 		_ = response.EnsureSuccessStatusCode();
 
@@ -133,6 +144,12 @@ internal readonly record struct JwtPayload(
 	string TargetAudience
 );
 
+/// <summary>
+/// Cached ID token structure for distributed cache storage.
+/// AOT-compatible: Uses source-generated JSON serialization.
+/// </summary>
+internal readonly record struct CachedIdToken(string Token, long ExpiresAtUnix);
+
 [JsonSerializable(typeof(ServiceAccountKey))]
 [JsonSerializable(typeof(JwtPayload))]
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower)]
@@ -141,3 +158,7 @@ internal sealed partial class GcpJsonContext : JsonSerializerContext;
 [JsonSerializable(typeof(JwtHeader))]
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 internal sealed partial class JwtHeaderJsonContext : JsonSerializerContext;
+
+[JsonSerializable(typeof(CachedIdToken))]
+[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+internal sealed partial class IdTokenCacheJsonContext : JsonSerializerContext;

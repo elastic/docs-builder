@@ -1,0 +1,152 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+using System.Diagnostics;
+using System.Globalization;
+using Amazon.DynamoDBv2;
+using Amazon.DynamoDBv2.Model;
+using Elastic.Documentation.Api.Core;
+using Microsoft.Extensions.Logging;
+
+namespace Elastic.Documentation.Api.Infrastructure.Caching;
+
+/// <summary>
+/// DynamoDB implementation of <see cref="IDistributedCache"/> for Lambda environments.
+/// Provides distributed caching across all Lambda containers using DynamoDB as backing store.
+/// Clean Code: Constructor injection (Dependency Inversion), small focused methods.
+/// </summary>
+public sealed class DynamoDbDistributedCache(IAmazonDynamoDB dynamoDb, string tableName, ILogger<DynamoDbDistributedCache> logger) : IDistributedCache
+{
+	private static readonly ActivitySource ActivitySource = new(TelemetryConstants.CacheSourceName);
+
+	private readonly IAmazonDynamoDB _dynamoDb = dynamoDb;
+	private readonly string _tableName = tableName;
+	private readonly ILogger<DynamoDbDistributedCache> _logger = logger;
+
+	// DynamoDB attribute names
+	private const string AttributeCacheKey = "CacheKey";
+	private const string AttributeValue = "Value";
+	private const string AttributeExpiresAt = "ExpiresAt";
+	private const string AttributeTtl = "TTL";
+
+	public async Task<string?> GetAsync(string key, Cancel ct = default)
+	{
+		using var activity = ActivitySource.StartActivity("get cache", ActivityKind.Client);
+		_ = (activity?.SetTag("cache.key", key));
+		_ = (activity?.SetTag("cache.table", _tableName));
+		_ = (activity?.SetTag("cache.backend", "dynamodb"));
+
+		try
+		{
+			var response = await _dynamoDb.GetItemAsync(new GetItemRequest
+			{
+				TableName = _tableName,
+				Key = new Dictionary<string, AttributeValue>
+				{
+					[AttributeCacheKey] = new AttributeValue { S = key }
+				}
+			}, ct);
+
+			if (!response.IsItemSet)
+			{
+				_ = (activity?.SetTag("cache.hit", false));
+				_logger.LogDebug("Cache miss for key: {CacheKey}", key);
+				return null;
+			}
+
+			// Check if expired (application-level check, DynamoDB TTL is for cleanup)
+			if (IsExpired(response.Item))
+			{
+				_ = (activity?.SetTag("cache.hit", false));
+				_ = (activity?.SetTag("cache.expired", true));
+				_logger.LogDebug("Cache expired for key: {CacheKey}", key);
+				return null;
+			}
+
+			var value = response.Item.TryGetValue(AttributeValue, out var valueAttr)
+				? valueAttr.S
+				: null;
+
+			_ = (activity?.SetTag("cache.hit", value != null));
+			if (value != null)
+			{
+				_logger.LogDebug("Cache hit for key: {CacheKey}", key);
+			}
+
+			return value;
+		}
+		catch (ResourceNotFoundException ex)
+		{
+			// Table doesn't exist - return null gracefully
+			// Infrastructure should create table, but don't fail hard in dev
+			_ = (activity?.SetTag("cache.error", "table_not_found"));
+			_logger.LogWarning(ex, "DynamoDB table {TableName} not found. Cache operations will fail gracefully.", _tableName);
+			return null;
+		}
+		catch (Exception ex)
+		{
+			_ = (activity?.SetStatus(ActivityStatusCode.Error, ex.Message));
+			_logger.LogError(ex, "Error retrieving cache key {CacheKey} from DynamoDB", key);
+			return null; // Fail gracefully
+		}
+	}
+
+	public async Task SetAsync(string key, string value, TimeSpan ttl, Cancel ct = default)
+	{
+		using var activity = ActivitySource.StartActivity("set cache", ActivityKind.Client);
+		_ = (activity?.SetTag("cache.key", key));
+		_ = (activity?.SetTag("cache.table", _tableName));
+		_ = (activity?.SetTag("cache.backend", "dynamodb"));
+		_ = (activity?.SetTag("cache.ttl", ttl.TotalSeconds));
+
+		try
+		{
+			var expiresAt = DateTimeOffset.UtcNow.Add(ttl);
+			var ttlTimestamp = expiresAt.ToUnixTimeSeconds();
+
+			_ = await _dynamoDb.PutItemAsync(new PutItemRequest
+			{
+				TableName = _tableName,
+				Item = new Dictionary<string, AttributeValue>
+				{
+					[AttributeCacheKey] = new AttributeValue { S = key },
+					[AttributeValue] = new AttributeValue { S = value },
+					[AttributeExpiresAt] = new AttributeValue { N = ttlTimestamp.ToString(CultureInfo.InvariantCulture) },
+					[AttributeTtl] = new AttributeValue { N = ttlTimestamp.ToString(CultureInfo.InvariantCulture) }
+				}
+			}, ct);
+
+			_logger.LogDebug("Cache set for key: {CacheKey}, TTL: {TTL}s", key, ttl.TotalSeconds);
+		}
+		catch (ResourceNotFoundException ex)
+		{
+			// Table doesn't exist - fail silently in dev, log in production
+			// Infrastructure should create table before deployment
+			_ = (activity?.SetTag("cache.error", "table_not_found"));
+			_logger.LogWarning(ex, "DynamoDB table {TableName} not found. Unable to cache key {CacheKey}.", _tableName, key);
+		}
+		catch (Exception ex)
+		{
+			_ = (activity?.SetStatus(ActivityStatusCode.Error, ex.Message));
+			_logger.LogError(ex, "Error setting cache key {CacheKey} in DynamoDB", key);
+			// Fail gracefully - don't throw
+		}
+	}
+
+	/// <summary>
+	/// Checks if a DynamoDB item has expired based on ExpiresAt attribute.
+	/// Clean Code: Single-purpose helper method with intention-revealing name.
+	/// </summary>
+	private static bool IsExpired(Dictionary<string, AttributeValue> item)
+	{
+		if (!item.TryGetValue(AttributeExpiresAt, out var expiresAtAttr))
+			return true; // No expiration timestamp = treat as expired
+
+		if (!long.TryParse(expiresAtAttr.N, out var expiresAtUnix))
+			return true; // Invalid timestamp = treat as expired
+
+		var expiresAt = DateTimeOffset.FromUnixTimeSeconds(expiresAtUnix);
+		return expiresAt <= DateTimeOffset.UtcNow;
+	}
+}

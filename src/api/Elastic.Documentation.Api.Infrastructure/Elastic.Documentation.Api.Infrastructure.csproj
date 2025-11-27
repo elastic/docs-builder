@@ -17,6 +17,7 @@
 
     <ItemGroup>
       <FrameworkReference Include="Microsoft.AspNetCore.App" />
+      <PackageReference Include="AWSSDK.DynamoDBv2" />
       <PackageReference Include="Elastic.Clients.Elasticsearch" />
       <PackageReference Include="NetEscapades.EnumGenerators" />
       <PackageReference Include="Elastic.OpenTelemetry" />
