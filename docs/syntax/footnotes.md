@@ -4,7 +4,7 @@ Footnotes allow you to add notes and references without cluttering the main text
 
 ## Plain paragraph test
 
-This is a plain footnote test[^plain]. No directives involved.
+This is a plain footnote test.[^plain] No directives involved.
 
 [^plain]: This footnote is in a plain paragraph, outside any directive.
 
@@ -14,7 +14,7 @@ This is a plain footnote test[^plain]. No directives involved.
 
 :::{tab-item} Output
 
-Here's a simple footnote[^1] and another one[^2].
+Here's a simple footnote[^1] and another one.[^2]
 
 You can also use named identifiers[^my-note] which can be more descriptive in your source files.
 
@@ -23,7 +23,7 @@ You can also use named identifiers[^my-note] which can be more descriptive in yo
 :::{tab-item} Markdown
 
 ```markdown
-Here's a simple footnote[^1] and another one[^2].
+Here's a simple footnote[^1] and another one.[^2]
 
 You can also use named identifiers[^my-note] which can be more descriptive in your source files.
 
@@ -48,22 +48,22 @@ You can reference the same footnote multiple times throughout your document.
 
 :::{tab-item} Output
 
-First reference to the concept[^concept]. Some more text here. 
+First reference to the concept.[^concept] Some more text here. 
 
 ...
 
-Second reference to the same concept[^concept].
+Second reference to the same concept.[^concept]
 
 :::
 
 :::{tab-item} Markdown
 
 ```markdown
-First reference to the concept[^concept]. Some more text here. 
+First reference to the concept.[^concept] Some more text here. 
 
 ...
 
-Second reference to the same concept[^concept].
+Second reference to the same concept.[^concept]
 
 [^concept]: This explains an important concept that's referenced multiple times.
 ```
@@ -82,14 +82,14 @@ Footnotes can contain multiple paragraphs, lists, blockquotes, and code blocks. 
 
 :::{tab-item} Output
 
-This has a complex footnote[^complex].
+This has a complex footnote.[^complex]
 
 :::
 
 :::{tab-item} Markdown
 
 ```markdown
-This has a complex footnote[^complex].
+This has a complex footnote.[^complex]
 
 [^complex]: This footnote has multiple elements.
 
@@ -140,9 +140,9 @@ Footnote definitions should be placed at the document level (not inside directiv
 
 :::{tab-item} Output
 
-Here's text with a footnote[^early].
+Here's text with a footnote.[^early]
 
-More content here, and another footnote[^late].
+More content here, and another footnote.[^late]
 
 Even more content in between.
 
@@ -151,11 +151,11 @@ Even more content in between.
 :::{tab-item} Markdown
 
 ```markdown
-Here's text with a footnote[^early].
+Here's text with a footnote.[^early]
 
 [^early]: This footnote is defined right after the reference.
 
-More content here, and another footnote[^late].
+More content here, and another footnote.[^late]
 
 Even more content in between.
 
