@@ -199,6 +199,9 @@ public abstract class ElasticsearchExporter<TChannelOptions, TChannel> : IDispos
 		          "prefix": { "type": "text", "analyzer" : "hierarchy_analyzer" }
 		        }
 		      },
+		      "hidden" : {
+		        "type" : "boolean"
+		      },
 		      "applies_to" : {
 		        "type" : "nested",
 		        "properties" : {
