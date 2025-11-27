@@ -22,6 +22,9 @@ public class VirtualFileNavigation<TModel>(TModel model, IFileInfo fileInfo, Vir
 	public string NavigationTitle => Index.NavigationTitle;
 
 	/// <inheritdoc />
+	public string? NavigationTooltip => Index.NavigationTooltip;
+
+	/// <inheritdoc />
 	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => args.HomeAccessor.HomeProvider.NavigationRoot;
 
 	/// <inheritdoc />

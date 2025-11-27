@@ -10,4 +10,7 @@ public interface IDocumentationFile : INavigationModel
 {
 	/// Gets the title to display in navigation for this documentation file.
 	string NavigationTitle { get; }
+
+	/// Gets the tooltip text to display on hover for this documentation file in navigation.
+	string? NavigationTooltip { get; }
 }

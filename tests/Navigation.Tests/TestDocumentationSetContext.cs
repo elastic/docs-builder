@@ -114,6 +114,9 @@ public class TestDocumentationFile(string navigationTitle) : IDocumentationFile
 {
 	/// <inheritdoc />
 	public string NavigationTitle { get; } = navigationTitle;
+
+	/// <inheritdoc />
+	public string? NavigationTooltip => null;
 }
 
 public class TestDocumentationFileFactory : IDocumentationFileFactory<TestDocumentationFile>

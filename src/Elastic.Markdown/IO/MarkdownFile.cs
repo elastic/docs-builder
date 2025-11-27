@@ -78,6 +78,23 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		private set => field = value.StripMarkdown();
 	}
 
+	public string? NavigationTooltip
+	{
+		get
+		{
+			if (!string.IsNullOrEmpty(field))
+				return field;
+
+			var description = YamlFrontMatter?.Description;
+			if (string.IsNullOrEmpty(description))
+				return null;
+
+			// Strip markdown and replace quotes to prevent HTML attribute issues
+			return description.StripMarkdown().Replace("\"", "'");
+		}
+		private set => field = value?.StripMarkdown().Replace("\"", "'");
+	}
+
 
 	//indexed by slug
 	private readonly Dictionary<string, PageTocItem> _pageTableOfContent = new(StringComparer.OrdinalIgnoreCase);
@@ -138,11 +155,14 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		var globalSubstitutions = _globalSubstitutions;
 		var fileSubstitutions = YamlFrontMatter?.Properties;
 		if (fileSubstitutions is not { Count: >= 0 })
-			return globalSubstitutions;
+			return globalSubstitutions ?? new Dictionary<string, string>();
 
 		var allProperties = new Dictionary<string, string>(fileSubstitutions);
-		foreach (var (key, value) in globalSubstitutions)
-			allProperties[key] = value;
+		if (globalSubstitutions is not null)
+		{
+			foreach (var (key, value) in globalSubstitutions)
+				allProperties[key] = value;
+		}
 		return allProperties;
 	}
 
@@ -156,6 +176,8 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		YamlFrontMatter = yamlFrontMatter;
 		if (yamlFrontMatter.NavigationTitle is not null)
 			NavigationTitle = yamlFrontMatter.NavigationTitle;
+		if (yamlFrontMatter.NavigationTooltip is not null)
+			NavigationTooltip = yamlFrontMatter.NavigationTooltip;
 
 		var subs = GetSubstitutions();
 
@@ -163,6 +185,12 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		{
 			if (NavigationTitle.AsSpan().ReplaceSubstitutions(subs, Collector, out var replacement))
 				NavigationTitle = replacement;
+		}
+
+		if (!string.IsNullOrEmpty(NavigationTooltip))
+		{
+			if (NavigationTooltip.AsSpan().ReplaceSubstitutions(subs, Collector, out var replacement))
+				NavigationTooltip = replacement;
 		}
 
 		if (string.IsNullOrEmpty(Title))
@@ -308,8 +336,10 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		if (document.FirstOrDefault() is not YamlFrontMatterBlock yaml)
 			return new YamlFrontMatter { Title = Title };
 
-		var raw = string.Join(Environment.NewLine, yaml.Lines.Lines);
-		var fm = ReadYamlFrontMatter(raw);
+		var raw = yaml.Lines.Lines is not null
+			? string.Join(Environment.NewLine, yaml.Lines.Lines)
+			: string.Empty;
+		var fm = ReadYamlFrontMatter(raw) ?? new YamlFrontMatter();
 
 		if (fm.AppliesTo?.Diagnostics is not null)
 		{

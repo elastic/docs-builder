@@ -75,6 +75,9 @@ public class FileNavigationLeaf<TModel>(TModel model, IFileInfo fileInfo, FileNa
 	public string NavigationTitle => Model.NavigationTitle;
 
 	/// <inheritdoc />
+	public string? NavigationTooltip => Model.NavigationTooltip;
+
+	/// <inheritdoc />
 	public int NavigationIndex { get; set; }
 
 }

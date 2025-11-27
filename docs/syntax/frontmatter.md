@@ -9,26 +9,49 @@ In the frontmatter block, you can define the following fields:
 ```yaml
 ---
 navigation_title: This is the navigation title <1>
-description: This is a description of the page <2>
-applies_to: <3>
+navigation_tooltip: This is a tooltip shown on hover <2>
+description: This is a description of the page <3>
+applies_to: <4>
   serverless: all
-products: <4>
+products: <5>
   - id: apm-agent
   - id: edot-sdk
-sub: <5>
-  key: value 
+sub: <6>
+  key: value
 ---
 ```
 
 1. [`navigation_title`](#navigation-title)
-2. [`description`](#description)
-3. [`applies_to`](#applies-to)
-4. [`products`](#products)
-5. [`sub`](#subs)
+2. [`navigation_tooltip`](#navigation-tooltip)
+3. [`description`](#description)
+4. [`applies_to`](#applies-to)
+5. [`products`](#products)
+6. [`sub`](#subs)
 
 ## Navigation Title
 
 See [](./titles.md)
+
+## Navigation Tooltip
+
+Use the `navigation_tooltip` frontmatter to set custom tooltip text that appears when hovering over navigation items.
+
+The tooltip is displayed with a 500ms delay when hovering over navigation links in the sidebar and dropdown menus.
+It's positioned dynamically relative to the viewport to avoid overflow issues.
+
+If you don't set a `navigation_tooltip`, it will automatically fall back to the `description` field.
+This provides helpful context for users browsing the navigation without requiring additional configuration.
+
+The `navigation_tooltip` frontmatter is a string. Keep it concise (recommended 50-100 characters) for best readability.
+
+Example:
+
+```yaml
+---
+navigation_title: Quick Start
+navigation_tooltip: Learn how to set up and configure your first application in 5 minutes
+---
+```
 
 ## Description
 
