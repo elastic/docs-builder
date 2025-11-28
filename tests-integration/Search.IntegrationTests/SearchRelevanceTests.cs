@@ -4,52 +4,53 @@
 
 using Elastic.Documentation.Api.Infrastructure.Adapters.Search;
 using Elastic.Documentation.Api.Infrastructure.Aws;
-using Elastic.Documentation.Configuration;
 using FluentAssertions;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
-namespace Elastic.Assembler.IntegrationTests.Search;
+namespace Search.IntegrationTests;
 
 /// <summary>
 /// Integration tests for search relevance that use ElasticsearchGateway directly
 /// to provide detailed explanations of search results using Elasticsearch's _explain API.
 /// These tests help understand and improve search ranking by showing detailed scoring breakdowns.
 /// </summary>
-[Collection(SearchBootstrapFixture.Collection)]
-public class SearchRelevanceTests(SearchBootstrapFixture searchFixture, DocumentationFixture documentationFixture, ITestOutputHelper output) : SearchTestBase
+public class SearchRelevanceTests(ITestOutputHelper output)
 {
 	/// <summary>
 	/// Theory data for search queries mapped to expected first hit URLs.
 	/// Same as SearchIntegrationTests but with detailed explain output on failures.
 	/// </summary>
-	public static TheoryData<string, string> SearchQueryTestCases => new()
+	public static TheoryData<string, string, string[]?> SearchQueryTestCases => new()
 	{
 		//TODO these results reflect today's result, we still have some work to do to improve the relevance of the search results
 
 		// Elasticsearch specific queries
-		{ "elasticsearch getting started", "/docs/reference/elasticsearch/clients/java/getting-started" },
-		{ "apm", "/docs/reference/apm/observability/apm" },
-		{ "kibana dashboard", "/docs/reference/beats/auditbeat/configuration-dashboards" },
-
-		// .NET specific queries (testing dotnet -> net replacement)
-		{ "dotnet client", "/docs/reference/elasticsearch/clients/dotnet/using-net-client" },
-		{ ".net apm agent", "/docs/reference/apm/agents/dotnet" },
-
-		// General queries
-		{ "machine learning", "/docs/reference/machine-learning" },
-		{ "ingest pipeline", "/docs/reference/beats/metricbeat/configuring-ingest-node" },
+		{ "elasticsearch get started", "/docs/solutions/search/get-started", null },
+		{ "elasticsearch getting started", "/docs/solutions/search/get-started", null },
+		{ "elastic common schema", "/docs/reference/ecs", null },
+		{ "ecs", "/docs/reference/ecs", null },
+		{ "c# client", "/docs/reference/elasticsearch/clients/dotnet", null },
+		{ "dotnet client", "/docs/reference/elasticsearch/clients/dotnet", null },
+		{ "runscript", "/docs/api/doc/kibana/operation/operation-runscriptaction", [ "/docs/solutions/security/endpoint-response-actions" ] },
+		{ "data-streams", "/docs/manage-data/data-store/data-streams", null },
+		{ "datastream", "/docs/manage-data/data-store/data-streams", null },
+		{ "data stream", "/docs/manage-data/data-store/data-streams", null },
+		{ "saml sso", "/docs/deploy-manage/users-roles/cloud-organization/register-elastic-cloud-saml-in-okta", ["/docs/deploy-manage/users-roles/cloud-organization/configure-saml-authentication"] },
+		{ "templates", "/docs/manage-data/data-store/templates", null},
+		{ "query dsl", "/docs/explore-analyze/query-filter/languages/querydsl", null},
+		{ "querydsl", "/docs/explore-analyze/query-filter/languages/querydsl", null}
 	};
 
 	[Theory]
 	[MemberData(nameof(SearchQueryTestCases))]
-	public async Task SearchReturnsExpectedFirstResultWithExplain(string query, string expectedFirstResultUrl)
+	public async Task SearchReturnsExpectedFirstResultWithExplain(string query, string expectedFirstResultUrl, string[]? additionalExpectedUrls)
 	{
-		Assert.SkipUnless(searchFixture.Connected, "Elasticsearch is not connected");
-
 		// Arrange - Create ElasticsearchGateway directly
 		var gateway = CreateElasticsearchGateway();
+		Assert.SkipUnless(gateway is not null, "Elasticsearch is not connected");
+		var canConnect = await gateway.CanConnect(TestContext.Current.CancellationToken);
+		Assert.SkipUnless(canConnect, "Elasticsearch is not connected");
 
 		// Act - Perform the search
 		var (totalHits, results) = await gateway.HybridSearchWithRrfAsync(query, 1, 5, TestContext.Current.CancellationToken);
@@ -77,6 +78,7 @@ public class SearchRelevanceTests(SearchBootstrapFixture searchFixture, Document
 			// Output the actual top result explanation
 			output.WriteLine("═══════════════════════════════════════════════════════════════");
 			output.WriteLine($"ACTUAL TOP RESULT: {topResultExplain.DocumentUrl}");
+			output.WriteLine($"Search Title: {topResultExplain.SearchTitle}");
 			output.WriteLine($"Score: {topResultExplain.Score:F4}");
 			output.WriteLine($"Matched: {topResultExplain.Matched}");
 			output.WriteLine("───────────────────────────────────────────────────────────────");
@@ -86,6 +88,7 @@ public class SearchRelevanceTests(SearchBootstrapFixture searchFixture, Document
 			// Output the expected result explanation
 			output.WriteLine("═══════════════════════════════════════════════════════════════");
 			output.WriteLine($"EXPECTED RESULT: {expectedResultExplain.DocumentUrl}");
+			output.WriteLine($"Search Title: {expectedResultExplain.SearchTitle}");
 			output.WriteLine($"Score: {expectedResultExplain.Score:F4}");
 			output.WriteLine($"Matched: {expectedResultExplain.Matched}");
 			output.WriteLine("───────────────────────────────────────────────────────────────");
@@ -118,6 +121,32 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 			output.WriteLine($"✅ First result matches expected: {actualFirstResultUrl}");
 			output.WriteLine($"   Score: {results.First().Score:F4}");
 		}
+
+		// Check for additional expected URLs if provided
+		if (additionalExpectedUrls?.Length > 0)
+		{
+			output.WriteLine($"\nChecking for {additionalExpectedUrls.Length} additional expected URLs on first page...");
+			var resultUrls = results.Select(r => r.Url).ToList();
+
+			foreach (var expectedUrl in additionalExpectedUrls)
+			{
+				if (resultUrls.Contains(expectedUrl))
+				{
+					var position = resultUrls.IndexOf(expectedUrl) + 1;
+					output.WriteLine($"✅ Found expected URL at position {position}: {expectedUrl}");
+				}
+				else
+				{
+					output.WriteLine($"❌ Expected URL not found on first page: {expectedUrl}");
+					output.WriteLine($"   First page results ({results.Count}):");
+					for (var i = 0; i < results.Count; i++)
+					{
+						output.WriteLine($"   {i + 1}. {results[i].Url} (score: {results[i].Score:F4})");
+					}
+					resultUrls.Should().Contain(expectedUrl, $"Expected URL '{expectedUrl}' should be present on the first page of results for query '{query}'");
+				}
+			}
+		}
 	}
 
 	[Fact]
@@ -125,6 +154,10 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 	{
 		// Arrange
 		var gateway = CreateElasticsearchGateway();
+		Assert.SkipUnless(gateway is not null, "Elasticsearch is not connected");
+		var canConnect = await gateway.CanConnect(TestContext.Current.CancellationToken);
+		Assert.SkipUnless(canConnect, "Elasticsearch is not connected");
+
 		const string query = "elasticsearch getting started";
 		const string expectedUrl = "/docs/reference/elasticsearch/clients/java/getting-started";
 
@@ -158,32 +191,30 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 	/// <summary>
 	/// Creates an ElasticsearchGateway instance using configuration from the distributed application.
 	/// </summary>
-	private ElasticsearchGateway CreateElasticsearchGateway()
+	private ElasticsearchGateway? CreateElasticsearchGateway()
 	{
-		var configuration = documentationFixture.DistributedApplication.Services.GetRequiredService<IConfiguration>();
-		var loggerFactory = documentationFixture.DistributedApplication.Services.GetRequiredService<ILoggerFactory>();
-
 		// Build a new ConfigurationBuilder to read user secrets
 		var configBuilder = new ConfigurationBuilder();
 		configBuilder.AddUserSecrets("72f50f33-6fb9-4d08-bff3-39568fe370b3");
 		var userSecretsConfig = configBuilder.Build();
 
 		// Get Elasticsearch configuration with fallback chain: user secrets → configuration → environment
-		var elasticsearchUrl = userSecretsConfig["Parameters:DocumentationElasticUrl"]
-			?? configuration["Parameters:DocumentationElasticUrl"]
-			?? Environment.GetEnvironmentVariable("DOCUMENTATION_ELASTIC_URL")
-			?? throw new InvalidOperationException("Elasticsearch URL not configured");
+		var elasticsearchUrl =
+			userSecretsConfig["Parameters:DocumentationElasticUrl"]
+			?? Environment.GetEnvironmentVariable("DOCUMENTATION_ELASTIC_URL");
 
-		var elasticsearchApiKey = userSecretsConfig["Parameters:DocumentationElasticApiKey"]
-			?? configuration["Parameters:DocumentationElasticApiKey"]
-			?? Environment.GetEnvironmentVariable("DOCUMENTATION_ELASTIC_APIKEY")
-			?? throw new InvalidOperationException("Elasticsearch API key not configured");
+		var elasticsearchApiKey =
+			userSecretsConfig["Parameters:DocumentationElasticApiKey"]
+			?? Environment.GetEnvironmentVariable("DOCUMENTATION_ELASTIC_APIKEY");
+
+		if (elasticsearchUrl is null or "" || elasticsearchApiKey is null or "")
+			return null;
 
 		// Create a test parameter provider with the configuration values
 		var parameterProvider = new TestParameterProvider(elasticsearchUrl, elasticsearchApiKey, "semantic-docs-dev-latest");
 		var options = new ElasticsearchOptions(parameterProvider);
 
-		return new ElasticsearchGateway(options, loggerFactory.CreateLogger<ElasticsearchGateway>());
+		return new ElasticsearchGateway(options, NullLogger<ElasticsearchGateway>.Instance);
 	}
 
 	/// <summary>

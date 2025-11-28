@@ -30,3 +30,5 @@ synonyms:
   - [ "ml", "machine learning" ]
   - [ "eis", "elastic inference service" ]
   - [ "traffic filter", "network security" ]
+  - [ "sso", "single sign-on" ]
+  - [ "querydsl", "query dsl", "query dsl"]
