@@ -11,19 +11,17 @@ import {
 import { useModalActions, useModalMode } from './modal.store'
 import { useCooldown } from './useCooldown'
 import {
-    EuiBetaBadge,
-    EuiText,
-    EuiLink,
     EuiTabbedContent,
     EuiIcon,
-    EuiHorizontalRule,
     type EuiTabbedContentTab,
+    useEuiTheme,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
 import * as React from 'react'
 import { useMemo } from 'react'
 
 export const SearchOrAskAiModal = React.memo(() => {
+    const { euiTheme } = useEuiTheme()
     const modalMode = useModalMode()
     const { setModalMode } = useModalActions()
 
@@ -70,47 +68,16 @@ export const SearchOrAskAiModal = React.memo(() => {
     return (
         <>
             <EuiTabbedContent
+                css={css`
+                    .euiTabs {
+                        padding-inline: ${euiTheme.size.base};
+                    }
+                `}
                 tabs={tabs}
                 selectedTab={selectedTab}
                 onTabClick={(tab) => setModalMode(tab.id as 'search' | 'askAi')}
             />
-            <ModalFooter />
+            {/*<ModalFooter />*/}
         </>
     )
 })
-
-const ModalFooter = () => {
-    return (
-        <>
-            <EuiHorizontalRule margin="m" />
-            <div
-                css={css`
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    gap: calc(var(--spacing) * 2);
-                `}
-            >
-                <EuiBetaBadge
-                    css={css`
-                        display: inline-flex;
-                    `}
-                    label="Alpha"
-                    color="accent"
-                    tooltipContent="This feature is in private preview and is only enabled if you are in Elastic's Global VPN."
-                />
-
-                <EuiText color="subdued" size="s">
-                    This feature is in private preview (alpha).{' '}
-                    <EuiLink
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        href="https://github.com/elastic/docs-eng-team/issues/new?template=search-or-ask-ai-feedback.yml"
-                    >
-                        Got feedback? We'd love to hear it!
-                    </EuiLink>
-                </EuiText>
-            </div>
-        </>
-    )
-}

@@ -44,7 +44,7 @@ export const SearchOrAskAiButton = () => {
         left: 50%;
         transform: translateX(-50%);
         top: 48px;
-        width: 80ch;
+        width: 640px;
         max-width: 100%;
     `
 
@@ -109,7 +109,11 @@ export const SearchOrAskAiButton = () => {
                 <EuiPortal>
                     <EuiOverlayMask>
                         <EuiFocusTrap onClickOutside={closeModal}>
-                            <EuiPanel role="dialog" css={positionCss}>
+                            <EuiPanel
+                                role="dialog"
+                                css={positionCss}
+                                paddingSize="none"
+                            >
                                 <Suspense
                                     fallback={
                                         <div css={loadingCss}>
