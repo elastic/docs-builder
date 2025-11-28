@@ -48,6 +48,7 @@ public class SearchRelevanceTests(ITestOutputHelper output)
 	{
 		// Arrange - Create ElasticsearchGateway directly
 		var gateway = CreateElasticsearchGateway();
+		Assert.SkipUnless(gateway is not null, "Elasticsearch is not connected");
 		var canConnect = await gateway.CanConnect(TestContext.Current.CancellationToken);
 		Assert.SkipUnless(canConnect, "Elasticsearch is not connected");
 
@@ -153,6 +154,7 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 	{
 		// Arrange
 		var gateway = CreateElasticsearchGateway();
+		Assert.SkipUnless(gateway is not null, "Elasticsearch is not connected");
 		var canConnect = await gateway.CanConnect(TestContext.Current.CancellationToken);
 		Assert.SkipUnless(canConnect, "Elasticsearch is not connected");
 
@@ -189,7 +191,7 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 	/// <summary>
 	/// Creates an ElasticsearchGateway instance using configuration from the distributed application.
 	/// </summary>
-	private ElasticsearchGateway CreateElasticsearchGateway()
+	private ElasticsearchGateway? CreateElasticsearchGateway()
 	{
 		// Build a new ConfigurationBuilder to read user secrets
 		var configBuilder = new ConfigurationBuilder();
@@ -197,13 +199,17 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 		var userSecretsConfig = configBuilder.Build();
 
 		// Get Elasticsearch configuration with fallback chain: user secrets → configuration → environment
-		var elasticsearchUrl = userSecretsConfig["Parameters:DocumentationElasticUrl"]
-			?? Environment.GetEnvironmentVariable("DOCUMENTATION_ELASTIC_URL")
-			?? throw new InvalidOperationException("Elasticsearch URL not configured");
+		var elasticsearchUrl =
+			userSecretsConfig["Parameters:DocumentationElasticUrl"]
+			?? Environment.GetEnvironmentVariable("DOCUMENTATION_ELASTIC_URL");
 
-		var elasticsearchApiKey = userSecretsConfig["Parameters:DocumentationElasticApiKey"]
+		var elasticsearchApiKey =
+			userSecretsConfig["Parameters:DocumentationElasticApiKey"]
 			?? Environment.GetEnvironmentVariable("DOCUMENTATION_ELASTIC_APIKEY")
 			?? throw new InvalidOperationException("Elasticsearch API key not configured");
+
+		if (elasticsearchUrl is null or "")
+			return null;
 
 		// Create a test parameter provider with the configuration values
 		var parameterProvider = new TestParameterProvider(elasticsearchUrl, elasticsearchApiKey, "semantic-docs-dev-latest");

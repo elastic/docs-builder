@@ -151,6 +151,15 @@ csharp_style_expression_bodied_accessors = true:suggestion
 csharp_style_expression_bodied_local_functions = when_on_single_line:error
 dotnet_style_prefer_conditional_expression_over_return = false
 
+csharp_alignment_tab_fill_style=optimal_fill
+csharp_align_multiline_parameter=false
+csharp_align_multiline_extends_list=false
+csharp_align_multiline_array_and_object_initializer=false
+csharp_align_multiline_switch_expression=false
+csharp_align_multiline_property_pattern=false
+csharp_align_multiline_list_pattern=false
+indent_braces_inside_statement_conditions=false
+
 
 # Suggest more modern language features when available
 csharp_style_pattern_matching_over_is_with_cast_check = true:error
