@@ -183,8 +183,9 @@ Each footnote should contain a single, focused piece of information. If you find
 
 Before adding footnotes, consider whether:
 - The information is important enough to be in the main text.
-- A link to external documentation would be more appropriate.
-- An admonition (note, warning, etc.) would be clearer.
+- A [link](links.md) to external documentation would be more appropriate.
+- An [admonition](admonitions.md) (note, warning, etc.) would be clearer.
+- You're referring to a code block, where [code callouts](code.md/#code-callouts) would be more appropriate.
 
 ### Numbering
 
