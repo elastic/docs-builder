@@ -185,7 +185,7 @@ Before adding footnotes, consider whether:
 - The information is important enough to be in the main text.
 - A [link](links.md) to external documentation would be more appropriate.
 - An [admonition](admonitions.md) (note, warning, etc.) would be clearer.
-- You're referring to a code block, where [code callouts](code.md/#code-callouts) would be more appropriate.
+- A [code callout](code.md/#code-callouts) would work better for code blocks.
 
 ### Numbering
 
