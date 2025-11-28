@@ -205,10 +205,9 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 
 		var elasticsearchApiKey =
 			userSecretsConfig["Parameters:DocumentationElasticApiKey"]
-			?? Environment.GetEnvironmentVariable("DOCUMENTATION_ELASTIC_APIKEY")
-			?? throw new InvalidOperationException("Elasticsearch API key not configured");
+			?? Environment.GetEnvironmentVariable("DOCUMENTATION_ELASTIC_APIKEY");
 
-		if (elasticsearchUrl is null or "")
+		if (elasticsearchUrl is null or "" || elasticsearchApiKey is null or "")
 			return null;
 
 		// Create a test parameter provider with the configuration values
