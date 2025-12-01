@@ -106,7 +106,7 @@
     "dompurify": "3.2.7",
     "highlight.js": "11.11.1",
     "htmx-ext-head-support": "2.0.4",
-    "htmx-ext-preload": "2.1.1",
+    "htmx-ext-preload": "2.1.2",
     "htmx.org": "2.0.8",
     "katex": "^0.16.25",
     "marked": "16.4.0",
