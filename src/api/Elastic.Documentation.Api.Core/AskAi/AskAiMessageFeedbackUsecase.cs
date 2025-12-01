@@ -16,12 +16,13 @@ public class AskAiMessageFeedbackUsecase(
 {
 	private static readonly ActivitySource FeedbackActivitySource = new(TelemetryConstants.AskAiFeedbackSourceName);
 
-	public async Task SubmitFeedback(AskAiMessageFeedbackRequest request, CancellationToken ctx)
+	public async Task SubmitFeedback(AskAiMessageFeedbackRequest request, string? euid, CancellationToken ctx)
 	{
 		using var activity = FeedbackActivitySource.StartActivity("record message-feedback", ActivityKind.Internal);
 		_ = activity?.SetTag("gen_ai.conversation.id", request.ConversationId); // correlation with chat traces
 		_ = activity?.SetTag("ask_ai.message.id", request.MessageId);
 		_ = activity?.SetTag("ask_ai.feedback.reaction", request.Reaction.ToString().ToLowerInvariant());
+		// Note: user.euid is automatically added to spans by EuidSpanProcessor
 
 		logger.LogInformation(
 			"Recording message feedback for message {MessageId} in conversation {ConversationId}: {Reaction}",
@@ -32,7 +33,8 @@ public class AskAiMessageFeedbackUsecase(
 		var record = new AskAiMessageFeedbackRecord(
 			request.MessageId,
 			request.ConversationId,
-			request.Reaction
+			request.Reaction,
+			euid
 		);
 
 		await feedbackGateway.RecordFeedbackAsync(record, ctx);

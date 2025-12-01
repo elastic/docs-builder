@@ -19,6 +19,7 @@ public record OutputMessage(string Role, MessagePart[] Parts, string FinishReaso
 
 [JsonSerializable(typeof(AskAiRequest))]
 [JsonSerializable(typeof(AskAiMessageFeedbackRequest))]
+[JsonSerializable(typeof(Reaction))]
 [JsonSerializable(typeof(SearchRequest))]
 [JsonSerializable(typeof(SearchResponse))]
 [JsonSerializable(typeof(InputMessage))]

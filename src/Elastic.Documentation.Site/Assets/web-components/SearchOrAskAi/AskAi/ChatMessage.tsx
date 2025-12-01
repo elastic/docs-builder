@@ -5,7 +5,8 @@ import { ApiError } from '../errorHandling'
 import { AskAiEvent, ChunkEvent, EventTypes } from './AskAiEvent'
 import { GeneratingStatus } from './GeneratingStatus'
 import { References } from './RelatedResources'
-import { ChatMessage as ChatMessageType } from './chat.store'
+import { ChatMessage as ChatMessageType, useConversationId } from './chat.store'
+import { useMessageFeedback, Reaction } from './useMessageFeedback'
 import { useStatusMinDisplay } from './useStatusMinDisplay'
 import {
     EuiButtonIcon,
@@ -186,62 +187,86 @@ const computeAiStatus = (
 // Action bar for complete AI messages
 const ActionBar = ({
     content,
+    messageId,
     onRetry,
 }: {
     content: string
+    messageId: string
     onRetry?: () => void
-}) => (
-    <EuiFlexGroup responsive={false} component="span" gutterSize="none">
-        <EuiFlexItem grow={false}>
-            <EuiToolTip content="This answer was helpful">
-                <EuiButtonIcon
-                    aria-label="This answer was helpful"
-                    iconType="thumbUp"
-                    color="success"
-                    size="s"
-                />
-            </EuiToolTip>
-        </EuiFlexItem>
-        <EuiFlexItem grow={false}>
-            <EuiToolTip content="This answer was not helpful">
-                <EuiButtonIcon
-                    aria-label="This answer was not helpful"
-                    iconType="thumbDown"
-                    color="danger"
-                    size="s"
-                />
-            </EuiToolTip>
-        </EuiFlexItem>
-        <EuiFlexItem grow={false}>
-            <EuiCopy
-                textToCopy={content}
-                beforeMessage="Copy markdown"
-                afterMessage="Copied!"
-            >
-                {(copy) => (
-                    <EuiButtonIcon
-                        aria-label="Copy markdown"
-                        iconType="copy"
-                        size="s"
-                        onClick={copy}
-                    />
-                )}
-            </EuiCopy>
-        </EuiFlexItem>
-        {onRetry && (
+}) => {
+    const conversationId = useConversationId()
+    const { selectedReaction, submitFeedback, isPending } = useMessageFeedback(
+        messageId,
+        conversationId
+    )
+
+    const handleFeedback = (reaction: Reaction) => {
+        if (!isPending) {
+            submitFeedback(reaction)
+        }
+    }
+
+    return (
+        <EuiFlexGroup responsive={false} component="span" gutterSize="xs">
             <EuiFlexItem grow={false}>
-                <EuiToolTip content="Request a new answer">
+                <EuiToolTip content="This answer was helpful">
                     <EuiButtonIcon
-                        aria-label="Request a new answer"
-                        iconType="refresh"
-                        onClick={onRetry}
+                        aria-label="This answer was helpful"
+                        iconType="thumbUp"
+                        color="success"
                         size="s"
+                        display={
+                            selectedReaction === 'thumbsUp' ? 'base' : 'empty'
+                        }
+                        onClick={() => handleFeedback('thumbsUp')}
                     />
                 </EuiToolTip>
             </EuiFlexItem>
-        )}
-    </EuiFlexGroup>
-)
+            <EuiFlexItem grow={false}>
+                <EuiToolTip content="This answer was not helpful">
+                    <EuiButtonIcon
+                        aria-label="This answer was not helpful"
+                        iconType="thumbDown"
+                        color="danger"
+                        size="s"
+                        display={
+                            selectedReaction === 'thumbsDown' ? 'base' : 'empty'
+                        }
+                        onClick={() => handleFeedback('thumbsDown')}
+                    />
+                </EuiToolTip>
+            </EuiFlexItem>
+            <EuiFlexItem grow={false}>
+                <EuiCopy
+                    textToCopy={content}
+                    beforeMessage="Copy markdown"
+                    afterMessage="Copied!"
+                >
+                    {(copy) => (
+                        <EuiButtonIcon
+                            aria-label="Copy markdown"
+                            iconType="copy"
+                            size="s"
+                            onClick={copy}
+                        />
+                    )}
+                </EuiCopy>
+            </EuiFlexItem>
+            {onRetry && (
+                <EuiFlexItem grow={false}>
+                    <EuiToolTip content="Request a new answer">
+                        <EuiButtonIcon
+                            aria-label="Request a new answer"
+                            iconType="refresh"
+                            onClick={onRetry}
+                            size="s"
+                        />
+                    </EuiToolTip>
+                </EuiFlexItem>
+            )}
+        </EuiFlexGroup>
+    )
+}
 
 export const ChatMessage = ({
     message,
@@ -412,6 +437,7 @@ export const ChatMessage = ({
                                 <EuiSpacer size="m" />
                                 <ActionBar
                                     content={mainContent}
+                                    messageId={message.id}
                                     onRetry={onRetry}
                                 />
                             </>

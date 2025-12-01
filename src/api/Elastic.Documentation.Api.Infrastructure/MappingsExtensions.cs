@@ -36,11 +36,14 @@ public static class MappingsExtension
 			await stream.CopyToAsync(context.Response.Body, ctx);
 		});
 
-		_ = askAiGroup.MapPost("/message-feedback", async (AskAiMessageFeedbackRequest request, AskAiMessageFeedbackUsecase feedbackUsecase, Cancel ctx) =>
+		_ = askAiGroup.MapPost("/message-feedback", async (HttpContext context, AskAiMessageFeedbackRequest request, AskAiMessageFeedbackUsecase feedbackUsecase, Cancel ctx) =>
 		{
-			await feedbackUsecase.SubmitFeedback(request, ctx);
+			// Extract euid cookie for user tracking
+			_ = context.Request.Cookies.TryGetValue("euid", out var euid);
+
+			await feedbackUsecase.SubmitFeedback(request, euid, ctx);
 			return Results.NoContent();
-		});
+		}).DisableAntiforgery();
 	}
 
 	private static void MapSearchEndpoint(IEndpointRouteBuilder group)

@@ -24,5 +24,6 @@ public interface IAskAiMessageFeedbackGateway
 public record AskAiMessageFeedbackRecord(
 	string MessageId,
 	string ConversationId,
-	Reaction Reaction
+	Reaction Reaction,
+	string? Euid = null
 );

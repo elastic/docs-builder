@@ -42,15 +42,22 @@ public class ElasticsearchAskAiMessageFeedbackGateway : IAskAiMessageFeedbackGat
 
 	public async Task RecordFeedbackAsync(AskAiMessageFeedbackRecord record, CancellationToken ctx)
 	{
+		var feedbackId = Guid.NewGuid().ToString();
 		var document = new MessageFeedbackDocument
 		{
+			FeedbackId = feedbackId,
 			MessageId = record.MessageId,
 			ConversationId = record.ConversationId,
 			Reaction = record.Reaction.ToString().ToLowerInvariant(),
+			Euid = record.Euid,
 			Timestamp = DateTimeOffset.UtcNow
 		};
 
-		var response = await _client.IndexAsync(document, _indexName, ctx);
+		_logger.LogDebug("Indexing feedback with ID {FeedbackId} to index {IndexName}", feedbackId, _indexName);
+
+		var response = await _client.IndexAsync<MessageFeedbackDocument>(document, idx => idx
+			.Index(_indexName)
+			.Id(feedbackId), ctx);
 
 		if (!response.IsValidResponse)
 		{
@@ -62,16 +69,21 @@ public class ElasticsearchAskAiMessageFeedbackGateway : IAskAiMessageFeedbackGat
 		else
 		{
 			_logger.LogInformation(
-				"Message feedback recorded: {Reaction} for message {MessageId} in conversation {ConversationId}",
+				"Message feedback recorded: {Reaction} for message {MessageId} in conversation {ConversationId}. ES _id: {EsId}, Index: {Index}",
 				record.Reaction,
 				record.MessageId,
-				record.ConversationId);
+				record.ConversationId,
+				response.Id,
+				response.Index);
 		}
 	}
 }
 
 internal sealed record MessageFeedbackDocument
 {
+	[JsonPropertyName("feedback_id")]
+	public required string FeedbackId { get; init; }
+
 	[JsonPropertyName("message_id")]
 	public required string MessageId { get; init; }
 
@@ -80,6 +92,10 @@ internal sealed record MessageFeedbackDocument
 
 	[JsonPropertyName("reaction")]
 	public required string Reaction { get; init; }
+
+	[JsonPropertyName("euid")]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+	public string? Euid { get; init; }
 
 	[JsonPropertyName("@timestamp")]
 	public required DateTimeOffset Timestamp { get; init; }
