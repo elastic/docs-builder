@@ -38,6 +38,13 @@ public record DocumentationDocument
 	[JsonPropertyName("hash")]
 	public string Hash { get; set; } = string.Empty;
 
+	/// <summary>
+	/// Search title is a combination of the title and the url components.
+	/// This is used for querying to not reward documents with short titles contributing to heavily to scoring
+	/// </summary>
+	[JsonPropertyName("search_title")]
+	public string? SearchTitle { get; set; }
+
 	[JsonPropertyName("title")]
 	public string? Title { get; set; }
 
@@ -65,4 +72,8 @@ public record DocumentationDocument
 
 	[JsonPropertyName("parents")]
 	public ParentDocument[] Parents { get; set; } = [];
+
+	[JsonPropertyName("hidden")]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+	public bool Hidden { get; set; }
 }

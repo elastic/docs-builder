@@ -31,4 +31,10 @@ public static class TelemetryConstants
 	/// Used to trace frontend telemetry proxying.
 	/// </summary>
 	public const string OtlpProxySourceName = "Elastic.Documentation.Api.OtlpProxy";
+
+	/// <summary>
+	/// ActivitySource name for distributed cache operations.
+	/// Used to trace cache hits, misses, and performance.
+	/// </summary>
+	public const string CacheSourceName = "Elastic.Documentation.Api.Cache";
 }

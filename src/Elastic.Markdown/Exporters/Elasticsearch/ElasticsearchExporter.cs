@@ -151,7 +151,8 @@ public abstract class ElasticsearchExporter<TChannelOptions, TChannel> : IDispos
 		        "tokenizer": "group_tokenizer",
 		        "filter": [
 		          "lowercase",
-		          "synonyms_filter"
+		          "synonyms_filter",
+		          "kstem"
 		        ]
 		      },
 		      "highlight_analyzer": {
@@ -199,6 +200,9 @@ public abstract class ElasticsearchExporter<TChannelOptions, TChannel> : IDispos
 		          "prefix": { "type": "text", "analyzer" : "hierarchy_analyzer" }
 		        }
 		      },
+		      "hidden" : {
+		        "type" : "boolean"
+		      },
 		      "applies_to" : {
 		        "type" : "nested",
 		        "properties" : {
@@ -228,13 +232,19 @@ public abstract class ElasticsearchExporter<TChannelOptions, TChannel> : IDispos
 		        }
 		      },
 		      "hash" : { "type" : "keyword" },
+		      "search_title": {
+		        "type": "text",
+		        "search_analyzer": "synonyms_analyzer",
+		        "fields": {
+		          "completion": { "type": "search_as_you_type" }
+		        }
+		      },
 		      "title": {
 		        "type": "text",
 		        "search_analyzer": "synonyms_analyzer",
 		        "fields": {
-		          "keyword": {
-		            "type": "keyword"
-		          }
+		          "keyword": { "type": "keyword" },
+		          "completion": { "type": "search_as_you_type", "search_analyzer": "synonyms_analyzer" }
 		          {{(!string.IsNullOrWhiteSpace(inferenceId) ? $$""", "semantic_text": {{{InferenceMapping(inferenceId)}}}""" : "")}}
 		        }
 		      },
@@ -252,33 +262,23 @@ public abstract class ElasticsearchExporter<TChannelOptions, TChannel> : IDispos
 		      "headings": {
 		        "type": "text",
 		        "search_analyzer": "synonyms_analyzer"
+		      },
+		      "abstract": {
+		        "type" : "text",
+		        "search_analyzer": "synonyms_analyzer",
+		        "fields" : {
+		          {{(!string.IsNullOrWhiteSpace(inferenceId) ? $"\"semantic_text\": {{{InferenceMapping(inferenceId)}}}" : "")}}
+		        }
 		      }
-		      {{(!string.IsNullOrWhiteSpace(inferenceId) ? AbstractInferenceMapping(inferenceId) : AbstractMapping())}}
 		    }
 		  }
 		  """;
-
-	private static string AbstractMapping() =>
-		"""
-		, "abstract": {
-		  "type": "text",
-		  "search_analyzer": "synonyms_analyzer"
-		}
-		""";
 
 	private static string InferenceMapping(string inferenceId) =>
 		$"""
 		 	"type": "semantic_text",
 		 	"inference_id": "{inferenceId}"
 		 """;
-
-	private static string AbstractInferenceMapping(string inferenceId) =>
-		// langugage=json
-		$$"""
-		  , "abstract": {
-		  	{{InferenceMapping(inferenceId)}}
-		  }
-		  """;
 
 
 	public void Dispose()

@@ -400,6 +400,12 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 		doc.BatchIndexDate = _batchIndexDate;
 	}
 
+	private void CommonEnrichments(DocumentationDocument doc)
+	{
+		var urlComponents = doc.Url.Split('/');
+		doc.SearchTitle = $"{doc.Title} - ({string.Join(" ", urlComponents)}";
+	}
+
 	public async ValueTask<bool> ExportAsync(MarkdownExportFileContext fileContext, Cancel ctx)
 	{
 		var file = fileContext.SourceFile;
@@ -451,10 +457,12 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 				Title = i.NavigationTitle,
 				Url = i.Url
 			}).Reverse().ToArray(),
-			Headings = headings
+			Headings = headings,
+			Hidden = fileContext.NavigationItem.Hidden
 		};
 
 		AssignDocumentMetadata(doc);
+		CommonEnrichments(doc);
 
 		if (_indexStrategy == IngestStrategy.Multiplex)
 			return await _lexicalChannel.TryWrite(doc, ctx) && await _semanticChannel.TryWrite(doc, ctx);
@@ -489,6 +497,7 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 				: string.Empty;
 			doc.Abstract = @abstract;
 			doc.Headings = headings;
+			CommonEnrichments(doc);
 
 			// Write to channels following the multiplex or reindex strategy
 			if (_indexStrategy == IngestStrategy.Multiplex)

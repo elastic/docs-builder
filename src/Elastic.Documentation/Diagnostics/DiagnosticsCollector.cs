@@ -111,6 +111,8 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 			Message = message
 		});
 
+	public void EmitError(string file, string message, string specificErrorMessage) => Emit(Severity.Error, file, $"{message}{Environment.NewLine}{specificErrorMessage}");
+
 	public void EmitError(string file, string message, Exception? e = null)
 	{
 		message = message
