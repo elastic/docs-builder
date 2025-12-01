@@ -25,11 +25,13 @@ public partial class SearchUsecase(ISearchGateway searchGateway, ILogger<SearchU
 			PageSize = request.PageSize,
 		};
 
+		var sanitizedQuery = LogSanitizer.Sanitize(request.Query);
+
 		LogSearchResults(
 			logger,
 			response.PageSize,
 			response.PageNumber,
-			request.Query,
+			sanitizedQuery,
 			new SearchResultsLogProperties(results.Select(i => i.Url).ToArray())
 		);
 
