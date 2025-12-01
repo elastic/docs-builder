@@ -7,6 +7,7 @@ using Elastic.Clients.Elasticsearch;
 using Elastic.Clients.Elasticsearch.Core.Search;
 using Elastic.Clients.Elasticsearch.QueryDsl;
 using Elastic.Clients.Elasticsearch.Serialization;
+using Elastic.Documentation.Api.Core;
 using Elastic.Documentation.Api.Core.Search;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Transport;
@@ -171,7 +172,7 @@ public partial class ElasticsearchGateway : ISearchGateway
 	public async Task<(int TotalHits, List<SearchResultItem> Results)> HybridSearchWithRrfAsync(string query, int pageNumber, int pageSize,
 		Cancel ctx = default)
 	{
-		_logger.LogInformation("Starting RRF hybrid search for '{Query}' with pageNumber={PageNumber}, pageSize={PageSize}", query, pageNumber, pageSize);
+		_logger.LogInformation("Starting RRF hybrid search for '{Query}' with pageNumber={PageNumber}, pageSize={PageSize}", LogSanitizer.Sanitize(query), pageNumber, pageSize);
 
 		const string preTag = "<mark>";
 		const string postTag = "</mark>";
@@ -256,13 +257,13 @@ public partial class ElasticsearchGateway : ISearchGateway
 					response.ElasticsearchServerError?.Error?.Reason ?? "Unknown");
 			}
 			else
-				_logger.LogInformation("RRF search completed for '{Query}'. Total hits: {TotalHits}", query, response.Total);
+				_logger.LogInformation("RRF search completed for '{Query}'. Total hits: {TotalHits}", LogSanitizer.Sanitize(query), response.Total);
 
 			return ProcessSearchResponse(response);
 		}
 		catch (Exception ex)
 		{
-			_logger.LogError(ex, "Error occurred during Elasticsearch RRF search for '{Query}'", query);
+			_logger.LogError(ex, "Error occurred during Elasticsearch RRF search for '{Query}'", LogSanitizer.Sanitize(query));
 			throw;
 		}
 	}
@@ -370,7 +371,7 @@ public partial class ElasticsearchGateway : ISearchGateway
 		}
 		catch (Exception ex)
 		{
-			_logger.LogError(ex, "Error explaining document '{Url}' for query '{Query}'", documentUrl, query);
+			_logger.LogError(ex, "Error explaining document '{Url}' for query '{Query}'", LogSanitizer.Sanitize(documentUrl), LogSanitizer.Sanitize(query));
 			return new ExplainResult
 			{
 				SearchTitle = "N/A",

@@ -30,7 +30,7 @@ public class AskAiUsecase(
 		};
 		var inputMessagesJson = JsonSerializer.Serialize(inputMessages, ApiJsonContext.Default.InputMessageArray);
 		_ = activity?.SetTag("gen_ai.input.messages", inputMessagesJson);
-		logger.LogInformation("AskAI input message: {ask_ai.input.message}", askAiRequest.Message);
+		logger.LogInformation("AskAI input message: {ask_ai.input.message}", LogSanitizer.Sanitize(askAiRequest.Message));
 		logger.LogInformation("Streaming AskAI response");
 		var rawStream = await askAiGateway.AskAi(askAiRequest, ctx);
 		// The stream transformer will handle disposing the activity when streaming completes

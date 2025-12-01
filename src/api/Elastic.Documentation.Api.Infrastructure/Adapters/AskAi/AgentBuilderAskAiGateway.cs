@@ -7,6 +7,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Elastic.Documentation.Api.Core;
 using Elastic.Documentation.Api.Core.AskAi;
 using Elastic.Documentation.Api.Infrastructure.Aws;
 using Microsoft.Extensions.Logging;
@@ -32,7 +33,7 @@ public class AgentBuilderAskAiGateway(HttpClient httpClient, IParameterProvider 
 			askAiRequest.ConversationId);
 		var requestBody = JsonSerializer.Serialize(agentBuilderPayload, AgentBuilderContext.Default.AgentBuilderPayload);
 
-		logger.LogInformation("Sending to Agent Builder with conversation_id: {ConversationId}", askAiRequest.ConversationId ?? "(null - first request)");
+		logger.LogInformation("Sending to Agent Builder with conversation_id: {ConversationId}", LogSanitizer.Sanitize(askAiRequest.ConversationId) ?? "(null - first request)");
 
 		var kibanaUrl = await parameterProvider.GetParam("docs-kibana-url", false, ctx);
 		var kibanaApiKey = await parameterProvider.GetParam("docs-kibana-apikey", true, ctx);
@@ -48,7 +49,7 @@ public class AgentBuilderAskAiGateway(HttpClient httpClient, IParameterProvider 
 		// Ensure the response is successful before streaming
 		if (!response.IsSuccessStatusCode)
 		{
-			logger.LogInformation("Body: {Body}", requestBody);
+			logger.LogInformation("Body: {Body}", LogSanitizer.Sanitize(requestBody));
 			var errorContent = await response.Content.ReadAsStringAsync(ctx);
 			logger.LogInformation("Reason: {Reason}", response.ReasonPhrase);
 			throw new HttpRequestException($"Agent Builder returned {response.StatusCode}: {errorContent}");

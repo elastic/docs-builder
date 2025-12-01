@@ -26,8 +26,8 @@ public class AskAiMessageFeedbackUsecase(
 
 		logger.LogInformation(
 			"Recording message feedback for message {MessageId} in conversation {ConversationId}: {Reaction}",
-			request.MessageId,
-			request.ConversationId,
+			LogSanitizer.Sanitize(request.MessageId),
+			LogSanitizer.Sanitize(request.ConversationId),
 			request.Reaction);
 
 		var record = new AskAiMessageFeedbackRecord(

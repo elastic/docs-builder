@@ -5,6 +5,7 @@
 using System.Text.Json.Serialization;
 using Elastic.Clients.Elasticsearch;
 using Elastic.Clients.Elasticsearch.Serialization;
+using Elastic.Documentation.Api.Core;
 using Elastic.Documentation.Api.Core.AskAi;
 using Elastic.Documentation.Api.Infrastructure.Adapters.Search;
 using Elastic.Transport;
@@ -63,7 +64,7 @@ public class ElasticsearchAskAiMessageFeedbackGateway : IAskAiMessageFeedbackGat
 		{
 			_logger.LogWarning(
 				"Failed to index message feedback for message {MessageId}: {Error}",
-				record.MessageId,
+				LogSanitizer.Sanitize(record.MessageId),
 				response.ElasticsearchServerError?.Error?.Reason ?? "Unknown error");
 		}
 		else
@@ -71,8 +72,8 @@ public class ElasticsearchAskAiMessageFeedbackGateway : IAskAiMessageFeedbackGat
 			_logger.LogInformation(
 				"Message feedback recorded: {Reaction} for message {MessageId} in conversation {ConversationId}. ES _id: {EsId}, Index: {Index}",
 				record.Reaction,
-				record.MessageId,
-				record.ConversationId,
+				LogSanitizer.Sanitize(record.MessageId),
+				LogSanitizer.Sanitize(record.ConversationId),
 				response.Id,
 				response.Index);
 		}
