@@ -217,8 +217,8 @@ public static class ServicesExtension
 			_ = services.AddScoped<IStreamTransformer, StreamTransformerFactory>();
 			logger?.LogInformation("Gateway and transformer factories registered successfully - provider switchable via X-AI-Provider header");
 
-			// Register message feedback components
-			_ = services.AddScoped<IAskAiMessageFeedbackGateway, ElasticsearchAskAiMessageFeedbackGateway>();
+			// Register message feedback components (gateway is singleton for connection reuse)
+			_ = services.AddSingleton<IAskAiMessageFeedbackGateway, ElasticsearchAskAiMessageFeedbackGateway>();
 			_ = services.AddScoped<AskAiMessageFeedbackUsecase>();
 			logger?.LogInformation("AskAiMessageFeedbackUsecase and Elasticsearch gateway registered successfully");
 		}
@@ -232,7 +232,7 @@ public static class ServicesExtension
 	{
 		var logger = GetLogger(services);
 		logger?.LogInformation("Configuring Search use case for environment {AppEnvironment}", appEnv);
-		_ = services.AddScoped<ElasticsearchOptions>();
+		_ = services.AddSingleton<ElasticsearchOptions>();
 		_ = services.AddScoped<ISearchGateway, ElasticsearchGateway>();
 		_ = services.AddScoped<SearchUsecase>();
 	}
