@@ -17,6 +17,7 @@ public static class LogSanitizer
 	/// </summary>
 	/// <remarks>
 	/// Removes:
+	/// - Newlines (\r, \n)
 	/// - ASCII control characters (0x00-0x1F)
 	/// - DEL character (0x7F)
 	/// - Unicode line separator (U+2028)
@@ -68,7 +69,8 @@ public static class LogSanitizer
 	/// Checks if a character is dangerous for logging (could enable log forging).
 	/// </summary>
 	private static bool IsDangerousChar(char c) =>
-		c is <= '\x1F' or          // ASCII control characters (0x00-0x1F)
+		c is '\r' or '\n' or       // Newlines (carriage return, line feed)
+		<= '\x1F' or          // ASCII control characters (0x00-0x1F)
 		'\x7F' or          // DEL character
 		'\u2028' or        // Unicode line separator
 		'\u2029';          // Unicode paragraph separator
