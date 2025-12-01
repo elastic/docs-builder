@@ -8,10 +8,11 @@ namespace Elastic.Documentation.Api.Core.AskAi;
 
 /// <summary>
 /// Request model for submitting feedback on a specific Ask AI message.
+/// Using Guid type ensures automatic validation during JSON deserialization.
 /// </summary>
 public record AskAiMessageFeedbackRequest(
-	string MessageId,
-	string ConversationId,
+	Guid MessageId,
+	Guid ConversationId,
 	Reaction Reaction
 );
 

@@ -65,7 +65,9 @@ export const useMessageFeedback = (
     const submitFeedback = useCallback(
         (reaction: Reaction) => {
             if (!conversationId) {
-                console.warn('Cannot submit feedback without conversationId')
+                logWarn('Cannot submit feedback without conversationId', {
+                    'ask_ai.message.id': messageId,
+                })
                 return
             }
 

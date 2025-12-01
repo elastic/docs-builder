@@ -43,12 +43,12 @@ public class ElasticsearchAskAiMessageFeedbackGateway : IAskAiMessageFeedbackGat
 
 	public async Task RecordFeedbackAsync(AskAiMessageFeedbackRecord record, CancellationToken ctx)
 	{
-		var feedbackId = Guid.NewGuid().ToString();
+		var feedbackId = Guid.NewGuid();
 		var document = new MessageFeedbackDocument
 		{
-			FeedbackId = feedbackId,
-			MessageId = record.MessageId,
-			ConversationId = record.ConversationId,
+			FeedbackId = feedbackId.ToString(),
+			MessageId = record.MessageId.ToString(),
+			ConversationId = record.ConversationId.ToString(),
 			Reaction = record.Reaction.ToString().ToLowerInvariant(),
 			Euid = record.Euid,
 			Timestamp = DateTimeOffset.UtcNow
@@ -58,9 +58,9 @@ public class ElasticsearchAskAiMessageFeedbackGateway : IAskAiMessageFeedbackGat
 
 		var response = await _client.IndexAsync<MessageFeedbackDocument>(document, idx => idx
 			.Index(_indexName)
-			.Id(feedbackId), ctx);
+			.Id(feedbackId.ToString()), ctx);
 
-		// MessageId and ConversationId are validated as UUIDs at the endpoint, so no sanitization needed
+		// MessageId and ConversationId are Guid types, so no sanitization needed
 		if (!response.IsValidResponse)
 		{
 			_logger.LogWarning(

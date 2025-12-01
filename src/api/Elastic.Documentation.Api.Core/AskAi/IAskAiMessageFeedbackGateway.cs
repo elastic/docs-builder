@@ -22,8 +22,8 @@ public interface IAskAiMessageFeedbackGateway
 /// Internal record used to pass message feedback data to the gateway.
 /// </summary>
 public record AskAiMessageFeedbackRecord(
-	string MessageId,
-	string ConversationId,
+	Guid MessageId,
+	Guid ConversationId,
 	Reaction Reaction,
 	string? Euid = null
 );
