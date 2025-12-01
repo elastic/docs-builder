@@ -254,17 +254,15 @@ public partial class ElasticsearchGateway : ISearchGateway
 
 			if (!response.IsValidResponse)
 			{
-				_logger.LogWarning("Elasticsearch RRF search response was not valid. Reason: {Reason}",
-					response.ElasticsearchServerError?.Error?.Reason ?? "Unknown");
+				_logger.LogWarning("Elasticsearch response is not valid. Reason: {Reason}",
+					response.ElasticsearchServerError?.Error.Reason ?? "Unknown");
 			}
-			else
-				_logger.LogInformation("RRF search completed for UserQuery='{SanitizedQuery}'. Total hits: {TotalHits}", sanitizedQuery, response.Total);
 
 			return ProcessSearchResponse(response);
 		}
 		catch (Exception ex)
 		{
-			_logger.LogError(ex, "Error occurred during Elasticsearch RRF search for UserQuery='{SanitizedQuery}'", sanitizedQuery);
+			_logger.LogError(ex, "Error occurred during Elasticsearch search");
 			throw;
 		}
 	}
