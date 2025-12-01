@@ -18,10 +18,10 @@ public class AskAiMessageFeedbackUsecase(
 
 	public async Task SubmitFeedback(AskAiMessageFeedbackRequest request, CancellationToken ctx)
 	{
-		using var activity = FeedbackActivitySource.StartActivity("ask-ai.message-feedback", ActivityKind.Internal);
-		_ = activity?.SetTag("gen_ai.conversation.id", request.ConversationId);
-		_ = activity?.SetTag("gen_ai.response.id", request.MessageId);
-		_ = activity?.SetTag("feedback.reaction", request.Reaction.ToString().ToLowerInvariant());
+		using var activity = FeedbackActivitySource.StartActivity("record message-feedback", ActivityKind.Internal);
+		_ = activity?.SetTag("gen_ai.conversation.id", request.ConversationId); // correlation with chat traces
+		_ = activity?.SetTag("ask_ai.message.id", request.MessageId);
+		_ = activity?.SetTag("ask_ai.feedback.reaction", request.Reaction.ToString().ToLowerInvariant());
 
 		logger.LogInformation(
 			"Recording message feedback for message {MessageId} in conversation {ConversationId}: {Reaction}",
