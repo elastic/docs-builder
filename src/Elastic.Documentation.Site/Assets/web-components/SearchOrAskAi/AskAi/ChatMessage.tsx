@@ -6,7 +6,7 @@ import { AskAiEvent, ChunkEvent, EventTypes } from './AskAiEvent'
 import { GeneratingStatus } from './GeneratingStatus'
 import { References } from './RelatedResources'
 import { ChatMessage as ChatMessageType, useConversationId } from './chat.store'
-import { useMessageFeedback, Reaction } from './useMessageFeedback'
+import { useMessageFeedback } from './useMessageFeedback'
 import { useStatusMinDisplay } from './useStatusMinDisplay'
 import {
     EuiButtonIcon,
@@ -195,16 +195,10 @@ const ActionBar = ({
     onRetry?: () => void
 }) => {
     const conversationId = useConversationId()
-    const { selectedReaction, submitFeedback, isPending } = useMessageFeedback(
+    const { selectedReaction, submitFeedback } = useMessageFeedback(
         messageId,
         conversationId
     )
-
-    const handleFeedback = (reaction: Reaction) => {
-        if (!isPending) {
-            submitFeedback(reaction)
-        }
-    }
 
     return (
         <EuiFlexGroup responsive={false} component="span" gutterSize="xs">
@@ -218,7 +212,7 @@ const ActionBar = ({
                         display={
                             selectedReaction === 'thumbsUp' ? 'base' : 'empty'
                         }
-                        onClick={() => handleFeedback('thumbsUp')}
+                        onClick={() => submitFeedback('thumbsUp')}
                     />
                 </EuiToolTip>
             </EuiFlexItem>
@@ -232,7 +226,7 @@ const ActionBar = ({
                         display={
                             selectedReaction === 'thumbsDown' ? 'base' : 'empty'
                         }
-                        onClick={() => handleFeedback('thumbsDown')}
+                        onClick={() => submitFeedback('thumbsDown')}
                     />
                 </EuiToolTip>
             </EuiFlexItem>

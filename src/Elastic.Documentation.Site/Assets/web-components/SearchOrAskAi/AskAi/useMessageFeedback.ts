@@ -2,9 +2,11 @@ import { logWarn } from '../../../telemetry/logging'
 import { traceSpan } from '../../../telemetry/tracing'
 import { Reaction, useChatActions, useMessageReaction } from './chat.store'
 import { useMutation } from '@tanstack/react-query'
-import { useCallback } from 'react'
+import { useCallback, useRef } from 'react'
 
 export type { Reaction } from './chat.store'
+
+const DEBOUNCE_MS = 500
 
 interface MessageFeedbackRequest {
     messageId: string
@@ -15,7 +17,6 @@ interface MessageFeedbackRequest {
 interface UseMessageFeedbackReturn {
     selectedReaction: Reaction | null
     submitFeedback: (reaction: Reaction) => void
-    isPending: boolean
 }
 
 const submitFeedbackToApi = async (
@@ -50,6 +51,9 @@ export const useMessageFeedback = (
 ): UseMessageFeedbackReturn => {
     const selectedReaction = useMessageReaction(messageId)
     const { setMessageFeedback } = useChatActions()
+    const debounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+        null
+    )
 
     const mutation = useMutation({
         mutationFn: submitFeedbackToApi,
@@ -76,20 +80,22 @@ export const useMessageFeedback = (
                 return
             }
 
-            // Ignore if already submitting
-            if (mutation.isPending) {
-                return
-            }
-
             // Optimistic update - stored in Zustand so it persists across tab switches
             setMessageFeedback(messageId, reaction)
 
-            // Submit to API
-            mutation.mutate({
-                messageId,
-                conversationId,
-                reaction,
-            })
+            // Cancel any pending debounced submission
+            if (debounceTimeoutRef.current) {
+                clearTimeout(debounceTimeoutRef.current)
+            }
+
+            // Debounce the API call - only send the final selection
+            debounceTimeoutRef.current = setTimeout(() => {
+                mutation.mutate({
+                    messageId,
+                    conversationId,
+                    reaction,
+                })
+            }, DEBOUNCE_MS)
         },
         [
             messageId,
@@ -103,6 +109,5 @@ export const useMessageFeedback = (
     return {
         selectedReaction,
         submitFeedback,
-        isPending: mutation.isPending,
     }
 }
