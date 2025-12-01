@@ -33,7 +33,7 @@ public class AgentBuilderAskAiGateway(HttpClient httpClient, IParameterProvider 
 			askAiRequest.ConversationId);
 		var requestBody = JsonSerializer.Serialize(agentBuilderPayload, AgentBuilderContext.Default.AgentBuilderPayload);
 
-		logger.LogInformation("Sending to Agent Builder with conversation_id: {ConversationId}", LogSanitizer.Sanitize(askAiRequest.ConversationId) ?? "(null - first request)");
+		logger.LogInformation("Sending to Agent Builder with conversation_id: \"{ConversationId}\"", LogSanitizer.Sanitize(askAiRequest.ConversationId) ?? "(null - first request)");
 
 		var kibanaUrl = await parameterProvider.GetParam("docs-kibana-url", false, ctx);
 		var kibanaApiKey = await parameterProvider.GetParam("docs-kibana-apikey", true, ctx);
