@@ -172,9 +172,6 @@ public partial class ElasticsearchGateway : ISearchGateway
 	public async Task<(int TotalHits, List<SearchResultItem> Results)> HybridSearchWithRrfAsync(string query, int pageNumber, int pageSize,
 		Cancel ctx = default)
 	{
-		var sanitizedQuery = LogSanitizer.Sanitize(query);
-		_logger.LogInformation("Starting RRF hybrid search. UserQuery='{SanitizedQuery}' pageNumber={PageNumber}, pageSize={PageSize}", sanitizedQuery, pageNumber, pageSize);
-
 		const string preTag = "<mark>";
 		const string postTag = "</mark>";
 
