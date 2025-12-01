@@ -121,6 +121,45 @@ public class LogSanitizerTests
 	}
 
 	[Fact]
+	public void SanitizeRemovesDelChar()
+	{
+		// Arrange - DEL is 0x7F
+		const string input = "Hello\x7FWorld";
+
+		// Act
+		var result = LogSanitizer.Sanitize(input);
+
+		// Assert
+		result.Should().Be("HelloWorld");
+	}
+
+	[Fact]
+	public void SanitizeRemovesUnicodeLineSeparator()
+	{
+		// Arrange - Unicode line separator U+2028
+		const string input = "Hello\u2028World";
+
+		// Act
+		var result = LogSanitizer.Sanitize(input);
+
+		// Assert
+		result.Should().Be("HelloWorld");
+	}
+
+	[Fact]
+	public void SanitizeRemovesUnicodeParagraphSeparator()
+	{
+		// Arrange - Unicode paragraph separator U+2029
+		const string input = "Hello\u2029World";
+
+		// Act
+		var result = LogSanitizer.Sanitize(input);
+
+		// Assert
+		result.Should().Be("HelloWorld");
+	}
+
+	[Fact]
 	public void SanitizePreservesSpaceAndPrintableChars()
 	{
 		// Arrange - space (0x20) is NOT a control char
@@ -164,6 +203,8 @@ public class LogSanitizerTests
 	[InlineData("user-id-123\r\nERROR: Attack!", "user-id-123ERROR: Attack!")]
 	[InlineData("input\twith\ttabs", "inputwithtabs")]
 	[InlineData("escape\x1B[0msequence", "escape[0msequence")]
+	[InlineData("unicode\u2028line\u2029separators", "unicodelineseparators")]
+	[InlineData("del\x7Fchar", "delchar")]
 	public void SanitizePreventsLogForging(string maliciousInput, string expected)
 	{
 		// Act
