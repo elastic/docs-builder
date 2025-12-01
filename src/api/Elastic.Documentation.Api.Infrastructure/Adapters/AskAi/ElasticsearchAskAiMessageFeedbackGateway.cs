@@ -16,11 +16,12 @@ namespace Elastic.Documentation.Api.Infrastructure.Adapters.AskAi;
 /// <summary>
 /// Records Ask AI message feedback to Elasticsearch.
 /// </summary>
-public class ElasticsearchAskAiMessageFeedbackGateway : IAskAiMessageFeedbackGateway
+public sealed class ElasticsearchAskAiMessageFeedbackGateway : IAskAiMessageFeedbackGateway, IDisposable
 {
 	private readonly ElasticsearchClient _client;
 	private readonly string _indexName;
 	private readonly ILogger<ElasticsearchAskAiMessageFeedbackGateway> _logger;
+	private bool _disposed;
 
 	public ElasticsearchAskAiMessageFeedbackGateway(
 		ElasticsearchOptions elasticsearchOptions,
@@ -39,6 +40,15 @@ public class ElasticsearchAskAiMessageFeedbackGateway : IAskAiMessageFeedbackGat
 			.Authentication(new ApiKey(elasticsearchOptions.ApiKey));
 
 		_client = new ElasticsearchClient(clientSettings);
+	}
+
+	public void Dispose()
+	{
+		if (_disposed)
+			return;
+
+		(_client.Transport as IDisposable)?.Dispose();
+		_disposed = true;
 	}
 
 	public async Task RecordFeedbackAsync(AskAiMessageFeedbackRecord record, CancellationToken ctx)
