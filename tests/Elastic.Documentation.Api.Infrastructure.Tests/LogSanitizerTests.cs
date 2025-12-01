@@ -30,10 +30,10 @@ public class LogSanitizerTests
 	}
 
 	[Fact]
-	public void SanitizeWhenInputHasNoNewlinesReturnsSameString()
+	public void SanitizeWhenInputHasNoControlCharsReturnsSameString()
 	{
 		// Arrange
-		const string input = "Hello World";
+		const string input = "Hello World! @#$%^&*()";
 
 		// Act
 		var result = LogSanitizer.Sanitize(input);
@@ -69,6 +69,19 @@ public class LogSanitizerTests
 	}
 
 	[Fact]
+	public void SanitizeWhenInputHasTabRemovesIt()
+	{
+		// Arrange
+		const string input = "Hello\tWorld";
+
+		// Act
+		var result = LogSanitizer.Sanitize(input);
+
+		// Assert
+		result.Should().Be("HelloWorld");
+	}
+
+	[Fact]
 	public void SanitizeWhenInputHasCrlfRemovesBoth()
 	{
 		// Arrange
@@ -82,23 +95,23 @@ public class LogSanitizerTests
 	}
 
 	[Fact]
-	public void SanitizeWhenInputHasMultipleNewlinesRemovesAll()
+	public void SanitizeWhenInputHasMultipleControlCharsRemovesAll()
 	{
-		// Arrange
-		const string input = "Line1\nLine2\r\nLine3\rLine4";
+		// Arrange - includes \n, \r, \t, and escape char \x1B
+		const string input = "Line1\nLine2\r\nLine3\tLine4\x1BLine5";
 
 		// Act
 		var result = LogSanitizer.Sanitize(input);
 
 		// Assert
-		result.Should().Be("Line1Line2Line3Line4");
+		result.Should().Be("Line1Line2Line3Line4Line5");
 	}
 
 	[Fact]
-	public void SanitizeWhenInputIsOnlyNewlinesReturnsEmptyString()
+	public void SanitizeWhenInputIsOnlyControlCharsReturnsEmptyString()
 	{
 		// Arrange
-		const string input = "\r\n\r\n";
+		const string input = "\r\n\t\x00\x1F";
 
 		// Act
 		var result = LogSanitizer.Sanitize(input);
@@ -108,10 +121,10 @@ public class LogSanitizerTests
 	}
 
 	[Fact]
-	public void SanitizePreservesOtherSpecialCharacters()
+	public void SanitizePreservesSpaceAndPrintableChars()
 	{
-		// Arrange
-		const string input = "Hello\tWorld! @#$%^&*()";
+		// Arrange - space (0x20) is NOT a control char
+		const string input = "Hello World! @#$%^&*() 123";
 
 		// Act
 		var result = LogSanitizer.Sanitize(input);
@@ -120,9 +133,37 @@ public class LogSanitizerTests
 		result.Should().Be(input);
 	}
 
+	[Fact]
+	public void SanitizeRemovesNullChar()
+	{
+		// Arrange
+		const string input = "Hello\x00World";
+
+		// Act
+		var result = LogSanitizer.Sanitize(input);
+
+		// Assert
+		result.Should().Be("HelloWorld");
+	}
+
+	[Fact]
+	public void SanitizeRemovesEscapeSequence()
+	{
+		// Arrange - \x1B is ESC, commonly used in ANSI escape sequences
+		const string input = "Hello\x1B[31mRed\x1B[0mWorld";
+
+		// Act
+		var result = LogSanitizer.Sanitize(input);
+
+		// Assert
+		result.Should().Be("Hello[31mRed[0mWorld");
+	}
+
 	[Theory]
 	[InlineData("fake-log-entry\nINFO: Injected message", "fake-log-entryINFO: Injected message")]
 	[InlineData("user-id-123\r\nERROR: Attack!", "user-id-123ERROR: Attack!")]
+	[InlineData("input\twith\ttabs", "inputwithtabs")]
+	[InlineData("escape\x1B[0msequence", "escape[0msequence")]
 	public void SanitizePreventsLogForging(string maliciousInput, string expected)
 	{
 		// Act
@@ -130,7 +171,23 @@ public class LogSanitizerTests
 
 		// Assert
 		result.Should().Be(expected);
-		result.Should().NotContain("\n");
-		result.Should().NotContain("\r");
+	}
+
+	[Fact]
+	public void SanitizeRemovesAllAsciiControlChars()
+	{
+		// Arrange - all ASCII control chars 0x00-0x1F
+		var allControlChars = string.Create(32, 0, static (span, _) =>
+		{
+			for (var i = 0; i < 32; i++)
+				span[i] = (char)i;
+		});
+		var input = $"Before{allControlChars}After";
+
+		// Act
+		var result = LogSanitizer.Sanitize(input);
+
+		// Assert
+		result.Should().Be("BeforeAfter");
 	}
 }

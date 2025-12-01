@@ -10,12 +10,13 @@ namespace Elastic.Documentation.Api.Core;
 public static class LogSanitizer
 {
 	/// <summary>
-	/// Sanitizes a string for safe logging by removing newline and carriage return characters.
-	/// This prevents log forging attacks where malicious input could inject fake log entries.
+	/// Sanitizes a string for safe logging by removing all ASCII control characters (0x00-0x1F).
+	/// This prevents log forging attacks where malicious input could inject fake log entries
+	/// via newlines, tabs, escape sequences, or other control characters.
 	/// Uses span-based operations for optimal performance.
 	/// </summary>
 	/// <param name="input">The input string to sanitize.</param>
-	/// <returns>The sanitized string with newlines removed, or empty string if input is null.</returns>
+	/// <returns>The sanitized string with control characters removed, or empty string if input is null.</returns>
 	public static string Sanitize(string? input)
 	{
 		if (string.IsNullOrEmpty(input))
@@ -23,15 +24,25 @@ public static class LogSanitizer
 
 		var span = input.AsSpan();
 
-		// Fast path: no sanitization needed (common case) - zero allocations
-		if (!span.ContainsAny('\r', '\n'))
+		// Fast path: check if any control characters exist (common case has none) - zero allocations
+		var hasControlChars = false;
+		foreach (var c in span)
+		{
+			if (IsControlChar(c))
+			{
+				hasControlChars = true;
+				break;
+			}
+		}
+
+		if (!hasControlChars)
 			return input;
 
 		// Slow path: count chars to keep, then create string with exact size
 		var keepCount = 0;
 		foreach (var c in span)
 		{
-			if (c is not '\r' and not '\n')
+			if (!IsControlChar(c))
 				keepCount++;
 		}
 
@@ -40,9 +51,14 @@ public static class LogSanitizer
 			var destIndex = 0;
 			foreach (var c in src)
 			{
-				if (c is not '\r' and not '\n')
+				if (!IsControlChar(c))
 					dest[destIndex++] = c;
 			}
 		});
 	}
+
+	/// <summary>
+	/// Checks if a character is an ASCII control character (0x00-0x1F).
+	/// </summary>
+	private static bool IsControlChar(char c) => c <= '\x1F';
 }
