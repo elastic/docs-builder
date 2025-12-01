@@ -33,14 +33,15 @@ public sealed class ElasticsearchAskAiMessageFeedbackGateway : IAskAiMessageFeed
 		_indexName = $"ask-ai-message-feedback-{appEnvironment.Current.ToStringFast(true)}";
 
 		_nodePool = new SingleNodePool(new Uri(elasticsearchOptions.Url.Trim()));
-		var clientSettings = new ElasticsearchClientSettings(
+		using (var clientSettings = new ElasticsearchClientSettings(
 				_nodePool,
 				sourceSerializer: (_, settings) => new DefaultSourceSerializer(settings, MessageFeedbackJsonContext.Default)
 			)
 			.DefaultIndex(_indexName)
-			.Authentication(new ApiKey(elasticsearchOptions.ApiKey));
-
-		_client = new ElasticsearchClient(clientSettings);
+			.Authentication(new ApiKey(elasticsearchOptions.ApiKey)))
+		{
+			_client = new ElasticsearchClient(clientSettings);
+		}
 	}
 
 	public void Dispose()
