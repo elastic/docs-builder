@@ -31,21 +31,7 @@ public static class LogSanitizer
 
 		var span = input.AsSpan();
 
-		// Fast path: check if any dangerous characters exist (common case has none) - zero allocations
-		var hasDangerousChars = false;
-		foreach (var c in span)
-		{
-			if (IsDangerousChar(c))
-			{
-				hasDangerousChars = true;
-				break;
-			}
-		}
-
-		if (!hasDangerousChars)
-			return input;
-
-		// Slow path: count chars to keep, then create string with exact size
+		// Always sanitize: remove all dangerous/control/log-forging characters
 		var keepCount = 0;
 		foreach (var c in span)
 		{
