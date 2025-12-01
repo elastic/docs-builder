@@ -35,6 +35,12 @@ public static class MappingsExtension
 			var stream = await askAiUsecase.AskAi(askAiRequest, ctx);
 			await stream.CopyToAsync(context.Response.Body, ctx);
 		});
+
+		_ = askAiGroup.MapPost("/message-feedback", async (AskAiMessageFeedbackRequest request, AskAiMessageFeedbackUsecase feedbackUsecase, Cancel ctx) =>
+		{
+			await feedbackUsecase.SubmitFeedback(request, ctx);
+			return Results.NoContent();
+		});
 	}
 
 	private static void MapSearchEndpoint(IEndpointRouteBuilder group)

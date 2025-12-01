@@ -216,6 +216,11 @@ public static class ServicesExtension
 			_ = services.AddScoped<IAskAiGateway<Stream>, AskAiGatewayFactory>();
 			_ = services.AddScoped<IStreamTransformer, StreamTransformerFactory>();
 			logger?.LogInformation("Gateway and transformer factories registered successfully - provider switchable via X-AI-Provider header");
+
+			// Register message feedback components
+			_ = services.AddScoped<IAskAiMessageFeedbackGateway, ElasticsearchAskAiMessageFeedbackGateway>();
+			_ = services.AddScoped<AskAiMessageFeedbackUsecase>();
+			logger?.LogInformation("AskAiMessageFeedbackUsecase and Elasticsearch gateway registered successfully");
 		}
 		catch (Exception ex)
 		{

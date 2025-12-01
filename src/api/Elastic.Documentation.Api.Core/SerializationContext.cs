@@ -18,6 +18,7 @@ public record InputMessage(string Role, MessagePart[] Parts);
 public record OutputMessage(string Role, MessagePart[] Parts, string FinishReason);
 
 [JsonSerializable(typeof(AskAiRequest))]
+[JsonSerializable(typeof(AskAiMessageFeedbackRequest))]
 [JsonSerializable(typeof(SearchRequest))]
 [JsonSerializable(typeof(SearchResponse))]
 [JsonSerializable(typeof(InputMessage))]
