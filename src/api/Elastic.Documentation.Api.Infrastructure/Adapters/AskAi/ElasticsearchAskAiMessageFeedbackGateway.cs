@@ -21,6 +21,7 @@ public sealed class ElasticsearchAskAiMessageFeedbackGateway : IAskAiMessageFeed
 	private readonly ElasticsearchClient _client;
 	private readonly string _indexName;
 	private readonly ILogger<ElasticsearchAskAiMessageFeedbackGateway> _logger;
+	private readonly SingleNodePool _nodePool;
 	private bool _disposed;
 
 	public ElasticsearchAskAiMessageFeedbackGateway(
@@ -31,9 +32,9 @@ public sealed class ElasticsearchAskAiMessageFeedbackGateway : IAskAiMessageFeed
 		_logger = logger;
 		_indexName = $"ask-ai-message-feedback-{appEnvironment.Current.ToStringFast(true)}";
 
-		var nodePool = new SingleNodePool(new Uri(elasticsearchOptions.Url.Trim()));
+		_nodePool = new SingleNodePool(new Uri(elasticsearchOptions.Url.Trim()));
 		var clientSettings = new ElasticsearchClientSettings(
-				nodePool,
+				_nodePool,
 				sourceSerializer: (_, settings) => new DefaultSourceSerializer(settings, MessageFeedbackJsonContext.Default)
 			)
 			.DefaultIndex(_indexName)
@@ -47,6 +48,7 @@ public sealed class ElasticsearchAskAiMessageFeedbackGateway : IAskAiMessageFeed
 		if (_disposed)
 			return;
 
+		_nodePool.Dispose();
 		(_client.Transport as IDisposable)?.Dispose();
 		_disposed = true;
 	}
