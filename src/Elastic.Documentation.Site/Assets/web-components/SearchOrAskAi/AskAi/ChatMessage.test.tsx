@@ -1,8 +1,26 @@
 import { ApiError } from '../errorHandling'
 import { ChatMessage } from './ChatMessage'
 import { ChatMessage as ChatMessageType } from './chat.store'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
 import * as React from 'react'
+
+// Create a fresh QueryClient for each test
+const createTestQueryClient = () =>
+    new QueryClient({
+        defaultOptions: {
+            queries: { retry: false },
+            mutations: { retry: false },
+        },
+    })
+
+// Wrapper component for tests that need React Query
+const renderWithQueryClient = (ui: React.ReactElement) => {
+    const testQueryClient = createTestQueryClient()
+    return render(
+        <QueryClientProvider client={testQueryClient}>{ui}</QueryClientProvider>
+    )
+}
 
 // Mock EuiCallOut and EuiSpacer for SearchOrAskAiErrorCallout
 jest.mock('@elastic/eui', () => {
@@ -141,7 +159,7 @@ describe('ChatMessage Component', () => {
 
         it('should render AI message with correct content', () => {
             // Act
-            render(<ChatMessage message={aiMessage} />)
+            renderWithQueryClient(<ChatMessage message={aiMessage} />)
 
             // Assert
             expect(
@@ -153,7 +171,7 @@ describe('ChatMessage Component', () => {
 
         it('should show feedback buttons', () => {
             // Act
-            render(<ChatMessage message={aiMessage} />)
+            renderWithQueryClient(<ChatMessage message={aiMessage} />)
 
             // Assert
             expect(
@@ -170,7 +188,7 @@ describe('ChatMessage Component', () => {
 
         it('should display Elastic logo icon', () => {
             // Act
-            render(<ChatMessage message={aiMessage} />)
+            renderWithQueryClient(<ChatMessage message={aiMessage} />)
 
             // Assert
             const messageElement = screen
@@ -199,7 +217,7 @@ describe('ChatMessage Component', () => {
 
         it('should show loading icon when streaming', () => {
             // Act
-            render(<ChatMessage message={streamingMessage} />)
+            renderWithQueryClient(<ChatMessage message={streamingMessage} />)
 
             // Assert
             // Loading elastic icon should be present
@@ -211,7 +229,7 @@ describe('ChatMessage Component', () => {
 
         it('should not show feedback buttons when streaming', () => {
             // Act
-            render(<ChatMessage message={streamingMessage} />)
+            renderWithQueryClient(<ChatMessage message={streamingMessage} />)
 
             // Assert
             expect(
@@ -244,7 +262,7 @@ describe('ChatMessage Component', () => {
 
         it('should show error message', () => {
             // Act
-            render(<ChatMessage message={errorMessage} />)
+            renderWithQueryClient(<ChatMessage message={errorMessage} />)
 
             // Assert
             const callout = screen.getByTestId('eui-callout')
@@ -258,7 +276,7 @@ describe('ChatMessage Component', () => {
 
         it('should display previous content before error occurred', () => {
             // Act
-            render(<ChatMessage message={errorMessage} />)
+            renderWithQueryClient(<ChatMessage message={errorMessage} />)
 
             // Assert
             // When there's an error, the content is hidden, only the error callout is shown
@@ -282,7 +300,7 @@ describe('ChatMessage Component', () => {
 
         it('should render markdown content', () => {
             // Act
-            render(<ChatMessage message={messageWithMarkdown} />)
+            renderWithQueryClient(<ChatMessage message={messageWithMarkdown} />)
 
             // Assert - EuiMarkdownFormat will render the markdown
             expect(screen.getByText(/Bold text/)).toBeInTheDocument()
