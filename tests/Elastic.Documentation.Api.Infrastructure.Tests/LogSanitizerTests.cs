@@ -124,7 +124,7 @@ public class LogSanitizerTests
 	public void SanitizeRemovesDelChar()
 	{
 		// Arrange - DEL is 0x7F
-		const string input = "Hello\x7FWorld";
+		const string input = "Hello\u007FWorld";
 
 		// Act
 		var result = LogSanitizer.Sanitize(input);
@@ -204,7 +204,7 @@ public class LogSanitizerTests
 	[InlineData("input\twith\ttabs", "inputwithtabs")]
 	[InlineData("escape\x1B[0msequence", "escape[0msequence")]
 	[InlineData("unicode\u2028line\u2029separators", "unicodelineseparators")]
-	[InlineData("del\x7Fchar", "delchar")]
+	[InlineData("del\u007Fchar", "delchar")]
 	public void SanitizePreventsLogForging(string maliciousInput, string expected)
 	{
 		// Act
