@@ -38,6 +38,13 @@ public static class MappingsExtension
 
 		_ = askAiGroup.MapPost("/message-feedback", async (HttpContext context, AskAiMessageFeedbackRequest request, AskAiMessageFeedbackUsecase feedbackUsecase, Cancel ctx) =>
 		{
+			// Validate UUIDs to prevent malformed input
+			if (!Guid.TryParse(request.MessageId, out _))
+				return Results.BadRequest("Invalid MessageId format. Expected UUID.");
+
+			if (!Guid.TryParse(request.ConversationId, out _))
+				return Results.BadRequest("Invalid ConversationId format. Expected UUID.");
+
 			// Extract euid cookie for user tracking
 			_ = context.Request.Cookies.TryGetValue("euid", out var euid);
 

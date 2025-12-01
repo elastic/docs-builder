@@ -60,11 +60,12 @@ public class ElasticsearchAskAiMessageFeedbackGateway : IAskAiMessageFeedbackGat
 			.Index(_indexName)
 			.Id(feedbackId), ctx);
 
+		// MessageId and ConversationId are validated as UUIDs at the endpoint, so no sanitization needed
 		if (!response.IsValidResponse)
 		{
 			_logger.LogWarning(
 				"Failed to index message feedback for message {MessageId}: {Error}",
-				LogSanitizer.Sanitize(record.MessageId),
+				record.MessageId,
 				response.ElasticsearchServerError?.Error?.Reason ?? "Unknown error");
 		}
 		else
@@ -72,8 +73,8 @@ public class ElasticsearchAskAiMessageFeedbackGateway : IAskAiMessageFeedbackGat
 			_logger.LogInformation(
 				"Message feedback recorded: {Reaction} for message {MessageId} in conversation {ConversationId}. ES _id: {EsId}, Index: {Index}",
 				record.Reaction,
-				LogSanitizer.Sanitize(record.MessageId),
-				LogSanitizer.Sanitize(record.ConversationId),
+				record.MessageId,
+				record.ConversationId,
 				response.Id,
 				response.Index);
 		}

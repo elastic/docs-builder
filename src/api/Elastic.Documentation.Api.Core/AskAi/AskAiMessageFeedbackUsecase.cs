@@ -24,10 +24,11 @@ public class AskAiMessageFeedbackUsecase(
 		_ = activity?.SetTag("ask_ai.feedback.reaction", request.Reaction.ToString().ToLowerInvariant());
 		// Note: user.euid is automatically added to spans by EuidSpanProcessor
 
+		// MessageId and ConversationId are validated as UUIDs at the endpoint, so no sanitization needed
 		logger.LogInformation(
 			"Recording message feedback for message {MessageId} in conversation {ConversationId}: {Reaction}",
-			LogSanitizer.Sanitize(request.MessageId),
-			LogSanitizer.Sanitize(request.ConversationId),
+			request.MessageId,
+			request.ConversationId,
 			request.Reaction);
 
 		var record = new AskAiMessageFeedbackRecord(
