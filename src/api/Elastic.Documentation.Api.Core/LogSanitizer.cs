@@ -68,8 +68,8 @@ public static class LogSanitizer
 	/// Checks if a character is dangerous for logging (could enable log forging).
 	/// </summary>
 	private static bool IsDangerousChar(char c) =>
-		c <= '\x1F' ||          // ASCII control characters (0x00-0x1F)
-		c == '\x7F' ||          // DEL character
-		c == '\u2028' ||        // Unicode line separator
-		c == '\u2029';          // Unicode paragraph separator
+		c is <= '\x1F' or          // ASCII control characters (0x00-0x1F)
+		'\x7F' or          // DEL character
+		'\u2028' or        // Unicode line separator
+		'\u2029';          // Unicode paragraph separator
 }
