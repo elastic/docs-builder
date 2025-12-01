@@ -172,7 +172,8 @@ public partial class ElasticsearchGateway : ISearchGateway
 	public async Task<(int TotalHits, List<SearchResultItem> Results)> HybridSearchWithRrfAsync(string query, int pageNumber, int pageSize,
 		Cancel ctx = default)
 	{
-		_logger.LogInformation("Starting RRF hybrid search for '[{Query}]' with pageNumber={PageNumber}, pageSize={PageSize}", $"[{LogSanitizer.Sanitize(query)}]", pageNumber, pageSize);
+		var sanitizedQuery = LogSanitizer.Sanitize(query);
+		_logger.LogInformation("Starting RRF hybrid search. UserQuery='{SanitizedQuery}' pageNumber={PageNumber}, pageSize={PageSize}", sanitizedQuery, pageNumber, pageSize);
 
 		const string preTag = "<mark>";
 		const string postTag = "</mark>";
@@ -257,13 +258,13 @@ public partial class ElasticsearchGateway : ISearchGateway
 					response.ElasticsearchServerError?.Error?.Reason ?? "Unknown");
 			}
 			else
-				_logger.LogInformation("RRF search completed for '[{Query}]'. Total hits: {TotalHits}", $"[{LogSanitizer.Sanitize(query)}]", response.Total);
+				_logger.LogInformation("RRF search completed for UserQuery='{SanitizedQuery}'. Total hits: {TotalHits}", sanitizedQuery, response.Total);
 
 			return ProcessSearchResponse(response);
 		}
 		catch (Exception ex)
 		{
-			_logger.LogError(ex, "Error occurred during Elasticsearch RRF search for '[{Query}]'", $"[{LogSanitizer.Sanitize(query)}]");
+			_logger.LogError(ex, "Error occurred during Elasticsearch RRF search for UserQuery='{SanitizedQuery}'", sanitizedQuery);
 			throw;
 		}
 	}
