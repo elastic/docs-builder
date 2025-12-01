@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { create } from 'zustand/react'
 
 export type AiProvider = 'AgentBuilder' | 'LlmGateway'
+export type Reaction = 'thumbsUp' | 'thumbsDown'
 
 export interface ChatMessage {
     id: string
@@ -22,6 +23,7 @@ interface ChatState {
     chatMessages: ChatMessage[]
     conversationId: string | null
     aiProvider: AiProvider
+    messageFeedback: Record<string, Reaction> // messageId -> reaction
     actions: {
         submitQuestion: (question: string) => void
         updateAiMessage: (
@@ -37,6 +39,7 @@ interface ChatState {
         hasMessageBeenSent: (id: string) => boolean
         markMessageAsSent: (id: string) => void
         cancelStreaming: () => void
+        setMessageFeedback: (messageId: string, reaction: Reaction) => void
     }
 }
 
@@ -44,6 +47,7 @@ export const chatStore = create<ChatState>((set) => ({
     chatMessages: [],
     conversationId: null, // Start with null - will be set by backend on first request
     aiProvider: 'LlmGateway', // Default to LLM Gateway
+    messageFeedback: {},
     actions: {
         submitQuestion: (question: string) => {
             set((state) => {
@@ -98,7 +102,7 @@ export const chatStore = create<ChatState>((set) => ({
 
         clearChat: () => {
             sentAiMessageIds.clear()
-            set({ chatMessages: [], conversationId: null })
+            set({ chatMessages: [], conversationId: null, messageFeedback: {} })
         },
 
         clearNon429Errors: () => {
@@ -136,6 +140,15 @@ export const chatStore = create<ChatState>((set) => ({
                 ),
             }))
         },
+
+        setMessageFeedback: (messageId: string, reaction: Reaction) => {
+            set((state) => ({
+                messageFeedback: {
+                    ...state.messageFeedback,
+                    [messageId]: reaction,
+                },
+            }))
+        },
     },
 }))
 
@@ -144,3 +157,5 @@ export const useConversationId = () =>
     chatStore((state) => state.conversationId)
 export const useAiProvider = () => chatStore((state) => state.aiProvider)
 export const useChatActions = () => chatStore((state) => state.actions)
+export const useMessageReaction = (messageId: string) =>
+    chatStore((state) => state.messageFeedback[messageId] ?? null)

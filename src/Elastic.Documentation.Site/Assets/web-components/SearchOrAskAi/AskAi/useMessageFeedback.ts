@@ -1,9 +1,10 @@
 import { logWarn } from '../../../telemetry/logging'
 import { traceSpan } from '../../../telemetry/tracing'
+import { Reaction, useChatActions, useMessageReaction } from './chat.store'
 import { useMutation } from '@tanstack/react-query'
-import { useState, useCallback } from 'react'
+import { useCallback } from 'react'
 
-export type Reaction = 'thumbsUp' | 'thumbsDown'
+export type { Reaction } from './chat.store'
 
 interface MessageFeedbackRequest {
     messageId: string
@@ -47,9 +48,8 @@ export const useMessageFeedback = (
     messageId: string,
     conversationId: string | null
 ): UseMessageFeedbackReturn => {
-    const [selectedReaction, setSelectedReaction] = useState<Reaction | null>(
-        null
-    )
+    const selectedReaction = useMessageReaction(messageId)
+    const { setMessageFeedback } = useChatActions()
 
     const mutation = useMutation({
         mutationFn: submitFeedbackToApi,
@@ -81,8 +81,8 @@ export const useMessageFeedback = (
                 return
             }
 
-            // Optimistic update
-            setSelectedReaction(reaction)
+            // Optimistic update - stored in Zustand so it persists across tab switches
+            setMessageFeedback(messageId, reaction)
 
             // Submit to API
             mutation.mutate({
@@ -91,7 +91,13 @@ export const useMessageFeedback = (
                 reaction,
             })
         },
-        [messageId, conversationId, selectedReaction, mutation]
+        [
+            messageId,
+            conversationId,
+            selectedReaction,
+            mutation,
+            setMessageFeedback,
+        ]
     )
 
     return {
