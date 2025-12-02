@@ -11,7 +11,7 @@ public class ReleaseNotesInput
 {
 	public required string Title { get; set; }
 	public required string Type { get; set; }
-	public required string[] Products { get; set; }
+	public required List<ProductInfo> Products { get; set; }
 	public string? Subtype { get; set; }
 	public string[] Areas { get; set; } = [];
 	public string? Pr { get; set; }
@@ -21,8 +21,6 @@ public class ReleaseNotesInput
 	public string? Action { get; set; }
 	public string? FeatureId { get; set; }
 	public bool? Highlight { get; set; }
-	public string? Lifecycle { get; set; }
-	public string? Target { get; set; }
 	public int? Id { get; set; }
 	public string? Output { get; set; }
 }

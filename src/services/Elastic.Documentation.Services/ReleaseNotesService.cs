@@ -54,7 +54,7 @@ public class ReleaseNotesService(
 				return false;
 			}
 
-			if (input.Products.Length == 0)
+			if (input.Products.Count == 0)
 			{
 				collector.EmitError(string.Empty, "At least one product is required");
 				return false;
@@ -178,12 +178,7 @@ public class ReleaseNotesService(
 			FeatureId = input.FeatureId,
 			Highlight = input.Highlight,
 			Pr = input.Pr,
-			Products = input.Products.Select(p => new ProductInfo
-			{
-				Product = p,
-				Target = input.Target,
-				Lifecycle = input.Lifecycle
-			}).ToList()
+			Products = input.Products
 		};
 
 		if (input.Areas.Length > 0)

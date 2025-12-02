@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using ConsoleAppFramework;
+using Documentation.Builder.Arguments;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;
@@ -32,7 +33,7 @@ internal sealed class ReleaseNotesCommand(
 	/// </summary>
 	/// <param name="title">Required: A short, user-facing title (max 80 characters)</param>
 	/// <param name="type">Required: Type of change (feature, enhancement, bug-fix, breaking-change, etc.)</param>
-	/// <param name="product">Required: Product ID(s) affected (comma-separated or specify multiple times)</param>
+	/// <param name="products">Required: Products affected in format "product target lifecycle, ..." (e.g., "elasticsearch 9.2.0 ga, cloud-serverless 2025-08-05")</param>
 	/// <param name="subtype">Optional: Subtype for breaking changes (api, behavioral, configuration, etc.)</param>
 	/// <param name="area">Optional: Area(s) affected (comma-separated or specify multiple times)</param>
 	/// <param name="pr">Optional: Pull request URL</param>
@@ -42,8 +43,6 @@ internal sealed class ReleaseNotesCommand(
 	/// <param name="action">Optional: What users must do to mitigate</param>
 	/// <param name="featureId">Optional: Feature flag ID</param>
 	/// <param name="highlight">Optional: Include in release highlights</param>
-	/// <param name="lifecycle">Optional: Lifecycle stage (preview, beta, ga)</param>
-	/// <param name="target">Optional: Target version or date</param>
 	/// <param name="id">Optional: Custom ID (auto-generated if not provided)</param>
 	/// <param name="output">Optional: Output directory for the changelog fragment. Defaults to current directory</param>
 	/// <param name="ctx"></param>
@@ -51,7 +50,7 @@ internal sealed class ReleaseNotesCommand(
 	public async Task<int> Create(
 		string title,
 		string type,
-		string[] product,
+		[ProductInfoParser] List<ProductInfo> products,
 		string? subtype = null,
 		string[]? area = null,
 		string? pr = null,
@@ -61,8 +60,6 @@ internal sealed class ReleaseNotesCommand(
 		string? action = null,
 		string? featureId = null,
 		bool? highlight = null,
-		string? lifecycle = null,
-		string? target = null,
 		int? id = null,
 		string? output = null,
 		Cancel ctx = default
@@ -76,7 +73,7 @@ internal sealed class ReleaseNotesCommand(
 		{
 			Title = title,
 			Type = type,
-			Products = product,
+			Products = products,
 			Subtype = subtype,
 			Areas = area ?? [],
 			Pr = pr,
@@ -86,8 +83,6 @@ internal sealed class ReleaseNotesCommand(
 			Action = action,
 			FeatureId = featureId,
 			Highlight = highlight,
-			Lifecycle = lifecycle,
-			Target = target,
 			Id = id,
 			Output = output
 		};
