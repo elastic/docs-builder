@@ -172,7 +172,7 @@ export const SearchResults = ({
                                 </ul>
                             }
                             loadedContent={
-                                data && (
+                                data ? (
                                     <ul>
                                         {filteredResults.map(
                                             (result, index) => (
@@ -188,6 +188,8 @@ export const SearchResults = ({
                                             )
                                         )}
                                     </ul>
+                                ) : (
+                                    <div>No results</div>
                                 )
                             }
                         />

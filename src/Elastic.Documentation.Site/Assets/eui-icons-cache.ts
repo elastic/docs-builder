@@ -19,6 +19,7 @@ import { icon as EuiIconEmpty } from '@elastic/eui/es/components/icon/assets/emp
 import { icon as EuiIconError } from '@elastic/eui/es/components/icon/assets/error'
 import { icon as EuiIconFaceHappy } from '@elastic/eui/es/components/icon/assets/face_happy'
 import { icon as EuiIconFaceSad } from '@elastic/eui/es/components/icon/assets/face_sad'
+import { icon as EuiIconKqlFunction } from '@elastic/eui/es/components/icon/assets/kql_function'
 import { icon as EuiIconLogoElastic } from '@elastic/eui/es/components/icon/assets/logo_elastic'
 import { icon as EuiIconNewChat } from '@elastic/eui/es/components/icon/assets/new_chat'
 import { icon as EuiIconPlay } from '@elastic/eui/es/components/icon/assets/play'
@@ -29,6 +30,7 @@ import { icon as EuiIconSearch } from '@elastic/eui/es/components/icon/assets/se
 import { icon as EuiIconSortDown } from '@elastic/eui/es/components/icon/assets/sort_down'
 import { icon as EuiIconSortUp } from '@elastic/eui/es/components/icon/assets/sort_up'
 import { icon as EuiIconSparkles } from '@elastic/eui/es/components/icon/assets/sparkles'
+import { icon as EuiIconStop } from '@elastic/eui/es/components/icon/assets/stop'
 import { icon as EuiIconThumbDown } from '@elastic/eui/es/components/icon/assets/thumbDown'
 import { icon as EuiIconThumbUp } from '@elastic/eui/es/components/icon/assets/thumbUp'
 import { icon as EuiIconTrash } from '@elastic/eui/es/components/icon/assets/trash'
@@ -68,9 +70,11 @@ const iconMapping = {
     play: EuiIconPlay,
     sortUp: EuiIconSortUp,
     sortDown: EuiIconSortDown,
+    stop: EuiIconStop,
     arrowStart: EuiIconArrowStart,
     arrowEnd: EuiIconArrowEnd,
     comment: EuiIconComment,
+    kqlFunction: EuiIconKqlFunction,
 }
 
 appendIconComponentCache(iconMapping)

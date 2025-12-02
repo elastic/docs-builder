@@ -59,9 +59,7 @@ export const AskAiSuggestions = ({ disabled }: { disabled?: boolean }) => {
                     `}
                 >
                     <EuiButton
-                        iconType="newChat"
-                        color="primary"
-                        fullWidth
+                        color="text"
                         size="s"
                         onClick={() => {
                             if (!disabled) {

@@ -1,7 +1,6 @@
 import { ChatMessage } from './ChatMessage'
 import { StreamingAiMessage } from './StreamingAiMessage'
 import { ChatMessage as ChatMessageType } from './chat.store'
-import { EuiSpacer } from '@elastic/eui'
 import * as React from 'react'
 import { useMemo } from 'react'
 
@@ -35,7 +34,6 @@ export const ChatMessageList = ({
                             showError={message.id === lastErrorMessageId}
                         />
                     )}
-                    {index < messages.length - 1 && <EuiSpacer size="l" />}
                 </React.Fragment>
             ))}
         </>

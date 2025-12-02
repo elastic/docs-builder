@@ -46,6 +46,7 @@ export const useKeyboardNavigation = (
 
     const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
+            e.preventDefault()
             onEnter?.()
         } else if (e.key === 'ArrowDown') {
             e.preventDefault()
