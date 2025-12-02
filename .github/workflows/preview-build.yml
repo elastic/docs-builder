@@ -169,7 +169,7 @@ jobs:
             README.md
 
       - name: Get vale files
-        if: contains(fromJSON('["pull_request""]'), github.event_name)
+        if: contains(fromJSON('["pull_request_target"]'), github.event_name)
         id: check-vale-files
         uses: tj-actions/changed-files@2f7c5bfce28377bc069a65ba478de0a74aa0ca32 # v46.0.1
         with:
@@ -676,7 +676,7 @@ jobs:
       id-token: none
     needs:
       - check
-    if: contains(fromJSON('["pull_request"]'), github.event_name) && needs.check.outputs.any_changed_vale_files == 'true'
+    if: contains(fromJSON('["pull_request_target"]'), github.event_name) && needs.check.outputs.any_changed_vale_files == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@v6
