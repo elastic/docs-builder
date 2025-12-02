@@ -12,6 +12,7 @@ using Elastic.Documentation.Services.ReleaseNotes;
 using Microsoft.Extensions.Logging;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
+using YamlDotNet.Core;
 using static Elastic.Documentation.Configuration.ConfigurationFileProvider;
 
 namespace Elastic.Documentation.Services;
@@ -93,11 +94,21 @@ public class ReleaseNotesService(
 
 			return true;
 		}
-		catch (Exception ex)
+		catch (OperationCanceledException)
 		{
-			collector.EmitError(string.Empty, $"Error creating release notes: {ex.Message}", ex);
+			// If cancelled, don't emit error; propagate cancellation signal.
+ 			throw;
+ 		}
+ 		catch (IOException ioEx)
+ 		{
+ 			collector.EmitError(string.Empty, $"IO error creating release notes: {ioEx.Message}", ioEx);
 			return false;
 		}
+		catch (UnauthorizedAccessException uaEx)
+ 		{
+ 			collector.EmitError(string.Empty, $"Access denied creating release notes: {uaEx.Message}", uaEx);
+ 			return false;
+ 		}
 	}
 
 	private async Task<ReleaseNotesConfiguration?> LoadReleaseNotesConfiguration(
@@ -107,7 +118,7 @@ public class ReleaseNotesService(
 	{
 		// Try to load from config directory
 		_ = configurationContext; // Suppress unused warning - kept for future extensibility
-		var configPath = Path.Combine(LocalConfigurationDirectory, "release-notes.yml");
+		var configPath = _fileSystem.Path.Combine(LocalConfigurationDirectory, "release-notes.yml");
 
 		if (!_fileSystem.File.Exists(configPath))
 		{
@@ -126,11 +137,21 @@ public class ReleaseNotesService(
 			var config = deserializer.Deserialize<ReleaseNotesConfiguration>(yamlContent);
 			return config;
 		}
-		catch (Exception ex)
+		catch (IOException ex)
 		{
-			collector.EmitError(configPath, $"Failed to load release notes configuration: {ex.Message}", ex);
+			collector.EmitError(configPath, $"I/O error loading release notes configuration: {ex.Message}", ex);
 			return null;
 		}
+		catch (UnauthorizedAccessException ex)
+ 		{
+ 			collector.EmitError(configPath, $"Access denied loading release notes configuration: {ex.Message}", ex);
+ 			return null;
+ 		}
+ 		catch (YamlException ex)
+ 		{
+ 			collector.EmitError(configPath, $"YAML parsing error in release notes configuration: {ex.Message}", ex);
+ 			return null;
+ 		}
 	}
 
 	private static int GenerateUniqueId(string title, string prUrl)
