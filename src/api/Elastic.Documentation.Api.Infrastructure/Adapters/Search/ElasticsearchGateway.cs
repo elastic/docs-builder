@@ -96,7 +96,7 @@ public partial class ElasticsearchGateway : ISearchGateway
 	/// </summary>
 	private static Query BuildLexicalQuery(string searchQuery)
 	{
-		var tokens = searchQuery.Split(" ");
+		var tokens = searchQuery.Split(Array.Empty<char>(), StringSplitOptions.RemoveEmptyEntries);
 		if (tokens is ["datastream" or "datastreams" or "data-stream" or "data-streams"])
 		{
 			// /docs/api/doc/kibana/operation/operation-delete-fleet-epm-packages-pkgname-pkgversion-datastream-assets
@@ -276,12 +276,16 @@ public partial class ElasticsearchGateway : ISearchGateway
 			var hit = response.Hits.ElementAtOrDefault(index);
 			var highlights = hit?.Highlight;
 
+			string? highlightedTitle = null;
 			string? highlightedBody = null;
 
 			if (highlights != null)
 			{
 				if (highlights.TryGetValue("stripped_body", out var bodyHighlights) && bodyHighlights.Count > 0)
 					highlightedBody = string.Join(". ", bodyHighlights.Select(h => h.TrimEnd('.')));
+
+				if (highlights.TryGetValue("title", out var titleHighlights) && titleHighlights.Count > 0)
+					highlightedTitle = string.Join(". ", titleHighlights.Select(h => h.TrimEnd('.')));
 			}
 
 			return new SearchResultItem
@@ -297,6 +301,7 @@ public partial class ElasticsearchGateway : ISearchGateway
 					Url = parent.Url
 				}).ToArray(),
 				Score = (float)(hit?.Score ?? 0.0),
+				HighlightedTitle = highlightedTitle,
 				HighlightedBody = highlightedBody
 			};
 		}).ToList();

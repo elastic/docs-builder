@@ -51,7 +51,10 @@ interface SearchResultListItemProps {
     index: number
     pageNumber: number
     pageSize: number
-    onKeyDown?: (e: React.KeyboardEvent<HTMLLIElement>, index: number) => void
+    onKeyDown?: (
+        e: React.KeyboardEvent<HTMLAnchorElement>,
+        index: number
+    ) => void
     setRef?: (element: HTMLAnchorElement | null, index: number) => void
 }
 
@@ -84,65 +87,67 @@ export function SearchResultListItem({
     }
 
     return (
-        <li
-        // css={css`
-        //     :not(:first-child) {
-        //         border-top: 1px dotted ${euiTheme.colors.borderBasePrimary};
-        //     }
-        // `}
-        >
+        <li>
             <a
                 ref={(el) => setRef?.(el, index)}
                 onClick={handleClick}
                 onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                         handleClick()
-                        // Navigate to the result URL
                         window.location.href = result.url
                     } else {
-                        // Type mismatch: event is from anchor but handler expects HTMLLIElement
-                        onKeyDown?.(
-                            e as unknown as React.KeyboardEvent<HTMLLIElement>,
-                            index
-                        )
+                        onKeyDown?.(e, index)
                     }
                 }}
                 css={css`
-                    display: flex;
+                    display: grid;
+                    grid-template-columns: auto 1fr auto;
                     align-items: center;
                     gap: ${euiTheme.size.base};
-                    border-radius: ${euiTheme.border.radius.small};
-                    width: 100%;
+                    border-radius: ${euiTheme.border.radius.medium};
                     padding-inline: ${euiTheme.size.base};
                     padding-block: ${euiTheme.size.m};
-                    :hover {
-                        background-color: ${euiTheme.colors
-                            .backgroundBaseSubdued};
-                    }
+                    margin-inline: ${euiTheme.size.base};
+                    border: 1px solid transparent;
+                    :hover,
                     :focus {
                         background-color: ${euiTheme.colors
                             .backgroundBaseSubdued};
-                    }
-                    :focus .return-key-icon {
-                        visibility: visible;
+                        border-color: ${euiTheme.colors.borderBasePlain};
+                        .return-key-icon {
+                            visibility: visible;
+                        }
                     }
                 `}
                 tabIndex={0}
                 href={result.url}
             >
-                {/*<EuiIcon*/}
-                {/*    type="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTQiIGhlaWdodD0iMTMiIHZpZXdCb3g9IjAgMCAxNCAxMyIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTExLjk3NDYgMC4zMTY0MDZMMTEuMDI3MyAzLjE1ODJIMTRWNC4xNTgySDEwLjY5NDNMOS4zNjAzNSA4LjE1ODJIMTJWOS4xNTgySDkuMDI3MzRMNy45NzQ2MSAxMi4zMTY0TDcuMDI1MzkgMTJMNy45NzI2NiA5LjE1ODJINC4wMjczNEwyLjk3NDYxIDEyLjMxNjRMMi4wMjUzOSAxMkwyLjk3MjY2IDkuMTU4MkgwVjguMTU4MkgzLjMwNTY2TDQuNjM5NjUgNC4xNTgySDJWMy4xNTgySDQuOTcyNjZMNi4wMjUzOSAwTDYuOTc0NjEgMC4zMTY0MDZMNi4wMjczNCAzLjE1ODJIOS45NzI2NkwxMS4wMjU0IDBMMTEuOTc0NiAwLjMxNjQwNlpNNC4zNjAzNSA4LjE1ODJIOC4zMDU2Nkw5LjYzOTY1IDQuMTU4Mkg1LjY5NDM0TDQuMzYwMzUgOC4xNTgyWiIgZmlsbD0iIzFEMkEzRSIvPgo8L3N2Zz4="*/}
-                {/*    color="subdued"*/}
-                {/*    size="m"*/}
-                {/*/>*/}
-                <div>
+                <EuiIcon
+                    type={result.type === 'api' ? 'code' : 'document'}
+                    color="subdued"
+                    size="m"
+                />
+                <div
+                    css={css`
+                        mark {
+                            background-color: transparent;
+                            // font-weight: ${euiTheme.font.weight.bold};
+                            color: ${euiTheme.colors.link};
+                        }
+                    `}
+                >
                     <div
                         css={css`
-                            font-size: ${titleFontSize};
+                            font-size: ${titleFontSize.fontSize};
                             font-weight: ${euiTheme.font.weight.semiBold};
                         `}
                     >
-                        {result.title}
+                        <SanitizedHtmlContent
+                            htmlContent={
+                                result.highlightedTitle ?? result.title
+                            }
+                            ellipsis={false}
+                        />
                     </div>
                     <EuiSpacer size="xs" />
                     <EuiText size="xs">
@@ -157,17 +162,12 @@ export function SearchResultListItem({
                                 overflow: hidden;
 
                                 //width: 90%;
-
-                                mark {
-                                    background-color: transparent;
-                                    font-weight: ${euiTheme.font.weight.bold};
-                                    color: ${euiTheme.colors.link};
-                                }
                             `}
                         >
                             {result.highlightedBody ? (
                                 <SanitizedHtmlContent
                                     htmlContent={result.highlightedBody}
+                                    ellipsis={true}
                                 />
                             ) : (
                                 <span>{result.description}</span>
@@ -177,7 +177,10 @@ export function SearchResultListItem({
                     {result.parents.length > 0 && (
                         <>
                             <EuiSpacer size="xs" />
-                            <Breadcrumbs parents={result.parents} />
+                            <Breadcrumbs
+                                type={result.type}
+                                parents={result.parents}
+                            />
                         </>
                     )}
                 </div>
@@ -195,7 +198,13 @@ export function SearchResultListItem({
     )
 }
 
-function Breadcrumbs({ parents }: { parents: SearchResultItem['parents'] }) {
+function Breadcrumbs({
+    type,
+    parents,
+}: {
+    type: SearchResultItem['type']
+    parents: SearchResultItem['parents']
+}) {
     const { euiTheme } = useEuiTheme()
     const { fontSize: smallFontsize } = useEuiFontSize('xs')
     return (
@@ -208,6 +217,23 @@ function Breadcrumbs({ parents }: { parents: SearchResultItem['parents'] }) {
                 list-style: none;
             `}
         >
+            <li
+                key={'breadcrumb-' + type}
+                css={css`
+                    &:not(:last-child)::after {
+                        content: '/';
+                        margin-left: ${euiTheme.size.xs};
+                        font-size: ${smallFontsize};
+                        color: ${euiTheme.colors.textSubdued};
+                        margin-top: -1px;
+                    }
+                    display: inline-flex;
+                `}
+            >
+                <EuiText size="xs" color="subdued">
+                    {type === 'api' ? 'API' : 'Docs'}
+                </EuiText>
+            </li>
             {parents.slice(1).map((parent) => (
                 <li
                     key={'breadcrumb-' + parent.url}
@@ -232,7 +258,7 @@ function Breadcrumbs({ parents }: { parents: SearchResultItem['parents'] }) {
 }
 
 const SanitizedHtmlContent = memo(
-    ({ htmlContent }: { htmlContent: string }) => {
+    ({ htmlContent, ellipsis }: { htmlContent: string; ellipsis: boolean }) => {
         const processed = useMemo(() => {
             if (!htmlContent) return ''
 
@@ -242,8 +268,13 @@ const SanitizedHtmlContent = memo(
                 KEEP_CONTENT: true,
             })
 
+            if (!ellipsis) {
+                return sanitized
+            }
+
             const temp = document.createElement('div')
             temp.innerHTML = sanitized
+
             const text = temp.textContent || ''
             const firstChar = text.trim()[0]
 

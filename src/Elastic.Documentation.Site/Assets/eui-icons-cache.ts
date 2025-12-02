@@ -6,7 +6,9 @@ import { icon as EuiIconArrowStart } from '@elastic/eui/es/components/icon/asset
 import { icon as EuiIconArrowDown } from '@elastic/eui/es/components/icon/assets/arrow_down'
 import { icon as EuiIconArrowLeft } from '@elastic/eui/es/components/icon/assets/arrow_left'
 import { icon as EuiIconArrowRight } from '@elastic/eui/es/components/icon/assets/arrow_right'
+import { icon as EuiIconArrowUp } from '@elastic/eui/es/components/icon/assets/arrow_up'
 import { icon as EuiIconCheck } from '@elastic/eui/es/components/icon/assets/check'
+import { icon as EuiIconCode } from '@elastic/eui/es/components/icon/assets/code'
 import { icon as EuiIconComment } from '@elastic/eui/es/components/icon/assets/comment'
 import { icon as EuiIconCopy } from '@elastic/eui/es/components/icon/assets/copy'
 import { icon as EuiIconCopyClipboard } from '@elastic/eui/es/components/icon/assets/copy_clipboard'
@@ -24,6 +26,7 @@ import { icon as EuiIconPopout } from '@elastic/eui/es/components/icon/assets/po
 import { icon as EuiIconRefresh } from '@elastic/eui/es/components/icon/assets/refresh'
 import { icon as EuiIconReturnKey } from '@elastic/eui/es/components/icon/assets/return_key'
 import { icon as EuiIconSearch } from '@elastic/eui/es/components/icon/assets/search'
+import { icon as EuiIconSortDown } from '@elastic/eui/es/components/icon/assets/sort_down'
 import { icon as EuiIconSortUp } from '@elastic/eui/es/components/icon/assets/sort_up'
 import { icon as EuiIconSparkles } from '@elastic/eui/es/components/icon/assets/sparkles'
 import { icon as EuiIconThumbDown } from '@elastic/eui/es/components/icon/assets/thumbDown'
@@ -33,11 +36,13 @@ import { icon as EuiIconUser } from '@elastic/eui/es/components/icon/assets/user
 import { icon as EuiIconWrench } from '@elastic/eui/es/components/icon/assets/wrench'
 import { appendIconComponentCache } from '@elastic/eui/es/components/icon/icon'
 
-appendIconComponentCache({
+const iconMapping = {
     newChat: EuiIconNewChat,
+    arrowUp: EuiIconArrowUp,
     arrowDown: EuiIconArrowDown,
     arrowLeft: EuiIconArrowLeft,
     arrowRight: EuiIconArrowRight,
+    code: EuiIconCode,
     document: EuiIconDocument,
     dot: EuiIconDot,
     empty: EuiIconEmpty,
@@ -62,7 +67,12 @@ appendIconComponentCache({
     copy: EuiIconCopy,
     play: EuiIconPlay,
     sortUp: EuiIconSortUp,
+    sortDown: EuiIconSortDown,
     arrowStart: EuiIconArrowStart,
     arrowEnd: EuiIconArrowEnd,
     comment: EuiIconComment,
-})
+}
+
+appendIconComponentCache(iconMapping)
+
+export const availableIcons = Object.keys(iconMapping)

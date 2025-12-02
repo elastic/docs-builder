@@ -12,7 +12,7 @@ const gradientContainerStyles = css`
             background-position: 100% 0%;
         }
     }
-    height: 42px;
+    padding: var(--outline-size);
     background: linear-gradient(
         90deg,
         #f04e98 0%,
@@ -23,9 +23,6 @@ const gradientContainerStyles = css`
     );
     background-size: 200% 100%;
     background-position: 0% 0%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     border-radius: 4px;
     animation: gradientMove 3s ease infinite;
 `
@@ -53,6 +50,7 @@ export const TellMeMoreButton = forwardRef<
         <div css={gradientContainerStyles}>
             <EuiButton
                 buttonRef={ref}
+                iconType="sparkles"
                 css={css`
                     & > span {
                         display: flex;
@@ -61,7 +59,6 @@ export const TellMeMoreButton = forwardRef<
                         width: 100%;
                         gap: ${euiTheme.size.s};
                     }
-                    margin-inline: 1px;
                     border: none;
                     position: relative;
                     :focus .return-key-icon {
