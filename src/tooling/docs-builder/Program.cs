@@ -34,6 +34,7 @@ app.Add<MoveCommand>("mv");
 app.Add<ServeCommand>("serve");
 app.Add<IndexCommand>("index");
 app.Add<FormatCommand>("format");
+app.Add<ReleaseNotesCommand>("release-notes");
 
 //assembler commands
 
