@@ -149,6 +149,7 @@ jobs:
       modified_files: ${{ steps.check-modified-file-detail.outputs.modified_files }}
       deleted_files: ${{ steps.check-modified-file-detail.outputs.deleted_files }}
       renamed_files: ${{ steps.check-modified-file-detail.outputs.renamed_files }}
+      any_changed_vale_files: ${{ steps.check-vale-files.outputs.any_changed }}
     steps:
       - name: Checkout
         if: contains(fromJSON('["push", "merge_group", "workflow_dispatch"]'), github.event_name)
@@ -166,6 +167,15 @@ jobs:
             ${{ inputs.path-pattern-ignore != '' && inputs.path-pattern-ignore || '' }}
             .github/**
             README.md
+
+      - name: Get vale files
+        if: contains(fromJSON('["pull_request""]'), github.event_name)
+        id: check-vale-files
+        uses: tj-actions/changed-files@2f7c5bfce28377bc069a65ba478de0a74aa0ca32 # v46.0.1
+        with:
+          files: |
+            docs/**/*.md
+            docs/**/*.adoc
 
       - name: Get modified file detail
         if: contains(fromJSON('["merge_group", "pull_request", "pull_request_target"]'), github.event_name)
@@ -656,3 +666,27 @@ jobs:
               issue_number: prNum,
               body
             });
+
+  vale:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      deployments: none
+      id-token: none
+    needs:
+      - check
+    if: contains(fromJSON('["pull_request"]'), github.event_name) && needs.check.outputs.any_changed_vale_files == 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Run Vale Linter
+        uses: elastic/vale-rules/lint@main
+
+      - name: Post Vale Results
+        uses: elastic/vale-rules/report@main
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
