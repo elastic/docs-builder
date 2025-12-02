@@ -10,9 +10,9 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services.ReleaseNotes;
 using Microsoft.Extensions.Logging;
+using YamlDotNet.Core;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
-using YamlDotNet.Core;
 using static Elastic.Documentation.Configuration.ConfigurationFileProvider;
 
 namespace Elastic.Documentation.Services;
@@ -97,18 +97,18 @@ public class ReleaseNotesService(
 		catch (OperationCanceledException)
 		{
 			// If cancelled, don't emit error; propagate cancellation signal.
- 			throw;
- 		}
- 		catch (IOException ioEx)
- 		{
- 			collector.EmitError(string.Empty, $"IO error creating release notes: {ioEx.Message}", ioEx);
+			throw;
+		}
+		catch (IOException ioEx)
+		{
+			collector.EmitError(string.Empty, $"IO error creating release notes: {ioEx.Message}", ioEx);
 			return false;
 		}
 		catch (UnauthorizedAccessException uaEx)
- 		{
- 			collector.EmitError(string.Empty, $"Access denied creating release notes: {uaEx.Message}", uaEx);
- 			return false;
- 		}
+		{
+			collector.EmitError(string.Empty, $"Access denied creating release notes: {uaEx.Message}", uaEx);
+			return false;
+		}
 	}
 
 	private async Task<ReleaseNotesConfiguration?> LoadReleaseNotesConfiguration(
@@ -143,15 +143,15 @@ public class ReleaseNotesService(
 			return null;
 		}
 		catch (UnauthorizedAccessException ex)
- 		{
- 			collector.EmitError(configPath, $"Access denied loading release notes configuration: {ex.Message}", ex);
- 			return null;
- 		}
- 		catch (YamlException ex)
- 		{
- 			collector.EmitError(configPath, $"YAML parsing error in release notes configuration: {ex.Message}", ex);
- 			return null;
- 		}
+		{
+			collector.EmitError(configPath, $"Access denied loading release notes configuration: {ex.Message}", ex);
+			return null;
+		}
+		catch (YamlException ex)
+		{
+			collector.EmitError(configPath, $"YAML parsing error in release notes configuration: {ex.Message}", ex);
+			return null;
+		}
 	}
 
 	private static int GenerateUniqueId(string title, string prUrl)
