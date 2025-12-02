@@ -12,6 +12,7 @@ using Elastic.Documentation.Services.ReleaseNotes;
 using Microsoft.Extensions.Logging;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
+using static Elastic.Documentation.Configuration.ConfigurationFileProvider;
 
 namespace Elastic.Documentation.Services;
 
@@ -106,7 +107,7 @@ public class ReleaseNotesService(
 	{
 		// Try to load from config directory
 		_ = configurationContext; // Suppress unused warning - kept for future extensibility
-		var configPath = Path.Combine(Elastic.Documentation.Configuration.ConfigurationFileProvider.LocalConfigurationDirectory, "release-notes.yml");
+		var configPath = Path.Combine(LocalConfigurationDirectory, "release-notes.yml");
 
 		if (!_fileSystem.File.Exists(configPath))
 		{
