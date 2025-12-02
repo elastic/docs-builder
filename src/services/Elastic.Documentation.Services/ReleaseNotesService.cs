@@ -85,7 +85,7 @@ public class ReleaseNotesService(
 			var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 			var slug = SanitizeFilename(input.Title);
 			var filename = $"{timestamp}-{slug}.yaml";
-			var filePath = Path.Combine(outputDir, filename);
+			var filePath = _fileSystem.Path.Combine(outputDir, filename);
 
 			// Write file
 			await _fileSystem.File.WriteAllTextAsync(filePath, yamlContent, ctx);
