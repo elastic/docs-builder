@@ -44,7 +44,7 @@ public class SearchRelevanceTests(ITestOutputHelper output)
 		{ "aliases", "/docs/manage-data/data-store/aliases", null},
 		{ "Kibana privilege", "/docs/deploy-manage/users-roles/cluster-or-deployment-auth/kibana-privileges", null},
 		{ "lens", "/docs/explore-analyze/visualize/lens", null},
-		{ "machine learning node", "/docs/deploy-manage/autoscaling/autoscaling-in-ece-and-ech", ["/docs/deploy-manage/distributed-architecture/clusters-nodes-shards/node-roles"]},
+		{ "machine learning node", "/docs/deploy-manage/autoscaling/autoscaling-in-ece-and-ech", null },
 		{ "machine learning", "/docs/reference/machine-learning", null},
 		{ "ml", "/docs/reference/machine-learning", null},
 		{ "elasticsearch", "/docs/reference/elasticsearch", null},
