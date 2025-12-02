@@ -69,6 +69,7 @@ public class DocumentationGenerator
 		_logger = logFactory.CreateLogger(nameof(DocumentationGenerator));
 
 		DocumentationSet = docSet;
+		PositionalNavigation = positionalNavigation ?? docSet;
 		Context = docSet.Context;
 		var productVersionInferrer = new ProductVersionInferrerService(DocumentationSet.Context.ProductsConfiguration, DocumentationSet.Context.VersionsConfiguration);
 		HtmlWriter = new HtmlWriter(DocumentationSet, _writeFileSystem, new DescriptionGenerator(), positionalNavigation, navigationHtmlWriter, legacyUrlMapper, productVersionInferrer);
@@ -82,6 +83,8 @@ public class DocumentationGenerator
 		_logger.LogInformation("Source directory: {SourcePath} Exists: {SourcePathExists}", docSet.SourceDirectory, docSet.SourceDirectory.Exists);
 		_logger.LogInformation("Output directory: {OutputPath} Exists: {OutputPathExists}", docSet.OutputDirectory, docSet.OutputDirectory.Exists);
 	}
+
+	private INavigationTraversable PositionalNavigation { get; }
 
 	public GenerationState? GetPreviousGenerationState()
 	{
@@ -256,7 +259,7 @@ public class DocumentationGenerator
 				foreach (var exporter in _markdownExporters)
 				{
 					var document = context.MarkdownDocument ??= await markdown.ParseFullAsync(DocumentationSet.TryFindDocumentByRelativePath, ctx);
-					var navigationItem = DocumentationSet.FindNavigationByMarkdown(markdown);
+					var navigationItem = PositionalNavigation.GetNavigationFor(markdown);
 					_ = await exporter.ExportAsync(new MarkdownExportFileContext
 					{
 						BuildContext = Context,
@@ -265,6 +268,7 @@ public class DocumentationGenerator
 						SourceFile = markdown,
 						DefaultOutputFile = outputFile,
 						DocumentationSet = DocumentationSet,
+						PositionaNavigation = PositionalNavigation,
 						NavigationItem = navigationItem
 					}, ctx);
 				}

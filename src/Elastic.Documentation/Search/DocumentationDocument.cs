@@ -25,6 +25,15 @@ public record DocumentationDocument
 	[JsonPropertyName("url")]
 	public string Url { get; set; } = string.Empty;
 
+	[JsonPropertyName("navigation_depth")]
+	public int NavigationDepth { get; set; } = 50; //default to a high number so that omission gets penalized.
+
+	[JsonPropertyName("navigation_table_of_contents")]
+	public int NavigationTableOfContents { get; set; } = 50; //default to a high number so that omission gets penalized.
+
+	[JsonPropertyName("navigation_section")]
+	public string? NavigationSection { get; set; }
+
 	/// The date of the batch update this document was part of last.
 	/// This date could be higher than the date_last_updated.
 	[JsonPropertyName("batch_index_date")]

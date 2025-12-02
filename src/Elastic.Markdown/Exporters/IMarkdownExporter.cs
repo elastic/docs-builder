@@ -20,6 +20,7 @@ public record MarkdownExportFileContext
 	public required IFileInfo DefaultOutputFile { get; init; }
 	public required DocumentationSet DocumentationSet { get; init; }
 	public required INavigationItem NavigationItem { get; init; }
+	public required INavigationTraversable PositionaNavigation { get; init; }
 }
 
 public interface IMarkdownExporter

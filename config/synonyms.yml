@@ -1,6 +1,8 @@
 synonyms:
   - [ ".net", "c#", "csharp", "dotnet", "net" ]
-  - [ "esql", "es|ql" ]
+  - [ "esql", "es|ql => esql" ]
+  - [ "data-stream", "data stream", "datastream => data-streams"]
+  - [ "data-streams", "data streams", "datastreams"]
   - [ "motlp", "managed otlp" ]
   - [ "s3", "aws s3", "amazon s3" ]
   - [ "es", "elasticsearch" ]
@@ -27,7 +29,7 @@ synonyms:
   - [ "edot", "elastic distribution of opentelemetry" ]
   - [ "k8s", "kubernetes" ]
   - [ "ecs", "elastic common schema" ]
-  - [ "ml", "machine learning" ]
+  - [ "machine-learning", "machine learning", "ml => machine learning" ]
   - [ "eis", "elastic inference service" ]
   - [ "traffic filter", "network security" ]
   - [ "sso", "single sign-on" ]
