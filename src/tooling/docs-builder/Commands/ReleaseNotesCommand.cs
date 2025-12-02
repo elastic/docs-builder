@@ -30,7 +30,7 @@ internal sealed class ReleaseNotesCommand(
 	/// <summary>
 	/// Create a new release notes changelog fragment from command-line input
 	/// </summary>
-	/// <param name="headline">Required: A short, user-facing headline (max 80 characters)</param>
+	/// <param name="title">Required: A short, user-facing title (max 80 characters)</param>
 	/// <param name="type">Required: Type of change (feature, enhancement, bug-fix, breaking-change, etc.)</param>
 	/// <param name="product">Required: Product ID(s) affected (comma-separated or specify multiple times)</param>
 	/// <param name="subtype">Optional: Subtype for breaking changes (api, behavioral, configuration, etc.)</param>
@@ -49,7 +49,7 @@ internal sealed class ReleaseNotesCommand(
 	/// <param name="ctx"></param>
 	[Command("create")]
 	public async Task<int> Create(
-		string headline,
+		string title,
 		string type,
 		string[] product,
 		string? subtype = null,
@@ -74,7 +74,7 @@ internal sealed class ReleaseNotesCommand(
 
 		var input = new ReleaseNotesInput
 		{
-			Title = headline,
+			Title = title,
 			Type = type,
 			Products = product,
 			Subtype = subtype,
