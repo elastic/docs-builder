@@ -15,6 +15,7 @@ import {
     EuiEmptyPrompt,
     EuiSpacer,
     EuiTitle,
+    useEuiTheme,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -42,7 +43,6 @@ const messagesStyles = css`
     margin: 0 auto;
 `
 
-// Small helper for scroll behavior
 const scrollToBottom = (container: HTMLDivElement | null) => {
     if (!container) return
     container.scrollTop = container.scrollHeight
@@ -74,6 +74,7 @@ const NewConversationHeader = ({
 )
 
 export const Chat = () => {
+    const { euiTheme } = useEuiTheme()
     const messages = useChatMessages()
     const { submitQuestion, clearChat, clearNon429Errors, cancelStreaming } =
         useChatActions()
@@ -89,18 +90,15 @@ export const Chat = () => {
         ${useEuiOverflowScroll('y', true)}
     `
 
-    // Check if there's an active streaming query
     const isStreaming =
         messages.length > 0 &&
         messages[messages.length - 1].type === 'ai' &&
         messages[messages.length - 1].status === 'streaming'
 
-    // Handle abort function from StreamingAiMessage
-    const handleAbortReady = (abort: () => void) => {
+    const handleAbortReady = useCallback((abort: () => void) => {
         abortFunctionRef.current = abort
-    }
+    }, [])
 
-    // Clear abort function when streaming ends
     useEffect(() => {
         if (!isStreaming) {
             abortFunctionRef.current = null
@@ -109,16 +107,13 @@ export const Chat = () => {
 
     const handleSubmit = useCallback(
         (question: string) => {
-            if (!question.trim()) return
-
-            // Prevent submission during countdown
-            if (isCooldownActive) {
+            const trimmedQuestion = question.trim()
+            if (!trimmedQuestion || isCooldownActive) {
                 return
             }
 
             clearNon429Errors()
-
-            submitQuestion(question.trim())
+            submitQuestion(trimmedQuestion)
 
             if (inputRef.current) {
                 inputRef.current.value = ''
@@ -245,6 +240,7 @@ export const Chat = () => {
                 <div
                     css={css`
                         position: relative;
+                        padding-inline: ${euiTheme.size.base};
                     `}
                 >
                     <EuiFieldText
@@ -266,7 +262,7 @@ export const Chat = () => {
                         }
                         css={css`
                             position: absolute;
-                            right: 8px;
+                            right: ${euiTheme.size.l};
                             top: 50%;
                             transform: translateY(-50%);
                             border-radius: 9999px;

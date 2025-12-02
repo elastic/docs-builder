@@ -46,7 +46,7 @@ public record SearchRequest
 {
 	public required string Query { get; init; }
 	public int PageNumber { get; init; } = 1;
-	public int PageSize { get; init; } = 5;
+	public int PageSize { get; init; } = 20;
 }
 
 public record SearchResponse
@@ -76,4 +76,6 @@ public record SearchResultItem
 	public string[]? Headings { get; init; }
 	public float Score { get; init; }
 	public string? HighlightedBody { get; init; }
+
+	public string? HighlightedTitle { get; init; }
 }

@@ -642,8 +642,12 @@ describe('Search Component', () => {
             // Act
             render(<Search />)
 
-            // Assert
-            expect(screen.getByRole('progressbar')).toBeInTheDocument()
+            // Assert - check that the loading spinner exists (it has aria-label="Loading" without trailing space)
+            const progressbars = screen.getAllByRole('progressbar')
+            const spinner = progressbars.find(
+                (el) => el.getAttribute('aria-label') === 'Loading'
+            )
+            expect(spinner).toBeInTheDocument()
         })
 
         it('should show loading spinner when isFetching is true', () => {

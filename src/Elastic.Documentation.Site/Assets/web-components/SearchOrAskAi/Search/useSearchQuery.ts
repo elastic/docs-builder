@@ -29,12 +29,13 @@ const SearchResultItemParent = z.object({
 })
 
 const SearchResultItem = z.object({
-    type: z.string().default('doc'),
+    type: z.enum(['doc', 'api']),
     url: z.string(),
     title: z.string(),
     description: z.string(),
     score: z.number(),
     parents: z.array(SearchResultItemParent),
+    highlightedTitle: z.string().nullish(),
     highlightedBody: z.string().nullish(),
 })
 

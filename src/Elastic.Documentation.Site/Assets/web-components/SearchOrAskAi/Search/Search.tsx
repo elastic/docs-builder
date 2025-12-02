@@ -1,5 +1,7 @@
+import { availableIcons } from '../../../eui-icons-cache'
 import { useChatActions } from '../AskAi/chat.store'
 import { useIsAskAiCooldownActive } from '../AskAi/useAskAiCooldown'
+import { InfoBanner } from '../InfoBanner'
 import { SearchOrAskAiErrorCallout } from '../SearchOrAskAiErrorCallout'
 import { useModalActions } from '../modal.store'
 import { SearchResults } from './SearchResults/SearchResults'
@@ -12,6 +14,7 @@ import {
     EuiFieldText,
     EuiSpacer,
     EuiButton,
+    EuiHorizontalRule,
     EuiIcon,
     EuiLoadingSpinner,
     EuiText,
@@ -19,7 +22,7 @@ import {
     useEuiFontSize,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
-import { useState } from 'react'
+import React, { useState } from 'react'
 
 export const Search = () => {
     const searchTerm = useSearchTerm()
@@ -31,20 +34,28 @@ export const Search = () => {
     const [isInputFocused, setIsInputFocused] = useState(false)
     const { isLoading, isFetching } = useSearchQuery()
     const xsFontSize = useEuiFontSize('xs').fontSize
+    const mFontSize = useEuiFontSize('m').fontSize
     const { euiTheme } = useEuiTheme()
 
-    const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleSearchInputChange = (
+        e: React.ChangeEvent<HTMLInputElement>
+    ) => {
         setSearchTerm(e.target.value)
     }
 
-    const handleAskAi = () => {
-        if (isAskAiCooldownActive || searchTerm.trim() === '') {
+    const handleAskAiClick = () => {
+        const trimmedSearchTerm = searchTerm.trim()
+        if (isAskAiCooldownActive || trimmedSearchTerm === '') {
             return
         }
-        // Always start a new conversation
         clearChat()
-        submitQuestion(searchTerm)
+        submitQuestion(trimmedSearchTerm)
         setModalMode('askAi')
+    }
+
+    const handleCloseModal = () => {
+        clearSearchTerm()
+        closeModal()
     }
 
     const {
@@ -54,64 +65,49 @@ export const Search = () => {
         handleListItemKeyDown,
         focusLastAvailable,
         setItemRef,
-    } = useKeyboardNavigation(handleAskAi)
+    } = useKeyboardNavigation(handleAskAiClick)
 
     return (
         <>
-            <EuiSpacer size="m" />
             {!searchTerm.trim() && (
                 <SearchOrAskAiErrorCallout error={null} domain="search" />
             )}
+
             <div
                 css={css`
-                    position: relative;
+                    display: grid;
+                    grid-template-columns: auto 1fr auto;
+                    gap: ${euiTheme.size.m};
+                    align-items: center;
+                    height: 56px;
+                    padding-inline: ${euiTheme.size.base};
                 `}
             >
+                {isLoading || isFetching ? (
+                    <EuiLoadingSpinner size="m" />
+                ) : (
+                    <EuiIcon type="search" size="m" />
+                )}
                 <EuiFieldText
                     css={css`
-                        padding-inline-end: 60px;
+                        box-shadow: none !important;
+                        outline: none !important;
+                        font-size: ${mFontSize};
+                        padding: 0;
                     `}
                     autoFocus
-                    icon="empty"
                     inputRef={inputRef}
                     fullWidth
                     placeholder="Search in Docs"
                     value={searchTerm}
-                    onChange={handleSearch}
+                    onChange={handleSearchInputChange}
                     onFocus={() => setIsInputFocused(true)}
                     onBlur={() => setIsInputFocused(false)}
                     onKeyDown={handleInputKeyDown}
                     disabled={isSearchCooldownActive}
                 />
-                {isLoading || isFetching ? (
-                    <div
-                        css={css`
-                            position: absolute;
-                            display: flex;
-                            left: 12px;
-                            top: 50%;
-                            transform: translateY(-50%);
-                        `}
-                    >
-                        <EuiLoadingSpinner size="m" />
-                    </div>
-                ) : (
-                    <EuiIcon
-                        type="search"
-                        css={css`
-                            position: absolute;
-                            left: 12px;
-                            top: 50%;
-                            transform: translateY(-50%);
-                        `}
-                    />
-                )}
                 <EuiButton
                     css={`
-                        position: absolute;
-                        right: ${euiTheme.size.m};
-                        top: 50%;
-                        transform: translateY(-50%);
                         block-size: 20px;
                         font-size: ${xsFontSize};
                         padding-inline: ${euiTheme.size.s};
@@ -120,20 +116,22 @@ export const Search = () => {
                     size="s"
                     color="text"
                     minWidth={false}
-                    onClick={() => {
-                        clearSearchTerm()
-                        closeModal()
-                    }}
+                    onClick={handleCloseModal}
                 >
                     Esc
                 </EuiButton>
             </div>
+
             <SearchResults
                 onKeyDown={handleListItemKeyDown}
                 setItemRef={setItemRef}
             />
             {searchTerm && (
-                <>
+                <div
+                    css={css`
+                        padding-inline: ${euiTheme.size.base};
+                    `}
+                >
                     <EuiSpacer size="s" />
                     <EuiText color="subdued" size="xs">
                         Ask AI assistant
@@ -143,11 +141,120 @@ export const Search = () => {
                         ref={buttonRef}
                         term={searchTerm}
                         isInputFocused={isInputFocused}
-                        onAsk={handleAskAi}
+                        onAsk={handleAskAiClick}
                         onArrowUp={focusLastAvailable}
                     />
-                </>
+                </div>
             )}
+
+            <InfoBanner />
+            <SearchFooter />
         </>
+    )
+}
+
+const SearchFooter = () => {
+    const { euiTheme } = useEuiTheme()
+    return (
+        <>
+            <EuiHorizontalRule margin="none" />
+            <div
+                css={css`
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: ${euiTheme.size.m};
+                    background-color: ${euiTheme.colors.backgroundBaseSubdued};
+                    border-bottom-right-radius: ${euiTheme.border.radius.small};
+                    border-bottom-left-radius: ${euiTheme.border.radius.small};
+                    padding-inline: ${euiTheme.size.base};
+                    padding-block: ${euiTheme.size.m};
+                `}
+            >
+                <KeyboardIconsWithLabel
+                    types={['returnKey']}
+                    label="to select"
+                />
+                <KeyboardIconsWithLabel
+                    types={['sortUp', 'sortDown']}
+                    label="to navigate"
+                />
+                <KeyboardIconsWithLabel types={['Esc']} label="to close" />
+            </div>
+        </>
+    )
+}
+
+interface KeyboardIconProps {
+    type: string
+}
+
+const KeyboardKey = ({ children }: { children: React.ReactNode }) => {
+    const { euiTheme } = useEuiTheme()
+    return (
+        <span
+            css={css`
+                display: inline-flex;
+                justify-content: center;
+                align-items: center;
+                background-color: ${euiTheme.colors.backgroundLightText};
+                min-width: ${euiTheme.size.l};
+                height: ${euiTheme.size.l};
+                border-radius: ${euiTheme.border.radius.small};
+                padding-inline: ${euiTheme.size.xs};
+            `}
+        >
+            {children}
+        </span>
+    )
+}
+
+const KeyboardIcon = ({ type }: KeyboardIconProps) => {
+    const { euiTheme } = useEuiTheme()
+    return (
+        <KeyboardKey>
+            {availableIcons.includes(type) ? (
+                <EuiIcon type={type} size="s" />
+            ) : (
+                <EuiText
+                    size="xs"
+                    css={css`
+                        margin-inline: ${euiTheme.size.xs};
+                    `}
+                >
+                    {type}
+                </EuiText>
+            )}
+        </KeyboardKey>
+    )
+}
+
+const KeyboardIconsWithLabel = ({
+    types,
+    label,
+}: {
+    types: string[]
+    label: string
+}) => {
+    const { euiTheme } = useEuiTheme()
+    return (
+        <span
+            css={css`
+                display: flex;
+                gap: ${euiTheme.size.xs};
+            `}
+        >
+            <span
+                css={css`
+                    display: flex;
+                    gap: ${euiTheme.size.xs};
+                `}
+            >
+                {types.map((type, index) => (
+                    <KeyboardIcon type={types[index]} key={type + index} />
+                ))}
+            </span>
+            <span>{label}</span>
+        </span>
     )
 }
