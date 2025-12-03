@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Documentation.Builder.Commands;
 
-internal sealed class ReleaseNotesCommand(
+internal sealed class ChangelogCommand(
 	ILoggerFactory logFactory,
 	IDiagnosticsCollector collector,
 	IConfigurationContext configurationContext
@@ -44,6 +44,7 @@ internal sealed class ReleaseNotesCommand(
 	/// <param name="featureId">Optional: Feature flag ID</param>
 	/// <param name="highlight">Optional: Include in release highlights</param>
 	/// <param name="output">Optional: Output directory for the changelog fragment. Defaults to current directory</param>
+	/// <param name="config">Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml'</param>
 	/// <param name="ctx"></param>
 	[Command("add")]
 	public async Task<int> Create(
@@ -60,6 +61,7 @@ internal sealed class ReleaseNotesCommand(
 		string? featureId = null,
 		bool? highlight = null,
 		string? output = null,
+		string? config = null,
 		Cancel ctx = default
 	)
 	{
@@ -81,7 +83,8 @@ internal sealed class ReleaseNotesCommand(
 			Action = action,
 			FeatureId = featureId,
 			Highlight = highlight,
-			Output = output
+			Output = output,
+			Config = config
 		};
 
 		serviceInvoker.AddCommand(service, input,
@@ -91,3 +94,4 @@ internal sealed class ReleaseNotesCommand(
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
 }
+

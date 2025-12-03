@@ -12,7 +12,6 @@ using Microsoft.Extensions.Logging;
 using YamlDotNet.Core;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
-using static Elastic.Documentation.Configuration.ConfigurationFileProvider;
 
 namespace Elastic.Documentation.Services;
 
@@ -32,11 +31,11 @@ public class ReleaseNotesService(
 	{
 		try
 		{
-			// Load release notes configuration
-			var config = await LoadReleaseNotesConfiguration(collector, ctx);
+			// Load changelog configuration
+			var config = await LoadReleaseNotesConfiguration(collector, input.Config, ctx);
 			if (config == null)
 			{
-				collector.EmitError(string.Empty, "Failed to load release notes configuration");
+				collector.EmitError(string.Empty, "Failed to load changelog configuration");
 				return false;
 			}
 
@@ -86,7 +85,7 @@ public class ReleaseNotesService(
 
 			// Write file
 			await _fileSystem.File.WriteAllTextAsync(filePath, yamlContent, ctx);
-			_logger.LogInformation("Created release notes fragment: {FilePath}", filePath);
+			_logger.LogInformation("Created changelog fragment: {FilePath}", filePath);
 
 			return true;
 		}
@@ -109,23 +108,24 @@ public class ReleaseNotesService(
 
 	private async Task<ReleaseNotesConfiguration?> LoadReleaseNotesConfiguration(
 		IDiagnosticsCollector collector,
+		string? configPath,
 		Cancel ctx
 	)
 	{
-		// Try to load from config directory
+		// Determine config file path
 		_ = configurationContext; // Suppress unused warning - kept for future extensibility
-		var configPath = _fileSystem.Path.Combine(LocalConfigurationDirectory, "release-notes.yml");
+		var finalConfigPath = configPath ?? _fileSystem.Path.Combine(Directory.GetCurrentDirectory(), "docs", "changelog.yml");
 
-		if (!_fileSystem.File.Exists(configPath))
+		if (!_fileSystem.File.Exists(finalConfigPath))
 		{
 			// Use default configuration if file doesn't exist
-			_logger.LogWarning("Release notes configuration not found at {ConfigPath}, using defaults", configPath);
+			_logger.LogWarning("Changelog configuration not found at {ConfigPath}, using defaults", finalConfigPath);
 			return ReleaseNotesConfiguration.Default;
 		}
 
 		try
 		{
-			var yamlContent = await _fileSystem.File.ReadAllTextAsync(configPath, ctx);
+			var yamlContent = await _fileSystem.File.ReadAllTextAsync(finalConfigPath, ctx);
 			var deserializer = new StaticDeserializerBuilder(new ReleaseNotesYamlStaticContext())
 				.WithNamingConvention(UnderscoredNamingConvention.Instance)
 				.Build();
@@ -135,17 +135,17 @@ public class ReleaseNotesService(
 		}
 		catch (IOException ex)
 		{
-			collector.EmitError(configPath, $"I/O error loading release notes configuration: {ex.Message}", ex);
+			collector.EmitError(finalConfigPath, $"I/O error loading changelog configuration: {ex.Message}", ex);
 			return null;
 		}
 		catch (UnauthorizedAccessException ex)
 		{
-			collector.EmitError(configPath, $"Access denied loading release notes configuration: {ex.Message}", ex);
+			collector.EmitError(finalConfigPath, $"Access denied loading changelog configuration: {ex.Message}", ex);
 			return null;
 		}
 		catch (YamlException ex)
 		{
-			collector.EmitError(configPath, $"YAML parsing error in release notes configuration: {ex.Message}", ex);
+			collector.EmitError(finalConfigPath, $"YAML parsing error in changelog configuration: {ex.Message}", ex);
 			return null;
 		}
 	}

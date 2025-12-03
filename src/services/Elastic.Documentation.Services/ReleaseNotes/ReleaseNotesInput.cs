@@ -22,5 +22,6 @@ public class ReleaseNotesInput
 	public string? FeatureId { get; set; }
 	public bool? Highlight { get; set; }
 	public string? Output { get; set; }
+	public string? Config { get; set; }
 }
 
