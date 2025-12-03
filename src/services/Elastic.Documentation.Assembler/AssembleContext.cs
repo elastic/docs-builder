@@ -7,7 +7,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
-using Elastic.Documentation.Configuration.Synonyms;
+using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 
@@ -32,7 +32,7 @@ public class AssembleContext : IDocumentationConfigurationContext
 
 	public ProductsConfiguration ProductsConfiguration { get; }
 	public LegacyUrlMappingConfiguration LegacyUrlMappings { get; }
-	public SynonymsConfiguration SynonymsConfiguration { get; }
+	public SearchConfiguration SearchConfiguration { get; }
 
 	// Always use the production URL. In case a page is leaked to a search engine, it should point to the production site.
 	/// <inheritdoc />
@@ -69,7 +69,7 @@ public class AssembleContext : IDocumentationConfigurationContext
 		ConfigurationFileProvider = configurationContext.ConfigurationFileProvider;
 		ConfigurationPath = ConfigurationFileProvider.AssemblerFile;
 		VersionsConfiguration = configurationContext.VersionsConfiguration;
-		SynonymsConfiguration = configurationContext.SynonymsConfiguration;
+		SearchConfiguration = configurationContext.SearchConfiguration;
 		Endpoints = configurationContext.Endpoints;
 		ProductsConfiguration = configurationContext.ProductsConfiguration;
 		LegacyUrlMappings = configurationContext.LegacyUrlMappings;

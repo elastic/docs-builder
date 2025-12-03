@@ -8,6 +8,7 @@ using System.Text.Json.Serialization;
 using Elastic.ApiExplorer.Elasticsearch;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Navigation;
@@ -46,6 +47,7 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 	private string _currentSemanticHash = string.Empty;
 
 	private readonly IReadOnlyCollection<string> _synonyms;
+	private readonly IReadOnlyCollection<QueryRule> _rules;
 	private readonly VersionsConfiguration _versionsConfiguration;
 	private readonly string _fixedSynonymsHash;
 
@@ -64,7 +66,8 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 		_indexStrategy = IngestStrategy.Reindex;
 		_indexNamespace = indexNamespace;
 		_versionsConfiguration = context.VersionsConfiguration;
-		_synonyms = context.SynonymsConfiguration.Synonyms;
+		_synonyms = context.SearchConfiguration.Synonyms;
+		_rules = context.SearchConfiguration.Rules;
 		var es = endpoints.Elasticsearch;
 
 		var configuration = new ElasticsearchConfiguration(es.Uri)
@@ -112,6 +115,7 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 		_currentSemanticHash = await _semanticChannel.Channel.GetIndexTemplateHashAsync(ctx) ?? string.Empty;
 
 		await PublishSynonymsAsync(ctx);
+		await PublishQueryRulesAsync(ctx);
 		_ = await _lexicalChannel.Channel.BootstrapElasticsearchAsync(BootstrapMethod.Failure, null, ctx);
 
 		// if the previous hash does not match the current hash, we know already we want to multiplex to a new index
@@ -184,6 +188,46 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 			_collector.EmitGlobalError($"Failed to publish synonym set '{setName}'. Reason: {response.ApiCallDetails.OriginalException?.Message ?? response.ToString()}");
 		else
 			_logger.LogInformation("Successfully published synonym set '{SetName}'.", setName);
+	}
+
+	private async Task PublishQueryRulesAsync(Cancel ctx)
+	{
+		if (_rules.Count == 0)
+		{
+			_logger.LogInformation("No query rules to publish");
+			return;
+		}
+
+		var rulesetName = $"docs-ruleset-{_indexNamespace}";
+		_logger.LogInformation("Publishing query ruleset '{RulesetName}' with {Count} rules to Elasticsearch", rulesetName, _rules.Count);
+
+		var rulesetRules = _rules.Select(r => new QueryRulesetRule
+		{
+			RuleId = r.RuleId,
+			Type = r.Type.ToString().ToLowerInvariant(),
+			Criteria = r.Criteria.Select(c => new QueryRulesetCriteria
+			{
+				Type = c.Type.ToString().ToLowerInvariant(),
+				Metadata = c.Metadata,
+				Values = c.Values.ToList()
+			}).ToList(),
+			Actions = new QueryRulesetActions { Ids = r.Actions.Ids.ToList() }
+		}).ToList();
+
+		var ruleset = new QueryRuleset { Rules = rulesetRules };
+		await PutQueryRuleset(ruleset, rulesetName, ctx);
+	}
+
+	private async Task PutQueryRuleset(QueryRuleset ruleset, string rulesetName, Cancel ctx)
+	{
+		var json = JsonSerializer.Serialize(ruleset, QueryRulesetSerializerContext.Default.QueryRuleset);
+
+		var response = await _transport.PutAsync<StringResponse>($"_query_rules/{rulesetName}", PostData.String(json), ctx);
+
+		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
+			_collector.EmitGlobalError($"Failed to publish query ruleset '{rulesetName}'. Reason: {response.ApiCallDetails.OriginalException?.Message ?? response.ToString()}");
+		else
+			_logger.LogInformation("Successfully published query ruleset '{RulesetName}'.", rulesetName);
 	}
 
 	private async ValueTask<long> CountAsync(string index, string body, Cancel ctx = default)
@@ -422,6 +466,9 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 		doc.NavigationDepth = navigationItem?.NavigationDepth ?? 20;
 		doc.NavigationTableOfContents = navigationItem switch
 		{
+			// release-notes get effectively flattened by product, so we to dampen its effect slightly
+			IRootNavigationItem<INavigationModel, INavigationItem> when navigationItem.NavigationSection == "release notes" =>
+				Math.Min(4 * doc.NavigationDepth, 48),
 			IRootNavigationItem<INavigationModel, INavigationItem> => Math.Min(2 * doc.NavigationDepth, 48),
 			INodeNavigationItem<INavigationModel, INavigationItem> => 50,
 			_ => 100
@@ -590,3 +637,49 @@ internal sealed record SynonymRule
 [JsonSerializable(typeof(SynonymsSet))]
 [JsonSerializable(typeof(SynonymRule))]
 internal sealed partial class SynonymSerializerContext : JsonSerializerContext;
+
+internal sealed record QueryRuleset
+{
+	[JsonPropertyName("rules")]
+	public required List<QueryRulesetRule> Rules { get; init; } = [];
+}
+
+internal sealed record QueryRulesetRule
+{
+	[JsonPropertyName("rule_id")]
+	public required string RuleId { get; init; }
+
+	[JsonPropertyName("type")]
+	public required string Type { get; init; }
+
+	[JsonPropertyName("criteria")]
+	public required List<QueryRulesetCriteria> Criteria { get; init; } = [];
+
+	[JsonPropertyName("actions")]
+	public required QueryRulesetActions Actions { get; init; }
+}
+
+internal sealed record QueryRulesetCriteria
+{
+	[JsonPropertyName("type")]
+	public required string Type { get; init; }
+
+	[JsonPropertyName("metadata")]
+	public required string Metadata { get; init; }
+
+	[JsonPropertyName("values")]
+	public required List<string> Values { get; init; } = [];
+}
+
+internal sealed record QueryRulesetActions
+{
+	[JsonPropertyName("ids")]
+	public required List<string> Ids { get; init; } = [];
+}
+
+[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower)]
+[JsonSerializable(typeof(QueryRuleset))]
+[JsonSerializable(typeof(QueryRulesetRule))]
+[JsonSerializable(typeof(QueryRulesetCriteria))]
+[JsonSerializable(typeof(QueryRulesetActions))]
+internal sealed partial class QueryRulesetSerializerContext : JsonSerializerContext;

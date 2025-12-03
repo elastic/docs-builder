@@ -2,13 +2,16 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Globalization;
 using System.Text.Json.Serialization;
 using Elastic.Clients.Elasticsearch;
+using Elastic.Clients.Elasticsearch.Core.Explain;
 using Elastic.Clients.Elasticsearch.Core.Search;
 using Elastic.Clients.Elasticsearch.QueryDsl;
 using Elastic.Clients.Elasticsearch.Serialization;
 using Elastic.Documentation.Api.Core.Search;
 using Elastic.Documentation.AppliesTo;
+using Elastic.Documentation.Configuration.Search;
 using Elastic.Transport;
 using Microsoft.Extensions.Logging;
 
@@ -79,11 +82,15 @@ public partial class ElasticsearchGateway : ISearchGateway
 	private readonly ElasticsearchClient _client;
 	private readonly ElasticsearchOptions _elasticsearchOptions;
 	private readonly ILogger<ElasticsearchGateway> _logger;
+	private readonly IReadOnlyCollection<string> _diminishTerms;
+	private readonly string? _rulesetName;
 
-	public ElasticsearchGateway(ElasticsearchOptions elasticsearchOptions, ILogger<ElasticsearchGateway> logger)
+	public ElasticsearchGateway(ElasticsearchOptions elasticsearchOptions, SearchConfiguration searchConfiguration, ILogger<ElasticsearchGateway> logger)
 	{
 		_logger = logger;
 		_elasticsearchOptions = elasticsearchOptions;
+		_diminishTerms = searchConfiguration.DiminishTerms;
+		_rulesetName = searchConfiguration.Rules.Count > 0 ? ExtractRulesetName(elasticsearchOptions.IndexName) : null;
 		var nodePool = new SingleNodePool(new Uri(elasticsearchOptions.Url.Trim()));
 		var clientSettings = new ElasticsearchClientSettings(
 				nodePool,
@@ -101,9 +108,38 @@ public partial class ElasticsearchGateway : ISearchGateway
 		await HybridSearchWithRrfAsync(query, pageNumber, pageSize, ctx);
 
 	/// <summary>
+	/// Extracts the ruleset name from the index name.
+	/// Index name format: "semantic-docs-{namespace}-latest" → ruleset: "docs-ruleset-{namespace}"
+	/// </summary>
+	private static string? ExtractRulesetName(string indexName)
+	{
+		// Index name format: semantic-docs-{namespace}-latest
+		var parts = indexName.Split('-');
+		if (parts.Length >= 3 && parts[0] == "semantic" && parts[1] == "docs")
+			return $"docs-ruleset-{parts[2]}";
+		return null;
+	}
+
+	/// <summary>
+	/// Wraps a query with a RuleQuery if a ruleset is configured.
+	/// </summary>
+	private Query WrapWithRuleQuery(Query query, string searchQuery)
+	{
+		if (_rulesetName is null)
+			return query;
+
+		return new RuleQuery
+		{
+			Organic = query,
+			RulesetIds = [_rulesetName],
+			MatchCriteria = new RuleQueryMatchCriteria { QueryString = searchQuery }
+		};
+	}
+
+	/// <summary>
 	/// Builds the lexical search query for the given search term.
 	/// </summary>
-	private static Query BuildLexicalQuery(string searchQuery)
+	private Query BuildLexicalQuery(string searchQuery)
 	{
 		var tokens = searchQuery.Split(Array.Empty<char>(), StringSplitOptions.RemoveEmptyEntries);
 
@@ -159,31 +195,39 @@ public partial class ElasticsearchGateway : ISearchGateway
 			};
 		}
 
-		return new BoostingQuery
+		var positiveQuery = new BoolQuery
 		{
-			Positive = new BoolQuery
-			{
-				Must = [query],
-				Filter = [DocumentFilter],
-				Should = [
-					new RankFeatureQuery {
-						Field = Infer.Field<DocumentDto>(f => f.NavigationDepth),
-						Boost = 0.8f
-					},
-					new RankFeatureQuery {
-						Field = Infer.Field<DocumentDto>(f => f.NavigationTableOfContents),
-						Boost = 0.8f
-					},
-					new TermQuery { Field = Infer.Field<DocumentDto>(f => f.NavigationSection ), Value = "reference", Boost = 0.15f },
-					new TermQuery { Field = Infer.Field<DocumentDto>(f => f.NavigationSection ), Value = "getting-started", Boost = 0.1f }
-				]
-			},
-			NegativeBoost = 0.8,
-			Negative = new MultiMatchQuery
-			{
-				Query = "plugin client integration glossary", Operator = Operator.Or, Fields = new[] { "search_title", "url.match" }
-			},
+			Must = [query],
+			Filter = [DocumentFilter],
+			Should = [
+				new RankFeatureQuery {
+					Field = Infer.Field<DocumentDto>(f => f.NavigationDepth),
+					Boost = 0.8f
+				},
+				new RankFeatureQuery {
+					Field = Infer.Field<DocumentDto>(f => f.NavigationTableOfContents),
+					Boost = 0.8f
+				},
+				new TermQuery { Field = Infer.Field<DocumentDto>(f => f.NavigationSection ), Value = "reference", Boost = 0.15f },
+				new TermQuery { Field = Infer.Field<DocumentDto>(f => f.NavigationSection ), Value = "getting-started", Boost = 0.1f }
+			]
 		};
+
+		Query baseQuery = _diminishTerms.Count == 0
+			? positiveQuery
+			: new BoostingQuery
+			{
+				Positive = positiveQuery,
+				NegativeBoost = 0.8,
+				Negative = new MultiMatchQuery
+				{
+					Query = string.Join(' ', _diminishTerms),
+					Operator = Operator.Or,
+					Fields = new[] { "search_title", "url.match" }
+				}
+			};
+
+		return WrapWithRuleQuery(baseQuery, searchQuery);
 	}
 
 	/// <summary>
@@ -417,14 +461,14 @@ public partial class ElasticsearchGateway : ISearchGateway
 	/// <summary>
 	/// Formats the Elasticsearch explanation into a readable string with indentation.
 	/// </summary>
-	private static string FormatExplanation(Elastic.Clients.Elasticsearch.Core.Explain.ExplanationDetail? explanation, int indent)
+	private static string FormatExplanation(ExplanationDetail? explanation, int indent)
 	{
 		if (explanation == null)
 			return string.Empty;
 
 		var indentStr = new string(' ', indent * 2);
-		var value = explanation.Value.ToString("F4", System.Globalization.CultureInfo.InvariantCulture);
-		var desc = explanation.Description ?? "No description";
+		var value = explanation.Value.ToString("F4", CultureInfo.InvariantCulture);
+		var desc = explanation.Description;
 		var result = $"{indentStr}{value} - {desc}\n";
 
 		if (explanation.Details != null && explanation.Details.Count > 0)
@@ -484,4 +528,11 @@ public sealed record ExplainResult
 
 [JsonSerializable(typeof(DocumentDto))]
 [JsonSerializable(typeof(ParentDocumentDto))]
+[JsonSerializable(typeof(RuleQueryMatchCriteria))]
 internal sealed partial class EsJsonContext : JsonSerializerContext;
+
+internal sealed record RuleQueryMatchCriteria
+{
+	[JsonPropertyName("query_string")]
+	public required string QueryString { get; init; }
+}
