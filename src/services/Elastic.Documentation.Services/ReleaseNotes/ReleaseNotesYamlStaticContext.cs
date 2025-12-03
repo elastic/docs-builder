@@ -9,6 +9,6 @@ namespace Elastic.Documentation.Services.ReleaseNotes;
 [YamlStaticContext]
 [YamlSerializable(typeof(ReleaseNotesData))]
 [YamlSerializable(typeof(ProductInfo))]
-[YamlSerializable(typeof(ReleaseNotesConfiguration))]
+[YamlSerializable(typeof(ChangelogConfiguration))]
 public partial class ReleaseNotesYamlStaticContext;
 

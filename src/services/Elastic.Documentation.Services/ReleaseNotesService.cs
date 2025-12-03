@@ -32,7 +32,7 @@ public class ReleaseNotesService(
 		try
 		{
 			// Load changelog configuration
-			var config = await LoadReleaseNotesConfiguration(collector, input.Config, ctx);
+			var config = await LoadChangelogConfiguration(collector, input.Config, ctx);
 			if (config == null)
 			{
 				collector.EmitError(string.Empty, "Failed to load changelog configuration");
@@ -61,7 +61,18 @@ public class ReleaseNotesService(
 			// Validate type is in allowed list
 			if (!config.AvailableTypes.Contains(input.Type))
 			{
-				collector.EmitWarning(string.Empty, $"Type '{input.Type}' is not in the list of available types. Available types: {string.Join(", ", config.AvailableTypes)}");
+				collector.EmitError(string.Empty, $"Type '{input.Type}' is not in the list of available types. Available types: {string.Join(", ", config.AvailableTypes)}");
+				return false;
+			}
+
+			// Validate subtype if provided
+			if (!string.IsNullOrWhiteSpace(input.Subtype))
+			{
+				if (!config.AvailableSubtypes.Contains(input.Subtype))
+				{
+					collector.EmitError(string.Empty, $"Subtype '{input.Subtype}' is not in the list of available subtypes. Available subtypes: {string.Join(", ", config.AvailableSubtypes)}");
+					return false;
+				}
 			}
 
 			// Validate areas if configuration provides available areas
@@ -85,6 +96,19 @@ public class ReleaseNotesService(
 					if (!config.AvailableProducts.Contains(product.Product))
 					{
 						collector.EmitError(string.Empty, $"Product '{product.Product}' is not in the list of available products. Available products: {string.Join(", ", config.AvailableProducts)}");
+						return false;
+					}
+				}
+			}
+
+			// Validate lifecycle values in products
+			foreach (var product in input.Products)
+			{
+				if (!string.IsNullOrWhiteSpace(product.Lifecycle))
+				{
+					if (!config.AvailableLifecycles.Contains(product.Lifecycle))
+					{
+						collector.EmitError(string.Empty, $"Lifecycle '{product.Lifecycle}' for product '{product.Product}' is not in the list of available lifecycles. Available lifecycles: {string.Join(", ", config.AvailableLifecycles)}");
 						return false;
 					}
 				}
@@ -132,7 +156,7 @@ public class ReleaseNotesService(
 		}
 	}
 
-	private async Task<ReleaseNotesConfiguration?> LoadReleaseNotesConfiguration(
+	private async Task<ChangelogConfiguration?> LoadChangelogConfiguration(
 		IDiagnosticsCollector collector,
 		string? configPath,
 		Cancel ctx
@@ -146,7 +170,7 @@ public class ReleaseNotesService(
 		{
 			// Use default configuration if file doesn't exist
 			_logger.LogWarning("Changelog configuration not found at {ConfigPath}, using defaults", finalConfigPath);
-			return ReleaseNotesConfiguration.Default;
+			return ChangelogConfiguration.Default;
 		}
 
 		try
@@ -156,7 +180,7 @@ public class ReleaseNotesService(
 				.WithNamingConvention(UnderscoredNamingConvention.Instance)
 				.Build();
 
-			var config = deserializer.Deserialize<ReleaseNotesConfiguration>(yamlContent);
+			var config = deserializer.Deserialize<ChangelogConfiguration>(yamlContent);
 			return config;
 		}
 		catch (IOException ex)
@@ -205,7 +229,7 @@ public class ReleaseNotesService(
 		return data;
 	}
 
-	private string GenerateYaml(ReleaseNotesData data, ReleaseNotesConfiguration config)
+	private string GenerateYaml(ReleaseNotesData data, ChangelogConfiguration config)
 	{
 		// Ensure areas is null if empty to omit it from YAML
 		if (data.Areas != null && data.Areas.Count == 0)
