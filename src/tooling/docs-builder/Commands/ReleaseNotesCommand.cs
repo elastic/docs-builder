@@ -19,17 +19,17 @@ internal sealed class ReleaseNotesCommand(
 )
 {
 	/// <summary>
-	/// Release notes commands. Use 'release-notes create' to create a new changelog fragment.
+	/// Changelog commands. Use 'changelog add' to create a new changelog fragment.
 	/// </summary>
 	[Command("")]
 	public Task<int> Default()
 	{
-		collector.EmitError(string.Empty, "Please specify a subcommand. Use 'release-notes create' to create a new changelog fragment. Run 'release-notes create --help' for usage information.");
+		collector.EmitError(string.Empty, "Please specify a subcommand. Use 'changelog add' to create a new changelog fragment. Run 'changelog add --help' for usage information.");
 		return Task.FromResult(1);
 	}
 
 	/// <summary>
-	/// Create a new release notes changelog fragment from command-line input
+	/// Add a new changelog fragment from command-line input
 	/// </summary>
 	/// <param name="title">Required: A short, user-facing title (max 80 characters)</param>
 	/// <param name="type">Required: Type of change (feature, enhancement, bug-fix, breaking-change, etc.)</param>
@@ -45,7 +45,7 @@ internal sealed class ReleaseNotesCommand(
 	/// <param name="highlight">Optional: Include in release highlights</param>
 	/// <param name="output">Optional: Output directory for the changelog fragment. Defaults to current directory</param>
 	/// <param name="ctx"></param>
-	[Command("create")]
+	[Command("add")]
 	public async Task<int> Create(
 		string title,
 		string type,
