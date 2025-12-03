@@ -181,7 +181,8 @@ public class SearchBootstrapFixture(DocumentationFixture fixture) : IAsyncLifeti
 				collector,
 				endpoint,
 				"dev", // index namespace
-				transport
+				transport,
+				[]
 			);
 
 			// Get the current hash from Elasticsearch index template

@@ -2,13 +2,16 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Globalization;
 using System.Text.Json.Serialization;
 using Elastic.Clients.Elasticsearch;
+using Elastic.Clients.Elasticsearch.Core.Explain;
 using Elastic.Clients.Elasticsearch.Core.Search;
 using Elastic.Clients.Elasticsearch.QueryDsl;
 using Elastic.Clients.Elasticsearch.Serialization;
 using Elastic.Documentation.Api.Core.Search;
 using Elastic.Documentation.AppliesTo;
+using Elastic.Documentation.Configuration.Search;
 using Elastic.Transport;
 using Microsoft.Extensions.Logging;
 
@@ -24,6 +27,15 @@ internal sealed record DocumentDto
 
 	[JsonPropertyName("url")]
 	public required string Url { get; init; }
+
+	[JsonPropertyName("navigation_depth")]
+	public int NavigationDepth { get; init; }
+
+	[JsonPropertyName("navigation_table_of_contents")]
+	public int NavigationTableOfContents { get; init; }
+
+	[JsonPropertyName("navigation_section")]
+	public string? NavigationSection { get; init; }
 
 	[JsonPropertyName("description")]
 	public string? Description { get; init; }
@@ -70,11 +82,15 @@ public partial class ElasticsearchGateway : ISearchGateway
 	private readonly ElasticsearchClient _client;
 	private readonly ElasticsearchOptions _elasticsearchOptions;
 	private readonly ILogger<ElasticsearchGateway> _logger;
+	private readonly IReadOnlyCollection<string> _diminishTerms;
+	private readonly string? _rulesetName;
 
-	public ElasticsearchGateway(ElasticsearchOptions elasticsearchOptions, ILogger<ElasticsearchGateway> logger)
+	public ElasticsearchGateway(ElasticsearchOptions elasticsearchOptions, SearchConfiguration searchConfiguration, ILogger<ElasticsearchGateway> logger)
 	{
 		_logger = logger;
 		_elasticsearchOptions = elasticsearchOptions;
+		_diminishTerms = searchConfiguration.DiminishTerms;
+		_rulesetName = searchConfiguration.Rules.Count > 0 ? ExtractRulesetName(elasticsearchOptions.IndexName) : null;
 		var nodePool = new SingleNodePool(new Uri(elasticsearchOptions.Url.Trim()));
 		var clientSettings = new ElasticsearchClientSettings(
 				nodePool,
@@ -92,42 +108,64 @@ public partial class ElasticsearchGateway : ISearchGateway
 		await HybridSearchWithRrfAsync(query, pageNumber, pageSize, ctx);
 
 	/// <summary>
+	/// Extracts the ruleset name from the index name.
+	/// Index name format: "semantic-docs-{namespace}-latest" → ruleset: "docs-ruleset-{namespace}"
+	/// </summary>
+	private static string? ExtractRulesetName(string indexName)
+	{
+		// Index name format: semantic-docs-{namespace}-latest
+		var parts = indexName.Split('-');
+		if (parts.Length >= 3 && parts[0] == "semantic" && parts[1] == "docs")
+			return $"docs-ruleset-{parts[2]}";
+		return null;
+	}
+
+	/// <summary>
+	/// Wraps a query with a RuleQuery if a ruleset is configured.
+	/// </summary>
+	private Query WrapWithRuleQuery(Query query, string searchQuery)
+	{
+		if (_rulesetName is null)
+			return query;
+
+		return new RuleQuery
+		{
+			Organic = query,
+			RulesetIds = [_rulesetName],
+			MatchCriteria = new RuleQueryMatchCriteria { QueryString = searchQuery }
+		};
+	}
+
+	/// <summary>
 	/// Builds the lexical search query for the given search term.
 	/// </summary>
-	private static Query BuildLexicalQuery(string searchQuery)
+	private Query BuildLexicalQuery(string searchQuery)
 	{
 		var tokens = searchQuery.Split(Array.Empty<char>(), StringSplitOptions.RemoveEmptyEntries);
-		if (tokens is ["datastream" or "datastreams" or "data-stream" or "data-streams"])
-		{
-			// /docs/api/doc/kibana/operation/operation-delete-fleet-epm-packages-pkgname-pkgversion-datastream-assets
-			// Is the only page that uses "datastream" instead of "data streams" this gives it an N of 1 in the entire corpus
-			// which is hard to fix through tweaking boosting, should update the page to use "data streams" instead
-			searchQuery = "data streams";
-			tokens = ["data", "streams"];
-		}
 
 		var query =
-			(Query)new MultiMatchQuery
+			(Query)new ConstantScoreQuery
 			{
-				Query = searchQuery, Operator = Operator.And, Type = TextQueryType.BoolPrefix,
-				Analyzer = "synonyms_analyzer",
-				Boost = 2.0f,
-				Fields = new[]
+				Filter = new MultiMatchQuery
 				{
-					"search_title.completion",
-					"search_title.completion._2gram",
-					"search_title.completion._3gram"
-				}
+					Query = searchQuery, Operator = Operator.And, Type = TextQueryType.BoolPrefix,
+					Analyzer = "synonyms_analyzer",
+					Boost = 1.0f,
+					Fields = new[]
+					{
+						"search_title.completion",
+						"search_title.completion._2gram",
+						"search_title.completion._3gram"
+					}
+				},
+				Boost = 6.0f
 			}
 			|| new MultiMatchQuery
 			{
 				Query = searchQuery, Operator = Operator.And, Type = TextQueryType.BestFields,
 				Analyzer = "synonyms_analyzer",
-				Boost = 0.2f,
-				Fields = new[]
-				{
-					"stripped_body"
-				}
+				Boost = 0.1f,
+				Fields = new[] { "stripped_body" }
 			};
 		// If the search term is a single word, boost the URL match
 		// This is to ensure that URLs that contain the search term are ranked higher than URLs that don't
@@ -142,19 +180,54 @@ public partial class ElasticsearchGateway : ISearchGateway
 					Field = Infer.Field<DocumentDto>(f => f.Url.Suffix("match")),
 					Query = searchQuery
 				},
-				Boost = 1
+				Boost = 0.3f
 			};
 		}
 
-		return new BoostingQuery
+		if (tokens.Length > 2)
 		{
-			Positive = query,
-			NegativeBoost = 0.8,
-			Negative = new MultiMatchQuery
+			query |= new MultiMatchQuery
 			{
-				Query = "plugin client integration", Operator = Operator.Or, Fields = new[] { "search_title", "headings", "url.match" }
-			}
+				Query = searchQuery, Operator = Operator.And, Type = TextQueryType.Phrase,
+				Analyzer = "synonyms_analyzer",
+				Boost = 0.2f,
+				Fields = new[] { "stripped_body" }
+			};
+		}
+
+		var positiveQuery = new BoolQuery
+		{
+			Must = [query],
+			Filter = [DocumentFilter],
+			Should = [
+				new RankFeatureQuery {
+					Field = Infer.Field<DocumentDto>(f => f.NavigationDepth),
+					Boost = 0.8f
+				},
+				new RankFeatureQuery {
+					Field = Infer.Field<DocumentDto>(f => f.NavigationTableOfContents),
+					Boost = 0.8f
+				},
+				new TermQuery { Field = Infer.Field<DocumentDto>(f => f.NavigationSection ), Value = "reference", Boost = 0.15f },
+				new TermQuery { Field = Infer.Field<DocumentDto>(f => f.NavigationSection ), Value = "getting-started", Boost = 0.1f }
+			]
 		};
+
+		Query baseQuery = _diminishTerms.Count == 0
+			? positiveQuery
+			: new BoostingQuery
+			{
+				Positive = positiveQuery,
+				NegativeBoost = 0.8,
+				Negative = new MultiMatchQuery
+				{
+					Query = string.Join(' ', _diminishTerms),
+					Operator = Operator.Or,
+					Fields = new[] { "search_title", "url.match" }
+				}
+			};
+
+		return WrapWithRuleQuery(baseQuery, searchQuery);
 	}
 
 	/// <summary>
@@ -164,7 +237,7 @@ public partial class ElasticsearchGateway : ISearchGateway
 		(Query)new SemanticQuery("title.semantic_text", searchQuery) { Boost = 5.0f }
 		|| new SemanticQuery("abstract.semantic_text", searchQuery) { Boost = 3.0f };
 
-	private static Query BuildFilter() => !(Query)new TermsQuery(Infer.Field<DocumentDto>(f => f.Url.Suffix("keyword")),
+	private static Query DocumentFilter { get; } = !(Query)new TermsQuery(Infer.Field<DocumentDto>(f => f.Url.Suffix("keyword")),
 		new TermsQueryField(["/docs", "/docs/", "/docs/404", "/docs/404/"]))
 		&& !(Query)new TermQuery { Field = Infer.Field<DocumentDto>(f => f.Hidden), Value = true };
 
@@ -186,7 +259,6 @@ public partial class ElasticsearchGateway : ISearchGateway
 				.Indices(_elasticsearchOptions.IndexName)
 				.From(Math.Max(pageNumber - 1, 0) * pageSize)
 				.Size(pageSize)
-				.PostFilter(BuildFilter())
 				.Query(BuildLexicalQuery(query))
 				// .Retriever(r => r
 				// 	.Rrf(rrf => rrf
@@ -217,7 +289,7 @@ public partial class ElasticsearchGateway : ISearchGateway
 				.Highlight(h => h
 					.RequireFieldMatch(true)
 					.Fields(f => f
-						.Add(Infer.Field<DocumentDto>(d => d.Title), hf => hf
+						.Add(Infer.Field<DocumentDto>(d => d.SearchTitle.Suffix("completion")), hf => hf
 							.FragmentSize(150)
 							.NumberOfFragments(3)
 							.NoMatchSize(150)
@@ -226,7 +298,7 @@ public partial class ElasticsearchGateway : ISearchGateway
 							.BoundaryMaxScan(15)
 							.FragmentOffset(0)
 							.HighlightQuery(q => q.Match(m => m
-								.Field(d => d.Title)
+								.Field(d => d.SearchTitle.Suffix("completion"))
 								.Query(searchQuery)
 								.Analyzer("highlight_analyzer")
 							))
@@ -282,10 +354,10 @@ public partial class ElasticsearchGateway : ISearchGateway
 			if (highlights != null)
 			{
 				if (highlights.TryGetValue("stripped_body", out var bodyHighlights) && bodyHighlights.Count > 0)
-					highlightedBody = string.Join(". ", bodyHighlights.Select(h => h.TrimEnd('.')));
+					highlightedBody = string.Join(". ", bodyHighlights.Select(h => h.TrimEnd('.', ' ', '-')));
 
-				if (highlights.TryGetValue("title", out var titleHighlights) && titleHighlights.Count > 0)
-					highlightedTitle = string.Join(". ", titleHighlights.Select(h => h.TrimEnd('.')));
+				if (highlights.TryGetValue("search_title.completion", out var titleHighlights) && titleHighlights.Count > 0)
+					highlightedTitle = string.Join(". ", titleHighlights.Select(h => h.TrimEnd('.', ' ', '-')));
 			}
 
 			return new SearchResultItem
@@ -389,14 +461,14 @@ public partial class ElasticsearchGateway : ISearchGateway
 	/// <summary>
 	/// Formats the Elasticsearch explanation into a readable string with indentation.
 	/// </summary>
-	private static string FormatExplanation(Elastic.Clients.Elasticsearch.Core.Explain.ExplanationDetail? explanation, int indent)
+	private static string FormatExplanation(ExplanationDetail? explanation, int indent)
 	{
 		if (explanation == null)
 			return string.Empty;
 
 		var indentStr = new string(' ', indent * 2);
-		var value = explanation.Value.ToString("F4", System.Globalization.CultureInfo.InvariantCulture);
-		var desc = explanation.Description ?? "No description";
+		var value = explanation.Value.ToString("F4", CultureInfo.InvariantCulture);
+		var desc = explanation.Description;
 		var result = $"{indentStr}{value} - {desc}\n";
 
 		if (explanation.Details != null && explanation.Details.Count > 0)
@@ -456,4 +528,11 @@ public sealed record ExplainResult
 
 [JsonSerializable(typeof(DocumentDto))]
 [JsonSerializable(typeof(ParentDocumentDto))]
+[JsonSerializable(typeof(RuleQueryMatchCriteria))]
 internal sealed partial class EsJsonContext : JsonSerializerContext;
+
+internal sealed record RuleQueryMatchCriteria
+{
+	[JsonPropertyName("query_string")]
+	public required string QueryString { get; init; }
+}

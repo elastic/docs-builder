@@ -16,7 +16,7 @@ open Elastic.Documentation.Configuration
 open Elastic.Documentation.Configuration.LegacyUrlMappings
 open Elastic.Documentation.Configuration.Versions
 open Elastic.Documentation.Configuration.Products
-open Elastic.Documentation.Configuration.Synonyms
+open Elastic.Documentation.Configuration.Search
 open Elastic.Markdown
 open Elastic.Markdown.IO
 open JetBrains.Annotations
@@ -288,7 +288,7 @@ type Setup =
             Endpoints=DocumentationEndpoints(Elasticsearch = ElasticsearchEndpoint.Default),
             ProductsConfiguration = ProductsConfiguration(Products = productDict.ToFrozenDictionary()),
             LegacyUrlMappings = LegacyUrlMappingConfiguration(Mappings = []),
-            SynonymsConfiguration = SynonymsConfiguration(Synonyms = [])
+            SearchConfiguration = SearchConfiguration(Synonyms = [], Rules = [], DiminishTerms = [])
         )
         let context = BuildContext(
             collector,

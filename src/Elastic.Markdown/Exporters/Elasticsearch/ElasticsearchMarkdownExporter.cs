@@ -8,6 +8,7 @@ using System.Text.Json.Serialization;
 using Elastic.ApiExplorer.Elasticsearch;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Navigation;
@@ -17,10 +18,11 @@ using Elastic.Ingest.Elasticsearch.Indices;
 using Elastic.Markdown.Helpers;
 using Elastic.Transport;
 using Elastic.Transport.Products.Elasticsearch;
-using Markdig.Parsers;
 using Markdig.Syntax;
 using Microsoft.Extensions.Logging;
 using NetEscapades.EnumGenerators;
+using static System.StringSplitOptions;
+using MarkdownParser = Markdig.Parsers.MarkdownParser;
 
 namespace Elastic.Markdown.Exporters.Elasticsearch;
 
@@ -45,7 +47,9 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 	private string _currentSemanticHash = string.Empty;
 
 	private readonly IReadOnlyCollection<string> _synonyms;
+	private readonly IReadOnlyCollection<QueryRule> _rules;
 	private readonly VersionsConfiguration _versionsConfiguration;
+	private readonly string _fixedSynonymsHash;
 
 	public ElasticsearchMarkdownExporter(
 		ILoggerFactory logFactory,
@@ -62,7 +66,8 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 		_indexStrategy = IngestStrategy.Reindex;
 		_indexNamespace = indexNamespace;
 		_versionsConfiguration = context.VersionsConfiguration;
-		_synonyms = context.SynonymsConfiguration.Synonyms;
+		_synonyms = context.SearchConfiguration.Synonyms;
+		_rules = context.SearchConfiguration.Rules;
 		var es = endpoints.Elasticsearch;
 
 		var configuration = new ElasticsearchConfiguration(es.Uri)
@@ -89,8 +94,18 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 		};
 
 		_transport = new DistributedTransport(configuration);
-		_lexicalChannel = new ElasticsearchLexicalExporter(logFactory, collector, es, indexNamespace, _transport);
-		_semanticChannel = new ElasticsearchSemanticExporter(logFactory, collector, es, indexNamespace, _transport);
+
+		string[] fixedSynonyms = ["esql", "data-stream", "data-streams", "machine-learning"];
+		var indexTimeSynonyms = _synonyms.Aggregate(new List<SynonymRule>(), (acc, synonym) =>
+		{
+			var id = synonym.Split(",", RemoveEmptyEntries)[0].Trim();
+			acc.Add(new SynonymRule { Id = id, Synonyms = synonym });
+			return acc;
+		}).Where(r => fixedSynonyms.Contains(r.Id)).Select(r => r.Synonyms).ToArray();
+		_fixedSynonymsHash = HashedBulkUpdate.CreateHash(string.Join(",", indexTimeSynonyms));
+
+		_lexicalChannel = new ElasticsearchLexicalExporter(logFactory, collector, es, indexNamespace, _transport, indexTimeSynonyms);
+		_semanticChannel = new ElasticsearchSemanticExporter(logFactory, collector, es, indexNamespace, _transport, indexTimeSynonyms);
 	}
 
 	/// <inheritdoc />
@@ -99,7 +114,8 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 		_currentLexicalHash = await _lexicalChannel.Channel.GetIndexTemplateHashAsync(ctx) ?? string.Empty;
 		_currentSemanticHash = await _semanticChannel.Channel.GetIndexTemplateHashAsync(ctx) ?? string.Empty;
 
-		await PublishSynonymsAsync($"docs-{_indexNamespace}", ctx);
+		await PublishSynonymsAsync(ctx);
+		await PublishQueryRulesAsync(ctx);
 		_ = await _lexicalChannel.Channel.BootstrapElasticsearchAsync(BootstrapMethod.Failure, null, ctx);
 
 		// if the previous hash does not match the current hash, we know already we want to multiplex to a new index
@@ -146,25 +162,24 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 		async ValueTask<bool> IndexExists(string name) => (await _transport.HeadAsync(name, ctx)).ApiCallDetails.HasSuccessfulStatusCode;
 	}
 
-	private async Task PublishSynonymsAsync(string setName, CancellationToken ctx)
+	private async Task PublishSynonymsAsync(Cancel ctx)
 	{
+		var setName = $"docs-{_indexNamespace}";
 		_logger.LogInformation("Publishing synonym set '{SetName}' to Elasticsearch", setName);
 
 		var synonymRules = _synonyms.Aggregate(new List<SynonymRule>(), (acc, synonym) =>
 		{
-			acc.Add(new SynonymRule
-			{
-				Id = synonym.Split(",", StringSplitOptions.RemoveEmptyEntries)[0].Trim(),
-				Synonyms = synonym
-			});
+			var id = synonym.Split(",", RemoveEmptyEntries)[0].Trim();
+			acc.Add(new SynonymRule { Id = id, Synonyms = synonym });
 			return acc;
 		});
 
-		var synonymsSet = new SynonymsSet
-		{
-			Synonyms = synonymRules
-		};
+		var synonymsSet = new SynonymsSet { Synonyms = synonymRules };
+		await PutSynonyms(synonymsSet, setName, ctx);
+	}
 
+	private async Task PutSynonyms(SynonymsSet synonymsSet, string setName, Cancel ctx)
+	{
 		var json = JsonSerializer.Serialize(synonymsSet, SynonymSerializerContext.Default.SynonymsSet);
 
 		var response = await _transport.PutAsync<StringResponse>($"_synonyms/{setName}", PostData.String(json), ctx);
@@ -173,6 +188,46 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 			_collector.EmitGlobalError($"Failed to publish synonym set '{setName}'. Reason: {response.ApiCallDetails.OriginalException?.Message ?? response.ToString()}");
 		else
 			_logger.LogInformation("Successfully published synonym set '{SetName}'.", setName);
+	}
+
+	private async Task PublishQueryRulesAsync(Cancel ctx)
+	{
+		if (_rules.Count == 0)
+		{
+			_logger.LogInformation("No query rules to publish");
+			return;
+		}
+
+		var rulesetName = $"docs-ruleset-{_indexNamespace}";
+		_logger.LogInformation("Publishing query ruleset '{RulesetName}' with {Count} rules to Elasticsearch", rulesetName, _rules.Count);
+
+		var rulesetRules = _rules.Select(r => new QueryRulesetRule
+		{
+			RuleId = r.RuleId,
+			Type = r.Type.ToString().ToLowerInvariant(),
+			Criteria = r.Criteria.Select(c => new QueryRulesetCriteria
+			{
+				Type = c.Type.ToString().ToLowerInvariant(),
+				Metadata = c.Metadata,
+				Values = c.Values.ToList()
+			}).ToList(),
+			Actions = new QueryRulesetActions { Ids = r.Actions.Ids.ToList() }
+		}).ToList();
+
+		var ruleset = new QueryRuleset { Rules = rulesetRules };
+		await PutQueryRuleset(ruleset, rulesetName, ctx);
+	}
+
+	private async Task PutQueryRuleset(QueryRuleset ruleset, string rulesetName, Cancel ctx)
+	{
+		var json = JsonSerializer.Serialize(ruleset, QueryRulesetSerializerContext.Default.QueryRuleset);
+
+		var response = await _transport.PutAsync<StringResponse>($"_query_rules/{rulesetName}", PostData.String(json), ctx);
+
+		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
+			_collector.EmitGlobalError($"Failed to publish query ruleset '{rulesetName}'. Reason: {response.ApiCallDetails.OriginalException?.Message ?? response.ToString()}");
+		else
+			_logger.LogInformation("Successfully published query ruleset '{RulesetName}'.", rulesetName);
 	}
 
 	private async ValueTask<long> CountAsync(string index, string body, Cancel ctx = default)
@@ -393,23 +448,59 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 		var semanticHash = _semanticChannel.Channel.ChannelHash;
 		var lexicalHash = _lexicalChannel.Channel.ChannelHash;
 		var hash = HashedBulkUpdate.CreateHash(semanticHash, lexicalHash,
-			doc.Url, doc.Type, doc.Body ?? string.Empty, string.Join(",", doc.Headings.OrderBy(h => h)), doc.Url
+			doc.Url, doc.Type, doc.StrippedBody ?? string.Empty, string.Join(",", doc.Headings.OrderBy(h => h)),
+			doc.SearchTitle ?? string.Empty,
+			doc.NavigationSection ?? string.Empty, doc.NavigationDepth.ToString("N0"),
+			doc.NavigationTableOfContents.ToString("N0"),
+			_fixedSynonymsHash
 		);
 		doc.Hash = hash;
 		doc.LastUpdated = _batchIndexDate;
 		doc.BatchIndexDate = _batchIndexDate;
 	}
 
-	private void CommonEnrichments(DocumentationDocument doc)
+	private void CommonEnrichments(DocumentationDocument doc, INavigationItem? navigationItem)
 	{
-		var urlComponents = doc.Url.Split('/');
-		doc.SearchTitle = $"{doc.Title} - ({string.Join(" ", urlComponents)}";
+		doc.SearchTitle = CreateSearchTitle();
+		// if we have no navigation, initialize to 20 since rank_feature would score 0 too high
+		doc.NavigationDepth = navigationItem?.NavigationDepth ?? 20;
+		doc.NavigationTableOfContents = navigationItem switch
+		{
+			// release-notes get effectively flattened by product, so we to dampen its effect slightly
+			IRootNavigationItem<INavigationModel, INavigationItem> when navigationItem.NavigationSection == "release notes" =>
+				Math.Min(4 * doc.NavigationDepth, 48),
+			IRootNavigationItem<INavigationModel, INavigationItem> => Math.Min(2 * doc.NavigationDepth, 48),
+			INodeNavigationItem<INavigationModel, INavigationItem> => 50,
+			_ => 100
+		};
+		doc.NavigationSection = navigationItem?.NavigationSection;
+		if (doc.Type == "api")
+			doc.NavigationSection = "api";
+
+		// this section gets promoted in the navigation we don't want it to be promoted in the search results
+		// e.g. `Use high-contrast mode in Kibana - ( docs cloud-account high contrast`
+		if (doc.NavigationSection == "manage your cloud account and preferences")
+			doc.NavigationDepth *= 2;
+
+		string CreateSearchTitle()
+		{
+			// skip doc and the section
+			var split = new[] { '/', ' ', '-', '.', '_' };
+			var urlComponents = new HashSet<string>(
+				doc.Url.Split('/', RemoveEmptyEntries).Skip(2)
+					.SelectMany(c => c.Split(split, RemoveEmptyEntries)).ToArray()
+			);
+			var title = doc.Title ?? string.Empty;
+			//skip tokens already part of the title we don't want to influence TF/IDF
+			var tokensInTitle = new HashSet<string>(title.Split(split, RemoveEmptyEntries).Select(t => t.ToLowerInvariant()));
+			return $"{doc.Title} - {string.Join(" ", urlComponents.Where(c => !tokensInTitle.Contains(c.ToLowerInvariant())))}";
+		}
 	}
 
 	public async ValueTask<bool> ExportAsync(MarkdownExportFileContext fileContext, Cancel ctx)
 	{
 		var file = fileContext.SourceFile;
-		INavigationTraversable navigation = fileContext.DocumentationSet;
+		var navigation = fileContext.PositionaNavigation;
 		var currentNavigation = navigation.GetNavigationFor(file);
 		var url = currentNavigation.Url;
 
@@ -419,7 +510,6 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 			_logger.LogInformation("Skipping export for {Url}", url);
 			return true;
 		}
-
 
 		// Remove the first h1 because we already have the title
 		// and we don't want it to appear in the body
@@ -461,8 +551,8 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 			Hidden = fileContext.NavigationItem.Hidden
 		};
 
+		CommonEnrichments(doc, currentNavigation);
 		AssignDocumentMetadata(doc);
-		CommonEnrichments(doc);
 
 		if (_indexStrategy == IngestStrategy.Multiplex)
 			return await _lexicalChannel.TryWrite(doc, ctx) && await _semanticChannel.TryWrite(doc, ctx);
@@ -481,7 +571,6 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 
 		await foreach (var doc in exporter.ExportDocuments(limitPerSource: null, ctx))
 		{
-			AssignDocumentMetadata(doc);
 			var document = MarkdownParser.Parse(doc.Body ?? string.Empty);
 
 			doc.Body = LlmMarkdownExporter.ConvertToLlmMarkdown(document, _context);
@@ -497,7 +586,8 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 				: string.Empty;
 			doc.Abstract = @abstract;
 			doc.Headings = headings;
-			CommonEnrichments(doc);
+			CommonEnrichments(doc, null);
+			AssignDocumentMetadata(doc);
 
 			// Write to channels following the multiplex or reindex strategy
 			if (_indexStrategy == IngestStrategy.Multiplex)
@@ -547,3 +637,49 @@ internal sealed record SynonymRule
 [JsonSerializable(typeof(SynonymsSet))]
 [JsonSerializable(typeof(SynonymRule))]
 internal sealed partial class SynonymSerializerContext : JsonSerializerContext;
+
+internal sealed record QueryRuleset
+{
+	[JsonPropertyName("rules")]
+	public required List<QueryRulesetRule> Rules { get; init; } = [];
+}
+
+internal sealed record QueryRulesetRule
+{
+	[JsonPropertyName("rule_id")]
+	public required string RuleId { get; init; }
+
+	[JsonPropertyName("type")]
+	public required string Type { get; init; }
+
+	[JsonPropertyName("criteria")]
+	public required List<QueryRulesetCriteria> Criteria { get; init; } = [];
+
+	[JsonPropertyName("actions")]
+	public required QueryRulesetActions Actions { get; init; }
+}
+
+internal sealed record QueryRulesetCriteria
+{
+	[JsonPropertyName("type")]
+	public required string Type { get; init; }
+
+	[JsonPropertyName("metadata")]
+	public required string Metadata { get; init; }
+
+	[JsonPropertyName("values")]
+	public required List<string> Values { get; init; } = [];
+}
+
+internal sealed record QueryRulesetActions
+{
+	[JsonPropertyName("ids")]
+	public required List<string> Ids { get; init; } = [];
+}
+
+[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower)]
+[JsonSerializable(typeof(QueryRuleset))]
+[JsonSerializable(typeof(QueryRulesetRule))]
+[JsonSerializable(typeof(QueryRulesetCriteria))]
+[JsonSerializable(typeof(QueryRulesetActions))]
+internal sealed partial class QueryRulesetSerializerContext : JsonSerializerContext;

@@ -4,6 +4,7 @@
 
 using Elastic.Documentation.Api.Infrastructure.Adapters.Search;
 using Elastic.Documentation.Api.Infrastructure.Aws;
+using Elastic.Documentation.Configuration.Search;
 using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -36,10 +37,26 @@ public class SearchRelevanceTests(ITestOutputHelper output)
 		{ "data-streams", "/docs/manage-data/data-store/data-streams", null },
 		{ "datastream", "/docs/manage-data/data-store/data-streams", null },
 		{ "data stream", "/docs/manage-data/data-store/data-streams", null },
-		{ "saml sso", "/docs/deploy-manage/users-roles/cloud-organization/register-elastic-cloud-saml-in-okta", ["/docs/deploy-manage/users-roles/cloud-organization/configure-saml-authentication"] },
+		{ "saml sso", "/docs/deploy-manage/users-roles/cloud-organization/configure-saml-authentication", ["/docs/deploy-manage/users-roles/cloud-organization/configure-saml-authentication"] },
 		{ "templates", "/docs/manage-data/data-store/templates", null},
-		{ "query dsl", "/docs/explore-analyze/query-filter/languages/querydsl", null},
-		{ "querydsl", "/docs/explore-analyze/query-filter/languages/querydsl", null}
+		{ "query dsl", "/docs/reference/query-languages/querydsl", ["/docs/explore-analyze/query-filter/languages/querydsl"]},
+		{ "querydsl", "/docs/reference/query-languages/querydsl", ["/docs/explore-analyze/query-filter/languages/querydsl"]},
+		{ "Agent policy", "/docs/reference/fleet/agent-policy", null},
+		{ "aliases", "/docs/manage-data/data-store/aliases", null},
+		{ "Kibana privilege", "/docs/deploy-manage/users-roles/cluster-or-deployment-auth/kibana-privileges", null},
+		{ "lens", "/docs/explore-analyze/visualize/lens", null},
+		{ "machine learning node", "/docs/deploy-manage/autoscaling/autoscaling-in-ece-and-ech", null },
+		{ "machine learning", "/docs/reference/machine-learning", null},
+		{ "ml", "/docs/reference/machine-learning", null},
+		{ "elasticsearch", "/docs/reference/elasticsearch", null},
+		{ "kibana", "/docs/reference/kibana", null},
+		{ "cloud", "/docs/reference/cloud", null},
+		{ "logstash", "/docs/reference/logstash", null},
+		{ "logstash release", "/docs/release-notes/logstash", null},
+		{ "esql", "/docs/reference/query-languages/esql", null},
+		{ "ES|QL", "/docs/reference/query-languages/esql", null},
+		{ "Output plugins for Logstash", "/docs/reference/logstash/plugins/output-plugins", null},
+		{ "Sending data to Elastic Cloud Hosted", "/docs/solutions/observability/get-started/quickstart-elastic-cloud-otel-endpoint", ["/docs/reference/logstash/connecting-to-cloud"]},
 	};
 
 	[Theory]
@@ -213,8 +230,34 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 		// Create a test parameter provider with the configuration values
 		var parameterProvider = new TestParameterProvider(elasticsearchUrl, elasticsearchApiKey, "semantic-docs-dev-latest");
 		var options = new ElasticsearchOptions(parameterProvider);
+		var searchConfig = new SearchConfiguration
+		{
+			Synonyms = [],
+			Rules =
+			[
+				new QueryRule
+				{
+					RuleId = "pin-data-streams",
+					Type = QueryRuleType.Pinned,
+					Criteria =
+					[
+						new QueryRuleCriteria
+						{
+							Type = QueryRuleCriteriaType.Exact,
+							Metadata = "query_string",
+							Values = ["data stream", "data-stream", "data-streams", "datastream", "datastreams"]
+						}
+					],
+					Actions = new QueryRuleActions
+					{
+						Ids = ["/docs/manage-data/data-store/data-streams"]
+					}
+				}
+			],
+			DiminishTerms = ["plugin", "client", "integration", "glossary"]
+		};
 
-		return new ElasticsearchGateway(options, NullLogger<ElasticsearchGateway>.Instance);
+		return new ElasticsearchGateway(options, searchConfig, NullLogger<ElasticsearchGateway>.Instance);
 	}
 
 	/// <summary>
