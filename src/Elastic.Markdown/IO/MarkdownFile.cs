@@ -47,7 +47,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		//todo refactor mutability of MarkdownFile as a whole
 		ScopeDirectory = build.Configuration.ScopeDirectory;
 		Products = build.ProductsConfiguration;
-
+		Title = FileName.StripMarkdown();
 	}
 
 	public ProductsConfiguration Products { get; }
@@ -61,12 +61,12 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 	public YamlFrontMatter? YamlFrontMatter { get; private set; }
 	public string? TitleRaw { get; protected set; }
 
-	public string? Title
+	public string Title
 	{
 		get;
 		protected set
 		{
-			field = value?.StripMarkdown();
+			field = value.StripMarkdown();
 			TitleRaw = value;
 		}
 	}
@@ -148,9 +148,9 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 
 	protected void ReadDocumentInstructions(MarkdownDocument document, Func<string, DocumentationFile?> documentationFileLookup)
 	{
-		Title ??= document
+		Title = document
 			.FirstOrDefault(block => block is HeadingBlock { Level: 1 })?
-			.GetData("header") as string;
+			.GetData("header") as string ?? Title;
 
 		var yamlFrontMatter = ProcessYamlFrontMatter(document);
 		YamlFrontMatter = yamlFrontMatter;

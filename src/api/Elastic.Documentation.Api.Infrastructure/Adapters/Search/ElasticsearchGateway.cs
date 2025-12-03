@@ -12,67 +12,11 @@ using Elastic.Clients.Elasticsearch.Serialization;
 using Elastic.Documentation.Api.Core.Search;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Search;
+using Elastic.Documentation.Search;
 using Elastic.Transport;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Api.Infrastructure.Adapters.Search;
-
-internal sealed record DocumentDto
-{
-	[JsonPropertyName("title")]
-	public required string Title { get; init; }
-
-	[JsonPropertyName("search_title")]
-	public required string SearchTitle { get; init; }
-
-	[JsonPropertyName("url")]
-	public required string Url { get; init; }
-
-	[JsonPropertyName("navigation_depth")]
-	public int NavigationDepth { get; init; }
-
-	[JsonPropertyName("navigation_table_of_contents")]
-	public int NavigationTableOfContents { get; init; }
-
-	[JsonPropertyName("navigation_section")]
-	public string? NavigationSection { get; init; }
-
-	[JsonPropertyName("description")]
-	public string? Description { get; init; }
-
-	[JsonPropertyName("type")]
-	public string Type { get; init; } = "doc";
-
-	[JsonPropertyName("body")]
-	public string? Body { get; init; }
-
-	[JsonPropertyName("stripped_body")]
-	public string? StrippedBody { get; init; }
-
-	[JsonPropertyName("abstract")]
-	public string? Abstract { get; init; }
-
-	[JsonPropertyName("headings")]
-	public string[] Headings { get; init; } = [];
-
-	[JsonPropertyName("parents")]
-	public ParentDocumentDto[] Parents { get; init; } = [];
-
-	[JsonPropertyName("applies_to")]
-	public ApplicableTo? Applies { get; init; }
-
-	[JsonPropertyName("hidden")]
-	public bool Hidden { get; init; } = false;
-}
-
-internal sealed record ParentDocumentDto
-{
-	[JsonPropertyName("title")]
-	public required string Title { get; init; }
-
-	[JsonPropertyName("url")]
-	public required string Url { get; init; }
-}
 
 public partial class ElasticsearchGateway : ISearchGateway
 {
@@ -88,7 +32,6 @@ public partial class ElasticsearchGateway : ISearchGateway
 		_logger = logger;
 		_elasticsearchOptions = elasticsearchOptions;
 		_searchConfiguration = searchConfiguration;
-		_diminishTerms = searchConfiguration.DiminishTerms;
 		_rulesetName = searchConfiguration.Rules.Count > 0 ? ExtractRulesetName(elasticsearchOptions.IndexName) : null;
 		var nodePool = new SingleNodePool(new Uri(elasticsearchOptions.Url.Trim()));
 		var clientSettings = new ElasticsearchClientSettings(
@@ -99,6 +42,14 @@ public partial class ElasticsearchGateway : ISearchGateway
 			.Authentication(new ApiKey(elasticsearchOptions.ApiKey));
 
 		_client = new ElasticsearchClient(clientSettings);
+
+		_diminishTerms = searchConfiguration.DiminishTerms;
+		DiminishTermsQuery = new MultiMatchQuery
+		{
+			Query = string.Join(' ', _diminishTerms),
+			Operator = Operator.Or,
+			Fields = new[] { "search_title", "url.match" }
+		};
 	}
 
 	public async Task<bool> CanConnect(Cancel ctx) => (await _client.PingAsync(ctx)).IsValidResponse;
@@ -114,7 +65,7 @@ public partial class ElasticsearchGateway : ISearchGateway
 	{
 		// Index name format: semantic-docs-{namespace}-latest
 		var parts = indexName.Split('-');
-		if (parts.Length >= 3 && parts[0] == "semantic" && parts[1] == "docs")
+		if (parts is ["semantic", "docs", _, ..])
 			return $"docs-ruleset-{parts[2]}";
 		return null;
 	}
@@ -160,7 +111,7 @@ public partial class ElasticsearchGateway : ISearchGateway
 	/// </summary>
 	private Query BuildLexicalQuery(string searchQuery)
 	{
-		var tokens = searchQuery.Split(Array.Empty<char>(), StringSplitOptions.RemoveEmptyEntries);
+		var tokens = searchQuery.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
 		var query =
 			(Query)new ConstantScoreQuery
@@ -220,7 +171,7 @@ public partial class ElasticsearchGateway : ISearchGateway
 			{
 				Filter = new MatchQuery
 				{
-					Field = Infer.Field<DocumentDto>(f => f.Url.Suffix("match")),
+					Field = Infer.Field<DocumentationDocument>(f => f.Url.Suffix("match")),
 					Query = searchQuery
 				},
 				Boost = 0.3f
@@ -242,18 +193,7 @@ public partial class ElasticsearchGateway : ISearchGateway
 		{
 			Must = [query],
 			Filter = [DocumentFilter],
-			Should = [
-				new RankFeatureQuery {
-					Field = Infer.Field<DocumentDto>(f => f.NavigationDepth),
-					Boost = 0.8f
-				},
-				new RankFeatureQuery {
-					Field = Infer.Field<DocumentDto>(f => f.NavigationTableOfContents),
-					Boost = 0.8f
-				},
-				new TermQuery { Field = Infer.Field<DocumentDto>(f => f.NavigationSection ), Value = "reference", Boost = 0.15f },
-				new TermQuery { Field = Infer.Field<DocumentDto>(f => f.NavigationSection ), Value = "getting-started", Boost = 0.1f }
-			]
+			Should = ScoringQueries
 		};
 
 		Query baseQuery = _diminishTerms.Count == 0
@@ -262,12 +202,7 @@ public partial class ElasticsearchGateway : ISearchGateway
 			{
 				Positive = positiveQuery,
 				NegativeBoost = 0.8,
-				Negative = new MultiMatchQuery
-				{
-					Query = string.Join(' ', _diminishTerms),
-					Operator = Operator.Or,
-					Fields = new[] { "search_title", "url.match" }
-				}
+				Negative = DiminishTermsQuery
 			};
 
 		return WrapWithRuleQuery(baseQuery, searchQuery);
@@ -280,9 +215,27 @@ public partial class ElasticsearchGateway : ISearchGateway
 		(Query)new SemanticQuery("title.semantic_text", searchQuery) { Boost = 5.0f }
 		|| new SemanticQuery("abstract.semantic_text", searchQuery) { Boost = 3.0f };
 
-	private static Query DocumentFilter { get; } = !(Query)new TermsQuery(Infer.Field<DocumentDto>(f => f.Url.Suffix("keyword")),
+	private Query DiminishTermsQuery { get; }
+
+	private static Query[] ScoringQueries { get; } =
+	[
+		new RankFeatureQuery
+		{
+			Field = Infer.Field<DocumentationDocument>(f => f.NavigationDepth),
+			Boost = 0.8f
+		},
+		new RankFeatureQuery
+		{
+			Field = Infer.Field<DocumentationDocument>(f => f.NavigationTableOfContents),
+			Boost = 0.8f
+		},
+		new TermQuery { Field = Infer.Field<DocumentationDocument>(f => f.NavigationSection), Value = "reference", Boost = 0.15f },
+		new TermQuery { Field = Infer.Field<DocumentationDocument>(f => f.NavigationSection), Value = "getting-started", Boost = 0.1f }
+	];
+
+	private static Query DocumentFilter { get; } = !(Query)new TermsQuery(Infer.Field<DocumentationDocument>(f => f.Url.Suffix("keyword")),
 		new TermsQueryField(["/docs", "/docs/", "/docs/404", "/docs/404/"]))
-		&& !(Query)new TermQuery { Field = Infer.Field<DocumentDto>(f => f.Hidden), Value = true };
+		&& !(Query)new TermQuery { Field = Infer.Field<DocumentationDocument>(f => f.Hidden), Value = true };
 
 	public async Task<(int TotalHits, List<SearchResultItem> Results)> HybridSearchWithRrfAsync(string query, int pageNumber, int pageSize,
 		Cancel ctx = default)
@@ -293,16 +246,15 @@ public partial class ElasticsearchGateway : ISearchGateway
 		const string postTag = "</mark>";
 
 		var searchQuery = query;
-		var lexicalSearchRetriever = BuildLexicalQuery(searchQuery);
-		var semanticSearchRetriever = BuildSemanticQuery(searchQuery);
+		var lexicalQuery = BuildLexicalQuery(searchQuery);
 
 		try
 		{
-			var response = await _client.SearchAsync<DocumentDto>(s => s
+			var response = await _client.SearchAsync<DocumentationDocument>(s => s
 				.Indices(_elasticsearchOptions.IndexName)
 				.From(Math.Max(pageNumber - 1, 0) * pageSize)
 				.Size(pageSize)
-				.Query(BuildLexicalQuery(query))
+				.Query(lexicalQuery)
 				// .Retriever(r => r
 				// 	.Rrf(rrf => rrf
 				// 		.Filter(BuildFilter())
@@ -332,7 +284,7 @@ public partial class ElasticsearchGateway : ISearchGateway
 				.Highlight(h => h
 					.RequireFieldMatch(true)
 					.Fields(f => f
-						.Add(Infer.Field<DocumentDto>(d => d.SearchTitle.Suffix("completion")), hf => hf
+						.Add(Infer.Field<DocumentationDocument>(d => d.SearchTitle.Suffix("completion")), hf => hf
 							.FragmentSize(150)
 							.NumberOfFragments(3)
 							.NoMatchSize(150)
@@ -347,7 +299,7 @@ public partial class ElasticsearchGateway : ISearchGateway
 							))
 							.PreTags(preTag)
 							.PostTags(postTag))
-						.Add(Infer.Field<DocumentDto>(d => d.StrippedBody), hf => hf
+						.Add(Infer.Field<DocumentationDocument>(d => d.StrippedBody), hf => hf
 							.FragmentSize(150)
 							.NumberOfFragments(3)
 							.NoMatchSize(150)
@@ -382,7 +334,7 @@ public partial class ElasticsearchGateway : ISearchGateway
 		}
 	}
 
-	private static (int TotalHits, List<SearchResultItem> Results) ProcessSearchResponse(SearchResponse<DocumentDto> response)
+	private static (int TotalHits, List<SearchResultItem> Results) ProcessSearchResponse(SearchResponse<DocumentationDocument> response)
 	{
 		var totalHits = (int)response.Total;
 
@@ -432,7 +384,6 @@ public partial class ElasticsearchGateway : ISearchGateway
 	{
 		var searchQuery = query;
 		var lexicalQuery = BuildLexicalQuery(searchQuery);
-		//var semanticQuery = BuildSemanticQuery(searchQuery);
 
 		// Combine queries with bool should to match RRF behavior
 		var combinedQuery = (Query)new BoolQuery
@@ -444,7 +395,7 @@ public partial class ElasticsearchGateway : ISearchGateway
 		try
 		{
 			// First, find the document by URL
-			var getDocResponse = await _client.SearchAsync<DocumentDto>(s => s
+			var getDocResponse = await _client.SearchAsync<DocumentationDocument>(s => s
 				.Indices(_elasticsearchOptions.IndexName)
 				.Query(q => q.Term(t => t.Field(f => f.Url).Value(documentUrl)))
 				.Size(1), ctx);
@@ -463,7 +414,7 @@ public partial class ElasticsearchGateway : ISearchGateway
 			var documentId = getDocResponse.Hits.First().Id;
 
 			// Now explain why this document matches (or doesn't match) the query
-			var explainResponse = await _client.ExplainAsync<DocumentDto>(_elasticsearchOptions.IndexName, documentId, e => e
+			var explainResponse = await _client.ExplainAsync<DocumentationDocument>(_elasticsearchOptions.IndexName, documentId, e => e
 				.Query(combinedQuery), ctx);
 
 			if (!explainResponse.IsValidResponse)
@@ -569,8 +520,8 @@ public sealed record ExplainResult
 	public string Explanation { get; init; } = string.Empty;
 }
 
-[JsonSerializable(typeof(DocumentDto))]
-[JsonSerializable(typeof(ParentDocumentDto))]
+[JsonSerializable(typeof(DocumentationDocument))]
+[JsonSerializable(typeof(ParentDocument))]
 [JsonSerializable(typeof(RuleQueryMatchCriteria))]
 internal sealed partial class EsJsonContext : JsonSerializerContext;
 
