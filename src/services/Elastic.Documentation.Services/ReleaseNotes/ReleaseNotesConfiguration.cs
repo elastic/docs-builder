@@ -9,7 +9,6 @@ namespace Elastic.Documentation.Services.ReleaseNotes;
 /// </summary>
 public class ReleaseNotesConfiguration
 {
-	public LabelMappings LabelMappings { get; set; } = new();
 	public List<string> AvailableTypes { get; set; } =
 	[
 		"feature",
@@ -46,35 +45,3 @@ public class ReleaseNotesConfiguration
 	public static ReleaseNotesConfiguration Default => new();
 }
 
-public class LabelMappings
-{
-	/// <summary>
-	/// Maps PR labels to type values (e.g., "bug" -> "bug-fix")
-	/// </summary>
-	public Dictionary<string, string> Type { get; set; } = [];
-
-	/// <summary>
-	/// Maps PR labels to subtype values (e.g., "breaking:api" -> "api")
-	/// </summary>
-	public Dictionary<string, string> Subtype { get; set; } = [];
-
-	/// <summary>
-	/// Maps PR labels to product IDs (e.g., "product:elasticsearch" -> "elasticsearch")
-	/// </summary>
-	public Dictionary<string, string> Product { get; set; } = [];
-
-	/// <summary>
-	/// Maps PR labels to area values (e.g., "area:search" -> "search")
-	/// </summary>
-	public Dictionary<string, string> Area { get; set; } = [];
-
-	/// <summary>
-	/// Maps PR labels to lifecycle values (e.g., "lifecycle:preview" -> "preview")
-	/// </summary>
-	public Dictionary<string, string> Lifecycle { get; set; } = [];
-
-	/// <summary>
-	/// Maps PR labels to highlight flag (e.g., "highlight" -> true)
-	/// </summary>
-	public Dictionary<string, bool> Highlight { get; set; } = [];
-}

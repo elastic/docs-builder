@@ -1,0 +1,34 @@
+# Changelog Configuration
+# This file configures the valid values for changelog fields.
+# Place this file as `changelog.yml` in the `docs/` directory
+
+# Available types for changelog entries
+available_types:
+  - feature
+  - enhancement
+  - bug-fix
+  - known-issue
+  - breaking-change
+  - deprecation
+  - docs
+  - regression
+  - security
+  - other
+
+# Available subtypes for breaking changes
+available_subtypes:
+  - api
+  - behavioral
+  - configuration
+  - dependency
+  - subscription
+  - plugin
+  - security
+  - other
+
+# Available lifecycle values
+available_lifecycles:
+  - preview
+  - beta
+  - ga
+
