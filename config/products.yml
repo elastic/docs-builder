@@ -114,6 +114,8 @@ products:
     display: 'EDOT Cloud Forwarder for AWS'
   edot-cf-azure:
     display: 'EDOT Cloud Forwarder for Azure'
+  edot-cf-gcp:
+    display: 'EDOT Cloud Forwarder for GCP'
   eland:
     display: 'Eland'
     versioning: 'stack'
