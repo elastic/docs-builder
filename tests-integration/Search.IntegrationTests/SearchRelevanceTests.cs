@@ -4,6 +4,7 @@
 
 using Elastic.Documentation.Api.Infrastructure.Adapters.Search;
 using Elastic.Documentation.Api.Infrastructure.Aws;
+using Elastic.Documentation.Configuration.Search;
 using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -51,6 +52,7 @@ public class SearchRelevanceTests(ITestOutputHelper output)
 		{ "kibana", "/docs/reference/kibana", null},
 		{ "cloud", "/docs/reference/cloud", null},
 		{ "logstash", "/docs/reference/logstash", null},
+		{ "logstash release", "/docs/release-notes/logstash", null},
 		{ "esql", "/docs/reference/query-languages/esql", null},
 		{ "ES|QL", "/docs/reference/query-languages/esql", null},
 		{ "Output plugins for Logstash", "/docs/reference/logstash/plugins/output-plugins", null},
@@ -228,8 +230,34 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 		// Create a test parameter provider with the configuration values
 		var parameterProvider = new TestParameterProvider(elasticsearchUrl, elasticsearchApiKey, "semantic-docs-dev-latest");
 		var options = new ElasticsearchOptions(parameterProvider);
+		var searchConfig = new SearchConfiguration
+		{
+			Synonyms = [],
+			Rules =
+			[
+				new QueryRule
+				{
+					RuleId = "pin-data-streams",
+					Type = QueryRuleType.Pinned,
+					Criteria =
+					[
+						new QueryRuleCriteria
+						{
+							Type = QueryRuleCriteriaType.Exact,
+							Metadata = "query_string",
+							Values = ["data stream", "data-stream", "data-streams", "datastream", "datastreams"]
+						}
+					],
+					Actions = new QueryRuleActions
+					{
+						Ids = ["/docs/manage-data/data-store/data-streams"]
+					}
+				}
+			],
+			DiminishTerms = ["plugin", "client", "integration", "glossary"]
+		};
 
-		return new ElasticsearchGateway(options, NullLogger<ElasticsearchGateway>.Instance);
+		return new ElasticsearchGateway(options, searchConfig, NullLogger<ElasticsearchGateway>.Instance);
 	}
 
 	/// <summary>

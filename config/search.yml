@@ -34,3 +34,39 @@ synonyms:
   - [ "traffic filter", "network security" ]
   - [ "sso", "single sign-on" ]
   - [ "querydsl", "query dsl", "query dsl"]
+
+# Use sparingly, in general our query relevance should be good enough.
+rules:
+  # datastreams require this special handling because `datastream` is really unique vs the other spellings. 
+  - rule_id: pin-data-streams
+    type: pinned
+    criteria:
+      - type: exact
+        metadata: query_string
+        values:
+          - data stream
+          - data-stream
+          - data-streams
+          - datastream
+          - datastreams
+    actions:
+      ids:
+        - /docs/manage-data/data-store/data-streams
+  # /docs/extend/logstash wins on relevance and based on its navigation type and depth has every right to win.
+  # we, however, want /docs/reference/logstash to be the first result and not the 2nd.
+  - rule_id: pin-logstash
+    type: pinned
+    criteria:
+      - type: exact
+        metadata: query_string
+        values:
+          - logstash
+    actions:
+      ids:
+        - /docs/reference/logstash
+
+diminish_terms:
+  - plugin
+  - client
+  - integration
+  - glossary
