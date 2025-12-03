@@ -47,7 +47,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		//todo refactor mutability of MarkdownFile as a whole
 		ScopeDirectory = build.Configuration.ScopeDirectory;
 		Products = build.ProductsConfiguration;
-		Title = FileName.StripMarkdown();
+		Title = RelativePath;
 	}
 
 	public ProductsConfiguration Products { get; }
@@ -165,11 +165,8 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 				NavigationTitle = replacement;
 		}
 
-		if (string.IsNullOrEmpty(Title))
-		{
-			Title = RelativePath;
+		if (Title == RelativePath)
 			Collector.EmitWarning(FilePath, "Document has no title, using file name as title.");
-		}
 		else if (Title.AsSpan().ReplaceSubstitutions(subs, Collector, out var replacement))
 			Title = replacement;
 
