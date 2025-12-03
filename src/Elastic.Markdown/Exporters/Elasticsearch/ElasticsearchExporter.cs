@@ -20,7 +20,8 @@ public class ElasticsearchLexicalExporter(
 	IDiagnosticsCollector collector,
 	ElasticsearchEndpoint endpoint,
 	string indexNamespace,
-	DistributedTransport transport
+	DistributedTransport transport,
+	string[] indexTimeSynonyms
 )
 	: ElasticsearchExporter<CatalogIndexChannelOptions<DocumentationDocument>, CatalogIndexChannel<DocumentationDocument>>
 	(logFactory, collector, endpoint, transport, o => new(o), t => new(t)
@@ -33,7 +34,7 @@ public class ElasticsearchLexicalExporter(
 				{ "batch_index_date", d.BatchIndexDate.ToString("o") }
 			}),
 		GetMapping = () => CreateMapping(null),
-		GetMappingSettings = () => CreateMappingSetting($"docs-{indexNamespace}"),
+		GetMappingSettings = () => CreateMappingSetting($"docs-{indexNamespace}", indexTimeSynonyms),
 		IndexFormat =
 			$"{endpoint.IndexNamePrefix.Replace("semantic", "lexical").ToLowerInvariant()}-{indexNamespace.ToLowerInvariant()}-{{0:yyyy.MM.dd.HHmmss}}",
 		ActiveSearchAlias = $"{endpoint.IndexNamePrefix.Replace("semantic", "lexical").ToLowerInvariant()}-{indexNamespace.ToLowerInvariant()}"
@@ -44,14 +45,15 @@ public class ElasticsearchSemanticExporter(
 	IDiagnosticsCollector collector,
 	ElasticsearchEndpoint endpoint,
 	string indexNamespace,
-	DistributedTransport transport
+	DistributedTransport transport,
+	string[] indexTimeSynonyms
 )
 	: ElasticsearchExporter<SemanticIndexChannelOptions<DocumentationDocument>, SemanticIndexChannel<DocumentationDocument>>
 	(logFactory, collector, endpoint, transport, o => new(o), t => new(t)
 	{
 		BulkOperationIdLookup = d => d.Url,
 		GetMapping = (inferenceId, _) => CreateMapping(inferenceId),
-		GetMappingSettings = (_, _) => CreateMappingSetting($"docs-{indexNamespace}"),
+		GetMappingSettings = (_, _) => CreateMappingSetting($"docs-{indexNamespace}", indexTimeSynonyms),
 		IndexFormat = $"{endpoint.IndexNamePrefix.ToLowerInvariant()}-{indexNamespace.ToLowerInvariant()}-{{0:yyyy.MM.dd.HHmmss}}",
 		ActiveSearchAlias = $"{endpoint.IndexNamePrefix}-{indexNamespace.ToLowerInvariant()}",
 		IndexNumThreads = endpoint.IndexNumThreads,
@@ -103,7 +105,14 @@ public abstract class ElasticsearchExporter<TChannelOptions, TChannel> : IDispos
 			_logger.LogError(e, "Failed to export document");
 			_collector.EmitGlobalError("Elasticsearch export: failed to export document", e);
 		};
-		options.ServerRejectionCallback = items => _logger.LogInformation("Server rejection: {Rejection}", items.First().Item2);
+		options.ServerRejectionCallback = items =>
+		{
+			foreach (var (doc, responseItem) in items)
+			{
+				_collector.EmitGlobalError(
+					$"Server rejection: {responseItem.Status} {responseItem.Error?.Type} {responseItem.Error?.Reason} for document {doc.Url}");
+			}
+		};
 		Channel = createChannel(options);
 		_logger.LogInformation("Created {Channel} Elasticsearch target for indexing", typeof(TChannel).Name);
 	}
@@ -140,54 +149,69 @@ public abstract class ElasticsearchExporter<TChannelOptions, TChannel> : IDispos
 		return false;
 	}
 
-
-	protected static string CreateMappingSetting(string synonymSetName) =>
+	protected static string CreateMappingSetting(string synonymSetName, string[] synonyms)
+	{
+		var indexTimeSynonyms = $"[{string.Join(",", synonyms.Select(r => $"\"{r}\""))}]";
 		// language=json
-		$$"""
-		{
-		  "analysis": {
-		    "analyzer": {
-		      "synonyms_analyzer": {
-		        "tokenizer": "group_tokenizer",
-		        "filter": [
-		          "lowercase",
-		          "synonyms_filter",
-		          "kstem"
-		        ]
-		      },
-		      "highlight_analyzer": {
-		        "tokenizer": "group_tokenizer",
-		        "filter": [
-		          "lowercase",
-		          "english_stop"
-		        ]
-		      },
-		      "hierarchy_analyzer": { "tokenizer": "path_tokenizer" }
-		    },
-		    "filter": {
-		      "synonyms_filter": {
-				  "type": "synonym_graph",
-				  "synonyms_set": "{{synonymSetName}}",
-				  "updateable": true
-			  },
-		      "english_stop": {
-		        "type": "stop",
-		        "stopwords": "_english_"
-		      }
-		    },
-		    "tokenizer": {
-		      "group_tokenizer": {
-		      	"type": "char_group",
-		      	"tokenize_on_chars": [ "whitespace", ",", ";", "?", "!", "(", ")", "&", "'", "\"", "/", "[", "]", "{", "}" ]
-			  },
-			  "path_tokenizer": {
-		        "type": "path_hierarchy",
-		        "delimiter": "/"
-		      }
-		    }
-		  }
-		}
-		""";
+		return
+			$$$"""
+			{
+				"analysis": {
+				  "analyzer": {
+					"synonyms_fixed_analyzer": {
+					  "tokenizer": "group_tokenizer",
+					  "filter": [
+						"lowercase",
+						"synonyms_fixed_filter",
+						"kstem"
+					  ]
+					},
+					"synonyms_analyzer": {
+					  "tokenizer": "group_tokenizer",
+					  "filter": [
+						"lowercase",
+						"synonyms_filter",
+						"kstem"
+					  ]
+					},
+					"highlight_analyzer": {
+					  "tokenizer": "group_tokenizer",
+					  "filter": [
+						"lowercase",
+						"english_stop"
+					  ]
+					},
+					"hierarchy_analyzer": { "tokenizer": "path_tokenizer" }
+				  },
+				  "filter": {
+					"synonyms_fixed_filter": {
+					  "type": "synonym_graph",
+					  "synonyms": {{{indexTimeSynonyms}}}
+					},
+					"synonyms_filter": {
+					  "type": "synonym_graph",
+					  "synonyms_set": "{{{synonymSetName}}}",
+					  "updateable": true
+					},
+					"english_stop": {
+					  "type": "stop",
+					  "stopwords": "_english_"
+					}
+				  },
+				  "tokenizer": {
+					"group_tokenizer": {
+					  "type": "char_group",
+					  "tokenize_on_chars": [ "whitespace", ",", ";", "?", "!", "(", ")", "&", "'", "\"", "/", "[", "]", "{", "}" ]
+					},
+					"path_tokenizer": {
+					  "type": "path_hierarchy",
+					  "delimiter": "/"
+					}
+				  }
+				}
+			  }
+			""";
+	}
 
 	protected static string CreateMapping(string? inferenceId) =>
 		$$"""
@@ -200,6 +224,9 @@ public abstract class ElasticsearchExporter<TChannelOptions, TChannel> : IDispos
 		          "prefix": { "type": "text", "analyzer" : "hierarchy_analyzer" }
 		        }
 		      },
+		      "navigation_depth" : { "type" : "rank_feature", "positive_score_impact": false },
+		      "navigation_table_of_contents" : { "type" : "rank_feature", "positive_score_impact": false },
+		      "navigation_section" : { "type" : "keyword" },
 		      "hidden" : {
 		        "type" : "boolean"
 		      },
@@ -234,9 +261,16 @@ public abstract class ElasticsearchExporter<TChannelOptions, TChannel> : IDispos
 		      "hash" : { "type" : "keyword" },
 		      "search_title": {
 		        "type": "text",
+		        "analyzer": "synonyms_fixed_analyzer",
 		        "search_analyzer": "synonyms_analyzer",
 		        "fields": {
-		          "completion": { "type": "search_as_you_type" }
+		          "completion": {
+		            "type": "search_as_you_type",
+		            "analyzer": "synonyms_fixed_analyzer",
+		            "search_analyzer": "synonyms_analyzer",
+		            "term_vector": "with_positions_offsets",
+		            "index_options": "offsets"
+		          }
 		        }
 		      },
 		      "title": {
@@ -256,15 +290,18 @@ public abstract class ElasticsearchExporter<TChannelOptions, TChannel> : IDispos
 		      },
 		      "stripped_body": {
 		        "type": "text",
+		        "analyzer": "synonyms_fixed_analyzer",
 		        "search_analyzer": "synonyms_analyzer",
 		        "term_vector": "with_positions_offsets"
 		      },
 		      "headings": {
 		        "type": "text",
+		        "analyzer": "synonyms_fixed_analyzer",
 		        "search_analyzer": "synonyms_analyzer"
 		      },
 		      "abstract": {
 		        "type" : "text",
+		        "analyzer": "synonyms_fixed_analyzer",
 		        "search_analyzer": "synonyms_analyzer",
 		        "fields" : {
 		          {{(!string.IsNullOrWhiteSpace(inferenceId) ? $"\"semantic_text\": {{{InferenceMapping(inferenceId)}}}" : "")}}

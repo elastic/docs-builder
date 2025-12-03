@@ -17,10 +17,11 @@ using Elastic.Ingest.Elasticsearch.Indices;
 using Elastic.Markdown.Helpers;
 using Elastic.Transport;
 using Elastic.Transport.Products.Elasticsearch;
-using Markdig.Parsers;
 using Markdig.Syntax;
 using Microsoft.Extensions.Logging;
 using NetEscapades.EnumGenerators;
+using static System.StringSplitOptions;
+using MarkdownParser = Markdig.Parsers.MarkdownParser;
 
 namespace Elastic.Markdown.Exporters.Elasticsearch;
 
@@ -46,6 +47,7 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 
 	private readonly IReadOnlyCollection<string> _synonyms;
 	private readonly VersionsConfiguration _versionsConfiguration;
+	private readonly string _fixedSynonymsHash;
 
 	public ElasticsearchMarkdownExporter(
 		ILoggerFactory logFactory,
@@ -89,8 +91,18 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 		};
 
 		_transport = new DistributedTransport(configuration);
-		_lexicalChannel = new ElasticsearchLexicalExporter(logFactory, collector, es, indexNamespace, _transport);
-		_semanticChannel = new ElasticsearchSemanticExporter(logFactory, collector, es, indexNamespace, _transport);
+
+		string[] fixedSynonyms = ["esql", "data-stream", "data-streams", "machine-learning"];
+		var indexTimeSynonyms = _synonyms.Aggregate(new List<SynonymRule>(), (acc, synonym) =>
+		{
+			var id = synonym.Split(",", RemoveEmptyEntries)[0].Trim();
+			acc.Add(new SynonymRule { Id = id, Synonyms = synonym });
+			return acc;
+		}).Where(r => fixedSynonyms.Contains(r.Id)).Select(r => r.Synonyms).ToArray();
+		_fixedSynonymsHash = HashedBulkUpdate.CreateHash(string.Join(",", indexTimeSynonyms));
+
+		_lexicalChannel = new ElasticsearchLexicalExporter(logFactory, collector, es, indexNamespace, _transport, indexTimeSynonyms);
+		_semanticChannel = new ElasticsearchSemanticExporter(logFactory, collector, es, indexNamespace, _transport, indexTimeSynonyms);
 	}
 
 	/// <inheritdoc />
@@ -99,7 +111,7 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 		_currentLexicalHash = await _lexicalChannel.Channel.GetIndexTemplateHashAsync(ctx) ?? string.Empty;
 		_currentSemanticHash = await _semanticChannel.Channel.GetIndexTemplateHashAsync(ctx) ?? string.Empty;
 
-		await PublishSynonymsAsync($"docs-{_indexNamespace}", ctx);
+		await PublishSynonymsAsync(ctx);
 		_ = await _lexicalChannel.Channel.BootstrapElasticsearchAsync(BootstrapMethod.Failure, null, ctx);
 
 		// if the previous hash does not match the current hash, we know already we want to multiplex to a new index
@@ -146,25 +158,24 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 		async ValueTask<bool> IndexExists(string name) => (await _transport.HeadAsync(name, ctx)).ApiCallDetails.HasSuccessfulStatusCode;
 	}
 
-	private async Task PublishSynonymsAsync(string setName, CancellationToken ctx)
+	private async Task PublishSynonymsAsync(Cancel ctx)
 	{
+		var setName = $"docs-{_indexNamespace}";
 		_logger.LogInformation("Publishing synonym set '{SetName}' to Elasticsearch", setName);
 
 		var synonymRules = _synonyms.Aggregate(new List<SynonymRule>(), (acc, synonym) =>
 		{
-			acc.Add(new SynonymRule
-			{
-				Id = synonym.Split(",", StringSplitOptions.RemoveEmptyEntries)[0].Trim(),
-				Synonyms = synonym
-			});
+			var id = synonym.Split(",", RemoveEmptyEntries)[0].Trim();
+			acc.Add(new SynonymRule { Id = id, Synonyms = synonym });
 			return acc;
 		});
 
-		var synonymsSet = new SynonymsSet
-		{
-			Synonyms = synonymRules
-		};
+		var synonymsSet = new SynonymsSet { Synonyms = synonymRules };
+		await PutSynonyms(synonymsSet, setName, ctx);
+	}
 
+	private async Task PutSynonyms(SynonymsSet synonymsSet, string setName, Cancel ctx)
+	{
 		var json = JsonSerializer.Serialize(synonymsSet, SynonymSerializerContext.Default.SynonymsSet);
 
 		var response = await _transport.PutAsync<StringResponse>($"_synonyms/{setName}", PostData.String(json), ctx);
@@ -393,23 +404,56 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 		var semanticHash = _semanticChannel.Channel.ChannelHash;
 		var lexicalHash = _lexicalChannel.Channel.ChannelHash;
 		var hash = HashedBulkUpdate.CreateHash(semanticHash, lexicalHash,
-			doc.Url, doc.Type, doc.Body ?? string.Empty, string.Join(",", doc.Headings.OrderBy(h => h)), doc.Url
+			doc.Url, doc.Type, doc.StrippedBody ?? string.Empty, string.Join(",", doc.Headings.OrderBy(h => h)),
+			doc.SearchTitle ?? string.Empty,
+			doc.NavigationSection ?? string.Empty, doc.NavigationDepth.ToString("N0"),
+			doc.NavigationTableOfContents.ToString("N0"),
+			_fixedSynonymsHash
 		);
 		doc.Hash = hash;
 		doc.LastUpdated = _batchIndexDate;
 		doc.BatchIndexDate = _batchIndexDate;
 	}
 
-	private void CommonEnrichments(DocumentationDocument doc)
+	private void CommonEnrichments(DocumentationDocument doc, INavigationItem? navigationItem)
 	{
-		var urlComponents = doc.Url.Split('/');
-		doc.SearchTitle = $"{doc.Title} - ({string.Join(" ", urlComponents)}";
+		doc.SearchTitle = CreateSearchTitle();
+		// if we have no navigation, initialize to 20 since rank_feature would score 0 too high
+		doc.NavigationDepth = navigationItem?.NavigationDepth ?? 20;
+		doc.NavigationTableOfContents = navigationItem switch
+		{
+			IRootNavigationItem<INavigationModel, INavigationItem> => Math.Min(2 * doc.NavigationDepth, 48),
+			INodeNavigationItem<INavigationModel, INavigationItem> => 50,
+			_ => 100
+		};
+		doc.NavigationSection = navigationItem?.NavigationSection;
+		if (doc.Type == "api")
+			doc.NavigationSection = "api";
+
+		// this section gets promoted in the navigation we don't want it to be promoted in the search results
+		// e.g. `Use high-contrast mode in Kibana - ( docs cloud-account high contrast`
+		if (doc.NavigationSection == "manage your cloud account and preferences")
+			doc.NavigationDepth *= 2;
+
+		string CreateSearchTitle()
+		{
+			// skip doc and the section
+			var split = new[] { '/', ' ', '-', '.', '_' };
+			var urlComponents = new HashSet<string>(
+				doc.Url.Split('/', RemoveEmptyEntries).Skip(2)
+					.SelectMany(c => c.Split(split, RemoveEmptyEntries)).ToArray()
+			);
+			var title = doc.Title ?? string.Empty;
+			//skip tokens already part of the title we don't want to influence TF/IDF
+			var tokensInTitle = new HashSet<string>(title.Split(split, RemoveEmptyEntries).Select(t => t.ToLowerInvariant()));
+			return $"{doc.Title} - {string.Join(" ", urlComponents.Where(c => !tokensInTitle.Contains(c.ToLowerInvariant())))}";
+		}
 	}
 
 	public async ValueTask<bool> ExportAsync(MarkdownExportFileContext fileContext, Cancel ctx)
 	{
 		var file = fileContext.SourceFile;
-		INavigationTraversable navigation = fileContext.DocumentationSet;
+		var navigation = fileContext.PositionaNavigation;
 		var currentNavigation = navigation.GetNavigationFor(file);
 		var url = currentNavigation.Url;
 
@@ -419,7 +463,6 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 			_logger.LogInformation("Skipping export for {Url}", url);
 			return true;
 		}
-
 
 		// Remove the first h1 because we already have the title
 		// and we don't want it to appear in the body
@@ -461,8 +504,8 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 			Hidden = fileContext.NavigationItem.Hidden
 		};
 
+		CommonEnrichments(doc, currentNavigation);
 		AssignDocumentMetadata(doc);
-		CommonEnrichments(doc);
 
 		if (_indexStrategy == IngestStrategy.Multiplex)
 			return await _lexicalChannel.TryWrite(doc, ctx) && await _semanticChannel.TryWrite(doc, ctx);
@@ -481,7 +524,6 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 
 		await foreach (var doc in exporter.ExportDocuments(limitPerSource: null, ctx))
 		{
-			AssignDocumentMetadata(doc);
 			var document = MarkdownParser.Parse(doc.Body ?? string.Empty);
 
 			doc.Body = LlmMarkdownExporter.ConvertToLlmMarkdown(document, _context);
@@ -497,7 +539,8 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 				: string.Empty;
 			doc.Abstract = @abstract;
 			doc.Headings = headings;
-			CommonEnrichments(doc);
+			CommonEnrichments(doc, null);
+			AssignDocumentMetadata(doc);
 
 			// Write to channels following the multiplex or reindex strategy
 			if (_indexStrategy == IngestStrategy.Multiplex)

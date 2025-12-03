@@ -25,6 +25,15 @@ internal sealed record DocumentDto
 	[JsonPropertyName("url")]
 	public required string Url { get; init; }
 
+	[JsonPropertyName("navigation_depth")]
+	public int NavigationDepth { get; init; }
+
+	[JsonPropertyName("navigation_table_of_contents")]
+	public int NavigationTableOfContents { get; init; }
+
+	[JsonPropertyName("navigation_section")]
+	public string? NavigationSection { get; init; }
+
 	[JsonPropertyName("description")]
 	public string? Description { get; init; }
 
@@ -97,37 +106,30 @@ public partial class ElasticsearchGateway : ISearchGateway
 	private static Query BuildLexicalQuery(string searchQuery)
 	{
 		var tokens = searchQuery.Split(Array.Empty<char>(), StringSplitOptions.RemoveEmptyEntries);
-		if (tokens is ["datastream" or "datastreams" or "data-stream" or "data-streams"])
-		{
-			// /docs/api/doc/kibana/operation/operation-delete-fleet-epm-packages-pkgname-pkgversion-datastream-assets
-			// Is the only page that uses "datastream" instead of "data streams" this gives it an N of 1 in the entire corpus
-			// which is hard to fix through tweaking boosting, should update the page to use "data streams" instead
-			searchQuery = "data streams";
-			tokens = ["data", "streams"];
-		}
 
 		var query =
-			(Query)new MultiMatchQuery
+			(Query)new ConstantScoreQuery
 			{
-				Query = searchQuery, Operator = Operator.And, Type = TextQueryType.BoolPrefix,
-				Analyzer = "synonyms_analyzer",
-				Boost = 2.0f,
-				Fields = new[]
+				Filter = new MultiMatchQuery
 				{
-					"search_title.completion",
-					"search_title.completion._2gram",
-					"search_title.completion._3gram"
-				}
+					Query = searchQuery, Operator = Operator.And, Type = TextQueryType.BoolPrefix,
+					Analyzer = "synonyms_analyzer",
+					Boost = 1.0f,
+					Fields = new[]
+					{
+						"search_title.completion",
+						"search_title.completion._2gram",
+						"search_title.completion._3gram"
+					}
+				},
+				Boost = 6.0f
 			}
 			|| new MultiMatchQuery
 			{
 				Query = searchQuery, Operator = Operator.And, Type = TextQueryType.BestFields,
 				Analyzer = "synonyms_analyzer",
-				Boost = 0.2f,
-				Fields = new[]
-				{
-					"stripped_body"
-				}
+				Boost = 0.1f,
+				Fields = new[] { "stripped_body" }
 			};
 		// If the search term is a single word, boost the URL match
 		// This is to ensure that URLs that contain the search term are ranked higher than URLs that don't
@@ -142,18 +144,45 @@ public partial class ElasticsearchGateway : ISearchGateway
 					Field = Infer.Field<DocumentDto>(f => f.Url.Suffix("match")),
 					Query = searchQuery
 				},
-				Boost = 1
+				Boost = 0.3f
+			};
+		}
+
+		if (tokens.Length > 2)
+		{
+			query |= new MultiMatchQuery
+			{
+				Query = searchQuery, Operator = Operator.And, Type = TextQueryType.Phrase,
+				Analyzer = "synonyms_analyzer",
+				Boost = 0.2f,
+				Fields = new[] { "stripped_body" }
 			};
 		}
 
 		return new BoostingQuery
 		{
-			Positive = query,
+			Positive = new BoolQuery
+			{
+				Must = [query],
+				Filter = [DocumentFilter],
+				Should = [
+					new RankFeatureQuery {
+						Field = Infer.Field<DocumentDto>(f => f.NavigationDepth),
+						Boost = 0.8f
+					},
+					new RankFeatureQuery {
+						Field = Infer.Field<DocumentDto>(f => f.NavigationTableOfContents),
+						Boost = 0.8f
+					},
+					new TermQuery { Field = Infer.Field<DocumentDto>(f => f.NavigationSection ), Value = "reference", Boost = 0.15f },
+					new TermQuery { Field = Infer.Field<DocumentDto>(f => f.NavigationSection ), Value = "getting-started", Boost = 0.1f }
+				]
+			},
 			NegativeBoost = 0.8,
 			Negative = new MultiMatchQuery
 			{
-				Query = "plugin client integration", Operator = Operator.Or, Fields = new[] { "search_title", "headings", "url.match" }
-			}
+				Query = "plugin client integration glossary", Operator = Operator.Or, Fields = new[] { "search_title", "url.match" }
+			},
 		};
 	}
 
@@ -164,7 +193,7 @@ public partial class ElasticsearchGateway : ISearchGateway
 		(Query)new SemanticQuery("title.semantic_text", searchQuery) { Boost = 5.0f }
 		|| new SemanticQuery("abstract.semantic_text", searchQuery) { Boost = 3.0f };
 
-	private static Query BuildFilter() => !(Query)new TermsQuery(Infer.Field<DocumentDto>(f => f.Url.Suffix("keyword")),
+	private static Query DocumentFilter { get; } = !(Query)new TermsQuery(Infer.Field<DocumentDto>(f => f.Url.Suffix("keyword")),
 		new TermsQueryField(["/docs", "/docs/", "/docs/404", "/docs/404/"]))
 		&& !(Query)new TermQuery { Field = Infer.Field<DocumentDto>(f => f.Hidden), Value = true };
 
@@ -186,7 +215,6 @@ public partial class ElasticsearchGateway : ISearchGateway
 				.Indices(_elasticsearchOptions.IndexName)
 				.From(Math.Max(pageNumber - 1, 0) * pageSize)
 				.Size(pageSize)
-				.PostFilter(BuildFilter())
 				.Query(BuildLexicalQuery(query))
 				// .Retriever(r => r
 				// 	.Rrf(rrf => rrf
@@ -217,7 +245,7 @@ public partial class ElasticsearchGateway : ISearchGateway
 				.Highlight(h => h
 					.RequireFieldMatch(true)
 					.Fields(f => f
-						.Add(Infer.Field<DocumentDto>(d => d.Title), hf => hf
+						.Add(Infer.Field<DocumentDto>(d => d.SearchTitle.Suffix("completion")), hf => hf
 							.FragmentSize(150)
 							.NumberOfFragments(3)
 							.NoMatchSize(150)
@@ -226,7 +254,7 @@ public partial class ElasticsearchGateway : ISearchGateway
 							.BoundaryMaxScan(15)
 							.FragmentOffset(0)
 							.HighlightQuery(q => q.Match(m => m
-								.Field(d => d.Title)
+								.Field(d => d.SearchTitle.Suffix("completion"))
 								.Query(searchQuery)
 								.Analyzer("highlight_analyzer")
 							))
@@ -282,10 +310,10 @@ public partial class ElasticsearchGateway : ISearchGateway
 			if (highlights != null)
 			{
 				if (highlights.TryGetValue("stripped_body", out var bodyHighlights) && bodyHighlights.Count > 0)
-					highlightedBody = string.Join(". ", bodyHighlights.Select(h => h.TrimEnd('.')));
+					highlightedBody = string.Join(". ", bodyHighlights.Select(h => h.TrimEnd('.', ' ', '-')));
 
-				if (highlights.TryGetValue("title", out var titleHighlights) && titleHighlights.Count > 0)
-					highlightedTitle = string.Join(". ", titleHighlights.Select(h => h.TrimEnd('.')));
+				if (highlights.TryGetValue("search_title.completion", out var titleHighlights) && titleHighlights.Count > 0)
+					highlightedTitle = string.Join(". ", titleHighlights.Select(h => h.TrimEnd('.', ' ', '-')));
 			}
 
 			return new SearchResultItem
