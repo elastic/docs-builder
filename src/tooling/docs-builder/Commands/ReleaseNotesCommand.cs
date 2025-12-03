@@ -43,7 +43,6 @@ internal sealed class ReleaseNotesCommand(
 	/// <param name="action">Optional: What users must do to mitigate</param>
 	/// <param name="featureId">Optional: Feature flag ID</param>
 	/// <param name="highlight">Optional: Include in release highlights</param>
-	/// <param name="id">Optional: Custom ID (auto-generated if not provided)</param>
 	/// <param name="output">Optional: Output directory for the changelog fragment. Defaults to current directory</param>
 	/// <param name="ctx"></param>
 	[Command("create")]
@@ -60,7 +59,6 @@ internal sealed class ReleaseNotesCommand(
 		string? action = null,
 		string? featureId = null,
 		bool? highlight = null,
-		int? id = null,
 		string? output = null,
 		Cancel ctx = default
 	)
@@ -83,7 +81,6 @@ internal sealed class ReleaseNotesCommand(
 			Action = action,
 			FeatureId = featureId,
 			Highlight = highlight,
-			Id = id,
 			Output = output
 		};
 

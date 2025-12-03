@@ -4,7 +4,6 @@
 
 using System.Globalization;
 using System.IO.Abstractions;
-using System.Security.Cryptography;
 using System.Text;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
@@ -66,11 +65,8 @@ public class ReleaseNotesService(
 				collector.EmitWarning(string.Empty, $"Type '{input.Type}' is not in the list of available types. Available types: {string.Join(", ", config.AvailableTypes)}");
 			}
 
-			// Generate unique ID if not provided
-			var id = input.Id ?? GenerateUniqueId(input.Title, input.Pr ?? string.Empty);
-
 			// Build release notes data from input
-			var releaseNotesData = BuildReleaseNotesData(input, id);
+			var releaseNotesData = BuildReleaseNotesData(input);
 
 			// Generate YAML file
 			var yamlContent = GenerateYaml(releaseNotesData, config);
@@ -154,21 +150,10 @@ public class ReleaseNotesService(
 		}
 	}
 
-	private static int GenerateUniqueId(string title, string prUrl)
-	{
-		// Generate a unique ID based on title and PR URL hash
-		var input = $"{title}-{prUrl}";
-		var hash = SHA256.HashData(Encoding.UTF8.GetBytes(input));
-		// Take first 4 bytes and convert to positive integer
-		var id = Math.Abs(BitConverter.ToInt32(hash, 0));
-		return id;
-	}
-
-	private static ReleaseNotesData BuildReleaseNotesData(ReleaseNotesInput input, int id)
+	private static ReleaseNotesData BuildReleaseNotesData(ReleaseNotesInput input)
 	{
 		var data = new ReleaseNotesData
 		{
-			Id = id,
 			Title = input.Title,
 			Type = input.Type,
 			Subtype = input.Subtype,
@@ -217,8 +202,7 @@ public class ReleaseNotesService(
 		_ = sb.AppendLine();
 		_ = sb.AppendLine("# These fields are likely generated when the changelog is created and unlikely to require edits");
 		_ = sb.AppendLine();
-		_ = sb.AppendLine("# id: A required number that is a unique identifier for this changelog");
-		_ = sb.AppendLine("# pr: An optional string that contains the pull request URL");
+		_ = sb.AppendLine("# pr: An optional string that contains the pull request number");
 		_ = sb.AppendLine("# issues: An optional array of strings that contain URLs for issues that are relevant to the PR");
 		_ = sb.AppendLine("# type: A required string that contains the type of change");
 		_ = sb.AppendLine("#   It can be one of:");

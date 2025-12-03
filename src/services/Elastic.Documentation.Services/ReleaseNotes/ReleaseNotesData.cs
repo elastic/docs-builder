@@ -10,7 +10,6 @@ namespace Elastic.Documentation.Services.ReleaseNotes;
 public class ReleaseNotesData
 {
 	// Automated fields
-	public int Id { get; set; }
 	public string? Pr { get; set; }
 	public List<string>? Issues { get; set; }
 	public string Type { get; set; } = string.Empty;
