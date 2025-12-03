@@ -31,15 +31,16 @@ public class SearchRelevanceTests(ITestOutputHelper output)
 		{ "elasticsearch getting started", "/docs/solutions/search/get-started", null },
 		{ "elastic common schema", "/docs/reference/ecs", null },
 		{ "ecs", "/docs/reference/ecs", null },
-		{ "c# client", "/docs/reference/elasticsearch/clients/dotnet", null },
-		{ "dotnet client", "/docs/reference/elasticsearch/clients/dotnet", null },
+		{ "c# client", "/docs/reference/elasticsearch/clients/dotnet/installation", ["/docs/reference/elasticsearch/clients/dotnet"] },
+		{ "dotnet client", "/docs/reference/elasticsearch/clients/dotnet/installation", ["/docs/reference/elasticsearch/clients/dotnet"] },
 		{ "runscript", "/docs/api/doc/kibana/operation/operation-runscriptaction", [ "/docs/solutions/security/endpoint-response-actions" ] },
 		{ "data-streams", "/docs/manage-data/data-store/data-streams", null },
 		{ "datastream", "/docs/manage-data/data-store/data-streams", null },
 		{ "data stream", "/docs/manage-data/data-store/data-streams", null },
 		{ "saml sso", "/docs/deploy-manage/users-roles/cloud-organization/configure-saml-authentication", ["/docs/deploy-manage/users-roles/cloud-organization/configure-saml-authentication"] },
 		{ "templates", "/docs/manage-data/data-store/templates", null},
-		{ "query dsl", "/docs/reference/query-languages/querydsl", ["/docs/explore-analyze/query-filter/languages/querydsl"]},
+		// different results because of the exact match on title, QueryDSL needs to be normalized in the content
+		{ "query dsl", "/docs/explore-analyze/query-filter/languages/querydsl", ["/docs/explore-analyze/query-filter/languages/querydsl"]},
 		{ "querydsl", "/docs/reference/query-languages/querydsl", ["/docs/explore-analyze/query-filter/languages/querydsl"]},
 		{ "Agent policy", "/docs/reference/fleet/agent-policy", null},
 		{ "aliases", "/docs/manage-data/data-store/aliases", null},
@@ -56,7 +57,14 @@ public class SearchRelevanceTests(ITestOutputHelper output)
 		{ "esql", "/docs/reference/query-languages/esql", null},
 		{ "ES|QL", "/docs/reference/query-languages/esql", null},
 		{ "Output plugins for Logstash", "/docs/reference/logstash/plugins/output-plugins", null},
-		{ "Sending data to Elastic Cloud Hosted", "/docs/solutions/observability/get-started/quickstart-elastic-cloud-otel-endpoint", ["/docs/reference/logstash/connecting-to-cloud"]},
+		// exact match on title wins but with variations we prefer the more general topic page
+		{ "Sending data to Elastic Cloud Hosted", "/docs/reference/logstash/connecting-to-cloud", ["/docs/solutions/observability/get-started/quickstart-elastic-cloud-otel-endpoint"]},
+		{ "Send data to Elastic Cloud Hosted", "/docs/solutions/observability/get-started/quickstart-elastic-cloud-otel-endpoint", ["/docs/reference/logstash/connecting-to-cloud"]},
+
+		{ "universal profiling", "/docs/solutions/observability/infra-and-hosts/universal-profiling", null},
+		{ "agg", "/docs/explore-analyze/query-filter/aggregations", null},
+		{ "a", "/docs/reference/apm/observability/apm", null},
+		//universal profiling
 	};
 
 	[Theory]
@@ -232,7 +240,7 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 		var options = new ElasticsearchOptions(parameterProvider);
 		var searchConfig = new SearchConfiguration
 		{
-			Synonyms = [],
+			Synonyms = new Dictionary<string, string[]>(),
 			Rules =
 			[
 				new QueryRule

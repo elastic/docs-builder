@@ -157,7 +157,22 @@ public abstract class ElasticsearchExporter<TChannelOptions, TChannel> : IDispos
 			$$$"""
 			{
 				"analysis": {
+				  "normalizer": {
+					"keyword_normalizer": {
+					  "type": "custom",
+					  "char_filter": ["strip_non_word_chars"],
+					  "filter": ["lowercase", "asciifolding", "trim"]
+					}
+				  },
 				  "analyzer": {
+					"starts_with_analyzer": {
+					  "tokenizer": "starts_with_tokenizer",
+					  "filter": [ "lowercase" ]
+					},
+					"starts_with_analyzer_search": {
+					  "tokenizer": "keyword",
+					  "filter": [ "lowercase" ]
+					},
 					"synonyms_fixed_analyzer": {
 					  "tokenizer": "group_tokenizer",
 					  "filter": [
@@ -183,6 +198,13 @@ public abstract class ElasticsearchExporter<TChannelOptions, TChannel> : IDispos
 					},
 					"hierarchy_analyzer": { "tokenizer": "path_tokenizer" }
 				  },
+				  "char_filter": {
+					"strip_non_word_chars": {
+					  "type": "pattern_replace",
+					  "pattern": "\\W",
+					  "replacement": " "
+					}
+				  },
 				  "filter": {
 					"synonyms_fixed_filter": {
 					  "type": "synonym_graph",
@@ -199,6 +221,17 @@ public abstract class ElasticsearchExporter<TChannelOptions, TChannel> : IDispos
 					}
 				  },
 				  "tokenizer": {
+					"starts_with_tokenizer": {
+					  "type": "edge_ngram",
+					  "min_gram": 1,
+					  "max_gram": 10,
+					  "token_chars": [
+						"letter",
+						"digit",
+						"symbol",
+						"whitespace"
+					  ]
+					},
 					"group_tokenizer": {
 					  "type": "char_group",
 					  "tokenize_on_chars": [ "whitespace", ",", ";", "?", "!", "(", ")", "&", "'", "\"", "/", "[", "]", "{", "}" ]
@@ -226,16 +259,16 @@ public abstract class ElasticsearchExporter<TChannelOptions, TChannel> : IDispos
 		      },
 		      "navigation_depth" : { "type" : "rank_feature", "positive_score_impact": false },
 		      "navigation_table_of_contents" : { "type" : "rank_feature", "positive_score_impact": false },
-		      "navigation_section" : { "type" : "keyword" },
+		      "navigation_section" : { "type" : "keyword", "normalizer": "keyword_normalizer" },
 		      "hidden" : {
 		        "type" : "boolean"
 		      },
 		      "applies_to" : {
 		        "type" : "nested",
 		        "properties" : {
-		          "type" : { "type" : "keyword" },
-		          "sub-type" : { "type" : "keyword" },
-		          "lifecycle" : { "type" : "keyword" },
+		          "type" : { "type" : "keyword", "normalizer": "keyword_normalizer" },
+		          "sub-type" : { "type" : "keyword", "normalizer": "keyword_normalizer" },
+		          "lifecycle" : { "type" : "keyword", "normalizer": "keyword_normalizer" },
 		          "version" : { "type" : "version" }
 		        }
 		      },
@@ -277,13 +310,11 @@ public abstract class ElasticsearchExporter<TChannelOptions, TChannel> : IDispos
 		        "type": "text",
 		        "search_analyzer": "synonyms_analyzer",
 		        "fields": {
-		          "keyword": { "type": "keyword" },
+		          "keyword": { "type": "keyword", "normalizer": "keyword_normalizer" },
+		          "starts_with": { "type": "text", "analyzer": "starts_with_analyzer", "search_analyzer": "starts_with_analyzer_search" },
 		          "completion": { "type": "search_as_you_type", "search_analyzer": "synonyms_analyzer" }
 		          {{(!string.IsNullOrWhiteSpace(inferenceId) ? $$""", "semantic_text": {{{InferenceMapping(inferenceId)}}}""" : "")}}
 		        }
-		      },
-		      "url_segment_count": {
-		        "type": "integer"
 		      },
 		      "body": {
 		        "type": "text"

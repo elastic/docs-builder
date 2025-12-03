@@ -46,7 +46,7 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 	private string _currentLexicalHash = string.Empty;
 	private string _currentSemanticHash = string.Empty;
 
-	private readonly IReadOnlyCollection<string> _synonyms;
+	private readonly IReadOnlyDictionary<string, string[]> _synonyms;
 	private readonly IReadOnlyCollection<QueryRule> _rules;
 	private readonly VersionsConfiguration _versionsConfiguration;
 	private readonly string _fixedSynonymsHash;
@@ -98,8 +98,8 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 		string[] fixedSynonyms = ["esql", "data-stream", "data-streams", "machine-learning"];
 		var indexTimeSynonyms = _synonyms.Aggregate(new List<SynonymRule>(), (acc, synonym) =>
 		{
-			var id = synonym.Split(",", RemoveEmptyEntries)[0].Trim();
-			acc.Add(new SynonymRule { Id = id, Synonyms = synonym });
+			var id = synonym.Key;
+			acc.Add(new SynonymRule { Id = id, Synonyms = string.Join(", ", synonym.Value) });
 			return acc;
 		}).Where(r => fixedSynonyms.Contains(r.Id)).Select(r => r.Synonyms).ToArray();
 		_fixedSynonymsHash = HashedBulkUpdate.CreateHash(string.Join(",", indexTimeSynonyms));
@@ -169,8 +169,8 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 
 		var synonymRules = _synonyms.Aggregate(new List<SynonymRule>(), (acc, synonym) =>
 		{
-			var id = synonym.Split(",", RemoveEmptyEntries)[0].Trim();
-			acc.Add(new SynonymRule { Id = id, Synonyms = synonym });
+			var id = synonym.Key;
+			acc.Add(new SynonymRule { Id = id, Synonyms = string.Join(", ", synonym.Value) });
 			return acc;
 		});
 

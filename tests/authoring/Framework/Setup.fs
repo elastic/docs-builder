@@ -288,7 +288,7 @@ type Setup =
             Endpoints=DocumentationEndpoints(Elasticsearch = ElasticsearchEndpoint.Default),
             ProductsConfiguration = ProductsConfiguration(Products = productDict.ToFrozenDictionary()),
             LegacyUrlMappings = LegacyUrlMappingConfiguration(Mappings = []),
-            SearchConfiguration = SearchConfiguration(Synonyms = [], Rules = [], DiminishTerms = [])
+            SearchConfiguration = SearchConfiguration(Synonyms = Dictionary<string, string[]>(), Rules = [], DiminishTerms = [])
         )
         let context = BuildContext(
             collector,

@@ -52,9 +52,6 @@ internal sealed record DocumentDto
 	[JsonPropertyName("abstract")]
 	public string? Abstract { get; init; }
 
-	[JsonPropertyName("url_segment_count")]
-	public int UrlSegmentCount { get; init; }
-
 	[JsonPropertyName("headings")]
 	public string[] Headings { get; init; } = [];
 
@@ -81,6 +78,7 @@ public partial class ElasticsearchGateway : ISearchGateway
 {
 	private readonly ElasticsearchClient _client;
 	private readonly ElasticsearchOptions _elasticsearchOptions;
+	private readonly SearchConfiguration _searchConfiguration;
 	private readonly ILogger<ElasticsearchGateway> _logger;
 	private readonly IReadOnlyCollection<string> _diminishTerms;
 	private readonly string? _rulesetName;
@@ -89,6 +87,7 @@ public partial class ElasticsearchGateway : ISearchGateway
 	{
 		_logger = logger;
 		_elasticsearchOptions = elasticsearchOptions;
+		_searchConfiguration = searchConfiguration;
 		_diminishTerms = searchConfiguration.DiminishTerms;
 		_rulesetName = searchConfiguration.Rules.Count > 0 ? ExtractRulesetName(elasticsearchOptions.IndexName) : null;
 		var nodePool = new SingleNodePool(new Uri(elasticsearchOptions.Url.Trim()));
@@ -136,6 +135,26 @@ public partial class ElasticsearchGateway : ISearchGateway
 		};
 	}
 
+	private Query? GenerateTitleKeywordQuery(string searchQuery)
+	{
+		var q = searchQuery.ToLowerInvariant();
+		// This is a known content issue
+		// /docs/reference/apm/agents/dotnet/setup-elasticsearch has 'Elasticsearch' as title.
+		// We need to address this at the source
+		if (q is "elasticsearch")
+			return null;
+		Query query = new TermQuery { Field = "title.keyword", Value = q };
+		if (q.Contains(' '))
+			return query;
+		// this ensures all synonyms get boosted if the title matches fully e.g
+		// k8s and kubernetes would match page names either k8s or kubernetes
+		if (!_searchConfiguration.SynonymBiDirectional.TryGetValue(q, out var synonyms))
+			return query;
+		foreach (var synonym in synonyms)
+			query |= new TermQuery { Field = "title.keyword", Value = synonym };
+		return query;
+	}
+
 	/// <summary>
 	/// Builds the lexical search query for the given search term.
 	/// </summary>
@@ -150,7 +169,6 @@ public partial class ElasticsearchGateway : ISearchGateway
 				{
 					Query = searchQuery, Operator = Operator.And, Type = TextQueryType.BoolPrefix,
 					Analyzer = "synonyms_analyzer",
-					Boost = 1.0f,
 					Fields = new[]
 					{
 						"search_title.completion",
@@ -158,7 +176,7 @@ public partial class ElasticsearchGateway : ISearchGateway
 						"search_title.completion._3gram"
 					}
 				},
-				Boost = 6.0f
+				Boost = 3.0f
 			}
 			|| new MultiMatchQuery
 			{
@@ -167,6 +185,31 @@ public partial class ElasticsearchGateway : ISearchGateway
 				Boost = 0.1f,
 				Fields = new[] { "stripped_body" }
 			};
+
+		var titleKeywordQuery = GenerateTitleKeywordQuery(searchQuery);
+		if (titleKeywordQuery is not null)
+			query |= titleKeywordQuery;
+
+		if (searchQuery.Length <= 10)
+		{
+			float? boost = searchQuery.Length switch
+			{
+				1 => 100.0f,
+				2 => 4.0f,
+				_ => null
+			};
+			query |= new ConstantScoreQuery
+			{
+				Filter = new TermQuery
+				{
+					Field = "title.starts_with",
+					Value = searchQuery.ToLowerInvariant(),
+					Boost = boost
+				},
+				Boost = boost
+			};
+		}
+
 		// If the search term is a single word, boost the URL match
 		// This is to ensure that URLs that contain the search term are ranked higher than URLs that don't
 		// We dampen the boost by wrapping it in a constant score query

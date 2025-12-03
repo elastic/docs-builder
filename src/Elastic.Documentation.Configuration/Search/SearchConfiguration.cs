@@ -3,12 +3,46 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Elastic.Documentation.Configuration.Search;
 
 public record SearchConfiguration
 {
-	public required IReadOnlyCollection<string> Synonyms { get; init; }
+	private readonly IReadOnlyDictionary<string, string[]> _synonyms;
+
+	public required IReadOnlyDictionary<string, string[]> Synonyms
+	{
+		get => _synonyms;
+		[MemberNotNull(nameof(_synonyms))]
+		init
+		{
+			_synonyms = value;
+			SynonymBiDirectional = value
+				.Select(kv => kv.Value.Concat([kv.Key]).ToArray())
+				.SelectMany(a =>
+				{
+					var targets = new List<string[]>();
+					foreach (var s in a)
+					{
+						if (s.Contains(' ') || s.Contains("=>"))
+							continue;
+
+						List<string> newTarget = [s];
+						newTarget.AddRange(a.Except([s]));
+						targets.Add(newTarget.ToArray());
+					}
+
+					return targets;
+				})
+				.Where(a => a.Length > 1)
+				.DistinctBy(a => a[0])
+				.ToDictionary(a => a[0], a => a.Skip(1).ToArray(), StringComparer.OrdinalIgnoreCase);
+		}
+	}
+
+	public IReadOnlyDictionary<string, string[]> SynonymBiDirectional { get; private set; } = new Dictionary<string, string[]>();
+
 	public required IReadOnlyCollection<QueryRule> Rules { get; init; }
 	public required IReadOnlyCollection<string> DiminishTerms { get; init; }
 }
@@ -78,15 +112,18 @@ public static class SearchConfigurationExtensions
 	public static SearchConfiguration CreateSearchConfiguration(this ConfigurationFileProvider provider)
 	{
 		var searchFile = provider.SearchFile;
+		var synonyms = new Dictionary<string, string[]>();
 
 		if (!searchFile.Exists)
-			return new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] };
+			return new SearchConfiguration { Synonyms = synonyms, Rules = [], DiminishTerms = [] };
 
 		var searchDto = ConfigurationFileProvider.Deserializer.Deserialize<SearchConfigDto>(searchFile.OpenText());
-		var flattenedSynonyms = searchDto.Synonyms.Select(sl => string.Join(',', sl)).ToImmutableArray();
+		synonyms = searchDto.Synonyms
+			.Where(s => s.Count > 1)
+			.ToDictionary(k => k[0], sl => sl.Skip(1).ToArray(), StringComparer.OrdinalIgnoreCase);
 		var rules = searchDto.Rules.Select(ParseRule).ToImmutableArray();
 		var diminishTerms = searchDto.DiminishTerms.ToImmutableArray();
-		return new SearchConfiguration { Synonyms = flattenedSynonyms, Rules = rules, DiminishTerms = diminishTerms };
+		return new SearchConfiguration { Synonyms = synonyms, Rules = rules, DiminishTerms = diminishTerms };
 	}
 
 	private static QueryRule ParseRule(QueryRuleDto dto) =>
