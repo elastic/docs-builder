@@ -32,3 +32,25 @@ available_lifecycles:
   - beta
   - ga
 
+# Available areas (optional - if not specified, all areas are allowed)
+available_areas:
+  - search
+  - security
+  - machine-learning
+  - observability
+  - index-management
+  # Add more areas as needed
+
+# Available products (optional - if not specified, all products are allowed)
+available_products:
+  - elasticsearch
+  - kibana
+  - apm
+  - beats
+  - elastic-agent
+  - fleet
+  - cloud-hosted
+  - cloud-serverless
+  - cloud-enterprise
+  # Add more products as needed
+

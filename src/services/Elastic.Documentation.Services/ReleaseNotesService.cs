@@ -64,6 +64,32 @@ public class ReleaseNotesService(
 				collector.EmitWarning(string.Empty, $"Type '{input.Type}' is not in the list of available types. Available types: {string.Join(", ", config.AvailableTypes)}");
 			}
 
+			// Validate areas if configuration provides available areas
+			if (config.AvailableAreas != null && config.AvailableAreas.Count > 0)
+			{
+				foreach (var area in input.Areas)
+				{
+					if (!config.AvailableAreas.Contains(area))
+					{
+						collector.EmitError(string.Empty, $"Area '{area}' is not in the list of available areas. Available areas: {string.Join(", ", config.AvailableAreas)}");
+						return false;
+					}
+				}
+			}
+
+			// Validate products if configuration provides available products
+			if (config.AvailableProducts != null && config.AvailableProducts.Count > 0)
+			{
+				foreach (var product in input.Products)
+				{
+					if (!config.AvailableProducts.Contains(product.Product))
+					{
+						collector.EmitError(string.Empty, $"Product '{product.Product}' is not in the list of available products. Available products: {string.Join(", ", config.AvailableProducts)}");
+						return false;
+					}
+				}
+			}
+
 			// Build release notes data from input
 			var releaseNotesData = BuildReleaseNotesData(input);
 

@@ -42,6 +42,10 @@ public class ReleaseNotesConfiguration
 		"ga"
 	];
 
+	public List<string>? AvailableAreas { get; set; }
+
+	public List<string>? AvailableProducts { get; set; }
+
 	public static ReleaseNotesConfiguration Default => new();
 }
 

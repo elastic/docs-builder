@@ -35,7 +35,7 @@ internal sealed class ChangelogCommand(
 	/// <param name="type">Required: Type of change (feature, enhancement, bug-fix, breaking-change, etc.)</param>
 	/// <param name="products">Required: Products affected in format "product target lifecycle, ..." (e.g., "elasticsearch 9.2.0 ga, cloud-serverless 2025-08-05")</param>
 	/// <param name="subtype">Optional: Subtype for breaking changes (api, behavioral, configuration, etc.)</param>
-	/// <param name="area">Optional: Area(s) affected (comma-separated or specify multiple times)</param>
+	/// <param name="areas">Optional: Area(s) affected (comma-separated or specify multiple times)</param>
 	/// <param name="pr">Optional: Pull request URL</param>
 	/// <param name="issues">Optional: Issue URL(s) (comma-separated or specify multiple times)</param>
 	/// <param name="description">Optional: Additional information about the change (max 600 characters)</param>
@@ -52,7 +52,7 @@ internal sealed class ChangelogCommand(
 		string type,
 		[ProductInfoParser] List<ProductInfo> products,
 		string? subtype = null,
-		string[]? area = null,
+		string[]? areas = null,
 		string? pr = null,
 		string[]? issues = null,
 		string? description = null,
@@ -75,7 +75,7 @@ internal sealed class ChangelogCommand(
 			Type = type,
 			Products = products,
 			Subtype = subtype,
-			Areas = area ?? [],
+			Areas = areas ?? [],
 			Pr = pr,
 			Issues = issues ?? [],
 			Description = description,
