@@ -99,7 +99,8 @@ public partial class ConfigurationFileProvider
 		AssemblerFile = CreateTemporaryConfigurationFile("assembler.yml");
 		NavigationFile = CreateTemporaryConfigurationFile("navigation.yml");
 		LegacyUrlMappingsFile = CreateTemporaryConfigurationFile("legacy-url-mappings.yml");
-		SearchFile = CreateTemporaryConfigurationFile("search.yml");
+		// reading from synonyms.yml is temporary. If you spot this again as a future reader, feel free to remove it.
+		SearchFile = CreateTemporaryConfigurationFile("search.yml", "synonyms.yml");
 	}
 
 	public bool SkipPrivateRepositories { get; }
@@ -192,34 +193,50 @@ public partial class ConfigurationFileProvider
 
 	}
 
-	private IFileInfo CreateTemporaryConfigurationFile(string fileName)
+	private IFileInfo CreateTemporaryConfigurationFile(string fileName, string? fallback = null)
 	{
-		using var stream = GetLocalOrEmbedded(fileName);
+		using var stream = GetLocalOrEmbedded(fileName, fallback);
 		var context = stream.ReadToEnd();
 		var fi = _fileSystem.FileInfo.New(Path.Combine(TemporaryDirectory.FullName, fileName));
 		_fileSystem.File.WriteAllText(fi.FullName, context);
 		return fi;
 	}
 
-	private StreamReader GetLocalOrEmbedded(string fileName)
+	private StreamReader GetLocalOrEmbedded(string fileName, string? fallback = null)
 	{
 		var localPath = GetLocalPath(fileName);
-		if (ConfigurationSource == ConfigurationSource.Local && _fileSystem.File.Exists(localPath))
-		{
-			var reader = _fileSystem.File.OpenText(localPath);
-			return reader;
-		}
 		if (ConfigurationSource == ConfigurationSource.Local)
+		{
+			if (_fileSystem.File.Exists(localPath))
+			{
+				var reader = _fileSystem.File.OpenText(localPath);
+				return reader;
+			}
+			var fallbackPath = fallback is not null ? GetLocalPath(fallback) : null;
+			if (fallbackPath is not null && _fileSystem.File.Exists(fallbackPath))
+			{
+				var reader = _fileSystem.File.OpenText(fallbackPath);
+				return reader;
+			}
 			throw new Exception($"Can not read {fileName} in directory {LocalConfigurationDirectory}");
+		}
 
 		var appDataPath = GetAppDataPath(fileName);
-		if (ConfigurationSource == ConfigurationSource.Remote && _fileSystem.File.Exists(appDataPath))
-		{
-			var reader = _fileSystem.File.OpenText(appDataPath);
-			return reader;
-		}
 		if (ConfigurationSource == ConfigurationSource.Remote)
+		{
+			if (_fileSystem.File.Exists(appDataPath))
+			{
+				var reader = _fileSystem.File.OpenText(appDataPath);
+				return reader;
+			}
+			var fallbackPath = fallback is not null ? GetAppDataPath(fallback) : null;
+			if (fallbackPath is not null && _fileSystem.File.Exists(fallbackPath))
+			{
+				var reader = _fileSystem.File.OpenText(fallbackPath);
+				return reader;
+			}
 			throw new Exception($"Can not read {fileName} in directory {AppDataConfigurationDirectory}");
+		}
 		return GetEmbeddedStream(fileName);
 	}
 
