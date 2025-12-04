@@ -11,19 +11,18 @@ import {
 } from '@elastic/eui'
 import { css } from '@emotion/react'
 import { useDebounce } from '@uidotdev/usehooks'
-import { useEffect } from 'react'
+import { useEffect, MutableRefObject } from 'react'
 
 interface SearchResultsProps {
-    onKeyDown?: (
-        e: React.KeyboardEvent<HTMLAnchorElement>,
-        index: number
-    ) => void
-    setItemRef?: (element: HTMLAnchorElement | null, index: number) => void
+    inputRef?: React.RefObject<HTMLInputElement>
+    buttonRef?: React.RefObject<HTMLButtonElement>
+    itemRefs?: MutableRefObject<(HTMLAnchorElement | null)[]>
 }
 
 export const SearchResults = ({
-    onKeyDown,
-    setItemRef,
+    inputRef,
+    buttonRef,
+    itemRefs,
 }: SearchResultsProps) => {
     const { euiTheme } = useEuiTheme()
     const searchTerm = useSearchTerm()
@@ -90,8 +89,9 @@ export const SearchResults = ({
                             pageSize={data.pageSize}
                             isLoading={isInitialLoading}
                             searchTerm={debouncedSearchTerm}
-                            onKeyDown={onKeyDown}
-                            setItemRef={setItemRef}
+                            inputRef={inputRef}
+                            buttonRef={buttonRef}
+                            itemRefs={itemRefs}
                         />
                     )}
 
@@ -102,8 +102,9 @@ export const SearchResults = ({
                             pageSize={10}
                             isLoading={true}
                             searchTerm={debouncedSearchTerm}
-                            onKeyDown={onKeyDown}
-                            setItemRef={setItemRef}
+                            inputRef={inputRef}
+                            buttonRef={buttonRef}
+                            itemRefs={itemRefs}
                         />
                     )}
                 </>

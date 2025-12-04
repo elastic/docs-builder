@@ -21,18 +21,19 @@ import {
     EuiButtonIcon,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
-import { useCallback } from 'react'
+import { useEffect } from 'react'
 
 export const Search = () => {
     const searchTerm = useSearchTerm()
-    const { setSearchTerm, setInputFocused, clearSearchTerm } =
-        useSearchActions()
+    const { setSearchTerm, clearSearchTerm } = useSearchActions()
     const { closeModal } = useModalActions()
     const isSearchCooldownActive = useIsSearchCooldownActive()
     const { askAi } = useAskAiFromSearch()
-    const { isLoading, isFetching } = useSearchQuery()
+    const { isLoading, isFetching, data } = useSearchQuery()
     const mFontSize = useEuiFontSize('m').fontSize
     const { euiTheme } = useEuiTheme()
+
+    const resultsCount = data?.results?.length ?? 0
 
     const handleSearchInputChange = (
         e: React.ChangeEvent<HTMLInputElement>
@@ -45,23 +46,25 @@ export const Search = () => {
         closeModal()
     }
 
-    const handleInputFocus = useCallback(
-        () => setInputFocused(true),
-        [setInputFocused]
-    )
-    const handleInputBlur = useCallback(
-        () => setInputFocused(false),
-        [setInputFocused]
-    )
-
     const {
         inputRef,
         buttonRef,
+        itemRefs,
         handleInputKeyDown,
-        handleListItemKeyDown,
         focusLastAvailable,
-        setItemRef,
-    } = useSearchKeyboardNavigation()
+    } = useSearchKeyboardNavigation(resultsCount)
+
+    // Listen for Cmd+K to focus input
+    useEffect(() => {
+        const handleGlobalKeyDown = (e: KeyboardEvent) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                e.preventDefault()
+                inputRef.current?.focus()
+            }
+        }
+        window.addEventListener('keydown', handleGlobalKeyDown)
+        return () => window.removeEventListener('keydown', handleGlobalKeyDown)
+    }, [inputRef])
 
     const showLoadingSpinner = isLoading || isFetching
 
@@ -99,8 +102,6 @@ export const Search = () => {
                     value={searchTerm}
                     onChange={handleSearchInputChange}
                     onKeyDown={handleInputKeyDown}
-                    onFocus={handleInputFocus}
-                    onBlur={handleInputBlur}
                     disabled={isSearchCooldownActive}
                 />
                 <EuiButtonIcon
@@ -112,8 +113,9 @@ export const Search = () => {
             </div>
 
             <SearchResults
-                onKeyDown={handleListItemKeyDown}
-                setItemRef={setItemRef}
+                inputRef={inputRef}
+                buttonRef={buttonRef}
+                itemRefs={itemRefs}
             />
             <EuiHorizontalRule margin="none" />
             {searchTerm && (
