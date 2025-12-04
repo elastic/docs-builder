@@ -57,8 +57,9 @@ catch (Exception ex)
 [JsonSerializable(typeof(APIGatewayHttpApiV2ProxyRequest))]
 [JsonSerializable(typeof(APIGatewayHttpApiV2ProxyResponse))]
 [JsonSerializable(typeof(AskAiRequest))]
-[JsonSerializable(typeof(SearchRequest))]
-[JsonSerializable(typeof(SearchResponse))]
+[JsonSerializable(typeof(SearchApiRequest))]
+[JsonSerializable(typeof(SearchApiResponse))]
+[JsonSerializable(typeof(SearchAggregations))]
 internal sealed partial class LambdaJsonSerializerContext : JsonSerializerContext;
 
 // Make the Program class accessible for integration testing

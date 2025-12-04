@@ -78,12 +78,14 @@ public class SearchRelevanceTests(ITestOutputHelper output)
 		Assert.SkipUnless(canConnect, "Elasticsearch is not connected");
 
 		// Act - Perform the search
-		var (totalHits, results) = await gateway.HybridSearchWithRrfAsync(query, 1, 5, TestContext.Current.CancellationToken);
+		var searchResult = await gateway.SearchImplementation(query, 1, 5, null, TestContext.Current.CancellationToken);
 
 		// Log basic results
 		output.WriteLine($"Query: {query}");
-		output.WriteLine($"Total hits: {totalHits}");
-		output.WriteLine($"Results returned: {results.Count}");
+		output.WriteLine($"Total hits: {searchResult.TotalHits}");
+		output.WriteLine($"Results returned: {searchResult.Results.Count}");
+
+		var results = searchResult.Results;
 
 		results.Should().NotBeEmpty($"Search for '{query}' should return results");
 

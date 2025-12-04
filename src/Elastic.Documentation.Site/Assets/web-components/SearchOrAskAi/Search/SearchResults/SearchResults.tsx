@@ -1,6 +1,6 @@
 import { SearchOrAskAiErrorCallout } from '../../SearchOrAskAiErrorCallout'
 import { useSearchActions, useSearchTerm } from '../search.store'
-import { useSearchFilters, type FilterType } from '../useSearchFilters'
+import { useSearchFilters, type TypeFilter } from '../useSearchFilters'
 import { useSearchQuery } from '../useSearchQuery'
 import { SearchResultListItem } from './SearchResultsListItem'
 import {
@@ -18,7 +18,6 @@ import {
 import { css } from '@emotion/react'
 import { useDebounce } from '@uidotdev/usehooks'
 import { useEffect, useRef, useCallback } from 'react'
-import type { MouseEvent } from 'react'
 
 interface SearchResultsProps {
     onKeyDown?: (
@@ -61,9 +60,10 @@ export const SearchResults = ({
 
     const { data, error, isLoading } = useSearchQuery()
 
-    const { selectedFilters, handleFilterClick, filteredResults, counts } =
+    const { selectedFilter, handleFilterClick, filteredResults, counts } =
         useSearchFilters({
             results: data?.results ?? [],
+            aggregations: data?.aggregations,
         })
 
     const isInitialLoading = isLoading && !data
@@ -84,7 +84,7 @@ export const SearchResults = ({
             {!error && (
                 <>
                     <Filter
-                        selectedFilters={selectedFilters}
+                        selectedFilter={selectedFilter}
                         onFilterClick={handleFilterClick}
                         counts={counts}
                         isLoading={isInitialLoading}
@@ -201,13 +201,13 @@ export const SearchResults = ({
 }
 
 const Filter = ({
-    selectedFilters,
+    selectedFilter,
     onFilterClick,
     counts,
     isLoading,
 }: {
-    selectedFilters: Set<FilterType>
-    onFilterClick: (filter: FilterType, event?: MouseEvent) => void
+    selectedFilter: TypeFilter
+    onFilterClick: (filter: TypeFilter) => void
     counts: {
         apiResultsCount: number
         docsResultsCount: number
@@ -245,12 +245,12 @@ const Filter = ({
                     color="text"
                     // @ts-expect-error: xs is valid size according to EuiButton docs
                     size="xs"
-                    fill={selectedFilters.has('all')}
+                    fill={selectedFilter === 'all'}
                     isLoading={isLoading}
-                    onClick={(e: MouseEvent) => onFilterClick('all', e)}
+                    onClick={() => onFilterClick('all')}
                     css={buttonStyle}
                     aria-label={`Show all results, ${totalCount} total`}
-                    aria-pressed={selectedFilters.has('all')}
+                    aria-pressed={selectedFilter === 'all'}
                 >
                     {isLoading ? 'ALL' : `ALL (${totalCount})`}
                 </EuiButton>
@@ -264,12 +264,12 @@ const Filter = ({
                     color="text"
                     // @ts-expect-error: xs is valid size according to EuiButton docs
                     size="xs"
-                    fill={selectedFilters.has('doc')}
+                    fill={selectedFilter === 'doc'}
                     isLoading={isLoading}
-                    onClick={(e: MouseEvent) => onFilterClick('doc', e)}
+                    onClick={() => onFilterClick('doc')}
                     css={buttonStyle}
                     aria-label={`Filter to documentation results, ${docsResultsCount} available`}
-                    aria-pressed={selectedFilters.has('doc')}
+                    aria-pressed={selectedFilter === 'doc'}
                 >
                     {isLoading ? 'DOCS' : `DOCS (${docsResultsCount})`}
                 </EuiButton>
@@ -283,12 +283,12 @@ const Filter = ({
                     color="text"
                     // @ts-expect-error: xs is valid size according to EuiButton docs
                     size="xs"
-                    fill={selectedFilters.has('api')}
+                    fill={selectedFilter === 'api'}
                     isLoading={isLoading}
-                    onClick={(e: MouseEvent) => onFilterClick('api', e)}
+                    onClick={() => onFilterClick('api')}
                     css={buttonStyle}
                     aria-label={`Filter to API results, ${apiResultsCount} available`}
-                    aria-pressed={selectedFilters.has('api')}
+                    aria-pressed={selectedFilter === 'api'}
                 >
                     {isLoading ? 'API' : `API (${apiResultsCount})`}
                 </EuiButton>

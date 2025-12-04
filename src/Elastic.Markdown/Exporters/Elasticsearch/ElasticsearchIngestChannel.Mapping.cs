@@ -113,7 +113,8 @@ public abstract partial class ElasticsearchIngestChannel<TChannelOptions, TChann
 		$$"""
 		  {
 		    "properties": {
-		      "url" : {
+		      "type": { "type" : "keyword", "normalizer": "keyword_normalizer" },
+		      "url": {
 		        "type": "keyword",
 		        "fields": {
 		          "match": { "type": "text" },

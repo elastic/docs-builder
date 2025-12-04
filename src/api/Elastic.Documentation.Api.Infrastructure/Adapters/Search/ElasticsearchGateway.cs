@@ -5,12 +5,12 @@
 using System.Globalization;
 using System.Text.Json.Serialization;
 using Elastic.Clients.Elasticsearch;
+using Elastic.Clients.Elasticsearch.Aggregations;
 using Elastic.Clients.Elasticsearch.Core.Explain;
 using Elastic.Clients.Elasticsearch.Core.Search;
 using Elastic.Clients.Elasticsearch.QueryDsl;
 using Elastic.Clients.Elasticsearch.Serialization;
 using Elastic.Documentation.Api.Core.Search;
-using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Search;
 using Elastic.Transport;
@@ -54,8 +54,8 @@ public partial class ElasticsearchGateway : ISearchGateway
 
 	public async Task<bool> CanConnect(Cancel ctx) => (await _client.PingAsync(ctx)).IsValidResponse;
 
-	public async Task<(int TotalHits, List<SearchResultItem> Results)> SearchAsync(string query, int pageNumber, int pageSize, Cancel ctx = default) =>
-		await HybridSearchWithRrfAsync(query, pageNumber, pageSize, ctx);
+	public async Task<SearchResult> SearchAsync(string query, int pageNumber, int pageSize, string? filter = null, Cancel ctx = default) =>
+		await SearchImplementation(query, pageNumber, pageSize, filter, ctx);
 
 	/// <summary>
 	/// Extracts the ruleset name from the index name.
@@ -237,85 +237,84 @@ public partial class ElasticsearchGateway : ISearchGateway
 		new TermsQueryField(["/docs", "/docs/", "/docs/404", "/docs/404/"]))
 		&& !(Query)new TermQuery { Field = Infer.Field<DocumentationDocument>(f => f.Hidden), Value = true };
 
-	public async Task<(int TotalHits, List<SearchResultItem> Results)> HybridSearchWithRrfAsync(string query, int pageNumber, int pageSize,
-		Cancel ctx = default)
+	public async Task<SearchResult> SearchImplementation(string query, int pageNumber, int pageSize, string? filter = null, Cancel ctx = default)
 	{
-		_logger.LogInformation("Starting RRF hybrid search for '{Query}' with pageNumber={PageNumber}, pageSize={PageSize}", query, pageNumber, pageSize);
-
 		const string preTag = "<mark>";
 		const string postTag = "</mark>";
 
 		var searchQuery = query;
 		var lexicalQuery = BuildLexicalQuery(searchQuery);
 
+		// Build post_filter for type filtering (applied after aggregations are computed)
+		Query? postFilter = null;
+		if (!string.IsNullOrWhiteSpace(filter))
+			postFilter = new TermQuery { Field = Infer.Field<DocumentationDocument>(f => f.Type), Value = filter };
+
 		try
 		{
-			var response = await _client.SearchAsync<DocumentationDocument>(s => s
-				.Indices(_elasticsearchOptions.IndexName)
-				.From(Math.Max(pageNumber - 1, 0) * pageSize)
-				.Size(pageSize)
-				.Query(lexicalQuery)
-				// .Retriever(r => r
-				// 	.Rrf(rrf => rrf
-				// 		.Filter(BuildFilter())
-				// 		.Retrievers(
-				// 			// Lexical/Traditional search retriever
-				// 			ret => ret.Standard(std => std.Query(lexicalSearchRetriever)),
-				// 			// Semantic search retriever
-				// 			ret => ret.Standard(std => std.Query(semanticSearchRetriever))
-				// 		)
-				// 		.RankConstant(60) // Controls how much weight is given to document ranking
-				// 		.RankWindowSize(100)
-				// 	)
-				// )
-				.Source(sf => sf
-					.Filter(f => f
-						.Includes(
-							e => e.Type,
-							e => e.Title,
-							e => e.SearchTitle,
-							e => e.Url,
-							e => e.Description,
-							e => e.Parents,
-							e => e.Headings
+			var response = await _client.SearchAsync<DocumentationDocument>(s =>
+			{
+				_ = s
+					.Indices(_elasticsearchOptions.IndexName)
+					.From(Math.Max(pageNumber - 1, 0) * pageSize)
+					.Size(pageSize)
+					.Query(lexicalQuery)
+					.Aggregations(agg => agg
+						.Add("type", a => a.Terms(t => t.Field(f => f.Type)))
+					)
+					.Source(sf => sf
+						.Filter(f => f
+							.Includes(
+								e => e.Type,
+								e => e.Title,
+								e => e.SearchTitle,
+								e => e.Url,
+								e => e.Description,
+								e => e.Parents,
+								e => e.Headings
+							)
 						)
 					)
-				)
-				.Highlight(h => h
-					.RequireFieldMatch(true)
-					.Fields(f => f
-						.Add(Infer.Field<DocumentationDocument>(d => d.SearchTitle.Suffix("completion")), hf => hf
-							.FragmentSize(150)
-							.NumberOfFragments(3)
-							.NoMatchSize(150)
-							.BoundaryChars(":.!?\t\n")
-							.BoundaryScanner(BoundaryScanner.Sentence)
-							.BoundaryMaxScan(15)
-							.FragmentOffset(0)
-							.HighlightQuery(q => q.Match(m => m
-								.Field(d => d.SearchTitle.Suffix("completion"))
-								.Query(searchQuery)
-								.Analyzer("highlight_analyzer")
-							))
-							.PreTags(preTag)
-							.PostTags(postTag))
-						.Add(Infer.Field<DocumentationDocument>(d => d.StrippedBody), hf => hf
-							.FragmentSize(150)
-							.NumberOfFragments(3)
-							.NoMatchSize(150)
-							.BoundaryChars(":.!?\t\n")
-							.BoundaryScanner(BoundaryScanner.Sentence)
-							.BoundaryMaxScan(15)
-							.FragmentOffset(0)
-							.HighlightQuery(q => q.Match(m => m
-								.Field(d => d.StrippedBody)
-								.Query(searchQuery)
-								.Analyzer("highlight_analyzer")
-							))
-							.PreTags(preTag)
-							.PostTags(postTag))
-					)
-				), ctx);
+					.Highlight(h => h
+						.RequireFieldMatch(true)
+						.Fields(f => f
+							.Add(Infer.Field<DocumentationDocument>(d => d.SearchTitle.Suffix("completion")), hf => hf
+								.FragmentSize(150)
+								.NumberOfFragments(3)
+								.NoMatchSize(150)
+								.BoundaryChars(":.!?\t\n")
+								.BoundaryScanner(BoundaryScanner.Sentence)
+								.BoundaryMaxScan(15)
+								.FragmentOffset(0)
+								.HighlightQuery(q => q.Match(m => m
+									.Field(d => d.SearchTitle.Suffix("completion"))
+									.Query(searchQuery)
+									.Analyzer("highlight_analyzer")
+								))
+								.PreTags(preTag)
+								.PostTags(postTag))
+							.Add(Infer.Field<DocumentationDocument>(d => d.StrippedBody), hf => hf
+								.FragmentSize(150)
+								.NumberOfFragments(3)
+								.NoMatchSize(150)
+								.BoundaryChars(":.!?\t\n")
+								.BoundaryScanner(BoundaryScanner.Sentence)
+								.BoundaryMaxScan(15)
+								.FragmentOffset(0)
+								.HighlightQuery(q => q.Match(m => m
+									.Field(d => d.StrippedBody)
+									.Query(searchQuery)
+									.Analyzer("highlight_analyzer")
+								))
+								.PreTags(preTag)
+								.PostTags(postTag))
+						)
+					);
+
+				// Apply post_filter if a filter is specified
+				if (postFilter is not null)
+					_ = s.PostFilter(postFilter);
+			}, ctx);
 
 			if (!response.IsValidResponse)
 			{
@@ -334,7 +333,7 @@ public partial class ElasticsearchGateway : ISearchGateway
 		}
 	}
 
-	private static (int TotalHits, List<SearchResultItem> Results) ProcessSearchResponse(SearchResponse<DocumentationDocument> response)
+	private static SearchResult ProcessSearchResponse(SearchResponse<DocumentationDocument> response)
 	{
 		var totalHits = (int)response.Total;
 
@@ -373,7 +372,20 @@ public partial class ElasticsearchGateway : ISearchGateway
 			};
 		}).ToList();
 
-		return (totalHits, results);
+		// Extract aggregations
+		var aggregations = new Dictionary<string, long>();
+		if (response.Aggregations?.TryGetValue("type", out var typeAgg) == true && typeAgg is StringTermsAggregate stringTermsAgg)
+		{
+			foreach (var bucket in stringTermsAgg.Buckets)
+				aggregations[bucket.Key.ToString()!] = bucket.DocCount;
+		}
+
+		return new SearchResult
+		{
+			TotalHits = totalHits,
+			Results = results,
+			Aggregations = aggregations
+		};
 	}
 
 	/// <summary>
@@ -484,7 +496,7 @@ public partial class ElasticsearchGateway : ISearchGateway
 		Cancel ctx = default)
 	{
 		// First, get the top result
-		var searchResults = await HybridSearchWithRrfAsync(query, 1, 1, ctx);
+		var searchResults = await SearchImplementation(query, 1, 1, null, ctx);
 		var topResultUrl = searchResults.Results.FirstOrDefault()?.Url;
 
 		if (string.IsNullOrEmpty(topResultUrl))
