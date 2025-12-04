@@ -15,7 +15,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Elastic.Markdown.Exporters.Elasticsearch;
 
-public class ElasticsearchLexicalExporter(
+public class ElasticsearchLexicalIngestChannel(
 	ILoggerFactory logFactory,
 	IDiagnosticsCollector collector,
 	ElasticsearchEndpoint endpoint,
@@ -23,7 +23,7 @@ public class ElasticsearchLexicalExporter(
 	DistributedTransport transport,
 	string[] indexTimeSynonyms
 )
-	: ElasticsearchExporter<CatalogIndexChannelOptions<DocumentationDocument>, CatalogIndexChannel<DocumentationDocument>>
+	: ElasticsearchIngestChannel<CatalogIndexChannelOptions<DocumentationDocument>, CatalogIndexChannel<DocumentationDocument>>
 	(logFactory, collector, endpoint, transport, o => new(o), t => new(t)
 	{
 		BulkOperationIdLookup = d => d.Url,
@@ -40,7 +40,7 @@ public class ElasticsearchLexicalExporter(
 		ActiveSearchAlias = $"{endpoint.IndexNamePrefix.Replace("semantic", "lexical").ToLowerInvariant()}-{indexNamespace.ToLowerInvariant()}"
 	});
 
-public class ElasticsearchSemanticExporter(
+public class ElasticsearchSemanticIngestChannel(
 	ILoggerFactory logFactory,
 	IDiagnosticsCollector collector,
 	ElasticsearchEndpoint endpoint,
@@ -48,7 +48,7 @@ public class ElasticsearchSemanticExporter(
 	DistributedTransport transport,
 	string[] indexTimeSynonyms
 )
-	: ElasticsearchExporter<SemanticIndexChannelOptions<DocumentationDocument>, SemanticIndexChannel<DocumentationDocument>>
+	: ElasticsearchIngestChannel<SemanticIndexChannelOptions<DocumentationDocument>, SemanticIndexChannel<DocumentationDocument>>
 	(logFactory, collector, endpoint, transport, o => new(o), t => new(t)
 	{
 		BulkOperationIdLookup = d => d.Url,
@@ -64,7 +64,7 @@ public class ElasticsearchSemanticExporter(
 		SearchInferenceId = endpoint.NoElasticInferenceService ? null : ".elser-2-elastic"
 	});
 
-public abstract class ElasticsearchExporter<TChannelOptions, TChannel> : IDisposable
+public abstract partial class ElasticsearchIngestChannel<TChannelOptions, TChannel> : IDisposable
 	where TChannelOptions : CatalogIndexChannelOptionsBase<DocumentationDocument>
 	where TChannel : CatalogIndexChannel<DocumentationDocument, TChannelOptions>
 {
@@ -72,7 +72,7 @@ public abstract class ElasticsearchExporter<TChannelOptions, TChannel> : IDispos
 	public TChannel Channel { get; }
 	private readonly ILogger _logger;
 
-	protected ElasticsearchExporter(
+	protected ElasticsearchIngestChannel(
 		ILoggerFactory logFactory,
 		IDiagnosticsCollector collector,
 		ElasticsearchEndpoint endpoint,
@@ -82,7 +82,7 @@ public abstract class ElasticsearchExporter<TChannelOptions, TChannel> : IDispos
 	)
 	{
 		_collector = collector;
-		_logger = logFactory.CreateLogger<ElasticsearchExporter<TChannelOptions, TChannel>>();
+		_logger = logFactory.CreateLogger<ElasticsearchIngestChannel<TChannelOptions, TChannel>>();
 		//The max num threads per allocated node, from testing its best to limit our max concurrency
 		//producing to this number as well
 		var options = createOptions(transport);
@@ -148,175 +148,6 @@ public abstract class ElasticsearchExporter<TChannelOptions, TChannel> : IDispos
 			return Channel.TryWrite(document);
 		return false;
 	}
-
-	protected static string CreateMappingSetting(string synonymSetName, string[] synonyms)
-	{
-		var indexTimeSynonyms = $"[{string.Join(",", synonyms.Select(r => $"\"{r}\""))}]";
-		// language=json
-		return
-			$$$"""
-			{
-				"analysis": {
-				  "analyzer": {
-					"synonyms_fixed_analyzer": {
-					  "tokenizer": "group_tokenizer",
-					  "filter": [
-						"lowercase",
-						"synonyms_fixed_filter",
-						"kstem"
-					  ]
-					},
-					"synonyms_analyzer": {
-					  "tokenizer": "group_tokenizer",
-					  "filter": [
-						"lowercase",
-						"synonyms_filter",
-						"kstem"
-					  ]
-					},
-					"highlight_analyzer": {
-					  "tokenizer": "group_tokenizer",
-					  "filter": [
-						"lowercase",
-						"english_stop"
-					  ]
-					},
-					"hierarchy_analyzer": { "tokenizer": "path_tokenizer" }
-				  },
-				  "filter": {
-					"synonyms_fixed_filter": {
-					  "type": "synonym_graph",
-					  "synonyms": {{{indexTimeSynonyms}}}
-					},
-					"synonyms_filter": {
-					  "type": "synonym_graph",
-					  "synonyms_set": "{{{synonymSetName}}}",
-					  "updateable": true
-					},
-					"english_stop": {
-					  "type": "stop",
-					  "stopwords": "_english_"
-					}
-				  },
-				  "tokenizer": {
-					"group_tokenizer": {
-					  "type": "char_group",
-					  "tokenize_on_chars": [ "whitespace", ",", ";", "?", "!", "(", ")", "&", "'", "\"", "/", "[", "]", "{", "}" ]
-					},
-					"path_tokenizer": {
-					  "type": "path_hierarchy",
-					  "delimiter": "/"
-					}
-				  }
-				}
-			  }
-			""";
-	}
-
-	protected static string CreateMapping(string? inferenceId) =>
-		$$"""
-		  {
-		    "properties": {
-		      "url" : {
-		        "type": "keyword",
-		        "fields": {
-		          "match": { "type": "text" },
-		          "prefix": { "type": "text", "analyzer" : "hierarchy_analyzer" }
-		        }
-		      },
-		      "navigation_depth" : { "type" : "rank_feature", "positive_score_impact": false },
-		      "navigation_table_of_contents" : { "type" : "rank_feature", "positive_score_impact": false },
-		      "navigation_section" : { "type" : "keyword" },
-		      "hidden" : {
-		        "type" : "boolean"
-		      },
-		      "applies_to" : {
-		        "type" : "nested",
-		        "properties" : {
-		          "type" : { "type" : "keyword" },
-		          "sub-type" : { "type" : "keyword" },
-		          "lifecycle" : { "type" : "keyword" },
-		          "version" : { "type" : "version" }
-		        }
-		      },
-		      "parents" : {
-		        "type" : "object",
-		        "properties" : {
-		          "url" : {
-		            "type": "keyword",
-		            "fields": {
-		              "match": { "type": "text" },
-		              "prefix": { "type": "text", "analyzer" : "hierarchy_analyzer" }
-		            }
-		          },
-		          "title": {
-		            "type": "text",
-		            "search_analyzer": "synonyms_analyzer",
-		            "fields": {
-		              "keyword": { "type": "keyword" }
-		            }
-		          }
-		        }
-		      },
-		      "hash" : { "type" : "keyword" },
-		      "search_title": {
-		        "type": "text",
-		        "analyzer": "synonyms_fixed_analyzer",
-		        "search_analyzer": "synonyms_analyzer",
-		        "fields": {
-		          "completion": {
-		            "type": "search_as_you_type",
-		            "analyzer": "synonyms_fixed_analyzer",
-		            "search_analyzer": "synonyms_analyzer",
-		            "term_vector": "with_positions_offsets",
-		            "index_options": "offsets"
-		          }
-		        }
-		      },
-		      "title": {
-		        "type": "text",
-		        "search_analyzer": "synonyms_analyzer",
-		        "fields": {
-		          "keyword": { "type": "keyword" },
-		          "completion": { "type": "search_as_you_type", "search_analyzer": "synonyms_analyzer" }
-		          {{(!string.IsNullOrWhiteSpace(inferenceId) ? $$""", "semantic_text": {{{InferenceMapping(inferenceId)}}}""" : "")}}
-		        }
-		      },
-		      "url_segment_count": {
-		        "type": "integer"
-		      },
-		      "body": {
-		        "type": "text"
-		      },
-		      "stripped_body": {
-		        "type": "text",
-		        "analyzer": "synonyms_fixed_analyzer",
-		        "search_analyzer": "synonyms_analyzer",
-		        "term_vector": "with_positions_offsets"
-		      },
-		      "headings": {
-		        "type": "text",
-		        "analyzer": "synonyms_fixed_analyzer",
-		        "search_analyzer": "synonyms_analyzer"
-		      },
-		      "abstract": {
-		        "type" : "text",
-		        "analyzer": "synonyms_fixed_analyzer",
-		        "search_analyzer": "synonyms_analyzer",
-		        "fields" : {
-		          {{(!string.IsNullOrWhiteSpace(inferenceId) ? $"\"semantic_text\": {{{InferenceMapping(inferenceId)}}}" : "")}}
-		        }
-		      }
-		    }
-		  }
-		  """;
-
-	private static string InferenceMapping(string inferenceId) =>
-		$"""
-		 	"type": "semantic_text",
-		 	"inference_id": "{inferenceId}"
-		 """;
-
 
 	public void Dispose()
 	{

@@ -61,7 +61,7 @@ public static class TestHelpers
 				}
 			}.ToFrozenDictionary()
 		};
-		var search = new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] };
+		var search = new SearchConfiguration { Synonyms = new Dictionary<string, string[]>(), Rules = [], DiminishTerms = [] };
 		return new ConfigurationContext
 		{
 			Endpoints = new DocumentationEndpoints

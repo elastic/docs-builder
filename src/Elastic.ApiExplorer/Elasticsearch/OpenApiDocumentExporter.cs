@@ -165,6 +165,7 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 					Type = "api",
 					Url = url,
 					Title = title,
+					SearchTitle = title,
 					Description = description,
 					Body = body,
 					StrippedBody = body,

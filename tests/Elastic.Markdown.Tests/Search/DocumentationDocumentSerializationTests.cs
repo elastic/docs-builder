@@ -21,8 +21,10 @@ public class DocumentationDocumentSerializationTests
 	{
 		var doc = new DocumentationDocument
 		{
+			Type = "doc",
 			Url = "/test/page",
 			Title = "Test Page",
+			SearchTitle = "Test Page",
 			Applies = new ApplicableTo
 			{
 				Stack = AppliesCollection.GenerallyAvailable
@@ -53,8 +55,10 @@ public class DocumentationDocumentSerializationTests
 	{
 		var doc = new DocumentationDocument
 		{
+			Type = "doc",
 			Url = "/test/deployment",
 			Title = "Deployment Test",
+			SearchTitle = "Deployment Test",
 			Applies = new ApplicableTo
 			{
 				Deployment = new DeploymentApplicability
@@ -93,8 +97,10 @@ public class DocumentationDocumentSerializationTests
 	{
 		var doc = new DocumentationDocument
 		{
+			Type = "doc",
 			Url = "/test/serverless",
 			Title = "Serverless Test",
+			SearchTitle = "Serverless Test",
 			Applies = new ApplicableTo
 			{
 				Serverless = new ServerlessProjectApplicability
@@ -133,8 +139,10 @@ public class DocumentationDocumentSerializationTests
 	{
 		var doc = new DocumentationDocument
 		{
+			Type = "doc",
 			Url = "/test/product",
 			Title = "Product Test",
+			SearchTitle = "Product Test",
 			Applies = new ApplicableTo
 			{
 				Product = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (SemVersion)"2.0.0" }])
@@ -161,8 +169,10 @@ public class DocumentationDocumentSerializationTests
 	{
 		var doc = new DocumentationDocument
 		{
+			Type = "doc",
 			Url = "/test/apm",
 			Title = "APM Test",
+			SearchTitle = "APM Test",
 			Applies = new ApplicableTo
 			{
 				ProductApplicability = new ProductApplicability
@@ -201,8 +211,10 @@ public class DocumentationDocumentSerializationTests
 	{
 		var doc = new DocumentationDocument
 		{
+			Type = "doc",
 			Url = "/test/complex",
 			Title = "Complex Test",
+			SearchTitle = "Complex Test",
 			Applies = new ApplicableTo
 			{
 				Stack = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (SemVersion)"8.0.0" }]),
@@ -236,8 +248,10 @@ public class DocumentationDocumentSerializationTests
 	{
 		var doc = new DocumentationDocument
 		{
+			Type = "doc",
 			Url = "/test/no-applies",
 			Title = "No Applies Test",
+			SearchTitle = "No Applies Test",
 			Applies = null
 		};
 
@@ -261,8 +275,10 @@ public class DocumentationDocumentSerializationTests
 	{
 		var doc = new DocumentationDocument
 		{
+			Type = "doc",
 			Url = "/test/empty-applies",
 			Title = "Empty Applies Test",
+			SearchTitle = "Empty Applies Test",
 			Applies = new ApplicableTo()
 		};
 
@@ -280,8 +296,10 @@ public class DocumentationDocumentSerializationTests
 	{
 		var original = new DocumentationDocument
 		{
+			Type = "doc",
 			Url = "/test/roundtrip",
 			Title = "Round Trip Test",
+			SearchTitle = "Round Trip Test",
 			Hash = "abc123",
 			BatchIndexDate = DateTimeOffset.Parse("2024-01-15T10:00:00Z", CultureInfo.InvariantCulture),
 			LastUpdated = DateTimeOffset.Parse("2024-01-15T09:00:00Z", CultureInfo.InvariantCulture),
@@ -317,8 +335,10 @@ public class DocumentationDocumentSerializationTests
 	{
 		var doc = new DocumentationDocument
 		{
+			Type = "doc",
 			Url = "/test/multiple",
 			Title = "Multiple Test",
+			SearchTitle = "Multiple Test",
 			Applies = new ApplicableTo
 			{
 				Stack = new AppliesCollection(
