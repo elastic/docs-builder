@@ -95,13 +95,10 @@ public class ReleaseNotesService(
 			// Validate lifecycle values in products
 			foreach (var product in input.Products)
 			{
-				if (!string.IsNullOrWhiteSpace(product.Lifecycle))
+				if (!string.IsNullOrWhiteSpace(product.Lifecycle) && !config.AvailableLifecycles.Contains(product.Lifecycle))
 				{
-					if (!config.AvailableLifecycles.Contains(product.Lifecycle))
-					{
-						collector.EmitError(string.Empty, $"Lifecycle '{product.Lifecycle}' for product '{product.Product}' is not in the list of available lifecycles. Available lifecycles: {string.Join(", ", config.AvailableLifecycles)}");
-						return false;
-					}
+					collector.EmitError(string.Empty, $"Lifecycle '{product.Lifecycle}' for product '{product.Product}' is not in the list of available lifecycles. Available lifecycles: {string.Join(", ", config.AvailableLifecycles)}");
+					return false;
 				}
 			}
 
