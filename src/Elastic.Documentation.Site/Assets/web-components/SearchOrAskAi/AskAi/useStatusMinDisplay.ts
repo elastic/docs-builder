@@ -16,9 +16,8 @@ const STATUS_MIN_DISPLAY_TIME_MS = 2000
  * Statuses that should always show immediately, bypassing the minimum display time
  */
 const IMMEDIATE_STATUSES: string[] = [
-    // 'Generating',
-    // 'Gathering resources',
-    // 'Searching Elastic\'s Docs for' // Search queries should show immediately
+    'Generating', // Show immediately when content starts streaming
+    'Gathering resources',
 ]
 
 /**

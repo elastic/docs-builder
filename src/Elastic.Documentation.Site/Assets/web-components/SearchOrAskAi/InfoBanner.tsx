@@ -1,7 +1,7 @@
 import {
     EuiBetaBadge,
-    EuiHorizontalRule,
     EuiLink,
+    EuiSpacer,
     EuiText,
     useEuiTheme,
 } from '@elastic/eui'
@@ -10,18 +10,15 @@ import { css } from '@emotion/react'
 export const InfoBanner = () => {
     const { euiTheme } = useEuiTheme()
     return (
-        <div
-            css={css`
-                padding: 0 ${euiTheme.size.base} ${euiTheme.size.base};
-            `}
-        >
-            <EuiHorizontalRule margin="m" />
+        <div>
+            <EuiSpacer size="m" />
             <div
                 css={css`
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     gap: ${euiTheme.size.s};
+                    padding: 0 ${euiTheme.size.base} ${euiTheme.size.base};
                 `}
             >
                 <EuiBetaBadge

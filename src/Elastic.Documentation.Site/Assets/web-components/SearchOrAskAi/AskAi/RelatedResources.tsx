@@ -1,16 +1,12 @@
 /** @jsxImportSource @emotion/react */
 import {
-    EuiFlexGroup,
-    EuiFlexItem,
     EuiText,
     EuiLink,
     EuiSpacer,
-    EuiIcon,
-    EuiPanel,
     useEuiTheme,
+    useEuiFontSize,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
-import * as React from 'react'
 
 interface Reference {
     url: string
@@ -55,6 +51,7 @@ const parseReferences = (jsonString: string): Reference[] => {
 export const References = ({ referencesJson }: ReferencesProps) => {
     const references = parseReferences(referencesJson)
     const { euiTheme } = useEuiTheme()
+    const smallFontsize = useEuiFontSize('xs')
 
     if (references.length === 0) {
         return null
@@ -62,8 +59,37 @@ export const References = ({ referencesJson }: ReferencesProps) => {
 
     return (
         <>
-            <EuiSpacer size="l" />
-            <EuiPanel
+            <EuiSpacer size="s" />
+            <ul>
+                {references.map((ref, index) => (
+                    <li key={index}>
+                        <div
+                            css={css`
+                                border: 1px solid ${euiTheme.border.color};
+                                padding: ${euiTheme.size.s};
+                                padding-top: 3px;
+                                border-radius: ${euiTheme.border.radius.small};
+                                display: inline-block;
+                                margin-top: ${euiTheme.size.s};
+                            `}
+                        >
+                            <EuiLink
+                                href={ref.url}
+                                target="_blank"
+                                css={css`
+                                    ${smallFontsize};
+                                `}
+                            >
+                                {ref.title}
+                            </EuiLink>
+                            <EuiText size="xs" color="subdued">
+                                {ref.description}
+                            </EuiText>
+                        </div>
+                    </li>
+                ))}
+            </ul>
+            {/* <EuiPanel
                 hasShadow={false}
                 paddingSize="m"
                 grow={false}
@@ -72,9 +98,6 @@ export const References = ({ referencesJson }: ReferencesProps) => {
                 `}
             >
                 <div>
-                    <EuiText size="s">
-                        <strong>Related resources:</strong>
-                    </EuiText>
                     <EuiSpacer size="s" />
                     <EuiFlexGroup direction="column" gutterSize="m">
                         {references.map((ref, index) => (
@@ -121,7 +144,7 @@ export const References = ({ referencesJson }: ReferencesProps) => {
                         ))}
                     </EuiFlexGroup>
                 </div>
-            </EuiPanel>
+            </EuiPanel> */}
         </>
     )
 }
