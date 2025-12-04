@@ -67,13 +67,10 @@ public class ReleaseNotesService(
 			}
 
 			// Validate subtype if provided
-			if (!string.IsNullOrWhiteSpace(input.Subtype))
+			if (!string.IsNullOrWhiteSpace(input.Subtype) && !config.AvailableSubtypes.Contains(input.Subtype))
 			{
-				if (!config.AvailableSubtypes.Contains(input.Subtype))
-				{
-					collector.EmitError(string.Empty, $"Subtype '{input.Subtype}' is not in the list of available subtypes. Available subtypes: {string.Join(", ", config.AvailableSubtypes)}");
-					return false;
-				}
+				collector.EmitError(string.Empty, $"Subtype '{input.Subtype}' is not in the list of available subtypes. Available subtypes: {string.Join(", ", config.AvailableSubtypes)}");
+				return false;
 			}
 
 			// Validate areas if configuration provides available areas
