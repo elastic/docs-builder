@@ -4,6 +4,7 @@
 
 using System.Globalization;
 using System.IO.Abstractions;
+using System.Linq;
 using System.Text;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
@@ -12,8 +13,6 @@ using Microsoft.Extensions.Logging;
 using YamlDotNet.Core;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
-
-using System.Linq;
 namespace Elastic.Documentation.Services;
 
 public class ReleaseNotesService(
