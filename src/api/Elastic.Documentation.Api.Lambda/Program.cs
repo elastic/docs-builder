@@ -9,12 +9,16 @@ using Elastic.Documentation.Api.Core.AskAi;
 using Elastic.Documentation.Api.Core.Search;
 using Elastic.Documentation.Api.Infrastructure;
 using Elastic.Documentation.Api.Infrastructure.OpenTelemetry;
+using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.ServiceDefaults;
 
 try
 {
 	var builder = WebApplication.CreateSlimBuilder(args);
-	_ = builder.AddDocumentationServiceDefaults();
+	_ = builder.AddDocumentationServiceDefaults(ref args, (s, p) =>
+	{
+		_ = s.AddSingleton(AssemblyConfiguration.Create(p));
+	});
 	// Add logging configuration for Lambda
 	_ = builder.AddDocsApiOpenTelemetry();
 

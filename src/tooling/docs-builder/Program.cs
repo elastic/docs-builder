@@ -17,7 +17,8 @@ var builder = Host.CreateApplicationBuilder()
 	{
 		_ = s.AddSingleton(AssemblyConfiguration.Create(p));
 	})
-	.AddDocumentationToolingDefaults();
+	.AddDocumentationToolingDefaults()
+	.AddOpenTelemetryDefaults();
 
 var app = builder.ToConsoleAppBuilder();
 
