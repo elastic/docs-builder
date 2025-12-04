@@ -5,7 +5,6 @@
 using System.Globalization;
 using System.IO.Abstractions;
 using System.Linq;
-using System.Text;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services.Changelog;
@@ -234,50 +233,48 @@ public class ChangelogService(
 
 		var yaml = serializer.Serialize(data);
 
-		// Add schema comments
-		var sb = new StringBuilder();
-		_ = sb.AppendLine("##### Automated fields #####");
-		_ = sb.AppendLine();
-		_ = sb.AppendLine("# These fields are likely generated when the changelog is created and unlikely to require edits");
-		_ = sb.AppendLine();
-		_ = sb.AppendLine("# pr: An optional string that contains the pull request number");
-		_ = sb.AppendLine("# issues: An optional array of strings that contain URLs for issues that are relevant to the PR");
-		_ = sb.AppendLine("# type: A required string that contains the type of change");
-		_ = sb.AppendLine("#   It can be one of:");
-		foreach (var type in config.AvailableTypes)
-		{
-			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"#   - {type}");
-		}
-		_ = sb.AppendLine("# subtype: An optional string that applies only to breaking changes");
-		if (config.AvailableSubtypes.Count > 0)
-		{
-			_ = sb.AppendLine("#   It can be one of:");
-			foreach (var subtype in config.AvailableSubtypes)
-			{
-				_ = sb.AppendLine(CultureInfo.InvariantCulture, $"#   - {subtype}");
-			}
-		}
-		_ = sb.AppendLine("# products: A required array of objects that denote the affected products");
-		_ = sb.AppendLine("#   Each product object contains:");
-		_ = sb.AppendLine("#     - product: A required string with a predefined product ID");
-		_ = sb.AppendLine("#     - target: An optional string with the target version or date");
-		_ = sb.AppendLine("#     - lifecycle: An optional string (preview, beta, ga)");
-		_ = sb.AppendLine("# areas: An optional array of strings that denotes the parts/components/services affected");
-		_ = sb.AppendLine();
-		_ = sb.AppendLine("##### Non-automated fields #####");
-		_ = sb.AppendLine();
-		_ = sb.AppendLine("# These fields might be generated when the changelog is created but are likely to require edits");
-		_ = sb.AppendLine();
-		_ = sb.AppendLine("# title: A required string that is a short, user-facing headline (Max 80 characters)");
-		_ = sb.AppendLine("# description: An optional string that provides additional information (Max 600 characters)");
-		_ = sb.AppendLine("# impact: An optional string that describes how the user's environment is affected");
-		_ = sb.AppendLine("# action: An optional string that describes what users must do to mitigate");
-		_ = sb.AppendLine("# feature-id: An optional string to associate with a unique feature flag");
-		_ = sb.AppendLine("# highlight: An optional boolean for items that should be included in release highlights");
-		_ = sb.AppendLine();
-		_ = sb.Append(yaml);
+		// Build types list
+		var typesList = string.Join("\n", config.AvailableTypes.Select(t => $"#   - {t}"));
 
-		return sb.ToString();
+		// Build subtypes list
+		var subtypesList = config.AvailableSubtypes.Count > 0
+			? "\n#   It can be one of:\n" + string.Join("\n", config.AvailableSubtypes.Select(s => $"#   - {s}"))
+			: string.Empty;
+
+		// Add schema comments using raw string literal
+		var result = $"""
+			##### Automated fields #####
+
+			# These fields are likely generated when the changelog is created and unlikely to require edits
+
+			# pr: An optional string that contains the pull request number
+			# issues: An optional array of strings that contain URLs for issues that are relevant to the PR
+			# type: A required string that contains the type of change
+			#   It can be one of:
+			{typesList}
+			# subtype: An optional string that applies only to breaking changes{subtypesList}
+			# products: A required array of objects that denote the affected products
+			#   Each product object contains:
+			#     - product: A required string with a predefined product ID
+			#     - target: An optional string with the target version or date
+			#     - lifecycle: An optional string (preview, beta, ga)
+			# areas: An optional array of strings that denotes the parts/components/services affected
+
+			##### Non-automated fields #####
+
+			# These fields might be generated when the changelog is created but are likely to require edits
+
+			# title: A required string that is a short, user-facing headline (Max 80 characters)
+			# description: An optional string that provides additional information (Max 600 characters)
+			# impact: An optional string that describes how the user's environment is affected
+			# action: An optional string that describes what users must do to mitigate
+			# feature-id: An optional string to associate with a unique feature flag
+			# highlight: An optional boolean for items that should be included in release highlights
+
+			{yaml}
+			""";
+
+		return result;
 	}
 
 	private static string SanitizeFilename(string input)
