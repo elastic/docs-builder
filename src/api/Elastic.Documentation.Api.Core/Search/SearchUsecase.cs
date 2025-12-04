@@ -8,21 +8,23 @@ namespace Elastic.Documentation.Api.Core.Search;
 
 public partial class SearchUsecase(ISearchGateway searchGateway, ILogger<SearchUsecase> logger)
 {
-	public async Task<SearchResponse> Search(SearchRequest request, Cancel ctx = default)
+	public async Task<SearchApiResponse> Search(SearchApiRequest request, Cancel ctx = default)
 	{
-		var (totalHits, results) = await searchGateway.SearchAsync(
+		var searchResult = await searchGateway.SearchAsync(
 			request.Query,
 			request.PageNumber,
 			request.PageSize,
+			request.TypeFilter,
 			ctx
 		);
 
-		var response = new SearchResponse
+		var response = new SearchApiResponse
 		{
-			Results = results,
-			TotalResults = totalHits,
+			Results = searchResult.Results,
+			TotalResults = searchResult.TotalHits,
 			PageNumber = request.PageNumber,
 			PageSize = request.PageSize,
+			Aggregations = new SearchAggregations { Type = searchResult.Aggregations }
 		};
 
 		LogSearchResults(
@@ -30,7 +32,7 @@ public partial class SearchUsecase(ISearchGateway searchGateway, ILogger<SearchU
 			response.PageSize,
 			response.PageNumber,
 			request.Query,
-			new SearchResultsLogProperties(results.Select(i => i.Url).ToArray())
+			new SearchResultsLogProperties(searchResult.Results.Select(i => i.Url).ToArray())
 		);
 
 		return response;
@@ -42,22 +44,29 @@ public partial class SearchUsecase(ISearchGateway searchGateway, ILogger<SearchU
 	private sealed record SearchResultsLogProperties(string[] Urls);
 }
 
-public record SearchRequest
+public record SearchApiRequest
 {
 	public required string Query { get; init; }
 	public int PageNumber { get; init; } = 1;
 	public int PageSize { get; init; } = 20;
+	public string? TypeFilter { get; init; }
 }
 
-public record SearchResponse
+public record SearchApiResponse
 {
 	public required IEnumerable<SearchResultItem> Results { get; init; }
 	public required int TotalResults { get; init; }
 	public required int PageNumber { get; init; }
 	public required int PageSize { get; init; }
+	public SearchAggregations Aggregations { get; init; } = new();
 	public int PageCount => TotalResults > 0
 				? (int)Math.Ceiling((double)TotalResults / PageSize)
 				: 0;
+}
+
+public record SearchAggregations
+{
+	public IReadOnlyDictionary<string, long> Type { get; init; } = new Dictionary<string, long>();
 }
 
 public record SearchResultItemParent
