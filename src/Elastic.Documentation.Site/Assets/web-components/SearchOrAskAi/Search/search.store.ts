@@ -21,7 +21,8 @@ export const searchStore = create<SearchState>((set) => ({
     actions: {
         setSearchTerm: (term: string) => set({ searchTerm: term }),
         setPageNumber: (page: number) => set({ page }),
-        setTypeFilter: (filter: TypeFilter) => set({ typeFilter: filter, page: 0 }),
+        setTypeFilter: (filter: TypeFilter) =>
+            set({ typeFilter: filter, page: 0 }),
         clearSearchTerm: () => set({ searchTerm: '', typeFilter: 'all' }),
     },
 }))

@@ -1,9 +1,9 @@
-import { SearchResponse } from './useSearchQuery'
 import {
     useTypeFilter,
     useSearchActions,
     type TypeFilter,
 } from './search.store'
+import { SearchResponse } from './useSearchQuery'
 
 interface UseSearchFiltersOptions {
     results: SearchResponse['results']
