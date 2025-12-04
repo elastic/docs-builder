@@ -113,6 +113,8 @@ public enum VersioningSystemId
 	EdotCfAws,
 	[Display(Name = "edot-cf-azure")]
 	EdotCfAzure,
+	[Display(Name = "edot-cf-gcp")]
+	EdotCfGcp,
 	[Display(Name = "edot-collector")]
 	EdotCollector,
 	[Display(Name = "search-ui")]
