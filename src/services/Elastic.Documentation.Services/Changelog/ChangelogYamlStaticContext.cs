@@ -4,11 +4,11 @@
 
 using YamlDotNet.Serialization;
 
-namespace Elastic.Documentation.Services.ReleaseNotes;
+namespace Elastic.Documentation.Services.Changelog;
 
 [YamlStaticContext]
-[YamlSerializable(typeof(ReleaseNotesData))]
+[YamlSerializable(typeof(ChangelogData))]
 [YamlSerializable(typeof(ProductInfo))]
 [YamlSerializable(typeof(ChangelogConfiguration))]
-public partial class ReleaseNotesYamlStaticContext;
+public partial class ChangelogYamlStaticContext;
 

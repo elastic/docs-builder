@@ -2,12 +2,12 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-namespace Elastic.Documentation.Services.ReleaseNotes;
+namespace Elastic.Documentation.Services.Changelog;
 
 /// <summary>
-/// Data structure for release notes YAML file matching the exact schema
+/// Data structure for changelog YAML file matching the exact schema
 /// </summary>
-public class ReleaseNotesData
+public class ChangelogData
 {
 	// Automated fields
 	public string? Pr { get; set; }
@@ -32,3 +32,4 @@ public class ProductInfo
 	public string? Target { get; set; }
 	public string? Lifecycle { get; set; }
 }
+

@@ -7,7 +7,7 @@ using Documentation.Builder.Arguments;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;
-using Elastic.Documentation.Services.ReleaseNotes;
+using Elastic.Documentation.Services.Changelog;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Builder.Commands;
@@ -67,9 +67,9 @@ internal sealed class ChangelogCommand(
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var service = new ReleaseNotesService(logFactory, configurationContext);
+		var service = new ChangelogService(logFactory, configurationContext);
 
-		var input = new ReleaseNotesInput
+		var input = new ChangelogInput
 		{
 			Title = title,
 			Type = type,
@@ -88,7 +88,7 @@ internal sealed class ChangelogCommand(
 		};
 
 		serviceInvoker.AddCommand(service, input,
-			async static (s, collector, state, ctx) => await s.CreateReleaseNotes(collector, state, ctx)
+			async static (s, collector, state, ctx) => await s.CreateChangelog(collector, state, ctx)
 		);
 
 		return await serviceInvoker.InvokeAsync(ctx);

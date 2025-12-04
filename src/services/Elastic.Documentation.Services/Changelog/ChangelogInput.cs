@@ -2,12 +2,12 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-namespace Elastic.Documentation.Services.ReleaseNotes;
+namespace Elastic.Documentation.Services.Changelog;
 
 /// <summary>
-/// Input data for creating a release notes changelog fragment
+/// Input data for creating a changelog fragment
 /// </summary>
-public class ReleaseNotesInput
+public class ChangelogInput
 {
 	public required string Title { get; set; }
 	public required string Type { get; set; }

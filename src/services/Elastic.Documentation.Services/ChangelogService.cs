@@ -8,24 +8,24 @@ using System.Linq;
 using System.Text;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
-using Elastic.Documentation.Services.ReleaseNotes;
+using Elastic.Documentation.Services.Changelog;
 using Microsoft.Extensions.Logging;
 using YamlDotNet.Core;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 namespace Elastic.Documentation.Services;
 
-public class ReleaseNotesService(
+public class ChangelogService(
 	ILoggerFactory logFactory,
 	IConfigurationContext configurationContext
 ) : IService
 {
-	private readonly ILogger _logger = logFactory.CreateLogger<ReleaseNotesService>();
+	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogService>();
 	private readonly IFileSystem _fileSystem = new FileSystem();
 
-	public async Task<bool> CreateReleaseNotes(
+	public async Task<bool> CreateChangelog(
 		IDiagnosticsCollector collector,
-		ReleaseNotesInput input,
+		ChangelogInput input,
 		Cancel ctx
 	)
 	{
@@ -102,11 +102,11 @@ public class ReleaseNotesService(
 				}
 			}
 
-			// Build release notes data from input
-			var releaseNotesData = BuildReleaseNotesData(input);
+			// Build changelog data from input
+			var changelogData = BuildChangelogData(input);
 
 			// Generate YAML file
-			var yamlContent = GenerateYaml(releaseNotesData, config);
+			var yamlContent = GenerateYaml(changelogData, config);
 
 			// Determine output path
 			var outputDir = input.Output ?? Directory.GetCurrentDirectory();
@@ -134,12 +134,12 @@ public class ReleaseNotesService(
 		}
 		catch (IOException ioEx)
 		{
-			collector.EmitError(string.Empty, $"IO error creating release notes: {ioEx.Message}", ioEx);
+			collector.EmitError(string.Empty, $"IO error creating changelog: {ioEx.Message}", ioEx);
 			return false;
 		}
 		catch (UnauthorizedAccessException uaEx)
 		{
-			collector.EmitError(string.Empty, $"Access denied creating release notes: {uaEx.Message}", uaEx);
+			collector.EmitError(string.Empty, $"Access denied creating changelog: {uaEx.Message}", uaEx);
 			return false;
 		}
 	}
@@ -164,7 +164,7 @@ public class ReleaseNotesService(
 		try
 		{
 			var yamlContent = await _fileSystem.File.ReadAllTextAsync(finalConfigPath, ctx);
-			var deserializer = new StaticDeserializerBuilder(new ReleaseNotesYamlStaticContext())
+			var deserializer = new StaticDeserializerBuilder(new ChangelogYamlStaticContext())
 				.WithNamingConvention(UnderscoredNamingConvention.Instance)
 				.Build();
 
@@ -188,9 +188,9 @@ public class ReleaseNotesService(
 		}
 	}
 
-	private static ReleaseNotesData BuildReleaseNotesData(ReleaseNotesInput input)
+	private static ChangelogData BuildChangelogData(ChangelogInput input)
 	{
-		var data = new ReleaseNotesData
+		var data = new ChangelogData
 		{
 			Title = input.Title,
 			Type = input.Type,
@@ -217,7 +217,7 @@ public class ReleaseNotesService(
 		return data;
 	}
 
-	private string GenerateYaml(ReleaseNotesData data, ChangelogConfiguration config)
+	private string GenerateYaml(ChangelogData data, ChangelogConfiguration config)
 	{
 		// Ensure areas is null if empty to omit it from YAML
 		if (data.Areas != null && data.Areas.Count == 0)
@@ -227,7 +227,7 @@ public class ReleaseNotesService(
 		if (data.Issues != null && data.Issues.Count == 0)
 			data.Issues = null;
 
-		var serializer = new StaticSerializerBuilder(new ReleaseNotesYamlStaticContext())
+		var serializer = new StaticSerializerBuilder(new ChangelogYamlStaticContext())
 			.WithNamingConvention(UnderscoredNamingConvention.Instance)
 			.ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitNull | DefaultValuesHandling.OmitEmptyCollections)
 			.Build();
@@ -297,3 +297,4 @@ public class ReleaseNotesService(
 		return sanitized;
 	}
 }
+
