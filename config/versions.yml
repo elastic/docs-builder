@@ -140,6 +140,31 @@ versioning_systems:
     base: 1.0
     current: 1.24.2
 
+  # Elasticsearch clients (separate from Elasticsearch)
+  elasticsearch-client-go:
+    base: 9.0
+    current: 9.2.0
+  elasticsearch-client-java:
+    base: 9.0
+    current: 9.2.1
+  elasticsearch-client-javascript:
+    base: 9.0
+    current: 9.2.0
+  elasticsearch-client-dotnet:
+    base: 9.0
+    current: 9.2.2
+  elasticsearch-client-php:
+    base: 9.0
+    current: 9.2.0
+  elasticsearch-client-python:
+    base: 9.0
+    current: 9.2.0
+  elasticsearch-client-ruby:
+    base: 9.0
+    current: 9.2.0
+  elasticsearch-client-rust:
+    base: 9.0
+    current: 9.1.0
   # Other
   cloud-terraform:
     base: 0.11
