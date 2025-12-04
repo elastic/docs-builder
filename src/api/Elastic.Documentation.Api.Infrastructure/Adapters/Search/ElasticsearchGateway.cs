@@ -367,7 +367,7 @@ public partial class ElasticsearchGateway : ISearchGateway
 		}
 		catch (Exception ex)
 		{
-			_logger.LogError(ex, "Error explaining document '{Url}' for query '{Query}'", LogSanitizer.Sanitize(documentUrl), LogSanitizer.Sanitize(query));
+			_logger.LogError(ex, "Error explaining document '{Url}' for query '{Query}'", documentUrl, query);
 			return new ExplainResult
 			{
 				SearchTitle = "N/A",
