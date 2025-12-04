@@ -51,6 +51,7 @@ interface SearchResultListItemProps {
     index: number
     pageNumber: number
     pageSize: number
+    isPreSelected?: boolean
     onKeyDown?: (
         e: React.KeyboardEvent<HTMLAnchorElement>,
         index: number
@@ -63,6 +64,7 @@ export function SearchResultListItem({
     index,
     pageNumber,
     pageSize,
+    isPreSelected,
     onKeyDown,
     setRef,
 }: SearchResultListItemProps) {
@@ -109,6 +111,14 @@ export function SearchResultListItem({
                     padding-block: ${euiTheme.size.m};
                     margin-inline: ${euiTheme.size.base};
                     border: 1px solid transparent;
+                    ${isPreSelected &&
+                    `
+                        background-color: ${euiTheme.colors.backgroundBaseSubdued};
+                        border-color: ${euiTheme.colors.borderBasePlain};
+                        .return-key-icon {
+                            visibility: visible;
+                        }
+                    `}
                     :hover,
                     :focus {
                         background-color: ${euiTheme.colors

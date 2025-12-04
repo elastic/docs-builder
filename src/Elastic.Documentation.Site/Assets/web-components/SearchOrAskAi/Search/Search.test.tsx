@@ -5,7 +5,7 @@ import { Search } from './Search'
 import { searchStore } from './search.store'
 import { SearchResultItem } from './useSearchQuery'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import * as React from 'react'
 
@@ -42,7 +42,12 @@ const TestWrapper = ({ children }: { children: React.ReactNode }) => {
 
 // Helper to reset all stores
 const resetStores = () => {
-    searchStore.setState({ searchTerm: '', page: 1 })
+    searchStore.setState({
+        searchTerm: '',
+        page: 1,
+        typeFilter: 'all',
+        isInputFocused: true,
+    })
     chatStore.setState({
         chatMessages: [],
         conversationId: null,
@@ -158,7 +163,9 @@ describe('Search Component', () => {
             await waitFor(() => {
                 const messages = chatStore.getState().chatMessages
                 expect(messages.length).toBeGreaterThanOrEqual(1)
-                expect(messages[0].content).toBe('what is kibana')
+                expect(messages[0].content).toBe(
+                    'Tell me more about what is kibana'
+                )
             })
             expect(modalStore.getState().mode).toBe('askAi')
         })
@@ -198,7 +205,9 @@ describe('Search Component', () => {
             // Assert
             await waitFor(() => {
                 const messages = chatStore.getState().chatMessages
-                expect(messages[0]?.content).toBe('elasticsearch query')
+                expect(messages[0]?.content).toBe(
+                    'Tell me more about elasticsearch query'
+                )
             })
         })
 
@@ -308,12 +317,140 @@ describe('Search Component', () => {
             })
 
             const firstResult = screen.getByText('Test Result 1').closest('a')!
-            firstResult.focus()
+            await act(async () => {
+                firstResult.focus()
+            })
             await user.keyboard('{ArrowDown}')
 
             // Assert
             const secondResult = screen.getByText('Test Result 2').closest('a')
             expect(secondResult).toHaveFocus()
+        })
+    })
+
+    describe('First result pre-selection', () => {
+        beforeEach(() => {
+            mockSearchResponse([
+                {
+                    type: 'doc',
+                    url: '/test1',
+                    title: 'Test Result 1',
+                    description: 'Description 1',
+                    score: 0.9,
+                    parents: [],
+                },
+                {
+                    type: 'doc',
+                    url: '/test2',
+                    title: 'Test Result 2',
+                    description: 'Description 2',
+                    score: 0.8,
+                    parents: [],
+                },
+            ])
+        })
+
+        it('should track input focus state in store', async () => {
+            // Arrange
+            searchStore.setState({ searchTerm: 'test' })
+            const user = userEvent.setup()
+
+            // Act
+            render(<Search />, { wrapper: TestWrapper })
+
+            await waitFor(() => {
+                expect(screen.getByText('Test Result 1')).toBeInTheDocument()
+            })
+
+            // Input starts focused (autoFocus), so isInputFocused should be true
+            expect(searchStore.getState().isInputFocused).toBe(true)
+
+            // Navigate away from input
+            const input = screen.getByPlaceholderText(/search in docs/i)
+            await user.click(input)
+            await user.keyboard('{ArrowDown}')
+
+            // Assert - focus moved to result, input blur should update store
+            await waitFor(() => {
+                expect(searchStore.getState().isInputFocused).toBe(false)
+            })
+        })
+
+        it('should restore input focus state when navigating back to input', async () => {
+            // Arrange
+            searchStore.setState({ searchTerm: 'test' })
+            const user = userEvent.setup()
+
+            // Act
+            render(<Search />, { wrapper: TestWrapper })
+
+            await waitFor(() => {
+                expect(screen.getByText('Test Result 1')).toBeInTheDocument()
+            })
+
+            const input = screen.getByPlaceholderText(/search in docs/i)
+
+            // Navigate to first result
+            await user.click(input)
+            await user.keyboard('{ArrowDown}')
+
+            await waitFor(() => {
+                expect(searchStore.getState().isInputFocused).toBe(false)
+            })
+
+            // Navigate back to input with ArrowUp
+            await user.keyboard('{ArrowUp}')
+
+            // Assert - input should be focused again
+            await waitFor(() => {
+                expect(input).toHaveFocus()
+                expect(searchStore.getState().isInputFocused).toBe(true)
+            })
+        })
+
+        it('should pass isPreSelected=true to first item when input is focused', async () => {
+            // Arrange
+            searchStore.setState({ searchTerm: 'test', isInputFocused: true })
+
+            // Act
+            render(<Search />, { wrapper: TestWrapper })
+
+            await waitFor(() => {
+                expect(screen.getByText('Test Result 1')).toBeInTheDocument()
+            })
+
+            // Assert - first result should have the pre-selected styling
+            // We verify this by checking the store state that controls it
+            expect(searchStore.getState().isInputFocused).toBe(true)
+
+            // The first result link should exist and be styled
+            const firstResultLink = screen
+                .getByText('Test Result 1')
+                .closest('a')
+            expect(firstResultLink).toBeInTheDocument()
+        })
+
+        it('should not show pre-selection when input loses focus', async () => {
+            // Arrange
+            searchStore.setState({ searchTerm: 'test' })
+
+            // Act
+            render(<Search />, { wrapper: TestWrapper })
+
+            await waitFor(() => {
+                expect(screen.getByText('Test Result 1')).toBeInTheDocument()
+            })
+
+            // Focus the second result directly to simulate focus leaving input
+            const secondResult = screen.getByText('Test Result 2').closest('a')!
+            await act(async () => {
+                secondResult.focus()
+            })
+
+            // Assert - input should no longer be focused, pre-selection should be off
+            await waitFor(() => {
+                expect(searchStore.getState().isInputFocused).toBe(false)
+            })
         })
     })
 

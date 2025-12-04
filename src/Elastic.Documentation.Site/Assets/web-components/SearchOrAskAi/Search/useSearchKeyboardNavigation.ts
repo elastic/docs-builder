@@ -1,6 +1,7 @@
+import { useAskAiFromSearch } from './useAskAiFromSearch'
 import { useRef, MutableRefObject } from 'react'
 
-interface KeyboardNavigationReturn {
+interface SearchKeyboardNavigationReturn {
     inputRef: React.RefObject<HTMLInputElement>
     buttonRef: React.RefObject<HTMLButtonElement>
     listItemRefs: MutableRefObject<(HTMLAnchorElement | null)[]>
@@ -13,12 +14,11 @@ interface KeyboardNavigationReturn {
     setItemRef: (element: HTMLAnchorElement | null, index: number) => void
 }
 
-export const useKeyboardNavigation = (
-    onEnter?: () => void
-): KeyboardNavigationReturn => {
+export const useSearchKeyboardNavigation = (): SearchKeyboardNavigationReturn => {
     const inputRef = useRef<HTMLInputElement>(null)
     const buttonRef = useRef<HTMLButtonElement>(null)
     const listItemRefs = useRef<(HTMLAnchorElement | null)[]>([])
+    const { askAi } = useAskAiFromSearch()
 
     const setItemRef = (element: HTMLAnchorElement | null, index: number) => {
         listItemRefs.current[index] = element
@@ -47,7 +47,13 @@ export const useKeyboardNavigation = (
     const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
             e.preventDefault()
-            onEnter?.()
+            // Navigate to first result if available, otherwise trigger Ask AI
+            const firstItem = listItemRefs.current.find((item) => item !== null)
+            if (firstItem) {
+                firstItem.click()
+            } else {
+                askAi()
+            }
         } else if (e.key === 'ArrowDown') {
             e.preventDefault()
             focusFirstAvailable()

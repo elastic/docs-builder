@@ -1,5 +1,3 @@
-import { useChatActions } from '../AskAi/chat.store'
-import { useIsAskAiCooldownActive } from '../AskAi/useAskAiCooldown'
 import { InfoBanner } from '../InfoBanner'
 import { KeyboardShortcutsFooter } from '../KeyboardShortcutsFooter'
 import { SearchOrAskAiErrorCallout } from '../SearchOrAskAiErrorCallout'
@@ -7,8 +5,9 @@ import { useModalActions } from '../modal.store'
 import { SearchResults } from './SearchResults/SearchResults'
 import { TellMeMoreButton } from './TellMeMoreButton'
 import { useSearchActions, useSearchTerm } from './search.store'
-import { useKeyboardNavigation } from './useKeyboardNavigation'
+import { useAskAiFromSearch } from './useAskAiFromSearch'
 import { useIsSearchCooldownActive } from './useSearchCooldown'
+import { useSearchKeyboardNavigation } from './useSearchKeyboardNavigation'
 import { useSearchQuery } from './useSearchQuery'
 import {
     EuiFieldText,
@@ -22,15 +21,15 @@ import {
     EuiButtonIcon,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
-import React from 'react'
+import { useCallback } from 'react'
 
 export const Search = () => {
     const searchTerm = useSearchTerm()
-    const { setSearchTerm, clearSearchTerm } = useSearchActions()
-    const { submitQuestion, clearChat } = useChatActions()
-    const { setModalMode, closeModal } = useModalActions()
+    const { setSearchTerm, setInputFocused, clearSearchTerm } =
+        useSearchActions()
+    const { closeModal } = useModalActions()
     const isSearchCooldownActive = useIsSearchCooldownActive()
-    const isAskAiCooldownActive = useIsAskAiCooldownActive()
+    const { askAi } = useAskAiFromSearch()
     const { isLoading, isFetching } = useSearchQuery()
     const mFontSize = useEuiFontSize('m').fontSize
     const { euiTheme } = useEuiTheme()
@@ -41,20 +40,19 @@ export const Search = () => {
         setSearchTerm(e.target.value)
     }
 
-    const handleAskAiClick = () => {
-        const trimmedSearchTerm = searchTerm.trim()
-        if (isAskAiCooldownActive || trimmedSearchTerm === '') {
-            return
-        }
-        clearChat()
-        submitQuestion(trimmedSearchTerm)
-        setModalMode('askAi')
-    }
-
     const handleCloseModal = () => {
         clearSearchTerm()
         closeModal()
     }
+
+    const handleInputFocus = useCallback(
+        () => setInputFocused(true),
+        [setInputFocused]
+    )
+    const handleInputBlur = useCallback(
+        () => setInputFocused(false),
+        [setInputFocused]
+    )
 
     const {
         inputRef,
@@ -63,7 +61,9 @@ export const Search = () => {
         handleListItemKeyDown,
         focusLastAvailable,
         setItemRef,
-    } = useKeyboardNavigation(handleAskAiClick)
+    } = useSearchKeyboardNavigation()
+
+    const showLoadingSpinner = isLoading || isFetching
 
     return (
         <>
@@ -80,7 +80,7 @@ export const Search = () => {
                     padding-inline: ${euiTheme.size.base};
                 `}
             >
-                {isLoading || isFetching ? (
+                {showLoadingSpinner ? (
                     <EuiLoadingSpinner size="m" />
                 ) : (
                     <EuiIcon type="search" size="m" />
@@ -99,6 +99,8 @@ export const Search = () => {
                     value={searchTerm}
                     onChange={handleSearchInputChange}
                     onKeyDown={handleInputKeyDown}
+                    onFocus={handleInputFocus}
+                    onBlur={handleInputBlur}
                     disabled={isSearchCooldownActive}
                 />
                 <EuiButtonIcon
@@ -128,7 +130,7 @@ export const Search = () => {
                     <TellMeMoreButton
                         ref={buttonRef}
                         term={searchTerm}
-                        onAsk={handleAskAiClick}
+                        onAsk={askAi}
                         onArrowUp={focusLastAvailable}
                     />
                 </div>
