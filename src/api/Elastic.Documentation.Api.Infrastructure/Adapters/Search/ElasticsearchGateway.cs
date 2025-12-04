@@ -239,8 +239,6 @@ public partial class ElasticsearchGateway : ISearchGateway
 
 	public async Task<SearchResult> SearchImplementation(string query, int pageNumber, int pageSize, string? filter = null, Cancel ctx = default)
 	{
-		_logger.LogInformation("Starting RRF hybrid search for '{Query}' with pageNumber={PageNumber}, pageSize={PageSize}, filter={Filter}", query, pageNumber, pageSize, filter);
-
 		const string preTag = "<mark>";
 		const string postTag = "</mark>";
 
