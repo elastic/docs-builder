@@ -45,6 +45,9 @@ try
 	builder.Services.AddElasticDocsApiUsecases(environment);
 	var app = builder.Build();
 
+	if (app.Environment.IsDevelopment())
+		_ = app.UseDeveloperExceptionPage();
+
 	var v1 = app.MapGroup("/docs/_api/v1");
 	v1.MapElasticDocsApiEndpoints();
 	Console.WriteLine("API endpoints mapped");
