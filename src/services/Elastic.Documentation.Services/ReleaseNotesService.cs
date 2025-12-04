@@ -13,6 +13,7 @@ using YamlDotNet.Core;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
+using System.Linq;
 namespace Elastic.Documentation.Services;
 
 public class ReleaseNotesService(
@@ -78,13 +79,10 @@ public class ReleaseNotesService(
 			// Validate areas if configuration provides available areas
 			if (config.AvailableAreas != null && config.AvailableAreas.Count > 0)
 			{
-				foreach (var area in input.Areas)
+				foreach (var area in input.Areas.Where(area => !config.AvailableAreas.Contains(area)))
 				{
-					if (!config.AvailableAreas.Contains(area))
-					{
-						collector.EmitError(string.Empty, $"Area '{area}' is not in the list of available areas. Available areas: {string.Join(", ", config.AvailableAreas)}");
-						return false;
-					}
+					collector.EmitError(string.Empty, $"Area '{area}' is not in the list of available areas. Available areas: {string.Join(", ", config.AvailableAreas)}");
+					return false;
 				}
 			}
 
