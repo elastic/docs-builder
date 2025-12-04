@@ -9,10 +9,16 @@ using Elastic.Documentation.Api.Core.AskAi;
 using Elastic.Documentation.Api.Core.Search;
 using Elastic.Documentation.Api.Infrastructure;
 using Elastic.Documentation.Api.Infrastructure.OpenTelemetry;
+using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.ServiceDefaults;
 
 try
 {
 	var builder = WebApplication.CreateSlimBuilder(args);
+	_ = builder.AddDocumentationServiceDefaults(ref args, (s, p) =>
+	{
+		_ = s.AddSingleton(AssemblyConfiguration.Create(p));
+	});
 	// Add logging configuration for Lambda
 	_ = builder.AddDocsApiOpenTelemetry();
 
@@ -38,6 +44,9 @@ try
 
 	builder.Services.AddElasticDocsApiUsecases(environment);
 	var app = builder.Build();
+
+	if (app.Environment.IsDevelopment())
+		_ = app.UseDeveloperExceptionPage();
 
 	var v1 = app.MapGroup("/docs/_api/v1");
 	v1.MapElasticDocsApiEndpoints();
