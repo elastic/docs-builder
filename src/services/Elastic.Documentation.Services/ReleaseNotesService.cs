@@ -85,13 +85,10 @@ public class ReleaseNotesService(
 			// Validate products if configuration provides available products
 			if (config.AvailableProducts != null && config.AvailableProducts.Count > 0)
 			{
-				foreach (var product in input.Products)
+				foreach (var product in input.Products.Where(p => !config.AvailableProducts.Contains(p.Product)))
 				{
-					if (!config.AvailableProducts.Contains(product.Product))
-					{
-						collector.EmitError(string.Empty, $"Product '{product.Product}' is not in the list of available products. Available products: {string.Join(", ", config.AvailableProducts)}");
-						return false;
-					}
+					collector.EmitError(string.Empty, $"Product '{product.Product}' is not in the list of available products. Available products: {string.Join(", ", config.AvailableProducts)}");
+					return false;
 				}
 			}
 
