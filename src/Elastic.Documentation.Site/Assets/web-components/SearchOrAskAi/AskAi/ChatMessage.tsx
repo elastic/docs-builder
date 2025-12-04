@@ -1,5 +1,6 @@
 import { initCopyButton } from '../../../copybutton'
 import { hljs } from '../../../hljs'
+import { aiGradients } from '../ElasticAiAssitant'
 import { SearchOrAskAiErrorCallout } from '../SearchOrAskAiErrorCallout'
 import { ApiError } from '../errorHandling'
 import { AskAiEvent, ChunkEvent, EventTypes } from './AskAiEvent'
@@ -13,7 +14,6 @@ import {
     EuiFlexGroup,
     EuiFlexItem,
     EuiIcon,
-    EuiLoadingElastic,
     EuiPanel,
     EuiSpacer,
     EuiText,
@@ -127,7 +127,8 @@ const getToolCallStatus = (event: AskAiEvent): string => {
 // Helper function for computing AI status - time-based latest status
 const computeAiStatus = (
     events: AskAiEvent[],
-    isComplete: boolean
+    isComplete: boolean,
+    content: string
 ): string | null => {
     if (isComplete) return null
 
@@ -151,7 +152,17 @@ const computeAiStatus = (
     // Get the most recent status-worthy event
     const latestEvent = statusEvents[statusEvents.length - 1]
 
-    if (!latestEvent) return STATUS_MESSAGES.THINKING
+    // If no events but we have content, we're generating
+    // (streaming managed by singleton manager outside React)
+    if (!latestEvent) {
+        if (content) {
+            if (content.includes('<!--REFERENCES')) {
+                return STATUS_MESSAGES.GATHERING
+            }
+            return STATUS_MESSAGES.GENERATING
+        }
+        return STATUS_MESSAGES.THINKING
+    }
 
     switch (latestEvent.type) {
         case EventTypes.REASONING:
@@ -191,38 +202,46 @@ const ActionBar = ({
     content: string
     onRetry?: () => void
 }) => (
-    <EuiFlexGroup responsive={false} component="span" gutterSize="none">
+    <EuiFlexGroup
+        responsive={false}
+        component="span"
+        gutterSize="none"
+        direction="rowReverse"
+    >
         <EuiFlexItem grow={false}>
-            <EuiToolTip content="This answer was helpful">
-                <EuiButtonIcon
-                    aria-label="This answer was helpful"
-                    iconType="thumbUp"
-                    color="success"
-                    size="s"
-                />
-            </EuiToolTip>
-        </EuiFlexItem>
-        <EuiFlexItem grow={false}>
-            <EuiToolTip content="This answer was not helpful">
+            <EuiToolTip content="Not helpful">
                 <EuiButtonIcon
                     aria-label="This answer was not helpful"
                     iconType="thumbDown"
                     color="danger"
-                    size="s"
+                    size="xs"
+                    iconSize="s"
+                />
+            </EuiToolTip>
+        </EuiFlexItem>
+        <EuiFlexItem grow={false}>
+            <EuiToolTip content="Mark as helpful">
+                <EuiButtonIcon
+                    aria-label="This answer was helpful"
+                    iconType="thumbUp"
+                    color="success"
+                    size="xs"
+                    iconSize="s"
                 />
             </EuiToolTip>
         </EuiFlexItem>
         <EuiFlexItem grow={false}>
             <EuiCopy
                 textToCopy={content}
-                beforeMessage="Copy markdown"
+                beforeMessage="Copy as markdown"
                 afterMessage="Copied!"
             >
                 {(copy) => (
                     <EuiButtonIcon
                         aria-label="Copy markdown"
                         iconType="copy"
-                        size="s"
+                        size="xs"
+                        iconSize="s"
                         onClick={copy}
                     />
                 )}
@@ -236,6 +255,7 @@ const ActionBar = ({
                         iconType="refresh"
                         onClick={onRetry}
                         size="s"
+                        iconSize="s"
                     />
                 </EuiToolTip>
             </EuiFlexItem>
@@ -256,27 +276,67 @@ export const ChatMessage = ({
 
     if (isUser) {
         return (
-            <div
-                data-message-type="user"
-                data-message-id={message.id}
-                css={css`
-                    max-width: 50%;
-                    justify-self: flex-end;
-                `}
-            >
-                <EuiPanel
-                    paddingSize="s"
-                    hasShadow={false}
-                    hasBorder={true}
+            <>
+                <EuiSpacer size="l" />
+                <div
+                    data-message-type="user"
+                    data-message-id={message.id}
                     css={css`
-                        border-radius: ${euiTheme.border.radius.medium};
-                        background-color: ${euiTheme.colors
-                            .backgroundLightText};
+                        max-width: 50%;
+                        justify-self: flex-end;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: flex-end;
+                        .copy-button {
+                            visibility: hidden;
+                        }
+                        &:hover .copy-button {
+                            visibility: visible;
+                        }
                     `}
                 >
-                    <EuiText size="s">{message.content}</EuiText>
-                </EuiPanel>
-            </div>
+                    <EuiPanel
+                        paddingSize="none"
+                        hasShadow={false}
+                        hasBorder={false}
+                        css={css`
+                            color: white;
+                            border-radius: 24px 24px 2px 24px;
+                            padding-inline: ${euiTheme.size.base};
+                            padding-block: ${euiTheme.size.m};
+                            background: ${aiGradients.dark};
+                        `}
+                    >
+                        <EuiText
+                            size="s"
+                            css={css`
+                                white-space: pre-wrap;
+                            `}
+                        >
+                            {message.content}
+                        </EuiText>
+                    </EuiPanel>
+                    <EuiSpacer size="xs" />
+
+                    <EuiCopy
+                        textToCopy={message.content}
+                        beforeMessage="Copy"
+                        afterMessage="Copied!"
+                    >
+                        {(copy) => (
+                            <EuiButtonIcon
+                                className="copy-button"
+                                aria-label="Copy"
+                                iconType="copy"
+                                iconSize="s"
+                                color="text"
+                                size="xs"
+                                onClick={copy}
+                            />
+                        )}
+                    </EuiCopy>
+                </div>
+            </>
         )
     }
 
@@ -313,8 +373,8 @@ export const ChatMessage = ({
     }, [mainContent])
 
     const rawAiStatus = useMemo(
-        () => computeAiStatus(events, isComplete),
-        [events, isComplete]
+        () => computeAiStatus(events, isComplete, content),
+        [events, isComplete, content]
     )
 
     // Apply minimum display time to prevent status flickering
@@ -347,39 +407,10 @@ export const ChatMessage = ({
             data-message-type="ai"
             data-message-id={message.id}
         >
-            {!hasError && (
-                <EuiFlexItem grow={false}>
-                    <div
-                        css={css`
-                            block-size: 32px;
-                            inline-size: 32px;
-                            border-radius: 50%;
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                        `}
-                    >
-                        {isLoading ? (
-                            <EuiLoadingElastic
-                                size="xl"
-                                css={css`
-                                    margin-top: -1px;
-                                `}
-                            />
-                        ) : (
-                            <EuiIcon
-                                name="Elastic Docs AI"
-                                size="xl"
-                                type="logoElastic"
-                            />
-                        )}
-                    </div>
-                </EuiFlexItem>
-            )}
             {!hasError && shouldRenderContent && (
                 <EuiFlexItem>
                     <EuiPanel
-                        paddingSize="m"
+                        paddingSize="none"
                         hasShadow={false}
                         hasBorder={false}
                         css={css`

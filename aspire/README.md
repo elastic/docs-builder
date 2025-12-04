@@ -87,7 +87,7 @@ Should have these secrets
 > Parameters:DocumentationElasticApiKey = ****
 
 To set them:
-
+  
 ```bash
 dotnet user-secrets --project aspire set Parameters:DocumentationElasticApiKey <VALUE>
 ```
@@ -149,4 +149,3 @@ dotnet test tests-integration/Elastic.Assembler.IntegrationTests --filter "Fully
   - Network connectivity issues with Elasticsearch
 - **Performance optimization**: Subsequent test runs against the same Elasticsearch instance are significantly faster because indexing is skipped when data is already up-to-date
 - The base class `SearchTestBase` can be extended for additional search-related tests, providing consistent initialization and intelligent indexing behavior
-

@@ -1,7 +1,13 @@
-/** @jsxImportSource @emotion/react */
 import '../../eui-icons-cache'
-import { useSearchActions, useSearchTerm } from './Search/search.store'
-import { useModalActions, useModalIsOpen } from './modal.store'
+import { ElasticAiAssistantButton } from './ElasticAiAssitant'
+import { useSearchTerm } from './Search/search.store'
+import AiIcon from './ai-icon.svg'
+import {
+    ModalMode,
+    useModalActions,
+    useModalIsOpen,
+    useModalMode,
+} from './modal.store'
 import {
     EuiButton,
     EuiPortal,
@@ -11,6 +17,8 @@ import {
     EuiTextTruncate,
     EuiText,
     EuiLoadingSpinner,
+    useEuiTheme,
+    EuiToolTip,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
 import { useQuery } from '@tanstack/react-query'
@@ -24,10 +32,11 @@ const SearchOrAskAiModal = lazy(() =>
 )
 
 export const SearchOrAskAiButton = () => {
+    const { euiTheme } = useEuiTheme()
     const searchTerm = useSearchTerm()
-    const { clearSearchTerm } = useSearchActions()
     const isModalOpen = useModalIsOpen()
-    const { openModal, closeModal, toggleModal } = useModalActions()
+    const modalMode = useModalMode()
+    const { openModal, closeModal, setModalMode } = useModalActions()
 
     const { data: isApiAvailable } = useQuery({
         queryKey: ['api-health'],
@@ -46,6 +55,7 @@ export const SearchOrAskAiButton = () => {
         top: 48px;
         width: 640px;
         max-width: 100%;
+        border-radius: ${euiTheme.size.s};
     `
 
     const loadingCss = css`
@@ -55,33 +65,65 @@ export const SearchOrAskAiButton = () => {
         padding: 2rem;
     `
 
+    const openAndSetModalMode = (mode: ModalMode) => {
+        setModalMode(mode)
+        if (!isModalOpen) {
+            openModal()
+        }
+    }
+
+    const openAskAiModal = () => openAndSetModalMode('askAi')
+    const openSearchModal = () => openAndSetModalMode('search')
+
     useEffect(() => {
         const handleKeydown = (event: KeyboardEvent) => {
             if (event.key === 'Escape') {
-                clearSearchTerm()
                 closeModal()
             }
             if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
                 event.preventDefault()
-                toggleModal()
+                openSearchModal()
+            }
+
+            if (
+                (event.metaKey || event.ctrlKey) &&
+                event.code === 'Semicolon'
+            ) {
+                event.preventDefault()
+                openAskAiModal()
             }
         }
         window.addEventListener('keydown', handleKeydown)
         return () => {
             window.removeEventListener('keydown', handleKeydown)
         }
-    }, [])
+    }, [isModalOpen, modalMode])
 
     if (!isApiAvailable) {
         return null
     }
 
     return (
-        <>
+        <div
+            css={css`
+                display: flex;
+                gap: ${euiTheme.size.base};
+            `}
+        >
+            <EuiToolTip content="Keyboard shortcut: ⌘;">
+                <ElasticAiAssistantButton
+                    size="s"
+                    iconType={AiIcon}
+                    onClick={openAskAiModal}
+                >
+                    Ask AI Assistant
+                </ElasticAiAssistantButton>
+            </EuiToolTip>
+
             <EuiButton
                 size="s"
                 color="text"
-                onClick={openModal}
+                onClick={openSearchModal}
                 iconType="search"
             >
                 <EuiText
@@ -97,7 +139,7 @@ export const SearchOrAskAiButton = () => {
                                 truncation="end"
                             />
                         ) : (
-                            'Search or ask AI'
+                            'Search in Docs'
                         )}
                     </span>
                 </EuiText>
@@ -128,6 +170,6 @@ export const SearchOrAskAiButton = () => {
                     </EuiOverlayMask>
                 </EuiPortal>
             )}
-        </>
+        </div>
     )
 }
