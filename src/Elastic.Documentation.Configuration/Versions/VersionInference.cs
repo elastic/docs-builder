@@ -19,20 +19,15 @@ public class ProductVersionInferrerService(ProductsConfiguration productsConfigu
 	private VersionsConfiguration VersionsConfiguration { get; } = versionsConfiguration;
 	public VersioningSystem InferVersion(string repositoryName, IReadOnlyCollection<LegacyPageMapping>? legacyPages, IReadOnlyCollection<Product>? products, ApplicableTo? applicableTo)
 	{
-		// docs-content handles content from multiple products which should preferably be inferred through frontmatter metadata
-		if (repositoryName.Equals("docs-content", StringComparison.OrdinalIgnoreCase))
-		{
-			if (products is { Count: > 0 }) // If the page is from multiple products, use the versioning system of the first product
-				return products.First().VersioningSystem!;
-			if (applicableTo is not null)
-			{
-				var versioningFromApplicability = VersioningFromApplicability(applicableTo); // Try to infer the versioning system from the applicability metadata
-				if (versioningFromApplicability is not null)
-					return versioningFromApplicability;
-			}
-		}
 		if (legacyPages is { Count: > 0 })
-			return legacyPages.ElementAt(0).Product.VersioningSystem!; // If the page has a legacy page mapping, use the versioning system of the legacy page
+			return legacyPages.ElementAt(0).Product.VersioningSystem!; // If the page has legacy mappings, use the versioning system of the first mapping's product
+
+		if (applicableTo is not null)
+		{
+			var versioningFromApplicability = VersioningFromApplicability(applicableTo); // Try to infer the versioning system from the applicability metadata
+			if (versioningFromApplicability is not null)
+				return versioningFromApplicability;
+		}
 
 		var versioning = ProductsConfiguration.Products.TryGetValue(repositoryName, out var belonging)
 				? belonging.VersioningSystem! //If the page's docset has a name with a direct product match, use the versioning system of the product
@@ -46,41 +41,18 @@ public class ProductVersionInferrerService(ProductsConfiguration productsConfigu
 
 	private VersioningSystem? VersioningFromApplicability(ApplicableTo applicableTo)
 	{
-		VersioningSystem? versioning = null;
-		if (applicableTo.ProductApplicability is not null)
-		{
-			versioning = applicableTo.ProductApplicability switch
-			{
-				{ ApmAgentAndroid: not null } => VersionsConfiguration.VersioningSystems[VersioningSystemId.ApmAgentAndroid],
-				{ ApmAgentIos: not null } => VersionsConfiguration.VersioningSystems[VersioningSystemId.ApmAgentIos],
-				{ ApmAgentJava: not null } => VersionsConfiguration.VersioningSystems[VersioningSystemId.ApmAgentJava],
-				{ ApmAgentDotnet: not null } => VersionsConfiguration.VersioningSystems[VersioningSystemId.ApmAgentDotnet],
-				{ ApmAgentGo: not null } => VersionsConfiguration.VersioningSystems[VersioningSystemId.ApmAgentGo],
-				{ ApmAgentNode: not null } => VersionsConfiguration.VersioningSystems[VersioningSystemId.ApmAgentNode],
-				{ ApmAgentPhp: not null } => VersionsConfiguration.VersioningSystems[VersioningSystemId.ApmAgentPhp],
-				{ ApmAgentPython: not null } => VersionsConfiguration.VersioningSystems[VersioningSystemId.ApmAgentPython],
-				{ ApmAgentRuby: not null } => VersionsConfiguration.VersioningSystems[VersioningSystemId.ApmAgentRuby],
-				{ ApmAgentRumJs: not null } => VersionsConfiguration.VersioningSystems[VersioningSystemId.ApmAgentRumJs],
-				{ Curator: not null } => VersionsConfiguration.VersioningSystems[VersioningSystemId.Curator],
-				{ Ecctl: not null } => VersionsConfiguration.VersioningSystems[VersioningSystemId.Ecctl],
-				{ EdotAndroid: not null } => VersionsConfiguration.VersioningSystems[VersioningSystemId.EdotAndroid],
-				{ EdotCfAws: not null } => VersionsConfiguration.VersioningSystems[VersioningSystemId.EdotCfAws],
-				{ EdotCfAzure: not null } => VersionsConfiguration.VersioningSystems[VersioningSystemId.EdotCfAzure],
-				{ EdotCollector: not null } => VersionsConfiguration.VersioningSystems[VersioningSystemId.EdotCollector],
-				{ EdotIos: not null } => VersionsConfiguration.VersioningSystems[VersioningSystemId.EdotIos],
-				{ EdotJava: not null } => VersionsConfiguration.VersioningSystems[VersioningSystemId.EdotJava],
-				{ EdotNode: not null } => VersionsConfiguration.VersioningSystems[VersioningSystemId.EdotNode],
-				{ EdotDotnet: not null } => VersionsConfiguration.VersioningSystems[VersioningSystemId.EdotDotnet],
-				{ EdotPhp: not null } => VersionsConfiguration.VersioningSystems[VersioningSystemId.EdotPhp],
-				{ EdotPython: not null } => VersionsConfiguration.VersioningSystems[VersioningSystemId.EdotPython],
-				_ => null
-			};
-		}
-		if (versioning is not null)
-			return versioning;
+		// Priority 1: Product applicability
+		var product = ProductFromApplicability(applicableTo.ProductApplicability);
+		if (product?.VersioningSystem is not null)
+			return product.VersioningSystem;
+
+		// Priority 2: Stack applicability
+		if (applicableTo.Stack is not null)
+			return VersionsConfiguration.VersioningSystems[VersioningSystemId.Stack];
+		// Priority 3: Deployment applicability
 		if (applicableTo.Deployment is not null)
 		{
-			versioning = applicableTo.Deployment switch
+			var versioning = applicableTo.Deployment switch
 			{
 				{ Ece: not null } => VersionsConfiguration.VersioningSystems[VersioningSystemId.Ece],
 				{ Eck: not null } => VersionsConfiguration.VersioningSystems[VersioningSystemId.Eck],
@@ -88,8 +60,34 @@ public class ProductVersionInferrerService(ProductsConfiguration productsConfigu
 				{ Self: not null } => VersionsConfiguration.VersioningSystems[VersioningSystemId.Self],
 				_ => null
 			};
+			if (versioning is not null)
+				return versioning;
 		}
-		return versioning;
+
+		// Priority 4: Serverless applicability
+		if (applicableTo.Serverless is not null)
+		{
+			var versioning = applicableTo.Serverless switch
+			{
+				{ Elasticsearch: not null } => VersionsConfiguration.VersioningSystems[VersioningSystemId.ElasticsearchProject],
+				{ Observability: not null } => VersionsConfiguration.VersioningSystems[VersioningSystemId.ObservabilityProject],
+				{ Security: not null } => VersionsConfiguration.VersioningSystems[VersioningSystemId.SecurityProject],
+				_ => null
+			};
+			if (versioning is not null)
+				return versioning;
+		}
+
+		return null;
+	}
+	private Product? ProductFromApplicability(ProductApplicability? productApplicability)
+	{
+		if (productApplicability is null)
+			return null;
+
+		var productId = ProductApplicabilityConversion.ProductApplicabilityToProductId(productApplicability);
+
+		return productId is null ? null : ProductsConfiguration.Products.GetValueOrDefault(productId);
 	}
 }
 
