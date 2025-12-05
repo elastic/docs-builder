@@ -37,18 +37,72 @@ public static class StringHighlightExtensions
 			// Highlight the token itself
 			result = HighlightSingleToken(result, token);
 
-			// Highlight synonyms for this token
-			if (synonyms == null || !synonyms.TryGetValue(token, out var tokenSynonyms))
+			if (synonyms == null)
 				continue;
 
-			foreach (var synonym in tokenSynonyms)
+			// Highlight synonyms for this token (direct lookup)
+			if (synonyms.TryGetValue(token, out var tokenSynonyms))
 			{
-				if (!string.IsNullOrEmpty(synonym))
-					result = HighlightSingleToken(result, synonym);
+				foreach (var synonym in tokenSynonyms)
+				{
+					var synonymToHighlight = ExtractSynonymTarget(synonym);
+					if (!string.IsNullOrEmpty(synonymToHighlight))
+						result = HighlightSingleToken(result, synonymToHighlight);
+				}
+			}
+
+			// Also check for hard replacements where this token is the source
+			// Format: "source => target" means when searching for "source", also highlight "target"
+			foreach (var kvp in synonyms)
+			{
+				foreach (var synonym in kvp.Value)
+				{
+					if (string.IsNullOrEmpty(synonym) || !synonym.Contains("=>"))
+						continue;
+
+					var (source, target) = ParseHardReplacement(synonym);
+					if (!string.IsNullOrEmpty(source) &&
+						!string.IsNullOrEmpty(target) &&
+						source.Equals(token, StringComparison.OrdinalIgnoreCase))
+					{
+						result = HighlightSingleToken(result, target);
+					}
+				}
 			}
 		}
 
 		return result;
+	}
+
+	/// <summary>
+	/// Extracts the target from a synonym entry, handling hard replacement format.
+	/// For "source => target" returns "target", otherwise returns the original synonym.
+	/// </summary>
+	private static string? ExtractSynonymTarget(string? synonym)
+	{
+		if (string.IsNullOrEmpty(synonym))
+			return null;
+
+		if (!synonym.Contains("=>"))
+			return synonym;
+
+		var (_, target) = ParseHardReplacement(synonym);
+		return target;
+	}
+
+	/// <summary>
+	/// Parses a hard replacement synonym format: "source => target"
+	/// </summary>
+	private static (string? Source, string? Target) ParseHardReplacement(string synonym)
+	{
+		var arrowIndex = synonym.IndexOf("=>", StringComparison.Ordinal);
+		if (arrowIndex < 0)
+			return (null, null);
+
+		var source = synonym[..arrowIndex].Trim();
+		var target = synonym[(arrowIndex + 2)..].Trim();
+
+		return (source, target);
 	}
 
 	private static string HighlightSingleToken(string text, string token)

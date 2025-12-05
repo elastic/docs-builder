@@ -683,4 +683,19 @@ public class StringHighlightExtensionsTests
 		// This is expected behavior - same as regular tokens
 		result.Should().Contain("<mark>k8s</mark>");
 	}
+
+	[Fact]
+	public void SynonymsHardReplacements()
+	{
+		var text = "ES|QL is esql and not EQL";
+		var synonyms = new Dictionary<string, string[]>
+		{
+			["esql"] = ["es|ql => esql"]
+		};
+		var result = text.HighlightTokens(["es|ql"], synonyms);
+
+		// k8s within k8ss and ak8s will be highlighted since it's a substring match
+		// This is expected behavior - same as regular tokens
+		result.Should().Contain("<mark>ES|QL</mark> is <mark>esql</mark> and not EQL");
+	}
 }
