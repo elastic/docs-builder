@@ -65,6 +65,9 @@ export const SearchResults = ({
                     <SearchFilters
                         counts={counts}
                         isLoading={isInitialLoading}
+                        inputRef={inputRef}
+                        itemRefs={itemRefs}
+                        resultsCount={results.length}
                     />
 
                     <EuiSpacer size="m" />

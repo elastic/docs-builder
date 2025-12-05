@@ -27,6 +27,17 @@ export const useSearchKeyboardNavigation = (
         }
     }
 
+    const focusNextItem = () => {
+        if (resultsCount > 1) {
+            // First item is already visually selected, so go to second item
+            const targetIndex = Math.min(selectedIndex + 1, resultsCount - 1)
+            itemRefs.current[targetIndex]?.focus()
+        } else {
+            // Only 1 or 0 results, go to button
+            buttonRef.current?.focus()
+        }
+    }
+
     const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
             e.preventDefault()
@@ -36,19 +47,12 @@ export const useSearchKeyboardNavigation = (
             } else {
                 askAi()
             }
-        } else if (e.key === 'ArrowDown') {
+        } else if (
+            e.key === 'ArrowDown' ||
+            (e.key === 'Tab' && !e.shiftKey && selectedIndex !== NO_SELECTION)
+        ) {
             e.preventDefault()
-            if (resultsCount > 1) {
-                // First item is already visually selected, so go to second item
-                const targetIndex = Math.min(
-                    selectedIndex + 1,
-                    resultsCount - 1
-                )
-                itemRefs.current[targetIndex]?.focus()
-            } else {
-                // Only 1 or 0 results, go to button
-                buttonRef.current?.focus()
-            }
+            focusNextItem()
         } else if (
             e.key === 'Tab' &&
             e.shiftKey &&
