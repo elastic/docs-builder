@@ -2,9 +2,27 @@ import { cooldownStore } from '../cooldown.store'
 import { modalStore } from '../modal.store'
 import { Chat } from './Chat'
 import { chatStore } from './chat.store'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import * as React from 'react'
+
+// Create a fresh QueryClient for each test
+const createTestQueryClient = () =>
+    new QueryClient({
+        defaultOptions: {
+            queries: { retry: false },
+            mutations: { retry: false },
+        },
+    })
+
+// Wrapper component for tests that need React Query
+const renderWithQueryClient = (ui: React.ReactElement) => {
+    const testQueryClient = createTestQueryClient()
+    return render(
+        <QueryClientProvider client={testQueryClient}>{ui}</QueryClientProvider>
+    )
+}
 
 // Mock only external HTTP calls - fetchEventSource makes the actual API request
 jest.mock('@microsoft/fetch-event-source', () => ({
@@ -103,7 +121,7 @@ describe('Chat Component', () => {
             setupMessages()
 
             // Act
-            render(<Chat />)
+            renderWithQueryClient(<Chat />)
 
             // Assert - real messages should be rendered
             expect(
@@ -124,7 +142,7 @@ describe('Chat Component', () => {
             setupMessages()
 
             // Act
-            render(<Chat />)
+            renderWithQueryClient(<Chat />)
 
             // Assert
             expect(
@@ -138,7 +156,7 @@ describe('Chat Component', () => {
             const user = userEvent.setup()
 
             // Act
-            render(<Chat />)
+            renderWithQueryClient(<Chat />)
             await user.click(
                 screen.getByRole('button', { name: /clear conversation/i })
             )

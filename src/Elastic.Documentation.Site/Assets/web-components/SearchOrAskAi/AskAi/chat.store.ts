@@ -17,6 +17,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { create } from 'zustand/react'
 
 export type AiProvider = 'AgentBuilder' | 'LlmGateway'
+export type Reaction = 'thumbsUp' | 'thumbsDown'
 
 export interface ChatMessage {
     id: string
@@ -53,10 +54,13 @@ async function computeSHA256(data: string): Promise<string> {
     return hashArray.map((b) => ('0' + b.toString(16)).slice(-2)).join('')
 }
 
+const sentAiMessageIds = new Set<string>()
+
 interface ChatState {
     chatMessages: ChatMessage[]
     conversationId: string | null
     aiProvider: AiProvider
+    messageFeedback: Record<string, Reaction> // messageId -> reaction
     scrollPosition: number
     actions: {
         submitQuestion: (question: string) => void
@@ -72,6 +76,7 @@ interface ChatState {
         clearChat: () => void
         clearNon429Errors: () => void
         cancelStreaming: () => void
+        setMessageFeedback: (messageId: string, reaction: Reaction) => void
         abortMessage: (messageId: string) => void
         isStreaming: (messageId: string) => boolean
         setScrollPosition: (position: number) => void
@@ -80,8 +85,9 @@ interface ChatState {
 
 export const chatStore = create<ChatState>((set, get) => ({
     chatMessages: [],
-    conversationId: null,
-    aiProvider: 'LlmGateway',
+    conversationId: null, // Start with null - will be set by backend on first request
+    aiProvider: 'LlmGateway', // Default to LLM Gateway
+    messageFeedback: {},
     scrollPosition: 0,
     actions: {
         submitQuestion: (question: string) => {
@@ -152,8 +158,9 @@ export const chatStore = create<ChatState>((set, get) => ({
                 stream.throttler.clear()
                 stream.controller.abort()
             }
+            sentAiMessageIds.clear()
             activeStreams.clear()
-            set({ chatMessages: [], conversationId: null })
+            set({ chatMessages: [], conversationId: null, messageFeedback: {} })
         },
 
         clearNon429Errors: () => {
@@ -194,6 +201,15 @@ export const chatStore = create<ChatState>((set, get) => ({
                         ? { ...msg, status: 'complete' }
                         : msg
                 ),
+            }))
+        },
+
+        setMessageFeedback: (messageId: string, reaction: Reaction) => {
+            set((state) => ({
+                messageFeedback: {
+                    ...state.messageFeedback,
+                    [messageId]: reaction,
+                },
             }))
         },
 
@@ -410,6 +426,8 @@ export const useAiProvider = () => chatStore((state) => state.aiProvider)
 export const useChatScrollPosition = () =>
     chatStore((state) => state.scrollPosition)
 export const useChatActions = () => chatStore((state) => state.actions)
+export const useMessageReaction = (messageId: string) =>
+    chatStore((state) => state.messageFeedback[messageId] ?? null)
 export const useIsStreaming = () =>
     chatStore((state) => {
         const last = state.chatMessages[state.chatMessages.length - 1]

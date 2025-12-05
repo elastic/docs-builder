@@ -37,4 +37,10 @@ public static class TelemetryConstants
 	/// Used to trace cache hits, misses, and performance.
 	/// </summary>
 	public const string CacheSourceName = "Elastic.Documentation.Api.Cache";
+
+	/// <summary>
+	/// ActivitySource name for Ask AI feedback operations.
+	/// Used to trace feedback submissions.
+	/// </summary>
+	public const string AskAiFeedbackSourceName = "Elastic.Documentation.Api.AskAiFeedback";
 }

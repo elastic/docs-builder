@@ -10,6 +10,7 @@ using Elastic.Clients.Elasticsearch.Core.Explain;
 using Elastic.Clients.Elasticsearch.Core.Search;
 using Elastic.Clients.Elasticsearch.QueryDsl;
 using Elastic.Clients.Elasticsearch.Serialization;
+using Elastic.Documentation.Api.Core;
 using Elastic.Documentation.Api.Core.Search;
 using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Search;
@@ -304,17 +305,15 @@ public partial class ElasticsearchGateway : ISearchGateway
 
 			if (!response.IsValidResponse)
 			{
-				_logger.LogWarning("Elasticsearch RRF search response was not valid. Reason: {Reason}",
-					response.ElasticsearchServerError?.Error?.Reason ?? "Unknown");
+				_logger.LogWarning("Elasticsearch response is not valid. Reason: {Reason}",
+					response.ElasticsearchServerError?.Error.Reason ?? "Unknown");
 			}
-			else
-				_logger.LogInformation("RRF search completed for '{Query}'. Total hits: {TotalHits}", query, response.Total);
 
 			return ProcessSearchResponse(response, searchQuery, _searchConfiguration.SynonymBiDirectional);
 		}
 		catch (Exception ex)
 		{
-			_logger.LogError(ex, "Error occurred during Elasticsearch RRF search for '{Query}'", query);
+			_logger.LogError(ex, "Error occurred during Elasticsearch search");
 			throw;
 		}
 	}
