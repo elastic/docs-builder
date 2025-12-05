@@ -19,6 +19,7 @@ interface ChatInputProps {
     placeholder?: string
     inputRef?: React.MutableRefObject<HTMLTextAreaElement | null>
     isStreaming?: boolean
+    onMetaSemicolon?: () => void
 }
 
 export const ChatInput = ({
@@ -30,6 +31,7 @@ export const ChatInput = ({
     placeholder = 'Ask the Elastic Docs AI Assistant',
     inputRef,
     isStreaming = false,
+    onMetaSemicolon,
 }: ChatInputProps) => {
     const { euiTheme } = useEuiTheme()
     const scollbarStyling = useEuiScrollBar()
@@ -70,6 +72,19 @@ export const ChatInput = ({
             maxHeight
         )}px`
     }, [value])
+
+    // Listen for Cmd+; to focus input
+    useEffect(() => {
+        if (!onMetaSemicolon) return
+        const handleGlobalKeyDown = (e: KeyboardEvent) => {
+            if ((e.metaKey || e.ctrlKey) && e.code === 'Semicolon') {
+                e.preventDefault()
+                onMetaSemicolon()
+            }
+        }
+        window.addEventListener('keydown', handleGlobalKeyDown)
+        return () => window.removeEventListener('keydown', handleGlobalKeyDown)
+    }, [onMetaSemicolon])
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) {

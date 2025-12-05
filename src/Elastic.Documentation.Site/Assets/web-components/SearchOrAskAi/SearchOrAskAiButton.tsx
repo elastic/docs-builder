@@ -83,6 +83,7 @@ export const SearchOrAskAiButton = () => {
             if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
                 event.preventDefault()
                 openSearchModal()
+                // Input focuses itself via its own Cmd+K listener
             }
 
             if (
@@ -91,6 +92,7 @@ export const SearchOrAskAiButton = () => {
             ) {
                 event.preventDefault()
                 openAskAiModal()
+                // Input focuses itself via its own Cmd+; listener
             }
         }
         window.addEventListener('keydown', handleKeydown)

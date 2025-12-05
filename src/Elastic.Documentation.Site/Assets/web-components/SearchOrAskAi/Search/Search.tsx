@@ -1,5 +1,3 @@
-import { useChatActions } from '../AskAi/chat.store'
-import { useIsAskAiCooldownActive } from '../AskAi/useAskAiCooldown'
 import { InfoBanner } from '../InfoBanner'
 import { KeyboardShortcutsFooter } from '../KeyboardShortcutsFooter'
 import { SearchOrAskAiErrorCallout } from '../SearchOrAskAiErrorCallout'
@@ -7,8 +5,9 @@ import { useModalActions } from '../modal.store'
 import { SearchResults } from './SearchResults/SearchResults'
 import { TellMeMoreButton } from './TellMeMoreButton'
 import { useSearchActions, useSearchTerm } from './search.store'
-import { useKeyboardNavigation } from './useKeyboardNavigation'
+import { useAskAiFromSearch } from './useAskAiFromSearch'
 import { useIsSearchCooldownActive } from './useSearchCooldown'
+import { useSearchKeyboardNavigation } from './useSearchKeyboardNavigation'
 import { useSearchQuery } from './useSearchQuery'
 import {
     EuiFieldText,
@@ -22,33 +21,24 @@ import {
     EuiButtonIcon,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
-import React from 'react'
+import { useEffect } from 'react'
 
 export const Search = () => {
     const searchTerm = useSearchTerm()
     const { setSearchTerm, clearSearchTerm } = useSearchActions()
-    const { submitQuestion, clearChat } = useChatActions()
-    const { setModalMode, closeModal } = useModalActions()
+    const { closeModal } = useModalActions()
     const isSearchCooldownActive = useIsSearchCooldownActive()
-    const isAskAiCooldownActive = useIsAskAiCooldownActive()
-    const { isLoading, isFetching } = useSearchQuery()
+    const { askAi } = useAskAiFromSearch()
+    const { isLoading, isFetching, data } = useSearchQuery()
     const mFontSize = useEuiFontSize('m').fontSize
     const { euiTheme } = useEuiTheme()
+
+    const resultsCount = data?.results?.length ?? 0
 
     const handleSearchInputChange = (
         e: React.ChangeEvent<HTMLInputElement>
     ) => {
         setSearchTerm(e.target.value)
-    }
-
-    const handleAskAiClick = () => {
-        const trimmedSearchTerm = searchTerm.trim()
-        if (isAskAiCooldownActive || trimmedSearchTerm === '') {
-            return
-        }
-        clearChat()
-        submitQuestion(trimmedSearchTerm)
-        setModalMode('askAi')
     }
 
     const handleCloseModal = () => {
@@ -59,11 +49,24 @@ export const Search = () => {
     const {
         inputRef,
         buttonRef,
+        itemRefs,
         handleInputKeyDown,
-        handleListItemKeyDown,
         focusLastAvailable,
-        setItemRef,
-    } = useKeyboardNavigation(handleAskAiClick)
+    } = useSearchKeyboardNavigation(resultsCount)
+
+    // Listen for Cmd+K to focus input
+    useEffect(() => {
+        const handleGlobalKeyDown = (e: KeyboardEvent) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                e.preventDefault()
+                inputRef.current?.focus()
+            }
+        }
+        window.addEventListener('keydown', handleGlobalKeyDown)
+        return () => window.removeEventListener('keydown', handleGlobalKeyDown)
+    }, [inputRef])
+
+    const showLoadingSpinner = isLoading || isFetching
 
     return (
         <>
@@ -80,7 +83,7 @@ export const Search = () => {
                     padding-inline: ${euiTheme.size.base};
                 `}
             >
-                {isLoading || isFetching ? (
+                {showLoadingSpinner ? (
                     <EuiLoadingSpinner size="m" />
                 ) : (
                     <EuiIcon type="search" size="m" />
@@ -110,8 +113,9 @@ export const Search = () => {
             </div>
 
             <SearchResults
-                onKeyDown={handleListItemKeyDown}
-                setItemRef={setItemRef}
+                inputRef={inputRef}
+                buttonRef={buttonRef}
+                itemRefs={itemRefs}
             />
             <EuiHorizontalRule margin="none" />
             {searchTerm && (
@@ -128,7 +132,7 @@ export const Search = () => {
                     <TellMeMoreButton
                         ref={buttonRef}
                         term={searchTerm}
-                        onAsk={handleAskAiClick}
+                        onAsk={askAi}
                         onArrowUp={focusLastAvailable}
                     />
                 </div>
