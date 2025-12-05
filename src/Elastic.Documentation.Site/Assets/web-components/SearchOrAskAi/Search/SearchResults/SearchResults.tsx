@@ -70,7 +70,6 @@ export const SearchResults = ({
                         resultsCount={results.length}
                     />
 
-                    <EuiSpacer size="m" />
                     <EuiHorizontalRule margin="none" />
 
                     {!isInitialLoading && results.length === 0 && (

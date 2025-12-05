@@ -3,12 +3,7 @@ import { type SearchResultItem } from '../useSearchQuery'
 import { SearchResultListItem } from './SearchResultsListItem'
 import {
     useEuiOverflowScroll,
-    EuiSpacer,
     useEuiTheme,
-    EuiSkeletonRectangle,
-    EuiSkeletonLoading,
-    EuiSkeletonText,
-    EuiSkeletonTitle,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
 import { useRef, useCallback, useEffect, MutableRefObject } from 'react'
@@ -34,6 +29,9 @@ export const SearchResultsList = ({
     buttonRef,
     itemRefs,
 }: SearchResultsListProps) => {
+    if (isLoading) {
+        return null
+    }
     const { euiTheme } = useEuiTheme()
     const selectedIndex = useSelectedIndex()
     const { setSelectedIndex, clearSelection } = useSearchActions()
@@ -116,85 +114,25 @@ export const SearchResultsList = ({
 
     return (
         <div data-search-results ref={scrollContainerRef} css={scrollbarStyle}>
-            <EuiSkeletonLoading
-                isLoading={isLoading}
-                loadingContent={<SkeletonResults />}
-                loadedContent={
-                    <ul onBlur={handleListBlur}>
-                        {results.map((result, index) => (
-                            <SearchResultListItem
-                                item={result}
-                                key={result.url}
-                                index={index}
-                                pageNumber={pageNumber}
-                                pageSize={pageSize}
-                                isSelected={index === selectedIndex}
-                                onFocus={handleItemFocus}
-                                onKeyDown={handleItemKeyDown}
-                                setRef={(el) => {
-                                    if (itemRefs) {
-                                        itemRefs.current[index] = el
-                                    }
-                                }}
-                            />
-                        ))}
-                    </ul>
-                }
-            />
+            <ul onBlur={handleListBlur}>
+                {results.map((result, index) => (
+                    <SearchResultListItem
+                        item={result}
+                        key={result.url}
+                        index={index}
+                        pageNumber={pageNumber}
+                        pageSize={pageSize}
+                        isSelected={index === selectedIndex}
+                        onFocus={handleItemFocus}
+                        onKeyDown={handleItemKeyDown}
+                        setRef={(el) => {
+                            if (itemRefs) {
+                                itemRefs.current[index] = el
+                            }
+                        }}
+                    />
+                ))}
+            </ul>
         </div>
-    )
-}
-
-const SkeletonResults = () => {
-    const { euiTheme } = useEuiTheme()
-
-    return (
-        <ul>
-            {[1, 2, 3].map((i) => (
-                <li
-                    key={i}
-                    css={css`
-                        padding: ${euiTheme.size.m} ${euiTheme.size.base};
-                        padding-right: calc(2 * ${euiTheme.size.base});
-                        margin-inline: ${euiTheme.size.base};
-                    `}
-                >
-                    <div
-                        css={css`
-                            display: grid;
-                            grid-template-columns: auto 1fr;
-                            gap: ${euiTheme.size.base};
-                        `}
-                    >
-                        <div
-                            css={css`
-                                display: flex;
-                                justify-content: center;
-                                align-items: center;
-                            `}
-                        >
-                            <EuiSkeletonRectangle
-                                height={16}
-                                width={16}
-                                borderRadius="m"
-                            />
-                        </div>
-                        <div>
-                            <EuiSkeletonTitle size="xxxs" />
-                            <EuiSpacer size="s" />
-                            <EuiSkeletonText lines={1} size="xs" />
-                            <EuiSpacer size="xs" />
-                            <div
-                                css={css`
-                                    width: 80%;
-                                `}
-                            >
-                                <EuiSkeletonText lines={2} size="xs" />
-                            </div>
-                        </div>
-                    </div>
-                </li>
-            ))}
-        </ul>
     )
 }
