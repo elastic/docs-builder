@@ -324,6 +324,17 @@ sources:
         kind: regex
         pattern: "^@elastic/apm-rum@(\\d*).(\\d*).(\\d*)$"
 
+  latest-elasticsearch-client-dotnet-version:
+    name: Get latest release version for Elasticsearch .NET Client
+    kind: githubrelease
+    spec:
+      owner: elastic
+      repository: elasticsearch-net
+      token: '{{ requiredEnv "GITHUB_TOKEN" }}'
+      username: '{{ requiredEnv "GITHUB_ACTOR" }}'
+      versionfilter:
+        kind: latest
+
   latest-elasticsearch-client-go-version:
     name: Get latest release version for Elasticsearch Go Client
     kind: githubrelease
@@ -358,17 +369,6 @@ sources:
     spec:
       owner: elastic
       repository: elasticsearch-js
-      token: '{{ requiredEnv "GITHUB_TOKEN" }}'
-      username: '{{ requiredEnv "GITHUB_ACTOR" }}'
-      versionfilter:
-        kind: latest
-
-  latest-elasticsearch-client-dotnet-version:
-    name: Get latest release version for Elasticsearch .NET Client
-    kind: githubrelease
-    spec:
-      owner: elastic
-      repository: elasticsearch-net
       token: '{{ requiredEnv "GITHUB_TOKEN" }}'
       username: '{{ requiredEnv "GITHUB_ACTOR" }}'
       versionfilter:
@@ -635,6 +635,15 @@ targets:
       file: config/versions.yml
       key: versioning_systems.apm-agent-rum-js.current
 
+  update-docs-docset-elasticsearch-client-dotnet:
+    name: 'Update config/versions.yml elasticsearch-client-dotnet {{ source "latest-elasticsearch-client-dotnet-version" }}'
+    scmid: githubConfig
+    sourceid: latest-elasticsearch-client-dotnet-version
+    kind: yaml
+    spec:
+      file: config/versions.yml
+      key: versioning_systems.elasticsearch-client-dotnet.current
+
   update-docs-docset-elasticsearch-client-go:
     name: 'Update config/versions.yml elasticsearch-client-go {{ source "latest-elasticsearch-client-go-version" }}'
     scmid: githubConfig
@@ -661,15 +670,6 @@ targets:
     spec:
       file: config/versions.yml
       key: versioning_systems.elasticsearch-client-javascript.current
-
-  update-docs-docset-elasticsearch-client-dotnet:
-    name: 'Update config/versions.yml elasticsearch-client-dotnet {{ source "latest-elasticsearch-client-dotnet-version" }}'
-    scmid: githubConfig
-    sourceid: latest-elasticsearch-client-dotnet-version
-    kind: yaml
-    spec:
-      file: config/versions.yml
-      key: versioning_systems.elasticsearch-client-dotnet.current
 
   update-docs-docset-elasticsearch-client-php:
     name: 'Update config/versions.yml elasticsearch-client-php {{ source "latest-elasticsearch-client-php-version" }}'
