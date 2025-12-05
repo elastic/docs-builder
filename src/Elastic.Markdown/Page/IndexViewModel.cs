@@ -54,6 +54,7 @@ public class IndexViewModel
 
 	public required HashSet<Product> Products { get; init; }
 
+	public required VersioningSystem VersioningSystem { get; init; }
 	public required VersionsConfiguration VersionsConfig { get; init; }
 
 	// https://developers.google.com/search/docs/appearance/structured-data/breadcrumb#json-ld
