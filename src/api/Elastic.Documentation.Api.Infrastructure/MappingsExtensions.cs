@@ -4,6 +4,7 @@
 
 using Elastic.Documentation.Api.Core.AskAi;
 using Elastic.Documentation.Api.Core.Search;
+using Elastic.Documentation.Api.Core.Telemetry;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -19,16 +20,31 @@ public static class MappingsExtension
 		_ = group.MapPost("/", () => Results.Empty);
 		MapAskAiEndpoint(group);
 		MapSearchEndpoint(group);
+		MapOtlpProxyEndpoint(group);
 	}
 
 	private static void MapAskAiEndpoint(IEndpointRouteBuilder group)
 	{
 		var askAiGroup = group.MapGroup("/ask-ai");
-		_ = askAiGroup.MapPost("/stream", async (AskAiRequest askAiRequest, AskAiUsecase askAiUsecase, Cancel ctx) =>
+		_ = askAiGroup.MapPost("/stream", async (HttpContext context, AskAiRequest askAiRequest, AskAiUsecase askAiUsecase, Cancel ctx) =>
 		{
+			context.Response.ContentType = "text/event-stream";
+			context.Response.Headers.CacheControl = "no-cache";
+			context.Response.Headers.Connection = "keep-alive";
+
 			var stream = await askAiUsecase.AskAi(askAiRequest, ctx);
-			return Results.Stream(stream, "text/event-stream");
+			await stream.CopyToAsync(context.Response.Body, ctx);
 		});
+
+		// UUID validation is automatic via Guid type deserialization (returns 400 if invalid)
+		_ = askAiGroup.MapPost("/message-feedback", async (HttpContext context, AskAiMessageFeedbackRequest request, AskAiMessageFeedbackUsecase feedbackUsecase, Cancel ctx) =>
+		{
+			// Extract euid cookie for user tracking
+			_ = context.Request.Cookies.TryGetValue("euid", out var euid);
+
+			await feedbackUsecase.SubmitFeedback(request, euid, ctx);
+			return Results.NoContent();
+		}).DisableAntiforgery();
 	}
 
 	private static void MapSearchEndpoint(IEndpointRouteBuilder group)
@@ -38,17 +54,48 @@ public static class MappingsExtension
 			async (
 				[FromQuery(Name = "q")] string query,
 				[FromQuery(Name = "page")] int? pageNumber,
+				[FromQuery(Name = "type")] string? typeFilter,
 				SearchUsecase searchUsecase,
 				Cancel ctx
 			) =>
 			{
-				var searchRequest = new SearchRequest
+				var searchRequest = new SearchApiRequest
 				{
 					Query = query,
-					PageNumber = pageNumber ?? 1
+					PageNumber = pageNumber ?? 1,
+					TypeFilter = typeFilter
 				};
 				var searchResponse = await searchUsecase.Search(searchRequest, ctx);
 				return Results.Ok(searchResponse);
 			});
 	}
+
+	private static void MapOtlpProxyEndpoint(IEndpointRouteBuilder group)
+	{
+		// Use /o/* to avoid adblocker detection (common blocklists target /otlp, /telemetry, etc.)
+		var otlpGroup = group.MapGroup("/o");
+
+		MapOtlpSignalEndpoint(otlpGroup, "/t", OtlpSignalType.Traces);
+		MapOtlpSignalEndpoint(otlpGroup, "/l", OtlpSignalType.Logs);
+		MapOtlpSignalEndpoint(otlpGroup, "/m", OtlpSignalType.Metrics);
+	}
+
+	private static void MapOtlpSignalEndpoint(
+		IEndpointRouteBuilder group,
+		string path,
+		OtlpSignalType signalType) =>
+		group.MapPost(path,
+			async (HttpContext context, OtlpProxyUsecase proxyUsecase, Cancel ctx) =>
+			{
+				var contentType = context.Request.ContentType ?? "application/json";
+				var result = await proxyUsecase.ProxyOtlp(
+					signalType,
+					context.Request.Body,
+					contentType,
+					ctx);
+				return result.IsSuccess
+					? Results.NoContent()
+					: Results.StatusCode(result.StatusCode);
+			})
+			.DisableAntiforgery();
 }

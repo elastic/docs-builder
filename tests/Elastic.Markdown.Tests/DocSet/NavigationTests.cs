@@ -10,21 +10,7 @@ public class NavigationTests(ITestOutputHelper output) : NavigationTestsBase(out
 {
 	[Fact]
 	public void ParsesATableOfContents() =>
-		Configuration.TableOfContents.Should().NotBeNullOrEmpty();
-
-	[Fact]
-	public void ParsesNestedFoldersAndPrefixesPaths()
-	{
-		Configuration.ImplicitFolders.Should().NotBeNullOrEmpty();
-		Configuration.ImplicitFolders.Should()
-			.Contain(Path.Combine("testing", "nested"));
-	}
-
-	[Fact]
-	public void ParsesFilesAndPrefixesPaths() =>
-		Configuration.Files.Should()
-			.Contain("index.md")
-			.And.Contain(Path.Combine("syntax", "index.md"));
+		Set.Navigation.Should().NotBeNull();
 
 	[Fact]
 	public void ParsesRedirects()

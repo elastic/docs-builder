@@ -5,7 +5,8 @@
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
-using Elastic.Documentation.Configuration.Synonyms;
+using Elastic.Documentation.Configuration.Search;
+using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
 using YamlDotNet.Serialization;
 
@@ -24,5 +25,13 @@ namespace Elastic.Documentation.Configuration.Serialization;
 [YamlSerializable(typeof(ProductDto))]
 [YamlSerializable(typeof(LegacyUrlMappingDto))]
 [YamlSerializable(typeof(LegacyUrlMappingConfigDto))]
-[YamlSerializable(typeof(SynonymsConfigDto))]
+[YamlSerializable(typeof(DocumentationSetFile))]
+[YamlSerializable(typeof(TableOfContentsFile))]
+[YamlSerializable(typeof(SiteNavigationFile))]
+[YamlSerializable(typeof(PhantomRegistration))]
+[YamlSerializable(typeof(ProductLink))]
+[YamlSerializable(typeof(SearchConfigDto))]
+[YamlSerializable(typeof(QueryRuleDto))]
+[YamlSerializable(typeof(QueryRuleCriteriaDto))]
+[YamlSerializable(typeof(QueryRuleActionsDto))]
 public partial class YamlStaticContext;

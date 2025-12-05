@@ -2,7 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Markdown.IO;
+using Elastic.Documentation.Extensions;
+using Elastic.Documentation.Navigation;
 using FluentAssertions;
 
 namespace Elastic.Markdown.Tests.DocSet;
@@ -10,26 +11,32 @@ namespace Elastic.Markdown.Tests.DocSet;
 public class BreadCrumbTests(ITestOutputHelper output) : NavigationTestsBase(output)
 {
 	[Fact]
-	public void ParsesATableOfContents()
+	public void CanQueryParentsSuccessfully()
 	{
-		var doc = Generator.DocumentationSet.Files.FirstOrDefault(f => f.RelativePath == Path.Combine("testing", "nested", "index.md")) as MarkdownFile;
+		var documentationSet = Generator.DocumentationSet;
+		INavigationTraversable navigationTraversable = documentationSet;
+		var crossLinks = Generator.DocumentationSet.MarkdownFiles.ToDictionary(f => $"docs-builder://{f.RelativePath.OptionalWindowsReplace()}");
+		var allKeys = crossLinks.Keys.ToList();
+		allKeys.Should().Contain("docs-builder://testing/nested/index.md");
+		allKeys.Should().Contain("docs-builder://testing/nest-under-index/index.md");
+
+		var lookup = Path.Combine("testing", "nested", "index.md");
+		var doc = Generator.DocumentationSet.MarkdownFiles
+			.FirstOrDefault(f => f.SourceFile.FullName.EndsWith(lookup, StringComparison.OrdinalIgnoreCase));
 
 		doc.Should().NotBeNull();
 
-		IPositionalNavigation positionalNavigation = Generator.DocumentationSet;
-
-		var allKeys = positionalNavigation.MarkdownNavigationLookup.Keys.ToList();
-		allKeys.Should().Contain("docs-builder://testing/nested/index.md");
-
-		var f = positionalNavigation.MarkdownNavigationLookup.FirstOrDefault(kv => kv.Key == "docs-builder://testing/deeply-nested/foo.md");
+		var f = crossLinks.FirstOrDefault(kv => kv.Key == "docs-builder://testing/deeply-nested/foo.md");
 		f.Should().NotBeNull();
 
-		positionalNavigation.MarkdownNavigationLookup.Should().ContainKey(doc.CrossLink);
-		var nav = positionalNavigation.MarkdownNavigationLookup[doc.CrossLink];
+		crossLinks.Should().ContainKey(doc.CrossLink);
+		var nav = navigationTraversable.GetNavigationFor(crossLinks[doc.CrossLink]);
 
 		nav.Parent.Should().NotBeNull();
 
-		var parents = positionalNavigation.GetParentsOfMarkdownFile(doc);
+		var docNavigation = navigationTraversable.GetNavigationFor(doc);
+		docNavigation.Should().NotBeNull();
+		var parents = navigationTraversable.GetParentsOfMarkdownFile(doc);
 
 		parents.Should().HaveCount(2);
 

@@ -8,11 +8,11 @@ using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
 using Microsoft.Extensions.Logging;
-using Microsoft.OpenApi.Any;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer;
 
@@ -50,19 +50,19 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 		var rootNavigation = new LandingNavigationItem(url);
 
 		var ops = openApiDocument.Paths
-			.SelectMany(p => p.Value.Operations.Select(op => (Path: p, Operation: op)))
+			.SelectMany(p => (p.Value.Operations ?? []).Select(op => (Path: p, Operation: op)))
 			.Select(pair =>
 			{
 				var op = pair.Operation;
 				var extensions = op.Value.Extensions;
-				var ns = (extensions?.TryGetValue("x-namespace", out var n) ?? false) && n is OpenApiAny anyNs
+				var ns = (extensions?.TryGetValue("x-namespace", out var n) ?? false) && n is JsonNodeExtension anyNs
 					? anyNs.Node.GetValue<string>()
 					: null;
-				var api = (extensions?.TryGetValue("x-api-name", out var a) ?? false) && a is OpenApiAny anyApi
+				var api = (extensions?.TryGetValue("x-api-name", out var a) ?? false) && a is JsonNodeExtension anyApi
 					? anyApi.Node.GetValue<string>()
 					: null;
 				var tag = op.Value.Tags?.FirstOrDefault()?.Reference.Id;
-				var tagClassification = (extensions?.TryGetValue("x-tag-group", out var g) ?? false) && g is OpenApiAny anyTagGroup
+				var tagClassification = (extensions?.TryGetValue("x-tag-group", out var g) ?? false) && g is JsonNodeExtension anyTagGroup
 					? anyTagGroup.Node.GetValue<string>()
 					: openApiDocument.Info.Title == "Elasticsearch Request & Response Specification"
 						? ClassifyElasticsearchTag(tag ?? "unknown")
@@ -265,7 +265,7 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 				CurrentNavigation = navigation,
 				MarkdownRenderer = markdownStringRenderer
 			};
-			_ = await Render(prefix, navigation, navigation.Index, renderContext, navigationRenderer, ctx);
+			_ = await Render(prefix, navigation, navigation.Index.Model, renderContext, navigationRenderer, ctx);
 			await RenderNavigationItems(prefix, renderContext, navigationRenderer, navigation, ctx);
 
 		}
@@ -275,7 +275,7 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 	{
 		if (currentNavigation is INodeNavigationItem<IApiModel, INavigationItem> node)
 		{
-			_ = await Render(prefix, node, node.Index, renderContext, navigationRenderer, ctx);
+			_ = await Render(prefix, node, node.Index.Model, renderContext, navigationRenderer, ctx);
 			foreach (var child in node.NavigationItems)
 				await RenderNavigationItems(prefix, renderContext, navigationRenderer, child, ctx);
 		}
@@ -298,7 +298,7 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 		if (!outputFile.Directory!.Exists)
 			outputFile.Directory.Create();
 
-		var navigationRenderResult = await navigationRenderer.RenderNavigation(current.NavigationRoot, INavigationHtmlWriter.AllLevels, ctx);
+		var navigationRenderResult = await navigationRenderer.RenderNavigation(current.NavigationRoot, current, INavigationHtmlWriter.AllLevels, ctx);
 		renderContext = renderContext with
 		{
 			CurrentNavigation = current,

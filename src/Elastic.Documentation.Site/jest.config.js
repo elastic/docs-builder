@@ -1,9 +1,11 @@
+/* global process, module */
 const isCI = process.env.CI === 'true'
 
 module.exports = {
   testEnvironment: 'jsdom',
   setupFilesAfterEnv: ['<rootDir>/setupTests.ts'],
   transform: {
+    '^.+\\.svg$': '<rootDir>/svgTransform.js',
     '^.+\\.(ts|tsx)$': [
       'babel-jest',
       {

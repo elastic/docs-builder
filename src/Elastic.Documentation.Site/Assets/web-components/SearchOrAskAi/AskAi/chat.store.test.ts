@@ -7,13 +7,13 @@ jest.mock('uuid', () => ({
     v4: jest.fn(),
 }))
 
-const mockUuidv4 = uuidv4 as jest.MockedFunction<typeof uuidv4>
+const mockUuidv4 = uuidv4 as jest.MockedFunction<() => string>
 
 describe('chat.store', () => {
     beforeEach(() => {
         // Setup UUID mock to return unique IDs
         let counter = 0
-        mockUuidv4.mockImplementation(() => `mock-uuid-${++counter}` as string)
+        mockUuidv4.mockImplementation((): string => `mock-uuid-${++counter}`)
 
         // Reset store state before each test
         act(() => {
@@ -86,7 +86,6 @@ describe('chat.store', () => {
         })
 
         expect(chatStore.getState().chatMessages).toHaveLength(2)
-        const oldThreadId = chatStore.getState().threadId
 
         // Clear conversation
         act(() => {
@@ -95,7 +94,7 @@ describe('chat.store', () => {
 
         // Verify fresh state
         expect(chatStore.getState().chatMessages).toHaveLength(0)
-        expect(chatStore.getState().threadId).not.toBe(oldThreadId)
+        expect(chatStore.getState().conversationId).toBeNull()
 
         // Start new conversation
         act(() => {

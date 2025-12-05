@@ -5,6 +5,7 @@
 using System.Collections.Concurrent;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Extensions;
+using Elastic.Documentation.Navigation;
 
 namespace Elastic.Documentation.Site.Navigation;
 
@@ -14,7 +15,7 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNaviga
 	private readonly ConcurrentDictionary<(string, int), string> _renderedNavigationCache = [];
 
 	public async Task<NavigationRenderResult> RenderNavigation(
-		IRootNavigationItem<INavigationModel, INavigationItem> currentRootNavigation, int maxLevel, Cancel ctx = default
+		IRootNavigationItem<INavigationModel, INavigationItem> currentRootNavigation, INavigationItem currentNavigationItem, int maxLevel, Cancel ctx = default
 	)
 	{
 		var navigation = context.Configuration.Features.PrimaryNavEnabled || currentRootNavigation.IsUsingNavigationDropdown

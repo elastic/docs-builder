@@ -5,12 +5,12 @@
 using System.IO.Abstractions;
 using Actions.Core.Services;
 using ConsoleAppFramework;
+using Documentation.Builder.Arguments;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Isolated;
 using Elastic.Documentation.Services;
-using Elastic.Documentation.Tooling.Arguments;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Builder.Commands;

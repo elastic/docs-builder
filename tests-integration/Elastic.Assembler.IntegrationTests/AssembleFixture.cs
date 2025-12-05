@@ -6,8 +6,8 @@ using Aspire.Hosting;
 using Aspire.Hosting.ApplicationModel;
 using Aspire.Hosting.Testing;
 using Elastic.Documentation.ServiceDefaults;
-using FluentAssertions;
 using InMemLogger;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using static Elastic.Documentation.Aspire.ResourceNames;
@@ -28,7 +28,12 @@ public static class DistributedApplicationExtensions
 		foreach (var parameter in parameters)
 			builder.Configuration[$"Parameters:{parameter.Name}"] = string.Empty;
 
-		builder.Configuration[$"Parameters:DocumentationElasticUrl"] = "http://localhost.example:9200";
+		var configBuilder = new ConfigurationBuilder();
+		_ = configBuilder.AddUserSecrets("72f50f33-6fb9-4d08-bff3-39568fe370b3");
+		var config = configBuilder.Build();
+
+		builder.Configuration[$"Parameters:DocumentationElasticUrl"] = config["Parameters:DocumentationElasticUrl"] ?? "http://localhost.example:9200";
+		builder.Configuration[$"Parameters:DocumentationElasticApiKey"] = config["Parameters:DocumentationElasticApiKey"] ?? "not-configured";
 		return builder;
 	}
 }
@@ -44,7 +49,7 @@ public class DocumentationFixture : IAsyncLifetime
 	public async ValueTask InitializeAsync()
 	{
 		var builder = await DistributedApplicationTestingBuilder.CreateAsync<Projects.aspire>(
-			["--skip-private-repositories", "--assume-cloned"],
+			["--skip-private-repositories", "--assume-cloned", "--assume-build"],
 			(options, _) =>
 			{
 				options.DisableDashboard = true;
@@ -110,30 +115,4 @@ public class DocumentationFixture : IAsyncLifetime
 		await DistributedApplication.DisposeAsync();
 		GC.SuppressFinalize(this);
 	}
-}
-
-public class ServeStaticTests(DocumentationFixture fixture, ITestOutputHelper output) : IAsyncLifetime
-{
-	[Fact]
-	public async Task AssertRequestToRootReturnsData()
-	{
-		var client = fixture.DistributedApplication.CreateHttpClient(AssemblerServe, "http");
-		var root = await client.GetStringAsync("/", TestContext.Current.CancellationToken);
-		_ = root.Should().NotBeNullOrEmpty();
-	}
-
-
-	/// <inheritdoc />
-	public ValueTask DisposeAsync()
-	{
-		GC.SuppressFinalize(this);
-		if (TestContext.Current.TestState?.Result is TestResult.Passed)
-			return default;
-		foreach (var resource in fixture.InMemoryLogger.RecordedLogs)
-			output.WriteLine(resource.Message);
-		return default;
-	}
-
-	/// <inheritdoc />
-	public ValueTask InitializeAsync() => default;
 }

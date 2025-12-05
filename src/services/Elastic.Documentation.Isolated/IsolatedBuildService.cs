@@ -118,7 +118,7 @@ public class IsolatedBuildService(
 		await Task.WhenAll(tasks);
 
 
-		var generator = new DocumentationGenerator(set, logFactory, null, null, markdownExporters.ToArray());
+		var generator = new DocumentationGenerator(set, logFactory, set, null, null, markdownExporters.ToArray());
 		_ = await generator.GenerateAll(ctx);
 
 		var openApiGenerator = new OpenApiGenerator(logFactory, context, generator.MarkdownStringRenderer);

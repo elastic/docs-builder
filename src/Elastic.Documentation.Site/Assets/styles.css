@@ -1,5 +1,5 @@
 @import 'tailwindcss';
-@config "../tailwind.config.js";
+@config '../tailwind.config.js';
 
 @import './fonts.css';
 @import './theme.css';
@@ -16,7 +16,9 @@
 @import './markdown/dropdown.css';
 @import './markdown/table.css';
 @import './markdown/definition-list.css';
+@import './markdown/footnotes.css';
 @import './markdown/images.css';
+@import './markdown/math.css';
 @import './markdown/image-carousel.css';
 @import './markdown/hr.css';
 @import './modal.css';

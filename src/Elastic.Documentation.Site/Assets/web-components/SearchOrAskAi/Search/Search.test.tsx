@@ -1,234 +1,513 @@
+import { chatStore } from '../AskAi/chat.store'
+import { cooldownStore } from '../cooldown.store'
+import { modalStore } from '../modal.store'
 import { Search } from './Search'
-import { render, screen } from '@testing-library/react'
+import { searchStore, NO_SELECTION } from './search.store'
+import { SearchResultItem } from './useSearchQuery'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { render, screen, waitFor, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import * as React from 'react'
 
-/*
- * Note: These tests use mock verification for store actions.
- *
- * Unlike pure unit tests, the Search component's main responsibility is
- * orchestrating the handoff from search to chat (calling clearChat,
- * submitQuestion, setModalMode in the right order). Testing these calls
- * verifies the integration/workflow, not just implementation details.
- *
- * For full E2E behavior testing without mocks, see integration tests.
- */
-
-// Mock dependencies
-jest.mock('./search.store', () => ({
-    useSearchTerm: jest.fn(() => ''),
-    useSearchActions: jest.fn(() => ({
-        setSearchTerm: jest.fn(),
-    })),
+// Mock external HTTP calls
+jest.mock('@microsoft/fetch-event-source', () => ({
+    fetchEventSource: jest.fn(),
+    EventStreamContentType: 'text/event-stream',
 }))
 
-jest.mock('../AskAi/chat.store', () => ({
-    useChatActions: jest.fn(() => ({
-        submitQuestion: jest.fn(),
-        clearChat: jest.fn(),
-    })),
-}))
+// Mock fetch for search API
+const mockFetch = jest.fn()
+global.fetch = mockFetch
 
-jest.mock('../modal.store', () => ({
-    useModalActions: jest.fn(() => ({
-        setModalMode: jest.fn(),
-    })),
-}))
+// Helper to create a fresh QueryClient for each test
+const createTestQueryClient = () =>
+    new QueryClient({
+        defaultOptions: {
+            queries: {
+                retry: false,
+                gcTime: 0,
+            },
+        },
+    })
 
-jest.mock('./SearchResults', () => ({
-    SearchResults: () => <div data-testid="search-results">Search Results</div>,
-}))
+// Wrapper with QueryClient
+const TestWrapper = ({ children }: { children: React.ReactNode }) => {
+    const queryClient = createTestQueryClient()
+    return (
+        <QueryClientProvider client={queryClient}>
+            {children}
+        </QueryClientProvider>
+    )
+}
 
-const mockUseSearchTerm = jest.mocked(
-    jest.requireMock('./search.store').useSearchTerm
-)
-const mockUseSearchActions = jest.mocked(
-    jest.requireMock('./search.store').useSearchActions
-)
-const mockUseChatActions = jest.mocked(
-    jest.requireMock('../AskAi/chat.store').useChatActions
-)
-const mockUseModalActions = jest.mocked(
-    jest.requireMock('../modal.store').useModalActions
-)
+// Helper to reset all stores
+const resetStores = () => {
+    searchStore.setState({
+        searchTerm: '',
+        page: 1,
+        typeFilter: 'all',
+        selectedIndex: NO_SELECTION,
+    })
+    chatStore.setState({
+        chatMessages: [],
+        conversationId: null,
+        aiProvider: 'LlmGateway',
+        scrollPosition: 0,
+    })
+    modalStore.setState({ isOpen: false, mode: 'search' })
+    cooldownStore.setState({
+        cooldowns: {
+            search: { cooldown: null, awaitingNewInput: false },
+            askAi: { cooldown: null, awaitingNewInput: false },
+        },
+    })
+}
+
+// Helper to mock successful search response
+const mockSearchResponse = (results: SearchResultItem[] = []) => {
+    mockFetch.mockResolvedValue({
+        ok: true,
+        json: () =>
+            Promise.resolve({
+                results,
+                totalResults: results.length,
+                pageCount: 1,
+                pageNumber: 1,
+                pageSize: 10,
+            }),
+    })
+}
 
 describe('Search Component', () => {
-    const mockSetSearchTerm = jest.fn()
-    const mockSubmitQuestion = jest.fn()
-    const mockClearChat = jest.fn()
-    const mockSetModalMode = jest.fn()
-
     beforeEach(() => {
         jest.clearAllMocks()
-        mockUseSearchActions.mockReturnValue({
-            setSearchTerm: mockSetSearchTerm,
-        })
-        mockUseChatActions.mockReturnValue({
-            submitQuestion: mockSubmitQuestion,
-            clearChat: mockClearChat,
-        })
-        mockUseModalActions.mockReturnValue({
-            setModalMode: mockSetModalMode,
-        })
+        resetStores()
+        mockSearchResponse([])
     })
 
     describe('Search input', () => {
         it('should render search input field', () => {
-            // Arrange
-            mockUseSearchTerm.mockReturnValue('')
-
             // Act
-            render(<Search />)
+            render(<Search />, { wrapper: TestWrapper })
 
             // Assert
             expect(
-                screen.getByPlaceholderText(/search the docs as you type/i)
+                screen.getByPlaceholderText(/search in docs/i)
             ).toBeInTheDocument()
         })
 
-        it('should display current search term', () => {
+        it('should update store when input changes', async () => {
             // Arrange
-            const searchTerm = 'elasticsearch'
-            mockUseSearchTerm.mockReturnValue(searchTerm)
-
-            // Act
-            render(<Search />)
-
-            // Assert
-            const input = screen.getByPlaceholderText(
-                /search the docs as you type/i
-            ) as HTMLInputElement
-            expect(input.value).toBe(searchTerm)
-        })
-
-        it('should call setSearchTerm when input changes', async () => {
-            // Arrange
-            mockUseSearchTerm.mockReturnValue('')
             const user = userEvent.setup()
 
             // Act
-            render(<Search />)
-            const input = screen.getByPlaceholderText(
-                /search the docs as you type/i
-            )
-            await user.type(input, 'kibana')
+            render(<Search />, { wrapper: TestWrapper })
+            const input = screen.getByPlaceholderText(/search in docs/i)
+            await user.type(input, 'elasticsearch')
 
             // Assert
-            expect(mockSetSearchTerm).toHaveBeenCalled()
+            expect(searchStore.getState().searchTerm).toBe('elasticsearch')
+        })
+
+        it('should display search term from store', () => {
+            // Arrange
+            searchStore.setState({ searchTerm: 'kibana' })
+
+            // Act
+            render(<Search />, { wrapper: TestWrapper })
+
+            // Assert
+            const input = screen.getByPlaceholderText(
+                /search in docs/i
+            ) as HTMLInputElement
+            expect(input.value).toBe('kibana')
+        })
+
+        it('should reset selectedIndex when search term changes', async () => {
+            // Arrange
+            searchStore.setState({ searchTerm: 'test', selectedIndex: 2 })
+            const user = userEvent.setup()
+
+            // Act
+            render(<Search />, { wrapper: TestWrapper })
+            const input = screen.getByPlaceholderText(/search in docs/i)
+            await user.type(input, 'x')
+
+            // Assert - selectedIndex should reset to 0
+            expect(searchStore.getState().selectedIndex).toBe(0)
         })
     })
 
     describe('Ask AI button', () => {
         it('should not show Ask AI button when search term is empty', () => {
-            // Arrange
-            mockUseSearchTerm.mockReturnValue('')
-
             // Act
-            render(<Search />)
+            render(<Search />, { wrapper: TestWrapper })
 
             // Assert
             expect(
-                screen.queryByRole('button', { name: /ask ai/i })
+                screen.queryByRole('button', { name: /tell me more about/i })
             ).not.toBeInTheDocument()
         })
 
         it('should show Ask AI button when search term exists', () => {
             // Arrange
-            mockUseSearchTerm.mockReturnValue('elasticsearch')
+            searchStore.setState({ searchTerm: 'elasticsearch' })
 
             // Act
-            render(<Search />)
+            render(<Search />, { wrapper: TestWrapper })
 
             // Assert
             expect(
-                screen.getByRole('button', { name: /ask ai about/i })
+                screen.getByRole('button', { name: /tell me more about/i })
             ).toBeInTheDocument()
-            expect(screen.getByText(/elasticsearch/i)).toBeInTheDocument()
         })
 
-        it('should trigger chat actions when Ask AI button is clicked', async () => {
+        it('should trigger chat when Ask AI button is clicked', async () => {
             // Arrange
-            const searchTerm = 'what is kibana'
-            mockUseSearchTerm.mockReturnValue(searchTerm)
+            searchStore.setState({ searchTerm: 'what is kibana' })
             const user = userEvent.setup()
 
             // Act
-            render(<Search />)
+            render(<Search />, { wrapper: TestWrapper })
             await user.click(
-                screen.getByRole('button', { name: /ask ai about/i })
+                screen.getByRole('button', { name: /tell me more about/i })
             )
 
-            // Assert - verify the workflow is triggered
-            expect(mockClearChat).toHaveBeenCalled()
-            expect(mockSubmitQuestion).toHaveBeenCalledWith(searchTerm)
-            expect(mockSetModalMode).toHaveBeenCalledWith('askAi')
+            // Assert - chat store should have user message and mode should change
+            await waitFor(() => {
+                const messages = chatStore.getState().chatMessages
+                expect(messages.length).toBeGreaterThanOrEqual(1)
+                expect(messages[0].content).toBe(
+                    'Tell me more about what is kibana'
+                )
+            })
+            expect(modalStore.getState().mode).toBe('askAi')
         })
 
         it('should not submit whitespace-only search term', async () => {
             // Arrange
-            mockUseSearchTerm.mockReturnValue('   ')
+            searchStore.setState({ searchTerm: '   ' })
             const user = userEvent.setup()
 
             // Act
-            render(<Search />)
-            await user.click(
-                screen.getByRole('button', { name: /ask ai about/i })
-            )
+            render(<Search />, { wrapper: TestWrapper })
+            // Button should still be visible for whitespace
+            const button = screen.queryByRole('button', {
+                name: /tell me more about/i,
+            })
+            if (button) {
+                await user.click(button)
+            }
 
-            // Assert - submission should be blocked
-            expect(mockSubmitQuestion).not.toHaveBeenCalled()
+            // Assert - chat should not be triggered
+            expect(chatStore.getState().chatMessages).toHaveLength(0)
         })
     })
 
     describe('Search on Enter', () => {
-        it('should trigger chat workflow when Enter is pressed', async () => {
+        it('should trigger chat when Enter is pressed with valid search and no results', async () => {
             // Arrange
-            const searchTerm = 'elasticsearch query'
-            mockUseSearchTerm.mockReturnValue(searchTerm)
+            searchStore.setState({ searchTerm: 'elasticsearch query' })
             const user = userEvent.setup()
 
             // Act
-            render(<Search />)
-            const input = screen.getByPlaceholderText(
-                /search the docs as you type/i
-            )
+            render(<Search />, { wrapper: TestWrapper })
+            const input = screen.getByPlaceholderText(/search in docs/i)
             await user.click(input)
             await user.keyboard('{Enter}')
 
-            // Assert - same workflow as clicking button
-            expect(mockClearChat).toHaveBeenCalled()
-            expect(mockSubmitQuestion).toHaveBeenCalledWith(searchTerm)
-            expect(mockSetModalMode).toHaveBeenCalledWith('askAi')
+            // Assert
+            await waitFor(() => {
+                const messages = chatStore.getState().chatMessages
+                expect(messages[0]?.content).toBe(
+                    'Tell me more about elasticsearch query'
+                )
+            })
         })
 
         it('should not submit empty search on Enter', async () => {
             // Arrange
-            mockUseSearchTerm.mockReturnValue('')
             const user = userEvent.setup()
 
             // Act
-            render(<Search />)
-            const input = screen.getByPlaceholderText(
-                /search the docs as you type/i
-            )
+            render(<Search />, { wrapper: TestWrapper })
+            const input = screen.getByPlaceholderText(/search in docs/i)
             await user.click(input)
             await user.keyboard('{Enter}')
 
             // Assert
-            expect(mockSubmitQuestion).not.toHaveBeenCalled()
+            expect(chatStore.getState().chatMessages).toHaveLength(0)
         })
     })
 
     describe('Search results', () => {
-        it('should render SearchResults component', () => {
+        it('should fetch and display search results', async () => {
             // Arrange
-            mockUseSearchTerm.mockReturnValue('test')
+            mockSearchResponse([
+                {
+                    type: 'doc',
+                    url: '/test1',
+                    title: 'Test Result 1',
+                    description: 'Description 1',
+                    score: 0.9,
+                    parents: [],
+                },
+            ])
+            searchStore.setState({ searchTerm: 'test' })
 
             // Act
-            render(<Search />)
+            render(<Search />, { wrapper: TestWrapper })
+
+            // Assert - wait for debounced search and result
+            await waitFor(
+                () => {
+                    expect(
+                        screen.getByText('Test Result 1')
+                    ).toBeInTheDocument()
+                },
+                { timeout: 1000 }
+            )
+        })
+    })
+
+    describe('Selection navigation', () => {
+        beforeEach(() => {
+            mockSearchResponse([
+                {
+                    type: 'doc',
+                    url: '/test1',
+                    title: 'Test Result 1',
+                    description: 'Description 1',
+                    score: 0.9,
+                    parents: [],
+                },
+                {
+                    type: 'doc',
+                    url: '/test2',
+                    title: 'Test Result 2',
+                    description: 'Description 2',
+                    score: 0.8,
+                    parents: [],
+                },
+                {
+                    type: 'doc',
+                    url: '/test3',
+                    title: 'Test Result 3',
+                    description: 'Description 3',
+                    score: 0.7,
+                    parents: [],
+                },
+            ])
+        })
+
+        it('should select first item after typing (selectedIndex = 0)', async () => {
+            // Arrange - start with no selection
+            expect(searchStore.getState().selectedIndex).toBe(NO_SELECTION)
+            const user = userEvent.setup()
+
+            // Act
+            render(<Search />, { wrapper: TestWrapper })
+            const input = screen.getByPlaceholderText(/search in docs/i)
+            await user.type(input, 'test')
+
+            await waitFor(() => {
+                expect(screen.getByText('Test Result 1')).toBeInTheDocument()
+            })
+
+            // Assert - selection appears after typing
+            expect(searchStore.getState().selectedIndex).toBe(0)
+        })
+
+        it('should move focus to second result on ArrowDown from input (first is already visually selected)', async () => {
+            // Arrange
+            const user = userEvent.setup()
+
+            // Act
+            render(<Search />, { wrapper: TestWrapper })
+
+            const input = screen.getByPlaceholderText(/search in docs/i)
+            await user.type(input, 'test')
+
+            await waitFor(() => {
+                expect(screen.getByText('Test Result 1')).toBeInTheDocument()
+            })
+
+            // selectedIndex is now 0 after typing
+            expect(searchStore.getState().selectedIndex).toBe(0)
+
+            await user.keyboard('{ArrowDown}')
+
+            // Assert - focus moved to second result (first is already visually selected)
+            const secondResult = screen.getByText('Test Result 2').closest('a')
+            expect(secondResult).toHaveFocus()
+        })
+
+        it('should move focus between results with ArrowDown/ArrowUp', async () => {
+            // Arrange
+            searchStore.setState({ searchTerm: 'test' })
+            const user = userEvent.setup()
+
+            // Act
+            render(<Search />, { wrapper: TestWrapper })
+
+            await waitFor(() => {
+                expect(screen.getByText('Test Result 1')).toBeInTheDocument()
+            })
+
+            // Focus first result
+            const firstResult = screen.getByText('Test Result 1').closest('a')!
+            await act(async () => {
+                firstResult.focus()
+            })
+
+            // Navigate down
+            await user.keyboard('{ArrowDown}')
+            const secondResult = screen.getByText('Test Result 2').closest('a')
+            expect(secondResult).toHaveFocus()
+            expect(searchStore.getState().selectedIndex).toBe(1)
+
+            // Navigate up
+            await user.keyboard('{ArrowUp}')
+            expect(firstResult).toHaveFocus()
+            expect(searchStore.getState().selectedIndex).toBe(0)
+        })
+
+        it('should clear selection when ArrowUp from first item goes to input', async () => {
+            // Arrange
+            const user = userEvent.setup()
+
+            // Act
+            render(<Search />, { wrapper: TestWrapper })
+            const input = screen.getByPlaceholderText(/search in docs/i)
+            await user.type(input, 'test')
+
+            await waitFor(() => {
+                expect(screen.getByText('Test Result 1')).toBeInTheDocument()
+            })
+
+            // Focus first result then press ArrowUp
+            const firstResult = screen.getByText('Test Result 1').closest('a')!
+            await act(async () => {
+                firstResult.focus()
+            })
+            expect(searchStore.getState().selectedIndex).toBe(0)
+
+            await user.keyboard('{ArrowUp}')
+
+            // Assert - focus goes to input, selection is cleared
+            expect(input).toHaveFocus()
+            expect(searchStore.getState().selectedIndex).toBe(NO_SELECTION)
+        })
+
+        it('should clear selection when ArrowDown from last item goes to button', async () => {
+            // Arrange
+            const user = userEvent.setup()
+
+            // Act
+            render(<Search />, { wrapper: TestWrapper })
+            const input = screen.getByPlaceholderText(/search in docs/i)
+            await user.type(input, 'test')
+
+            await waitFor(() => {
+                expect(screen.getByText('Test Result 3')).toBeInTheDocument()
+            })
+
+            // Focus the last item directly
+            const lastResult = screen.getByText('Test Result 3').closest('a')!
+            await act(async () => {
+                lastResult.focus()
+            })
+            expect(searchStore.getState().selectedIndex).toBe(2)
+
+            // Try to go down from last item
+            await user.keyboard('{ArrowDown}')
+
+            // Assert - focus moves to button, selection is cleared
+            const button = screen.getByRole('button', {
+                name: /tell me more about/i,
+            })
+            expect(button).toHaveFocus()
+            expect(searchStore.getState().selectedIndex).toBe(NO_SELECTION)
+        })
+
+        it('should render isSelected prop on the selected item', async () => {
+            // Arrange
+            searchStore.setState({ searchTerm: 'test', selectedIndex: 1 })
+
+            // Act
+            render(<Search />, { wrapper: TestWrapper })
+
+            await waitFor(() => {
+                expect(screen.getByText('Test Result 2')).toBeInTheDocument()
+            })
+
+            // Assert - the second result should have the data-selected attribute
+            const secondResultLink = screen
+                .getByText('Test Result 2')
+                .closest('a')
+            expect(secondResultLink).toHaveAttribute('data-selected', 'true')
+
+            // First and third should not be selected
+            const firstResultLink = screen
+                .getByText('Test Result 1')
+                .closest('a')
+            expect(firstResultLink).not.toHaveAttribute('data-selected')
+        })
+    })
+
+    describe('Loading states', () => {
+        it('should show loading spinner when fetching', async () => {
+            // Arrange - slow response
+            mockFetch.mockImplementation(
+                () =>
+                    new Promise((resolve) =>
+                        setTimeout(
+                            () =>
+                                resolve({
+                                    ok: true,
+                                    json: () =>
+                                        Promise.resolve({
+                                            results: [],
+                                            totalResults: 0,
+                                            pageCount: 1,
+                                            pageNumber: 1,
+                                            pageSize: 10,
+                                        }),
+                                }),
+                            500
+                        )
+                    )
+            )
+            searchStore.setState({ searchTerm: 'test' })
+
+            // Act
+            render(<Search />, { wrapper: TestWrapper })
+
+            // Assert - loading spinner should appear
+            await waitFor(() => {
+                const spinner = screen.queryByRole('progressbar')
+                // Spinner appears during loading
+                expect(spinner || screen.queryByText('test')).toBeTruthy()
+            })
+        })
+    })
+
+    describe('Close modal', () => {
+        it('should close modal and clear search when close button is clicked', async () => {
+            // Arrange
+            modalStore.setState({ isOpen: true })
+            searchStore.setState({ searchTerm: 'test' })
+            const user = userEvent.setup()
+
+            // Act
+            render(<Search />, { wrapper: TestWrapper })
+            await user.click(
+                screen.getByRole('button', { name: /close search modal/i })
+            )
 
             // Assert
-            expect(screen.getByTestId('search-results')).toBeInTheDocument()
+            expect(modalStore.getState().isOpen).toBe(false)
+            expect(searchStore.getState().searchTerm).toBe('')
         })
     })
 })

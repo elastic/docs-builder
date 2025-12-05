@@ -15,7 +15,7 @@ max_line_length = 160
 indent_style = space
 indent_size = 4
 
-[*.{md,markdown,json,js,yml,csproj,fsproj,targets,targets,props}]
+[*.{md,markdown,json,js,yml,yaml,csproj,fsproj,targets,targets,props}]
 indent_style = space
 indent_size = 2
 
@@ -151,6 +151,15 @@ csharp_style_expression_bodied_accessors = true:suggestion
 csharp_style_expression_bodied_local_functions = when_on_single_line:error
 dotnet_style_prefer_conditional_expression_over_return = false
 
+csharp_alignment_tab_fill_style=optimal_fill
+csharp_align_multiline_parameter=false
+csharp_align_multiline_extends_list=false
+csharp_align_multiline_array_and_object_initializer=false
+csharp_align_multiline_switch_expression=false
+csharp_align_multiline_property_pattern=false
+csharp_align_multiline_list_pattern=false
+indent_braces_inside_statement_conditions=false
+
 
 # Suggest more modern language features when available
 csharp_style_pattern_matching_over_is_with_cast_check = true:error
@@ -172,7 +181,7 @@ csharp_new_line_before_open_brace = all
 csharp_new_line_before_else = true
 csharp_new_line_before_catch = true
 csharp_new_line_before_finally = true
-csharp_new_line_before_members_in_object_initializers = true
+csharp_new_line_before_members_in_object_initializers = false
 
 # just a suggestion do to our JSON tests that use anonymous types to 
 # represent json quite a bit (makes copy paste easier).
@@ -190,6 +199,9 @@ csharp_space_between_method_call_parameter_list_parentheses = false
 #Wrap
 csharp_preserve_single_line_statements = false
 csharp_preserve_single_line_blocks = true
+csharp_place_simple_initializer_on_single_line = true
+csharp_max_initializer_elements_on_line = 5
+csharp_wrap_object_and_collection_initializer_style = wrap_if_long
 resharper_wrap_object_and_collection_initializer_style = chop_always
 
 # Resharper
@@ -240,11 +252,16 @@ dotnet_diagnostic.IDE0059.severity = suggestion
 
 dotnet_diagnostic.CA1859.severity = none
 
+# https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/ca1727
+dotnet_diagnostic.CA1727.severity = none
+
 dotnet_diagnostic.IDE0305.severity = none
 
 # https://github.com/dotnet/roslyn/issues/60784
 # CS8509 already warns
 dotnet_diagnostic.IDE0072.severity = none
+
+dotnet_diagnostic.CA1873.severity = suggestion
 
 [src/api/Elastic.Documentation.Api.Lambda/**.cs]
 dotnet_diagnostic.IL3050.severity = none

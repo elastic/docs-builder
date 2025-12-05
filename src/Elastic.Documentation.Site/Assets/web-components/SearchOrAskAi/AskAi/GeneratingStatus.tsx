@@ -5,7 +5,6 @@ import {
     EuiLoadingSpinner,
     EuiText,
 } from '@elastic/eui'
-import * as React from 'react'
 
 interface GeneratingStatusProps {
     status: string | null

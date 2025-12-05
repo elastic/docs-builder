@@ -12,6 +12,7 @@ public class MockSearchGateway : ISearchGateway
 	[
 		new SearchResultItem
 		{
+			Type = "doc",
 			Url = "https://www.elastic.co/kibana",
 			Title = "Kibana: Explore, Visualize, Discover Data",
 			Description =
@@ -20,6 +21,7 @@ public class MockSearchGateway : ISearchGateway
 		},
 		new SearchResultItem
 		{
+			Type = "doc",
 			Url = "https://www.elastic.co/docs/explore-analyze",
 			Title = "Explore and analyze | Elastic Docs",
 			Description = "Kibana provides a comprehensive suite of tools to help you search, interact with, explore, and analyze your data effectively.",
@@ -27,6 +29,7 @@ public class MockSearchGateway : ISearchGateway
 		},
 		new SearchResultItem
 		{
+			Type = "doc",
 			Url = "https://www.elastic.co/docs/deploy-manage/deploy/self-managed/install-kibana",
 			Title = "Install Kibana | Elastic Docs",
 			Description =
@@ -35,6 +38,7 @@ public class MockSearchGateway : ISearchGateway
 		},
 		new SearchResultItem
 		{
+			Type = "doc",
 			Url = "https://www.elastic.co/kibana/kibana-lens",
 			Title = "Kibana Lens – Data visualization. Simply.",
 			Description =
@@ -43,6 +47,7 @@ public class MockSearchGateway : ISearchGateway
 		},
 		new SearchResultItem
 		{
+			Type = "doc",
 			Url = "https://www.elastic.co/docs",
 			Title = "Elastic Docs – Elastic products, guides & reference",
 			Description =
@@ -51,6 +56,7 @@ public class MockSearchGateway : ISearchGateway
 		},
 		new SearchResultItem
 		{
+			Type = "doc",
 			Url = "https://www.elastic.co/docs/get-started/introduction",
 			Title = "Get started | Elastic Docs",
 			Description =
@@ -59,6 +65,7 @@ public class MockSearchGateway : ISearchGateway
 		},
 		new SearchResultItem
 		{
+			Type = "doc",
 			Url = "https://www.elastic.co/docs/solutions/search/elasticsearch-basics-quickstart",
 			Title = "Elasticsearch basics quickstart",
 			Description = "Hands‑on introduction to fundamental Elasticsearch concepts: indices, documents, mappings, and search via Console syntax.",
@@ -66,6 +73,7 @@ public class MockSearchGateway : ISearchGateway
 		},
 		new SearchResultItem
 		{
+			Type = "doc",
 			Url = "https://www.elastic.co/docs/api/doc/elasticsearch/group/endpoint-document",
 			Title = "Elasticsearch API documentation",
 			Description =
@@ -74,13 +82,25 @@ public class MockSearchGateway : ISearchGateway
 		}
 	];
 
-	public async Task<(int TotalHits, List<SearchResultItem> Results)> SearchAsync(string query, int pageNumber, int pageSize, CancellationToken ctx = default)
+	public async Task<SearchResult> SearchAsync(string query, int pageNumber, int pageSize, string? filter = null, CancellationToken ctx = default)
 	{
 		var filteredResults = Results
 			.Where(item =>
-				item.Title.Equals(query, StringComparison.OrdinalIgnoreCase) ||
-				item.Description?.Equals(query, StringComparison.OrdinalIgnoreCase) == true)
+				item.Title.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+				item.Description?.Contains(query, StringComparison.OrdinalIgnoreCase) == true)
 			.ToList();
+
+		// Apply type filter if specified
+		if (!string.IsNullOrWhiteSpace(filter))
+			filteredResults = filteredResults.Where(item => item.Type == filter).ToList();
+
+		// Calculate aggregations before filtering
+		var aggregations = Results
+			.Where(item =>
+				item.Title.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+				item.Description?.Contains(query, StringComparison.OrdinalIgnoreCase) == true)
+			.GroupBy(item => item.Type)
+			.ToDictionary(g => g.Key, g => (long)g.Count());
 
 		var pagedResults = filteredResults
 			.Skip((pageNumber - 1) * pageSize)
@@ -89,7 +109,12 @@ public class MockSearchGateway : ISearchGateway
 
 		Console.WriteLine($"MockSearchGateway: Paged results count: {pagedResults.Count}");
 
-		return await Task.Delay(1000, ctx)
-			.ContinueWith(_ => (TotalHits: filteredResults.Count, Results: pagedResults), ctx);
+		await Task.Delay(1000, ctx);
+		return new SearchResult
+		{
+			TotalHits = filteredResults.Count,
+			Results = pagedResults,
+			Aggregations = aggregations
+		};
 	}
 }

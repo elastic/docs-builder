@@ -4,6 +4,10 @@
 
 namespace Elastic.Documentation.Api.Infrastructure.Aws;
 
+/// <summary>
+/// Abstraction for retrieving configuration parameters.
+/// Infrastructure concern: Used by other Infrastructure adapters to get configuration.
+/// </summary>
 public interface IParameterProvider
 {
 	Task<string> GetParam(string name, bool withDecryption = true, Cancel ctx = default);

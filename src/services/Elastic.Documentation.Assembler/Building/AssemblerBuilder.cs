@@ -10,10 +10,10 @@ using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
+using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Serialization;
 using Elastic.Markdown;
 using Elastic.Markdown.Exporters;
-using Elastic.Markdown.Helpers;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Assembler.Building;
@@ -21,13 +21,15 @@ namespace Elastic.Documentation.Assembler.Building;
 public class AssemblerBuilder(
 	ILoggerFactory logFactory,
 	AssembleContext context,
-	GlobalNavigation navigation,
+	INavigationTraversable navigationTraversable,
 	GlobalNavigationHtmlWriter writer,
 	GlobalNavigationPathProvider pathProvider,
 	ILegacyUrlMapper? legacyUrlMapper
 )
 {
 	private readonly ILogger<AssemblerBuilder> _logger = logFactory.CreateLogger<AssemblerBuilder>();
+
+	private INavigationTraversable NavigationTraversable { get; } = navigationTraversable;
 
 	private GlobalNavigationHtmlWriter HtmlWriter { get; } = writer;
 
@@ -114,7 +116,7 @@ public class AssemblerBuilder(
 			if (Uri.IsWellFormedUriString(path, UriKind.Absolute)) // Cross-repo links
 			{
 				_ = linkResolver.TryResolve(
-					e => _logger.LogError("An error occurred while resolving cross-link {Path}: {Error}", path, e),
+					specificErrorMessage => context.Collector.EmitError(path, $"An error occurred while resolving cross-link {path}", specificErrorMessage),
 					new Uri(path),
 					out uri);
 			}
@@ -133,10 +135,9 @@ public class AssemblerBuilder(
 		SetFeatureFlags(set);
 		var generator = new DocumentationGenerator(
 			set.DocumentationSet,
-			logFactory, HtmlWriter,
+			logFactory, NavigationTraversable, HtmlWriter,
 			pathProvider,
 			legacyUrlMapper: LegacyUrlMapper,
-			positionalNavigation: navigation,
 			markdownExporters: markdownExporters
 		);
 		return await generator.GenerateAll(ctx);

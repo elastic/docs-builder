@@ -3,8 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.Navigation;
-using Microsoft.OpenApi.Models.Interfaces;
+using Microsoft.OpenApi;
 using RazorSlices;
 
 namespace Elastic.ApiExplorer.Endpoints;

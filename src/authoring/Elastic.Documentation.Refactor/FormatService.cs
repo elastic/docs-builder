@@ -54,7 +54,7 @@ public class FormatService(
 			formatterStats[formatter.Name] = 0;
 
 		// Only process markdown files that are part of the documentation set
-		foreach (var docFile in set.Files.OfType<MarkdownFile>())
+		foreach (var docFile in set.Files.Values.OfType<MarkdownFile>())
 		{
 			if (ctx.IsCancellationRequested)
 				break;

@@ -34,10 +34,10 @@ jobs:
     env:
       ZIP_FILE: api-lambda.zip
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
           
       - name: Download bootstrap binary
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           name: api-lambda-binary # Defined in build-api-lambda.yml
 
@@ -45,24 +45,65 @@ jobs:
         run: |
           zip -j "${ZIP_FILE}" ./bootstrap
 
-      - uses: aws-actions/configure-aws-credentials@00943011d9042930efac3dcd3a170e4273319bc8 # v5.1.0
+      - uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708 # v5.1.1
         with:
           role-to-assume: arn:aws:iam::197730964718:role/elastic-docs-v3-api-deployer-${{ inputs.environment }}
           aws-region: us-east-1
 
-      - name: Upload Lambda function
+      - name: Upload to S3 and Deploy Lambda Functions
         run: |
-          NEW_VERSION=$(aws lambda update-function-code \
-            --function-name "elastic-docs-v3-${ENVIRONMENT}-api" \
-            --zip-file "fileb://${ZIP_FILE}" \
-            --publish \
+          # Upload once to S3 with git SHA for traceability
+          S3_KEY="${ENVIRONMENT}/${GITHUB_SHA}/api-lambda.zip"
+          aws s3 cp "${ZIP_FILE}" "s3://${S3_BUCKET}/${S3_KEY}"
+          
+          # Deploy to streaming-optimized Lambda
+          aws lambda update-function-code \
+            --function-name "${LAMBDA_STREAM_FUNCTION}" \
+            --s3-bucket "${S3_BUCKET}" \
+            --s3-key "${S3_KEY}"
+
+          # Deploy to API Gateway-optimized Lambda
+          aws lambda update-function-code \
+            --function-name "${LAMBDA_API_GW_FUNCTION}" \
+            --s3-bucket "${S3_BUCKET}" \
+            --s3-key "${S3_KEY}"
+
+          # Wait for the function update to complete before publishing
+          aws lambda wait function-updated \
+            --function-name "${LAMBDA_STREAM_FUNCTION}"
+                      
+          # Wait for the function update to complete before publishing
+          aws lambda wait function-updated \
+            --function-name "${LAMBDA_API_GW_FUNCTION}"
+          
+          STREAM_VERSION=$(aws lambda publish-version \
+            --function-name "${LAMBDA_STREAM_FUNCTION}" \
+            --description "Deployed from ${GITHUB_SHA}" \
             --query 'Version' \
             --output text)
-
+          
           aws lambda update-alias \
-          --function-name "elastic-docs-v3-${ENVIRONMENT}-api" \
-          --name live \
-          --function-version $NEW_VERSION
+            --function-name "${LAMBDA_STREAM_FUNCTION}" \
+            --name live \
+            --function-version $STREAM_VERSION
+          
+          API_GW_VERSION=$(aws lambda publish-version \
+            --function-name "${LAMBDA_API_GW_FUNCTION}" \
+            --description "Deployed from ${GITHUB_SHA}" \
+            --query 'Version' \
+            --output text)
+          
+          aws lambda update-alias \
+            --function-name "${LAMBDA_API_GW_FUNCTION}" \
+            --name live \
+            --function-version $API_GW_VERSION
+          
+          echo "✅ Deployed to both Lambda functions from S3: ${S3_KEY}"
+          echo "   ${LAMBDA_STREAM_FUNCTION}: version $STREAM_VERSION (${GITHUB_SHA})"
+          echo "   ${LAMBDA_API_GW_FUNCTION}: version $API_GW_VERSION (${GITHUB_SHA})"
           
         env:
           ENVIRONMENT: ${{ inputs.environment }}
+          S3_BUCKET: elastic-docs-v3-api-lambda-artifacts
+          LAMBDA_STREAM_FUNCTION: elastic-docs-v3-${{ inputs.environment }}-lambda-stream-optimized
+          LAMBDA_API_GW_FUNCTION: elastic-docs-v3-${{ inputs.environment }}-lambda-api-gateway-optimized

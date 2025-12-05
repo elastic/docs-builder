@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using YamlDotNet.Serialization;
+
 namespace Elastic.Documentation.Configuration.Versions;
 
 public static class VersionsConfigurationExtensions
@@ -56,7 +58,9 @@ internal sealed record VersionsConfigDto
 
 internal sealed record VersioningSystemDto
 {
+	[YamlMember(Alias = "base")]
 	public string Base { get; set; } = string.Empty;
+	[YamlMember(Alias = "current")]
 	public string Current { get; set; } = string.Empty;
 }
 

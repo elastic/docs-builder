@@ -3,13 +3,18 @@
 // See the LICENSE file in the project root for more information
 
 using System.ComponentModel.DataAnnotations;
+using Amazon.DynamoDBv2;
 using Elastic.Documentation.Api.Core;
 using Elastic.Documentation.Api.Core.AskAi;
 using Elastic.Documentation.Api.Core.Search;
+using Elastic.Documentation.Api.Core.Telemetry;
 using Elastic.Documentation.Api.Infrastructure.Adapters.AskAi;
 using Elastic.Documentation.Api.Infrastructure.Adapters.Search;
+using Elastic.Documentation.Api.Infrastructure.Adapters.Telemetry;
 using Elastic.Documentation.Api.Infrastructure.Aws;
+using Elastic.Documentation.Api.Infrastructure.Caching;
 using Elastic.Documentation.Api.Infrastructure.Gcp;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NetEscapades.EnumGenerators;
@@ -58,12 +63,21 @@ public static class ServicesExtension
 		{
 			options.SerializerOptions.TypeInfoResolverChain.Insert(0, ApiJsonContext.Default);
 		});
-		_ = services.AddHttpClient();
+
+		// Configure HttpClient for streaming optimization
+		_ = services.AddHttpClient("StreamingHttpClient", client =>
+		{
+			// Disable response buffering for streaming
+			client.DefaultRequestHeaders.Connection.Add("keep-alive");
+			client.Timeout = TimeSpan.FromMinutes(10); // Longer timeout for streaming
+		});
 		// Register AppEnvironment as a singleton for dependency injection
 		_ = services.AddSingleton(new AppEnvironment { Current = appEnv });
+		AddDistributedCache(services, appEnv);
 		AddParameterProvider(services, appEnv);
 		AddAskAiUsecase(services, appEnv);
 		AddSearchUsecase(services, appEnv);
+		AddOtlpProxyUsecase(services, appEnv);
 	}
 
 	// https://docs.aws.amazon.com/systems	-manager/latest/userguide/ps-integration-lambda-extensions.html
@@ -105,8 +119,59 @@ public static class ServicesExtension
 				}
 			default:
 				{
-					throw new ArgumentOutOfRangeException(nameof(appEnv), appEnv,
-						"Unsupported environment for parameter provider.");
+					throw new ArgumentOutOfRangeException(nameof(appEnv), appEnv, "Unsupported environment for parameter provider.");
+				}
+		}
+	}
+
+	private static void AddDistributedCache(IServiceCollection services, AppEnv appEnv)
+	{
+		var logger = GetLogger(services);
+
+		switch (appEnv)
+		{
+			case AppEnv.Dev:
+				{
+					logger?.LogInformation("Configuring InMemoryDistributedCache for environment {AppEnvironment}", appEnv);
+					_ = services.AddSingleton<IDistributedCache, InMemoryDistributedCache>();
+					logger?.LogInformation("InMemoryDistributedCache registered for local development");
+					break;
+				}
+			case AppEnv.Prod:
+			case AppEnv.Staging:
+			case AppEnv.Edge:
+				{
+					logger?.LogInformation("Configuring DynamoDB distributed cache for environment {AppEnvironment}", appEnv);
+					try
+					{
+						// Register AWS DynamoDB client
+						_ = services.AddSingleton<IAmazonDynamoDB, AmazonDynamoDBClient>();
+						logger?.LogInformation("AmazonDynamoDB client registered");
+
+						// Register multi-layer cache (L1: in-memory + L2: DynamoDB)
+						_ = services.AddSingleton<IDistributedCache>(sp =>
+						{
+							var dynamoDb = sp.GetRequiredService<IAmazonDynamoDB>();
+							var tableName = $"docs-api-cache-{appEnv.ToStringFast(true)}";
+							var dynamoLogger = sp.GetRequiredService<ILogger<DynamoDbDistributedCache>>();
+							var multiLogger = sp.GetRequiredService<ILogger<MultiLayerCache>>();
+
+							var dynamoCache = new DynamoDbDistributedCache(dynamoDb, tableName, dynamoLogger);
+							var multiLayerCache = new MultiLayerCache(dynamoCache, multiLogger);
+							logger?.LogInformation("Multi-layer cache registered with DynamoDB table: {TableName}", tableName);
+							return multiLayerCache;
+						});
+					}
+					catch (Exception ex)
+					{
+						logger?.LogError(ex, "Failed to configure distributed cache for environment {AppEnvironment}", appEnv);
+						throw;
+					}
+					break;
+				}
+			default:
+				{
+					throw new ArgumentOutOfRangeException(nameof(appEnv), appEnv, "Unsupported environment for distributed cache.");
 				}
 		}
 	}
@@ -118,8 +183,10 @@ public static class ServicesExtension
 
 		try
 		{
-			_ = services.AddSingleton<GcpIdTokenProvider>();
-			logger?.LogInformation("GcpIdTokenProvider registered successfully");
+			// Register GcpIdTokenProvider with distributed cache dependency
+			// Clean: Let DI handle everything automatically
+			_ = services.AddSingleton<IGcpIdTokenProvider, GcpIdTokenProvider>();
+			logger?.LogInformation("GcpIdTokenProvider registered with distributed cache support");
 
 			_ = services.AddScoped<LlmGatewayOptions>();
 			logger?.LogInformation("LlmGatewayOptions registered successfully");
@@ -127,8 +194,33 @@ public static class ServicesExtension
 			_ = services.AddScoped<AskAiUsecase>();
 			logger?.LogInformation("AskAiUsecase registered successfully");
 
-			_ = services.AddScoped<IAskAiGateway<Stream>, LlmGatewayAskAiGateway>();
-			logger?.LogInformation("LlmGatewayAskAiGateway registered successfully");
+			// Register HttpContextAccessor for provider resolution
+			_ = services.AddHttpContextAccessor();
+			logger?.LogInformation("HttpContextAccessor registered successfully");
+
+			// Register provider resolver
+			_ = services.AddScoped<AskAiProviderResolver>();
+			logger?.LogInformation("AskAiProviderResolver registered successfully");
+
+			// Register both gateways as concrete types
+			_ = services.AddScoped<LlmGatewayAskAiGateway>();
+			_ = services.AddScoped<AgentBuilderAskAiGateway>();
+			logger?.LogInformation("Both AI gateways registered as concrete types");
+
+			// Register both transformers as concrete types
+			_ = services.AddScoped<LlmGatewayStreamTransformer>();
+			_ = services.AddScoped<AgentBuilderStreamTransformer>();
+			logger?.LogInformation("Both stream transformers registered as concrete types");
+
+			// Register factories as interface implementations
+			_ = services.AddScoped<IAskAiGateway<Stream>, AskAiGatewayFactory>();
+			_ = services.AddScoped<IStreamTransformer, StreamTransformerFactory>();
+			logger?.LogInformation("Gateway and transformer factories registered successfully - provider switchable via X-AI-Provider header");
+
+			// Register message feedback components (gateway is singleton for connection reuse)
+			_ = services.AddSingleton<IAskAiMessageFeedbackGateway, ElasticsearchAskAiMessageFeedbackGateway>();
+			_ = services.AddScoped<AskAiMessageFeedbackUsecase>();
+			logger?.LogInformation("AskAiMessageFeedbackUsecase and Elasticsearch gateway registered successfully");
 		}
 		catch (Exception ex)
 		{
@@ -140,8 +232,31 @@ public static class ServicesExtension
 	{
 		var logger = GetLogger(services);
 		logger?.LogInformation("Configuring Search use case for environment {AppEnvironment}", appEnv);
-		_ = services.AddScoped<ElasticsearchOptions>();
+		_ = services.AddSingleton<ElasticsearchOptions>();
 		_ = services.AddScoped<ISearchGateway, ElasticsearchGateway>();
 		_ = services.AddScoped<SearchUsecase>();
+	}
+
+	private static void AddOtlpProxyUsecase(IServiceCollection services, AppEnv appEnv)
+	{
+		var logger = GetLogger(services);
+		logger?.LogInformation("Configuring OTLP proxy use case for environment {AppEnvironment}", appEnv);
+
+		_ = services.AddSingleton(sp =>
+		{
+			var config = sp.GetRequiredService<IConfiguration>();
+			return new OtlpProxyOptions(config);
+		});
+
+		// Register named HttpClient for OTLP proxy
+		_ = services.AddHttpClient(AdotOtlpGateway.HttpClientName)
+			.ConfigureHttpClient(client =>
+			{
+				client.Timeout = TimeSpan.FromSeconds(30);
+			});
+
+		_ = services.AddScoped<IOtlpGateway, AdotOtlpGateway>();
+		_ = services.AddScoped<OtlpProxyUsecase>();
+		logger?.LogInformation("OTLP proxy configured to forward to ADOT Lambda Layer collector");
 	}
 }

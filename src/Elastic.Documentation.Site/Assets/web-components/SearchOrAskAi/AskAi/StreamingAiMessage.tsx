@@ -1,75 +1,47 @@
+/**
+ * StreamingAiMessage - Renders an AI message that may be streaming.
+ *
+ * Streaming is managed by the Zustand store, which persists across
+ * component mounts/unmounts. This component simply renders from the store.
+ */
 import { ChatMessage } from './ChatMessage'
-import {
-    ChatMessage as ChatMessageType,
-    useChatActions,
-    useThreadId,
-} from './chat.store'
-import { useLlmGateway } from './useLlmGateway'
-import * as React from 'react'
-import { useEffect, useRef } from 'react'
+import { ChatMessage as ChatMessageType, useChatActions } from './chat.store'
+import { useCallback, useEffect } from 'react'
 
 interface StreamingAiMessageProps {
     message: ChatMessageType
     isLast: boolean
+    onAbortReady?: (abort: () => void) => void
+    showError?: boolean
 }
 
 export const StreamingAiMessage = ({
     message,
     isLast,
+    onAbortReady,
+    showError,
 }: StreamingAiMessageProps) => {
-    const { updateAiMessage, hasMessageBeenSent, markMessageAsSent } =
-        useChatActions()
-    const threadId = useThreadId()
-    const contentRef = useRef('')
+    const { abortMessage, cancelStreaming } = useChatActions()
 
-    const { messages: llmMessages, sendQuestion } = useLlmGateway({
-        threadId,
-        onMessage: (llmMessage) => {
-            if (llmMessage.type === 'ai_message_chunk') {
-                contentRef.current += llmMessage.data.content
-            } else if (llmMessage.type === 'agent_end') {
-                updateAiMessage(message.id, contentRef.current, 'complete')
-            }
-        },
-        onError: () => {
-            updateAiMessage(
-                message.id,
-                message.content || 'Error occurred',
-                'error'
-            )
-        },
-    })
+    // Create abort function for this specific message
+    const handleAbort = useCallback(() => {
+        abortMessage(message.id)
+        cancelStreaming()
+    }, [message.id, abortMessage, cancelStreaming])
 
+    // Expose abort function to parent when this is the last message and streaming
     useEffect(() => {
-        if (
-            isLast &&
-            message.status === 'streaming' &&
-            message.question &&
-            !hasMessageBeenSent(message.id)
-        ) {
-            markMessageAsSent(message.id)
-            contentRef.current = ''
-            sendQuestion(message.question)
+        if (isLast && message.status === 'streaming' && onAbortReady) {
+            onAbortReady(handleAbort)
         }
-    }, [
-        isLast,
-        message.status,
-        message.question,
-        message.id,
-        sendQuestion,
-        hasMessageBeenSent,
-        markMessageAsSent,
-    ])
+    }, [isLast, message.status, onAbortReady, handleAbort])
 
     return (
         <ChatMessage
             message={message}
-            llmMessages={isLast ? llmMessages : []}
-            streamingContent={
-                isLast && message.status === 'streaming'
-                    ? contentRef.current
-                    : undefined
-            }
+            events={message.reasoning || []}
+            error={message.error ?? undefined}
+            showError={showError}
         />
     )
 }

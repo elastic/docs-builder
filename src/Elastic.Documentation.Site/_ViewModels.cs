@@ -4,8 +4,8 @@
 
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
-using Elastic.Documentation.Site.Navigation;
 
 namespace Elastic.Documentation.Site;
 
@@ -52,7 +52,7 @@ public record GlobalLayoutViewModel
 
 	public string Link(string path)
 	{
-		path = path.AsSpan().TrimStart('/').ToString();
+		path = path.AsSpan().Trim('/').ToString();
 		return $"{UrlPathPrefix}/{path}";
 	}
 }

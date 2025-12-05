@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Collections.Frozen;
 using System.IO.Abstractions;
 using System.Text;
 using Actions.Core.Services;
@@ -10,9 +9,10 @@ using Elastic.Documentation.Assembler.Navigation;
 using Elastic.Documentation.Assembler.Sourcing;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
-using Elastic.Documentation.Configuration.Navigation;
+using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.LegacyDocs;
+using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 
@@ -33,6 +33,7 @@ public class AssemblerBuildService(
 		bool? metadataOnly,
 		bool? showHints,
 		IReadOnlySet<Exporter>? exporters,
+		bool? assumeBuild,
 		FileSystem fs,
 		Cancel ctx
 	)
@@ -44,6 +45,8 @@ public class AssemblerBuildService(
 		if (exporters.Contains(Exporter.DocumentationState))
 			exporters = new HashSet<Exporter>(exporters.Except([Exporter.DocumentationState]));
 
+		var elasticsearchExportOnly = exporters.SetEquals([Exporter.Elasticsearch]);
+
 		var githubEnvironmentInput = githubActionsService.GetInput("environment");
 		environment ??= !string.IsNullOrEmpty(githubEnvironmentInput) ? githubEnvironmentInput : "dev";
 
@@ -53,17 +56,30 @@ public class AssemblerBuildService(
 
 		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, fs, fs, null, null);
 
-		if (assembleContext.OutputDirectory.Exists)
+		// Early return if --assume-build is specified and output already exists
+		if (assumeBuild.GetValueOrDefault(false))
 		{
-			_logger.LogInformation("Cleaning target output directory");
-			assembleContext.OutputDirectory.Delete(true);
+			var indexHtmlPath = Path.Combine(assembleContext.OutputDirectory.FullName, "docs", "index.html");
+			if (assembleContext.OutputDirectory.Exists && fs.File.Exists(indexHtmlPath))
+			{
+				_logger.LogInformation("Assuming build already exists (--assume-build). Found index.html at {Path}. Skipping build.", indexHtmlPath);
+				return true;
+			}
+			_logger.LogInformation("--assume-build specified but output directory does not exist or is incomplete. Proceeding with build.");
 		}
 
-		_logger.LogInformation("Validating navigation.yml does not contain colliding path prefixes");
-		// this validates all path prefixes are unique, early exit if duplicates are detected
-		if (!GlobalNavigationFile.ValidatePathPrefixes(assembleContext.Collector, assembleContext.ConfigurationFileProvider, assemblyConfiguration)
-			|| assembleContext.Collector.Errors > 0)
-			return false;
+		if (assembleContext.OutputDirectory.Exists)
+		{
+			if (elasticsearchExportOnly)
+			{
+				_logger.LogInformation("Elasticsearch export only. Skipping clean up of target output directory");
+			}
+			else
+			{
+				_logger.LogInformation("Cleaning target output directory");
+				assembleContext.OutputDirectory.Delete(true);
+			}
+		}
 
 		_logger.LogInformation("Get all clone directory information");
 		var cloner = new AssemblerRepositorySourcer(logFactory, assembleContext);
@@ -75,13 +91,19 @@ public class AssemblerBuildService(
 
 		_logger.LogInformation("Preparing all assemble sources for build");
 		var assembleSources = await AssembleSources.AssembleAsync(logFactory, assembleContext, checkouts, configurationContext, exporters, ctx);
-		var navigationFile = new GlobalNavigationFile(collector, configurationContext.ConfigurationFileProvider, assemblyConfiguration, assembleSources.TocConfigurationMapping);
 
-		_logger.LogInformation("Create global navigation");
-		var navigation = new GlobalNavigation(assembleSources, navigationFile);
+		var navigationFileInfo = configurationContext.ConfigurationFileProvider.NavigationFile;
+		var siteNavigationFile = SiteNavigationFile.Deserialize(await fs.File.ReadAllTextAsync(navigationFileInfo.FullName, ctx));
+		var documentationSets = assembleSources.AssembleSets.Values.Select(s => s.DocumentationSet.Navigation).ToArray();
+		var navigation = new SiteNavigation(siteNavigationFile, assembleContext, documentationSets, assembleContext.Environment.PathPrefix);
 
-		var pathProvider = new GlobalNavigationPathProvider(navigationFile, assembleSources, assembleContext);
-		var htmlWriter = new GlobalNavigationHtmlWriter(logFactory, navigation, collector);
+		_logger.LogInformation("Validating navigation.yml does not contain colliding path prefixes");
+		// this validates all path prefixes are unique, early exit if duplicates are detected
+		if (!SiteNavigationFile.ValidatePathPrefixes(assembleContext.Collector, siteNavigationFile, navigationFileInfo) || assembleContext.Collector.Errors > 0)
+			return false;
+
+		var pathProvider = new GlobalNavigationPathProvider(navigation, assembleSources, assembleContext);
+		using var htmlWriter = new GlobalNavigationHtmlWriter(logFactory, navigation, collector);
 		var legacyPageChecker = new LegacyPageService(logFactory);
 		var historyMapper = new PageLegacyUrlMapper(legacyPageChecker, assembleContext.VersionsConfiguration, assembleSources.LegacyUrlMappings);
 
@@ -116,7 +138,7 @@ public class AssemblerBuildService(
 		return strict.Value ? collector.Errors + collector.Warnings == 0 : collector.Errors == 0;
 	}
 
-	private static async Task EnhanceLlmsTxtFile(AssembleContext context, GlobalNavigation navigation, LlmsNavigationEnhancer enhancer, Cancel ctx)
+	private static async Task EnhanceLlmsTxtFile(AssembleContext context, SiteNavigation navigation, LlmsNavigationEnhancer enhancer, Cancel ctx)
 	{
 		var llmsTxtPath = Path.Combine(context.OutputDirectory.FullName, "docs", "llms.txt");
 

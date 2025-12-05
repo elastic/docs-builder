@@ -2,6 +2,13 @@
   "version": 1,
   "isRoot": true,
   "tools": {
+    "husky": {
+      "version": "0.7.1",
+      "commands": [
+        "husky"
+      ],
+      "rollForward": true
+    },
     "minver-cli": {
       "version": "5.0.0",
       "commands": [

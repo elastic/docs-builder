@@ -8,7 +8,7 @@ scms:
       user: '{{ requiredEnv "GITHUB_ACTOR" }}'
       username: '{{ requiredEnv "GITHUB_ACTOR" }}'
       owner: '{{ .scm.owner }}'
-      repository: '{{ .scm.repository }}'
+      repository: docs-builder
       token: '{{ requiredEnv "GITHUB_TOKEN" }}'
       commitusingapi: true
       branch: '{{ .scm.branch }}'
@@ -46,6 +46,45 @@ sources:
       username: '{{ requiredEnv "GITHUB_ACTOR" }}'
       versionfilter:
         kind: latest
+
+  latest-edot-cf-aws-version:
+    name: Get latest release version for the edot-cf-aws
+    kind: githubrelease
+    transformers:
+      - trimprefix: v
+    spec:
+      owner: elastic
+      repository: edot-cloud-forwarder-aws
+      token: '{{ requiredEnv "GITHUB_TOKEN" }}'
+      username: '{{ requiredEnv "GITHUB_ACTOR" }}'
+      versionfilter:
+        kind: latest
+
+  latest-edot-cf-azure-version:
+    name: Get latest release version for the edot-cf-azure
+    kind: githubrelease
+    transformers:
+      - trimprefix: v
+    spec:
+      owner: elastic
+      repository: edot-cloud-forwarder-azure
+      token: '{{ requiredEnv "GITHUB_TOKEN" }}'
+      username: '{{ requiredEnv "GITHUB_ACTOR" }}'
+      versionfilter:
+        kind: latest
+
+  # latest-edot-cf-gcp-version:
+  #   name: Get latest release version for the edot-cf-gcp
+  #   kind: githubrelease
+  #   transformers:
+  #     - trimprefix: v
+  #   spec:
+  #     owner: elastic
+  #     repository: edot-cloud-forwarder-gcp
+  #     token: '{{ requiredEnv "GITHUB_TOKEN" }}'
+  #     username: '{{ requiredEnv "GITHUB_ACTOR" }}'
+  #     versionfilter:
+  #       kind: latest
 
   latest-edot-collector-version:
     name: Get latest major release version for the elastic-agent
@@ -285,6 +324,108 @@ sources:
         kind: regex
         pattern: "^@elastic/apm-rum@(\\d*).(\\d*).(\\d*)$"
 
+  latest-elasticsearch-client-dotnet-version:
+    name: Get latest release version for Elasticsearch .NET Client
+    kind: githubrelease
+    spec:
+      owner: elastic
+      repository: elasticsearch-net
+      token: '{{ requiredEnv "GITHUB_TOKEN" }}'
+      username: '{{ requiredEnv "GITHUB_ACTOR" }}'
+      versionfilter:
+        kind: latest
+
+  latest-elasticsearch-client-go-version:
+    name: Get latest release version for Elasticsearch Go Client
+    kind: githubrelease
+    transformers:
+      - trimprefix: v
+    spec:
+      owner: elastic
+      repository: go-elasticsearch
+      token: '{{ requiredEnv "GITHUB_TOKEN" }}'
+      username: '{{ requiredEnv "GITHUB_ACTOR" }}'
+      versionfilter:
+        kind: latest
+
+  latest-elasticsearch-client-java-version:
+    name: Get latest release version for Elasticsearch Java Client
+    kind: githubrelease
+    transformers:
+      - trimprefix: v
+    spec:
+      owner: elastic
+      repository: elasticsearch-java
+      token: '{{ requiredEnv "GITHUB_TOKEN" }}'
+      username: '{{ requiredEnv "GITHUB_ACTOR" }}'
+      versionfilter:
+        kind: latest
+
+  latest-elasticsearch-client-javascript-version:
+    name: Get latest release version for Elasticsearch JavaScript Client
+    kind: githubrelease
+    transformers:
+      - trimprefix: v
+    spec:
+      owner: elastic
+      repository: elasticsearch-js
+      token: '{{ requiredEnv "GITHUB_TOKEN" }}'
+      username: '{{ requiredEnv "GITHUB_ACTOR" }}'
+      versionfilter:
+        kind: latest
+
+  latest-elasticsearch-client-php-version:
+    name: Get latest release version for Elasticsearch PHP Client
+    kind: githubrelease
+    transformers:
+      - trimprefix: v
+    spec:
+      owner: elastic
+      repository: elasticsearch-php
+      token: '{{ requiredEnv "GITHUB_TOKEN" }}'
+      username: '{{ requiredEnv "GITHUB_ACTOR" }}'
+      versionfilter:
+        kind: latest
+
+  latest-elasticsearch-client-python-version:
+    name: Get latest release version for Elasticsearch Python Client
+    kind: githubrelease
+    transformers:
+      - trimprefix: v
+    spec:
+      owner: elastic
+      repository: elasticsearch-py
+      token: '{{ requiredEnv "GITHUB_TOKEN" }}'
+      username: '{{ requiredEnv "GITHUB_ACTOR" }}'
+      versionfilter:
+        kind: latest
+
+  latest-elasticsearch-client-ruby-version:
+    name: Get latest release version for Elasticsearch Ruby Client
+    kind: githubrelease
+    transformers:
+      - trimprefix: v
+    spec:
+      owner: elastic
+      repository: elasticsearch-ruby
+      token: '{{ requiredEnv "GITHUB_TOKEN" }}'
+      username: '{{ requiredEnv "GITHUB_ACTOR" }}'
+      versionfilter:
+        kind: latest
+
+  latest-elasticsearch-client-rust-version:
+    name: Get latest release version for Elasticsearch Rust Client
+    kind: githubrelease
+    transformers:
+      - trimprefix: v
+    spec:
+      owner: elastic
+      repository: elasticsearch-rs
+      token: '{{ requiredEnv "GITHUB_TOKEN" }}'
+      username: '{{ requiredEnv "GITHUB_ACTOR" }}'
+      versionfilter:
+        kind: latest
+
 targets:
   update-docs-docset-stack:
     name: 'Update config/versions.yml stack {{ source "latest-stack-version" }}'
@@ -304,6 +445,33 @@ targets:
     spec:
       file: config/versions.yml
       key: versioning_systems.edot-android.current
+
+  update-docs-docset-cf-aws:
+    name: 'Update config/versions.yml edot-cf-aws {{ source "latest-edot-cf-aws-version" }}'
+    scmid: githubConfig
+    sourceid: latest-edot-cf-aws-version
+    kind: yaml
+    spec:
+      file: config/versions.yml
+      key: versioning_systems.edot-cf-aws.current
+
+  update-docs-docset-cf-azure:
+    name: 'Update config/versions.yml edot-cf-azure {{ source "latest-edot-cf-azure-version" }}'
+    scmid: githubConfig
+    sourceid: latest-edot-cf-azure-version
+    kind: yaml
+    spec:
+      file: config/versions.yml
+      key: versioning_systems.edot-cf-azure.current
+
+  # update-docs-docset-cf-gcp:
+  #   name: 'Update config/versions.yml edot-cf-gcp {{ source "latest-edot-cf-gcp-version" }}'
+  #   scmid: githubConfig
+  #   sourceid: latest-edot-cf-gcp-version
+  #   kind: yaml
+  #   spec:
+  #     file: config/versions.yml
+  #     key: versioning_systems.edot-cf-gcp.current
 
   update-docs-docset-collector:
     name: 'Update config/versions.yml edot-collector {{ source "latest-edot-collector-version" }}'
@@ -466,3 +634,75 @@ targets:
     spec:
       file: config/versions.yml
       key: versioning_systems.apm-agent-rum-js.current
+
+  update-docs-docset-elasticsearch-client-dotnet:
+    name: 'Update config/versions.yml elasticsearch-client-dotnet {{ source "latest-elasticsearch-client-dotnet-version" }}'
+    scmid: githubConfig
+    sourceid: latest-elasticsearch-client-dotnet-version
+    kind: yaml
+    spec:
+      file: config/versions.yml
+      key: versioning_systems.elasticsearch-client-dotnet.current
+
+  update-docs-docset-elasticsearch-client-go:
+    name: 'Update config/versions.yml elasticsearch-client-go {{ source "latest-elasticsearch-client-go-version" }}'
+    scmid: githubConfig
+    sourceid: latest-elasticsearch-client-go-version
+    kind: yaml
+    spec:
+      file: config/versions.yml
+      key: versioning_systems.elasticsearch-client-go.current
+
+  update-docs-docset-elasticsearch-client-java:
+    name: 'Update config/versions.yml elasticsearch-client-java {{ source "latest-elasticsearch-client-java-version" }}'
+    scmid: githubConfig
+    sourceid: latest-elasticsearch-client-java-version
+    kind: yaml
+    spec:
+      file: config/versions.yml
+      key: versioning_systems.elasticsearch-client-java.current
+
+  update-docs-docset-elasticsearch-client-javascript:
+    name: 'Update config/versions.yml elasticsearch-client-javascript {{ source "latest-elasticsearch-client-javascript-version" }}'
+    scmid: githubConfig
+    sourceid: latest-elasticsearch-client-javascript-version
+    kind: yaml
+    spec:
+      file: config/versions.yml
+      key: versioning_systems.elasticsearch-client-javascript.current
+
+  update-docs-docset-elasticsearch-client-php:
+    name: 'Update config/versions.yml elasticsearch-client-php {{ source "latest-elasticsearch-client-php-version" }}'
+    scmid: githubConfig
+    sourceid: latest-elasticsearch-client-php-version
+    kind: yaml
+    spec:
+      file: config/versions.yml
+      key: versioning_systems.elasticsearch-client-php.current
+
+  update-docs-docset-elasticsearch-client-python:
+    name: 'Update config/versions.yml elasticsearch-client-python {{ source "latest-elasticsearch-client-python-version" }}'
+    scmid: githubConfig
+    sourceid: latest-elasticsearch-client-python-version
+    kind: yaml
+    spec:
+      file: config/versions.yml
+      key: versioning_systems.elasticsearch-client-python.current
+
+  update-docs-docset-elasticsearch-client-ruby:
+    name: 'Update config/versions.yml elasticsearch-client-ruby {{ source "latest-elasticsearch-client-ruby-version" }}'
+    scmid: githubConfig
+    sourceid: latest-elasticsearch-client-ruby-version
+    kind: yaml
+    spec:
+      file: config/versions.yml
+      key: versioning_systems.elasticsearch-client-ruby.current
+
+  update-docs-docset-elasticsearch-client-rust:
+    name: 'Update config/versions.yml elasticsearch-client-rust {{ source "latest-elasticsearch-client-rust-version" }}'
+    scmid: githubConfig
+    sourceid: latest-elasticsearch-client-rust-version
+    kind: yaml
+    spec:
+      file: config/versions.yml
+      key: versioning_systems.elasticsearch-client-rust.current

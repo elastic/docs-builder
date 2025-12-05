@@ -1,0 +1,139 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+using System.IO.Abstractions;
+using Elastic.Documentation.Assembler;
+using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Diagnostics;
+using FluentAssertions;
+using Microsoft.Extensions.Logging.Abstractions;
+
+namespace Elastic.Assembler.IntegrationTests;
+
+public class PublicOnlyAssemblerConfigurationTests
+{
+	private DiagnosticsCollector Collector { get; }
+	private AssembleContext Context { get; }
+	private FileSystem FileSystem { get; }
+	private IDirectoryInfo CheckoutDirectory { get; set; }
+	public PublicOnlyAssemblerConfigurationTests()
+	{
+		FileSystem = new FileSystem();
+		CheckoutDirectory = FileSystem.DirectoryInfo.New(
+			FileSystem.Path.Combine(Paths.GetSolutionDirectory()!.FullName, ".artifacts", "checkouts")
+		);
+		Collector = new DiagnosticsCollector([]);
+		var configurationFileProvider = new ConfigurationFileProvider(NullLoggerFactory.Instance, FileSystem, skipPrivateRepositories: true);
+		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem, configurationFileProvider: configurationFileProvider);
+		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
+		Context = new AssembleContext(config, configurationContext, "dev", Collector, FileSystem, FileSystem, CheckoutDirectory.FullName, null);
+	}
+
+	[Fact]
+	public void ReadsPrivateRepositories()
+	{
+		var config = Context.Configuration;
+		config.ReferenceRepositories.Should().NotBeEmpty().And.NotContainKey("cloud");
+		config.PrivateRepositories.Should().NotBeEmpty().And.ContainKey("cloud");
+		var cloud = config.PrivateRepositories["cloud"];
+		cloud.Should().NotBeNull();
+		cloud.GitReferenceCurrent.Should().NotBeNullOrEmpty()
+			.And.Be("master");
+	}
+
+}
+
+public class AssemblerConfigurationTests : IAsyncLifetime
+{
+	private readonly DocumentationFixture _fixture;
+	private readonly ITestOutputHelper _output;
+	private DiagnosticsCollector Collector { get; }
+	private AssembleContext Context { get; }
+	private FileSystem FileSystem { get; }
+	private IDirectoryInfo CheckoutDirectory { get; set; }
+	public AssemblerConfigurationTests(DocumentationFixture fixture, ITestOutputHelper output)
+	{
+		_fixture = fixture;
+		_output = output;
+		FileSystem = new FileSystem();
+		CheckoutDirectory = FileSystem.DirectoryInfo.New(
+			FileSystem.Path.Combine(Paths.GetSolutionDirectory()!.FullName, ".artifacts", "checkouts")
+		);
+		Collector = new DiagnosticsCollector([]);
+		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem);
+		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
+		Context = new AssembleContext(config, configurationContext, "dev", Collector, FileSystem, FileSystem, CheckoutDirectory.FullName, null);
+	}
+
+	[Fact]
+	public void ReadsConfigurationFiles()
+	{
+		Context.ConfigurationFileProvider.VersionFile.Name.Should().Be("versions.yml");
+		Context.ConfigurationFileProvider.ProductsFile.Name.Should().Be("products.yml");
+		Context.ConfigurationFileProvider.NavigationFile.Name.Should().Be("navigation.yml");
+		Context.ConfigurationFileProvider.AssemblerFile.Name.Should().Be("assembler.yml");
+		Context.ConfigurationFileProvider.LegacyUrlMappingsFile.Name.Should().Be("legacy-url-mappings.yml");
+		Context.ConfigurationFileProvider.SearchFile.Name.Should().Be("search.yml");
+	}
+
+	[Fact]
+	public void ReadsContentSource()
+	{
+		var environments = Context.Configuration.Environments;
+		environments.Should().NotBeEmpty()
+			.And.ContainKey("prod");
+
+		var prod = environments["prod"];
+		prod.ContentSource.Should().Be(ContentSource.Current);
+
+		var staging = environments["staging"];
+		staging.ContentSource.Should().Be(ContentSource.Next);
+	}
+
+	[Fact]
+	public void ReadsVersions()
+	{
+		var config = Context.Configuration;
+		config.SharedConfigurations.Should().NotBeEmpty()
+			.And.ContainKey("stack");
+
+		config.SharedConfigurations["stack"].GitReferenceEdge.Should().NotBeNullOrEmpty();
+
+		//var agent = config.ReferenceRepositories["elasticsearch"];
+		//agent.GitReferenceCurrent.Should().NotBeNullOrEmpty()
+		//	.And.Be(config.NamedGitReferences["stack"]);
+
+		// test defaults
+		var apmServer = config.ReferenceRepositories["apm-server"];
+		apmServer.GitReferenceNext.Should().NotBeNullOrEmpty()
+			.And.Be("main");
+		apmServer.GitReferenceCurrent.Should().NotBeNullOrEmpty()
+			.And.Be("main");
+		apmServer.GitReferenceEdge.Should().NotBeNullOrEmpty()
+			.And.Be("main");
+
+		var beats = config.ReferenceRepositories["beats"];
+		beats.GitReferenceCurrent.Should().NotBeNullOrEmpty()
+			.And.NotBe("main");
+
+		var curator = config.ReferenceRepositories["curator"];
+		curator.GitReferenceCurrent.Should().NotBeNullOrEmpty()
+			.And.Be("master");
+	}
+
+	/// <inheritdoc />
+	public ValueTask DisposeAsync()
+	{
+		GC.SuppressFinalize(this);
+		if (TestContext.Current.TestState?.Result is TestResult.Passed)
+			return default;
+		foreach (var resource in _fixture.InMemoryLogger.RecordedLogs)
+			_output.WriteLine(resource.Message);
+		return default;
+	}
+
+	/// <inheritdoc />
+	public ValueTask InitializeAsync() => default;
+}

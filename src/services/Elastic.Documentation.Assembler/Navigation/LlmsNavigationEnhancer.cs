@@ -2,15 +2,13 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System;
 using System.Globalization;
-using System.Linq;
 using System.Text;
-using Elastic.Documentation.Assembler;
-using Elastic.Documentation.Assembler.Navigation;
-using Elastic.Documentation.Site.Navigation;
+using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Navigation.Assembler;
+using Elastic.Documentation.Navigation.Isolated;
+using Elastic.Documentation.Navigation.Isolated.Leaf;
 using Elastic.Markdown.IO;
-using Elastic.Markdown.IO.Navigation;
 using Elastic.Markdown.Myst.Renderers.LlmMarkdown;
 
 namespace Elastic.Documentation.Assembler.Navigation;
@@ -20,7 +18,7 @@ namespace Elastic.Documentation.Assembler.Navigation;
 /// </summary>
 public class LlmsNavigationEnhancer
 {
-	public string GenerateNavigationSections(GlobalNavigation navigation, Uri canonicalBaseUrl)
+	public string GenerateNavigationSections(SiteNavigation navigation, Uri canonicalBaseUrl)
 	{
 		var content = new StringBuilder();
 
@@ -29,7 +27,7 @@ public class LlmsNavigationEnhancer
 
 		foreach (var topLevelItem in topLevelItems)
 		{
-			if (topLevelItem is not DocumentationGroup group)
+			if (topLevelItem is not { } group)
 				continue;
 
 			// Create H2 section for the category - use H1 title if available, fallback to navigation title
@@ -40,7 +38,7 @@ public class LlmsNavigationEnhancer
 			// Get first-level children
 			var firstLevelChildren = GetFirstLevelChildren(group);
 
-			if (firstLevelChildren.Any())
+			if (firstLevelChildren.Count != 0)
 			{
 				foreach (var child in firstLevelChildren)
 				{
@@ -60,25 +58,21 @@ public class LlmsNavigationEnhancer
 	}
 
 
-	private static IEnumerable<INavigationItem> GetFirstLevelChildren(DocumentationGroup group) =>
-		group.NavigationItems.Where(i => !i.Hidden);
+	private static IReadOnlyCollection<INavigationItem> GetFirstLevelChildren(INodeNavigationItem<INavigationModel, INavigationItem> group) =>
+		group.NavigationItems.Where(i => !i.Hidden).ToArray();
 
 	/// <summary>
 	/// Gets the best title for a navigation item, preferring H1 content over navigation title
 	/// </summary>
 	private static string GetBestTitle(INavigationItem navigationItem) => navigationItem switch
 	{
-		// For file navigation items, prefer the H1 title from the markdown content
-		FileNavigationItem fileItem when !string.IsNullOrEmpty(fileItem.Model.Title)
-			=> fileItem.Model.Title,
-		FileNavigationItem fileItem
-			=> fileItem.NavigationTitle,
+		// For file navigation items, prefer the H1 title from the Markdown content
+		ILeafNavigationItem<MarkdownFile> markdownNavigation =>
+			markdownNavigation.Model.Title ?? markdownNavigation.NavigationTitle,
 
-		// For documentation groups, prefer the H1 title from the index file
-		DocumentationGroup group when !string.IsNullOrEmpty(group.Index?.Title)
-			=> group.Index.Title,
-		DocumentationGroup group
-			=> group.NavigationTitle,
+		// For documentation groups, try to get the full title of the index
+		INodeNavigationItem<MarkdownFile, INavigationItem> markdownNodeNavigation =>
+			markdownNodeNavigation.Index.Model.Title ?? markdownNodeNavigation.NavigationTitle,
 
 		// For other navigation item types, use the navigation title
 		_ => navigationItem.NavigationTitle
@@ -86,26 +80,26 @@ public class LlmsNavigationEnhancer
 
 	private static string? GetDescription(INavigationItem navigationItem) => navigationItem switch
 	{
+		// Cross-repository links don't have descriptions in frontmatter
+		ILeafNavigationItem<CrossLinkModel> => null,
+
 		// For file navigation items, extract from frontmatter
-		FileNavigationItem fileItem when fileItem.Model is MarkdownFile markdownFile
-			=> markdownFile.YamlFrontMatter?.Description,
+		ILeafNavigationItem<MarkdownFile> markdownNavigation =>
+			markdownNavigation.Model.YamlFrontMatter?.Description,
 
 		// For documentation groups, try to get from index file
-		DocumentationGroup group when group.Index is MarkdownFile indexFile
-			=> indexFile.YamlFrontMatter?.Description,
+		INodeNavigationItem<MarkdownFile, INavigationItem> markdownNodeNavigation =>
+			markdownNodeNavigation.Index.Model.YamlFrontMatter?.Description,
 
-		// For table of contents trees (inherits from DocumentationGroup, but handled explicitly)
-		TableOfContentsTree tocTree when tocTree.Index is MarkdownFile indexFile
-			=> indexFile.YamlFrontMatter?.Description,
-
-		// Cross-repository links don't have descriptions in frontmatter
-		CrossLinkNavigationItem => null,
+		// we only know about MarkdownFiles for now
+		ILeafNavigationItem<IDocumentationFile> => null,
+		INodeNavigationItem<IDocumentationFile, INavigationItem> => null,
 
 		// API-related navigation items (these don't have markdown frontmatter)
 		// Check by namespace to avoid direct assembly references
-		INavigationItem item when item.GetType().FullName?.StartsWith("Elastic.ApiExplorer.", StringComparison.Ordinal) == true => null,
+		{ } item when item.GetType().FullName?.StartsWith("Elastic.ApiExplorer.", StringComparison.Ordinal) == true => null,
 
 		// Throw exception for any unhandled navigation item types
-		_ => throw new InvalidOperationException($"Unhandled navigation item type: {navigationItem.GetType().FullName}")
+		_ => throw new InvalidOperationException($"{nameof(LlmsNavigationEnhancer)}.{nameof(GetDescription)}: Unhandled navigation item type: {navigationItem.GetType().FullName}")
 	};
 }

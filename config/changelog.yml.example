@@ -1,0 +1,56 @@
+# Changelog Configuration
+# This file configures the valid values for changelog fields.
+# Place this file as `changelog.yml` in the `docs/` directory
+
+# Available types for changelog entries
+available_types:
+  - feature
+  - enhancement
+  - bug-fix
+  - known-issue
+  - breaking-change
+  - deprecation
+  - docs
+  - regression
+  - security
+  - other
+
+# Available subtypes for breaking changes
+available_subtypes:
+  - api
+  - behavioral
+  - configuration
+  - dependency
+  - subscription
+  - plugin
+  - security
+  - other
+
+# Available lifecycle values
+available_lifecycles:
+  - preview
+  - beta
+  - ga
+
+# Available areas (optional - if not specified, all areas are allowed)
+available_areas:
+  - search
+  - security
+  - machine-learning
+  - observability
+  - index-management
+  # Add more areas as needed
+
+# Available products (optional - if not specified, all products are allowed)
+available_products:
+  - elasticsearch
+  - kibana
+  - apm
+  - beats
+  - elastic-agent
+  - fleet
+  - cloud-hosted
+  - cloud-serverless
+  - cloud-enterprise
+  # Add more products as needed
+

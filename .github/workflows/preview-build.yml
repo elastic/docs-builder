@@ -152,7 +152,7 @@ jobs:
     steps:
       - name: Checkout
         if: contains(fromJSON('["push", "merge_group", "workflow_dispatch"]'), github.event_name)
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
 
@@ -251,7 +251,7 @@ jobs:
             needs.check.outputs.any_modified == 'true'
             || contains(fromJSON('["push", "workflow_dispatch"]'), github.event_name)
           )
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
           persist-credentials: false
@@ -456,7 +456,7 @@ jobs:
             )
           )
         run: |
-          dotnet run --project src/tooling/docs-assembler -- navigation validate-link-reference
+          dotnet run --project src/tooling/docs-builder -- assembler navigation validate-link-reference
 
       - uses: elastic/docs-builder/.github/actions/aws-auth@main
         if: >
@@ -648,7 +648,7 @@ jobs:
             </details>
         
             ### 🤔 Need help?
-            - Check out the [cumulative docs guidelines](https://elastic.github.io/docs-builder/contribute/cumulative-docs/)
+            - Check out the [cumulative docs guidelines](https://www.elastic.co/docs/contribute-docs/how-to/cumulative-docs/)
             - Reach out in the [#docs](https://elastic.slack.com/archives/C0JF80CJZ) Slack channel`;
               
             await github.rest.issues.createComment({

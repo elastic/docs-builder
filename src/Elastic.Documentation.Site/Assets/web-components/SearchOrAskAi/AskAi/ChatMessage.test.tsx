@@ -1,11 +1,41 @@
+import { cooldownStore } from '../cooldown.store'
+import { ApiError } from '../errorHandling'
 import { ChatMessage } from './ChatMessage'
 import { ChatMessage as ChatMessageType } from './chat.store'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
 import * as React from 'react'
 
+// Create a fresh QueryClient for each test
+const createTestQueryClient = () =>
+    new QueryClient({
+        defaultOptions: {
+            queries: { retry: false },
+            mutations: { retry: false },
+        },
+    })
+
+// Wrapper component for tests that need React Query
+const renderWithQueryClient = (ui: React.ReactElement) => {
+    const testQueryClient = createTestQueryClient()
+    return render(
+        <QueryClientProvider client={testQueryClient}>{ui}</QueryClientProvider>
+    )
+}
+
+// Reset cooldown store between tests
+const resetStores = () => {
+    cooldownStore.setState({
+        cooldowns: {
+            search: { cooldown: null, awaitingNewInput: false },
+            askAi: { cooldown: null, awaitingNewInput: false },
+        },
+    })
+}
+
 describe('ChatMessage Component', () => {
     beforeEach(() => {
-        jest.clearAllMocks()
+        resetStores()
     })
 
     describe('User messages', () => {
@@ -13,7 +43,7 @@ describe('ChatMessage Component', () => {
             id: '1',
             type: 'user',
             content: 'What is Elasticsearch?',
-            threadId: 'thread-1',
+            conversationId: 'thread-1',
             timestamp: Date.now(),
         }
 
@@ -27,7 +57,7 @@ describe('ChatMessage Component', () => {
             ).toBeInTheDocument()
         })
 
-        it('should display user icon', () => {
+        it('should mark message as user type', () => {
             // Act
             render(<ChatMessage message={userMessage} />)
 
@@ -44,14 +74,14 @@ describe('ChatMessage Component', () => {
             id: '2',
             type: 'ai',
             content: 'Elasticsearch is a distributed search engine...',
-            threadId: 'thread-1',
+            conversationId: 'thread-1',
             timestamp: Date.now(),
             status: 'complete',
         }
 
         it('should render AI message with correct content', () => {
             // Act
-            render(<ChatMessage message={aiMessage} />)
+            renderWithQueryClient(<ChatMessage message={aiMessage} />)
 
             // Assert
             expect(
@@ -61,9 +91,9 @@ describe('ChatMessage Component', () => {
             ).toBeInTheDocument()
         })
 
-        it('should show feedback buttons', () => {
+        it('should show feedback buttons when complete', () => {
             // Act
-            render(<ChatMessage message={aiMessage} />)
+            renderWithQueryClient(<ChatMessage message={aiMessage} />)
 
             // Assert
             expect(
@@ -78,9 +108,9 @@ describe('ChatMessage Component', () => {
             ).toBeInTheDocument()
         })
 
-        it('should display Elastic logo icon', () => {
+        it('should have correct data attributes', () => {
             // Act
-            render(<ChatMessage message={aiMessage} />)
+            renderWithQueryClient(<ChatMessage message={aiMessage} />)
 
             // Assert
             const messageElement = screen
@@ -89,11 +119,7 @@ describe('ChatMessage Component', () => {
                 )[0]
                 .closest('[data-message-type="ai"]')
             expect(messageElement).toBeInTheDocument()
-            // Check for logo icon
-            const logoIcon = messageElement?.querySelector(
-                '[data-type="logoElastic"]'
-            )
-            expect(logoIcon).toBeInTheDocument()
+            expect(messageElement).toHaveAttribute('data-message-id', '2')
         })
     })
 
@@ -102,17 +128,16 @@ describe('ChatMessage Component', () => {
             id: '3',
             type: 'ai',
             content: 'Elasticsearch is...',
-            threadId: 'thread-1',
+            conversationId: 'thread-1',
             timestamp: Date.now(),
             status: 'streaming',
         }
 
-        it('should show loading icon when streaming', () => {
+        it('should render streaming content', () => {
             // Act
-            render(<ChatMessage message={streamingMessage} llmMessages={[]} />)
+            renderWithQueryClient(<ChatMessage message={streamingMessage} />)
 
             // Assert
-            // Loading elastic icon should be present
             const messageElement = screen
                 .getByText(/Elasticsearch is\.\.\./i)
                 .closest('[data-message-type="ai"]')
@@ -121,7 +146,7 @@ describe('ChatMessage Component', () => {
 
         it('should not show feedback buttons when streaming', () => {
             // Act
-            render(<ChatMessage message={streamingMessage} />)
+            renderWithQueryClient(<ChatMessage message={streamingMessage} />)
 
             // Assert
             expect(
@@ -129,45 +154,48 @@ describe('ChatMessage Component', () => {
                     name: /^This answer was helpful$/i,
                 })
             ).not.toBeInTheDocument()
-            expect(
-                screen.queryByRole('button', {
-                    name: /^This answer was not helpful$/i,
-                })
-            ).not.toBeInTheDocument()
         })
     })
 
     describe('AI messages - error', () => {
-        const errorMessage: ChatMessageType = {
-            id: '4',
-            type: 'ai',
-            content: 'Previous content...',
-            threadId: 'thread-1',
-            timestamp: Date.now(),
-            status: 'error',
+        const createErrorMessage = (): ChatMessageType => {
+            const testError = new Error('Server error') as ApiError
+            testError.name = 'ApiError'
+            testError.statusCode = 500
+
+            return {
+                id: '4',
+                type: 'ai',
+                content: '',
+                conversationId: 'thread-1',
+                timestamp: Date.now(),
+                status: 'error',
+                error: testError,
+            }
         }
 
-        it('should show error message', () => {
+        it('should show error callout when status is error', () => {
             // Act
-            render(<ChatMessage message={errorMessage} />)
+            renderWithQueryClient(
+                <ChatMessage message={createErrorMessage()} />
+            )
 
-            // Assert
+            // Assert - error callout should be visible with title
             expect(
-                screen.getByText(/Sorry, there was an error/i)
-            ).toBeInTheDocument()
-            expect(
-                screen.getByText(
-                    /The Elastic Docs AI Assistant encountered an error/i
-                )
+                screen.getByText(/sorry, there was an error/i)
             ).toBeInTheDocument()
         })
 
-        it('should display previous content before error occurred', () => {
+        it('should display error message for 5xx errors', () => {
             // Act
-            render(<ChatMessage message={errorMessage} />)
+            renderWithQueryClient(
+                <ChatMessage message={createErrorMessage()} />
+            )
 
-            // Assert
-            expect(screen.getByText(/Previous content/i)).toBeInTheDocument()
+            // Assert - error guidance should be displayed
+            expect(
+                screen.getByText(/We are unable to process your request/i)
+            ).toBeInTheDocument()
         })
     })
 
@@ -176,16 +204,16 @@ describe('ChatMessage Component', () => {
             id: '5',
             type: 'ai',
             content: '# Heading\n\n**Bold text** and *italic*',
-            threadId: 'thread-1',
+            conversationId: 'thread-1',
             timestamp: Date.now(),
             status: 'complete',
         }
 
-        it('should render markdown content', () => {
+        it('should render markdown as HTML', () => {
             // Act
-            render(<ChatMessage message={messageWithMarkdown} />)
+            renderWithQueryClient(<ChatMessage message={messageWithMarkdown} />)
 
-            // Assert - EuiMarkdownFormat will render the markdown
+            // Assert - Bold text should be rendered
             expect(screen.getByText(/Bold text/)).toBeInTheDocument()
         })
     })

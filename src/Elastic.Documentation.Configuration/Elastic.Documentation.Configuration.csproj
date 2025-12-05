@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
@@ -24,6 +24,6 @@
     <EmbeddedResource Include="$(SolutionRoot)\config\assembler.yml" />
     <EmbeddedResource Include="$(SolutionRoot)\config\navigation.yml" />
     <EmbeddedResource Include="$(SolutionRoot)\config\legacy-url-mappings.yml" />
-    <EmbeddedResource Include="$(SolutionRoot)\config\synonyms.yml" />
+    <EmbeddedResource Include="$(SolutionRoot)\config\search.yml" />
   </ItemGroup>
 </Project>

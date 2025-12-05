@@ -18,7 +18,7 @@ jobs:
     env:
       BINARY_PATH: .artifacts/docs-lambda-index-publisher/release_linux-x64/bootstrap
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with: 
           ref: ${{ inputs.ref }}
       - name: Amazon Linux 2023 build
@@ -33,7 +33,7 @@ jobs:
           stat "${BINARY_PATH}"
       - name: Archive artifact
         id: upload-artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: link-index-updater-lambda-binary
           retention-days: 1

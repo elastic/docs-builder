@@ -4,7 +4,7 @@
 
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
-using Elastic.Documentation.Configuration.Synonyms;
+using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Versions;
 
 namespace Elastic.Documentation.Configuration;
@@ -16,8 +16,7 @@ public interface IConfigurationContext
 	DocumentationEndpoints Endpoints { get; }
 	ProductsConfiguration ProductsConfiguration { get; }
 	LegacyUrlMappingConfiguration LegacyUrlMappings { get; }
-	SynonymsConfiguration SynonymsConfiguration { get; }
-
+	SearchConfiguration SearchConfiguration { get; }
 }
 
 /// Used only to seed <see cref="IConfigurationContext"/> in DI, you primarily want to depend on <see cref="IDocumentationConfigurationContext"/>
@@ -39,7 +38,10 @@ public class ConfigurationContext : IConfigurationContext
 	public required LegacyUrlMappingConfiguration LegacyUrlMappings { get; init; }
 
 	/// <inheritdoc />
-	public required SynonymsConfiguration SynonymsConfiguration { get; init; }
+	public required SearchConfiguration SearchConfiguration { get; init; }
 }
 
-public interface IDocumentationConfigurationContext : IDocumentationContext, IConfigurationContext;
+public interface IDocumentationConfigurationContext : IDocumentationContext, IConfigurationContext
+{
+	Uri? CanonicalBaseUrl { get; }
+}

@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <InvariantGlobalization>true</InvariantGlobalization>
@@ -15,6 +15,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Elastic.Documentation\Elastic.Documentation.csproj" />
     <ProjectReference Include="..\Elastic.Documentation.Configuration\Elastic.Documentation.Configuration.csproj" />
+    <ProjectReference Include="..\Elastic.Documentation.Navigation\Elastic.Documentation.Navigation.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -39,9 +40,14 @@
   <!--
       2. Run npm run build before building the .NET project.
       MSBuild runs NpmInstall before this task because of the DependsOnTargets attribute.
+      DependsOnTargets ensures MinVer runs first so $(MinVerVersion) is available.
    -->
-  <Target Name="NpmRunBuild" DependsOnTargets="NpmInstall" BeforeTargets="BeforeBuild">
-    <Exec Command="npm run build" WorkingDirectory="$(MSBuildThisFileDirectory)" ConsoleToMsBuild="true">
+  <Target Name="NpmRunBuild" DependsOnTargets="NpmInstall;MinVer" BeforeTargets="BeforeBuild">
+    <Message Text="Building frontend with version: $(MinVerVersion)" Importance="high" />
+    <Exec Command="npm run build" 
+          WorkingDirectory="$(MSBuildThisFileDirectory)" 
+          ConsoleToMsBuild="true"
+          EnvironmentVariables="DOCS_BUILDER_VERSION=$(MinVerVersion)">
       <Output TaskParameter="ConsoleOutput" PropertyName="OutputOfExec" />
     </Exec>
   </Target>
@@ -54,6 +60,8 @@
       <EmbeddedResource Include="_static/*.css.map" Watch="false" />
       <EmbeddedResource Include="_static/*.svg" Watch="false" />
       <EmbeddedResource Include="_static/*.png" Watch="false" />
+      <EmbeddedResource Include="_static/*.ttf" Watch="false" />
+      <EmbeddedResource Include="_static/*.woff" Watch="false" />
       <EmbeddedResource Include="_static/*.woff2" Watch="false" />
     </ItemGroup>
   </Target>

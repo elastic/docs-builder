@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using Actions.Core.Services;
 using ConsoleAppFramework;
+using Documentation.Builder.Arguments;
 using Documentation.Builder.Http;
 using Elastic.Documentation;
 using Elastic.Documentation.Assembler.Building;
@@ -13,7 +14,6 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;
-using Elastic.Documentation.Tooling.Arguments;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Builder.Commands.Assembler;
@@ -31,6 +31,7 @@ internal sealed class AssembleCommands(
 	/// <param name="environment"> The environment to build</param>
 	/// <param name="fetchLatest"> If true, fetch the latest commit of the branch instead of the link registry entry ref</param>
 	/// <param name="assumeCloned"> If true, assume the repository folder already exists on disk assume it's cloned already, primarily used for testing</param>
+	/// <param name="assumeBuild"> If true, assume the build output already exists and skip building if index.html exists, primarily used for testing</param>
 	/// <param name="metadataOnly"> Only emit documentation metadata to output, ignored if 'exporters' is also set </param>
 	/// <param name="showHints"> Show hints from all documentation sets during assembler build</param>
 	/// <param name="exporters"> Set available exporters:
@@ -45,6 +46,7 @@ internal sealed class AssembleCommands(
 		string? environment = null,
 		bool? fetchLatest = null,
 		bool? assumeCloned = null,
+		bool? assumeBuild = null,
 		bool? metadataOnly = null,
 		bool? showHints = null,
 		[ExporterParser] IReadOnlySet<Exporter>? exporters = null,
@@ -61,9 +63,9 @@ internal sealed class AssembleCommands(
 
 		var buildService = new AssemblerBuildService(logFactory, assemblyConfiguration, configurationContext, githubActionsService);
 		var fs = new FileSystem();
-		serviceInvoker.AddCommand(buildService, (strict, environment, metadataOnly, showHints, exporters, fs), strict ?? false,
+		serviceInvoker.AddCommand(buildService, (strict, environment, metadataOnly, showHints, exporters, assumeBuild, fs), strict ?? false,
 			static async (s, collector, state, ctx) =>
-				await s.BuildAll(collector, state.strict, state.environment, state.metadataOnly, state.showHints, state.exporters, state.fs, ctx)
+				await s.BuildAll(collector, state.strict, state.environment, state.metadataOnly, state.showHints, state.exporters, state.assumeBuild, state.fs, ctx)
 		);
 		var result = await serviceInvoker.InvokeAsync(ctx);
 
@@ -116,6 +118,7 @@ internal sealed class AssemblerCommands(
 	/// <summary> Builds all repositories </summary>
 	/// <param name="strict"> Treat warnings as errors and fail the build on warnings</param>
 	/// <param name="environment"> The environment to build</param>
+	/// <param name="assumeBuild"> If true, assume the build output already exists and skip building if index.html exists, primarily used for testing</param>
 	/// <param name="metadataOnly"> Only emit documentation metadata to output, ignored if 'exporters' is also set </param>
 	/// <param name="showHints"> Show hints from all documentation sets during assembler build</param>
 	/// <param name="exporters"> Set available exporters:
@@ -127,6 +130,7 @@ internal sealed class AssemblerCommands(
 	public async Task<int> BuildAll(
 		bool? strict = null,
 		string? environment = null,
+		bool? assumeBuild = null,
 		bool? metadataOnly = null,
 		bool? showHints = null,
 		[ExporterParser] IReadOnlySet<Exporter>? exporters = null,
@@ -137,9 +141,9 @@ internal sealed class AssemblerCommands(
 
 		var fs = new FileSystem();
 		var service = new AssemblerBuildService(logFactory, assemblyConfiguration, configurationContext, githubActionsService);
-		serviceInvoker.AddCommand(service, (strict, environment, metadataOnly, showHints, exporters, fs), strict ?? false,
+		serviceInvoker.AddCommand(service, (strict, environment, assumeBuild, metadataOnly, showHints, exporters, fs), strict ?? false,
 			static async (s, collector, state, ctx) =>
-				await s.BuildAll(collector, state.strict, state.environment, state.metadataOnly, state.showHints, state.exporters, state.fs, ctx)
+				await s.BuildAll(collector, state.strict, state.environment, state.metadataOnly, state.showHints, state.exporters, state.assumeBuild, state.fs, ctx)
 		);
 
 		return await serviceInvoker.InvokeAsync(ctx);

@@ -6,7 +6,6 @@ using System.Reflection;
 using ConsoleAppFramework;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.ServiceDefaults;
 
 namespace Documentation.Builder.Filters;
 

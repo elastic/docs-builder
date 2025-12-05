@@ -4,9 +4,10 @@
 
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer;
 

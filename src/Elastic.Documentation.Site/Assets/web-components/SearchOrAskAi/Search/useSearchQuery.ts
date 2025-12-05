@@ -1,5 +1,26 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import {
+    ATTR_SEARCH_QUERY,
+    ATTR_SEARCH_PAGE,
+    ATTR_SEARCH_RESULTS_TOTAL,
+    ATTR_SEARCH_RESULTS_COUNT,
+    ATTR_SEARCH_PAGE_COUNT,
+} from '../../../telemetry/semconv'
+import { traceSpan } from '../../../telemetry/tracing'
+import { createApiErrorFromResponse, shouldRetry } from '../errorHandling'
+import { ApiError } from '../errorHandling'
+import { usePageNumber, useSearchTerm, useTypeFilter } from './search.store'
+import {
+    useIsSearchAwaitingNewInput,
+    useSearchCooldownActions,
+    useIsSearchCooldownActive,
+} from './useSearchCooldown'
+import {
+    keepPreviousData,
+    useQuery,
+    useQueryClient,
+} from '@tanstack/react-query'
 import { useDebounce } from '@uidotdev/usehooks'
+import { useRef, useEffect, useCallback } from 'react'
 import * as z from 'zod'
 
 const SearchResultItemParent = z.object({
@@ -8,15 +29,19 @@ const SearchResultItemParent = z.object({
 })
 
 const SearchResultItem = z.object({
+    type: z.enum(['doc', 'api']),
     url: z.string(),
     title: z.string(),
     description: z.string(),
     score: z.number(),
     parents: z.array(SearchResultItemParent),
-    highlightedBody: z.string().nullish(),
 })
 
 export type SearchResultItem = z.infer<typeof SearchResultItem>
+
+const SearchAggregations = z.object({
+    type: z.record(z.string(), z.number()).optional(),
+})
 
 const SearchResponse = z.object({
     results: z.array(SearchResultItem),
@@ -24,46 +49,121 @@ const SearchResponse = z.object({
     pageCount: z.number(),
     pageNumber: z.number(),
     pageSize: z.number(),
+    aggregations: SearchAggregations.optional(),
 })
 
 export type SearchResponse = z.infer<typeof SearchResponse>
 
-type Props = {
-    searchTerm: string
-    pageNumber?: number
-}
-
-export const useSearchQuery = ({ searchTerm, pageNumber = 1 }: Props) => {
+export const useSearchQuery = () => {
+    const searchTerm = useSearchTerm()
+    const pageNumber = usePageNumber() + 1
+    const typeFilter = useTypeFilter()
     const trimmedSearchTerm = searchTerm.trim()
     const debouncedSearchTerm = useDebounce(trimmedSearchTerm, 300)
-    return useQuery<SearchResponse>({
+    const isCooldownActive = useIsSearchCooldownActive()
+    const awaitingNewInput = useIsSearchAwaitingNewInput()
+    const { acknowledgeCooldownFinished } = useSearchCooldownActions()
+    const previousSearchTermRef = useRef(debouncedSearchTerm)
+    const queryClient = useQueryClient()
+
+    useEffect(() => {
+        if (previousSearchTermRef.current !== debouncedSearchTerm) {
+            if (awaitingNewInput) {
+                acknowledgeCooldownFinished()
+            }
+        }
+        previousSearchTermRef.current = debouncedSearchTerm
+    }, [debouncedSearchTerm, awaitingNewInput, acknowledgeCooldownFinished])
+
+    const shouldEnable =
+        !!trimmedSearchTerm &&
+        trimmedSearchTerm.length >= 1 &&
+        !isCooldownActive &&
+        !awaitingNewInput
+
+    const query = useQuery<SearchResponse, ApiError>({
         queryKey: [
             'search',
-            { searchTerm: debouncedSearchTerm.toLowerCase(), pageNumber },
+            {
+                searchTerm: debouncedSearchTerm.toLowerCase(),
+                pageNumber,
+                typeFilter,
+            },
         ],
-        queryFn: async () => {
+        queryFn: async ({ signal }) => {
+            // Don't create span for empty searches
             if (!debouncedSearchTerm || debouncedSearchTerm.length < 1) {
-                return SearchResponse.parse({ results: [], totalResults: 0 })
+                return SearchResponse.parse({
+                    results: [],
+                    totalResults: 0,
+                })
             }
-            const params = new URLSearchParams({
-                q: debouncedSearchTerm,
-                page: pageNumber.toString(),
-            })
 
-            const response = await fetch(
-                '/docs/_api/v1/search?' + params.toString()
-            )
-            if (!response.ok) {
-                throw new Error(
-                    'Failed to fetch search results: ' + response.statusText
+            return traceSpan('execute search', async (span) => {
+                // Track frontend search (even if backend response is cached by CloudFront)
+                span.setAttribute(ATTR_SEARCH_QUERY, debouncedSearchTerm)
+                span.setAttribute(ATTR_SEARCH_PAGE, pageNumber)
+
+                const params = new URLSearchParams({
+                    q: debouncedSearchTerm,
+                    page: pageNumber.toString(),
+                })
+
+                // Only add type filter if not 'all'
+                if (typeFilter !== 'all') {
+                    params.set('type', typeFilter)
+                }
+
+                const response = await fetch(
+                    '/docs/_api/v1/search?' + params.toString(),
+                    { signal }
                 )
-            }
-            const data = await response.json()
-            return SearchResponse.parse(data)
+                if (!response.ok) {
+                    throw await createApiErrorFromResponse(response)
+                }
+                const data = await response.json()
+                const searchResponse = SearchResponse.parse(data)
+
+                // Add result metrics to span
+                span.setAttribute(
+                    ATTR_SEARCH_RESULTS_TOTAL,
+                    searchResponse.totalResults
+                )
+                span.setAttribute(
+                    ATTR_SEARCH_RESULTS_COUNT,
+                    searchResponse.results.length
+                )
+                span.setAttribute(
+                    ATTR_SEARCH_PAGE_COUNT,
+                    searchResponse.pageCount
+                )
+
+                return searchResponse
+            })
         },
-        enabled: !!trimmedSearchTerm && trimmedSearchTerm.length >= 1,
+        enabled: shouldEnable,
         refetchOnWindowFocus: false,
+        refetchOnMount: !isCooldownActive,
         placeholderData: keepPreviousData,
         staleTime: 1000 * 60 * 5, // 5 minutes
+        retry: shouldRetry,
     })
+
+    const cancelQuery = useCallback(() => {
+        queryClient.cancelQueries({
+            queryKey: [
+                'search',
+                {
+                    searchTerm: debouncedSearchTerm.toLowerCase(),
+                    pageNumber,
+                    typeFilter,
+                },
+            ],
+        })
+    }, [queryClient, debouncedSearchTerm, pageNumber, typeFilter])
+
+    return {
+        ...query,
+        cancelQuery,
+    }
 }

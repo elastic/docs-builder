@@ -5,7 +5,7 @@
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
-using Elastic.Documentation.Configuration.Synonyms;
+using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.ServiceDefaults.Logging;
 using Microsoft.Extensions.DependencyInjection;
@@ -35,11 +35,11 @@ public static class AppDefaultsExtensions
 			{
 				var versionConfiguration = p.CreateVersionConfiguration();
 				var products = p.CreateProducts(versionConfiguration);
-				var synonyms = p.CreateSynonymsConfiguration();
+				var search = p.CreateSearchConfiguration();
 				_ = s.AddSingleton(p.CreateLegacyUrlMappings(products));
 				_ = s.AddSingleton(products);
 				_ = s.AddSingleton(versionConfiguration);
-				_ = s.AddSingleton(synonyms);
+				_ = s.AddSingleton(search);
 				configure?.Invoke(s, p);
 			});
 		_ = builder.Services.AddElasticDocumentationLogging(globalArgs.LogLevel);

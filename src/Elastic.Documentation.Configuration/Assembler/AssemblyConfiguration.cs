@@ -204,9 +204,18 @@ public record AssemblyConfiguration
 			if (SemVersion.TryParse(current + ".0", out var currentVersion))
 			{
 				logger.LogInformation("Current is already using versioned branches {Current}", currentVersion);
+				var previousCurrentVersion = new SemVersion(currentVersion.Major, Math.Max(currentVersion.Minor - 1, 0), 0);
 				if (v >= currentVersion)
 				{
 					logger.LogInformation("Speculative build because {Branch} is gte current {Current}", branchOrTag, currentVersion);
+					match = match with
+					{
+						Speculative = true
+					};
+				}
+				else if (v == previousCurrentVersion)
+				{
+					logger.LogInformation("Speculative build {Branch} is the previous minor '{ProductPreviousMinor}' of current {Current}", branchOrTag, previousCurrentVersion, currentVersion);
 					match = match with
 					{
 						Speculative = true
@@ -219,17 +228,18 @@ public record AssemblyConfiguration
 			else if (product?.VersioningSystem is { } versioningSystem)
 			{
 				logger.LogInformation("Current is not using versioned branches checking product info");
-				var productCurrentVersion = versioningSystem.Current;
-				if (v >= productCurrentVersion)
+				var productVersion = versioningSystem.Current;
+				var anchoredProductVersion = new SemVersion(productVersion.Major, productVersion.Minor, 0);
+				if (v >= anchoredProductVersion)
 				{
-					logger.LogInformation("Speculative build {Branch} is gte product current '{ProductCurrent}'", branchOrTag, productCurrentVersion);
+					logger.LogInformation("Speculative build {Branch} is gte product current '{ProductCurrent}' anchored at {ProductAnchored}", branchOrTag, productVersion, anchoredProductVersion);
 					match = match with
 					{
 						Speculative = true
 					};
 				}
 				else
-					logger.LogInformation("NO speculative build {Branch} is lte product current '{ProductCurrent}'", branchOrTag, productCurrentVersion);
+					logger.LogInformation("NO speculative build {Branch} is lte product current '{ProductCurrent}'", branchOrTag, productVersion);
 			}
 			else
 				logger.LogInformation("No versioning system found for {Repository} on {Branch}", repository, branchOrTag);
@@ -252,6 +262,6 @@ public record AssemblyConfiguration
 
 internal static partial class ContentSourceRegex
 {
-	[GeneratedRegex(@"^\d+\.\d+$", RegexOptions.IgnoreCase, "en-US")]
+	[GeneratedRegex(@"^\d+\.\d+$", RegexOptions.IgnoreCase)]
 	public static partial Regex MatchVersionBranch();
 }

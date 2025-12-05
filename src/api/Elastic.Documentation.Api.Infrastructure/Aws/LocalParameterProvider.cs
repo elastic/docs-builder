@@ -2,10 +2,27 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Microsoft.Extensions.Configuration;
+
 namespace Elastic.Documentation.Api.Infrastructure.Aws;
 
 public class LocalParameterProvider : IParameterProvider
 {
+	private readonly string? _elasticUrlFromSecret;
+	private readonly string? _elasticApiKeyFromSecret;
+
+	public LocalParameterProvider()
+	{
+		// Build a new ConfigurationBuilder to read user secrets
+		var configBuilder = new ConfigurationBuilder();
+		_ = configBuilder.AddUserSecrets("72f50f33-6fb9-4d08-bff3-39568fe370b3");
+		var userSecretsConfig = configBuilder.Build();
+
+		_elasticUrlFromSecret = userSecretsConfig["Parameters:DocumentationElasticUrl"];
+		_elasticApiKeyFromSecret = userSecretsConfig["Parameters:DocumentationElasticApiKey"];
+
+	}
+
 	public async Task<string> GetParam(string name, bool withDecryption = true, Cancel ctx = default)
 	{
 		switch (name)
@@ -24,11 +41,19 @@ public class LocalParameterProvider : IParameterProvider
 				}
 			case "docs-elasticsearch-url":
 				{
-					return GetEnv("DOCUMENTATION_ELASTIC_URL");
+					return GetEnv("DOCUMENTATION_ELASTIC_URL", _elasticUrlFromSecret);
 				}
 			case "docs-elasticsearch-apikey":
 				{
-					return GetEnv("DOCUMENTATION_ELASTIC_APIKEY");
+					return GetEnv("DOCUMENTATION_ELASTIC_APIKEY", _elasticApiKeyFromSecret);
+				}
+			case "docs-kibana-url":
+				{
+					return GetEnv("DOCUMENTATION_KIBANA_URL");
+				}
+			case "docs-kibana-apikey":
+				{
+					return GetEnv("DOCUMENTATION_KIBANA_APIKEY");
 				}
 			case "docs-elasticsearch-index":
 				{

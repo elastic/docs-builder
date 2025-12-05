@@ -2,8 +2,12 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Extensions;
+using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Navigation.Isolated;
+using Elastic.Documentation.Navigation.Isolated.Leaf;
+using Elastic.Documentation.Navigation.Isolated.Node;
 using Elastic.Markdown.IO;
-using Elastic.Markdown.IO.Navigation;
 using FluentAssertions;
 
 namespace Elastic.Markdown.Tests.DocSet;
@@ -13,25 +17,27 @@ public class NestedTocTests(ITestOutputHelper output) : NavigationTestsBase(outp
 	[Fact]
 	public void InjectsNestedTocsIntoDocumentationSet()
 	{
-		var doc = Generator.DocumentationSet.Files.FirstOrDefault(f => f.RelativePath == Path.Combine("development", "index.md")) as MarkdownFile;
+		var doc = Generator.DocumentationSet.MarkdownFiles.FirstOrDefault(f => f.RelativePath == Path.Combine("development", "index.md"));
 
 		doc.Should().NotBeNull();
-		IPositionalNavigation positionalNavigation = Generator.DocumentationSet;
-		positionalNavigation.MarkdownNavigationLookup.Should().ContainKey(doc.CrossLink);
-		var nav = positionalNavigation.MarkdownNavigationLookup[doc.CrossLink];
+		INavigationTraversable navigationTraversable = Generator.DocumentationSet;
+		navigationTraversable.GetNavigationFor(doc).Should().NotBeNull();
+		var nav = navigationTraversable.GetNavigationFor(doc)
+				  ?? throw new Exception($"Could not find nav item for {doc.CrossLink}");
 
+		nav.Should().BeOfType<TableOfContentsNavigation<MarkdownFile>>();
 		var parent = nav.Parent;
 
 		// ensure we link back up to the main toc in docset yaml
 		parent.Should().NotBeNull();
-
-		// its parent should be null
-		parent.Parent.Should().BeNull();
+		parent.Should().BeOfType<DocumentationSetNavigation<MarkdownFile>>();
 
 		// its parent should point to an index
-		var index = (parent as DocumentationGroup)?.Index;
+		var index = (parent as DocumentationSetNavigation<MarkdownFile>)?.Index;
 		index.Should().NotBeNull();
-		index.RelativePath.Should().Be("index.md");
+		var fileNav = index as FileNavigationLeaf<MarkdownFile>;
+		fileNav.Should().NotBeNull();
+		fileNav.Model.RelativePath.OptionalWindowsReplace().Should().Be("index.md");
 
 	}
 }

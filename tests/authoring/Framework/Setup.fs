@@ -16,7 +16,7 @@ open Elastic.Documentation.Configuration
 open Elastic.Documentation.Configuration.LegacyUrlMappings
 open Elastic.Documentation.Configuration.Versions
 open Elastic.Documentation.Configuration.Products
-open Elastic.Documentation.Configuration.Synonyms
+open Elastic.Documentation.Configuration.Search
 open Elastic.Markdown
 open Elastic.Markdown.IO
 open JetBrains.Annotations
@@ -63,12 +63,18 @@ type Setup =
         yaml.WriteLine("  - docs-content")
         yaml.WriteLine("  - elasticsearch")
         yaml.WriteLine("  - kibana")
+        yaml.WriteLine("exclude:")
+        yaml.WriteLine("  - '_*.md'")
         yaml.WriteLine("toc:")
         let markdownFiles = fileSystem.Directory.EnumerateFiles(root.FullName, "*.md", SearchOption.AllDirectories)
         markdownFiles
         |> Seq.iter(fun markdownFile ->
             let relative = fileSystem.Path.GetRelativePath(root.FullName, markdownFile);
-            yaml.WriteLine($" - file: {relative}");
+            // Skip files that match the exclusion pattern (any path segment starting with _)
+            let pathSegments = relative.Split([|'/'; '\\'|], StringSplitOptions.RemoveEmptyEntries)
+            let shouldExclude = pathSegments |> Array.exists (fun segment -> segment.StartsWith("_"))
+            if not shouldExclude then
+                yaml.WriteLine($" - file: {relative}");
         )
         let redirectFiles = ["5th-page"; "second-page"; "third-page"; "first-page"]
         redirectFiles
@@ -282,7 +288,7 @@ type Setup =
             Endpoints=DocumentationEndpoints(Elasticsearch = ElasticsearchEndpoint.Default),
             ProductsConfiguration = ProductsConfiguration(Products = productDict.ToFrozenDictionary()),
             LegacyUrlMappings = LegacyUrlMappingConfiguration(Mappings = []),
-            SynonymsConfiguration = SynonymsConfiguration(Synonyms = [])
+            SearchConfiguration = SearchConfiguration(Synonyms = Dictionary<string, string[]>(), Rules = [], DiminishTerms = [])
         )
         let context = BuildContext(
             collector,
@@ -297,7 +303,7 @@ type Setup =
         let set = DocumentationSet(context, logger, linkResolver)
         
         
-        let generator = DocumentationGenerator(set, logger, null, null, null, conversionCollector)
+        let generator = DocumentationGenerator(set, logger, null, null, null, null, conversionCollector)
 
         let context = {
             Collector = collector
