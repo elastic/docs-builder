@@ -292,7 +292,8 @@ public class StringHighlightExtensionsTests
 		var text = "APM Architecture for AWS Lambda";
 		var result = text.HighlightTokens(["a"]);
 
-		result.Should().Be("<mark>A</mark>PM <mark>A</mark>rchitecture for <mark>A</mark>WS L<mark>a</mark>mbd<mark>a</mark>");
+		// With starts-with highlighting, only 'a' at word boundaries is highlighted
+		result.Should().Be("<mark>A</mark>PM <mark>A</mark>rchitecture for <mark>A</mark>WS Lambda");
 	}
 
 	[Fact]
@@ -671,7 +672,7 @@ public class StringHighlightExtensionsTests
 	[Fact]
 	public void SynonymsPartialMatchNotHighlighted()
 	{
-		// Synonym "k8s" should not match "k8ss" or "ak8s"
+		// Synonym "k8s" should not match "ak8s" (middle of word) but should match "k8ss" (starts with k8s)
 		var text = "k8ss is not k8s and ak8s is wrong";
 		var synonyms = new Dictionary<string, string[]>
 		{
@@ -679,9 +680,11 @@ public class StringHighlightExtensionsTests
 		};
 		var result = text.HighlightTokens(["kubernetes"], synonyms);
 
-		// k8s within k8ss and ak8s will be highlighted since it's a substring match
-		// This is expected behavior - same as regular tokens
-		result.Should().Contain("<mark>k8s</mark>");
+		// With starts-with highlighting:
+		// - "k8ss" starts with "k8s" so it's highlighted
+		// - "k8s" is a full word match so it's highlighted
+		// - "ak8s" does NOT start with "k8s" so it's NOT highlighted
+		result.Should().Be("<mark>k8s</mark>s is not <mark>k8s</mark> and ak8s is wrong");
 	}
 
 	[Fact]

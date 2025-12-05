@@ -140,6 +140,15 @@ public static class StringHighlightExtensions
 				continue;
 			}
 
+			// Only highlight if the match is at the start of a word (word boundary)
+			if (!IsAtWordBoundary(textSpan, absoluteIndex))
+			{
+				// Not at word boundary, skip this match
+				_ = sb.Append(remaining[..(matchIndex + tokenSpan.Length)]);
+				pos = absoluteIndex + token.Length;
+				continue;
+			}
+
 			// Append text before match, then highlighted token (preserving original case)
 			_ = sb.Append(remaining[..matchIndex])
 				.Append(MarkOpen)
@@ -150,6 +159,40 @@ public static class StringHighlightExtensions
 		}
 
 		return sb.ToString();
+	}
+
+	/// <summary>
+	/// Checks if the given position is at the start of a word (word boundary).
+	/// A word boundary is: start of string, after whitespace, after punctuation,
+	/// or after a closing mark tag.
+	/// </summary>
+	private static bool IsAtWordBoundary(ReadOnlySpan<char> text, int position)
+	{
+		// Start of string is a word boundary
+		if (position == 0)
+			return true;
+
+		// Check if we're right after a closing </mark> tag
+		if (position >= MarkClose.Length)
+		{
+			var potentialMarkClose = text[(position - MarkClose.Length)..position];
+			if (potentialMarkClose.Equals(MarkClose.AsSpan(), StringComparison.OrdinalIgnoreCase))
+				return true;
+		}
+
+		var prevChar = text[position - 1];
+
+		// After whitespace is a word boundary
+		if (char.IsWhiteSpace(prevChar))
+			return true;
+
+		// After punctuation (but not letters/digits) is a word boundary
+		if (char.IsPunctuation(prevChar) || char.IsSymbol(prevChar))
+			return true;
+
+		// After a digit when current is not a digit, or vice versa - not a word boundary for alphanumeric continuity
+		// After a letter when current is also a letter - not a word boundary
+		return false;
 	}
 
 	private static bool IsInsideMarkTagSyntax(ReadOnlySpan<char> text, int position, int tokenLength)
