@@ -10,6 +10,7 @@ Use these guides for tasks like managing documentation files and folders, config
 
 - [Move files and folders](move.md): Move files or folders and automatically update all links in the documentation.
 - [Manage redirects across doc sets](redirects.md): Set up redirects when moving or deleting pages to prevent broken links.
+- [Add changelog entries](changelog.md): Create changelog fragments using the command-line interface.
 
 ## Repository management
 
