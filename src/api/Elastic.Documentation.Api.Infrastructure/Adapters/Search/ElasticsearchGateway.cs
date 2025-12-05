@@ -310,7 +310,7 @@ public partial class ElasticsearchGateway : ISearchGateway
 			else
 				_logger.LogInformation("RRF search completed for '{Query}'. Total hits: {TotalHits}", query, response.Total);
 
-			return ProcessSearchResponse(response, searchQuery);
+			return ProcessSearchResponse(response, searchQuery, _searchConfiguration.SynonymBiDirectional);
 		}
 		catch (Exception ex)
 		{
@@ -319,7 +319,10 @@ public partial class ElasticsearchGateway : ISearchGateway
 		}
 	}
 
-	private static SearchResult ProcessSearchResponse(SearchResponse<DocumentationDocument> response, string searchQuery)
+	private static SearchResult ProcessSearchResponse(
+		SearchResponse<DocumentationDocument> response,
+		string searchQuery,
+		IReadOnlyDictionary<string, string[]> synonyms)
 	{
 		var totalHits = (int)response.Total;
 		var searchTokens = searchQuery.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -341,13 +344,13 @@ public partial class ElasticsearchGateway : ISearchGateway
 					highlightedTitle = string.Join(". ", titleHighlights.Select(h => h.Trim(['|', ' ', '.', '-'])));
 			}
 
-			var title = (highlightedTitle ?? doc.Title).HighlightTokens(searchTokens);
+			var title = (highlightedTitle ?? doc.Title).HighlightTokens(searchTokens, synonyms);
 			var description = (!string.IsNullOrWhiteSpace(highlightedBody) ? highlightedBody : doc.Description ?? string.Empty)
 				.Replace("\r\n", " ")
 				.Replace("\n", " ")
 				.Replace("\r", " ")
 				.Trim(['|', ' '])
-				.HighlightTokens(searchTokens);
+				.HighlightTokens(searchTokens, synonyms);
 
 			return new SearchResultItem
 			{

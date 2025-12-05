@@ -17,8 +17,12 @@ public static class StringHighlightExtensions
 	/// </summary>
 	/// <param name="text">The text to highlight tokens in</param>
 	/// <param name="tokens">The search tokens to highlight</param>
+	/// <param name="synonyms">Optional dictionary of synonyms to also highlight</param>
 	/// <returns>Text with highlighted tokens</returns>
-	public static string HighlightTokens(this string text, ReadOnlySpan<string> tokens)
+	public static string HighlightTokens(
+		this string text,
+		ReadOnlySpan<string> tokens,
+		IReadOnlyDictionary<string, string[]>? synonyms = null)
 	{
 		if (tokens.Length == 0 || string.IsNullOrEmpty(text))
 			return text;
@@ -30,7 +34,18 @@ public static class StringHighlightExtensions
 			if (string.IsNullOrEmpty(token))
 				continue;
 
+			// Highlight the token itself
 			result = HighlightSingleToken(result, token);
+
+			// Highlight synonyms for this token
+			if (synonyms == null || !synonyms.TryGetValue(token, out var tokenSynonyms))
+				continue;
+
+			foreach (var synonym in tokenSynonyms)
+			{
+				if (!string.IsNullOrEmpty(synonym))
+					result = HighlightSingleToken(result, synonym);
+			}
 		}
 
 		return result;
