@@ -101,6 +101,33 @@ export const SearchOrAskAiButton = () => {
         }
     }, [isModalOpen, modalMode])
 
+    useEffect(() => {
+        if (!isModalOpen) return
+
+        const html = document.documentElement
+        const body = document.body
+
+        const originalHtmlOverflow = html.style.overflow
+        const originalBodyOverflow = body.style.overflow
+        const originalHtmlPaddingRight = html.style.paddingRight
+
+        const scrollBarWidth =
+            window.innerWidth - document.documentElement.clientWidth
+
+        html.style.overflow = 'hidden'
+        body.style.overflow = 'hidden'
+
+        if (scrollBarWidth > 0) {
+            html.style.paddingRight = `${scrollBarWidth}px`
+        }
+
+        return () => {
+            html.style.overflow = originalHtmlOverflow
+            body.style.overflow = originalBodyOverflow
+            html.style.paddingRight = originalHtmlPaddingRight
+        }
+    }, [isModalOpen])
+
     if (!isApiAvailable) {
         return null
     }
