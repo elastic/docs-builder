@@ -303,6 +303,9 @@ public record ProductApplicability
 	[YamlMember(Alias = "edot-cf-azure")]
 	public AppliesCollection? EdotCfAzure { get; set; }
 
+	[YamlMember(Alias = "edot-cf-gcp")]
+	public AppliesCollection? EdotCfGcp { get; set; }
+
 	[YamlMember(Alias = "edot-collector")]
 	public AppliesCollection? EdotCollector { get; set; }
 
@@ -343,6 +346,7 @@ public record ProductApplicability
 		AppendProduct("edot-python", EdotPython);
 		AppendProduct("edot-cf-aws", EdotCfAws);
 		AppendProduct("edot-cf-azure", EdotCfAzure);
+		AppendProduct("edot-cf-gcp", EdotCfGcp);
 		AppendProduct("edot-collector", EdotCollector);
 
 		return sb.ToString();

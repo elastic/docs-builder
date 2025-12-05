@@ -2,80 +2,38 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Globalization;
 using System.Text.Json.Serialization;
 using Elastic.Clients.Elasticsearch;
+using Elastic.Clients.Elasticsearch.Aggregations;
+using Elastic.Clients.Elasticsearch.Core.Explain;
 using Elastic.Clients.Elasticsearch.Core.Search;
 using Elastic.Clients.Elasticsearch.QueryDsl;
 using Elastic.Clients.Elasticsearch.Serialization;
 using Elastic.Documentation.Api.Core;
 using Elastic.Documentation.Api.Core.Search;
-using Elastic.Documentation.AppliesTo;
+using Elastic.Documentation.Configuration.Search;
+using Elastic.Documentation.Search;
 using Elastic.Transport;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Api.Infrastructure.Adapters.Search;
 
-internal sealed record DocumentDto
-{
-	[JsonPropertyName("title")]
-	public required string Title { get; init; }
-
-	[JsonPropertyName("search_title")]
-	public required string SearchTitle { get; init; }
-
-	[JsonPropertyName("url")]
-	public required string Url { get; init; }
-
-	[JsonPropertyName("description")]
-	public string? Description { get; init; }
-
-	[JsonPropertyName("type")]
-	public string Type { get; init; } = "doc";
-
-	[JsonPropertyName("body")]
-	public string? Body { get; init; }
-
-	[JsonPropertyName("stripped_body")]
-	public string? StrippedBody { get; init; }
-
-	[JsonPropertyName("abstract")]
-	public string? Abstract { get; init; }
-
-	[JsonPropertyName("url_segment_count")]
-	public int UrlSegmentCount { get; init; }
-
-	[JsonPropertyName("headings")]
-	public string[] Headings { get; init; } = [];
-
-	[JsonPropertyName("parents")]
-	public ParentDocumentDto[] Parents { get; init; } = [];
-
-	[JsonPropertyName("applies_to")]
-	public ApplicableTo? Applies { get; init; }
-
-	[JsonPropertyName("hidden")]
-	public bool Hidden { get; init; } = false;
-}
-
-internal sealed record ParentDocumentDto
-{
-	[JsonPropertyName("title")]
-	public required string Title { get; init; }
-
-	[JsonPropertyName("url")]
-	public required string Url { get; init; }
-}
-
 public partial class ElasticsearchGateway : ISearchGateway
 {
 	private readonly ElasticsearchClient _client;
 	private readonly ElasticsearchOptions _elasticsearchOptions;
+	private readonly SearchConfiguration _searchConfiguration;
 	private readonly ILogger<ElasticsearchGateway> _logger;
+	private readonly IReadOnlyCollection<string> _diminishTerms;
+	private readonly string? _rulesetName;
 
-	public ElasticsearchGateway(ElasticsearchOptions elasticsearchOptions, ILogger<ElasticsearchGateway> logger)
+	public ElasticsearchGateway(ElasticsearchOptions elasticsearchOptions, SearchConfiguration searchConfiguration, ILogger<ElasticsearchGateway> logger)
 	{
 		_logger = logger;
 		_elasticsearchOptions = elasticsearchOptions;
+		_searchConfiguration = searchConfiguration;
+		_rulesetName = searchConfiguration.Rules.Count > 0 ? ExtractRulesetName(elasticsearchOptions.IndexName) : null;
 		var nodePool = new SingleNodePool(new Uri(elasticsearchOptions.Url.Trim()));
 		var clientSettings = new ElasticsearchClientSettings(
 				nodePool,
@@ -85,51 +43,125 @@ public partial class ElasticsearchGateway : ISearchGateway
 			.Authentication(new ApiKey(elasticsearchOptions.ApiKey));
 
 		_client = new ElasticsearchClient(clientSettings);
+
+		_diminishTerms = searchConfiguration.DiminishTerms;
+		DiminishTermsQuery = new MultiMatchQuery
+		{
+			Query = string.Join(' ', _diminishTerms),
+			Operator = Operator.Or,
+			Fields = new[] { "search_title", "url.match" }
+		};
 	}
 
 	public async Task<bool> CanConnect(Cancel ctx) => (await _client.PingAsync(ctx)).IsValidResponse;
 
-	public async Task<(int TotalHits, List<SearchResultItem> Results)> SearchAsync(string query, int pageNumber, int pageSize, Cancel ctx = default) =>
-		await HybridSearchWithRrfAsync(query, pageNumber, pageSize, ctx);
+	public async Task<SearchResult> SearchAsync(string query, int pageNumber, int pageSize, string? filter = null, Cancel ctx = default) =>
+		await SearchImplementation(query, pageNumber, pageSize, filter, ctx);
+
+	/// <summary>
+	/// Extracts the ruleset name from the index name.
+	/// Index name format: "semantic-docs-{namespace}-latest" → ruleset: "docs-ruleset-{namespace}"
+	/// </summary>
+	private static string? ExtractRulesetName(string indexName)
+	{
+		// Index name format: semantic-docs-{namespace}-latest
+		var parts = indexName.Split('-');
+		if (parts is ["semantic", "docs", _, ..])
+			return $"docs-ruleset-{parts[2]}";
+		return null;
+	}
+
+	/// <summary>
+	/// Wraps a query with a RuleQuery if a ruleset is configured.
+	/// </summary>
+	private Query WrapWithRuleQuery(Query query, string searchQuery)
+	{
+		if (_rulesetName is null)
+			return query;
+
+		return new RuleQuery
+		{
+			Organic = query,
+			RulesetIds = [_rulesetName],
+			MatchCriteria = new RuleQueryMatchCriteria { QueryString = searchQuery }
+		};
+	}
+
+	private Query? GenerateTitleKeywordQuery(string searchQuery)
+	{
+		var q = searchQuery.ToLowerInvariant();
+		// This is a known content issue
+		// /docs/reference/apm/agents/dotnet/setup-elasticsearch has 'Elasticsearch' as title.
+		// We need to address this at the source
+		if (q is "elasticsearch")
+			return null;
+		Query query = new TermQuery { Field = "title.keyword", Value = q };
+		if (q.Contains(' '))
+			return query;
+		// this ensures all synonyms get boosted if the title matches fully e.g
+		// k8s and kubernetes would match page names either k8s or kubernetes
+		if (!_searchConfiguration.SynonymBiDirectional.TryGetValue(q, out var synonyms))
+			return query;
+		foreach (var synonym in synonyms)
+			query |= new TermQuery { Field = "title.keyword", Value = synonym };
+		return query;
+	}
 
 	/// <summary>
 	/// Builds the lexical search query for the given search term.
 	/// </summary>
-	private static Query BuildLexicalQuery(string searchQuery)
+	private Query BuildLexicalQuery(string searchQuery)
 	{
-		var tokens = searchQuery.Split(" ");
-		if (tokens is ["datastream" or "datastreams" or "data-stream" or "data-streams"])
-		{
-			// /docs/api/doc/kibana/operation/operation-delete-fleet-epm-packages-pkgname-pkgversion-datastream-assets
-			// Is the only page that uses "datastream" instead of "data streams" this gives it an N of 1 in the entire corpus
-			// which is hard to fix through tweaking boosting, should update the page to use "data streams" instead
-			searchQuery = "data streams";
-			tokens = ["data", "streams"];
-		}
+		var tokens = searchQuery.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
 		var query =
-			(Query)new MultiMatchQuery
+			(Query)new ConstantScoreQuery
 			{
-				Query = searchQuery, Operator = Operator.And, Type = TextQueryType.BoolPrefix,
-				Analyzer = "synonyms_analyzer",
-				Boost = 2.0f,
-				Fields = new[]
+				Filter = new MultiMatchQuery
 				{
-					"search_title.completion",
-					"search_title.completion._2gram",
-					"search_title.completion._3gram"
-				}
+					Query = searchQuery, Operator = Operator.And, Type = TextQueryType.BoolPrefix,
+					Analyzer = "synonyms_analyzer",
+					Fields = new[]
+					{
+						"search_title.completion",
+						"search_title.completion._2gram",
+						"search_title.completion._3gram"
+					}
+				},
+				Boost = 3.0f
 			}
 			|| new MultiMatchQuery
 			{
 				Query = searchQuery, Operator = Operator.And, Type = TextQueryType.BestFields,
 				Analyzer = "synonyms_analyzer",
-				Boost = 0.2f,
-				Fields = new[]
-				{
-					"stripped_body"
-				}
+				Boost = 0.1f,
+				Fields = new[] { "stripped_body" }
 			};
+
+		var titleKeywordQuery = GenerateTitleKeywordQuery(searchQuery);
+		if (titleKeywordQuery is not null)
+			query |= titleKeywordQuery;
+
+		if (searchQuery.Length <= 10)
+		{
+			float? boost = searchQuery.Length switch
+			{
+				1 => 100.0f,
+				2 => 4.0f,
+				_ => null
+			};
+			query |= new ConstantScoreQuery
+			{
+				Filter = new TermQuery
+				{
+					Field = "title.starts_with",
+					Value = searchQuery.ToLowerInvariant(),
+					Boost = boost
+				},
+				Boost = boost
+			};
+		}
+
 		// If the search term is a single word, boost the URL match
 		// This is to ensure that URLs that contain the search term are ranked higher than URLs that don't
 		// We dampen the boost by wrapping it in a constant score query
@@ -140,22 +172,41 @@ public partial class ElasticsearchGateway : ISearchGateway
 			{
 				Filter = new MatchQuery
 				{
-					Field = Infer.Field<DocumentDto>(f => f.Url.Suffix("match")),
+					Field = Infer.Field<DocumentationDocument>(f => f.Url.Suffix("match")),
 					Query = searchQuery
 				},
-				Boost = 1
+				Boost = 0.3f
 			};
 		}
 
-		return new BoostingQuery
+		if (tokens.Length > 2)
 		{
-			Positive = query,
-			NegativeBoost = 0.8,
-			Negative = new MultiMatchQuery
+			query |= new MultiMatchQuery
 			{
-				Query = "plugin client integration", Operator = Operator.Or, Fields = new[] { "search_title", "headings", "url.match" }
-			}
+				Query = searchQuery, Operator = Operator.And, Type = TextQueryType.Phrase,
+				Analyzer = "synonyms_analyzer",
+				Boost = 0.2f,
+				Fields = new[] { "stripped_body" }
+			};
+		}
+
+		var positiveQuery = new BoolQuery
+		{
+			Must = [query],
+			Filter = [DocumentFilter],
+			Should = ScoringQueries
 		};
+
+		Query baseQuery = _diminishTerms.Count == 0
+			? positiveQuery
+			: new BoostingQuery
+			{
+				Positive = positiveQuery,
+				NegativeBoost = 0.8,
+				Negative = DiminishTermsQuery
+			};
+
+		return WrapWithRuleQuery(baseQuery, searchQuery);
 	}
 
 	/// <summary>
@@ -165,89 +216,106 @@ public partial class ElasticsearchGateway : ISearchGateway
 		(Query)new SemanticQuery("title.semantic_text", searchQuery) { Boost = 5.0f }
 		|| new SemanticQuery("abstract.semantic_text", searchQuery) { Boost = 3.0f };
 
-	private static Query BuildFilter() => !(Query)new TermsQuery(Infer.Field<DocumentDto>(f => f.Url.Suffix("keyword")),
-		new TermsQueryField(["/docs", "/docs/", "/docs/404", "/docs/404/"]))
-		&& !(Query)new TermQuery { Field = Infer.Field<DocumentDto>(f => f.Hidden), Value = true };
+	private Query DiminishTermsQuery { get; }
 
-	public async Task<(int TotalHits, List<SearchResultItem> Results)> HybridSearchWithRrfAsync(string query, int pageNumber, int pageSize,
-		Cancel ctx = default)
+	private static Query[] ScoringQueries { get; } =
+	[
+		new RankFeatureQuery
+		{
+			Field = Infer.Field<DocumentationDocument>(f => f.NavigationDepth),
+			Boost = 0.8f
+		},
+		new RankFeatureQuery
+		{
+			Field = Infer.Field<DocumentationDocument>(f => f.NavigationTableOfContents),
+			Boost = 0.8f
+		},
+		new TermQuery { Field = Infer.Field<DocumentationDocument>(f => f.NavigationSection), Value = "reference", Boost = 0.15f },
+		new TermQuery { Field = Infer.Field<DocumentationDocument>(f => f.NavigationSection), Value = "getting-started", Boost = 0.1f }
+	];
+
+	private static Query DocumentFilter { get; } = !(Query)new TermsQuery(Infer.Field<DocumentationDocument>(f => f.Url.Suffix("keyword")),
+		new TermsQueryField(["/docs", "/docs/", "/docs/404", "/docs/404/"]))
+		&& !(Query)new TermQuery { Field = Infer.Field<DocumentationDocument>(f => f.Hidden), Value = true };
+
+	public async Task<SearchResult> SearchImplementation(string query, int pageNumber, int pageSize, string? filter = null, Cancel ctx = default)
 	{
 		const string preTag = "<mark>";
 		const string postTag = "</mark>";
 
 		var searchQuery = query;
-		var lexicalSearchRetriever = BuildLexicalQuery(searchQuery);
-		var semanticSearchRetriever = BuildSemanticQuery(searchQuery);
+		var lexicalQuery = BuildLexicalQuery(searchQuery);
+
+		// Build post_filter for type filtering (applied after aggregations are computed)
+		Query? postFilter = null;
+		if (!string.IsNullOrWhiteSpace(filter))
+			postFilter = new TermQuery { Field = Infer.Field<DocumentationDocument>(f => f.Type), Value = filter };
 
 		try
 		{
-			var response = await _client.SearchAsync<DocumentDto>(s => s
-				.Indices(_elasticsearchOptions.IndexName)
-				.From(Math.Max(pageNumber - 1, 0) * pageSize)
-				.Size(pageSize)
-				.PostFilter(BuildFilter())
-				.Query(BuildLexicalQuery(query))
-				// .Retriever(r => r
-				// 	.Rrf(rrf => rrf
-				// 		.Filter(BuildFilter())
-				// 		.Retrievers(
-				// 			// Lexical/Traditional search retriever
-				// 			ret => ret.Standard(std => std.Query(lexicalSearchRetriever)),
-				// 			// Semantic search retriever
-				// 			ret => ret.Standard(std => std.Query(semanticSearchRetriever))
-				// 		)
-				// 		.RankConstant(60) // Controls how much weight is given to document ranking
-				// 		.RankWindowSize(100)
-				// 	)
-				// )
-				.Source(sf => sf
-					.Filter(f => f
-						.Includes(
-							e => e.Type,
-							e => e.Title,
-							e => e.SearchTitle,
-							e => e.Url,
-							e => e.Description,
-							e => e.Parents,
-							e => e.Headings
+			var response = await _client.SearchAsync<DocumentationDocument>(s =>
+			{
+				_ = s
+					.Indices(_elasticsearchOptions.IndexName)
+					.From(Math.Max(pageNumber - 1, 0) * pageSize)
+					.Size(pageSize)
+					.Query(lexicalQuery)
+					.Aggregations(agg => agg
+						.Add("type", a => a.Terms(t => t.Field(f => f.Type)))
+					)
+					.Source(sf => sf
+						.Filter(f => f
+							.Includes(
+								e => e.Type,
+								e => e.Title,
+								e => e.SearchTitle,
+								e => e.Url,
+								e => e.Description,
+								e => e.Parents,
+								e => e.Headings
+							)
 						)
 					)
-				)
-				.Highlight(h => h
-					.RequireFieldMatch(true)
-					.Fields(f => f
-						.Add(Infer.Field<DocumentDto>(d => d.Title), hf => hf
-							.FragmentSize(150)
-							.NumberOfFragments(3)
-							.NoMatchSize(150)
-							.BoundaryChars(":.!?\t\n")
-							.BoundaryScanner(BoundaryScanner.Sentence)
-							.BoundaryMaxScan(15)
-							.FragmentOffset(0)
-							.HighlightQuery(q => q.Match(m => m
-								.Field(d => d.Title)
-								.Query(searchQuery)
-								.Analyzer("highlight_analyzer")
-							))
-							.PreTags(preTag)
-							.PostTags(postTag))
-						.Add(Infer.Field<DocumentDto>(d => d.StrippedBody), hf => hf
-							.FragmentSize(150)
-							.NumberOfFragments(3)
-							.NoMatchSize(150)
-							.BoundaryChars(":.!?\t\n")
-							.BoundaryScanner(BoundaryScanner.Sentence)
-							.BoundaryMaxScan(15)
-							.FragmentOffset(0)
-							.HighlightQuery(q => q.Match(m => m
-								.Field(d => d.StrippedBody)
-								.Query(searchQuery)
-								.Analyzer("highlight_analyzer")
-							))
-							.PreTags(preTag)
-							.PostTags(postTag))
-					)
-				), ctx);
+					.Highlight(h => h
+						.RequireFieldMatch(true)
+						.Fields(f => f
+							.Add(Infer.Field<DocumentationDocument>(d => d.SearchTitle.Suffix("completion")), hf => hf
+								.FragmentSize(150)
+								.NumberOfFragments(3)
+								.NoMatchSize(150)
+								.BoundaryChars(":.!?\t\n")
+								.BoundaryScanner(BoundaryScanner.Sentence)
+								.BoundaryMaxScan(15)
+								.FragmentOffset(0)
+								.HighlightQuery(q => q.Match(m => m
+									.Field(d => d.SearchTitle.Suffix("completion"))
+									.Query(searchQuery)
+									.Analyzer("highlight_analyzer")
+								))
+								.PreTags(preTag)
+								.PostTags(postTag))
+							.Add(Infer.Field<DocumentationDocument>(d => d.StrippedBody), hf => hf
+								.FragmentSize(150)
+								.NumberOfFragments(3)
+								.NoMatchSize(150)
+								.BoundaryChars(":.!?\t\n")
+								.BoundaryScanner(BoundaryScanner.Sentence)
+								.BoundaryMaxScan(15)
+								.FragmentOffset(0)
+								.HighlightQuery(q => q.Match(m => m
+									.Field(d => d.StrippedBody)
+									.Query(searchQuery)
+									.Analyzer("highlight_analyzer")
+								))
+								.PreTags(preTag)
+								.PostTags(postTag))
+						)
+					);
+
+				// Apply post_filter if a filter is specified
+				if (postFilter is not null)
+					_ = s.PostFilter(postFilter);
+			}, ctx);
 
 			if (!response.IsValidResponse)
 			{
@@ -264,7 +332,7 @@ public partial class ElasticsearchGateway : ISearchGateway
 		}
 	}
 
-	private static (int TotalHits, List<SearchResultItem> Results) ProcessSearchResponse(SearchResponse<DocumentDto> response)
+	private static SearchResult ProcessSearchResponse(SearchResponse<DocumentationDocument> response)
 	{
 		var totalHits = (int)response.Total;
 
@@ -273,12 +341,16 @@ public partial class ElasticsearchGateway : ISearchGateway
 			var hit = response.Hits.ElementAtOrDefault(index);
 			var highlights = hit?.Highlight;
 
+			string? highlightedTitle = null;
 			string? highlightedBody = null;
 
 			if (highlights != null)
 			{
 				if (highlights.TryGetValue("stripped_body", out var bodyHighlights) && bodyHighlights.Count > 0)
-					highlightedBody = string.Join(". ", bodyHighlights.Select(h => h.TrimEnd('.')));
+					highlightedBody = string.Join(". ", bodyHighlights.Select(h => h.TrimEnd('.', ' ', '-')));
+
+				if (highlights.TryGetValue("search_title.completion", out var titleHighlights) && titleHighlights.Count > 0)
+					highlightedTitle = string.Join(". ", titleHighlights.Select(h => h.TrimEnd('.', ' ', '-')));
 			}
 
 			return new SearchResultItem
@@ -294,11 +366,25 @@ public partial class ElasticsearchGateway : ISearchGateway
 					Url = parent.Url
 				}).ToArray(),
 				Score = (float)(hit?.Score ?? 0.0),
+				HighlightedTitle = highlightedTitle,
 				HighlightedBody = highlightedBody
 			};
 		}).ToList();
 
-		return (totalHits, results);
+		// Extract aggregations
+		var aggregations = new Dictionary<string, long>();
+		if (response.Aggregations?.TryGetValue("type", out var typeAgg) == true && typeAgg is StringTermsAggregate stringTermsAgg)
+		{
+			foreach (var bucket in stringTermsAgg.Buckets)
+				aggregations[bucket.Key.ToString()!] = bucket.DocCount;
+		}
+
+		return new SearchResult
+		{
+			TotalHits = totalHits,
+			Results = results,
+			Aggregations = aggregations
+		};
 	}
 
 	/// <summary>
@@ -309,7 +395,6 @@ public partial class ElasticsearchGateway : ISearchGateway
 	{
 		var searchQuery = query;
 		var lexicalQuery = BuildLexicalQuery(searchQuery);
-		//var semanticQuery = BuildSemanticQuery(searchQuery);
 
 		// Combine queries with bool should to match RRF behavior
 		var combinedQuery = (Query)new BoolQuery
@@ -321,7 +406,7 @@ public partial class ElasticsearchGateway : ISearchGateway
 		try
 		{
 			// First, find the document by URL
-			var getDocResponse = await _client.SearchAsync<DocumentDto>(s => s
+			var getDocResponse = await _client.SearchAsync<DocumentationDocument>(s => s
 				.Indices(_elasticsearchOptions.IndexName)
 				.Query(q => q.Term(t => t.Field(f => f.Url).Value(documentUrl)))
 				.Size(1), ctx);
@@ -340,7 +425,7 @@ public partial class ElasticsearchGateway : ISearchGateway
 			var documentId = getDocResponse.Hits.First().Id;
 
 			// Now explain why this document matches (or doesn't match) the query
-			var explainResponse = await _client.ExplainAsync<DocumentDto>(_elasticsearchOptions.IndexName, documentId, e => e
+			var explainResponse = await _client.ExplainAsync<DocumentationDocument>(_elasticsearchOptions.IndexName, documentId, e => e
 				.Query(combinedQuery), ctx);
 
 			if (!explainResponse.IsValidResponse)
@@ -381,14 +466,14 @@ public partial class ElasticsearchGateway : ISearchGateway
 	/// <summary>
 	/// Formats the Elasticsearch explanation into a readable string with indentation.
 	/// </summary>
-	private static string FormatExplanation(Elastic.Clients.Elasticsearch.Core.Explain.ExplanationDetail? explanation, int indent)
+	private static string FormatExplanation(ExplanationDetail? explanation, int indent)
 	{
 		if (explanation == null)
 			return string.Empty;
 
 		var indentStr = new string(' ', indent * 2);
-		var value = explanation.Value.ToString("F4", System.Globalization.CultureInfo.InvariantCulture);
-		var desc = explanation.Description ?? "No description";
+		var value = explanation.Value.ToString("F4", CultureInfo.InvariantCulture);
+		var desc = explanation.Description;
 		var result = $"{indentStr}{value} - {desc}\n";
 
 		if (explanation.Details != null && explanation.Details.Count > 0)
@@ -410,7 +495,7 @@ public partial class ElasticsearchGateway : ISearchGateway
 		Cancel ctx = default)
 	{
 		// First, get the top result
-		var searchResults = await HybridSearchWithRrfAsync(query, 1, 1, ctx);
+		var searchResults = await SearchImplementation(query, 1, 1, null, ctx);
 		var topResultUrl = searchResults.Results.FirstOrDefault()?.Url;
 
 		if (string.IsNullOrEmpty(topResultUrl))
@@ -446,6 +531,13 @@ public sealed record ExplainResult
 	public string Explanation { get; init; } = string.Empty;
 }
 
-[JsonSerializable(typeof(DocumentDto))]
-[JsonSerializable(typeof(ParentDocumentDto))]
+[JsonSerializable(typeof(DocumentationDocument))]
+[JsonSerializable(typeof(ParentDocument))]
+[JsonSerializable(typeof(RuleQueryMatchCriteria))]
 internal sealed partial class EsJsonContext : JsonSerializerContext;
+
+internal sealed record RuleQueryMatchCriteria
+{
+	[JsonPropertyName("query_string")]
+	public required string QueryString { get; init; }
+}

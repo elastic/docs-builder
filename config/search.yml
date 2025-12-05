@@ -1,0 +1,85 @@
+# Dampen the impact of search results that contain these terms.
+# Use sparingly, in general our query relevance should be good enough.
+diminish_terms:
+  - plugin
+  - client
+  - integration
+  - curator
+  - hadoop
+  - glossary
+
+# Query rules, to promote certain results over others.
+# Use sparingly, in general our query relevance should be good enough.
+rules:
+  # datastreams require this special handling because `datastream` is really unique vs the other spellings. 
+  - rule_id: pin-data-streams
+    type: pinned
+    criteria:
+      - type: exact
+        metadata: query_string
+        values:
+          - data stream
+          - data-stream
+          - data-streams
+          - datastream
+          - datastreams
+    actions:
+      ids:
+        - /docs/manage-data/data-store/data-streams
+  # /docs/extend/logstash wins on relevance and based on its navigation type and depth has every right to win.
+  # we, however, want /docs/reference/logstash to be the first result and not the 2nd.
+  - rule_id: pin-logstash
+    type: pinned
+    criteria:
+      - type: exact
+        metadata: query_string
+        values:
+          - logstash
+    actions:
+      ids:
+        - /docs/reference/logstash
+
+
+synonyms:
+  - [ ".net", "c#", "csharp", "dotnet", "net" ]
+  - [ "apm", "application performance monitoring" ]
+  - [ "aws", "amazon" ]
+  - [ "ccr", "cross-cluster replication", "cross cluster replication" ]
+  - [ "ccs", "cross cluster search", "cross-cluster search", "spaghetti" ]
+  - [ "cps", "cross project search", "cross-project search" ]
+  - [ "data-stream", "data stream", "datastream => data-streams"]
+  - [ "data-streams", "data streams", "datastreams"]
+  - [ "ecctl", "elastic cloud control" ]
+  - [ "ece", "elastic cloud enterprise" ]
+  - [ "ech", "elastic cloud hosted", "ess" ]
+  - [ "eck", "elastic cloud on kubernetes" ]
+  - [ "ecs", "elastic common schema" ]
+  - [ "edot", "elastic distribution of opentelemetry" ]
+  - [ "edr", "endpoint detection response" ]
+  - [ "eis", "elastic inference service" ]
+  - [ "eks", "elastic kubernetes service" ]
+  - [ "elastic distributions of opentelemetry", "edot" ]
+  - [ "elastic learned sparse encoder", "elser" ]
+  - [ "elasticsearch service", "elastic cloud" ]
+  - [ "elv2", "elastic license v2" ]
+  - [ "es", "elasticsearch" ]
+  - [ "esaas", "elastic stack as a service" ]
+  - [ "esql", "es|ql => esql" ]
+  - [ "gcp", "google cloud platform" ]
+  - [ "ilm", "index lifecycle management" ]
+  - [ "javascript", "js", "node", "nodejs", "node.js" ]
+  - [ "k8s", "kubernetes" ]
+  - [ "knn", "k-nearest neighbors" ]
+  - [ "kpi", "key performance indicator" ]
+  - [ "kql", "kibana query language" ]
+  - [ "logsdb", "logs datastream", "logs data stream" ]
+  - [ "machine-learning", "machine learning", "ml => machine learning" ]
+  - [ "motlp", "managed otlp" ]
+  - [ "opentelemetry", "otel" ]
+  - [ "querydsl", "query dsl", "query dsl"]
+  - [ "rag", "retrieval augmented generation" ]
+  - [ "s3", "aws s3", "amazon s3" ]
+  - [ "sso", "single sign-on" ]
+  - [ "traffic filter", "network security" ]
+  - [ "tsvb", "time series visual builder" ]
+

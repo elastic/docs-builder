@@ -7,6 +7,42 @@ using System.Runtime.CompilerServices;
 
 namespace Elastic.Documentation.Navigation;
 
+public static class NavigationExtensions
+{
+	extension(INavigationItem navigationItem)
+	{
+		public INavigationItem[] GetParents()
+		{
+			var parents = new List<INavigationItem>();
+			var parent = navigationItem.Parent;
+			do
+			{
+				if (parent is null)
+					continue;
+				if (parents.All(i => i.Url != parent.Url))
+					parents.Add(parent);
+
+				parent = parent.Parent;
+			} while (parent != null);
+
+			return [.. parents];
+		}
+
+		public int NavigationDepth => navigationItem.GetParents().Length;
+
+		public string? NavigationSection
+		{
+			get
+			{
+				var parents = navigationItem.GetParents();
+				if (parents.Length <= 1)
+					return navigationItem.NavigationTitle.ToLowerInvariant();
+				return parents.Reverse().Skip(1).FirstOrDefault()?.NavigationTitle.ToLowerInvariant();
+			}
+		}
+	}
+}
+
 public interface INavigationTraversable
 {
 	ConditionalWeakTable<IDocumentationFile, INavigationItem> NavigationDocumentationFileLookup { get; }
@@ -71,22 +107,7 @@ public interface INavigationTraversable
 		NavigationDocumentationFileLookup.TryGetValue(file, out var navigation)
 			? navigation : throw new InvalidOperationException($"Could not find {file.NavigationTitle} in navigation");
 
-	INavigationItem[] GetParents(INavigationItem current)
-	{
-		var parents = new List<INavigationItem>();
-		var parent = current.Parent;
-		do
-		{
-			if (parent is null)
-				continue;
-			if (parents.All(i => i.Url != parent.Url))
-				parents.Add(parent);
-
-			parent = parent.Parent;
-		} while (parent != null);
-
-		return [.. parents];
-	}
+	INavigationItem[] GetParents(INavigationItem current) => current.GetParents();
 
 	INavigationItem[] GetParentsOfMarkdownFile(IDocumentationFile file) =>
 		NavigationDocumentationFileLookup.TryGetValue(file, out var navigation) ? GetParents(navigation) : [];

@@ -2,23 +2,16 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.IO.Abstractions;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Elastic.ApiExplorer.Elasticsearch;
-using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
-using Elastic.Documentation.Navigation;
-using Elastic.Documentation.Search;
 using Elastic.Ingest.Elasticsearch;
 using Elastic.Ingest.Elasticsearch.Indices;
-using Elastic.Markdown.Helpers;
 using Elastic.Transport;
 using Elastic.Transport.Products.Elasticsearch;
-using Markdig.Parsers;
-using Markdig.Syntax;
 using Microsoft.Extensions.Logging;
 using NetEscapades.EnumGenerators;
 
@@ -27,13 +20,13 @@ namespace Elastic.Markdown.Exporters.Elasticsearch;
 [EnumExtensions]
 public enum IngestStrategy { Reindex, Multiplex }
 
-public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
+public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 {
 	private readonly IDiagnosticsCollector _collector;
 	private readonly IDocumentationConfigurationContext _context;
 	private readonly ILogger _logger;
-	private readonly ElasticsearchLexicalExporter _lexicalChannel;
-	private readonly ElasticsearchSemanticExporter _semanticChannel;
+	private readonly ElasticsearchLexicalIngestChannel _lexicalChannel;
+	private readonly ElasticsearchSemanticIngestChannel _semanticChannel;
 
 	private readonly ElasticsearchEndpoint _endpoint;
 
@@ -44,8 +37,10 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 	private string _currentLexicalHash = string.Empty;
 	private string _currentSemanticHash = string.Empty;
 
-	private readonly IReadOnlyCollection<string> _synonyms;
+	private readonly IReadOnlyDictionary<string, string[]> _synonyms;
+	private readonly IReadOnlyCollection<QueryRule> _rules;
 	private readonly VersionsConfiguration _versionsConfiguration;
+	private readonly string _fixedSynonymsHash;
 
 	public ElasticsearchMarkdownExporter(
 		ILoggerFactory logFactory,
@@ -62,7 +57,8 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 		_indexStrategy = IngestStrategy.Reindex;
 		_indexNamespace = indexNamespace;
 		_versionsConfiguration = context.VersionsConfiguration;
-		_synonyms = context.SynonymsConfiguration.Synonyms;
+		_synonyms = context.SearchConfiguration.Synonyms;
+		_rules = context.SearchConfiguration.Rules;
 		var es = endpoints.Elasticsearch;
 
 		var configuration = new ElasticsearchConfiguration(es.Uri)
@@ -89,8 +85,18 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 		};
 
 		_transport = new DistributedTransport(configuration);
-		_lexicalChannel = new ElasticsearchLexicalExporter(logFactory, collector, es, indexNamespace, _transport);
-		_semanticChannel = new ElasticsearchSemanticExporter(logFactory, collector, es, indexNamespace, _transport);
+
+		string[] fixedSynonyms = ["esql", "data-stream", "data-streams", "machine-learning"];
+		var indexTimeSynonyms = _synonyms.Aggregate(new List<SynonymRule>(), (acc, synonym) =>
+		{
+			var id = synonym.Key;
+			acc.Add(new SynonymRule { Id = id, Synonyms = string.Join(", ", synonym.Value) });
+			return acc;
+		}).Where(r => fixedSynonyms.Contains(r.Id)).Select(r => r.Synonyms).ToArray();
+		_fixedSynonymsHash = HashedBulkUpdate.CreateHash(string.Join(",", indexTimeSynonyms));
+
+		_lexicalChannel = new ElasticsearchLexicalIngestChannel(logFactory, collector, es, indexNamespace, _transport, indexTimeSynonyms);
+		_semanticChannel = new ElasticsearchSemanticIngestChannel(logFactory, collector, es, indexNamespace, _transport, indexTimeSynonyms);
 	}
 
 	/// <inheritdoc />
@@ -99,7 +105,8 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 		_currentLexicalHash = await _lexicalChannel.Channel.GetIndexTemplateHashAsync(ctx) ?? string.Empty;
 		_currentSemanticHash = await _semanticChannel.Channel.GetIndexTemplateHashAsync(ctx) ?? string.Empty;
 
-		await PublishSynonymsAsync($"docs-{_indexNamespace}", ctx);
+		await PublishSynonymsAsync(ctx);
+		await PublishQueryRulesAsync(ctx);
 		_ = await _lexicalChannel.Channel.BootstrapElasticsearchAsync(BootstrapMethod.Failure, null, ctx);
 
 		// if the previous hash does not match the current hash, we know already we want to multiplex to a new index
@@ -146,25 +153,24 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 		async ValueTask<bool> IndexExists(string name) => (await _transport.HeadAsync(name, ctx)).ApiCallDetails.HasSuccessfulStatusCode;
 	}
 
-	private async Task PublishSynonymsAsync(string setName, CancellationToken ctx)
+	private async Task PublishSynonymsAsync(Cancel ctx)
 	{
+		var setName = $"docs-{_indexNamespace}";
 		_logger.LogInformation("Publishing synonym set '{SetName}' to Elasticsearch", setName);
 
 		var synonymRules = _synonyms.Aggregate(new List<SynonymRule>(), (acc, synonym) =>
 		{
-			acc.Add(new SynonymRule
-			{
-				Id = synonym.Split(",", StringSplitOptions.RemoveEmptyEntries)[0].Trim(),
-				Synonyms = synonym
-			});
+			var id = synonym.Key;
+			acc.Add(new SynonymRule { Id = id, Synonyms = string.Join(", ", synonym.Value) });
 			return acc;
 		});
 
-		var synonymsSet = new SynonymsSet
-		{
-			Synonyms = synonymRules
-		};
+		var synonymsSet = new SynonymsSet { Synonyms = synonymRules };
+		await PutSynonyms(synonymsSet, setName, ctx);
+	}
 
+	private async Task PutSynonyms(SynonymsSet synonymsSet, string setName, Cancel ctx)
+	{
 		var json = JsonSerializer.Serialize(synonymsSet, SynonymSerializerContext.Default.SynonymsSet);
 
 		var response = await _transport.PutAsync<StringResponse>($"_synonyms/{setName}", PostData.String(json), ctx);
@@ -173,6 +179,46 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 			_collector.EmitGlobalError($"Failed to publish synonym set '{setName}'. Reason: {response.ApiCallDetails.OriginalException?.Message ?? response.ToString()}");
 		else
 			_logger.LogInformation("Successfully published synonym set '{SetName}'.", setName);
+	}
+
+	private async Task PublishQueryRulesAsync(Cancel ctx)
+	{
+		if (_rules.Count == 0)
+		{
+			_logger.LogInformation("No query rules to publish");
+			return;
+		}
+
+		var rulesetName = $"docs-ruleset-{_indexNamespace}";
+		_logger.LogInformation("Publishing query ruleset '{RulesetName}' with {Count} rules to Elasticsearch", rulesetName, _rules.Count);
+
+		var rulesetRules = _rules.Select(r => new QueryRulesetRule
+		{
+			RuleId = r.RuleId,
+			Type = r.Type.ToString().ToLowerInvariant(),
+			Criteria = r.Criteria.Select(c => new QueryRulesetCriteria
+			{
+				Type = c.Type.ToString().ToLowerInvariant(),
+				Metadata = c.Metadata,
+				Values = c.Values.ToList()
+			}).ToList(),
+			Actions = new QueryRulesetActions { Ids = r.Actions.Ids.ToList() }
+		}).ToList();
+
+		var ruleset = new QueryRuleset { Rules = rulesetRules };
+		await PutQueryRuleset(ruleset, rulesetName, ctx);
+	}
+
+	private async Task PutQueryRuleset(QueryRuleset ruleset, string rulesetName, Cancel ctx)
+	{
+		var json = JsonSerializer.Serialize(ruleset, QueryRulesetSerializerContext.Default.QueryRuleset);
+
+		var response = await _transport.PutAsync<StringResponse>($"_query_rules/{rulesetName}", PostData.String(json), ctx);
+
+		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
+			_collector.EmitGlobalError($"Failed to publish query ruleset '{rulesetName}'. Reason: {response.ApiCallDetails.OriginalException?.Message ?? response.ToString()}");
+		else
+			_logger.LogInformation("Successfully published query ruleset '{RulesetName}'.", rulesetName);
 	}
 
 	private async ValueTask<long> CountAsync(string index, string body, Cancel ctx = default)
@@ -385,143 +431,6 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 		} while (!completed);
 	}
 
-	/// <summary>
-	/// Assigns hash, last updated, and batch index date to a documentation document.
-	/// </summary>
-	private void AssignDocumentMetadata(DocumentationDocument doc)
-	{
-		var semanticHash = _semanticChannel.Channel.ChannelHash;
-		var lexicalHash = _lexicalChannel.Channel.ChannelHash;
-		var hash = HashedBulkUpdate.CreateHash(semanticHash, lexicalHash,
-			doc.Url, doc.Type, doc.Body ?? string.Empty, string.Join(",", doc.Headings.OrderBy(h => h)), doc.Url
-		);
-		doc.Hash = hash;
-		doc.LastUpdated = _batchIndexDate;
-		doc.BatchIndexDate = _batchIndexDate;
-	}
-
-	private void CommonEnrichments(DocumentationDocument doc)
-	{
-		var urlComponents = doc.Url.Split('/');
-		doc.SearchTitle = $"{doc.Title} - ({string.Join(" ", urlComponents)}";
-	}
-
-	public async ValueTask<bool> ExportAsync(MarkdownExportFileContext fileContext, Cancel ctx)
-	{
-		var file = fileContext.SourceFile;
-		INavigationTraversable navigation = fileContext.DocumentationSet;
-		var currentNavigation = navigation.GetNavigationFor(file);
-		var url = currentNavigation.Url;
-
-		if (url is "/docs" or "/docs/404")
-		{
-			// Skip the root and 404 pages
-			_logger.LogInformation("Skipping export for {Url}", url);
-			return true;
-		}
-
-
-		// Remove the first h1 because we already have the title
-		// and we don't want it to appear in the body
-		var h1 = fileContext.Document.Descendants<HeadingBlock>().FirstOrDefault(h => h.Level == 1);
-		if (h1 is not null)
-			_ = fileContext.Document.Remove(h1);
-
-		var body = LlmMarkdownExporter.ConvertToLlmMarkdown(fileContext.Document, fileContext.BuildContext);
-
-		var headings = fileContext.Document.Descendants<HeadingBlock>()
-			.Select(h => h.GetData("header") as string ?? string.Empty) // TODO: Confirm that 'header' data is correctly set for all HeadingBlock instances and that this extraction is reliable.
-			.Where(text => !string.IsNullOrEmpty(text))
-			.ToArray();
-
-		var strippedBody = body.StripMarkdown();
-		var @abstract = !string.IsNullOrEmpty(strippedBody)
-			? strippedBody[..Math.Min(strippedBody.Length, 400)] + " " + string.Join(" \n- ", headings)
-			: string.Empty;
-
-		// this is temporary until https://github.com/elastic/docs-builder/pull/2070 lands
-		// this PR will add a service for us to resolve to a versioning scheme.
-		var appliesTo = fileContext.SourceFile.YamlFrontMatter?.AppliesTo ?? ApplicableTo.Default;
-
-		var doc = new DocumentationDocument
-		{
-			Url = url,
-			Title = file.Title,
-			Body = body,
-			StrippedBody = strippedBody,
-			Description = fileContext.SourceFile.YamlFrontMatter?.Description,
-			Abstract = @abstract,
-			Applies = appliesTo,
-			Parents = navigation.GetParentsOfMarkdownFile(file).Select(i => new ParentDocument
-			{
-				Title = i.NavigationTitle,
-				Url = i.Url
-			}).Reverse().ToArray(),
-			Headings = headings,
-			Hidden = fileContext.NavigationItem.Hidden
-		};
-
-		AssignDocumentMetadata(doc);
-		CommonEnrichments(doc);
-
-		if (_indexStrategy == IngestStrategy.Multiplex)
-			return await _lexicalChannel.TryWrite(doc, ctx) && await _semanticChannel.TryWrite(doc, ctx);
-		return await _lexicalChannel.TryWrite(doc, ctx);
-	}
-
-	/// <inheritdoc />
-	public async ValueTask<bool> FinishExportAsync(IDirectoryInfo outputFolder, Cancel ctx)
-	{
-
-		// this is temporary; once we implement Elastic.ApiExplorer, this should flow through
-		// we'll rename IMarkdownExporter to IDocumentationFileExporter at that point
-		_logger.LogInformation("Exporting OpenAPI documentation to Elasticsearch");
-
-		var exporter = new OpenApiDocumentExporter(_versionsConfiguration);
-
-		await foreach (var doc in exporter.ExportDocuments(limitPerSource: null, ctx))
-		{
-			AssignDocumentMetadata(doc);
-			var document = MarkdownParser.Parse(doc.Body ?? string.Empty);
-
-			doc.Body = LlmMarkdownExporter.ConvertToLlmMarkdown(document, _context);
-
-			var headings = document.Descendants<HeadingBlock>()
-				.Select(h => h.GetData("header") as string ?? string.Empty) // TODO: Confirm that 'header' data is correctly set for all HeadingBlock instances and that this extraction is reliable.
-				.Where(text => !string.IsNullOrEmpty(text))
-				.ToArray();
-
-			doc.StrippedBody = doc.Body.StripMarkdown();
-			var @abstract = !string.IsNullOrEmpty(doc.StrippedBody)
-				? doc.Body[..Math.Min(doc.StrippedBody.Length, 400)] + " " + string.Join(" \n- ", doc.Headings)
-				: string.Empty;
-			doc.Abstract = @abstract;
-			doc.Headings = headings;
-			CommonEnrichments(doc);
-
-			// Write to channels following the multiplex or reindex strategy
-			if (_indexStrategy == IngestStrategy.Multiplex)
-			{
-				if (!await _lexicalChannel.TryWrite(doc, ctx) || !await _semanticChannel.TryWrite(doc, ctx))
-				{
-					_logger.LogError("Failed to write OpenAPI document {Url}", doc.Url);
-					return false;
-				}
-			}
-			else
-			{
-				if (!await _lexicalChannel.TryWrite(doc, ctx))
-				{
-					_logger.LogError("Failed to write OpenAPI document {Url}", doc.Url);
-					return false;
-				}
-			}
-		}
-
-		_logger.LogInformation("Finished exporting OpenAPI documentation");
-		return true;
-	}
-
 	/// <inheritdoc />
 	public void Dispose()
 	{
@@ -547,3 +456,49 @@ internal sealed record SynonymRule
 [JsonSerializable(typeof(SynonymsSet))]
 [JsonSerializable(typeof(SynonymRule))]
 internal sealed partial class SynonymSerializerContext : JsonSerializerContext;
+
+internal sealed record QueryRuleset
+{
+	[JsonPropertyName("rules")]
+	public required List<QueryRulesetRule> Rules { get; init; } = [];
+}
+
+internal sealed record QueryRulesetRule
+{
+	[JsonPropertyName("rule_id")]
+	public required string RuleId { get; init; }
+
+	[JsonPropertyName("type")]
+	public required string Type { get; init; }
+
+	[JsonPropertyName("criteria")]
+	public required List<QueryRulesetCriteria> Criteria { get; init; } = [];
+
+	[JsonPropertyName("actions")]
+	public required QueryRulesetActions Actions { get; init; }
+}
+
+internal sealed record QueryRulesetCriteria
+{
+	[JsonPropertyName("type")]
+	public required string Type { get; init; }
+
+	[JsonPropertyName("metadata")]
+	public required string Metadata { get; init; }
+
+	[JsonPropertyName("values")]
+	public required List<string> Values { get; init; } = [];
+}
+
+internal sealed record QueryRulesetActions
+{
+	[JsonPropertyName("ids")]
+	public required List<string> Ids { get; init; } = [];
+}
+
+[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower)]
+[JsonSerializable(typeof(QueryRuleset))]
+[JsonSerializable(typeof(QueryRulesetRule))]
+[JsonSerializable(typeof(QueryRulesetCriteria))]
+[JsonSerializable(typeof(QueryRulesetActions))]
+internal sealed partial class QueryRulesetSerializerContext : JsonSerializerContext;

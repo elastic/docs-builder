@@ -8,7 +8,7 @@ import {
 import { traceSpan } from '../../../telemetry/tracing'
 import { createApiErrorFromResponse, shouldRetry } from '../errorHandling'
 import { ApiError } from '../errorHandling'
-import { usePageNumber, useSearchTerm } from './search.store'
+import { usePageNumber, useSearchTerm, useTypeFilter } from './search.store'
 import {
     useIsSearchAwaitingNewInput,
     useSearchCooldownActions,
@@ -29,16 +29,21 @@ const SearchResultItemParent = z.object({
 })
 
 const SearchResultItem = z.object({
-    type: z.string().default('doc'),
+    type: z.enum(['doc', 'api']),
     url: z.string(),
     title: z.string(),
     description: z.string(),
     score: z.number(),
     parents: z.array(SearchResultItemParent),
+    highlightedTitle: z.string().nullish(),
     highlightedBody: z.string().nullish(),
 })
 
 export type SearchResultItem = z.infer<typeof SearchResultItem>
+
+const SearchAggregations = z.object({
+    type: z.record(z.string(), z.number()).optional(),
+})
 
 const SearchResponse = z.object({
     results: z.array(SearchResultItem),
@@ -46,6 +51,7 @@ const SearchResponse = z.object({
     pageCount: z.number(),
     pageNumber: z.number(),
     pageSize: z.number(),
+    aggregations: SearchAggregations.optional(),
 })
 
 export type SearchResponse = z.infer<typeof SearchResponse>
@@ -53,6 +59,7 @@ export type SearchResponse = z.infer<typeof SearchResponse>
 export const useSearchQuery = () => {
     const searchTerm = useSearchTerm()
     const pageNumber = usePageNumber() + 1
+    const typeFilter = useTypeFilter()
     const trimmedSearchTerm = searchTerm.trim()
     const debouncedSearchTerm = useDebounce(trimmedSearchTerm, 300)
     const isCooldownActive = useIsSearchCooldownActive()
@@ -79,7 +86,11 @@ export const useSearchQuery = () => {
     const query = useQuery<SearchResponse, ApiError>({
         queryKey: [
             'search',
-            { searchTerm: debouncedSearchTerm.toLowerCase(), pageNumber },
+            {
+                searchTerm: debouncedSearchTerm.toLowerCase(),
+                pageNumber,
+                typeFilter,
+            },
         ],
         queryFn: async ({ signal }) => {
             // Don't create span for empty searches
@@ -99,6 +110,11 @@ export const useSearchQuery = () => {
                     q: debouncedSearchTerm,
                     page: pageNumber.toString(),
                 })
+
+                // Only add type filter if not 'all'
+                if (typeFilter !== 'all') {
+                    params.set('type', typeFilter)
+                }
 
                 const response = await fetch(
                     '/docs/_api/v1/search?' + params.toString(),
@@ -139,10 +155,14 @@ export const useSearchQuery = () => {
         queryClient.cancelQueries({
             queryKey: [
                 'search',
-                { searchTerm: debouncedSearchTerm.toLowerCase(), pageNumber },
+                {
+                    searchTerm: debouncedSearchTerm.toLowerCase(),
+                    pageNumber,
+                    typeFilter,
+                },
             ],
         })
-    }, [queryClient, debouncedSearchTerm, pageNumber])
+    }, [queryClient, debouncedSearchTerm, pageNumber, typeFilter])
 
     return {
         ...query,

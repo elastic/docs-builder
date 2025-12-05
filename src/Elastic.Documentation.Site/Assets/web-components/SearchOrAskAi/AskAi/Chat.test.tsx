@@ -1,99 +1,63 @@
+import { cooldownStore } from '../cooldown.store'
+import { modalStore } from '../modal.store'
 import { Chat } from './Chat'
+import { chatStore } from './chat.store'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import * as React from 'react'
 
-// Mock the chat store
-jest.mock('./chat.store', () => ({
-    chatStore: {
-        getState: jest.fn(),
-    },
-    useChatMessages: jest.fn(() => []),
-    useAiProvider: jest.fn(() => 'LlmGateway'),
-    useChatActions: jest.fn(() => ({
-        submitQuestion: jest.fn(),
-        clearChat: jest.fn(),
-        clearNon429Errors: jest.fn(),
-        setAiProvider: jest.fn(),
-    })),
+// Create a fresh QueryClient for each test
+const createTestQueryClient = () =>
+    new QueryClient({
+        defaultOptions: {
+            queries: { retry: false },
+            mutations: { retry: false },
+        },
+    })
+
+// Wrapper component for tests that need React Query
+const renderWithQueryClient = (ui: React.ReactElement) => {
+    const testQueryClient = createTestQueryClient()
+    return render(
+        <QueryClientProvider client={testQueryClient}>{ui}</QueryClientProvider>
+    )
+}
+
+// Mock only external HTTP calls - fetchEventSource makes the actual API request
+jest.mock('@microsoft/fetch-event-source', () => ({
+    fetchEventSource: jest.fn(),
+    EventStreamContentType: 'text/event-stream',
 }))
 
-// Mock ChatMessageList
-jest.mock('./ChatMessageList', () => ({
-    ChatMessageList: () => <div data-testid="chat-message-list">Messages</div>,
-}))
-
-// Mock AskAiSuggestions
-jest.mock('./AskAiSuggestions', () => ({
-    AskAiSuggestions: () => (
-        <div data-testid="ask-ai-suggestions">Suggestions</div>
-    ),
-}))
-
-// Mock AiProviderSelector
-jest.mock('./AiProviderSelector', () => ({
-    AiProviderSelector: () => (
-        <div data-testid="ai-provider-selector">Provider Selector</div>
-    ),
-}))
-
-// Mock modal.store
-jest.mock('../modal.store', () => ({
-    useModalActions: jest.fn(() => ({
-        setModalMode: jest.fn(),
-        openModal: jest.fn(),
-        closeModal: jest.fn(),
-        toggleModal: jest.fn(),
-    })),
-}))
-
-// Mock cooldown hooks
-jest.mock('./useAskAiCooldown', () => ({
-    useIsAskAiCooldownActive: jest.fn(() => false),
-    useAskAiCooldown: jest.fn(() => null),
-    useAskAiCooldownActions: jest.fn(() => ({
-        setCooldown: jest.fn(),
-        updateCooldown: jest.fn(),
-        notifyCooldownFinished: jest.fn(),
-        acknowledgeCooldownFinished: jest.fn(),
-    })),
-}))
-
-jest.mock('../useCooldown', () => ({
-    useCooldown: jest.fn(),
-}))
-
-// Mock SearchOrAskAiErrorCallout
-jest.mock('../SearchOrAskAiErrorCallout', () => ({
-    SearchOrAskAiErrorCallout: () => null,
-}))
-
-const mockUseChatMessages = jest.mocked(
-    jest.requireMock('./chat.store').useChatMessages
-)
-const mockUseChatActions = jest.mocked(
-    jest.requireMock('./chat.store').useChatActions
-)
+// Helper to reset all stores to initial state
+const resetStores = () => {
+    chatStore.setState({
+        chatMessages: [],
+        conversationId: null,
+        aiProvider: 'LlmGateway',
+        scrollPosition: 0,
+    })
+    modalStore.setState({
+        isOpen: false,
+        mode: 'search',
+    })
+    cooldownStore.setState({
+        cooldowns: {
+            search: { cooldown: null, awaitingNewInput: false },
+            askAi: { cooldown: null, awaitingNewInput: false },
+        },
+    })
+}
 
 describe('Chat Component', () => {
-    const mockSubmitQuestion = jest.fn()
-    const mockClearChat = jest.fn()
-    const mockClearNon429Errors = jest.fn()
-
     beforeEach(() => {
         jest.clearAllMocks()
-        mockUseChatActions.mockReturnValue({
-            submitQuestion: mockSubmitQuestion,
-            clearChat: mockClearChat,
-            clearNon429Errors: mockClearNon429Errors,
-        })
+        resetStores()
     })
 
     describe('Empty state', () => {
         it('should show empty prompt when no messages', () => {
-            // Arrange
-            mockUseChatMessages.mockReturnValue([])
-
             // Act
             render(<Chat />)
 
@@ -102,139 +66,152 @@ describe('Chat Component', () => {
                 screen.getByText(/Hi! I'm the Elastic Docs AI Assistant/i)
             ).toBeInTheDocument()
             expect(
-                screen.getByText(/Ask me anything about Elasticsearch/i)
+                screen.getByText(
+                    /I'm here to help you find answers about Elastic/i
+                )
             ).toBeInTheDocument()
         })
 
-        it('should show suggestions when no messages', () => {
-            // Arrange
-            mockUseChatMessages.mockReturnValue([])
-
+        it('should show example questions when no messages', () => {
             // Act
             render(<Chat />)
 
             // Assert
-            expect(screen.getByText(/Try asking me:/i)).toBeInTheDocument()
+            expect(screen.getByText(/Example questions/i)).toBeInTheDocument()
         })
 
-        it('should not show "New conversation" button when no messages', () => {
-            // Arrange
-            mockUseChatMessages.mockReturnValue([])
-
+        it('should not show "Clear conversation" button when no messages', () => {
             // Act
             render(<Chat />)
 
             // Assert
             expect(
-                screen.queryByRole('button', { name: /new conversation/i })
+                screen.queryByRole('button', { name: /clear conversation/i })
             ).not.toBeInTheDocument()
         })
     })
 
     describe('With messages', () => {
-        const mockMessages = [
-            {
-                id: '1',
-                type: 'user' as const,
-                content: 'What is Elasticsearch?',
+        const setupMessages = () => {
+            chatStore.setState({
+                chatMessages: [
+                    {
+                        id: '1',
+                        type: 'user',
+                        content: 'What is Elasticsearch?',
+                        conversationId: 'thread-1',
+                        timestamp: Date.now(),
+                    },
+                    {
+                        id: '2',
+                        type: 'ai',
+                        content:
+                            'Elasticsearch is a distributed search engine...',
+                        conversationId: 'thread-1',
+                        timestamp: Date.now(),
+                        status: 'complete',
+                    },
+                ],
                 conversationId: 'thread-1',
-                timestamp: Date.now(),
-            },
-            {
-                id: '2',
-                type: 'ai' as const,
-                content: 'Elasticsearch is a search engine...',
-                conversationId: 'thread-1',
-                timestamp: Date.now(),
-                status: 'complete' as const,
-            },
-        ]
+            })
+        }
 
-        it('should show message list when there are messages', () => {
+        it('should show messages when there are messages', () => {
             // Arrange
-            mockUseChatMessages.mockReturnValue(mockMessages)
+            setupMessages()
 
             // Act
-            render(<Chat />)
+            renderWithQueryClient(<Chat />)
 
-            // Assert
-            expect(screen.getByTestId('chat-message-list')).toBeInTheDocument()
+            // Assert - real messages should be rendered
+            expect(
+                screen.getByText('What is Elasticsearch?')
+            ).toBeInTheDocument()
+            expect(
+                screen.getByText(
+                    /Elasticsearch is a distributed search engine/i
+                )
+            ).toBeInTheDocument()
             expect(
                 screen.queryByText(/Hi! I'm the Elastic Docs AI Assistant/i)
             ).not.toBeInTheDocument()
         })
 
-        it('should show "New conversation" button when there are messages', () => {
+        it('should show "Clear conversation" button when there are messages', () => {
             // Arrange
-            mockUseChatMessages.mockReturnValue(mockMessages)
+            setupMessages()
 
             // Act
-            render(<Chat />)
+            renderWithQueryClient(<Chat />)
 
             // Assert
             expect(
-                screen.getByRole('button', { name: /new conversation/i })
+                screen.getByRole('button', { name: /clear conversation/i })
             ).toBeInTheDocument()
         })
 
-        it('should call clearChat when "New conversation" is clicked', async () => {
+        it('should clear messages when "Clear conversation" is clicked', async () => {
             // Arrange
-            mockUseChatMessages.mockReturnValue(mockMessages)
+            setupMessages()
             const user = userEvent.setup()
 
             // Act
-            render(<Chat />)
+            renderWithQueryClient(<Chat />)
             await user.click(
-                screen.getByRole('button', { name: /new conversation/i })
+                screen.getByRole('button', { name: /clear conversation/i })
             )
 
-            // Assert
-            expect(mockClearChat).toHaveBeenCalledTimes(1)
+            // Assert - messages should be cleared
+            await waitFor(() => {
+                expect(chatStore.getState().chatMessages).toHaveLength(0)
+            })
         })
     })
 
     describe('Input and submission', () => {
         it('should render input field', () => {
-            // Arrange
-            mockUseChatMessages.mockReturnValue([])
-
             // Act
             render(<Chat />)
 
             // Assert
             expect(
-                screen.getByPlaceholderText(/Ask Elastic Docs AI Assistant/i)
+                screen.getByPlaceholderText(
+                    /Ask the Elastic Docs AI Assistant/i
+                )
             ).toBeInTheDocument()
         })
 
-        it('should submit question when Enter is pressed', async () => {
+        it('should add user message to store when question is submitted', async () => {
             // Arrange
-            mockUseChatMessages.mockReturnValue([])
             const user = userEvent.setup()
             const question = 'What is Kibana?'
 
             // Act
             render(<Chat />)
             const input = screen.getByPlaceholderText(
-                /Ask Elastic Docs AI Assistant/i
+                /Ask the Elastic Docs AI Assistant/i
             )
             await user.type(input, question)
             await user.keyboard('{Enter}')
 
-            // Assert
-            expect(mockSubmitQuestion).toHaveBeenCalledWith(question)
+            // Assert - user message should be in the store
+            await waitFor(() => {
+                const messages = chatStore.getState().chatMessages
+                expect(messages.length).toBeGreaterThanOrEqual(1)
+                expect(messages[0].type).toBe('user')
+                expect(messages[0].content).toBe(question)
+            })
         })
 
-        it('should submit question when Send button is clicked', async () => {
+        it('should add user message when Send button is clicked', async () => {
             // Arrange
-            mockUseChatMessages.mockReturnValue([])
             const user = userEvent.setup()
             const question = 'What is Kibana?'
 
             // Act
             render(<Chat />)
             const input = screen.getByPlaceholderText(
-                /Ask Elastic Docs AI Assistant/i
+                /Ask the Elastic Docs AI Assistant/i
             )
             await user.type(input, question)
             await user.click(
@@ -242,36 +219,37 @@ describe('Chat Component', () => {
             )
 
             // Assert
-            expect(mockSubmitQuestion).toHaveBeenCalledWith(question)
+            await waitFor(() => {
+                const messages = chatStore.getState().chatMessages
+                expect(messages[0].content).toBe(question)
+            })
         })
 
         it('should not submit empty question', async () => {
             // Arrange
-            mockUseChatMessages.mockReturnValue([])
             const user = userEvent.setup()
 
             // Act
             render(<Chat />)
             const input = screen.getByPlaceholderText(
-                /Ask Elastic Docs AI Assistant/i
+                /Ask the Elastic Docs AI Assistant/i
             )
             await user.type(input, '   ')
             await user.keyboard('{Enter}')
 
-            // Assert
-            expect(mockSubmitQuestion).not.toHaveBeenCalled()
+            // Assert - no messages should be added
+            expect(chatStore.getState().chatMessages).toHaveLength(0)
         })
 
         it('should clear input after submission', async () => {
             // Arrange
-            mockUseChatMessages.mockReturnValue([])
             const user = userEvent.setup()
 
             // Act
             render(<Chat />)
             const input = screen.getByPlaceholderText(
-                /Ask Elastic Docs AI Assistant/i
-            ) as HTMLInputElement
+                /Ask the Elastic Docs AI Assistant/i
+            ) as HTMLTextAreaElement
             await user.type(input, 'test question')
             await user.keyboard('{Enter}')
 
@@ -282,45 +260,20 @@ describe('Chat Component', () => {
         })
     })
 
-    describe('Auto-focus', () => {
-        it('should focus input when AI completes response', () => {
+    describe('Close modal', () => {
+        it('should close modal when close button is clicked', async () => {
             // Arrange
-            const streamingMessages = [
-                {
-                    id: '1',
-                    type: 'user' as const,
-                    content: 'Question',
-                    conversationId: 'thread-1',
-                    timestamp: Date.now(),
-                },
-                {
-                    id: '2',
-                    type: 'ai' as const,
-                    content: 'Answer...',
-                    conversationId: 'thread-1',
-                    timestamp: Date.now(),
-                    status: 'streaming' as const,
-                },
-            ]
+            modalStore.setState({ isOpen: true })
+            const user = userEvent.setup()
 
-            mockUseChatMessages.mockReturnValue(streamingMessages)
-            const { rerender } = render(<Chat />)
-
-            // Act - simulate AI completing the response
-            const completeMessages = [
-                ...streamingMessages.slice(0, 1),
-                { ...streamingMessages[1], status: 'complete' as const },
-            ]
-            mockUseChatMessages.mockReturnValue(completeMessages)
-            rerender(<Chat />)
+            // Act
+            render(<Chat />)
+            await user.click(
+                screen.getByRole('button', { name: /close ask ai modal/i })
+            )
 
             // Assert
-            const input = screen.getByPlaceholderText(
-                /Ask Elastic Docs AI Assistant/i
-            )
-            // In a real test environment, we'd check if focus() was called
-            // This is a limitation of jsdom
-            expect(input).toBeInTheDocument()
+            expect(modalStore.getState().isOpen).toBe(false)
         })
     })
 })

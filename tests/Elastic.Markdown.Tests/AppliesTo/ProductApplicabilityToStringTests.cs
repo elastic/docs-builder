@@ -41,7 +41,7 @@ public class ProductApplicabilityToStringTests
 		}
 
 		// Verify we have the expected number of properties
-		properties.Should().HaveCount(22, "ProductApplicability should have exactly 22 product properties");
+		properties.Should().HaveCount(23, "ProductApplicability should have exactly 23 product properties");
 	}
 
 	[Fact]

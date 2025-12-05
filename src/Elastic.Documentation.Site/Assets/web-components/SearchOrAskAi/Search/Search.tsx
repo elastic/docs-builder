@@ -1,5 +1,7 @@
 import { useChatActions } from '../AskAi/chat.store'
 import { useIsAskAiCooldownActive } from '../AskAi/useAskAiCooldown'
+import { InfoBanner } from '../InfoBanner'
+import { KeyboardShortcutsFooter } from '../KeyboardShortcutsFooter'
 import { SearchOrAskAiErrorCallout } from '../SearchOrAskAiErrorCallout'
 import { useModalActions } from '../modal.store'
 import { SearchResults } from './SearchResults/SearchResults'
@@ -11,15 +13,16 @@ import { useSearchQuery } from './useSearchQuery'
 import {
     EuiFieldText,
     EuiSpacer,
-    EuiButton,
+    EuiHorizontalRule,
     EuiIcon,
     EuiLoadingSpinner,
     EuiText,
     useEuiTheme,
     useEuiFontSize,
+    EuiButtonIcon,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
-import { useState } from 'react'
+import React from 'react'
 
 export const Search = () => {
     const searchTerm = useSearchTerm()
@@ -28,23 +31,29 @@ export const Search = () => {
     const { setModalMode, closeModal } = useModalActions()
     const isSearchCooldownActive = useIsSearchCooldownActive()
     const isAskAiCooldownActive = useIsAskAiCooldownActive()
-    const [isInputFocused, setIsInputFocused] = useState(false)
     const { isLoading, isFetching } = useSearchQuery()
-    const xsFontSize = useEuiFontSize('xs').fontSize
+    const mFontSize = useEuiFontSize('m').fontSize
     const { euiTheme } = useEuiTheme()
 
-    const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleSearchInputChange = (
+        e: React.ChangeEvent<HTMLInputElement>
+    ) => {
         setSearchTerm(e.target.value)
     }
 
-    const handleAskAi = () => {
-        if (isAskAiCooldownActive || searchTerm.trim() === '') {
+    const handleAskAiClick = () => {
+        const trimmedSearchTerm = searchTerm.trim()
+        if (isAskAiCooldownActive || trimmedSearchTerm === '') {
             return
         }
-        // Always start a new conversation
         clearChat()
-        submitQuestion(searchTerm)
+        submitQuestion(trimmedSearchTerm)
         setModalMode('askAi')
+    }
+
+    const handleCloseModal = () => {
+        clearSearchTerm()
+        closeModal()
     }
 
     const {
@@ -54,100 +63,89 @@ export const Search = () => {
         handleListItemKeyDown,
         focusLastAvailable,
         setItemRef,
-    } = useKeyboardNavigation(handleAskAi)
+    } = useKeyboardNavigation(handleAskAiClick)
 
     return (
         <>
-            <EuiSpacer size="m" />
             {!searchTerm.trim() && (
                 <SearchOrAskAiErrorCallout error={null} domain="search" />
             )}
             <div
                 css={css`
-                    position: relative;
+                    display: grid;
+                    grid-template-columns: auto 1fr auto;
+                    gap: ${euiTheme.size.m};
+                    align-items: center;
+                    height: 56px;
+                    padding-inline: ${euiTheme.size.base};
                 `}
             >
+                {isLoading || isFetching ? (
+                    <EuiLoadingSpinner size="m" />
+                ) : (
+                    <EuiIcon type="search" size="m" />
+                )}
                 <EuiFieldText
                     css={css`
-                        padding-inline-end: 60px;
+                        box-shadow: none !important;
+                        outline: none !important;
+                        font-size: ${mFontSize};
+                        padding: 0;
                     `}
                     autoFocus
-                    icon="empty"
                     inputRef={inputRef}
                     fullWidth
                     placeholder="Search in Docs"
                     value={searchTerm}
-                    onChange={handleSearch}
-                    onFocus={() => setIsInputFocused(true)}
-                    onBlur={() => setIsInputFocused(false)}
+                    onChange={handleSearchInputChange}
                     onKeyDown={handleInputKeyDown}
                     disabled={isSearchCooldownActive}
                 />
-                {isLoading || isFetching ? (
-                    <div
-                        css={css`
-                            position: absolute;
-                            display: flex;
-                            left: 12px;
-                            top: 50%;
-                            transform: translateY(-50%);
-                        `}
-                    >
-                        <EuiLoadingSpinner size="m" />
-                    </div>
-                ) : (
-                    <EuiIcon
-                        type="search"
-                        css={css`
-                            position: absolute;
-                            left: 12px;
-                            top: 50%;
-                            transform: translateY(-50%);
-                        `}
-                    />
-                )}
-                <EuiButton
-                    css={`
-                        position: absolute;
-                        right: ${euiTheme.size.m};
-                        top: 50%;
-                        transform: translateY(-50%);
-                        block-size: 20px;
-                        font-size: ${xsFontSize};
-                        padding-inline: ${euiTheme.size.s};
-                        border-radius: ${euiTheme.border.radius.small};
-                    `}
-                    size="s"
+                <EuiButtonIcon
+                    aria-label="Close search modal"
+                    iconType="cross"
                     color="text"
-                    minWidth={false}
-                    onClick={() => {
-                        clearSearchTerm()
-                        closeModal()
-                    }}
-                >
-                    Esc
-                </EuiButton>
+                    onClick={handleCloseModal}
+                />
             </div>
+
             <SearchResults
                 onKeyDown={handleListItemKeyDown}
                 setItemRef={setItemRef}
             />
+            <EuiHorizontalRule margin="none" />
             {searchTerm && (
-                <>
-                    <EuiSpacer size="s" />
+                <div
+                    css={css`
+                        padding-inline: ${euiTheme.size.base};
+                    `}
+                >
+                    <EuiSpacer size="m" />
                     <EuiText color="subdued" size="xs">
                         Ask AI assistant
                     </EuiText>
-                    <EuiSpacer size="m" />
+                    <EuiSpacer size="s" />
                     <TellMeMoreButton
                         ref={buttonRef}
                         term={searchTerm}
-                        isInputFocused={isInputFocused}
-                        onAsk={handleAskAi}
+                        onAsk={handleAskAiClick}
                         onArrowUp={focusLastAvailable}
                     />
-                </>
+                </div>
             )}
+
+            <InfoBanner />
+            <SearchFooter />
         </>
     )
 }
+
+const SEARCH_KEYBOARD_SHORTCUTS = [
+    { keys: ['returnKey'], label: 'to select' },
+    { keys: ['sortUp', 'sortDown'], label: 'to navigate' },
+    { keys: ['Esc'], label: 'to close' },
+]
+
+const SearchFooter = () => (
+    <KeyboardShortcutsFooter shortcuts={SEARCH_KEYBOARD_SHORTCUTS} />
+)

@@ -10,20 +10,41 @@ namespace Elastic.Documentation.Search;
 public record ParentDocument
 {
 	[JsonPropertyName("title")]
-	public string? Title { get; set; }
+	public required string Title { get; set; }
 
 	[JsonPropertyName("url")]
-	public string? Url { get; set; }
+	public required string Url { get; set; }
 }
 
 public record DocumentationDocument
 {
-	[JsonPropertyName("type")]
-	public string Type { get; set; } = "doc";
+	[JsonPropertyName("title")]
+	public required string Title { get; set; }
 
-	// TODO make this required once all doc_sets have published again
+	/// <summary>
+	/// Search title is a combination of the title and the url components.
+	/// This is used for querying to not reward documents with short titles contributing to heavily to scoring
+	/// </summary>
+	[JsonPropertyName("search_title")]
+	public required string SearchTitle { get; set; }
+
+	[JsonPropertyName("type")]
+	public required string Type { get; set; } = "doc";
+
 	[JsonPropertyName("url")]
-	public string Url { get; set; } = string.Empty;
+	public required string Url { get; set; } = string.Empty;
+
+	[JsonPropertyName("hash")]
+	public string Hash { get; set; } = string.Empty;
+
+	[JsonPropertyName("navigation_depth")]
+	public int NavigationDepth { get; set; } = 50; //default to a high number so that omission gets penalized.
+
+	[JsonPropertyName("navigation_table_of_contents")]
+	public int NavigationTableOfContents { get; set; } = 50; //default to a high number so that omission gets penalized.
+
+	[JsonPropertyName("navigation_section")]
+	public string? NavigationSection { get; set; }
 
 	/// The date of the batch update this document was part of last.
 	/// This date could be higher than the date_last_updated.
@@ -33,20 +54,6 @@ public record DocumentationDocument
 	/// The date this document was last updated,
 	[JsonPropertyName("last_updated")]
 	public DateTimeOffset LastUpdated { get; set; }
-
-	// TODO make this required once all doc_sets have published again
-	[JsonPropertyName("hash")]
-	public string Hash { get; set; } = string.Empty;
-
-	/// <summary>
-	/// Search title is a combination of the title and the url components.
-	/// This is used for querying to not reward documents with short titles contributing to heavily to scoring
-	/// </summary>
-	[JsonPropertyName("search_title")]
-	public string? SearchTitle { get; set; }
-
-	[JsonPropertyName("title")]
-	public string? Title { get; set; }
 
 	[JsonPropertyName("description")]
 	public string? Description { get; set; }
@@ -63,7 +70,7 @@ public record DocumentationDocument
 	[JsonPropertyName("body")]
 	public string? Body { get; set; }
 
-	// Stripped body is the body with Markdown removed, suitable for search indexing
+	/// Stripped body is the body with Markdown removed, suitable for search indexing
 	[JsonPropertyName("stripped_body")]
 	public string? StrippedBody { get; set; }
 

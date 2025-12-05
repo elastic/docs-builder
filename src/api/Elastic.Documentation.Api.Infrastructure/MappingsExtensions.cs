@@ -54,14 +54,16 @@ public static class MappingsExtension
 			async (
 				[FromQuery(Name = "q")] string query,
 				[FromQuery(Name = "page")] int? pageNumber,
+				[FromQuery(Name = "type")] string? typeFilter,
 				SearchUsecase searchUsecase,
 				Cancel ctx
 			) =>
 			{
-				var searchRequest = new SearchRequest
+				var searchRequest = new SearchApiRequest
 				{
 					Query = query,
-					PageNumber = pageNumber ?? 1
+					PageNumber = pageNumber ?? 1,
+					TypeFilter = typeFilter
 				};
 				var searchResponse = await searchUsecase.Search(searchRequest, ctx);
 				return Results.Ok(searchResponse);

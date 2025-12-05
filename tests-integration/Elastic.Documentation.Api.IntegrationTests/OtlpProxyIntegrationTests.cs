@@ -209,8 +209,11 @@ public class OtlpProxyIntegrationTests
 
 		using var factory = ApiWebApplicationFactory.WithMockedServices(services =>
 		{
+#pragma warning disable EXTEXP0001 // Experimental API - needed for test to bypass resilience handlers
 			_ = services.AddHttpClient(AdotOtlpGateway.HttpClientName)
-				.ConfigurePrimaryHttpMessageHandler(() => mockHandler);
+				.ConfigurePrimaryHttpMessageHandler(() => mockHandler)
+				.RemoveAllResilienceHandlers();
+#pragma warning restore EXTEXP0001
 		});
 
 		var client = factory.CreateClient();
@@ -219,8 +222,10 @@ public class OtlpProxyIntegrationTests
 		// Act
 		using var response = await client.PostAsync("/docs/_api/v1/o/t", content, TestContext.Current.CancellationToken);
 
+		var responseContent = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
 		// Assert - verify error responses are properly forwarded
-		response.StatusCode.Should().Be(HttpStatusCode.ServiceUnavailable);
+		response.StatusCode.Should().Be(HttpStatusCode.ServiceUnavailable, "{0}", responseContent);
+
 
 		// Cleanup mock response
 		mockResponse.Dispose();

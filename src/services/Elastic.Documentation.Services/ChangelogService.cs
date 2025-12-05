@@ -1,0 +1,294 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+using System.Globalization;
+using System.IO.Abstractions;
+using System.Linq;
+using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Services.Changelog;
+using Microsoft.Extensions.Logging;
+using YamlDotNet.Core;
+using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
+namespace Elastic.Documentation.Services;
+
+public class ChangelogService(
+	ILoggerFactory logFactory,
+	IConfigurationContext configurationContext
+) : IService
+{
+	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogService>();
+	private readonly IFileSystem _fileSystem = new FileSystem();
+
+	public async Task<bool> CreateChangelog(
+		IDiagnosticsCollector collector,
+		ChangelogInput input,
+		Cancel ctx
+	)
+	{
+		try
+		{
+			// Load changelog configuration
+			var config = await LoadChangelogConfiguration(collector, input.Config, ctx);
+			if (config == null)
+			{
+				collector.EmitError(string.Empty, "Failed to load changelog configuration");
+				return false;
+			}
+
+			// Validate required fields
+			if (string.IsNullOrWhiteSpace(input.Title))
+			{
+				collector.EmitError(string.Empty, "Title is required");
+				return false;
+			}
+
+			if (string.IsNullOrWhiteSpace(input.Type))
+			{
+				collector.EmitError(string.Empty, "Type is required");
+				return false;
+			}
+
+			if (input.Products.Count == 0)
+			{
+				collector.EmitError(string.Empty, "At least one product is required");
+				return false;
+			}
+
+			// Validate type is in allowed list
+			if (!config.AvailableTypes.Contains(input.Type))
+			{
+				collector.EmitError(string.Empty, $"Type '{input.Type}' is not in the list of available types. Available types: {string.Join(", ", config.AvailableTypes)}");
+				return false;
+			}
+
+			// Validate subtype if provided
+			if (!string.IsNullOrWhiteSpace(input.Subtype) && !config.AvailableSubtypes.Contains(input.Subtype))
+			{
+				collector.EmitError(string.Empty, $"Subtype '{input.Subtype}' is not in the list of available subtypes. Available subtypes: {string.Join(", ", config.AvailableSubtypes)}");
+				return false;
+			}
+
+			// Validate areas if configuration provides available areas
+			if (config.AvailableAreas != null && config.AvailableAreas.Count > 0)
+			{
+				foreach (var area in input.Areas.Where(area => !config.AvailableAreas.Contains(area)))
+				{
+					collector.EmitError(string.Empty, $"Area '{area}' is not in the list of available areas. Available areas: {string.Join(", ", config.AvailableAreas)}");
+					return false;
+				}
+			}
+
+			// Validate products if configuration provides available products
+			if (config.AvailableProducts != null && config.AvailableProducts.Count > 0)
+			{
+				foreach (var product in input.Products.Where(p => !config.AvailableProducts.Contains(p.Product)))
+				{
+					collector.EmitError(string.Empty, $"Product '{product.Product}' is not in the list of available products. Available products: {string.Join(", ", config.AvailableProducts)}");
+					return false;
+				}
+			}
+
+			// Validate lifecycle values in products
+			foreach (var product in input.Products.Where(product => !string.IsNullOrWhiteSpace(product.Lifecycle) && !config.AvailableLifecycles.Contains(product.Lifecycle)))
+			{
+				collector.EmitError(string.Empty, $"Lifecycle '{product.Lifecycle}' for product '{product.Product}' is not in the list of available lifecycles. Available lifecycles: {string.Join(", ", config.AvailableLifecycles)}");
+				return false;
+			}
+
+			// Build changelog data from input
+			var changelogData = BuildChangelogData(input);
+
+			// Generate YAML file
+			var yamlContent = GenerateYaml(changelogData, config);
+
+			// Determine output path
+			var outputDir = input.Output ?? Directory.GetCurrentDirectory();
+			if (!_fileSystem.Directory.Exists(outputDir))
+			{
+				_ = _fileSystem.Directory.CreateDirectory(outputDir);
+			}
+
+			// Generate filename (timestamp-slug.yaml)
+			var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+			var slug = SanitizeFilename(input.Title);
+			var filename = $"{timestamp}-{slug}.yaml";
+			var filePath = _fileSystem.Path.Combine(outputDir, filename);
+
+			// Write file
+			await _fileSystem.File.WriteAllTextAsync(filePath, yamlContent, ctx);
+			_logger.LogInformation("Created changelog fragment: {FilePath}", filePath);
+
+			return true;
+		}
+		catch (OperationCanceledException)
+		{
+			// If cancelled, don't emit error; propagate cancellation signal.
+			throw;
+		}
+		catch (IOException ioEx)
+		{
+			collector.EmitError(string.Empty, $"IO error creating changelog: {ioEx.Message}", ioEx);
+			return false;
+		}
+		catch (UnauthorizedAccessException uaEx)
+		{
+			collector.EmitError(string.Empty, $"Access denied creating changelog: {uaEx.Message}", uaEx);
+			return false;
+		}
+	}
+
+	private async Task<ChangelogConfiguration?> LoadChangelogConfiguration(
+		IDiagnosticsCollector collector,
+		string? configPath,
+		Cancel ctx
+	)
+	{
+		// Determine config file path
+		_ = configurationContext; // Suppress unused warning - kept for future extensibility
+		var finalConfigPath = configPath ?? _fileSystem.Path.Combine(Directory.GetCurrentDirectory(), "docs", "changelog.yml");
+
+		if (!_fileSystem.File.Exists(finalConfigPath))
+		{
+			// Use default configuration if file doesn't exist
+			_logger.LogWarning("Changelog configuration not found at {ConfigPath}, using defaults", finalConfigPath);
+			return ChangelogConfiguration.Default;
+		}
+
+		try
+		{
+			var yamlContent = await _fileSystem.File.ReadAllTextAsync(finalConfigPath, ctx);
+			var deserializer = new StaticDeserializerBuilder(new ChangelogYamlStaticContext())
+				.WithNamingConvention(UnderscoredNamingConvention.Instance)
+				.Build();
+
+			var config = deserializer.Deserialize<ChangelogConfiguration>(yamlContent);
+			return config;
+		}
+		catch (IOException ex)
+		{
+			collector.EmitError(finalConfigPath, $"I/O error loading changelog configuration: {ex.Message}", ex);
+			return null;
+		}
+		catch (UnauthorizedAccessException ex)
+		{
+			collector.EmitError(finalConfigPath, $"Access denied loading changelog configuration: {ex.Message}", ex);
+			return null;
+		}
+		catch (YamlException ex)
+		{
+			collector.EmitError(finalConfigPath, $"YAML parsing error in changelog configuration: {ex.Message}", ex);
+			return null;
+		}
+	}
+
+	private static ChangelogData BuildChangelogData(ChangelogInput input)
+	{
+		var data = new ChangelogData
+		{
+			Title = input.Title,
+			Type = input.Type,
+			Subtype = input.Subtype,
+			Description = input.Description,
+			Impact = input.Impact,
+			Action = input.Action,
+			FeatureId = input.FeatureId,
+			Highlight = input.Highlight,
+			Pr = input.Pr,
+			Products = input.Products
+		};
+
+		if (input.Areas.Length > 0)
+		{
+			data.Areas = input.Areas.ToList();
+		}
+
+		if (input.Issues.Length > 0)
+		{
+			data.Issues = input.Issues.ToList();
+		}
+
+		return data;
+	}
+
+	private string GenerateYaml(ChangelogData data, ChangelogConfiguration config)
+	{
+		// Ensure areas is null if empty to omit it from YAML
+		if (data.Areas != null && data.Areas.Count == 0)
+			data.Areas = null;
+
+		// Ensure issues is null if empty to omit it from YAML
+		if (data.Issues != null && data.Issues.Count == 0)
+			data.Issues = null;
+
+		var serializer = new StaticSerializerBuilder(new ChangelogYamlStaticContext())
+			.WithNamingConvention(UnderscoredNamingConvention.Instance)
+			.ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitNull | DefaultValuesHandling.OmitEmptyCollections)
+			.Build();
+
+		var yaml = serializer.Serialize(data);
+
+		// Build types list
+		var typesList = string.Join("\n", config.AvailableTypes.Select(t => $"#   - {t}"));
+
+		// Build subtypes list
+		var subtypesList = config.AvailableSubtypes.Count > 0
+			? "\n#   It can be one of:\n" + string.Join("\n", config.AvailableSubtypes.Select(s => $"#   - {s}"))
+			: string.Empty;
+
+		// Add schema comments using raw string literal
+		var result = $"""
+			##### Automated fields #####
+
+			# These fields are likely generated when the changelog is created and unlikely to require edits
+
+			# pr: An optional string that contains the pull request number
+			# issues: An optional array of strings that contain URLs for issues that are relevant to the PR
+			# type: A required string that contains the type of change
+			#   It can be one of:
+			{typesList}
+			# subtype: An optional string that applies only to breaking changes{subtypesList}
+			# products: A required array of objects that denote the affected products
+			#   Each product object contains:
+			#     - product: A required string with a predefined product ID
+			#     - target: An optional string with the target version or date
+			#     - lifecycle: An optional string (preview, beta, ga)
+			# areas: An optional array of strings that denotes the parts/components/services affected
+
+			##### Non-automated fields #####
+
+			# These fields might be generated when the changelog is created but are likely to require edits
+
+			# title: A required string that is a short, user-facing headline (Max 80 characters)
+			# description: An optional string that provides additional information (Max 600 characters)
+			# impact: An optional string that describes how the user's environment is affected
+			# action: An optional string that describes what users must do to mitigate
+			# feature-id: An optional string to associate with a unique feature flag
+			# highlight: An optional boolean for items that should be included in release highlights
+
+			{yaml}
+			""";
+
+		return result;
+	}
+
+	private static string SanitizeFilename(string input)
+	{
+		var sanitized = input.ToLowerInvariant()
+			.Replace(" ", "-")
+			.Replace("/", "-")
+			.Replace("\\", "-")
+			.Replace(":", "")
+			.Replace("'", "")
+			.Replace("\"", "");
+
+		// Limit length
+		if (sanitized.Length > 50)
+			sanitized = sanitized[..50];
+
+		return sanitized;
+	}
+}
+

@@ -302,6 +302,8 @@ public partial class FootnotesCodeBlockInDirectiveTests(ITestOutputHelper output
 	[^2]: This is the second footnote.
 	""")
 {
+	private readonly ITestOutputHelper _output = output;
+
 	[Fact]
 	public void CodeBlockRendered()
 	{
@@ -314,9 +316,9 @@ public partial class FootnotesCodeBlockInDirectiveTests(ITestOutputHelper output
 		// Should have exactly 2 back-references (one for [^1] and one for [^2])
 		// If code block content is being parsed, we'd see 4 back-references
 		var count = BackRefRegex().Count(Html);
-		output.WriteLine("=== HTML ===");
-		output.WriteLine(Html);
-		output.WriteLine("=== END ===");
+		_output.WriteLine("=== HTML ===");
+		_output.WriteLine(Html);
+		_output.WriteLine("=== END ===");
 		count.Should().Be(2, $"Expected 2 back-refs (one per footnote), got {count}. Code block content may be parsed incorrectly.");
 	}
 

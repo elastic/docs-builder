@@ -1,3 +1,4 @@
+import { cooldownStore } from '../cooldown.store'
 import { ApiError } from '../errorHandling'
 import { ChatMessage } from './ChatMessage'
 import { ChatMessage as ChatMessageType } from './chat.store'
@@ -22,98 +23,19 @@ const renderWithQueryClient = (ui: React.ReactElement) => {
     )
 }
 
-// Mock EuiCallOut and EuiSpacer for SearchOrAskAiErrorCallout
-jest.mock('@elastic/eui', () => {
-    const actual = jest.requireActual('@elastic/eui')
-    return {
-        ...actual,
-        EuiCallOut: ({
-            title,
-            children,
-            color,
-            iconType,
-            size,
-        }: {
-            title: string
-            children: React.ReactNode
-            color: string
-            iconType: string
-            size: string
-        }) => (
-            <div
-                data-testid="eui-callout"
-                data-title={title}
-                data-color={color}
-                data-icon-type={iconType}
-                data-size={size}
-            >
-                {children}
-            </div>
-        ),
-        EuiSpacer: ({ size }: { size: string }) => (
-            <div data-testid="eui-spacer" data-size={size} />
-        ),
-    }
-})
-
-// Mock domain-specific cooldown hooks
-jest.mock('../Search/useSearchCooldown', () => ({
-    useSearchErrorCalloutState: jest.fn(() => ({
-        hasActiveCooldown: false,
-        countdown: null,
-        awaitingNewInput: false,
-    })),
-}))
-
-jest.mock('../AskAi/useAskAiCooldown', () => ({
-    useAskAiErrorCalloutState: jest.fn(() => ({
-        hasActiveCooldown: false,
-        countdown: null,
-        awaitingNewInput: false,
-    })),
-}))
-
-// Mock errorHandling utilities
-jest.mock('../errorHandling', () => {
-    const actual = jest.requireActual('../errorHandling')
-    return {
-        ...actual,
-        getErrorMessage: jest.fn((error: ApiError | Error | null) => {
-            if (!error) return 'Unknown error'
-            if ('statusCode' in error) {
-                return `Error ${error.statusCode}: ${error.message}`
-            }
-            return error.message
-        }),
-        isApiError: jest.fn((error: ApiError | Error | null) => {
-            return (
-                error instanceof Error &&
-                'statusCode' in error &&
-                error.name === 'ApiError'
-            )
-        }),
-        isRateLimitError: jest.fn((error: ApiError | Error | null) => {
-            return (
-                error instanceof Error &&
-                'statusCode' in error &&
-                (error as ApiError).statusCode === 429
-            )
-        }),
-    }
-})
-
-// Mock rate limit handlers
-jest.mock('./useAskAiRateLimitHandler', () => ({
-    useAskAiRateLimitHandler: jest.fn(),
-}))
-
-jest.mock('../Search/useSearchRateLimitHandler', () => ({
-    useSearchRateLimitHandler: jest.fn(),
-}))
+// Reset cooldown store between tests
+const resetStores = () => {
+    cooldownStore.setState({
+        cooldowns: {
+            search: { cooldown: null, awaitingNewInput: false },
+            askAi: { cooldown: null, awaitingNewInput: false },
+        },
+    })
+}
 
 describe('ChatMessage Component', () => {
     beforeEach(() => {
-        jest.clearAllMocks()
+        resetStores()
     })
 
     describe('User messages', () => {
@@ -135,7 +57,7 @@ describe('ChatMessage Component', () => {
             ).toBeInTheDocument()
         })
 
-        it('should display user icon', () => {
+        it('should mark message as user type', () => {
             // Act
             render(<ChatMessage message={userMessage} />)
 
@@ -169,7 +91,7 @@ describe('ChatMessage Component', () => {
             ).toBeInTheDocument()
         })
 
-        it('should show feedback buttons', () => {
+        it('should show feedback buttons when complete', () => {
             // Act
             renderWithQueryClient(<ChatMessage message={aiMessage} />)
 
@@ -186,7 +108,7 @@ describe('ChatMessage Component', () => {
             ).toBeInTheDocument()
         })
 
-        it('should display Elastic logo icon', () => {
+        it('should have correct data attributes', () => {
             // Act
             renderWithQueryClient(<ChatMessage message={aiMessage} />)
 
@@ -197,11 +119,7 @@ describe('ChatMessage Component', () => {
                 )[0]
                 .closest('[data-message-type="ai"]')
             expect(messageElement).toBeInTheDocument()
-            // Check for logo icon
-            const logoIcon = messageElement?.querySelector(
-                '[data-type="logoElastic"]'
-            )
-            expect(logoIcon).toBeInTheDocument()
+            expect(messageElement).toHaveAttribute('data-message-id', '2')
         })
     })
 
@@ -215,12 +133,11 @@ describe('ChatMessage Component', () => {
             status: 'streaming',
         }
 
-        it('should show loading icon when streaming', () => {
+        it('should render streaming content', () => {
             // Act
             renderWithQueryClient(<ChatMessage message={streamingMessage} />)
 
             // Assert
-            // Loading elastic icon should be present
             const messageElement = screen
                 .getByText(/Elasticsearch is\.\.\./i)
                 .closest('[data-message-type="ai"]')
@@ -237,54 +154,48 @@ describe('ChatMessage Component', () => {
                     name: /^This answer was helpful$/i,
                 })
             ).not.toBeInTheDocument()
-            expect(
-                screen.queryByRole('button', {
-                    name: /^This answer was not helpful$/i,
-                })
-            ).not.toBeInTheDocument()
         })
     })
 
     describe('AI messages - error', () => {
-        const testError = new Error('Test error') as ApiError
-        testError.name = 'ApiError'
-        testError.statusCode = 500
+        const createErrorMessage = (): ChatMessageType => {
+            const testError = new Error('Server error') as ApiError
+            testError.name = 'ApiError'
+            testError.statusCode = 500
 
-        const errorMessage: ChatMessageType = {
-            id: '4',
-            type: 'ai',
-            content: 'Previous content...',
-            conversationId: 'thread-1',
-            timestamp: Date.now(),
-            status: 'error',
-            error: testError,
+            return {
+                id: '4',
+                type: 'ai',
+                content: '',
+                conversationId: 'thread-1',
+                timestamp: Date.now(),
+                status: 'error',
+                error: testError,
+            }
         }
 
-        it('should show error message', () => {
+        it('should show error callout when status is error', () => {
             // Act
-            renderWithQueryClient(<ChatMessage message={errorMessage} />)
-
-            // Assert
-            const callout = screen.getByTestId('eui-callout')
-            expect(callout).toBeInTheDocument()
-            expect(callout).toHaveAttribute(
-                'data-title',
-                'Sorry, there was an error'
+            renderWithQueryClient(
+                <ChatMessage message={createErrorMessage()} />
             )
-            expect(callout).toHaveTextContent('Test error')
+
+            // Assert - error callout should be visible with title
+            expect(
+                screen.getByText(/sorry, there was an error/i)
+            ).toBeInTheDocument()
         })
 
-        it('should display previous content before error occurred', () => {
+        it('should display error message for 5xx errors', () => {
             // Act
-            renderWithQueryClient(<ChatMessage message={errorMessage} />)
+            renderWithQueryClient(
+                <ChatMessage message={createErrorMessage()} />
+            )
 
-            // Assert
-            // When there's an error, the content is hidden, only the error callout is shown
-            expect(screen.getByTestId('eui-callout')).toBeInTheDocument()
-            // The content is not rendered when hasError is true
+            // Assert - error guidance should be displayed
             expect(
-                screen.queryByText(/Previous content/i)
-            ).not.toBeInTheDocument()
+                screen.getByText(/We are unable to process your request/i)
+            ).toBeInTheDocument()
         })
     })
 
@@ -298,11 +209,11 @@ describe('ChatMessage Component', () => {
             status: 'complete',
         }
 
-        it('should render markdown content', () => {
+        it('should render markdown as HTML', () => {
             // Act
             renderWithQueryClient(<ChatMessage message={messageWithMarkdown} />)
 
-            // Assert - EuiMarkdownFormat will render the markdown
+            // Assert - Bold text should be rendered
             expect(screen.getByText(/Bold text/)).toBeInTheDocument()
         })
     })

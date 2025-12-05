@@ -176,12 +176,13 @@ public class SearchBootstrapFixture(DocumentationFixture fixture) : IAsyncLifeti
 			var collector = new ConsoleDiagnosticsCollector(loggerFactory);
 
 			// Create semantic exporter to check channel hash (index namespace is 'dev' for tests)
-			using var semanticExporter = new ElasticsearchSemanticExporter(
+			using var semanticExporter = new ElasticsearchSemanticIngestChannel(
 				loggerFactory,
 				collector,
 				endpoint,
 				"dev", // index namespace
-				transport
+				transport,
+				[]
 			);
 
 			// Get the current hash from Elasticsearch index template

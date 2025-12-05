@@ -6,7 +6,7 @@ interface KeyboardNavigationReturn {
     listItemRefs: MutableRefObject<(HTMLAnchorElement | null)[]>
     handleInputKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void
     handleListItemKeyDown: (
-        e: React.KeyboardEvent<HTMLLIElement>,
+        e: React.KeyboardEvent<HTMLAnchorElement>,
         currentIndex: number
     ) => void
     focusLastAvailable: () => void
@@ -46,6 +46,7 @@ export const useKeyboardNavigation = (
 
     const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
+            e.preventDefault()
             onEnter?.()
         } else if (e.key === 'ArrowDown') {
             e.preventDefault()
@@ -54,7 +55,7 @@ export const useKeyboardNavigation = (
     }
 
     const handleListItemKeyDown = (
-        e: React.KeyboardEvent<HTMLLIElement>,
+        e: React.KeyboardEvent<HTMLAnchorElement>,
         currentIndex: number
     ) => {
         if (e.key === 'ArrowDown') {

@@ -113,12 +113,30 @@ public enum VersioningSystemId
 	EdotCfAws,
 	[Display(Name = "edot-cf-azure")]
 	EdotCfAzure,
+	[Display(Name = "edot-cf-gcp")]
+	EdotCfGcp,
 	[Display(Name = "edot-collector")]
 	EdotCollector,
 	[Display(Name = "search-ui")]
 	SearchUI,
 	[Display(Name = "cloud-terraform")]
 	CloudTerraform,
+	[Display(Name = "elasticsearch-client-go")]
+	ElasticsearchClientGo,
+	[Display(Name = "elasticsearch-client-java")]
+	ElasticsearchClientJava,
+	[Display(Name = "elasticsearch-client-javascript")]
+	ElasticsearchClientJavascript,
+	[Display(Name = "elasticsearch-client-dotnet")]
+	ElasticsearchClientDotnet,
+	[Display(Name = "elasticsearch-client-php")]
+	ElasticsearchClientPhp,
+	[Display(Name = "elasticsearch-client-python")]
+	ElasticsearchClientPython,
+	[Display(Name = "elasticsearch-client-ruby")]
+	ElasticsearchClientRuby,
+	[Display(Name = "elasticsearch-client-rust")]
+	ElasticsearchClientRust,
 }
 
 [YamlSerializable]

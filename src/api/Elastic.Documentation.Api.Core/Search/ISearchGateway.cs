@@ -6,10 +6,18 @@ namespace Elastic.Documentation.Api.Core.Search;
 
 public interface ISearchGateway
 {
-	Task<(int TotalHits, List<SearchResultItem> Results)> SearchAsync(
+	Task<SearchResult> SearchAsync(
 		string query,
 		int pageNumber,
 		int pageSize,
+		string? filter = null,
 		Cancel ctx = default
 	);
+}
+
+public record SearchResult
+{
+	public required int TotalHits { get; init; }
+	public required List<SearchResultItem> Results { get; init; }
+	public IReadOnlyDictionary<string, long> Aggregations { get; init; } = new Dictionary<string, long>();
 }

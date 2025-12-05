@@ -114,6 +114,8 @@ products:
     display: 'EDOT Cloud Forwarder for AWS'
   edot-cf-azure:
     display: 'EDOT Cloud Forwarder for Azure'
+  edot-cf-gcp:
+    display: 'EDOT Cloud Forwarder for GCP'
   eland:
     display: 'Eland'
     versioning: 'stack'
@@ -131,6 +133,42 @@ products:
     versioning: 'stack'
   elasticsearch-client:
     display: 'Elasticsearch Client'
+    versioning: 'stack'
+  elasticsearch-client-go:
+    display: 'Elasticsearch Go Client'
+    repository: 'go-elasticsearch'
+    versioning: 'elasticsearch-client-go'
+  elasticsearch-client-java:
+    display: 'Elasticsearch Java Client'
+    repository: 'elasticsearch-java'
+    versioning: 'elasticsearch-client-java'
+  elasticsearch-client-javascript:
+    display: 'Elasticsearch JavaScript Client'
+    repository: 'elasticsearch-js'
+    versioning: 'elasticsearch-client-javascript'
+  elasticsearch-client-dotnet:
+    display: 'Elasticsearch .NET Client'
+    repository: 'elasticsearch-net'
+    versioning: 'elasticsearch-client-dotnet'
+  elasticsearch-client-php:
+    display: 'Elasticsearch PHP Client'
+    repository: 'elasticsearch-php'
+    versioning: 'elasticsearch-client-php'
+  elasticsearch-client-python:
+    display: 'Elasticsearch Python Client'
+    repository: 'elasticsearch-py'
+    versioning: 'elasticsearch-client-python'
+  elasticsearch-client-ruby:
+    display: 'Elasticsearch Ruby Client'
+    repository: 'elasticsearch-ruby'
+    versioning: 'elasticsearch-client-ruby'
+  elasticsearch-client-rust:
+    display: 'Elasticsearch Rust Client'
+    repository: 'elasticsearch-rs'
+    versioning: 'elasticsearch-client-rust'
+  elasticsearch-hadoop:
+    display: 'Elasticsearch for Apache Hadoop'
+    repository: 'elasticsearch-hadoop'
     versioning: 'stack'
   ess:
     display: 'Elastic Cloud Hosted'

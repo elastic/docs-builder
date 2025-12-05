@@ -17,7 +17,8 @@ var builder = Host.CreateApplicationBuilder()
 	{
 		_ = s.AddSingleton(AssemblyConfiguration.Create(p));
 	})
-	.AddDocumentationToolingDefaults();
+	.AddDocumentationToolingDefaults()
+	.AddOpenTelemetryDefaults();
 
 var app = builder.ToConsoleAppBuilder();
 
@@ -34,6 +35,7 @@ app.Add<MoveCommand>("mv");
 app.Add<ServeCommand>("serve");
 app.Add<IndexCommand>("index");
 app.Add<FormatCommand>("format");
+app.Add<ChangelogCommand>("changelog");
 
 //assembler commands
 
