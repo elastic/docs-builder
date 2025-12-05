@@ -42,6 +42,8 @@ export const SearchFilters = ({ counts, isLoading }: SearchFiltersProps) => {
             >
                 <EuiButton
                     color="text"
+                    iconType="globe"
+                    iconSize="s"
                     // @ts-expect-error: xs is valid size according to EuiButton docs
                     size="xs"
                     fill={selectedFilter === 'all'}
@@ -61,6 +63,8 @@ export const SearchFilters = ({ counts, isLoading }: SearchFiltersProps) => {
             >
                 <EuiButton
                     color="text"
+                    iconType="document"
+                    iconSize="s"
                     // @ts-expect-error: xs is valid size according to EuiButton docs
                     size="xs"
                     fill={selectedFilter === 'doc'}
@@ -80,6 +84,8 @@ export const SearchFilters = ({ counts, isLoading }: SearchFiltersProps) => {
             >
                 <EuiButton
                     color="text"
+                    iconType="code"
+                    iconSize="s"
                     // @ts-expect-error: xs is valid size according to EuiButton docs
                     size="xs"
                     fill={selectedFilter === 'api'}
