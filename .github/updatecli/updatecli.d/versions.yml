@@ -334,7 +334,7 @@ sources:
       username: '{{ requiredEnv "GITHUB_ACTOR" }}'
       versionfilter:
         kind: semver
-        pattern: ">=9.0.0-0"
+        pattern: "^9.0.0"
 
   latest-elasticsearch-client-go-version:
     name: Get latest release version for Elasticsearch Go Client
@@ -348,7 +348,7 @@ sources:
       username: '{{ requiredEnv "GITHUB_ACTOR" }}'
       versionfilter:
         kind: semver
-        pattern: ">=9.0.0-0"
+        pattern: "^9.0.0"
 
   latest-elasticsearch-client-java-version:
     name: Get latest release version for Elasticsearch Java Client
@@ -362,7 +362,7 @@ sources:
       username: '{{ requiredEnv "GITHUB_ACTOR" }}'
       versionfilter:
         kind: semver
-        pattern: ">=9.0.0-0"
+        pattern: "^9.0.0"
 
   latest-elasticsearch-client-javascript-version:
     name: Get latest release version for Elasticsearch JavaScript Client
@@ -376,7 +376,7 @@ sources:
       username: '{{ requiredEnv "GITHUB_ACTOR" }}'
       versionfilter:
         kind: semver
-        pattern: ">=9.0.0-0"
+        pattern: "^9.0.0"
 
   latest-elasticsearch-client-php-version:
     name: Get latest release version for Elasticsearch PHP Client
@@ -390,7 +390,7 @@ sources:
       username: '{{ requiredEnv "GITHUB_ACTOR" }}'
       versionfilter:
         kind: semver
-        pattern: ">=9.0.0-0"
+        pattern: "^9.0.0"
 
   latest-elasticsearch-client-python-version:
     name: Get latest release version for Elasticsearch Python Client
@@ -404,7 +404,7 @@ sources:
       username: '{{ requiredEnv "GITHUB_ACTOR" }}'
       versionfilter:
         kind: semver
-        pattern: ">=9.0.0-0"
+        pattern: "^9.0.0"
 
   latest-elasticsearch-client-ruby-version:
     name: Get latest release version for Elasticsearch Ruby Client
@@ -418,7 +418,7 @@ sources:
       username: '{{ requiredEnv "GITHUB_ACTOR" }}'
       versionfilter:
         kind: semver
-        pattern: ">=9.0.0-0"
+        pattern: "^9.0.0"
 
   latest-elasticsearch-client-rust-version:
     name: Get latest release version for Elasticsearch Rust Client
@@ -432,7 +432,7 @@ sources:
       username: '{{ requiredEnv "GITHUB_ACTOR" }}'
       versionfilter:
         kind: semver
-        pattern: ">=9.0.0-0"
+        pattern: ">=9.0.0-0 <10.0.0"
 
 targets:
   update-docs-docset-stack:
