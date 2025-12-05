@@ -276,18 +276,13 @@ public partial class ElasticsearchGateway : ISearchGateway
 						)
 					)
 					.Highlight(h => h
-						.RequireFieldMatch(true)
 						.Fields(f => f
-							.Add(Infer.Field<DocumentationDocument>(d => d.SearchTitle.Suffix("completion")), hf => hf
+							.Add(Infer.Field<DocumentationDocument>(d => d.Title), hf => hf
 								.FragmentSize(150)
 								.NumberOfFragments(3)
 								.NoMatchSize(150)
-								.BoundaryChars(":.!?\t\n")
-								.BoundaryScanner(BoundaryScanner.Sentence)
-								.BoundaryMaxScan(15)
-								.FragmentOffset(0)
 								.HighlightQuery(q => q.Match(m => m
-									.Field(d => d.SearchTitle.Suffix("completion"))
+									.Field(d => d.Title)
 									.Query(searchQuery)
 									.Analyzer("highlight_analyzer")
 								))
@@ -297,15 +292,6 @@ public partial class ElasticsearchGateway : ISearchGateway
 								.FragmentSize(150)
 								.NumberOfFragments(3)
 								.NoMatchSize(150)
-								.BoundaryChars(":.!?\t\n")
-								.BoundaryScanner(BoundaryScanner.Sentence)
-								.BoundaryMaxScan(15)
-								.FragmentOffset(0)
-								.HighlightQuery(q => q.Match(m => m
-									.Field(d => d.StrippedBody)
-									.Query(searchQuery)
-									.Analyzer("highlight_analyzer")
-								))
 								.PreTags(preTag)
 								.PostTags(postTag))
 						)
@@ -324,7 +310,7 @@ public partial class ElasticsearchGateway : ISearchGateway
 			else
 				_logger.LogInformation("RRF search completed for '{Query}'. Total hits: {TotalHits}", query, response.Total);
 
-			return ProcessSearchResponse(response);
+			return ProcessSearchResponse(response, searchQuery);
 		}
 		catch (Exception ex)
 		{
@@ -333,9 +319,10 @@ public partial class ElasticsearchGateway : ISearchGateway
 		}
 	}
 
-	private static SearchResult ProcessSearchResponse(SearchResponse<DocumentationDocument> response)
+	private static SearchResult ProcessSearchResponse(SearchResponse<DocumentationDocument> response, string searchQuery)
 	{
 		var totalHits = (int)response.Total;
+		var searchTokens = searchQuery.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
 		var results = response.Documents.Select((doc, index) =>
 		{
@@ -348,36 +335,42 @@ public partial class ElasticsearchGateway : ISearchGateway
 			if (highlights != null)
 			{
 				if (highlights.TryGetValue("stripped_body", out var bodyHighlights) && bodyHighlights.Count > 0)
-					highlightedBody = string.Join(". ", bodyHighlights.Select(h => h.TrimEnd('.', ' ', '-')));
+					highlightedBody = string.Join(". ", bodyHighlights.Select(h => h.Trim(['|', ' ', '.', '-'])));
 
-				if (highlights.TryGetValue("search_title.completion", out var titleHighlights) && titleHighlights.Count > 0)
-					highlightedTitle = string.Join(". ", titleHighlights.Select(h => h.TrimEnd('.', ' ', '-')));
+				if (highlights.TryGetValue("title", out var titleHighlights) && titleHighlights.Count > 0)
+					highlightedTitle = string.Join(". ", titleHighlights.Select(h => h.Trim(['|', ' ', '.', '-'])));
 			}
+
+			var title = (highlightedTitle ?? doc.Title).HighlightTokens(searchTokens);
+			var description = (!string.IsNullOrWhiteSpace(highlightedBody) ? highlightedBody : doc.Description ?? string.Empty)
+				.Replace("\r\n", " ")
+				.Replace("\n", " ")
+				.Replace("\r", " ")
+				.Trim(['|', ' '])
+				.HighlightTokens(searchTokens);
 
 			return new SearchResultItem
 			{
 				Url = doc.Url,
-				Title = doc.Title,
+				Title = title,
 				Type = doc.Type,
-				Description = doc.Description ?? string.Empty,
-				Headings = doc.Headings,
+				Description = description,
 				Parents = doc.Parents.Select(parent => new SearchResultItemParent
 				{
 					Title = parent.Title,
 					Url = parent.Url
 				}).ToArray(),
-				Score = (float)(hit?.Score ?? 0.0),
-				HighlightedTitle = highlightedTitle,
-				HighlightedBody = highlightedBody
+				Score = (float)(hit?.Score ?? 0.0)
 			};
 		}).ToList();
 
 		// Extract aggregations
 		var aggregations = new Dictionary<string, long>();
-		if (response.Aggregations?.TryGetValue("type", out var typeAgg) == true && typeAgg is StringTermsAggregate stringTermsAgg)
+		var terms = response.Aggregations?.GetStringTerms("type");
+		if (terms is not null)
 		{
-			foreach (var bucket in stringTermsAgg.Buckets)
-				aggregations[bucket.Key.ToString()!] = bucket.DocCount;
+			foreach (var bucket in terms.Buckets)
+				aggregations[bucket.Key.ToString()] = bucket.DocCount;
 		}
 
 		return new SearchResult

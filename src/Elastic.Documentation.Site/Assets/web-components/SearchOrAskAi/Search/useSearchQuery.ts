@@ -35,8 +35,6 @@ const SearchResultItem = z.object({
     description: z.string(),
     score: z.number(),
     parents: z.array(SearchResultItemParent),
-    highlightedTitle: z.string().nullish(),
-    highlightedBody: z.string().nullish(),
 })
 
 export type SearchResultItem = z.infer<typeof SearchResultItem>
