@@ -2,8 +2,26 @@ import { cooldownStore } from '../cooldown.store'
 import { ApiError } from '../errorHandling'
 import { ChatMessage } from './ChatMessage'
 import { ChatMessage as ChatMessageType } from './chat.store'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
 import * as React from 'react'
+
+// Create a fresh QueryClient for each test
+const createTestQueryClient = () =>
+    new QueryClient({
+        defaultOptions: {
+            queries: { retry: false },
+            mutations: { retry: false },
+        },
+    })
+
+// Wrapper component for tests that need React Query
+const renderWithQueryClient = (ui: React.ReactElement) => {
+    const testQueryClient = createTestQueryClient()
+    return render(
+        <QueryClientProvider client={testQueryClient}>{ui}</QueryClientProvider>
+    )
+}
 
 // Reset cooldown store between tests
 const resetStores = () => {
@@ -63,7 +81,7 @@ describe('ChatMessage Component', () => {
 
         it('should render AI message with correct content', () => {
             // Act
-            render(<ChatMessage message={aiMessage} />)
+            renderWithQueryClient(<ChatMessage message={aiMessage} />)
 
             // Assert
             expect(
@@ -75,7 +93,7 @@ describe('ChatMessage Component', () => {
 
         it('should show feedback buttons when complete', () => {
             // Act
-            render(<ChatMessage message={aiMessage} />)
+            renderWithQueryClient(<ChatMessage message={aiMessage} />)
 
             // Assert
             expect(
@@ -92,7 +110,7 @@ describe('ChatMessage Component', () => {
 
         it('should have correct data attributes', () => {
             // Act
-            render(<ChatMessage message={aiMessage} />)
+            renderWithQueryClient(<ChatMessage message={aiMessage} />)
 
             // Assert
             const messageElement = screen
@@ -117,7 +135,7 @@ describe('ChatMessage Component', () => {
 
         it('should render streaming content', () => {
             // Act
-            render(<ChatMessage message={streamingMessage} />)
+            renderWithQueryClient(<ChatMessage message={streamingMessage} />)
 
             // Assert
             const messageElement = screen
@@ -128,7 +146,7 @@ describe('ChatMessage Component', () => {
 
         it('should not show feedback buttons when streaming', () => {
             // Act
-            render(<ChatMessage message={streamingMessage} />)
+            renderWithQueryClient(<ChatMessage message={streamingMessage} />)
 
             // Assert
             expect(
@@ -158,7 +176,9 @@ describe('ChatMessage Component', () => {
 
         it('should show error callout when status is error', () => {
             // Act
-            render(<ChatMessage message={createErrorMessage()} />)
+            renderWithQueryClient(
+                <ChatMessage message={createErrorMessage()} />
+            )
 
             // Assert - error callout should be visible with title
             expect(
@@ -166,11 +186,13 @@ describe('ChatMessage Component', () => {
             ).toBeInTheDocument()
         })
 
-        it('should display error guidance for 5xx errors', () => {
+        it('should display error message for 5xx errors', () => {
             // Act
-            render(<ChatMessage message={createErrorMessage()} />)
+            renderWithQueryClient(
+                <ChatMessage message={createErrorMessage()} />
+            )
 
-            // Assert - 5xx errors show generic guidance
+            // Assert - error guidance should be displayed
             expect(
                 screen.getByText(/We are unable to process your request/i)
             ).toBeInTheDocument()
@@ -189,7 +211,7 @@ describe('ChatMessage Component', () => {
 
         it('should render markdown as HTML', () => {
             // Act
-            render(<ChatMessage message={messageWithMarkdown} />)
+            renderWithQueryClient(<ChatMessage message={messageWithMarkdown} />)
 
             // Assert - Bold text should be rendered
             expect(screen.getByText(/Bold text/)).toBeInTheDocument()

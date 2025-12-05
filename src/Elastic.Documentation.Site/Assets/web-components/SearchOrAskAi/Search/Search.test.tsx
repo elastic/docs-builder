@@ -2,10 +2,10 @@ import { chatStore } from '../AskAi/chat.store'
 import { cooldownStore } from '../cooldown.store'
 import { modalStore } from '../modal.store'
 import { Search } from './Search'
-import { searchStore } from './search.store'
+import { searchStore, NO_SELECTION } from './search.store'
 import { SearchResultItem } from './useSearchQuery'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import * as React from 'react'
 
@@ -42,7 +42,12 @@ const TestWrapper = ({ children }: { children: React.ReactNode }) => {
 
 // Helper to reset all stores
 const resetStores = () => {
-    searchStore.setState({ searchTerm: '', page: 1 })
+    searchStore.setState({
+        searchTerm: '',
+        page: 1,
+        typeFilter: 'all',
+        selectedIndex: NO_SELECTION,
+    })
     chatStore.setState({
         chatMessages: [],
         conversationId: null,
@@ -117,6 +122,20 @@ describe('Search Component', () => {
             ) as HTMLInputElement
             expect(input.value).toBe('kibana')
         })
+
+        it('should reset selectedIndex when search term changes', async () => {
+            // Arrange
+            searchStore.setState({ searchTerm: 'test', selectedIndex: 2 })
+            const user = userEvent.setup()
+
+            // Act
+            render(<Search />, { wrapper: TestWrapper })
+            const input = screen.getByPlaceholderText(/search in docs/i)
+            await user.type(input, 'x')
+
+            // Assert - selectedIndex should reset to 0
+            expect(searchStore.getState().selectedIndex).toBe(0)
+        })
     })
 
     describe('Ask AI button', () => {
@@ -158,7 +177,9 @@ describe('Search Component', () => {
             await waitFor(() => {
                 const messages = chatStore.getState().chatMessages
                 expect(messages.length).toBeGreaterThanOrEqual(1)
-                expect(messages[0].content).toBe('what is kibana')
+                expect(messages[0].content).toBe(
+                    'Tell me more about what is kibana'
+                )
             })
             expect(modalStore.getState().mode).toBe('askAi')
         })
@@ -184,7 +205,7 @@ describe('Search Component', () => {
     })
 
     describe('Search on Enter', () => {
-        it('should trigger chat when Enter is pressed with valid search', async () => {
+        it('should trigger chat when Enter is pressed with valid search and no results', async () => {
             // Arrange
             searchStore.setState({ searchTerm: 'elasticsearch query' })
             const user = userEvent.setup()
@@ -198,7 +219,9 @@ describe('Search Component', () => {
             // Assert
             await waitFor(() => {
                 const messages = chatStore.getState().chatMessages
-                expect(messages[0]?.content).toBe('elasticsearch query')
+                expect(messages[0]?.content).toBe(
+                    'Tell me more about elasticsearch query'
+                )
             })
         })
 
@@ -247,7 +270,7 @@ describe('Search Component', () => {
         })
     })
 
-    describe('Arrow key navigation', () => {
+    describe('Selection navigation', () => {
         beforeEach(() => {
             mockSearchResponse([
                 {
@@ -266,36 +289,60 @@ describe('Search Component', () => {
                     score: 0.8,
                     parents: [],
                 },
+                {
+                    type: 'doc',
+                    url: '/test3',
+                    title: 'Test Result 3',
+                    description: 'Description 3',
+                    score: 0.7,
+                    parents: [],
+                },
             ])
         })
 
-        it('should navigate from input to first result on ArrowDown', async () => {
-            // Arrange
-            searchStore.setState({ searchTerm: 'test' })
+        it('should select first item after typing (selectedIndex = 0)', async () => {
+            // Arrange - start with no selection
+            expect(searchStore.getState().selectedIndex).toBe(NO_SELECTION)
             const user = userEvent.setup()
 
             // Act
             render(<Search />, { wrapper: TestWrapper })
+            const input = screen.getByPlaceholderText(/search in docs/i)
+            await user.type(input, 'test')
 
-            // Wait for results to load
             await waitFor(() => {
                 expect(screen.getByText('Test Result 1')).toBeInTheDocument()
             })
 
-            const input = screen.getByPlaceholderText(/search in docs/i)
-            await user.click(input)
-            await user.keyboard('{ArrowDown}')
-
-            // Assert
-            await waitFor(() => {
-                const firstResult = screen
-                    .getByText('Test Result 1')
-                    .closest('a')
-                expect(firstResult).toHaveFocus()
-            })
+            // Assert - selection appears after typing
+            expect(searchStore.getState().selectedIndex).toBe(0)
         })
 
-        it('should navigate between results with ArrowDown', async () => {
+        it('should move focus to second result on ArrowDown from input (first is already visually selected)', async () => {
+            // Arrange
+            const user = userEvent.setup()
+
+            // Act
+            render(<Search />, { wrapper: TestWrapper })
+
+            const input = screen.getByPlaceholderText(/search in docs/i)
+            await user.type(input, 'test')
+
+            await waitFor(() => {
+                expect(screen.getByText('Test Result 1')).toBeInTheDocument()
+            })
+
+            // selectedIndex is now 0 after typing
+            expect(searchStore.getState().selectedIndex).toBe(0)
+
+            await user.keyboard('{ArrowDown}')
+
+            // Assert - focus moved to second result (first is already visually selected)
+            const secondResult = screen.getByText('Test Result 2').closest('a')
+            expect(secondResult).toHaveFocus()
+        })
+
+        it('should move focus between results with ArrowDown/ArrowUp', async () => {
             // Arrange
             searchStore.setState({ searchTerm: 'test' })
             const user = userEvent.setup()
@@ -307,13 +354,104 @@ describe('Search Component', () => {
                 expect(screen.getByText('Test Result 1')).toBeInTheDocument()
             })
 
+            // Focus first result
             const firstResult = screen.getByText('Test Result 1').closest('a')!
-            firstResult.focus()
-            await user.keyboard('{ArrowDown}')
+            await act(async () => {
+                firstResult.focus()
+            })
 
-            // Assert
+            // Navigate down
+            await user.keyboard('{ArrowDown}')
             const secondResult = screen.getByText('Test Result 2').closest('a')
             expect(secondResult).toHaveFocus()
+            expect(searchStore.getState().selectedIndex).toBe(1)
+
+            // Navigate up
+            await user.keyboard('{ArrowUp}')
+            expect(firstResult).toHaveFocus()
+            expect(searchStore.getState().selectedIndex).toBe(0)
+        })
+
+        it('should clear selection when ArrowUp from first item goes to input', async () => {
+            // Arrange
+            const user = userEvent.setup()
+
+            // Act
+            render(<Search />, { wrapper: TestWrapper })
+            const input = screen.getByPlaceholderText(/search in docs/i)
+            await user.type(input, 'test')
+
+            await waitFor(() => {
+                expect(screen.getByText('Test Result 1')).toBeInTheDocument()
+            })
+
+            // Focus first result then press ArrowUp
+            const firstResult = screen.getByText('Test Result 1').closest('a')!
+            await act(async () => {
+                firstResult.focus()
+            })
+            expect(searchStore.getState().selectedIndex).toBe(0)
+
+            await user.keyboard('{ArrowUp}')
+
+            // Assert - focus goes to input, selection is cleared
+            expect(input).toHaveFocus()
+            expect(searchStore.getState().selectedIndex).toBe(NO_SELECTION)
+        })
+
+        it('should clear selection when ArrowDown from last item goes to button', async () => {
+            // Arrange
+            const user = userEvent.setup()
+
+            // Act
+            render(<Search />, { wrapper: TestWrapper })
+            const input = screen.getByPlaceholderText(/search in docs/i)
+            await user.type(input, 'test')
+
+            await waitFor(() => {
+                expect(screen.getByText('Test Result 3')).toBeInTheDocument()
+            })
+
+            // Focus the last item directly
+            const lastResult = screen.getByText('Test Result 3').closest('a')!
+            await act(async () => {
+                lastResult.focus()
+            })
+            expect(searchStore.getState().selectedIndex).toBe(2)
+
+            // Try to go down from last item
+            await user.keyboard('{ArrowDown}')
+
+            // Assert - focus moves to button, selection is cleared
+            const button = screen.getByRole('button', {
+                name: /tell me more about/i,
+            })
+            expect(button).toHaveFocus()
+            expect(searchStore.getState().selectedIndex).toBe(NO_SELECTION)
+        })
+
+        it('should render isSelected prop on the selected item', async () => {
+            // Arrange
+            searchStore.setState({ searchTerm: 'test', selectedIndex: 1 })
+
+            // Act
+            render(<Search />, { wrapper: TestWrapper })
+
+            await waitFor(() => {
+                expect(screen.getByText('Test Result 2')).toBeInTheDocument()
+            })
+
+            // Assert - the second result should have the data-selected attribute
+            const secondResultLink = screen
+                .getByText('Test Result 2')
+                .closest('a')
+            expect(secondResultLink).toHaveAttribute('data-selected', 'true')
+
+            // First and third should not be selected
+            const firstResultLink = screen
+                .getByText('Test Result 1')
+                .closest('a')
+            expect(firstResultLink).not.toHaveAttribute('data-selected')
         })
     })
 

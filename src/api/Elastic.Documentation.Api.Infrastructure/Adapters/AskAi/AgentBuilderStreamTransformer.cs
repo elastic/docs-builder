@@ -19,12 +19,12 @@ public class AgentBuilderStreamTransformer(ILogger<AgentBuilderStreamTransformer
 	{
 		var type = eventType ?? "message";
 		var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-		var id = Guid.NewGuid().ToString();
 
 		// Handle error events first - they have a different structure (no "data" wrapper)
 		if (type == "error")
 		{
-			return ParseErrorEvent(id, timestamp, json);
+			var errorId = Guid.NewGuid().ToString();
+			return ParseErrorEvent(errorId, timestamp, json);
 		}
 
 		// Most Agent Builder events have data nested in a "data" property
@@ -33,6 +33,11 @@ public class AgentBuilderStreamTransformer(ILogger<AgentBuilderStreamTransformer
 			Logger.LogDebug("Agent Builder event without 'data' property (skipping): {EventType}", type);
 			return null;
 		}
+
+		// Extract message_id from innerData if available, fallback to new GUID
+		var id = innerData.TryGetProperty("message_id", out var msgId)
+			? msgId.GetString() ?? Guid.NewGuid().ToString()
+			: Guid.NewGuid().ToString();
 
 		return type switch
 		{

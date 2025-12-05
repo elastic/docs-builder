@@ -64,6 +64,8 @@ public class SearchRelevanceTests(ITestOutputHelper output)
 		{ "universal profiling", "/docs/solutions/observability/infra-and-hosts/universal-profiling", null},
 		{ "agg", "/docs/explore-analyze/query-filter/aggregations", null},
 		{ "a", "/docs/reference/apm/observability/apm", null},
+		{ "index.number_of_replicas", "/docs/reference/elasticsearch/index-settings/index-modules", null},
+		//{ "index.use_time_series_doc_values_format", "/docs/reference/elasticsearch/index-settings/index-modules", null},
 		//universal profiling
 	};
 

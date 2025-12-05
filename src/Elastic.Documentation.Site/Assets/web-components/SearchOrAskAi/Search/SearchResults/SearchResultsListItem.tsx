@@ -51,11 +51,13 @@ interface SearchResultListItemProps {
     index: number
     pageNumber: number
     pageSize: number
+    isSelected?: boolean
+    onFocus?: (index: number) => void
     onKeyDown?: (
         e: React.KeyboardEvent<HTMLAnchorElement>,
         index: number
     ) => void
-    setRef?: (element: HTMLAnchorElement | null, index: number) => void
+    setRef?: (el: HTMLAnchorElement | null) => void
 }
 
 export function SearchResultListItem({
@@ -63,6 +65,8 @@ export function SearchResultListItem({
     index,
     pageNumber,
     pageSize,
+    isSelected,
+    onFocus,
     onKeyDown,
     setRef,
 }: SearchResultListItemProps) {
@@ -89,16 +93,12 @@ export function SearchResultListItem({
     return (
         <li>
             <a
-                ref={(el) => setRef?.(el, index)}
+                ref={setRef}
+                data-selected={isSelected || undefined}
+                tabIndex={0}
                 onClick={handleClick}
-                onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                        handleClick()
-                        window.location.href = result.url
-                    } else {
-                        onKeyDown?.(e, index)
-                    }
-                }}
+                onFocus={() => onFocus?.(index)}
+                onKeyDown={(e) => onKeyDown?.(e, index)}
                 css={css`
                     display: grid;
                     grid-template-columns: auto 1fr auto;
@@ -109,8 +109,12 @@ export function SearchResultListItem({
                     padding-block: ${euiTheme.size.m};
                     margin-inline: ${euiTheme.size.base};
                     border: 1px solid transparent;
-                    :hover,
-                    :focus {
+                    outline: none;
+
+                    /* Shared highlight styles for selected, hover, and focus */
+                    &[data-selected],
+                    &:hover,
+                    &:focus {
                         background-color: ${euiTheme.colors
                             .backgroundBaseSubdued};
                         border-color: ${euiTheme.colors.borderBasePlain};
@@ -118,8 +122,14 @@ export function SearchResultListItem({
                             visibility: visible;
                         }
                     }
+
+                    /* Focus ring for selected and focus states */
+                    &[data-selected],
+                    &:focus {
+                        outline: 2px solid ${euiTheme.colors.primary};
+                        outline-offset: -2px;
+                    }
                 `}
-                tabIndex={0}
                 href={result.url}
             >
                 <EuiIcon
@@ -131,7 +141,6 @@ export function SearchResultListItem({
                     css={css`
                         mark {
                             background-color: transparent;
-                            // font-weight: ${euiTheme.font.weight.bold};
                             color: ${euiTheme.colors.link};
                         }
                     `}
@@ -143,9 +152,7 @@ export function SearchResultListItem({
                         `}
                     >
                         <SanitizedHtmlContent
-                            htmlContent={
-                                result.highlightedTitle ?? result.title
-                            }
+                            htmlContent={result.title}
                             ellipsis={false}
                         />
                     </div>
@@ -164,14 +171,10 @@ export function SearchResultListItem({
                                 //width: 90%;
                             `}
                         >
-                            {result.highlightedBody ? (
-                                <SanitizedHtmlContent
-                                    htmlContent={result.highlightedBody}
-                                    ellipsis={true}
-                                />
-                            ) : (
-                                <span>{result.description}</span>
-                            )}
+                            <SanitizedHtmlContent
+                                htmlContent={result.description}
+                                ellipsis={true}
+                            />
                         </div>
                     </EuiText>
                     {result.parents.length > 0 && (
@@ -289,3 +292,5 @@ const SanitizedHtmlContent = memo(
         return <div dangerouslySetInnerHTML={{ __html: processed }} />
     }
 )
+
+SanitizedHtmlContent.displayName = 'SanitizedHtmlContent'

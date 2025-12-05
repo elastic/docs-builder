@@ -35,6 +35,16 @@ public static class MappingsExtension
 			var stream = await askAiUsecase.AskAi(askAiRequest, ctx);
 			await stream.CopyToAsync(context.Response.Body, ctx);
 		});
+
+		// UUID validation is automatic via Guid type deserialization (returns 400 if invalid)
+		_ = askAiGroup.MapPost("/message-feedback", async (HttpContext context, AskAiMessageFeedbackRequest request, AskAiMessageFeedbackUsecase feedbackUsecase, Cancel ctx) =>
+		{
+			// Extract euid cookie for user tracking
+			_ = context.Request.Cookies.TryGetValue("euid", out var euid);
+
+			await feedbackUsecase.SubmitFeedback(request, euid, ctx);
+			return Results.NoContent();
+		}).DisableAntiforgery();
 	}
 
 	private static void MapSearchEndpoint(IEndpointRouteBuilder group)

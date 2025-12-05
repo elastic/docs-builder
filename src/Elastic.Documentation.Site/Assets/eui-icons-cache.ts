@@ -10,6 +10,7 @@ import { icon as EuiIconArrowUp } from '@elastic/eui/es/components/icon/assets/a
 import { icon as EuiIconCheck } from '@elastic/eui/es/components/icon/assets/check'
 import { icon as EuiIconCode } from '@elastic/eui/es/components/icon/assets/code'
 import { icon as EuiIconComment } from '@elastic/eui/es/components/icon/assets/comment'
+import { icon as EuiIconConsole } from '@elastic/eui/es/components/icon/assets/console'
 import { icon as EuiIconCopy } from '@elastic/eui/es/components/icon/assets/copy'
 import { icon as EuiIconCopyClipboard } from '@elastic/eui/es/components/icon/assets/copy_clipboard'
 import { icon as EuiIconCross } from '@elastic/eui/es/components/icon/assets/cross'
@@ -19,6 +20,7 @@ import { icon as EuiIconEmpty } from '@elastic/eui/es/components/icon/assets/emp
 import { icon as EuiIconError } from '@elastic/eui/es/components/icon/assets/error'
 import { icon as EuiIconFaceHappy } from '@elastic/eui/es/components/icon/assets/face_happy'
 import { icon as EuiIconFaceSad } from '@elastic/eui/es/components/icon/assets/face_sad'
+import { icon as EuiIconGlobe } from '@elastic/eui/es/components/icon/assets/globe'
 import { icon as EuiIconKqlFunction } from '@elastic/eui/es/components/icon/assets/kql_function'
 import { icon as EuiIconLogoElastic } from '@elastic/eui/es/components/icon/assets/logo_elastic'
 import { icon as EuiIconNewChat } from '@elastic/eui/es/components/icon/assets/new_chat'
@@ -75,6 +77,8 @@ const iconMapping = {
     arrowEnd: EuiIconArrowEnd,
     comment: EuiIconComment,
     kqlFunction: EuiIconKqlFunction,
+    globe: EuiIconGlobe,
+    console: EuiIconConsole,
 }
 
 appendIconComponentCache(iconMapping)

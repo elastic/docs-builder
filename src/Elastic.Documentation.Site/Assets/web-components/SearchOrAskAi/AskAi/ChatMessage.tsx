@@ -6,7 +6,8 @@ import { ApiError } from '../errorHandling'
 import { AskAiEvent, ChunkEvent, EventTypes } from './AskAiEvent'
 import { GeneratingStatus } from './GeneratingStatus'
 import { References } from './RelatedResources'
-import { ChatMessage as ChatMessageType } from './chat.store'
+import { ChatMessage as ChatMessageType, useConversationId } from './chat.store'
+import { useMessageFeedback } from './useMessageFeedback'
 import { useStatusMinDisplay } from './useStatusMinDisplay'
 import {
     EuiButtonIcon,
@@ -197,18 +198,28 @@ const computeAiStatus = (
 // Action bar for complete AI messages
 const ActionBar = ({
     content,
+    messageId,
     onRetry,
 }: {
     content: string
+    messageId: string
     onRetry?: () => void
-}) => (
-    <EuiFlexGroup
-        responsive={false}
-        component="span"
-        gutterSize="none"
-        direction="rowReverse"
-    >
-        <EuiFlexItem grow={false}>
+}) => {
+    const { euiTheme } = useEuiTheme()
+    const conversationId = useConversationId()
+    const { selectedReaction, submitFeedback } = useMessageFeedback(
+        messageId,
+        conversationId
+    )
+    return (
+        <div
+            css={css`
+                display: flex;
+                gap: ${euiTheme.size.xxs};
+                align-items: center;
+                flex-direction: row-reverse;
+            `}
+        >
             <EuiToolTip content="Not helpful">
                 <EuiButtonIcon
                     aria-label="This answer was not helpful"
@@ -216,10 +227,12 @@ const ActionBar = ({
                     color="danger"
                     size="xs"
                     iconSize="s"
+                    display={
+                        selectedReaction === 'thumbsDown' ? 'base' : 'empty'
+                    }
+                    onClick={() => submitFeedback('thumbsDown')}
                 />
             </EuiToolTip>
-        </EuiFlexItem>
-        <EuiFlexItem grow={false}>
             <EuiToolTip content="Mark as helpful">
                 <EuiButtonIcon
                     aria-label="This answer was helpful"
@@ -227,13 +240,13 @@ const ActionBar = ({
                     color="success"
                     size="xs"
                     iconSize="s"
+                    display={selectedReaction === 'thumbsUp' ? 'base' : 'empty'}
+                    onClick={() => submitFeedback('thumbsUp')}
                 />
             </EuiToolTip>
-        </EuiFlexItem>
-        <EuiFlexItem grow={false}>
             <EuiCopy
                 textToCopy={content}
-                beforeMessage="Copy as markdown"
+                beforeMessage="Copy markdown"
                 afterMessage="Copied!"
             >
                 {(copy) => (
@@ -242,13 +255,12 @@ const ActionBar = ({
                         iconType="copy"
                         size="xs"
                         iconSize="s"
+                        color="text"
                         onClick={copy}
                     />
                 )}
             </EuiCopy>
-        </EuiFlexItem>
-        {onRetry && (
-            <EuiFlexItem grow={false}>
+            {onRetry && (
                 <EuiToolTip content="Request a new answer">
                     <EuiButtonIcon
                         aria-label="Request a new answer"
@@ -258,10 +270,10 @@ const ActionBar = ({
                         iconSize="s"
                     />
                 </EuiToolTip>
-            </EuiFlexItem>
-        )}
-    </EuiFlexGroup>
-)
+            )}
+        </div>
+    )
+}
 
 export const ChatMessage = ({
     message,
@@ -443,6 +455,7 @@ export const ChatMessage = ({
                                 <EuiSpacer size="m" />
                                 <ActionBar
                                     content={mainContent}
+                                    messageId={message.id}
                                     onRetry={onRetry}
                                 />
                             </>

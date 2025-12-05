@@ -39,6 +39,11 @@ export const Chat = () => {
     const handleScroll = useScrollPersistence(scrollRef)
     useFocusOnComplete(inputRef)
 
+    // Focus input when Cmd+; is pressed
+    const handleMetaSemicolon = useCallback(() => {
+        inputRef.current?.focus()
+    }, [])
+
     const {
         inputValue,
         setInputValue,
@@ -73,6 +78,7 @@ export const Chat = () => {
                 onAbort={handleAbort}
                 disabled={isCooldownActive}
                 isStreaming={isStreaming}
+                onMetaSemicolon={handleMetaSemicolon}
             />
 
             <InfoBanner />
@@ -222,6 +228,7 @@ interface ChatInputAreaProps {
     onAbort: () => void
     disabled: boolean
     isStreaming: boolean
+    onMetaSemicolon?: () => void
 }
 
 const ChatInputArea = ({
@@ -232,6 +239,7 @@ const ChatInputArea = ({
     onAbort,
     disabled,
     isStreaming,
+    onMetaSemicolon,
 }: ChatInputAreaProps) => {
     const { euiTheme } = useEuiTheme()
 
@@ -252,6 +260,7 @@ const ChatInputArea = ({
                     disabled={disabled}
                     inputRef={inputRef}
                     isStreaming={isStreaming}
+                    onMetaSemicolon={onMetaSemicolon}
                 />
             </div>
         </EuiFlexItem>
