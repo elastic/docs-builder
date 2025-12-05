@@ -29,10 +29,10 @@ public class AgentBuilderAskAiGateway(HttpClient httpClient, IParameterProvider 
 		var agentBuilderPayload = new AgentBuilderPayload(
 			askAiRequest.Message,
 			"docs-agent",
-			askAiRequest.ConversationId);
+			askAiRequest.ConversationId?.ToString());
 		var requestBody = JsonSerializer.Serialize(agentBuilderPayload, AgentBuilderContext.Default.AgentBuilderPayload);
 
-		logger.LogInformation("Sending to Agent Builder with conversation_id: \"{ConversationId}\"", askAiRequest.ConversationId ?? "(null - first request)");
+		logger.LogInformation("Sending to Agent Builder with conversation_id: \"{ConversationId}\"", askAiRequest.ConversationId?.ToString() ?? "(null - first request)");
 
 		var kibanaUrl = await parameterProvider.GetParam("docs-kibana-url", false, ctx);
 		var kibanaApiKey = await parameterProvider.GetParam("docs-kibana-apikey", true, ctx);
