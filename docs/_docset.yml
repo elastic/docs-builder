@@ -42,6 +42,7 @@ toc:
       - file: branching-strategy.md
       - file: add-repo.md
       - file: release-new-version.md
+      - file: changelog.md
       - hidden: locally.md
       - hidden: on-the-web.md
   - folder: building-blocks
