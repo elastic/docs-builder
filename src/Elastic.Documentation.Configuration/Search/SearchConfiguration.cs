@@ -25,10 +25,18 @@ public record SearchConfiguration
 					var targets = new List<string[]>();
 					foreach (var s in a)
 					{
-						if (s.Contains(' ') || s.Contains("=>"))
+						if (s.Contains(' '))
 							continue;
 
 						List<string> newTarget = [s];
+						if (s.Contains("=>"))
+						{
+							var tokens = s.Split("=>");
+							if (tokens.Length > 1)
+								newTarget = [tokens[0].Trim()];
+							else
+								continue;
+						}
 						newTarget.AddRange(a.Except([s]));
 						targets.Add(newTarget.ToArray());
 					}

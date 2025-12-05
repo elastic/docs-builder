@@ -143,9 +143,7 @@ export function SearchResultListItem({
                         `}
                     >
                         <SanitizedHtmlContent
-                            htmlContent={
-                                result.highlightedTitle ?? result.title
-                            }
+                            htmlContent={result.title}
                             ellipsis={false}
                         />
                     </div>
@@ -164,14 +162,10 @@ export function SearchResultListItem({
                                 //width: 90%;
                             `}
                         >
-                            {result.highlightedBody ? (
-                                <SanitizedHtmlContent
-                                    htmlContent={result.highlightedBody}
-                                    ellipsis={true}
-                                />
-                            ) : (
-                                <span>{result.description}</span>
-                            )}
+                            <SanitizedHtmlContent
+                                htmlContent={result.description}
+                                ellipsis={true}
+                            />
                         </div>
                     </EuiText>
                     {result.parents.length > 0 && (
