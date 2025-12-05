@@ -205,79 +205,73 @@ const ActionBar = ({
     messageId: string
     onRetry?: () => void
 }) => {
+    const { euiTheme } = useEuiTheme()
     const conversationId = useConversationId()
     const { selectedReaction, submitFeedback } = useMessageFeedback(
         messageId,
         conversationId
     )
     return (
-        <EuiFlexGroup
-            responsive={false}
-            component="span"
-            gutterSize="none"
-            direction="rowReverse"
+        <div
+            css={css`
+                display: flex;
+                gap: ${euiTheme.size.xxs};
+                align-items: center;
+                flex-direction: row-reverse;
+            `}
         >
-            <EuiFlexItem grow={false}>
-                <EuiToolTip content="Not helpful">
+            <EuiToolTip content="Not helpful">
+                <EuiButtonIcon
+                    aria-label="This answer was not helpful"
+                    iconType="thumbDown"
+                    color="danger"
+                    size="xs"
+                    iconSize="s"
+                    display={
+                        selectedReaction === 'thumbsDown' ? 'base' : 'empty'
+                    }
+                    onClick={() => submitFeedback('thumbsDown')}
+                />
+            </EuiToolTip>
+            <EuiToolTip content="Mark as helpful">
+                <EuiButtonIcon
+                    aria-label="This answer was helpful"
+                    iconType="thumbUp"
+                    color="success"
+                    size="xs"
+                    iconSize="s"
+                    display={selectedReaction === 'thumbsUp' ? 'base' : 'empty'}
+                    onClick={() => submitFeedback('thumbsUp')}
+                />
+            </EuiToolTip>
+            <EuiCopy
+                textToCopy={content}
+                beforeMessage="Copy markdown"
+                afterMessage="Copied!"
+            >
+                {(copy) => (
                     <EuiButtonIcon
-                        aria-label="This answer was not helpful"
-                        iconType="thumbDown"
-                        color="danger"
+                        aria-label="Copy markdown"
+                        iconType="copy"
                         size="xs"
                         iconSize="s"
-                        display={
-                            selectedReaction === 'thumbsDown' ? 'base' : 'empty'
-                        }
-                        onClick={() => submitFeedback('thumbsDown')}
+                        color="text"
+                        onClick={copy}
                     />
-                </EuiToolTip>
-            </EuiFlexItem>
-            <EuiFlexItem grow={false}>
-                <EuiToolTip content="Mark as helpful">
-                    <EuiButtonIcon
-                        aria-label="This answer was helpful"
-                        iconType="thumbUp"
-                        color="success"
-                        size="xs"
-                        iconSize="s"
-                        display={
-                            selectedReaction === 'thumbsUp' ? 'base' : 'empty'
-                        }
-                        onClick={() => submitFeedback('thumbsUp')}
-                    />
-                </EuiToolTip>
-            </EuiFlexItem>
-            <EuiFlexItem grow={false}>
-                <EuiCopy
-                    textToCopy={content}
-                    beforeMessage="Copy markdown"
-                    afterMessage="Copied!"
-                >
-                    {(copy) => (
-                        <EuiButtonIcon
-                            aria-label="Copy markdown"
-                            iconType="copy"
-                            size="xs"
-                            iconSize="s"
-                            onClick={copy}
-                        />
-                    )}
-                </EuiCopy>
-            </EuiFlexItem>
+                )}
+            </EuiCopy>
             {onRetry && (
-                <EuiFlexItem grow={false}>
-                    <EuiToolTip content="Request a new answer">
-                        <EuiButtonIcon
-                            aria-label="Request a new answer"
-                            iconType="refresh"
-                            onClick={onRetry}
-                            size="s"
-                            iconSize="s"
-                        />
-                    </EuiToolTip>
-                </EuiFlexItem>
+                <EuiToolTip content="Request a new answer">
+                    <EuiButtonIcon
+                        aria-label="Request a new answer"
+                        iconType="refresh"
+                        onClick={onRetry}
+                        size="s"
+                        iconSize="s"
+                    />
+                </EuiToolTip>
             )}
-        </EuiFlexGroup>
+        </div>
     )
 }
 
