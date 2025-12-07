@@ -145,7 +145,7 @@ export const SearchOrAskAiButton = () => {
                     iconType={AiIcon}
                     onClick={openAskAiModal}
                 >
-                    Ask AI Assistant
+                    Ask AI assistant
                 </ElasticAiAssistantButton>
             </EuiToolTip>
 
