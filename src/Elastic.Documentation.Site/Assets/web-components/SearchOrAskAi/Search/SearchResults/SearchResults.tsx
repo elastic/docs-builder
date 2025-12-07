@@ -38,12 +38,6 @@ export const SearchResults = ({
 
     const results = data?.results ?? []
     const typeAggregations = data?.aggregations?.type
-    const counts = {
-        apiResultsCount: typeAggregations?.['api'] ?? 0,
-        docsResultsCount: typeAggregations?.['doc'] ?? 0,
-        totalCount:
-            (typeAggregations?.['api'] ?? 0) + (typeAggregations?.['doc'] ?? 0),
-    }
 
     const isInitialLoading = isLoading && !data
 
@@ -63,7 +57,6 @@ export const SearchResults = ({
             {!error && (
                 <>
                     <SearchFilters
-                        counts={counts}
                         isLoading={isInitialLoading}
                         inputRef={inputRef}
                         itemRefs={itemRefs}
