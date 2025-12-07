@@ -117,7 +117,7 @@ export const Search = () => {
                 buttonRef={buttonRef}
                 itemRefs={itemRefs}
             />
-            <EuiHorizontalRule margin="none" />
+            {!showLoadingSpinner && <EuiHorizontalRule margin="none" />}
             {searchTerm && (
                 <div
                     css={css`
@@ -125,7 +125,11 @@ export const Search = () => {
                     `}
                 >
                     <EuiSpacer size="m" />
-                    <EuiText color="subdued" size="xs">
+                    <EuiText color="default" size="xs"
+                    css={css`
+                        font-weight: 500;
+                    `}
+                    >
                         Ask AI assistant
                     </EuiText>
                     <EuiSpacer size="s" />
@@ -145,9 +149,9 @@ export const Search = () => {
 }
 
 const SEARCH_KEYBOARD_SHORTCUTS = [
-    { keys: ['returnKey'], label: 'to select' },
-    { keys: ['sortUp', 'sortDown'], label: 'to navigate' },
-    { keys: ['Esc'], label: 'to close' },
+    { keys: ['returnKey'], label: 'Select' },
+    { keys: ['sortUp', 'sortDown'], label: 'Navigate' },
+    { keys: ['Esc'], label: 'Close' },
 ]
 
 const SearchFooter = () => (

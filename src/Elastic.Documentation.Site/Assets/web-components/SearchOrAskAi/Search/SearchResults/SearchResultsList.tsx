@@ -39,9 +39,11 @@ export const SearchResultsList = ({
 
     const scrollbarStyle = css`
         max-height: 400px;
-        padding-block: ${euiTheme.size.base};
-        margin-right: ${euiTheme.size.s};
+        padding-block-start: ${euiTheme.size.base};
+        padding-block-end: ${euiTheme.size.base};
+        margin-inline-end: ${euiTheme.size.s};
         ${useEuiOverflowScroll('y', true)}
+        mask-image: none;
     `
 
     const resetScrollToTop = useCallback(() => {
