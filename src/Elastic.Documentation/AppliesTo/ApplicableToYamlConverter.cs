@@ -256,9 +256,101 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		if (target is null || (target is string s && string.IsNullOrWhiteSpace(s)))
 			availability = AppliesCollection.GenerallyAvailable;
 		else if (target is string stackString)
+		{
 			availability = AppliesCollection.TryParse(stackString, diagnostics, out var a) ? a : null;
+
+			if (availability is not null)
+				ValidateApplicabilityCollection(key, availability, diagnostics);
+		}
 		return availability is not null;
 	}
+
+	private static void ValidateApplicabilityCollection(string key, AppliesCollection collection, List<(Severity, string)> diagnostics)
+	{
+		var items = collection.ToList();
+
+		// Rule: Only one version declaration per lifecycle
+		var lifecycleGroups = items.GroupBy(a => a.Lifecycle).ToList();
+		foreach (var group in lifecycleGroups)
+		{
+			var lifecycleVersionedItems = group.Where(a => a.Version is not null &&
+														  a.Version != AllVersionsSpec.Instance).ToList();
+			if (lifecycleVersionedItems.Count > 1)
+			{
+				diagnostics.Add((Severity.Warning,
+					$"Key '{key}': Multiple version declarations for {group.Key} lifecycle. Only one version per lifecycle is allowed."));
+			}
+		}
+
+		// Rule: Only one item per key can use greater-than syntax
+		var greaterThanItems = items.Where(a =>
+			a.Version is VersionSpec spec && spec.Kind == VersionSpecKind.GreaterThanOrEqual &&
+			a.Version != AllVersionsSpec.Instance).ToList();
+
+		if (greaterThanItems.Count > 1)
+		{
+			diagnostics.Add((Severity.Warning,
+				$"Key '{key}': Multiple items use greater-than-or-equal syntax. Only one item per key can use this syntax."));
+		}
+
+		// Rule: In a range, the first version must be less than or equal the last version
+		foreach (var item in items)
+		{
+			if (item.Version is { Kind: VersionSpecKind.Range } spec)
+			{
+				if (spec.Min.CompareTo(spec.Max!) > 0)
+				{
+					diagnostics.Add((Severity.Warning,
+						$"Key '{key}', {item.Lifecycle}: Range has first version ({spec.Min.Major}.{spec.Min.Minor}) greater than last version ({spec.Max!.Major}.{spec.Max.Minor})."));
+				}
+			}
+		}
+
+		// Rule: No overlapping version ranges for the same key
+		var versionedItems = items.Where(a => a.Version is not null &&
+											 a.Version != AllVersionsSpec.Instance).ToList();
+
+		for (var i = 0; i < versionedItems.Count; i++)
+		{
+			for (var j = i + 1; j < versionedItems.Count; j++)
+			{
+				if (CheckVersionOverlap(versionedItems[i].Version!, versionedItems[j].Version!, out var overlapMsg))
+				{
+					diagnostics.Add((Severity.Warning,
+						$"Key '{key}': Overlapping versions between {versionedItems[i].Lifecycle} and {versionedItems[j].Lifecycle}. {overlapMsg}"));
+				}
+			}
+		}
+	}
+
+	private static bool CheckVersionOverlap(VersionSpec v1, VersionSpec v2, out string message)
+	{
+		message = string.Empty;
+
+		// Get the effective ranges for each version spec
+		// For GreaterThanOrEqual: [min, infinity)
+		// For Range: [min, max]
+		// For Exact: [exact, exact]
+
+		var (v1Min, v1Max) = GetEffectiveRange(v1);
+		var (v2Min, v2Max) = GetEffectiveRange(v2);
+
+		var overlaps = v1Min.CompareTo(v2Max ?? new SemVersion(9999, 9999, 9999)) <= 0 &&
+						v2Min.CompareTo(v1Max ?? new SemVersion(9999, 9999, 9999)) <= 0;
+
+		if (overlaps)
+			message = $"Version ranges overlap.";
+
+		return overlaps;
+	}
+
+	private static (SemVersion min, SemVersion? max) GetEffectiveRange(VersionSpec spec) => spec.Kind switch
+	{
+		VersionSpecKind.Exact => (spec.Min, spec.Min),
+		VersionSpecKind.Range => (spec.Min, spec.Max),
+		VersionSpecKind.GreaterThanOrEqual => (spec.Min, null),
+		_ => throw new ArgumentOutOfRangeException(nameof(spec), spec.Kind, "Unknown VersionSpecKind")
+	};
 
 	public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer) =>
 		serializer.Invoke(value, type);
