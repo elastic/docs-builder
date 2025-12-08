@@ -72,8 +72,14 @@ public class ApplicableToJsonConverter : JsonConverter<ApplicableTo>
 						break;
 					case "version":
 						var versionStr = reader.GetString();
-						if (versionStr != null && VersionSpec.TryParse(versionStr, out var v))
-							version = v;
+						if (versionStr != null)
+						{
+							// Handle "all" explicitly for AllVersionsSpec
+							if (string.Equals(versionStr.Trim(), "all", StringComparison.OrdinalIgnoreCase))
+								version = AllVersionsSpec.Instance;
+							else if (VersionSpec.TryParse(versionStr, out var v))
+								version = v;
+						}
 						break;
 				}
 			}
