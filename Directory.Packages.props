@@ -22,7 +22,7 @@
     <PackageVersion Include="AngleSharp" Version="1.4.0" />
     <PackageVersion Include="Aspire.Hosting" Version="13.0.0" />
     <PackageVersion Include="Aspire.Hosting.Testing" Version="13.0.0" />
-    <PackageVersion Include="AWSSDK.Core" Version="4.0.3.3" />
+    <PackageVersion Include="AWSSDK.Core" Version="4.0.3.4" />
     <PackageVersion Include="AWSSDK.DynamoDBv2" Version="4.0.5" />
     <PackageVersion Include="AWSSDK.SQS" Version="4.0.2.5" />
     <PackageVersion Include="AWSSDK.S3" Version="4.0.7.14" />
