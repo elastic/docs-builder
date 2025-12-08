@@ -9,7 +9,7 @@ mapped_pages:
 # Requirements
 
 ```{applies_to}
-stack: preview 9.0, ga 9.1
+stack: preview =9.0, ga 9.1
 ```
 
 1. Select **Create** to create a new policy, or select **Edit** {icon}`pencil` to open an existing policy.
