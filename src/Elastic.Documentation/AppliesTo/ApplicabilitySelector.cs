@@ -30,8 +30,7 @@ public static class ApplicabilitySelector
 		};
 
 		var availableApplicabilities = applicabilityList
-			.Where(a => a.Version is null || a.Version is AllVersionsSpec ||
-					   (a.Version is VersionSpec vs && vs.Min <= currentVersion))
+			.Where(a => a.Version is null || a.Version is AllVersionsSpec || a.Version.Min <= currentVersion)
 			.ToList();
 
 		if (availableApplicabilities.Count != 0)
@@ -43,8 +42,7 @@ public static class ApplicabilitySelector
 		}
 
 		var futureApplicabilities = applicabilityList
-			.Where(a => a.Version is not null && a.Version is not AllVersionsSpec &&
-					   a.Version is VersionSpec vs && vs.Min > currentVersion)
+			.Where(a => a.Version is not null && a.Version is not AllVersionsSpec && a.Version.Min > currentVersion)
 			.ToList();
 
 		if (futureApplicabilities.Count != 0)

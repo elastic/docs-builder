@@ -294,15 +294,13 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		}
 
 		// Rule: In a range, the first version must be less than or equal the last version
-		foreach (var item in items)
+		foreach (var item in items.Where(a => a.Version is { Kind: VersionSpecKind.Range }))
 		{
-			if (item.Version is { Kind: VersionSpecKind.Range } spec)
+			var spec = item.Version!;
+			if (spec.Min.CompareTo(spec.Max!) > 0)
 			{
-				if (spec.Min.CompareTo(spec.Max!) > 0)
-				{
-					diagnostics.Add((Severity.Warning,
-						$"Key '{key}', {item.Lifecycle}: Range has first version ({spec.Min.Major}.{spec.Min.Minor}) greater than last version ({spec.Max!.Major}.{spec.Max.Minor})."));
-				}
+				diagnostics.Add((Severity.Warning,
+					$"Key '{key}', {item.Lifecycle}: Range has first version ({spec.Min.Major}.{spec.Min.Minor}) greater than last version ({spec.Max!.Major}.{spec.Max.Minor})."));
 			}
 		}
 
