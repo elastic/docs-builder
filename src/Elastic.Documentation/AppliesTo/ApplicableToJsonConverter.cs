@@ -72,7 +72,7 @@ public class ApplicableToJsonConverter : JsonConverter<ApplicableTo>
 						break;
 					case "version":
 						var versionStr = reader.GetString();
-						if (versionStr != null && VersionSpecConverter.TryParse(versionStr, out var v))
+						if (versionStr != null && VersionSpec.TryParse(versionStr, out var v))
 							version = v;
 						break;
 				}
