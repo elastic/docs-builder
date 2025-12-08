@@ -111,7 +111,7 @@
     "htmx-ext-preload": "2.1.2",
     "htmx.org": "2.0.8",
     "katex": "^0.16.25",
-    "marked": "16.4.0",
+    "marked": "17.0.1",
     "select-dom": "9.4.0",
     "tailwindcss": "4.1.17",
     "tippy.js": "6.3.7",
