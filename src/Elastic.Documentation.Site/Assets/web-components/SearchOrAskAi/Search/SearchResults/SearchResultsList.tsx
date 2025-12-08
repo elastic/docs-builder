@@ -1,10 +1,7 @@
 import { useSelectedIndex, useSearchActions } from '../search.store'
 import { type SearchResultItem } from '../useSearchQuery'
 import { SearchResultListItem } from './SearchResultsListItem'
-import {
-    useEuiOverflowScroll,
-    useEuiTheme,
-} from '@elastic/eui'
+import { useEuiOverflowScroll, useEuiTheme } from '@elastic/eui'
 import { css } from '@emotion/react'
 import { useRef, useCallback, useEffect, MutableRefObject } from 'react'
 

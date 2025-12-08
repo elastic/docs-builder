@@ -88,7 +88,7 @@ export const SearchFilters = ({
             svg {
                 fill: ${euiTheme.colors.borderBaseProminent};
             }
-        } 
+        }
     `
 
     return (
@@ -102,7 +102,6 @@ export const SearchFilters = ({
                 role="group"
                 aria-label="Search filters"
             >
-
                 <EuiButton
                     color="text"
                     iconType="globe"

@@ -120,7 +120,8 @@ export function SearchResultListItem({
                     &[data-selected],
                     &:hover,
                     &:focus {
-                        background-color: ${euiTheme.colors.backgroundBaseHighlighted};
+                        background-color: ${euiTheme.colors
+                            .backgroundBaseHighlighted};
                         border-color: ${euiTheme.colors.borderBasePlain};
                         .return-key-icon {
                             visibility: visible;
@@ -172,9 +173,9 @@ export function SearchResultListItem({
                         />
                     </div>
                     <EuiSpacer
-                    css={css`
-                        block-size: 2px;
-                    `}
+                        css={css`
+                            block-size: 2px;
+                        `}
                     />
                     <EuiText size="xs">
                         <div

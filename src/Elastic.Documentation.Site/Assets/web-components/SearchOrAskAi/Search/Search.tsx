@@ -125,10 +125,12 @@ export const Search = () => {
                     `}
                 >
                     <EuiSpacer size="m" />
-                    <EuiText color="default" size="xs"
-                    css={css`
-                        font-weight: 500;
-                    `}
+                    <EuiText
+                        color="default"
+                        size="xs"
+                        css={css`
+                            font-weight: 500;
+                        `}
                     >
                         Ask AI assistant
                     </EuiText>
