@@ -37,7 +37,6 @@ export const SearchResults = ({
     const { data, error, isLoading } = useSearchQuery()
 
     const results = data?.results ?? []
-    const typeAggregations = data?.aggregations?.type
 
     const isInitialLoading = isLoading && !data
 
