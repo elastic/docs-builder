@@ -164,7 +164,7 @@ versioning_systems:
     current: 8.19.2
   elasticsearch-client-rust:
     base: 9.0
-    current: 9.1.0-alpha.1
+    current: 8.19.0-alpha.1
   # Other
   cloud-terraform:
     base: 0.11
