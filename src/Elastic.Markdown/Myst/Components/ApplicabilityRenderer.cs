@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Diagnostics.CodeAnalysis;
 using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Versions;
@@ -159,8 +158,10 @@ public class ApplicabilityRenderer
 	{
 		var tooltipText = "";
 
-		tooltipText = applicability.Version is not null && applicability.Version != AllVersionsSpec.Instance
-			? applicability.Version.Min <= versioningSystem.Current
+		// Check if a specific version is provided
+		if (applicability.Version is not null && applicability.Version != AllVersionsSpec.Instance)
+		{
+			tooltipText = applicability.Version.Min <= versioningSystem.Current
 				? $"{lifecycleFull} on {applicabilityDefinition.DisplayName} version {applicability.Version.Min} and later unless otherwise specified."
 				: applicability.Lifecycle switch
 				{
@@ -174,8 +175,21 @@ public class ApplicabilityRenderer
 					ProductLifecycle.Removed =>
 						$"We plan to remove this functionality in a future {applicabilityDefinition.DisplayName} update. Subject to change.",
 					_ => tooltipText
+				};
+		}
+		else
+		{
+			// No version specified - check if we should show base version
+			tooltipText = versioningSystem.Base.Major != AllVersionsSpec.Instance.Min.Major
+				? applicability.Lifecycle switch
+				{
+					ProductLifecycle.Removed =>
+						$"Removed in {applicabilityDefinition.DisplayName} {versioningSystem.Base.Major}.{versioningSystem.Base.Minor}.",
+					_ =>
+						$"{lifecycleFull} since {versioningSystem.Base.Major}.{versioningSystem.Base.Minor}."
 				}
-			: $"{lifecycleFull} on {applicabilityDefinition.DisplayName} unless otherwise specified.";
+				: $"{lifecycleFull} on {applicabilityDefinition.DisplayName} unless otherwise specified.";
+		}
 
 		var disclaimer = GetDisclaimer(applicability.Lifecycle, versioningSystem.Id);
 		if (disclaimer is not null)
@@ -246,8 +260,15 @@ public class ApplicabilityRenderer
 	/// </summary>
 	private static string GetBadgeVersionText(VersionSpec? versionSpec, VersioningSystem versioningSystem)
 	{
+		// When no version is specified, check if we should show the base version
 		if (versionSpec is null || versionSpec == AllVersionsSpec.Instance)
+		{
+			if (versioningSystem.Base.Major != AllVersionsSpec.Instance.Min.Major)
+				return $"{versioningSystem.Base.Major}.{versioningSystem.Base.Minor}+";
+
+			// Otherwise, this is an unversioned product, show no version
 			return string.Empty;
+		}
 
 		var kind = versionSpec.Kind;
 		var min = versionSpec.Min;

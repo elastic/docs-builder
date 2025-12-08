@@ -284,7 +284,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 
 		// Rule: Only one item per key can use greater-than syntax
 		var greaterThanItems = items.Where(a =>
-			a.Version is VersionSpec spec && spec.Kind == VersionSpecKind.GreaterThanOrEqual &&
+			a.Version is { Kind: VersionSpecKind.GreaterThanOrEqual } &&
 			a.Version != AllVersionsSpec.Instance).ToList();
 
 		if (greaterThanItems.Count > 1)
@@ -335,8 +335,8 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		var (v1Min, v1Max) = GetEffectiveRange(v1);
 		var (v2Min, v2Max) = GetEffectiveRange(v2);
 
-		var overlaps = v1Min.CompareTo(v2Max ?? new SemVersion(9999, 9999, 9999)) <= 0 &&
-						v2Min.CompareTo(v1Max ?? new SemVersion(9999, 9999, 9999)) <= 0;
+		var overlaps = v1Min.CompareTo(v2Max ?? new SemVersion(99999, 99999, 99999)) <= 0 &&
+						v2Min.CompareTo(v1Max ?? new SemVersion(99999, 99999, 99999)) <= 0;
 
 		if (overlaps)
 			message = $"Version ranges overlap.";

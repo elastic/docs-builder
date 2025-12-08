@@ -8,7 +8,7 @@ using System.Text.RegularExpressions;
 
 namespace Elastic.Documentation;
 
-public class AllVersions() : SemVersion(9999, 9999, 9999)
+public class AllVersions() : SemVersion(99999, 99999, 99999)
 {
 	public static AllVersions Instance { get; } = new();
 }
