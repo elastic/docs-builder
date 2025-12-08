@@ -68,10 +68,14 @@ This is a custom admonition with applies_to information.
 
 If this functionality is unavailable or behaves differently when deployed on ECH, ECE, ECK, or a self-managed installation, it will be indicated on the page.">
 				<span class="applicable-name">Stack</span>
-				<span class="applicable-meta applicable-meta-ga">
-				</span>
-			</span>
-		</span>
+ 				<span class="applicable-separator"></span>
+ 				<span class="applicable-meta applicable-meta-ga">
+ 					<span class="applicable-version applicable-version-ga">
+ 						8.0+
+ 					</span>
+ 				</span>
+ 			</span>
+ 		</span>
 		<span class="admonition-title__separator"></span>
 	</div>
 	<div class="admonition-content">
@@ -84,10 +88,14 @@ If this functionality is unavailable or behaves differently when deployed on ECH
 		<span class="applies applies-admonition">
 			<span class="applicable-info" data-tippy-content="Available since 8.0.">
 				<span class="applicable-name">Serverless</span>
-				<span class="applicable-meta applicable-meta-ga">
-				</span>
-			</span>
-		</span>
+ 				<span class="applicable-separator"></span>
+ 				<span class="applicable-meta applicable-meta-ga">
+ 					<span class="applicable-version applicable-version-ga">
+ 						8.0+
+ 					</span>
+ 				</span>
+ 			</span>
+ 		</span>
 		<span class="admonition-title__separator"></span>
 	</div>
 	<div class="admonition-content">
@@ -105,6 +113,9 @@ This functionality may be changed or removed in a future release. Elastic will w
 				<span class="applicable-separator"></span>
 				<span class="applicable-meta applicable-meta-preview">
 					<span class="applicable-lifecycle applicable-lifecycle-preview">Preview</span>
+ 					<span class="applicable-version applicable-version-preview">
+ 						8.0+
+ 					</span>
 				</span>
 			</span>
 		</span>

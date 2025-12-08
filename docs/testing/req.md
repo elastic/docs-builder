@@ -59,6 +59,17 @@ Below is a table of `applies_to` badge scenarios.
 | {applies_to}`stack: deprecated` | `` {applies_to}`stack: deprecated` `` |
 | {applies_to}`stack: removed` | `` {applies_to}`stack: removed` `` |
 
+### No version specified (product)
+
+| Badge | Raw Markdown |
+|-------|--------------|
+| {applies_to}`apm_agent_python: ga` | `` {applies_to}`apm_agent_python: ga` `` |
+| {applies_to}`apm_agent_python: preview` | `` {applies_to}`apm_agent_python: preview` `` |
+| {applies_to}`apm_agent_python: beta` | `` {applies_to}`apm_agent_python: beta` `` |
+| {applies_to}`apm_agent_python: deprecated` | `` {applies_to}`apm_agent_python: deprecated` `` |
+| {applies_to}`apm_agent_python: removed` | `` {applies_to}`apm_agent_python: removed` `` |
+
+
 ### Greater than or equal to (x.x+ / x.x)
 
 | Badge | Raw Markdown |
@@ -69,6 +80,13 @@ Below is a table of `applies_to` badge scenarios.
 | {applies_to}`stack: beta 9.1+` | `` {applies_to}`stack: beta 9.1+` `` |
 | {applies_to}`stack: deprecated 9.0+` | `` {applies_to}`stack: deprecated 9.0+` `` |
 | {applies_to}`stack: removed 9.0` | `` {applies_to}`stack: removed 9.0` `` |
+| {applies_to}`apm_agent_python: ga 6.0` | `` {applies_to}`apm_agent_python: ga 6.0` `` |
+| {applies_to}`apm_agent_python: ga 6.5+` | `` {applies_to}`apm_agent_python: ga 6.5+` `` |
+| {applies_to}`apm_agent_python: preview 6.24+` | `` {applies_to}`apm_agent_python: preview 6.24+` `` |
+| {applies_to}`apm_agent_python: beta 6.1+` | `` {applies_to}`apm_agent_python: beta 6.1+` `` |
+| {applies_to}`apm_agent_python: deprecated 6.0+` | `` {applies_to}`apm_agent_python: deprecated 6.0+` `` |
+| {applies_to}`apm_agent_python: removed 6.0` | `` {applies_to}`apm_agent_python: removed 6.0` `` |
+
 
 ### Range (x.x-y.y)
 
@@ -78,6 +96,7 @@ Below is a table of `applies_to` badge scenarios.
 | {applies_to}`stack: preview 9.0-9.2` | `` {applies_to}`stack: preview 9.0-9.2` `` |
 | {applies_to}`stack: beta 9.0-9.1` | `` {applies_to}`stack: beta 9.0-9.1` `` |
 | {applies_to}`stack: deprecated 9.0-9.2` | `` {applies_to}`stack: deprecated 9.0-9.2` `` |
+| {applies_to}`apm_agent_python: ga 6.0-6.23` | `` {applies_to}`apm_agent_python: ga 6.0-6.23` `` |
 
 ### Exact version (=x.x)
 
@@ -88,6 +107,7 @@ Below is a table of `applies_to` badge scenarios.
 | {applies_to}`stack: beta =9.1` | `` {applies_to}`stack: beta =9.1` `` |
 | {applies_to}`stack: deprecated =9.0` | `` {applies_to}`stack: deprecated =9.0` `` |
 | {applies_to}`stack: removed =9.0` | `` {applies_to}`stack: removed =9.0` `` |
+| {applies_to}`apm_agent_python: ga =6.20` | `` {applies_to}`apm_agent_python: ga =6.20` `` |
 
 ### Multiple lifecycles
 

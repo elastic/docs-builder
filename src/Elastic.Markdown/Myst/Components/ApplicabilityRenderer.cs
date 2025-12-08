@@ -36,21 +36,14 @@ public class ApplicabilityRenderer
 		var showLifecycle = applicability.Lifecycle != ProductLifecycle.GenerallyAvailable && string.IsNullOrEmpty(badgeLifecycleText);
 
 		// Determine if we should show version based on VersionSpec
-		var showVersion = false;
-		var versionDisplay = string.Empty;
+		var versionDisplay = GetBadgeVersionText(applicability.Version, versioningSystem);
+		var showVersion = !string.IsNullOrEmpty(versionDisplay);
 
-		if (applicability.Version is not null && applicability.Version != AllVersionsSpec.Instance)
+		// Special handling for Removed lifecycle - don't show + suffix
+		if (applicability is { Lifecycle: ProductLifecycle.Removed, Version.Kind: VersionSpecKind.GreaterThanOrEqual } &&
+			!string.IsNullOrEmpty(versionDisplay))
 		{
-			versionDisplay = GetBadgeVersionText(applicability.Version, versioningSystem);
-			showVersion = !string.IsNullOrEmpty(versionDisplay);
-
-			// Special handling for Removed lifecycle - don't show + suffix
-			if (applicability.Lifecycle == ProductLifecycle.Removed &&
-				applicability.Version.Kind == VersionSpecKind.GreaterThanOrEqual &&
-				!string.IsNullOrEmpty(versionDisplay))
-			{
-				versionDisplay = versionDisplay.TrimEnd('+');
-			}
+			versionDisplay = versionDisplay.TrimEnd('+');
 		}
 
 		return new ApplicabilityRenderData(
@@ -261,13 +254,11 @@ public class ApplicabilityRenderer
 	private static string GetBadgeVersionText(VersionSpec? versionSpec, VersioningSystem versioningSystem)
 	{
 		// When no version is specified, check if we should show the base version
-		if (versionSpec is null || versionSpec == AllVersionsSpec.Instance)
+		if (versionSpec is null)
 		{
-			if (versioningSystem.Base.Major != AllVersionsSpec.Instance.Min.Major)
-				return $"{versioningSystem.Base.Major}.{versioningSystem.Base.Minor}+";
-
-			// Otherwise, this is an unversioned product, show no version
-			return string.Empty;
+			return versioningSystem.Base != AllVersionsSpec.Instance.Min
+				? $"{versioningSystem.Base.Major}.{versioningSystem.Base.Minor}+"
+				: string.Empty; // Otherwise, this is an unversioned product, show no version
 		}
 
 		var kind = versionSpec.Kind;

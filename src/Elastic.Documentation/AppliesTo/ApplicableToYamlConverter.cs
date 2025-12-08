@@ -333,8 +333,8 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		var (v1Min, v1Max) = GetEffectiveRange(v1);
 		var (v2Min, v2Max) = GetEffectiveRange(v2);
 
-		var overlaps = v1Min.CompareTo(v2Max ?? new SemVersion(99999, 99999, 99999)) <= 0 &&
-						v2Min.CompareTo(v1Max ?? new SemVersion(99999, 99999, 99999)) <= 0;
+		var overlaps = v1Min.CompareTo(v2Max ?? new SemVersion(99999, 0, 0)) <= 0 &&
+						v2Min.CompareTo(v1Max ?? new SemVersion(99999, 0, 0)) <= 0;
 
 		if (overlaps)
 			message = $"Version ranges overlap.";

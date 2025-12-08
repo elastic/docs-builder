@@ -146,7 +146,11 @@ stack: ga
 
 If this functionality is unavailable or behaves differently when deployed on ECH, ECE, ECK, or a self-managed installation, it will be indicated on the page.">
 		<span class="applicable-name">Stack</span>
-		<span class="applicable-meta applicable-meta-ga">
+ 		<span class="applicable-separator"></span>
+ 		<span class="applicable-meta applicable-meta-ga">
+ 			<span class="applicable-version applicable-version-ga">
+ 				8.0+
+ 			</span>
 		</span>
 	</span>
 </p>
@@ -484,6 +488,9 @@ stack: unavailable
 		<span class="applicable-separator"></span>
 		<span class="applicable-meta applicable-meta-unavailable">
 			<span class="applicable-lifecycle applicable-lifecycle-unavailable">Unavailable</span>
+ 			<span class="applicable-version applicable-version-unavailable">
+ 				8.0+
+ 			</span>
 		</span>
 	</span>
 </div>
@@ -503,6 +510,9 @@ product: ga
 	<span class="applicable-info" data-tippy-content="Available since 8.0.">
 		<span class="applicable-name"></span>
 		<span class="applicable-meta applicable-meta-ga">
+ 			<span class="applicable-version applicable-version-ga">
+ 				8.0+
+ 			</span>
 		</span>
 	</span>
 </p>
