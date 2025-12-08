@@ -413,8 +413,8 @@ If this functionality is unavailable or behaves differently when deployed on ECH
 This functionality may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.</div>">
 		<span class="applicable-name">Stack</span>
 		<span class="applicable-separator"></span>
-		<span class="applicable-meta applicable-meta-ga">
-			GA planned
+		<span class="applicable-meta applicable-meta-preview">
+			<span class="applicable-lifecycle applicable-lifecycle-preview">Preview</span>
 			<span class="applicable-ellipsis">
 				<span class="applicable-ellipsis__dot"></span>
 				<span class="applicable-ellipsis__dot"></span>
@@ -526,7 +526,7 @@ This functionality may be changed or removed in a future release. Elastic will w
 		<span class="applicable-meta applicable-meta-preview">
 			<span class="applicable-lifecycle applicable-lifecycle-preview">Preview</span>
 			<span class="applicable-version applicable-version-preview">
-				1.3.0
+				1.3+
 			</span>
 		</span>
 	</span>
@@ -824,7 +824,7 @@ Beta features are subject to change. The design and code is less mature than off
 		<span class="applicable-meta applicable-meta-ga">
 			<span class="applicable-lifecycle applicable-lifecycle-ga">GA</span>
 			<span class="applicable-version applicable-version-ga">
-				8.0.0
+				8.0+
 			</span>
 			<span class="applicable-ellipsis">
 				<span class="applicable-ellipsis__dot"></span>

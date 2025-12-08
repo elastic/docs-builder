@@ -16,6 +16,7 @@ public class ApplicabilityRenderer
 		string Version,
 		string TooltipText,
 		string LifecycleClass,
+		string LifecycleName,
 		bool ShowLifecycleName,
 		bool ShowVersion,
 		bool HasMultipleLifecycles = false
@@ -29,19 +30,36 @@ public class ApplicabilityRenderer
 	{
 		var lifecycleClass = applicability.GetLifeCycleName().ToLowerInvariant().Replace(" ", "-");
 		var lifecycleFull = GetLifecycleFullText(applicability.Lifecycle);
-		var realVersion = TryGetRealVersion(applicability, out var v) ? v : null;
 
-		var tooltipText = BuildTooltipText(applicability, applicabilityDefinition, versioningSystem, realVersion, lifecycleFull);
-		var badgeLifecycleText = BuildBadgeLifecycleText(applicability, versioningSystem, realVersion, allApplications);
+		var tooltipText = BuildTooltipText(applicability, applicabilityDefinition, versioningSystem, lifecycleFull);
+		var badgeLifecycleText = BuildBadgeLifecycleText(applicability, versioningSystem, allApplications);
 
 		var showLifecycle = applicability.Lifecycle != ProductLifecycle.GenerallyAvailable && string.IsNullOrEmpty(badgeLifecycleText);
-		var showVersion = applicability.Version is not null and not AllVersions && versioningSystem.Current >= applicability.Version;
-		var version = applicability.Version?.ToString() ?? "";
+
+		// Determine if we should show version based on VersionSpec
+		var showVersion = false;
+		var versionDisplay = string.Empty;
+
+		if (applicability.Version is not null && applicability.Version != AllVersionsSpec.Instance)
+		{
+			versionDisplay = GetBadgeVersionText(applicability.Version, versioningSystem);
+			showVersion = !string.IsNullOrEmpty(versionDisplay);
+
+			// Special handling for Removed lifecycle - don't show + suffix
+			if (applicability.Lifecycle == ProductLifecycle.Removed &&
+				applicability.Version.Kind == VersionSpecKind.GreaterThanOrEqual &&
+				!string.IsNullOrEmpty(versionDisplay))
+			{
+				versionDisplay = versionDisplay.TrimEnd('+');
+			}
+		}
+
 		return new ApplicabilityRenderData(
 			BadgeLifecycleText: badgeLifecycleText,
-			Version: version,
+			Version: versionDisplay,
 			TooltipText: tooltipText,
 			LifecycleClass: lifecycleClass,
+			LifecycleName: applicability.GetLifeCycleName(),
 			ShowLifecycleName: showLifecycle,
 			ShowVersion: showVersion
 		);
@@ -54,9 +72,26 @@ public class ApplicabilityRenderer
 		AppliesCollection allApplications)
 	{
 		var applicabilityList = applicabilities.ToList();
-		var primaryApplicability = ApplicabilitySelector.GetPrimaryApplicability(applicabilityList, versioningSystem.Current);
 
-		var primaryRenderData = RenderApplicability(primaryApplicability, applicabilityDefinition, versioningSystem, allApplications);
+		// Sort by lifecycle priority (GA > Beta > Preview > etc.) to determine display order
+		var sortedApplicabilities = applicabilityList
+			.OrderBy(a => GetLifecycleOrder(a.Lifecycle))
+			.ThenByDescending(a => a.Version?.Min ?? new SemVersion(0, 0, 0))
+			.ToList();
+
+		var primaryLifecycle = sortedApplicabilities.First();
+
+		var primaryRender = RenderApplicability(primaryLifecycle, applicabilityDefinition, versioningSystem, allApplications);
+
+		// If the primary lifecycle returns an empty badge text (indicating "use previous lifecycle")
+		// and we have multiple lifecycles, use the next lifecycle in priority order
+		var applicabilityToDisplay = string.IsNullOrEmpty(primaryRender.BadgeLifecycleText) &&
+									 string.IsNullOrEmpty(primaryRender.Version) &&
+									 sortedApplicabilities.Count >= 2
+			? sortedApplicabilities[1]
+			: primaryLifecycle;
+
+		var primaryRenderData = RenderApplicability(applicabilityToDisplay, applicabilityDefinition, versioningSystem, allApplications);
 		var combinedTooltip = BuildCombinedTooltipText(applicabilityList, applicabilityDefinition, versioningSystem);
 
 		// Check if there are multiple different lifecycles
@@ -70,7 +105,6 @@ public class ApplicabilityRenderer
 		};
 	}
 
-
 	private static string BuildCombinedTooltipText(
 		List<Applicability> applicabilities,
 		ApplicabilityMappings.ApplicabilityDefinition applicabilityDefinition,
@@ -80,17 +114,17 @@ public class ApplicabilityRenderer
 
 		// Order by the same logic as primary selection: available first (by version desc), then future (by version asc)
 		var orderedApplicabilities = applicabilities
-			.OrderByDescending(a => a.Version is null || a.Version is AllVersions || a.Version <= versioningSystem.Current ? 1 : 0)
-			.ThenByDescending(a => a.Version ?? new SemVersion(0, 0, 0))
-			.ThenBy(a => a.Version ?? new SemVersion(0, 0, 0))
+			.OrderByDescending(a => a.Version is null || a.Version is AllVersionsSpec ||
+								   (a.Version is VersionSpec vs && vs.Min <= versioningSystem.Current) ? 1 : 0)
+			.ThenByDescending(a => a.Version?.Min ?? new SemVersion(0, 0, 0))
+			.ThenBy(a => a.Version?.Min ?? new SemVersion(0, 0, 0))
 			.ToList();
 
 		foreach (var applicability in orderedApplicabilities)
 		{
-			var realVersion = TryGetRealVersion(applicability, out var v) ? v : null;
 			var lifecycleFull = GetLifecycleFullText(applicability.Lifecycle);
-			var heading = CreateApplicabilityHeading(applicability, applicabilityDefinition, realVersion);
-			var tooltipText = BuildTooltipText(applicability, applicabilityDefinition, versioningSystem, realVersion, lifecycleFull);
+			var heading = CreateApplicabilityHeading(applicability, applicabilityDefinition);
+			var tooltipText = BuildTooltipText(applicability, applicabilityDefinition, versioningSystem, lifecycleFull);
 			// language=html
 			tooltipParts.Add($"<div>{heading}{tooltipText}</div>");
 		}
@@ -98,11 +132,10 @@ public class ApplicabilityRenderer
 		return string.Join("\n\n", tooltipParts);
 	}
 
-	private static string CreateApplicabilityHeading(Applicability applicability, ApplicabilityMappings.ApplicabilityDefinition applicabilityDefinition,
-		SemVersion? realVersion)
+	private static string CreateApplicabilityHeading(Applicability applicability, ApplicabilityMappings.ApplicabilityDefinition applicabilityDefinition)
 	{
 		var lifecycleName = applicability.GetLifeCycleName();
-		var versionText = realVersion is not null ? $" {realVersion}" : "";
+		var versionText = applicability.Version is not null ? $" {applicability.Version.Min}" : "";
 		// language=html
 		return $"""<strong>{applicabilityDefinition.DisplayName} {lifecycleName}{versionText}:</strong>""";
 	}
@@ -122,14 +155,13 @@ public class ApplicabilityRenderer
 		Applicability applicability,
 		ApplicabilityMappings.ApplicabilityDefinition applicabilityDefinition,
 		VersioningSystem versioningSystem,
-		SemVersion? realVersion,
 		string lifecycleFull)
 	{
 		var tooltipText = "";
 
-		tooltipText = realVersion is not null
-			? realVersion <= versioningSystem.Current
-				? $"{lifecycleFull} on {applicabilityDefinition.DisplayName} version {realVersion} and later unless otherwise specified."
+		tooltipText = applicability.Version is not null && applicability.Version != AllVersionsSpec.Instance
+			? applicability.Version.Min <= versioningSystem.Current
+				? $"{lifecycleFull} on {applicabilityDefinition.DisplayName} version {applicability.Version.Min} and later unless otherwise specified."
 				: applicability.Lifecycle switch
 				{
 					ProductLifecycle.GenerallyAvailable
@@ -167,40 +199,97 @@ public class ApplicabilityRenderer
 	private static string BuildBadgeLifecycleText(
 		Applicability applicability,
 		VersioningSystem versioningSystem,
-		SemVersion? realVersion,
 		AppliesCollection allApplications)
 	{
 		var badgeText = "";
-		if (realVersion is not null && realVersion > versioningSystem.Current)
+		var versionSpec = applicability.Version;
+
+		if (versionSpec is not null && versionSpec != AllVersionsSpec.Instance)
 		{
-			badgeText = applicability.Lifecycle switch
+			var isMinReleased = versionSpec.Min <= versioningSystem.Current;
+			var isMaxReleased = versionSpec.Max is not null && versionSpec.Max <= versioningSystem.Current;
+
+			// Determine if we should show "Planned" badge
+			var shouldShowPlanned = (versionSpec.Kind == VersionSpecKind.GreaterThanOrEqual && !isMinReleased)
+									|| (versionSpec.Kind == VersionSpecKind.Range && !isMaxReleased && !isMinReleased)
+									|| (versionSpec.Kind == VersionSpecKind.Exact && !isMinReleased);
+
+			// Check lifecycle count for "use previous lifecycle" logic
+			if (shouldShowPlanned)
 			{
-				ProductLifecycle.TechnicalPreview => "Planned",
-				ProductLifecycle.Beta => "Planned",
-				ProductLifecycle.GenerallyAvailable =>
-					allApplications.Any(a => a.Lifecycle is ProductLifecycle.TechnicalPreview or ProductLifecycle.Beta)
-						? "GA planned"
-						: "Planned",
-				ProductLifecycle.Deprecated => "Deprecation planned",
-				ProductLifecycle.Removed => "Removal planned",
-				ProductLifecycle.Planned => "Planned",
-				ProductLifecycle.Unavailable => "Unavailable",
-				_ => badgeText
-			};
+				var lifecycleCount = allApplications.Count;
+
+				// If lifecycle count >= 2, we should use previous lifecycle instead of showing "Planned"
+				if (lifecycleCount >= 2)
+					return string.Empty;
+
+				// Otherwise show planned badge (lifecycle count == 1)
+				badgeText = applicability.Lifecycle switch
+				{
+					ProductLifecycle.TechnicalPreview => "Planned",
+					ProductLifecycle.Beta => "Planned",
+					ProductLifecycle.GenerallyAvailable => "Planned",
+					ProductLifecycle.Deprecated => "Deprecation planned",
+					ProductLifecycle.Removed => "Removal planned",
+					ProductLifecycle.Planned => "Planned",
+					ProductLifecycle.Unavailable => "Unavailable",
+					_ => badgeText
+				};
+			}
 		}
 
 		return badgeText;
 	}
 
-	private static bool TryGetRealVersion(Applicability applicability, [NotNullWhen(true)] out SemVersion? version)
+	/// <summary>
+	/// Gets the version to display in badges, handling VersionSpec kinds
+	/// </summary>
+	private static string GetBadgeVersionText(VersionSpec? versionSpec, VersioningSystem versioningSystem)
 	{
-		version = null;
-		if (applicability.Version is not null && applicability.Version != AllVersions.Instance)
-		{
-			version = applicability.Version;
-			return true;
-		}
+		if (versionSpec is null || versionSpec == AllVersionsSpec.Instance)
+			return string.Empty;
 
-		return false;
+		var kind = versionSpec.Kind;
+		var min = versionSpec.Min;
+		var max = versionSpec.Max;
+
+		// Check if versions are released
+		var minReleased = min <= versioningSystem.Current;
+		var maxReleased = max is not null && max <= versioningSystem.Current;
+
+		return kind switch
+		{
+			VersionSpecKind.GreaterThanOrEqual => minReleased
+				? $"{min.Major}.{min.Minor}+"
+				: string.Empty,
+
+			VersionSpecKind.Range => maxReleased
+				? $"{min.Major}.{min.Minor}-{max!.Major}.{max.Minor}"
+				: minReleased
+					? $"{min.Major}.{min.Minor}+"
+					: string.Empty,
+
+			VersionSpecKind.Exact => minReleased
+				? $"{min.Major}.{min.Minor}"
+				: string.Empty,
+
+			_ => string.Empty
+		};
 	}
+	private static int GetLifecycleOrder(ProductLifecycle lifecycle) => lifecycle switch
+	{
+		ProductLifecycle.GenerallyAvailable => 0,
+		ProductLifecycle.Beta => 1,
+		ProductLifecycle.TechnicalPreview => 2,
+		ProductLifecycle.Planned => 3,
+		ProductLifecycle.Deprecated => 4,
+		ProductLifecycle.Removed => 5,
+		ProductLifecycle.Unavailable => 6,
+		_ => 999
+	};
+
+	/// <summary>
+	/// Checks if a version should be considered released
+	/// </summary>
+	private static bool IsVersionReleased(SemVersion version, VersioningSystem versioningSystem) => version <= versioningSystem.Current;
 }

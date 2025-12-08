@@ -38,7 +38,7 @@ public record AppliesCollection : IReadOnlyCollection<Applicability>
 			return false;
 
 		// Sort by version in descending order (the highest version first)
-		// Items without versions (AllVersions.Instance) are sorted last
+		// Items without versions (AllVersionsSpec.Instance) are sorted last
 		var sortedApplications = applications.OrderDescending().ToArray();
 		availability = new AppliesCollection(sortedApplications);
 		return true;
@@ -98,12 +98,12 @@ public record AppliesCollection : IReadOnlyCollection<Applicability>
 public record Applicability : IComparable<Applicability>, IComparable
 {
 	public ProductLifecycle Lifecycle { get; init; }
-	public SemVersion? Version { get; init; }
+	public VersionSpec? Version { get; init; }
 
 	public static Applicability GenerallyAvailable { get; } = new()
 	{
 		Lifecycle = ProductLifecycle.GenerallyAvailable,
-		Version = AllVersions.Instance
+		Version = AllVersionsSpec.Instance
 	};
 
 
@@ -126,8 +126,8 @@ public record Applicability : IComparable<Applicability>, IComparable
 	/// <inheritdoc />
 	public int CompareTo(Applicability? other)
 	{
-		var xIsNonVersioned = Version is null || ReferenceEquals(Version, AllVersions.Instance);
-		var yIsNonVersioned = other?.Version is null || ReferenceEquals(other.Version, AllVersions.Instance);
+		var xIsNonVersioned = Version is null || ReferenceEquals(Version, AllVersionsSpec.Instance);
+		var yIsNonVersioned = other?.Version is null || ReferenceEquals(other.Version, AllVersionsSpec.Instance);
 
 		if (xIsNonVersioned && yIsNonVersioned)
 			return 0;
@@ -158,7 +158,7 @@ public record Applicability : IComparable<Applicability>, IComparable
 			_ => throw new ArgumentOutOfRangeException()
 		};
 		_ = sb.Append(lifecycle);
-		if (Version is not null && Version != AllVersions.Instance)
+		if (Version is not null && Version != AllVersionsSpec.Instance)
 			_ = sb.Append(' ').Append(Version);
 		return sb.ToString();
 	}
@@ -224,10 +224,10 @@ public record Applicability : IComparable<Applicability>, IComparable
 			? null
 			: tokens[1] switch
 			{
-				null => AllVersions.Instance,
-				"all" => AllVersions.Instance,
-				"" => AllVersions.Instance,
-				var t => SemVersionConverter.TryParse(t, out var v) ? v : null
+				null => AllVersionsSpec.Instance,
+				"all" => AllVersionsSpec.Instance,
+				"" => AllVersionsSpec.Instance,
+				var t => VersionSpec.TryParse(t, out var v) ? v : null
 			};
 		availability = new Applicability { Version = version, Lifecycle = lifecycle };
 		return true;

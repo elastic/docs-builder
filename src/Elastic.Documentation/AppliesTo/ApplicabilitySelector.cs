@@ -30,25 +30,27 @@ public static class ApplicabilitySelector
 		};
 
 		var availableApplicabilities = applicabilityList
-			.Where(a => a.Version is null || a.Version is AllVersions || a.Version <= currentVersion)
+			.Where(a => a.Version is null || a.Version is AllVersionsSpec ||
+					   (a.Version is VersionSpec vs && vs.Min <= currentVersion))
 			.ToList();
 
 		if (availableApplicabilities.Count != 0)
 		{
 			return availableApplicabilities
-				.OrderByDescending(a => a.Version ?? new SemVersion(0, 0, 0))
+				.OrderByDescending(a => a.Version?.Min ?? new SemVersion(0, 0, 0))
 				.ThenBy(a => lifecycleOrder.GetValueOrDefault(a.Lifecycle, 999))
 				.First();
 		}
 
 		var futureApplicabilities = applicabilityList
-			.Where(a => a.Version is not null && a.Version is not AllVersions && a.Version > currentVersion)
+			.Where(a => a.Version is not null && a.Version is not AllVersionsSpec &&
+					   a.Version is VersionSpec vs && vs.Min > currentVersion)
 			.ToList();
 
 		if (futureApplicabilities.Count != 0)
 		{
 			return futureApplicabilities
-				.OrderBy(a => a.Version!.CompareTo(currentVersion))
+				.OrderBy(a => a.Version!.Min.CompareTo(currentVersion))
 				.ThenBy(a => lifecycleOrder.GetValueOrDefault(a.Lifecycle, 999))
 				.First();
 		}

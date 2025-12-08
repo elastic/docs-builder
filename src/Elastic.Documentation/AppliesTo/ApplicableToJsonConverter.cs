@@ -44,7 +44,7 @@ public class ApplicableToJsonConverter : JsonConverter<ApplicableTo>
 			string? type = null;
 			string? subType = null;
 			var lifecycle = ProductLifecycle.GenerallyAvailable;
-			SemVersion? version = null;
+			VersionSpec? version = null;
 
 			while (reader.Read())
 			{
@@ -72,7 +72,7 @@ public class ApplicableToJsonConverter : JsonConverter<ApplicableTo>
 						break;
 					case "version":
 						var versionStr = reader.GetString();
-						if (versionStr != null && SemVersionConverter.TryParse(versionStr, out var v))
+						if (versionStr != null && VersionSpecConverter.TryParse(versionStr, out var v))
 							version = v;
 						break;
 				}
