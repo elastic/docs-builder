@@ -21,7 +21,6 @@ public static class YamlSerialization
 			.IgnoreUnmatchedProperties()
 			.WithEnumNamingConvention(HyphenatedNamingConvention.Instance)
 			.WithTypeConverter(new SemVersionConverter())
-			.WithTypeConverter(new VersionSpecConverter())
 			.WithTypeConverter(new ProductConverter(products))
 			.WithTypeConverter(new ApplicableToYamlConverter(products.Products.Keys))
 			.Build();
