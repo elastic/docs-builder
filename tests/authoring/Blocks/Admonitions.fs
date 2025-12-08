@@ -64,7 +64,7 @@ This is a custom admonition with applies_to information.
 	<div class="admonition-header">
 		<span class="admonition-title">Note</span>
 		<span class="applies applies-admonition">
-			<span class="applicable-info" data-tippy-content="Available on Elastic&nbsp;Stack unless otherwise specified.
+			<span class="applicable-info" data-tippy-content="Available since 8.0.
 
 If this functionality is unavailable or behaves differently when deployed on ECH, ECE, ECK, or a self-managed installation, it will be indicated on the page.">
 				<span class="applicable-name">Stack</span>
@@ -82,7 +82,7 @@ If this functionality is unavailable or behaves differently when deployed on ECH
 	<div class="admonition-header">
 		<span class="admonition-title">Warning</span>
 		<span class="applies applies-admonition">
-			<span class="applicable-info" data-tippy-content="Available on Elastic&nbsp;Cloud&nbsp;Serverless unless otherwise specified.">
+			<span class="applicable-info" data-tippy-content="Available since 8.0.">
 				<span class="applicable-name">Serverless</span>
 				<span class="applicable-meta applicable-meta-ga">
 				</span>
@@ -98,7 +98,7 @@ If this functionality is unavailable or behaves differently when deployed on ECH
 	<div class="admonition-header">
 		<span class="admonition-title">Tip</span>
 		<span class="applies applies-admonition">
-			<span class="applicable-info" data-tippy-content="Available in technical preview on Serverless&nbsp;Elasticsearch projects unless otherwise specified.
+			<span class="applicable-info" data-tippy-content="Available in technical preview since 8.0.
 
 This functionality may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.">
 				<span class="applicable-name">Serverless Elasticsearch</span>

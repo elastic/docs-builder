@@ -142,7 +142,7 @@ stack: ga
     let ``renders all versions`` () =
         markdown |> convertsToHtml """
 <p class="applies applies-block">
-	<span class="applicable-info" data-tippy-content="Available on Elastic&nbsp;Stack unless otherwise specified.
+	<span class="applicable-info" data-tippy-content="Available since 8.0.
 
 If this functionality is unavailable or behaves differently when deployed on ECH, ECE, ECK, or a self-managed installation, it will be indicated on the page.">
 		<span class="applicable-name">Stack</span>
@@ -479,7 +479,7 @@ stack: unavailable
     let ``renders unavailable`` () =
         markdown |> convertsToHtml """
 <p class="applies applies-block">
-	<span class="applicable-info" data-tippy-content="Not available on Elastic&nbsp;Stack unless otherwise specified.">
+	<span class="applicable-info" data-tippy-content="Unavailable since 8.0.">
 		<span class="applicable-name">Stack</span>
 		<span class="applicable-separator"></span>
 		<span class="applicable-meta applicable-meta-unavailable">
@@ -500,7 +500,7 @@ product: ga
     let ``renders product all versions`` () =
         markdown |> convertsToHtml """
 <p class="applies applies-block">
-	<span class="applicable-info" data-tippy-content="Available on  unless otherwise specified.">
+	<span class="applicable-info" data-tippy-content="Available since 8.0.">
 		<span class="applicable-name"></span>
 		<span class="applicable-meta applicable-meta-ga">
 		</span>
@@ -694,7 +694,7 @@ stack:
     let ``renders missing edge cases`` () =
         markdown |> convertsToHtml """
 <p class="applies applies-block">
-	<span class="applicable-info" data-tippy-content="Available on Elastic&nbsp;Stack unless otherwise specified.
+	<span class="applicable-info" data-tippy-content="Available since 8.0.
 
 If this functionality is unavailable or behaves differently when deployed on ECH, ECE, ECK, or a self-managed installation, it will be indicated on the page.">
 		<span class="applicable-name">Stack</span>

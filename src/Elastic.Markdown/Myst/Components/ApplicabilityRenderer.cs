@@ -114,7 +114,7 @@ public class ApplicabilityRenderer
 		// Order by the same logic as primary selection: available first (by version desc), then future (by version asc)
 		var orderedApplicabilities = applicabilities
 			.OrderByDescending(a => a.Version is null || a.Version is AllVersionsSpec ||
-								   (a.Version is VersionSpec vs && vs.Min <= versioningSystem.Current) ? 1 : 0)
+								   (a.Version is { } vs && vs.Min <= versioningSystem.Current) ? 1 : 0)
 			.ThenByDescending(a => a.Version?.Min ?? new SemVersion(0, 0, 0))
 			.ThenBy(a => a.Version?.Min ?? new SemVersion(0, 0, 0))
 			.ToList();
@@ -146,7 +146,7 @@ public class ApplicabilityRenderer
 		ProductLifecycle.TechnicalPreview => "Available in technical preview",
 		ProductLifecycle.Deprecated => "Deprecated",
 		ProductLifecycle.Removed => "Removed",
-		ProductLifecycle.Unavailable => "Not available",
+		ProductLifecycle.Unavailable => "Unavailable",
 		_ => ""
 	};
 
