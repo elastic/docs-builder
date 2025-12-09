@@ -112,7 +112,7 @@
     "htmx.org": "2.0.8",
     "katex": "^0.16.25",
     "marked": "17.0.1",
-    "select-dom": "9.4.0",
+    "select-dom": "9.5.0",
     "tailwindcss": "4.1.17",
     "tippy.js": "6.3.7",
     "ua-parser-js": "2.0.6",
