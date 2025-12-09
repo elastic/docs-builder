@@ -36,7 +36,7 @@
     <PackageVersion Include="Elastic.Aspire.Hosting.Elasticsearch" Version="9.3.0" />
     <PackageVersion Include="Elastic.Clients.Elasticsearch" Version="9.2.1" />
     <PackageVersion Include="FakeItEasy" Version="8.3.0" />
-    <PackageVersion Include="Elastic.Ingest.Elasticsearch" Version="0.16.3" />
+    <PackageVersion Include="Elastic.Ingest.Elasticsearch" Version="0.17.1" />
     <PackageVersion Include="InMemoryLogger" Version="1.0.66" />
     <PackageVersion Include="MartinCostello.Logging.XUnit.v3" Version="0.6.0" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.0" />
