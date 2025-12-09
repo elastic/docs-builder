@@ -9,17 +9,7 @@ title:
 type: 
 
 # A required string that contains the type of change.
-# It can be one of:
-# - feature: new functionality
-# - enhancement: extends functionality but does not break or fix existing behavior
-# - bug-fix: fixes a problem in a previous version
-# - known-issue: problems that we are aware of in a given version
-# - breaking-change: a change to previously-documented behavior
-# - deprecation: functionality that is being removed in a later release
-# - docs: major documentation updates or reorgs
-# - regression: functionality that no longer works or behaves incorrectly
-# - security: an advisory about potential security vulnerabilities
-# - other: does not fit into any of the other categories
+# Refer to https://github.com/elastic/docs-builder/blob/main/src/services/Elastic.Documentation.Services/Changelog/ChangelogConfiguration.cs for the acceptable values.
 
 products:
 
@@ -29,6 +19,7 @@ products:
 
       # A required string with a predefined product ID used for release note routing,
       # filters, and categorization.
+      # Refer to https://github.com/elastic/docs-builder/blob/main/config/products.yml for the acceptable values.
       
       target:
 
@@ -40,10 +31,7 @@ products:
       lifecycle:
 
       # An optional string for new features and enhancements that have a specific availability.
-      # It can be one of the following:
-      # - preview
-      # - beta
-      # - ga
+      # Refer to https://github.com/elastic/docs-builder/blob/main/src/services/Elastic.Documentation.Services/Changelog/ChangelogConfiguration.cs for the acceptable values.
 
 ##### Optional fields #####
 action:
@@ -91,13 +79,5 @@ pr:
 subtype:
 
 # An optional string that applies only to breaking changes and further subdivides that type.
-# It can be one of:
-# - api: refers to changes that break an api
-# - behavioral: refers to changes the way something works
-# - configuration: refers to changes that break the configuration
-# - dependency: refers to changes like removing support for third-party products
-# - subscription: refers to changes that break licensing behavior
-# - plugin: refers to changes that break a plugin
-# - security: refers to changes that break authentication, authorization, or permissions
-# - other: does not fit into any of the other categories
+# Refer to https://github.com/elastic/docs-builder/blob/main/src/services/Elastic.Documentation.Services/Changelog/ChangelogConfiguration.cs for the acceptable values.
 ```
