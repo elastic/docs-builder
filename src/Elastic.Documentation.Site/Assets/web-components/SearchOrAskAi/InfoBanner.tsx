@@ -23,9 +23,10 @@ export const InfoBanner = () => {
             >
                 <EuiBetaBadge
                     css={css`
-                        display: inline-flex;
+                        display: inherit;
                     `}
                     label="Alpha"
+                    size="s"
                     color="accent"
                     tooltipContent="This feature is in private preview and is only enabled if you are in Elastic's Global VPN."
                 />
