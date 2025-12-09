@@ -119,7 +119,8 @@ export function SearchResultListItem({
                     /* Shared highlight styles for selected & hover */
                     &[data-selected],
                     &:hover {
-                        background-color: ${euiTheme.colors.backgroundBaseHighlighted};
+                        background-color: ${euiTheme.colors
+                            .backgroundBaseHighlighted};
                         border-color: ${euiTheme.colors.borderBasePlain};
                         .return-key-icon {
                             visibility: visible;
@@ -128,7 +129,8 @@ export function SearchResultListItem({
 
                     /* Focus ring for selected and focus states */
                     &:focus-visible {
-                        outline: 2px solid ${euiTheme.colors.borderStrongPrimary};
+                        outline: 2px solid
+                            ${euiTheme.colors.borderStrongPrimary};
                         outline-offset: -2px;
                         border-color: ${euiTheme.colors.borderStrongPrimary};
                     }
