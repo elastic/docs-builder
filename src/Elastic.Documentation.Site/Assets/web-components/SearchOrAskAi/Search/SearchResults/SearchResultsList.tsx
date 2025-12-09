@@ -39,8 +39,7 @@ export const SearchResultsList = ({
         padding-block-start: ${euiTheme.size.base};
         padding-block-end: ${euiTheme.size.base};
         margin-inline-end: ${euiTheme.size.s};
-        ${useEuiOverflowScroll('y', true)}
-        mask-image: none;
+        ${useEuiOverflowScroll('y', false)}
     `
 
     const resetScrollToTop = useCallback(() => {
