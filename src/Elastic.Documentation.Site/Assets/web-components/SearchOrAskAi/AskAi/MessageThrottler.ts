@@ -6,7 +6,7 @@
  */
 
 const DEFAULT_THROTTLE_DELAY_MS = 25
-const DEFAULT_FAST_DELAY_MS = 5
+const DEFAULT_FAST_DELAY_MS = 0
 const DEFAULT_SPEEDUP_AFTER_MS = 5_000
 
 export interface MessageThrottlerOptions<T> {
