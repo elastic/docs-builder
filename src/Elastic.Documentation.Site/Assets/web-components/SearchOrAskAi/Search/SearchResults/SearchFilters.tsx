@@ -70,9 +70,11 @@ export const SearchFilters = ({
             }
         }
         &:hover,
-        &:focus-visible,
         &:hover:not(:disabled)::before {
             background-color: ${euiTheme.colors.backgroundBaseHighlighted};
+        }
+        &:focus-visible {
+            background-color: ${euiTheme.colors.backgroundBasePlain};
         }
         &[aria-pressed='true']:hover,
         &[aria-pressed='true']:focus-visible {

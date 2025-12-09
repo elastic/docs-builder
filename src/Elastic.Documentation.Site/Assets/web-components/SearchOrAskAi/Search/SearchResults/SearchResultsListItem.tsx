@@ -104,7 +104,7 @@ export function SearchResultListItem({
                     grid-template-columns: auto 1fr auto;
                     align-items: center;
                     gap: ${euiTheme.size.m};
-                    border-radius: ${euiTheme.size.xs};
+                    border-radius: ${euiTheme.size.s};
                     border-width: 1px;
                     border-style: solid;
                     border-color: transparent;
@@ -116,12 +116,10 @@ export function SearchResultListItem({
                     outline: none;
                     outline-color: transparent;
 
-                    /* Shared highlight styles for selected, hover, and focus */
+                    /* Shared highlight styles for selected & hover */
                     &[data-selected],
-                    &:hover,
-                    &:focus {
-                        background-color: ${euiTheme.colors
-                            .backgroundBaseHighlighted};
+                    &:hover {
+                        background-color: ${euiTheme.colors.backgroundBaseHighlighted};
                         border-color: ${euiTheme.colors.borderBasePlain};
                         .return-key-icon {
                             visibility: visible;
@@ -129,10 +127,10 @@ export function SearchResultListItem({
                     }
 
                     /* Focus ring for selected and focus states */
-                    &[data-selected],
-                    &:focus {
-                        outline: 1px solid ${euiTheme.colors.borderBasePlain};
-                        outline-offset: -1px;
+                    &:focus-visible {
+                        outline: 2px solid ${euiTheme.colors.borderStrongPrimary};
+                        outline-offset: -2px;
+                        border-color: ${euiTheme.colors.borderStrongPrimary};
                     }
                 `}
                 href={result.url}
