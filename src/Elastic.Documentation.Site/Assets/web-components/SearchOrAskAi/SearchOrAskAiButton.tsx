@@ -75,6 +75,8 @@ export const SearchOrAskAiButton = () => {
     const openAskAiModal = () => openAndSetModalMode('askAi')
     const openSearchModal = () => openAndSetModalMode('search')
 
+    // Prevent layout jump when hiding the scrollbar by compensating its width
+
     useEffect(() => {
         const handleKeydown = (event: KeyboardEvent) => {
             if (event.key === 'Escape') {
