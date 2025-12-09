@@ -132,7 +132,7 @@ export const Search = () => {
                             font-weight: 500;
                         `}
                     >
-                        Ask AI assistant
+                        Ask AI Assistant
                     </EuiText>
                     <EuiSpacer size="s" />
                     <TellMeMoreButton
