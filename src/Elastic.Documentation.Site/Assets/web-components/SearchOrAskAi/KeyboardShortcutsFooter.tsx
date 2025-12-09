@@ -22,8 +22,9 @@ export const KeyboardShortcutsFooter = ({
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                gap: ${euiTheme.size.m};
-                background-color: ${euiTheme.colors.backgroundBaseSubdued};
+                gap: ${euiTheme.size.l};
+                border-top: 1px solid ${euiTheme.colors.borderBaseSubdued};
+                background-color: ${euiTheme.colors.backgroundBasePlain};
                 border-bottom-right-radius: ${euiTheme.size.s};
                 border-bottom-left-radius: ${euiTheme.size.s};
                 padding-inline: ${euiTheme.size.base};
@@ -49,7 +50,8 @@ const KeyboardKey = ({ children }: { children: React.ReactNode }) => {
                 display: inline-flex;
                 justify-content: center;
                 align-items: center;
-                background-color: ${euiTheme.colors.backgroundLightText};
+                background-color: ${euiTheme.colors.backgroundBasePlain};
+                border: 1px solid ${euiTheme.colors.borderBasePlain};
                 min-width: ${euiTheme.size.l};
                 height: ${euiTheme.size.l};
                 border-radius: ${euiTheme.border.radius.small};
@@ -95,6 +97,7 @@ const KeyboardIconsWithLabel = ({
                 display: flex;
                 align-items: center;
                 gap: ${euiTheme.size.xs};
+                color: #1d2a3e;
             `}
         >
             <span
@@ -107,7 +110,7 @@ const KeyboardIconsWithLabel = ({
                     <KeyboardIcon type={key} key={key + index} />
                 ))}
             </span>
-            <EuiText size="s">{label}</EuiText>
+            <EuiText size="xs">{label}</EuiText>
         </span>
     )
 }
