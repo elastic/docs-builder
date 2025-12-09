@@ -52,7 +52,8 @@ interface SearchResultListItemProps {
     pageNumber: number
     pageSize: number
     isSelected?: boolean
-    onFocus?: (index: number) => void
+    tabIndex?: 0 | -1
+    onSelect?: (index: number) => void
     onKeyDown?: (
         e: React.KeyboardEvent<HTMLAnchorElement>,
         index: number
@@ -66,7 +67,8 @@ export function SearchResultListItem({
     pageNumber,
     pageSize,
     isSelected,
-    onFocus,
+    tabIndex = -1,
+    onSelect,
     onKeyDown,
     setRef,
 }: SearchResultListItemProps) {
@@ -91,13 +93,21 @@ export function SearchResultListItem({
     }
 
     return (
-        <li>
+        <li
+            css={css`
+                :not(:last-child) {
+                    margin-bottom: ${euiTheme.size.xs};
+                }
+            `}
+        >
             <a
                 ref={setRef}
                 data-selected={isSelected || undefined}
-                tabIndex={0}
+                tabIndex={tabIndex}
+                role="option"
+                aria-selected={isSelected}
                 onClick={handleClick}
-                onFocus={() => onFocus?.(index)}
+                onFocus={() => onSelect?.(index)}
                 onKeyDown={(e) => onKeyDown?.(e, index)}
                 css={css`
                     display: grid;
@@ -116,15 +126,23 @@ export function SearchResultListItem({
                     outline: none;
                     outline-color: transparent;
 
-                    /* Shared highlight styles for selected & hover */
+                    /* Highlight styles for selected and hovered items */
                     &[data-selected],
                     &:hover {
                         background-color: ${euiTheme.colors
                             .backgroundBaseHighlighted};
                         border-color: ${euiTheme.colors.borderBasePlain};
-                        .return-key-icon {
-                            visibility: visible;
-                        }
+                    }
+
+                    /* Return key icon only shows for selected item */
+                    &[data-selected] .return-key-icon {
+                        visibility: visible;
+                    }
+
+                    /* Icons turn blue when selected */
+                    &[data-selected] .result-type-icon,
+                    &[data-selected] .return-key-icon {
+                        color: ${euiTheme.colors.primaryText};
                     }
 
                     /* Focus ring for selected and focus states */
@@ -138,6 +156,7 @@ export function SearchResultListItem({
                 href={result.url}
             >
                 <EuiIcon
+                    className="result-type-icon"
                     type={result.type === 'api' ? 'code' : 'documentation'}
                     size="m"
                     css={css`

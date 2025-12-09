@@ -46,13 +46,8 @@ export const Search = () => {
         closeModal()
     }
 
-    const {
-        inputRef,
-        buttonRef,
-        itemRefs,
-        handleInputKeyDown,
-        focusLastAvailable,
-    } = useSearchKeyboardNavigation(resultsCount)
+    const { inputRef, buttonRef, itemRefs, filterRefs, handleInputKeyDown } =
+        useSearchKeyboardNavigation(resultsCount)
 
     // Listen for Cmd+K to focus input
     useEffect(() => {
@@ -109,14 +104,11 @@ export const Search = () => {
                     iconType="cross"
                     color="text"
                     onClick={handleCloseModal}
+                    tabIndex={-1}
                 />
             </div>
 
-            <SearchResults
-                inputRef={inputRef}
-                buttonRef={buttonRef}
-                itemRefs={itemRefs}
-            />
+            <SearchResults itemRefs={itemRefs} filterRefs={filterRefs} />
             {!showLoadingSpinner && <EuiHorizontalRule margin="none" />}
             {searchTerm && (
                 <div
@@ -139,7 +131,6 @@ export const Search = () => {
                         ref={buttonRef}
                         term={searchTerm}
                         onAsk={askAi}
-                        onArrowUp={focusLastAvailable}
                     />
                 </div>
             )}
