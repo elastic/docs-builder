@@ -1,14 +1,9 @@
 import { useTypeFilter, useSearchActions } from '../search.store'
-import { useEuiTheme, EuiButton, EuiSkeletonRectangle } from '@elastic/eui'
+import { useEuiTheme, EuiButton, EuiSpacer } from '@elastic/eui'
 import { css } from '@emotion/react'
 import { useRef, useCallback, MutableRefObject } from 'react'
 
 interface SearchFiltersProps {
-    counts: {
-        apiResultsCount: number
-        docsResultsCount: number
-        totalCount: number
-    }
     isLoading: boolean
     inputRef?: React.RefObject<HTMLInputElement>
     itemRefs?: MutableRefObject<(HTMLAnchorElement | null)[]>
@@ -16,16 +11,18 @@ interface SearchFiltersProps {
 }
 
 export const SearchFilters = ({
-    counts,
     isLoading,
     inputRef,
     itemRefs,
     resultsCount = 0,
 }: SearchFiltersProps) => {
+    if (isLoading) {
+        return null
+    }
+
     const { euiTheme } = useEuiTheme()
     const selectedFilter = useTypeFilter()
     const { setTypeFilter } = useSearchActions()
-    const { apiResultsCount, docsResultsCount, totalCount } = counts
 
     const filterRefs = useRef<(HTMLButtonElement | null)[]>([])
 
@@ -60,37 +57,58 @@ export const SearchFilters = ({
 
     const buttonStyle = css`
         border-radius: 99999px;
-        padding-inline: ${euiTheme.size.m};
+        padding-inline: ${euiTheme.size.s};
         min-inline-size: auto;
-    `
-
-    const skeletonStyle = css`
-        border-radius: 99999px;
+        &[aria-pressed='true'] {
+            background-color: ${euiTheme.colors.backgroundBaseHighlighted};
+            border-color: ${euiTheme.colors.borderStrongPrimary};
+            color: ${euiTheme.colors.textPrimary};
+            border-width: 1px;
+            border-style: solid;
+            span svg {
+                fill: ${euiTheme.colors.textPrimary};
+            }
+        }
+        &:hover,
+        &:hover:not(:disabled)::before {
+            background-color: ${euiTheme.colors.backgroundBaseHighlighted};
+        }
+        &:focus-visible {
+            background-color: ${euiTheme.colors.backgroundBasePlain};
+        }
+        &[aria-pressed='true']:hover,
+        &[aria-pressed='true']:focus-visible {
+            background-color: ${euiTheme.colors.backgroundBaseHighlighted};
+            border-color: ${euiTheme.colors.borderStrongPrimary};
+            color: ${euiTheme.colors.textPrimary};
+        }
+        span {
+            gap: 4px;
+            &.eui-textTruncate {
+                padding-inline: 4px;
+            }
+            svg {
+                fill: ${euiTheme.colors.borderBaseProminent};
+            }
+        }
     `
 
     return (
-        <div
-            css={css`
-                display: flex;
-                gap: ${euiTheme.size.s};
-                padding-inline: ${euiTheme.size.base};
-            `}
-            role="group"
-            aria-label="Search filters"
-        >
-            <EuiSkeletonRectangle
-                isLoading={isLoading}
-                width="73.0547px"
-                css={skeletonStyle}
+        <div>
+            <div
+                css={css`
+                    display: flex;
+                    gap: ${euiTheme.size.s};
+                    padding-inline: ${euiTheme.size.base};
+                `}
+                role="group"
+                aria-label="Search filters"
             >
                 <EuiButton
                     color="text"
                     iconType="globe"
-                    iconSize="s"
-                    // @ts-expect-error: xs is valid size according to EuiButton docs
-                    size="xs"
-                    fill={selectedFilter === 'all'}
-                    isLoading={isLoading}
+                    iconSize="m"
+                    size="s"
                     onClick={() => setTypeFilter('all')}
                     onKeyDown={(e: React.KeyboardEvent<HTMLButtonElement>) =>
                         handleFilterKeyDown(e, 0)
@@ -99,25 +117,16 @@ export const SearchFilters = ({
                         filterRefs.current[0] = el
                     }}
                     css={buttonStyle}
-                    aria-label={`Show all results, ${totalCount} total`}
+                    aria-label={`Show all results`}
                     aria-pressed={selectedFilter === 'all'}
                 >
-                    {isLoading ? 'ALL' : `ALL (${totalCount})`}
+                    {`All`}
                 </EuiButton>
-            </EuiSkeletonRectangle>
-            <EuiSkeletonRectangle
-                isLoading={isLoading}
-                width="87.4375px"
-                css={skeletonStyle}
-            >
                 <EuiButton
                     color="text"
-                    iconType="document"
-                    iconSize="s"
-                    // @ts-expect-error: xs is valid size according to EuiButton docs
-                    size="xs"
-                    fill={selectedFilter === 'doc'}
-                    isLoading={isLoading}
+                    iconType="documentation"
+                    iconSize="m"
+                    size="s"
                     onClick={() => setTypeFilter('doc')}
                     onKeyDown={(e: React.KeyboardEvent<HTMLButtonElement>) =>
                         handleFilterKeyDown(e, 1)
@@ -126,25 +135,16 @@ export const SearchFilters = ({
                         filterRefs.current[1] = el
                     }}
                     css={buttonStyle}
-                    aria-label={`Filter to documentation results, ${docsResultsCount} available`}
+                    aria-label={`Filter to documentation results`}
                     aria-pressed={selectedFilter === 'doc'}
                 >
-                    {isLoading ? 'DOCS' : `DOCS (${docsResultsCount})`}
+                    {`Docs`}
                 </EuiButton>
-            </EuiSkeletonRectangle>
-            <EuiSkeletonRectangle
-                isLoading={isLoading}
-                width="65.0547px"
-                css={skeletonStyle}
-            >
                 <EuiButton
                     color="text"
                     iconType="code"
                     iconSize="s"
-                    // @ts-expect-error: xs is valid size according to EuiButton docs
-                    size="xs"
-                    fill={selectedFilter === 'api'}
-                    isLoading={isLoading}
+                    size="s"
                     onClick={() => setTypeFilter('api')}
                     onKeyDown={(e: React.KeyboardEvent<HTMLButtonElement>) =>
                         handleFilterKeyDown(e, 2)
@@ -153,12 +153,13 @@ export const SearchFilters = ({
                         filterRefs.current[2] = el
                     }}
                     css={buttonStyle}
-                    aria-label={`Filter to API results, ${apiResultsCount} available`}
+                    aria-label={`Filter to API results`}
                     aria-pressed={selectedFilter === 'api'}
                 >
-                    {isLoading ? 'API' : `API (${apiResultsCount})`}
+                    {`API`}
                 </EuiButton>
-            </EuiSkeletonRectangle>
+            </div>
+            <EuiSpacer size="m" />
         </div>
     )
 }

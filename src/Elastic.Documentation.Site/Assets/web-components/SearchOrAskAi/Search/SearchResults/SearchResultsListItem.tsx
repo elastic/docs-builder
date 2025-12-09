@@ -71,7 +71,7 @@ export function SearchResultListItem({
     setRef,
 }: SearchResultListItemProps) {
     const { euiTheme } = useEuiTheme()
-    const titleFontSize = useEuiFontSize('s')
+    const titleFontSize = useEuiFontSize('m')
     const searchQuery = useSearchTerm()
 
     // Calculate absolute position across all pages
@@ -103,20 +103,24 @@ export function SearchResultListItem({
                     display: grid;
                     grid-template-columns: auto 1fr auto;
                     align-items: center;
-                    gap: ${euiTheme.size.base};
-                    border-radius: ${euiTheme.border.radius.medium};
-                    padding-inline: ${euiTheme.size.base};
+                    gap: ${euiTheme.size.m};
+                    border-radius: ${euiTheme.size.s};
+                    border-width: 1px;
+                    border-style: solid;
+                    border-color: transparent;
+                    padding-inline-start: ${euiTheme.size.m};
+                    padding-inline-end: ${euiTheme.size.base};
                     padding-block: ${euiTheme.size.m};
-                    margin-inline: ${euiTheme.size.base};
-                    border: 1px solid transparent;
+                    margin-inline-start: ${euiTheme.size.base};
+                    margin-inline-end: ${euiTheme.size.s};
                     outline: none;
+                    outline-color: transparent;
 
-                    /* Shared highlight styles for selected, hover, and focus */
+                    /* Shared highlight styles for selected & hover */
                     &[data-selected],
-                    &:hover,
-                    &:focus {
+                    &:hover {
                         background-color: ${euiTheme.colors
-                            .backgroundBaseSubdued};
+                            .backgroundBaseHighlighted};
                         border-color: ${euiTheme.colors.borderBasePlain};
                         .return-key-icon {
                             visibility: visible;
@@ -124,27 +128,39 @@ export function SearchResultListItem({
                     }
 
                     /* Focus ring for selected and focus states */
-                    &[data-selected],
-                    &:focus {
-                        outline: 2px solid ${euiTheme.colors.primary};
+                    &:focus-visible {
+                        outline: 2px solid
+                            ${euiTheme.colors.borderStrongPrimary};
                         outline-offset: -2px;
+                        border-color: ${euiTheme.colors.borderStrongPrimary};
                     }
                 `}
                 href={result.url}
             >
                 <EuiIcon
-                    type={result.type === 'api' ? 'code' : 'document'}
-                    color="subdued"
+                    type={result.type === 'api' ? 'code' : 'documentation'}
                     size="m"
+                    css={css`
+                        color: ${euiTheme.colors.borderBaseProminent};
+                    `}
                 />
                 <div
                     css={css`
                         mark {
                             background-color: transparent;
                             color: ${euiTheme.colors.link};
+                            font-weight: ${euiTheme.font.weight.bold};
                         }
                     `}
                 >
+                    {result.parents.length > 0 && (
+                        <>
+                            <Breadcrumbs
+                                type={result.type}
+                                parents={result.parents}
+                            />
+                        </>
+                    )}
                     <div
                         css={css`
                             font-size: ${titleFontSize.fontSize};
@@ -156,19 +172,21 @@ export function SearchResultListItem({
                             ellipsis={false}
                         />
                     </div>
-                    <EuiSpacer size="xs" />
+                    <EuiSpacer
+                        css={css`
+                            block-size: 2px;
+                        `}
+                    />
                     <EuiText size="xs">
                         <div
                             css={css`
                                 font-family: ${euiTheme.font.family};
+                                color: ${euiTheme.colors.textSubdued};
                                 position: relative;
-
                                 display: -webkit-box;
                                 -webkit-line-clamp: 1;
                                 -webkit-box-orient: vertical;
                                 overflow: hidden;
-
-                                //width: 90%;
                             `}
                         >
                             <SanitizedHtmlContent
@@ -177,20 +195,12 @@ export function SearchResultListItem({
                             />
                         </div>
                     </EuiText>
-                    {result.parents.length > 0 && (
-                        <>
-                            <EuiSpacer size="xs" />
-                            <Breadcrumbs
-                                type={result.type}
-                                parents={result.parents}
-                            />
-                        </>
-                    )}
                 </div>
                 <EuiIcon
                     className="return-key-icon"
                     css={css`
                         visibility: hidden;
+                        color: ${euiTheme.colors.borderBaseProminent};
                     `}
                     type="returnKey"
                     color="subdued"
@@ -213,7 +223,6 @@ function Breadcrumbs({
     return (
         <ul
             css={css`
-                margin-top: 2px;
                 display: flex;
                 gap: 0 ${euiTheme.size.xs};
                 flex-wrap: wrap;
@@ -233,7 +242,12 @@ function Breadcrumbs({
                     display: inline-flex;
                 `}
             >
-                <EuiText size="xs" color="subdued">
+                <EuiText
+                    size="xs"
+                    css={css`
+                        color: ${euiTheme.colors.textSubdued};
+                    `}
+                >
                     {type === 'api' ? 'API' : 'Docs'}
                 </EuiText>
             </li>
@@ -251,7 +265,12 @@ function Breadcrumbs({
                         display: inline-flex;
                     `}
                 >
-                    <EuiText size="xs" color="subdued">
+                    <EuiText
+                        size="xs"
+                        css={css`
+                            color: ${euiTheme.colors.textSubdued};
+                        `}
+                    >
                         {parent.title}
                     </EuiText>
                 </li>
