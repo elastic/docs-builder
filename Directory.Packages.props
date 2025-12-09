@@ -22,9 +22,9 @@
     <PackageVersion Include="AngleSharp" Version="1.4.0" />
     <PackageVersion Include="Aspire.Hosting" Version="13.0.0" />
     <PackageVersion Include="Aspire.Hosting.Testing" Version="13.0.0" />
-    <PackageVersion Include="AWSSDK.Core" Version="4.0.3.3" />
+    <PackageVersion Include="AWSSDK.Core" Version="4.0.3.4" />
     <PackageVersion Include="AWSSDK.DynamoDBv2" Version="4.0.5" />
-    <PackageVersion Include="AWSSDK.SQS" Version="4.0.2.5" />
+    <PackageVersion Include="AWSSDK.SQS" Version="4.0.2.6" />
     <PackageVersion Include="AWSSDK.S3" Version="4.0.7.14" />
     <PackageVersion Include="Elastic.OpenTelemetry" Version="1.1.0" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.UserSecrets" Version="10.0.0" />
@@ -34,9 +34,9 @@
     <PackageVersion Include="Generator.Equals" Version="3.2.1" PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
     <PackageVersion Include="KubernetesClient" Version="18.0.5" />
     <PackageVersion Include="Elastic.Aspire.Hosting.Elasticsearch" Version="9.3.0" />
-    <PackageVersion Include="Elastic.Clients.Elasticsearch" Version="9.2.1" />
+    <PackageVersion Include="Elastic.Clients.Elasticsearch" Version="9.2.2" />
     <PackageVersion Include="FakeItEasy" Version="8.3.0" />
-    <PackageVersion Include="Elastic.Ingest.Elasticsearch" Version="0.16.3" />
+    <PackageVersion Include="Elastic.Ingest.Elasticsearch" Version="0.17.1" />
     <PackageVersion Include="InMemoryLogger" Version="1.0.66" />
     <PackageVersion Include="MartinCostello.Logging.XUnit.v3" Version="0.6.0" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.0" />
@@ -55,7 +55,7 @@
     <PackageVersion Include="FSharp.Core" Version="10.0.100" />
   </ItemGroup>
   <ItemGroup>
-    <PackageVersion Include="ConsoleAppFramework" Version="5.7.11" PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
+    <PackageVersion Include="ConsoleAppFramework" Version="5.7.13" PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
     <PackageVersion Include="ConsoleAppFramework.Abstractions" Version="5.7.2" />
     <PackageVersion Include="Crayon" Version="2.0.69" />
     <PackageVersion Include="DotNet.Glob" Version="3.1.3" />
@@ -91,7 +91,7 @@
   <!-- Test packages -->
   <ItemGroup>
     <PackageVersion Include="Aspire.Hosting.AppHost" Version="13.0.0" />
-    <PackageVersion Include="AngleSharp.Diffing" Version="1.1.0" />
+    <PackageVersion Include="AngleSharp.Diffing" Version="1.1.1" />
     <PackageVersion Include="DiffPlex" Version="1.9.0" />
     <PackageVersion Include="FluentAssertions" Version="7.2.0" />
     <PackageVersion Include="FsUnit.xUnit" Version="7.0.1" />
