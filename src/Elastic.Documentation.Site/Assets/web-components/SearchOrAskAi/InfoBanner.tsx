@@ -22,6 +22,7 @@ export const InfoBanner = () => {
                 `}
             >
                 <EuiBetaBadge
+                    tabIndex={-1}
                     css={css`
                         display: inherit;
                     `}

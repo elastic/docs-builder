@@ -44,10 +44,14 @@ export const useSearchKeyboardNavigation = (
                             ? 0
                             : Math.min(selectedIndex + 1, resultsCount - 1)
                     setSelectedIndex(nextIndex)
-                    // Scroll into view
-                    itemRefs.current[nextIndex]?.scrollIntoView({
-                        block: 'nearest',
-                    })
+                    // Scroll into view (guard for JSDOM)
+                    const element = itemRefs.current[nextIndex]
+                    if (
+                        element &&
+                        typeof element.scrollIntoView === 'function'
+                    ) {
+                        element.scrollIntoView({ block: 'nearest' })
+                    }
                 }
             } else if (e.key === 'ArrowUp') {
                 e.preventDefault()
@@ -55,10 +59,14 @@ export const useSearchKeyboardNavigation = (
                     // Move selection up
                     const prevIndex = selectedIndex - 1
                     setSelectedIndex(prevIndex)
-                    // Scroll into view
-                    itemRefs.current[prevIndex]?.scrollIntoView({
-                        block: 'nearest',
-                    })
+                    // Scroll into view (guard for JSDOM)
+                    const element = itemRefs.current[prevIndex]
+                    if (
+                        element &&
+                        typeof element.scrollIntoView === 'function'
+                    ) {
+                        element.scrollIntoView({ block: 'nearest' })
+                    }
                 }
             }
             // Tab works naturally - goes to filters, then button
