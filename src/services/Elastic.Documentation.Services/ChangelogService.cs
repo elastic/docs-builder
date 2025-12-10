@@ -40,14 +40,34 @@ public class ChangelogService(
 				return false;
 			}
 
-			// Try to fetch PR information if PR URL is provided
-			var prInfo = await TryFetchPrInfoAsync(input.Pr, ctx);
-			if (prInfo != null)
+			// Validate that if PR is just a number, owner and repo must be provided
+			if (!string.IsNullOrWhiteSpace(input.Pr) && int.TryParse(input.Pr, out _))
 			{
-				// Use PR title if title was not explicitly provided or is empty
-				// Note: title is a required parameter, but user might pass empty string
+				if (string.IsNullOrWhiteSpace(input.Owner) || string.IsNullOrWhiteSpace(input.Repo))
+				{
+					collector.EmitError(string.Empty, "When --pr is specified as just a number, both --owner and --repo must be provided");
+					return false;
+				}
+			}
+
+			// If PR is specified, try to fetch PR information and derive title/type
+			if (!string.IsNullOrWhiteSpace(input.Pr))
+			{
+				var prInfo = await TryFetchPrInfoAsync(input.Pr, input.Owner, input.Repo, ctx);
+				if (prInfo == null)
+				{
+					collector.EmitError(string.Empty, $"Failed to fetch PR information from GitHub for PR: {input.Pr}. Cannot derive title and type.");
+					return false;
+				}
+
+				// Use PR title if title was not explicitly provided
 				if (string.IsNullOrWhiteSpace(input.Title))
 				{
+					if (string.IsNullOrWhiteSpace(prInfo.Title))
+					{
+						collector.EmitError(string.Empty, $"PR {input.Pr} does not have a title. Please provide --title or ensure the PR has a title.");
+						return false;
+					}
 					input.Title = prInfo.Title;
 					_logger.LogInformation("Using PR title: {Title}", input.Title);
 				}
@@ -56,18 +76,26 @@ public class ChangelogService(
 					_logger.LogDebug("Using explicitly provided title, ignoring PR title");
 				}
 
-				// Map labels to type if type was not explicitly provided or is empty
-				// Note: type is a required parameter, but user might pass empty string
-				if (string.IsNullOrWhiteSpace(input.Type) && config.LabelToType != null)
+				// Map labels to type if type was not explicitly provided
+				if (string.IsNullOrWhiteSpace(input.Type))
 				{
-					var mappedType = MapLabelsToType(prInfo.Labels, config.LabelToType);
-					if (mappedType != null)
+					if (config.LabelToType == null || config.LabelToType.Count == 0)
 					{
-						input.Type = mappedType;
-						_logger.LogInformation("Mapped PR labels to type: {Type}", input.Type);
+						collector.EmitError(string.Empty, $"Cannot derive type from PR {input.Pr} labels: no label-to-type mapping configured in changelog.yml. Please provide --type or configure label_to_type in changelog.yml.");
+						return false;
 					}
+
+					var mappedType = MapLabelsToType(prInfo.Labels, config.LabelToType);
+					if (mappedType == null)
+					{
+						var availableLabels = prInfo.Labels.Length > 0 ? string.Join(", ", prInfo.Labels) : "none";
+						collector.EmitError(string.Empty, $"Cannot derive type from PR {input.Pr} labels ({availableLabels}). No matching label found in label_to_type mapping. Please provide --type or add a label mapping in changelog.yml.");
+						return false;
+					}
+					input.Type = mappedType;
+					_logger.LogInformation("Mapped PR labels to type: {Type}", input.Type);
 				}
-				else if (!string.IsNullOrWhiteSpace(input.Type))
+				else
 				{
 					_logger.LogDebug("Using explicitly provided type, ignoring PR labels");
 				}
@@ -87,21 +115,17 @@ public class ChangelogService(
 					_logger.LogDebug("Using explicitly provided areas, ignoring PR labels");
 				}
 			}
-			else if (!string.IsNullOrWhiteSpace(input.Pr))
-			{
-				_logger.LogWarning("PR URL was provided but GitHub information could not be fetched. Continuing with provided values.");
-			}
 
-			// Validate required fields
+			// Validate required fields (must be provided either explicitly or derived from PR)
 			if (string.IsNullOrWhiteSpace(input.Title))
 			{
-				collector.EmitError(string.Empty, "Title is required");
+				collector.EmitError(string.Empty, "Title is required. Provide --title or specify --pr to derive it from the PR.");
 				return false;
 			}
 
 			if (string.IsNullOrWhiteSpace(input.Type))
 			{
-				collector.EmitError(string.Empty, "Type is required");
+				collector.EmitError(string.Empty, "Type is required. Provide --type or specify --pr to derive it from PR labels (requires label_to_type mapping in changelog.yml).");
 				return false;
 			}
 
@@ -284,10 +308,11 @@ public class ChangelogService(
 
 	private static ChangelogData BuildChangelogData(ChangelogInput input)
 	{
+		// Title and Type are guaranteed to be non-null at this point due to validation above
 		var data = new ChangelogData
 		{
-			Title = input.Title,
-			Type = input.Type,
+			Title = input.Title!,
+			Type = input.Type!,
 			Subtype = input.Subtype,
 			Description = input.Description,
 			Impact = input.Impact,
@@ -427,7 +452,7 @@ public class ChangelogService(
 		return sanitized;
 	}
 
-	private async Task<GitHubPrInfo?> TryFetchPrInfoAsync(string? prUrl, Cancel ctx)
+	private async Task<GitHubPrInfo?> TryFetchPrInfoAsync(string? prUrl, string? owner, string? repo, Cancel ctx)
 	{
 		if (string.IsNullOrWhiteSpace(prUrl) || _githubPrService == null)
 		{
@@ -436,7 +461,7 @@ public class ChangelogService(
 
 		try
 		{
-			var prInfo = await _githubPrService.FetchPrInfoAsync(prUrl, ctx);
+			var prInfo = await _githubPrService.FetchPrInfoAsync(prUrl, owner, repo, ctx);
 			if (prInfo != null)
 			{
 				_logger.LogInformation("Successfully fetched PR information from GitHub");

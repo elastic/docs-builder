@@ -29,23 +29,25 @@ public class GitHubPrService(ILoggerFactory loggerFactory)
 	/// <summary>
 	/// Fetches pull request information from GitHub
 	/// </summary>
-	/// <param name="prUrl">The PR URL (e.g., https://github.com/owner/repo/pull/123 or owner/repo#123)</param>
+	/// <param name="prUrl">The PR URL (e.g., https://github.com/owner/repo/pull/123, owner/repo#123, or just a number if owner/repo are provided)</param>
+	/// <param name="owner">Optional: GitHub repository owner (used when prUrl is just a number)</param>
+	/// <param name="repo">Optional: GitHub repository name (used when prUrl is just a number)</param>
 	/// <param name="ctx">Cancellation token</param>
 	/// <returns>PR information or null if fetch fails</returns>
-	public async Task<GitHubPrInfo?> FetchPrInfoAsync(string prUrl, CancellationToken ctx = default)
+	public async Task<GitHubPrInfo?> FetchPrInfoAsync(string prUrl, string? owner = null, string? repo = null, CancellationToken ctx = default)
 	{
 		try
 		{
-			var (owner, repo, prNumber) = ParsePrUrl(prUrl);
-			if (owner == null || repo == null || prNumber == null)
+			var (parsedOwner, parsedRepo, prNumber) = ParsePrUrl(prUrl, owner, repo);
+			if (parsedOwner == null || parsedRepo == null || prNumber == null)
 			{
-				_logger.LogWarning("Unable to parse PR URL: {PrUrl}", prUrl);
+				_logger.LogWarning("Unable to parse PR URL: {PrUrl}. Owner: {Owner}, Repo: {Repo}", prUrl, owner, repo);
 				return null;
 			}
 
 			// Add GitHub token if available (for rate limiting and private repos)
 			var githubToken = Environment.GetEnvironmentVariable("GITHUB_TOKEN");
-			using var request = new HttpRequestMessage(HttpMethod.Get, $"https://api.github.com/repos/{owner}/{repo}/pulls/{prNumber}");
+			using var request = new HttpRequestMessage(HttpMethod.Get, $"https://api.github.com/repos/{parsedOwner}/{parsedRepo}/pulls/{prNumber}");
 			if (!string.IsNullOrEmpty(githubToken))
 			{
 				request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", githubToken);
@@ -92,7 +94,7 @@ public class GitHubPrService(ILoggerFactory loggerFactory)
 		}
 	}
 
-	private static (string? owner, string? repo, int? prNumber) ParsePrUrl(string prUrl)
+	private static (string? owner, string? repo, int? prNumber) ParsePrUrl(string prUrl, string? defaultOwner = null, string? defaultRepo = null)
 	{
 		// Handle full URL: https://github.com/owner/repo/pull/123
 		if (prUrl.StartsWith("https://github.com/", StringComparison.OrdinalIgnoreCase) ||
@@ -125,6 +127,15 @@ public class GitHubPrService(ILoggerFactory loggerFactory)
 				{
 					return (repoParts[0], repoParts[1], prNum);
 				}
+			}
+		}
+
+		// Handle just a PR number when owner/repo are provided
+		if (int.TryParse(prUrl, out var prNumber))
+		{
+			if (!string.IsNullOrWhiteSpace(defaultOwner) && !string.IsNullOrWhiteSpace(defaultRepo))
+			{
+				return (defaultOwner, defaultRepo, prNumber);
 			}
 		}
 
