@@ -81,12 +81,16 @@ public class ChangelogService(
 				}
 			}
 
-			// Validate products if configuration provides available products
-			if (config.AvailableProducts != null && config.AvailableProducts.Count > 0)
+			// Always validate products against products.yml
+			var validProductIds = configurationContext.ProductsConfiguration.Products.Keys.ToHashSet(StringComparer.OrdinalIgnoreCase);
+			foreach (var product in input.Products)
 			{
-				foreach (var product in input.Products.Where(p => !config.AvailableProducts.Contains(p.Product)))
+				// Normalize product ID (replace underscores with hyphens for comparison)
+				var normalizedProductId = product.Product.Replace('_', '-');
+				if (!validProductIds.Contains(normalizedProductId))
 				{
-					collector.EmitError(string.Empty, $"Product '{product.Product}' is not in the list of available products. Available products: {string.Join(", ", config.AvailableProducts)}");
+					var availableProducts = string.Join(", ", validProductIds.OrderBy(p => p));
+					collector.EmitError(string.Empty, $"Product '{product.Product}' is not in the list of available products from config/products.yml. Available products: {availableProducts}");
 					return false;
 				}
 			}
@@ -147,7 +151,6 @@ public class ChangelogService(
 	)
 	{
 		// Determine config file path
-		_ = configurationContext; // Suppress unused warning - kept for future extensibility
 		var finalConfigPath = configPath ?? _fileSystem.Path.Combine(Directory.GetCurrentDirectory(), "docs", "changelog.yml");
 
 		if (!_fileSystem.File.Exists(finalConfigPath))
@@ -165,6 +168,47 @@ public class ChangelogService(
 				.Build();
 
 			var config = deserializer.Deserialize<ChangelogConfiguration>(yamlContent);
+
+			// Validate that changelog.yml values conform to ChangelogConfiguration defaults
+			var defaultConfig = ChangelogConfiguration.Default;
+			var validProductIds = configurationContext.ProductsConfiguration.Products.Keys.ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+			// Validate available_types
+			foreach (var type in config.AvailableTypes.Where(t => !defaultConfig.AvailableTypes.Contains(t)))
+			{
+				collector.EmitError(finalConfigPath, $"Type '{type}' in changelog.yml is not in the list of available types. Available types: {string.Join(", ", defaultConfig.AvailableTypes)}");
+				return null;
+			}
+
+			// Validate available_subtypes
+			foreach (var subtype in config.AvailableSubtypes.Where(s => !defaultConfig.AvailableSubtypes.Contains(s)))
+			{
+				collector.EmitError(finalConfigPath, $"Subtype '{subtype}' in changelog.yml is not in the list of available subtypes. Available subtypes: {string.Join(", ", defaultConfig.AvailableSubtypes)}");
+				return null;
+			}
+
+			// Validate available_lifecycles
+			foreach (var lifecycle in config.AvailableLifecycles.Where(l => !defaultConfig.AvailableLifecycles.Contains(l)))
+			{
+				collector.EmitError(finalConfigPath, $"Lifecycle '{lifecycle}' in changelog.yml is not in the list of available lifecycles. Available lifecycles: {string.Join(", ", defaultConfig.AvailableLifecycles)}");
+				return null;
+			}
+
+			// Validate available_products (if specified) - must be from products.yml
+			if (config.AvailableProducts != null && config.AvailableProducts.Count > 0)
+			{
+				foreach (var product in config.AvailableProducts)
+				{
+					var normalizedProductId = product.Replace('_', '-');
+					if (!validProductIds.Contains(normalizedProductId))
+					{
+						var availableProducts = string.Join(", ", validProductIds.OrderBy(p => p));
+						collector.EmitError(finalConfigPath, $"Product '{product}' in changelog.yml is not in the list of available products from config/products.yml. Available products: {availableProducts}");
+						return null;
+					}
+				}
+			}
+
 			return config;
 		}
 		catch (IOException ex)
