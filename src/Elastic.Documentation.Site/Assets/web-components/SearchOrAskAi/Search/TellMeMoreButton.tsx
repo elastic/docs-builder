@@ -7,13 +7,12 @@ import { forwardRef } from 'react'
 interface TellMeMoreButtonProps {
     term: string
     onAsk: () => void
-    onArrowUp?: () => void
 }
 
 export const TellMeMoreButton = forwardRef<
     HTMLButtonElement,
     TellMeMoreButtonProps
->(({ term, onAsk, onArrowUp }, ref) => {
+>(({ term, onAsk }, ref) => {
     const isAskAiCooldownActive = useIsAskAiCooldownActive()
     const { euiTheme } = useEuiTheme()
 
@@ -29,12 +28,6 @@ export const TellMeMoreButton = forwardRef<
             `}
             onClick={onAsk}
             disabled={isAskAiCooldownActive}
-            onKeyDown={(e) => {
-                if (e.key === 'ArrowUp') {
-                    e.preventDefault()
-                    onArrowUp?.()
-                }
-            }}
         >
             <span>Tell me more about</span>{' '}
             <span
