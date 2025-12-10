@@ -4,6 +4,7 @@
 
 using System.Net.Http.Headers;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Services.Changelog;
@@ -11,14 +12,10 @@ namespace Elastic.Documentation.Services.Changelog;
 /// <summary>
 /// Service for fetching pull request information from GitHub
 /// </summary>
-public class GitHubPrService(ILoggerFactory loggerFactory)
+public partial class GitHubPrService(ILoggerFactory loggerFactory)
 {
 	private readonly ILogger<GitHubPrService> _logger = loggerFactory.CreateLogger<GitHubPrService>();
 	private static readonly HttpClient HttpClient = new();
-	private static readonly JsonSerializerOptions JsonOptions = new()
-	{
-		PropertyNameCaseInsensitive = true
-	};
 
 	static GitHubPrService()
 	{
@@ -63,7 +60,7 @@ public class GitHubPrService(ILoggerFactory loggerFactory)
 			}
 
 			var jsonContent = await response.Content.ReadAsStringAsync(ctx);
-			var prData = JsonSerializer.Deserialize<GitHubPrResponse>(jsonContent, JsonOptions);
+			var prData = JsonSerializer.Deserialize(jsonContent, GitHubPrJsonContext.Default.GitHubPrResponse);
 
 			if (prData == null)
 			{
@@ -152,6 +149,12 @@ public class GitHubPrService(ILoggerFactory loggerFactory)
 	{
 		public string Name { get; set; } = string.Empty;
 	}
+
+	[JsonSourceGenerationOptions(PropertyNameCaseInsensitive = true)]
+	[JsonSerializable(typeof(GitHubPrResponse))]
+	[JsonSerializable(typeof(GitHubLabel))]
+	[JsonSerializable(typeof(List<GitHubLabel>))]
+	private sealed partial class GitHubPrJsonContext : JsonSerializerContext;
 }
 
 /// <summary>
