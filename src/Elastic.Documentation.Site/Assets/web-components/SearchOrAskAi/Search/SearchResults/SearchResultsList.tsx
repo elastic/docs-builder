@@ -34,7 +34,8 @@ export const SearchResultsList = ({
         max-height: 400px;
         padding-block-start: ${euiTheme.size.base};
         padding-block-end: ${euiTheme.size.base};
-        margin-inline-end: ${euiTheme.size.s};
+        padding-inline-end: ${euiTheme.size.xs};
+        margin-inline-end: ${euiTheme.size.xs};
         ${useEuiOverflowScroll('y', false)}
     `
 
