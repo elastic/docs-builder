@@ -5,11 +5,12 @@ navigation_title: CLI (docs-builder)
 # Command line interface
 
 `docs-builder` is the binary used to invoke various commands. 
-These commands can be roughly grouped into three main categories
+These commands can be roughly grouped into four main categories
 
 - [Documentation Set commands](#documentation-set-commands)
 - [Link commands](#link-commands)
 - [Assembler commands](#assembler-commands)
+- [Release doc commands](#release-doc-commands)
 
 ### Global options 
 
@@ -22,7 +23,7 @@ The following options are available for all commands:
 :   Explicitly set the configuration source one of `local`, `remote` or `embedded`. Defaults to `local` if available 
     other wise `embedded`
 
-## Documentation Set Commands
+## Documentation set commands
 
 Commands that operate over a single documentation set.
 
@@ -32,7 +33,7 @@ These commands are typically what you interface with when you are working on the
 
 [See available CLI commands for documentation sets](docset/index.md) 
 
-## Link Commands
+## Link commands
 
 Outbound links, those going from the documentation set to other sources, are validated as part of the build process.
 
@@ -40,8 +41,14 @@ Inbound links, those going from other sources to the documentation set, are vali
 
 [See available CLI commands for inbound links](links/index.md) 
 
-## Assembler Commands
+## Assembler commands
 
 Assembler builds bring together all isolated documentation set builds and turn them into the overall documentation that gets published.
 
 [See available CLI commands for assembler](assembler/index.md)
+
+## Release doc commands
+
+Commands that pertain to creating and publishing product release documentation.
+
+[See available CLI commands for release docs](release/index.md)
