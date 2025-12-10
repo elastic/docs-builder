@@ -11,35 +11,35 @@ public class ChangelogConfiguration
 {
 	public List<string> AvailableTypes { get; set; } =
 	[
-		"feature",
-		"enhancement",
-		"bug-fix",
-		"known-issue",
-		"breaking-change",
-		"deprecation",
-		"docs",
-		"regression",
-		"security",
-		"other"
+		"feature", // A new feature or enhancement.
+		"enhancement", // An improvement to an existing feature.
+		"bug-fix", // A bug fix.
+		"known-issue", // A problem that is known to exist in the product.
+		"breaking-change", // A breaking change to the documented behavior of the product.
+		"deprecation", // Functionality that is deprecated and will be removed in a future release.
+		"docs", // Major documentation changes or reorganizations.
+		"regression", // Functionality that no longer works or behaves incorrectly.
+		"security", // An advisory about a potentialsecurity vulnerability.
+		"other" // Changes that do not fit into any of the other categories.
 	];
 
 	public List<string> AvailableSubtypes { get; set; } =
 	[
-		"api",
-		"behavioral",
-		"configuration",
-		"dependency",
-		"subscription",
-		"plugin",
-		"security",
-		"other"
+		"api", // A change that breaks an API.
+		"behavioral", // A change that breaks the way something works.
+		"configuration", // A change that breaks the configuration.
+		"dependency", // A change that breaks a dependency, such as a third-party product.
+		"subscription", // A change that breaks licensing behavior.
+		"plugin", // A change that breaks a plugin.
+		"security", // A change that breaks authentication, authorization, or permissions.
+		"other" // A breaking change that do not fit into any of the other categories.
 	];
 
 	public List<string> AvailableLifecycles { get; set; } =
 	[
-		"preview",
-		"beta",
-		"ga"
+		"preview", // A technical preview of a feature or enhancement.
+		"beta", // A beta release of a feature or enhancement.
+		"ga", // A generally available release of a feature or enhancement.
 	];
 
 	public List<string>? AvailableAreas { get; set; }

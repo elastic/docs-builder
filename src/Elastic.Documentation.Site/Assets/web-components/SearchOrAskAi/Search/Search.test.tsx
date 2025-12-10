@@ -318,7 +318,7 @@ describe('Search Component', () => {
             expect(searchStore.getState().selectedIndex).toBe(0)
         })
 
-        it('should move focus to second result on ArrowDown from input (first is already visually selected)', async () => {
+        it('should move selection to second result on ArrowDown from input (focus stays on input)', async () => {
             // Arrange
             const user = userEvent.setup()
 
@@ -337,9 +337,9 @@ describe('Search Component', () => {
 
             await user.keyboard('{ArrowDown}')
 
-            // Assert - focus moved to second result (first is already visually selected)
-            const secondResult = screen.getByText('Test Result 2').closest('a')
-            expect(secondResult).toHaveFocus()
+            // Assert - selection moved to second result, focus stays on input (Pattern B)
+            expect(searchStore.getState().selectedIndex).toBe(1)
+            expect(input).toHaveFocus()
         })
 
         it('should move focus between results with ArrowDown/ArrowUp', async () => {
@@ -372,7 +372,7 @@ describe('Search Component', () => {
             expect(searchStore.getState().selectedIndex).toBe(0)
         })
 
-        it('should clear selection when ArrowUp from first item goes to input', async () => {
+        it('should stay at first item when ArrowUp from first item (no wrap)', async () => {
             // Arrange
             const user = userEvent.setup()
 
@@ -394,12 +394,12 @@ describe('Search Component', () => {
 
             await user.keyboard('{ArrowUp}')
 
-            // Assert - focus goes to input, selection is cleared
-            expect(input).toHaveFocus()
-            expect(searchStore.getState().selectedIndex).toBe(NO_SELECTION)
+            // Assert - stays at first item (no wrap around)
+            expect(firstResult).toHaveFocus()
+            expect(searchStore.getState().selectedIndex).toBe(0)
         })
 
-        it('should clear selection when ArrowDown from last item goes to button', async () => {
+        it('should stay at last item when ArrowDown from last item (no wrap)', async () => {
             // Arrange
             const user = userEvent.setup()
 
@@ -422,12 +422,9 @@ describe('Search Component', () => {
             // Try to go down from last item
             await user.keyboard('{ArrowDown}')
 
-            // Assert - focus moves to button, selection is cleared
-            const button = screen.getByRole('button', {
-                name: /tell me more about/i,
-            })
-            expect(button).toHaveFocus()
-            expect(searchStore.getState().selectedIndex).toBe(NO_SELECTION)
+            // Assert - stays at last item (no wrap around)
+            expect(lastResult).toHaveFocus()
+            expect(searchStore.getState().selectedIndex).toBe(2)
         })
 
         it('should render isSelected prop on the selected item', async () => {

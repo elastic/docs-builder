@@ -278,39 +278,77 @@ public class ChangelogService(
 		var typesList = string.Join("\n", config.AvailableTypes.Select(t => $"#   - {t}"));
 
 		// Build subtypes list
-		var subtypesList = config.AvailableSubtypes.Count > 0
-			? "\n#   It can be one of:\n" + string.Join("\n", config.AvailableSubtypes.Select(s => $"#   - {s}"))
-			: string.Empty;
+		var subtypesList = string.Join("\n", config.AvailableSubtypes.Select(s => $"#   - {s}"));
+
+		// Build lifecycles list
+		var lifecyclesList = string.Join("\n", config.AvailableLifecycles.Select(l => $"#       - {l}"));
 
 		// Add schema comments using raw string literal
 		var result = $"""
-			##### Automated fields #####
+			##### Required fields #####
 
-			# These fields are likely generated when the changelog is created and unlikely to require edits
+			# title:
+			#   A required string that is a short, user-facing headline.
+			#   (Max 80 characters)
 
-			# pr: An optional string that contains the pull request number
-			# issues: An optional array of strings that contain URLs for issues that are relevant to the PR
-			# type: A required string that contains the type of change
+			# type:
+			#   A required string that contains the type of change
 			#   It can be one of:
 			{typesList}
-			# subtype: An optional string that applies only to breaking changes{subtypesList}
-			# products: A required array of objects that denote the affected products
+
+			# products:
+			#   A required array of objects that denote the affected products
 			#   Each product object contains:
-			#     - product: A required string with a predefined product ID
-			#     - target: An optional string with the target version or date
-			#     - lifecycle: An optional string (preview, beta, ga)
-			# areas: An optional array of strings that denotes the parts/components/services affected
+			#
+			#   - product:
+			#       A required string with a valid product ID.
+			#       Valid values are defined in https://github.com/elastic/docs-builder/blob/main/config/products.yml
+			#
+			#     target:
+			#       An optional string with the target version or date.
+			#
+			#     lifecycle:
+			#       An optional string for new features or enhancements that have a specific availability.
+			#       It can be one of:
+			{lifecyclesList}
+			
+			##### Optional fields #####
 
-			##### Non-automated fields #####
+			# action:
+			#   An optional string that describes what users must do to mitigate
+			#   the impact of a breaking change or known issue.
 
-			# These fields might be generated when the changelog is created but are likely to require edits
+			# areas:
+			#   An optional array of strings that denotes the parts/components/services
+			#   of the product that are affected.
 
-			# title: A required string that is a short, user-facing headline (Max 80 characters)
-			# description: An optional string that provides additional information (Max 600 characters)
-			# impact: An optional string that describes how the user's environment is affected
-			# action: An optional string that describes what users must do to mitigate
-			# feature-id: An optional string to associate with a unique feature flag
-			# highlight: An optional boolean for items that should be included in release highlights
+			# description:
+			#   An optional string that provides additional information.
+			#   (Max 600 characters).
+
+			# feature-id:
+			#   An optional string to associate a feature or enhanceent with a
+			#   unique feature flag.
+
+			# highlight:
+			#   An optional boolean for items that should be included in release
+			#   highlights or the UI to draw user attention.
+
+			# impact:
+			#   An optional string that describes how the user's environment is
+			#   affected by a breaking change or known issue.
+
+			# issues:
+			#   An optional array of strings that contain the issues that are
+			#   relevant to the PR.
+
+			# pr:
+			#   An optional string that contains the pull request number.
+
+			# subtype:
+			#   An optional string that applies only to breaking changes.
+			#   It can be one of:
+			{subtypesList}
 
 			{yaml}
 			""";

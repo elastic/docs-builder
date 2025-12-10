@@ -14,16 +14,11 @@ import { useDebounce } from '@uidotdev/usehooks'
 import { useEffect, MutableRefObject } from 'react'
 
 interface SearchResultsProps {
-    inputRef?: React.RefObject<HTMLInputElement>
-    buttonRef?: React.RefObject<HTMLButtonElement>
     itemRefs?: MutableRefObject<(HTMLAnchorElement | null)[]>
+    filterRefs?: MutableRefObject<(HTMLButtonElement | null)[]>
 }
 
-export const SearchResults = ({
-    inputRef,
-    buttonRef,
-    itemRefs,
-}: SearchResultsProps) => {
+export const SearchResults = ({ itemRefs, filterRefs }: SearchResultsProps) => {
     const { euiTheme } = useEuiTheme()
     const searchTerm = useSearchTerm()
     const { setPageNumber } = useSearchActions()
@@ -57,9 +52,7 @@ export const SearchResults = ({
                 <>
                     <SearchFilters
                         isLoading={isInitialLoading}
-                        inputRef={inputRef}
-                        itemRefs={itemRefs}
-                        resultsCount={results.length}
+                        filterRefs={filterRefs}
                     />
 
                     <EuiHorizontalRule margin="none" />
@@ -83,8 +76,6 @@ export const SearchResults = ({
                             pageSize={data.pageSize}
                             isLoading={isInitialLoading}
                             searchTerm={debouncedSearchTerm}
-                            inputRef={inputRef}
-                            buttonRef={buttonRef}
                             itemRefs={itemRefs}
                         />
                     )}
@@ -96,8 +87,6 @@ export const SearchResults = ({
                             pageSize={10}
                             isLoading={true}
                             searchTerm={debouncedSearchTerm}
-                            inputRef={inputRef}
-                            buttonRef={buttonRef}
                             itemRefs={itemRefs}
                         />
                     )}
