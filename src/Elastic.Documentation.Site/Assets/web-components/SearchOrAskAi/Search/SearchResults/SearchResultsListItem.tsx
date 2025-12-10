@@ -52,7 +52,8 @@ interface SearchResultListItemProps {
     pageNumber: number
     pageSize: number
     isSelected?: boolean
-    onFocus?: (index: number) => void
+    tabIndex?: 0 | -1
+    onSelect?: (index: number) => void
     onKeyDown?: (
         e: React.KeyboardEvent<HTMLAnchorElement>,
         index: number
@@ -66,7 +67,8 @@ export function SearchResultListItem({
     pageNumber,
     pageSize,
     isSelected,
-    onFocus,
+    tabIndex = -1,
+    onSelect,
     onKeyDown,
     setRef,
 }: SearchResultListItemProps) {
@@ -91,13 +93,36 @@ export function SearchResultListItem({
     }
 
     return (
-        <li>
+        <li
+            css={css`
+                :not(:last-child) {
+                    margin-bottom: ${euiTheme.size.xs};
+                }
+            `}
+        >
             <a
                 ref={setRef}
                 data-selected={isSelected || undefined}
-                tabIndex={0}
+                tabIndex={tabIndex}
+                role="option"
+                aria-selected={isSelected}
                 onClick={handleClick}
-                onFocus={() => onFocus?.(index)}
+                onMouseEnter={(e) => {
+                    // If another result item has focus, move focus to this item
+                    if (document.activeElement instanceof HTMLElement) {
+                        const isResultItem = document.activeElement.closest(
+                            '[data-search-results]'
+                        )
+                        if (
+                            isResultItem &&
+                            document.activeElement !== e.currentTarget
+                        ) {
+                            e.currentTarget.focus()
+                        }
+                    }
+                    onSelect?.(index)
+                }}
+                onFocus={() => onSelect?.(index)}
                 onKeyDown={(e) => onKeyDown?.(e, index)}
                 css={css`
                     display: grid;
@@ -116,12 +141,12 @@ export function SearchResultListItem({
                     outline: none;
                     outline-color: transparent;
 
-                    /* Shared highlight styles for selected & hover */
-                    &[data-selected],
-                    &:hover {
+                    /* Selected: background + border (hover updates selection via onMouseEnter) */
+                    &[data-selected] {
                         background-color: ${euiTheme.colors
                             .backgroundBaseHighlighted};
                         border-color: ${euiTheme.colors.borderBasePlain};
+
                         .return-key-icon {
                             visibility: visible;
                         }
@@ -138,6 +163,7 @@ export function SearchResultListItem({
                 href={result.url}
             >
                 <EuiIcon
+                    className="result-type-icon"
                     type={result.type === 'api' ? 'code' : 'documentation'}
                     size="m"
                     css={css`
