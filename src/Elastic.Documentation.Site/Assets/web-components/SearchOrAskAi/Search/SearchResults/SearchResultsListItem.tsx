@@ -107,6 +107,21 @@ export function SearchResultListItem({
                 role="option"
                 aria-selected={isSelected}
                 onClick={handleClick}
+                onMouseEnter={(e) => {
+                    // If another result item has focus, move focus to this item
+                    if (document.activeElement instanceof HTMLElement) {
+                        const isResultItem = document.activeElement.closest(
+                            '[data-search-results]'
+                        )
+                        if (
+                            isResultItem &&
+                            document.activeElement !== e.currentTarget
+                        ) {
+                            e.currentTarget.focus()
+                        }
+                    }
+                    onSelect?.(index)
+                }}
                 onFocus={() => onSelect?.(index)}
                 onKeyDown={(e) => onKeyDown?.(e, index)}
                 css={css`
@@ -126,23 +141,15 @@ export function SearchResultListItem({
                     outline: none;
                     outline-color: transparent;
 
-                    /* Highlight styles for selected and hovered items */
-                    &[data-selected],
-                    &:hover {
+                    /* Selected: background + border (hover updates selection via onMouseEnter) */
+                    &[data-selected] {
                         background-color: ${euiTheme.colors
                             .backgroundBaseHighlighted};
                         border-color: ${euiTheme.colors.borderBasePlain};
-                    }
 
-                    /* Return key icon only shows for selected item */
-                    &[data-selected] .return-key-icon {
-                        visibility: visible;
-                    }
-
-                    /* Icons turn blue when selected */
-                    &[data-selected] .result-type-icon,
-                    &[data-selected] .return-key-icon {
-                        color: ${euiTheme.colors.primaryText};
+                        .return-key-icon {
+                            visibility: visible;
+                        }
                     }
 
                     /* Focus ring for selected and focus states */
