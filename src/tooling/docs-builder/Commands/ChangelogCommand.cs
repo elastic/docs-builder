@@ -67,7 +67,8 @@ internal sealed class ChangelogCommand(
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var service = new ChangelogService(logFactory, configurationContext);
+		var githubPrService = new GitHubPrService(logFactory);
+		var service = new ChangelogService(logFactory, configurationContext, githubPrService);
 
 		var input = new ChangelogInput
 		{

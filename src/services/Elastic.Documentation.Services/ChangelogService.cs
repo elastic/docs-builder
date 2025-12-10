@@ -16,11 +16,13 @@ namespace Elastic.Documentation.Services;
 
 public class ChangelogService(
 	ILoggerFactory logFactory,
-	IConfigurationContext configurationContext
+	IConfigurationContext configurationContext,
+	GitHubPrService? githubPrService = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogService>();
 	private readonly IFileSystem _fileSystem = new FileSystem();
+	private readonly GitHubPrService? _githubPrService = githubPrService;
 
 	public async Task<bool> CreateChangelog(
 		IDiagnosticsCollector collector,
@@ -36,6 +38,58 @@ public class ChangelogService(
 			{
 				collector.EmitError(string.Empty, "Failed to load changelog configuration");
 				return false;
+			}
+
+			// Try to fetch PR information if PR URL is provided
+			var prInfo = await TryFetchPrInfoAsync(input.Pr, ctx);
+			if (prInfo != null)
+			{
+				// Use PR title if title was not explicitly provided or is empty
+				// Note: title is a required parameter, but user might pass empty string
+				if (string.IsNullOrWhiteSpace(input.Title))
+				{
+					input.Title = prInfo.Title;
+					_logger.LogInformation("Using PR title: {Title}", input.Title);
+				}
+				else
+				{
+					_logger.LogDebug("Using explicitly provided title, ignoring PR title");
+				}
+
+				// Map labels to type if type was not explicitly provided or is empty
+				// Note: type is a required parameter, but user might pass empty string
+				if (string.IsNullOrWhiteSpace(input.Type) && config.LabelToType != null)
+				{
+					var mappedType = MapLabelsToType(prInfo.Labels, config.LabelToType);
+					if (mappedType != null)
+					{
+						input.Type = mappedType;
+						_logger.LogInformation("Mapped PR labels to type: {Type}", input.Type);
+					}
+				}
+				else if (!string.IsNullOrWhiteSpace(input.Type))
+				{
+					_logger.LogDebug("Using explicitly provided type, ignoring PR labels");
+				}
+
+				// Map labels to areas if areas were not explicitly provided
+				if ((input.Areas == null || input.Areas.Length == 0) && config.LabelToAreas != null)
+				{
+					var mappedAreas = MapLabelsToAreas(prInfo.Labels, config.LabelToAreas);
+					if (mappedAreas.Count > 0)
+					{
+						input.Areas = mappedAreas.ToArray();
+						_logger.LogInformation("Mapped PR labels to areas: {Areas}", string.Join(", ", mappedAreas));
+					}
+				}
+				else if (input.Areas != null && input.Areas.Length > 0)
+				{
+					_logger.LogDebug("Using explicitly provided areas, ignoring PR labels");
+				}
+			}
+			else if (!string.IsNullOrWhiteSpace(input.Pr))
+			{
+				_logger.LogWarning("PR URL was provided but GitHub information could not be fetched. Continuing with provided values.");
 			}
 
 			// Validate required fields
@@ -72,7 +126,7 @@ public class ChangelogService(
 			}
 
 			// Validate areas if configuration provides available areas
-			if (config.AvailableAreas != null && config.AvailableAreas.Count > 0)
+			if (config.AvailableAreas != null && config.AvailableAreas.Count > 0 && input.Areas != null)
 			{
 				foreach (var area in input.Areas.Where(area => !config.AvailableAreas.Contains(area)))
 				{
@@ -371,6 +425,63 @@ public class ChangelogService(
 			sanitized = sanitized[..50];
 
 		return sanitized;
+	}
+
+	private async Task<GitHubPrInfo?> TryFetchPrInfoAsync(string? prUrl, Cancel ctx)
+	{
+		if (string.IsNullOrWhiteSpace(prUrl) || _githubPrService == null)
+		{
+			return null;
+		}
+
+		try
+		{
+			var prInfo = await _githubPrService.FetchPrInfoAsync(prUrl, ctx);
+			if (prInfo != null)
+			{
+				_logger.LogInformation("Successfully fetched PR information from GitHub");
+			}
+			else
+			{
+				_logger.LogWarning("Unable to fetch PR information from GitHub. Continuing with provided values.");
+			}
+			return prInfo;
+		}
+		catch (Exception ex)
+		{
+			_logger.LogWarning(ex, "Error fetching PR information from GitHub. Continuing with provided values.");
+			return null;
+		}
+	}
+
+	private static string? MapLabelsToType(string[] labels, Dictionary<string, string> labelToTypeMapping)
+	{
+		foreach (var label in labels)
+		{
+			if (labelToTypeMapping.TryGetValue(label, out var mappedType))
+			{
+				return mappedType;
+			}
+		}
+		return null;
+	}
+
+	private static List<string> MapLabelsToAreas(string[] labels, Dictionary<string, string> labelToAreasMapping)
+	{
+		var areas = new HashSet<string>();
+		foreach (var label in labels)
+		{
+			if (labelToAreasMapping.TryGetValue(label, out var mappedAreas))
+			{
+				// Support comma-separated areas
+				var areaList = mappedAreas.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+				foreach (var area in areaList)
+				{
+					_ = areas.Add(area);
+				}
+			}
+		}
+		return areas.ToList();
 	}
 }
 
