@@ -663,7 +663,7 @@ public class ChangelogServiceTests
 		{
 			Pr = "https://github.com/elastic/elasticsearch/pull/12345",
 			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
-			Output = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString())
+			Output = _fileSystem.Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString())
 		};
 
 		// Act
@@ -687,7 +687,7 @@ public class ChangelogServiceTests
 			Title = "Test",
 			Type = "feature",
 			Products = [new ProductInfo { Product = "invalid-product", Target = "9.2.0" }],
-			Output = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString())
+			Output = _fileSystem.Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString())
 		};
 
 		// Act
@@ -711,7 +711,7 @@ public class ChangelogServiceTests
 			Title = "Test",
 			Type = "invalid-type",
 			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
-			Output = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString())
+			Output = _fileSystem.Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString())
 		};
 
 		// Act
