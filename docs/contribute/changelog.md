@@ -78,7 +78,16 @@ If a configuration file exists, the command validates all its values before gene
 - If the configuration file contains `lifecycle`, `product`, `subtype`, or `type` values that don't match the values in `products.yml` and `ChangelogConfiguration.cs`, validation fails. The changelog file is not created.
 - If the configuration file contains `areas` values and they don't match what you specify in the `--areas` command option, validation fails. The changelog file is not created.
 
+### GitHub label mappings
+
+You can optionally add `label_to_type` and `label_to_areas` mappings in your changelog configuration.
+When you run the command with the `--pr` option, it can use these mappings to fill in the `type` and `areas` in your changelog based on your pull request labels.
+
+Refer to [changelog.yml.example](https://github.com/elastic/docs-builder/blob/main/config/changelog.yml.example).
+
 ## Examples
+
+### Multiple products
 
 The following command creates a changelog for a bug fix that applies to two products:
 
@@ -109,4 +118,53 @@ products:
 title: Fixes enrich and lookup join resolution based on minimum transport version
 areas:
 - ES|QL
+```
+
+### PR label mappings
+
+You can update your changelog configuration file to contain GitHub label mappings, for example:
+
+```yaml
+# Available areas (optional - if not specified, all areas are allowed)
+available_areas:
+  - search
+  - security
+  - machine-learning
+  - observability
+  - index-management
+  - ES|QL
+  # Add more areas as needed
+
+# GitHub label mappings (optional - used when --pr option is specified)
+# Maps GitHub PR labels to changelog type values
+# When a PR has a label that matches a key, the corresponding type value is used
+label_to_type:
+  # Example mappings - customize based on your label naming conventions
+  ">enhancement": enhancement
+  ">breaking": breaking-change
+
+# Maps GitHub PR labels to changelog area values
+# Multiple labels can map to the same area, and a single label can map to multiple areas (comma-separated)
+label_to_areas:
+  # Example mappings - customize based on your label naming conventions
+  ":Search Relevance/ES|QL": "ES|QL"
+```
+
+When you use the `--pr` option to derive information from a pull request, it can make use of those mappings:
+
+```sh
+docs-builder changelog add --pr https://github.com/elastic/elasticsearch/pull/139272 --products "elasticsearch 9.3.0" --config test/changelog.yml
+```
+
+In this case, the changelog file derives the title, type, and areas:
+
+```yaml
+pr: https://github.com/elastic/elasticsearch/pull/139272
+type: enhancement
+products:
+- product: elasticsearch
+  target: 9.3.0
+areas:
+- ES|QL
+title: '[ES|QL] Take TOP_SNIPPETS out of snapshot'
 ```
