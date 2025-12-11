@@ -54,6 +54,12 @@ public record ParserState(BuildContext Build) : ParserResolvers
 
 	public IFileInfo? ParentMarkdownPath { get; init; }
 	public bool SkipValidation { get; init; }
+
+	/// <summary>
+	/// The line number of the include directive in the parent file.
+	/// Used to generate unique IDs for blocks within included snippets.
+	/// </summary>
+	public int? IncludeLine { get; init; }
 }
 
 public class ParserContext : MarkdownParserContext, IParserResolvers
@@ -72,6 +78,12 @@ public class ParserContext : MarkdownParserContext, IParserResolvers
 	public IReadOnlyDictionary<string, string> ContextSubstitutions { get; }
 	public INavigationTraversable NavigationTraversable { get; }
 
+	/// <summary>
+	/// The line number of the include directive in the parent file.
+	/// Used to generate unique IDs for blocks within included snippets.
+	/// </summary>
+	public int? IncludeLine { get; }
+
 	public ParserContext(ParserState state)
 	{
 		Build = state.Build;
@@ -79,6 +91,7 @@ public class ParserContext : MarkdownParserContext, IParserResolvers
 		YamlFrontMatter = state.YamlFrontMatter;
 		SkipValidation = state.SkipValidation;
 		MarkdownParentPath = state.ParentMarkdownPath;
+		IncludeLine = state.IncludeLine;
 
 		CrossLinkResolver = state.CrossLinkResolver;
 		MarkdownSourcePath = state.MarkdownSourcePath;

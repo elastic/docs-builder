@@ -19,15 +19,12 @@ public class TabSetBlock(DirectiveBlockParser parser, ParserContext context)
 
 	private int _index = -1;
 
-	// For simplicity, we use the line number as the index.
-	// It's not ideal, but it's unique.
-	// This is more efficient than finding the root block and then finding the index.
 	public int FindIndex()
 	{
 		if (_index > -1)
 			return _index;
 
-		_index = Line;
+		_index = GetUniqueLineIndex();
 		return _index;
 	}
 }
