@@ -7,7 +7,6 @@ using System.IO.Abstractions;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.RegularExpressions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services.Changelog;
@@ -17,7 +16,7 @@ using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 namespace Elastic.Documentation.Services;
 
-public partial class ChangelogService(
+public class ChangelogService(
 	ILoggerFactory logFactory,
 	IConfigurationContext configurationContext,
 	IGitHubPrService? githubPrService = null
@@ -620,7 +619,8 @@ public partial class ChangelogService(
 				.WithNamingConvention(UnderscoredNamingConvention.Instance)
 				.Build();
 
-			var changelogEntries = new List<(ChangelogData data, string filePath, string fileName, long timestamp, string checksum)>();
+			var changelogEntries = new List<(ChangelogData data, string filePath, string fileName, string checksum)>();
+			var matchedPrs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
 			foreach (var filePath in yamlFiles)
 			{
@@ -628,16 +628,6 @@ public partial class ChangelogService(
 				{
 					var fileName = _fileSystem.Path.GetFileName(filePath);
 					var fileContent = await _fileSystem.File.ReadAllTextAsync(filePath, ctx);
-
-					// Extract timestamp from filename (format: timestamp-slug.yaml)
-					var timestampMatch = TimestampRegex().Match(fileName);
-					if (!timestampMatch.Success)
-					{
-						_logger.LogWarning("Skipping file {FileName}: does not match expected format (timestamp-slug.yaml)", fileName);
-						continue;
-					}
-
-					var timestamp = long.Parse(timestampMatch.Groups[1].Value, CultureInfo.InvariantCulture);
 
 					// Compute checksum (SHA1)
 					var checksum = ComputeSha1(fileContent);
@@ -678,7 +668,16 @@ public partial class ChangelogService(
 						{
 							// Normalize PR for comparison
 							var normalizedPr = NormalizePrForComparison(data.Pr, input.Owner, input.Repo);
-							matches = prsToMatch.Any(pr => NormalizePrForComparison(pr, input.Owner, input.Repo) == normalizedPr);
+							foreach (var pr in prsToMatch)
+							{
+								var normalizedPrToMatch = NormalizePrForComparison(pr, input.Owner, input.Repo);
+								if (normalizedPr == normalizedPrToMatch)
+								{
+									matches = true;
+									_ = matchedPrs.Add(pr);
+									break;
+								}
+							}
 						}
 
 						if (!matches)
@@ -687,7 +686,7 @@ public partial class ChangelogService(
 						}
 					}
 
-					changelogEntries.Add((data, filePath, fileName, timestamp, checksum));
+					changelogEntries.Add((data, filePath, fileName, checksum));
 				}
 				catch (YamlException ex)
 				{
@@ -700,6 +699,19 @@ public partial class ChangelogService(
 					_logger.LogWarning(ex, "Error processing file {FilePath}", filePath);
 					collector.EmitError(filePath, $"Error processing file: {ex.Message}");
 					continue;
+				}
+			}
+
+			// Warn about unmatched PRs if filtering by PRs
+			if (prsToMatch.Count > 0)
+			{
+				var unmatchedPrs = prsToMatch.Where(pr => !matchedPrs.Contains(pr)).ToList();
+				if (unmatchedPrs.Count > 0)
+				{
+					foreach (var unmatchedPr in unmatchedPrs)
+					{
+						collector.EmitWarning(string.Empty, $"No changelog file found for PR: {unmatchedPr}");
+					}
 				}
 			}
 
@@ -716,7 +728,7 @@ public partial class ChangelogService(
 
 			// Extract unique products/versions
 			var productVersions = new HashSet<(string product, string version)>();
-			foreach (var (data, _, _, _, _) in changelogEntries)
+			foreach (var (data, _, _, _) in changelogEntries)
 			{
 				foreach (var product in data.Products)
 				{
@@ -735,40 +747,15 @@ public partial class ChangelogService(
 				})
 				.ToList();
 
-			// Build entries
+			// Build entries - only include file information
 			bundledData.Entries = changelogEntries
-				.OrderBy(e => e.timestamp)
-				.Select(e =>
+				.Select(e => new BundledEntry
 				{
-					var entry = new BundledEntry
+					File = new BundledFile
 					{
-						Kind = e.data.Type,
-						Summary = e.data.Title,
-						Description = e.data.Description ?? string.Empty,
-						Component = e.data.Products.FirstOrDefault()?.Product ?? string.Empty,
-						Impact = e.data.Impact ?? string.Empty,
-						Action = e.data.Action ?? string.Empty,
-						Timestamp = e.timestamp,
-						File = new BundledFile
-						{
-							Name = e.fileName,
-							Checksum = e.checksum
-						}
-					};
-
-					// Convert PR to list
-					if (!string.IsNullOrWhiteSpace(e.data.Pr))
-					{
-						entry.Pr = [e.data.Pr];
+						Name = e.fileName,
+						Checksum = e.checksum
 					}
-
-					// Convert issues to list
-					if (e.data.Issues != null && e.data.Issues.Count > 0)
-					{
-						entry.Issue = e.data.Issues.ToList();
-					}
-
-					return entry;
 				})
 				.ToList();
 
@@ -818,8 +805,6 @@ public partial class ChangelogService(
 		return Convert.ToHexString(hash).ToLowerInvariant();
 	}
 
-	[GeneratedRegex(@"^(\d+)-", RegexOptions.None)]
-	private static partial Regex TimestampRegex();
 
 	private static string NormalizePrForComparison(string pr, string? defaultOwner, string? defaultRepo)
 	{

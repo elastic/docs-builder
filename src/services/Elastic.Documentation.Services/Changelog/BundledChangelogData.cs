@@ -21,16 +21,7 @@ public class BundledProduct
 
 public class BundledEntry
 {
-	public string Kind { get; set; } = string.Empty;
-	public string Summary { get; set; } = string.Empty;
-	public string Description { get; set; } = string.Empty;
-	public string Component { get; set; } = string.Empty;
-	public List<string>? Pr { get; set; }
-	public List<string>? Issue { get; set; }
-	public string Impact { get; set; } = string.Empty;
-	public string Action { get; set; } = string.Empty;
-	public long Timestamp { get; set; }
-	public BundledFile? File { get; set; }
+	public BundledFile File { get; set; } = new();
 }
 
 public class BundledFile
