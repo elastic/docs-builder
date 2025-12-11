@@ -603,17 +603,40 @@ public partial class ChangelogService(
 			var outputFileName = _fileSystem.Path.GetFileName(outputPath);
 
 			// Read all YAML files from directory (exclude bundle files and output file)
-			var yamlFiles = _fileSystem.Directory.GetFiles(input.Directory, "*.yaml", SearchOption.TopDirectoryOnly)
+			var allYamlFiles = _fileSystem.Directory.GetFiles(input.Directory, "*.yaml", SearchOption.TopDirectoryOnly)
 				.Concat(_fileSystem.Directory.GetFiles(input.Directory, "*.yml", SearchOption.TopDirectoryOnly))
-				.Where(f =>
-				{
-					var fileName = _fileSystem.Path.GetFileName(f);
-					// Exclude bundle files and the output file
-					return !fileName.Contains("changelog-bundle", StringComparison.OrdinalIgnoreCase) &&
-						!fileName.Equals(outputFileName, StringComparison.OrdinalIgnoreCase) &&
-						!fileName.Contains("-bundle", StringComparison.OrdinalIgnoreCase);
-				})
 				.ToList();
+
+			var yamlFiles = new List<string>();
+			foreach (var filePath in allYamlFiles)
+			{
+				var fileName = _fileSystem.Path.GetFileName(filePath);
+
+				// Exclude the output file
+				if (fileName.Equals(outputFileName, StringComparison.OrdinalIgnoreCase))
+					continue;
+
+				// Check if file is a bundle file by looking for "entries:" key (unique to bundle files)
+				try
+				{
+					var fileContent = await _fileSystem.File.ReadAllTextAsync(filePath, ctx);
+					// Bundle files have "entries:" at root level, changelog files don't
+					if (fileContent.Contains("entries:", StringComparison.Ordinal) &&
+						fileContent.Contains("products:", StringComparison.Ordinal))
+					{
+						_logger.LogDebug("Skipping bundle file: {FileName}", fileName);
+						continue;
+					}
+				}
+				catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException or ThreadAbortException))
+				{
+					// If we can't read the file, skip it
+					_logger.LogWarning(ex, "Failed to read file {FileName} for bundle detection", fileName);
+					continue;
+				}
+
+				yamlFiles.Add(filePath);
+			}
 
 			if (yamlFiles.Count == 0)
 			{
