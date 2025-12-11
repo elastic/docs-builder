@@ -531,7 +531,7 @@ public partial class ChangelogService(
 			var filterCount = 0;
 			if (input.All)
 				filterCount++;
-			if (!string.IsNullOrWhiteSpace(input.ProductVersion))
+			if (input.Products != null && input.Products.Count > 0)
 				filterCount++;
 			if (input.Prs != null && input.Prs.Length > 0)
 				filterCount++;
@@ -540,13 +540,13 @@ public partial class ChangelogService(
 
 			if (filterCount == 0)
 			{
-				collector.EmitError(string.Empty, "At least one filter option must be specified: --all, --product-version, --prs, or --prs-file");
+				collector.EmitError(string.Empty, "At least one filter option must be specified: --all, --products, --prs, or --prs-file");
 				return false;
 			}
 
 			if (filterCount > 1)
 			{
-				collector.EmitError(string.Empty, "Only one filter option can be specified at a time: --all, --product-version, --prs, or --prs-file");
+				collector.EmitError(string.Empty, "Only one filter option can be specified at a time: --all, --products, --prs, or --prs-file");
 				return false;
 			}
 
@@ -587,19 +587,15 @@ public partial class ChangelogService(
 				}
 			}
 
-			// Parse product/version if specified
-			string? filterProduct = null;
-			string? filterVersion = null;
-			if (!string.IsNullOrWhiteSpace(input.ProductVersion))
+			// Build set of product/version combinations to filter by
+			var productsToMatch = new HashSet<(string product, string version)>();
+			if (input.Products != null && input.Products.Count > 0)
 			{
-				var parts = input.ProductVersion.Split(':', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-				if (parts.Length != 2)
+				foreach (var product in input.Products)
 				{
-					collector.EmitError(string.Empty, "Product version must be in format 'product:version'");
-					return false;
+					var version = product.Target ?? string.Empty;
+					_ = productsToMatch.Add((product.Product.ToLowerInvariant(), version));
 				}
-				filterProduct = parts[0];
-				filterVersion = parts[1];
 			}
 
 			// Determine output path to exclude it from input files
@@ -667,12 +663,14 @@ public partial class ChangelogService(
 					{
 						// Include all
 					}
-					else if (!string.IsNullOrWhiteSpace(filterProduct) && !string.IsNullOrWhiteSpace(filterVersion))
+					else if (productsToMatch.Count > 0)
 					{
-						// Filter by product/version
+						// Filter by products
 						var matches = data.Products.Any(p =>
-							string.Equals(p.Product, filterProduct, StringComparison.OrdinalIgnoreCase) &&
-							string.Equals(p.Target, filterVersion, StringComparison.OrdinalIgnoreCase));
+						{
+							var version = p.Target ?? string.Empty;
+							return productsToMatch.Contains((p.Product.ToLowerInvariant(), version));
+						});
 
 						if (!matches)
 						{
@@ -746,14 +744,18 @@ public partial class ChangelogService(
 			var bundledData = new BundledChangelogData();
 
 			// Extract unique products/versions
-			// If --product-version filter was used, only include that specific product-version
-			if (!string.IsNullOrWhiteSpace(filterProduct) && !string.IsNullOrWhiteSpace(filterVersion))
+			// If --products filter was used, only include those specific product-versions
+			if (productsToMatch.Count > 0)
 			{
-				bundledData.Products = [new BundledProduct
-				{
-					Product = filterProduct,
-					Version = filterVersion
-				}];
+				bundledData.Products = productsToMatch
+					.OrderBy(pv => pv.product)
+					.ThenBy(pv => pv.version)
+					.Select(pv => new BundledProduct
+					{
+						Product = pv.product,
+						Version = pv.version
+					})
+					.ToList();
 			}
 			else
 			{
