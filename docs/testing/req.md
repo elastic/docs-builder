@@ -62,7 +62,7 @@ stack: unavailable 9.0, beta 9.1, preview 9.2, ga 9.4
 
 Interpreted as: `unavailable =9.0`, `beta =9.1`, `preview 9.2-9.3` (range to fill the gap), `ga 9.4+`.
 
-### Four stages with varying gaps
+### Three stages with varying gaps
 
 ```{applies_to}
 stack: preview 9.0, beta 9.2, ga 9.5
