@@ -83,7 +83,7 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 	}
 
 	public static Task<MarkdownDocument> ParseSnippetAsync(BuildContext build, IParserResolvers resolvers, IFileInfo path, IFileInfo parentPath,
-		YamlFrontMatter? matter, Cancel ctx)
+		YamlFrontMatter? matter, Cancel ctx, int? includeLine = null)
 	{
 		var state = new ParserState(build)
 		{
@@ -93,7 +93,8 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 			TryFindDocumentByRelativePath = resolvers.TryFindDocumentByRelativePath,
 			CrossLinkResolver = resolvers.CrossLinkResolver,
 			NavigationTraversable = resolvers.NavigationTraversable,
-			ParentMarkdownPath = parentPath
+			ParentMarkdownPath = parentPath,
+			IncludeLine = includeLine
 		};
 		var context = new ParserContext(state);
 		return ParseAsync(path, context, Pipeline, ctx);

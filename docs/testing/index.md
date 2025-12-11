@@ -99,3 +99,10 @@ const foo = "bar"; <1>
 ```
 
 1. This is a JavaScript code block.
+
+
+:::{include} /_snippets/applies-switch.md
+:::
+
+:::{include} /_snippets/applies-switch.md
+:::
