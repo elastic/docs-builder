@@ -746,25 +746,48 @@ public partial class ChangelogService(
 			var bundledData = new BundledChangelogData();
 
 			// Extract unique products/versions
-			var productVersions = new HashSet<(string product, string version)>();
-			foreach (var (data, _, _, _) in changelogEntries)
+			// If --product-version filter was used, only include that specific product-version
+			if (!string.IsNullOrWhiteSpace(filterProduct) && !string.IsNullOrWhiteSpace(filterVersion))
 			{
-				foreach (var product in data.Products)
+				bundledData.Products = [new BundledProduct
 				{
-					var version = product.Target ?? string.Empty;
-					_ = productVersions.Add((product.Product, version));
+					Product = filterProduct,
+					Version = filterVersion
+				}];
+			}
+			else
+			{
+				var productVersions = new HashSet<(string product, string version)>();
+				foreach (var (data, _, _, _) in changelogEntries)
+				{
+					foreach (var product in data.Products)
+					{
+						var version = product.Target ?? string.Empty;
+						_ = productVersions.Add((product.Product, version));
+					}
 				}
+
+				bundledData.Products = productVersions
+					.OrderBy(pv => pv.product)
+					.ThenBy(pv => pv.version)
+					.Select(pv => new BundledProduct
+					{
+						Product = pv.product,
+						Version = pv.version
+					})
+					.ToList();
 			}
 
-			bundledData.Products = productVersions
-				.OrderBy(pv => pv.product)
-				.ThenBy(pv => pv.version)
-				.Select(pv => new BundledProduct
-				{
-					Product = pv.product,
-					Version = pv.version
-				})
+			// Check for products with same product ID but different versions
+			var productsByProductId = bundledData.Products.GroupBy(p => p.Product, StringComparer.OrdinalIgnoreCase)
+				.Where(g => g.Count() > 1)
 				.ToList();
+
+			foreach (var productGroup in productsByProductId)
+			{
+				var versions = productGroup.Select(p => string.IsNullOrWhiteSpace(p.Version) ? "(no version)" : p.Version).ToList();
+				collector.EmitWarning(string.Empty, $"Product '{productGroup.Key}' has multiple versions in bundle: {string.Join(", ", versions)}");
+			}
 
 			// Build entries - only include file information
 			bundledData.Entries = changelogEntries
@@ -791,6 +814,18 @@ public partial class ChangelogService(
 			if (!string.IsNullOrWhiteSpace(outputDir) && !_fileSystem.Directory.Exists(outputDir))
 			{
 				_ = _fileSystem.Directory.CreateDirectory(outputDir);
+			}
+
+			// If output file already exists, generate a unique filename
+			if (_fileSystem.File.Exists(outputPath))
+			{
+				var directory = _fileSystem.Path.GetDirectoryName(outputPath) ?? string.Empty;
+				var fileNameWithoutExtension = _fileSystem.Path.GetFileNameWithoutExtension(outputPath);
+				var extension = _fileSystem.Path.GetExtension(outputPath);
+				var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+				var uniqueFileName = $"{fileNameWithoutExtension}-{timestamp}{extension}";
+				outputPath = _fileSystem.Path.Combine(directory, uniqueFileName);
+				_logger.LogInformation("Output file already exists, using unique filename: {OutputPath}", outputPath);
 			}
 
 			// Write bundled file
