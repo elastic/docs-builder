@@ -405,7 +405,7 @@ stack: ga 8.8.0, preview 8.1.0
 """
 
     [<Fact>]
-    let ``renders GA planned when preview exists alongside GA`` () =
+    let ``renders Preview when GA and Preview both exist for an unreleased entry`` () =
         markdown |> convertsToHtml """
 <p class="applies applies-block">
 	<span class="applicable-info" data-tippy-content="<div><strong>Elastic&nbsp;Stack GA 8.8.0:</strong>We plan to add this functionality in a future Elastic&nbsp;Stack update. Subject to change.
@@ -811,6 +811,7 @@ If this functionality is unavailable or behaves differently when deployed on ECH
 """
 
 // Test multiple lifecycles for same applicability key
+// With version inference: ga 8.0, beta 8.1 → ga =8.0 (exact), beta 8.1+ (highest gets GTE)
 type ``multiple lifecycles same key`` () =
     static let markdown = Setup.Markdown """
 ```{applies_to}
@@ -834,7 +835,7 @@ Beta features are subject to change. The design and code is less mature than off
 		<span class="applicable-meta applicable-meta-ga">
 			<span class="applicable-lifecycle applicable-lifecycle-ga">GA</span>
 			<span class="applicable-version applicable-version-ga">
-				8.0+
+				8.0
 			</span>
 			<span class="applicable-ellipsis">
 				<span class="applicable-ellipsis__dot"></span>

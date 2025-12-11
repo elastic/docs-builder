@@ -57,6 +57,21 @@ public class VersionSpec : IComparable<VersionSpec>, IEquatable<VersionSpec>
 	}
 
 	/// <summary>
+	/// Creates an Exact version spec from a SemVersion.
+	/// </summary>
+	public static VersionSpec Exact(SemVersion version) => new(version, null, VersionSpecKind.Exact);
+
+	/// <summary>
+	/// Creates a Range version spec from two SemVersions.
+	/// </summary>
+	public static VersionSpec Range(SemVersion min, SemVersion max) => new(min, max, VersionSpecKind.Range);
+
+	/// <summary>
+	/// Creates a GreaterThanOrEqual version spec from a SemVersion.
+	/// </summary>
+	public static VersionSpec GreaterThanOrEqual(SemVersion min) => new(min, null, VersionSpecKind.GreaterThanOrEqual);
+
+	/// <summary>
 	/// Tries to parse a version specification string.
 	/// Supports: x.x, x.x+, x.x.x, x.x.x+ (gte), x.x-y.y (range), =x.x (exact)
 	/// </summary>

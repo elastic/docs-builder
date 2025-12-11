@@ -37,11 +37,86 @@ public record AppliesCollection : IReadOnlyCollection<Applicability>
 		if (applications.Count == 0)
 			return false;
 
+		// Infer version semantics when multiple items have GreaterThanOrEqual versions
+		applications = InferVersionSemantics(applications);
+
 		// Sort by version in descending order (the highest version first)
 		// Items without versions (AllVersionsSpec.Instance) are sorted last
 		var sortedApplications = applications.OrderDescending().ToArray();
 		availability = new AppliesCollection(sortedApplications);
 		return true;
+	}
+
+	/// <summary>
+	/// Infers versioning semantics according to the following ruleset:
+	/// - The highest version keeps GreaterThanOrEqual (e.g., 9.4+)
+	/// - Lower versions become Exact if consecutive, or Range to fill gaps
+	/// - This rule only applies when all versions are at minor level (patch = 0).
+	/// </summary>
+	private static List<Applicability> InferVersionSemantics(List<Applicability> applications)
+	{
+		// Get items with actual GreaterThanOrEqual versions (not AllVersionsSpec, not null, not ranges/exact)
+		var gteItems = applications
+			.Where(a => a.Version is { Kind: VersionSpecKind.GreaterThanOrEqual }
+						&& a.Version != AllVersionsSpec.Instance)
+			.ToList();
+
+		// If 0 or 1 GTE items, no inference needed
+		if (gteItems.Count <= 1)
+			return applications;
+
+		// Only apply inference when all entries are on patch version 0
+		if (gteItems.Any(a => a.Version!.Min.Patch != 0))
+			return applications;
+
+		// Sort GTE items by version ascending to process from lowest to highest
+		var sortedGteVersions = gteItems
+			.Select(a => a.Version!.Min)
+			.Distinct()
+			.OrderBy(v => v)
+			.ToList();
+
+		if (sortedGteVersions.Count <= 1)
+			return applications;
+
+		var versionMapping = new Dictionary<SemVersion, VersionSpec>();
+
+		for (var i = 0; i < sortedGteVersions.Count; i++)
+		{
+			var currentVersion = sortedGteVersions[i];
+
+			if (i == sortedGteVersions.Count - 1)
+			{
+				// Highest version keeps GreaterThanOrEqual
+				versionMapping[currentVersion] = VersionSpec.GreaterThanOrEqual(currentVersion);
+			}
+			else
+			{
+				var nextVersion = sortedGteVersions[i + 1];
+
+				// Define an Exact or Range VersionSpec according to the numeric difference between lifecycles
+				if (currentVersion.Major == nextVersion.Major
+					&& nextVersion.Minor == currentVersion.Minor + 1)
+					versionMapping[currentVersion] = VersionSpec.Exact(currentVersion);
+				else
+				{
+					var rangeEnd = new SemVersion(nextVersion.Major, nextVersion.Minor - 1, 0);
+					versionMapping[currentVersion] = VersionSpec.Range(currentVersion, rangeEnd);
+				}
+			}
+		}
+
+		// Apply the mapping to create updated applications
+		return applications.Select(a =>
+		{
+			if (a.Version is null || a.Version == AllVersionsSpec.Instance || a is not { Version.Kind: VersionSpecKind.GreaterThanOrEqual })
+				return a;
+
+			if (versionMapping.TryGetValue(a.Version.Min, out var newSpec))
+				return a with { Version = newSpec };
+
+			return a;
+		}).ToList();
 	}
 
 	public virtual bool Equals(AppliesCollection? other)

@@ -125,7 +125,7 @@ type ``parses multiple applies_to in one line`` () =
 type ``render 'GA Planned' if preview exists alongside ga`` () =
     static let markdown = Setup.Markdown """
 
-This is an inline {applies_to}`stack: preview 9.0, ga 9.1` element.
+This is an inline {applies_to}`stack: preview 8.0, ga 8.1` element.
 """
 
     [<Fact>]
@@ -133,7 +133,7 @@ This is an inline {applies_to}`stack: preview 9.0, ga 9.1` element.
         let directives = markdown |> converts "index.md" |> parses<AppliesToRole>
         test <@ directives.Length = 1 @>
         directives |> appliesToDirective (ApplicableTo(
-            Stack=AppliesCollection.op_Explicit "ga 9.1, preview 9.0"
+            Stack=AppliesCollection.op_Explicit "ga 8.1, preview 8.0"
         ))
 
     [<Fact>]
@@ -141,17 +141,20 @@ This is an inline {applies_to}`stack: preview 9.0, ga 9.1` element.
         markdown |> convertsToHtml """
 <p>This is an inline
 	<span class="applies applies-inline">
-		<span class="applicable-info" data-tippy-content="<div><strong>Elastic&nbsp;Stack GA 9.1.0:</strong>We plan to add this functionality in a future Elastic&nbsp;Stack update. Subject to change.
+        <span class="applicable-info" data-tippy-content="<div><strong>Elastic&nbsp;Stack Preview 8.0.0:</strong>Available in technical preview on Elastic&nbsp;Stack version 8.0.0 and later unless otherwise specified.
 
-If this functionality is unavailable or behaves differently when deployed on ECH, ECE, ECK, or a self-managed installation, it will be indicated on the page.</div>
+This functionality may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.</div>
 
-<div><strong>Elastic&nbsp;Stack Preview 9.0.0:</strong>We plan to add this functionality in a future Elastic&nbsp;Stack update. Subject to change.
+<div><strong>Elastic&nbsp;Stack GA 8.1.0:</strong>We plan to add this functionality in a future Elastic&nbsp;Stack update. Subject to change.
 
-This functionality may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.</div>">
+If this functionality is unavailable or behaves differently when deployed on ECH, ECE, ECK, or a self-managed installation, it will be indicated on the page.</div>">
 			<span class="applicable-name">Stack</span>
 			<span class="applicable-separator"></span>
 			<span class="applicable-meta applicable-meta-preview">
 				<span class="applicable-lifecycle applicable-lifecycle-preview">Preview</span>
+ 				<span class="applicable-version applicable-version-preview">
+ 					8.0
+ 				</span>
 				<span class="applicable-ellipsis">
 				    <span class="applicable-ellipsis__dot"></span>
 				    <span class="applicable-ellipsis__dot"></span>
