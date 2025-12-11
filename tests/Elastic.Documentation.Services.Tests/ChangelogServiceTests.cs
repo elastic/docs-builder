@@ -302,9 +302,10 @@ public class ChangelogServiceTests
 			A<CancellationToken>._))
 			.Returns(prInfo);
 
-		var configDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-		Directory.CreateDirectory(configDir);
-		var configPath = Path.Combine(configDir, "changelog.yml");
+		var fileSystem = new FileSystem();
+		var configDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		fileSystem.Directory.CreateDirectory(configDir);
+		var configPath = fileSystem.Path.Combine(configDir, "changelog.yml");
 		var configContent = """
 			available_types:
 			  - feature
@@ -320,7 +321,7 @@ public class ChangelogServiceTests
 			  "area:security": security
 			  "area:search": search
 			""";
-		await File.WriteAllTextAsync(configPath, configContent);
+		await fileSystem.File.WriteAllTextAsync(configPath, configContent);
 
 		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
 
@@ -329,7 +330,7 @@ public class ChangelogServiceTests
 			Pr = "https://github.com/elastic/elasticsearch/pull/12345",
 			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
 			Config = configPath,
-			Output = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString())
+			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString())
 		};
 
 		// Act
