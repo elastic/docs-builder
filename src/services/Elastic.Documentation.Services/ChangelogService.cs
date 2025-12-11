@@ -7,6 +7,7 @@ using System.IO.Abstractions;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services.Changelog;
@@ -16,7 +17,7 @@ using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 namespace Elastic.Documentation.Services;
 
-public class ChangelogService(
+public partial class ChangelogService(
 	ILoggerFactory logFactory,
 	IConfigurationContext configurationContext,
 	IGitHubPrService? githubPrService = null
@@ -601,9 +602,21 @@ public class ChangelogService(
 				filterVersion = parts[1];
 			}
 
-			// Read all YAML files from directory
+			// Determine output path to exclude it from input files
+			var outputPath = input.Output ?? _fileSystem.Path.Combine(input.Directory, "changelog-bundle.yaml");
+			var outputFileName = _fileSystem.Path.GetFileName(outputPath);
+
+			// Read all YAML files from directory (exclude bundle files and output file)
 			var yamlFiles = _fileSystem.Directory.GetFiles(input.Directory, "*.yaml", SearchOption.TopDirectoryOnly)
 				.Concat(_fileSystem.Directory.GetFiles(input.Directory, "*.yml", SearchOption.TopDirectoryOnly))
+				.Where(f =>
+				{
+					var fileName = _fileSystem.Path.GetFileName(f);
+					// Exclude bundle files and the output file
+					return !fileName.Contains("changelog-bundle", StringComparison.OrdinalIgnoreCase) &&
+						!fileName.Equals(outputFileName, StringComparison.OrdinalIgnoreCase) &&
+						!fileName.Contains("-bundle", StringComparison.OrdinalIgnoreCase);
+				})
 				.ToList();
 
 			if (yamlFiles.Count == 0)
@@ -635,7 +648,13 @@ public class ChangelogService(
 					// Deserialize YAML (skip comment lines)
 					var yamlLines = fileContent.Split('\n');
 					var yamlWithoutComments = string.Join('\n', yamlLines.Where(line => !line.TrimStart().StartsWith('#')));
-					var data = deserializer.Deserialize<ChangelogData>(yamlWithoutComments);
+
+					// Normalize "version:" to "target:" in products section for compatibility
+					// Some changelog files may use "version" instead of "target"
+					// Match "version:" with various indentation levels
+					var normalizedYaml = VersionToTargetRegex().Replace(yamlWithoutComments, "$1target:");
+
+					var data = deserializer.Deserialize<ChangelogData>(normalizedYaml);
 
 					if (data == null)
 					{
@@ -767,8 +786,7 @@ public class ChangelogService(
 
 			var bundledYaml = bundleSerializer.Serialize(bundledData);
 
-			// Determine output path
-			var outputPath = input.Output ?? _fileSystem.Path.Combine(input.Directory, "changelog-bundle.yaml");
+			// Output path was already determined above when filtering files
 			var outputDir = _fileSystem.Path.GetDirectoryName(outputPath);
 			if (!string.IsNullOrWhiteSpace(outputDir) && !_fileSystem.Directory.Exists(outputDir))
 			{
@@ -805,6 +823,8 @@ public class ChangelogService(
 		return Convert.ToHexString(hash).ToLowerInvariant();
 	}
 
+	[GeneratedRegex(@"(\s+)version:", RegexOptions.Multiline)]
+	private static partial Regex VersionToTargetRegex();
 
 	private static string NormalizePrForComparison(string pr, string? defaultOwner, string? defaultRepo)
 	{
