@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using Elastic.Documentation.Configuration;
@@ -19,7 +20,8 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Documentation.Services.Tests;
 
-public class ChangelogServiceTests
+[SuppressMessage("Naming", "CA1707:Identifiers should not contain underscores", Justification = "Test method names with underscores are standard in xUnit")]
+public class ChangelogServiceTests : IDisposable
 {
 	private readonly MockFileSystem _fileSystem;
 	private readonly IConfigurationContext _configurationContext;
@@ -94,12 +96,19 @@ public class ChangelogServiceTests
 		};
 	}
 
+	public void Dispose()
+	{
+		_loggerFactory?.Dispose();
+		GC.SuppressFinalize(this);
+	}
+
 	[Fact]
 	public async Task CreateChangelog_WithBasicInput_CreatesValidYamlFile()
 	{
 		// Arrange
 		var mockGitHubService = A.Fake<IGitHubPrService>();
 		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
+		var fileSystem = new FileSystem();
 
 		var input = new ChangelogInput
 		{
@@ -107,11 +116,11 @@ public class ChangelogServiceTests
 			Type = "feature",
 			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
 			Description = "This is a new search feature",
-			Output = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString())
+			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString())
 		};
 
 		// Act
-		var result = await service.CreateChangelog(_collector, input, CancellationToken.None);
+		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
 		if (!result)
@@ -131,7 +140,7 @@ public class ChangelogServiceTests
 		var files = Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await File.ReadAllTextAsync(files[0]);
+		var yamlContent = await File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
 		yamlContent.Should().Contain("title: Add new search feature");
 		yamlContent.Should().Contain("type: feature");
 		yamlContent.Should().Contain("product: elasticsearch");
@@ -159,10 +168,11 @@ public class ChangelogServiceTests
 			.Returns(prInfo);
 
 		// Create a config file with label mappings
-		var _fileSystem = new MockFileSystem();
-		var configDir = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		_fileSystem.Directory.CreateDirectory(configDir);
-		var configPath = _fileSystem.Path.Combine(configDir, "changelog.yml");
+		// Note: ChangelogService uses real FileSystem, so we need to use the real file system
+		var fileSystem = new FileSystem();
+		var configDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		fileSystem.Directory.CreateDirectory(configDir);
+		var configPath = fileSystem.Path.Combine(configDir, "changelog.yml");
 		var configContent = """
 			available_types:
 			  - feature
@@ -175,7 +185,7 @@ public class ChangelogServiceTests
 			label_to_type:
 			  "type:feature": feature
 			""";
-		await _fileSystem.File.WriteAllTextAsync(configPath, configContent);
+		await fileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
 		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
 
@@ -184,11 +194,11 @@ public class ChangelogServiceTests
 			Pr = "https://github.com/elastic/elasticsearch/pull/12345",
 			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
 			Config = configPath,
-			Output = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString())
+			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString())
 		};
 
 		// Act
-		var result = await service.CreateChangelog(_collector, input, CancellationToken.None);
+		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -201,13 +211,14 @@ public class ChangelogServiceTests
 			A<CancellationToken>._))
 			.MustHaveHappenedOnceExactly();
 
-		var outputDir = input.Output ?? _fileSystem.Directory.GetCurrentDirectory();
-		if (!_fileSystem.Directory.Exists(outputDir))
-			_fileSystem.Directory.CreateDirectory(outputDir);
-		var files = _fileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		// Note: ChangelogService uses real FileSystem, so we need to check the actual file system
+		var outputDir = input.Output ?? Directory.GetCurrentDirectory();
+		if (!Directory.Exists(outputDir))
+			Directory.CreateDirectory(outputDir);
+		var files = Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await _fileSystem.File.ReadAllTextAsync(files[0]);
+		var yamlContent = await File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
 		yamlContent.Should().Contain("title: Implement new aggregation API");
 		yamlContent.Should().Contain("type: feature");
 		yamlContent.Should().Contain("pr: https://github.com/elastic/elasticsearch/pull/12345");
@@ -232,8 +243,8 @@ public class ChangelogServiceTests
 			.Returns(prInfo);
 
 		var fs = new FileSystem();
-		var configDir = fs.Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-		Directory.CreateDirectory(configDir);
+		var configDir = fs.Path.Combine(fs.Path.GetTempPath(), Guid.NewGuid().ToString());
+		fs.Directory.CreateDirectory(configDir);
 		var configPath = fs.Path.Combine(configDir, "changelog.yml");
 		var configContent = """
 			available_types:
@@ -249,7 +260,7 @@ public class ChangelogServiceTests
 			  "type:bug": bug-fix
 			  "type:feature": feature
 			""";
-		await File.WriteAllTextAsync(configPath, configContent);
+		await fs.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
 		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
 
@@ -258,11 +269,11 @@ public class ChangelogServiceTests
 			Pr = "https://github.com/elastic/elasticsearch/pull/12345",
 			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
 			Config = configPath,
-			Output = fs.Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString())
+			Output = fs.Path.Combine(fs.Path.GetTempPath(), Guid.NewGuid().ToString())
 		};
 
 		// Act
-		var result = await service.CreateChangelog(_collector, input, CancellationToken.None);
+		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
 		if (!result)
@@ -280,7 +291,7 @@ public class ChangelogServiceTests
 		if (!Directory.Exists(outputDir))
 			Directory.CreateDirectory(outputDir);
 		var files = Directory.GetFiles(outputDir, "*.yaml");
-		var yamlContent = await File.ReadAllTextAsync(files[0]);
+		var yamlContent = await File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
 		yamlContent.Should().Contain("type: bug-fix");
 	}
 
@@ -321,7 +332,7 @@ public class ChangelogServiceTests
 			  "area:security": security
 			  "area:search": search
 			""";
-		await fileSystem.File.WriteAllTextAsync(configPath, configContent);
+		await fileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
 		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
 
@@ -334,7 +345,7 @@ public class ChangelogServiceTests
 		};
 
 		// Act
-		var result = await service.CreateChangelog(_collector, input, CancellationToken.None);
+		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
 		if (!result)
@@ -352,7 +363,7 @@ public class ChangelogServiceTests
 		if (!Directory.Exists(outputDir))
 			Directory.CreateDirectory(outputDir);
 		var files = Directory.GetFiles(outputDir, "*.yaml");
-		var yamlContent = await File.ReadAllTextAsync(files[0]);
+		var yamlContent = await File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
 		yamlContent.Should().Contain("areas:");
 		yamlContent.Should().Contain("- security");
 		yamlContent.Should().Contain("- search");
@@ -377,6 +388,7 @@ public class ChangelogServiceTests
 			.Returns(prInfo);
 
 		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
+		var fileSystem = new FileSystem();
 
 		var input = new ChangelogInput
 		{
@@ -386,11 +398,11 @@ public class ChangelogServiceTests
 			Title = "Update documentation",
 			Type = "docs",
 			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
-			Output = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString())
+			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString())
 		};
 
 		// Act
-		var result = await service.CreateChangelog(_collector, input, CancellationToken.None);
+		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -423,6 +435,7 @@ public class ChangelogServiceTests
 			.Returns(prInfo);
 
 		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
+		var fileSystem = new FileSystem();
 
 		var input = new ChangelogInput
 		{
@@ -430,11 +443,11 @@ public class ChangelogServiceTests
 			Title = "Custom Title Override",
 			Type = "feature",
 			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
-			Output = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString())
+			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString())
 		};
 
 		// Act
-		var result = await service.CreateChangelog(_collector, input, CancellationToken.None);
+		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
 		if (!result)
@@ -452,7 +465,7 @@ public class ChangelogServiceTests
 		if (!Directory.Exists(outputDir))
 			Directory.CreateDirectory(outputDir);
 		var files = Directory.GetFiles(outputDir, "*.yaml");
-		var yamlContent = await File.ReadAllTextAsync(files[0]);
+		var yamlContent = await File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
 		yamlContent.Should().Contain("title: Custom Title Override");
 		yamlContent.Should().NotContain("PR Title from GitHub");
 	}
@@ -463,6 +476,7 @@ public class ChangelogServiceTests
 		// Arrange
 		var mockGitHubService = A.Fake<IGitHubPrService>();
 		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
+		var fileSystem = new FileSystem();
 
 		var input = new ChangelogInput
 		{
@@ -472,11 +486,11 @@ public class ChangelogServiceTests
 				new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" },
 				new ProductInfo { Product = "kibana", Target = "9.2.0", Lifecycle = "ga" }
 			],
-			Output = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString())
+			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString())
 		};
 
 		// Act
-		var result = await service.CreateChangelog(_collector, input, CancellationToken.None);
+		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
 		if (!result)
@@ -494,7 +508,7 @@ public class ChangelogServiceTests
 		if (!Directory.Exists(outputDir))
 			Directory.CreateDirectory(outputDir);
 		var files = Directory.GetFiles(outputDir, "*.yaml");
-		var yamlContent = await File.ReadAllTextAsync(files[0]);
+		var yamlContent = await File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
 		yamlContent.Should().Contain("products:");
 		// Should contain both products
 		var elasticsearchIndex = yamlContent.IndexOf("product: elasticsearch", StringComparison.Ordinal);
@@ -509,6 +523,7 @@ public class ChangelogServiceTests
 		// Arrange
 		var mockGitHubService = A.Fake<IGitHubPrService>();
 		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
+		var fileSystem = new FileSystem();
 
 		var input = new ChangelogInput
 		{
@@ -518,11 +533,11 @@ public class ChangelogServiceTests
 			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
 			Impact = "API clients will need to update",
 			Action = "Update your API client code",
-			Output = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString())
+			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString())
 		};
 
 		// Act
-		var result = await service.CreateChangelog(_collector, input, CancellationToken.None);
+		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
 		if (!result)
@@ -540,7 +555,7 @@ public class ChangelogServiceTests
 		if (!Directory.Exists(outputDir))
 			Directory.CreateDirectory(outputDir);
 		var files = Directory.GetFiles(outputDir, "*.yaml");
-		var yamlContent = await File.ReadAllTextAsync(files[0]);
+		var yamlContent = await File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
 		yamlContent.Should().Contain("type: breaking-change");
 		yamlContent.Should().Contain("subtype: api");
 		yamlContent.Should().Contain("impact: API clients will need to update");
@@ -553,6 +568,7 @@ public class ChangelogServiceTests
 		// Arrange
 		var mockGitHubService = A.Fake<IGitHubPrService>();
 		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
+		var fileSystem = new FileSystem();
 
 		var input = new ChangelogInput
 		{
@@ -563,11 +579,11 @@ public class ChangelogServiceTests
 				"https://github.com/elastic/elasticsearch/issues/123",
 				"https://github.com/elastic/elasticsearch/issues/456"
 			],
-			Output = new FileSystem().Path.Combine(new FileSystem().Path.GetTempPath(), Guid.NewGuid().ToString())
+			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString())
 		};
 
 		// Act
-		var result = await service.CreateChangelog(_collector, input, CancellationToken.None);
+		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
 		if (!result)
@@ -585,7 +601,7 @@ public class ChangelogServiceTests
 		if (!Directory.Exists(outputDir))
 			Directory.CreateDirectory(outputDir);
 		var files = Directory.GetFiles(outputDir, "*.yaml");
-		var yamlContent = await File.ReadAllTextAsync(files[0]);
+		var yamlContent = await File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
 		yamlContent.Should().Contain("issues:");
 		yamlContent.Should().Contain("- https://github.com/elastic/elasticsearch/issues/123");
 		yamlContent.Should().Contain("- https://github.com/elastic/elasticsearch/issues/456");
@@ -612,7 +628,7 @@ public class ChangelogServiceTests
 		// Config without label_to_type mapping
 		var fileSystem = new FileSystem();
 		var configDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		Directory.CreateDirectory(configDir);
+		fileSystem.Directory.CreateDirectory(configDir);
 		var configPath = fileSystem.Path.Combine(configDir, "changelog.yml");
 		var configContent = """
 			available_types:
@@ -624,7 +640,7 @@ public class ChangelogServiceTests
 			  - beta
 			  - ga
 			""";
-		await File.WriteAllTextAsync(configPath, configContent);
+		await fileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
 		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
 
@@ -637,7 +653,7 @@ public class ChangelogServiceTests
 		};
 
 		// Act
-		var result = await service.CreateChangelog(_collector, input, CancellationToken.None);
+		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
 		result.Should().BeFalse();
@@ -659,16 +675,17 @@ public class ChangelogServiceTests
 			.Returns((GitHubPrInfo?)null);
 
 		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
+		var fileSystem = new FileSystem();
 
 		var input = new ChangelogInput
 		{
 			Pr = "https://github.com/elastic/elasticsearch/pull/12345",
 			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
-			Output = _fileSystem.Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString())
+			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString())
 		};
 
 		// Act
-		var result = await service.CreateChangelog(_collector, input, CancellationToken.None);
+		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
 		result.Should().BeFalse();
@@ -682,17 +699,18 @@ public class ChangelogServiceTests
 		// Arrange
 		var mockGitHubService = A.Fake<IGitHubPrService>();
 		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
+		var fileSystem = new FileSystem();
 
 		var input = new ChangelogInput
 		{
 			Title = "Test",
 			Type = "feature",
 			Products = [new ProductInfo { Product = "invalid-product", Target = "9.2.0" }],
-			Output = _fileSystem.Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString())
+			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString())
 		};
 
 		// Act
-		var result = await service.CreateChangelog(_collector, input, CancellationToken.None);
+		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
 		result.Should().BeFalse();
@@ -706,17 +724,18 @@ public class ChangelogServiceTests
 		// Arrange
 		var mockGitHubService = A.Fake<IGitHubPrService>();
 		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
+		var fileSystem = new FileSystem();
 
 		var input = new ChangelogInput
 		{
 			Title = "Test",
 			Type = "invalid-type",
 			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
-			Output = _fileSystem.Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString())
+			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString())
 		};
 
 		// Act
-		var result = await service.CreateChangelog(_collector, input, CancellationToken.None);
+		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
 		result.Should().BeFalse();
@@ -730,6 +749,7 @@ public class ChangelogServiceTests
 		// Arrange
 		var mockGitHubService = A.Fake<IGitHubPrService>();
 		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
+		var fileSystem = new FileSystem();
 
 		var input = new ChangelogInput
 		{
@@ -737,11 +757,11 @@ public class ChangelogServiceTests
 			Type = "feature",
 			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
 			Highlight = true,
-			Output = new FileSystem().Path.Combine(new FileSystem().Path.GetTempPath(), Guid.NewGuid().ToString())
+			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString())
 		};
 
 		// Act
-		var result = await service.CreateChangelog(_collector, input, CancellationToken.None);
+		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
 		if (!result)
@@ -759,7 +779,7 @@ public class ChangelogServiceTests
 		if (!Directory.Exists(outputDir))
 			Directory.CreateDirectory(outputDir);
 		var files = Directory.GetFiles(outputDir, "*.yaml");
-		var yamlContent = await File.ReadAllTextAsync(files[0]);
+		var yamlContent = await File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
 		yamlContent.Should().Contain("highlight: true");
 	}
 
@@ -769,6 +789,7 @@ public class ChangelogServiceTests
 		// Arrange
 		var mockGitHubService = A.Fake<IGitHubPrService>();
 		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
+		var fileSystem = new FileSystem();
 
 		var input = new ChangelogInput
 		{
@@ -776,11 +797,11 @@ public class ChangelogServiceTests
 			Type = "feature",
 			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
 			FeatureId = "feature:new-search-api",
-			Output = new FileSystem().Path.Combine(new FileSystem().Path.GetTempPath(), Guid.NewGuid().ToString())
+			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString())
 		};
 
 		// Act
-		var result = await service.CreateChangelog(_collector, input, CancellationToken.None);
+		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
 		if (!result)
@@ -798,7 +819,7 @@ public class ChangelogServiceTests
 		if (!Directory.Exists(outputDir))
 			Directory.CreateDirectory(outputDir);
 		var files = Directory.GetFiles(outputDir, "*.yaml");
-		var yamlContent = await File.ReadAllTextAsync(files[0]);
+		var yamlContent = await File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
 		yamlContent.Should().Contain("feature_id: feature:new-search-api");
 	}
 }
