@@ -107,7 +107,7 @@ public class ChangelogServiceTests
 			Type = "feature",
 			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
 			Description = "This is a new search feature",
-			Output = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString())
+			Output = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString())
 		};
 
 		// Act
