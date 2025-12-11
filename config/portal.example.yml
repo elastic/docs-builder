@@ -1,0 +1,77 @@
+# Portal Configuration Example
+# This file demonstrates how to configure a documentation portal that
+# composes multiple isolated documentation sets.
+#
+# Usage:
+#   docs-builder portal --config portal.yml
+#   docs-builder portal clone --config portal.yml
+#   docs-builder portal build --config portal.yml
+#   docs-builder portal serve
+
+# Site prefix for all portal URLs
+# All documentation sets will be served under this prefix
+# e.g., /internal-docs, /dev-docs, /docs
+site_prefix: /internal-docs
+
+# Title displayed on the portal index page
+title: "Elastic's Internal Dev Docs"
+
+# Documentation sets to include in the portal
+# Each documentation set is cloned from a git repository and built separately
+documentation_sets:
+  # Minimal configuration - origin defaults to "elastic/{name}"
+  # URL will be: /internal-docs/apm-managed-intake/
+  - name: apm-managed-intake
+    branch: main
+
+  # With explicit origin (for non-elastic repositories or different naming)
+  # URL will be: /internal-docs/appex-qa/
+  - name: appex-qa
+    origin: elastic/appex-qa-team
+    branch: main
+    path: docs  # optional, defaults to "docs"
+
+  # With category grouping
+  # URL will be: /internal-docs/observability/benchmarking/
+  - name: benchmarking
+    branch: main
+    category: observability
+
+  # Another documentation set in the observability category
+  # URL will be: /internal-docs/observability/apm-intake/
+  - name: apm-intake
+    origin: elastic/apm-managed-intake-service
+    branch: main
+    category: observability
+
+  # Documentation set in a different category
+  # URL will be: /internal-docs/developer-tools/ci-developer-guide/
+  - name: ci-developer-guide
+    branch: main
+    category: developer-tools
+
+  # Documentation set without category (direct child of portal root)
+  # URL will be: /internal-docs/content-architecture/
+  - name: content-architecture
+    branch: main
+
+# Configuration options reference:
+#
+# name (required):
+#   The identifier for the documentation set. Used in URL paths.
+#
+# origin (optional):
+#   The git repository to clone from. Defaults to "elastic/{name}".
+#   Can be a short form like "elastic/my-repo" or a full URL.
+#
+# branch (required):
+#   The git branch to checkout.
+#
+# path (optional):
+#   The directory within the repository containing documentation.
+#   Defaults to "docs".
+#
+# category (optional):
+#   Group documentation sets under a category.
+#   Creates URL structure: /{site_prefix}/{category}/{name}/
+#   If not specified, URL is: /{site_prefix}/{name}/

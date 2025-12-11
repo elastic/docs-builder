@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="GitHub.Actions.Core" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(SolutionRoot)\src\Elastic.Documentation\Elastic.Documentation.csproj" />
+    <ProjectReference Include="$(SolutionRoot)\src\Elastic.Documentation.Configuration\Elastic.Documentation.Configuration.csproj" />
+    <ProjectReference Include="$(SolutionRoot)\src\Elastic.Documentation.Navigation\Elastic.Documentation.Navigation.csproj" />
+    <ProjectReference Include="$(SolutionRoot)\src\Elastic.Documentation.ServiceDefaults\Elastic.Documentation.ServiceDefaults.csproj" />
+    <ProjectReference Include="$(SolutionRoot)\src\Elastic.Portal\Elastic.Portal.csproj" />
+    <ProjectReference Include="..\..\Elastic.Documentation.Links\Elastic.Documentation.Links.csproj" />
+    <ProjectReference Include="..\..\Elastic.Markdown\Elastic.Markdown.csproj" />
+    <ProjectReference Include="..\Elastic.Documentation.Services\Elastic.Documentation.Services.csproj" />
+  </ItemGroup>
+
+</Project>

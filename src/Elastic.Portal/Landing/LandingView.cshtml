@@ -1,0 +1,45 @@
+@inherits RazorSliceHttpResult<Elastic.Portal.Landing.LandingViewModel>
+@using Elastic.Portal.Landing
+@using Elastic.Portal.Navigation
+@implements IUsesLayout<Elastic.Portal._Layout, GlobalLayoutViewModel>
+@functions {
+	public GlobalLayoutViewModel LayoutModel => Model.CreateGlobalLayoutModel();
+
+	private static string FormatCategoryTitle(string? category) =>
+		string.IsNullOrEmpty(category) ? "Documentation" : category
+			.Replace('-', ' ')
+			.Replace('_', ' ')
+			.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+			.Select(w => char.ToUpperInvariant(w[0]) + w[1..].ToLowerInvariant())
+			.Aggregate((a, b) => $"{a} {b}");
+}
+<section id="elastic-docs-v3" class="portal-landing">
+	<div class="portal-header py-12 text-center">
+		<h1 class="text-4xl font-bold mb-4">@Model.IndexPage.NavigationTitle</h1>
+		<p class="text-lg text-gray-60">Browse documentation across all products and services</p>
+	</div>
+
+	@foreach (var categoryGroup in Model.DocumentationSetsByCategory.OrderBy(g => g.Key ?? "zzz"))
+	{
+		var categoryTitle = FormatCategoryTitle(categoryGroup.Key);
+		<div class="portal-category mb-12">
+			@if (!string.IsNullOrEmpty(categoryGroup.Key))
+			{
+				<h2 class="text-2xl font-semibold mb-6 pb-2 border-b border-gray-20">@categoryTitle</h2>
+			}
+			<div class="portal-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+				@foreach (var docSet in categoryGroup.OrderBy(ds => ds.Title))
+				{
+					<a href="@docSet.Url" class="portal-card block p-6 rounded-lg border border-gray-20 hover:border-blue-40 hover:shadow-md transition-all">
+						<div class="portal-card-content">
+							<h3 class="text-xl font-medium mb-2 text-gray-80">@docSet.Title</h3>
+							<div class="portal-card-meta text-sm text-gray-50">
+								<span>@docSet.PageCount pages</span>
+							</div>
+						</div>
+					</a>
+				}
+			</div>
+		</div>
+	}
+</section>

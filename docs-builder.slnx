@@ -43,6 +43,7 @@
   </Folder>
   <Folder Name="/src/">
     <File Path="src/Directory.Build.props" />
+    <Project Path="src/Elastic.Portal/Elastic.Portal.csproj" />
     <Project Path="src/Elastic.ApiExplorer/Elastic.ApiExplorer.csproj" />
     <Project Path="src/Elastic.Documentation.Configuration/Elastic.Documentation.Configuration.csproj" />
     <Project Path="src/Elastic.Documentation.LegacyDocs/Elastic.Documentation.LegacyDocs.csproj" />
@@ -69,6 +70,7 @@
     <Project Path="src/services/Elastic.Documentation.Assembler/Elastic.Documentation.Assembler.csproj" />
     <Project Path="src/services/Elastic.Documentation.Isolated/Elastic.Documentation.Isolated.csproj" />
     <Project Path="src/services/Elastic.Documentation.Services/Elastic.Documentation.Services.csproj" />
+    <Project Path="src/services/Elastic.Documentation.Portal/Elastic.Documentation.Portal.csproj" />
   </Folder>
   <Folder Name="/src/tooling/">
     <File Path="src/tooling/Directory.Build.props" />
