@@ -474,6 +474,13 @@ public class ChangelogService(
 		}
 		catch (Exception ex)
 		{
+			if (ex is OutOfMemoryException ||
+			    ex is StackOverflowException ||
+			    ex is AccessViolationException ||
+			    ex is ThreadAbortException)
+			{
+				throw;
+			}
 			_logger.LogWarning(ex, "Error fetching PR information from GitHub. Continuing with provided values.");
 			return null;
 		}
