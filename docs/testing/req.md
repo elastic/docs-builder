@@ -65,10 +65,10 @@ Interpreted as: `unavailable =9.0`, `beta =9.1`, `preview 9.2-9.3` (range to fil
 ### Three stages with varying gaps
 
 ```{applies_to}
-stack: preview 9.0, beta 9.2, ga 9.5
+stack: preview 8.0, beta 9.0, ga 9.2
 ```
 
-Interpreted as: `preview 9.0-9.1`, `beta 9.2-9.4`, `ga 9.5+`.
+Interpreted as: `preview 8.0-8.19`, `beta 9.0-9.1`, `ga 9.2+`.
 
 ## Inline examples
 
