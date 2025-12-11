@@ -25,20 +25,22 @@ Usage: changelog add [options...] [-h|--help] [--version]
 Add a new changelog fragment from command-line input
 
 Options:
-  --title <string>                  Required: A short, user-facing title (max 80 characters) (Required)
-  --type <string>                   Required: Type of change (feature, enhancement, bug-fix, breaking-change, etc.) (Required)
-  --products <List<ProductInfo>>    Required: Products affected in format "product target lifecycle, ..." (e.g., "elasticsearch 9.2.0 ga, cloud-serverless 2025-08-05") (Required)
-  --subtype <string?>               Optional: Subtype for breaking changes (api, behavioral, configuration, etc.) (Default: null)
-  --areas <string[]?>               Optional: Area(s) affected (comma-separated or specify multiple times) (Default: null)
-  --pr <string?>                    Optional: Pull request URL (Default: null)
-  --issues <string[]?>              Optional: Issue URL(s) (comma-separated or specify multiple times) (Default: null)
-  --description <string?>           Optional: Additional information about the change (max 600 characters) (Default: null)
-  --impact <string?>                Optional: How the user's environment is affected (Default: null)
-  --action <string?>                Optional: What users must do to mitigate (Default: null)
-  --feature-id <string?>            Optional: Feature flag ID (Default: null)
-  --highlight <bool?>               Optional: Include in release highlights (Default: null)
-  --output <string?>                Optional: Output directory for the changelog fragment. Defaults to current directory (Default: null)
-  --config <string?>                Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml' (Default: null)
+  --products <List<ProductInfo>>    Required: Products affected in format "product target lifecycle, ..." (e.g., "elasticsearch 9.2.0 ga, cloud-serverless 2025-08-05") [Required]
+  --title <string?>                 Optional: A short, user-facing title (max 80 characters). Required if --pr is not specified. If --pr is specified, will be derived from PR title if not provided. [Default: null]
+  --type <string?>                  Optional: Type of change (feature, enhancement, bug-fix, breaking-change, etc.). Required if --pr is not specified. If --pr is specified, will be derived from PR labels if not provided. [Default: null]
+  --subtype <string?>               Optional: Subtype for breaking changes (api, behavioral, configuration, etc.) [Default: null]
+  --areas <string[]?>               Optional: Area(s) affected (comma-separated or specify multiple times) [Default: null]
+  --pr <string?>                    Optional: Pull request URL or PR number (if --owner and --repo are provided). If specified, --title and --type can be derived from the PR. [Default: null]
+  --owner <string?>                 Optional: GitHub repository owner (used when --pr is just a number) [Default: null]
+  --repo <string?>                  Optional: GitHub repository name (used when --pr is just a number) [Default: null]
+  --issues <string[]?>              Optional: Issue URL(s) (comma-separated or specify multiple times) [Default: null]
+  --description <string?>           Optional: Additional information about the change (max 600 characters) [Default: null]
+  --impact <string?>                Optional: How the user's environment is affected [Default: null]
+  --action <string?>                Optional: What users must do to mitigate [Default: null]
+  --feature-id <string?>            Optional: Feature flag ID [Default: null]
+  --highlight <bool?>               Optional: Include in release highlights [Default: null]
+  --output <string?>                Optional: Output directory for the changelog fragment. Defaults to current directory [Default: null]
+  --config <string?>                Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml' [Default: null]
 ```
 
 ### Product format
@@ -82,16 +84,17 @@ The following command creates a changelog for a bug fix that applies to two prod
 
 ```sh
 docs-builder changelog add \
-  --title "Fixes enrich and lookup join resolution based on minimum transport version" \
-  --type bug-fix \ <1>
-  --products "elasticsearch 9.2.3, cloud-serverless 2025-12-02" \ <2>
+  --title "Fixes enrich and lookup join resolution based on minimum transport version" \ <1>
+  --type bug-fix \ <2>
+  --products "elasticsearch 9.2.3, cloud-serverless 2025-12-02" \ <3>
   --areas "ES|QL"
-  --pr "https://github.com/elastic/elasticsearch/pull/137431" <3>
+  --pr "https://github.com/elastic/elasticsearch/pull/137431" <4>
 ```
 
-1. The type values are defined in [ChangelogConfiguration.cs](https://github.com/elastic/docs-builder/blob/main/src/services/Elastic.Documentation.Services/Changelog/ChangelogConfiguration.cs).
-2. The product values are defined in [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml).
-3. At this time, the PR value can be a number or a URL; it is not validated.
+1. This option is required only if you want to override what's derived from the PR title.
+2. The type values are defined in [ChangelogConfiguration.cs](https://github.com/elastic/docs-builder/blob/main/src/services/Elastic.Documentation.Services/Changelog/ChangelogConfiguration.cs).
+3. The product values are defined in [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml).
+4. The `--pr` value can be a full URL (such as `https://github.com/owner/repo/pull/123`, a short format (such as `owner/repo#123`) or just a number (in which case you must also provide `--owner` and `--repo` options).
 
 The output file has the following format:
 
