@@ -231,9 +231,10 @@ public class ChangelogServiceTests
 			A<CancellationToken>._))
 			.Returns(prInfo);
 
-		var configDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+		var fs = new FileSystem();
+		var configDir = fs.Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
 		Directory.CreateDirectory(configDir);
-		var configPath = Path.Combine(configDir, "changelog.yml");
+		var configPath = fs.Path.Combine(configDir, "changelog.yml");
 		var configContent = """
 			available_types:
 			  - feature
@@ -257,7 +258,7 @@ public class ChangelogServiceTests
 			Pr = "https://github.com/elastic/elasticsearch/pull/12345",
 			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
 			Config = configPath,
-			Output = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString())
+			Output = fs.Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString())
 		};
 
 		// Act
