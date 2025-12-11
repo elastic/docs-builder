@@ -5,6 +5,9 @@
 using System.Globalization;
 using System.IO.Abstractions;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.RegularExpressions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services.Changelog;
@@ -14,7 +17,7 @@ using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 namespace Elastic.Documentation.Services;
 
-public class ChangelogService(
+public partial class ChangelogService(
 	ILoggerFactory logFactory,
 	IConfigurationContext configurationContext,
 	IGitHubPrService? githubPrService = null
@@ -501,6 +504,366 @@ public class ChangelogService(
 			_ = areas.Add(area);
 		}
 		return areas.ToList();
+	}
+
+	public async Task<bool> BundleChangelogs(
+		IDiagnosticsCollector collector,
+		ChangelogBundleInput input,
+		Cancel ctx
+	)
+	{
+		try
+		{
+			// Validate input
+			if (string.IsNullOrWhiteSpace(input.Directory))
+			{
+				collector.EmitError(string.Empty, "Directory is required");
+				return false;
+			}
+
+			if (!_fileSystem.Directory.Exists(input.Directory))
+			{
+				collector.EmitError(input.Directory, "Directory does not exist");
+				return false;
+			}
+
+			// Validate filter options
+			var filterCount = 0;
+			if (input.All)
+				filterCount++;
+			if (!string.IsNullOrWhiteSpace(input.ProductVersion))
+				filterCount++;
+			if (input.Prs != null && input.Prs.Length > 0)
+				filterCount++;
+			if (!string.IsNullOrWhiteSpace(input.PrsFile))
+				filterCount++;
+
+			if (filterCount == 0)
+			{
+				collector.EmitError(string.Empty, "At least one filter option must be specified: --all, --product-version, --prs, or --prs-file");
+				return false;
+			}
+
+			if (filterCount > 1)
+			{
+				collector.EmitError(string.Empty, "Only one filter option can be specified at a time: --all, --product-version, --prs, or --prs-file");
+				return false;
+			}
+
+			// Load PRs from file if specified
+			var prsToMatch = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+			if (!string.IsNullOrWhiteSpace(input.PrsFile))
+			{
+				if (!_fileSystem.File.Exists(input.PrsFile))
+				{
+					collector.EmitError(input.PrsFile, "PRs file does not exist");
+					return false;
+				}
+
+				var prsFileContent = await _fileSystem.File.ReadAllTextAsync(input.PrsFile, ctx);
+				var prsFromFile = prsFileContent
+					.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+					.Where(p => !string.IsNullOrWhiteSpace(p))
+					.ToArray();
+
+				if (input.Prs != null && input.Prs.Length > 0)
+				{
+					foreach (var pr in input.Prs)
+					{
+						_ = prsToMatch.Add(pr);
+					}
+				}
+
+				foreach (var pr in prsFromFile)
+				{
+					_ = prsToMatch.Add(pr);
+				}
+			}
+			else if (input.Prs != null && input.Prs.Length > 0)
+			{
+				foreach (var pr in input.Prs)
+				{
+					_ = prsToMatch.Add(pr);
+				}
+			}
+
+			// Parse product/version if specified
+			string? filterProduct = null;
+			string? filterVersion = null;
+			if (!string.IsNullOrWhiteSpace(input.ProductVersion))
+			{
+				var parts = input.ProductVersion.Split(':', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+				if (parts.Length != 2)
+				{
+					collector.EmitError(string.Empty, "Product version must be in format 'product:version'");
+					return false;
+				}
+				filterProduct = parts[0];
+				filterVersion = parts[1];
+			}
+
+			// Read all YAML files from directory
+			var yamlFiles = _fileSystem.Directory.GetFiles(input.Directory, "*.yaml", SearchOption.TopDirectoryOnly)
+				.Concat(_fileSystem.Directory.GetFiles(input.Directory, "*.yml", SearchOption.TopDirectoryOnly))
+				.ToList();
+
+			if (yamlFiles.Count == 0)
+			{
+				collector.EmitError(input.Directory, "No YAML files found in directory");
+				return false;
+			}
+
+			_logger.LogInformation("Found {Count} YAML files in directory", yamlFiles.Count);
+
+			// Deserialize and filter changelog files
+			var deserializer = new StaticDeserializerBuilder(new ChangelogYamlStaticContext())
+				.WithNamingConvention(UnderscoredNamingConvention.Instance)
+				.Build();
+
+			var changelogEntries = new List<(ChangelogData data, string filePath, string fileName, long timestamp, string checksum)>();
+
+			foreach (var filePath in yamlFiles)
+			{
+				try
+				{
+					var fileName = _fileSystem.Path.GetFileName(filePath);
+					var fileContent = await _fileSystem.File.ReadAllTextAsync(filePath, ctx);
+
+					// Extract timestamp from filename (format: timestamp-slug.yaml)
+					var timestampMatch = TimestampRegex().Match(fileName);
+					if (!timestampMatch.Success)
+					{
+						_logger.LogWarning("Skipping file {FileName}: does not match expected format (timestamp-slug.yaml)", fileName);
+						continue;
+					}
+
+					var timestamp = long.Parse(timestampMatch.Groups[1].Value, CultureInfo.InvariantCulture);
+
+					// Compute checksum (SHA1)
+					var checksum = ComputeSha1(fileContent);
+
+					// Deserialize YAML (skip comment lines)
+					var yamlLines = fileContent.Split('\n');
+					var yamlWithoutComments = string.Join('\n', yamlLines.Where(line => !line.TrimStart().StartsWith('#')));
+					var data = deserializer.Deserialize<ChangelogData>(yamlWithoutComments);
+
+					if (data == null)
+					{
+						_logger.LogWarning("Skipping file {FileName}: failed to deserialize", fileName);
+						continue;
+					}
+
+					// Apply filters
+					if (input.All)
+					{
+						// Include all
+					}
+					else if (!string.IsNullOrWhiteSpace(filterProduct) && !string.IsNullOrWhiteSpace(filterVersion))
+					{
+						// Filter by product/version
+						var matches = data.Products.Any(p =>
+							string.Equals(p.Product, filterProduct, StringComparison.OrdinalIgnoreCase) &&
+							string.Equals(p.Target, filterVersion, StringComparison.OrdinalIgnoreCase));
+
+						if (!matches)
+						{
+							continue;
+						}
+					}
+					else if (prsToMatch.Count > 0)
+					{
+						// Filter by PRs
+						var matches = false;
+						if (!string.IsNullOrWhiteSpace(data.Pr))
+						{
+							// Normalize PR for comparison
+							var normalizedPr = NormalizePrForComparison(data.Pr, input.Owner, input.Repo);
+							matches = prsToMatch.Any(pr => NormalizePrForComparison(pr, input.Owner, input.Repo) == normalizedPr);
+						}
+
+						if (!matches)
+						{
+							continue;
+						}
+					}
+
+					changelogEntries.Add((data, filePath, fileName, timestamp, checksum));
+				}
+				catch (YamlException ex)
+				{
+					_logger.LogWarning(ex, "Failed to parse YAML file {FilePath}", filePath);
+					collector.EmitError(filePath, $"Failed to parse YAML: {ex.Message}");
+					continue;
+				}
+				catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException or ThreadAbortException))
+				{
+					_logger.LogWarning(ex, "Error processing file {FilePath}", filePath);
+					collector.EmitError(filePath, $"Error processing file: {ex.Message}");
+					continue;
+				}
+			}
+
+			if (changelogEntries.Count == 0)
+			{
+				collector.EmitError(string.Empty, "No changelog entries matched the filter criteria");
+				return false;
+			}
+
+			_logger.LogInformation("Found {Count} matching changelog entries", changelogEntries.Count);
+
+			// Build bundled data
+			var bundledData = new BundledChangelogData();
+
+			// Extract unique products/versions
+			var productVersions = new HashSet<(string product, string version)>();
+			foreach (var (data, _, _, _, _) in changelogEntries)
+			{
+				foreach (var product in data.Products)
+				{
+					var version = product.Target ?? string.Empty;
+					_ = productVersions.Add((product.Product, version));
+				}
+			}
+
+			bundledData.Products = productVersions
+				.OrderBy(pv => pv.product)
+				.ThenBy(pv => pv.version)
+				.Select(pv => new BundledProduct
+				{
+					Product = pv.product,
+					Version = pv.version
+				})
+				.ToList();
+
+			// Build entries
+			bundledData.Entries = changelogEntries
+				.OrderBy(e => e.timestamp)
+				.Select(e =>
+				{
+					var entry = new BundledEntry
+					{
+						Kind = e.data.Type,
+						Summary = e.data.Title,
+						Description = e.data.Description ?? string.Empty,
+						Component = e.data.Products.FirstOrDefault()?.Product ?? string.Empty,
+						Impact = e.data.Impact ?? string.Empty,
+						Action = e.data.Action ?? string.Empty,
+						Timestamp = e.timestamp,
+						File = new BundledFile
+						{
+							Name = e.fileName,
+							Checksum = e.checksum
+						}
+					};
+
+					// Convert PR to list
+					if (!string.IsNullOrWhiteSpace(e.data.Pr))
+					{
+						entry.Pr = [e.data.Pr];
+					}
+
+					// Convert issues to list
+					if (e.data.Issues != null && e.data.Issues.Count > 0)
+					{
+						entry.Issue = e.data.Issues.ToList();
+					}
+
+					return entry;
+				})
+				.ToList();
+
+			// Generate bundled YAML
+			var bundleSerializer = new StaticSerializerBuilder(new ChangelogYamlStaticContext())
+				.WithNamingConvention(UnderscoredNamingConvention.Instance)
+				.ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitNull | DefaultValuesHandling.OmitEmptyCollections)
+				.Build();
+
+			var bundledYaml = bundleSerializer.Serialize(bundledData);
+
+			// Determine output path
+			var outputPath = input.Output ?? _fileSystem.Path.Combine(input.Directory, "changelog-bundle.yaml");
+			var outputDir = _fileSystem.Path.GetDirectoryName(outputPath);
+			if (!string.IsNullOrWhiteSpace(outputDir) && !_fileSystem.Directory.Exists(outputDir))
+			{
+				_ = _fileSystem.Directory.CreateDirectory(outputDir);
+			}
+
+			// Write bundled file
+			await _fileSystem.File.WriteAllTextAsync(outputPath, bundledYaml, ctx);
+			_logger.LogInformation("Created bundled changelog: {OutputPath}", outputPath);
+
+			return true;
+		}
+		catch (OperationCanceledException)
+		{
+			throw;
+		}
+		catch (IOException ioEx)
+		{
+			collector.EmitError(string.Empty, $"IO error bundling changelogs: {ioEx.Message}", ioEx);
+			return false;
+		}
+		catch (UnauthorizedAccessException uaEx)
+		{
+			collector.EmitError(string.Empty, $"Access denied bundling changelogs: {uaEx.Message}", uaEx);
+			return false;
+		}
+	}
+
+	[System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5350:Do not use insecure cryptographic algorithm SHA1", Justification = "SHA1 is required for compatibility with existing changelog bundle format")]
+	private static string ComputeSha1(string content)
+	{
+		var bytes = Encoding.UTF8.GetBytes(content);
+		var hash = SHA1.HashData(bytes);
+		return Convert.ToHexString(hash).ToLowerInvariant();
+	}
+
+	[GeneratedRegex(@"^(\d+)-", RegexOptions.None)]
+	private static partial Regex TimestampRegex();
+
+	private static string NormalizePrForComparison(string pr, string? defaultOwner, string? defaultRepo)
+	{
+		// Parse PR using the same logic as GitHubPrService.ParsePrUrl
+		// Return a normalized format (owner/repo#number) for comparison
+
+		// Handle full URL: https://github.com/owner/repo/pull/123
+		if (pr.StartsWith("https://github.com/", StringComparison.OrdinalIgnoreCase) ||
+			pr.StartsWith("http://github.com/", StringComparison.OrdinalIgnoreCase))
+		{
+			try
+			{
+				var uri = new Uri(pr);
+				var segments = uri.Segments;
+				if (segments.Length >= 5 && segments[3].Equals("pull/", StringComparison.OrdinalIgnoreCase))
+				{
+					var owner = segments[1].TrimEnd('/');
+					var repo = segments[2].TrimEnd('/');
+					var prNum = segments[4].Trim();
+					return $"{owner}/{repo}#{prNum}".ToLowerInvariant();
+				}
+			}
+			catch (UriFormatException)
+			{
+				// Invalid URI, fall through
+			}
+		}
+
+		// Handle short format: owner/repo#123
+		var hashIndex = pr.LastIndexOf('#');
+		if (hashIndex > 0 && hashIndex < pr.Length - 1)
+		{
+			return pr.ToLowerInvariant();
+		}
+
+		// Handle just a PR number when owner/repo are provided
+		if (int.TryParse(pr, out var prNumber) &&
+			!string.IsNullOrWhiteSpace(defaultOwner) && !string.IsNullOrWhiteSpace(defaultRepo))
+		{
+			return $"{defaultOwner}/{defaultRepo}#{prNumber}".ToLowerInvariant();
+		}
+
+		// Return as-is for comparison (fallback)
+		return pr.ToLowerInvariant();
 	}
 }
 

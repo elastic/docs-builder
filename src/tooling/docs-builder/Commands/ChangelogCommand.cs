@@ -100,5 +100,53 @@ internal sealed class ChangelogCommand(
 
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
+
+	/// <summary>
+	/// Bundle changelog fragments into a single YAML file
+	/// </summary>
+	/// <param name="directory">Required: Directory containing changelog YAML files</param>
+	/// <param name="output">Optional: Output file path for the bundled changelog. Defaults to 'changelog-bundle.yaml' in the input directory</param>
+	/// <param name="all">Include all changelogs in the directory</param>
+	/// <param name="productVersion">Filter by product and version in format "product:version" (e.g., "elastic-agent:9.1.5")</param>
+	/// <param name="prs">Filter by pull request URLs or numbers (can specify multiple times)</param>
+	/// <param name="prsFile">Path to a newline-delimited file containing PR URLs or numbers</param>
+	/// <param name="owner">Optional: GitHub repository owner (used when PRs are specified as numbers)</param>
+	/// <param name="repo">Optional: GitHub repository name (used when PRs are specified as numbers)</param>
+	/// <param name="ctx"></param>
+	[Command("bundle")]
+	public async Task<int> Bundle(
+		string directory,
+		string? output = null,
+		bool all = false,
+		string? productVersion = null,
+		string[]? prs = null,
+		string? prsFile = null,
+		string? owner = null,
+		string? repo = null,
+		Cancel ctx = default
+	)
+	{
+		await using var serviceInvoker = new ServiceInvoker(collector);
+
+		var service = new ChangelogService(logFactory, configurationContext, null);
+
+		var input = new ChangelogBundleInput
+		{
+			Directory = directory,
+			Output = output,
+			All = all,
+			ProductVersion = productVersion,
+			Prs = prs,
+			PrsFile = prsFile,
+			Owner = owner,
+			Repo = repo
+		};
+
+		serviceInvoker.AddCommand(service, input,
+			async static (s, collector, state, ctx) => await s.BundleChangelogs(collector, state, ctx)
+		);
+
+		return await serviceInvoker.InvokeAsync(ctx);
+	}
 }
 
