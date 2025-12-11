@@ -562,7 +562,7 @@ public class ChangelogServiceTests
 				"https://github.com/elastic/elasticsearch/issues/123",
 				"https://github.com/elastic/elasticsearch/issues/456"
 			],
-			Output = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString())
+			Output = new FileSystem().Path.Combine(new FileSystem().Path.GetTempPath(), Guid.NewGuid().ToString())
 		};
 
 		// Act
