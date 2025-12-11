@@ -41,8 +41,8 @@ public class ChangelogService(
 			}
 
 			// Validate that if PR is just a number, owner and repo must be provided
-			if (!string.IsNullOrWhiteSpace(input.Pr) 
-				&& int.TryParse(input.Pr, out _) 
+			if (!string.IsNullOrWhiteSpace(input.Pr)
+				&& int.TryParse(input.Pr, out _)
 				&& (string.IsNullOrWhiteSpace(input.Owner) || string.IsNullOrWhiteSpace(input.Repo)))
 			{
 				collector.EmitError(string.Empty, "When --pr is specified as just a number, both --owner and --repo must be provided");
@@ -473,10 +473,10 @@ public class ChangelogService(
 		}
 		catch (Exception ex)
 		{
-			if (ex is OutOfMemoryException ||
-			    ex is StackOverflowException ||
-			    ex is AccessViolationException ||
-			    ex is ThreadAbortException)
+			if (ex is OutOfMemoryException or
+				StackOverflowException or
+				AccessViolationException or
+				ThreadAbortException)
 			{
 				throw;
 			}
