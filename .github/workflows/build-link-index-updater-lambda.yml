@@ -21,9 +21,21 @@ jobs:
       - uses: actions/checkout@v6
         with: 
           ref: ${{ inputs.ref }}
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
       - name: Amazon Linux 2023 build
-        run: |
-          docker build . -t publish-links-index:latest -f src/infra/docs-lambda-index-publisher/lambda.DockerFile
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: src/infra/docs-lambda-index-publisher/lambda.DockerFile
+          push: false
+          load: true
+          tags: publish-links-index:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
       - name: Get bootstrap binary
         run: |
           docker cp $(docker create --name tc publish-links-index:latest):/app/.artifacts/publish ./.artifacts && docker rm tc
