@@ -41,13 +41,12 @@ public class ChangelogService(
 			}
 
 			// Validate that if PR is just a number, owner and repo must be provided
-			if (!string.IsNullOrWhiteSpace(input.Pr) && int.TryParse(input.Pr, out _))
+			if (!string.IsNullOrWhiteSpace(input.Pr) 
+				&& int.TryParse(input.Pr, out _) 
+				&& (string.IsNullOrWhiteSpace(input.Owner) || string.IsNullOrWhiteSpace(input.Repo)))
 			{
-				if (string.IsNullOrWhiteSpace(input.Owner) || string.IsNullOrWhiteSpace(input.Repo))
-				{
-					collector.EmitError(string.Empty, "When --pr is specified as just a number, both --owner and --repo must be provided");
-					return false;
-				}
+				collector.EmitError(string.Empty, "When --pr is specified as just a number, both --owner and --repo must be provided");
+				return false;
 			}
 
 			// If PR is specified, try to fetch PR information and derive title/type
