@@ -495,15 +495,13 @@ public class ChangelogService(
 	private static List<string> MapLabelsToAreas(string[] labels, Dictionary<string, string> labelToAreasMapping)
 	{
 		var areas = new HashSet<string>();
-		foreach (var label in labels.Where(label => labelToAreasMapping.ContainsKey(label)))
+		var areaList = labels
+			.Where(label => labelToAreasMapping.ContainsKey(label))
+			.SelectMany(label => labelToAreasMapping[label]
+				.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+		foreach (var area in areaList)
 		{
-			var mappedAreas = labelToAreasMapping[label];
-			// Support comma-separated areas
-			var areaList = mappedAreas.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-			foreach (var area in areaList)
-			{
-				_ = areas.Add(area);
-			}
+			_ = areas.Add(area);
 		}
 		return areas.ToList();
 	}
