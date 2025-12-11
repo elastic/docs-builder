@@ -159,9 +159,10 @@ public class ChangelogServiceTests
 			.Returns(prInfo);
 
 		// Create a config file with label mappings
-		var configDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-		Directory.CreateDirectory(configDir);
-		var configPath = Path.Combine(configDir, "changelog.yml");
+		var _fileSystem = new MockFileSystem();
+		var configDir = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		_fileSystem.Directory.CreateDirectory(configDir);
+		var configPath = _fileSystem.Path.Combine(configDir, "changelog.yml");
 		var configContent = """
 			available_types:
 			  - feature
@@ -174,7 +175,7 @@ public class ChangelogServiceTests
 			label_to_type:
 			  "type:feature": feature
 			""";
-		await File.WriteAllTextAsync(configPath, configContent);
+		await _fileSystem.File.WriteAllTextAsync(configPath, configContent);
 
 		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
 
@@ -183,7 +184,7 @@ public class ChangelogServiceTests
 			Pr = "https://github.com/elastic/elasticsearch/pull/12345",
 			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
 			Config = configPath,
-			Output = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString())
+			Output = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString())
 		};
 
 		// Act
@@ -200,13 +201,13 @@ public class ChangelogServiceTests
 			A<CancellationToken>._))
 			.MustHaveHappenedOnceExactly();
 
-		var outputDir = input.Output ?? Directory.GetCurrentDirectory();
-		if (!Directory.Exists(outputDir))
-			Directory.CreateDirectory(outputDir);
-		var files = Directory.GetFiles(outputDir, "*.yaml");
+		var outputDir = input.Output ?? _fileSystem.Directory.GetCurrentDirectory();
+		if (!_fileSystem.Directory.Exists(outputDir))
+			_fileSystem.Directory.CreateDirectory(outputDir);
+		var files = _fileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await File.ReadAllTextAsync(files[0]);
+		var yamlContent = await _fileSystem.File.ReadAllTextAsync(files[0]);
 		yamlContent.Should().Contain("title: Implement new aggregation API");
 		yamlContent.Should().Contain("type: feature");
 		yamlContent.Should().Contain("pr: https://github.com/elastic/elasticsearch/pull/12345");
