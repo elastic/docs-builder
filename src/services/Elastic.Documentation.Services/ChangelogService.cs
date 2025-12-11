@@ -487,14 +487,9 @@ public class ChangelogService(
 
 	private static string? MapLabelsToType(string[] labels, Dictionary<string, string> labelToTypeMapping)
 	{
-		foreach (var label in labels)
-		{
-			if (labelToTypeMapping.TryGetValue(label, out var mappedType))
-			{
-				return mappedType;
-			}
-		}
-		return null;
+		return labels
+			.Select(label => labelToTypeMapping.TryGetValue(label, out var mappedType) ? mappedType : null)
+			.FirstOrDefault(mappedType => mappedType != null);
 	}
 
 	private static List<string> MapLabelsToAreas(string[] labels, Dictionary<string, string> labelToAreasMapping)
