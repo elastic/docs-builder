@@ -84,7 +84,7 @@ public partial class GitHubPrService(ILoggerFactory loggerFactory)
 			_logger.LogWarning("Request timeout fetching PR info from GitHub");
 			return null;
 		}
-		catch (Exception ex) when (ex is not OutOfMemoryException && ex is not StackOverflowException && ex is not ThreadAbortException)
+		catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException or ThreadAbortException))
 		{
 			_logger.LogWarning(ex, "Unexpected error fetching PR info from GitHub");
 			return null;
