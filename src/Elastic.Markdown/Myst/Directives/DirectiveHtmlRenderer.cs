@@ -361,7 +361,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		var snippet = block.Build.ReadFileSystem.FileInfo.New(block.IncludePath);
 
 		var parentPath = block.Context.MarkdownParentPath ?? block.Context.MarkdownSourcePath;
-		var document = MarkdownParser.ParseSnippetAsync(block.Build, block.Context, snippet, parentPath, block.Context.YamlFrontMatter, default)
+		var document = MarkdownParser.ParseSnippetAsync(block.Build, block.Context, snippet, parentPath, block.Context.YamlFrontMatter, default, block.Line)
 			.GetAwaiter().GetResult();
 
 		var html = document.ToHtml(MarkdownParser.Pipeline);
