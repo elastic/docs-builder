@@ -128,12 +128,10 @@ public partial class GitHubPrService(ILoggerFactory loggerFactory)
 		}
 
 		// Handle just a PR number when owner/repo are provided
-		if (int.TryParse(prUrl, out var prNumber))
+		if (int.TryParse(prUrl, out var prNumber) &&
+			!string.IsNullOrWhiteSpace(defaultOwner) && !string.IsNullOrWhiteSpace(defaultRepo))
 		{
-			if (!string.IsNullOrWhiteSpace(defaultOwner) && !string.IsNullOrWhiteSpace(defaultRepo))
-			{
-				return (defaultOwner, defaultRepo, prNumber);
-			}
+			return (defaultOwner, defaultRepo, prNumber);
 		}
 
 		return (null, null, null);
