@@ -641,3 +641,113 @@ Another setting description.
 
 An advanced option.
 """
+
+type ``links in paragraphs`` () =
+    static let markdown = Setup.Document """
+This is a paragraph with a [link to docs](https://www.elastic.co/docs/deploy-manage/security) in it.
+"""
+
+    [<Fact>]
+    let ``renders links without duplication`` () =
+        markdown |> convertsToNewLLM """This is a paragraph with a [link to docs](https://www.elastic.co/docs/deploy-manage/security) in it.
+"""
+
+type ``links in tables`` () =
+    static let markdown = Setup.Document """
+| Feature | Availability |
+|---------|--------------|
+| [Security configurations](https://www.elastic.co/docs/deploy-manage/security) | Full control |
+| [Authentication realms](https://www.elastic.co/docs/deploy-manage/users-roles) | Available |
+"""
+
+    [<Fact>]
+    let ``renders links in table cells without duplication`` () =
+        markdown |> convertsToNewLLM """
+| Feature                                                                        | Availability |
+|--------------------------------------------------------------------------------|--------------|
+| [Security configurations](https://www.elastic.co/docs/deploy-manage/security)  | Full control |
+| [Authentication realms](https://www.elastic.co/docs/deploy-manage/users-roles) | Available    |
+"""
+
+type ``multiple links in table cells`` () =
+    static let markdown = Setup.Document """
+| Feature | Links |
+|---------|-------|
+| Security | [Config](https://example.com/config) and [Auth](https://example.com/auth) |
+"""
+
+    [<Fact>]
+    let ``renders multiple links in same cell without duplication`` () =
+        markdown |> convertsToNewLLM """
+| Feature  | Links                                                                     |
+|----------|---------------------------------------------------------------------------|
+| Security | [Config](https://example.com/config) and [Auth](https://example.com/auth) |
+"""
+
+type ``links with formatting in tables`` () =
+    static let markdown = Setup.Document """
+| Feature | Description |
+|---------|-------------|
+| [**Bold link**](https://example.com) | Description |
+| [*Italic link*](https://example.com/italic) | Another |
+"""
+
+    [<Fact>]
+    let ``renders formatted links in table cells correctly`` () =
+        markdown |> convertsToNewLLM """
+| Feature                                     | Description |
+|---------------------------------------------|-------------|
+| [**Bold link**](https://example.com)        | Description |
+| [*Italic link*](https://example.com/italic) | Another     |
+"""
+
+type ``bold and italic in tables`` () =
+    static let markdown = Setup.Document """
+| Format | Example |
+|--------|---------|
+| Bold | This is **bold text** here |
+| Italic | This is *italic text* here |
+| Both | This is **bold** and *italic* |
+"""
+
+    [<Fact>]
+    let ``renders bold and italic in table cells without duplication`` () =
+        markdown |> convertsToNewLLM """
+| Format | Example                       |
+|--------|-------------------------------|
+| Bold   | This is **bold text** here    |
+| Italic | This is *italic text* here    |
+| Both   | This is **bold** and *italic* |
+"""
+
+type ``code inline in tables`` () =
+    static let markdown = Setup.Document """
+| Command | Description |
+|---------|-------------|
+| `git status` | Shows status |
+| `git commit` | Commits changes |
+"""
+
+    [<Fact>]
+    let ``renders code inline in table cells correctly`` () =
+        markdown |> convertsToNewLLM """
+| Command      | Description     |
+|--------------|-----------------|
+| `git status` | Shows status    |
+| `git commit` | Commits changes |
+"""
+
+type ``images in tables`` () =
+    static let markdown = Setup.Document """
+| Icon | Name |
+|------|------|
+| ![logo](https://example.com/logo.png) | Logo |
+"""
+
+    [<Fact>]
+    let ``renders images in table cells without duplication`` () =
+        markdown |> convertsToNewLLM """
+| Icon                                  | Name |
+|---------------------------------------|------|
+| ![logo](https://example.com/logo.png) | Logo |
+"""
