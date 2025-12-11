@@ -609,9 +609,10 @@ public class ChangelogServiceTests
 			.Returns(prInfo);
 
 		// Config without label_to_type mapping
-		var configDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+		var fileSystem = new FileSystem();
+		var configDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		Directory.CreateDirectory(configDir);
-		var configPath = Path.Combine(configDir, "changelog.yml");
+		var configPath = fileSystem.Path.Combine(configDir, "changelog.yml");
 		var configContent = """
 			available_types:
 			  - feature
@@ -631,7 +632,7 @@ public class ChangelogServiceTests
 			Pr = "https://github.com/elastic/elasticsearch/pull/12345",
 			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
 			Config = configPath,
-			Output = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString())
+			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString())
 		};
 
 		// Act
