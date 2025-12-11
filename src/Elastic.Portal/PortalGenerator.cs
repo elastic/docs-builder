@@ -35,11 +35,12 @@ public interface IPortalPageRenderer
 /// <summary>
 /// Generator for portal HTML pages.
 /// </summary>
-public class PortalGenerator(ILoggerFactory logFactory, BuildContext context)
+public class PortalGenerator(ILoggerFactory logFactory, BuildContext context, IDirectoryInfo outputDirectory)
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<PortalGenerator>();
 	private readonly IFileSystem _writeFileSystem = context.WriteFileSystem;
 	private readonly StaticFileContentHashProvider _contentHashProvider = new(new EmbeddedOrPhysicalFileProvider(context));
+	private readonly IDirectoryInfo _outputDirectory = outputDirectory;
 
 	/// <summary>
 	/// Generates all portal pages (landing and category pages).
@@ -47,6 +48,9 @@ public class PortalGenerator(ILoggerFactory logFactory, BuildContext context)
 	public async Task Generate(PortalNavigation portalNavigation, Cancel ctx = default)
 	{
 		_logger.LogInformation("Generating portal pages for {Title}", portalNavigation.NavigationTitle);
+
+		// Extract static files to the portal's _static directory
+		await ExtractEmbeddedStaticResources(ctx);
 
 		var navigationRenderer = new PortalNavigationHtmlWriter(context, portalNavigation);
 
@@ -66,6 +70,41 @@ public class PortalGenerator(ILoggerFactory logFactory, BuildContext context)
 			{
 				await RenderCategoryPage(category, renderContext, navigationRenderer, ctx);
 			}
+		}
+	}
+
+	private async Task ExtractEmbeddedStaticResources(Cancel ctx)
+	{
+		_logger.LogInformation("Copying static files to portal output directory");
+		var assembly = typeof(EmbeddedOrPhysicalFileProvider).Assembly;
+		var embeddedStaticFiles = assembly
+			.GetManifestResourceNames()
+			.ToList();
+
+		foreach (var resourceName in embeddedStaticFiles)
+		{
+			await using var resourceStream = assembly.GetManifestResourceStream(resourceName);
+			if (resourceStream == null)
+				continue;
+
+			// Convert resource name to file path: Elastic.Documentation.Site._static.file.ext -> _static/file.ext
+			var path = resourceName
+				.Replace("Elastic.Documentation.Site.", "")
+				.Replace("_static.", $"_static{Path.DirectorySeparatorChar}");
+
+			// Output to portal's URL prefix directory (e.g., internal-docs/_static/)
+			var outputPath = Path.Combine(
+				_outputDirectory.FullName,
+				context.UrlPathPrefix?.Trim('/') ?? string.Empty,
+				path);
+
+			var outputFile = _writeFileSystem.FileInfo.New(outputPath);
+			if (outputFile.Directory is { Exists: false })
+				outputFile.Directory.Create();
+
+			await using var stream = outputFile.OpenWrite();
+			await resourceStream.CopyToAsync(stream, ctx);
+			_logger.LogDebug("Copied static embedded resource {Path}", path);
 		}
 	}
 
@@ -96,9 +135,11 @@ public class PortalGenerator(ILoggerFactory logFactory, BuildContext context)
 		if (!outputFile.Directory!.Exists)
 			outputFile.Directory.Create();
 
-		await using var stream = _writeFileSystem.FileStream.New(outputFile.FullName, FileMode.Create);
 		var slice = LandingView.Create(viewModel);
+
+		await using var stream = _writeFileSystem.FileStream.New(outputFile.FullName, FileMode.Create);
 		await slice.RenderAsync(stream, cancellationToken: ctx);
+
 
 		_logger.LogDebug("Generated portal landing page: {Path}", outputFile.FullName);
 	}
@@ -140,8 +181,9 @@ public class PortalGenerator(ILoggerFactory logFactory, BuildContext context)
 	private IFileInfo GetOutputFile(string url)
 	{
 		const string indexHtml = "index.html";
-		var fileName = Regex.Replace(url + "/" + indexHtml, $"^{context.UrlPathPrefix}", string.Empty);
-		return _writeFileSystem.FileInfo.New(Path.Combine(context.OutputDirectory.FullName, fileName.Trim('/')));
+		// Keep the full URL path so file structure matches URLs
+		var fileName = url.TrimStart('/') + "/" + indexHtml;
+		return _writeFileSystem.FileInfo.New(Path.Combine(_outputDirectory.FullName, fileName.Trim('/')));
 	}
 }
 

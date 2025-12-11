@@ -8,7 +8,7 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 
-namespace Elastic.Documentation.Portal.Sourcing;
+namespace Elastic.Portal.Sourcing;
 
 /// <summary>
 /// Service for cloning repositories defined in a portal configuration.
@@ -59,7 +59,7 @@ public class PortalCloneService(ILoggerFactory logFactory) : IService
 		Cancel _)
 	{
 		var repoDir = context.ReadFileSystem.DirectoryInfo.New(
-			Path.Combine(context.CheckoutDirectory.FullName, docSetRef.Name));
+			Path.Combine(context.CheckoutDirectory.FullName, docSetRef.ResolvedRepoName));
 
 		var gitUrl = docSetRef.GetGitUrl();
 		var branch = docSetRef.Branch;

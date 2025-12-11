@@ -20,5 +20,6 @@ public class LandingViewModel(PortalRenderContext context) : PortalViewModel(con
 	/// Information about all documentation sets grouped by category.
 	/// </summary>
 	public ILookup<string?, PortalDocumentationSetInfo> DocumentationSetsByCategory =>
-		PortalNavigation.DocumentationSetInfos.ToLookup(ds => ds.Category);
+		PortalNavigation?.DocumentationSetInfos?.ToLookup(ds => ds.Category)
+		?? Array.Empty<PortalDocumentationSetInfo>().ToLookup(ds => ds.Category);
 }

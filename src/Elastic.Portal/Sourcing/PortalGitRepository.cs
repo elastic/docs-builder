@@ -7,7 +7,7 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ExternalCommands;
 using Microsoft.Extensions.Logging;
 
-namespace Elastic.Documentation.Portal.Sourcing;
+namespace Elastic.Portal.Sourcing;
 
 /// <summary>
 /// Git repository operations optimized for shallow clones.

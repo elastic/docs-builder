@@ -3,9 +3,9 @@
 # composes multiple isolated documentation sets.
 #
 # Usage:
-#   docs-builder portal --config portal.yml
-#   docs-builder portal clone --config portal.yml
-#   docs-builder portal build --config portal.yml
+#   docs-builder portal config/portal.example.yml
+#   docs-builder portal clone config/portal.example.yml
+#   docs-builder portal build config/portal.example.yml
 #   docs-builder portal serve
 
 # Site prefix for all portal URLs
@@ -19,46 +19,70 @@ title: "Elastic's Internal Dev Docs"
 # Documentation sets to include in the portal
 # Each documentation set is cloned from a git repository and built separately
 documentation_sets:
-  # Minimal configuration - origin defaults to "elastic/{name}"
-  # URL will be: /internal-docs/apm-managed-intake/
-  - name: apm-managed-intake
+  # APM Managed Intake Service documentation
+  - name: docs-builder
     branch: main
+    repo_name: apm-intake
+    display_name: "APM Managed Intake Service"
+    icon: apm
 
-  # With explicit origin (for non-elastic repositories or different naming)
-  # URL will be: /internal-docs/appex-qa/
-  - name: appex-qa
-    origin: elastic/appex-qa-team
+  # CI Developer Guide
+  - name: docs-builder
     branch: main
-    path: docs  # optional, defaults to "docs"
+    repo_name: ci-guide
+    display_name: "CI Developer Guide"
+    icon: ci
 
-  # With category grouping
-  # URL will be: /internal-docs/observability/benchmarking/
-  - name: benchmarking
+  # Content Architecture documentation
+  - name: docs-builder
+    branch: main
+    repo_name: content-arch
+    display_name: "Content Architecture"
+    icon: architecture
+
+  # Benchmarking documentation in observability category
+  - name: docs-builder
     branch: main
     category: observability
+    repo_name: benchmarking
+    display_name: "Benchmarking Elasticsearch"
+    icon: benchmark
 
-  # Another documentation set in the observability category
-  # URL will be: /internal-docs/observability/apm-intake/
-  - name: apm-intake
-    origin: elastic/apm-managed-intake-service
+  # Migration Guide in tooling category
+  - name: docs-builder
     branch: main
-    category: observability
+    category: tooling
+    repo_name: migration-guide
+    display_name: "AsciiDoc-to-MDX Migration"
+    icon: migration
 
-  # Documentation set in a different category
-  # URL will be: /internal-docs/developer-tools/ci-developer-guide/
-  - name: ci-developer-guide
+  # Artifactory documentation in tooling category
+  - name: docs-builder
     branch: main
-    category: developer-tools
+    category: tooling
+    repo_name: artifactory
+    display_name: "Artifactory"
+    icon: artifactory
 
-  # Documentation set without category (direct child of portal root)
-  # URL will be: /internal-docs/content-architecture/
-  - name: content-architecture
+  # QA Team documentation
+  - name: docs-builder
     branch: main
+    repo_name: qa-team
+    display_name: "QA Team Handbook"
+    icon: testing
+
+  # Consulting documentation
+  - name: docs-builder
+    branch: main
+    repo_name: consulting
+    display_name: "Consulting Team"
+    icon: consulting
 
 # Configuration options reference:
 #
 # name (required):
-#   The identifier for the documentation set. Used in URL paths.
+#   The identifier for the documentation set. Used as the default for
+#   origin (elastic/{name}) and repo_name.
 #
 # origin (optional):
 #   The git repository to clone from. Defaults to "elastic/{name}".
@@ -73,5 +97,21 @@ documentation_sets:
 #
 # category (optional):
 #   Group documentation sets under a category.
-#   Creates URL structure: /{site_prefix}/{category}/{name}/
-#   If not specified, URL is: /{site_prefix}/{name}/
+#   Creates URL structure: /{site_prefix}/{category}/{repo_name}/
+#   If not specified, URL is: /{site_prefix}/{repo_name}/
+#
+# repo_name (optional):
+#   Override the name used for checkout directories and URL paths.
+#   Defaults to the value of "name". This allows including the same
+#   repository multiple times with different URL paths.
+#
+# display_name (optional):
+#   The title shown on the portal landing page card.
+#   If not specified, uses the documentation set's title from docset.yml.
+#
+# icon (optional):
+#   Icon shown on the portal landing page card.
+#   Available icons: elasticsearch, kibana, observability, security,
+#   enterprise-search, logstash, beats, apm, fleet, cloud, integrations,
+#   docs, dev-tools, benchmark, migration, testing, ci, architecture,
+#   consulting, artifactory

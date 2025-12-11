@@ -7,7 +7,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Portal;
 using Elastic.Documentation.Diagnostics;
 
-namespace Elastic.Documentation.Portal;
+namespace Elastic.Portal;
 
 /// <summary>
 /// Context for portal operations containing configuration, file systems, and directories.
@@ -37,10 +37,10 @@ public class PortalContext
 		ReadFileSystem = readFileSystem;
 		WriteFileSystem = writeFileSystem;
 
-		var defaultCheckoutDirectory = Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "portal-checkouts");
+		var defaultCheckoutDirectory = Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "portal", "clone");
 		CheckoutDirectory = ReadFileSystem.DirectoryInfo.New(checkoutDirectory ?? defaultCheckoutDirectory);
 
-		var defaultOutputDirectory = Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "portal");
+		var defaultOutputDirectory = Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "portal", "docs");
 		OutputDirectory = ReadFileSystem.DirectoryInfo.New(outputDirectory ?? defaultOutputDirectory);
 	}
 }

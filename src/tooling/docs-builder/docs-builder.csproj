@@ -44,7 +44,7 @@
     <ProjectReference Include="..\..\Elastic.Documentation.ServiceDefaults\Elastic.Documentation.ServiceDefaults.csproj" />
     
     <ProjectReference Include="..\..\services\Elastic.Documentation.Assembler\Elastic.Documentation.Assembler.csproj" />
-    <ProjectReference Include="..\..\services\Elastic.Documentation.Portal\Elastic.Documentation.Portal.csproj" />
+    <ProjectReference Include="..\..\Elastic.Portal\Elastic.Portal.csproj" />
 
     <ProjectReference Include="..\..\services\Elastic.Documentation.Isolated\Elastic.Documentation.Isolated.csproj" />
     

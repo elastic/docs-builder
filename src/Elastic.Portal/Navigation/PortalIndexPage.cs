@@ -40,4 +40,9 @@ public record PortalDocumentationSetInfo
 	/// The total number of pages in the documentation set.
 	/// </summary>
 	public int PageCount { get; init; }
+
+	/// <summary>
+	/// Optional icon identifier for display on the portal card.
+	/// </summary>
+	public string? Icon { get; init; }
 }

@@ -17,19 +17,19 @@ public record PortalConfiguration
 	/// All documentation sets will be served under this prefix.
 	/// </summary>
 	[YamlMember(Alias = "site_prefix")]
-	public string SitePrefix { get; init; } = "/docs";
+	public string SitePrefix { get; set; } = "/docs";
 
 	/// <summary>
 	/// The title displayed on the portal index page.
 	/// </summary>
 	[YamlMember(Alias = "title")]
-	public string Title { get; init; } = "Documentation Portal";
+	public string Title { get; set; } = "Documentation Portal";
 
 	/// <summary>
 	/// The list of documentation sets to include in the portal.
 	/// </summary>
 	[YamlMember(Alias = "documentation_sets")]
-	public IReadOnlyList<PortalDocumentationSetReference> DocumentationSets { get; init; } = [];
+	public IReadOnlyList<PortalDocumentationSetReference> DocumentationSets { get; set; } = [];
 
 	/// <summary>
 	/// Deserializes a portal configuration from YAML content.

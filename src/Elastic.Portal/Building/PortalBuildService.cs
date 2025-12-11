@@ -6,24 +6,26 @@ using System.IO.Abstractions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Isolated;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Isolated.Node;
-using Elastic.Documentation.Portal.Sourcing;
 using Elastic.Documentation.Services;
-using Elastic.Markdown;
-using Elastic.Markdown.Exporters;
+using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.IO;
-using Elastic.Portal;
 using Elastic.Portal.Navigation;
+using Elastic.Portal.Sourcing;
 using Microsoft.Extensions.Logging;
 
-namespace Elastic.Documentation.Portal.Building;
+namespace Elastic.Portal.Building;
 
 /// <summary>
 /// Service for building all documentation sets in a portal.
 /// </summary>
-public class PortalBuildService(ILoggerFactory logFactory, IConfigurationContext configurationContext) : IService
+public class PortalBuildService(
+	ILoggerFactory logFactory,
+	IConfigurationContext configurationContext,
+	IsolatedBuildService isolatedBuildService) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<PortalBuildService>();
 
@@ -53,7 +55,7 @@ public class PortalBuildService(ILoggerFactory logFactory, IConfigurationContext
 			if (buildContext != null)
 			{
 				buildContexts.Add(buildContext);
-				documentationSets[checkout.Reference.Name] = buildContext.DocumentationSet.Navigation;
+				documentationSets[checkout.Reference.ResolvedRepoName] = buildContext.DocumentationSet.Navigation;
 			}
 		}
 
@@ -65,10 +67,11 @@ public class PortalBuildService(ILoggerFactory logFactory, IConfigurationContext
 
 		// Phase 3: Build each documentation set
 		foreach (var buildContext in buildContexts)
-			await BuildDocumentationSet(context, buildContext, portalNavigation, ctx);
+			await BuildDocumentationSet(context, buildContext, ctx);
 
 		// Phase 4: Generate portal index and category pages using PortalGenerator
-		await GeneratePortalPages(context, portalNavigation, ctx);
+		if (buildContexts.Count > 0)
+			await GeneratePortalPages(context, buildContexts[0].BuildContext, portalNavigation, ctx);
 
 		return new PortalBuildResult(portalNavigation, buildContexts.Select(b => b.DocumentationSet).ToList());
 	}
@@ -83,15 +86,18 @@ public class PortalBuildService(ILoggerFactory logFactory, IConfigurationContext
 
 		try
 		{
-			// Calculate output path based on category
+			// Calculate output path based on category (using ResolvedRepoName for directory/URL paths)
+			// Include site prefix in output path so file structure matches URL structure
+			var repoName = checkout.Reference.ResolvedRepoName;
+			var sitePrefix = context.Configuration.SitePrefix.Trim('/');
 			var outputPath = string.IsNullOrEmpty(checkout.Reference.Category)
-				? fileSystem.Path.Combine(context.OutputDirectory.FullName, checkout.Reference.Name)
-				: fileSystem.Path.Combine(context.OutputDirectory.FullName, checkout.Reference.Category, checkout.Reference.Name);
+				? fileSystem.Path.Combine(context.OutputDirectory.FullName, sitePrefix, repoName)
+				: fileSystem.Path.Combine(context.OutputDirectory.FullName, sitePrefix, checkout.Reference.Category, repoName);
 
 			// Calculate URL path prefix
 			var pathPrefix = string.IsNullOrEmpty(checkout.Reference.Category)
-				? $"{context.Configuration.SitePrefix}/{checkout.Reference.Name}"
-				: $"{context.Configuration.SitePrefix}/{checkout.Reference.Category}/{checkout.Reference.Name}";
+				? $"{context.Configuration.SitePrefix}/{repoName}"
+				: $"{context.Configuration.SitePrefix}/{checkout.Reference.Category}/{repoName}";
 
 			// Create git checkout information
 			var git = new GitCheckoutInformation
@@ -139,28 +145,20 @@ public class PortalBuildService(ILoggerFactory logFactory, IConfigurationContext
 	private async Task BuildDocumentationSet(
 		PortalContext context,
 		PortalDocumentationSetBuildContext buildContext,
-		PortalNavigation portalNavigation,
 		Cancel ctx)
 	{
 		_logger.LogInformation("Building documentation set: {Name}", buildContext.Checkout.Reference.Name);
 
 		try
 		{
-			var exporters = ExportOptions.Default.CreateMarkdownExporters(logFactory, buildContext.BuildContext, "portal");
-			var tasks = exporters.Select(async e => await e.StartAsync(ctx));
-			await Task.WhenAll(tasks);
-
-			var generator = new DocumentationGenerator(
+			// Use the documentation set's own navigation for traversal (file lookups, prev/next)
+			// TODO: Create a PortalNavigationHtmlWriter to render portal-wide navigation
+			_ = await isolatedBuildService.BuildDocumentationSet(
 				buildContext.DocumentationSet,
-				logFactory,
-				portalNavigation,
-				null,
-				null,
-				exporters.ToArray());
-			_ = await generator.GenerateAll(ctx);
-
-			tasks = exporters.Select(async e => await e.StopAsync(ctx));
-			await Task.WhenAll(tasks);
+				null, // Use doc set's navigation for traversal
+				null, // Use default navigation HTML writer (doc set's navigation)
+				ExportOptions.Default,
+				ctx);
 		}
 		catch (Exception ex)
 		{
@@ -172,29 +170,23 @@ public class PortalBuildService(ILoggerFactory logFactory, IConfigurationContext
 
 	private async Task GeneratePortalPages(
 		PortalContext context,
+		BuildContext docSetBuildContext,
 		PortalNavigation portalNavigation,
 		Cancel ctx)
 	{
 		_logger.LogInformation("Generating portal pages");
 
-		// Create a build context for the portal pages
-		var portalBuildContext = new BuildContext(
-			context.Collector,
-			context.ReadFileSystem,
-			context.WriteFileSystem,
-			configurationContext,
-			ExportOptions.Default,
-			context.OutputDirectory.FullName,
-			context.OutputDirectory.FullName,
-			null)
+		// Create a portal-specific build context using the doc set's context as a base
+		// but with portal-specific URL prefix
+		var portalBuildContext = docSetBuildContext with
 		{
 			UrlPathPrefix = context.Configuration.SitePrefix,
 			Force = true,
 			AllowIndexing = false
 		};
 
-		// Use PortalGenerator to render the portal pages
-		var portalGenerator = new PortalGenerator(logFactory, portalBuildContext);
+		// Use PortalGenerator to render the portal pages to the portal's output directory
+		var portalGenerator = new PortalGenerator(logFactory, portalBuildContext, context.OutputDirectory);
 		await portalGenerator.Generate(portalNavigation, ctx);
 	}
 }

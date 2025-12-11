@@ -54,10 +54,12 @@ public class PortalNavigation : IRootNavigationItem<IDocumentationFile, INavigat
 
 		foreach (var docSetRef in configuration.DocumentationSets)
 		{
+			var repoName = docSetRef.ResolvedRepoName;
+
 			// Find the matching documentation set navigation
-			if (!documentationSetNavigations.TryGetValue(docSetRef.Name, out var docSetNav))
+			if (!documentationSetNavigations.TryGetValue(repoName, out var docSetNav))
 			{
-				context.EmitError($"Documentation set '{docSetRef.Name}' not found in built documentation sets");
+				context.EmitError($"Documentation set '{docSetRef.Name}' (repo_name: {repoName}) not found in built documentation sets");
 				continue;
 			}
 
@@ -85,12 +87,12 @@ public class PortalNavigation : IRootNavigationItem<IDocumentationFile, INavigat
 					items.Add(categoryNav);
 				}
 
-				pathPrefix = $"{Url}/{docSetRef.Category}/{docSetRef.Name}";
+				pathPrefix = $"{Url}/{docSetRef.Category}/{repoName}";
 				parentNode = categoryNav;
 			}
 			else
 			{
-				pathPrefix = $"{Url}/{docSetRef.Name}";
+				pathPrefix = $"{Url}/{repoName}";
 				parentNode = this;
 			}
 
@@ -123,11 +125,12 @@ public class PortalNavigation : IRootNavigationItem<IDocumentationFile, INavigat
 				var pageCount = CountPages(rootNavItem);
 				documentationSetInfos.Add(new PortalDocumentationSetInfo
 				{
-					Name = docSetRef.Name,
-					Title = rootNavItem.NavigationTitle,
+					Name = repoName,
+					Title = docSetRef.DisplayName ?? rootNavItem.NavigationTitle ?? repoName,
 					Url = rootNavItem.Url,
 					Category = docSetRef.Category,
-					PageCount = pageCount
+					PageCount = pageCount,
+					Icon = docSetRef.Icon
 				});
 			}
 		}

@@ -3,15 +3,17 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Actions.Core.Services;
 using ConsoleAppFramework;
 using Documentation.Builder.Http;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Portal;
 using Elastic.Documentation.Diagnostics;
-using Elastic.Documentation.Portal;
-using Elastic.Documentation.Portal.Building;
-using Elastic.Documentation.Portal.Sourcing;
+using Elastic.Documentation.Isolated;
 using Elastic.Documentation.Services;
+using Elastic.Portal;
+using Elastic.Portal.Building;
+using Elastic.Portal.Sourcing;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Builder.Commands.Portal;
@@ -22,7 +24,8 @@ namespace Documentation.Builder.Commands.Portal;
 internal sealed class PortalCommands(
 	ILoggerFactory logFactory,
 	IDiagnosticsCollector collector,
-	IConfigurationContext configurationContext
+	IConfigurationContext configurationContext,
+	ICoreService githubActionsService
 )
 {
 	/// <summary>
@@ -37,7 +40,7 @@ internal sealed class PortalCommands(
 	/// <param name="ctx">Cancellation token.</param>
 	[Command("")]
 	public async Task<int> CloneAndBuild(
-		string config = "portal.yml",
+		[Argument] string config,
 		bool strict = false,
 		bool fetchLatest = false,
 		bool assumeCloned = false,
@@ -73,7 +76,8 @@ internal sealed class PortalCommands(
 			});
 
 		// Build service
-		var buildService = new PortalBuildService(logFactory, configurationContext);
+		var isolatedBuildService = new IsolatedBuildService(logFactory, configurationContext, githubActionsService);
+		var buildService = new PortalBuildService(logFactory, configurationContext, isolatedBuildService);
 		serviceInvoker.AddCommand(buildService, (portalContext, cloneResult, fs), strict,
 			async (s, col, state, c) =>
 			{
@@ -105,7 +109,7 @@ internal sealed class PortalCommands(
 	/// <param name="ctx">Cancellation token.</param>
 	[Command("clone")]
 	public async Task<int> Clone(
-		string config = "portal.yml",
+		[Argument] string config,
 		bool strict = false,
 		bool fetchLatest = false,
 		bool assumeCloned = false,
@@ -146,7 +150,7 @@ internal sealed class PortalCommands(
 	/// <param name="ctx">Cancellation token.</param>
 	[Command("build")]
 	public async Task<int> Build(
-		string config = "portal.yml",
+		[Argument] string config,
 		bool strict = false,
 		string? output = null,
 		Cancel ctx = default)
@@ -176,7 +180,8 @@ internal sealed class PortalCommands(
 			return 1;
 		}
 
-		var buildService = new PortalBuildService(logFactory, configurationContext);
+		var isolatedBuildService = new IsolatedBuildService(logFactory, configurationContext, githubActionsService);
+		var buildService = new PortalBuildService(logFactory, configurationContext, isolatedBuildService);
 		serviceInvoker.AddCommand(buildService, (portalContext, cloneResult, fs), strict,
 			async (s, col, state, c) =>
 			{
@@ -201,7 +206,7 @@ internal sealed class PortalCommands(
 	{
 		var fs = new FileSystem();
 		var servePath = path ?? fs.Path.Combine(
-			Environment.CurrentDirectory, ".artifacts", "portal");
+			Environment.CurrentDirectory, ".artifacts", "portal", "docs");
 
 		var host = new StaticWebHost(port, servePath);
 		await host.RunAsync(ctx);
