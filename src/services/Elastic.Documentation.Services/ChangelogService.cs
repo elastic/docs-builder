@@ -17,12 +17,12 @@ namespace Elastic.Documentation.Services;
 public class ChangelogService(
 	ILoggerFactory logFactory,
 	IConfigurationContext configurationContext,
-	GitHubPrService? githubPrService = null
+	IGitHubPrService? githubPrService = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogService>();
 	private readonly IFileSystem _fileSystem = new FileSystem();
-	private readonly GitHubPrService? _githubPrService = githubPrService;
+	private readonly IGitHubPrService? _githubPrService = githubPrService;
 
 	public async Task<bool> CreateChangelog(
 		IDiagnosticsCollector collector,

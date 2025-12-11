@@ -12,7 +12,7 @@ namespace Elastic.Documentation.Services.Changelog;
 /// <summary>
 /// Service for fetching pull request information from GitHub
 /// </summary>
-public partial class GitHubPrService(ILoggerFactory loggerFactory)
+public partial class GitHubPrService(ILoggerFactory loggerFactory) : IGitHubPrService
 {
 	private readonly ILogger<GitHubPrService> _logger = loggerFactory.CreateLogger<GitHubPrService>();
 	private static readonly HttpClient HttpClient = new();

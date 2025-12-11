@@ -1,0 +1,801 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+using System.Collections.Frozen;
+using System.IO.Abstractions;
+using System.IO.Abstractions.TestingHelpers;
+using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.LegacyUrlMappings;
+using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Configuration.Search;
+using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Services.Changelog;
+using FakeItEasy;
+using FluentAssertions;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+
+namespace Elastic.Documentation.Services.Tests;
+
+public class ChangelogServiceTests
+{
+	private readonly MockFileSystem _fileSystem;
+	private readonly IConfigurationContext _configurationContext;
+	private readonly TestDiagnosticsCollector _collector;
+	private readonly ILoggerFactory _loggerFactory;
+	private readonly ITestOutputHelper _output;
+
+	public ChangelogServiceTests(ITestOutputHelper output)
+	{
+		_output = output;
+		_fileSystem = new MockFileSystem();
+		_collector = new TestDiagnosticsCollector(output);
+		_loggerFactory = new TestLoggerFactory(output);
+
+		var versionsConfiguration = new VersionsConfiguration
+		{
+			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
+			{
+				{
+					VersioningSystemId.Stack, new VersioningSystem
+					{
+						Id = VersioningSystemId.Stack,
+						Current = new SemVersion(9, 2, 0),
+						Base = new SemVersion(9, 2, 0)
+					}
+				}
+			},
+		};
+
+		var productsConfiguration = new ProductsConfiguration
+		{
+			Products = new Dictionary<string, Product>
+			{
+				{
+					"elasticsearch", new Product
+					{
+						Id = "elasticsearch",
+						DisplayName = "Elasticsearch",
+						VersioningSystem = versionsConfiguration.GetVersioningSystem(VersioningSystemId.Stack)
+					}
+				},
+				{
+					"kibana", new Product
+					{
+						Id = "kibana",
+						DisplayName = "Kibana",
+						VersioningSystem = versionsConfiguration.GetVersioningSystem(VersioningSystemId.Stack)
+					}
+				},
+				{
+					"cloud-hosted", new Product
+					{
+						Id = "cloud-hosted",
+						DisplayName = "Elastic Cloud Hosted",
+						VersioningSystem = versionsConfiguration.GetVersioningSystem(VersioningSystemId.Stack)
+					}
+				}
+			}.ToFrozenDictionary()
+		};
+
+		_configurationContext = new ConfigurationContext
+		{
+			Endpoints = new DocumentationEndpoints
+			{
+				Elasticsearch = ElasticsearchEndpoint.Default,
+			},
+			ConfigurationFileProvider = new ConfigurationFileProvider(NullLoggerFactory.Instance, _fileSystem),
+			VersionsConfiguration = versionsConfiguration,
+			ProductsConfiguration = productsConfiguration,
+			SearchConfiguration = new SearchConfiguration { Synonyms = new Dictionary<string, string[]>(), Rules = [], DiminishTerms = [] },
+			LegacyUrlMappings = new LegacyUrlMappingConfiguration { Mappings = [] },
+		};
+	}
+
+	[Fact]
+	public async Task CreateChangelog_WithBasicInput_CreatesValidYamlFile()
+	{
+		// Arrange
+		var mockGitHubService = A.Fake<IGitHubPrService>();
+		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
+
+		var input = new ChangelogInput
+		{
+			Title = "Add new search feature",
+			Type = "feature",
+			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Description = "This is a new search feature",
+			Output = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString())
+		};
+
+		// Act
+		var result = await service.CreateChangelog(_collector, input, CancellationToken.None);
+
+		// Assert
+		if (!result)
+		{
+			foreach (var diagnostic in _collector.Diagnostics)
+			{
+				_output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
+			}
+		}
+		result.Should().BeTrue();
+		_collector.Errors.Should().Be(0);
+
+		// Note: ChangelogService uses real FileSystem, so we need to check the actual file system
+		var outputDir = input.Output ?? Directory.GetCurrentDirectory();
+		if (!Directory.Exists(outputDir))
+			Directory.CreateDirectory(outputDir);
+		var files = Directory.GetFiles(outputDir, "*.yaml");
+		files.Should().HaveCount(1);
+
+		var yamlContent = await File.ReadAllTextAsync(files[0]);
+		yamlContent.Should().Contain("title: Add new search feature");
+		yamlContent.Should().Contain("type: feature");
+		yamlContent.Should().Contain("product: elasticsearch");
+		yamlContent.Should().Contain("target: 9.2.0");
+		yamlContent.Should().Contain("lifecycle: ga");
+		yamlContent.Should().Contain("description: This is a new search feature");
+	}
+
+	[Fact]
+	public async Task CreateChangelog_WithPrOption_FetchesPrInfoAndDerivesTitle()
+	{
+		// Arrange
+		var mockGitHubService = A.Fake<IGitHubPrService>();
+		var prInfo = new GitHubPrInfo
+		{
+			Title = "Implement new aggregation API",
+			Labels = ["type:feature"]
+		};
+
+		A.CallTo(() => mockGitHubService.FetchPrInfoAsync(
+			"https://github.com/elastic/elasticsearch/pull/12345",
+			null,
+			null,
+			A<CancellationToken>._))
+			.Returns(prInfo);
+
+		// Create a config file with label mappings
+		var configDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+		Directory.CreateDirectory(configDir);
+		var configPath = Path.Combine(configDir, "changelog.yml");
+		var configContent = """
+			available_types:
+			  - feature
+			  - bug-fix
+			available_subtypes: []
+			available_lifecycles:
+			  - preview
+			  - beta
+			  - ga
+			label_to_type:
+			  "type:feature": feature
+			""";
+		await File.WriteAllTextAsync(configPath, configContent);
+
+		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
+
+		var input = new ChangelogInput
+		{
+			Pr = "https://github.com/elastic/elasticsearch/pull/12345",
+			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Config = configPath,
+			Output = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString())
+		};
+
+		// Act
+		var result = await service.CreateChangelog(_collector, input, CancellationToken.None);
+
+		// Assert
+		result.Should().BeTrue();
+		_collector.Errors.Should().Be(0);
+
+		A.CallTo(() => mockGitHubService.FetchPrInfoAsync(
+			"https://github.com/elastic/elasticsearch/pull/12345",
+			null,
+			null,
+			A<CancellationToken>._))
+			.MustHaveHappenedOnceExactly();
+
+		var outputDir = input.Output ?? Directory.GetCurrentDirectory();
+		if (!Directory.Exists(outputDir))
+			Directory.CreateDirectory(outputDir);
+		var files = Directory.GetFiles(outputDir, "*.yaml");
+		files.Should().HaveCount(1);
+
+		var yamlContent = await File.ReadAllTextAsync(files[0]);
+		yamlContent.Should().Contain("title: Implement new aggregation API");
+		yamlContent.Should().Contain("type: feature");
+		yamlContent.Should().Contain("pr: https://github.com/elastic/elasticsearch/pull/12345");
+	}
+
+	[Fact]
+	public async Task CreateChangelog_WithPrOptionAndLabelMapping_MapsLabelsToType()
+	{
+		// Arrange
+		var mockGitHubService = A.Fake<IGitHubPrService>();
+		var prInfo = new GitHubPrInfo
+		{
+			Title = "Fix memory leak in search",
+			Labels = ["type:bug"]
+		};
+
+		A.CallTo(() => mockGitHubService.FetchPrInfoAsync(
+			A<string>._,
+			A<string?>._,
+			A<string?>._,
+			A<CancellationToken>._))
+			.Returns(prInfo);
+
+		var configDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+		Directory.CreateDirectory(configDir);
+		var configPath = Path.Combine(configDir, "changelog.yml");
+		var configContent = """
+			available_types:
+			  - feature
+			  - bug-fix
+			  - enhancement
+			available_subtypes: []
+			available_lifecycles:
+			  - preview
+			  - beta
+			  - ga
+			label_to_type:
+			  "type:bug": bug-fix
+			  "type:feature": feature
+			""";
+		await File.WriteAllTextAsync(configPath, configContent);
+
+		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
+
+		var input = new ChangelogInput
+		{
+			Pr = "https://github.com/elastic/elasticsearch/pull/12345",
+			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
+			Config = configPath,
+			Output = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString())
+		};
+
+		// Act
+		var result = await service.CreateChangelog(_collector, input, CancellationToken.None);
+
+		// Assert
+		if (!result)
+		{
+			foreach (var diagnostic in _collector.Diagnostics)
+			{
+				_output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
+			}
+		}
+		result.Should().BeTrue();
+		_collector.Errors.Should().Be(0);
+
+		// Note: ChangelogService uses real FileSystem, so we need to check the actual file system
+		var outputDir = input.Output ?? Directory.GetCurrentDirectory();
+		if (!Directory.Exists(outputDir))
+			Directory.CreateDirectory(outputDir);
+		var files = Directory.GetFiles(outputDir, "*.yaml");
+		var yamlContent = await File.ReadAllTextAsync(files[0]);
+		yamlContent.Should().Contain("type: bug-fix");
+	}
+
+	[Fact]
+	public async Task CreateChangelog_WithPrOptionAndAreaMapping_MapsLabelsToAreas()
+	{
+		// Arrange
+		var mockGitHubService = A.Fake<IGitHubPrService>();
+		var prInfo = new GitHubPrInfo
+		{
+			Title = "Add security enhancements",
+			Labels = ["type:enhancement", "area:security", "area:search"]
+		};
+
+		A.CallTo(() => mockGitHubService.FetchPrInfoAsync(
+			A<string>._,
+			A<string?>._,
+			A<string?>._,
+			A<CancellationToken>._))
+			.Returns(prInfo);
+
+		var configDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+		Directory.CreateDirectory(configDir);
+		var configPath = Path.Combine(configDir, "changelog.yml");
+		var configContent = """
+			available_types:
+			  - feature
+			  - enhancement
+			available_subtypes: []
+			available_lifecycles:
+			  - preview
+			  - beta
+			  - ga
+			label_to_type:
+			  "type:enhancement": enhancement
+			label_to_areas:
+			  "area:security": security
+			  "area:search": search
+			""";
+		await File.WriteAllTextAsync(configPath, configContent);
+
+		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
+
+		var input = new ChangelogInput
+		{
+			Pr = "https://github.com/elastic/elasticsearch/pull/12345",
+			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
+			Config = configPath,
+			Output = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString())
+		};
+
+		// Act
+		var result = await service.CreateChangelog(_collector, input, CancellationToken.None);
+
+		// Assert
+		if (!result)
+		{
+			foreach (var diagnostic in _collector.Diagnostics)
+			{
+				_output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
+			}
+		}
+		result.Should().BeTrue();
+		_collector.Errors.Should().Be(0);
+
+		// Note: ChangelogService uses real FileSystem, so we need to check the actual file system
+		var outputDir = input.Output ?? Directory.GetCurrentDirectory();
+		if (!Directory.Exists(outputDir))
+			Directory.CreateDirectory(outputDir);
+		var files = Directory.GetFiles(outputDir, "*.yaml");
+		var yamlContent = await File.ReadAllTextAsync(files[0]);
+		yamlContent.Should().Contain("areas:");
+		yamlContent.Should().Contain("- security");
+		yamlContent.Should().Contain("- search");
+	}
+
+	[Fact]
+	public async Task CreateChangelog_WithPrNumberAndOwnerRepo_FetchesPrInfo()
+	{
+		// Arrange
+		var mockGitHubService = A.Fake<IGitHubPrService>();
+		var prInfo = new GitHubPrInfo
+		{
+			Title = "Update documentation",
+			Labels = []
+		};
+
+		A.CallTo(() => mockGitHubService.FetchPrInfoAsync(
+			"12345",
+			"elastic",
+			"elasticsearch",
+			A<CancellationToken>._))
+			.Returns(prInfo);
+
+		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
+
+		var input = new ChangelogInput
+		{
+			Pr = "12345",
+			Owner = "elastic",
+			Repo = "elasticsearch",
+			Title = "Update documentation",
+			Type = "docs",
+			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
+			Output = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString())
+		};
+
+		// Act
+		var result = await service.CreateChangelog(_collector, input, CancellationToken.None);
+
+		// Assert
+		result.Should().BeTrue();
+		_collector.Errors.Should().Be(0);
+
+		A.CallTo(() => mockGitHubService.FetchPrInfoAsync(
+			"12345",
+			"elastic",
+			"elasticsearch",
+			A<CancellationToken>._))
+			.MustHaveHappenedOnceExactly();
+	}
+
+	[Fact]
+	public async Task CreateChangelog_WithExplicitTitle_OverridesPrTitle()
+	{
+		// Arrange
+		var mockGitHubService = A.Fake<IGitHubPrService>();
+		var prInfo = new GitHubPrInfo
+		{
+			Title = "PR Title from GitHub",
+			Labels = []
+		};
+
+		A.CallTo(() => mockGitHubService.FetchPrInfoAsync(
+			A<string>._,
+			A<string?>._,
+			A<string?>._,
+			A<CancellationToken>._))
+			.Returns(prInfo);
+
+		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
+
+		var input = new ChangelogInput
+		{
+			Pr = "https://github.com/elastic/elasticsearch/pull/12345",
+			Title = "Custom Title Override",
+			Type = "feature",
+			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
+			Output = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString())
+		};
+
+		// Act
+		var result = await service.CreateChangelog(_collector, input, CancellationToken.None);
+
+		// Assert
+		if (!result)
+		{
+			foreach (var diagnostic in _collector.Diagnostics)
+			{
+				_output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
+			}
+		}
+		result.Should().BeTrue();
+		_collector.Errors.Should().Be(0);
+
+		// Note: ChangelogService uses real FileSystem, so we need to check the actual file system
+		var outputDir = input.Output ?? Directory.GetCurrentDirectory();
+		if (!Directory.Exists(outputDir))
+			Directory.CreateDirectory(outputDir);
+		var files = Directory.GetFiles(outputDir, "*.yaml");
+		var yamlContent = await File.ReadAllTextAsync(files[0]);
+		yamlContent.Should().Contain("title: Custom Title Override");
+		yamlContent.Should().NotContain("PR Title from GitHub");
+	}
+
+	[Fact]
+	public async Task CreateChangelog_WithMultipleProducts_CreatesValidYaml()
+	{
+		// Arrange
+		var mockGitHubService = A.Fake<IGitHubPrService>();
+		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
+
+		var input = new ChangelogInput
+		{
+			Title = "Multi-product feature",
+			Type = "feature",
+			Products = [
+				new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" },
+				new ProductInfo { Product = "kibana", Target = "9.2.0", Lifecycle = "ga" }
+			],
+			Output = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString())
+		};
+
+		// Act
+		var result = await service.CreateChangelog(_collector, input, CancellationToken.None);
+
+		// Assert
+		if (!result)
+		{
+			foreach (var diagnostic in _collector.Diagnostics)
+			{
+				_output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
+			}
+		}
+		result.Should().BeTrue();
+		_collector.Errors.Should().Be(0);
+
+		// Note: ChangelogService uses real FileSystem, so we need to check the actual file system
+		var outputDir = input.Output ?? Directory.GetCurrentDirectory();
+		if (!Directory.Exists(outputDir))
+			Directory.CreateDirectory(outputDir);
+		var files = Directory.GetFiles(outputDir, "*.yaml");
+		var yamlContent = await File.ReadAllTextAsync(files[0]);
+		yamlContent.Should().Contain("products:");
+		// Should contain both products
+		var elasticsearchIndex = yamlContent.IndexOf("product: elasticsearch", StringComparison.Ordinal);
+		var kibanaIndex = yamlContent.IndexOf("product: kibana", StringComparison.Ordinal);
+		elasticsearchIndex.Should().BeGreaterThan(-1);
+		kibanaIndex.Should().BeGreaterThan(-1);
+	}
+
+	[Fact]
+	public async Task CreateChangelog_WithBreakingChangeAndSubtype_CreatesValidYaml()
+	{
+		// Arrange
+		var mockGitHubService = A.Fake<IGitHubPrService>();
+		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
+
+		var input = new ChangelogInput
+		{
+			Title = "Breaking API change",
+			Type = "breaking-change",
+			Subtype = "api",
+			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
+			Impact = "API clients will need to update",
+			Action = "Update your API client code",
+			Output = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString())
+		};
+
+		// Act
+		var result = await service.CreateChangelog(_collector, input, CancellationToken.None);
+
+		// Assert
+		if (!result)
+		{
+			foreach (var diagnostic in _collector.Diagnostics)
+			{
+				_output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
+			}
+		}
+		result.Should().BeTrue();
+		_collector.Errors.Should().Be(0);
+
+		// Note: ChangelogService uses real FileSystem, so we need to check the actual file system
+		var outputDir = input.Output ?? Directory.GetCurrentDirectory();
+		if (!Directory.Exists(outputDir))
+			Directory.CreateDirectory(outputDir);
+		var files = Directory.GetFiles(outputDir, "*.yaml");
+		var yamlContent = await File.ReadAllTextAsync(files[0]);
+		yamlContent.Should().Contain("type: breaking-change");
+		yamlContent.Should().Contain("subtype: api");
+		yamlContent.Should().Contain("impact: API clients will need to update");
+		yamlContent.Should().Contain("action: Update your API client code");
+	}
+
+	[Fact]
+	public async Task CreateChangelog_WithIssues_CreatesValidYaml()
+	{
+		// Arrange
+		var mockGitHubService = A.Fake<IGitHubPrService>();
+		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
+
+		var input = new ChangelogInput
+		{
+			Title = "Fix multiple issues",
+			Type = "bug-fix",
+			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
+			Issues = [
+				"https://github.com/elastic/elasticsearch/issues/123",
+				"https://github.com/elastic/elasticsearch/issues/456"
+			],
+			Output = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString())
+		};
+
+		// Act
+		var result = await service.CreateChangelog(_collector, input, CancellationToken.None);
+
+		// Assert
+		if (!result)
+		{
+			foreach (var diagnostic in _collector.Diagnostics)
+			{
+				_output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
+			}
+		}
+		result.Should().BeTrue();
+		_collector.Errors.Should().Be(0);
+
+		// Note: ChangelogService uses real FileSystem, so we need to check the actual file system
+		var outputDir = input.Output ?? Directory.GetCurrentDirectory();
+		if (!Directory.Exists(outputDir))
+			Directory.CreateDirectory(outputDir);
+		var files = Directory.GetFiles(outputDir, "*.yaml");
+		var yamlContent = await File.ReadAllTextAsync(files[0]);
+		yamlContent.Should().Contain("issues:");
+		yamlContent.Should().Contain("- https://github.com/elastic/elasticsearch/issues/123");
+		yamlContent.Should().Contain("- https://github.com/elastic/elasticsearch/issues/456");
+	}
+
+	[Fact]
+	public async Task CreateChangelog_WithPrOptionButNoLabelMapping_ReturnsError()
+	{
+		// Arrange
+		var mockGitHubService = A.Fake<IGitHubPrService>();
+		var prInfo = new GitHubPrInfo
+		{
+			Title = "Some PR",
+			Labels = ["some-label"]
+		};
+
+		A.CallTo(() => mockGitHubService.FetchPrInfoAsync(
+			A<string>._,
+			A<string?>._,
+			A<string?>._,
+			A<CancellationToken>._))
+			.Returns(prInfo);
+
+		// Config without label_to_type mapping
+		var configDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+		Directory.CreateDirectory(configDir);
+		var configPath = Path.Combine(configDir, "changelog.yml");
+		var configContent = """
+			available_types:
+			  - feature
+			  - bug-fix
+			available_subtypes: []
+			available_lifecycles:
+			  - preview
+			  - beta
+			  - ga
+			""";
+		await File.WriteAllTextAsync(configPath, configContent);
+
+		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
+
+		var input = new ChangelogInput
+		{
+			Pr = "https://github.com/elastic/elasticsearch/pull/12345",
+			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
+			Config = configPath,
+			Output = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString())
+		};
+
+		// Act
+		var result = await service.CreateChangelog(_collector, input, CancellationToken.None);
+
+		// Assert
+		result.Should().BeFalse();
+		_collector.Errors.Should().BeGreaterThan(0);
+		_collector.Diagnostics.Should().Contain(d => d.Message.Contains("Cannot derive type from PR"));
+	}
+
+	[Fact]
+	public async Task CreateChangelog_WithPrOptionButPrFetchFails_ReturnsError()
+	{
+		// Arrange
+		var mockGitHubService = A.Fake<IGitHubPrService>();
+
+		A.CallTo(() => mockGitHubService.FetchPrInfoAsync(
+			A<string>._,
+			A<string?>._,
+			A<string?>._,
+			A<CancellationToken>._))
+			.Returns((GitHubPrInfo?)null);
+
+		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
+
+		var input = new ChangelogInput
+		{
+			Pr = "https://github.com/elastic/elasticsearch/pull/12345",
+			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
+			Output = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString())
+		};
+
+		// Act
+		var result = await service.CreateChangelog(_collector, input, CancellationToken.None);
+
+		// Assert
+		result.Should().BeFalse();
+		_collector.Errors.Should().BeGreaterThan(0);
+		_collector.Diagnostics.Should().Contain(d => d.Message.Contains("Failed to fetch PR information"));
+	}
+
+	[Fact]
+	public async Task CreateChangelog_WithInvalidProduct_ReturnsError()
+	{
+		// Arrange
+		var mockGitHubService = A.Fake<IGitHubPrService>();
+		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
+
+		var input = new ChangelogInput
+		{
+			Title = "Test",
+			Type = "feature",
+			Products = [new ProductInfo { Product = "invalid-product", Target = "9.2.0" }],
+			Output = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString())
+		};
+
+		// Act
+		var result = await service.CreateChangelog(_collector, input, CancellationToken.None);
+
+		// Assert
+		result.Should().BeFalse();
+		_collector.Errors.Should().BeGreaterThan(0);
+		_collector.Diagnostics.Should().Contain(d => d.Message.Contains("is not in the list of available products"));
+	}
+
+	[Fact]
+	public async Task CreateChangelog_WithInvalidType_ReturnsError()
+	{
+		// Arrange
+		var mockGitHubService = A.Fake<IGitHubPrService>();
+		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
+
+		var input = new ChangelogInput
+		{
+			Title = "Test",
+			Type = "invalid-type",
+			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
+			Output = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString())
+		};
+
+		// Act
+		var result = await service.CreateChangelog(_collector, input, CancellationToken.None);
+
+		// Assert
+		result.Should().BeFalse();
+		_collector.Errors.Should().BeGreaterThan(0);
+		_collector.Diagnostics.Should().Contain(d => d.Message.Contains("is not in the list of available types"));
+	}
+
+	[Fact]
+	public async Task CreateChangelog_WithHighlightFlag_CreatesValidYaml()
+	{
+		// Arrange
+		var mockGitHubService = A.Fake<IGitHubPrService>();
+		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
+
+		var input = new ChangelogInput
+		{
+			Title = "Important feature",
+			Type = "feature",
+			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
+			Highlight = true,
+			Output = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString())
+		};
+
+		// Act
+		var result = await service.CreateChangelog(_collector, input, CancellationToken.None);
+
+		// Assert
+		if (!result)
+		{
+			foreach (var diagnostic in _collector.Diagnostics)
+			{
+				_output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
+			}
+		}
+		result.Should().BeTrue();
+		_collector.Errors.Should().Be(0);
+
+		// Note: ChangelogService uses real FileSystem, so we need to check the actual file system
+		var outputDir = input.Output ?? Directory.GetCurrentDirectory();
+		if (!Directory.Exists(outputDir))
+			Directory.CreateDirectory(outputDir);
+		var files = Directory.GetFiles(outputDir, "*.yaml");
+		var yamlContent = await File.ReadAllTextAsync(files[0]);
+		yamlContent.Should().Contain("highlight: true");
+	}
+
+	[Fact]
+	public async Task CreateChangelog_WithFeatureId_CreatesValidYaml()
+	{
+		// Arrange
+		var mockGitHubService = A.Fake<IGitHubPrService>();
+		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
+
+		var input = new ChangelogInput
+		{
+			Title = "New feature with flag",
+			Type = "feature",
+			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
+			FeatureId = "feature:new-search-api",
+			Output = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString())
+		};
+
+		// Act
+		var result = await service.CreateChangelog(_collector, input, CancellationToken.None);
+
+		// Assert
+		if (!result)
+		{
+			foreach (var diagnostic in _collector.Diagnostics)
+			{
+				_output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
+			}
+		}
+		result.Should().BeTrue();
+		_collector.Errors.Should().Be(0);
+
+		// Note: ChangelogService uses real FileSystem, so we need to check the actual file system
+		var outputDir = input.Output ?? Directory.GetCurrentDirectory();
+		if (!Directory.Exists(outputDir))
+			Directory.CreateDirectory(outputDir);
+		var files = Directory.GetFiles(outputDir, "*.yaml");
+		var yamlContent = await File.ReadAllTextAsync(files[0]);
+		yamlContent.Should().Contain("feature_id: feature:new-search-api");
+	}
+}
+
