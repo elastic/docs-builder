@@ -737,7 +737,7 @@ public class ChangelogServiceTests
 			Type = "feature",
 			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
 			Highlight = true,
-			Output = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString())
+			Output = new FileSystem().Path.Combine(new FileSystem().Path.GetTempPath(), Guid.NewGuid().ToString())
 		};
 
 		// Act
@@ -776,7 +776,7 @@ public class ChangelogServiceTests
 			Type = "feature",
 			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
 			FeatureId = "feature:new-search-api",
-			Output = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString())
+			Output = new FileSystem().Path.Combine(new FileSystem().Path.GetTempPath(), Guid.NewGuid().ToString())
 		};
 
 		// Act
