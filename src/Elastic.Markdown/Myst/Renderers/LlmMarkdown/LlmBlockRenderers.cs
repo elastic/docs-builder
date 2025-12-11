@@ -382,12 +382,13 @@ public class LlmTableRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, Tabl
 	private static string RenderTableCellContent(LlmMarkdownRenderer renderer, TableCell cell) =>
 		DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(
 			renderer.BuildContext,
-			cell.Descendants().OfType<Inline>(),
-			static (tmpRenderer, obj) =>
+			cell,
+			static (tmpRenderer, c) =>
 			{
-				foreach (var inline in obj)
-					tmpRenderer.Write(inline);
-			});
+				// Render the cell's child blocks (e.g., ParagraphBlock) which properly
+				// handles the inline hierarchy without duplicating nested inline content
+				tmpRenderer.WriteChildren(c);
+			}).Trim();
 }
 
 public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, DirectiveBlock>
