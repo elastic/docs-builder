@@ -531,7 +531,7 @@ public partial class ChangelogService(
 			var filterCount = 0;
 			if (input.All)
 				filterCount++;
-			if (input.Products != null && input.Products.Count > 0)
+			if (input.InputProducts != null && input.InputProducts.Count > 0)
 				filterCount++;
 			if (input.Prs != null && input.Prs.Length > 0)
 				filterCount++;
@@ -540,13 +540,13 @@ public partial class ChangelogService(
 
 			if (filterCount == 0)
 			{
-				collector.EmitError(string.Empty, "At least one filter option must be specified: --all, --products, --prs, or --prs-file");
+				collector.EmitError(string.Empty, "At least one filter option must be specified: --all, --input-products, --prs, or --prs-file");
 				return false;
 			}
 
 			if (filterCount > 1)
 			{
-				collector.EmitError(string.Empty, "Only one filter option can be specified at a time: --all, --products, --prs, or --prs-file");
+				collector.EmitError(string.Empty, "Only one filter option can be specified at a time: --all, --input-products, --prs, or --prs-file");
 				return false;
 			}
 
@@ -589,9 +589,9 @@ public partial class ChangelogService(
 
 			// Build set of product/version combinations to filter by
 			var productsToMatch = new HashSet<(string product, string version)>();
-			if (input.Products != null && input.Products.Count > 0)
+			if (input.InputProducts != null && input.InputProducts.Count > 0)
 			{
-				foreach (var product in input.Products)
+				foreach (var product in input.InputProducts)
 				{
 					var version = product.Target ?? string.Empty;
 					_ = productsToMatch.Add((product.Product.ToLowerInvariant(), version));
@@ -766,9 +766,22 @@ public partial class ChangelogService(
 			// Build bundled data
 			var bundledData = new BundledChangelogData();
 
-			// Extract unique products/versions
-			// If --products filter was used, only include those specific product-versions
-			if (productsToMatch.Count > 0)
+			// Set products array in output
+			// If --output-products was specified, use those values (override any from changelogs)
+			if (input.OutputProducts != null && input.OutputProducts.Count > 0)
+			{
+				bundledData.Products = input.OutputProducts
+					.OrderBy(p => p.Product)
+					.ThenBy(p => p.Target ?? string.Empty)
+					.Select(p => new BundledProduct
+					{
+						Product = p.Product,
+						Target = p.Target
+					})
+					.ToList();
+			}
+			// If --input-products filter was used, only include those specific product-versions
+			else if (productsToMatch.Count > 0)
 			{
 				bundledData.Products = productsToMatch
 					.OrderBy(pv => pv.product)
@@ -780,6 +793,7 @@ public partial class ChangelogService(
 					})
 					.ToList();
 			}
+			// Otherwise, extract unique products/versions from changelog entries
 			else
 			{
 				var productVersions = new HashSet<(string product, string version)>();

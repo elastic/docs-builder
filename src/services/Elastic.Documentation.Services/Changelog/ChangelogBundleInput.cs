@@ -12,7 +12,8 @@ public class ChangelogBundleInput
 	public string Directory { get; set; } = string.Empty;
 	public string? Output { get; set; }
 	public bool All { get; set; }
-	public List<ProductInfo>? Products { get; set; }
+	public List<ProductInfo>? InputProducts { get; set; }
+	public List<ProductInfo>? OutputProducts { get; set; }
 	public string[]? Prs { get; set; }
 	public string? PrsFile { get; set; }
 	public string? Owner { get; set; }

@@ -916,7 +916,7 @@ public class ChangelogServiceTests : IDisposable
 		var input = new ChangelogBundleInput
 		{
 			Directory = changelogDir,
-			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
+			InputProducts = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
 			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
@@ -1197,7 +1197,7 @@ public class ChangelogServiceTests : IDisposable
 		var input = new ChangelogBundleInput
 		{
 			Directory = changelogDir,
-			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
+			InputProducts = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
 			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
@@ -1271,7 +1271,7 @@ public class ChangelogServiceTests : IDisposable
 		{
 			Directory = changelogDir,
 			All = true,
-			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
+			InputProducts = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
 			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
@@ -1319,7 +1319,7 @@ public class ChangelogServiceTests : IDisposable
 		var input = new ChangelogBundleInput
 		{
 			Directory = changelogDir,
-			Products = [
+			InputProducts = [
 				new ProductInfo { Product = "cloud-serverless", Target = "2025-12-02" },
 				new ProductInfo { Product = "cloud-serverless", Target = "2025-12-06" }
 			],
@@ -1364,6 +1364,69 @@ public class ChangelogServiceTests : IDisposable
 		result.Should().BeFalse();
 		_collector.Errors.Should().BeGreaterThan(0);
 		_collector.Diagnostics.Should().Contain(d => d.Message.Contains("PRs file does not exist"));
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithOutputProducts_OverridesChangelogProducts()
+	{
+		// Arrange
+		var service = new ChangelogService(_loggerFactory, _configurationContext, null);
+		var fileSystem = new FileSystem();
+		var changelogDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		fileSystem.Directory.CreateDirectory(changelogDir);
+
+		// Create test changelog files with different products
+		var changelog1 = """
+			title: Elasticsearch feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			pr: https://github.com/elastic/elasticsearch/pull/100
+			""";
+		var changelog2 = """
+			title: Kibana feature
+			type: feature
+			products:
+			  - product: kibana
+			    target: 9.2.0
+			pr: https://github.com/elastic/kibana/pull/200
+			""";
+
+		var file1 = fileSystem.Path.Combine(changelogDir, "1755268130-elasticsearch-feature.yaml");
+		var file2 = fileSystem.Path.Combine(changelogDir, "1755268140-kibana-feature.yaml");
+		await fileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+		await fileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
+
+		var input = new ChangelogBundleInput
+		{
+			Directory = changelogDir,
+			All = true,
+			OutputProducts = [
+				new ProductInfo { Product = "cloud-serverless", Target = "2025-12-02" },
+				new ProductInfo { Product = "cloud-serverless", Target = "2025-12-06" }
+			],
+			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
+		};
+
+		// Act
+		var result = await service.BundleChangelogs(_collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		_collector.Errors.Should().Be(0);
+
+		var bundleContent = await fileSystem.File.ReadAllTextAsync(input.Output!, TestContext.Current.CancellationToken);
+		// Output products should override changelog products
+		bundleContent.Should().Contain("product: cloud-serverless");
+		bundleContent.Should().Contain("target: 2025-12-02");
+		bundleContent.Should().Contain("target: 2025-12-06");
+		// Should not contain products from changelogs
+		bundleContent.Should().NotContain("product: elasticsearch");
+		bundleContent.Should().NotContain("product: kibana");
+		// But should still contain the entries
+		bundleContent.Should().Contain("name: 1755268130-elasticsearch-feature.yaml");
+		bundleContent.Should().Contain("name: 1755268140-kibana-feature.yaml");
 	}
 
 	[Fact]

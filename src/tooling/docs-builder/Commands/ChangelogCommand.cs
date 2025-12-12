@@ -107,7 +107,8 @@ internal sealed class ChangelogCommand(
 	/// <param name="directory">Optional: Directory containing changelog YAML files. Defaults to current directory</param>
 	/// <param name="output">Optional: Output file path for the bundled changelog. Defaults to 'changelog-bundle.yaml' in the input directory</param>
 	/// <param name="all">Include all changelogs in the directory</param>
-	/// <param name="products">Filter by products in format "product target lifecycle, ..." (e.g., "cloud-serverless 2025-12-02, cloud-serverless 2025-12-06")</param>
+	/// <param name="inputProducts">Filter by products in format "product target lifecycle, ..." (e.g., "cloud-serverless 2025-12-02, cloud-serverless 2025-12-06")</param>
+	/// <param name="outputProducts">Explicitly set the products array in the output file in format "product target lifecycle, ...". Overrides any values from changelogs.</param>
 	/// <param name="prs">Filter by pull request URLs or numbers (can specify multiple times)</param>
 	/// <param name="prsFile">Path to a newline-delimited file containing PR URLs or numbers</param>
 	/// <param name="owner">Optional: GitHub repository owner (used when PRs are specified as numbers)</param>
@@ -118,7 +119,8 @@ internal sealed class ChangelogCommand(
 		string? directory = null,
 		string? output = null,
 		bool all = false,
-		[ProductInfoParser] List<ProductInfo>? products = null,
+		[ProductInfoParser] List<ProductInfo>? inputProducts = null,
+		[ProductInfoParser] List<ProductInfo>? outputProducts = null,
 		string[]? prs = null,
 		string? prsFile = null,
 		string? owner = null,
@@ -135,7 +137,8 @@ internal sealed class ChangelogCommand(
 			Directory = directory ?? Directory.GetCurrentDirectory(),
 			Output = output,
 			All = all,
-			Products = products,
+			InputProducts = inputProducts,
+			OutputProducts = outputProducts,
 			Prs = prs,
 			PrsFile = prsFile,
 			Owner = owner,
