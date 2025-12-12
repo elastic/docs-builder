@@ -685,7 +685,7 @@ jobs:
       - name: Run Vale Linter
         uses: elastic/vale-rules/lint@main
         with: 
-          files: ${{ needs.check.outputs.added_files }} ${{ needs.check.outputs.modified_files }}
+          files: ${{ needs.check.outputs.all_changed_files }}
       - name: Post Vale Results
         uses: elastic/vale-rules/report@main
         with:
