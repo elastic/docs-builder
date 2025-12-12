@@ -57,6 +57,12 @@ public class ChangelogConfiguration
 	/// </summary>
 	public Dictionary<string, string>? LabelToAreas { get; set; }
 
+	/// <summary>
+	/// Product-specific label blocking configuration
+	/// Maps product IDs to lists of labels that should prevent changelog creation for that product
+	/// </summary>
+	public Dictionary<string, List<string>>? ProductLabelBlockers { get; set; }
+
 	public static ChangelogConfiguration Default => new();
 }
 
