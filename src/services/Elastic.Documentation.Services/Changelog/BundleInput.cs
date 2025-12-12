@@ -5,13 +5,12 @@
 namespace Elastic.Documentation.Services.Changelog;
 
 /// <summary>
-/// Input data for rendering changelog bundle to markdown
+/// Input for a single bundle file with optional directory and repo
 /// </summary>
-public class ChangelogRenderInput
+public class BundleInput
 {
-	public List<BundleInput> Bundles { get; set; } = [];
-	public string? Output { get; set; }
-	public string? Title { get; set; }
-	public bool Subsections { get; set; }
+	public string BundleFile { get; set; } = string.Empty;
+	public string? Directory { get; set; }
+	public string? Repo { get; set; }
 }
 

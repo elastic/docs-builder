@@ -156,20 +156,18 @@ internal sealed class ChangelogCommand(
 	}
 
 	/// <summary>
-	/// Render a bundled changelog to markdown files
+	/// Render bundled changelog(s) to markdown files
 	/// </summary>
-	/// <param name="bundleFile">Required: Path to the bundled changelog YAML file (output from 'changelog bundle')</param>
+	/// <param name="input">Required: Bundle input(s) in format "bundle-file-path, changelog-directory, repo". Can be specified multiple times. Only bundle-file-path is required.</param>
 	/// <param name="output">Optional: Output directory for rendered markdown files. Defaults to current directory</param>
-	/// <param name="directory">Optional: Directory containing changelog YAML files (used when bundle contains file references). Defaults to bundle file directory</param>
-	/// <param name="repo">Optional: GitHub repository name for PR/issue links. Defaults to 'elastic'</param>
+	/// <param name="title">Optional: Title to use for section headers in output markdown files. Defaults to version from first bundle</param>
 	/// <param name="subsections">Optional: Group entries by area/component in subsections. Defaults to false</param>
 	/// <param name="ctx"></param>
 	[Command("render")]
 	public async Task<int> Render(
-		string bundleFile,
+		[BundleInputParser] List<BundleInput> input,
 		string? output = null,
-		string? directory = null,
-		string? repo = null,
+		string? title = null,
 		bool subsections = false,
 		Cancel ctx = default
 	)
@@ -178,16 +176,15 @@ internal sealed class ChangelogCommand(
 
 		var service = new ChangelogService(logFactory, configurationContext, null);
 
-		var input = new ChangelogRenderInput
+		var renderInput = new ChangelogRenderInput
 		{
-			BundleFile = bundleFile,
+			Bundles = input ?? [],
 			Output = output,
-			Directory = directory,
-			Repo = repo,
+			Title = title,
 			Subsections = subsections
 		};
 
-		serviceInvoker.AddCommand(service, input,
+		serviceInvoker.AddCommand(service, renderInput,
 			async static (s, collector, state, ctx) => await s.RenderChangelogs(collector, state, ctx)
 		);
 

@@ -1014,98 +1014,294 @@ public partial class ChangelogService(
 		try
 		{
 			// Validate input
-			if (string.IsNullOrWhiteSpace(input.BundleFile))
+			if (input.Bundles == null || input.Bundles.Count == 0)
 			{
-				collector.EmitError(string.Empty, "Bundle file is required");
+				collector.EmitError(string.Empty, "At least one bundle file is required. Use --input to specify bundle files.");
 				return false;
 			}
 
-			if (!_fileSystem.File.Exists(input.BundleFile))
-			{
-				collector.EmitError(input.BundleFile, "Bundle file does not exist");
-				return false;
-			}
-
-			// Load bundle file
-			var bundleContent = await _fileSystem.File.ReadAllTextAsync(input.BundleFile, ctx);
 			var deserializer = new StaticDeserializerBuilder(new ChangelogYamlStaticContext())
 				.WithNamingConvention(UnderscoredNamingConvention.Instance)
 				.Build();
 
-			var bundledData = deserializer.Deserialize<BundledChangelogData>(bundleContent);
-			if (bundledData == null)
+			// Validation phase: Load and validate all bundles before merging
+			var bundleDataList = new List<(BundledChangelogData data, BundleInput input, string directory)>();
+			var seenFileNames = new Dictionary<string, List<string>>(); // filename -> list of bundle files
+			var seenPrs = new Dictionary<string, List<string>>(); // PR -> list of bundle files
+			var defaultRepo = "elastic";
+
+			foreach (var bundleInput in input.Bundles)
 			{
-				collector.EmitError(input.BundleFile, "Failed to deserialize bundle file");
+				if (string.IsNullOrWhiteSpace(bundleInput.BundleFile))
+				{
+					collector.EmitError(string.Empty, "Bundle file path is required for each --input");
+					return false;
+				}
+
+				if (!_fileSystem.File.Exists(bundleInput.BundleFile))
+				{
+					collector.EmitError(bundleInput.BundleFile, "Bundle file does not exist");
+					return false;
+				}
+
+				// Load bundle file
+				var bundleContent = await _fileSystem.File.ReadAllTextAsync(bundleInput.BundleFile, ctx);
+
+				// Validate bundle structure - check for unexpected fields by deserializing
+				BundledChangelogData? bundledData;
+				try
+				{
+					bundledData = deserializer.Deserialize<BundledChangelogData>(bundleContent);
+				}
+				catch (YamlException yamlEx)
+				{
+					collector.EmitError(bundleInput.BundleFile, $"Failed to deserialize bundle file: {yamlEx.Message}", yamlEx);
+					return false;
+				}
+
+				if (bundledData == null)
+				{
+					collector.EmitError(bundleInput.BundleFile, "Failed to deserialize bundle file");
+					return false;
+				}
+
+				// Validate bundle has required structure
+				if (bundledData.Products == null)
+				{
+					collector.EmitError(bundleInput.BundleFile, "Bundle file is missing required field: products");
+					return false;
+				}
+
+				if (bundledData.Entries == null)
+				{
+					collector.EmitError(bundleInput.BundleFile, "Bundle file is missing required field: entries");
+					return false;
+				}
+
+				// Determine directory for resolving file references
+				var bundleDirectory = bundleInput.Directory ?? _fileSystem.Path.GetDirectoryName(bundleInput.BundleFile) ?? Directory.GetCurrentDirectory();
+
+				// Validate all referenced files exist and check for duplicates
+				foreach (var entry in bundledData.Entries)
+				{
+					// Track file names for duplicate detection
+					if (!string.IsNullOrWhiteSpace(entry.File?.Name))
+					{
+						if (!seenFileNames.TryGetValue(entry.File.Name, out var bundleList))
+						{
+							bundleList = [];
+							seenFileNames[entry.File.Name] = bundleList;
+						}
+						bundleList.Add(bundleInput.BundleFile);
+					}
+
+					// If entry has resolved data, validate it
+					if (!string.IsNullOrWhiteSpace(entry.Title) && !string.IsNullOrWhiteSpace(entry.Type))
+					{
+						// Validate required fields in resolved entry
+						if (string.IsNullOrWhiteSpace(entry.Title))
+						{
+							collector.EmitError(bundleInput.BundleFile, $"Entry in bundle is missing required field: title");
+							return false;
+						}
+
+						if (string.IsNullOrWhiteSpace(entry.Type))
+						{
+							collector.EmitError(bundleInput.BundleFile, $"Entry in bundle is missing required field: type");
+							return false;
+						}
+
+						if (entry.Products == null || entry.Products.Count == 0)
+						{
+							collector.EmitError(bundleInput.BundleFile, $"Entry '{entry.Title}' in bundle is missing required field: products");
+							return false;
+						}
+
+						// Track PRs for duplicate detection
+						if (!string.IsNullOrWhiteSpace(entry.Pr))
+						{
+							var normalizedPr = NormalizePrForComparison(entry.Pr, null, null);
+							if (!seenPrs.TryGetValue(normalizedPr, out var prBundleList))
+							{
+								prBundleList = [];
+								seenPrs[normalizedPr] = prBundleList;
+							}
+							prBundleList.Add(bundleInput.BundleFile);
+						}
+					}
+					else
+					{
+						// Entry only has file reference - validate file exists
+						if (string.IsNullOrWhiteSpace(entry.File?.Name))
+						{
+							collector.EmitError(bundleInput.BundleFile, "Entry in bundle is missing required field: file.name");
+							return false;
+						}
+
+						if (string.IsNullOrWhiteSpace(entry.File.Checksum))
+						{
+							collector.EmitError(bundleInput.BundleFile, $"Entry for file '{entry.File.Name}' in bundle is missing required field: file.checksum");
+							return false;
+						}
+
+						var filePath = _fileSystem.Path.Combine(bundleDirectory, entry.File.Name);
+						if (!_fileSystem.File.Exists(filePath))
+						{
+							collector.EmitError(bundleInput.BundleFile, $"Referenced changelog file '{entry.File.Name}' does not exist at path: {filePath}");
+							return false;
+						}
+
+						// Validate the changelog file can be deserialized
+						try
+						{
+							var fileContent = await _fileSystem.File.ReadAllTextAsync(filePath, ctx);
+							var checksum = ComputeSha1(fileContent);
+							if (checksum != entry.File.Checksum)
+							{
+								collector.EmitWarning(bundleInput.BundleFile, $"Checksum mismatch for file {entry.File.Name}. Expected {entry.File.Checksum}, got {checksum}");
+							}
+
+							// Deserialize YAML (skip comment lines) to validate structure
+							var yamlLines = fileContent.Split('\n');
+							var yamlWithoutComments = string.Join('\n', yamlLines.Where(line => !line.TrimStart().StartsWith('#')));
+
+							// Normalize "version:" to "target:" in products section
+							var normalizedYaml = VersionToTargetRegex().Replace(yamlWithoutComments, "$1target:");
+
+							var entryData = deserializer.Deserialize<ChangelogData>(normalizedYaml);
+							if (entryData == null)
+							{
+								collector.EmitError(bundleInput.BundleFile, $"Failed to deserialize changelog file '{entry.File.Name}'");
+								return false;
+							}
+
+							// Validate required fields in changelog file
+							if (string.IsNullOrWhiteSpace(entryData.Title))
+							{
+								collector.EmitError(filePath, "Changelog file is missing required field: title");
+								return false;
+							}
+
+							if (string.IsNullOrWhiteSpace(entryData.Type))
+							{
+								collector.EmitError(filePath, "Changelog file is missing required field: type");
+								return false;
+							}
+
+							if (entryData.Products == null || entryData.Products.Count == 0)
+							{
+								collector.EmitError(filePath, "Changelog file is missing required field: products");
+								return false;
+							}
+
+							// Track PRs for duplicate detection
+							if (!string.IsNullOrWhiteSpace(entryData.Pr))
+							{
+								var normalizedPr = NormalizePrForComparison(entryData.Pr, null, null);
+								if (!seenPrs.TryGetValue(normalizedPr, out var prBundleList2))
+								{
+									prBundleList2 = [];
+									seenPrs[normalizedPr] = prBundleList2;
+								}
+								prBundleList2.Add(bundleInput.BundleFile);
+							}
+						}
+						catch (YamlException yamlEx)
+						{
+							collector.EmitError(filePath, $"Failed to parse changelog file: {yamlEx.Message}", yamlEx);
+							return false;
+						}
+					}
+				}
+
+				bundleDataList.Add((bundledData, bundleInput, bundleDirectory));
+			}
+
+			// Check for duplicate file names
+			foreach (var (fileName, bundleFiles) in seenFileNames.Where(kvp => kvp.Value.Count > 1))
+			{
+				collector.EmitWarning(string.Empty, $"Changelog file '{fileName}' appears in multiple bundles: {string.Join(", ", bundleFiles)}");
+			}
+
+			// Check for duplicate PRs
+			foreach (var (pr, bundleFiles) in seenPrs.Where(kvp => kvp.Value.Count > 1))
+			{
+				var uniqueBundles = bundleFiles.Distinct().ToList();
+				if (uniqueBundles.Count > 1)
+				{
+					collector.EmitWarning(string.Empty, $"PR '{pr}' appears in multiple bundles: {string.Join(", ", uniqueBundles)}");
+				}
+			}
+
+			// If validation found errors, stop before merging
+			if (collector.Errors > 0)
+			{
 				return false;
 			}
 
-			// Determine directory for resolving file references
-			var bundleDirectory = input.Directory ?? _fileSystem.Path.GetDirectoryName(input.BundleFile) ?? Directory.GetCurrentDirectory();
+			// Merge phase: Now that validation passed, load and merge all bundles
+			var allResolvedEntries = new List<(ChangelogData entry, string repo)>();
+			var allProducts = new HashSet<(string product, string target)>();
 
-			// Resolve entries if they only contain file references
-			var resolvedEntries = new List<ChangelogData>();
-			foreach (var entry in bundledData.Entries)
+			foreach (var (bundledData, bundleInput, bundleDirectory) in bundleDataList)
 			{
-				ChangelogData? entryData = null;
-
-				// If entry has resolved data, use it
-				if (!string.IsNullOrWhiteSpace(entry.Title) && !string.IsNullOrWhiteSpace(entry.Type))
+				// Collect products from this bundle
+				foreach (var product in bundledData.Products)
 				{
-					entryData = new ChangelogData
-					{
-						Title = entry.Title,
-						Type = entry.Type,
-						Subtype = entry.Subtype,
-						Description = entry.Description,
-						Impact = entry.Impact,
-						Action = entry.Action,
-						FeatureId = entry.FeatureId,
-						Highlight = entry.Highlight,
-						Pr = entry.Pr,
-						Products = entry.Products ?? [],
-						Areas = entry.Areas,
-						Issues = entry.Issues
-					};
-				}
-				else
-				{
-					// Load from file
-					var filePath = _fileSystem.Path.Combine(bundleDirectory, entry.File.Name);
-					if (!_fileSystem.File.Exists(filePath))
-					{
-						collector.EmitError(filePath, $"Referenced changelog file does not exist");
-						return false;
-					}
-
-					var fileContent = await _fileSystem.File.ReadAllTextAsync(filePath, ctx);
-					var checksum = ComputeSha1(fileContent);
-					if (checksum != entry.File.Checksum)
-					{
-						collector.EmitWarning(filePath, $"Checksum mismatch for file {entry.File.Name}. Expected {entry.File.Checksum}, got {checksum}");
-					}
-
-					// Deserialize YAML (skip comment lines)
-					var yamlLines = fileContent.Split('\n');
-					var yamlWithoutComments = string.Join('\n', yamlLines.Where(line => !line.TrimStart().StartsWith('#')));
-
-					// Normalize "version:" to "target:" in products section
-					var normalizedYaml = VersionToTargetRegex().Replace(yamlWithoutComments, "$1target:");
-
-					entryData = deserializer.Deserialize<ChangelogData>(normalizedYaml);
-					if (entryData == null)
-					{
-						collector.EmitError(filePath, "Failed to deserialize changelog file");
-						return false;
-					}
+					var target = product.Target ?? string.Empty;
+					_ = allProducts.Add((product.Product, target));
 				}
 
-				if (entryData != null)
+				var repo = bundleInput.Repo ?? defaultRepo;
+
+				// Resolve entries
+				foreach (var entry in bundledData.Entries)
 				{
-					resolvedEntries.Add(entryData);
+					ChangelogData? entryData = null;
+
+					// If entry has resolved data, use it
+					if (!string.IsNullOrWhiteSpace(entry.Title) && !string.IsNullOrWhiteSpace(entry.Type))
+					{
+						entryData = new ChangelogData
+						{
+							Title = entry.Title,
+							Type = entry.Type,
+							Subtype = entry.Subtype,
+							Description = entry.Description,
+							Impact = entry.Impact,
+							Action = entry.Action,
+							FeatureId = entry.FeatureId,
+							Highlight = entry.Highlight,
+							Pr = entry.Pr,
+							Products = entry.Products ?? [],
+							Areas = entry.Areas,
+							Issues = entry.Issues
+						};
+					}
+					else
+					{
+						// Load from file (already validated to exist)
+						var filePath = _fileSystem.Path.Combine(bundleDirectory, entry.File.Name);
+						var fileContent = await _fileSystem.File.ReadAllTextAsync(filePath, ctx);
+
+						// Deserialize YAML (skip comment lines)
+						var yamlLines = fileContent.Split('\n');
+						var yamlWithoutComments = string.Join('\n', yamlLines.Where(line => !line.TrimStart().StartsWith('#')));
+
+						// Normalize "version:" to "target:" in products section
+						var normalizedYaml = VersionToTargetRegex().Replace(yamlWithoutComments, "$1target:");
+
+						entryData = deserializer.Deserialize<ChangelogData>(normalizedYaml);
+					}
+
+					if (entryData != null)
+					{
+						allResolvedEntries.Add((entryData, repo));
+					}
 				}
 			}
 
-			if (resolvedEntries.Count == 0)
+			if (allResolvedEntries.Count == 0)
 			{
 				collector.EmitError(string.Empty, "No changelog entries to render");
 				return false;
@@ -1119,24 +1315,32 @@ public partial class ChangelogService(
 			}
 
 			// Extract version from products (use first product's target if available, or "unknown")
-			var version = bundledData.Products.Count > 0 && !string.IsNullOrWhiteSpace(bundledData.Products[0].Target)
-				? bundledData.Products[0].Target!
+			var version = allProducts.Count > 0
+				? allProducts.OrderBy(p => p.product).ThenBy(p => p.target).First().target
 				: "unknown";
 
-			// Group entries by type (kind)
-			var entriesByType = resolvedEntries.GroupBy(e => e.Type).ToDictionary(g => g.Key, g => g.ToList());
+			if (string.IsNullOrWhiteSpace(version))
+			{
+				version = "unknown";
+			}
 
-			// Render markdown files
-			var repo = input.Repo ?? "elastic";
+			// Group entries by type (kind)
+			var entriesByType = allResolvedEntries.Select(e => e.entry).GroupBy(e => e.Type).ToDictionary(g => g.Key, g => g.ToList());
+
+			// Use title from input or default to version
+			var title = input.Title ?? version;
+
+			// Render markdown files (use first repo found, or default)
+			var repoForRendering = allResolvedEntries.Count > 0 ? allResolvedEntries[0].repo : defaultRepo;
 
 			// Render index.md (features, enhancements, bug fixes, security)
-			await RenderIndexMarkdown(collector, outputDir, version, repo, resolvedEntries, entriesByType, input.Subsections, ctx);
+			await RenderIndexMarkdown(collector, outputDir, title, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, ctx);
 
 			// Render breaking-changes.md
-			await RenderBreakingChangesMarkdown(collector, outputDir, version, repo, resolvedEntries, entriesByType, input.Subsections, ctx);
+			await RenderBreakingChangesMarkdown(collector, outputDir, title, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, ctx);
 
 			// Render deprecations.md
-			await RenderDeprecationsMarkdown(collector, outputDir, version, repo, resolvedEntries, entriesByType, input.Subsections, ctx);
+			await RenderDeprecationsMarkdown(collector, outputDir, title, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, ctx);
 
 			_logger.LogInformation("Rendered changelog markdown files to {OutputDir}", outputDir);
 
@@ -1158,7 +1362,7 @@ public partial class ChangelogService(
 		}
 		catch (YamlException yamlEx)
 		{
-			collector.EmitError(input.BundleFile, $"YAML parsing error: {yamlEx.Message}", yamlEx);
+			collector.EmitError(string.Empty, $"YAML parsing error: {yamlEx.Message}", yamlEx);
 			return false;
 		}
 	}
@@ -1168,7 +1372,7 @@ public partial class ChangelogService(
 	private async Task RenderIndexMarkdown(
 		IDiagnosticsCollector collector,
 		string outputDir,
-		string version,
+		string title,
 		string repo,
 		List<ChangelogData> entries,
 		Dictionary<string, List<ChangelogData>> entriesByType,
@@ -1197,15 +1401,15 @@ public partial class ChangelogService(
 		}
 		if (hasBreakingChanges)
 		{
-			otherLinks.Add($"[Breaking changes](/release-notes/breaking-changes.md#{repo}-{version}-breaking-changes)");
+			otherLinks.Add($"[Breaking changes](/release-notes/breaking-changes.md#{repo}-{title}-breaking-changes)");
 		}
 		if (hasDeprecations)
 		{
-			otherLinks.Add($"[Deprecations](/release-notes/deprecations.md#{repo}-{version}-deprecations)");
+			otherLinks.Add($"[Deprecations](/release-notes/deprecations.md#{repo}-{title}-deprecations)");
 		}
 
 		var sb = new StringBuilder();
-		sb.AppendLine(CultureInfo.InvariantCulture, $"## {version} [{repo}-release-notes-{version}]");
+		sb.AppendLine(CultureInfo.InvariantCulture, $"## {title} [{repo}-release-notes-{title}]");
 
 		if (otherLinks.Count > 0)
 		{
@@ -1218,7 +1422,7 @@ public partial class ChangelogService(
 		{
 			if (features.Count > 0 || enhancements.Count > 0)
 			{
-				sb.AppendLine(CultureInfo.InvariantCulture, $"### Features and enhancements [{repo}-{version}-features-enhancements]");
+				sb.AppendLine(CultureInfo.InvariantCulture, $"### Features and enhancements [{repo}-{title}-features-enhancements]");
 				var combined = features.Concat(enhancements).ToList();
 				RenderEntriesByArea(sb, combined, repo, subsections);
 			}
@@ -1226,7 +1430,7 @@ public partial class ChangelogService(
 			if (security.Count > 0 || bugFixes.Count > 0)
 			{
 				sb.AppendLine();
-				sb.AppendLine(CultureInfo.InvariantCulture, $"### Fixes [{repo}-{version}-fixes]");
+				sb.AppendLine(CultureInfo.InvariantCulture, $"### Fixes [{repo}-{title}-fixes]");
 				var combined = security.Concat(bugFixes).ToList();
 				RenderEntriesByArea(sb, combined, repo, subsections);
 			}
@@ -1236,7 +1440,7 @@ public partial class ChangelogService(
 			sb.AppendLine("_No new features, enhancements, or fixes._");
 		}
 
-		var indexPath = _fileSystem.Path.Combine(outputDir, version, "index.md");
+		var indexPath = _fileSystem.Path.Combine(outputDir, title, "index.md");
 		var indexDir = _fileSystem.Path.GetDirectoryName(indexPath);
 		if (!string.IsNullOrWhiteSpace(indexDir) && !_fileSystem.Directory.Exists(indexDir))
 		{
@@ -1251,7 +1455,7 @@ public partial class ChangelogService(
 	private async Task RenderBreakingChangesMarkdown(
 		IDiagnosticsCollector collector,
 		string outputDir,
-		string version,
+		string title,
 		string repo,
 		List<ChangelogData> entries,
 		Dictionary<string, List<ChangelogData>> entriesByType,
@@ -1262,7 +1466,7 @@ public partial class ChangelogService(
 		var breakingChanges = entriesByType.GetValueOrDefault("breaking-change", []);
 
 		var sb = new StringBuilder();
-		sb.AppendLine(CultureInfo.InvariantCulture, $"## {version} [{repo}-{version}-breaking-changes]");
+		sb.AppendLine(CultureInfo.InvariantCulture, $"## {title} [{repo}-{title}-breaking-changes]");
 
 		if (breakingChanges.Count > 0)
 		{
@@ -1327,7 +1531,7 @@ public partial class ChangelogService(
 			sb.AppendLine("_No breaking changes._");
 		}
 
-		var breakingPath = _fileSystem.Path.Combine(outputDir, version, "breaking-changes.md");
+		var breakingPath = _fileSystem.Path.Combine(outputDir, title, "breaking-changes.md");
 		var breakingDir = _fileSystem.Path.GetDirectoryName(breakingPath);
 		if (!string.IsNullOrWhiteSpace(breakingDir) && !_fileSystem.Directory.Exists(breakingDir))
 		{
@@ -1342,7 +1546,7 @@ public partial class ChangelogService(
 	private async Task RenderDeprecationsMarkdown(
 		IDiagnosticsCollector collector,
 		string outputDir,
-		string version,
+		string title,
 		string repo,
 		List<ChangelogData> entries,
 		Dictionary<string, List<ChangelogData>> entriesByType,
@@ -1353,7 +1557,7 @@ public partial class ChangelogService(
 		var deprecations = entriesByType.GetValueOrDefault("deprecation", []);
 
 		var sb = new StringBuilder();
-		sb.AppendLine(CultureInfo.InvariantCulture, $"## {version} [{repo}-{version}-deprecations]");
+		sb.AppendLine(CultureInfo.InvariantCulture, $"## {title} [{repo}-{title}-deprecations]");
 
 		if (deprecations.Count > 0)
 		{
@@ -1418,7 +1622,7 @@ public partial class ChangelogService(
 			sb.AppendLine("_No deprecations._");
 		}
 
-		var deprecationsPath = _fileSystem.Path.Combine(outputDir, version, "deprecations.md");
+		var deprecationsPath = _fileSystem.Path.Combine(outputDir, title, "deprecations.md");
 		var deprecationsDir = _fileSystem.Path.GetDirectoryName(deprecationsPath);
 		if (!string.IsNullOrWhiteSpace(deprecationsDir) && !_fileSystem.Directory.Exists(deprecationsDir))
 		{
