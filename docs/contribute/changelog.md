@@ -26,13 +26,13 @@ Add a new changelog fragment from command-line input
 
 Options:
   --products <List<ProductInfo>>    Required: Products affected in format "product target lifecycle, ..." (e.g., "elasticsearch 9.2.0 ga, cloud-serverless 2025-08-05") [Required]
-  --title <string?>                 Optional: A short, user-facing title (max 80 characters). Required if --pr is not specified. If --pr and --title are specified, the latter value is used instead of what exists in the PR. [Default: null]
-  --type <string?>                  Optional: Type of change (feature, enhancement, bug-fix, breaking-change, etc.). Required if --pr is not specified. If mappings are configured, type can be derived from the PR. [Default: null]
+  --title <string?>                 Optional: A short, user-facing title (max 80 characters). Required if --prs is not specified. If --prs and --title are specified, the latter value is used instead of what exists in the PR. [Default: null]
+  --type <string?>                  Optional: Type of change (feature, enhancement, bug-fix, breaking-change, etc.). Required if --prs is not specified. If mappings are configured, type can be derived from the PR. [Default: null]
   --subtype <string?>               Optional: Subtype for breaking changes (api, behavioral, configuration, etc.) [Default: null]
   --areas <string[]?>               Optional: Area(s) affected (comma-separated or specify multiple times) [Default: null]
-  --pr <string?>                    Optional: Pull request URL or PR number (if --owner and --repo are provided). If specified, --title can be derived from the PR. If mappings are configured, --areas and --type can also be derived from the PR. [Default: null]
-  --owner <string?>                 Optional: GitHub repository owner (used when --pr is just a number) [Default: null]
-  --repo <string?>                  Optional: GitHub repository name (used when --pr is just a number) [Default: null]
+  --prs <string[]?>                 Optional: Pull request URL(s) or PR number(s) (comma-separated, or if --owner and --repo are provided, just numbers). If specified, --title can be derived from the PR. If mappings are configured, --areas and --type can also be derived from the PR. Creates one changelog file per PR. [Default: null]
+  --owner <string?>                 Optional: GitHub repository owner (used when --prs contains just numbers) [Default: null]
+  --repo <string?>                  Optional: GitHub repository name (used when --prs contains just numbers) [Default: null]
   --issues <string[]?>              Optional: Issue URL(s) (comma-separated or specify multiple times) [Default: null]
   --description <string?>           Optional: Additional information about the change (max 600 characters) [Default: null]
   --impact <string?>                Optional: How the user's environment is affected [Default: null]
@@ -81,7 +81,7 @@ If a configuration file exists, the command validates all its values before gene
 ### GitHub label mappings
 
 You can optionally add `label_to_type` and `label_to_areas` mappings in your changelog configuration.
-When you run the command with the `--pr` option, it can use these mappings to fill in the `type` and `areas` in your changelog based on your pull request labels.
+When you run the command with the `--prs` option, it can use these mappings to fill in the `type` and `areas` in your changelog based on your pull request labels.
 
 Refer to [changelog.yml.example](https://github.com/elastic/docs-builder/blob/main/config/changelog.yml.example).
 
@@ -97,13 +97,13 @@ docs-builder changelog add \
   --type bug-fix \ <2>
   --products "elasticsearch 9.2.3, cloud-serverless 2025-12-02" \ <3>
   --areas "ES|QL"
-  --pr "https://github.com/elastic/elasticsearch/pull/137431" <4>
+  --prs "https://github.com/elastic/elasticsearch/pull/137431" <4>
 ```
 
 1. This option is required only if you want to override what's derived from the PR title.
 2. The type values are defined in [ChangelogConfiguration.cs](https://github.com/elastic/docs-builder/blob/main/src/services/Elastic.Documentation.Services/Changelog/ChangelogConfiguration.cs).
 3. The product values are defined in [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml).
-4. The `--pr` value can be a full URL (such as `https://github.com/owner/repo/pull/123`, a short format (such as `owner/repo#123`) or just a number (in which case you must also provide `--owner` and `--repo` options).
+4. The `--prs` value can be a full URL (such as `https://github.com/owner/repo/pull/123`, a short format (such as `owner/repo#123`) or just a number (in which case you must also provide `--owner` and `--repo` options). Multiple PRs can be provided comma-separated, and one changelog file will be created for each PR.
 
 The output file has the following format:
 
@@ -135,7 +135,7 @@ available_areas:
   - ES|QL
   # Add more areas as needed
 
-# GitHub label mappings (optional - used when --pr option is specified)
+# GitHub label mappings (optional - used when --prs option is specified)
 # Maps GitHub PR labels to changelog type values
 # When a PR has a label that matches a key, the corresponding type value is used
 label_to_type:
@@ -148,12 +148,24 @@ label_to_type:
 label_to_areas:
   # Example mappings - customize based on your label naming conventions
   ":Search Relevance/ES|QL": "ES|QL"
+
+# Product-specific label blockers (optional)
+# Maps product IDs to lists of labels that prevent changelog creation for that product
+# If a PR has any of these labels for the specified product, changelog creation will be skipped
+product_label_blockers:
+  # Example: Skip changelog creation for cloud.serverless when PR has "ILM" label
+  cloud-serverless:
+    - "ILM"
+    - "skip:releaseNotes"
+  # Example: Skip changelog creation for elasticsearch when PR has "skip:releaseNotes" label
+  elasticsearch:
+    - "skip:releaseNotes"
 ```
 
-When you use the `--pr` option to derive information from a pull request, it can make use of those mappings:
+When you use the `--prs` option to derive information from a pull request, it can make use of those mappings:
 
 ```sh
-docs-builder changelog add --pr https://github.com/elastic/elasticsearch/pull/139272 --products "elasticsearch 9.3.0" --config test/changelog.yml
+docs-builder changelog add --prs https://github.com/elastic/elasticsearch/pull/139272 --products "elasticsearch 9.3.0" --config test/changelog.yml
 ```
 
 In this case, the changelog file derives the title, type, and areas:
@@ -168,3 +180,26 @@ areas:
 - ES|QL
 title: '[ES|QL] Take TOP_SNIPPETS out of snapshot'
 ```
+
+### Product-specific label blockers
+
+You can configure product-specific label blockers to prevent changelog creation for certain PRs based on their labels.
+
+When using `--prs` with multiple PRs, if a PR has a blocking label for any of the specified products, that PR will be skipped and no changelog file will be created for it. A warning message will be emitted indicating which PR was skipped and why.
+
+For example, if you configure:
+
+```yaml
+product_label_blockers:
+  cloud-serverless:
+    - "ILM"
+    - "skip:releaseNotes"
+```
+
+And run:
+
+```sh
+docs-builder changelog add --prs "1234, 5678" --products "cloud-serverless 2025-08-05" --owner elastic --repo elasticsearch
+```
+
+If PR 1234 has the "ILM" label, it will be skipped and no changelog will be created for it. If PR 5678 does not have any blocking labels, a changelog will be created for it.

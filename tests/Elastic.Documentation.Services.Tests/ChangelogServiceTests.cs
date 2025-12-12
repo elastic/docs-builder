@@ -191,7 +191,7 @@ public class ChangelogServiceTests : IDisposable
 
 		var input = new ChangelogInput
 		{
-			Pr = "https://github.com/elastic/elasticsearch/pull/12345",
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
 			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString())
@@ -392,7 +392,7 @@ public class ChangelogServiceTests : IDisposable
 
 		var input = new ChangelogInput
 		{
-			Pr = "12345",
+			Prs = ["12345"],
 			Owner = "elastic",
 			Repo = "elasticsearch",
 			Title = "Update documentation",
@@ -439,7 +439,7 @@ public class ChangelogServiceTests : IDisposable
 
 		var input = new ChangelogInput
 		{
-			Pr = "https://github.com/elastic/elasticsearch/pull/12345",
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
 			Title = "Custom Title Override",
 			Type = "feature",
 			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
@@ -821,6 +821,298 @@ public class ChangelogServiceTests : IDisposable
 		var files = Directory.GetFiles(outputDir, "*.yaml");
 		var yamlContent = await File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
 		yamlContent.Should().Contain("feature_id: feature:new-search-api");
+	}
+
+	[Fact]
+	public async Task CreateChangelog_WithMultiplePrs_CreatesOneFilePerPr()
+	{
+		// Arrange
+		var mockGitHubService = A.Fake<IGitHubPrService>();
+		var pr1Info = new GitHubPrInfo
+		{
+			Title = "First PR feature",
+			Labels = ["type:feature"]
+		};
+		var pr2Info = new GitHubPrInfo
+		{
+			Title = "Second PR bug fix",
+			Labels = ["type:bug"]
+		};
+
+		A.CallTo(() => mockGitHubService.FetchPrInfoAsync(
+			"1234",
+			null,
+			null,
+			A<CancellationToken>._))
+			.Returns(pr1Info);
+
+		A.CallTo(() => mockGitHubService.FetchPrInfoAsync(
+			"5678",
+			null,
+			null,
+			A<CancellationToken>._))
+			.Returns(pr2Info);
+
+		var fileSystem = new FileSystem();
+		var configDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		fileSystem.Directory.CreateDirectory(configDir);
+		var configPath = fileSystem.Path.Combine(configDir, "changelog.yml");
+		var configContent = """
+			available_types:
+			  - feature
+			  - bug-fix
+			available_subtypes: []
+			available_lifecycles:
+			  - preview
+			  - beta
+			  - ga
+			label_to_type:
+			  "type:feature": feature
+			  "type:bug": bug-fix
+			""";
+		await fileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
+
+		var input = new ChangelogInput
+		{
+			Prs = ["https://github.com/elastic/elasticsearch/pull/1234", "https://github.com/elastic/elasticsearch/pull/5678"],
+			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Config = configPath,
+			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString())
+		};
+
+		// Act
+		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		_collector.Errors.Should().Be(0);
+
+		var outputDir = input.Output ?? Directory.GetCurrentDirectory();
+		if (!Directory.Exists(outputDir))
+			Directory.CreateDirectory(outputDir);
+		var files = Directory.GetFiles(outputDir, "*.yaml");
+		files.Should().HaveCount(2);
+
+		var yamlContent1 = await File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent2 = await File.ReadAllTextAsync(files[1], TestContext.Current.CancellationToken);
+
+		// One file should contain first PR title, the other should contain second PR title
+		var contents = new[] { yamlContent1, yamlContent2 };
+		contents.Should().Contain(c => c.Contains("title: First PR feature"));
+		contents.Should().Contain(c => c.Contains("title: Second PR bug fix"));
+		contents.Should().Contain(c => c.Contains("pr: https://github.com/elastic/elasticsearch/pull/1234"));
+		contents.Should().Contain(c => c.Contains("pr: https://github.com/elastic/elasticsearch/pull/5678"));
+	}
+
+	[Fact]
+	public async Task CreateChangelog_WithBlockingLabel_SkipsChangelogCreation()
+	{
+		// Arrange
+		var mockGitHubService = A.Fake<IGitHubPrService>();
+		var prInfo = new GitHubPrInfo
+		{
+			Title = "PR with blocking label",
+			Labels = ["type:feature", "skip:releaseNotes"]
+		};
+
+		A.CallTo(() => mockGitHubService.FetchPrInfoAsync(
+			A<string>._,
+			A<string?>._,
+			A<string?>._,
+			A<CancellationToken>._))
+			.Returns(prInfo);
+
+		var fileSystem = new FileSystem();
+		var configDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		fileSystem.Directory.CreateDirectory(configDir);
+		var configPath = fileSystem.Path.Combine(configDir, "changelog.yml");
+		var configContent = """
+			available_types:
+			  - feature
+			available_subtypes: []
+			available_lifecycles:
+			  - preview
+			  - beta
+			  - ga
+			label_to_type:
+			  "type:feature": feature
+			product_label_blockers:
+			  elasticsearch:
+			    - "skip:releaseNotes"
+			""";
+		await fileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
+
+		var input = new ChangelogInput
+		{
+			Prs = ["https://github.com/elastic/elasticsearch/pull/1234"],
+			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Config = configPath,
+			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString())
+		};
+
+		// Act
+		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue(); // Should succeed but skip creating changelog
+		_collector.Warnings.Should().BeGreaterThan(0);
+		_collector.Diagnostics.Should().Contain(d => d.Message.Contains("Skipping changelog creation") && d.Message.Contains("skip:releaseNotes"));
+
+		var outputDir = input.Output ?? Directory.GetCurrentDirectory();
+		if (!Directory.Exists(outputDir))
+			Directory.CreateDirectory(outputDir);
+		var files = Directory.GetFiles(outputDir, "*.yaml");
+		files.Should().HaveCount(0); // No files should be created
+	}
+
+	[Fact]
+	public async Task CreateChangelog_WithBlockingLabelForSpecificProduct_OnlyBlocksForThatProduct()
+	{
+		// Arrange
+		var mockGitHubService = A.Fake<IGitHubPrService>();
+		var prInfo = new GitHubPrInfo
+		{
+			Title = "PR with blocking label",
+			Labels = ["type:feature", "ILM"]
+		};
+
+		A.CallTo(() => mockGitHubService.FetchPrInfoAsync(
+			A<string>._,
+			A<string?>._,
+			A<string?>._,
+			A<CancellationToken>._))
+			.Returns(prInfo);
+
+		var fileSystem = new FileSystem();
+		var configDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		fileSystem.Directory.CreateDirectory(configDir);
+		var configPath = fileSystem.Path.Combine(configDir, "changelog.yml");
+		var configContent = """
+			available_types:
+			  - feature
+			available_subtypes: []
+			available_lifecycles:
+			  - preview
+			  - beta
+			  - ga
+			label_to_type:
+			  "type:feature": feature
+			product_label_blockers:
+			  cloud-serverless:
+			    - "ILM"
+			""";
+		await fileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
+
+		var input = new ChangelogInput
+		{
+			Prs = ["https://github.com/elastic/elasticsearch/pull/1234"],
+			Products = [
+				new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" },
+				new ProductInfo { Product = "cloud-serverless", Target = "2025-08-05" }
+			],
+			Config = configPath,
+			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString())
+		};
+
+		// Act
+		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue(); // Should succeed but skip creating changelog due to cloud-serverless blocker
+		_collector.Warnings.Should().BeGreaterThan(0);
+		_collector.Diagnostics.Should().Contain(d => d.Message.Contains("Skipping changelog creation") && d.Message.Contains("ILM") && d.Message.Contains("cloud-serverless"));
+
+		var outputDir = input.Output ?? Directory.GetCurrentDirectory();
+		if (!Directory.Exists(outputDir))
+			Directory.CreateDirectory(outputDir);
+		var files = Directory.GetFiles(outputDir, "*.yaml");
+		files.Should().HaveCount(0); // No files should be created
+	}
+
+	[Fact]
+	public async Task CreateChangelog_WithMultiplePrsAndSomeBlocked_CreatesFilesForNonBlockedPrs()
+	{
+		// Arrange
+		var mockGitHubService = A.Fake<IGitHubPrService>();
+		var pr1Info = new GitHubPrInfo
+		{
+			Title = "First PR without blocker",
+			Labels = ["type:feature"]
+		};
+		var pr2Info = new GitHubPrInfo
+		{
+			Title = "Second PR with blocker",
+			Labels = ["type:feature", "skip:releaseNotes"]
+		};
+
+		A.CallTo(() => mockGitHubService.FetchPrInfoAsync(
+			"1234",
+			null,
+			null,
+			A<CancellationToken>._))
+			.Returns(pr1Info);
+
+		A.CallTo(() => mockGitHubService.FetchPrInfoAsync(
+			"5678",
+			null,
+			null,
+			A<CancellationToken>._))
+			.Returns(pr2Info);
+
+		var fileSystem = new FileSystem();
+		var configDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		fileSystem.Directory.CreateDirectory(configDir);
+		var configPath = fileSystem.Path.Combine(configDir, "changelog.yml");
+		var configContent = """
+			available_types:
+			  - feature
+			available_subtypes: []
+			available_lifecycles:
+			  - preview
+			  - beta
+			  - ga
+			label_to_type:
+			  "type:feature": feature
+			product_label_blockers:
+			  elasticsearch:
+			    - "skip:releaseNotes"
+			""";
+		await fileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
+
+		var input = new ChangelogInput
+		{
+			Prs = ["https://github.com/elastic/elasticsearch/pull/1234", "https://github.com/elastic/elasticsearch/pull/5678"],
+			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Config = configPath,
+			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString())
+		};
+
+		// Act
+		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		_collector.Warnings.Should().BeGreaterThan(0);
+		_collector.Diagnostics.Should().Contain(d => d.Message.Contains("Skipping changelog creation") && d.Message.Contains("5678"));
+
+		var outputDir = input.Output ?? Directory.GetCurrentDirectory();
+		if (!Directory.Exists(outputDir))
+			Directory.CreateDirectory(outputDir);
+		var files = Directory.GetFiles(outputDir, "*.yaml");
+		files.Should().HaveCount(1); // Only one file should be created (for PR 1234)
+
+		var yamlContent = await File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		yamlContent.Should().Contain("title: First PR without blocker");
+		yamlContent.Should().Contain("pr: https://github.com/elastic/elasticsearch/pull/1234");
+		yamlContent.Should().NotContain("Second PR with blocker");
 	}
 }
 
