@@ -32,7 +32,6 @@ export interface ChatMessage {
 }
 
 const API_ENDPOINT = '/docs/_api/v1/ask-ai/stream'
-const MESSAGE_THROTTLE_MS = 25
 
 interface ActiveStream {
     controller: AbortController
@@ -244,8 +243,8 @@ async function startStream(
     const controller = new AbortController()
 
     // Create a throttler for this stream to control update frequency
+    // Throttler automatically speeds up after 10 seconds to drain buffers faster
     const throttler = new MessageThrottler<AskAiEvent>({
-        delayInMs: MESSAGE_THROTTLE_MS,
         onMessage: (event) => handleStreamEvent(messageId, event),
     })
 
@@ -368,6 +367,8 @@ function handleStreamEvent(messageId: string, event: AskAiEvent): void {
     if (event.type === 'conversation_start' && event.conversationId) {
         actions.setConversationId(event.conversationId)
     } else if (event.type === 'message_chunk') {
+        // Start speedup timer on first content chunk
+        stream.throttler.startSpeedupTimer()
         stream.content += event.content
         actions.updateAiMessage(messageId, stream.content, 'streaming')
     } else if (event.type === 'error') {
