@@ -24,7 +24,7 @@ internal sealed class ChangelogCommand(
 	[Command("")]
 	public Task<int> Default()
 	{
-		collector.EmitError(string.Empty, "Please specify a subcommand. Available subcommands:\n  - 'changelog add': Create a new changelog from command-line input\n  - 'changelog bundle': Create a consolidated list of changelog files\n\nRun 'changelog add --help' or 'changelog bundle --help' for usage information.");
+		collector.EmitError(string.Empty, "Please specify a subcommand. Available subcommands:\n  - 'changelog add': Create a new changelog from command-line input\n  - 'changelog bundle': Create a consolidated list of changelog files\n  - 'changelog render': Render a bundled changelog to markdown files\n\nRun 'changelog add --help', 'changelog bundle --help', or 'changelog render --help' for usage information.");
 		return Task.FromResult(1);
 	}
 
@@ -150,6 +150,45 @@ internal sealed class ChangelogCommand(
 
 		serviceInvoker.AddCommand(service, input,
 			async static (s, collector, state, ctx) => await s.BundleChangelogs(collector, state, ctx)
+		);
+
+		return await serviceInvoker.InvokeAsync(ctx);
+	}
+
+	/// <summary>
+	/// Render a bundled changelog to markdown files
+	/// </summary>
+	/// <param name="bundleFile">Required: Path to the bundled changelog YAML file (output from 'changelog bundle')</param>
+	/// <param name="output">Optional: Output directory for rendered markdown files. Defaults to current directory</param>
+	/// <param name="directory">Optional: Directory containing changelog YAML files (used when bundle contains file references). Defaults to bundle file directory</param>
+	/// <param name="repo">Optional: GitHub repository name for PR/issue links. Defaults to 'elastic'</param>
+	/// <param name="subsections">Optional: Group entries by area/component in subsections. Defaults to false</param>
+	/// <param name="ctx"></param>
+	[Command("render")]
+	public async Task<int> Render(
+		string bundleFile,
+		string? output = null,
+		string? directory = null,
+		string? repo = null,
+		bool subsections = false,
+		Cancel ctx = default
+	)
+	{
+		await using var serviceInvoker = new ServiceInvoker(collector);
+
+		var service = new ChangelogService(logFactory, configurationContext, null);
+
+		var input = new ChangelogRenderInput
+		{
+			BundleFile = bundleFile,
+			Output = output,
+			Directory = directory,
+			Repo = repo,
+			Subsections = subsections
+		};
+
+		serviceInvoker.AddCommand(service, input,
+			async static (s, collector, state, ctx) => await s.RenderChangelogs(collector, state, ctx)
 		);
 
 		return await serviceInvoker.InvokeAsync(ctx);

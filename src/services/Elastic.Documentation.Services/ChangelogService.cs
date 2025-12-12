@@ -1004,5 +1004,559 @@ public partial class ChangelogService(
 		// Return as-is for comparison (fallback)
 		return pr.ToLowerInvariant();
 	}
+
+	public async Task<bool> RenderChangelogs(
+		IDiagnosticsCollector collector,
+		ChangelogRenderInput input,
+		Cancel ctx
+	)
+	{
+		try
+		{
+			// Validate input
+			if (string.IsNullOrWhiteSpace(input.BundleFile))
+			{
+				collector.EmitError(string.Empty, "Bundle file is required");
+				return false;
+			}
+
+			if (!_fileSystem.File.Exists(input.BundleFile))
+			{
+				collector.EmitError(input.BundleFile, "Bundle file does not exist");
+				return false;
+			}
+
+			// Load bundle file
+			var bundleContent = await _fileSystem.File.ReadAllTextAsync(input.BundleFile, ctx);
+			var deserializer = new StaticDeserializerBuilder(new ChangelogYamlStaticContext())
+				.WithNamingConvention(UnderscoredNamingConvention.Instance)
+				.Build();
+
+			var bundledData = deserializer.Deserialize<BundledChangelogData>(bundleContent);
+			if (bundledData == null)
+			{
+				collector.EmitError(input.BundleFile, "Failed to deserialize bundle file");
+				return false;
+			}
+
+			// Determine directory for resolving file references
+			var bundleDirectory = input.Directory ?? _fileSystem.Path.GetDirectoryName(input.BundleFile) ?? Directory.GetCurrentDirectory();
+
+			// Resolve entries if they only contain file references
+			var resolvedEntries = new List<ChangelogData>();
+			foreach (var entry in bundledData.Entries)
+			{
+				ChangelogData? entryData = null;
+
+				// If entry has resolved data, use it
+				if (!string.IsNullOrWhiteSpace(entry.Title) && !string.IsNullOrWhiteSpace(entry.Type))
+				{
+					entryData = new ChangelogData
+					{
+						Title = entry.Title,
+						Type = entry.Type,
+						Subtype = entry.Subtype,
+						Description = entry.Description,
+						Impact = entry.Impact,
+						Action = entry.Action,
+						FeatureId = entry.FeatureId,
+						Highlight = entry.Highlight,
+						Pr = entry.Pr,
+						Products = entry.Products ?? [],
+						Areas = entry.Areas,
+						Issues = entry.Issues
+					};
+				}
+				else
+				{
+					// Load from file
+					var filePath = _fileSystem.Path.Combine(bundleDirectory, entry.File.Name);
+					if (!_fileSystem.File.Exists(filePath))
+					{
+						collector.EmitError(filePath, $"Referenced changelog file does not exist");
+						return false;
+					}
+
+					var fileContent = await _fileSystem.File.ReadAllTextAsync(filePath, ctx);
+					var checksum = ComputeSha1(fileContent);
+					if (checksum != entry.File.Checksum)
+					{
+						collector.EmitWarning(filePath, $"Checksum mismatch for file {entry.File.Name}. Expected {entry.File.Checksum}, got {checksum}");
+					}
+
+					// Deserialize YAML (skip comment lines)
+					var yamlLines = fileContent.Split('\n');
+					var yamlWithoutComments = string.Join('\n', yamlLines.Where(line => !line.TrimStart().StartsWith('#')));
+
+					// Normalize "version:" to "target:" in products section
+					var normalizedYaml = VersionToTargetRegex().Replace(yamlWithoutComments, "$1target:");
+
+					entryData = deserializer.Deserialize<ChangelogData>(normalizedYaml);
+					if (entryData == null)
+					{
+						collector.EmitError(filePath, "Failed to deserialize changelog file");
+						return false;
+					}
+				}
+
+				if (entryData != null)
+				{
+					resolvedEntries.Add(entryData);
+				}
+			}
+
+			if (resolvedEntries.Count == 0)
+			{
+				collector.EmitError(string.Empty, "No changelog entries to render");
+				return false;
+			}
+
+			// Determine output directory
+			var outputDir = input.Output ?? Directory.GetCurrentDirectory();
+			if (!_fileSystem.Directory.Exists(outputDir))
+			{
+				_ = _fileSystem.Directory.CreateDirectory(outputDir);
+			}
+
+			// Extract version from products (use first product's target if available, or "unknown")
+			var version = bundledData.Products.Count > 0 && !string.IsNullOrWhiteSpace(bundledData.Products[0].Target)
+				? bundledData.Products[0].Target!
+				: "unknown";
+
+			// Group entries by type (kind)
+			var entriesByType = resolvedEntries.GroupBy(e => e.Type).ToDictionary(g => g.Key, g => g.ToList());
+
+			// Render markdown files
+			var repo = input.Repo ?? "elastic";
+
+			// Render index.md (features, enhancements, bug fixes, security)
+			await RenderIndexMarkdown(collector, outputDir, version, repo, resolvedEntries, entriesByType, input.Subsections, ctx);
+
+			// Render breaking-changes.md
+			await RenderBreakingChangesMarkdown(collector, outputDir, version, repo, resolvedEntries, entriesByType, input.Subsections, ctx);
+
+			// Render deprecations.md
+			await RenderDeprecationsMarkdown(collector, outputDir, version, repo, resolvedEntries, entriesByType, input.Subsections, ctx);
+
+			_logger.LogInformation("Rendered changelog markdown files to {OutputDir}", outputDir);
+
+			return true;
+		}
+		catch (OperationCanceledException)
+		{
+			throw;
+		}
+		catch (IOException ioEx)
+		{
+			collector.EmitError(string.Empty, $"IO error rendering changelogs: {ioEx.Message}", ioEx);
+			return false;
+		}
+		catch (UnauthorizedAccessException uaEx)
+		{
+			collector.EmitError(string.Empty, $"Access denied rendering changelogs: {uaEx.Message}", uaEx);
+			return false;
+		}
+		catch (YamlException yamlEx)
+		{
+			collector.EmitError(input.BundleFile, $"YAML parsing error: {yamlEx.Message}", yamlEx);
+			return false;
+		}
+	}
+
+	[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "Parameters match interface pattern")]
+	[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0058:Expression value is never used", Justification = "StringBuilder methods return builder for chaining")]
+	private async Task RenderIndexMarkdown(
+		IDiagnosticsCollector collector,
+		string outputDir,
+		string version,
+		string repo,
+		List<ChangelogData> entries,
+		Dictionary<string, List<ChangelogData>> entriesByType,
+		bool subsections,
+		Cancel ctx
+	)
+	{
+		var features = entriesByType.GetValueOrDefault("feature", []);
+		var enhancements = entriesByType.GetValueOrDefault("enhancement", []);
+		var security = entriesByType.GetValueOrDefault("security", []);
+		var bugFixes = entriesByType.GetValueOrDefault("bug-fix", []);
+
+		if (features.Count == 0 && enhancements.Count == 0 && security.Count == 0 && bugFixes.Count == 0)
+		{
+			// Still create file with "no changes" message
+		}
+
+		var hasBreakingChanges = entriesByType.ContainsKey("breaking-change");
+		var hasDeprecations = entriesByType.ContainsKey("deprecation");
+		var hasKnownIssues = entriesByType.ContainsKey("known-issue");
+
+		var otherLinks = new List<string>();
+		if (hasKnownIssues)
+		{
+			otherLinks.Add("[Known issues](/release-notes/known-issues.md)");
+		}
+		if (hasBreakingChanges)
+		{
+			otherLinks.Add($"[Breaking changes](/release-notes/breaking-changes.md#{repo}-{version}-breaking-changes)");
+		}
+		if (hasDeprecations)
+		{
+			otherLinks.Add($"[Deprecations](/release-notes/deprecations.md#{repo}-{version}-deprecations)");
+		}
+
+		var sb = new StringBuilder();
+		sb.AppendLine(CultureInfo.InvariantCulture, $"## {version} [{repo}-release-notes-{version}]");
+
+		if (otherLinks.Count > 0)
+		{
+			var linksText = string.Join(" and ", otherLinks);
+			sb.AppendLine(CultureInfo.InvariantCulture, $"_{linksText}._");
+			sb.AppendLine();
+		}
+
+		if (features.Count > 0 || enhancements.Count > 0 || security.Count > 0 || bugFixes.Count > 0)
+		{
+			if (features.Count > 0 || enhancements.Count > 0)
+			{
+				sb.AppendLine(CultureInfo.InvariantCulture, $"### Features and enhancements [{repo}-{version}-features-enhancements]");
+				var combined = features.Concat(enhancements).ToList();
+				RenderEntriesByArea(sb, combined, repo, subsections);
+			}
+
+			if (security.Count > 0 || bugFixes.Count > 0)
+			{
+				sb.AppendLine();
+				sb.AppendLine(CultureInfo.InvariantCulture, $"### Fixes [{repo}-{version}-fixes]");
+				var combined = security.Concat(bugFixes).ToList();
+				RenderEntriesByArea(sb, combined, repo, subsections);
+			}
+		}
+		else
+		{
+			sb.AppendLine("_No new features, enhancements, or fixes._");
+		}
+
+		var indexPath = _fileSystem.Path.Combine(outputDir, version, "index.md");
+		var indexDir = _fileSystem.Path.GetDirectoryName(indexPath);
+		if (!string.IsNullOrWhiteSpace(indexDir) && !_fileSystem.Directory.Exists(indexDir))
+		{
+			_ = _fileSystem.Directory.CreateDirectory(indexDir);
+		}
+
+		await _fileSystem.File.WriteAllTextAsync(indexPath, sb.ToString(), ctx);
+	}
+
+	[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "Parameters match interface pattern")]
+	[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0058:Expression value is never used", Justification = "StringBuilder methods return builder for chaining")]
+	private async Task RenderBreakingChangesMarkdown(
+		IDiagnosticsCollector collector,
+		string outputDir,
+		string version,
+		string repo,
+		List<ChangelogData> entries,
+		Dictionary<string, List<ChangelogData>> entriesByType,
+		bool subsections,
+		Cancel ctx
+	)
+	{
+		var breakingChanges = entriesByType.GetValueOrDefault("breaking-change", []);
+
+		var sb = new StringBuilder();
+		sb.AppendLine(CultureInfo.InvariantCulture, $"## {version} [{repo}-{version}-breaking-changes]");
+
+		if (breakingChanges.Count > 0)
+		{
+			var groupedByArea = breakingChanges.GroupBy(e => GetComponent(e)).ToList();
+			foreach (var areaGroup in groupedByArea)
+			{
+				if (subsections && !string.IsNullOrWhiteSpace(areaGroup.Key))
+				{
+					var header = FormatAreaHeader(areaGroup.Key);
+					sb.AppendLine();
+					sb.AppendLine(CultureInfo.InvariantCulture, $"**{header}**");
+				}
+
+				foreach (var entry in areaGroup)
+				{
+					sb.AppendLine();
+					sb.AppendLine(CultureInfo.InvariantCulture, $"::::{{dropdown}} {Beautify(entry.Title)}");
+					sb.AppendLine(entry.Description ?? "% Describe the functionality that changed");
+					sb.AppendLine();
+					sb.Append("For more information, check ");
+					if (!string.IsNullOrWhiteSpace(entry.Pr))
+					{
+						sb.Append(FormatPrLink(entry.Pr, repo));
+					}
+					if (entry.Issues != null && entry.Issues.Count > 0)
+					{
+						foreach (var issue in entry.Issues)
+						{
+							sb.Append(' ');
+							sb.Append(FormatIssueLink(issue, repo));
+						}
+					}
+					sb.AppendLine(".");
+					sb.AppendLine();
+
+					if (!string.IsNullOrWhiteSpace(entry.Impact))
+					{
+						sb.AppendLine("**Impact**<br>" + entry.Impact);
+					}
+					else
+					{
+						sb.AppendLine("% **Impact**<br>_Add a description of the impact_");
+					}
+
+					sb.AppendLine();
+
+					if (!string.IsNullOrWhiteSpace(entry.Action))
+					{
+						sb.AppendLine("**Action**<br>" + entry.Action);
+					}
+					else
+					{
+						sb.AppendLine("% **Action**<br>_Add a description of the what action to take_");
+					}
+
+					sb.AppendLine("::::");
+				}
+			}
+		}
+		else
+		{
+			sb.AppendLine("_No breaking changes._");
+		}
+
+		var breakingPath = _fileSystem.Path.Combine(outputDir, version, "breaking-changes.md");
+		var breakingDir = _fileSystem.Path.GetDirectoryName(breakingPath);
+		if (!string.IsNullOrWhiteSpace(breakingDir) && !_fileSystem.Directory.Exists(breakingDir))
+		{
+			_ = _fileSystem.Directory.CreateDirectory(breakingDir);
+		}
+
+		await _fileSystem.File.WriteAllTextAsync(breakingPath, sb.ToString(), ctx);
+	}
+
+	[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "Parameters match interface pattern")]
+	[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0058:Expression value is never used", Justification = "StringBuilder methods return builder for chaining")]
+	private async Task RenderDeprecationsMarkdown(
+		IDiagnosticsCollector collector,
+		string outputDir,
+		string version,
+		string repo,
+		List<ChangelogData> entries,
+		Dictionary<string, List<ChangelogData>> entriesByType,
+		bool subsections,
+		Cancel ctx
+	)
+	{
+		var deprecations = entriesByType.GetValueOrDefault("deprecation", []);
+
+		var sb = new StringBuilder();
+		sb.AppendLine(CultureInfo.InvariantCulture, $"## {version} [{repo}-{version}-deprecations]");
+
+		if (deprecations.Count > 0)
+		{
+			var groupedByArea = deprecations.GroupBy(e => GetComponent(e)).ToList();
+			foreach (var areaGroup in groupedByArea)
+			{
+				if (subsections && !string.IsNullOrWhiteSpace(areaGroup.Key))
+				{
+					var header = FormatAreaHeader(areaGroup.Key);
+					sb.AppendLine();
+					sb.AppendLine(CultureInfo.InvariantCulture, $"**{header}**");
+				}
+
+				foreach (var entry in areaGroup)
+				{
+					sb.AppendLine();
+					sb.AppendLine(CultureInfo.InvariantCulture, $"::::{{dropdown}} {Beautify(entry.Title)}");
+					sb.AppendLine(entry.Description ?? "% Describe the functionality that was deprecated");
+					sb.AppendLine();
+					sb.Append("For more information, check ");
+					if (!string.IsNullOrWhiteSpace(entry.Pr))
+					{
+						sb.Append(FormatPrLink(entry.Pr, repo));
+					}
+					if (entry.Issues != null && entry.Issues.Count > 0)
+					{
+						foreach (var issue in entry.Issues)
+						{
+							sb.Append(' ');
+							sb.Append(FormatIssueLink(issue, repo));
+						}
+					}
+					sb.AppendLine(".");
+					sb.AppendLine();
+
+					if (!string.IsNullOrWhiteSpace(entry.Impact))
+					{
+						sb.AppendLine("**Impact**<br>" + entry.Impact);
+					}
+					else
+					{
+						sb.AppendLine("% **Impact**<br>_Add a description of the impact_");
+					}
+
+					sb.AppendLine();
+
+					if (!string.IsNullOrWhiteSpace(entry.Action))
+					{
+						sb.AppendLine("**Action**<br>" + entry.Action);
+					}
+					else
+					{
+						sb.AppendLine("% **Action**<br>_Add a description of the what action to take_");
+					}
+
+					sb.AppendLine("::::");
+				}
+			}
+		}
+		else
+		{
+			sb.AppendLine("_No deprecations._");
+		}
+
+		var deprecationsPath = _fileSystem.Path.Combine(outputDir, version, "deprecations.md");
+		var deprecationsDir = _fileSystem.Path.GetDirectoryName(deprecationsPath);
+		if (!string.IsNullOrWhiteSpace(deprecationsDir) && !_fileSystem.Directory.Exists(deprecationsDir))
+		{
+			_ = _fileSystem.Directory.CreateDirectory(deprecationsDir);
+		}
+
+		await _fileSystem.File.WriteAllTextAsync(deprecationsPath, sb.ToString(), ctx);
+	}
+
+	[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0058:Expression value is never used", Justification = "StringBuilder methods return builder for chaining")]
+	private void RenderEntriesByArea(StringBuilder sb, List<ChangelogData> entries, string repo, bool subsections)
+	{
+		var groupedByArea = entries.GroupBy(e => GetComponent(e)).ToList();
+		foreach (var areaGroup in groupedByArea)
+		{
+			if (subsections && !string.IsNullOrWhiteSpace(areaGroup.Key))
+			{
+				var header = FormatAreaHeader(areaGroup.Key);
+				sb.AppendLine();
+				sb.AppendLine(CultureInfo.InvariantCulture, $"**{header}**");
+			}
+
+			foreach (var entry in areaGroup)
+			{
+				sb.Append("* ");
+				sb.Append(Beautify(entry.Title));
+				sb.Append(' ');
+
+				if (!string.IsNullOrWhiteSpace(entry.Pr))
+				{
+					sb.Append(FormatPrLink(entry.Pr, repo));
+					sb.Append(' ');
+				}
+
+				if (entry.Issues != null && entry.Issues.Count > 0)
+				{
+					foreach (var issue in entry.Issues)
+					{
+						sb.Append(FormatIssueLink(issue, repo));
+						sb.Append(' ');
+					}
+				}
+
+				if (!string.IsNullOrWhiteSpace(entry.Description))
+				{
+					sb.AppendLine();
+					var indented = Indent(entry.Description);
+					sb.AppendLine(indented);
+				}
+				else
+				{
+					sb.AppendLine();
+				}
+			}
+		}
+	}
+
+	private static string GetComponent(ChangelogData entry)
+	{
+		// Map areas (list) to component (string) - use first area or empty string
+		if (entry.Areas != null && entry.Areas.Count > 0)
+		{
+			return entry.Areas[0];
+		}
+		return string.Empty;
+	}
+
+	private static string FormatAreaHeader(string area)
+	{
+		// Capitalize first letter and replace hyphens with spaces
+		if (string.IsNullOrWhiteSpace(area))
+			return string.Empty;
+
+		var result = char.ToUpperInvariant(area[0]) + area.Substring(1);
+		return result.Replace("-", " ");
+	}
+
+	private static string Beautify(string text)
+	{
+		if (string.IsNullOrWhiteSpace(text))
+			return string.Empty;
+
+		// Capitalize first letter and ensure ends with period
+		var result = char.ToUpperInvariant(text[0]) + text.Substring(1);
+		if (!result.EndsWith('.'))
+		{
+			result += ".";
+		}
+		return result;
+	}
+
+	private static string Indent(string text)
+	{
+		// Indent each line with two spaces
+		var lines = text.Split('\n');
+		return string.Join("\n", lines.Select(line => "  " + line));
+	}
+
+	[GeneratedRegex(@"\d+$", RegexOptions.None)]
+	private static partial Regex PrNumberRegex();
+
+	[GeneratedRegex(@"\d+$", RegexOptions.None)]
+	private static partial Regex IssueNumberRegex();
+
+	private static string FormatPrLink(string pr, string repo)
+	{
+		// Extract PR number
+		var match = PrNumberRegex().Match(pr);
+		var prNumber = match.Success ? match.Value : pr;
+
+		// Format as markdown link
+		if (pr.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+		{
+			return $"[#{prNumber}]({pr})";
+		}
+		else
+		{
+			var url = $"https://github.com/elastic/{repo}/pull/{prNumber}";
+			return $"[#{prNumber}]({url})";
+		}
+	}
+
+	private static string FormatIssueLink(string issue, string repo)
+	{
+		// Extract issue number
+		var match = IssueNumberRegex().Match(issue);
+		var issueNumber = match.Success ? match.Value : issue;
+
+		// Format as markdown link
+		if (issue.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+		{
+			return $"[#{issueNumber}]({issue})";
+		}
+		else
+		{
+			var url = $"https://github.com/elastic/{repo}/issues/{issueNumber}";
+			return $"[#{issueNumber}]({url})";
+		}
+	}
 }
 
