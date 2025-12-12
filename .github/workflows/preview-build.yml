@@ -521,7 +521,6 @@ jobs:
         id: internal-assembler-build
         if: >
           github.repository == 'elastic/docs-builder'
-          && github.head_ref == 'applies-to-popovers'
           && steps.deployment.outputs.result
         run: |
           dotnet run --project src/tooling/docs-builder -- assemble --skip-private-repositories
