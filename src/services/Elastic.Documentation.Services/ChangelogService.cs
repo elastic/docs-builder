@@ -89,9 +89,8 @@ public class ChangelogService(
 		var successCount = 0;
 		var skippedCount = 0;
 
-		foreach (var pr in input.Prs)
+		foreach (var prTrimmed in input.Prs.Select(pr => pr.Trim()))
 		{
-			var prTrimmed = pr.Trim();
 			if (string.IsNullOrWhiteSpace(prTrimmed))
 				continue;
 
