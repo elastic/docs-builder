@@ -142,11 +142,15 @@ stack: ga
     let ``renders all versions`` () =
         markdown |> convertsToHtml """
 <p class="applies applies-block">
-	<span class="applicable-info" data-tippy-content="Available on Elastic&nbsp;Stack unless otherwise specified.
+	<span class="applicable-info" data-tippy-content="Available since 8.0.
 
 If this functionality is unavailable or behaves differently when deployed on ECH, ECE, ECK, or a self-managed installation, it will be indicated on the page.">
 		<span class="applicable-name">Stack</span>
-		<span class="applicable-meta applicable-meta-ga">
+ 		<span class="applicable-separator"></span>
+ 		<span class="applicable-meta applicable-meta-ga">
+ 			<span class="applicable-version applicable-version-ga">
+ 				8.0+
+ 			</span>
 		</span>
 	</span>
 </p>
@@ -401,7 +405,7 @@ stack: ga 8.8.0, preview 8.1.0
 """
 
     [<Fact>]
-    let ``renders GA planned when preview exists alongside GA`` () =
+    let ``renders Preview when GA and Preview both exist for an unreleased entry`` () =
         markdown |> convertsToHtml """
 <p class="applies applies-block">
 	<span class="applicable-info" data-tippy-content="<div><strong>Elastic&nbsp;Stack GA 8.8.0:</strong>We plan to add this functionality in a future Elastic&nbsp;Stack update. Subject to change.
@@ -413,8 +417,8 @@ If this functionality is unavailable or behaves differently when deployed on ECH
 This functionality may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.</div>">
 		<span class="applicable-name">Stack</span>
 		<span class="applicable-separator"></span>
-		<span class="applicable-meta applicable-meta-ga">
-			GA planned
+		<span class="applicable-meta applicable-meta-preview">
+			<span class="applicable-lifecycle applicable-lifecycle-preview">Preview</span>
 			<span class="applicable-ellipsis">
 				<span class="applicable-ellipsis__dot"></span>
 				<span class="applicable-ellipsis__dot"></span>
@@ -479,11 +483,14 @@ stack: unavailable
     let ``renders unavailable`` () =
         markdown |> convertsToHtml """
 <p class="applies applies-block">
-	<span class="applicable-info" data-tippy-content="Not available on Elastic&nbsp;Stack unless otherwise specified.">
+	<span class="applicable-info" data-tippy-content="Unavailable since 8.0.">
 		<span class="applicable-name">Stack</span>
 		<span class="applicable-separator"></span>
 		<span class="applicable-meta applicable-meta-unavailable">
 			<span class="applicable-lifecycle applicable-lifecycle-unavailable">Unavailable</span>
+ 			<span class="applicable-version applicable-version-unavailable">
+ 				8.0+
+ 			</span>
 		</span>
 	</span>
 </div>
@@ -500,9 +507,12 @@ product: ga
     let ``renders product all versions`` () =
         markdown |> convertsToHtml """
 <p class="applies applies-block">
-	<span class="applicable-info" data-tippy-content="Available on  unless otherwise specified.">
+	<span class="applicable-info" data-tippy-content="Available since 8.0.">
 		<span class="applicable-name"></span>
 		<span class="applicable-meta applicable-meta-ga">
+ 			<span class="applicable-version applicable-version-ga">
+ 				8.0+
+ 			</span>
 		</span>
 	</span>
 </p>
@@ -526,7 +536,7 @@ This functionality may be changed or removed in a future release. Elastic will w
 		<span class="applicable-meta applicable-meta-preview">
 			<span class="applicable-lifecycle applicable-lifecycle-preview">Preview</span>
 			<span class="applicable-version applicable-version-preview">
-				1.3.0
+				1.3+
 			</span>
 		</span>
 	</span>
@@ -694,7 +704,7 @@ stack:
     let ``renders missing edge cases`` () =
         markdown |> convertsToHtml """
 <p class="applies applies-block">
-	<span class="applicable-info" data-tippy-content="Available on Elastic&nbsp;Stack unless otherwise specified.
+	<span class="applicable-info" data-tippy-content="Available since 8.0.
 
 If this functionality is unavailable or behaves differently when deployed on ECH, ECE, ECK, or a self-managed installation, it will be indicated on the page.">
 		<span class="applicable-name">Stack</span>
@@ -801,6 +811,7 @@ If this functionality is unavailable or behaves differently when deployed on ECH
 """
 
 // Test multiple lifecycles for same applicability key
+// With version inference: ga 8.0, beta 8.1 → ga =8.0 (exact), beta 8.1+ (highest gets GTE)
 type ``multiple lifecycles same key`` () =
     static let markdown = Setup.Markdown """
 ```{applies_to}
@@ -824,7 +835,7 @@ Beta features are subject to change. The design and code is less mature than off
 		<span class="applicable-meta applicable-meta-ga">
 			<span class="applicable-lifecycle applicable-lifecycle-ga">GA</span>
 			<span class="applicable-version applicable-version-ga">
-				8.0.0
+				8.0
 			</span>
 			<span class="applicable-ellipsis">
 				<span class="applicable-ellipsis__dot"></span>

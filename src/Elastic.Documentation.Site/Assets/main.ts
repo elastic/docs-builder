@@ -2,7 +2,6 @@ import { initAppliesSwitch } from './applies-switch'
 import { initCopyButton } from './copybutton'
 import { initHighlight } from './hljs'
 import { initImageCarousel } from './image-carousel'
-import './markdown/applies-to'
 import { openDetailsWithAnchor } from './open-details-with-anchor'
 import { initNav } from './pages-nav'
 import { initSmoothScroll } from './smooth-scroll'
@@ -33,6 +32,7 @@ initializeOtel({
 // Parcel will automatically code-split this into a separate chunk
 import('./web-components/SearchOrAskAi/SearchOrAskAi')
 import('./web-components/VersionDropdown')
+import('./web-components/AppliesToPopover')
 
 const { getOS } = new UAParser()
 const isLazyLoadNavigationEnabled =
