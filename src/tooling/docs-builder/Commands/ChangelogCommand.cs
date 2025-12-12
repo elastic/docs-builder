@@ -102,7 +102,7 @@ internal sealed class ChangelogCommand(
 	}
 
 	/// <summary>
-	/// Bundle changelog fragments into a single YAML file
+	/// Bundle changelog files
 	/// </summary>
 	/// <param name="directory">Optional: Directory containing changelog YAML files. Defaults to current directory</param>
 	/// <param name="output">Optional: Output file path for the bundled changelog. Defaults to 'changelog-bundle.yaml' in the input directory</param>

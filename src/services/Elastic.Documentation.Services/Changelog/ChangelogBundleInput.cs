@@ -5,7 +5,7 @@
 namespace Elastic.Documentation.Services.Changelog;
 
 /// <summary>
-/// Input data for bundling changelog fragments
+/// Input data for bundling changelog files
 /// </summary>
 public class ChangelogBundleInput
 {
