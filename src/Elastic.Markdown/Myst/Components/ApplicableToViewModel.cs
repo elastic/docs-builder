@@ -130,7 +130,7 @@ public class ApplicableToViewModel
 				var versioningSystem = VersionsConfig.GetVersioningSystem(applicabilityDefinition.VersioningSystemId);
 				var allApplicabilities = items.Select(i => i.Applicability).ToList();
 
-				var renderData = _applicabilityRenderer.RenderApplicability(
+				var renderData = ApplicabilityRenderer.RenderApplicability(
 					allApplicabilities,
 					applicabilityDefinition,
 					versioningSystem);
