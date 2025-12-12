@@ -666,6 +666,7 @@ jobs:
   vale:
     if: >
       startsWith(github.event_name, 'pull_request')
+      && inputs.enable-vale-linting == true
       && needs.check.outputs.any_modified
     runs-on: ubuntu-latest
     needs: check
