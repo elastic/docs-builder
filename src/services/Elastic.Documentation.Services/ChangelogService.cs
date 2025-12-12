@@ -16,11 +16,13 @@ namespace Elastic.Documentation.Services;
 
 public class ChangelogService(
 	ILoggerFactory logFactory,
-	IConfigurationContext configurationContext
+	IConfigurationContext configurationContext,
+	IGitHubPrService? githubPrService = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogService>();
 	private readonly IFileSystem _fileSystem = new FileSystem();
+	private readonly IGitHubPrService? _githubPrService = githubPrService;
 
 	public async Task<bool> CreateChangelog(
 		IDiagnosticsCollector collector,
@@ -38,16 +40,91 @@ public class ChangelogService(
 				return false;
 			}
 
-			// Validate required fields
+			// Validate that if PR is just a number, owner and repo must be provided
+			if (!string.IsNullOrWhiteSpace(input.Pr)
+				&& int.TryParse(input.Pr, out _)
+				&& (string.IsNullOrWhiteSpace(input.Owner) || string.IsNullOrWhiteSpace(input.Repo)))
+			{
+				collector.EmitError(string.Empty, "When --pr is specified as just a number, both --owner and --repo must be provided");
+				return false;
+			}
+
+			// If PR is specified, try to fetch PR information and derive title/type
+			if (!string.IsNullOrWhiteSpace(input.Pr))
+			{
+				var prInfo = await TryFetchPrInfoAsync(input.Pr, input.Owner, input.Repo, ctx);
+				if (prInfo == null)
+				{
+					collector.EmitError(string.Empty, $"Failed to fetch PR information from GitHub for PR: {input.Pr}. Cannot derive title and type.");
+					return false;
+				}
+
+				// Use PR title if title was not explicitly provided
+				if (string.IsNullOrWhiteSpace(input.Title))
+				{
+					if (string.IsNullOrWhiteSpace(prInfo.Title))
+					{
+						collector.EmitError(string.Empty, $"PR {input.Pr} does not have a title. Please provide --title or ensure the PR has a title.");
+						return false;
+					}
+					input.Title = prInfo.Title;
+					_logger.LogInformation("Using PR title: {Title}", input.Title);
+				}
+				else
+				{
+					_logger.LogDebug("Using explicitly provided title, ignoring PR title");
+				}
+
+				// Map labels to type if type was not explicitly provided
+				if (string.IsNullOrWhiteSpace(input.Type))
+				{
+					if (config.LabelToType == null || config.LabelToType.Count == 0)
+					{
+						collector.EmitError(string.Empty, $"Cannot derive type from PR {input.Pr} labels: no label-to-type mapping configured in changelog.yml. Please provide --type or configure label_to_type in changelog.yml.");
+						return false;
+					}
+
+					var mappedType = MapLabelsToType(prInfo.Labels, config.LabelToType);
+					if (mappedType == null)
+					{
+						var availableLabels = prInfo.Labels.Length > 0 ? string.Join(", ", prInfo.Labels) : "none";
+						collector.EmitError(string.Empty, $"Cannot derive type from PR {input.Pr} labels ({availableLabels}). No matching label found in label_to_type mapping. Please provide --type or add a label mapping in changelog.yml.");
+						return false;
+					}
+					input.Type = mappedType;
+					_logger.LogInformation("Mapped PR labels to type: {Type}", input.Type);
+				}
+				else
+				{
+					_logger.LogDebug("Using explicitly provided type, ignoring PR labels");
+				}
+
+				// Map labels to areas if areas were not explicitly provided
+				if ((input.Areas == null || input.Areas.Length == 0) && config.LabelToAreas != null)
+				{
+					var mappedAreas = MapLabelsToAreas(prInfo.Labels, config.LabelToAreas);
+					if (mappedAreas.Count > 0)
+					{
+						input.Areas = mappedAreas.ToArray();
+						_logger.LogInformation("Mapped PR labels to areas: {Areas}", string.Join(", ", mappedAreas));
+					}
+				}
+				else if (input.Areas != null && input.Areas.Length > 0)
+				{
+					_logger.LogDebug("Using explicitly provided areas, ignoring PR labels");
+				}
+			}
+
+			// Validate required fields (must be provided either explicitly or derived from PR)
 			if (string.IsNullOrWhiteSpace(input.Title))
 			{
-				collector.EmitError(string.Empty, "Title is required");
+				collector.EmitError(string.Empty, "Title is required. Provide --title or specify --pr to derive it from the PR.");
 				return false;
 			}
 
 			if (string.IsNullOrWhiteSpace(input.Type))
 			{
-				collector.EmitError(string.Empty, "Type is required");
+				collector.EmitError(string.Empty, "Type is required. Provide --type or specify --pr to derive it from PR labels (requires label_to_type mapping in changelog.yml).");
 				return false;
 			}
 
@@ -72,7 +149,7 @@ public class ChangelogService(
 			}
 
 			// Validate areas if configuration provides available areas
-			if (config.AvailableAreas != null && config.AvailableAreas.Count > 0)
+			if (config.AvailableAreas != null && config.AvailableAreas.Count > 0 && input.Areas != null)
 			{
 				foreach (var area in input.Areas.Where(area => !config.AvailableAreas.Contains(area)))
 				{
@@ -230,10 +307,11 @@ public class ChangelogService(
 
 	private static ChangelogData BuildChangelogData(ChangelogInput input)
 	{
+		// Title and Type are guaranteed to be non-null at this point due to validation above
 		var data = new ChangelogData
 		{
-			Title = input.Title,
-			Type = input.Type,
+			Title = input.Title!,
+			Type = input.Type!,
 			Subtype = input.Subtype,
 			Description = input.Description,
 			Impact = input.Impact,
@@ -371,6 +449,58 @@ public class ChangelogService(
 			sanitized = sanitized[..50];
 
 		return sanitized;
+	}
+
+	private async Task<GitHubPrInfo?> TryFetchPrInfoAsync(string? prUrl, string? owner, string? repo, Cancel ctx)
+	{
+		if (string.IsNullOrWhiteSpace(prUrl) || _githubPrService == null)
+		{
+			return null;
+		}
+
+		try
+		{
+			var prInfo = await _githubPrService.FetchPrInfoAsync(prUrl, owner, repo, ctx);
+			if (prInfo != null)
+			{
+				_logger.LogInformation("Successfully fetched PR information from GitHub");
+			}
+			else
+			{
+				_logger.LogWarning("Unable to fetch PR information from GitHub. Continuing with provided values.");
+			}
+			return prInfo;
+		}
+		catch (Exception ex)
+		{
+			if (ex is OutOfMemoryException or
+				StackOverflowException or
+				AccessViolationException or
+				ThreadAbortException)
+			{
+				throw;
+			}
+			_logger.LogWarning(ex, "Error fetching PR information from GitHub. Continuing with provided values.");
+			return null;
+		}
+	}
+
+	private static string? MapLabelsToType(string[] labels, Dictionary<string, string> labelToTypeMapping) => labels
+			.Select(label => labelToTypeMapping.TryGetValue(label, out var mappedType) ? mappedType : null)
+			.FirstOrDefault(mappedType => mappedType != null);
+
+	private static List<string> MapLabelsToAreas(string[] labels, Dictionary<string, string> labelToAreasMapping)
+	{
+		var areas = new HashSet<string>();
+		var areaList = labels
+			.Where(label => labelToAreasMapping.ContainsKey(label))
+			.SelectMany(label => labelToAreasMapping[label]
+				.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+		foreach (var area in areaList)
+		{
+			_ = areas.Add(area);
+		}
+		return areas.ToList();
 	}
 }
 

@@ -54,3 +54,25 @@ available_products:
   - cloud-enterprise
   # Add more products as needed
 
+# GitHub label mappings (optional - used when --pr option is specified)
+# Maps GitHub PR labels to changelog type values
+# When a PR has a label that matches a key, the corresponding type value is used
+label_to_type:
+  # Example mappings - customize based on your label naming conventions
+  # "type:feature": feature
+  # "type:bug": bug-fix
+  # "type:enhancement": enhancement
+  # "type:breaking": breaking-change
+  # "type:security": security
+
+# Maps GitHub PR labels to changelog area values
+# Multiple labels can map to the same area, and a single label can map to multiple areas (comma-separated)
+label_to_areas:
+  # Example mappings - customize based on your label naming conventions
+  # "area:search": search
+  # "area:security": security
+  # "area:ml": machine-learning
+  # "area:observability": observability
+  # "area:index": index-management
+  # "area:multiple": "search, security"  # Multiple areas comma-separated
+

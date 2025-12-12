@@ -46,6 +46,17 @@ public class ChangelogConfiguration
 
 	public List<string>? AvailableProducts { get; set; }
 
+	/// <summary>
+	/// Mapping from GitHub label names to changelog type values
+	/// </summary>
+	public Dictionary<string, string>? LabelToType { get; set; }
+
+	/// <summary>
+	/// Mapping from GitHub label names to changelog area values
+	/// Multiple labels can map to the same area, and a single label can map to multiple areas (comma-separated)
+	/// </summary>
+	public Dictionary<string, string>? LabelToAreas { get; set; }
+
 	public static ChangelogConfiguration Default => new();
 }
 
