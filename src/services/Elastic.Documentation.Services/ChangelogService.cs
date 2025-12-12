@@ -1324,6 +1324,12 @@ public partial class ChangelogService(
 				version = "unknown";
 			}
 
+			// Warn if --title was not provided and version defaults to "unknown"
+			if (string.IsNullOrWhiteSpace(input.Title) && version == "unknown")
+			{
+				collector.EmitWarning(string.Empty, "No --title option provided and bundle files do not contain 'target' values. Output folder and markdown titles will default to 'unknown'. Consider using --title to specify a custom title.");
+			}
+
 			// Group entries by type (kind)
 			var entriesByType = allResolvedEntries.Select(e => e.entry).GroupBy(e => e.Type).ToDictionary(g => g.Key, g => g.ToList());
 
