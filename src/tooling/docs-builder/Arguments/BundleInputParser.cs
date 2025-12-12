@@ -8,7 +8,7 @@ using Elastic.Documentation.Services.Changelog;
 namespace Documentation.Builder.Arguments;
 
 /// <summary>
-/// Parser for bundle input format: "bundle-file-path, changelog-directory, repo"
+/// Parser for bundle input format: "bundle-file-path, changelog-file-path, repo"
 /// Only bundle-file-path is required.
 /// Can be specified multiple times.
 /// </summary>

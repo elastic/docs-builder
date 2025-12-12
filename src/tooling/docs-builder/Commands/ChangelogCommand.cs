@@ -158,7 +158,7 @@ internal sealed class ChangelogCommand(
 	/// <summary>
 	/// Render bundled changelog(s) to markdown files
 	/// </summary>
-	/// <param name="input">Required: Bundle input(s) in format "bundle-file-path, changelog-directory, repo". Can be specified multiple times. Only bundle-file-path is required.</param>
+	/// <param name="input">Required: Bundle input(s) in format "bundle-file-path, changelog-file-path, repo". Can be specified multiple times. Only bundle-file-path is required.</param>
 	/// <param name="output">Optional: Output directory for rendered markdown files. Defaults to current directory</param>
 	/// <param name="title">Optional: Title to use for section headers in output markdown files. Defaults to version from first bundle</param>
 	/// <param name="subsections">Optional: Group entries by area/component in subsections. Defaults to false</param>
