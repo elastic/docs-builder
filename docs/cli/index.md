@@ -10,7 +10,7 @@ These commands can be roughly grouped into four main categories
 - [Documentation Set commands](#documentation-set-commands)
 - [Link commands](#link-commands)
 - [Assembler commands](#assembler-commands)
-- [Changelog commands](#release-doc-commands)
+- [Changelog commands](#changelog-commands)
 
 ### Global options 
 
