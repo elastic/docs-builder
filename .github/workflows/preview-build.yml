@@ -58,6 +58,12 @@ on:
         type: boolean
         default: false
         required: false
+      enable-vale-linting:
+        description: 'Enable vale linting'
+        type: boolean
+        default: false
+        required: false
+        
 
 permissions:
   contents: read
@@ -656,3 +662,27 @@ jobs:
               issue_number: prNum,
               body
             });
+
+  vale:
+    if: >
+      startsWith(github.event_name, 'pull_request')
+      && inputs.enable-vale-linting == true
+      && needs.check.outputs.any_modified
+    runs-on: ubuntu-latest
+    needs: check
+    permissions:
+      contents: read
+      pull-requests: write
+      deployments: none
+      id-token: none
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Run Vale Linter
+        uses: elastic/vale-rules/lint@main
+        with: 
+          files: ${{ needs.check.outputs.all_changed_files }}
+      - name: Post Vale Results
+        uses: elastic/vale-rules/report@main
+        with:
+          download_artifacts: false
