@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Versions;
 
@@ -63,105 +62,96 @@ public class ApplicableToViewModel
 
 	public IEnumerable<ApplicabilityItem> GetApplicabilityItems()
 	{
-		var items = new List<ApplicabilityItem>();
+		var rawItems = new List<RawApplicabilityItem>();
 
 		if (AppliesTo.Serverless is not null)
 		{
-			items.AddRange(AppliesTo.Serverless.AllProjects is not null
-				? ProcessSingleCollection(AppliesTo.Serverless.AllProjects, ApplicabilityMappings.Serverless)
-				: ProcessMappedCollections(AppliesTo.Serverless, ServerlessMappings));
+			rawItems.AddRange(AppliesTo.Serverless.AllProjects is not null
+				? CollectFromCollection(AppliesTo.Serverless.AllProjects, ApplicabilityMappings.Serverless)
+				: CollectFromMappings(AppliesTo.Serverless, ServerlessMappings));
 		}
 
 		if (AppliesTo.Stack is not null)
-			items.AddRange(ProcessSingleCollection(AppliesTo.Stack, ApplicabilityMappings.Stack));
+			rawItems.AddRange(CollectFromCollection(AppliesTo.Stack, ApplicabilityMappings.Stack));
 
 		if (AppliesTo.Deployment is not null)
-			items.AddRange(ProcessMappedCollections(AppliesTo.Deployment, DeploymentMappings));
+			rawItems.AddRange(CollectFromMappings(AppliesTo.Deployment, DeploymentMappings));
 
 		if (AppliesTo.ProductApplicability is not null)
-			items.AddRange(ProcessMappedCollections(AppliesTo.ProductApplicability, ProductMappings));
+			rawItems.AddRange(CollectFromMappings(AppliesTo.ProductApplicability, ProductMappings));
 
 		if (AppliesTo.Product is not null)
-			items.AddRange(ProcessSingleCollection(AppliesTo.Product, ApplicabilityMappings.Product));
+			rawItems.AddRange(CollectFromCollection(AppliesTo.Product, ApplicabilityMappings.Product));
 
-		return CombineItemsByKey(items);
-	}
-
-	private IEnumerable<ApplicabilityItem> ProcessSingleCollection(AppliesCollection collection, ApplicabilityMappings.ApplicabilityDefinition applicabilityDefinition)
-	{
-		var versioningSystem = VersionsConfig.GetVersioningSystem(applicabilityDefinition.VersioningSystemId);
-		return ProcessApplicabilityCollection(collection, applicabilityDefinition, versioningSystem);
+		return RenderGroupedItems(rawItems);
 	}
 
 	/// <summary>
-	/// Uses mapping dictionary to eliminate repetitive code when processing multiple collections
+	/// Collects raw applicability items from a single collection.
 	/// </summary>
-	private IEnumerable<ApplicabilityItem> ProcessMappedCollections<T>(T source, Dictionary<Func<T, AppliesCollection?>, ApplicabilityMappings.ApplicabilityDefinition> mappings)
+	private static IEnumerable<RawApplicabilityItem> CollectFromCollection(
+		AppliesCollection collection,
+		ApplicabilityMappings.ApplicabilityDefinition applicabilityDefinition) =>
+		collection.Select(applicability => new RawApplicabilityItem(
+			Key: applicabilityDefinition.Key,
+			Applicability: applicability,
+			ApplicabilityDefinition: applicabilityDefinition
+		));
+
+	/// <summary>
+	/// Collects raw applicability items from mapped collections.
+	/// </summary>
+	private static IEnumerable<RawApplicabilityItem> CollectFromMappings<T>(
+		T source,
+		Dictionary<Func<T, AppliesCollection?>, ApplicabilityMappings.ApplicabilityDefinition> mappings)
 	{
-		var items = new List<ApplicabilityItem>();
+		var items = new List<RawApplicabilityItem>();
 
 		foreach (var (propertySelector, applicabilityDefinition) in mappings)
 		{
 			var collection = propertySelector(source);
 			if (collection is not null)
-				items.AddRange(ProcessSingleCollection(collection, applicabilityDefinition));
+				items.AddRange(CollectFromCollection(collection, applicabilityDefinition));
 		}
 
 		return items;
 	}
 
-	private IEnumerable<ApplicabilityItem> ProcessApplicabilityCollection(
-		AppliesCollection applications,
-		ApplicabilityMappings.ApplicabilityDefinition applicabilityDefinition,
-		VersioningSystem versioningSystem) =>
-		applications.Select(applicability =>
-		{
-			var renderData = _applicabilityRenderer.RenderApplicability(
-				applicability,
-				applicabilityDefinition,
-				versioningSystem,
-				applications);
-
-			return new ApplicabilityItem(
-				Key: applicabilityDefinition.Key,
-				PrimaryApplicability: applicability,
-				RenderData: renderData,
-				ApplicabilityDefinition: applicabilityDefinition
-			);
-		});
-
 	/// <summary>
-	/// Combines multiple applicability items with the same key into a single item with combined tooltip
+	/// Groups raw items by key and renders each group using the unified renderer.
 	/// </summary>
-	private IEnumerable<ApplicabilityItem> CombineItemsByKey(List<ApplicabilityItem> items) => items
+	private IEnumerable<ApplicabilityItem> RenderGroupedItems(List<RawApplicabilityItem> rawItems) =>
+		rawItems
 			.GroupBy(item => item.Key)
 			.Select(group =>
 			{
-				if (group.Count() == 1)
-					return group.First();
-
-				var firstItem = group.First();
-				var allApplicabilities = group.Select(g => g.Applicability).ToList();
-				var applicabilityDefinition = firstItem.ApplicabilityDefinition;
+				var items = group.ToList();
+				var applicabilityDefinition = items.First().ApplicabilityDefinition;
 				var versioningSystem = VersionsConfig.GetVersioningSystem(applicabilityDefinition.VersioningSystemId);
+				var allApplicabilities = items.Select(i => i.Applicability).ToList();
 
-				var combinedRenderData = _applicabilityRenderer.RenderCombinedApplicability(
+				var renderData = _applicabilityRenderer.RenderApplicability(
 					allApplicabilities,
 					applicabilityDefinition,
-					versioningSystem,
-					new AppliesCollection(allApplicabilities.ToArray()));
+					versioningSystem);
 
 				// Select the closest version to current as the primary display
 				var primaryApplicability = ApplicabilitySelector.GetPrimaryApplicability(allApplicabilities, versioningSystem.Current);
 
 				return new ApplicabilityItem(
-					Key: firstItem.Key,
+					Key: items.First().Key,
 					PrimaryApplicability: primaryApplicability,
-					RenderData: combinedRenderData,
+					RenderData: renderData,
 					ApplicabilityDefinition: applicabilityDefinition
 				);
 			});
 
-
-
+	/// <summary>
+	/// Intermediate representation before rendering.
+	/// </summary>
+	private sealed record RawApplicabilityItem(
+		string Key,
+		Applicability Applicability,
+		ApplicabilityMappings.ApplicabilityDefinition ApplicabilityDefinition
+	);
 }

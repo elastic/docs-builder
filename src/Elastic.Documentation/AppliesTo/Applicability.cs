@@ -183,19 +183,7 @@ public record Applicability : IComparable<Applicability>, IComparable
 
 
 	public string GetLifeCycleName() =>
-		Lifecycle switch
-		{
-			ProductLifecycle.TechnicalPreview => "Preview",
-			ProductLifecycle.Beta => "Beta",
-			ProductLifecycle.Development => "Development",
-			ProductLifecycle.Deprecated => "Deprecated",
-			ProductLifecycle.Planned => "Planned",
-			ProductLifecycle.Discontinued => "Discontinued",
-			ProductLifecycle.Unavailable => "Unavailable",
-			ProductLifecycle.GenerallyAvailable => "GA",
-			ProductLifecycle.Removed => "Removed",
-			_ => throw new ArgumentOutOfRangeException(nameof(Lifecycle), Lifecycle, null)
-		};
+		ProductLifecycleInfo.GetShortName(Lifecycle);
 
 
 	/// <inheritdoc />

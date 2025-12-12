@@ -2,36 +2,17 @@
 
 @foreach (var item in Model.GetApplicabilityItems())
 {
-		<span class="applicable-info" data-tippy-content="@(new HtmlString(Model.ShowTooltip ? item.RenderData.TooltipText : string.Empty))">
-			<span class="applicable-name">@item.Key</span>
-			
-			@if (!string.IsNullOrEmpty(item.Key) && (item.RenderData.ShowLifecycleName || item.RenderData.ShowVersion || !string.IsNullOrEmpty(item.RenderData.BadgeLifecycleText)))
-			{
-				<span class="applicable-separator"></span>
-			}
-			<span class="applicable-meta applicable-meta-@item.RenderData.LifecycleClass">
-				@if (item.RenderData.ShowLifecycleName)
-				{
-					<span class="applicable-lifecycle applicable-lifecycle-@item.RenderData.LifecycleClass">@item.RenderData.LifecycleName</span>
-				}
-				@if (item.RenderData.ShowVersion)
-				{
-					<span class="applicable-version applicable-version-@item.RenderData.LifecycleClass">
-						@item.RenderData.Version
-					</span>
-				}
-				else
-				{
-					@item.RenderData.BadgeLifecycleText
-				}
-				@if (item.RenderData.HasMultipleLifecycles)
-				{
-					<span class="applicable-ellipsis">
-						<span class="applicable-ellipsis__dot"></span>
-						<span class="applicable-ellipsis__dot"></span>
-						<span class="applicable-ellipsis__dot"></span>
-					</span>
-				}
-			</span>
-		</span>
+	<applies-to-popover
+		badge-key="@item.Key"
+		badge-lifecycle-text="@item.RenderData.BadgeLifecycleText"
+		badge-version="@item.RenderData.Version"
+		lifecycle-class="@item.RenderData.LifecycleClass"
+		lifecycle-name="@item.RenderData.LifecycleName"
+		show-lifecycle-name="@item.RenderData.ShowLifecycleName.ToString().ToLowerInvariant()"
+		show-version="@item.RenderData.ShowVersion.ToString().ToLowerInvariant()"
+		has-multiple-lifecycles="@item.RenderData.HasMultipleLifecycles.ToString().ToLowerInvariant()"
+		popover-content="@(new HtmlString(System.Web.HttpUtility.HtmlAttributeEncode(Model.ShowTooltip ? item.RenderData.TooltipText : string.Empty)))"
+		show-popover="@Model.ShowTooltip.ToString().ToLowerInvariant()"
+		is-inline="@Model.Inline.ToString().ToLowerInvariant()"
+	></applies-to-popover>
 }
