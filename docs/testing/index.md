@@ -106,3 +106,15 @@ const foo = "bar"; <1>
 
 :::{include} /_snippets/applies-switch.md
 :::
+
+
+
+## Accessibility rule test
+
+This person is a victim of disability and is handicapped by birth defect. The normal person suffers from hearing-impaired conditions.
+
+## Acronyms rule test
+
+We use the XYZ technology and the ABC framework.
+
+## Articles rule test
