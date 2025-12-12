@@ -47,7 +47,10 @@ export const Search = () => {
     }
 
     const { inputRef, buttonRef, itemRefs, filterRefs, handleInputKeyDown } =
-        useSearchKeyboardNavigation(resultsCount)
+        useSearchKeyboardNavigation({
+            resultsCount,
+            isLoading: isLoading || isFetching,
+        })
 
     // Listen for Cmd+K to focus input
     useEffect(() => {

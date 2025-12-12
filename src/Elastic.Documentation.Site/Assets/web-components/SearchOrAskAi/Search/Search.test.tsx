@@ -205,7 +205,7 @@ describe('Search Component', () => {
     })
 
     describe('Search on Enter', () => {
-        it('should trigger chat when Enter is pressed with valid search and no results', async () => {
+        it('should not trigger chat when Enter is pressed with no results', async () => {
             // Arrange
             searchStore.setState({ searchTerm: 'elasticsearch query' })
             const user = userEvent.setup()
@@ -216,13 +216,9 @@ describe('Search Component', () => {
             await user.click(input)
             await user.keyboard('{Enter}')
 
-            // Assert
-            await waitFor(() => {
-                const messages = chatStore.getState().chatMessages
-                expect(messages[0]?.content).toBe(
-                    'Tell me more about elasticsearch query'
-                )
-            })
+            // Assert - chat should not be triggered
+            expect(chatStore.getState().chatMessages).toHaveLength(0)
+            expect(modalStore.getState().mode).toBe('search')
         })
 
         it('should not submit empty search on Enter', async () => {
