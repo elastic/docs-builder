@@ -109,6 +109,7 @@ internal sealed class ChangelogCommand(
 	/// <param name="all">Include all changelogs in the directory</param>
 	/// <param name="inputProducts">Filter by products in format "product target lifecycle, ..." (e.g., "cloud-serverless 2025-12-02, cloud-serverless 2025-12-06")</param>
 	/// <param name="outputProducts">Explicitly set the products array in the output file in format "product target lifecycle, ...". Overrides any values from changelogs.</param>
+	/// <param name="resolve">Copy the contents of each changelog file into the entries array</param>
 	/// <param name="prs">Filter by pull request URLs or numbers (can specify multiple times)</param>
 	/// <param name="prsFile">Path to a newline-delimited file containing PR URLs or numbers</param>
 	/// <param name="owner">Optional: GitHub repository owner (used when PRs are specified as numbers)</param>
@@ -121,6 +122,7 @@ internal sealed class ChangelogCommand(
 		bool all = false,
 		[ProductInfoParser] List<ProductInfo>? inputProducts = null,
 		[ProductInfoParser] List<ProductInfo>? outputProducts = null,
+		bool resolve = false,
 		string[]? prs = null,
 		string? prsFile = null,
 		string? owner = null,
@@ -139,6 +141,7 @@ internal sealed class ChangelogCommand(
 			All = all,
 			InputProducts = inputProducts,
 			OutputProducts = outputProducts,
+			Resolve = resolve,
 			Prs = prs,
 			PrsFile = prsFile,
 			Owner = owner,

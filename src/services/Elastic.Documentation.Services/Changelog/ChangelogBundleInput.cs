@@ -14,6 +14,7 @@ public class ChangelogBundleInput
 	public bool All { get; set; }
 	public List<ProductInfo>? InputProducts { get; set; }
 	public List<ProductInfo>? OutputProducts { get; set; }
+	public bool Resolve { get; set; }
 	public string[]? Prs { get; set; }
 	public string? PrsFile { get; set; }
 	public string? Owner { get; set; }

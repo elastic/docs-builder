@@ -22,6 +22,20 @@ public class BundledProduct
 public class BundledEntry
 {
 	public BundledFile File { get; set; } = new();
+
+	// Resolved changelog fields (only populated when --resolve is used)
+	public string? Type { get; set; }
+	public string? Title { get; set; }
+	public List<ProductInfo>? Products { get; set; }
+	public string? Description { get; set; }
+	public string? Impact { get; set; }
+	public string? Action { get; set; }
+	public string? FeatureId { get; set; }
+	public bool? Highlight { get; set; }
+	public string? Subtype { get; set; }
+	public List<string>? Areas { get; set; }
+	public string? Pr { get; set; }
+	public List<string>? Issues { get; set; }
 }
 
 public class BundledFile

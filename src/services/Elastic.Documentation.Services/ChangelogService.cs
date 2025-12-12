@@ -828,17 +828,80 @@ public partial class ChangelogService(
 				collector.EmitWarning(string.Empty, $"Product '{productGroup.Key}' has multiple targets in bundle: {string.Join(", ", targets)}");
 			}
 
-			// Build entries - only include file information
-			bundledData.Entries = changelogEntries
-				.Select(e => new BundledEntry
+			// Build entries
+			if (input.Resolve)
+			{
+				// When resolving, include changelog contents and validate required fields
+				var resolvedEntries = new List<BundledEntry>();
+				foreach (var (data, filePath, fileName, checksum) in changelogEntries)
 				{
-					File = new BundledFile
+					// Validate required fields
+					if (string.IsNullOrWhiteSpace(data.Title))
 					{
-						Name = e.fileName,
-						Checksum = e.checksum
+						collector.EmitError(filePath, "Changelog file is missing required field: title");
+						return false;
 					}
-				})
-				.ToList();
+
+					if (string.IsNullOrWhiteSpace(data.Type))
+					{
+						collector.EmitError(filePath, "Changelog file is missing required field: type");
+						return false;
+					}
+
+					if (data.Products == null || data.Products.Count == 0)
+					{
+						collector.EmitError(filePath, "Changelog file is missing required field: products");
+						return false;
+					}
+
+					// Validate products have required fields
+					foreach (var product in data.Products)
+					{
+						if (string.IsNullOrWhiteSpace(product.Product))
+						{
+							collector.EmitError(filePath, "Changelog file has product entry missing required field: product");
+							return false;
+						}
+					}
+
+					resolvedEntries.Add(new BundledEntry
+					{
+						File = new BundledFile
+						{
+							Name = fileName,
+							Checksum = checksum
+						},
+						Type = data.Type,
+						Title = data.Title,
+						Products = data.Products,
+						Description = data.Description,
+						Impact = data.Impact,
+						Action = data.Action,
+						FeatureId = data.FeatureId,
+						Highlight = data.Highlight,
+						Subtype = data.Subtype,
+						Areas = data.Areas,
+						Pr = data.Pr,
+						Issues = data.Issues
+					});
+				}
+
+				bundledData.Entries = resolvedEntries;
+			}
+			else
+			{
+				// Only include file information
+				bundledData.Entries = changelogEntries
+					.Select(e => new BundledEntry
+					{
+						File = new BundledFile
+						{
+							Name = e.fileName,
+							Checksum = e.checksum
+						}
+					})
+					.ToList();
+			}
 
 			// Generate bundled YAML
 			var bundleSerializer = new StaticSerializerBuilder(new ChangelogYamlStaticContext())

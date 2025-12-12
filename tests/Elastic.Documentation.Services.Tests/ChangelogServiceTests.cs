@@ -1495,5 +1495,205 @@ public class ChangelogServiceTests : IDisposable
 		var entryCount = bundleContent.Split("file:", StringSplitOptions.RemoveEmptyEntries).Length - 1;
 		entryCount.Should().Be(3);
 	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithResolve_CopiesChangelogContents()
+	{
+		// Arrange
+		var service = new ChangelogService(_loggerFactory, _configurationContext, null);
+		var fileSystem = new FileSystem();
+		var changelogDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		fileSystem.Directory.CreateDirectory(changelogDir);
+
+		// Create test changelog file
+		var changelog1 = """
+			title: Test feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			pr: https://github.com/elastic/elasticsearch/pull/100
+			areas:
+			  - Search
+			description: This is a test feature
+			""";
+
+		var file1 = fileSystem.Path.Combine(changelogDir, "1755268130-test-feature.yaml");
+		await fileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+
+		var input = new ChangelogBundleInput
+		{
+			Directory = changelogDir,
+			All = true,
+			Resolve = true,
+			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
+		};
+
+		// Act
+		var result = await service.BundleChangelogs(_collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		_collector.Errors.Should().Be(0);
+
+		var bundleContent = await fileSystem.File.ReadAllTextAsync(input.Output!, TestContext.Current.CancellationToken);
+		bundleContent.Should().Contain("file:");
+		bundleContent.Should().Contain("name: 1755268130-test-feature.yaml");
+		bundleContent.Should().Contain("checksum:");
+		bundleContent.Should().Contain("type: feature");
+		bundleContent.Should().Contain("title: Test feature");
+		bundleContent.Should().Contain("product: elasticsearch");
+		bundleContent.Should().Contain("target: 9.2.0");
+		bundleContent.Should().Contain("pr: https://github.com/elastic/elasticsearch/pull/100");
+		bundleContent.Should().Contain("areas:");
+		bundleContent.Should().Contain("- Search");
+		bundleContent.Should().Contain("description: This is a test feature");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithResolveAndMissingTitle_ReturnsError()
+	{
+		// Arrange
+		var service = new ChangelogService(_loggerFactory, _configurationContext, null);
+		var fileSystem = new FileSystem();
+		var changelogDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		fileSystem.Directory.CreateDirectory(changelogDir);
+
+		// Create test changelog file without title
+		var changelog1 = """
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			""";
+
+		var file1 = fileSystem.Path.Combine(changelogDir, "1755268130-test-feature.yaml");
+		await fileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+
+		var input = new ChangelogBundleInput
+		{
+			Directory = changelogDir,
+			All = true,
+			Resolve = true,
+			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
+		};
+
+		// Act
+		var result = await service.BundleChangelogs(_collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeFalse();
+		_collector.Errors.Should().BeGreaterThan(0);
+		_collector.Diagnostics.Should().Contain(d => d.Message.Contains("missing required field: title"));
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithResolveAndMissingType_ReturnsError()
+	{
+		// Arrange
+		var service = new ChangelogService(_loggerFactory, _configurationContext, null);
+		var fileSystem = new FileSystem();
+		var changelogDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		fileSystem.Directory.CreateDirectory(changelogDir);
+
+		// Create test changelog file without type
+		var changelog1 = """
+			title: Test feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			""";
+
+		var file1 = fileSystem.Path.Combine(changelogDir, "1755268130-test-feature.yaml");
+		await fileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+
+		var input = new ChangelogBundleInput
+		{
+			Directory = changelogDir,
+			All = true,
+			Resolve = true,
+			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
+		};
+
+		// Act
+		var result = await service.BundleChangelogs(_collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeFalse();
+		_collector.Errors.Should().BeGreaterThan(0);
+		_collector.Diagnostics.Should().Contain(d => d.Message.Contains("missing required field: type"));
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithResolveAndMissingProducts_ReturnsError()
+	{
+		// Arrange
+		var service = new ChangelogService(_loggerFactory, _configurationContext, null);
+		var fileSystem = new FileSystem();
+		var changelogDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		fileSystem.Directory.CreateDirectory(changelogDir);
+
+		// Create test changelog file without products
+		var changelog1 = """
+			title: Test feature
+			type: feature
+			""";
+
+		var file1 = fileSystem.Path.Combine(changelogDir, "1755268130-test-feature.yaml");
+		await fileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+
+		var input = new ChangelogBundleInput
+		{
+			Directory = changelogDir,
+			All = true,
+			Resolve = true,
+			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
+		};
+
+		// Act
+		var result = await service.BundleChangelogs(_collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeFalse();
+		_collector.Errors.Should().BeGreaterThan(0);
+		_collector.Diagnostics.Should().Contain(d => d.Message.Contains("missing required field: products"));
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithResolveAndInvalidProduct_ReturnsError()
+	{
+		// Arrange
+		var service = new ChangelogService(_loggerFactory, _configurationContext, null);
+		var fileSystem = new FileSystem();
+		var changelogDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		fileSystem.Directory.CreateDirectory(changelogDir);
+
+		// Create test changelog file with invalid product (missing product field)
+		var changelog1 = """
+			title: Test feature
+			type: feature
+			products:
+			  - target: 9.2.0
+			""";
+
+		var file1 = fileSystem.Path.Combine(changelogDir, "1755268130-test-feature.yaml");
+		await fileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+
+		var input = new ChangelogBundleInput
+		{
+			Directory = changelogDir,
+			All = true,
+			Resolve = true,
+			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
+		};
+
+		// Act
+		var result = await service.BundleChangelogs(_collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeFalse();
+		_collector.Errors.Should().BeGreaterThan(0);
+		_collector.Diagnostics.Should().Contain(d => d.Message.Contains("product entry missing required field: product"));
+	}
 }
 
