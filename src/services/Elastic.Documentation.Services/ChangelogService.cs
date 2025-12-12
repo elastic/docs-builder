@@ -203,7 +203,7 @@ public partial class ChangelogService(
 
 			// Write file
 			await _fileSystem.File.WriteAllTextAsync(filePath, yamlContent, ctx);
-			_logger.LogInformation("Created changelog fragment: {FilePath}", filePath);
+			_logger.LogInformation("Created changelog: {FilePath}", filePath);
 
 			return true;
 		}

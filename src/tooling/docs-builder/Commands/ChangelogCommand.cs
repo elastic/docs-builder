@@ -19,17 +19,17 @@ internal sealed class ChangelogCommand(
 )
 {
 	/// <summary>
-	/// Changelog commands. Use 'changelog add' to create a new changelog fragment.
+	/// Changelog commands. Use 'changelog add' to create a new changelog or 'changelog bundle' to create a consolidated list of changelogs.
 	/// </summary>
 	[Command("")]
 	public Task<int> Default()
 	{
-		collector.EmitError(string.Empty, "Please specify a subcommand. Use 'changelog add' to create a new changelog fragment. Run 'changelog add --help' for usage information.");
+		collector.EmitError(string.Empty, "Please specify a subcommand. Available subcommands:\n  - 'changelog add': Create a new changelog from command-line input\n  - 'changelog bundle': Create a consolidated list of changelog files\n\nRun 'changelog add --help' or 'changelog bundle --help' for usage information.");
 		return Task.FromResult(1);
 	}
 
 	/// <summary>
-	/// Add a new changelog fragment from command-line input
+	/// Add a new changelog from command-line input
 	/// </summary>
 	/// <param name="title">Optional: A short, user-facing title (max 80 characters). Required if --pr is not specified. If --pr and --title are specified, the latter value is used instead of what exists in the PR.</param>
 	/// <param name="type">Optional: Type of change (feature, enhancement, bug-fix, breaking-change, etc.). Required if --pr is not specified. If mappings are configured, type can be derived from the PR.</param>
@@ -45,7 +45,7 @@ internal sealed class ChangelogCommand(
 	/// <param name="action">Optional: What users must do to mitigate</param>
 	/// <param name="featureId">Optional: Feature flag ID</param>
 	/// <param name="highlight">Optional: Include in release highlights</param>
-	/// <param name="output">Optional: Output directory for the changelog fragment. Defaults to current directory</param>
+	/// <param name="output">Optional: Output directory for the changelog. Defaults to current directory</param>
 	/// <param name="config">Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml'</param>
 	/// <param name="ctx"></param>
 	[Command("add")]
