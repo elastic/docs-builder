@@ -16,11 +16,13 @@ namespace Elastic.Documentation.Services;
 
 public class ChangelogService(
 	ILoggerFactory logFactory,
-	IConfigurationContext configurationContext
+	IConfigurationContext configurationContext,
+	IGitHubPrService? githubPrService = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogService>();
 	private readonly IFileSystem _fileSystem = new FileSystem();
+	private readonly IGitHubPrService? _githubPrService = githubPrService;
 
 	public async Task<bool> CreateChangelog(
 		IDiagnosticsCollector collector,
@@ -38,16 +40,91 @@ public class ChangelogService(
 				return false;
 			}
 
-			// Validate required fields
+			// Validate that if PR is just a number, owner and repo must be provided
+			if (!string.IsNullOrWhiteSpace(input.Pr)
+				&& int.TryParse(input.Pr, out _)
+				&& (string.IsNullOrWhiteSpace(input.Owner) || string.IsNullOrWhiteSpace(input.Repo)))
+			{
+				collector.EmitError(string.Empty, "When --pr is specified as just a number, both --owner and --repo must be provided");
+				return false;
+			}
+
+			// If PR is specified, try to fetch PR information and derive title/type
+			if (!string.IsNullOrWhiteSpace(input.Pr))
+			{
+				var prInfo = await TryFetchPrInfoAsync(input.Pr, input.Owner, input.Repo, ctx);
+				if (prInfo == null)
+				{
+					collector.EmitError(string.Empty, $"Failed to fetch PR information from GitHub for PR: {input.Pr}. Cannot derive title and type.");
+					return false;
+				}
+
+				// Use PR title if title was not explicitly provided
+				if (string.IsNullOrWhiteSpace(input.Title))
+				{
+					if (string.IsNullOrWhiteSpace(prInfo.Title))
+					{
+						collector.EmitError(string.Empty, $"PR {input.Pr} does not have a title. Please provide --title or ensure the PR has a title.");
+						return false;
+					}
+					input.Title = prInfo.Title;
+					_logger.LogInformation("Using PR title: {Title}", input.Title);
+				}
+				else
+				{
+					_logger.LogDebug("Using explicitly provided title, ignoring PR title");
+				}
+
+				// Map labels to type if type was not explicitly provided
+				if (string.IsNullOrWhiteSpace(input.Type))
+				{
+					if (config.LabelToType == null || config.LabelToType.Count == 0)
+					{
+						collector.EmitError(string.Empty, $"Cannot derive type from PR {input.Pr} labels: no label-to-type mapping configured in changelog.yml. Please provide --type or configure label_to_type in changelog.yml.");
+						return false;
+					}
+
+					var mappedType = MapLabelsToType(prInfo.Labels, config.LabelToType);
+					if (mappedType == null)
+					{
+						var availableLabels = prInfo.Labels.Length > 0 ? string.Join(", ", prInfo.Labels) : "none";
+						collector.EmitError(string.Empty, $"Cannot derive type from PR {input.Pr} labels ({availableLabels}). No matching label found in label_to_type mapping. Please provide --type or add a label mapping in changelog.yml.");
+						return false;
+					}
+					input.Type = mappedType;
+					_logger.LogInformation("Mapped PR labels to type: {Type}", input.Type);
+				}
+				else
+				{
+					_logger.LogDebug("Using explicitly provided type, ignoring PR labels");
+				}
+
+				// Map labels to areas if areas were not explicitly provided
+				if ((input.Areas == null || input.Areas.Length == 0) && config.LabelToAreas != null)
+				{
+					var mappedAreas = MapLabelsToAreas(prInfo.Labels, config.LabelToAreas);
+					if (mappedAreas.Count > 0)
+					{
+						input.Areas = mappedAreas.ToArray();
+						_logger.LogInformation("Mapped PR labels to areas: {Areas}", string.Join(", ", mappedAreas));
+					}
+				}
+				else if (input.Areas != null && input.Areas.Length > 0)
+				{
+					_logger.LogDebug("Using explicitly provided areas, ignoring PR labels");
+				}
+			}
+
+			// Validate required fields (must be provided either explicitly or derived from PR)
 			if (string.IsNullOrWhiteSpace(input.Title))
 			{
-				collector.EmitError(string.Empty, "Title is required");
+				collector.EmitError(string.Empty, "Title is required. Provide --title or specify --pr to derive it from the PR.");
 				return false;
 			}
 
 			if (string.IsNullOrWhiteSpace(input.Type))
 			{
-				collector.EmitError(string.Empty, "Type is required");
+				collector.EmitError(string.Empty, "Type is required. Provide --type or specify --pr to derive it from PR labels (requires label_to_type mapping in changelog.yml).");
 				return false;
 			}
 
@@ -72,7 +149,7 @@ public class ChangelogService(
 			}
 
 			// Validate areas if configuration provides available areas
-			if (config.AvailableAreas != null && config.AvailableAreas.Count > 0)
+			if (config.AvailableAreas != null && config.AvailableAreas.Count > 0 && input.Areas != null)
 			{
 				foreach (var area in input.Areas.Where(area => !config.AvailableAreas.Contains(area)))
 				{
@@ -81,12 +158,16 @@ public class ChangelogService(
 				}
 			}
 
-			// Validate products if configuration provides available products
-			if (config.AvailableProducts != null && config.AvailableProducts.Count > 0)
+			// Always validate products against products.yml
+			var validProductIds = configurationContext.ProductsConfiguration.Products.Keys.ToHashSet(StringComparer.OrdinalIgnoreCase);
+			foreach (var product in input.Products)
 			{
-				foreach (var product in input.Products.Where(p => !config.AvailableProducts.Contains(p.Product)))
+				// Normalize product ID (replace underscores with hyphens for comparison)
+				var normalizedProductId = product.Product.Replace('_', '-');
+				if (!validProductIds.Contains(normalizedProductId))
 				{
-					collector.EmitError(string.Empty, $"Product '{product.Product}' is not in the list of available products. Available products: {string.Join(", ", config.AvailableProducts)}");
+					var availableProducts = string.Join(", ", validProductIds.OrderBy(p => p));
+					collector.EmitError(string.Empty, $"Product '{product.Product}' is not in the list of available products from config/products.yml. Available products: {availableProducts}");
 					return false;
 				}
 			}
@@ -147,7 +228,6 @@ public class ChangelogService(
 	)
 	{
 		// Determine config file path
-		_ = configurationContext; // Suppress unused warning - kept for future extensibility
 		var finalConfigPath = configPath ?? _fileSystem.Path.Combine(Directory.GetCurrentDirectory(), "docs", "changelog.yml");
 
 		if (!_fileSystem.File.Exists(finalConfigPath))
@@ -165,6 +245,47 @@ public class ChangelogService(
 				.Build();
 
 			var config = deserializer.Deserialize<ChangelogConfiguration>(yamlContent);
+
+			// Validate that changelog.yml values conform to ChangelogConfiguration defaults
+			var defaultConfig = ChangelogConfiguration.Default;
+			var validProductIds = configurationContext.ProductsConfiguration.Products.Keys.ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+			// Validate available_types
+			foreach (var type in config.AvailableTypes.Where(t => !defaultConfig.AvailableTypes.Contains(t)))
+			{
+				collector.EmitError(finalConfigPath, $"Type '{type}' in changelog.yml is not in the list of available types. Available types: {string.Join(", ", defaultConfig.AvailableTypes)}");
+				return null;
+			}
+
+			// Validate available_subtypes
+			foreach (var subtype in config.AvailableSubtypes.Where(s => !defaultConfig.AvailableSubtypes.Contains(s)))
+			{
+				collector.EmitError(finalConfigPath, $"Subtype '{subtype}' in changelog.yml is not in the list of available subtypes. Available subtypes: {string.Join(", ", defaultConfig.AvailableSubtypes)}");
+				return null;
+			}
+
+			// Validate available_lifecycles
+			foreach (var lifecycle in config.AvailableLifecycles.Where(l => !defaultConfig.AvailableLifecycles.Contains(l)))
+			{
+				collector.EmitError(finalConfigPath, $"Lifecycle '{lifecycle}' in changelog.yml is not in the list of available lifecycles. Available lifecycles: {string.Join(", ", defaultConfig.AvailableLifecycles)}");
+				return null;
+			}
+
+			// Validate available_products (if specified) - must be from products.yml
+			if (config.AvailableProducts != null && config.AvailableProducts.Count > 0)
+			{
+				foreach (var product in config.AvailableProducts)
+				{
+					var normalizedProductId = product.Replace('_', '-');
+					if (!validProductIds.Contains(normalizedProductId))
+					{
+						var availableProducts = string.Join(", ", validProductIds.OrderBy(p => p));
+						collector.EmitError(finalConfigPath, $"Product '{product}' in changelog.yml is not in the list of available products from config/products.yml. Available products: {availableProducts}");
+						return null;
+					}
+				}
+			}
+
 			return config;
 		}
 		catch (IOException ex)
@@ -186,10 +307,11 @@ public class ChangelogService(
 
 	private static ChangelogData BuildChangelogData(ChangelogInput input)
 	{
+		// Title and Type are guaranteed to be non-null at this point due to validation above
 		var data = new ChangelogData
 		{
-			Title = input.Title,
-			Type = input.Type,
+			Title = input.Title!,
+			Type = input.Type!,
 			Subtype = input.Subtype,
 			Description = input.Description,
 			Impact = input.Impact,
@@ -234,39 +356,77 @@ public class ChangelogService(
 		var typesList = string.Join("\n", config.AvailableTypes.Select(t => $"#   - {t}"));
 
 		// Build subtypes list
-		var subtypesList = config.AvailableSubtypes.Count > 0
-			? "\n#   It can be one of:\n" + string.Join("\n", config.AvailableSubtypes.Select(s => $"#   - {s}"))
-			: string.Empty;
+		var subtypesList = string.Join("\n", config.AvailableSubtypes.Select(s => $"#   - {s}"));
+
+		// Build lifecycles list
+		var lifecyclesList = string.Join("\n", config.AvailableLifecycles.Select(l => $"#       - {l}"));
 
 		// Add schema comments using raw string literal
 		var result = $"""
-			##### Automated fields #####
+			##### Required fields #####
 
-			# These fields are likely generated when the changelog is created and unlikely to require edits
+			# title:
+			#   A required string that is a short, user-facing headline.
+			#   (Max 80 characters)
 
-			# pr: An optional string that contains the pull request number
-			# issues: An optional array of strings that contain URLs for issues that are relevant to the PR
-			# type: A required string that contains the type of change
+			# type:
+			#   A required string that contains the type of change
 			#   It can be one of:
 			{typesList}
-			# subtype: An optional string that applies only to breaking changes{subtypesList}
-			# products: A required array of objects that denote the affected products
+
+			# products:
+			#   A required array of objects that denote the affected products
 			#   Each product object contains:
-			#     - product: A required string with a predefined product ID
-			#     - target: An optional string with the target version or date
-			#     - lifecycle: An optional string (preview, beta, ga)
-			# areas: An optional array of strings that denotes the parts/components/services affected
+			#
+			#   - product:
+			#       A required string with a valid product ID.
+			#       Valid values are defined in https://github.com/elastic/docs-builder/blob/main/config/products.yml
+			#
+			#     target:
+			#       An optional string with the target version or date.
+			#
+			#     lifecycle:
+			#       An optional string for new features or enhancements that have a specific availability.
+			#       It can be one of:
+			{lifecyclesList}
+			
+			##### Optional fields #####
 
-			##### Non-automated fields #####
+			# action:
+			#   An optional string that describes what users must do to mitigate
+			#   the impact of a breaking change or known issue.
 
-			# These fields might be generated when the changelog is created but are likely to require edits
+			# areas:
+			#   An optional array of strings that denotes the parts/components/services
+			#   of the product that are affected.
 
-			# title: A required string that is a short, user-facing headline (Max 80 characters)
-			# description: An optional string that provides additional information (Max 600 characters)
-			# impact: An optional string that describes how the user's environment is affected
-			# action: An optional string that describes what users must do to mitigate
-			# feature-id: An optional string to associate with a unique feature flag
-			# highlight: An optional boolean for items that should be included in release highlights
+			# description:
+			#   An optional string that provides additional information.
+			#   (Max 600 characters).
+
+			# feature-id:
+			#   An optional string to associate a feature or enhanceent with a
+			#   unique feature flag.
+
+			# highlight:
+			#   An optional boolean for items that should be included in release
+			#   highlights or the UI to draw user attention.
+
+			# impact:
+			#   An optional string that describes how the user's environment is
+			#   affected by a breaking change or known issue.
+
+			# issues:
+			#   An optional array of strings that contain the issues that are
+			#   relevant to the PR.
+
+			# pr:
+			#   An optional string that contains the pull request number.
+
+			# subtype:
+			#   An optional string that applies only to breaking changes.
+			#   It can be one of:
+			{subtypesList}
 
 			{yaml}
 			""";
@@ -289,6 +449,58 @@ public class ChangelogService(
 			sanitized = sanitized[..50];
 
 		return sanitized;
+	}
+
+	private async Task<GitHubPrInfo?> TryFetchPrInfoAsync(string? prUrl, string? owner, string? repo, Cancel ctx)
+	{
+		if (string.IsNullOrWhiteSpace(prUrl) || _githubPrService == null)
+		{
+			return null;
+		}
+
+		try
+		{
+			var prInfo = await _githubPrService.FetchPrInfoAsync(prUrl, owner, repo, ctx);
+			if (prInfo != null)
+			{
+				_logger.LogInformation("Successfully fetched PR information from GitHub");
+			}
+			else
+			{
+				_logger.LogWarning("Unable to fetch PR information from GitHub. Continuing with provided values.");
+			}
+			return prInfo;
+		}
+		catch (Exception ex)
+		{
+			if (ex is OutOfMemoryException or
+				StackOverflowException or
+				AccessViolationException or
+				ThreadAbortException)
+			{
+				throw;
+			}
+			_logger.LogWarning(ex, "Error fetching PR information from GitHub. Continuing with provided values.");
+			return null;
+		}
+	}
+
+	private static string? MapLabelsToType(string[] labels, Dictionary<string, string> labelToTypeMapping) => labels
+			.Select(label => labelToTypeMapping.TryGetValue(label, out var mappedType) ? mappedType : null)
+			.FirstOrDefault(mappedType => mappedType != null);
+
+	private static List<string> MapLabelsToAreas(string[] labels, Dictionary<string, string> labelToAreasMapping)
+	{
+		var areas = new HashSet<string>();
+		var areaList = labels
+			.Where(label => labelToAreasMapping.ContainsKey(label))
+			.SelectMany(label => labelToAreasMapping[label]
+				.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+		foreach (var area in areaList)
+		{
+			_ = areas.Add(area);
+		}
+		return areas.ToList();
 	}
 }
 

@@ -1,13 +1,13 @@
-import { useSelectedIndex, NO_SELECTION } from './search.store'
+import { useSelectedIndex, useSearchActions } from './search.store'
 import { useAskAiFromSearch } from './useAskAiFromSearch'
-import { useRef, MutableRefObject } from 'react'
+import { useRef, useCallback, MutableRefObject } from 'react'
 
 interface SearchKeyboardNavigationReturn {
     inputRef: React.RefObject<HTMLInputElement>
     buttonRef: React.RefObject<HTMLButtonElement>
     itemRefs: MutableRefObject<(HTMLAnchorElement | null)[]>
+    filterRefs: MutableRefObject<(HTMLButtonElement | null)[]>
     handleInputKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void
-    focusLastAvailable: () => void
 }
 
 export const useSearchKeyboardNavigation = (
@@ -16,61 +16,69 @@ export const useSearchKeyboardNavigation = (
     const inputRef = useRef<HTMLInputElement>(null)
     const buttonRef = useRef<HTMLButtonElement>(null)
     const itemRefs = useRef<(HTMLAnchorElement | null)[]>([])
+    const filterRefs = useRef<(HTMLButtonElement | null)[]>([])
     const { askAi } = useAskAiFromSearch()
     const selectedIndex = useSelectedIndex()
+    const { setSelectedIndex } = useSearchActions()
 
-    const focusLastAvailable = () => {
-        if (resultsCount > 0) {
-            itemRefs.current[resultsCount - 1]?.focus()
-        } else {
-            inputRef.current?.focus()
-        }
-    }
-
-    const focusNextItem = () => {
-        if (resultsCount > 1) {
-            // First item is already visually selected, so go to second item
-            const targetIndex = Math.min(selectedIndex + 1, resultsCount - 1)
-            itemRefs.current[targetIndex]?.focus()
-        } else {
-            // Only 1 or 0 results, go to button
-            buttonRef.current?.focus()
-        }
-    }
-
-    const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter') {
-            e.preventDefault()
-            if (resultsCount > 0) {
-                // Navigate to selected result
-                itemRefs.current[selectedIndex]?.click()
-            } else {
-                askAi()
+    const handleInputKeyDown = useCallback(
+        (e: React.KeyboardEvent<HTMLInputElement>) => {
+            if (e.key === 'Enter') {
+                e.preventDefault()
+                if (resultsCount > 0 && selectedIndex >= 0) {
+                    // Navigate to selected result
+                    itemRefs.current[selectedIndex]?.click()
+                } else if (resultsCount > 0) {
+                    // No selection, click first result
+                    itemRefs.current[0]?.click()
+                } else {
+                    // No results, ask AI
+                    askAi()
+                }
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault()
+                if (resultsCount > 0) {
+                    // Move selection down (or start at 0)
+                    const nextIndex =
+                        selectedIndex < 0
+                            ? 0
+                            : Math.min(selectedIndex + 1, resultsCount - 1)
+                    setSelectedIndex(nextIndex)
+                    // Scroll into view (guard for JSDOM)
+                    const element = itemRefs.current[nextIndex]
+                    if (
+                        element &&
+                        typeof element.scrollIntoView === 'function'
+                    ) {
+                        element.scrollIntoView({ block: 'nearest' })
+                    }
+                }
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault()
+                if (resultsCount > 0 && selectedIndex > 0) {
+                    // Move selection up
+                    const prevIndex = selectedIndex - 1
+                    setSelectedIndex(prevIndex)
+                    // Scroll into view (guard for JSDOM)
+                    const element = itemRefs.current[prevIndex]
+                    if (
+                        element &&
+                        typeof element.scrollIntoView === 'function'
+                    ) {
+                        element.scrollIntoView({ block: 'nearest' })
+                    }
+                }
             }
-        } else if (
-            e.key === 'ArrowDown' ||
-            (e.key === 'Tab' && !e.shiftKey && selectedIndex !== NO_SELECTION)
-        ) {
-            e.preventDefault()
-            focusNextItem()
-        } else if (
-            e.key === 'Tab' &&
-            e.shiftKey &&
-            selectedIndex !== NO_SELECTION
-        ) {
-            // When Shift+Tab from input with a selected item,
-            // focus the selected result and let browser handle the rest
-            itemRefs.current[selectedIndex]?.focus()
-            // Don't preventDefault - let browser handle Shift+Tab from the focused result
-        }
-        // ArrowUp from input does nothing (already at top)
-    }
+            // Tab works naturally - goes to filters, then button
+        },
+        [resultsCount, selectedIndex, setSelectedIndex, askAi]
+    )
 
     return {
         inputRef,
         buttonRef,
         itemRefs,
+        filterRefs,
         handleInputKeyDown,
-        focusLastAvailable,
     }
 }

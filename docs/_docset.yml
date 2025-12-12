@@ -42,6 +42,7 @@ toc:
       - file: branching-strategy.md
       - file: add-repo.md
       - file: release-new-version.md
+      - file: changelog.md
       - hidden: locally.md
       - hidden: on-the-web.md
   - folder: building-blocks
@@ -152,6 +153,10 @@ toc:
           - file: inbound-links-validate.md
           - file: inbound-links-validate-all.md
           - file: inbound-links-validate-link-reference.md
+      - folder: release
+        children:
+          - file: index.md
+          - file: changelog-add.md
   - folder: migration
     children:
       - file: index.md

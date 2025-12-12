@@ -46,13 +46,8 @@ export const Search = () => {
         closeModal()
     }
 
-    const {
-        inputRef,
-        buttonRef,
-        itemRefs,
-        handleInputKeyDown,
-        focusLastAvailable,
-    } = useSearchKeyboardNavigation(resultsCount)
+    const { inputRef, buttonRef, itemRefs, filterRefs, handleInputKeyDown } =
+        useSearchKeyboardNavigation(resultsCount)
 
     // Listen for Cmd+K to focus input
     useEffect(() => {
@@ -109,15 +104,12 @@ export const Search = () => {
                     iconType="cross"
                     color="text"
                     onClick={handleCloseModal}
+                    tabIndex={-1}
                 />
             </div>
 
-            <SearchResults
-                inputRef={inputRef}
-                buttonRef={buttonRef}
-                itemRefs={itemRefs}
-            />
-            <EuiHorizontalRule margin="none" />
+            <SearchResults itemRefs={itemRefs} filterRefs={filterRefs} />
+            {!showLoadingSpinner && <EuiHorizontalRule margin="none" />}
             {searchTerm && (
                 <div
                     css={css`
@@ -125,15 +117,20 @@ export const Search = () => {
                     `}
                 >
                     <EuiSpacer size="m" />
-                    <EuiText color="subdued" size="xs">
-                        Ask AI assistant
+                    <EuiText
+                        color="default"
+                        size="xs"
+                        css={css`
+                            font-weight: 500;
+                        `}
+                    >
+                        Ask AI Assistant
                     </EuiText>
                     <EuiSpacer size="s" />
                     <TellMeMoreButton
                         ref={buttonRef}
                         term={searchTerm}
                         onAsk={askAi}
-                        onArrowUp={focusLastAvailable}
                     />
                 </div>
             )}
@@ -145,9 +142,9 @@ export const Search = () => {
 }
 
 const SEARCH_KEYBOARD_SHORTCUTS = [
-    { keys: ['returnKey'], label: 'to select' },
-    { keys: ['sortUp', 'sortDown'], label: 'to navigate' },
-    { keys: ['Esc'], label: 'to close' },
+    { keys: ['returnKey'], label: 'Select' },
+    { keys: ['sortUp', 'sortDown'], label: 'Navigate' },
+    { keys: ['Esc'], label: 'Close' },
 ]
 
 const SearchFooter = () => (

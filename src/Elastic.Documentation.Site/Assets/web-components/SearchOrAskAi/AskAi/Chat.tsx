@@ -379,8 +379,8 @@ function useFocusOnComplete(inputRef: RefObject<HTMLTextAreaElement | null>) {
 // ============================================================================
 
 const KEYBOARD_SHORTCUTS = [
-    { keys: ['⌘K'], label: 'to search' },
-    { keys: ['Esc'], label: 'to close' },
+    { keys: ['⌘K'], label: 'Search' },
+    { keys: ['Esc'], label: 'Close' },
 ]
 
 const containerStyles = css`

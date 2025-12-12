@@ -47,7 +47,7 @@ versioning_systems:
     current: 2.7.2
   apm-agent-java:
     base: 1.0
-    current: 1.55.1
+    current: 1.55.2
   apm-agent-node:
     base: 4.0
     current: 4.15.0
@@ -82,10 +82,10 @@ versioning_systems:
     current: 1.4.0
   edot-dotnet:
     base: 1.0
-    current: 1.1.0
+    current: 1.2.0
   edot-java:
     base: 1.0
-    current: 1.7.0
+    current: 1.8.0
   edot-node:
     base: 1.0
     current: 1.7.0
@@ -94,10 +94,10 @@ versioning_systems:
     current: 1.2.0
   edot-python:
     base: 1.0
-    current: 1.10.0
+    current: 1.10.2
   edot-cf-aws:
     base: 0.1
-    current: 0.2.6
+    current: 1.0.0
   edot-cf-azure:
     base: 0.1
     current: 0.6.0
@@ -164,7 +164,7 @@ versioning_systems:
     current: 9.2.0
   elasticsearch-client-rust:
     base: 9.0
-    current: 9.1.0
+    current: 9.1.0-alpha.1
   # Other
   cloud-terraform:
     base: 0.11

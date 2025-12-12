@@ -14,16 +14,11 @@ import { useDebounce } from '@uidotdev/usehooks'
 import { useEffect, MutableRefObject } from 'react'
 
 interface SearchResultsProps {
-    inputRef?: React.RefObject<HTMLInputElement>
-    buttonRef?: React.RefObject<HTMLButtonElement>
     itemRefs?: MutableRefObject<(HTMLAnchorElement | null)[]>
+    filterRefs?: MutableRefObject<(HTMLButtonElement | null)[]>
 }
 
-export const SearchResults = ({
-    inputRef,
-    buttonRef,
-    itemRefs,
-}: SearchResultsProps) => {
+export const SearchResults = ({ itemRefs, filterRefs }: SearchResultsProps) => {
     const { euiTheme } = useEuiTheme()
     const searchTerm = useSearchTerm()
     const { setPageNumber } = useSearchActions()
@@ -37,13 +32,6 @@ export const SearchResults = ({
     const { data, error, isLoading } = useSearchQuery()
 
     const results = data?.results ?? []
-    const typeAggregations = data?.aggregations?.type
-    const counts = {
-        apiResultsCount: typeAggregations?.['api'] ?? 0,
-        docsResultsCount: typeAggregations?.['doc'] ?? 0,
-        totalCount:
-            (typeAggregations?.['api'] ?? 0) + (typeAggregations?.['doc'] ?? 0),
-    }
 
     const isInitialLoading = isLoading && !data
 
@@ -63,14 +51,10 @@ export const SearchResults = ({
             {!error && (
                 <>
                     <SearchFilters
-                        counts={counts}
                         isLoading={isInitialLoading}
-                        inputRef={inputRef}
-                        itemRefs={itemRefs}
-                        resultsCount={results.length}
+                        filterRefs={filterRefs}
                     />
 
-                    <EuiSpacer size="m" />
                     <EuiHorizontalRule margin="none" />
 
                     {!isInitialLoading && results.length === 0 && (
@@ -92,8 +76,6 @@ export const SearchResults = ({
                             pageSize={data.pageSize}
                             isLoading={isInitialLoading}
                             searchTerm={debouncedSearchTerm}
-                            inputRef={inputRef}
-                            buttonRef={buttonRef}
                             itemRefs={itemRefs}
                         />
                     )}
@@ -105,8 +87,6 @@ export const SearchResults = ({
                             pageSize={10}
                             isLoading={true}
                             searchTerm={debouncedSearchTerm}
-                            inputRef={inputRef}
-                            buttonRef={buttonRef}
                             itemRefs={itemRefs}
                         />
                     )}

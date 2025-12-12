@@ -15,6 +15,7 @@ import { icon as EuiIconCopy } from '@elastic/eui/es/components/icon/assets/copy
 import { icon as EuiIconCopyClipboard } from '@elastic/eui/es/components/icon/assets/copy_clipboard'
 import { icon as EuiIconCross } from '@elastic/eui/es/components/icon/assets/cross'
 import { icon as EuiIconDocument } from '@elastic/eui/es/components/icon/assets/document'
+import { icon as EuiIconDocumentation } from '@elastic/eui/es/components/icon/assets/documentation'
 import { icon as EuiIconDot } from '@elastic/eui/es/components/icon/assets/dot'
 import { icon as EuiIconEmpty } from '@elastic/eui/es/components/icon/assets/empty'
 import { icon as EuiIconError } from '@elastic/eui/es/components/icon/assets/error'
@@ -48,6 +49,7 @@ const iconMapping = {
     arrowRight: EuiIconArrowRight,
     code: EuiIconCode,
     document: EuiIconDocument,
+    documentation: EuiIconDocumentation,
     dot: EuiIconDot,
     empty: EuiIconEmpty,
     search: EuiIconSearch,
