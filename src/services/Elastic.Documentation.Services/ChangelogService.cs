@@ -167,13 +167,12 @@ public class ChangelogService(
 			var normalizedProductId = product.Product.Replace('_', '-');
 			if (config.ProductLabelBlockers.TryGetValue(normalizedProductId, out var blockerLabels))
 			{
-				foreach (var blockerLabel in blockerLabels)
+				var matchingBlockerLabel = blockerLabels
+					.FirstOrDefault(blockerLabel => prLabels.Contains(blockerLabel, StringComparer.OrdinalIgnoreCase));
+				if (matchingBlockerLabel != null)
 				{
-					if (prLabels.Contains(blockerLabel, StringComparer.OrdinalIgnoreCase))
-					{
-						collector.EmitWarning(string.Empty, $"Skipping changelog creation for PR {prUrl} due to blocking label '{blockerLabel}' for product '{product.Product}'. This label is configured to prevent changelog creation for this product.");
-						return true;
-					}
+					collector.EmitWarning(string.Empty, $"Skipping changelog creation for PR {prUrl} due to blocking label '{matchingBlockerLabel}' for product '{product.Product}'. This label is configured to prevent changelog creation for this product.");
+					return true;
 				}
 			}
 		}
