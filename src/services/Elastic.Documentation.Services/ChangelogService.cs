@@ -855,13 +855,10 @@ public partial class ChangelogService(
 					}
 
 					// Validate products have required fields
-					foreach (var product in data.Products)
+					if (data.Products.Any(product => string.IsNullOrWhiteSpace(product.Product)))
 					{
-						if (string.IsNullOrWhiteSpace(product.Product))
-						{
-							collector.EmitError(filePath, "Changelog file has product entry missing required field: product");
-							return false;
-						}
+						collector.EmitError(filePath, "Changelog file has product entry missing required field: product");
+						return false;
 					}
 
 					resolvedEntries.Add(new BundledEntry
