@@ -10,7 +10,7 @@ These commands can be roughly grouped into four main categories
 - [Documentation Set commands](#documentation-set-commands)
 - [Link commands](#link-commands)
 - [Assembler commands](#assembler-commands)
-- [Release doc commands](#release-doc-commands)
+- [Changelog commands](#release-doc-commands)
 
 ### Global options 
 
@@ -47,8 +47,8 @@ Assembler builds bring together all isolated documentation set builds and turn t
 
 [See available CLI commands for assembler](assembler/index.md)
 
-## Release doc commands
+## Changelog commands
 
 Commands that pertain to creating and publishing product release documentation.
 
-[See available CLI commands for release docs](release/index.md)
+[See available CLI commands for release docs](changelog/index.md)

@@ -24,3 +24,7 @@ redirects:
   'testing/redirects/third-page.md':
     anchors:
       'removed-anchor':
+  'cli/release/index.md':
+    to: 'cli/changelog/index.md'
+  'cli/release/changelog-add.md':
+    to: 'cli/changelog/changelog-add.md'

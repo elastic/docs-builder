@@ -50,10 +50,11 @@ docs-builder changelog add [options...] [-h|--help]
 :   The valid product identifiers are listed in [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml).
 :   The valid lifecycles are listed in [ChangelogConfiguration.cs](https://github.com/elastic/docs-builder/blob/main/src/services/Elastic.Documentation.Services/Changelog/ChangelogConfiguration.cs).
 
-`--pr <string?>`
-:   Optional: Pull request URL or number (if `--owner` and `--repo` are provided).
+`--prs <string[]?>`
+:   Optional: Pull request URLs or numbers (if `--owner` and `--repo` are provided).
 :   If specified, `--title` can be derived from the PR.
 :   If mappings are configured, `--areas` and `--type` can also be derived from the PR.
+:   Creates one changelog file per PR.
 
 `--repo <string?>`
 :   Optional: GitHub repository name (used when `--pr` is just a number).
