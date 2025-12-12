@@ -63,7 +63,7 @@ public record LlmGatewayRequest(
 			PlatformContext: new PlatformContext("docs_site", "docs_assistant", []),
 			Input:
 			[
-				new ChatInput("user", AskAiRequest.SystemPrompt),
+				// new ChatInput("user", AskAiRequest.SystemPrompt),
 				new ChatInput("user", request.Message)
 			],
 			ThreadId: request.ConversationId?.ToString() ?? Guid.NewGuid().ToString()
