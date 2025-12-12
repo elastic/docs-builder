@@ -30,6 +30,7 @@ jobs:
             docs-builder
             edot-cloud-forwarder-aws
             edot-cloud-forwarder-azure
+            edot-cloud-forwarder-gcp
 
       - uses: elastic/oblt-actions/updatecli/run@v1
         with:

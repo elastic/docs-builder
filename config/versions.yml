@@ -104,6 +104,9 @@ versioning_systems:
   edot-cf-gcp:
     base: 0.1
     current: 0.1.0
+  terraform-google-edot-cf:
+    base: 0.1
+    current: 0.1.0
 
   # Logging
   ecs-logging-dotnet:
