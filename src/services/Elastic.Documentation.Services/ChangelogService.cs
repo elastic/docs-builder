@@ -417,6 +417,21 @@ public class ChangelogService(
 				}
 			}
 
+			// Validate product_label_blockers (if specified) - product keys must be from products.yml
+			if (config.ProductLabelBlockers != null && config.ProductLabelBlockers.Count > 0)
+			{
+				foreach (var productKey in config.ProductLabelBlockers.Keys)
+				{
+					var normalizedProductId = productKey.Replace('_', '-');
+					if (!validProductIds.Contains(normalizedProductId))
+					{
+						var availableProducts = string.Join(", ", validProductIds.OrderBy(p => p));
+						collector.EmitError(finalConfigPath, $"Product '{productKey}' in product_label_blockers in changelog.yml is not in the list of available products from config/products.yml. Available products: {availableProducts}");
+						return null;
+					}
+				}
+			}
+
 			return config;
 		}
 		catch (IOException ex)
