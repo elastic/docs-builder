@@ -516,29 +516,6 @@ jobs:
               environment_url: `https://docs-v3-preview.elastic.dev${process.env.LANDING_PAGE_PATH}`,
               log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
             })
-
-      - name: Build assembled documentation (temporary)
-        id: internal-assembler-build
-        if: >
-          github.repository == 'elastic/docs-builder'
-          && steps.deployment.outputs.result
-        run: |
-          dotnet run --project src/tooling/docs-builder -- assemble --skip-private-repositories --path-prefix "${PATH_PREFIX}/assembled-docs"
-
-      - name: Upload assembled docs to S3 (temporary)
-        if: >
-          github.repository == 'elastic/docs-builder'
-          && steps.internal-assembler-build.outcome == 'success'
-        env:
-          AWS_RETRY_MODE: standard
-          AWS_MAX_ATTEMPTS: 6
-        run: |
-          aws s3 sync .artifacts/assembly/docs "s3://elastic-docs-v3-website-preview${PATH_PREFIX}/assembled-docs/" --delete --no-follow-symlinks
-          aws cloudfront create-invalidation \
-            --distribution-id EKT7LT5PM8RKS \
-            --paths "${PATH_PREFIX}/assembled-docs" "${PATH_PREFIX}/assembled-docs/*"
-
-
   comment:
     if: >
       startsWith(github.event_name, 'pull_request')
