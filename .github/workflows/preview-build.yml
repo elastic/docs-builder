@@ -533,7 +533,7 @@ jobs:
           AWS_RETRY_MODE: standard
           AWS_MAX_ATTEMPTS: 6
         run: |
-          aws s3 sync .artifacts/assembly/docs "s3://elastic-docs-v3-website-preview/assembled-docs/" --delete --no-follow-symlinks
+          aws s3 sync .artifacts/assembly/docs "s3://elastic-docs-v3-website-preview${PATH_PREFIX}/assembled-docs/" --delete --no-follow-symlinks
           aws cloudfront create-invalidation \
             --distribution-id EKT7LT5PM8RKS \
             --paths "/assembled-docs" "/assembled-docs/*"
