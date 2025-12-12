@@ -30,7 +30,7 @@ public record GlobalLayoutViewModel
 	public required string NavigationFileName { get; init; }
 	public required string? UrlPathPrefix { get; init; }
 	public required Uri? CanonicalBaseUrl { get; init; }
-	public string? CanonicalUrl => CanonicalBaseUrl is not null ?
+	public string? CanonicalUrl => CanonicalBaseUrl is not null && CurrentNavigationItem is not null ?
 		new Uri(CanonicalBaseUrl, CurrentNavigationItem.Url).ToString().TrimEnd('/') : null;
 
 	public required FeatureFlags Features { get; init; }
