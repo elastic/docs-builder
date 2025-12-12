@@ -1,14 +1,16 @@
-# Add changelog entries
+# Create and bundle changelogs
 
 The `docs-builder changelog add` command creates a new changelog file from command-line input.
-By adding a file for each notable change, you can ultimately generate release documention with a consistent layout for all your products.
+The `docs-builder changelog bundle` command creates a consolidated list of changelogs.
+
+By adding a file for each notable change and grouping them into bundles, you can ultimately generate release documention with a consistent layout for all your products.
 
 :::{note}
 This command is associated with an ongoing release docs initiative.
 Additional workflows are still to come for managing the list of changelogs in each release.
 :::
 
-The command generates a YAML file that uses the following schema:
+The changelogs use the following schema:
 
 :::{dropdown} Changelog schema
 ::::{include} /contribute/_snippets/changelog-fields.md
@@ -17,7 +19,7 @@ The command generates a YAML file that uses the following schema:
 
 ## Command options
 
-The command supports all of the following options, which generally align with fields in the changelog schema:
+The `changelog add` command supports all of the following options, which generally align with fields in the changelog schema:
 
 ```sh
 Usage: changelog add [options...] [-h|--help] [--version]
@@ -41,6 +43,24 @@ Options:
   --highlight <bool?>               Optional: Include in release highlights [Default: null]
   --output <string?>                Optional: Output directory for the changelog fragment. Defaults to current directory [Default: null]
   --config <string?>                Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml' [Default: null]
+```
+
+The `changelog bundle` command supports all of the following options, which provide multiple methods for collecting the changelogs:
+
+```sh
+Bundle changelogs
+
+Options:
+  --directory <string?>                     Optional: Directory containing changelog YAML files. Defaults to current directory [Default: null]
+  --output <string?>                        Optional: Output file path for the bundled changelog. Defaults to 'changelog-bundle.yaml' in the input directory [Default: null]
+  --all                                     Include all changelogs in the directory
+  --input-products <List<ProductInfo>?>     Filter by products in format "product target lifecycle, ..." (e.g., "cloud-serverless 2025-12-02, cloud-serverless 2025-12-06") [Default: null]
+  --output-products <List<ProductInfo>?>    Explicitly set the products array in the output file in format "product target lifecycle, ...". Overrides any values from changelogs. [Default: null]
+  --resolve                                 Copy the contents of each changelog file into the entries array
+  --prs <string[]?>                         Filter by pull request URLs or numbers (can specify multiple times) [Default: null]
+  --prs-file <string?>                      Path to a newline-delimited file containing PR URLs or numbers [Default: null]
+  --owner <string?>                         Optional: GitHub repository owner (used when PRs are specified as numbers) [Default: null]
+  --repo <string?>                          Optional: GitHub repository name (used when PRs are specified as numbers) [Default: null]
 ```
 
 ### Product format
@@ -87,7 +107,7 @@ Refer to [changelog.yml.example](https://github.com/elastic/docs-builder/blob/ma
 
 ## Examples
 
-### Multiple products
+### Create a changelog for multiple products
 
 The following command creates a changelog for a bug fix that applies to two products:
 
@@ -120,7 +140,7 @@ areas:
 - ES|QL
 ```
 
-### PR label mappings
+### Create a changelog with PR label mappings
 
 You can update your changelog configuration file to contain GitHub label mappings, for example:
 
