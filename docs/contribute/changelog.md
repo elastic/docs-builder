@@ -59,7 +59,7 @@ Examples:
 
 ## Changelog configuration
 
-Some of the fields in the changelog accept only a specific set of values.
+Some of the fields in the changelog accept only a specific set of values:
 
 :::{important}
 
@@ -68,6 +68,7 @@ Some of the fields in the changelog accept only a specific set of values.
 :::
 
 If you want to further limit the list of values, you can optionally create a configuration file.
+You can also use the configuration file to prevent the creation of changelogs when certain PR labels are present.
 Refer to [changelog.yml.example](https://github.com/elastic/docs-builder/blob/main/config/changelog.yml.example).
 
 By default, the command checks the following path: `docs/changelog.yml`.
@@ -83,11 +84,19 @@ If a configuration file exists, the command validates all its values before gene
 You can optionally add `label_to_type` and `label_to_areas` mappings in your changelog configuration.
 When you run the command with the `--prs` option, it can use these mappings to fill in the `type` and `areas` in your changelog based on your pull request labels.
 
-Refer to [changelog.yml.example](https://github.com/elastic/docs-builder/blob/main/config/changelog.yml.example).
+Refer to the file layout in [changelog.yml.example](https://github.com/elastic/docs-builder/blob/main/config/changelog.yml.example) and an [example usage](#example-map-label).
+
+### GitHub label blockers
+
+You can also optionally add `product_label_blockers` in your changelog configuration.
+When you run the command with the `--prs` and `--products` options and the PR has a label that you've identified as a blocker for that product, the `docs-builder changelog add` command does not create a changelog for that PR.
+
+Refer to the file layout in [changelog.yml.example](https://github.com/elastic/docs-builder/blob/main/config/changelog.yml.example) and an [example usage](#example-block-label).
+
 
 ## Examples
 
-### Multiple products
+### Create a changelog for multiple products [example-multiple-products]
 
 The following command creates a changelog for a bug fix that applies to two products:
 
@@ -120,7 +129,7 @@ areas:
 - ES|QL
 ```
 
-### PR label mappings
+### Create a changelog with PR label mappings [example-map-label]
 
 You can update your changelog configuration file to contain GitHub label mappings, for example:
 
@@ -148,18 +157,6 @@ label_to_type:
 label_to_areas:
   # Example mappings - customize based on your label naming conventions
   ":Search Relevance/ES|QL": "ES|QL"
-
-# Product-specific label blockers (optional)
-# Maps product IDs to lists of labels that prevent changelog creation for that product
-# If a PR has any of these labels for the specified product, changelog creation will be skipped
-product_label_blockers:
-  # Example: Skip changelog creation for cloud.serverless when PR has "ILM" label
-  cloud-serverless:
-    - "ILM"
-    - "skip:releaseNotes"
-  # Example: Skip changelog creation for elasticsearch when PR has "skip:releaseNotes" label
-  elasticsearch:
-    - "skip:releaseNotes"
 ```
 
 When you use the `--prs` option to derive information from a pull request, it can make use of those mappings:
@@ -181,25 +178,34 @@ areas:
 title: '[ES|QL] Take TOP_SNIPPETS out of snapshot'
 ```
 
-### Product-specific label blockers
+### Block changelog creation with PR labels [example-block-label]
 
 You can configure product-specific label blockers to prevent changelog creation for certain PRs based on their labels.
 
-When using `--prs` with multiple PRs, if a PR has a blocking label for any of the specified products, that PR will be skipped and no changelog file will be created for it. A warning message will be emitted indicating which PR was skipped and why.
+If you run the `docs-builder changelog add` command with the `--prs` option and a PR has a blocking label for any of the products in the `--products` option, that PR will be skipped and no changelog file will be created for it.
+A warning message will be emitted indicating which PR was skipped and why.
 
-For example, if you configure:
+For example, your configuration file can contain `product_label_blockers` like this:
 
 ```yaml
+# Product-specific label blockers (optional)
+# Maps product IDs to lists of labels that prevent changelog creation for that product
+# If you run the changelog add command with the --prs option and a PR has any of these labels, the changelog is not created
 product_label_blockers:
+  # Example: Skip changelog for cloud.serverless product when PR has "Watcher" label
   cloud-serverless:
-    - "ILM"
-    - "skip:releaseNotes"
+    - ":Data Management/Watcher"
+    - ">non-issue"
+  # Example: Skip changelog creation for elasticsearch product when PR has "skip:releaseNotes" label
+  elasticsearch:
+    - ">non-issue"
 ```
 
-And run:
+Those settings affect commands with the `--prs` option, for example:
 
 ```sh
-docs-builder changelog add --prs "1234, 5678" --products "cloud-serverless 2025-08-05" --owner elastic --repo elasticsearch
+docs-builder changelog add --prs "1234, 5678" --products "cloud-serverless" --owner elastic --repo elasticsearch --config test/changelog.yml
 ```
 
-If PR 1234 has the "ILM" label, it will be skipped and no changelog will be created for it. If PR 5678 does not have any blocking labels, a changelog will be created for it.
+If PR 1234 has the `>non-issue` or Watcher label, it will be skipped and no changelog will be created for it.
+If PR 5678 does not have any blocking labels, a changelog is created.

@@ -266,7 +266,7 @@ public class ChangelogServiceTests : IDisposable
 
 		var input = new ChangelogInput
 		{
-			Pr = "https://github.com/elastic/elasticsearch/pull/12345",
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
 			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
 			Config = configPath,
 			Output = fs.Path.Combine(fs.Path.GetTempPath(), Guid.NewGuid().ToString())
@@ -338,7 +338,7 @@ public class ChangelogServiceTests : IDisposable
 
 		var input = new ChangelogInput
 		{
-			Pr = "https://github.com/elastic/elasticsearch/pull/12345",
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
 			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
 			Config = configPath,
 			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString())
@@ -646,7 +646,7 @@ public class ChangelogServiceTests : IDisposable
 
 		var input = new ChangelogInput
 		{
-			Pr = "https://github.com/elastic/elasticsearch/pull/12345",
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
 			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
 			Config = configPath,
 			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString())
@@ -679,7 +679,7 @@ public class ChangelogServiceTests : IDisposable
 
 		var input = new ChangelogInput
 		{
-			Pr = "https://github.com/elastic/elasticsearch/pull/12345",
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
 			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
 			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString())
 		};
@@ -741,6 +741,100 @@ public class ChangelogServiceTests : IDisposable
 		result.Should().BeFalse();
 		_collector.Errors.Should().BeGreaterThan(0);
 		_collector.Diagnostics.Should().Contain(d => d.Message.Contains("is not in the list of available types"));
+	}
+
+	[Fact]
+	public async Task CreateChangelog_WithInvalidProductInProductLabelBlockers_ReturnsError()
+	{
+		// Arrange
+		var mockGitHubService = A.Fake<IGitHubPrService>();
+		var fileSystem = new FileSystem();
+		var configDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		fileSystem.Directory.CreateDirectory(configDir);
+		var configPath = fileSystem.Path.Combine(configDir, "changelog.yml");
+		var configContent = """
+			available_types:
+			  - feature
+			available_subtypes: []
+			available_lifecycles:
+			  - preview
+			  - beta
+			  - ga
+			product_label_blockers:
+			  invalid-product:
+			    - "skip:releaseNotes"
+			""";
+		await fileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
+
+		var input = new ChangelogInput
+		{
+			Title = "Test",
+			Type = "feature",
+			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
+			Config = configPath,
+			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString())
+		};
+
+		// Act
+		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeFalse();
+		_collector.Errors.Should().BeGreaterThan(0);
+		_collector.Diagnostics.Should().Contain(d => d.Message.Contains("Product 'invalid-product' in product_label_blockers") && d.Message.Contains("is not in the list of available products"));
+	}
+
+	[Fact]
+	public async Task CreateChangelog_WithValidProductInProductLabelBlockers_Succeeds()
+	{
+		// Arrange
+		var mockGitHubService = A.Fake<IGitHubPrService>();
+		var fileSystem = new FileSystem();
+		var configDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		fileSystem.Directory.CreateDirectory(configDir);
+		var configPath = fileSystem.Path.Combine(configDir, "changelog.yml");
+		var configContent = """
+			available_types:
+			  - feature
+			available_subtypes: []
+			available_lifecycles:
+			  - preview
+			  - beta
+			  - ga
+			product_label_blockers:
+			  elasticsearch:
+			    - "skip:releaseNotes"
+			  cloud-hosted:
+			    - "ILM"
+			""";
+		await fileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
+
+		var input = new ChangelogInput
+		{
+			Title = "Test",
+			Type = "feature",
+			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
+			Config = configPath,
+			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString())
+		};
+
+		// Act
+		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		if (!result)
+		{
+			foreach (var diagnostic in _collector.Diagnostics)
+			{
+				_output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
+			}
+		}
+		result.Should().BeTrue();
+		_collector.Errors.Should().Be(0);
 	}
 
 	[Fact]
