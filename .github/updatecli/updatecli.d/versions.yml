@@ -73,7 +73,7 @@ sources:
       versionfilter:
         kind: latest
 
-  latest-edot-cf-gcp-version:
+  latest-docker-edot-cf-gcp-version:
     name: Get latest release version for the edot-cf-gcp
     kind: githubrelease
     transformers:
@@ -81,6 +81,19 @@ sources:
     spec:
       owner: elastic
       repository: edot-cloud-forwarder-gcp
+      token: '{{ requiredEnv "GITHUB_TOKEN" }}'
+      username: '{{ requiredEnv "GITHUB_ACTOR" }}'
+      versionfilter:
+        kind: latest
+
+  latest-terraform-google-edot-cf-version:
+    name: Get latest release version for the terraform-google-edot-cloud-forwarder
+    kind: githubrelease
+    transformers:
+      - trimprefix: v
+    spec:
+      owner: elastic
+      repository: terraform-google-edot-cloud-forwarder
       token: '{{ requiredEnv "GITHUB_TOKEN" }}'
       username: '{{ requiredEnv "GITHUB_ACTOR" }}'
       versionfilter:
@@ -473,13 +486,22 @@ targets:
       key: versioning_systems.edot-cf-azure.current
 
   update-docs-docset-cf-gcp:
-    name: 'Update config/versions.yml edot-cf-gcp {{ source "latest-edot-cf-gcp-version" }}'
+    name: 'Update config/versions.yml edot-cf-gcp {{ source "latest-docker-edot-cf-gcp-version" }}'
     scmid: githubConfig
-    sourceid: latest-edot-cf-gcp-version
+    sourceid: latest-docker-edot-cf-gcp-version
     kind: yaml
     spec:
       file: config/versions.yml
       key: versioning_systems.edot-cf-gcp.current
+
+  update-docs-docset-terraform-google-edot-cf:
+    name: 'Update config/versions.yml terraform-google-edot-cf {{ source "latest-terraform-google-edot-cf-version" }}'
+    scmid: githubConfig
+    sourceid: latest-terraform-google-edot-cf-version
+    kind: yaml
+    spec:
+      file: config/versions.yml
+      key: versioning_systems.terraform-google-edot-cf.current
 
   update-docs-docset-collector:
     name: 'Update config/versions.yml edot-collector {{ source "latest-edot-collector-version" }}'
