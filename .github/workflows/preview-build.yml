@@ -664,10 +664,6 @@ jobs:
             });
 
   vale:
-#    if: >
-#      startsWith(github.event_name, 'pull_request')
-#      && inputs.enable-vale-linting == true
-#      && needs.check.outputs.any_modified
     if: >
       startsWith(github.event_name, 'pull_request')
       && needs.check.outputs.any_modified
@@ -688,6 +684,6 @@ jobs:
         with: 
           files: ${{ needs.check.outputs.all_changed_files }}
       - name: Post Vale Results
-        uses: elastic/vale-rules/report@feature/conditional-artifacts-down
+        uses: elastic/vale-rules/report@main
         with:
           download_artifacts: false
