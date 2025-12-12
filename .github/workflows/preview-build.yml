@@ -536,7 +536,7 @@ jobs:
           aws s3 sync .artifacts/assembly/docs "s3://elastic-docs-v3-website-preview/assembled-docs/" --delete --no-follow-symlinks
           aws cloudfront create-invalidation \
             --distribution-id EKT7LT5PM8RKS \
-            --paths "/internal-preview" "/internal-preview/*"
+            --paths "/assembled-docs" "/assembled-docs/*"
 
 
   comment:
