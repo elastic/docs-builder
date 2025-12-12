@@ -16,7 +16,7 @@ public class BundledChangelogData
 public class BundledProduct
 {
 	public string Product { get; set; } = string.Empty;
-	public string Version { get; set; } = string.Empty;
+	public string? Target { get; set; }
 }
 
 public class BundledEntry

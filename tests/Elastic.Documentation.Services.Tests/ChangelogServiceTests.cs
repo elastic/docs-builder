@@ -882,7 +882,7 @@ public class ChangelogServiceTests : IDisposable
 	}
 
 	[Fact]
-	public async Task BundleChangelogs_WithProductVersionFilter_FiltersCorrectly()
+	public async Task BundleChangelogs_WithProductsFilter_FiltersCorrectly()
 	{
 		// Arrange
 		var service = new ChangelogService(_loggerFactory, _configurationContext, null);
@@ -916,7 +916,7 @@ public class ChangelogServiceTests : IDisposable
 		var input = new ChangelogBundleInput
 		{
 			Directory = changelogDir,
-			ProductVersion = "elasticsearch:9.2.0",
+			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
 			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
@@ -929,6 +929,7 @@ public class ChangelogServiceTests : IDisposable
 
 		var bundleContent = await fileSystem.File.ReadAllTextAsync(input.Output!, TestContext.Current.CancellationToken);
 		bundleContent.Should().Contain("product: elasticsearch");
+		bundleContent.Should().Contain("target: 9.2.0");
 		bundleContent.Should().Contain("name: 1755268130-elasticsearch-feature.yaml");
 		bundleContent.Should().NotContain("name: 1755268140-kibana-feature.yaml");
 	}
@@ -1196,7 +1197,7 @@ public class ChangelogServiceTests : IDisposable
 		var input = new ChangelogBundleInput
 		{
 			Directory = changelogDir,
-			ProductVersion = "elasticsearch:9.2.0",
+			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
 			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
@@ -1270,7 +1271,7 @@ public class ChangelogServiceTests : IDisposable
 		{
 			Directory = changelogDir,
 			All = true,
-			ProductVersion = "elasticsearch:9.2.0",
+			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
 			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
@@ -1284,7 +1285,7 @@ public class ChangelogServiceTests : IDisposable
 	}
 
 	[Fact]
-	public async Task BundleChangelogs_WithInvalidProductVersionFormat_ReturnsError()
+	public async Task BundleChangelogs_WithMultipleProducts_CreatesValidBundle()
 	{
 		// Arrange
 		var service = new ChangelogService(_loggerFactory, _configurationContext, null);
@@ -1292,10 +1293,36 @@ public class ChangelogServiceTests : IDisposable
 		var changelogDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		fileSystem.Directory.CreateDirectory(changelogDir);
 
+		// Create test changelog files
+		var changelog1 = """
+			title: Cloud serverless feature 1
+			type: feature
+			products:
+			  - product: cloud-serverless
+			    target: 2025-12-02
+			pr: https://github.com/elastic/cloud-serverless/pull/100
+			""";
+		var changelog2 = """
+			title: Cloud serverless feature 2
+			type: feature
+			products:
+			  - product: cloud-serverless
+			    target: 2025-12-06
+			pr: https://github.com/elastic/cloud-serverless/pull/200
+			""";
+
+		var file1 = fileSystem.Path.Combine(changelogDir, "1755268130-cloud-feature1.yaml");
+		var file2 = fileSystem.Path.Combine(changelogDir, "1755268140-cloud-feature2.yaml");
+		await fileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+		await fileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
+
 		var input = new ChangelogBundleInput
 		{
 			Directory = changelogDir,
-			ProductVersion = "invalid-format",
+			Products = [
+				new ProductInfo { Product = "cloud-serverless", Target = "2025-12-02" },
+				new ProductInfo { Product = "cloud-serverless", Target = "2025-12-06" }
+			],
 			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
@@ -1303,9 +1330,15 @@ public class ChangelogServiceTests : IDisposable
 		var result = await service.BundleChangelogs(_collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
-		result.Should().BeFalse();
-		_collector.Errors.Should().BeGreaterThan(0);
-		_collector.Diagnostics.Should().Contain(d => d.Message.Contains("Product version must be in format"));
+		result.Should().BeTrue();
+		_collector.Errors.Should().Be(0);
+
+		var bundleContent = await fileSystem.File.ReadAllTextAsync(input.Output!, TestContext.Current.CancellationToken);
+		bundleContent.Should().Contain("product: cloud-serverless");
+		bundleContent.Should().Contain("target: 2025-12-02");
+		bundleContent.Should().Contain("target: 2025-12-06");
+		bundleContent.Should().Contain("name: 1755268130-cloud-feature1.yaml");
+		bundleContent.Should().Contain("name: 1755268140-cloud-feature2.yaml");
 	}
 
 	[Fact]
@@ -1394,7 +1427,7 @@ public class ChangelogServiceTests : IDisposable
 		var bundleContent = await fileSystem.File.ReadAllTextAsync(input.Output!, TestContext.Current.CancellationToken);
 		bundleContent.Should().Contain("product: elasticsearch");
 		bundleContent.Should().Contain("product: kibana");
-		bundleContent.Should().Contain("version: 9.2.0");
+		bundleContent.Should().Contain("target: 9.2.0");
 		// Should have 3 entries
 		var entryCount = bundleContent.Split("file:", StringSplitOptions.RemoveEmptyEntries).Length - 1;
 		entryCount.Should().Be(3);

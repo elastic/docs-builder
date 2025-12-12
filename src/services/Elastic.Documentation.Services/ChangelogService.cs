@@ -776,7 +776,7 @@ public partial class ChangelogService(
 					.Select(pv => new BundledProduct
 					{
 						Product = pv.product,
-						Version = pv.version
+						Target = string.IsNullOrWhiteSpace(pv.version) ? null : pv.version
 					})
 					.ToList();
 			}
@@ -798,7 +798,7 @@ public partial class ChangelogService(
 					.Select(pv => new BundledProduct
 					{
 						Product = pv.product,
-						Version = pv.version
+						Target = string.IsNullOrWhiteSpace(pv.version) ? null : pv.version
 					})
 					.ToList();
 			}
@@ -810,8 +810,8 @@ public partial class ChangelogService(
 
 			foreach (var productGroup in productsByProductId)
 			{
-				var versions = productGroup.Select(p => string.IsNullOrWhiteSpace(p.Version) ? "(no version)" : p.Version).ToList();
-				collector.EmitWarning(string.Empty, $"Product '{productGroup.Key}' has multiple versions in bundle: {string.Join(", ", versions)}");
+				var targets = productGroup.Select(p => string.IsNullOrWhiteSpace(p.Target) ? "(no target)" : p.Target).ToList();
+				collector.EmitWarning(string.Empty, $"Product '{productGroup.Key}' has multiple targets in bundle: {string.Join(", ", targets)}");
 			}
 
 			// Build entries - only include file information
