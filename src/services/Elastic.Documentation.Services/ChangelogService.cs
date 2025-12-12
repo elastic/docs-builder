@@ -89,10 +89,8 @@ public class ChangelogService(
 		var successCount = 0;
 		var skippedCount = 0;
 
-		foreach (var prTrimmed in input.Prs.Select(pr => pr.Trim()))
+		foreach (var prTrimmed in input.Prs.Select(pr => pr.Trim()).Where(prTrimmed => !string.IsNullOrWhiteSpace(prTrimmed)))
 		{
-			if (string.IsNullOrWhiteSpace(prTrimmed))
-				continue;
 
 			// Fetch PR information
 			var prInfo = await TryFetchPrInfoAsync(prTrimmed, input.Owner, input.Repo, ctx);
