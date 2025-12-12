@@ -9,8 +9,6 @@ namespace Elastic.Markdown.Myst.Components;
 
 public class ApplicableToViewModel
 {
-	private readonly ApplicabilityRenderer _applicabilityRenderer = new();
-
 	public required bool Inline { get; init; }
 
 	public bool ShowTooltip { get; init; } = true;
