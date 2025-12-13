@@ -4,6 +4,7 @@ By adding a file for each notable change and grouping them into bundles, you can
 
 1. Create changelogs with the `docs-builder changelog add` command.
 2. [Create changelog bundles](#changelog-bundle) with the `docs-builder changelog bundle` command. For example, create a bundle for the pull requests that are included in a product release.
+3. [Create documentation](#render-changelogs) with the `docs-builder changelog render` command.
 
 For more information about running `docs-builder`, go to [Contribute locally](https://www.elastic.co/docs/contribute-docs/locally).
 
@@ -244,88 +245,68 @@ entries:
 ...
 ```
 
-## Examples
+## Create documentation [render-changelogs]
 
-### Create a changelog for multiple products
-
-The following command creates a changelog for a bug fix that applies to two products:
-
-```sh
-docs-builder changelog add \
-  --title "Fixes enrich and lookup join resolution based on minimum transport version" \ <1>
-  --type bug-fix \ <2>
-  --products "elasticsearch 9.2.3, cloud-serverless 2025-12-02" \ <3>
-  --areas "ES|QL"
-  --pr "https://github.com/elastic/elasticsearch/pull/137431" <4>
-```
-
-1. This option is required only if you want to override what's derived from the PR title.
-2. The type values are defined in [ChangelogConfiguration.cs](https://github.com/elastic/docs-builder/blob/main/src/services/Elastic.Documentation.Services/Changelog/ChangelogConfiguration.cs).
-3. The product values are defined in [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml).
-4. The `--pr` value can be a full URL (such as `https://github.com/owner/repo/pull/123`, a short format (such as `owner/repo#123`) or just a number (in which case you must also provide `--owner` and `--repo` options).
-
-The output file has the following format:
-
-```yaml
-pr: https://github.com/elastic/elasticsearch/pull/137431
-type: bug-fix
-products:
-- product: elasticsearch
-  target: 9.2.3
-- product: cloud-serverless
-  target: 2025-12-02
-title: Fixes enrich and lookup join resolution based on minimum transport version
-areas:
-- ES|QL
-```
-
-### Create a changelog with PR label mappings
-
-You can update your changelog configuration file to contain GitHub label mappings, for example:
-
-```yaml
-# Available areas (optional - if not specified, all areas are allowed)
-available_areas:
-  - search
-  - security
-  - machine-learning
-  - observability
-  - index-management
-  - ES|QL
-  # Add more areas as needed
-
-# GitHub label mappings (optional - used when --pr option is specified)
-# Maps GitHub PR labels to changelog type values
-# When a PR has a label that matches a key, the corresponding type value is used
-label_to_type:
-  # Example mappings - customize based on your label naming conventions
-  ">enhancement": enhancement
-  ">breaking": breaking-change
-
-# Maps GitHub PR labels to changelog area values
-# Multiple labels can map to the same area, and a single label can map to multiple areas (comma-separated)
-label_to_areas:
-  # Example mappings - customize based on your label naming conventions
-  ":Search Relevance/ES|QL": "ES|QL"
-```
-
-When you use the `--pr` option to derive information from a pull request, it can make use of those mappings:
+The `docs-builder changelog render` command creates markdown files from changelog bundles for documentation purposes.
+For up-to-date details, use the `-h` command option:
 
 ```sh
-docs-builder changelog add \
-  --pr https://github.com/elastic/elasticsearch/pull/139272 \
-  --products "elasticsearch 9.3.0" --config test/changelog.yml
+Render bundled changelog(s) to markdown files
+
+Options:
+  --input <List<BundleInput>>    Required: Bundle input(s) in format "bundle-file-path, changelog-file-path, repo". Can be specified multiple times. Only bundle-file-path is required. [Required]
+  --output <string?>             Optional: Output directory for rendered markdown files. Defaults to current directory [Default: null]
+  --title <string?>              Optional: Title to use for section headers in output markdown files. Defaults to version from first bundle [Default: null]
+  --subsections                  Optional: Group entries by area/component in subsections. Defaults to false
 ```
 
-In this case, the changelog file derives the title, type, and areas:
+Before you can use this command you must create changelog files and collect them into bundles.
+For example, the `docs-builder changelog bundle` command creates a file like this:
 
 ```yaml
-pr: https://github.com/elastic/elasticsearch/pull/139272
-type: enhancement
 products:
 - product: elasticsearch
-  target: 9.3.0
-areas:
-- ES|QL
-title: '[ES|QL] Take TOP_SNIPPETS out of snapshot'
+  target: 9.2.2
+entries:
+- file:
+    name: 1765581721-convert-bytestransportresponse-when-proxying-respo.yaml
+    checksum: d7e74edff1bdd3e23ba4f2f88b92cf61cc7d490a
+- file:
+    name: 1765581721-fix-ml-calendar-event-update-scalability-issues.yaml
+    checksum: dfafce50c9fd61c3d8db286398f9553e67737f07
+- file:
+    name: 1765581651-break-on-fielddata-when-building-global-ordinals.yaml
+    checksum: 704b25348d6daff396259216201053334b5b3c1d
+```
+
+To create markdown files from this bundle, run the `docs-builder changelog render` command:
+
+```sh
+docs-builder changelog render \
+  --input "./changelog-bundle.yaml,./changelogs,elasticsearch" \ <1>
+  --title 9.2.2 \ <2>
+  --output ./release-notes \ <3>
+  --subsections \ <4>
+```
+
+1. Provide information about the changelog bundle. The format is `"<bundle-file-path>, <changelog-file-path>, <repository>"`. Only the `<bundle-file-path>` is required. The `<changelog-file-path>` is useful if the changelogs are not in the default directory and are not resolved within the bundle. The `<repository>` is useful for PR or issue link checks. You can specify `--input` multiple times to merge multiple bundles.
+2. The `--title` value is used for an output folder name and for section titles in the markdown files. If you omit `--title` and the first bundle contains a product `target` value, that value is used. Otherwise, if none of the bundles have product `target` fields, the title defaults to "unknown".
+3. By default the command creates the output files in the current directory.
+4. By default the changelog areas are not displayed in the output. Add `--subsections` to group changelog details by their `areas`.
+
+For example, the `index.md` output file contains information derived from the changelogs:
+
+```md
+## 9.2.2 [elastic-release-notes-9.2.2]
+
+### Fixes [elastic-9.2.2-fixes]
+
+**Network**
+* Convert BytesTransportResponse when proxying response from/to local node. [#135873](https://github.com/elastic/elastic/pull/135873) 
+
+**Machine Learning**
+* Fix ML calendar event update scalability issues. [#136886](https://github.com/elastic/elastic/pull/136886) 
+
+**Aggregations**
+* Break on FieldData when building global ordinals. [#108875](https://github.com/elastic/elastic/pull/108875) 
 ```
