@@ -36,9 +36,9 @@ internal sealed class ChangelogCommand(
 	/// <param name="products">Required: Products affected in format "product target lifecycle, ..." (e.g., "elasticsearch 9.2.0 ga, cloud-serverless 2025-08-05")</param>
 	/// <param name="subtype">Optional: Subtype for breaking changes (api, behavioral, configuration, etc.)</param>
 	/// <param name="areas">Optional: Area(s) affected (comma-separated or specify multiple times)</param>
-	/// <param name="pr">Optional: Pull request URL or PR number (if --owner and --repo are provided). If specified, --title can be derived from the PR. If mappings are configured, --areas and --type can also be derived from the PR.</param>
-	/// <param name="owner">Optional: GitHub repository owner (used when --pr is just a number)</param>
-	/// <param name="repo">Optional: GitHub repository name (used when --pr is just a number)</param>
+	/// <param name="prs">Optional: Pull request URL(s) or PR number(s) (comma-separated, or if --owner and --repo are provided, just numbers). If specified, --title can be derived from the PR. If mappings are configured, --areas and --type can also be derived from the PR. Creates one changelog file per PR.</param>
+	/// <param name="owner">Optional: GitHub repository owner (used when --prs contains just numbers)</param>
+	/// <param name="repo">Optional: GitHub repository name (used when --prs contains just numbers)</param>
 	/// <param name="issues">Optional: Issue URL(s) (comma-separated or specify multiple times)</param>
 	/// <param name="description">Optional: Additional information about the change (max 600 characters)</param>
 	/// <param name="impact">Optional: How the user's environment is affected</param>
@@ -55,7 +55,7 @@ internal sealed class ChangelogCommand(
 		string? type = null,
 		string? subtype = null,
 		string[]? areas = null,
-		string? pr = null,
+		string[]? prs = null,
 		string? owner = null,
 		string? repo = null,
 		string[]? issues = null,
@@ -74,6 +74,13 @@ internal sealed class ChangelogCommand(
 		IGitHubPrService githubPrService = new GitHubPrService(logFactory);
 		var service = new ChangelogService(logFactory, configurationContext, githubPrService);
 
+		// Parse comma-separated PRs if provided as a single string
+		string[]? parsedPrs = null;
+		if (prs != null && prs.Length > 0)
+		{
+			parsedPrs = prs.SelectMany(pr => pr.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)).ToArray();
+		}
+
 		var input = new ChangelogInput
 		{
 			Title = title,
@@ -81,7 +88,7 @@ internal sealed class ChangelogCommand(
 			Products = products,
 			Subtype = subtype,
 			Areas = areas ?? [],
-			Pr = pr,
+			Prs = parsedPrs,
 			Owner = owner,
 			Repo = repo,
 			Issues = issues ?? [],
