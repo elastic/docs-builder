@@ -1,9 +1,11 @@
 # Create and bundle changelogs
 
-The `docs-builder changelog add` command creates a new changelog file from command-line input.
-The `docs-builder changelog bundle` command creates a consolidated list of changelogs.
-
 By adding a file for each notable change and grouping them into bundles, you can ultimately generate release documention with a consistent layout for all your products.
+
+1. Create changelogs with the `docs-builder changelog add` command.
+2. [Create changelog bundles](#changelog-bundle) with the `docs-builder changelog bundle` command. For example, create a bundle for the pull requests that are included in a product release.
+
+For more information about running `docs-builder`, go to [Contribute locally](https://www.elastic.co/docs/contribute-docs/locally).
 
 :::{note}
 This command is associated with an ongoing release docs initiative.
@@ -43,24 +45,6 @@ Options:
   --highlight <bool?>               Optional: Include in release highlights [Default: null]
   --output <string?>                Optional: Output directory for the changelog. Defaults to current directory [Default: null]
   --config <string?>                Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml' [Default: null]
-```
-
-The `changelog bundle` command creates a single YAML bundle file and supports all of the following options:
-
-```sh
-Bundle changelogs
-
-Options:
-  --directory <string?>                     Optional: Directory containing changelog YAML files. Defaults to current directory [Default: null]
-  --output <string?>                        Optional: Output file path for the bundled changelog. Defaults to 'changelog-bundle.yaml' in the input directory [Default: null]
-  --all                                     Include all changelogs in the directory
-  --input-products <List<ProductInfo>?>     Filter by products in format "product target lifecycle, ..." (e.g., "cloud-serverless 2025-12-02, cloud-serverless 2025-12-06") [Default: null]
-  --output-products <List<ProductInfo>?>    Explicitly set the products array in the output file in format "product target lifecycle, ...". Overrides any values from changelogs. [Default: null]
-  --resolve                                 Copy the contents of each changelog file into the entries array
-  --prs <string[]?>                         Filter by pull request URLs or numbers (can specify multiple times) [Default: null]
-  --prs-file <string?>                      Path to a newline-delimited file containing PR URLs or numbers [Default: null]
-  --owner <string?>                         Optional: GitHub repository owner (used when PRs are specified as numbers) [Default: null]
-  --repo <string?>                          Optional: GitHub repository name (used when PRs are specified as numbers) [Default: null]
 ```
 
 ### Product format
@@ -107,43 +91,28 @@ When you run the command with the `--pr` option, it can use these mappings to fi
 
 Refer to [changelog.yml.example](https://github.com/elastic/docs-builder/blob/main/config/changelog.yml.example).
 
-## Bundle creation
+## Create bundles [changelog-bundle]
 
 You can use the `docs-builder changelog bundle` command to create a YAML file that lists multiple changelogs.
-By default, the file contains only the changelog file names and checksums.
-For example:
+For up-to-date details, use the `-h` option:
 
-```yaml
-products:
-- product: elasticsearch
-  target: 9.2.2
-entries:
-- file:
-    name: 1765507819-fix-ml-calendar-event-update-scalability-issues.yaml
-    checksum: 069b59edb14594e0bc3b70365e81626bde730ab7
+```sh
+Bundle changelogs
+
+Options:
+  --directory <string?>                     Optional: Directory containing changelog YAML files. Defaults to current directory [Default: null]
+  --output <string?>                        Optional: Output file path for the bundled changelog. Defaults to 'changelog-bundle.yaml' in the input directory [Default: null]
+  --all                                     Include all changelogs in the directory
+  --input-products <List<ProductInfo>?>     Filter by products in format "product target lifecycle, ..." (e.g., "cloud-serverless 2025-12-02, cloud-serverless 2025-12-06") [Default: null]
+  --output-products <List<ProductInfo>?>    Explicitly set the products array in the output file in format "product target lifecycle, ...". Overrides any values from changelogs. [Default: null]
+  --resolve                                 Copy the contents of each changelog file into the entries array
+  --prs <string[]?>                         Filter by pull request URLs or numbers (can specify multiple times) [Default: null]
+  --prs-file <string?>                      Path to a newline-delimited file containing PR URLs or numbers [Default: null]
+  --owner <string?>                         Optional: GitHub repository owner (used when PRs are specified as numbers) [Default: null]
+  --repo <string?>                          Optional: GitHub repository name (used when PRs are specified as numbers) [Default: null]
 ```
 
-You can optionally use the `--resolve` command option to pull all of the content from each changelog into the bundle.
-For example:
-
-```yaml
-products:
-- product: elasticsearch
-  target: 9.2.2
-entries:
-- file:
-    name: 1765507819-fix-ml-calendar-event-update-scalability-issues.yaml
-    checksum: 069b59edb14594e0bc3b70365e81626bde730ab7
-  type: bug-fix
-  title: Fix ML calendar event update scalability issues
-  products:
-  - product: elasticsearch
-  areas:
-  - Machine Learning
-  pr: https://github.com/elastic/elasticsearch/pull/136886
-```
-
-When you run the `docs-builder changelog bundle` command, you can specify only one of the following filter options:
+You can specify only one of the following filter options:
 
 `--all`
 :   Include all changelogs from the directory.
@@ -160,6 +129,120 @@ When you run the `docs-builder changelog bundle` command, you can specify only o
 `--prs-file`
 :   Include changelogs for the pull request URLs or numbers specified in a newline-delimited file.
 :   Pull requests can be identified by a full URL (such as `https://github.com/owner/repo/pull/123`, a short format (such as `owner/repo#123`) or just a number (in which case you must also provide `--owner` and `--repo` options).
+
+By default, the output file contains only the changelog file names and checksums.
+You can optionally use the `--resolve` command option to pull all of the content from each changelog into the bundle.
+
+### Filter by product [changelog-bundle-product]
+
+You can use the `--input-products` option to create a bundle of changelogs that match the product details:
+
+```sh
+docs-builder changelog bundle \
+  --input-products "cloud-serverless 2025-12-02, cloud-serverless 2025-12-06" <1>
+```
+
+1. Include all changelogs that have the `cloud-serverless` product identifier and target dates of either December 2 2025 or December 12 2025. For more information about product values, refer to [](#product-format).
+
+If you have changelog files that reference those product details, the command creates a file like this:
+
+```yaml
+products: <1>
+- product: cloud-serverless
+  target: 2025-12-02
+- product: cloud-serverless
+  target: 2025-12-06
+entries:
+- file:
+    name: 1765495972-fixes-enrich-and-lookup-join-resolution-based-on-m.yaml
+    checksum: 6c3243f56279b1797b5dfff6c02ebf90b9658464
+- file:
+    name: 1765507778-break-on-fielddata-when-building-global-ordinals.yaml
+    checksum: 70d197d96752c05b6595edffe6fe3ba3d055c845
+```
+
+1. By default these values match your `--input-products` (even if the changelogs have more products). To specify different product metadata, use the `--output-products` option.
+
+If you add the `--resolve` option, the contents of each changelog will be included in the output file.
+
+### Filter by pull requests [changelog-bundle-pr]
+
+You can use the `--prs` option (with the `--repo` and `--owner` options if you provide only the PR numbers) to create a bundle of the changelogs that relate to those pull requests:
+
+```sh
+docs-builder changelog bundle --prs 108875,135873,136886 \ <1>
+  --repo elasticsearch \ <2>
+  --owner elastic \ <3>
+  --output-products "elasticsearch 9.2.2" <4>
+```
+
+1. The list of pull request numbers to seek.
+2. The repository in the pull request URLs. This option is not required if you specify the short or full PR URLs in the `--prs` option.
+3. The owner in the pull request URLs. This option is not required if you specify the short or full PR URLs in the `--prs` option.
+4. The product metadata for the bundle. If it is not provided, it will be derived from all the changelog product values.
+
+If you have changelog files that reference those pull requests, the command creates a file like this:
+
+```yaml
+products:
+- product: elasticsearch
+  target: 9.2.2
+entries:
+- file:
+    name: 1765507819-fix-ml-calendar-event-update-scalability-issues.yaml
+    checksum: 069b59edb14594e0bc3b70365e81626bde730ab7
+- file:
+    name: 1765507798-convert-bytestransportresponse-when-proxying-respo.yaml
+    checksum: c6dbd4730bf34dbbc877c16c042e6578dd108b62
+- file:
+    name: 1765507839-use-ivf_pq-for-gpu-index-build-for-large-datasets.yaml
+    checksum: 451d60283fe5df426f023e824339f82c2900311e
+```
+
+If you add the `--resolve` option, the contents of each changelog will be included in the output file.
+
+### Filter by pull request file [changelog-bundle-file]
+
+If you have a file that lists pull requests (such as PRs associated with a GitHub release):
+
+```txt
+https://github.com/elastic/elasticsearch/pull/108875
+https://github.com/elastic/elasticsearch/pull/135873
+https://github.com/elastic/elasticsearch/pull/136886
+https://github.com/elastic/elasticsearch/pull/137126
+```
+
+You can use the `--prs-file` option to create a bundle of the changelogs that relate to those pull requests:
+
+```sh
+./docs-builder changelog bundle --prs-file test/9.2.2.txt \ <1>
+  --output-products "elasticsearch 9.2.2" <3>
+  --resolve <3>
+```
+
+1. The path for the file that lists the pull requests. If the file contains only PR numbers, you must add `--repo` and `--owner` command options.
+2. The product metadata for the bundle. If it is not provided, it will be derived from all the changelog product values.
+3. Optionally include the contents of each changelog in the output file.
+
+If you have changelog files that reference those pull requests, the command creates a file like this:
+
+```yaml
+products:
+- product: elasticsearch
+  target: 9.2.2
+entries:
+- file:
+    name: 1765507778-break-on-fielddata-when-building-global-ordinals.yaml
+    checksum: 70d197d96752c05b6595edffe6fe3ba3d055c845
+  type: bug-fix
+  title: Break on FieldData when building global ordinals
+  products:
+  - product: elasticsearch
+  areas:
+  - Aggregations
+  pr: https://github.com/elastic/elasticsearch/pull/108875
+...
+```
 
 ## Examples
 
@@ -245,118 +328,4 @@ products:
 areas:
 - ES|QL
 title: '[ES|QL] Take TOP_SNIPPETS out of snapshot'
-```
-
-### Create a changelog bundle by product
-
-You can use the `--input-products` option to create a bundle of changelogs that match the product details:
-
-```sh
-docs-builder changelog bundle \
-  --input-products "cloud-serverless 2025-12-02, cloud-serverless 2025-12-06" <1>
-```
-
-1. Include all changelogs that have the `cloud-serverless` product identifier and target dates of either December 2 2025 or December 12 2025. For more information about product values, refer to [](#product-format).
-
-If you have changelog files that reference those product details, the command creates a file like this:
-
-```yaml
-products: <1>
-- product: cloud-serverless
-  target: 2025-12-02
-- product: cloud-serverless
-  target: 2025-12-06
-entries:
-- file:
-    name: 1765495972-fixes-enrich-and-lookup-join-resolution-based-on-m.yaml
-    checksum: 6c3243f56279b1797b5dfff6c02ebf90b9658464
-- file:
-    name: 1765507778-break-on-fielddata-when-building-global-ordinals.yaml
-    checksum: 70d197d96752c05b6595edffe6fe3ba3d055c845
-```
-
-1. By default these values match your `--input-products` (even if the changelogs have more products). To specify different product metadata, use the `--output-products` option.
-
-If you add the `--resolve` option, the contents of each changelog will be included in the output file.
-Refer to [](#bundle-creation).
-
-### Create a changelog bundle by PR list
-
-You can use the `--prs` option (with the `--repo` and `--owner` options if you provide only the PR numbers) to create a bundle of the changelogs that relate to those pull requests:
-
-```sh
-docs-builder changelog bundle --prs 108875,135873,136886 \ <1>
-  --repo elasticsearch \ <2>
-  --owner elastic \ <3>
-  --output-products "elasticsearch 9.2.2" <4>
-```
-
-1. The list of pull request numbers to seek.
-2. The repository in the pull request URLs. This option is not required if you specify the short or full PR URLs in the `--prs` option.
-3. The owner in the pull request URLs. This option is not required if you specify the short or full PR URLs in the `--prs` option.
-4. The product metadata for the bundle. If it is not provided, it will be derived from all the changelog product values.
-
-If you have changelog files that reference those pull requests, the command creates a file like this:
-
-```yaml
-products:
-- product: elasticsearch
-  target: 9.2.2
-entries:
-- file:
-    name: 1765507819-fix-ml-calendar-event-update-scalability-issues.yaml
-    checksum: 069b59edb14594e0bc3b70365e81626bde730ab7
-- file:
-    name: 1765507798-convert-bytestransportresponse-when-proxying-respo.yaml
-    checksum: c6dbd4730bf34dbbc877c16c042e6578dd108b62
-- file:
-    name: 1765507839-use-ivf_pq-for-gpu-index-build-for-large-datasets.yaml
-    checksum: 451d60283fe5df426f023e824339f82c2900311e
-```
-
-If you add the `--resolve` option, the contents of each changelog will be included in the output file.
-Refer to [](#bundle-creation).
-
-
-### Create a changelog bundle by PR file
-
-If you have a file that lists pull requests (such as PRs associated with a GitHub release):
-
-```txt
-https://github.com/elastic/elasticsearch/pull/108875
-https://github.com/elastic/elasticsearch/pull/135873
-https://github.com/elastic/elasticsearch/pull/136886
-https://github.com/elastic/elasticsearch/pull/137126
-```
-
-You can use the `--prs-file` option to create a bundle of the changelogs that relate to those pull requests:
-
-```sh
-./docs-builder changelog bundle --prs-file test/9.2.2.txt \ <1>
-  --output-products "elasticsearch 9.2.2" <3>
-  --resolve <3>
-```
-
-1. The path for the file that lists the pull requests. If the file contains only PR numbers, you must add `--repo` and `--owner` command options.
-2. The product metadata for the bundle. If it is not provided, it will be derived from all the changelog product values.
-3. Optionally include the contents of each changelog in the output file.
-
-If you have changelog files that reference those pull requests, the command creates a file like this:
-
-```yaml
-products:
-- product: elasticsearch
-  target: 9.2.2
-entries:
-- file:
-    name: 1765507778-break-on-fielddata-when-building-global-ordinals.yaml
-    checksum: 70d197d96752c05b6595edffe6fe3ba3d055c845
-  type: bug-fix
-  title: Break on FieldData when building global ordinals
-  products:
-  - product: elasticsearch
-  areas:
-  - Aggregations
-  pr: https://github.com/elastic/elasticsearch/pull/108875
-...
 ```
