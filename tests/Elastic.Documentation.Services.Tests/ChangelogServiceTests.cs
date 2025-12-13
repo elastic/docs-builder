@@ -2015,6 +2015,71 @@ public class ChangelogServiceTests : IDisposable
 	}
 
 	[Fact]
+	public async Task RenderChangelogs_WithDuplicateFileNameInSameBundle_EmitsWarning()
+	{
+		// Arrange
+		var service = new ChangelogService(_loggerFactory, _configurationContext, null);
+		var fileSystem = new FileSystem();
+		var changelogDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		fileSystem.Directory.CreateDirectory(changelogDir);
+
+		// Create changelog file
+		var changelog = """
+			title: Test feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			pr: https://github.com/elastic/elasticsearch/pull/100
+			""";
+
+		var fileName = "1755268130-test-feature.yaml";
+		var changelogFile = fileSystem.Path.Combine(changelogDir, fileName);
+		await fileSystem.File.WriteAllTextAsync(changelogFile, changelog, TestContext.Current.CancellationToken);
+
+		// Create bundle file with the same file referenced twice
+		var bundleDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		fileSystem.Directory.CreateDirectory(bundleDir);
+
+		var bundleFile = fileSystem.Path.Combine(bundleDir, "bundle.yaml");
+		var bundleContent = $"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			entries:
+			  - file:
+			      name: {fileName}
+			      checksum: {ComputeSha1(changelog)}
+			  - file:
+			      name: {fileName}
+			      checksum: {ComputeSha1(changelog)}
+			""";
+		await fileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+
+		var outputDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+
+		var input = new ChangelogRenderInput
+		{
+			Bundles = [
+				new BundleInput { BundleFile = bundleFile, Directory = changelogDir }
+			],
+			Output = outputDir
+		};
+
+		// Act
+		var result = await service.RenderChangelogs(_collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		_collector.Errors.Should().Be(0);
+		_collector.Warnings.Should().BeGreaterThan(0);
+		_collector.Diagnostics.Should().Contain(d =>
+			d.Severity == Severity.Warning &&
+			d.Message.Contains("appears multiple times in the same bundle") &&
+			d.File == bundleFile);
+	}
+
+	[Fact]
 	public async Task RenderChangelogs_WithDuplicatePr_EmitsWarning()
 	{
 		// Arrange

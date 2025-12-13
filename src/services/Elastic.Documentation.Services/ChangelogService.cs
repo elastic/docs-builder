@@ -1026,7 +1026,7 @@ public partial class ChangelogService(
 
 			// Validation phase: Load and validate all bundles before merging
 			var bundleDataList = new List<(BundledChangelogData data, BundleInput input, string directory)>();
-			var seenFileNames = new Dictionary<string, List<string>>(); // filename -> list of bundle files
+			var seenFileNames = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase); // filename -> list of bundle files
 			var seenPrs = new Dictionary<string, List<string>>(); // PR -> list of bundle files
 			var defaultRepo = "elastic";
 
@@ -1082,15 +1082,25 @@ public partial class ChangelogService(
 				var bundleDirectory = bundleInput.Directory ?? _fileSystem.Path.GetDirectoryName(bundleInput.BundleFile) ?? Directory.GetCurrentDirectory();
 
 				// Validate all referenced files exist and check for duplicates
+				var fileNamesInThisBundle = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 				foreach (var entry in bundledData.Entries)
 				{
 					// Track file names for duplicate detection
 					if (!string.IsNullOrWhiteSpace(entry.File?.Name))
 					{
-						if (!seenFileNames.TryGetValue(entry.File.Name, out var bundleList))
+						var fileName = entry.File.Name;
+
+						// Check for duplicates within the same bundle
+						if (!fileNamesInThisBundle.Add(fileName))
+						{
+							collector.EmitWarning(bundleInput.BundleFile, $"Changelog file '{fileName}' appears multiple times in the same bundle");
+						}
+
+						// Track across bundles
+						if (!seenFileNames.TryGetValue(fileName, out var bundleList))
 						{
 							bundleList = [];
-							seenFileNames[entry.File.Name] = bundleList;
+							seenFileNames[fileName] = bundleList;
 						}
 						bundleList.Add(bundleInput.BundleFile);
 					}
@@ -1217,10 +1227,14 @@ public partial class ChangelogService(
 				bundleDataList.Add((bundledData, bundleInput, bundleDirectory));
 			}
 
-			// Check for duplicate file names
+			// Check for duplicate file names across bundles
 			foreach (var (fileName, bundleFiles) in seenFileNames.Where(kvp => kvp.Value.Count > 1))
 			{
-				collector.EmitWarning(string.Empty, $"Changelog file '{fileName}' appears in multiple bundles: {string.Join(", ", bundleFiles)}");
+				var uniqueBundles = bundleFiles.Distinct().ToList();
+				if (uniqueBundles.Count > 1)
+				{
+					collector.EmitWarning(string.Empty, $"Changelog file '{fileName}' appears in multiple bundles: {string.Join(", ", uniqueBundles)}");
+				}
 			}
 
 			// Check for duplicate PRs
