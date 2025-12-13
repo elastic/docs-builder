@@ -4,6 +4,7 @@ By adding a file for each notable change and grouping them into bundles, you can
 
 1. Create changelogs with the `docs-builder changelog add` command.
 2. [Create changelog bundles](#changelog-bundle) with the `docs-builder changelog bundle` command. For example, create a bundle for the pull requests that are included in a product release.
+3. [Create documentation](#render-changelogs) with the `docs-builder changelog render` command.
 
 For more information about running `docs-builder`, go to [Contribute locally](https://www.elastic.co/docs/contribute-docs/locally).
 
@@ -247,7 +248,7 @@ entries:
 ## Create documentation [render-changelogs]
 
 The `docs-builder changelog render` command creates markdown files from changelog bundles for documentation purposes.
-It supports all of the following options:
+For up-to-date details, use the `-h` command option:
 
 ```sh
 Render bundled changelog(s) to markdown files
@@ -258,8 +259,6 @@ Options:
   --title <string?>              Optional: Title to use for section headers in output markdown files. Defaults to version from first bundle [Default: null]
   --subsections                  Optional: Group entries by area/component in subsections. Defaults to false
 ```
-
-For up-to-date details, use the `-h` command option.
 
 Before you can use this command you must create changelog files and collect them into bundles.
 For example, the `docs-builder changelog bundle` command creates a file like this:
