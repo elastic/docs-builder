@@ -1,9 +1,10 @@
 # Create and bundle changelogs
 
-The `docs-builder changelog add` command creates a new changelog file from command-line input.
-The `docs-builder changelog bundle` command creates a consolidated list of changelogs.
-
 By adding a file for each notable change and grouping them into bundles, you can ultimately generate release documention with a consistent layout for all your products.
+
+1. Create changelog files with the `docs-builder changelog add` command.
+2. Create consolidated list of changelogs with the `docs-builder changelog bundle` command. For example, create a bundle for the pull requests that are included in a product release.
+3. [Create documentation](#render-changelogs) from one or more changelog bundles.
 
 :::{note}
 This command is associated with an ongoing release docs initiative.
@@ -359,4 +360,72 @@ entries:
   - Aggregations
   pr: https://github.com/elastic/elasticsearch/pull/108875
 ...
+```
+
+## Create documentation [render-changelogs]
+
+The `docs-builder changelog render` command creates markdown files from changelog bundles for documentation purposes.
+It supports all of the following options:
+
+```sh
+Render bundled changelog(s) to markdown files
+
+Options:
+  --input <List<BundleInput>>    Required: Bundle input(s) in format "bundle-file-path, changelog-file-path, repo". Can be specified multiple times. Only bundle-file-path is required. [Required]
+  --output <string?>             Optional: Output directory for rendered markdown files. Defaults to current directory [Default: null]
+  --title <string?>              Optional: Title to use for section headers in output markdown files. Defaults to version from first bundle [Default: null]
+  --subsections                  Optional: Group entries by area/component in subsections. Defaults to false
+```
+
+For up-to-date details, use the `-h` command option.
+
+Before you can use this command you must create changelog files and collect them into bundles.
+For example, the `docs-builder changelog bundle` command creates a file like this:
+
+```yaml
+products:
+- product: elasticsearch
+  target: 9.2.2
+entries:
+- file:
+    name: 1765581721-convert-bytestransportresponse-when-proxying-respo.yaml
+    checksum: d7e74edff1bdd3e23ba4f2f88b92cf61cc7d490a
+- file:
+    name: 1765581721-fix-ml-calendar-event-update-scalability-issues.yaml
+    checksum: dfafce50c9fd61c3d8db286398f9553e67737f07
+- file:
+    name: 1765581651-break-on-fielddata-when-building-global-ordinals.yaml
+    checksum: 704b25348d6daff396259216201053334b5b3c1d
+```
+
+To create markdown files from this bundle, run the `docs-builder changelog render` command:
+
+```sh
+docs-builder changelog render \
+  --input "./changelog-bundle.yaml,./changelogs,elasticsearch" \ <1>
+  --title 9.2.2 \ <2>
+  --output ./release-notes \ <3>
+  --subsections \ <4>
+```
+
+1. Provide information about the changelog bundle. The format is `"<bundle-file-path>, <changelog-file-path>, <repository>"`. Only the `<bundle-file-path>` is required. The `<changelog-file-path>` is useful if the changelogs are not in the default directory and are not resolved within the bundle. The `<repository>` is useful for PR or issue link checks. You can specify `--input` multiple times to merge multiple bundles.
+2. The `--title` value is used for an output folder name and for section titles in the markdown files. If you omit `--title` and the first bundle contains a product `target` value, that value is used. Otherwise, if none of the bundles have product `target` fields, the title defaults to "unknown".
+3. By default the command creates the output files in the current directory.
+4. By default the changelog areas are not displayed in the output. Add `--subsections` to group changelog details by their `areas`.
+
+For example, the `index.md` output file contains information derived from the changelogs:
+
+```md
+## 9.2.2 [elastic-release-notes-9.2.2]
+
+### Fixes [elastic-9.2.2-fixes]
+
+**Network**
+* Convert BytesTransportResponse when proxying response from/to local node. [#135873](https://github.com/elastic/elastic/pull/135873) 
+
+**Machine Learning**
+* Fix ML calendar event update scalability issues. [#136886](https://github.com/elastic/elastic/pull/136886) 
+
+**Aggregations**
+* Break on FieldData when building global ordinals. [#108875](https://github.com/elastic/elastic/pull/108875) 
 ```
