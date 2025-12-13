@@ -51,4 +51,4 @@ Assembler builds bring together all isolated documentation set builds and turn t
 
 Commands that pertain to creating and publishing product release documentation.
 
-[See available CLI commands for release docs](changelog/index.md)
+[See available CLI commands for release docs](release/index.md)
