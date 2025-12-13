@@ -153,7 +153,7 @@ toc:
           - file: inbound-links-validate.md
           - file: inbound-links-validate-all.md
           - file: inbound-links-validate-link-reference.md
-      - folder: changelog
+      - folder: release
         children:
           - file: index.md
           - file: changelog-add.md
