@@ -2,9 +2,10 @@
 
 By adding a file for each notable change and grouping them into bundles, you can ultimately generate release documention with a consistent layout for all your products.
 
-1. Create changelog files with the `docs-builder changelog add` command.
-2. Create consolidated list of changelogs with the `docs-builder changelog bundle` command. For example, create a bundle for the pull requests that are included in a product release.
-3. [Create documentation](#render-changelogs) from one or more changelog bundles.
+1. Create changelogs with the `docs-builder changelog add` command.
+2. [Create changelog bundles](#changelog-bundle) with the `docs-builder changelog bundle` command. For example, create a bundle for the pull requests that are included in a product release.
+
+For more information about running `docs-builder`, go to [Contribute locally](https://www.elastic.co/docs/contribute-docs/locally).
 
 :::{note}
 This command is associated with an ongoing release docs initiative.
@@ -44,24 +45,6 @@ Options:
   --highlight <bool?>               Optional: Include in release highlights [Default: null]
   --output <string?>                Optional: Output directory for the changelog. Defaults to current directory [Default: null]
   --config <string?>                Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml' [Default: null]
-```
-
-The `changelog bundle` command creates a single YAML bundle file and supports all of the following options:
-
-```sh
-Bundle changelogs
-
-Options:
-  --directory <string?>                     Optional: Directory containing changelog YAML files. Defaults to current directory [Default: null]
-  --output <string?>                        Optional: Output file path for the bundled changelog. Defaults to 'changelog-bundle.yaml' in the input directory [Default: null]
-  --all                                     Include all changelogs in the directory
-  --input-products <List<ProductInfo>?>     Filter by products in format "product target lifecycle, ..." (e.g., "cloud-serverless 2025-12-02, cloud-serverless 2025-12-06") [Default: null]
-  --output-products <List<ProductInfo>?>    Explicitly set the products array in the output file in format "product target lifecycle, ...". Overrides any values from changelogs. [Default: null]
-  --resolve                                 Copy the contents of each changelog file into the entries array
-  --prs <string[]?>                         Filter by pull request URLs or numbers (can specify multiple times) [Default: null]
-  --prs-file <string?>                      Path to a newline-delimited file containing PR URLs or numbers [Default: null]
-  --owner <string?>                         Optional: GitHub repository owner (used when PRs are specified as numbers) [Default: null]
-  --repo <string?>                          Optional: GitHub repository name (used when PRs are specified as numbers) [Default: null]
 ```
 
 ### Product format
@@ -108,43 +91,28 @@ When you run the command with the `--pr` option, it can use these mappings to fi
 
 Refer to [changelog.yml.example](https://github.com/elastic/docs-builder/blob/main/config/changelog.yml.example).
 
-## Bundle creation
+## Create bundles [changelog-bundle]
 
 You can use the `docs-builder changelog bundle` command to create a YAML file that lists multiple changelogs.
-By default, the file contains only the changelog file names and checksums.
-For example:
+For up-to-date details, use the `-h` option:
 
-```yaml
-products:
-- product: elasticsearch
-  target: 9.2.2
-entries:
-- file:
-    name: 1765507819-fix-ml-calendar-event-update-scalability-issues.yaml
-    checksum: 069b59edb14594e0bc3b70365e81626bde730ab7
+```sh
+Bundle changelogs
+
+Options:
+  --directory <string?>                     Optional: Directory containing changelog YAML files. Defaults to current directory [Default: null]
+  --output <string?>                        Optional: Output file path for the bundled changelog. Defaults to 'changelog-bundle.yaml' in the input directory [Default: null]
+  --all                                     Include all changelogs in the directory
+  --input-products <List<ProductInfo>?>     Filter by products in format "product target lifecycle, ..." (e.g., "cloud-serverless 2025-12-02, cloud-serverless 2025-12-06") [Default: null]
+  --output-products <List<ProductInfo>?>    Explicitly set the products array in the output file in format "product target lifecycle, ...". Overrides any values from changelogs. [Default: null]
+  --resolve                                 Copy the contents of each changelog file into the entries array
+  --prs <string[]?>                         Filter by pull request URLs or numbers (can specify multiple times) [Default: null]
+  --prs-file <string?>                      Path to a newline-delimited file containing PR URLs or numbers [Default: null]
+  --owner <string?>                         Optional: GitHub repository owner (used when PRs are specified as numbers) [Default: null]
+  --repo <string?>                          Optional: GitHub repository name (used when PRs are specified as numbers) [Default: null]
 ```
 
-You can optionally use the `--resolve` command option to pull all of the content from each changelog into the bundle.
-For example:
-
-```yaml
-products:
-- product: elasticsearch
-  target: 9.2.2
-entries:
-- file:
-    name: 1765507819-fix-ml-calendar-event-update-scalability-issues.yaml
-    checksum: 069b59edb14594e0bc3b70365e81626bde730ab7
-  type: bug-fix
-  title: Fix ML calendar event update scalability issues
-  products:
-  - product: elasticsearch
-  areas:
-  - Machine Learning
-  pr: https://github.com/elastic/elasticsearch/pull/136886
-```
-
-When you run the `docs-builder changelog bundle` command, you can specify only one of the following filter options:
+You can specify only one of the following filter options:
 
 `--all`
 :   Include all changelogs from the directory.
@@ -162,93 +130,10 @@ When you run the `docs-builder changelog bundle` command, you can specify only o
 :   Include changelogs for the pull request URLs or numbers specified in a newline-delimited file.
 :   Pull requests can be identified by a full URL (such as `https://github.com/owner/repo/pull/123`, a short format (such as `owner/repo#123`) or just a number (in which case you must also provide `--owner` and `--repo` options).
 
-## Examples
+By default, the output file contains only the changelog file names and checksums.
+You can optionally use the `--resolve` command option to pull all of the content from each changelog into the bundle.
 
-### Create a changelog for multiple products
-
-The following command creates a changelog for a bug fix that applies to two products:
-
-```sh
-docs-builder changelog add \
-  --title "Fixes enrich and lookup join resolution based on minimum transport version" \ <1>
-  --type bug-fix \ <2>
-  --products "elasticsearch 9.2.3, cloud-serverless 2025-12-02" \ <3>
-  --areas "ES|QL"
-  --pr "https://github.com/elastic/elasticsearch/pull/137431" <4>
-```
-
-1. This option is required only if you want to override what's derived from the PR title.
-2. The type values are defined in [ChangelogConfiguration.cs](https://github.com/elastic/docs-builder/blob/main/src/services/Elastic.Documentation.Services/Changelog/ChangelogConfiguration.cs).
-3. The product values are defined in [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml).
-4. The `--pr` value can be a full URL (such as `https://github.com/owner/repo/pull/123`, a short format (such as `owner/repo#123`) or just a number (in which case you must also provide `--owner` and `--repo` options).
-
-The output file has the following format:
-
-```yaml
-pr: https://github.com/elastic/elasticsearch/pull/137431
-type: bug-fix
-products:
-- product: elasticsearch
-  target: 9.2.3
-- product: cloud-serverless
-  target: 2025-12-02
-title: Fixes enrich and lookup join resolution based on minimum transport version
-areas:
-- ES|QL
-```
-
-### Create a changelog with PR label mappings
-
-You can update your changelog configuration file to contain GitHub label mappings, for example:
-
-```yaml
-# Available areas (optional - if not specified, all areas are allowed)
-available_areas:
-  - search
-  - security
-  - machine-learning
-  - observability
-  - index-management
-  - ES|QL
-  # Add more areas as needed
-
-# GitHub label mappings (optional - used when --pr option is specified)
-# Maps GitHub PR labels to changelog type values
-# When a PR has a label that matches a key, the corresponding type value is used
-label_to_type:
-  # Example mappings - customize based on your label naming conventions
-  ">enhancement": enhancement
-  ">breaking": breaking-change
-
-# Maps GitHub PR labels to changelog area values
-# Multiple labels can map to the same area, and a single label can map to multiple areas (comma-separated)
-label_to_areas:
-  # Example mappings - customize based on your label naming conventions
-  ":Search Relevance/ES|QL": "ES|QL"
-```
-
-When you use the `--pr` option to derive information from a pull request, it can make use of those mappings:
-
-```sh
-docs-builder changelog add \
-  --pr https://github.com/elastic/elasticsearch/pull/139272 \
-  --products "elasticsearch 9.3.0" --config test/changelog.yml
-```
-
-In this case, the changelog file derives the title, type, and areas:
-
-```yaml
-pr: https://github.com/elastic/elasticsearch/pull/139272
-type: enhancement
-products:
-- product: elasticsearch
-  target: 9.3.0
-areas:
-- ES|QL
-title: '[ES|QL] Take TOP_SNIPPETS out of snapshot'
-```
-
-### Create a changelog bundle by product
+### Filter by product [changelog-bundle-product]
 
 You can use the `--input-products` option to create a bundle of changelogs that match the product details:
 
@@ -279,9 +164,8 @@ entries:
 1. By default these values match your `--input-products` (even if the changelogs have more products). To specify different product metadata, use the `--output-products` option.
 
 If you add the `--resolve` option, the contents of each changelog will be included in the output file.
-Refer to [](#bundle-creation).
 
-### Create a changelog bundle by PR list
+### Filter by pull requests [changelog-bundle-pr]
 
 You can use the `--prs` option (with the `--repo` and `--owner` options if you provide only the PR numbers) to create a bundle of the changelogs that relate to those pull requests:
 
@@ -316,10 +200,8 @@ entries:
 ```
 
 If you add the `--resolve` option, the contents of each changelog will be included in the output file.
-Refer to [](#bundle-creation).
 
-
-### Create a changelog bundle by PR file
+### Filter by pull request file [changelog-bundle-file]
 
 If you have a file that lists pull requests (such as PRs associated with a GitHub release):
 
