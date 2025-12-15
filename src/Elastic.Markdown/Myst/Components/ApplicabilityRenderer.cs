@@ -346,7 +346,8 @@ public class ApplicabilityRenderer
 		displayName.Replace("&nbsp;", " ");
 
 	/// <summary>
-	/// Determines if a version should be considered released.
+	/// Determines if a version should be considered released for lifecycle description purposes
+	/// For ranges, if min is released, the feature is currently available
 	/// </summary>
 	private static bool IsVersionReleased(Applicability applicability, VersioningSystem versioningSystem)
 	{
@@ -356,11 +357,8 @@ public class ApplicabilityRenderer
 		if (versionSpec is null or AllVersionsSpec)
 			return true;
 
-		// For ranges, check the max version
-		if (versionSpec.Kind == VersionSpecKind.Range && versionSpec.Max is not null)
-			return versionSpec.Max <= versioningSystem.Current;
-
-		// For GTE and Exact, check the min version
+		// For all version spec types, check if min is released
+		// This determines whether the feature is currently available
 		return versionSpec.Min <= versioningSystem.Current;
 	}
 

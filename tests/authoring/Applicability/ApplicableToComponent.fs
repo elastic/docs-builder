@@ -506,3 +506,149 @@ stack: ga 8.0.0, beta 8.1.0
 </applies-to-popover>
 </p>
 """
+
+type ``stack ga released version`` () =
+    static let markdown = Setup.Markdown """
+```{applies_to}
+stack: ga 7.0.0
+```
+"""
+
+    [<Fact>]
+    let ``renders ga since released version`` () =
+        markdown |> convertsToHtml """
+<p class="applies applies-block">
+	<applies-to-popover badge-key="Stack" badge-version="7.0+" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="true" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;The \u003Cstrong\u003EElastic Stack\u003C/strong\u003E includes Elastic\u0027s core products such as Elasticsearch, Kibana, Logstash, and Beats.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available since 7.0&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:&quot;Unless stated otherwise on the page, this functionality is available when your Elastic Stack is deployed on Elastic Cloud Hosted, Elastic Cloud Enterprise, Elastic Cloud on Kubernetes, and self-managed environments.&quot;,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the release notes for changes.&quot;}" show-popover="true" is-inline="false">
+</applies-to-popover>
+</p>
+"""
+
+type ``stack preview released version`` () =
+    static let markdown = Setup.Markdown """
+```{applies_to}
+stack: preview 7.0.0
+```
+"""
+
+    [<Fact>]
+    let ``renders preview since released version`` () =
+        markdown |> convertsToHtml """
+<p class="applies applies-block">
+	<applies-to-popover badge-key="Stack" badge-version="7.0+" lifecycle-class="preview" lifecycle-name="Preview" show-lifecycle-name="true" show-version="true" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;The \u003Cstrong\u003EElastic Stack\u003C/strong\u003E includes Elastic\u0027s core products such as Elasticsearch, Kibana, Logstash, and Beats.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Preview since 7.0&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is in technical preview and is not ready for production usage. Technical preview features may change or be removed at any time. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features. Specific Support terms apply.&quot;}],&quot;additionalInfo&quot;:&quot;Unless stated otherwise on the page, this functionality is available when your Elastic Stack is deployed on Elastic Cloud Hosted, Elastic Cloud Enterprise, Elastic Cloud on Kubernetes, and self-managed environments.&quot;,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the release notes for changes.&quot;}" show-popover="true" is-inline="false">
+</applies-to-popover>
+</p>
+"""
+
+type ``stack beta released version`` () =
+    static let markdown = Setup.Markdown """
+```{applies_to}
+stack: beta 7.0.0
+```
+"""
+
+    [<Fact>]
+    let ``renders beta since released version`` () =
+        markdown |> convertsToHtml """
+<p class="applies applies-block">
+	<applies-to-popover badge-key="Stack" badge-version="7.0+" lifecycle-class="beta" lifecycle-name="Beta" show-lifecycle-name="true" show-version="true" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;The \u003Cstrong\u003EElastic Stack\u003C/strong\u003E includes Elastic\u0027s core products such as Elasticsearch, Kibana, Logstash, and Beats.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Beta since 7.0&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is in beta and is not ready for production usage. For beta features, the design and code is less mature than official GA features and is being provided as-is with no warranties. Beta features are not subject to the support SLA of official GA features. Specific Support terms apply.&quot;}],&quot;additionalInfo&quot;:&quot;Unless stated otherwise on the page, this functionality is available when your Elastic Stack is deployed on Elastic Cloud Hosted, Elastic Cloud Enterprise, Elastic Cloud on Kubernetes, and self-managed environments.&quot;,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the release notes for changes.&quot;}" show-popover="true" is-inline="false">
+</applies-to-popover>
+</p>
+"""
+
+type ``stack deprecated released version`` () =
+    static let markdown = Setup.Markdown """
+```{applies_to}
+stack: deprecated 7.0.0
+```
+"""
+
+    [<Fact>]
+    let ``renders deprecated since released version`` () =
+        markdown |> convertsToHtml """
+<p class="applies applies-block">
+	<applies-to-popover badge-key="Stack" badge-version="7.0+" lifecycle-class="deprecated" lifecycle-name="Deprecated" show-lifecycle-name="true" show-version="true" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;The \u003Cstrong\u003EElastic Stack\u003C/strong\u003E includes Elastic\u0027s core products such as Elasticsearch, Kibana, Logstash, and Beats.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Deprecated since 7.0&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is deprecated. You can still use it, but it\u0027ll be removed in a future Elastic Stack update.&quot;}],&quot;additionalInfo&quot;:&quot;Unless stated otherwise on the page, this functionality is available when your Elastic Stack is deployed on Elastic Cloud Hosted, Elastic Cloud Enterprise, Elastic Cloud on Kubernetes, and self-managed environments.&quot;,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the release notes for changes.&quot;}" show-popover="true" is-inline="false">
+</applies-to-popover>
+</p>
+"""
+
+type ``stack removed released version`` () =
+    static let markdown = Setup.Markdown """
+```{applies_to}
+stack: removed 7.0.0
+```
+"""
+
+    [<Fact>]
+    let ``renders removed in released version`` () =
+        markdown |> convertsToHtml """
+<p class="applies applies-block">
+	<applies-to-popover badge-key="Stack" badge-version="7.0" lifecycle-class="removed" lifecycle-name="Removed" show-lifecycle-name="true" show-version="true" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;The \u003Cstrong\u003EElastic Stack\u003C/strong\u003E includes Elastic\u0027s core products such as Elasticsearch, Kibana, Logstash, and Beats.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Removed in 7.0&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality was removed. You can no longer use it if you\u0027re running on this version or a later one.&quot;}],&quot;additionalInfo&quot;:&quot;Unless stated otherwise on the page, this functionality is available when your Elastic Stack is deployed on Elastic Cloud Hosted, Elastic Cloud Enterprise, Elastic Cloud on Kubernetes, and self-managed environments.&quot;,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the release notes for changes.&quot;}" show-popover="true" is-inline="false">
+</applies-to-popover>
+</p>
+"""
+
+// Version spec syntax tests (exact and range)
+type ``stack ga exact version released`` () =
+    static let markdown = Setup.Markdown """
+```{applies_to}
+stack: ga =7.5
+```
+"""
+
+    [<Fact>]
+    let ``renders ga in exact released version`` () =
+        markdown |> convertsToHtml """
+<p class="applies applies-block">
+	<applies-to-popover badge-key="Stack" badge-version="7.5" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="true" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;The \u003Cstrong\u003EElastic Stack\u003C/strong\u003E includes Elastic\u0027s core products such as Elasticsearch, Kibana, Logstash, and Beats.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available in 7.5&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:&quot;Unless stated otherwise on the page, this functionality is available when your Elastic Stack is deployed on Elastic Cloud Hosted, Elastic Cloud Enterprise, Elastic Cloud on Kubernetes, and self-managed environments.&quot;,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the release notes for changes.&quot;}" show-popover="true" is-inline="false">
+</applies-to-popover>
+</p>
+"""
+
+type ``stack ga range both released`` () =
+    static let markdown = Setup.Markdown """
+```{applies_to}
+stack: ga 7.0-8.0
+```
+"""
+
+    [<Fact>]
+    let ``renders ga from-to when both ends released`` () =
+        markdown |> convertsToHtml """
+<p class="applies applies-block">
+	<applies-to-popover badge-key="Stack" badge-version="7.0-8.0" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="true" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;The \u003Cstrong\u003EElastic Stack\u003C/strong\u003E includes Elastic\u0027s core products such as Elasticsearch, Kibana, Logstash, and Beats.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available from 7.0 to 8.0&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:&quot;Unless stated otherwise on the page, this functionality is available when your Elastic Stack is deployed on Elastic Cloud Hosted, Elastic Cloud Enterprise, Elastic Cloud on Kubernetes, and self-managed environments.&quot;,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the release notes for changes.&quot;}" show-popover="true" is-inline="false">
+</applies-to-popover>
+</p>
+"""
+
+type ``stack ga range max unreleased`` () =
+    static let markdown = Setup.Markdown """
+```{applies_to}
+stack: ga 7.0-9.0
+```
+"""
+
+    [<Fact>]
+    let ``renders ga since min when max unreleased`` () =
+        markdown |> convertsToHtml """
+<p class="applies applies-block">
+	<applies-to-popover badge-key="Stack" badge-version="7.0+" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="true" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;The \u003Cstrong\u003EElastic Stack\u003C/strong\u003E includes Elastic\u0027s core products such as Elasticsearch, Kibana, Logstash, and Beats.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available since 7.0&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:&quot;Unless stated otherwise on the page, this functionality is available when your Elastic Stack is deployed on Elastic Cloud Hosted, Elastic Cloud Enterprise, Elastic Cloud on Kubernetes, and self-managed environments.&quot;,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the release notes for changes.&quot;}" show-popover="true" is-inline="false">
+</applies-to-popover>
+</p>
+"""
+
+// Multiple released lifecycles showing both in popover
+type ``preview and ga both released`` () =
+    static let markdown = Setup.Markdown """
+```{applies_to}
+stack: preview 7.0, ga 7.5
+```
+"""
+
+    [<Fact>]
+    let ``renders ga badge with both lifecycles in popover`` () =
+        markdown |> convertsToHtml """
+<p class="applies applies-block">
+	<applies-to-popover badge-key="Stack" badge-version="7.5+" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="true" show-version="true" has-multiple-lifecycles="true" popover-data="{&quot;productDescription&quot;:&quot;The \u003Cstrong\u003EElastic Stack\u003C/strong\u003E includes Elastic\u0027s core products such as Elasticsearch, Kibana, Logstash, and Beats.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available since 7.5&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;},{&quot;text&quot;:&quot;Preview from 7.0 to 7.4&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is in technical preview and is not ready for production usage. Technical preview features may change or be removed at any time. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features. Specific Support terms apply.&quot;}],&quot;additionalInfo&quot;:&quot;Unless stated otherwise on the page, this functionality is available when your Elastic Stack is deployed on Elastic Cloud Hosted, Elastic Cloud Enterprise, Elastic Cloud on Kubernetes, and self-managed environments.&quot;,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the release notes for changes.&quot;}" show-popover="true" is-inline="false">
+</applies-to-popover>
+</p>
+"""
