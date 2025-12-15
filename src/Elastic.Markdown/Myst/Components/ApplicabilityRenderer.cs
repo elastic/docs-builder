@@ -9,7 +9,7 @@ using Elastic.Documentation.Configuration.Versions;
 
 namespace Elastic.Markdown.Myst.Components;
 
-public class ApplicabilityRenderer
+public static class ApplicabilityRenderer
 {
 	/// <summary>
 	/// Represents a single availability item in the popover (e.g., "Generally available since 9.1").
@@ -139,12 +139,9 @@ public class ApplicabilityRenderer
 		var productName = GetPlainProductName(applicabilityDefinition.DisplayName);
 
 		// Availability section - collect items from all applicabilities
-		// Order by: available first (by version desc), then future (by version asc)
+		// Order by version descending (most recent/future first, then going backwards)
 		var orderedApplicabilities = applicabilities
-			.OrderByDescending(a => a.Version is null || a.Version is AllVersionsSpec ||
-								   (a.Version is { } vs && vs.Min <= versioningSystem.Current) ? 1 : 0)
-			.ThenByDescending(a => a.Version?.Min ?? new SemVersion(0, 0, 0))
-			.ThenBy(a => a.Version?.Min ?? new SemVersion(0, 0, 0))
+			.OrderByDescending(a => a.Version?.Min ?? new SemVersion(0, 0, 0))
 			.ToList();
 
 		var availabilityItems = new List<PopoverAvailabilityItem>();
