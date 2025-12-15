@@ -220,8 +220,9 @@ public class ApplicabilityRenderer
 			var baseVersion = $"{versioningSystem.Base.Major}.{versioningSystem.Base.Minor}";
 			return lifecycle switch
 			{
-				ProductLifecycle.Removed => $"Removed in {baseVersion}",
-				_ => $"{ProductLifecycleInfo.GetDisplayText(lifecycle)} since {baseVersion}"
+				ProductLifecycle.Removed => $"Removed in {baseVersion}+",
+				ProductLifecycle.Unavailable => $"Unavailable in {baseVersion}+",
+				_ => $"{ProductLifecycleInfo.GetDisplayText(lifecycle)} in {baseVersion}+"
 			};
 		}
 
