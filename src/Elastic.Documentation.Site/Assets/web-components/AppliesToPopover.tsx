@@ -59,7 +59,8 @@ const AppliesToPopover = ({
     // Detect touch device on mount
     useEffect(() => {
         const checkTouchDevice = () => {
-            const hasCoarsePointer = window.matchMedia('(pointer: coarse)').matches
+            const hasCoarsePointer =
+                window.matchMedia('(pointer: coarse)').matches
             const hasNoHover = window.matchMedia('(hover: none)').matches
             setIsTouchDevice(hasCoarsePointer || hasNoHover)
         }
