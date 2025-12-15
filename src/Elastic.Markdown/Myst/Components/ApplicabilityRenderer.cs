@@ -57,7 +57,6 @@ public static class ApplicabilityRenderer
 		// Find the first lifecycle that returns displayable badge data (non-empty text or version)
 		// If all return empty (all unreleased with multiple lifecycles), use the first one and show "Planned"
 		BadgeData? badgeData = null;
-		Applicability? applicabilityToDisplay = null;
 		BadgeData? firstBadgeData = null;
 		Applicability? firstApplicability = null;
 
@@ -74,20 +73,15 @@ public static class ApplicabilityRenderer
 				!string.IsNullOrEmpty(candidateBadgeData.Version))
 			{
 				badgeData = candidateBadgeData;
-				applicabilityToDisplay = applicability;
 				break;
 			}
 		}
 
 		// If we've exhausted all options (none had displayable data), use the first one with "Planned"
 		if (badgeData is null && firstBadgeData is not null)
-		{
 			badgeData = firstBadgeData with { BadgeLifecycleText = "Planned" };
-			applicabilityToDisplay = firstApplicability;
-		}
 
 		badgeData ??= GetBadgeData(sortedApplicabilities.First(), versioningSystem, allApplications);
-		applicabilityToDisplay ??= sortedApplicabilities.First();
 
 		var popoverData = BuildPopoverData(applicabilities, applicabilityDefinition, versioningSystem);
 
