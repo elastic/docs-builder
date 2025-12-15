@@ -39,6 +39,7 @@
 		Breadcrumbs = Model.Breadcrumbs,
 		CurrentVersion = Model.CurrentDocument.YamlFrontMatter?.Layout == MarkdownPageLayout.LandingPage ? Model.VersionsConfig.VersioningSystems[0].Current : Model.CurrentVersion,
 		AllVersionsUrl = Model.AllVersionsUrl,
+		VersioningSystem = Model.VersioningSystem,
 		VersionDropdownSerializedModel = JsonSerializer.Serialize(Model.VersionDropdownItems,
 			ViewModelSerializerContext.Default.VersionDropDownItemViewModelArray),
 	};
