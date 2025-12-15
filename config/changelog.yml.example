@@ -76,3 +76,15 @@ label_to_areas:
   # "area:index": index-management
   # "area:multiple": "search, security"  # Multiple areas comma-separated
 
+# Product-specific label blockers (optional)
+# Maps product IDs to lists of labels that prevent changelog creation for that product
+# If you run the changelog add command with the --prs option and a PR has any of these labels, the changelog is not created
+product_label_blockers:
+  # Example: Skip changelog for cloud.serverless product when PR has "Watcher" label
+  # cloud-serverless:
+  #   - ":Data Management/Watcher"
+  #   - ">non-issue"
+  # Example: Skip changelog creation for elasticsearch product when PR has "skip:releaseNotes" label
+  # elasticsearch:
+  #   - ">non-issue"
+
