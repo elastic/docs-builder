@@ -271,15 +271,16 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 
 		// Rule: Only one version declaration per lifecycle
 		var lifecycleGroups = items.GroupBy(a => a.Lifecycle).ToList();
-		foreach (var group in lifecycleGroups)
+		var lifecyclesWithMultipleVersions = lifecycleGroups
+			.Where(group => group.Count(a => a.Version is not null && a.Version != AllVersionsSpec.Instance) > 1)
+			.Select(g => g.Key)
+			.ToList();
+
+		if (lifecyclesWithMultipleVersions.Count > 0)
 		{
-			var lifecycleVersionedItems = group.Where(a => a.Version is not null &&
-														  a.Version != AllVersionsSpec.Instance).ToList();
-			if (lifecycleVersionedItems.Count > 1)
-			{
-				diagnostics.Add((Severity.Warning,
-					$"Key '{key}': Multiple version declarations for {group.Key} lifecycle. Only one version per lifecycle is allowed."));
-			}
+			var lifecycleNames = string.Join(", ", lifecyclesWithMultipleVersions);
+			diagnostics.Add((Severity.Warning,
+				$"Key '{key}': Multiple version declarations found for lifecycle(s): {lifecycleNames}. Only one version per lifecycle is allowed."));
 		}
 
 		// Rule: Only one item per key can use greater-than syntax
@@ -294,37 +295,42 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		}
 
 		// Rule: In a range, the first version must be less than or equal the last version
-		foreach (var item in items.Where(a => a.Version is { Kind: VersionSpecKind.Range }))
+		var invalidRanges = items
+			.Where(a => a.Version is { Kind: VersionSpecKind.Range } && a.Version!.Min.CompareTo(a.Version.Max!) > 0)
+			.ToList();
+
+		if (invalidRanges.Count > 0)
 		{
-			var spec = item.Version!;
-			if (spec.Min.CompareTo(spec.Max!) > 0)
-			{
-				diagnostics.Add((Severity.Warning,
-					$"Key '{key}', {item.Lifecycle}: Range has first version ({spec.Min.Major}.{spec.Min.Minor}) greater than last version ({spec.Max!.Major}.{spec.Max.Minor})."));
-			}
+			var rangeDescriptions = invalidRanges.Select(item =>
+				$"{item.Lifecycle} ({item.Version!.Min.Major}.{item.Version.Min.Minor}-{item.Version.Max!.Major}.{item.Version.Max.Minor})");
+			diagnostics.Add((Severity.Warning,
+				$"Key '{key}': Invalid range(s) where first version is greater than last version: {string.Join(", ", rangeDescriptions)}."));
 		}
 
 		// Rule: No overlapping version ranges for the same key
-		var versionedItems = items.Where(a => a.Version is not null &&
-											 a.Version != AllVersionsSpec.Instance).ToList();
+		var versionedItems = items
+			.Where(a => a.Version is not null && a.Version != AllVersionsSpec.Instance)
+			.ToList();
 
-		for (var i = 0; i < versionedItems.Count; i++)
+		var hasOverlaps = false;
+		for (var i = 0; i < versionedItems.Count && !hasOverlaps; i++)
 		{
-			for (var j = i + 1; j < versionedItems.Count; j++)
+			for (var j = i + 1; j < versionedItems.Count && !hasOverlaps; j++)
 			{
-				if (CheckVersionOverlap(versionedItems[i].Version!, versionedItems[j].Version!, out var overlapMsg))
-				{
-					diagnostics.Add((Severity.Warning,
-						$"Key '{key}': Overlapping versions between {versionedItems[i].Lifecycle} and {versionedItems[j].Lifecycle}. {overlapMsg}"));
-				}
+				if (CheckVersionOverlap(versionedItems[i].Version!, versionedItems[j].Version!))
+					hasOverlaps = true;
 			}
+		}
+
+		if (hasOverlaps)
+		{
+			diagnostics.Add((Severity.Warning,
+				$"Key '{key}': Overlapping version ranges detected. Ensure version ranges do not overlap within the same key."));
 		}
 	}
 
-	private static bool CheckVersionOverlap(VersionSpec v1, VersionSpec v2, out string message)
+	private static bool CheckVersionOverlap(VersionSpec v1, VersionSpec v2)
 	{
-		message = string.Empty;
-
 		// Get the effective ranges for each version spec
 		// For GreaterThanOrEqual: [min, infinity)
 		// For Range: [min, max]
@@ -333,13 +339,8 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		var (v1Min, v1Max) = GetEffectiveRange(v1);
 		var (v2Min, v2Max) = GetEffectiveRange(v2);
 
-		var overlaps = v1Min.CompareTo(v2Max ?? new SemVersion(99999, 0, 0)) <= 0 &&
-						v2Min.CompareTo(v1Max ?? new SemVersion(99999, 0, 0)) <= 0;
-
-		if (overlaps)
-			message = $"Version ranges overlap.";
-
-		return overlaps;
+		return v1Min.CompareTo(v2Max ?? new SemVersion(99999, 0, 0)) <= 0 &&
+			   v2Min.CompareTo(v1Max ?? new SemVersion(99999, 0, 0)) <= 0;
 	}
 
 	private static (SemVersion min, SemVersion? max) GetEffectiveRange(VersionSpec spec) => spec.Kind switch
