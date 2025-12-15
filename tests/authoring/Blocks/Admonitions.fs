@@ -64,18 +64,8 @@ This is a custom admonition with applies_to information.
 	<div class="admonition-header">
 		<span class="admonition-title">Note</span>
 		<span class="applies applies-admonition">
-			<span class="applicable-info" data-tippy-content="Available since 8.0.
-
-If this functionality is unavailable or behaves differently when deployed on ECH, ECE, ECK, or a self-managed installation, it will be indicated on the page.">
-				<span class="applicable-name">Stack</span>
- 				<span class="applicable-separator"></span>
- 				<span class="applicable-meta applicable-meta-ga">
- 					<span class="applicable-version applicable-version-ga">
- 						8.0+
- 					</span>
- 				</span>
- 			</span>
- 		</span>
+			<applies-to-popover badge-key="Stack" badge-version="8.0+" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="true" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;The \u003Cstrong\u003EElastic Stack\u003C/strong\u003E includes Elastic\u0027s core products such as Elasticsearch, Kibana, Logstash, and Beats.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available since 8.0&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:&quot;Unless stated otherwise on the page, this functionality is available when your Elastic Stack is deployed on Elastic Cloud Hosted, Elastic Cloud Enterprise, Elastic Cloud on Kubernetes, and self-managed environments.&quot;,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the release notes for changes.&quot;}" show-popover="true" is-inline="true"></applies-to-popover>
+		</span>
 		<span class="admonition-title__separator"></span>
 	</div>
 	<div class="admonition-content">
@@ -86,16 +76,8 @@ If this functionality is unavailable or behaves differently when deployed on ECH
 	<div class="admonition-header">
 		<span class="admonition-title">Warning</span>
 		<span class="applies applies-admonition">
-			<span class="applicable-info" data-tippy-content="Available since 8.0.">
-				<span class="applicable-name">Serverless</span>
- 				<span class="applicable-separator"></span>
- 				<span class="applicable-meta applicable-meta-ga">
- 					<span class="applicable-version applicable-version-ga">
- 						8.0+
- 					</span>
- 				</span>
- 			</span>
- 		</span>
+			<applies-to-popover badge-key="Serverless" badge-version="8.0+" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="true" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003EElastic Cloud Serverless\u003C/strong\u003E projects are autoscaled environments, fully managed by Elastic and available on Elastic Cloud.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available since 8.0&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:&quot;Serverless interfaces and procedures might differ from classic Elastic Stack deployments.&quot;,&quot;showVersionNote&quot;:false,&quot;versionNote&quot;:null}" show-popover="true" is-inline="true"></applies-to-popover>
+		</span>
 		<span class="admonition-title__separator"></span>
 	</div>
 	<div class="admonition-content">
@@ -106,18 +88,7 @@ If this functionality is unavailable or behaves differently when deployed on ECH
 	<div class="admonition-header">
 		<span class="admonition-title">Tip</span>
 		<span class="applies applies-admonition">
-			<span class="applicable-info" data-tippy-content="Available in technical preview since 8.0.
-
-This functionality may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.">
-				<span class="applicable-name">Serverless Elasticsearch</span>
-				<span class="applicable-separator"></span>
-				<span class="applicable-meta applicable-meta-preview">
-					<span class="applicable-lifecycle applicable-lifecycle-preview">Preview</span>
- 					<span class="applicable-version applicable-version-preview">
- 						8.0+
- 					</span>
-				</span>
-			</span>
+			<applies-to-popover badge-key="Serverless Elasticsearch" badge-version="8.0+" lifecycle-class="preview" lifecycle-name="Preview" show-lifecycle-name="true" show-version="true" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003EElastic Cloud Serverless\u003C/strong\u003E projects are autoscaled environments, fully managed by Elastic and available on Elastic Cloud.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Preview since 8.0&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is in technical preview and is not ready for production usage. Technical preview features may change or be removed at any time. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features. Specific Support terms apply.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:false,&quot;versionNote&quot;:null}" show-popover="true" is-inline="true"></applies-to-popover>
 		</span>
 		<span class="admonition-title__separator"></span>
 	</div>

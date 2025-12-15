@@ -30,15 +30,11 @@ This is an inline {applies_to}`stack: preview 9.1` element.
         markdown |> convertsToHtml """
 <p>This is an inline
 	<span class="applies applies-inline">
-		<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Elastic&nbsp;Stack update. Subject to change.
-
-This functionality may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.">
-			<span class="applicable-name">Stack</span>
-			<span class="applicable-separator"></span>
-			<span class="applicable-meta applicable-meta-preview">
-				Planned
-			</span>
-		</span>
+		<applies-to-popover badge-key="Stack" badge-lifecycle-text="Planned" lifecycle-class="preview" lifecycle-name="Preview" 
+		    show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" 
+		    popover-data="{&quot;productDescription&quot;:&quot;The \u003Cstrong\u003EElastic Stack\u003C/strong\u003E includes Elastic\u0027s core products such as Elasticsearch, Kibana, Logstash, and Beats.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Planned&quot;,&quot;lifecycleDescription&quot;:&quot;We plan to add this functionality in a future Elastic Stack update. Subject to changes.&quot;}],&quot;additionalInfo&quot;:&quot;Unless stated otherwise on the page, this functionality is available when your Elastic Stack is deployed on Elastic Cloud Hosted, Elastic Cloud Enterprise, Elastic Cloud on Kubernetes, and self-managed environments.&quot;,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the release notes for changes.&quot;}"
+		    show-popover="true" is-inline="true">
+        </applies-to-popover>
 	</span>
 	element.</p>
 """
@@ -122,7 +118,7 @@ type ``parses multiple applies_to in one line`` () =
             )
         ))
 
-type ``render 'GA Planned' if preview exists alongside ga`` () =
+type ``render 'Preview' for GA in future version`` () =
     static let markdown = Setup.Markdown """
 
 This is an inline {applies_to}`stack: preview 8.0, ga 8.1` element.
@@ -141,27 +137,11 @@ This is an inline {applies_to}`stack: preview 8.0, ga 8.1` element.
         markdown |> convertsToHtml """
 <p>This is an inline
 	<span class="applies applies-inline">
-        <span class="applicable-info" data-tippy-content="<div><strong>Elastic&nbsp;Stack Preview 8.0.0:</strong>Available in technical preview on Elastic&nbsp;Stack version 8.0.0 and later unless otherwise specified.
-
-This functionality may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.</div>
-
-<div><strong>Elastic&nbsp;Stack GA 8.1.0:</strong>We plan to add this functionality in a future Elastic&nbsp;Stack update. Subject to change.
-
-If this functionality is unavailable or behaves differently when deployed on ECH, ECE, ECK, or a self-managed installation, it will be indicated on the page.</div>">
-			<span class="applicable-name">Stack</span>
-			<span class="applicable-separator"></span>
-			<span class="applicable-meta applicable-meta-preview">
-				<span class="applicable-lifecycle applicable-lifecycle-preview">Preview</span>
- 				<span class="applicable-version applicable-version-preview">
- 					8.0
- 				</span>
-				<span class="applicable-ellipsis">
-				    <span class="applicable-ellipsis__dot"></span>
-				    <span class="applicable-ellipsis__dot"></span>
-				    <span class="applicable-ellipsis__dot"></span>
-				</span>
-			</span>
-		</span>
+			<applies-to-popover badge-key="Stack" badge-version="8.0" lifecycle-class="preview" lifecycle-name="Preview" 
+			    show-lifecycle-name="true" show-version="true" has-multiple-lifecycles="true" 
+			    popover-data="{&quot;productDescription&quot;:&quot;The \u003Cstrong\u003EElastic Stack\u003C/strong\u003E includes Elastic\u0027s core products such as Elasticsearch, Kibana, Logstash, and Beats.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Preview in 8.0&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is in technical preview and is not ready for production usage. Technical preview features may change or be removed at any time. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features. Specific Support terms apply.&quot;}],&quot;additionalInfo&quot;:&quot;Unless stated otherwise on the page, this functionality is available when your Elastic Stack is deployed on Elastic Cloud Hosted, Elastic Cloud Enterprise, Elastic Cloud on Kubernetes, and self-managed environments.&quot;,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the release notes for changes.&quot;}" 
+			    show-popover="true" is-inline="true">
+            </applies-to-popover>
 	</span>
 	element.</p>
 """
