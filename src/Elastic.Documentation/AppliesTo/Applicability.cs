@@ -100,7 +100,7 @@ public record AppliesCollection : IReadOnlyCollection<Applicability>
 					versionMapping[currentVersion] = VersionSpec.Exact(currentVersion);
 				else
 				{
-					var rangeEnd = new SemVersion(nextVersion.Major, nextVersion.Minor - 1, 0);
+					var rangeEnd = new SemVersion(nextVersion.Major, nextVersion.Minor == 0 ? nextVersion.Minor : nextVersion.Minor - 1, 0);
 					versionMapping[currentVersion] = VersionSpec.Range(currentVersion, rangeEnd);
 				}
 			}

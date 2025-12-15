@@ -282,7 +282,7 @@ edot_python: preview 9.2.0
 """
 
 // Test complex scenarios with multiple lifecycles
-type ``mixed unreleased lifecycles falls back to preview`` () =
+type ``mixed unreleased lifecycles falls back to planned`` () =
     static let markdown = Setup.Markdown """
 ```{applies_to}
 stack: ga 8.8.0, preview 8.1.0
@@ -290,10 +290,10 @@ stack: ga 8.8.0, preview 8.1.0
 """
 
     [<Fact>]
-    let ``renders Preview when GA and Preview both exist for an unreleased entry`` () =
+    let ``renders Planned when GA and Preview are both unreleased`` () =
         markdown |> convertsToHtml """
 <p class="applies applies-block">
-	<applies-to-popover badge-key="Stack" lifecycle-class="preview" lifecycle-name="Preview" show-lifecycle-name="true" show-version="false" has-multiple-lifecycles="true" popover-data="{&quot;productDescription&quot;:&quot;The \u003Cstrong\u003EElastic Stack\u003C/strong\u003E includes Elastic\u0027s core products such as Elasticsearch, Kibana, Logstash, and Beats.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available since 8.8&quot;,&quot;lifecycleDescription&quot;:&quot;We plan to add this functionality in a future Elastic Stack update. Subject to changes.&quot;},{&quot;text&quot;:&quot;Preview since 8.1&quot;,&quot;lifecycleDescription&quot;:&quot;We plan to add this functionality in a future Elastic Stack update. Subject to changes.&quot;}],&quot;additionalInfo&quot;:&quot;Unless stated otherwise on the page, this functionality is available when your Elastic Stack is deployed on Elastic Cloud Hosted, Elastic Cloud Enterprise, Elastic Cloud on Kubernetes, and self-managed environments.&quot;,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the release notes for changes.&quot;}" show-popover="true" is-inline="false">
+	<applies-to-popover badge-key="Stack" badge-lifecycle-text="Planned" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="true" popover-data="{&quot;productDescription&quot;:&quot;The \u003Cstrong\u003EElastic Stack\u003C/strong\u003E includes Elastic\u0027s core products such as Elasticsearch, Kibana, Logstash, and Beats.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available since 8.8&quot;,&quot;lifecycleDescription&quot;:&quot;We plan to add this functionality in a future Elastic Stack update. Subject to changes.&quot;},{&quot;text&quot;:&quot;Preview since 8.1&quot;,&quot;lifecycleDescription&quot;:&quot;We plan to add this functionality in a future Elastic Stack update. Subject to changes.&quot;}],&quot;additionalInfo&quot;:&quot;Unless stated otherwise on the page, this functionality is available when your Elastic Stack is deployed on Elastic Cloud Hosted, Elastic Cloud Enterprise, Elastic Cloud on Kubernetes, and self-managed environments.&quot;,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the release notes for changes.&quot;}" show-popover="true" is-inline="false">
 </applies-to-popover>
 </p>
 """
