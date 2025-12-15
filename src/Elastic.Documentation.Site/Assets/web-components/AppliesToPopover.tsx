@@ -50,10 +50,24 @@ const AppliesToPopover = ({
     const [isOpen, setIsOpen] = useState(false)
     const [isPinned, setIsPinned] = useState(false)
     const [openItems, setOpenItems] = useState<Set<number>>(new Set())
+    const [isTouchDevice, setIsTouchDevice] = useState(false)
     const popoverId = useGeneratedHtmlId({ prefix: 'appliesToPopover' })
     const contentRef = useRef<HTMLDivElement>(null)
     const badgeRef = useRef<HTMLSpanElement>(null)
     const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+    // Detect touch device on mount
+    useEffect(() => {
+        const checkTouchDevice = () => {
+            const hasCoarsePointer = window.matchMedia('(pointer: coarse)').matches
+            const hasNoHover = window.matchMedia('(hover: none)').matches
+            setIsTouchDevice(hasCoarsePointer || hasNoHover)
+        }
+        checkTouchDevice()
+        // Re-check on resize in case device mode changes (e.g., dev tools toggle)
+        window.addEventListener('resize', checkTouchDevice)
+        return () => window.removeEventListener('resize', checkTouchDevice)
+    }, [])
 
     const hasPopoverContent =
         popoverData &&
@@ -75,6 +89,10 @@ const AppliesToPopover = ({
     }, [isPinned])
 
     const handleClick = useCallback(() => {
+        // Only allow click/pin behavior on touch devices
+        // On desktop, the popover is tooltip-like (hover only)
+        if (!isTouchDevice) return
+
         if (showPopover && hasPopoverContent) {
             if (isPinned) {
                 // If already pinned, unpin and close
@@ -86,7 +104,7 @@ const AppliesToPopover = ({
                 setIsOpen(true)
             }
         }
-    }, [showPopover, hasPopoverContent, isPinned])
+    }, [showPopover, hasPopoverContent, isPinned, isTouchDevice])
 
     const toggleItem = useCallback((index: number, e: React.MouseEvent) => {
         e.stopPropagation()
@@ -165,6 +183,9 @@ const AppliesToPopover = ({
     const showSeparator =
         badgeKey && (showLifecycleName || showVersion || badgeLifecycleText)
 
+    // Only show interactive attributes on touch devices
+    const isInteractive = showPopover && hasPopoverContent && isTouchDevice
+
     const badgeButton = (
         <span
             ref={badgeRef}
@@ -172,14 +193,10 @@ const AppliesToPopover = ({
             onClick={handleClick}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
-            role={showPopover && hasPopoverContent ? 'button' : undefined}
-            tabIndex={showPopover && hasPopoverContent ? 0 : undefined}
+            role={isInteractive ? 'button' : undefined}
+            tabIndex={isInteractive ? 0 : undefined}
             onKeyDown={(e) => {
-                if (
-                    showPopover &&
-                    hasPopoverContent &&
-                    (e.key === 'Enter' || e.key === ' ')
-                ) {
+                if (isInteractive && (e.key === 'Enter' || e.key === ' ')) {
                     e.preventDefault()
                     handleClick()
                 }
