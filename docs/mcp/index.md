@@ -6,9 +6,15 @@
 
 The MCP server currently exposes the following tools:
 
+### Cross-link tools
+
 | Tool | Description |
 |------|-------------|
-| `Echo` | Echoes a greeting message back to the client. |
+| `ResolveCrossLink` | Resolves a cross-link (like `docs-content://get-started/intro.md`) to its target URL and returns available anchors. |
+| `ListRepositories` | Lists all repositories available in the cross-link index with their metadata. |
+| `GetRepositoryLinks` | Gets all pages and their anchors published by a specific repository. |
+| `FindCrossLinks` | Finds all cross-links between repositories. Can filter by source or target repository. |
+| `ValidateCrossLinks` | Validates cross-links to a repository and reports any broken links. |
 
 ## Configuration
 

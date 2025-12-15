@@ -11,5 +11,11 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Console" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Elastic.Documentation\Elastic.Documentation.csproj" />
+    <ProjectReference Include="..\Elastic.Documentation.Links\Elastic.Documentation.Links.csproj" />
+    <ProjectReference Include="..\Elastic.Documentation.LinkIndex\Elastic.Documentation.LinkIndex.csproj" />
+  </ItemGroup>
+
 </Project>
 
