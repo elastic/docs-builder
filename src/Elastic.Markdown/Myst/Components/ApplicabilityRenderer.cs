@@ -412,7 +412,6 @@ public static class ApplicabilityRenderer
 		switch (versionSpec)
 		{
 			case AllVersionsSpec:
-				return string.Empty;
 			case null:
 				// Only show base version if the product is versioned
 				return versioningSystem.Base.Major != AllVersionsSpec.Instance.Min.Major

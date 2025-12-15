@@ -101,6 +101,7 @@ deployment:
   eck: beta 3.0, ga 3.1
 ```
 
+
 ## Additional content
 
 To follow this tutorial you will need to install the following components:
@@ -115,3 +116,5 @@ The tutorial assumes that you have no previous knowledge of Elasticsearch or gen
 - The command prompt or terminal application in your operating system.
 
 {applies_to}`ece: removed`
+
+{applies_to}`ece: `
