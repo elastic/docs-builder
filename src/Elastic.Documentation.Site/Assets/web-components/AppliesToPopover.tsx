@@ -55,12 +55,12 @@ const AppliesToPopover = ({
     const badgeRef = useRef<HTMLSpanElement>(null)
     const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-    const hasPopoverContent = popoverData && (
-        popoverData.productDescription ||
-        popoverData.availabilityItems.length > 0 ||
-        popoverData.additionalInfo ||
-        popoverData.showVersionNote
-    )
+    const hasPopoverContent =
+        popoverData &&
+        (popoverData.productDescription ||
+            popoverData.availabilityItems.length > 0 ||
+            popoverData.additionalInfo ||
+            popoverData.showVersionNote)
 
     const openPopover = useCallback(() => {
         if (showPopover && hasPopoverContent) {
@@ -268,7 +268,13 @@ const AppliesToPopover = ({
                             }
                         `}
                     >
-                        <span css={css`flex: 1;`}>{item.text}</span>
+                        <span
+                            css={css`
+                                flex: 1;
+                            `}
+                        >
+                            {item.text}
+                        </span>
                     </div>
                     {isItemOpen && (
                         <p
