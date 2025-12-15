@@ -157,6 +157,9 @@ toc:
         children:
           - file: index.md
           - file: changelog-add.md
+  - folder: mcp
+    children:
+      - file: index.md
   - folder: migration
     children:
       - file: index.md
