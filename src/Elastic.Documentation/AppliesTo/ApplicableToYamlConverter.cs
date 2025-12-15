@@ -307,7 +307,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 				$"Key '{key}': Invalid range(s) where first version is greater than last version: {string.Join(", ", rangeDescriptions)}."));
 		}
 
-		// Rule: No overlapping version ranges for the same key
+		// Rule: No overlapping version ranges
 		var versionedItems = items
 			.Where(a => a.Version is not null && a.Version != AllVersionsSpec.Instance)
 			.ToList();
@@ -331,6 +331,14 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 
 	private static bool CheckVersionOverlap(VersionSpec v1, VersionSpec v2)
 	{
+		// Special case: two gte specs with different min versions represent a version progression
+		// e.g., "deprecated 7.16.0, removed 8.0.0" - these don't truly overlap, version inference
+		// will convert the earlier one to a range
+		if (v1.Kind == VersionSpecKind.GreaterThanOrEqual &&
+			v2.Kind == VersionSpecKind.GreaterThanOrEqual &&
+			v1.Min.CompareTo(v2.Min) != 0)
+			return false;
+
 		// Get the effective ranges for each version spec
 		// For GreaterThanOrEqual: [min, infinity)
 		// For Range: [min, max]

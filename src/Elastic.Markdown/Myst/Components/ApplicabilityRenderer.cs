@@ -78,7 +78,9 @@ public static class ApplicabilityRenderer
 		}
 
 		// If we've exhausted all options (none had displayable data), use the first one with "Planned"
-		if (badgeData is null && firstBadgeData is not null)
+		// But only for versioned products - unversioned products (base=99999) should show empty badge
+		var isVersionedProduct = versioningSystem.Base.Major != AllVersionsSpec.Instance.Min.Major;
+		if (badgeData is null && firstBadgeData is not null && isVersionedProduct)
 			badgeData = firstBadgeData with { BadgeLifecycleText = "Planned" };
 
 		badgeData ??= GetBadgeData(sortedApplicabilities.First(), versioningSystem, allApplications);

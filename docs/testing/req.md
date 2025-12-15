@@ -126,3 +126,5 @@ The tutorial assumes that you have no previous knowledge of Elasticsearch or gen
 {applies_to}`ece: `
 
 {applies_to}`stack: deprecated 7.16.0, removed 8.0.0`
+
+{applies_to}`ess: `
