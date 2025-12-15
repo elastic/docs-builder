@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Text.Json.Serialization;
 using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Versions;
@@ -10,10 +11,29 @@ namespace Elastic.Markdown.Myst.Components;
 
 public class ApplicabilityRenderer
 {
+	/// <summary>
+	/// Represents a single availability item in the popover (e.g., "Generally available since 9.1").
+	/// </summary>
+	public record PopoverAvailabilityItem(
+		[property: JsonPropertyName("text")] string Text,
+		[property: JsonPropertyName("lifecycleDescription")] string? LifecycleDescription
+	);
+
+	/// <summary>
+	/// Structured data for the popover content, to be serialized as JSON and rendered by the frontend.
+	/// </summary>
+	public record PopoverData(
+		[property: JsonPropertyName("productDescription")] string? ProductDescription,
+		[property: JsonPropertyName("availabilityItems")] PopoverAvailabilityItem[] AvailabilityItems,
+		[property: JsonPropertyName("additionalInfo")] string? AdditionalInfo,
+		[property: JsonPropertyName("showVersionNote")] bool ShowVersionNote,
+		[property: JsonPropertyName("versionNote")] string? VersionNote
+	);
+
 	public record ApplicabilityRenderData(
 		string BadgeLifecycleText,
 		string Version,
-		string TooltipText,
+		PopoverData? PopoverData,
 		string LifecycleClass,
 		string LifecycleName,
 		bool ShowLifecycleName,
@@ -50,7 +70,7 @@ public class ApplicabilityRenderer
 			? primaryBadgeData
 			: GetBadgeData(applicabilityToDisplay, versioningSystem, allApplications);
 
-		var popoverContent = BuildPopoverContent(applicabilityList, applicabilityDefinition, versioningSystem);
+		var popoverData = BuildPopoverData(applicabilityList, applicabilityDefinition, versioningSystem);
 
 		// Check if there are multiple different lifecycles
 		var hasMultipleLifecycles = applicabilityList.Select(a => a.Lifecycle).Distinct().Count() > 1;
@@ -58,7 +78,7 @@ public class ApplicabilityRenderer
 		return new ApplicabilityRenderData(
 			BadgeLifecycleText: badgeData.BadgeLifecycleText,
 			Version: badgeData.Version,
-			TooltipText: popoverContent,
+			PopoverData: popoverData,
 			LifecycleClass: badgeData.LifecycleClass,
 			LifecycleName: badgeData.LifecycleName,
 			ShowLifecycleName: badgeData.ShowLifecycleName || (string.IsNullOrEmpty(badgeData.BadgeLifecycleText) && hasMultipleLifecycles),
@@ -110,22 +130,13 @@ public class ApplicabilityRenderer
 		bool ShowVersion
 	);
 
-	private static string BuildPopoverContent(
+	private static PopoverData BuildPopoverData(
 		List<Applicability> applicabilities,
 		ApplicabilityMappings.ApplicabilityDefinition applicabilityDefinition,
 		VersioningSystem versioningSystem)
 	{
 		var productInfo = ProductDescriptions.GetProductInfo(versioningSystem.Id);
 		var productName = GetPlainProductName(applicabilityDefinition.DisplayName);
-
-		var parts = new List<string>();
-
-		// Product description
-		if (productInfo is not null && !string.IsNullOrEmpty(productInfo.Description))
-		{
-			// language=html
-			parts.Add($"<p class=\"popover-product-description\">{productInfo.Description}</p>");
-		}
 
 		// Availability section - collect items from all applicabilities
 		// Order by: available first (by version desc), then future (by version asc)
@@ -136,53 +147,40 @@ public class ApplicabilityRenderer
 			.ThenBy(a => a.Version?.Min ?? new SemVersion(0, 0, 0))
 			.ToList();
 
-		var allAvailabilityItems = new List<string>();
+		var availabilityItems = new List<PopoverAvailabilityItem>();
 		foreach (var applicability in orderedApplicabilities)
 		{
-			var items = BuildAvailabilityItems(applicability, versioningSystem, productName, applicabilities.Count);
-			allAvailabilityItems.AddRange(items);
+			var item = BuildAvailabilityItem(applicability, versioningSystem, productName, applicabilities.Count);
+			if (item is not null)
+				availabilityItems.Add(item);
 		}
 
-		if (allAvailabilityItems.Count > 0)
-		{
-			// language=html
-			parts.Add("<p class=\"popover-availability-title\"><strong>Availability</strong></p>");
-			parts.Add("<p class=\"popover-availability-intro\">The functionality described here is:</p>");
-			parts.Add(string.Join("\n", allAvailabilityItems));
-		}
+		var showVersionNote = productInfo is { IncludeVersionNote: true } &&
+							  versioningSystem.Base.Major != AllVersionsSpec.Instance.Min.Major;
 
-		// Additional availability info
-		if (productInfo is { AdditionalAvailabilityInfo: not null })
-		{
-			// language=html
-			parts.Add($"<p class=\"popover-additional-info\">{productInfo.AdditionalAvailabilityInfo}</p>");
-		}
-
-		// Version note
-		if (productInfo is { IncludeVersionNote: true } && versioningSystem.Base.Major != AllVersionsSpec.Instance.Min.Major)
-		{
-			// language=html
-			parts.Add($"<p class=\"popover-version-note\"><span class=\"popover-note-icon\">ⓘ</span> {ProductDescriptions.VersionNote}</p>");
-		}
-
-		return string.Join("\n", parts);
+		return new PopoverData(
+			ProductDescription: productInfo?.Description,
+			AvailabilityItems: availabilityItems.ToArray(),
+			AdditionalInfo: productInfo?.AdditionalAvailabilityInfo,
+			ShowVersionNote: showVersionNote,
+			VersionNote: showVersionNote ? ProductDescriptions.VersionNote : null
+		);
 	}
 
 	/// <summary>
-	/// Builds the availability list items (details/summary elements) for an applicability.
+	/// Builds an availability item for an applicability.
+	/// Returns null if the item should not be added to the availability list.
 	/// </summary>
-	private static List<string> BuildAvailabilityItems(
+	private static PopoverAvailabilityItem? BuildAvailabilityItem(
 		Applicability applicability,
 		VersioningSystem versioningSystem,
 		string productName,
 		int lifecycleCount)
 	{
-		var items = new List<string>();
-
 		var availabilityText = GenerateAvailabilityText(applicability, versioningSystem, lifecycleCount);
 
 		if (availabilityText is null)
-			return items;
+			return null;
 
 		var isReleased = IsVersionReleased(applicability, versioningSystem);
 		var lifecycleDescription = LifecycleDescriptions.GetDescriptionWithProduct(
@@ -191,25 +189,10 @@ public class ApplicabilityRenderer
 			productName
 		);
 
-		// Build the details/summary element for collapsible lifecycle description
-		if (!string.IsNullOrEmpty(lifecycleDescription))
-		{
-			// language=html
-			items.Add($"""
-<details class="popover-availability-item">
-<summary class="popover-availability-summary"><span class="popover-availability-text">{availabilityText}</span></summary>
-<p class="popover-lifecycle-description">{lifecycleDescription}</p>
-</details>
-""");
-		}
-		else
-		{
-			// No collapsible content, just show the text
-			// language=html
-			items.Add($"<p class=\"popover-availability-item-simple\">{availabilityText}</p>");
-		}
-
-		return items;
+		return new PopoverAvailabilityItem(
+			Text: availabilityText,
+			LifecycleDescription: lifecycleDescription
+		);
 	}
 
 	/// <summary>

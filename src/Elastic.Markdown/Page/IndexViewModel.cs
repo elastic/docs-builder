@@ -12,6 +12,7 @@ using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Markdown.IO;
+using Elastic.Markdown.Myst.Components;
 
 namespace Elastic.Markdown.Page;
 
@@ -136,4 +137,5 @@ public class VersionDropDownItemViewModel
 }
 
 [JsonSerializable(typeof(VersionDropDownItemViewModel[]))]
+[JsonSerializable(typeof(ApplicabilityRenderer.PopoverData))]
 public partial class ViewModelSerializerContext : JsonSerializerContext;

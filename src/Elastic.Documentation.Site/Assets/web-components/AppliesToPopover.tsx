@@ -7,6 +7,19 @@ import r2wc from '@r2wc/react-to-web-component'
 import * as React from 'react'
 import { useState, useRef, useEffect, useCallback } from 'react'
 
+type PopoverAvailabilityItem = {
+    text: string
+    lifecycleDescription?: string
+}
+
+type PopoverData = {
+    productDescription?: string
+    availabilityItems: PopoverAvailabilityItem[]
+    additionalInfo?: string
+    showVersionNote: boolean
+    versionNote?: string
+}
+
 type AppliesToPopoverProps = {
     badgeKey?: string
     badgeLifecycleText?: string
@@ -16,7 +29,7 @@ type AppliesToPopoverProps = {
     showLifecycleName?: boolean
     showVersion?: boolean
     hasMultipleLifecycles?: boolean
-    popoverContent?: string
+    popoverData?: PopoverData
     showPopover?: boolean
     isInline?: boolean
 }
@@ -30,22 +43,30 @@ const AppliesToPopover = ({
     showLifecycleName,
     showVersion,
     hasMultipleLifecycles,
-    popoverContent,
+    popoverData,
     showPopover = true,
     isInline = false,
 }: AppliesToPopoverProps) => {
     const [isOpen, setIsOpen] = useState(false)
     const [isPinned, setIsPinned] = useState(false)
+    const [openItems, setOpenItems] = useState<Set<number>>(new Set())
     const popoverId = useGeneratedHtmlId({ prefix: 'appliesToPopover' })
     const contentRef = useRef<HTMLDivElement>(null)
     const badgeRef = useRef<HTMLSpanElement>(null)
     const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+    const hasPopoverContent = popoverData && (
+        popoverData.productDescription ||
+        popoverData.availabilityItems.length > 0 ||
+        popoverData.additionalInfo ||
+        popoverData.showVersionNote
+    )
+
     const openPopover = useCallback(() => {
-        if (showPopover && popoverContent) {
+        if (showPopover && hasPopoverContent) {
             setIsOpen(true)
         }
-    }, [showPopover, popoverContent])
+    }, [showPopover, hasPopoverContent])
 
     const closePopover = useCallback(() => {
         if (!isPinned) {
@@ -54,7 +75,7 @@ const AppliesToPopover = ({
     }, [isPinned])
 
     const handleClick = useCallback(() => {
-        if (showPopover && popoverContent) {
+        if (showPopover && hasPopoverContent) {
             if (isPinned) {
                 // If already pinned, unpin and close
                 setIsPinned(false)
@@ -65,7 +86,20 @@ const AppliesToPopover = ({
                 setIsOpen(true)
             }
         }
-    }, [showPopover, popoverContent, isPinned])
+    }, [showPopover, hasPopoverContent, isPinned])
+
+    const toggleItem = useCallback((index: number, e: React.MouseEvent) => {
+        e.stopPropagation()
+        setOpenItems((prev) => {
+            const next = new Set(prev)
+            if (next.has(index)) {
+                next.delete(index)
+            } else {
+                next.add(index)
+            }
+            return next
+        })
+    }, [])
 
     const handleClosePopover = useCallback(() => {
         setIsPinned(false)
@@ -121,17 +155,12 @@ const AppliesToPopover = ({
         }
     }, [isOpen])
 
-    // Handle details/summary elements for collapsible sections
+    // Reset open items when popover closes
     useEffect(() => {
-        if (!contentRef.current) return
-
-        const details = contentRef.current.querySelectorAll('details')
-        details.forEach((detail) => {
-            detail.addEventListener('toggle', (e) => {
-                e.stopPropagation()
-            })
-        })
-    }, [isOpen, popoverContent])
+        if (!isOpen) {
+            setOpenItems(new Set())
+        }
+    }, [isOpen])
 
     const showSeparator =
         badgeKey && (showLifecycleName || showVersion || badgeLifecycleText)
@@ -139,16 +168,16 @@ const AppliesToPopover = ({
     const badgeButton = (
         <span
             ref={badgeRef}
-            className={`applicable-info${showPopover && popoverContent ? ' applicable-info--clickable' : ''}${isPinned ? ' applicable-info--pinned' : ''}`}
+            className={`applicable-info${showPopover && hasPopoverContent ? ' applicable-info--clickable' : ''}${isPinned ? ' applicable-info--pinned' : ''}`}
             onClick={handleClick}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
-            role={showPopover && popoverContent ? 'button' : undefined}
-            tabIndex={showPopover && popoverContent ? 0 : undefined}
+            role={showPopover && hasPopoverContent ? 'button' : undefined}
+            tabIndex={showPopover && hasPopoverContent ? 0 : undefined}
             onKeyDown={(e) => {
                 if (
                     showPopover &&
-                    popoverContent &&
+                    hasPopoverContent &&
                     (e.key === 'Enter' || e.key === ' ')
                 ) {
                     e.preventDefault()
@@ -190,8 +219,89 @@ const AppliesToPopover = ({
         </span>
     )
 
-    if (!showPopover || !popoverContent) {
+    if (!showPopover || !hasPopoverContent) {
         return badgeButton
+    }
+
+    const renderAvailabilityItem = (
+        item: PopoverAvailabilityItem,
+        index: number
+    ) => {
+        const isItemOpen = openItems.has(index)
+
+        if (item.lifecycleDescription) {
+            return (
+                <div
+                    key={index}
+                    css={css`
+                        margin: 0 0 4px 0;
+                        border: none;
+                        background: none;
+                    `}
+                >
+                    <div
+                        onClick={(e) => toggleItem(index, e)}
+                        css={css`
+                            display: flex;
+                            align-items: center;
+                            cursor: pointer;
+                            padding: 4px 0;
+                            color: var(--color-blue-elastic, #0077cc);
+                            font-weight: 500;
+
+                            &::before {
+                                content: '';
+                                display: inline-block;
+                                width: 6px;
+                                height: 6px;
+                                border-right: 2px solid currentColor;
+                                border-bottom: 2px solid currentColor;
+                                transform: ${isItemOpen
+                                    ? 'rotate(45deg)'
+                                    : 'rotate(-45deg)'};
+                                margin-right: 8px;
+                                transition: transform 0.15s ease;
+                            }
+
+                            &:hover {
+                                color: var(--color-blue-hover, #005fa3);
+                            }
+                        `}
+                    >
+                        <span css={css`flex: 1;`}>{item.text}</span>
+                    </div>
+                    {isItemOpen && (
+                        <p
+                            css={css`
+                                margin: 4px 0 8px 16px;
+                                padding: 8px 12px;
+                                background: var(--color-grey-5, #f5f7fa);
+                                border-radius: 4px;
+                                font-size: 13px;
+                                color: var(--color-grey-80, #343741);
+                                line-height: 1.5;
+                            `}
+                        >
+                            {item.lifecycleDescription}
+                        </p>
+                    )}
+                </div>
+            )
+        }
+
+        // Simple item without collapsible content
+        return (
+            <p
+                key={index}
+                css={css`
+                    margin: 0 0 4px 0;
+                    padding: 4px 0 4px 16px;
+                    color: var(--color-grey-80, #343741);
+                `}
+            >
+                {item.text}
+            </p>
+        )
     }
 
     return (
@@ -212,7 +322,7 @@ const AppliesToPopover = ({
                 onMouseLeave: handleMouseLeave,
                 css: css`
                     max-width: 420px;
-                    z-index: 40 !important; /* Below header which is z-50 */
+                    z-index: 40 !important; /* Show below the main header if needed */
 
                     /* Remove all focus styling from panel */
                     &,
@@ -231,136 +341,110 @@ const AppliesToPopover = ({
         >
             <div
                 ref={contentRef}
-                className="applies-to-popover-content"
                 css={css`
                     padding: 16px;
                     font-size: 14px;
                     line-height: 1.5;
                     color: var(--color-grey-100, #1a1c21);
-
-                    /* Product description */
-                    .popover-product-description {
-                        margin: 0 0 16px 0;
-                        color: var(--color-grey-80, #343741);
-
-                        strong {
-                            display: inline;
-                            font-weight: 700;
-                            color: var(--color-grey-100, #1a1c21);
-                        }
-                    }
-
-                    /* Availability section */
-                    .popover-availability-title {
-                        margin: 0 0 4px 0;
-
-                        strong {
-                            display: inline;
-                            font-weight: 700;
-                            font-size: 15px;
-                            color: var(--color-grey-100, #1a1c21);
-                        }
-                    }
-
-                    .popover-availability-intro {
-                        margin: 0 0 8px 0;
-                        color: var(--color-grey-70, #535966);
-                        font-size: 13px;
-                    }
-
-                    /* Availability items (collapsible details/summary) */
-                    .popover-availability-item {
-                        margin: 0 0 4px 0;
-                        border: none;
-                        background: none;
-
-                        &[open] .popover-availability-summary::before {
-                            transform: rotate(45deg);
-                        }
-                    }
-
-                    .popover-availability-summary {
-                        display: flex;
-                        align-items: center;
-                        cursor: pointer;
-                        list-style: none;
-                        padding: 4px 0;
-                        color: var(--color-blue-elastic, #0077cc);
-                        font-weight: 500;
-
-                        &::-webkit-details-marker {
-                            display: none;
-                        }
-
-                        &::before {
-                            content: '';
-                            display: inline-block;
-                            width: 6px;
-                            height: 6px;
-                            border-right: 2px solid currentColor;
-                            border-bottom: 2px solid currentColor;
-                            transform: rotate(-45deg);
-                            margin-right: 8px;
-                            transition: transform 0.15s ease;
-                        }
-
-                        &:hover {
-                            color: var(--color-blue-hover, #005fa3);
-                        }
-                    }
-
-                    .popover-availability-text {
-                        flex: 1;
-                    }
-
-                    .popover-lifecycle-description {
-                        margin: 4px 0 8px 16px;
-                        padding: 8px 12px;
-                        background: var(--color-grey-5, #f5f7fa);
-                        border-radius: 4px;
-                        font-size: 13px;
-                        color: var(--color-grey-80, #343741);
-                        line-height: 1.5;
-                    }
-
-                    /* Simple availability item (no collapsible content) */
-                    .popover-availability-item-simple {
-                        margin: 0 0 4px 0;
-                        padding: 4px 0 4px 16px;
-                        color: var(--color-grey-80, #343741);
-                    }
-
-                    /* Additional availability info */
-                    .popover-additional-info {
-                        margin: 12px 0 0 0;
-                        padding-top: 12px;
-                        border-top: 1px solid var(--color-grey-15, #e0e5ee);
-                        color: var(--color-grey-70, #535966);
-                        font-size: 13px;
-                    }
-
-                    /* Version note */
-                    .popover-version-note {
-                        display: flex;
-                        align-items: flex-start;
-                        gap: 8px;
-                        margin: 12px 0 0 0;
-                        padding: 8px 12px;
-                        background: var(--color-grey-5, #f5f7fa);
-                        border-radius: 4px;
-                        font-size: 12px;
-                        color: var(--color-grey-70, #535966);
-                        line-height: 1.5;
-                    }
-
-                    .popover-note-icon {
-                        flex-shrink: 0;
-                        color: var(--color-blue-elastic, #0077cc);
-                        font-size: 14px;
-                    }
                 `}
-                dangerouslySetInnerHTML={{ __html: popoverContent }}
-            />
+            >
+                {/* Product description */}
+                {popoverData?.productDescription && (
+                    <p
+                        css={css`
+                            margin: 0 0 16px 0;
+                            color: var(--color-grey-80, #343741);
+
+                            strong {
+                                display: inline;
+                                font-weight: 700;
+                                color: var(--color-grey-100, #1a1c21);
+                            }
+                        `}
+                        dangerouslySetInnerHTML={{
+                            __html: popoverData.productDescription,
+                        }}
+                    />
+                )}
+
+                {/* Availability section */}
+                {popoverData && popoverData.availabilityItems.length > 0 && (
+                    <>
+                        <p
+                            css={css`
+                                margin: 0 0 4px 0;
+                            `}
+                        >
+                            <strong
+                                css={css`
+                                    display: inline;
+                                    font-weight: 700;
+                                    font-size: 15px;
+                                    color: var(--color-grey-100, #1a1c21);
+                                `}
+                            >
+                                Availability
+                            </strong>
+                        </p>
+                        <p
+                            css={css`
+                                margin: 0 0 8px 0;
+                                color: var(--color-grey-70, #535966);
+                                font-size: 13px;
+                            `}
+                        >
+                            The functionality described here is:
+                        </p>
+                        {popoverData.availabilityItems.map((item, index) =>
+                            renderAvailabilityItem(item, index)
+                        )}
+                    </>
+                )}
+
+                {/* Additional availability info */}
+                {popoverData?.additionalInfo && (
+                    <p
+                        css={css`
+                            margin: 12px 0 0 0;
+                            padding-top: 12px;
+                            border-top: 1px solid var(--color-grey-15, #e0e5ee);
+                            color: var(--color-grey-70, #535966);
+                            font-size: 13px;
+                        `}
+                    >
+                        {popoverData.additionalInfo}
+                    </p>
+                )}
+
+                {/* Version note */}
+                {popoverData?.showVersionNote && popoverData?.versionNote && (
+                    <p
+                        css={css`
+                            display: flex;
+                            align-items: flex-start;
+                            gap: 8px;
+                            margin: 12px 0 0 0;
+                            padding: 8px 12px;
+                            background: var(--color-grey-5, #f5f7fa);
+                            border-radius: 4px;
+                            font-size: 12px;
+                            color: var(--color-grey-70, #535966);
+                            line-height: 1.5;
+                        `}
+                    >
+                        <span
+                            css={css`
+                                flex-shrink: 0;
+                                color: var(--color-blue-elastic, #0077cc);
+                                font-size: 14px;
+                            `}
+                        >
+                            ⓘ
+                        </span>
+                        {popoverData.versionNote}
+                    </p>
+                )}
+            </div>
         </EuiPopover>
     )
 }
@@ -377,7 +461,7 @@ customElements.define(
             showLifecycleName: 'boolean',
             showVersion: 'boolean',
             hasMultipleLifecycles: 'boolean',
-            popoverContent: 'string',
+            popoverData: 'json',
             showPopover: 'boolean',
             isInline: 'boolean',
         },

@@ -1,3 +1,5 @@
+@using System.Text.Json
+@using Elastic.Markdown.Page
 @inherits RazorSlice<Elastic.Markdown.Myst.Components.ApplicableToViewModel>
 
 @foreach (var item in Model.GetApplicabilityItems())
@@ -11,7 +13,7 @@
 		show-lifecycle-name="@item.RenderData.ShowLifecycleName.ToString().ToLowerInvariant()"
 		show-version="@item.RenderData.ShowVersion.ToString().ToLowerInvariant()"
 		has-multiple-lifecycles="@item.RenderData.HasMultipleLifecycles.ToString().ToLowerInvariant()"
-		popover-content="@(new HtmlString(System.Web.HttpUtility.HtmlAttributeEncode(Model.ShowTooltip ? item.RenderData.TooltipText : string.Empty)))"
+		popover-data='@(Model.ShowTooltip && item.RenderData.PopoverData is not null ? new HtmlString(JsonSerializer.Serialize(item.RenderData.PopoverData, ViewModelSerializerContext.Default.PopoverData)) : new HtmlString(""))'
 		show-popover="@Model.ShowTooltip.ToString().ToLowerInvariant()"
 		is-inline="@Model.Inline.ToString().ToLowerInvariant()"
 	></applies-to-popover>
