@@ -15,9 +15,9 @@ public static class ApplicabilitySelector
 	/// <param name="applicabilities">The collection of applicabilities to select from</param>
 	/// <param name="currentVersion">The current version to use for comparison</param>
 	/// <returns>The most relevant applicability for display</returns>
-	public static Applicability GetPrimaryApplicability(IEnumerable<Applicability> applicabilities, SemVersion currentVersion)
+	public static Applicability GetPrimaryApplicability(IReadOnlyCollection<Applicability> applicabilities, SemVersion currentVersion)
 	{
-		var applicabilityList = applicabilities.ToList();
+		//var applicabilityList = applicabilities.ToList();
 		var lifecycleOrder = new Dictionary<ProductLifecycle, int>
 		{
 			[ProductLifecycle.GenerallyAvailable] = 0,
@@ -29,11 +29,10 @@ public static class ApplicabilitySelector
 			[ProductLifecycle.Unavailable] = 6
 		};
 
-		var availableApplicabilities = applicabilityList
-			.Where(a => a.Version is null || a.Version is AllVersionsSpec || a.Version.Min <= currentVersion)
-			.ToList();
+		var availableApplicabilities = applicabilities
+			.Where(a => a.Version is null || a.Version is AllVersionsSpec || a.Version.Min <= currentVersion).ToArray();
 
-		if (availableApplicabilities.Count != 0)
+		if (availableApplicabilities.Length > 0)
 		{
 			return availableApplicabilities
 				.OrderByDescending(a => a.Version?.Min ?? new SemVersion(0, 0, 0))
@@ -41,11 +40,10 @@ public static class ApplicabilitySelector
 				.First();
 		}
 
-		var futureApplicabilities = applicabilityList
-			.Where(a => a.Version is not null && a.Version is not AllVersionsSpec && a.Version.Min > currentVersion)
-			.ToList();
+		var futureApplicabilities = applicabilities
+			.Where(a => a.Version is not null && a.Version is not AllVersionsSpec && a.Version.Min > currentVersion).ToArray();
 
-		if (futureApplicabilities.Count != 0)
+		if (futureApplicabilities.Length > 0)
 		{
 			return futureApplicabilities
 				.OrderBy(a => a.Version!.Min.CompareTo(currentVersion))
@@ -53,6 +51,6 @@ public static class ApplicabilitySelector
 				.First();
 		}
 
-		return applicabilityList.First();
+		return applicabilities.First();
 	}
 }

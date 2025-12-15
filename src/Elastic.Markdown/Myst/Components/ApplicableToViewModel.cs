@@ -58,7 +58,7 @@ public class ApplicableToViewModel
 	};
 
 
-	public IEnumerable<ApplicabilityItem> GetApplicabilityItems()
+	public IReadOnlyCollection<ApplicabilityItem> GetApplicabilityItems()
 	{
 		var rawItems = new List<RawApplicabilityItem>();
 
@@ -81,7 +81,7 @@ public class ApplicableToViewModel
 		if (AppliesTo.Product is not null)
 			rawItems.AddRange(CollectFromCollection(AppliesTo.Product, ApplicabilityMappings.Product));
 
-		return RenderGroupedItems(rawItems);
+		return RenderGroupedItems(rawItems).ToArray();
 	}
 
 	/// <summary>
@@ -99,7 +99,7 @@ public class ApplicableToViewModel
 	/// <summary>
 	/// Collects raw applicability items from mapped collections.
 	/// </summary>
-	private static IEnumerable<RawApplicabilityItem> CollectFromMappings<T>(
+	private static IReadOnlyCollection<RawApplicabilityItem> CollectFromMappings<T>(
 		T source,
 		Dictionary<Func<T, AppliesCollection?>, ApplicabilityMappings.ApplicabilityDefinition> mappings)
 	{
@@ -118,7 +118,7 @@ public class ApplicableToViewModel
 	/// <summary>
 	/// Groups raw items by key and renders each group using the unified renderer.
 	/// </summary>
-	private IEnumerable<ApplicabilityItem> RenderGroupedItems(List<RawApplicabilityItem> rawItems) =>
+	private IEnumerable<ApplicabilityItem> RenderGroupedItems(IReadOnlyCollection<RawApplicabilityItem> rawItems) =>
 		rawItems
 			.GroupBy(item => item.Key)
 			.Select(group =>
@@ -126,7 +126,7 @@ public class ApplicableToViewModel
 				var items = group.ToList();
 				var applicabilityDefinition = items.First().ApplicabilityDefinition;
 				var versioningSystem = VersionsConfig.GetVersioningSystem(applicabilityDefinition.VersioningSystemId);
-				var allApplicabilities = items.Select(i => i.Applicability).ToList();
+				var allApplicabilities = items.Select(i => i.Applicability).ToArray();
 
 				var renderData = ApplicabilityRenderer.RenderApplicability(
 					allApplicabilities,

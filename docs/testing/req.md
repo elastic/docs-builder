@@ -101,6 +101,12 @@ deployment:
   eck: beta 3.0, ga 3.1
 ```
 
+### Handling multiple future versions
+
+```{applies_to}
+eck: beta 3.4, ga 3.5, deprecated 3.9
+```
+
 
 ## Additional content
 

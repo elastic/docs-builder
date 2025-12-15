@@ -42,38 +42,57 @@ public static class ApplicabilityRenderer
 	);
 
 	public static ApplicabilityRenderData RenderApplicability(
-		IEnumerable<Applicability> applicabilities,
+		IReadOnlyCollection<Applicability> applicabilities,
 		ApplicabilityMappings.ApplicabilityDefinition applicabilityDefinition,
 		VersioningSystem versioningSystem)
 	{
-		var applicabilityList = applicabilities.ToList();
-		var allApplications = new AppliesCollection([.. applicabilityList]);
+		var allApplications = new AppliesCollection([.. applicabilities]);
 
 		// Sort by lifecycle priority (GA > Beta > Preview > etc.) to determine display order
-		var sortedApplicabilities = applicabilityList
+		var sortedApplicabilities = applicabilities
 			.OrderBy(a => ProductLifecycleInfo.GetOrder(a.Lifecycle))
 			.ThenByDescending(a => a.Version?.Min ?? new SemVersion(0, 0, 0))
 			.ToList();
 
-		var primaryLifecycle = sortedApplicabilities.First();
-		var primaryBadgeData = GetBadgeData(primaryLifecycle, versioningSystem, allApplications);
+		// Find the first lifecycle that returns displayable badge data (non-empty text or version)
+		// If all return empty (all unreleased with multiple lifecycles), use the first one and show "Planned"
+		BadgeData? badgeData = null;
+		Applicability? applicabilityToDisplay = null;
+		BadgeData? firstBadgeData = null;
+		Applicability? firstApplicability = null;
 
-		// If the primary lifecycle returns an empty badge text (indicating "use previous lifecycle")
-		// and we have multiple lifecycles, use the next lifecycle in priority order
-		var applicabilityToDisplay = string.IsNullOrEmpty(primaryBadgeData.BadgeLifecycleText) &&
-									 string.IsNullOrEmpty(primaryBadgeData.Version) &&
-									 sortedApplicabilities.Count >= 2
-			? sortedApplicabilities[1]
-			: primaryLifecycle;
+		foreach (var applicability in sortedApplicabilities)
+		{
+			var candidateBadgeData = GetBadgeData(applicability, versioningSystem, allApplications);
 
-		var badgeData = applicabilityToDisplay == primaryLifecycle
-			? primaryBadgeData
-			: GetBadgeData(applicabilityToDisplay, versioningSystem, allApplications);
+			// Keep track of the first one as fallback
+			firstBadgeData ??= candidateBadgeData;
+			firstApplicability ??= applicability;
 
-		var popoverData = BuildPopoverData(applicabilityList, applicabilityDefinition, versioningSystem);
+			// If this candidate has displayable data, use it
+			if (!string.IsNullOrEmpty(candidateBadgeData.BadgeLifecycleText) ||
+				!string.IsNullOrEmpty(candidateBadgeData.Version))
+			{
+				badgeData = candidateBadgeData;
+				applicabilityToDisplay = applicability;
+				break;
+			}
+		}
+
+		// If we've exhausted all options (none had displayable data), use the first one with "Planned"
+		if (badgeData is null && firstBadgeData is not null)
+		{
+			badgeData = firstBadgeData with { BadgeLifecycleText = "Planned" };
+			applicabilityToDisplay = firstApplicability;
+		}
+
+		badgeData ??= GetBadgeData(sortedApplicabilities.First(), versioningSystem, allApplications);
+		applicabilityToDisplay ??= sortedApplicabilities.First();
+
+		var popoverData = BuildPopoverData(applicabilities, applicabilityDefinition, versioningSystem);
 
 		// Check if there are multiple different lifecycles
-		var hasMultipleLifecycles = applicabilityList.Select(a => a.Lifecycle).Distinct().Count() > 1;
+		var hasMultipleLifecycles = applicabilities.Select(a => a.Lifecycle).Distinct().Count() > 1;
 
 		return new ApplicabilityRenderData(
 			BadgeLifecycleText: badgeData.BadgeLifecycleText,
@@ -131,7 +150,7 @@ public static class ApplicabilityRenderer
 	);
 
 	private static PopoverData BuildPopoverData(
-		List<Applicability> applicabilities,
+		IReadOnlyCollection<Applicability> applicabilities,
 		ApplicabilityMappings.ApplicabilityDefinition applicabilityDefinition,
 		VersioningSystem versioningSystem)
 	{
@@ -141,23 +160,14 @@ public static class ApplicabilityRenderer
 		// Availability section - collect items from all applicabilities
 		// Order by version descending (most recent/future first, then going backwards)
 		var orderedApplicabilities = applicabilities
-			.OrderByDescending(a => a.Version?.Min ?? new SemVersion(0, 0, 0))
-			.ToList();
-
-		var availabilityItems = new List<PopoverAvailabilityItem>();
-		foreach (var applicability in orderedApplicabilities)
-		{
-			var item = BuildAvailabilityItem(applicability, versioningSystem, productName, applicabilities.Count);
-			if (item is not null)
-				availabilityItems.Add(item);
-		}
+			.OrderByDescending(a => a.Version?.Min ?? new SemVersion(0, 0, 0));
 
 		var showVersionNote = productInfo is { IncludeVersionNote: true } &&
 							  versioningSystem.Base.Major != AllVersionsSpec.Instance.Min.Major;
 
 		return new PopoverData(
 			ProductDescription: productInfo?.Description,
-			AvailabilityItems: availabilityItems.ToArray(),
+			AvailabilityItems: orderedApplicabilities.Select(applicability => BuildAvailabilityItem(applicability, versioningSystem, productName, applicabilities.Count)).OfType<PopoverAvailabilityItem>().ToArray(),
 			AdditionalInfo: productInfo?.AdditionalAvailabilityInfo,
 			ShowVersionNote: showVersionNote,
 			VersionNote: showVersionNote ? ProductDescriptions.VersionNote : null
@@ -165,7 +175,7 @@ public static class ApplicabilityRenderer
 	}
 
 	/// <summary>
-	/// Builds an availability item for an applicability.
+	/// Builds an availability item for an applicability entry.
 	/// Returns null if the item should not be added to the availability list.
 	/// </summary>
 	private static PopoverAvailabilityItem? BuildAvailabilityItem(
