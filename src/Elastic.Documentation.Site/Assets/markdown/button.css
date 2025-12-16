@@ -43,58 +43,14 @@
 	display: inline-flex;
 }
 
-/* Base button styles - applied to links inside button wrappers */
-/* Matches elastic.co/docs landing page buttons */
-.doc-button-wrapper a,
-.doc-button-item a {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	cursor: pointer;
-	white-space: nowrap;
-	font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
-	font-weight: 600;
-	border-radius: 0.25rem; /* rounded */
-	padding: 0.5rem 1.5rem; /* py-2 px-6 */
-	height: 2.5rem; /* h-10 */
-	text-decoration: none !important;
-	transition:
-		background-color 0.15s,
-		border-color 0.15s,
-		color 0.15s;
-}
-
-/* Primary button (filled blue) */
+/* Primary button - exact same Tailwind classes as _LandingPage.cshtml */
 .doc-button-primary a {
-	background-color: var(--blue-elastic, #0077cc);
-	color: #ffffff !important;
-	border: 2px solid transparent;
+	@apply bg-blue-elastic hover:bg-blue-elastic-110 focus:ring-blue-elastic-50 flex h-10 cursor-pointer items-center justify-center rounded-sm px-6 py-2 font-sans text-base font-semibold text-nowrap text-white no-underline select-none hover:text-white focus:ring-4 focus:outline-none;
 }
 
-.doc-button-primary a:hover {
-	background-color: var(--blue-elastic-110, #0066b3);
-}
-
-.doc-button-primary a:focus {
-	outline: none;
-	box-shadow: 0 0 0 4px var(--blue-elastic-50, rgba(0, 119, 204, 0.25));
-}
-
-/* Secondary button (outlined) */
+/* Secondary button - exact same Tailwind classes as _LandingPage.cshtml */
 .doc-button-secondary a {
-	background-color: transparent;
-	color: var(--blue-elastic, #0077cc) !important;
-	border: 2px solid var(--blue-elastic, #0077cc);
-}
-
-.doc-button-secondary a:hover {
-	color: var(--blue-elastic-100, #005fa3) !important;
-	border-color: var(--blue-elastic-100, #005fa3);
-}
-
-.doc-button-secondary a:focus {
-	outline: none;
-	box-shadow: 0 0 0 4px var(--blue-elastic-50, rgba(0, 119, 204, 0.25));
+	@apply text-blue-elastic hover:text-blue-elastic-100 border-blue-elastic hover:border-blue-elastic-100 focus:ring-blue-elastic-50 flex h-10 cursor-pointer items-center justify-center rounded-sm border-2 px-6 py-2 text-center font-sans text-base font-semibold text-nowrap no-underline focus:ring-4 focus:outline-none;
 }
 
 /* Remove external link icon from buttons */
