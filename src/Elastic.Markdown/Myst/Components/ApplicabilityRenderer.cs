@@ -243,10 +243,10 @@ public static class ApplicabilityRenderer
 			VersionSpecKind.GreaterThanOrEqual => GenerateGteAvailabilityText(lifecycle, minVersion, isMinReleased, lifecycleCount),
 
 			// Range (x.x-y.y, x.x.x-y.y.y)
-			VersionSpecKind.Range => GenerateRangeAvailabilityText(lifecycle, minVersion, maxVersion!, isMinReleased, isMaxReleased),
+			VersionSpecKind.Range => GenerateRangeAvailabilityText(lifecycle, minVersion, maxVersion!, isMinReleased, isMaxReleased, lifecycleCount),
 
 			// Exact (=x.x, =x.x.x)
-			VersionSpecKind.Exact => GenerateExactAvailabilityText(lifecycle, minVersion, isMinReleased),
+			VersionSpecKind.Exact => GenerateExactAvailabilityText(lifecycle, minVersion, isMinReleased, lifecycleCount),
 
 			_ => null
 		};
@@ -262,20 +262,17 @@ public static class ApplicabilityRenderer
 			return lifecycle switch
 			{
 				ProductLifecycle.Removed => $"Removed in {version}",
-				ProductLifecycle.Unavailable => $"Unavailable since {version}",
 				_ => $"{ProductLifecycleInfo.GetDisplayText(lifecycle)} since {version}"
 			};
 		}
 
-		// Unreleased - show the version so users see the full timeline in the popover
-		// Only hide Unavailable when there are other lifecycles (it's implied by other entries)
 		return lifecycle switch
 		{
-			ProductLifecycle.Deprecated => $"Deprecated since {version}",
-			ProductLifecycle.Removed => $"Removed in {version}",
+			ProductLifecycle.Deprecated => "Planned for deprecation",
+			ProductLifecycle.Removed => "Planned for removal",
 			ProductLifecycle.Unavailable when lifecycleCount == 1 => "Unavailable",
-			ProductLifecycle.Unavailable => null,
-			_ => $"{ProductLifecycleInfo.GetDisplayText(lifecycle)} since {version}"
+			_ when lifecycleCount >= 2 => null, // Do not add to availability list
+			_ => "Planned"
 		};
 	}
 
@@ -283,7 +280,7 @@ public static class ApplicabilityRenderer
 	/// Generates availability text for range version type.
 	/// </summary>
 	private static string? GenerateRangeAvailabilityText(
-		ProductLifecycle lifecycle, string minVersion, string maxVersion, bool isMinReleased, bool isMaxReleased)
+		ProductLifecycle lifecycle, string minVersion, string maxVersion, bool isMinReleased, bool isMaxReleased, int lifecycleCount)
 	{
 		if (isMaxReleased)
 		{
@@ -306,20 +303,21 @@ public static class ApplicabilityRenderer
 			};
 		}
 
-		// Neither released - show the version so users see the full timeline in the popover
+		// Neither released
 		return lifecycle switch
 		{
-			ProductLifecycle.Deprecated => $"Deprecated since {minVersion}",
-			ProductLifecycle.Removed => $"Removed in {minVersion}",
+			ProductLifecycle.Deprecated => "Planned for deprecation",
+			ProductLifecycle.Removed => "Planned for removal",
 			ProductLifecycle.Unavailable => null,
-			_ => $"{ProductLifecycleInfo.GetDisplayText(lifecycle)} since {minVersion}"
+			_ when lifecycleCount >= 2 => null, // Do not add to availability list
+			_ => "Planned"
 		};
 	}
 
 	/// <summary>
 	/// Generates availability text for exact version type.
 	/// </summary>
-	private static string? GenerateExactAvailabilityText(ProductLifecycle lifecycle, string version, bool isReleased)
+	private static string? GenerateExactAvailabilityText(ProductLifecycle lifecycle, string version, bool isReleased, int lifecycleCount)
 	{
 		if (isReleased)
 		{
@@ -331,13 +329,14 @@ public static class ApplicabilityRenderer
 			};
 		}
 
-		// Unreleased - show the version so users see the full timeline in the popover
+		// Unreleased
 		return lifecycle switch
 		{
-			ProductLifecycle.Deprecated => $"Deprecated in {version}",
-			ProductLifecycle.Removed => $"Removed in {version}",
+			ProductLifecycle.Deprecated => "Planned for deprecation",
+			ProductLifecycle.Removed => "Planned for removal",
 			ProductLifecycle.Unavailable => null,
-			_ => $"{ProductLifecycleInfo.GetDisplayText(lifecycle)} in {version}"
+			_ when lifecycleCount >= 2 => null, // Do not add to availability list
+			_ => "Planned"
 		};
 	}
 
