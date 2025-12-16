@@ -182,3 +182,56 @@ public class ButtonCrossLinkTests(ITestOutputHelper output) : DirectiveTest<Butt
 	[Fact]
 	public void RendersLinkHref() => Html.Should().Contain("href=\"");
 }
+
+public class ButtonEmptyTests(ITestOutputHelper output) : DirectiveTest<ButtonBlock>(output,
+"""
+:::{button}
+:::
+"""
+)
+{
+	[Fact]
+	public void EmitsErrorForEmptyContent() =>
+		Collector.Diagnostics.Should().ContainSingle(d => d.Message.Contains("requires a link"));
+}
+
+public class ButtonPlainTextTests(ITestOutputHelper output) : DirectiveTest<ButtonBlock>(output,
+"""
+:::{button}
+Just some text without a link
+:::
+"""
+)
+{
+	[Fact]
+	public void EmitsErrorForPlainText() =>
+		Collector.Diagnostics.Should().ContainSingle(d => d.Message.Contains("must contain only a single Markdown link"));
+}
+
+public class ButtonMultipleLinksTests(ITestOutputHelper output) : DirectiveTest<ButtonBlock>(output,
+"""
+:::{button}
+[Link One](/one) and [Link Two](/two)
+:::
+"""
+)
+{
+	[Fact]
+	public void EmitsErrorForMultipleLinks() =>
+		Collector.Diagnostics.Should().ContainSingle(d => d.Message.Contains("must contain only a single Markdown link"));
+}
+
+public class ButtonNestedDirectiveTests(ITestOutputHelper output) : DirectiveTest<ButtonBlock>(output,
+"""
+:::{button}
+::::{note}
+This is nested
+::::
+:::
+"""
+)
+{
+	[Fact]
+	public void EmitsErrorForNestedDirective() =>
+		Collector.Diagnostics.Should().ContainSingle(d => d.Message.Contains("cannot contain nested directives"));
+}
