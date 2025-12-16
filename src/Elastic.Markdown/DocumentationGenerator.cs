@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
@@ -37,7 +38,7 @@ public record GenerationResult
 	public IReadOnlyDictionary<string, LinkRedirect> Redirects { get; set; } = new Dictionary<string, LinkRedirect>();
 }
 
-public class DocumentationGenerator
+public partial class DocumentationGenerator
 {
 	private readonly IDocumentationFileOutputProvider? _documentationFileOutputProvider;
 	private readonly IConversionCollector? _conversionCollector;
@@ -231,6 +232,28 @@ public class DocumentationGenerator
 		}
 	}
 
+	[GeneratedRegex(@"^[a-z0-9\s\-_\.\/\\]*[a-z0-9_\-]\.([a-z]+)$")]
+	private static partial Regex FilePathRegex();
+
+	[GeneratedRegex(@"^[a-z0-9_][a-z0-9_\-\s\.]*?\.([a-z]+)$")]
+	private static partial Regex FileNameRegex();
+
+	public static bool IsValidFileName(string strToCheck) =>
+		strToCheck switch
+		{
+			//prior art
+			_ when strToCheck.StartsWith("reference/query-languages/esql/_snippets/") => true,
+			_ when strToCheck.EndsWith(".svg") => true,
+			_ when strToCheck.EndsWith(".gif") => true,
+			_ when strToCheck.EndsWith(".png") => true,
+			_ when strToCheck.EndsWith(".png") => true,
+			"reference/security/prebuilt-rules/audit_policies/windows/README.md" => true,
+			"extend/integrations/developer-workflow-fleet-UI.md" => true,
+			"reference/elasticsearch/clients/ruby/Helpers.md" => true,
+			"explore-analyze/ai-features/llm-guides/connect-to-vLLM.md" => true,
+			_ => FilePathRegex().IsMatch(strToCheck) && FileNameRegex().IsMatch(Path.GetFileName(strToCheck))
+		};
+
 	private async Task ProcessFile(HashSet<string> offendingFiles, DocumentationFile file, DateTimeOffset outputSeenChanges, Cancel ctx)
 	{
 		if (!Context.Force)
@@ -243,8 +266,16 @@ public class DocumentationGenerator
 
 		_logger.LogTrace("--> {FileFullPath}", file.SourceFile.FullName);
 		var outputFile = OutputFile(file.RelativePath);
+
 		if (outputFile is not null)
 		{
+			var relative = Path.GetRelativePath(Context.OutputDirectory.FullName, outputFile.FullName);
+			if (!IsValidFileName(relative))
+			{
+				Context.Collector.EmitError(file.SourceFile.FullName, $"File name {relative} is not valid needs to be lowercase and contain only alphanumeric characters, spaces, dashes, dots and underscores");
+				return;
+			}
+
 			var context = new ProcessingFileContext
 			{
 				BuildContext = Context,
@@ -368,4 +399,5 @@ public class DocumentationGenerator
 		await DocumentationSet.ResolveDirectoryTree(ctx);
 		return await HtmlWriter.RenderLayout(markdown, ctx);
 	}
+
 }
