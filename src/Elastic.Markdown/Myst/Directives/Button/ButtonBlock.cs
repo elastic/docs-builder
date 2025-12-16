@@ -135,17 +135,11 @@ public class ButtonBlock(DirectiveBlockParser parser, ParserContext context) : D
 			{
 				IsCrossLink = true;
 				context.Build.Collector.EmitCrossLink(Link);
-				if (context.CrossLinkResolver.TryResolve(
+				ResolvedLink = context.CrossLinkResolver.TryResolve(
 						s => this.EmitError(s),
-						uri, out var resolvedUri))
-				{
-					ResolvedLink = resolvedUri.ToString();
-				}
-				else
-				{
-					// Fallback to original link if resolution fails (error already emitted)
-					ResolvedLink = Link;
-				}
+						uri, out var resolvedUri)
+					? resolvedUri.ToString()
+					: Link;
 				External = explicitExternal;
 				return;
 			}
