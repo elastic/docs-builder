@@ -1,0 +1,32 @@
+@inherits RazorSlice<Elastic.Markdown.Myst.Directives.Button.ButtonViewModel>
+@{
+	// Use the same Tailwind classes as the landing page buttons
+	var primaryClasses = "select-none cursor-pointer text-white text-nowrap bg-blue-elastic hover:bg-blue-elastic-110 focus:ring-4 focus:ring-blue-elastic-50 font-semibold font-sans rounded-sm px-6 py-2 focus:outline-none h-10 flex items-center justify-center no-underline";
+	var secondaryClasses = "cursor-pointer text-blue-elastic hover:text-blue-elastic-100 text-nowrap border-2 border-blue-elastic hover:border-blue-elastic-100 focus:ring-4 focus:outline-none focus:ring-blue-elastic-50 font-semibold font-sans rounded-sm px-6 py-2 text-center h-10 flex items-center justify-center no-underline";
+	var buttonClasses = Model.Type == "secondary" ? secondaryClasses : primaryClasses;
+}
+@if (!Model.IsInGroup)
+{
+	<div class="doc-button-wrapper @Model.AlignClass">
+		@if (Model.External)
+		{
+			<a href="@(Model.Link ?? "#")" class="@buttonClasses" target="_blank" rel="noopener noreferrer">@Model.Text</a>
+		}
+		else
+		{
+			<a href="@(Model.Link ?? "#")" class="@buttonClasses">@Model.Text</a>
+		}
+	</div>
+}
+else
+{
+	@if (Model.External)
+	{
+		<a href="@(Model.Link ?? "#")" class="@buttonClasses" target="_blank" rel="noopener noreferrer">@Model.Text</a>
+	}
+	else
+	{
+		<a href="@(Model.Link ?? "#")" class="@buttonClasses">@Model.Text</a>
+	}
+}
+
