@@ -331,12 +331,12 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 
 	private static bool CheckVersionOverlap(VersionSpec v1, VersionSpec v2)
 	{
-		// Special case: two gte specs with different min versions represent a version progression
-		// e.g., "deprecated 7.16.0, removed 8.0.0" - these don't truly overlap, version inference
-		// will convert the earlier one to a range
-		if (v1.Kind == VersionSpecKind.GreaterThanOrEqual &&
-			v2.Kind == VersionSpecKind.GreaterThanOrEqual &&
-			v1.Min.CompareTo(v2.Min) != 0)
+		// Allow overlap in case there is a version bump
+		if (v1.Kind == VersionSpecKind.Range && v2.Kind == VersionSpecKind.GreaterThanOrEqual &&
+			v1.Max is not null && v1.Max.CompareTo(v2.Min) <= 0)
+			return false;
+		if (v2.Kind == VersionSpecKind.Range && v1.Kind == VersionSpecKind.GreaterThanOrEqual &&
+			v2.Max is not null && v2.Max.CompareTo(v1.Min) <= 0)
 			return false;
 
 		// Get the effective ranges for each version spec
