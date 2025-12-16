@@ -146,7 +146,7 @@ versioning_systems:
     current: 9.2.1
   elasticsearch-client-java:
     base: 9.0
-    current: 9.2.1
+    current: 9.2.2
   elasticsearch-client-javascript:
     base: 9.0
     current: 9.2.0
