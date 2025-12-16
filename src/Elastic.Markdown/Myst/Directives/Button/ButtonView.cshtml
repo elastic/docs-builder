@@ -1,36 +1,16 @@
 @inherits RazorSlice<Elastic.Markdown.Myst.Directives.Button.ButtonViewModel>
-@using Microsoft.AspNetCore.Html
 @{
-	// Use the same Tailwind classes as the landing page buttons
-	var primaryClasses = "select-none cursor-pointer text-white text-nowrap bg-blue-elastic hover:bg-blue-elastic-110 focus:ring-4 focus:ring-blue-elastic-50 font-semibold font-sans rounded-sm px-6 py-2 focus:outline-none h-10 flex items-center justify-center no-underline";
-	var secondaryClasses = "cursor-pointer text-blue-elastic hover:text-blue-elastic-100 text-nowrap border-2 border-blue-elastic hover:border-blue-elastic-100 focus:ring-4 focus:outline-none focus:ring-blue-elastic-50 font-semibold font-sans rounded-sm px-6 py-2 text-center h-10 flex items-center justify-center no-underline";
-	var buttonClasses = Model.Type == "secondary" ? secondaryClasses : primaryClasses;
-
-	// htmx attributes for client-side navigation (cross-links always use #main-container)
-	var htmxAttrs = Model.RequiresHtmx ? new HtmlString("hx-select-oob=\"#main-container\" preload=\"mousedown\"") : HtmlString.Empty;
+	var typeClass = Model.Type == "secondary" ? "doc-button-secondary" : "doc-button-primary";
 }
 @if (!Model.IsInGroup)
 {
-	<div class="doc-button-wrapper @Model.AlignClass">
-		@if (Model.External)
-		{
-			<a href="@(Model.Link ?? "#")" class="@buttonClasses" target="_blank" rel="noopener noreferrer">@Model.Text</a>
-		}
-		else
-		{
-			<a href="@(Model.Link ?? "#")" class="@buttonClasses" @htmxAttrs>@Model.Text</a>
-		}
+	<div class="doc-button-wrapper @typeClass @Model.AlignClass">
+		@Model.RenderBlock()
 	</div>
 }
 else
 {
-	@if (Model.External)
-	{
-		<a href="@(Model.Link ?? "#")" class="@buttonClasses" target="_blank" rel="noopener noreferrer">@Model.Text</a>
-	}
-	else
-	{
-		<a href="@(Model.Link ?? "#")" class="@buttonClasses" @htmxAttrs>@Model.Text</a>
-	}
+	<span class="doc-button-item @typeClass">
+		@Model.RenderBlock()
+	</span>
 }
-

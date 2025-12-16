@@ -200,14 +200,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		var slice = ButtonView.Create(new ButtonViewModel
 		{
 			DirectiveBlock = block,
-			Text = block.Text,
-			Link = block.ResolvedLink,
 			Type = block.Type,
 			Align = block.Align,
-			External = block.External,
-			IsInGroup = block.IsInGroup,
-			IsCrossLink = block.IsCrossLink,
-			RequiresHtmx = block.RequiresHtmx
+			IsInGroup = block.IsInGroup
 		});
 		RenderRazorSlice(slice, renderer);
 	}

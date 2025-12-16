@@ -6,19 +6,10 @@ namespace Elastic.Markdown.Myst.Directives.Button;
 
 /// <summary>
 /// View model for a single button.
+/// The button wraps a link that is rendered by the standard link renderer.
 /// </summary>
 public class ButtonViewModel : DirectiveViewModel
 {
-	/// <summary>
-	/// The button text to display.
-	/// </summary>
-	public required string Text { get; init; }
-
-	/// <summary>
-	/// The resolved URL the button links to.
-	/// </summary>
-	public required string? Link { get; init; }
-
 	/// <summary>
 	/// Button variant: "primary" (filled) or "secondary" (outlined).
 	/// </summary>
@@ -30,29 +21,9 @@ public class ButtonViewModel : DirectiveViewModel
 	public required string Align { get; init; }
 
 	/// <summary>
-	/// If true, the link opens in a new tab with appropriate security attributes.
-	/// </summary>
-	public required bool External { get; init; }
-
-	/// <summary>
 	/// Whether this button is inside a button group.
 	/// </summary>
 	public required bool IsInGroup { get; init; }
-
-	/// <summary>
-	/// Whether the link is a cross-repository link.
-	/// </summary>
-	public required bool IsCrossLink { get; init; }
-
-	/// <summary>
-	/// Whether the link requires htmx attributes for client-side navigation.
-	/// </summary>
-	public required bool RequiresHtmx { get; init; }
-
-	/// <summary>
-	/// Gets the CSS class for the button type.
-	/// </summary>
-	public string TypeClass => Type == "secondary" ? "doc-button-secondary" : "doc-button-primary";
 
 	/// <summary>
 	/// Gets the CSS class for the button alignment (only used for standalone buttons).
@@ -85,4 +56,3 @@ public class ButtonGroupViewModel : DirectiveViewModel
 		_ => "doc-button-group-left"
 	};
 }
-

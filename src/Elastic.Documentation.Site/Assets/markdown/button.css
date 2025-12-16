@@ -38,21 +38,68 @@
 	justify-content: flex-end;
 }
 
-/* Override markdown link styles for buttons */
-.markdown-content .doc-button-wrapper a,
-.markdown-content .doc-button-group a {
+/* Button item wrapper for buttons inside groups */
+.doc-button-item {
+	display: inline-flex;
+}
+
+/* Base button styles - applied to links inside button wrappers */
+/* Matches elastic.co/docs landing page buttons */
+.doc-button-wrapper a,
+.doc-button-item a {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	white-space: nowrap;
+	font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+	font-weight: 600;
+	border-radius: 0.25rem; /* rounded */
+	padding: 0.5rem 1.5rem; /* py-2 px-6 */
+	height: 2.5rem; /* h-10 */
 	text-decoration: none !important;
+	transition:
+		background-color 0.15s,
+		border-color 0.15s,
+		color 0.15s;
 }
 
-/* Primary button text color override */
-.markdown-content .doc-button-wrapper a.bg-blue-elastic,
-.markdown-content .doc-button-group a.bg-blue-elastic {
+/* Primary button (filled blue) */
+.doc-button-primary a {
+	background-color: var(--blue-elastic, #0077cc);
 	color: #ffffff !important;
+	border: 2px solid transparent;
 }
 
-/* Remove external link icon from buttons in markdown content */
-.markdown-content .doc-button-wrapper a[target='_blank']::after,
-.markdown-content .doc-button-group a[target='_blank']::after {
+.doc-button-primary a:hover {
+	background-color: var(--blue-elastic-110, #0066b3);
+}
+
+.doc-button-primary a:focus {
+	outline: none;
+	box-shadow: 0 0 0 4px var(--blue-elastic-50, rgba(0, 119, 204, 0.25));
+}
+
+/* Secondary button (outlined) */
+.doc-button-secondary a {
+	background-color: transparent;
+	color: var(--blue-elastic, #0077cc) !important;
+	border: 2px solid var(--blue-elastic, #0077cc);
+}
+
+.doc-button-secondary a:hover {
+	color: var(--blue-elastic-100, #005fa3) !important;
+	border-color: var(--blue-elastic-100, #005fa3);
+}
+
+.doc-button-secondary a:focus {
+	outline: none;
+	box-shadow: 0 0 0 4px var(--blue-elastic-50, rgba(0, 119, 204, 0.25));
+}
+
+/* Remove external link icon from buttons */
+.doc-button-wrapper a[target='_blank']::after,
+.doc-button-item a[target='_blank']::after {
 	content: none !important;
 }
 
@@ -62,7 +109,11 @@
 		flex-direction: column;
 	}
 
-	.doc-button-group > a {
+	.doc-button-item {
+		width: 100%;
+	}
+
+	.doc-button-item a {
 		width: 100%;
 	}
 }

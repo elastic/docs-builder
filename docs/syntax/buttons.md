@@ -2,25 +2,25 @@
 
 Buttons provide styled link elements for calls to action in documentation. Use buttons to highlight important navigation points, downloads, or external resources.
 
-:::{button} This is an example
-:link: docs-content://get-started/introduction.md
+:::{button}
+[Getting Started](docs-content://get-started/introduction.md)
 :::
 
 ## Basic button
 
-A button requires the button text as an argument and a `:link:` property:
+A button wraps a standard Markdown link with button styling:
 
 :::::::{tab-set}
 ::::::{tab-item} Output
-:::{button} Syntax Guide
-:link: /syntax
+:::{button}
+[Syntax Guide](index.md)
 :::
 ::::::
 
 ::::::{tab-item} Markdown
 ```markdown
-:::{button} Get Started
-:link: /get-started
+:::{button}
+[Get Started](/get-started)
 :::
 ```
 ::::::
@@ -36,13 +36,12 @@ Two button variants are available:
 :::::::{tab-set}
 ::::::{tab-item} Output
 ::::{button-group}
-:::{button} Quick Reference
-:link: /syntax/quick-ref
-:type: primary
+:::{button}
+[Quick Reference](quick-ref.md)
 :::
-:::{button} View All Syntax
-:link: /syntax
+:::{button}
 :type: secondary
+[Syntax Guide](index.md)
 :::
 ::::
 ::::::
@@ -50,13 +49,12 @@ Two button variants are available:
 ::::::{tab-item} Markdown
 ```markdown
 ::::{button-group}
-:::{button} Primary Button
-:link: /primary
-:type: primary
+:::{button}
+[Primary Action](/primary)
 :::
-:::{button} Secondary Button
-:link: /secondary
+:::{button}
 :type: secondary
+[Secondary Action](/secondary)
 :::
 ::::
 ```
@@ -70,13 +68,12 @@ Use the `{button-group}` directive to display multiple buttons in a row:
 :::::::{tab-set}
 ::::::{tab-item} Output
 ::::{button-group}
-:::{button} How-to Guides
-:link: /contribute
-:type: primary
+:::{button}
+[Admonitions](admonitions.md)
 :::
-:::{button} Configuration
-:link: /configure
+:::{button}
 :type: secondary
+[Dropdowns](dropdowns.md)
 :::
 ::::
 ::::::
@@ -84,13 +81,12 @@ Use the `{button-group}` directive to display multiple buttons in a row:
 ::::::{tab-item} Markdown
 ```markdown
 ::::{button-group}
-:::{button} Elastic Fundamentals
-:link: /get-started
-:type: primary
+:::{button}
+[Elastic Fundamentals](/get-started)
 :::
-:::{button} Upgrade Versions
-:link: /deploy-manage/upgrade
+:::{button}
 :type: secondary
+[Upgrade Versions](/deploy-manage/upgrade)
 :::
 ::::
 ```
@@ -105,37 +101,37 @@ Control the horizontal alignment of standalone buttons with the `:align:` proper
 
 :::::::{tab-set}
 ::::::{tab-item} Output
-:::{button} Links
-:link: /syntax/links
+:::{button}
 :align: left
+[Links](links.md)
 :::
 
-:::{button} Images
-:link: /syntax/images
+:::{button}
 :align: center
+[Images](images.md)
 :::
 
-:::{button} Tables
-:link: /syntax/tables
+:::{button}
 :align: right
+[Tables](tables.md)
 :::
 ::::::
 
 ::::::{tab-item} Markdown
 ```markdown
-:::{button} Left (default)
-:link: /example
+:::{button}
 :align: left
+[Left (default)](/example)
 :::
 
-:::{button} Center
-:link: /example
+:::{button}
 :align: center
+[Center](/example)
 :::
 
-:::{button} Right
-:link: /example
+:::{button}
 :align: right
+[Right](/example)
 :::
 ```
 ::::::
@@ -149,12 +145,12 @@ Button groups also support the `:align:` property:
 ::::::{tab-item} Output
 ::::{button-group}
 :align: center
-:::{button} Code Blocks
-:link: /syntax/code
+:::{button}
+[Code Blocks](code.md)
 :::
-:::{button} Tabs
-:link: /syntax/tabs
+:::{button}
 :type: secondary
+[Tabs](tabs.md)
 :::
 ::::
 ::::::
@@ -163,12 +159,12 @@ Button groups also support the `:align:` property:
 ```markdown
 ::::{button-group}
 :align: center
-:::{button} Centered Group
-:link: /example
+:::{button}
+[Centered Group](/example)
 :::
-:::{button} Second Button
-:link: /example
+:::{button}
 :type: secondary
+[Second Button](/example)
 :::
 ::::
 ```
@@ -177,21 +173,19 @@ Button groups also support the `:align:` property:
 
 ## External links
 
-External links (URLs outside elastic.co) automatically open in a new tab. You can also explicitly mark a link as external:
+External links (URLs outside elastic.co) automatically open in a new tab, just like regular links:
 
 :::::::{tab-set}
 ::::::{tab-item} Output
-:::{button} Visit GitHub
-:link: https://github.com/elastic
-:external:
+:::{button}
+[Visit GitHub](https://github.com/elastic)
 :::
 ::::::
 
 ::::::{tab-item} Markdown
 ```markdown
-:::{button} Visit GitHub
-:link: https://github.com/elastic
-:external:
+:::{button}
+[Visit GitHub](https://github.com/elastic)
 :::
 ```
 ::::::
@@ -205,15 +199,15 @@ Buttons support [cross-repository links](links.md#cross-repository-links) using 
 
 :::::::{tab-set}
 ::::::{tab-item} Output
-:::{button} Getting Started Guide
-:link: docs-content://get-started/introduction.md
+:::{button}
+[Getting Started Guide](docs-content://get-started/introduction.md)
 :::
 ::::::
 
 ::::::{tab-item} Markdown
 ```markdown
-:::{button} Getting Started Guide
-:link: docs-content://get-started/introduction.md
+:::{button}
+[Getting Started Guide](docs-content://get-started/introduction.md)
 :::
 ```
 ::::::
@@ -227,15 +221,12 @@ Cross-links are resolved at build time to their target URLs in the documentation
 
 | Property | Required | Default | Description |
 |----------|----------|---------|-------------|
-| (argument) | Yes | - | The button text to display. |
-| `:link:` | Yes | - | The URL the button links to. Supports internal paths, external URLs, and cross-repository links (e.g., `kibana://api/index.md`). |
+| (content) | Yes | - | A Markdown link `[text](url)` that becomes the button. |
 | `:type:` | No | `primary` | Button variant: `primary` (filled) or `secondary` (outlined). |
 | `:align:` | No | `left` | Horizontal alignment for standalone buttons: `left`, `center`, or `right`. |
-| `:external:` | No | auto | If set, the link opens in a new tab. Auto-detected for non-elastic.co URLs. Cross-links are not treated as external by default. |
 
 ### Button group properties
 
 | Property | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `:align:` | No | `left` | Horizontal alignment of the button group: `left`, `center`, or `right`. |
-
