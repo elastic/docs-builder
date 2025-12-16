@@ -2,67 +2,67 @@
 
 /* Button wrapper for standalone buttons */
 .doc-button-wrapper {
-  display: flex;
-  margin-block: 1rem;
+	display: flex;
+	margin-block: 1rem;
 }
 
 .doc-button-wrapper.doc-button-left {
-  justify-content: flex-start;
+	justify-content: flex-start;
 }
 
 .doc-button-wrapper.doc-button-center {
-  justify-content: center;
+	justify-content: center;
 }
 
 .doc-button-wrapper.doc-button-right {
-  justify-content: flex-end;
+	justify-content: flex-end;
 }
 
 /* Button group container */
 .doc-button-group {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-block: 1rem;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.75rem;
+	margin-block: 1rem;
 }
 
 .doc-button-group.doc-button-group-left {
-  justify-content: flex-start;
+	justify-content: flex-start;
 }
 
 .doc-button-group.doc-button-group-center {
-  justify-content: center;
+	justify-content: center;
 }
 
 .doc-button-group.doc-button-group-right {
-  justify-content: flex-end;
+	justify-content: flex-end;
 }
 
 /* Override markdown link styles for buttons */
 .markdown-content .doc-button-wrapper a,
 .markdown-content .doc-button-group a {
-  text-decoration: none !important;
+	text-decoration: none !important;
 }
 
 /* Primary button text color override */
 .markdown-content .doc-button-wrapper a.bg-blue-elastic,
 .markdown-content .doc-button-group a.bg-blue-elastic {
-  color: #ffffff !important;
+	color: #ffffff !important;
 }
 
 /* Remove external link icon from buttons in markdown content */
-.markdown-content .doc-button-wrapper a[target="_blank"]::after,
-.markdown-content .doc-button-group a[target="_blank"]::after {
-  content: none !important;
+.markdown-content .doc-button-wrapper a[target='_blank']::after,
+.markdown-content .doc-button-group a[target='_blank']::after {
+	content: none !important;
 }
 
 /* Responsive adjustments */
 @media (max-width: 640px) {
-  .doc-button-group {
-    flex-direction: column;
-  }
+	.doc-button-group {
+		flex-direction: column;
+	}
 
-  .doc-button-group > a {
-    width: 100%;
-  }
+	.doc-button-group > a {
+		width: 100%;
+	}
 }
