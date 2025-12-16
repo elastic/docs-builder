@@ -69,6 +69,16 @@ public class ButtonBlock(DirectiveBlockParser parser, ParserContext context) : D
 	/// </summary>
 	public bool IsInGroup { get; private set; }
 
+	/// <summary>
+	/// Whether the link is a cross-repository link.
+	/// </summary>
+	public bool IsCrossLink { get; private set; }
+
+	/// <summary>
+	/// Whether the link requires htmx attributes for client-side navigation.
+	/// </summary>
+	public bool RequiresHtmx => IsCrossLink || (ResolvedLink?.StartsWith('/') == true);
+
 	public override void FinalizeAndValidate(ParserContext context)
 	{
 		// Get button text from arguments
@@ -123,6 +133,7 @@ public class ButtonBlock(DirectiveBlockParser parser, ParserContext context) : D
 			// Check if it's a cross-link (e.g., kibana://api/index.md)
 			if (CrossLinkValidator.IsCrossLink(uri))
 			{
+				IsCrossLink = true;
 				context.Build.Collector.EmitCrossLink(Link);
 				if (context.CrossLinkResolver.TryResolve(
 						s => this.EmitError(s),

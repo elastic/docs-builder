@@ -205,7 +205,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			Type = block.Type,
 			Align = block.Align,
 			External = block.External,
-			IsInGroup = block.IsInGroup
+			IsInGroup = block.IsInGroup,
+			IsCrossLink = block.IsCrossLink,
+			RequiresHtmx = block.RequiresHtmx
 		});
 		RenderRazorSlice(slice, renderer);
 	}

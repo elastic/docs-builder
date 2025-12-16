@@ -12,8 +12,8 @@ A button requires the button text as an argument and a `:link:` property:
 
 :::::::{tab-set}
 ::::::{tab-item} Output
-:::{button} Get Started
-:link: #
+:::{button} Syntax Guide
+:link: /syntax
 :::
 ::::::
 
@@ -36,12 +36,12 @@ Two button variants are available:
 :::::::{tab-set}
 ::::::{tab-item} Output
 ::::{button-group}
-:::{button} Primary Button
-:link: #
+:::{button} Quick Reference
+:link: /syntax/quick-ref
 :type: primary
 :::
-:::{button} Secondary Button
-:link: #
+:::{button} View All Syntax
+:link: /syntax
 :type: secondary
 :::
 ::::
@@ -70,12 +70,12 @@ Use the `{button-group}` directive to display multiple buttons in a row:
 :::::::{tab-set}
 ::::::{tab-item} Output
 ::::{button-group}
-:::{button} Elastic Fundamentals
-:link: #
+:::{button} How-to Guides
+:link: /contribute
 :type: primary
 :::
-:::{button} Upgrade Versions
-:link: #
+:::{button} Configuration
+:link: /configure
 :type: secondary
 :::
 ::::
@@ -105,18 +105,18 @@ Control the horizontal alignment of standalone buttons with the `:align:` proper
 
 :::::::{tab-set}
 ::::::{tab-item} Output
-:::{button} Left (default)
-:link: #
+:::{button} Links
+:link: /syntax/links
 :align: left
 :::
 
-:::{button} Center
-:link: #
+:::{button} Images
+:link: /syntax/images
 :align: center
 :::
 
-:::{button} Right
-:link: #
+:::{button} Tables
+:link: /syntax/tables
 :align: right
 :::
 ::::::
@@ -149,11 +149,11 @@ Button groups also support the `:align:` property:
 ::::::{tab-item} Output
 ::::{button-group}
 :align: center
-:::{button} Centered Group
-:link: #
+:::{button} Code Blocks
+:link: /syntax/code
 :::
-:::{button} Second Button
-:link: #
+:::{button} Tabs
+:link: /syntax/tabs
 :type: secondary
 :::
 ::::

@@ -40,6 +40,16 @@ public class ButtonViewModel : DirectiveViewModel
 	public required bool IsInGroup { get; init; }
 
 	/// <summary>
+	/// Whether the link is a cross-repository link.
+	/// </summary>
+	public required bool IsCrossLink { get; init; }
+
+	/// <summary>
+	/// Whether the link requires htmx attributes for client-side navigation.
+	/// </summary>
+	public required bool RequiresHtmx { get; init; }
+
+	/// <summary>
 	/// Gets the CSS class for the button type.
 	/// </summary>
 	public string TypeClass => Type == "secondary" ? "doc-button-secondary" : "doc-button-primary";
