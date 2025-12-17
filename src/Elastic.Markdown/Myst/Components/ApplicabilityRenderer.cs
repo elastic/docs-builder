@@ -431,7 +431,9 @@ public static class ApplicabilityRenderer
 						: string.Empty,
 
 					VersionSpecKind.Range => maxReleased
-						? $"{min.Major}.{min.Minor}-{max!.Major}.{max.Minor}"
+						? min.Major == max!.Major && min.Minor == max.Minor
+							? $"{min.Major}.{min.Minor}" // Same major.minor, so just show the version once
+							: $"{min.Major}.{min.Minor}-{max.Major}.{max.Minor}"
 						: minReleased
 							? $"{min.Major}.{min.Minor}+"
 							: string.Empty,
