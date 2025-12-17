@@ -115,6 +115,8 @@ public enum VersioningSystemId
 	EdotCfAzure,
 	[Display(Name = "edot-cf-gcp")]
 	EdotCfGcp,
+	[Display(Name = "terraform-google-edot-cf")]
+	TerraformGoogleEdotCf,
 	[Display(Name = "edot-collector")]
 	EdotCollector,
 	[Display(Name = "search-ui")]

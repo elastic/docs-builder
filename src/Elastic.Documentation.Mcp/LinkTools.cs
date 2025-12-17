@@ -56,7 +56,11 @@ public class LinkTools(
 
 			return JsonSerializer.Serialize(new ErrorResponse("Failed to resolve cross-link", errors), McpJsonContext.Default.ErrorResponse);
 		}
-		catch (Exception ex)
+		catch (OperationCanceledException)
+		{
+			throw;
+		}
+		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
 		{
 			return JsonSerializer.Serialize(new ErrorResponse(ex.Message), McpJsonContext.Default.ErrorResponse);
 		}
@@ -92,7 +96,11 @@ public class LinkTools(
 				new ListRepositoriesResponse(repositories.Count, repositories),
 				McpJsonContext.Default.ListRepositoriesResponse);
 		}
-		catch (Exception ex)
+		catch (OperationCanceledException)
+		{
+			throw;
+		}
+		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
 		{
 			return JsonSerializer.Serialize(new ErrorResponse(ex.Message), McpJsonContext.Default.ErrorResponse);
 		}
@@ -145,7 +153,11 @@ public class LinkTools(
 					pages),
 				McpJsonContext.Default.RepositoryLinksResponse);
 		}
-		catch (Exception ex)
+		catch (OperationCanceledException)
+		{
+			throw;
+		}
+		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
 		{
 			return JsonSerializer.Serialize(new ErrorResponse(ex.Message), McpJsonContext.Default.ErrorResponse);
 		}
@@ -196,7 +208,11 @@ public class LinkTools(
 				new FindCrossLinksResponse(results.Count, results),
 				McpJsonContext.Default.FindCrossLinksResponse);
 		}
-		catch (Exception ex)
+		catch (OperationCanceledException)
+		{
+			throw;
+		}
+		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
 		{
 			return JsonSerializer.Serialize(new ErrorResponse(ex.Message), McpJsonContext.Default.ErrorResponse);
 		}
@@ -251,7 +267,11 @@ public class LinkTools(
 				new ValidateCrossLinksResponse(repository, validCount, brokenLinks.Count, brokenLinks),
 				McpJsonContext.Default.ValidateCrossLinksResponse);
 		}
-		catch (Exception ex)
+		catch (OperationCanceledException)
+		{
+			throw;
+		}
+		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
 		{
 			return JsonSerializer.Serialize(new ErrorResponse(ex.Message), McpJsonContext.Default.ErrorResponse);
 		}

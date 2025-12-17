@@ -36,7 +36,7 @@ jobs:
           stat "${BINARY_PATH}"
       - name: Archive artifact
         id: upload-artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: api-lambda-binary
           retention-days: 1
