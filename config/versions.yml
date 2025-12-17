@@ -104,6 +104,9 @@ versioning_systems:
   edot-cf-gcp:
     base: 0.1
     current: 0.1.0
+  terraform-google-edot-cf:
+    base: 0.1
+    current: 0.1.1
 
   # Logging
   ecs-logging-dotnet:
@@ -143,10 +146,10 @@ versioning_systems:
   # Elasticsearch clients (separate from Elasticsearch)
   elasticsearch-client-go:
     base: 9.0
-    current: 9.2.0
+    current: 9.2.1
   elasticsearch-client-java:
     base: 9.0
-    current: 9.2.1
+    current: 9.2.2
   elasticsearch-client-javascript:
     base: 9.0
     current: 9.2.0
