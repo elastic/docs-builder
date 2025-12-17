@@ -134,3 +134,7 @@ The tutorial assumes that you have no previous knowledge of Elasticsearch or gen
 {applies_to}`stack: preview 9.0, removed 9.1`
 
 {applies_to}`stack: preview 9.0.0-9.0.3, removed 9.3`
+
+{applies_to}`stack: preview 9.0, ga 9.4, removed 9.7`
+
+{applies_to}`stack: preview 9.0, deprecated 9.4, removed 9.7`
