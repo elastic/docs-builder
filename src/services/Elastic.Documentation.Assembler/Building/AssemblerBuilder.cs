@@ -78,7 +78,7 @@ public class AssemblerBuilder(
 			var pathPrefix = context.Environment.PathPrefix;
 			var outputWithPrefix = string.IsNullOrEmpty(pathPrefix)
 				? context.OutputDirectory
-				: context.ReadFileSystem.DirectoryInfo.New(Path.Combine(context.OutputDirectory.FullName, pathPrefix));
+				: context.ReadFileSystem.DirectoryInfo.New(Path.Join(context.OutputDirectory.FullName, pathPrefix));
 			_ = await exporter.FinishExportAsync(outputWithPrefix, ctx);
 		}
 

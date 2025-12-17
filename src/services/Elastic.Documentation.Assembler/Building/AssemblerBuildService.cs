@@ -123,7 +123,7 @@ public class AssemblerBuildService(
 			var pathPrefix = assembleContext.Environment.PathPrefix;
 			var outputWithPrefix = string.IsNullOrEmpty(pathPrefix)
 				? assembleContext.OutputDirectory
-				: assembleContext.WriteFileSystem.DirectoryInfo.New(Path.Combine(assembleContext.OutputDirectory.FullName, pathPrefix));
+				: assembleContext.WriteFileSystem.DirectoryInfo.New(assembleContext.WriteFileSystem.Path.Combine(assembleContext.OutputDirectory.FullName, pathPrefix));
 			var sitemapBuilder = new SitemapBuilder(navigation.NavigationItems, assembleContext.WriteFileSystem, outputWithPrefix);
 			sitemapBuilder.Generate();
 		}
