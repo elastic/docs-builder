@@ -140,7 +140,8 @@ public class AssemblerBuildService(
 
 	private static async Task EnhanceLlmsTxtFile(AssembleContext context, SiteNavigation navigation, LlmsNavigationEnhancer enhancer, Cancel ctx)
 	{
-		var llmsTxtPath = Path.Combine(context.OutputDirectory.FullName, "docs", "llms.txt");
+		var pathPrefix = context.Environment.PathPrefix ?? "docs";
+		var llmsTxtPath = Path.Combine(context.OutputDirectory.FullName, pathPrefix, "llms.txt");
 
 		var readFs = context.ReadFileSystem;
 		if (!readFs.File.Exists(llmsTxtPath))
