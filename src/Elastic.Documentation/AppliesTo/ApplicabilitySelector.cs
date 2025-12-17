@@ -23,7 +23,7 @@ public static class ApplicabilitySelector
 		if (availableApplicabilities.Length > 0)
 		{
 			return availableApplicabilities
-				.OrderByDescending(a => a.Version?.Min ?? new SemVersion(0, 0, 0))
+				.OrderByDescending(a => a.Version?.Min ?? ZeroVersion.Instance)
 				.ThenBy(a => ProductLifecycleInfo.GetOrder(a.Lifecycle))
 				.First();
 		}

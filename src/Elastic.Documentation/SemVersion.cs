@@ -13,6 +13,11 @@ public class AllVersions() : SemVersion(99999, 0, 0)
 	public static AllVersions Instance { get; } = new();
 }
 
+public class ZeroVersion() : SemVersion(0, 0, 0)
+{
+	public static ZeroVersion Instance { get; } = new();
+}
+
 /// <summary>
 /// A semver2 compatible version.
 /// </summary>

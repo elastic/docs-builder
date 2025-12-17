@@ -347,8 +347,8 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		var (v1Min, v1Max) = GetEffectiveRange(v1);
 		var (v2Min, v2Max) = GetEffectiveRange(v2);
 
-		return v1Min.CompareTo(v2Max ?? new SemVersion(99999, 0, 0)) <= 0 &&
-			   v2Min.CompareTo(v1Max ?? new SemVersion(99999, 0, 0)) <= 0;
+		return v1Min.CompareTo(v2Max ?? AllVersions.Instance) <= 0 &&
+			   v2Min.CompareTo(v1Max ?? AllVersions.Instance) <= 0;
 	}
 
 	private static (SemVersion min, SemVersion? max) GetEffectiveRange(VersionSpec spec) => spec.Kind switch

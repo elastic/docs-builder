@@ -50,7 +50,7 @@ public static class ApplicabilityRenderer
 
 		// Sort by version (highest first), then by lifecycle priority as tiebreaker
 		var sortedApplicabilities = applicabilities
-			.OrderByDescending(a => a.Version?.Min ?? new SemVersion(0, 0, 0))
+			.OrderByDescending(a => a.Version?.Min ?? ZeroVersion.Instance)
 			.ThenBy(a => ProductLifecycleInfo.GetOrder(a.Lifecycle))
 			.ToList();
 
@@ -156,7 +156,7 @@ public static class ApplicabilityRenderer
 		// Availability section - collect items from all applicabilities
 		// Order by version descending (most recent/future first, then going backwards)
 		var orderedApplicabilities = applicabilities
-			.OrderByDescending(a => a.Version?.Min ?? new SemVersion(0, 0, 0));
+			.OrderByDescending(a => a.Version?.Min ?? ZeroVersion.Instance);
 
 		var showVersionNote = productInfo is { IncludeVersionNote: true } &&
 							  versioningSystem.Base.Major != AllVersionsSpec.Instance.Min.Major;
