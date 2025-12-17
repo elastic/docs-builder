@@ -417,7 +417,6 @@ const AppliesToPopover = ({
                                 font-size: 13px;
                             `}
                         >
-                            The functionality described here is:
                         </p>
                         {popoverData.availabilityItems.map((item, index) =>
                             renderAvailabilityItem(item, index)
