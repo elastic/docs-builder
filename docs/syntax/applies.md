@@ -407,3 +407,206 @@ Within the ProductApplicability category, EDOT and APM Agent items are sorted al
 :::{note}
 Inline applies annotations are rendered in the order they appear in the source file.
 :::
+
+## Rulesets
+
+Badges and applicabilities are displayed according to pre-defined rules according to the release status, the amount of lifecycles declared in the `applies_to` statement, and the versions involved in the comparison when applicable.
+
+### Badges
+
+:::::{dropdown} No version declared (Serverless)
+
+| Lifecycle   | Release status                                          | Lifecycle count | Rendered output              |
+|:------------|:--------------------------------------------------------|-----------------|:-----------------------------|
+| GA          | –                                                       | –               | `{product}`                  |
+| Preview     | –                                                       | –               | `{product}\|Preview`         |
+| Beta        | –                                                       | –               | `{product}                   |Beta` |
+| Deprecated  | –                                                       | –               | `{product}                   |Deprecated` |
+| Removed     | –                                                       | –               | `{product}                   |Removed` |
+| Unavailable | –                                                       | –               | `{product}                   |Unavailable` |
+
+:::::
+
+:::::{dropdown} No version declared (Other versioning systems)
+
+| Lifecycle   | Release status                                          | Lifecycle count | Rendered output              |
+|:------------|:--------------------------------------------------------|-----------------|:-----------------------------|
+| GA          | –                                                       | –               | `{product}                   |{base}+` |
+| Preview     | –                                                       | –               | `{product}\|Preview {base}+` |
+| Beta        | –                                                       | –               | `{product}                   |Beta {base}+` |
+| Deprecated  | –                                                       | –               | `{product}                   |Deprecated {base}+` |
+| Removed     | –                                                       | –               | `{product}                   |Removed {base}+` |
+| Unavailable | –                                                       | –               | `{product}                   |Unavailable {base}+` |
+
+:::::
+
+:::::{dropdown} Greater than or equal to "x.x" (x.x+, x.x, x.x.x+, x.x.x)
+
+| Lifecycle   | Release status                                          | Lifecycle count | Rendered output              |
+|:------------|:--------------------------------------------------------|-----------------|:-----------------------------|
+| GA          | Released                                                | \>= 1           | `{product}                   |x.x+` |
+|             | Unreleased                                              | 1               | `{product}\|Planned`         |
+|             |                                                         | \>= 2           | Use previous lifecycle       |
+| Preview     | Released                                                | \>= 1           | `{product}\|Preview x.x+`    |
+|             | Unreleased                                              | 1               | `{product}\|Planned`         |
+|             |                                                         | \>= 2           | Use previous lifecycle       |
+| Beta        | Released                                                | \>= 1           | `{product}                   |Beta x.x+` |
+|             | Unreleased                                              | 1               | `{product}\|Planned`         |
+|             |                                                         | \>= 2           | Use previous lifecycle       |
+| Deprecated  | Released                                                | \>= 1           | `{product}                   |Deprecated x.x+` |
+|             | Unreleased                                              | 1               | `{product}                   |Deprecation planned` |
+|             |                                                         | \>= 2           | Use previous lifecycle       |
+| Removed     | Released                                                | \>= 1           | `{product}                   |Removed x.x` |
+|             | Unreleased                                              | 1               | `{product}                   |Removal planned` |
+|             |                                                         | \>= 2           | Use previous lifecycle       |
+
+:::::
+
+:::::{dropdown} Range of "x.x-y.y" (x.x-y.y, x.x.x-y.y.y)
+
+| Lifecycle   | Release status                                          | Lifecycle count | Rendered output              |
+|:------------|:--------------------------------------------------------|-----------------|:-----------------------------|
+| GA          | `y.y.y` is released                                     | \>= 1           | `{product}                   |x.x-y.y` |
+|             | `y.y.y` is **not** released `x.x.x` is released         | \>= 1           | `{product}                   |x.x+` |
+|             | `y.y.y` is **not** released `x.x.x` is **not** released | 1               | `{product}\|Planned`         |
+|             |                                                         | \>= 2           | Use previous lifecycle       |
+| Preview     | `y.y.y` is released                                     | \>= 1           | `{product}\|Preview x.x-y.y` |
+|             | `y.y.y` is **not** released `x.x.x` is released         | \>= 1           | `{product}\|Preview x.x+`    |
+|             | `y.y.y` is **not** released `x.x.x` is **not** released | 1               | `{product}\|Planned`         |
+|             |                                                         | \>= 2           | Use previous lifecycle       |
+| Beta        | `y.y.y` is released                                     | \>= 1           | `{product}                   |Beta x.x-y.y` |
+|             | `y.y.y` is **not** released `x.x.x` is released         | \>= 1           | `{product}                   |Beta x.x+` |
+|             | `y.y.y` is **not** released `x.x.x` is **not** released | 1               | `{product}\|Planned`         |
+|             |                                                         | \>= 2           | Use previous lifecycle       |
+| Deprecated  | `y.y.y` is released                                     | \>= 1           | `{product}                   |Deprecated x.x-y.y` |
+|             | `y.y.y` is **not** released `x.x.x` is released         | \>= 1           | `{product}                   |Deprecated x.x+` |
+|             | `y.y.y` is **not** released `x.x.x` is **not** released | \>= 1           | `{product}                   |Deprecation planned` |
+| Removed     | `y.y.y` is released                                     | \>= 1           | `{product}                   |Removed x.x` |
+|             | `y.y.y` is **not** released `x.x.x` is released         | \>= 1           | `{product}                   |Removed x.x` |
+|             | `y.y.y` is **not** released `x.x.x` is **not** released | \>= 1           | `{product}                   |Removal planned` |
+| Unavailable | `y.y.y` is released                                     | \>= 1           | `{product}                   |Unavailable X.X-Y.Y` |
+|             | `y.y.y` is **not** released `x.x.x` is released         | \>= 1           | `{product}                   |Unavailable X.X+` |
+|             | `y.y.y` is **not** released `x.x.x` is **not** released | \>= 1           | ???                          |
+
+:::::
+
+:::::{dropdown} Exactly "x.x" (=x.x, =x.x.x)
+
+| Lifecycle   | Release status                                          | Lifecycle count | Rendered output              |
+|:------------|:--------------------------------------------------------|-----------------|:-----------------------------|
+| GA          | Released                                                | \>= 1           | `{product}                   |X.X` |
+|             | Unreleased                                              | 1               | `{product}\|Planned`         |
+|             |                                                         | \>= 2           | Use previous lifecycle       |
+| Preview     | Released                                                | \>= 1           | `{product}\|Preview X.X`     |
+|             | Unreleased                                              | 1               | `{product}\|Planned`         |
+|             |                                                         | \>= 2           | Use previous lifecycle       |
+| Beta        | Released                                                | \>= 1           | `{product}                   |Beta X.X` |
+|             | Unreleased                                              | 1               | `{product}\|Planned`         |
+|             |                                                         | \>= 2           | Use previous lifecycle       |
+| Deprecated  | Released                                                | \>= 1           | `{product}                   |Deprecated X.X` |
+|             | Unreleased                                              | \>= 1           | `{product}                   |Deprecation planned` |
+| Removed     | Released                                                | \>= 1           | `{product}                   |Removed X.X` |
+|             | Unreleased                                              | \>=1            | `{product}                   |Removal planned` |
+| Unavailable | Released                                                | \>= 1           | `{product}                   |Unavailable X.X` |
+|             | Unreleased                                              | \>= 1           | ???                          |
+
+:::::
+
+### Headers for dynamic content on popover, based on lifecycle/version (Applicability list)
+
+:::::{dropdown} No version declared (Serverless)
+
+| Lifecycle   | Release status                                          | Lifecycle count | Rendered output              |
+|:------------|:--------------------------------------------------------|-----------------|:-----------------------------|
+| GA          | –                                                       | 1               | `Generally available`                 |
+| Preview     | –                                                       | 1               | `Preview`                             |
+| Beta        | –                                                       | 1               | `Beta`                                |
+| Deprecated  | –                                                       | 1               | `Deprecated`                          |
+| Removed     | –                                                       | 1               | `Removed`                             |
+| Unavailable | –                                                       | 1               | `Unavailable`                         |
+:::::
+
+:::::{dropdown} No version declared (Other versioning systems)
+
+| Lifecycle   | Release status                                          | Lifecycle count | Rendered output              |
+|:------------|:--------------------------------------------------------|-----------------|:-----------------------------|
+| GA          | –                                                       | 1               | `Generally available since {base}`    |
+| Preview     | –                                                       | 1               | `Preview since {base}`                |
+| Beta        | –                                                       | 1               | `Beta since {base}`                   |
+| Deprecated  | –                                                       | 1               | `Deprecated since {base}`             |
+| Removed     | –                                                       | 1               | `Removed in {base}`                   |
+| Unavailable | –                                                       | 1               | `Unavailable since {base}`            |
+:::::
+
+:::::{dropdown} Greater than or equal to "x.x" (x.x+, x.x, x.x.x+, x.x.x)
+
+| Lifecycle   | Release status                                          | Lifecycle count | Rendered output              |
+|:------------|:--------------------------------------------------------|-----------------|:-----------------------------|
+| GA          | Released                                                | \>= 1           | `Generally available since X.X`       |
+|             | Unreleased                                              | 1               | `Planned`                             |
+|             |                                                         | \>= 2           | Do not add to availability list       |
+| Preview     | Released                                                | \>= 1           | `Preview since X.X`                   |
+|             | Unreleased                                              | 1               | `Planned`                             |
+|             |                                                         | \>= 2           | Do not add to availability list       |
+| Beta        | Released                                                | \>= 1           | `Beta since X.X`                      |
+|             | Unreleased                                              | 1               | `Planned`                             |
+|             |                                                         | \>= 2           | Do not add to availability list       |
+| Deprecated  | Released                                                | \>= 1           | `Deprecated since X.X`                |
+|             | Unreleased                                              | \>= 1           | `Planned for deprecation`             |
+| Removed     | Released                                                | \>= 1           | `Removed in X.X`                      |
+|             | Unreleased                                              | \>=1            | `Planned for removal`                 |
+| Unavailable | Released                                                | \>= 1           | `Unavailable since X.X`               |
+|             | Unreleased                                              | 1               | `Unavailable`                         |
+|             |                                                         | \>= 2           | Do not add to availability list       |
+:::::
+
+:::::{dropdown} Range of "x.x-y.y" (x.x-y.y, x.x.x-y.y.y)
+
+| Lifecycle   | Release status                                          | Lifecycle count | Rendered output              |
+|:------------|:--------------------------------------------------------|-----------------|:-----------------------------|
+| GA          | `y.y.y` is released                                     | \>= 1           | `Generally available from X.X to Y.Y` |
+|             | `y.y.y` is **not** released `x.x.x` is released         | \>= 1           | `Generally available since X.X`       |
+|             | `y.y.y` is **not** released `x.x.x` is **not** released | 1               | `Planned`                             |
+|             |                                                         | \>= 2           | Do not add to availability list       |
+| Preview     | `y.y.y` is released                                     | \>= 1           | `Preview from X.X to Y.Y`             |
+|             | `y.y.y` is **not** released `x.x.x` is released         | \>= 1           | `Preview since X.X`                   |
+|             | `y.y.y` is **not** released `x.x.x` is **not** released | 1               | `Planned`                             |
+|             |                                                         | \>= 2           | Do not add to availability list       |
+| Beta        | `y.y.y` is released                                     | \>= 1           | `Beta from X.X to Y.Y`                |
+|             | `y.y.y` is **not** released `x.x.x` is released         | \>= 1           | `Beta since X.X`                      |
+|             | `y.y.y` is **not** released `x.x.x` is **not** released | 1               | `Planned`                             |
+|             |                                                         | \>= 2           | Do not add to availability list       |
+| Deprecated  | `y.y.y` is released                                     | \>= 1           | `Deprecated from X.X to Y.Y`          |
+|             | `y.y.y` is **not** released `x.x.x` is released         | \>= 1           | `Deprecated since X.X`                |
+|             | `y.y.y` is **not** released `x.x.x` is **not** released | \>= 1           | `Planned for deprecation`             |
+| Removed     | `y.y.y` is released                                     | \>= 1           | `Removed in X.X`                      |
+|             | `y.y.y` is **not** released `x.x.x` is released         | \>= 1           | `Removed in X.X`                      |
+|             | `y.y.y` is **not** released `x.x.x` is **not** released | \>= 1           | `Planned for removal`                 |
+| Unavailable | `y.y.y` is released                                     | \>= 1           | `Unavailable from X.X to Y.Y`         |
+|             | `y.y.y` is **not** released `x.x.x` is released         | \>= 1           | `Unavailable since X.X`               |
+|             | `y.y.y` is **not** released `x.x.x` is **not** released | \>= 1           | Do not add to availability list       |
+
+
+:::::
+
+:::::{dropdown} Exactly "x.x" (=x.x, =x.x.x)
+
+| Lifecycle   | Release status                                          | Lifecycle count | Rendered output              |
+|:------------|:--------------------------------------------------------|-----------------|:-----------------------------|
+| GA          | Released                                                | \>= 1           | `Generally available in X.X`          |
+|             | Unreleased                                              | 1               | `Planned`                             |
+|             |                                                         | \>= 2           | Do not add to availability list       |
+| Preview     | Released                                                | \>= 1           | `Preview in X.X`                      |
+|             | Unreleased                                              | 1               | `Planned`                             |
+|             |                                                         | \>= 2           | Do not add to availability list       |
+| Beta        | Released                                                | \>= 1           | `Beta in X.X`                         |
+|             | Unreleased                                              | 1               | `Planned`                             |
+|             |                                                         | \>= 2           | Do not add to availability list       |
+| Deprecated  | Released                                                | \>= 1           | `Deprecated in X.X`                   |
+|             | Unreleased                                              | \>= 1           | `Planned for deprecation`             |
+| Removed     | Released                                                | \>= 1           | `Removed in X.X`                      |
+|             | Unreleased                                              | \>=1            | `Planned for removal`                 |
+| Unavailable | Released                                                | \>= 1           | `Unavailable in X.X`                  |
+|             | Unreleased                                              | \>= 1           | Do not add to availability list       |
+
+:::::
