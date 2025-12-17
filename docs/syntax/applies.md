@@ -512,7 +512,7 @@ Badges and applicabilities are displayed according to pre-defined rules accordin
 
 :::::
 
-### Headers for dynamic content on popover, based on lifecycle/version (Applicability list)
+### Headers for dynamic content on popover (Applicability list)
 
 :::::{dropdown} No version declared (Serverless)
 
