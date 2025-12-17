@@ -537,7 +537,7 @@ jobs:
         env:
           AWS_RETRY_MODE: standard
           AWS_MAX_ATTEMPTS: 6
-          ASSEMBLER_PREVIEW_PATH_PREFIX: /${{ github.repository }}/assembled-docs/${{ github.event.pull_request.number }}
+          ASSEMBLER_PREVIEW_PATH_PREFIX: ${{ github.repository }}/assembled-docs/${{ github.event.pull_request.number }}
         run: |
           aws s3 sync .artifacts/assembly/${ASSEMBLER_PREVIEW_PATH_PREFIX} "s3://elastic-docs-v3-website-preview/${ASSEMBLER_PREVIEW_PATH_PREFIX}" --delete --no-follow-symlinks
           aws cloudfront create-invalidation \
