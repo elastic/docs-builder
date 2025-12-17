@@ -67,7 +67,11 @@ public class LinkTools(
 				details = errors
 			}, JsonOptions);
 		}
-		catch (Exception ex)
+		catch (OperationCanceledException)
+		{
+			throw;
+		}
+		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
 		{
 			return JsonSerializer.Serialize(new { error = ex.Message }, JsonOptions);
 		}
@@ -112,7 +116,11 @@ public class LinkTools(
 				repositories
 			}, JsonOptions);
 		}
-		catch (Exception ex)
+		catch (OperationCanceledException)
+		{
+			throw;
+		}
+		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
 		{
 			return JsonSerializer.Serialize(new { error = ex.Message }, JsonOptions);
 		}
@@ -175,7 +183,11 @@ public class LinkTools(
 				}).ToList()
 			}, JsonOptions);
 		}
-		catch (Exception ex)
+		catch (OperationCanceledException)
+		{
+			throw;
+		}
+		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
 		{
 			return JsonSerializer.Serialize(new { error = ex.Message }, JsonOptions);
 		}
@@ -234,7 +246,11 @@ public class LinkTools(
 				links = results
 			}, JsonOptions);
 		}
-		catch (Exception ex)
+		catch (OperationCanceledException)
+		{
+			throw;
+		}
+		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
 		{
 			return JsonSerializer.Serialize(new { error = ex.Message }, JsonOptions);
 		}
@@ -300,7 +316,11 @@ public class LinkTools(
 				broken = brokenLinks
 			}, JsonOptions);
 		}
-		catch (Exception ex)
+		catch (OperationCanceledException)
+		{
+			throw;
+		}
+		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
 		{
 			return JsonSerializer.Serialize(new { error = ex.Message }, JsonOptions);
 		}
