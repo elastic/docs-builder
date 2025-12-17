@@ -117,11 +117,15 @@ public class AssemblerRepositorySourcer(ILoggerFactory logFactory, AssembleConte
 		};
 	}
 
-	public async Task WriteLinkRegistrySnapshot(LinkRegistry linkRegistrySnapshot, Cancel ctx = default) => await context.WriteFileSystem.File.WriteAllTextAsync(
-			Path.Combine(context.OutputDirectory.FullName, "docs", CheckoutResult.LinkRegistrySnapshotFileName),
+	public async Task WriteLinkRegistrySnapshot(LinkRegistry linkRegistrySnapshot, Cancel ctx = default)
+	{
+		var pathPrefix = context.Environment.PathPrefix ?? "docs";
+		await context.WriteFileSystem.File.WriteAllTextAsync(
+			Path.Combine(context.OutputDirectory.FullName, pathPrefix, CheckoutResult.LinkRegistrySnapshotFileName),
 			LinkRegistry.Serialize(linkRegistrySnapshot),
 			ctx
 		);
+	}
 }
 
 
