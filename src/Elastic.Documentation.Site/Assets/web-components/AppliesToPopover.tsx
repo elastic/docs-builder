@@ -416,8 +416,7 @@ const AppliesToPopover = ({
                                 color: var(--color-grey-70, #535966);
                                 font-size: 13px;
                             `}
-                        >
-                        </p>
+                        ></p>
                         {popoverData.availabilityItems.map((item, index) =>
                             renderAvailabilityItem(item, index)
                         )}
