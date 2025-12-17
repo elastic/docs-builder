@@ -225,8 +225,13 @@ public static class ApplicabilityRenderer
 		// Get version info
 		var min = versionSpec.Min;
 		var max = versionSpec.Max;
-		var minVersion = $"{min.Major}.{min.Minor}";
-		var maxVersion = max is not null ? $"{max.Major}.{max.Minor}" : null;
+		var isPatchLevelRange = max is not null && min.Major == max.Major && min.Minor == max.Minor;
+		var minVersion = isPatchLevelRange ? min.ToString() : $"{min.Major}.{min.Minor}";
+		var maxVersion = max is not null
+			? isPatchLevelRange
+				? max.ToString()
+				: $"{max.Major}.{max.Minor}"
+			: null;
 		var isMinReleased = min <= versioningSystem.Current;
 		var isMaxReleased = max is not null && max <= versioningSystem.Current;
 
