@@ -54,7 +54,7 @@ public class SitemapBuilder(
 
 		doc.Add(root);
 
-		using var fileStream = fileSystem.File.Create(Path.Combine(outputFolder.ToString() ?? string.Empty, "docs", "sitemap.xml"));
+		using var fileStream = fileSystem.File.Create(Path.Combine(outputFolder.FullName, "sitemap.xml"));
 		doc.Save(fileStream);
 	}
 

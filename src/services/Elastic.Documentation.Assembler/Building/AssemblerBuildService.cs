@@ -120,7 +120,11 @@ public class AssemblerBuildService(
 
 		if (exporters.Contains(Exporter.Html))
 		{
-			var sitemapBuilder = new SitemapBuilder(navigation.NavigationItems, assembleContext.WriteFileSystem, assembleContext.OutputDirectory);
+			var pathPrefix = assembleContext.Environment.PathPrefix;
+			var outputWithPrefix = string.IsNullOrEmpty(pathPrefix)
+				? assembleContext.OutputDirectory
+				: assembleContext.WriteFileSystem.DirectoryInfo.New(Path.Combine(assembleContext.OutputDirectory.FullName, pathPrefix));
+			var sitemapBuilder = new SitemapBuilder(navigation.NavigationItems, assembleContext.WriteFileSystem, outputWithPrefix);
 			sitemapBuilder.Generate();
 		}
 
@@ -140,10 +144,10 @@ public class AssemblerBuildService(
 
 	private static async Task EnhanceLlmsTxtFile(AssembleContext context, SiteNavigation navigation, LlmsNavigationEnhancer enhancer, Cancel ctx)
 	{
-		var pathPrefix = context.Environment.PathPrefix ?? "docs";
-		var llmsTxtPath = Path.Combine(context.OutputDirectory.FullName, pathPrefix, "llms.txt");
-
 		var readFs = context.ReadFileSystem;
+		var pathPrefix = context.Environment.PathPrefix ?? "docs";
+		var llmsTxtPath = readFs.Path.Combine(context.OutputDirectory.FullName, pathPrefix, "llms.txt");
+
 		if (!readFs.File.Exists(llmsTxtPath))
 			return; // No llms.txt file to enhance
 
