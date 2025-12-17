@@ -54,6 +54,9 @@ products:
   cloud-terraform:
     display: 'Elastic Cloud Terraform Provider'
     versioning: 'cloud-terraform'
+  terraform-google-edot-cf:
+    display: 'Terraform Google EDOT CF'
+    versioning: 'terraform-google-edot-cf'
   curator:
     display: 'Elasticsearch Curator'
   ecs:

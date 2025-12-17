@@ -37,7 +37,7 @@ jobs:
       - uses: actions/checkout@v6
           
       - name: Download bootstrap binary
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: api-lambda-binary # Defined in build-api-lambda.yml
 
