@@ -170,52 +170,7 @@ const ChatScrollArea = ({
     isStreaming,
 }: ChatScrollAreaProps) => {
     const { euiTheme } = useEuiTheme()
-    const [spacerHeight, setSpacerHeight] = useState(0)
-
-    // Calculate spacer height when streaming starts/ends
-    useEffect(() => {
-        if (!scrollRef.current) return
-
-        const container = scrollRef.current
-        const containerHeight = container.clientHeight
-        const scrollMargin = parseInt(euiTheme.size.l, 10)
-
-        // Find the last user message
-        const userMessages = container.querySelectorAll(
-            '[data-message-type="user"]'
-        )
-        const lastUserMessage = userMessages[
-            userMessages.length - 1
-        ] as HTMLElement
-
-        if (!lastUserMessage) {
-            setSpacerHeight(0)
-            return
-        }
-
-        const userMessageHeight = lastUserMessage.offsetHeight
-
-        if (isStreaming) {
-            // During streaming: spacer = remaining space after user message
-            const calculatedHeight =
-                containerHeight - userMessageHeight - scrollMargin
-            setSpacerHeight(Math.max(0, calculatedHeight))
-        } else {
-            // After streaming: keep spacer if AI response is shorter than available space
-            const aiMessages = container.querySelectorAll(
-                '[data-message-type="ai"]'
-            )
-            const lastAiMessage = aiMessages[
-                aiMessages.length - 1
-            ] as HTMLElement
-            const aiMessageHeight = lastAiMessage?.offsetHeight || 0
-
-            const contentHeight =
-                userMessageHeight + aiMessageHeight + scrollMargin
-            const remainingSpace = containerHeight - contentHeight
-            setSpacerHeight(Math.max(0, remainingSpace))
-        }
-    }, [isStreaming, scrollRef, messages])
+    const spacerHeight = useSpacerHeight(scrollRef, isStreaming, messages)
 
     const scrollableStyles = css`
         height: 100%;
@@ -324,6 +279,7 @@ function useChatSubmit(scrollRef: RefObject<HTMLDivElement | null>) {
     const isCooldownActive = useIsAskAiCooldownActive()
     const isStreaming = useIsStreaming()
     const { euiTheme } = useEuiTheme()
+    const scrollMargin = parseInt(euiTheme.size.l, 10)
 
     const [inputValue, setInputValue] = useState('')
     const abortRef = useRef<(() => void) | null>(null)
@@ -346,32 +302,7 @@ function useChatSubmit(scrollRef: RefObject<HTMLDivElement | null>) {
             // Scroll to position the user message at the top of the viewport
             setTimeout(() => {
                 if (scrollRef.current) {
-                    // Find the last user message element
-                    const userMessages = scrollRef.current.querySelectorAll(
-                        '[data-message-type="user"]'
-                    )
-                    const lastUserMessage = userMessages[
-                        userMessages.length - 1
-                    ] as HTMLElement
-
-                    if (lastUserMessage) {
-                        // Calculate scroll position to put user message at top with margin
-                        const containerRect =
-                            scrollRef.current.getBoundingClientRect()
-                        const messageRect =
-                            lastUserMessage.getBoundingClientRect()
-                        const scrollMargin = parseInt(euiTheme.size.l, 10)
-                        const scrollOffset =
-                            messageRect.top -
-                            containerRect.top +
-                            scrollRef.current.scrollTop -
-                            scrollMargin
-
-                        scrollRef.current.scrollTo({
-                            top: Math.max(0, scrollOffset),
-                            behavior: 'smooth',
-                        })
-                    }
+                    scrollUserMessageToTop(scrollRef.current, scrollMargin)
                 }
             }, 100)
         },
@@ -452,6 +383,54 @@ function useFocusOnComplete(inputRef: RefObject<HTMLTextAreaElement | null>) {
     }, [messages, inputRef])
 }
 
+/**
+ * Calculates spacer height to keep user message at top during/after streaming.
+ * During streaming: spacer fills remaining space after user message.
+ * After streaming: keeps spacer if AI response is shorter than available space.
+ */
+function useSpacerHeight(
+    scrollRef: RefObject<HTMLDivElement | null>,
+    isStreaming: boolean,
+    messages: ChatMessage[]
+): number {
+    const { euiTheme } = useEuiTheme()
+    const scrollMargin = parseInt(euiTheme.size.l, 10)
+    const [spacerHeight, setSpacerHeight] = useState(0)
+
+    useEffect(() => {
+        if (!scrollRef.current) return
+
+        const container = scrollRef.current
+        const containerHeight = container.clientHeight
+        const lastUserMessage = getLastMessage(container, 'user')
+
+        if (!lastUserMessage) {
+            setSpacerHeight(0)
+            return
+        }
+
+        const userMessageHeight = lastUserMessage.offsetHeight
+
+        if (isStreaming) {
+            // During streaming: spacer = remaining space after user message
+            const calculatedHeight =
+                containerHeight - userMessageHeight - scrollMargin
+            setSpacerHeight(Math.max(0, calculatedHeight))
+        } else {
+            // After streaming: keep spacer if AI response is shorter than available space
+            const lastAiMessage = getLastMessage(container, 'ai')
+            const aiMessageHeight = lastAiMessage?.offsetHeight || 0
+
+            const contentHeight =
+                userMessageHeight + aiMessageHeight + scrollMargin
+            const remainingSpace = containerHeight - contentHeight
+            setSpacerHeight(Math.max(0, remainingSpace))
+        }
+    }, [isStreaming, scrollRef, messages, scrollMargin])
+
+    return spacerHeight
+}
+
 // ============================================================================
 // Constants & Styles (implementation details)
 // ============================================================================
@@ -462,6 +441,33 @@ const KEYBOARD_SHORTCUTS = [
 ]
 
 const CONTENT_AREA_HEIGHT = 400
+
+// ============================================================================
+// DOM Helpers
+// ============================================================================
+
+function getLastMessage(
+    container: HTMLElement,
+    type: 'user' | 'ai'
+): HTMLElement | null {
+    const messages = container.querySelectorAll(`[data-message-type="${type}"]`)
+    return (messages[messages.length - 1] as HTMLElement) || null
+}
+
+function scrollUserMessageToTop(container: HTMLElement, margin: number): void {
+    const lastUserMessage = getLastMessage(container, 'user')
+    if (!lastUserMessage) return
+
+    const containerRect = container.getBoundingClientRect()
+    const messageRect = lastUserMessage.getBoundingClientRect()
+    const scrollOffset =
+        messageRect.top - containerRect.top + container.scrollTop - margin
+
+    container.scrollTo({
+        top: Math.max(0, scrollOffset),
+        behavior: 'smooth',
+    })
+}
 
 const containerStyles = css`
     height: 100%;
