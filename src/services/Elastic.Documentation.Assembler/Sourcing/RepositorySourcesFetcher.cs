@@ -121,7 +121,7 @@ public class AssemblerRepositorySourcer(ILoggerFactory logFactory, AssembleConte
 	{
 		var pathPrefix = context.Environment.PathPrefix ?? "docs";
 		await context.WriteFileSystem.File.WriteAllTextAsync(
-			Path.Combine(context.OutputDirectory.FullName, pathPrefix, CheckoutResult.LinkRegistrySnapshotFileName),
+			context.WriteFileSystem.Path.Combine(context.OutputDirectory.FullName, pathPrefix, CheckoutResult.LinkRegistrySnapshotFileName),
 			LinkRegistry.Serialize(linkRegistrySnapshot),
 			ctx
 		);
