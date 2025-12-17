@@ -8,28 +8,22 @@ using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Links.InboundLinks;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using ModelContextProtocol.Server;
 
 namespace Elastic.Documentation.Mcp;
 
 [McpServerToolType]
-public static class LinkTools
+public class LinkTools(
+	ILinkIndexReader linkIndexReader,
+	LinksIndexCrossLinkFetcher crossLinkFetcher)
 {
 	private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
-
-	private static LinksIndexCrossLinkFetcher CreateFetcher()
-	{
-		var reader = Aws3LinkIndexReader.CreateAnonymous();
-		return new LinksIndexCrossLinkFetcher(NullLoggerFactory.Instance, reader);
-	}
 
 	/// <summary>
 	/// Resolves a cross-link URI to its target URL.
 	/// </summary>
 	[McpServerTool, Description("Resolves a cross-link (like 'docs-content://get-started/intro.md') to its target URL and returns available anchors.")]
-	public static async Task<string> ResolveCrossLink(
+	public async Task<string> ResolveCrossLink(
 		[Description("The cross-link URI to resolve (e.g., 'docs-content://get-started/intro.md')")] string crossLink,
 		CancellationToken cancellationToken = default)
 	{
@@ -38,8 +32,7 @@ public static class LinkTools
 			if (!Uri.TryCreate(crossLink, UriKind.Absolute, out var uri))
 				return JsonSerializer.Serialize(new { error = $"Invalid cross-link URI: {crossLink}" }, JsonOptions);
 
-			using var fetcher = CreateFetcher();
-			var crossLinks = await fetcher.FetchCrossLinks(cancellationToken);
+			var crossLinks = await crossLinkFetcher.FetchCrossLinks(cancellationToken);
 
 			var errors = new List<string>();
 			var resolver = new CrossLinkResolver(crossLinks);
@@ -84,12 +77,11 @@ public static class LinkTools
 	/// Lists all available repositories in the link index.
 	/// </summary>
 	[McpServerTool, Description("Lists all repositories available in the cross-link index with their metadata.")]
-	public static async Task<string> ListRepositories(CancellationToken cancellationToken = default)
+	public async Task<string> ListRepositories(CancellationToken cancellationToken = default)
 	{
 		try
 		{
-			var reader = Aws3LinkIndexReader.CreateAnonymous();
-			var registry = await reader.GetRegistry(cancellationToken);
+			var registry = await linkIndexReader.GetRegistry(cancellationToken);
 
 			var repositories = new List<object>();
 			foreach (var (repoName, branches) in registry.Repositories)
@@ -130,14 +122,13 @@ public static class LinkTools
 	/// Gets all links published by a repository.
 	/// </summary>
 	[McpServerTool, Description("Gets all pages and their anchors published by a specific repository.")]
-	public static async Task<string> GetRepositoryLinks(
+	public async Task<string> GetRepositoryLinks(
 		[Description("The repository name (e.g., 'docs-content', 'elasticsearch')")] string repository,
 		CancellationToken cancellationToken = default)
 	{
 		try
 		{
-			var reader = Aws3LinkIndexReader.CreateAnonymous();
-			var registry = await reader.GetRegistry(cancellationToken);
+			var registry = await linkIndexReader.GetRegistry(cancellationToken);
 
 			if (!registry.Repositories.TryGetValue(repository, out var branches))
 			{
@@ -163,7 +154,7 @@ public static class LinkTools
 				}, JsonOptions);
 			}
 
-			var links = await reader.GetRepositoryLinks(entry.Path, cancellationToken);
+			var links = await linkIndexReader.GetRepositoryLinks(entry.Path, cancellationToken);
 
 			return JsonSerializer.Serialize(new
 			{
@@ -194,7 +185,7 @@ public static class LinkTools
 	/// Finds all cross-links from one repository to another.
 	/// </summary>
 	[McpServerTool, Description("Finds all cross-links between repositories. Can filter by source or target repository.")]
-	public static async Task<string> FindCrossLinks(
+	public async Task<string> FindCrossLinks(
 		[Description("Source repository to find links FROM (optional)")] string? from = null,
 		[Description("Target repository to find links TO (optional)")] string? to = null,
 		CancellationToken cancellationToken = default)
@@ -209,8 +200,7 @@ public static class LinkTools
 				}, JsonOptions);
 			}
 
-			using var fetcher = CreateFetcher();
-			var crossLinks = await fetcher.FetchCrossLinks(cancellationToken);
+			var crossLinks = await crossLinkFetcher.FetchCrossLinks(cancellationToken);
 
 			var results = new List<object>();
 
@@ -254,14 +244,13 @@ public static class LinkTools
 	/// Validates cross-links and finds broken ones.
 	/// </summary>
 	[McpServerTool, Description("Validates cross-links to a repository and reports any broken links.")]
-	public static async Task<string> ValidateCrossLinks(
+	public async Task<string> ValidateCrossLinks(
 		[Description("Target repository to validate links TO (e.g., 'docs-content')")] string repository,
 		CancellationToken cancellationToken = default)
 	{
 		try
 		{
-			using var fetcher = CreateFetcher();
-			var crossLinks = await fetcher.FetchCrossLinks(cancellationToken);
+			var crossLinks = await crossLinkFetcher.FetchCrossLinks(cancellationToken);
 
 			if (!crossLinks.LinkReferences.ContainsKey(repository))
 			{
