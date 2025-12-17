@@ -279,7 +279,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		if (lifecyclesWithMultipleVersions.Count > 0)
 		{
 			var lifecycleNames = string.Join(", ", lifecyclesWithMultipleVersions);
-			diagnostics.Add((Severity.Warning,
+			diagnostics.Add((Severity.Hint, // Temporary downgrade to Hint until the currently available docs are adjusted
 				$"Key '{key}': Multiple version declarations found for lifecycle(s): {lifecycleNames}. Only one version per lifecycle is allowed."));
 		}
 
@@ -290,7 +290,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 
 		if (greaterThanItems.Count > 1)
 		{
-			diagnostics.Add((Severity.Warning,
+			diagnostics.Add((Severity.Hint, // Temporary downgrade to Hint until the currently available docs are adjusted
 				$"Key '{key}': Multiple items use greater-than-or-equal syntax. Only one item per key can use this syntax."));
 		}
 
@@ -303,7 +303,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		{
 			var rangeDescriptions = invalidRanges.Select(item =>
 				$"{item.Lifecycle} ({item.Version!.Min.Major}.{item.Version.Min.Minor}-{item.Version.Max!.Major}.{item.Version.Max.Minor})");
-			diagnostics.Add((Severity.Warning,
+			diagnostics.Add((Severity.Hint, // Temporary downgrade to Hint until the currently available docs are adjusted
 				$"Key '{key}': Invalid range(s) where first version is greater than last version: {string.Join(", ", rangeDescriptions)}."));
 		}
 
@@ -324,7 +324,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 
 		if (hasOverlaps)
 		{
-			diagnostics.Add((Severity.Warning,
+			diagnostics.Add((Severity.Hint, // Temporary downgrade to Hint until the currently available docs are adjusted
 				$"Key '{key}': Overlapping version ranges detected. Ensure version ranges do not overlap within the same key."));
 		}
 	}
