@@ -109,7 +109,7 @@ public record AppliesCollection : IReadOnlyCollection<Applicability>
 		// Apply the mapping to create updated applications
 		return applications.Select(a =>
 		{
-			if (a.Version is null || a.Version == AllVersionsSpec.Instance || a is not { Version.Kind: VersionSpecKind.GreaterThanOrEqual })
+			if (a.Version is null or AllVersionsSpec || a is not { Version.Kind: VersionSpecKind.GreaterThanOrEqual })
 				return a;
 
 			if (versionMapping.TryGetValue(a.Version.Min, out var newSpec))
