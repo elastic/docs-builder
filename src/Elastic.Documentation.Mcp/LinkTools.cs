@@ -4,18 +4,14 @@
 
 using System.ComponentModel;
 using System.Text.Json;
-using Elastic.Documentation.LinkIndex;
-using Elastic.Documentation.Links.CrossLinks;
-using Elastic.Documentation.Links.InboundLinks;
+using Elastic.Documentation.Assembler.Links;
 using Elastic.Documentation.Mcp.Responses;
 using ModelContextProtocol.Server;
 
 namespace Elastic.Documentation.Mcp;
 
 [McpServerToolType]
-public class LinkTools(
-	ILinkIndexReader linkIndexReader,
-	LinksIndexCrossLinkFetcher crossLinkFetcher)
+public class LinkTools(ILinkUtilService linkUtilService)
 {
 	/// <summary>
 	/// Resolves a cross-link URI to its target URL.
@@ -27,34 +23,19 @@ public class LinkTools(
 	{
 		try
 		{
-			if (!Uri.TryCreate(crossLink, UriKind.Absolute, out var uri))
-				return JsonSerializer.Serialize(new ErrorResponse($"Invalid cross-link URI: {crossLink}"), McpJsonContext.Default.ErrorResponse);
+			var result = await linkUtilService.ResolveCrossLinkAsync(crossLink, cancellationToken);
 
-			var crossLinks = await crossLinkFetcher.FetchCrossLinks(cancellationToken);
-
-			var errors = new List<string>();
-			var resolver = new CrossLinkResolver(crossLinks);
-
-			if (resolver.TryResolve(errors.Add, uri, out var resolvedUri))
+			if (result.IsSuccess)
 			{
-				// Try to get anchor information
-				var lookupPath = (uri.Host + '/' + uri.AbsolutePath.TrimStart('/')).Trim('/');
-				if (string.IsNullOrEmpty(lookupPath) && uri.Host.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
-					lookupPath = uri.Host;
-
-				string[]? anchors = null;
-				if (crossLinks.LinkReferences.TryGetValue(uri.Scheme, out var linkRef) &&
-					linkRef.Links.TryGetValue(lookupPath, out var metadata))
-				{
-					anchors = metadata.Anchors;
-				}
-
+				var value = result.Value;
 				return JsonSerializer.Serialize(
-					new CrossLinkResolved(resolvedUri.ToString(), uri.Scheme, lookupPath, anchors, uri.Fragment.TrimStart('#')),
+					new CrossLinkResolved(value.ResolvedUrl, value.Repository, value.Path, value.Anchors, value.Fragment),
 					McpJsonContext.Default.CrossLinkResolved);
 			}
 
-			return JsonSerializer.Serialize(new ErrorResponse("Failed to resolve cross-link", errors), McpJsonContext.Default.ErrorResponse);
+			return JsonSerializer.Serialize(
+				new ErrorResponse(result.Error.Message, result.Error.Details, result.Error.AvailableRepositories),
+				McpJsonContext.Default.ErrorResponse);
 		}
 		catch (OperationCanceledException)
 		{
@@ -74,27 +55,21 @@ public class LinkTools(
 	{
 		try
 		{
-			var registry = await linkIndexReader.GetRegistry(cancellationToken);
+			var result = await linkUtilService.ListRepositoriesAsync(cancellationToken);
 
-			var repositories = new List<RepositoryInfo>();
-			foreach (var (repoName, branches) in registry.Repositories)
+			if (result.IsSuccess)
 			{
-				// Get the main/master branch entry
-				var entry = branches.TryGetValue("main", out var mainEntry)
-					? mainEntry
-					: branches.TryGetValue("master", out var masterEntry)
-						? masterEntry
-						: branches.Values.FirstOrDefault();
-
-				if (entry != null)
-				{
-					repositories.Add(new RepositoryInfo(repoName, entry.Branch, entry.Path, entry.GitReference, entry.UpdatedAt));
-				}
+				var value = result.Value;
+				var repos = value.Repositories.Select(r =>
+					new Responses.RepositoryInfo(r.Repository, r.Branch, r.Path, r.GitRef, r.UpdatedAt)).ToList();
+				return JsonSerializer.Serialize(
+					new ListRepositoriesResponse(value.Count, repos),
+					McpJsonContext.Default.ListRepositoriesResponse);
 			}
 
 			return JsonSerializer.Serialize(
-				new ListRepositoriesResponse(repositories.Count, repositories),
-				McpJsonContext.Default.ListRepositoriesResponse);
+				new ErrorResponse(result.Error.Message, result.Error.Details, result.Error.AvailableRepositories),
+				McpJsonContext.Default.ErrorResponse);
 		}
 		catch (OperationCanceledException)
 		{
@@ -116,42 +91,27 @@ public class LinkTools(
 	{
 		try
 		{
-			var registry = await linkIndexReader.GetRegistry(cancellationToken);
+			var result = await linkUtilService.GetRepositoryLinksAsync(repository, cancellationToken);
 
-			if (!registry.Repositories.TryGetValue(repository, out var branches))
+			if (result.IsSuccess)
 			{
+				var value = result.Value;
+				var pages = value.Pages.Select(p =>
+					new Responses.PageInfo(p.Path, p.Anchors, p.Hidden)).ToList();
 				return JsonSerializer.Serialize(
-					new ErrorResponse($"Repository '{repository}' not found in link index", AvailableRepositories: registry.Repositories.Keys.ToList()),
-					McpJsonContext.Default.ErrorResponse);
+					new RepositoryLinksResponse(
+						value.Repository,
+						new Responses.OriginInfo(value.Origin.RepositoryName, value.Origin.GitRef),
+						value.UrlPathPrefix,
+						value.PageCount,
+						value.CrossLinkCount,
+						pages),
+					McpJsonContext.Default.RepositoryLinksResponse);
 			}
-
-			// Get the main/master branch entry
-			var entry = branches.TryGetValue("main", out var mainEntry)
-				? mainEntry
-				: branches.TryGetValue("master", out var masterEntry)
-					? masterEntry
-					: branches.Values.FirstOrDefault();
-
-			if (entry == null)
-			{
-				return JsonSerializer.Serialize(
-					new ErrorResponse($"No main or master branch found for repository '{repository}'"),
-					McpJsonContext.Default.ErrorResponse);
-			}
-
-			var links = await linkIndexReader.GetRepositoryLinks(entry.Path, cancellationToken);
-
-			var pages = links.Links.Select(l => new PageInfo(l.Key, l.Value.Anchors, l.Value.Hidden)).ToList();
 
 			return JsonSerializer.Serialize(
-				new RepositoryLinksResponse(
-					repository,
-					new OriginInfo(links.Origin.RepositoryName, links.Origin.Ref),
-					links.UrlPathPrefix,
-					links.Links.Count,
-					links.CrossLinks.Length,
-					pages),
-				McpJsonContext.Default.RepositoryLinksResponse);
+				new ErrorResponse(result.Error.Message, result.Error.Details, result.Error.AvailableRepositories),
+				McpJsonContext.Default.ErrorResponse);
 		}
 		catch (OperationCanceledException)
 		{
@@ -174,39 +134,21 @@ public class LinkTools(
 	{
 		try
 		{
-			if (string.IsNullOrEmpty(from) && string.IsNullOrEmpty(to))
+			var result = await linkUtilService.FindCrossLinksAsync(from, to, cancellationToken);
+
+			if (result.IsSuccess)
 			{
+				var value = result.Value;
+				var links = value.Links.Select(l =>
+					new Responses.CrossLinkInfo(l.FromRepository, l.ToRepository, l.Link)).ToList();
 				return JsonSerializer.Serialize(
-					new ErrorResponse("Please specify at least one of 'from' or 'to' parameters"),
-					McpJsonContext.Default.ErrorResponse);
-			}
-
-			var crossLinks = await crossLinkFetcher.FetchCrossLinks(cancellationToken);
-
-			var results = new List<CrossLinkInfo>();
-
-			foreach (var (repository, linkRef) in crossLinks.LinkReferences)
-			{
-				// Filter by source repository
-				if (!string.IsNullOrEmpty(from) && repository != from)
-					continue;
-
-				foreach (var crossLink in linkRef.CrossLinks)
-				{
-					if (!Uri.TryCreate(crossLink, UriKind.Absolute, out var uri))
-						continue;
-
-					// Filter by target repository
-					if (!string.IsNullOrEmpty(to) && uri.Scheme != to)
-						continue;
-
-					results.Add(new CrossLinkInfo(repository, uri.Scheme, crossLink));
-				}
+					new FindCrossLinksResponse(value.Count, links),
+					McpJsonContext.Default.FindCrossLinksResponse);
 			}
 
 			return JsonSerializer.Serialize(
-				new FindCrossLinksResponse(results.Count, results),
-				McpJsonContext.Default.FindCrossLinksResponse);
+				new ErrorResponse(result.Error.Message, result.Error.Details, result.Error.AvailableRepositories),
+				McpJsonContext.Default.ErrorResponse);
 		}
 		catch (OperationCanceledException)
 		{
@@ -228,44 +170,21 @@ public class LinkTools(
 	{
 		try
 		{
-			var crossLinks = await crossLinkFetcher.FetchCrossLinks(cancellationToken);
+			var result = await linkUtilService.ValidateCrossLinksAsync(repository, cancellationToken);
 
-			if (!crossLinks.LinkReferences.ContainsKey(repository))
+			if (result.IsSuccess)
 			{
+				var value = result.Value;
+				var broken = value.Broken.Select(b =>
+					new Responses.BrokenLinkInfo(b.FromRepository, b.Link, b.Errors)).ToList();
 				return JsonSerializer.Serialize(
-					new ErrorResponse($"Repository '{repository}' not found in link index", AvailableRepositories: crossLinks.LinkReferences.Keys.ToList()),
-					McpJsonContext.Default.ErrorResponse);
-			}
-
-			var resolver = new CrossLinkResolver(crossLinks);
-			var brokenLinks = new List<BrokenLinkInfo>();
-			var validCount = 0;
-
-			foreach (var (sourceRepo, linkRef) in crossLinks.LinkReferences)
-			{
-				foreach (var crossLink in linkRef.CrossLinks)
-				{
-					if (!Uri.TryCreate(crossLink, UriKind.Absolute, out var uri))
-						continue;
-
-					if (uri.Scheme != repository)
-						continue;
-
-					var errors = new List<string>();
-					if (resolver.TryResolve(errors.Add, uri, out _))
-					{
-						validCount++;
-					}
-					else
-					{
-						brokenLinks.Add(new BrokenLinkInfo(sourceRepo, crossLink, errors));
-					}
-				}
+					new ValidateCrossLinksResponse(value.Repository, value.ValidLinks, value.BrokenLinks, broken),
+					McpJsonContext.Default.ValidateCrossLinksResponse);
 			}
 
 			return JsonSerializer.Serialize(
-				new ValidateCrossLinksResponse(repository, validCount, brokenLinks.Count, brokenLinks),
-				McpJsonContext.Default.ValidateCrossLinksResponse);
+				new ErrorResponse(result.Error.Message, result.Error.Details, result.Error.AvailableRepositories),
+				McpJsonContext.Default.ErrorResponse);
 		}
 		catch (OperationCanceledException)
 		{

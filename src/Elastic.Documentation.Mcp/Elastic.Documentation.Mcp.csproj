@@ -12,9 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Elastic.Documentation\Elastic.Documentation.csproj" />
-    <ProjectReference Include="..\Elastic.Documentation.Links\Elastic.Documentation.Links.csproj" />
-    <ProjectReference Include="..\Elastic.Documentation.LinkIndex\Elastic.Documentation.LinkIndex.csproj" />
+    <ProjectReference Include="..\services\Elastic.Documentation.Assembler\Elastic.Documentation.Assembler.csproj" />
   </ItemGroup>
 
 </Project>
