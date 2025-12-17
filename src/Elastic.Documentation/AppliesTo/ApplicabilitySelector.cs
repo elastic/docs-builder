@@ -17,18 +17,6 @@ public static class ApplicabilitySelector
 	/// <returns>The most relevant applicability for display</returns>
 	public static Applicability GetPrimaryApplicability(IReadOnlyCollection<Applicability> applicabilities, SemVersion currentVersion)
 	{
-		//var applicabilityList = applicabilities.ToList();
-		var lifecycleOrder = new Dictionary<ProductLifecycle, int>
-		{
-			[ProductLifecycle.GenerallyAvailable] = 0,
-			[ProductLifecycle.Beta] = 1,
-			[ProductLifecycle.TechnicalPreview] = 2,
-			[ProductLifecycle.Planned] = 3,
-			[ProductLifecycle.Deprecated] = 4,
-			[ProductLifecycle.Removed] = 5,
-			[ProductLifecycle.Unavailable] = 6
-		};
-
 		var availableApplicabilities = applicabilities
 			.Where(a => a.Version is null || a.Version is AllVersionsSpec || a.Version.Min <= currentVersion).ToArray();
 
@@ -36,7 +24,7 @@ public static class ApplicabilitySelector
 		{
 			return availableApplicabilities
 				.OrderByDescending(a => a.Version?.Min ?? new SemVersion(0, 0, 0))
-				.ThenBy(a => lifecycleOrder.GetValueOrDefault(a.Lifecycle, 999))
+				.ThenBy(a => ProductLifecycleInfo.GetOrder(a.Lifecycle))
 				.First();
 		}
 
@@ -47,7 +35,7 @@ public static class ApplicabilitySelector
 		{
 			return futureApplicabilities
 				.OrderBy(a => a.Version!.Min.CompareTo(currentVersion))
-				.ThenBy(a => lifecycleOrder.GetValueOrDefault(a.Lifecycle, 999))
+				.ThenBy(a => ProductLifecycleInfo.GetOrder(a.Lifecycle))
 				.First();
 		}
 
