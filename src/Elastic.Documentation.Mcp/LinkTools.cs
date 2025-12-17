@@ -5,9 +5,9 @@
 using System.ComponentModel;
 using System.Text.Json;
 using Elastic.Documentation.LinkIndex;
-using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Links.InboundLinks;
+using Elastic.Documentation.Mcp.Responses;
 using ModelContextProtocol.Server;
 
 namespace Elastic.Documentation.Mcp;
@@ -17,8 +17,6 @@ public class LinkTools(
 	ILinkIndexReader linkIndexReader,
 	LinksIndexCrossLinkFetcher crossLinkFetcher)
 {
-	private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
-
 	/// <summary>
 	/// Resolves a cross-link URI to its target URL.
 	/// </summary>
@@ -30,7 +28,7 @@ public class LinkTools(
 		try
 		{
 			if (!Uri.TryCreate(crossLink, UriKind.Absolute, out var uri))
-				return JsonSerializer.Serialize(new { error = $"Invalid cross-link URI: {crossLink}" }, JsonOptions);
+				return JsonSerializer.Serialize(new ErrorResponse($"Invalid cross-link URI: {crossLink}"), McpJsonContext.Default.ErrorResponse);
 
 			var crossLinks = await crossLinkFetcher.FetchCrossLinks(cancellationToken);
 
@@ -51,21 +49,12 @@ public class LinkTools(
 					anchors = metadata.Anchors;
 				}
 
-				return JsonSerializer.Serialize(new
-				{
-					resolved = resolvedUri.ToString(),
-					repository = uri.Scheme,
-					path = lookupPath,
-					anchors,
-					fragment = uri.Fragment.TrimStart('#')
-				}, JsonOptions);
+				return JsonSerializer.Serialize(
+					new CrossLinkResolved(resolvedUri.ToString(), uri.Scheme, lookupPath, anchors, uri.Fragment.TrimStart('#')),
+					McpJsonContext.Default.CrossLinkResolved);
 			}
 
-			return JsonSerializer.Serialize(new
-			{
-				error = "Failed to resolve cross-link",
-				details = errors
-			}, JsonOptions);
+			return JsonSerializer.Serialize(new ErrorResponse("Failed to resolve cross-link", errors), McpJsonContext.Default.ErrorResponse);
 		}
 		catch (OperationCanceledException)
 		{
@@ -73,7 +62,7 @@ public class LinkTools(
 		}
 		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
 		{
-			return JsonSerializer.Serialize(new { error = ex.Message }, JsonOptions);
+			return JsonSerializer.Serialize(new ErrorResponse(ex.Message), McpJsonContext.Default.ErrorResponse);
 		}
 	}
 
@@ -87,7 +76,7 @@ public class LinkTools(
 		{
 			var registry = await linkIndexReader.GetRegistry(cancellationToken);
 
-			var repositories = new List<object>();
+			var repositories = new List<RepositoryInfo>();
 			foreach (var (repoName, branches) in registry.Repositories)
 			{
 				// Get the main/master branch entry
@@ -99,22 +88,13 @@ public class LinkTools(
 
 				if (entry != null)
 				{
-					repositories.Add(new
-					{
-						repository = repoName,
-						branch = entry.Branch,
-						path = entry.Path,
-						gitRef = entry.GitReference,
-						updatedAt = entry.UpdatedAt
-					});
+					repositories.Add(new RepositoryInfo(repoName, entry.Branch, entry.Path, entry.GitReference, entry.UpdatedAt));
 				}
 			}
 
-			return JsonSerializer.Serialize(new
-			{
-				count = repositories.Count,
-				repositories
-			}, JsonOptions);
+			return JsonSerializer.Serialize(
+				new ListRepositoriesResponse(repositories.Count, repositories),
+				McpJsonContext.Default.ListRepositoriesResponse);
 		}
 		catch (OperationCanceledException)
 		{
@@ -122,7 +102,7 @@ public class LinkTools(
 		}
 		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
 		{
-			return JsonSerializer.Serialize(new { error = ex.Message }, JsonOptions);
+			return JsonSerializer.Serialize(new ErrorResponse(ex.Message), McpJsonContext.Default.ErrorResponse);
 		}
 	}
 
@@ -140,11 +120,9 @@ public class LinkTools(
 
 			if (!registry.Repositories.TryGetValue(repository, out var branches))
 			{
-				return JsonSerializer.Serialize(new
-				{
-					error = $"Repository '{repository}' not found in link index",
-					availableRepositories = registry.Repositories.Keys.ToList()
-				}, JsonOptions);
+				return JsonSerializer.Serialize(
+					new ErrorResponse($"Repository '{repository}' not found in link index", AvailableRepositories: registry.Repositories.Keys.ToList()),
+					McpJsonContext.Default.ErrorResponse);
 			}
 
 			// Get the main/master branch entry
@@ -156,32 +134,24 @@ public class LinkTools(
 
 			if (entry == null)
 			{
-				return JsonSerializer.Serialize(new
-				{
-					error = $"No main or master branch found for repository '{repository}'"
-				}, JsonOptions);
+				return JsonSerializer.Serialize(
+					new ErrorResponse($"No main or master branch found for repository '{repository}'"),
+					McpJsonContext.Default.ErrorResponse);
 			}
 
 			var links = await linkIndexReader.GetRepositoryLinks(entry.Path, cancellationToken);
 
-			return JsonSerializer.Serialize(new
-			{
-				repository,
-				origin = new
-				{
-					repositoryName = links.Origin.RepositoryName,
-					gitRef = links.Origin.Ref
-				},
-				urlPathPrefix = links.UrlPathPrefix,
-				pageCount = links.Links.Count,
-				crossLinkCount = links.CrossLinks.Length,
-				pages = links.Links.Select(l => new
-				{
-					path = l.Key,
-					anchors = l.Value.Anchors,
-					hidden = l.Value.Hidden
-				}).ToList()
-			}, JsonOptions);
+			var pages = links.Links.Select(l => new PageInfo(l.Key, l.Value.Anchors, l.Value.Hidden)).ToList();
+
+			return JsonSerializer.Serialize(
+				new RepositoryLinksResponse(
+					repository,
+					new OriginInfo(links.Origin.RepositoryName, links.Origin.Ref),
+					links.UrlPathPrefix,
+					links.Links.Count,
+					links.CrossLinks.Length,
+					pages),
+				McpJsonContext.Default.RepositoryLinksResponse);
 		}
 		catch (OperationCanceledException)
 		{
@@ -189,7 +159,7 @@ public class LinkTools(
 		}
 		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
 		{
-			return JsonSerializer.Serialize(new { error = ex.Message }, JsonOptions);
+			return JsonSerializer.Serialize(new ErrorResponse(ex.Message), McpJsonContext.Default.ErrorResponse);
 		}
 	}
 
@@ -206,15 +176,14 @@ public class LinkTools(
 		{
 			if (string.IsNullOrEmpty(from) && string.IsNullOrEmpty(to))
 			{
-				return JsonSerializer.Serialize(new
-				{
-					error = "Please specify at least one of 'from' or 'to' parameters"
-				}, JsonOptions);
+				return JsonSerializer.Serialize(
+					new ErrorResponse("Please specify at least one of 'from' or 'to' parameters"),
+					McpJsonContext.Default.ErrorResponse);
 			}
 
 			var crossLinks = await crossLinkFetcher.FetchCrossLinks(cancellationToken);
 
-			var results = new List<object>();
+			var results = new List<CrossLinkInfo>();
 
 			foreach (var (repository, linkRef) in crossLinks.LinkReferences)
 			{
@@ -231,20 +200,13 @@ public class LinkTools(
 					if (!string.IsNullOrEmpty(to) && uri.Scheme != to)
 						continue;
 
-					results.Add(new
-					{
-						fromRepository = repository,
-						toRepository = uri.Scheme,
-						link = crossLink
-					});
+					results.Add(new CrossLinkInfo(repository, uri.Scheme, crossLink));
 				}
 			}
 
-			return JsonSerializer.Serialize(new
-			{
-				count = results.Count,
-				links = results
-			}, JsonOptions);
+			return JsonSerializer.Serialize(
+				new FindCrossLinksResponse(results.Count, results),
+				McpJsonContext.Default.FindCrossLinksResponse);
 		}
 		catch (OperationCanceledException)
 		{
@@ -252,7 +214,7 @@ public class LinkTools(
 		}
 		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
 		{
-			return JsonSerializer.Serialize(new { error = ex.Message }, JsonOptions);
+			return JsonSerializer.Serialize(new ErrorResponse(ex.Message), McpJsonContext.Default.ErrorResponse);
 		}
 	}
 
@@ -270,15 +232,13 @@ public class LinkTools(
 
 			if (!crossLinks.LinkReferences.ContainsKey(repository))
 			{
-				return JsonSerializer.Serialize(new
-				{
-					error = $"Repository '{repository}' not found in link index",
-					availableRepositories = crossLinks.LinkReferences.Keys.ToList()
-				}, JsonOptions);
+				return JsonSerializer.Serialize(
+					new ErrorResponse($"Repository '{repository}' not found in link index", AvailableRepositories: crossLinks.LinkReferences.Keys.ToList()),
+					McpJsonContext.Default.ErrorResponse);
 			}
 
 			var resolver = new CrossLinkResolver(crossLinks);
-			var brokenLinks = new List<object>();
+			var brokenLinks = new List<BrokenLinkInfo>();
 			var validCount = 0;
 
 			foreach (var (sourceRepo, linkRef) in crossLinks.LinkReferences)
@@ -298,23 +258,14 @@ public class LinkTools(
 					}
 					else
 					{
-						brokenLinks.Add(new
-						{
-							fromRepository = sourceRepo,
-							link = crossLink,
-							errors
-						});
+						brokenLinks.Add(new BrokenLinkInfo(sourceRepo, crossLink, errors));
 					}
 				}
 			}
 
-			return JsonSerializer.Serialize(new
-			{
-				repository,
-				validLinks = validCount,
-				brokenLinks = brokenLinks.Count,
-				broken = brokenLinks
-			}, JsonOptions);
+			return JsonSerializer.Serialize(
+				new ValidateCrossLinksResponse(repository, validCount, brokenLinks.Count, brokenLinks),
+				McpJsonContext.Default.ValidateCrossLinksResponse);
 		}
 		catch (OperationCanceledException)
 		{
@@ -322,7 +273,7 @@ public class LinkTools(
 		}
 		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
 		{
-			return JsonSerializer.Serialize(new { error = ex.Message }, JsonOptions);
+			return JsonSerializer.Serialize(new ErrorResponse(ex.Message), McpJsonContext.Default.ErrorResponse);
 		}
 	}
 }
