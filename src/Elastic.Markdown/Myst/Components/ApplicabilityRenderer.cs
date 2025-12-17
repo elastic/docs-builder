@@ -48,10 +48,10 @@ public static class ApplicabilityRenderer
 	{
 		var allApplications = new AppliesCollection([.. applicabilities]);
 
-		// Sort by lifecycle priority (GA > Beta > Preview > etc.) to determine display order
+		// Sort by version (highest first), then by lifecycle priority as tiebreaker
 		var sortedApplicabilities = applicabilities
-			.OrderBy(a => ProductLifecycleInfo.GetOrder(a.Lifecycle))
-			.ThenByDescending(a => a.Version?.Min ?? new SemVersion(0, 0, 0))
+			.OrderByDescending(a => a.Version?.Min ?? new SemVersion(0, 0, 0))
+			.ThenBy(a => ProductLifecycleInfo.GetOrder(a.Lifecycle))
 			.ToList();
 
 		// Find the first lifecycle that returns displayable badge data (non-empty text or version)
