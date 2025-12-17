@@ -487,10 +487,10 @@ public class VersionInferenceTests
 	public void IsVersionlessCorrectlyIdentifiesAllVersionlessSystemsFromActualConfig()
 	{
 		// Load the actual versions.yml configuration
-		var versionsPath = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "config", "versions.yml");
+		var fileSystem = new FileSystem();
+		var versionsPath = fileSystem.Path.Combine(Paths.WorkingDirectoryRoot.FullName, "config", "versions.yml");
 		File.Exists(versionsPath).Should().BeTrue($"Expected versions file to exist at {versionsPath}");
 
-		var fileSystem = new FileSystem();
 		var provider = new ConfigurationFileProvider(new NullLoggerFactory(), fileSystem);
 		var versionsConfig = provider.CreateVersionConfiguration();
 
@@ -519,10 +519,10 @@ public class VersionInferenceTests
 	public void AllVersioningSystemsInConfigAreAccountedFor()
 	{
 		// Load the actual versions.yml configuration
-		var versionsPath = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "config", "versions.yml");
+		var fileSystem = new FileSystem();
+		var versionsPath = fileSystem.Path.Combine(Paths.WorkingDirectoryRoot.FullName, "config", "versions.yml");
 		File.Exists(versionsPath).Should().BeTrue($"Expected versions file to exist at {versionsPath}");
 
-		var fileSystem = new FileSystem();
 		var provider = new ConfigurationFileProvider(new NullLoggerFactory(), fileSystem);
 		var versionsConfig = provider.CreateVersionConfiguration();
 
