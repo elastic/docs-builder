@@ -67,7 +67,7 @@ public static class ProductDescriptions
 
 		// Deployment Types
 		[VersioningSystemId.Ess] = new ProductInfo(
-			Description: "<strong>Elastic Cloud Hosted</strong> is a deployment of the Elastic Stack that's hosted on Elastic Cloud.",
+			Description: "<strong>Elastic Cloud Hosted</strong> lets you manage and configure one or more deployments of the versioned Elastic Stack, hosted on Elastic Cloud.",
 			AdditionalAvailabilityInfo: null,
 			IncludeVersionNote: false
 		),
