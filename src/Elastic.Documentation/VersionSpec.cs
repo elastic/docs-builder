@@ -8,9 +8,7 @@ namespace Elastic.Documentation;
 
 public sealed class AllVersionsSpec : VersionSpec
 {
-	private static readonly SemVersion AllVersionsSemVersion = new(99999, 0, 0);
-
-	private AllVersionsSpec() : base(AllVersionsSemVersion, null, VersionSpecKind.GreaterThanOrEqual)
+	private AllVersionsSpec() : base(AllVersions.Instance, null, VersionSpecKind.GreaterThanOrEqual)
 	{
 	}
 

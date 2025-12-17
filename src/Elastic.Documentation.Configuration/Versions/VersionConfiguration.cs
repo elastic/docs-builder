@@ -151,4 +151,6 @@ public record VersioningSystem
 
 	[YamlMember(Alias = "current")]
 	public required SemVersion Current { get; init; }
+
+	public bool IsVersioned() => Base.Major != AllVersions.Instance.Major;
 }

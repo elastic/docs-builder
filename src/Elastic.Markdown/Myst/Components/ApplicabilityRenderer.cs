@@ -78,9 +78,8 @@ public static class ApplicabilityRenderer
 		}
 
 		// If we've exhausted all options (none had displayable data), use the first one with "Planned"
-		// But only for versioned products - unversioned products (base=99999) should show empty badge
-		var isVersionedProduct = versioningSystem.Base.Major != AllVersionsSpec.Instance.Min.Major;
-		if (badgeData is null && firstBadgeData is not null && isVersionedProduct)
+		// But only for versioned products - unversioned products should show empty badge
+		if (badgeData is null && firstBadgeData is not null && versioningSystem.IsVersioned())
 			badgeData = firstBadgeData with { BadgeLifecycleText = "Planned" };
 
 		badgeData ??= GetBadgeData(sortedApplicabilities.First(), versioningSystem, allApplications);
@@ -158,8 +157,7 @@ public static class ApplicabilityRenderer
 		var orderedApplicabilities = applicabilities
 			.OrderByDescending(a => a.Version?.Min ?? ZeroVersion.Instance);
 
-		var showVersionNote = productInfo is { IncludeVersionNote: true } &&
-							  versioningSystem.Base.Major != AllVersionsSpec.Instance.Min.Major;
+		var showVersionNote = productInfo is { IncludeVersionNote: true } && versioningSystem.IsVersioned();
 
 		return new PopoverData(
 			ProductDescription: productInfo?.Description,
@@ -210,16 +208,11 @@ public static class ApplicabilityRenderer
 		var lifecycle = applicability.Lifecycle;
 		var versionSpec = applicability.Version;
 
-		// No version (null or AllVersionsSpec) with unversioned product
-		if ((versionSpec is null || versionSpec is AllVersionsSpec) &&
-			versioningSystem.Base.Major == AllVersionsSpec.Instance.Min.Major)
-		{
-			return ProductLifecycleInfo.GetDisplayText(lifecycle);
-		}
-
-		// No version with versioned product
 		if (versionSpec is null or AllVersionsSpec)
 		{
+			if (!versioningSystem.IsVersioned())
+				return ProductLifecycleInfo.GetDisplayText(lifecycle);
+
 			var baseVersion = $"{versioningSystem.Base.Major}.{versioningSystem.Base.Minor}";
 			return lifecycle switch
 			{
@@ -419,7 +412,7 @@ public static class ApplicabilityRenderer
 			case AllVersionsSpec:
 			case null:
 				// Only show base version if the product is versioned
-				return versioningSystem.Base.Major != AllVersionsSpec.Instance.Min.Major
+				return versioningSystem.IsVersioned()
 					? $"{versioningSystem.Base.Major}.{versioningSystem.Base.Minor}+"
 					: string.Empty;
 			default:
