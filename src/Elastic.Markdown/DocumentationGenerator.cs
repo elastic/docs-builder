@@ -242,6 +242,7 @@ public partial class DocumentationGenerator
 		strToCheck switch
 		{
 			//prior art
+			_ when strToCheck.StartsWith("release-notes/elastic-agent/_snippets/") => true,
 			_ when strToCheck.StartsWith("reference/query-languages/esql/_snippets/") => true,
 			_ when strToCheck.EndsWith(".svg") => true,
 			_ when strToCheck.EndsWith(".gif") => true,
