@@ -136,7 +136,12 @@ toc:
 		"reference/security/prebuilt-rules/audit_policies/windows/README.md",
 		"extend/integrations/developer-workflow-fleet-UI.md",
 		"reference/elasticsearch/clients/ruby/Helpers.md",
-		"explore-analyze/ai-features/llm-guides/connect-to-vLLM.md"
+		"explore-analyze/ai-features/llm-guides/connect-to-vLLM.md",
+
+		// Plus sign in path (e.g., semantic version with build metadata)
+		"release-notes/_snippets/9.2.0+build202510300150/index.md",
+		"test+file.md",
+		"c++.md"
 	];
 
 	public static TheoryData<string> InvalidFileNames =>
@@ -210,10 +215,6 @@ toc:
 		// Special characters - asterisk
 		"test*file.md",
 		"*.md",
-
-		// Special characters - plus sign
-		"test+file.md",
-		"c++.md",
 
 		// Special characters - equals sign
 		"test=file.md",

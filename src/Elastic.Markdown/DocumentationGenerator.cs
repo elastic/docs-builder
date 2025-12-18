@@ -232,10 +232,10 @@ public partial class DocumentationGenerator
 		}
 	}
 
-	[GeneratedRegex(@"^[a-z0-9\s\-_\.\/\\]*[a-z0-9_\-]\.([a-z]+)$")]
+	[GeneratedRegex(@"^[a-z0-9\s\-_\.\/\\+]*[a-z0-9_\-+]\.([a-z]+)$")]
 	private static partial Regex FilePathRegex();
 
-	[GeneratedRegex(@"^[a-z0-9_][a-z0-9_\-\s\.]*?\.([a-z]+)$")]
+	[GeneratedRegex(@"^[a-z0-9_][a-z0-9_\-\s\.+]*?\.([a-z]+)$")]
 	private static partial Regex FileNameRegex();
 
 	public static bool IsValidFileName(string strToCheck) =>
@@ -273,7 +273,7 @@ public partial class DocumentationGenerator
 			var relative = Path.GetRelativePath(Context.OutputDirectory.FullName, outputFile.FullName);
 			if (!IsValidFileName(relative))
 			{
-				Context.Collector.EmitError(file.SourceFile.FullName, $"File name {relative} is not valid needs to be lowercase and contain only alphanumeric characters, spaces, dashes, dots and underscores");
+				Context.Collector.EmitError(file.SourceFile.FullName, $"File name {relative} is not valid needs to be lowercase and contain only alphanumeric characters, spaces, dashes, dots, underscores, and plus signs");
 				return;
 			}
 
