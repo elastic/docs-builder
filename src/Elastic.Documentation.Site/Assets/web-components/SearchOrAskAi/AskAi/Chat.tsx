@@ -1,6 +1,6 @@
 import { InfoBanner } from '../InfoBanner'
 import { KeyboardShortcutsFooter } from '../KeyboardShortcutsFooter'
-import { SearchOrAskAiErrorCallout } from '../SearchOrAskAiErrorCallout'
+import { LegalDisclaimer } from '../LegalDisclaimer'
 import AiIcon from '../ai-icon.svg'
 import { useModalActions } from '../modal.store'
 import { AskAiSuggestions } from './AskAiSuggestions'
@@ -11,6 +11,7 @@ import {
     useChatActions,
     useChatMessages,
     useChatScrollPosition,
+    useIsChatEmpty,
     useIsStreaming,
 } from './chat.store'
 import { useIsAskAiCooldownActive } from './useAskAiCooldown'
@@ -22,7 +23,6 @@ import {
     EuiHorizontalRule,
     EuiIcon,
     EuiSpacer,
-    EuiText,
     EuiToolTip,
     useEuiFontSize,
     useEuiOverflowScroll,
@@ -32,7 +32,8 @@ import { css } from '@emotion/react'
 import { RefObject, useCallback, useEffect, useRef, useState } from 'react'
 
 export const Chat = () => {
-    const messages = useChatMessages()
+    const { euiTheme } = useEuiTheme()
+    const isEmpty = useIsChatEmpty()
     const inputRef = useRef<HTMLTextAreaElement>(null)
     const scrollRef = useRef<HTMLDivElement>(null)
 
@@ -44,15 +45,13 @@ export const Chat = () => {
         inputRef.current?.focus()
     }, [])
 
-    const {
-        inputValue,
-        setInputValue,
-        handleSubmit,
-        handleAbort,
-        handleAbortReady,
-        isStreaming,
-        isCooldownActive,
-    } = useChatSubmit(scrollRef)
+    const [scrollAreaProps, setScrollAreaProps] = useState<{
+        onAbortReady: (abort: () => void) => void
+        isStreaming: boolean
+    }>({
+        onAbortReady: () => {},
+        isStreaming: false,
+    })
 
     return (
         <EuiFlexGroup
@@ -62,27 +61,52 @@ export const Chat = () => {
         >
             <ChatHeader />
 
-            <ChatScrollArea
-                scrollRef={scrollRef}
-                onScroll={handleScroll}
-                messages={messages}
-                isCooldownActive={isCooldownActive}
-                onAbortReady={handleAbortReady}
-                isStreaming={isStreaming}
-            />
+            {isEmpty ? (
+                <EuiFlexItem grow={true} css={emptyStateContainerStyles}>
+                    <EuiEmptyPrompt
+                        icon={<EuiIcon type={AiIcon} size="xxl" />}
+                        title={<h2>Hi! I'm the Elastic Docs AI Assistant</h2>}
+                        body={
+                            <p>
+                                I'm here to help you find answers about Elastic,
+                                powered entirely by our technical documentation.
+                                How can I help?
+                            </p>
+                        }
+                    />
+                </EuiFlexItem>
+            ) : (
+                <ChatScrollArea
+                    scrollRef={scrollRef}
+                    onScroll={handleScroll}
+                    onAbortReady={scrollAreaProps.onAbortReady}
+                    isStreaming={scrollAreaProps.isStreaming}
+                />
+            )}
 
             <ChatInputArea
                 inputRef={inputRef}
-                value={inputValue}
-                onChange={setInputValue}
-                onSubmit={handleSubmit}
-                onAbort={handleAbort}
-                disabled={isCooldownActive}
-                isStreaming={isStreaming}
+                scrollRef={scrollRef}
                 onMetaSemicolon={handleMetaSemicolon}
+                onStateChange={setScrollAreaProps}
             />
 
+            {isEmpty && (
+                <>
+                    <AskAiSuggestions />
+                    <EuiSpacer size="m" />
+                    <div
+                        css={css`
+                            padding-inline: ${euiTheme.size.base};
+                        `}
+                    >
+                        <LegalDisclaimer />
+                    </div>
+                </>
+            )}
+
             <InfoBanner />
+
             <KeyboardShortcutsFooter shortcuts={KEYBOARD_SHORTCUTS} />
         </EuiFlexGroup>
     )
@@ -155,8 +179,6 @@ const ChatHeader = () => {
 interface ChatScrollAreaProps {
     scrollRef: RefObject<HTMLDivElement>
     onScroll: () => void
-    messages: ChatMessage[]
-    isCooldownActive: boolean
     onAbortReady: (abort: () => void) => void
     isStreaming: boolean
 }
@@ -164,11 +186,10 @@ interface ChatScrollAreaProps {
 const ChatScrollArea = ({
     scrollRef,
     onScroll,
-    messages,
-    isCooldownActive,
     onAbortReady,
     isStreaming,
 }: ChatScrollAreaProps) => {
+    const messages = useChatMessages()
     const { euiTheme } = useEuiTheme()
     const spacerHeight = useSpacerHeight(scrollRef, isStreaming, messages)
 
@@ -183,72 +204,53 @@ const ChatScrollArea = ({
     return (
         <EuiFlexItem grow={true} css={scrollContainerStyles}>
             <div ref={scrollRef} css={scrollableStyles} onScroll={onScroll}>
-                {messages.length === 0 ? (
-                    <ChatEmptyState disabled={isCooldownActive} />
-                ) : (
-                    <div css={messagesStyles}>
-                        <ChatMessageList
-                            messages={messages}
-                            onAbortReady={onAbortReady}
-                        />
-                        {spacerHeight > 0 && (
-                            <div style={{ minHeight: spacerHeight }} />
-                        )}
-                    </div>
-                )}
+                <div css={messagesStyles}>
+                    <ChatMessageList
+                        messages={messages}
+                        onAbortReady={onAbortReady}
+                    />
+                    {spacerHeight > 0 && (
+                        <div style={{ minHeight: spacerHeight }} />
+                    )}
+                </div>
             </div>
         </EuiFlexItem>
     )
 }
 
-const ChatEmptyState = ({ disabled }: { disabled: boolean }) => (
-    <>
-        <EuiEmptyPrompt
-            icon={<EuiIcon type={AiIcon} size="xxl" />}
-            title={<h2>Hi! I'm the Elastic Docs AI Assistant</h2>}
-            body={
-                <p>
-                    I'm here to help you find answers about Elastic, powered
-                    entirely by our technical documentation. How can I help?
-                </p>
-            }
-        />
-        <EuiSpacer size="s" />
-        <div>
-            <EuiText size="xs" color="subdued">
-                Example questions
-            </EuiText>
-            <EuiSpacer size="s" />
-            <AskAiSuggestions disabled={disabled} />
-        </div>
-        <div css={messagesStyles}>
-            <SearchOrAskAiErrorCallout error={null} domain="askAi" />
-        </div>
-    </>
-)
-
 interface ChatInputAreaProps {
     inputRef: RefObject<HTMLTextAreaElement>
-    value: string
-    onChange: (value: string) => void
-    onSubmit: (question: string) => void
-    onAbort: () => void
-    disabled: boolean
-    isStreaming: boolean
+    scrollRef: RefObject<HTMLDivElement>
     onMetaSemicolon?: () => void
+    onStateChange?: (state: {
+        onAbortReady: (abort: () => void) => void
+        isStreaming: boolean
+    }) => void
 }
 
 const ChatInputArea = ({
     inputRef,
-    value,
-    onChange,
-    onSubmit,
-    onAbort,
-    disabled,
-    isStreaming,
+    scrollRef,
     onMetaSemicolon,
+    onStateChange,
 }: ChatInputAreaProps) => {
     const { euiTheme } = useEuiTheme()
+    const {
+        inputValue,
+        setInputValue,
+        handleSubmit,
+        handleAbort,
+        handleAbortReady,
+        isStreaming,
+        isCooldownActive,
+    } = useChatSubmit(scrollRef)
+
+    useEffect(() => {
+        onStateChange?.({
+            onAbortReady: handleAbortReady,
+            isStreaming,
+        })
+    }, [handleAbortReady, isStreaming, onStateChange])
 
     return (
         <EuiFlexItem grow={false}>
@@ -259,11 +261,11 @@ const ChatInputArea = ({
                 `}
             >
                 <ChatInput
-                    value={value}
-                    onChange={onChange}
-                    onSubmit={onSubmit}
-                    onAbort={onAbort}
-                    disabled={disabled}
+                    value={inputValue}
+                    onChange={setInputValue}
+                    onSubmit={handleSubmit}
+                    onAbort={handleAbort}
+                    disabled={isCooldownActive}
                     inputRef={inputRef}
                     isStreaming={isStreaming}
                     onMetaSemicolon={onMetaSemicolon}
@@ -479,6 +481,12 @@ const scrollContainerStyles = css`
     position: relative;
     overflow: hidden;
     min-height: ${CONTENT_AREA_HEIGHT}px;
+`
+
+const emptyStateContainerStyles = css`
+    display: flex;
+    align-items: center;
+    justify-content: center;
 `
 
 const messagesStyles = css`

@@ -1,5 +1,6 @@
 import { InfoBanner } from '../InfoBanner'
 import { KeyboardShortcutsFooter } from '../KeyboardShortcutsFooter'
+import { LegalDisclaimer } from '../LegalDisclaimer'
 import { SearchOrAskAiErrorCallout } from '../SearchOrAskAiErrorCallout'
 import { useModalActions } from '../modal.store'
 import { SearchResults } from './SearchResults/SearchResults'
@@ -135,6 +136,8 @@ export const Search = () => {
                         term={searchTerm}
                         onAsk={askAi}
                     />
+                    <EuiSpacer size="m" />
+                    <LegalDisclaimer />
                 </div>
             )}
 
