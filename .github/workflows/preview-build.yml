@@ -6,6 +6,7 @@ on:
       - opened
       - synchronize
       - reopened
+      - labeled
   push:
     branches:
       - main
@@ -63,14 +64,14 @@ on:
         type: boolean
         default: false
         required: false
-
+        
 
 permissions:
   contents: read
   deployments: write
   id-token: write
   pull-requests: write
-
+    
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.head.ref || github.ref }}
   cancel-in-progress: ${{ startsWith(github.event_name, 'pull_request') }}
@@ -79,7 +80,7 @@ jobs:
   match:
     if: github.event.repository.fork == false # Skip running the job on the fork itself (It still runs on PRs on the upstream from forks)
     runs-on: ubuntu-latest
-    permissions:
+    permissions: 
       contents: none
       deployments: none
       pull-requests: none
@@ -104,7 +105,7 @@ jobs:
         with:
           ref_name: ${{ steps.merge-group-base-branch.outputs.base_ref }}
           repository: ${{ github.repository }}
-
+          
       - name: Match for PR events
         id: pr-check
         if: contains(fromJSON('["pull_request", "pull_request_target"]'), github.event_name)
@@ -117,7 +118,7 @@ jobs:
         run: |
           echo "ref=${{ github.base_ref }}"
           echo "repo=${{ github.repository }}"
-
+          
       - name: Match for push events
         id: push-check
         if: contains(fromJSON('["push"]'), github.event_name)
@@ -130,7 +131,7 @@ jobs:
         run: |
           echo "ref=${{ github.ref_name }}"
           echo "repo=${{ github.repository }}"
-
+          
       - name: Debug outputs
         run: |
           echo "content-source-match: ${{ format('{0}{1}{2}', steps.pr-check.outputs.content-source-match, steps.push-check.outputs.content-source-match, steps.merge-group-check.outputs.content-source-match) }}"
@@ -141,7 +142,7 @@ jobs:
 
   check:
     runs-on: ubuntu-latest
-    needs:
+    needs: 
       - match
     permissions:
       contents: read
@@ -236,7 +237,7 @@ jobs:
       deployments: write
       id-token: write
       pull-requests: none
-    outputs:
+    outputs: 
       deployment_result: ${{ steps.deployment.outputs.result }}
       path_prefix: ${{ steps.generate-path-prefix.outputs.result }}
     env:
@@ -261,7 +262,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
           persist-credentials: false
-
+          
       - name: Create Deployment
         if: >
           env.MATCH == 'true'
@@ -408,7 +409,7 @@ jobs:
             )
           )
         uses: elastic/docs-builder/actions/validate-inbound-local@main
-
+        
       - name: 'Validate inbound links'
         if: >
           env.MATCH == 'true'
@@ -444,7 +445,7 @@ jobs:
             )
           )
         uses: elastic/docs-builder/actions/validate-path-prefixes-local@main
-
+        
       - name: 'Validate local path prefixes against those claimed by global navigation.yml'
         if: >
           env.MATCH == 'true'
@@ -516,6 +517,81 @@ jobs:
               environment_url: `https://docs-v3-preview.elastic.dev${process.env.LANDING_PAGE_PATH}`,
               log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
             })
+
+      - name: Create Assembler Deployment
+        if: >
+          github.repository == 'elastic/docs-builder'
+          && steps.deployment.outputs.result
+          && contains(github.event.pull_request.labels.*.name, 'assembler-preview')
+        uses: actions/github-script@v8
+        id: assembler-deployment
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REF: ${{ github.event.pull_request.head.sha }}
+        with:
+          result-encoding: string
+          script: |
+            const { owner, repo } = context.repo;
+            const prNumber = process.env.PR_NUMBER;
+            const environment = 'assembler-preview';
+            const task = `assembler-preview-${prNumber}`;
+            const deployment = await github.rest.repos.createDeployment({
+                owner,
+                repo,
+                environment,
+                task,
+                ref: process.env.REF,
+                auto_merge: false,
+                transient_environment: true,
+                required_contexts: [],
+            })
+            await github.rest.repos.createDeploymentStatus({
+                deployment_id: deployment.data.id,
+                owner,
+                repo,
+                state: "in_progress",
+                log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+            })
+            return deployment.data.id
+
+      - name: Build assembled documentation
+        id: internal-assembler-build
+        if: steps.assembler-deployment.outputs.result
+        env:
+          ASSEMBLER_PREVIEW_PATH_PREFIX: ${{ github.repository }}/assembled-docs/${{ github.event.pull_request.number }}
+        run: |
+          yq -i ".environments.preview.path_prefix = \"${ASSEMBLER_PREVIEW_PATH_PREFIX}\"" config/assembler.yml
+          dotnet run --project src/tooling/docs-builder -- assemble --skip-private-repositories --environment preview
+
+      - name: Upload assembled docs to S3
+        id: assembler-s3-upload
+        if: steps.internal-assembler-build.outcome == 'success'
+        env:
+          AWS_RETRY_MODE: standard
+          AWS_MAX_ATTEMPTS: 6
+          ASSEMBLER_PREVIEW_PATH_PREFIX: ${{ github.repository }}/assembled-docs/${{ github.event.pull_request.number }}
+        run: |
+          aws s3 sync .artifacts/assembly/${ASSEMBLER_PREVIEW_PATH_PREFIX} "s3://elastic-docs-v3-website-preview/${ASSEMBLER_PREVIEW_PATH_PREFIX}" --delete --no-follow-symlinks
+          aws cloudfront create-invalidation \
+            --distribution-id EKT7LT5PM8RKS \
+            --paths "/${ASSEMBLER_PREVIEW_PATH_PREFIX}" "/${ASSEMBLER_PREVIEW_PATH_PREFIX}/*"
+
+      - name: Update Assembler Deployment Status
+        if: always() && steps.assembler-deployment.outputs.result
+        uses: actions/github-script@v8
+        env:
+          ASSEMBLER_PREVIEW_PATH_PREFIX: ${{ github.repository }}/assembled-docs/${{ github.event.pull_request.number }}
+        with:
+          script: |
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: ${{ steps.assembler-deployment.outputs.result || 0 }},
+              state: "${{ steps.assembler-s3-upload.outcome == 'success' && 'success' || 'failure' }}",
+              environment_url: `https://docs-v3-preview.elastic.dev/${process.env.ASSEMBLER_PREVIEW_PATH_PREFIX}`,
+              log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+            })
+    
   comment:
     if: >
       startsWith(github.event_name, 'pull_request')
@@ -526,7 +602,7 @@ jobs:
     needs:
       - check
       - build
-    permissions:
+    permissions: 
       contents: none
       deployments: none
       id-token: none
@@ -619,7 +695,7 @@ jobs:
             const owner = context.repo.owner;
             const repo = context.repo.repo;
             
-            
+             
             const { data: comments } = await github.rest.issues.listComments({
               owner, repo, issue_number: prNum
             });
@@ -656,7 +732,7 @@ jobs:
             ### 🤔 Need help?
             - Check out the [cumulative docs guidelines](https://www.elastic.co/docs/contribute-docs/how-to/cumulative-docs/)
             - Reach out in the [#docs](https://elastic.slack.com/archives/C0JF80CJZ) Slack channel`;
-            
+              
             await github.rest.issues.createComment({
               owner, repo,
               issue_number: prNum,
@@ -684,7 +760,7 @@ jobs:
           persist-credentials: false
       - name: Run Vale Linter
         uses: elastic/vale-rules/lint@main
-        with:
+        with: 
           files: ${{ needs.check.outputs.all_changed_files }}
       - name: Post Vale Results
         uses: elastic/vale-rules/report@main
