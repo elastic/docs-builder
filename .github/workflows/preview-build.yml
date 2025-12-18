@@ -6,7 +6,6 @@ on:
       - opened
       - synchronize
       - reopened
-      - labeled
   push:
     branches:
       - main
@@ -517,33 +516,6 @@ jobs:
               environment_url: `https://docs-v3-preview.elastic.dev${process.env.LANDING_PAGE_PATH}`,
               log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
             })
-
-      - name: Build assembled documentation
-        id: internal-assembler-build
-        if: >
-          github.repository == 'elastic/docs-builder'
-          && steps.deployment.outputs.result
-          && contains(github.event.pull_request.labels.*.name, 'assembler-preview')
-        env:
-          ASSEMBLER_PREVIEW_PATH_PREFIX: ${{ github.repository }}/assembled-docs/${{ github.event.pull_request.number }}
-        run: |
-          yq -i ".environments.preview.path_prefix = \"${ASSEMBLER_PREVIEW_PATH_PREFIX}\"" config/assembler.yml
-          dotnet run --project src/tooling/docs-builder -- assemble --skip-private-repositories --environment preview
-
-      - name: Upload assembled docs to S3
-        if: >
-          github.repository == 'elastic/docs-builder'
-          && steps.internal-assembler-build.outcome == 'success'
-        env:
-          AWS_RETRY_MODE: standard
-          AWS_MAX_ATTEMPTS: 6
-          ASSEMBLER_PREVIEW_PATH_PREFIX: /${{ github.repository }}/assembled-docs/${{ github.event.pull_request.number }}
-        run: |
-          aws s3 sync .artifacts/assembly/${ASSEMBLER_PREVIEW_PATH_PREFIX} "s3://elastic-docs-v3-website-preview/${ASSEMBLER_PREVIEW_PATH_PREFIX}" --delete --no-follow-symlinks
-          aws cloudfront create-invalidation \
-            --distribution-id EKT7LT5PM8RKS \
-            --paths "/${ASSEMBLER_PREVIEW_PATH_PREFIX}" "/${ASSEMBLER_PREVIEW_PATH_PREFIX}/*"
-    
   comment:
     if: >
       startsWith(github.event_name, 'pull_request')

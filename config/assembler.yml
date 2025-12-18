@@ -36,14 +36,6 @@ environments:
     path_prefix: docs
     feature_flags:
       SEARCH_OR_ASK_AI: true
-  preview:
-    uri: https://docs-v3-preview.elastic.dev
-    path_prefix: ${ASSEMBLER_PREVIEW_PATH_PREFIX}
-    content_source: current
-    google_tag_manager:
-      enabled: false
-    feature_flags:
-      SEARCH_OR_ASK_AI: true
 
 shared_configuration:
   stack: &stack
