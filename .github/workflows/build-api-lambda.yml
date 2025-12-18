@@ -24,9 +24,21 @@ jobs:
       - uses: actions/checkout@v6
         with: 
           ref: ${{ inputs.ref }}
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
       - name: Amazon Linux 2023 build
-        run: |
-          docker build . -t api-lambda:latest -f src/api/Elastic.Documentation.Api.Lambda/Dockerfile
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: src/api/Elastic.Documentation.Api.Lambda/Dockerfile
+          push: false
+          load: true
+          tags: api-lambda:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
       - name: Get bootstrap binary
         run: |
           docker cp $(docker create --name tc api-lambda:latest):/app/.artifacts/publish ./.artifacts && docker rm tc
