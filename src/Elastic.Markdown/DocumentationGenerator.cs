@@ -232,7 +232,7 @@ public partial class DocumentationGenerator
 		}
 	}
 
-	[GeneratedRegex(@"^[a-z0-9\s\-_\.\/\\+]*[a-z0-9_\-]\.([a-z]+)$")]
+	[GeneratedRegex(@"^[a-z0-9\s\-_\.\/\\+]*[a-z0-9_\-+]\.([a-z]+)$")]
 	private static partial Regex FilePathRegex();
 
 	[GeneratedRegex(@"^[a-z0-9_][a-z0-9_\-\s\.+]*?\.([a-z]+)$")]
