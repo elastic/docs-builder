@@ -1,6 +1,6 @@
 import { InfoBanner } from '../InfoBanner'
 import { KeyboardShortcutsFooter } from '../KeyboardShortcutsFooter'
-import { SearchOrAskAiErrorCallout } from '../SearchOrAskAiErrorCallout'
+import { LegalDisclaimer } from '../LegalDisclaimer'
 import AiIcon from '../ai-icon.svg'
 import { useModalActions } from '../modal.store'
 import { AskAiSuggestions } from './AskAiSuggestions'
@@ -11,6 +11,7 @@ import {
     useChatActions,
     useChatMessages,
     useChatScrollPosition,
+    useIsChatEmpty,
     useIsStreaming,
 } from './chat.store'
 import { useIsAskAiCooldownActive } from './useAskAiCooldown'
@@ -22,7 +23,6 @@ import {
     EuiHorizontalRule,
     EuiIcon,
     EuiSpacer,
-    EuiText,
     EuiToolTip,
     useEuiFontSize,
     useEuiOverflowScroll,
@@ -32,7 +32,8 @@ import { css } from '@emotion/react'
 import { RefObject, useCallback, useEffect, useRef, useState } from 'react'
 
 export const Chat = () => {
-    const messages = useChatMessages()
+    const { euiTheme } = useEuiTheme()
+    const isEmpty = useIsChatEmpty()
     const inputRef = useRef<HTMLTextAreaElement>(null)
     const scrollRef = useRef<HTMLDivElement>(null)
 
@@ -44,15 +45,13 @@ export const Chat = () => {
         inputRef.current?.focus()
     }, [])
 
-    const {
-        inputValue,
-        setInputValue,
-        handleSubmit,
-        handleAbort,
-        handleAbortReady,
-        isStreaming,
-        isCooldownActive,
-    } = useChatSubmit(scrollRef)
+    const [scrollAreaProps, setScrollAreaProps] = useState<{
+        onAbortReady: (abort: () => void) => void
+        isStreaming: boolean
+    }>({
+        onAbortReady: () => {},
+        isStreaming: false,
+    })
 
     return (
         <EuiFlexGroup
@@ -62,26 +61,52 @@ export const Chat = () => {
         >
             <ChatHeader />
 
-            <ChatScrollArea
-                scrollRef={scrollRef}
-                onScroll={handleScroll}
-                messages={messages}
-                isCooldownActive={isCooldownActive}
-                onAbortReady={handleAbortReady}
-            />
+            {isEmpty ? (
+                <EuiFlexItem grow={true} css={emptyStateContainerStyles}>
+                    <EuiEmptyPrompt
+                        icon={<EuiIcon type={AiIcon} size="xxl" />}
+                        title={<h2>Hi! I'm the Elastic Docs AI Assistant</h2>}
+                        body={
+                            <p>
+                                I'm here to help you find answers about Elastic,
+                                powered entirely by our technical documentation.
+                                How can I help?
+                            </p>
+                        }
+                    />
+                </EuiFlexItem>
+            ) : (
+                <ChatScrollArea
+                    scrollRef={scrollRef}
+                    onScroll={handleScroll}
+                    onAbortReady={scrollAreaProps.onAbortReady}
+                    isStreaming={scrollAreaProps.isStreaming}
+                />
+            )}
 
             <ChatInputArea
                 inputRef={inputRef}
-                value={inputValue}
-                onChange={setInputValue}
-                onSubmit={handleSubmit}
-                onAbort={handleAbort}
-                disabled={isCooldownActive}
-                isStreaming={isStreaming}
+                scrollRef={scrollRef}
                 onMetaSemicolon={handleMetaSemicolon}
+                onStateChange={setScrollAreaProps}
             />
 
+            {isEmpty && (
+                <>
+                    <AskAiSuggestions />
+                    <EuiSpacer size="m" />
+                    <div
+                        css={css`
+                            padding-inline: ${euiTheme.size.base};
+                        `}
+                    >
+                        <LegalDisclaimer />
+                    </div>
+                </>
+            )}
+
             <InfoBanner />
+
             <KeyboardShortcutsFooter shortcuts={KEYBOARD_SHORTCUTS} />
         </EuiFlexGroup>
     )
@@ -94,7 +119,12 @@ const ChatHeader = () => {
     const { euiTheme } = useEuiTheme()
     const smallFontsize = useEuiFontSize('s').fontSize
     return (
-        <>
+        <EuiFlexItem
+            grow={false}
+            css={css`
+                flex-shrink: 0;
+            `}
+        >
             <div
                 css={css`
                     padding-block: ${euiTheme.size.m};
@@ -128,16 +158,19 @@ const ChatHeader = () => {
                         gap: ${euiTheme.size.s};
                     `}
                 >
-                    {messages.length > 0 && (
-                        <EuiToolTip content="Clear conversation">
-                            <EuiButtonIcon
-                                aria-label="Clear conversation"
-                                iconType="trash"
-                                color="text"
-                                onClick={() => clearChat()}
-                            />
-                        </EuiToolTip>
-                    )}
+                    <EuiToolTip content="Clear conversation">
+                        <EuiButtonIcon
+                            aria-label="Clear conversation"
+                            iconType="trash"
+                            color="text"
+                            onClick={() => clearChat()}
+                            css={css`
+                                visibility: ${messages.length > 0
+                                    ? 'visible'
+                                    : 'hidden'};
+                            `}
+                        />
+                    </EuiToolTip>
                     <EuiButtonIcon
                         aria-label="Close Ask AI modal"
                         iconType="cross"
@@ -147,105 +180,88 @@ const ChatHeader = () => {
                 </div>
             </div>
             <EuiHorizontalRule margin="none" />
-        </>
+        </EuiFlexItem>
     )
 }
 
 interface ChatScrollAreaProps {
     scrollRef: RefObject<HTMLDivElement>
     onScroll: () => void
-    messages: ChatMessage[]
-    isCooldownActive: boolean
     onAbortReady: (abort: () => void) => void
+    isStreaming: boolean
 }
 
 const ChatScrollArea = ({
     scrollRef,
     onScroll,
-    messages,
-    isCooldownActive,
     onAbortReady,
+    isStreaming,
 }: ChatScrollAreaProps) => {
+    const messages = useChatMessages()
     const { euiTheme } = useEuiTheme()
+    const spacerHeight = useSpacerHeight(scrollRef, isStreaming, messages)
 
     const scrollableStyles = css`
         height: 100%;
         overflow-y: auto;
         scrollbar-gutter: stable;
         padding: ${euiTheme.size.l};
-        ${useEuiOverflowScroll('y', true)}
+        ${useEuiOverflowScroll('y', false)}
     `
 
     return (
         <EuiFlexItem grow={true} css={scrollContainerStyles}>
             <div ref={scrollRef} css={scrollableStyles} onScroll={onScroll}>
-                {messages.length === 0 ? (
-                    <ChatEmptyState disabled={isCooldownActive} />
-                ) : (
-                    <div css={messagesStyles}>
-                        <ChatMessageList
-                            messages={messages}
-                            onAbortReady={onAbortReady}
-                        />
-                    </div>
-                )}
+                <div css={messagesStyles}>
+                    <ChatMessageList
+                        messages={messages}
+                        onAbortReady={onAbortReady}
+                    />
+                    {spacerHeight > 0 && (
+                        <div style={{ minHeight: spacerHeight }} />
+                    )}
+                </div>
             </div>
         </EuiFlexItem>
     )
 }
 
-const ChatEmptyState = ({ disabled }: { disabled: boolean }) => (
-    <>
-        <EuiEmptyPrompt
-            icon={<EuiIcon type={AiIcon} size="xxl" />}
-            title={<h2>Hi! I'm the Elastic Docs AI Assistant</h2>}
-            body={
-                <p>
-                    I'm here to help you find answers about Elastic, powered
-                    entirely by our technical documentation. How can I help?
-                </p>
-            }
-        />
-        <EuiSpacer size="s" />
-        <div>
-            <EuiText size="xs" color="subdued">
-                Example questions
-            </EuiText>
-            <EuiSpacer size="s" />
-            <AskAiSuggestions disabled={disabled} />
-        </div>
-        <div css={messagesStyles}>
-            <SearchOrAskAiErrorCallout error={null} domain="askAi" />
-        </div>
-    </>
-)
-
 interface ChatInputAreaProps {
     inputRef: RefObject<HTMLTextAreaElement>
-    value: string
-    onChange: (value: string) => void
-    onSubmit: (question: string) => void
-    onAbort: () => void
-    disabled: boolean
-    isStreaming: boolean
+    scrollRef: RefObject<HTMLDivElement>
     onMetaSemicolon?: () => void
+    onStateChange?: (state: {
+        onAbortReady: (abort: () => void) => void
+        isStreaming: boolean
+    }) => void
 }
 
 const ChatInputArea = ({
     inputRef,
-    value,
-    onChange,
-    onSubmit,
-    onAbort,
-    disabled,
-    isStreaming,
+    scrollRef,
     onMetaSemicolon,
+    onStateChange,
 }: ChatInputAreaProps) => {
     const { euiTheme } = useEuiTheme()
+    const {
+        inputValue,
+        setInputValue,
+        handleSubmit,
+        handleAbort,
+        handleAbortReady,
+        isStreaming,
+        isCooldownActive,
+    } = useChatSubmit(scrollRef)
+
+    useEffect(() => {
+        onStateChange?.({
+            onAbortReady: handleAbortReady,
+            isStreaming,
+        })
+    }, [handleAbortReady, isStreaming, onStateChange])
 
     return (
         <EuiFlexItem grow={false}>
-            <EuiSpacer size="s" />
             <div
                 css={css`
                     position: relative;
@@ -253,11 +269,11 @@ const ChatInputArea = ({
                 `}
             >
                 <ChatInput
-                    value={value}
-                    onChange={onChange}
-                    onSubmit={onSubmit}
-                    onAbort={onAbort}
-                    disabled={disabled}
+                    value={inputValue}
+                    onChange={setInputValue}
+                    onSubmit={handleSubmit}
+                    onAbort={handleAbort}
+                    disabled={isCooldownActive}
                     inputRef={inputRef}
                     isStreaming={isStreaming}
                     onMetaSemicolon={onMetaSemicolon}
@@ -272,6 +288,8 @@ function useChatSubmit(scrollRef: RefObject<HTMLDivElement | null>) {
         useChatActions()
     const isCooldownActive = useIsAskAiCooldownActive()
     const isStreaming = useIsStreaming()
+    const { euiTheme } = useEuiTheme()
+    const scrollMargin = parseInt(euiTheme.size.l, 10)
 
     const [inputValue, setInputValue] = useState('')
     const abortRef = useRef<(() => void) | null>(null)
@@ -291,9 +309,10 @@ function useChatSubmit(scrollRef: RefObject<HTMLDivElement | null>) {
             submitQuestion(trimmed)
             setInputValue('')
 
+            // Scroll to position the user message at the top of the viewport
             setTimeout(() => {
                 if (scrollRef.current) {
-                    scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+                    scrollUserMessageToTop(scrollRef.current, scrollMargin)
                 }
             }, 100)
         },
@@ -374,6 +393,54 @@ function useFocusOnComplete(inputRef: RefObject<HTMLTextAreaElement | null>) {
     }, [messages, inputRef])
 }
 
+/**
+ * Calculates spacer height to keep user message at top during/after streaming.
+ * During streaming: spacer fills remaining space after user message.
+ * After streaming: keeps spacer if AI response is shorter than available space.
+ */
+function useSpacerHeight(
+    scrollRef: RefObject<HTMLDivElement | null>,
+    isStreaming: boolean,
+    messages: ChatMessage[]
+): number {
+    const { euiTheme } = useEuiTheme()
+    const scrollMargin = parseInt(euiTheme.size.l, 10)
+    const [spacerHeight, setSpacerHeight] = useState(0)
+
+    useEffect(() => {
+        if (!scrollRef.current) return
+
+        const container = scrollRef.current
+        const containerHeight = container.clientHeight
+        const lastUserMessage = getLastMessage(container, 'user')
+
+        if (!lastUserMessage) {
+            setSpacerHeight(0)
+            return
+        }
+
+        const userMessageHeight = lastUserMessage.offsetHeight
+
+        if (isStreaming) {
+            // During streaming: spacer = remaining space after user message
+            const calculatedHeight =
+                containerHeight - userMessageHeight - scrollMargin * 2 - 1
+            setSpacerHeight(Math.max(0, calculatedHeight))
+        } else {
+            // After streaming: keep spacer if AI response is shorter than available space
+            const lastAiMessage = getLastMessage(container, 'ai')
+            const aiMessageHeight = lastAiMessage?.offsetHeight || 0
+
+            const contentHeight = userMessageHeight + aiMessageHeight
+            const remainingSpace =
+                containerHeight - contentHeight - scrollMargin * 2 - 1
+            setSpacerHeight(Math.max(0, remainingSpace))
+        }
+    }, [isStreaming, scrollRef, messages, scrollMargin])
+
+    return spacerHeight
+}
+
 // ============================================================================
 // Constants & Styles (implementation details)
 // ============================================================================
@@ -382,6 +449,35 @@ const KEYBOARD_SHORTCUTS = [
     { keys: ['⌘K'], label: 'Search' },
     { keys: ['Esc'], label: 'Close' },
 ]
+
+const CONTENT_AREA_HEIGHT = 400
+
+// ============================================================================
+// DOM Helpers
+// ============================================================================
+
+function getLastMessage(
+    container: HTMLElement,
+    type: 'user' | 'ai'
+): HTMLElement | null {
+    const messages = container.querySelectorAll(`[data-message-type="${type}"]`)
+    return (messages[messages.length - 1] as HTMLElement) || null
+}
+
+function scrollUserMessageToTop(container: HTMLElement, margin: number): void {
+    const lastUserMessage = getLastMessage(container, 'user')
+    if (!lastUserMessage) return
+
+    const containerRect = container.getBoundingClientRect()
+    const messageRect = lastUserMessage.getBoundingClientRect()
+    const scrollOffset =
+        messageRect.top - containerRect.top + container.scrollTop - margin
+
+    container.scrollTo({
+        top: Math.max(0, scrollOffset),
+        behavior: 'smooth',
+    })
+}
 
 const containerStyles = css`
     height: 100%;
@@ -392,9 +488,20 @@ const containerStyles = css`
 const scrollContainerStyles = css`
     position: relative;
     overflow: hidden;
+    min-height: ${CONTENT_AREA_HEIGHT}px;
+`
+
+const emptyStateContainerStyles = css`
+    display: flex;
+    align-items: center;
+    justify-content: center;
 `
 
 const messagesStyles = css`
     max-width: 800px;
     margin: 0 auto;
+
+    & > [data-message-type='user']:first-child {
+        margin-top: 0;
+    }
 `
