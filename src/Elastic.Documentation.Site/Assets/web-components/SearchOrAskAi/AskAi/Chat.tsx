@@ -119,7 +119,12 @@ const ChatHeader = () => {
     const { euiTheme } = useEuiTheme()
     const smallFontsize = useEuiFontSize('s').fontSize
     return (
-        <>
+        <EuiFlexItem
+            grow={false}
+            css={css`
+                flex-shrink: 0;
+            `}
+        >
             <div
                 css={css`
                     padding-block: ${euiTheme.size.m};
@@ -153,16 +158,19 @@ const ChatHeader = () => {
                         gap: ${euiTheme.size.s};
                     `}
                 >
-                    {messages.length > 0 && (
-                        <EuiToolTip content="Clear conversation">
-                            <EuiButtonIcon
-                                aria-label="Clear conversation"
-                                iconType="trash"
-                                color="text"
-                                onClick={() => clearChat()}
-                            />
-                        </EuiToolTip>
-                    )}
+                    <EuiToolTip content="Clear conversation">
+                        <EuiButtonIcon
+                            aria-label="Clear conversation"
+                            iconType="trash"
+                            color="text"
+                            onClick={() => clearChat()}
+                            css={css`
+                                visibility: ${messages.length > 0
+                                    ? 'visible'
+                                    : 'hidden'};
+                            `}
+                        />
+                    </EuiToolTip>
                     <EuiButtonIcon
                         aria-label="Close Ask AI modal"
                         iconType="cross"
@@ -172,7 +180,7 @@ const ChatHeader = () => {
                 </div>
             </div>
             <EuiHorizontalRule margin="none" />
-        </>
+        </EuiFlexItem>
     )
 }
 
@@ -416,16 +424,16 @@ function useSpacerHeight(
         if (isStreaming) {
             // During streaming: spacer = remaining space after user message
             const calculatedHeight =
-                containerHeight - userMessageHeight - scrollMargin
+                containerHeight - userMessageHeight - scrollMargin * 2 - 1
             setSpacerHeight(Math.max(0, calculatedHeight))
         } else {
             // After streaming: keep spacer if AI response is shorter than available space
             const lastAiMessage = getLastMessage(container, 'ai')
             const aiMessageHeight = lastAiMessage?.offsetHeight || 0
 
-            const contentHeight =
-                userMessageHeight + aiMessageHeight + scrollMargin
-            const remainingSpace = containerHeight - contentHeight
+            const contentHeight = userMessageHeight + aiMessageHeight
+            const remainingSpace =
+                containerHeight - contentHeight - scrollMargin * 2 - 1
             setSpacerHeight(Math.max(0, remainingSpace))
         }
     }, [isStreaming, scrollRef, messages, scrollMargin])
