@@ -1,0 +1,16 @@
+@inherits RazorSlice<Elastic.Markdown.Myst.Directives.Button.ButtonViewModel>
+@{
+	var typeClass = Model.Type == "secondary" ? "doc-button-secondary" : "doc-button-primary";
+}
+@if (!Model.IsInGroup)
+{
+	<div class="doc-button-wrapper @typeClass @Model.AlignClass">
+		@Model.RenderBlock()
+	</div>
+}
+else
+{
+	<span class="doc-button-item @typeClass">
+		@Model.RenderBlock()
+	</span>
+}
