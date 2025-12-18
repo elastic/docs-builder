@@ -434,3 +434,5 @@ export const useIsStreaming = () =>
         const last = state.chatMessages[state.chatMessages.length - 1]
         return last?.type === 'ai' && last?.status === 'streaming'
     })
+export const useIsChatEmpty = () =>
+    chatStore((state) => state.chatMessages.length === 0)
