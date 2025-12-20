@@ -29,6 +29,7 @@ internal sealed class IndexCommand(
 	/// <param name="username">Elasticsearch username (basic auth), alternatively set env DOCUMENTATION_ELASTIC_USERNAME</param>
 	/// <param name="password">Elasticsearch password (basic auth), alternatively set env DOCUMENTATION_ELASTIC_PASSWORD</param>
 	/// <param name="noSemantic">Index without semantic fields</param>
+	/// <param name="enableAiEnrichment">Enable AI enrichment of documents using LLM-generated metadata</param>
 	/// <param name="searchNumThreads">The number of search threads the inference endpoint should use. Defaults: 8</param>
 	/// <param name="indexNumThreads">The number of index threads the inference endpoint should use. Defaults: 8</param>
 	/// <param name="indexNamePrefix">The prefix for the computed index/alias names. Defaults: semantic-docs</param>
@@ -57,6 +58,7 @@ internal sealed class IndexCommand(
 
 		// inference options
 		bool? noSemantic = null,
+		bool? enableAiEnrichment = null,
 		int? searchNumThreads = null,
 		int? indexNumThreads = null,
 		bool? noEis = null,
@@ -93,7 +95,7 @@ internal sealed class IndexCommand(
 				// endpoint options
 				endpoint, apiKey, username, password,
 				// inference options
-				noSemantic, indexNumThreads, noEis, searchNumThreads, bootstrapTimeout,
+				noSemantic, enableAiEnrichment, indexNumThreads, noEis, searchNumThreads, bootstrapTimeout,
 				// channel and connection options
 				indexNamePrefix, forceReindex, bufferSize, maxRetries, debugMode,
 				// proxy options
@@ -106,7 +108,7 @@ internal sealed class IndexCommand(
 				// endpoint options
 				state.endpoint, state.apiKey, state.username, state.password,
 				// inference options
-				state.noSemantic, state.searchNumThreads, state.indexNumThreads, state.noEis, state.bootstrapTimeout,
+				state.noSemantic, state.enableAiEnrichment, state.searchNumThreads, state.indexNumThreads, state.noEis, state.bootstrapTimeout,
 				// channel and connection options
 				state.indexNamePrefix, state.forceReindex, state.bufferSize, state.maxRetries, state.debugMode,
 				// proxy options

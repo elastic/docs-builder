@@ -83,4 +83,41 @@ public record DocumentationDocument
 	[JsonPropertyName("hidden")]
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
 	public bool Hidden { get; set; }
+
+	// AI Enrichment fields - populated by DocumentEnrichmentService
+
+	/// <summary>
+	/// 3-5 sentences dense with technical entities, API names, and core functionality for vector matching.
+	/// </summary>
+	[JsonPropertyName("ai_rag_optimized_summary")]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+	public string? AiRagOptimizedSummary { get; set; }
+
+	/// <summary>
+	/// Exactly 5-10 words for a UI tooltip.
+	/// </summary>
+	[JsonPropertyName("ai_short_summary")]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+	public string? AiShortSummary { get; set; }
+
+	/// <summary>
+	/// A 3-8 word keyword string representing a high-intent user search for this doc.
+	/// </summary>
+	[JsonPropertyName("ai_search_query")]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+	public string? AiSearchQuery { get; set; }
+
+	/// <summary>
+	/// Array of 3-5 specific questions answered by this document.
+	/// </summary>
+	[JsonPropertyName("ai_questions")]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+	public string[]? AiQuestions { get; set; }
+
+	/// <summary>
+	/// Array of 2-4 specific use cases this doc helps with.
+	/// </summary>
+	[JsonPropertyName("ai_use_cases")]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+	public string[]? AiUseCases { get; set; }
 }

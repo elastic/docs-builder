@@ -45,4 +45,10 @@ public class ElasticsearchEndpoint
 	public int? BootstrapTimeout { get; set; }
 	public bool NoSemantic { get; set; }
 	public bool ForceReindex { get; set; }
+
+	/// <summary>
+	/// Enable AI enrichment of documents using LLM-generated metadata.
+	/// When enabled, documents are enriched with summaries, search queries, and questions.
+	/// </summary>
+	public bool EnableAiEnrichment { get; set; }
 }

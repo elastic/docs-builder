@@ -131,6 +131,10 @@ public partial class ElasticsearchMarkdownExporter
 		};
 
 		CommonEnrichments(doc, currentNavigation);
+
+		// AI enrichment - respects per-run limit, uses cache
+		_ = await _enrichmentService.TryEnrichAsync(doc, ctx);
+
 		AssignDocumentMetadata(doc);
 
 		if (_indexStrategy == IngestStrategy.Multiplex)
@@ -166,6 +170,10 @@ public partial class ElasticsearchMarkdownExporter
 			doc.Abstract = @abstract;
 			doc.Headings = headings;
 			CommonEnrichments(doc, null);
+
+			// AI enrichment - respects per-run limit, uses cache
+			_ = await _enrichmentService.TryEnrichAsync(doc, ctx);
+
 			AssignDocumentMetadata(doc);
 
 			// Write to channels following the multiplex or reindex strategy

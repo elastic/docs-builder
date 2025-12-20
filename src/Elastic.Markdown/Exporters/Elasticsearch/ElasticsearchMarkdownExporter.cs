@@ -12,6 +12,7 @@ using Elastic.Ingest.Elasticsearch;
 using Elastic.Ingest.Elasticsearch.Indices;
 using Elastic.Transport;
 using Elastic.Transport.Products.Elasticsearch;
+using Elastic.Markdown.Exporters.Elasticsearch.Enrichment;
 using Microsoft.Extensions.Logging;
 using NetEscapades.EnumGenerators;
 
@@ -41,6 +42,9 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	private readonly IReadOnlyCollection<QueryRule> _rules;
 	private readonly VersionsConfiguration _versionsConfiguration;
 	private readonly string _fixedSynonymsHash;
+	private readonly Enrichment.DocumentEnrichmentService _enrichmentService;
+	private readonly IEnrichmentCache _enrichmentCache;
+	private readonly ILlmClient _llmClient;
 
 	public ElasticsearchMarkdownExporter(
 		ILoggerFactory logFactory,
@@ -97,6 +101,16 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 
 		_lexicalChannel = new ElasticsearchLexicalIngestChannel(logFactory, collector, es, indexNamespace, _transport, indexTimeSynonyms);
 		_semanticChannel = new ElasticsearchSemanticIngestChannel(logFactory, collector, es, indexNamespace, _transport, indexTimeSynonyms);
+
+		// Create enrichment services
+		var enrichmentOptions = new EnrichmentOptions { Enabled = es.EnableAiEnrichment };
+		_enrichmentCache = new ElasticsearchEnrichmentCache(_transport, logFactory.CreateLogger<ElasticsearchEnrichmentCache>());
+		_llmClient = new ElasticsearchLlmClient(_transport, logFactory.CreateLogger<ElasticsearchLlmClient>());
+		_enrichmentService = new Enrichment.DocumentEnrichmentService(
+			_enrichmentCache,
+			_llmClient,
+			enrichmentOptions,
+			logFactory.CreateLogger<Enrichment.DocumentEnrichmentService>());
 	}
 
 	/// <inheritdoc />
@@ -105,6 +119,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		_currentLexicalHash = await _lexicalChannel.Channel.GetIndexTemplateHashAsync(ctx) ?? string.Empty;
 		_currentSemanticHash = await _semanticChannel.Channel.GetIndexTemplateHashAsync(ctx) ?? string.Empty;
 
+		await _enrichmentService.InitializeAsync(ctx);
 		await PublishSynonymsAsync(ctx);
 		await PublishQueryRulesAsync(ctx);
 		_ = await _lexicalChannel.Channel.BootstrapElasticsearchAsync(BootstrapMethod.Failure, null, ctx);
@@ -230,6 +245,9 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	/// <inheritdoc />
 	public async ValueTask StopAsync(Cancel ctx = default)
 	{
+		// Log AI enrichment progress
+		_enrichmentService.LogProgress();
+
 		var semanticWriteAlias = string.Format(_semanticChannel.Channel.Options.IndexFormat, "latest");
 		var lexicalWriteAlias = string.Format(_lexicalChannel.Channel.Options.IndexFormat, "latest");
 
@@ -436,6 +454,8 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	{
 		_lexicalChannel.Dispose();
 		_semanticChannel.Dispose();
+		_enrichmentService.Dispose();
+		_llmClient.Dispose();
 		GC.SuppressFinalize(this);
 	}
 }

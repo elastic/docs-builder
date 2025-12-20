@@ -201,6 +201,32 @@ public abstract partial class ElasticsearchIngestChannel<TChannelOptions, TChann
 		        "fields" : {
 		          {{(!string.IsNullOrWhiteSpace(inferenceId) ? $"\"semantic_text\": {{{InferenceMapping(inferenceId)}}}" : "")}}
 		        }
+		      },
+		      "ai_rag_optimized_summary": {
+		        "type": "text",
+		        "analyzer": "synonyms_fixed_analyzer",
+		        "search_analyzer": "synonyms_analyzer",
+		        "fields": {
+		          {{(!string.IsNullOrWhiteSpace(inferenceId) ? $"\"semantic_text\": {{{InferenceMapping(inferenceId)}}}" : "")}}
+		        }
+		      },
+		      "ai_short_summary": {
+		        "type": "text"
+		      },
+		      "ai_search_query": {
+		        "type": "keyword"
+		      },
+		      "ai_questions": {
+		        "type": "text",
+		        "fields": {
+		          {{(!string.IsNullOrWhiteSpace(inferenceId) ? $"\"semantic_text\": {{{InferenceMapping(inferenceId)}}}" : "")}}
+		        }
+		      },
+		      "ai_use_cases": {
+		        "type": "text",
+		        "fields": {
+		          {{(!string.IsNullOrWhiteSpace(inferenceId) ? $"\"semantic_text\": {{{InferenceMapping(inferenceId)}}}" : "")}}
+		        }
 		      }
 		    }
 		  }
