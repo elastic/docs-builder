@@ -19,7 +19,7 @@ public sealed class ElasticsearchLlmClient(
 	ILogger<ElasticsearchLlmClient> logger,
 	int maxConcurrency = 10,
 	int maxRetries = 5,
-	string inferenceEndpointId = ".gp-llm-v2-completion") : ILlmClient
+	string inferenceEndpointId = ".gp-llm-v2-completion") : ILlmClient, IDisposable
 {
 	private readonly DistributedTransport _transport = transport;
 	private readonly ILogger _logger = logger;
@@ -50,13 +50,13 @@ public sealed class ElasticsearchLlmClient(
 
 		for (var attempt = 0; attempt <= _maxRetries; attempt++)
 		{
-			var response = await _transport.PostAsync<DynamicResponse>(
+			var response = await _transport.PostAsync<StringResponse>(
 				$"_inference/completion/{_inferenceEndpointId}",
 				PostData.String(requestBody),
 				ct);
 
 			if (response.ApiCallDetails.HasSuccessfulStatusCode)
-				return ParseResponse(response);
+				return ParseResponse(response.Body);
 
 			if (response.ApiCallDetails.HttpStatusCode == 429 && attempt < _maxRetries)
 			{
@@ -67,16 +67,17 @@ public sealed class ElasticsearchLlmClient(
 				continue;
 			}
 
-			_logger.LogWarning("LLM inference failed: {StatusCode}", response.ApiCallDetails.HttpStatusCode);
+			_logger.LogWarning("LLM inference failed: {StatusCode} - {Body}",
+				response.ApiCallDetails.HttpStatusCode, response.Body);
 			return null;
 		}
 
 		return null;
 	}
 
-	private EnrichmentData? ParseResponse(DynamicResponse response)
+	private EnrichmentData? ParseResponse(string? responseBody)
 	{
-		if (response.ApiCallDetails.ResponseBodyInBytes is not { } responseBytes)
+		if (string.IsNullOrEmpty(responseBody))
 		{
 			_logger.LogWarning("No response body from LLM");
 			return null;
@@ -85,7 +86,7 @@ public sealed class ElasticsearchLlmClient(
 		string? responseText = null;
 		try
 		{
-			var completionResponse = JsonSerializer.Deserialize(responseBytes, EnrichmentSerializerContext.Default.CompletionResponse);
+			var completionResponse = JsonSerializer.Deserialize(responseBody, EnrichmentSerializerContext.Default.CompletionResponse);
 			responseText = completionResponse?.Completion?.FirstOrDefault()?.Result;
 
 			if (string.IsNullOrEmpty(responseText))
@@ -121,6 +122,9 @@ public sealed class ElasticsearchLlmClient(
 		// Fix common LLM issue: extra closing brace
 		if (cleaned.EndsWith("}}") && !cleaned.Contains("{{"))
 			cleaned = cleaned[..^1];
+
+		// Fix common LLM issue: trailing backticks from incomplete code block syntax
+		cleaned = cleaned.TrimEnd('`');
 
 		return cleaned;
 	}

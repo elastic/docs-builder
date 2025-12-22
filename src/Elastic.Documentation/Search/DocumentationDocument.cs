@@ -87,6 +87,14 @@ public record DocumentationDocument
 	// AI Enrichment fields - populated by DocumentEnrichmentService
 
 	/// <summary>
+	/// Content-addressable hash of title + body for AI enrichment cache lookup.
+	/// Used by the enrich processor to join AI-generated fields at index time.
+	/// </summary>
+	[JsonPropertyName("content_hash")]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+	public string? ContentHash { get; set; }
+
+	/// <summary>
 	/// 3-5 sentences dense with technical entities, API names, and core functionality for vector matching.
 	/// </summary>
 	[JsonPropertyName("ai_rag_optimized_summary")]

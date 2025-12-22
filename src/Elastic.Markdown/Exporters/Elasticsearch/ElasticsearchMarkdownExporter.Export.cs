@@ -8,6 +8,7 @@ using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Search;
 using Elastic.Ingest.Elasticsearch.Indices;
+using Elastic.Markdown.Exporters.Elasticsearch.Enrichment;
 using Elastic.Markdown.Helpers;
 using Markdig.Syntax;
 using Microsoft.Extensions.Logging;
@@ -132,8 +133,11 @@ public partial class ElasticsearchMarkdownExporter
 
 		CommonEnrichments(doc, currentNavigation);
 
-		// AI enrichment - respects per-run limit, uses cache
-		_ = await _enrichmentService.TryEnrichAsync(doc, ctx);
+		// AI Enrichment - hybrid approach:
+		// - Cache hits: enrich processor applies fields at index time
+		// - Cache misses: apply fields inline before indexing
+		doc.ContentHash = ContentHashGenerator.Generate(doc.Title, doc.StrippedBody ?? string.Empty);
+		await TryEnrichDocumentAsync(doc, ctx);
 
 		AssignDocumentMetadata(doc);
 
@@ -171,8 +175,9 @@ public partial class ElasticsearchMarkdownExporter
 			doc.Headings = headings;
 			CommonEnrichments(doc, null);
 
-			// AI enrichment - respects per-run limit, uses cache
-			_ = await _enrichmentService.TryEnrichAsync(doc, ctx);
+			// AI Enrichment - hybrid approach
+			doc.ContentHash = ContentHashGenerator.Generate(doc.Title, doc.StrippedBody ?? string.Empty);
+			await TryEnrichDocumentAsync(doc, ctx);
 
 			AssignDocumentMetadata(doc);
 
@@ -199,4 +204,51 @@ public partial class ElasticsearchMarkdownExporter
 		return true;
 	}
 
+	/// <summary>
+	/// Hybrid AI enrichment: cache hits rely on enrich processor, cache misses apply fields inline.
+	/// </summary>
+	private async ValueTask TryEnrichDocumentAsync(DocumentationDocument doc, Cancel ctx)
+	{
+		if (_enrichmentCache is null || _llmClient is null || string.IsNullOrWhiteSpace(doc.ContentHash))
+			return;
+
+		// Check if enrichment exists in cache
+		if (_enrichmentCache.Exists(doc.ContentHash))
+		{
+			// Cache hit - enrich processor will apply fields at index time
+			_ = Interlocked.Increment(ref _cacheHitCount);
+			return;
+		}
+
+		// Check if we've hit the limit for new enrichments
+		var current = Interlocked.Increment(ref _newEnrichmentCount);
+		if (current > _enrichmentOptions.MaxNewEnrichmentsPerRun)
+		{
+			_ = Interlocked.Decrement(ref _newEnrichmentCount);
+			return;
+		}
+
+		// Cache miss - generate enrichment inline and apply directly
+		try
+		{
+			var enrichment = await _llmClient.EnrichAsync(doc.Title, doc.StrippedBody ?? string.Empty, ctx);
+			if (enrichment is not { HasData: true })
+				return;
+
+			// Store in cache for future runs
+			await _enrichmentCache.StoreAsync(doc.ContentHash, enrichment, _enrichmentOptions.PromptVersion, ctx);
+
+			// Apply fields directly (enrich processor won't have this entry yet)
+			doc.AiRagOptimizedSummary = enrichment.RagOptimizedSummary;
+			doc.AiShortSummary = enrichment.ShortSummary;
+			doc.AiSearchQuery = enrichment.SearchQuery;
+			doc.AiQuestions = enrichment.Questions;
+			doc.AiUseCases = enrichment.UseCases;
+		}
+		catch (Exception ex) when (ex is not OperationCanceledException)
+		{
+			_logger.LogWarning(ex, "Failed to enrich document {Url}", doc.Url);
+			_ = Interlocked.Decrement(ref _newEnrichmentCount);
+		}
+	}
 }

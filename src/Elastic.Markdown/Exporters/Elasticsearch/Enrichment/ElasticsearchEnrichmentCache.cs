@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Concurrent;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Elastic.Transport;
@@ -11,8 +12,8 @@ using Microsoft.Extensions.Logging;
 namespace Elastic.Markdown.Exporters.Elasticsearch.Enrichment;
 
 /// <summary>
-/// Elasticsearch-backed implementation of <see cref="IEnrichmentCache"/>.
-/// Pre-loads all entries into memory at startup for fast lookups.
+/// Elasticsearch-backed enrichment cache for use with the enrich processor.
+/// Stores AI-generated enrichment fields directly (not as JSON string) for efficient lookups.
 /// </summary>
 public sealed class ElasticsearchEnrichmentCache(
 	DistributedTransport transport,
@@ -21,22 +22,22 @@ public sealed class ElasticsearchEnrichmentCache(
 {
 	private readonly DistributedTransport _transport = transport;
 	private readonly ILogger _logger = logger;
-	private readonly string _indexName = indexName;
-	private readonly Dictionary<string, CachedEnrichmentEntry> _cache = [];
+	private readonly ConcurrentDictionary<string, byte> _existingHashes = new();
 
-	private const int ScrollBatchSize = 1000;
-	private const string ScrollTimeout = "1m";
+	public string IndexName { get; } = indexName;
 
 	// language=json
+	// Note: No settings block - Serverless doesn't allow number_of_shards/replicas
 	private const string IndexMapping = """
 		{
-			"settings": {
-				"number_of_shards": 1,
-				"number_of_replicas": 1
-			},
 			"mappings": {
 				"properties": {
-					"response_json": { "type": "text", "index": false },
+					"content_hash": { "type": "keyword" },
+					"ai_rag_optimized_summary": { "type": "text" },
+					"ai_short_summary": { "type": "text" },
+					"ai_search_query": { "type": "text" },
+					"ai_questions": { "type": "text" },
+					"ai_use_cases": { "type": "text" },
 					"created_at": { "type": "date" },
 					"prompt_version": { "type": "integer" }
 				}
@@ -44,131 +45,94 @@ public sealed class ElasticsearchEnrichmentCache(
 		}
 		""";
 
-	public int Count => _cache.Count;
+	public int Count => _existingHashes.Count;
 
 	public async Task InitializeAsync(CancellationToken ct)
 	{
 		await EnsureIndexExistsAsync(ct);
-		await PreloadCacheAsync(ct);
+		await LoadExistingHashesAsync(ct);
 	}
 
-	public CachedEnrichmentEntry? TryGet(string key) =>
-		_cache.TryGetValue(key, out var entry) ? entry : null;
+	public bool Exists(string contentHash) => _existingHashes.ContainsKey(contentHash);
 
-	public async Task StoreAsync(string key, EnrichmentData data, int promptVersion, CancellationToken ct)
+	public Task<EnrichmentData?> GetAsync(string contentHash, CancellationToken ct) =>
+		Task.FromResult<EnrichmentData?>(null); // Not used - enrich processor handles cache hits
+
+	public async Task StoreAsync(string contentHash, EnrichmentData data, int promptVersion, CancellationToken ct)
 	{
-		_cache[key] = new CachedEnrichmentEntry(data, promptVersion);
-		await PersistToElasticsearchAsync(key, data, promptVersion, ct);
-	}
+		var cacheEntry = new CacheIndexEntry
+		{
+			ContentHash = contentHash,
+			AiRagOptimizedSummary = data.RagOptimizedSummary,
+			AiShortSummary = data.ShortSummary,
+			AiSearchQuery = data.SearchQuery,
+			AiQuestions = data.Questions,
+			AiUseCases = data.UseCases,
+			CreatedAt = DateTimeOffset.UtcNow,
+			PromptVersion = promptVersion
+		};
 
-	private async Task PersistToElasticsearchAsync(string key, EnrichmentData data, int promptVersion, CancellationToken ct)
-	{
-		try
-		{
-			var responseJson = JsonSerializer.Serialize(data, EnrichmentSerializerContext.Default.EnrichmentData);
-			var cacheItem = new CachedEnrichment
-			{
-				ResponseJson = responseJson,
-				CreatedAt = DateTimeOffset.UtcNow,
-				PromptVersion = promptVersion
-			};
+		var body = JsonSerializer.Serialize(cacheEntry, EnrichmentSerializerContext.Default.CacheIndexEntry);
+		var response = await _transport.PutAsync<StringResponse>(
+			$"{IndexName}/_doc/{contentHash}",
+			PostData.String(body),
+			ct);
 
-			var body = JsonSerializer.Serialize(cacheItem, EnrichmentSerializerContext.Default.CachedEnrichment);
-			var response = await _transport.PutAsync<StringResponse>(
-				$"{_indexName}/_doc/{key}",
-				PostData.String(body),
-				ct);
-
-			if (!response.ApiCallDetails.HasSuccessfulStatusCode)
-				_logger.LogWarning("Failed to persist cache entry: {StatusCode}", response.ApiCallDetails.HttpStatusCode);
-		}
-		catch (OperationCanceledException)
-		{
-			// Respect cancellation requests and allow callers to observe them.
-			throw;
-		}
-		catch (TransportException tex)
-		{
-			// Transport-related failures are treated as best-effort cache persistence issues.
-			_logger.LogWarning(tex, "Failed to persist cache entry for key {Key}", key);
-		}
-		catch (Exception ex)
-		{
-			// Unexpected exceptions are logged and rethrown to avoid silently swallowing serious issues.
-			_logger.LogError(ex, "Unexpected error while persisting cache entry for key {Key}", key);
-			throw;
-		}
+		if (response.ApiCallDetails.HasSuccessfulStatusCode)
+			_ = _existingHashes.TryAdd(contentHash, 0);
+		else
+			_logger.LogWarning("Failed to store enrichment: {StatusCode}", response.ApiCallDetails.HttpStatusCode);
 	}
 
 	private async Task EnsureIndexExistsAsync(CancellationToken ct)
 	{
-		var existsResponse = await _transport.HeadAsync(_indexName, ct);
+		var existsResponse = await _transport.HeadAsync(IndexName, ct);
 		if (existsResponse.ApiCallDetails.HasSuccessfulStatusCode)
+		{
+			_logger.LogDebug("Enrichment cache index {IndexName} already exists", IndexName);
 			return;
+		}
 
+		_logger.LogInformation("Creating enrichment cache index {IndexName}...", IndexName);
 		var createResponse = await _transport.PutAsync<StringResponse>(
-			_indexName,
+			IndexName,
 			PostData.String(IndexMapping),
 			ct);
 
 		if (createResponse.ApiCallDetails.HasSuccessfulStatusCode)
-			_logger.LogInformation("Created cache index {IndexName}", _indexName);
-		else if (createResponse.ApiCallDetails.HttpStatusCode != 400) // 400 = already exists
-			_logger.LogWarning("Failed to create cache index: {StatusCode}", createResponse.ApiCallDetails.HttpStatusCode);
+			_logger.LogInformation("Created enrichment cache index {IndexName}", IndexName);
+		else if (createResponse.ApiCallDetails.HttpStatusCode == 400 &&
+				 createResponse.Body?.Contains("resource_already_exists_exception") == true)
+			_logger.LogDebug("Enrichment cache index {IndexName} already exists (race condition)", IndexName);
+		else
+			_logger.LogError("Failed to create cache index: {StatusCode} - {Response}",
+				createResponse.ApiCallDetails.HttpStatusCode, createResponse.Body);
 	}
 
-	private async Task PreloadCacheAsync(CancellationToken ct)
+	private async Task LoadExistingHashesAsync(CancellationToken ct)
 	{
 		var sw = System.Diagnostics.Stopwatch.StartNew();
 
-		if (!await HasDocumentsAsync(ct))
-		{
-			_logger.LogInformation("Cache index is empty, skipping preload ({ElapsedMs}ms)", sw.ElapsedMilliseconds);
-			return;
-		}
+		// Only fetch _id to minimize memory - we use _id as the hash
+		var scrollQuery = /*lang=json,strict*/ """{"size": 1000, "_source": false, "query": {"match_all": {}}}""";
 
-		await ScrollAllDocumentsAsync(ct);
-
-		sw.Stop();
-		_logger.LogInformation("Pre-loaded {Count} cache entries in {ElapsedMs}ms", _cache.Count, sw.ElapsedMilliseconds);
-	}
-
-	private async Task<bool> HasDocumentsAsync(CancellationToken ct)
-	{
-		var countResponse = await _transport.GetAsync<DynamicResponse>($"{_indexName}/_count", ct);
-		if (!countResponse.ApiCallDetails.HasSuccessfulStatusCode)
-		{
-			_logger.LogWarning("Cache count failed: {StatusCode}", countResponse.ApiCallDetails.HttpStatusCode);
-			return true; // Assume there might be documents
-		}
-
-		var docCount = countResponse.Body.Get<long?>("count") ?? 0;
-		_logger.LogDebug("Cache index has {Count} documents", docCount);
-		return docCount > 0;
-	}
-
-	private async Task ScrollAllDocumentsAsync(CancellationToken ct)
-	{
-		var scrollQuery = "{\"size\": " + ScrollBatchSize + ", \"query\": {\"match_all\": {}}}";
-
-		var searchResponse = await _transport.PostAsync<DynamicResponse>(
-			$"{_indexName}/_search?scroll={ScrollTimeout}",
+		var searchResponse = await _transport.PostAsync<StringResponse>(
+			$"{IndexName}/_search?scroll=1m",
 			PostData.String(scrollQuery),
 			ct);
 
 		if (!searchResponse.ApiCallDetails.HasSuccessfulStatusCode)
 		{
-			_logger.LogWarning("Failed to start cache scroll: {StatusCode}", searchResponse.ApiCallDetails.HttpStatusCode);
+			_logger.LogWarning("Failed to load existing hashes: {StatusCode}", searchResponse.ApiCallDetails.HttpStatusCode);
 			return;
 		}
 
-		_ = ProcessHits(searchResponse);
-		var scrollId = searchResponse.Body.Get<string>("_scroll_id");
+		var (count, scrollId) = ProcessHashHits(searchResponse.Body);
 
-		while (scrollId is not null)
+		while (scrollId is not null && count > 0)
 		{
-			var scrollBody = $$"""{"scroll": "{{ScrollTimeout}}", "scroll_id": "{{scrollId}}"}""";
-			var scrollResponse = await _transport.PostAsync<DynamicResponse>(
+			var scrollBody = $$"""{"scroll": "1m", "scroll_id": "{{scrollId}}"}""";
+			var scrollResponse = await _transport.PostAsync<StringResponse>(
 				"_search/scroll",
 				PostData.String(scrollBody),
 				ct);
@@ -176,72 +140,65 @@ public sealed class ElasticsearchEnrichmentCache(
 			if (!scrollResponse.ApiCallDetails.HasSuccessfulStatusCode)
 				break;
 
-			var hitsCount = ProcessHits(scrollResponse);
-			if (hitsCount == 0)
-				break;
-
-			scrollId = scrollResponse.Body.Get<string>("_scroll_id");
+			(count, scrollId) = ProcessHashHits(scrollResponse.Body);
 		}
+
+		_logger.LogInformation("Loaded {Count} existing enrichment hashes in {ElapsedMs}ms",
+			_existingHashes.Count, sw.ElapsedMilliseconds);
 	}
 
-	private int ProcessHits(DynamicResponse response)
+	private (int count, string? scrollId) ProcessHashHits(string? responseBody)
 	{
-		if (response.ApiCallDetails.ResponseBodyInBytes is not { } responseBytes)
-			return 0;
+		if (string.IsNullOrEmpty(responseBody))
+			return (0, null);
 
-		using var doc = JsonDocument.Parse(responseBytes);
+		using var doc = JsonDocument.Parse(responseBody);
+
+		var scrollId = doc.RootElement.TryGetProperty("_scroll_id", out var scrollIdProp)
+			? scrollIdProp.GetString()
+			: null;
+
 		if (!doc.RootElement.TryGetProperty("hits", out var hitsObj) ||
 			!hitsObj.TryGetProperty("hits", out var hitsArray))
-			return 0;
+			return (0, scrollId);
 
 		var count = 0;
 		foreach (var hit in hitsArray.EnumerateArray())
 		{
-			if (TryParseHit(hit, out var id, out var entry))
+			// Use _id as the hash (we store content_hash as both _id and field)
+			if (hit.TryGetProperty("_id", out var idProp) && idProp.GetString() is { } id)
 			{
-				_cache[id] = entry;
+				_ = _existingHashes.TryAdd(id, 0);
 				count++;
 			}
 		}
-		return count;
-	}
-
-	private static bool TryParseHit(JsonElement hit, out string id, out CachedEnrichmentEntry entry)
-	{
-		id = string.Empty;
-		entry = default!;
-
-		if (!hit.TryGetProperty("_id", out var idProp) || idProp.GetString() is not { } docId)
-			return false;
-
-		if (!hit.TryGetProperty("_source", out var source))
-			return false;
-
-		if (!source.TryGetProperty("response_json", out var jsonProp) ||
-			jsonProp.GetString() is not { Length: > 0 } responseJson)
-			return false;
-
-		var promptVersion = source.TryGetProperty("prompt_version", out var versionProp)
-			? versionProp.GetInt32()
-			: 0;
-
-		var data = JsonSerializer.Deserialize(responseJson, EnrichmentSerializerContext.Default.EnrichmentData);
-		if (data is not { HasData: true })
-			return false;
-
-		id = docId;
-		entry = new CachedEnrichmentEntry(data, promptVersion);
-		return true;
+		return (count, scrollId);
 	}
 }
 
 /// <summary>
-/// Wrapper for storing enrichment data in the cache index.
+/// Document structure for the enrichment cache index.
+/// Fields are stored directly for use with the enrich processor.
 /// </summary>
-public sealed record CachedEnrichment
+public sealed record CacheIndexEntry
 {
-	[JsonPropertyName("response_json")]
-	public required string ResponseJson { get; init; }
+	[JsonPropertyName("content_hash")]
+	public required string ContentHash { get; init; }
+
+	[JsonPropertyName("ai_rag_optimized_summary")]
+	public string? AiRagOptimizedSummary { get; init; }
+
+	[JsonPropertyName("ai_short_summary")]
+	public string? AiShortSummary { get; init; }
+
+	[JsonPropertyName("ai_search_query")]
+	public string? AiSearchQuery { get; init; }
+
+	[JsonPropertyName("ai_questions")]
+	public string[]? AiQuestions { get; init; }
+
+	[JsonPropertyName("ai_use_cases")]
+	public string[]? AiUseCases { get; init; }
 
 	[JsonPropertyName("created_at")]
 	public required DateTimeOffset CreatedAt { get; init; }

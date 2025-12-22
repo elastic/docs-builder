@@ -11,13 +11,15 @@ public abstract partial class ElasticsearchIngestChannel<TChannelOptions, TChann
 	where TChannelOptions : CatalogIndexChannelOptionsBase<DocumentationDocument>
 	where TChannel : CatalogIndexChannel<DocumentationDocument, TChannelOptions>
 {
-	protected static string CreateMappingSetting(string synonymSetName, string[] synonyms)
+	protected static string CreateMappingSetting(string synonymSetName, string[] synonyms, string? defaultPipeline = null)
 	{
 		var indexTimeSynonyms = $"[{string.Join(",", synonyms.Select(r => $"\"{r}\""))}]";
+		var pipelineSetting = defaultPipeline is not null ? $"\"default_pipeline\": \"{defaultPipeline}\"," : "";
 		// language=json
 		return
 			$$$"""
 			{
+				{{{pipelineSetting}}}
 				"analysis": {
 				  "normalizer": {
 					"keyword_normalizer": {
@@ -156,6 +158,7 @@ public abstract partial class ElasticsearchIngestChannel<TChannelOptions, TChann
 		        }
 		      },
 		      "hash" : { "type" : "keyword" },
+		      "content_hash" : { "type" : "keyword" },
 		      "search_title": {
 		        "type": "text",
 		        "analyzer": "synonyms_fixed_analyzer",

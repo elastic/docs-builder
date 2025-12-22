@@ -42,9 +42,14 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	private readonly IReadOnlyCollection<QueryRule> _rules;
 	private readonly VersionsConfiguration _versionsConfiguration;
 	private readonly string _fixedSynonymsHash;
-	private readonly Enrichment.DocumentEnrichmentService _enrichmentService;
-	private readonly IEnrichmentCache _enrichmentCache;
-	private readonly ILlmClient _llmClient;
+
+	// AI Enrichment - hybrid approach: cache hits use enrich processor, misses are applied inline
+	private readonly ElasticsearchEnrichmentCache? _enrichmentCache;
+	private readonly ElasticsearchLlmClient? _llmClient;
+	private readonly EnrichPolicyManager? _enrichPolicyManager;
+	private readonly EnrichmentOptions _enrichmentOptions = new();
+	private int _newEnrichmentCount;
+	private int _cacheHitCount;
 
 	public ElasticsearchMarkdownExporter(
 		ILoggerFactory logFactory,
@@ -65,30 +70,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		_rules = context.SearchConfiguration.Rules;
 		var es = endpoints.Elasticsearch;
 
-		var configuration = new ElasticsearchConfiguration(es.Uri)
-		{
-			Authentication = es.ApiKey is { } apiKey
-				? new ApiKey(apiKey)
-				: es is { Username: { } username, Password: { } password }
-					? new BasicAuthentication(username, password)
-					: null,
-			EnableHttpCompression = true,
-			//DebugMode = _endpoint.DebugMode,
-			DebugMode = true,
-			CertificateFingerprint = _endpoint.CertificateFingerprint,
-			ProxyAddress = _endpoint.ProxyAddress,
-			ProxyPassword = _endpoint.ProxyPassword,
-			ProxyUsername = _endpoint.ProxyUsername,
-			ServerCertificateValidationCallback = _endpoint.DisableSslVerification
-				? CertificateValidations.AllowAll
-				: _endpoint.Certificate is { } cert
-					? _endpoint.CertificateIsNotRoot
-						? CertificateValidations.AuthorityPartOfChain(cert)
-						: CertificateValidations.AuthorityIsRoot(cert)
-					: null
-		};
-
-		_transport = new DistributedTransport(configuration);
+		_transport = ElasticsearchTransportFactory.Create(es);
 
 		string[] fixedSynonyms = ["esql", "data-stream", "data-streams", "machine-learning"];
 		var indexTimeSynonyms = _synonyms.Aggregate(new List<SynonymRule>(), (acc, synonym) =>
@@ -99,27 +81,44 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		}).Where(r => fixedSynonyms.Contains(r.Id)).Select(r => r.Synonyms).ToArray();
 		_fixedSynonymsHash = HashedBulkUpdate.CreateHash(string.Join(",", indexTimeSynonyms));
 
-		_lexicalChannel = new ElasticsearchLexicalIngestChannel(logFactory, collector, es, indexNamespace, _transport, indexTimeSynonyms);
-		_semanticChannel = new ElasticsearchSemanticIngestChannel(logFactory, collector, es, indexNamespace, _transport, indexTimeSynonyms);
+		// Use AI enrichment pipeline if enabled - hybrid approach:
+		// - Cache hits: enrich processor applies fields at index time
+		// - Cache misses: apply fields inline before indexing
+		var aiPipeline = es.EnableAiEnrichment ? EnrichPolicyManager.PipelineName : null;
+		_lexicalChannel = new ElasticsearchLexicalIngestChannel(logFactory, collector, es, indexNamespace, _transport, indexTimeSynonyms, aiPipeline);
+		_semanticChannel = new ElasticsearchSemanticIngestChannel(logFactory, collector, es, indexNamespace, _transport, indexTimeSynonyms, aiPipeline);
 
-		// Create enrichment services
-		var enrichmentOptions = new EnrichmentOptions { Enabled = es.EnableAiEnrichment };
-		_enrichmentCache = new ElasticsearchEnrichmentCache(_transport, logFactory.CreateLogger<ElasticsearchEnrichmentCache>());
-		_llmClient = new ElasticsearchLlmClient(_transport, logFactory.CreateLogger<ElasticsearchLlmClient>());
-		_enrichmentService = new Enrichment.DocumentEnrichmentService(
-			_enrichmentCache,
-			_llmClient,
-			enrichmentOptions,
-			logFactory.CreateLogger<Enrichment.DocumentEnrichmentService>());
+		// Initialize AI enrichment services if enabled
+		if (es.EnableAiEnrichment)
+		{
+			_enrichmentCache = new ElasticsearchEnrichmentCache(_transport, logFactory.CreateLogger<ElasticsearchEnrichmentCache>());
+			_llmClient = new ElasticsearchLlmClient(_transport, logFactory.CreateLogger<ElasticsearchLlmClient>());
+			_enrichPolicyManager = new EnrichPolicyManager(_transport, logFactory.CreateLogger<EnrichPolicyManager>(), _enrichmentCache.IndexName);
+		}
 	}
 
 	/// <inheritdoc />
 	public async ValueTask StartAsync(Cancel ctx = default)
 	{
+		// Initialize AI enrichment cache (pre-loads existing hashes into memory)
+		if (_enrichmentCache is not null && _enrichPolicyManager is not null)
+		{
+			_logger.LogInformation("Initializing AI enrichment cache...");
+			await _enrichmentCache.InitializeAsync(ctx);
+			_logger.LogInformation("AI enrichment cache ready with {Count} existing entries", _enrichmentCache.Count);
+
+			// The enrich pipeline must exist before indexing (used as default_pipeline).
+			// The pipeline's enrich processor requires the .enrich-* index to exist,
+			// which is created by executing the policy. We execute even with an empty
+			// cache index - it just creates an empty enrich index that returns no matches.
+			_logger.LogInformation("Setting up enrich policy and pipeline...");
+			await _enrichPolicyManager.ExecutePolicyAsync(ctx);
+			await _enrichPolicyManager.EnsurePipelineExistsAsync(ctx);
+		}
+
 		_currentLexicalHash = await _lexicalChannel.Channel.GetIndexTemplateHashAsync(ctx) ?? string.Empty;
 		_currentSemanticHash = await _semanticChannel.Channel.GetIndexTemplateHashAsync(ctx) ?? string.Empty;
 
-		await _enrichmentService.InitializeAsync(ctx);
 		await PublishSynonymsAsync(ctx);
 		await PublishQueryRulesAsync(ctx);
 		_ = await _lexicalChannel.Channel.BootstrapElasticsearchAsync(BootstrapMethod.Failure, null, ctx);
@@ -245,9 +244,6 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	/// <inheritdoc />
 	public async ValueTask StopAsync(Cancel ctx = default)
 	{
-		// Log AI enrichment progress
-		_enrichmentService.LogProgress();
-
 		var semanticWriteAlias = string.Format(_semanticChannel.Channel.Options.IndexFormat, "latest");
 		var lexicalWriteAlias = string.Format(_lexicalChannel.Channel.Options.IndexFormat, "latest");
 
@@ -347,6 +343,80 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 
 		_logger.LogInformation("Finish sync to semantic index using {IndexStrategy} strategy", _indexStrategy.ToStringFast(true));
 		await QueryDocumentCounts(ctx);
+
+		// Execute enrich policy so new cache entries are available for next run
+		await ExecuteEnrichPolicyIfNeededAsync(ctx);
+	}
+
+	private async ValueTask ExecuteEnrichPolicyIfNeededAsync(Cancel ctx)
+	{
+		if (_enrichmentCache is null || _enrichPolicyManager is null)
+			return;
+
+		_logger.LogInformation(
+			"AI enrichment complete: {CacheHits} cache hits, {NewEnrichments} new enrichments (limit: {Limit})",
+			_cacheHitCount, _newEnrichmentCount, _enrichmentOptions.MaxNewEnrichmentsPerRun);
+
+		if (_enrichmentCache.Count > 0)
+		{
+			_logger.LogInformation("Executing enrich policy to update internal index with {Count} total entries...", _enrichmentCache.Count);
+			await _enrichPolicyManager.ExecutePolicyAsync(ctx);
+
+			// Backfill: Apply AI fields to documents that were skipped by hash-based upsert
+			await BackfillMissingAiFieldsAsync(ctx);
+		}
+	}
+
+	private async ValueTask BackfillMissingAiFieldsAsync(Cancel ctx)
+	{
+		// Why backfill is needed:
+		// The exporter uses hash-based upsert - unchanged documents are skipped during indexing.
+		// These skipped documents never pass through the ingest pipeline, so they miss AI fields.
+		// This backfill runs _update_by_query with the AI pipeline to enrich those documents.
+		//
+		// Only backfill the semantic index - it's what the search API uses.
+		// The lexical index is just an intermediate step for reindexing.
+		if (_endpoint.NoSemantic || _enrichmentCache is null)
+			return;
+
+		var semanticAlias = _semanticChannel.Channel.Options.ActiveSearchAlias;
+
+		_logger.LogInformation(
+			"Starting AI backfill for documents missing AI fields (cache has {CacheCount} entries)",
+			_enrichmentCache.Count);
+
+		// Find documents with content_hash but missing AI fields - these need the pipeline applied
+		var query = /*lang=json,strict*/ """
+			{
+				"query": {
+					"bool": {
+						"must": { "exists": { "field": "content_hash" } },
+						"must_not": { "exists": { "field": "ai_questions" } }
+					}
+				}
+			}
+			""";
+
+		await RunBackfillQuery(semanticAlias, query, ctx);
+	}
+
+	private async ValueTask RunBackfillQuery(string indexAlias, string query, Cancel ctx)
+	{
+		var pipeline = EnrichPolicyManager.PipelineName;
+		var url = $"/{indexAlias}/_update_by_query?pipeline={pipeline}&timeout=10m";
+
+		var response = await _transport.PostAsync<DynamicResponse>(url, PostData.String(query), ctx);
+
+		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
+		{
+			_logger.LogWarning("AI backfill failed for {Index}: {Response}", indexAlias, response);
+			return;
+		}
+
+		var updated = response.Body.Get<int>("updated");
+		_logger.LogInformation(
+			"AI backfill complete for {Index}: {Updated} documents processed (only those with matching cache entries get AI fields)",
+			indexAlias, updated);
 	}
 
 	private async ValueTask QueryIngestStatistics(string lexicalWriteAlias, Cancel ctx)
@@ -454,8 +524,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	{
 		_lexicalChannel.Dispose();
 		_semanticChannel.Dispose();
-		_enrichmentService.Dispose();
-		_llmClient.Dispose();
+		_llmClient?.Dispose();
 		GC.SuppressFinalize(this);
 	}
 }

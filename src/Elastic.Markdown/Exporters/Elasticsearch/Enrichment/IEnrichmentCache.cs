@@ -11,30 +11,36 @@ public sealed record CachedEnrichmentEntry(EnrichmentData Data, int PromptVersio
 
 /// <summary>
 /// Abstraction for enrichment cache operations.
-/// Enables swapping implementations (Elasticsearch, Redis, in-memory) and testing.
+/// With the enrich processor pattern, the cache stores enrichment data that
+/// gets joined to documents at index time via an Elasticsearch enrich processor.
 /// </summary>
 public interface IEnrichmentCache
 {
 	/// <summary>
-	/// Initializes the cache, including any index bootstrapping and preloading.
+	/// The name of the cache index.
+	/// </summary>
+	string IndexName { get; }
+
+	/// <summary>
+	/// Initializes the cache, including index creation and loading existing hashes.
 	/// </summary>
 	Task InitializeAsync(CancellationToken ct);
 
 	/// <summary>
-	/// Attempts to retrieve enrichment data from the cache.
+	/// Checks if an enrichment exists for the given content hash.
 	/// </summary>
-	/// <param name="key">The content-addressable cache key.</param>
-	/// <returns>The cached entry if found, null otherwise.</returns>
-	CachedEnrichmentEntry? TryGet(string key);
+	bool Exists(string contentHash);
+
+	/// <summary>
+	/// Fetches enrichment data from the cache by content hash.
+	/// Returns null if not found.
+	/// </summary>
+	Task<EnrichmentData?> GetAsync(string contentHash, CancellationToken ct);
 
 	/// <summary>
 	/// Stores enrichment data in the cache.
 	/// </summary>
-	/// <param name="key">The content-addressable cache key.</param>
-	/// <param name="data">The enrichment data to store.</param>
-	/// <param name="promptVersion">The prompt version used to generate this data.</param>
-	/// <param name="ct">Cancellation token.</param>
-	Task StoreAsync(string key, EnrichmentData data, int promptVersion, CancellationToken ct);
+	Task StoreAsync(string contentHash, EnrichmentData data, int promptVersion, CancellationToken ct);
 
 	/// <summary>
 	/// Gets the number of entries currently in the cache.
