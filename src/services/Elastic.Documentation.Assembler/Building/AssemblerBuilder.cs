@@ -75,11 +75,7 @@ public class AssemblerBuilder(
 		foreach (var exporter in markdownExporters)
 		{
 			_logger.LogInformation("Calling FinishExportAsync on {ExporterName}", exporter.GetType().Name);
-			var pathPrefix = context.Environment.PathPrefix;
-			var outputWithPrefix = string.IsNullOrEmpty(pathPrefix)
-				? context.OutputDirectory
-				: context.ReadFileSystem.DirectoryInfo.New(Path.Join(context.OutputDirectory.FullName, pathPrefix));
-			_ = await exporter.FinishExportAsync(outputWithPrefix, ctx);
+			_ = await exporter.FinishExportAsync(context.OutputWithPathPrefixDirectory, ctx);
 		}
 
 		if (exportOptions.Contains(Exporter.Redirects))

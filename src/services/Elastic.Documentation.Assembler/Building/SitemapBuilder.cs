@@ -16,7 +16,7 @@ namespace Elastic.Documentation.Assembler.Building;
 public class SitemapBuilder(
 	IReadOnlyCollection<INavigationItem> navigationItems,
 	IFileSystem fileSystem,
-	IDirectoryInfo outputFolder
+	IDirectoryInfo pathPrefixedOutputFolder
 )
 {
 	private static readonly Uri BaseUri = new("https://www.elastic.co");
@@ -54,7 +54,7 @@ public class SitemapBuilder(
 
 		doc.Add(root);
 
-		using var fileStream = fileSystem.File.Create(fileSystem.Path.Combine(outputFolder.FullName, "sitemap.xml"));
+		using var fileStream = fileSystem.File.Create(fileSystem.Path.Combine(pathPrefixedOutputFolder.FullName, "sitemap.xml"));
 		doc.Save(fileStream);
 	}
 
