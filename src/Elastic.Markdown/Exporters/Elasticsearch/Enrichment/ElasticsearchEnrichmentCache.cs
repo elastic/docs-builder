@@ -32,15 +32,15 @@ public sealed class ElasticsearchEnrichmentCache(
 		{
 			"mappings": {
 				"properties": {
-					"content_hash": { "type": "keyword" },
-					"ai_rag_optimized_summary": { "type": "text" },
-					"ai_short_summary": { "type": "text" },
-					"ai_search_query": { "type": "text" },
-					"ai_questions": { "type": "text" },
-					"ai_use_cases": { "type": "text" },
-					"created_at": { "type": "date" },
-					"prompt_version": { "type": "integer" }
-				}
+				"enrichment_key": { "type": "keyword" },
+				"ai_rag_optimized_summary": { "type": "text" },
+				"ai_short_summary": { "type": "text" },
+				"ai_search_query": { "type": "text" },
+				"ai_questions": { "type": "text" },
+				"ai_use_cases": { "type": "text" },
+				"created_at": { "type": "date" },
+				"prompt_hash": { "type": "keyword" }
+			}
 			}
 		}
 		""";
@@ -53,33 +53,31 @@ public sealed class ElasticsearchEnrichmentCache(
 		await LoadExistingHashesAsync(ct);
 	}
 
-	public bool Exists(string contentHash) => _existingHashes.ContainsKey(contentHash);
+	public bool Exists(string enrichmentKey) => _existingHashes.ContainsKey(enrichmentKey);
 
-	public Task<EnrichmentData?> GetAsync(string contentHash, CancellationToken ct) =>
-		Task.FromResult<EnrichmentData?>(null); // Not used - enrich processor handles cache hits
-
-	public async Task StoreAsync(string contentHash, EnrichmentData data, int promptVersion, CancellationToken ct)
+	public async Task StoreAsync(string enrichmentKey, EnrichmentData data, CancellationToken ct)
 	{
+		var promptHash = ElasticsearchLlmClient.PromptHash;
 		var cacheEntry = new CacheIndexEntry
 		{
-			ContentHash = contentHash,
+			EnrichmentKey = enrichmentKey,
 			AiRagOptimizedSummary = data.RagOptimizedSummary,
 			AiShortSummary = data.ShortSummary,
 			AiSearchQuery = data.SearchQuery,
 			AiQuestions = data.Questions,
 			AiUseCases = data.UseCases,
 			CreatedAt = DateTimeOffset.UtcNow,
-			PromptVersion = promptVersion
+			PromptHash = promptHash
 		};
 
 		var body = JsonSerializer.Serialize(cacheEntry, EnrichmentSerializerContext.Default.CacheIndexEntry);
 		var response = await _transport.PutAsync<StringResponse>(
-			$"{IndexName}/_doc/{contentHash}",
+			$"{IndexName}/_doc/{enrichmentKey}",
 			PostData.String(body),
 			ct);
 
 		if (response.ApiCallDetails.HasSuccessfulStatusCode)
-			_ = _existingHashes.TryAdd(contentHash, 0);
+			_ = _existingHashes.TryAdd(enrichmentKey, 0);
 		else
 			_logger.LogWarning("Failed to store enrichment: {StatusCode}", response.ApiCallDetails.HttpStatusCode);
 	}
@@ -165,7 +163,7 @@ public sealed class ElasticsearchEnrichmentCache(
 		var count = 0;
 		foreach (var hit in hitsArray.EnumerateArray())
 		{
-			// Use _id as the hash (we store content_hash as both _id and field)
+			// Use _id as the enrichment key
 			if (hit.TryGetProperty("_id", out var idProp) && idProp.GetString() is { } id)
 			{
 				_ = _existingHashes.TryAdd(id, 0);
@@ -182,8 +180,8 @@ public sealed class ElasticsearchEnrichmentCache(
 /// </summary>
 public sealed record CacheIndexEntry
 {
-	[JsonPropertyName("content_hash")]
-	public required string ContentHash { get; init; }
+	[JsonPropertyName("enrichment_key")]
+	public required string EnrichmentKey { get; init; }
 
 	[JsonPropertyName("ai_rag_optimized_summary")]
 	public string? AiRagOptimizedSummary { get; init; }
@@ -203,6 +201,6 @@ public sealed record CacheIndexEntry
 	[JsonPropertyName("created_at")]
 	public required DateTimeOffset CreatedAt { get; init; }
 
-	[JsonPropertyName("prompt_version")]
-	public required int PromptVersion { get; init; }
+	[JsonPropertyName("prompt_hash")]
+	public required string PromptHash { get; init; }
 }

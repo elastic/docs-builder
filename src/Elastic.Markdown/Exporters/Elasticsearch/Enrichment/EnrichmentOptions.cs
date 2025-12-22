@@ -25,12 +25,6 @@ public sealed record EnrichmentOptions
 	public int MaxConcurrentLlmCalls { get; init; } = 4;
 
 	/// <summary>
-	/// Version number for cache entries. Bump to trigger gradual re-enrichment.
-	/// Using int allows future range queries (e.g., re-enrich all entries below version 5).
-	/// </summary>
-	public int PromptVersion { get; init; } = 1;
-
-	/// <summary>
 	/// Creates options with enrichment disabled.
 	/// </summary>
 	public static EnrichmentOptions Disabled => new() { Enabled = false };

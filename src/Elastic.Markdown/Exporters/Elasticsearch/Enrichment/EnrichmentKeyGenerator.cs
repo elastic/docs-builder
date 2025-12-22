@@ -9,14 +9,17 @@ using System.Text.RegularExpressions;
 namespace Elastic.Markdown.Exporters.Elasticsearch.Enrichment;
 
 /// <summary>
-/// Generates content-addressable hashes for AI enrichment cache lookups.
+/// Generates enrichment keys for AI enrichment cache lookups.
+/// The key includes the prompt hash so that prompt changes trigger automatic cache invalidation.
 /// </summary>
-public static partial class ContentHashGenerator
+public static partial class EnrichmentKeyGenerator
 {
 	public static string Generate(string title, string body)
 	{
 		var normalized = NormalizeRegex().Replace(title + body, "").ToLowerInvariant();
-		var hash = SHA256.HashData(Encoding.UTF8.GetBytes(normalized));
+		var promptHash = ElasticsearchLlmClient.PromptHash;
+		var input = normalized + promptHash;
+		var hash = SHA256.HashData(Encoding.UTF8.GetBytes(input));
 		return Convert.ToHexString(hash).ToLowerInvariant();
 	}
 

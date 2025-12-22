@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Elastic.Transport;
@@ -26,6 +28,18 @@ public sealed class ElasticsearchLlmClient(
 	private readonly SemaphoreSlim _throttle = new(maxConcurrency);
 	private readonly string _inferenceEndpointId = inferenceEndpointId;
 	private readonly int _maxRetries = maxRetries;
+
+	private static readonly Lazy<string> PromptHashLazy = new(() =>
+	{
+		var prompt = BuildPrompt("", "");
+		var hash = SHA256.HashData(Encoding.UTF8.GetBytes(prompt));
+		return Convert.ToHexString(hash).ToLowerInvariant();
+	});
+
+	/// <summary>
+	/// Hash of the prompt template. Changes when the prompt changes, triggering cache invalidation.
+	/// </summary>
+	public static string PromptHash => PromptHashLazy.Value;
 
 	public async Task<EnrichmentData?> EnrichAsync(string title, string body, CancellationToken ct)
 	{

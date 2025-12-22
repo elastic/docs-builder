@@ -5,11 +5,6 @@
 namespace Elastic.Markdown.Exporters.Elasticsearch.Enrichment;
 
 /// <summary>
-/// Represents cached enrichment data with its version metadata.
-/// </summary>
-public sealed record CachedEnrichmentEntry(EnrichmentData Data, int PromptVersion);
-
-/// <summary>
 /// Abstraction for enrichment cache operations.
 /// With the enrich processor pattern, the cache stores enrichment data that
 /// gets joined to documents at index time via an Elasticsearch enrich processor.
@@ -27,20 +22,14 @@ public interface IEnrichmentCache
 	Task InitializeAsync(CancellationToken ct);
 
 	/// <summary>
-	/// Checks if an enrichment exists for the given content hash.
+	/// Checks if an enrichment exists for the given enrichment key.
 	/// </summary>
-	bool Exists(string contentHash);
-
-	/// <summary>
-	/// Fetches enrichment data from the cache by content hash.
-	/// Returns null if not found.
-	/// </summary>
-	Task<EnrichmentData?> GetAsync(string contentHash, CancellationToken ct);
+	bool Exists(string enrichmentKey);
 
 	/// <summary>
 	/// Stores enrichment data in the cache.
 	/// </summary>
-	Task StoreAsync(string contentHash, EnrichmentData data, int promptVersion, CancellationToken ct);
+	Task StoreAsync(string enrichmentKey, EnrichmentData data, CancellationToken ct);
 
 	/// <summary>
 	/// Gets the number of entries currently in the cache.

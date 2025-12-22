@@ -136,7 +136,7 @@ public partial class ElasticsearchMarkdownExporter
 		// AI Enrichment - hybrid approach:
 		// - Cache hits: enrich processor applies fields at index time
 		// - Cache misses: apply fields inline before indexing
-		doc.ContentHash = ContentHashGenerator.Generate(doc.Title, doc.StrippedBody ?? string.Empty);
+		doc.EnrichmentKey = EnrichmentKeyGenerator.Generate(doc.Title, doc.StrippedBody ?? string.Empty);
 		await TryEnrichDocumentAsync(doc, ctx);
 
 		AssignDocumentMetadata(doc);
@@ -176,7 +176,7 @@ public partial class ElasticsearchMarkdownExporter
 			CommonEnrichments(doc, null);
 
 			// AI Enrichment - hybrid approach
-			doc.ContentHash = ContentHashGenerator.Generate(doc.Title, doc.StrippedBody ?? string.Empty);
+			doc.EnrichmentKey = EnrichmentKeyGenerator.Generate(doc.Title, doc.StrippedBody ?? string.Empty);
 			await TryEnrichDocumentAsync(doc, ctx);
 
 			AssignDocumentMetadata(doc);
@@ -209,11 +209,11 @@ public partial class ElasticsearchMarkdownExporter
 	/// </summary>
 	private async ValueTask TryEnrichDocumentAsync(DocumentationDocument doc, Cancel ctx)
 	{
-		if (_enrichmentCache is null || _llmClient is null || string.IsNullOrWhiteSpace(doc.ContentHash))
+		if (_enrichmentCache is null || _llmClient is null || string.IsNullOrWhiteSpace(doc.EnrichmentKey))
 			return;
 
 		// Check if enrichment exists in cache
-		if (_enrichmentCache.Exists(doc.ContentHash))
+		if (_enrichmentCache.Exists(doc.EnrichmentKey))
 		{
 			// Cache hit - enrich processor will apply fields at index time
 			_ = Interlocked.Increment(ref _cacheHitCount);
@@ -236,7 +236,7 @@ public partial class ElasticsearchMarkdownExporter
 				return;
 
 			// Store in cache for future runs
-			await _enrichmentCache.StoreAsync(doc.ContentHash, enrichment, _enrichmentOptions.PromptVersion, ctx);
+			await _enrichmentCache.StoreAsync(doc.EnrichmentKey, enrichment, ctx);
 
 			// Apply fields directly (enrich processor won't have this entry yet)
 			doc.AiRagOptimizedSummary = enrichment.RagOptimizedSummary;
