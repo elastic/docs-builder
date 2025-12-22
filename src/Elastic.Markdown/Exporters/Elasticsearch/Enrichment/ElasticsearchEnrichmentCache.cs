@@ -82,9 +82,21 @@ public sealed class ElasticsearchEnrichmentCache(
 			if (!response.ApiCallDetails.HasSuccessfulStatusCode)
 				_logger.LogWarning("Failed to persist cache entry: {StatusCode}", response.ApiCallDetails.HttpStatusCode);
 		}
+		catch (OperationCanceledException)
+		{
+			// Respect cancellation requests and allow callers to observe them.
+			throw;
+		}
+		catch (TransportException tex)
+		{
+			// Transport-related failures are treated as best-effort cache persistence issues.
+			_logger.LogWarning(tex, "Failed to persist cache entry for key {Key}", key);
+		}
 		catch (Exception ex)
 		{
-			_logger.LogWarning(ex, "Failed to persist cache entry for key {Key}", key);
+			// Unexpected exceptions are logged and rethrown to avoid silently swallowing serious issues.
+			_logger.LogError(ex, "Unexpected error while persisting cache entry for key {Key}", key);
+			throw;
 		}
 	}
 
