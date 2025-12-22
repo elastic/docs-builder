@@ -6,7 +6,6 @@ on:
       - opened
       - synchronize
       - reopened
-      - labeled
   workflow_dispatch:
     inputs:
       pr_number:
@@ -26,20 +25,13 @@ concurrency:
 
 jobs:
   build:
-    # Run if:
-    # - Manual trigger (workflow_dispatch), OR
-    # - PR event with 'assembler-preview' label present
     if: >
       github.event_name == 'workflow_dispatch'
-      || (
-        github.event_name == 'pull_request'
-        && contains(github.event.pull_request.labels.*.name, 'assembler-preview')
-      )
     runs-on: ubuntu-latest
     env:
       PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
     steps:
-      - name: Get PR details (workflow_dispatch only)
+      - name: Get PR details
         if: github.event_name == 'workflow_dispatch'
         id: pr-details
         uses: actions/github-script@v8
