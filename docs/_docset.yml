@@ -88,6 +88,7 @@ toc:
       - file: applies.md
       - file: applies-switch.md
       - file: automated_settings.md
+      - file: buttons.md
       - file: code.md
       - file: comments.md
       - file: conditionals.md
