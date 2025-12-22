@@ -94,6 +94,6 @@ public class AssembleContext : IDocumentationConfigurationContext
 		var pathPrefix = Environment.PathPrefix;
 		OutputWithPathPrefixDirectory = string.IsNullOrEmpty(pathPrefix)
 			? OutputDirectory
-			: WriteFileSystem.DirectoryInfo.New(Path.Combine(OutputDirectory.FullName, pathPrefix));
+			: WriteFileSystem.DirectoryInfo.New(WriteFileSystem.Path.Combine(OutputDirectory.FullName, pathPrefix));
 	}
 }
