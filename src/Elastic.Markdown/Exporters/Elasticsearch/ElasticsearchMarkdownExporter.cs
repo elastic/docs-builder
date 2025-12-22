@@ -10,9 +10,9 @@ using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Ingest.Elasticsearch;
 using Elastic.Ingest.Elasticsearch.Indices;
+using Elastic.Markdown.Exporters.Elasticsearch.Enrichment;
 using Elastic.Transport;
 using Elastic.Transport.Products.Elasticsearch;
-using Elastic.Markdown.Exporters.Elasticsearch.Enrichment;
 using Microsoft.Extensions.Logging;
 using NetEscapades.EnumGenerators;
 
