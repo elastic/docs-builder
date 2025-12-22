@@ -23,7 +23,7 @@
     <PackageVersion Include="Aspire.Hosting" Version="13.0.0" />
     <PackageVersion Include="Aspire.Hosting.Testing" Version="13.0.0" />
     <PackageVersion Include="AWSSDK.Core" Version="4.0.3.6" />
-    <PackageVersion Include="AWSSDK.DynamoDBv2" Version="4.0.5" />
+    <PackageVersion Include="AWSSDK.DynamoDBv2" Version="4.0.10.4" />
     <PackageVersion Include="AWSSDK.SQS" Version="4.0.2.8" />
     <PackageVersion Include="AWSSDK.S3" Version="4.0.15.2" />
     <PackageVersion Include="Elastic.OpenTelemetry" Version="1.1.0" />
