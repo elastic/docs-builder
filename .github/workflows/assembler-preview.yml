@@ -63,14 +63,19 @@ jobs:
               core.setFailed(`Failed to get PR #${prNumber}: ${error.message}`);
             }
 
-      - name: Set PR SHA
+      - name: Set PR SHA (workflow_dispatch)
+        id: pr-sha-dispatch
+        if: github.event_name == 'workflow_dispatch'
+        run: echo "sha=${{ fromJSON(steps.pr-details.outputs.result).sha }}" >> $GITHUB_OUTPUT
+
+      - name: Set PR SHA (pull_request)
+        id: pr-sha-pr
+        if: github.event_name == 'pull_request'
+        run: echo "sha=${{ github.event.pull_request.head.sha }}" >> $GITHUB_OUTPUT
+
+      - name: Resolve PR SHA
         id: pr-sha
-        run: |
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            echo "sha=${{ fromJSON(steps.pr-details.outputs.result).sha }}" >> $GITHUB_OUTPUT
-          else
-            echo "sha=${{ github.event.pull_request.head.sha }}" >> $GITHUB_OUTPUT
-          fi
+        run: echo "sha=${{ steps.pr-sha-dispatch.outputs.sha || steps.pr-sha-pr.outputs.sha }}" >> $GITHUB_OUTPUT
 
       - name: Checkout
         uses: actions/checkout@v6
