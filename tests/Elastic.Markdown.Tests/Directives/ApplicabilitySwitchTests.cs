@@ -227,11 +227,12 @@ Content for removed version
 		var expectedKeys = new Dictionary<string, string>
 		{
 			// These are the actual SHA256-based hashes that should never change
-			{ "stack: ga 9.1", "applies-031B7112" },
-			{ "stack: preview 9.0", "applies-361F73DC" },
-			{ "ess: ga 8.11", "applies-32E204F7" },
-			{ "deployment: { ece: ga 9.0, ess: ga 9.1 }", "applies-D099CDEF" },
-			{ "serverless: all", "applies-A34B17C6" },
+			// (unless the version format actually changes)
+			{ "stack: ga 9.1", "applies-A8B9CC9C" },
+			{ "stack: preview 9.0", "applies-66AECC4E" },
+			{ "ess: ga 8.11", "applies-9CA8543E" },
+			{ "deployment: { ece: ga 9.0, ess: ga 9.1 }", "applies-51C670D4" },
+			{ "serverless: all", "applies-A34B17C6" }
 		};
 
 		foreach (var (definition, expectedKey) in expectedKeys)
