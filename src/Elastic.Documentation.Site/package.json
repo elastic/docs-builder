@@ -49,7 +49,7 @@
     "@babel/preset-typescript": "7.27.1",
     "@elastic/synthetics": "1.20.0",
     "@eslint/js": "9.39.1",
-    "@parcel/reporter-bundle-analyzer": "2.16.1",
+    "@parcel/reporter-bundle-analyzer": "2.16.3",
     "@parcel/transformer-svg-react": "2.16.1",
     "@tailwindcss/postcss": "4.1.17",
     "@testing-library/jest-dom": "6.9.1",
@@ -71,20 +71,20 @@
     "postcss": "8.5.6",
     "postcss-import": "16.1.1",
     "prettier": "3.7.3",
-    "prettier-plugin-tailwindcss": "0.7.1",
+    "prettier-plugin-tailwindcss": "0.7.2",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "svgo": "^3.3.2",
     "text-diff": "1.0.1",
     "typescript": "^5.9.3",
-    "typescript-eslint": "8.48.0",
+    "typescript-eslint": "8.48.1",
     "wait-on": "9.0.1"
   },
   "browserslist": [
     "defaults"
   ],
   "dependencies": {
-    "@elastic/eui": "109.2.0",
+    "@elastic/eui": "110.0.0",
     "@elastic/highlightjs-esql": "1.2.0",
     "@emotion/css": "11.13.5",
     "@emotion/react": "11.14.0",
