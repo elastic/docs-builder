@@ -15,7 +15,8 @@ public sealed record EnrichmentOptions
 	public bool Enabled { get; init; }
 
 	/// <summary>
-	/// Maximum new enrichments per run. Limits LLM calls to prevent long deployments.
+	/// Maximum enrichments per run (new + stale refresh). Limits LLM calls to prevent long deployments.
+	/// Stale entries (with old prompt hash) are treated as non-existent and count toward this limit.
 	/// </summary>
 	public int MaxNewEnrichmentsPerRun { get; init; } = 100;
 

@@ -206,13 +206,15 @@ public partial class ElasticsearchMarkdownExporter
 
 	/// <summary>
 	/// Hybrid AI enrichment: cache hits rely on enrich processor, cache misses apply fields inline.
+	/// Stale entries (with old prompt hash) are treated as non-existent and will be regenerated.
 	/// </summary>
 	private async ValueTask TryEnrichDocumentAsync(DocumentationDocument doc, Cancel ctx)
 	{
 		if (_enrichmentCache is null || _llmClient is null || string.IsNullOrWhiteSpace(doc.EnrichmentKey))
 			return;
 
-		// Check if enrichment exists in cache
+		// Check if valid enrichment exists in cache (current prompt hash)
+		// Stale entries are treated as non-existent and will be regenerated
 		if (_enrichmentCache.Exists(doc.EnrichmentKey))
 		{
 			// Cache hit - enrich processor will apply fields at index time
@@ -220,15 +222,15 @@ public partial class ElasticsearchMarkdownExporter
 			return;
 		}
 
-		// Check if we've hit the limit for new enrichments
-		var current = Interlocked.Increment(ref _newEnrichmentCount);
+		// Check if we've hit the limit for enrichments
+		var current = Interlocked.Increment(ref _enrichmentCount);
 		if (current > _enrichmentOptions.MaxNewEnrichmentsPerRun)
 		{
-			_ = Interlocked.Decrement(ref _newEnrichmentCount);
+			_ = Interlocked.Decrement(ref _enrichmentCount);
 			return;
 		}
 
-		// Cache miss - generate enrichment inline and apply directly
+		// Cache miss (or stale) - generate enrichment inline and apply directly
 		try
 		{
 			var enrichment = await _llmClient.EnrichAsync(doc.Title, doc.StrippedBody ?? string.Empty, ctx);
@@ -248,7 +250,7 @@ public partial class ElasticsearchMarkdownExporter
 		catch (Exception ex) when (ex is not OperationCanceledException)
 		{
 			_logger.LogWarning(ex, "Failed to enrich document {Url}", doc.Url);
-			_ = Interlocked.Decrement(ref _newEnrichmentCount);
+			_ = Interlocked.Decrement(ref _enrichmentCount);
 		}
 	}
 }

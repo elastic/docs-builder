@@ -14,12 +14,15 @@ namespace Elastic.Markdown.Exporters.Elasticsearch.Enrichment;
 /// </summary>
 public static partial class EnrichmentKeyGenerator
 {
+	/// <summary>
+	/// Generates a content-based enrichment key (without prompt hash).
+	/// This allows stale enrichments from old prompts to still be applied when the prompt changes.
+	/// New enrichments will gradually replace stale ones as they're generated.
+	/// </summary>
 	public static string Generate(string title, string body)
 	{
 		var normalized = NormalizeRegex().Replace(title + body, "").ToLowerInvariant();
-		var promptHash = ElasticsearchLlmClient.PromptHash;
-		var input = normalized + promptHash;
-		var hash = SHA256.HashData(Encoding.UTF8.GetBytes(input));
+		var hash = SHA256.HashData(Encoding.UTF8.GetBytes(normalized));
 		return Convert.ToHexString(hash).ToLowerInvariant();
 	}
 

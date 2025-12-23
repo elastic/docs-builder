@@ -48,7 +48,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	private readonly ElasticsearchLlmClient? _llmClient;
 	private readonly EnrichPolicyManager? _enrichPolicyManager;
 	private readonly EnrichmentOptions _enrichmentOptions = new();
-	private int _newEnrichmentCount;
+	private int _enrichmentCount;
 	private int _cacheHitCount;
 
 	public ElasticsearchMarkdownExporter(
@@ -354,8 +354,8 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 			return;
 
 		_logger.LogInformation(
-			"AI enrichment complete: {CacheHits} cache hits, {NewEnrichments} new enrichments (limit: {Limit})",
-			_cacheHitCount, _newEnrichmentCount, _enrichmentOptions.MaxNewEnrichmentsPerRun);
+			"AI enrichment complete: {CacheHits} cache hits, {Enrichments} enrichments generated (limit: {Limit})",
+			_cacheHitCount, _enrichmentCount, _enrichmentOptions.MaxNewEnrichmentsPerRun);
 
 		if (_enrichmentCache.Count > 0)
 		{
@@ -385,12 +385,12 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 			"Starting AI backfill for documents missing AI fields (cache has {CacheCount} entries)",
 			_enrichmentCache.Count);
 
-		// Find documents with content_hash but missing AI fields - these need the pipeline applied
+		// Find documents with enrichment_key but missing AI fields - these need the pipeline applied
 		var query = /*lang=json,strict*/ """
 			{
 				"query": {
 					"bool": {
-						"must": { "exists": { "field": "content_hash" } },
+						"must": { "exists": { "field": "enrichment_key" } },
 						"must_not": { "exists": { "field": "ai_questions" } }
 					}
 				}

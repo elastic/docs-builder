@@ -158,7 +158,7 @@ public abstract partial class ElasticsearchIngestChannel<TChannelOptions, TChann
 		        }
 		      },
 		      "hash" : { "type" : "keyword" },
-		      "content_hash" : { "type" : "keyword" },
+		      "enrichment_key" : { "type" : "keyword" },
 		      "search_title": {
 		        "type": "text",
 		        "analyzer": "synonyms_fixed_analyzer",

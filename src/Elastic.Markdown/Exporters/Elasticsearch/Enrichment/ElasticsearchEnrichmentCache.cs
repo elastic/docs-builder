@@ -15,6 +15,7 @@ namespace Elastic.Markdown.Exporters.Elasticsearch.Enrichment;
 /// <summary>
 /// Elasticsearch-backed enrichment cache for use with the enrich processor.
 /// Stores AI-generated enrichment fields directly (not as JSON string) for efficient lookups.
+/// Only entries with the current prompt hash are considered valid - stale entries are treated as non-existent.
 /// </summary>
 public sealed class ElasticsearchEnrichmentCache(
 	DistributedTransport transport,
@@ -23,7 +24,9 @@ public sealed class ElasticsearchEnrichmentCache(
 {
 	private readonly DistributedTransport _transport = transport;
 	private readonly ILogger _logger = logger;
-	private readonly ConcurrentDictionary<string, byte> _existingHashes = new();
+
+	// Only contains entries with current prompt hash - stale entries are excluded
+	private readonly ConcurrentDictionary<string, byte> _validEntries = new();
 
 	public string IndexName { get; } = indexName;
 
@@ -46,7 +49,15 @@ public sealed class ElasticsearchEnrichmentCache(
 		}
 		""";
 
-	public int Count => _existingHashes.Count;
+	/// <summary>
+	/// Number of valid cache entries (with current prompt hash).
+	/// </summary>
+	public int Count => _validEntries.Count;
+
+	/// <summary>
+	/// Number of stale entries found during initialization (for logging only).
+	/// </summary>
+	public int StaleCount { get; private set; }
 
 	public async Task InitializeAsync(CancellationToken ct)
 	{
@@ -54,7 +65,11 @@ public sealed class ElasticsearchEnrichmentCache(
 		await LoadExistingHashesAsync(ct);
 	}
 
-	public bool Exists(string enrichmentKey) => _existingHashes.ContainsKey(enrichmentKey);
+	/// <summary>
+	/// Checks if a valid enrichment exists in the cache (with current prompt hash).
+	/// Stale entries are treated as non-existent and will be regenerated.
+	/// </summary>
+	public bool Exists(string enrichmentKey) => _validEntries.ContainsKey(enrichmentKey);
 
 	public async Task StoreAsync(string enrichmentKey, EnrichmentData data, CancellationToken ct)
 	{
@@ -78,7 +93,7 @@ public sealed class ElasticsearchEnrichmentCache(
 			ct);
 
 		if (response.ApiCallDetails.HasSuccessfulStatusCode)
-			_ = _existingHashes.TryAdd(enrichmentKey, 0);
+			_ = _validEntries.TryAdd(enrichmentKey, 0);
 		else
 			_logger.LogWarning("Failed to store enrichment: {StatusCode}", response.ApiCallDetails.HttpStatusCode);
 	}
@@ -111,9 +126,12 @@ public sealed class ElasticsearchEnrichmentCache(
 	private async Task LoadExistingHashesAsync(CancellationToken ct)
 	{
 		var sw = System.Diagnostics.Stopwatch.StartNew();
+		var currentPromptHash = ElasticsearchLlmClient.PromptHash;
+		var staleCount = 0;
+		var totalCount = 0;
 
-		// Only fetch _id to minimize memory - we use _id as the hash
-		var scrollQuery = /*lang=json,strict*/ """{"size": 1000, "_source": false, "query": {"match_all": {}}}""";
+		// Fetch _id and prompt_hash to determine validity
+		var scrollQuery = /*lang=json,strict*/ """{"size": 1000, "_source": ["prompt_hash"], "query": {"match_all": {}}}""";
 
 		var searchResponse = await _transport.PostAsync<StringResponse>(
 			$"{IndexName}/_search?scroll=1m",
@@ -126,9 +144,11 @@ public sealed class ElasticsearchEnrichmentCache(
 			return;
 		}
 
-		var (count, scrollId) = ProcessHashHits(searchResponse.Body);
+		var (batchTotal, batchStale, scrollId) = ProcessHashHits(searchResponse.Body, currentPromptHash);
+		totalCount += batchTotal;
+		staleCount += batchStale;
 
-		while (scrollId is not null && count > 0)
+		while (scrollId is not null && batchTotal > 0)
 		{
 			var scrollBody = $$"""{"scroll": "1m", "scroll_id": "{{scrollId}}"}""";
 			var scrollResponse = await _transport.PostAsync<StringResponse>(
@@ -139,17 +159,21 @@ public sealed class ElasticsearchEnrichmentCache(
 			if (!scrollResponse.ApiCallDetails.HasSuccessfulStatusCode)
 				break;
 
-			(count, scrollId) = ProcessHashHits(scrollResponse.Body);
+			(batchTotal, batchStale, scrollId) = ProcessHashHits(scrollResponse.Body, currentPromptHash);
+			totalCount += batchTotal;
+			staleCount += batchStale;
 		}
 
-		_logger.LogInformation("Loaded {Count} existing enrichment hashes in {ElapsedMs}ms",
-			_existingHashes.Count, sw.ElapsedMilliseconds);
+		StaleCount = staleCount;
+		_logger.LogInformation(
+			"Loaded {Total} enrichment cache entries: {Valid} valid (current prompt), {Stale} stale (will be refreshed) in {ElapsedMs}ms",
+			totalCount, _validEntries.Count, staleCount, sw.ElapsedMilliseconds);
 	}
 
-	private (int count, string? scrollId) ProcessHashHits(string? responseBody)
+	private (int total, int stale, string? scrollId) ProcessHashHits(string? responseBody, string currentPromptHash)
 	{
 		if (string.IsNullOrEmpty(responseBody))
-			return (0, null);
+			return (0, 0, null);
 
 		using var doc = JsonDocument.Parse(responseBody);
 
@@ -159,21 +183,30 @@ public sealed class ElasticsearchEnrichmentCache(
 
 		if (!doc.RootElement.TryGetProperty("hits", out var hitsObj) ||
 			!hitsObj.TryGetProperty("hits", out var hitsArray))
-			return (0, scrollId);
+			return (0, 0, scrollId);
 
-		var count = 0;
-		var ids = hitsArray
-			.EnumerateArray()
-			.Select(hit => hit.TryGetProperty("_id", out var idProp) ? idProp.GetString() : null)
-			.Where(id => id is not null)!;
-
-		foreach (var id in ids)
+		var total = 0;
+		var stale = 0;
+		foreach (var hit in hitsArray.EnumerateArray())
 		{
-			// Use _id as the enrichment key
-			_ = _existingHashes.TryAdd(id, 0);
-			count++;
+			if (hit.TryGetProperty("_id", out var idProp) && idProp.GetString() is { } id)
+			{
+				total++;
+
+				// Only add entries with current prompt hash - stale entries are ignored
+				if (hit.TryGetProperty("_source", out var source) &&
+					source.TryGetProperty("prompt_hash", out var promptHashProp) &&
+					promptHashProp.GetString() == currentPromptHash)
+				{
+					_ = _validEntries.TryAdd(id, 0);
+				}
+				else
+				{
+					stale++;
+				}
+			}
 		}
-		return (count, scrollId);
+		return (total, stale, scrollId);
 	}
 }
 

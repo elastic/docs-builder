@@ -32,7 +32,7 @@ public sealed class EnrichPolicyManager(
 				{
 					"enrich": {
 						"policy_name": "ai-enrichment-policy",
-						"field": "content_hash",
+						"field": "enrichment_key",
 						"target_field": "ai_enrichment",
 						"max_matches": 1,
 						"ignore_missing": true
@@ -71,7 +71,7 @@ public sealed class EnrichPolicyManager(
 			{
 				"match": {
 					"indices": "{{_cacheIndexName}}",
-					"match_field": "content_hash",
+					"match_field": "enrichment_key",
 					"enrich_fields": ["ai_rag_optimized_summary", "ai_short_summary", "ai_search_query", "ai_questions", "ai_use_cases"]
 				}
 			}
