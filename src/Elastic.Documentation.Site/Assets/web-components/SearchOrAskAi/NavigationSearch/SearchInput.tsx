@@ -35,14 +35,14 @@ export const SearchInput = ({
             <span
                 css={css`
                     position: absolute;
-                    left: ${euiTheme.size.m};
+                    left: ${euiTheme.base * 0.75}px;
                     display: flex;
                     align-items: center;
                     pointer-events: none;
                 `}
             >
                 {isLoading ? (
-                    <EuiLoadingSpinner size="s" />
+                    <EuiLoadingSpinner size="m" />
                 ) : (
                     <EuiIcon type="search" size="m" color="subdued" />
                 )}
@@ -61,17 +61,18 @@ export const SearchInput = ({
                 css={css`
                     width: 100%;
                     padding: ${euiTheme.size.s} ${euiTheme.size.m};
-                    padding-left: ${euiTheme.size.xxl};
+                    padding-left: 34px;
                     padding-right: 62px;
-                    border: 1px solid ${euiTheme.colors.borderBaseSubdued};
+                    border: 1px solid ${euiTheme.colors.borderBasePlain};
                     border-radius: ${euiTheme.border.radius.medium};
                     background: ${euiTheme.colors.backgroundBasePlain};
-                    font-size: ${euiTheme.font.scale.m * euiTheme.base}px;
+                    font-size: ${euiTheme.font.scale.s * euiTheme.base}px;
+                    line-height: ${euiTheme.base * 1.25}px;
                     color: ${euiTheme.colors.textParagraph};
                     outline: none;
 
                     &::placeholder {
-                        color: ${euiTheme.colors.textSubdued};
+                        color: ${euiTheme.colors.textDisabled};
                     }
 
                     &:focus {
@@ -83,7 +84,7 @@ export const SearchInput = ({
             <span
                 css={css`
                     position: absolute;
-                    right: ${euiTheme.size.m};
+                    right: ${euiTheme.size.s};
                     display: flex;
                     align-items: center;
                     pointer-events: none;
