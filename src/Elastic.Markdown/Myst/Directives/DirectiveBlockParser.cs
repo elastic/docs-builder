@@ -5,6 +5,7 @@
 using System.Collections.Frozen;
 using Elastic.Markdown.Myst.Directives.Admonition;
 using Elastic.Markdown.Myst.Directives.AppliesSwitch;
+using Elastic.Markdown.Myst.Directives.Button;
 using Elastic.Markdown.Myst.Directives.CsvInclude;
 using Elastic.Markdown.Myst.Directives.Diagram;
 using Elastic.Markdown.Myst.Directives.Image;
@@ -154,6 +155,12 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 
 		if (info.IndexOf("{step}") > 0)
 			return new StepBlock(this, context);
+
+		if (info.IndexOf("{button-group}") > 0)
+			return new ButtonGroupBlock(this, context);
+
+		if (info.IndexOf("{button}") > 0)
+			return new ButtonBlock(this, context);
 
 		return new UnknownDirectiveBlock(this, info.ToString(), context);
 	}
