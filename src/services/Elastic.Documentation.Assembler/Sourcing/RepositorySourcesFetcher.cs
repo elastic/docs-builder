@@ -118,7 +118,7 @@ public class AssemblerRepositorySourcer(ILoggerFactory logFactory, AssembleConte
 	}
 
 	public async Task WriteLinkRegistrySnapshot(LinkRegistry linkRegistrySnapshot, Cancel ctx = default) => await context.WriteFileSystem.File.WriteAllTextAsync(
-			Path.Combine(context.OutputDirectory.FullName, "docs", CheckoutResult.LinkRegistrySnapshotFileName),
+			context.WriteFileSystem.Path.Combine(context.OutputWithPathPrefixDirectory.FullName, CheckoutResult.LinkRegistrySnapshotFileName),
 			LinkRegistry.Serialize(linkRegistrySnapshot),
 			ctx
 		);
