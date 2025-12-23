@@ -97,6 +97,41 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		}
 	}
 
+	private const int MaxRetries = 5;
+
+	/// <summary>
+	/// Executes an Elasticsearch API call with exponential backoff retry on 429 (rate limit) errors.
+	/// </summary>
+	private async Task<TResponse> WithRetryAsync<TResponse>(
+		Func<Task<TResponse>> apiCall,
+		string operationName,
+		Cancel ctx) where TResponse : TransportResponse
+	{
+		for (var attempt = 0; attempt <= MaxRetries; attempt++)
+		{
+			var response = await apiCall();
+
+			if (response.ApiCallDetails.HasSuccessfulStatusCode)
+				return response;
+
+			if (response.ApiCallDetails.HttpStatusCode == 429 && attempt < MaxRetries)
+			{
+				var delay = TimeSpan.FromSeconds(Math.Pow(2, attempt)); // 1s, 2s, 4s, 8s, 16s
+				_logger.LogWarning(
+					"Rate limited (429) on {Operation}, retrying in {Delay}s (attempt {Attempt}/{MaxRetries})",
+					operationName, delay.TotalSeconds, attempt + 1, MaxRetries);
+				await Task.Delay(delay, ctx);
+				continue;
+			}
+
+			// Not a 429 or exhausted retries - return the response for caller to handle
+			return response;
+		}
+
+		// Should never reach here, but satisfy compiler
+		return await apiCall();
+	}
+
 	/// <inheritdoc />
 	public async ValueTask StartAsync(Cancel ctx = default)
 	{
@@ -187,7 +222,10 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	{
 		var json = JsonSerializer.Serialize(synonymsSet, SynonymSerializerContext.Default.SynonymsSet);
 
-		var response = await _transport.PutAsync<StringResponse>($"_synonyms/{setName}", PostData.String(json), ctx);
+		var response = await WithRetryAsync(
+			() => _transport.PutAsync<StringResponse>($"_synonyms/{setName}", PostData.String(json), ctx),
+			$"PUT _synonyms/{setName}",
+			ctx);
 
 		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
 			_collector.EmitGlobalError($"Failed to publish synonym set '{setName}'. Reason: {response.ApiCallDetails.OriginalException?.Message ?? response.ToString()}");
@@ -227,7 +265,10 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	{
 		var json = JsonSerializer.Serialize(ruleset, QueryRulesetSerializerContext.Default.QueryRuleset);
 
-		var response = await _transport.PutAsync<StringResponse>($"_query_rules/{rulesetName}", PostData.String(json), ctx);
+		var response = await WithRetryAsync(
+			() => _transport.PutAsync<StringResponse>($"_query_rules/{rulesetName}", PostData.String(json), ctx),
+			$"PUT _query_rules/{rulesetName}",
+			ctx);
 
 		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
 			_collector.EmitGlobalError($"Failed to publish query ruleset '{rulesetName}'. Reason: {response.ApiCallDetails.OriginalException?.Message ?? response.ToString()}");
@@ -237,7 +278,10 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 
 	private async ValueTask<long> CountAsync(string index, string body, Cancel ctx = default)
 	{
-		var countResponse = await _transport.PostAsync<DynamicResponse>($"/{index}/_count", PostData.String(body), ctx);
+		var countResponse = await WithRetryAsync(
+			() => _transport.PostAsync<DynamicResponse>($"/{index}/_count", PostData.String(body), ctx),
+			$"POST {index}/_count",
+			ctx);
 		return countResponse.Body.Get<long>("count");
 	}
 
@@ -405,7 +449,10 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		var pipeline = EnrichPolicyManager.PipelineName;
 		var url = $"/{indexAlias}/_update_by_query?pipeline={pipeline}&timeout=10m";
 
-		var response = await _transport.PostAsync<DynamicResponse>(url, PostData.String(query), ctx);
+		var response = await WithRetryAsync(
+			() => _transport.PostAsync<DynamicResponse>(url, PostData.String(query), ctx),
+			$"POST {indexAlias}/_update_by_query",
+			ctx);
 
 		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
 		{
@@ -458,7 +505,10 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 			}
 		}");
 		var reindexUrl = $"/{lexicalWriteAlias}/_delete_by_query?wait_for_completion=false";
-		var deleteOldLexicalDocs = await _transport.PostAsync<DynamicResponse>(reindexUrl, request, ctx);
+		var deleteOldLexicalDocs = await WithRetryAsync(
+			() => _transport.PostAsync<DynamicResponse>(reindexUrl, request, ctx),
+			$"POST {lexicalWriteAlias}/_delete_by_query",
+			ctx);
 		var taskId = deleteOldLexicalDocs.Body.Get<string>("task");
 		if (string.IsNullOrWhiteSpace(taskId))
 		{
@@ -467,10 +517,18 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 			return;
 		}
 		_logger.LogInformation("_delete_by_query task id: {TaskId}", taskId);
+		await PollTaskUntilComplete(taskId, "_delete_by_query", lexicalWriteAlias, null, ctx);
+	}
+
+	private async ValueTask PollTaskUntilComplete(string taskId, string operation, string sourceIndex, string? destIndex, Cancel ctx)
+	{
 		bool completed;
 		do
 		{
-			var reindexTask = await _transport.GetAsync<DynamicResponse>($"/_tasks/{taskId}", ctx);
+			var reindexTask = await WithRetryAsync(
+				() => _transport.GetAsync<DynamicResponse>($"/_tasks/{taskId}", ctx),
+				$"GET _tasks/{taskId}",
+				ctx);
 			completed = reindexTask.Body.Get<bool>("completed");
 			var total = reindexTask.Body.Get<int>("task.status.total");
 			var updated = reindexTask.Body.Get<int>("task.status.updated");
@@ -479,8 +537,18 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 			var batches = reindexTask.Body.Get<int>("task.status.batches");
 			var runningTimeInNanos = reindexTask.Body.Get<long>("task.running_time_in_nanos");
 			var time = TimeSpan.FromMicroseconds(runningTimeInNanos / 1000);
-			_logger.LogInformation("_delete_by_query '{SourceIndex}': {RunningTimeInNanos} Documents {Total}: {Updated} updated, {Created} created, {Deleted} deleted, {Batches} batches",
-				lexicalWriteAlias, time.ToString(@"hh\:mm\:ss"), total, updated, created, deleted, batches);
+
+			if (destIndex is not null)
+			{
+				_logger.LogInformation("{Operation}: {Time} '{SourceIndex}' => '{DestIndex}'. Documents {Total}: {Updated} updated, {Created} created, {Deleted} deleted, {Batches} batches",
+					operation, time.ToString(@"hh\:mm\:ss"), sourceIndex, destIndex, total, updated, created, deleted, batches);
+			}
+			else
+			{
+				_logger.LogInformation("{Operation} '{SourceIndex}': {Time} Documents {Total}: {Updated} updated, {Created} created, {Deleted} deleted, {Batches} batches",
+					operation, sourceIndex, time.ToString(@"hh\:mm\:ss"), total, updated, created, deleted, batches);
+			}
+
 			if (!completed)
 				await Task.Delay(TimeSpan.FromSeconds(5), ctx);
 
@@ -490,7 +558,10 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	private async ValueTask DoReindex(PostData request, string lexicalWriteAlias, string semanticWriteAlias, string typeOfSync, Cancel ctx)
 	{
 		var reindexUrl = "/_reindex?wait_for_completion=false&scroll=10m";
-		var reindexNewChanges = await _transport.PostAsync<DynamicResponse>(reindexUrl, request, ctx);
+		var reindexNewChanges = await WithRetryAsync(
+			() => _transport.PostAsync<DynamicResponse>(reindexUrl, request, ctx),
+			$"POST _reindex ({typeOfSync})",
+			ctx);
 		var taskId = reindexNewChanges.Body.Get<string>("task");
 		if (string.IsNullOrWhiteSpace(taskId))
 		{
@@ -499,24 +570,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 			return;
 		}
 		_logger.LogInformation("_reindex {Type} task id: {TaskId}", typeOfSync, taskId);
-		bool completed;
-		do
-		{
-			var reindexTask = await _transport.GetAsync<DynamicResponse>($"/_tasks/{taskId}", ctx);
-			completed = reindexTask.Body.Get<bool>("completed");
-			var total = reindexTask.Body.Get<int>("task.status.total");
-			var updated = reindexTask.Body.Get<int>("task.status.updated");
-			var created = reindexTask.Body.Get<int>("task.status.created");
-			var deleted = reindexTask.Body.Get<int>("task.status.deleted");
-			var batches = reindexTask.Body.Get<int>("task.status.batches");
-			var runningTimeInNanos = reindexTask.Body.Get<long>("task.running_time_in_nanos");
-			var time = TimeSpan.FromMicroseconds(runningTimeInNanos / 1000);
-			_logger.LogInformation("_reindex {Type}: {RunningTimeInNanos} '{SourceIndex}' => '{DestinationIndex}'. Documents {Total}: {Updated} updated, {Created} created, {Deleted} deleted, {Batches} batches",
-				typeOfSync, time.ToString(@"hh\:mm\:ss"), lexicalWriteAlias, semanticWriteAlias, total, updated, created, deleted, batches);
-			if (!completed)
-				await Task.Delay(TimeSpan.FromSeconds(5), ctx);
-
-		} while (!completed);
+		await PollTaskUntilComplete(taskId, $"_reindex {typeOfSync}", lexicalWriteAlias, semanticWriteAlias, ctx);
 	}
 
 	/// <inheritdoc />

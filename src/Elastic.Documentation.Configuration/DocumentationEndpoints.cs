@@ -22,15 +22,15 @@ public class ElasticsearchEndpoint
 
 	// inference options
 	public int SearchNumThreads { get; set; } = 8;
-	public int IndexNumThreads { get; set; } = 8;
+	public int IndexNumThreads { get; set; } = 4; // Reduced for Serverless rate limits
 	public bool NoElasticInferenceService { get; set; }
 
 	// index options
 	public string IndexNamePrefix { get; set; } = "semantic-docs";
 
 	// channel buffer options
-	public int BufferSize { get; set; } = 100;
-	public int MaxRetries { get; set; } = 3;
+	public int BufferSize { get; set; } = 50; // Reduced for Serverless rate limits
+	public int MaxRetries { get; set; } = 5; // Increased for 429 retries
 
 	// connection options
 	public bool DebugMode { get; set; }
