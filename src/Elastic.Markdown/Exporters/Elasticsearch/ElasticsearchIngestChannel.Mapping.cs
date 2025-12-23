@@ -11,13 +11,15 @@ public abstract partial class ElasticsearchIngestChannel<TChannelOptions, TChann
 	where TChannelOptions : CatalogIndexChannelOptionsBase<DocumentationDocument>
 	where TChannel : CatalogIndexChannel<DocumentationDocument, TChannelOptions>
 {
-	protected static string CreateMappingSetting(string synonymSetName, string[] synonyms)
+	protected static string CreateMappingSetting(string synonymSetName, string[] synonyms, string? defaultPipeline = null)
 	{
 		var indexTimeSynonyms = $"[{string.Join(",", synonyms.Select(r => $"\"{r}\""))}]";
+		var pipelineSetting = defaultPipeline is not null ? $"\"default_pipeline\": \"{defaultPipeline}\"," : "";
 		// language=json
 		return
 			$$$"""
 			{
+				{{{pipelineSetting}}}
 				"analysis": {
 				  "normalizer": {
 					"keyword_normalizer": {
@@ -156,6 +158,7 @@ public abstract partial class ElasticsearchIngestChannel<TChannelOptions, TChann
 		        }
 		      },
 		      "hash" : { "type" : "keyword" },
+		      "enrichment_key" : { "type" : "keyword" },
 		      "search_title": {
 		        "type": "text",
 		        "analyzer": "synonyms_fixed_analyzer",
@@ -199,6 +202,32 @@ public abstract partial class ElasticsearchIngestChannel<TChannelOptions, TChann
 		        "analyzer": "synonyms_fixed_analyzer",
 		        "search_analyzer": "synonyms_analyzer",
 		        "fields" : {
+		          {{(!string.IsNullOrWhiteSpace(inferenceId) ? $"\"semantic_text\": {{{InferenceMapping(inferenceId)}}}" : "")}}
+		        }
+		      },
+		      "ai_rag_optimized_summary": {
+		        "type": "text",
+		        "analyzer": "synonyms_fixed_analyzer",
+		        "search_analyzer": "synonyms_analyzer",
+		        "fields": {
+		          {{(!string.IsNullOrWhiteSpace(inferenceId) ? $"\"semantic_text\": {{{InferenceMapping(inferenceId)}}}" : "")}}
+		        }
+		      },
+		      "ai_short_summary": {
+		        "type": "text"
+		      },
+		      "ai_search_query": {
+		        "type": "keyword"
+		      },
+		      "ai_questions": {
+		        "type": "text",
+		        "fields": {
+		          {{(!string.IsNullOrWhiteSpace(inferenceId) ? $"\"semantic_text\": {{{InferenceMapping(inferenceId)}}}" : "")}}
+		        }
+		      },
+		      "ai_use_cases": {
+		        "type": "text",
+		        "fields": {
 		          {{(!string.IsNullOrWhiteSpace(inferenceId) ? $"\"semantic_text\": {{{InferenceMapping(inferenceId)}}}" : "")}}
 		        }
 		      }

@@ -18,7 +18,7 @@ public static class ExporterExtensions
 		string indexNamespace
 	)
 	{
-		var markdownExporters = new List<IMarkdownExporter>(3);
+		var markdownExporters = new List<IMarkdownExporter>(4);
 		if (exportOptions.Contains(Exporter.LLMText))
 			markdownExporters.Add(new LlmMarkdownExporter());
 		if (exportOptions.Contains(Exporter.Configuration))
@@ -28,4 +28,3 @@ public static class ExporterExtensions
 		return markdownExporters;
 	}
 }
-
