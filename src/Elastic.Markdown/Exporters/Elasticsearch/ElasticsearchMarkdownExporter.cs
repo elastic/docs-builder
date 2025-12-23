@@ -447,23 +447,22 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	private async ValueTask RunBackfillQuery(string indexAlias, string query, Cancel ctx)
 	{
 		var pipeline = EnrichPolicyManager.PipelineName;
-		var url = $"/{indexAlias}/_update_by_query?pipeline={pipeline}&timeout=10m";
+		var url = $"/{indexAlias}/_update_by_query?pipeline={pipeline}&wait_for_completion=false";
 
 		var response = await WithRetryAsync(
 			() => _transport.PostAsync<DynamicResponse>(url, PostData.String(query), ctx),
 			$"POST {indexAlias}/_update_by_query",
 			ctx);
 
-		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
+		var taskId = response.Body.Get<string>("task");
+		if (string.IsNullOrWhiteSpace(taskId))
 		{
 			_logger.LogWarning("AI backfill failed for {Index}: {Response}", indexAlias, response);
 			return;
 		}
 
-		var updated = response.Body.Get<int>("updated");
-		_logger.LogInformation(
-			"AI backfill complete for {Index}: {Updated} documents processed (only those with matching cache entries get AI fields)",
-			indexAlias, updated);
+		_logger.LogInformation("AI backfill task id: {TaskId}", taskId);
+		await PollTaskUntilComplete(taskId, "_update_by_query (AI backfill)", indexAlias, null, ctx);
 	}
 
 	private async ValueTask QueryIngestStatistics(string lexicalWriteAlias, Cancel ctx)
