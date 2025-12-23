@@ -21,5 +21,8 @@
 		.screenshot {
 			@apply border-grey-20 bg-grey-10 border-1 p-4 shadow-md;
 		}
+		.border {
+			@apply border-grey-20 border-1;
+		}
 	}
 }

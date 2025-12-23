@@ -66,3 +66,36 @@ Relaxing at the beach 🏝 🌊 😎
 			.And.OnlyContain(d => d.Severity == Severity.Warning);
 	}
 }
+
+public class ImageBlockWithBorderTests(ITestOutputHelper output) : DirectiveTest<ImageBlock>(output,
+"""
+:::{image} img/observability.png
+:alt: Elasticsearch
+:width: 400px
+:border:
+:::
+"""
+)
+{
+	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
+		fileSystem.AddFile(@"docs/img/observability.png", "");
+
+	[Fact]
+	public void ParsesBlock() => Block.Should().NotBeNull();
+
+	[Fact]
+	public void ParsesBorderProperty()
+	{
+		Block!.Alt.Should().Be("Elasticsearch");
+		Block!.Width.Should().Be("400px");
+		Block!.ImageUrl.Should().Be("/img/observability.png");
+		Block!.Border.Should().Be("border");
+	}
+
+	[Fact]
+	public void ImageIsFoundSoNoErrorIsEmitted()
+	{
+		Block!.Found.Should().BeTrue();
+		Collector.Diagnostics.Count.Should().Be(0);
+	}
+}
