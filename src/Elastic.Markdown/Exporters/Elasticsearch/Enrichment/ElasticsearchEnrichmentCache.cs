@@ -5,6 +5,7 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Linq;
 using Elastic.Transport;
 using Elastic.Transport.Products.Elasticsearch;
 using Microsoft.Extensions.Logging;
@@ -161,14 +162,16 @@ public sealed class ElasticsearchEnrichmentCache(
 			return (0, scrollId);
 
 		var count = 0;
-		foreach (var hit in hitsArray.EnumerateArray())
+		var ids = hitsArray
+			.EnumerateArray()
+			.Select(hit => hit.TryGetProperty("_id", out var idProp) ? idProp.GetString() : null)
+			.Where(id => id is not null)!;
+
+		foreach (var id in ids)
 		{
 			// Use _id as the enrichment key
-			if (hit.TryGetProperty("_id", out var idProp) && idProp.GetString() is { } id)
-			{
-				_ = _existingHashes.TryAdd(id, 0);
-				count++;
-			}
+			_ = _existingHashes.TryAdd(id, 0);
+			count++;
 		}
 		return (count, scrollId);
 	}
