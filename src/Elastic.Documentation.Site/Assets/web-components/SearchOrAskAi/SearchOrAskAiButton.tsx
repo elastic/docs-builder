@@ -1,7 +1,5 @@
 import '../../eui-icons-cache'
-import { ElasticAiAssistantButton } from './ElasticAiAssitant'
-import { useSearchTerm } from './Search/search.store'
-import AiIcon from './ai-icon.svg'
+import { NavigationSearch } from './NavigationSearch'
 import {
     ModalMode,
     useModalActions,
@@ -9,16 +7,12 @@ import {
     useModalMode,
 } from './modal.store'
 import {
-    EuiButton,
     EuiPortal,
     EuiOverlayMask,
     EuiFocusTrap,
     EuiPanel,
-    EuiTextTruncate,
-    EuiText,
     EuiLoadingSpinner,
     useEuiTheme,
-    EuiToolTip,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
 import { useQuery } from '@tanstack/react-query'
@@ -33,7 +27,6 @@ const SearchOrAskAiModal = lazy(() =>
 
 export const SearchOrAskAiButton = () => {
     const { euiTheme } = useEuiTheme()
-    const searchTerm = useSearchTerm()
     const isModalOpen = useModalIsOpen()
     const modalMode = useModalMode()
     const { openModal, closeModal, setModalMode } = useModalActions()
@@ -73,7 +66,7 @@ export const SearchOrAskAiButton = () => {
     }
 
     const openAskAiModal = () => openAndSetModalMode('askAi')
-    const openSearchModal = () => openAndSetModalMode('search')
+    // const openSearchModal = () => openAndSetModalMode('search')
 
     // Prevent layout jump when hiding the scrollbar by compensating its width
 
@@ -82,11 +75,11 @@ export const SearchOrAskAiButton = () => {
             if (event.key === 'Escape') {
                 closeModal()
             }
-            if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
-                event.preventDefault()
-                openSearchModal()
-                // Input focuses itself via its own Cmd+K listener
-            }
+            // Cmd+K is now handled by NavigationSearch to focus the input
+            // if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
+            //     event.preventDefault()
+            //     openSearchModal()
+            // }
 
             if (
                 (event.metaKey || event.ctrlKey) &&
@@ -141,43 +134,17 @@ export const SearchOrAskAiButton = () => {
                 gap: ${euiTheme.size.base};
             `}
         >
-            <EuiToolTip content="Keyboard shortcut: ⌘;">
-                <ElasticAiAssistantButton
-                    size="s"
-                    iconType={AiIcon}
-                    onClick={openAskAiModal}
-                >
-                    Ask AI Assistant
-                </ElasticAiAssistantButton>
-            </EuiToolTip>
+            {/*<EuiToolTip content="Keyboard shortcut: ⌘;">*/}
+            {/*    <ElasticAiAssistantButton*/}
+            {/*        size="s"*/}
+            {/*        iconType={AiIcon}*/}
+            {/*        onClick={openAskAiModal}*/}
+            {/*    >*/}
+            {/*        Ask AI Assistant*/}
+            {/*    </ElasticAiAssistantButton>*/}
+            {/*</EuiToolTip>*/}
 
-            <EuiButton
-                size="s"
-                color="text"
-                onClick={openSearchModal}
-                iconType="search"
-            >
-                <EuiText
-                    color="subdued"
-                    size="s"
-                    style={{ width: 200 }}
-                    textAlign="left"
-                >
-                    <span>
-                        {searchTerm ? (
-                            <EuiTextTruncate
-                                text={searchTerm}
-                                truncation="end"
-                            />
-                        ) : (
-                            'Search in Docs'
-                        )}
-                    </span>
-                </EuiText>
-                <EuiText color="subdued" size="xs">
-                    <kbd className="font-body bg-grey-20 border-none!">⌘K</kbd>
-                </EuiText>
-            </EuiButton>
+            <NavigationSearch />
             {isModalOpen && (
                 <EuiPortal>
                     <EuiOverlayMask>

@@ -5,6 +5,11 @@
 	@{
 		var currentTopLevelItem = Model.TopLevelItems.FirstOrDefault(i => i.Id == Model.Tree.Id) ?? Model.Tree;
 	} 
+
+	<div class="mr-4 mt-6 h-10.5">
+		<search-or-ask-ai></search-or-ask-ai>
+	</div>
+		
 	@if (Model.IsUsingNavigationDropdown)
 		{
 			<div class="sticky top-0 py-6 bg-white z-10 border-b-1 border-grey-20 pr-4">

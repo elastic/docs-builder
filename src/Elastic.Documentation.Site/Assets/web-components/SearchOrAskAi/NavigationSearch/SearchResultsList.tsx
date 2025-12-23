@@ -1,0 +1,282 @@
+import { useSelectedIndex, useSearchActions } from '../Search/search.store'
+import { useSearchQuery, SearchResultItem } from '../Search/useSearchQuery'
+import { SanitizedHtmlContent } from './SanitizedHtmlContent'
+import { EuiBadge, EuiIcon, EuiLoadingSpinner, useEuiTheme } from '@elastic/eui'
+import { css } from '@emotion/react'
+import { forwardRef, useMemo, MutableRefObject } from 'react'
+
+const RESULTS_MAX_HEIGHT = 400
+const BREADCRUMB_SEPARATOR = ' / '
+
+export interface SearchResultsListProps {
+    itemRefs: MutableRefObject<(HTMLAnchorElement | null)[]>
+    isKeyboardNavigating: MutableRefObject<boolean>
+    onMouseMove: () => void
+}
+
+export const SearchResultsList = ({
+    itemRefs,
+    isKeyboardNavigating,
+    onMouseMove,
+}: SearchResultsListProps) => {
+    const { euiTheme } = useEuiTheme()
+    const selectedIndex = useSelectedIndex()
+    const { setSelectedIndex } = useSearchActions()
+    const { isLoading, data } = useSearchQuery()
+
+    const results = data?.results ?? []
+    const isInitialLoading = isLoading && !data
+
+    const containerStyles = css`
+        max-height: ${RESULTS_MAX_HEIGHT}px;
+        overflow-y: auto;
+    `
+
+    const emptyStateStyles = css`
+        padding: ${euiTheme.size.xl};
+        text-align: center;
+        color: ${euiTheme.colors.textSubdued};
+    `
+
+    if (isInitialLoading) {
+        return (
+            <div css={containerStyles}>
+                <div css={emptyStateStyles}>
+                    <EuiLoadingSpinner size="m" />
+                </div>
+            </div>
+        )
+    }
+
+    if (results.length === 0) {
+        return (
+            <div css={containerStyles}>
+                <div css={emptyStateStyles}>No results found</div>
+            </div>
+        )
+    }
+
+    const handleMouseEnter = (index: number) => {
+        if (!isKeyboardNavigating.current) {
+            setSelectedIndex(index)
+        }
+    }
+
+    const handleItemMouseMove = (index: number) => {
+        if (isKeyboardNavigating.current) {
+            onMouseMove()
+            setSelectedIndex(index)
+        }
+    }
+
+    return (
+        <div css={containerStyles}>
+            {results.map((result, index) => (
+                <SearchResultRow
+                    key={result.url}
+                    result={result}
+                    isSelected={index === selectedIndex}
+                    onMouseEnter={() => handleMouseEnter(index)}
+                    onMouseMove={() => handleItemMouseMove(index)}
+                    ref={(el) => {
+                        itemRefs.current[index] = el
+                    }}
+                />
+            ))}
+        </div>
+    )
+}
+
+interface SearchResultRowProps {
+    result: SearchResultItem
+    isSelected: boolean
+    onMouseEnter: () => void
+    onMouseMove: () => void
+}
+
+const SearchResultRow = forwardRef<HTMLAnchorElement, SearchResultRowProps>(
+    ({ result, isSelected, onMouseEnter, onMouseMove }, ref) => {
+        const { euiTheme } = useEuiTheme()
+
+        const breadcrumbItems = useMemo(() => {
+            const typePrefix = result.type === 'api' ? 'API' : 'Docs'
+            return [typePrefix, ...result.parents.slice(1).map((p) => p.title)]
+        }, [result.type, result.parents])
+
+        return (
+            <a
+                ref={ref}
+                href={result.url}
+                onMouseEnter={onMouseEnter}
+                onMouseMove={onMouseMove}
+                css={css`
+                    display: flex;
+                    align-items: center;
+                    gap: ${euiTheme.size.s};
+                    padding-inline: ${euiTheme.size.base};
+                    padding-block: ${euiTheme.size.m};
+                    text-decoration: none;
+                    cursor: pointer;
+                    border-bottom: 1px solid
+                        ${euiTheme.colors.borderBaseSubdued};
+                    background: ${isSelected
+                        ? euiTheme.colors.backgroundBaseSubdued
+                        : 'transparent'};
+
+                    &:last-child {
+                        border-bottom: none;
+                    }
+                `}
+            >
+                <div
+                    css={css`
+                        flex: 1;
+                        min-width: 0;
+                        overflow: hidden;
+                    `}
+                >
+                    <Breadcrumb items={breadcrumbItems} />
+                    <Title text={result.title} />
+                    {result.description && (
+                        <Description text={result.description} />
+                    )}
+                </div>
+                {isSelected && <JumpToIndicator />}
+            </a>
+        )
+    }
+)
+
+SearchResultRow.displayName = 'SearchResultRow'
+
+/**
+ * Breadcrumb with 3-part layout:
+ * - First: always visible
+ * - Middle: truncates with ellipsis
+ * - Last: always visible
+ */
+const Breadcrumb = ({ items }: { items: string[] }) => {
+    const { euiTheme } = useEuiTheme()
+
+    if (items.length === 0) return null
+
+    const baseStyles = css`
+        font-size: ${euiTheme.size.m};
+        color: ${euiTheme.colors.textSubdued};
+        margin-bottom: ${euiTheme.size.xs};
+    `
+
+    if (items.length === 1) {
+        return <div css={baseStyles}>{items[0]}</div>
+    }
+
+    const first = items[0]
+    const middle = items.slice(1, -1)
+    const last = items[items.length - 1]
+
+    return (
+        <div
+            css={css`
+                ${baseStyles}
+                display: flex;
+                white-space: nowrap;
+                overflow: hidden;
+            `}
+        >
+            <span
+                css={css`
+                    flex-shrink: 0;
+                `}
+            >
+                {first}
+            </span>
+
+            {middle.length > 0 && (
+                <span
+                    css={css`
+                        flex-shrink: 1;
+                        min-width: 0;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        margin-left: 0.5ch;
+                    `}
+                >
+                    {BREADCRUMB_SEPARATOR}
+                    {middle.join(BREADCRUMB_SEPARATOR)}
+                </span>
+            )}
+
+            <span
+                css={css`
+                    flex-shrink: 0;
+                    margin-left: 0.5ch;
+                `}
+            >
+                {BREADCRUMB_SEPARATOR}
+                {last}
+            </span>
+        </div>
+    )
+}
+
+const Title = ({ text }: { text: string }) => {
+    const { euiTheme } = useEuiTheme()
+
+    return (
+        <div
+            css={css`
+                font-weight: ${euiTheme.font.weight.semiBold};
+                color: ${euiTheme.colors.textParagraph};
+                margin-bottom: ${euiTheme.size.xs};
+
+                mark {
+                    background-color: ${euiTheme.colors.backgroundBasePrimary};
+                    font-weight: ${euiTheme.font.weight.bold};
+                }
+            `}
+        >
+            <SanitizedHtmlContent htmlContent={text} />
+        </div>
+    )
+}
+
+const Description = ({ text }: { text: string }) => {
+    const { euiTheme } = useEuiTheme()
+
+    return (
+        <div
+            css={css`
+                font-size: 13px;
+                color: ${euiTheme.colors.textSubdued};
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+
+                mark {
+                    background-color: ${euiTheme.colors.backgroundBasePrimary};
+                    font-weight: ${euiTheme.font.weight.bold};
+                }
+            `}
+        >
+            <SanitizedHtmlContent htmlContent={text} ellipsis />
+        </div>
+    )
+}
+
+const JumpToIndicator = () => {
+    const { euiTheme } = useEuiTheme()
+
+    return (
+        <div
+            css={css`
+                flex-shrink: 0;
+                color: ${euiTheme.colors.textSubdued};
+                margin-left: ${euiTheme.size.xxxxl};
+            `}
+        >
+            <EuiBadge color="hollow">
+                Jump to <EuiIcon type="returnKey" size="s" />
+            </EuiBadge>
+        </div>
+    )
+}
