@@ -272,7 +272,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 				processor.EmitWarning(link, $"Local file `{url}` has a redirect, please update this reference to: {name}");
 			}
 			else
-				processor.EmitError(link, $"`{url}` does not exist. If it was recently removed add a redirect. resolved to `{pathOnDisk}");
+				processor.EmitError(link, $"`{url}` does not exist. If it was recently removed add a redirect. resolved to `{pathOnDisk}`");
 
 		}
 	}
@@ -340,7 +340,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		{
 			newUrl = newUrl.EndsWith($"{Path.DirectorySeparatorChar}index.md")
 				? newUrl.Remove(newUrl.LastIndexOf("index.md", StringComparison.Ordinal), "index.md".Length)
-				: newUrl.Remove(url.LastIndexOf(".md", StringComparison.Ordinal), ".md".Length);
+				: newUrl.Remove(newUrl.LastIndexOf(".md", StringComparison.Ordinal), ".md".Length);
 		}
 
 		// TODO this is hardcoded should be part of extension system
