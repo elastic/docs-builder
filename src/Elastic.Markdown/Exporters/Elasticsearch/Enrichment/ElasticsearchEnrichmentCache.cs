@@ -3,9 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Concurrent;
+using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Linq;
 using Elastic.Transport;
 using Elastic.Transport.Products.Elasticsearch;
 using Microsoft.Extensions.Logging;
