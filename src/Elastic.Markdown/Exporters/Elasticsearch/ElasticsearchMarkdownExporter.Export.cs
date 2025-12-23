@@ -238,7 +238,7 @@ public partial class ElasticsearchMarkdownExporter
 				return;
 
 			// Store in cache for future runs
-			await _enrichmentCache.StoreAsync(doc.EnrichmentKey, enrichment, ctx);
+			await _enrichmentCache.StoreAsync(doc.EnrichmentKey, doc.Url, enrichment, ctx);
 
 			// Apply fields directly (enrich processor won't have this entry yet)
 			doc.AiRagOptimizedSummary = enrichment.RagOptimizedSummary;

@@ -37,6 +37,7 @@ public sealed class ElasticsearchEnrichmentCache(
 			"mappings": {
 				"properties": {
 				"enrichment_key": { "type": "keyword" },
+				"url": { "type": "keyword" },
 				"ai_rag_optimized_summary": { "type": "text" },
 				"ai_short_summary": { "type": "text" },
 				"ai_search_query": { "type": "text" },
@@ -71,12 +72,13 @@ public sealed class ElasticsearchEnrichmentCache(
 	/// </summary>
 	public bool Exists(string enrichmentKey) => _validEntries.ContainsKey(enrichmentKey);
 
-	public async Task StoreAsync(string enrichmentKey, EnrichmentData data, CancellationToken ct)
+	public async Task StoreAsync(string enrichmentKey, string url, EnrichmentData data, CancellationToken ct)
 	{
 		var promptHash = ElasticsearchLlmClient.PromptHash;
 		var cacheEntry = new CacheIndexEntry
 		{
 			EnrichmentKey = enrichmentKey,
+			Url = url,
 			AiRagOptimizedSummary = data.RagOptimizedSummary,
 			AiShortSummary = data.ShortSummary,
 			AiSearchQuery = data.SearchQuery,
@@ -224,6 +226,12 @@ public sealed record CacheIndexEntry
 {
 	[JsonPropertyName("enrichment_key")]
 	public required string EnrichmentKey { get; init; }
+
+	/// <summary>
+	/// Document URL for debugging - helps identify which document this cache entry belongs to.
+	/// </summary>
+	[JsonPropertyName("url")]
+	public string? Url { get; init; }
 
 	[JsonPropertyName("ai_rag_optimized_summary")]
 	public string? AiRagOptimizedSummary { get; init; }

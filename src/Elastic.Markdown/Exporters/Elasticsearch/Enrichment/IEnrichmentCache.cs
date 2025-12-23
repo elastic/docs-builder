@@ -29,7 +29,11 @@ public interface IEnrichmentCache
 	/// <summary>
 	/// Stores enrichment data in the cache.
 	/// </summary>
-	Task StoreAsync(string enrichmentKey, EnrichmentData data, CancellationToken ct);
+	/// <param name="enrichmentKey">The enrichment key (content hash).</param>
+	/// <param name="url">The document URL for debugging.</param>
+	/// <param name="data">The enrichment data to store.</param>
+	/// <param name="ct">Cancellation token.</param>
+	Task StoreAsync(string enrichmentKey, string url, EnrichmentData data, CancellationToken ct);
 
 	/// <summary>
 	/// Gets the number of entries currently in the cache.
