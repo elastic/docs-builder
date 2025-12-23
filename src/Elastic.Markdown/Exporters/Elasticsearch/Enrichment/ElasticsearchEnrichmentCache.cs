@@ -187,23 +187,29 @@ public sealed class ElasticsearchEnrichmentCache(
 
 		var total = 0;
 		var stale = 0;
-		foreach (var hit in hitsArray.EnumerateArray())
-		{
-			if (hit.TryGetProperty("_id", out var idProp) && idProp.GetString() is { } id)
+		foreach (var entry in hitsArray
+			.EnumerateArray()
+			.Select(hit => new
 			{
-				total++;
+				Hit = hit,
+				Id = hit.TryGetProperty("_id", out var idProp) ? idProp.GetString() : null
+			})
+			.Where(e => e.Id is not null))
+		{
+			var hit = entry.Hit;
+			var id = entry.Id!;
+			total++;
 
-				// Only add entries with current prompt hash - stale entries are ignored
-				if (hit.TryGetProperty("_source", out var source) &&
-					source.TryGetProperty("prompt_hash", out var promptHashProp) &&
-					promptHashProp.GetString() == currentPromptHash)
-				{
-					_ = _validEntries.TryAdd(id, 0);
-				}
-				else
-				{
-					stale++;
-				}
+			// Only add entries with current prompt hash - stale entries are ignored
+			if (hit.TryGetProperty("_source", out var source) &&
+				source.TryGetProperty("prompt_hash", out var promptHashProp) &&
+				promptHashProp.GetString() == currentPromptHash)
+			{
+				_ = _validEntries.TryAdd(id, 0);
+			}
+			else
+			{
+				stale++;
 			}
 		}
 		return (total, stale, scrollId);
