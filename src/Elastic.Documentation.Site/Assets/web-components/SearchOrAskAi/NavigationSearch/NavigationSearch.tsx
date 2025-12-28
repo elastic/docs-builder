@@ -1,17 +1,25 @@
-import { KeyboardShortcutsFooter } from '../KeyboardShortcutsFooter'
 import { useSearchTerm, useSearchActions } from '../Search/search.store'
 import { useIsSearchCooldownActive } from '../Search/useSearchCooldown'
 import { useSearchQuery } from '../Search/useSearchQuery'
-import { SearchDropdownHeader } from './SearchDropdownHeader'
 import { SearchInput } from './SearchInput'
 import { SearchResultsList } from './SearchResultsList'
+import { availableIcons } from '../../../eui-icons-cache'
 import { useGlobalKeyboardShortcut } from './useGlobalKeyboardShortcut'
 import { useNavigationSearchKeyboardNavigation } from './useNavigationSearchKeyboardNavigation'
-import { EuiInputPopover, EuiHorizontalRule } from '@elastic/eui'
+import {
+    EuiInputPopover,
+    useEuiTheme,
+    useEuiFontSize,
+    EuiBetaBadge,
+    EuiLink,
+    EuiIcon,
+    EuiText,
+} from '@elastic/eui'
 import { css } from '@emotion/react'
-import { useState, useRef } from 'react'
+import { useRef, useState } from 'react'
 
 export const NavigationSearch = () => {
+    const { euiTheme } = useEuiTheme()
     const [isPopoverOpen, setIsPopoverOpen] = useState(false)
     const popoverContentRef = useRef<HTMLDivElement>(null)
     const searchTerm = useSearchTerm()
@@ -78,6 +86,8 @@ export const NavigationSearch = () => {
             panelProps={{
                 css: css`
                     max-width: 640px;
+                    border-radius: ${euiTheme.size.s};
+                    overflow: hidden;
                 `,
                 onMouseDown: (e: React.MouseEvent) => {
                     // Prevent input blur when clicking anywhere inside the popover panel
@@ -89,7 +99,12 @@ export const NavigationSearch = () => {
                     inputRef={inputRef}
                     value={searchTerm}
                     onChange={handleChange}
-                    onFocus={() => hasContent && setIsPopoverOpen(true)}
+                    onFocus={() => {
+                        // Solo abrir el popover si hay contenido Y el usuario está interactuando
+                        if (hasContent) {
+                            setIsPopoverOpen(true)
+                        }
+                    }}
                     onBlur={handleBlur}
                     onKeyDown={handleKeyDown}
                     disabled={isSearchCooldownActive}
@@ -110,6 +125,9 @@ export const NavigationSearch = () => {
     )
 }
 
+const FEEDBACK_URL =
+    'https://github.com/elastic/docs-eng-team/issues/new?template=search-or-ask-ai-feedback.yml'
+
 const KEYBOARD_SHORTCUTS = [
     { keys: ['returnKey'], label: 'Jump to' },
     { keys: ['sortUp', 'sortDown'], label: 'Navigate' },
@@ -126,15 +144,180 @@ const SearchDropdownContent = ({
     itemRefs,
     isKeyboardNavigating,
     onMouseMove,
-}: SearchDropdownContentProps) => (
-    <>
-        <SearchDropdownHeader />
-        <EuiHorizontalRule margin="none" />
-        <SearchResultsList
-            itemRefs={itemRefs}
-            isKeyboardNavigating={isKeyboardNavigating}
-            onMouseMove={onMouseMove}
-        />
-        <KeyboardShortcutsFooter shortcuts={KEYBOARD_SHORTCUTS} />
-    </>
-)
+}: SearchDropdownContentProps) => {
+    const { euiTheme } = useEuiTheme()
+    const { fontSize: sFontsize, lineHeight: sLineHeight } = useEuiFontSize('s')
+
+    return (
+        <>
+            <SearchResultsList
+                itemRefs={itemRefs}
+                isKeyboardNavigating={isKeyboardNavigating}
+                onMouseMove={onMouseMove}
+            />
+            <div
+                css={css`
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    min-height: 40px;
+                    box-sizing: content-box;
+                    border-top: 1px solid ${euiTheme.colors.borderBaseSubdued};
+                    background-color: ${euiTheme.colors.backgroundBasePlain};
+                    border-bottom-right-radius: ${euiTheme.size.s};
+                    border-bottom-left-radius: ${euiTheme.size.s};
+                    padding-inline: ${euiTheme.size.base};
+                    padding-block: ${euiTheme.size.xs};
+                `}
+            >
+                <div
+                    css={css`
+                        display: flex;
+                        align-items: center;
+                        gap: ${euiTheme.size.s};
+                    `}
+                >
+                    <EuiBetaBadge
+                        color="accent"
+                        label="ALPHA"
+                        size="s"
+                        anchorProps={{
+                            css: css`
+                                display: inline-flex;
+                                align-items: center;
+                            `,
+                        }}
+                    />
+                    <span
+                        css={css`
+                            font-size: ${euiTheme.size.m};
+                            color: ${euiTheme.colors.textDisabled};
+                        `}
+                    >
+                        ·
+                    </span>
+                    <EuiLink
+                        href={FEEDBACK_URL}
+                        target="_blank"
+                        external
+                        css={css`
+                            font-size: ${sFontsize};
+                            line-height: ${sLineHeight};
+                        `}
+                    >
+                        Give feedback
+                    </EuiLink>
+                </div>
+                <div
+                    css={css`
+                        display: flex;
+                        align-items: center;
+                        gap: ${euiTheme.size.base};
+                    `}
+                >
+                    {KEYBOARD_SHORTCUTS.map((shortcut, index) => (
+                        <KeyboardShortcutItem
+                            key={index}
+                            keys={shortcut.keys}
+                            label={shortcut.label}
+                        />
+                    ))}
+                </div>
+            </div>
+        </>
+    )
+}
+
+const KeyboardKey = ({ children, className }: { children: React.ReactNode; className?: string }) => {
+    const { euiTheme } = useEuiTheme()
+    return (
+        <span
+            className={className}
+            css={css`
+                display: inline-flex;
+                justify-content: center;
+                align-items: center;
+                background-color: ${euiTheme.colors.backgroundBaseHighlighted};
+                border: 1px solid ${euiTheme.colors.borderBasePlain};
+                border-radius: ${euiTheme.border.radius.small};
+                padding: 2px 8px;
+
+                &.keyboard-key-icon {
+                    padding-inline: 2px;
+                }
+            `}
+        >
+            {children}
+        </span>
+    )
+}
+
+const KeyboardIcon = ({ type }: { type: string }) => {
+    const { euiTheme } = useEuiTheme()
+    const hasIcon = availableIcons.includes(type)
+    return (
+        <KeyboardKey className={hasIcon ? 'keyboard-key-icon' : 'keyboard-key-text'}>
+            {hasIcon ? (
+                <EuiIcon
+                    type={type}
+                    size="s"
+                    css={css`
+                        color: ${euiTheme.colors.textSubdued};
+                    `}
+                />
+            ) : (
+                <span
+                    className="keyboard-key-text"
+                    css={css`
+                        color: ${euiTheme.colors.textSubdued};
+                        font-size: 11px;
+                        line-height: 16px;
+                        display: inline-block;
+                        font-family: ${euiTheme.font.family};
+                        font-weight: ${euiTheme.font.weight.regular};
+                    `}
+                >
+                    {type}
+                </span>
+            )}
+        </KeyboardKey>
+    )
+}
+
+const KeyboardShortcutItem = ({
+    keys,
+    label,
+}: {
+    keys: string[]
+    label: string
+}) => {
+    const { euiTheme } = useEuiTheme()
+    return (
+        <span
+            css={css`
+                display: flex;
+                align-items: center;
+                gap: ${euiTheme.size.xs};
+            `}
+        >
+            <span
+                css={css`
+                    display: flex;
+                    gap: ${euiTheme.size.xs};
+                `}
+            >
+                {keys.map((key, index) => (
+                    <KeyboardIcon type={key} key={key + index} />
+                ))}
+            </span>
+            <EuiText
+                size="xs"
+                css={css`
+                    color: ${euiTheme.colors.textSubdued};
+                `}
+            >
+                {label}
+            </EuiText>
+        </span>
+    )
+}

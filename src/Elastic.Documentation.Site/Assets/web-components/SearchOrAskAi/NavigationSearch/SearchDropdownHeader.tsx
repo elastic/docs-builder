@@ -1,9 +1,4 @@
-import {
-    EuiBetaBadge,
-    EuiLink,
-    useEuiTheme,
-    useEuiFontSize,
-} from '@elastic/eui'
+import { EuiBetaBadge, EuiLink, useEuiTheme, useEuiFontSize } from '@elastic/eui'
 import { css } from '@emotion/react'
 
 const FEEDBACK_URL =
@@ -11,7 +6,7 @@ const FEEDBACK_URL =
 
 export const SearchDropdownHeader = () => {
     const { euiTheme } = useEuiTheme()
-    const { fontSize: xsFontsize } = useEuiFontSize('xs')
+    const { fontSize: sFontsize, lineHeight: sLineHeight } = useEuiFontSize('s')
 
     return (
         <div
@@ -27,24 +22,36 @@ export const SearchDropdownHeader = () => {
                 css={css`
                     display: flex;
                     align-items: center;
-                    gap: ${euiTheme.size.s};
+                    gap: ${euiTheme.size.xs};
                 `}
             >
                 <span
                     css={css`
                         color: ${euiTheme.colors.textParagraph};
+                        font-size: ${euiTheme.font.scale.s * euiTheme.base}px;
+                        line-height: ${euiTheme.base * 1.25}px;
                     `}
                 >
                     Pages
                 </span>
-                <span>·</span>
+                <span
+                    css={css`
+                        font-size: ${euiTheme.font.scale.s * euiTheme.base}px;
+                        line-height: ${euiTheme.base * 1.25}px;
+                    `}
+                >
+                    ·
+                </span>
                 <EuiBetaBadge
                     color="accent"
                     label="ALPHA"
-                    css={css`
-                        display: inline-flex;
-                        align-items: center;
-                    `}
+                    size="s"
+                    anchorProps={{
+                        css: css`
+                            display: inline-flex;
+                            align-items: center;
+                        `,
+                    }}
                 />
             </div>
             <EuiLink
@@ -52,7 +59,8 @@ export const SearchDropdownHeader = () => {
                 target="_blank"
                 external
                 css={css`
-                    font-size: ${xsFontsize};
+                    font-size: ${sFontsize};
+                    line-height: ${sLineHeight};
                 `}
             >
                 Give feedback
