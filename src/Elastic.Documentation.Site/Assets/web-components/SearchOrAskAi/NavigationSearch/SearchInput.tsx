@@ -83,7 +83,7 @@ export const SearchInput = ({
                 disabled={disabled}
                 css={css`
                     width: 100%;
-                    padding: ${euiTheme.size.s} ${euiTheme.size.m};
+                    padding: calc(${euiTheme.size.s} + 2px) ${euiTheme.size.m};
                     padding-left: 34px;
                     padding-right: calc(${euiTheme.size.m} + 2ch + ${euiTheme.size.m});
                     border: 1px solid ${euiTheme.colors.borderBasePlain};
