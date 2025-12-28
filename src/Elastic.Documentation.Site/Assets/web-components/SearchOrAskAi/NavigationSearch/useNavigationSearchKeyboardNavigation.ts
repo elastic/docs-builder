@@ -32,7 +32,7 @@ export const useNavigationSearchKeyboardNavigation = ({
 
     const scrollToItem = (index: number) => {
         const element = itemRefs.current[index]
-        element?.scrollIntoView?.({ block: 'nearest' })
+        element?.scrollIntoView?.({ block: 'end' })
     }
 
     const navigateToResult = (index: number) => {

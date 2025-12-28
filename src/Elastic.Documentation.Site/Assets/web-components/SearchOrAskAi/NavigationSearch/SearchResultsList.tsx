@@ -1,11 +1,17 @@
 import { useSelectedIndex, useSearchActions } from '../Search/search.store'
 import { useSearchQuery, SearchResultItem } from '../Search/useSearchQuery'
 import { SanitizedHtmlContent } from './SanitizedHtmlContent'
-import { EuiBadge, EuiIcon, EuiLoadingSpinner, useEuiTheme } from '@elastic/eui'
+import {
+    EuiBadge,
+    EuiIcon,
+    EuiLoadingSpinner,
+    useEuiTheme,
+    useEuiOverflowScroll,
+} from '@elastic/eui'
 import { css } from '@emotion/react'
-import { forwardRef, useMemo, MutableRefObject } from 'react'
+import { forwardRef, useMemo, MutableRefObject, useState } from 'react'
 
-const RESULTS_MAX_HEIGHT = 400
+const RESULTS_MAX_HEIGHT = 454
 const BREADCRUMB_SEPARATOR = ' / '
 
 export interface SearchResultsListProps {
@@ -30,19 +36,25 @@ export const SearchResultsList = ({
     const containerStyles = css`
         max-height: ${RESULTS_MAX_HEIGHT}px;
         overflow-y: auto;
+        overflow-x: hidden;
+        border-top-left-radius: ${euiTheme.size.s};
+        border-top-right-radius: ${euiTheme.size.s};
+        ${useEuiOverflowScroll('y', false)}
     `
 
     const emptyStateStyles = css`
-        padding: ${euiTheme.size.xl};
+        padding: ${euiTheme.size.xl} ${euiTheme.size.xl} ${euiTheme.size.l} ${euiTheme.size.xl};
         text-align: center;
-        color: ${euiTheme.colors.textSubdued};
+        color: ${euiTheme.colors.textDisabled};
+        font-size: ${euiTheme.font.scale.s * euiTheme.base}px;
+        line-height: ${euiTheme.base * 1.25}px;
     `
 
     if (isInitialLoading) {
         return (
             <div css={containerStyles}>
                 <div css={emptyStateStyles}>
-                    <EuiLoadingSpinner size="m" />
+                    <EuiLoadingSpinner size="xl" />
                 </div>
             </div>
         )
@@ -51,7 +63,7 @@ export const SearchResultsList = ({
     if (results.length === 0) {
         return (
             <div css={containerStyles}>
-                <div css={emptyStateStyles}>No results found</div>
+                <div css={emptyStateStyles}>We couldn't find a page that matches your search</div>
             </div>
         )
     }
@@ -75,7 +87,9 @@ export const SearchResultsList = ({
                 <SearchResultRow
                     key={result.url}
                     result={result}
+                    index={index}
                     isSelected={index === selectedIndex}
+                    isKeyboardNavigating={isKeyboardNavigating.current}
                     onMouseEnter={() => handleMouseEnter(index)}
                     onMouseMove={() => handleItemMouseMove(index)}
                     ref={(el) => {
@@ -89,32 +103,42 @@ export const SearchResultsList = ({
 
 interface SearchResultRowProps {
     result: SearchResultItem
+    index: number
     isSelected: boolean
+    isKeyboardNavigating: boolean
     onMouseEnter: () => void
     onMouseMove: () => void
 }
 
 const SearchResultRow = forwardRef<HTMLAnchorElement, SearchResultRowProps>(
-    ({ result, isSelected, onMouseEnter, onMouseMove }, ref) => {
+    ({ result, index, isSelected, isKeyboardNavigating, onMouseEnter, onMouseMove }, ref) => {
         const { euiTheme } = useEuiTheme()
+        const [isHovered, setIsHovered] = useState(false)
 
         const breadcrumbItems = useMemo(() => {
             const typePrefix = result.type === 'api' ? 'API' : 'Docs'
             return [typePrefix, ...result.parents.slice(1).map((p) => p.title)]
         }, [result.type, result.parents])
+        
+        const shouldShowJumpTo = isSelected && (isKeyboardNavigating || index === 0) && !isHovered
 
         return (
             <a
                 ref={ref}
                 href={result.url}
-                onMouseEnter={onMouseEnter}
+                onMouseEnter={(e) => {
+                    setIsHovered(true)
+                    onMouseEnter()
+                }}
+                onMouseLeave={() => setIsHovered(false)}
                 onMouseMove={onMouseMove}
+                data-selected={isSelected ? 'true' : 'false'}
                 css={css`
                     display: flex;
                     align-items: center;
                     gap: ${euiTheme.size.s};
-                    padding-inline: ${euiTheme.size.base};
-                    padding-block: ${euiTheme.size.m};
+                    padding-inline: ${euiTheme.size.l};
+                    padding-block: ${euiTheme.size.base};
                     text-decoration: none;
                     cursor: pointer;
                     border-bottom: 1px solid
@@ -125,6 +149,19 @@ const SearchResultRow = forwardRef<HTMLAnchorElement, SearchResultRowProps>(
 
                     &:last-child {
                         border-bottom: none;
+                    }
+
+                    &:hover,
+                    &[data-selected='true'] {
+                        .title-text {
+                            color: ${euiTheme.colors.link};
+                            text-decoration: underline;
+
+                            mark {
+                                color: ${euiTheme.colors.textParagraph};
+                                text-decoration: underline;
+                            }
+                        }
                     }
                 `}
             >
@@ -141,7 +178,7 @@ const SearchResultRow = forwardRef<HTMLAnchorElement, SearchResultRowProps>(
                         <Description text={result.description} />
                     )}
                 </div>
-                {isSelected && <JumpToIndicator />}
+                <JumpToIndicator isVisible={shouldShowJumpTo} />
             </a>
         )
     }
@@ -162,8 +199,9 @@ const Breadcrumb = ({ items }: { items: string[] }) => {
 
     const baseStyles = css`
         font-size: ${euiTheme.size.m};
-        color: ${euiTheme.colors.textSubdued};
-        margin-bottom: ${euiTheme.size.xs};
+        line-height: ${euiTheme.size.base};
+        color: ${euiTheme.colors.textDisabled};
+        margin-bottom: 0;
     `
 
     if (items.length === 1) {
@@ -224,14 +262,18 @@ const Title = ({ text }: { text: string }) => {
 
     return (
         <div
+            className="title-text"
             css={css`
-                font-weight: ${euiTheme.font.weight.semiBold};
+                font-size: ${euiTheme.font.scale.s * euiTheme.base}px;
+                line-height: ${euiTheme.size.l};
+                font-weight: ${euiTheme.font.weight.bold};
                 color: ${euiTheme.colors.textParagraph};
-                margin-bottom: ${euiTheme.size.xs};
+                margin-bottom: calc(${euiTheme.size.xs} / 2);
 
                 mark {
-                    background-color: ${euiTheme.colors.backgroundBasePrimary};
+                    background-color: ${euiTheme.colors.backgroundLightPrimary};
                     font-weight: ${euiTheme.font.weight.bold};
+                    color: ${euiTheme.colors.textParagraph};
                 }
             `}
         >
@@ -246,14 +288,15 @@ const Description = ({ text }: { text: string }) => {
     return (
         <div
             css={css`
-                font-size: 13px;
+                font-size: ${euiTheme.size.m};
+                line-height: ${euiTheme.size.base};
                 color: ${euiTheme.colors.textSubdued};
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
 
                 mark {
-                    background-color: ${euiTheme.colors.backgroundBasePrimary};
+                    background-color: ${euiTheme.colors.backgroundLightPrimary};
                     font-weight: ${euiTheme.font.weight.bold};
                 }
             `}
@@ -263,7 +306,7 @@ const Description = ({ text }: { text: string }) => {
     )
 }
 
-const JumpToIndicator = () => {
+const JumpToIndicator = ({ isVisible }: { isVisible: boolean }) => {
     const { euiTheme } = useEuiTheme()
 
     return (
@@ -272,6 +315,7 @@ const JumpToIndicator = () => {
                 flex-shrink: 0;
                 color: ${euiTheme.colors.textSubdued};
                 margin-left: ${euiTheme.size.xxxxl};
+                visibility: ${isVisible ? 'visible' : 'hidden'};
             `}
         >
             <EuiBadge color="hollow">
