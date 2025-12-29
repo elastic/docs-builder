@@ -87,7 +87,6 @@ export const SearchResultsList = ({
                 <SearchResultRow
                     key={result.url}
                     result={result}
-                    index={index}
                     isSelected={index === selectedIndex}
                     isKeyboardNavigating={isKeyboardNavigating.current}
                     onMouseEnter={() => handleMouseEnter(index)}
@@ -103,7 +102,6 @@ export const SearchResultsList = ({
 
 interface SearchResultRowProps {
     result: SearchResultItem
-    index: number
     isSelected: boolean
     isKeyboardNavigating: boolean
     onMouseEnter: () => void
@@ -111,7 +109,7 @@ interface SearchResultRowProps {
 }
 
 const SearchResultRow = forwardRef<HTMLAnchorElement, SearchResultRowProps>(
-    ({ result, index, isSelected, isKeyboardNavigating, onMouseEnter, onMouseMove }, ref) => {
+    ({ result, isSelected, isKeyboardNavigating, onMouseEnter, onMouseMove }, ref) => {
         const { euiTheme } = useEuiTheme()
 
         const breadcrumbItems = useMemo(() => {
