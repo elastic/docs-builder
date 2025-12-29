@@ -9,7 +9,7 @@ import {
     useEuiOverflowScroll,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
-import { forwardRef, useMemo, MutableRefObject, useState, useRef, useEffect } from 'react'
+import { forwardRef, useMemo, MutableRefObject, useState } from 'react'
 
 const RESULTS_MAX_HEIGHT = 465
 const BREADCRUMB_SEPARATOR = ' / '
@@ -29,22 +29,9 @@ export const SearchResultsList = ({
     const selectedIndex = useSelectedIndex()
     const { setSelectedIndex } = useSearchActions()
     const { isLoading, data } = useSearchQuery()
-    const keyboardSelectedIndexRef = useRef<number>(-1)
 
     const results = data?.results ?? []
     const isInitialLoading = isLoading && !data
-
-    // Track keyboard-selected index to maintain it even when mouse hovers
-    useEffect(() => {
-        if (isKeyboardNavigating.current && selectedIndex >= 0) {
-            keyboardSelectedIndexRef.current = selectedIndex
-        }
-    }, [selectedIndex, isKeyboardNavigating])
-
-    // Maintain keyboard-selected index when mouse hovers (but allow clicks to override)
-    const effectiveSelectedIndex = keyboardSelectedIndexRef.current >= 0 && !isKeyboardNavigating.current
-        ? keyboardSelectedIndexRef.current
-        : selectedIndex
 
     const containerStyles = css`
         max-height: ${RESULTS_MAX_HEIGHT}px;
@@ -82,51 +69,34 @@ export const SearchResultsList = ({
     }
 
     const handleMouseEnter = (index: number) => {
-        // Only change selection with mouse if there's no keyboard-selected index to preserve
-        if (keyboardSelectedIndexRef.current < 0) {
+        if (!isKeyboardNavigating.current) {
             setSelectedIndex(index)
         }
-        // If there's a keyboard selection, keep it (don't change selectedIndex)
     }
 
     const handleItemMouseMove = (index: number) => {
         if (isKeyboardNavigating.current) {
-            // When keyboard navigating, disable keyboard mode but keep the keyboard-selected item highlighted
             onMouseMove()
-            // Don't change selectedIndex - keep the keyboard-selected item
-        } else if (keyboardSelectedIndexRef.current < 0) {
-            // When not keyboard navigating and no keyboard selection to preserve, allow mouse to select items
             setSelectedIndex(index)
         }
-        // If keyboardSelectedIndexRef.current >= 0, we preserve the keyboard selection
-    }
-
-    const handleClick = () => {
-        // When user clicks, reset the keyboard selection ref to allow mouse selection
-        keyboardSelectedIndexRef.current = -1
     }
 
     return (
         <div css={containerStyles}>
-            {results.map((result, index) => {
-                const isKeyboardSelected = keyboardSelectedIndexRef.current >= 0 && index === keyboardSelectedIndexRef.current
-                return (
-                    <SearchResultRow
-                        key={result.url}
-                        result={result}
-                        index={index}
-                        isSelected={index === effectiveSelectedIndex}
-                        isKeyboardSelected={isKeyboardSelected}
-                        isKeyboardNavigating={isKeyboardNavigating.current}
-                        onMouseEnter={() => handleMouseEnter(index)}
-                        onMouseMove={() => handleItemMouseMove(index)}
-                        onClick={handleClick}
-                        ref={(el) => {
-                            itemRefs.current[index] = el
-                        }}
-                    />
-                )
-            })}
+            {results.map((result, index) => (
+                <SearchResultRow
+                    key={result.url}
+                    result={result}
+                    index={index}
+                    isSelected={index === selectedIndex}
+                    isKeyboardNavigating={isKeyboardNavigating.current}
+                    onMouseEnter={() => handleMouseEnter(index)}
+                    onMouseMove={() => handleItemMouseMove(index)}
+                    ref={(el) => {
+                        itemRefs.current[index] = el
+                    }}
+                />
+            ))}
         </div>
     )
 }
@@ -135,47 +105,31 @@ interface SearchResultRowProps {
     result: SearchResultItem
     index: number
     isSelected: boolean
-    isKeyboardSelected: boolean
     isKeyboardNavigating: boolean
     onMouseEnter: () => void
     onMouseMove: () => void
-    onClick: () => void
 }
 
 const SearchResultRow = forwardRef<HTMLAnchorElement, SearchResultRowProps>(
-    ({ result, index, isSelected, isKeyboardSelected, isKeyboardNavigating, onMouseEnter, onMouseMove, onClick }, ref) => {
+    ({ result, index, isSelected, isKeyboardNavigating, onMouseEnter, onMouseMove }, ref) => {
         const { euiTheme } = useEuiTheme()
-        const [isHovered, setIsHovered] = useState(false)
 
         const breadcrumbItems = useMemo(() => {
             const typePrefix = result.type === 'api' ? 'API' : 'Docs'
             return [typePrefix, ...result.parents.slice(1).map((p) => p.title)]
         }, [result.type, result.parents])
         
-        // Show "Jump to" if element is selected AND:
-        // - Currently keyboard navigating, OR
-        // - It's the first element, OR  
-        // - It's the keyboard-selected element
-        // Always show if it's keyboard-selected or keyboard navigating (even when hovering)
-        // For other selected elements, only show when not hovering
-        const shouldShowJumpTo = isSelected && (
-            isKeyboardNavigating || 
-            isKeyboardSelected || 
-            (index === 0 && !isHovered)
-        )
+        // Show "Jump to" if element is selected
+        const shouldShowJumpTo = isSelected
 
         return (
             <a
                 ref={ref}
                 href={result.url}
-                onMouseEnter={(e) => {
-                    setIsHovered(true)
-                    onMouseEnter()
-                }}
-                onMouseLeave={() => setIsHovered(false)}
+                onMouseEnter={onMouseEnter}
                 onMouseMove={onMouseMove}
-                onClick={onClick}
                 data-selected={isSelected ? 'true' : 'false'}
+                data-keyboard-navigating={isKeyboardNavigating ? 'true' : 'false'}
                 css={css`
                     display: flex;
                     align-items: center;
@@ -194,7 +148,7 @@ const SearchResultRow = forwardRef<HTMLAnchorElement, SearchResultRowProps>(
                         border-bottom: none;
                     }
 
-                    &:hover {
+                    &:hover:not([data-keyboard-navigating='true']) {
                         background: ${isSelected
                             ? euiTheme.colors.backgroundBaseSubdued
                             : euiTheme.colors.backgroundBaseHighlighted};
