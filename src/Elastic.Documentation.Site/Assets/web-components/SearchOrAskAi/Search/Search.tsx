@@ -1,5 +1,6 @@
 import { InfoBanner } from '../InfoBanner'
 import { KeyboardShortcutsFooter } from '../KeyboardShortcutsFooter'
+import { LegalDisclaimer } from '../LegalDisclaimer'
 import { SearchOrAskAiErrorCallout } from '../SearchOrAskAiErrorCallout'
 import { useModalActions } from '../modal.store'
 import { SearchResults } from './SearchResults/SearchResults'
@@ -47,7 +48,10 @@ export const Search = () => {
     }
 
     const { inputRef, buttonRef, itemRefs, filterRefs, handleInputKeyDown } =
-        useSearchKeyboardNavigation(resultsCount)
+        useSearchKeyboardNavigation({
+            resultsCount,
+            isLoading: isLoading || isFetching,
+        })
 
     // Listen for Cmd+K to focus input
     useEffect(() => {
@@ -132,6 +136,8 @@ export const Search = () => {
                         term={searchTerm}
                         onAsk={askAi}
                     />
+                    <EuiSpacer size="m" />
+                    <LegalDisclaimer />
                 </div>
             )}
 

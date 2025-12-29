@@ -288,67 +288,65 @@ export const ChatMessage = ({
 
     if (isUser) {
         return (
-            <>
-                <EuiSpacer size="l" />
-                <div
-                    data-message-type="user"
-                    data-message-id={message.id}
+            <div
+                data-message-type="user"
+                data-message-id={message.id}
+                css={css`
+                    max-width: 50%;
+                    justify-self: flex-end;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: flex-end;
+                    margin-top: ${euiTheme.size.l};
+                    .copy-button {
+                        visibility: hidden;
+                    }
+                    &:hover .copy-button {
+                        visibility: visible;
+                    }
+                `}
+            >
+                <EuiPanel
+                    paddingSize="none"
+                    hasShadow={false}
+                    hasBorder={false}
                     css={css`
-                        max-width: 50%;
-                        justify-self: flex-end;
-                        display: flex;
-                        flex-direction: column;
-                        align-items: flex-end;
-                        .copy-button {
-                            visibility: hidden;
-                        }
-                        &:hover .copy-button {
-                            visibility: visible;
-                        }
+                        color: white;
+                        border-radius: 24px 24px 2px 24px;
+                        padding-inline: ${euiTheme.size.base};
+                        padding-block: ${euiTheme.size.m};
+                        background: ${aiGradients.dark};
                     `}
                 >
-                    <EuiPanel
-                        paddingSize="none"
-                        hasShadow={false}
-                        hasBorder={false}
+                    <EuiText
+                        size="s"
                         css={css`
-                            color: white;
-                            border-radius: 24px 24px 2px 24px;
-                            padding-inline: ${euiTheme.size.base};
-                            padding-block: ${euiTheme.size.m};
-                            background: ${aiGradients.dark};
+                            white-space: pre-wrap;
                         `}
                     >
-                        <EuiText
-                            size="s"
-                            css={css`
-                                white-space: pre-wrap;
-                            `}
-                        >
-                            {message.content}
-                        </EuiText>
-                    </EuiPanel>
-                    <EuiSpacer size="xs" />
+                        {message.content}
+                    </EuiText>
+                </EuiPanel>
+                <EuiSpacer size="xs" />
 
-                    <EuiCopy
-                        textToCopy={message.content}
-                        beforeMessage="Copy"
-                        afterMessage="Copied!"
-                    >
-                        {(copy) => (
-                            <EuiButtonIcon
-                                className="copy-button"
-                                aria-label="Copy"
-                                iconType="copy"
-                                iconSize="s"
-                                color="text"
-                                size="xs"
-                                onClick={copy}
-                            />
-                        )}
-                    </EuiCopy>
-                </div>
-            </>
+                <EuiCopy
+                    textToCopy={message.content}
+                    beforeMessage="Copy"
+                    afterMessage="Copied!"
+                >
+                    {(copy) => (
+                        <EuiButtonIcon
+                            className="copy-button"
+                            aria-label="Copy"
+                            iconType="copy"
+                            iconSize="s"
+                            color="text"
+                            size="xs"
+                            onClick={copy}
+                        />
+                    )}
+                </EuiCopy>
+            </div>
         )
     }
 

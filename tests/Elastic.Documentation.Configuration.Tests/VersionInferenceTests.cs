@@ -3,10 +3,12 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
+using System.IO.Abstractions;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Versions;
 using FluentAssertions;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Documentation.Configuration.Tests;
 
@@ -415,5 +417,128 @@ public class VersionInferenceTests
 	{
 		var result = ProductApplicabilityConversion.ProductApplicabilityToProductId(new ProductApplicability());
 		result.Should().BeNull();
+	}
+
+	[Theory(DisplayName = "IsVersionless returns true for versionless products")]
+	[InlineData(VersioningSystemId.All)]
+	[InlineData(VersioningSystemId.Serverless)]
+	[InlineData(VersioningSystemId.Ech)]
+	[InlineData(VersioningSystemId.Ess)]
+	[InlineData(VersioningSystemId.ElasticsearchProject)]
+	[InlineData(VersioningSystemId.ObservabilityProject)]
+	[InlineData(VersioningSystemId.SecurityProject)]
+	public void IsVersionlessReturnsTrueForVersionlessProducts(VersioningSystemId id)
+	{
+		var versioningSystem = new VersioningSystem
+		{
+			Id = id,
+			Current = new SemVersion(VersioningSystem.VersionlessSentinel, 0, 0),
+			Base = new SemVersion(VersioningSystem.VersionlessSentinel, 0, 0)
+		};
+
+		versioningSystem.IsVersionless.Should().BeTrue(
+			$"Versioning system {id} with version {VersioningSystem.VersionlessSentinel} should be marked as versionless");
+	}
+
+	[Theory(DisplayName = "IsVersionless returns false for versioned products")]
+	[InlineData(VersioningSystemId.Stack, 9, 2, 0)]
+	[InlineData(VersioningSystemId.Ece, 4, 0, 3)]
+	[InlineData(VersioningSystemId.Eck, 3, 2, 0)]
+	[InlineData(VersioningSystemId.ApmAgentJava, 1, 55, 2)]
+	[InlineData(VersioningSystemId.EdotCollector, 9, 2, 2)]
+	public void IsVersionlessReturnsFalseForVersionedProducts(VersioningSystemId id, int major, int minor, int patch)
+	{
+		var versioningSystem = new VersioningSystem
+		{
+			Id = id,
+			Current = new SemVersion(major, minor, patch),
+			Base = new SemVersion(major, 0, 0)
+		};
+
+		versioningSystem.IsVersionless.Should().BeFalse(
+			$"Versioning system {id} with version {major}.{minor}.{patch} should not be marked as versionless");
+	}
+
+	[Fact(DisplayName = "VersionlessSentinel constant matches versions.yml value")]
+	public void VersionlessSentinelMatchesConfigValue()
+	{
+		// This test ensures the sentinel value matches what's used in config/versions.yml
+		// If this test fails, update VersioningSystem.VersionlessSentinel to match versions.yml
+		VersioningSystem.VersionlessSentinel.Should().Be(99999,
+			"VersionlessSentinel should match the value used in config/versions.yml for 'all' versioning system");
+	}
+
+	/// <summary>
+	/// These are the versioning system IDs that use the 'all' alias in versions.yml,
+	/// meaning they have version 99999 and should be marked as versionless.
+	/// </summary>
+	private static readonly HashSet<VersioningSystemId> ExpectedVersionlessIds =
+	[
+		VersioningSystemId.All,
+		VersioningSystemId.Ech,
+		VersioningSystemId.Ess,
+		VersioningSystemId.Serverless,
+		VersioningSystemId.ElasticsearchProject,
+		VersioningSystemId.ObservabilityProject,
+		VersioningSystemId.SecurityProject
+	];
+
+	[Fact(DisplayName = "IsVersionless correctly identifies all versionless systems from actual config")]
+	public void IsVersionlessCorrectlyIdentifiesAllVersionlessSystemsFromActualConfig()
+	{
+		// Load the actual versions.yml configuration
+		var fileSystem = new FileSystem();
+		var versionsPath = fileSystem.Path.Combine(Paths.WorkingDirectoryRoot.FullName, "config", "versions.yml");
+		File.Exists(versionsPath).Should().BeTrue($"Expected versions file to exist at {versionsPath}");
+
+		var provider = new ConfigurationFileProvider(new NullLoggerFactory(), fileSystem);
+		var versionsConfig = provider.CreateVersionConfiguration();
+
+		// Verify all expected versionless systems are marked as versionless
+		foreach (var id in ExpectedVersionlessIds)
+		{
+			if (versionsConfig.VersioningSystems.TryGetValue(id, out var versioningSystem))
+			{
+				versioningSystem.IsVersionless.Should().BeTrue(
+					$"Versioning system {id} uses 'all' alias in versions.yml and should be marked as versionless");
+			}
+		}
+
+		// Verify all other systems are NOT marked as versionless
+		foreach (var (id, versioningSystem) in versionsConfig.VersioningSystems)
+		{
+			if (!ExpectedVersionlessIds.Contains(id))
+			{
+				versioningSystem.IsVersionless.Should().BeFalse(
+					$"Versioning system {id} has version {versioningSystem.Current} and should NOT be marked as versionless");
+			}
+		}
+	}
+
+	[Fact(DisplayName = "All versioning systems in config are accounted for in IsVersionless logic")]
+	public void AllVersioningSystemsInConfigAreAccountedFor()
+	{
+		// Load the actual versions.yml configuration
+		var fileSystem = new FileSystem();
+		var versionsPath = fileSystem.Path.Combine(Paths.WorkingDirectoryRoot.FullName, "config", "versions.yml");
+		File.Exists(versionsPath).Should().BeTrue($"Expected versions file to exist at {versionsPath}");
+
+		var provider = new ConfigurationFileProvider(new NullLoggerFactory(), fileSystem);
+		var versionsConfig = provider.CreateVersionConfiguration();
+
+		// Count how many are versionless vs versioned
+		var versionlessSystems = versionsConfig.VersioningSystems.Values.Where(v => v.IsVersionless).ToList();
+		var versionedSystems = versionsConfig.VersioningSystems.Values.Where(v => !v.IsVersionless).ToList();
+
+		// The versionless systems should match our expected list
+		versionlessSystems.Select(v => v.Id).Should().BeEquivalentTo(ExpectedVersionlessIds,
+			"The versioning systems marked as versionless should match the expected list from versions.yml");
+
+		// All versioned systems should have version < 99999
+		foreach (var system in versionedSystems)
+		{
+			system.Current.Major.Should().BeLessThan(VersioningSystem.VersionlessSentinel,
+				$"Versioned system {system.Id} should have major version less than {VersioningSystem.VersionlessSentinel}");
+		}
 	}
 }
