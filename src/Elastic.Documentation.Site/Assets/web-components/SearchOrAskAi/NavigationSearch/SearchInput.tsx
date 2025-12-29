@@ -53,6 +53,7 @@ export const SearchInput = ({
                 position: relative;
                 display: flex;
                 align-items: center;
+                margin-right: ${euiTheme.size.base};
             `}
         >
             <span
