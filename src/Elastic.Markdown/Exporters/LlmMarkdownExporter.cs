@@ -48,7 +48,7 @@ public class LlmMarkdownExporter : IMarkdownExporter
 
 	public async ValueTask<bool> FinishExportAsync(IDirectoryInfo outputFolder, Cancel ctx)
 	{
-		var outputDirectory = Path.Combine(outputFolder.FullName, "docs");
+		var outputDirectory = outputFolder.FullName;
 		var zipPath = Path.Combine(outputDirectory, "llm.zip");
 
 		// Create the llms.txt file with boilerplate content

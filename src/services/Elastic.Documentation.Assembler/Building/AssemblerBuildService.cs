@@ -120,7 +120,7 @@ public class AssemblerBuildService(
 
 		if (exporters.Contains(Exporter.Html))
 		{
-			var sitemapBuilder = new SitemapBuilder(navigation.NavigationItems, assembleContext.WriteFileSystem, assembleContext.OutputDirectory);
+			var sitemapBuilder = new SitemapBuilder(navigation.NavigationItems, assembleContext.WriteFileSystem, assembleContext.OutputWithPathPrefixDirectory);
 			sitemapBuilder.Generate();
 		}
 
@@ -140,13 +140,13 @@ public class AssemblerBuildService(
 
 	private static async Task EnhanceLlmsTxtFile(AssembleContext context, SiteNavigation navigation, LlmsNavigationEnhancer enhancer, Cancel ctx)
 	{
-		var llmsTxtPath = Path.Combine(context.OutputDirectory.FullName, "docs", "llms.txt");
+		var pathPrefixedOutputFolder = context.OutputWithPathPrefixDirectory;
+		var llmsTxtPath = context.ReadFileSystem.Path.Combine(pathPrefixedOutputFolder.FullName, "llms.txt");
 
-		var readFs = context.ReadFileSystem;
-		if (!readFs.File.Exists(llmsTxtPath))
+		if (!context.ReadFileSystem.File.Exists(llmsTxtPath))
 			return; // No llms.txt file to enhance
 
-		var existingContent = await readFs.File.ReadAllTextAsync(llmsTxtPath, ctx);
+		var existingContent = await context.ReadFileSystem.File.ReadAllTextAsync(llmsTxtPath, ctx);
 		// Assembler always uses the production URL as canonical base URL
 		var canonicalBaseUrl = new Uri(context.Environment.Uri);
 		var navigationSections = enhancer.GenerateNavigationSections(navigation, canonicalBaseUrl);
@@ -154,7 +154,6 @@ public class AssemblerBuildService(
 		// Append the navigation sections to the existing boilerplate
 		var enhancedContent = existingContent + Environment.NewLine + navigationSections;
 
-		var writeFs = context.WriteFileSystem;
-		await writeFs.File.WriteAllTextAsync(llmsTxtPath, enhancedContent, Encoding.UTF8, ctx);
+		await context.WriteFileSystem.File.WriteAllTextAsync(llmsTxtPath, enhancedContent, Encoding.UTF8, ctx);
 	}
 }
