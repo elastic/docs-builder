@@ -3,7 +3,7 @@ import { css } from '@emotion/react'
 
 const CustomSearchIcon = () => {
     const { euiTheme } = useEuiTheme()
-    
+
     return (
         <svg
             width="16"
@@ -86,7 +86,9 @@ export const SearchInput = ({
                     width: 100%;
                     padding: calc(${euiTheme.size.s} + 2px) ${euiTheme.size.m};
                     padding-left: 34px;
-                    padding-right: calc(${euiTheme.size.m} + 2ch + ${euiTheme.size.m});
+                    padding-right: calc(
+                        ${euiTheme.size.m} + 2ch + ${euiTheme.size.m}
+                    );
                     border: 1px solid ${euiTheme.colors.borderBasePlain};
                     border-radius: ${euiTheme.border.radius.medium};
                     background: ${euiTheme.colors.backgroundBasePlain};

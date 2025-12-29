@@ -43,7 +43,8 @@ export const SearchResultsList = ({
     `
 
     const emptyStateStyles = css`
-        padding: ${euiTheme.size.xl} ${euiTheme.size.xl} ${euiTheme.size.l} ${euiTheme.size.xl};
+        padding: ${euiTheme.size.xl} ${euiTheme.size.xl} ${euiTheme.size.l}
+            ${euiTheme.size.xl};
         text-align: center;
         color: ${euiTheme.colors.textDisabled};
         font-size: ${euiTheme.font.scale.s * euiTheme.base}px;
@@ -63,7 +64,9 @@ export const SearchResultsList = ({
     if (results.length === 0) {
         return (
             <div css={containerStyles}>
-                <div css={emptyStateStyles}>We couldn't find a page that matches your search</div>
+                <div css={emptyStateStyles}>
+                    We couldn't find a page that matches your search
+                </div>
             </div>
         )
     }
@@ -109,14 +112,17 @@ interface SearchResultRowProps {
 }
 
 const SearchResultRow = forwardRef<HTMLAnchorElement, SearchResultRowProps>(
-    ({ result, isSelected, isKeyboardNavigating, onMouseEnter, onMouseMove }, ref) => {
+    (
+        { result, isSelected, isKeyboardNavigating, onMouseEnter, onMouseMove },
+        ref
+    ) => {
         const { euiTheme } = useEuiTheme()
 
         const breadcrumbItems = useMemo(() => {
             const typePrefix = result.type === 'api' ? 'API' : 'Docs'
             return [typePrefix, ...result.parents.slice(1).map((p) => p.title)]
         }, [result.type, result.parents])
-        
+
         // Show "Jump to" if element is selected
         const shouldShowJumpTo = isSelected
 
@@ -127,7 +133,9 @@ const SearchResultRow = forwardRef<HTMLAnchorElement, SearchResultRowProps>(
                 onMouseEnter={onMouseEnter}
                 onMouseMove={onMouseMove}
                 data-selected={isSelected ? 'true' : 'false'}
-                data-keyboard-navigating={isKeyboardNavigating ? 'true' : 'false'}
+                data-keyboard-navigating={
+                    isKeyboardNavigating ? 'true' : 'false'
+                }
                 css={css`
                     display: flex;
                     align-items: center;
@@ -150,7 +158,7 @@ const SearchResultRow = forwardRef<HTMLAnchorElement, SearchResultRowProps>(
                         background: ${isSelected
                             ? euiTheme.colors.backgroundBaseSubdued
                             : euiTheme.colors.backgroundBaseHighlighted};
-                        
+
                         .title-text {
                             color: ${euiTheme.colors.link};
                             text-decoration: underline;

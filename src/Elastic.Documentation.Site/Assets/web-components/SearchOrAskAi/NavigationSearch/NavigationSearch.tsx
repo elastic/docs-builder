@@ -1,9 +1,9 @@
+import { availableIcons } from '../../../eui-icons-cache'
 import { useSearchTerm, useSearchActions } from '../Search/search.store'
 import { useIsSearchCooldownActive } from '../Search/useSearchCooldown'
 import { useSearchQuery } from '../Search/useSearchQuery'
 import { SearchInput } from './SearchInput'
 import { SearchResultsList } from './SearchResultsList'
-import { availableIcons } from '../../../eui-icons-cache'
 import { useGlobalKeyboardShortcut } from './useGlobalKeyboardShortcut'
 import { useNavigationSearchKeyboardNavigation } from './useNavigationSearchKeyboardNavigation'
 import {
@@ -228,7 +228,13 @@ const SearchDropdownContent = ({
     )
 }
 
-const KeyboardKey = ({ children, className }: { children: React.ReactNode; className?: string }) => {
+const KeyboardKey = ({
+    children,
+    className,
+}: {
+    children: React.ReactNode
+    className?: string
+}) => {
     const { euiTheme } = useEuiTheme()
     return (
         <span
@@ -256,7 +262,9 @@ const KeyboardIcon = ({ type }: { type: string }) => {
     const { euiTheme } = useEuiTheme()
     const hasIcon = availableIcons.includes(type)
     return (
-        <KeyboardKey className={hasIcon ? 'keyboard-key-icon' : 'keyboard-key-text'}>
+        <KeyboardKey
+            className={hasIcon ? 'keyboard-key-icon' : 'keyboard-key-text'}
+        >
             {hasIcon ? (
                 <EuiIcon
                     type={type}

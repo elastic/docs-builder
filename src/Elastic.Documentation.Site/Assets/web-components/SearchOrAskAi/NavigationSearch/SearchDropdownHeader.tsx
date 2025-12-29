@@ -1,4 +1,9 @@
-import { EuiBetaBadge, EuiLink, useEuiTheme, useEuiFontSize } from '@elastic/eui'
+import {
+    EuiBetaBadge,
+    EuiLink,
+    useEuiTheme,
+    useEuiFontSize,
+} from '@elastic/eui'
 import { css } from '@emotion/react'
 
 const FEEDBACK_URL =
