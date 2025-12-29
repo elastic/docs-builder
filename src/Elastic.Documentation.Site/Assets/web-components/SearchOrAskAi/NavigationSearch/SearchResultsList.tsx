@@ -9,7 +9,7 @@ import {
     useEuiOverflowScroll,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
-import { forwardRef, useMemo, MutableRefObject, useState } from 'react'
+import { forwardRef, useMemo, MutableRefObject } from 'react'
 
 const RESULTS_MAX_HEIGHT = 465
 const BREADCRUMB_SEPARATOR = ' / '
