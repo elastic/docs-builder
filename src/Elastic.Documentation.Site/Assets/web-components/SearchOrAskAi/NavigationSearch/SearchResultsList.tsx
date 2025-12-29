@@ -11,7 +11,7 @@ import {
 import { css } from '@emotion/react'
 import { forwardRef, useMemo, MutableRefObject, useState } from 'react'
 
-const RESULTS_MAX_HEIGHT = 454
+const RESULTS_MAX_HEIGHT = 465
 const BREADCRUMB_SEPARATOR = ' / '
 
 export interface SearchResultsListProps {
