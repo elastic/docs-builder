@@ -45,33 +45,49 @@ public class VersionSpec : IComparable<VersionSpec>, IEquatable<VersionSpec>
 	/// </summary>
 	public VersionSpecKind Kind { get; }
 
+	/// <summary>
+	/// Whether to explicitly show the patch version for the minimum version in display.
+	/// Controlled by the ! operator (e.g., "9.0.4!" shows 9.0.4 instead of 9.0).
+	/// </summary>
+	public bool ShowMinPatch { get; }
+
+	/// <summary>
+	/// Whether to explicitly show the patch version for the maximum version in display.
+	/// Only applicable for Range kind. Controlled by the ! operator (e.g., "9.0-9.1.2!" shows 9.0-9.1.2).
+	/// </summary>
+	public bool ShowMaxPatch { get; }
+
 	// Internal constructor to prevent direct instantiation outside of TryParse
 	// except for AllVersionsSpec which needs to inherit from this class
-	protected VersionSpec(SemVersion min, SemVersion? max, VersionSpecKind kind)
+	protected VersionSpec(SemVersion min, SemVersion? max, VersionSpecKind kind, bool showMinPatch = false, bool showMaxPatch = false)
 	{
 		Min = min;
 		Max = max;
 		Kind = kind;
+		ShowMinPatch = showMinPatch;
+		ShowMaxPatch = showMaxPatch;
 	}
 
 	/// <summary>
 	/// Creates an Exact version spec from a SemVersion.
 	/// </summary>
-	public static VersionSpec Exact(SemVersion version) => new(version, null, VersionSpecKind.Exact);
+	public static VersionSpec Exact(SemVersion version, bool showPatch = false) => new(version, null, VersionSpecKind.Exact, showPatch);
 
 	/// <summary>
 	/// Creates a Range version spec from two SemVersions.
 	/// </summary>
-	public static VersionSpec Range(SemVersion min, SemVersion max) => new(min, max, VersionSpecKind.Range);
+	public static VersionSpec Range(SemVersion min, SemVersion max, bool showMinPatch = false, bool showMaxPatch = false) =>
+		new(min, max, VersionSpecKind.Range, showMinPatch, showMaxPatch);
 
 	/// <summary>
 	/// Creates a GreaterThanOrEqual version spec from a SemVersion.
 	/// </summary>
-	public static VersionSpec GreaterThanOrEqual(SemVersion min) => new(min, null, VersionSpecKind.GreaterThanOrEqual);
+	public static VersionSpec GreaterThanOrEqual(SemVersion min, bool showPatch = false) => new(min, null, VersionSpecKind.GreaterThanOrEqual, showPatch);
 
 	/// <summary>
 	/// Tries to parse a version specification string.
 	/// Supports: x.x, x.x+, x.x.x, x.x.x+ (gte), x.x-y.y (range), =x.x (exact)
+	/// Use ! after a version to explicitly show the patch version (e.g., "9.0.4!" shows 9.0.4 instead of 9.0)
 	/// </summary>
 	public static bool TryParse(string? input, [NotNullWhen(true)] out VersionSpec? spec)
 	{
@@ -82,40 +98,66 @@ public class VersionSpec : IComparable<VersionSpec>, IEquatable<VersionSpec>
 
 		var trimmed = input.Trim();
 
-		// Check for exact syntax: =x.x or =x.x.x
+		// Check for exact syntax: =x.x or =x.x.x or =x.x.x!
 		if (trimmed.StartsWith('='))
 		{
 			var versionPart = trimmed[1..];
+			var showPatch = versionPart.EndsWith('!');
+			if (showPatch)
+				versionPart = versionPart[..^1];
+
 			if (!TryParseVersion(versionPart, out var version))
 				return false;
 
-			spec = new(version, null, VersionSpecKind.Exact);
+			spec = new(version, null, VersionSpecKind.Exact, showPatch);
 			return true;
 		}
 
-		// Check for range syntax: x.x-y.y or x.x.x-y.y.y
+		// Check for range syntax: x.x-y.y or x.x.x-y.y.y (with optional ! on either/both sides)
 		var dashIndex = FindRangeSeparator(trimmed);
 		if (dashIndex > 0)
 		{
 			var minPart = trimmed[..dashIndex];
 			var maxPart = trimmed[(dashIndex + 1)..];
 
+			// Check for ! on min part
+			var showMinPatch = minPart.EndsWith('!');
+			if (showMinPatch)
+				minPart = minPart[..^1];
+
+			// Check for ! on max part (before stripping +)
+			var showMaxPatch = maxPart.EndsWith('!') || maxPart.EndsWith("!+", StringComparison.Ordinal);
+			if (maxPart.EndsWith("!+", StringComparison.Ordinal))
+				maxPart = maxPart[..^2] + "+";
+			else if (maxPart.EndsWith('!'))
+				maxPart = maxPart[..^1];
+
+			// Strip trailing + from max if present
+			if (maxPart.EndsWith('+'))
+				maxPart = maxPart[..^1];
+
 			if (!TryParseVersion(minPart, out var minVersion) ||
 				!TryParseVersion(maxPart, out var maxVersion))
 				return false;
 
-			spec = new(minVersion, maxVersion, VersionSpecKind.Range);
+			spec = new(minVersion, maxVersion, VersionSpecKind.Range, showMinPatch, showMaxPatch);
 			return true;
 		}
 
 		// Otherwise, it's greater-than-or-equal syntax
+		var showGtePatch = trimmed.EndsWith('!') || trimmed.EndsWith("!+", StringComparison.Ordinal);
+		if (trimmed.EndsWith("!+", StringComparison.Ordinal))
+			trimmed = trimmed[..^2] + "+";
+		else if (trimmed.EndsWith('!'))
+			trimmed = trimmed[..^1];
+
 		// Strip trailing + if present
 		var versionString = trimmed.EndsWith('+') ? trimmed[..^1] : trimmed;
 
 		if (!TryParseVersion(versionString, out var gteVersion))
 			return false;
 
-		spec = new(gteVersion, null, VersionSpecKind.GreaterThanOrEqual);
+		spec = new(gteVersion, null, VersionSpecKind.GreaterThanOrEqual, showGtePatch);
 		return true;
 	}
 
@@ -142,6 +184,8 @@ public class VersionSpec : IComparable<VersionSpec>, IEquatable<VersionSpec>
 				{
 					// Also verify that what comes before looks like a version
 					var beforeDash = input[..i];
+					if (beforeDash.EndsWith('!'))
+						beforeDash = beforeDash[..^1];
 					if (TryParseVersion(beforeDash, out _))
 						return i;
 				}
@@ -177,14 +221,30 @@ public class VersionSpec : IComparable<VersionSpec>, IEquatable<VersionSpec>
 	/// <summary>
 	/// Returns the canonical string representation of this version spec.
 	/// Format: "9.2+" for GreaterThanOrEqual, "9.0-9.1" for Range, "=9.2" for Exact
+	/// When ShowMinPatch/ShowMaxPatch is true, includes patch version (e.g., "9.2.4!+")
 	/// </summary>
 	public override string ToString() => Kind switch
 	{
-		VersionSpecKind.Exact => $"={Min.Major}.{Min.Minor}",
-		VersionSpecKind.Range => $"{Min.Major}.{Min.Minor}-{Max!.Major}.{Max.Minor}",
-		VersionSpecKind.GreaterThanOrEqual => $"{Min.Major}.{Min.Minor}+",
+		VersionSpecKind.Exact => ShowMinPatch
+			? $"={Min.Major}.{Min.Minor}.{Min.Patch}!"
+			: $"={Min.Major}.{Min.Minor}",
+		VersionSpecKind.Range => FormatRangeToString(),
+		VersionSpecKind.GreaterThanOrEqual => ShowMinPatch
+			? $"{Min.Major}.{Min.Minor}.{Min.Patch}!+"
+			: $"{Min.Major}.{Min.Minor}+",
 		_ => throw new ArgumentOutOfRangeException(nameof(Kind), Kind, null)
 	};
+
+	private string FormatRangeToString()
+	{
+		var minPart = ShowMinPatch
+			? $"{Min.Major}.{Min.Minor}.{Min.Patch}!"
+			: $"{Min.Major}.{Min.Minor}";
+		var maxPart = ShowMaxPatch
+			? $"{Max!.Major}.{Max.Minor}.{Max.Patch}!"
+			: $"{Max!.Major}.{Max.Minor}";
+		return $"{minPart}-{maxPart}";
+	}
 
 	/// <summary>
 	/// Compares this VersionSpec to another for sorting.
@@ -214,12 +274,14 @@ public class VersionSpec : IComparable<VersionSpec>, IEquatable<VersionSpec>
 			return true;
 
 		return Kind == other.Kind && Min.Equals(other.Min) &&
-			   (Max?.Equals(other.Max) ?? (other.Max is null));
+			   (Max?.Equals(other.Max) ?? (other.Max is null)) &&
+			   ShowMinPatch == other.ShowMinPatch &&
+			   ShowMaxPatch == other.ShowMaxPatch;
 	}
 
 	public override bool Equals(object? obj) => obj is VersionSpec other && Equals(other);
 
-	public override int GetHashCode() => HashCode.Combine(Kind, Min, Max);
+	public override int GetHashCode() => HashCode.Combine(Kind, Min, Max, ShowMinPatch, ShowMaxPatch);
 
 	public static bool operator ==(VersionSpec? left, VersionSpec? right)
 	{

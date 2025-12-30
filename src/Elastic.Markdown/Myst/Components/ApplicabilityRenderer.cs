@@ -225,8 +225,12 @@ public static class ApplicabilityRenderer
 		// Get version info
 		var min = versionSpec.Min;
 		var max = versionSpec.Max;
-		var minVersion = $"{min.Major}.{min.Minor}";
-		var maxVersion = max is not null ? $"{max.Major}.{max.Minor}" : null;
+		var showMinPatch = versionSpec.ShowMinPatch;
+		var showMaxPatch = versionSpec.ShowMaxPatch;
+		var minVersion = showMinPatch ? $"{min.Major}.{min.Minor}.{min.Patch}" : $"{min.Major}.{min.Minor}";
+		var maxVersion = max is not null
+			? (showMaxPatch ? $"{max.Major}.{max.Minor}.{max.Patch}" : $"{max.Major}.{max.Minor}")
+			: null;
 		var isMinReleased = min <= versioningSystem.Current;
 		var isMaxReleased = max is not null && max <= versioningSystem.Current;
 
@@ -419,27 +423,38 @@ public static class ApplicabilityRenderer
 				var kind = versionSpec.Kind;
 				var min = versionSpec.Min;
 				var max = versionSpec.Max;
+				var showMinPatch = versionSpec.ShowMinPatch;
+				var showMaxPatch = versionSpec.ShowMaxPatch;
 
 				// Check if versions are released
 				var minReleased = min <= versioningSystem.Current;
 				var maxReleased = max is not null && max <= versioningSystem.Current;
 
+				// Helper to format version with or without patch
+				string FormatMinVersion() => showMinPatch
+					? $"{min.Major}.{min.Minor}.{min.Patch}"
+					: $"{min.Major}.{min.Minor}";
+
+				string FormatMaxVersion() => showMaxPatch
+					? $"{max!.Major}.{max.Minor}.{max.Patch}"
+					: $"{max!.Major}.{max.Minor}";
+
 				return kind switch
 				{
 					VersionSpecKind.GreaterThanOrEqual => minReleased
-						? $"{min.Major}.{min.Minor}+"
+						? $"{FormatMinVersion()}+"
 						: string.Empty,
 
 					VersionSpecKind.Range => maxReleased
-						? min.Major == max!.Major && min.Minor == max.Minor
-							? $"{min.Major}.{min.Minor}" // Same major.minor, so just show the version once
-							: $"{min.Major}.{min.Minor}-{max.Major}.{max.Minor}"
+						? min.Major == max!.Major && min.Minor == max.Minor && !showMinPatch && !showMaxPatch
+							? $"{min.Major}.{min.Minor}" // Same major.minor and no explicit patch, so just show the version once
+							: $"{FormatMinVersion()}-{FormatMaxVersion()}"
 						: minReleased
-							? $"{min.Major}.{min.Minor}+"
+							? $"{FormatMinVersion()}+"
 							: string.Empty,
 
 					VersionSpecKind.Exact => minReleased
-						? $"{min.Major}.{min.Minor}"
+						? FormatMinVersion()
 						: string.Empty,
 
 					_ => string.Empty

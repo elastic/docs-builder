@@ -80,6 +80,28 @@ Interpreted as: `preview 8.0-8.19`, `beta 9.0-9.1`, `ga 9.2+`.
 
 {applies_to}`stack: preview =9.0` This feature was in preview only in 9.0 (exact).
 
+## Explicit patch version display
+
+By default, patch versions (e.g., the `.4` in `9.0.4`) are hidden in badge displays, showing only `9.0` instead. To explicitly show the patch version, add an exclamation mark `!` after the version declaration.
+
+### Single version with explicit patch
+
+{applies_to}`stack: preview 7.5.4!` Shows `7.5.4+` instead of `7.5+`.
+
+{applies_to}`stack: preview 7.5.4` Without `!`, shows `7.5+` (patch hidden).
+
+### Range versions with explicit patch
+
+{applies_to}`stack: beta 7.0.3!-7.5.2!` Shows `7.0.3-7.5.2` with both patch versions visible.
+
+{applies_to}`stack: ga 7.0.5!-7.5` Shows `7.0.5-7.5` with patch only on min.
+
+{applies_to}`stack: ga 7.0-7.5.3!` Shows `7.0-7.5.3` with patch only on max.
+
+### Exact version with explicit patch
+
+{applies_to}`stack: ga =7.5.3!` Shows `7.5.3` as an exact version with patch visible.
+
 ## Deprecation and removal examples
 
 ```{applies_to}
