@@ -1,0 +1,75 @@
+/* Button directive styles */
+
+/* Button wrapper for standalone buttons */
+.doc-button-wrapper {
+	display: flex;
+	margin-block: 1rem;
+}
+
+.doc-button-wrapper.doc-button-left {
+	justify-content: flex-start;
+}
+
+.doc-button-wrapper.doc-button-center {
+	justify-content: center;
+}
+
+.doc-button-wrapper.doc-button-right {
+	justify-content: flex-end;
+}
+
+/* Button group container */
+.doc-button-group {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.75rem;
+	margin-block: 1rem;
+}
+
+.doc-button-group.doc-button-group-left {
+	justify-content: flex-start;
+}
+
+.doc-button-group.doc-button-group-center {
+	justify-content: center;
+}
+
+.doc-button-group.doc-button-group-right {
+	justify-content: flex-end;
+}
+
+/* Button item wrapper for buttons inside groups */
+.doc-button-item {
+	display: inline-flex;
+}
+
+/* Primary button - exact same Tailwind classes as _LandingPage.cshtml */
+.doc-button-primary a {
+	@apply bg-blue-elastic hover:bg-blue-elastic-110 focus:ring-blue-elastic-50 flex h-10 cursor-pointer items-center justify-center rounded-sm px-6 py-2 font-sans text-base font-semibold text-nowrap text-white no-underline select-none hover:text-white focus:ring-4 focus:outline-none;
+}
+
+/* Secondary button - exact same Tailwind classes as _LandingPage.cshtml */
+.doc-button-secondary a {
+	@apply text-blue-elastic hover:text-blue-elastic-100 border-blue-elastic hover:border-blue-elastic-100 focus:ring-blue-elastic-50 flex h-10 cursor-pointer items-center justify-center rounded-sm border-2 px-6 py-2 text-center font-sans text-base font-semibold text-nowrap no-underline focus:ring-4 focus:outline-none;
+}
+
+/* Remove external link icon from buttons */
+.doc-button-wrapper a[target='_blank']::after,
+.doc-button-item a[target='_blank']::after {
+	content: none !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+	.doc-button-group {
+		flex-direction: column;
+	}
+
+	.doc-button-item {
+		width: 100%;
+	}
+
+	.doc-button-item a {
+		width: 100%;
+	}
+}

@@ -88,6 +88,7 @@ toc:
       - file: applies.md
       - file: applies-switch.md
       - file: automated_settings.md
+      - file: buttons.md
       - file: code.md
       - file: comments.md
       - file: conditionals.md
@@ -157,6 +158,9 @@ toc:
         children:
           - file: index.md
           - file: changelog-add.md
+  - folder: mcp
+    children:
+      - file: index.md
   - folder: migration
     children:
       - file: index.md

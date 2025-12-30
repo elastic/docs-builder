@@ -1,8 +1,8 @@
 import { useModalActions } from '../modal.store'
 import { useChatActions } from './chat.store'
-import { EuiButton, useEuiTheme } from '@elastic/eui'
+import { useIsAskAiCooldownActive } from './useAskAiCooldown'
+import { EuiButton, EuiText, useEuiTheme, EuiSpacer } from '@elastic/eui'
 import { css } from '@emotion/react'
-import * as React from 'react'
 import { useMemo } from 'react'
 
 export interface AskAiSuggestion {
@@ -37,9 +37,10 @@ const ALL_SUGGESTIONS: AskAiSuggestion[] = [
     },
 ]
 
-export const AskAiSuggestions = ({ disabled }: { disabled?: boolean }) => {
+export const AskAiSuggestions = () => {
     const { submitQuestion } = useChatActions()
     const { setModalMode } = useModalActions()
+    const disabled = useIsAskAiCooldownActive()
     const { euiTheme } = useEuiTheme()
 
     // Randomly select 3 questions from the comprehensive list
@@ -50,29 +51,37 @@ export const AskAiSuggestions = ({ disabled }: { disabled?: boolean }) => {
     }, [])
 
     return (
-        <ul>
-            {selectedSuggestions.map((suggestion) => (
-                <li
-                    key={suggestion.question}
-                    css={css`
-                        margin-bottom: ${euiTheme.size.s};
-                    `}
-                >
-                    <EuiButton
-                        color="text"
-                        size="s"
-                        onClick={() => {
-                            if (!disabled) {
-                                submitQuestion(suggestion.question)
-                                setModalMode('askAi')
-                            }
-                        }}
-                        disabled={disabled}
+        <div
+            css={css`
+                padding-inline: ${euiTheme.size.base};
+            `}
+        >
+            <EuiSpacer size="m" />
+            <EuiText size="xs">Example questions:</EuiText>
+            <ul>
+                {selectedSuggestions.map((suggestion) => (
+                    <li
+                        key={suggestion.question}
+                        css={css`
+                            margin-top: ${euiTheme.size.s};
+                        `}
                     >
-                        {suggestion.question}
-                    </EuiButton>
-                </li>
-            ))}
-        </ul>
+                        <EuiButton
+                            color="text"
+                            size="s"
+                            onClick={() => {
+                                if (!disabled) {
+                                    submitQuestion(suggestion.question)
+                                    setModalMode('askAi')
+                                }
+                            }}
+                            disabled={disabled}
+                        >
+                            {suggestion.question}
+                        </EuiButton>
+                    </li>
+                ))}
+            </ul>
+        </div>
     )
 }
