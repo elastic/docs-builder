@@ -13,12 +13,8 @@
 		}
 
 		.applicable-info--clickable {
-			/* Desktop: tooltip-like behavior, no pointer cursor */
+			/* Desktop: tooltip-like behavior, no pointer cursor or hover state */
 			@apply cursor-default;
-
-			&:hover {
-				@apply border-grey-30 bg-grey-10;
-			}
 
 			&:focus {
 				outline: none;

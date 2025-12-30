@@ -126,19 +126,28 @@ const AppliesToPopover = ({
     }, [])
 
     const handleMouseEnter = useCallback(() => {
-        // Clear any pending close timeout
+        // Clear any pending timeout (open or close)
         if (hoverTimeoutRef.current) {
             clearTimeout(hoverTimeoutRef.current)
             hoverTimeoutRef.current = null
         }
-        openPopover()
+        // Delay opening to prevent accidental triggers while scanning
+        // Matches EUI tooltip default delay (~250ms)
+        hoverTimeoutRef.current = setTimeout(() => {
+            openPopover()
+        }, 250)
     }, [openPopover])
 
     const handleMouseLeave = useCallback(() => {
+        // Clear any pending open timeout
+        if (hoverTimeoutRef.current) {
+            clearTimeout(hoverTimeoutRef.current)
+            hoverTimeoutRef.current = null
+        }
         // Small delay before closing to allow moving to the popover content
         hoverTimeoutRef.current = setTimeout(() => {
             closePopover()
-        }, 100)
+        }, 150)
     }, [closePopover])
 
     // Cleanup timeout on unmount
