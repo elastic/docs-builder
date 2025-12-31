@@ -40,8 +40,8 @@ public class ChangelogService(
 				return false;
 			}
 
-			// Handle multiple PRs if provided
-			if (input.Prs != null && input.Prs.Length > 0)
+			// Handle multiple PRs if provided (more than one PR)
+			if (input.Prs != null && input.Prs.Length > 1)
 			{
 				return await CreateChangelogsForMultiplePrs(collector, input, config, ctx);
 			}
@@ -211,6 +211,14 @@ public class ChangelogService(
 			}
 			else
 			{
+				// Check for label blockers (only if we successfully fetched PR info)
+				var shouldSkip = ShouldSkipPrDueToLabelBlockers(prInfo.Labels, input.Products, config, collector, prUrl);
+				if (shouldSkip)
+				{
+					// Return true but don't create changelog (similar to multiple PRs behavior)
+					return true;
+				}
+
 				// Use PR title if title was not explicitly provided
 				if (string.IsNullOrWhiteSpace(input.Title))
 				{
