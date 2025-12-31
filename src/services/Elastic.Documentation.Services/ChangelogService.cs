@@ -1733,6 +1733,12 @@ public partial class ChangelogService(
 							hasCommentedLinks = true;
 						}
 					}
+
+					// Add newline after the last link if there are commented links
+					if (hasCommentedLinks)
+					{
+						sb.AppendLine();
+					}
 				}
 				else
 				{
@@ -1756,8 +1762,7 @@ public partial class ChangelogService(
 				if (!string.IsNullOrWhiteSpace(entry.Description))
 				{
 					// Add blank line before description
-					// When hidePrivateLinks is true and links exist, the last link already ends with a newline,
-					// so we just need one blank line (indented) to separate links from description
+					// When hidePrivateLinks is true and links exist, add an indented blank line
 					if (hidePrivateLinks && hasCommentedLinks)
 					{
 						sb.AppendLine("  ");
