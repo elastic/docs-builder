@@ -1508,20 +1508,39 @@ public partial class ChangelogService(
 					sb.AppendLine(CultureInfo.InvariantCulture, $"::::{{dropdown}} {Beautify(entry.Title)}");
 					sb.AppendLine(entry.Description ?? "% Describe the functionality that changed");
 					sb.AppendLine();
-					sb.Append("For more information, check ");
-					if (!string.IsNullOrWhiteSpace(entry.Pr))
+					if (hidePrivateLinks)
 					{
-						sb.Append(FormatPrLink(entry.Pr, repo, hidePrivateLinks));
-					}
-					if (entry.Issues != null && entry.Issues.Count > 0)
-					{
-						foreach (var issue in entry.Issues)
+						// When hiding private links, put them on separate lines as comments
+						if (!string.IsNullOrWhiteSpace(entry.Pr))
 						{
-							sb.Append(' ');
-							sb.Append(FormatIssueLink(issue, repo, hidePrivateLinks));
+							sb.AppendLine(FormatPrLink(entry.Pr, repo, hidePrivateLinks));
 						}
+						if (entry.Issues != null && entry.Issues.Count > 0)
+						{
+							foreach (var issue in entry.Issues)
+							{
+								sb.AppendLine(FormatIssueLink(issue, repo, hidePrivateLinks));
+							}
+						}
+						sb.AppendLine("For more information, check the pull request or issue above.");
 					}
-					sb.AppendLine(".");
+					else
+					{
+						sb.Append("For more information, check ");
+						if (!string.IsNullOrWhiteSpace(entry.Pr))
+						{
+							sb.Append(FormatPrLink(entry.Pr, repo, hidePrivateLinks));
+						}
+						if (entry.Issues != null && entry.Issues.Count > 0)
+						{
+							foreach (var issue in entry.Issues)
+							{
+								sb.Append(' ');
+								sb.Append(FormatIssueLink(issue, repo, hidePrivateLinks));
+							}
+						}
+						sb.AppendLine(".");
+					}
 					sb.AppendLine();
 
 					if (!string.IsNullOrWhiteSpace(entry.Impact))
@@ -1600,20 +1619,39 @@ public partial class ChangelogService(
 					sb.AppendLine(CultureInfo.InvariantCulture, $"::::{{dropdown}} {Beautify(entry.Title)}");
 					sb.AppendLine(entry.Description ?? "% Describe the functionality that was deprecated");
 					sb.AppendLine();
-					sb.Append("For more information, check ");
-					if (!string.IsNullOrWhiteSpace(entry.Pr))
+					if (hidePrivateLinks)
 					{
-						sb.Append(FormatPrLink(entry.Pr, repo, hidePrivateLinks));
-					}
-					if (entry.Issues != null && entry.Issues.Count > 0)
-					{
-						foreach (var issue in entry.Issues)
+						// When hiding private links, put them on separate lines as comments
+						if (!string.IsNullOrWhiteSpace(entry.Pr))
 						{
-							sb.Append(' ');
-							sb.Append(FormatIssueLink(issue, repo, hidePrivateLinks));
+							sb.AppendLine(FormatPrLink(entry.Pr, repo, hidePrivateLinks));
 						}
+						if (entry.Issues != null && entry.Issues.Count > 0)
+						{
+							foreach (var issue in entry.Issues)
+							{
+								sb.AppendLine(FormatIssueLink(issue, repo, hidePrivateLinks));
+							}
+						}
+						sb.AppendLine("For more information, check the pull request or issue above.");
 					}
-					sb.AppendLine(".");
+					else
+					{
+						sb.Append("For more information, check ");
+						if (!string.IsNullOrWhiteSpace(entry.Pr))
+						{
+							sb.Append(FormatPrLink(entry.Pr, repo, hidePrivateLinks));
+						}
+						if (entry.Issues != null && entry.Issues.Count > 0)
+						{
+							foreach (var issue in entry.Issues)
+							{
+								sb.Append(' ');
+								sb.Append(FormatIssueLink(issue, repo, hidePrivateLinks));
+							}
+						}
+						sb.AppendLine(".");
+					}
 					sb.AppendLine();
 
 					if (!string.IsNullOrWhiteSpace(entry.Impact))
@@ -1672,20 +1710,40 @@ public partial class ChangelogService(
 			{
 				sb.Append("* ");
 				sb.Append(Beautify(entry.Title));
-				sb.Append(' ');
 
-				if (!string.IsNullOrWhiteSpace(entry.Pr))
+				if (hidePrivateLinks)
 				{
-					sb.Append(FormatPrLink(entry.Pr, repo, hidePrivateLinks));
-					sb.Append(' ');
-				}
-
-				if (entry.Issues != null && entry.Issues.Count > 0)
-				{
-					foreach (var issue in entry.Issues)
+					// When hiding private links, put them on separate lines as comments
+					sb.AppendLine();
+					if (!string.IsNullOrWhiteSpace(entry.Pr))
 					{
-						sb.Append(FormatIssueLink(issue, repo, hidePrivateLinks));
+						sb.AppendLine(FormatPrLink(entry.Pr, repo, hidePrivateLinks));
+					}
+
+					if (entry.Issues != null && entry.Issues.Count > 0)
+					{
+						foreach (var issue in entry.Issues)
+						{
+							sb.AppendLine(FormatIssueLink(issue, repo, hidePrivateLinks));
+						}
+					}
+				}
+				else
+				{
+					sb.Append(' ');
+					if (!string.IsNullOrWhiteSpace(entry.Pr))
+					{
+						sb.Append(FormatPrLink(entry.Pr, repo, hidePrivateLinks));
 						sb.Append(' ');
+					}
+
+					if (entry.Issues != null && entry.Issues.Count > 0)
+					{
+						foreach (var issue in entry.Issues)
+						{
+							sb.Append(FormatIssueLink(issue, repo, hidePrivateLinks));
+							sb.Append(' ');
+						}
 					}
 				}
 
