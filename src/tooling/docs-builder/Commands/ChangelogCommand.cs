@@ -162,6 +162,7 @@ internal sealed class ChangelogCommand(
 	/// <param name="output">Optional: Output directory for rendered markdown files. Defaults to current directory</param>
 	/// <param name="title">Optional: Title to use for section headers in output markdown files. Defaults to version from first bundle</param>
 	/// <param name="subsections">Optional: Group entries by area/component in subsections. Defaults to false</param>
+	/// <param name="hidePrivateLinks">Optional: Hide private links by commenting them out in markdown output. Defaults to false</param>
 	/// <param name="ctx"></param>
 	[Command("render")]
 	public async Task<int> Render(
@@ -169,6 +170,7 @@ internal sealed class ChangelogCommand(
 		string? output = null,
 		string? title = null,
 		bool subsections = false,
+		bool hidePrivateLinks = false,
 		Cancel ctx = default
 	)
 	{
@@ -181,7 +183,8 @@ internal sealed class ChangelogCommand(
 			Bundles = input ?? [],
 			Output = output,
 			Title = title,
-			Subsections = subsections
+			Subsections = subsections,
+			HidePrivateLinks = hidePrivateLinks
 		};
 
 		serviceInvoker.AddCommand(service, renderInput,

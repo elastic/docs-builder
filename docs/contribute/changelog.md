@@ -258,6 +258,7 @@ Options:
   --output <string?>             Optional: Output directory for rendered markdown files. Defaults to current directory [Default: null]
   --title <string?>              Optional: Title to use for section headers in output markdown files. Defaults to version from first bundle [Default: null]
   --subsections                  Optional: Group entries by area/component in subsections. Defaults to false
+  --hide-private-links           Optional: Hide private links by commenting them out in markdown output. Defaults to false
 ```
 
 Before you can use this command you must create changelog files and collect them into bundles.
