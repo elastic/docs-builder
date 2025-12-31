@@ -1714,11 +1714,13 @@ public partial class ChangelogService(
 				if (hidePrivateLinks)
 				{
 					// When hiding private links, put them on separate lines as comments with proper indentation
+					var hasLinks = false;
 					if (!string.IsNullOrWhiteSpace(entry.Pr))
 					{
 						sb.AppendLine();
 						sb.Append("  ");
 						sb.Append(FormatPrLink(entry.Pr, repo, hidePrivateLinks));
+						hasLinks = true;
 					}
 
 					if (entry.Issues != null && entry.Issues.Count > 0)
@@ -1728,7 +1730,15 @@ public partial class ChangelogService(
 							sb.AppendLine();
 							sb.Append("  ");
 							sb.Append(FormatIssueLink(issue, repo, hidePrivateLinks));
+							hasLinks = true;
 						}
+					}
+
+					// Add blank line between commented links and description if both exist
+					if (hasLinks && !string.IsNullOrWhiteSpace(entry.Description))
+					{
+						sb.AppendLine();
+						sb.AppendLine("  ");
 					}
 				}
 				else
