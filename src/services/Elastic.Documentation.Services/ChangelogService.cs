@@ -1711,16 +1711,16 @@ public partial class ChangelogService(
 				sb.Append("* ");
 				sb.Append(Beautify(entry.Title));
 
+				var hasCommentedLinks = false;
 				if (hidePrivateLinks)
 				{
 					// When hiding private links, put them on separate lines as comments with proper indentation
-					var hasLinks = false;
 					if (!string.IsNullOrWhiteSpace(entry.Pr))
 					{
 						sb.AppendLine();
 						sb.Append("  ");
 						sb.Append(FormatPrLink(entry.Pr, repo, hidePrivateLinks));
-						hasLinks = true;
+						hasCommentedLinks = true;
 					}
 
 					if (entry.Issues != null && entry.Issues.Count > 0)
@@ -1730,15 +1730,8 @@ public partial class ChangelogService(
 							sb.AppendLine();
 							sb.Append("  ");
 							sb.Append(FormatIssueLink(issue, repo, hidePrivateLinks));
-							hasLinks = true;
+							hasCommentedLinks = true;
 						}
-					}
-
-					// Add blank line between commented links and description if both exist
-					if (hasLinks && !string.IsNullOrWhiteSpace(entry.Description))
-					{
-						sb.AppendLine();
-						sb.AppendLine("  ");
 					}
 				}
 				else
@@ -1762,7 +1755,17 @@ public partial class ChangelogService(
 
 				if (!string.IsNullOrWhiteSpace(entry.Description))
 				{
-					sb.AppendLine();
+					// Add blank line before description
+					// When hidePrivateLinks is true and links exist, the last link already ends with a newline,
+					// so we just need one blank line (indented) to separate links from description
+					if (hidePrivateLinks && hasCommentedLinks)
+					{
+						sb.AppendLine("  ");
+					}
+					else
+					{
+						sb.AppendLine();
+					}
 					var indented = Indent(entry.Description);
 					sb.AppendLine(indented);
 				}
