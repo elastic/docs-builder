@@ -1713,18 +1713,21 @@ public partial class ChangelogService(
 
 				if (hidePrivateLinks)
 				{
-					// When hiding private links, put them on separate lines as comments
-					sb.AppendLine();
+					// When hiding private links, put them on separate lines as comments with proper indentation
 					if (!string.IsNullOrWhiteSpace(entry.Pr))
 					{
-						sb.AppendLine(FormatPrLink(entry.Pr, repo, hidePrivateLinks));
+						sb.AppendLine();
+						sb.Append("  ");
+						sb.Append(FormatPrLink(entry.Pr, repo, hidePrivateLinks));
 					}
 
 					if (entry.Issues != null && entry.Issues.Count > 0)
 					{
 						foreach (var issue in entry.Issues)
 						{
-							sb.AppendLine(FormatIssueLink(issue, repo, hidePrivateLinks));
+							sb.AppendLine();
+							sb.Append("  ");
+							sb.Append(FormatIssueLink(issue, repo, hidePrivateLinks));
 						}
 					}
 				}
