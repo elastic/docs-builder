@@ -1354,13 +1354,13 @@ public partial class ChangelogService(
 			var repoForRendering = allResolvedEntries.Count > 0 ? allResolvedEntries[0].repo : defaultRepo;
 
 			// Render index.md (features, enhancements, bug fixes, security)
-			await RenderIndexMarkdown(collector, outputDir, title, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, ctx);
+			await RenderIndexMarkdown(collector, outputDir, title, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, ctx);
 
 			// Render breaking-changes.md
-			await RenderBreakingChangesMarkdown(collector, outputDir, title, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, ctx);
+			await RenderBreakingChangesMarkdown(collector, outputDir, title, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, ctx);
 
 			// Render deprecations.md
-			await RenderDeprecationsMarkdown(collector, outputDir, title, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, ctx);
+			await RenderDeprecationsMarkdown(collector, outputDir, title, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, ctx);
 
 			_logger.LogInformation("Rendered changelog markdown files to {OutputDir}", outputDir);
 
@@ -1397,6 +1397,7 @@ public partial class ChangelogService(
 		List<ChangelogData> entries,
 		Dictionary<string, List<ChangelogData>> entriesByType,
 		bool subsections,
+		bool hidePrivateLinks,
 		Cancel ctx
 	)
 	{
@@ -1444,7 +1445,7 @@ public partial class ChangelogService(
 			{
 				sb.AppendLine(CultureInfo.InvariantCulture, $"### Features and enhancements [{repo}-{title}-features-enhancements]");
 				var combined = features.Concat(enhancements).ToList();
-				RenderEntriesByArea(sb, combined, repo, subsections);
+				RenderEntriesByArea(sb, combined, repo, subsections, hidePrivateLinks);
 			}
 
 			if (security.Count > 0 || bugFixes.Count > 0)
@@ -1452,7 +1453,7 @@ public partial class ChangelogService(
 				sb.AppendLine();
 				sb.AppendLine(CultureInfo.InvariantCulture, $"### Fixes [{repo}-{title}-fixes]");
 				var combined = security.Concat(bugFixes).ToList();
-				RenderEntriesByArea(sb, combined, repo, subsections);
+				RenderEntriesByArea(sb, combined, repo, subsections, hidePrivateLinks);
 			}
 		}
 		else
@@ -1480,6 +1481,7 @@ public partial class ChangelogService(
 		List<ChangelogData> entries,
 		Dictionary<string, List<ChangelogData>> entriesByType,
 		bool subsections,
+		bool hidePrivateLinks,
 		Cancel ctx
 	)
 	{
@@ -1509,14 +1511,14 @@ public partial class ChangelogService(
 					sb.Append("For more information, check ");
 					if (!string.IsNullOrWhiteSpace(entry.Pr))
 					{
-						sb.Append(FormatPrLink(entry.Pr, repo));
+						sb.Append(FormatPrLink(entry.Pr, repo, hidePrivateLinks));
 					}
 					if (entry.Issues != null && entry.Issues.Count > 0)
 					{
 						foreach (var issue in entry.Issues)
 						{
 							sb.Append(' ');
-							sb.Append(FormatIssueLink(issue, repo));
+							sb.Append(FormatIssueLink(issue, repo, hidePrivateLinks));
 						}
 					}
 					sb.AppendLine(".");
@@ -1571,6 +1573,7 @@ public partial class ChangelogService(
 		List<ChangelogData> entries,
 		Dictionary<string, List<ChangelogData>> entriesByType,
 		bool subsections,
+		bool hidePrivateLinks,
 		Cancel ctx
 	)
 	{
@@ -1600,14 +1603,14 @@ public partial class ChangelogService(
 					sb.Append("For more information, check ");
 					if (!string.IsNullOrWhiteSpace(entry.Pr))
 					{
-						sb.Append(FormatPrLink(entry.Pr, repo));
+						sb.Append(FormatPrLink(entry.Pr, repo, hidePrivateLinks));
 					}
 					if (entry.Issues != null && entry.Issues.Count > 0)
 					{
 						foreach (var issue in entry.Issues)
 						{
 							sb.Append(' ');
-							sb.Append(FormatIssueLink(issue, repo));
+							sb.Append(FormatIssueLink(issue, repo, hidePrivateLinks));
 						}
 					}
 					sb.AppendLine(".");
@@ -1653,7 +1656,7 @@ public partial class ChangelogService(
 	}
 
 	[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0058:Expression value is never used", Justification = "StringBuilder methods return builder for chaining")]
-	private void RenderEntriesByArea(StringBuilder sb, List<ChangelogData> entries, string repo, bool subsections)
+	private void RenderEntriesByArea(StringBuilder sb, List<ChangelogData> entries, string repo, bool subsections, bool hidePrivateLinks)
 	{
 		var groupedByArea = entries.GroupBy(e => GetComponent(e)).ToList();
 		foreach (var areaGroup in groupedByArea)
@@ -1673,7 +1676,7 @@ public partial class ChangelogService(
 
 				if (!string.IsNullOrWhiteSpace(entry.Pr))
 				{
-					sb.Append(FormatPrLink(entry.Pr, repo));
+					sb.Append(FormatPrLink(entry.Pr, repo, hidePrivateLinks));
 					sb.Append(' ');
 				}
 
@@ -1681,7 +1684,7 @@ public partial class ChangelogService(
 				{
 					foreach (var issue in entry.Issues)
 					{
-						sb.Append(FormatIssueLink(issue, repo));
+						sb.Append(FormatIssueLink(issue, repo, hidePrivateLinks));
 						sb.Append(' ');
 					}
 				}
@@ -1747,40 +1750,58 @@ public partial class ChangelogService(
 	[GeneratedRegex(@"\d+$", RegexOptions.None)]
 	private static partial Regex IssueNumberRegex();
 
-	private static string FormatPrLink(string pr, string repo)
+	private static string FormatPrLink(string pr, string repo, bool hidePrivateLinks)
 	{
 		// Extract PR number
 		var match = PrNumberRegex().Match(pr);
 		var prNumber = match.Success ? match.Value : pr;
 
 		// Format as markdown link
+		string link;
 		if (pr.StartsWith("http", StringComparison.OrdinalIgnoreCase))
 		{
-			return $"[#{prNumber}]({pr})";
+			link = $"[#{prNumber}]({pr})";
 		}
 		else
 		{
 			var url = $"https://github.com/elastic/{repo}/pull/{prNumber}";
-			return $"[#{prNumber}]({url})";
+			link = $"[#{prNumber}]({url})";
 		}
+
+		// Comment out link if hiding private links
+		if (hidePrivateLinks)
+		{
+			return $"% {link}";
+		}
+
+		return link;
 	}
 
-	private static string FormatIssueLink(string issue, string repo)
+	private static string FormatIssueLink(string issue, string repo, bool hidePrivateLinks)
 	{
 		// Extract issue number
 		var match = IssueNumberRegex().Match(issue);
 		var issueNumber = match.Success ? match.Value : issue;
 
 		// Format as markdown link
+		string link;
 		if (issue.StartsWith("http", StringComparison.OrdinalIgnoreCase))
 		{
-			return $"[#{issueNumber}]({issue})";
+			link = $"[#{issueNumber}]({issue})";
 		}
 		else
 		{
 			var url = $"https://github.com/elastic/{repo}/issues/{issueNumber}";
-			return $"[#{issueNumber}]({url})";
+			link = $"[#{issueNumber}]({url})";
 		}
+
+		// Comment out link if hiding private links
+		if (hidePrivateLinks)
+		{
+			return $"% {link}";
+		}
+
+		return link;
 	}
 }
 
