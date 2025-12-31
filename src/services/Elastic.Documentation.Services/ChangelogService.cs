@@ -1349,18 +1349,20 @@ public partial class ChangelogService(
 
 			// Use title from input or default to version
 			var title = input.Title ?? version;
+			// Convert title to slug format for folder names and anchors (lowercase, dashes instead of spaces)
+			var titleSlug = TitleToSlug(title);
 
 			// Render markdown files (use first repo found, or default)
 			var repoForRendering = allResolvedEntries.Count > 0 ? allResolvedEntries[0].repo : defaultRepo;
 
 			// Render index.md (features, enhancements, bug fixes, security)
-			await RenderIndexMarkdown(collector, outputDir, title, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, ctx);
+			await RenderIndexMarkdown(collector, outputDir, title, titleSlug, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, ctx);
 
 			// Render breaking-changes.md
-			await RenderBreakingChangesMarkdown(collector, outputDir, title, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, ctx);
+			await RenderBreakingChangesMarkdown(collector, outputDir, title, titleSlug, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, ctx);
 
 			// Render deprecations.md
-			await RenderDeprecationsMarkdown(collector, outputDir, title, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, ctx);
+			await RenderDeprecationsMarkdown(collector, outputDir, title, titleSlug, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, ctx);
 
 			_logger.LogInformation("Rendered changelog markdown files to {OutputDir}", outputDir);
 
@@ -1393,6 +1395,7 @@ public partial class ChangelogService(
 		IDiagnosticsCollector collector,
 		string outputDir,
 		string title,
+		string titleSlug,
 		string repo,
 		List<ChangelogData> entries,
 		Dictionary<string, List<ChangelogData>> entriesByType,
@@ -1422,15 +1425,15 @@ public partial class ChangelogService(
 		}
 		if (hasBreakingChanges)
 		{
-			otherLinks.Add($"[Breaking changes](/release-notes/breaking-changes.md#{repo}-{title}-breaking-changes)");
+			otherLinks.Add($"[Breaking changes](/release-notes/breaking-changes.md#{repo}-{titleSlug}-breaking-changes)");
 		}
 		if (hasDeprecations)
 		{
-			otherLinks.Add($"[Deprecations](/release-notes/deprecations.md#{repo}-{title}-deprecations)");
+			otherLinks.Add($"[Deprecations](/release-notes/deprecations.md#{repo}-{titleSlug}-deprecations)");
 		}
 
 		var sb = new StringBuilder();
-		sb.AppendLine(CultureInfo.InvariantCulture, $"## {title} [{repo}-release-notes-{title}]");
+		sb.AppendLine(CultureInfo.InvariantCulture, $"## {title} [{repo}-release-notes-{titleSlug}]");
 
 		if (otherLinks.Count > 0)
 		{
@@ -1443,7 +1446,7 @@ public partial class ChangelogService(
 		{
 			if (features.Count > 0 || enhancements.Count > 0)
 			{
-				sb.AppendLine(CultureInfo.InvariantCulture, $"### Features and enhancements [{repo}-{title}-features-enhancements]");
+				sb.AppendLine(CultureInfo.InvariantCulture, $"### Features and enhancements [{repo}-{titleSlug}-features-enhancements]");
 				var combined = features.Concat(enhancements).ToList();
 				RenderEntriesByArea(sb, combined, repo, subsections, hidePrivateLinks);
 			}
@@ -1451,7 +1454,7 @@ public partial class ChangelogService(
 			if (security.Count > 0 || bugFixes.Count > 0)
 			{
 				sb.AppendLine();
-				sb.AppendLine(CultureInfo.InvariantCulture, $"### Fixes [{repo}-{title}-fixes]");
+				sb.AppendLine(CultureInfo.InvariantCulture, $"### Fixes [{repo}-{titleSlug}-fixes]");
 				var combined = security.Concat(bugFixes).ToList();
 				RenderEntriesByArea(sb, combined, repo, subsections, hidePrivateLinks);
 			}
@@ -1461,7 +1464,7 @@ public partial class ChangelogService(
 			sb.AppendLine("_No new features, enhancements, or fixes._");
 		}
 
-		var indexPath = _fileSystem.Path.Combine(outputDir, title, "index.md");
+		var indexPath = _fileSystem.Path.Combine(outputDir, titleSlug, "index.md");
 		var indexDir = _fileSystem.Path.GetDirectoryName(indexPath);
 		if (!string.IsNullOrWhiteSpace(indexDir) && !_fileSystem.Directory.Exists(indexDir))
 		{
@@ -1477,6 +1480,7 @@ public partial class ChangelogService(
 		IDiagnosticsCollector collector,
 		string outputDir,
 		string title,
+		string titleSlug,
 		string repo,
 		List<ChangelogData> entries,
 		Dictionary<string, List<ChangelogData>> entriesByType,
@@ -1488,7 +1492,7 @@ public partial class ChangelogService(
 		var breakingChanges = entriesByType.GetValueOrDefault("breaking-change", []);
 
 		var sb = new StringBuilder();
-		sb.AppendLine(CultureInfo.InvariantCulture, $"## {title} [{repo}-{title}-breaking-changes]");
+		sb.AppendLine(CultureInfo.InvariantCulture, $"## {title} [{repo}-{titleSlug}-breaking-changes]");
 
 		if (breakingChanges.Count > 0)
 		{
@@ -1572,7 +1576,7 @@ public partial class ChangelogService(
 			sb.AppendLine("_No breaking changes._");
 		}
 
-		var breakingPath = _fileSystem.Path.Combine(outputDir, title, "breaking-changes.md");
+		var breakingPath = _fileSystem.Path.Combine(outputDir, titleSlug, "breaking-changes.md");
 		var breakingDir = _fileSystem.Path.GetDirectoryName(breakingPath);
 		if (!string.IsNullOrWhiteSpace(breakingDir) && !_fileSystem.Directory.Exists(breakingDir))
 		{
@@ -1588,6 +1592,7 @@ public partial class ChangelogService(
 		IDiagnosticsCollector collector,
 		string outputDir,
 		string title,
+		string titleSlug,
 		string repo,
 		List<ChangelogData> entries,
 		Dictionary<string, List<ChangelogData>> entriesByType,
@@ -1599,7 +1604,7 @@ public partial class ChangelogService(
 		var deprecations = entriesByType.GetValueOrDefault("deprecation", []);
 
 		var sb = new StringBuilder();
-		sb.AppendLine(CultureInfo.InvariantCulture, $"## {title} [{repo}-{title}-deprecations]");
+		sb.AppendLine(CultureInfo.InvariantCulture, $"## {title} [{repo}-{titleSlug}-deprecations]");
 
 		if (deprecations.Count > 0)
 		{
@@ -1683,7 +1688,7 @@ public partial class ChangelogService(
 			sb.AppendLine("_No deprecations._");
 		}
 
-		var deprecationsPath = _fileSystem.Path.Combine(outputDir, title, "deprecations.md");
+		var deprecationsPath = _fileSystem.Path.Combine(outputDir, titleSlug, "deprecations.md");
 		var deprecationsDir = _fileSystem.Path.GetDirectoryName(deprecationsPath);
 		if (!string.IsNullOrWhiteSpace(deprecationsDir) && !_fileSystem.Directory.Exists(deprecationsDir))
 		{
@@ -1814,6 +1819,15 @@ public partial class ChangelogService(
 			result += ".";
 		}
 		return result;
+	}
+
+	private static string TitleToSlug(string title)
+	{
+		if (string.IsNullOrWhiteSpace(title))
+			return string.Empty;
+
+		// Convert to lowercase and replace spaces with dashes
+		return title.ToLowerInvariant().Replace(' ', '-');
 	}
 
 	private static string Indent(string text)
