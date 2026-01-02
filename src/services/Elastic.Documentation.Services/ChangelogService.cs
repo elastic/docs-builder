@@ -589,7 +589,7 @@ public partial class ChangelogService(
 
 			// Build set of product/version combinations to filter by
 			var productsToMatch = new HashSet<(string product, string version)>();
-			if (input.InputProducts != null && input.InputProducts.Count > 0)
+			if (input.InputProducts is { Count: > 0 })
 			{
 				foreach (var product in input.InputProducts)
 				{
