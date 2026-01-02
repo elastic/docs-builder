@@ -290,7 +290,7 @@ docs-builder changelog render \
   --subsections \ <4>
 ```
 
-1. Provide information about the changelog bundle. The format is `"<bundle-file-path>, <changelog-file-path>, <repository>"`. Only the `<bundle-file-path>` is required. The `<changelog-file-path>` is useful if the changelogs are not in the default directory and are not resolved within the bundle. The `<repository>` is useful for PR or issue link checks. You can specify `--input` multiple times to merge multiple bundles.
+1. Provide information about the changelog bundle. The format is `"<bundle-file-path>, <changelog-file-path>, <repository>"`. Only the `<bundle-file-path>` is required. The `<changelog-file-path>` is useful if the changelogs are not in the default directory and are not resolved within the bundle. The `<repository>` is necessary if your changelogs do not contain full URLs for the pull requests or issues. You can specify `--input` multiple times to merge multiple bundles.
 2. The `--title` value is used for an output folder name and for section titles in the markdown files. If you omit `--title` and the first bundle contains a product `target` value, that value is used. Otherwise, if none of the bundles have product `target` fields, the title defaults to "unknown".
 3. By default the command creates the output files in the current directory.
 4. By default the changelog areas are not displayed in the output. Add `--subsections` to group changelog details by their `areas`.
@@ -311,3 +311,5 @@ For example, the `index.md` output file contains information derived from the ch
 **Aggregations**
 * Break on FieldData when building global ordinals. [#108875](https://github.com/elastic/elastic/pull/108875) 
 ```
+
+To comment out the pull request and issue links, for example if they relate to a private repository, use the `--hide-private-links` option.

@@ -23,7 +23,9 @@ docs-builder changelog render [options...] [-h|--help]
 `--input <List<BundleInput>>`
 :   One or more bundle input files.
 :   Each item can be specified as "bundle-file-path, changelog-file-path, repo" to accommodate files coming from multiple locations.
+:   For example, `--input "./changelog-bundle.yaml,./changelogs,elasticsearch"`.
 :   Only `bundle-file-path` is required.
+:   Use `repo` if your changelogs do not contain full URLs for the pull requests or issues; otherwise they will be incorrectly derived with "elastic/elastic" in the URL by default.
 
 `--output <string?>`
 :   Optional: The output directory for rendered markdown files.
