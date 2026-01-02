@@ -8,6 +8,7 @@ using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Search;
 using Elastic.Ingest.Elasticsearch.Indices;
+using Elastic.Markdown.Exporters.Elasticsearch.Enrichment;
 using Elastic.Markdown.Helpers;
 using Markdig.Syntax;
 using Microsoft.Extensions.Logging;
@@ -131,6 +132,13 @@ public partial class ElasticsearchMarkdownExporter
 		};
 
 		CommonEnrichments(doc, currentNavigation);
+
+		// AI Enrichment - hybrid approach:
+		// - Cache hits: enrich processor applies fields at index time
+		// - Cache misses: apply fields inline before indexing
+		doc.EnrichmentKey = EnrichmentKeyGenerator.Generate(doc.Title, doc.StrippedBody ?? string.Empty);
+		await TryEnrichDocumentAsync(doc, ctx);
+
 		AssignDocumentMetadata(doc);
 
 		if (_indexStrategy == IngestStrategy.Multiplex)
@@ -166,6 +174,11 @@ public partial class ElasticsearchMarkdownExporter
 			doc.Abstract = @abstract;
 			doc.Headings = headings;
 			CommonEnrichments(doc, null);
+
+			// AI Enrichment - hybrid approach
+			doc.EnrichmentKey = EnrichmentKeyGenerator.Generate(doc.Title, doc.StrippedBody ?? string.Empty);
+			await TryEnrichDocumentAsync(doc, ctx);
+
 			AssignDocumentMetadata(doc);
 
 			// Write to channels following the multiplex or reindex strategy
@@ -191,4 +204,53 @@ public partial class ElasticsearchMarkdownExporter
 		return true;
 	}
 
+	/// <summary>
+	/// Hybrid AI enrichment: cache hits rely on enrich processor, cache misses apply fields inline.
+	/// Stale entries (with old prompt hash) are treated as non-existent and will be regenerated.
+	/// </summary>
+	private async ValueTask TryEnrichDocumentAsync(DocumentationDocument doc, Cancel ctx)
+	{
+		if (_enrichmentCache is null || _llmClient is null || string.IsNullOrWhiteSpace(doc.EnrichmentKey))
+			return;
+
+		// Check if valid enrichment exists in cache (current prompt hash)
+		// Stale entries are treated as non-existent and will be regenerated
+		if (_enrichmentCache.Exists(doc.EnrichmentKey))
+		{
+			// Cache hit - enrich processor will apply fields at index time
+			_ = Interlocked.Increment(ref _cacheHitCount);
+			return;
+		}
+
+		// Check if we've hit the limit for enrichments
+		var current = Interlocked.Increment(ref _enrichmentCount);
+		if (current > _enrichmentOptions.MaxNewEnrichmentsPerRun)
+		{
+			_ = Interlocked.Decrement(ref _enrichmentCount);
+			return;
+		}
+
+		// Cache miss (or stale) - generate enrichment inline and apply directly
+		try
+		{
+			var enrichment = await _llmClient.EnrichAsync(doc.Title, doc.StrippedBody ?? string.Empty, ctx);
+			if (enrichment is not { HasData: true })
+				return;
+
+			// Store in cache for future runs
+			await _enrichmentCache.StoreAsync(doc.EnrichmentKey, doc.Url, enrichment, ctx);
+
+			// Apply fields directly (enrich processor won't have this entry yet)
+			doc.AiRagOptimizedSummary = enrichment.RagOptimizedSummary;
+			doc.AiShortSummary = enrichment.ShortSummary;
+			doc.AiSearchQuery = enrichment.SearchQuery;
+			doc.AiQuestions = enrichment.Questions;
+			doc.AiUseCases = enrichment.UseCases;
+		}
+		catch (Exception ex) when (ex is not OperationCanceledException)
+		{
+			_logger.LogWarning(ex, "Failed to enrich document {Url}", doc.Url);
+			_ = Interlocked.Decrement(ref _enrichmentCount);
+		}
+	}
 }
