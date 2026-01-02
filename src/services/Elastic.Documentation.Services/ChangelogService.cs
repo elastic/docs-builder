@@ -1830,15 +1830,12 @@ public partial class ChangelogService(
 	}
 
 	[GeneratedRegex(@"\d+$", RegexOptions.None)]
-	private static partial Regex PrNumberRegex();
-
-	[GeneratedRegex(@"\d+$", RegexOptions.None)]
-	private static partial Regex IssueNumberRegex();
+	private static partial Regex TrailingNumberRegex();
 
 	private static string FormatPrLink(string pr, string repo, bool hidePrivateLinks)
 	{
 		// Extract PR number
-		var match = PrNumberRegex().Match(pr);
+		var match = TrailingNumberRegex().Match(pr);
 		var prNumber = match.Success ? match.Value : pr;
 
 		// Format as markdown link
@@ -1865,7 +1862,7 @@ public partial class ChangelogService(
 	private static string FormatIssueLink(string issue, string repo, bool hidePrivateLinks)
 	{
 		// Extract issue number
-		var match = IssueNumberRegex().Match(issue);
+		var match = TrailingNumberRegex().Match(issue);
 		var issueNumber = match.Success ? match.Value : issue;
 
 		// Format as markdown link
