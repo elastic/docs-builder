@@ -531,9 +531,9 @@ public partial class ChangelogService(
 			var filterCount = 0;
 			if (input.All)
 				filterCount++;
-			if (input.InputProducts != null && input.InputProducts.Count > 0)
+			if (input.InputProducts is { Count: > 0 })
 				filterCount++;
-			if (input.Prs != null && input.Prs.Length > 0)
+			if (input.Prs is { Length: > 0 })
 				filterCount++;
 			if (!string.IsNullOrWhiteSpace(input.PrsFile))
 				filterCount++;
