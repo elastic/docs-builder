@@ -22,7 +22,7 @@ interface SearchState {
 
 export const searchStore = create<SearchState>((set) => ({
     searchTerm: '',
-    page: 1,
+    page: 0,
     typeFilter: 'all',
     selectedIndex: NO_SELECTION,
     actions: {

@@ -70,14 +70,16 @@ const KeyboardIcon = ({ type }: { type: string }) => {
             {availableIcons.includes(type) ? (
                 <EuiIcon type={type} size="s" />
             ) : (
-                <EuiText
-                    size="xs"
+                <span
                     css={css`
                         margin-inline: ${euiTheme.size.xs};
+                        font-size: ${euiTheme.size.m};
+                        line-height: ${euiTheme.size.base};
+                        display: inline-block;
                     `}
                 >
                     {type}
-                </EuiText>
+                </span>
             )}
         </KeyboardKey>
     )
