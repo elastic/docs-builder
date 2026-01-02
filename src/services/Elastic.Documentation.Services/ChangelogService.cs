@@ -768,7 +768,7 @@ public partial class ChangelogService(
 
 			// Set products array in output
 			// If --output-products was specified, use those values (override any from changelogs)
-			if (input.OutputProducts != null && input.OutputProducts.Count > 0)
+			if (input.OutputProducts is { Count: > 0 })
 			{
 				bundledData.Products = input.OutputProducts
 					.OrderBy(p => p.Product)
