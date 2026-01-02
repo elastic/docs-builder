@@ -579,7 +579,7 @@ public partial class ChangelogService(
 					_ = prsToMatch.Add(pr);
 				}
 			}
-			else if (input.Prs != null && input.Prs.Length > 0)
+			else if (input.Prs is { Length: > 0 })
 			{
 				foreach (var pr in input.Prs)
 				{
