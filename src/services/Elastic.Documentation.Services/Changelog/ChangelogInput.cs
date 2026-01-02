@@ -14,7 +14,7 @@ public class ChangelogInput
 	public required List<ProductInfo> Products { get; set; }
 	public string? Subtype { get; set; }
 	public string[] Areas { get; set; } = [];
-	public string? Pr { get; set; }
+	public string[]? Prs { get; set; }
 	public string? Owner { get; set; }
 	public string? Repo { get; set; }
 	public string[] Issues { get; set; } = [];
