@@ -1108,18 +1108,6 @@ public partial class ChangelogService(
 					// If entry has resolved data, validate it
 					if (!string.IsNullOrWhiteSpace(entry.Title) && !string.IsNullOrWhiteSpace(entry.Type))
 					{
-						// Validate required fields in resolved entry
-						if (string.IsNullOrWhiteSpace(entry.Title))
-						{
-							collector.EmitError(bundleInput.BundleFile, $"Entry in bundle is missing required field: title");
-							return false;
-						}
-
-						if (string.IsNullOrWhiteSpace(entry.Type))
-						{
-							collector.EmitError(bundleInput.BundleFile, $"Entry in bundle is missing required field: type");
-							return false;
-						}
 
 						if (entry.Products == null || entry.Products.Count == 0)
 						{
