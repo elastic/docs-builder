@@ -11,6 +11,7 @@ using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.FileProviders;
 using Microsoft.AspNetCore.Html;
+using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer;
 
@@ -21,6 +22,7 @@ public abstract class ApiViewModel(ApiRenderContext context)
 	public INavigationItem CurrentNavigationItem { get; } = context.CurrentNavigation;
 	public IMarkdownStringRenderer MarkdownRenderer { get; } = context.MarkdownRenderer;
 	public BuildContext BuildContext { get; } = context.BuildContext;
+	public OpenApiDocument Document { get; } = context.Model;
 
 
 	public HtmlString RenderMarkdown(string? markdown) =>

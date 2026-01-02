@@ -1,6 +1,7 @@
 @inherits RazorSliceHttpResult<Elastic.ApiExplorer.Landing.LandingViewModel>
 @using Elastic.ApiExplorer.Landing
 @using Elastic.ApiExplorer.Operations
+@using Elastic.ApiExplorer.Schemas
 @using Elastic.Documentation.Navigation
 @using Elastic.Documentation.Site.Navigation
 @implements IUsesLayout<Elastic.ApiExplorer._Layout, GlobalLayoutViewModel>
@@ -70,9 +71,23 @@
 						<td>@RenderOp([operation])</td>
 					</tr>
 				}
+				else if (navigationItem is SchemaCategoryNavigationItem schemaCategory)
+				{
+					<tr>
+						<td colspan="2"><h3>@(schemaCategory.NavigationTitle)</h3></td>
+					</tr>
+					@RenderProduct(schemaCategory)
+				}
+				else if (navigationItem is SchemaNavigationItem schemaItem)
+				{
+					<tr>
+						<td class="api-name"><a href="@schemaItem.Url">@(schemaItem.NavigationTitle)</a></td>
+						<td><code>@schemaItem.Model.SchemaId</code></td>
+					</tr>
+				}
 				else
 				{
-					throw new Exception($"Unexpected type: {item.GetType().FullName}");
+					throw new Exception($"Unexpected type: {navigationItem.GetType().FullName}");
 				}
 			}
 		}

@@ -1,7 +1,7 @@
 @using Elastic.ApiExplorer.Landing
-@using Elastic.ApiExplorer.Operations
+@using Elastic.ApiExplorer.Schemas
 @using Microsoft.OpenApi
-@inherits RazorSliceHttpResult<Elastic.ApiExplorer.Operations.OperationViewModel>
+@inherits RazorSliceHttpResult<Elastic.ApiExplorer.Schemas.SchemaViewModel>
 @implements IUsesLayout<Elastic.ApiExplorer._Layout, GlobalLayoutViewModel>
 @functions {
 	public GlobalLayoutViewModel LayoutModel => Model.CreateGlobalLayoutModel();
@@ -39,10 +39,17 @@
 		};
 	}
 
-	private static bool ShouldLinkToContainerPage(string typeName)
+	private static bool ShouldLinkToContainerPage(string typeName, string? currentPageType = null)
 	{
 		// Only actual container types have dedicated pages
-		return LinkedTypes.Contains(typeName);
+		if (!LinkedTypes.Contains(typeName))
+			return false;
+
+		// Don't link to self when on a container page
+		if (!string.IsNullOrEmpty(currentPageType) && typeName.Equals(currentPageType, StringComparison.OrdinalIgnoreCase))
+			return false;
+
+		return true;
 	}
 
 	public string GetPrimitiveTypeName(JsonSchemaType? type)
@@ -75,17 +82,16 @@
 
 	public bool IsValueType(string typeName) => KnownValueTypes.Contains(typeName);
 
-	public bool IsLinkedType(string typeName) => ShouldLinkToContainerPage(typeName);
+	// Current page type is set from the model to prevent self-linking
+	private string? _currentPageType;
+	public bool IsLinkedType(string typeName) => ShouldLinkToContainerPage(typeName, _currentPageType);
 
 	public string? GetValueTypeBase(IOpenApiSchema? schema)
 	{
 		if (schema is null) return null;
-
-		// Check the schema's type
 		var primitiveType = GetPrimitiveTypeName(schema.Type);
 		if (!string.IsNullOrEmpty(primitiveType) && primitiveType != "object")
 			return primitiveType;
-
 		return null;
 	}
 
@@ -99,19 +105,14 @@
 		bool HasLink,
 		List<(string Name, string? Ref, bool IsObject)>? AnyOfOptions,
 		bool IsDictionary = false,
-		IOpenApiSchema? DictValueSchema = null,
-		bool IsEnum = false,
-		bool IsUnion = false,
-		string[]? EnumValues = null,
-		string[]? UnionOptions = null
+		IOpenApiSchema? DictValueSchema = null
 	);
 
-	public TypeInfo GetTypeInfo(IOpenApiSchema? schema, string? currentPropertyPath = null)
+	public TypeInfo GetTypeInfo(IOpenApiSchema? schema)
 	{
 		if (schema is null)
 			return new TypeInfo("unknown", null, false, false, false, null, false, null);
 
-		// Check if this is a schema reference
 		if (schema is OpenApiSchemaReference schemaRef)
 		{
 			var refId = schemaRef.Reference?.Id;
@@ -122,44 +123,10 @@
 				var isValueType = IsValueType(typeName);
 				var valueTypeBase = isValueType ? GetValueTypeBase(schemaRef) ?? "string" : null;
 				var hasLink = IsLinkedType(typeName);
-
-				// Check if the schema reference is an enum or union
-				// OpenApiSchemaReference proxies to resolved schema properties
-				var isEnum = schemaRef.Enum is { Count: > 0 };
-				var isUnion = !isEnum && (schemaRef.OneOf is { Count: > 0 } || schemaRef.AnyOf is { Count: > 0 });
-				string[]? enumValues = isEnum ? schemaRef.Enum?.Select(e => e?.ToString() ?? "").ToArray() : null;
-
-				// Get union options from oneOf/anyOf
-				string[]? unionOptions = null;
-				if (isUnion)
-				{
-					var unionSchemas = schemaRef.OneOf is { Count: > 0 } ? schemaRef.OneOf : schemaRef.AnyOf;
-					var options = new List<string>();
-					foreach (var s in unionSchemas ?? [])
-					{
-						if (s is OpenApiSchemaReference unionRef)
-						{
-							options.Add(FormatSchemaName(unionRef.Reference?.Id ?? "unknown"));
-						}
-						else if (s?.Enum is { Count: > 0 } inlineEnum)
-						{
-							// String literal union - add enum values
-							foreach (var enumVal in inlineEnum)
-								options.Add(enumVal?.ToString() ?? "");
-						}
-						else
-						{
-							options.Add(GetPrimitiveTypeName(s?.Type) ?? "unknown");
-						}
-					}
-					unionOptions = options.ToArray();
-				}
-
-				return new TypeInfo(typeName, refId, isArray, !isValueType && !isEnum, isValueType, valueTypeBase, hasLink, null, false, null, isEnum, isUnion, enumValues, unionOptions);
+				return new TypeInfo(typeName, refId, isArray, !isValueType, isValueType, valueTypeBase, hasLink, null);
 			}
 		}
 
-		// Check for oneOf/anyOf which often indicate union types
 		if (schema.OneOf is { Count: > 0 } oneOf)
 		{
 			var options = oneOf.Where(s => s is not null).Select(s => {
@@ -169,10 +136,7 @@
 
 			var hasObjectOptions = options.Any(o => o.IsObject);
 			if (hasObjectOptions && options.Count > 1)
-			{
-				// Return anyOf options for potential tab rendering
 				return new TypeInfo("oneOf", null, false, true, false, null, false, options);
-			}
 
 			var typeNames = options.Select(o => o.TypeName).Distinct().ToArray();
 			return new TypeInfo(string.Join(" | ", typeNames), null, false, false, false, null, false, null);
@@ -187,16 +151,12 @@
 
 			var hasObjectOptions = options.Any(o => o.IsObject);
 			if (hasObjectOptions && options.Count > 1)
-			{
-				// Return anyOf options for potential tab rendering
 				return new TypeInfo("anyOf", null, false, true, false, null, false, options);
-			}
 
 			var typeNames = options.Select(o => o.TypeName).Distinct().ToArray();
 			return new TypeInfo(string.Join(" | ", typeNames), null, false, false, false, null, false, null);
 		}
 
-		// Check for allOf (usually inheritance/composition)
 		if (schema.AllOf is { Count: > 0 } allOf)
 		{
 			var refSchemas = allOf.OfType<OpenApiSchemaReference>().ToArray();
@@ -213,7 +173,6 @@
 			}
 		}
 
-		// Check for array items
 		if (schema.Type?.HasFlag(JsonSchemaType.Array) ?? false)
 		{
 			if (schema.Items is not null)
@@ -224,14 +183,9 @@
 			return new TypeInfo("unknown", null, true, false, false, null, false, null);
 		}
 
-		// Check for enum
 		if (schema.Enum is { Count: > 0 })
-		{
-			var enumValues = schema.Enum.Select(e => e?.ToString() ?? "").Take(5).ToArray();
-			return new TypeInfo("enum", null, false, false, false, null, false, null, false, null, true, false, enumValues);
-		}
+			return new TypeInfo("enum", null, false, false, false, null, false, null);
 
-		// Check for additionalProperties (dictionary-like objects)
 		if (schema.AdditionalProperties is IOpenApiSchema addProps)
 		{
 			var valueInfo = GetTypeInfo(addProps);
@@ -239,31 +193,14 @@
 			return new TypeInfo($"string to {valueInfo.TypeName}", valueInfo.SchemaRef, false, true, false, null, valueInfo.HasLink, null, true, addProps);
 		}
 
-		// Check if it has properties (inline object)
 		if (schema.Properties is { Count: > 0 })
 			return new TypeInfo("object", null, false, true, false, null, false, null);
 
-		// Primitive type
 		var primitiveName = GetPrimitiveTypeName(schema.Type);
 		if (!string.IsNullOrEmpty(primitiveName))
 			return new TypeInfo(primitiveName, null, false, primitiveName == "object", false, null, false, null);
 
 		return new TypeInfo("object", null, false, true, false, null, false, null);
-	}
-
-	public IOpenApiSchema? ResolveSchema(IOpenApiSchema? schema)
-	{
-		if (schema is null) return null;
-
-		// If it's a reference, get the target schema
-		if (schema is OpenApiSchemaReference schemaRef)
-			return schemaRef;
-
-		// For allOf, merge properties from all schemas
-		if (schema.AllOf is { Count: > 0 })
-			return schema;
-
-		return schema;
 	}
 
 	public IDictionary<string, IOpenApiSchema>? GetSchemaProperties(IOpenApiSchema? schema)
@@ -285,11 +222,9 @@
 			// Fall through to try properties on the reference itself
 		}
 
-		// Direct properties
 		if (schema.Properties is { Count: > 0 })
 			return schema.Properties;
 
-		// For allOf, collect properties from all schemas
 		if (schema.AllOf is { Count: > 0 } allOf)
 		{
 			var props = new Dictionary<string, IOpenApiSchema>();
@@ -313,10 +248,7 @@
 		var info = GetTypeInfo(schema);
 		var sb = new System.Text.StringBuilder();
 
-		// Check if this type actually has properties (for showing {} icon)
-		var hasActualProperties = GetSchemaProperties(schema)?.Count > 0;
-
-		// Build the display text with [] for arrays, {} for objects, enum/union markers
+		// Build the display text with [] for arrays and {} for objects
 		if (info.IsArray)
 		{
 			sb.Append("<span class=\"array-icon\">[] </span>");
@@ -324,15 +256,7 @@
 			{
 				sb.Append($"{info.ValueTypeBase} ");
 			}
-			else if (info.IsEnum)
-			{
-				sb.Append("<span class=\"enum-icon\">enum </span>");
-			}
-			else if (info.IsUnion)
-			{
-				sb.Append("<span class=\"union-icon\">union </span>");
-			}
-			else if (info.IsObject && !string.IsNullOrEmpty(info.SchemaRef) && (hasActualProperties || info.HasLink))
+			else if (info.IsObject && !string.IsNullOrEmpty(info.SchemaRef))
 			{
 				sb.Append("<span class=\"object-icon\">{} </span>");
 			}
@@ -340,30 +264,19 @@
 		else if (info.IsDictionary)
 		{
 			// Dictionary uses a map icon and {} for object value types
-			sb.Append("<span class=\"dict-icon\">map </span>");
-			var dictValueHasProps = info.DictValueSchema != null && GetSchemaProperties(info.DictValueSchema)?.Count > 0;
-			if (info.HasLink || dictValueHasProps)
+			sb.Append("<span class=\"dict-icon\">(map) </span>");
+			if (info.HasLink || (info.DictValueSchema != null && GetTypeInfo(info.DictValueSchema).IsObject))
 			{
 				sb.Append("<span class=\"object-icon\">{} </span>");
 			}
-		}
-		else if (info.IsEnum)
-		{
-			// Enum marker
-			sb.Append("<span class=\"enum-icon\">enum </span>");
-		}
-		else if (info.IsUnion)
-		{
-			// Union marker
-			sb.Append("<span class=\"union-icon\">union </span>");
 		}
 		else if (info.IsValueType && info.ValueTypeBase != null)
 		{
 			sb.Append($"{info.ValueTypeBase} ");
 		}
-		else if (info.IsObject && !string.IsNullOrEmpty(info.SchemaRef) && !info.HasLink && hasActualProperties)
+		else if (info.IsObject && !string.IsNullOrEmpty(info.SchemaRef) && !info.HasLink)
 		{
-			// Regular objects get {} only if they have properties
+			// Regular objects get {} (but not linked types - they get it below)
 			sb.Append("<span class=\"object-icon\">{} </span>");
 		}
 
@@ -386,13 +299,13 @@
 		return new HtmlString("<span class=\"recursive\">recursive</span>");
 	}
 
-	public IHtmlContent RenderProperties(IOpenApiSchema? schema, ISet<string>? required, string prefix, int depth, HashSet<string>? ancestorTypes = null, bool isRequest = false)
+	public IHtmlContent RenderProperties(IOpenApiSchema? schema, string prefix, int depth, HashSet<string>? ancestorTypes = null)
 	{
 		var properties = GetSchemaProperties(schema);
 		if (properties is null || properties.Count == 0)
 			return HtmlString.Empty;
 
-		var requiredProps = required ?? schema?.Required ?? new HashSet<string>();
+		var requiredProps = schema?.Required ?? new HashSet<string>();
 		var propArray = properties.ToArray();
 
 		<dl class="property-list">
@@ -447,19 +360,15 @@
 				var hasChildren = (hasNestedProps || hasDictValueProps || hasArrayItemProps) && !isRecursive;
 				var isCollapsible = hasChildren && nestedPropCount > 2;
 
-				// Auto expand if < 5 properties, collapse if >= 5
-				var defaultExpanded = nestedPropCount > 0 && nestedPropCount < 5;
+				// On type pages: depth-0 properties default to collapsed, deeper levels expand if < 5 properties
+				var defaultExpanded = depth == 0 ? false : (nestedPropCount > 0 && nestedPropCount < 5);
 
 				<div class="property-item depth-@depth @(isLast ? "last-sibling" : "") @(hasChildren ? "has-children" : "") @(isCollapsible ? (defaultExpanded ? "expanded" : "collapsed") : "")">
 					<dt id="@propId">
 						<a href="#@propId">
 							<code>@property.Key</code>
 							@RenderSchemaType(propSchema, ancestorTypes)
-							@if (isRequest && isRequired)
-							{
-								<span class="required">required</span>
-							}
-							else if (!isRequest && !isRequired)
+							@if (!isRequired)
 							{
 								<span class="optional">optional</span>
 							}
@@ -473,26 +382,6 @@
 					{
 						<dd>
 							@Model.RenderMarkdown(propSchema.Description)
-						</dd>
-					}
-					@if (typeInfo.IsEnum && typeInfo.EnumValues is { Length: > 0 })
-					{
-						<dd class="enum-values">
-							<span class="values-label">Values:</span>
-							@foreach (var enumVal in typeInfo.EnumValues)
-							{
-								<code class="enum-value">@enumVal</code>
-							}
-						</dd>
-					}
-					@if (typeInfo.IsUnion && typeInfo.UnionOptions is { Length: > 0 })
-					{
-						<dd class="union-options">
-							<span class="values-label">One of:</span>
-							@foreach (var unionOpt in typeInfo.UnionOptions)
-							{
-								<code class="union-option">@unionOpt</code>
-							}
 						</dd>
 					}
 					@{
@@ -550,7 +439,7 @@
 											@RenderSchemaType(typeInfo.DictValueSchema, newAncestors)
 										</dt>
 										<div class="nested-properties">
-											@RenderProperties(typeInfo.DictValueSchema, null, keyPropId, depth + 2, newAncestors, isRequest)
+											@RenderProperties(typeInfo.DictValueSchema, keyPropId, depth + 2, newAncestors)
 										</div>
 									</div>
 								</dl>
@@ -559,14 +448,14 @@
 						else if (hasNestedProps)
 						{
 							<div class="nested-properties" id="@propId-children">
-								@RenderProperties(propSchema, null, propId, depth + 1, newAncestors, isRequest)
+								@RenderProperties(propSchema, propId, depth + 1, newAncestors)
 							</div>
 						}
 						else if (hasArrayItemProps && arrayItemSchema != null)
 						{
 							// Show array item properties
 							<div class="nested-properties" id="@propId-children">
-								@RenderProperties(arrayItemSchema, null, propId, depth + 1, newAncestors, isRequest)
+								@RenderProperties(arrayItemSchema, propId, depth + 1, newAncestors)
 							</div>
 						}
 					}
@@ -578,216 +467,114 @@
 	}
 }
 @{
-	var self = Model.CurrentNavigationItem as OperationNavigationItem;
-	var allOperations =
-		Model.CurrentNavigationItem.Parent is EndpointNavigationItem { NavigationItems.Count: > 0 } parent && parent.NavigationItems.All(n => n.Hidden)
-			? parent.NavigationItems
-			: self is not null
-				? [self]
-				: [];
+	var schema = Model.Schema;
+	var openApiSchema = schema.Schema;
+	var isAggregation = schema.Category == "aggregations";
 
-	var operation = Model.Operation.Operation;
+	// Set the current page type for self-link prevention
+	_currentPageType = schema.DisplayName;
+
+	// Check if this is a container type that represents a dictionary
+	var isContainerType = schema.DisplayName is "QueryContainer" or "AggregationContainer" or "Aggregate";
+	var dictionaryTypeName = schema.DisplayName switch
+	{
+		"AggregationContainer" => "Dictionary<string, AggregationContainer>",
+		"Aggregate" => "Dictionary<string, Aggregate>",
+		_ => null
+	};
 }
 
-<div class="w-full h-full grid
-					grid-cols-1
-					md:grid-cols-[1fr_var(--max-examples-width)]
-					lg:grid-cols-[1fr_var(--max-examples-width)]
-				">
-<section id="elastic-api-v3">
-	<h1>@operation.Summary</h1>
+<div class="w-full h-full grid grid-cols-1 md:grid-cols-[1fr_var(--max-examples-width)]">
+<section id="schema-definition">
+	<h1>@schema.DisplayName</h1>
+	<p class="schema-id"><code>@schema.SchemaId</code></p>
 
-	<h3 class="section-header" data-section="paths">
-		<span>Paths</span>
-		<span class="section-nav">
-			<span class="section-path">@Model.Operation.Route</span>
-			<button class="section-nav-btn" data-dir="up" title="Previous section">&#x25B2;</button>
-			<button class="section-nav-btn" data-dir="down" title="Next section">&#x25BC;</button>
-		</span>
-	</h3>
-	<ul class="api-url-listing">
-		@foreach (var overload in allOperations)
-		{
-			var method = overload.Model.OperationType.ToString().ToLowerInvariant();
-			var current = overload.Model.Route == Model.Operation.Route && overload.Model.OperationType == Model.Operation.OperationType ? "current" : "";
-			<li class="api-url-list-item">
-				<a href="@overload.Url" class="@current" hx-disable="true">
-					 <span class="api-method api-method-@method">@method.ToUpperInvariant()</span>
-					 <span class="api-url">@overload.Model.Route</span>
-				</a>
-			</li>
-		}
-	</ul>
-	@{
-		var pathParameters = operation.Parameters?.Where(p => p.In == ParameterLocation.Path).ToArray() ?? [];
-	}
-	@if (pathParameters.Length > 0)
+	@if (!string.IsNullOrEmpty(dictionaryTypeName))
 	{
-		<h4>Path Parameters</h4>
-		<dl class="property-list">
-		@foreach (var path in pathParameters)
-		{
-			<dt id="path-@path.Name"><a href="#path-@path.Name"><code>@path.Name</code></a></dt>
-			<dd>@Model.RenderMarkdown(path.Description)</dd>
-		}
-		</dl>
-	}
-
-	@if (!string.IsNullOrWhiteSpace(operation.Description))
-	{
-		<h3 class="section-header" data-section="description">
-			<span>Description</span>
-			<span class="section-nav">
-				<span class="section-path">@Model.Operation.Route</span>
-				<button class="section-nav-btn" data-dir="up" title="Previous section">&#x25B2;</button>
-				<button class="section-nav-btn" data-dir="down" title="Next section">&#x25BC;</button>
-			</span>
-		</h3>
-		<p>
-			@(Model.RenderMarkdown(operation.Description))
+		<p class="schema-type-info">
+			<span class="dict-icon">(map) </span>
+			<code class="schema-type">@dictionaryTypeName</code>
 		</p>
+		<p>This type represents a dictionary mapping string keys to <code>@schema.DisplayName</code> values.</p>
+	}
+
+	@if (!string.IsNullOrEmpty(openApiSchema.Description))
+	{
+		<p>@Model.RenderMarkdown(openApiSchema.Description)</p>
+	}
+
+	@if (openApiSchema.Enum is { Count: > 0 })
+	{
+		<h3>Enum Values</h3>
+		<ul class="enum-values">
+			@foreach (var enumValue in openApiSchema.Enum)
+			{
+				<li><code>@enumValue</code></li>
+			}
+		</ul>
+	}
+
+	@if (openApiSchema.OneOf is { Count: > 0 })
+	{
+		<h3>Union Types (oneOf)</h3>
+		<p>This type can be one of the following:</p>
+		<ul class="union-types">
+			@foreach (var variant in openApiSchema.OneOf)
+			{
+				if (variant is null) continue;
+				<li>@RenderSchemaType(variant)</li>
+			}
+		</ul>
+	}
+
+	@if (openApiSchema.AnyOf is { Count: > 0 })
+	{
+		<h3>Union Types (anyOf)</h3>
+		<p>This type can be any of the following:</p>
+		<ul class="union-types">
+			@foreach (var variant in openApiSchema.AnyOf)
+			{
+				if (variant is null) continue;
+				<li>@RenderSchemaType(variant)</li>
+			}
+		</ul>
 	}
 
 	@{
-		var queryStringParameters = operation.Parameters?.Where(p => p.In == ParameterLocation.Query).ToArray() ?? [];
+		// Initialize ancestor set with the root type name to detect recursive references
+		var rootAncestors = new HashSet<string> { schema.DisplayName };
 	}
-	@if (queryStringParameters.Length > 0)
+	@* For aggregations, show both aggregation request and aggregate response *@
+	@if (isAggregation && schema.RelatedAggregation is not null)
 	{
-		<h3 class="section-header" data-section="query-params">
-			<span>Query String Parameters</span>
-			<span class="section-nav">
-				<span class="section-path">@Model.Operation.Route</span>
-				<button class="section-nav-btn" data-dir="up" title="Previous section">&#x25B2;</button>
-				<button class="section-nav-btn" data-dir="down" title="Next section">&#x25BC;</button>
-			</span>
-		</h3>
-		<dl class="property-list">
-			@foreach (var qs in queryStringParameters)
-			{
-				<dt id="query-@qs.Name"><a href="#query-@qs.Name"><code>@qs.Name</code></a></dt>
-				<dd>@Model.RenderMarkdown(qs.Description)</dd>
-			}
-		</dl>
+		<h3>Aggregation Request</h3>
+		<p>Properties for configuring the <code>@(schema.DisplayName)</code> aggregation:</p>
+		@RenderProperties(schema.RelatedAggregation, "agg", 0, rootAncestors)
 	}
-	@if (operation.RequestBody is not null)
+	else if (GetSchemaProperties(openApiSchema) is { Count: > 0 })
 	{
-		var requestContent = operation.RequestBody.Content?.FirstOrDefault();
-		var requestContentType = requestContent?.Key ?? "application/json";
-		<h3 class="section-header" data-section="request-body">
-			<span>Request Body</span>
-			<span class="content-type-badge">@requestContentType</span>
-			<span class="section-nav">
-				<span class="section-path">@Model.Operation.Route</span>
-				<button class="section-nav-btn" data-dir="up" title="Previous section">&#x25B2;</button>
-				<button class="section-nav-btn" data-dir="down" title="Next section">&#x25BC;</button>
-			</span>
-		</h3>
-		var content = requestContent?.Value;
-		if (!string.IsNullOrEmpty(operation.RequestBody.Description))
-		{
-			<p>@Model.RenderMarkdown(operation.RequestBody.Description)</p>
-		}
-
-		var requestSchema = content?.Schema;
-		if (requestSchema is not null)
-		{
-			var props = GetSchemaProperties(requestSchema);
-			if (props is { Count: > 0 })
-			{
-				@RenderProperties(requestSchema, null, "req", 0, null, isRequest: true)
-			}
-			else
-			{
-				<p>Type: @RenderSchemaType(requestSchema)</p>
-			}
-		}
+		<h3>Properties</h3>
+		@RenderProperties(openApiSchema, "", 0, rootAncestors)
 	}
 
-	@if (operation.Responses is { Count: > 0 })
+	@if (isAggregation && schema.RelatedAggregate is not null)
 	{
-		var isSingleResponse = operation.Responses.Count == 1;
-		var singleResponse = isSingleResponse ? operation.Responses.First() : default;
-		var singleContentType = isSingleResponse && singleResponse.Value?.Content?.Count > 0
-			? singleResponse.Value.Content.First().Key
-			: null;
+		<h3>Aggregate Response</h3>
+		<p>Properties returned in the <code>@(schema.DisplayName)</code> aggregate response:</p>
+		@RenderProperties(schema.RelatedAggregate, "result", 0, rootAncestors)
+	}
 
-		<h3 class="section-header" data-section="responses">
-			<span>@(isSingleResponse ? "Response" : "Responses")</span>
-			@if (!string.IsNullOrEmpty(singleContentType))
-			{
-				<span class="content-type-badge">@singleContentType</span>
-			}
-			<span class="section-nav">
-				<span class="section-path">@Model.Operation.Route</span>
-				<button class="section-nav-btn" data-dir="up" title="Previous section">&#x25B2;</button>
-				<button class="section-nav-btn" data-dir="down" title="Next section">&#x25BC;</button>
-			</span>
-		</h3>
-		@foreach (var response in operation.Responses)
-		{
-			var statusCode = response.Key;
-			var responseValue = response.Value;
-			if (responseValue is null) continue;
-			var statusClass = statusCode.StartsWith("2") ? "success" : statusCode.StartsWith("4") || statusCode.StartsWith("5") ? "error" : "info";
-			<div class="response-section">
-				@if (!isSingleResponse)
-				{
-					<h4>
-						<span class="status-code status-@statusClass">@statusCode</span>
-						@if (!string.IsNullOrEmpty(responseValue.Description))
-						{
-							<span class="response-description">@responseValue.Description</span>
-						}
-					</h4>
-				}
-				@if (responseValue.Content is { Count: > 0 })
-				{
-					foreach (var contentType in responseValue.Content)
-					{
-						if (contentType.Value?.Schema is not { } responseSchema) continue;
-						@if (!isSingleResponse)
-						{
-							<p class="content-type">Content-Type: <code>@contentType.Key</code></p>
-						}
-						var responseProps = GetSchemaProperties(responseSchema);
-						if (responseProps is { Count: > 0 })
-						{
-							@RenderProperties(responseSchema, null, $"res-{statusCode}", 0)
-						}
-						else
-						{
-							<p>Response Type: @RenderSchemaType(responseSchema)</p>
-						}
-					}
-				}
-			</div>
-		}
+	@if (openApiSchema.AdditionalProperties is IOpenApiSchema addProps)
+	{
+		<h3>Additional Properties</h3>
+		<p>This type allows additional properties of type: @RenderSchemaType(addProps)</p>
 	}
 </section>
 <aside class="examples-panel">
-	@{
-		// Check for examples in the response
-		var successResponse = operation.Responses?.FirstOrDefault(r => r.Key.StartsWith("2")).Value;
-		var responseContent = successResponse?.Content?.FirstOrDefault().Value;
-		var examples = responseContent?.Examples;
-	}
-	@if (examples is { Count: > 0 })
+	@if (openApiSchema.Example is not null)
 	{
-		<h4>Examples</h4>
-		@foreach (var example in examples)
-		{
-			<div class="example-block">
-				<h5>@example.Key</h5>
-				@if (!string.IsNullOrEmpty(example.Value?.Description))
-				{
-					<p>@Model.RenderMarkdown(example.Value.Description)</p>
-				}
-				@if (example.Value?.Value is not null)
-				{
-					<pre><code class="language-json">@example.Value.Value.ToString()</code></pre>
-				}
-			</div>
-		}
+		<h4>Example</h4>
+		<pre><code class="language-json">@openApiSchema.Example</code></pre>
 	}
 </aside>
 </div>
@@ -795,85 +582,10 @@
 <script>
 (function() {
 	// Use event delegation on the section
-	const section = document.getElementById('elastic-api-v3');
+	const section = document.getElementById('schema-definition');
 	if (!section) return;
 
-	// Scroll detection for section-path visibility
-	// Find the trigger point - after Path Parameters header (or paths section if no path params)
-	let triggerElement = null;
-
-	// First check for Path Parameters header
-	const pathParamsHeader = section.querySelector('h4');
-	if (pathParamsHeader && pathParamsHeader.textContent?.includes('Path Parameters')) {
-		triggerElement = pathParamsHeader;
-	} else {
-		// Fall back to the paths section URL listing
-		const pathsHeader = section.querySelector('h3[data-section="paths"]');
-		if (pathsHeader) {
-			triggerElement = pathsHeader.nextElementSibling;
-		}
-	}
-
-	function updateScrollState() {
-		if (!triggerElement) return;
-
-		const triggerBottom = triggerElement.getBoundingClientRect().bottom;
-		const isScrolled = triggerBottom < 100; // 100px from top of viewport
-
-		section.querySelectorAll('h3.section-header').forEach(header => {
-			if (isScrolled) {
-				header.classList.add('scrolled');
-			} else {
-				header.classList.remove('scrolled');
-			}
-		});
-	}
-
-	// Throttled scroll handler
-	let ticking = false;
-	window.addEventListener('scroll', function() {
-		if (!ticking) {
-			window.requestAnimationFrame(function() {
-				updateScrollState();
-				ticking = false;
-			});
-			ticking = true;
-		}
-	});
-
-	// Initial check
-	updateScrollState();
-
 	section.addEventListener('click', function(e) {
-		// Handle section navigation buttons
-		const navBtn = e.target.closest('.section-nav-btn');
-		if (navBtn) {
-			e.preventDefault();
-			e.stopPropagation();
-
-			const direction = navBtn.getAttribute('data-dir');
-			const headers = Array.from(section.querySelectorAll('h3.section-header'));
-			const currentHeader = navBtn.closest('h3');
-			const currentIndex = headers.indexOf(currentHeader);
-
-			if (currentIndex === -1) return;
-
-			let targetIndex;
-			if (direction === 'up') {
-				targetIndex = currentIndex > 0 ? currentIndex - 1 : headers.length - 1;
-			} else {
-				targetIndex = currentIndex < headers.length - 1 ? currentIndex + 1 : 0;
-			}
-
-			const targetHeader = headers[targetIndex];
-			if (targetHeader) {
-				const offset = 80;
-				const targetPosition = targetHeader.getBoundingClientRect().top + window.scrollY - offset;
-				window.scrollTo({ top: targetPosition, behavior: 'smooth' });
-			}
-			return;
-		}
-
 		// Handle expand/collapse toggle buttons
 		const toggleBtn = e.target.closest('.expand-toggle');
 		if (toggleBtn) {
@@ -885,7 +597,6 @@
 
 			const isExpanded = propertyItem.classList.contains('expanded');
 			const toggleIcon = toggleBtn.querySelector('.toggle-icon');
-
 			const toggleLabel = toggleBtn.querySelector('.toggle-label');
 			const propCount = toggleLabel?.textContent?.match(/\d+/)?.[0] || '';
 
