@@ -107,8 +107,7 @@ Options:
   --input-products <List<ProductInfo>?>     Filter by products in format "product target lifecycle, ..." (e.g., "cloud-serverless 2025-12-02, cloud-serverless 2025-12-06") [Default: null]
   --output-products <List<ProductInfo>?>    Explicitly set the products array in the output file in format "product target lifecycle, ...". Overrides any values from changelogs. [Default: null]
   --resolve                                 Copy the contents of each changelog file into the entries array
-  --prs <string[]?>                         Filter by pull request URLs or numbers (can specify multiple times) [Default: null]
-  --prs-file <string?>                      Path to a newline-delimited file containing PR URLs or numbers [Default: null]
+  --prs <string[]?>                         Filter by pull request URLs or numbers (comma-separated), or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times. [Default: null]
   --owner <string?>                         Optional: GitHub repository owner (used when PRs are specified as numbers) [Default: null]
   --repo <string?>                          Optional: GitHub repository name (used when PRs are specified as numbers) [Default: null]
 ```
@@ -124,12 +123,11 @@ You can specify only one of the following filter options:
 :   For example, `"cloud-serverless 2025-12-02, cloud-serverless 2025-12-06"`.
 
 `--prs`
-:   Include changelogs for the specified pull request URLs or numbers.
-:   Pull requests can be identified by a full URL (such as `https://github.com/owner/repo/pull/123`, a short format (such as `owner/repo#123`) or just a number (in which case you must also provide `--owner` and `--repo` options).
-
-`--prs-file`
-:   Include changelogs for the pull request URLs or numbers specified in a newline-delimited file.
-:   Pull requests can be identified by a full URL (such as `https://github.com/owner/repo/pull/123`, a short format (such as `owner/repo#123`) or just a number (in which case you must also provide `--owner` and `--repo` options).
+:   Include changelogs for the specified pull request URLs or numbers, or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times.
+:   Each occurrence can be either comma-separated PRs (e.g., `--prs "https://github.com/owner/repo/pull/123,12345"`) or a file path (e.g., `--prs /path/to/file.txt`).
+:   When specifying PRs directly, provide comma-separated values.
+:   When specifying a file path, provide a single value that points to a newline-delimited file. The file should contain one PR URL or number per line.
+:   Pull requests can be identified by a full URL (such as `https://github.com/owner/repo/pull/123`), a short format (such as `owner/repo#123`), or just a number (in which case you must also provide `--owner` and `--repo` options).
 
 By default, the output file contains only the changelog file names and checksums.
 You can optionally use the `--resolve` command option to pull all of the content from each changelog into the bundle.
@@ -171,13 +169,13 @@ If you add the `--resolve` option, the contents of each changelog will be includ
 You can use the `--prs` option (with the `--repo` and `--owner` options if you provide only the PR numbers) to create a bundle of the changelogs that relate to those pull requests:
 
 ```sh
-docs-builder changelog bundle --prs 108875,135873,136886 \ <1>
+docs-builder changelog bundle --prs "108875,135873,136886" \ <1>
   --repo elasticsearch \ <2>
   --owner elastic \ <3>
   --output-products "elasticsearch 9.2.2" <4>
 ```
 
-1. The list of pull request numbers to seek.
+1. The comma-separated list of pull request numbers to seek. You can also specify multiple `--prs` options, each with comma-separated PRs or a file path.
 2. The repository in the pull request URLs. This option is not required if you specify the short or full PR URLs in the `--prs` option.
 3. The owner in the pull request URLs. This option is not required if you specify the short or full PR URLs in the `--prs` option.
 4. The product metadata for the bundle. If it is not provided, it will be derived from all the changelog product values.
@@ -213,17 +211,20 @@ https://github.com/elastic/elasticsearch/pull/136886
 https://github.com/elastic/elasticsearch/pull/137126
 ```
 
-You can use the `--prs-file` option to create a bundle of the changelogs that relate to those pull requests:
+You can use the `--prs` option with a file path to create a bundle of the changelogs that relate to those pull requests. You can also combine multiple `--prs` options:
 
 ```sh
-./docs-builder changelog bundle --prs-file test/9.2.2.txt \ <1>
+./docs-builder changelog bundle \
+  --prs "https://github.com/elastic/elasticsearch/pull/108875,135873" \ <1>
+  --prs test/9.2.2.txt \ <2>
   --output-products "elasticsearch 9.2.2" <3>
-  --resolve <3>
+  --resolve <4>
 ```
 
-1. The path for the file that lists the pull requests. If the file contains only PR numbers, you must add `--repo` and `--owner` command options.
-2. The product metadata for the bundle. If it is not provided, it will be derived from all the changelog product values.
-3. Optionally include the contents of each changelog in the output file.
+1. Comma-separated list of pull request URLs or numbers.
+2. The path for the file that lists the pull requests. If the file contains only PR numbers, you must add `--repo` and `--owner` command options.
+3. The product metadata for the bundle. If it is not provided, it will be derived from all the changelog product values.
+4. Optionally include the contents of each changelog in the output file.
 
 If you have changelog files that reference those pull requests, the command creates a file like this:
 

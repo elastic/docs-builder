@@ -546,55 +546,145 @@ public partial class ChangelogService(
 				filterCount++;
 			if (input.Prs is { Length: > 0 })
 				filterCount++;
-			if (!string.IsNullOrWhiteSpace(input.PrsFile))
-				filterCount++;
 
 			if (filterCount == 0)
 			{
-				collector.EmitError(string.Empty, "At least one filter option must be specified: --all, --input-products, --prs, or --prs-file");
+				collector.EmitError(string.Empty, "At least one filter option must be specified: --all, --input-products, or --prs");
 				return false;
 			}
 
 			if (filterCount > 1)
 			{
-				collector.EmitError(string.Empty, "Only one filter option can be specified at a time: --all, --input-products, --prs, or --prs-file");
+				collector.EmitError(string.Empty, "Only one filter option can be specified at a time: --all, --input-products, or --prs");
 				return false;
 			}
 
-			// Load PRs from file if specified
+			// Load PRs - check if --prs contains a file path or a list of PRs
 			var prsToMatch = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-			if (!string.IsNullOrWhiteSpace(input.PrsFile))
+			if (input.Prs is { Length: > 0 })
 			{
-				if (!_fileSystem.File.Exists(input.PrsFile))
+				// If there's exactly one value, check if it's a file path
+				if (input.Prs.Length == 1)
 				{
-					collector.EmitError(input.PrsFile, "PRs file does not exist");
-					return false;
-				}
+					var singleValue = input.Prs[0];
 
-				var prsFileContent = await _fileSystem.File.ReadAllTextAsync(input.PrsFile, ctx);
-				var prsFromFile = prsFileContent
-					.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-					.Where(p => !string.IsNullOrWhiteSpace(p))
-					.ToArray();
+					// Check if it's a URL - URLs should always be treated as PRs, not file paths
+					var isUrl = singleValue.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+						singleValue.StartsWith("https://", StringComparison.OrdinalIgnoreCase);
 
-				if (input.Prs is { Length: > 0 })
-				{
-					foreach (var pr in input.Prs)
+					if (isUrl)
 					{
-						_ = prsToMatch.Add(pr);
+						// Treat as PR identifier
+						_ = prsToMatch.Add(singleValue);
+					}
+					else if (_fileSystem.File.Exists(singleValue))
+					{
+						// File exists, read PRs from it
+						var prsFileContent = await _fileSystem.File.ReadAllTextAsync(singleValue, ctx);
+						var prsFromFile = prsFileContent
+							.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+							.Where(p => !string.IsNullOrWhiteSpace(p))
+							.ToArray();
+
+						foreach (var pr in prsFromFile)
+						{
+							_ = prsToMatch.Add(pr);
+						}
+					}
+					else
+					{
+						// Check if it looks like a file path (contains path separators or has extension)
+						var looksLikeFilePath = singleValue.Contains(_fileSystem.Path.DirectorySeparatorChar) ||
+							singleValue.Contains(_fileSystem.Path.AltDirectorySeparatorChar) ||
+							_fileSystem.Path.HasExtension(singleValue);
+
+						if (looksLikeFilePath)
+						{
+							// File path doesn't exist - if there are no other PRs, return error; otherwise emit warning
+							if (prsToMatch.Count == 0)
+							{
+								collector.EmitError(singleValue, $"File does not exist: {singleValue}");
+								return false;
+							}
+							else
+							{
+								collector.EmitWarning(singleValue, $"File does not exist, skipping: {singleValue}");
+							}
+						}
+						else
+						{
+							// Doesn't look like a file path, treat as PR identifier
+							_ = prsToMatch.Add(singleValue);
+						}
 					}
 				}
+				else
+				{
+					// Multiple values - process all values first, then check for errors
+					var nonExistentFiles = new List<string>();
+					foreach (var value in input.Prs)
+					{
+						// Check if it's a URL - URLs should always be treated as PRs
+						var isUrl = value.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+							value.StartsWith("https://", StringComparison.OrdinalIgnoreCase);
 
-				foreach (var pr in prsFromFile)
-				{
-					_ = prsToMatch.Add(pr);
-				}
-			}
-			else if (input.Prs is { Length: > 0 })
-			{
-				foreach (var pr in input.Prs)
-				{
-					_ = prsToMatch.Add(pr);
+						if (isUrl)
+						{
+							// Treat as PR identifier
+							_ = prsToMatch.Add(value);
+						}
+						else if (_fileSystem.File.Exists(value))
+						{
+							// File exists, read PRs from it
+							var prsFileContent = await _fileSystem.File.ReadAllTextAsync(value, ctx);
+							var prsFromFile = prsFileContent
+								.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+								.Where(p => !string.IsNullOrWhiteSpace(p))
+								.ToArray();
+
+							foreach (var pr in prsFromFile)
+							{
+								_ = prsToMatch.Add(pr);
+							}
+						}
+						else
+						{
+							// Check if it looks like a file path
+							var looksLikeFilePath = value.Contains(_fileSystem.Path.DirectorySeparatorChar) ||
+								value.Contains(_fileSystem.Path.AltDirectorySeparatorChar) ||
+								_fileSystem.Path.HasExtension(value);
+
+							if (looksLikeFilePath)
+							{
+								// Track non-existent files to check later
+								nonExistentFiles.Add(value);
+							}
+							else
+							{
+								// Doesn't look like a file path, treat as PR identifier
+								_ = prsToMatch.Add(value);
+							}
+						}
+					}
+
+					// After processing all values, handle non-existent files
+					if (nonExistentFiles.Count > 0)
+					{
+						// If there are no valid PRs and we have non-existent files, return error
+						if (prsToMatch.Count == 0)
+						{
+							collector.EmitError(nonExistentFiles[0], $"File does not exist: {nonExistentFiles[0]}");
+							return false;
+						}
+						else
+						{
+							// Emit warnings for non-existent files since we have valid PRs
+							foreach (var file in nonExistentFiles)
+							{
+								collector.EmitWarning(file, $"File does not exist, skipping: {file}");
+							}
+						}
+					}
 				}
 			}
 
@@ -766,12 +856,6 @@ public partial class ChangelogService(
 				}
 			}
 
-			if (changelogEntries.Count == 0)
-			{
-				collector.EmitError(string.Empty, "No changelog entries matched the filter criteria");
-				return false;
-			}
-
 			_logger.LogInformation("Found {Count} matching changelog entries", changelogEntries.Count);
 
 			// Build bundled data
@@ -805,7 +889,7 @@ public partial class ChangelogService(
 					.ToList();
 			}
 			// Otherwise, extract unique products/versions from changelog entries
-			else
+			else if (changelogEntries.Count > 0)
 			{
 				var productVersions = new HashSet<(string product, string version)>();
 				foreach (var (data, _, _, _) in changelogEntries)
@@ -827,6 +911,18 @@ public partial class ChangelogService(
 					})
 					.ToList();
 			}
+			else
+			{
+				// No entries and no products specified - initialize to empty list
+				bundledData.Products = [];
+			}
+
+			// Check if we should allow empty result
+			if (changelogEntries.Count == 0)
+			{
+				collector.EmitError(string.Empty, "No changelog entries matched the filter criteria");
+				return false;
+			}
 
 			// Check for products with same product ID but different versions
 			var productsByProductId = bundledData.Products.GroupBy(p => p.Product, StringComparer.OrdinalIgnoreCase)
@@ -840,7 +936,12 @@ public partial class ChangelogService(
 			}
 
 			// Build entries
-			if (input.Resolve)
+			if (changelogEntries.Count == 0)
+			{
+				// No entries - initialize to empty list
+				bundledData.Entries = [];
+			}
+			else if (input.Resolve)
 			{
 				// When resolving, include changelog contents and validate required fields
 				var resolvedEntries = new List<BundledEntry>();
