@@ -1791,7 +1791,9 @@ public partial class ChangelogService(
 		if (string.IsNullOrWhiteSpace(area))
 			return string.Empty;
 
-		var result = char.ToUpperInvariant(area[0]) + area.Substring(1);
+		var result = area.Length < 2
+			? char.ToUpperInvariant(area[0]).ToString()
+			: char.ToUpperInvariant(area[0]) + area[1..];
 		return result.Replace("-", " ");
 	}
 
