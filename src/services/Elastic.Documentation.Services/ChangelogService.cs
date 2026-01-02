@@ -27,6 +27,17 @@ public partial class ChangelogService(
 	private readonly IFileSystem _fileSystem = new FileSystem();
 	private readonly IGitHubPrService? _githubPrService = githubPrService;
 
+	private static class ChangelogEntryTypes
+	{
+		public const string Feature = "feature";
+		public const string Enhancement = "enhancement";
+		public const string Security = "security";
+		public const string BugFix = "bug-fix";
+		public const string BreakingChange = "breaking-change";
+		public const string Deprecation = "deprecation";
+		public const string KnownIssue = "known-issue";
+	}
+
 	public async Task<bool> CreateChangelog(
 		IDiagnosticsCollector collector,
 		ChangelogInput input,
@@ -1392,19 +1403,19 @@ public partial class ChangelogService(
 		Cancel ctx
 	)
 	{
-		var features = entriesByType.GetValueOrDefault("feature", []);
-		var enhancements = entriesByType.GetValueOrDefault("enhancement", []);
-		var security = entriesByType.GetValueOrDefault("security", []);
-		var bugFixes = entriesByType.GetValueOrDefault("bug-fix", []);
+		var features = entriesByType.GetValueOrDefault(ChangelogEntryTypes.Feature, []);
+		var enhancements = entriesByType.GetValueOrDefault(ChangelogEntryTypes.Enhancement, []);
+		var security = entriesByType.GetValueOrDefault(ChangelogEntryTypes.Security, []);
+		var bugFixes = entriesByType.GetValueOrDefault(ChangelogEntryTypes.BugFix, []);
 
 		if (features.Count == 0 && enhancements.Count == 0 && security.Count == 0 && bugFixes.Count == 0)
 		{
 			// Still create file with "no changes" message
 		}
 
-		var hasBreakingChanges = entriesByType.ContainsKey("breaking-change");
-		var hasDeprecations = entriesByType.ContainsKey("deprecation");
-		var hasKnownIssues = entriesByType.ContainsKey("known-issue");
+		var hasBreakingChanges = entriesByType.ContainsKey(ChangelogEntryTypes.BreakingChange);
+		var hasDeprecations = entriesByType.ContainsKey(ChangelogEntryTypes.Deprecation);
+		var hasKnownIssues = entriesByType.ContainsKey(ChangelogEntryTypes.KnownIssue);
 
 		var otherLinks = new List<string>();
 		if (hasKnownIssues)
@@ -1477,7 +1488,7 @@ public partial class ChangelogService(
 		Cancel ctx
 	)
 	{
-		var breakingChanges = entriesByType.GetValueOrDefault("breaking-change", []);
+		var breakingChanges = entriesByType.GetValueOrDefault(ChangelogEntryTypes.BreakingChange, []);
 
 		var sb = new StringBuilder();
 		sb.AppendLine(CultureInfo.InvariantCulture, $"## {title} [{repo}-{titleSlug}-breaking-changes]");
@@ -1589,7 +1600,7 @@ public partial class ChangelogService(
 		Cancel ctx
 	)
 	{
-		var deprecations = entriesByType.GetValueOrDefault("deprecation", []);
+		var deprecations = entriesByType.GetValueOrDefault(ChangelogEntryTypes.Deprecation, []);
 
 		var sb = new StringBuilder();
 		sb.AppendLine(CultureInfo.InvariantCulture, $"## {title} [{repo}-{titleSlug}-deprecations]");
