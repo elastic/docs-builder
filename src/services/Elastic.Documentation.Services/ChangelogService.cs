@@ -566,7 +566,7 @@ public partial class ChangelogService(
 					.Where(p => !string.IsNullOrWhiteSpace(p))
 					.ToArray();
 
-				if (input.Prs != null && input.Prs.Length > 0)
+				if (input.Prs is { Length: > 0 })
 				{
 					foreach (var pr in input.Prs)
 					{
