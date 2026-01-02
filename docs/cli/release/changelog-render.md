@@ -14,12 +14,6 @@ docs-builder changelog render [options...] [-h|--help]
 
 ## Options
 
-  --input <List<BundleInput>>    Required: Bundle input(s) in format "bundle-file-path, changelog-file-path, repo". Can be specified multiple times. Only bundle-file-path is required. [Required]
-  --output <string?>             Optional: Output directory for rendered markdown files. Defaults to current directory [Default: null]
-  --title <string?>              Optional: Title to use for section headers in output markdown files. Defaults to version from first bundle [Default: null]
-  --subsections                  Optional: Group entries by area/component in subsections. Defaults to false
-  --hide-private-links           Optional: Hide private links by commenting them out in markdown output. Defaults to false
-
 `--input <List<BundleInput>>`
 :   One or more bundle input files.
 :   Each item can be specified as "bundle-file-path, changelog-file-path, repo" to accommodate files coming from multiple locations.
