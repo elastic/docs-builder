@@ -566,16 +566,7 @@ public class ChangelogService(
 				!line.TrimStart().StartsWith('#') &&
 				!line.TrimStart().StartsWith("---", StringComparison.Ordinal));
 
-			if (insertIndex == -1)
-			{
-				// No data found, append at the end
-				lines.AddRange(commentedFields);
-			}
-			else
-			{
-				// Insert before the first data field
-				lines.InsertRange(insertIndex, commentedFields);
-			}
+			lines.InsertRange(insertIndex >= 0 ? insertIndex : lines.Count, commentedFields);
 
 			yaml = string.Join('\n', lines);
 		}
