@@ -249,8 +249,11 @@ public partial class DocumentationGenerator
 			_ when strToCheck.EndsWith(".png") => true,
 			_ when strToCheck.EndsWith(".png") => true,
 			"reference/security/prebuilt-rules/audit_policies/windows/README.md" => true,
+			"audit_policies/windows/README.md" => true,
 			"extend/integrations/developer-workflow-fleet-UI.md" => true,
+			"extend/developer-workflow-fleet-UI.md" => true,
 			"reference/elasticsearch/clients/ruby/Helpers.md" => true,
+			"reference/Helpers.md" => true,
 			"explore-analyze/ai-features/llm-guides/connect-to-vLLM.md" => true,
 			_ => FilePathRegex().IsMatch(strToCheck) && FileNameRegex().IsMatch(Path.GetFileName(strToCheck))
 		};
