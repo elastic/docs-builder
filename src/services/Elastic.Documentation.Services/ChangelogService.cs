@@ -1801,7 +1801,9 @@ public partial class ChangelogService(
 			return string.Empty;
 
 		// Capitalize first letter and ensure ends with period
-		var result = char.ToUpperInvariant(text[0]) + text.Substring(1);
+		var result = text.Length < 2
+			? char.ToUpperInvariant(text[0]).ToString()
+			: char.ToUpperInvariant(text[0]) + text[1..];
 		if (!result.EndsWith('.'))
 		{
 			result += ".";
