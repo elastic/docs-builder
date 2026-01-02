@@ -260,7 +260,7 @@ public class ChangelogService(
 				}
 
 				// Map labels to areas if areas were not explicitly provided
-				if ((input.Areas == null || input.Areas.Length == 0) && config.LabelToAreas != null)
+				if (input.Areas.Length == 0 && config.LabelToAreas != null)
 				{
 					var mappedAreas = MapLabelsToAreas(prInfo.Labels, config.LabelToAreas);
 					if (mappedAreas.Count > 0)
