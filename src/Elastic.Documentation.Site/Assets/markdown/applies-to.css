@@ -4,12 +4,52 @@
 
 		@apply text-subdued;
 
-		[data-tippy-content]:not([data-tippy-content='']) {
-			@apply cursor-help;
+		applies-to-popover {
+			display: contents;
 		}
 
 		.applicable-info {
 			@apply border-grey-20 inline-flex cursor-default rounded-full border-[1px] bg-white pt-1.5 pr-3 pb-1.5 pl-3;
+		}
+
+		.applicable-info--clickable {
+			/* Desktop: tooltip-like behavior, no pointer cursor or hover state */
+			@apply cursor-default;
+
+			&:focus {
+				outline: none;
+			}
+
+			/* Desktop: no focus-visible outline for tooltip behavior */
+			@media (hover: hover) and (pointer: fine) {
+				&:focus-visible {
+					outline: none;
+				}
+			}
+
+			/* Mobile/touch: show focus outline for accessibility */
+			@media (hover: none), (pointer: coarse) {
+				@apply cursor-pointer;
+
+				&:focus-visible {
+					outline: 2px solid var(--color-blue-elastic);
+					outline-offset: 2px;
+				}
+			}
+		}
+
+		/* Desktop: no pinned state styling */
+		@media (hover: hover) and (pointer: fine) {
+			.applicable-info--pinned {
+				@apply border-grey-20 bg-white;
+			}
+		}
+
+		/* Mobile/touch: show pinned state */
+		@media (hover: none), (pointer: coarse) {
+			.applicable-info--pinned {
+				@apply border-blue-elastic bg-grey-10;
+			}
 		}
 
 		.applicable-meta {
@@ -35,6 +75,12 @@
 	.applies.applies-inline {
 		display: inline-block;
 		vertical-align: bottom;
+
+		applies-to-popover {
+			display: inline-flex;
+			vertical-align: bottom;
+		}
+
 		.applicable-separator {
 			margin-left: calc(var(--spacing) * 1.5);
 			margin-right: calc(var(--spacing) * 1.5);
@@ -57,19 +103,9 @@
 	}
 }
 
-.tippy-box[data-theme~='applies-to'] {
-	.tippy-content {
-		white-space: normal;
-
-		strong {
-			display: block;
-			margin-bottom: calc(var(--spacing) * 1);
-		}
-	}
-
-	.tippy-content > div:not(:last-child) {
-		border-bottom: 1px dotted var(--color-grey-50);
-		padding-bottom: calc(var(--spacing) * 3);
-		margin-bottom: calc(var(--spacing) * 3);
-	}
+.euiPopover__panel {
+	/* Shadow and border for the popover */
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
+	border: 1px solid var(--color-grey-20) !important;
+	border-radius: 6px !important;
 }
