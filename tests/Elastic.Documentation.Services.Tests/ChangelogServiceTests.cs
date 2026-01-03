@@ -1087,7 +1087,7 @@ public class ChangelogServiceTests : IDisposable
 		var input = new ChangelogBundleInput
 		{
 			Directory = changelogDir,
-			PrsFile = prsFile,
+			Prs = new[] { prsFile },
 			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
@@ -1342,7 +1342,7 @@ public class ChangelogServiceTests : IDisposable
 	}
 
 	[Fact]
-	public async Task BundleChangelogs_WithInvalidPrsFile_ReturnsError()
+	public async Task BundleChangelogs_WithNonExistentFileAsPrs_ReturnsError()
 	{
 		// Arrange
 		var service = new ChangelogService(_loggerFactory, _configurationContext, null);
@@ -1350,10 +1350,12 @@ public class ChangelogServiceTests : IDisposable
 		var changelogDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		fileSystem.Directory.CreateDirectory(changelogDir);
 
+		// Provide a non-existent file path - should return error since there are no other PRs
+		var nonexistentFile = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "nonexistent.txt");
 		var input = new ChangelogBundleInput
 		{
 			Directory = changelogDir,
-			PrsFile = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "nonexistent.txt"),
+			Prs = new[] { nonexistentFile },
 			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
@@ -1361,9 +1363,98 @@ public class ChangelogServiceTests : IDisposable
 		var result = await service.BundleChangelogs(_collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
+		// File doesn't exist and there are no other PRs, so should return error
 		result.Should().BeFalse();
 		_collector.Errors.Should().BeGreaterThan(0);
-		_collector.Diagnostics.Should().Contain(d => d.Message.Contains("PRs file does not exist"));
+		_collector.Diagnostics.Should().Contain(d => d.Message.Contains("File does not exist"));
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithUrlAsPrs_TreatsAsPrIdentifier()
+	{
+		// Arrange
+		var service = new ChangelogService(_loggerFactory, _configurationContext, null);
+		var fileSystem = new FileSystem();
+		var changelogDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		fileSystem.Directory.CreateDirectory(changelogDir);
+
+		// Create a changelog file for a specific PR
+		var changelog = """
+			title: Test PR
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			pr: https://github.com/elastic/elasticsearch/pull/123
+			""";
+		var changelogFile = fileSystem.Path.Combine(changelogDir, "1755268130-test-pr.yaml");
+		await fileSystem.File.WriteAllTextAsync(changelogFile, changelog, TestContext.Current.CancellationToken);
+
+		// Provide a URL - should be treated as a PR identifier, not a file path
+		var input = new ChangelogBundleInput
+		{
+			Directory = changelogDir,
+			Prs = new[] { "https://github.com/elastic/elasticsearch/pull/123" },
+			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
+		};
+
+		// Act
+		var result = await service.BundleChangelogs(_collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		// URL should be treated as PR identifier and match the changelog
+		result.Should().BeTrue();
+		_collector.Errors.Should().Be(0);
+		_collector.Warnings.Should().Be(0);
+
+		var bundleContent = await fileSystem.File.ReadAllTextAsync(input.Output!, TestContext.Current.CancellationToken);
+		bundleContent.Should().Contain("name: 1755268130-test-pr.yaml");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithNonExistentFileAndOtherPrs_EmitsWarning()
+	{
+		// Arrange
+		var service = new ChangelogService(_loggerFactory, _configurationContext, null);
+		var fileSystem = new FileSystem();
+		var changelogDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		fileSystem.Directory.CreateDirectory(changelogDir);
+
+		// Create a changelog file for a specific PR
+		var changelog = """
+			title: Test PR
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			pr: https://github.com/elastic/elasticsearch/pull/123
+			""";
+		var changelogFile = fileSystem.Path.Combine(changelogDir, "1755268130-test-pr.yaml");
+		await fileSystem.File.WriteAllTextAsync(changelogFile, changelog, TestContext.Current.CancellationToken);
+
+		// Provide a non-existent file path along with a valid PR - should emit warning for file but continue with PR
+		var nonexistentFile = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "nonexistent.txt");
+		var input = new ChangelogBundleInput
+		{
+			Directory = changelogDir,
+			Prs = new[] { nonexistentFile, "https://github.com/elastic/elasticsearch/pull/123" },
+			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
+		};
+
+		// Act
+		var result = await service.BundleChangelogs(_collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		// Should succeed because we have a valid PR, but should emit warning for the non-existent file
+		result.Should().BeTrue();
+		_collector.Errors.Should().Be(0);
+		_collector.Warnings.Should().BeGreaterThan(0);
+		// Check that we have a warning about the file not existing
+		var fileWarning = _collector.Diagnostics.FirstOrDefault(d => d.Message.Contains("File does not exist, skipping"));
+		fileWarning.Should().NotBeNull("Expected a warning about the non-existent file being skipped");
+
+		var bundleContent = await fileSystem.File.ReadAllTextAsync(input.Output!, TestContext.Current.CancellationToken);
+		bundleContent.Should().Contain("name: 1755268130-test-pr.yaml");
 	}
 
 	[Fact]

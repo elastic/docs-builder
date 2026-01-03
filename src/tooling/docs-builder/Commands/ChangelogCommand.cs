@@ -110,8 +110,7 @@ internal sealed class ChangelogCommand(
 	/// <param name="inputProducts">Filter by products in format "product target lifecycle, ..." (e.g., "cloud-serverless 2025-12-02, cloud-serverless 2025-12-06")</param>
 	/// <param name="outputProducts">Explicitly set the products array in the output file in format "product target lifecycle, ...". Overrides any values from changelogs.</param>
 	/// <param name="resolve">Copy the contents of each changelog file into the entries array</param>
-	/// <param name="prs">Filter by pull request URLs or numbers (can specify multiple times)</param>
-	/// <param name="prsFile">Path to a newline-delimited file containing PR URLs or numbers</param>
+	/// <param name="prs">Filter by pull request URLs or numbers (comma-separated), or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times.</param>
 	/// <param name="owner">Optional: GitHub repository owner (used when PRs are specified as numbers)</param>
 	/// <param name="repo">Optional: GitHub repository name (used when PRs are specified as numbers)</param>
 	/// <param name="ctx"></param>
@@ -124,7 +123,6 @@ internal sealed class ChangelogCommand(
 		[ProductInfoParser] List<ProductInfo>? outputProducts = null,
 		bool resolve = false,
 		string[]? prs = null,
-		string? prsFile = null,
 		string? owner = null,
 		string? repo = null,
 		Cancel ctx = default
@@ -134,6 +132,31 @@ internal sealed class ChangelogCommand(
 
 		var service = new ChangelogService(logFactory, configurationContext, null);
 
+		// Process each --prs occurrence: each can be comma-separated PRs or a file path
+		var allPrs = new List<string>();
+		if (prs is { Length: > 0 })
+		{
+			foreach (var prsValue in prs)
+			{
+				if (string.IsNullOrWhiteSpace(prsValue))
+					continue;
+
+				// Check if it contains commas - if so, split and add each as a PR
+				if (prsValue.Contains(','))
+				{
+					var commaSeparatedPrs = prsValue
+						.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+						.Where(p => !string.IsNullOrWhiteSpace(p));
+					allPrs.AddRange(commaSeparatedPrs);
+				}
+				else
+				{
+					// Single value - pass as-is (will be handled by service layer as file path or PR)
+					allPrs.Add(prsValue);
+				}
+			}
+		}
+
 		var input = new ChangelogBundleInput
 		{
 			Directory = directory ?? Directory.GetCurrentDirectory(),
@@ -142,8 +165,7 @@ internal sealed class ChangelogCommand(
 			InputProducts = inputProducts,
 			OutputProducts = outputProducts,
 			Resolve = resolve,
-			Prs = prs,
-			PrsFile = prsFile,
+			Prs = allPrs.Count > 0 ? allPrs.ToArray() : null,
 			Owner = owner,
 			Repo = repo
 		};

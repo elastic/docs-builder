@@ -38,10 +38,10 @@ docs-builder changelog bundle [options...] [-h|--help]
 :   Optional: The GitHub repository owner, which is required when pull requests are specified as numbers.
 
 `--prs <string[]?>`
-:   Filter by pull request URLs or numbers (can specify multiple times).
-
-`--prs-file <string?>`
-:   The path to a newline-delimited file containing PR URLs or numbers.
+:   Filter by pull request URLs or numbers (comma-separated), or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times.
+:   Each occurrence can be either comma-separated PRs (e.g., `--prs "https://github.com/owner/repo/pull/123,6789"`) or a file path (e.g., `--prs /path/to/file.txt`).
+:   When specifying PRs directly, provide comma-separated values.
+:   When specifying a file path, provide a single value that points to a newline-delimited file.
 
 `--repo <string?>`
 :   Optional: The GitHub repository name, which is required when PRs are specified as numbers.
