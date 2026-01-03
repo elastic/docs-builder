@@ -1452,17 +1452,131 @@ public partial class ChangelogService(
 			// Convert title to slug format for folder names and anchors (lowercase, dashes instead of spaces)
 			var titleSlug = TitleToSlug(title);
 
+			// Load feature IDs to hide - check if --hide-features contains a file path or a list of feature IDs
+			var featureIdsToHide = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+			if (input.HideFeatures is { Length: > 0 })
+			{
+				// If there's exactly one value, check if it's a file path
+				if (input.HideFeatures.Length == 1)
+				{
+					var singleValue = input.HideFeatures[0];
+
+					if (_fileSystem.File.Exists(singleValue))
+					{
+						// File exists, read feature IDs from it
+						var featureIdsFileContent = await _fileSystem.File.ReadAllTextAsync(singleValue, ctx);
+						var featureIdsFromFile = featureIdsFileContent
+							.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+							.Where(f => !string.IsNullOrWhiteSpace(f))
+							.ToArray();
+
+						foreach (var featureId in featureIdsFromFile)
+						{
+							_ = featureIdsToHide.Add(featureId);
+						}
+					}
+					else
+					{
+						// Check if it looks like a file path
+						var looksLikeFilePath = singleValue.Contains(_fileSystem.Path.DirectorySeparatorChar) ||
+							singleValue.Contains(_fileSystem.Path.AltDirectorySeparatorChar) ||
+							_fileSystem.Path.HasExtension(singleValue);
+
+						if (looksLikeFilePath)
+						{
+							// File path doesn't exist
+							collector.EmitError(singleValue, $"File does not exist: {singleValue}");
+							return false;
+						}
+						else
+						{
+							// Doesn't look like a file path, treat as feature ID
+							_ = featureIdsToHide.Add(singleValue);
+						}
+					}
+				}
+				else
+				{
+					// Multiple values - process all values first, then check for errors
+					var nonExistentFiles = new List<string>();
+					foreach (var value in input.HideFeatures)
+					{
+						if (_fileSystem.File.Exists(value))
+						{
+							// File exists, read feature IDs from it
+							var featureIdsFileContent = await _fileSystem.File.ReadAllTextAsync(value, ctx);
+							var featureIdsFromFile = featureIdsFileContent
+								.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+								.Where(f => !string.IsNullOrWhiteSpace(f))
+								.ToArray();
+
+							foreach (var featureId in featureIdsFromFile)
+							{
+								_ = featureIdsToHide.Add(featureId);
+							}
+						}
+						else
+						{
+							// Check if it looks like a file path
+							var looksLikeFilePath = value.Contains(_fileSystem.Path.DirectorySeparatorChar) ||
+								value.Contains(_fileSystem.Path.AltDirectorySeparatorChar) ||
+								_fileSystem.Path.HasExtension(value);
+
+							if (looksLikeFilePath)
+							{
+								// Track non-existent files to check later
+								nonExistentFiles.Add(value);
+							}
+							else
+							{
+								// Doesn't look like a file path, treat as feature ID
+								_ = featureIdsToHide.Add(value);
+							}
+						}
+					}
+
+					// Report errors for non-existent files
+					if (nonExistentFiles.Count > 0)
+					{
+						foreach (var filePath in nonExistentFiles)
+						{
+							collector.EmitError(filePath, $"File does not exist: {filePath}");
+						}
+						return false;
+					}
+				}
+			}
+
+			// Track hidden entries for warnings
+			var hiddenEntries = new List<(string title, string featureId)>();
+			foreach (var (entry, _) in allResolvedEntries)
+			{
+				if (!string.IsNullOrWhiteSpace(entry.FeatureId) && featureIdsToHide.Contains(entry.FeatureId))
+				{
+					hiddenEntries.Add((entry.Title ?? "Unknown", entry.FeatureId));
+				}
+			}
+
+			// Emit warnings for hidden entries
+			if (hiddenEntries.Count > 0)
+			{
+				foreach (var (entryTitle, featureId) in hiddenEntries)
+				{
+					collector.EmitWarning(string.Empty, $"Changelog entry '{entryTitle}' with feature-id '{featureId}' will be commented out in markdown output");
+				}
+			}
+
 			// Render markdown files (use first repo found, or default)
 			var repoForRendering = allResolvedEntries.Count > 0 ? allResolvedEntries[0].repo : defaultRepo;
 
 			// Render index.md (features, enhancements, bug fixes, security)
-			await RenderIndexMarkdown(collector, outputDir, title, titleSlug, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, ctx);
+			await RenderIndexMarkdown(collector, outputDir, title, titleSlug, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, featureIdsToHide, ctx);
 
 			// Render breaking-changes.md
-			await RenderBreakingChangesMarkdown(collector, outputDir, title, titleSlug, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, ctx);
+			await RenderBreakingChangesMarkdown(collector, outputDir, title, titleSlug, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, featureIdsToHide, ctx);
 
 			// Render deprecations.md
-			await RenderDeprecationsMarkdown(collector, outputDir, title, titleSlug, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, ctx);
+			await RenderDeprecationsMarkdown(collector, outputDir, title, titleSlug, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, featureIdsToHide, ctx);
 
 			_logger.LogInformation("Rendered changelog markdown files to {OutputDir}", outputDir);
 
@@ -1501,6 +1615,7 @@ public partial class ChangelogService(
 		Dictionary<string, List<ChangelogData>> entriesByType,
 		bool subsections,
 		bool hidePrivateLinks,
+		HashSet<string> featureIdsToHide,
 		Cancel ctx
 	)
 	{
@@ -1548,7 +1663,7 @@ public partial class ChangelogService(
 			{
 				sb.AppendLine(CultureInfo.InvariantCulture, $"### Features and enhancements [{repo}-{titleSlug}-features-enhancements]");
 				var combined = features.Concat(enhancements).ToList();
-				RenderEntriesByArea(sb, combined, repo, subsections, hidePrivateLinks);
+				RenderEntriesByArea(sb, combined, repo, subsections, hidePrivateLinks, featureIdsToHide);
 			}
 
 			if (security.Count > 0 || bugFixes.Count > 0)
@@ -1556,7 +1671,7 @@ public partial class ChangelogService(
 				sb.AppendLine();
 				sb.AppendLine(CultureInfo.InvariantCulture, $"### Fixes [{repo}-{titleSlug}-fixes]");
 				var combined = security.Concat(bugFixes).ToList();
-				RenderEntriesByArea(sb, combined, repo, subsections, hidePrivateLinks);
+				RenderEntriesByArea(sb, combined, repo, subsections, hidePrivateLinks, featureIdsToHide);
 			}
 		}
 		else
@@ -1586,6 +1701,7 @@ public partial class ChangelogService(
 		Dictionary<string, List<ChangelogData>> entriesByType,
 		bool subsections,
 		bool hidePrivateLinks,
+		HashSet<string> featureIdsToHide,
 		Cancel ctx
 	)
 	{
@@ -1608,7 +1724,13 @@ public partial class ChangelogService(
 
 				foreach (var entry in areaGroup)
 				{
+					var shouldHide = !string.IsNullOrWhiteSpace(entry.FeatureId) && featureIdsToHide.Contains(entry.FeatureId);
+
 					sb.AppendLine();
+					if (shouldHide)
+					{
+						sb.AppendLine("<!--");
+					}
 					sb.AppendLine(CultureInfo.InvariantCulture, $"::::{{dropdown}} {Beautify(entry.Title)}");
 					sb.AppendLine(entry.Description ?? "% Describe the functionality that changed");
 					sb.AppendLine();
@@ -1668,6 +1790,10 @@ public partial class ChangelogService(
 					}
 
 					sb.AppendLine("::::");
+					if (shouldHide)
+					{
+						sb.AppendLine("-->");
+					}
 				}
 			}
 		}
@@ -1698,6 +1824,7 @@ public partial class ChangelogService(
 		Dictionary<string, List<ChangelogData>> entriesByType,
 		bool subsections,
 		bool hidePrivateLinks,
+		HashSet<string> featureIdsToHide,
 		Cancel ctx
 	)
 	{
@@ -1720,7 +1847,13 @@ public partial class ChangelogService(
 
 				foreach (var entry in areaGroup)
 				{
+					var shouldHide = !string.IsNullOrWhiteSpace(entry.FeatureId) && featureIdsToHide.Contains(entry.FeatureId);
+
 					sb.AppendLine();
+					if (shouldHide)
+					{
+						sb.AppendLine("<!--");
+					}
 					sb.AppendLine(CultureInfo.InvariantCulture, $"::::{{dropdown}} {Beautify(entry.Title)}");
 					sb.AppendLine(entry.Description ?? "% Describe the functionality that was deprecated");
 					sb.AppendLine();
@@ -1780,6 +1913,10 @@ public partial class ChangelogService(
 					}
 
 					sb.AppendLine("::::");
+					if (shouldHide)
+					{
+						sb.AppendLine("-->");
+					}
 				}
 			}
 		}
@@ -1799,7 +1936,7 @@ public partial class ChangelogService(
 	}
 
 	[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0058:Expression value is never used", Justification = "StringBuilder methods return builder for chaining")]
-	private void RenderEntriesByArea(StringBuilder sb, List<ChangelogData> entries, string repo, bool subsections, bool hidePrivateLinks)
+	private void RenderEntriesByArea(StringBuilder sb, List<ChangelogData> entries, string repo, bool subsections, bool hidePrivateLinks, HashSet<string> featureIdsToHide)
 	{
 		var groupedByArea = entries.GroupBy(e => GetComponent(e)).ToList();
 		foreach (var areaGroup in groupedByArea)
@@ -1813,6 +1950,12 @@ public partial class ChangelogService(
 
 			foreach (var entry in areaGroup)
 			{
+				var shouldHide = !string.IsNullOrWhiteSpace(entry.FeatureId) && featureIdsToHide.Contains(entry.FeatureId);
+
+				if (shouldHide)
+				{
+					sb.Append("% ");
+				}
 				sb.Append("* ");
 				sb.Append(Beautify(entry.Title));
 
@@ -1823,6 +1966,10 @@ public partial class ChangelogService(
 					if (!string.IsNullOrWhiteSpace(entry.Pr))
 					{
 						sb.AppendLine();
+						if (shouldHide)
+						{
+							sb.Append("% ");
+						}
 						sb.Append("  ");
 						sb.Append(FormatPrLink(entry.Pr, repo, hidePrivateLinks));
 						hasCommentedLinks = true;
@@ -1833,6 +1980,10 @@ public partial class ChangelogService(
 						foreach (var issue in entry.Issues)
 						{
 							sb.AppendLine();
+							if (shouldHide)
+							{
+								sb.Append("% ");
+							}
 							sb.Append("  ");
 							sb.Append(FormatIssueLink(issue, repo, hidePrivateLinks));
 							hasCommentedLinks = true;
@@ -1877,7 +2028,20 @@ public partial class ChangelogService(
 						sb.AppendLine();
 					}
 					var indented = Indent(entry.Description);
-					sb.AppendLine(indented);
+					if (shouldHide)
+					{
+						// Comment out each line of the description
+						var indentedLines = indented.Split('\n');
+						foreach (var line in indentedLines)
+						{
+							sb.Append("% ");
+							sb.AppendLine(line);
+						}
+					}
+					else
+					{
+						sb.AppendLine(indented);
+					}
 				}
 				else
 				{

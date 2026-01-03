@@ -259,7 +259,8 @@ Options:
   --output <string?>             Optional: Output directory for rendered markdown files. Defaults to current directory [Default: null]
   --title <string?>              Optional: Title to use for section headers in output markdown files. Defaults to version from first bundle [Default: null]
   --subsections                  Optional: Group entries by area/component in subsections. Defaults to false
-  --hide-private-links           Optional: Hide private links by commenting them out in markdown output. Defaults to false
+  --hide-private-links           Optional: Hide private links by commenting them out in the markdown output. Defaults to false
+  --hide-features <string[]?>    Filter by feature IDs (comma-separated), or a path to a newline-delimited file containing feature IDs. Can be specified multiple times. Entries with matching feature-id values will be commented out in the markdown output. [Default: null]
 ```
 
 Before you can use this command you must create changelog files and collect them into bundles.
@@ -314,3 +315,6 @@ For example, the `index.md` output file contains information derived from the ch
 ```
 
 To comment out the pull request and issue links, for example if they relate to a private repository, use the `--hide-private-links` option.
+
+If you have changelogs with `feature-id` values and you want them to be omitted from the output, use the `--hide-features` option.
+For more information, refer to [](/cli/release/changelog-render.md).

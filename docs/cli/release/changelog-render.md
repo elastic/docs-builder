@@ -35,6 +35,13 @@ docs-builder changelog render [options...] [-h|--help]
 :   Defaults to false.
 
 `--hide-private-links`
-:   Optional: Hide private links by commenting them out in markdown output.
+:   Optional: Hide private links by commenting them out in the markdown output.
 :   This option is useful when rendering changelog bundles in private repositories.
 :   Defaults to false.
+
+`--hide-features <string[]?>`
+:   Optional: Filter by feature IDs (comma-separated), or a path to a newline-delimited file containing feature IDs. Can be specified multiple times.
+:   Each occurrence can be either comma-separated feature IDs (e.g., `--hide-features "feature:new-search-api,feature:enhanced-analytics"`) or a file path (e.g., `--hide-features /path/to/file.txt`).
+:   When specifying feature IDs directly, provide comma-separated values.
+:   When specifying a file path, provide a single value that points to a newline-delimited file. The file should contain one feature ID per line.
+:   Entries with matching `feature-id` values will be commented out in the markdown output and a warning will be emitted.
