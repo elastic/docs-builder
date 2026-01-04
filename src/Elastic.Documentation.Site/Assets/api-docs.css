@@ -398,6 +398,27 @@
 	@apply text-yellow-90 bg-yellow-10 rounded px-1.5 py-0.5 text-xs;
 }
 
+/* Union variants container for expandable union type options */
+.union-variants {
+	@apply mt-2;
+}
+
+.union-variant {
+	/* No special border for union variants */
+}
+
+.union-variant-label {
+	@apply flex items-center gap-1;
+
+	code {
+		@apply text-yellow-90 font-medium;
+	}
+}
+
+.variant-description {
+	@apply text-grey-60 text-sm mt-1;
+}
+
 /* Schema ID display */
 .schema-id {
 	@apply text-grey-60 text-sm mb-4;
@@ -540,4 +561,96 @@
 .content-type-badge {
 	@apply text-grey-60 bg-grey-10 rounded px-2 py-0.5 text-xs ml-2;
 	font-weight: 500;
+}
+
+/* API description - smaller font like property descriptions */
+#elastic-api-v3 > p,
+#elastic-api-v3 h3[data-section="description"] + p {
+	@apply text-grey-80;
+	font-size: 0.9em;
+	line-height: 1.5;
+}
+
+/* Example blocks */
+.example-block {
+	@apply mb-6;
+	position: relative;
+}
+
+/* Example description - smaller font like property descriptions */
+.example-description {
+	@apply text-grey-80;
+	font-size: 0.9em;
+	line-height: 1.5;
+	margin-bottom: 0.75rem;
+
+	p {
+		margin: 0;
+	}
+
+	code {
+		@apply text-yellow-90 bg-yellow-10 rounded px-1 py-0.5 text-xs;
+		font-weight: 500;
+	}
+}
+
+/* Example h4 titles - sticky within example sections */
+.example-block h4 {
+	@apply bg-white border-b-grey-20 border-b-1;
+	position: sticky;
+	top: 120px; /* Below h3 sticky header */
+	z-index: 5;
+	padding-top: 0.5rem;
+	padding-bottom: 0.5rem;
+	margin-top: 0;
+	margin-bottom: 0.5rem;
+}
+
+/* Sticky Examples button - bottom right of content area */
+.examples-jump-btn {
+	@apply bg-blue-elastic rounded-full shadow-lg;
+	color: white !important;
+	position: fixed;
+	bottom: 2rem;
+	/* Align with right edge of content area (account for TOC sidebar) */
+	right: calc(var(--max-sidebar-width) + 2rem);
+	padding: 0.75rem 1.25rem;
+	font-size: 0.875rem;
+	font-weight: 500;
+	cursor: pointer;
+	z-index: 50;
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	transition: all 0.2s ease;
+	opacity: 0;
+	transform: translateY(1rem);
+	pointer-events: none;
+	text-decoration: none;
+}
+
+.examples-jump-btn.visible {
+	opacity: 1;
+	transform: translateY(0);
+	pointer-events: auto;
+}
+
+.examples-jump-btn:hover {
+	@apply bg-blue-elastic-80;
+	color: white !important;
+	transform: translateY(-2px);
+	box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+	text-decoration: none;
+}
+
+.examples-jump-btn .icon {
+	font-size: 1rem;
+	color: white !important;
+}
+
+/* Hide button on smaller screens where TOC is hidden */
+@media (max-width: 1023px) {
+	.examples-jump-btn {
+		right: 2rem;
+	}
 }
