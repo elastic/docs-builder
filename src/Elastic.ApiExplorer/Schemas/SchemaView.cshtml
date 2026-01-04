@@ -875,7 +875,7 @@
 							var keyPropId = $"{propId}-string";
 							<div class="nested-properties" id="@propId-children">
 								<dl class="property-list">
-									<div class="property-item depth-@(depth + 1) has-children expanded">
+									<div class="property-item depth-@(depth + 1) last-sibling has-children expanded">
 										<dt id="@keyPropId">
 											<code>&lt;string&gt;</code>
 											<code class="schema-type"><span class="union-icon">| </span>@GetTypeInfo(typeInfo.DictValueSchema).TypeName</code>
@@ -893,7 +893,7 @@
 							var keyPropId = $"{propId}-string";
 							<div class="nested-properties" id="@propId-children">
 								<dl class="property-list">
-									<div class="property-item depth-@(depth + 1) has-children">
+									<div class="property-item depth-@(depth + 1) last-sibling has-children">
 										<dt id="@keyPropId">
 											<code>&lt;string&gt;</code>
 											@RenderSchemaType(typeInfo.DictValueSchema, newAncestors)

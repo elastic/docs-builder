@@ -228,7 +228,8 @@
 		bool IsEnum = false,
 		bool IsUnion = false,
 		string[]? EnumValues = null,
-		string[]? UnionOptions = null
+		string[]? UnionOptions = null,
+		string? ArrayItemType = null
 	);
 
 	public TypeInfo GetTypeInfo(IOpenApiSchema? schema, string? currentPropertyPath = null)
@@ -253,6 +254,30 @@
 				var isEnum = schemaRef.Enum is { Count: > 0 };
 				var isUnion = !isEnum && (schemaRef.OneOf is { Count: > 0 } || schemaRef.AnyOf is { Count: > 0 });
 				string[]? enumValues = isEnum ? schemaRef.Enum?.Select(e => e?.ToString() ?? "").ToArray() : null;
+
+				// Check if the referenced type is an array of primitives
+				string? arrayItemType = null;
+				if (isArray)
+				{
+					// Try getting Items from the proxy first
+					IOpenApiSchema? itemSchema = schemaRef.Items;
+
+					// If Items is null, try resolving the schema explicitly
+					if (itemSchema is null && Model.Document.Components?.Schemas?.TryGetValue(refId, out var resolvedArraySchema) == true)
+					{
+						itemSchema = resolvedArraySchema.Items;
+					}
+
+					if (itemSchema is not null)
+					{
+						var itemInfo = GetTypeInfo(itemSchema);
+						// If the item is not an object and not a linked type, it's a primitive array
+						if (!itemInfo.IsObject && !itemInfo.HasLink && string.IsNullOrEmpty(itemInfo.SchemaRef))
+						{
+							arrayItemType = itemInfo.TypeName;
+						}
+					}
+				}
 
 				// Get union options from oneOf/anyOf
 				string[]? unionOptions = null;
@@ -298,7 +323,7 @@
 					anyOfOptions = anyOfList.Count > 0 ? anyOfList : null;
 				}
 
-				return new TypeInfo(typeName, refId, isArray, !isValueType && !isEnum, isValueType, valueTypeBase, hasLink, anyOfOptions, false, null, isEnum, isUnion, enumValues, unionOptions);
+				return new TypeInfo(typeName, refId, isArray, !isValueType && !isEnum, isValueType, valueTypeBase, hasLink, anyOfOptions, false, null, isEnum, isUnion, enumValues, unionOptions, arrayItemType);
 			}
 		}
 
@@ -366,9 +391,12 @@
 			if (schema.Items is not null)
 			{
 				var itemInfo = GetTypeInfo(schema.Items);
-				return new TypeInfo(itemInfo.TypeName, itemInfo.SchemaRef, true, itemInfo.IsObject, itemInfo.IsValueType, itemInfo.ValueTypeBase, itemInfo.HasLink, null);
+				// If the item is not an object and not a linked type, it's a primitive array
+				var isPrimitiveArray = !itemInfo.IsObject && !itemInfo.HasLink && string.IsNullOrEmpty(itemInfo.SchemaRef);
+				var arrayItemType = isPrimitiveArray ? itemInfo.TypeName : null;
+				return new TypeInfo(itemInfo.TypeName, itemInfo.SchemaRef, true, itemInfo.IsObject, itemInfo.IsValueType, itemInfo.ValueTypeBase, itemInfo.HasLink, null, ArrayItemType: arrayItemType);
 			}
-			return new TypeInfo("unknown", null, true, false, false, null, false, null);
+			return new TypeInfo("unknown", null, true, false, false, null, false, null, ArrayItemType: "unknown");
 		}
 
 		// Check for enum
@@ -641,121 +669,160 @@
 		if (options.Count == 0)
 			return HtmlString.Empty;
 
-		// Flatten nested unions to get leaf object types
-		var flattenedOptions = FlattenUnionOptions(options);
-
-		// Filter to only object options that have properties we can expand
-		// Note: "One of:" is shown in RenderProperties, so we only show expandable variants here
-		var objectOptions = flattenedOptions.Where(o => o.IsObject && o.Schema != null).ToList();
-
-		// If no object options with properties, nothing to render here
-		if (objectOptions.Count == 0)
-		{
+		// If ALL options are value types (no objects), don't render tree nodes
+		// The "One of:" badges are sufficient for simple unions like boolean | number
+		var hasObjectOption = options.Any(o => o.IsObject);
+		if (!hasObjectOption)
 			return HtmlString.Empty;
-		}
 
-		// Consolidate X and X[] variants - only show properties once, with X[] listed first
-		// Group by base name (without [])
-		var consolidatedOptions = objectOptions
+		// Use original options list to include ALL types (objects AND primitives)
+		// Sort: array variants first, then non-array variants
+		// Group by base name to pair X[] with X
+		var sortedOptions = options
 			.GroupBy(o => o.Name.EndsWith("[]") ? o.Name[..^2] : o.Name)
-			.Select(g => {
-				// Prefer array variant for display name, but use base schema for properties
-				var hasArray = g.Any(o => o.Name.EndsWith("[]"));
-				var baseOption = g.FirstOrDefault(o => !o.Name.EndsWith("[]"));
-				var arrayOption = g.FirstOrDefault(o => o.Name.EndsWith("[]"));
-
-				// Use the base option's schema for properties, but display both names if both exist
-				var displayOption = baseOption.Schema != null ? baseOption : arrayOption;
-				var displayNames = hasArray && baseOption.Schema != null
-					? new[] { $"{g.Key}[]", g.Key }
-					: new[] { g.First().Name };
-
-				return (Names: displayNames, Option: displayOption);
+			.SelectMany(g => {
+				var items = g.ToList();
+				// Sort within group: array first, then non-array
+				return items.OrderByDescending(o => o.Name.EndsWith("[]"));
 			})
-			.Where(x => x.Option.Schema != null)
 			.ToList();
 
-		// Show expandable union variants
-		<div class="union-variants">
-			<dl class="property-list">
-				@foreach (var consolidated in consolidatedOptions)
+		// Build list of variants to render - include ALL types (both objects and primitives)
+		var variantsToRender = new List<(string Name, string BaseName, bool IsArray, bool IsObject, IOpenApiSchema? Schema, IDictionary<string, IOpenApiSchema>? Props)>();
+
+		// Group by base name
+		var typeGroups = sortedOptions
+			.GroupBy(o => o.Name.EndsWith("[]") ? o.Name[..^2] : o.Name)
+			.ToDictionary(g => g.Key, g => g.ToList());
+
+		foreach (var (baseName, variants) in typeGroups)
+		{
+			// Find the non-array variant to get schema info (or use array if no non-array)
+			var primaryOption = variants.FirstOrDefault(o => !o.Name.EndsWith("[]"));
+			if (primaryOption.Schema is null)
+				primaryOption = variants.First();
+
+			IOpenApiSchema? schemaToRender = primaryOption.Schema;
+			IDictionary<string, IOpenApiSchema>? optionProps = null;
+
+			// Try to get properties for object types
+			if (primaryOption.IsObject && schemaToRender != null)
+			{
+				optionProps = GetSchemaProperties(schemaToRender);
+
+				if (optionProps is null || optionProps.Count == 0)
 				{
-					var option = consolidated.Option;
-					var displayNames = consolidated.Names;
-					if (option.Schema is null) continue;
+					var refId = primaryOption.Ref;
+					if (string.IsNullOrEmpty(refId) && schemaToRender is OpenApiSchemaReference schemaRef)
+						refId = schemaRef.Reference?.Id;
 
-					// Get base name for schema lookup
-					var baseName = option.Name.EndsWith("[]") ? option.Name[..^2] : option.Name;
-
-					// Get properties - try direct first, then resolve via Ref or schema reference
-					var optionProps = GetSchemaProperties(option.Schema);
-					IOpenApiSchema schemaToRender = option.Schema;
-					if (optionProps is null || optionProps.Count == 0)
+					if (!string.IsNullOrEmpty(refId) && Model.Document.Components?.Schemas?.TryGetValue(refId, out var resolvedSchema) == true)
 					{
-						var refId = option.Ref;
-						if (string.IsNullOrEmpty(refId) && option.Schema is OpenApiSchemaReference schemaRef)
-							refId = schemaRef.Reference?.Id;
-
-						if (!string.IsNullOrEmpty(refId) && Model.Document.Components?.Schemas?.TryGetValue(refId, out var resolvedSchema) == true)
+						optionProps = GetSchemaProperties(resolvedSchema);
+						schemaToRender = resolvedSchema;
+					}
+					else if (Model.Document.Components?.Schemas != null)
+					{
+						var matchingSchema = Model.Document.Components.Schemas
+							.FirstOrDefault(kvp => kvp.Key.EndsWith("." + baseName) || kvp.Key == baseName);
+						if (matchingSchema.Value != null)
 						{
-							optionProps = GetSchemaProperties(resolvedSchema);
-							schemaToRender = resolvedSchema;
-						}
-						else if (Model.Document.Components?.Schemas != null)
-						{
-							// Try finding by name pattern
-							var matchingSchema = Model.Document.Components.Schemas
-								.FirstOrDefault(kvp => kvp.Key.EndsWith("." + baseName) || kvp.Key == baseName);
-							if (matchingSchema.Value != null)
-							{
-								optionProps = GetSchemaProperties(matchingSchema.Value);
-								schemaToRender = matchingSchema.Value;
-							}
+							optionProps = GetSchemaProperties(matchingSchema.Value);
+							schemaToRender = matchingSchema.Value;
 						}
 					}
-					if (optionProps is null || optionProps.Count == 0) continue;
+				}
+			}
 
-					var optionId = $"{prefix}-variant-{baseName.ToLowerInvariant().Replace(" ", "-")}";
-					var nestedPropCount = optionProps.Count;
-					var isCollapsible = nestedPropCount > 2;
-					var defaultExpanded = depth == 0 ? false : (nestedPropCount > 0 && nestedPropCount < 5);
+			// Check if this type has both array and non-array variants
+			var hasArrayVariant = variants.Any(v => v.Name.EndsWith("[]"));
+			var hasNonArrayVariant = variants.Any(v => !v.Name.EndsWith("[]"));
 
-					// Build ancestor set including current variant type
-					var newAncestors = ancestorTypes != null ? new HashSet<string>(ancestorTypes) : new HashSet<string>();
-					if (!string.IsNullOrEmpty(baseName))
-						newAncestors.Add(baseName);
+			if (hasArrayVariant && hasNonArrayVariant)
+			{
+				// Render both: array first (no properties), then non-array (with properties)
+				variantsToRender.Add(($"{baseName}[]", baseName, true, primaryOption.IsObject, schemaToRender, optionProps));
+				variantsToRender.Add((baseName, baseName, false, primaryOption.IsObject, schemaToRender, optionProps));
+			}
+			else if (hasArrayVariant)
+			{
+				variantsToRender.Add(($"{baseName}[]", baseName, true, primaryOption.IsObject, schemaToRender, optionProps));
+			}
+			else
+			{
+				variantsToRender.Add((baseName, baseName, false, primaryOption.IsObject, schemaToRender, optionProps));
+			}
+		}
 
-					<div class="property-item union-variant depth-@depth has-children @(isCollapsible ? (defaultExpanded ? "expanded" : "collapsed") : "")">
-						<dt id="@optionId">
-							<span class="union-variant-label">
-								<span class="object-icon">{} </span>
-								@foreach (var name in displayNames)
-								{
-									<code>@name</code>
-								}
-							</span>
-						</dt>
-						@if (!string.IsNullOrEmpty(schemaToRender.Description))
+		// If no variants to render, nothing to show
+		if (variantsToRender.Count == 0)
+			return HtmlString.Empty;
+
+		// Show union variants - type labels without tree connectors
+		// Object types with properties get expand/collapse
+		<div class="union-variants">
+			@for (var i = 0; i < variantsToRender.Count; i++)
+			{
+				var variant = variantsToRender[i];
+				var variantName = variant.Name;
+				var baseName = variant.BaseName;
+				var isArrayVariant = variant.IsArray;
+				var isObjectType = variant.IsObject;
+				var schemaToRender = variant.Schema;
+				var optionProps = variant.Props;
+				var hasProperties = optionProps != null && optionProps.Count > 0;
+
+				var optionId = $"{prefix}-variant-{variantName.ToLowerInvariant().Replace(" ", "-").Replace("[]", "-array")}";
+
+				// Only show properties for non-array variant when both exist (to avoid duplication)
+				var hasBothVariants = variantsToRender.Count(v => v.BaseName == baseName) > 1;
+				var showProperties = hasProperties && (!isArrayVariant || !hasBothVariants);
+
+				// Build ancestor set including current variant type
+				var newAncestors = ancestorTypes != null ? new HashSet<string>(ancestorTypes) : new HashSet<string>();
+				if (!string.IsNullOrEmpty(baseName))
+					newAncestors.Add(baseName);
+
+				// Add separator before each variant except the first
+				@if (i > 0)
+				{
+					<div class="union-separator">or</div>
+				}
+
+				// Render as type label (no tree connectors)
+				// Object types with properties are collapsible
+				var nestedPropCount = optionProps?.Count ?? 0;
+				var isCollapsible = showProperties && nestedPropCount > 1;
+
+				<div class="union-variant-item @(showProperties ? "has-children" : "") @(isCollapsible ? "collapsed" : "")" id="@optionId">
+					<div class="union-variant-label">
+						@if (isArrayVariant)
 						{
-							<dd class="variant-description">
-								@Model.RenderMarkdown(schemaToRender.Description)
-							</dd>
+							<span class="array-icon">[]</span>
 						}
+						@if (isObjectType)
+						{
+							<span class="object-icon">{}</span>
+						}
+						<code class="schema-type">@variantName</code>
+					</div>
+					@if (showProperties && schemaToRender != null)
+					{
 						@if (isCollapsible)
 						{
-							<dd class="expand-toggle-row">
-								<button class="expand-toggle" aria-expanded="@(defaultExpanded ? "true" : "false")" aria-controls="@optionId-children" title="@(defaultExpanded ? "Collapse" : "Expand") @nestedPropCount properties">
-									<span class="toggle-icon">@(defaultExpanded ? "−" : "+")</span>
-									<span class="toggle-label">@(defaultExpanded ? "Hide" : "Show") @nestedPropCount properties</span>
+							<div class="expand-toggle-row union-expand-toggle">
+								<button class="expand-toggle">
+									<span class="toggle-icon">+</span>
+									<span class="toggle-label">Show @nestedPropCount properties</span>
 								</button>
-							</dd>
+							</div>
 						}
 						<div class="nested-properties" id="@optionId-children">
 							@RenderProperties(schemaToRender, null, optionId, depth + 1, newAncestors, isRequest)
 						</div>
-					</div>
-				}
-			</dl>
+					}
+				</div>
+			}
 		</div>
 
 		return HtmlString.Empty;
@@ -824,12 +891,13 @@
 				else if (hasUnionOptions && typeInfo.AnyOfOptions != null)
 					nestedPropCount = typeInfo.AnyOfOptions.Count(UnionOptionHasProperties);
 
-				// Only show collapse toggle if more than 2 properties
+				// Show collapse toggle if more than 1 property
+				// Union types should NOT have expand/collapse - their type options are always visible as tree nodes
 				var hasChildren = (hasNestedProps || hasDictValueProps || hasArrayItemProps || hasUnionOptions) && !isRecursive;
-				var isCollapsible = hasChildren && nestedPropCount > 2;
+				var isCollapsible = hasChildren && nestedPropCount > 1 && !hasUnionOptions;
 
-				// Auto expand if < 5 properties, collapse if >= 5
-				var defaultExpanded = nestedPropCount > 0 && nestedPropCount < 5;
+				// Always collapsed when toggle is shown (only 1 prop = no toggle, content visible)
+				var defaultExpanded = false;
 
 				<div class="property-item depth-@depth @(isLast ? "last-sibling" : "") @(hasChildren ? "has-children" : "") @(isCollapsible ? (defaultExpanded ? "expanded" : "collapsed") : "")">
 					<dt id="@propId">
@@ -868,27 +936,61 @@
 					}
 					@if (typeInfo.IsUnion)
 					{
-						// Prefer AnyOfOptions if available (has schema refs), otherwise use UnionOptions
-						var unionOptionNames = typeInfo.AnyOfOptions is { Count: > 0 }
-							? typeInfo.AnyOfOptions.Select(o => o.Name).ToArray()
-							: typeInfo.UnionOptions;
+						// Merge AnyOfOptions names with UnionOptions for complete coverage
+						// AnyOfOptions has complex types with schemas, UnionOptions has all names including primitives
+						var unionOptionNames = new List<string>();
+						if (typeInfo.AnyOfOptions != null && typeInfo.AnyOfOptions.Count > 0)
+							unionOptionNames.AddRange(typeInfo.AnyOfOptions.Select(o => o.Name));
+						if (typeInfo.UnionOptions != null)
+							unionOptionNames.AddRange(typeInfo.UnionOptions);
+						var distinctOptions = unionOptionNames.Distinct().ToArray();
 
-						if (unionOptionNames is { Length: > 0 })
+						// For X | X[] unions, show X[] first
+						var sortedOptions = distinctOptions
+							.OrderByDescending(o => o.EndsWith("[]"))
+							.ToArray();
+
+						// Check if all options are enum-like (primitive string values, not types with PascalCase or [])
+						// Enum values are typically lowercase like "avg", "max", "none"
+						// Type names are typically PascalCase like "Rescore", "SortOptions"
+						var allEnumLike = sortedOptions.Length > 0 && sortedOptions.All(o =>
+							!o.EndsWith("[]") &&
+							!string.IsNullOrEmpty(o) &&
+							(char.IsLower(o[0]) || o.All(c => !char.IsLetter(c) || char.IsLower(c) || c == '_')));
+
+						if (allEnumLike)
 						{
-							// For X | X[] unions, show X[] first
-							var sortedOptions = unionOptionNames
-								.OrderByDescending(o => o.EndsWith("[]"))
-								.Distinct()
-								.ToArray();
+							<dd class="enum-values">
+								<span class="values-label">Values:</span>
+								@foreach (var enumVal in sortedOptions)
+								{
+									<code class="enum-value">@enumVal</code>
+								}
+							</dd>
+						}
+						else if (sortedOptions.Length > 0 || hasUnionOptions)
+						{
+							// Always show "One of:" label when we have union options
+							// If hasUnionOptions is true, all types are rendered as tree nodes (including value types)
+							// so we don't show any badges - they all appear in the tree below
+							// Only show badges when there are NO tree nodes (all value types)
+							var badgeOptions = hasUnionOptions ? Array.Empty<string>() : sortedOptions;
 
 							<dd class="union-options">
 								<span class="values-label">One of:</span>
-								@foreach (var unionOpt in sortedOptions)
+								@foreach (var unionOpt in badgeOptions)
 								{
 									<code class="union-option">@unionOpt</code>
 								}
 							</dd>
 						}
+					}
+					@if (!string.IsNullOrEmpty(typeInfo.ArrayItemType))
+					{
+						<dd class="primitive-array">
+							<span class="values-label">Array of:</span>
+							<code class="primitive-type">@typeInfo.ArrayItemType</code>
+						</dd>
 					}
 					@{
 						// Add link to type page for linked types
@@ -939,7 +1041,7 @@
 							var keyPropId = $"{propId}-string";
 							<div class="nested-properties" id="@propId-children">
 								<dl class="property-list">
-									<div class="property-item depth-@(depth + 1) has-children">
+									<div class="property-item depth-@(depth + 1) last-sibling has-children">
 										<dt id="@keyPropId">
 											<code>&lt;string&gt;</code>
 											@RenderSchemaType(typeInfo.DictValueSchema, newAncestors)
@@ -1350,6 +1452,33 @@
 			e.preventDefault();
 			e.stopPropagation();
 
+			// Check if this is a union variant toggle (inside .union-expand-toggle)
+			const unionToggleRow = toggleBtn.closest('.union-expand-toggle');
+			if (unionToggleRow) {
+				// Handle union variant expand/collapse - toggle the variant item, not the parent property
+				const unionVariantItem = toggleBtn.closest('.union-variant-item');
+				if (!unionVariantItem) return;
+
+				const isExpanded = unionVariantItem.classList.contains('expanded');
+				const toggleIcon = toggleBtn.querySelector('.toggle-icon');
+				const toggleLabel = toggleBtn.querySelector('.toggle-label');
+				const propCount = toggleLabel?.textContent?.match(/\d+/)?.[0] || '';
+
+				if (isExpanded) {
+					unionVariantItem.classList.remove('expanded');
+					unionVariantItem.classList.add('collapsed');
+					if (toggleIcon) toggleIcon.textContent = '+';
+					if (toggleLabel) toggleLabel.textContent = `Show ${propCount} properties`;
+				} else {
+					unionVariantItem.classList.remove('collapsed');
+					unionVariantItem.classList.add('expanded');
+					if (toggleIcon) toggleIcon.textContent = '−';
+					if (toggleLabel) toggleLabel.textContent = `Hide ${propCount} properties`;
+				}
+				return;
+			}
+
+			// Handle regular property expand/collapse
 			const propertyItem = toggleBtn.closest('.property-item');
 			if (!propertyItem) return;
 

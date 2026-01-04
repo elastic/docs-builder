@@ -286,6 +286,55 @@
 		margin: 0;
 		margin-top: calc(var(--spacing) * 2);
 		position: relative;
+		display: flex;
+		align-items: center;
+
+		/* Vertical line - always visible when has children, extends to button center */
+		&::before {
+			content: '';
+			position: absolute;
+			left: 0.375rem;
+			top: 0;
+			height: 50%;
+			width: 0;
+			border-left: 1px solid #cbd5e1;
+			opacity: 0;
+			transition: opacity 0.1s ease;
+		}
+
+		/* Horizontal connector - only when collapsed */
+		&::after {
+			content: '';
+			position: absolute;
+			left: 0.375rem;
+			top: 50%;
+			width: 0.5rem;
+			border-top: 1px solid #cbd5e1;
+			opacity: 0;
+			transition: opacity 0.1s ease;
+		}
+	}
+
+	/* Expanded state - show vertical line extending through the row */
+	.property-item.expanded > .expand-toggle-row::before {
+		opacity: 1;
+		height: 100%; /* Extend to bottom of toggle row */
+	}
+
+	/* Continuation line from expand toggle down to nested properties */
+	.property-item.expanded > .nested-properties::before {
+		content: '';
+		position: absolute;
+		left: 0.375rem;
+		top: 0;
+		height: calc(var(--spacing) * 5 + 0.4rem); /* Connect to first child's L-connector */
+		border-left: 1px solid #cbd5e1;
+	}
+
+	/* Collapsed state - show both vertical and horizontal connector */
+	.property-item.collapsed > .expand-toggle-row::before,
+	.property-item.collapsed > .expand-toggle-row::after {
+		opacity: 1;
 	}
 
 	/* Expand/collapse toggle button - default grey (expanded state) */
@@ -331,7 +380,7 @@
 
 /* Schema type styling - visually distinct from property names */
 .schema-type {
-	@apply text-blue-elastic bg-blue-elastic-10 rounded px-1 py-0.5 text-xs font-normal;
+	@apply text-blue-elastic text-xs font-normal bg-transparent border-0 p-0;
 }
 
 /* Required badge */
@@ -398,21 +447,127 @@
 	@apply text-yellow-90 bg-yellow-10 rounded px-1.5 py-0.5 text-xs;
 }
 
-/* Union variants container for expandable union type options */
-.union-variants {
-	@apply mt-2;
+/* Primitive array type display */
+.primitive-array {
+	@apply flex flex-wrap items-center gap-1 mt-1;
+	padding-left: calc(var(--spacing) * 2);
 }
 
-.union-variant {
-	/* No special border for union variants */
+.primitive-type {
+	@apply text-blue-elastic bg-blue-elastic-10 rounded px-1.5 py-0.5 text-xs;
+}
+
+/* Union variants container for expandable union type options */
+.union-variants {
+	@apply mt-1;
+	padding-left: calc(var(--spacing) * 2);
+}
+
+/* Union variant item - type label without tree connectors */
+.union-variant-item {
+	padding: calc(var(--spacing) * 1) 0;
+
+	/* Collapsed state - hide nested properties */
+	&.collapsed > .nested-properties {
+		display: none;
+	}
+
+	/* Expanded state - show nested properties */
+	&.expanded > .nested-properties {
+		display: block;
+	}
+
+	/* Nested properties */
+	.nested-properties {
+		margin-top: 0;
+	}
 }
 
 .union-variant-label {
 	@apply flex items-center gap-1;
+}
 
-	code {
-		@apply text-yellow-90 font-medium;
+/* Union expand toggle row - on new line with tree connector when collapsed */
+.union-expand-toggle {
+	padding: calc(var(--spacing) * 1) 0;
+	padding-left: 1.25rem;
+	margin: 0;
+	position: relative;
+	display: flex;
+	align-items: center;
+
+	/* Vertical line - extends to button center */
+	&::before {
+		content: '';
+		position: absolute;
+		left: 0.375rem;
+		top: 0;
+		height: 50%;
+		width: 0;
+		border-left: 1px solid #cbd5e1;
+		opacity: 0;
+		transition: opacity 0.1s ease;
 	}
+
+	/* Horizontal connector - only when collapsed */
+	&::after {
+		content: '';
+		position: absolute;
+		left: 0.375rem;
+		top: 50%;
+		width: 0.5rem;
+		border-top: 1px solid #cbd5e1;
+		opacity: 0;
+		transition: opacity 0.1s ease;
+	}
+
+	/* Default button style (expanded state - grey) */
+	.expand-toggle {
+		@apply text-grey-60 bg-grey-10 border-grey-20 border rounded cursor-pointer;
+		padding: 0.25rem 0.5rem;
+		font-size: 0.8rem;
+		line-height: 1.2;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		transition: all 0.1s ease;
+	}
+
+	.expand-toggle:hover {
+		@apply text-blue-elastic bg-blue-elastic-10 border-blue-elastic-30;
+	}
+}
+
+/* Union expanded state - show only vertical line */
+.union-variant-item.expanded > .union-expand-toggle::before {
+	opacity: 1;
+}
+
+/* Union collapsed state - show both vertical and horizontal connector, green button */
+.union-variant-item.collapsed > .union-expand-toggle::before,
+.union-variant-item.collapsed > .union-expand-toggle::after {
+	opacity: 1;
+}
+
+.union-variant-item.collapsed > .union-expand-toggle .expand-toggle {
+	@apply text-green-90 bg-green-10 border-green-30;
+}
+
+/* Union separator between type options */
+.union-separator {
+	@apply text-grey-40 text-xs;
+	padding: calc(var(--spacing) * 0.5) 0;
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.union-separator::before,
+.union-separator::after {
+	content: '';
+	flex: 1;
+	max-width: 2rem;
+	border-top: 1px dashed #cbd5e1;
 }
 
 .variant-description {
@@ -442,7 +597,7 @@
 }
 
 /* Inline code in property descriptions - more distinct */
-.property-list dd code {
+.property-list dd code:not(.enum-value) {
 	@apply text-yellow-90 bg-yellow-10 rounded px-1 py-0.5 text-xs;
 	font-weight: 500;
 }
@@ -472,16 +627,20 @@
 	@apply text-purple-70 bg-purple-10 font-semibold;
 }
 
-/* Type link in description */
+/* Type link in description - styled as button */
 .type-link-description {
 	@apply mt-1;
 	padding-left: calc(var(--spacing) * 2);
 
 	a {
 		@apply text-blue-elastic text-sm no-underline;
+		@apply bg-blue-elastic-10 rounded px-2 py-1;
+		@apply inline-flex items-center gap-1;
+		@apply border border-blue-elastic-30;
+		transition: background-color 0.15s ease, border-color 0.15s ease;
 	}
 	a:hover {
-		@apply underline;
+		@apply bg-blue-elastic-20 border-blue-elastic-40;
 	}
 }
 
