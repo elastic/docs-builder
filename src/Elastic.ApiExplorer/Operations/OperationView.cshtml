@@ -2,9 +2,9 @@
 @using Elastic.ApiExplorer.Operations
 @using Microsoft.OpenApi
 @inherits RazorSliceHttpResult<Elastic.ApiExplorer.Operations.OperationViewModel>
-@implements IUsesLayout<Elastic.ApiExplorer._Layout, GlobalLayoutViewModel>
+@implements IUsesLayout<Elastic.ApiExplorer._Layout, ApiLayoutViewModel>
 @functions {
-	public GlobalLayoutViewModel LayoutModel => Model.CreateGlobalLayoutModel();
+	public ApiLayoutViewModel LayoutModel => Model.CreateGlobalLayoutModel();
 
 	private const int MaxDepth = 4;
 
@@ -589,11 +589,6 @@
 	var operation = Model.Operation.Operation;
 }
 
-<div class="w-full h-full grid
-					grid-cols-1
-					md:grid-cols-[1fr_var(--max-examples-width)]
-					lg:grid-cols-[1fr_var(--max-examples-width)]
-				">
 <section id="elastic-api-v3">
 	<h1>@operation.Summary</h1>
 
@@ -763,34 +758,75 @@
 			</div>
 		}
 	}
-</section>
-<aside class="examples-panel">
 	@{
+		// Check for examples in request body
+		var requestBodyContent = operation.RequestBody?.Content?.FirstOrDefault().Value;
+		var requestExamples = requestBodyContent?.Examples;
+
 		// Check for examples in the response
 		var successResponse = operation.Responses?.FirstOrDefault(r => r.Key.StartsWith("2")).Value;
 		var responseContent = successResponse?.Content?.FirstOrDefault().Value;
-		var examples = responseContent?.Examples;
+		var responseExamples = responseContent?.Examples;
 	}
-	@if (examples is { Count: > 0 })
+	@if (requestExamples is { Count: > 0 })
 	{
-		<h4>Examples</h4>
-		@foreach (var example in examples)
+		<h3 class="section-header" data-section="request-examples">
+			<span>Request Examples</span>
+			<span class="section-nav">
+				<span class="section-path">@Model.Operation.Route</span>
+				<button class="section-nav-btn" data-dir="up" title="Previous section">&#x25B2;</button>
+				<button class="section-nav-btn" data-dir="down" title="Next section">&#x25BC;</button>
+			</span>
+		</h3>
+		@foreach (var example in requestExamples)
 		{
 			<div class="example-block">
-				<h5>@example.Key</h5>
+				<h4>@(string.IsNullOrEmpty(example.Value?.Summary) ? example.Key : example.Value.Summary)</h4>
 				@if (!string.IsNullOrEmpty(example.Value?.Description))
 				{
-					<p>@Model.RenderMarkdown(example.Value.Description)</p>
+					<div class="example-description">@Model.RenderMarkdown(example.Value.Description)</div>
 				}
 				@if (example.Value?.Value is not null)
 				{
 					<pre><code class="language-json">@example.Value.Value.ToString()</code></pre>
 				}
+				@if (!string.IsNullOrEmpty(example.Value?.ExternalValue))
+				{
+					<p class="external-example">External example: <a href="@example.Value.ExternalValue">@example.Value.ExternalValue</a></p>
+				}
 			</div>
 		}
 	}
-</aside>
-</div>
+	@if (responseExamples is { Count: > 0 })
+	{
+		<h3 class="section-header" data-section="response-examples">
+			<span>Response Examples</span>
+			<span class="section-nav">
+				<span class="section-path">@Model.Operation.Route</span>
+				<button class="section-nav-btn" data-dir="up" title="Previous section">&#x25B2;</button>
+				<button class="section-nav-btn" data-dir="down" title="Next section">&#x25BC;</button>
+			</span>
+		</h3>
+		@foreach (var example in responseExamples)
+		{
+			<div class="example-block">
+				<h4>@(string.IsNullOrEmpty(example.Value?.Summary) ? example.Key : example.Value.Summary)</h4>
+				@if (!string.IsNullOrEmpty(example.Value?.Description))
+				{
+					<div class="example-description">@Model.RenderMarkdown(example.Value.Description)</div>
+				}
+				@if (example.Value?.Value is not null)
+				{
+					<pre><code class="language-json">@example.Value.Value.ToString()</code></pre>
+				}
+				@if (!string.IsNullOrEmpty(example.Value?.ExternalValue))
+				{
+					<p class="external-example">External example: <a href="@example.Value.ExternalValue">@example.Value.ExternalValue</a></p>
+				}
+			</div>
+		}
+	}
+</section>
 
 <script>
 (function() {
@@ -906,3 +942,4 @@
 	});
 })();
 </script>
+

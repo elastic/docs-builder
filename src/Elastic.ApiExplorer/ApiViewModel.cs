@@ -15,6 +15,13 @@ using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer;
 
+public record ApiTocItem(string Heading, string Slug, int Level = 2);
+
+public record ApiLayoutViewModel : GlobalLayoutViewModel
+{
+	public required IReadOnlyList<ApiTocItem> TocItems { get; init; }
+}
+
 public abstract class ApiViewModel(ApiRenderContext context)
 {
 	public string NavigationHtml { get; } = context.NavigationHtml;
@@ -28,8 +35,9 @@ public abstract class ApiViewModel(ApiRenderContext context)
 	public HtmlString RenderMarkdown(string? markdown) =>
 		new(string.IsNullOrEmpty(markdown) ? string.Empty : MarkdownRenderer.Render(markdown, null));
 
+	protected virtual IReadOnlyList<ApiTocItem> GetTocItems() => [];
 
-	public GlobalLayoutViewModel CreateGlobalLayoutModel() =>
+	public ApiLayoutViewModel CreateGlobalLayoutModel() =>
 		new()
 		{
 			DocsBuilderVersion = ShortId.Create(BuildContext.Version),
@@ -45,6 +53,7 @@ public abstract class ApiViewModel(ApiRenderContext context)
 			CanonicalBaseUrl = BuildContext.CanonicalBaseUrl,
 			GoogleTagManager = new GoogleTagManagerConfiguration(),
 			Features = new FeatureFlags([]),
-			StaticFileContentHashProvider = StaticFileContentHashProvider
+			StaticFileContentHashProvider = StaticFileContentHashProvider,
+			TocItems = GetTocItems()
 		};
 }

@@ -2,9 +2,9 @@
 @using Elastic.ApiExplorer.Schemas
 @using Microsoft.OpenApi
 @inherits RazorSliceHttpResult<Elastic.ApiExplorer.Schemas.SchemaViewModel>
-@implements IUsesLayout<Elastic.ApiExplorer._Layout, GlobalLayoutViewModel>
+@implements IUsesLayout<Elastic.ApiExplorer._Layout, ApiLayoutViewModel>
 @functions {
-	public GlobalLayoutViewModel LayoutModel => Model.CreateGlobalLayoutModel();
+	public ApiLayoutViewModel LayoutModel => Model.CreateGlobalLayoutModel();
 
 	private const int MaxDepth = 4;
 
