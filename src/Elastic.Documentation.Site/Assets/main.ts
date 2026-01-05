@@ -1,3 +1,4 @@
+import { initApiDocs } from './api-docs'
 import { initAppliesSwitch } from './applies-switch'
 import { initCopyButton } from './copybutton'
 import { initHighlight } from './hljs'
@@ -101,6 +102,7 @@ document.addEventListener('htmx:load', function (event: HtmxEvent) {
     initTabs()
     initAppliesSwitch()
     initMath()
+    initApiDocs()
 
     // We do this so that the navigation is not initialized twice
     if (isLazyLoadNavigationEnabled) {

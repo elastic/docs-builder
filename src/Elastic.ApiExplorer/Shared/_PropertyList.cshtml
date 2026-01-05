@@ -1,0 +1,50 @@
+@using Elastic.ApiExplorer.Schema
+@inherits RazorSlice<Elastic.ApiExplorer.Schema.PropertyRenderContext>
+@{
+	var properties = Model.Analyzer.GetSchemaProperties(Model.Schema);
+	if (properties is null || properties.Count == 0)
+	{
+		return;
+	}
+
+	var requiredProps = Model.RequiredProperties ?? Model.Schema?.Required ?? new HashSet<string>();
+	var propArray = properties.ToArray();
+}
+<dl class="property-list">
+	@for (var i = 0; i < propArray.Length; i++)
+	{
+		var property = propArray[i];
+		var propSchema = property.Value;
+		if (propSchema is null) continue;
+
+		var typeInfo = Model.Analyzer.GetTypeInfo(propSchema);
+		var propId = string.IsNullOrEmpty(Model.Prefix) ? property.Key : $"{Model.Prefix}-{property.Key}";
+
+		// Check if this type appears in any ancestor (recursive detection)
+		// Only consider named types - primitive types like "object", "string" cannot be recursive
+		var isRecursive = Model.AncestorTypes != null && !string.IsNullOrEmpty(typeInfo.TypeName)
+			&& !SchemaHelpers.IsPrimitiveTypeName(typeInfo.TypeName) && Model.AncestorTypes.Contains(typeInfo.TypeName);
+
+		// Also check dictionary value types for recursion
+		if (!isRecursive && typeInfo.IsDictionary && typeInfo.DictValueSchema != null)
+		{
+			var dictValueType = Model.Analyzer.GetTypeInfo(typeInfo.DictValueSchema);
+			isRecursive = Model.AncestorTypes != null && !string.IsNullOrEmpty(dictValueType.TypeName)
+				&& !SchemaHelpers.IsPrimitiveTypeName(dictValueType.TypeName) && Model.AncestorTypes.Contains(dictValueType.TypeName);
+		}
+
+		var itemContext = new PropertyItemContext
+		{
+			PropertyName = property.Key,
+			PropertySchema = propSchema,
+			TypeInfo = typeInfo,
+			PropId = propId,
+			IsRequired = requiredProps.Contains(property.Key),
+			IsLast = i == propArray.Length - 1,
+			IsRecursive = isRecursive,
+			ParentContext = Model
+		};
+
+		@(await RenderPartialAsync<_PropertyItem, PropertyItemContext>(itemContext))
+	}
+</dl>

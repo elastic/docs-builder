@@ -8,6 +8,18 @@ using Microsoft.OpenApi;
 namespace Elastic.ApiExplorer.Schema;
 
 /// <summary>
+/// Controls how property sections collapse/expand by default.
+/// </summary>
+public enum CollapseMode
+{
+	/// <summary>Properties always start collapsed when toggle is shown (OperationView behavior).</summary>
+	AlwaysCollapsed,
+
+	/// <summary>Depth-based: depth 0 collapsed, deeper levels expand if less than 5 properties (SchemaView behavior).</summary>
+	DepthBased
+}
+
+/// <summary>
 /// Context for rendering a property list.
 /// </summary>
 public record PropertyRenderContext
@@ -38,6 +50,21 @@ public record PropertyRenderContext
 
 	/// <summary>Maximum depth for property expansion.</summary>
 	public int MaxDepth { get; init; } = SchemaHelpers.MaxDepth;
+
+	/// <summary>Whether to show deprecated badges on deprecated properties.</summary>
+	public bool ShowDeprecated { get; init; } = true;
+
+	/// <summary>Whether to show version badges from x-state extension.</summary>
+	public bool ShowVersionInfo { get; init; } = true;
+
+	/// <summary>Whether to show external documentation links.</summary>
+	public bool ShowExternalDocs { get; init; } = true;
+
+	/// <summary>Whether to use hidden="until-found" for collapsed sections (enables browser find-in-page).</summary>
+	public bool UseHiddenUntilFound { get; init; } = true;
+
+	/// <summary>How collapsed sections should be expanded by default.</summary>
+	public CollapseMode CollapseMode { get; init; } = CollapseMode.AlwaysCollapsed;
 }
 
 /// <summary>
@@ -110,5 +137,14 @@ public record UnionVariantsContext
 
 	/// <summary>Function to render markdown to HTML.</summary>
 	public required Func<string?, HtmlString> RenderMarkdown { get; init; }
+
+	/// <summary>Whether to use hidden="until-found" for collapsed sections (enables browser find-in-page).</summary>
+	public bool UseHiddenUntilFound { get; init; } = true;
+
+	/// <summary>How collapsed sections should be expanded by default.</summary>
+	public CollapseMode CollapseMode { get; init; } = CollapseMode.AlwaysCollapsed;
+
+	/// <summary>Maximum depth for property expansion.</summary>
+	public int MaxDepth { get; init; } = SchemaHelpers.MaxDepth;
 }
 

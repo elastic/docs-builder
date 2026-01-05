@@ -1,0 +1,203 @@
+@using Elastic.ApiExplorer.Schema
+@using Microsoft.OpenApi
+@inherits RazorSlice<Elastic.ApiExplorer.Schema.UnionVariantsContext>
+@{
+	var options = Model.Options;
+	if (options.Count == 0)
+	{
+		return;
+	}
+
+	// If ALL options are value types (no objects), don't render tree nodes
+	// The "One of:" badges are sufficient for simple unions like boolean | number
+	var hasObjectOption = options.Any(o => o.IsObject);
+	if (!hasObjectOption)
+	{
+		return;
+	}
+
+	// Sort: array variants first, then non-array variants
+	// Group by base name to pair X[] with X
+	var sortedOptions = options
+		.GroupBy(o => o.Name.EndsWith("[]") ? o.Name[..^2] : o.Name)
+		.SelectMany(g => {
+			var items = g.ToList();
+			// Sort within group: array first, then non-array
+			return items.OrderByDescending(o => o.Name.EndsWith("[]"));
+		})
+		.ToList();
+
+	// Build list of variants to render - include ALL types (both objects and primitives)
+	var variantsToRender = new List<(string Name, string BaseName, bool IsArray, bool IsObject, IOpenApiSchema? Schema, IDictionary<string, IOpenApiSchema>? Props)>();
+
+	// Group by base name
+	var typeGroups = sortedOptions
+		.GroupBy(o => o.Name.EndsWith("[]") ? o.Name[..^2] : o.Name)
+		.ToDictionary(g => g.Key, g => g.ToList());
+
+	foreach (var (baseName, variants) in typeGroups)
+	{
+		// Find the non-array variant to get schema info (or use array if no non-array)
+		var primaryOption = variants.FirstOrDefault(o => !o.Name.EndsWith("[]"));
+		if (primaryOption?.Schema is null)
+			primaryOption = variants.First();
+
+		IOpenApiSchema? schemaToRender = primaryOption?.Schema;
+		IDictionary<string, IOpenApiSchema>? optionProps = null;
+
+		// Try to get properties for object types
+		if (primaryOption?.IsObject == true && schemaToRender != null)
+		{
+			optionProps = Model.Analyzer.GetSchemaProperties(schemaToRender);
+
+			if (optionProps is null || optionProps.Count == 0)
+			{
+				var refId = primaryOption.Ref;
+				if (string.IsNullOrEmpty(refId) && schemaToRender is OpenApiSchemaReference schemaRef)
+					refId = schemaRef.Reference?.Id;
+
+				// Note: We don't have access to Document here, so we can't resolve by refId
+				// The properties should already be resolved by SchemaAnalyzer
+			}
+		}
+
+		// Check if this type has both array and non-array variants
+		var hasArrayVariant = variants.Any(v => v.Name.EndsWith("[]"));
+		var hasNonArrayVariant = variants.Any(v => !v.Name.EndsWith("[]"));
+
+		if (hasArrayVariant && hasNonArrayVariant)
+		{
+			// Render both: array first (no properties), then non-array (with properties)
+			variantsToRender.Add(($"{baseName}[]", baseName, true, primaryOption?.IsObject ?? false, schemaToRender, optionProps));
+			variantsToRender.Add((baseName, baseName, false, primaryOption?.IsObject ?? false, schemaToRender, optionProps));
+		}
+		else if (hasArrayVariant)
+		{
+			variantsToRender.Add(($"{baseName}[]", baseName, true, primaryOption?.IsObject ?? false, schemaToRender, optionProps));
+		}
+		else
+		{
+			variantsToRender.Add((baseName, baseName, false, primaryOption?.IsObject ?? false, schemaToRender, optionProps));
+		}
+	}
+
+	// If no variants to render, nothing to show
+	if (variantsToRender.Count == 0)
+	{
+		return;
+	}
+
+	// Check if we should collapse the union options (more than 2 variants)
+	var shouldCollapseUnion = variantsToRender.Count > 2;
+	var unionContainerId = $"{Model.Prefix}-union-options";
+}
+<div class="union-variants-container @(shouldCollapseUnion ? "collapsible collapsed" : "")" id="@unionContainerId">
+	@if (shouldCollapseUnion)
+	{
+		<div class="union-collapse-toggle">
+			<button class="expand-toggle union-group-toggle">
+				<span class="toggle-icon">+</span>
+				<span class="toggle-label">Show @variantsToRender.Count type options</span>
+			</button>
+		</div>
+	}
+	<div class="union-variants @(shouldCollapseUnion ? "union-variants-content" : "")" @(shouldCollapseUnion && Model.UseHiddenUntilFound ? "hidden=\"until-found\"" : "")>
+	@for (var i = 0; i < variantsToRender.Count; i++)
+	{
+		var variant = variantsToRender[i];
+		var variantName = variant.Name;
+		var baseName = variant.BaseName;
+		var isArrayVariant = variant.IsArray;
+		var isObjectType = variant.IsObject;
+		var schemaToRender = variant.Schema;
+		var optionProps = variant.Props;
+		var hasProperties = optionProps != null && optionProps.Count > 0;
+
+		var optionId = $"{Model.Prefix}-variant-{variantName.ToLowerInvariant().Replace(" ", "-").Replace("[]", "-array")}";
+
+		// Only show properties for non-array variant when both exist (to avoid duplication)
+		var hasBothVariants = variantsToRender.Count(v => v.BaseName == baseName) > 1;
+		var showProperties = hasProperties && (!isArrayVariant || !hasBothVariants);
+
+		// Build ancestor set including current variant type
+		var newAncestors = Model.AncestorTypes != null ? new HashSet<string>(Model.AncestorTypes) : new HashSet<string>();
+		if (!string.IsNullOrEmpty(baseName))
+			newAncestors.Add(baseName);
+
+		// Add separator before each variant except the first
+		@if (i > 0)
+		{
+			<div class="union-separator">or</div>
+		}
+
+		// Render as type label (no tree connectors)
+		// Object types with properties are collapsible
+		var nestedPropCount = optionProps?.Count ?? 0;
+		var isCollapsible = showProperties && nestedPropCount > 1;
+		var defaultExpanded = Model.CollapseMode == CollapseMode.DepthBased
+			? (Model.Depth == 0 ? false : (nestedPropCount > 0 && nestedPropCount < 5))
+			: false;
+
+		<div class="union-variant-item @(showProperties ? "has-children" : "") @(isCollapsible ? (defaultExpanded ? "expanded" : "collapsed") : "")" id="@optionId">
+			<div class="union-variant-label">
+				@if (isArrayVariant)
+				{
+					<span class="array-icon">[]</span>
+				}
+				@if (isObjectType)
+				{
+					<span class="object-icon">{}</span>
+				}
+				@{
+					// Remove [] suffix from name when we already show [] icon prefix
+					var displayVariantName = isArrayVariant && variantName.EndsWith("[]") ? variantName[..^2] : variantName;
+				}
+				<code class="schema-type">@displayVariantName</code>
+			</div>
+			@if (showProperties && schemaToRender != null)
+			{
+				var childContext = new PropertyRenderContext
+				{
+					Schema = schemaToRender,
+					RequiredProperties = null,
+					Prefix = optionId,
+					Depth = Model.Depth + 1,
+					AncestorTypes = newAncestors,
+					IsRequest = Model.IsRequest,
+					Analyzer = Model.Analyzer,
+					RenderMarkdown = Model.RenderMarkdown,
+					MaxDepth = Model.MaxDepth,
+					ShowDeprecated = true,
+					ShowVersionInfo = true,
+					ShowExternalDocs = true,
+					UseHiddenUntilFound = Model.UseHiddenUntilFound,
+					CollapseMode = Model.CollapseMode
+				};
+				var useHidden = Model.UseHiddenUntilFound && isCollapsible && !defaultExpanded;
+
+				if (isCollapsible)
+				{
+					<div class="expand-toggle-row union-expand-toggle">
+						<button class="expand-toggle">
+							<span class="toggle-icon">@(defaultExpanded ? "−" : "+")</span>
+							<span class="toggle-label">@(defaultExpanded ? "Hide" : "Show") @nestedPropCount properties</span>
+						</button>
+					</div>
+				}
+				if (useHidden)
+				{
+					<div class="nested-properties" id="@optionId-children" hidden="until-found">
+						@(await RenderPartialAsync<_PropertyList, PropertyRenderContext>(childContext))
+					</div>
+				}
+				else
+				{
+					<div class="nested-properties" id="@optionId-children">
+						@(await RenderPartialAsync<_PropertyList, PropertyRenderContext>(childContext))
+					</div>
+				}
+			}
+		</div>
+	}
+	</div>
+</div>

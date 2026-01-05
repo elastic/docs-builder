@@ -1,6 +1,7 @@
 @using Elastic.ApiExplorer.Landing
 @using Elastic.ApiExplorer.Schema
 @using Elastic.ApiExplorer.Schemas
+@using Elastic.ApiExplorer.Shared
 @using Microsoft.OpenApi
 @inherits RazorSliceHttpResult<Elastic.ApiExplorer.Schemas.SchemaViewModel>
 @implements IUsesLayout<Elastic.ApiExplorer._Layout, ApiLayoutViewModel>
@@ -11,546 +12,41 @@
 	private SchemaAnalyzer? _analyzer;
 	private SchemaAnalyzer Analyzer => _analyzer ??= new SchemaAnalyzer(Model.Document, _currentPageType);
 
-	// Delegate to shared helpers
-	private static string GetContainerPageUrl(string typeName) => SchemaHelpers.GetContainerPageUrl(typeName) ?? "";
-	private static bool ShouldLinkToContainerPage(string typeName, string? currentPageType = null) =>
-		SchemaHelpers.ShouldLinkToContainerPage(typeName, currentPageType);
-
 	// Delegate schema analysis to Analyzer
-	private bool UnionOptionHasProperties(UnionOption option) => Analyzer.UnionOptionHasProperties(option);
-	private List<UnionOption> GetNestedUnionOptions(IOpenApiSchema? schema) => Analyzer.GetNestedUnionOptions(schema);
-	private List<UnionOption> FlattenUnionOptions(List<UnionOption> options) => Analyzer.FlattenUnionOptions(options);
-	private IOpenApiSchema? ResolveSchema(IOpenApiSchema? schema) => Analyzer.ResolveSchema(schema);
 	private IDictionary<string, IOpenApiSchema>? GetSchemaProperties(IOpenApiSchema? schema) => Analyzer.GetSchemaProperties(schema);
 	private TypeInfo GetTypeInfo(IOpenApiSchema? schema) => Analyzer.GetTypeInfo(schema);
 
-	// Delegate simple helpers to SchemaHelpers
-	public string GetPrimitiveTypeName(JsonSchemaType? type) => SchemaHelpers.GetPrimitiveTypeName(type);
-	public string FormatSchemaName(string schemaId) => SchemaHelpers.FormatSchemaName(schemaId);
-	public bool IsValueType(string typeName) => SchemaHelpers.IsValueType(typeName);
-	public bool IsPrimitiveTypeName(string typeName) => SchemaHelpers.IsPrimitiveTypeName(typeName);
-	public string? GetValueTypeBase(IOpenApiSchema? schema) => SchemaHelpers.GetValueTypeBase(schema);
-	public string? GetPrimitiveAliasType(IOpenApiSchema? schema) => SchemaHelpers.GetPrimitiveAliasType(schema);
-
 	// Current page type is set from the model to prevent self-linking
 	private string? _currentPageType;
-	public bool IsLinkedType(string typeName) => Analyzer.IsLinkedType(typeName);
 
-	public IHtmlContent RenderSchemaType(IOpenApiSchema schema, HashSet<string>? ancestorTypes = null)
-	{
-		var info = GetTypeInfo(schema);
-		var sb = new System.Text.StringBuilder();
-
-		// Build the display text with [] for arrays and {} for objects
-		if (info.IsArray)
+	// Helper to create PropertyRenderContext for SchemaView
+	private PropertyRenderContext CreatePropertyContext(IOpenApiSchema? schema, string prefix, HashSet<string>? ancestors = null)
+		=> new PropertyRenderContext
 		{
-			sb.Append("<span class=\"array-icon\">[] </span>");
-			if (info.IsValueType && info.ValueTypeBase != null)
-			{
-				sb.Append($"{info.ValueTypeBase} ");
-			}
-			else if (info.IsObject && !string.IsNullOrEmpty(info.SchemaRef))
-			{
-				sb.Append("<span class=\"object-icon\">{} </span>");
-			}
-		}
-		else if (info.IsDictionary)
+			Schema = schema,
+			RequiredProperties = schema?.Required,
+			Prefix = prefix,
+			Depth = 0,
+			AncestorTypes = ancestors,
+			IsRequest = false,
+			Analyzer = Analyzer,
+			RenderMarkdown = Model.RenderMarkdown,
+			// SchemaView defaults - disable OperationView-specific features
+			ShowDeprecated = false,
+			ShowVersionInfo = false,
+			ShowExternalDocs = false,
+			UseHiddenUntilFound = false,
+			CollapseMode = CollapseMode.DepthBased
+		};
+
+	// Helper to create SchemaTypeContext
+	private SchemaTypeContext CreateSchemaTypeContext(IOpenApiSchema schema)
+		=> new SchemaTypeContext
 		{
-			// Dictionary uses "map string to TypeName" format
-			var valueTypeName = info.TypeName.StartsWith("string to ") ? info.TypeName["string to ".Length..] : info.TypeName;
-			var dictValueHasProps = info.DictValueSchema != null && GetSchemaProperties(info.DictValueSchema)?.Count > 0;
-			var showObjectIcon = info.HasLink || dictValueHasProps;
-
-			// Format: "map string to {} ScriptField" with "string" and "ScriptField" as types (blue)
-			sb.Append("<span class=\"map-keyword\">map </span>");
-			sb.Append("<span>string</span>");
-			sb.Append("<span class=\"map-keyword\"> to </span>");
-			if (showObjectIcon)
-			{
-				sb.Append("<span class=\"object-icon\">{} </span>");
-			}
-			sb.Append($"<span>{System.Web.HttpUtility.HtmlEncode(valueTypeName)}</span>");
-			return new HtmlString($"<code class=\"schema-type\">{sb}</code>");
-		}
-		else if (info.IsUnion && info.UnionOptions != null)
-		{
-			// Union types get a special icon - use "union" like OperationView
-			sb.Append("<span class=\"union-icon\">union </span>");
-		}
-		else if (info.IsValueType && info.ValueTypeBase != null)
-		{
-			// Show underlying type for named value types: "string Field" instead of just "Field"
-			sb.Append($"<span class=\"value-type-keyword\">{info.ValueTypeBase}</span> ");
-		}
-		else if (info.IsObject && !string.IsNullOrEmpty(info.SchemaRef) && !info.HasLink)
-		{
-			// Regular objects get {} (but not linked types - they get it below)
-			sb.Append("<span class=\"object-icon\">{} </span>");
-		}
-
-		var displayName = System.Web.HttpUtility.HtmlEncode(info.TypeName);
-		var titleAttr = !string.IsNullOrEmpty(info.SchemaRef) ? $" title=\"{info.SchemaRef}\"" : "";
-
-		// Add {} prefix for linked types (they have dedicated pages)
-		if (info.HasLink && !info.IsDictionary)
-		{
-			sb.Append("<span class=\"object-icon\">{} </span>");
-		}
-
-		sb.Append($"<span{titleAttr}>{displayName}</span>");
-
-		return new HtmlString($"<code class=\"schema-type\">{sb}</code>");
-	}
-
-	public IHtmlContent RenderRecursiveBadge()
-	{
-		return new HtmlString("<span class=\"recursive\">recursive</span>");
-	}
-
-	public IHtmlContent RenderUnionOptions(List<UnionOption> options, string prefix, int depth, HashSet<string>? ancestorTypes = null)
-	{
-		if (options.Count == 0)
-			return HtmlString.Empty;
-
-		// Show "One of:" with sorted options (X[] before X, deduplicated)
-		var sortedOptionNames = options.Select(o => o.Name)
-			.OrderByDescending(o => o.EndsWith("[]"))
-			.Distinct()
-			.ToArray();
-
-		// Primitive types that should render as types, not enum values
-		var primitiveTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-			{ "boolean", "number", "string", "integer", "object", "null", "array" };
-
-		<div class="union-options">
-			<span class="values-label">One of:</span>
-			@foreach (var optName in sortedOptionNames)
-			{
-				// Use type styling for primitive types or PascalCase type names
-				// Enum values are typically lowercase like "avg", "max", "none"
-				var isTypeOption = primitiveTypes.Contains(optName) ||
-					primitiveTypes.Contains(optName.TrimEnd('[', ']')) ||
-					(!string.IsNullOrEmpty(optName) && char.IsUpper(optName[0])) || optName.EndsWith("[]");
-				<code class="@(isTypeOption ? "union-type-option" : "union-option")">@optName</code>
-			}
-		</div>
-
-		// Flatten nested unions to get leaf object types
-		var flattenedOptions = FlattenUnionOptions(options);
-
-		// Filter to only object options that have properties we can expand
-		var objectOptions = flattenedOptions.Where(o => o.IsObject && o.Schema != null).ToList();
-
-		// If no object options with properties, we're done (already showed the options list)
-		if (objectOptions.Count == 0)
-		{
-			return HtmlString.Empty;
-		}
-
-		// Consolidate X and X[] variants - only show properties once, with X[] listed first
-		var consolidatedOptions = objectOptions
-			.GroupBy(o => o.Name.EndsWith("[]") ? o.Name[..^2] : o.Name)
-			.Select(g => {
-				var hasArray = g.Any(o => o.Name.EndsWith("[]"));
-				var baseOption = g.FirstOrDefault(o => !o.Name.EndsWith("[]"));
-				var arrayOption = g.FirstOrDefault(o => o.Name.EndsWith("[]"));
-				var displayOption = baseOption?.Schema != null ? baseOption : arrayOption;
-				var displayNames = hasArray && baseOption?.Schema != null
-					? new[] { $"{g.Key}[]", g.Key }
-					: new[] { g.First().Name };
-				return (Names: displayNames, Option: displayOption);
-			})
-			.Where(x => x.Option?.Schema != null)
-			.ToList();
-
-		// Show expandable union variants
-		<div class="union-variants">
-			<dl class="property-list">
-				@foreach (var consolidated in consolidatedOptions)
-				{
-					var option = consolidated.Option;
-					var displayNames = consolidated.Names;
-					if (option?.Schema is null) continue;
-
-					// Get base name for schema lookup
-					var baseName = option.Name.EndsWith("[]") ? option.Name[..^2] : option.Name;
-
-					// Get properties - try direct first, then resolve via Ref or schema reference
-					var optionProps = GetSchemaProperties(option.Schema);
-					IOpenApiSchema schemaToRender = option.Schema;
-					if (optionProps is null || optionProps.Count == 0)
-					{
-						var refId = option.Ref;
-						if (string.IsNullOrEmpty(refId) && option.Schema is OpenApiSchemaReference schemaRef)
-							refId = schemaRef.Reference?.Id;
-
-						if (!string.IsNullOrEmpty(refId) && Model.Document.Components?.Schemas?.TryGetValue(refId, out var resolvedSchema) == true)
-						{
-							optionProps = GetSchemaProperties(resolvedSchema);
-							schemaToRender = resolvedSchema;
-						}
-						else if (Model.Document.Components?.Schemas != null)
-						{
-							// Try finding by name pattern
-							var matchingSchema = Model.Document.Components.Schemas
-								.FirstOrDefault(kvp => kvp.Key.EndsWith("." + baseName) || kvp.Key == baseName);
-							if (matchingSchema.Value != null)
-							{
-								optionProps = GetSchemaProperties(matchingSchema.Value);
-								schemaToRender = matchingSchema.Value;
-							}
-						}
-					}
-					if (optionProps is null || optionProps.Count == 0) continue;
-
-					var optionId = $"{prefix}-variant-{baseName.ToLowerInvariant().Replace(" ", "-")}";
-					var nestedPropCount = optionProps.Count;
-					var isCollapsible = nestedPropCount > 2;
-					var defaultExpanded = depth == 0 ? false : (nestedPropCount > 0 && nestedPropCount < 5);
-
-					// Build ancestor set including current variant type
-					var newAncestors = ancestorTypes != null ? new HashSet<string>(ancestorTypes) : new HashSet<string>();
-					if (!string.IsNullOrEmpty(baseName))
-						newAncestors.Add(baseName);
-
-					<div class="property-item union-variant depth-@depth has-children @(isCollapsible ? (defaultExpanded ? "expanded" : "collapsed") : "")">
-						<dt id="@optionId">
-							<span class="union-variant-label">
-								<span class="object-icon">{} </span>
-								@foreach (var name in displayNames)
-								{
-									<code>@name</code>
-								}
-							</span>
-						</dt>
-						@if (!string.IsNullOrEmpty(schemaToRender.Description))
-						{
-							<dd class="variant-description">
-								@Model.RenderMarkdown(schemaToRender.Description)
-							</dd>
-						}
-						@if (isCollapsible)
-						{
-							<dd class="expand-toggle-row">
-								<button class="expand-toggle" aria-expanded="@(defaultExpanded ? "true" : "false")" aria-controls="@optionId-children" title="@(defaultExpanded ? "Collapse" : "Expand") @nestedPropCount properties">
-									<span class="toggle-icon">@(defaultExpanded ? "−" : "+")</span>
-									<span class="toggle-label">@(defaultExpanded ? "Hide" : "Show") @nestedPropCount properties</span>
-								</button>
-							</dd>
-						}
-						<div class="nested-properties" id="@optionId-children">
-							@RenderProperties(schemaToRender, optionId, depth + 1, newAncestors)
-						</div>
-					</div>
-				}
-			</dl>
-		</div>
-
-		return HtmlString.Empty;
-	}
-
-	public IHtmlContent RenderProperties(IOpenApiSchema? schema, string prefix, int depth, HashSet<string>? ancestorTypes = null)
-	{
-		var properties = GetSchemaProperties(schema);
-		if (properties is null || properties.Count == 0)
-			return HtmlString.Empty;
-
-		var requiredProps = schema?.Required ?? new HashSet<string>();
-		var propArray = properties.ToArray();
-
-		<dl class="property-list">
-			@for (var i = 0; i < propArray.Length; i++)
-			{
-				var property = propArray[i];
-				var propSchema = property.Value;
-				if (propSchema is null) continue;
-				var isRequired = requiredProps.Contains(property.Key);
-				var typeInfo = GetTypeInfo(propSchema);
-				var propId = string.IsNullOrEmpty(prefix) ? property.Key : $"{prefix}-{property.Key}";
-				var isLast = i == propArray.Length - 1;
-				var hasDescription = !string.IsNullOrWhiteSpace(propSchema.Description);
-
-				// Check if this type appears in any ancestor (recursive detection)
-				var isRecursive = ancestorTypes != null && !string.IsNullOrEmpty(typeInfo.TypeName) && ancestorTypes.Contains(typeInfo.TypeName);
-
-				// Also check dictionary value types for recursion (e.g., "aggregations" map string to AggregationContainer)
-				if (!isRecursive && typeInfo.IsDictionary && typeInfo.DictValueSchema != null)
-				{
-					var dictValueType = GetTypeInfo(typeInfo.DictValueSchema);
-					isRecursive = ancestorTypes != null && !string.IsNullOrEmpty(dictValueType.TypeName) && ancestorTypes.Contains(dictValueType.TypeName);
-				}
-
-				// For dictionaries with linked value types, typeInfo.HasLink is true
-				var dictHasLinkedValue = typeInfo.IsDictionary && typeInfo.HasLink;
-
-				// Determine if we should show nested properties
-				// Don't expand if the type has a dedicated page (linked type)
-				var hasNestedProps = typeInfo.IsObject && !typeInfo.HasLink && depth < SchemaHelpers.MaxDepth && GetSchemaProperties(propSchema)?.Count > 0;
-
-				// For dictionaries, check if the value type has properties we should show
-				// Don't expand if the value type has a dedicated page (linked type)
-				var hasDictValueProps = typeInfo.IsDictionary && typeInfo.DictValueSchema != null
-					&& depth < SchemaHelpers.MaxDepth && !dictHasLinkedValue && GetSchemaProperties(typeInfo.DictValueSchema)?.Count > 0;
-
-				// For arrays, check if the item type has properties we should show
-				var arrayItemSchema = typeInfo.IsArray && propSchema.Items != null ? propSchema.Items : null;
-				var hasArrayItemProps = arrayItemSchema != null && !typeInfo.HasLink && depth < SchemaHelpers.MaxDepth
-					&& GetSchemaProperties(arrayItemSchema)?.Count > 0;
-
-				// For union types, check if there are object options with properties (using helper with fallback resolution)
-				// First, detect "simple" X | X[] unions - same base type, just one single and one array variant
-				var isSimpleArrayUnion = false;
-				string? simpleUnionBaseName = null;
-				if (typeInfo.IsUnion && typeInfo.AnyOfOptions != null && typeInfo.AnyOfOptions.Count > 0)
-				{
-					var unionOptionNames = typeInfo.AnyOfOptions.Select(o => o.Name).Distinct().ToArray();
-
-					// Check if this is exactly X and X[] (same base type)
-					if (unionOptionNames.Length == 2)
-					{
-						var baseNames = unionOptionNames.Select(n => n.EndsWith("[]") ? n[..^2] : n).Distinct().ToArray();
-						if (baseNames.Length == 1 && !string.IsNullOrEmpty(baseNames[0]))
-						{
-							isSimpleArrayUnion = true;
-							simpleUnionBaseName = baseNames[0];
-						}
-					}
-				}
-
-				// For simple X | X[] unions, don't expand tree - show inline instead
-				var hasUnionOptions = typeInfo.IsUnion && typeInfo.AnyOfOptions != null && depth < SchemaHelpers.MaxDepth
-					&& !isSimpleArrayUnion
-					&& typeInfo.AnyOfOptions.Any(UnionOptionHasProperties);
-
-				// For simple unions, check if the base type has properties we should expand (when NOT linked)
-				var simpleUnionHasExpandableProps = false;
-				IOpenApiSchema? simpleUnionSchema = null;
-				if (isSimpleArrayUnion && !string.IsNullOrEmpty(simpleUnionBaseName) && typeInfo.AnyOfOptions != null && depth < SchemaHelpers.MaxDepth)
-				{
-					var baseOption = typeInfo.AnyOfOptions.FirstOrDefault(o => o.Name == simpleUnionBaseName);
-					if (baseOption?.Schema != null)
-					{
-						var baseTypeInfo = GetTypeInfo(baseOption.Schema);
-						// Only expand if NOT linked (linked types have their own page)
-						if (!baseTypeInfo.HasLink && UnionOptionHasProperties(baseOption))
-						{
-							simpleUnionHasExpandableProps = true;
-							simpleUnionSchema = baseOption.Schema;
-						}
-					}
-				}
-
-				// Count nested properties
-				var nestedPropCount = 0;
-				if (hasNestedProps)
-					nestedPropCount = GetSchemaProperties(propSchema)?.Count ?? 0;
-				else if (hasDictValueProps && typeInfo.DictValueSchema != null)
-					nestedPropCount = GetSchemaProperties(typeInfo.DictValueSchema)?.Count ?? 0;
-				else if (hasArrayItemProps && arrayItemSchema != null)
-					nestedPropCount = GetSchemaProperties(arrayItemSchema)?.Count ?? 0;
-				else if (hasUnionOptions && typeInfo.AnyOfOptions != null)
-					nestedPropCount = typeInfo.AnyOfOptions.Count(UnionOptionHasProperties);
-				else if (simpleUnionHasExpandableProps && simpleUnionSchema != null)
-					nestedPropCount = GetSchemaProperties(simpleUnionSchema)?.Count ?? 0;
-
-				// Only show collapse toggle if more than 2 properties
-				// Dictionary types have their toggle at the <string> key level, not the parent level
-				// Simple unions with expandable props should have toggle
-				var hasChildren = (hasNestedProps || hasDictValueProps || hasArrayItemProps || hasUnionOptions || simpleUnionHasExpandableProps) && !isRecursive;
-				var isCollapsible = hasChildren && nestedPropCount > 2 && !hasDictValueProps;
-
-				// On type pages: depth-0 properties default to collapsed, deeper levels expand if < 5 properties
-				var defaultExpanded = depth == 0 ? false : (nestedPropCount > 0 && nestedPropCount < 5);
-
-				<div class="property-item depth-@depth @(isLast ? "last-sibling" : "") @(hasChildren ? "has-children" : "") @(isCollapsible ? (defaultExpanded ? "expanded" : "collapsed") : "")">
-					<dt id="@propId">
-						<a href="#@propId">
-							<code>@property.Key</code>
-							@RenderSchemaType(propSchema, ancestorTypes)
-							@if (!isRequired)
-							{
-								<span class="optional">optional</span>
-							}
-							@if (isRecursive)
-							{
-								@RenderRecursiveBadge()
-							}
-						</a>
-					</dt>
-					@if (hasDescription)
-					{
-						<dd>
-							@Model.RenderMarkdown(propSchema.Description)
-						</dd>
-					}
-					@ValidationConstraintsRenderer.Render(propSchema)
-					@if (isSimpleArrayUnion && !string.IsNullOrEmpty(simpleUnionBaseName))
-					{
-						// Simple X | X[] union - show horizontal layout
-						var baseTypeOption = typeInfo.AnyOfOptions?.FirstOrDefault(o => o.Name == simpleUnionBaseName);
-						var isObjectType = baseTypeOption?.IsObject ?? false;
-						<dd class="union-inline-row">
-							<span class="values-label">One of:</span>
-							<span class="union-inline-options">
-								<span class="union-inline-option">
-									@if (isObjectType)
-									{
-										<span class="object-icon">{}</span>
-									}
-									<code class="schema-type"><span>@simpleUnionBaseName</span></code>
-								</span>
-								<span class="union-inline-separator">or</span>
-								<span class="union-inline-option">
-									<span class="array-icon">[]</span>
-									@if (isObjectType)
-									{
-										<span class="object-icon">{}</span>
-									}
-									<code class="schema-type"><span>@(simpleUnionBaseName)[]</span></code>
-								</span>
-							</span>
-						</dd>
-					}
-					@{
-						// Add link to type page for linked types
-						// For simple X | X[] unions, check if the base type has a linked page
-						string? linkedTypeName = null;
-						if (typeInfo.HasLink)
-						{
-							linkedTypeName = typeInfo.IsDictionary && typeInfo.DictValueSchema != null
-								? GetTypeInfo(typeInfo.DictValueSchema).TypeName
-								: typeInfo.TypeName;
-						}
-						else if (isSimpleArrayUnion && !string.IsNullOrEmpty(simpleUnionBaseName) && typeInfo.AnyOfOptions != null)
-						{
-							// Check if the base type in the simple union is a linked type
-							var baseOption = typeInfo.AnyOfOptions.FirstOrDefault(o => o.Name == simpleUnionBaseName);
-							if (baseOption?.Schema != null)
-							{
-								var baseTypeInfo = GetTypeInfo(baseOption.Schema);
-								if (baseTypeInfo.HasLink)
-									linkedTypeName = simpleUnionBaseName;
-							}
-						}
-					}
-					@if (!string.IsNullOrEmpty(linkedTypeName))
-					{
-						var typePageUrl = GetContainerPageUrl(linkedTypeName);
-						<dd class="type-link-description">
-							<a href="@typePageUrl" data-hx-boost="false">See @linkedTypeName type →</a>
-						</dd>
-					}
-					@if (isCollapsible)
-					{
-						<dd class="expand-toggle-row">
-							<button class="expand-toggle" aria-expanded="@(defaultExpanded ? "true" : "false")" aria-controls="@propId-children" title="@(defaultExpanded ? "Collapse" : "Expand") @nestedPropCount properties">
-								<span class="toggle-icon">@(defaultExpanded ? "−" : "+")</span>
-								<span class="toggle-label">@(defaultExpanded ? "Hide" : "Show") @nestedPropCount properties</span>
-							</button>
-						</dd>
-					}
-					@if (!isRecursive)
-					{
-						// Build new ancestor set including current type
-						var newAncestors = ancestorTypes != null ? new HashSet<string>(ancestorTypes) : new HashSet<string>();
-						if (!string.IsNullOrEmpty(typeInfo.TypeName) && typeInfo.IsObject)
-						{
-							// For dictionaries, add the value type name rather than "string to X"
-							if (typeInfo.IsDictionary && typeInfo.DictValueSchema != null)
-							{
-								var dictValueType = GetTypeInfo(typeInfo.DictValueSchema);
-								if (!string.IsNullOrEmpty(dictValueType.TypeName))
-									newAncestors.Add(dictValueType.TypeName);
-							}
-							else
-							{
-								newAncestors.Add(typeInfo.TypeName);
-							}
-						}
-
-						if (typeInfo.IsDictionary && hasUnionOptions && typeInfo.UnionOptions != null)
-						{
-							// Dictionary with union value type - show key level, then union variants
-							// Union options are always expanded (no toggle)
-							var keyPropId = $"{propId}-string";
-							<div class="nested-properties" id="@propId-children">
-								<dl class="property-list">
-									<div class="property-item depth-@(depth + 1) last-sibling has-children expanded">
-										<dt id="@keyPropId">
-											<code>&lt;string&gt;</code>
-											<code class="schema-type"><span class="union-icon">| </span>@GetTypeInfo(typeInfo.DictValueSchema).TypeName</code>
-										</dt>
-										<div class="nested-properties">
-											@RenderUnionOptions(typeInfo.AnyOfOptions!, keyPropId, depth + 2, newAncestors)
-										</div>
-									</div>
-								</dl>
-							</div>
-						}
-						else if (hasDictValueProps && typeInfo.DictValueSchema != null)
-						{
-							// Show dictionary with intermediary key level - key is always string for additionalProperties
-							// The expand toggle appears at this <string> key level, not the parent property level
-							var keyPropId = $"{propId}-string";
-							var dictIsCollapsible = nestedPropCount > 2;
-							var dictDefaultExpanded = depth == 0 ? false : (nestedPropCount > 0 && nestedPropCount < 5);
-							<div class="nested-properties" id="@propId-children">
-								<dl class="property-list">
-									<div class="property-item depth-@(depth + 1) last-sibling has-children @(dictIsCollapsible ? (dictDefaultExpanded ? "expanded" : "collapsed") : "")">
-										<dt id="@keyPropId">
-											<code>&lt;string&gt;</code>
-											@RenderSchemaType(typeInfo.DictValueSchema, newAncestors)
-										</dt>
-										@if (dictIsCollapsible)
-										{
-											<dd class="expand-toggle-row">
-												<button class="expand-toggle" aria-expanded="@(dictDefaultExpanded ? "true" : "false")" aria-controls="@keyPropId-children" title="@(dictDefaultExpanded ? "Collapse" : "Expand") @nestedPropCount properties">
-													<span class="toggle-icon">@(dictDefaultExpanded ? "−" : "+")</span>
-													<span class="toggle-label">@(dictDefaultExpanded ? "Hide" : "Show") @nestedPropCount properties</span>
-												</button>
-											</dd>
-										}
-										<div class="nested-properties" id="@keyPropId-children">
-											@RenderProperties(typeInfo.DictValueSchema, keyPropId, depth + 2, newAncestors)
-										</div>
-									</div>
-								</dl>
-							</div>
-						}
-						else if (hasNestedProps)
-						{
-							<div class="nested-properties" id="@propId-children">
-								@RenderProperties(propSchema, propId, depth + 1, newAncestors)
-							</div>
-						}
-						else if (hasArrayItemProps && arrayItemSchema != null)
-						{
-							// Show array item properties
-							<div class="nested-properties" id="@propId-children">
-								@RenderProperties(arrayItemSchema, propId, depth + 1, newAncestors)
-							</div>
-						}
-						else if (hasUnionOptions && typeInfo.AnyOfOptions != null)
-						{
-							// Show union variant options
-							<div class="nested-properties" id="@propId-children">
-								@RenderUnionOptions(typeInfo.AnyOfOptions, propId, depth + 1, newAncestors)
-							</div>
-						}
-						else if (simpleUnionHasExpandableProps && simpleUnionSchema != null)
-						{
-							// Show properties for simple X | X[] union (non-linked type)
-							<div class="nested-properties" id="@propId-children">
-								@RenderProperties(simpleUnionSchema, propId, depth + 1, newAncestors)
-							</div>
-						}
-					}
-				</div>
-			}
-		</dl>
-
-		return HtmlString.Empty;
-	}
+			Schema = schema,
+			TypeInfo = GetTypeInfo(schema),
+			HasActualProperties = GetSchemaProperties(schema)?.Count > 0
+		};
 }
 @{
 	var schema = Model.Schema;
@@ -628,7 +124,7 @@
 			@foreach (var variant in openApiSchema.OneOf!)
 			{
 				if (variant is null) continue;
-				<li>@RenderSchemaType(variant)</li>
+				<li>@(await RenderPartialAsync<_SchemaType, SchemaTypeContext>(CreateSchemaTypeContext(variant)))</li>
 			}
 		</ul>
 	}
@@ -643,7 +139,7 @@
 			@foreach (var variant in openApiSchema.AnyOf!)
 			{
 				if (variant is null) continue;
-				<li>@RenderSchemaType(variant)</li>
+				<li>@(await RenderPartialAsync<_SchemaType, SchemaTypeContext>(CreateSchemaTypeContext(variant)))</li>
 			}
 		</ul>
 	}
@@ -655,14 +151,14 @@
 			<span>Aggregation Request</span>
 		</h3>
 		<p>Properties for configuring the <code>@(schema.DisplayName)</code> aggregation:</p>
-		@RenderProperties(schema.RelatedAggregation, "agg", 0, rootAncestors)
+		@(await RenderPartialAsync<_PropertyList, PropertyRenderContext>(CreatePropertyContext(schema.RelatedAggregation, "agg", rootAncestors)))
 	}
 	else if (hasProperties)
 	{
 		<h3 class="section-header" id="properties" data-section="properties">
 			<span>Properties</span>
 		</h3>
-		@RenderProperties(openApiSchema, "", 0, rootAncestors)
+		@(await RenderPartialAsync<_PropertyList, PropertyRenderContext>(CreatePropertyContext(openApiSchema, "", rootAncestors)))
 	}
 
 	@if (hasAggResponse)
@@ -671,7 +167,7 @@
 			<span>Aggregate Response</span>
 		</h3>
 		<p>Properties returned in the <code>@(schema.DisplayName)</code> aggregate response:</p>
-		@RenderProperties(schema.RelatedAggregate, "result", 0, rootAncestors)
+		@(await RenderPartialAsync<_PropertyList, PropertyRenderContext>(CreatePropertyContext(schema.RelatedAggregate, "result", rootAncestors)))
 	}
 
 	@if (hasAdditionalProps && openApiSchema.AdditionalProperties is IOpenApiSchema addPropsSchema)
@@ -679,7 +175,7 @@
 		<h3 class="section-header" id="additional-properties" data-section="additional-properties">
 			<span>Additional Properties</span>
 		</h3>
-		<p>This type allows additional properties of type: @RenderSchemaType(addPropsSchema)</p>
+		<p>This type allows additional properties of type: @(await RenderPartialAsync<_SchemaType, SchemaTypeContext>(CreateSchemaTypeContext(addPropsSchema)))</p>
 	}
 
 	@if (hasExample)
@@ -690,42 +186,3 @@
 		<pre><code class="language-json">@openApiSchema.Example</code></pre>
 	}
 </section>
-
-<script>
-(function() {
-	// Use event delegation on the section
-	const section = document.getElementById('schema-definition');
-	if (!section) return;
-
-	section.addEventListener('click', function(e) {
-		// Handle expand/collapse toggle buttons
-		const toggleBtn = e.target.closest('.expand-toggle');
-		if (toggleBtn) {
-			e.preventDefault();
-			e.stopPropagation();
-
-			const propertyItem = toggleBtn.closest('.property-item');
-			if (!propertyItem) return;
-
-			const isExpanded = propertyItem.classList.contains('expanded');
-			const toggleIcon = toggleBtn.querySelector('.toggle-icon');
-			const toggleLabel = toggleBtn.querySelector('.toggle-label');
-			const propCount = toggleLabel?.textContent?.match(/\d+/)?.[0] || '';
-
-			if (isExpanded) {
-				propertyItem.classList.remove('expanded');
-				propertyItem.classList.add('collapsed');
-				toggleBtn.setAttribute('aria-expanded', 'false');
-				if (toggleIcon) toggleIcon.textContent = '+';
-				if (toggleLabel) toggleLabel.textContent = `Show ${propCount} properties`;
-			} else {
-				propertyItem.classList.remove('collapsed');
-				propertyItem.classList.add('expanded');
-				toggleBtn.setAttribute('aria-expanded', 'true');
-				if (toggleIcon) toggleIcon.textContent = '−';
-				if (toggleLabel) toggleLabel.textContent = `Hide ${propCount} properties`;
-			}
-		}
-	});
-})();
-</script>
