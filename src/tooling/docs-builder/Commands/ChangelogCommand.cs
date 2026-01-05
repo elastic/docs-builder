@@ -9,6 +9,7 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;
 using Elastic.Documentation.Services.Changelog;
 using Microsoft.Extensions.Logging;
+using System.Linq;
 
 namespace Documentation.Builder.Commands;
 
@@ -203,11 +204,8 @@ internal sealed class ChangelogCommand(
 		var allFeatureIds = new List<string>();
 		if (hideFeatures is { Length: > 0 })
 		{
-			foreach (var hideFeaturesValue in hideFeatures)
+			foreach (var hideFeaturesValue in hideFeatures.Where(v => !string.IsNullOrWhiteSpace(v)))
 			{
-				if (string.IsNullOrWhiteSpace(hideFeaturesValue))
-					continue;
-
 				// Check if it contains commas - if so, split and add each as a feature ID
 				if (hideFeaturesValue.Contains(','))
 				{
