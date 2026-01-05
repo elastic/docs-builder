@@ -181,7 +181,8 @@ internal sealed class ChangelogCommand(
 	/// <param name="output">Optional: Output directory for rendered markdown files. Defaults to current directory</param>
 	/// <param name="title">Optional: Title to use for section headers in output markdown files. Defaults to version from first bundle</param>
 	/// <param name="subsections">Optional: Group entries by area/component in subsections. Defaults to false</param>
-	/// <param name="hidePrivateLinks">Optional: Hide private links by commenting them out in markdown output. Defaults to false</param>
+	/// <param name="hidePrivateLinks">Optional: Hide private links by commenting them out in the markdown output. Defaults to false</param>
+	/// <param name="hideFeatures">Filter by feature IDs (comma-separated), or a path to a newline-delimited file containing feature IDs. Can be specified multiple times. Entries with matching feature-id values will be commented out in the markdown output.</param>
 	/// <param name="ctx"></param>
 	[Command("render")]
 	public async Task<int> Render(
@@ -190,6 +191,7 @@ internal sealed class ChangelogCommand(
 		string? title = null,
 		bool subsections = false,
 		bool hidePrivateLinks = false,
+		string[]? hideFeatures = null,
 		Cancel ctx = default
 	)
 	{
@@ -197,13 +199,39 @@ internal sealed class ChangelogCommand(
 
 		var service = new ChangelogService(logFactory, configurationContext, null);
 
+		// Process each --hide-features occurrence: each can be comma-separated feature IDs or a file path
+		var allFeatureIds = new List<string>();
+		if (hideFeatures is { Length: > 0 })
+		{
+			foreach (var hideFeaturesValue in hideFeatures)
+			{
+				if (string.IsNullOrWhiteSpace(hideFeaturesValue))
+					continue;
+
+				// Check if it contains commas - if so, split and add each as a feature ID
+				if (hideFeaturesValue.Contains(','))
+				{
+					var commaSeparatedFeatureIds = hideFeaturesValue
+						.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+						.Where(f => !string.IsNullOrWhiteSpace(f));
+					allFeatureIds.AddRange(commaSeparatedFeatureIds);
+				}
+				else
+				{
+					// Single value - pass as-is (will be handled by service layer as file path or feature ID)
+					allFeatureIds.Add(hideFeaturesValue);
+				}
+			}
+		}
+
 		var renderInput = new ChangelogRenderInput
 		{
 			Bundles = input ?? [],
 			Output = output,
 			Title = title,
 			Subsections = subsections,
-			HidePrivateLinks = hidePrivateLinks
+			HidePrivateLinks = hidePrivateLinks,
+			HideFeatures = allFeatureIds.Count > 0 ? allFeatureIds.ToArray() : null
 		};
 
 		serviceInvoker.AddCommand(service, renderInput,
