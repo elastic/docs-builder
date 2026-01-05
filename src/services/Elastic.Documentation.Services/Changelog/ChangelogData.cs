@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using YamlDotNet.Serialization;
+
 namespace Elastic.Documentation.Services.Changelog;
 
 /// <summary>
@@ -22,6 +24,7 @@ public class ChangelogData
 	public string? Description { get; set; }
 	public string? Impact { get; set; }
 	public string? Action { get; set; }
+	[YamlMember(Alias = "feature-id", ApplyNamingConventions = false)]
 	public string? FeatureId { get; set; }
 	public bool? Highlight { get; set; }
 }
