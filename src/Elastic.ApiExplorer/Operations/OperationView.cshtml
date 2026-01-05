@@ -924,7 +924,7 @@
 				// Always collapsed when toggle is shown (only 1 prop = no toggle, content visible)
 				var defaultExpanded = false;
 
-				<div class="property-item depth-@depth @(isLast ? "last-sibling" : "") @(hasChildren ? "has-children" : "") @(isCollapsible ? (defaultExpanded ? "expanded" : "collapsed") : "")">
+				<div class="property-item depth-@depth @(isLast ? "last-sibling" : "") @(hasChildren ? "has-children" : "") @(isCollapsible ? (defaultExpanded ? "expanded" : "collapsed") : "") @(propSchema.Deprecated == true ? "deprecated" : "")">
 					<dt id="@propId">
 						<a href="#@propId">
 							<code>@property.Key</code>
@@ -941,7 +941,22 @@
 							{
 								@RenderRecursiveBadge()
 							}
+							@if (propSchema.Deprecated == true)
+							{
+								<span class="deprecated-badge">deprecated</span>
+							}
+							@{
+								var propVersionInfo = propSchema.Extensions?.TryGetValue("x-state", out var propStateValue) == true && propStateValue is System.Text.Json.Nodes.JsonNode propStateNode ? propStateNode.ToString() : null;
+							}
+							@if (!string.IsNullOrEmpty(propVersionInfo))
+							{
+								<span class="version-badge">@propVersionInfo</span>
+							}
 						</a>
+						@if (propSchema.ExternalDocs?.Url != null)
+						{
+							<a href="@propSchema.ExternalDocs.Url" class="external-docs-inline" target="_blank" rel="noopener" title="External documentation">docs</a>
+						}
 					</dt>
 					@if (hasDescription)
 					{
@@ -1046,6 +1061,10 @@
 
 							<dd class="union-options">
 								<span class="values-label">One of:</span>
+								@if (propSchema.Discriminator?.PropertyName != null)
+								{
+									<span class="discriminator-note">(determined by <code>@propSchema.Discriminator.PropertyName</code>)</span>
+								}
 								@{var badgeIndex = 0;}
 								@foreach (var unionOpt in badgeOptions)
 								{
@@ -1258,7 +1277,35 @@
 }
 
 <section id="elastic-api-v3">
-	<h1>@operation.Summary</h1>
+	<h1>
+		@operation.Summary
+		@if (operation.Deprecated == true)
+		{
+			<span class="deprecated-badge">deprecated</span>
+		}
+		@{
+			var isBeta = operation.Extensions?.TryGetValue("x-beta", out var betaValue) == true && betaValue is System.Text.Json.Nodes.JsonNode betaNode && betaNode.GetValue<bool>();
+		}
+		@if (isBeta)
+		{
+			<span class="beta-badge">Beta</span>
+		}
+		@{
+			var versionInfo = operation.Extensions?.TryGetValue("x-state", out var stateValue) == true && stateValue is System.Text.Json.Nodes.JsonNode stateNode ? stateNode.ToString() : null;
+		}
+		@if (!string.IsNullOrEmpty(versionInfo))
+		{
+			<span class="version-badge">@versionInfo</span>
+		}
+	</h1>
+	<span style="background:cyan; display:none;" id="debug-version">DEBUG: Extensions=@(operation.Extensions != null ? string.Join(",", operation.Extensions.Keys) : "null"), x-state=@(versionInfo ?? "null")</span>
+	<span style="background:yellow; display:none;" id="debug-externaldocs">DEBUG: ExternalDocs=@(operation.ExternalDocs != null ? "exists" : "null"), Url=@(operation.ExternalDocs?.Url?.ToString() ?? "null")</span>
+	@if (operation.ExternalDocs?.Url != null)
+	{
+		<a href="@operation.ExternalDocs.Url" class="external-docs-link" target="_blank" rel="noopener">
+			Documentation
+		</a>
+	}
 
 	<h3 class="section-header" id="paths" data-section="paths">
 		<span>Paths</span>
@@ -1369,16 +1416,21 @@
 					qsUnionOptions.AddRange(qsTypeInfo.UnionOptions.Where(n => !string.IsNullOrEmpty(n)));
 				}
 
-				<dt id="query-@qs.Name">
-					<a href="#query-@qs.Name">
-						<code>@qs.Name</code>
-						@if (qsSchema != null)
-						{
-							@RenderSchemaType(qsSchema)
-						}
-					</a>
-				</dt>
-				<dd>@Model.RenderMarkdown(qs.Description)</dd>
+				<div class="query-param @(qs.Deprecated == true ? "deprecated" : "")">
+					<dt id="query-@qs.Name">
+						<a href="#query-@qs.Name">
+							<code>@qs.Name</code>
+							@if (qsSchema != null)
+							{
+								@RenderSchemaType(qsSchema)
+							}
+							@if (qs.Deprecated == true)
+							{
+								<span class="deprecated-badge">deprecated</span>
+							}
+						</a>
+					</dt>
+					<dd>@Model.RenderMarkdown(qs.Description)</dd>
 				@if (qsUnionOptions.Count > 0 && qsEnumValues.Count == 0)
 				{
 					var primitiveTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
@@ -1410,6 +1462,7 @@
 						}
 					</dd>
 				}
+				</div>
 			}
 		</dl>
 	}

@@ -407,6 +407,50 @@
 	content: '↻ ';
 }
 
+/* Deprecated badge - red warning style */
+.deprecated-badge {
+	@apply text-red-70 bg-red-10 rounded px-1 py-0.5 text-xs font-medium;
+}
+
+/* Deprecated property/parameter styling - strikethrough */
+.property-item.deprecated > dt > a > code:first-child,
+.query-param.deprecated > dt > a > code:first-child {
+	@apply line-through opacity-70;
+}
+
+/* Version badge - subtle grey */
+.version-badge {
+	@apply text-grey-60 bg-grey-10 rounded px-1 py-0.5 text-xs font-normal;
+}
+
+/* Beta badge - orange/amber warning */
+.beta-badge {
+	@apply text-yellow-90 bg-yellow-10 border-yellow-30 border rounded px-1 py-0.5 text-xs font-medium;
+}
+
+/* External documentation link */
+.external-docs-link {
+	@apply text-blue-elastic text-sm hover:underline inline-flex items-center gap-1;
+}
+.external-docs-link::before {
+	content: '📖';
+	font-size: 0.9em;
+}
+
+/* Inline external docs link (for properties) */
+.external-docs-inline {
+	@apply text-blue-elastic text-xs hover:underline;
+	margin-left: 0.25rem;
+}
+.external-docs-inline::before {
+	content: '↗';
+}
+
+/* Discriminator note styling */
+.discriminator-note {
+	@apply text-grey-60 text-xs italic;
+}
+
 /* Object type icon */
 .object-icon {
 	@apply text-grey-60 font-normal;
