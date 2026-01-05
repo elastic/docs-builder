@@ -373,20 +373,116 @@ function initOperationView(section: HTMLElement): void {
     })
 }
 
+// Track if global handlers have been initialized
+let globalHandlersInitialized = false
+
 /**
- * Initialize common expand/collapse functionality for property lists
- * Works for both OperationView and SchemaView
+ * Initialize global click handlers for expand/collapse functionality
+ * Uses event delegation at document level so it works after HTMX content swaps
  */
-function initPropertyListToggle(section: HTMLElement): void {
-    section.addEventListener('click', function (e) {
+function initGlobalClickHandlers(): void {
+    if (globalHandlersInitialized) return
+    globalHandlersInitialized = true
+
+    document.addEventListener('click', function (e) {
         const target = e.target as HTMLElement
 
-        // Handle expand/collapse toggle buttons
+        // Only handle clicks within API doc sections
+        const apiSection = target.closest(
+            '#elastic-api-v3, #schema-definition'
+        ) as HTMLElement
+        if (!apiSection) return
+
+        // Handle union group toggle buttons (collapse/expand all union options)
+        const unionGroupToggle = target.closest<HTMLButtonElement>(
+            '.union-group-toggle'
+        )
+        if (unionGroupToggle) {
+            e.preventDefault()
+            e.stopPropagation()
+
+            const container = unionGroupToggle.closest<HTMLElement>(
+                '.union-variants-container'
+            )
+            if (!container) return
+
+            const isExpanded = container.classList.contains('expanded')
+            const toggleIcon = unionGroupToggle.querySelector('.toggle-icon')
+            const toggleLabel = unionGroupToggle.querySelector('.toggle-label')
+            const variantsContent = container.querySelector<HTMLElement>(
+                ':scope > .union-variants-content'
+            )
+            const optionCount =
+                toggleLabel?.textContent?.match(/\d+/)?.[0] || ''
+
+            if (isExpanded) {
+                container.classList.remove('expanded')
+                container.classList.add('collapsed')
+                if (toggleIcon) toggleIcon.textContent = '+'
+                if (toggleLabel)
+                    toggleLabel.textContent = `Show ${optionCount} type options`
+                if (variantsContent && supportsHiddenUntilFound) {
+                    variantsContent.setAttribute('hidden', 'until-found')
+                }
+            } else {
+                container.classList.remove('collapsed')
+                container.classList.add('expanded')
+                if (toggleIcon) toggleIcon.textContent = '−'
+                if (toggleLabel)
+                    toggleLabel.textContent = `Hide ${optionCount} type options`
+                if (variantsContent) {
+                    variantsContent.removeAttribute('hidden')
+                }
+            }
+            return
+        }
+
+        // Handle union variant expand/collapse
         const toggleBtn = target.closest<HTMLButtonElement>('.expand-toggle')
         if (toggleBtn) {
-            // Skip if this is a union expand toggle (handled by OperationView-specific code)
-            if (toggleBtn.closest('.union-expand-toggle')) return
-            // Skip if this is a union group toggle
+            const unionToggleRow = toggleBtn.closest('.union-expand-toggle')
+            if (unionToggleRow) {
+                e.preventDefault()
+                e.stopPropagation()
+
+                const unionVariantItem =
+                    toggleBtn.closest<HTMLElement>('.union-variant-item')
+                if (!unionVariantItem) return
+
+                const isExpanded =
+                    unionVariantItem.classList.contains('expanded')
+                const toggleIcon = toggleBtn.querySelector('.toggle-icon')
+                const toggleLabel = toggleBtn.querySelector('.toggle-label')
+                const nestedProps = unionVariantItem.querySelector<HTMLElement>(
+                    ':scope > .nested-properties'
+                )
+                const propCount =
+                    toggleLabel?.textContent?.match(/\d+/)?.[0] || ''
+
+                if (isExpanded) {
+                    unionVariantItem.classList.remove('expanded')
+                    unionVariantItem.classList.add('collapsed')
+                    if (toggleIcon) toggleIcon.textContent = '+'
+                    if (toggleLabel)
+                        toggleLabel.textContent = `Show ${propCount} properties`
+                    if (nestedProps && supportsHiddenUntilFound) {
+                        nestedProps.setAttribute('hidden', 'until-found')
+                    }
+                } else {
+                    unionVariantItem.classList.remove('collapsed')
+                    unionVariantItem.classList.add('expanded')
+                    if (toggleIcon) toggleIcon.textContent = '−'
+                    if (toggleLabel)
+                        toggleLabel.textContent = `Hide ${propCount} properties`
+                    if (nestedProps) {
+                        nestedProps.removeAttribute('hidden')
+                    }
+                }
+                return
+            }
+
+            // Handle property item expand/collapse toggle buttons
+            // Skip if this is a union toggle (already handled above)
             if (toggleBtn.closest('.union-group-toggle')) return
 
             e.preventDefault()
@@ -436,17 +532,12 @@ function initPropertyListToggle(section: HTMLElement): void {
  * Call this after page load or HTMX content swap
  */
 export function initApiDocs(): void {
-    // Check for OperationView page
+    // Initialize global click handlers once (uses event delegation)
+    initGlobalClickHandlers()
+
+    // Check for OperationView page - initialize view-specific features
     const operationSection = document.getElementById('elastic-api-v3')
     if (operationSection) {
         initOperationView(operationSection)
-        initPropertyListToggle(operationSection)
-        return
-    }
-
-    // Check for SchemaView page
-    const schemaSection = document.getElementById('schema-definition')
-    if (schemaSection) {
-        initPropertyListToggle(schemaSection)
     }
 }

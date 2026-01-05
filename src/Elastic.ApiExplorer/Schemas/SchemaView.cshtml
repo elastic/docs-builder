@@ -47,6 +47,30 @@
 			TypeInfo = GetTypeInfo(schema),
 			HasActualProperties = GetSchemaProperties(schema)?.Count > 0
 		};
+
+	// Helper to create UnionVariantsContext for oneOf/anyOf
+	private UnionVariantsContext CreateUnionContext(IList<IOpenApiSchema> unionSchemas, string prefix, HashSet<string>? ancestors = null)
+	{
+		var options = unionSchemas.Where(s => s is not null).Select(s =>
+		{
+			var info = GetTypeInfo(s);
+			var displayName = info.IsArray ? $"{info.TypeName}[]" : info.TypeName;
+			return new UnionOption(displayName, info.SchemaRef, info.IsObject, s);
+		}).ToList();
+
+		return new UnionVariantsContext
+		{
+			Options = options,
+			Prefix = prefix,
+			Depth = 0,
+			AncestorTypes = ancestors,
+			IsRequest = false,
+			Analyzer = Analyzer,
+			RenderMarkdown = Model.RenderMarkdown,
+			UseHiddenUntilFound = false,
+			CollapseMode = CollapseMode.DepthBased
+		};
+	}
 }
 @{
 	var schema = Model.Schema;
@@ -120,13 +144,7 @@
 			<span>Union Types (oneOf)</span>
 		</h3>
 		<p>This type can be one of the following:</p>
-		<ul class="union-types">
-			@foreach (var variant in openApiSchema.OneOf!)
-			{
-				if (variant is null) continue;
-				<li>@(await RenderPartialAsync<_SchemaType, SchemaTypeContext>(CreateSchemaTypeContext(variant)))</li>
-			}
-		</ul>
+		@(await RenderPartialAsync<_UnionOptions, UnionVariantsContext>(CreateUnionContext(openApiSchema.OneOf!, "oneof", rootAncestors)))
 	}
 
 	@if (hasAnyOf)
@@ -135,13 +153,7 @@
 			<span>Union Types (anyOf)</span>
 		</h3>
 		<p>This type can be any of the following:</p>
-		<ul class="union-types">
-			@foreach (var variant in openApiSchema.AnyOf!)
-			{
-				if (variant is null) continue;
-				<li>@(await RenderPartialAsync<_SchemaType, SchemaTypeContext>(CreateSchemaTypeContext(variant)))</li>
-			}
-		</ul>
+		@(await RenderPartialAsync<_UnionOptions, UnionVariantsContext>(CreateUnionContext(openApiSchema.AnyOf!, "anyof", rootAncestors)))
 	}
 
 	@* For aggregations, show both aggregation request and aggregate response *@
