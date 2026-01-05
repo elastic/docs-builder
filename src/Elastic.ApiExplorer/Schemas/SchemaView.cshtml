@@ -784,8 +784,47 @@
 					&& GetSchemaProperties(arrayItemSchema)?.Count > 0;
 
 				// For union types, check if there are object options with properties (using helper with fallback resolution)
+				// First, detect "simple" X | X[] unions - same base type, just one single and one array variant
+				var isSimpleArrayUnion = false;
+				string? simpleUnionBaseName = null;
+				if (typeInfo.IsUnion && typeInfo.UnionOptions != null && typeInfo.UnionOptions.Count > 0)
+				{
+					var unionOptionNames = typeInfo.UnionOptions.Select(o => o.Name).Distinct().ToArray();
+
+					// Check if this is exactly X and X[] (same base type)
+					if (unionOptionNames.Length == 2)
+					{
+						var baseNames = unionOptionNames.Select(n => n.EndsWith("[]") ? n[..^2] : n).Distinct().ToArray();
+						if (baseNames.Length == 1 && !string.IsNullOrEmpty(baseNames[0]))
+						{
+							isSimpleArrayUnion = true;
+							simpleUnionBaseName = baseNames[0];
+						}
+					}
+				}
+
+				// For simple X | X[] unions, don't expand tree - show inline instead
 				var hasUnionOptions = typeInfo.IsUnion && typeInfo.UnionOptions != null && depth < MaxDepth
+					&& !isSimpleArrayUnion
 					&& typeInfo.UnionOptions.Any(UnionOptionHasProperties);
+
+				// For simple unions, check if the base type has properties we should expand (when NOT linked)
+				var simpleUnionHasExpandableProps = false;
+				IOpenApiSchema? simpleUnionSchema = null;
+				if (isSimpleArrayUnion && !string.IsNullOrEmpty(simpleUnionBaseName) && typeInfo.UnionOptions != null && depth < MaxDepth)
+				{
+					var baseOption = typeInfo.UnionOptions.FirstOrDefault(o => o.Name == simpleUnionBaseName);
+					if (baseOption.Schema != null)
+					{
+						var baseTypeInfo = GetTypeInfo(baseOption.Schema);
+						// Only expand if NOT linked (linked types have their own page)
+						if (!baseTypeInfo.HasLink && UnionOptionHasProperties(baseOption))
+						{
+							simpleUnionHasExpandableProps = true;
+							simpleUnionSchema = baseOption.Schema;
+						}
+					}
+				}
 
 				// Count nested properties
 				var nestedPropCount = 0;
@@ -797,10 +836,14 @@
 					nestedPropCount = GetSchemaProperties(arrayItemSchema)?.Count ?? 0;
 				else if (hasUnionOptions && typeInfo.UnionOptions != null)
 					nestedPropCount = typeInfo.UnionOptions.Count(UnionOptionHasProperties);
+				else if (simpleUnionHasExpandableProps && simpleUnionSchema != null)
+					nestedPropCount = GetSchemaProperties(simpleUnionSchema)?.Count ?? 0;
 
 				// Only show collapse toggle if more than 2 properties
-				var hasChildren = (hasNestedProps || hasDictValueProps || hasArrayItemProps || hasUnionOptions) && !isRecursive;
-				var isCollapsible = hasChildren && nestedPropCount > 2;
+				// Dictionary types have their toggle at the <string> key level, not the parent level
+				// Simple unions with expandable props should have toggle
+				var hasChildren = (hasNestedProps || hasDictValueProps || hasArrayItemProps || hasUnionOptions || simpleUnionHasExpandableProps) && !isRecursive;
+				var isCollapsible = hasChildren && nestedPropCount > 2 && !hasDictValueProps;
 
 				// On type pages: depth-0 properties default to collapsed, deeper levels expand if < 5 properties
 				var defaultExpanded = depth == 0 ? false : (nestedPropCount > 0 && nestedPropCount < 5);
@@ -826,13 +869,54 @@
 							@Model.RenderMarkdown(propSchema.Description)
 						</dd>
 					}
+					@if (isSimpleArrayUnion && !string.IsNullOrEmpty(simpleUnionBaseName))
+					{
+						// Simple X | X[] union - show horizontal layout
+						var baseTypeOption = typeInfo.UnionOptions?.FirstOrDefault(o => o.Name == simpleUnionBaseName);
+						var isObjectType = baseTypeOption?.IsObject ?? false;
+						<dd class="union-inline-row">
+							<span class="values-label">One of:</span>
+							<span class="union-inline-options">
+								<span class="union-inline-option">
+									@if (isObjectType)
+									{
+										<span class="object-icon">{}</span>
+									}
+									<code class="schema-type"><span>@simpleUnionBaseName</span></code>
+								</span>
+								<span class="union-inline-separator">or</span>
+								<span class="union-inline-option">
+									<span class="array-icon">[]</span>
+									@if (isObjectType)
+									{
+										<span class="object-icon">{}</span>
+									}
+									<code class="schema-type"><span>@(simpleUnionBaseName)[]</span></code>
+								</span>
+							</span>
+						</dd>
+					}
 					@{
 						// Add link to type page for linked types
-						var linkedTypeName = typeInfo.HasLink
-							? (typeInfo.IsDictionary && typeInfo.DictValueSchema != null
+						// For simple X | X[] unions, check if the base type has a linked page
+						string? linkedTypeName = null;
+						if (typeInfo.HasLink)
+						{
+							linkedTypeName = typeInfo.IsDictionary && typeInfo.DictValueSchema != null
 								? GetTypeInfo(typeInfo.DictValueSchema).TypeName
-								: typeInfo.TypeName)
-							: null;
+								: typeInfo.TypeName;
+						}
+						else if (isSimpleArrayUnion && !string.IsNullOrEmpty(simpleUnionBaseName) && typeInfo.UnionOptions != null)
+						{
+							// Check if the base type in the simple union is a linked type
+							var baseOption = typeInfo.UnionOptions.FirstOrDefault(o => o.Name == simpleUnionBaseName);
+							if (baseOption.Schema != null)
+							{
+								var baseTypeInfo = GetTypeInfo(baseOption.Schema);
+								if (baseTypeInfo.HasLink)
+									linkedTypeName = simpleUnionBaseName;
+							}
+						}
 					}
 					@if (!string.IsNullOrEmpty(linkedTypeName))
 					{
@@ -872,6 +956,7 @@
 						if (typeInfo.IsDictionary && hasUnionOptions && typeInfo.UnionOptions != null)
 						{
 							// Dictionary with union value type - show key level, then union variants
+							// Union options are always expanded (no toggle)
 							var keyPropId = $"{propId}-string";
 							<div class="nested-properties" id="@propId-children">
 								<dl class="property-list">
@@ -890,15 +975,27 @@
 						else if (hasDictValueProps && typeInfo.DictValueSchema != null)
 						{
 							// Show dictionary with intermediary key level - key is always string for additionalProperties
+							// The expand toggle appears at this <string> key level, not the parent property level
 							var keyPropId = $"{propId}-string";
+							var dictIsCollapsible = nestedPropCount > 2;
+							var dictDefaultExpanded = depth == 0 ? false : (nestedPropCount > 0 && nestedPropCount < 5);
 							<div class="nested-properties" id="@propId-children">
 								<dl class="property-list">
-									<div class="property-item depth-@(depth + 1) last-sibling has-children">
+									<div class="property-item depth-@(depth + 1) last-sibling has-children @(dictIsCollapsible ? (dictDefaultExpanded ? "expanded" : "collapsed") : "")">
 										<dt id="@keyPropId">
 											<code>&lt;string&gt;</code>
 											@RenderSchemaType(typeInfo.DictValueSchema, newAncestors)
 										</dt>
-										<div class="nested-properties">
+										@if (dictIsCollapsible)
+										{
+											<dd class="expand-toggle-row">
+												<button class="expand-toggle" aria-expanded="@(dictDefaultExpanded ? "true" : "false")" aria-controls="@keyPropId-children" title="@(dictDefaultExpanded ? "Collapse" : "Expand") @nestedPropCount properties">
+													<span class="toggle-icon">@(dictDefaultExpanded ? "−" : "+")</span>
+													<span class="toggle-label">@(dictDefaultExpanded ? "Hide" : "Show") @nestedPropCount properties</span>
+												</button>
+											</dd>
+										}
+										<div class="nested-properties" id="@keyPropId-children">
 											@RenderProperties(typeInfo.DictValueSchema, keyPropId, depth + 2, newAncestors)
 										</div>
 									</div>
@@ -925,6 +1022,13 @@
 								@RenderUnionOptions(typeInfo.UnionOptions, propId, depth + 1, newAncestors)
 							</div>
 						}
+						else if (simpleUnionHasExpandableProps && simpleUnionSchema != null)
+						{
+							// Show properties for simple X | X[] union (non-linked type)
+							<div class="nested-properties" id="@propId-children">
+								@RenderProperties(simpleUnionSchema, propId, depth + 1, newAncestors)
+							</div>
+						}
 					}
 				</div>
 			}
@@ -949,9 +1053,22 @@
 		"Aggregate" => "Dictionary<string, Aggregate>",
 		_ => null
 	};
+
+	// Initialize ancestor set with the root type name to detect recursive references
+	var rootAncestors = new HashSet<string> { schema.DisplayName };
+
+	// Determine which sections exist
+	var hasDescription = !string.IsNullOrEmpty(openApiSchema.Description);
+	var hasEnum = openApiSchema.Enum is { Count: > 0 };
+	var hasOneOf = openApiSchema.OneOf is { Count: > 0 };
+	var hasAnyOf = openApiSchema.AnyOf is { Count: > 0 };
+	var hasAggRequest = isAggregation && schema.RelatedAggregation is not null;
+	var hasProperties = !hasAggRequest && GetSchemaProperties(openApiSchema) is { Count: > 0 };
+	var hasAggResponse = isAggregation && schema.RelatedAggregate is not null;
+	var hasAdditionalProps = openApiSchema.AdditionalProperties is IOpenApiSchema;
+	var hasExample = openApiSchema.Example is not null;
 }
 
-<div class="w-full h-full grid grid-cols-1 md:grid-cols-[1fr_var(--max-examples-width)]">
 <section id="schema-definition">
 	<h1>@schema.DisplayName</h1>
 	<p class="schema-id"><code>@schema.SchemaId</code></p>
@@ -965,28 +1082,35 @@
 		<p>This type represents a dictionary mapping string keys to <code>@schema.DisplayName</code> values.</p>
 	}
 
-	@if (!string.IsNullOrEmpty(openApiSchema.Description))
+	@if (hasDescription)
 	{
+		<h3 class="section-header" id="description" data-section="description">
+			<span>Description</span>
+		</h3>
 		<p>@Model.RenderMarkdown(openApiSchema.Description)</p>
 	}
 
-	@if (openApiSchema.Enum is { Count: > 0 })
+	@if (hasEnum)
 	{
-		<h3>Enum Values</h3>
+		<h3 class="section-header" id="enum-values" data-section="enum-values">
+			<span>Enum Values</span>
+		</h3>
 		<ul class="enum-values">
-			@foreach (var enumValue in openApiSchema.Enum)
+			@foreach (var enumValue in openApiSchema.Enum!)
 			{
 				<li><code>@enumValue</code></li>
 			}
 		</ul>
 	}
 
-	@if (openApiSchema.OneOf is { Count: > 0 })
+	@if (hasOneOf)
 	{
-		<h3>Union Types (oneOf)</h3>
+		<h3 class="section-header" id="union-types" data-section="union-types">
+			<span>Union Types (oneOf)</span>
+		</h3>
 		<p>This type can be one of the following:</p>
 		<ul class="union-types">
-			@foreach (var variant in openApiSchema.OneOf)
+			@foreach (var variant in openApiSchema.OneOf!)
 			{
 				if (variant is null) continue;
 				<li>@RenderSchemaType(variant)</li>
@@ -994,12 +1118,14 @@
 		</ul>
 	}
 
-	@if (openApiSchema.AnyOf is { Count: > 0 })
+	@if (hasAnyOf)
 	{
-		<h3>Union Types (anyOf)</h3>
+		<h3 class="section-header" id="union-types" data-section="union-types">
+			<span>Union Types (anyOf)</span>
+		</h3>
 		<p>This type can be any of the following:</p>
 		<ul class="union-types">
-			@foreach (var variant in openApiSchema.AnyOf)
+			@foreach (var variant in openApiSchema.AnyOf!)
 			{
 				if (variant is null) continue;
 				<li>@RenderSchemaType(variant)</li>
@@ -1007,44 +1133,48 @@
 		</ul>
 	}
 
-	@{
-		// Initialize ancestor set with the root type name to detect recursive references
-		var rootAncestors = new HashSet<string> { schema.DisplayName };
-	}
 	@* For aggregations, show both aggregation request and aggregate response *@
-	@if (isAggregation && schema.RelatedAggregation is not null)
+	@if (hasAggRequest)
 	{
-		<h3>Aggregation Request</h3>
+		<h3 class="section-header" id="aggregation-request" data-section="aggregation-request">
+			<span>Aggregation Request</span>
+		</h3>
 		<p>Properties for configuring the <code>@(schema.DisplayName)</code> aggregation:</p>
 		@RenderProperties(schema.RelatedAggregation, "agg", 0, rootAncestors)
 	}
-	else if (GetSchemaProperties(openApiSchema) is { Count: > 0 })
+	else if (hasProperties)
 	{
-		<h3>Properties</h3>
+		<h3 class="section-header" id="properties" data-section="properties">
+			<span>Properties</span>
+		</h3>
 		@RenderProperties(openApiSchema, "", 0, rootAncestors)
 	}
 
-	@if (isAggregation && schema.RelatedAggregate is not null)
+	@if (hasAggResponse)
 	{
-		<h3>Aggregate Response</h3>
+		<h3 class="section-header" id="aggregate-response" data-section="aggregate-response">
+			<span>Aggregate Response</span>
+		</h3>
 		<p>Properties returned in the <code>@(schema.DisplayName)</code> aggregate response:</p>
 		@RenderProperties(schema.RelatedAggregate, "result", 0, rootAncestors)
 	}
 
-	@if (openApiSchema.AdditionalProperties is IOpenApiSchema addProps)
+	@if (hasAdditionalProps && openApiSchema.AdditionalProperties is IOpenApiSchema addPropsSchema)
 	{
-		<h3>Additional Properties</h3>
-		<p>This type allows additional properties of type: @RenderSchemaType(addProps)</p>
+		<h3 class="section-header" id="additional-properties" data-section="additional-properties">
+			<span>Additional Properties</span>
+		</h3>
+		<p>This type allows additional properties of type: @RenderSchemaType(addPropsSchema)</p>
 	}
-</section>
-<aside class="examples-panel">
-	@if (openApiSchema.Example is not null)
+
+	@if (hasExample)
 	{
-		<h4>Example</h4>
+		<h3 class="section-header" id="example" data-section="example">
+			<span>Example</span>
+		</h3>
 		<pre><code class="language-json">@openApiSchema.Example</code></pre>
 	}
-</aside>
-</div>
+</section>
 
 <script>
 (function() {

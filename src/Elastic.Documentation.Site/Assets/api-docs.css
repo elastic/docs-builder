@@ -447,6 +447,24 @@
 	@apply text-yellow-90 bg-yellow-10 rounded px-1.5 py-0.5 text-xs;
 }
 
+/* Inline union display for simple X | X[] unions */
+.union-inline-row {
+	@apply flex flex-wrap items-center gap-1 mt-1;
+	padding-left: calc(var(--spacing) * 2);
+}
+
+.union-inline-options {
+	@apply flex items-center gap-2;
+}
+
+.union-inline-option {
+	@apply flex items-center gap-1;
+}
+
+.union-inline-separator {
+	@apply text-grey-50 text-xs;
+}
+
 /* Primitive array type display */
 .primitive-array {
 	@apply flex flex-wrap items-center gap-1 mt-1;
@@ -538,9 +556,24 @@
 	}
 }
 
-/* Union expanded state - show only vertical line */
+/* Union expanded state - show vertical line extending through the toggle row */
 .union-variant-item.expanded > .union-expand-toggle::before {
 	opacity: 1;
+	height: 100%; /* Extend to bottom of toggle row */
+}
+
+/* Continuation line from union expand toggle down to nested properties */
+.union-variant-item.expanded > .nested-properties {
+	position: relative;
+}
+
+.union-variant-item.expanded > .nested-properties::before {
+	content: '';
+	position: absolute;
+	left: 0.375rem;
+	top: 0;
+	height: calc(var(--spacing) * 5 + 0.4rem); /* Connect to first child's L-connector */
+	border-left: 1px solid #cbd5e1;
 }
 
 /* Union collapsed state - show both vertical and horizontal connector, green button */
@@ -597,7 +630,7 @@
 }
 
 /* Inline code in property descriptions - more distinct */
-.property-list dd code:not(.enum-value) {
+.property-list dd code:not(.enum-value):not(.schema-type) {
 	@apply text-yellow-90 bg-yellow-10 rounded px-1 py-0.5 text-xs;
 	font-weight: 500;
 }

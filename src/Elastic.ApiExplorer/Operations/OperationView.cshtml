@@ -877,8 +877,51 @@
 					&& GetSchemaProperties(arrayItemSchema)?.Count > 0;
 
 				// For union types, check if there are object options with properties (using helper with fallback resolution)
+				// First, detect "simple" X | X[] unions - same base type, just one single and one array variant
+				var isSimpleArrayUnion = false;
+				string? simpleUnionBaseName = null;
+				if (typeInfo.IsUnion && typeInfo.AnyOfOptions != null && typeInfo.AnyOfOptions.Count > 0)
+				{
+					var unionOptionNames = new List<string>();
+					unionOptionNames.AddRange(typeInfo.AnyOfOptions.Select(o => o.Name));
+					if (typeInfo.UnionOptions != null)
+						unionOptionNames.AddRange(typeInfo.UnionOptions);
+					var distinctNames = unionOptionNames.Distinct().ToArray();
+
+					// Check if this is exactly X and X[] (same base type)
+					if (distinctNames.Length == 2)
+					{
+						var baseNames = distinctNames.Select(n => n.EndsWith("[]") ? n[..^2] : n).Distinct().ToArray();
+						if (baseNames.Length == 1 && !string.IsNullOrEmpty(baseNames[0]))
+						{
+							isSimpleArrayUnion = true;
+							simpleUnionBaseName = baseNames[0];
+						}
+					}
+				}
+
+				// For simple X | X[] unions, don't expand tree - show inline instead
 				var hasUnionOptions = typeInfo.IsUnion && typeInfo.AnyOfOptions != null && depth < MaxDepth
+					&& !isSimpleArrayUnion
 					&& typeInfo.AnyOfOptions.Any(UnionOptionHasProperties);
+
+				// For simple unions, check if the base type has properties we should expand (when NOT linked)
+				var simpleUnionHasExpandableProps = false;
+				IOpenApiSchema? simpleUnionSchema = null;
+				if (isSimpleArrayUnion && !string.IsNullOrEmpty(simpleUnionBaseName) && typeInfo.AnyOfOptions != null && depth < MaxDepth)
+				{
+					var baseOption = typeInfo.AnyOfOptions.FirstOrDefault(o => o.Name == simpleUnionBaseName);
+					if (baseOption.Schema != null)
+					{
+						var baseTypeInfo = GetTypeInfo(baseOption.Schema);
+						// Only expand if NOT linked (linked types have their own page)
+						if (!baseTypeInfo.HasLink && UnionOptionHasProperties(baseOption))
+						{
+							simpleUnionHasExpandableProps = true;
+							simpleUnionSchema = baseOption.Schema;
+						}
+					}
+				}
 
 				// Count nested properties
 				var nestedPropCount = 0;
@@ -890,11 +933,15 @@
 					nestedPropCount = GetSchemaProperties(arrayItemSchema)?.Count ?? 0;
 				else if (hasUnionOptions && typeInfo.AnyOfOptions != null)
 					nestedPropCount = typeInfo.AnyOfOptions.Count(UnionOptionHasProperties);
+				else if (simpleUnionHasExpandableProps && simpleUnionSchema != null)
+					nestedPropCount = GetSchemaProperties(simpleUnionSchema)?.Count ?? 0;
 
 				// Show collapse toggle if more than 1 property
 				// Union types should NOT have expand/collapse - their type options are always visible as tree nodes
-				var hasChildren = (hasNestedProps || hasDictValueProps || hasArrayItemProps || hasUnionOptions) && !isRecursive;
-				var isCollapsible = hasChildren && nestedPropCount > 1 && !hasUnionOptions;
+				// Dictionary types have their toggle at the <string> key level, not the parent level
+				// Simple unions with expandable props should have toggle
+				var hasChildren = (hasNestedProps || hasDictValueProps || hasArrayItemProps || hasUnionOptions || simpleUnionHasExpandableProps) && !isRecursive;
+				var isCollapsible = hasChildren && nestedPropCount > 1 && !hasUnionOptions && !hasDictValueProps;
 
 				// Always collapsed when toggle is shown (only 1 prop = no toggle, content visible)
 				var defaultExpanded = false;
@@ -968,6 +1015,34 @@
 								}
 							</dd>
 						}
+						else if (isSimpleArrayUnion && !string.IsNullOrEmpty(simpleUnionBaseName))
+						{
+							// Simple X | X[] union - show horizontal layout
+							// Check if the base type is an object type
+							var baseTypeOption = typeInfo.AnyOfOptions?.FirstOrDefault(o => o.Name == simpleUnionBaseName);
+							var isObjectType = baseTypeOption?.IsObject ?? false;
+							<dd class="union-inline-row">
+								<span class="values-label">One of:</span>
+								<span class="union-inline-options">
+									<span class="union-inline-option">
+										@if (isObjectType)
+										{
+											<span class="object-icon">{}</span>
+										}
+										<code class="schema-type"><span>@simpleUnionBaseName</span></code>
+									</span>
+									<span class="union-inline-separator">or</span>
+									<span class="union-inline-option">
+										<span class="array-icon">[]</span>
+										@if (isObjectType)
+										{
+											<span class="object-icon">{}</span>
+										}
+										<code class="schema-type"><span>@(simpleUnionBaseName)[]</span></code>
+									</span>
+								</span>
+							</dd>
+						}
 						else if (sortedOptions.Length > 0 || hasUnionOptions)
 						{
 							// Always show "One of:" label when we have union options
@@ -994,11 +1069,25 @@
 					}
 					@{
 						// Add link to type page for linked types
-						var linkedTypeName = typeInfo.HasLink
-							? (typeInfo.IsDictionary && typeInfo.DictValueSchema != null
+						// For simple X | X[] unions, check if the base type has a linked page
+						string? linkedTypeName = null;
+						if (typeInfo.HasLink)
+						{
+							linkedTypeName = typeInfo.IsDictionary && typeInfo.DictValueSchema != null
 								? GetTypeInfo(typeInfo.DictValueSchema).TypeName
-								: typeInfo.TypeName)
-							: null;
+								: typeInfo.TypeName;
+						}
+						else if (isSimpleArrayUnion && !string.IsNullOrEmpty(simpleUnionBaseName) && typeInfo.AnyOfOptions != null)
+						{
+							// Check if the base type in the simple union is a linked type
+							var baseOption = typeInfo.AnyOfOptions.FirstOrDefault(o => o.Name == simpleUnionBaseName);
+							if (baseOption.Schema != null)
+							{
+								var baseTypeInfo = GetTypeInfo(baseOption.Schema);
+								if (baseTypeInfo.HasLink)
+									linkedTypeName = simpleUnionBaseName;
+							}
+						}
 					}
 					@if (!string.IsNullOrEmpty(linkedTypeName))
 					{
@@ -1038,15 +1127,27 @@
 						if (hasDictValueProps && typeInfo.DictValueSchema != null)
 						{
 							// Show dictionary with intermediary key level - key is always string for additionalProperties
+							// The expand toggle appears at this <string> key level, not the parent property level
 							var keyPropId = $"{propId}-string";
+							var dictIsCollapsible = nestedPropCount > 1;
+							var dictDefaultExpanded = false;
 							<div class="nested-properties" id="@propId-children">
 								<dl class="property-list">
-									<div class="property-item depth-@(depth + 1) last-sibling has-children">
+									<div class="property-item depth-@(depth + 1) last-sibling has-children @(dictIsCollapsible ? (dictDefaultExpanded ? "expanded" : "collapsed") : "")">
 										<dt id="@keyPropId">
 											<code>&lt;string&gt;</code>
 											@RenderSchemaType(typeInfo.DictValueSchema, newAncestors)
 										</dt>
-										<div class="nested-properties">
+										@if (dictIsCollapsible)
+										{
+											<dd class="expand-toggle-row">
+												<button class="expand-toggle" aria-expanded="@(dictDefaultExpanded ? "true" : "false")" aria-controls="@keyPropId-children" title="@(dictDefaultExpanded ? "Collapse" : "Expand") @nestedPropCount properties">
+													<span class="toggle-icon">@(dictDefaultExpanded ? "−" : "+")</span>
+													<span class="toggle-label">@(dictDefaultExpanded ? "Hide" : "Show") @nestedPropCount properties</span>
+												</button>
+											</dd>
+										}
+										<div class="nested-properties" id="@keyPropId-children">
 											@RenderProperties(typeInfo.DictValueSchema, null, keyPropId, depth + 2, newAncestors, isRequest)
 										</div>
 									</div>
@@ -1073,6 +1174,13 @@
 								@RenderUnionOptions(typeInfo.AnyOfOptions, propId, depth + 1, newAncestors, isRequest)
 							</div>
 						}
+						else if (simpleUnionHasExpandableProps && simpleUnionSchema != null)
+						{
+							// Show properties for simple X | X[] union (non-linked type)
+							<div class="nested-properties" id="@propId-children">
+								@RenderProperties(simpleUnionSchema, null, propId, depth + 1, newAncestors, isRequest)
+							</div>
+						}
 					}
 				</div>
 			}
@@ -1096,7 +1204,7 @@
 <section id="elastic-api-v3">
 	<h1>@operation.Summary</h1>
 
-	<h3 class="section-header" data-section="paths">
+	<h3 class="section-header" id="paths" data-section="paths">
 		<span>Paths</span>
 		<span class="section-nav">
 			<span class="section-path">@Model.Operation.Route</span>
@@ -1134,7 +1242,7 @@
 
 	@if (!string.IsNullOrWhiteSpace(operation.Description))
 	{
-		<h3 class="section-header" data-section="description">
+		<h3 class="section-header" id="description" data-section="description">
 			<span>Description</span>
 			<span class="section-nav">
 				<span class="section-path">@Model.Operation.Route</span>
@@ -1152,7 +1260,7 @@
 	}
 	@if (queryStringParameters.Length > 0)
 	{
-		<h3 class="section-header" data-section="query-params">
+		<h3 class="section-header" id="query-params" data-section="query-params">
 			<span>Query String Parameters</span>
 			<span class="section-nav">
 				<span class="section-path">@Model.Operation.Route</span>
@@ -1172,7 +1280,7 @@
 	{
 		var requestContent = operation.RequestBody.Content?.FirstOrDefault();
 		var requestContentType = requestContent?.Key ?? "application/json";
-		<h3 class="section-header" data-section="request-body">
+		<h3 class="section-header" id="request-body" data-section="request-body">
 			<span>Request Body</span>
 			<span class="content-type-badge">@requestContentType</span>
 			<span class="section-nav">
@@ -1210,7 +1318,7 @@
 			? singleResponse.Value.Content.First().Key
 			: null;
 
-		<h3 class="section-header" data-section="responses">
+		<h3 class="section-header" id="responses" data-section="responses">
 			<span>@(isSingleResponse ? "Response" : "Responses")</span>
 			@if (!string.IsNullOrEmpty(singleContentType))
 			{
@@ -1274,7 +1382,7 @@
 	}
 	@if (requestExamples is { Count: > 0 })
 	{
-		<h3 class="section-header" data-section="request-examples">
+		<h3 class="section-header" id="request-examples" data-section="request-examples">
 			<span>Request Examples</span>
 			<span class="section-nav">
 				<span class="section-path">@Model.Operation.Route</span>
@@ -1303,7 +1411,7 @@
 	}
 	@if (responseExamples is { Count: > 0 })
 	{
-		<h3 class="section-header" data-section="response-examples">
+		<h3 class="section-header" id="response-examples" data-section="response-examples">
 			<span>Response Examples</span>
 			<span class="section-nav">
 				<span class="section-path">@Model.Operation.Route</span>
