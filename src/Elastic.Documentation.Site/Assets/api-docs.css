@@ -518,6 +518,20 @@
 	}
 }
 
+/* Response headers display */
+.response-headers {
+	@apply mt-4 pt-4 border-t border-grey-20;
+
+	h5 {
+		@apply text-sm font-medium text-grey-80 mb-2;
+	}
+}
+
+.header-item {
+	@apply mb-2;
+}
+
+/* Server info display */
 /* Union type option - styled like regular types, not enum values */
 .union-type-option {
 	@apply text-blue-elastic bg-blue-elastic-10 rounded px-1.5 py-0.5 text-xs;

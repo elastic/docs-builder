@@ -1562,6 +1562,40 @@
 						}
 					}
 				}
+				@if (responseValue.Headers is { Count: > 0 })
+				{
+					<div class="response-headers">
+						<h5>Response Headers</h5>
+						<dl class="property-list">
+							@foreach (var header in responseValue.Headers)
+							{
+								<div class="header-item">
+									<dt id="header-@statusCode-@header.Key">
+										<a href="#header-@statusCode-@header.Key">
+											<code>@header.Key</code>
+											@if (header.Value?.Schema != null)
+											{
+												@RenderSchemaType(header.Value.Schema)
+											}
+											@if (header.Value?.Required == true)
+											{
+												<span class="required">required</span>
+											}
+											@if (header.Value?.Deprecated == true)
+											{
+												<span class="deprecated-badge">deprecated</span>
+											}
+										</a>
+									</dt>
+									@if (!string.IsNullOrEmpty(header.Value?.Description))
+									{
+										<dd>@Model.RenderMarkdown(header.Value.Description)</dd>
+									}
+								</div>
+							}
+						</dl>
+					</div>
+				}
 			</div>
 		}
 	}
