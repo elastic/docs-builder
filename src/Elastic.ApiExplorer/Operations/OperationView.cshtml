@@ -459,13 +459,22 @@
 		}
 		else if (info.IsDictionary)
 		{
-			// Dictionary uses a map icon and {} for object value types
-			sb.Append("<span class=\"dict-icon\">map </span>");
+			// Dictionary uses "map string to TypeName" format
+			// Extract the value type name from the TypeName (format: "string to TypeName")
+			var valueTypeName = info.TypeName.StartsWith("string to ") ? info.TypeName["string to ".Length..] : info.TypeName;
 			var dictValueHasProps = info.DictValueSchema != null && GetSchemaProperties(info.DictValueSchema)?.Count > 0;
-			if (info.HasLink || dictValueHasProps)
+			var showObjectIcon = info.HasLink || dictValueHasProps;
+
+			// Format: "map string to {} ScriptField" with "string" and "ScriptField" as types (blue)
+			sb.Append("<span class=\"map-keyword\">map </span>");
+			sb.Append("<span>string</span>");
+			sb.Append("<span class=\"map-keyword\"> to </span>");
+			if (showObjectIcon)
 			{
 				sb.Append("<span class=\"object-icon\">{} </span>");
 			}
+			sb.Append($"<span>{System.Web.HttpUtility.HtmlEncode(valueTypeName)}</span>");
+			return new HtmlString($"<code class=\"schema-type\">{sb}</code>");
 		}
 		else if (info.IsEnum)
 		{
@@ -479,7 +488,8 @@
 		}
 		else if (info.IsValueType && info.ValueTypeBase != null)
 		{
-			sb.Append($"{info.ValueTypeBase} ");
+			// Show underlying type for named value types: "string Field" instead of just "Field"
+			sb.Append($"<span class=\"map-keyword\">{info.ValueTypeBase} </span>");
 		}
 		else if (info.IsObject && !string.IsNullOrEmpty(info.SchemaRef) && !info.HasLink && hasActualProperties)
 		{
@@ -736,7 +746,11 @@
 						{
 							<span class="object-icon">{}</span>
 						}
-						<code class="schema-type">@variantName</code>
+						@{
+							// Remove [] suffix from name when we already show [] icon prefix
+							var displayVariantName = isArrayVariant && variantName.EndsWith("[]") ? variantName[..^2] : variantName;
+						}
+						<code class="schema-type">@displayVariantName</code>
 					</div>
 					@if (showProperties && schemaToRender != null)
 					{
@@ -749,9 +763,18 @@
 								</button>
 							</div>
 						}
-						<div class="nested-properties" id="@optionId-children">
-							@RenderProperties(schemaToRender, null, optionId, depth + 1, newAncestors, isRequest)
-						</div>
+						@if (isCollapsible)
+						{
+							<div class="nested-properties" id="@optionId-children" hidden="until-found">
+								@RenderProperties(schemaToRender, null, optionId, depth + 1, newAncestors, isRequest)
+							</div>
+						}
+						else
+						{
+							<div class="nested-properties" id="@optionId-children">
+								@RenderProperties(schemaToRender, null, optionId, depth + 1, newAncestors, isRequest)
+							</div>
+						}
 					}
 				</div>
 			}
@@ -840,6 +863,7 @@
 				// For simple unions, check if the base type has properties we should expand (when NOT linked)
 				var simpleUnionHasExpandableProps = false;
 				IOpenApiSchema? simpleUnionSchema = null;
+				List<(string Name, string? Ref, bool IsObject, IOpenApiSchema? Schema)>? simpleUnionNestedOptions = null;
 				if (isSimpleArrayUnion && !string.IsNullOrEmpty(simpleUnionBaseName) && typeInfo.AnyOfOptions != null && depth < SchemaHelpers.MaxDepth)
 				{
 					var baseOption = typeInfo.AnyOfOptions.FirstOrDefault(o => o.Name == simpleUnionBaseName);
@@ -851,6 +875,26 @@
 						{
 							simpleUnionHasExpandableProps = true;
 							simpleUnionSchema = baseOption.Schema;
+
+							// Check if the base type is itself a nested union
+							// If so, we need to render its nested union options, not try to get direct properties
+							var directProps = GetSchemaProperties(baseOption.Schema);
+							if (directProps == null || directProps.Count == 0)
+							{
+								// No direct properties - check if it's a nested union
+								simpleUnionNestedOptions = GetNestedUnionOptions(baseOption.Schema);
+								if (simpleUnionNestedOptions.Count == 0)
+								{
+									// Try resolving schema reference
+									var refId = baseOption.Ref;
+									if (string.IsNullOrEmpty(refId) && baseOption.Schema is OpenApiSchemaReference schemaRef)
+										refId = schemaRef.Reference?.Id;
+									if (!string.IsNullOrEmpty(refId) && Model.Document.Components?.Schemas?.TryGetValue(refId, out var resolvedSchema) == true)
+									{
+										simpleUnionNestedOptions = GetNestedUnionOptions(resolvedSchema);
+									}
+								}
+							}
 						}
 					}
 				}
@@ -865,6 +909,8 @@
 					nestedPropCount = GetSchemaProperties(arrayItemSchema)?.Count ?? 0;
 				else if (hasUnionOptions && typeInfo.AnyOfOptions != null)
 					nestedPropCount = typeInfo.AnyOfOptions.Count(UnionOptionHasProperties);
+				else if (simpleUnionHasExpandableProps && simpleUnionNestedOptions is { Count: > 0 })
+					nestedPropCount = simpleUnionNestedOptions.Count(UnionOptionHasProperties);
 				else if (simpleUnionHasExpandableProps && simpleUnionSchema != null)
 					nestedPropCount = GetSchemaProperties(simpleUnionSchema)?.Count ?? 0;
 
@@ -932,9 +978,13 @@
 						// Check if all options are enum-like (primitive string values, not types with PascalCase or [])
 						// Enum values are typically lowercase like "avg", "max", "none"
 						// Type names are typically PascalCase like "Rescore", "SortOptions"
+						// Primitive types (boolean, number, string, etc.) are NOT enum-like even though they're lowercase
+						var primitiveTypeNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+							{ "boolean", "number", "string", "integer", "object", "null", "array" };
 						var allEnumLike = sortedOptions.Length > 0 && sortedOptions.All(o =>
 							!o.EndsWith("[]") &&
 							!string.IsNullOrEmpty(o) &&
+							!primitiveTypeNames.Contains(o) &&
 							(char.IsLower(o[0]) || o.All(c => !char.IsLetter(c) || char.IsLower(c) || c == '_')));
 
 						if (allEnumLike)
@@ -950,9 +1000,16 @@
 						else if (isSimpleArrayUnion && !string.IsNullOrEmpty(simpleUnionBaseName))
 						{
 							// Simple X | X[] union - show horizontal layout
-							// Check if the base type is an object type
+							// Check if the base type is an object type or a value type
 							var baseTypeOption = typeInfo.AnyOfOptions?.FirstOrDefault(o => o.Name == simpleUnionBaseName);
 							var isObjectType = baseTypeOption?.IsObject ?? false;
+							// Check if the base type is a named value type (e.g., Field = string)
+							var baseSchema = baseTypeOption?.Schema;
+							var baseTypeInfo = baseSchema != null ? GetTypeInfo(baseSchema) : null;
+							var isBaseValueType = baseTypeInfo?.IsValueType ?? false;
+							var valueTypePrefix = isBaseValueType && !string.IsNullOrEmpty(baseTypeInfo?.ValueTypeBase)
+								? baseTypeInfo.ValueTypeBase + " "
+								: "";
 							<dd class="union-inline-row">
 								<span class="values-label">One of:</span>
 								<span class="union-inline-options">
@@ -961,7 +1018,7 @@
 										{
 											<span class="object-icon">{}</span>
 										}
-										<code class="schema-type"><span>@simpleUnionBaseName</span></code>
+										<code class="schema-type"><span>@valueTypePrefix@simpleUnionBaseName</span></code>
 									</span>
 									<span class="union-inline-separator">or</span>
 									<span class="union-inline-option">
@@ -970,7 +1027,7 @@
 										{
 											<span class="object-icon">{}</span>
 										}
-										<code class="schema-type"><span>@(simpleUnionBaseName)[]</span></code>
+										<code class="schema-type"><span>@valueTypePrefix@simpleUnionBaseName</span></code>
 									</span>
 								</span>
 							</dd>
@@ -983,11 +1040,26 @@
 							// Only show badges when there are NO tree nodes (all value types)
 							var badgeOptions = hasUnionOptions ? Array.Empty<string>() : sortedOptions;
 
+							// Primitive types that should render as types, not enum values
+							var primitiveTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+								{ "boolean", "number", "string", "integer", "object", "null", "array" };
+
 							<dd class="union-options">
 								<span class="values-label">One of:</span>
+								@{var badgeIndex = 0;}
 								@foreach (var unionOpt in badgeOptions)
 								{
-									<code class="union-option">@unionOpt</code>
+									if (badgeIndex > 0)
+									{
+										<span class="union-inline-separator">or</span>
+									}
+									// Use type styling for primitive types or PascalCase type names
+									// Enum values are typically lowercase like "avg", "max", "none"
+									var isTypeOption = primitiveTypes.Contains(unionOpt) ||
+										primitiveTypes.Contains(unionOpt.TrimEnd('[', ']')) ||
+										char.IsUpper(unionOpt[0]) || unionOpt.EndsWith("[]");
+									<code class="@(isTypeOption ? "union-type-option" : "union-option")">@unionOpt</code>
+									badgeIndex++;
 								}
 							</dd>
 						}
@@ -1079,39 +1151,91 @@
 												</button>
 											</dd>
 										}
-										<div class="nested-properties" id="@keyPropId-children">
-											@RenderProperties(typeInfo.DictValueSchema, null, keyPropId, depth + 2, newAncestors, isRequest)
-										</div>
+										@if (dictIsCollapsible && !dictDefaultExpanded)
+										{
+											<div class="nested-properties" id="@keyPropId-children" hidden="until-found">
+												@RenderProperties(typeInfo.DictValueSchema, null, keyPropId, depth + 2, newAncestors, isRequest)
+											</div>
+										}
+										else
+										{
+											<div class="nested-properties" id="@keyPropId-children">
+												@RenderProperties(typeInfo.DictValueSchema, null, keyPropId, depth + 2, newAncestors, isRequest)
+											</div>
+										}
 									</div>
 								</dl>
 							</div>
 						}
 						else if (hasNestedProps)
 						{
-							<div class="nested-properties" id="@propId-children">
-								@RenderProperties(propSchema, null, propId, depth + 1, newAncestors, isRequest)
-							</div>
+							@if (isCollapsible && !defaultExpanded)
+							{
+								<div class="nested-properties" id="@propId-children" hidden="until-found">
+									@RenderProperties(propSchema, null, propId, depth + 1, newAncestors, isRequest)
+								</div>
+							}
+							else
+							{
+								<div class="nested-properties" id="@propId-children">
+									@RenderProperties(propSchema, null, propId, depth + 1, newAncestors, isRequest)
+								</div>
+							}
 						}
 						else if (hasArrayItemProps && arrayItemSchema != null)
 						{
 							// Show array item properties
-							<div class="nested-properties" id="@propId-children">
-								@RenderProperties(arrayItemSchema, null, propId, depth + 1, newAncestors, isRequest)
-							</div>
+							@if (isCollapsible && !defaultExpanded)
+							{
+								<div class="nested-properties" id="@propId-children" hidden="until-found">
+									@RenderProperties(arrayItemSchema, null, propId, depth + 1, newAncestors, isRequest)
+								</div>
+							}
+							else
+							{
+								<div class="nested-properties" id="@propId-children">
+									@RenderProperties(arrayItemSchema, null, propId, depth + 1, newAncestors, isRequest)
+								</div>
+							}
 						}
 						else if (hasUnionOptions && typeInfo.AnyOfOptions != null)
 						{
-							// Show union variant options
+							// Show union variant options (these are not collapsible at this level)
 							<div class="nested-properties" id="@propId-children">
 								@RenderUnionOptions(typeInfo.AnyOfOptions, propId, depth + 1, newAncestors, isRequest)
 							</div>
 						}
+						else if (simpleUnionHasExpandableProps && simpleUnionNestedOptions is { Count: > 0 })
+						{
+							// Show nested union options for simple X | X[] union where X is itself a union
+							@if (isCollapsible && !defaultExpanded)
+							{
+								<div class="nested-properties" id="@propId-children" hidden="until-found">
+									@RenderUnionOptions(simpleUnionNestedOptions, propId, depth + 1, newAncestors, isRequest)
+								</div>
+							}
+							else
+							{
+								<div class="nested-properties" id="@propId-children">
+									@RenderUnionOptions(simpleUnionNestedOptions, propId, depth + 1, newAncestors, isRequest)
+								</div>
+							}
+						}
 						else if (simpleUnionHasExpandableProps && simpleUnionSchema != null)
 						{
-							// Show properties for simple X | X[] union (non-linked type)
-							<div class="nested-properties" id="@propId-children">
-								@RenderProperties(simpleUnionSchema, null, propId, depth + 1, newAncestors, isRequest)
-							</div>
+							// Show properties for simple X | X[] union (non-linked type with direct properties)
+							@if (isCollapsible && !defaultExpanded)
+							{
+								<div class="nested-properties" id="@propId-children" hidden="until-found">
+									@RenderProperties(simpleUnionSchema, null, propId, depth + 1, newAncestors, isRequest)
+								</div>
+							}
+							else
+							{
+								<div class="nested-properties" id="@propId-children">
+									@RenderProperties(simpleUnionSchema, null, propId, depth + 1, newAncestors, isRequest)
+								</div>
+							}
 						}
 					}
 				</div>
@@ -1203,8 +1327,89 @@
 		<dl class="property-list">
 			@foreach (var qs in queryStringParameters)
 			{
-				<dt id="query-@qs.Name"><a href="#query-@qs.Name"><code>@qs.Name</code></a></dt>
+				var qsSchema = qs.Schema;
+				var resolvedQsSchema = qsSchema != null ? ResolveSchema(qsSchema) : null;
+
+				// Collect enum values from direct enum, resolved enum, or union of string literals
+				var qsEnumValues = new List<string>();
+				if (qsSchema?.Enum is { Count: > 0 })
+					qsEnumValues.AddRange(qsSchema.Enum.Select(e => e?.ToString()?.Trim('"') ?? "").Where(e => !string.IsNullOrEmpty(e)));
+				else if (resolvedQsSchema?.Enum is { Count: > 0 })
+					qsEnumValues.AddRange(resolvedQsSchema.Enum.Select(e => e?.ToString()?.Trim('"') ?? "").Where(e => !string.IsNullOrEmpty(e)));
+
+				// Check for oneOf/anyOf with string literals (union enums)
+				if (qsEnumValues.Count == 0)
+				{
+					var unionSchemas = resolvedQsSchema?.OneOf is { Count: > 0 } ? resolvedQsSchema.OneOf
+						: resolvedQsSchema?.AnyOf is { Count: > 0 } ? resolvedQsSchema.AnyOf
+						: null;
+					if (unionSchemas != null)
+					{
+						foreach (var us in unionSchemas)
+						{
+							// Resolve the reference if us is a $ref
+							var resolvedUnionOption = ResolveSchema(us);
+							if (resolvedUnionOption?.Enum is { Count: > 0 })
+								qsEnumValues.AddRange(resolvedUnionOption.Enum.Select(e => e?.ToString()?.Trim('"') ?? "").Where(e => !string.IsNullOrEmpty(e)));
+						}
+					}
+				}
+
+					// Get TypeInfo for union options display
+				var qsTypeInfo = qsSchema != null ? GetTypeInfo(qsSchema) : null;
+
+					// Collect union option names for "One of:" display
+				var qsUnionOptions = new List<string>();
+				if (qsTypeInfo?.AnyOfOptions is { Count: > 0 })
+				{
+					qsUnionOptions.AddRange(qsTypeInfo.AnyOfOptions.Select(o => o.Name).Where(n => !string.IsNullOrEmpty(n)));
+				}
+				else if (qsTypeInfo?.UnionOptions is { Length: > 0 })
+				{
+					qsUnionOptions.AddRange(qsTypeInfo.UnionOptions.Where(n => !string.IsNullOrEmpty(n)));
+				}
+
+				<dt id="query-@qs.Name">
+					<a href="#query-@qs.Name">
+						<code>@qs.Name</code>
+						@if (qsSchema != null)
+						{
+							@RenderSchemaType(qsSchema)
+						}
+					</a>
+				</dt>
 				<dd>@Model.RenderMarkdown(qs.Description)</dd>
+				@if (qsUnionOptions.Count > 0 && qsEnumValues.Count == 0)
+				{
+					var primitiveTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+						{ "boolean", "number", "string", "integer", "object", "null", "array" };
+					<dd class="union-options">
+						<span class="values-label">One of:</span>
+						@{var optIndex = 0;}
+						@foreach (var unionOpt in qsUnionOptions)
+						{
+							if (optIndex > 0)
+							{
+								<span class="union-inline-separator">or</span>
+							}
+							var isTypeOption = primitiveTypes.Contains(unionOpt) ||
+								primitiveTypes.Contains(unionOpt.TrimEnd('[', ']')) ||
+								char.IsUpper(unionOpt[0]) || unionOpt.EndsWith("[]");
+							<code class="@(isTypeOption ? "union-type-option" : "union-option")">@unionOpt</code>
+							optIndex++;
+						}
+					</dd>
+				}
+				@if (qsEnumValues.Count > 0)
+				{
+					<dd class="enum-values">
+						<span class="values-label">Values:</span>
+						@foreach (var enumVal in qsEnumValues)
+						{
+							<code class="enum-value">@enumVal</code>
+						}
+					</dd>
+				}
 			}
 		</dl>
 	}
@@ -1389,6 +1594,91 @@
 	const section = document.getElementById('elastic-api-v3');
 	if (!section) return;
 
+	// Check if hidden="until-found" is supported
+	const supportsHiddenUntilFound = 'onbeforematch' in document.body;
+
+	// Helper function to expand a property item and all its ancestors
+	function expandPropertyItem(propertyItem) {
+		if (!propertyItem) return;
+
+		const toggleBtn = propertyItem.querySelector(':scope > .expand-toggle-row > .expand-toggle');
+		const nestedProps = propertyItem.querySelector(':scope > .nested-properties');
+
+		propertyItem.classList.remove('collapsed');
+		propertyItem.classList.add('expanded');
+
+		if (toggleBtn) {
+			toggleBtn.setAttribute('aria-expanded', 'true');
+			const toggleIcon = toggleBtn.querySelector('.toggle-icon');
+			const toggleLabel = toggleBtn.querySelector('.toggle-label');
+			const propCount = toggleLabel?.textContent?.match(/\d+/)?.[0] || '';
+			if (toggleIcon) toggleIcon.textContent = '−';
+			if (toggleLabel) toggleLabel.textContent = `Hide ${propCount} properties`;
+		}
+
+		if (nestedProps) {
+			nestedProps.removeAttribute('hidden');
+		}
+
+		// Recursively expand parent property items
+		const parentItem = propertyItem.parentElement?.closest('.property-item, .union-variant-item');
+		if (parentItem) {
+			if (parentItem.classList.contains('union-variant-item')) {
+				expandUnionVariantItem(parentItem);
+			} else {
+				expandPropertyItem(parentItem);
+			}
+		}
+	}
+
+	// Helper function to expand a union variant item and all its ancestors
+	function expandUnionVariantItem(variantItem) {
+		if (!variantItem) return;
+
+		const toggleBtn = variantItem.querySelector(':scope > .union-expand-toggle > .expand-toggle');
+		const nestedProps = variantItem.querySelector(':scope > .nested-properties');
+
+		variantItem.classList.remove('collapsed');
+		variantItem.classList.add('expanded');
+
+		if (toggleBtn) {
+			const toggleIcon = toggleBtn.querySelector('.toggle-icon');
+			const toggleLabel = toggleBtn.querySelector('.toggle-label');
+			const propCount = toggleLabel?.textContent?.match(/\d+/)?.[0] || '';
+			if (toggleIcon) toggleIcon.textContent = '−';
+			if (toggleLabel) toggleLabel.textContent = `Hide ${propCount} properties`;
+		}
+
+		if (nestedProps) {
+			nestedProps.removeAttribute('hidden');
+		}
+
+		// Recursively expand parent items
+		const parentItem = variantItem.parentElement?.closest('.property-item, .union-variant-item');
+		if (parentItem) {
+			if (parentItem.classList.contains('union-variant-item')) {
+				expandUnionVariantItem(parentItem);
+			} else {
+				expandPropertyItem(parentItem);
+			}
+		}
+	}
+
+	// Add beforematch event listeners for hidden="until-found" elements (set server-side)
+	// When find-in-page matches content inside collapsed sections, expand them
+	if (supportsHiddenUntilFound) {
+		section.querySelectorAll('.nested-properties[hidden="until-found"]').forEach(nestedProps => {
+			nestedProps.addEventListener('beforematch', function(e) {
+				const parentItem = nestedProps.parentElement;
+				if (parentItem?.classList.contains('union-variant-item')) {
+					expandUnionVariantItem(parentItem);
+				} else if (parentItem?.classList.contains('property-item')) {
+					expandPropertyItem(parentItem);
+				}
+			});
+		});
+	}
+
 	// Scroll detection for section-path visibility
 	// Find the trigger point - after Path Parameters header (or paths section if no path params)
 	let triggerElement = null;
@@ -1502,6 +1792,7 @@
 				const isExpanded = unionVariantItem.classList.contains('expanded');
 				const toggleIcon = toggleBtn.querySelector('.toggle-icon');
 				const toggleLabel = toggleBtn.querySelector('.toggle-label');
+				const nestedProps = unionVariantItem.querySelector(':scope > .nested-properties');
 				const propCount = toggleLabel?.textContent?.match(/\d+/)?.[0] || '';
 
 				if (isExpanded) {
@@ -1509,11 +1800,19 @@
 					unionVariantItem.classList.add('collapsed');
 					if (toggleIcon) toggleIcon.textContent = '+';
 					if (toggleLabel) toggleLabel.textContent = `Show ${propCount} properties`;
+					// Set hidden="until-found" for find-in-page searchability
+					if (nestedProps && supportsHiddenUntilFound) {
+						nestedProps.setAttribute('hidden', 'until-found');
+					}
 				} else {
 					unionVariantItem.classList.remove('collapsed');
 					unionVariantItem.classList.add('expanded');
 					if (toggleIcon) toggleIcon.textContent = '−';
 					if (toggleLabel) toggleLabel.textContent = `Hide ${propCount} properties`;
+					// Remove hidden attribute when expanding
+					if (nestedProps) {
+						nestedProps.removeAttribute('hidden');
+					}
 				}
 				return;
 			}
@@ -1524,6 +1823,7 @@
 
 			const isExpanded = propertyItem.classList.contains('expanded');
 			const toggleIcon = toggleBtn.querySelector('.toggle-icon');
+			const nestedProps = propertyItem.querySelector(':scope > .nested-properties');
 
 			const toggleLabel = toggleBtn.querySelector('.toggle-label');
 			const propCount = toggleLabel?.textContent?.match(/\d+/)?.[0] || '';
@@ -1534,12 +1834,20 @@
 				toggleBtn.setAttribute('aria-expanded', 'false');
 				if (toggleIcon) toggleIcon.textContent = '+';
 				if (toggleLabel) toggleLabel.textContent = `Show ${propCount} properties`;
+				// Set hidden="until-found" for find-in-page searchability
+				if (nestedProps && supportsHiddenUntilFound) {
+					nestedProps.setAttribute('hidden', 'until-found');
+				}
 			} else {
 				propertyItem.classList.remove('collapsed');
 				propertyItem.classList.add('expanded');
 				toggleBtn.setAttribute('aria-expanded', 'true');
 				if (toggleIcon) toggleIcon.textContent = '−';
 				if (toggleLabel) toggleLabel.textContent = `Hide ${propCount} properties`;
+				// Remove hidden attribute when expanding
+				if (nestedProps) {
+					nestedProps.removeAttribute('hidden');
+				}
 			}
 		}
 	});

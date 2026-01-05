@@ -492,21 +492,31 @@
 		}
 		else if (info.IsDictionary)
 		{
-			// Dictionary uses a map icon and {} for object value types
-			sb.Append("<span class=\"dict-icon\">(map) </span>");
-			if (info.HasLink || (info.DictValueSchema != null && GetTypeInfo(info.DictValueSchema).IsObject))
+			// Dictionary uses "map string to TypeName" format
+			var valueTypeName = info.TypeName.StartsWith("string to ") ? info.TypeName["string to ".Length..] : info.TypeName;
+			var dictValueHasProps = info.DictValueSchema != null && GetSchemaProperties(info.DictValueSchema)?.Count > 0;
+			var showObjectIcon = info.HasLink || dictValueHasProps;
+
+			// Format: "map string to {} ScriptField" with "string" and "ScriptField" as types (blue)
+			sb.Append("<span class=\"map-keyword\">map </span>");
+			sb.Append("<span>string</span>");
+			sb.Append("<span class=\"map-keyword\"> to </span>");
+			if (showObjectIcon)
 			{
 				sb.Append("<span class=\"object-icon\">{} </span>");
 			}
+			sb.Append($"<span>{System.Web.HttpUtility.HtmlEncode(valueTypeName)}</span>");
+			return new HtmlString($"<code class=\"schema-type\">{sb}</code>");
 		}
 		else if (info.IsUnion && info.UnionOptions != null)
 		{
-			// Union types get a special icon
-			sb.Append("<span class=\"union-icon\">| </span>");
+			// Union types get a special icon - use "union" like OperationView
+			sb.Append("<span class=\"union-icon\">union </span>");
 		}
 		else if (info.IsValueType && info.ValueTypeBase != null)
 		{
-			sb.Append($"{info.ValueTypeBase} ");
+			// Show underlying type for named value types: "string Field" instead of just "Field"
+			sb.Append($"<span class=\"map-keyword\">{info.ValueTypeBase} </span>");
 		}
 		else if (info.IsObject && !string.IsNullOrEmpty(info.SchemaRef) && !info.HasLink)
 		{
@@ -544,11 +554,20 @@
 			.Distinct()
 			.ToArray();
 
+		// Primitive types that should render as types, not enum values
+		var primitiveTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+			{ "boolean", "number", "string", "integer", "object", "null", "array" };
+
 		<div class="union-options">
 			<span class="values-label">One of:</span>
 			@foreach (var optName in sortedOptionNames)
 			{
-				<span class="union-option">@optName</span>
+				// Use type styling for primitive types or PascalCase type names
+				// Enum values are typically lowercase like "avg", "max", "none"
+				var isTypeOption = primitiveTypes.Contains(optName) ||
+					primitiveTypes.Contains(optName.TrimEnd('[', ']')) ||
+					(!string.IsNullOrEmpty(optName) && char.IsUpper(optName[0])) || optName.EndsWith("[]");
+				<code class="@(isTypeOption ? "union-type-option" : "union-option")">@optName</code>
 			}
 		</div>
 

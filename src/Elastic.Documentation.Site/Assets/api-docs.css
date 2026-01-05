@@ -367,14 +367,20 @@
 		font-weight: 500;
 	}
 
-	/* Collapsed state - hide nested properties */
-	.property-item.collapsed > .nested-properties {
+	/* Collapsed state - hide nested properties using hidden="until-found" for searchability */
+	/* The hidden attribute handles visibility; this is a fallback for unsupported browsers */
+	.property-item.collapsed > .nested-properties:not([hidden="until-found"]) {
 		display: none;
 	}
 
 	/* Expanded state - show nested properties */
 	.property-item.expanded > .nested-properties {
 		display: block;
+	}
+
+	/* Ensure hidden="until-found" elements don't show borders/padding from container */
+	.nested-properties[hidden="until-found"] {
+		content-visibility: hidden;
 	}
 }
 
@@ -393,9 +399,12 @@
 	@apply text-grey-60 bg-grey-10 rounded px-1 py-0.5 text-xs font-normal;
 }
 
-/* Recursive badge - similar style to required */
+/* Recursive badge - amber/yellow with icon */
 .recursive {
-	@apply text-yellow-90 bg-yellow-10 rounded px-1 py-0.5 text-xs font-medium;
+	@apply text-yellow-90 bg-yellow-10 border-yellow-30 border rounded px-1.5 py-0.5 text-xs font-medium;
+}
+.recursive::before {
+	content: '↻ ';
 }
 
 /* Object type icon */
@@ -447,6 +456,17 @@
 	@apply text-yellow-90 bg-yellow-10 rounded px-1.5 py-0.5 text-xs;
 }
 
+/* Union type option - styled like regular types, not enum values */
+.union-type-option {
+	@apply text-blue-elastic bg-blue-elastic-10 rounded px-1.5 py-0.5 text-xs;
+}
+
+/* Map keyword styling */
+.map-keyword {
+	@apply text-grey-50 font-normal;
+	font-size: 0.85em;
+}
+
 /* Inline union display for simple X | X[] unions */
 .union-inline-row {
 	@apply flex flex-wrap items-center gap-1 mt-1;
@@ -485,8 +505,9 @@
 .union-variant-item {
 	padding: calc(var(--spacing) * 1) 0;
 
-	/* Collapsed state - hide nested properties */
-	&.collapsed > .nested-properties {
+	/* Collapsed state - hide nested properties using hidden="until-found" for searchability */
+	/* The hidden attribute handles visibility; this is a fallback for unsupported browsers */
+	&.collapsed > .nested-properties:not([hidden="until-found"]) {
 		display: none;
 	}
 
