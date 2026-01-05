@@ -136,11 +136,8 @@ internal sealed class ChangelogCommand(
 		var allPrs = new List<string>();
 		if (prs is { Length: > 0 })
 		{
-			foreach (var prsValue in prs)
+			foreach (var prsValue in prs.Where(p => !string.IsNullOrWhiteSpace(p)))
 			{
-				if (string.IsNullOrWhiteSpace(prsValue))
-					continue;
-
 				// Check if it contains commas - if so, split and add each as a PR
 				if (prsValue.Contains(','))
 				{
