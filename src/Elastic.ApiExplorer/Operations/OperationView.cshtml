@@ -6,44 +6,13 @@
 @functions {
 	public ApiLayoutViewModel LayoutModel => Model.CreateGlobalLayoutModel();
 
-	private const int MaxDepth = 4;
+	// Schema analyzer instance - created lazily
+	private SchemaAnalyzer? _analyzer;
+	private SchemaAnalyzer Analyzer => _analyzer ??= new SchemaAnalyzer(Model.Document);
 
-	// Types that are known to be value types (resolve to primitives like string)
-	private static readonly HashSet<string> KnownValueTypes = new(StringComparer.OrdinalIgnoreCase)
-	{
-		"Field", "Fields", "Id", "Ids", "IndexName", "Indices", "Name", "Names",
-		"Routing", "VersionNumber", "SequenceNumber", "PropertyName", "RelationName",
-		"TaskId", "ScrollId", "SuggestionName", "Duration", "DateMath", "Fuzziness",
-		"GeoHashPrecision", "Distance", "TimeOfDay", "MinimumShouldMatch", "Script",
-		"ByteSize", "Percentage", "Stringifiedboolean", "ExpandWildcards", "float", "Stringifiedinteger",
-		// Numeric value types
-		"uint", "ulong", "long", "int", "short", "ushort", "byte", "sbyte", "double", "decimal"
-	};
-
-	// Types that have dedicated pages we can link to
-	// Only container types get their own pages - individual queries/aggregations are rendered inline
-	private static readonly HashSet<string> LinkedTypes = new(StringComparer.OrdinalIgnoreCase)
-	{
-		"QueryContainer", "AggregationContainer", "Aggregate"
-	};
-
-	private static string GetContainerPageUrl(string typeName)
-	{
-		// Only container types get their own pages
-		return typeName switch
-		{
-			"QueryContainer" => "/api/elasticsearch/types/_types-query_dsl-querycontainer",
-			"AggregationContainer" => "/api/elasticsearch/types/_types-aggregations-aggregationcontainer",
-			"Aggregate" => "/api/elasticsearch/types/_types-aggregations-aggregate",
-			_ => null! // Should not be called for non-container types
-		};
-	}
-
-	private static bool ShouldLinkToContainerPage(string typeName)
-	{
-		// Only actual container types have dedicated pages
-		return LinkedTypes.Contains(typeName);
-	}
+	// Delegate to shared helpers
+	private static string GetContainerPageUrl(string typeName) => SchemaHelpers.GetContainerPageUrl(typeName) ?? "";
+	private static bool ShouldLinkToContainerPage(string typeName) => SchemaHelpers.ShouldLinkToContainerPage(typeName);
 
 	/// <summary>
 	/// Checks if a union option has properties, using fallback resolution if needed.
@@ -170,49 +139,12 @@
 		return result;
 	}
 
-	public string GetPrimitiveTypeName(JsonSchemaType? type)
-	{
-		if (type is null)
-			return "";
-
-		var typeName = "";
-		if (type.Value.HasFlag(JsonSchemaType.Boolean))
-			typeName = "boolean";
-		else if (type.Value.HasFlag(JsonSchemaType.Integer))
-			typeName = "integer";
-		else if (type.Value.HasFlag(JsonSchemaType.String))
-			typeName = "string";
-		else if (type.Value.HasFlag(JsonSchemaType.Number))
-			typeName = "number";
-		else if (type.Value.HasFlag(JsonSchemaType.Null))
-			typeName = "null";
-		else if (type.Value.HasFlag(JsonSchemaType.Object))
-			typeName = "object";
-
-		return typeName;
-	}
-
-	public string FormatSchemaName(string schemaId)
-	{
-		var parts = schemaId.Split('.');
-		return parts.Length > 0 ? parts[^1] : schemaId;
-	}
-
-	public bool IsValueType(string typeName) => KnownValueTypes.Contains(typeName);
-
-	public bool IsLinkedType(string typeName) => ShouldLinkToContainerPage(typeName);
-
-	public string? GetValueTypeBase(IOpenApiSchema? schema)
-	{
-		if (schema is null) return null;
-
-		// Check the schema's type
-		var primitiveType = GetPrimitiveTypeName(schema.Type);
-		if (!string.IsNullOrEmpty(primitiveType) && primitiveType != "object")
-			return primitiveType;
-
-		return null;
-	}
+	// Delegate simple helpers to SchemaHelpers
+	public string GetPrimitiveTypeName(JsonSchemaType? type) => SchemaHelpers.GetPrimitiveTypeName(type);
+	public string FormatSchemaName(string schemaId) => SchemaHelpers.FormatSchemaName(schemaId);
+	public bool IsValueType(string typeName) => SchemaHelpers.IsValueType(typeName);
+	public bool IsLinkedType(string typeName) => Analyzer.IsLinkedType(typeName);
+	public string? GetValueTypeBase(IOpenApiSchema? schema) => SchemaHelpers.GetValueTypeBase(schema);
 
 	public record TypeInfo(
 		string TypeName,
@@ -864,16 +796,16 @@
 
 				// Determine if we should show nested properties
 				// Don't expand if the type has a dedicated page (linked type)
-				var hasNestedProps = typeInfo.IsObject && !typeInfo.HasLink && depth < MaxDepth && GetSchemaProperties(propSchema)?.Count > 0;
+				var hasNestedProps = typeInfo.IsObject && !typeInfo.HasLink && depth < SchemaHelpers.MaxDepth && GetSchemaProperties(propSchema)?.Count > 0;
 
 				// For dictionaries, check if the value type has properties we should show
 				// Don't expand if the value type has a dedicated page (linked type)
 				var hasDictValueProps = typeInfo.IsDictionary && typeInfo.DictValueSchema != null
-					&& depth < MaxDepth && !dictHasLinkedValue && GetSchemaProperties(typeInfo.DictValueSchema)?.Count > 0;
+					&& depth < SchemaHelpers.MaxDepth && !dictHasLinkedValue && GetSchemaProperties(typeInfo.DictValueSchema)?.Count > 0;
 
 				// For arrays, check if the item type has properties we should show
 				var arrayItemSchema = typeInfo.IsArray && propSchema.Items != null ? propSchema.Items : null;
-				var hasArrayItemProps = arrayItemSchema != null && !typeInfo.HasLink && depth < MaxDepth
+				var hasArrayItemProps = arrayItemSchema != null && !typeInfo.HasLink && depth < SchemaHelpers.MaxDepth
 					&& GetSchemaProperties(arrayItemSchema)?.Count > 0;
 
 				// For union types, check if there are object options with properties (using helper with fallback resolution)
@@ -901,14 +833,14 @@
 				}
 
 				// For simple X | X[] unions, don't expand tree - show inline instead
-				var hasUnionOptions = typeInfo.IsUnion && typeInfo.AnyOfOptions != null && depth < MaxDepth
+				var hasUnionOptions = typeInfo.IsUnion && typeInfo.AnyOfOptions != null && depth < SchemaHelpers.MaxDepth
 					&& !isSimpleArrayUnion
 					&& typeInfo.AnyOfOptions.Any(UnionOptionHasProperties);
 
 				// For simple unions, check if the base type has properties we should expand (when NOT linked)
 				var simpleUnionHasExpandableProps = false;
 				IOpenApiSchema? simpleUnionSchema = null;
-				if (isSimpleArrayUnion && !string.IsNullOrEmpty(simpleUnionBaseName) && typeInfo.AnyOfOptions != null && depth < MaxDepth)
+				if (isSimpleArrayUnion && !string.IsNullOrEmpty(simpleUnionBaseName) && typeInfo.AnyOfOptions != null && depth < SchemaHelpers.MaxDepth)
 				{
 					var baseOption = typeInfo.AnyOfOptions.FirstOrDefault(o => o.Name == simpleUnionBaseName);
 					if (baseOption.Schema != null)

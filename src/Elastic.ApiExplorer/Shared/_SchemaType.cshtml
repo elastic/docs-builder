@@ -1,0 +1,68 @@
+@using Elastic.ApiExplorer.Schema
+@inherits RazorSlice<Elastic.ApiExplorer.Schema.SchemaTypeContext>
+@{
+	var info = Model.TypeInfo;
+	var sb = new System.Text.StringBuilder();
+
+	// Build the display text with [] for arrays, {} for objects, enum/union markers
+	if (info.IsArray)
+	{
+		sb.Append("<span class=\"array-icon\">[] </span>");
+		if (info.IsValueType && info.ValueTypeBase != null)
+		{
+			sb.Append($"{info.ValueTypeBase} ");
+		}
+		else if (info.IsEnum)
+		{
+			sb.Append("<span class=\"enum-icon\">enum </span>");
+		}
+		else if (info.IsUnion)
+		{
+			sb.Append("<span class=\"union-icon\">union </span>");
+		}
+		else if (info.IsObject && !string.IsNullOrEmpty(info.SchemaRef) && (Model.HasActualProperties || info.HasLink))
+		{
+			sb.Append("<span class=\"object-icon\">{} </span>");
+		}
+	}
+	else if (info.IsDictionary)
+	{
+		// Dictionary uses a map icon and {} for object value types
+		sb.Append("<span class=\"dict-icon\">map </span>");
+		if (info.HasLink || Model.HasActualProperties)
+		{
+			sb.Append("<span class=\"object-icon\">{} </span>");
+		}
+	}
+	else if (info.IsEnum)
+	{
+		// Enum marker
+		sb.Append("<span class=\"enum-icon\">enum </span>");
+	}
+	else if (info.IsUnion)
+	{
+		// Union marker
+		sb.Append("<span class=\"union-icon\">union </span>");
+	}
+	else if (info.IsValueType && info.ValueTypeBase != null)
+	{
+		sb.Append($"{info.ValueTypeBase} ");
+	}
+	else if (info.IsObject && !string.IsNullOrEmpty(info.SchemaRef) && !info.HasLink && Model.HasActualProperties)
+	{
+		// Regular objects get {} only if they have properties
+		sb.Append("<span class=\"object-icon\">{} </span>");
+	}
+
+	var displayName = System.Web.HttpUtility.HtmlEncode(info.TypeName);
+	var titleAttr = !string.IsNullOrEmpty(info.SchemaRef) ? $" title=\"{info.SchemaRef}\"" : "";
+
+	// Add {} prefix for linked types (they have dedicated pages)
+	if (info.HasLink && !info.IsDictionary)
+	{
+		sb.Append("<span class=\"object-icon\">{} </span>");
+	}
+
+	sb.Append($"<span{titleAttr}>{displayName}</span>");
+}
+<code class="schema-type">@Html.Raw(sb.ToString())</code>
