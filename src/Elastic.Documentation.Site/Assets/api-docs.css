@@ -414,7 +414,8 @@
 
 /* Deprecated property/parameter styling - strikethrough */
 .property-item.deprecated > dt > a > code:first-child,
-.query-param.deprecated > dt > a > code:first-child {
+.query-param.deprecated > dt > a > code:first-child,
+.path-param.deprecated > dt > a > code:first-child {
 	@apply line-through opacity-70;
 }
 
@@ -518,6 +519,28 @@
 	}
 }
 
+/* Security requirements display */
+.security-requirements {
+	@apply flex flex-wrap items-center gap-2 mt-4 mb-4 p-3 rounded;
+	@apply bg-blue-elastic-10 border border-blue-elastic-20;
+}
+
+.security-label {
+	@apply text-blue-elastic text-sm font-medium;
+}
+
+.security-scheme {
+	@apply flex items-center gap-1;
+
+	code {
+		@apply text-blue-elastic bg-white rounded px-1.5 py-0.5 text-xs font-mono;
+	}
+}
+
+.security-scopes {
+	@apply text-grey-60 text-xs;
+}
+
 /* Response headers display */
 .response-headers {
 	@apply mt-4 pt-4 border-t border-grey-20;
@@ -532,6 +555,26 @@
 }
 
 /* Server info display */
+.server-info {
+	@apply flex flex-wrap items-center gap-2 mt-2 mb-4 text-sm;
+}
+
+.server-label {
+	@apply text-grey-60 font-medium;
+}
+
+.server-url {
+	@apply flex items-center gap-1;
+
+	code {
+		@apply text-grey-80 bg-grey-10 rounded px-1.5 py-0.5 text-xs font-mono;
+	}
+}
+
+.server-description {
+	@apply text-grey-50 text-xs;
+}
+
 /* Union type option - styled like regular types, not enum values */
 .union-type-option {
 	@apply text-blue-elastic bg-blue-elastic-10 rounded px-1.5 py-0.5 text-xs;

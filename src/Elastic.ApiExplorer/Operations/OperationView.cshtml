@@ -1307,6 +1307,26 @@
 			Documentation
 		</a>
 	}
+	@{
+		// Servers can be at operation level or document level
+		var servers = operation.Servers is { Count: > 0 } ? operation.Servers : Model.Document.Servers;
+	}
+	@if (servers is { Count: > 0 })
+	{
+		<div class="server-info">
+			<span class="server-label">Server@(servers.Count > 1 ? "s" : ""):</span>
+			@foreach (var server in servers)
+			{
+				<span class="server-url">
+					<code>@server.Url</code>
+					@if (!string.IsNullOrEmpty(server.Description))
+					{
+						<span class="server-description">(@server.Description)</span>
+					}
+				</span>
+			}
+		</div>
+	}
 
 	<h3 class="section-header" id="paths" data-section="paths">
 		<span>Paths</span>
@@ -1338,8 +1358,18 @@
 		<dl class="property-list">
 		@foreach (var path in pathParameters)
 		{
-			<dt id="path-@path.Name"><a href="#path-@path.Name"><code>@path.Name</code></a></dt>
-			<dd>@Model.RenderMarkdown(path.Description)</dd>
+			<div class="path-param @(path.Deprecated == true ? "deprecated" : "")">
+				<dt id="path-@path.Name">
+					<a href="#path-@path.Name">
+						<code>@path.Name</code>
+						@if (path.Deprecated == true)
+						{
+							<span class="deprecated-badge">deprecated</span>
+						}
+					</a>
+				</dt>
+				<dd>@Model.RenderMarkdown(path.Description)</dd>
+			</div>
 		}
 		</dl>
 	}
@@ -1357,6 +1387,26 @@
 		<p>
 			@(Model.RenderMarkdown(operation.Description))
 		</p>
+	}
+
+	@if (operation.Security is { Count: > 0 })
+	{
+		<div class="security-requirements">
+			<span class="security-label">Authorization:</span>
+			@foreach (var requirement in operation.Security)
+			{
+				@foreach (var scheme in requirement)
+				{
+					<span class="security-scheme">
+						<code>@scheme.Key.Name</code>
+						@if (scheme.Value is { Count: > 0 })
+						{
+							<span class="security-scopes">(@string.Join(", ", scheme.Value))</span>
+						}
+					</span>
+				}
+			}
+		</div>
 	}
 
 	@{
