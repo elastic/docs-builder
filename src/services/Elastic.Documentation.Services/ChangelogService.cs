@@ -49,6 +49,13 @@ public class ChangelogService(
 				return false;
 			}
 
+			// Validate that if --use-pr-number is set, PR must be provided
+			if (input.UsePrNumber && string.IsNullOrWhiteSpace(input.Pr))
+			{
+				collector.EmitError(string.Empty, "When --use-pr-number is specified, --pr must also be provided");
+				return false;
+			}
+
 			// If PR is specified, try to fetch PR information and derive title/type
 			if (!string.IsNullOrWhiteSpace(input.Pr))
 			{
@@ -192,10 +199,25 @@ public class ChangelogService(
 				_ = _fileSystem.Directory.CreateDirectory(outputDir);
 			}
 
-			// Generate filename (timestamp-slug.yaml)
-			var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-			var slug = SanitizeFilename(input.Title);
-			var filename = $"{timestamp}-{slug}.yaml";
+			// Generate filename
+			string filename;
+			if (input.UsePrNumber)
+			{
+				var prNumber = ExtractPrNumber(input.Pr!, input.Owner, input.Repo);
+				if (prNumber == null)
+				{
+					collector.EmitError(string.Empty, $"Unable to extract PR number from '{input.Pr}'. Cannot use --use-pr-number option.");
+					return false;
+				}
+				filename = $"{prNumber}.yaml";
+			}
+			else
+			{
+				// Generate filename (timestamp-slug.yaml)
+				var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+				var slug = SanitizeFilename(input.Title);
+				filename = $"{timestamp}-{slug}.yaml";
+			}
 			var filePath = _fileSystem.Path.Combine(outputDir, filename);
 
 			// Write file
@@ -449,6 +471,45 @@ public class ChangelogService(
 			sanitized = sanitized[..50];
 
 		return sanitized;
+	}
+
+	private static int? ExtractPrNumber(string prUrl, string? defaultOwner = null, string? defaultRepo = null)
+	{
+		// Handle full URL: https://github.com/owner/repo/pull/123
+		if (prUrl.StartsWith("https://github.com/", StringComparison.OrdinalIgnoreCase) ||
+			prUrl.StartsWith("http://github.com/", StringComparison.OrdinalIgnoreCase))
+		{
+			var uri = new Uri(prUrl);
+			var segments = uri.Segments;
+			// segments[0] is "/", segments[1] is "owner/", segments[2] is "repo/", segments[3] is "pull/", segments[4] is "123"
+			if (segments.Length >= 5 && segments[3].Equals("pull/", StringComparison.OrdinalIgnoreCase))
+			{
+				if (int.TryParse(segments[4], out var prNum))
+				{
+					return prNum;
+				}
+			}
+		}
+
+		// Handle short format: owner/repo#123
+		var hashIndex = prUrl.LastIndexOf('#');
+		if (hashIndex > 0 && hashIndex < prUrl.Length - 1)
+		{
+			var prPart = prUrl[(hashIndex + 1)..];
+			if (int.TryParse(prPart, out var prNum))
+			{
+				return prNum;
+			}
+		}
+
+		// Handle just a PR number when owner/repo are provided
+		if (int.TryParse(prUrl, out var prNumber) &&
+			!string.IsNullOrWhiteSpace(defaultOwner) && !string.IsNullOrWhiteSpace(defaultRepo))
+		{
+			return prNumber;
+		}
+
+		return null;
 	}
 
 	private async Task<GitHubPrInfo?> TryFetchPrInfoAsync(string? prUrl, string? owner, string? repo, Cancel ctx)
