@@ -482,12 +482,11 @@ public class ChangelogService(
 			var uri = new Uri(prUrl);
 			var segments = uri.Segments;
 			// segments[0] is "/", segments[1] is "owner/", segments[2] is "repo/", segments[3] is "pull/", segments[4] is "123"
-			if (segments.Length >= 5 && segments[3].Equals("pull/", StringComparison.OrdinalIgnoreCase))
+			if (segments.Length >= 5 &&
+				segments[3].Equals("pull/", StringComparison.OrdinalIgnoreCase) &&
+				int.TryParse(segments[4], out var prNum))
 			{
-				if (int.TryParse(segments[4], out var prNum))
-				{
-					return prNum;
-				}
+				return prNum;
 			}
 		}
 
