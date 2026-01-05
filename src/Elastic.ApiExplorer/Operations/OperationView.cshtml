@@ -1,5 +1,6 @@
 @using Elastic.ApiExplorer.Landing
 @using Elastic.ApiExplorer.Operations
+@using Elastic.ApiExplorer.Schema
 @using Microsoft.OpenApi
 @inherits RazorSliceHttpResult<Elastic.ApiExplorer.Operations.OperationViewModel>
 @implements IUsesLayout<Elastic.ApiExplorer._Layout, ApiLayoutViewModel>
@@ -14,420 +15,24 @@
 	private static string GetContainerPageUrl(string typeName) => SchemaHelpers.GetContainerPageUrl(typeName) ?? "";
 	private static bool ShouldLinkToContainerPage(string typeName) => SchemaHelpers.ShouldLinkToContainerPage(typeName);
 
-	/// <summary>
-	/// Checks if a union option has properties, using fallback resolution if needed.
-	/// Also recursively checks nested unions.
-	/// </summary>
-	private bool UnionOptionHasProperties((string Name, string? Ref, bool IsObject, IOpenApiSchema? Schema) option)
-	{
-		if (option.Schema == null) return false;
-
-		// For non-object types, check if they're nested unions with object options
-		if (!option.IsObject)
-		{
-			// Check if this is a union type that might contain objects
-			var nestedOptions = GetNestedUnionOptions(option.Schema);
-			return nestedOptions.Any(UnionOptionHasProperties);
-		}
-
-		// Try to get properties directly first
-		var props = GetSchemaProperties(option.Schema);
-		if (props?.Count > 0) return true;
-
-		// For schema references, try resolving via the Ref ID or the schema reference itself
-		var refId = option.Ref;
-		if (string.IsNullOrEmpty(refId) && option.Schema is OpenApiSchemaReference schemaRef)
-			refId = schemaRef.Reference?.Id;
-
-		if (!string.IsNullOrEmpty(refId) && Model.Document.Components?.Schemas?.TryGetValue(refId, out var resolvedSchema) == true)
-		{
-			props = GetSchemaProperties(resolvedSchema);
-			if (props?.Count > 0) return true;
-
-			// Check if the resolved schema is itself a union
-			// Try the original schema reference first (OpenApiSchemaReference proxies OneOf/AnyOf)
-			var nestedOptions = GetNestedUnionOptions(option.Schema);
-			if (nestedOptions.Count == 0)
-			{
-				// Fallback to resolved schema
-				nestedOptions = GetNestedUnionOptions(resolvedSchema);
-			}
-			if (nestedOptions.Any(UnionOptionHasProperties)) return true;
-		}
-
-		// Try finding by name pattern (e.g., "SourceFilter" -> look for schemas ending with ".SourceFilter")
-		if (Model.Document.Components?.Schemas != null)
-		{
-			var baseName = option.Name.EndsWith("[]") ? option.Name[..^2] : option.Name;
-			var matchingSchema = Model.Document.Components.Schemas
-				.FirstOrDefault(kvp => kvp.Key.EndsWith("." + baseName) || kvp.Key == baseName);
-			if (matchingSchema.Value != null)
-			{
-				props = GetSchemaProperties(matchingSchema.Value);
-				if (props?.Count > 0) return true;
-
-				// Check if the matched schema is itself a union
-				var nestedOptions = GetNestedUnionOptions(matchingSchema.Value);
-				if (nestedOptions.Any(UnionOptionHasProperties)) return true;
-			}
-		}
-
-		return false;
-	}
-
-	/// <summary>
-	/// Gets the union options from a schema's oneOf/anyOf, if present
-	/// </summary>
-	private List<(string Name, string? Ref, bool IsObject, IOpenApiSchema? Schema)> GetNestedUnionOptions(IOpenApiSchema? schema)
-	{
-		var result = new List<(string Name, string? Ref, bool IsObject, IOpenApiSchema? Schema)>();
-		if (schema == null)
-			return result;
-
-		IList<IOpenApiSchema>? unionSchemas = null;
-
-		// First try the schema directly (OpenApiSchemaReference proxies OneOf/AnyOf)
-		if (schema.OneOf is { Count: > 0 })
-			unionSchemas = schema.OneOf;
-		else if (schema.AnyOf is { Count: > 0 })
-			unionSchemas = schema.AnyOf;
-
-		// If not found and it's a reference, resolve and try again
-		if (unionSchemas == null && schema is OpenApiSchemaReference schemaRef)
-		{
-			var refId = schemaRef.Reference?.Id;
-			if (!string.IsNullOrEmpty(refId) && Model.Document.Components?.Schemas?.TryGetValue(refId, out var resolved) == true)
-			{
-				if (resolved.OneOf is { Count: > 0 })
-					unionSchemas = resolved.OneOf;
-				else if (resolved.AnyOf is { Count: > 0 })
-					unionSchemas = resolved.AnyOf;
-			}
-		}
-
-		if (unionSchemas == null)
-			return result;
-
-		foreach (var s in unionSchemas)
-		{
-			if (s is OpenApiSchemaReference unionRef)
-			{
-				var typeName = FormatSchemaName(unionRef.Reference?.Id ?? "unknown");
-				result.Add((typeName, unionRef.Reference?.Id, !IsValueType(typeName), s));
-			}
-			else if (s?.Type?.HasFlag(JsonSchemaType.Array) == true && s.Items != null)
-			{
-				var itemInfo = GetTypeInfo(s.Items);
-				result.Add(($"{itemInfo.TypeName}[]", itemInfo.SchemaRef, itemInfo.IsObject, s));
-			}
-			else if (s != null)
-			{
-				// Could be an inline schema or wrapped reference - try to get type info
-				var info = GetTypeInfo(s);
-				if (!string.IsNullOrEmpty(info.SchemaRef))
-				{
-					result.Add((info.TypeName, info.SchemaRef, info.IsObject, s));
-				}
-				else
-				{
-					var primName = GetPrimitiveTypeName(s.Type) ?? "unknown";
-					result.Add((primName, null, false, s));
-				}
-			}
-		}
-
-		return result;
-	}
+	// Delegate schema analysis to Analyzer
+	private bool UnionOptionHasProperties(UnionOption option) => Analyzer.UnionOptionHasProperties(option);
+	private List<UnionOption> GetNestedUnionOptions(IOpenApiSchema? schema) => Analyzer.GetNestedUnionOptions(schema);
+	private List<UnionOption> FlattenUnionOptions(List<UnionOption> options) => Analyzer.FlattenUnionOptions(options);
+	private IOpenApiSchema? ResolveSchema(IOpenApiSchema? schema) => Analyzer.ResolveSchema(schema);
+	private IDictionary<string, IOpenApiSchema>? GetSchemaProperties(IOpenApiSchema? schema) => Analyzer.GetSchemaProperties(schema);
+	private TypeInfo GetTypeInfo(IOpenApiSchema? schema) => Analyzer.GetTypeInfo(schema);
 
 	// Delegate simple helpers to SchemaHelpers
 	public string GetPrimitiveTypeName(JsonSchemaType? type) => SchemaHelpers.GetPrimitiveTypeName(type);
 	public string FormatSchemaName(string schemaId) => SchemaHelpers.FormatSchemaName(schemaId);
 	public bool IsValueType(string typeName) => SchemaHelpers.IsValueType(typeName);
 	public bool IsLinkedType(string typeName) => Analyzer.IsLinkedType(typeName);
+	public bool IsPrimitiveTypeName(string typeName) => SchemaHelpers.IsPrimitiveTypeName(typeName);
 	public string? GetValueTypeBase(IOpenApiSchema? schema) => SchemaHelpers.GetValueTypeBase(schema);
+	public string? GetPrimitiveAliasType(IOpenApiSchema? schema) => SchemaHelpers.GetPrimitiveAliasType(schema);
 
-	public record TypeInfo(
-		string TypeName,
-		string? SchemaRef,
-		bool IsArray,
-		bool IsObject,
-		bool IsValueType,
-		string? ValueTypeBase,
-		bool HasLink,
-		List<(string Name, string? Ref, bool IsObject, IOpenApiSchema? Schema)>? AnyOfOptions,
-		bool IsDictionary = false,
-		IOpenApiSchema? DictValueSchema = null,
-		bool IsEnum = false,
-		bool IsUnion = false,
-		string[]? EnumValues = null,
-		string[]? UnionOptions = null,
-		string? ArrayItemType = null
-	);
-
-	public TypeInfo GetTypeInfo(IOpenApiSchema? schema, string? currentPropertyPath = null)
-	{
-		if (schema is null)
-			return new TypeInfo("unknown", null, false, false, false, null, false, null);
-
-		// Check if this is a schema reference
-		if (schema is OpenApiSchemaReference schemaRef)
-		{
-			var refId = schemaRef.Reference?.Id;
-			if (!string.IsNullOrEmpty(refId))
-			{
-				var typeName = FormatSchemaName(refId);
-				var isArray = schema.Type?.HasFlag(JsonSchemaType.Array) ?? false;
-				var isValueType = IsValueType(typeName);
-				var valueTypeBase = isValueType ? GetValueTypeBase(schemaRef) ?? "string" : null;
-				var hasLink = IsLinkedType(typeName);
-
-				// Check if the schema reference is an enum or union
-				// OpenApiSchemaReference proxies to resolved schema properties
-				var isEnum = schemaRef.Enum is { Count: > 0 };
-				var isUnion = !isEnum && (schemaRef.OneOf is { Count: > 0 } || schemaRef.AnyOf is { Count: > 0 });
-				string[]? enumValues = isEnum ? schemaRef.Enum?.Select(e => e?.ToString() ?? "").ToArray() : null;
-
-				// Check if the referenced type is an array of primitives
-				string? arrayItemType = null;
-				if (isArray)
-				{
-					// Try getting Items from the proxy first
-					IOpenApiSchema? itemSchema = schemaRef.Items;
-
-					// If Items is null, try resolving the schema explicitly
-					if (itemSchema is null && Model.Document.Components?.Schemas?.TryGetValue(refId, out var resolvedArraySchema) == true)
-					{
-						itemSchema = resolvedArraySchema.Items;
-					}
-
-					if (itemSchema is not null)
-					{
-						var itemInfo = GetTypeInfo(itemSchema);
-						// If the item is not an object and not a linked type, it's a primitive array
-						if (!itemInfo.IsObject && !itemInfo.HasLink && string.IsNullOrEmpty(itemInfo.SchemaRef))
-						{
-							arrayItemType = itemInfo.TypeName;
-						}
-					}
-				}
-
-				// Get union options from oneOf/anyOf
-				string[]? unionOptions = null;
-				List<(string Name, string? Ref, bool IsObject, IOpenApiSchema? Schema)>? anyOfOptions = null;
-				if (isUnion)
-				{
-					var unionSchemas = schemaRef.OneOf is { Count: > 0 } ? schemaRef.OneOf : schemaRef.AnyOf;
-					var options = new List<string>();
-					var anyOfList = new List<(string Name, string? Ref, bool IsObject, IOpenApiSchema? Schema)>();
-					foreach (var s in unionSchemas ?? [])
-					{
-						if (s is OpenApiSchemaReference unionRef)
-						{
-							var unionTypeName = FormatSchemaName(unionRef.Reference?.Id ?? "unknown");
-							options.Add(unionTypeName);
-							// Also add to anyOfOptions for potential expansion
-							anyOfList.Add((unionTypeName, unionRef.Reference?.Id, !IsValueType(unionTypeName), s));
-						}
-						else if (s?.Enum is { Count: > 0 } inlineEnum)
-						{
-							// String literal union - add enum values
-							foreach (var enumVal in inlineEnum)
-								options.Add(enumVal?.ToString() ?? "");
-						}
-						else if (s?.Type?.HasFlag(JsonSchemaType.Array) == true && s.Items != null)
-						{
-							// Array type - get the item type and add [] suffix
-							var itemInfo = GetTypeInfo(s.Items);
-							var arrayTypeName = $"{itemInfo.TypeName}[]";
-							options.Add(arrayTypeName);
-							// Arrays of objects are expandable
-							anyOfList.Add((arrayTypeName, itemInfo.SchemaRef, itemInfo.IsObject, s));
-						}
-						else
-						{
-							var primName = GetPrimitiveTypeName(s?.Type) ?? "unknown";
-							options.Add(primName);
-							// Primitives are not objects
-							anyOfList.Add((primName, null, false, s));
-						}
-					}
-					unionOptions = options.ToArray();
-					anyOfOptions = anyOfList.Count > 0 ? anyOfList : null;
-				}
-
-				return new TypeInfo(typeName, refId, isArray, !isValueType && !isEnum, isValueType, valueTypeBase, hasLink, anyOfOptions, false, null, isEnum, isUnion, enumValues, unionOptions, arrayItemType);
-			}
-		}
-
-		// Check for oneOf/anyOf which often indicate union types
-		if (schema.OneOf is { Count: > 0 } oneOf)
-		{
-			var options = oneOf.Where(s => s is not null).Select(s => {
-				var info = GetTypeInfo(s);
-				// Include [] suffix for array types
-				var displayName = info.IsArray ? $"{info.TypeName}[]" : info.TypeName;
-				return (Name: displayName, Ref: info.SchemaRef, IsObject: info.IsObject, Schema: (IOpenApiSchema?)s);
-			}).ToList();
-
-			var hasObjectOptions = options.Any(o => o.IsObject);
-			if (hasObjectOptions && options.Count > 1)
-			{
-				// Return anyOf options for potential tab rendering
-				return new TypeInfo("oneOf", null, false, true, false, null, false, options, IsUnion: true);
-			}
-
-			var typeNames = options.Select(o => o.Name).Distinct().ToArray();
-			return new TypeInfo(string.Join(" | ", typeNames), null, false, false, false, null, false, options, IsUnion: true);
-		}
-
-		if (schema.AnyOf is { Count: > 0 } anyOf)
-		{
-			var options = anyOf.Where(s => s is not null).Select(s => {
-				var info = GetTypeInfo(s);
-				// Include [] suffix for array types
-				var displayName = info.IsArray ? $"{info.TypeName}[]" : info.TypeName;
-				return (Name: displayName, Ref: info.SchemaRef, IsObject: info.IsObject, Schema: (IOpenApiSchema?)s);
-			}).ToList();
-
-			var hasObjectOptions = options.Any(o => o.IsObject);
-			if (hasObjectOptions && options.Count > 1)
-			{
-				// Return anyOf options for potential tab rendering
-				return new TypeInfo("anyOf", null, false, true, false, null, false, options, IsUnion: true);
-			}
-
-			var typeNames = options.Select(o => o.Name).Distinct().ToArray();
-			return new TypeInfo(string.Join(" | ", typeNames), null, false, false, false, null, false, options, IsUnion: true);
-		}
-
-		// Check for allOf (usually inheritance/composition)
-		if (schema.AllOf is { Count: > 0 } allOf)
-		{
-			var refSchemas = allOf.OfType<OpenApiSchemaReference>().ToArray();
-			if (refSchemas.Length > 0)
-			{
-				var refId = refSchemas[0].Reference?.Id;
-				if (!string.IsNullOrEmpty(refId))
-				{
-					var typeName = FormatSchemaName(refId);
-					var isValueType = IsValueType(typeName);
-					var hasLink = IsLinkedType(typeName);
-					return new TypeInfo(typeName, refId, false, !isValueType, isValueType, null, hasLink, null);
-				}
-			}
-		}
-
-		// Check for array items
-		if (schema.Type?.HasFlag(JsonSchemaType.Array) ?? false)
-		{
-			if (schema.Items is not null)
-			{
-				var itemInfo = GetTypeInfo(schema.Items);
-				// If the item is not an object and not a linked type, it's a primitive array
-				var isPrimitiveArray = !itemInfo.IsObject && !itemInfo.HasLink && string.IsNullOrEmpty(itemInfo.SchemaRef);
-				var arrayItemType = isPrimitiveArray ? itemInfo.TypeName : null;
-				return new TypeInfo(itemInfo.TypeName, itemInfo.SchemaRef, true, itemInfo.IsObject, itemInfo.IsValueType, itemInfo.ValueTypeBase, itemInfo.HasLink, null, ArrayItemType: arrayItemType);
-			}
-			return new TypeInfo("unknown", null, true, false, false, null, false, null, ArrayItemType: "unknown");
-		}
-
-		// Check for enum
-		if (schema.Enum is { Count: > 0 })
-		{
-			var enumValues = schema.Enum.Select(e => e?.ToString() ?? "").Take(5).ToArray();
-			return new TypeInfo("enum", null, false, false, false, null, false, null, false, null, true, false, enumValues);
-		}
-
-		// Check for additionalProperties (dictionary-like objects)
-		if (schema.AdditionalProperties is IOpenApiSchema addProps)
-		{
-			var valueInfo = GetTypeInfo(addProps);
-			// Pass valueInfo.HasLink so we know if the dictionary value type has a dedicated page
-			return new TypeInfo($"string to {valueInfo.TypeName}", valueInfo.SchemaRef, false, true, false, null, valueInfo.HasLink, null, true, addProps);
-		}
-
-		// Check if it has properties (inline object)
-		if (schema.Properties is { Count: > 0 })
-			return new TypeInfo("object", null, false, true, false, null, false, null);
-
-		// Primitive type
-		var primitiveName = GetPrimitiveTypeName(schema.Type);
-		if (!string.IsNullOrEmpty(primitiveName))
-			return new TypeInfo(primitiveName, null, false, primitiveName == "object", false, null, false, null);
-
-		return new TypeInfo("object", null, false, true, false, null, false, null);
-	}
-
-	public IOpenApiSchema? ResolveSchema(IOpenApiSchema? schema)
-	{
-		if (schema is null) return null;
-
-		// If it's a reference, resolve from Components.Schemas
-		if (schema is OpenApiSchemaReference schemaRef)
-		{
-			var refId = schemaRef.Reference?.Id;
-			if (!string.IsNullOrEmpty(refId) && Model.Document.Components?.Schemas?.TryGetValue(refId, out var resolved) == true)
-			{
-				return resolved;
-			}
-			return schemaRef;
-		}
-
-		// For allOf, merge properties from all schemas
-		if (schema.AllOf is { Count: > 0 })
-			return schema;
-
-		return schema;
-	}
-
-	public IDictionary<string, IOpenApiSchema>? GetSchemaProperties(IOpenApiSchema? schema)
-	{
-		if (schema is null) return null;
-
-		// Handle schema references - resolve to get actual properties
-		if (schema is OpenApiSchemaReference schemaRef)
-		{
-			// OpenApiSchemaReference proxies to the target schema
-			// Try direct property access first (proxied)
-			if (schemaRef.Properties is { Count: > 0 })
-				return schemaRef.Properties;
-
-			// Try resolving via Reference.Id
-			var refId = schemaRef.Reference?.Id;
-			if (!string.IsNullOrEmpty(refId))
-			{
-				// Try to get the resolved schema from the document
-				if (Model.Document.Components?.Schemas?.TryGetValue(refId, out var resolvedSchema) == true)
-				{
-					return GetSchemaProperties(resolvedSchema);
-				}
-			}
-			// Fall through to try other schema properties
-		}
-
-		// Direct properties
-		if (schema.Properties is { Count: > 0 })
-			return schema.Properties;
-
-		// For allOf, collect properties from all schemas
-		if (schema.AllOf is { Count: > 0 } allOf)
-		{
-			var props = new Dictionary<string, IOpenApiSchema>();
-			foreach (var subSchema in allOf)
-			{
-				var subProps = GetSchemaProperties(subSchema);
-				if (subProps is not null)
-				{
-					foreach (var prop in subProps)
-						props.TryAdd(prop.Key, prop.Value);
-				}
-			}
-			return props.Count > 0 ? props : null;
-		}
-
-		return null;
-	}
-
+	// Keep rendering functions that produce HTML - these will eventually become partials
 	public IHtmlContent RenderSchemaType(IOpenApiSchema schema, HashSet<string>? ancestorTypes = null)
 	{
 		var info = GetTypeInfo(schema);
@@ -489,7 +94,7 @@
 		else if (info.IsValueType && info.ValueTypeBase != null)
 		{
 			// Show underlying type for named value types: "string Field" instead of just "Field"
-			sb.Append($"<span class=\"map-keyword\">{info.ValueTypeBase} </span>");
+			sb.Append($"<span class=\"value-type-keyword\">{info.ValueTypeBase}</span> ");
 		}
 		else if (info.IsObject && !string.IsNullOrEmpty(info.SchemaRef) && !info.HasLink && hasActualProperties)
 		{
@@ -516,97 +121,7 @@
 		return new HtmlString("<span class=\"recursive\">recursive</span>");
 	}
 
-	/// <summary>
-	/// Flattens nested unions to get all leaf options (options with direct properties, not union wrappers)
-	/// </summary>
-	private List<(string Name, string? Ref, bool IsObject, IOpenApiSchema? Schema)> FlattenUnionOptions(
-		List<(string Name, string? Ref, bool IsObject, IOpenApiSchema? Schema)> options,
-		bool includeArraySuffix = false)
-	{
-		var result = new List<(string Name, string? Ref, bool IsObject, IOpenApiSchema? Schema)>();
-
-		foreach (var option in options)
-		{
-			if (option.Schema == null) continue;
-
-			var baseName = option.Name.EndsWith("[]") ? option.Name[..^2] : option.Name;
-			var isArray = option.Name.EndsWith("[]");
-
-			// For array types, we need to look at the Items schema
-			IOpenApiSchema? schemaToCheck = option.Schema;
-			if (option.Schema.Type?.HasFlag(JsonSchemaType.Array) == true && option.Schema.Items != null)
-			{
-				schemaToCheck = option.Schema.Items;
-			}
-
-			// Check if this option has direct properties
-			var hasDirectProps = false;
-			IOpenApiSchema? resolvedSchema = schemaToCheck;
-
-			var props = GetSchemaProperties(schemaToCheck);
-			if (props?.Count > 0)
-			{
-				hasDirectProps = true;
-			}
-			else if (schemaToCheck is OpenApiSchemaReference schemaRef)
-			{
-				var refId = schemaRef.Reference?.Id;
-				if (!string.IsNullOrEmpty(refId) && Model.Document.Components?.Schemas?.TryGetValue(refId, out var resolved) == true)
-				{
-					resolvedSchema = resolved;
-					props = GetSchemaProperties(resolved);
-					if (props?.Count > 0) hasDirectProps = true;
-				}
-			}
-
-			if (!hasDirectProps && Model.Document.Components?.Schemas != null)
-			{
-				var matchingSchema = Model.Document.Components.Schemas
-					.FirstOrDefault(kvp => kvp.Key.EndsWith("." + baseName) || kvp.Key == baseName);
-				if (matchingSchema.Value != null)
-				{
-					resolvedSchema = matchingSchema.Value;
-					props = GetSchemaProperties(matchingSchema.Value);
-					if (props?.Count > 0) hasDirectProps = true;
-				}
-			}
-
-			if (hasDirectProps)
-			{
-				// This option has properties, add it to results
-				// For arrays, keep the original schema so we render the right type
-				result.Add((option.Name, option.Ref, option.IsObject, resolvedSchema));
-			}
-			else if (resolvedSchema != null)
-			{
-				// Check if this is a nested union that we should expand
-				// Try the original schema first (OpenApiSchemaReference proxies OneOf/AnyOf correctly)
-				var nestedOptions = GetNestedUnionOptions(schemaToCheck);
-				if (nestedOptions.Count == 0)
-				{
-					// Fallback to resolved schema
-					nestedOptions = GetNestedUnionOptions(resolvedSchema);
-				}
-				if (nestedOptions.Count > 0)
-				{
-					// Recursively flatten nested union, carrying the array suffix if needed
-					var flattenedNested = FlattenUnionOptions(nestedOptions);
-					foreach (var nested in flattenedNested)
-					{
-						// If the parent was an array and the nested option isn't, add array suffix
-						var nestedName = nested.Name;
-						if (isArray && !nestedName.EndsWith("[]"))
-							nestedName = $"{nestedName}[]";
-						result.Add((nestedName, nested.Ref, nested.IsObject, nested.Schema));
-					}
-				}
-			}
-		}
-
-		return result;
-	}
-
-	public IHtmlContent RenderUnionOptions(List<(string Name, string? Ref, bool IsObject, IOpenApiSchema? Schema)> options, string prefix, int depth, HashSet<string>? ancestorTypes = null, bool isRequest = false)
+	public IHtmlContent RenderUnionOptions(List<UnionOption> options, string prefix, int depth, HashSet<string>? ancestorTypes = null, bool isRequest = false)
 	{
 		if (options.Count == 0)
 			return HtmlString.Empty;
@@ -641,7 +156,7 @@
 		{
 			// Find the non-array variant to get schema info (or use array if no non-array)
 			var primaryOption = variants.FirstOrDefault(o => !o.Name.EndsWith("[]"));
-			if (primaryOption.Schema is null)
+			if (primaryOption?.Schema is null)
 				primaryOption = variants.First();
 
 			IOpenApiSchema? schemaToRender = primaryOption.Schema;
@@ -700,9 +215,23 @@
 		if (variantsToRender.Count == 0)
 			return HtmlString.Empty;
 
-		// Show union variants - type labels without tree connectors
+		// Check if we should collapse the union options (more than 2 variants)
+		var shouldCollapseUnion = variantsToRender.Count > 2;
+		var unionContainerId = $"{prefix}-union-options";
+
+		// Show union variants - type labels with tree-style connectors
 		// Object types with properties get expand/collapse
-		<div class="union-variants">
+		<div class="union-variants-container @(shouldCollapseUnion ? "collapsible collapsed" : "")" id="@unionContainerId">
+			@if (shouldCollapseUnion)
+			{
+				<div class="union-collapse-toggle">
+					<button class="expand-toggle union-group-toggle">
+						<span class="toggle-icon">+</span>
+						<span class="toggle-label">Show @variantsToRender.Count type options</span>
+					</button>
+				</div>
+			}
+			<div class="union-variants @(shouldCollapseUnion ? "union-variants-content" : "")" @(shouldCollapseUnion ? "hidden=\"until-found\"" : "")>
 			@for (var i = 0; i < variantsToRender.Count; i++)
 			{
 				var variant = variantsToRender[i];
@@ -778,6 +307,7 @@
 					}
 				</div>
 			}
+			</div>
 		</div>
 
 		return HtmlString.Empty;
@@ -805,13 +335,16 @@
 				var hasDescription = !string.IsNullOrWhiteSpace(propSchema.Description);
 
 				// Check if this type appears in any ancestor (recursive detection)
-				var isRecursive = ancestorTypes != null && !string.IsNullOrEmpty(typeInfo.TypeName) && ancestorTypes.Contains(typeInfo.TypeName);
+				// Only consider named types - primitive types like "object", "string" cannot be recursive
+				var isRecursive = ancestorTypes != null && !string.IsNullOrEmpty(typeInfo.TypeName)
+					&& !IsPrimitiveTypeName(typeInfo.TypeName) && ancestorTypes.Contains(typeInfo.TypeName);
 
 				// Also check dictionary value types for recursion (e.g., "aggregations" map string to AggregationContainer)
 				if (!isRecursive && typeInfo.IsDictionary && typeInfo.DictValueSchema != null)
 				{
 					var dictValueType = GetTypeInfo(typeInfo.DictValueSchema);
-					isRecursive = ancestorTypes != null && !string.IsNullOrEmpty(dictValueType.TypeName) && ancestorTypes.Contains(dictValueType.TypeName);
+					isRecursive = ancestorTypes != null && !string.IsNullOrEmpty(dictValueType.TypeName)
+						&& !IsPrimitiveTypeName(dictValueType.TypeName) && ancestorTypes.Contains(dictValueType.TypeName);
 				}
 
 				// For dictionaries with linked value types, typeInfo.HasLink is true
@@ -863,11 +396,11 @@
 				// For simple unions, check if the base type has properties we should expand (when NOT linked)
 				var simpleUnionHasExpandableProps = false;
 				IOpenApiSchema? simpleUnionSchema = null;
-				List<(string Name, string? Ref, bool IsObject, IOpenApiSchema? Schema)>? simpleUnionNestedOptions = null;
+				List<UnionOption>? simpleUnionNestedOptions = null;
 				if (isSimpleArrayUnion && !string.IsNullOrEmpty(simpleUnionBaseName) && typeInfo.AnyOfOptions != null && depth < SchemaHelpers.MaxDepth)
 				{
 					var baseOption = typeInfo.AnyOfOptions.FirstOrDefault(o => o.Name == simpleUnionBaseName);
-					if (baseOption.Schema != null)
+					if (baseOption?.Schema != null)
 					{
 						var baseTypeInfo = GetTypeInfo(baseOption.Schema);
 						// Only expand if NOT linked (linked types have their own page)
@@ -1105,7 +638,7 @@
 						{
 							// Check if the base type in the simple union is a linked type
 							var baseOption = typeInfo.AnyOfOptions.FirstOrDefault(o => o.Name == simpleUnionBaseName);
-							if (baseOption.Schema != null)
+							if (baseOption?.Schema != null)
 							{
 								var baseTypeInfo = GetTypeInfo(baseOption.Schema);
 								if (baseTypeInfo.HasLink)
@@ -1341,10 +874,15 @@
 		{
 			var method = overload.Model.OperationType.ToString().ToLowerInvariant();
 			var current = overload.Model.Route == Model.Operation.Route && overload.Model.OperationType == Model.Operation.OperationType ? "current" : "";
-			<li class="api-url-list-item">
+			var isDeprecated = overload.Model.Operation?.Deprecated == true;
+			<li class="api-url-list-item @(isDeprecated ? "deprecated" : "")">
 				<a href="@overload.Url" class="@current" hx-disable="true">
 					 <span class="api-method api-method-@method">@method.ToUpperInvariant()</span>
-					 <span class="api-url">@overload.Model.Route</span>
+					 <span class="api-url @(isDeprecated ? "deprecated-path" : "")">@overload.Model.Route</span>
+					 @if (isDeprecated)
+					 {
+						 <span class="deprecated-badge">deprecated</span>
+					 }
 				</a>
 			</li>
 		}
@@ -1602,9 +1140,39 @@
 							<p class="content-type">Content-Type: <code>@contentType.Key</code></p>
 						}
 						var responseProps = GetSchemaProperties(responseSchema);
+						var responseTypeInfo = GetTypeInfo(responseSchema);
+
+						// For arrays, check if the item type has properties we should render
+						IOpenApiSchema? arrayItemSchema = null;
+						IDictionary<string, IOpenApiSchema>? arrayItemProps = null;
+						if (responseTypeInfo.IsArray)
+						{
+							// Try getting Items - handle schema references which may need explicit resolution
+							arrayItemSchema = responseSchema.Items;
+							if (arrayItemSchema is null && responseSchema is OpenApiSchemaReference respSchemaRef)
+							{
+								var respRefId = respSchemaRef.Reference?.Id;
+								if (!string.IsNullOrEmpty(respRefId) &&
+									Model.Document.Components?.Schemas?.TryGetValue(respRefId, out var resolvedRespSchema) == true)
+								{
+									arrayItemSchema = resolvedRespSchema.Items;
+								}
+							}
+							if (arrayItemSchema is not null)
+							{
+								arrayItemProps = GetSchemaProperties(arrayItemSchema);
+							}
+						}
+
 						if (responseProps is { Count: > 0 })
 						{
 							@RenderProperties(responseSchema, null, $"res-{statusCode}", 0)
+						}
+						else if (arrayItemProps is { Count: > 0 } && arrayItemSchema is not null)
+						{
+							// Array of objects - show the type annotation and render item properties
+							<p>Response Type: @RenderSchemaType(responseSchema)</p>
+							@RenderProperties(arrayItemSchema, null, $"res-{statusCode}", 0)
 						}
 						else
 						{
@@ -1888,7 +1456,87 @@
 	updateScrollState();
 	updateExamplesButtonVisibility();
 
+	// Helper function to expand a union variants container and all its ancestors
+	function expandUnionContainer(container) {
+		if (!container) return;
+
+		const toggleBtn = container.querySelector(':scope > .union-collapse-toggle > .union-group-toggle');
+		const variantsContent = container.querySelector(':scope > .union-variants-content');
+
+		container.classList.remove('collapsed');
+		container.classList.add('expanded');
+
+		if (toggleBtn) {
+			const toggleIcon = toggleBtn.querySelector('.toggle-icon');
+			const toggleLabel = toggleBtn.querySelector('.toggle-label');
+			const optionCount = toggleLabel?.textContent?.match(/\d+/)?.[0] || '';
+			if (toggleIcon) toggleIcon.textContent = '−';
+			if (toggleLabel) toggleLabel.textContent = `Hide ${optionCount} type options`;
+		}
+
+		if (variantsContent) {
+			variantsContent.removeAttribute('hidden');
+		}
+
+		// Recursively expand parent items
+		const parentItem = container.parentElement?.closest('.property-item, .union-variant-item');
+		if (parentItem) {
+			if (parentItem.classList.contains('union-variant-item')) {
+				expandUnionVariantItem(parentItem);
+			} else {
+				expandPropertyItem(parentItem);
+			}
+		}
+	}
+
+	// Add beforematch event listeners for union variants content
+	if (supportsHiddenUntilFound) {
+		section.querySelectorAll('.union-variants-content[hidden="until-found"]').forEach(variantsContent => {
+			variantsContent.addEventListener('beforematch', function(e) {
+				const container = variantsContent.parentElement;
+				if (container?.classList.contains('union-variants-container')) {
+					expandUnionContainer(container);
+				}
+			});
+		});
+	}
+
 	section.addEventListener('click', function(e) {
+		// Handle union group toggle buttons (collapse/expand all union options)
+		const unionGroupToggle = e.target.closest('.union-group-toggle');
+		if (unionGroupToggle) {
+			e.preventDefault();
+			e.stopPropagation();
+
+			const container = unionGroupToggle.closest('.union-variants-container');
+			if (!container) return;
+
+			const isExpanded = container.classList.contains('expanded');
+			const toggleIcon = unionGroupToggle.querySelector('.toggle-icon');
+			const toggleLabel = unionGroupToggle.querySelector('.toggle-label');
+			const variantsContent = container.querySelector(':scope > .union-variants-content');
+			const optionCount = toggleLabel?.textContent?.match(/\d+/)?.[0] || '';
+
+			if (isExpanded) {
+				container.classList.remove('expanded');
+				container.classList.add('collapsed');
+				if (toggleIcon) toggleIcon.textContent = '+';
+				if (toggleLabel) toggleLabel.textContent = `Show ${optionCount} type options`;
+				if (variantsContent && supportsHiddenUntilFound) {
+					variantsContent.setAttribute('hidden', 'until-found');
+				}
+			} else {
+				container.classList.remove('collapsed');
+				container.classList.add('expanded');
+				if (toggleIcon) toggleIcon.textContent = '−';
+				if (toggleLabel) toggleLabel.textContent = `Hide ${optionCount} type options`;
+				if (variantsContent) {
+					variantsContent.removeAttribute('hidden');
+				}
+			}
+			return;
+		}
+
 		// Handle section navigation buttons
 		const navBtn = e.target.closest('.section-nav-btn');
 		if (navBtn) {

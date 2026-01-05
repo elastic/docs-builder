@@ -348,8 +348,14 @@ public class SchemaAnalyzer(OpenApiDocument document, string? currentPageType = 
 			{
 				var typeName = SchemaHelpers.FormatSchemaName(refId);
 				var isArray = schema.Type?.HasFlag(JsonSchemaType.Array) ?? false;
+
+				// Check if this is a value type - either from the known list or by detecting it's a primitive alias
 				var isValueType = SchemaHelpers.IsValueType(typeName);
-				var valueTypeBase = isValueType ? SchemaHelpers.GetValueTypeBase(schemaRef) ?? "string" : null;
+				var primitiveAliasType = !isValueType ? SchemaHelpers.GetPrimitiveAliasType(schemaRef) : null;
+				if (!string.IsNullOrEmpty(primitiveAliasType))
+					isValueType = true;
+
+				var valueTypeBase = isValueType ? (primitiveAliasType ?? SchemaHelpers.GetValueTypeBase(schemaRef) ?? "string") : null;
 				var hasLink = IsLinkedType(typeName);
 
 				// Check if the schema reference is an enum or union
@@ -487,8 +493,12 @@ public class SchemaAnalyzer(OpenApiDocument document, string? currentPageType = 
 				{
 					var typeName = SchemaHelpers.FormatSchemaName(refId);
 					var isValueType = SchemaHelpers.IsValueType(typeName);
+					var primitiveAliasType = !isValueType ? SchemaHelpers.GetPrimitiveAliasType(refSchemas[0]) : null;
+					if (!string.IsNullOrEmpty(primitiveAliasType))
+						isValueType = true;
+					var valueTypeBase = isValueType ? (primitiveAliasType ?? SchemaHelpers.GetValueTypeBase(refSchemas[0]) ?? "string") : null;
 					var hasLink = IsLinkedType(typeName);
-					return new TypeInfo(typeName, refId, false, !isValueType, isValueType, null, hasLink, null);
+					return new TypeInfo(typeName, refId, false, !isValueType, isValueType, valueTypeBase, hasLink, null);
 				}
 			}
 		}

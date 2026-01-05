@@ -419,6 +419,15 @@
 	@apply line-through opacity-70;
 }
 
+/* Deprecated path styling in api-url-listing */
+.api-url-listing .api-url-list-item.deprecated .api-url {
+	@apply line-through opacity-70;
+}
+
+.api-url-listing .api-url-list-item.deprecated .deprecated-badge {
+	@apply ml-2;
+}
+
 /* Version badge - subtle grey */
 .version-badge {
 	@apply text-grey-60 bg-grey-10 rounded px-1 py-0.5 text-xs font-normal;
@@ -455,31 +464,36 @@
 /* Object type icon */
 .object-icon {
 	@apply text-grey-60 font-normal;
-	font-size: 0.85em;
+	font-size: 1.2em;
+	font-variant: small-caps;
 }
 
 /* Array type icon */
 .array-icon {
 	@apply text-green-70 font-normal;
-	font-size: 0.85em;
+	font-size: 1.2em;
+	font-variant: small-caps;
 }
 
 /* Dictionary/map type icon - same color as object icon */
 .dict-icon {
 	@apply text-grey-60 font-normal;
-	font-size: 0.85em;
+	font-size: 1.2em;
+	font-variant: small-caps;
 }
 
 /* Enum type icon - purple to match enum values */
 .enum-icon {
 	@apply text-purple-70 font-normal;
-	font-size: 0.85em;
+	font-size: 1.2em;
+	font-variant: small-caps;
 }
 
 /* Union type icon - orange/yellow for distinction */
 .union-icon {
 	@apply text-yellow-90 font-normal;
-	font-size: 0.85em;
+	font-size: 1.2em;
+	font-variant: small-caps;
 }
 
 /* Enum values and union options display */
@@ -586,6 +600,11 @@
 	font-size: 0.85em;
 }
 
+/* Value type keyword styling - for discovered primitive aliases */
+.value-type-keyword {
+	@apply text-blue-elastic text-xs font-normal bg-transparent border-0 p-0;
+}
+
 /* Inline union display for simple X | X[] unions */
 .union-inline-row {
 	@apply flex flex-wrap items-center gap-1 mt-1;
@@ -615,9 +634,106 @@
 }
 
 /* Union variants container for expandable union type options */
-.union-variants {
+.union-variants-container {
 	@apply mt-1;
 	padding-left: calc(var(--spacing) * 2);
+	position: relative;
+}
+
+/* Non-collapsible union variants (just the content wrapper) */
+.union-variants-container:not(.collapsible) > .union-variants {
+	/* No additional styling needed */
+}
+
+/* Collapsible union variants container */
+.union-variants-container.collapsible {
+	/* Container for tree structure */
+}
+
+/* Union collapse toggle row - with tree connectors */
+.union-collapse-toggle {
+	padding: calc(var(--spacing) * 1) 0;
+	padding-left: 1.25rem;
+	margin: 0;
+	position: relative;
+	display: flex;
+	align-items: center;
+
+	/* Vertical line - extends to button center */
+	&::before {
+		content: '';
+		position: absolute;
+		left: 0.375rem;
+		top: 0;
+		height: 50%;
+		width: 0;
+		border-left: 1px solid #cbd5e1;
+		opacity: 0;
+		transition: opacity 0.1s ease;
+	}
+
+	/* Horizontal connector - only when collapsed */
+	&::after {
+		content: '';
+		position: absolute;
+		left: 0.375rem;
+		top: 50%;
+		width: 0.5rem;
+		border-top: 1px solid #cbd5e1;
+		opacity: 0;
+		transition: opacity 0.1s ease;
+	}
+
+	/* Button styling */
+	.union-group-toggle {
+		@apply text-grey-60 bg-grey-10 border-grey-20 border rounded cursor-pointer;
+		padding: 0.25rem 0.5rem;
+		font-size: 0.8rem;
+		line-height: 1.2;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		transition: all 0.1s ease;
+	}
+
+	.union-group-toggle:hover {
+		@apply text-blue-elastic bg-blue-elastic-10 border-blue-elastic-30;
+	}
+}
+
+/* Expanded state - show vertical line extending through the toggle row */
+.union-variants-container.expanded > .union-collapse-toggle::before {
+	opacity: 1;
+	height: 100%; /* Extend to bottom of toggle row */
+}
+
+/* Collapsed state - show both vertical and horizontal connector, green button */
+.union-variants-container.collapsed > .union-collapse-toggle::before,
+.union-variants-container.collapsed > .union-collapse-toggle::after {
+	opacity: 1;
+}
+
+.union-variants-container.collapsed > .union-collapse-toggle .union-group-toggle {
+	@apply text-green-90 bg-green-10 border-green-30;
+}
+
+/* Union variants content - the actual list of type options */
+.union-variants-content {
+	position: relative;
+}
+
+/* Hidden state for collapsed union content */
+.union-variants-container.collapsed > .union-variants-content:not([hidden="until-found"]) {
+	display: none;
+}
+
+/* Ensure hidden="until-found" elements work correctly */
+.union-variants-content[hidden="until-found"] {
+	content-visibility: hidden;
+}
+
+.union-variants {
+	/* Variants list styling */
 }
 
 /* Union variant item - type label without tree connectors */

@@ -10,7 +10,7 @@
 		sb.Append("<span class=\"array-icon\">[] </span>");
 		if (info.IsValueType && info.ValueTypeBase != null)
 		{
-			sb.Append($"{info.ValueTypeBase} ");
+			sb.Append($"<span class=\"value-type-keyword\">{info.ValueTypeBase}</span> ");
 		}
 		else if (info.IsEnum)
 		{
@@ -27,12 +27,22 @@
 	}
 	else if (info.IsDictionary)
 	{
-		// Dictionary uses a map icon and {} for object value types
-		sb.Append("<span class=\"dict-icon\">map </span>");
+		// Dictionary uses "map string to TypeName" format
+		// Extract the value type name from the TypeName (format: "string to TypeName")
+		var valueTypeName = info.TypeName.StartsWith("string to ") ? info.TypeName["string to ".Length..] : info.TypeName;
+
+		// Format: "map string to {} ScriptField" with "string" and "ScriptField" as types (blue)
+		sb.Append("<span class=\"map-keyword\">map </span>");
+		sb.Append("<span>string</span>");
+		sb.Append("<span class=\"map-keyword\"> to </span>");
 		if (info.HasLink || Model.HasActualProperties)
 		{
 			sb.Append("<span class=\"object-icon\">{} </span>");
 		}
+		sb.Append($"<span>{System.Web.HttpUtility.HtmlEncode(valueTypeName)}</span>");
+		// Early return for dictionaries - they have their own format
+		<code class="schema-type">@Html.Raw(sb.ToString())</code>
+		return;
 	}
 	else if (info.IsEnum)
 	{
@@ -46,7 +56,8 @@
 	}
 	else if (info.IsValueType && info.ValueTypeBase != null)
 	{
-		sb.Append($"{info.ValueTypeBase} ");
+		// Show underlying type for named value types: "string Field" instead of just "Field"
+		sb.Append($"<span class=\"value-type-keyword\">{info.ValueTypeBase}</span> ");
 	}
 	else if (info.IsObject && !string.IsNullOrEmpty(info.SchemaRef) && !info.HasLink && Model.HasActualProperties)
 	{
