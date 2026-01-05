@@ -500,6 +500,24 @@
 	@apply text-yellow-90 bg-yellow-10 rounded px-1.5 py-0.5 text-xs;
 }
 
+/* Validation constraints display */
+.validation-constraints {
+	@apply flex flex-wrap items-center gap-1 mt-1;
+	padding-left: calc(var(--spacing) * 2);
+}
+
+.constraints-label {
+	@apply text-grey-60 text-xs mr-1;
+}
+
+.constraint {
+	@apply text-grey-70 bg-grey-10 rounded px-1.5 py-0.5 text-xs;
+
+	code {
+		@apply text-grey-80 bg-grey-20 rounded px-1 py-0 text-xs font-mono;
+	}
+}
+
 /* Union type option - styled like regular types, not enum values */
 .union-type-option {
 	@apply text-blue-elastic bg-blue-elastic-10 rounded px-1.5 py-0.5 text-xs;

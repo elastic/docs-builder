@@ -819,6 +819,7 @@
 							@Model.RenderMarkdown(propSchema.Description)
 						</dd>
 					}
+					@ValidationConstraintsRenderer.Render(propSchema)
 					@if (isSimpleArrayUnion && !string.IsNullOrEmpty(simpleUnionBaseName))
 					{
 						// Simple X | X[] union - show horizontal layout

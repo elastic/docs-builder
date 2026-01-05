@@ -964,6 +964,7 @@
 							@Model.RenderMarkdown(propSchema.Description)
 						</dd>
 					}
+					@ValidationConstraintsRenderer.Render(propSchema)
 					@if (typeInfo.IsEnum && typeInfo.EnumValues is { Length: > 0 })
 					{
 						<dd class="enum-values">
@@ -1431,6 +1432,10 @@
 						</a>
 					</dt>
 					<dd>@Model.RenderMarkdown(qs.Description)</dd>
+					@if (qsSchema != null)
+					{
+						@ValidationConstraintsRenderer.Render(qsSchema)
+					}
 				@if (qsUnionOptions.Count > 0 && qsEnumValues.Count == 0)
 				{
 					var primitiveTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
