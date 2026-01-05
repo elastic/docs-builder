@@ -111,3 +111,4 @@ public record UnionVariantsContext
 	/// <summary>Function to render markdown to HTML.</summary>
 	public required Func<string?, HtmlString> RenderMarkdown { get; init; }
 }
+
