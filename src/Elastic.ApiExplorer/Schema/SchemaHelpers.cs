@@ -14,7 +14,7 @@ public static class SchemaHelpers
 	/// <summary>
 	/// Maximum depth for recursive property rendering.
 	/// </summary>
-	public const int MaxDepth = 4;
+	public const int MaxDepth = 100;
 
 	/// <summary>
 	/// Types that are known to be value types (resolve to primitives like string).
