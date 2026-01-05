@@ -38,11 +38,13 @@
 		};
 
 	// Helper to create SchemaTypeContext
+	private static readonly TypeInfo _defaultTypeInfo = new("unknown", null, false, false, false, null, false, null);
+
 	private SchemaTypeContext CreateSchemaTypeContext(IOpenApiSchema schema)
 		=> new SchemaTypeContext
 		{
 			Schema = schema,
-			TypeInfo = GetTypeInfo(schema),
+			TypeInfo = GetTypeInfo(schema) ?? _defaultTypeInfo,
 			HasActualProperties = GetSchemaProperties(schema)?.Count > 0
 		};
 }
