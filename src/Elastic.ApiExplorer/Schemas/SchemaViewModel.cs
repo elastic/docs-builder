@@ -137,13 +137,7 @@ public class SchemaViewModel(ApiRenderContext context) : ApiViewModel(context)
 
 		// For allOf, check if any sub-schema has properties
 		if (schema.AllOf is { Count: > 0 })
-		{
-			foreach (var subSchema in schema.AllOf)
-			{
-				if (HasSchemaProperties(subSchema))
-					return true;
-			}
-		}
+			return schema.AllOf.Any(HasSchemaProperties);
 
 		return false;
 	}

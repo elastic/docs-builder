@@ -233,18 +233,16 @@ public class SchemaAnalyzer(OpenApiDocument document, string? currentPageType = 
 	{
 		var result = new List<UnionOption>();
 
-		foreach (var option in options)
+		foreach (var option in options.Where(o => o.Schema != null))
 		{
-			if (option.Schema == null)
-				continue;
-
 			var baseName = option.Name.EndsWith("[]") ? option.Name[..^2] : option.Name;
 			var isArray = option.Name.EndsWith("[]");
+			var schema = option.Schema!; // Schema is guaranteed non-null by Where filter
 
 			// For array types, we need to look at the Items schema
-			var schemaToCheck = option.Schema;
-			if (option.Schema.Type?.HasFlag(JsonSchemaType.Array) == true && option.Schema.Items != null)
-				schemaToCheck = option.Schema.Items;
+			var schemaToCheck = schema;
+			if (schema.Type?.HasFlag(JsonSchemaType.Array) == true && schema.Items != null)
+				schemaToCheck = schema.Items;
 
 			// Check if this option has direct properties
 			var hasDirectProps = false;

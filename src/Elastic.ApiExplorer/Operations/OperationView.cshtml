@@ -241,13 +241,13 @@
 						: null;
 					if (unionSchemas != null)
 					{
-						foreach (var us in unionSchemas)
-						{
-							// Resolve the reference if us is a $ref
-							var resolvedUnionOption = ResolveSchema(us);
-							if (resolvedUnionOption?.Enum is { Count: > 0 })
-								qsEnumValues.AddRange(resolvedUnionOption.Enum.Select(e => e?.ToString()?.Trim('"') ?? "").Where(e => !string.IsNullOrEmpty(e)));
-						}
+						qsEnumValues.AddRange(
+							unionSchemas
+								.Select(ResolveSchema)
+								.Where(resolved => resolved?.Enum is { Count: > 0 })
+								.SelectMany(resolved => resolved!.Enum!
+									.Select(e => e?.ToString()?.Trim('"') ?? "")
+									.Where(e => !string.IsNullOrEmpty(e))));
 					}
 				}
 
@@ -392,9 +392,9 @@
 				}
 				@if (responseValue.Content is { Count: > 0 })
 				{
-					foreach (var contentType in responseValue.Content)
+					foreach (var contentType in responseValue.Content.Where(ct => ct.Value?.Schema is not null))
 					{
-						if (contentType.Value?.Schema is not { } responseSchema) continue;
+						var responseSchema = contentType.Value!.Schema!;
 						@if (!isSingleResponse)
 						{
 							<p class="content-type">Content-Type: <code>@contentType.Key</code></p>

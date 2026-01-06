@@ -44,17 +44,9 @@
 		// Also check union option types for recursion (e.g., QueryContainer | QueryContainer[] when on QueryContainer page)
 		if (!isRecursive && typeInfo.IsUnion && typeInfo.AnyOfOptions != null && Model.AncestorTypes != null)
 		{
-			foreach (var option in typeInfo.AnyOfOptions)
-			{
-				// Get the base name (strip [] suffix for array variants)
-				var optionName = option.Name;
-				var baseName = optionName.EndsWith("[]") ? optionName[..^2] : optionName;
-				if (!string.IsNullOrEmpty(baseName) && !SchemaHelpers.IsPrimitiveTypeName(baseName) && Model.AncestorTypes.Contains(baseName))
-				{
-					isRecursive = true;
-					break;
-				}
-			}
+			isRecursive = typeInfo.AnyOfOptions
+				.Select(option => option.Name.EndsWith("[]") ? option.Name[..^2] : option.Name)
+				.Any(baseName => !string.IsNullOrEmpty(baseName) && !SchemaHelpers.IsPrimitiveTypeName(baseName) && Model.AncestorTypes.Contains(baseName));
 		}
 
 		// Also check schema's direct oneOf/anyOf for recursion (in case typeInfo doesn't capture it)
