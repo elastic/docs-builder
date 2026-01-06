@@ -3505,6 +3505,104 @@ public class ChangelogServiceTests : IDisposable
 	}
 
 	[Fact]
+	public async Task RenderChangelogs_WithRenderBlockers_UsesBundleProductsNotEntryProducts()
+	{
+		// Arrange
+		var service = new ChangelogService(_loggerFactory, _configurationContext, null);
+		var fileSystem = new FileSystem();
+		var changelogDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		fileSystem.Directory.CreateDirectory(changelogDir);
+
+		// Create changelog with elasticsearch product and search area
+		// But bundle has kibana product - should NOT be blocked because render_blockers matches against bundle products
+		var changelog1 = """
+			title: Entry with elasticsearch but bundle has kibana
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			areas:
+			  - search
+			pr: https://github.com/elastic/elasticsearch/pull/100
+			description: This should NOT be blocked because bundle product is kibana
+			""";
+
+		var changelogFile1 = fileSystem.Path.Combine(changelogDir, "1755268130-test.yaml");
+		await fileSystem.File.WriteAllTextAsync(changelogFile1, changelog1, TestContext.Current.CancellationToken);
+
+		// Create config file with render_blockers blocking elasticsearch
+		var configDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var docsDir = fileSystem.Path.Combine(configDir, "docs");
+		fileSystem.Directory.CreateDirectory(docsDir);
+		var configPath = fileSystem.Path.Combine(docsDir, "changelog.yml");
+		var configContent = """
+			available_types:
+			  - feature
+			available_subtypes: []
+			available_lifecycles:
+			  - ga
+			render_blockers:
+			  elasticsearch:
+			    areas:
+			      - search
+			""";
+		await fileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// Create bundle file with kibana product (not elasticsearch)
+		var bundleDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		fileSystem.Directory.CreateDirectory(bundleDir);
+
+		var bundleFile = fileSystem.Path.Combine(bundleDir, "bundle.yaml");
+		var bundleContent = $"""
+			products:
+			  - product: kibana
+			    target: 9.2.0
+			entries:
+			  - file:
+			      name: 1755268130-test.yaml
+			      checksum: {ComputeSha1(changelog1)}
+			""";
+		await fileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+
+		// Set current directory to where config file is located so it can be found
+		var originalDir = Directory.GetCurrentDirectory();
+		try
+		{
+			Directory.SetCurrentDirectory(configDir);
+
+			var outputDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+
+			var input = new ChangelogRenderInput
+			{
+				Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
+				Output = outputDir,
+				Title = "9.2.0"
+			};
+
+			// Act
+			var result = await service.RenderChangelogs(_collector, input, TestContext.Current.CancellationToken);
+
+			// Assert
+			result.Should().BeTrue();
+			_collector.Errors.Should().Be(0);
+			// Should have no warnings because entry is NOT blocked (bundle product is kibana, not elasticsearch)
+			_collector.Warnings.Should().Be(0);
+
+			var indexFile = fileSystem.Path.Combine(outputDir, "9.2.0", "index.md");
+			fileSystem.File.Exists(indexFile).Should().BeTrue();
+
+			var indexContent = await fileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
+			// Entry should NOT be commented out because bundle product is kibana, not elasticsearch
+			indexContent.Should().Contain("* Entry with elasticsearch but bundle has kibana");
+			indexContent.Should().NotContain("% * Entry with elasticsearch but bundle has kibana");
+		}
+		finally
+		{
+			Directory.SetCurrentDirectory(originalDir);
+		}
+	}
+
+	[Fact]
 	public async Task LoadChangelogConfiguration_WithoutAvailableTypes_UsesDefaults()
 	{
 		// Arrange

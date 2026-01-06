@@ -1516,16 +1516,21 @@ public partial class ChangelogService(
 			}
 
 			// Merge phase: Now that validation passed, load and merge all bundles
-			var allResolvedEntries = new List<(ChangelogData entry, string repo)>();
+			var allResolvedEntries = new List<(ChangelogData entry, string repo, HashSet<string> bundleProductIds)>();
 			var allProducts = new HashSet<(string product, string target)>();
 
 			foreach (var (bundledData, bundleInput, bundleDirectory) in bundleDataList)
 			{
 				// Collect products from this bundle
+				var bundleProductIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 				foreach (var product in bundledData.Products)
 				{
 					var target = product.Target ?? string.Empty;
 					_ = allProducts.Add((product.Product, target));
+					if (!string.IsNullOrWhiteSpace(product.Product))
+					{
+						_ = bundleProductIds.Add(product.Product);
+					}
 				}
 
 				var repo = bundleInput.Repo ?? defaultRepo;
@@ -1572,7 +1577,7 @@ public partial class ChangelogService(
 
 					if (entryData != null)
 					{
-						allResolvedEntries.Add((entryData, repo));
+						allResolvedEntries.Add((entryData, repo, bundleProductIds));
 					}
 				}
 			}
@@ -1725,7 +1730,7 @@ public partial class ChangelogService(
 
 			// Track hidden entries for warnings
 			var hiddenEntries = new List<(string title, string featureId)>();
-			foreach (var (entry, _) in allResolvedEntries)
+			foreach (var (entry, _, _) in allResolvedEntries)
 			{
 				if (!string.IsNullOrWhiteSpace(entry.FeatureId) && featureIdsToHide.Contains(entry.FeatureId))
 				{
@@ -1743,11 +1748,12 @@ public partial class ChangelogService(
 			}
 
 			// Check entries against render blockers and track blocked entries
+			// render_blockers matches against bundle products, not individual entry products
 			var blockedEntries = new List<(string title, List<string> reasons)>();
-			foreach (var (entry, _) in allResolvedEntries)
+			foreach (var (entry, _, bundleProductIds) in allResolvedEntries)
 			{
 				var reasons = new List<string>();
-				var isBlocked = ShouldBlockEntry(entry, renderBlockers, out var blockReasons);
+				var isBlocked = ShouldBlockEntry(entry, bundleProductIds, renderBlockers, out var blockReasons);
 				if (isBlocked)
 				{
 					blockedEntries.Add((entry.Title ?? "Unknown", blockReasons));
@@ -1764,17 +1770,25 @@ public partial class ChangelogService(
 				}
 			}
 
+			// Create mapping from entries to their bundle product IDs for render_blockers checking
+			// Use a custom comparer for reference equality since entries are objects
+			var entryToBundleProducts = new Dictionary<ChangelogData, HashSet<string>>();
+			foreach (var (entry, _, bundleProductIds) in allResolvedEntries)
+			{
+				entryToBundleProducts[entry] = bundleProductIds;
+			}
+
 			// Render markdown files (use first repo found, or default)
 			var repoForRendering = allResolvedEntries.Count > 0 ? allResolvedEntries[0].repo : defaultRepo;
 
 			// Render index.md (features, enhancements, bug fixes, security)
-			await RenderIndexMarkdown(collector, outputDir, title, titleSlug, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, featureIdsToHide, renderBlockers, ctx);
+			await RenderIndexMarkdown(collector, outputDir, title, titleSlug, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts, ctx);
 
 			// Render breaking-changes.md
-			await RenderBreakingChangesMarkdown(collector, outputDir, title, titleSlug, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, featureIdsToHide, renderBlockers, ctx);
+			await RenderBreakingChangesMarkdown(collector, outputDir, title, titleSlug, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts, ctx);
 
 			// Render deprecations.md
-			await RenderDeprecationsMarkdown(collector, outputDir, title, titleSlug, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, featureIdsToHide, renderBlockers, ctx);
+			await RenderDeprecationsMarkdown(collector, outputDir, title, titleSlug, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts, ctx);
 
 			_logger.LogInformation("Rendered changelog markdown files to {OutputDir}", outputDir);
 
@@ -1815,6 +1829,7 @@ public partial class ChangelogService(
 		bool hidePrivateLinks,
 		HashSet<string> featureIdsToHide,
 		Dictionary<string, RenderBlockersEntry>? renderBlockers,
+		Dictionary<ChangelogData, HashSet<string>> entryToBundleProducts,
 		Cancel ctx
 	)
 	{
@@ -1862,7 +1877,7 @@ public partial class ChangelogService(
 			{
 				sb.AppendLine(CultureInfo.InvariantCulture, $"### Features and enhancements [{repo}-{titleSlug}-features-enhancements]");
 				var combined = features.Concat(enhancements).ToList();
-				RenderEntriesByArea(sb, combined, repo, subsections, hidePrivateLinks, featureIdsToHide, renderBlockers);
+				RenderEntriesByArea(sb, combined, repo, subsections, hidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts);
 			}
 
 			if (security.Count > 0 || bugFixes.Count > 0)
@@ -1870,7 +1885,7 @@ public partial class ChangelogService(
 				sb.AppendLine();
 				sb.AppendLine(CultureInfo.InvariantCulture, $"### Fixes [{repo}-{titleSlug}-fixes]");
 				var combined = security.Concat(bugFixes).ToList();
-				RenderEntriesByArea(sb, combined, repo, subsections, hidePrivateLinks, featureIdsToHide, renderBlockers);
+				RenderEntriesByArea(sb, combined, repo, subsections, hidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts);
 			}
 		}
 		else
@@ -1902,6 +1917,7 @@ public partial class ChangelogService(
 		bool hidePrivateLinks,
 		HashSet<string> featureIdsToHide,
 		Dictionary<string, RenderBlockersEntry>? renderBlockers,
+		Dictionary<ChangelogData, HashSet<string>> entryToBundleProducts,
 		Cancel ctx
 	)
 	{
@@ -1924,8 +1940,9 @@ public partial class ChangelogService(
 
 				foreach (var entry in areaGroup)
 				{
+					var bundleProductIds = entryToBundleProducts.GetValueOrDefault(entry, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
 					var shouldHide = (!string.IsNullOrWhiteSpace(entry.FeatureId) && featureIdsToHide.Contains(entry.FeatureId)) ||
-						ShouldBlockEntry(entry, renderBlockers, out _);
+						ShouldBlockEntry(entry, bundleProductIds, renderBlockers, out _);
 
 					sb.AppendLine();
 					if (shouldHide)
@@ -2027,6 +2044,7 @@ public partial class ChangelogService(
 		bool hidePrivateLinks,
 		HashSet<string> featureIdsToHide,
 		Dictionary<string, RenderBlockersEntry>? renderBlockers,
+		Dictionary<ChangelogData, HashSet<string>> entryToBundleProducts,
 		Cancel ctx
 	)
 	{
@@ -2049,8 +2067,9 @@ public partial class ChangelogService(
 
 				foreach (var entry in areaGroup)
 				{
+					var bundleProductIds = entryToBundleProducts.GetValueOrDefault(entry, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
 					var shouldHide = (!string.IsNullOrWhiteSpace(entry.FeatureId) && featureIdsToHide.Contains(entry.FeatureId)) ||
-						ShouldBlockEntry(entry, renderBlockers, out _);
+						ShouldBlockEntry(entry, bundleProductIds, renderBlockers, out _);
 
 					sb.AppendLine();
 					if (shouldHide)
@@ -2139,7 +2158,7 @@ public partial class ChangelogService(
 	}
 
 	[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0058:Expression value is never used", Justification = "StringBuilder methods return builder for chaining")]
-	private void RenderEntriesByArea(StringBuilder sb, List<ChangelogData> entries, string repo, bool subsections, bool hidePrivateLinks, HashSet<string> featureIdsToHide, Dictionary<string, RenderBlockersEntry>? renderBlockers)
+	private void RenderEntriesByArea(StringBuilder sb, List<ChangelogData> entries, string repo, bool subsections, bool hidePrivateLinks, HashSet<string> featureIdsToHide, Dictionary<string, RenderBlockersEntry>? renderBlockers, Dictionary<ChangelogData, HashSet<string>> entryToBundleProducts)
 	{
 		var groupedByArea = entries.GroupBy(e => GetComponent(e)).ToList();
 		foreach (var areaGroup in groupedByArea)
@@ -2153,8 +2172,9 @@ public partial class ChangelogService(
 
 			foreach (var entry in areaGroup)
 			{
+				var bundleProductIds = entryToBundleProducts.GetValueOrDefault(entry, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
 				var shouldHide = (!string.IsNullOrWhiteSpace(entry.FeatureId) && featureIdsToHide.Contains(entry.FeatureId)) ||
-					ShouldBlockEntry(entry, renderBlockers, out _);
+					ShouldBlockEntry(entry, bundleProductIds, renderBlockers, out _);
 
 				if (shouldHide)
 				{
@@ -2260,9 +2280,10 @@ public partial class ChangelogService(
 	/// RenderBlockers is a Dictionary where:
 	/// - Key can be a single product ID or comma-separated product IDs (e.g., "elasticsearch, cloud-serverless")
 	/// - Value is a RenderBlockersEntry containing areas and/or types that should be blocked for those products
-	/// An entry is blocked if ANY product in the entry matches ANY product key AND (ANY area matches OR ANY type matches).
+	/// An entry is blocked if ANY product in the bundle matches ANY product key AND (ANY area matches OR ANY type matches).
+	/// Note: render_blockers matches against bundle products, not individual entry products.
 	/// </summary>
-	private static bool ShouldBlockEntry(ChangelogData entry, Dictionary<string, RenderBlockersEntry>? renderBlockers, out List<string> reasons)
+	private static bool ShouldBlockEntry(ChangelogData entry, HashSet<string> bundleProductIds, Dictionary<string, RenderBlockersEntry>? renderBlockers, out List<string> reasons)
 	{
 		reasons = [];
 		if (renderBlockers == null || renderBlockers.Count == 0)
@@ -2270,17 +2291,11 @@ public partial class ChangelogService(
 			return false;
 		}
 
-		// Entry must have products to be blocked
-		if (entry.Products == null || entry.Products.Count == 0)
+		// Bundle must have products to be blocked
+		if (bundleProductIds == null || bundleProductIds.Count == 0)
 		{
 			return false;
 		}
-
-		// Extract product IDs from entry (case-insensitive comparison)
-		var entryProductIds = entry.Products
-			.Where(p => !string.IsNullOrWhiteSpace(p.Product))
-			.Select(p => p.Product!)
-			.ToHashSet(StringComparer.OrdinalIgnoreCase);
 
 		// Extract area values from entry (case-insensitive comparison)
 		var entryAreas = entry.Areas != null && entry.Areas.Count > 0
@@ -2309,8 +2324,8 @@ public partial class ChangelogService(
 				.Where(p => !string.IsNullOrWhiteSpace(p))
 				.ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-			// Check if any product in the entry matches any product in the key
-			var matchingProducts = entryProductIds.Intersect(productKeys, StringComparer.OrdinalIgnoreCase).ToList();
+			// Check if any product in the bundle matches any product in the key
+			var matchingProducts = bundleProductIds.Intersect(productKeys, StringComparer.OrdinalIgnoreCase).ToList();
 			if (matchingProducts.Count == 0)
 			{
 				continue;
