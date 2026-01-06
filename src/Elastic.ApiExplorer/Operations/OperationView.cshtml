@@ -321,8 +321,9 @@
 	}
 	@if (operation.RequestBody is not null)
 	{
-		var requestContent = operation.RequestBody.Content?.FirstOrDefault();
-		var requestContentType = requestContent?.Key ?? "application/json";
+		var requestContentEntry = operation.RequestBody.Content?.FirstOrDefault();
+		var requestContentType = requestContentEntry?.Key ?? "application/json";
+		var requestMediaType = requestContentEntry?.Value;
 		<h3 class="section-header" id="request-body" data-section="request-body">
 			<span>Request Body</span>
 			<span class="content-type-badge">@requestContentType</span>
@@ -332,13 +333,12 @@
 				<button class="section-nav-btn" data-dir="down" title="Next section">&#x25BC;</button>
 			</span>
 		</h3>
-		var content = requestContent?.Value;
 		if (!string.IsNullOrEmpty(operation.RequestBody.Description))
 		{
 			<p>@Model.RenderMarkdown(operation.RequestBody.Description)</p>
 		}
 
-		var requestSchema = content?.Schema;
+		var requestSchema = requestMediaType?.Schema;
 		if (requestSchema is not null)
 		{
 			var props = GetSchemaProperties(requestSchema);

@@ -1,5 +1,3 @@
-@using Elastic.ApiExplorer.Schema
-@using Microsoft.OpenApi
 @inherits RazorSlice<Elastic.ApiExplorer.Schema.PropertyItemContext>
 @{
 	var ctx = Model.ParentContext;
@@ -55,9 +53,9 @@
 	var simpleUnionHasExpandableProps = false;
 	IOpenApiSchema? simpleUnionSchema = null;
 	List<UnionOption>? simpleUnionNestedOptions = null;
-	if (isSimpleArrayUnion && !string.IsNullOrEmpty(simpleUnionBaseName) && typeInfo.AnyOfOptions != null && depth < ctx.MaxDepth)
+	if (isSimpleArrayUnion && !string.IsNullOrEmpty(simpleUnionBaseName) && depth < ctx.MaxDepth)
 	{
-		var baseOption = typeInfo.AnyOfOptions.FirstOrDefault(o => o.Name == simpleUnionBaseName);
+		var baseOption = typeInfo.AnyOfOptions!.FirstOrDefault(o => o.Name == simpleUnionBaseName);
 		if (baseOption?.Schema != null)
 		{
 			var baseTypeInfo = ctx.Analyzer.GetTypeInfo(baseOption.Schema);
@@ -74,7 +72,7 @@
 					{
 						var refId = baseOption.Ref;
 						if (string.IsNullOrEmpty(refId) && baseOption.Schema is OpenApiSchemaReference schemaRef)
-							refId = schemaRef.Reference?.Id;
+							refId = schemaRef.Reference.Id;
 						// Note: Would need Document access to resolve by refId - simplified here
 					}
 				}
@@ -86,12 +84,12 @@
 	var nestedPropCount = 0;
 	if (hasNestedProps)
 		nestedPropCount = ctx.Analyzer.GetSchemaProperties(propSchema)?.Count ?? 0;
-	else if (hasDictValueProps && typeInfo.DictValueSchema != null)
+	else if (hasDictValueProps)
 		nestedPropCount = ctx.Analyzer.GetSchemaProperties(typeInfo.DictValueSchema)?.Count ?? 0;
-	else if (hasArrayItemProps && arrayItemSchema != null)
+	else if (hasArrayItemProps)
 		nestedPropCount = ctx.Analyzer.GetSchemaProperties(arrayItemSchema)?.Count ?? 0;
-	else if (hasUnionOptions && typeInfo.AnyOfOptions != null)
-		nestedPropCount = typeInfo.AnyOfOptions.Count(ctx.Analyzer.UnionOptionHasProperties);
+	else if (hasUnionOptions)
+		nestedPropCount = typeInfo.AnyOfOptions!.Count(ctx.Analyzer.UnionOptionHasProperties);
 	else if (simpleUnionHasExpandableProps && simpleUnionNestedOptions is { Count: > 0 })
 		nestedPropCount = simpleUnionNestedOptions.Count(ctx.Analyzer.UnionOptionHasProperties);
 	else if (simpleUnionHasExpandableProps && simpleUnionSchema != null)
@@ -206,7 +204,7 @@
 		}
 		else if (isSimpleArrayUnion && !string.IsNullOrEmpty(simpleUnionBaseName))
 		{
-			var baseTypeOption = typeInfo.AnyOfOptions?.FirstOrDefault(o => o.Name == simpleUnionBaseName);
+			var baseTypeOption = typeInfo.AnyOfOptions!.FirstOrDefault(o => o.Name == simpleUnionBaseName);
 			var isObjectType = baseTypeOption?.IsObject ?? false;
 			var baseSchema = baseTypeOption?.Schema;
 			var baseTypeInfo = baseSchema != null ? ctx.Analyzer.GetTypeInfo(baseSchema) : null;
@@ -279,9 +277,9 @@
 				? ctx.Analyzer.GetTypeInfo(typeInfo.DictValueSchema).TypeName
 				: typeInfo.TypeName;
 		}
-		else if (isSimpleArrayUnion && !string.IsNullOrEmpty(simpleUnionBaseName) && typeInfo.AnyOfOptions != null)
+		else if (isSimpleArrayUnion && !string.IsNullOrEmpty(simpleUnionBaseName))
 		{
-			var baseOption = typeInfo.AnyOfOptions.FirstOrDefault(o => o.Name == simpleUnionBaseName);
+			var baseOption = typeInfo.AnyOfOptions!.FirstOrDefault(o => o.Name == simpleUnionBaseName);
 			if (baseOption?.Schema != null)
 			{
 				var baseTypeInfo = ctx.Analyzer.GetTypeInfo(baseOption.Schema);
@@ -345,18 +343,18 @@
 
 		var useHidden = ctx.UseHiddenUntilFound && isCollapsible && !defaultExpanded;
 
-		if (hasDictValueProps && typeInfo.DictValueSchema != null)
+		if (hasDictValueProps)
 		{
 			var keyPropId = $"{Model.PropId}-string";
 			var dictIsCollapsible = nestedPropCount > 1;
 			var dictDefaultExpanded = ctx.CollapseMode == CollapseMode.DepthBased
 				? (depth + 1 == 0 ? false : (nestedPropCount > 0 && nestedPropCount < 5))
 				: false;
-			var dictChildCtx = childContext with { Schema = typeInfo.DictValueSchema, Prefix = keyPropId, Depth = depth + 2 };
-			var dictValueTypeInfo = ctx.Analyzer.GetTypeInfo(typeInfo.DictValueSchema);
+			var dictChildCtx = childContext with { Schema = typeInfo.DictValueSchema!, Prefix = keyPropId, Depth = depth + 2 };
+			var dictValueTypeInfo = ctx.Analyzer.GetTypeInfo(typeInfo.DictValueSchema!);
 			var dictValueSchemaTypeCtx = new SchemaTypeContext
 			{
-				Schema = typeInfo.DictValueSchema,
+				Schema = typeInfo.DictValueSchema!,
 				TypeInfo = dictValueTypeInfo,
 				HasActualProperties = ctx.Analyzer.GetSchemaProperties(typeInfo.DictValueSchema)?.Count > 0
 			};
@@ -408,7 +406,7 @@
 				</div>
 			}
 		}
-		else if (hasArrayItemProps && arrayItemSchema != null)
+		else if (hasArrayItemProps)
 		{
 			var arrayCtx = childContext with { Schema = arrayItemSchema };
 			if (useHidden)
@@ -424,11 +422,11 @@
 				</div>
 			}
 		}
-		else if (hasUnionOptions && typeInfo.AnyOfOptions != null)
+		else if (hasUnionOptions)
 		{
 			var unionCtx = new UnionVariantsContext
 			{
-				Options = typeInfo.AnyOfOptions,
+				Options = typeInfo.AnyOfOptions!,
 				Prefix = Model.PropId,
 				Depth = depth + 1,
 				AncestorTypes = newAncestors,
