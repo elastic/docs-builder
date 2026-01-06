@@ -81,7 +81,6 @@
 	_currentPageType = schema.DisplayName;
 
 	// Check if this is a container type that represents a dictionary
-	var isContainerType = schema.DisplayName is "QueryContainer" or "AggregationContainer" or "Aggregate";
 	var dictionaryTypeName = schema.DisplayName switch
 	{
 		"AggregationContainer" => "Dictionary<string, AggregationContainer>",
