@@ -235,7 +235,7 @@ public partial class ChangelogService(
 		}
 	}
 
-	private async Task<ChangelogConfiguration?> LoadChangelogConfiguration(
+	internal async Task<ChangelogConfiguration?> LoadChangelogConfiguration(
 		IDiagnosticsCollector collector,
 		string? configPath,
 		Cancel ctx
@@ -264,25 +264,68 @@ public partial class ChangelogService(
 			var defaultConfig = ChangelogConfiguration.Default;
 			var validProductIds = configurationContext.ProductsConfiguration.Products.Keys.ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-			// Validate available_types
-			foreach (var type in config.AvailableTypes.Where(t => !defaultConfig.AvailableTypes.Contains(t)))
+			// If available_types is not specified or empty, use defaults
+			if (config.AvailableTypes == null || config.AvailableTypes.Count == 0)
 			{
-				collector.EmitError(finalConfigPath, $"Type '{type}' in changelog.yml is not in the list of available types. Available types: {string.Join(", ", defaultConfig.AvailableTypes)}");
-				return null;
+				config.AvailableTypes = defaultConfig.AvailableTypes.ToList();
+			}
+			else
+			{
+				// Validate available_types - must be subset of defaults
+				foreach (var type in config.AvailableTypes.Where(t => !defaultConfig.AvailableTypes.Contains(t)))
+				{
+					collector.EmitError(finalConfigPath, $"Type '{type}' in changelog.yml is not in the list of available types. Available types: {string.Join(", ", defaultConfig.AvailableTypes)}");
+					return null;
+				}
 			}
 
-			// Validate available_subtypes
-			foreach (var subtype in config.AvailableSubtypes.Where(s => !defaultConfig.AvailableSubtypes.Contains(s)))
+			// If available_subtypes is not specified or empty, use defaults
+			if (config.AvailableSubtypes == null || config.AvailableSubtypes.Count == 0)
 			{
-				collector.EmitError(finalConfigPath, $"Subtype '{subtype}' in changelog.yml is not in the list of available subtypes. Available subtypes: {string.Join(", ", defaultConfig.AvailableSubtypes)}");
-				return null;
+				config.AvailableSubtypes = defaultConfig.AvailableSubtypes.ToList();
+			}
+			else
+			{
+				// Validate available_subtypes - must be subset of defaults
+				foreach (var subtype in config.AvailableSubtypes.Where(s => !defaultConfig.AvailableSubtypes.Contains(s)))
+				{
+					collector.EmitError(finalConfigPath, $"Subtype '{subtype}' in changelog.yml is not in the list of available subtypes. Available subtypes: {string.Join(", ", defaultConfig.AvailableSubtypes)}");
+					return null;
+				}
 			}
 
-			// Validate available_lifecycles
-			foreach (var lifecycle in config.AvailableLifecycles.Where(l => !defaultConfig.AvailableLifecycles.Contains(l)))
+			// If available_lifecycles is not specified or empty, use defaults
+			if (config.AvailableLifecycles == null || config.AvailableLifecycles.Count == 0)
 			{
-				collector.EmitError(finalConfigPath, $"Lifecycle '{lifecycle}' in changelog.yml is not in the list of available lifecycles. Available lifecycles: {string.Join(", ", defaultConfig.AvailableLifecycles)}");
-				return null;
+				config.AvailableLifecycles = defaultConfig.AvailableLifecycles.ToList();
+			}
+			else
+			{
+				// Validate available_lifecycles - must be subset of defaults
+				foreach (var lifecycle in config.AvailableLifecycles.Where(l => !defaultConfig.AvailableLifecycles.Contains(l)))
+				{
+					collector.EmitError(finalConfigPath, $"Lifecycle '{lifecycle}' in changelog.yml is not in the list of available lifecycles. Available lifecycles: {string.Join(", ", defaultConfig.AvailableLifecycles)}");
+					return null;
+				}
+			}
+
+			// Validate render_blockers types against available_types
+			if (config.RenderBlockers != null)
+			{
+				foreach (var (productKey, blockersEntry) in config.RenderBlockers)
+				{
+					if (blockersEntry?.Types != null && blockersEntry.Types.Count > 0)
+					{
+						foreach (var type in blockersEntry.Types)
+						{
+							if (!config.AvailableTypes.Contains(type))
+							{
+								collector.EmitError(finalConfigPath, $"Type '{type}' in render_blockers for '{productKey}' is not in the list of available types. Available types: {string.Join(", ", config.AvailableTypes)}");
+								return null;
+							}
+						}
+					}
+				}
 			}
 
 			// Validate available_products (if specified) - must be from products.yml
@@ -1571,6 +1614,20 @@ public partial class ChangelogService(
 			// Convert title to slug format for folder names and anchors (lowercase, dashes instead of spaces)
 			var titleSlug = TitleToSlug(title);
 
+			// Load changelog configuration to check for render_blockers
+			var config = await LoadChangelogConfiguration(collector, null, ctx);
+			if (config == null)
+			{
+				collector.EmitError(string.Empty, "Failed to load changelog configuration");
+				return false;
+			}
+
+			// Extract render blockers from configuration
+			// RenderBlockers is a Dictionary<string, RenderBlockersEntry> where:
+			// - Key can be a single product ID or comma-separated product IDs (e.g., "elasticsearch, cloud-serverless")
+			// - Value is a RenderBlockersEntry containing areas and/or types that should be blocked for those products
+			var renderBlockers = config.RenderBlockers;
+
 			// Load feature IDs to hide - check if --hide-features contains a file path or a list of feature IDs
 			var featureIdsToHide = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 			if (input.HideFeatures is { Length: > 0 })
@@ -1685,17 +1742,39 @@ public partial class ChangelogService(
 				}
 			}
 
+			// Check entries against render blockers and track blocked entries
+			var blockedEntries = new List<(string title, List<string> reasons)>();
+			foreach (var (entry, _) in allResolvedEntries)
+			{
+				var reasons = new List<string>();
+				var isBlocked = ShouldBlockEntry(entry, renderBlockers, out var blockReasons);
+				if (isBlocked)
+				{
+					blockedEntries.Add((entry.Title ?? "Unknown", blockReasons));
+				}
+			}
+
+			// Emit warnings for blocked entries
+			if (blockedEntries.Count > 0)
+			{
+				foreach (var (entryTitle, reasons) in blockedEntries)
+				{
+					var reasonsText = string.Join(" and ", reasons);
+					collector.EmitWarning(string.Empty, $"Changelog entry '{entryTitle}' will be commented out in markdown output because it matches render_blockers: {reasonsText}");
+				}
+			}
+
 			// Render markdown files (use first repo found, or default)
 			var repoForRendering = allResolvedEntries.Count > 0 ? allResolvedEntries[0].repo : defaultRepo;
 
 			// Render index.md (features, enhancements, bug fixes, security)
-			await RenderIndexMarkdown(collector, outputDir, title, titleSlug, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, featureIdsToHide, ctx);
+			await RenderIndexMarkdown(collector, outputDir, title, titleSlug, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, featureIdsToHide, renderBlockers, ctx);
 
 			// Render breaking-changes.md
-			await RenderBreakingChangesMarkdown(collector, outputDir, title, titleSlug, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, featureIdsToHide, ctx);
+			await RenderBreakingChangesMarkdown(collector, outputDir, title, titleSlug, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, featureIdsToHide, renderBlockers, ctx);
 
 			// Render deprecations.md
-			await RenderDeprecationsMarkdown(collector, outputDir, title, titleSlug, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, featureIdsToHide, ctx);
+			await RenderDeprecationsMarkdown(collector, outputDir, title, titleSlug, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, featureIdsToHide, renderBlockers, ctx);
 
 			_logger.LogInformation("Rendered changelog markdown files to {OutputDir}", outputDir);
 
@@ -1735,6 +1814,7 @@ public partial class ChangelogService(
 		bool subsections,
 		bool hidePrivateLinks,
 		HashSet<string> featureIdsToHide,
+		Dictionary<string, RenderBlockersEntry>? renderBlockers,
 		Cancel ctx
 	)
 	{
@@ -1782,7 +1862,7 @@ public partial class ChangelogService(
 			{
 				sb.AppendLine(CultureInfo.InvariantCulture, $"### Features and enhancements [{repo}-{titleSlug}-features-enhancements]");
 				var combined = features.Concat(enhancements).ToList();
-				RenderEntriesByArea(sb, combined, repo, subsections, hidePrivateLinks, featureIdsToHide);
+				RenderEntriesByArea(sb, combined, repo, subsections, hidePrivateLinks, featureIdsToHide, renderBlockers);
 			}
 
 			if (security.Count > 0 || bugFixes.Count > 0)
@@ -1790,7 +1870,7 @@ public partial class ChangelogService(
 				sb.AppendLine();
 				sb.AppendLine(CultureInfo.InvariantCulture, $"### Fixes [{repo}-{titleSlug}-fixes]");
 				var combined = security.Concat(bugFixes).ToList();
-				RenderEntriesByArea(sb, combined, repo, subsections, hidePrivateLinks, featureIdsToHide);
+				RenderEntriesByArea(sb, combined, repo, subsections, hidePrivateLinks, featureIdsToHide, renderBlockers);
 			}
 		}
 		else
@@ -1821,6 +1901,7 @@ public partial class ChangelogService(
 		bool subsections,
 		bool hidePrivateLinks,
 		HashSet<string> featureIdsToHide,
+		Dictionary<string, RenderBlockersEntry>? renderBlockers,
 		Cancel ctx
 	)
 	{
@@ -1843,7 +1924,8 @@ public partial class ChangelogService(
 
 				foreach (var entry in areaGroup)
 				{
-					var shouldHide = !string.IsNullOrWhiteSpace(entry.FeatureId) && featureIdsToHide.Contains(entry.FeatureId);
+					var shouldHide = (!string.IsNullOrWhiteSpace(entry.FeatureId) && featureIdsToHide.Contains(entry.FeatureId)) ||
+						ShouldBlockEntry(entry, renderBlockers, out _);
 
 					sb.AppendLine();
 					if (shouldHide)
@@ -1944,6 +2026,7 @@ public partial class ChangelogService(
 		bool subsections,
 		bool hidePrivateLinks,
 		HashSet<string> featureIdsToHide,
+		Dictionary<string, RenderBlockersEntry>? renderBlockers,
 		Cancel ctx
 	)
 	{
@@ -1966,7 +2049,8 @@ public partial class ChangelogService(
 
 				foreach (var entry in areaGroup)
 				{
-					var shouldHide = !string.IsNullOrWhiteSpace(entry.FeatureId) && featureIdsToHide.Contains(entry.FeatureId);
+					var shouldHide = (!string.IsNullOrWhiteSpace(entry.FeatureId) && featureIdsToHide.Contains(entry.FeatureId)) ||
+						ShouldBlockEntry(entry, renderBlockers, out _);
 
 					sb.AppendLine();
 					if (shouldHide)
@@ -2055,7 +2139,7 @@ public partial class ChangelogService(
 	}
 
 	[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0058:Expression value is never used", Justification = "StringBuilder methods return builder for chaining")]
-	private void RenderEntriesByArea(StringBuilder sb, List<ChangelogData> entries, string repo, bool subsections, bool hidePrivateLinks, HashSet<string> featureIdsToHide)
+	private void RenderEntriesByArea(StringBuilder sb, List<ChangelogData> entries, string repo, bool subsections, bool hidePrivateLinks, HashSet<string> featureIdsToHide, Dictionary<string, RenderBlockersEntry>? renderBlockers)
 	{
 		var groupedByArea = entries.GroupBy(e => GetComponent(e)).ToList();
 		foreach (var areaGroup in groupedByArea)
@@ -2069,7 +2153,8 @@ public partial class ChangelogService(
 
 			foreach (var entry in areaGroup)
 			{
-				var shouldHide = !string.IsNullOrWhiteSpace(entry.FeatureId) && featureIdsToHide.Contains(entry.FeatureId);
+				var shouldHide = (!string.IsNullOrWhiteSpace(entry.FeatureId) && featureIdsToHide.Contains(entry.FeatureId)) ||
+					ShouldBlockEntry(entry, renderBlockers, out _);
 
 				if (shouldHide)
 				{
@@ -2168,6 +2253,124 @@ public partial class ChangelogService(
 				}
 			}
 		}
+	}
+
+	/// <summary>
+	/// Checks if an entry should be blocked based on render_blockers configuration.
+	/// RenderBlockers is a Dictionary where:
+	/// - Key can be a single product ID or comma-separated product IDs (e.g., "elasticsearch, cloud-serverless")
+	/// - Value is a RenderBlockersEntry containing areas and/or types that should be blocked for those products
+	/// An entry is blocked if ANY product in the entry matches ANY product key AND (ANY area matches OR ANY type matches).
+	/// </summary>
+	private static bool ShouldBlockEntry(ChangelogData entry, Dictionary<string, RenderBlockersEntry>? renderBlockers, out List<string> reasons)
+	{
+		reasons = [];
+		if (renderBlockers == null || renderBlockers.Count == 0)
+		{
+			return false;
+		}
+
+		// Entry must have products to be blocked
+		if (entry.Products == null || entry.Products.Count == 0)
+		{
+			return false;
+		}
+
+		// Extract product IDs from entry (case-insensitive comparison)
+		var entryProductIds = entry.Products
+			.Where(p => !string.IsNullOrWhiteSpace(p.Product))
+			.Select(p => p.Product!)
+			.ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+		// Extract area values from entry (case-insensitive comparison)
+		var entryAreas = entry.Areas != null && entry.Areas.Count > 0
+			? entry.Areas
+				.Where(a => !string.IsNullOrWhiteSpace(a))
+				.Select(a => a!)
+				.ToHashSet(StringComparer.OrdinalIgnoreCase)
+			: new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+		// Extract type from entry (case-insensitive comparison)
+		var entryType = !string.IsNullOrWhiteSpace(entry.Type)
+			? entry.Type
+			: null;
+
+		// Check each render_blockers entry
+		foreach (var (productKey, blockersEntry) in renderBlockers)
+		{
+			if (blockersEntry == null)
+			{
+				continue;
+			}
+
+			// Parse product key - can be comma-separated (e.g., "elasticsearch, cloud-serverless")
+			var productKeys = productKey
+				.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+				.Where(p => !string.IsNullOrWhiteSpace(p))
+				.ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+			// Check if any product in the entry matches any product in the key
+			var matchingProducts = entryProductIds.Intersect(productKeys, StringComparer.OrdinalIgnoreCase).ToList();
+			if (matchingProducts.Count == 0)
+			{
+				continue;
+			}
+
+			var isBlocked = false;
+			var blockReasons = new List<string>();
+
+			// Check areas if specified
+			if (blockersEntry.Areas != null && blockersEntry.Areas.Count > 0 && entryAreas.Count > 0)
+			{
+				var matchingAreas = entryAreas.Intersect(blockersEntry.Areas, StringComparer.OrdinalIgnoreCase).ToList();
+				if (matchingAreas.Count > 0)
+				{
+					isBlocked = true;
+					foreach (var product in matchingProducts)
+					{
+						foreach (var area in matchingAreas)
+						{
+							var reason = $"product '{product}' with area '{area}'";
+							if (!blockReasons.Contains(reason))
+							{
+								blockReasons.Add(reason);
+							}
+						}
+					}
+				}
+			}
+
+			// Check types if specified
+			if (blockersEntry.Types != null && blockersEntry.Types.Count > 0 && !string.IsNullOrWhiteSpace(entryType))
+			{
+				var matchingTypes = blockersEntry.Types
+					.Where(t => string.Equals(t, entryType, StringComparison.OrdinalIgnoreCase))
+					.ToList();
+				if (matchingTypes.Count > 0)
+				{
+					isBlocked = true;
+					foreach (var product in matchingProducts)
+					{
+						foreach (var type in matchingTypes)
+						{
+							var reason = $"product '{product}' with type '{type}'";
+							if (!blockReasons.Contains(reason))
+							{
+								blockReasons.Add(reason);
+							}
+						}
+					}
+				}
+			}
+
+			if (isBlocked)
+			{
+				reasons.AddRange(blockReasons);
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	private static string GetComponent(ChangelogData entry)

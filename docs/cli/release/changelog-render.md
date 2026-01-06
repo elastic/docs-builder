@@ -45,3 +45,6 @@ docs-builder changelog render [options...] [-h|--help]
 :   When specifying feature IDs directly, provide comma-separated values.
 :   When specifying a file path, provide a single value that points to a newline-delimited file. The file should contain one feature ID per line.
 :   Entries with matching `feature-id` values will be commented out in the markdown output and a warning will be emitted.
+
+You can configure `render_blockers` in your `changelog.yml` configuration file to automatically block changelog entries from being rendered based on their products, areas, and/or types.
+For more information, refer to [](/contribute/changelog.md#render-blockers).
