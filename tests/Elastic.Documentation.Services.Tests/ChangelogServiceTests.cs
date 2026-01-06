@@ -820,7 +820,7 @@ public class ChangelogServiceTests : IDisposable
 			Directory.CreateDirectory(outputDir);
 		var files = Directory.GetFiles(outputDir, "*.yaml");
 		var yamlContent = await File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
-		yamlContent.Should().Contain("feature_id: feature:new-search-api");
+		yamlContent.Should().Contain("feature-id: feature:new-search-api");
 	}
 
 	[Fact]
