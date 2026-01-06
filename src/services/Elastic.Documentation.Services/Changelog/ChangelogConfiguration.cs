@@ -60,8 +60,9 @@ public class ChangelogConfiguration
 	/// <summary>
 	/// Product-specific label blocking configuration
 	/// Maps product IDs to lists of labels that should prevent changelog creation for that product
+	/// Keys can be comma-separated product IDs to share the same list of labels across multiple products
 	/// </summary>
-	public Dictionary<string, List<string>>? ProductLabelBlockers { get; set; }
+	public Dictionary<string, List<string>>? AddBlockers { get; set; }
 
 	public static ChangelogConfiguration Default => new();
 }
