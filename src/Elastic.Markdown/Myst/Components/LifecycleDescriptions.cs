@@ -68,7 +68,7 @@ public static class LifecycleDescriptions
 
 		// Unavailable
 		[(ProductLifecycle.Unavailable, true)] =
-			"{product} doesn't include this functionality."
+			"This functionality is not available in {product}."
 	};
 }
 

@@ -27,7 +27,7 @@ public static class ProductDescriptions
 	/// The version note text shown at the bottom of versioned product popovers.
 	/// </summary>
 	public const string VersionNote =
-		"This documentation corresponds to the latest patch available for each minor version. If you're not using the latest patch, check the release notes for changes.";
+		"This documentation corresponds to the latest patch available for each minor version. If you're not using the latest patch, check the <a href=\"https://www.elastic.co/docs/release-notes\">release notes</a> for changes.";
 
 	public static ProductInfo? GetProductInfo(VersioningSystemId versioningSystemId) =>
 		Descriptions.GetValueOrDefault(versioningSystemId);
