@@ -144,15 +144,21 @@
 				}
 			}
 		</a>
-		@if (ctx.ShowExternalDocs && propSchema.ExternalDocs?.Url != null)
-		{
-			<a href="@propSchema.ExternalDocs.Url" class="external-docs-inline" target="_blank" rel="noopener" title="External documentation">docs</a>
-		}
 	</dt>
 	@if (hasDescription)
 	{
 		<dd>
 			@ctx.RenderMarkdown(propSchema.Description)
+		</dd>
+	}
+	@if (ctx.ShowExternalDocs && propSchema.ExternalDocs?.Url != null && !typeInfo.HasLink)
+	{
+		var externalDocsUrl = propSchema.ExternalDocs.Url.ToString();
+		var isElasticDocs = externalDocsUrl.Contains("www.elastic.co/docs") || externalDocsUrl.Contains("elastic.co/guide");
+		<dd class="external-docs-row">
+			<a href="@externalDocsUrl" class="docs-reference-btn docs-reference-btn-sm" @(isElasticDocs ? "" : "target=\"_blank\" rel=\"noopener\"")>
+				@(isElasticDocs ? "Read the reference documentation" : "External documentation")
+			</a>
 		</dd>
 	}
 	@ValidationConstraintsRenderer.Render(propSchema)

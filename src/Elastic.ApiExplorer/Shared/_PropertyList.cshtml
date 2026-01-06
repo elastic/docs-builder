@@ -25,12 +25,68 @@
 		var isRecursive = Model.AncestorTypes != null && !string.IsNullOrEmpty(typeInfo.TypeName)
 			&& !SchemaHelpers.IsPrimitiveTypeName(typeInfo.TypeName) && Model.AncestorTypes.Contains(typeInfo.TypeName);
 
+		// Also check array item types for recursion (e.g., QueryContainer[] when on QueryContainer page)
+		if (!isRecursive && typeInfo.IsArray && propSchema.Items != null)
+		{
+			var arrayItemType = Model.Analyzer.GetTypeInfo(propSchema.Items);
+			isRecursive = Model.AncestorTypes != null && !string.IsNullOrEmpty(arrayItemType.TypeName)
+				&& !SchemaHelpers.IsPrimitiveTypeName(arrayItemType.TypeName) && Model.AncestorTypes.Contains(arrayItemType.TypeName);
+		}
+
 		// Also check dictionary value types for recursion
 		if (!isRecursive && typeInfo.IsDictionary && typeInfo.DictValueSchema != null)
 		{
 			var dictValueType = Model.Analyzer.GetTypeInfo(typeInfo.DictValueSchema);
 			isRecursive = Model.AncestorTypes != null && !string.IsNullOrEmpty(dictValueType.TypeName)
 				&& !SchemaHelpers.IsPrimitiveTypeName(dictValueType.TypeName) && Model.AncestorTypes.Contains(dictValueType.TypeName);
+		}
+
+		// Also check union option types for recursion (e.g., QueryContainer | QueryContainer[] when on QueryContainer page)
+		if (!isRecursive && typeInfo.IsUnion && typeInfo.AnyOfOptions != null && Model.AncestorTypes != null)
+		{
+			foreach (var option in typeInfo.AnyOfOptions)
+			{
+				// Get the base name (strip [] suffix for array variants)
+				var optionName = option.Name;
+				var baseName = optionName.EndsWith("[]") ? optionName[..^2] : optionName;
+				if (!string.IsNullOrEmpty(baseName) && !SchemaHelpers.IsPrimitiveTypeName(baseName) && Model.AncestorTypes.Contains(baseName))
+				{
+					isRecursive = true;
+					break;
+				}
+			}
+		}
+
+		// Also check schema's direct oneOf/anyOf for recursion (in case typeInfo doesn't capture it)
+		if (!isRecursive && Model.AncestorTypes != null)
+		{
+			var unionSchemas = propSchema.OneOf ?? propSchema.AnyOf;
+			if (unionSchemas is { Count: > 0 })
+			{
+				foreach (var unionSchema in unionSchemas)
+				{
+					if (unionSchema == null) continue;
+					var unionTypeInfo = Model.Analyzer.GetTypeInfo(unionSchema);
+					var typeName = unionTypeInfo.TypeName;
+					// Strip [] suffix for array types
+					var baseName = typeName?.EndsWith("[]") == true ? typeName[..^2] : typeName;
+					if (!string.IsNullOrEmpty(baseName) && !SchemaHelpers.IsPrimitiveTypeName(baseName) && Model.AncestorTypes.Contains(baseName))
+					{
+						isRecursive = true;
+						break;
+					}
+					// Also check if the union option is an array pointing to an ancestor type
+					if (unionTypeInfo.IsArray && unionSchema.Items != null)
+					{
+						var itemTypeInfo = Model.Analyzer.GetTypeInfo(unionSchema.Items);
+						if (!string.IsNullOrEmpty(itemTypeInfo.TypeName) && !SchemaHelpers.IsPrimitiveTypeName(itemTypeInfo.TypeName) && Model.AncestorTypes.Contains(itemTypeInfo.TypeName))
+						{
+							isRecursive = true;
+							break;
+						}
+					}
+				}
+			}
 		}
 
 		var itemContext = new PropertyItemContext

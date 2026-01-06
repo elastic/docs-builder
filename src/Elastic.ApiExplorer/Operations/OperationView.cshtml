@@ -84,12 +84,6 @@
 	</h1>
 	<span style="background:cyan; display:none;" id="debug-version">DEBUG: Extensions=@(operation.Extensions != null ? string.Join(",", operation.Extensions.Keys) : "null"), x-state=@(versionInfo ?? "null")</span>
 	<span style="background:yellow; display:none;" id="debug-externaldocs">DEBUG: ExternalDocs=@(operation.ExternalDocs != null ? "exists" : "null"), Url=@(operation.ExternalDocs?.Url?.ToString() ?? "null")</span>
-	@if (operation.ExternalDocs?.Url != null)
-	{
-		<a href="@operation.ExternalDocs.Url" class="external-docs-link" target="_blank" rel="noopener">
-			Documentation
-		</a>
-	}
 	@{
 		// Servers can be at operation level or document level
 		var servers = operation.Servers is { Count: > 0 } ? operation.Servers : Model.Document.Servers;
@@ -175,6 +169,22 @@
 		<p>
 			@(Model.RenderMarkdown(operation.Description))
 		</p>
+		@if (operation.ExternalDocs?.Url != null)
+		{
+			var externalDocsUrl = operation.ExternalDocs.Url.ToString();
+			var isElasticDocs = externalDocsUrl.Contains("www.elastic.co/docs") || externalDocsUrl.Contains("elastic.co/guide");
+			<a href="@externalDocsUrl" class="docs-reference-btn" @(isElasticDocs ? "" : "target=\"_blank\" rel=\"noopener\"")>
+				@(isElasticDocs ? "Read the reference documentation" : "External documentation")
+			</a>
+		}
+	}
+	else if (operation.ExternalDocs?.Url != null)
+	{
+		var externalDocsUrl = operation.ExternalDocs.Url.ToString();
+		var isElasticDocs = externalDocsUrl.Contains("www.elastic.co/docs") || externalDocsUrl.Contains("elastic.co/guide");
+		<a href="@externalDocsUrl" class="docs-reference-btn" @(isElasticDocs ? "" : "target=\"_blank\" rel=\"noopener\"")>
+			@(isElasticDocs ? "Read the reference documentation" : "External documentation")
+		</a>
 	}
 
 	@if (operation.Security is { Count: > 0 })

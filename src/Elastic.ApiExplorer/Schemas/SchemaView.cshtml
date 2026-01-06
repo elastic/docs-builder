@@ -123,6 +123,22 @@
 			<span>Description</span>
 		</h3>
 		<p>@Model.RenderMarkdown(openApiSchema.Description)</p>
+		@if (openApiSchema.ExternalDocs?.Url != null)
+		{
+			var externalDocsUrl = openApiSchema.ExternalDocs.Url.ToString();
+			var isElasticDocs = externalDocsUrl.Contains("www.elastic.co/docs") || externalDocsUrl.Contains("elastic.co/guide");
+			<a href="@externalDocsUrl" class="docs-reference-btn" @(isElasticDocs ? "" : "target=\"_blank\" rel=\"noopener\"")>
+				@(isElasticDocs ? "Read the reference documentation" : "External documentation")
+			</a>
+		}
+	}
+	else if (openApiSchema.ExternalDocs?.Url != null)
+	{
+		var externalDocsUrl = openApiSchema.ExternalDocs.Url.ToString();
+		var isElasticDocs = externalDocsUrl.Contains("www.elastic.co/docs") || externalDocsUrl.Contains("elastic.co/guide");
+		<a href="@externalDocsUrl" class="docs-reference-btn" @(isElasticDocs ? "" : "target=\"_blank\" rel=\"noopener\"")>
+			@(isElasticDocs ? "Read the reference documentation" : "External documentation")
+		</a>
 	}
 
 	@if (hasEnum)

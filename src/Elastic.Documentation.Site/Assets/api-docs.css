@@ -438,7 +438,36 @@
 	@apply text-yellow-90 bg-yellow-10 border-yellow-30 border rounded px-1 py-0.5 text-xs font-medium;
 }
 
-/* External documentation link */
+/* Reference documentation button */
+.docs-reference-btn {
+	@apply inline-flex items-center gap-2 px-4 py-2 text-sm font-medium;
+	@apply bg-blue-elastic-10 text-blue-elastic border border-blue-elastic-30 rounded-md;
+	@apply hover:bg-blue-elastic-20 hover:border-blue-elastic-40 transition-colors;
+	margin-top: 0.75rem;
+}
+.docs-reference-btn::before {
+	content: '📖';
+	font-size: 1em;
+}
+/* External links get an arrow indicator */
+.docs-reference-btn[target="_blank"]::after {
+	content: '↗';
+	font-size: 0.85em;
+	margin-left: 0.25rem;
+}
+
+/* Smaller variant for property rows */
+.docs-reference-btn-sm {
+	@apply px-3 py-1.5 text-xs;
+	margin-top: 0.5rem;
+}
+
+/* Container for external docs in property items */
+.external-docs-row {
+	margin-top: 0.25rem;
+}
+
+/* Legacy external documentation link (keeping for backwards compat) */
 .external-docs-link {
 	@apply text-blue-elastic text-sm hover:underline inline-flex items-center gap-1;
 }
@@ -447,7 +476,7 @@
 	font-size: 0.9em;
 }
 
-/* Inline external docs link (for properties) */
+/* Inline external docs link (for properties) - legacy */
 .external-docs-inline {
 	@apply text-blue-elastic text-xs hover:underline;
 	margin-left: 0.25rem;
