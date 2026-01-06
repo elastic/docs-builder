@@ -29,7 +29,8 @@ function expandPropertyItem(propertyItem: HTMLElement): void {
         const toggleLabel = toggleBtn.querySelector('.toggle-label')
         const propCount = toggleLabel?.textContent?.match(/\d+/)?.[0] || ''
         if (toggleIcon) toggleIcon.textContent = '−'
-        if (toggleLabel) toggleLabel.textContent = `Hide ${propCount} properties`
+        if (toggleLabel)
+            toggleLabel.textContent = `Hide ${propCount} properties`
     }
 
     if (nestedProps) {
@@ -70,7 +71,8 @@ function expandUnionVariantItem(variantItem: HTMLElement): void {
         const toggleLabel = toggleBtn.querySelector('.toggle-label')
         const propCount = toggleLabel?.textContent?.match(/\d+/)?.[0] || ''
         if (toggleIcon) toggleIcon.textContent = '−'
-        if (toggleLabel) toggleLabel.textContent = `Hide ${propCount} properties`
+        if (toggleLabel)
+            toggleLabel.textContent = `Hide ${propCount} properties`
     }
 
     if (nestedProps) {
@@ -165,7 +167,9 @@ function initOperationView(section: HTMLElement): void {
                 variantsContent.addEventListener('beforematch', function () {
                     const container = variantsContent.parentElement
                     if (
-                        container?.classList.contains('union-variants-container')
+                        container?.classList.contains(
+                            'union-variants-container'
+                        )
                     ) {
                         expandUnionContainer(container)
                     }
@@ -335,8 +339,9 @@ function initOperationView(section: HTMLElement): void {
                 e.preventDefault()
                 e.stopPropagation()
 
-                const unionVariantItem =
-                    toggleBtn.closest<HTMLElement>('.union-variant-item')
+                const unionVariantItem = toggleBtn.closest<HTMLElement>(
+                    '.union-variant-item'
+                )
                 if (!unionVariantItem) return
 
                 const isExpanded =
@@ -445,8 +450,9 @@ function initGlobalClickHandlers(): void {
                 e.preventDefault()
                 e.stopPropagation()
 
-                const unionVariantItem =
-                    toggleBtn.closest<HTMLElement>('.union-variant-item')
+                const unionVariantItem = toggleBtn.closest<HTMLElement>(
+                    '.union-variant-item'
+                )
                 if (!unionVariantItem) return
 
                 const isExpanded =

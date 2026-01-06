@@ -61,9 +61,7 @@ public static class ValidationConstraintsRenderer
 		var sb = new System.Text.StringBuilder();
 		_ = sb.Append("<dd class=\"validation-constraints\"><span class=\"constraints-label\">Constraints:</span>");
 		foreach (var constraint in constraints)
-		{
 			_ = sb.Append($"<span class=\"constraint\">{constraint}</span>");
-		}
 		_ = sb.Append("</dd>");
 
 		return new HtmlString(sb.ToString());

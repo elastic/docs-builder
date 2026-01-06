@@ -17,14 +17,11 @@ namespace Elastic.ApiExplorer.Schema;
 /// <param name="currentPageType">Optional current page type to prevent self-linking on schema pages.</param>
 public class SchemaAnalyzer(OpenApiDocument document, string? currentPageType = null)
 {
-	private readonly OpenApiDocument _document = document;
-	private readonly string? _currentPageType = currentPageType;
-
 	/// <summary>
 	/// Checks if a type should link to its container page, considering the current page.
 	/// </summary>
-	public bool IsLinkedType(string typeName) =>
-		SchemaHelpers.ShouldLinkToContainerPage(typeName, _currentPageType);
+	private bool IsLinkedType(string typeName) =>
+		SchemaHelpers.ShouldLinkToContainerPage(typeName, currentPageType);
 
 	/// <summary>
 	/// Resolves a schema reference to its target schema.
@@ -37,18 +34,11 @@ public class SchemaAnalyzer(OpenApiDocument document, string? currentPageType = 
 		// If it's a reference, resolve from Components.Schemas
 		if (schema is OpenApiSchemaReference schemaRef)
 		{
-			var refId = schemaRef.Reference?.Id;
-			if (!string.IsNullOrEmpty(refId) &&
-				_document.Components?.Schemas?.TryGetValue(refId, out var resolved) == true)
-			{
+			var refId = schemaRef.Reference.Id;
+			if (!string.IsNullOrEmpty(refId) && document.Components?.Schemas?.TryGetValue(refId, out var resolved) == true)
 				return resolved;
-			}
 			return schemaRef;
 		}
-
-		// For allOf, return as-is (properties will be merged by GetSchemaProperties)
-		if (schema.AllOf is { Count: > 0 })
-			return schema;
 
 		return schema;
 	}
@@ -70,14 +60,12 @@ public class SchemaAnalyzer(OpenApiDocument document, string? currentPageType = 
 				return schemaRef.Properties;
 
 			// Try resolving via Reference.Id
-			var refId = schemaRef.Reference?.Id;
+			var refId = schemaRef.Reference.Id;
 			if (!string.IsNullOrEmpty(refId))
 			{
 				// Try to get the resolved schema from the document
-				if (_document.Components?.Schemas?.TryGetValue(refId, out var resolvedSchema) == true)
-				{
+				if (document.Components?.Schemas?.TryGetValue(refId, out var resolvedSchema) == true)
 					return GetSchemaProperties(resolvedSchema);
-				}
 			}
 			// Fall through to try other schema properties
 		}
@@ -125,9 +113,9 @@ public class SchemaAnalyzer(OpenApiDocument document, string? currentPageType = 
 		// If not found and it's a reference, resolve and try again
 		if (unionSchemas == null && schema is OpenApiSchemaReference schemaRef)
 		{
-			var refId = schemaRef.Reference?.Id;
+			var refId = schemaRef.Reference.Id;
 			if (!string.IsNullOrEmpty(refId) &&
-				_document.Components?.Schemas?.TryGetValue(refId, out var resolved) == true)
+				document.Components?.Schemas?.TryGetValue(refId, out var resolved) == true)
 			{
 				if (resolved.OneOf is { Count: > 0 })
 					unionSchemas = resolved.OneOf;
@@ -146,19 +134,17 @@ public class SchemaAnalyzer(OpenApiDocument document, string? currentPageType = 
 				var typeName = SchemaHelpers.FormatSchemaName(unionRef.Reference?.Id ?? "unknown");
 				result.Add(new UnionOption(typeName, unionRef.Reference?.Id, !SchemaHelpers.IsValueType(typeName), s));
 			}
-			else if (s?.Type?.HasFlag(JsonSchemaType.Array) == true && s.Items != null)
+			else if (s.Type?.HasFlag(JsonSchemaType.Array) == true && s.Items != null)
 			{
 				var itemInfo = GetTypeInfo(s.Items);
 				result.Add(new UnionOption($"{itemInfo.TypeName}[]", itemInfo.SchemaRef, itemInfo.IsObject, s));
 			}
-			else if (s != null)
+			else
 			{
 				// Could be an inline schema or wrapped reference - try to get type info
 				var info = GetTypeInfo(s);
 				if (!string.IsNullOrEmpty(info.SchemaRef))
-				{
 					result.Add(new UnionOption(info.TypeName, info.SchemaRef, info.IsObject, s));
-				}
 				else
 				{
 					var primName = SchemaHelpers.GetPrimitiveTypeName(s.Type);
@@ -197,10 +183,10 @@ public class SchemaAnalyzer(OpenApiDocument document, string? currentPageType = 
 		// For schema references, try resolving via the Ref ID or the schema reference itself
 		var refId = option.Ref;
 		if (string.IsNullOrEmpty(refId) && option.Schema is OpenApiSchemaReference schemaRef)
-			refId = schemaRef.Reference?.Id;
+			refId = schemaRef.Reference.Id;
 
 		if (!string.IsNullOrEmpty(refId) &&
-			_document.Components?.Schemas?.TryGetValue(refId, out var resolvedSchema) == true)
+			document.Components?.Schemas?.TryGetValue(refId, out var resolvedSchema) == true)
 		{
 			props = GetSchemaProperties(resolvedSchema);
 			if (props?.Count > 0)
@@ -219,10 +205,10 @@ public class SchemaAnalyzer(OpenApiDocument document, string? currentPageType = 
 		}
 
 		// Try finding by name pattern (e.g., "SourceFilter" -> look for schemas ending with ".SourceFilter")
-		if (_document.Components?.Schemas != null)
+		if (document.Components?.Schemas != null)
 		{
 			var baseName = option.Name.EndsWith("[]") ? option.Name[..^2] : option.Name;
-			var matchingSchema = _document.Components.Schemas
+			var matchingSchema = document.Components.Schemas
 				.FirstOrDefault(kvp => kvp.Key.EndsWith("." + baseName) || kvp.Key == baseName);
 			if (matchingSchema.Value != null)
 			{
@@ -258,9 +244,7 @@ public class SchemaAnalyzer(OpenApiDocument document, string? currentPageType = 
 			// For array types, we need to look at the Items schema
 			var schemaToCheck = option.Schema;
 			if (option.Schema.Type?.HasFlag(JsonSchemaType.Array) == true && option.Schema.Items != null)
-			{
 				schemaToCheck = option.Schema.Items;
-			}
 
 			// Check if this option has direct properties
 			var hasDirectProps = false;
@@ -268,14 +252,12 @@ public class SchemaAnalyzer(OpenApiDocument document, string? currentPageType = 
 
 			var props = GetSchemaProperties(schemaToCheck);
 			if (props?.Count > 0)
-			{
 				hasDirectProps = true;
-			}
 			else if (schemaToCheck is OpenApiSchemaReference schemaRef)
 			{
 				var refId = schemaRef.Reference?.Id;
 				if (!string.IsNullOrEmpty(refId) &&
-					_document.Components?.Schemas?.TryGetValue(refId, out var resolved) == true)
+					document.Components?.Schemas?.TryGetValue(refId, out var resolved) == true)
 				{
 					resolvedSchema = resolved;
 					props = GetSchemaProperties(resolved);
@@ -284,9 +266,9 @@ public class SchemaAnalyzer(OpenApiDocument document, string? currentPageType = 
 				}
 			}
 
-			if (!hasDirectProps && _document.Components?.Schemas != null)
+			if (!hasDirectProps && document.Components?.Schemas != null)
 			{
-				var matchingSchema = _document.Components.Schemas
+				var matchingSchema = document.Components.Schemas
 					.FirstOrDefault(kvp => kvp.Key.EndsWith("." + baseName) || kvp.Key == baseName);
 				if (matchingSchema.Value != null)
 				{
@@ -343,7 +325,7 @@ public class SchemaAnalyzer(OpenApiDocument document, string? currentPageType = 
 		// Check if this is a schema reference
 		if (schema is OpenApiSchemaReference schemaRef)
 		{
-			var refId = schemaRef.Reference?.Id;
+			var refId = schemaRef.Reference.Id;
 			if (!string.IsNullOrEmpty(refId))
 			{
 				var typeName = SchemaHelpers.FormatSchemaName(refId);
@@ -362,7 +344,7 @@ public class SchemaAnalyzer(OpenApiDocument document, string? currentPageType = 
 				// OpenApiSchemaReference proxies to resolved schema properties
 				var isEnum = schemaRef.Enum is { Count: > 0 };
 				var isUnion = !isEnum && (schemaRef.OneOf is { Count: > 0 } || schemaRef.AnyOf is { Count: > 0 });
-				var enumValues = isEnum ? schemaRef.Enum?.Select(e => e?.ToString() ?? "").ToArray() : null;
+				var enumValues = isEnum ? schemaRef.Enum?.Select(e => e.ToString()).ToArray() : null;
 
 				// Check if the referenced type is an array of primitives
 				string? arrayItemType = null;
@@ -373,18 +355,17 @@ public class SchemaAnalyzer(OpenApiDocument document, string? currentPageType = 
 
 					// If Items is null, try resolving the schema explicitly
 					if (itemSchema is null &&
-						_document.Components?.Schemas?.TryGetValue(refId, out var resolvedArraySchema) == true)
-					{
+						document.Components?.Schemas?.TryGetValue(refId, out var resolvedArraySchema) == true)
 						itemSchema = resolvedArraySchema.Items;
-					}
 
 					if (itemSchema is not null)
 					{
 						var itemInfo = GetTypeInfo(itemSchema);
 						// If the item is not an object and not a linked type, it's a primitive array
-						if (!itemInfo.IsObject && !itemInfo.HasLink && string.IsNullOrEmpty(itemInfo.SchemaRef))
+						if (itemInfo is { IsObject: false, HasLink: false })
 						{
-							arrayItemType = itemInfo.TypeName;
+							if (string.IsNullOrEmpty(itemInfo.SchemaRef))
+								arrayItemType = itemInfo.TypeName;
 						}
 					}
 				}
@@ -406,13 +387,13 @@ public class SchemaAnalyzer(OpenApiDocument document, string? currentPageType = 
 							// Also add to anyOfOptions for potential expansion
 							anyOfList.Add(new UnionOption(unionTypeName, unionRef.Reference?.Id, !SchemaHelpers.IsValueType(unionTypeName), s));
 						}
-						else if (s?.Enum is { Count: > 0 } inlineEnum)
+						else if (s.Enum is { Count: > 0 } inlineEnum)
 						{
 							// String literal union - add enum values
 							foreach (var enumVal in inlineEnum)
-								options.Add(enumVal?.ToString() ?? "");
+								options.Add(enumVal.ToString());
 						}
-						else if (s?.Type?.HasFlag(JsonSchemaType.Array) == true && s.Items != null)
+						else if (s.Type?.HasFlag(JsonSchemaType.Array) == true && s.Items != null)
 						{
 							// Array type - get the item type and add [] suffix
 							var itemInfo = GetTypeInfo(s.Items);
@@ -423,7 +404,7 @@ public class SchemaAnalyzer(OpenApiDocument document, string? currentPageType = 
 						}
 						else
 						{
-							var primName = SchemaHelpers.GetPrimitiveTypeName(s?.Type);
+							var primName = SchemaHelpers.GetPrimitiveTypeName(s.Type);
 							if (string.IsNullOrEmpty(primName))
 								primName = "unknown";
 							options.Add(primName);
@@ -442,7 +423,7 @@ public class SchemaAnalyzer(OpenApiDocument document, string? currentPageType = 
 		// Check for oneOf/anyOf which often indicate union types
 		if (schema.OneOf is { Count: > 0 } oneOf)
 		{
-			var options = oneOf.Where(s => s is not null).Select(s =>
+			var options = oneOf.Select(s =>
 			{
 				var info = GetTypeInfo(s);
 				// Include [] suffix for array types
@@ -463,7 +444,7 @@ public class SchemaAnalyzer(OpenApiDocument document, string? currentPageType = 
 
 		if (schema.AnyOf is { Count: > 0 } anyOf)
 		{
-			var options = anyOf.Where(s => s is not null).Select(s =>
+			var options = anyOf.Select(s =>
 			{
 				var info = GetTypeInfo(s);
 				// Include [] suffix for array types
@@ -488,7 +469,7 @@ public class SchemaAnalyzer(OpenApiDocument document, string? currentPageType = 
 			var refSchemas = allOf.OfType<OpenApiSchemaReference>().ToArray();
 			if (refSchemas.Length > 0)
 			{
-				var refId = refSchemas[0].Reference?.Id;
+				var refId = refSchemas[0].Reference.Id;
 				if (!string.IsNullOrEmpty(refId))
 				{
 					var typeName = SchemaHelpers.FormatSchemaName(refId);
@@ -510,7 +491,7 @@ public class SchemaAnalyzer(OpenApiDocument document, string? currentPageType = 
 			{
 				var itemInfo = GetTypeInfo(schema.Items);
 				// If the item is not an object and not a linked type, it's a primitive array
-				var isPrimitiveArray = !itemInfo.IsObject && !itemInfo.HasLink && string.IsNullOrEmpty(itemInfo.SchemaRef);
+				var isPrimitiveArray = itemInfo is not { IsObject: false, HasLink: false } || !string.IsNullOrEmpty(itemInfo.SchemaRef);
 				var arrayItemType = isPrimitiveArray ? itemInfo.TypeName : null;
 				return new TypeInfo(itemInfo.TypeName, itemInfo.SchemaRef, true, itemInfo.IsObject, itemInfo.IsValueType, itemInfo.ValueTypeBase, itemInfo.HasLink, null, ArrayItemType: arrayItemType);
 			}
@@ -520,12 +501,12 @@ public class SchemaAnalyzer(OpenApiDocument document, string? currentPageType = 
 		// Check for enum
 		if (schema.Enum is { Count: > 0 })
 		{
-			var enumValues = schema.Enum.Select(e => e?.ToString() ?? "").Take(5).ToArray();
+			var enumValues = schema.Enum.Select(e => e.ToString()).Take(5).ToArray();
 			return new TypeInfo("enum", null, false, false, false, null, false, null, false, null, true, false, enumValues);
 		}
 
 		// Check for additionalProperties (dictionary-like objects)
-		if (schema.AdditionalProperties is IOpenApiSchema addProps)
+		if (schema.AdditionalProperties is { } addProps)
 		{
 			var valueInfo = GetTypeInfo(addProps);
 			// Pass valueInfo.HasLink so we know if the dictionary value type has a dedicated page
