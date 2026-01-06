@@ -593,28 +593,47 @@ public partial class ChangelogService(
 					}
 					else
 					{
-						// Check if it looks like a file path (contains path separators or has extension)
-						var looksLikeFilePath = singleValue.Contains(_fileSystem.Path.DirectorySeparatorChar) ||
-							singleValue.Contains(_fileSystem.Path.AltDirectorySeparatorChar) ||
-							_fileSystem.Path.HasExtension(singleValue);
-
-						if (looksLikeFilePath)
+						// Check if it's in short PR format (owner/repo#number) before treating as file path
+						var hashIndex = singleValue.LastIndexOf('#');
+						var isShortPrFormat = false;
+						if (hashIndex > 0 && hashIndex < singleValue.Length - 1)
 						{
-							// File path doesn't exist - if there are no other PRs, return error; otherwise emit warning
-							if (prsToMatch.Count == 0)
+							var repoPart = singleValue[..hashIndex];
+							var prPart = singleValue[(hashIndex + 1)..];
+							var repoParts = repoPart.Split('/');
+							// Check if it matches owner/repo#number format
+							if (repoParts.Length == 2 && int.TryParse(prPart, out _))
 							{
-								collector.EmitError(singleValue, $"File does not exist: {singleValue}");
-								return false;
+								isShortPrFormat = true;
+								_ = prsToMatch.Add(singleValue);
+							}
+						}
+
+						if (!isShortPrFormat)
+						{
+							// Check if it looks like a file path (contains path separators or has extension)
+							var looksLikeFilePath = singleValue.Contains(_fileSystem.Path.DirectorySeparatorChar) ||
+								singleValue.Contains(_fileSystem.Path.AltDirectorySeparatorChar) ||
+								_fileSystem.Path.HasExtension(singleValue);
+
+							if (looksLikeFilePath)
+							{
+								// File path doesn't exist - if there are no other PRs, return error; otherwise emit warning
+								if (prsToMatch.Count == 0)
+								{
+									collector.EmitError(singleValue, $"File does not exist: {singleValue}");
+									return false;
+								}
+								else
+								{
+									collector.EmitWarning(singleValue, $"File does not exist, skipping: {singleValue}");
+								}
 							}
 							else
 							{
-								collector.EmitWarning(singleValue, $"File does not exist, skipping: {singleValue}");
+								// Doesn't look like a file path, treat as PR identifier
+								_ = prsToMatch.Add(singleValue);
 							}
-						}
-						else
-						{
-							// Doesn't look like a file path, treat as PR identifier
-							_ = prsToMatch.Add(singleValue);
 						}
 					}
 				}
@@ -649,20 +668,39 @@ public partial class ChangelogService(
 						}
 						else
 						{
-							// Check if it looks like a file path
-							var looksLikeFilePath = value.Contains(_fileSystem.Path.DirectorySeparatorChar) ||
-								value.Contains(_fileSystem.Path.AltDirectorySeparatorChar) ||
-								_fileSystem.Path.HasExtension(value);
-
-							if (looksLikeFilePath)
+							// Check if it's in short PR format (owner/repo#number) before treating as file path
+							var hashIndex = value.LastIndexOf('#');
+							var isShortPrFormat = false;
+							if (hashIndex > 0 && hashIndex < value.Length - 1)
 							{
-								// Track non-existent files to check later
-								nonExistentFiles.Add(value);
+								var repoPart = value[..hashIndex];
+								var prPart = value[(hashIndex + 1)..];
+								var repoParts = repoPart.Split('/');
+								// Check if it matches owner/repo#number format
+								if (repoParts.Length == 2 && int.TryParse(prPart, out _))
+								{
+									isShortPrFormat = true;
+									_ = prsToMatch.Add(value);
+								}
 							}
-							else
+
+							if (!isShortPrFormat)
 							{
-								// Doesn't look like a file path, treat as PR identifier
-								_ = prsToMatch.Add(value);
+								// Check if it looks like a file path
+								var looksLikeFilePath = value.Contains(_fileSystem.Path.DirectorySeparatorChar) ||
+									value.Contains(_fileSystem.Path.AltDirectorySeparatorChar) ||
+									_fileSystem.Path.HasExtension(value);
+
+								if (looksLikeFilePath)
+								{
+									// Track non-existent files to check later
+									nonExistentFiles.Add(value);
+								}
+								else
+								{
+									// Doesn't look like a file path, treat as PR identifier
+									_ = prsToMatch.Add(value);
+								}
 							}
 						}
 					}
@@ -685,6 +723,47 @@ public partial class ChangelogService(
 							}
 						}
 					}
+				}
+			}
+
+			// Validate that if any PR is just a number (not a URL and not in owner/repo#number format),
+			// then owner and repo must be provided
+			if (prsToMatch.Count > 0)
+			{
+				var hasNumericOnlyPr = false;
+				foreach (var pr in prsToMatch)
+				{
+					// Check if it's a URL - URLs don't need owner/repo
+					var isUrl = pr.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+						pr.StartsWith("https://", StringComparison.OrdinalIgnoreCase);
+
+					if (isUrl)
+						continue;
+
+					// Check if it's in owner/repo#number format - these don't need owner/repo
+					var hashIndex = pr.LastIndexOf('#');
+					if (hashIndex > 0 && hashIndex < pr.Length - 1)
+					{
+						var repoPart = pr[..hashIndex].Trim();
+						var prPart = pr[(hashIndex + 1)..].Trim();
+						var repoParts = repoPart.Split('/');
+						// If it has a # and the part before # contains a /, it's likely owner/repo#number format
+						if (repoParts.Length == 2 && int.TryParse(prPart, out _))
+							continue;
+					}
+
+					// If it's just a number, it needs owner/repo
+					if (int.TryParse(pr, out _))
+					{
+						hasNumericOnlyPr = true;
+						break;
+					}
+				}
+
+				if (hasNumericOnlyPr && (string.IsNullOrWhiteSpace(input.Owner) || string.IsNullOrWhiteSpace(input.Repo)))
+				{
+					collector.EmitError(string.Empty, "When --prs contains PR numbers (not URLs or owner/repo#number format), both --owner and --repo must be provided");
+					return false;
 				}
 			}
 
@@ -1072,7 +1151,7 @@ public partial class ChangelogService(
 	[GeneratedRegex(@"(\s+)version:", RegexOptions.Multiline)]
 	private static partial Regex VersionToTargetRegex();
 
-	[GeneratedRegex(@"(?:https?://)?(?:www\.)?github\.com/([^/]+)/([^/]+)/pull/(\d+)", RegexOptions.IgnoreCase)]
+	[GeneratedRegex(@"github\.com/([^/]+)/([^/]+)/pull/(\d+)", RegexOptions.IgnoreCase)]
 	private static partial Regex GitHubPrUrlRegex();
 
 	private static string NormalizePrForComparison(string pr, string? defaultOwner, string? defaultRepo)
@@ -1080,17 +1159,20 @@ public partial class ChangelogService(
 		// Parse PR using the same logic as GitHubPrService.ParsePrUrl
 		// Return a normalized format (owner/repo#number) for comparison
 
+		// Trim whitespace first
+		pr = pr.Trim();
+
 		// Handle full URL: https://github.com/owner/repo/pull/123
 		if (pr.StartsWith("https://github.com/", StringComparison.OrdinalIgnoreCase) ||
 			pr.StartsWith("http://github.com/", StringComparison.OrdinalIgnoreCase))
 		{
 			// Use regex to parse URL more reliably
 			var match = GitHubPrUrlRegex().Match(pr);
-			if (match.Success)
+			if (match.Success && match.Groups.Count >= 4)
 			{
-				var owner = match.Groups[1].Value;
-				var repo = match.Groups[2].Value;
-				var prPart = match.Groups[3].Value;
+				var owner = match.Groups[1].Value.Trim();
+				var repo = match.Groups[2].Value.Trim();
+				var prPart = match.Groups[3].Value.Trim();
 				if (!string.IsNullOrWhiteSpace(owner) && !string.IsNullOrWhiteSpace(repo) &&
 					int.TryParse(prPart, out var prNum))
 				{
@@ -1106,9 +1188,11 @@ public partial class ChangelogService(
 				// segments[0] is "/", segments[1] is "owner/", segments[2] is "repo/", segments[3] is "pull/", segments[4] is "123"
 				if (segments.Length >= 5 && segments[3].Equals("pull/", StringComparison.OrdinalIgnoreCase))
 				{
-					var owner = segments[1].TrimEnd('/');
-					var repo = segments[2].TrimEnd('/');
-					if (int.TryParse(segments[4], out var prNum))
+					var owner = segments[1].TrimEnd('/').Trim();
+					var repo = segments[2].TrimEnd('/').Trim();
+					var prPart = segments[4].TrimEnd('/').Trim();
+					if (!string.IsNullOrWhiteSpace(owner) && !string.IsNullOrWhiteSpace(repo) &&
+						int.TryParse(prPart, out var prNum))
 					{
 						return $"{owner}/{repo}#{prNum}".ToLowerInvariant();
 					}

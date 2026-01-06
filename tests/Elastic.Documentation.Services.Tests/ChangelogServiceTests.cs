@@ -1161,7 +1161,7 @@ public class ChangelogServiceTests : IDisposable
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			pr: https://github.com/elastic/elasticsearch/pull/133609
 			""";
 
 		var file1 = fileSystem.Path.Combine(changelogDir, "1755268130-short-format.yaml");
@@ -1170,7 +1170,7 @@ public class ChangelogServiceTests : IDisposable
 		var input = new ChangelogBundleInput
 		{
 			Directory = changelogDir,
-			Prs = ["elastic/elasticsearch#100"],
+			Prs = ["elastic/elasticsearch#133609"],
 			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
