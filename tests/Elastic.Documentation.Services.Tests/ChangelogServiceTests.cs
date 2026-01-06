@@ -873,7 +873,7 @@ public class ChangelogServiceTests : IDisposable
 	}
 
 	[Fact]
-	public async Task CreateChangelog_WithInvalidProductInProductLabelBlockers_ReturnsError()
+	public async Task CreateChangelog_WithInvalidProductInAddBlockers_ReturnsError()
 	{
 		// Arrange
 		var mockGitHubService = A.Fake<IGitHubPrService>();
@@ -889,7 +889,7 @@ public class ChangelogServiceTests : IDisposable
 			  - preview
 			  - beta
 			  - ga
-			product_label_blockers:
+			add_blockers:
 			  invalid-product:
 			    - "skip:releaseNotes"
 			""";
@@ -912,11 +912,11 @@ public class ChangelogServiceTests : IDisposable
 		// Assert
 		result.Should().BeFalse();
 		_collector.Errors.Should().BeGreaterThan(0);
-		_collector.Diagnostics.Should().Contain(d => d.Message.Contains("Product 'invalid-product' in product_label_blockers") && d.Message.Contains("is not in the list of available products"));
+		_collector.Diagnostics.Should().Contain(d => d.Message.Contains("Product 'invalid-product' in add_blockers") && d.Message.Contains("is not in the list of available products"));
 	}
 
 	[Fact]
-	public async Task CreateChangelog_WithValidProductInProductLabelBlockers_Succeeds()
+	public async Task CreateChangelog_WithValidProductInAddBlockers_Succeeds()
 	{
 		// Arrange
 		var mockGitHubService = A.Fake<IGitHubPrService>();
@@ -932,7 +932,7 @@ public class ChangelogServiceTests : IDisposable
 			  - preview
 			  - beta
 			  - ga
-			product_label_blockers:
+			add_blockers:
 			  elasticsearch:
 			    - "skip:releaseNotes"
 			  cloud-hosted:
@@ -1161,7 +1161,7 @@ public class ChangelogServiceTests : IDisposable
 			  - ga
 			label_to_type:
 			  "type:feature": feature
-			product_label_blockers:
+			add_blockers:
 			  elasticsearch:
 			    - "skip:releaseNotes"
 			""";
@@ -1224,7 +1224,7 @@ public class ChangelogServiceTests : IDisposable
 			  - ga
 			label_to_type:
 			  "type:feature": feature
-			product_label_blockers:
+			add_blockers:
 			  cloud-serverless:
 			    - "ILM"
 			""";
@@ -1302,7 +1302,7 @@ public class ChangelogServiceTests : IDisposable
 			  - ga
 			label_to_type:
 			  "type:feature": feature
-			product_label_blockers:
+			add_blockers:
 			  elasticsearch:
 			    - "skip:releaseNotes"
 			""";
@@ -1336,6 +1336,72 @@ public class ChangelogServiceTests : IDisposable
 		yamlContent.Should().Contain("title: First PR without blocker");
 		yamlContent.Should().Contain("pr: https://github.com/elastic/elasticsearch/pull/1234");
 		yamlContent.Should().NotContain("Second PR with blocker");
+	}
+
+	[Fact]
+	public async Task CreateChangelog_WithCommaSeparatedProductIdsInAddBlockers_ExpandsCorrectly()
+	{
+		// Arrange
+		var mockGitHubService = A.Fake<IGitHubPrService>();
+		var prInfo = new GitHubPrInfo
+		{
+			Title = "PR with blocking label",
+			Labels = ["type:feature", ">non-issue"]
+		};
+
+		A.CallTo(() => mockGitHubService.FetchPrInfoAsync(
+			A<string>._,
+			A<string?>._,
+			A<string?>._,
+			A<CancellationToken>._))
+			.Returns(prInfo);
+
+		var fileSystem = new FileSystem();
+		var configDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		fileSystem.Directory.CreateDirectory(configDir);
+		var configPath = fileSystem.Path.Combine(configDir, "changelog.yml");
+		var configContent = """
+			available_types:
+			  - feature
+			available_subtypes: []
+			available_lifecycles:
+			  - preview
+			  - beta
+			  - ga
+			label_to_type:
+			  "type:feature": feature
+			add_blockers:
+			  elasticsearch, cloud-serverless:
+			    - ">non-issue"
+			""";
+		await fileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
+
+		var input = new ChangelogInput
+		{
+			Prs = ["https://github.com/elastic/elasticsearch/pull/1234"],
+			Products = [
+				new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" },
+				new ProductInfo { Product = "cloud-serverless", Target = "2025-08-05" }
+			],
+			Config = configPath,
+			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString())
+		};
+
+		// Act
+		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue(); // Should succeed but skip creating changelog due to blocker
+		_collector.Warnings.Should().BeGreaterThan(0);
+		_collector.Diagnostics.Should().Contain(d => d.Message.Contains("Skipping changelog creation") && d.Message.Contains(">non-issue"));
+
+		var outputDir = input.Output ?? Directory.GetCurrentDirectory();
+		if (!Directory.Exists(outputDir))
+			Directory.CreateDirectory(outputDir);
+		var files = Directory.GetFiles(outputDir, "*.yaml");
+		files.Should().HaveCount(0); // No files should be created
 	}
 }
 

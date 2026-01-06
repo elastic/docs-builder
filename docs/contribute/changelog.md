@@ -59,6 +59,8 @@ Refer to the file layout in [changelog.yml.example](https://github.com/elastic/d
 You can also optionally use `add_blockers` in your changelog configuration.
 When you run the `docs-builder changelog add` command with the `--prs` and `--products` options and the PR has a label that you've identified as a blocker for that product, the command does not create a changelog for that PR.
 
+You can use comma-separated product IDs to share the same list of labels across multiple products.
+
 Refer to the file layout in [changelog.yml.example](https://github.com/elastic/docs-builder/blob/main/config/changelog.yml.example) and an [example usage](#example-block-label).
 
 ## Create changelog files [changelog-add]
@@ -197,19 +199,23 @@ You can configure product-specific label blockers to prevent changelog creation 
 If you run the `docs-builder changelog add` command with the `--prs` option and a PR has a blocking label for any of the products in the `--products` option, that PR will be skipped and no changelog file will be created for it.
 A warning message will be emitted indicating which PR was skipped and why.
 
-For example, your configuration file can contain `product_label_blockers` like this:
+For example, your configuration file can contain `add_blockers` like this:
 
 ```yaml
 # Product-specific label blockers (optional)
 # Maps product IDs to lists of labels that prevent changelog creation for that product
 # If you run the changelog add command with the --prs option and a PR has any of these labels, the changelog is not created
-product_label_blockers:
+# Product IDs can be comma-separated to share the same list of labels across multiple products
+add_blockers:
   # Example: Skip changelog for cloud.serverless product when PR has "Watcher" label
   cloud-serverless:
     - ":Data Management/Watcher"
     - ">non-issue"
   # Example: Skip changelog creation for elasticsearch product when PR has "skip:releaseNotes" label
   elasticsearch:
+    - ">non-issue"
+  # Example: Share the same blockers across multiple products using comma-separated product IDs
+  elasticsearch, cloud-serverless:
     - ">non-issue"
 ```
 

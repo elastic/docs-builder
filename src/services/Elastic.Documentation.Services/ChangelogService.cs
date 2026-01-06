@@ -156,7 +156,7 @@ public class ChangelogService(
 		string prUrl
 	)
 	{
-		if (config.ProductLabelBlockers == null || config.ProductLabelBlockers.Count == 0)
+		if (config.AddBlockers == null || config.AddBlockers.Count == 0)
 		{
 			return false;
 		}
@@ -164,7 +164,7 @@ public class ChangelogService(
 		foreach (var product in products)
 		{
 			var normalizedProductId = product.Product.Replace('_', '-');
-			if (config.ProductLabelBlockers.TryGetValue(normalizedProductId, out var blockerLabels))
+			if (config.AddBlockers.TryGetValue(normalizedProductId, out var blockerLabels))
 			{
 				var matchingBlockerLabel = blockerLabels
 					.FirstOrDefault(blockerLabel => prLabels.Contains(blockerLabel, StringComparer.OrdinalIgnoreCase));
@@ -408,6 +408,30 @@ public class ChangelogService(
 
 			var config = deserializer.Deserialize<ChangelogConfiguration>(yamlContent);
 
+			// Expand comma-separated product IDs in add_blockers
+			if (config.AddBlockers != null && config.AddBlockers.Count > 0)
+			{
+				var expandedBlockers = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+				foreach (var kvp in config.AddBlockers)
+				{
+					var productKeys = kvp.Key.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+					foreach (var productKey in productKeys)
+					{
+						if (expandedBlockers.TryGetValue(productKey, out var existingLabels))
+						{
+							// Merge labels if product key already exists
+							var mergedLabels = existingLabels.Union(kvp.Value, StringComparer.OrdinalIgnoreCase).ToList();
+							expandedBlockers[productKey] = mergedLabels;
+						}
+						else
+						{
+							expandedBlockers[productKey] = kvp.Value.ToList();
+						}
+					}
+				}
+				config.AddBlockers = expandedBlockers;
+			}
+
 			// Validate that changelog.yml values conform to ChangelogConfiguration defaults
 			var defaultConfig = ChangelogConfiguration.Default;
 			var validProductIds = configurationContext.ProductsConfiguration.Products.Keys.ToHashSet(StringComparer.OrdinalIgnoreCase);
@@ -448,16 +472,16 @@ public class ChangelogService(
 				}
 			}
 
-			// Validate product_label_blockers (if specified) - product keys must be from products.yml
-			if (config.ProductLabelBlockers != null && config.ProductLabelBlockers.Count > 0)
+			// Validate add_blockers (if specified) - product keys must be from products.yml
+			if (config.AddBlockers != null && config.AddBlockers.Count > 0)
 			{
-				foreach (var productKey in config.ProductLabelBlockers.Keys)
+				foreach (var productKey in config.AddBlockers.Keys)
 				{
 					var normalizedProductId = productKey.Replace('_', '-');
 					if (!validProductIds.Contains(normalizedProductId))
 					{
 						var availableProducts = string.Join(", ", validProductIds.OrderBy(p => p));
-						collector.EmitError(finalConfigPath, $"Product '{productKey}' in product_label_blockers in changelog.yml is not in the list of available products from config/products.yml. Available products: {availableProducts}");
+						collector.EmitError(finalConfigPath, $"Product '{productKey}' in add_blockers in changelog.yml is not in the list of available products from config/products.yml. Available products: {availableProducts}");
 						return null;
 					}
 				}

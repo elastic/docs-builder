@@ -55,6 +55,7 @@ docs-builder changelog add [options...] [-h|--help]
 :   If specified, `--title` can be derived from the PR.
 :   If mappings are configured, `--areas` and `--type` can also be derived from the PR.
 :   Creates one changelog file per PR.
+:   If `add_blockers` are configured in the changelog configuration file and a PR has a blocking label for any product in `--products`, that PR is skipped and no changelog file is created for it.
 
 `--repo <string?>`
 :   Optional: GitHub repository name (used when `--pr` is just a number).
