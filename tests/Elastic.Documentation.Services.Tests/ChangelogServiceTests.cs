@@ -2482,7 +2482,7 @@ public class ChangelogServiceTests : IDisposable
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			feature_id: feature:hidden-api
+			feature-id: feature:hidden-api
 			pr: https://github.com/elastic/elasticsearch/pull/100
 			description: This feature should be hidden
 			""";
@@ -2571,7 +2571,7 @@ public class ChangelogServiceTests : IDisposable
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			feature_id: feature:hidden-breaking
+			feature-id: feature:hidden-breaking
 			pr: https://github.com/elastic/elasticsearch/pull/100
 			description: This breaking change should be hidden
 			impact: Users will be affected
@@ -2643,7 +2643,7 @@ public class ChangelogServiceTests : IDisposable
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			feature_id: feature:hidden-deprecation
+			feature-id: feature:hidden-deprecation
 			pr: https://github.com/elastic/elasticsearch/pull/100
 			description: This deprecation should be hidden
 			""";
@@ -2708,7 +2708,7 @@ public class ChangelogServiceTests : IDisposable
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			feature_id: feature:first
+			feature-id: feature:first
 			pr: https://github.com/elastic/elasticsearch/pull/100
 			""";
 
@@ -2718,7 +2718,7 @@ public class ChangelogServiceTests : IDisposable
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			feature_id: feature:second
+			feature-id: feature:second
 			pr: https://github.com/elastic/elasticsearch/pull/101
 			""";
 
@@ -2799,7 +2799,7 @@ public class ChangelogServiceTests : IDisposable
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			feature_id: feature:from-file
+			feature-id: feature:from-file
 			pr: https://github.com/elastic/elasticsearch/pull/100
 			""";
 
@@ -2863,7 +2863,7 @@ public class ChangelogServiceTests : IDisposable
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			feature_id: Feature:UpperCase
+			feature-id: Feature:UpperCase
 			pr: https://github.com/elastic/elasticsearch/pull/100
 			""";
 

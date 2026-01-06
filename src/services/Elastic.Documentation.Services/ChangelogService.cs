@@ -1072,6 +1072,9 @@ public partial class ChangelogService(
 	[GeneratedRegex(@"(\s+)version:", RegexOptions.Multiline)]
 	private static partial Regex VersionToTargetRegex();
 
+	[GeneratedRegex(@"(?:https?://)?(?:www\.)?github\.com/([^/]+)/([^/]+)/pull/(\d+)", RegexOptions.IgnoreCase)]
+	private static partial Regex GitHubPrUrlRegex();
+
 	private static string NormalizePrForComparison(string pr, string? defaultOwner, string? defaultRepo)
 	{
 		// Parse PR using the same logic as GitHubPrService.ParsePrUrl
@@ -1081,16 +1084,34 @@ public partial class ChangelogService(
 		if (pr.StartsWith("https://github.com/", StringComparison.OrdinalIgnoreCase) ||
 			pr.StartsWith("http://github.com/", StringComparison.OrdinalIgnoreCase))
 		{
+			// Use regex to parse URL more reliably
+			var match = GitHubPrUrlRegex().Match(pr);
+			if (match.Success)
+			{
+				var owner = match.Groups[1].Value;
+				var repo = match.Groups[2].Value;
+				var prPart = match.Groups[3].Value;
+				if (!string.IsNullOrWhiteSpace(owner) && !string.IsNullOrWhiteSpace(repo) &&
+					int.TryParse(prPart, out var prNum))
+				{
+					return $"{owner}/{repo}#{prNum}".ToLowerInvariant();
+				}
+			}
+
+			// Fallback to URI parsing if regex fails
 			try
 			{
 				var uri = new Uri(pr);
 				var segments = uri.Segments;
+				// segments[0] is "/", segments[1] is "owner/", segments[2] is "repo/", segments[3] is "pull/", segments[4] is "123"
 				if (segments.Length >= 5 && segments[3].Equals("pull/", StringComparison.OrdinalIgnoreCase))
 				{
 					var owner = segments[1].TrimEnd('/');
 					var repo = segments[2].TrimEnd('/');
-					var prNum = segments[4].Trim();
-					return $"{owner}/{repo}#{prNum}".ToLowerInvariant();
+					if (int.TryParse(segments[4], out var prNum))
+					{
+						return $"{owner}/{repo}#{prNum}".ToLowerInvariant();
+					}
 				}
 			}
 			catch (UriFormatException)
@@ -1103,7 +1124,21 @@ public partial class ChangelogService(
 		var hashIndex = pr.LastIndexOf('#');
 		if (hashIndex > 0 && hashIndex < pr.Length - 1)
 		{
-			return pr.ToLowerInvariant();
+			var repoPart = pr[..hashIndex].Trim();
+			var prPart = pr[(hashIndex + 1)..].Trim();
+			if (int.TryParse(prPart, out var prNum))
+			{
+				var repoParts = repoPart.Split('/');
+				if (repoParts.Length == 2)
+				{
+					var owner = repoParts[0].Trim();
+					var repo = repoParts[1].Trim();
+					if (!string.IsNullOrWhiteSpace(owner) && !string.IsNullOrWhiteSpace(repo))
+					{
+						return $"{owner}/{repo}#{prNum}".ToLowerInvariant();
+					}
+				}
+			}
 		}
 
 		// Handle just a PR number when owner/repo are provided
