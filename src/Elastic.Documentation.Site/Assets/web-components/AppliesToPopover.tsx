@@ -472,7 +472,20 @@ const AppliesToPopover = ({
                         >
                             ⓘ
                         </span>
-                        {popoverData.versionNote}
+                        <span
+                            css={css`
+                                a {
+                                    color: var(--color-blue-elastic, #0077cc);
+                                    text-decoration: none;
+                                    &:hover {
+                                        text-decoration: underline;
+                                    }
+                                }
+                            `}
+                            dangerouslySetInnerHTML={{
+                                __html: popoverData.versionNote,
+                            }}
+                        />
                     </p>
                 )}
             </div>
