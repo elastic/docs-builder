@@ -297,21 +297,16 @@ applies_to:
 
 The following examples demonstrate the new version syntax capabilities:
 
-**Greater than or equal to:**
-- {applies_to}`stack: ga 9.1` (implicit `+`)
-- {applies_to}`stack: ga 9.1+` (explicit `+`)
-- {applies_to}`stack: preview 9.0+`
-
-**Ranges:**
-- {applies_to}`stack: preview 9.0-9.2` (range display when both released)
-- {applies_to}`stack: beta 9.1-9.3` (converts to `+` if end unreleased)
-
-**Exact versions:**
-- {applies_to}`stack: beta =9.1` (no `+` symbol)
-- {applies_to}`stack: deprecated =9.0`
-
-**Multiple lifecycles:**
-- {applies_to}`stack: ga 9.2+, beta 9.0-9.1` (shows highest priority)
+| Rendered | Raw input | Notes |
+|----------|-----------|-------|
+| {applies_to}`stack: ga 9.1` | `` {applies_to}`stack: ga 9.1` `` | Implicit `+` |
+| {applies_to}`stack: ga 9.1+` | `` {applies_to}`stack: ga 9.1+` `` | Explicit `+` |
+| {applies_to}`stack: preview 9.0+` | `` {applies_to}`stack: preview 9.0+` `` | |
+| {applies_to}`stack: preview 9.0-9.2` | `` {applies_to}`stack: preview 9.0-9.2` `` | Range display when both ends state released versions |
+| {applies_to}`stack: beta 9.1-9.3` | `` {applies_to}`stack: beta 9.1-9.3` `` | Converts to `+` if the end portion is unreleased |
+| {applies_to}`stack: beta =9.1` | `` {applies_to}`stack: beta =9.1` `` | Exact version |
+| {applies_to}`stack: deprecated =9.0` | `` {applies_to}`stack: deprecated =9.0` `` | |
+| {applies_to}`stack: ga 9.2+, beta 9.0-9.1` | `` {applies_to}`stack: ga 9.2+, beta 9.0-9.1` `` | Multiple lifecycles, shows highest priority |
 
 :::::
 
