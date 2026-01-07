@@ -316,13 +316,11 @@ public partial class ChangelogService(
 				{
 					if (blockersEntry?.Types != null && blockersEntry.Types.Count > 0)
 					{
-						foreach (var type in blockersEntry.Types)
+						var invalidType = blockersEntry.Types.FirstOrDefault(type => !config.AvailableTypes.Contains(type));
+						if (invalidType != null)
 						{
-							if (!config.AvailableTypes.Contains(type))
-							{
-								collector.EmitError(finalConfigPath, $"Type '{type}' in render_blockers for '{productKey}' is not in the list of available types. Available types: {string.Join(", ", config.AvailableTypes)}");
-								return null;
-							}
+							collector.EmitError(finalConfigPath, $"Type '{invalidType}' in render_blockers for '{productKey}' is not in the list of available types. Available types: {string.Join(", ", config.AvailableTypes)}");
+							return null;
 						}
 					}
 				}
