@@ -897,6 +897,7 @@ public class ChangelogServiceTests : IDisposable
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
+			    lifecycle: ga
 			pr: https://github.com/elastic/elasticsearch/pull/100
 			""";
 		var changelog2 = """
@@ -905,6 +906,7 @@ public class ChangelogServiceTests : IDisposable
 			products:
 			  - product: kibana
 			    target: 9.2.0
+			    lifecycle: ga
 			pr: https://github.com/elastic/kibana/pull/200
 			""";
 
@@ -916,7 +918,7 @@ public class ChangelogServiceTests : IDisposable
 		var input = new ChangelogBundleInput
 		{
 			Directory = changelogDir,
-			InputProducts = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
+			InputProducts = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
 			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
@@ -1197,7 +1199,7 @@ public class ChangelogServiceTests : IDisposable
 		var input = new ChangelogBundleInput
 		{
 			Directory = changelogDir,
-			InputProducts = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
+			InputProducts = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
 			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
@@ -1243,6 +1245,31 @@ public class ChangelogServiceTests : IDisposable
 		var changelogDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		fileSystem.Directory.CreateDirectory(changelogDir);
 
+		// Create test changelog files
+		var changelog1 = """
+			title: First changelog
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			pr: https://github.com/elastic/elasticsearch/pull/100
+			""";
+		var changelog2 = """
+			title: Second changelog
+			type: enhancement
+			products:
+			  - product: kibana
+			    target: 9.2.0
+			    lifecycle: ga
+			pr: https://github.com/elastic/kibana/pull/200
+			""";
+
+		var file1 = fileSystem.Path.Combine(changelogDir, "1755268130-first-changelog.yaml");
+		var file2 = fileSystem.Path.Combine(changelogDir, "1755268140-second-changelog.yaml");
+		await fileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+		await fileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
+
 		var input = new ChangelogBundleInput
 		{
 			Directory = changelogDir,
@@ -1271,7 +1298,7 @@ public class ChangelogServiceTests : IDisposable
 		{
 			Directory = changelogDir,
 			All = true,
-			InputProducts = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
+			InputProducts = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
 			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
@@ -1320,8 +1347,8 @@ public class ChangelogServiceTests : IDisposable
 		{
 			Directory = changelogDir,
 			InputProducts = [
-				new ProductInfo { Product = "cloud-serverless", Target = "2025-12-02" },
-				new ProductInfo { Product = "cloud-serverless", Target = "2025-12-06" }
+				new ProductInfo { Product = "cloud-serverless", Target = "2025-12-02", Lifecycle = "*" },
+				new ProductInfo { Product = "cloud-serverless", Target = "2025-12-06", Lifecycle = "*" }
 			],
 			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
@@ -1339,6 +1366,177 @@ public class ChangelogServiceTests : IDisposable
 		bundleContent.Should().Contain("target: 2025-12-06");
 		bundleContent.Should().Contain("name: 1755268130-cloud-feature1.yaml");
 		bundleContent.Should().Contain("name: 1755268140-cloud-feature2.yaml");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithWildcardProductFilter_MatchesAllProducts()
+	{
+		// Arrange
+		var service = new ChangelogService(_loggerFactory, _configurationContext, null);
+		var fileSystem = new FileSystem();
+		var changelogDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		fileSystem.Directory.CreateDirectory(changelogDir);
+
+		// Create test changelog files
+		var changelog1 = """
+			title: Elasticsearch feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			pr: https://github.com/elastic/elasticsearch/pull/100
+			""";
+		var changelog2 = """
+			title: Kibana feature
+			type: feature
+			products:
+			  - product: kibana
+			    target: 9.2.0
+			    lifecycle: ga
+			pr: https://github.com/elastic/kibana/pull/200
+			""";
+
+		var file1 = fileSystem.Path.Combine(changelogDir, "1755268130-elasticsearch-feature.yaml");
+		var file2 = fileSystem.Path.Combine(changelogDir, "1755268140-kibana-feature.yaml");
+		await fileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+		await fileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
+
+		var input = new ChangelogBundleInput
+		{
+			Directory = changelogDir,
+			InputProducts = [new ProductInfo { Product = "*", Target = "9.2.0", Lifecycle = "ga" }],
+			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
+		};
+
+		// Act
+		var result = await service.BundleChangelogs(_collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		_collector.Errors.Should().Be(0);
+
+		var bundleContent = await fileSystem.File.ReadAllTextAsync(input.Output!, TestContext.Current.CancellationToken);
+		bundleContent.Should().Contain("name: 1755268130-elasticsearch-feature.yaml");
+		bundleContent.Should().Contain("name: 1755268140-kibana-feature.yaml");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithWildcardAllParts_EquivalentToAll()
+	{
+		// Arrange
+		var service = new ChangelogService(_loggerFactory, _configurationContext, null);
+		var fileSystem = new FileSystem();
+		var changelogDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		fileSystem.Directory.CreateDirectory(changelogDir);
+
+		// Create test changelog files
+		var changelog1 = """
+			title: Elasticsearch feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			pr: https://github.com/elastic/elasticsearch/pull/100
+			""";
+		var changelog2 = """
+			title: Kibana feature
+			type: feature
+			products:
+			  - product: kibana
+			    target: 9.3.0
+			    lifecycle: beta
+			pr: https://github.com/elastic/kibana/pull/200
+			""";
+
+		var file1 = fileSystem.Path.Combine(changelogDir, "1755268130-elasticsearch-feature.yaml");
+		var file2 = fileSystem.Path.Combine(changelogDir, "1755268140-kibana-feature.yaml");
+		await fileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+		await fileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
+
+		var input = new ChangelogBundleInput
+		{
+			Directory = changelogDir,
+			InputProducts = [new ProductInfo { Product = "*", Target = "*", Lifecycle = "*" }],
+			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
+		};
+
+		// Act
+		var result = await service.BundleChangelogs(_collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		_collector.Errors.Should().Be(0);
+
+		var bundleContent = await fileSystem.File.ReadAllTextAsync(input.Output!, TestContext.Current.CancellationToken);
+		bundleContent.Should().Contain("name: 1755268130-elasticsearch-feature.yaml");
+		bundleContent.Should().Contain("name: 1755268140-kibana-feature.yaml");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithPrefixWildcardTarget_MatchesCorrectly()
+	{
+		// Arrange
+		var service = new ChangelogService(_loggerFactory, _configurationContext, null);
+		var fileSystem = new FileSystem();
+		var changelogDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		fileSystem.Directory.CreateDirectory(changelogDir);
+
+		// Create test changelog files
+		var changelog1 = """
+			title: Elasticsearch 9.3.0 feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			    lifecycle: ga
+			pr: https://github.com/elastic/elasticsearch/pull/100
+			""";
+		var changelog2 = """
+			title: Elasticsearch 9.3.1 feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.3.1
+			    lifecycle: ga
+			pr: https://github.com/elastic/elasticsearch/pull/200
+			""";
+		var changelog3 = """
+			title: Elasticsearch 9.2.0 feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			pr: https://github.com/elastic/elasticsearch/pull/300
+			""";
+
+		var file1 = fileSystem.Path.Combine(changelogDir, "1755268130-es-9.3.0.yaml");
+		var file2 = fileSystem.Path.Combine(changelogDir, "1755268140-es-9.3.1.yaml");
+		var file3 = fileSystem.Path.Combine(changelogDir, "1755268150-es-9.2.0.yaml");
+		await fileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+		await fileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
+		await fileSystem.File.WriteAllTextAsync(file3, changelog3, TestContext.Current.CancellationToken);
+
+		var input = new ChangelogBundleInput
+		{
+			Directory = changelogDir,
+			InputProducts = [new ProductInfo { Product = "elasticsearch", Target = "9.3.*", Lifecycle = "*" }],
+			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
+		};
+
+		// Act
+		var result = await service.BundleChangelogs(_collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		_collector.Errors.Should().Be(0);
+
+		var bundleContent = await fileSystem.File.ReadAllTextAsync(input.Output!, TestContext.Current.CancellationToken);
+		bundleContent.Should().Contain("name: 1755268130-es-9.3.0.yaml");
+		bundleContent.Should().Contain("name: 1755268140-es-9.3.1.yaml");
+		bundleContent.Should().NotContain("name: 1755268150-es-9.2.0.yaml");
 	}
 
 	[Fact]

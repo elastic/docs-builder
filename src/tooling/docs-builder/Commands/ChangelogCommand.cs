@@ -108,7 +108,7 @@ internal sealed class ChangelogCommand(
 	/// <param name="directory">Optional: Directory containing changelog YAML files. Defaults to current directory</param>
 	/// <param name="output">Optional: Output file path for the bundled changelog. Defaults to 'changelog-bundle.yaml' in the input directory</param>
 	/// <param name="all">Include all changelogs in the directory</param>
-	/// <param name="inputProducts">Filter by products in format "product target lifecycle, ..." (e.g., "cloud-serverless 2025-12-02, cloud-serverless 2025-12-06")</param>
+	/// <param name="inputProducts">Optional: Filter by products in format "product target lifecycle, ..." (e.g., "cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta"). When specified, all three parts (product, target, lifecycle) are required but can be wildcards (*). Examples: "elasticsearch * *" matches all elasticsearch changelogs, "cloud-serverless 2025-12-02 *" matches cloud-serverless 2025-12-02 with any lifecycle, "* 9.3.* *" matches any product with target starting with "9.3.", "* * *" matches all changelogs (equivalent to --all).</param>
 	/// <param name="outputProducts">Explicitly set the products array in the output file in format "product target lifecycle, ...". Overrides any values from changelogs.</param>
 	/// <param name="resolve">Copy the contents of each changelog file into the entries array</param>
 	/// <param name="prs">Filter by pull request URLs or numbers (comma-separated), or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times.</param>
@@ -152,6 +152,67 @@ internal sealed class ChangelogCommand(
 					// Single value - pass as-is (will be handled by service layer as file path or PR)
 					allPrs.Add(prsValue);
 				}
+			}
+		}
+
+		// Validate filter options - at least one must be specified
+		var filterCount = 0;
+		if (all)
+			filterCount++;
+		if (inputProducts != null && inputProducts.Count > 0)
+			filterCount++;
+		if (allPrs.Count > 0)
+			filterCount++;
+
+		if (filterCount == 0)
+		{
+			collector.EmitError(string.Empty, "At least one filter option must be specified: --all, --input-products, or --prs");
+			return 1;
+		}
+
+		if (filterCount > 1)
+		{
+			collector.EmitError(string.Empty, "Only one filter option can be specified at a time: --all, --input-products, or --prs");
+			return 1;
+		}
+
+		// Validate that if inputProducts is provided, all three parts (product, target, lifecycle) are present for each entry
+		// They can be wildcards (*) but must be present
+		if (inputProducts != null && inputProducts.Count > 0)
+		{
+			foreach (var product in inputProducts)
+			{
+				if (string.IsNullOrWhiteSpace(product.Product))
+				{
+					collector.EmitError(string.Empty, "--input-products: product is required (use '*' for wildcard)");
+					return 1;
+				}
+
+				// When --input-products is used, target and lifecycle are required (but can be "*")
+				// If they're null, it means they weren't provided in the input
+				if (product.Target == null)
+				{
+					collector.EmitError(string.Empty, $"--input-products: target is required for product '{product.Product}' (use '*' for wildcard)");
+					return 1;
+				}
+
+				if (product.Lifecycle == null)
+				{
+					collector.EmitError(string.Empty, $"--input-products: lifecycle is required for product '{product.Product}' (use '*' for wildcard)");
+					return 1;
+				}
+			}
+
+			// Check if --input-products * * * is specified (equivalent to --all)
+			var isAllWildcard = inputProducts.Count == 1 &&
+				inputProducts[0].Product == "*" &&
+				inputProducts[0].Target == "*" &&
+				inputProducts[0].Lifecycle == "*";
+
+			if (isAllWildcard)
+			{
+				all = true;
+				inputProducts = null; // Clear inputProducts so service treats it as --all
 			}
 		}
 

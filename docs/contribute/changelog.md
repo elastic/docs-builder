@@ -149,12 +149,9 @@ Options:
   --directory <string?>                     Optional: Directory containing changelog YAML files. Defaults to current directory [Default: null]
   --output <string?>                        Optional: Output file path for the bundled changelog. Defaults to 'changelog-bundle.yaml' in the input directory [Default: null]
   --all                                     Include all changelogs in the directory
-  --input-products <List<ProductInfo>?>     Filter by products in format "product target lifecycle, ..." (e.g., "cloud-serverless 2025-12-02, cloud-serverless 2025-12-06") [Default: null]
+  --input-products <List<ProductInfo>?>     Filter by products in format "product target lifecycle, ..." (e.g., "cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta"). When specified, all three parts (product, target, lifecycle) are required but can be wildcards (*). Examples: "elasticsearch * *" matches all elasticsearch changelogs, "cloud-serverless 2025-12-02 *" matches cloud-serverless 2025-12-02 with any lifecycle, "* 9.3.* *" matches any product with target starting with "9.3.", "* * *" matches all changelogs (equivalent to --all). [Default: null]
   --output-products <List<ProductInfo>?>    Explicitly set the products array in the output file in format "product target lifecycle, ...". Overrides any values from changelogs. [Default: null]
   --resolve                                 Copy the contents of each changelog file into the entries array
-  --prs <string[]?>                         Filter by pull request URLs or numbers (comma-separated), or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times. [Default: null]
-  --owner <string?>                         Optional: GitHub repository owner (used when PRs are specified as numbers) [Default: null]
-  --repo <string?>                          Optional: GitHub repository name (used when PRs are specified as numbers) [Default: null]
 ```
 
 You can specify only one of the following filter options:
@@ -164,8 +161,13 @@ You can specify only one of the following filter options:
 
 `--input-products`
 :   Include changelogs for the specified products.
-:   The format aligns with [](#product-format).
-:   For example, `"cloud-serverless 2025-12-02, cloud-serverless 2025-12-06"`.
+:   When using `--input-products`, you must provide all three parts: product, target, and lifecycle. Each part can be a wildcard (`*`) to match any value.
+:   Examples:
+:   - `"cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta"` - exact matches
+:   - `"cloud-serverless 2025-12-02 *, cloud-serverless 2025-11-* beta"` - wildcard lifecycle and prefix matching for target
+:   - `"elasticsearch * *, kibana * *"` - match all changelogs for elasticsearch or kibana
+:   - `"elasticsearch 9.3.* *"` - match elasticsearch with target starting with "9.3."
+:   - `"* * *"` - match all changelogs (equivalent to `--all`)
 
 `--prs`
 :   Include changelogs for the specified pull request URLs or numbers, or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times.
@@ -179,14 +181,30 @@ You can optionally use the `--resolve` command option to pull all of the content
 
 ### Filter by product [changelog-bundle-product]
 
-You can use the `--input-products` option to create a bundle of changelogs that match the product details:
+You can use the `--input-products` option to create a bundle of changelogs that match the product details. When using `--input-products`, you must provide all three parts: product, target, and lifecycle. Each part can be a wildcard (`*`) to match any value.
 
 ```sh
 docs-builder changelog bundle \
-  --input-products "cloud-serverless 2025-12-02, cloud-serverless 2025-12-06" <1>
+  --input-products "cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta" <1>
 ```
 
-1. Include all changelogs that have the `cloud-serverless` product identifier and target dates of either December 2 2025 or December 12 2025. For more information about product values, refer to [](#product-format).
+1. Include all changelogs that have the `cloud-serverless` product identifier with target dates of either December 2 2025 (lifecycle `ga`) or December 6 2025 (lifecycle `beta`). For more information about product values, refer to [](#product-format).
+
+You can use wildcards in any of the three parts:
+
+```sh
+# Match all elasticsearch changelogs regardless of target or lifecycle
+docs-builder changelog bundle --input-products "elasticsearch * *"
+
+# Match cloud-serverless 2025-12-02 with any lifecycle
+docs-builder changelog bundle --input-products "cloud-serverless 2025-12-02 *"
+
+# Match any product with target starting with "9.3."
+docs-builder changelog bundle --input-products "* 9.3.* *"
+
+# Match all changelogs (equivalent to --all)
+docs-builder changelog bundle --input-products "* * *"
+```
 
 If you have changelog files that reference those product details, the command creates a file like this:
 
@@ -217,7 +235,7 @@ You can use the `--prs` option (with the `--repo` and `--owner` options if you p
 docs-builder changelog bundle --prs "108875,135873,136886" \ <1>
   --repo elasticsearch \ <2>
   --owner elastic \ <3>
-  --output-products "elasticsearch 9.2.2" <4>
+  --output-products "elasticsearch 9.2.2 ga" <4>
 ```
 
 1. The comma-separated list of pull request numbers to seek. You can also specify multiple `--prs` options, each with comma-separated PRs or a file path.
@@ -262,7 +280,7 @@ You can use the `--prs` option with a file path to create a bundle of the change
 ./docs-builder changelog bundle \
   --prs "https://github.com/elastic/elasticsearch/pull/108875,135873" \ <1>
   --prs test/9.2.2.txt \ <2>
-  --output-products "elasticsearch 9.2.2" <3>
+  --output-products "elasticsearch 9.2.2 ga" <3>
   --resolve <4>
 ```
 
@@ -290,6 +308,10 @@ entries:
   pr: https://github.com/elastic/elasticsearch/pull/108875
 ...
 ```
+
+:::{note}
+When a changelog matches multiple `--input-products` filters, it appears only once in the bundle. This deduplication applies even when using `--all` or `--prs`.
+:::
 
 ## Create documentation [render-changelogs]
 

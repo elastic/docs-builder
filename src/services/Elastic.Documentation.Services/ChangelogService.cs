@@ -603,6 +603,40 @@ public partial class ChangelogService(
 				return false;
 			}
 
+			// Build product filter patterns (with wildcard support)
+			var productFilters = new List<(string? productPattern, string? targetPattern, string? lifecyclePattern)>();
+			if (input.InputProducts is { Count: > 0 })
+			{
+				foreach (var product in input.InputProducts)
+				{
+					productFilters.Add((
+						product.Product == "*" ? null : product.Product,
+						product.Target == "*" ? null : product.Target,
+						product.Lifecycle == "*" ? null : product.Lifecycle
+					));
+				}
+			}
+
+			// Helper function to check if a string matches a pattern (supports wildcards)
+			static bool MatchesPattern(string? value, string? pattern)
+			{
+				if (pattern == null)
+					return true; // Wildcard matches anything (including null/empty)
+
+				if (value == null)
+					return false; // Non-wildcard pattern doesn't match null
+
+				// If pattern ends with *, do prefix match
+				if (pattern.EndsWith('*'))
+				{
+					var prefix = pattern[..^1];
+					return value.StartsWith(prefix, StringComparison.OrdinalIgnoreCase);
+				}
+
+				// Exact match (case-insensitive)
+				return string.Equals(value, pattern, StringComparison.OrdinalIgnoreCase);
+			}
+
 			// Load PRs - check if --prs contains a file path or a list of PRs
 			var prsToMatch = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 			if (input.Prs is { Length: > 0 })
@@ -811,16 +845,7 @@ public partial class ChangelogService(
 				}
 			}
 
-			// Build set of product/version combinations to filter by
-			var productsToMatch = new HashSet<(string product, string version)>();
-			if (input.InputProducts is { Count: > 0 })
-			{
-				foreach (var product in input.InputProducts)
-				{
-					var version = product.Target ?? string.Empty;
-					_ = productsToMatch.Add((product.Product.ToLowerInvariant(), version));
-				}
-			}
+			// Product filters are already built above with wildcard support
 
 			// Determine output path to exclude it from input files
 			var outputPath = input.Output ?? _fileSystem.Path.Combine(input.Directory, "changelog-bundle.yaml");
@@ -877,6 +902,7 @@ public partial class ChangelogService(
 
 			var changelogEntries = new List<(ChangelogData data, string filePath, string fileName, string checksum)>();
 			var matchedPrs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+			var seenChangelogs = new HashSet<string>(); // For deduplication (using checksum)
 
 			foreach (var filePath in yamlFiles)
 			{
@@ -905,19 +931,41 @@ public partial class ChangelogService(
 						continue;
 					}
 
+					// Check for duplicates (using checksum)
+					if (seenChangelogs.Contains(checksum))
+					{
+						_logger.LogDebug("Skipping duplicate changelog: {FileName} (checksum: {Checksum})", fileName, checksum);
+						continue;
+					}
+
 					// Apply filters
 					if (input.All)
 					{
-						// Include all
+						// Include all - no filtering needed
 					}
-					else if (productsToMatch.Count > 0)
+					else if (productFilters.Count > 0)
 					{
-						// Filter by products
-						var matches = data.Products.Any(p =>
+						// Filter by products with wildcard support
+						var matches = false;
+						foreach (var (productPattern, targetPattern, lifecyclePattern) in productFilters)
 						{
-							var version = p.Target ?? string.Empty;
-							return productsToMatch.Contains((p.Product.ToLowerInvariant(), version));
-						});
+							// Check if any product in the changelog matches this filter
+							foreach (var changelogProduct in data.Products)
+							{
+								var productMatches = MatchesPattern(changelogProduct.Product, productPattern);
+								var targetMatches = MatchesPattern(changelogProduct.Target, targetPattern);
+								var lifecycleMatches = MatchesPattern(changelogProduct.Lifecycle, lifecyclePattern);
+
+								if (productMatches && targetMatches && lifecycleMatches)
+								{
+									matches = true;
+									break;
+								}
+							}
+
+							if (matches)
+								break;
+						}
 
 						if (!matches)
 						{
@@ -950,6 +998,8 @@ public partial class ChangelogService(
 						}
 					}
 
+					// Add to seen set and entries list
+					_ = seenChangelogs.Add(checksum);
 					changelogEntries.Add((data, filePath, fileName, checksum));
 				}
 				catch (YamlException ex)
@@ -994,20 +1044,7 @@ public partial class ChangelogService(
 					.Select(p => new BundledProduct
 					{
 						Product = p.Product,
-						Target = p.Target
-					})
-					.ToList();
-			}
-			// If --input-products filter was used, only include those specific product-versions
-			else if (productsToMatch.Count > 0)
-			{
-				bundledData.Products = productsToMatch
-					.OrderBy(pv => pv.product)
-					.ThenBy(pv => pv.version)
-					.Select(pv => new BundledProduct
-					{
-						Product = pv.product,
-						Target = string.IsNullOrWhiteSpace(pv.version) ? null : pv.version
+						Target = p.Target == "*" ? null : p.Target
 					})
 					.ToList();
 			}
