@@ -167,12 +167,18 @@ internal sealed class ChangelogCommand(
 		if (specifiedFilters.Count == 0)
 		{
 			collector.EmitError(string.Empty, "At least one filter option must be specified: --all, --input-products, or --prs");
+			_ = collector.StartAsync(ctx);
+			await collector.WaitForDrain();
+			await collector.StopAsync(ctx);
 			return 1;
 		}
 
 		if (specifiedFilters.Count > 1)
 		{
 			collector.EmitError(string.Empty, $"Multiple filter options cannot be specified together. You specified: {string.Join(", ", specifiedFilters)}. Please use only one filter option: --all, --input-products, or --prs");
+			_ = collector.StartAsync(ctx);
+			await collector.WaitForDrain();
+			await collector.StopAsync(ctx);
 			return 1;
 		}
 
@@ -185,6 +191,9 @@ internal sealed class ChangelogCommand(
 				if (string.IsNullOrWhiteSpace(product.Product))
 				{
 					collector.EmitError(string.Empty, "--input-products: product is required (use '*' for wildcard)");
+					_ = collector.StartAsync(ctx);
+					await collector.WaitForDrain();
+					await collector.StopAsync(ctx);
 					return 1;
 				}
 
@@ -193,12 +202,18 @@ internal sealed class ChangelogCommand(
 				if (product.Target == null)
 				{
 					collector.EmitError(string.Empty, $"--input-products: target is required for product '{product.Product}' (use '*' for wildcard)");
+					_ = collector.StartAsync(ctx);
+					await collector.WaitForDrain();
+					await collector.StopAsync(ctx);
 					return 1;
 				}
 
 				if (product.Lifecycle == null)
 				{
 					collector.EmitError(string.Empty, $"--input-products: lifecycle is required for product '{product.Product}' (use '*' for wildcard)");
+					_ = collector.StartAsync(ctx);
+					await collector.WaitForDrain();
+					await collector.StopAsync(ctx);
 					return 1;
 				}
 			}
