@@ -21,7 +21,8 @@ public class ElasticsearchLexicalIngestChannel(
 	ElasticsearchEndpoint endpoint,
 	string indexNamespace,
 	DistributedTransport transport,
-	string[] indexTimeSynonyms
+	string[] indexTimeSynonyms,
+	string? defaultPipeline = null
 )
 	: ElasticsearchIngestChannel<CatalogIndexChannelOptions<DocumentationDocument>, CatalogIndexChannel<DocumentationDocument>>
 	(logFactory, collector, endpoint, transport, o => new(o), t => new(t)
@@ -34,7 +35,7 @@ public class ElasticsearchLexicalIngestChannel(
 				{ "batch_index_date", d.BatchIndexDate.ToString("o") }
 			}),
 		GetMapping = () => CreateMapping(null),
-		GetMappingSettings = () => CreateMappingSetting($"docs-{indexNamespace}", indexTimeSynonyms),
+		GetMappingSettings = () => CreateMappingSetting($"docs-{indexNamespace}", indexTimeSynonyms, defaultPipeline),
 		IndexFormat =
 			$"{endpoint.IndexNamePrefix.Replace("semantic", "lexical").ToLowerInvariant()}-{indexNamespace.ToLowerInvariant()}-{{0:yyyy.MM.dd.HHmmss}}",
 		ActiveSearchAlias = $"{endpoint.IndexNamePrefix.Replace("semantic", "lexical").ToLowerInvariant()}-{indexNamespace.ToLowerInvariant()}"
@@ -46,14 +47,15 @@ public class ElasticsearchSemanticIngestChannel(
 	ElasticsearchEndpoint endpoint,
 	string indexNamespace,
 	DistributedTransport transport,
-	string[] indexTimeSynonyms
+	string[] indexTimeSynonyms,
+	string? defaultPipeline = null
 )
 	: ElasticsearchIngestChannel<SemanticIndexChannelOptions<DocumentationDocument>, SemanticIndexChannel<DocumentationDocument>>
 	(logFactory, collector, endpoint, transport, o => new(o), t => new(t)
 	{
 		BulkOperationIdLookup = d => d.Url,
 		GetMapping = (inferenceId, _) => CreateMapping(inferenceId),
-		GetMappingSettings = (_, _) => CreateMappingSetting($"docs-{indexNamespace}", indexTimeSynonyms),
+		GetMappingSettings = (_, _) => CreateMappingSetting($"docs-{indexNamespace}", indexTimeSynonyms, defaultPipeline),
 		IndexFormat = $"{endpoint.IndexNamePrefix.ToLowerInvariant()}-{indexNamespace.ToLowerInvariant()}-{{0:yyyy.MM.dd.HHmmss}}",
 		ActiveSearchAlias = $"{endpoint.IndexNamePrefix}-{indexNamespace.ToLowerInvariant()}",
 		IndexNumThreads = endpoint.IndexNumThreads,
