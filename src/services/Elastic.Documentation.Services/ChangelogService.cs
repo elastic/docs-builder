@@ -1752,7 +1752,6 @@ public partial class ChangelogService(
 			var blockedEntries = new List<(string title, List<string> reasons)>();
 			foreach (var (entry, _, bundleProductIds) in allResolvedEntries)
 			{
-				var reasons = new List<string>();
 				var isBlocked = ShouldBlockEntry(entry, bundleProductIds, renderBlockers, out var blockReasons);
 				if (isBlocked)
 				{
