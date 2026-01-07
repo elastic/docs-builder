@@ -2340,15 +2340,16 @@ public partial class ChangelogService(
 				if (matchingAreas.Count > 0)
 				{
 					isBlocked = true;
-					foreach (var product in matchingProducts)
+					var reasonsForProductsAndAreas = matchingProducts
+						.SelectMany(product => matchingAreas
+							.Select(area => $"product '{product}' with area '{area}'"))
+						.Distinct();
+
+					foreach (var reason in reasonsForProductsAndAreas)
 					{
-						foreach (var area in matchingAreas)
+						if (!blockReasons.Contains(reason))
 						{
-							var reason = $"product '{product}' with area '{area}'";
-							if (!blockReasons.Contains(reason))
-							{
-								blockReasons.Add(reason);
-							}
+							blockReasons.Add(reason);
 						}
 					}
 				}
