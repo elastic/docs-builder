@@ -14,6 +14,7 @@ import {
     EuiLink,
     EuiIcon,
     EuiText,
+    EuiHorizontalRule,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
 import { useRef, useState } from 'react'
@@ -75,53 +76,68 @@ export const NavigationSearch = () => {
     useGlobalKeyboardShortcut('k', () => inputRef.current?.focus())
 
     return (
-        <EuiInputPopover
-            isOpen={isPopoverOpen && hasContent}
-            closePopover={() => setIsPopoverOpen(false)}
-            ownFocus={false}
-            disableFocusTrap={true}
-            panelMinWidth={640}
-            panelPaddingSize="none"
-            offset={12}
-            panelProps={{
-                css: css`
-                    max-width: 640px;
-                    border-radius: ${euiTheme.size.s};
-                    overflow: hidden;
-                `,
-                onMouseDown: (e: React.MouseEvent) => {
-                    // Prevent input blur when clicking anywhere inside the popover panel
-                    e.preventDefault()
-                },
-            }}
-            input={
-                <SearchInput
-                    inputRef={inputRef}
-                    value={searchTerm}
-                    onChange={handleChange}
-                    onFocus={() => {
-                        // Solo abrir el popover si hay contenido Y el usuario está interactuando
-                        if (hasContent) {
-                            setIsPopoverOpen(true)
-                        }
-                    }}
-                    onBlur={handleBlur}
-                    onKeyDown={handleKeyDown}
-                    disabled={isSearchCooldownActive}
-                    isLoading={isSearching}
-                />
-            }
+        <div
+            css={css`
+                padding-top: ${euiTheme.size.base};
+                padding-right: ${euiTheme.size.base};
+            `}
         >
-            {hasContent && (
-                <div ref={popoverContentRef}>
-                    <SearchDropdownContent
-                        itemRefs={itemRefs}
-                        isKeyboardNavigating={isKeyboardNavigating}
-                        onMouseMove={handleMouseMove}
-                    />
-                </div>
-            )}
-        </EuiInputPopover>
+            <EuiInputPopover
+                isOpen={isPopoverOpen && hasContent}
+                closePopover={() => setIsPopoverOpen(false)}
+                ownFocus={false}
+                disableFocusTrap={true}
+                panelMinWidth={640}
+                panelPaddingSize="none"
+                offset={12}
+                panelProps={{
+                    css: css`
+                        max-width: 640px;
+                        border-radius: ${euiTheme.size.s};
+                        overflow: hidden;
+                    `,
+                    onMouseDown: (e: React.MouseEvent) => {
+                        // Prevent input blur when clicking anywhere inside the popover panel
+                        e.preventDefault()
+                    },
+                }}
+                input={
+                    <>
+                        <SearchInput
+                            inputRef={inputRef}
+                            value={searchTerm}
+                            onChange={handleChange}
+                            onFocus={() => {
+                                // Solo abrir el popover si hay contenido Y el usuario está interactuando
+                                if (hasContent) {
+                                    setIsPopoverOpen(true)
+                                }
+                            }}
+                            onBlur={handleBlur}
+                            onKeyDown={handleKeyDown}
+                            disabled={isSearchCooldownActive}
+                            isLoading={isSearching}
+                        />
+                    </>
+                }
+            >
+                {hasContent && (
+                    <div ref={popoverContentRef}>
+                        <SearchDropdownContent
+                            itemRefs={itemRefs}
+                            isKeyboardNavigating={isKeyboardNavigating}
+                            onMouseMove={handleMouseMove}
+                        />
+                    </div>
+                )}
+            </EuiInputPopover>
+            <EuiHorizontalRule
+                margin="none"
+                css={css`
+                    margin-top: ${euiTheme.size.base};
+                `}
+            />
+        </div>
     )
 }
 

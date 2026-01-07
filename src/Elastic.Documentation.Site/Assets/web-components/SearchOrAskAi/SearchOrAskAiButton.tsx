@@ -145,6 +145,7 @@ export const SearchOrAskAiButton = () => {
             {/*</EuiToolTip>*/}
 
             <NavigationSearch />
+
             {isModalOpen && (
                 <EuiPortal>
                     <EuiOverlayMask>

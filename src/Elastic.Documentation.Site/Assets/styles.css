@@ -74,7 +74,7 @@ body {
 
 @media screen and (min-width: 1200px) {
 	:root {
-		--offset-top: 72px;
+		--offset-top: 80px;
 	}
 }
 
