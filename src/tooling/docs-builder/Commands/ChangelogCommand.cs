@@ -156,23 +156,23 @@ internal sealed class ChangelogCommand(
 		}
 
 		// Validate filter options - at least one must be specified
-		var filterCount = 0;
+		var specifiedFilters = new List<string>();
 		if (all)
-			filterCount++;
+			specifiedFilters.Add("--all");
 		if (inputProducts != null && inputProducts.Count > 0)
-			filterCount++;
+			specifiedFilters.Add("--input-products");
 		if (allPrs.Count > 0)
-			filterCount++;
+			specifiedFilters.Add("--prs");
 
-		if (filterCount == 0)
+		if (specifiedFilters.Count == 0)
 		{
 			collector.EmitError(string.Empty, "At least one filter option must be specified: --all, --input-products, or --prs");
 			return 1;
 		}
 
-		if (filterCount > 1)
+		if (specifiedFilters.Count > 1)
 		{
-			collector.EmitError(string.Empty, "Only one filter option can be specified at a time: --all, --input-products, or --prs");
+			collector.EmitError(string.Empty, $"Multiple filter options cannot be specified together. You specified: {string.Join(", ", specifiedFilters)}. Please use only one filter option: --all, --input-products, or --prs");
 			return 1;
 		}
 
