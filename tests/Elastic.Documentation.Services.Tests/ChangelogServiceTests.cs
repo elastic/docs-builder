@@ -3603,6 +3603,97 @@ public class ChangelogServiceTests : IDisposable
 	}
 
 	[Fact]
+	public async Task RenderChangelogs_WithCustomConfigPath_UsesSpecifiedConfigFile()
+	{
+		// Arrange
+		var service = new ChangelogService(_loggerFactory, _configurationContext, null);
+		var fileSystem = new FileSystem();
+		var changelogDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		fileSystem.Directory.CreateDirectory(changelogDir);
+
+		// Create changelog that should be blocked (elasticsearch + search area)
+		var changelog1 = """
+			title: Blocked feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			areas:
+			  - search
+			pr: https://github.com/elastic/elasticsearch/pull/100
+			description: This feature should be blocked
+			""";
+
+		var changelogFile1 = fileSystem.Path.Combine(changelogDir, "1755268130-blocked.yaml");
+		await fileSystem.File.WriteAllTextAsync(changelogFile1, changelog1, TestContext.Current.CancellationToken);
+
+		// Create config file in a custom location (not in docs/ subdirectory)
+		var customConfigDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		fileSystem.Directory.CreateDirectory(customConfigDir);
+		var customConfigPath = fileSystem.Path.Combine(customConfigDir, "custom-changelog.yml");
+		var configContent = """
+			available_types:
+			  - feature
+			available_subtypes: []
+			available_lifecycles:
+			  - ga
+			render_blockers:
+			  elasticsearch:
+			    areas:
+			      - search
+			""";
+		await fileSystem.File.WriteAllTextAsync(customConfigPath, configContent, TestContext.Current.CancellationToken);
+
+		// Create bundle file
+		var bundleDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		fileSystem.Directory.CreateDirectory(bundleDir);
+
+		var bundleFile = fileSystem.Path.Combine(bundleDir, "bundle.yaml");
+		var bundleContent = $"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			entries:
+			  - file:
+			      name: 1755268130-blocked.yaml
+			      checksum: {ComputeSha1(changelog1)}
+			""";
+		await fileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+
+		// Don't change directory - use custom config path via Config property
+		var outputDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+
+		var input = new ChangelogRenderInput
+		{
+			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
+			Output = outputDir,
+			Title = "9.2.0",
+			Config = customConfigPath
+		};
+
+		// Act
+		var result = await service.RenderChangelogs(_collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		_collector.Errors.Should().Be(0);
+		_collector.Warnings.Should().BeGreaterThan(0);
+		_collector.Diagnostics.Should().Contain(d =>
+			d.Severity == Severity.Warning &&
+			d.Message.Contains("Blocked feature") &&
+			d.Message.Contains("render_blockers") &&
+			d.Message.Contains("product 'elasticsearch'") &&
+			d.Message.Contains("area 'search'"));
+
+		var indexFile = fileSystem.Path.Combine(outputDir, "9.2.0", "index.md");
+		fileSystem.File.Exists(indexFile).Should().BeTrue();
+
+		var indexContent = await fileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
+		// Blocked entry should be commented out with % prefix
+		indexContent.Should().Contain("% * Blocked feature");
+	}
+
+	[Fact]
 	public async Task LoadChangelogConfiguration_WithoutAvailableTypes_UsesDefaults()
 	{
 		// Arrange

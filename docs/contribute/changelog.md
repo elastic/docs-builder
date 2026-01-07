@@ -100,6 +100,9 @@ Refer to [changelog.yml.example](https://github.com/elastic/docs-builder/blob/ma
 You can optionally add `render_blockers` in your changelog configuration to block specific changelog entries from being rendered in markdown output files.
 When you run the `docs-builder changelog render` command, changelog entries that match the specified products and areas/types will be commented out in the markdown output.
 
+By default, the `docs-builder changelog render` command checks the following path: `docs/changelog.yml`.
+You can specify a different path with the `--config` command option.
+
 The `render_blockers` configuration uses a dictionary format where:
 
 - The key can be a single product ID or comma-separated product IDs (e.g., `"elasticsearch, cloud-serverless"`)
@@ -303,6 +306,7 @@ Options:
   --subsections                  Optional: Group entries by area/component in subsections. Defaults to false
   --hide-private-links           Optional: Hide private links by commenting them out in the markdown output. Defaults to false
   --hide-features <string[]?>    Filter by feature IDs (comma-separated), or a path to a newline-delimited file containing feature IDs. Can be specified multiple times. Entries with matching feature-id values will be commented out in the markdown output. [Default: null]
+  --config <string?>             Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml' [Default: null]
 ```
 
 Before you can use this command you must create changelog files and collect them into bundles.

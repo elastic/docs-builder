@@ -15,5 +15,6 @@ public class ChangelogRenderInput
 	public bool Subsections { get; set; }
 	public bool HidePrivateLinks { get; set; }
 	public string[]? HideFeatures { get; set; }
+	public string? Config { get; set; }
 }
 

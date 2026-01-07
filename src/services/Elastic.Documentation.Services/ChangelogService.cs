@@ -1620,7 +1620,7 @@ public partial class ChangelogService(
 			var titleSlug = TitleToSlug(title);
 
 			// Load changelog configuration to check for render_blockers
-			var config = await LoadChangelogConfiguration(collector, null, ctx);
+			var config = await LoadChangelogConfiguration(collector, input.Config, ctx);
 			if (config == null)
 			{
 				collector.EmitError(string.Empty, "Failed to load changelog configuration");
