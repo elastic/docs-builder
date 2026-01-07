@@ -1788,14 +1788,11 @@ public partial class ChangelogService(
 			var availableTypes = config.AvailableTypes ?? ChangelogConfiguration.Default.AvailableTypes;
 			var availableTypesSet = new HashSet<string>(availableTypes, StringComparer.OrdinalIgnoreCase);
 
-			foreach (var entryType in entriesByType.Keys)
+			foreach (var entryType in entriesByType.Keys.Where(t => availableTypesSet.Contains(t) && !handledTypes.Contains(t)))
 			{
 				// Only warn if the type is valid according to config but not handled in rendering
-				if (availableTypesSet.Contains(entryType) && !handledTypes.Contains(entryType))
-				{
-					var entryCount = entriesByType[entryType].Count;
-					collector.EmitWarning(string.Empty, $"Changelog type '{entryType}' is valid according to configuration but is not handled in rendering output. {entryCount} entry/entries of this type will not be included in the generated markdown files.");
-				}
+				var entryCount = entriesByType[entryType].Count;
+				collector.EmitWarning(string.Empty, $"Changelog type '{entryType}' is valid according to configuration but is not handled in rendering output. {entryCount} entry/entries of this type will not be included in the generated markdown files.");
 			}
 
 			// Create mapping from entries to their bundle product IDs for render_blockers checking
