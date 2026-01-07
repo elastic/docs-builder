@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System;
+
 namespace Elastic.Documentation.Services.Changelog;
 
 /// <summary>
@@ -65,7 +67,9 @@ public class ChangelogConfiguration
 	/// </summary>
 	public Dictionary<string, RenderBlockersEntry>? RenderBlockers { get; set; }
 
-	public static ChangelogConfiguration Default => new();
+	private static readonly Lazy<ChangelogConfiguration> DefaultLazy = new(() => new ChangelogConfiguration());
+
+	public static ChangelogConfiguration Default => DefaultLazy.Value;
 }
 
 /// <summary>

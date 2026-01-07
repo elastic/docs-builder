@@ -1785,7 +1785,8 @@ public partial class ChangelogService(
 				ChangelogEntryTypes.Other
 			};
 
-			var availableTypes = config.AvailableTypes ?? ChangelogConfiguration.Default.AvailableTypes;
+			// config is never null at this point (checked above), and AvailableTypes is initialized in the class
+			var availableTypes = config.AvailableTypes;
 			var availableTypesSet = new HashSet<string>(availableTypes, StringComparer.OrdinalIgnoreCase);
 
 			foreach (var entryType in entriesByType.Keys.Where(t => availableTypesSet.Contains(t) && !handledTypes.Contains(t)))
