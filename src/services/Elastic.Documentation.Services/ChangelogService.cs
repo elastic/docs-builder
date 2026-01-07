@@ -2363,18 +2363,16 @@ public partial class ChangelogService(
 				if (matchingTypes.Count > 0)
 				{
 					isBlocked = true;
-					foreach (var product in matchingProducts)
-					{
-						var reasonsForProduct = matchingTypes
-							.Select(type => $"product '{product}' with type '{type}'")
-							.Distinct();
+					var reasonsForProducts = matchingProducts
+						.SelectMany(product => matchingTypes
+							.Select(type => $"product '{product}' with type '{type}'"))
+						.Distinct();
 
-						foreach (var reason in reasonsForProduct)
+					foreach (var reason in reasonsForProducts)
+					{
+						if (!blockReasons.Contains(reason))
 						{
-							if (!blockReasons.Contains(reason))
-							{
-								blockReasons.Add(reason);
-							}
+							blockReasons.Add(reason);
 						}
 					}
 				}
