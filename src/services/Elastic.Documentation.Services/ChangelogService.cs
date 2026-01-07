@@ -2368,12 +2368,9 @@ public partial class ChangelogService(
 							.Select(type => $"product '{product}' with type '{type}'"))
 						.Distinct();
 
-					foreach (var reason in reasonsForProducts)
+					foreach (var reason in reasonsForProducts.Where(reason => !blockReasons.Contains(reason)))
 					{
-						if (!blockReasons.Contains(reason))
-						{
-							blockReasons.Add(reason);
-						}
+						blockReasons.Add(reason);
 					}
 				}
 			}
