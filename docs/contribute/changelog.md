@@ -85,10 +85,55 @@ If a configuration file exists, the command validates all its values before gene
 - If the configuration file contains `lifecycle`, `product`, `subtype`, or `type` values that don't match the values in `products.yml` and `ChangelogConfiguration.cs`, validation fails. The changelog file is not created.
 - If the configuration file contains `areas` values and they don't match what you specify in the `--areas` command option, validation fails. The changelog file is not created.
 
+The `available_types`, `available_subtypes`, and `available_lifecycles` fields are optional in the configuration file.
+If not specified, all default values from `ChangelogConfiguration.cs` are used.
+
 ### GitHub label mappings
 
 You can optionally add `label_to_type` and `label_to_areas` mappings in your changelog configuration.
 When you run the command with the `--pr` option, it can use these mappings to fill in the `type` and `areas` in your changelog based on your pull request labels.
+
+Refer to [changelog.yml.example](https://github.com/elastic/docs-builder/blob/main/config/changelog.yml.example).
+
+### Render blockers [render-blockers]
+
+You can optionally add `render_blockers` in your changelog configuration to block specific changelog entries from being rendered in markdown output files.
+When you run the `docs-builder changelog render` command, changelog entries that match the specified products and areas/types will be commented out in the markdown output.
+
+By default, the `docs-builder changelog render` command checks the following path: `docs/changelog.yml`.
+You can specify a different path with the `--config` command option.
+
+The `render_blockers` configuration uses a dictionary format where:
+
+- The key can be a single product ID or comma-separated product IDs (e.g., `"elasticsearch, cloud-serverless"`)
+- The value contains `areas` and/or `types` that should be blocked for those products
+
+An entry is blocked if any product in the changelog entry matches any product key in `render_blockers` AND (any area matches OR any type matches).
+If a changelog entry has multiple products, all matching products in `render_blockers` are checked.
+
+The `types` values in `render_blockers` must exist in the `available_types` list (or in the default types if `available_types` is not specified).
+
+Example configuration:
+
+```yaml
+render_blockers:
+  "cloud-hosted, cloud-serverless":
+    areas: # List of area values that should be blocked (commented out) during render
+      - Autoscaling
+      - Watcher
+    types: # List of type values that should be blocked (commented out) during render
+      - docs
+  elasticsearch: # Another single product case
+    areas:
+      - Security
+```
+
+When rendering, entries with:
+
+- Product `cloud-hosted` or `cloud-serverless` AND (area `Autoscaling` or `Watcher` OR type `docs`) will be commented out
+- Product `elasticsearch` AND area `Security` will be commented out
+
+The command will emit warnings indicating which changelog entries were commented out and why.
 
 Refer to [changelog.yml.example](https://github.com/elastic/docs-builder/blob/main/config/changelog.yml.example).
 
@@ -261,6 +306,7 @@ Options:
   --subsections                  Optional: Group entries by area/component in subsections. Defaults to false
   --hide-private-links           Optional: Hide private links by commenting them out in the markdown output. Defaults to false
   --hide-features <string[]?>    Filter by feature IDs (comma-separated), or a path to a newline-delimited file containing feature IDs. Can be specified multiple times. Entries with matching feature-id values will be commented out in the markdown output. [Default: null]
+  --config <string?>             Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml' [Default: null]
 ```
 
 Before you can use this command you must create changelog files and collect them into bundles.

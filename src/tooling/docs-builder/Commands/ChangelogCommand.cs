@@ -193,6 +193,7 @@ internal sealed class ChangelogCommand(
 		bool subsections = false,
 		bool hidePrivateLinks = false,
 		string[]? hideFeatures = null,
+		string? config = null,
 		Cancel ctx = default
 	)
 	{
@@ -229,7 +230,8 @@ internal sealed class ChangelogCommand(
 			Title = title,
 			Subsections = subsections,
 			HidePrivateLinks = hidePrivateLinks,
-			HideFeatures = allFeatureIds.Count > 0 ? allFeatureIds.ToArray() : null
+			HideFeatures = allFeatureIds.Count > 0 ? allFeatureIds.ToArray() : null,
+			Config = config
 		};
 
 		serviceInvoker.AddCommand(service, renderInput,
