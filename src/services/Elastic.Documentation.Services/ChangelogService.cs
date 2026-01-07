@@ -1983,17 +1983,21 @@ public partial class ChangelogService(
 
 		if (breakingChanges.Count > 0)
 		{
-			var groupedByArea = breakingChanges.GroupBy(e => GetComponent(e)).ToList();
-			foreach (var areaGroup in groupedByArea)
+			// Group by subtype if subsections is enabled, otherwise group by area
+			var groupedEntries = subsections
+				? breakingChanges.GroupBy(e => string.IsNullOrWhiteSpace(e.Subtype) ? string.Empty : e.Subtype).ToList()
+				: breakingChanges.GroupBy(e => GetComponent(e)).ToList();
+
+			foreach (var group in groupedEntries)
 			{
-				if (subsections && !string.IsNullOrWhiteSpace(areaGroup.Key))
+				if (subsections && !string.IsNullOrWhiteSpace(group.Key))
 				{
-					var header = FormatAreaHeader(areaGroup.Key);
+					var header = FormatSubtypeHeader(group.Key);
 					sb.AppendLine();
 					sb.AppendLine(CultureInfo.InvariantCulture, $"**{header}**");
 				}
 
-				foreach (var entry in areaGroup)
+				foreach (var entry in group)
 				{
 					var bundleProductIds = entryToBundleProducts.GetValueOrDefault(entry, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
 					var shouldHide = (!string.IsNullOrWhiteSpace(entry.FeatureId) && featureIdsToHide.Contains(entry.FeatureId)) ||
@@ -2604,6 +2608,18 @@ public partial class ChangelogService(
 		var result = area.Length < 2
 			? char.ToUpperInvariant(area[0]).ToString()
 			: char.ToUpperInvariant(area[0]) + area[1..];
+		return result.Replace("-", " ");
+	}
+
+	private static string FormatSubtypeHeader(string subtype)
+	{
+		// Capitalize first letter and replace hyphens with spaces
+		if (string.IsNullOrWhiteSpace(subtype))
+			return string.Empty;
+
+		var result = subtype.Length < 2
+			? char.ToUpperInvariant(subtype[0]).ToString()
+			: char.ToUpperInvariant(subtype[0]) + subtype[1..];
 		return result.Replace("-", " ");
 	}
 

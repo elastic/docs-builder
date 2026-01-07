@@ -181,7 +181,7 @@ internal sealed class ChangelogCommand(
 	/// <param name="input">Required: Bundle input(s) in format "bundle-file-path, changelog-file-path, repo". Can be specified multiple times. Only bundle-file-path is required.</param>
 	/// <param name="output">Optional: Output directory for rendered markdown files. Defaults to current directory</param>
 	/// <param name="title">Optional: Title to use for section headers in output markdown files. Defaults to version from first bundle</param>
-	/// <param name="subsections">Optional: Group entries by area/component in subsections. Defaults to false</param>
+	/// <param name="subsections">Optional: Group entries by area/component in subsections. For breaking changes with a subtype, groups by subtype instead of area. Defaults to false</param>
 	/// <param name="hidePrivateLinks">Optional: Hide private links by commenting them out in the markdown output. Defaults to false</param>
 	/// <param name="hideFeatures">Filter by feature IDs (comma-separated), or a path to a newline-delimited file containing feature IDs. Can be specified multiple times. Entries with matching feature-id values will be commented out in the markdown output.</param>
 	/// <param name="ctx"></param>
