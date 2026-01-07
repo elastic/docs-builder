@@ -15,12 +15,14 @@ import {
     EuiIcon,
     EuiText,
     EuiHorizontalRule,
+    useIsWithinMaxBreakpoint,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
 import { useRef, useState } from 'react'
 
 export const NavigationSearch = () => {
     const { euiTheme } = useEuiTheme()
+    const isMobile = useIsWithinMaxBreakpoint('s')
     const [isPopoverOpen, setIsPopoverOpen] = useState(false)
     const popoverContentRef = useRef<HTMLDivElement>(null)
     const searchTerm = useSearchTerm()
@@ -87,14 +89,12 @@ export const NavigationSearch = () => {
                 closePopover={() => setIsPopoverOpen(false)}
                 ownFocus={false}
                 disableFocusTrap={true}
-                panelMinWidth={640}
+                panelMinWidth={isMobile ? undefined : 640}
                 panelPaddingSize="none"
                 offset={12}
                 panelProps={{
                     css: css`
-                        max-width: 640px;
                         border-radius: ${euiTheme.size.s};
-                        overflow: hidden;
                     `,
                     onMouseDown: (e: React.MouseEvent) => {
                         // Prevent input blur when clicking anywhere inside the popover panel
@@ -161,9 +161,6 @@ const SearchDropdownContent = ({
     isKeyboardNavigating,
     onMouseMove,
 }: SearchDropdownContentProps) => {
-    const { euiTheme } = useEuiTheme()
-    const { fontSize: sFontsize, lineHeight: sLineHeight } = useEuiFontSize('s')
-
     return (
         <>
             <SearchResultsList
@@ -171,59 +168,71 @@ const SearchDropdownContent = ({
                 isKeyboardNavigating={isKeyboardNavigating}
                 onMouseMove={onMouseMove}
             />
+            <SearchDropdownFooter />
+        </>
+    )
+}
+
+const SearchDropdownFooter = () => {
+    const { euiTheme } = useEuiTheme()
+    const { fontSize: sFontsize, lineHeight: sLineHeight } = useEuiFontSize('s')
+    const isMobile = useIsWithinMaxBreakpoint('s')
+
+    return (
+        <div
+            css={css`
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                min-height: 40px;
+                box-sizing: content-box;
+                border-top: 1px solid ${euiTheme.colors.borderBaseSubdued};
+                background-color: ${euiTheme.colors.backgroundBasePlain};
+                border-bottom-right-radius: ${euiTheme.size.s};
+                border-bottom-left-radius: ${euiTheme.size.s};
+                padding-inline: ${euiTheme.size.base};
+                padding-block: ${euiTheme.size.xs};
+            `}
+        >
             <div
                 css={css`
                     display: flex;
                     align-items: center;
-                    justify-content: space-between;
-                    min-height: 40px;
-                    box-sizing: content-box;
-                    border-top: 1px solid ${euiTheme.colors.borderBaseSubdued};
-                    background-color: ${euiTheme.colors.backgroundBasePlain};
-                    border-bottom-right-radius: ${euiTheme.size.s};
-                    border-bottom-left-radius: ${euiTheme.size.s};
-                    padding-inline: ${euiTheme.size.base};
-                    padding-block: ${euiTheme.size.xs};
+                    gap: ${euiTheme.size.s};
                 `}
             >
-                <div
+                <EuiBetaBadge
+                    color="accent"
+                    label="ALPHA"
+                    size="s"
+                    anchorProps={{
+                        css: css`
+                            display: inline-flex;
+                            align-items: center;
+                        `,
+                    }}
+                />
+                <span
                     css={css`
-                        display: flex;
-                        align-items: center;
-                        gap: ${euiTheme.size.s};
+                        font-size: ${euiTheme.size.m};
+                        color: ${euiTheme.colors.textDisabled};
                     `}
                 >
-                    <EuiBetaBadge
-                        color="accent"
-                        label="ALPHA"
-                        size="s"
-                        anchorProps={{
-                            css: css`
-                                display: inline-flex;
-                                align-items: center;
-                            `,
-                        }}
-                    />
-                    <span
-                        css={css`
-                            font-size: ${euiTheme.size.m};
-                            color: ${euiTheme.colors.textDisabled};
-                        `}
-                    >
-                        ·
-                    </span>
-                    <EuiLink
-                        href={FEEDBACK_URL}
-                        target="_blank"
-                        external
-                        css={css`
-                            font-size: ${sFontsize};
-                            line-height: ${sLineHeight};
-                        `}
-                    >
-                        Give feedback
-                    </EuiLink>
-                </div>
+                    ·
+                </span>
+                <EuiLink
+                    href={FEEDBACK_URL}
+                    target="_blank"
+                    external
+                    css={css`
+                        font-size: ${sFontsize};
+                        line-height: ${sLineHeight};
+                    `}
+                >
+                    Give feedback
+                </EuiLink>
+            </div>
+            {!isMobile && (
                 <div
                     css={css`
                         display: flex;
@@ -239,8 +248,8 @@ const SearchDropdownContent = ({
                         />
                     ))}
                 </div>
-            </div>
-        </>
+            )}
+        </div>
     )
 }
 

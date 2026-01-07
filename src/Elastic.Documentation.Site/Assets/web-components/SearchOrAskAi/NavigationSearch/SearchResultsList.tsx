@@ -7,6 +7,7 @@ import {
     EuiLoadingSpinner,
     useEuiTheme,
     useEuiOverflowScroll,
+    useIsWithinMaxBreakpoint,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
 import { forwardRef, useMemo, MutableRefObject } from 'react'
@@ -117,14 +118,12 @@ const SearchResultRow = forwardRef<HTMLAnchorElement, SearchResultRowProps>(
         ref
     ) => {
         const { euiTheme } = useEuiTheme()
+        const isMobile = useIsWithinMaxBreakpoint('s')
 
         const breadcrumbItems = useMemo(() => {
             const typePrefix = result.type === 'api' ? 'API' : 'Docs'
             return [typePrefix, ...result.parents.slice(1).map((p) => p.title)]
         }, [result.type, result.parents])
-
-        // Show "Jump to" if element is selected
-        const shouldShowJumpTo = isSelected
 
         return (
             <a
@@ -168,6 +167,10 @@ const SearchResultRow = forwardRef<HTMLAnchorElement, SearchResultRowProps>(
                                 text-decoration: underline;
                             }
                         }
+
+                        .jump-to-indicator {
+                            visibility: visible;
+                        }
                     }
 
                     &[data-selected='true'] {
@@ -179,6 +182,10 @@ const SearchResultRow = forwardRef<HTMLAnchorElement, SearchResultRowProps>(
                                 color: ${euiTheme.colors.textParagraph};
                                 text-decoration: underline;
                             }
+                        }
+
+                        .jump-to-indicator {
+                            visibility: visible;
                         }
                     }
                 `}
@@ -196,7 +203,7 @@ const SearchResultRow = forwardRef<HTMLAnchorElement, SearchResultRowProps>(
                         <Description text={result.description} />
                     )}
                 </div>
-                <JumpToIndicator isVisible={shouldShowJumpTo} />
+                {!isMobile && <JumpToIndicator />}
             </a>
         )
     }
@@ -324,16 +331,17 @@ const Description = ({ text }: { text: string }) => {
     )
 }
 
-const JumpToIndicator = ({ isVisible }: { isVisible: boolean }) => {
+const JumpToIndicator = () => {
     const { euiTheme } = useEuiTheme()
 
     return (
         <div
+            className="jump-to-indicator"
             css={css`
                 flex-shrink: 0;
                 color: ${euiTheme.colors.textSubdued};
                 margin-left: ${euiTheme.size.xxxxl};
-                visibility: ${isVisible ? 'visible' : 'hidden'};
+                visibility: hidden;
             `}
         >
             <EuiBadge color="hollow">

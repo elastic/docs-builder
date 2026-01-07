@@ -128,12 +128,7 @@ export const SearchOrAskAiButton = () => {
     }
 
     return (
-        <div
-            css={css`
-                display: flex;
-                gap: ${euiTheme.size.base};
-            `}
-        >
+        <div>
             {/*<EuiToolTip content="Keyboard shortcut: ⌘;">*/}
             {/*    <ElasticAiAssistantButton*/}
             {/*        size="s"*/}
