@@ -2365,9 +2365,12 @@ public partial class ChangelogService(
 					isBlocked = true;
 					foreach (var product in matchingProducts)
 					{
-						foreach (var type in matchingTypes)
+						var reasonsForProduct = matchingTypes
+							.Select(type => $"product '{product}' with type '{type}'")
+							.Distinct();
+
+						foreach (var reason in reasonsForProduct)
 						{
-							var reason = $"product '{product}' with type '{type}'";
 							if (!blockReasons.Contains(reason))
 							{
 								blockReasons.Add(reason);
