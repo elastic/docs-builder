@@ -3860,6 +3860,92 @@ public class ChangelogServiceTests : IDisposable
 		}
 	}
 
+	[Fact]
+	public async Task RenderChangelogs_WithUnhandledType_EmitsWarning()
+	{
+		// Arrange
+		// This test simulates the scenario where a new type is added to ChangelogConfiguration.cs
+		// but the rendering code hasn't been updated to handle it yet.
+		// We use reflection to temporarily add "experimental-feature" to the defaults for testing.
+		var defaultConfig = ChangelogConfiguration.Default;
+		var originalTypes = defaultConfig.AvailableTypes.ToList();
+		var testType = "experimental-feature";
+
+		// Temporarily add the test type to defaults to simulate it being added to ChangelogConfiguration.cs
+		defaultConfig.AvailableTypes.Add(testType);
+
+		try
+		{
+			var service = new ChangelogService(_loggerFactory, _configurationContext, null);
+			var fileSystem = new FileSystem();
+			var changelogDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+			fileSystem.Directory.CreateDirectory(changelogDir);
+
+			// Create changelog with an unhandled type
+			var changelog1 = """
+				title: Experimental feature
+				type: experimental-feature
+				products:
+				  - product: elasticsearch
+				    target: 9.2.0
+				description: This is an experimental feature
+				""";
+
+			var changelogFile = fileSystem.Path.Combine(changelogDir, "1755268130-experimental.yaml");
+			await fileSystem.File.WriteAllTextAsync(changelogFile, changelog1, TestContext.Current.CancellationToken);
+
+			// Create bundle file
+			var bundleDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+			fileSystem.Directory.CreateDirectory(bundleDir);
+			var bundleFile = fileSystem.Path.Combine(bundleDir, "bundle.yaml");
+			var bundleContent = $"""
+				products:
+				  - product: elasticsearch
+				    target: 9.2.0
+				entries:
+				  - file:
+				      name: 1755268130-experimental.yaml
+				      checksum: {ComputeSha1(changelog1)}
+				""";
+			await fileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+
+			var outputDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+
+			var input = new ChangelogRenderInput
+			{
+				Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
+				Output = outputDir,
+				Title = "9.2.0"
+			};
+
+			// Act
+			var result = await service.RenderChangelogs(_collector, input, TestContext.Current.CancellationToken);
+
+			// Assert
+			result.Should().BeTrue();
+			_collector.Errors.Should().Be(0);
+			_collector.Warnings.Should().BeGreaterThan(0);
+			_collector.Diagnostics.Should().Contain(d =>
+				d.Severity == Severity.Warning &&
+				d.Message.Contains("experimental-feature") &&
+				d.Message.Contains("is valid according to configuration but is not handled in rendering output") &&
+				d.Message.Contains("1 entry/entries of this type will not be included"));
+
+			// Verify that the entry is not included in the output
+			var indexFile = fileSystem.Path.Combine(outputDir, "9.2.0", "index.md");
+			fileSystem.File.Exists(indexFile).Should().BeTrue();
+
+			var indexContent = await fileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
+			indexContent.Should().NotContain("Experimental feature");
+		}
+		finally
+		{
+			// Restore original types
+			defaultConfig.AvailableTypes.Clear();
+			defaultConfig.AvailableTypes.AddRange(originalTypes);
+		}
+	}
+
 	private static string ComputeSha1(string content)
 	{
 		var bytes = System.Text.Encoding.UTF8.GetBytes(content);

@@ -36,6 +36,9 @@ public partial class ChangelogService(
 		public const string BreakingChange = "breaking-change";
 		public const string Deprecation = "deprecation";
 		public const string KnownIssue = "known-issue";
+		public const string Docs = "docs";
+		public const string Regression = "regression";
+		public const string Other = "other";
 	}
 
 	public async Task<bool> CreateChangelog(
@@ -1770,6 +1773,34 @@ public partial class ChangelogService(
 				}
 			}
 
+			// Check for unhandled changelog types
+			var handledTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+			{
+				ChangelogEntryTypes.Feature,
+				ChangelogEntryTypes.Enhancement,
+				ChangelogEntryTypes.Security,
+				ChangelogEntryTypes.BugFix,
+				ChangelogEntryTypes.BreakingChange,
+				ChangelogEntryTypes.Deprecation,
+				ChangelogEntryTypes.KnownIssue,
+				ChangelogEntryTypes.Docs,
+				ChangelogEntryTypes.Regression,
+				ChangelogEntryTypes.Other
+			};
+
+			var availableTypes = config.AvailableTypes ?? ChangelogConfiguration.Default.AvailableTypes;
+			var availableTypesSet = new HashSet<string>(availableTypes, StringComparer.OrdinalIgnoreCase);
+
+			foreach (var entryType in entriesByType.Keys)
+			{
+				// Only warn if the type is valid according to config but not handled in rendering
+				if (availableTypesSet.Contains(entryType) && !handledTypes.Contains(entryType))
+				{
+					var entryCount = entriesByType[entryType].Count;
+					collector.EmitWarning(string.Empty, $"Changelog type '{entryType}' is valid according to configuration but is not handled in rendering output. {entryCount} entry/entries of this type will not be included in the generated markdown files.");
+				}
+			}
+
 			// Create mapping from entries to their bundle product IDs for render_blockers checking
 			// Use a custom comparer for reference equality since entries are objects
 			var entryToBundleProducts = new Dictionary<ChangelogData, HashSet<string>>();
@@ -1781,7 +1812,7 @@ public partial class ChangelogService(
 			// Render markdown files (use first repo found, or default)
 			var repoForRendering = allResolvedEntries.Count > 0 ? allResolvedEntries[0].repo : defaultRepo;
 
-			// Render index.md (features, enhancements, bug fixes, security)
+			// Render index.md (features, enhancements, bug fixes, security, docs, regression, other)
 			await RenderIndexMarkdown(collector, outputDir, title, titleSlug, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts, ctx);
 
 			// Render breaking-changes.md
@@ -1789,6 +1820,9 @@ public partial class ChangelogService(
 
 			// Render deprecations.md
 			await RenderDeprecationsMarkdown(collector, outputDir, title, titleSlug, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts, ctx);
+
+			// Render known-issues.md
+			await RenderKnownIssuesMarkdown(collector, outputDir, title, titleSlug, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts, ctx);
 
 			_logger.LogInformation("Rendered changelog markdown files to {OutputDir}", outputDir);
 
@@ -1837,11 +1871,9 @@ public partial class ChangelogService(
 		var enhancements = entriesByType.GetValueOrDefault(ChangelogEntryTypes.Enhancement, []);
 		var security = entriesByType.GetValueOrDefault(ChangelogEntryTypes.Security, []);
 		var bugFixes = entriesByType.GetValueOrDefault(ChangelogEntryTypes.BugFix, []);
-
-		if (features.Count == 0 && enhancements.Count == 0 && security.Count == 0 && bugFixes.Count == 0)
-		{
-			// Still create file with "no changes" message
-		}
+		var docs = entriesByType.GetValueOrDefault(ChangelogEntryTypes.Docs, []);
+		var regressions = entriesByType.GetValueOrDefault(ChangelogEntryTypes.Regression, []);
+		var other = entriesByType.GetValueOrDefault(ChangelogEntryTypes.Other, []);
 
 		var hasBreakingChanges = entriesByType.ContainsKey(ChangelogEntryTypes.BreakingChange);
 		var hasDeprecations = entriesByType.ContainsKey(ChangelogEntryTypes.Deprecation);
@@ -1850,7 +1882,7 @@ public partial class ChangelogService(
 		var otherLinks = new List<string>();
 		if (hasKnownIssues)
 		{
-			otherLinks.Add("[Known issues](/release-notes/known-issues.md)");
+			otherLinks.Add($"[Known issues](/release-notes/known-issues.md#{repo}-{titleSlug}-known-issues)");
 		}
 		if (hasBreakingChanges)
 		{
@@ -1871,7 +1903,9 @@ public partial class ChangelogService(
 			sb.AppendLine();
 		}
 
-		if (features.Count > 0 || enhancements.Count > 0 || security.Count > 0 || bugFixes.Count > 0)
+		var hasAnyEntries = features.Count > 0 || enhancements.Count > 0 || security.Count > 0 || bugFixes.Count > 0 || docs.Count > 0 || regressions.Count > 0 || other.Count > 0;
+
+		if (hasAnyEntries)
 		{
 			if (features.Count > 0 || enhancements.Count > 0)
 			{
@@ -1886,6 +1920,27 @@ public partial class ChangelogService(
 				sb.AppendLine(CultureInfo.InvariantCulture, $"### Fixes [{repo}-{titleSlug}-fixes]");
 				var combined = security.Concat(bugFixes).ToList();
 				RenderEntriesByArea(sb, combined, repo, subsections, hidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts);
+			}
+
+			if (docs.Count > 0)
+			{
+				sb.AppendLine();
+				sb.AppendLine(CultureInfo.InvariantCulture, $"### Documentation [{repo}-{titleSlug}-docs]");
+				RenderEntriesByArea(sb, docs, repo, subsections, hidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts);
+			}
+
+			if (regressions.Count > 0)
+			{
+				sb.AppendLine();
+				sb.AppendLine(CultureInfo.InvariantCulture, $"### Regressions [{repo}-{titleSlug}-regressions]");
+				RenderEntriesByArea(sb, regressions, repo, subsections, hidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts);
+			}
+
+			if (other.Count > 0)
+			{
+				sb.AppendLine();
+				sb.AppendLine(CultureInfo.InvariantCulture, $"### Other changes [{repo}-{titleSlug}-other]");
+				RenderEntriesByArea(sb, other, repo, subsections, hidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts);
 			}
 		}
 		else
@@ -1952,40 +2007,45 @@ public partial class ChangelogService(
 					sb.AppendLine(CultureInfo.InvariantCulture, $"::::{{dropdown}} {Beautify(entry.Title)}");
 					sb.AppendLine(entry.Description ?? "% Describe the functionality that changed");
 					sb.AppendLine();
-					if (hidePrivateLinks)
+					var hasPr = !string.IsNullOrWhiteSpace(entry.Pr);
+					var hasIssues = entry.Issues != null && entry.Issues.Count > 0;
+					if (hasPr || hasIssues)
 					{
-						// When hiding private links, put them on separate lines as comments
-						if (!string.IsNullOrWhiteSpace(entry.Pr))
+						if (hidePrivateLinks)
 						{
-							sb.AppendLine(FormatPrLink(entry.Pr, repo, hidePrivateLinks));
-						}
-						if (entry.Issues != null && entry.Issues.Count > 0)
-						{
-							foreach (var issue in entry.Issues)
+							// When hiding private links, put them on separate lines as comments
+							if (hasPr)
 							{
-								sb.AppendLine(FormatIssueLink(issue, repo, hidePrivateLinks));
+								sb.AppendLine(FormatPrLink(entry.Pr!, repo, hidePrivateLinks));
 							}
-						}
-						sb.AppendLine("For more information, check the pull request or issue above.");
-					}
-					else
-					{
-						sb.Append("For more information, check ");
-						if (!string.IsNullOrWhiteSpace(entry.Pr))
-						{
-							sb.Append(FormatPrLink(entry.Pr, repo, hidePrivateLinks));
-						}
-						if (entry.Issues != null && entry.Issues.Count > 0)
-						{
-							foreach (var issue in entry.Issues)
+							if (hasIssues)
 							{
-								sb.Append(' ');
-								sb.Append(FormatIssueLink(issue, repo, hidePrivateLinks));
+								foreach (var issue in entry.Issues!)
+								{
+									sb.AppendLine(FormatIssueLink(issue, repo, hidePrivateLinks));
+								}
 							}
+							sb.AppendLine("For more information, check the pull request or issue above.");
 						}
-						sb.AppendLine(".");
+						else
+						{
+							sb.Append("For more information, check ");
+							if (hasPr)
+							{
+								sb.Append(FormatPrLink(entry.Pr!, repo, hidePrivateLinks));
+							}
+							if (hasIssues)
+							{
+								foreach (var issue in entry.Issues!)
+								{
+									sb.Append(' ');
+									sb.Append(FormatIssueLink(issue, repo, hidePrivateLinks));
+								}
+							}
+							sb.AppendLine(".");
+						}
+						sb.AppendLine();
 					}
-					sb.AppendLine();
 
 					if (!string.IsNullOrWhiteSpace(entry.Impact))
 					{
@@ -2079,40 +2139,45 @@ public partial class ChangelogService(
 					sb.AppendLine(CultureInfo.InvariantCulture, $"::::{{dropdown}} {Beautify(entry.Title)}");
 					sb.AppendLine(entry.Description ?? "% Describe the functionality that was deprecated");
 					sb.AppendLine();
-					if (hidePrivateLinks)
+					var hasPr = !string.IsNullOrWhiteSpace(entry.Pr);
+					var hasIssues = entry.Issues != null && entry.Issues.Count > 0;
+					if (hasPr || hasIssues)
 					{
-						// When hiding private links, put them on separate lines as comments
-						if (!string.IsNullOrWhiteSpace(entry.Pr))
+						if (hidePrivateLinks)
 						{
-							sb.AppendLine(FormatPrLink(entry.Pr, repo, hidePrivateLinks));
-						}
-						if (entry.Issues != null && entry.Issues.Count > 0)
-						{
-							foreach (var issue in entry.Issues)
+							// When hiding private links, put them on separate lines as comments
+							if (hasPr)
 							{
-								sb.AppendLine(FormatIssueLink(issue, repo, hidePrivateLinks));
+								sb.AppendLine(FormatPrLink(entry.Pr!, repo, hidePrivateLinks));
 							}
-						}
-						sb.AppendLine("For more information, check the pull request or issue above.");
-					}
-					else
-					{
-						sb.Append("For more information, check ");
-						if (!string.IsNullOrWhiteSpace(entry.Pr))
-						{
-							sb.Append(FormatPrLink(entry.Pr, repo, hidePrivateLinks));
-						}
-						if (entry.Issues != null && entry.Issues.Count > 0)
-						{
-							foreach (var issue in entry.Issues)
+							if (hasIssues)
 							{
-								sb.Append(' ');
-								sb.Append(FormatIssueLink(issue, repo, hidePrivateLinks));
+								foreach (var issue in entry.Issues!)
+								{
+									sb.AppendLine(FormatIssueLink(issue, repo, hidePrivateLinks));
+								}
 							}
+							sb.AppendLine("For more information, check the pull request or issue above.");
 						}
-						sb.AppendLine(".");
+						else
+						{
+							sb.Append("For more information, check ");
+							if (hasPr)
+							{
+								sb.Append(FormatPrLink(entry.Pr!, repo, hidePrivateLinks));
+							}
+							if (hasIssues)
+							{
+								foreach (var issue in entry.Issues!)
+								{
+									sb.Append(' ');
+									sb.Append(FormatIssueLink(issue, repo, hidePrivateLinks));
+								}
+							}
+							sb.AppendLine(".");
+						}
+						sb.AppendLine();
 					}
-					sb.AppendLine();
 
 					if (!string.IsNullOrWhiteSpace(entry.Impact))
 					{
@@ -2155,6 +2220,138 @@ public partial class ChangelogService(
 		}
 
 		await _fileSystem.File.WriteAllTextAsync(deprecationsPath, sb.ToString(), ctx);
+	}
+
+	[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "Parameters match interface pattern")]
+	[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0058:Expression value is never used", Justification = "StringBuilder methods return builder for chaining")]
+	private async Task RenderKnownIssuesMarkdown(
+		IDiagnosticsCollector collector,
+		string outputDir,
+		string title,
+		string titleSlug,
+		string repo,
+		List<ChangelogData> entries,
+		Dictionary<string, List<ChangelogData>> entriesByType,
+		bool subsections,
+		bool hidePrivateLinks,
+		HashSet<string> featureIdsToHide,
+		Dictionary<string, RenderBlockersEntry>? renderBlockers,
+		Dictionary<ChangelogData, HashSet<string>> entryToBundleProducts,
+		Cancel ctx
+	)
+	{
+		var knownIssues = entriesByType.GetValueOrDefault(ChangelogEntryTypes.KnownIssue, []);
+
+		var sb = new StringBuilder();
+		sb.AppendLine(CultureInfo.InvariantCulture, $"## {title} [{repo}-{titleSlug}-known-issues]");
+
+		if (knownIssues.Count > 0)
+		{
+			var groupedByArea = knownIssues.GroupBy(e => GetComponent(e)).ToList();
+			foreach (var areaGroup in groupedByArea)
+			{
+				if (subsections && !string.IsNullOrWhiteSpace(areaGroup.Key))
+				{
+					var header = FormatAreaHeader(areaGroup.Key);
+					sb.AppendLine();
+					sb.AppendLine(CultureInfo.InvariantCulture, $"**{header}**");
+				}
+
+				foreach (var entry in areaGroup)
+				{
+					var bundleProductIds = entryToBundleProducts.GetValueOrDefault(entry, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+					var shouldHide = (!string.IsNullOrWhiteSpace(entry.FeatureId) && featureIdsToHide.Contains(entry.FeatureId)) ||
+						ShouldBlockEntry(entry, bundleProductIds, renderBlockers, out _);
+
+					sb.AppendLine();
+					if (shouldHide)
+					{
+						sb.AppendLine("<!--");
+					}
+					sb.AppendLine(CultureInfo.InvariantCulture, $"::::{{dropdown}} {Beautify(entry.Title)}");
+					sb.AppendLine(entry.Description ?? "% Describe the known issue");
+					sb.AppendLine();
+					var hasPr = !string.IsNullOrWhiteSpace(entry.Pr);
+					var hasIssues = entry.Issues != null && entry.Issues.Count > 0;
+					if (hasPr || hasIssues)
+					{
+						if (hidePrivateLinks)
+						{
+							// When hiding private links, put them on separate lines as comments
+							if (hasPr)
+							{
+								sb.AppendLine(FormatPrLink(entry.Pr!, repo, hidePrivateLinks));
+							}
+							if (hasIssues)
+							{
+								foreach (var issue in entry.Issues!)
+								{
+									sb.AppendLine(FormatIssueLink(issue, repo, hidePrivateLinks));
+								}
+							}
+							sb.AppendLine("For more information, check the pull request or issue above.");
+						}
+						else
+						{
+							sb.Append("For more information, check ");
+							if (hasPr)
+							{
+								sb.Append(FormatPrLink(entry.Pr!, repo, hidePrivateLinks));
+							}
+							if (hasIssues)
+							{
+								foreach (var issue in entry.Issues!)
+								{
+									sb.Append(' ');
+									sb.Append(FormatIssueLink(issue, repo, hidePrivateLinks));
+								}
+							}
+							sb.AppendLine(".");
+						}
+						sb.AppendLine();
+					}
+
+					if (!string.IsNullOrWhiteSpace(entry.Impact))
+					{
+						sb.AppendLine("**Impact**<br>" + entry.Impact);
+					}
+					else
+					{
+						sb.AppendLine("% **Impact**<br>_Add a description of the impact_");
+					}
+
+					sb.AppendLine();
+
+					if (!string.IsNullOrWhiteSpace(entry.Action))
+					{
+						sb.AppendLine("**Action**<br>" + entry.Action);
+					}
+					else
+					{
+						sb.AppendLine("% **Action**<br>_Add a description of the what action to take_");
+					}
+
+					sb.AppendLine("::::");
+					if (shouldHide)
+					{
+						sb.AppendLine("-->");
+					}
+				}
+			}
+		}
+		else
+		{
+			sb.AppendLine("_No known issues._");
+		}
+
+		var knownIssuesPath = _fileSystem.Path.Combine(outputDir, titleSlug, "known-issues.md");
+		var knownIssuesDir = _fileSystem.Path.GetDirectoryName(knownIssuesPath);
+		if (!string.IsNullOrWhiteSpace(knownIssuesDir) && !_fileSystem.Directory.Exists(knownIssuesDir))
+		{
+			_ = _fileSystem.Directory.CreateDirectory(knownIssuesDir);
+		}
+
+		await _fileSystem.File.WriteAllTextAsync(knownIssuesPath, sb.ToString(), ctx);
 	}
 
 	[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0058:Expression value is never used", Justification = "StringBuilder methods return builder for chaining")]
