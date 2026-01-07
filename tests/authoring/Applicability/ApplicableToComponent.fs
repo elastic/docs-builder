@@ -300,7 +300,7 @@ deployment:
         markdown |> convertsToHtml """
 <p class="applies applies-block">
 	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Self-managed Elastic&nbsp;deployments update. Subject to change.">
-		<span class="applicable-name">Self-Managed</span>
+		<span class="applicable-name">Self-managed</span>
 		<span class="applicable-separator"></span>
 		<span class="applicable-meta applicable-meta-ga">
 			Planned
@@ -761,7 +761,7 @@ If this functionality is unavailable or behaves differently when deployed on ECH
 		</span>
 	</span>
 	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Self-managed Elastic&nbsp;deployments update. Subject to change.">
-		<span class="applicable-name">Self-Managed</span>
+		<span class="applicable-name">Self-managed</span>
 		<span class="applicable-separator"></span>
 		<span class="applicable-meta applicable-meta-ga">
 			Planned
