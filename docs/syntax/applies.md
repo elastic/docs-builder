@@ -373,7 +373,7 @@ This section provides detailed rules for how badges are rendered based on lifecy
 
 1. **Stack** - Elastic Stack
 2. **Serverless** - Elastic Cloud Serverless offerings
-3. **Deployment** - Deployment options (ECH, ECK, ECE, Self-Managed)
+3. **Deployment** - Deployment options (ECH, ECK, ECE, Self-managed)
 4. **ProductApplicability** - Specialized tools and agents (ECCTL, Curator, EDOT, APM Agents)
 5. **Product (generic)** - Generic product applicability
 

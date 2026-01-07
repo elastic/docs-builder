@@ -23,7 +23,7 @@ public static class ApplicabilityMappings
 	public static readonly ApplicabilityDefinition Ech = new("ECH", "Elastic&nbsp;Cloud&nbsp;Hosted", VersioningSystemId.Ess);
 	public static readonly ApplicabilityDefinition Eck = new("ECK", "Elastic&nbsp;Cloud&nbsp;on&nbsp;Kubernetes", VersioningSystemId.Eck);
 	public static readonly ApplicabilityDefinition Ece = new("ECE", "Elastic&nbsp;Cloud&nbsp;Enterprise", VersioningSystemId.Ece);
-	public static readonly ApplicabilityDefinition Self = new("Self-Managed", "Self-managed Elastic&nbsp;deployments", VersioningSystemId.Self);
+	public static readonly ApplicabilityDefinition Self = new("Self-managed", "Self-managed Elastic&nbsp;deployments", VersioningSystemId.Self);
 
 	// Product Applicability
 	public static readonly ApplicabilityDefinition Ecctl = new("ECCTL", "Elastic&nbsp;Cloud&nbsp;Control", VersioningSystemId.Ecctl);
