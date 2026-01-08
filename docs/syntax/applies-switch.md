@@ -48,7 +48,7 @@ This is useful when content applies to multiple deployment types or versions sim
 
 ::::{applies-switch}
 
-:::{applies-item} { ece: ga, ess: ga }
+:::{applies-item} { ece: ga 4.0+, ess: ga }
 Content for ECE and ECH
 :::
 
@@ -64,7 +64,7 @@ Content for Serverless
 ```markdown
 ::::{applies-switch}
 
-:::{applies-item} { ece: ga, ess: ga }
+:::{applies-item} { ece: ga 4.0+, ess: ga }
 Content for ECE and ECH
 :::
 
