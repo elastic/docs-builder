@@ -29,7 +29,14 @@ import {
     useEuiTheme,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
-import { RefObject, useCallback, useEffect, useRef, useState } from 'react'
+import {
+    RefObject,
+    useCallback,
+    useEffect,
+    useLayoutEffect,
+    useRef,
+    useState,
+} from 'react'
 
 export const Chat = () => {
     const { euiTheme } = useEuiTheme()
@@ -86,7 +93,6 @@ export const Chat = () => {
 
             <ChatInputArea
                 inputRef={inputRef}
-                scrollRef={scrollRef}
                 onMetaSemicolon={handleMetaSemicolon}
                 onStateChange={setScrollAreaProps}
             />
@@ -200,6 +206,25 @@ const ChatScrollArea = ({
     const messages = useChatMessages()
     const { euiTheme } = useEuiTheme()
     const spacerHeight = useSpacerHeight(scrollRef, isStreaming, messages)
+    const lastUserMessageCountRef = useRef(0)
+
+    // Scroll to user message when a new one is added
+    useLayoutEffect(() => {
+        const userMessageCount = messages.filter(
+            (m) => m.type === 'user'
+        ).length
+        if (userMessageCount > lastUserMessageCountRef.current) {
+            // New user message added - scroll after DOM updates but before paint
+            // useLayoutEffect runs synchronously after DOM mutations, perfect for scrolling
+            requestAnimationFrame(() => {
+                if (scrollRef.current) {
+                    const scrollMargin = parseInt(euiTheme.size.l, 10)
+                    scrollUserMessageToTop(scrollRef.current, scrollMargin)
+                }
+            })
+        }
+        lastUserMessageCountRef.current = userMessageCount
+    }, [messages, scrollRef, euiTheme.size.l])
 
     const scrollableStyles = css`
         height: 100%;
@@ -228,7 +253,6 @@ const ChatScrollArea = ({
 
 interface ChatInputAreaProps {
     inputRef: RefObject<HTMLTextAreaElement>
-    scrollRef: RefObject<HTMLDivElement>
     onMetaSemicolon?: () => void
     onStateChange?: (state: {
         onAbortReady: (abort: () => void) => void
@@ -238,7 +262,6 @@ interface ChatInputAreaProps {
 
 const ChatInputArea = ({
     inputRef,
-    scrollRef,
     onMetaSemicolon,
     onStateChange,
 }: ChatInputAreaProps) => {
@@ -251,7 +274,7 @@ const ChatInputArea = ({
         handleAbortReady,
         isStreaming,
         isCooldownActive,
-    } = useChatSubmit(scrollRef)
+    } = useChatSubmit()
 
     useEffect(() => {
         onStateChange?.({
@@ -283,13 +306,12 @@ const ChatInputArea = ({
     )
 }
 
-function useChatSubmit(scrollRef: RefObject<HTMLDivElement | null>) {
+function useChatSubmit() {
     const { submitQuestion, clearNon429Errors, cancelStreaming } =
         useChatActions()
     const isCooldownActive = useIsAskAiCooldownActive()
     const isStreaming = useIsStreaming()
-    const { euiTheme } = useEuiTheme()
-    const scrollMargin = parseInt(euiTheme.size.l, 10)
+    // Note: Scrolling is now handled in ChatScrollArea via useLayoutEffect
 
     const [inputValue, setInputValue] = useState('')
     const abortRef = useRef<(() => void) | null>(null)
@@ -308,15 +330,8 @@ function useChatSubmit(scrollRef: RefObject<HTMLDivElement | null>) {
             clearNon429Errors()
             submitQuestion(trimmed)
             setInputValue('')
-
-            // Scroll to position the user message at the top of the viewport
-            setTimeout(() => {
-                if (scrollRef.current) {
-                    scrollUserMessageToTop(scrollRef.current, scrollMargin)
-                }
-            }, 100)
         },
-        [submitQuestion, isCooldownActive, clearNon429Errors, scrollRef]
+        [submitQuestion, isCooldownActive, clearNon429Errors]
     )
 
     const handleAbort = useCallback(() => {
