@@ -227,7 +227,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 						{
 							// The step was parsed without context (defaulted to h2)
 							// Adjust it to be one level deeper than the preceding heading
-							adjustedItem = item with { Level = System.Math.Min(precedingLevel.Value + 1, 6) };
+							adjustedItem = item with { Level = Math.Min(precedingLevel.Value + 1, 6) };
 						}
 						return new { TocItem = adjustedItem, i.Block.Line };
 					});
