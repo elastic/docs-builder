@@ -1121,7 +1121,15 @@ public partial class ChangelogService(
 
 			foreach (var productGroup in productsByProductId)
 			{
-				var targets = productGroup.Select(p => string.IsNullOrWhiteSpace(p.Target) ? "(no target)" : p.Target).ToList();
+				var targets = productGroup.Select(p =>
+				{
+					var target = string.IsNullOrWhiteSpace(p.Target) ? "(no target)" : p.Target;
+					if (!string.IsNullOrWhiteSpace(p.Lifecycle))
+					{
+						target = $"{target} {p.Lifecycle}";
+					}
+					return target;
+				}).ToList();
 				collector.EmitWarning(string.Empty, $"Product '{productGroup.Key}' has multiple targets in bundle: {string.Join(", ", targets)}");
 			}
 

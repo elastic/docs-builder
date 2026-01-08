@@ -2006,6 +2006,73 @@ public class ChangelogServiceTests : IDisposable
 	}
 
 	[Fact]
+	public async Task BundleChangelogs_WithMultipleTargets_WarningIncludesLifecycle()
+	{
+		// Arrange - Test that warning message includes lifecycle when multiple products
+		// have the same target but different lifecycles
+		var service = new ChangelogService(_loggerFactory, _configurationContext, null);
+		var fileSystem = new FileSystem();
+		var changelogDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		fileSystem.Directory.CreateDirectory(changelogDir);
+
+		// Create test changelog files with same target but different lifecycles
+		var changelog1 = """
+			title: Elasticsearch GA feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			pr: https://github.com/elastic/elasticsearch/pull/100
+			""";
+		var changelog2 = """
+			title: Elasticsearch Beta feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: beta
+			pr: https://github.com/elastic/elasticsearch/pull/200
+			""";
+		var changelog3 = """
+			title: Elasticsearch feature without lifecycle
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			pr: https://github.com/elastic/elasticsearch/pull/300
+			""";
+
+		var file1 = fileSystem.Path.Combine(changelogDir, "1755268130-elasticsearch-ga.yaml");
+		var file2 = fileSystem.Path.Combine(changelogDir, "1755268140-elasticsearch-beta.yaml");
+		var file3 = fileSystem.Path.Combine(changelogDir, "1755268150-elasticsearch-no-lifecycle.yaml");
+		await fileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+		await fileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
+		await fileSystem.File.WriteAllTextAsync(file3, changelog3, TestContext.Current.CancellationToken);
+
+		var input = new ChangelogBundleInput
+		{
+			Directory = changelogDir,
+			All = true,
+			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
+		};
+
+		// Act
+		var result = await service.BundleChangelogs(_collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		_collector.Errors.Should().Be(0);
+		_collector.Warnings.Should().BeGreaterThan(0);
+		// Verify warning message includes lifecycle values
+		_collector.Diagnostics.Should().Contain(d => 
+			d.Message.Contains("Product 'elasticsearch' has multiple targets in bundle") &&
+			d.Message.Contains("9.2.0") &&
+			d.Message.Contains("9.2.0 beta") &&
+			d.Message.Contains("9.2.0 ga"));
+	}
+
+	[Fact]
 	public async Task BundleChangelogs_WithResolve_CopiesChangelogContents()
 	{
 		// Arrange
