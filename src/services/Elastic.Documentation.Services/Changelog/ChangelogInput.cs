@@ -25,5 +25,6 @@ public class ChangelogInput
 	public bool? Highlight { get; set; }
 	public string? Output { get; set; }
 	public string? Config { get; set; }
+	public bool UsePrNumber { get; set; }
 }
 
