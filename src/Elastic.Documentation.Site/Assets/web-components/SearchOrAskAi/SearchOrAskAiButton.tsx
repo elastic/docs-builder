@@ -1,7 +1,7 @@
 import '../../eui-icons-cache'
 import { NavigationSearch } from './NavigationSearch'
 import {
-    ModalMode,
+    // ModalMode,
     useModalActions,
     useModalIsOpen,
     useModalMode,
@@ -29,7 +29,11 @@ export const SearchOrAskAiButton = () => {
     const { euiTheme } = useEuiTheme()
     const isModalOpen = useModalIsOpen()
     const modalMode = useModalMode()
-    const { openModal, closeModal, setModalMode } = useModalActions()
+    const {
+        // openModal,
+        closeModal,
+        // setModalMode
+    } = useModalActions()
 
     const { data: isApiAvailable } = useQuery({
         queryKey: ['api-health'],
@@ -58,14 +62,14 @@ export const SearchOrAskAiButton = () => {
         padding: 2rem;
     `
 
-    const openAndSetModalMode = (mode: ModalMode) => {
-        setModalMode(mode)
-        if (!isModalOpen) {
-            openModal()
-        }
-    }
+    // const openAndSetModalMode = (mode: ModalMode) => {
+    //     setModalMode(mode)
+    //     if (!isModalOpen) {
+    //         openModal()
+    //     }
+    // }
 
-    const openAskAiModal = () => openAndSetModalMode('askAi')
+    // const openAskAiModal = () => openAndSetModalMode('askAi')
     // const openSearchModal = () => openAndSetModalMode('search')
 
     // Prevent layout jump when hiding the scrollbar by compensating its width
@@ -81,14 +85,14 @@ export const SearchOrAskAiButton = () => {
             //     openSearchModal()
             // }
 
-            if (
-                (event.metaKey || event.ctrlKey) &&
-                event.code === 'Semicolon'
-            ) {
-                event.preventDefault()
-                openAskAiModal()
-                // Input focuses itself via its own Cmd+; listener
-            }
+            // if (
+            //     (event.metaKey || event.ctrlKey) &&
+            //     event.code === 'Semicolon'
+            // ) {
+            //     event.preventDefault()
+            //     openAskAiModal()
+            //     // Input focuses itself via its own Cmd+; listener
+            // }
         }
         window.addEventListener('keydown', handleKeydown)
         return () => {
