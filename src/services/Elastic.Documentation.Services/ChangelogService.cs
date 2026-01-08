@@ -1050,18 +1050,29 @@ public partial class ChangelogService(
 					})
 					.ToList();
 			}
-			// If --input-products was specified (and --output-products was not), use those values
-			else if (input.InputProducts is { Count: > 0 })
+			// If --input-products was specified (and --output-products was not), extract from matched changelog entries
+			// This ensures the products array reflects the actual values from the changelogs, not the filter
+			else if (input.InputProducts is { Count: > 0 } && changelogEntries.Count > 0)
 			{
-				bundledData.Products = input.InputProducts
-					.OrderBy(p => p.Product)
-					.ThenBy(p => p.Target ?? string.Empty)
-					.ThenBy(p => p.Lifecycle ?? string.Empty)
-					.Select(p => new BundledProduct
+				var productVersions = new HashSet<(string product, string version, string? lifecycle)>();
+				foreach (var (data, _, _, _) in changelogEntries)
+				{
+					foreach (var product in data.Products)
 					{
-						Product = p.Product,
-						Target = p.Target == "*" ? null : p.Target,
-						Lifecycle = p.Lifecycle == "*" ? null : p.Lifecycle
+						var version = product.Target ?? string.Empty;
+						_ = productVersions.Add((product.Product, version, product.Lifecycle));
+					}
+				}
+
+				bundledData.Products = productVersions
+					.OrderBy(pv => pv.product)
+					.ThenBy(pv => pv.version)
+					.ThenBy(pv => pv.lifecycle ?? string.Empty)
+					.Select(pv => new BundledProduct
+					{
+						Product = pv.product,
+						Target = string.IsNullOrWhiteSpace(pv.version) ? null : pv.version,
+						Lifecycle = pv.lifecycle
 					})
 					.ToList();
 			}

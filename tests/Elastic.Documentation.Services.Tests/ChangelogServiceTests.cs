@@ -1840,13 +1840,12 @@ public class ChangelogServiceTests : IDisposable
 		_collector.Errors.Should().Be(0);
 
 		var bundleContent = await fileSystem.File.ReadAllTextAsync(input.Output!, TestContext.Current.CancellationToken);
-		// Verify lifecycle is included in products array
-		var deserializer = new DeserializerBuilder().Build();
-		var bundle = deserializer.Deserialize<BundledChangelogData>(bundleContent);
-		
-		bundle.Products.Should().HaveCount(2);
-		bundle.Products.Should().Contain(p => p.Product == "elasticsearch" && p.Target == "9.2.0" && p.Lifecycle == "ga");
-		bundle.Products.Should().Contain(p => p.Product == "elasticsearch" && p.Target == "9.3.0" && p.Lifecycle == "beta");
+		// Verify lifecycle is included in products array (extracted from changelog entries, not filter)
+		bundleContent.Should().Contain("product: elasticsearch");
+		bundleContent.Should().Contain("target: 9.2.0");
+		bundleContent.Should().Contain("target: 9.3.0");
+		bundleContent.Should().Contain("lifecycle: ga");
+		bundleContent.Should().Contain("lifecycle: beta");
 	}
 
 	[Fact]
@@ -1890,13 +1889,12 @@ public class ChangelogServiceTests : IDisposable
 		_collector.Errors.Should().Be(0);
 
 		var bundleContent = await fileSystem.File.ReadAllTextAsync(input.Output!, TestContext.Current.CancellationToken);
-		// Verify lifecycle is included in products array
-		var deserializer = new DeserializerBuilder().Build();
-		var bundle = deserializer.Deserialize<BundledChangelogData>(bundleContent);
-		
-		bundle.Products.Should().HaveCount(2);
-		bundle.Products.Should().Contain(p => p.Product == "cloud-serverless" && p.Target == "2025-12-02" && p.Lifecycle == "ga");
-		bundle.Products.Should().Contain(p => p.Product == "cloud-serverless" && p.Target == "2025-12-06" && p.Lifecycle == "beta");
+		// Verify lifecycle is included in products array from --output-products
+		bundleContent.Should().Contain("product: cloud-serverless");
+		bundleContent.Should().Contain("target: 2025-12-02");
+		bundleContent.Should().Contain("target: 2025-12-06");
+		bundleContent.Should().Contain("lifecycle: ga");
+		bundleContent.Should().Contain("lifecycle: beta");
 	}
 
 	[Fact]
@@ -1949,12 +1947,62 @@ public class ChangelogServiceTests : IDisposable
 
 		var bundleContent = await fileSystem.File.ReadAllTextAsync(input.Output!, TestContext.Current.CancellationToken);
 		// Verify lifecycle is included in products array extracted from changelog entries
-		var deserializer = new DeserializerBuilder().Build();
-		var bundle = deserializer.Deserialize<BundledChangelogData>(bundleContent);
-		
-		bundle.Products.Should().HaveCount(2);
-		bundle.Products.Should().Contain(p => p.Product == "elasticsearch" && p.Target == "9.2.0" && p.Lifecycle == "ga");
-		bundle.Products.Should().Contain(p => p.Product == "elasticsearch" && p.Target == "9.3.0" && p.Lifecycle == "beta");
+		bundleContent.Should().Contain("product: elasticsearch");
+		bundleContent.Should().Contain("target: 9.2.0");
+		bundleContent.Should().Contain("target: 9.3.0");
+		bundleContent.Should().Contain("lifecycle: ga");
+		bundleContent.Should().Contain("lifecycle: beta");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithInputProductsWildcardLifecycle_ExtractsActualLifecycleFromChangelogs()
+	{
+		// Arrange - Test the scenario where --input-products uses "*" for lifecycle,
+		// but the actual lifecycle value should be extracted from the changelog entries
+		var service = new ChangelogService(_loggerFactory, _configurationContext, null);
+		var fileSystem = new FileSystem();
+		var changelogDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		fileSystem.Directory.CreateDirectory(changelogDir);
+
+		// Create test changelog file with lifecycle
+		var changelog1 = """
+			title: A new feature was added
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			pr: https://github.com/elastic/elasticsearch/pull/100
+			""";
+
+		var file1 = fileSystem.Path.Combine(changelogDir, "1-feature.yaml");
+		await fileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+
+		var input = new ChangelogBundleInput
+		{
+			Directory = changelogDir,
+			InputProducts = [
+				new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "*" }
+			],
+			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
+		};
+
+		// Act
+		var result = await service.BundleChangelogs(_collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		_collector.Errors.Should().Be(0);
+
+		var bundleContent = await fileSystem.File.ReadAllTextAsync(input.Output!, TestContext.Current.CancellationToken);
+		// Verify that the actual lifecycle value "ga" from the changelog is included in products array,
+		// not the wildcard "*" from the filter
+		bundleContent.Should().Contain("product: elasticsearch");
+		bundleContent.Should().Contain("target: 9.2.0");
+		bundleContent.Should().Contain("lifecycle: ga");
+		// Verify wildcard "*" is not included in the products array
+		bundleContent.Should().NotContain("lifecycle: *");
+		bundleContent.Should().NotContain("lifecycle: '*\"");
 	}
 
 	[Fact]
