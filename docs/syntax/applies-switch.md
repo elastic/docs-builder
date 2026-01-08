@@ -9,11 +9,11 @@ The applies-switch directive creates tabbed content where each tab displays an a
 
 ::::{applies-switch}
 
-:::{applies-item} stack:
+:::{applies-item} stack: ga 9.0+
 Content for Stack
 :::
 
-:::{applies-item} serverless:
+:::{applies-item} serverless: ga
 Content for Serverless
 :::
 
@@ -25,11 +25,11 @@ Content for Serverless
 ```markdown
 ::::{applies-switch}
 
-:::{applies-item} stack:
+:::{applies-item} stack: ga 9.0+
 Content for Stack
 :::
 
-:::{applies-item} serverless:
+:::{applies-item} serverless: ga
 Content for Serverless
 :::
 
@@ -48,11 +48,11 @@ This is useful when content applies to multiple deployment types or versions sim
 
 ::::{applies-switch}
 
-:::{applies-item} { ece:, ess: }
+:::{applies-item} { ece: ga, ess: ga }
 Content for ECE and ECH
 :::
 
-:::{applies-item} serverless:
+:::{applies-item} serverless: ga
 Content for Serverless
 :::
 
@@ -64,11 +64,11 @@ Content for Serverless
 ```markdown
 ::::{applies-switch}
 
-:::{applies-item} { ece:, ess: }
+:::{applies-item} { ece: ga, ess: ga }
 Content for ECE and ECH
 :::
 
-:::{applies-item} serverless:
+:::{applies-item} serverless: ga
 Content for Serverless
 :::
 
@@ -81,7 +81,7 @@ Content for Serverless
 
 All applies switches on a page automatically sync together. When you select an applies_to definition in one switch, all other switches will switch to the same applies_to definition.
 
-The format of the applies_to definition doesn't matter - `stack: preview 9.1+`, `{ "stack": "preview 9.1+" }`, and `{ stack: "preview 9.1+" }` all identify the same content and will sync together.
+The format of the applies_to definition doesn't matter - `stack: ga 9.1+`, `{ "stack": "ga 9.1+" }`, and `{ stack: "ga 9.1+" }` all identify the same content and will sync together.
 
 In the following example, both switch sets are automatically grouped and will stay in sync.
 
@@ -90,19 +90,19 @@ In the following example, both switch sets are automatically grouped and will st
 
 ::::{applies-switch}
 :::{applies-item} { "stack": "ga 9.1+" }
-Content for 9.1 version
+Content for versions 9.1 and newer
 :::
 :::{applies-item} { "stack": "preview =9.0" }
-Content for 9.0 version
+Content for version 9.0
 :::
 ::::
 
 ::::{applies-switch}
 :::{applies-item} stack: ga 9.1+
-Other content for 9.1 version
+Other content for versions 9.1 and newer
 :::
 :::{applies-item} stack: preview =9.0
-Other content for 9.0 version
+Other content for version 9.0
 :::
 ::::
 
@@ -112,19 +112,19 @@ Other content for 9.0 version
 ```markdown
 ::::{applies-switch}
 :::{applies-item} { "stack": "ga 9.1+" }
-Content for 9.1 version
+Content for versions 9.1 and newer
 :::
 :::{applies-item} { "stack": "preview =9.0" }
-Content for 9.0 version
+Content for version 9.0
 :::
 ::::
 
 ::::{applies-switch}
 :::{applies-item} stack: ga 9.1+
-Other content for 9.1 version
+Other content for versions 9.1 and newer
 :::
 :::{applies-item} stack: preview =9.0
-Other content for 9.0 version
+Other content for version 9.0
 :::
 ::::
 ```
