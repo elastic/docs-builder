@@ -17,10 +17,10 @@ public class ApplicableToViewModel
 
 	private static readonly Dictionary<Func<DeploymentApplicability, AppliesCollection?>, ApplicabilityMappings.ApplicabilityDefinition> DeploymentMappings = new()
 	{
-		[d => d.Ess] = ApplicabilityMappings.Ech,
-		[d => d.Eck] = ApplicabilityMappings.Eck,
-		[d => d.Ece] = ApplicabilityMappings.Ece,
-		[d => d.Self] = ApplicabilityMappings.Self
+		[d => d.Ess] = ApplicabilityMappings.Ech,  // ESS/ECH first
+		[d => d.Ece] = ApplicabilityMappings.Ece,  // ECE second
+		[d => d.Eck] = ApplicabilityMappings.Eck,  // ECK third
+		[d => d.Self] = ApplicabilityMappings.Self // Self-managed last
 	};
 
 	private static readonly Dictionary<Func<ServerlessProjectApplicability, AppliesCollection?>, ApplicabilityMappings.ApplicabilityDefinition> ServerlessMappings = new()
@@ -81,7 +81,12 @@ public class ApplicableToViewModel
 		if (AppliesTo.Product is not null)
 			rawItems.AddRange(CollectFromCollection(AppliesTo.Product, ApplicabilityMappings.Product));
 
-		return RenderGroupedItems(rawItems).ToArray();
+		var items = RenderGroupedItems(rawItems).ToList();
+
+		// Sort badges: unavailable lifecycle comes last
+		return items
+			.OrderBy(item => item.PrimaryApplicability.Lifecycle == ProductLifecycle.Unavailable ? 1 : 0)
+			.ToArray();
 	}
 
 	/// <summary>
