@@ -138,6 +138,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			Target = block.Target,
 			Width = block.Width,
 			Screenshot = block.Screenshot,
+			Border = block.Border,
 			ImageUrl = imageUrl,
 		});
 		RenderRazorSlice(slice, renderer);
@@ -159,6 +160,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 				Width = img.Width,
 				Scale = img.Scale ?? string.Empty,
 				Screenshot = img.Screenshot,
+				Border = img.Border,
 				Target = img.Target,
 				ImageUrl = img.ImageUrl
 			}).ToList(),
@@ -225,6 +227,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			Target = block.Target,
 			Width = block.Width,
 			Screenshot = block.Screenshot,
+			Border = block.Border,
 			ImageUrl = imageUrl,
 		});
 		RenderRazorSlice(slice, renderer);
