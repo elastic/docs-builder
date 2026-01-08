@@ -1308,7 +1308,7 @@ public class ChangelogServiceTests : IDisposable
 		// Assert
 		result.Should().BeFalse();
 		_collector.Errors.Should().BeGreaterThan(0);
-		_collector.Diagnostics.Should().Contain(d => d.Message.Contains("Only one filter option can be specified"));
+		_collector.Diagnostics.Should().Contain(d => d.Message.Contains("Multiple filter options cannot be specified together"));
 	}
 
 	[Fact]
