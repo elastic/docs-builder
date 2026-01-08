@@ -159,32 +159,18 @@ Options:
 
 You can specify only one of the following filter options:
 
-`--all`
-:   Include all changelogs from the directory.
-
-`--input-products`
-:   Include changelogs for the specified products.
-:   When using `--input-products`, you must provide all three parts: product, target, and lifecycle. Each part can be a wildcard (`*`) to match any value.
-:   Examples:
-:   - `"cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta"` - exact matches
-:   - `"cloud-serverless 2025-12-02 *, cloud-serverless 2025-11-* beta"` - wildcard lifecycle and prefix matching for target
-:   - `"elasticsearch * *, kibana * *"` - match all changelogs for elasticsearch or kibana
-:   - `"elasticsearch 9.3.* *"` - match elasticsearch with target starting with "9.3."
-:   - `"* * *"` - match all changelogs (equivalent to `--all`)
-
-`--prs`
-:   Include changelogs for the specified pull request URLs or numbers, or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times.
-:   Each occurrence can be either comma-separated PRs (e.g., `--prs "https://github.com/owner/repo/pull/123,12345"`) or a file path (e.g., `--prs /path/to/file.txt`).
-:   When specifying PRs directly, provide comma-separated values.
-:   When specifying a file path, provide a single value that points to a newline-delimited file. The file should contain one PR URL or number per line.
-:   Pull requests can be identified by a full URL (such as `https://github.com/owner/repo/pull/123`), a short format (such as `owner/repo#123`), or just a number (in which case you must also provide `--owner` and `--repo` options).
+- `--all`: Include all changelogs from the directory.
+- `--input-products`: Include changelogs for the specified products. Refer to [Filter by product](#changelog-bundle-pr).
+- `--prs`:   Include changelogs for the specified pull request URLs or numbers, or a path to a newline-delimited file containing PR URLs or numbers. Go to [Filter by pull requests](#changelog-bundle-pr).
 
 By default, the output file contains only the changelog file names and checksums.
 You can optionally use the `--resolve` command option to pull all of the content from each changelog into the bundle.
 
 ### Filter by product [changelog-bundle-product]
 
-You can use the `--input-products` option to create a bundle of changelogs that match the product details. When using `--input-products`, you must provide all three parts: product, target, and lifecycle. Each part can be a wildcard (`*`) to match any value.
+You can use the `--input-products` option to create a bundle of changelogs that match the product details.
+When using `--input-products`, you must provide all three parts: product, target, and lifecycle.
+Each part can be a wildcard (`*`) to match any value.
 
 ```sh
 docs-builder changelog bundle \
@@ -196,16 +182,19 @@ docs-builder changelog bundle \
 You can use wildcards in any of the three parts:
 
 ```sh
-# Match all elasticsearch changelogs regardless of target or lifecycle
+# Bundle any changelogs that have exact matches for either of these clauses
+docs-builder changelog bundle --input-products "cloud-serverless 2025-12-02 ga, elasticsearch 9.3.0 beta"
+
+# Bundle all elasticsearch changelogs regardless of target or lifecycle
 docs-builder changelog bundle --input-products "elasticsearch * *"
 
-# Match cloud-serverless 2025-12-02 with any lifecycle
+# Bundle all cloud-serverless 2025-12-02 changelogs with any lifecycle
 docs-builder changelog bundle --input-products "cloud-serverless 2025-12-02 *"
 
-# Match any product with target starting with "9.3."
-docs-builder changelog bundle --input-products "* 9.3.* *"
+# Bundle any cloud-serverless changelogs with target starting with "2025-11-" and "ga" lifecycle
+docs-builder changelog bundle --input-products "cloud-serverless 2025-11-* ga"
 
-# Match all changelogs (equivalent to --all)
+# Bundle all changelogs (equivalent to --all)
 docs-builder changelog bundle --input-products "* * *"
 ```
 
@@ -226,13 +215,18 @@ entries:
     checksum: 70d197d96752c05b6595edffe6fe3ba3d055c845
 ```
 
-1. By default these values match your `--input-products` (even if the changelogs have more products). To specify different product metadata, use the `--output-products` option.
+1. By default these values match your `--input-products` (even if the changelogs have more products).
+To specify different product metadata, use the `--output-products` option.
 
 If you add the `--resolve` option, the contents of each changelog will be included in the output file.
 
 ### Filter by pull requests [changelog-bundle-pr]
 
-You can use the `--prs` option (with the `--repo` and `--owner` options if you provide only the PR numbers) to create a bundle of the changelogs that relate to those pull requests:
+You can use the `--prs` option to create a bundle of the changelogs that relate to those pull requests.
+You can provide either a comma-separated list of PRs (`--prs "https://github.com/owner/repo/pull/123,12345"`) or a path to a newline-delimited file (`--prs /path/to/file.txt`).
+In the latter case, the file should contain one PR URL or number per line.
+
+Pull requests can be identified by a full URL (such as `https://github.com/owner/repo/pull/123`), a short format (such as `owner/repo#123`), or just a number (in which case you must also provide `--owner` and `--repo` options).
 
 ```sh
 docs-builder changelog bundle --prs "108875,135873,136886" \ <1>
@@ -241,7 +235,7 @@ docs-builder changelog bundle --prs "108875,135873,136886" \ <1>
   --output-products "elasticsearch 9.2.2 ga" <4>
 ```
 
-1. The comma-separated list of pull request numbers to seek. You can also specify multiple `--prs` options, each with comma-separated PRs or a file path.
+1. The comma-separated list of pull request numbers to seek.
 2. The repository in the pull request URLs. This option is not required if you specify the short or full PR URLs in the `--prs` option.
 3. The owner in the pull request URLs. This option is not required if you specify the short or full PR URLs in the `--prs` option.
 4. The product metadata for the bundle. If it is not provided, it will be derived from all the changelog product values.
@@ -252,6 +246,7 @@ If you have changelog files that reference those pull requests, the command crea
 products:
 - product: elasticsearch
   target: 9.2.2
+  lifecycle: ga
 entries:
 - file:
     name: 1765507819-fix-ml-calendar-event-update-scalability-issues.yaml
@@ -298,6 +293,7 @@ If you have changelog files that reference those pull requests, the command crea
 products:
 - product: elasticsearch
   target: 9.2.2
+  lifecycle: ga
 entries:
 - file:
     name: 1765507778-break-on-fielddata-when-building-global-ordinals.yaml
