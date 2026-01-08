@@ -1041,33 +1041,52 @@ public partial class ChangelogService(
 				bundledData.Products = input.OutputProducts
 					.OrderBy(p => p.Product)
 					.ThenBy(p => p.Target ?? string.Empty)
+					.ThenBy(p => p.Lifecycle ?? string.Empty)
 					.Select(p => new BundledProduct
 					{
 						Product = p.Product,
-						Target = p.Target == "*" ? null : p.Target
+						Target = p.Target == "*" ? null : p.Target,
+						Lifecycle = p.Lifecycle == "*" ? null : p.Lifecycle
 					})
 					.ToList();
 			}
-			// Otherwise, extract unique products/versions from changelog entries
+			// If --input-products was specified (and --output-products was not), use those values
+			else if (input.InputProducts is { Count: > 0 })
+			{
+				bundledData.Products = input.InputProducts
+					.OrderBy(p => p.Product)
+					.ThenBy(p => p.Target ?? string.Empty)
+					.ThenBy(p => p.Lifecycle ?? string.Empty)
+					.Select(p => new BundledProduct
+					{
+						Product = p.Product,
+						Target = p.Target == "*" ? null : p.Target,
+						Lifecycle = p.Lifecycle == "*" ? null : p.Lifecycle
+					})
+					.ToList();
+			}
+			// Otherwise, extract unique products/versions/lifecycles from changelog entries
 			else if (changelogEntries.Count > 0)
 			{
-				var productVersions = new HashSet<(string product, string version)>();
+				var productVersions = new HashSet<(string product, string version, string? lifecycle)>();
 				foreach (var (data, _, _, _) in changelogEntries)
 				{
 					foreach (var product in data.Products)
 					{
 						var version = product.Target ?? string.Empty;
-						_ = productVersions.Add((product.Product, version));
+						_ = productVersions.Add((product.Product, version, product.Lifecycle));
 					}
 				}
 
 				bundledData.Products = productVersions
 					.OrderBy(pv => pv.product)
 					.ThenBy(pv => pv.version)
+					.ThenBy(pv => pv.lifecycle ?? string.Empty)
 					.Select(pv => new BundledProduct
 					{
 						Product = pv.product,
-						Target = string.IsNullOrWhiteSpace(pv.version) ? null : pv.version
+						Target = string.IsNullOrWhiteSpace(pv.version) ? null : pv.version,
+						Lifecycle = pv.lifecycle
 					})
 					.ToList();
 			}
