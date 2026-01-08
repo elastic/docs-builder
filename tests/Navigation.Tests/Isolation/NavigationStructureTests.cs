@@ -362,4 +362,5 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 
 		context.Diagnostics.Should().BeEmpty();
 	}
+
 }
