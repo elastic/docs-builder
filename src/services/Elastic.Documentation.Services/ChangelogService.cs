@@ -583,24 +583,58 @@ public partial class ChangelogService(
 			}
 
 			// Validate filter options
-			var filterCount = 0;
+			var specifiedFilters = new List<string>();
 			if (input.All)
-				filterCount++;
+				specifiedFilters.Add("--all");
 			if (input.InputProducts is { Count: > 0 })
-				filterCount++;
+				specifiedFilters.Add("--input-products");
 			if (input.Prs is { Length: > 0 })
-				filterCount++;
+				specifiedFilters.Add("--prs");
 
-			if (filterCount == 0)
+			if (specifiedFilters.Count == 0)
 			{
 				collector.EmitError(string.Empty, "At least one filter option must be specified: --all, --input-products, or --prs");
 				return false;
 			}
 
-			if (filterCount > 1)
+			if (specifiedFilters.Count > 1)
 			{
-				collector.EmitError(string.Empty, "Only one filter option can be specified at a time: --all, --input-products, or --prs");
+				collector.EmitError(string.Empty, $"Multiple filter options cannot be specified together. You specified: {string.Join(", ", specifiedFilters)}. Please use only one filter option: --all, --input-products, or --prs");
 				return false;
+			}
+
+			// Build product filter patterns (with wildcard support)
+			var productFilters = new List<(string? productPattern, string? targetPattern, string? lifecyclePattern)>();
+			if (input.InputProducts is { Count: > 0 })
+			{
+				foreach (var product in input.InputProducts)
+				{
+					productFilters.Add((
+						product.Product == "*" ? null : product.Product,
+						product.Target == "*" ? null : product.Target,
+						product.Lifecycle == "*" ? null : product.Lifecycle
+					));
+				}
+			}
+
+			// Helper function to check if a string matches a pattern (supports wildcards)
+			static bool MatchesPattern(string? value, string? pattern)
+			{
+				if (pattern == null)
+					return true; // Wildcard matches anything (including null/empty)
+
+				if (value == null)
+					return false; // Non-wildcard pattern doesn't match null
+
+				// If pattern ends with *, do prefix match
+				if (pattern.EndsWith('*'))
+				{
+					var prefix = pattern[..^1];
+					return value.StartsWith(prefix, StringComparison.OrdinalIgnoreCase);
+				}
+
+				// Exact match (case-insensitive)
+				return string.Equals(value, pattern, StringComparison.OrdinalIgnoreCase);
 			}
 
 			// Load PRs - check if --prs contains a file path or a list of PRs
@@ -811,16 +845,7 @@ public partial class ChangelogService(
 				}
 			}
 
-			// Build set of product/version combinations to filter by
-			var productsToMatch = new HashSet<(string product, string version)>();
-			if (input.InputProducts is { Count: > 0 })
-			{
-				foreach (var product in input.InputProducts)
-				{
-					var version = product.Target ?? string.Empty;
-					_ = productsToMatch.Add((product.Product.ToLowerInvariant(), version));
-				}
-			}
+			// Product filters are already built above with wildcard support
 
 			// Determine output path to exclude it from input files
 			var outputPath = input.Output ?? _fileSystem.Path.Combine(input.Directory, "changelog-bundle.yaml");
@@ -877,6 +902,7 @@ public partial class ChangelogService(
 
 			var changelogEntries = new List<(ChangelogData data, string filePath, string fileName, string checksum)>();
 			var matchedPrs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+			var seenChangelogs = new HashSet<string>(); // For deduplication (using checksum)
 
 			foreach (var filePath in yamlFiles)
 			{
@@ -905,19 +931,41 @@ public partial class ChangelogService(
 						continue;
 					}
 
+					// Check for duplicates (using checksum)
+					if (seenChangelogs.Contains(checksum))
+					{
+						_logger.LogDebug("Skipping duplicate changelog: {FileName} (checksum: {Checksum})", fileName, checksum);
+						continue;
+					}
+
 					// Apply filters
 					if (input.All)
 					{
-						// Include all
+						// Include all - no filtering needed
 					}
-					else if (productsToMatch.Count > 0)
+					else if (productFilters.Count > 0)
 					{
-						// Filter by products
-						var matches = data.Products.Any(p =>
+						// Filter by products with wildcard support
+						var matches = false;
+						foreach (var (productPattern, targetPattern, lifecyclePattern) in productFilters)
 						{
-							var version = p.Target ?? string.Empty;
-							return productsToMatch.Contains((p.Product.ToLowerInvariant(), version));
-						});
+							// Check if any product in the changelog matches this filter
+							foreach (var changelogProduct in data.Products)
+							{
+								var productMatches = MatchesPattern(changelogProduct.Product, productPattern);
+								var targetMatches = MatchesPattern(changelogProduct.Target, targetPattern);
+								var lifecycleMatches = MatchesPattern(changelogProduct.Lifecycle, lifecyclePattern);
+
+								if (productMatches && targetMatches && lifecycleMatches)
+								{
+									matches = true;
+									break;
+								}
+							}
+
+							if (matches)
+								break;
+						}
 
 						if (!matches)
 						{
@@ -950,6 +998,8 @@ public partial class ChangelogService(
 						}
 					}
 
+					// Add to seen set and entries list
+					_ = seenChangelogs.Add(checksum);
 					changelogEntries.Add((data, filePath, fileName, checksum));
 				}
 				catch (YamlException ex)
@@ -991,46 +1041,63 @@ public partial class ChangelogService(
 				bundledData.Products = input.OutputProducts
 					.OrderBy(p => p.Product)
 					.ThenBy(p => p.Target ?? string.Empty)
+					.ThenBy(p => p.Lifecycle ?? string.Empty)
 					.Select(p => new BundledProduct
 					{
 						Product = p.Product,
-						Target = p.Target
+						Target = p.Target == "*" ? null : p.Target,
+						Lifecycle = p.Lifecycle == "*" ? null : p.Lifecycle
 					})
 					.ToList();
 			}
-			// If --input-products filter was used, only include those specific product-versions
-			else if (productsToMatch.Count > 0)
+			// If --input-products was specified (and --output-products was not), extract from matched changelog entries
+			// This ensures the products array reflects the actual values from the changelogs, not the filter
+			else if (input.InputProducts is { Count: > 0 } && changelogEntries.Count > 0)
 			{
-				bundledData.Products = productsToMatch
-					.OrderBy(pv => pv.product)
-					.ThenBy(pv => pv.version)
-					.Select(pv => new BundledProduct
-					{
-						Product = pv.product,
-						Target = string.IsNullOrWhiteSpace(pv.version) ? null : pv.version
-					})
-					.ToList();
-			}
-			// Otherwise, extract unique products/versions from changelog entries
-			else if (changelogEntries.Count > 0)
-			{
-				var productVersions = new HashSet<(string product, string version)>();
+				var productVersions = new HashSet<(string product, string version, string? lifecycle)>();
 				foreach (var (data, _, _, _) in changelogEntries)
 				{
 					foreach (var product in data.Products)
 					{
 						var version = product.Target ?? string.Empty;
-						_ = productVersions.Add((product.Product, version));
+						_ = productVersions.Add((product.Product, version, product.Lifecycle));
 					}
 				}
 
 				bundledData.Products = productVersions
 					.OrderBy(pv => pv.product)
 					.ThenBy(pv => pv.version)
+					.ThenBy(pv => pv.lifecycle ?? string.Empty)
 					.Select(pv => new BundledProduct
 					{
 						Product = pv.product,
-						Target = string.IsNullOrWhiteSpace(pv.version) ? null : pv.version
+						Target = string.IsNullOrWhiteSpace(pv.version) ? null : pv.version,
+						Lifecycle = pv.lifecycle
+					})
+					.ToList();
+			}
+			// Otherwise, extract unique products/versions/lifecycles from changelog entries
+			else if (changelogEntries.Count > 0)
+			{
+				var productVersions = new HashSet<(string product, string version, string? lifecycle)>();
+				foreach (var (data, _, _, _) in changelogEntries)
+				{
+					foreach (var product in data.Products)
+					{
+						var version = product.Target ?? string.Empty;
+						_ = productVersions.Add((product.Product, version, product.Lifecycle));
+					}
+				}
+
+				bundledData.Products = productVersions
+					.OrderBy(pv => pv.product)
+					.ThenBy(pv => pv.version)
+					.ThenBy(pv => pv.lifecycle ?? string.Empty)
+					.Select(pv => new BundledProduct
+					{
+						Product = pv.product,
+						Target = string.IsNullOrWhiteSpace(pv.version) ? null : pv.version,
+						Lifecycle = pv.lifecycle
 					})
 					.ToList();
 			}
@@ -1054,7 +1121,15 @@ public partial class ChangelogService(
 
 			foreach (var productGroup in productsByProductId)
 			{
-				var targets = productGroup.Select(p => string.IsNullOrWhiteSpace(p.Target) ? "(no target)" : p.Target).ToList();
+				var targets = productGroup.Select(p =>
+				{
+					var target = string.IsNullOrWhiteSpace(p.Target) ? "(no target)" : p.Target;
+					if (!string.IsNullOrWhiteSpace(p.Lifecycle))
+					{
+						target = $"{target} {p.Lifecycle}";
+					}
+					return target;
+				}).ToList();
 				collector.EmitWarning(string.Empty, $"Product '{productGroup.Key}' has multiple targets in bundle: {string.Join(", ", targets)}");
 			}
 
