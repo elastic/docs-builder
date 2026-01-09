@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Linq;
+
 namespace Elastic.Documentation.AppliesTo;
 
 /// <summary>
@@ -145,16 +147,12 @@ public class ApplicableToOrderComparer : IComparer<ApplicableTo?>
 		if (collection is null || collection.Count == 0)
 			return null;
 
-		// Find the highest version in the collection
-		SemVersion? latest = null;
-		foreach (var applicability in collection)
-		{
-			var version = applicability.Version?.Min;
-			if (version is not null && (latest is null || version > latest))
-				latest = version;
-		}
-
-		return latest;
+		// Find the highest version in the collection using LINQ
+		return collection
+			.Select(applicability => applicability.Version?.Min)
+			.Where(version => version is not null)
+			.DefaultIfEmpty(null)
+			.Max();
 	}
 
 	private enum ApplicabilityCategory
