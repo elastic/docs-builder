@@ -135,7 +135,7 @@ This is an inline {applies_to}`stack: preview 9.1` element.
     [<Fact>]
     let ``converts to readable text`` () =
         markdown |> convertsToNewLLM """
-        This is an inline [Planned in Stack] element.
+        This is an inline [Planned for Stack] element.
         """
 
 type ``admonition directive`` () =
@@ -214,15 +214,15 @@ This is a custom admonition with applies_to information.
     [<Fact>]
     let ``renders correctly with applies_to information`` () =
         markdown |> convertsToNewLLM """
-<note applies-to="stack: ga">
+<note applies-to="Generally available in 8.0+ for Stack">
   This is a note admonition with applies_to information.
 </note>
 
-<warning applies-to="serverless: ga">
+<warning applies-to="Generally available in 8.0+ for Serverless">
   This is a warning admonition with applies_to information.
 </warning>
 
-<tip applies-to="elasticsearch: preview">
+<tip applies-to="Preview in 8.0+ for Serverless Elasticsearch">
   This is a tip admonition with applies_to information.
 </tip>
 
