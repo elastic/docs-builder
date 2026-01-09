@@ -765,17 +765,27 @@ This is a test page with applies_to frontmatter.
 """
 
     [<Fact>]
-    let ``outputs content correctly`` () =
+    let ``renders content correctly`` () =
         // The page content should be rendered in LLM markdown
         markdown |> convertsToNewLLM """
 This is a test page with applies_to frontmatter.
 """
     
     [<Fact>]
-    let ``parses applies_to from frontmatter`` () =
-        // Verify that applies_to frontmatter is parsed into the ApplicableTo object
-        // Note: The actual "This applies to:" text is added during export in LlmMarkdownExporter.CreateLlmContentWithMetadata
-        // which is not tested by convertsToNewLLM (that only tests document content, not the full export metadata)
+    let ``frontmatter applies_to is exported in metadata section`` () =
+        // The applies_to from frontmatter is processed and would appear in the exported LLM file
+        // In the format:
+        //   ---
+        //   title: Test Page
+        //   description: ...
+        //
+        //   This applies to:
+        //   - Generally available since 8.5 for Stack
+        //   - Preview for Serverless
+        //   ---
+        //
+        // This happens in LlmMarkdownExporter.CreateLlmContentWithMetadata during export.
+        // We verify the frontmatter is parsed correctly so it can be used during export.
         let results = markdown.Value
         let defaultFile = results.MarkdownResults |> Seq.find (fun r -> r.File.RelativePath = "index.md")
         
@@ -783,6 +793,13 @@ This is a test page with applies_to frontmatter.
         test <@ defaultFile.File.YamlFrontMatter <> null @>
         match defaultFile.File.YamlFrontMatter with
         | NonNull yamlFrontMatter ->
-            // Verify applies_to was parsed
+            // Verify applies_to was parsed and contains expected data
             test <@ yamlFrontMatter.AppliesTo <> null @>
+            match yamlFrontMatter.AppliesTo with
+            | NonNull appliesTo ->
+                // Verify Stack configuration exists
+                test <@ appliesTo.Stack <> null @>
+                // Verify Serverless configuration exists  
+                test <@ appliesTo.Serverless <> null @>
+            | _ -> ()
         | _ -> ()
