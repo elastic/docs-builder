@@ -89,6 +89,8 @@ public static class LlmAppliesToHelper
 		{
 			// The popover text already includes lifecycle and version info
 			// e.g., "Generally available since 9.1", "Preview in 8.0", etc.
+			// We use the first item because it represents the most current/relevant status
+			// (items are sorted by version descending in ApplicabilityRenderer)
 			return items[0].Text;
 		}
 
