@@ -10,5 +10,10 @@ namespace Elastic.Documentation.Services.Changelog;
 [YamlSerializable(typeof(ChangelogData))]
 [YamlSerializable(typeof(ProductInfo))]
 [YamlSerializable(typeof(ChangelogConfiguration))]
+[YamlSerializable(typeof(RenderBlockersEntry))]
+[YamlSerializable(typeof(BundledChangelogData))]
+[YamlSerializable(typeof(BundledProduct))]
+[YamlSerializable(typeof(BundledEntry))]
+[YamlSerializable(typeof(BundledFile))]
 public partial class ChangelogYamlStaticContext;
 

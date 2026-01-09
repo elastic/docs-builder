@@ -5,7 +5,7 @@
 namespace Elastic.Documentation.Services.Changelog;
 
 /// <summary>
-/// Input data for creating a changelog fragment
+/// Input data for creating a changelog
 /// </summary>
 public class ChangelogInput
 {
