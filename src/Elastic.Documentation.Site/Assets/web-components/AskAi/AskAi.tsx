@@ -11,7 +11,11 @@ import {
 } from '@elastic/eui'
 import { css } from '@emotion/react'
 import r2wc from '@r2wc/react-to-web-component'
-import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
+import {
+    QueryClient,
+    QueryClientProvider,
+    useQuery,
+} from '@tanstack/react-query'
 import { useEffect, Suspense, lazy, StrictMode } from 'react'
 
 const queryClient = new QueryClient()

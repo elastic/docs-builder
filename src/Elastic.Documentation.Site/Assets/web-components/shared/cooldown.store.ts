@@ -11,7 +11,10 @@ interface CooldownState {
     cooldowns: Record<CooldownDomain, CooldownStateData>
     actions: {
         setCooldown: (domain: CooldownDomain, cooldown: number | null) => void
-        updateCooldown: (domain: CooldownDomain, cooldown: number | null) => void
+        updateCooldown: (
+            domain: CooldownDomain,
+            cooldown: number | null
+        ) => void
         notifyCooldownFinished: (domain: CooldownDomain) => void
         acknowledgeCooldownFinished: (domain: CooldownDomain) => void
     }

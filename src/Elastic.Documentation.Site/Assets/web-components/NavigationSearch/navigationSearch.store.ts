@@ -44,8 +44,7 @@ export const navigationSearchStore = create<NavigationSearchState>((set) => ({
 
 export const useSearchTerm = () =>
     navigationSearchStore((state) => state.searchTerm)
-export const usePageNumber = () =>
-    navigationSearchStore((state) => state.page)
+export const usePageNumber = () => navigationSearchStore((state) => state.page)
 export const useTypeFilter = () =>
     navigationSearchStore((state) => state.typeFilter)
 export const useSelectedIndex = () =>

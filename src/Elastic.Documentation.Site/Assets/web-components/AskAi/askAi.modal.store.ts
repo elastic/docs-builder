@@ -18,7 +18,9 @@ const askAiModalStore = create<ModalState>((set) => ({
     },
 }))
 
-export const useAskAiModalIsOpen = () => askAiModalStore((state) => state.isOpen)
-export const useAskAiModalActions = () => askAiModalStore((state) => state.actions)
+export const useAskAiModalIsOpen = () =>
+    askAiModalStore((state) => state.isOpen)
+export const useAskAiModalActions = () =>
+    askAiModalStore((state) => state.actions)
 
 export { askAiModalStore }

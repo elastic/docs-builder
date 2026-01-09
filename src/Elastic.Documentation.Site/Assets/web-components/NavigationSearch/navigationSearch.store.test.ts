@@ -16,7 +16,9 @@ describe('navigationSearch.store', () => {
 
             // Act
             act(() => {
-                navigationSearchStore.getState().actions.setSearchTerm(searchTerm)
+                navigationSearchStore
+                    .getState()
+                    .actions.setSearchTerm(searchTerm)
             })
 
             // Assert
@@ -26,12 +28,16 @@ describe('navigationSearch.store', () => {
         it('should update existing search term', () => {
             // Arrange
             act(() => {
-                navigationSearchStore.getState().actions.setSearchTerm('old term')
+                navigationSearchStore
+                    .getState()
+                    .actions.setSearchTerm('old term')
             })
 
             // Act
             act(() => {
-                navigationSearchStore.getState().actions.setSearchTerm('new term')
+                navigationSearchStore
+                    .getState()
+                    .actions.setSearchTerm('new term')
             })
 
             // Assert
@@ -43,7 +49,9 @@ describe('navigationSearch.store', () => {
         it('should clear search term', () => {
             // Arrange
             act(() => {
-                navigationSearchStore.getState().actions.setSearchTerm('test search')
+                navigationSearchStore
+                    .getState()
+                    .actions.setSearchTerm('test search')
             })
 
             // Act

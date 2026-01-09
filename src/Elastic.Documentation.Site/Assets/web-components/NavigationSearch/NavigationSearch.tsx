@@ -1,11 +1,11 @@
 import { availableIcons } from '../../eui-icons-cache'
-import { useSearchTerm, useSearchActions } from './navigationSearch.store'
-import { useIsNavigationSearchCooldownActive } from './useNavigationSearchCooldown'
-import { useNavigationSearchQuery } from './useNavigationSearchQuery'
 import { SearchInput } from './SearchInput'
 import { SearchResultsList } from './SearchResultsList'
+import { useSearchTerm, useSearchActions } from './navigationSearch.store'
 import { useGlobalKeyboardShortcut } from './useGlobalKeyboardShortcut'
+import { useIsNavigationSearchCooldownActive } from './useNavigationSearchCooldown'
 import { useNavigationSearchKeyboardNavigation } from './useNavigationSearchKeyboardNavigation'
+import { useNavigationSearchQuery } from './useNavigationSearchQuery'
 import {
     EuiInputPopover,
     useEuiTheme,

@@ -1,7 +1,4 @@
-import {
-    useCooldownActions,
-    CooldownDomain,
-} from '../shared/cooldown.store'
+import { useCooldownActions, CooldownDomain } from '../shared/cooldown.store'
 import { useEffect, useRef } from 'react'
 
 interface UseCooldownParams {

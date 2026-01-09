@@ -229,13 +229,7 @@ describe('ErrorCallout', () => {
             error.statusCode = 400
             error.name = 'ApiError'
 
-            render(
-                <ErrorCallout
-                    error={error}
-                    domain="search"
-                    inline={true}
-                />
-            )
+            render(<ErrorCallout error={error} domain="search" inline={true} />)
 
             expect(screen.queryByTestId('eui-spacer')).not.toBeInTheDocument()
         })

@@ -1,9 +1,9 @@
+import { SanitizedHtmlContent } from './SanitizedHtmlContent'
 import { useSelectedIndex, useSearchActions } from './navigationSearch.store'
 import {
     useNavigationSearchQuery,
     SearchResultItem,
 } from './useNavigationSearchQuery'
-import { SanitizedHtmlContent } from './SanitizedHtmlContent'
 import {
     EuiBadge,
     EuiIcon,

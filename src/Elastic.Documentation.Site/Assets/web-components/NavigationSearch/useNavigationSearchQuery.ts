@@ -6,9 +6,16 @@ import {
     ATTR_SEARCH_PAGE_COUNT,
 } from '../../telemetry/semconv'
 import { traceSpan } from '../../telemetry/tracing'
-import { createApiErrorFromResponse, shouldRetry } from '../shared/errorHandling'
+import {
+    createApiErrorFromResponse,
+    shouldRetry,
+} from '../shared/errorHandling'
 import { ApiError } from '../shared/errorHandling'
-import { usePageNumber, useSearchTerm, useTypeFilter } from './navigationSearch.store'
+import {
+    usePageNumber,
+    useSearchTerm,
+    useTypeFilter,
+} from './navigationSearch.store'
 import {
     useIsNavigationSearchAwaitingNewInput,
     useNavigationSearchCooldownActions,

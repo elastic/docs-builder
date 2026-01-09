@@ -1,11 +1,11 @@
+import { AskAiSuggestions } from './AskAiSuggestions'
+import { ChatInput } from './ChatInput'
+import { ChatMessageList } from './ChatMessageList'
 import { InfoBanner } from './InfoBanner'
 import { KeyboardShortcutsFooter } from './KeyboardShortcutsFooter'
 import { LegalDisclaimer } from './LegalDisclaimer'
 import AiIcon from './ai-icon.svg'
 import { useAskAiModalActions } from './askAi.modal.store'
-import { AskAiSuggestions } from './AskAiSuggestions'
-import { ChatInput } from './ChatInput'
-import { ChatMessageList } from './ChatMessageList'
 import {
     ChatMessage,
     useChatActions,

@@ -393,5 +393,4 @@ describe('Chat Component', () => {
             }
         })
     })
-
 })
