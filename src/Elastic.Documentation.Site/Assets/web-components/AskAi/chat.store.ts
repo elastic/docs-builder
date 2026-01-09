@@ -1,4 +1,4 @@
-import { logError, logWarn } from '../../../telemetry/logging'
+import { logError, logWarn } from '../../telemetry/logging'
 import { cooldownStore } from '../shared/cooldown.store'
 import {
     ApiError,

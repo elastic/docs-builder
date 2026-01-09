@@ -4,8 +4,8 @@ import {
     ATTR_SEARCH_RESULTS_TOTAL,
     ATTR_SEARCH_RESULTS_COUNT,
     ATTR_SEARCH_PAGE_COUNT,
-} from '../../../telemetry/semconv'
-import { traceSpan } from '../../../telemetry/tracing'
+} from '../../telemetry/semconv'
+import { traceSpan } from '../../telemetry/tracing'
 import { createApiErrorFromResponse, shouldRetry } from '../shared/errorHandling'
 import { ApiError } from '../shared/errorHandling'
 import { usePageNumber, useSearchTerm, useTypeFilter } from './navigationSearch.store'

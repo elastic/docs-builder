@@ -1,5 +1,5 @@
-import { initCopyButton } from '../../../copybutton'
-import { hljs } from '../../../hljs'
+import { initCopyButton } from '../../copybutton'
+import { hljs } from '../../hljs'
 import { aiGradients } from './ElasticAiAssitant'
 import { ErrorCallout } from '../shared/ErrorCallout'
 import { ApiError } from '../shared/errorHandling'

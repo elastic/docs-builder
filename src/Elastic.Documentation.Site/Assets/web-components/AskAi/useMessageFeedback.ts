@@ -1,5 +1,5 @@
-import { logWarn } from '../../../telemetry/logging'
-import { traceSpan } from '../../../telemetry/tracing'
+import { logWarn } from '../../telemetry/logging'
+import { traceSpan } from '../../telemetry/tracing'
 import { Reaction, useChatActions, useMessageReaction } from './chat.store'
 import { useMutation } from '@tanstack/react-query'
 import { useCallback, useRef } from 'react'

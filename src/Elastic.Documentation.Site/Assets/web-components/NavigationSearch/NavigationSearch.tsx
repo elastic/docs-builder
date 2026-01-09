@@ -1,4 +1,4 @@
-import { availableIcons } from '../../../eui-icons-cache'
+import { availableIcons } from '../../eui-icons-cache'
 import { useSearchTerm, useSearchActions } from './navigationSearch.store'
 import { useIsNavigationSearchCooldownActive } from './useNavigationSearchCooldown'
 import { useNavigationSearchQuery } from './useNavigationSearchQuery'

@@ -1,5 +1,4 @@
 import '../../eui-icons-cache'
-import { AskAiModal } from './AskAiModal'
 import { useAskAiModalActions, useAskAiModalIsOpen } from './askAi.modal.store'
 import {
     EuiPortal,
@@ -12,7 +11,7 @@ import {
 } from '@elastic/eui'
 import { css } from '@emotion/react'
 import r2wc from '@r2wc/react-to-web-component'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
 import { useEffect, Suspense, lazy, StrictMode } from 'react'
 
 const queryClient = new QueryClient()
@@ -28,6 +27,16 @@ const AskAiButton = () => {
     const { euiTheme } = useEuiTheme()
     const isModalOpen = useAskAiModalIsOpen()
     const { openModal, closeModal } = useAskAiModalActions()
+
+    const { data: isApiAvailable } = useQuery({
+        queryKey: ['api-health'],
+        queryFn: async () => {
+            const response = await fetch('/docs/_api/v1/', { method: 'POST' })
+            return response.ok
+        },
+        staleTime: 60 * 60 * 1000, // 60 minutes
+        retry: false,
+    })
 
     const positionCss = css`
         position: absolute;
@@ -93,6 +102,10 @@ const AskAiButton = () => {
             html.style.paddingRight = originalHtmlPaddingRight
         }
     }, [isModalOpen])
+
+    if (!isApiAvailable) {
+        return null
+    }
 
     return (
         <>
