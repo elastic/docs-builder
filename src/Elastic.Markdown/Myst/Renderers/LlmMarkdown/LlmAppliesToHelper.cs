@@ -16,13 +16,47 @@ namespace Elastic.Markdown.Myst.Renderers.LlmMarkdown;
 public static class LlmAppliesToHelper
 {
 	/// <summary>
-	/// Converts ApplicableTo to a readable text format for LLM consumption
+	/// Converts ApplicableTo to a readable text format for LLM consumption (block level - for page or section)
+	/// </summary>
+	public static string RenderAppliesToBlock(ApplicableTo? appliesTo, IDocumentationConfigurationContext buildContext)
+	{
+		if (appliesTo is null || appliesTo == ApplicableTo.All)
+			return string.Empty;
+
+		var items = GetApplicabilityItems(appliesTo, buildContext);
+		if (items.Count == 0)
+			return string.Empty;
+
+		var sb = new StringBuilder();
+		_ = sb.AppendLine();
+		_ = sb.AppendLine("This applies to:");
+
+		foreach (var (productName, availabilityText) in items)
+			_ = sb.AppendLine($"- {availabilityText} for {productName}");
+
+		return sb.ToString();
+	}
+
+	/// <summary>
+	/// Converts ApplicableTo to a readable inline text format for LLM consumption
 	/// </summary>
 	public static string RenderApplicableTo(ApplicableTo? appliesTo, IDocumentationConfigurationContext buildContext)
 	{
 		if (appliesTo is null || appliesTo == ApplicableTo.All)
 			return string.Empty;
 
+		var items = GetApplicabilityItems(appliesTo, buildContext);
+		if (items.Count == 0)
+			return string.Empty;
+
+		var itemList = items.Select(item => $"{item.availabilityText} for {item.productName}").ToList();
+		return string.Join(", ", itemList);
+	}
+
+	private static List<(string productName, string availabilityText)> GetApplicabilityItems(
+		ApplicableTo appliesTo,
+		IDocumentationConfigurationContext buildContext)
+	{
 		var viewModel = new ApplicableToViewModel
 		{
 			AppliesTo = appliesTo,
@@ -31,64 +65,44 @@ public static class LlmAppliesToHelper
 			VersionsConfig = buildContext.VersionsConfiguration
 		};
 
-		var items = viewModel.GetApplicabilityItems();
-		if (items.Count == 0)
-			return string.Empty;
+		var applicabilityItems = viewModel.GetApplicabilityItems();
+		var results = new List<(string productName, string availabilityText)>();
 
-		var itemList = new List<string>();
-
-		foreach (var item in items)
+		foreach (var item in applicabilityItems)
 		{
-			var text = BuildApplicabilityText(item);
-			if (!string.IsNullOrEmpty(text))
-				itemList.Add(text);
+			var renderData = item.RenderData;
+			var productName = item.Key;
+
+			// Get the availability text from the popover data
+			var availabilityText = GetAvailabilityText(renderData);
+			if (!string.IsNullOrEmpty(availabilityText))
+				results.Add((productName, availabilityText));
 		}
 
-		if (itemList.Count == 0)
-			return string.Empty;
-
-		return string.Join(", ", itemList);
+		return results;
 	}
 
-	private static string BuildApplicabilityText(ApplicabilityItem item)
+	private static string GetAvailabilityText(ApplicabilityRenderer.ApplicabilityRenderData renderData)
 	{
-		// For LLM output, use the shorter Key name for better readability
-		var parts = new List<string> { item.Key };
-
-		// For LLM output, show the actual applicability information directly
-		var applicability = item.Applicability;
-
-		// Add lifecycle if it's not GA
-		if (applicability.Lifecycle != ProductLifecycle.GenerallyAvailable)
-			parts.Add(applicability.GetLifeCycleName());
-
-		// Add version information if present
-		if (applicability.Version is not null and not AllVersionsSpec)
+		// Use the first availability item's text if available (this is what the popover shows)
+		if (renderData.PopoverData?.AvailabilityItems is { Length: > 0 } items)
 		{
-			var versionText = FormatVersion(applicability.Version);
-			if (!string.IsNullOrEmpty(versionText))
-				parts.Add(versionText);
+			// The popover text already includes lifecycle and version info
+			// e.g., "Generally available since 9.1", "Preview in 8.0", etc.
+			return items[0].Text;
 		}
 
-		return string.Join(" ", parts);
-	}
+		// Fallback to constructing from badge data
+		var parts = new List<string>();
 
-	private static string FormatVersion(VersionSpec versionSpec)
-	{
-		var min = versionSpec.Min;
-		var max = versionSpec.Max;
-		var showMinPatch = versionSpec.ShowMinPatch;
-		var showMaxPatch = versionSpec.ShowMaxPatch;
+		if (!string.IsNullOrEmpty(renderData.LifecycleName) && renderData.LifecycleName != "Generally available")
+			parts.Add(renderData.LifecycleName);
 
-		static string FormatSemVersion(SemVersion v, bool showPatch) =>
-			showPatch ? $"{v.Major}.{v.Minor}.{v.Patch}" : $"{v.Major}.{v.Minor}";
+		if (!string.IsNullOrEmpty(renderData.Version))
+			parts.Add(renderData.Version);
+		else if (!string.IsNullOrEmpty(renderData.BadgeLifecycleText))
+			parts.Add(renderData.BadgeLifecycleText);
 
-		return versionSpec.Kind switch
-		{
-			VersionSpecKind.GreaterThanOrEqual => $"{FormatSemVersion(min, showMinPatch)}+",
-			VersionSpecKind.Range when max is not null => $"{FormatSemVersion(min, showMinPatch)}-{FormatSemVersion(max, showMaxPatch)}",
-			VersionSpecKind.Exact => FormatSemVersion(min, showMinPatch),
-			_ => string.Empty
-		};
+		return parts.Count > 0 ? string.Join(" ", parts) : "Available";
 	}
 }

@@ -445,7 +445,7 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 				};
 				// Fallback to raw definition if parsing didn't work or returned empty
 				appliesToText ??= appliesBlock.AppliesToDefinition;
-				
+
 				if (!string.IsNullOrEmpty(appliesToText))
 					renderer.Writer.Write($" applies-to=\"{appliesToText}\"");
 				break;

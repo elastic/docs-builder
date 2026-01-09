@@ -135,7 +135,7 @@ This is an inline {applies_to}`stack: preview 9.1` element.
     [<Fact>]
     let ``converts to readable text`` () =
         markdown |> convertsToNewLLM """
-        This is an inline [Stack Preview 9.1+] element.
+        This is an inline [Planned in Stack] element.
         """
 
 type ``admonition directive`` () =

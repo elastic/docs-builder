@@ -159,9 +159,9 @@ public class LlmMarkdownExporter : IMarkdownExporter
 		// Add applies_to information from frontmatter
 		if (sourceFile.YamlFrontMatter?.AppliesTo is not null)
 		{
-			var appliesToText = LlmAppliesToHelper.RenderApplicableTo(sourceFile.YamlFrontMatter.AppliesTo, context.BuildContext);
+			var appliesToText = LlmAppliesToHelper.RenderAppliesToBlock(sourceFile.YamlFrontMatter.AppliesTo, context.BuildContext);
 			if (!string.IsNullOrEmpty(appliesToText))
-				_ = metadata.AppendLine($"applies_to: {appliesToText}");
+				_ = metadata.Append(appliesToText);
 		}
 
 		_ = metadata.AppendLine("---");
