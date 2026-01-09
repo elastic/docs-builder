@@ -224,3 +224,18 @@ document.body.addEventListener(
         }
     }
 )
+
+// Clean up web component content before htmx saves to history cache.
+document.body.addEventListener('htmx:beforeHistorySave', function () {
+    // connectedCallback() re-renders
+    $$('applies-to-popover, version-dropdown, search-or-ask-ai').forEach(
+        (el) => {
+            el.innerHTML = ''
+        }
+    )
+
+    // EUI portal containers getting orphaned during navigation
+    $$('[data-euiportal="true"]').forEach((el) => {
+        el.remove()
+    })
+})
