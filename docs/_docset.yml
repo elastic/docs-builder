@@ -19,7 +19,7 @@ subs:
   dbuild: "docs-builder"
 
 features:
-  primary-nav: false
+  primary-nav: true
 
 api:
    elasticsearch: elasticsearch-openapi.json
