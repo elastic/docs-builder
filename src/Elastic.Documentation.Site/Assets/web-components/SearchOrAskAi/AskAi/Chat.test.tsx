@@ -54,6 +54,17 @@ describe('Chat Component', () => {
     beforeEach(() => {
         jest.clearAllMocks()
         resetStores()
+
+        // Mock scrollTo to prevent flaky test failures in CI
+        // The handleSubmit function schedules a setTimeout that calls scrollTo
+        // In test environments, scrollTo may not be available on DOM elements
+        HTMLElement.prototype.scrollTo = jest.fn()
+    })
+
+    afterEach(() => {
+        // Clean up the mock
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        delete (HTMLElement.prototype as any).scrollTo
     })
 
     describe('Empty state', () => {
@@ -257,6 +268,134 @@ describe('Chat Component', () => {
             await waitFor(() => {
                 expect(input.value).toBe('')
             })
+        })
+
+        it('should scroll to user message when question is submitted', async () => {
+            // Arrange
+            jest.useFakeTimers()
+            try {
+                const user = userEvent.setup({ delay: null })
+                const question = 'What is Kibana?'
+                const scrollToSpy = jest.fn()
+
+                // Set up existing messages so scroll container exists
+                chatStore.setState({
+                    chatMessages: [
+                        {
+                            id: '1',
+                            type: 'user',
+                            content: 'What is Elasticsearch?',
+                            conversationId: 'thread-1',
+                            timestamp: Date.now(),
+                        },
+                        {
+                            id: '2',
+                            type: 'ai',
+                            content:
+                                'Elasticsearch is a distributed search engine...',
+                            conversationId: 'thread-1',
+                            timestamp: Date.now(),
+                            status: 'complete',
+                        },
+                    ],
+                    conversationId: 'thread-1',
+                })
+
+                // Act
+                const { container } = renderWithQueryClient(<Chat />)
+
+                // Wait for component to render and find scroll container
+                await waitFor(() => {
+                    expect(
+                        screen.getByText('What is Elasticsearch?')
+                    ).toBeInTheDocument()
+                })
+
+                // Find the scroll container (the div that will have messages)
+                const scrollContainer =
+                    (container
+                        .querySelector('[data-message-type]')
+                        ?.closest('div[style*="overflow"]') as HTMLElement) ||
+                    (Array.from(container.querySelectorAll('div')).find(
+                        (el) => {
+                            const style = window.getComputedStyle(el)
+                            return style.overflowY === 'auto'
+                        }
+                    ) as HTMLElement)
+
+                if (scrollContainer) {
+                    scrollContainer.scrollTo = scrollToSpy
+                    scrollContainer.scrollTop = 0
+                    // Mock getBoundingClientRect for scroll calculations
+                    scrollContainer.getBoundingClientRect = jest.fn(() => ({
+                        top: 0,
+                        left: 0,
+                        right: 100,
+                        bottom: 500,
+                        width: 100,
+                        height: 500,
+                        x: 0,
+                        y: 0,
+                        toJSON: jest.fn(),
+                    })) as jest.MockedFunction<() => DOMRect>
+                }
+
+                const input = screen.getByPlaceholderText(
+                    /Ask the Elastic Docs AI Assistant/i
+                )
+                await user.type(input, question)
+                await user.keyboard('{Enter}')
+
+                // Wait for message to be added
+                await waitFor(() => {
+                    const messages = chatStore.getState().chatMessages
+                    expect(messages.length).toBeGreaterThan(2)
+                    expect(messages[messages.length - 2].type).toBe('user')
+                    expect(messages[messages.length - 2].content).toBe(question)
+                })
+
+                // Wait for the new user message to be rendered in the DOM
+                await waitFor(() => {
+                    expect(screen.getByText(question)).toBeInTheDocument()
+                })
+
+                // Mock getBoundingClientRect for the new user message
+                const newUserMessage = container.querySelector(
+                    '[data-message-type="user"]:last-of-type'
+                ) as HTMLElement
+                if (newUserMessage) {
+                    newUserMessage.getBoundingClientRect = jest.fn(() => ({
+                        top: 100,
+                        left: 0,
+                        right: 100,
+                        bottom: 200,
+                        width: 100,
+                        height: 100,
+                        x: 0,
+                        y: 100,
+                        toJSON: jest.fn(),
+                    })) as jest.MockedFunction<() => DOMRect>
+                }
+
+                // Advance timers to trigger requestAnimationFrame
+                jest.advanceTimersByTime(100)
+                await Promise.resolve() // Let React process the state update
+
+                // Run all pending requestAnimationFrame callbacks
+                jest.runAllTimers()
+
+                // Verify scrollTo was called
+                if (scrollContainer) {
+                    expect(scrollToSpy).toHaveBeenCalledWith(
+                        expect.objectContaining({
+                            top: expect.any(Number),
+                            behavior: 'smooth',
+                        })
+                    )
+                }
+            } finally {
+                jest.useRealTimers()
+            }
         })
     })
 

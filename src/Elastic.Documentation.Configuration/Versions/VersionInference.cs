@@ -96,7 +96,7 @@ public class NoopVersionInferrer : IVersionInferrerService
 	public VersioningSystem InferVersion(string repositoryName, IReadOnlyCollection<LegacyPageMapping>? legacyPages, IReadOnlyCollection<Product>? products, ApplicableTo? applicableTo) => new()
 	{
 		Id = VersioningSystemId.Stack,
-		Base = new SemVersion(0, 0, 0),
-		Current = new SemVersion(0, 0, 0)
+		Base = ZeroVersion.Instance,
+		Current = ZeroVersion.Instance
 	};
 }
