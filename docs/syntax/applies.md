@@ -369,18 +369,24 @@ This section provides detailed rules for how badges are rendered based on lifecy
 
 ### Rendering order
 
-`applies_to` badges are displayed in a consistent order regardless of how they appear in your source files:
+`applies_to` badges are **automatically displayed in a consistent order** regardless of how they appear in your source files:
 
-1. **Stack** - Elastic Stack
-2. **Serverless** - Elastic Cloud Serverless offerings
-3. **Deployment** - Deployment options (ECH, ECK, ECE, Self-managed)
+1. **Serverless** - Elastic Cloud Serverless offerings (appears first)
+2. **Stack** - Elastic Stack (ordered from latest to oldest version)
+3. **Deployment** - Deployment options in this order:
+   - ECH/ESS (Elastic Cloud Hosted)
+   - ECE (Elastic Cloud Enterprise)
+   - ECK (Elastic Cloud on Kubernetes)
+   - Self-managed
 4. **ProductApplicability** - Specialized tools and agents (ECCTL, Curator, EDOT, APM Agents)
 5. **Product (generic)** - Generic product applicability
+
+Items with **unavailable** lifecycle always appear **last**, regardless of their category.
 
 Within the ProductApplicability category, EDOT and APM Agent items are sorted alphabetically for better scanning.
 
 :::{note}
-Inline applies annotations are rendered in the order they appear in the source file.
+This automatic ordering applies to badges displayed at page and section levels, as well as in [applies-switch](applies-switch.md) tabs. Inline applies annotations are rendered in the order they appear in the source file.
 :::
 
 ### Badge rendering rules
