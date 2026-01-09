@@ -19,7 +19,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Api.Infrastructure.Adapters.Search;
 
-public partial class ElasticsearchGateway : ISearchGateway
+public partial class ElasticsearchGateway : IFindPageGateway
 {
 	private readonly ElasticsearchClient _client;
 	private readonly ElasticsearchOptions _elasticsearchOptions;
@@ -55,7 +55,7 @@ public partial class ElasticsearchGateway : ISearchGateway
 
 	public async Task<bool> CanConnect(Cancel ctx) => (await _client.PingAsync(ctx)).IsValidResponse;
 
-	public async Task<SearchResult> SearchAsync(string query, int pageNumber, int pageSize, string? filter = null, Cancel ctx = default) =>
+	public async Task<FindPageResult> FindPageAsync(string query, int pageNumber, int pageSize, string? filter = null, Cancel ctx = default) =>
 		await SearchImplementation(query, pageNumber, pageSize, filter, ctx);
 
 	/// <summary>
@@ -238,7 +238,7 @@ public partial class ElasticsearchGateway : ISearchGateway
 		new TermsQueryField(["/docs", "/docs/", "/docs/404", "/docs/404/"]))
 		&& !(Query)new TermQuery { Field = Infer.Field<DocumentationDocument>(f => f.Hidden), Value = true };
 
-	public async Task<SearchResult> SearchImplementation(string query, int pageNumber, int pageSize, string? filter = null, Cancel ctx = default)
+	public async Task<FindPageResult> SearchImplementation(string query, int pageNumber, int pageSize, string? filter = null, Cancel ctx = default)
 	{
 		const string preTag = "<mark>";
 		const string postTag = "</mark>";
@@ -318,7 +318,7 @@ public partial class ElasticsearchGateway : ISearchGateway
 		}
 	}
 
-	private static SearchResult ProcessSearchResponse(
+	private static FindPageResult ProcessSearchResponse(
 		SearchResponse<DocumentationDocument> response,
 		string searchQuery,
 		IReadOnlyDictionary<string, string[]> synonyms)
@@ -351,13 +351,13 @@ public partial class ElasticsearchGateway : ISearchGateway
 				.Trim(['|', ' '])
 				.HighlightTokens(searchTokens, synonyms);
 
-			return new SearchResultItem
+			return new FindPageResultItem
 			{
 				Url = doc.Url,
 				Title = title,
 				Type = doc.Type,
 				Description = description,
-				Parents = doc.Parents.Select(parent => new SearchResultItemParent
+				Parents = doc.Parents.Select(parent => new FindPageResultItemParent
 				{
 					Title = parent.Title,
 					Url = parent.Url
@@ -375,7 +375,7 @@ public partial class ElasticsearchGateway : ISearchGateway
 				aggregations[bucket.Key.ToString()] = bucket.DocCount;
 		}
 
-		return new SearchResult
+		return new FindPageResult
 		{
 			TotalHits = totalHits,
 			Results = results,
