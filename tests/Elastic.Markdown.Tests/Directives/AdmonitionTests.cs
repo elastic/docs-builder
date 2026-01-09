@@ -267,7 +267,7 @@ A regular paragraph.
 		var html = Html;
 		html.Should().Contain("applies applies-admonition");
 		html.Should().Contain("admonition-title__separator");
-		html.Should().Contain("applicable-info");
+		html.Should().Contain("applies-to-popover");
 	}
 }
 
@@ -299,7 +299,7 @@ A regular paragraph.
 		var html = Html;
 		html.Should().Contain("applies applies-admonition");
 		html.Should().Contain("admonition-title__separator");
-		html.Should().Contain("applicable-info");
+		html.Should().Contain("applies-to-popover");
 	}
 }
 
@@ -331,7 +331,7 @@ A regular paragraph.
 		var html = Html;
 		html.Should().Contain("applies applies-admonition");
 		html.Should().Contain("admonition-title__separator");
-		html.Should().Contain("applicable-info");
+		html.Should().Contain("applies-to-popover");
 	}
 }
 
@@ -363,7 +363,7 @@ A regular paragraph.
 		var html = Html;
 		html.Should().Contain("applies applies-admonition");
 		html.Should().Contain("admonition-title__separator");
-		html.Should().Contain("applicable-info");
+		html.Should().Contain("applies-to-popover");
 	}
 }
 
@@ -395,6 +395,6 @@ A regular paragraph.
 		var html = Html;
 		html.Should().Contain("applies applies-admonition");
 		html.Should().Contain("admonition-title__separator");
-		html.Should().Contain("applicable-info");
+		html.Should().Contain("applies-to-popover");
 	}
 }

@@ -64,9 +64,11 @@ public record ApplicableTo
 		Product = AppliesCollection.GenerallyAvailable
 	};
 
+	private static readonly VersionSpec DefaultVersion = VersionSpec.TryParse("9.0", out var v) ? v! : AllVersionsSpec.Instance;
+
 	public static ApplicableTo Default { get; } = new()
 	{
-		Stack = new AppliesCollection([new Applicability { Version = new SemVersion(9, 0, 0), Lifecycle = ProductLifecycle.GenerallyAvailable }]),
+		Stack = new AppliesCollection([new Applicability { Version = DefaultVersion, Lifecycle = ProductLifecycle.GenerallyAvailable }]),
 		Serverless = ServerlessProjectApplicability.All
 	};
 

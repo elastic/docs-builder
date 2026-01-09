@@ -23,9 +23,9 @@
     <PackageVersion Include="Aspire.Hosting" Version="13.0.0" />
     <PackageVersion Include="Aspire.Hosting.Testing" Version="13.0.0" />
     <PackageVersion Include="AWSSDK.Core" Version="4.0.3.6" />
-    <PackageVersion Include="AWSSDK.DynamoDBv2" Version="4.0.10.4" />
-    <PackageVersion Include="AWSSDK.SQS" Version="4.0.2.8" />
-    <PackageVersion Include="AWSSDK.S3" Version="4.0.16" />
+    <PackageVersion Include="AWSSDK.DynamoDBv2" Version="4.0.10.5" />
+    <PackageVersion Include="AWSSDK.SQS" Version="4.0.2.9" />
+    <PackageVersion Include="AWSSDK.S3" Version="4.0.16.2" />
     <PackageVersion Include="Elastic.OpenTelemetry" Version="1.1.0" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.UserSecrets" Version="10.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.0" />
@@ -38,7 +38,7 @@
     <PackageVersion Include="FakeItEasy" Version="8.3.0" />
     <PackageVersion Include="Elastic.Ingest.Elasticsearch" Version="0.17.1" />
     <PackageVersion Include="InMemoryLogger" Version="1.0.66" />
-    <PackageVersion Include="MartinCostello.Logging.XUnit.v3" Version="0.6.0" />
+    <PackageVersion Include="MartinCostello.Logging.XUnit.v3" Version="0.7.0" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.0" />
     <PackageVersion Include="Microsoft.OpenApi" Version="3.0.1" />
     <PackageVersion Include="TUnit" Version="0.25.21" />

@@ -47,7 +47,7 @@ body {
 	--header-height: calc(var(--spacing) * 21);
 	--banner-height: calc(var(--spacing) * 9);
 	/*--offset-top: calc(var(--header-height) + var(--banner-height));*/
-	--offset-top: 72px;
+	--offset-top: 102px;
 	--max-text-width: clamp(40ch, 90ch, 100%);
 	--max-sidebar-width: calc(var(--spacing) * 65);
 	--content-spacing: calc(var(--spacing) * 8);
@@ -74,7 +74,7 @@ body {
 
 @media screen and (min-width: 1200px) {
 	:root {
-		--offset-top: 72px;
+		--offset-top: 80px;
 	}
 }
 
