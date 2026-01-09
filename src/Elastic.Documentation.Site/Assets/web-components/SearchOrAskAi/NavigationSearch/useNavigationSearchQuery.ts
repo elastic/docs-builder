@@ -8,12 +8,12 @@ import {
 import { traceSpan } from '../../../telemetry/tracing'
 import { createApiErrorFromResponse, shouldRetry } from '../errorHandling'
 import { ApiError } from '../errorHandling'
-import { usePageNumber, useSearchTerm, useTypeFilter } from './search.store'
+import { usePageNumber, useSearchTerm, useTypeFilter } from './navigationSearch.store'
 import {
-    useIsSearchAwaitingNewInput,
-    useSearchCooldownActions,
-    useIsSearchCooldownActive,
-} from './useSearchCooldown'
+    useIsNavigationSearchAwaitingNewInput,
+    useNavigationSearchCooldownActions,
+    useIsNavigationSearchCooldownActive,
+} from './useNavigationSearchCooldown'
 import {
     keepPreviousData,
     useQuery,
@@ -54,15 +54,15 @@ const SearchResponse = z.object({
 
 export type SearchResponse = z.infer<typeof SearchResponse>
 
-export const useSearchQuery = () => {
+export const useNavigationSearchQuery = () => {
     const searchTerm = useSearchTerm()
     const pageNumber = usePageNumber() + 1
     const typeFilter = useTypeFilter()
     const trimmedSearchTerm = searchTerm.trim()
     const debouncedSearchTerm = useDebounce(trimmedSearchTerm, 300)
-    const isCooldownActive = useIsSearchCooldownActive()
-    const awaitingNewInput = useIsSearchAwaitingNewInput()
-    const { acknowledgeCooldownFinished } = useSearchCooldownActions()
+    const isCooldownActive = useIsNavigationSearchCooldownActive()
+    const awaitingNewInput = useIsNavigationSearchAwaitingNewInput()
+    const { acknowledgeCooldownFinished } = useNavigationSearchCooldownActions()
     const previousSearchTermRef = useRef(debouncedSearchTerm)
     const queryClient = useQueryClient()
 
@@ -83,7 +83,7 @@ export const useSearchQuery = () => {
 
     const query = useQuery<SearchResponse, ApiError>({
         queryKey: [
-            'search',
+            'navigation-search',
             {
                 searchTerm: debouncedSearchTerm.toLowerCase(),
                 pageNumber,
@@ -99,7 +99,7 @@ export const useSearchQuery = () => {
                 })
             }
 
-            return traceSpan('execute search', async (span) => {
+            return traceSpan('execute navigation search', async (span) => {
                 // Track frontend search (even if backend response is cached by CloudFront)
                 span.setAttribute(ATTR_SEARCH_QUERY, debouncedSearchTerm)
                 span.setAttribute(ATTR_SEARCH_PAGE, pageNumber)
@@ -115,7 +115,7 @@ export const useSearchQuery = () => {
                 }
 
                 const response = await fetch(
-                    '/docs/_api/v1/search?' + params.toString(),
+                    '/docs/_api/v1/navigation-search?' + params.toString(),
                     { signal }
                 )
                 if (!response.ok) {
@@ -152,7 +152,7 @@ export const useSearchQuery = () => {
     const cancelQuery = useCallback(() => {
         queryClient.cancelQueries({
             queryKey: [
-                'search',
+                'navigation-search',
                 {
                     searchTerm: debouncedSearchTerm.toLowerCase(),
                     pageNumber,

@@ -2,7 +2,6 @@ import { InfoBanner } from '../InfoBanner'
 import { KeyboardShortcutsFooter } from '../KeyboardShortcutsFooter'
 import { LegalDisclaimer } from '../LegalDisclaimer'
 import AiIcon from '../ai-icon.svg'
-import { useModalActions } from '../modal.store'
 import { AskAiSuggestions } from './AskAiSuggestions'
 import { ChatInput } from './ChatInput'
 import { ChatMessageList } from './ChatMessageList'
@@ -119,7 +118,6 @@ export const Chat = () => {
 }
 
 const ChatHeader = () => {
-    const { closeModal } = useModalActions()
     const { clearChat } = useChatActions()
     const messages = useChatMessages()
     const { euiTheme } = useEuiTheme()
@@ -137,7 +135,7 @@ const ChatHeader = () => {
                     padding-inline: ${euiTheme.size.base};
                     display: grid;
                     height: 56px;
-                    grid-template-columns: 1fr auto auto;
+                    grid-template-columns: 1fr auto;
                     align-items: center;
                 `}
             >
@@ -158,32 +156,19 @@ const ChatHeader = () => {
                         Elastic Docs AI Assistant
                     </span>
                 </div>
-                <div
-                    css={css`
-                        display: flex;
-                        gap: ${euiTheme.size.s};
-                    `}
-                >
-                    <EuiToolTip content="Clear conversation">
-                        <EuiButtonIcon
-                            aria-label="Clear conversation"
-                            iconType="trash"
-                            color="text"
-                            onClick={() => clearChat()}
-                            css={css`
-                                visibility: ${messages.length > 0
-                                    ? 'visible'
-                                    : 'hidden'};
-                            `}
-                        />
-                    </EuiToolTip>
+                <EuiToolTip content="Clear conversation">
                     <EuiButtonIcon
-                        aria-label="Close Ask AI modal"
-                        iconType="cross"
+                        aria-label="Clear conversation"
+                        iconType="trash"
                         color="text"
-                        onClick={() => closeModal()}
+                        onClick={() => clearChat()}
+                        css={css`
+                            visibility: ${messages.length > 0
+                                ? 'visible'
+                                : 'hidden'};
+                        `}
                     />
-                </div>
+                </EuiToolTip>
             </div>
             <EuiHorizontalRule margin="none" />
         </EuiFlexItem>

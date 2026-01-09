@@ -1,24 +1,24 @@
 import { useCooldownState, useCooldownActions } from '../cooldown.store'
 
-export const useSearchCooldown = () => {
+export const useNavigationSearchCooldown = () => {
     const state = useCooldownState('search')
     return state.cooldown
 }
 
-export const useIsSearchAwaitingNewInput = () => {
+export const useIsNavigationSearchAwaitingNewInput = () => {
     const state = useCooldownState('search')
     return state.awaitingNewInput
 }
 
-export const useIsSearchCooldownActive = () => {
-    const countdown = useSearchCooldown()
+export const useIsNavigationSearchCooldownActive = () => {
+    const countdown = useNavigationSearchCooldown()
     return countdown !== null && countdown > 0
 }
 
-export const useSearchErrorCalloutState = () => {
-    const countdown = useSearchCooldown()
-    const hasActiveCooldown = useIsSearchCooldownActive()
-    const awaitingNewInput = useIsSearchAwaitingNewInput()
+export const useNavigationSearchErrorCalloutState = () => {
+    const countdown = useNavigationSearchCooldown()
+    const hasActiveCooldown = useIsNavigationSearchCooldownActive()
+    const awaitingNewInput = useIsNavigationSearchAwaitingNewInput()
 
     return {
         countdown,
@@ -27,7 +27,7 @@ export const useSearchErrorCalloutState = () => {
     }
 }
 
-export const useSearchCooldownActions = () => {
+export const useNavigationSearchCooldownActions = () => {
     const actions = useCooldownActions()
     return {
         setCooldown: (cooldown: number | null) =>

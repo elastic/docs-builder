@@ -1,4 +1,4 @@
-import { useSelectedIndex, useSearchActions } from '../Search/search.store'
+import { useSelectedIndex, useSearchActions } from './navigationSearch.store'
 import { useRef, useCallback, MutableRefObject } from 'react'
 
 interface Options {

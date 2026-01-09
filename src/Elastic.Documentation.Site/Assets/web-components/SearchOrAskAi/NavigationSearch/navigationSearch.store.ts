@@ -5,7 +5,7 @@ export type TypeFilter = 'all' | 'doc' | 'api'
 /** -1 indicates no item is selected (e.g., before user starts typing) */
 export const NO_SELECTION = -1
 
-interface SearchState {
+interface NavigationSearchState {
     searchTerm: string
     page: number
     typeFilter: TypeFilter
@@ -20,7 +20,7 @@ interface SearchState {
     }
 }
 
-export const searchStore = create<SearchState>((set) => ({
+export const navigationSearchStore = create<NavigationSearchState>((set) => ({
     searchTerm: '',
     page: 0,
     typeFilter: 'all',
@@ -42,9 +42,13 @@ export const searchStore = create<SearchState>((set) => ({
     },
 }))
 
-export const useSearchTerm = () => searchStore((state) => state.searchTerm)
-export const usePageNumber = () => searchStore((state) => state.page)
-export const useTypeFilter = () => searchStore((state) => state.typeFilter)
+export const useSearchTerm = () =>
+    navigationSearchStore((state) => state.searchTerm)
+export const usePageNumber = () =>
+    navigationSearchStore((state) => state.page)
+export const useTypeFilter = () =>
+    navigationSearchStore((state) => state.typeFilter)
 export const useSelectedIndex = () =>
-    searchStore((state) => state.selectedIndex)
-export const useSearchActions = () => searchStore((state) => state.actions)
+    navigationSearchStore((state) => state.selectedIndex)
+export const useSearchActions = () =>
+    navigationSearchStore((state) => state.actions)

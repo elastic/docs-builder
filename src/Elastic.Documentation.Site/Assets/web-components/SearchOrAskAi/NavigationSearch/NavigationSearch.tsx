@@ -1,7 +1,7 @@
 import { availableIcons } from '../../../eui-icons-cache'
-import { useSearchTerm, useSearchActions } from '../Search/search.store'
-import { useIsSearchCooldownActive } from '../Search/useSearchCooldown'
-import { useSearchQuery } from '../Search/useSearchQuery'
+import { useSearchTerm, useSearchActions } from './navigationSearch.store'
+import { useIsNavigationSearchCooldownActive } from './useNavigationSearchCooldown'
+import { useNavigationSearchQuery } from './useNavigationSearchQuery'
 import { SearchInput } from './SearchInput'
 import { SearchResultsList } from './SearchResultsList'
 import { useGlobalKeyboardShortcut } from './useGlobalKeyboardShortcut'
@@ -27,8 +27,8 @@ export const NavigationSearch = () => {
     const popoverContentRef = useRef<HTMLDivElement>(null)
     const searchTerm = useSearchTerm()
     const { setSearchTerm } = useSearchActions()
-    const isSearchCooldownActive = useIsSearchCooldownActive()
-    const { isLoading, isFetching, data } = useSearchQuery()
+    const isSearchCooldownActive = useIsNavigationSearchCooldownActive()
+    const { isLoading, isFetching, data } = useNavigationSearchQuery()
 
     const results = data?.results ?? []
     const hasContent = !!searchTerm.trim()

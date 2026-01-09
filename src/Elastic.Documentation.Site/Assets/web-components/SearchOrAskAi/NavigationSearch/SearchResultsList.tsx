@@ -1,5 +1,8 @@
-import { useSelectedIndex, useSearchActions } from '../Search/search.store'
-import { useSearchQuery, SearchResultItem } from '../Search/useSearchQuery'
+import { useSelectedIndex, useSearchActions } from './navigationSearch.store'
+import {
+    useNavigationSearchQuery,
+    SearchResultItem,
+} from './useNavigationSearchQuery'
 import { SanitizedHtmlContent } from './SanitizedHtmlContent'
 import {
     EuiBadge,
@@ -29,7 +32,7 @@ export const SearchResultsList = ({
     const { euiTheme } = useEuiTheme()
     const selectedIndex = useSelectedIndex()
     const { setSelectedIndex } = useSearchActions()
-    const { isLoading, data } = useSearchQuery()
+    const { isLoading, data } = useNavigationSearchQuery()
 
     const results = data?.results ?? []
     const isInitialLoading = isLoading && !data

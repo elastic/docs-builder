@@ -1,5 +1,4 @@
 import { cooldownStore } from '../cooldown.store'
-import { modalStore } from '../modal.store'
 import { Chat } from './Chat'
 import { chatStore } from './chat.store'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -37,10 +36,6 @@ const resetStores = () => {
         conversationId: null,
         aiProvider: 'LlmGateway',
         scrollPosition: 0,
-    })
-    modalStore.setState({
-        isOpen: false,
-        mode: 'search',
     })
     cooldownStore.setState({
         cooldowns: {
@@ -399,20 +394,4 @@ describe('Chat Component', () => {
         })
     })
 
-    describe('Close modal', () => {
-        it('should close modal when close button is clicked', async () => {
-            // Arrange
-            modalStore.setState({ isOpen: true })
-            const user = userEvent.setup()
-
-            // Act
-            render(<Chat />)
-            await user.click(
-                screen.getByRole('button', { name: /close ask ai modal/i })
-            )
-
-            // Assert
-            expect(modalStore.getState().isOpen).toBe(false)
-        })
-    })
 })

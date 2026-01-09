@@ -4,15 +4,14 @@ This document describes the test coverage for the SearchOrAskAi feature.
 
 ## Summary
 
-**38 tests** across 5 test files, running in **~4.8 seconds**
+**24 tests** across 3 test files
 
-| Test File              | Tests | Focus                      |
-| ---------------------- | ----- | -------------------------- |
-| `chat.store.test.ts`   | 2     | Chat state scenarios       |
-| `search.store.test.ts` | 4     | Search state management    |
-| `Chat.test.tsx`        | 12    | Chat UI & interactions     |
-| `ChatMessage.test.tsx` | 10    | Message rendering & states |
-| `Search.test.tsx`      | 10    | Search UI & chat handoff   |
+| Test File                          | Tests | Focus                      |
+| ---------------------------------- | ----- | -------------------------- |
+| `AskAi/chat.store.test.ts`         | 2     | Chat state scenarios       |
+| `AskAi/Chat.test.tsx`              | 12    | Chat UI & interactions     |
+| `AskAi/ChatMessage.test.tsx`       | 10    | Message rendering & states |
+| `NavigationSearch/navigationSearch.store.test.ts` | 4 | Navigation search state |
 
 ## Testing Philosophy
 
@@ -58,9 +57,9 @@ Tests chat state management through **complete user scenarios**:
 
 **Coverage**: Core conversation flows
 
-#### `Search/search.store.test.ts` (4 tests)
+#### `NavigationSearch/navigationSearch.store.test.ts` (4 tests)
 
-Tests the search term state management:
+Tests the navigation search state management:
 
 - ✅ **setSearchTerm**: Updating search input
 - ✅ **clearSearchTerm**: Resetting search
@@ -68,7 +67,7 @@ Tests the search term state management:
 
 **Coverage**: 100% of store logic
 
-**Note**: Search store tests remain granular because the store is simple and these tests are fast.
+**Note**: Navigation search store tests remain granular because the store is simple and these tests are fast.
 
 ### Component Tests
 
@@ -105,27 +104,11 @@ Tests individual message rendering:
 
 **Coverage**: Core message rendering behaviors
 
-#### `Search/Search.test.tsx` (10 tests)
-
-Tests the search interface and **search-to-chat handoff workflow**:
-
-- ✅ **Search input**: Typing and updating search term
-- ✅ **Ask AI button**: Visibility and click behavior
-- ✅ **Enter key**: Submitting search to AI
-- ✅ **Workflow orchestration**: Verifies clearChat → submitQuestion → setModalMode
-- ✅ **Search results**: Rendering result component
-- ✅ **Validation**: Preventing empty/whitespace submissions
-
-**Note**: Tests verify workflow orchestration (calling the right actions in the right order), not just UI rendering. This is appropriate because Search's main responsibility is coordinating the handoff from search to chat.
-
-**Coverage**: Search component and integration workflow
-
 ### Integration Test Coverage
 
 #### What's Tested
 
-- ✅ User can type in search field
-- ✅ User can submit search to AI chat
+- ✅ User can type in navigation search field
 - ✅ User can type in chat input
 - ✅ User can submit questions in chat
 - ✅ Chat messages are rendered correctly
@@ -137,8 +120,6 @@ Tests the search interface and **search-to-chat handoff workflow**:
 
 - ❌ Actual LLM API calls
 - ❌ Real EventSource streaming
-- ❌ Modal open/close animations
-- ❌ Tab switching between Search and Ask AI
 - ❌ Cross-browser compatibility
 - ❌ Performance under load
 
@@ -324,9 +305,8 @@ describe('New component', () => {
 
 1. **ChatMessageList** - Needs tests for streaming orchestration
 2. **AskAiSuggestions** - Needs tests for suggestion clicks
-3. **SearchResults** - Needs tests for result rendering
+3. **NavigationSearch** - Needs tests for autocomplete rendering
 4. **useLlmGateway** - Needs unit tests for streaming logic
-5. **Modal integration** - Needs tests for tab switching
 
 ## Future Improvements
 

@@ -37,8 +37,8 @@ jest.mock('@elastic/eui', () => ({
 const mockUseSearchRateLimitHandler = jest.fn()
 const mockUseAskAiRateLimitHandler = jest.fn()
 
-jest.mock('./Search/useSearchRateLimitHandler', () => ({
-    useSearchRateLimitHandler: (error: ApiError | Error | null) =>
+jest.mock('./NavigationSearch/useNavigationSearchRateLimitHandler', () => ({
+    useNavigationSearchRateLimitHandler: (error: ApiError | Error | null) =>
         mockUseSearchRateLimitHandler(error),
 }))
 
@@ -60,8 +60,8 @@ const mockAskAiState = {
     awaitingNewInput: false,
 }
 
-jest.mock('./Search/useSearchCooldown', () => ({
-    useSearchErrorCalloutState: jest.fn(() => mockSearchState),
+jest.mock('./NavigationSearch/useNavigationSearchCooldown', () => ({
+    useNavigationSearchErrorCalloutState: jest.fn(() => mockSearchState),
 }))
 
 jest.mock('./AskAi/useAskAiCooldown', () => ({
@@ -69,7 +69,8 @@ jest.mock('./AskAi/useAskAiCooldown', () => ({
 }))
 
 const mockUseSearchErrorCalloutState = jest.mocked(
-    jest.requireMock('./Search/useSearchCooldown').useSearchErrorCalloutState
+    jest.requireMock('./NavigationSearch/useNavigationSearchCooldown')
+        .useNavigationSearchErrorCalloutState
 )
 const mockUseAskAiErrorCalloutState = jest.mocked(
     jest.requireMock('./AskAi/useAskAiCooldown').useAskAiErrorCalloutState

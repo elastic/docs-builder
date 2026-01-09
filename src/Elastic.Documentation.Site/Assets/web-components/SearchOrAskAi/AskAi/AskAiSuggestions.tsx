@@ -1,4 +1,3 @@
-import { useModalActions } from '../modal.store'
 import { useChatActions } from './chat.store'
 import { useIsAskAiCooldownActive } from './useAskAiCooldown'
 import { EuiButton, EuiText, useEuiTheme, EuiSpacer } from '@elastic/eui'
@@ -39,7 +38,6 @@ const ALL_SUGGESTIONS: AskAiSuggestion[] = [
 
 export const AskAiSuggestions = () => {
     const { submitQuestion } = useChatActions()
-    const { setModalMode } = useModalActions()
     const disabled = useIsAskAiCooldownActive()
     const { euiTheme } = useEuiTheme()
 
@@ -72,7 +70,6 @@ export const AskAiSuggestions = () => {
                             onClick={() => {
                                 if (!disabled) {
                                     submitQuestion(suggestion.question)
-                                    setModalMode('askAi')
                                 }
                             }}
                             disabled={disabled}

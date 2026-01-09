@@ -1,5 +1,6 @@
-import { ModalMode } from './modalmodes'
 import { create } from 'zustand/react'
+
+export type CooldownDomain = 'search' | 'askAi'
 
 interface CooldownStateData {
     cooldown: number | null
@@ -7,12 +8,12 @@ interface CooldownStateData {
 }
 
 interface CooldownState {
-    cooldowns: Record<ModalMode, CooldownStateData>
+    cooldowns: Record<CooldownDomain, CooldownStateData>
     actions: {
-        setCooldown: (domain: ModalMode, cooldown: number | null) => void
-        updateCooldown: (domain: ModalMode, cooldown: number | null) => void
-        notifyCooldownFinished: (domain: ModalMode) => void
-        acknowledgeCooldownFinished: (domain: ModalMode) => void
+        setCooldown: (domain: CooldownDomain, cooldown: number | null) => void
+        updateCooldown: (domain: CooldownDomain, cooldown: number | null) => void
+        notifyCooldownFinished: (domain: CooldownDomain) => void
+        acknowledgeCooldownFinished: (domain: CooldownDomain) => void
     }
 }
 
@@ -77,8 +78,7 @@ const cooldownStore = create<CooldownState>((set) => ({
 
 export const useCooldownActions = () => cooldownStore((state) => state.actions)
 
-export const useCooldownState = (domain: ModalMode) =>
+export const useCooldownState = (domain: CooldownDomain) =>
     cooldownStore((state) => state.cooldowns[domain])
 
 export { cooldownStore }
-export type { ModalMode } from './modalmodes'

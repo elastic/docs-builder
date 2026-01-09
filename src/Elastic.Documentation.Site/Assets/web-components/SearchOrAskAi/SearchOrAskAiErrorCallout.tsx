@@ -1,7 +1,7 @@
 import { useAskAiErrorCalloutState } from './AskAi/useAskAiCooldown'
 import { useAskAiRateLimitHandler } from './AskAi/useAskAiRateLimitHandler'
-import { useSearchErrorCalloutState } from './Search/useSearchCooldown'
-import { useSearchRateLimitHandler } from './Search/useSearchRateLimitHandler'
+import { useNavigationSearchErrorCalloutState } from './NavigationSearch/useNavigationSearchCooldown'
+import { useNavigationSearchRateLimitHandler } from './NavigationSearch/useNavigationSearchRateLimitHandler'
 import {
     ApiError,
     getErrorMessage,
@@ -27,12 +27,12 @@ export function SearchOrAskAiErrorCallout({
     title = 'Sorry, there was an error',
 }: SearchOrAskAiErrorCalloutProps) {
     // Use domain-specific hooks based on the domain prop
-    const searchState = useSearchErrorCalloutState()
+    const searchState = useNavigationSearchErrorCalloutState()
     const askAiState = useAskAiErrorCalloutState()
     const state = domain === 'search' ? searchState : askAiState
 
     // Use domain-specific rate limit handler
-    useSearchRateLimitHandler(domain === 'search' ? error : null)
+    useNavigationSearchRateLimitHandler(domain === 'search' ? error : null)
     useAskAiRateLimitHandler(domain === 'askAi' ? error : null)
 
     const is429Error = error && isRateLimitError(error)
