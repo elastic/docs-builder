@@ -133,9 +133,9 @@ This is an inline {applies_to}`stack: preview 9.1` element.
 """
 
     [<Fact>]
-    let ``converts to plain text with optional comment`` () =
+    let ``converts to readable text`` () =
         markdown |> convertsToNewLLM """
-        This is an inline `stack: preview 9.1` element.
+        This is an inline [Stack Preview 9.1+] element.
         """
 
 type ``admonition directive`` () =

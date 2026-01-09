@@ -8,6 +8,7 @@ using System.Text;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Markdown.Helpers;
+using Elastic.Markdown.Myst.Renderers.LlmMarkdown;
 using Markdig.Syntax;
 
 namespace Elastic.Markdown.Exporters;
@@ -153,6 +154,14 @@ public class LlmMarkdownExporter : IMarkdownExporter
 			_ = metadata.AppendLine("products:");
 			foreach (var item in pageProducts.Select(p => p.DisplayName).Order())
 				_ = metadata.AppendLine($"  - {item}");
+		}
+
+		// Add applies_to information from frontmatter
+		if (sourceFile.YamlFrontMatter?.AppliesTo is not null)
+		{
+			var appliesToText = LlmAppliesToHelper.RenderApplicableTo(sourceFile.YamlFrontMatter.AppliesTo, context.BuildContext);
+			if (!string.IsNullOrEmpty(appliesToText))
+				_ = metadata.AppendLine($"applies_to: {appliesToText}");
 		}
 
 		_ = metadata.AppendLine("---");
