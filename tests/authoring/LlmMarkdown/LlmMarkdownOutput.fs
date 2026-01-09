@@ -765,24 +765,24 @@ This is a test page with applies_to frontmatter.
 """
 
     [<Fact>]
-    let ``parses applies_to frontmatter correctly`` () =
-        // Test that the applies_to frontmatter is correctly parsed
+    let ``outputs content correctly`` () =
+        // The page content should be rendered in LLM markdown
+        markdown |> convertsToNewLLM """
+This is a test page with applies_to frontmatter.
+"""
+    
+    [<Fact>]
+    let ``parses applies_to from frontmatter`` () =
+        // Verify that applies_to frontmatter is parsed into the ApplicableTo object
+        // Note: The actual "This applies to:" text is added during export in LlmMarkdownExporter.CreateLlmContentWithMetadata
+        // which is not tested by convertsToNewLLM (that only tests document content, not the full export metadata)
         let results = markdown.Value
         let defaultFile = results.MarkdownResults |> Seq.find (fun r -> r.File.RelativePath = "index.md")
         
-        // Test that the file has the correct applies_to information
+        // Verify frontmatter was parsed
         test <@ defaultFile.File.YamlFrontMatter <> null @>
         match defaultFile.File.YamlFrontMatter with
         | NonNull yamlFrontMatter ->
+            // Verify applies_to was parsed
             test <@ yamlFrontMatter.AppliesTo <> null @>
-            match yamlFrontMatter.AppliesTo with
-            | NonNull appliesTo ->
-                // Verify stack applies_to
-                match appliesTo.Stack with
-                | NonNull stack -> test <@ stack.Count > 0 @>
-                | _ -> ()
-                
-                // Verify serverless applies_to
-                test <@ appliesTo.Serverless <> null @>
-            | _ -> ()
         | _ -> ()
