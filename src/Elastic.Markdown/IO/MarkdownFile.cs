@@ -211,8 +211,27 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 			.ToArray();
 
 		var includedTocs = includes
-			.SelectMany(i => i!.Anchors!.TableOfContentItems
-				.Select(item => new { TocItem = item, i.Block.Line }))
+			.SelectMany(i =>
+			{
+				// Calculate the heading level context at the include block position
+				var precedingLevel = GetPrecedingHeadingLevel(i!.Block);
+
+				return i.Anchors!.TableOfContentItems
+					.Select(item =>
+					{
+						// Only adjust stepper steps, not regular headings
+						// Stepper steps default to level 2 when parsed in isolation (no preceding heading in snippet),
+						// but should be relative to the preceding heading in the parent document
+						var adjustedItem = item;
+						if (item.IsStepperStep && precedingLevel.HasValue && item.Level == 2)
+						{
+							// The step was parsed without context (defaulted to h2)
+							// Adjust it to be one level deeper than the preceding heading
+							adjustedItem = item with { Level = Math.Min(precedingLevel.Value + 1, 6) };
+						}
+						return new { TocItem = adjustedItem, i.Block.Line };
+					});
+			})
 			.ToArray();
 
 		// Collect headings from standard markdown
@@ -255,7 +274,8 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 					{
 						Heading = processedTitle,
 						Slug = step.Anchor,
-						Level = step.HeadingLevel // Use dynamic heading level
+						Level = step.HeadingLevel, // Use dynamic heading level
+						IsStepperStep = true
 					},
 					step.Line
 				};
@@ -298,6 +318,38 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 			parent = parent.Parent;
 		}
 		return false;
+	}
+
+	/// <summary>
+	/// Finds the heading level that precedes the given block in the document.
+	/// Used to provide context for included snippets so stepper heading levels
+	/// can be adjusted relative to the parent document's structure.
+	/// </summary>
+	private static int? GetPrecedingHeadingLevel(MarkdownObject block)
+	{
+		// Find the document root
+		var current = block;
+		while (current is ContainerBlock container && container.Parent != null)
+			current = container.Parent;
+
+		if (current is not ContainerBlock root)
+			return null;
+
+		// Find all blocks and locate this one
+		var allBlocks = root.Descendants().ToList();
+		var thisIndex = allBlocks.IndexOf(block);
+
+		if (thisIndex == -1)
+			return null;
+
+		// Look backwards for the most recent heading
+		for (var i = thisIndex - 1; i >= 0; i--)
+		{
+			if (allBlocks[i] is HeadingBlock heading)
+				return heading.Level;
+		}
+
+		return null;
 	}
 
 	private YamlFrontMatter ProcessYamlFrontMatter(MarkdownDocument document)
