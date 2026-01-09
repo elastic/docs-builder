@@ -4,9 +4,9 @@
 
 namespace Elastic.Documentation.Api.Core.Search;
 
-public interface ISearchGateway
+public interface IFindPageGateway
 {
-	Task<SearchResult> SearchAsync(
+	Task<FindPageResult> FindPageAsync(
 		string query,
 		int pageNumber,
 		int pageSize,
@@ -15,9 +15,9 @@ public interface ISearchGateway
 	);
 }
 
-public record SearchResult
+public record FindPageResult
 {
 	public required int TotalHits { get; init; }
-	public required List<SearchResultItem> Results { get; init; }
+	public required List<FindPageResultItem> Results { get; init; }
 	public IReadOnlyDictionary<string, long> Aggregations { get; init; } = new Dictionary<string, long>();
 }
