@@ -30,7 +30,8 @@ initializeOtel({
 // Dynamically import web components after telemetry is initialized
 // This ensures telemetry is available when the components execute
 // Parcel will automatically code-split this into a separate chunk
-import('./web-components/SearchOrAskAi/SearchOrAskAi')
+import('./web-components/NavigationSearch/NavigationSearchComponent')
+import('./web-components/AskAi/AskAi')
 import('./web-components/VersionDropdown')
 import('./web-components/AppliesToPopover')
 
