@@ -751,3 +751,38 @@ type ``images in tables`` () =
 |---------------------------------------|------|
 | ![logo](https://example.com/logo.png) | Logo |
 """
+
+type ``page level applies_to in frontmatter`` () =
+    static let markdown = Setup.Document """---
+applies_to:
+  stack: ga 8.5
+  serverless: preview
+---
+
+# Test Page
+
+This is a test page with applies_to frontmatter.
+"""
+
+    [<Fact>]
+    let ``parses applies_to frontmatter correctly`` () =
+        // Test that the applies_to frontmatter is correctly parsed
+        let results = markdown.Value
+        let defaultFile = results.MarkdownResults |> Seq.find (fun r -> r.File.RelativePath = "index.md")
+        
+        // Test that the file has the correct applies_to information
+        test <@ defaultFile.File.YamlFrontMatter <> null @>
+        match defaultFile.File.YamlFrontMatter with
+        | NonNull yamlFrontMatter ->
+            test <@ yamlFrontMatter.AppliesTo <> null @>
+            match yamlFrontMatter.AppliesTo with
+            | NonNull appliesTo ->
+                // Verify stack applies_to
+                match appliesTo.Stack with
+                | NonNull stack -> test <@ stack.Count > 0 @>
+                | _ -> ()
+                
+                // Verify serverless applies_to
+                test <@ appliesTo.Serverless <> null @>
+            | _ -> ()
+        | _ -> ()
