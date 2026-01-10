@@ -765,41 +765,27 @@ This is a test page with applies_to frontmatter.
 """
 
     [<Fact>]
-    let ``renders content correctly`` () =
-        // The page content should be rendered in LLM markdown
-        markdown |> convertsToNewLLM """
-This is a test page with applies_to frontmatter.
-"""
-    
-    [<Fact>]
-    let ``frontmatter applies_to is exported in metadata section`` () =
-        // The applies_to from frontmatter is processed and would appear in the exported LLM file
-        // In the format:
-        //   ---
-        //   title: Test Page
-        //   description: ...
-        //
-        //   This applies to:
-        //   - Generally available since 8.5 for Stack
-        //   - Preview for Serverless
-        //   ---
-        //
-        // This happens in LlmMarkdownExporter.CreateLlmContentWithMetadata during export.
-        // We verify the frontmatter is parsed correctly so it can be used during export.
+    let ``exports with applies_to in metadata`` () =
+        // Test that the applies_to helper renders the expected output
         let results = markdown.Value
         let defaultFile = results.MarkdownResults |> Seq.find (fun r -> r.File.RelativePath = "index.md")
         
-        // Verify frontmatter was parsed
+        // Get the AppliesTo object from frontmatter
         test <@ defaultFile.File.YamlFrontMatter <> null @>
         match defaultFile.File.YamlFrontMatter with
         | NonNull yamlFrontMatter ->
-            // Verify applies_to was parsed and contains expected data
             test <@ yamlFrontMatter.AppliesTo <> null @>
             match yamlFrontMatter.AppliesTo with
             | NonNull appliesTo ->
-                // Verify Stack configuration exists
-                test <@ appliesTo.Stack <> null @>
-                // Verify Serverless configuration exists  
-                test <@ appliesTo.Serverless <> null @>
-            | _ -> ()
-        | _ -> ()
+                // Test that the LlmAppliesToHelper renders the correct output
+                let appliesToText = Elastic.Markdown.Myst.Renderers.LlmMarkdown.LlmAppliesToHelper.RenderAppliesToBlock(
+                    appliesTo,
+                    defaultFile.Context.Generator.Context
+                )
+                
+                // Verify it contains the expected sections
+                test <@ appliesToText.Contains("This applies to:") @>
+                test <@ appliesToText.Contains("for Stack") @>
+                test <@ appliesToText.Contains("for Serverless") @>
+            | _ -> failwith "AppliesTo should not be null"
+        | _ -> failwith "YamlFrontMatter should not be null"

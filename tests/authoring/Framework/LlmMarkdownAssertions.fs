@@ -39,21 +39,3 @@ module LlmMarkdownAssertions =
 {actualLLM}
 """
             raise (XunitException(msg))
-    
-    [<DebuggerStepThrough>]
-    let llmOutputContains (expectedText: string) (actual: Lazy<GeneratorResults>) =
-        // Check if the document content contains the expected text
-        let results = actual.Value
-        let defaultFile = results.MarkdownResults |> Seq.find (fun r -> r.File.RelativePath = "index.md")
-        let actualLLM = toLlmMarkdown defaultFile
-        
-        if not (actualLLM.Contains(expectedText)) then
-            let msg = $"""LLM output does not contain expected text
-
--- EXPECTED TO CONTAIN --
-{expectedText}
-
--- ACTUAL OUTPUT --
-{actualLLM}
-"""
-            raise (XunitException(msg))
