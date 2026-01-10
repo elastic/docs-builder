@@ -18,7 +18,11 @@ public class AppliesSwitchBlock(DirectiveBlockParser parser, ParserContext conte
 	public int Index { get; set; }
 	public string GetGroupKey() => Prop("group") ?? "applies-switches";
 
-	public override void FinalizeAndValidate(ParserContext context) => Index = FindIndex();
+	public override void FinalizeAndValidate(ParserContext context)
+	{
+		Index = FindIndex();
+		SortAppliesItems();
+	}
 
 	private int _index = -1;
 
@@ -29,6 +33,52 @@ public class AppliesSwitchBlock(DirectiveBlockParser parser, ParserContext conte
 
 		_index = GetUniqueLineIndex();
 		return _index;
+	}
+
+	private void SortAppliesItems()
+	{
+		// Get all applies-item children
+		var items = this.OfType<AppliesItemBlock>().ToList();
+		if (items.Count <= 1)
+			return; // No need to sort if 0 or 1 items
+
+		// Parse ApplicableTo for each item for sorting
+		var itemsWithAppliesTo = items.Select(item =>
+		{
+			try
+			{
+				var applicableTo = YamlSerialization.Deserialize<ApplicableTo>(
+					item.AppliesToDefinition,
+					Build.ProductsConfiguration);
+				return (Item: item, AppliesTo: (ApplicableTo?)applicableTo);
+			}
+			catch
+			{
+				// If parsing fails, keep original order for this item
+				return (Item: item, AppliesTo: null);
+			}
+		}).ToList();
+
+		// Create comparer
+		var comparer = new ApplicableToOrderComparer();
+
+		// Sort items based on their ApplicableTo, putting unparseable items at the end
+		var sorted = itemsWithAppliesTo
+			.OrderBy(x => x.AppliesTo is null ? 1 : 0) // Unparseable items last
+			.ThenBy(x => x.AppliesTo, comparer)
+			.ToList();
+
+		// Remove all items from the block
+		foreach (var item in items)
+			_ = Remove(item);
+
+		// Re-add items in sorted order
+		foreach (var (item, _) in sorted)
+			Add(item);
+
+		// Update indices after sorting
+		foreach (var item in items)
+			item.UpdateIndex();
 	}
 }
 
@@ -51,7 +101,6 @@ public class AppliesItemBlock(DirectiveBlockParser parser, ParserContext context
 			this.EmitError("{applies-item} requires an argument with applies_to definition.");
 
 		AppliesToDefinition = (Arguments ?? "{undefined}").ReplaceSubstitutions(context);
-		Index = Parent!.IndexOf(this);
 
 		var appliesSwitch = Parent as AppliesSwitchBlock;
 
@@ -62,6 +111,9 @@ public class AppliesItemBlock(DirectiveBlockParser parser, ParserContext context
 		SyncKey = Prop("sync") ?? GenerateSyncKey(AppliesToDefinition, Build.ProductsConfiguration);
 		Selected = PropBool("selected");
 	}
+
+	// Called after sorting to update the index
+	internal void UpdateIndex() => Index = Parent!.IndexOf(this);
 
 	public static string GenerateSyncKey(string appliesToDefinition, ProductsConfiguration productsConfiguration)
 	{

@@ -258,3 +258,129 @@ Content for removed version
 			"Different applies_to definitions must produce different sync keys");
 	}
 }
+
+public class ApplicabilitySwitchOrderingTests(ITestOutputHelper output) : DirectiveTest<AppliesSwitchBlock>(output,
+"""
+:::::{applies-switch}
+::::{applies-item} stack: ga 8.11
+Old stack version content
+::::
+
+::::{applies-item} serverless: ga
+Serverless content
+::::
+
+::::{applies-item} stack: preview 9.1
+New stack version content
+::::
+
+::::{applies-item} deployment: { ece: ga, ess: ga }
+Deployment content
+::::
+:::::
+"""
+)
+{
+	[Fact]
+	public void OrdersAppliesItemsCorrectly()
+	{
+		var items = Block!.OfType<AppliesItemBlock>().ToArray();
+		items.Should().HaveCount(4);
+
+		// After automatic sorting:
+		// 1. Serverless first (index 0)
+		// 2. Stack 9.1 - latest stack version (index 1)
+		// 3. Stack 8.11 - older stack version (index 2)
+		// 4. Deployment (index 3)
+
+		items[0].AppliesToDefinition.Should().Contain("serverless");
+		items[1].AppliesToDefinition.Should().Contain("stack: preview 9.1");
+		items[2].AppliesToDefinition.Should().Contain("stack: ga 8.11");
+		items[3].AppliesToDefinition.Should().Contain("deployment");
+	}
+
+	[Fact]
+	public void UpdatesIndicesAfterSorting()
+	{
+		var items = Block!.OfType<AppliesItemBlock>().ToArray();
+		for (var i = 0; i < items.Length; i++)
+			items[i].Index.Should().Be(i, $"Item at position {i} should have Index {i}");
+	}
+}
+
+public class UnavailableLastOrderingTests(ITestOutputHelper output) : DirectiveTest<AppliesSwitchBlock>(output,
+"""
+:::::{applies-switch}
+::::{applies-item} stack: ga 9.1
+Available content
+::::
+
+::::{applies-item} stack: unavailable 9.0
+Unavailable content
+::::
+
+::::{applies-item} serverless: ga
+Serverless content
+::::
+:::::
+"""
+)
+{
+	[Fact]
+	public void OrdersUnavailableLast()
+	{
+		var items = Block!.OfType<AppliesItemBlock>().ToArray();
+		items.Should().HaveCount(3);
+
+		// After automatic sorting:
+		// 1. Serverless (index 0)
+		// 2. Stack 9.1 available (index 1)
+		// 3. Stack 9.0 unavailable (index 2) - unavailable should be last
+
+		items[0].AppliesToDefinition.Should().Contain("serverless");
+		items[1].AppliesToDefinition.Should().Contain("stack: ga 9.1");
+		items[2].AppliesToDefinition.Should().Contain("unavailable");
+	}
+}
+
+public class DeploymentOrderingTests(ITestOutputHelper output) : DirectiveTest<AppliesSwitchBlock>(output,
+"""
+:::::{applies-switch}
+::::{applies-item} deployment: { self: ga }
+Self-managed content
+::::
+
+::::{applies-item} deployment: { eck: ga }
+ECK content
+::::
+
+::::{applies-item} deployment: { ess: ga }
+ESS/ECH content
+::::
+
+::::{applies-item} deployment: { ece: ga }
+ECE content
+::::
+:::::
+"""
+)
+{
+	[Fact]
+	public void OrdersDeploymentsCorrectly()
+	{
+		var items = Block!.OfType<AppliesItemBlock>().ToArray();
+		items.Should().HaveCount(4);
+
+		// After automatic sorting:
+		// 1. ESS/ECH first (index 0)
+		// 2. ECE second (index 1)
+		// 3. ECK third (index 2)
+		// 4. Self-managed last (index 3)
+
+		items[0].AppliesToDefinition.Should().Contain("ess");
+		items[1].AppliesToDefinition.Should().Contain("ece");
+		items[2].AppliesToDefinition.Should().Contain("eck");
+		items[3].AppliesToDefinition.Should().Contain("self");
+	}
+}
+

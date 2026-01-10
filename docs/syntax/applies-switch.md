@@ -77,6 +77,45 @@ Content for Serverless
 :::::
 ::::::
 
+## Automatic ordering
+
+Applies-switch tabs are **automatically ordered** according to documentation standards, regardless of how they appear in the source file. This ensures consistency across documentation.
+
+The ordering rules are:
+
+1. **Serverless** appears first
+2. **Stack** versions appear second, ordered from **latest to oldest**
+3. **Deployment types** appear third, in this order:
+   - ECH/ESS (Elastic Cloud Hosted)
+   - ECE (Elastic Cloud Enterprise)
+   - ECK (Elastic Cloud on Kubernetes)
+   - Self-managed
+4. Items with **unavailable** lifecycle always appear **last**
+
+**Example:**
+
+Even if you write the tabs in a different order:
+
+```markdown
+::::{applies-switch}
+:::{applies-item} stack: ga 8.11
+Old stack version
+:::
+:::{applies-item} serverless: ga
+Serverless content
+:::
+:::{applies-item} stack: preview 9.1
+New stack version
+:::
+::::
+```
+
+They will automatically render in the correct order: Serverless → Stack 9.1 → Stack 8.11
+
+:::{tip}
+You don't need to manually order tabs anymore. Focus on content, and the system will handle the ordering for consistency.
+:::
+
 ## Automatic grouping
 
 All applies switches on a page automatically sync together. When you select an applies_to definition in one switch, all other switches will switch to the same applies_to definition.
