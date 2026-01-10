@@ -133,9 +133,9 @@ This is an inline {applies_to}`stack: preview 9.1` element.
 """
 
     [<Fact>]
-    let ``converts to plain text with optional comment`` () =
+    let ``converts to readable text`` () =
         markdown |> convertsToNewLLM """
-        This is an inline `stack: preview 9.1` element.
+        This is an inline [Planned for Stack] element.
         """
 
 type ``admonition directive`` () =
@@ -214,15 +214,15 @@ This is a custom admonition with applies_to information.
     [<Fact>]
     let ``renders correctly with applies_to information`` () =
         markdown |> convertsToNewLLM """
-<note applies-to="stack: ga">
+<note applies-to="Generally available in 8.0+ for Stack">
   This is a note admonition with applies_to information.
 </note>
 
-<warning applies-to="serverless: ga">
+<warning applies-to="Generally available in 8.0+ for Serverless">
   This is a warning admonition with applies_to information.
 </warning>
 
-<tip applies-to="elasticsearch: preview">
+<tip applies-to="Preview in 8.0+ for Serverless Elasticsearch">
   This is a tip admonition with applies_to information.
 </tip>
 
@@ -751,3 +751,41 @@ type ``images in tables`` () =
 |---------------------------------------|------|
 | ![logo](https://example.com/logo.png) | Logo |
 """
+
+type ``page level applies_to in frontmatter`` () =
+    static let markdown = Setup.Document """---
+applies_to:
+  stack: ga 8.5
+  serverless: preview
+---
+
+# Test Page
+
+This is a test page with applies_to frontmatter.
+"""
+
+    [<Fact>]
+    let ``exports with applies_to in metadata`` () =
+        // Test that the applies_to helper renders the expected output
+        let results = markdown.Value
+        let defaultFile = results.MarkdownResults |> Seq.find (fun r -> r.File.RelativePath = "index.md")
+        
+        // Get the AppliesTo object from frontmatter
+        test <@ defaultFile.File.YamlFrontMatter <> null @>
+        match defaultFile.File.YamlFrontMatter with
+        | NonNull yamlFrontMatter ->
+            test <@ yamlFrontMatter.AppliesTo <> null @>
+            match yamlFrontMatter.AppliesTo with
+            | NonNull appliesTo ->
+                // Test that the LlmAppliesToHelper renders the correct output
+                let appliesToText = Elastic.Markdown.Myst.Renderers.LlmMarkdown.LlmAppliesToHelper.RenderAppliesToBlock(
+                    appliesTo,
+                    defaultFile.Context.Generator.Context
+                )
+                
+                // Verify it contains the expected sections
+                test <@ appliesToText.Contains("This applies to:") @>
+                test <@ appliesToText.Contains("for Stack") @>
+                test <@ appliesToText.Contains("for Serverless") @>
+            | _ -> failwith "AppliesTo should not be null"
+        | _ -> failwith "YamlFrontMatter should not be null"

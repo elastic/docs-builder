@@ -8,6 +8,7 @@ using System.Text;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Markdown.Helpers;
+using Elastic.Markdown.Myst.Renderers.LlmMarkdown;
 using Markdig.Syntax;
 
 namespace Elastic.Markdown.Exporters;
@@ -76,7 +77,7 @@ public class LlmMarkdownExporter : IMarkdownExporter
 		if (outputFile.Directory is { Exists: false })
 			outputFile.Directory.Create();
 
-		var content = IsRootIndexFile(fileContext) ? LlmsTxtTemplate : CreateLlmContentWithMetadata(fileContext, llmMarkdown);
+		var content = IsRootIndexFile(fileContext) ? LlmsTxtTemplate : CreateLlmContentWithMetadataInternal(fileContext, llmMarkdown);
 
 		await fileContext.SourceFile.SourceFile.FileSystem.File.WriteAllTextAsync(
 			outputFile.FullName,
@@ -92,6 +93,13 @@ public class LlmMarkdownExporter : IMarkdownExporter
 		{
 			_ = renderer.Render(obj);
 		});
+
+	/// <summary>
+	/// Creates the full LLM content with metadata section (frontmatter).
+	/// This is exposed for testing purposes.
+	/// </summary>
+	public static string CreateLlmContentWithMetadata(MarkdownExportFileContext context, string llmMarkdown) =>
+		new LlmMarkdownExporter().CreateLlmContentWithMetadataInternal(context, llmMarkdown);
 
 	private static bool IsRootIndexFile(MarkdownExportFileContext fileContext)
 	{
@@ -128,7 +136,7 @@ public class LlmMarkdownExporter : IMarkdownExporter
 	}
 
 
-	private string CreateLlmContentWithMetadata(MarkdownExportFileContext context, string llmMarkdown)
+	private string CreateLlmContentWithMetadataInternal(MarkdownExportFileContext context, string llmMarkdown)
 	{
 		var sourceFile = context.SourceFile;
 		var metadata = DocumentationObjectPoolProvider.StringBuilderPool.Get();
@@ -153,6 +161,14 @@ public class LlmMarkdownExporter : IMarkdownExporter
 			_ = metadata.AppendLine("products:");
 			foreach (var item in pageProducts.Select(p => p.DisplayName).Order())
 				_ = metadata.AppendLine($"  - {item}");
+		}
+
+		// Add applies_to information from frontmatter
+		if (sourceFile.YamlFrontMatter?.AppliesTo is not null)
+		{
+			var appliesToText = LlmAppliesToHelper.RenderAppliesToBlock(sourceFile.YamlFrontMatter.AppliesTo, context.BuildContext);
+			if (!string.IsNullOrEmpty(appliesToText))
+				_ = metadata.Append(appliesToText);
 		}
 
 		_ = metadata.AppendLine("---");

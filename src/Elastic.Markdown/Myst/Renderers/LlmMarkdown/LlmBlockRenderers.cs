@@ -436,7 +436,20 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		switch (obj)
 		{
 			case IBlockAppliesTo appliesBlock when !string.IsNullOrEmpty(appliesBlock.AppliesToDefinition):
-				renderer.Writer.Write($" applies-to=\"{appliesBlock.AppliesToDefinition}\"");
+				// Check if the block has a parsed AppliesTo object (e.g., AdmonitionBlock)
+				// Only AdmonitionBlock currently parses the YAML into an ApplicableTo object
+				// Other directive types may implement IBlockAppliesTo but not parse it
+				var appliesToText = obj switch
+				{
+					AdmonitionBlock admonition when admonition.AppliesTo is not null =>
+						LlmAppliesToHelper.RenderApplicableTo(admonition.AppliesTo, renderer.BuildContext),
+					_ => null
+				};
+				// Fallback to raw definition if parsing didn't work or returned empty
+				appliesToText ??= appliesBlock.AppliesToDefinition;
+
+				if (!string.IsNullOrEmpty(appliesToText))
+					renderer.Writer.Write($" applies-to=\"{appliesToText}\"");
 				break;
 		}
 
