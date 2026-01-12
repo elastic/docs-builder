@@ -117,19 +117,18 @@ stack: ga
 """
 
 // Test Serverless applicability scenarios
-type ``serverless ga future`` () =
+type ``serverless ga`` () =
     static let markdown = Setup.Markdown """
 ```{applies_to}
-serverless: ga 9.0.0
+serverless: ga
 ```
 """
 
     [<Fact>]
-    let ``renders serverless ga planned`` () =
+    let ``renders serverless ga`` () =
         markdown |> convertsToHtml """
 <p class="applies applies-block">
-	<applies-to-popover badge-key="Serverless" badge-lifecycle-text="Planned" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003EElastic Cloud Serverless\u003C/strong\u003E projects are autoscaled environments, fully managed by Elastic and available on Elastic Cloud.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Planned&quot;,&quot;lifecycleDescription&quot;:&quot;We plan to add this functionality in a future Elastic Cloud Serverless update. Subject to changes.&quot;}],&quot;additionalInfo&quot;:&quot;Serverless interfaces and procedures might differ from classic Elastic Stack deployments.&quot;,&quot;showVersionNote&quot;:false,&quot;versionNote&quot;:null}" show-popover="true" is-inline="false">
-</applies-to-popover>
+	<applies-to-popover badge-key="Serverless" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003EElastic Cloud Serverless\u003C/strong\u003E projects are autoscaled environments, fully managed by Elastic and available on Elastic Cloud.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:&quot;Serverless interfaces and procedures might differ from classic Elastic Stack deployments.&quot;,&quot;showVersionNote&quot;:false,&quot;versionNote&quot;:null}" show-popover="true" is-inline="false"></applies-to-popover>
 </p>
 """
 

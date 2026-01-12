@@ -352,6 +352,14 @@ This is a warning admonition with applies_to information.
 :applies_to: elasticsearch: preview
 This is a tip admonition with applies_to information.
 :::
+:::{important}
+:applies_to: { stack: ga, serverless: ga }
+This is an important admonition with applies_to information.
+:::
+:::{admonition} Custom Admonition
+:applies_to: { stack: ga, serverless: ga, elasticsearch: preview }
+This is a custom admonition with applies_to information.
+:::
 """
 
     [<Fact>]
@@ -368,6 +376,14 @@ This is a tip admonition with applies_to information.
 <tip applies-to="Serverless Elasticsearch projects: Preview in 8.0+">
   This is a tip admonition with applies_to information.
 </tip>
+
+<important applies-to="Elastic Cloud Serverless: Generally available, Elastic Stack: Generally available in 8.0+">
+  This is an important admonition with applies_to information.
+</important>
+
+<admonition title="Custom Admonition" applies-to="Serverless Elasticsearch projects: Preview in 8.0+, Elastic Stack: Generally available in 8.0+">
+  This is a custom admonition with applies_to information.
+</admonition>
 """
 
 type ``image directive`` () =
