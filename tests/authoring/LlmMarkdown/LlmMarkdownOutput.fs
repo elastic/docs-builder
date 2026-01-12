@@ -193,12 +193,22 @@ type ``applies_to inline role formats`` () =
         // GA with released version
         ("stack: ga 7.3", "Elastic Stack: Generally available since 7.3")
         ("stack: ga 8.0", "Elastic Stack: Generally available since 8.0")
+        ("stack: ga 8.0+", "Elastic Stack: Generally available since 8.0")
         
         // GA with future version (shows Planned)
         ("stack: ga 9.0", "Elastic Stack: Planned")
         
         // Preview with released version
         ("stack: preview 7.5", "Elastic Stack: Preview since 7.5")
+        
+        // Preview with exact version
+        ("stack: preview =7.0", "Elastic Stack: Preview in 7.0")
+        
+        // GA with range (both ends released)
+        ("stack: ga 7.0-8.0", "Elastic Stack: Generally available from 7.0 to 8.0")
+        
+        // Beta with range
+        ("stack: beta 7.0-7.5", "Elastic Stack: Beta from 7.0 to 7.5")
         
         // Preview with future version (shows Planned)
         ("stack: preview 9.1", "Elastic Stack: Planned")
