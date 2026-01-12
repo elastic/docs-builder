@@ -133,10 +133,161 @@ This is an inline {applies_to}`stack: preview 9.1` element.
 """
 
     [<Fact>]
-    let ``converts to plain text with optional comment`` () =
+    let ``converts to human readable format`` () =
+        markdown |> convertsToNewLLM """This is an inline <applies-to>Elastic Stack: Planned</applies-to> element.
+"""
+
+type ``applies_to role with ga future version`` () =
+    static let markdown = Setup.Document """
+This is an inline {applies_to}`stack: ga 9.0` element.
+"""
+
+    [<Fact>]
+    let ``shows planned text for unreleased version`` () =
+        markdown |> convertsToNewLLM """This is an inline <applies-to>Elastic Stack: Planned</applies-to> element.
+"""
+
+type ``applies_to role with ga released version`` () =
+    static let markdown = Setup.Document """
+This is an inline {applies_to}`stack: ga 7.3` element.
+"""
+
+    [<Fact>]
+    let ``shows ga text for released version`` () =
+        markdown |> convertsToNewLLM """This is an inline <applies-to>Elastic Stack: Generally available since 7.3</applies-to> element.
+"""
+
+type ``applies_to role in sentence with serverless`` () =
+    static let markdown = Setup.Document """
+This feature is available on {applies_to}`serverless: ga` for all users.
+"""
+
+    [<Fact>]
+    let ``shows serverless availability in sentence`` () =
+        markdown |> convertsToNewLLM """This feature is available on <applies-to>Elastic Cloud Serverless: Generally available</applies-to> for all users.
+"""
+
+type ``applies_to role in sentence with preview`` () =
+    static let markdown = Setup.Document """
+The new API {applies_to}`stack: preview 7.5` provides enhanced functionality.
+"""
+
+    [<Fact>]
+    let ``shows preview availability in sentence`` () =
+        markdown |> convertsToNewLLM """The new API <applies-to>Elastic Stack: Preview since 7.5</applies-to> provides enhanced functionality.
+"""
+
+type ``applies_to role in sentence with deprecated`` () =
+    static let markdown = Setup.Document """
+This method {applies_to}`stack: deprecated 7.0` should not be used in new code.
+"""
+
+    [<Fact>]
+    let ``shows deprecated availability in sentence`` () =
+        markdown |> convertsToNewLLM """This method <applies-to>Elastic Stack: Deprecated since 7.0</applies-to> should not be used in new code.
+"""
+
+type ``applies_to inline role formats`` () =
+    // Test cases: (input applies_to syntax, expected output text)
+    static let testCases = [
+        // GA with released version
+        ("stack: ga 7.3", "Elastic Stack: Generally available since 7.3")
+        ("stack: ga 8.0", "Elastic Stack: Generally available since 8.0")
+        
+        // GA with future version (shows Planned)
+        ("stack: ga 9.0", "Elastic Stack: Planned")
+        
+        // Preview with released version
+        ("stack: preview 7.5", "Elastic Stack: Preview since 7.5")
+        
+        // Preview with future version (shows Planned)
+        ("stack: preview 9.1", "Elastic Stack: Planned")
+        
+        // Beta with released version
+        ("stack: beta 7.0", "Elastic Stack: Beta since 7.0")
+        
+        // Deprecated with released version
+        ("stack: deprecated 7.0", "Elastic Stack: Deprecated since 7.0")
+        
+        // Serverless GA (unversioned product - no version shown)
+        ("serverless: ga", "Elastic Cloud Serverless: Generally available")
+        
+        // Elasticsearch preview (no version - uses base version)
+        ("elasticsearch: preview", "Serverless Elasticsearch projects: Preview in 8.0+")
+    ]
+    
+    [<Fact>]
+    let ``renders all lifecycle types correctly`` () =
+        for (input, expected) in testCases do
+            let markdown = Setup.Document $"Test {{applies_to}}`{input}` here."
+            let expectedOutput = $"Test <applies-to>{expected}</applies-to> here.\n"
+            markdown |> convertsToNewLLM expectedOutput
+
+type ``frontmatter applies_to in metadata`` () =
+    static let generator = Setup.Generate [
+        Index """---
+applies_to:
+  stack: ga 7.0
+---
+# Test Page
+
+This is test content.
+"""
+    ]
+
+    [<Fact>]
+    let ``includes applies_to in LLM metadata output`` () =
+        generator |> convertsToLlmWithMetadata """---
+title: Test Page
+applies_to:
+  - Elastic Stack: Generally available since 7.0
+---
+
+# Test Page
+This is test content.
+"""
+
+type ``applies_to code block directive`` () =
+    static let markdown = Setup.Document """
+```{applies_to}
+stack: ga 7.0
+serverless: ga
+```
+"""
+
+    [<Fact>]
+    let ``renders applies_to block with human-readable text`` () =
+        markdown |> convertsToNewLLM """<applies-to>
+  - Elastic Cloud Serverless: Generally available
+  - Elastic Stack: Generally available since 7.0
+</applies-to>
+"""
+
+type ``applies-switch directive`` () =
+    static let markdown = Setup.Document """
+::::{applies-switch}
+:::{applies-item} stack: ga 7.0
+Content for Elastic Stack users.
+:::
+:::{applies-item} serverless: ga
+Content for Serverless users.
+:::
+::::
+"""
+
+    [<Fact>]
+    let ``renders applies-switch with human-readable applies-to`` () =
         markdown |> convertsToNewLLM """
-        This is an inline `stack: preview 9.1` element.
-        """
+<applies-switch>
+  <applies-item title="stack: ga 7.0" applies-to="Elastic Stack: Generally available since 7.0">
+    Content for Elastic Stack users.
+  </applies-item>
+
+  <applies-item title="serverless: ga" applies-to="Elastic Cloud Serverless: Generally available">
+    Content for Serverless users.
+  </applies-item>
+</applies-switch>
+"""
 
 type ``admonition directive`` () =
     static let markdown = Setup.Document """
@@ -201,38 +352,22 @@ This is a warning admonition with applies_to information.
 :applies_to: elasticsearch: preview
 This is a tip admonition with applies_to information.
 :::
-:::{important}
-:applies_to: stack: ga, serverless: ga
-This is an important admonition with applies_to information.
-:::
-:::{admonition} Custom Admonition
-:applies_to: stack: ga, serverless: ga, elasticsearch: preview
-This is a custom admonition with applies_to information.
-:::
 """
 
     [<Fact>]
     let ``renders correctly with applies_to information`` () =
         markdown |> convertsToNewLLM """
-<note applies-to="stack: ga">
+<note applies-to="Elastic Stack: Generally available in 8.0+">
   This is a note admonition with applies_to information.
 </note>
 
-<warning applies-to="serverless: ga">
+<warning applies-to="Elastic Cloud Serverless: Generally available">
   This is a warning admonition with applies_to information.
 </warning>
 
-<tip applies-to="elasticsearch: preview">
+<tip applies-to="Serverless Elasticsearch projects: Preview in 8.0+">
   This is a tip admonition with applies_to information.
 </tip>
-
-<important applies-to="stack: ga, serverless: ga">
-  This is an important admonition with applies_to information.
-</important>
-
-<admonition title="Custom Admonition" applies-to="stack: ga, serverless: ga, elasticsearch: preview">
-  This is a custom admonition with applies_to information.
-</admonition>
 """
 
 type ``image directive`` () =
@@ -410,7 +545,7 @@ This is where the content for the dropdown goes.
 type ``dropdown with applies_to`` () =
     static let markdown = Setup.Document """
 :::{dropdown} Dropdown title
-:applies_to: stack: 9.1.0
+:applies_to: stack: ga 8.0
 This is where the content for the dropdown goes.
 :::
 """
@@ -418,7 +553,7 @@ This is where the content for the dropdown goes.
     [<Fact>]
     let ``rendered correctly`` () =
         markdown |> convertsToNewLLM """
-<dropdown title="Dropdown title" applies-to="stack: 9.1.0">
+<dropdown title="Dropdown title" applies-to="Elastic Stack: Generally available since 8.0">
   This is where the content for the dropdown goes.
 </dropdown>
 """

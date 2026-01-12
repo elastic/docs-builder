@@ -33,12 +33,13 @@ public class AppliesSwitchBlock(DirectiveBlockParser parser, ParserContext conte
 }
 
 public class AppliesItemBlock(DirectiveBlockParser parser, ParserContext context)
-	: DirectiveBlock(parser, context), IBlockTitle
+	: DirectiveBlock(parser, context), IBlockTitle, IBlockAppliesTo
 {
 	public override string Directive => "applies-item";
 
-	public string AppliesToDefinition { get; private set; } = default!;
-	public string Title => AppliesToDefinition; // IBlockTitle implementation
+	public string? AppliesToDefinition { get; private set; }
+	public ApplicableTo? AppliesTo { get; private set; }
+	public string Title => AppliesToDefinition ?? string.Empty; // IBlockTitle implementation
 	public int Index { get; private set; }
 	public int AppliesSwitchIndex { get; private set; }
 	public string? AppliesSwitchGroupKey { get; private set; }
@@ -61,6 +62,24 @@ public class AppliesItemBlock(DirectiveBlockParser parser, ParserContext context
 		// Auto-generate sync key from applies_to definition if not provided
 		SyncKey = Prop("sync") ?? GenerateSyncKey(AppliesToDefinition, Build.ProductsConfiguration);
 		Selected = PropBool("selected");
+
+		// Parse the ApplicableTo object for IBlockAppliesTo
+		if (!string.IsNullOrEmpty(AppliesToDefinition))
+			AppliesTo = ParseApplicableTo(AppliesToDefinition);
+	}
+
+	private ApplicableTo? ParseApplicableTo(string yaml)
+	{
+		try
+		{
+			var applicableTo = YamlSerialization.Deserialize<ApplicableTo>(yaml, Build.ProductsConfiguration);
+			return applicableTo;
+		}
+		catch
+		{
+			// If parsing fails, return null
+			return null;
+		}
 	}
 
 	public static string GenerateSyncKey(string appliesToDefinition, ProductsConfiguration productsConfiguration)

@@ -4,6 +4,7 @@
 
 using Elastic.Markdown.Myst.InlineParsers.Substitution;
 using Elastic.Markdown.Myst.Roles;
+using Elastic.Markdown.Myst.Roles.AppliesTo;
 using Elastic.Markdown.Myst.Roles.Kbd;
 using Markdig.Renderers;
 using Markdig.Syntax.Inlines;
@@ -101,7 +102,15 @@ public class LlmRoleRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, RoleL
 					renderer.Writer.Write(output);
 					break;
 				}
-			// TODO: Add support for applies_to role
+			case AppliesToRole appliesToRole:
+				{
+					var text = LlmApplicabilityHelper.RenderForLlm(
+						appliesToRole.AppliesTo,
+						appliesToRole.BuildContext.VersionsConfiguration);
+					if (!string.IsNullOrEmpty(text))
+						renderer.Writer.Write(text);
+					break;
+				}
 			default:
 				{
 					new LlmCodeInlineRenderer().Write(renderer, obj);

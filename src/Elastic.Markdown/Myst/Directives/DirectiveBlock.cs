@@ -7,6 +7,7 @@
 // See the license.txt file in the project root for more information.
 
 using System.IO.Abstractions;
+using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration;
 using Markdig.Helpers;
 using Markdig.Syntax;
@@ -21,6 +22,7 @@ public interface IBlockTitle
 public interface IBlockAppliesTo
 {
 	string? AppliesToDefinition { get; }
+	ApplicableTo? AppliesTo { get; }
 }
 
 public interface IBlockExtension : IBlock
