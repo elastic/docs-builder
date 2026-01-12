@@ -75,7 +75,12 @@ public class AppliesItemBlock(DirectiveBlockParser parser, ParserContext context
 			var applicableTo = YamlSerialization.Deserialize<ApplicableTo>(yaml, Build.ProductsConfiguration);
 			return applicableTo;
 		}
-		catch (Exception e)
+		catch (FormatException e)
+		{
+			this.EmitError($"Unable to parse applies_to definition: {yaml}", e);
+			return null;
+		}
+		catch (InvalidOperationException e)
 		{
 			this.EmitError($"Unable to parse applies_to definition: {yaml}", e);
 			return null;
