@@ -233,6 +233,16 @@ type ``applies_to inline role formats`` () =
             let expectedOutput = $"Test <applies-to>{expected}</applies-to> here.\n"
             markdown |> convertsToNewLLM expectedOutput
 
+type ``applies_to inline role with multiple lifecycles`` () =
+    static let markdown = Setup.Document """
+This feature {applies_to}`stack: beta 7.0-7.1, ga 7.2` has multiple lifecycles.
+"""
+
+    [<Fact>]
+    let ``renders multiple lifecycles with product name for each`` () =
+        markdown |> convertsToNewLLM """This feature <applies-to>Elastic Stack: Generally available since 7.2, Elastic Stack: Beta from 7.0 to 7.1</applies-to> has multiple lifecycles.
+"""
+
 type ``frontmatter applies_to in metadata`` () =
     static let generator = Setup.Generate [
         Index """---
@@ -270,6 +280,21 @@ serverless: ga
         markdown |> convertsToNewLLM """<applies-to>
   - Elastic Cloud Serverless: Generally available
   - Elastic Stack: Generally available since 7.0
+</applies-to>
+"""
+
+type ``applies_to code block with multiple lifecycles`` () =
+    static let markdown = Setup.Document """
+```{applies_to}
+stack: beta 7.0-7.1, ga 7.2
+```
+"""
+
+    [<Fact>]
+    let ``renders multiple lifecycles with product name for each`` () =
+        markdown |> convertsToNewLLM """<applies-to>
+  - Elastic Stack: Generally available since 7.2
+  - Elastic Stack: Beta from 7.0 to 7.1
 </applies-to>
 """
 
@@ -394,6 +419,22 @@ This is a custom admonition with applies_to information.
 <admonition title="Custom Admonition" applies-to="Serverless Elasticsearch projects: Preview in 8.0+, Elastic Stack: Generally available in 8.0+">
   This is a custom admonition with applies_to information.
 </admonition>
+"""
+
+type ``admonition directive with multiple lifecycles`` () =
+    static let markdown = Setup.Document """
+:::{note}
+:applies_to: stack: beta 7.0-7.1, ga 7.2
+This note has multiple lifecycle states.
+:::
+"""
+
+    [<Fact>]
+    let ``renders multiple lifecycles with product name for each`` () =
+        markdown |> convertsToNewLLM """
+<note applies-to="Elastic Stack: Generally available since 7.2, Elastic Stack: Beta from 7.0 to 7.1">
+  This note has multiple lifecycle states.
+</note>
 """
 
 type ``image directive`` () =

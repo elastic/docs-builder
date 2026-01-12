@@ -44,17 +44,36 @@ public static class LlmApplicabilityHelper
 		var result = new StringBuilder();
 		foreach (var item in items)
 		{
-			if (result.Length > 0)
-				_ = result.Append(", ");
-
 			// Use the display name from ApplicabilityDefinition, removing HTML entities
 			var displayName = GetPlainDisplayName(item.ApplicabilityDefinition.DisplayName);
-			_ = result.Append(displayName);
-			_ = result.Append(": ");
 
 			// Get the availability text from the popover data
 			var availabilityText = GetAvailabilityText(item);
-			_ = result.Append(availabilityText);
+
+			// If there are multiple availability items (multiple lifecycles), we need to format each one
+			var popoverData = item.RenderData.PopoverData;
+			if (popoverData?.AvailabilityItems is { Length: > 1 })
+			{
+				// Multiple lifecycles - format each one with product name
+				var availabilityParts = popoverData.AvailabilityItems.Select(a => a.Text);
+				foreach (var part in availabilityParts)
+				{
+					if (result.Length > 0)
+						_ = result.Append(", ");
+					_ = result.Append(displayName);
+					_ = result.Append(": ");
+					_ = result.Append(part);
+				}
+			}
+			else
+			{
+				// Single lifecycle - format normally
+				if (result.Length > 0)
+					_ = result.Append(", ");
+				_ = result.Append(displayName);
+				_ = result.Append(": ");
+				_ = result.Append(availabilityText);
+			}
 		}
 
 		// Wrap in <applies-to> tag for inline use
