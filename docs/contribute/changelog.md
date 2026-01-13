@@ -344,19 +344,6 @@ docs-builder changelog render \
 3. By default the command creates the output files in the current directory.
 4. By default the changelog areas are not displayed in the output. Add `--subsections` to group changelog details by their `areas`. For breaking changes that have a `subtype` value, the subsections will be grouped by subtype instead of area.
 
-To create an asciidoc file instead of markdown files, add the `--file-type asciidoc` option:
-
-```sh
-docs-builder changelog render \
-  --input "./changelog-bundle.yaml,./changelogs,elasticsearch" \
-  --title 9.2.2 \
-  --output ./release-notes \
-  --file-type asciidoc \ <1>
-  --subsections
-```
-
-1. Generate a single asciidoc file instead of multiple markdown files.
-
 For example, the `index.md` output file contains information derived from the changelogs:
 
 ```md
@@ -378,3 +365,16 @@ To comment out the pull request and issue links, for example if they relate to a
 
 If you have changelogs with `feature-id` values and you want them to be omitted from the output, use the `--hide-features` option.
 For more information, refer to [](/cli/release/changelog-render.md).
+
+To create an asciidoc file instead of markdown files, add the `--file-type asciidoc` option:
+
+```sh
+docs-builder changelog render \
+  --input "./changelog-bundle.yaml,./changelogs,elasticsearch" \
+  --title 9.2.2 \
+  --output ./release-notes \
+  --file-type asciidoc \ <1>
+  --subsections
+```
+
+1. Generate a single asciidoc file instead of multiple markdown files.
