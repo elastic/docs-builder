@@ -209,7 +209,7 @@ export const ResultCard = ({ result }: ResultCardProps) => {
                                 margin-bottom: ${euiTheme.size.s};
                             `}
                         >
-                            <EuiText size="s">{result.aiShortSummary}</EuiText>
+                            <EuiText size="s">{result.aiRagOptimizedSummary}</EuiText>
                         </EuiPanel>
                     )}
                 </>
