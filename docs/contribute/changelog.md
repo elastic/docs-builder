@@ -105,6 +105,28 @@ Examples:
 - `"cloud-serverless 2025-08-05"`
 - `"cloud-enterprise 4.0.3, cloud-hosted 2025-10-31"`
 
+### Filenames
+
+By default, the `docs-builder changelog add` command generates filenames using a timestamp and a sanitized version of the title:
+`{timestamp}-{sanitized-title}.yaml`
+
+For example: `1735689600-fixes-enrich-and-lookup-join-resolution.yaml`
+
+If you want to use the PR number as the filename instead, add the `--use-pr-number` option:
+
+```sh
+docs-builder changelog add \
+  --pr https://github.com/elastic/elasticsearch/pull/137431 \
+  --products "elasticsearch 9.2.3" \
+  --use-pr-number
+```
+
+This creates a file named `137431.yaml` instead of the default timestamp-based filename.
+
+:::{important}
+When using `--use-pr-number`, you must also provide the `--pr` option. The PR number is extracted from the PR URL or number you provide.
+:::
+
 ## Examples
 
 ### Create a changelog for multiple products [example-multiple-products]
@@ -123,7 +145,7 @@ docs-builder changelog add \
 1. This option is required only if you want to override what's derived from the PR title.
 2. The type values are defined in [ChangelogConfiguration.cs](https://github.com/elastic/docs-builder/blob/main/src/services/Elastic.Documentation.Services/Changelog/ChangelogConfiguration.cs).
 3. The product values are defined in [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml).
-4. The `--prs` value can be a full URL (such as `https://github.com/owner/repo/pull/123`, a short format (such as `owner/repo#123`) or just a number (in which case you must also provide `--owner` and `--repo` options). Multiple PRs can be provided comma-separated, and one changelog file will be created for each PR.
+4. The `--prs` value can be a full URL (such as `https://github.com/owner/repo/pull/123`), a short format (such as `owner/repo#123`), just a number (in which case you must also provide `--owner` and `--repo` options), or a path to a file containing newline-delimited PR URLs or numbers. Multiple PRs can be provided comma-separated, or you can specify a file path. You can also mix both formats by specifying `--prs` multiple times. One changelog file will be created for each PR.
 
 The output file has the following format:
 
@@ -231,25 +253,33 @@ docs-builder changelog add --prs "1234, 5678" \
 If PR 1234 has the `>non-issue` or Watcher label, it will be skipped and no changelog will be created for it.
 If PR 5678 does not have any blocking labels, a changelog is created.
 
+### Create changelogs from a file of PRs [example-file-prs]
 
-### Filenames
+You can also provide PRs from a file containing newline-delimited PR URLs or numbers:
 
-By default, the `docs-builder changelog add` command generates filenames using a timestamp and a sanitized version of the title:
-`{timestamp}-{sanitized-title}.yaml`
+```sh
+# Create a file with PRs (one per line)
+cat > prs.txt << EOF
+https://github.com/elastic/elasticsearch/pull/1234
+https://github.com/elastic/elasticsearch/pull/5678
+EOF
 
-For example: `1735689600-fixes-enrich-and-lookup-join-resolution.yaml`
+# Use the file with --prs
+docs-builder changelog add --prs prs.txt \
+  --products "elasticsearch 9.2.0 ga" \
+  --config test/changelog.yml
+```
 
-If you want to use the PR number as the filename instead, add the `--use-pr-number` option:
+You can also mix file paths and comma-separated PRs:
 
 ```sh
 docs-builder changelog add \
-  --pr https://github.com/elastic/elasticsearch/pull/137431 \
-  --products "elasticsearch 9.2.3" \
-  --use-pr-number
+  --prs "https://github.com/elastic/elasticsearch/pull/1234" \
+  --prs prs.txt \
+  --prs "5678, 9012" \
+  --products "elasticsearch 9.2.0 ga" \
+  --owner elastic --repo elasticsearch \
+  --config test/changelog.yml
 ```
 
-This creates a file named `137431.yaml` instead of the default timestamp-based filename.
-
-:::{important}
-When using `--use-pr-number`, you must also provide the `--pr` option. The PR number is extracted from the PR URL or number you provide.
-:::
+This creates one changelog file for each PR specified, whether from files or directly.
