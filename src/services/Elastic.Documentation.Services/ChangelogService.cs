@@ -1804,22 +1804,32 @@ public partial class ChangelogService(
 				entryToBundleProducts[entry] = bundleProductIds;
 			}
 
-			// Render markdown files (use first repo found, or default)
+			// Render files (use first repo found, or default)
 			var repoForRendering = allResolvedEntries.Count > 0 ? allResolvedEntries[0].repo : defaultRepo;
+			var fileType = input.FileType ?? "markdown";
 
-			// Render index.md (features, enhancements, bug fixes, security, docs, regression, other)
-			await RenderIndexMarkdown(collector, outputDir, title, titleSlug, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts, ctx);
+			if (string.Equals(fileType, "asciidoc", StringComparison.OrdinalIgnoreCase))
+			{
+				// Render asciidoc file
+				await RenderAsciidoc(collector, outputDir, title, titleSlug, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts, ctx);
+				_logger.LogInformation("Rendered changelog asciidoc file to {OutputDir}", outputDir);
+			}
+			else
+			{
+				// Render markdown files
+				await RenderIndexMarkdown(collector, outputDir, title, titleSlug, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts, ctx);
 
-			// Render breaking-changes.md
-			await RenderBreakingChangesMarkdown(collector, outputDir, title, titleSlug, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts, ctx);
+				// Render breaking-changes.md
+				await RenderBreakingChangesMarkdown(collector, outputDir, title, titleSlug, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts, ctx);
 
-			// Render deprecations.md
-			await RenderDeprecationsMarkdown(collector, outputDir, title, titleSlug, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts, ctx);
+				// Render deprecations.md
+				await RenderDeprecationsMarkdown(collector, outputDir, title, titleSlug, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts, ctx);
 
-			// Render known-issues.md
-			await RenderKnownIssuesMarkdown(collector, outputDir, title, titleSlug, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts, ctx);
+				// Render known-issues.md
+				await RenderKnownIssuesMarkdown(collector, outputDir, title, titleSlug, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts, ctx);
 
-			_logger.LogInformation("Rendered changelog markdown files to {OutputDir}", outputDir);
+				_logger.LogInformation("Rendered changelog markdown files to {OutputDir}", outputDir);
+			}
 
 			return true;
 		}
@@ -2701,6 +2711,554 @@ public partial class ChangelogService(
 		}
 
 		return link;
+	}
+
+	private static string FormatPrLinkAsciidoc(string pr, string repo, bool hidePrivateLinks)
+	{
+		// Extract PR number
+		var match = TrailingNumberRegex().Match(pr);
+		var prNumber = match.Success ? match.Value : pr;
+
+		// Format as asciidoc link attribute reference
+		// Format: {repo-pull}PRNUMBER[#PRNUMBER]
+		// Convert repo name to attribute format (e.g., "elastic-agent" -> "agent-pull", "fleet-server" -> "fleet-server-pull")
+		var attributeName = ConvertRepoToAttributeName(repo, "pull");
+		var link = $"{{{attributeName}}}{prNumber}[#{prNumber}]";
+
+		// Comment out link if hiding private links
+		if (hidePrivateLinks)
+		{
+			return $"// {link}";
+		}
+
+		return link;
+	}
+
+	private static string FormatIssueLinkAsciidoc(string issue, string repo, bool hidePrivateLinks)
+	{
+		// Extract issue number
+		var match = TrailingNumberRegex().Match(issue);
+		var issueNumber = match.Success ? match.Value : issue;
+
+		// Format as asciidoc link attribute reference
+		// Format: {repo-issue}ISSUENUMBER[#ISSUENUMBER]
+		// Convert repo name to attribute format (e.g., "elastic-agent" -> "agent-issue", "fleet-server" -> "fleet-server-issue")
+		var attributeName = ConvertRepoToAttributeName(repo, "issue");
+		var link = $"{{{attributeName}}}{issueNumber}[#{issueNumber}]";
+
+		// Comment out link if hiding private links
+		if (hidePrivateLinks)
+		{
+			return $"// {link}";
+		}
+
+		return link;
+	}
+
+	private static string ConvertRepoToAttributeName(string repo, string suffix)
+	{
+		// Convert repo name to attribute format
+		// Examples:
+		// "elastic-agent" -> "agent-pull"
+		// "fleet-server" -> "fleet-server-pull"
+		// "elastic-agent-libs" -> "agent-libs-pull"
+		// "elasticsearch" -> "es-pull"
+		// "kibana" -> "kibana-pull"
+
+		if (string.IsNullOrWhiteSpace(repo))
+		{
+			return $"repo-{suffix}";
+		}
+
+		// Handle common repo name patterns
+		if (repo.Equals("elasticsearch", StringComparison.OrdinalIgnoreCase))
+		{
+			return $"es-{suffix}";
+		}
+
+		// Remove "elastic-" prefix if present
+		var normalized = repo;
+		if (normalized.StartsWith("elastic-", StringComparison.OrdinalIgnoreCase))
+		{
+			normalized = normalized.Substring("elastic-".Length);
+		}
+
+		// Return normalized name with suffix
+		return $"{normalized}-{suffix}";
+	}
+
+	[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "Parameters match interface pattern")]
+	[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0058:Expression value is never used", Justification = "StringBuilder methods return builder for chaining")]
+	private async Task RenderAsciidoc(
+		IDiagnosticsCollector collector,
+		string outputDir,
+		string title,
+		string titleSlug,
+		string repo,
+		List<ChangelogData> entries,
+		Dictionary<string, List<ChangelogData>> entriesByType,
+		bool subsections,
+		bool hidePrivateLinks,
+		HashSet<string> featureIdsToHide,
+		Dictionary<string, RenderBlockersEntry>? renderBlockers,
+		Dictionary<ChangelogData, HashSet<string>> entryToBundleProducts,
+		Cancel ctx
+	)
+	{
+		var sb = new StringBuilder();
+
+		// Add anchor
+		sb.AppendLine(CultureInfo.InvariantCulture, $"[[release-notes-{titleSlug}]]");
+		sb.AppendLine(CultureInfo.InvariantCulture, $"== {title}");
+		sb.AppendLine();
+
+		// Group entries by type
+		var security = entriesByType.GetValueOrDefault(ChangelogEntryTypes.Security, []);
+		var bugFixes = entriesByType.GetValueOrDefault(ChangelogEntryTypes.BugFix, []);
+		var features = entriesByType.GetValueOrDefault(ChangelogEntryTypes.Feature, []);
+		var enhancements = entriesByType.GetValueOrDefault(ChangelogEntryTypes.Enhancement, []);
+		var breakingChanges = entriesByType.GetValueOrDefault(ChangelogEntryTypes.BreakingChange, []);
+		var deprecations = entriesByType.GetValueOrDefault(ChangelogEntryTypes.Deprecation, []);
+		var knownIssues = entriesByType.GetValueOrDefault(ChangelogEntryTypes.KnownIssue, []);
+		var docs = entriesByType.GetValueOrDefault(ChangelogEntryTypes.Docs, []);
+		var regressions = entriesByType.GetValueOrDefault(ChangelogEntryTypes.Regression, []);
+		var other = entriesByType.GetValueOrDefault(ChangelogEntryTypes.Other, []);
+
+		// Render security updates
+		if (security.Count > 0)
+		{
+			sb.AppendLine(CultureInfo.InvariantCulture, $"[[security-updates-{titleSlug}]]");
+			sb.AppendLine("[float]");
+			sb.AppendLine("=== Security updates");
+			sb.AppendLine();
+			RenderEntriesByAreaAsciidoc(sb, security, repo, subsections, hidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts);
+			sb.AppendLine();
+		}
+
+		// Render bug fixes
+		if (bugFixes.Count > 0)
+		{
+			sb.AppendLine(CultureInfo.InvariantCulture, $"[[bug-fixes-{titleSlug}]]");
+			sb.AppendLine("[float]");
+			sb.AppendLine("=== Bug fixes");
+			sb.AppendLine();
+			RenderEntriesByAreaAsciidoc(sb, bugFixes, repo, subsections, hidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts);
+			sb.AppendLine();
+		}
+
+		// Render features and enhancements
+		if (features.Count > 0 || enhancements.Count > 0)
+		{
+			sb.AppendLine(CultureInfo.InvariantCulture, $"[[features-enhancements-{titleSlug}]]");
+			sb.AppendLine("[float]");
+			sb.AppendLine("=== New features and enhancements");
+			sb.AppendLine();
+			var combined = features.Concat(enhancements).ToList();
+			RenderEntriesByAreaAsciidoc(sb, combined, repo, subsections, hidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts);
+			sb.AppendLine();
+		}
+
+		// Render breaking changes
+		if (breakingChanges.Count > 0)
+		{
+			sb.AppendLine(CultureInfo.InvariantCulture, $"[[breaking-changes-{titleSlug}]]");
+			sb.AppendLine("[float]");
+			sb.AppendLine("=== Breaking changes");
+			sb.AppendLine();
+			RenderBreakingChangesAsciidoc(sb, breakingChanges, repo, subsections, hidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts);
+			sb.AppendLine();
+		}
+
+		// Render deprecations
+		if (deprecations.Count > 0)
+		{
+			sb.AppendLine(CultureInfo.InvariantCulture, $"[[deprecations-{titleSlug}]]");
+			sb.AppendLine("[float]");
+			sb.AppendLine("=== Deprecations");
+			sb.AppendLine();
+			RenderDeprecationsAsciidoc(sb, deprecations, repo, subsections, hidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts);
+			sb.AppendLine();
+		}
+
+		// Render known issues
+		if (knownIssues.Count > 0)
+		{
+			sb.AppendLine(CultureInfo.InvariantCulture, $"[[known-issues-{titleSlug}]]");
+			sb.AppendLine("[float]");
+			sb.AppendLine("=== Known issues");
+			sb.AppendLine();
+			RenderKnownIssuesAsciidoc(sb, knownIssues, repo, subsections, hidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts);
+			sb.AppendLine();
+		}
+
+		// Render documentation changes
+		if (docs.Count > 0)
+		{
+			sb.AppendLine(CultureInfo.InvariantCulture, $"[[docs-{titleSlug}]]");
+			sb.AppendLine("[float]");
+			sb.AppendLine("=== Documentation");
+			sb.AppendLine();
+			RenderEntriesByAreaAsciidoc(sb, docs, repo, subsections, hidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts);
+			sb.AppendLine();
+		}
+
+		// Render regressions
+		if (regressions.Count > 0)
+		{
+			sb.AppendLine(CultureInfo.InvariantCulture, $"[[regressions-{titleSlug}]]");
+			sb.AppendLine("[float]");
+			sb.AppendLine("=== Regressions");
+			sb.AppendLine();
+			RenderEntriesByAreaAsciidoc(sb, regressions, repo, subsections, hidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts);
+			sb.AppendLine();
+		}
+
+		// Render other changes
+		if (other.Count > 0)
+		{
+			sb.AppendLine(CultureInfo.InvariantCulture, $"[[other-{titleSlug}]]");
+			sb.AppendLine("[float]");
+			sb.AppendLine("=== Other changes");
+			sb.AppendLine();
+			RenderEntriesByAreaAsciidoc(sb, other, repo, subsections, hidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts);
+			sb.AppendLine();
+		}
+
+		// Write the asciidoc file
+		var asciidocPath = _fileSystem.Path.Combine(outputDir, $"{titleSlug}.asciidoc");
+		var asciidocDir = _fileSystem.Path.GetDirectoryName(asciidocPath);
+		if (!string.IsNullOrWhiteSpace(asciidocDir) && !_fileSystem.Directory.Exists(asciidocDir))
+		{
+			_ = _fileSystem.Directory.CreateDirectory(asciidocDir);
+		}
+
+		await _fileSystem.File.WriteAllTextAsync(asciidocPath, sb.ToString(), ctx);
+	}
+
+	[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0058:Expression value is never used", Justification = "StringBuilder methods return builder for chaining")]
+	[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "Parameter matches interface pattern for consistency")]
+	private void RenderEntriesByAreaAsciidoc(StringBuilder sb, List<ChangelogData> entries, string repo, bool subsections, bool hidePrivateLinks, HashSet<string> featureIdsToHide, Dictionary<string, RenderBlockersEntry>? renderBlockers, Dictionary<ChangelogData, HashSet<string>> entryToBundleProducts)
+	{
+		var groupedByArea = entries.GroupBy(e => GetComponent(e)).ToList();
+		foreach (var areaGroup in groupedByArea)
+		{
+			var componentName = !string.IsNullOrWhiteSpace(areaGroup.Key) ? areaGroup.Key : "General";
+
+			// Format component name (capitalize first letter, replace hyphens with spaces)
+			var formattedComponent = FormatAreaHeader(componentName);
+
+			sb.AppendLine(CultureInfo.InvariantCulture, $"{formattedComponent}::");
+			sb.AppendLine();
+
+			foreach (var entry in areaGroup)
+			{
+				var bundleProductIds = entryToBundleProducts.GetValueOrDefault(entry, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+				var shouldHide = (!string.IsNullOrWhiteSpace(entry.FeatureId) && featureIdsToHide.Contains(entry.FeatureId)) ||
+					ShouldBlockEntry(entry, bundleProductIds, renderBlockers, out _);
+
+				if (shouldHide)
+				{
+					sb.AppendLine("// ");
+				}
+
+				sb.Append("* ");
+				sb.Append(Beautify(entry.Title));
+
+				var hasPr = !string.IsNullOrWhiteSpace(entry.Pr);
+				var hasIssues = entry.Issues != null && entry.Issues.Count > 0;
+
+				if (hasPr || hasIssues)
+				{
+					sb.Append(' ');
+					if (hasPr)
+					{
+						sb.Append(FormatPrLinkAsciidoc(entry.Pr!, repo, hidePrivateLinks));
+						sb.Append(' ');
+					}
+					if (hasIssues)
+					{
+						foreach (var issue in entry.Issues!)
+						{
+							sb.Append(FormatIssueLinkAsciidoc(issue, repo, hidePrivateLinks));
+							sb.Append(' ');
+						}
+					}
+				}
+
+				if (!string.IsNullOrWhiteSpace(entry.Description))
+				{
+					sb.AppendLine();
+					var indented = Indent(entry.Description);
+					if (shouldHide)
+					{
+						var indentedLines = indented.Split('\n');
+						foreach (var line in indentedLines)
+						{
+							sb.AppendLine(CultureInfo.InvariantCulture, $"// {line}");
+						}
+					}
+					else
+					{
+						sb.AppendLine(indented);
+					}
+				}
+
+				sb.AppendLine();
+			}
+		}
+	}
+
+	[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0058:Expression value is never used", Justification = "StringBuilder methods return builder for chaining")]
+	private void RenderBreakingChangesAsciidoc(StringBuilder sb, List<ChangelogData> breakingChanges, string repo, bool subsections, bool hidePrivateLinks, HashSet<string> featureIdsToHide, Dictionary<string, RenderBlockersEntry>? renderBlockers, Dictionary<ChangelogData, HashSet<string>> entryToBundleProducts)
+	{
+		// Group by subtype if subsections is enabled, otherwise group by area
+		var groupedEntries = subsections
+			? breakingChanges.GroupBy(e => string.IsNullOrWhiteSpace(e.Subtype) ? string.Empty : e.Subtype).ToList()
+			: breakingChanges.GroupBy(e => GetComponent(e)).ToList();
+
+		foreach (var group in groupedEntries)
+		{
+			if (subsections && !string.IsNullOrWhiteSpace(group.Key))
+			{
+				var header = FormatSubtypeHeader(group.Key);
+				sb.AppendLine(CultureInfo.InvariantCulture, $"**{header}**");
+				sb.AppendLine();
+			}
+
+			foreach (var entry in group)
+			{
+				var bundleProductIds = entryToBundleProducts.GetValueOrDefault(entry, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+				var shouldHide = (!string.IsNullOrWhiteSpace(entry.FeatureId) && featureIdsToHide.Contains(entry.FeatureId)) ||
+					ShouldBlockEntry(entry, bundleProductIds, renderBlockers, out _);
+
+				if (shouldHide)
+				{
+					sb.AppendLine("// ");
+				}
+
+				sb.Append("* ");
+				sb.Append(Beautify(entry.Title));
+
+				var hasPr = !string.IsNullOrWhiteSpace(entry.Pr);
+				var hasIssues = entry.Issues != null && entry.Issues.Count > 0;
+
+				if (hasPr || hasIssues)
+				{
+					sb.Append(' ');
+					if (hasPr)
+					{
+						sb.Append(FormatPrLinkAsciidoc(entry.Pr!, repo, hidePrivateLinks));
+						sb.Append(' ');
+					}
+					if (hasIssues)
+					{
+						foreach (var issue in entry.Issues!)
+						{
+							sb.Append(FormatIssueLinkAsciidoc(issue, repo, hidePrivateLinks));
+							sb.Append(' ');
+						}
+					}
+				}
+
+				if (!string.IsNullOrWhiteSpace(entry.Description))
+				{
+					sb.AppendLine();
+					var indented = Indent(entry.Description);
+					if (shouldHide)
+					{
+						var indentedLines = indented.Split('\n');
+						foreach (var line in indentedLines)
+						{
+							sb.AppendLine(CultureInfo.InvariantCulture, $"// {line}");
+						}
+					}
+					else
+					{
+						sb.AppendLine(indented);
+					}
+				}
+
+				if (!string.IsNullOrWhiteSpace(entry.Impact))
+				{
+					sb.AppendLine();
+					sb.AppendLine(CultureInfo.InvariantCulture, $"**Impact:** {entry.Impact}");
+				}
+
+				if (!string.IsNullOrWhiteSpace(entry.Action))
+				{
+					sb.AppendLine();
+					sb.AppendLine(CultureInfo.InvariantCulture, $"**Action:** {entry.Action}");
+				}
+
+				sb.AppendLine();
+			}
+		}
+	}
+
+	[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0058:Expression value is never used", Justification = "StringBuilder methods return builder for chaining")]
+	[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "Parameter matches interface pattern for consistency")]
+	private void RenderDeprecationsAsciidoc(StringBuilder sb, List<ChangelogData> deprecations, string repo, bool subsections, bool hidePrivateLinks, HashSet<string> featureIdsToHide, Dictionary<string, RenderBlockersEntry>? renderBlockers, Dictionary<ChangelogData, HashSet<string>> entryToBundleProducts)
+	{
+		var groupedByArea = deprecations.GroupBy(e => GetComponent(e)).ToList();
+		foreach (var areaGroup in groupedByArea)
+		{
+			var componentName = !string.IsNullOrWhiteSpace(areaGroup.Key) ? areaGroup.Key : "General";
+			var formattedComponent = FormatAreaHeader(componentName);
+
+			sb.AppendLine(CultureInfo.InvariantCulture, $"{formattedComponent}::");
+			sb.AppendLine();
+
+			foreach (var entry in areaGroup)
+			{
+				var bundleProductIds = entryToBundleProducts.GetValueOrDefault(entry, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+				var shouldHide = (!string.IsNullOrWhiteSpace(entry.FeatureId) && featureIdsToHide.Contains(entry.FeatureId)) ||
+					ShouldBlockEntry(entry, bundleProductIds, renderBlockers, out _);
+
+				if (shouldHide)
+				{
+					sb.AppendLine("// ");
+				}
+
+				sb.Append("* ");
+				sb.Append(Beautify(entry.Title));
+
+				var hasPr = !string.IsNullOrWhiteSpace(entry.Pr);
+				var hasIssues = entry.Issues != null && entry.Issues.Count > 0;
+
+				if (hasPr || hasIssues)
+				{
+					sb.Append(' ');
+					if (hasPr)
+					{
+						sb.Append(FormatPrLinkAsciidoc(entry.Pr!, repo, hidePrivateLinks));
+						sb.Append(' ');
+					}
+					if (hasIssues)
+					{
+						foreach (var issue in entry.Issues!)
+						{
+							sb.Append(FormatIssueLinkAsciidoc(issue, repo, hidePrivateLinks));
+							sb.Append(' ');
+						}
+					}
+				}
+
+				if (!string.IsNullOrWhiteSpace(entry.Description))
+				{
+					sb.AppendLine();
+					var indented = Indent(entry.Description);
+					if (shouldHide)
+					{
+						var indentedLines = indented.Split('\n');
+						foreach (var line in indentedLines)
+						{
+							sb.AppendLine(CultureInfo.InvariantCulture, $"// {line}");
+						}
+					}
+					else
+					{
+						sb.AppendLine(indented);
+					}
+				}
+
+				if (!string.IsNullOrWhiteSpace(entry.Impact))
+				{
+					sb.AppendLine();
+					sb.AppendLine(CultureInfo.InvariantCulture, $"**Impact:** {entry.Impact}");
+				}
+
+				if (!string.IsNullOrWhiteSpace(entry.Action))
+				{
+					sb.AppendLine();
+					sb.AppendLine(CultureInfo.InvariantCulture, $"**Action:** {entry.Action}");
+				}
+
+				sb.AppendLine();
+			}
+		}
+	}
+
+	[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0058:Expression value is never used", Justification = "StringBuilder methods return builder for chaining")]
+	[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "Parameter matches interface pattern for consistency")]
+	private void RenderKnownIssuesAsciidoc(StringBuilder sb, List<ChangelogData> knownIssues, string repo, bool subsections, bool hidePrivateLinks, HashSet<string> featureIdsToHide, Dictionary<string, RenderBlockersEntry>? renderBlockers, Dictionary<ChangelogData, HashSet<string>> entryToBundleProducts)
+	{
+		var groupedByArea = knownIssues.GroupBy(e => GetComponent(e)).ToList();
+		foreach (var areaGroup in groupedByArea)
+		{
+			var componentName = !string.IsNullOrWhiteSpace(areaGroup.Key) ? areaGroup.Key : "General";
+			var formattedComponent = FormatAreaHeader(componentName);
+
+			sb.AppendLine(CultureInfo.InvariantCulture, $"{formattedComponent}::");
+			sb.AppendLine();
+
+			foreach (var entry in areaGroup)
+			{
+				var bundleProductIds = entryToBundleProducts.GetValueOrDefault(entry, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+				var shouldHide = (!string.IsNullOrWhiteSpace(entry.FeatureId) && featureIdsToHide.Contains(entry.FeatureId)) ||
+					ShouldBlockEntry(entry, bundleProductIds, renderBlockers, out _);
+
+				if (shouldHide)
+				{
+					sb.AppendLine("// ");
+				}
+
+				sb.Append("* ");
+				sb.Append(Beautify(entry.Title));
+
+				var hasPr = !string.IsNullOrWhiteSpace(entry.Pr);
+				var hasIssues = entry.Issues != null && entry.Issues.Count > 0;
+
+				if (hasPr || hasIssues)
+				{
+					sb.Append(' ');
+					if (hasPr)
+					{
+						sb.Append(FormatPrLinkAsciidoc(entry.Pr!, repo, hidePrivateLinks));
+						sb.Append(' ');
+					}
+					if (hasIssues)
+					{
+						foreach (var issue in entry.Issues!)
+						{
+							sb.Append(FormatIssueLinkAsciidoc(issue, repo, hidePrivateLinks));
+							sb.Append(' ');
+						}
+					}
+				}
+
+				if (!string.IsNullOrWhiteSpace(entry.Description))
+				{
+					sb.AppendLine();
+					var indented = Indent(entry.Description);
+					if (shouldHide)
+					{
+						var indentedLines = indented.Split('\n');
+						foreach (var line in indentedLines)
+						{
+							sb.AppendLine(CultureInfo.InvariantCulture, $"// {line}");
+						}
+					}
+					else
+					{
+						sb.AppendLine(indented);
+					}
+				}
+
+				if (!string.IsNullOrWhiteSpace(entry.Impact))
+				{
+					sb.AppendLine();
+					sb.AppendLine(CultureInfo.InvariantCulture, $"**Impact:** {entry.Impact}");
+				}
+
+				if (!string.IsNullOrWhiteSpace(entry.Action))
+				{
+					sb.AppendLine();
+					sb.AppendLine(CultureInfo.InvariantCulture, $"**Action:** {entry.Action}");
+				}
+
+				sb.AppendLine();
+			}
+		}
 	}
 }
 

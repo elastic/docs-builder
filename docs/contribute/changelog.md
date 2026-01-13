@@ -97,8 +97,8 @@ Refer to [changelog.yml.example](https://github.com/elastic/docs-builder/blob/ma
 
 ### Render blockers [render-blockers]
 
-You can optionally add `render_blockers` in your changelog configuration to block specific changelog entries from being rendered in markdown output files.
-When you run the `docs-builder changelog render` command, changelog entries that match the specified products and areas/types will be commented out in the markdown output.
+You can optionally add `render_blockers` in your changelog configuration to block specific changelog entries from being rendered in output files.
+When you run the `docs-builder changelog render` command, changelog entries that match the specified products and areas/types will be commented out in the output (markdown or asciidoc).
 
 By default, the `docs-builder changelog render` command checks the following path: `docs/changelog.yml`.
 You can specify a different path with the `--config` command option.
@@ -293,19 +293,20 @@ entries:
 
 ## Create documentation [render-changelogs]
 
-The `docs-builder changelog render` command creates markdown files from changelog bundles for documentation purposes.
+The `docs-builder changelog render` command creates markdown or asciidoc files from changelog bundles for documentation purposes.
 For up-to-date details, use the `-h` command option:
 
 ```sh
-Render bundled changelog(s) to markdown files
+Render bundled changelog(s) to markdown or asciidoc files
 
 Options:
   --input <List<BundleInput>>    Required: Bundle input(s) in format "bundle-file-path, changelog-file-path, repo". Can be specified multiple times. Only bundle-file-path is required. [Required]
-  --output <string?>             Optional: Output directory for rendered markdown files. Defaults to current directory [Default: null]
-  --title <string?>              Optional: Title to use for section headers in output markdown files. Defaults to version from first bundle [Default: null]
+  --output <string?>             Optional: Output directory for rendered files. Defaults to current directory [Default: null]
+  --title <string?>              Optional: Title to use for section headers in output files. Defaults to version from first bundle [Default: null]
   --subsections                  Optional: Group entries by area/component in subsections. For breaking changes with a subtype, groups by subtype instead of area. Defaults to false
-  --hide-private-links           Optional: Hide private links by commenting them out in the markdown output. Defaults to false
-  --hide-features <string[]?>    Filter by feature IDs (comma-separated), or a path to a newline-delimited file containing feature IDs. Can be specified multiple times. Entries with matching feature-id values will be commented out in the markdown output. [Default: null]
+  --hide-private-links           Optional: Hide private links by commenting them out in the output. Defaults to false
+  --hide-features <string[]?>    Filter by feature IDs (comma-separated), or a path to a newline-delimited file containing feature IDs. Can be specified multiple times. Entries with matching feature-id values will be commented out in the output. [Default: null]
+  --file-type <string>           Optional: Output file type. Valid values: "markdown" or "asciidoc". Defaults to "markdown" [Default: markdown]
   --config <string?>             Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml' [Default: null]
 ```
 
@@ -339,9 +340,22 @@ docs-builder changelog render \
 ```
 
 1. Provide information about the changelog bundle. The format is `"<bundle-file-path>, <changelog-file-path>, <repository>"`. Only the `<bundle-file-path>` is required. The `<changelog-file-path>` is useful if the changelogs are not in the default directory and are not resolved within the bundle. The `<repository>` is necessary if your changelogs do not contain full URLs for the pull requests or issues. You can specify `--input` multiple times to merge multiple bundles.
-2. The `--title` value is used for an output folder name and for section titles in the markdown files. If you omit `--title` and the first bundle contains a product `target` value, that value is used. Otherwise, if none of the bundles have product `target` fields, the title defaults to "unknown".
+2. The `--title` value is used for an output folder name and for section titles in the output files. If you omit `--title` and the first bundle contains a product `target` value, that value is used. Otherwise, if none of the bundles have product `target` fields, the title defaults to "unknown".
 3. By default the command creates the output files in the current directory.
 4. By default the changelog areas are not displayed in the output. Add `--subsections` to group changelog details by their `areas`. For breaking changes that have a `subtype` value, the subsections will be grouped by subtype instead of area.
+
+To create an asciidoc file instead of markdown files, add the `--file-type asciidoc` option:
+
+```sh
+docs-builder changelog render \
+  --input "./changelog-bundle.yaml,./changelogs,elasticsearch" \
+  --title 9.2.2 \
+  --output ./release-notes \
+  --file-type asciidoc \ <1>
+  --subsections
+```
+
+1. Generate a single asciidoc file instead of multiple markdown files.
 
 For example, the `index.md` output file contains information derived from the changelogs:
 

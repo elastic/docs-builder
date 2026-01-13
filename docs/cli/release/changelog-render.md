@@ -1,6 +1,6 @@
 # changelog render
 
-Generate markdown files from changelog bundle files.
+Generate markdown or asciidoc files from changelog bundle files.
 
 To create the bundle files, use [](/cli/release/changelog-bundle.md).
 
@@ -22,20 +22,26 @@ docs-builder changelog render [options...] [-h|--help]
 :   Use `repo` if your changelogs do not contain full URLs for the pull requests or issues; otherwise they will be incorrectly derived with "elastic/elastic" in the URL by default.
 
 `--output <string?>`
-:   Optional: The output directory for rendered markdown files.
+:   Optional: The output directory for rendered files.
 :   Defaults to current directory.
 
 `--title <string?>`
-:   Optional: The title to use for section headers, directories, and anchors in output markdown files.
+:   Optional: The title to use for section headers, directories, and anchors in output files.
 :   Defaults to the version in the first bundle.
 :   If the string contains spaces, they are replaced with dashes when used in directory names and anchors.
+
+`--file-type <string>`
+:   Optional: Output file type. Valid values: `"markdown"` or `"asciidoc"`.
+:   Defaults to `"markdown"`.
+:   When `"markdown"` is specified, the command generates multiple markdown files (index.md, breaking-changes.md, deprecations.md, known-issues.md).
+:   When `"asciidoc"` is specified, the command generates a single asciidoc file with all sections.
 
 `--subsections`
 :   Optional: Group entries by area in subsections.
 :   Defaults to false.
 
 `--hide-private-links`
-:   Optional: Hide private links by commenting them out in the markdown output.
+:   Optional: Hide private links by commenting them out in the output.
 :   This option is useful when rendering changelog bundles in private repositories.
 :   Defaults to false.
 
@@ -44,7 +50,7 @@ docs-builder changelog render [options...] [-h|--help]
 :   Each occurrence can be either comma-separated feature IDs (e.g., `--hide-features "feature:new-search-api,feature:enhanced-analytics"`) or a file path (e.g., `--hide-features /path/to/file.txt`).
 :   When specifying feature IDs directly, provide comma-separated values.
 :   When specifying a file path, provide a single value that points to a newline-delimited file. The file should contain one feature ID per line.
-:   Entries with matching `feature-id` values will be commented out in the markdown output and a warning will be emitted.
+:   Entries with matching `feature-id` values will be commented out in the output and a warning will be emitted.
 
 `--config <string?>`
 :   Optional: Path to the changelog.yml configuration file.
@@ -53,3 +59,28 @@ docs-builder changelog render [options...] [-h|--help]
 
 You can configure `render_blockers` in your `changelog.yml` configuration file to automatically block changelog entries from being rendered based on their products, areas, and/or types.
 For more information, refer to [](/contribute/changelog.md#render-blockers).
+
+## Output formats
+
+### Markdown format
+
+When `--file-type markdown` is specified (the default), the command generates multiple markdown files:
+- `index.md` - Contains features, enhancements, bug fixes, security updates, documentation changes, regressions, and other changes
+- `breaking-changes.md` - Contains breaking changes
+- `deprecations.md` - Contains deprecations
+- `known-issues.md` - Contains known issues
+
+### Asciidoc format
+
+When `--file-type asciidoc` is specified, the command generates a single asciidoc file with all sections:
+- Security updates
+- Bug fixes
+- New features and enhancements
+- Breaking changes
+- Deprecations
+- Known issues
+- Documentation
+- Regressions
+- Other changes
+
+The asciidoc output uses attribute references for links (e.g., `{repo-pull}NUMBER[#NUMBER]`) and follows patterns similar to Elasticsearch release notes.
