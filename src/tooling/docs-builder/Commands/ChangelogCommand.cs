@@ -105,7 +105,7 @@ internal sealed class ChangelogCommand(
 							}
 						}
 					}
-					catch (Exception ex)
+					catch (System.IO.IOException ex)
 					{
 						collector.EmitError(string.Empty, $"Failed to read PRs from file '{trimmedValue}': {ex.Message}", ex);
 						return 1;
