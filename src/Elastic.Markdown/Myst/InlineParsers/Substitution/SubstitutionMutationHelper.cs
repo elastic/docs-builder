@@ -74,6 +74,7 @@ public static class SubstitutionMutationHelper
 			SubstitutionMutation.MajorMinor => TryGetVersion(value, v => $"{v.Major}.{v.Minor}"),
 			SubstitutionMutation.IncreaseMajor => TryGetVersion(value, v => $"{v.Major + 1}.0.0"),
 			SubstitutionMutation.IncreaseMinor => TryGetVersion(value, v => $"{v.Major}.{v.Minor + 1}.0"),
+			SubstitutionMutation.DecreaseMinor => TryGetVersion(value, v => v.Minor == 0 ? value : $"{v.Major}.{v.Minor - 1}.0"),
 			SubstitutionMutation.LowerCase => (true, value.ToLowerInvariant()),
 			SubstitutionMutation.UpperCase => (true, value.ToUpperInvariant()),
 			SubstitutionMutation.Capitalize => (true, Capitalize(value)),

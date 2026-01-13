@@ -34,6 +34,7 @@ public enum SubstitutionMutation
 	[Display(Name = "M.M")] MajorMinor,
 	[Display(Name = "M+1")] IncreaseMajor,
 	[Display(Name = "M.M+1")] IncreaseMinor,
+	[Display(Name = "M.M-1")] DecreaseMinor,
 	[Display(Name = "lc")] LowerCase,
 	[Display(Name = "uc")] UpperCase,
 	[Display(Name = "tc")] TitleCase,

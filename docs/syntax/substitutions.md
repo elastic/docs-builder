@@ -78,6 +78,7 @@ For variables declaring a semantic version or `Major.Minor` the following operat
 | `M.M`    | Display only the major and the minor     |
 | `M+1`    | The next major version                   |
 | `M.M+1`  | The next minor version                   |
+| `M.M-1`  | The previous minor version (returns original value if minor is 0) |
 
 ### Example
 
@@ -109,6 +110,7 @@ sub:
 * M+1: {{version.stack | M+1 }}
 * M+1 | M.M: {{version.stack | M+1 | M.M }}
 * M.M+1: {{version.stack | M.M+1 }}
+* M.M-1: {{version.stack | M.M-1 }}
 
 :::
 
@@ -130,6 +132,7 @@ sub:
 * M+1: {{version.stack | M+1 }}
 * M+1 | M.M: {{version.stack | M+1 | M.M }}
 * M.M+1: {{version.stack | M.M+1 }}
+* M.M-1: {{version.stack | M.M-1 }}
 ````
 :::
 
