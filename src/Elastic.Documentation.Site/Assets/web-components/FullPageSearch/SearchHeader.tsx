@@ -159,7 +159,7 @@ export const SearchHeader = ({
         <header
             css={css`
                 position: sticky;
-                top: 0;
+                top: var(--offset-top, 0);
                 z-index: 100;
                 background: ${euiTheme.colors.emptyShade};
                 border-bottom: 1px solid ${euiTheme.border.color};
@@ -170,7 +170,7 @@ export const SearchHeader = ({
                 alignItems="center"
                 gutterSize="m"
                 css={css`
-                    max-width: var(--max-layout-width, 1400px);
+                    max-width: 1200px;
                     margin: 0 auto;
                 `}
             >

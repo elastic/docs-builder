@@ -143,13 +143,32 @@ export const FullPageSearch = () => {
 
             <main
                 css={css`
-                    max-width: var(--max-layout-width, 1400px);
+                    max-width: var(--max-layout-width);
+                    width: 100%;
+                    height: 100%;
                     margin: 0 auto;
-                    padding: ${euiTheme.size.l};
+                    display: grid;
+                    padding: ${hasSearched ? euiTheme.size.l : '0'};
+
+                    ${hasSearched
+                        ? `
+                        grid-template-columns: 1fr;
+                    `
+                        : `
+                        grid-template-columns: 1fr;
+
+                        @media (min-width: 768px) {
+                            grid-template-columns: 1fr minmax(800px, auto) 1fr;
+                        }
+                    `}
                 `}
             >
                 {!hasSearched ? (
-                    <LandingPage onSearch={handleSearch} />
+                    <>
+                        <div />
+                        <LandingPage onSearch={handleSearch} />
+                        <div />
+                    </>
                 ) : totalResults === 0 && !isLoading ? (
                     <NoResultsState
                         query={query}

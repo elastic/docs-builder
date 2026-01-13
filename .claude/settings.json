@@ -1,26 +1,15 @@
 {
   "permissions": {
     "allow": [
-      {
-        "tool": "Bash",
-        "prompt": "run dotnet build"
-      },
-      {
-        "tool": "Bash",
-        "prompt": "run npm build"
-      },
-      {
-        "tool": "Bash",
-        "prompt": "run dotnet test"
-      },
-      {
-        "tool": "Bash",
-        "prompt": "run npm test"
-      },
-      {
-        "tool": "Bash",
-        "prompt": "install npm dependencies"
-      }
+      "Bash(find:*)",
+      "Bash(wc:*)",
+      "Bash(dotnet build:*)",
+      "Bash(npm run compile:check:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm exec:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run build:*)",
+      "Bash(git grep:*)"
     ]
   }
 }
