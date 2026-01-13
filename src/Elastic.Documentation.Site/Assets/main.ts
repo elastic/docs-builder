@@ -30,7 +30,8 @@ initializeOtel({
 // Dynamically import web components after telemetry is initialized
 // This ensures telemetry is available when the components execute
 // Parcel will automatically code-split this into a separate chunk
-import('./web-components/SearchOrAskAi/SearchOrAskAi')
+import('./web-components/NavigationSearch/NavigationSearchComponent')
+import('./web-components/AskAi/AskAi')
 import('./web-components/VersionDropdown')
 import('./web-components/AppliesToPopover')
 
@@ -224,3 +225,18 @@ document.body.addEventListener(
         }
     }
 )
+
+// Clean up web component content before htmx saves to history cache.
+document.body.addEventListener('htmx:beforeHistorySave', function () {
+    // connectedCallback() re-renders
+    $$('applies-to-popover, version-dropdown, search-or-ask-ai').forEach(
+        (el) => {
+            el.innerHTML = ''
+        }
+    )
+
+    // EUI portal containers getting orphaned during navigation
+    $$('[data-euiportal="true"]').forEach((el) => {
+        el.remove()
+    })
+})

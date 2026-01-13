@@ -308,7 +308,8 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 	private static void WriteAppliesItem(HtmlRenderer renderer, AppliesItemBlock block)
 	{
 		// Parse the applies_to definition to get the ApplicableTo object
-		var appliesTo = ParseApplicableTo(block.AppliesToDefinition, block);
+		// Use the pre-parsed AppliesTo from the block (implementing IBlockAppliesTo)
+		var appliesTo = block.AppliesTo ?? (block.AppliesToDefinition is not null ? ParseApplicableTo(block.AppliesToDefinition, block) : null);
 		var slice = AppliesItemView.Create(new AppliesItemViewModel
 		{
 			DirectiveBlock = block,
