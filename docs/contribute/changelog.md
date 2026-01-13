@@ -147,7 +147,7 @@ Bundle changelogs
 
 Options:
   --directory <string?>                     Optional: Directory containing changelog YAML files. Defaults to current directory [Default: null]
-  --output <string?>                        Optional: Output file path for the bundled changelog. Defaults to 'changelog-bundle.yaml' in the input directory [Default: null]
+  --output <string?>                        Optional: Output path for the bundled changelog. Can be either (1) a directory path, in which case 'changelog-bundle.yaml' is created in that directory, or (2) a file path ending in .yml or .yaml. Defaults to 'changelog-bundle.yaml' in the input directory [Default: null]
   --all                                     Include all changelogs in the directory. Only one filter option can be specified: `--all`, `--input-products`, or `--prs`.
   --input-products <List<ProductInfo>?>     Filter by products in format "product target lifecycle, ..." (e.g., "cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta"). When specified, all three parts (product, target, lifecycle) are required but can be wildcards (*). Examples: "elasticsearch * *" matches all elasticsearch changelogs, "cloud-serverless 2025-12-02 *" matches cloud-serverless 2025-12-02 with any lifecycle, "* 9.3.* *" matches any product with target starting with "9.3.", "* * *" matches all changelogs (equivalent to --all). Only one filter option can be specified: `--all`, `--input-products`, or `--prs`. [Default: null]
   --output-products <List<ProductInfo>?>    Optional: Explicitly set the products array in the output file in format "product target lifecycle, ...". Overrides any values from changelogs. [Default: null]
@@ -311,6 +311,26 @@ entries:
 :::{note}
 When a changelog matches multiple `--input-products` filters, it appears only once in the bundle. This deduplication applies even when using `--all` or `--prs`.
 :::
+
+### Output file location
+
+The `--output` option supports two formats:
+
+1. **Directory path**: If you specify a directory path (without a filename), the command creates `changelog-bundle.yaml` in that directory:
+
+   ```sh
+   docs-builder changelog bundle --all --output /path/to/output/dir
+   # Creates /path/to/output/dir/changelog-bundle.yaml
+   ```
+
+2. **File path**: If you specify a file path ending in `.yml` or `.yaml`, the command uses that exact path:
+
+   ```sh
+   docs-builder changelog bundle --all --output /path/to/custom-bundle.yaml
+   # Creates /path/to/custom-bundle.yaml
+   ```
+
+If you specify a file path with a different extension (not `.yml` or `.yaml`), the command returns an error.
 
 ## Create documentation [render-changelogs]
 

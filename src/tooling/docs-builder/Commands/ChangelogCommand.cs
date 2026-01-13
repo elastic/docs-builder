@@ -106,7 +106,7 @@ internal sealed class ChangelogCommand(
 	/// Bundle changelog files
 	/// </summary>
 	/// <param name="directory">Optional: Directory containing changelog YAML files. Defaults to current directory</param>
-	/// <param name="output">Optional: Output file path for the bundled changelog. Defaults to 'changelog-bundle.yaml' in the input directory</param>
+	/// <param name="output">Optional: Output path for the bundled changelog. Can be either (1) a directory path, in which case 'changelog-bundle.yaml' is created in that directory, or (2) a file path ending in .yml or .yaml. Defaults to 'changelog-bundle.yaml' in the input directory</param>
 	/// <param name="all">Include all changelogs in the directory. Only one filter option can be specified: `--all`, `--input-products`, or `--prs`.</param>
 	/// <param name="inputProducts">Filter by products in format "product target lifecycle, ..." (e.g., "cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta"). When specified, all three parts (product, target, lifecycle) are required but can be wildcards (*). Examples: "elasticsearch * *" matches all elasticsearch changelogs, "cloud-serverless 2025-12-02 *" matches cloud-serverless 2025-12-02 with any lifecycle, "* 9.3.* *" matches any product with target starting with "9.3.", "* * *" matches all changelogs (equivalent to --all). Only one filter option can be specified: `--all`, `--input-products`, or `--prs`.</param>
 	/// <param name="outputProducts">Optional: Explicitly set the products array in the output file in format "product target lifecycle, ...". Overrides any values from changelogs.</param>
@@ -231,10 +231,42 @@ internal sealed class ChangelogCommand(
 			}
 		}
 
+		// Process and validate output parameter
+		string? processedOutput = null;
+		if (!string.IsNullOrWhiteSpace(output))
+		{
+			var outputLower = output.ToLowerInvariant();
+			var endsWithYml = outputLower.EndsWith(".yml", StringComparison.OrdinalIgnoreCase);
+			var endsWithYaml = outputLower.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase);
+
+			if (endsWithYml || endsWithYaml)
+			{
+				// It's a file path - use as-is
+				processedOutput = output;
+			}
+			else
+			{
+				// Check if it has a file extension (other than .yml/.yaml)
+				var extension = Path.GetExtension(output);
+				if (!string.IsNullOrEmpty(extension))
+				{
+					// Has an extension that's not .yml/.yaml - this is invalid
+					collector.EmitError(string.Empty, $"--output: If a filename is provided, it must end in .yml or .yaml. Found: {extension}");
+					_ = collector.StartAsync(ctx);
+					await collector.WaitForDrain();
+					await collector.StopAsync(ctx);
+					return 1;
+				}
+
+				// It's a directory path - append default filename
+				processedOutput = Path.Combine(output, "changelog-bundle.yaml");
+			}
+		}
+
 		var input = new ChangelogBundleInput
 		{
 			Directory = directory ?? Directory.GetCurrentDirectory(),
-			Output = output,
+			Output = processedOutput,
 			All = all,
 			InputProducts = inputProducts,
 			OutputProducts = outputProducts,
