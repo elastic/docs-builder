@@ -1575,13 +1575,11 @@ public class ChangelogServiceTests : IDisposable
 
 		// Add PRs from file
 		var prsFromFile = await fileSystem.File.ReadAllLinesAsync(prsFile, TestContext.Current.CancellationToken);
-		foreach (var line in prsFromFile)
-		{
-			if (!string.IsNullOrWhiteSpace(line))
-			{
-				allPrs.Add(line.Trim());
-			}
-		}
+		allPrs.AddRange(
+			prsFromFile
+				.Where(line => !string.IsNullOrWhiteSpace(line))
+				.Select(line => line.Trim())
+		);
 
 		var configDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		fileSystem.Directory.CreateDirectory(configDir);
