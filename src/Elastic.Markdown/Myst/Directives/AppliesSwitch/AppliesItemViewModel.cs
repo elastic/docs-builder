@@ -12,7 +12,7 @@ public class AppliesItemViewModel : DirectiveViewModel
 {
 	public required int Index { get; init; }
 	public required int AppliesSwitchIndex { get; init; }
-	public required string AppliesToDefinition { get; init; }
+	public required string? AppliesToDefinition { get; init; }
 	public required ApplicableTo? AppliesTo { get; init; }
 	public required string? SyncKey { get; init; }
 	public required string? AppliesSwitchGroupKey { get; init; }
