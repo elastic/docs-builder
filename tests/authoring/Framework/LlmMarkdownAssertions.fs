@@ -34,24 +34,32 @@ module LlmMarkdownAssertions =
         
         // Add applies_to if present
         let appliesTo = sourceFile.YamlFrontMatter
-        if appliesTo <> null && appliesTo.AppliesTo <> null && appliesTo.AppliesTo <> ApplicableTo.All && appliesTo.AppliesTo <> ApplicableTo.Default then
-            let viewModel = ApplicableToViewModel(
-                AppliesTo = appliesTo.AppliesTo,
-                Inline = true,
-                ShowTooltip = true,
-                VersionsConfig = buildContext.VersionsConfiguration
-            )
-            let items = viewModel.GetApplicabilityItems()
-            if items.Count > 0 then
-                metadata.AppendLine("applies_to:") |> ignore
-                for item in items do
-                    let displayName = item.ApplicabilityDefinition.DisplayName.Replace("&nbsp;", " ")
-                    let popoverData = item.RenderData.PopoverData
-                    let availabilityText = 
-                        if popoverData <> null && popoverData.AvailabilityItems <> null && popoverData.AvailabilityItems.Length > 0 then
-                            String.Join(", ", popoverData.AvailabilityItems |> Array.map (fun a -> a.Text))
-                        else "Available"
-                    metadata.AppendLine($"  - {displayName}: {availabilityText}") |> ignore
+        match appliesTo with
+        | null -> ()
+        | appliesTo ->
+            match appliesTo.AppliesTo with
+            | null -> ()
+            | appliesTo ->
+                if appliesTo <> ApplicableTo.All && appliesTo <> ApplicableTo.Default then
+                    let viewModel = ApplicableToViewModel(
+                        AppliesTo = appliesTo,
+                        Inline = true,
+                        ShowTooltip = true,
+                        VersionsConfig = buildContext.VersionsConfiguration
+                    )
+                    let items = viewModel.GetApplicabilityItems()
+                    if items.Count > 0 then
+                        metadata.AppendLine("applies_to:") |> ignore
+                        for item in items do
+                            let displayName = item.ApplicabilityDefinition.DisplayName.Replace("&nbsp;", " ")
+                            let popoverData = item.RenderData.PopoverData
+                            let availabilityText =
+                                match popoverData with
+                                | NonNull popoverData when popoverData.AvailabilityItems.Length > 0 ->
+                                    String.Join(", ", popoverData.AvailabilityItems |> Array.map _.Text)
+                                | _ -> "Available"
+
+                            metadata.AppendLine($"  - {displayName}: {availabilityText}") |> ignore
         
         metadata.AppendLine("---") |> ignore
         metadata.AppendLine() |> ignore
