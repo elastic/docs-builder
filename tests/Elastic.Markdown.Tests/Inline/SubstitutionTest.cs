@@ -262,9 +262,9 @@ sub:
 
 # Testing Decrease Minor Mutation
 
-Version with minor > 0: {{version-with-minor|M.M-1}}
-Version with minor > 0 and M.M: {{version-with-minor|M.M-1|M.M}}
-Version with minor = 0: {{version-with-zero-minor|M.M-1}}
+Version with minor greater than 0: {{version-with-minor|M.M-1}}
+Version with minor greater than 0 and M.M: {{version-with-minor|M.M-1|M.M}}
+Version with minor 0: {{version-with-zero-minor|M.M-1}}
 """
 )
 {
@@ -272,10 +272,10 @@ Version with minor = 0: {{version-with-zero-minor|M.M-1}}
 	public void DecreaseMinorWorksCorrectly()
 	{
 		// When minor > 0, should decrease minor
-		Html.Should().Contain("Version with minor > 0: 9.1.0")
-			.And.Contain("Version with minor > 0 and M.M: 9.1")
+		Html.Should().Contain("Version with minor greater than 0: 9.1.0")
+			.And.Contain("Version with minor greater than 0 and M.M: 9.1")
 			// When minor = 0, should return original value
-			.And.Contain("Version with minor = 0: 9.0.4");
+			.And.Contain("Version with minor 0: 9.0.4");
 	}
 
 	[Fact]
