@@ -113,6 +113,7 @@ const RecentSearchesDropdown = ({
 interface SearchHeaderProps {
     query: string
     recentSearches: string[]
+    showSearchInput: boolean
     onQueryChange: (query: string) => void
     onSearch: (query: string) => void
     onClearRecent: () => void
@@ -121,6 +122,7 @@ interface SearchHeaderProps {
 export const SearchHeader = ({
     query,
     recentSearches,
+    showSearchInput,
     onQueryChange,
     onSearch,
     onClearRecent,
@@ -163,102 +165,117 @@ export const SearchHeader = ({
                 z-index: 100;
                 background: ${euiTheme.colors.emptyShade};
                 border-bottom: 1px solid ${euiTheme.border.color};
-                padding: ${euiTheme.size.m} ${euiTheme.size.l};
             `}
         >
-            <EuiFlexGroup
-                alignItems="center"
-                gutterSize="m"
+            <div
                 css={css`
-                    max-width: 1200px;
+                    max-width: var(--max-layout-width);
                     margin: 0 auto;
+                    padding: ${euiTheme.size.m} ${euiTheme.size.l};
                 `}
             >
-                <EuiFlexItem grow={false}>
-                    <EuiFlexGroup alignItems="center" gutterSize="s">
-                        <EuiFlexItem grow={false}>
-                            <div
-                                css={css`
-                                    width: 32px;
-                                    height: 32px;
-                                    background: linear-gradient(
-                                        135deg,
-                                        ${euiTheme.colors.primary} 0%,
-                                        ${euiTheme.colors.accent} 100%
-                                    );
-                                    border-radius: ${euiTheme.border.radius
-                                        .medium};
-                                    display: flex;
-                                    align-items: center;
-                                    justify-content: center;
-                                `}
-                            >
-                                <EuiIcon
-                                    type="documentation"
-                                    color="ghost"
-                                    size="m"
-                                />
-                            </div>
-                        </EuiFlexItem>
-                        <EuiFlexItem grow={false}>
-                            <EuiText
-                                css={css`
-                                    font-weight: ${euiTheme.font.weight
-                                        .semiBold};
-                                    display: none;
-                                    @media (min-width: 600px) {
-                                        display: block;
-                                    }
-                                `}
-                            >
-                                Elastic Docs
-                            </EuiText>
-                        </EuiFlexItem>
-                    </EuiFlexGroup>
-                </EuiFlexItem>
-                <EuiFlexItem
-                    css={css`
-                        max-width: 700px;
-                        position: relative;
-                    `}
-                >
-                    <EuiFieldSearch
-                        ref={inputRef as never}
-                        placeholder="Search documentation or ask a question..."
-                        value={query}
-                        onChange={(e) => onQueryChange(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        onFocus={handleFocus}
-                        onBlur={handleBlur}
-                        fullWidth
-                        isClearable
-                    />
-                    <RecentSearchesDropdown
-                        searches={recentSearches}
-                        onSelect={handleSelectRecent}
-                        onClear={onClearRecent}
-                        visible={showRecent}
-                    />
-                </EuiFlexItem>
-                <EuiFlexItem grow={false}>
-                    <EuiButton
-                        fill
-                        iconType="search"
-                        onClick={() => onSearch(query)}
+                <EuiFlexGroup alignItems="center" gutterSize="xl">
+                    <EuiFlexItem
+                        grow={false}
+                        css={css`
+                            width: 280px;
+                            flex-shrink: 0;
+
+                            @media (max-width: 768px) {
+                                width: auto;
+                            }
+                        `}
                     >
-                        <span
-                            css={css`
-                                display: none;
-                                @media (min-width: 600px) {
-                                    display: inline;
-                                }
-                            `}
-                        >
-                            Search
-                        </span>
-                    </EuiButton>
-                </EuiFlexItem>
-            </EuiFlexGroup>
+                        <EuiFlexGroup alignItems="center" gutterSize="s">
+                            <EuiFlexItem grow={false}>
+                                <div
+                                    css={css`
+                                        width: 32px;
+                                        height: 32px;
+                                        background: linear-gradient(
+                                            135deg,
+                                            ${euiTheme.colors.primary} 0%,
+                                            ${euiTheme.colors.accent} 100%
+                                        );
+                                        border-radius: ${euiTheme.border.radius.medium};
+                                        display: flex;
+                                        align-items: center;
+                                        justify-content: center;
+                                    `}
+                                >
+                                    <EuiIcon
+                                        type="documentation"
+                                        color="ghost"
+                                        size="m"
+                                    />
+                                </div>
+                            </EuiFlexItem>
+                            <EuiFlexItem grow={false}>
+                                <EuiText
+                                    css={css`
+                                        font-weight: ${euiTheme.font.weight.semiBold};
+                                        display: none;
+                                        @media (min-width: 600px) {
+                                            display: block;
+                                        }
+                                    `}
+                                >
+                                    Elastic Documentation
+                                </EuiText>
+                            </EuiFlexItem>
+                        </EuiFlexGroup>
+                    </EuiFlexItem>
+                    <EuiFlexItem
+                        css={css`
+                            position: relative;
+                            transform: ${showSearchInput ? 'translateY(0)' : 'translateY(-10px)'};
+                            opacity: ${showSearchInput ? 1 : 0};
+                            transition: transform 0.2s ease, opacity 0.2s ease;
+                            pointer-events: ${showSearchInput ? 'auto' : 'none'};
+                        `}
+                    >
+                        <EuiFlexGroup gutterSize="m">
+                            <EuiFlexItem>
+                                <EuiFieldSearch
+                                    ref={inputRef as never}
+                                    placeholder="Search documentation or ask a question..."
+                                    value={query}
+                                    onChange={(e) => onQueryChange(e.target.value)}
+                                    onKeyDown={handleKeyDown}
+                                    onFocus={handleFocus}
+                                    onBlur={handleBlur}
+                                    fullWidth
+                                    isClearable
+                                />
+                                <RecentSearchesDropdown
+                                    searches={recentSearches}
+                                    onSelect={handleSelectRecent}
+                                    onClear={onClearRecent}
+                                    visible={showRecent && showSearchInput}
+                                />
+                            </EuiFlexItem>
+                            <EuiFlexItem grow={false}>
+                                <EuiButton
+                                    fill
+                                    iconType="search"
+                                    onClick={() => onSearch(query)}
+                                >
+                                    <span
+                                        css={css`
+                                            display: none;
+                                            @media (min-width: 600px) {
+                                                display: inline;
+                                            }
+                                        `}
+                                    >
+                                        Search
+                                    </span>
+                                </EuiButton>
+                            </EuiFlexItem>
+                        </EuiFlexGroup>
+                    </EuiFlexItem>
+                </EuiFlexGroup>
+            </div>
         </header>
     )
 }

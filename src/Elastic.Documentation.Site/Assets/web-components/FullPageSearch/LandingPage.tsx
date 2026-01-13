@@ -1,10 +1,11 @@
 import {
+    EuiButton,
+    EuiFieldSearch,
     EuiFlexGroup,
     EuiFlexItem,
     EuiText,
     EuiTitle,
     EuiIcon,
-    EuiBadge,
     useEuiTheme,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
@@ -276,11 +277,21 @@ const RotatingQueryCard = ({
 }
 
 interface LandingPageProps {
+    query: string
+    isAnimatingOut: boolean
+    onQueryChange: (query: string) => void
     onSearch: (query: string) => void
 }
 
-export const LandingPage = ({ onSearch }: LandingPageProps) => {
+export const LandingPage = ({ query, isAnimatingOut, onQueryChange, onSearch }: LandingPageProps) => {
     const { euiTheme } = useEuiTheme()
+    const searchInputRef = useRef<HTMLDivElement>(null)
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' && query.trim()) {
+            onSearch(query)
+        }
+    }
 
     return (
         <div
@@ -297,15 +308,32 @@ export const LandingPage = ({ onSearch }: LandingPageProps) => {
                 gutterSize="l"
             >
                 <EuiFlexItem>
-                    <EuiTitle size="l">
-                        <h1
-                            css={css`
-                                text-align: center;
-                            `}
-                        >
-                            Search Elastic Documentation
-                        </h1>
-                    </EuiTitle>
+                    <EuiFlexGroup alignItems="center" justifyContent="center" gutterSize="m">
+                        <EuiFlexItem grow={false}>
+                            <div
+                                css={css`
+                                    width: 48px;
+                                    height: 48px;
+                                    background: linear-gradient(
+                                        135deg,
+                                        ${euiTheme.colors.primary} 0%,
+                                        ${euiTheme.colors.accent} 100%
+                                    );
+                                    border-radius: ${euiTheme.border.radius.medium};
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                `}
+                            >
+                                <EuiIcon type="documentation" color="ghost" size="xl" />
+                            </div>
+                        </EuiFlexItem>
+                        <EuiFlexItem grow={false}>
+                            <EuiTitle size="l">
+                                <h1>Search Elastic Documentation</h1>
+                            </EuiTitle>
+                        </EuiFlexItem>
+                    </EuiFlexGroup>
                 </EuiFlexItem>
                 <EuiFlexItem>
                     <EuiText
@@ -315,20 +343,82 @@ export const LandingPage = ({ onSearch }: LandingPageProps) => {
                             max-width: 600px;
                         `}
                     >
-                        <p>
-                            Find guides, API references, tutorials, and more.
-                            Ask a question or search by keyword.
-                        </p>
+                        <p>Find guides, API references, tutorials, and more.</p>
                     </EuiText>
                 </EuiFlexItem>
+                <EuiFlexItem
+                    css={css`
+                        width: 100%;
+                        max-width: 700px;
+                    `}
+                >
+                    <div
+                        ref={searchInputRef}
+                        css={css`
+                            transform: ${isAnimatingOut ? 'translateY(-40px) scale(0.98)' : 'translateY(0) scale(1)'};
+                            opacity: ${isAnimatingOut ? 0 : 1};
+                            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                                        opacity 0.2s ease-out;
+                        `}
+                    >
+                        <EuiFlexGroup gutterSize="m">
+                            <EuiFlexItem>
+                                <EuiFieldSearch
+                                    autoFocus
+                                    placeholder="Search documentation or ask a question..."
+                                    value={query}
+                                    onChange={(e) => onQueryChange(e.target.value)}
+                                    onKeyDown={handleKeyDown}
+                                    fullWidth
+                                    isClearable
+                                    css={css`
+                                        .euiFieldSearch {
+                                            font-size: 1.1rem;
+                                            padding: ${euiTheme.size.m};
+                                        }
+                                    `}
+                                />
+                            </EuiFlexItem>
+                            <EuiFlexItem grow={false}>
+                                <EuiButton
+                                    fill
+                                    iconType="search"
+                                    onClick={() => query.trim() && onSearch(query)}
+                                    css={css`
+                                        height: 100%;
+                                    `}
+                                >
+                                    Search
+                                </EuiButton>
+                            </EuiFlexItem>
+                        </EuiFlexGroup>
+                    </div>
+                </EuiFlexItem>
             </EuiFlexGroup>
+
+            <div
+                css={css`
+                    display: flex;
+                    align-items: center;
+                    gap: ${euiTheme.size.m};
+                    margin-top: ${euiTheme.size.xxl};
+                `}
+            >
+                <div css={css`flex: 1; height: 1px; background: ${euiTheme.border.color};`} />
+                <EuiText size="s" color="subdued">OR</EuiText>
+                <div css={css`flex: 1; height: 1px; background: ${euiTheme.border.color};`} />
+            </div>
+
+            <EuiTitle size="s" css={css`margin-top: ${euiTheme.size.l}; text-align: center;`}>
+                <h2 css={css`color: ${euiTheme.colors.subduedText};`}>Try a question now!</h2>
+            </EuiTitle>
 
             <div
                 css={css`
                     display: grid;
                     grid-template-columns: 1fr;
                     gap: ${euiTheme.size.m};
-                    margin-top: ${euiTheme.size.xl};
+                    margin-top: ${euiTheme.size.l};
 
                     @media (min-width: 768px) {
                         grid-template-columns: repeat(2, 1fr);
@@ -346,37 +436,45 @@ export const LandingPage = ({ onSearch }: LandingPageProps) => {
                 ))}
             </div>
 
-            <EuiFlexGroup
-                direction="column"
-                alignItems="center"
-                gutterSize="s"
+            <div
                 css={css`
+                    display: flex;
+                    align-items: center;
+                    gap: ${euiTheme.size.m};
                     margin-top: ${euiTheme.size.xxl};
                 `}
             >
+                <div css={css`flex: 1; height: 1px; background: ${euiTheme.border.color};`} />
+                <EuiText size="s" color="subdued">OR</EuiText>
+                <div css={css`flex: 1; height: 1px; background: ${euiTheme.border.color};`} />
+            </div>
+
+            <EuiFlexGroup
+                direction="column"
+                alignItems="center"
+                gutterSize="m"
+                css={css`
+                    margin-top: ${euiTheme.size.l};
+                `}
+            >
                 <EuiFlexItem>
-                    <EuiText size="s" color="subdued">
-                        Popular searches
-                    </EuiText>
+                    <EuiTitle size="s">
+                        <h2 css={css`color: ${euiTheme.colors.subduedText};`}>Try a popular search term</h2>
+                    </EuiTitle>
                 </EuiFlexItem>
                 <EuiFlexItem>
-                    <EuiFlexGroup gutterSize="s" wrap>
+                    <EuiFlexGroup gutterSize="s" wrap justifyContent="center">
                         {POPULAR_SEARCHES.map((term) => (
                             <EuiFlexItem key={term} grow={false}>
-                                <EuiBadge
-                                    color="hollow"
+                                <EuiButton
                                     onClick={() => onSearch(term)}
-                                    onClickAriaLabel={`Search for ${term}`}
+                                    color="text"
                                     css={css`
-                                        cursor: pointer;
-                                        &:hover {
-                                            background: ${euiTheme.colors
-                                                .lightestShade};
-                                        }
+                                        border: 1px solid ${euiTheme.border.color};
                                     `}
                                 >
                                     {term}
-                                </EuiBadge>
+                                </EuiButton>
                             </EuiFlexItem>
                         ))}
                     </EuiFlexGroup>

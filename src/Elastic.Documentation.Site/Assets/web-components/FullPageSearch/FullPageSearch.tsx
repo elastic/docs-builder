@@ -8,6 +8,7 @@ import {
     useEuiTheme,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
+import { useState, useCallback } from 'react'
 import { LandingPage } from './LandingPage'
 import { SearchHeader } from './SearchHeader'
 import { FilterSidebar } from './FilterSidebar'
@@ -73,6 +74,9 @@ const NoResultsState = ({
 export const FullPageSearch = () => {
     const { euiTheme } = useEuiTheme()
 
+    // Animation state for search box transition
+    const [isAnimatingSearchToHeader, setIsAnimatingSearchToHeader] = useState(false)
+
     // Store state
     const query = useFullPageSearchQuery()
     const hasSearched = useHasSearched()
@@ -91,7 +95,6 @@ export const FullPageSearch = () => {
     const totalResults = data?.totalResults ?? 0
     const pageCount = data?.pageCount ?? 0
     const aggregations = data?.aggregations
-    const isSemanticSearch = data?.isSemanticQuery ?? false
 
     // Show AI answer for semantic queries
     const showAIAnswer =
@@ -100,9 +103,19 @@ export const FullPageSearch = () => {
         results.length > 0 &&
         !isLoading
 
-    const handleSearch = (searchQuery: string) => {
-        actions.submitSearch(searchQuery)
-    }
+    const handleSearch = useCallback((searchQuery: string) => {
+        if (!searchQuery.trim()) return
+
+        // Start the animation
+        setIsAnimatingSearchToHeader(true)
+
+        // After animation starts, submit the search
+        setTimeout(() => {
+            actions.submitSearch(searchQuery)
+            // Reset animation state after transition completes
+            setTimeout(() => setIsAnimatingSearchToHeader(false), 50)
+        }, 200)
+    }, [actions])
 
     const handleFilterChange = (
         key: keyof FullPageSearchFilters,
@@ -122,24 +135,42 @@ export const FullPageSearch = () => {
         actions.setVersion('9.0+')
     }
 
+    // Show header search input only after search has been performed
+    const showHeaderSearchInput = hasSearched
+
     return (
         <div
             css={css`
                 min-height: 100vh;
-                background: linear-gradient(
-                    180deg,
-                    ${euiTheme.colors.lightestShade} 0%,
-                    ${euiTheme.colors.emptyShade} 100%
-                );
             `}
         >
-            <SearchHeader
-                query={query}
-                recentSearches={recentSearches}
-                onQueryChange={actions.setQuery}
-                onSearch={handleSearch}
-                onClearRecent={actions.clearRecentSearches}
+            {/* Full-width gradient background */}
+            <div
+                css={css`
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: linear-gradient(
+                        180deg,
+                        ${euiTheme.colors.lightestShade} 0%,
+                        ${euiTheme.colors.emptyShade} 100%
+                    );
+                    z-index: -1;
+                `}
             />
+
+            {hasSearched && (
+                <SearchHeader
+                    query={query}
+                    recentSearches={recentSearches}
+                    showSearchInput={showHeaderSearchInput}
+                    onQueryChange={actions.setQuery}
+                    onSearch={(q) => actions.submitSearch(q)}
+                    onClearRecent={actions.clearRecentSearches}
+                />
+            )}
 
             <main
                 css={css`
@@ -166,7 +197,12 @@ export const FullPageSearch = () => {
                 {!hasSearched ? (
                     <>
                         <div />
-                        <LandingPage onSearch={handleSearch} />
+                        <LandingPage
+                            query={query}
+                            isAnimatingOut={isAnimatingSearchToHeader}
+                            onQueryChange={actions.setQuery}
+                            onSearch={handleSearch}
+                        />
                         <div />
                     </>
                 ) : totalResults === 0 && !isLoading ? (
