@@ -10,6 +10,7 @@ using Elastic.Documentation.Api.Core.Search;
 using Elastic.Documentation.Api.Core.Telemetry;
 using Elastic.Documentation.Api.Infrastructure.Adapters.AskAi;
 using Elastic.Documentation.Api.Infrastructure.Adapters.Search;
+using Elastic.Documentation.Api.Infrastructure.Adapters.Search.Common;
 using Elastic.Documentation.Api.Infrastructure.Adapters.Telemetry;
 using Elastic.Documentation.Api.Infrastructure.Aws;
 using Elastic.Documentation.Api.Infrastructure.Caching;
@@ -232,9 +233,19 @@ public static class ServicesExtension
 	{
 		var logger = GetLogger(services);
 		logger?.LogInformation("Configuring Search use case for environment {AppEnvironment}", appEnv);
+
+		// Shared Elasticsearch client accessor (singleton - one client instance)
 		_ = services.AddSingleton<ElasticsearchOptions>();
+		_ = services.AddSingleton<ElasticsearchClientAccessor>();
+
+		// FindPage (autocomplete/navigation search)
 		_ = services.AddScoped<IFindPageGateway, ElasticsearchGateway>();
 		_ = services.AddScoped<SearchUsecase>();
+
+		// FullSearch (full-page search with hybrid RRF)
+		_ = services.AddScoped<IFullSearchGateway, FullSearchGateway>();
+		_ = services.AddScoped<FullSearchUsecase>();
+		logger?.LogInformation("Full search use case registered with hybrid RRF support");
 	}
 
 	private static void AddOtlpProxyUsecase(IServiceCollection services, AppEnv appEnv)

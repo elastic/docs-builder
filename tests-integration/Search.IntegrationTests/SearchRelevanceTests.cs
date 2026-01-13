@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Api.Infrastructure.Adapters.Search;
+using Elastic.Documentation.Api.Infrastructure.Adapters.Search.Common;
 using Elastic.Documentation.Api.Infrastructure.Aws;
 using Elastic.Documentation.Configuration.Search;
 using FluentAssertions;
@@ -269,7 +270,8 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 			DiminishTerms = ["plugin", "client", "integration", "glossary"]
 		};
 
-		return new ElasticsearchGateway(options, searchConfig, NullLogger<ElasticsearchGateway>.Instance);
+		var clientAccessor = new ElasticsearchClientAccessor(options, searchConfig);
+		return new ElasticsearchGateway(clientAccessor, NullLogger<ElasticsearchGateway>.Instance);
 	}
 
 	/// <summary>

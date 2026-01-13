@@ -34,6 +34,7 @@ import('./web-components/NavigationSearch/NavigationSearchComponent')
 import('./web-components/AskAi/AskAi')
 import('./web-components/VersionDropdown')
 import('./web-components/AppliesToPopover')
+import('./web-components/FullPageSearch/FullPageSearchComponent')
 
 const { getOS } = new UAParser()
 const isLazyLoadNavigationEnabled =
@@ -229,7 +230,7 @@ document.body.addEventListener(
 // Clean up web component content before htmx saves to history cache.
 document.body.addEventListener('htmx:beforeHistorySave', function () {
     // connectedCallback() re-renders
-    $$('applies-to-popover, version-dropdown, search-or-ask-ai').forEach(
+    $$('applies-to-popover, version-dropdown, search-or-ask-ai, full-page-search').forEach(
         (el) => {
             el.innerHTML = ''
         }

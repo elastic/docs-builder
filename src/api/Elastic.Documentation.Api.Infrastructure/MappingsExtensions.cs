@@ -20,6 +20,7 @@ public static class MappingsExtension
 		_ = group.MapPost("/", () => Results.Empty);
 		MapAskAiEndpoint(group);
 		MapNavigationSearch(group);
+		MapFullSearch(group);
 		MapOtlpProxyEndpoint(group);
 	}
 
@@ -66,6 +67,39 @@ public static class MappingsExtension
 					TypeFilter = typeFilter
 				};
 				var response = await searchUsecase.FindPageAsync(request, ctx);
+				return Results.Ok(response);
+			});
+	}
+
+	private static void MapFullSearch(IEndpointRouteBuilder group)
+	{
+		var searchGroup = group.MapGroup("/search");
+		_ = searchGroup.MapGet("/",
+			async (
+				[FromQuery(Name = "q")] string query,
+				[FromQuery(Name = "page")] int? pageNumber,
+				[FromQuery(Name = "size")] int? pageSize,
+				[FromQuery(Name = "type")] string[]? typeFilter,
+				[FromQuery(Name = "section")] string[]? sectionFilter,
+				[FromQuery(Name = "deployment")] string[]? deploymentFilter,
+				[FromQuery(Name = "version")] string? versionFilter,
+				[FromQuery(Name = "sort")] string? sortBy,
+				FullSearchUsecase searchUsecase,
+				Cancel ctx
+			) =>
+			{
+				var request = new FullSearchApiRequest
+				{
+					Query = query,
+					PageNumber = pageNumber ?? 1,
+					PageSize = pageSize ?? 20,
+					TypeFilter = typeFilter,
+					SectionFilter = sectionFilter,
+					DeploymentFilter = deploymentFilter,
+					VersionFilter = versionFilter,
+					SortBy = sortBy ?? "relevance"
+				};
+				var response = await searchUsecase.SearchAsync(request, ctx);
 				return Results.Ok(response);
 			});
 	}
