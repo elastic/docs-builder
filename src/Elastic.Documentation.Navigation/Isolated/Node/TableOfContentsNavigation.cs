@@ -28,7 +28,8 @@ public class TableOfContentsNavigation<TModel> : IRootNavigationItem<TModel, INa
 		Parent = parent;
 		Hidden = false;
 		IsUsingNavigationDropdown = false;
-		Id = ShortId.Create(parentPath);
+		// Id will be set in SetNavigationItems using Index.Url for uniqueness
+		Id = null!;
 		ParentPath = parentPath;
 		PathPrefix = pathPrefix;
 
@@ -103,7 +104,8 @@ public class TableOfContentsNavigation<TModel> : IRootNavigationItem<TModel, INa
 	{
 		var indexNavigation = navigationItems.QueryIndex<TModel>(this, $"{ParentPath}/index.md", out navigationItems);
 		Index = indexNavigation;
-		Id = ShortId.Create(indexNavigation.Url);
+		// Include NavigationRoot.Id to ensure uniqueness across docsets in assembler builds
+		Id = ShortId.Create(NavigationRoot.Id, Index.Url);
 		NavigationItems = navigationItems;
 	}
 }

@@ -19,7 +19,7 @@ public static class MappingsExtension
 		_ = group.MapGet("/", () => Results.Empty);
 		_ = group.MapPost("/", () => Results.Empty);
 		MapAskAiEndpoint(group);
-		MapSearchEndpoint(group);
+		MapNavigationSearch(group);
 		MapOtlpProxyEndpoint(group);
 	}
 
@@ -47,9 +47,9 @@ public static class MappingsExtension
 		}).DisableAntiforgery();
 	}
 
-	private static void MapSearchEndpoint(IEndpointRouteBuilder group)
+	private static void MapNavigationSearch(IEndpointRouteBuilder group)
 	{
-		var searchGroup = group.MapGroup("/search");
+		var searchGroup = group.MapGroup("/navigation-search");
 		_ = searchGroup.MapGet("/",
 			async (
 				[FromQuery(Name = "q")] string query,
@@ -59,14 +59,14 @@ public static class MappingsExtension
 				Cancel ctx
 			) =>
 			{
-				var searchRequest = new SearchApiRequest
+				var request = new FindPageApiRequest
 				{
 					Query = query,
 					PageNumber = pageNumber ?? 1,
 					TypeFilter = typeFilter
 				};
-				var searchResponse = await searchUsecase.Search(searchRequest, ctx);
-				return Results.Ok(searchResponse);
+				var response = await searchUsecase.FindPageAsync(request, ctx);
+				return Results.Ok(response);
 			});
 	}
 

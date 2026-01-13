@@ -55,7 +55,7 @@ This example shows how to use directly a key from the second level of the `appli
 ::::{tab-item} Output
 
 - {applies_to}`serverless: ga` {applies_to}`stack: ga 9.1.0`
-- {applies_to}`edot_python: preview 1.7.0, ga 1.8.0` {applies_to}`apm_agent_java: beta 1.0.0, ga 1.2.0`
+- {applies_to}`edot_python: preview =1.7.0, ga 1.8.0` {applies_to}`apm_agent_java: beta =1.0.0, ga 1.2.0`
 - {applies_to}`stack: ga 9.0` {applies_to}`eck: ga 3.0`
 
 ::::
@@ -63,7 +63,7 @@ This example shows how to use directly a key from the second level of the `appli
 ::::{tab-item} Markdown
 ```markdown
 - {applies_to}`serverless: ga` {applies_to}`stack: ga 9.1.0`
-- {applies_to}`edot_python: preview 1.7.0, ga 1.8.0` {applies_to}`apm_agent_java: beta 1.0.0, ga 1.2.0`
+- {applies_to}`edot_python: preview =1.7.0, ga 1.8.0` {applies_to}`apm_agent_java: beta =1.0.0, ga 1.2.0`
 - {applies_to}`stack: ga 9.0` {applies_to}`eck: ga 3.0`
 ```
 ::::
