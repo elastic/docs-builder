@@ -84,9 +84,8 @@ internal sealed class ChangelogCommand(
 		{
 			var allPrs = new List<string>();
 			var validPrs = prs.Where(prValue => !string.IsNullOrWhiteSpace(prValue));
-			foreach (var prValue in validPrs)
+			foreach (var trimmedValue in validPrs.Select(prValue => prValue.Trim()))
 			{
-				var trimmedValue = prValue.Trim();
 
 				// Check if this is a file path
 
