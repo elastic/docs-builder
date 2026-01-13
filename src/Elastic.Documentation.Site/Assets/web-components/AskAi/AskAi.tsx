@@ -62,7 +62,7 @@ const AskAiButton = () => {
     useEffect(() => {
         const handleKeydown = (event: KeyboardEvent) => {
             if (event.key === 'Escape') {
-                closeModal()
+                //closeModal()
             }
 
             // Cmd+; to open Ask AI modal
@@ -70,8 +70,8 @@ const AskAiButton = () => {
                 (event.metaKey || event.ctrlKey) &&
                 event.code === 'Semicolon'
             ) {
-                event.preventDefault()
-                openModal()
+                //event.preventDefault()
+                //openModal()
             }
         }
         window.addEventListener('keydown', handleKeydown)
