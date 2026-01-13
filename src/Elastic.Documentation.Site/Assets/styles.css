@@ -119,8 +119,8 @@ body {
 
 	.sidebar {
 		.sidebar-nav {
-			@apply sticky top-(--offset-top) z-30 overflow-y-auto;
-			max-height: calc(100vh - var(--offset-top));
+			@apply sticky top-0 z-30 overflow-y-auto;
+			max-height: 100vh;
 			scrollbar-gutter: stable;
 			scroll-behavior: smooth;
 		}

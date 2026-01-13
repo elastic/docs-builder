@@ -80,7 +80,7 @@ export const NavigationSearch = () => {
     return (
         <div
             css={css`
-                padding-top: ${euiTheme.size.base};
+                padding-top: ${euiTheme.size.l};
                 padding-right: ${euiTheme.size.base};
             `}
         >
