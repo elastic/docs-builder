@@ -47,7 +47,11 @@ docs-builder changelog add [options...] [-h|--help]
 :   The valid lifecycles are listed in [ChangelogConfiguration.cs](https://github.com/elastic/docs-builder/blob/main/src/services/Elastic.Documentation.Services/Changelog/ChangelogConfiguration.cs).
 
 `--prs <string[]?>`
-:   Optional: Pull request URLs or numbers (if `--owner` and `--repo` are provided).
+:   Optional: Pull request URLs or numbers (comma-separated), or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times.
+:   Each occurrence can be either comma-separated PRs (e.g., `--prs "https://github.com/owner/repo/pull/123,6789"`) or a file path (e.g., `--prs /path/to/file.txt`).
+:   When specifying PRs directly, provide comma-separated values.
+:   When specifying a file path, provide a single value that points to a newline-delimited file.
+:   If `--owner` and `--repo` are provided, PR numbers can be used instead of URLs.
 :   If specified, `--title` can be derived from the PR.
 :   If mappings are configured, `--areas` and `--type` can also be derived from the PR.
 :   Creates one changelog file per PR.

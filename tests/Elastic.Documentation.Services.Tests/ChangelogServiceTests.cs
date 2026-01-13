@@ -1403,5 +1403,239 @@ public class ChangelogServiceTests : IDisposable
 		var files = Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(0); // No files should be created
 	}
+
+	[Fact]
+	public async Task CreateChangelog_WithPrsFromFile_ProcessesAllPrsFromFile()
+	{
+		// Arrange - Simulate what ChangelogCommand does: read PRs from a file
+		var mockGitHubService = A.Fake<IGitHubPrService>();
+		var pr1Info = new GitHubPrInfo
+		{
+			Title = "First PR from file",
+			Labels = ["type:feature"]
+		};
+		var pr2Info = new GitHubPrInfo
+		{
+			Title = "Second PR from file",
+			Labels = ["type:bug"]
+		};
+		var pr3Info = new GitHubPrInfo
+		{
+			Title = "Third PR from file",
+			Labels = ["type:enhancement"]
+		};
+
+		A.CallTo(() => mockGitHubService.FetchPrInfoAsync(
+			A<string>.That.Contains("1111"),
+			null,
+			null,
+			A<CancellationToken>._))
+			.Returns(pr1Info);
+
+		A.CallTo(() => mockGitHubService.FetchPrInfoAsync(
+			A<string>.That.Contains("2222"),
+			null,
+			null,
+			A<CancellationToken>._))
+			.Returns(pr2Info);
+
+		A.CallTo(() => mockGitHubService.FetchPrInfoAsync(
+			A<string>.That.Contains("3333"),
+			null,
+			null,
+			A<CancellationToken>._))
+			.Returns(pr3Info);
+
+		var fileSystem = new FileSystem();
+		var tempDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		fileSystem.Directory.CreateDirectory(tempDir);
+
+		// Create a file with newline-delimited PRs (simulating what ChangelogCommand would read)
+		var prsFile = fileSystem.Path.Combine(tempDir, "prs.txt");
+		var prsFileContent = """
+			https://github.com/elastic/elasticsearch/pull/1111
+			https://github.com/elastic/elasticsearch/pull/2222
+			https://github.com/elastic/elasticsearch/pull/3333
+			""";
+		await fileSystem.File.WriteAllTextAsync(prsFile, prsFileContent, TestContext.Current.CancellationToken);
+
+		// Read PRs from file (simulating ChangelogCommand behavior)
+		var prsFromFile = await fileSystem.File.ReadAllLinesAsync(prsFile, TestContext.Current.CancellationToken);
+		var parsedPrs = prsFromFile
+			.Where(line => !string.IsNullOrWhiteSpace(line))
+			.Select(line => line.Trim())
+			.ToArray();
+
+		var configDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		fileSystem.Directory.CreateDirectory(configDir);
+		var configPath = fileSystem.Path.Combine(configDir, "changelog.yml");
+		var configContent = """
+			available_types:
+			  - feature
+			  - bug-fix
+			  - enhancement
+			available_subtypes: []
+			available_lifecycles:
+			  - preview
+			  - beta
+			  - ga
+			label_to_type:
+			  "type:feature": feature
+			  "type:bug": bug-fix
+			  "type:enhancement": enhancement
+			""";
+		await fileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
+
+		var input = new ChangelogInput
+		{
+			Prs = parsedPrs, // PRs read from file
+			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Config = configPath,
+			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString())
+		};
+
+		// Act
+		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		_collector.Errors.Should().Be(0);
+
+		var outputDir = input.Output ?? Directory.GetCurrentDirectory();
+		if (!Directory.Exists(outputDir))
+			Directory.CreateDirectory(outputDir);
+		var files = Directory.GetFiles(outputDir, "*.yaml");
+		files.Should().HaveCount(3); // One file per PR
+
+		var yamlContents = new List<string>();
+		foreach (var file in files)
+		{
+			var content = await File.ReadAllTextAsync(file, TestContext.Current.CancellationToken);
+			yamlContents.Add(content);
+		}
+
+		// Verify all PRs were processed
+		yamlContents.Should().Contain(c => c.Contains("title: First PR from file"));
+		yamlContents.Should().Contain(c => c.Contains("title: Second PR from file"));
+		yamlContents.Should().Contain(c => c.Contains("title: Third PR from file"));
+		yamlContents.Should().Contain(c => c.Contains("pr: https://github.com/elastic/elasticsearch/pull/1111"));
+		yamlContents.Should().Contain(c => c.Contains("pr: https://github.com/elastic/elasticsearch/pull/2222"));
+		yamlContents.Should().Contain(c => c.Contains("pr: https://github.com/elastic/elasticsearch/pull/3333"));
+	}
+
+	[Fact]
+	public async Task CreateChangelog_WithMixedPrsFromFileAndCommaSeparated_ProcessesAllPrs()
+	{
+		// Arrange - Simulate ChangelogCommand handling both file paths and comma-separated PRs
+		var mockGitHubService = A.Fake<IGitHubPrService>();
+		var pr1Info = new GitHubPrInfo
+		{
+			Title = "PR from comma-separated",
+			Labels = ["type:feature"]
+		};
+		var pr2Info = new GitHubPrInfo
+		{
+			Title = "PR from file",
+			Labels = ["type:bug"]
+		};
+
+		A.CallTo(() => mockGitHubService.FetchPrInfoAsync(
+			A<string>.That.Contains("1111"),
+			null,
+			null,
+			A<CancellationToken>._))
+			.Returns(pr1Info);
+
+		A.CallTo(() => mockGitHubService.FetchPrInfoAsync(
+			A<string>.That.Contains("2222"),
+			null,
+			null,
+			A<CancellationToken>._))
+			.Returns(pr2Info);
+
+		var fileSystem = new FileSystem();
+		var tempDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		fileSystem.Directory.CreateDirectory(tempDir);
+
+		// Create a file with PRs
+		var prsFile = fileSystem.Path.Combine(tempDir, "prs.txt");
+		var prsFileContent = """
+			https://github.com/elastic/elasticsearch/pull/2222
+			""";
+		await fileSystem.File.WriteAllTextAsync(prsFile, prsFileContent, TestContext.Current.CancellationToken);
+
+		// Simulate ChangelogCommand processing: comma-separated PRs + file path
+		var allPrs = new List<string>();
+
+		// Add comma-separated PRs
+		var commaSeparatedPrs = "https://github.com/elastic/elasticsearch/pull/1111".Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+		allPrs.AddRange(commaSeparatedPrs);
+
+		// Add PRs from file
+		var prsFromFile = await fileSystem.File.ReadAllLinesAsync(prsFile, TestContext.Current.CancellationToken);
+		foreach (var line in prsFromFile)
+		{
+			if (!string.IsNullOrWhiteSpace(line))
+			{
+				allPrs.Add(line.Trim());
+			}
+		}
+
+		var configDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		fileSystem.Directory.CreateDirectory(configDir);
+		var configPath = fileSystem.Path.Combine(configDir, "changelog.yml");
+		var configContent = """
+			available_types:
+			  - feature
+			  - bug-fix
+			available_subtypes: []
+			available_lifecycles:
+			  - preview
+			  - beta
+			  - ga
+			label_to_type:
+			  "type:feature": feature
+			  "type:bug": bug-fix
+			""";
+		await fileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
+
+		var input = new ChangelogInput
+		{
+			Prs = allPrs.ToArray(), // Mixed PRs from comma-separated and file
+			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Config = configPath,
+			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString())
+		};
+
+		// Act
+		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		_collector.Errors.Should().Be(0);
+
+		var outputDir = input.Output ?? Directory.GetCurrentDirectory();
+		if (!Directory.Exists(outputDir))
+			Directory.CreateDirectory(outputDir);
+		var files = Directory.GetFiles(outputDir, "*.yaml");
+		files.Should().HaveCount(2); // One file per PR
+
+		var yamlContents = new List<string>();
+		foreach (var file in files)
+		{
+			var content = await File.ReadAllTextAsync(file, TestContext.Current.CancellationToken);
+			yamlContents.Add(content);
+		}
+
+		// Verify both PRs were processed
+		yamlContents.Should().Contain(c => c.Contains("title: PR from comma-separated"));
+		yamlContents.Should().Contain(c => c.Contains("title: PR from file"));
+		yamlContents.Should().Contain(c => c.Contains("pr: https://github.com/elastic/elasticsearch/pull/1111"));
+		yamlContents.Should().Contain(c => c.Contains("pr: https://github.com/elastic/elasticsearch/pull/2222"));
+	}
 }
 
