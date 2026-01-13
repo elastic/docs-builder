@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.IO.Abstractions;
 using ConsoleAppFramework;
 using Documentation.Builder.Arguments;
 using Elastic.Documentation.Configuration;
@@ -9,7 +10,6 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;
 using Elastic.Documentation.Services.Changelog;
 using Microsoft.Extensions.Logging;
-using System.IO.Abstractions;
 
 namespace Documentation.Builder.Commands;
 
