@@ -3,7 +3,7 @@ versioning_systems:
   # Updates for Stack versions are manual
   stack: &stack
     base: 9.0
-    current: 9.2.3
+    current: 9.2.4
 
   # Using an unlikely high version
   # So that our logic that would display "planned" doesn't trigger
@@ -73,7 +73,7 @@ versioning_systems:
   # EDOTs
   edot-collector:
     base: 9.0
-    current: 9.2.3
+    current: 9.2.4
   edot-ios:
     base: 1.0
     current: 1.4.0
@@ -82,7 +82,7 @@ versioning_systems:
     current: 1.4.0
   edot-dotnet:
     base: 1.0
-    current: 1.2.0
+    current: 1.2.2
   edot-java:
     base: 1.0
     current: 1.8.0
@@ -149,7 +149,7 @@ versioning_systems:
     current: 9.2.1
   elasticsearch-client-java:
     base: 9.0
-    current: 9.2.3
+    current: 9.2.4
   elasticsearch-client-javascript:
     base: 9.0
     current: 9.2.0

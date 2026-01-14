@@ -209,7 +209,7 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 			return true; // Could not parse version, safe to include
 
 		// Get current version for the product
-		var versioningSystemId = product == "elasticsearch"
+		var versioningSystemId = product.Equals("elasticsearch", StringComparison.OrdinalIgnoreCase)
 			? VersioningSystemId.Stack
 			: VersioningSystemId.Stack; // Both use Stack for now
 
@@ -294,14 +294,14 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 	/// <summary>
 	/// Parses the version from "Added in X.Y.Z" pattern in the x-state string.
 	/// </summary>
-	private static SemVersion? ParseVersion(string stateValue)
+	private static VersionSpec? ParseVersion(string stateValue)
 	{
 		var match = AddedInVersionRegex().Match(stateValue);
 		if (!match.Success)
 			return null;
 
 		var versionString = match.Groups[1].Value;
-		return SemVersion.TryParse(versionString, out var version) ? version : null;
+		return VersionSpec.TryParse(versionString, out var version) ? version : null;
 	}
 
 	/// <summary>

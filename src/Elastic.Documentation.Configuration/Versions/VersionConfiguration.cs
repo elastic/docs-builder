@@ -158,6 +158,7 @@ public record VersioningSystem
 	[YamlMember(Alias = "current")]
 	public required SemVersion Current { get; init; }
 
+	public bool IsVersioned() => Base.Major != AllVersions.Instance.Major;
 	/// <summary>
 	/// Returns true if this versioning system represents a "versionless" product
 	/// (e.g., serverless, cloud services) that should not display a version dropdown.
