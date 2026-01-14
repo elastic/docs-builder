@@ -44,7 +44,7 @@ public class RepositoryBuildMatchingService(
 		var linkIndexProvider = Aws3LinkIndexReader.CreateAnonymous();
 		var linkRegistry = await linkIndexProvider.GetRegistry(ctx);
 		var alreadyPublishing = linkRegistry.Repositories.ContainsKey(repo);
-		_logger.LogInformation("'{Repository}' already publishing to link registry", repo);
+		_logger.LogInformation("'{Repository}' publishing to link registry: {PublishState} ", repo, alreadyPublishing);
 		var assembleContext = new AssembleContext(configuration, configurationContext, "dev", collector, fileSystem, fileSystem, null, null);
 		var product = assembleContext.ProductsConfiguration.GetProductByRepositoryName(repo);
 		var matches = assembleContext.Configuration.Match(logFactory, repo, refName, product, alreadyPublishing);
