@@ -816,7 +816,7 @@ export const AIAnswerPanel = ({
                                             }
                                         `}
                                     >
-                                        {result.title.replace(/<[^>]*>/g, '')}
+                                        {result.title}
                                     </EuiLink>
                                 </EuiFlexItem>
                             ))}
