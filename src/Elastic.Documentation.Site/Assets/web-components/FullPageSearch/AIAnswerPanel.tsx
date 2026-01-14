@@ -354,7 +354,7 @@ export const AIAnswerPanel = ({
         // Reset refs to allow regeneration
         answeredQueryRef.current = null
         streamingQueryRef.current = null
-        streamAnswer(query, results)
+        doStream(query, results)
     }
 
     if (!visible) return null
@@ -392,7 +392,7 @@ export const AIAnswerPanel = ({
                                     aria-label="Retry"
                                     onClick={handleRegenerate}
                                     size="s"
-                                    color="subdued"
+                                    color="text"
                                 />
                             </EuiToolTip>
                         </EuiFlexItem>
