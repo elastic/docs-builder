@@ -1089,7 +1089,7 @@ public class ChangelogServiceTests : IDisposable
 		var input = new ChangelogBundleInput
 		{
 			Directory = changelogDir,
-			Prs = new[] { prsFile },
+			Prs = [prsFile],
 			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
@@ -1553,7 +1553,7 @@ public class ChangelogServiceTests : IDisposable
 		var input = new ChangelogBundleInput
 		{
 			Directory = changelogDir,
-			Prs = new[] { nonexistentFile },
+			Prs = [nonexistentFile],
 			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
@@ -1592,7 +1592,7 @@ public class ChangelogServiceTests : IDisposable
 		var input = new ChangelogBundleInput
 		{
 			Directory = changelogDir,
-			Prs = new[] { "https://github.com/elastic/elasticsearch/pull/123" },
+			Prs = ["https://github.com/elastic/elasticsearch/pull/123"],
 			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
@@ -1635,7 +1635,7 @@ public class ChangelogServiceTests : IDisposable
 		var input = new ChangelogBundleInput
 		{
 			Directory = changelogDir,
-			Prs = new[] { nonexistentFile, "https://github.com/elastic/elasticsearch/pull/123" },
+			Prs = [nonexistentFile, "https://github.com/elastic/elasticsearch/pull/123"],
 			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
@@ -2065,7 +2065,7 @@ public class ChangelogServiceTests : IDisposable
 		_collector.Errors.Should().Be(0);
 		_collector.Warnings.Should().BeGreaterThan(0);
 		// Verify warning message includes lifecycle values
-		_collector.Diagnostics.Should().Contain(d => 
+		_collector.Diagnostics.Should().Contain(d =>
 			d.Message.Contains("Product 'elasticsearch' has multiple targets in bundle") &&
 			d.Message.Contains("9.2.0") &&
 			d.Message.Contains("9.2.0 beta") &&
@@ -2124,6 +2124,54 @@ public class ChangelogServiceTests : IDisposable
 		bundleContent.Should().Contain("areas:");
 		bundleContent.Should().Contain("- Search");
 		bundleContent.Should().Contain("description: This is a test feature");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithDirectoryOutputPath_CreatesDefaultFilename()
+	{
+		// Arrange
+		var service = new ChangelogService(_loggerFactory, _configurationContext, null);
+		var fileSystem = new FileSystem();
+		var changelogDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		fileSystem.Directory.CreateDirectory(changelogDir);
+
+		// Create test changelog file
+		var changelog1 = """
+			title: Test feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			pr: https://github.com/elastic/elasticsearch/pull/100
+			""";
+
+		var file1 = fileSystem.Path.Combine(changelogDir, "1755268130-test-feature.yaml");
+		await fileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+
+		// Use a directory path with default filename (simulating command layer processing)
+		var outputDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var outputPath = fileSystem.Path.Combine(outputDir, "changelog-bundle.yaml");
+
+		var input = new ChangelogBundleInput
+		{
+			Directory = changelogDir,
+			All = true,
+			Output = outputPath
+		};
+
+		// Act
+		var result = await service.BundleChangelogs(_collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		_collector.Errors.Should().Be(0);
+		fileSystem.File.Exists(outputPath).Should().BeTrue("Output file should be created");
+
+		var bundleContent = await fileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		bundleContent.Should().Contain("products:");
+		bundleContent.Should().Contain("product: elasticsearch");
+		bundleContent.Should().Contain("entries:");
+		bundleContent.Should().Contain("name: 1755268130-test-feature.yaml");
 	}
 
 	[Fact]
@@ -4435,7 +4483,7 @@ public class ChangelogServiceTests : IDisposable
 	{
 		var bytes = System.Text.Encoding.UTF8.GetBytes(content);
 		var hash = System.Security.Cryptography.SHA1.HashData(bytes);
-		return System.Convert.ToHexString(hash).ToLowerInvariant();
+		return Convert.ToHexString(hash).ToLowerInvariant();
 	}
 }
 

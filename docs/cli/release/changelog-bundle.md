@@ -35,7 +35,8 @@ docs-builder changelog bundle [options...] [-h|--help]
 - `"* * *"` - match all changelogs (equivalent to `--all`)
 
 `--output <string?>`
-:   Optional: The output file path for the bundle.
+:   Optional: The output path for the bundle.
+:   Can be either (1) a directory path, in which case `changelog-bundle.yaml` is created in that directory, or (2) a file path ending in `.yml` or `.yaml`.
 :   Defaults to `changelog-bundle.yaml` in the input directory.
 
 `--output-products <List<ProductInfo>?>`
