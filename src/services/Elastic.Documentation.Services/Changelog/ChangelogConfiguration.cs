@@ -60,6 +60,13 @@ public class ChangelogConfiguration
 	public Dictionary<string, string>? LabelToAreas { get; set; }
 
 	/// <summary>
+	/// Product-specific label blocking configuration
+	/// Maps product IDs to lists of labels that should prevent changelog creation for that product
+	/// Keys can be comma-separated product IDs to share the same list of labels across multiple products
+	/// </summary>
+	public Dictionary<string, List<string>>? AddBlockers { get; set; }
+
+	/// <summary>
 	/// Configuration for blocking changelogs from being rendered (commented out in markdown output)
 	/// Dictionary key can be a single product ID or comma-separated product IDs (e.g., "elasticsearch, cloud-serverless")
 	/// Dictionary value contains areas and/or types that should be blocked for those products
