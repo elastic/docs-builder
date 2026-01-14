@@ -286,20 +286,18 @@ internal sealed class ChangelogCommand(
 	/// <summary>
 	/// Render bundled changelog(s) to markdown files
 	/// </summary>
-	/// <param name="input">Required: Bundle input(s) in format "bundle-file-path, changelog-file-path, repo". Can be specified multiple times. Only bundle-file-path is required.</param>
+	/// <param name="input">Required: Bundle input(s) in format "bundle-file-path|changelog-file-path|repo|link-visibility" (use pipe as delimiter). To merge multiple bundles, separate them with commas. Only bundle-file-path is required. link-visibility can be "hide-links" or "keep-links" (default). Paths must be absolute or use environment variables; tilde (~) expansion is not supported.</param>
 	/// <param name="output">Optional: Output directory for rendered markdown files. Defaults to current directory</param>
 	/// <param name="title">Optional: Title to use for section headers in output markdown files. Defaults to version from first bundle</param>
 	/// <param name="subsections">Optional: Group entries by area/component in subsections. For breaking changes with a subtype, groups by subtype instead of area. Defaults to false</param>
-	/// <param name="hidePrivateLinks">Optional: Hide private links by commenting them out in the markdown output. Defaults to false</param>
 	/// <param name="hideFeatures">Filter by feature IDs (comma-separated), or a path to a newline-delimited file containing feature IDs. Can be specified multiple times. Entries with matching feature-id values will be commented out in the markdown output.</param>
 	/// <param name="ctx"></param>
 	[Command("render")]
 	public async Task<int> Render(
-		[BundleInputParser] List<BundleInput> input,
+		string[]? input = null,
 		string? output = null,
 		string? title = null,
 		bool subsections = false,
-		bool hidePrivateLinks = false,
 		string[]? hideFeatures = null,
 		string? config = null,
 		Cancel ctx = default
@@ -331,13 +329,15 @@ internal sealed class ChangelogCommand(
 			}
 		}
 
+		// Parse each --input value into BundleInput objects
+		var bundles = BundleInputParser.ParseAll(input);
+
 		var renderInput = new ChangelogRenderInput
 		{
-			Bundles = input ?? [],
+			Bundles = bundles,
 			Output = output,
 			Title = title,
 			Subsections = subsections,
-			HidePrivateLinks = hidePrivateLinks,
 			HideFeatures = allFeatureIds.Count > 0 ? allFeatureIds.ToArray() : null,
 			Config = config
 		};
