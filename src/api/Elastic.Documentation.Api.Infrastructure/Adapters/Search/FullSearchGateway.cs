@@ -60,7 +60,11 @@ public partial class FullSearchGateway(
 		const string preTag = "<mark>";
 		const string postTag = "</mark>";
 
-		var lexicalQuery = BuildFullSearchLexicalQuery(request.Query);
+		var lexicalQuery = SearchQueryBuilder.BuildLexicalQuery(
+			request.Query,
+			clientAccessor.SynonymBiDirectional,
+			clientAccessor.DiminishTerms,
+			clientAccessor.RulesetName);
 		var semanticQuery = SearchQueryBuilder.BuildSemanticQuery(request.Query);
 
 		// Combine lexical and semantic with bool should for hybrid search
@@ -154,7 +158,11 @@ public partial class FullSearchGateway(
 		const string preTag = "<mark>";
 		const string postTag = "</mark>";
 
-		var lexicalQuery = BuildFullSearchLexicalQuery(request.Query);
+		var lexicalQuery = SearchQueryBuilder.BuildLexicalQuery(
+			request.Query,
+			clientAccessor.SynonymBiDirectional,
+			clientAccessor.DiminishTerms,
+			clientAccessor.RulesetName);
 		var filteredQuery = ApplyFilters(lexicalQuery, request);
 
 		try
@@ -225,59 +233,6 @@ public partial class FullSearchGateway(
 			logger.LogError(ex, "Error occurred during lexical search");
 			throw;
 		}
-	}
-
-	/// <summary>
-	/// Builds the lexical search query for full-page search.
-	/// Uses regular match on search_title (NOT prefix completion like autocomplete).
-	/// </summary>
-	private Query BuildFullSearchLexicalQuery(string searchQuery)
-	{
-		var tokens = searchQuery.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-
-		// Regular match query on search_title (different from autocomplete which uses completion prefix)
-		var query =
-			(Query)new MultiMatchQuery
-			{
-				Query = searchQuery,
-				Operator = Operator.And,
-				Type = TextQueryType.BestFields,
-				Analyzer = "synonyms_analyzer",
-				Fields = new[] { "search_title^3", "stripped_body^0.1" }
-			};
-
-		// Add title keyword boost with synonyms
-		var titleKeywordQuery = SearchQueryBuilder.GenerateTitleKeywordQuery(searchQuery, clientAccessor.SynonymBiDirectional);
-		if (titleKeywordQuery is not null)
-			query |= titleKeywordQuery;
-
-		// Add title starts-with for short queries
-		var startsWithQuery = SearchQueryBuilder.BuildTitleStartsWithQuery(searchQuery);
-		if (startsWithQuery is not null)
-			query |= startsWithQuery;
-
-		// URL match for single tokens
-		if (tokens.Length == 1)
-			query |= SearchQueryBuilder.BuildUrlMatchQuery(searchQuery);
-
-		// Phrase match for multi-token queries
-		if (tokens.Length > 2)
-			query |= SearchQueryBuilder.BuildPhraseMatchQuery(searchQuery);
-
-		// Build positive query with filters and scoring
-		var positiveQuery = new BoolQuery
-		{
-			Must = [query],
-			Filter = [SearchQueryBuilder.DocumentFilter],
-			Should = SearchQueryBuilder.ScoringQueries
-		};
-
-		// Apply diminish boost if configured
-		var diminishQuery = SearchQueryBuilder.BuildDiminishQuery(clientAccessor.DiminishTerms);
-		var baseQuery = SearchQueryBuilder.ApplyDiminishBoost(positiveQuery, diminishQuery);
-
-		// Wrap with rule query if configured
-		return SearchQueryBuilder.WrapWithRuleQuery(baseQuery, searchQuery, clientAccessor.RulesetName);
 	}
 
 	/// <summary>

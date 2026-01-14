@@ -167,6 +167,82 @@ public static class SearchQueryBuilder
 		};
 
 	/// <summary>
+	/// Builds the lexical search query optimized for autocomplete behavior.
+	/// Uses prefix completion queries for fast as-you-type search.
+	/// Shared between FindPage (autocomplete) and FullSearch gateways.
+	/// </summary>
+	public static Query BuildLexicalQuery(
+		string searchQuery,
+		IReadOnlyDictionary<string, string[]> synonymBiDirectional,
+		IReadOnlyCollection<string> diminishTerms,
+		string? rulesetName)
+	{
+		var tokens = searchQuery.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+		// Prefix completion query for autocomplete behavior
+		var query =
+			(Query)new ConstantScoreQuery
+			{
+				Filter = new MultiMatchQuery
+				{
+					Query = searchQuery,
+					Operator = Operator.And,
+					Type = TextQueryType.BoolPrefix,
+					Analyzer = "synonyms_analyzer",
+					Fields = new[]
+					{
+						"search_title.completion",
+						"search_title.completion._2gram",
+						"search_title.completion._3gram"
+					}
+				},
+				Boost = 3.0f
+			}
+			|| new MultiMatchQuery
+			{
+				Query = searchQuery,
+				Operator = Operator.And,
+				Type = TextQueryType.BestFields,
+				Analyzer = "synonyms_analyzer",
+				Boost = 0.1f,
+				Fields = new[] { "stripped_body" }
+			};
+
+		// Add title keyword boost with synonyms
+		var titleKeywordQuery = GenerateTitleKeywordQuery(searchQuery, synonymBiDirectional);
+		if (titleKeywordQuery is not null)
+			query |= titleKeywordQuery;
+
+		// Add title starts-with for short queries
+		var startsWithQuery = BuildTitleStartsWithQuery(searchQuery);
+		if (startsWithQuery is not null)
+			query |= startsWithQuery;
+
+		// URL match for single tokens
+		if (tokens.Length == 1)
+			query |= BuildUrlMatchQuery(searchQuery);
+
+		// Phrase match for multi-token queries
+		if (tokens.Length > 2)
+			query |= BuildPhraseMatchQuery(searchQuery);
+
+		// Build positive query with shared filters and scoring
+		var positiveQuery = new BoolQuery
+		{
+			Must = [query],
+			Filter = [DocumentFilter],
+			Should = ScoringQueries
+		};
+
+		// Apply diminish boost if configured
+		var diminishQuery = BuildDiminishQuery(diminishTerms);
+		var baseQuery = ApplyDiminishBoost(positiveQuery, diminishQuery);
+
+		// Wrap with rule query if configured
+		return WrapWithRuleQuery(baseQuery, searchQuery, rulesetName);
+	}
+
+	/// <summary>
 	/// Wraps a positive query with boosting query if diminish terms are configured.
 	/// </summary>
 	public static Query ApplyDiminishBoost(Query positiveQuery, Query? diminishQuery)
