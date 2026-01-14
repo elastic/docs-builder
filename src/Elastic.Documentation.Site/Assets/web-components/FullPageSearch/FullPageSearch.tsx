@@ -1,10 +1,6 @@
 import {
     EuiButtonIcon,
     EuiEmptyPrompt,
-    EuiFlexGroup,
-    EuiFlexItem,
-    EuiIcon,
-    EuiText,
     useEuiTheme,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
@@ -169,6 +165,7 @@ export const FullPageSearch = () => {
                     onQueryChange={actions.setQuery}
                     onSearch={(q) => actions.submitSearch(q)}
                     onClearRecent={actions.clearRecentSearches}
+                    onLogoClick={actions.goToLanding}
                 />
             )}
 
@@ -211,15 +208,37 @@ export const FullPageSearch = () => {
                         onClearFilters={actions.clearAllFilters}
                     />
                 ) : (
-                    <EuiFlexGroup gutterSize="xl">
-                        <EuiFlexItem
-                            grow={false}
+                    <div
+                        css={css`
+                            display: flex;
+                            gap: ${euiTheme.size.xl};
+                            height: calc(100vh - var(--offset-top, 0px) - 80px);
+                        `}
+                    >
+                        <div
                             css={css`
                                 width: 280px;
                                 flex-shrink: 0;
+                                overflow-y: auto;
+                                padding-right: ${euiTheme.size.s};
 
                                 @media (max-width: 768px) {
                                     display: none;
+                                }
+
+                                /* Custom scrollbar styling */
+                                &::-webkit-scrollbar {
+                                    width: 6px;
+                                }
+                                &::-webkit-scrollbar-track {
+                                    background: transparent;
+                                }
+                                &::-webkit-scrollbar-thumb {
+                                    background: ${euiTheme.colors.lightShade};
+                                    border-radius: 3px;
+                                }
+                                &::-webkit-scrollbar-thumb:hover {
+                                    background: ${euiTheme.colors.mediumShade};
                                 }
                             `}
                         >
@@ -230,8 +249,29 @@ export const FullPageSearch = () => {
                                 onVersionChange={actions.setVersion}
                                 onFilterChange={handleFilterChange}
                             />
-                        </EuiFlexItem>
-                        <EuiFlexItem>
+                        </div>
+                        <div
+                            css={css`
+                                flex: 1;
+                                overflow-y: auto;
+                                padding-right: ${euiTheme.size.s};
+
+                                /* Custom scrollbar styling */
+                                &::-webkit-scrollbar {
+                                    width: 6px;
+                                }
+                                &::-webkit-scrollbar-track {
+                                    background: transparent;
+                                }
+                                &::-webkit-scrollbar-thumb {
+                                    background: ${euiTheme.colors.lightShade};
+                                    border-radius: 3px;
+                                }
+                                &::-webkit-scrollbar-thumb:hover {
+                                    background: ${euiTheme.colors.mediumShade};
+                                }
+                            `}
+                        >
                             {showAIAnswer && (
                                 <AIAnswerPanel
                                     query={query}
@@ -256,8 +296,8 @@ export const FullPageSearch = () => {
                                 onClearAllFilters={actions.clearAllFilters}
                                 onResetVersion={handleResetVersion}
                             />
-                        </EuiFlexItem>
-                    </EuiFlexGroup>
+                        </div>
+                    </div>
                 )}
             </main>
 

@@ -11,8 +11,15 @@ import {
     useEuiTheme,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
-import { useState } from 'react'
+import { useState, ReactNode } from 'react'
 import type { SearchResultItem } from './useFullPageSearchQuery'
+import { DocumentIcon, ConsoleIcon } from './FilterSidebar'
+
+// Inline SVG icons for result types (breadcrumb size)
+const TYPE_ICON_COMPONENTS: Record<string, ReactNode> = {
+    doc: <DocumentIcon size={14} />,
+    api: <ConsoleIcon size={14} />,
+}
 
 const TYPE_ICONS: Record<string, string> = {
     reference: 'documentation',
@@ -24,12 +31,13 @@ const TYPE_ICONS: Record<string, string> = {
 
 interface BreadcrumbsProps {
     parents: { title: string; url: string }[]
+    typeIcon?: ReactNode
 }
 
-const Breadcrumbs = ({ parents }: BreadcrumbsProps) => {
+const Breadcrumbs = ({ parents, typeIcon }: BreadcrumbsProps) => {
     const { euiTheme } = useEuiTheme()
 
-    if (parents.length === 0) return null
+    if (parents.length === 0 && !typeIcon) return null
 
     return (
         <EuiFlexGroup
@@ -40,6 +48,20 @@ const Breadcrumbs = ({ parents }: BreadcrumbsProps) => {
                 margin-bottom: ${euiTheme.size.xs};
             `}
         >
+            {typeIcon && (
+                <EuiFlexItem grow={false}>
+                    <div
+                        css={css`
+                            color: ${euiTheme.colors.subduedText};
+                            display: flex;
+                            align-items: center;
+                            margin-right: ${euiTheme.size.xs};
+                        `}
+                    >
+                        {typeIcon}
+                    </div>
+                </EuiFlexItem>
+            )}
             {parents.map((parent, idx) => (
                 <EuiFlexItem key={idx} grow={false}>
                     <EuiFlexGroup gutterSize="xs" alignItems="center">
@@ -103,12 +125,8 @@ export const ResultCard = ({ result }: ResultCardProps) => {
                     position: absolute;
                     top: ${euiTheme.size.m};
                     right: ${euiTheme.size.m};
-                    display: flex;
-                    align-items: center;
-                    gap: ${euiTheme.size.s};
                 `}
             >
-                <EuiIcon type={typeIcon} color="subdued" />
                 <EuiToolTip content={copied ? 'Copied!' : 'Copy link'}>
                     <EuiButtonIcon
                         iconType={copied ? 'check' : 'copy'}
@@ -127,13 +145,17 @@ export const ResultCard = ({ result }: ResultCardProps) => {
                 </EuiToolTip>
             </div>
 
-            <Breadcrumbs parents={result.parents} />
+            <Breadcrumbs
+                parents={result.parents}
+                typeIcon={TYPE_ICON_COMPONENTS[result.type] ?? <EuiIcon type={typeIcon} size="s" />}
+            />
 
             <EuiLink
                 href={result.url}
                 css={css`
                     display: block;
                     margin-right: ${euiTheme.size.xxl};
+                    margin-bottom: ${euiTheme.size.xs};
                 `}
             >
                 <EuiText>
@@ -141,7 +163,6 @@ export const ResultCard = ({ result }: ResultCardProps) => {
                         css={css`
                             font-size: 1.1rem;
                             font-weight: ${euiTheme.font.weight.semiBold};
-                            margin-bottom: ${euiTheme.size.xs};
 
                             &:hover {
                                 color: ${euiTheme.colors.primary};

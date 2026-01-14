@@ -30,6 +30,7 @@ interface FullPageSearchState {
         addRecentSearch: (query: string) => void
         clearRecentSearches: () => void
         reset: () => void
+        goToLanding: () => void
     }
 }
 
@@ -41,14 +42,82 @@ const initialFilters: FullPageSearchFilters = {
     deploymentType: [],
 }
 
+// URL parameter helpers
+const VERSION_TO_URL: Record<string, string> = {
+    '8.19': '8',
+    '7.17': '7',
+}
+
+const URL_TO_VERSION: Record<string, string> = {
+    '8': '8.19',
+    '7': '7.17',
+}
+
+function getStateFromUrl(): Partial<FullPageSearchState> {
+    if (typeof window === 'undefined') return {}
+
+    const params = new URLSearchParams(window.location.search)
+    const state: Partial<FullPageSearchState> = {}
+
+    const q = params.get('q')
+    if (q) {
+        state.query = q
+        state.hasSearched = true
+    }
+
+    const v = params.get('v')
+    if (v && URL_TO_VERSION[v]) {
+        state.version = URL_TO_VERSION[v]
+    }
+
+    const type = params.getAll('type')
+    const section = params.getAll('section')
+
+    if (type.length > 0 || section.length > 0) {
+        state.filters = {
+            type: type,
+            navigationSection: section,
+            deploymentType: [],
+        }
+    }
+
+    return state
+}
+
+function syncUrlToState(state: FullPageSearchState) {
+    if (typeof window === 'undefined') return
+
+    const params = new URLSearchParams()
+
+    if (state.hasSearched && state.query) {
+        params.set('q', state.query)
+    }
+
+    if (state.version !== DEFAULT_VERSION && VERSION_TO_URL[state.version]) {
+        params.set('v', VERSION_TO_URL[state.version])
+    }
+
+    state.filters.type.forEach(t => params.append('type', t))
+    state.filters.navigationSection.forEach(s => params.append('section', s))
+
+    const newUrl = params.toString()
+        ? `${window.location.pathname}?${params.toString()}`
+        : window.location.pathname
+
+    window.history.replaceState({}, '', newUrl)
+}
+
+// Get initial state from URL
+const urlState = getStateFromUrl()
+
 export const fullPageSearchStore = create<FullPageSearchState>((set, get) => ({
-    query: '',
-    hasSearched: false,
+    query: urlState.query ?? '',
+    hasSearched: urlState.hasSearched ?? false,
     page: 1,
     pageSize: 20,
     sortBy: 'relevance',
-    version: DEFAULT_VERSION,
-    filters: { ...initialFilters },
+    version: urlState.version ?? DEFAULT_VERSION,
+    filters: urlState.filters ?? { ...initialFilters },
     recentSearches: [],
     actions: {
         setQuery: (query: string) => set({ query }),
@@ -109,8 +178,28 @@ export const fullPageSearchStore = create<FullPageSearchState>((set, get) => ({
                 version: DEFAULT_VERSION,
                 filters: { ...initialFilters },
             }),
+        goToLanding: () => {
+            set({
+                query: '',
+                hasSearched: false,
+                page: 1,
+                pageSize: 20,
+                sortBy: 'relevance',
+                version: DEFAULT_VERSION,
+                filters: { ...initialFilters },
+            })
+            // Clear URL params
+            if (typeof window !== 'undefined') {
+                window.history.replaceState({}, '', window.location.pathname)
+            }
+        },
     },
 }))
+
+// Subscribe to state changes to sync URL
+fullPageSearchStore.subscribe((state) => {
+    syncUrlToState(state)
+})
 
 // Selectors
 export const useFullPageSearchQuery = () =>

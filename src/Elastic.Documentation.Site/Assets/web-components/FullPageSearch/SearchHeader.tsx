@@ -117,6 +117,7 @@ interface SearchHeaderProps {
     onQueryChange: (query: string) => void
     onSearch: (query: string) => void
     onClearRecent: () => void
+    onLogoClick: () => void
 }
 
 export const SearchHeader = ({
@@ -126,6 +127,7 @@ export const SearchHeader = ({
     onQueryChange,
     onSearch,
     onClearRecent,
+    onLogoClick,
 }: SearchHeaderProps) => {
     const { euiTheme } = useEuiTheme()
     const inputRef = useRef<HTMLInputElement>(null)
@@ -186,44 +188,55 @@ export const SearchHeader = ({
                             }
                         `}
                     >
-                        <EuiFlexGroup alignItems="center" gutterSize="s">
-                            <EuiFlexItem grow={false}>
-                                <div
-                                    css={css`
-                                        width: 32px;
-                                        height: 32px;
-                                        background: linear-gradient(
-                                            135deg,
-                                            ${euiTheme.colors.primary} 0%,
-                                            ${euiTheme.colors.accent} 100%
-                                        );
-                                        border-radius: ${euiTheme.border.radius.medium};
-                                        display: flex;
-                                        align-items: center;
-                                        justify-content: center;
-                                    `}
-                                >
-                                    <EuiIcon
-                                        type="documentation"
-                                        color="ghost"
-                                        size="m"
-                                    />
-                                </div>
-                            </EuiFlexItem>
-                            <EuiFlexItem grow={false}>
-                                <EuiText
-                                    css={css`
-                                        font-weight: ${euiTheme.font.weight.semiBold};
-                                        display: none;
-                                        @media (min-width: 600px) {
-                                            display: block;
-                                        }
-                                    `}
-                                >
-                                    Elastic Documentation
-                                </EuiText>
-                            </EuiFlexItem>
-                        </EuiFlexGroup>
+                        <button
+                            onClick={onLogoClick}
+                            css={css`
+                                background: none;
+                                border: none;
+                                padding: 0;
+                                cursor: pointer;
+                                display: flex;
+                                align-items: center;
+                                gap: ${euiTheme.size.s};
+
+                                &:hover {
+                                    opacity: 0.8;
+                                }
+                            `}
+                        >
+                            <div
+                                css={css`
+                                    width: 32px;
+                                    height: 32px;
+                                    background: linear-gradient(
+                                        135deg,
+                                        ${euiTheme.colors.primary} 0%,
+                                        ${euiTheme.colors.accent} 100%
+                                    );
+                                    border-radius: ${euiTheme.border.radius.medium};
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                `}
+                            >
+                                <EuiIcon
+                                    type="documentation"
+                                    color="ghost"
+                                    size="m"
+                                />
+                            </div>
+                            <EuiText
+                                css={css`
+                                    font-weight: ${euiTheme.font.weight.semiBold};
+                                    display: none;
+                                    @media (min-width: 600px) {
+                                        display: block;
+                                    }
+                                `}
+                            >
+                                Elastic Documentation
+                            </EuiText>
+                        </button>
                     </EuiFlexItem>
                     <EuiFlexItem
                         css={css`
