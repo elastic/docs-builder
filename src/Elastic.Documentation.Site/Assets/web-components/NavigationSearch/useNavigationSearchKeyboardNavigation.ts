@@ -1,16 +1,16 @@
 import { useSelectedIndex, useSearchActions } from './navigationSearch.store'
-import { useRef, useCallback, MutableRefObject } from 'react'
+import { useRef, useCallback } from 'react'
 
 interface Options {
     resultsCount: number
     isLoading: boolean
     onClose: () => void
+    onNavigate: () => void
 }
 
 interface Result {
     inputRef: React.RefObject<HTMLInputElement>
-    itemRefs: MutableRefObject<(HTMLAnchorElement | null)[]>
-    isKeyboardNavigating: MutableRefObject<boolean>
+    isKeyboardNavigating: React.MutableRefObject<boolean>
     handleInputKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void
     handleMouseMove: () => void
 }
@@ -19,9 +19,9 @@ export const useNavigationSearchKeyboardNavigation = ({
     resultsCount,
     isLoading,
     onClose,
+    onNavigate,
 }: Options): Result => {
     const inputRef = useRef<HTMLInputElement>(null)
-    const itemRefs = useRef<(HTMLAnchorElement | null)[]>([])
     const isKeyboardNavigating = useRef(false)
     const selectedIndex = useSelectedIndex()
     const { setSelectedIndex } = useSearchActions()
@@ -31,12 +31,22 @@ export const useNavigationSearchKeyboardNavigation = ({
     }, [])
 
     const scrollToItem = (index: number) => {
-        const element = itemRefs.current[index]
-        element?.scrollIntoView?.({ block: 'end' })
+        // Use data attribute to find and scroll to item
+        const element = document.querySelector(
+            `[data-search-result-index="${index}"]`
+        )
+        element?.scrollIntoView?.({ block: 'nearest' })
     }
 
     const navigateToResult = (index: number) => {
-        itemRefs.current[index]?.click()
+        // Click the anchor with the matching data attribute
+        const element = document.querySelector<HTMLAnchorElement>(
+            `[data-search-result-index="${index}"]`
+        )
+        if (element) {
+            onNavigate()
+            element.click()
+        }
     }
 
     const handleInputKeyDown = useCallback(
@@ -77,12 +87,18 @@ export const useNavigationSearchKeyboardNavigation = ({
                     break
             }
         },
-        [resultsCount, isLoading, selectedIndex, setSelectedIndex, onClose]
+        [
+            resultsCount,
+            isLoading,
+            selectedIndex,
+            setSelectedIndex,
+            onClose,
+            onNavigate,
+        ]
     )
 
     return {
         inputRef,
-        itemRefs,
         isKeyboardNavigating,
         handleInputKeyDown,
         handleMouseMove,
