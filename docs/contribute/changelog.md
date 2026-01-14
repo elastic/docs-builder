@@ -46,6 +46,7 @@ Options:
   --highlight <bool?>               Optional: Include in release highlights [Default: null]
   --output <string?>                Optional: Output directory for the changelog. Defaults to current directory [Default: null]
   --config <string?>                Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml' [Default: null]
+  --use-pr-number                   Optional: Use the PR number as the filename instead of generating it from a unique ID and title
 ```
 
 ### Product format
@@ -94,6 +95,28 @@ You can optionally add `label_to_type` and `label_to_areas` mappings in your cha
 When you run the command with the `--pr` option, it can use these mappings to fill in the `type` and `areas` in your changelog based on your pull request labels.
 
 Refer to [changelog.yml.example](https://github.com/elastic/docs-builder/blob/main/config/changelog.yml.example).
+
+### Filenames
+
+By default, the command generates filenames using a timestamp and a sanitized version of the title:
+`{timestamp}-{sanitized-title}.yaml`
+
+For example: `1735689600-fixes-enrich-and-lookup-join-resolution.yaml`
+
+If you want to use the PR number as the filename instead, use the `--use-pr-number` option:
+
+```sh
+docs-builder changelog add \
+  --pr https://github.com/elastic/elasticsearch/pull/137431 \
+  --products "elasticsearch 9.2.3" \
+  --use-pr-number
+```
+
+This creates a file named `137431.yaml` instead of the default timestamp-based filename.
+
+:::{important}
+When using `--use-pr-number`, you must also provide the `--pr` option. The PR number is extracted from the PR URL or number you provide.
+:::
 
 ### Render blockers [render-blockers]
 

@@ -48,6 +48,7 @@ internal sealed class ChangelogCommand(
 	/// <param name="highlight">Optional: Include in release highlights</param>
 	/// <param name="output">Optional: Output directory for the changelog. Defaults to current directory</param>
 	/// <param name="config">Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml'</param>
+	/// <param name="usePrNumber">Optional: Use the PR number as the filename instead of generating it from a unique ID and title</param>
 	/// <param name="ctx"></param>
 	[Command("add")]
 	public async Task<int> Create(
@@ -67,6 +68,7 @@ internal sealed class ChangelogCommand(
 		bool? highlight = null,
 		string? output = null,
 		string? config = null,
+		bool usePrNumber = false,
 		Cancel ctx = default
 	)
 	{
@@ -92,7 +94,8 @@ internal sealed class ChangelogCommand(
 			FeatureId = featureId,
 			Highlight = highlight,
 			Output = output,
-			Config = config
+			Config = config,
+			UsePrNumber = usePrNumber
 		};
 
 		serviceInvoker.AddCommand(service, input,

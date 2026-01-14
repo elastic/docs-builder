@@ -38,6 +38,10 @@ docs-builder changelog add [options...] [-h|--help]
 `--output <string?>`
 :   Optional: Output directory for the changelog fragment. Defaults to current directory.
 
+`--use-pr-number`
+:   Optional: Use the PR number as the filename instead of generating it from a unique ID and title.
+:   When using this option, you must also provide the `--pr` option.
+
 `--owner <string?>`
 :   Optional: GitHub repository owner (used when `--pr` is just a number).
 
