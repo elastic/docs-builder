@@ -80,15 +80,12 @@ internal sealed class ChangelogCommand(
 
 		// Parse PRs: handle both comma-separated values and file paths
 		string[]? parsedPrs = null;
-		if (prs != null && prs.Length > 0)
+		if (prs is { Length: > 0 })
 		{
 			var allPrs = new List<string>();
 			var validPrs = prs.Where(prValue => !string.IsNullOrWhiteSpace(prValue));
 			foreach (var trimmedValue in validPrs.Select(prValue => prValue.Trim()))
 			{
-
-				// Check if this is a file path
-
 				// Check if this is a file path
 				if (_fileSystem.File.Exists(trimmedValue))
 				{
@@ -104,7 +101,7 @@ internal sealed class ChangelogCommand(
 							}
 						}
 					}
-					catch (System.IO.IOException ex)
+					catch (IOException ex)
 					{
 						collector.EmitError(string.Empty, $"Failed to read PRs from file '{trimmedValue}': {ex.Message}", ex);
 						return 1;
