@@ -2,30 +2,30 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using ConsoleAppFramework;
 using Elastic.Documentation.Services.Changelog;
 
 namespace Documentation.Builder.Arguments;
 
 /// <summary>
-/// Parser for bundle input format: "bundle-file-path, changelog-file-path, repo"
+/// Utility class for parsing bundle input format: "bundle-file-path, changelog-file-path, repo"
 /// Only bundle-file-path is required.
-/// Can be specified multiple times.
 /// </summary>
-[AttributeUsage(AttributeTargets.Parameter)]
-public class BundleInputParserAttribute : Attribute, IArgumentParser<List<BundleInput>>
+public static class BundleInputParser
 {
-	public static bool TryParse(ReadOnlySpan<char> s, out List<BundleInput> result)
+	/// <summary>
+	/// Parses a single input string into a BundleInput object.
+	/// Format: "bundle-file-path, changelog-file-path, repo" (only bundle-file-path is required)
+	/// </summary>
+	public static BundleInput? Parse(string input)
 	{
-		result = [];
+		if (string.IsNullOrWhiteSpace(input))
+			return null;
 
 		// Split by comma to get parts
-		var parts = s.ToString().Split(',', StringSplitOptions.TrimEntries);
+		var parts = input.Split(',', StringSplitOptions.TrimEntries);
 
 		if (parts.Length == 0 || string.IsNullOrWhiteSpace(parts[0]))
-		{
-			return false;
-		}
+			return null;
 
 		var bundleInput = new BundleInput
 		{
@@ -44,8 +44,28 @@ public class BundleInputParserAttribute : Attribute, IArgumentParser<List<Bundle
 			bundleInput.Repo = parts[2];
 		}
 
-		result.Add(bundleInput);
-		return true;
+		return bundleInput;
+	}
+
+	/// <summary>
+	/// Parses multiple input strings into a list of BundleInput objects.
+	/// Each input is in format: "bundle-file-path, changelog-file-path, repo" (only bundle-file-path is required)
+	/// </summary>
+	public static List<BundleInput> ParseAll(string[]? inputs)
+	{
+		var result = new List<BundleInput>();
+
+		if (inputs == null || inputs.Length == 0)
+			return result;
+
+		foreach (var input in inputs)
+		{
+			var bundleInput = Parse(input);
+			if (bundleInput != null)
+				result.Add(bundleInput);
+		}
+
+		return result;
 	}
 }
 

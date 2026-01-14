@@ -341,7 +341,7 @@ For up-to-date details, use the `-h` command option:
 Render bundled changelog(s) to markdown files
 
 Options:
-  --input <List<BundleInput>>    Required: Bundle input(s) in format "bundle-file-path, changelog-file-path, repo". Can be specified multiple times. Only bundle-file-path is required. [Required]
+  --input <string[]>             Required: Bundle input(s) in format "bundle-file-path,changelog-file-path,repo". Can be specified multiple times to merge multiple bundles. Only bundle-file-path is required. Paths must be absolute or use environment variables; tilde (~) expansion is not supported. [Required]
   --output <string?>             Optional: Output directory for rendered markdown files. Defaults to current directory [Default: null]
   --title <string?>              Optional: Title to use for section headers in output markdown files. Defaults to version from first bundle [Default: null]
   --subsections                  Optional: Group entries by area/component in subsections. For breaking changes with a subtype, groups by subtype instead of area. Defaults to false
@@ -373,16 +373,22 @@ To create markdown files from this bundle, run the `docs-builder changelog rende
 
 ```sh
 docs-builder changelog render \
-  --input "./changelog-bundle.yaml,./changelogs,elasticsearch" \ <1>
-  --title 9.2.2 \ <2>
-  --output ./release-notes \ <3>
-  --subsections \ <4>
+  --input "/path/to/changelog-bundle.yaml,/path/to/changelogs,elasticsearch" \ <1>
+  --input "/path/to/other-bundle.yaml,/path/to/other-changelogs,kibana" \ <2>
+  --title 9.2.2 \ <3>
+  --output /path/to/release-notes \ <4>
+  --subsections <5>
 ```
 
-1. Provide information about the changelog bundle. The format is `"<bundle-file-path>, <changelog-file-path>, <repository>"`. Only the `<bundle-file-path>` is required. The `<changelog-file-path>` is useful if the changelogs are not in the default directory and are not resolved within the bundle. The `<repository>` is necessary if your changelogs do not contain full URLs for the pull requests or issues. You can specify `--input` multiple times to merge multiple bundles.
-2. The `--title` value is used for an output folder name and for section titles in the markdown files. If you omit `--title` and the first bundle contains a product `target` value, that value is used. Otherwise, if none of the bundles have product `target` fields, the title defaults to "unknown".
-3. By default the command creates the output files in the current directory.
-4. By default the changelog areas are not displayed in the output. Add `--subsections` to group changelog details by their `areas`. For breaking changes that have a `subtype` value, the subsections will be grouped by subtype instead of area.
+1. Provide information about the changelog bundle. The format is `"<bundle-file-path>,<changelog-file-path>,<repository>"`. Only the `<bundle-file-path>` is required. The `<changelog-file-path>` is useful if the changelogs are not in the default directory and are not resolved within the bundle. The `<repository>` is necessary if your changelogs do not contain full URLs for the pull requests or issues.
+2. You can specify `--input` multiple times to merge multiple bundles into the same output files.
+3. The `--title` value is used for an output folder name and for section titles in the markdown files. If you omit `--title` and the first bundle contains a product `target` value, that value is used. Otherwise, if none of the bundles have product `target` fields, the title defaults to "unknown".
+4. By default the command creates the output files in the current directory.
+5. By default the changelog areas are not displayed in the output. Add `--subsections` to group changelog details by their `areas`. For breaking changes that have a `subtype` value, the subsections will be grouped by subtype instead of area.
+
+:::{important}
+Paths in the `--input` option must be absolute paths or use environment variables. Tilde (`~`) expansion is not supported.
+:::
 
 For example, the `index.md` output file contains information derived from the changelogs:
 

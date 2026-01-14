@@ -286,7 +286,7 @@ internal sealed class ChangelogCommand(
 	/// <summary>
 	/// Render bundled changelog(s) to markdown files
 	/// </summary>
-	/// <param name="input">Required: Bundle input(s) in format "bundle-file-path, changelog-file-path, repo". Can be specified multiple times. Only bundle-file-path is required.</param>
+	/// <param name="input">Required: Bundle input(s) in format "bundle-file-path,changelog-file-path,repo". Can be specified multiple times to merge multiple bundles. Only bundle-file-path is required. Paths must be absolute or use environment variables; tilde (~) expansion is not supported.</param>
 	/// <param name="output">Optional: Output directory for rendered markdown files. Defaults to current directory</param>
 	/// <param name="title">Optional: Title to use for section headers in output markdown files. Defaults to version from first bundle</param>
 	/// <param name="subsections">Optional: Group entries by area/component in subsections. For breaking changes with a subtype, groups by subtype instead of area. Defaults to false</param>
@@ -295,7 +295,7 @@ internal sealed class ChangelogCommand(
 	/// <param name="ctx"></param>
 	[Command("render")]
 	public async Task<int> Render(
-		[BundleInputParser] List<BundleInput> input,
+		string[] input,
 		string? output = null,
 		string? title = null,
 		bool subsections = false,
@@ -331,9 +331,12 @@ internal sealed class ChangelogCommand(
 			}
 		}
 
+		// Parse each --input value into BundleInput objects
+		var bundles = BundleInputParser.ParseAll(input);
+
 		var renderInput = new ChangelogRenderInput
 		{
-			Bundles = input ?? [],
+			Bundles = bundles,
 			Output = output,
 			Title = title,
 			Subsections = subsections,
