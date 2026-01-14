@@ -1,5 +1,6 @@
 import { SanitizedHtmlContent } from './SanitizedHtmlContent'
 import { useSelectedIndex, useSearchActions } from './navigationSearch.store'
+import { useSearchTerm } from './navigationSearch.store'
 import {
     useNavigationSearchQuery,
     SearchResultItem,
@@ -13,29 +14,58 @@ import {
     useIsWithinMaxBreakpoint,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
-import { forwardRef, useMemo, MutableRefObject } from 'react'
+import htmx from 'htmx.org'
+import { useRef, useMemo, MutableRefObject, useEffect } from 'react'
 
 const RESULTS_MAX_HEIGHT = 465
 const BREADCRUMB_SEPARATOR = ' / '
 
+/**
+ * Gets the first segment from a URL path after removing /docs/ prefix.
+ * Matches the pattern from the original SearchSuggestions component.
+ */
+const getFirstSegment = (path: string): string =>
+    path.replace('/docs/', '/').split('/')[1] ?? ''
+
+/**
+ * Returns the appropriate hx-select-oob value based on whether
+ * the target URL is in the same top-level group as the current URL.
+ */
+const getHxSelectOob = (targetUrl: string): string => {
+    const currentSegment = getFirstSegment(window.location.pathname)
+    const targetSegment = getFirstSegment(targetUrl)
+    return currentSegment === targetSegment
+        ? '#content-container,#toc-nav'
+        : '#content-container,#toc-nav,#nav-tree,#nav-dropdown'
+}
+
 export interface SearchResultsListProps {
-    itemRefs: MutableRefObject<(HTMLAnchorElement | null)[]>
     isKeyboardNavigating: MutableRefObject<boolean>
     onMouseMove: () => void
+    onResultClick: () => void
 }
 
 export const SearchResultsList = ({
-    itemRefs,
     isKeyboardNavigating,
     onMouseMove,
+    onResultClick,
 }: SearchResultsListProps) => {
     const { euiTheme } = useEuiTheme()
     const selectedIndex = useSelectedIndex()
     const { setSelectedIndex } = useSearchActions()
     const { isLoading, data } = useNavigationSearchQuery()
+    const containerRef = useRef<HTMLDivElement>(null)
+    const searchTerm = useSearchTerm()
 
     const results = data?.results ?? []
     const isInitialLoading = isLoading && !data
+
+    // Scroll to top when search term changes
+    useEffect(() => {
+        if (containerRef.current) {
+            containerRef.current.scrollTop = 0
+        }
+    }, [searchTerm])
 
     const containerStyles = css`
         max-height: ${RESULTS_MAX_HEIGHT}px;
@@ -89,18 +119,17 @@ export const SearchResultsList = ({
     }
 
     return (
-        <div css={containerStyles}>
+        <div ref={containerRef} css={containerStyles}>
             {results.map((result, index) => (
                 <SearchResultRow
                     key={result.url}
+                    index={index}
                     result={result}
                     isSelected={index === selectedIndex}
                     isKeyboardNavigating={isKeyboardNavigating.current}
                     onMouseEnter={() => handleMouseEnter(index)}
                     onMouseMove={() => handleItemMouseMove(index)}
-                    ref={(el) => {
-                        itemRefs.current[index] = el
-                    }}
+                    onClick={onResultClick}
                 />
             ))}
         </div>
@@ -108,111 +137,124 @@ export const SearchResultsList = ({
 }
 
 interface SearchResultRowProps {
+    index: number
     result: SearchResultItem
     isSelected: boolean
     isKeyboardNavigating: boolean
     onMouseEnter: () => void
     onMouseMove: () => void
+    onClick: () => void
 }
 
-const SearchResultRow = forwardRef<HTMLAnchorElement, SearchResultRowProps>(
-    (
-        { result, isSelected, isKeyboardNavigating, onMouseEnter, onMouseMove },
-        ref
-    ) => {
-        const { euiTheme } = useEuiTheme()
-        const isMobile = useIsWithinMaxBreakpoint('s')
+const SearchResultRow = ({
+    index,
+    result,
+    isSelected,
+    isKeyboardNavigating,
+    onMouseEnter,
+    onMouseMove,
+    onClick,
+}: SearchResultRowProps) => {
+    const { euiTheme } = useEuiTheme()
+    const isMobile = useIsWithinMaxBreakpoint('s')
+    const anchorRef = useRef<HTMLAnchorElement | null>(null)
 
-        const breadcrumbItems = useMemo(() => {
-            const typePrefix = result.type === 'api' ? 'API' : 'Docs'
-            return [typePrefix, ...result.parents.slice(1).map((p) => p.title)]
-        }, [result.type, result.parents])
+    const breadcrumbItems = useMemo(() => {
+        const typePrefix = result.type === 'api' ? 'API' : 'Docs'
+        return [typePrefix, ...result.parents.slice(1).map((p) => p.title)]
+    }, [result.type, result.parents])
 
-        return (
-            <a
-                ref={ref}
-                href={result.url}
-                onMouseEnter={onMouseEnter}
-                onMouseMove={onMouseMove}
-                data-selected={isSelected ? 'true' : 'false'}
-                data-keyboard-navigating={
-                    isKeyboardNavigating ? 'true' : 'false'
+    const hxSelectOob = getHxSelectOob(result.url)
+
+    // Process htmx when element mounts
+    useEffect(() => {
+        if (anchorRef.current) {
+            htmx.process(anchorRef.current)
+        }
+    }, [])
+
+    return (
+        <a
+            ref={anchorRef}
+            href={result.url}
+            hx-select-oob={hxSelectOob}
+            data-search-result-index={index}
+            onClick={onClick}
+            onMouseEnter={onMouseEnter}
+            onMouseMove={onMouseMove}
+            data-selected={isSelected ? 'true' : 'false'}
+            data-keyboard-navigating={isKeyboardNavigating ? 'true' : 'false'}
+            css={css`
+                display: flex;
+                align-items: center;
+                gap: ${euiTheme.size.s};
+                padding-inline: ${euiTheme.size.l};
+                padding-block: ${euiTheme.size.base};
+                text-decoration: none;
+                cursor: pointer;
+                border-bottom: 1px solid ${euiTheme.colors.borderBaseSubdued};
+                background: ${isSelected
+                    ? euiTheme.colors.backgroundBaseSubdued
+                    : 'transparent'};
+
+                &:last-child {
+                    border-bottom: none;
                 }
-                css={css`
-                    display: flex;
-                    align-items: center;
-                    gap: ${euiTheme.size.s};
-                    padding-inline: ${euiTheme.size.l};
-                    padding-block: ${euiTheme.size.base};
-                    text-decoration: none;
-                    cursor: pointer;
-                    border-bottom: 1px solid
-                        ${euiTheme.colors.borderBaseSubdued};
+
+                &:hover:not([data-keyboard-navigating='true']) {
                     background: ${isSelected
                         ? euiTheme.colors.backgroundBaseSubdued
-                        : 'transparent'};
+                        : euiTheme.colors.backgroundBaseHighlighted};
 
-                    &:last-child {
-                        border-bottom: none;
-                    }
+                    .title-text {
+                        color: ${euiTheme.colors.link};
+                        text-decoration: underline;
 
-                    &:hover:not([data-keyboard-navigating='true']) {
-                        background: ${isSelected
-                            ? euiTheme.colors.backgroundBaseSubdued
-                            : euiTheme.colors.backgroundBaseHighlighted};
-
-                        .title-text {
-                            color: ${euiTheme.colors.link};
+                        mark {
+                            color: ${euiTheme.colors.textParagraph};
                             text-decoration: underline;
-
-                            mark {
-                                color: ${euiTheme.colors.textParagraph};
-                                text-decoration: underline;
-                            }
-                        }
-
-                        .jump-to-indicator {
-                            visibility: visible;
                         }
                     }
 
-                    &[data-selected='true'] {
-                        .title-text {
-                            color: ${euiTheme.colors.link};
+                    .jump-to-indicator {
+                        visibility: visible;
+                    }
+                }
+
+                &[data-selected='true'] {
+                    .title-text {
+                        color: ${euiTheme.colors.link};
+                        text-decoration: underline;
+
+                        mark {
+                            color: ${euiTheme.colors.textParagraph};
                             text-decoration: underline;
-
-                            mark {
-                                color: ${euiTheme.colors.textParagraph};
-                                text-decoration: underline;
-                            }
-                        }
-
-                        .jump-to-indicator {
-                            visibility: visible;
                         }
                     }
+
+                    .jump-to-indicator {
+                        visibility: visible;
+                    }
+                }
+            `}
+        >
+            <div
+                css={css`
+                    flex: 1;
+                    min-width: 0;
+                    overflow: hidden;
                 `}
             >
-                <div
-                    css={css`
-                        flex: 1;
-                        min-width: 0;
-                        overflow: hidden;
-                    `}
-                >
-                    <Breadcrumb items={breadcrumbItems} />
-                    <Title text={result.title} />
-                    {result.description && (
-                        <Description text={result.description} />
-                    )}
-                </div>
-                {!isMobile && <JumpToIndicator />}
-            </a>
-        )
-    }
-)
-
-SearchResultRow.displayName = 'SearchResultRow'
+                <Breadcrumb items={breadcrumbItems} />
+                <Title text={result.title} />
+                {result.description && (
+                    <Description text={result.description} />
+                )}
+            </div>
+            {!isMobile && <JumpToIndicator />}
+        </a>
+    )
+}
 
 /**
  * Breadcrumb with 3-part layout:
