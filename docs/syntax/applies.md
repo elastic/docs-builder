@@ -116,7 +116,7 @@ Versions can be specified using several formats to indicate different applicabil
 - Each version statement corresponds to the **latest patch** of the specified minor version (e.g., `9.1` represents 9.1.0, 9.1.1, 9.1.6, etc.).
 - When critical patch-level differences exist, use plain text descriptions alongside the badge rather than specifying patch versions.
 - Disambiguation between `+` and `=`:
-  - `=` means that the content is only true for that version and that version only. If you're not on that version, then this content does **not** concern you.
+  - `=` means that the lifecycle state is valid for that version and that version only. If you're not on that version, then this content does **not** concern you.
   - `+` means that the content is true for that version and any subsequent versions. If you're on that version, then this content **does** concern you.
 
 ### Rendered examples
