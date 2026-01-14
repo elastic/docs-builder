@@ -34,9 +34,13 @@ export const NavigationSearch = () => {
     const hasContent = !!searchTerm.trim()
     const isSearching = isLoading || isFetching
 
+    const handleResultClick = () => {
+        setIsPopoverOpen(false)
+        inputRef.current?.blur()
+    }
+
     const {
         inputRef,
-        itemRefs,
         isKeyboardNavigating,
         handleInputKeyDown,
         handleMouseMove,
@@ -44,6 +48,7 @@ export const NavigationSearch = () => {
         resultsCount: results.length,
         isLoading: isSearching,
         onClose: () => setIsPopoverOpen(false),
+        onNavigate: handleResultClick,
     })
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -75,10 +80,14 @@ export const NavigationSearch = () => {
         setIsPopoverOpen(false)
     }
 
-    useGlobalKeyboardShortcut('k', () => inputRef.current?.focus())
+    useGlobalKeyboardShortcut('k', () => {
+        inputRef.current?.focus()
+        inputRef.current?.select()
+    })
 
     return (
         <div
+            className="sticky top-0"
             css={css`
                 padding-top: ${euiTheme.size.base};
                 padding-right: ${euiTheme.size.base};
@@ -124,9 +133,9 @@ export const NavigationSearch = () => {
                 {hasContent && (
                     <div ref={popoverContentRef}>
                         <SearchDropdownContent
-                            itemRefs={itemRefs}
                             isKeyboardNavigating={isKeyboardNavigating}
                             onMouseMove={handleMouseMove}
+                            onResultClick={handleResultClick}
                         />
                     </div>
                 )}
@@ -151,22 +160,22 @@ const KEYBOARD_SHORTCUTS = [
 ]
 
 interface SearchDropdownContentProps {
-    itemRefs: React.MutableRefObject<(HTMLAnchorElement | null)[]>
     isKeyboardNavigating: React.MutableRefObject<boolean>
     onMouseMove: () => void
+    onResultClick: () => void
 }
 
 const SearchDropdownContent = ({
-    itemRefs,
     isKeyboardNavigating,
     onMouseMove,
+    onResultClick,
 }: SearchDropdownContentProps) => {
     return (
         <>
             <SearchResultsList
-                itemRefs={itemRefs}
                 isKeyboardNavigating={isKeyboardNavigating}
                 onMouseMove={onMouseMove}
+                onResultClick={onResultClick}
             />
             <SearchDropdownFooter />
         </>
