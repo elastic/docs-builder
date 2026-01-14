@@ -21,7 +21,7 @@ interface AIAnswerPanelProps {
     forceCollapsed?: boolean
 }
 
-const PREVIEW_HEIGHT = 48 // Height to show approximately one line
+const PREVIEW_HEIGHT = 64 // Height to show content with read more overlay
 
 export const AIAnswerPanel = ({
     query,
@@ -42,6 +42,8 @@ export const AIAnswerPanel = ({
     const resultsRef = useRef<SearchResultItem[]>(results)
     const prevResultsLengthRef = useRef(0)
     const mountedRef = useRef(true)
+    const collapsedHeaderRef = useRef<HTMLDivElement>(null)
+    const expandedHeaderRef = useRef<HTMLDivElement>(null)
 
     // Track the query we want to stream for - set when query changes
     const pendingQueryRef = useRef<string | null>(null)
@@ -223,6 +225,26 @@ export const AIAnswerPanel = ({
         }
     }, [forceCollapsed])
 
+    // Control gradient animation play state using Web Animations API
+    // Pause immediately on mount if not streaming, and control based on streaming state
+    useEffect(() => {
+        const pauseAnimations = (el: HTMLDivElement | null) => {
+            if (el) {
+                const animations = el.getAnimations()
+                animations.forEach(anim => {
+                    if (streaming) {
+                        anim.play()
+                    } else {
+                        anim.pause()
+                    }
+                })
+            }
+        }
+
+        pauseAnimations(collapsedHeaderRef.current)
+        pauseAnimations(expandedHeaderRef.current)
+    }, [streaming, expanded]) // Re-run when expanded changes to catch new elements
+
     const handleStop = () => {
         abortControllerRef.current?.abort()
         streamingQueryRef.current = null
@@ -291,55 +313,64 @@ export const AIAnswerPanel = ({
                 paddingSize="none"
                 css={css`
                     margin-bottom: ${euiTheme.size.m};
-                    background: ${euiTheme.colors.success}15;
-                    border: 1px solid ${euiTheme.colors.success}40;
+                    background: ${euiTheme.colors.emptyShade};
+                    border: 1px solid #9B59B620;
                     cursor: pointer;
                     transition: all 0.2s ease;
                     overflow: hidden;
 
                     &:hover {
-                        background: ${euiTheme.colors.success}20;
+                        border-color: #9B59B640;
+                        box-shadow: 0 2px 8px rgba(155, 89, 182, 0.15);
                     }
                 `}
                 onClick={() => setExpanded(true)}
             >
-                {/* Header */}
+                {/* Purple-blue gradient header with animation while streaming */}
                 <div
+                    ref={collapsedHeaderRef}
                     css={css`
                         padding: ${euiTheme.size.s} ${euiTheme.size.m};
-                        border-bottom: 1px solid ${euiTheme.colors.success}30;
+                        background: linear-gradient(135deg, #9B59B6 0%, #0077CC 25%, #9B59B6 50%, #0077CC 75%, #9B59B6 100%);
+                        background-size: 200% 200%;
+                        animation: diagonalFlow 3s linear infinite;
+
+                        @keyframes diagonalFlow {
+                            0% { background-position: 0% 0%; }
+                            100% { background-position: 100% 100%; }
+                        }
                     `}
                 >
                     <EuiFlexGroup alignItems="center" gutterSize="s">
                         <EuiFlexItem grow={false}>
-                            <EuiIcon type="sparkles" color="success" />
+                            <EuiIcon type="sparkles" color="ghost" />
                         </EuiFlexItem>
-                        <EuiFlexItem>
-                            <EuiText size="s" css={css`color: ${euiTheme.colors.success};`}>
-                                <strong>AI Answer</strong>
-                            </EuiText>
-                        </EuiFlexItem>
-                        {streaming && (
-                            <EuiFlexItem grow={false}>
-                                <span
-                                    css={css`
-                                        font-size: 12px;
-                                        color: ${euiTheme.colors.success};
-                                        background: ${euiTheme.colors.success}20;
-                                        padding: 2px 8px;
-                                        border-radius: ${euiTheme.border.radius.medium};
-                                        animation: pulse 1.5s infinite;
+                        <EuiFlexItem grow={false}>
+                            <div css={css`display: flex; align-items: center; gap: 8px;`}>
+                                <EuiText size="s" css={css`color: white;`}>
+                                    <strong>AI Answer</strong>
+                                </EuiText>
+                                {streaming && (
+                                    <span
+                                        css={css`
+                                            font-size: 12px;
+                                            color: white;
+                                            background: rgba(255, 255, 255, 0.2);
+                                            padding: 2px 8px;
+                                            border-radius: ${euiTheme.border.radius.medium};
+                                            animation: pulse 1.5s ease-in-out infinite;
 
-                                        @keyframes pulse {
-                                            0%, 100% { opacity: 1; }
-                                            50% { opacity: 0.5; }
-                                        }
-                                    `}
-                                >
-                                    Generating...
-                                </span>
-                            </EuiFlexItem>
-                        )}
+                                            @keyframes pulse {
+                                                0%, 100% { background: rgba(255, 255, 255, 0.1); }
+                                                50% { background: rgba(255, 255, 255, 0.4); }
+                                            }
+                                        `}
+                                    >
+                                        Generating...
+                                    </span>
+                                )}
+                            </div>
+                        </EuiFlexItem>
                     </EuiFlexGroup>
                 </div>
                 {/* Content preview with fade overlay */}
@@ -351,7 +382,7 @@ export const AIAnswerPanel = ({
                 >
                     <div
                         css={css`
-                            padding: ${euiTheme.size.s} ${euiTheme.size.m};
+                            padding: ${euiTheme.size.m} ${euiTheme.size.m};
                             max-height: ${PREVIEW_HEIGHT}px;
                             overflow: hidden;
                         `}
@@ -368,7 +399,7 @@ export const AIAnswerPanel = ({
                                             display: inline-block;
                                             width: 8px;
                                             height: 16px;
-                                            background: ${euiTheme.colors.success};
+                                            background: #9B59B6;
                                             margin-left: 4px;
                                             animation: blink 0.8s infinite;
 
@@ -386,7 +417,7 @@ export const AIAnswerPanel = ({
                                     display: inline-block;
                                     width: 8px;
                                     height: 16px;
-                                    background: ${euiTheme.colors.success};
+                                    background: #9B59B6;
                                     animation: blink 0.8s infinite;
 
                                     @keyframes blink {
@@ -404,16 +435,38 @@ export const AIAnswerPanel = ({
                             bottom: 0;
                             left: 0;
                             right: 0;
-                            height: 40px;
-                            background: linear-gradient(rgba(255, 255, 255, 0), rgba(255, 255, 255, 1));
-                            display: flex;
-                            justify-content: center;
-                            align-items: flex-end;
-                            padding-bottom: ${euiTheme.size.xs};
+                            height: 50px;
+                            background: linear-gradient(rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.9) 40%, rgba(255, 255, 255, 1));
                             pointer-events: none;
                         `}
+                    />
+                    {/* "Read more" positioned above overlay */}
+                    <div
+                        css={css`
+                            position: absolute;
+                            bottom: 0;
+                            left: 0;
+                            right: 0;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            padding-bottom: ${euiTheme.size.xs};
+                            pointer-events: none;
+                            z-index: 1;
+                        `}
                     >
-                        <EuiIcon type="arrowDown" size="s" color="subdued" />
+                        <span
+                            css={css`
+                                font-size: 11px;
+                                color: ${euiTheme.colors.darkestShade};
+                                font-weight: 500;
+                                text-transform: uppercase;
+                                letter-spacing: 0.5px;
+                            `}
+                        >
+                            read more
+                        </span>
+                        <EuiIcon type="arrowDown" size="s" color={euiTheme.colors.darkestShade} />
                     </div>
                 </div>
             </EuiPanel>
@@ -425,50 +478,58 @@ export const AIAnswerPanel = ({
             paddingSize="none"
             css={css`
                 margin-bottom: ${euiTheme.size.m};
-                background: ${euiTheme.colors.success}15;
-                border: 1px solid ${euiTheme.colors.success}40;
+                background: ${euiTheme.colors.emptyShade};
+                border: 1px solid #9B59B630;
                 overflow: hidden;
             `}
         >
-            {/* Header */}
+            {/* Purple-blue gradient header with animation while streaming */}
             <div
+                ref={expandedHeaderRef}
                 css={css`
                     padding: ${euiTheme.size.m};
-                    border-bottom: 1px solid ${euiTheme.colors.success}30;
+                    background: linear-gradient(135deg, #9B59B6 0%, #0077CC 25%, #9B59B6 50%, #0077CC 75%, #9B59B6 100%);
+                    background-size: 200% 200%;
+                    animation: diagonalFlow 3s linear infinite;
+
+                    @keyframes diagonalFlow {
+                        0% { background-position: 0% 0%; }
+                        100% { background-position: 100% 100%; }
+                    }
                 `}
             >
                 <EuiFlexGroup alignItems="center" justifyContent="spaceBetween">
                     <EuiFlexItem grow={false}>
                         <EuiFlexGroup alignItems="center" gutterSize="s">
                             <EuiFlexItem grow={false}>
-                                <EuiIcon type="sparkles" color="success" />
+                                <EuiIcon type="sparkles" color="ghost" />
                             </EuiFlexItem>
-                            <EuiFlexItem>
-                                <EuiText size="s" css={css`color: ${euiTheme.colors.success};`}>
-                                    <strong>AI Answer</strong>
-                                </EuiText>
-                            </EuiFlexItem>
-                            {streaming && (
-                                <EuiFlexItem grow={false}>
-                                    <span
-                                        css={css`
-                                            font-size: 12px;
-                                            color: ${euiTheme.colors.success};
-                                            background: ${euiTheme.colors.success}20;
-                                            padding: 2px 8px;
-                                            border-radius: ${euiTheme.border.radius.medium};
-                                            animation: pulse 1.5s infinite;
+                            <EuiFlexItem grow={false}>
+                                <div css={css`display: flex; align-items: center; gap: 8px;`}>
+                                    <EuiText size="s" css={css`color: white;`}>
+                                        <strong>AI Answer</strong>
+                                    </EuiText>
+                                    {streaming && (
+                                        <span
+                                            css={css`
+                                                font-size: 12px;
+                                                color: white;
+                                                background: rgba(255, 255, 255, 0.2);
+                                                padding: 2px 8px;
+                                                border-radius: ${euiTheme.border.radius.medium};
+                                                animation: pulse 1.5s ease-in-out infinite;
 
-                                            @keyframes pulse {
-                                                0%, 100% { opacity: 1; }
-                                                50% { opacity: 0.5; }
-                                            }
-                                        `}
-                                    >
-                                        Generating...
-                                    </span>
-                                </EuiFlexItem>
-                            )}
+                                                @keyframes pulse {
+                                                    0%, 100% { background: rgba(255, 255, 255, 0.1); }
+                                                    50% { background: rgba(255, 255, 255, 0.4); }
+                                                }
+                                            `}
+                                        >
+                                            Generating...
+                                        </span>
+                                    )}
+                                </div>
+                            </EuiFlexItem>
                         </EuiFlexGroup>
                     </EuiFlexItem>
                     <EuiFlexItem grow={false}>
@@ -481,6 +542,7 @@ export const AIAnswerPanel = ({
                                             aria-label="Stop"
                                             onClick={handleStop}
                                             size="s"
+                                            css={css`color: white !important;`}
                                         />
                                     </EuiToolTip>
                                 </EuiFlexItem>
@@ -492,6 +554,7 @@ export const AIAnswerPanel = ({
                                             aria-label="Regenerate"
                                             onClick={handleRegenerate}
                                             size="s"
+                                            css={css`color: white !important;`}
                                         />
                                     </EuiToolTip>
                                 </EuiFlexItem>
@@ -504,6 +567,7 @@ export const AIAnswerPanel = ({
                                             aria-label="Collapse"
                                             onClick={() => setExpanded(false)}
                                             size="s"
+                                            css={css`color: white !important;`}
                                         />
                                     </EuiToolTip>
                                 </EuiFlexItem>
@@ -537,7 +601,7 @@ export const AIAnswerPanel = ({
                                     display: inline-block;
                                     width: 8px;
                                     height: 16px;
-                                    background: ${euiTheme.colors.success};
+                                    background: #9B59B6;
                                     margin-left: 4px;
                                     animation: blink 0.8s infinite;
 
@@ -556,10 +620,10 @@ export const AIAnswerPanel = ({
                         css={css`
                             margin-top: ${euiTheme.size.m};
                             padding-top: ${euiTheme.size.m};
-                            border-top: 1px solid ${euiTheme.colors.lightShade};
+                            border-top: 1px solid rgba(0, 119, 204, 0.2);
                         `}
                     >
-                        <EuiText size="xs" color="subdued">
+                        <EuiText size="xs" css={css`color: #0077CC;`}>
                             Sources
                         </EuiText>
                         <EuiFlexGroup
@@ -575,12 +639,13 @@ export const AIAnswerPanel = ({
                                         href={result.url}
                                         css={css`
                                             font-size: 12px;
-                                            background: ${euiTheme.colors.lightestShade};
+                                            background: rgba(0, 119, 204, 0.1);
                                             padding: 4px 8px;
                                             border-radius: ${euiTheme.border.radius.medium};
+                                            color: #0077CC !important;
 
                                             &:hover {
-                                                background: ${euiTheme.colors.lightShade};
+                                                background: rgba(0, 119, 204, 0.2);
                                             }
                                         `}
                                     >
