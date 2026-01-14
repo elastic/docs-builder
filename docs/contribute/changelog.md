@@ -1,38 +1,85 @@
-# Add changelog entries
+# Create changelogs
 
-The `docs-builder changelog add` command creates a new changelog file from command-line input.
-By adding a file for each notable change, you can ultimately generate release documention with a consistent layout for all your products.
+By adding a changelog file for each notable change, you can ultimately generate release documention with a consistent layout for all your products.
 
-:::{note}
-This command is associated with an ongoing release docs initiative.
-Additional workflows are still to come for managing the list of changelogs in each release.
-:::
-
-The command generates a YAML file that uses the following schema:
+These instructions rely on the use of a common changelog schema:
 
 :::{dropdown} Changelog schema
 ::::{include} /contribute/_snippets/changelog-fields.md
 ::::
 :::
 
-## Command options
+Some of the fields in the schema accept only a specific set of values:
 
-The command supports all of the following options, which generally align with fields in the changelog schema:
+:::{important}
+
+- Product values must exist in [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml). Invalid products will cause the `docs-builder changelog add` command to fail.
+- Type, subtype, and lifecycle values must match the available values defined in [ChangelogConfiguration.cs](https://github.com/elastic/docs-builder/blob/main/src/services/Elastic.Documentation.Services/Changelog/ChangelogConfiguration.cs). Invalid values will cause the `docs-builder changelog add` command to fail.
+:::
+
+To use the `docs-builder changelog` commands in your development workflow:
+
+1. Ensure that your products exist in [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml).
+1. Add labels to your GitHub pull requests to represent the types defined in [ChangelogConfiguration.cs](https://github.com/elastic/docs-builder/blob/main/src/services/Elastic.Documentation.Services/Changelog/ChangelogConfiguration.cs). For example, `>bug` and `>enhancement` labels.
+1. Optional: Choose areas or components that your changes affect and add labels to your GitHub pull requests (such as `:Analytics/Aggregations`).
+1. Optional: Add labels to your GitHub pull requests to indicate that they are not notable and should not generate changelogs. For example, `non-issue` or `release_notes:skip`.
+1. [Configure changelog settings](#changelog-settings) to correctly interpret your PR labels.
+1. [Create changelogs](#changelog-add) with the `docs-builder changelog add` command.
+
+For more information about running `docs-builder`, go to [Contribute locally](https://www.elastic.co/docs/contribute-docs/locally).
+
+:::{note}
+This command is associated with an ongoing release docs initiative.
+Additional workflows are still to come for managing the list of changelogs in each release.
+:::
+
+## Create a changelog configuration file [changelog-settings]
+
+You can create a configuration file to limit the acceptable product, type, subtype, and lifecycle values.
+You can also use it to prevent the creation of changelogs when certain PR labels are present.
+Refer to [changelog.yml.example](https://github.com/elastic/docs-builder/blob/main/config/changelog.yml.example).
+
+By default, the `docs-builder changelog add` command checks the following path: `docs/changelog.yml`.
+You can specify a different path with the `--config` command option.
+
+If a configuration file exists, the command validates its values before generating changelog files:
+
+- If the configuration file contains `lifecycle`, `product`, `subtype`, or `type` values that don't match the values in `products.yml` and `ChangelogConfiguration.cs`, validation fails. The changelog file is not created.
+- If the configuration file contains `areas` values and they don't match what you specify in the `--areas` command option, validation fails. The changelog file is not created.
+
+### GitHub label mappings
+
+You can optionally add `label_to_type` and `label_to_areas` mappings in your changelog configuration.
+When you run the `docs-builder changelog add` command with the `--prs` option, it can use these mappings to fill in the `type` and `areas` in your changelog based on your pull request labels.
+
+Refer to the file layout in [changelog.yml.example](https://github.com/elastic/docs-builder/blob/main/config/changelog.yml.example) and an [example usage](#example-map-label).
+
+### GitHub label blockers
+
+You can also optionally use `add_blockers` in your changelog configuration.
+When you run the `docs-builder changelog add` command with the `--prs` and `--products` options and the PR has a label that you've identified as a blocker for that product, the command does not create a changelog for that PR.
+
+You can use comma-separated product IDs to share the same list of labels across multiple products.
+
+Refer to the file layout in [changelog.yml.example](https://github.com/elastic/docs-builder/blob/main/config/changelog.yml.example) and an [example usage](#example-block-label).
+
+## Create changelog files [changelog-add]
+
+You can use the `docs-builder changelog add` command to create a changelog file.
+For up-to-date details, use the `-h` option:
 
 ```sh
-Usage: changelog add [options...] [-h|--help] [--version]
-
-Add a new changelog fragment from command-line input
+Add a new changelog from command-line input
 
 Options:
   --products <List<ProductInfo>>    Required: Products affected in format "product target lifecycle, ..." (e.g., "elasticsearch 9.2.0 ga, cloud-serverless 2025-08-05") [Required]
-  --title <string?>                 Optional: A short, user-facing title (max 80 characters). Required if --pr is not specified. If --pr and --title are specified, the latter value is used instead of what exists in the PR. [Default: null]
-  --type <string?>                  Optional: Type of change (feature, enhancement, bug-fix, breaking-change, etc.). Required if --pr is not specified. If mappings are configured, type can be derived from the PR. [Default: null]
+  --title <string?>                 Optional: A short, user-facing title (max 80 characters). Required if --prs is not specified. If --prs and --title are specified, the latter value is used instead of what exists in the PR. [Default: null]
+  --type <string?>                  Optional: Type of change (feature, enhancement, bug-fix, breaking-change, etc.). Required if --prs is not specified. If mappings are configured, type can be derived from the PR. [Default: null]
   --subtype <string?>               Optional: Subtype for breaking changes (api, behavioral, configuration, etc.) [Default: null]
   --areas <string[]?>               Optional: Area(s) affected (comma-separated or specify multiple times) [Default: null]
-  --pr <string?>                    Optional: Pull request URL or PR number (if --owner and --repo are provided). If specified, --title can be derived from the PR. If mappings are configured, --areas and --type can also be derived from the PR. [Default: null]
-  --owner <string?>                 Optional: GitHub repository owner (used when --pr is just a number) [Default: null]
-  --repo <string?>                  Optional: GitHub repository name (used when --pr is just a number) [Default: null]
+  --prs <string[]?>                 Optional: Pull request URL(s) or PR number(s) (comma-separated, or if --owner and --repo are provided, just numbers). If specified, --title can be derived from the PR. If mappings are configured, --areas and --type can also be derived from the PR. Creates one changelog file per PR. [Default: null]
+  --owner <string?>                 Optional: GitHub repository owner (used when --prs contains just numbers) [Default: null]
+  --repo <string?>                  Optional: GitHub repository name (used when --prs contains just numbers) [Default: null]
   --issues <string[]?>              Optional: Issue URL(s) (comma-separated or specify multiple times) [Default: null]
   --description <string?>           Optional: Additional information about the change (max 600 characters) [Default: null]
   --impact <string?>                Optional: How the user's environment is affected [Default: null]
@@ -41,6 +88,7 @@ Options:
   --highlight <bool?>               Optional: Include in release highlights [Default: null]
   --output <string?>                Optional: Output directory for the changelog fragment. Defaults to current directory [Default: null]
   --config <string?>                Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml' [Default: null]
+  --use-pr-number                   Optional: Use the PR number as the filename instead of generating it from a unique ID and title
 ```
 
 ### Product format
@@ -57,37 +105,31 @@ Examples:
 - `"cloud-serverless 2025-08-05"`
 - `"cloud-enterprise 4.0.3, cloud-hosted 2025-10-31"`
 
-## Changelog configuration
+### Filenames
 
-Some of the fields in the changelog accept only a specific set of values.
+By default, the `docs-builder changelog add` command generates filenames using a timestamp and a sanitized version of the title:
+`{timestamp}-{sanitized-title}.yaml`
+
+For example: `1735689600-fixes-enrich-and-lookup-join-resolution.yaml`
+
+If you want to use the PR number as the filename instead, add the `--use-pr-number` option:
+
+```sh
+docs-builder changelog add \
+  --pr https://github.com/elastic/elasticsearch/pull/137431 \
+  --products "elasticsearch 9.2.3" \
+  --use-pr-number
+```
+
+This creates a file named `137431.yaml` instead of the default timestamp-based filename.
 
 :::{important}
-
-- Product values must exist in [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml). Invalid products will cause the command to fail.
-- Type, subtype, and lifecycle values must match the available values defined in [ChangelogConfiguration.cs](https://github.com/elastic/docs-builder/blob/main/src/services/Elastic.Documentation.Services/Changelog/ChangelogConfiguration.cs). Invalid values will cause the command to fail.
+When using `--use-pr-number`, you must also provide the `--pr` option. The PR number is extracted from the PR URL or number you provide.
 :::
-
-If you want to further limit the list of values, you can optionally create a configuration file.
-Refer to [changelog.yml.example](https://github.com/elastic/docs-builder/blob/main/config/changelog.yml.example).
-
-By default, the command checks the following path: `docs/changelog.yml`.
-You can specify a different path with the `--config` command option.
-
-If a configuration file exists, the command validates all its values before generating the changelog file:
-
-- If the configuration file contains `lifecycle`, `product`, `subtype`, or `type` values that don't match the values in `products.yml` and `ChangelogConfiguration.cs`, validation fails. The changelog file is not created.
-- If the configuration file contains `areas` values and they don't match what you specify in the `--areas` command option, validation fails. The changelog file is not created.
-
-### GitHub label mappings
-
-You can optionally add `label_to_type` and `label_to_areas` mappings in your changelog configuration.
-When you run the command with the `--pr` option, it can use these mappings to fill in the `type` and `areas` in your changelog based on your pull request labels.
-
-Refer to [changelog.yml.example](https://github.com/elastic/docs-builder/blob/main/config/changelog.yml.example).
 
 ## Examples
 
-### Multiple products
+### Create a changelog for multiple products [example-multiple-products]
 
 The following command creates a changelog for a bug fix that applies to two products:
 
@@ -97,13 +139,13 @@ docs-builder changelog add \
   --type bug-fix \ <2>
   --products "elasticsearch 9.2.3, cloud-serverless 2025-12-02" \ <3>
   --areas "ES|QL"
-  --pr "https://github.com/elastic/elasticsearch/pull/137431" <4>
+  --prs "https://github.com/elastic/elasticsearch/pull/137431" <4>
 ```
 
 1. This option is required only if you want to override what's derived from the PR title.
 2. The type values are defined in [ChangelogConfiguration.cs](https://github.com/elastic/docs-builder/blob/main/src/services/Elastic.Documentation.Services/Changelog/ChangelogConfiguration.cs).
 3. The product values are defined in [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml).
-4. The `--pr` value can be a full URL (such as `https://github.com/owner/repo/pull/123`, a short format (such as `owner/repo#123`) or just a number (in which case you must also provide `--owner` and `--repo` options).
+4. The `--prs` value can be a full URL (such as `https://github.com/owner/repo/pull/123`), a short format (such as `owner/repo#123`), just a number (in which case you must also provide `--owner` and `--repo` options), or a path to a file containing newline-delimited PR URLs or numbers. Multiple PRs can be provided comma-separated, or you can specify a file path. You can also mix both formats by specifying `--prs` multiple times. One changelog file will be created for each PR.
 
 The output file has the following format:
 
@@ -120,7 +162,7 @@ areas:
 - ES|QL
 ```
 
-### PR label mappings
+### Create a changelog with PR label mappings [example-map-label]
 
 You can update your changelog configuration file to contain GitHub label mappings, for example:
 
@@ -135,7 +177,7 @@ available_areas:
   - ES|QL
   # Add more areas as needed
 
-# GitHub label mappings (optional - used when --pr option is specified)
+# GitHub label mappings (optional - used when --prs option is specified)
 # Maps GitHub PR labels to changelog type values
 # When a PR has a label that matches a key, the corresponding type value is used
 label_to_type:
@@ -150,13 +192,16 @@ label_to_areas:
   ":Search Relevance/ES|QL": "ES|QL"
 ```
 
-When you use the `--pr` option to derive information from a pull request, it can make use of those mappings:
+When you use the `--prs` option to derive information from a pull request, it can make use of those mappings:
 
 ```sh
-docs-builder changelog add --pr https://github.com/elastic/elasticsearch/pull/139272 --products "elasticsearch 9.3.0" --config test/changelog.yml
+docs-builder changelog add \
+  --prs https://github.com/elastic/elasticsearch/pull/139272 \
+  --products "elasticsearch 9.3.0" \
+  --config test/changelog.yml
 ```
 
-In this case, the changelog file derives the title, type, and areas:
+In this case, the changelog file derives the title, type, and areas from the pull request:
 
 ```yaml
 pr: https://github.com/elastic/elasticsearch/pull/139272
@@ -168,3 +213,73 @@ areas:
 - ES|QL
 title: '[ES|QL] Take TOP_SNIPPETS out of snapshot'
 ```
+
+### Block changelog creation with PR labels [example-block-label]
+
+You can configure product-specific label blockers to prevent changelog creation for certain PRs based on their labels.
+
+If you run the `docs-builder changelog add` command with the `--prs` option and a PR has a blocking label for any of the products in the `--products` option, that PR will be skipped and no changelog file will be created for it.
+A warning message will be emitted indicating which PR was skipped and why.
+
+For example, your configuration file can contain `add_blockers` like this:
+
+```yaml
+# Product-specific label blockers (optional)
+# Maps product IDs to lists of labels that prevent changelog creation for that product
+# If you run the changelog add command with the --prs option and a PR has any of these labels, the changelog is not created
+# Product IDs can be comma-separated to share the same list of labels across multiple products
+add_blockers:
+  # Example: Skip changelog for cloud.serverless product when PR has "Watcher" label
+  cloud-serverless:
+    - ":Data Management/Watcher"
+    - ">non-issue"
+  # Example: Skip changelog creation for elasticsearch product when PR has "skip:releaseNotes" label
+  elasticsearch:
+    - ">non-issue"
+  # Example: Share the same blockers across multiple products using comma-separated product IDs
+  elasticsearch, cloud-serverless:
+    - ">non-issue"
+```
+
+Those settings affect commands with the `--prs` option, for example:
+
+```sh
+docs-builder changelog add --prs "1234, 5678" \
+  --products "cloud-serverless" \
+  --owner elastic --repo elasticsearch \
+  --config test/changelog.yml
+```
+
+If PR 1234 has the `>non-issue` or Watcher label, it will be skipped and no changelog will be created for it.
+If PR 5678 does not have any blocking labels, a changelog is created.
+
+### Create changelogs from a file of PRs [example-file-prs]
+
+You can also provide PRs from a file containing newline-delimited PR URLs or numbers:
+
+```sh
+# Create a file with PRs (one per line)
+cat > prs.txt << EOF
+https://github.com/elastic/elasticsearch/pull/1234
+https://github.com/elastic/elasticsearch/pull/5678
+EOF
+
+# Use the file with --prs
+docs-builder changelog add --prs prs.txt \
+  --products "elasticsearch 9.2.0 ga" \
+  --config test/changelog.yml
+```
+
+You can also mix file paths and comma-separated PRs:
+
+```sh
+docs-builder changelog add \
+  --prs "https://github.com/elastic/elasticsearch/pull/1234" \
+  --prs prs.txt \
+  --prs "5678, 9012" \
+  --products "elasticsearch 9.2.0 ga" \
+  --owner elastic --repo elasticsearch \
+  --config test/changelog.yml
+```
+
+This creates one changelog file for each PR specified, whether from files or directly.
