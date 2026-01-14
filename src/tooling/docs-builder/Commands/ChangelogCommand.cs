@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.IO.Abstractions;
 using ConsoleAppFramework;
 using Documentation.Builder.Arguments;
 using Elastic.Documentation.Configuration;
@@ -18,6 +19,7 @@ internal sealed class ChangelogCommand(
 	IConfigurationContext configurationContext
 )
 {
+	private readonly IFileSystem _fileSystem = new FileSystem();
 	/// <summary>
 	/// Changelog commands. Use 'changelog add' to create a new changelog fragment.
 	/// </summary>
@@ -36,9 +38,9 @@ internal sealed class ChangelogCommand(
 	/// <param name="products">Required: Products affected in format "product target lifecycle, ..." (e.g., "elasticsearch 9.2.0 ga, cloud-serverless 2025-08-05")</param>
 	/// <param name="subtype">Optional: Subtype for breaking changes (api, behavioral, configuration, etc.)</param>
 	/// <param name="areas">Optional: Area(s) affected (comma-separated or specify multiple times)</param>
-	/// <param name="pr">Optional: Pull request URL or PR number (if --owner and --repo are provided). If specified, --title can be derived from the PR. If mappings are configured, --areas and --type can also be derived from the PR.</param>
-	/// <param name="owner">Optional: GitHub repository owner (used when --pr is just a number)</param>
-	/// <param name="repo">Optional: GitHub repository name (used when --pr is just a number)</param>
+	/// <param name="prs">Optional: Pull request URL(s) or PR number(s) (comma-separated), or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times. Each occurrence can be either comma-separated PRs (e.g., `--prs "https://github.com/owner/repo/pull/123,6789"`) or a file path (e.g., `--prs /path/to/file.txt`). When specifying PRs directly, provide comma-separated values. When specifying a file path, provide a single value that points to a newline-delimited file. If --owner and --repo are provided, PR numbers can be used instead of URLs. If specified, --title can be derived from the PR. If mappings are configured, --areas and --type can also be derived from the PR. Creates one changelog file per PR.</param>
+	/// <param name="owner">Optional: GitHub repository owner (used when --prs contains just numbers)</param>
+	/// <param name="repo">Optional: GitHub repository name (used when --prs contains just numbers)</param>
 	/// <param name="issues">Optional: Issue URL(s) (comma-separated or specify multiple times)</param>
 	/// <param name="description">Optional: Additional information about the change (max 600 characters)</param>
 	/// <param name="impact">Optional: How the user's environment is affected</param>
@@ -47,6 +49,7 @@ internal sealed class ChangelogCommand(
 	/// <param name="highlight">Optional: Include in release highlights</param>
 	/// <param name="output">Optional: Output directory for the changelog fragment. Defaults to current directory</param>
 	/// <param name="config">Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml'</param>
+	/// <param name="usePrNumber">Optional: Use the PR number as the filename instead of generating it from a unique ID and title</param>
 	/// <param name="ctx"></param>
 	[Command("add")]
 	public async Task<int> Create(
@@ -55,7 +58,7 @@ internal sealed class ChangelogCommand(
 		string? type = null,
 		string? subtype = null,
 		string[]? areas = null,
-		string? pr = null,
+		string[]? prs = null,
 		string? owner = null,
 		string? repo = null,
 		string[]? issues = null,
@@ -66,6 +69,7 @@ internal sealed class ChangelogCommand(
 		bool? highlight = null,
 		string? output = null,
 		string? config = null,
+		bool usePrNumber = false,
 		Cancel ctx = default
 	)
 	{
@@ -74,6 +78,45 @@ internal sealed class ChangelogCommand(
 		IGitHubPrService githubPrService = new GitHubPrService(logFactory);
 		var service = new ChangelogService(logFactory, configurationContext, githubPrService);
 
+		// Parse PRs: handle both comma-separated values and file paths
+		string[]? parsedPrs = null;
+		if (prs is { Length: > 0 })
+		{
+			var allPrs = new List<string>();
+			var validPrs = prs.Where(prValue => !string.IsNullOrWhiteSpace(prValue));
+			foreach (var trimmedValue in validPrs.Select(prValue => prValue.Trim()))
+			{
+				// Check if this is a file path
+				if (_fileSystem.File.Exists(trimmedValue))
+				{
+					// Read all lines from the file (newline-delimited)
+					try
+					{
+						var fileLines = await _fileSystem.File.ReadAllLinesAsync(trimmedValue, ctx);
+						foreach (var line in fileLines)
+						{
+							if (!string.IsNullOrWhiteSpace(line))
+							{
+								allPrs.Add(line.Trim());
+							}
+						}
+					}
+					catch (IOException ex)
+					{
+						collector.EmitError(string.Empty, $"Failed to read PRs from file '{trimmedValue}': {ex.Message}", ex);
+						return 1;
+					}
+				}
+				else
+				{
+					// Treat as comma-separated PRs
+					var commaSeparatedPrs = trimmedValue.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+					allPrs.AddRange(commaSeparatedPrs);
+				}
+			}
+			parsedPrs = allPrs.ToArray();
+		}
+
 		var input = new ChangelogInput
 		{
 			Title = title,
@@ -81,7 +124,7 @@ internal sealed class ChangelogCommand(
 			Products = products,
 			Subtype = subtype,
 			Areas = areas ?? [],
-			Pr = pr,
+			Prs = parsedPrs,
 			Owner = owner,
 			Repo = repo,
 			Issues = issues ?? [],
@@ -91,7 +134,8 @@ internal sealed class ChangelogCommand(
 			FeatureId = featureId,
 			Highlight = highlight,
 			Output = output,
-			Config = config
+			Config = config,
+			UsePrNumber = usePrNumber
 		};
 
 		serviceInvoker.AddCommand(service, input,
