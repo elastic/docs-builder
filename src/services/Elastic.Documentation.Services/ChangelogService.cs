@@ -1879,20 +1879,27 @@ public partial class ChangelogService(
 				entryToBundleProducts[entry] = bundleProductIds;
 			}
 
-			// Render markdown files (use first repo found, or default)
-			var repoForRendering = allResolvedEntries.Count > 0 ? allResolvedEntries[0].repo : defaultRepo;
+			// Create mapping from entries to their repo for PR link formatting
+			var entryToRepo = new Dictionary<ChangelogData, string>();
+			foreach (var (entry, repo, _) in allResolvedEntries)
+			{
+				entryToRepo[entry] = repo;
+			}
+
+			// Render markdown files (use first repo found for section anchors, or default)
+			var repoForAnchors = allResolvedEntries.Count > 0 ? allResolvedEntries[0].repo : defaultRepo;
 
 			// Render index.md (features, enhancements, bug fixes, security, docs, regression, other)
-			await RenderIndexMarkdown(collector, outputDir, title, titleSlug, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts, ctx);
+			await RenderIndexMarkdown(collector, outputDir, title, titleSlug, repoForAnchors, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts, entryToRepo, ctx);
 
 			// Render breaking-changes.md
-			await RenderBreakingChangesMarkdown(collector, outputDir, title, titleSlug, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts, ctx);
+			await RenderBreakingChangesMarkdown(collector, outputDir, title, titleSlug, repoForAnchors, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts, entryToRepo, ctx);
 
 			// Render deprecations.md
-			await RenderDeprecationsMarkdown(collector, outputDir, title, titleSlug, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts, ctx);
+			await RenderDeprecationsMarkdown(collector, outputDir, title, titleSlug, repoForAnchors, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts, entryToRepo, ctx);
 
 			// Render known-issues.md
-			await RenderKnownIssuesMarkdown(collector, outputDir, title, titleSlug, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts, ctx);
+			await RenderKnownIssuesMarkdown(collector, outputDir, title, titleSlug, repoForAnchors, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts, entryToRepo, ctx);
 
 			_logger.LogInformation("Rendered changelog markdown files to {OutputDir}", outputDir);
 
@@ -1934,6 +1941,7 @@ public partial class ChangelogService(
 		HashSet<string> featureIdsToHide,
 		Dictionary<string, RenderBlockersEntry>? renderBlockers,
 		Dictionary<ChangelogData, HashSet<string>> entryToBundleProducts,
+		Dictionary<ChangelogData, string> entryToRepo,
 		Cancel ctx
 	)
 	{
@@ -1981,7 +1989,7 @@ public partial class ChangelogService(
 			{
 				sb.AppendLine(CultureInfo.InvariantCulture, $"### Features and enhancements [{repo}-{titleSlug}-features-enhancements]");
 				var combined = features.Concat(enhancements).ToList();
-				RenderEntriesByArea(sb, combined, repo, subsections, hidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts);
+				RenderEntriesByArea(sb, combined, subsections, hidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts, entryToRepo);
 			}
 
 			if (security.Count > 0 || bugFixes.Count > 0)
@@ -1989,28 +1997,28 @@ public partial class ChangelogService(
 				sb.AppendLine();
 				sb.AppendLine(CultureInfo.InvariantCulture, $"### Fixes [{repo}-{titleSlug}-fixes]");
 				var combined = security.Concat(bugFixes).ToList();
-				RenderEntriesByArea(sb, combined, repo, subsections, hidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts);
+				RenderEntriesByArea(sb, combined, subsections, hidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts, entryToRepo);
 			}
 
 			if (docs.Count > 0)
 			{
 				sb.AppendLine();
 				sb.AppendLine(CultureInfo.InvariantCulture, $"### Documentation [{repo}-{titleSlug}-docs]");
-				RenderEntriesByArea(sb, docs, repo, subsections, hidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts);
+				RenderEntriesByArea(sb, docs, subsections, hidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts, entryToRepo);
 			}
 
 			if (regressions.Count > 0)
 			{
 				sb.AppendLine();
 				sb.AppendLine(CultureInfo.InvariantCulture, $"### Regressions [{repo}-{titleSlug}-regressions]");
-				RenderEntriesByArea(sb, regressions, repo, subsections, hidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts);
+				RenderEntriesByArea(sb, regressions, subsections, hidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts, entryToRepo);
 			}
 
 			if (other.Count > 0)
 			{
 				sb.AppendLine();
 				sb.AppendLine(CultureInfo.InvariantCulture, $"### Other changes [{repo}-{titleSlug}-other]");
-				RenderEntriesByArea(sb, other, repo, subsections, hidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts);
+				RenderEntriesByArea(sb, other, subsections, hidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts, entryToRepo);
 			}
 		}
 		else
@@ -2043,6 +2051,7 @@ public partial class ChangelogService(
 		HashSet<string> featureIdsToHide,
 		Dictionary<string, RenderBlockersEntry>? renderBlockers,
 		Dictionary<ChangelogData, HashSet<string>> entryToBundleProducts,
+		Dictionary<ChangelogData, string> entryToRepo,
 		Cancel ctx
 	)
 	{
@@ -2070,6 +2079,7 @@ public partial class ChangelogService(
 				foreach (var entry in group)
 				{
 					var bundleProductIds = entryToBundleProducts.GetValueOrDefault(entry, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+					var entryRepo = entryToRepo.GetValueOrDefault(entry, repo);
 					var shouldHide = (!string.IsNullOrWhiteSpace(entry.FeatureId) && featureIdsToHide.Contains(entry.FeatureId)) ||
 						ShouldBlockEntry(entry, bundleProductIds, renderBlockers, out _);
 
@@ -2090,13 +2100,13 @@ public partial class ChangelogService(
 							// When hiding private links, put them on separate lines as comments
 							if (hasPr)
 							{
-								sb.AppendLine(FormatPrLink(entry.Pr!, repo, hidePrivateLinks));
+								sb.AppendLine(FormatPrLink(entry.Pr!, entryRepo, hidePrivateLinks));
 							}
 							if (hasIssues)
 							{
 								foreach (var issue in entry.Issues!)
 								{
-									sb.AppendLine(FormatIssueLink(issue, repo, hidePrivateLinks));
+									sb.AppendLine(FormatIssueLink(issue, entryRepo, hidePrivateLinks));
 								}
 							}
 							sb.AppendLine("For more information, check the pull request or issue above.");
@@ -2106,14 +2116,14 @@ public partial class ChangelogService(
 							sb.Append("For more information, check ");
 							if (hasPr)
 							{
-								sb.Append(FormatPrLink(entry.Pr!, repo, hidePrivateLinks));
+								sb.Append(FormatPrLink(entry.Pr!, entryRepo, hidePrivateLinks));
 							}
 							if (hasIssues)
 							{
 								foreach (var issue in entry.Issues!)
 								{
 									sb.Append(' ');
-									sb.Append(FormatIssueLink(issue, repo, hidePrivateLinks));
+									sb.Append(FormatIssueLink(issue, entryRepo, hidePrivateLinks));
 								}
 							}
 							sb.AppendLine(".");
@@ -2179,6 +2189,7 @@ public partial class ChangelogService(
 		HashSet<string> featureIdsToHide,
 		Dictionary<string, RenderBlockersEntry>? renderBlockers,
 		Dictionary<ChangelogData, HashSet<string>> entryToBundleProducts,
+		Dictionary<ChangelogData, string> entryToRepo,
 		Cancel ctx
 	)
 	{
@@ -2202,6 +2213,7 @@ public partial class ChangelogService(
 				foreach (var entry in areaGroup)
 				{
 					var bundleProductIds = entryToBundleProducts.GetValueOrDefault(entry, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+					var entryRepo = entryToRepo.GetValueOrDefault(entry, repo);
 					var shouldHide = (!string.IsNullOrWhiteSpace(entry.FeatureId) && featureIdsToHide.Contains(entry.FeatureId)) ||
 						ShouldBlockEntry(entry, bundleProductIds, renderBlockers, out _);
 
@@ -2222,13 +2234,13 @@ public partial class ChangelogService(
 							// When hiding private links, put them on separate lines as comments
 							if (hasPr)
 							{
-								sb.AppendLine(FormatPrLink(entry.Pr!, repo, hidePrivateLinks));
+								sb.AppendLine(FormatPrLink(entry.Pr!, entryRepo, hidePrivateLinks));
 							}
 							if (hasIssues)
 							{
 								foreach (var issue in entry.Issues!)
 								{
-									sb.AppendLine(FormatIssueLink(issue, repo, hidePrivateLinks));
+									sb.AppendLine(FormatIssueLink(issue, entryRepo, hidePrivateLinks));
 								}
 							}
 							sb.AppendLine("For more information, check the pull request or issue above.");
@@ -2238,14 +2250,14 @@ public partial class ChangelogService(
 							sb.Append("For more information, check ");
 							if (hasPr)
 							{
-								sb.Append(FormatPrLink(entry.Pr!, repo, hidePrivateLinks));
+								sb.Append(FormatPrLink(entry.Pr!, entryRepo, hidePrivateLinks));
 							}
 							if (hasIssues)
 							{
 								foreach (var issue in entry.Issues!)
 								{
 									sb.Append(' ');
-									sb.Append(FormatIssueLink(issue, repo, hidePrivateLinks));
+									sb.Append(FormatIssueLink(issue, entryRepo, hidePrivateLinks));
 								}
 							}
 							sb.AppendLine(".");
@@ -2311,6 +2323,7 @@ public partial class ChangelogService(
 		HashSet<string> featureIdsToHide,
 		Dictionary<string, RenderBlockersEntry>? renderBlockers,
 		Dictionary<ChangelogData, HashSet<string>> entryToBundleProducts,
+		Dictionary<ChangelogData, string> entryToRepo,
 		Cancel ctx
 	)
 	{
@@ -2334,6 +2347,7 @@ public partial class ChangelogService(
 				foreach (var entry in areaGroup)
 				{
 					var bundleProductIds = entryToBundleProducts.GetValueOrDefault(entry, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+					var entryRepo = entryToRepo.GetValueOrDefault(entry, repo);
 					var shouldHide = (!string.IsNullOrWhiteSpace(entry.FeatureId) && featureIdsToHide.Contains(entry.FeatureId)) ||
 						ShouldBlockEntry(entry, bundleProductIds, renderBlockers, out _);
 
@@ -2354,13 +2368,13 @@ public partial class ChangelogService(
 							// When hiding private links, put them on separate lines as comments
 							if (hasPr)
 							{
-								sb.AppendLine(FormatPrLink(entry.Pr!, repo, hidePrivateLinks));
+								sb.AppendLine(FormatPrLink(entry.Pr!, entryRepo, hidePrivateLinks));
 							}
 							if (hasIssues)
 							{
 								foreach (var issue in entry.Issues!)
 								{
-									sb.AppendLine(FormatIssueLink(issue, repo, hidePrivateLinks));
+									sb.AppendLine(FormatIssueLink(issue, entryRepo, hidePrivateLinks));
 								}
 							}
 							sb.AppendLine("For more information, check the pull request or issue above.");
@@ -2370,14 +2384,14 @@ public partial class ChangelogService(
 							sb.Append("For more information, check ");
 							if (hasPr)
 							{
-								sb.Append(FormatPrLink(entry.Pr!, repo, hidePrivateLinks));
+								sb.Append(FormatPrLink(entry.Pr!, entryRepo, hidePrivateLinks));
 							}
 							if (hasIssues)
 							{
 								foreach (var issue in entry.Issues!)
 								{
 									sb.Append(' ');
-									sb.Append(FormatIssueLink(issue, repo, hidePrivateLinks));
+									sb.Append(FormatIssueLink(issue, entryRepo, hidePrivateLinks));
 								}
 							}
 							sb.AppendLine(".");
@@ -2429,7 +2443,7 @@ public partial class ChangelogService(
 	}
 
 	[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0058:Expression value is never used", Justification = "StringBuilder methods return builder for chaining")]
-	private void RenderEntriesByArea(StringBuilder sb, List<ChangelogData> entries, string repo, bool subsections, bool hidePrivateLinks, HashSet<string> featureIdsToHide, Dictionary<string, RenderBlockersEntry>? renderBlockers, Dictionary<ChangelogData, HashSet<string>> entryToBundleProducts)
+	private void RenderEntriesByArea(StringBuilder sb, List<ChangelogData> entries, bool subsections, bool hidePrivateLinks, HashSet<string> featureIdsToHide, Dictionary<string, RenderBlockersEntry>? renderBlockers, Dictionary<ChangelogData, HashSet<string>> entryToBundleProducts, Dictionary<ChangelogData, string> entryToRepo)
 	{
 		var groupedByArea = entries.GroupBy(e => GetComponent(e)).ToList();
 		foreach (var areaGroup in groupedByArea)
@@ -2444,6 +2458,7 @@ public partial class ChangelogService(
 			foreach (var entry in areaGroup)
 			{
 				var bundleProductIds = entryToBundleProducts.GetValueOrDefault(entry, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+				var entryRepo = entryToRepo.GetValueOrDefault(entry, "elastic");
 				var shouldHide = (!string.IsNullOrWhiteSpace(entry.FeatureId) && featureIdsToHide.Contains(entry.FeatureId)) ||
 					ShouldBlockEntry(entry, bundleProductIds, renderBlockers, out _);
 
@@ -2466,7 +2481,7 @@ public partial class ChangelogService(
 							sb.Append("% ");
 						}
 						sb.Append("  ");
-						sb.Append(FormatPrLink(entry.Pr, repo, hidePrivateLinks));
+						sb.Append(FormatPrLink(entry.Pr, entryRepo, hidePrivateLinks));
 						hasCommentedLinks = true;
 					}
 
@@ -2480,7 +2495,7 @@ public partial class ChangelogService(
 								sb.Append("% ");
 							}
 							sb.Append("  ");
-							sb.Append(FormatIssueLink(issue, repo, hidePrivateLinks));
+							sb.Append(FormatIssueLink(issue, entryRepo, hidePrivateLinks));
 							hasCommentedLinks = true;
 						}
 					}
@@ -2496,7 +2511,7 @@ public partial class ChangelogService(
 					sb.Append(' ');
 					if (!string.IsNullOrWhiteSpace(entry.Pr))
 					{
-						sb.Append(FormatPrLink(entry.Pr, repo, hidePrivateLinks));
+						sb.Append(FormatPrLink(entry.Pr, entryRepo, hidePrivateLinks));
 						sb.Append(' ');
 					}
 
@@ -2504,7 +2519,7 @@ public partial class ChangelogService(
 					{
 						foreach (var issue in entry.Issues)
 						{
-							sb.Append(FormatIssueLink(issue, repo, hidePrivateLinks));
+							sb.Append(FormatIssueLink(issue, entryRepo, hidePrivateLinks));
 							sb.Append(' ');
 						}
 					}
