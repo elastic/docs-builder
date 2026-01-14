@@ -75,7 +75,7 @@ public class AssemblyConfigurationMatchTests
 	{
 		var config = CreateConfiguration();
 
-		var result = config.Match(LoggerFactory, repository, "main", null);
+		var result = config.Match(LoggerFactory, repository, "main", null, false);
 
 		result.Should().BeEquivalentTo(NoMatch);
 	}
@@ -88,7 +88,7 @@ public class AssemblyConfigurationMatchTests
 	{
 		var config = CreateConfiguration();
 
-		var result = config.Match(LoggerFactory, "elastic/unknown-repo", branch, null);
+		var result = config.Match(LoggerFactory, "elastic/unknown-repo", branch, null, false);
 
 		result.Should().BeEquivalentTo(Speculative);
 	}
@@ -98,7 +98,7 @@ public class AssemblyConfigurationMatchTests
 	{
 		var config = CreateConfiguration();
 
-		var result = config.Match(LoggerFactory, "elastic/unknown-repo", "feature-branch", null);
+		var result = config.Match(LoggerFactory, "elastic/unknown-repo", "feature-branch", null, false);
 
 		result.Should().BeEquivalentTo(NoMatch);
 	}
@@ -111,7 +111,7 @@ public class AssemblyConfigurationMatchTests
 	{
 		var config = CreateConfiguration();
 
-		var result = config.Match(LoggerFactory, "elastic/test-repo", branch, null);
+		var result = config.Match(LoggerFactory, "elastic/test-repo", branch, null, false);
 
 		// Version branches set Speculative if they're >= current version (8.0)
 		var isVersionBranch = branch.Contains('.');
@@ -136,7 +136,7 @@ public class AssemblyConfigurationMatchTests
 		};
 		var config = CreateConfiguration(repositories);
 
-		var result = config.Match(LoggerFactory, "elastic/test-repo", "main", null);
+		var result = config.Match(LoggerFactory, "elastic/test-repo", "main", null, false);
 
 		result.Should().BeEquivalentTo(new MatchResult(
 			ContentSource.Current,
@@ -158,7 +158,7 @@ public class AssemblyConfigurationMatchTests
 		};
 		var config = CreateConfiguration(repositories);
 
-		var result = config.Match(LoggerFactory, "elastic/test-repo", branch, null);
+		var result = config.Match(LoggerFactory, "elastic/test-repo", branch, null, false);
 
 		result.Speculative.Should().Be(shouldBeSpeculative);
 	}
@@ -179,7 +179,7 @@ public class AssemblyConfigurationMatchTests
 		var versionParts = productVersion.Split('.');
 		var product = CreateProduct(new SemVersion(int.Parse(versionParts[0], null), int.Parse(versionParts[1], null), 0));
 
-		var result = config.Match(LoggerFactory, "elastic/test-repo", branch, product);
+		var result = config.Match(LoggerFactory, "elastic/test-repo", branch, product, false);
 
 		result.Speculative.Should().Be(shouldBeSpeculative);
 	}
@@ -195,7 +195,7 @@ public class AssemblyConfigurationMatchTests
 		};
 		var config = CreateConfiguration(repositories);
 
-		var result = config.Match(LoggerFactory, "elastic/test-repo", branch, null);
+		var result = config.Match(LoggerFactory, "elastic/test-repo", branch, null, false);
 
 		result.Current.Should().BeNull();
 		result.Next.Should().BeNull();
@@ -212,7 +212,7 @@ public class AssemblyConfigurationMatchTests
 		};
 		var config = CreateConfiguration(repositories);
 
-		var result = config.Match(LoggerFactory, "elastic/test-repo", "feature-branch", null);
+		var result = config.Match(LoggerFactory, "elastic/test-repo", "feature-branch", null, false);
 
 		result.Should().BeEquivalentTo(NoMatch);
 	}
@@ -226,7 +226,7 @@ public class AssemblyConfigurationMatchTests
 		};
 		var config = CreateConfiguration(repositories);
 
-		var result = config.Match(LoggerFactory, "elastic/test-repo", "main", null);
+		var result = config.Match(LoggerFactory, "elastic/test-repo", "main", null, false);
 
 		result.Current.Should().Be(ContentSource.Current);
 	}
@@ -236,7 +236,7 @@ public class AssemblyConfigurationMatchTests
 	{
 		var config = CreateConfiguration();
 
-		var result = config.Match(LoggerFactory, "elastic/test-repo", "8.x", null);
+		var result = config.Match(LoggerFactory, "elastic/test-repo", "8.x", null, false);
 
 		result.Should().NotBeNull();
 	}
@@ -246,7 +246,7 @@ public class AssemblyConfigurationMatchTests
 	{
 		var config = CreateConfiguration();
 
-		var result = config.Match(LoggerFactory, "elastic/test-repo", "8.0", null);
+		var result = config.Match(LoggerFactory, "elastic/test-repo", "8.0", null, false);
 
 		result.Current.Should().Be(ContentSource.Current);
 	}
@@ -260,7 +260,7 @@ public class AssemblyConfigurationMatchTests
 		};
 		var config = CreateConfiguration(repositories);
 
-		var result = config.Match(LoggerFactory, "elastic/test-repo", "8.15", null);
+		var result = config.Match(LoggerFactory, "elastic/test-repo", "8.15", null, false);
 
 		result.Current.Should().Be(ContentSource.Current);
 		result.Speculative.Should().BeTrue();
@@ -280,7 +280,7 @@ public class AssemblyConfigurationMatchTests
 		var versionParts = productVersion.Split('.');
 		var product = CreateProduct(new SemVersion(int.Parse(versionParts[0], null), int.Parse(versionParts[1], null), int.Parse(versionParts[2], null)));
 
-		var result = config.Match(LoggerFactory, "elastic/test-repo", branch, product);
+		var result = config.Match(LoggerFactory, "elastic/test-repo", branch, product, false);
 
 		result.Speculative.Should().BeTrue();
 	}
@@ -299,7 +299,7 @@ public class AssemblyConfigurationMatchTests
 		var versionParts = productVersion.Split('.');
 		var product = CreateProduct(new SemVersion(int.Parse(versionParts[0], null), int.Parse(versionParts[1], null), int.Parse(versionParts[2], null)));
 
-		var result = config.Match(LoggerFactory, "elastic/test-repo", branch, product);
+		var result = config.Match(LoggerFactory, "elastic/test-repo", branch, product, false);
 
 		result.Speculative.Should().BeFalse();
 	}
@@ -316,7 +316,7 @@ public class AssemblyConfigurationMatchTests
 		};
 		var config = CreateConfiguration(repositories);
 
-		var result = config.Match(LoggerFactory, "elastic/test-repo", branch, null);
+		var result = config.Match(LoggerFactory, "elastic/test-repo", branch, null, false);
 
 		result.Speculative.Should().BeTrue();
 	}
@@ -336,7 +336,7 @@ public class AssemblyConfigurationMatchTests
 			VersioningSystem = null // No versioning system
 		};
 
-		var result = config.Match(LoggerFactory, "elastic/test-repo", "9.0", product);
+		var result = config.Match(LoggerFactory, "elastic/test-repo", "9.0", product, false);
 
 		result.Speculative.Should().BeFalse();
 	}
@@ -350,7 +350,7 @@ public class AssemblyConfigurationMatchTests
 		};
 		var config = CreateConfiguration(repositories);
 
-		var result = config.Match(LoggerFactory, "elastic/test-repo", "9.0", null);
+		var result = config.Match(LoggerFactory, "elastic/test-repo", "9.0", null, false);
 
 		result.Speculative.Should().BeFalse();
 	}
@@ -369,7 +369,7 @@ public class AssemblyConfigurationMatchTests
 		var versionParts = productVersion.Split('.');
 		var product = CreateProduct(new SemVersion(int.Parse(versionParts[0], null), int.Parse(versionParts[1], null), int.Parse(versionParts[2], null)));
 
-		var result = config.Match(LoggerFactory, "elastic/test-repo", branch, product);
+		var result = config.Match(LoggerFactory, "elastic/test-repo", branch, product, false);
 
 		// Should match because branch 9.0 >= anchored product version 9.0.0
 		result.Speculative.Should().BeTrue();
@@ -386,11 +386,85 @@ public class AssemblyConfigurationMatchTests
 		};
 		var config = CreateConfiguration(repositories);
 
-		var result = config.Match(LoggerFactory, "elastic/test-repo", branch, null);
+		var result = config.Match(LoggerFactory, "elastic/test-repo", branch, null, false);
 
 		// 8.0 should match previous minor of 8.1 (which is 8.0)
 		// 7.17 should NOT match previous minor of 8.0 (which is Math.Max(8-1, 0).0 = 7.0, not 7.17)
 		var expectedSpeculative = branch == "8.0" && currentVersion == "8.1";
 		result.Speculative.Should().Be(expectedSpeculative);
+	}
+
+	[Theory]
+	[InlineData("9.0", "9.0.0")]   // Matches anchored product version
+	[InlineData("9.1", "9.0.0")]   // Greater than anchored product version
+	[InlineData("9.5", "9.0.0")]   // Much greater than anchored product version
+	public void AlreadyPublishingTruePreventSpeculativeBuildForVersionBranch(string branch, string productVersion)
+	{
+		var repositories = new Dictionary<string, Repository>
+		{
+			["test-repo"] = CreateRepository(current: "main", next: "main", edge: "main")
+		};
+		var config = CreateConfiguration(repositories);
+		var versionParts = productVersion.Split('.');
+		var product = CreateProduct(new SemVersion(int.Parse(versionParts[0], null), int.Parse(versionParts[1], null), int.Parse(versionParts[2], null)));
+
+		var result = config.Match(LoggerFactory, "elastic/test-repo", branch, product, true);
+
+		result.Speculative.Should().BeFalse();
+	}
+
+	[Theory]
+	[InlineData("9.0", "9.0.0")]   // Matches anchored product version
+	[InlineData("9.1", "9.0.0")]   // Greater than anchored product version
+	[InlineData("9.5", "9.0.0")]   // Much greater than anchored product version
+	public void AlreadyPublishingFalseAllowsSpeculativeBuildForVersionBranch(string branch, string productVersion)
+	{
+		var repositories = new Dictionary<string, Repository>
+		{
+			["test-repo"] = CreateRepository(current: "main", next: "main", edge: "main")
+		};
+		var config = CreateConfiguration(repositories);
+		var versionParts = productVersion.Split('.');
+		var product = CreateProduct(new SemVersion(int.Parse(versionParts[0], null), int.Parse(versionParts[1], null), int.Parse(versionParts[2], null)));
+
+		var result = config.Match(LoggerFactory, "elastic/test-repo", branch, product, false);
+
+		result.Speculative.Should().BeTrue();
+	}
+
+	[Fact]
+	public void AlreadyPublishingOnlyAffectsVersionBranchesWithoutVersionedCurrent()
+	{
+		var repositories = new Dictionary<string, Repository>
+		{
+			["test-repo"] = CreateRepository(current: "8.15", next: "main", edge: "main")
+		};
+		var config = CreateConfiguration(repositories);
+
+		// When current is a version branch, alreadyPublishing should have no effect
+		var resultTrue = config.Match(LoggerFactory, "elastic/test-repo", "8.15", null, true);
+		var resultFalse = config.Match(LoggerFactory, "elastic/test-repo", "8.15", null, false);
+
+		resultTrue.Speculative.Should().BeTrue();
+		resultFalse.Speculative.Should().BeTrue();
+	}
+
+	[Theory]
+	[InlineData("main")]
+	[InlineData("master")]
+	public void AlreadyPublishingDoesNotAffectNonVersionBranchesWithFallback(string branch)
+	{
+		var repositories = new Dictionary<string, Repository>
+		{
+			["test-repo"] = CreateRepository(current: "8.0", next: "8.1", edge: "8.2")
+		};
+		var config = CreateConfiguration(repositories);
+
+		// alreadyPublishing should not affect main/master branches when they fall back to speculative
+		var resultTrue = config.Match(LoggerFactory, "elastic/test-repo", branch, null, true);
+		var resultFalse = config.Match(LoggerFactory, "elastic/test-repo", branch, null, false);
+
+		resultTrue.Speculative.Should().BeTrue();
+		resultFalse.Speculative.Should().BeTrue();
 	}
 }

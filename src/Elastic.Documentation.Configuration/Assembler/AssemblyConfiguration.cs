@@ -133,7 +133,7 @@ public record AssemblyConfiguration
 
 	/// Returns whether the <paramref name="branchOrTag"/> is configured as an integration branch or tag for the given
 	/// <paramref name="repository"/>.
-	public ContentSourceMatch Match(ILoggerFactory logFactory, string repository, string branchOrTag, Product? product)
+	public ContentSourceMatch Match(ILoggerFactory logFactory, string repository, string branchOrTag, Product? product, bool alreadyPublishing)
 	{
 		var logger = logFactory.CreateLogger<ContentSourceMatch>();
 		var match = new ContentSourceMatch(null, null, null, false);
@@ -227,22 +227,28 @@ public record AssemblyConfiguration
 			// assume we are newly onboarding the repository to current/next
 			else if (product?.VersioningSystem is { } versioningSystem)
 			{
-				logger.LogInformation("Current is not using versioned branches checking product info");
-				var productVersion = versioningSystem.Current;
-				var anchoredProductVersion = new SemVersion(productVersion.Major, productVersion.Minor, 0);
-				if (v >= anchoredProductVersion)
+				if (!alreadyPublishing)
 				{
-					logger.LogInformation("Speculative build {Branch} is gte product current '{ProductCurrent}' anchored at {ProductAnchored}", branchOrTag, productVersion, anchoredProductVersion);
-					match = match with
+					logger.LogInformation("Current is not using versioned branches and is not publishing to the registry yet, using product information to determine speculative build is needed");
+					var productVersion = versioningSystem.Current;
+					var anchoredProductVersion = new SemVersion(productVersion.Major, productVersion.Minor, 0);
+					if (v >= anchoredProductVersion)
 					{
-						Speculative = true
-					};
+						logger.LogInformation("Speculative build {Branch} is gte product current '{ProductCurrent}' anchored at {ProductAnchored}", branchOrTag,
+							productVersion, anchoredProductVersion);
+						match = match with
+						{
+							Speculative = true
+						};
+					}
+					else
+						logger.LogInformation("NO speculative build {Branch} is lte product current '{ProductCurrent}'", branchOrTag, productVersion);
 				}
 				else
-					logger.LogInformation("NO speculative build {Branch} is lte product current '{ProductCurrent}'", branchOrTag, productVersion);
+					logger.LogInformation("NO speculative build, repository is not using version branches to publish to documentation and is already in the link registry");
 			}
 			else
-				logger.LogInformation("No versioning system found for {Repository} on {Branch}", repository, branchOrTag);
+				logger.LogInformation("No versioning system found for {Repository} on {Branch}, can not determine speculative build until repository is specified in docs-builder configuration", repository, branchOrTag);
 		}
 
 		// if we haven't matched anything yet, and the branch is 'main' or 'master' always build
