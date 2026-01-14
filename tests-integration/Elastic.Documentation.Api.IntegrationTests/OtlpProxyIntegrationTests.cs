@@ -13,8 +13,22 @@ using Xunit;
 
 namespace Elastic.Documentation.Api.IntegrationTests;
 
-public class OtlpProxyIntegrationTests
+public class OtlpProxyIntegrationTests : IAsyncLifetime
 {
+	private const string OtlpEndpoint = "http://localhost:4318";
+
+	public ValueTask InitializeAsync()
+	{
+		Environment.SetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT", OtlpEndpoint);
+		return ValueTask.CompletedTask;
+	}
+
+	public ValueTask DisposeAsync()
+	{
+		Environment.SetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT", null);
+		return ValueTask.CompletedTask;
+	}
+
 	[Fact]
 	public async Task OtlpProxyTracesEndpointForwardsToCorrectUrl()
 	{
@@ -71,7 +85,7 @@ public class OtlpProxyIntegrationTests
 		response.StatusCode.Should().Be(HttpStatusCode.NoContent);
 		capturedRequest.Should().NotBeNull();
 		capturedRequest!.RequestUri.Should().NotBeNull();
-		capturedRequest.RequestUri!.ToString().Should().Be("http://localhost:4318/v1/traces");
+		capturedRequest.RequestUri!.ToString().Should().Be($"{OtlpEndpoint}/v1/traces");
 		capturedRequest.Method.Should().Be(HttpMethod.Post);
 		capturedRequest.Content.Should().NotBeNull();
 		capturedRequest.Content!.Headers.ContentType!.MediaType.Should().Be("application/json");
@@ -131,7 +145,7 @@ public class OtlpProxyIntegrationTests
 		// Assert - verify the enum ToStringFast() generates "logs" (lowercase)
 		response.StatusCode.Should().Be(HttpStatusCode.NoContent);
 		capturedRequest.Should().NotBeNull();
-		capturedRequest!.RequestUri!.ToString().Should().Be("http://localhost:4318/v1/logs");
+		capturedRequest!.RequestUri!.ToString().Should().Be($"{OtlpEndpoint}/v1/logs");
 
 		// Cleanup mock response
 		mockResponse.Dispose();
@@ -184,7 +198,7 @@ public class OtlpProxyIntegrationTests
 		// Assert - verify the enum ToStringFast() generates "metrics" (lowercase)
 		response.StatusCode.Should().Be(HttpStatusCode.NoContent);
 		capturedRequest.Should().NotBeNull();
-		capturedRequest!.RequestUri!.ToString().Should().Be("http://localhost:4318/v1/metrics");
+		capturedRequest!.RequestUri!.ToString().Should().Be($"{OtlpEndpoint}/v1/metrics");
 
 		// Cleanup mock response
 		mockResponse.Dispose();
