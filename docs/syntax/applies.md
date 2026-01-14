@@ -115,6 +115,9 @@ Versions can be specified using several formats to indicate different applicabil
 - Versions are always displayed as **Major.Minor** (e.g., `9.1`) in badges, regardless of whether you specify patch versions in the source.
 - Each version statement corresponds to the **latest patch** of the specified minor version (e.g., `9.1` represents 9.1.0, 9.1.1, 9.1.6, etc.).
 - When critical patch-level differences exist, use plain text descriptions alongside the badge rather than specifying patch versions.
+- Disambiguation between `+` and `=`:
+  - `=` means that the content is only true for that version and that version only. If you're not on that version, then this content does **not** concern you.
+  - `+` means that the content is true for that version and any subsequent versions. If you're on that version, then this content **does** concern you.
 
 ### Rendered examples
 
@@ -127,8 +130,8 @@ The following table shows how different version syntaxes render:
 | {applies_to}`stack: preview 9.0+` | `` {applies_to}`stack: preview 9.0+` `` | Preview with version |
 | {applies_to}`stack: preview 9.0-9.2` | `` {applies_to}`stack: preview 9.0-9.2` `` | Range display when both ends are released |
 | {applies_to}`stack: beta 9.1-9.3` | `` {applies_to}`stack: beta 9.1-9.3` `` | Converts to `+` if the end version is unreleased |
-| {applies_to}`stack: beta =9.1` | `` {applies_to}`stack: beta =9.1` `` | Exact version (no `+` symbol) |
-| {applies_to}`stack: deprecated =9.0` | `` {applies_to}`stack: deprecated =9.0` `` | Deprecated exact version |
+| {applies_to}`stack: beta =9.1` | `` {applies_to}`stack: beta =9.1` `` | In Beta for that version only (no `+` symbol) |
+| {applies_to}`stack: deprecated =9.0, removed 9.1+` | `` {applies_to}`stack: deprecated =9.0, removed 9.1+` `` | Deprecated only in 9.0, then removed from 9.1 |
 | {applies_to}`stack: ga 9.2+, beta 9.0-9.1` | `` {applies_to}`stack: ga 9.2+, beta 9.0-9.1` `` | Multiple lifecycles (highest priority shown) |
 | {applies_to}`stack: ga 9.3, beta 9.1+` | `` {applies_to}`stack: ga 9.3, beta 9.1+` `` | Shows Beta when GA is unreleased (2+ lifecycles) |
 | {applies_to}`serverless: ga` | `` {applies_to}`serverless: ga` `` | No version badge for unversioned products |
