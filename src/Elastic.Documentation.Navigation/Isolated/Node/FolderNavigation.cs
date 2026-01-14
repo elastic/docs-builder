@@ -38,7 +38,7 @@ public class FolderNavigation<TModel>(
 	public int NavigationIndex { get; set; }
 
 	/// <inheritdoc />
-	public string Id { get; } = ShortId.Create(parentPath);
+	public string Id { get; private set; } = null!;
 
 	/// <inheritdoc />
 	public ILeafNavigationItem<TModel> Index { get; private set; } = null!;
@@ -50,6 +50,9 @@ public class FolderNavigation<TModel>(
 	{
 		var indexNavigation = navigationItems.QueryIndex<TModel>(this, $"{FolderPath}/index.md", out navigationItems);
 		Index = indexNavigation;
+		// Include NavigationRoot.Id to ensure uniqueness across docsets in assembler builds
+		// (URLs alone aren't unique until path prefixes are applied by SiteNavigation)
+		Id = ShortId.Create(NavigationRoot.Id, Index.Url);
 		NavigationItems = navigationItems;
 	}
 }

@@ -147,46 +147,56 @@ Bundle changelogs
 
 Options:
   --directory <string?>                     Optional: Directory containing changelog YAML files. Defaults to current directory [Default: null]
-  --output <string?>                        Optional: Output file path for the bundled changelog. Defaults to 'changelog-bundle.yaml' in the input directory [Default: null]
-  --all                                     Include all changelogs in the directory
-  --input-products <List<ProductInfo>?>     Filter by products in format "product target lifecycle, ..." (e.g., "cloud-serverless 2025-12-02, cloud-serverless 2025-12-06") [Default: null]
-  --output-products <List<ProductInfo>?>    Explicitly set the products array in the output file in format "product target lifecycle, ...". Overrides any values from changelogs. [Default: null]
-  --resolve                                 Copy the contents of each changelog file into the entries array
-  --prs <string[]?>                         Filter by pull request URLs or numbers (comma-separated), or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times. [Default: null]
-  --owner <string?>                         Optional: GitHub repository owner (used when PRs are specified as numbers) [Default: null]
-  --repo <string?>                          Optional: GitHub repository name (used when PRs are specified as numbers) [Default: null]
+  --output <string?>                        Optional: Output path for the bundled changelog. Can be either (1) a directory path, in which case 'changelog-bundle.yaml' is created in that directory, or (2) a file path ending in .yml or .yaml. Defaults to 'changelog-bundle.yaml' in the input directory [Default: null]
+  --all                                     Include all changelogs in the directory. Only one filter option can be specified: `--all`, `--input-products`, or `--prs`.
+  --input-products <List<ProductInfo>?>     Filter by products in format "product target lifecycle, ..." (e.g., "cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta"). When specified, all three parts (product, target, lifecycle) are required but can be wildcards (*). Examples: "elasticsearch * *" matches all elasticsearch changelogs, "cloud-serverless 2025-12-02 *" matches cloud-serverless 2025-12-02 with any lifecycle, "* 9.3.* *" matches any product with target starting with "9.3.", "* * *" matches all changelogs (equivalent to --all). Only one filter option can be specified: `--all`, `--input-products`, or `--prs`. [Default: null]
+  --output-products <List<ProductInfo>?>    Optional: Explicitly set the products array in the output file in format "product target lifecycle, ...". Overrides any values from changelogs. [Default: null]
+  --resolve                                 Optional: Copy the contents of each changelog file into the entries array. By default, the bundle contains only the file names and checksums.
+  --prs <string[]?>                         Filter by pull request URLs or numbers (comma-separated), or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times. Only one filter option can be specified: `--all`, `--input-products`, or `--prs`. [Default: null]
+  --owner <string?>                         GitHub repository owner (required only when PRs are specified as numbers) [Default: null]
+  --repo <string?>                          GitHub repository name (required only when PRs are specified as numbers) [Default: null]
 ```
 
 You can specify only one of the following filter options:
 
-`--all`
-:   Include all changelogs from the directory.
-
-`--input-products`
-:   Include changelogs for the specified products.
-:   The format aligns with [](#product-format).
-:   For example, `"cloud-serverless 2025-12-02, cloud-serverless 2025-12-06"`.
-
-`--prs`
-:   Include changelogs for the specified pull request URLs or numbers, or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times.
-:   Each occurrence can be either comma-separated PRs (e.g., `--prs "https://github.com/owner/repo/pull/123,12345"`) or a file path (e.g., `--prs /path/to/file.txt`).
-:   When specifying PRs directly, provide comma-separated values.
-:   When specifying a file path, provide a single value that points to a newline-delimited file. The file should contain one PR URL or number per line.
-:   Pull requests can be identified by a full URL (such as `https://github.com/owner/repo/pull/123`), a short format (such as `owner/repo#123`), or just a number (in which case you must also provide `--owner` and `--repo` options).
+- `--all`: Include all changelogs from the directory.
+- `--input-products`: Include changelogs for the specified products. Refer to [Filter by product](#changelog-bundle-pr).
+- `--prs`:   Include changelogs for the specified pull request URLs or numbers, or a path to a newline-delimited file containing PR URLs or numbers. Go to [Filter by pull requests](#changelog-bundle-pr).
 
 By default, the output file contains only the changelog file names and checksums.
 You can optionally use the `--resolve` command option to pull all of the content from each changelog into the bundle.
 
 ### Filter by product [changelog-bundle-product]
 
-You can use the `--input-products` option to create a bundle of changelogs that match the product details:
+You can use the `--input-products` option to create a bundle of changelogs that match the product details.
+When using `--input-products`, you must provide all three parts: product, target, and lifecycle.
+Each part can be a wildcard (`*`) to match any value.
 
 ```sh
 docs-builder changelog bundle \
-  --input-products "cloud-serverless 2025-12-02, cloud-serverless 2025-12-06" <1>
+  --input-products "cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta" <1>
 ```
 
-1. Include all changelogs that have the `cloud-serverless` product identifier and target dates of either December 2 2025 or December 12 2025. For more information about product values, refer to [](#product-format).
+1. Include all changelogs that have the `cloud-serverless` product identifier with target dates of either December 2 2025 (lifecycle `ga`) or December 6 2025 (lifecycle `beta`). For more information about product values, refer to [](#product-format).
+
+You can use wildcards in any of the three parts:
+
+```sh
+# Bundle any changelogs that have exact matches for either of these clauses
+docs-builder changelog bundle --input-products "cloud-serverless 2025-12-02 ga, elasticsearch 9.3.0 beta"
+
+# Bundle all elasticsearch changelogs regardless of target or lifecycle
+docs-builder changelog bundle --input-products "elasticsearch * *"
+
+# Bundle all cloud-serverless 2025-12-02 changelogs with any lifecycle
+docs-builder changelog bundle --input-products "cloud-serverless 2025-12-02 *"
+
+# Bundle any cloud-serverless changelogs with target starting with "2025-11-" and "ga" lifecycle
+docs-builder changelog bundle --input-products "cloud-serverless 2025-11-* ga"
+
+# Bundle all changelogs (equivalent to --all)
+docs-builder changelog bundle --input-products "* * *"
+```
 
 If you have changelog files that reference those product details, the command creates a file like this:
 
@@ -205,22 +215,27 @@ entries:
     checksum: 70d197d96752c05b6595edffe6fe3ba3d055c845
 ```
 
-1. By default these values match your `--input-products` (even if the changelogs have more products). To specify different product metadata, use the `--output-products` option.
+1. By default these values match your `--input-products` (even if the changelogs have more products).
+To specify different product metadata, use the `--output-products` option.
 
 If you add the `--resolve` option, the contents of each changelog will be included in the output file.
 
 ### Filter by pull requests [changelog-bundle-pr]
 
-You can use the `--prs` option (with the `--repo` and `--owner` options if you provide only the PR numbers) to create a bundle of the changelogs that relate to those pull requests:
+You can use the `--prs` option to create a bundle of the changelogs that relate to those pull requests.
+You can provide either a comma-separated list of PRs (`--prs "https://github.com/owner/repo/pull/123,12345"`) or a path to a newline-delimited file (`--prs /path/to/file.txt`).
+In the latter case, the file should contain one PR URL or number per line.
+
+Pull requests can be identified by a full URL (such as `https://github.com/owner/repo/pull/123`), a short format (such as `owner/repo#123`), or just a number (in which case you must also provide `--owner` and `--repo` options).
 
 ```sh
 docs-builder changelog bundle --prs "108875,135873,136886" \ <1>
   --repo elasticsearch \ <2>
   --owner elastic \ <3>
-  --output-products "elasticsearch 9.2.2" <4>
+  --output-products "elasticsearch 9.2.2 ga" <4>
 ```
 
-1. The comma-separated list of pull request numbers to seek. You can also specify multiple `--prs` options, each with comma-separated PRs or a file path.
+1. The comma-separated list of pull request numbers to seek.
 2. The repository in the pull request URLs. This option is not required if you specify the short or full PR URLs in the `--prs` option.
 3. The owner in the pull request URLs. This option is not required if you specify the short or full PR URLs in the `--prs` option.
 4. The product metadata for the bundle. If it is not provided, it will be derived from all the changelog product values.
@@ -231,6 +246,7 @@ If you have changelog files that reference those pull requests, the command crea
 products:
 - product: elasticsearch
   target: 9.2.2
+  lifecycle: ga
 entries:
 - file:
     name: 1765507819-fix-ml-calendar-event-update-scalability-issues.yaml
@@ -262,7 +278,7 @@ You can use the `--prs` option with a file path to create a bundle of the change
 ./docs-builder changelog bundle \
   --prs "https://github.com/elastic/elasticsearch/pull/108875,135873" \ <1>
   --prs test/9.2.2.txt \ <2>
-  --output-products "elasticsearch 9.2.2" <3>
+  --output-products "elasticsearch 9.2.2 ga" <3>
   --resolve <4>
 ```
 
@@ -277,6 +293,7 @@ If you have changelog files that reference those pull requests, the command crea
 products:
 - product: elasticsearch
   target: 9.2.2
+  lifecycle: ga
 entries:
 - file:
     name: 1765507778-break-on-fielddata-when-building-global-ordinals.yaml
@@ -290,6 +307,30 @@ entries:
   pr: https://github.com/elastic/elasticsearch/pull/108875
 ...
 ```
+
+:::{note}
+When a changelog matches multiple `--input-products` filters, it appears only once in the bundle. This deduplication applies even when using `--all` or `--prs`.
+:::
+
+### Output file location
+
+The `--output` option supports two formats:
+
+1. **Directory path**: If you specify a directory path (without a filename), the command creates `changelog-bundle.yaml` in that directory:
+
+   ```sh
+   docs-builder changelog bundle --all --output /path/to/output/dir
+   # Creates /path/to/output/dir/changelog-bundle.yaml
+   ```
+
+2. **File path**: If you specify a file path ending in `.yml` or `.yaml`, the command uses that exact path:
+
+   ```sh
+   docs-builder changelog bundle --all --output /path/to/custom-bundle.yaml
+   # Creates /path/to/custom-bundle.yaml
+   ```
+
+If you specify a file path with a different extension (not `.yml` or `.yaml`), the command returns an error.
 
 ## Create documentation [render-changelogs]
 

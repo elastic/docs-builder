@@ -15,44 +15,30 @@ public static class ApplicabilitySelector
 	/// <param name="applicabilities">The collection of applicabilities to select from</param>
 	/// <param name="currentVersion">The current version to use for comparison</param>
 	/// <returns>The most relevant applicability for display</returns>
-	public static Applicability GetPrimaryApplicability(IEnumerable<Applicability> applicabilities, SemVersion currentVersion)
+	public static Applicability GetPrimaryApplicability(IReadOnlyCollection<Applicability> applicabilities, SemVersion currentVersion)
 	{
-		var applicabilityList = applicabilities.ToList();
-		var lifecycleOrder = new Dictionary<ProductLifecycle, int>
-		{
-			[ProductLifecycle.GenerallyAvailable] = 0,
-			[ProductLifecycle.Beta] = 1,
-			[ProductLifecycle.TechnicalPreview] = 2,
-			[ProductLifecycle.Planned] = 3,
-			[ProductLifecycle.Deprecated] = 4,
-			[ProductLifecycle.Removed] = 5,
-			[ProductLifecycle.Unavailable] = 6
-		};
+		var availableApplicabilities = applicabilities
+			.Where(a => a.Version is null || a.Version is AllVersionsSpec || a.Version.Min <= currentVersion).ToArray();
 
-		var availableApplicabilities = applicabilityList
-			.Where(a => a.Version is null || a.Version is AllVersions || a.Version <= currentVersion)
-			.ToList();
-
-		if (availableApplicabilities.Count != 0)
+		if (availableApplicabilities.Length > 0)
 		{
 			return availableApplicabilities
-				.OrderByDescending(a => a.Version ?? new SemVersion(0, 0, 0))
-				.ThenBy(a => lifecycleOrder.GetValueOrDefault(a.Lifecycle, 999))
+				.OrderByDescending(a => a.Version?.Min ?? ZeroVersion.Instance)
+				.ThenBy(a => ProductLifecycleInfo.GetOrder(a.Lifecycle))
 				.First();
 		}
 
-		var futureApplicabilities = applicabilityList
-			.Where(a => a.Version is not null && a.Version is not AllVersions && a.Version > currentVersion)
-			.ToList();
+		var futureApplicabilities = applicabilities
+			.Where(a => a.Version is not null && a.Version is not AllVersionsSpec && a.Version.Min > currentVersion).ToArray();
 
-		if (futureApplicabilities.Count != 0)
+		if (futureApplicabilities.Length > 0)
 		{
 			return futureApplicabilities
-				.OrderBy(a => a.Version!.CompareTo(currentVersion))
-				.ThenBy(a => lifecycleOrder.GetValueOrDefault(a.Lifecycle, 999))
+				.OrderBy(a => a.Version!.Min.CompareTo(currentVersion))
+				.ThenBy(a => ProductLifecycleInfo.GetOrder(a.Lifecycle))
 				.First();
 		}
 
-		return applicabilityList.First();
+		return applicabilities.First();
 	}
 }

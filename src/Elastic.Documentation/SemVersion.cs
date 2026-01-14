@@ -8,9 +8,14 @@ using System.Text.RegularExpressions;
 
 namespace Elastic.Documentation;
 
-public class AllVersions() : SemVersion(9999, 9999, 9999)
+public class AllVersions() : SemVersion(99999, 0, 0)
 {
 	public static AllVersions Instance { get; } = new();
+}
+
+public class ZeroVersion() : SemVersion(0, 0, 0)
+{
+	public static ZeroVersion Instance { get; } = new();
 }
 
 /// <summary>

@@ -17,6 +17,7 @@ public class BundledProduct
 {
 	public string Product { get; set; } = string.Empty;
 	public string? Target { get; set; }
+	public string? Lifecycle { get; set; }
 }
 
 public class BundledEntry

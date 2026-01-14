@@ -2,7 +2,6 @@ import { initAppliesSwitch } from './applies-switch'
 import { initCopyButton } from './copybutton'
 import { initHighlight } from './hljs'
 import { initImageCarousel } from './image-carousel'
-import './markdown/applies-to'
 import { openDetailsWithAnchor } from './open-details-with-anchor'
 import { initNav } from './pages-nav'
 import { initSmoothScroll } from './smooth-scroll'
@@ -31,8 +30,10 @@ initializeOtel({
 // Dynamically import web components after telemetry is initialized
 // This ensures telemetry is available when the components execute
 // Parcel will automatically code-split this into a separate chunk
-import('./web-components/SearchOrAskAi/SearchOrAskAi')
+import('./web-components/NavigationSearch/NavigationSearchComponent')
+import('./web-components/AskAi/AskAi')
 import('./web-components/VersionDropdown')
+import('./web-components/AppliesToPopover')
 
 const { getOS } = new UAParser()
 const isLazyLoadNavigationEnabled =
@@ -224,3 +225,18 @@ document.body.addEventListener(
         }
     }
 )
+
+// Clean up web component content before htmx saves to history cache.
+document.body.addEventListener('htmx:beforeHistorySave', function () {
+    // connectedCallback() re-renders
+    $$('applies-to-popover, version-dropdown, search-or-ask-ai').forEach(
+        (el) => {
+            el.innerHTML = ''
+        }
+    )
+
+    // EUI portal containers getting orphaned during navigation
+    $$('[data-euiportal="true"]').forEach((el) => {
+        el.remove()
+    })
+})
