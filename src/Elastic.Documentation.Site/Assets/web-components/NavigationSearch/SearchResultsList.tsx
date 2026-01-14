@@ -198,6 +198,7 @@ const SearchResultRow = ({
         if (anchorRef.current) {
             const hxSelectOob = getHxSelectOob(result.url, currentPathname)
             anchorRef.current.setAttribute('hx-select-oob', hxSelectOob)
+            anchorRef.current.setAttribute('hx-swap', 'none')
             htmx.process(anchorRef.current)
         }
     }, [result.url, currentPathname])
