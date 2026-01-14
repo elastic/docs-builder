@@ -7,22 +7,24 @@ using Elastic.Documentation.Services.Changelog;
 namespace Documentation.Builder.Arguments;
 
 /// <summary>
-/// Utility class for parsing bundle input format: "bundle-file-path, changelog-file-path, repo"
+/// Utility class for parsing bundle input format: "bundle-file-path|changelog-file-path|repo"
+/// Uses pipe (|) as delimiter since ConsoleAppFramework auto-splits string[] by comma.
 /// Only bundle-file-path is required.
 /// </summary>
 public static class BundleInputParser
 {
 	/// <summary>
 	/// Parses a single input string into a BundleInput object.
-	/// Format: "bundle-file-path, changelog-file-path, repo" (only bundle-file-path is required)
+	/// Format: "bundle-file-path|changelog-file-path|repo" (only bundle-file-path is required)
+	/// Uses pipe (|) as delimiter since ConsoleAppFramework auto-splits string[] by comma.
 	/// </summary>
 	public static BundleInput? Parse(string input)
 	{
 		if (string.IsNullOrWhiteSpace(input))
 			return null;
 
-		// Split by comma to get parts
-		var parts = input.Split(',', StringSplitOptions.TrimEntries);
+		// Split by pipe to get parts (comma is auto-split by ConsoleAppFramework)
+		var parts = input.Split('|', StringSplitOptions.TrimEntries);
 
 		if (parts.Length == 0 || string.IsNullOrWhiteSpace(parts[0]))
 			return null;
@@ -49,7 +51,9 @@ public static class BundleInputParser
 
 	/// <summary>
 	/// Parses multiple input strings into a list of BundleInput objects.
-	/// Each input is in format: "bundle-file-path, changelog-file-path, repo" (only bundle-file-path is required)
+	/// Each input is in format: "bundle-file-path|changelog-file-path|repo" (only bundle-file-path is required)
+	/// Uses pipe (|) as delimiter since ConsoleAppFramework auto-splits string[] by comma.
+	/// Multiple bundles can be specified by comma-separating them in a single --input option.
 	/// </summary>
 	public static List<BundleInput> ParseAll(string[]? inputs)
 	{
