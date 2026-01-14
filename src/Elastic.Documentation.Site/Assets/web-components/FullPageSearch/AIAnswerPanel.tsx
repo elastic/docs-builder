@@ -1,3 +1,5 @@
+import { MarkdownContent } from '../shared/MarkdownContent'
+import type { SearchResultItem } from './useFullPageSearchQuery'
 import {
     EuiButtonIcon,
     EuiFlexGroup,
@@ -11,8 +13,6 @@ import {
 } from '@elastic/eui'
 import { css } from '@emotion/react'
 import { useState, useEffect, useRef, useCallback } from 'react'
-import type { SearchResultItem } from './useFullPageSearchQuery'
-import { MarkdownContent } from '../shared/MarkdownContent'
 
 interface AIAnswerPanelProps {
     query: string
@@ -70,14 +70,26 @@ const StatusBadge = ({
                 font-weight: ${isReady ? '600' : '400'};
 
                 @keyframes pulse {
-                    0%, 100% { background: rgba(255, 255, 255, 0.1); }
-                    50% { background: rgba(255, 255, 255, 0.4); }
+                    0%,
+                    100% {
+                        background: rgba(255, 255, 255, 0.1);
+                    }
+                    50% {
+                        background: rgba(255, 255, 255, 0.4);
+                    }
                 }
 
                 @keyframes wiggle {
-                    0%, 100% { transform: rotate(0deg); }
-                    25% { transform: rotate(-3deg) scale(1.1); }
-                    75% { transform: rotate(3deg) scale(1.1); }
+                    0%,
+                    100% {
+                        transform: rotate(0deg);
+                    }
+                    25% {
+                        transform: rotate(-3deg) scale(1.1);
+                    }
+                    75% {
+                        transform: rotate(3deg) scale(1.1);
+                    }
                 }
             `}
         >
@@ -113,136 +125,155 @@ export const AIAnswerPanel = ({
     const pendingQueryRef = useRef<string | null>(null)
 
     // Streaming function - only called when we have results and want to stream
-    const doStream = useCallback(async (currentQuery: string, currentResults: SearchResultItem[]) => {
-        if (!currentQuery || currentResults.length === 0) return
+    const doStream = useCallback(
+        async (currentQuery: string, currentResults: SearchResultItem[]) => {
+            if (!currentQuery || currentResults.length === 0) return
 
-        // Already answered this query
-        if (answeredQueryRef.current === currentQuery) {
-            return
-        }
-
-        // Already streaming this query
-        if (streamingQueryRef.current === currentQuery) {
-            return
-        }
-
-        streamingQueryRef.current = currentQuery
-
-        setContent('')
-        setStreaming(true)
-        setShowSources(false)
-        setError(null)
-        setUnavailable(false)
-
-        const controller = new AbortController()
-        abortControllerRef.current = controller
-
-        try {
-            const contextDocs = currentResults.slice(0, 5).map((r) => ({
-                title: r.title,
-                url: r.url,
-                content: r.aiRagOptimizedSummary || r.description,
-            }))
-
-            const contextText = contextDocs
-                .map((d) => `Title: ${d.title}\nURL: ${d.url}\nContent: ${d.content}`)
-                .join('\n\n---\n\n')
-
-            const messageWithContext = `Based on the following documentation context, answer this question: "${currentQuery}"\n\nContext:\n${contextText}`
-
-            const response = await fetch('/docs/_api/v1/ask-ai/stream', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    message: messageWithContext,
-                    conversationId: null,
-                }),
-                signal: controller.signal,
-            })
-
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+            // Already answered this query
+            if (answeredQueryRef.current === currentQuery) {
+                return
             }
 
-            const reader = response.body?.getReader()
-            if (!reader) {
-                throw new Error('No response body')
+            // Already streaming this query
+            if (streamingQueryRef.current === currentQuery) {
+                return
             }
 
-            const decoder = new TextDecoder()
-            let buffer = ''
+            streamingQueryRef.current = currentQuery
 
-            while (true) {
-                const { done, value } = await reader.read()
-                if (done) break
+            setContent('')
+            setStreaming(true)
+            setShowSources(false)
+            setError(null)
+            setUnavailable(false)
 
-                buffer += decoder.decode(value, { stream: true })
+            const controller = new AbortController()
+            abortControllerRef.current = controller
 
-                const lines = buffer.split('\n')
-                buffer = lines.pop() || ''
+            try {
+                const contextDocs = currentResults.slice(0, 5).map((r) => ({
+                    title: r.title,
+                    url: r.url,
+                    content: r.aiRagOptimizedSummary || r.description,
+                }))
 
-                for (const line of lines) {
-                    if (line.startsWith('data:')) {
-                        const data = line.slice(5).trim()
-                        if (data === '[DONE]') {
-                            answeredQueryRef.current = currentQuery
-                            streamingQueryRef.current = null
-                            if (mountedRef.current) {
-                                setStreaming(false)
-                                setShowSources(true)
-                                setJustCompleted(true)
-                            }
-                            return
-                        }
+                const contextText = contextDocs
+                    .map(
+                        (d) =>
+                            `Title: ${d.title}\nURL: ${d.url}\nContent: ${d.content}`
+                    )
+                    .join('\n\n---\n\n')
 
-                        try {
-                            const parsed = JSON.parse(data)
-                            if (parsed.content && mountedRef.current) {
-                                setContent((prev) => prev + parsed.content)
-                            } else if (parsed.error) {
+                const messageWithContext = `Based on the following documentation context, answer this question: "${currentQuery}"\n\nContext:\n${contextText}`
+
+                const response = await fetch('/docs/_api/v1/ask-ai/stream', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: messageWithContext,
+                        conversationId: null,
+                    }),
+                    signal: controller.signal,
+                })
+
+                if (!response.ok) {
+                    throw new Error(
+                        `HTTP ${response.status}: ${response.statusText}`
+                    )
+                }
+
+                const reader = response.body?.getReader()
+                if (!reader) {
+                    throw new Error('No response body')
+                }
+
+                const decoder = new TextDecoder()
+                let buffer = ''
+
+                while (true) {
+                    const { done, value } = await reader.read()
+                    if (done) break
+
+                    buffer += decoder.decode(value, { stream: true })
+
+                    const lines = buffer.split('\n')
+                    buffer = lines.pop() || ''
+
+                    for (const line of lines) {
+                        if (line.startsWith('data:')) {
+                            const data = line.slice(5).trim()
+                            if (data === '[DONE]') {
+                                answeredQueryRef.current = currentQuery
                                 streamingQueryRef.current = null
                                 if (mountedRef.current) {
-                                    setError(parsed.error)
                                     setStreaming(false)
+                                    setShowSources(true)
+                                    setJustCompleted(true)
                                 }
                                 return
                             }
-                        } catch {
-                            if (data && data !== '[DONE]' && mountedRef.current) {
-                                setContent((prev) => prev + data)
+
+                            try {
+                                const parsed = JSON.parse(data)
+                                if (parsed.content && mountedRef.current) {
+                                    setContent((prev) => prev + parsed.content)
+                                } else if (parsed.error) {
+                                    streamingQueryRef.current = null
+                                    if (mountedRef.current) {
+                                        setError(parsed.error)
+                                        setStreaming(false)
+                                    }
+                                    return
+                                }
+                            } catch {
+                                if (
+                                    data &&
+                                    data !== '[DONE]' &&
+                                    mountedRef.current
+                                ) {
+                                    setContent((prev) => prev + data)
+                                }
                             }
                         }
                     }
                 }
-            }
 
-            answeredQueryRef.current = currentQuery
-            streamingQueryRef.current = null
-            if (mountedRef.current) {
-                setStreaming(false)
-                setShowSources(true)
-                setJustCompleted(true)
-            }
-        } catch (err) {
-            streamingQueryRef.current = null
-            if (!mountedRef.current) {
-                // Component unmounted (likely StrictMode), don't update state
-                return
-            }
-            setStreaming(false)
-            if (err instanceof Error && err.name === 'AbortError') {
-                // Only show unavailable if this was the current pending query and we're still mounted
-                if (pendingQueryRef.current === currentQuery && mountedRef.current) {
-                    setUnavailable(true)
+                answeredQueryRef.current = currentQuery
+                streamingQueryRef.current = null
+                if (mountedRef.current) {
+                    setStreaming(false)
+                    setShowSources(true)
+                    setJustCompleted(true)
                 }
-                return
+            } catch (err) {
+                streamingQueryRef.current = null
+                if (!mountedRef.current) {
+                    // Component unmounted (likely StrictMode), don't update state
+                    return
+                }
+                setStreaming(false)
+                if (err instanceof Error && err.name === 'AbortError') {
+                    // Only show unavailable if this was the current pending query and we're still mounted
+                    if (
+                        pendingQueryRef.current === currentQuery &&
+                        mountedRef.current
+                    ) {
+                        setUnavailable(true)
+                    }
+                    return
+                }
+                setError(
+                    err instanceof Error
+                        ? err.message
+                        : 'Failed to get AI answer'
+                )
+                setUnavailable(true)
             }
-            setError(err instanceof Error ? err.message : 'Failed to get AI answer')
-            setUnavailable(true)
-        }
-    }, [])
+        },
+        []
+    )
 
     // Keep resultsRef in sync (no side effects, just sync the ref)
     useEffect(() => {
@@ -264,7 +295,10 @@ export const AIAnswerPanel = ({
         pendingQueryRef.current = query
 
         // If we already answered or are streaming this query, don't start again
-        if (answeredQueryRef.current === query || streamingQueryRef.current === query) {
+        if (
+            answeredQueryRef.current === query ||
+            streamingQueryRef.current === query
+        ) {
             return
         }
 
@@ -297,7 +331,7 @@ export const AIAnswerPanel = ({
         const pauseAnimations = (el: HTMLDivElement | null) => {
             if (el) {
                 const animations = el.getAnimations()
-                animations.forEach(anim => {
+                animations.forEach((anim) => {
                     if (streaming) {
                         anim.play()
                     } else {
@@ -380,13 +414,13 @@ export const AIAnswerPanel = ({
                 css={css`
                     margin-bottom: ${euiTheme.size.m};
                     background: ${euiTheme.colors.emptyShade};
-                    border: 1px solid #9B59B620;
+                    border: 1px solid #9b59b620;
                     cursor: pointer;
                     transition: all 0.2s ease;
                     overflow: hidden;
 
                     &:hover {
-                        border-color: #9B59B640;
+                        border-color: #9b59b640;
                         box-shadow: 0 2px 8px rgba(155, 89, 182, 0.15);
                     }
                 `}
@@ -400,13 +434,24 @@ export const AIAnswerPanel = ({
                     ref={collapsedHeaderRef}
                     css={css`
                         padding: ${euiTheme.size.s} ${euiTheme.size.m};
-                        background: linear-gradient(135deg, #9B59B6 0%, #0077CC 25%, #9B59B6 50%, #0077CC 75%, #9B59B6 100%);
+                        background: linear-gradient(
+                            135deg,
+                            #9b59b6 0%,
+                            #0077cc 25%,
+                            #9b59b6 50%,
+                            #0077cc 75%,
+                            #9b59b6 100%
+                        );
                         background-size: 200% 200%;
                         animation: diagonalFlow 3s linear infinite;
 
                         @keyframes diagonalFlow {
-                            0% { background-position: 0% 0%; }
-                            100% { background-position: 100% 100%; }
+                            0% {
+                                background-position: 0% 0%;
+                            }
+                            100% {
+                                background-position: 100% 100%;
+                            }
                         }
                     `}
                 >
@@ -415,8 +460,19 @@ export const AIAnswerPanel = ({
                             <EuiIcon type="sparkles" color="ghost" />
                         </EuiFlexItem>
                         <EuiFlexItem grow={false}>
-                            <div css={css`display: flex; align-items: center; gap: 8px;`}>
-                                <EuiText size="s" css={css`color: white;`}>
+                            <div
+                                css={css`
+                                    display: flex;
+                                    align-items: center;
+                                    gap: 8px;
+                                `}
+                            >
+                                <EuiText
+                                    size="s"
+                                    css={css`
+                                        color: white;
+                                    `}
+                                >
                                     <strong>AI Answer</strong>
                                 </EuiText>
                                 <StatusBadge
@@ -455,13 +511,18 @@ export const AIAnswerPanel = ({
                                             display: inline-block;
                                             width: 8px;
                                             height: 16px;
-                                            background: #9B59B6;
+                                            background: #9b59b6;
                                             margin-left: 4px;
                                             animation: blink 0.8s infinite;
 
                                             @keyframes blink {
-                                                0%, 100% { opacity: 1; }
-                                                50% { opacity: 0; }
+                                                0%,
+                                                100% {
+                                                    opacity: 1;
+                                                }
+                                                50% {
+                                                    opacity: 0;
+                                                }
                                             }
                                         `}
                                     />
@@ -473,12 +534,17 @@ export const AIAnswerPanel = ({
                                     display: inline-block;
                                     width: 8px;
                                     height: 16px;
-                                    background: #9B59B6;
+                                    background: #9b59b6;
                                     animation: blink 0.8s infinite;
 
                                     @keyframes blink {
-                                        0%, 100% { opacity: 1; }
-                                        50% { opacity: 0; }
+                                        0%,
+                                        100% {
+                                            opacity: 1;
+                                        }
+                                        50% {
+                                            opacity: 0;
+                                        }
                                     }
                                 `}
                             />
@@ -492,7 +558,11 @@ export const AIAnswerPanel = ({
                             left: 0;
                             right: 0;
                             height: 50px;
-                            background: linear-gradient(rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.9) 40%, rgba(255, 255, 255, 1));
+                            background: linear-gradient(
+                                rgba(255, 255, 255, 0),
+                                rgba(255, 255, 255, 0.9) 40%,
+                                rgba(255, 255, 255, 1)
+                            );
                             pointer-events: none;
                         `}
                     />
@@ -522,7 +592,11 @@ export const AIAnswerPanel = ({
                         >
                             read more
                         </span>
-                        <EuiIcon type="arrowDown" size="s" color={euiTheme.colors.darkestShade} />
+                        <EuiIcon
+                            type="arrowDown"
+                            size="s"
+                            color={euiTheme.colors.darkestShade}
+                        />
                     </div>
                 </div>
             </EuiPanel>
@@ -535,7 +609,7 @@ export const AIAnswerPanel = ({
             css={css`
                 margin-bottom: ${euiTheme.size.m};
                 background: ${euiTheme.colors.emptyShade};
-                border: 1px solid #9B59B630;
+                border: 1px solid #9b59b630;
                 border-radius: ${euiTheme.border.radius.medium};
             `}
         >
@@ -547,15 +621,27 @@ export const AIAnswerPanel = ({
                     top: 0;
                     z-index: 10;
                     padding: ${euiTheme.size.m};
-                    background: linear-gradient(135deg, #9B59B6 0%, #0077CC 25%, #9B59B6 50%, #0077CC 75%, #9B59B6 100%);
+                    background: linear-gradient(
+                        135deg,
+                        #9b59b6 0%,
+                        #0077cc 25%,
+                        #9b59b6 50%,
+                        #0077cc 75%,
+                        #9b59b6 100%
+                    );
                     background-size: 200% 200%;
                     animation: diagonalFlow 3s linear infinite;
-                    border-radius: ${euiTheme.border.radius.medium} ${euiTheme.border.radius.medium} 0 0;
+                    border-radius: ${euiTheme.border.radius.medium}
+                        ${euiTheme.border.radius.medium} 0 0;
                     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 
                     @keyframes diagonalFlow {
-                        0% { background-position: 0% 0%; }
-                        100% { background-position: 100% 100%; }
+                        0% {
+                            background-position: 0% 0%;
+                        }
+                        100% {
+                            background-position: 100% 100%;
+                        }
                     }
                 `}
             >
@@ -566,8 +652,19 @@ export const AIAnswerPanel = ({
                                 <EuiIcon type="sparkles" color="ghost" />
                             </EuiFlexItem>
                             <EuiFlexItem grow={false}>
-                                <div css={css`display: flex; align-items: center; gap: 8px;`}>
-                                    <EuiText size="s" css={css`color: white;`}>
+                                <div
+                                    css={css`
+                                        display: flex;
+                                        align-items: center;
+                                        gap: 8px;
+                                    `}
+                                >
+                                    <EuiText
+                                        size="s"
+                                        css={css`
+                                            color: white;
+                                        `}
+                                    >
                                         <strong>AI Answer</strong>
                                     </EuiText>
                                     <StatusBadge
@@ -590,7 +687,9 @@ export const AIAnswerPanel = ({
                                             aria-label="Stop"
                                             onClick={handleStop}
                                             size="s"
-                                            css={css`color: white !important;`}
+                                            css={css`
+                                                color: white !important;
+                                            `}
                                         />
                                     </EuiToolTip>
                                 </EuiFlexItem>
@@ -602,7 +701,9 @@ export const AIAnswerPanel = ({
                                             aria-label="Regenerate"
                                             onClick={handleRegenerate}
                                             size="s"
-                                            css={css`color: white !important;`}
+                                            css={css`
+                                                color: white !important;
+                                            `}
                                         />
                                     </EuiToolTip>
                                 </EuiFlexItem>
@@ -615,7 +716,9 @@ export const AIAnswerPanel = ({
                                             aria-label="Collapse"
                                             onClick={() => setExpanded(false)}
                                             size="s"
-                                            css={css`color: white !important;`}
+                                            css={css`
+                                                color: white !important;
+                                            `}
                                         />
                                     </EuiToolTip>
                                 </EuiFlexItem>
@@ -649,13 +752,18 @@ export const AIAnswerPanel = ({
                                     display: inline-block;
                                     width: 8px;
                                     height: 16px;
-                                    background: #9B59B6;
+                                    background: #9b59b6;
                                     margin-left: 4px;
                                     animation: blink 0.8s infinite;
 
                                     @keyframes blink {
-                                        0%, 100% { opacity: 1; }
-                                        50% { opacity: 0; }
+                                        0%,
+                                        100% {
+                                            opacity: 1;
+                                        }
+                                        50% {
+                                            opacity: 0;
+                                        }
                                     }
                                 `}
                             />
@@ -671,7 +779,12 @@ export const AIAnswerPanel = ({
                             border-top: 1px solid rgba(0, 119, 204, 0.2);
                         `}
                     >
-                        <EuiText size="xs" css={css`color: #0077CC;`}>
+                        <EuiText
+                            size="xs"
+                            css={css`
+                                color: #0077cc;
+                            `}
+                        >
                             Sources
                         </EuiText>
                         <EuiFlexGroup
@@ -689,11 +802,17 @@ export const AIAnswerPanel = ({
                                             font-size: 12px;
                                             background: rgba(0, 119, 204, 0.1);
                                             padding: 4px 8px;
-                                            border-radius: ${euiTheme.border.radius.medium};
-                                            color: #0077CC !important;
+                                            border-radius: ${euiTheme.border
+                                                .radius.medium};
+                                            color: #0077cc !important;
 
                                             &:hover {
-                                                background: rgba(0, 119, 204, 0.2);
+                                                background: rgba(
+                                                    0,
+                                                    119,
+                                                    204,
+                                                    0.2
+                                                );
                                             }
                                         `}
                                     >

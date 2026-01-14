@@ -1,3 +1,7 @@
+import { AIAnswerPanel } from './AIAnswerPanel'
+import { ResultCard } from './ResultCard'
+import type { FullPageSearchFilters, SortBy } from './fullPageSearch.store'
+import type { SearchResultItem } from './useFullPageSearchQuery'
 import {
     EuiBadge,
     EuiButtonIcon,
@@ -12,10 +16,6 @@ import {
     useEuiTheme,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
-import { ResultCard } from './ResultCard'
-import { AIAnswerPanel } from './AIAnswerPanel'
-import type { SearchResultItem } from './useFullPageSearchQuery'
-import type { FullPageSearchFilters, SortBy } from './fullPageSearch.store'
 
 const ResultSkeleton = () => {
     const { euiTheme } = useEuiTheme()
@@ -69,7 +69,7 @@ const ActiveFilters = ({
 
     const allFilters: { key: keyof FullPageSearchFilters; value: string }[] = []
     Object.entries(filters).forEach(([key, values]) => {
-        (values as string[]).forEach((value: string) => {
+        ;(values as string[]).forEach((value: string) => {
             allFilters.push({
                 key: key as keyof FullPageSearchFilters,
                 value,
@@ -234,8 +234,10 @@ export const ResultsList = ({
                                     css={css`
                                         width: 16px;
                                         height: 16px;
-                                        border: 2px solid ${euiTheme.colors.lightShade};
-                                        border-top-color: ${euiTheme.colors.primary};
+                                        border: 2px solid
+                                            ${euiTheme.colors.lightShade};
+                                        border-top-color: ${euiTheme.colors
+                                            .primary};
                                         border-radius: 50%;
                                         animation: spin 0.8s linear infinite;
                                         @keyframes spin {
@@ -249,7 +251,8 @@ export const ResultsList = ({
                             </span>
                         ) : (
                             <>
-                                <strong>{totalResults.toLocaleString()}</strong> results
+                                <strong>{totalResults.toLocaleString()}</strong>{' '}
+                                results
                             </>
                         )}
                     </EuiText>

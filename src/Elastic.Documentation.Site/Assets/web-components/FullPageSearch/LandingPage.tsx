@@ -195,7 +195,13 @@ const RotatingQueryCard = ({
                 }
             `}
         >
-            <EuiFlexGroup alignItems="center" gutterSize="m" css={css`height: 100%;`}>
+            <EuiFlexGroup
+                alignItems="center"
+                gutterSize="m"
+                css={css`
+                    height: 100%;
+                `}
+            >
                 <EuiFlexItem grow={false}>
                     <div
                         css={css`
@@ -213,55 +219,75 @@ const RotatingQueryCard = ({
                 </EuiFlexItem>
                 <EuiFlexItem>
                     <EuiText size="m">
-                        <span>{parts[0]}<span
-                            css={css`
-                                display: inline-grid;
-                                vertical-align: baseline;
-                                text-align: center;
-                                background: ${euiTheme.colors.lightestShade};
-                                border-radius: ${euiTheme.border.radius.small};
-                                padding: 0 ${euiTheme.size.xs};
-                                perspective: 200px;
-                                overflow: hidden;
-                            `}
-                        >{variants.map((variant, i) => {
-                            const isCurrent = i === index
-                            const isPrev = i === prevIndex
+                        <span>
+                            {parts[0]}
+                            <span
+                                css={css`
+                                    display: inline-grid;
+                                    vertical-align: baseline;
+                                    text-align: center;
+                                    background: ${euiTheme.colors
+                                        .lightestShade};
+                                    border-radius: ${euiTheme.border.radius
+                                        .small};
+                                    padding: 0 ${euiTheme.size.xs};
+                                    perspective: 200px;
+                                    overflow: hidden;
+                                `}
+                            >
+                                {variants.map((variant, i) => {
+                                    const isCurrent = i === index
+                                    const isPrev = i === prevIndex
 
-                            // Slot machine style: old text rolls up and out, new text rolls up from below
-                            let transform = 'translateY(100%) rotateX(-90deg)'
-                            let opacity = 0
+                                    // Slot machine style: old text rolls up and out, new text rolls up from below
+                                    let transform =
+                                        'translateY(100%) rotateX(-90deg)'
+                                    let opacity = 0
 
-                            if (isCurrent) {
-                                // Current item is visible and in place
-                                transform = 'translateY(0) rotateX(0deg)'
-                                opacity = 1
-                            } else if (isPrev && isAnimating) {
-                                // Previous item rolls up and fades out
-                                transform = 'translateY(-100%) rotateX(90deg)'
-                                opacity = 0
-                            }
+                                    if (isCurrent) {
+                                        // Current item is visible and in place
+                                        transform =
+                                            'translateY(0) rotateX(0deg)'
+                                        opacity = 1
+                                    } else if (isPrev && isAnimating) {
+                                        // Previous item rolls up and fades out
+                                        transform =
+                                            'translateY(-100%) rotateX(90deg)'
+                                        opacity = 0
+                                    }
 
-                            return (
-                                <span
-                                    key={variant}
-                                    css={css`
-                                        grid-area: 1 / 1;
-                                        font-weight: ${euiTheme.font.weight.semiBold};
-                                        color: ${euiTheme.colors.primary};
-                                        transform-style: preserve-3d;
-                                        backface-visibility: hidden;
-                                        transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+                                    return (
+                                        <span
+                                            key={variant}
+                                            css={css`
+                                                grid-area: 1 / 1;
+                                                font-weight: ${euiTheme.font
+                                                    .weight.semiBold};
+                                                color: ${euiTheme.colors
+                                                    .primary};
+                                                transform-style: preserve-3d;
+                                                backface-visibility: hidden;
+                                                transition:
+                                                    transform 0.5s
+                                                        cubic-bezier(
+                                                            0.34,
+                                                            1.56,
+                                                            0.64,
+                                                            1
+                                                        ),
                                                     opacity 0.3s ease-out;
-                                        transform: ${transform};
-                                        opacity: ${opacity};
-                                        transform-origin: center bottom;
-                                    `}
-                                >
-                                    {variant}
-                                </span>
-                            )
-                        })}</span>{parts[1]}</span>
+                                                transform: ${transform};
+                                                opacity: ${opacity};
+                                                transform-origin: center bottom;
+                                            `}
+                                        >
+                                            {variant}
+                                        </span>
+                                    )
+                                })}
+                            </span>
+                            {parts[1]}
+                        </span>
                     </EuiText>
                     <EuiFlexGroup
                         gutterSize="xs"
@@ -303,7 +329,14 @@ interface LandingPageProps {
     unavailable?: boolean
 }
 
-export const LandingPage = ({ query, isAnimatingOut, onQueryChange, onSearch, disabled = false, unavailable = false }: LandingPageProps) => {
+export const LandingPage = ({
+    query,
+    isAnimatingOut,
+    onQueryChange,
+    onSearch,
+    disabled = false,
+    unavailable = false,
+}: LandingPageProps) => {
     const { euiTheme } = useEuiTheme()
     const searchInputRef = useRef<HTMLDivElement>(null)
 
@@ -322,13 +355,13 @@ export const LandingPage = ({ query, isAnimatingOut, onQueryChange, onSearch, di
                 padding: ${euiTheme.size.xxl} ${euiTheme.size.l};
             `}
         >
-            <EuiFlexGroup
-                direction="column"
-                alignItems="center"
-                gutterSize="l"
-            >
+            <EuiFlexGroup direction="column" alignItems="center" gutterSize="l">
                 <EuiFlexItem>
-                    <EuiFlexGroup alignItems="center" justifyContent="center" gutterSize="m">
+                    <EuiFlexGroup
+                        alignItems="center"
+                        justifyContent="center"
+                        gutterSize="m"
+                    >
                         <EuiFlexItem grow={false}>
                             <div
                                 css={css`
@@ -339,13 +372,18 @@ export const LandingPage = ({ query, isAnimatingOut, onQueryChange, onSearch, di
                                         ${euiTheme.colors.primary} 0%,
                                         ${euiTheme.colors.accent} 100%
                                     );
-                                    border-radius: ${euiTheme.border.radius.medium};
+                                    border-radius: ${euiTheme.border.radius
+                                        .medium};
                                     display: flex;
                                     align-items: center;
                                     justify-content: center;
                                 `}
                             >
-                                <EuiIcon type="documentation" color="ghost" size="xl" />
+                                <EuiIcon
+                                    type="documentation"
+                                    color="ghost"
+                                    size="xl"
+                                />
                             </div>
                         </EuiFlexItem>
                         <EuiFlexItem grow={false}>
@@ -375,19 +413,30 @@ export const LandingPage = ({ query, isAnimatingOut, onQueryChange, onSearch, di
                     <div
                         ref={searchInputRef}
                         css={css`
-                            transform: ${isAnimatingOut ? 'translateY(-40px) scale(0.98)' : 'translateY(0) scale(1)'};
+                            transform: ${isAnimatingOut
+                                ? 'translateY(-40px) scale(0.98)'
+                                : 'translateY(0) scale(1)'};
                             opacity: ${isAnimatingOut ? 0 : 1};
-                            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
-                                        opacity 0.2s ease-out;
+                            transition:
+                                transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                                opacity 0.2s ease-out;
                         `}
                     >
                         <EuiFlexGroup gutterSize="m">
                             <EuiFlexItem>
                                 <EuiFieldSearch
                                     autoFocus={!disabled && !unavailable}
-                                    placeholder={unavailable ? "Search unavailable" : disabled ? "Checking search availability..." : "Search documentation or ask a question..."}
+                                    placeholder={
+                                        unavailable
+                                            ? 'Search unavailable'
+                                            : disabled
+                                              ? 'Checking search availability...'
+                                              : 'Search documentation or ask a question...'
+                                    }
                                     value={query}
-                                    onChange={(e) => onQueryChange(e.target.value)}
+                                    onChange={(e) =>
+                                        onQueryChange(e.target.value)
+                                    }
                                     onKeyDown={handleKeyDown}
                                     fullWidth
                                     isClearable
@@ -405,7 +454,12 @@ export const LandingPage = ({ query, isAnimatingOut, onQueryChange, onSearch, di
                                 <EuiButton
                                     fill
                                     iconType="search"
-                                    onClick={() => query.trim() && !disabled && !unavailable && onSearch(query)}
+                                    onClick={() =>
+                                        query.trim() &&
+                                        !disabled &&
+                                        !unavailable &&
+                                        onSearch(query)
+                                    }
                                     disabled={disabled || unavailable}
                                     css={css`
                                         height: 100%;
@@ -447,8 +501,10 @@ export const LandingPage = ({ query, isAnimatingOut, onQueryChange, onSearch, di
                                 <WarningIcon size={20} />
                             </span>
                             <EuiText size="s">
-                                <strong>Search service is currently unavailable.</strong>
-                                {' '}Please try again later.
+                                <strong>
+                                    Search service is currently unavailable.
+                                </strong>{' '}
+                                Please try again later.
                             </EuiText>
                         </div>
                     </EuiFlexItem>
@@ -456,98 +512,149 @@ export const LandingPage = ({ query, isAnimatingOut, onQueryChange, onSearch, di
             </EuiFlexGroup>
 
             {!unavailable && (
-            <>
-            <div
-                css={css`
-                    display: flex;
-                    align-items: center;
-                    gap: ${euiTheme.size.m};
-                    margin-top: ${euiTheme.size.xxl};
-                `}
-            >
-                <div css={css`flex: 1; height: 1px; background: ${euiTheme.border.color};`} />
-                <EuiText size="s" color="subdued">OR</EuiText>
-                <div css={css`flex: 1; height: 1px; background: ${euiTheme.border.color};`} />
-            </div>
+                <>
+                    <div
+                        css={css`
+                            display: flex;
+                            align-items: center;
+                            gap: ${euiTheme.size.m};
+                            margin-top: ${euiTheme.size.xxl};
+                        `}
+                    >
+                        <div
+                            css={css`
+                                flex: 1;
+                                height: 1px;
+                                background: ${euiTheme.border.color};
+                            `}
+                        />
+                        <EuiText size="s" color="subdued">
+                            OR
+                        </EuiText>
+                        <div
+                            css={css`
+                                flex: 1;
+                                height: 1px;
+                                background: ${euiTheme.border.color};
+                            `}
+                        />
+                    </div>
 
-            <EuiTitle size="s" css={css`margin-top: ${euiTheme.size.l}; text-align: center;`}>
-                <h2 css={css`color: ${euiTheme.colors.subduedText};`}>Try a question now!</h2>
-            </EuiTitle>
-
-            <div
-                css={css`
-                    display: grid;
-                    grid-template-columns: 1fr;
-                    gap: ${euiTheme.size.m};
-                    margin-top: ${euiTheme.size.l};
-                    opacity: ${disabled ? 0.5 : 1};
-                    pointer-events: ${disabled ? 'none' : 'auto'};
-                    transition: opacity 0.2s ease;
-
-                    @media (min-width: 768px) {
-                        grid-template-columns: repeat(2, 1fr);
-                    }
-                `}
-            >
-                {ROTATING_QUERIES.map((query, idx) => (
-                    <RotatingQueryCard
-                        key={idx}
-                        template={query.template}
-                        variants={query.variants}
-                        icon={query.icon}
-                        onSelect={onSearch}
-                    />
-                ))}
-            </div>
-
-            <div
-                css={css`
-                    display: flex;
-                    align-items: center;
-                    gap: ${euiTheme.size.m};
-                    margin-top: ${euiTheme.size.xxl};
-                `}
-            >
-                <div css={css`flex: 1; height: 1px; background: ${euiTheme.border.color};`} />
-                <EuiText size="s" color="subdued">OR</EuiText>
-                <div css={css`flex: 1; height: 1px; background: ${euiTheme.border.color};`} />
-            </div>
-
-            <EuiFlexGroup
-                direction="column"
-                alignItems="center"
-                gutterSize="m"
-                css={css`
-                    margin-top: ${euiTheme.size.l};
-                    opacity: ${disabled ? 0.5 : 1};
-                    pointer-events: ${disabled ? 'none' : 'auto'};
-                    transition: opacity 0.2s ease;
-                `}
-            >
-                <EuiFlexItem>
-                    <EuiTitle size="s">
-                        <h2 css={css`color: ${euiTheme.colors.subduedText};`}>Try a popular search term</h2>
+                    <EuiTitle
+                        size="s"
+                        css={css`
+                            margin-top: ${euiTheme.size.l};
+                            text-align: center;
+                        `}
+                    >
+                        <h2
+                            css={css`
+                                color: ${euiTheme.colors.subduedText};
+                            `}
+                        >
+                            Try a question now!
+                        </h2>
                     </EuiTitle>
-                </EuiFlexItem>
-                <EuiFlexItem>
-                    <EuiFlexGroup gutterSize="s" wrap justifyContent="center">
-                        {POPULAR_SEARCHES.map((term) => (
-                            <EuiFlexItem key={term} grow={false}>
-                                <EuiButton
-                                    onClick={() => onSearch(term)}
-                                    color="text"
+
+                    <div
+                        css={css`
+                            display: grid;
+                            grid-template-columns: 1fr;
+                            gap: ${euiTheme.size.m};
+                            margin-top: ${euiTheme.size.l};
+                            opacity: ${disabled ? 0.5 : 1};
+                            pointer-events: ${disabled ? 'none' : 'auto'};
+                            transition: opacity 0.2s ease;
+
+                            @media (min-width: 768px) {
+                                grid-template-columns: repeat(2, 1fr);
+                            }
+                        `}
+                    >
+                        {ROTATING_QUERIES.map((query, idx) => (
+                            <RotatingQueryCard
+                                key={idx}
+                                template={query.template}
+                                variants={query.variants}
+                                icon={query.icon}
+                                onSelect={onSearch}
+                            />
+                        ))}
+                    </div>
+
+                    <div
+                        css={css`
+                            display: flex;
+                            align-items: center;
+                            gap: ${euiTheme.size.m};
+                            margin-top: ${euiTheme.size.xxl};
+                        `}
+                    >
+                        <div
+                            css={css`
+                                flex: 1;
+                                height: 1px;
+                                background: ${euiTheme.border.color};
+                            `}
+                        />
+                        <EuiText size="s" color="subdued">
+                            OR
+                        </EuiText>
+                        <div
+                            css={css`
+                                flex: 1;
+                                height: 1px;
+                                background: ${euiTheme.border.color};
+                            `}
+                        />
+                    </div>
+
+                    <EuiFlexGroup
+                        direction="column"
+                        alignItems="center"
+                        gutterSize="m"
+                        css={css`
+                            margin-top: ${euiTheme.size.l};
+                            opacity: ${disabled ? 0.5 : 1};
+                            pointer-events: ${disabled ? 'none' : 'auto'};
+                            transition: opacity 0.2s ease;
+                        `}
+                    >
+                        <EuiFlexItem>
+                            <EuiTitle size="s">
+                                <h2
                                     css={css`
-                                        border: 1px solid ${euiTheme.border.color};
+                                        color: ${euiTheme.colors.subduedText};
                                     `}
                                 >
-                                    {term}
-                                </EuiButton>
-                            </EuiFlexItem>
-                        ))}
+                                    Try a popular search term
+                                </h2>
+                            </EuiTitle>
+                        </EuiFlexItem>
+                        <EuiFlexItem>
+                            <EuiFlexGroup
+                                gutterSize="s"
+                                wrap
+                                justifyContent="center"
+                            >
+                                {POPULAR_SEARCHES.map((term) => (
+                                    <EuiFlexItem key={term} grow={false}>
+                                        <EuiButton
+                                            onClick={() => onSearch(term)}
+                                            color="text"
+                                            css={css`
+                                                border: 1px solid
+                                                    ${euiTheme.border.color};
+                                            `}
+                                        >
+                                            {term}
+                                        </EuiButton>
+                                    </EuiFlexItem>
+                                ))}
+                            </EuiFlexGroup>
+                        </EuiFlexItem>
                     </EuiFlexGroup>
-                </EuiFlexItem>
-            </EuiFlexGroup>
-            </>
+                </>
             )}
         </div>
     )

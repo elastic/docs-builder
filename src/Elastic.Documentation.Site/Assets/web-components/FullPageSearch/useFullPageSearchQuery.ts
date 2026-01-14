@@ -97,7 +97,8 @@ export const useFullPageSearch = () => {
 
     const debouncedQuery = useDebounce(query.trim(), 300)
 
-    const shouldEnable = hasSearched && !!debouncedQuery && debouncedQuery.length >= 1
+    const shouldEnable =
+        hasSearched && !!debouncedQuery && debouncedQuery.length >= 1
 
     return useQuery<FullSearchResponse, ApiError>({
         queryKey: [

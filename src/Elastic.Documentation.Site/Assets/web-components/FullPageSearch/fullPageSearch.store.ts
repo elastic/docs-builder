@@ -97,8 +97,8 @@ function syncUrlToState(state: FullPageSearchState) {
         params.set('v', VERSION_TO_URL[state.version])
     }
 
-    state.filters.type.forEach(t => params.append('type', t))
-    state.filters.navigationSection.forEach(s => params.append('section', s))
+    state.filters.type.forEach((t) => params.append('type', t))
+    state.filters.navigationSection.forEach((s) => params.append('section', s))
 
     // Preserve demo mode parameters (fail=slow, fail=ai)
     const currentParams = new URLSearchParams(window.location.search)
@@ -197,7 +197,9 @@ export const fullPageSearchStore = create<FullPageSearchState>((set, get) => ({
             })
             // Clear URL params but preserve demo mode parameters
             if (typeof window !== 'undefined') {
-                const currentParams = new URLSearchParams(window.location.search)
+                const currentParams = new URLSearchParams(
+                    window.location.search
+                )
                 const failParam = currentParams.get('fail')
                 const newUrl = failParam
                     ? `${window.location.pathname}?fail=${failParam}`

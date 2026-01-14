@@ -1,15 +1,7 @@
-import {
-    EuiBadge,
-    EuiButtonIcon,
-    EuiEmptyPrompt,
-    useEuiTheme,
-} from '@elastic/eui'
-import { css } from '@emotion/react'
-import { useState, useCallback, useEffect, useRef } from 'react'
-import { LandingPage } from './LandingPage'
-import { SearchHeader } from './SearchHeader'
 import { FilterSidebar } from './FilterSidebar'
+import { LandingPage } from './LandingPage'
 import { ResultsList } from './ResultsList'
+import { SearchHeader } from './SearchHeader'
 import {
     useFullPageSearchQuery,
     useHasSearched,
@@ -22,11 +14,16 @@ import {
     useFullPageSearchActions,
     FullPageSearchFilters,
 } from './fullPageSearch.store'
-import {
-    useFullPageSearch,
-    isSemanticQuery,
-} from './useFullPageSearchQuery'
+import { useFullPageSearch, isSemanticQuery } from './useFullPageSearchQuery'
 import { useSearchAvailability } from './useSearchAvailability'
+import {
+    EuiBadge,
+    EuiButtonIcon,
+    EuiEmptyPrompt,
+    useEuiTheme,
+} from '@elastic/eui'
+import { css } from '@emotion/react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 
 const NoResultsState = ({
     query,
@@ -86,8 +83,8 @@ const ErrorState = ({
                 iconType="search"
                 title={
                     <h2>
-                        <EuiBadge color="danger">Error</EuiBadge>
-                        {' '}searching for &quot;{query}&quot;
+                        <EuiBadge color="danger">Error</EuiBadge> searching for
+                        &quot;{query}&quot;
                     </h2>
                 }
                 body={
@@ -131,7 +128,8 @@ export const FullPageSearch = () => {
     const { isAvailable, isChecking } = useSearchAvailability()
 
     // Animation state for search box transition
-    const [isAnimatingSearchToHeader, setIsAnimatingSearchToHeader] = useState(false)
+    const [isAnimatingSearchToHeader, setIsAnimatingSearchToHeader] =
+        useState(false)
 
     // Track when to force collapse the AI panel (when filters/page/sort change)
     const [forceAICollapsed, setForceAICollapsed] = useState(false)
@@ -171,13 +169,20 @@ export const FullPageSearch = () => {
 
     // Force collapse AI panel when filters, page, sort, or version change
     useEffect(() => {
-        const filtersChanged = JSON.stringify(filters) !== JSON.stringify(prevFiltersRef.current)
+        const filtersChanged =
+            JSON.stringify(filters) !== JSON.stringify(prevFiltersRef.current)
         const versionChanged = version !== prevVersionRef.current
         const pageChanged = page !== prevPageRef.current
         const pageSizeChanged = pageSize !== prevPageSizeRef.current
         const sortByChanged = sortBy !== prevSortByRef.current
 
-        if (filtersChanged || versionChanged || pageChanged || pageSizeChanged || sortByChanged) {
+        if (
+            filtersChanged ||
+            versionChanged ||
+            pageChanged ||
+            pageSizeChanged ||
+            sortByChanged
+        ) {
             setForceAICollapsed(true)
             // Reset after a tick so component can react to the change
             setTimeout(() => setForceAICollapsed(false), 0)
@@ -190,19 +195,22 @@ export const FullPageSearch = () => {
         prevSortByRef.current = sortBy
     }, [filters, version, page, pageSize, sortBy])
 
-    const handleSearch = useCallback((searchQuery: string) => {
-        if (!searchQuery.trim()) return
+    const handleSearch = useCallback(
+        (searchQuery: string) => {
+            if (!searchQuery.trim()) return
 
-        // Start the animation
-        setIsAnimatingSearchToHeader(true)
+            // Start the animation
+            setIsAnimatingSearchToHeader(true)
 
-        // After animation starts, submit the search
-        setTimeout(() => {
-            actions.submitSearch(searchQuery)
-            // Reset animation state after transition completes
-            setTimeout(() => setIsAnimatingSearchToHeader(false), 50)
-        }, 200)
-    }, [actions])
+            // After animation starts, submit the search
+            setTimeout(() => {
+                actions.submitSearch(searchQuery)
+                // Reset animation state after transition completes
+                setTimeout(() => setIsAnimatingSearchToHeader(false), 50)
+            }, 200)
+        },
+        [actions]
+    )
 
     const handleFilterChange = (
         key: keyof FullPageSearchFilters,

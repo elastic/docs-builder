@@ -1,3 +1,5 @@
+import { DocumentIcon, ConsoleIcon } from './FilterSidebar'
+import type { SearchResultItem } from './useFullPageSearchQuery'
 import {
     EuiBadge,
     EuiButtonIcon,
@@ -11,8 +13,6 @@ import {
 } from '@elastic/eui'
 import { css } from '@emotion/react'
 import { useState, ReactNode } from 'react'
-import type { SearchResultItem } from './useFullPageSearchQuery'
-import { DocumentIcon, ConsoleIcon } from './FilterSidebar'
 
 // Inline SVG icons for result types (breadcrumb size)
 const TYPE_ICON_COMPONENTS: Record<string, ReactNode> = {
@@ -92,7 +92,9 @@ const Breadcrumbs = ({ parents, typeIcon }: BreadcrumbsProps) => {
                         align-items: center;
                         gap: 6px;
                         min-width: 0;
-                        flex-shrink: ${idx === displayedParents.length - 1 ? 1 : 0};
+                        flex-shrink: ${idx === displayedParents.length - 1
+                            ? 1
+                            : 0};
                     `}
                 >
                     {idx > 0 && (
@@ -144,7 +146,10 @@ export const ResultCard = ({ result }: ResultCardProps) => {
         // Find if there's a button between target and currentTarget (exclusive of currentTarget)
         let element: HTMLElement | null = target
         while (element && element !== currentTarget) {
-            if (element.tagName === 'BUTTON' || element.getAttribute('role') === 'button') {
+            if (
+                element.tagName === 'BUTTON' ||
+                element.getAttribute('role') === 'button'
+            ) {
                 return
             }
             element = element.parentElement
@@ -217,7 +222,11 @@ export const ResultCard = ({ result }: ResultCardProps) => {
 
             <Breadcrumbs
                 parents={result.parents}
-                typeIcon={TYPE_ICON_COMPONENTS[result.type] ?? <EuiIcon type={typeIcon} size="s" />}
+                typeIcon={
+                    TYPE_ICON_COMPONENTS[result.type] ?? (
+                        <EuiIcon type={typeIcon} size="s" />
+                    )
+                }
             />
 
             <div
@@ -264,10 +273,14 @@ export const ResultCard = ({ result }: ResultCardProps) => {
                             setShowAiSummary(!showAiSummary)
                         }}
                         css={css`
-                            background: linear-gradient(135deg, rgba(155, 89, 182, 0.08) 0%, rgba(0, 119, 204, 0.08) 100%);
+                            background: linear-gradient(
+                                135deg,
+                                rgba(155, 89, 182, 0.08) 0%,
+                                rgba(0, 119, 204, 0.08) 100%
+                            );
                             border: 1px solid rgba(155, 89, 182, 0.15);
                             border-radius: ${euiTheme.border.radius.medium};
-                            color: #7B4B9E;
+                            color: #7b4b9e;
                             cursor: pointer;
                             font-size: 13px;
                             font-weight: ${euiTheme.font.weight.medium};
@@ -279,7 +292,11 @@ export const ResultCard = ({ result }: ResultCardProps) => {
                             transition: all 0.2s ease;
 
                             &:hover {
-                                background: linear-gradient(135deg, #9B59B6 0%, #0077CC 100%);
+                                background: linear-gradient(
+                                    135deg,
+                                    #9b59b6 0%,
+                                    #0077cc 100%
+                                );
                                 border-color: transparent;
                                 color: white;
                             }
@@ -303,14 +320,29 @@ export const ResultCard = ({ result }: ResultCardProps) => {
                             css={css`
                                 margin-bottom: ${euiTheme.size.s};
                                 padding: ${euiTheme.size.m};
-                                background: linear-gradient(135deg, rgba(155, 89, 182, 0.03) 0%, rgba(0, 119, 204, 0.03) 100%);
+                                background: linear-gradient(
+                                    135deg,
+                                    rgba(155, 89, 182, 0.03) 0%,
+                                    rgba(0, 119, 204, 0.03) 100%
+                                );
                                 border-left: 3px solid;
-                                border-image: linear-gradient(135deg, #9B59B6 0%, #0077CC 100%) 1;
-                                border-radius: 0 ${euiTheme.border.radius.small} ${euiTheme.border.radius.small} 0;
+                                border-image: linear-gradient(
+                                        135deg,
+                                        #9b59b6 0%,
+                                        #0077cc 100%
+                                    )
+                                    1;
+                                border-radius: 0 ${euiTheme.border.radius.small}
+                                    ${euiTheme.border.radius.small} 0;
                             `}
                         >
                             <EuiText size="s" color="default">
-                                <p css={css`margin: 0; line-height: 1.6;`}>
+                                <p
+                                    css={css`
+                                        margin: 0;
+                                        line-height: 1.6;
+                                    `}
+                                >
                                     {result.aiRagOptimizedSummary}
                                 </p>
                             </EuiText>

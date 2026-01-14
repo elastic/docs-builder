@@ -245,9 +245,13 @@ export const SearchHeader = ({
                     css={css`
                         flex: 1;
                         position: relative;
-                        transform: ${showSearchInput ? 'translateY(0)' : 'translateY(-10px)'};
+                        transform: ${showSearchInput
+                            ? 'translateY(0)'
+                            : 'translateY(-10px)'};
                         opacity: ${showSearchInput ? 1 : 0};
-                        transition: transform 0.2s ease, opacity 0.2s ease;
+                        transition:
+                            transform 0.2s ease,
+                            opacity 0.2s ease;
                         pointer-events: ${showSearchInput ? 'auto' : 'none'};
                         padding-right: ${euiTheme.size.s};
                     `}

@@ -1,10 +1,10 @@
+import { initCopyButton } from '../../copybutton'
+import { hljs } from '../../hljs'
 import { useEuiTheme } from '@elastic/eui'
 import { css } from '@emotion/react'
 import DOMPurify from 'dompurify'
 import { Marked, RendererObject, Tokens } from 'marked'
 import { useEffect, useMemo, useRef } from 'react'
-import { initCopyButton } from '../../copybutton'
-import { hljs } from '../../hljs'
 
 // Create the marked instance once globally
 const createMarkedInstance = () => {
