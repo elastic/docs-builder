@@ -48,7 +48,7 @@ internal sealed class ContentSourceCommands(
 		serviceInvoker.AddCommand(service, (repository, branchOrTag),
 			static async (s, collector, state, ctx) =>
 			{
-				_ = await s.ShouldBuild(collector, state.repository, state.branchOrTag);
+				_ = await s.ShouldBuild(collector, state.repository, state.branchOrTag, ctx);
 				// ShouldBuild throws an exception on bad args and will return false if it has no matches
 				// We return true to the service invoker to continue
 				return true;
