@@ -24,6 +24,7 @@ can be printed in any kind of ways.
 | `{{version.stack| M.M}}`    |  {{version.stack|M.M}} |
 | `{{version.stack.base | M }}`     | {{version.stack.base | M }} |
 | `{{version.stack | M+1       | M }}` | {{version.stack | M+1 | M }} |
+| `{{version.stack | M-1 }}` | {{version.stack | M-1 }} |
 | `{{version.stack.base | M.M+1 }}` | {{version.stack.base | M.M+1 }} |
 | `{{version.stack | M.M-1 }}` | {{version.stack | M.M-1 }} |
 
