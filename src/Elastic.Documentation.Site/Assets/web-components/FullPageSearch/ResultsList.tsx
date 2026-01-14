@@ -222,7 +222,36 @@ export const ResultsList = ({
             >
                 <EuiFlexItem grow={false}>
                     <EuiText size="s">
-                        <strong>{totalResults.toLocaleString()}</strong> results
+                        {isLoading && totalResults === 0 ? (
+                            <span
+                                css={css`
+                                    display: inline-flex;
+                                    align-items: center;
+                                    gap: ${euiTheme.size.s};
+                                `}
+                            >
+                                <span
+                                    css={css`
+                                        width: 16px;
+                                        height: 16px;
+                                        border: 2px solid ${euiTheme.colors.lightShade};
+                                        border-top-color: ${euiTheme.colors.primary};
+                                        border-radius: 50%;
+                                        animation: spin 0.8s linear infinite;
+                                        @keyframes spin {
+                                            to {
+                                                transform: rotate(360deg);
+                                            }
+                                        }
+                                    `}
+                                />
+                                Searching...
+                            </span>
+                        ) : (
+                            <>
+                                <strong>{totalResults.toLocaleString()}</strong> results
+                            </>
+                        )}
                     </EuiText>
                 </EuiFlexItem>
                 <EuiFlexItem grow={false}>

@@ -1,4 +1,5 @@
 import {
+    EuiBadge,
     EuiButtonIcon,
     EuiEmptyPrompt,
     useEuiTheme,
@@ -25,6 +26,7 @@ import {
     useFullPageSearch,
     isSemanticQuery,
 } from './useFullPageSearchQuery'
+import { useSearchAvailability } from './useSearchAvailability'
 
 const NoResultsState = ({
     query,
@@ -33,8 +35,6 @@ const NoResultsState = ({
     query: string
     onClearFilters: () => void
 }) => {
-    const { euiTheme } = useEuiTheme()
-
     return (
         <div
             css={css`
@@ -66,8 +66,69 @@ const NoResultsState = ({
     )
 }
 
+const ErrorState = ({
+    query,
+    onGoToLanding,
+}: {
+    query: string
+    onGoToLanding: () => void
+}) => {
+    const { euiTheme } = useEuiTheme()
+
+    return (
+        <div
+            css={css`
+                max-width: 600px;
+                margin: 0 auto;
+            `}
+        >
+            <EuiEmptyPrompt
+                iconType="search"
+                title={
+                    <h2>
+                        <EuiBadge color="danger">Error</EuiBadge>
+                        {' '}searching for &quot;{query}&quot;
+                    </h2>
+                }
+                body={
+                    <p>
+                        Something went wrong while processing your search.
+                        Please try again later.
+                    </p>
+                }
+                actions={[
+                    <button
+                        key="back"
+                        onClick={onGoToLanding}
+                        css={css`
+                            background: ${euiTheme.colors.primary};
+                            color: ${euiTheme.colors.ghost};
+                            border: none;
+                            border-radius: ${euiTheme.border.radius.medium};
+                            padding: ${euiTheme.size.s} ${euiTheme.size.l};
+                            font-size: ${euiTheme.size.m};
+                            font-weight: ${euiTheme.font.weight.medium};
+                            cursor: pointer;
+                            transition: background 0.2s ease;
+
+                            &:hover {
+                                background: ${euiTheme.colors.primaryText};
+                            }
+                        `}
+                    >
+                        Back to search
+                    </button>,
+                ]}
+            />
+        </div>
+    )
+}
+
 export const FullPageSearch = () => {
     const { euiTheme } = useEuiTheme()
+
+    // Check search service availability
+    const { isAvailable, isChecking } = useSearchAvailability()
 
     // Animation state for search box transition
     const [isAnimatingSearchToHeader, setIsAnimatingSearchToHeader] = useState(false)
@@ -87,7 +148,7 @@ export const FullPageSearch = () => {
     const actions = useFullPageSearchActions()
 
     // API query
-    const { data, isLoading, isFetching } = useFullPageSearch()
+    const { data, isLoading, isFetching, error } = useFullPageSearch()
 
     const results = data?.results ?? []
     const totalResults = data?.totalResults ?? 0
@@ -187,7 +248,7 @@ export const FullPageSearch = () => {
                 `}
             />
 
-            {hasSearched && (
+            {hasSearched && isAvailable && (
                 <SearchHeader
                     query={query}
                     recentSearches={recentSearches}
@@ -221,7 +282,7 @@ export const FullPageSearch = () => {
                     `}
                 `}
             >
-                {!hasSearched ? (
+                {!hasSearched || (!isAvailable && !isChecking) ? (
                     <>
                         <div />
                         <LandingPage
@@ -229,9 +290,16 @@ export const FullPageSearch = () => {
                             isAnimatingOut={isAnimatingSearchToHeader}
                             onQueryChange={actions.setQuery}
                             onSearch={handleSearch}
+                            disabled={isChecking}
+                            unavailable={!isAvailable && !isChecking}
                         />
                         <div />
                     </>
+                ) : error ? (
+                    <ErrorState
+                        query={query}
+                        onGoToLanding={actions.goToLanding}
+                    />
                 ) : totalResults === 0 && !isLoading ? (
                     <NoResultsState
                         query={query}

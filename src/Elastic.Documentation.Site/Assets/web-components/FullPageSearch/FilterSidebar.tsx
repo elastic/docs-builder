@@ -1,17 +1,15 @@
 import {
-    EuiAccordion,
     EuiBadge,
-    EuiFlexGroup,
-    EuiFlexItem,
     EuiIcon,
     EuiText,
     useEuiTheme,
-    useGeneratedHtmlId,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
-import { ReactNode } from 'react'
+import { ReactNode, useState } from 'react'
 import type { SearchAggregations } from './useFullPageSearchQuery'
 import type { FullPageSearchFilters } from './fullPageSearch.store'
+
+const ITEMS_TO_SHOW = 5
 
 // Inline SVG icons
 const PackageIcon = () => (
@@ -52,6 +50,44 @@ const VERSION_OPTIONS = [
     { id: '7.17', label: '7.17', current: false },
 ]
 
+// Reusable facet header component
+const FacetHeader = ({ icon, title }: { icon: ReactNode; title: string }) => {
+    const { euiTheme } = useEuiTheme()
+
+    return (
+        <div
+            css={css`
+                display: flex;
+                align-items: center;
+                gap: ${euiTheme.size.s};
+                padding: ${euiTheme.size.s} ${euiTheme.size.s};
+                margin-bottom: ${euiTheme.size.xs};
+                background: linear-gradient(
+                    180deg,
+                    ${euiTheme.colors.lightestShade} 0%,
+                    transparent 100%
+                );
+                border-radius: ${euiTheme.border.radius.small};
+                border-top: 1px solid ${euiTheme.colors.lightShade};
+            `}
+        >
+            <span css={css`color: ${euiTheme.colors.darkShade}; display: flex;`}>
+                {icon}
+            </span>
+            <EuiText size="s" css={css`color: ${euiTheme.colors.title};`}>
+                <strong>{title}</strong>
+            </EuiText>
+        </div>
+    )
+}
+
+// Icon for Type facet (grid/category icon)
+const TypeIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M6 2H2v4h4V2ZM1 1h6v6H1V1ZM14 2h-4v4h4V2Zm-5-1h6v6H9V1ZM6 10H2v4h4v-4ZM1 9h6v6H1V9ZM14 10h-4v4h4v-4Zm-5-1h6v6H9V9Z"/>
+    </svg>
+)
+
 // Type icons matching ResultCard
 const TYPE_ICONS: Record<string, ReactNode> = {
     doc: <DocumentIcon />,
@@ -71,36 +107,10 @@ interface VersionFilterProps {
 
 const VersionFilter = ({ selected, onChange }: VersionFilterProps) => {
     const { euiTheme } = useEuiTheme()
-    const accordionId = useGeneratedHtmlId({ prefix: 'version' })
 
     return (
-        <EuiAccordion
-            id={accordionId}
-            buttonContent={
-                <EuiFlexGroup alignItems="center" gutterSize="s">
-                    <EuiFlexItem grow={false} css={css`color: ${euiTheme.colors.subduedText};`}>
-                        <PackageIcon />
-                    </EuiFlexItem>
-                    <EuiFlexItem>
-                        <EuiText size="s">
-                            <strong>Version</strong>
-                        </EuiText>
-                    </EuiFlexItem>
-                </EuiFlexGroup>
-            }
-            forceState="open"
-            arrowDisplay="none"
-            paddingSize="none"
-            css={css`
-                margin-bottom: ${euiTheme.size.l};
-
-                /* Override EuiAccordion's inline block-size: 0px which breaks async content */
-                .euiAccordion__childWrapper {
-                    block-size: auto !important;
-                    height: auto !important;
-                }
-            `}
-        >
+        <div css={css`margin-bottom: ${euiTheme.size.l};`}>
+            <FacetHeader icon={<PackageIcon />} title="Version" />
             <div
                 css={css`
                     display: flex;
@@ -108,7 +118,7 @@ const VersionFilter = ({ selected, onChange }: VersionFilterProps) => {
                     border: 1px solid ${euiTheme.border.color};
                     border-radius: ${euiTheme.border.radius.medium};
                     overflow: hidden;
-                    margin-top: ${euiTheme.size.s};
+                    margin-top: ${euiTheme.size.xs};
                 `}
             >
                 {VERSION_OPTIONS.map((option, idx) => {
@@ -145,7 +155,7 @@ const VersionFilter = ({ selected, onChange }: VersionFilterProps) => {
                     )
                 })}
             </div>
-        </EuiAccordion>
+        </div>
     )
 }
 
@@ -157,46 +167,19 @@ interface TypeFilterProps {
 
 const TypeFilter = ({ items, selected, onChange }: TypeFilterProps) => {
     const { euiTheme } = useEuiTheme()
-    const accordionId = useGeneratedHtmlId({ prefix: 'type' })
+    const [showAll, setShowAll] = useState(false)
 
     const sortedItems = Object.entries(items).sort(([, a], [, b]) => b - a)
+    const hasMore = sortedItems.length > ITEMS_TO_SHOW
+    const displayedItems = showAll ? sortedItems : sortedItems.slice(0, ITEMS_TO_SHOW)
 
     if (sortedItems.length === 0) return null
 
     return (
-        <EuiAccordion
-            id={accordionId}
-            buttonContent={
-                <EuiFlexGroup alignItems="center" gutterSize="s">
-                    <EuiFlexItem grow={false} css={css`color: ${euiTheme.colors.subduedText};`}>
-                        <DocumentIcon />
-                    </EuiFlexItem>
-                    <EuiFlexItem>
-                        <EuiText size="s">
-                            <strong>Type</strong>
-                        </EuiText>
-                    </EuiFlexItem>
-                </EuiFlexGroup>
-            }
-            forceState="open"
-            arrowDisplay="none"
-            paddingSize="none"
-            css={css`
-                margin-bottom: ${euiTheme.size.l};
-
-                /* Override EuiAccordion's inline block-size: 0px which breaks async content */
-                .euiAccordion__childWrapper {
-                    block-size: auto !important;
-                    height: auto !important;
-                }
-            `}
-        >
-            <div
-                css={css`
-                    padding-top: ${euiTheme.size.s};
-                `}
-            >
-                {sortedItems.map(([key, count]) => {
+        <div css={css`margin-bottom: ${euiTheme.size.l};`}>
+            <FacetHeader icon={<TypeIcon />} title="Type" />
+            <div css={css`margin-top: ${euiTheme.size.xs};`}>
+                {displayedItems.map(([key, count]) => {
                     const isSelected = selected.includes(key)
                     return (
                         <button
@@ -243,8 +226,33 @@ const TypeFilter = ({ items, selected, onChange }: TypeFilterProps) => {
                         </button>
                     )
                 })}
+                {hasMore && (
+                    <button
+                        onClick={() => setShowAll(!showAll)}
+                        css={css`
+                            display: flex;
+                            align-items: center;
+                            gap: ${euiTheme.size.xs};
+                            width: 100%;
+                            padding: ${euiTheme.size.xs} ${euiTheme.size.s};
+                            background: none;
+                            border: none;
+                            cursor: pointer;
+                            color: ${euiTheme.colors.primary};
+                            font-size: 13px;
+                            margin-top: ${euiTheme.size.xs};
+
+                            &:hover {
+                                text-decoration: underline;
+                            }
+                        `}
+                    >
+                        <EuiIcon type={showAll ? 'arrowUp' : 'arrowDown'} size="s" />
+                        {showAll ? 'Show less' : `Show ${sortedItems.length - ITEMS_TO_SHOW} more`}
+                    </button>
+                )}
             </div>
-        </EuiAccordion>
+        </div>
     )
 }
 
@@ -264,45 +272,19 @@ const FacetFilter = ({
     onChange,
 }: FacetFilterProps) => {
     const { euiTheme } = useEuiTheme()
-    const accordionId = useGeneratedHtmlId({ prefix: title.toLowerCase() })
+    const [showAll, setShowAll] = useState(false)
 
     const sortedItems = Object.entries(items).sort(([, a], [, b]) => b - a)
+    const hasMore = sortedItems.length > ITEMS_TO_SHOW
+    const displayedItems = showAll ? sortedItems : sortedItems.slice(0, ITEMS_TO_SHOW)
 
     if (sortedItems.length === 0) return null
 
     return (
-        <EuiAccordion
-            id={accordionId}
-            buttonContent={
-                <EuiFlexGroup alignItems="center" gutterSize="s">
-                    <EuiFlexItem grow={false} css={css`color: ${euiTheme.colors.subduedText};`}>
-                        {icon}
-                    </EuiFlexItem>
-                    <EuiFlexItem>
-                        <EuiText size="s">
-                            <strong>{title}</strong>
-                        </EuiText>
-                    </EuiFlexItem>
-                </EuiFlexGroup>
-            }
-            forceState="open"
-            paddingSize="none"
-            css={css`
-                margin-bottom: ${euiTheme.size.l};
-
-                /* Override EuiAccordion's inline block-size: 0px which breaks async content */
-                .euiAccordion__childWrapper {
-                    block-size: auto !important;
-                    height: auto !important;
-                }
-            `}
-        >
-            <div
-                css={css`
-                    padding-top: ${euiTheme.size.s};
-                `}
-            >
-                {sortedItems.map(([key, count]) => {
+        <div css={css`margin-bottom: ${euiTheme.size.l};`}>
+            <FacetHeader icon={icon} title={title} />
+            <div css={css`margin-top: ${euiTheme.size.xs};`}>
+                {displayedItems.map(([key, count]) => {
                     const isSelected = selected.includes(key)
                     return (
                         <button
@@ -347,8 +329,33 @@ const FacetFilter = ({
                         </button>
                     )
                 })}
+                {hasMore && (
+                    <button
+                        onClick={() => setShowAll(!showAll)}
+                        css={css`
+                            display: flex;
+                            align-items: center;
+                            gap: ${euiTheme.size.xs};
+                            width: 100%;
+                            padding: ${euiTheme.size.xs} ${euiTheme.size.s};
+                            background: none;
+                            border: none;
+                            cursor: pointer;
+                            color: ${euiTheme.colors.primary};
+                            font-size: 13px;
+                            margin-top: ${euiTheme.size.xs};
+
+                            &:hover {
+                                text-decoration: underline;
+                            }
+                        `}
+                    >
+                        <EuiIcon type={showAll ? 'arrowUp' : 'arrowDown'} size="s" />
+                        {showAll ? 'Show less' : `Show ${sortedItems.length - ITEMS_TO_SHOW} more`}
+                    </button>
+                )}
             </div>
-        </EuiAccordion>
+        </div>
     )
 }
 

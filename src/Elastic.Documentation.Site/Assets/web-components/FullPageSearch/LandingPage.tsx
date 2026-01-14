@@ -49,6 +49,24 @@ const IngestIcon = () => (
     </svg>
 )
 
+const WarningIcon = ({ size = 24 }: { size?: number }) => (
+    <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width={size}
+        height={size}
+        viewBox="0 0 16 16"
+        fill="currentColor"
+    >
+        <path d="M9 12a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z" />
+        <path fillRule="evenodd" d="M7.5 10V5h1v5h-1Z" clipRule="evenodd" />
+        <path
+            fillRule="evenodd"
+            d="M8 1a1 1 0 0 1 .864.496l7 12A1 1 0 0 1 15 15H1a1 1 0 0 1-.864-1.504l7-12A1 1 0 0 1 8 1ZM1 14h14L8 2 1 14Z"
+            clipRule="evenodd"
+        />
+    </svg>
+)
+
 const SparklesIcon = () => (
     <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -281,14 +299,16 @@ interface LandingPageProps {
     isAnimatingOut: boolean
     onQueryChange: (query: string) => void
     onSearch: (query: string) => void
+    disabled?: boolean
+    unavailable?: boolean
 }
 
-export const LandingPage = ({ query, isAnimatingOut, onQueryChange, onSearch }: LandingPageProps) => {
+export const LandingPage = ({ query, isAnimatingOut, onQueryChange, onSearch, disabled = false, unavailable = false }: LandingPageProps) => {
     const { euiTheme } = useEuiTheme()
     const searchInputRef = useRef<HTMLDivElement>(null)
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter' && query.trim()) {
+        if (e.key === 'Enter' && query.trim() && !disabled) {
             onSearch(query)
         }
     }
@@ -364,13 +384,15 @@ export const LandingPage = ({ query, isAnimatingOut, onQueryChange, onSearch }: 
                         <EuiFlexGroup gutterSize="m">
                             <EuiFlexItem>
                                 <EuiFieldSearch
-                                    autoFocus
-                                    placeholder="Search documentation or ask a question..."
+                                    autoFocus={!disabled && !unavailable}
+                                    placeholder={unavailable ? "Search unavailable" : disabled ? "Checking search availability..." : "Search documentation or ask a question..."}
                                     value={query}
                                     onChange={(e) => onQueryChange(e.target.value)}
                                     onKeyDown={handleKeyDown}
                                     fullWidth
                                     isClearable
+                                    disabled={disabled || unavailable}
+                                    isLoading={disabled && !unavailable}
                                     css={css`
                                         .euiFieldSearch {
                                             font-size: 1.1rem;
@@ -383,7 +405,8 @@ export const LandingPage = ({ query, isAnimatingOut, onQueryChange, onSearch }: 
                                 <EuiButton
                                     fill
                                     iconType="search"
-                                    onClick={() => query.trim() && onSearch(query)}
+                                    onClick={() => query.trim() && !disabled && !unavailable && onSearch(query)}
+                                    disabled={disabled || unavailable}
                                     css={css`
                                         height: 100%;
                                     `}
@@ -394,8 +417,46 @@ export const LandingPage = ({ query, isAnimatingOut, onQueryChange, onSearch }: 
                         </EuiFlexGroup>
                     </div>
                 </EuiFlexItem>
+
+                {unavailable && (
+                    <EuiFlexItem
+                        css={css`
+                            width: 100%;
+                            max-width: 700px;
+                        `}
+                    >
+                        <div
+                            css={css`
+                                background: ${euiTheme.colors.warning}20;
+                                border: 1px solid ${euiTheme.colors.warning};
+                                border-radius: ${euiTheme.border.radius.medium};
+                                padding: ${euiTheme.size.m} ${euiTheme.size.l};
+                                display: flex;
+                                align-items: center;
+                                gap: ${euiTheme.size.m};
+                            `}
+                        >
+                            <span
+                                css={css`
+                                    display: flex;
+                                    align-items: center;
+                                    flex-shrink: 0;
+                                    color: ${euiTheme.colors.warning};
+                                `}
+                            >
+                                <WarningIcon size={20} />
+                            </span>
+                            <EuiText size="s">
+                                <strong>Search service is currently unavailable.</strong>
+                                {' '}Please try again later.
+                            </EuiText>
+                        </div>
+                    </EuiFlexItem>
+                )}
             </EuiFlexGroup>
 
+            {!unavailable && (
+            <>
             <div
                 css={css`
                     display: flex;
@@ -419,6 +480,9 @@ export const LandingPage = ({ query, isAnimatingOut, onQueryChange, onSearch }: 
                     grid-template-columns: 1fr;
                     gap: ${euiTheme.size.m};
                     margin-top: ${euiTheme.size.l};
+                    opacity: ${disabled ? 0.5 : 1};
+                    pointer-events: ${disabled ? 'none' : 'auto'};
+                    transition: opacity 0.2s ease;
 
                     @media (min-width: 768px) {
                         grid-template-columns: repeat(2, 1fr);
@@ -455,6 +519,9 @@ export const LandingPage = ({ query, isAnimatingOut, onQueryChange, onSearch }: 
                 gutterSize="m"
                 css={css`
                     margin-top: ${euiTheme.size.l};
+                    opacity: ${disabled ? 0.5 : 1};
+                    pointer-events: ${disabled ? 'none' : 'auto'};
+                    transition: opacity 0.2s ease;
                 `}
             >
                 <EuiFlexItem>
@@ -480,6 +547,8 @@ export const LandingPage = ({ query, isAnimatingOut, onQueryChange, onSearch }: 
                     </EuiFlexGroup>
                 </EuiFlexItem>
             </EuiFlexGroup>
+            </>
+            )}
         </div>
     )
 }

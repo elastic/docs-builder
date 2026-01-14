@@ -23,6 +23,69 @@ interface AIAnswerPanelProps {
 
 const PREVIEW_HEIGHT = 64 // Height to show content with read more overlay
 
+// Status badge component for AI answer states
+const StatusBadge = ({
+    streaming,
+    hasContent,
+    justCompleted,
+    euiTheme,
+}: {
+    streaming: boolean
+    hasContent: boolean
+    justCompleted: boolean
+    euiTheme: ReturnType<typeof useEuiTheme>['euiTheme']
+}) => {
+    // Determine the state
+    const isThinking = streaming && !hasContent
+    const isGenerating = streaming && hasContent
+    const isReady = !streaming && hasContent && justCompleted
+
+    if (!isThinking && !isGenerating && !isReady) return null
+
+    let text = ''
+    let background = 'rgba(255, 255, 255, 0.2)'
+    let animation = ''
+
+    if (isThinking) {
+        text = 'Thinking...'
+        animation = 'pulse 1.5s ease-in-out infinite'
+    } else if (isGenerating) {
+        text = 'Generating...'
+        animation = 'pulse 1.5s ease-in-out infinite'
+    } else if (isReady) {
+        text = 'Ready!'
+        background = '#00BFA5'
+        animation = 'wiggle 0.5s ease-in-out 3'
+    }
+
+    return (
+        <span
+            css={css`
+                font-size: 12px;
+                color: white;
+                background: ${background};
+                padding: 2px 8px;
+                border-radius: ${euiTheme.border.radius.medium};
+                animation: ${animation};
+                font-weight: ${isReady ? '600' : '400'};
+
+                @keyframes pulse {
+                    0%, 100% { background: rgba(255, 255, 255, 0.1); }
+                    50% { background: rgba(255, 255, 255, 0.4); }
+                }
+
+                @keyframes wiggle {
+                    0%, 100% { transform: rotate(0deg); }
+                    25% { transform: rotate(-3deg) scale(1.1); }
+                    75% { transform: rotate(3deg) scale(1.1); }
+                }
+            `}
+        >
+            {text}
+        </span>
+    )
+}
+
 export const AIAnswerPanel = ({
     query,
     results,
@@ -36,6 +99,7 @@ export const AIAnswerPanel = ({
     const [showSources, setShowSources] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [unavailable, setUnavailable] = useState(false)
+    const [justCompleted, setJustCompleted] = useState(false)
     const abortControllerRef = useRef<AbortController | null>(null)
     const streamingQueryRef = useRef<string | null>(null)
     const answeredQueryRef = useRef<string | null>(null)
@@ -128,6 +192,7 @@ export const AIAnswerPanel = ({
                             if (mountedRef.current) {
                                 setStreaming(false)
                                 setShowSources(true)
+                                setJustCompleted(true)
                             }
                             return
                         }
@@ -158,6 +223,7 @@ export const AIAnswerPanel = ({
             if (mountedRef.current) {
                 setStreaming(false)
                 setShowSources(true)
+                setJustCompleted(true)
             }
         } catch (err) {
             streamingQueryRef.current = null
@@ -185,9 +251,9 @@ export const AIAnswerPanel = ({
 
     // Single effect to handle streaming - triggered by query or results changes
     useEffect(() => {
-        // Demo mode: fa=1 in query string forces unavailable state
+        // Demo mode: fail=ai in query string forces unavailable state
         const params = new URLSearchParams(window.location.search)
-        if (params.get('fa') === '1') {
+        if (params.get('fail') === 'ai') {
             setUnavailable(true)
             return
         }
@@ -324,7 +390,10 @@ export const AIAnswerPanel = ({
                         box-shadow: 0 2px 8px rgba(155, 89, 182, 0.15);
                     }
                 `}
-                onClick={() => setExpanded(true)}
+                onClick={() => {
+                    setExpanded(true)
+                    setJustCompleted(false)
+                }}
             >
                 {/* Purple-blue gradient header with animation while streaming */}
                 <div
@@ -350,25 +419,12 @@ export const AIAnswerPanel = ({
                                 <EuiText size="s" css={css`color: white;`}>
                                     <strong>AI Answer</strong>
                                 </EuiText>
-                                {streaming && (
-                                    <span
-                                        css={css`
-                                            font-size: 12px;
-                                            color: white;
-                                            background: rgba(255, 255, 255, 0.2);
-                                            padding: 2px 8px;
-                                            border-radius: ${euiTheme.border.radius.medium};
-                                            animation: pulse 1.5s ease-in-out infinite;
-
-                                            @keyframes pulse {
-                                                0%, 100% { background: rgba(255, 255, 255, 0.1); }
-                                                50% { background: rgba(255, 255, 255, 0.4); }
-                                            }
-                                        `}
-                                    >
-                                        Generating...
-                                    </span>
-                                )}
+                                <StatusBadge
+                                    streaming={streaming}
+                                    hasContent={!!content}
+                                    justCompleted={justCompleted}
+                                    euiTheme={euiTheme}
+                                />
                             </div>
                         </EuiFlexItem>
                     </EuiFlexGroup>
@@ -480,17 +536,22 @@ export const AIAnswerPanel = ({
                 margin-bottom: ${euiTheme.size.m};
                 background: ${euiTheme.colors.emptyShade};
                 border: 1px solid #9B59B630;
-                overflow: hidden;
+                border-radius: ${euiTheme.border.radius.medium};
             `}
         >
-            {/* Purple-blue gradient header with animation while streaming */}
+            {/* Purple-blue gradient header with animation while streaming - sticky when expanded */}
             <div
                 ref={expandedHeaderRef}
                 css={css`
+                    position: sticky;
+                    top: 0;
+                    z-index: 10;
                     padding: ${euiTheme.size.m};
                     background: linear-gradient(135deg, #9B59B6 0%, #0077CC 25%, #9B59B6 50%, #0077CC 75%, #9B59B6 100%);
                     background-size: 200% 200%;
                     animation: diagonalFlow 3s linear infinite;
+                    border-radius: ${euiTheme.border.radius.medium} ${euiTheme.border.radius.medium} 0 0;
+                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 
                     @keyframes diagonalFlow {
                         0% { background-position: 0% 0%; }
@@ -509,25 +570,12 @@ export const AIAnswerPanel = ({
                                     <EuiText size="s" css={css`color: white;`}>
                                         <strong>AI Answer</strong>
                                     </EuiText>
-                                    {streaming && (
-                                        <span
-                                            css={css`
-                                                font-size: 12px;
-                                                color: white;
-                                                background: rgba(255, 255, 255, 0.2);
-                                                padding: 2px 8px;
-                                                border-radius: ${euiTheme.border.radius.medium};
-                                                animation: pulse 1.5s ease-in-out infinite;
-
-                                                @keyframes pulse {
-                                                    0%, 100% { background: rgba(255, 255, 255, 0.1); }
-                                                    50% { background: rgba(255, 255, 255, 0.4); }
-                                                }
-                                            `}
-                                        >
-                                            Generating...
-                                        </span>
-                                    )}
+                                    <StatusBadge
+                                        streaming={streaming}
+                                        hasContent={!!content}
+                                        justCompleted={justCompleted}
+                                        euiTheme={euiTheme}
+                                    />
                                 </div>
                             </EuiFlexItem>
                         </EuiFlexGroup>

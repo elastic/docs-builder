@@ -24,6 +24,14 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useDebounce } from '@uidotdev/usehooks'
 import * as z from 'zod'
 
+// Demo mode: Read fail parameter once at module load to ensure it persists
+const getFailMode = () => {
+    if (typeof window === 'undefined') return null
+    const params = new URLSearchParams(window.location.search)
+    return params.get('fail')
+}
+const FAIL_MODE = getFailMode()
+
 const SearchResultParent = z.object({
     url: z.string(),
     title: z.string(),
@@ -101,6 +109,7 @@ export const useFullPageSearch = () => {
                 sortBy,
                 version,
                 filters,
+                failMode: FAIL_MODE,
             },
         ],
         queryFn: async ({ signal }) => {
@@ -113,6 +122,22 @@ export const useFullPageSearch = () => {
                     pageSize,
                     isSemanticQuery: false,
                 })
+            }
+
+            // Demo mode: fail=slow simulates slow search results (3 second delay)
+            if (FAIL_MODE === 'slow') {
+                await new Promise((resolve) => setTimeout(resolve, 3000))
+            }
+
+            // Demo mode: fail=slow_error simulates slow search followed by server error
+            if (FAIL_MODE === 'slow_error') {
+                await new Promise((resolve) => setTimeout(resolve, 3000))
+                const error = new Error(
+                    'Service temporarily unavailable. Please try again later.'
+                ) as ApiError
+                error.name = 'ApiError'
+                error.statusCode = 500
+                throw error
             }
 
             return traceSpan('execute full search', async (span) => {
