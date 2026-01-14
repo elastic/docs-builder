@@ -14,12 +14,15 @@ docs-builder changelog render [options...] [-h|--help]
 
 ## Options
 
-`--input <List<BundleInput>>`
+`--input <string[]>`
 :   One or more bundle input files.
-:   Each item can be specified as "bundle-file-path, changelog-file-path, repo" to accommodate files coming from multiple locations.
-:   For example, `--input "./changelog-bundle.yaml,./changelogs,elasticsearch"`.
-:   Only `bundle-file-path` is required.
+:   Each bundle is specified as "bundle-file-path|changelog-file-path|repo|link-visibility" using pipe (`|`) as delimiter.
+:   To merge multiple bundles, separate them with commas: `--input "bundle1|dir1|repo1|keep-links,bundle2|dir2|repo2|hide-links"`.
+:   For example, `--input "/path/to/changelog-bundle.yaml|/path/to/changelogs|elasticsearch|keep-links"`.
+:   Only `bundle-file-path` is required for each bundle.
 :   Use `repo` if your changelogs do not contain full URLs for the pull requests or issues; otherwise they will be incorrectly derived with "elastic/elastic" in the URL by default.
+:   Use `link-visibility` to control whether PR/issue links are shown or hidden for entries from this bundle. Valid values are `keep-links` (default) or `hide-links`. Use `hide-links` for bundles from private repositories.
+:   **Important**: Paths must be absolute or use environment variables. Tilde (`~`) expansion is not supported.
 
 `--output <string?>`
 :   Optional: The output directory for rendered files.
@@ -38,11 +41,6 @@ docs-builder changelog render [options...] [-h|--help]
 
 `--subsections`
 :   Optional: Group entries by area in subsections.
-:   Defaults to false.
-
-`--hide-private-links`
-:   Optional: Hide private links by commenting them out in the output.
-:   This option is useful when rendering changelog bundles in private repositories.
 :   Defaults to false.
 
 `--hide-features <string[]?>`

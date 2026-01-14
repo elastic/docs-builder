@@ -341,11 +341,10 @@ For up-to-date details, use the `-h` command option:
 Render bundled changelog(s) to markdown or asciidoc files
 
 Options:
-  --input <List<BundleInput>>    Required: Bundle input(s) in format "bundle-file-path, changelog-file-path, repo". Can be specified multiple times. Only bundle-file-path is required. [Required]
+  --input <string[]>             Required: Bundle input(s) in format "bundle-file-path|changelog-file-path|repo|link-visibility" (use pipe as delimiter). To merge multiple bundles, separate them with commas. Only bundle-file-path is required. link-visibility can be "hide-links" or "keep-links" (default). Paths must be absolute or use environment variables; tilde (~) expansion is not supported. [Required]
   --output <string?>             Optional: Output directory for rendered files. Defaults to current directory [Default: null]
   --title <string?>              Optional: Title to use for section headers in output files. Defaults to version from first bundle [Default: null]
   --subsections                  Optional: Group entries by area/component in subsections. For breaking changes with a subtype, groups by subtype instead of area. Defaults to false
-  --hide-private-links           Optional: Hide private links by commenting them out in the output. Defaults to false
   --hide-features <string[]?>    Filter by feature IDs (comma-separated), or a path to a newline-delimited file containing feature IDs. Can be specified multiple times. Entries with matching feature-id values will be commented out in the output. [Default: null]
   --file-type <string>           Optional: Output file type. Valid values: "markdown" or "asciidoc". Defaults to "markdown" [Default: markdown]
   --config <string?>             Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml' [Default: null]
@@ -374,16 +373,20 @@ To create markdown files from this bundle, run the `docs-builder changelog rende
 
 ```sh
 docs-builder changelog render \
-  --input "./changelog-bundle.yaml,./changelogs,elasticsearch" \ <1>
+  --input "/path/to/changelog-bundle.yaml|/path/to/changelogs|elasticsearch|keep-links,/path/to/other-bundle.yaml|/path/to/other-changelogs|kibana|hide-links" \ <1>
   --title 9.2.2 \ <2>
-  --output ./release-notes \ <3>
-  --subsections \ <4>
+  --output /path/to/release-notes \ <3>
+  --subsections <4>
 ```
 
-1. Provide information about the changelog bundle. The format is `"<bundle-file-path>, <changelog-file-path>, <repository>"`. Only the `<bundle-file-path>` is required. The `<changelog-file-path>` is useful if the changelogs are not in the default directory and are not resolved within the bundle. The `<repository>` is necessary if your changelogs do not contain full URLs for the pull requests or issues. You can specify `--input` multiple times to merge multiple bundles.
+1. Provide information about the changelog bundle(s). The format for each bundle is `"<bundle-file-path>|<changelog-file-path>|<repository>|<link-visibility>"` using pipe (`|`) as delimiter. To merge multiple bundles, separate them with commas (`,`). Only the `<bundle-file-path>` is required for each bundle. The `<changelog-file-path>` is useful if the changelogs are not in the default directory and are not resolved within the bundle. The `<repository>` is necessary if your changelogs do not contain full URLs for the pull requests or issues. The `<link-visibility>` can be `hide-links` or `keep-links` (default) to control whether PR/issue links are hidden for entries from private repositories.
 2. The `--title` value is used for an output folder name and for section titles in the output files. If you omit `--title` and the first bundle contains a product `target` value, that value is used. Otherwise, if none of the bundles have product `target` fields, the title defaults to "unknown".
 3. By default the command creates the output files in the current directory.
 4. By default the changelog areas are not displayed in the output. Add `--subsections` to group changelog details by their `areas`. For breaking changes that have a `subtype` value, the subsections will be grouped by subtype instead of area.
+
+:::{important}
+Paths in the `--input` option must be absolute paths or use environment variables. Tilde (`~`) expansion is not supported.
+:::
 
 For example, the `index.md` output file contains information derived from the changelogs:
 
@@ -402,7 +405,7 @@ For example, the `index.md` output file contains information derived from the ch
 * Break on FieldData when building global ordinals. [#108875](https://github.com/elastic/elastic/pull/108875) 
 ```
 
-To comment out the pull request and issue links, for example if they relate to a private repository, use the `--hide-private-links` option.
+To comment out the pull request and issue links, for example if they relate to a private repository, add `hide-links` to the `--input` option for that bundle. This allows you to selectively hide links per bundle when merging changelogs from multiple repositories.
 
 If you have changelogs with `feature-id` values and you want them to be omitted from the output, use the `--hide-features` option.
 For more information, refer to [](/cli/release/changelog-render.md).

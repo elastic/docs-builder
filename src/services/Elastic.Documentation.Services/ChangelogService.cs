@@ -1592,7 +1592,7 @@ public partial class ChangelogService(
 			}
 
 			// Merge phase: Now that validation passed, load and merge all bundles
-			var allResolvedEntries = new List<(ChangelogData entry, string repo, HashSet<string> bundleProductIds)>();
+			var allResolvedEntries = new List<(ChangelogData entry, string repo, HashSet<string> bundleProductIds, bool hideLinks)>();
 			var allProducts = new HashSet<(string product, string target)>();
 
 			foreach (var (bundledData, bundleInput, bundleDirectory) in bundleDataList)
@@ -1653,7 +1653,7 @@ public partial class ChangelogService(
 
 					if (entryData != null)
 					{
-						allResolvedEntries.Add((entryData, repo, bundleProductIds));
+						allResolvedEntries.Add((entryData, repo, bundleProductIds, bundleInput.HideLinks));
 					}
 				}
 			}
@@ -1806,7 +1806,7 @@ public partial class ChangelogService(
 
 			// Track hidden entries for warnings
 			var hiddenEntries = new List<(string title, string featureId)>();
-			foreach (var (entry, _, _) in allResolvedEntries)
+			foreach (var (entry, _, _, _) in allResolvedEntries)
 			{
 				if (!string.IsNullOrWhiteSpace(entry.FeatureId) && featureIdsToHide.Contains(entry.FeatureId))
 				{
@@ -1826,7 +1826,7 @@ public partial class ChangelogService(
 			// Check entries against render blockers and track blocked entries
 			// render_blockers matches against bundle products, not individual entry products
 			var blockedEntries = new List<(string title, List<string> reasons)>();
-			foreach (var (entry, _, bundleProductIds) in allResolvedEntries)
+			foreach (var (entry, _, bundleProductIds, _) in allResolvedEntries)
 			{
 				var isBlocked = ShouldBlockEntry(entry, bundleProductIds, renderBlockers, out var blockReasons);
 				if (isBlocked)
@@ -1874,34 +1874,48 @@ public partial class ChangelogService(
 			// Create mapping from entries to their bundle product IDs for render_blockers checking
 			// Use a custom comparer for reference equality since entries are objects
 			var entryToBundleProducts = new Dictionary<ChangelogData, HashSet<string>>();
-			foreach (var (entry, _, bundleProductIds) in allResolvedEntries)
+			foreach (var (entry, _, bundleProductIds, _) in allResolvedEntries)
 			{
 				entryToBundleProducts[entry] = bundleProductIds;
 			}
 
-			// Render files (use first repo found, or default)
-			var repoForRendering = allResolvedEntries.Count > 0 ? allResolvedEntries[0].repo : defaultRepo;
+			// Create mapping from entries to their repo for PR link formatting
+			var entryToRepo = new Dictionary<ChangelogData, string>();
+			foreach (var (entry, repo, _, _) in allResolvedEntries)
+			{
+				entryToRepo[entry] = repo;
+			}
+
+			// Create mapping from entries to their hideLinks setting for per-bundle link visibility
+			var entryToHideLinks = new Dictionary<ChangelogData, bool>();
+			foreach (var (entry, _, _, hideLinks) in allResolvedEntries)
+			{
+				entryToHideLinks[entry] = hideLinks;
+			}
+
+			// Render files (use first repo found for section anchors, or default)
+			var repoForAnchors = allResolvedEntries.Count > 0 ? allResolvedEntries[0].repo : defaultRepo;
 			var fileType = input.FileType ?? "markdown";
 
 			if (string.Equals(fileType, "asciidoc", StringComparison.OrdinalIgnoreCase))
 			{
 				// Render asciidoc file
-				await RenderAsciidoc(collector, outputDir, title, titleSlug, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts, ctx);
+				await RenderAsciidoc(collector, outputDir, title, titleSlug, repoForAnchors, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, featureIdsToHide, renderBlockers, entryToBundleProducts, entryToRepo, entryToHideLinks, ctx);
 				_logger.LogInformation("Rendered changelog asciidoc file to {OutputDir}", outputDir);
 			}
 			else
 			{
-				// Render markdown files
-				await RenderIndexMarkdown(collector, outputDir, title, titleSlug, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts, ctx);
+				// Render index.md (features, enhancements, bug fixes, security, docs, regression, other)
+				await RenderIndexMarkdown(collector, outputDir, title, titleSlug, repoForAnchors, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, featureIdsToHide, renderBlockers, entryToBundleProducts, entryToRepo, entryToHideLinks, ctx);
 
 				// Render breaking-changes.md
-				await RenderBreakingChangesMarkdown(collector, outputDir, title, titleSlug, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts, ctx);
+				await RenderBreakingChangesMarkdown(collector, outputDir, title, titleSlug, repoForAnchors, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, featureIdsToHide, renderBlockers, entryToBundleProducts, entryToRepo, entryToHideLinks, ctx);
 
 				// Render deprecations.md
-				await RenderDeprecationsMarkdown(collector, outputDir, title, titleSlug, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts, ctx);
+				await RenderDeprecationsMarkdown(collector, outputDir, title, titleSlug, repoForAnchors, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, featureIdsToHide, renderBlockers, entryToBundleProducts, entryToRepo, entryToHideLinks, ctx);
 
 				// Render known-issues.md
-				await RenderKnownIssuesMarkdown(collector, outputDir, title, titleSlug, repoForRendering, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, input.HidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts, ctx);
+				await RenderKnownIssuesMarkdown(collector, outputDir, title, titleSlug, repoForAnchors, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, featureIdsToHide, renderBlockers, entryToBundleProducts, entryToRepo, entryToHideLinks, ctx);
 
 				_logger.LogInformation("Rendered changelog markdown files to {OutputDir}", outputDir);
 			}
@@ -1940,10 +1954,11 @@ public partial class ChangelogService(
 		List<ChangelogData> entries,
 		Dictionary<string, List<ChangelogData>> entriesByType,
 		bool subsections,
-		bool hidePrivateLinks,
 		HashSet<string> featureIdsToHide,
 		Dictionary<string, RenderBlockersEntry>? renderBlockers,
 		Dictionary<ChangelogData, HashSet<string>> entryToBundleProducts,
+		Dictionary<ChangelogData, string> entryToRepo,
+		Dictionary<ChangelogData, bool> entryToHideLinks,
 		Cancel ctx
 	)
 	{
@@ -1991,7 +2006,7 @@ public partial class ChangelogService(
 			{
 				sb.AppendLine(CultureInfo.InvariantCulture, $"### Features and enhancements [{repo}-{titleSlug}-features-enhancements]");
 				var combined = features.Concat(enhancements).ToList();
-				RenderEntriesByArea(sb, combined, repo, subsections, hidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts);
+				RenderEntriesByArea(sb, combined, subsections, featureIdsToHide, renderBlockers, entryToBundleProducts, entryToRepo, entryToHideLinks);
 			}
 
 			if (security.Count > 0 || bugFixes.Count > 0)
@@ -1999,28 +2014,28 @@ public partial class ChangelogService(
 				sb.AppendLine();
 				sb.AppendLine(CultureInfo.InvariantCulture, $"### Fixes [{repo}-{titleSlug}-fixes]");
 				var combined = security.Concat(bugFixes).ToList();
-				RenderEntriesByArea(sb, combined, repo, subsections, hidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts);
+				RenderEntriesByArea(sb, combined, subsections, featureIdsToHide, renderBlockers, entryToBundleProducts, entryToRepo, entryToHideLinks);
 			}
 
 			if (docs.Count > 0)
 			{
 				sb.AppendLine();
 				sb.AppendLine(CultureInfo.InvariantCulture, $"### Documentation [{repo}-{titleSlug}-docs]");
-				RenderEntriesByArea(sb, docs, repo, subsections, hidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts);
+				RenderEntriesByArea(sb, docs, subsections, featureIdsToHide, renderBlockers, entryToBundleProducts, entryToRepo, entryToHideLinks);
 			}
 
 			if (regressions.Count > 0)
 			{
 				sb.AppendLine();
 				sb.AppendLine(CultureInfo.InvariantCulture, $"### Regressions [{repo}-{titleSlug}-regressions]");
-				RenderEntriesByArea(sb, regressions, repo, subsections, hidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts);
+				RenderEntriesByArea(sb, regressions, subsections, featureIdsToHide, renderBlockers, entryToBundleProducts, entryToRepo, entryToHideLinks);
 			}
 
 			if (other.Count > 0)
 			{
 				sb.AppendLine();
 				sb.AppendLine(CultureInfo.InvariantCulture, $"### Other changes [{repo}-{titleSlug}-other]");
-				RenderEntriesByArea(sb, other, repo, subsections, hidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts);
+				RenderEntriesByArea(sb, other, subsections, featureIdsToHide, renderBlockers, entryToBundleProducts, entryToRepo, entryToHideLinks);
 			}
 		}
 		else
@@ -2049,10 +2064,11 @@ public partial class ChangelogService(
 		List<ChangelogData> entries,
 		Dictionary<string, List<ChangelogData>> entriesByType,
 		bool subsections,
-		bool hidePrivateLinks,
 		HashSet<string> featureIdsToHide,
 		Dictionary<string, RenderBlockersEntry>? renderBlockers,
 		Dictionary<ChangelogData, HashSet<string>> entryToBundleProducts,
+		Dictionary<ChangelogData, string> entryToRepo,
+		Dictionary<ChangelogData, bool> entryToHideLinks,
 		Cancel ctx
 	)
 	{
@@ -2080,6 +2096,8 @@ public partial class ChangelogService(
 				foreach (var entry in group)
 				{
 					var bundleProductIds = entryToBundleProducts.GetValueOrDefault(entry, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+					var entryRepo = entryToRepo.GetValueOrDefault(entry, repo);
+					var entryHideLinks = entryToHideLinks.GetValueOrDefault(entry, false);
 					var shouldHide = (!string.IsNullOrWhiteSpace(entry.FeatureId) && featureIdsToHide.Contains(entry.FeatureId)) ||
 						ShouldBlockEntry(entry, bundleProductIds, renderBlockers, out _);
 
@@ -2095,18 +2113,18 @@ public partial class ChangelogService(
 					var hasIssues = entry.Issues != null && entry.Issues.Count > 0;
 					if (hasPr || hasIssues)
 					{
-						if (hidePrivateLinks)
+						if (entryHideLinks)
 						{
 							// When hiding private links, put them on separate lines as comments
 							if (hasPr)
 							{
-								sb.AppendLine(FormatPrLink(entry.Pr!, repo, hidePrivateLinks));
+								sb.AppendLine(FormatPrLink(entry.Pr!, entryRepo, entryHideLinks));
 							}
 							if (hasIssues)
 							{
 								foreach (var issue in entry.Issues!)
 								{
-									sb.AppendLine(FormatIssueLink(issue, repo, hidePrivateLinks));
+									sb.AppendLine(FormatIssueLink(issue, entryRepo, entryHideLinks));
 								}
 							}
 							sb.AppendLine("For more information, check the pull request or issue above.");
@@ -2116,14 +2134,14 @@ public partial class ChangelogService(
 							sb.Append("For more information, check ");
 							if (hasPr)
 							{
-								sb.Append(FormatPrLink(entry.Pr!, repo, hidePrivateLinks));
+								sb.Append(FormatPrLink(entry.Pr!, entryRepo, entryHideLinks));
 							}
 							if (hasIssues)
 							{
 								foreach (var issue in entry.Issues!)
 								{
 									sb.Append(' ');
-									sb.Append(FormatIssueLink(issue, repo, hidePrivateLinks));
+									sb.Append(FormatIssueLink(issue, entryRepo, entryHideLinks));
 								}
 							}
 							sb.AppendLine(".");
@@ -2185,10 +2203,11 @@ public partial class ChangelogService(
 		List<ChangelogData> entries,
 		Dictionary<string, List<ChangelogData>> entriesByType,
 		bool subsections,
-		bool hidePrivateLinks,
 		HashSet<string> featureIdsToHide,
 		Dictionary<string, RenderBlockersEntry>? renderBlockers,
 		Dictionary<ChangelogData, HashSet<string>> entryToBundleProducts,
+		Dictionary<ChangelogData, string> entryToRepo,
+		Dictionary<ChangelogData, bool> entryToHideLinks,
 		Cancel ctx
 	)
 	{
@@ -2212,6 +2231,8 @@ public partial class ChangelogService(
 				foreach (var entry in areaGroup)
 				{
 					var bundleProductIds = entryToBundleProducts.GetValueOrDefault(entry, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+					var entryRepo = entryToRepo.GetValueOrDefault(entry, repo);
+					var entryHideLinks = entryToHideLinks.GetValueOrDefault(entry, false);
 					var shouldHide = (!string.IsNullOrWhiteSpace(entry.FeatureId) && featureIdsToHide.Contains(entry.FeatureId)) ||
 						ShouldBlockEntry(entry, bundleProductIds, renderBlockers, out _);
 
@@ -2227,18 +2248,18 @@ public partial class ChangelogService(
 					var hasIssues = entry.Issues != null && entry.Issues.Count > 0;
 					if (hasPr || hasIssues)
 					{
-						if (hidePrivateLinks)
+						if (entryHideLinks)
 						{
 							// When hiding private links, put them on separate lines as comments
 							if (hasPr)
 							{
-								sb.AppendLine(FormatPrLink(entry.Pr!, repo, hidePrivateLinks));
+								sb.AppendLine(FormatPrLink(entry.Pr!, entryRepo, entryHideLinks));
 							}
 							if (hasIssues)
 							{
 								foreach (var issue in entry.Issues!)
 								{
-									sb.AppendLine(FormatIssueLink(issue, repo, hidePrivateLinks));
+									sb.AppendLine(FormatIssueLink(issue, entryRepo, entryHideLinks));
 								}
 							}
 							sb.AppendLine("For more information, check the pull request or issue above.");
@@ -2248,14 +2269,14 @@ public partial class ChangelogService(
 							sb.Append("For more information, check ");
 							if (hasPr)
 							{
-								sb.Append(FormatPrLink(entry.Pr!, repo, hidePrivateLinks));
+								sb.Append(FormatPrLink(entry.Pr!, entryRepo, entryHideLinks));
 							}
 							if (hasIssues)
 							{
 								foreach (var issue in entry.Issues!)
 								{
 									sb.Append(' ');
-									sb.Append(FormatIssueLink(issue, repo, hidePrivateLinks));
+									sb.Append(FormatIssueLink(issue, entryRepo, entryHideLinks));
 								}
 							}
 							sb.AppendLine(".");
@@ -2317,10 +2338,11 @@ public partial class ChangelogService(
 		List<ChangelogData> entries,
 		Dictionary<string, List<ChangelogData>> entriesByType,
 		bool subsections,
-		bool hidePrivateLinks,
 		HashSet<string> featureIdsToHide,
 		Dictionary<string, RenderBlockersEntry>? renderBlockers,
 		Dictionary<ChangelogData, HashSet<string>> entryToBundleProducts,
+		Dictionary<ChangelogData, string> entryToRepo,
+		Dictionary<ChangelogData, bool> entryToHideLinks,
 		Cancel ctx
 	)
 	{
@@ -2344,6 +2366,8 @@ public partial class ChangelogService(
 				foreach (var entry in areaGroup)
 				{
 					var bundleProductIds = entryToBundleProducts.GetValueOrDefault(entry, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+					var entryRepo = entryToRepo.GetValueOrDefault(entry, repo);
+					var entryHideLinks = entryToHideLinks.GetValueOrDefault(entry, false);
 					var shouldHide = (!string.IsNullOrWhiteSpace(entry.FeatureId) && featureIdsToHide.Contains(entry.FeatureId)) ||
 						ShouldBlockEntry(entry, bundleProductIds, renderBlockers, out _);
 
@@ -2359,18 +2383,18 @@ public partial class ChangelogService(
 					var hasIssues = entry.Issues != null && entry.Issues.Count > 0;
 					if (hasPr || hasIssues)
 					{
-						if (hidePrivateLinks)
+						if (entryHideLinks)
 						{
 							// When hiding private links, put them on separate lines as comments
 							if (hasPr)
 							{
-								sb.AppendLine(FormatPrLink(entry.Pr!, repo, hidePrivateLinks));
+								sb.AppendLine(FormatPrLink(entry.Pr!, entryRepo, entryHideLinks));
 							}
 							if (hasIssues)
 							{
 								foreach (var issue in entry.Issues!)
 								{
-									sb.AppendLine(FormatIssueLink(issue, repo, hidePrivateLinks));
+									sb.AppendLine(FormatIssueLink(issue, entryRepo, entryHideLinks));
 								}
 							}
 							sb.AppendLine("For more information, check the pull request or issue above.");
@@ -2380,14 +2404,14 @@ public partial class ChangelogService(
 							sb.Append("For more information, check ");
 							if (hasPr)
 							{
-								sb.Append(FormatPrLink(entry.Pr!, repo, hidePrivateLinks));
+								sb.Append(FormatPrLink(entry.Pr!, entryRepo, entryHideLinks));
 							}
 							if (hasIssues)
 							{
 								foreach (var issue in entry.Issues!)
 								{
 									sb.Append(' ');
-									sb.Append(FormatIssueLink(issue, repo, hidePrivateLinks));
+									sb.Append(FormatIssueLink(issue, entryRepo, entryHideLinks));
 								}
 							}
 							sb.AppendLine(".");
@@ -2439,7 +2463,7 @@ public partial class ChangelogService(
 	}
 
 	[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0058:Expression value is never used", Justification = "StringBuilder methods return builder for chaining")]
-	private void RenderEntriesByArea(StringBuilder sb, List<ChangelogData> entries, string repo, bool subsections, bool hidePrivateLinks, HashSet<string> featureIdsToHide, Dictionary<string, RenderBlockersEntry>? renderBlockers, Dictionary<ChangelogData, HashSet<string>> entryToBundleProducts)
+	private void RenderEntriesByArea(StringBuilder sb, List<ChangelogData> entries, bool subsections, HashSet<string> featureIdsToHide, Dictionary<string, RenderBlockersEntry>? renderBlockers, Dictionary<ChangelogData, HashSet<string>> entryToBundleProducts, Dictionary<ChangelogData, string> entryToRepo, Dictionary<ChangelogData, bool> entryToHideLinks)
 	{
 		var groupedByArea = entries.GroupBy(e => GetComponent(e)).ToList();
 		foreach (var areaGroup in groupedByArea)
@@ -2454,6 +2478,8 @@ public partial class ChangelogService(
 			foreach (var entry in areaGroup)
 			{
 				var bundleProductIds = entryToBundleProducts.GetValueOrDefault(entry, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+				var entryRepo = entryToRepo.GetValueOrDefault(entry, "elastic");
+				var entryHideLinks = entryToHideLinks.GetValueOrDefault(entry, false);
 				var shouldHide = (!string.IsNullOrWhiteSpace(entry.FeatureId) && featureIdsToHide.Contains(entry.FeatureId)) ||
 					ShouldBlockEntry(entry, bundleProductIds, renderBlockers, out _);
 
@@ -2465,7 +2491,7 @@ public partial class ChangelogService(
 				sb.Append(Beautify(entry.Title));
 
 				var hasCommentedLinks = false;
-				if (hidePrivateLinks)
+				if (entryHideLinks)
 				{
 					// When hiding private links, put them on separate lines as comments with proper indentation
 					if (!string.IsNullOrWhiteSpace(entry.Pr))
@@ -2476,7 +2502,7 @@ public partial class ChangelogService(
 							sb.Append("% ");
 						}
 						sb.Append("  ");
-						sb.Append(FormatPrLink(entry.Pr, repo, hidePrivateLinks));
+						sb.Append(FormatPrLink(entry.Pr, entryRepo, entryHideLinks));
 						hasCommentedLinks = true;
 					}
 
@@ -2490,7 +2516,7 @@ public partial class ChangelogService(
 								sb.Append("% ");
 							}
 							sb.Append("  ");
-							sb.Append(FormatIssueLink(issue, repo, hidePrivateLinks));
+							sb.Append(FormatIssueLink(issue, entryRepo, entryHideLinks));
 							hasCommentedLinks = true;
 						}
 					}
@@ -2506,7 +2532,7 @@ public partial class ChangelogService(
 					sb.Append(' ');
 					if (!string.IsNullOrWhiteSpace(entry.Pr))
 					{
-						sb.Append(FormatPrLink(entry.Pr, repo, hidePrivateLinks));
+						sb.Append(FormatPrLink(entry.Pr, entryRepo, entryHideLinks));
 						sb.Append(' ');
 					}
 
@@ -2514,7 +2540,7 @@ public partial class ChangelogService(
 					{
 						foreach (var issue in entry.Issues)
 						{
-							sb.Append(FormatIssueLink(issue, repo, hidePrivateLinks));
+							sb.Append(FormatIssueLink(issue, entryRepo, entryHideLinks));
 							sb.Append(' ');
 						}
 					}
@@ -2523,8 +2549,8 @@ public partial class ChangelogService(
 				if (!string.IsNullOrWhiteSpace(entry.Description))
 				{
 					// Add blank line before description
-					// When hidePrivateLinks is true and links exist, add an indented blank line
-					if (hidePrivateLinks && hasCommentedLinks)
+					// When hiding links, add an indented blank line if there are commented links
+					if (entryHideLinks && hasCommentedLinks)
 					{
 						sb.AppendLine("  ");
 					}
@@ -2873,10 +2899,11 @@ public partial class ChangelogService(
 		List<ChangelogData> entries,
 		Dictionary<string, List<ChangelogData>> entriesByType,
 		bool subsections,
-		bool hidePrivateLinks,
 		HashSet<string> featureIdsToHide,
 		Dictionary<string, RenderBlockersEntry>? renderBlockers,
 		Dictionary<ChangelogData, HashSet<string>> entryToBundleProducts,
+		Dictionary<ChangelogData, string> entryToRepo,
+		Dictionary<ChangelogData, bool> entryToHideLinks,
 		Cancel ctx
 	)
 	{
@@ -2906,7 +2933,7 @@ public partial class ChangelogService(
 			sb.AppendLine("[float]");
 			sb.AppendLine("=== Security updates");
 			sb.AppendLine();
-			RenderEntriesByAreaAsciidoc(sb, security, repo, subsections, hidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts);
+			RenderEntriesByAreaAsciidoc(sb, security, repo, subsections, featureIdsToHide, renderBlockers, entryToBundleProducts, entryToRepo, entryToHideLinks);
 			sb.AppendLine();
 		}
 
@@ -2917,7 +2944,7 @@ public partial class ChangelogService(
 			sb.AppendLine("[float]");
 			sb.AppendLine("=== Bug fixes");
 			sb.AppendLine();
-			RenderEntriesByAreaAsciidoc(sb, bugFixes, repo, subsections, hidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts);
+			RenderEntriesByAreaAsciidoc(sb, bugFixes, repo, subsections, featureIdsToHide, renderBlockers, entryToBundleProducts, entryToRepo, entryToHideLinks);
 			sb.AppendLine();
 		}
 
@@ -2929,7 +2956,7 @@ public partial class ChangelogService(
 			sb.AppendLine("=== New features and enhancements");
 			sb.AppendLine();
 			var combined = features.Concat(enhancements).ToList();
-			RenderEntriesByAreaAsciidoc(sb, combined, repo, subsections, hidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts);
+			RenderEntriesByAreaAsciidoc(sb, combined, repo, subsections, featureIdsToHide, renderBlockers, entryToBundleProducts, entryToRepo, entryToHideLinks);
 			sb.AppendLine();
 		}
 
@@ -2940,7 +2967,7 @@ public partial class ChangelogService(
 			sb.AppendLine("[float]");
 			sb.AppendLine("=== Breaking changes");
 			sb.AppendLine();
-			RenderBreakingChangesAsciidoc(sb, breakingChanges, repo, subsections, hidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts);
+			RenderBreakingChangesAsciidoc(sb, breakingChanges, repo, subsections, featureIdsToHide, renderBlockers, entryToBundleProducts, entryToRepo, entryToHideLinks);
 			sb.AppendLine();
 		}
 
@@ -2951,7 +2978,7 @@ public partial class ChangelogService(
 			sb.AppendLine("[float]");
 			sb.AppendLine("=== Deprecations");
 			sb.AppendLine();
-			RenderDeprecationsAsciidoc(sb, deprecations, repo, subsections, hidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts);
+			RenderDeprecationsAsciidoc(sb, deprecations, repo, subsections, featureIdsToHide, renderBlockers, entryToBundleProducts, entryToRepo, entryToHideLinks);
 			sb.AppendLine();
 		}
 
@@ -2962,7 +2989,7 @@ public partial class ChangelogService(
 			sb.AppendLine("[float]");
 			sb.AppendLine("=== Known issues");
 			sb.AppendLine();
-			RenderKnownIssuesAsciidoc(sb, knownIssues, repo, subsections, hidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts);
+			RenderKnownIssuesAsciidoc(sb, knownIssues, repo, subsections, featureIdsToHide, renderBlockers, entryToBundleProducts, entryToRepo, entryToHideLinks);
 			sb.AppendLine();
 		}
 
@@ -2973,7 +3000,7 @@ public partial class ChangelogService(
 			sb.AppendLine("[float]");
 			sb.AppendLine("=== Documentation");
 			sb.AppendLine();
-			RenderEntriesByAreaAsciidoc(sb, docs, repo, subsections, hidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts);
+			RenderEntriesByAreaAsciidoc(sb, docs, repo, subsections, featureIdsToHide, renderBlockers, entryToBundleProducts, entryToRepo, entryToHideLinks);
 			sb.AppendLine();
 		}
 
@@ -2984,7 +3011,7 @@ public partial class ChangelogService(
 			sb.AppendLine("[float]");
 			sb.AppendLine("=== Regressions");
 			sb.AppendLine();
-			RenderEntriesByAreaAsciidoc(sb, regressions, repo, subsections, hidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts);
+			RenderEntriesByAreaAsciidoc(sb, regressions, repo, subsections, featureIdsToHide, renderBlockers, entryToBundleProducts, entryToRepo, entryToHideLinks);
 			sb.AppendLine();
 		}
 
@@ -2995,7 +3022,7 @@ public partial class ChangelogService(
 			sb.AppendLine("[float]");
 			sb.AppendLine("=== Other changes");
 			sb.AppendLine();
-			RenderEntriesByAreaAsciidoc(sb, other, repo, subsections, hidePrivateLinks, featureIdsToHide, renderBlockers, entryToBundleProducts);
+			RenderEntriesByAreaAsciidoc(sb, other, repo, subsections, featureIdsToHide, renderBlockers, entryToBundleProducts, entryToRepo, entryToHideLinks);
 			sb.AppendLine();
 		}
 
@@ -3012,7 +3039,7 @@ public partial class ChangelogService(
 
 	[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0058:Expression value is never used", Justification = "StringBuilder methods return builder for chaining")]
 	[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "Parameter matches interface pattern for consistency")]
-	private void RenderEntriesByAreaAsciidoc(StringBuilder sb, List<ChangelogData> entries, string repo, bool subsections, bool hidePrivateLinks, HashSet<string> featureIdsToHide, Dictionary<string, RenderBlockersEntry>? renderBlockers, Dictionary<ChangelogData, HashSet<string>> entryToBundleProducts)
+	private void RenderEntriesByAreaAsciidoc(StringBuilder sb, List<ChangelogData> entries, string repo, bool subsections, HashSet<string> featureIdsToHide, Dictionary<string, RenderBlockersEntry>? renderBlockers, Dictionary<ChangelogData, HashSet<string>> entryToBundleProducts, Dictionary<ChangelogData, string> entryToRepo, Dictionary<ChangelogData, bool> entryToHideLinks)
 	{
 		var groupedByArea = entries.GroupBy(e => GetComponent(e)).ToList();
 		foreach (var areaGroup in groupedByArea)
@@ -3044,17 +3071,19 @@ public partial class ChangelogService(
 
 				if (hasPr || hasIssues)
 				{
+					var entryRepo = entryToRepo.GetValueOrDefault(entry, repo);
+					var hideLinks = entryToHideLinks.GetValueOrDefault(entry, false);
 					sb.Append(' ');
 					if (hasPr)
 					{
-						sb.Append(FormatPrLinkAsciidoc(entry.Pr!, repo, hidePrivateLinks));
+						sb.Append(FormatPrLinkAsciidoc(entry.Pr!, entryRepo, hideLinks));
 						sb.Append(' ');
 					}
 					if (hasIssues)
 					{
 						foreach (var issue in entry.Issues!)
 						{
-							sb.Append(FormatIssueLinkAsciidoc(issue, repo, hidePrivateLinks));
+							sb.Append(FormatIssueLinkAsciidoc(issue, entryRepo, hideLinks));
 							sb.Append(' ');
 						}
 					}
@@ -3084,7 +3113,7 @@ public partial class ChangelogService(
 	}
 
 	[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0058:Expression value is never used", Justification = "StringBuilder methods return builder for chaining")]
-	private void RenderBreakingChangesAsciidoc(StringBuilder sb, List<ChangelogData> breakingChanges, string repo, bool subsections, bool hidePrivateLinks, HashSet<string> featureIdsToHide, Dictionary<string, RenderBlockersEntry>? renderBlockers, Dictionary<ChangelogData, HashSet<string>> entryToBundleProducts)
+	private void RenderBreakingChangesAsciidoc(StringBuilder sb, List<ChangelogData> breakingChanges, string repo, bool subsections, HashSet<string> featureIdsToHide, Dictionary<string, RenderBlockersEntry>? renderBlockers, Dictionary<ChangelogData, HashSet<string>> entryToBundleProducts, Dictionary<ChangelogData, string> entryToRepo, Dictionary<ChangelogData, bool> entryToHideLinks)
 	{
 		// Group by subtype if subsections is enabled, otherwise group by area
 		var groupedEntries = subsections
@@ -3119,17 +3148,19 @@ public partial class ChangelogService(
 
 				if (hasPr || hasIssues)
 				{
+					var entryRepo = entryToRepo.GetValueOrDefault(entry, repo);
+					var hideLinks = entryToHideLinks.GetValueOrDefault(entry, false);
 					sb.Append(' ');
 					if (hasPr)
 					{
-						sb.Append(FormatPrLinkAsciidoc(entry.Pr!, repo, hidePrivateLinks));
+						sb.Append(FormatPrLinkAsciidoc(entry.Pr!, entryRepo, hideLinks));
 						sb.Append(' ');
 					}
 					if (hasIssues)
 					{
 						foreach (var issue in entry.Issues!)
 						{
-							sb.Append(FormatIssueLinkAsciidoc(issue, repo, hidePrivateLinks));
+							sb.Append(FormatIssueLinkAsciidoc(issue, entryRepo, hideLinks));
 							sb.Append(' ');
 						}
 					}
@@ -3172,7 +3203,7 @@ public partial class ChangelogService(
 
 	[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0058:Expression value is never used", Justification = "StringBuilder methods return builder for chaining")]
 	[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "Parameter matches interface pattern for consistency")]
-	private void RenderDeprecationsAsciidoc(StringBuilder sb, List<ChangelogData> deprecations, string repo, bool subsections, bool hidePrivateLinks, HashSet<string> featureIdsToHide, Dictionary<string, RenderBlockersEntry>? renderBlockers, Dictionary<ChangelogData, HashSet<string>> entryToBundleProducts)
+	private void RenderDeprecationsAsciidoc(StringBuilder sb, List<ChangelogData> deprecations, string repo, bool subsections, HashSet<string> featureIdsToHide, Dictionary<string, RenderBlockersEntry>? renderBlockers, Dictionary<ChangelogData, HashSet<string>> entryToBundleProducts, Dictionary<ChangelogData, string> entryToRepo, Dictionary<ChangelogData, bool> entryToHideLinks)
 	{
 		var groupedByArea = deprecations.GroupBy(e => GetComponent(e)).ToList();
 		foreach (var areaGroup in groupedByArea)
@@ -3202,17 +3233,19 @@ public partial class ChangelogService(
 
 				if (hasPr || hasIssues)
 				{
+					var entryRepo = entryToRepo.GetValueOrDefault(entry, repo);
+					var hideLinks = entryToHideLinks.GetValueOrDefault(entry, false);
 					sb.Append(' ');
 					if (hasPr)
 					{
-						sb.Append(FormatPrLinkAsciidoc(entry.Pr!, repo, hidePrivateLinks));
+						sb.Append(FormatPrLinkAsciidoc(entry.Pr!, entryRepo, hideLinks));
 						sb.Append(' ');
 					}
 					if (hasIssues)
 					{
 						foreach (var issue in entry.Issues!)
 						{
-							sb.Append(FormatIssueLinkAsciidoc(issue, repo, hidePrivateLinks));
+							sb.Append(FormatIssueLinkAsciidoc(issue, entryRepo, hideLinks));
 							sb.Append(' ');
 						}
 					}
@@ -3255,7 +3288,7 @@ public partial class ChangelogService(
 
 	[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0058:Expression value is never used", Justification = "StringBuilder methods return builder for chaining")]
 	[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "Parameter matches interface pattern for consistency")]
-	private void RenderKnownIssuesAsciidoc(StringBuilder sb, List<ChangelogData> knownIssues, string repo, bool subsections, bool hidePrivateLinks, HashSet<string> featureIdsToHide, Dictionary<string, RenderBlockersEntry>? renderBlockers, Dictionary<ChangelogData, HashSet<string>> entryToBundleProducts)
+	private void RenderKnownIssuesAsciidoc(StringBuilder sb, List<ChangelogData> knownIssues, string repo, bool subsections, HashSet<string> featureIdsToHide, Dictionary<string, RenderBlockersEntry>? renderBlockers, Dictionary<ChangelogData, HashSet<string>> entryToBundleProducts, Dictionary<ChangelogData, string> entryToRepo, Dictionary<ChangelogData, bool> entryToHideLinks)
 	{
 		var groupedByArea = knownIssues.GroupBy(e => GetComponent(e)).ToList();
 		foreach (var areaGroup in groupedByArea)
@@ -3285,17 +3318,19 @@ public partial class ChangelogService(
 
 				if (hasPr || hasIssues)
 				{
+					var entryRepo = entryToRepo.GetValueOrDefault(entry, repo);
+					var hideLinks = entryToHideLinks.GetValueOrDefault(entry, false);
 					sb.Append(' ');
 					if (hasPr)
 					{
-						sb.Append(FormatPrLinkAsciidoc(entry.Pr!, repo, hidePrivateLinks));
+						sb.Append(FormatPrLinkAsciidoc(entry.Pr!, entryRepo, hideLinks));
 						sb.Append(' ');
 					}
 					if (hasIssues)
 					{
 						foreach (var issue in entry.Issues!)
 						{
-							sb.Append(FormatIssueLinkAsciidoc(issue, repo, hidePrivateLinks));
+							sb.Append(FormatIssueLinkAsciidoc(issue, entryRepo, hideLinks));
 							sb.Append(' ');
 						}
 					}
