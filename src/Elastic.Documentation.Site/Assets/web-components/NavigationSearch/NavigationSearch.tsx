@@ -84,22 +84,12 @@ export const NavigationSearch = () => {
         inputRef.current?.select()
     })
 
-    // Close popover immediately when htmx request starts from a search result
-    // This provides instant feedback while htmx indicator shows loading state
+    // Close popover and blur input when htmx navigation starts from a search result
     useEffect(() => {
-        const isSearchResultTrigger = (event: CustomEvent) => {
-            const trigger = event.detail?.elt as HTMLElement | undefined
-            return trigger?.hasAttribute('data-search-result-index')
-        }
-
         const handleBeforeSend = (event: CustomEvent) => {
-            if (isSearchResultTrigger(event)) {
+            const trigger = event.detail?.elt as HTMLElement | undefined
+            if (trigger?.hasAttribute('data-search-result-index')) {
                 setIsPopoverOpen(false)
-            }
-        }
-
-        const handleAfterRequest = (event: CustomEvent) => {
-            if (isSearchResultTrigger(event)) {
                 inputRef.current?.blur()
             }
         }
@@ -108,19 +98,10 @@ export const NavigationSearch = () => {
             'htmx:beforeSend',
             handleBeforeSend as EventListener
         )
-        document.addEventListener(
-            'htmx:afterRequest',
-            handleAfterRequest as EventListener
-        )
-
         return () => {
             document.removeEventListener(
                 'htmx:beforeSend',
                 handleBeforeSend as EventListener
-            )
-            document.removeEventListener(
-                'htmx:afterRequest',
-                handleAfterRequest as EventListener
             )
         }
     }, [inputRef])
