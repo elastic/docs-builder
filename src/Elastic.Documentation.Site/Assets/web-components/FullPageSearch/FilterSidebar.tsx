@@ -88,10 +88,17 @@ const VersionFilter = ({ selected, onChange }: VersionFilterProps) => {
                     </EuiFlexItem>
                 </EuiFlexGroup>
             }
-            initialIsOpen={true}
+            forceState="open"
+            arrowDisplay="none"
             paddingSize="none"
             css={css`
                 margin-bottom: ${euiTheme.size.l};
+
+                /* Override EuiAccordion's inline block-size: 0px which breaks async content */
+                .euiAccordion__childWrapper {
+                    block-size: auto !important;
+                    height: auto !important;
+                }
             `}
         >
             <div
@@ -171,10 +178,17 @@ const TypeFilter = ({ items, selected, onChange }: TypeFilterProps) => {
                     </EuiFlexItem>
                 </EuiFlexGroup>
             }
-            initialIsOpen={true}
+            forceState="open"
+            arrowDisplay="none"
             paddingSize="none"
             css={css`
                 margin-bottom: ${euiTheme.size.l};
+
+                /* Override EuiAccordion's inline block-size: 0px which breaks async content */
+                .euiAccordion__childWrapper {
+                    block-size: auto !important;
+                    height: auto !important;
+                }
             `}
         >
             <div
@@ -271,10 +285,16 @@ const FacetFilter = ({
                     </EuiFlexItem>
                 </EuiFlexGroup>
             }
-            initialIsOpen={true}
+            forceState="open"
             paddingSize="none"
             css={css`
                 margin-bottom: ${euiTheme.size.l};
+
+                /* Override EuiAccordion's inline block-size: 0px which breaks async content */
+                .euiAccordion__childWrapper {
+                    block-size: auto !important;
+                    height: auto !important;
+                }
             `}
         >
             <div

@@ -13,6 +13,7 @@ import {
 } from '@elastic/eui'
 import { css } from '@emotion/react'
 import { ResultCard } from './ResultCard'
+import { AIAnswerPanel } from './AIAnswerPanel'
 import type { SearchResultItem } from './useFullPageSearchQuery'
 import type { FullPageSearchFilters, SortBy } from './fullPageSearch.store'
 
@@ -165,6 +166,9 @@ interface ResultsListProps {
     isLoading: boolean
     filters: FullPageSearchFilters
     version: string
+    query: string
+    showAIAnswer: boolean
+    forceAICollapsed: boolean
     onPageChange: (page: number) => void
     onPageSizeChange: (size: number) => void
     onSortChange: (sort: SortBy) => void
@@ -183,6 +187,9 @@ export const ResultsList = ({
     isLoading,
     filters,
     version,
+    query,
+    showAIAnswer,
+    forceAICollapsed,
     onPageChange,
     onPageSizeChange,
     onSortChange,
@@ -251,6 +258,15 @@ export const ResultsList = ({
                 onClearAll={onClearAllFilters}
                 onResetVersion={onResetVersion}
             />
+
+            {showAIAnswer && (
+                <AIAnswerPanel
+                    query={query}
+                    results={results}
+                    visible={showAIAnswer}
+                    forceCollapsed={forceAICollapsed}
+                />
+            )}
 
             {isLoading ? (
                 <EuiFlexGroup direction="column" gutterSize="m">

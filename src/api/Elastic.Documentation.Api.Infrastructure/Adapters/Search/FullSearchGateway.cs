@@ -282,10 +282,11 @@ public partial class FullSearchGateway(
 
 	/// <summary>
 	/// Applies filters to the query based on request parameters.
+	/// Filters are placed in the Filter clause while the base query stays in Must to preserve scoring.
 	/// </summary>
 	private static Query ApplyFilters(Query baseQuery, FullSearchRequest request)
 	{
-		var filters = new List<Query> { baseQuery };
+		var filters = new List<Query>();
 
 		// Type filter
 		if (request.TypeFilter is { Length: > 0 })
@@ -306,10 +307,15 @@ public partial class FullSearchGateway(
 		// TODO: Add nested applies_to filters when deployment/version filters are provided
 		// This requires nested queries for the applies_to field
 
-		if (filters.Count == 1)
+		if (filters.Count == 0)
 			return baseQuery;
 
-		return new BoolQuery { Filter = filters };
+		// Keep baseQuery in Must to preserve scoring, only put actual filters in Filter
+		return new BoolQuery
+		{
+			Must = [baseQuery],
+			Filter = filters
+		};
 	}
 
 	/// <summary>

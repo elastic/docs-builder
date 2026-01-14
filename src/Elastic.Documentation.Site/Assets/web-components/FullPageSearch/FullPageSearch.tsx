@@ -4,12 +4,11 @@ import {
     useEuiTheme,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { LandingPage } from './LandingPage'
 import { SearchHeader } from './SearchHeader'
 import { FilterSidebar } from './FilterSidebar'
 import { ResultsList } from './ResultsList'
-import { AIAnswerPanel } from './AIAnswerPanel'
 import {
     useFullPageSearchQuery,
     useHasSearched,
@@ -73,6 +72,9 @@ export const FullPageSearch = () => {
     // Animation state for search box transition
     const [isAnimatingSearchToHeader, setIsAnimatingSearchToHeader] = useState(false)
 
+    // Track when to force collapse the AI panel (when filters/page/sort change)
+    const [forceAICollapsed, setForceAICollapsed] = useState(false)
+
     // Store state
     const query = useFullPageSearchQuery()
     const hasSearched = useHasSearched()
@@ -98,6 +100,34 @@ export const FullPageSearch = () => {
         isSemanticQuery(query) &&
         results.length > 0 &&
         !isLoading
+
+    // Track previous values to detect changes
+    const prevFiltersRef = useRef(filters)
+    const prevVersionRef = useRef(version)
+    const prevPageRef = useRef(page)
+    const prevPageSizeRef = useRef(pageSize)
+    const prevSortByRef = useRef(sortBy)
+
+    // Force collapse AI panel when filters, page, sort, or version change
+    useEffect(() => {
+        const filtersChanged = JSON.stringify(filters) !== JSON.stringify(prevFiltersRef.current)
+        const versionChanged = version !== prevVersionRef.current
+        const pageChanged = page !== prevPageRef.current
+        const pageSizeChanged = pageSize !== prevPageSizeRef.current
+        const sortByChanged = sortBy !== prevSortByRef.current
+
+        if (filtersChanged || versionChanged || pageChanged || pageSizeChanged || sortByChanged) {
+            setForceAICollapsed(true)
+            // Reset after a tick so component can react to the change
+            setTimeout(() => setForceAICollapsed(false), 0)
+        }
+
+        prevFiltersRef.current = filters
+        prevVersionRef.current = version
+        prevPageRef.current = page
+        prevPageSizeRef.current = pageSize
+        prevSortByRef.current = sortBy
+    }, [filters, version, page, pageSize, sortBy])
 
     const handleSearch = useCallback((searchQuery: string) => {
         if (!searchQuery.trim()) return
@@ -272,13 +302,6 @@ export const FullPageSearch = () => {
                                 }
                             `}
                         >
-                            {showAIAnswer && (
-                                <AIAnswerPanel
-                                    query={query}
-                                    results={results}
-                                    visible={showAIAnswer}
-                                />
-                            )}
                             <ResultsList
                                 results={results}
                                 totalResults={totalResults}
@@ -289,6 +312,9 @@ export const FullPageSearch = () => {
                                 isLoading={isLoading || isFetching}
                                 filters={filters}
                                 version={version}
+                                query={query}
+                                showAIAnswer={showAIAnswer}
+                                forceAICollapsed={forceAICollapsed}
                                 onPageChange={actions.setPage}
                                 onPageSizeChange={actions.setPageSize}
                                 onSortChange={actions.setSortBy}
