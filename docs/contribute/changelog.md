@@ -2,17 +2,6 @@
 
 By adding a file for each notable change and grouping them into bundles, you can ultimately generate release documention with a consistent layout for all your products.
 
-1. Create changelogs with the `docs-builder changelog add` command.
-2. [Create changelog bundles](#changelog-bundle) with the `docs-builder changelog bundle` command. For example, create a bundle for the pull requests that are included in a product release.
-3. [Create documentation](#render-changelogs) with the `docs-builder changelog render` command.
-
-For more information about running `docs-builder`, go to [Contribute locally](https://www.elastic.co/docs/contribute-docs/locally).
-
-:::{note}
-This command is associated with an ongoing release docs initiative.
-Additional workflows are still to come for updating and generating documentation from changelogs.
-:::
-
 The changelogs use the following schema:
 
 :::{dropdown} Changelog schema
@@ -20,9 +9,8 @@ The changelogs use the following schema:
 ::::
 :::
 
-Some of the fields in the schema accept only a specific set of values:
-
 :::{important}
+Some of the fields in the schema accept only a specific set of values:
 
 - Product values must exist in [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml). Invalid products will cause the `docs-builder changelog add` command to fail.
 - Type, subtype, and lifecycle values must match the available values defined in [ChangelogConfiguration.cs](https://github.com/elastic/docs-builder/blob/main/src/services/Elastic.Documentation.Services/Changelog/ChangelogConfiguration.cs). Invalid values will cause the `docs-builder changelog add` command to fail.
@@ -36,6 +24,15 @@ To use the `docs-builder changelog` commands in your development workflow:
 1. Optional: Add labels to your GitHub pull requests to indicate that they are not notable and should not generate changelogs. For example, `non-issue` or `release_notes:skip`.
 1. [Configure changelog settings](#changelog-settings) to correctly interpret your PR labels.
 1. [Create changelogs](#changelog-add) with the `docs-builder changelog add` command.
+1. [Create changelog bundles](#changelog-bundle) with the `docs-builder changelog bundle` command. For example, create a bundle for the pull requests that are included in a product release.
+1. [Create documentation](#render-changelogs) with the `docs-builder changelog render` command.
+
+For more information about running `docs-builder`, go to [Contribute locally](https://www.elastic.co/docs/contribute-docs/locally).
+
+:::{note}
+This command is associated with an ongoing release docs initiative.
+Additional workflows are still to come for updating and generating documentation from changelogs.
+:::
 
 ## Create a changelog configuration file [changelog-settings]
 
@@ -115,7 +112,12 @@ Refer to [changelog.yml.example](https://github.com/elastic/docs-builder/blob/ma
 ## Create changelog files [changelog-add]
 
 You can use the `docs-builder changelog add` command to create a changelog file.
-For up-to-date details, use the `-h` option:
+
+:::{tip}
+Ideally this task will be automated such that it's performed by a bot or GitHub action when you create a pull request. More details to come as we refine the workflows.
+:::
+
+For up-to-date command usage information, use the `-h` option:
 
 ```sh
 Add a new changelog from command-line input
@@ -139,6 +141,24 @@ Options:
   --config <string?>                Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml' [Default: null]
   --use-pr-number                   Optional: Use the PR number as the filename instead of generating it from a unique ID and title
 ```
+
+### Authorization
+
+If you use the `--prs` option, the `docs-builder changelog add` command interacts with GitHub services.
+Log into GitHub or set the `GITHUB_TOKEN` (or `GH_TOKEN` ) environment variable with a sufficient personal access token (PAT).
+Otherwise, there will be fetch failures when you access private repositories and you might also encounter GitHub rate limiting errors.
+
+For example, to create a new token with the minimum authority to read pull request details:
+
+1. Go to **GitHub Settings** > **Developer settings** > **Personal access tokens** > [Fine-grained tokens](https://github.com/settings/personal-access-tokens).
+2. Click **Generate new token**.
+3. Give your token a descriptive name (such as "docs-builder changelog").
+4. Under **Resource owner** if you're an Elastic employee, select **Elastic**.
+5. Set an expiration date.
+6. Under **Repository access**, select **Only select repositories** and choose the repositories you want to access.
+7. Under **Permissions** > **Repository permissions**, set **Pull requests** to **Read-only**.
+8. Click **Generate token**.
+9. Copy the token to a safe location and use it in the `GITHUB_TOKEN` environment variable.
 
 ### Product format
 
