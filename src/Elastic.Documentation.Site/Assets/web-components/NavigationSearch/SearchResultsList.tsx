@@ -164,22 +164,19 @@ const SearchResultRow = ({
         return [typePrefix, ...result.parents.slice(1).map((p) => p.title)]
     }, [result.type, result.parents])
 
-    // Don't use htmx for API URLs - they require full page navigation
-    const isApiUrl = result.url.startsWith('/api')
-    const hxSelectOob = isApiUrl ? undefined : getHxSelectOob(result.url)
+    const hxSelectOob = getHxSelectOob(result.url)
 
-    // Process htmx when element mounts (only for non-API URLs)
+    // Process htmx when element mounts
     useEffect(() => {
-        if (anchorRef.current && !isApiUrl) {
+        if (anchorRef.current) {
             htmx.process(anchorRef.current)
         }
-    }, [isApiUrl, result.url])
+    }, [result.url])
 
     return (
         <a
             ref={anchorRef}
             href={result.url}
-            hx-boost={isApiUrl ? 'false' : undefined}
             hx-select-oob={hxSelectOob}
             data-search-result-index={index}
             onClick={onClick}

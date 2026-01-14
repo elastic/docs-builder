@@ -134,6 +134,15 @@ document.addEventListener(
 )
 
 document.addEventListener('htmx:beforeRequest', function (event: HtmxEvent) {
+    const path = event.detail.requestConfig?.path
+
+    // Bypass htmx for /api URLs - they require full page navigation
+    if (path?.startsWith('/api')) {
+        event.preventDefault()
+        window.location.href = path
+        return
+    }
+
     if (
         event.detail.requestConfig.verb === 'get' &&
         event.detail.requestConfig.triggeringEvent
