@@ -3,7 +3,7 @@ import { initCopyButton } from './copybutton'
 import { initHighlight } from './hljs'
 import { initImageCarousel } from './image-carousel'
 import { openDetailsWithAnchor } from './open-details-with-anchor'
-import { initNav } from './pages-nav'
+import { initNav, scrollCurrentNaviItemIntoView } from './pages-nav'
 import { initSmoothScroll } from './smooth-scroll'
 import { initTabs } from './tabs'
 import { initializeOtel } from './telemetry/instrumentation'
@@ -30,7 +30,8 @@ initializeOtel({
 // Dynamically import web components after telemetry is initialized
 // This ensures telemetry is available when the components execute
 // Parcel will automatically code-split this into a separate chunk
-import('./web-components/SearchOrAskAi/SearchOrAskAi')
+import('./web-components/NavigationSearch/NavigationSearchComponent')
+import('./web-components/AskAi/AskAi')
 import('./web-components/VersionDropdown')
 import('./web-components/AppliesToPopover')
 
@@ -178,6 +179,20 @@ document.body.addEventListener(
         navItems.forEach((navItem) => {
             navItem.classList.add('current')
         })
+    }
+)
+
+document.body.addEventListener(
+    'htmx:oobAfterSwap',
+    function (event: HtmxEvent) {
+        if (event.detail.target.id === 'nav-tree') {
+            return
+        }
+
+        const pagesNav = $('#pages-nav')
+        if (pagesNav) {
+            scrollCurrentNaviItemIntoView(pagesNav)
+        }
     }
 )
 

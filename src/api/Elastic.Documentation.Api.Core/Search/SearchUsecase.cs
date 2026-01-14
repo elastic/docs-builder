@@ -6,11 +6,12 @@ using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Api.Core.Search;
 
-public partial class SearchUsecase(ISearchGateway searchGateway, ILogger<SearchUsecase> logger)
+// note still called SearchUseCase because we'll re-add Search() and ensure both share the same client.
+public partial class SearchUsecase(IFindPageGateway findPageGateway, ILogger<SearchUsecase> logger)
 {
-	public async Task<SearchApiResponse> Search(SearchApiRequest request, Cancel ctx = default)
+	public async Task<FindPageApiResponse> FindPageAsync(FindPageApiRequest request, Cancel ctx = default)
 	{
-		var searchResult = await searchGateway.SearchAsync(
+		var result = await findPageGateway.FindPageAsync(
 			request.Query,
 			request.PageNumber,
 			request.PageSize,
@@ -18,33 +19,33 @@ public partial class SearchUsecase(ISearchGateway searchGateway, ILogger<SearchU
 			ctx
 		);
 
-		var response = new SearchApiResponse
+		var response = new FindPageApiResponse
 		{
-			Results = searchResult.Results,
-			TotalResults = searchResult.TotalHits,
+			Results = result.Results,
+			TotalResults = result.TotalHits,
 			PageNumber = request.PageNumber,
 			PageSize = request.PageSize,
-			Aggregations = new SearchAggregations { Type = searchResult.Aggregations }
+			Aggregations = new FindPageAggregations { Type = result.Aggregations }
 		};
 
-		LogSearchResults(
+		LogFindPageResults(
 			logger,
 			response.PageSize,
 			response.PageNumber,
 			request.Query,
-			new SearchResultsLogProperties(searchResult.Results.Select(i => i.Url).ToArray())
+			new AutoCompleteResultsLogProperties(result.Results.Select(i => i.Url).ToArray())
 		);
 
 		return response;
 	}
 
-	[LoggerMessage(Level = LogLevel.Information, Message = "Search completed with {PageSize} (page {PageNumber}) results for query '{SearchQuery}'")]
-	private static partial void LogSearchResults(ILogger logger, int pageSize, int pageNumber, string searchQuery, [LogProperties] SearchResultsLogProperties result);
+	[LoggerMessage(Level = LogLevel.Information, Message = "Find page completed with {PageSize} (page {PageNumber}) results for query '{SearchQuery}'")]
+	private static partial void LogFindPageResults(ILogger logger, int pageSize, int pageNumber, string searchQuery, [LogProperties] AutoCompleteResultsLogProperties result);
 
-	private sealed record SearchResultsLogProperties(string[] Urls);
+	private sealed record AutoCompleteResultsLogProperties(string[] Urls);
 }
 
-public record SearchApiRequest
+public record FindPageApiRequest
 {
 	public required string Query { get; init; }
 	public int PageNumber { get; init; } = 1;
@@ -52,35 +53,35 @@ public record SearchApiRequest
 	public string? TypeFilter { get; init; }
 }
 
-public record SearchApiResponse
+public record FindPageApiResponse
 {
-	public required IEnumerable<SearchResultItem> Results { get; init; }
+	public required IEnumerable<FindPageResultItem> Results { get; init; }
 	public required int TotalResults { get; init; }
 	public required int PageNumber { get; init; }
 	public required int PageSize { get; init; }
-	public SearchAggregations Aggregations { get; init; } = new();
+	public FindPageAggregations Aggregations { get; init; } = new();
 	public int PageCount => TotalResults > 0
 				? (int)Math.Ceiling((double)TotalResults / PageSize)
 				: 0;
 }
 
-public record SearchAggregations
+public record FindPageAggregations
 {
 	public IReadOnlyDictionary<string, long> Type { get; init; } = new Dictionary<string, long>();
 }
 
-public record SearchResultItemParent
+public record FindPageResultItemParent
 {
 	public required string Title { get; init; }
 	public required string Url { get; init; }
 }
 
-public record SearchResultItem
+public record FindPageResultItem
 {
 	public required string Type { get; init; }
 	public required string Url { get; init; }
 	public required string Title { get; init; }
 	public required string Description { get; init; }
-	public required SearchResultItemParent[] Parents { get; init; }
+	public required FindPageResultItemParent[] Parents { get; init; }
 	public float Score { get; init; }
 }

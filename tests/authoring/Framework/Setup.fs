@@ -215,8 +215,8 @@ type Setup =
         versioningSystems.Add(VersioningSystemId.Serverless, 
             VersioningSystem(
                 Id = VersioningSystemId.Serverless,
-                Current = SemVersion(8, 0, 0),
-                Base = SemVersion(8, 0, 0)
+                Current = AllVersions.Instance,
+                Base = AllVersions.Instance
             )
         )
         versioningSystems.Add(VersioningSystemId.ApmAgentJava, 

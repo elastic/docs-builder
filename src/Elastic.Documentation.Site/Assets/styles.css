@@ -122,7 +122,6 @@ body {
 			@apply sticky top-(--offset-top) z-30 overflow-y-auto;
 			max-height: calc(100vh - var(--offset-top));
 			scrollbar-gutter: stable;
-			scroll-behavior: smooth;
 		}
 
 		.sidebar-link {
