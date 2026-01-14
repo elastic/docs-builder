@@ -7,6 +7,7 @@ using Actions.Core.Services;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 
@@ -28,7 +29,7 @@ public class RepositoryBuildMatchingService(
 	/// <para>Will also qualify the branch as being current or next or whether we should build this speculatively</para>
 	/// <para>e.g., if a new minor branch gets created, we want to build it even if it's not configured in assembler.yml yet</para>
 	/// </summary>
-	public async Task<bool> ShouldBuild(IDiagnosticsCollector collector, string? repository, string? branchOrTag)
+	public async Task<bool> ShouldBuild(IDiagnosticsCollector collector, string? repository, string? branchOrTag, Cancel ctx)
 	{
 		var repo = repository ?? githubActionsService.GetInput("repository");
 		var refName = branchOrTag ?? githubActionsService.GetInput("ref_name");
@@ -40,9 +41,13 @@ public class RepositoryBuildMatchingService(
 			throw new ArgumentNullException(nameof(branchOrTag));
 
 		// environment does not matter to check the configuration, defaulting to dev
+		var linkIndexProvider = Aws3LinkIndexReader.CreateAnonymous();
+		var linkRegistry = await linkIndexProvider.GetRegistry(ctx);
+		var alreadyPublishing = linkRegistry.Repositories.ContainsKey(repo);
+		_logger.LogInformation("'{Repository}' publishing to link registry: {PublishState} ", repo, alreadyPublishing);
 		var assembleContext = new AssembleContext(configuration, configurationContext, "dev", collector, fileSystem, fileSystem, null, null);
 		var product = assembleContext.ProductsConfiguration.GetProductByRepositoryName(repo);
-		var matches = assembleContext.Configuration.Match(logFactory, repo, refName, product);
+		var matches = assembleContext.Configuration.Match(logFactory, repo, refName, product, alreadyPublishing);
 		if (matches is { Current: null, Next: null, Edge: null, Speculative: false })
 		{
 			_logger.LogInformation("'{Repository}' '{BranchOrTag}' combination not found in configuration.", repo, refName);
