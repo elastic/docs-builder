@@ -193,11 +193,11 @@ const SearchResultRow = ({
         return [typePrefix, ...result.parents.slice(1).map((p) => p.title)]
     }, [result.type, result.parents])
 
-    const hxSelectOob = getHxSelectOob(result.url, currentPathname)
-
     // Process htmx when element mounts or when pathname changes
     useEffect(() => {
         if (anchorRef.current) {
+            const hxSelectOob = getHxSelectOob(result.url, currentPathname)
+            anchorRef.current.setAttribute('hx-select-oob', hxSelectOob)
             htmx.process(anchorRef.current)
         }
     }, [result.url, currentPathname])
@@ -206,7 +206,6 @@ const SearchResultRow = ({
         <a
             ref={anchorRef}
             href={result.url}
-            hx-select-oob={hxSelectOob}
             data-search-result-index={index}
             onClick={onClick}
             onMouseEnter={onMouseEnter}
