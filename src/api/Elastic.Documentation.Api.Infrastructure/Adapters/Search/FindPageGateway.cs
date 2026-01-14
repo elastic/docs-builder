@@ -18,9 +18,8 @@ namespace Elastic.Documentation.Api.Infrastructure.Adapters.Search;
 /// Elasticsearch gateway for FindPage (autocomplete/navigation search).
 /// Uses shared lexical query optimized for autocomplete.
 /// </summary>
-public class FindPageGateway(
-	ElasticsearchClientAccessor clientAccessor,
-	ILogger<FindPageGateway> logger) : IFindPageGateway
+public class FindPageGateway(ElasticsearchClientAccessor clientAccessor, ILogger<FindPageGateway> logger)
+	: IFindPageGateway, IDisposable
 {
 	public async Task<bool> CanConnect(Cancel ctx) => await clientAccessor.CanConnect(ctx);
 
@@ -278,6 +277,13 @@ public class FindPageGateway(
 		var expectedResultExplain = await ExplainDocumentAsync(query, expectedDocumentUrl, ctx);
 
 		return (topResultExplain, expectedResultExplain);
+	}
+
+	/// <inheritdoc />
+	public void Dispose()
+	{
+		GC.SuppressFinalize(this);
+		clientAccessor.Dispose();
 	}
 }
 

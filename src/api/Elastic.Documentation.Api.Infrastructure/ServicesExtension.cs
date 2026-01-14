@@ -240,7 +240,7 @@ public static class ServicesExtension
 
 		// FindPage (autocomplete/navigation search)
 		_ = services.AddScoped<IFindPageGateway, FindPageGateway>();
-		_ = services.AddScoped<SearchUsecase>();
+		_ = services.AddScoped<FindPageUsecase>();
 
 		// FullSearch (full-page search with hybrid RRF)
 		_ = services.AddScoped<IFullSearchGateway, FullSearchGateway>();

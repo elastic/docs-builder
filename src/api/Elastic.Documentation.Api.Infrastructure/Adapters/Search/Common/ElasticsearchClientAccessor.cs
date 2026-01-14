@@ -13,8 +13,10 @@ namespace Elastic.Documentation.Api.Infrastructure.Adapters.Search.Common;
 /// Shared singleton accessor for the Elasticsearch client.
 /// Both FindPage (autocomplete) and FullSearch gateways share this client instance.
 /// </summary>
-public class ElasticsearchClientAccessor
+public class ElasticsearchClientAccessor : IDisposable
 {
+	private readonly ElasticsearchClientSettings _clientSettings;
+	private readonly SingleNodePool _nodePool;
 	public ElasticsearchClient Client { get; }
 	public ElasticsearchOptions Options { get; }
 	public SearchConfiguration SearchConfiguration { get; }
@@ -34,15 +36,15 @@ public class ElasticsearchClientAccessor
 			? ExtractRulesetName(elasticsearchOptions.IndexName)
 			: null;
 
-		var nodePool = new SingleNodePool(new Uri(elasticsearchOptions.Url.Trim()));
-		var clientSettings = new ElasticsearchClientSettings(
-				nodePool,
+		_nodePool = new SingleNodePool(new Uri(elasticsearchOptions.Url.Trim()));
+		_clientSettings = new ElasticsearchClientSettings(
+				_nodePool,
 				sourceSerializer: (_, settings) => new DefaultSourceSerializer(settings, EsJsonContext.Default)
 			)
 			.DefaultIndex(elasticsearchOptions.IndexName)
 			.Authentication(new ApiKey(elasticsearchOptions.ApiKey));
 
-		Client = new ElasticsearchClient(clientSettings);
+		Client = new ElasticsearchClient(_clientSettings);
 	}
 
 	/// <summary>
@@ -61,4 +63,12 @@ public class ElasticsearchClientAccessor
 	/// Tests connectivity to the Elasticsearch cluster.
 	/// </summary>
 	public async Task<bool> CanConnect(Cancel ctx) => (await Client.PingAsync(ctx)).IsValidResponse;
+
+	/// <inheritdoc />
+	public void Dispose()
+	{
+		GC.SuppressFinalize(this);
+		((IDisposable)_clientSettings).Dispose();
+		_nodePool.Dispose();
+	}
 }

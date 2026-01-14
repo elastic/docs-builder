@@ -116,7 +116,6 @@ export const AIAnswerPanel = ({
     const streamingQueryRef = useRef<string | null>(null)
     const answeredQueryRef = useRef<string | null>(null)
     const resultsRef = useRef<SearchResultItem[]>(results)
-    const prevResultsLengthRef = useRef(0)
     const mountedRef = useRef(true)
     const collapsedHeaderRef = useRef<HTMLDivElement>(null)
     const expandedHeaderRef = useRef<HTMLDivElement>(null)

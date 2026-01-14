@@ -16,9 +16,8 @@ namespace Elastic.Documentation.Api.Infrastructure.Adapters.Search;
 /// Full-page search gateway implementation.
 /// Uses hybrid RRF search for semantic queries, lexical-only for keyword queries.
 /// </summary>
-public partial class FullSearchGateway(
-	ElasticsearchClientAccessor clientAccessor,
-	ILogger<FullSearchGateway> logger) : IFullSearchGateway
+public partial class FullSearchGateway(ElasticsearchClientAccessor clientAccessor, ILogger<FullSearchGateway> logger)
+	: IFullSearchGateway, IDisposable
 {
 	/// <summary>
 	/// Regex pattern to detect semantic/question queries.
@@ -338,5 +337,12 @@ public partial class FullSearchGateway(
 			Aggregations = aggregations,
 			IsSemanticQuery = isSemanticQuery
 		};
+	}
+
+	/// <inheritdoc />
+	public void Dispose()
+	{
+		GC.SuppressFinalize(this);
+		clientAccessor.Dispose();
 	}
 }
