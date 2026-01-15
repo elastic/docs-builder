@@ -28,6 +28,24 @@ public partial class FullSearchGateway(ElasticsearchClientAccessor clientAccesso
 	private static partial Regex SemanticKeywordsRegex();
 
 	/// <summary>
+	/// Regex pattern to exclude common question words from highlighting.
+	/// </summary>
+	private static readonly Regex ExcludeFromHighlight = ExcludeFromHighlightRegex();
+
+	[GeneratedRegex(@"^(how|why|what|when|where|can|should|is|it|do|i|does|will|would|could)$", RegexOptions.IgnoreCase)]
+	private static partial Regex ExcludeFromHighlightRegex();
+
+	/// <summary>
+	/// Highlight options for full-page search results.
+	/// </summary>
+	private static readonly HighlightOptions FullPageHighlightOptions = new()
+	{
+		WholeWordOnly = true,
+		MinTokenLength = 2,
+		ExcludePattern = ExcludeFromHighlight
+	};
+
+	/// <summary>
 	/// Detects if a query is a semantic/question query.
 	/// </summary>
 	private static bool IsSemanticQuery(string query)
@@ -303,7 +321,7 @@ public partial class FullSearchGateway(ElasticsearchClientAccessor clientAccesso
 
 		var results = response.Hits.Select(hit =>
 		{
-			var item = SearchResultProcessor.ProcessHit(hit, searchQuery, clientAccessor.SynonymBiDirectional);
+			var item = SearchResultProcessor.ProcessHit(hit, searchQuery, clientAccessor.SynonymBiDirectional, FullPageHighlightOptions);
 			return new FullSearchResultItem
 			{
 				Type = item.Type,

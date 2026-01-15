@@ -237,7 +237,7 @@ export const SearchHeader = ({
                                 }
                             `}
                         >
-                            Elastic Documentation
+                            Search Elastic Documentation
                         </EuiText>
                     </button>
                 </div>
