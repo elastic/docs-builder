@@ -34,6 +34,7 @@ import('./web-components/NavigationSearch/NavigationSearchComponent')
 import('./web-components/AskAi/AskAi')
 import('./web-components/VersionDropdown')
 import('./web-components/AppliesToPopover')
+import('./web-components/FullPageSearch/FullPageSearchComponent')
 
 const { getOS } = new UAParser()
 const isLazyLoadNavigationEnabled =

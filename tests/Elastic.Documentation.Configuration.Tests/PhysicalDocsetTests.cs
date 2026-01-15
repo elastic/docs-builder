@@ -29,7 +29,7 @@ public class PhysicalDocsetTests
 		docSet.CrossLinks.Should().ContainSingle().Which.Should().Be("docs-content");
 
 		// Assert exclude patterns
-		docSet.Exclude.Should().ContainSingle().Which.Should().Be("_*.md");
+		docSet.Exclude.Should().HaveCount(2).And.Subject.First().Should().Be("_*.md");
 
 		// Assert substitutions
 		docSet.Subs.Should().NotBeEmpty();
