@@ -1,4 +1,5 @@
 import { MarkdownContent } from '../shared/MarkdownContent'
+import { startAskAiStream } from '../shared/askAiStreamClient'
 import type { SearchResultItem } from './useFullPageSearchQuery'
 import {
     EuiButtonIcon,
@@ -149,6 +150,9 @@ export const AIAnswerPanel = ({
             const controller = new AbortController()
             abortControllerRef.current = controller
 
+            // Track accumulated content for this stream
+            let accumulatedContent = ''
+
             try {
                 const contextDocs = currentResults.slice(0, 5).map((r) => ({
                     title: r.title,
@@ -165,83 +169,52 @@ export const AIAnswerPanel = ({
 
                 const messageWithContext = `Based on the following documentation context, answer this question: "${currentQuery}"\n\nContext:\n${contextText}`
 
-                const response = await fetch('/docs/_api/v1/ask-ai/stream', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        message: messageWithContext,
-                        conversationId: null,
-                    }),
+                await startAskAiStream({
+                    message: messageWithContext,
                     signal: controller.signal,
-                })
+                    callbacks: {
+                        onEvent: (event) => {
+                            if (!mountedRef.current) return
 
-                if (!response.ok) {
-                    throw new Error(
-                        `HTTP ${response.status}: ${response.statusText}`
-                    )
-                }
-
-                const reader = response.body?.getReader()
-                if (!reader) {
-                    throw new Error('No response body')
-                }
-
-                const decoder = new TextDecoder()
-                let buffer = ''
-
-                while (true) {
-                    const { done, value } = await reader.read()
-                    if (done) break
-
-                    buffer += decoder.decode(value, { stream: true })
-
-                    const lines = buffer.split('\n')
-                    buffer = lines.pop() || ''
-
-                    for (const line of lines) {
-                        if (line.startsWith('data:')) {
-                            const data = line.slice(5).trim()
-                            if (data === '[DONE]') {
+                            if (event.type === 'message_chunk') {
+                                accumulatedContent += event.content
+                                setContent(accumulatedContent)
+                            } else if (event.type === 'error') {
+                                streamingQueryRef.current = null
+                                setError(event.message || 'An error occurred')
+                                setStreaming(false)
+                            } else if (event.type === 'conversation_end') {
                                 answeredQueryRef.current = currentQuery
                                 streamingQueryRef.current = null
-                                if (mountedRef.current) {
-                                    setStreaming(false)
-                                    setShowSources(true)
-                                    setJustCompleted(true)
+                                setStreaming(false)
+                                setShowSources(true)
+                                setJustCompleted(true)
+                            }
+                        },
+                        onError: (err) => {
+                            streamingQueryRef.current = null
+                            if (!mountedRef.current) return
+
+                            setStreaming(false)
+                            if (err.name === 'AbortError') {
+                                if (pendingQueryRef.current === currentQuery) {
+                                    setUnavailable(true)
                                 }
                                 return
                             }
+                            setError(err.message || 'Failed to get AI answer')
+                            setUnavailable(true)
+                        },
+                    },
+                })
 
-                            try {
-                                const parsed = JSON.parse(data)
-                                if (parsed.content && mountedRef.current) {
-                                    setContent((prev) => prev + parsed.content)
-                                } else if (parsed.error) {
-                                    streamingQueryRef.current = null
-                                    if (mountedRef.current) {
-                                        setError(parsed.error)
-                                        setStreaming(false)
-                                    }
-                                    return
-                                }
-                            } catch {
-                                if (
-                                    data &&
-                                    data !== '[DONE]' &&
-                                    mountedRef.current
-                                ) {
-                                    setContent((prev) => prev + data)
-                                }
-                            }
-                        }
-                    }
-                }
-
-                answeredQueryRef.current = currentQuery
-                streamingQueryRef.current = null
-                if (mountedRef.current) {
+                // Stream completed successfully (normal close)
+                if (
+                    mountedRef.current &&
+                    streamingQueryRef.current === currentQuery
+                ) {
+                    answeredQueryRef.current = currentQuery
+                    streamingQueryRef.current = null
                     setStreaming(false)
                     setShowSources(true)
                     setJustCompleted(true)
