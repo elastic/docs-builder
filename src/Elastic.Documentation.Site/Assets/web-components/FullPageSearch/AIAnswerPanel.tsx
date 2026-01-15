@@ -128,7 +128,9 @@ export const AIAnswerPanel = ({
     const mountedRef = useRef(true)
     const collapsedHeaderRef = useRef<HTMLDivElement>(null)
     const expandedHeaderRef = useRef<HTMLDivElement>(null)
-    const waitingDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+    const waitingDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(
+        null
+    )
 
     // Track the query we want to stream for - set when query changes
     const pendingQueryRef = useRef<string | null>(null)
@@ -191,7 +193,8 @@ export const AIAnswerPanel = ({
                         onEvent: (event) => {
                             // Ignore events if component unmounted or this stream was superseded
                             if (!mountedRef.current) return
-                            if (streamingQueryRef.current !== currentQuery) return
+                            if (streamingQueryRef.current !== currentQuery)
+                                return
 
                             if (event.type === 'message_chunk') {
                                 accumulatedContent += event.content
@@ -210,7 +213,10 @@ export const AIAnswerPanel = ({
                         },
                         onError: (err) => {
                             // Ignore errors from superseded streams
-                            if (streamingQueryRef.current !== currentQuery && streamingQueryRef.current !== null) {
+                            if (
+                                streamingQueryRef.current !== currentQuery &&
+                                streamingQueryRef.current !== null
+                            ) {
                                 return
                             }
                             streamingQueryRef.current = null
@@ -240,7 +246,10 @@ export const AIAnswerPanel = ({
                 }
             } catch (err) {
                 // Ignore errors from superseded streams
-                if (streamingQueryRef.current !== currentQuery && streamingQueryRef.current !== null) {
+                if (
+                    streamingQueryRef.current !== currentQuery &&
+                    streamingQueryRef.current !== null
+                ) {
                     return
                 }
                 streamingQueryRef.current = null
@@ -279,7 +288,8 @@ export const AIAnswerPanel = ({
 
         // If input query differs from submitted query, user is typing something new
         const trimmedInput = inputQuery.trim()
-        const isTypingNewQuery = trimmedInput !== query.trim() && trimmedInput !== ''
+        const isTypingNewQuery =
+            trimmedInput !== query.trim() && trimmedInput !== ''
 
         if (isTypingNewQuery) {
             // Show waiting state immediately
