@@ -3,7 +3,7 @@ import { initCopyButton } from './copybutton'
 import { initHighlight } from './hljs'
 import { initImageCarousel } from './image-carousel'
 import { openDetailsWithAnchor } from './open-details-with-anchor'
-import { initNav } from './pages-nav'
+import { initNav, scrollCurrentNaviItemIntoView } from './pages-nav'
 import { initSmoothScroll } from './smooth-scroll'
 import { initTabs } from './tabs'
 import { initializeOtel } from './telemetry/instrumentation'
@@ -34,6 +34,7 @@ import('./web-components/NavigationSearch/NavigationSearchComponent')
 import('./web-components/AskAi/AskAi')
 import('./web-components/VersionDropdown')
 import('./web-components/AppliesToPopover')
+import('./web-components/FullPageSearch/FullPageSearchComponent')
 
 const { getOS } = new UAParser()
 const isLazyLoadNavigationEnabled =
@@ -134,6 +135,15 @@ document.addEventListener(
 )
 
 document.addEventListener('htmx:beforeRequest', function (event: HtmxEvent) {
+    const path = event.detail.requestConfig?.path
+
+    // Bypass htmx for /api URLs - they require full page navigation
+    if (path?.startsWith('/api')) {
+        event.preventDefault()
+        window.location.href = path
+        return
+    }
+
     if (
         event.detail.requestConfig.verb === 'get' &&
         event.detail.requestConfig.triggeringEvent
@@ -183,6 +193,20 @@ document.body.addEventListener(
 )
 
 document.body.addEventListener(
+    'htmx:oobAfterSwap',
+    function (event: HtmxEvent) {
+        if (event.detail.target.id === 'nav-tree') {
+            return
+        }
+
+        const pagesNav = $('#pages-nav')
+        if (pagesNav) {
+            scrollCurrentNaviItemIntoView(pagesNav)
+        }
+    }
+)
+
+document.body.addEventListener(
     'htmx:responseError',
     function (event: HtmxEvent) {
         // If you get a 404 error while clicking on a hx-get link, actually open the link
@@ -225,18 +249,3 @@ document.body.addEventListener(
         }
     }
 )
-
-// Clean up web component content before htmx saves to history cache.
-document.body.addEventListener('htmx:beforeHistorySave', function () {
-    // connectedCallback() re-renders
-    $$('applies-to-popover, version-dropdown, search-or-ask-ai').forEach(
-        (el) => {
-            el.innerHTML = ''
-        }
-    )
-
-    // EUI portal containers getting orphaned during navigation
-    $$('[data-euiportal="true"]').forEach((el) => {
-        el.remove()
-    })
-})
