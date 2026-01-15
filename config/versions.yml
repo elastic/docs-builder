@@ -106,7 +106,7 @@ versioning_systems:
     current: 0.1.1
   terraform-google-edot-cf:
     base: 0.1
-    current: 0.1.1
+    current: 0.1.2
 
   # Logging
   ecs-logging-dotnet:
