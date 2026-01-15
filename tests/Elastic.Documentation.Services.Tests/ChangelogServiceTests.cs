@@ -5208,6 +5208,7 @@ public class ChangelogServiceTests : IDisposable
 		yamlContents.Should().Contain(c => c.Contains("pr: https://github.com/elastic/elasticsearch/pull/2222"));
 	}
 
+	[SuppressMessage("Security", "CA5350:Do not use insecure cryptographic algorithm SHA1", Justification = "SHA1 is required for compatibility with existing changelog bundle format")]
 	private static string ComputeSha1(string content)
 	{
 		var bytes = System.Text.Encoding.UTF8.GetBytes(content);
