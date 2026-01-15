@@ -167,6 +167,7 @@ interface ResultsListProps {
     filters: FullPageSearchFilters
     version: string
     query: string
+    inputQuery: string
     showAIAnswer: boolean
     forceAICollapsed: boolean
     onPageChange: (page: number) => void
@@ -188,6 +189,7 @@ export const ResultsList = ({
     filters,
     version,
     query,
+    inputQuery,
     showAIAnswer,
     forceAICollapsed,
     onPageChange,
@@ -294,6 +296,7 @@ export const ResultsList = ({
             {showAIAnswer && (
                 <AIAnswerPanel
                     query={query}
+                    inputQuery={inputQuery}
                     results={results}
                     visible={showAIAnswer}
                     forceCollapsed={forceAICollapsed}

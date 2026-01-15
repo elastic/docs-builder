@@ -17,6 +17,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 
 interface AIAnswerPanelProps {
     query: string
+    inputQuery: string
     results: SearchResultItem[]
     visible: boolean
     forceCollapsed?: boolean
@@ -29,11 +30,13 @@ const StatusBadge = ({
     streaming,
     hasContent,
     justCompleted,
+    isWaiting,
     euiTheme,
 }: {
     streaming: boolean
     hasContent: boolean
     justCompleted: boolean
+    isWaiting: boolean
     euiTheme: ReturnType<typeof useEuiTheme>['euiTheme']
 }) => {
     // Determine the state
@@ -41,13 +44,16 @@ const StatusBadge = ({
     const isGenerating = streaming && hasContent
     const isReady = !streaming && hasContent && justCompleted
 
-    if (!isThinking && !isGenerating && !isReady) return null
+    if (!isThinking && !isGenerating && !isReady && !isWaiting) return null
 
     let text = ''
     let background = 'rgba(255, 255, 255, 0.2)'
     let animation = ''
 
-    if (isThinking) {
+    if (isWaiting) {
+        text = 'Waiting...'
+        animation = 'pulse 1.5s ease-in-out infinite'
+    } else if (isThinking) {
         text = 'Thinking...'
         animation = 'pulse 1.5s ease-in-out infinite'
     } else if (isGenerating) {
@@ -101,6 +107,7 @@ const StatusBadge = ({
 
 export const AIAnswerPanel = ({
     query,
+    inputQuery,
     results,
     visible,
     forceCollapsed = false,
@@ -113,6 +120,7 @@ export const AIAnswerPanel = ({
     const [error, setError] = useState<string | null>(null)
     const [unavailable, setUnavailable] = useState(false)
     const [justCompleted, setJustCompleted] = useState(false)
+    const [isWaiting, setIsWaiting] = useState(false)
     const abortControllerRef = useRef<AbortController | null>(null)
     const streamingQueryRef = useRef<string | null>(null)
     const answeredQueryRef = useRef<string | null>(null)
@@ -120,6 +128,9 @@ export const AIAnswerPanel = ({
     const mountedRef = useRef(true)
     const collapsedHeaderRef = useRef<HTMLDivElement>(null)
     const expandedHeaderRef = useRef<HTMLDivElement>(null)
+    const waitingDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(
+        null
+    )
 
     // Track the query we want to stream for - set when query changes
     const pendingQueryRef = useRef<string | null>(null)
@@ -139,6 +150,11 @@ export const AIAnswerPanel = ({
                 return
             }
 
+            // Abort any existing stream before starting a new one
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort()
+            }
+
             streamingQueryRef.current = currentQuery
 
             setContent('')
@@ -146,6 +162,7 @@ export const AIAnswerPanel = ({
             setShowSources(false)
             setError(null)
             setUnavailable(false)
+            setIsWaiting(false)
 
             const controller = new AbortController()
             abortControllerRef.current = controller
@@ -174,7 +191,10 @@ export const AIAnswerPanel = ({
                     signal: controller.signal,
                     callbacks: {
                         onEvent: (event) => {
+                            // Ignore events if component unmounted or this stream was superseded
                             if (!mountedRef.current) return
+                            if (streamingQueryRef.current !== currentQuery)
+                                return
 
                             if (event.type === 'message_chunk') {
                                 accumulatedContent += event.content
@@ -192,14 +212,19 @@ export const AIAnswerPanel = ({
                             }
                         },
                         onError: (err) => {
+                            // Ignore errors from superseded streams
+                            if (
+                                streamingQueryRef.current !== currentQuery &&
+                                streamingQueryRef.current !== null
+                            ) {
+                                return
+                            }
                             streamingQueryRef.current = null
                             if (!mountedRef.current) return
 
                             setStreaming(false)
+                            // Don't show error/unavailable for intentional aborts (new query typed)
                             if (err.name === 'AbortError') {
-                                if (pendingQueryRef.current === currentQuery) {
-                                    setUnavailable(true)
-                                }
                                 return
                             }
                             setError(err.message || 'Failed to get AI answer')
@@ -220,20 +245,21 @@ export const AIAnswerPanel = ({
                     setJustCompleted(true)
                 }
             } catch (err) {
+                // Ignore errors from superseded streams
+                if (
+                    streamingQueryRef.current !== currentQuery &&
+                    streamingQueryRef.current !== null
+                ) {
+                    return
+                }
                 streamingQueryRef.current = null
                 if (!mountedRef.current) {
                     // Component unmounted (likely StrictMode), don't update state
                     return
                 }
                 setStreaming(false)
+                // Don't show error/unavailable for intentional aborts
                 if (err instanceof Error && err.name === 'AbortError') {
-                    // Only show unavailable if this was the current pending query and we're still mounted
-                    if (
-                        pendingQueryRef.current === currentQuery &&
-                        mountedRef.current
-                    ) {
-                        setUnavailable(true)
-                    }
                     return
                 }
                 setError(
@@ -251,6 +277,46 @@ export const AIAnswerPanel = ({
     useEffect(() => {
         resultsRef.current = results
     }, [results])
+
+    // Debounced AI query - automatically submit to AI when user stops typing
+    useEffect(() => {
+        // Clear any existing debounce timer
+        if (waitingDebounceRef.current) {
+            clearTimeout(waitingDebounceRef.current)
+            waitingDebounceRef.current = null
+        }
+
+        // If input query differs from submitted query, user is typing something new
+        const trimmedInput = inputQuery.trim()
+        const isTypingNewQuery =
+            trimmedInput !== query.trim() && trimmedInput !== ''
+
+        if (isTypingNewQuery) {
+            // Show waiting state immediately
+            setIsWaiting(true)
+            setJustCompleted(false) // Clear "Ready!" state
+
+            // Debounce: wait 500ms after user stops typing, then submit to AI
+            waitingDebounceRef.current = setTimeout(() => {
+                // Reset answered ref to allow streaming the new query
+                answeredQueryRef.current = null
+                // Start streaming with the typed query using current results as context
+                // doStream will handle aborting any existing stream
+                if (resultsRef.current.length > 0) {
+                    doStream(trimmedInput, resultsRef.current)
+                }
+            }, 500)
+        } else {
+            // User cleared input or input matches submitted query
+            setIsWaiting(false)
+        }
+
+        return () => {
+            if (waitingDebounceRef.current) {
+                clearTimeout(waitingDebounceRef.current)
+            }
+        }
+    }, [inputQuery, query, doStream])
 
     // Single effect to handle streaming - triggered by query or results changes
     useEffect(() => {
@@ -451,6 +517,7 @@ export const AIAnswerPanel = ({
                                     streaming={streaming}
                                     hasContent={!!content}
                                     justCompleted={justCompleted}
+                                    isWaiting={isWaiting}
                                     euiTheme={euiTheme}
                                 />
                             </div>
@@ -643,6 +710,7 @@ export const AIAnswerPanel = ({
                                         streaming={streaming}
                                         hasContent={!!content}
                                         justCompleted={justCompleted}
+                                        isWaiting={isWaiting}
                                         euiTheme={euiTheme}
                                     />
                                 </div>
