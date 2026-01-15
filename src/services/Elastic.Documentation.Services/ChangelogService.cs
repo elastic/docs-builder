@@ -409,7 +409,7 @@ public partial class ChangelogService(
 				collector.EmitWarning(string.Empty, $"Failed to extract PR number from '{prUrl}'. Falling back to timestamp-based filename.");
 				var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 				var slug = string.IsNullOrWhiteSpace(input.Title)
-					? (prUrl != null ? $"pr-{prUrl.Replace("/", "-").Replace(":", "-")}" : "changelog")
+					? $"pr-{prUrl.Replace("/", "-").Replace(":", "-")}"
 					: SanitizeFilename(input.Title);
 				filename = $"{timestamp}-{slug}.yaml";
 			}
@@ -419,7 +419,7 @@ public partial class ChangelogService(
 			// Default: timestamp-slug.yaml
 			var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 			var slug = string.IsNullOrWhiteSpace(input.Title)
-				? (prUrl != null ? $"pr-{prUrl.Replace("/", "-").Replace(":", "-")}" : "changelog")
+				? $"pr-{prUrl.Replace("/", "-").Replace(":", "-")}"
 				: SanitizeFilename(input.Title);
 			filename = $"{timestamp}-{slug}.yaml";
 		}
