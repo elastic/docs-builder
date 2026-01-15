@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Api.Infrastructure.Adapters.Search;
+using Elastic.Documentation.Api.Infrastructure.Adapters.Search.Common;
 using Elastic.Documentation.Api.Infrastructure.Aws;
 using Elastic.Documentation.Configuration.Search;
 using FluentAssertions;
@@ -74,7 +75,7 @@ public class SearchRelevanceTests(ITestOutputHelper output)
 	public async Task SearchReturnsExpectedFirstResultWithExplain(string query, string expectedFirstResultUrl, string[]? additionalExpectedUrls)
 	{
 		// Arrange - Create ElasticsearchGateway directly
-		var gateway = CreateElasticsearchGateway();
+		var gateway = CreateFindPageGateway();
 		Assert.SkipUnless(gateway is not null, "Elasticsearch is not connected");
 		var canConnect = await gateway.CanConnect(TestContext.Current.CancellationToken);
 		Assert.SkipUnless(canConnect, "Elasticsearch is not connected");
@@ -182,7 +183,7 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 	public async Task ExplainTopResultAndExpectedAsyncReturnsDetailedScoring()
 	{
 		// Arrange
-		var gateway = CreateElasticsearchGateway();
+		var gateway = CreateFindPageGateway();
 		Assert.SkipUnless(gateway is not null, "Elasticsearch is not connected");
 		var canConnect = await gateway.CanConnect(TestContext.Current.CancellationToken);
 		Assert.SkipUnless(canConnect, "Elasticsearch is not connected");
@@ -220,7 +221,7 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 	/// <summary>
 	/// Creates an ElasticsearchGateway instance using configuration from the distributed application.
 	/// </summary>
-	private ElasticsearchGateway? CreateElasticsearchGateway()
+	private FindPageGateway? CreateFindPageGateway()
 	{
 		// Build a new ConfigurationBuilder to read user secrets
 		var configBuilder = new ConfigurationBuilder();
@@ -269,7 +270,8 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 			DiminishTerms = ["plugin", "client", "integration", "glossary"]
 		};
 
-		return new ElasticsearchGateway(options, searchConfig, NullLogger<ElasticsearchGateway>.Instance);
+		var clientAccessor = new ElasticsearchClientAccessor(options, searchConfig);
+		return new FindPageGateway(clientAccessor, NullLogger<FindPageGateway>.Instance);
 	}
 
 	/// <summary>

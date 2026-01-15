@@ -91,3 +91,17 @@ render_blockers:
     areas:
       - Security
 
+# Product-specific label blockers (optional)
+# Maps product IDs to lists of pull request labels that prevent changelog creation for that product
+# If you run the changelog add command with the --prs option and a PR has any of these labels, the changelog is not created
+# Product IDs can be comma-separated to share the same list of labels across multiple products
+add_blockers:
+  # Example: Skip changelog creation for elasticsearch product when PR has these labels
+  # elasticsearch:
+  #   - ">non-issue"
+  #   - ">test"
+  #   - ">refactoring"
+  # Example: Share the same blockers across multiple products using comma-separated product IDs
+  # elasticsearch, cloud-serverless:
+  #   - ">non-issue"
+

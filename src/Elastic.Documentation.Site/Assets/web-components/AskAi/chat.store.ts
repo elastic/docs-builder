@@ -1,22 +1,13 @@
-import { logError, logWarn } from '../../telemetry/logging'
+import { logError } from '../../telemetry/logging'
+import { startAskAiStream, AiProvider } from '../shared/askAiStreamClient'
 import { cooldownStore } from '../shared/cooldown.store'
-import {
-    ApiError,
-    createApiErrorFromResponse,
-    isApiError,
-    isRateLimitError,
-} from '../shared/errorHandling'
-import { AskAiEvent, AskAiEventSchema } from './AskAiEvent'
+import { ApiError, isApiError, isRateLimitError } from '../shared/errorHandling'
+import { AskAiEvent } from './AskAiEvent'
 import { MessageThrottler } from './MessageThrottler'
-import {
-    fetchEventSource,
-    EventSourceMessage,
-    EventStreamContentType,
-} from '@microsoft/fetch-event-source'
 import { v4 as uuidv4 } from 'uuid'
 import { create } from 'zustand/react'
 
-export type AiProvider = 'AgentBuilder' | 'LlmGateway'
+export type { AiProvider }
 export type Reaction = 'thumbsUp' | 'thumbsDown'
 
 export interface ChatMessage {
@@ -31,8 +22,6 @@ export interface ChatMessage {
     reasoning?: AskAiEvent[] // Reasoning steps for status display (search, tool calls, etc.)
 }
 
-const API_ENDPOINT = '/docs/_api/v1/ask-ai/stream'
-
 interface ActiveStream {
     controller: AbortController
     content: string
@@ -41,17 +30,6 @@ interface ActiveStream {
 
 // Active streams stored outside the reactive state (non-serializable)
 const activeStreams = new Map<string, ActiveStream>()
-
-/**
- * Compute SHA256 hash for CloudFront + Lambda Function URL with OAC
- */
-async function computeSHA256(data: string): Promise<string> {
-    const encoder = new TextEncoder()
-    const dataBuffer = encoder.encode(data)
-    const hashBuffer = await crypto.subtle.digest('SHA-256', dataBuffer)
-    const hashArray = Array.from(new Uint8Array(hashBuffer))
-    return hashArray.map((b) => ('0' + b.toString(16)).slice(-2)).join('')
-}
 
 const sentAiMessageIds = new Set<string>()
 
@@ -250,95 +228,19 @@ async function startStream(
 
     activeStreams.set(messageId, { controller, content: '', throttler })
 
-    const payload = {
-        message: question,
-        ...(conversationId && { conversationId }),
-    }
-
     try {
-        const bodyString = JSON.stringify(payload)
-        const contentHash = await computeSHA256(bodyString)
-
-        await fetchEventSource(API_ENDPOINT, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-amz-content-sha256': contentHash,
-                'X-AI-Provider': aiProvider,
-            },
-            body: bodyString,
+        await startAskAiStream({
+            message: question,
+            conversationId,
+            aiProvider,
             signal: controller.signal,
-            openWhenHidden: true,
-
-            onopen: async (response) => {
-                if (
-                    response.ok &&
-                    response.headers
-                        .get('content-type')
-                        ?.includes(EventStreamContentType)
-                ) {
-                    return
-                }
-                if (!response.ok) {
-                    const error =
-                        (await createApiErrorFromResponse(response)) ??
-                        new Error('Request failed')
+            callbacks: {
+                onEvent: (event) => throttler.push(event),
+                onError: (error) => {
                     controller.abort()
                     handleStreamError(messageId, error)
-                    throw error
-                }
-                throw new Error('Invalid response')
-            },
-
-            onmessage: (msg: EventSourceMessage) => {
-                if (msg.event === 'FatalError') {
-                    handleStreamError(messageId, new Error(msg.data))
-                    return
-                }
-                if (!msg.data?.trim()) return
-
-                try {
-                    const rawData = JSON.parse(msg.data)
-                    const result = AskAiEventSchema.safeParse(rawData)
-                    if (!result.success) {
-                        logWarn('Failed to parse AskAi event', {
-                            'error.type': 'validation',
-                            'error.issues': JSON.stringify(result.error.issues),
-                        })
-                        return
-                    }
-                    // Push to throttler instead of handling directly
-                    throttler.push(result.data)
-                } catch (error) {
-                    logWarn('Failed to parse SSE message', {
-                        'error.message':
-                            error instanceof Error
-                                ? error.message
-                                : String(error),
-                    })
-                }
-            },
-
-            onerror: (err) => {
-                // Don't treat abort as an error - it's normal when user cancels
-                if (err instanceof Error && err.name === 'AbortError') {
-                    return null
-                }
-                if (isApiError(err)) {
-                    controller.abort()
-                    handleStreamError(messageId, err)
-                    return null
-                }
-                const error =
-                    err instanceof Error
-                        ? err
-                        : new Error(err?.message || 'Connection error')
-                handleStreamError(messageId, error)
-                return undefined
-            },
-
-            onclose: () => {
-                // Don't clear throttler here - let pending events drain naturally.
+                },
+                // Don't clear throttler on close - let pending events drain naturally.
                 // The conversation_end event will handle cleanup when it's processed.
             },
         })

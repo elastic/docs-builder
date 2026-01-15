@@ -34,6 +34,7 @@ import('./web-components/NavigationSearch/NavigationSearchComponent')
 import('./web-components/AskAi/AskAi')
 import('./web-components/VersionDropdown')
 import('./web-components/AppliesToPopover')
+import('./web-components/FullPageSearch/FullPageSearchComponent')
 
 const { getOS } = new UAParser()
 const isLazyLoadNavigationEnabled =
@@ -134,6 +135,15 @@ document.addEventListener(
 )
 
 document.addEventListener('htmx:beforeRequest', function (event: HtmxEvent) {
+    const path = event.detail.requestConfig?.path
+
+    // Bypass htmx for /api URLs - they require full page navigation
+    if (path?.startsWith('/api')) {
+        event.preventDefault()
+        window.location.href = path
+        return
+    }
+
     if (
         event.detail.requestConfig.verb === 'get' &&
         event.detail.requestConfig.triggeringEvent

@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find:*)",
+      "Bash(wc:*)",
+      "Bash(dotnet build:*)",
+      "Bash(npm run compile:check:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm exec:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run build:*)",
+      "Bash(git grep:*)"
+    ]
+  }
+}
