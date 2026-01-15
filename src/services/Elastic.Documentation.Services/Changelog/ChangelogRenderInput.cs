@@ -5,7 +5,7 @@
 namespace Elastic.Documentation.Services.Changelog;
 
 /// <summary>
-/// Input data for rendering changelog bundle to markdown
+/// Input data for rendering changelog bundle to markdown or asciidoc
 /// </summary>
 public class ChangelogRenderInput
 {
@@ -15,5 +15,6 @@ public class ChangelogRenderInput
 	public bool Subsections { get; set; }
 	public string[]? HideFeatures { get; set; }
 	public string? Config { get; set; }
+	public string FileType { get; set; } = "markdown";
 }
 

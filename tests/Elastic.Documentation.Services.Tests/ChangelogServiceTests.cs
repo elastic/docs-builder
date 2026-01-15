@@ -5208,6 +5208,204 @@ public class ChangelogServiceTests : IDisposable
 		yamlContents.Should().Contain(c => c.Contains("pr: https://github.com/elastic/elasticsearch/pull/2222"));
 	}
 
+	[Fact]
+	public async Task RenderChangelogs_WithAsciidocFileType_CreatesSingleAsciidocFile()
+	{
+		// Arrange
+		var service = new ChangelogService(_loggerFactory, _configurationContext, null);
+		var fileSystem = new FileSystem();
+		var changelogDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		fileSystem.Directory.CreateDirectory(changelogDir);
+
+		// Create test changelog file
+		var changelog1 = """
+			title: Test feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			pr: https://github.com/elastic/elasticsearch/pull/100
+			description: This is a test feature
+			""";
+
+		var changelogFile = fileSystem.Path.Combine(changelogDir, "1755268130-test-feature.yaml");
+		await fileSystem.File.WriteAllTextAsync(changelogFile, changelog1, TestContext.Current.CancellationToken);
+
+		// Create bundle file
+		var bundleFile = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
+		fileSystem.Directory.CreateDirectory(fileSystem.Path.GetDirectoryName(bundleFile)!);
+
+		var bundleContent = $"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			entries:
+			  - file:
+			      name: 1755268130-test-feature.yaml
+			      checksum: {ComputeSha1(changelog1)}
+			""";
+		await fileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+
+		var outputDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+
+		var input = new ChangelogRenderInput
+		{
+			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
+			Output = outputDir,
+			Title = "9.2.0",
+			FileType = "asciidoc"
+		};
+
+		// Act
+		var result = await service.RenderChangelogs(_collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		_collector.Errors.Should().Be(0);
+
+		// Verify a single .asciidoc file is created (not multiple files like markdown)
+		var asciidocFiles = fileSystem.Directory.GetFiles(outputDir, "*.asciidoc", SearchOption.AllDirectories);
+		asciidocFiles.Should().HaveCount(1, "asciidoc render should create a single file");
+
+		var asciidocFile = asciidocFiles[0];
+		var asciidocContent = await fileSystem.File.ReadAllTextAsync(asciidocFile, TestContext.Current.CancellationToken);
+
+		// Verify valid asciidoc format elements
+		asciidocContent.Should().Contain("[[release-notes-", "should contain anchor");
+		asciidocContent.Should().Contain("== 9.2.0", "should contain section header");
+		asciidocContent.Should().Contain("[[features-enhancements-", "should contain features section anchor");
+		asciidocContent.Should().Contain("=== New features and enhancements", "should contain features section header");
+		asciidocContent.Should().Contain("* Test feature", "should contain changelog entry");
+		asciidocContent.Should().Contain("This is a test feature", "should contain description");
+
+		// Verify no markdown files are created
+		var markdownFiles = fileSystem.Directory.GetFiles(outputDir, "*.md", SearchOption.AllDirectories);
+		markdownFiles.Should().BeEmpty("asciidoc render should not create markdown files");
+	}
+
+	[Fact]
+	public async Task RenderChangelogs_WithAsciidocFileType_ValidatesAsciidocFormat()
+	{
+		// Arrange
+		var service = new ChangelogService(_loggerFactory, _configurationContext, null);
+		var fileSystem = new FileSystem();
+		var changelogDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		fileSystem.Directory.CreateDirectory(changelogDir);
+
+		// Create test changelog files with different types
+		var featureChangelog = """
+			title: New search feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			pr: https://github.com/elastic/elasticsearch/pull/100
+			description: Added new search capabilities
+			""";
+
+		var bugFixChangelog = """
+			title: Fixed search bug
+			type: bug-fix
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			pr: https://github.com/elastic/elasticsearch/pull/200
+			description: Fixed a critical search issue
+			""";
+
+		var breakingChangeChangelog = """
+			title: Breaking API change
+			type: breaking-change
+			subtype: api
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			pr: https://github.com/elastic/elasticsearch/pull/300
+			description: Changed API endpoint structure
+			impact: Users need to update their API calls
+			action: Update API client libraries
+			""";
+
+		var featureFile = fileSystem.Path.Combine(changelogDir, "1755268130-feature.yaml");
+		var bugFixFile = fileSystem.Path.Combine(changelogDir, "1755268140-bugfix.yaml");
+		var breakingFile = fileSystem.Path.Combine(changelogDir, "1755268150-breaking.yaml");
+		await fileSystem.File.WriteAllTextAsync(featureFile, featureChangelog, TestContext.Current.CancellationToken);
+		await fileSystem.File.WriteAllTextAsync(bugFixFile, bugFixChangelog, TestContext.Current.CancellationToken);
+		await fileSystem.File.WriteAllTextAsync(breakingFile, breakingChangeChangelog, TestContext.Current.CancellationToken);
+
+		// Create bundle file
+		var bundleFile = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
+		fileSystem.Directory.CreateDirectory(fileSystem.Path.GetDirectoryName(bundleFile)!);
+
+		var bundleContent = $"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			entries:
+			  - file:
+			      name: 1755268130-feature.yaml
+			      checksum: {ComputeSha1(featureChangelog)}
+			  - file:
+			      name: 1755268140-bugfix.yaml
+			      checksum: {ComputeSha1(bugFixChangelog)}
+			  - file:
+			      name: 1755268150-breaking.yaml
+			      checksum: {ComputeSha1(breakingChangeChangelog)}
+			""";
+		await fileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+
+		var outputDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+
+		var input = new ChangelogRenderInput
+		{
+			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
+			Output = outputDir,
+			Title = "9.2.0",
+			FileType = "asciidoc"
+		};
+
+		// Act
+		var result = await service.RenderChangelogs(_collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		_collector.Errors.Should().Be(0);
+
+		var asciidocFiles = fileSystem.Directory.GetFiles(outputDir, "*.asciidoc", SearchOption.AllDirectories);
+		asciidocFiles.Should().HaveCount(1);
+
+		var asciidocContent = await fileSystem.File.ReadAllTextAsync(asciidocFiles[0], TestContext.Current.CancellationToken);
+
+		// Verify asciidoc structure
+		asciidocContent.Should().Contain("[[release-notes-9.2.0]]", "should contain main anchor");
+		asciidocContent.Should().Contain("== 9.2.0", "should contain main header");
+
+		// Verify sections are present with proper asciidoc format
+		asciidocContent.Should().Contain("[[bug-fixes-9.2.0]]", "should contain bug fixes anchor");
+		asciidocContent.Should().Contain("[float]", "should contain float attribute");
+		asciidocContent.Should().Contain("=== Bug fixes", "should contain bug fixes header");
+
+		asciidocContent.Should().Contain("[[features-enhancements-9.2.0]]", "should contain features anchor");
+		asciidocContent.Should().Contain("=== New features and enhancements", "should contain features header");
+
+		asciidocContent.Should().Contain("[[breaking-changes-9.2.0]]", "should contain breaking changes anchor");
+		asciidocContent.Should().Contain("=== Breaking changes", "should contain breaking changes header");
+
+		// Verify entries are formatted correctly
+		asciidocContent.Should().Contain("* New search feature", "should contain feature entry");
+		asciidocContent.Should().Contain("* Fixed search bug", "should contain bug fix entry");
+		asciidocContent.Should().Contain("* Breaking API change", "should contain breaking change entry");
+
+		// Verify asciidoc list format (entries should start with *)
+		var lines = asciidocContent.Split('\n');
+		var entryLines = lines.Where(l => l.TrimStart().StartsWith("* ", StringComparison.Ordinal) && !l.TrimStart().StartsWith("* *", StringComparison.Ordinal)).ToList();
+		entryLines.Should().HaveCountGreaterThanOrEqualTo(3, "should have at least 3 changelog entries");
+
+		// Verify no invalid markdown syntax (like ##) is present
+		asciidocContent.Should().NotContain("##", "should not contain markdown headers");
+		asciidocContent.Should().NotContain("###", "should not contain markdown headers");
+	}
+
 	[SuppressMessage("Security", "CA5350:Do not use insecure cryptographic algorithm SHA1", Justification = "SHA1 is required for compatibility with existing changelog bundle format")]
 	private static string ComputeSha1(string content)
 	{

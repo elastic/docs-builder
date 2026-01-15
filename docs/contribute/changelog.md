@@ -58,9 +58,9 @@ When you run the `docs-builder changelog add` command with the `--prs` option, i
 
 Refer to the file layout in [changelog.yml.example](https://github.com/elastic/docs-builder/blob/main/config/changelog.yml.example) and an [example usage](#example-map-label).
 
-### GitHub label blockers
+### Add blockers
 
-You can also optionally use `add_blockers` in your changelog configuration.
+You can optionally use `add_blockers` in your changelog configuration to prevent the creation of some changelogs.
 When you run the `docs-builder changelog add` command with the `--prs` and `--products` options and the PR has a label that you've identified as a blocker for that product, the command does not create a changelog for that PR.
 
 You can use comma-separated product IDs to share the same list of labels across multiple products.
@@ -69,8 +69,8 @@ Refer to the file layout in [changelog.yml.example](https://github.com/elastic/d
 
 ### Render blockers [render-blockers]
 
-You can optionally add `render_blockers` in your changelog configuration to block specific changelog entries from being rendered in markdown output files.
-When you run the `docs-builder changelog render` command, changelog entries that match the specified products and areas/types will be commented out in the markdown output.
+You can optionally add `render_blockers` in your changelog configuration to prevent the rendering of some changelogs.
+When you run the `docs-builder changelog render` command, changelog entries that match the specified products and areas/types will be commented out of the documentation output files.
 
 By default, the `docs-builder changelog render` command checks the following path: `docs/changelog.yml`.
 You can specify a different path with the `--config` command option.
@@ -198,9 +198,9 @@ This creates a file named `137431.yaml` instead of the default timestamp-based f
 When using `--use-pr-number`, you must also provide the `--pr` option. The PR number is extracted from the PR URL or number you provide.
 :::
 
-## Examples
+### Examples
 
-### Create a changelog for multiple products [example-multiple-products]
+#### Create a changelog for multiple products [example-multiple-products]
 
 ```sh
 docs-builder changelog add \
@@ -216,7 +216,7 @@ docs-builder changelog add \
 3. The product values are defined in [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml).
 4. The `--prs` value can be a full URL (such as `https://github.com/owner/repo/pull/123`), a short format (such as `owner/repo#123`), just a number (in which case you must also provide `--owner` and `--repo` options), or a path to a file containing newline-delimited PR URLs or numbers. Multiple PRs can be provided comma-separated, or you can specify a file path. You can also mix both formats by specifying `--prs` multiple times. One changelog file will be created for each PR.
 
-### Create a changelog with PR label mappings [example-map-label]
+#### Create a changelog with PR label mappings [example-map-label]
 
 You can configure label mappings in your changelog configuration file:
 
@@ -247,7 +247,7 @@ docs-builder changelog add \
 
 In this case, the changelog file derives the title, type, and areas from the pull request.
 
-### Block changelog creation with PR labels [example-block-label]
+#### Block changelog creation with PR labels [example-block-label]
 
 You can configure product-specific label blockers to prevent changelog creation for certain PRs based on their labels.
 
@@ -286,7 +286,7 @@ docs-builder changelog add --prs "1234, 5678" \
 If PR 1234 has the `>non-issue` or Watcher label, it will be skipped and no changelog will be created for it.
 If PR 5678 does not have any blocking labels, a changelog is created.
 
-### Create changelogs from a file of PRs [example-file-prs]
+#### Create changelogs from a file of PRs [example-file-prs]
 
 You can also provide PRs from a file containing newline-delimited PR URLs or numbers:
 
@@ -415,6 +415,7 @@ docs-builder changelog bundle --prs "108875,135873,136886" \ <1>
   --output-products "elasticsearch 9.2.2 ga" <4>
 ```
 
+
 1. The comma-separated list of pull request numbers to seek.
 2. The repository in the pull request URLs. This option is not required if you specify the short or full PR URLs in the `--prs` option.
 3. The owner in the pull request URLs. This option is not required if you specify the short or full PR URLs in the `--prs` option.
@@ -514,18 +515,19 @@ If you specify a file path with a different extension (not `.yml` or `.yaml`), t
 
 ## Create documentation [render-changelogs]
 
-The `docs-builder changelog render` command creates markdown files from changelog bundles for documentation purposes.
+The `docs-builder changelog render` command creates markdown or asciidoc files from changelog bundles for documentation purposes.
 For up-to-date details, use the `-h` command option:
 
 ```sh
-Render bundled changelog(s) to markdown files
+Render bundled changelog(s) to markdown or asciidoc files
 
 Options:
   --input <string[]>             Required: Bundle input(s) in format "bundle-file-path|changelog-file-path|repo|link-visibility" (use pipe as delimiter). To merge multiple bundles, separate them with commas. Only bundle-file-path is required. link-visibility can be "hide-links" or "keep-links" (default). Paths must be absolute or use environment variables; tilde (~) expansion is not supported. [Required]
-  --output <string?>             Optional: Output directory for rendered markdown files. Defaults to current directory [Default: null]
-  --title <string?>              Optional: Title to use for section headers in output markdown files. Defaults to version from first bundle [Default: null]
+  --output <string?>             Optional: Output directory for rendered files. Defaults to current directory [Default: null]
+  --title <string?>              Optional: Title to use for section headers in output files. Defaults to version from first bundle [Default: null]
   --subsections                  Optional: Group entries by area/component in subsections. For breaking changes with a subtype, groups by subtype instead of area. Defaults to false
-  --hide-features <string[]?>    Filter by feature IDs (comma-separated), or a path to a newline-delimited file containing feature IDs. Can be specified multiple times. Entries with matching feature-id values will be commented out in the markdown output. [Default: null]
+  --hide-features <string[]?>    Filter by feature IDs (comma-separated), or a path to a newline-delimited file containing feature IDs. Can be specified multiple times. Entries with matching feature-id values will be commented out in the output. [Default: null]
+  --file-type <string>           Optional: Output file type. Valid values: "markdown" or "asciidoc". Defaults to "markdown" [Default: markdown]
   --config <string?>             Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml' [Default: null]
 ```
 
@@ -559,7 +561,7 @@ docs-builder changelog render \
 ```
 
 1. Provide information about the changelog bundle(s). The format for each bundle is `"<bundle-file-path>|<changelog-file-path>|<repository>|<link-visibility>"` using pipe (`|`) as delimiter. To merge multiple bundles, separate them with commas (`,`). Only the `<bundle-file-path>` is required for each bundle. The `<changelog-file-path>` is useful if the changelogs are not in the default directory and are not resolved within the bundle. The `<repository>` is necessary if your changelogs do not contain full URLs for the pull requests or issues. The `<link-visibility>` can be `hide-links` or `keep-links` (default) to control whether PR/issue links are hidden for entries from private repositories.
-2. The `--title` value is used for an output folder name and for section titles in the markdown files. If you omit `--title` and the first bundle contains a product `target` value, that value is used. Otherwise, if none of the bundles have product `target` fields, the title defaults to "unknown".
+2. The `--title` value is used for an output folder name and for section titles in the output files. If you omit `--title` and the first bundle contains a product `target` value, that value is used. Otherwise, if none of the bundles have product `target` fields, the title defaults to "unknown".
 3. By default the command creates the output files in the current directory.
 4. By default the changelog areas are not displayed in the output. Add `--subsections` to group changelog details by their `areas`. For breaking changes that have a `subtype` value, the subsections will be grouped by subtype instead of area.
 
@@ -588,3 +590,16 @@ To comment out the pull request and issue links, for example if they relate to a
 
 If you have changelogs with `feature-id` values and you want them to be omitted from the output, use the `--hide-features` option.
 For more information, refer to [](/cli/release/changelog-render.md).
+
+To create an asciidoc file instead of markdown files, add the `--file-type asciidoc` option:
+
+```sh
+docs-builder changelog render \
+  --input "./changelog-bundle.yaml,./changelogs,elasticsearch" \
+  --title 9.2.2 \
+  --output ./release-notes \
+  --file-type asciidoc \ <1>
+  --subsections
+```
+
+1. Generate a single asciidoc file instead of multiple markdown files.

@@ -27,7 +27,7 @@ internal sealed class ChangelogCommand(
 	[Command("")]
 	public Task<int> Default()
 	{
-		collector.EmitError(string.Empty, "Please specify a subcommand. Available subcommands:\n  - 'changelog add': Create a new changelog from command-line input\n  - 'changelog bundle': Create a consolidated list of changelog files\n  - 'changelog render': Render a bundled changelog to markdown files\n\nRun 'changelog add --help', 'changelog bundle --help', or 'changelog render --help' for usage information.");
+		collector.EmitError(string.Empty, "Please specify a subcommand. Available subcommands:\n  - 'changelog add': Create a new changelog from command-line input\n  - 'changelog bundle': Create a consolidated list of changelog files\n  - 'changelog render': Render a bundled changelog to markdown or asciidoc files\n\nRun 'changelog add --help', 'changelog bundle --help', or 'changelog render --help' for usage information.");
 		return Task.FromResult(1);
 	}
 
@@ -328,13 +328,15 @@ internal sealed class ChangelogCommand(
 	}
 
 	/// <summary>
-	/// Render bundled changelog(s) to markdown files
+	/// Render bundled changelog(s) to markdown or asciidoc files
 	/// </summary>
 	/// <param name="input">Required: Bundle input(s) in format "bundle-file-path|changelog-file-path|repo|link-visibility" (use pipe as delimiter). To merge multiple bundles, separate them with commas. Only bundle-file-path is required. link-visibility can be "hide-links" or "keep-links" (default). Paths must be absolute or use environment variables; tilde (~) expansion is not supported.</param>
-	/// <param name="output">Optional: Output directory for rendered markdown files. Defaults to current directory</param>
-	/// <param name="title">Optional: Title to use for section headers in output markdown files. Defaults to version from first bundle</param>
+	/// <param name="output">Optional: Output directory for rendered files. Defaults to current directory</param>
+	/// <param name="title">Optional: Title to use for section headers in output files. Defaults to version from first bundle</param>
 	/// <param name="subsections">Optional: Group entries by area/component in subsections. For breaking changes with a subtype, groups by subtype instead of area. Defaults to false</param>
-	/// <param name="hideFeatures">Filter by feature IDs (comma-separated), or a path to a newline-delimited file containing feature IDs. Can be specified multiple times. Entries with matching feature-id values will be commented out in the markdown output.</param>
+	/// <param name="hideFeatures">Filter by feature IDs (comma-separated), or a path to a newline-delimited file containing feature IDs. Can be specified multiple times. Entries with matching feature-id values will be commented out in the output.</param>
+	/// <param name="fileType">Optional: Output file type. Valid values: "markdown" or "asciidoc". Defaults to "markdown"</param>
+	/// <param name="config">Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml'</param>
 	/// <param name="ctx"></param>
 	[Command("render")]
 	public async Task<int> Render(
@@ -343,6 +345,7 @@ internal sealed class ChangelogCommand(
 		string? title = null,
 		bool subsections = false,
 		string[]? hideFeatures = null,
+		string? fileType = "markdown",
 		string? config = null,
 		Cancel ctx = default
 	)
@@ -373,6 +376,14 @@ internal sealed class ChangelogCommand(
 			}
 		}
 
+		// Validate file-type
+		if (!string.Equals(fileType, "markdown", StringComparison.OrdinalIgnoreCase) &&
+			!string.Equals(fileType, "asciidoc", StringComparison.OrdinalIgnoreCase))
+		{
+			collector.EmitError(string.Empty, $"Invalid file-type '{fileType}'. Valid values are 'markdown' or 'asciidoc'.");
+			return 1;
+		}
+
 		// Parse each --input value into BundleInput objects
 		var bundles = BundleInputParser.ParseAll(input);
 
@@ -383,6 +394,7 @@ internal sealed class ChangelogCommand(
 			Title = title,
 			Subsections = subsections,
 			HideFeatures = allFeatureIds.Count > 0 ? allFeatureIds.ToArray() : null,
+			FileType = fileType ?? "markdown",
 			Config = config
 		};
 
