@@ -19,11 +19,17 @@
 	<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=@(Model.GoogleTagManager.Id)@(new HtmlString(Model.GoogleTagManager.QueryString()))"
 	                  height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 }
-@(await RenderPartialAsync(_Header.Create(Model)))
-<div id="main-container" class="flex flex-col items-center border-t-1 border-grey-20">
+@if (Model.RenderHeaders)
+{
+	@(await RenderPartialAsync(_Header.Create(Model)))
+}
+<div id="main-container" class="flex flex-col items-center @(Model.RenderHeaders ? "border-t-1 border-grey-20" : "")">
 	@(await RenderBodyAsync())
 </div>
-@await RenderPartialAsync(_Footer.Create(Model))
+@if (Model.RenderHeaders)
+{
+	@await RenderPartialAsync(_Footer.Create(Model))
+}
 @await RenderSectionAsync(GlobalSections.Footer)
 </body>
 </html>
