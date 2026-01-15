@@ -38,10 +38,6 @@ docs-builder changelog add [options...] [-h|--help]
 `--output <string?>`
 :   Optional: Output directory for the changelog fragment. Defaults to current directory.
 
-`--use-pr-number`
-:   Optional: Use the PR number as the filename instead of generating it from a unique ID and title.
-:   When using this option, you must also provide the `--pr` option.
-
 `--owner <string?>`
 :   Optional: GitHub repository owner (used when `--pr` is just a number).
 
@@ -64,6 +60,11 @@ docs-builder changelog add [options...] [-h|--help]
 `--repo <string?>`
 :   Optional: GitHub repository name (used when `--pr` is just a number).
 
+`--strip-title-prefix`
+:   Optional: When used with `--prs`, remove square brackets and text within them from the beginning of PR titles.
+:   For example, if a PR title is `"[Attack discovery] Improves Attack discovery hallucination detection"`, the changelog title will be `"Improves Attack discovery hallucination detection"`.
+:   This option applies only when the title is derived from the PR (when `--title` is not explicitly provided).
+
 `--subtype <string?>`
 :   Optional: Subtype for breaking changes (for example, `api`, `behavioral`, or `configuration`).
 :   The valid subtypes are listed in [ChangelogConfiguration.cs](https://github.com/elastic/docs-builder/blob/main/src/services/Elastic.Documentation.Services/Changelog/ChangelogConfiguration.cs).
@@ -76,3 +77,7 @@ docs-builder changelog add [options...] [-h|--help]
 `--type <string>`
 :   Required: Type of change (for example, `feature`, `enhancement`, `bug-fix`, or `breaking-change`).
 :   The valid types are listed in [ChangelogConfiguration.cs](https://github.com/elastic/docs-builder/blob/main/src/services/Elastic.Documentation.Services/Changelog/ChangelogConfiguration.cs).
+
+`--use-pr-number`
+:   Optional: Use the PR number as the filename instead of generating it from a unique ID and title.
+:   When using this option, you must also provide the `--pr` option.

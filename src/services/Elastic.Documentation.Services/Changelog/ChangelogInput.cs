@@ -26,5 +26,6 @@ public class ChangelogInput
 	public string? Output { get; set; }
 	public string? Config { get; set; }
 	public bool UsePrNumber { get; set; }
+	public bool StripTitlePrefix { get; set; }
 }
 

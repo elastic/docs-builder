@@ -145,7 +145,9 @@ public partial class ChangelogService(
 				FeatureId = input.FeatureId,
 				Highlight = input.Highlight,
 				Output = input.Output,
-				Config = input.Config
+				Config = input.Config,
+				UsePrNumber = input.UsePrNumber,
+				StripTitlePrefix = input.StripTitlePrefix
 			};
 
 			// Process this PR (treat as single PR)
@@ -244,7 +246,13 @@ public partial class ChangelogService(
 						collector.EmitError(string.Empty, $"PR {prUrl} does not have a title. Please provide --title or ensure the PR has a title.");
 						return false;
 					}
-					input.Title = prInfo.Title;
+					var prTitle = prInfo.Title;
+					// Strip prefix if requested
+					if (input.StripTitlePrefix)
+					{
+						prTitle = StripSquareBracketPrefix(prTitle);
+					}
+					input.Title = prTitle;
 					_logger.LogInformation("Using PR title: {Title}", input.Title);
 				}
 				else
@@ -750,6 +758,25 @@ public partial class ChangelogService(
 			sanitized = sanitized[..50];
 
 		return sanitized;
+	}
+
+	private static string StripSquareBracketPrefix(string title)
+	{
+		if (string.IsNullOrWhiteSpace(title))
+			return title;
+
+		// Check if title starts with '['
+		if (!title.StartsWith('['))
+			return title;
+
+		// Find the matching ']'
+		var closingBracketIndex = title.IndexOf(']', 1);
+		if (closingBracketIndex < 0)
+			return title; // No matching ']', return as-is
+
+		// Extract everything after the closing bracket and trim whitespace
+		var remaining = title[(closingBracketIndex + 1)..].TrimStart();
+		return remaining;
 	}
 
 	private static int? ExtractPrNumber(string prUrl, string? defaultOwner = null, string? defaultRepo = null)
