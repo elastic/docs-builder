@@ -255,6 +255,62 @@ The `--strip-title-prefix` option in this example means that if the PR title has
 The `--strip-title-prefix` option only applies when the title is derived from the PR (when `--title` is not explicitly provided). If you specify `--title` explicitly, that title is used as-is without any prefix stripping.
 :::
 
+#### Extract release notes from PR descriptions [example-extract-release-notes]
+
+You can use the `--extract-release-notes` option to automatically extract release notes from PR descriptions and use them in your changelog.
+
+The extractor looks for release notes in various formats in the PR description:
+
+- `Release Notes: This is the extracted sentence.`
+- `Release-Notes: This is the extracted sentence.`
+- `release notes: This is the extracted sentence.`
+- `Release Note: This is the extracted sentence.`
+- `Release Notes - This is the extracted sentence.`
+- `## Release Note` (as a markdown header)
+
+The extracted content is handled differently based on its length:
+
+- **Short release notes (≤120 characters, single line)**: Used as the changelog title (only if `--title` is not explicitly provided)
+- **Long release notes (>120 characters or multi-line)**: Used as the changelog description (only if `--description` is not explicitly provided)
+- **No release note found**: No changes are made to the title or description
+
+Example PR description:
+
+```markdown
+## Summary
+
+This PR adds support for new aggregation types.
+
+## Release Notes: Adds support for new aggregation types including date histogram and range aggregations
+
+## Testing
+
+Unit tests included.
+```
+
+When you run:
+
+```sh
+docs-builder changelog add \
+  --prs https://github.com/elastic/elasticsearch/pull/123456 \
+  --products "elasticsearch 9.2.3" \
+  --extract-release-notes
+```
+
+The changelog will use "Adds support for new aggregation types including date histogram and range aggregations" as the description (since it's longer than 120 characters).
+
+If the release note is shorter, for example:
+
+```markdown
+## Release Notes: Adds support for new aggregation types
+```
+
+The changelog will use "Adds support for new aggregation types" as the title instead.
+
+:::{note}
+The `--extract-release-notes` option only applies when used with `--prs`. If you explicitly provide `--title` or `--description`, those values take precedence over extracted release notes.
+:::
+
 #### Block changelog creation with PR labels [example-block-label]
 
 You can configure product-specific label blockers to prevent changelog creation for certain PRs based on their labels.
