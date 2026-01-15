@@ -58,9 +58,9 @@ When you run the `docs-builder changelog add` command with the `--prs` option, i
 
 Refer to the file layout in [changelog.yml.example](https://github.com/elastic/docs-builder/blob/main/config/changelog.yml.example) and an [example usage](#example-map-label).
 
-### GitHub label blockers
+### Add blockers
 
-You can also optionally use `add_blockers` in your changelog configuration.
+You can optionally use `add_blockers` in your changelog configuration to prevent the creation of some changelogs.
 When you run the `docs-builder changelog add` command with the `--prs` and `--products` options and the PR has a label that you've identified as a blocker for that product, the command does not create a changelog for that PR.
 
 You can use comma-separated product IDs to share the same list of labels across multiple products.
@@ -69,8 +69,8 @@ Refer to the file layout in [changelog.yml.example](https://github.com/elastic/d
 
 ### Render blockers [render-blockers]
 
-You can optionally add `render_blockers` in your changelog configuration to block specific changelog entries from being rendered in output files.
-When you run the `docs-builder changelog render` command, changelog entries that match the specified products and areas/types will be commented out in the output (markdown or asciidoc).
+You can optionally add `render_blockers` in your changelog configuration to prevent the rendering of some changelogs.
+When you run the `docs-builder changelog render` command, changelog entries that match the specified products and areas/types will be commented out of the documentation output files.
 
 By default, the `docs-builder changelog render` command checks the following path: `docs/changelog.yml`.
 You can specify a different path with the `--config` command option.
@@ -198,9 +198,9 @@ This creates a file named `137431.yaml` instead of the default timestamp-based f
 When using `--use-pr-number`, you must also provide the `--pr` option. The PR number is extracted from the PR URL or number you provide.
 :::
 
-## Examples
+### Examples
 
-### Create a changelog for multiple products [example-multiple-products]
+#### Create a changelog for multiple products [example-multiple-products]
 
 ```sh
 docs-builder changelog add \
@@ -216,7 +216,7 @@ docs-builder changelog add \
 3. The product values are defined in [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml).
 4. The `--prs` value can be a full URL (such as `https://github.com/owner/repo/pull/123`), a short format (such as `owner/repo#123`), just a number (in which case you must also provide `--owner` and `--repo` options), or a path to a file containing newline-delimited PR URLs or numbers. Multiple PRs can be provided comma-separated, or you can specify a file path. You can also mix both formats by specifying `--prs` multiple times. One changelog file will be created for each PR.
 
-### Create a changelog with PR label mappings [example-map-label]
+#### Create a changelog with PR label mappings [example-map-label]
 
 You can configure label mappings in your changelog configuration file:
 
@@ -247,7 +247,7 @@ docs-builder changelog add \
 
 In this case, the changelog file derives the title, type, and areas from the pull request.
 
-### Block changelog creation with PR labels [example-block-label]
+#### Block changelog creation with PR labels [example-block-label]
 
 You can configure product-specific label blockers to prevent changelog creation for certain PRs based on their labels.
 
@@ -286,7 +286,7 @@ docs-builder changelog add --prs "1234, 5678" \
 If PR 1234 has the `>non-issue` or Watcher label, it will be skipped and no changelog will be created for it.
 If PR 5678 does not have any blocking labels, a changelog is created.
 
-### Create changelogs from a file of PRs [example-file-prs]
+#### Create changelogs from a file of PRs [example-file-prs]
 
 You can also provide PRs from a file containing newline-delimited PR URLs or numbers:
 
