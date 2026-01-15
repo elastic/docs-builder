@@ -10,6 +10,7 @@ export interface FullPageSearchFilters {
 
 interface FullPageSearchState {
     query: string
+    submittedQuery: string
     hasSearched: boolean
     page: number
     pageSize: number
@@ -119,6 +120,7 @@ const urlState = getStateFromUrl()
 
 export const fullPageSearchStore = create<FullPageSearchState>((set, get) => ({
     query: urlState.query ?? '',
+    submittedQuery: urlState.query ?? '',
     hasSearched: urlState.hasSearched ?? false,
     page: 1,
     pageSize: 20,
@@ -134,6 +136,7 @@ export const fullPageSearchStore = create<FullPageSearchState>((set, get) => ({
             actions.addRecentSearch(query.trim())
             set({
                 query: query.trim(),
+                submittedQuery: query.trim(),
                 hasSearched: true,
                 page: 1,
             })
@@ -178,6 +181,7 @@ export const fullPageSearchStore = create<FullPageSearchState>((set, get) => ({
         reset: () =>
             set({
                 query: '',
+                submittedQuery: '',
                 hasSearched: false,
                 page: 1,
                 pageSize: 20,
@@ -188,6 +192,7 @@ export const fullPageSearchStore = create<FullPageSearchState>((set, get) => ({
         goToLanding: () => {
             set({
                 query: '',
+                submittedQuery: '',
                 hasSearched: false,
                 page: 1,
                 pageSize: 20,
@@ -218,6 +223,8 @@ fullPageSearchStore.subscribe((state) => {
 // Selectors
 export const useFullPageSearchQuery = () =>
     fullPageSearchStore((state) => state.query)
+export const useSubmittedQuery = () =>
+    fullPageSearchStore((state) => state.submittedQuery)
 export const useHasSearched = () =>
     fullPageSearchStore((state) => state.hasSearched)
 export const usePage = () => fullPageSearchStore((state) => state.page)

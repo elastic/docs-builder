@@ -4,6 +4,7 @@ import { ResultsList } from './ResultsList'
 import { SearchHeader } from './SearchHeader'
 import {
     useFullPageSearchQuery,
+    useSubmittedQuery,
     useHasSearched,
     usePage,
     usePageSize,
@@ -135,7 +136,8 @@ export const FullPageSearch = () => {
     const [forceAICollapsed, setForceAICollapsed] = useState(false)
 
     // Store state
-    const query = useFullPageSearchQuery()
+    const inputQuery = useFullPageSearchQuery()
+    const submittedQuery = useSubmittedQuery()
     const hasSearched = useHasSearched()
     const page = usePage()
     const pageSize = usePageSize()
@@ -156,7 +158,7 @@ export const FullPageSearch = () => {
     // Show AI answer for semantic queries
     const showAIAnswer =
         hasSearched &&
-        isSemanticQuery(query) &&
+        isSemanticQuery(submittedQuery) &&
         results.length > 0 &&
         !isLoading
 
@@ -258,7 +260,7 @@ export const FullPageSearch = () => {
 
             {hasSearched && isAvailable && (
                 <SearchHeader
-                    query={query}
+                    query={inputQuery}
                     recentSearches={recentSearches}
                     showSearchInput={showHeaderSearchInput}
                     onQueryChange={actions.setQuery}
@@ -294,7 +296,7 @@ export const FullPageSearch = () => {
                     <>
                         <div />
                         <LandingPage
-                            query={query}
+                            query={inputQuery}
                             isAnimatingOut={isAnimatingSearchToHeader}
                             onQueryChange={actions.setQuery}
                             onSearch={handleSearch}
@@ -305,12 +307,12 @@ export const FullPageSearch = () => {
                     </>
                 ) : error ? (
                     <ErrorState
-                        query={query}
+                        query={submittedQuery}
                         onGoToLanding={actions.goToLanding}
                     />
                 ) : totalResults === 0 && !isLoading ? (
                     <NoResultsState
-                        query={query}
+                        query={submittedQuery}
                         onClearFilters={actions.clearAllFilters}
                     />
                 ) : (
@@ -388,7 +390,8 @@ export const FullPageSearch = () => {
                                 isLoading={isLoading || isFetching}
                                 filters={filters}
                                 version={version}
-                                query={query}
+                                query={submittedQuery}
+                                inputQuery={inputQuery}
                                 showAIAnswer={showAIAnswer}
                                 forceAICollapsed={forceAICollapsed}
                                 onPageChange={actions.setPage}
