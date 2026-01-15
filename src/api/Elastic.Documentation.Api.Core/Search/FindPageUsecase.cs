@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 namespace Elastic.Documentation.Api.Core.Search;
 
 // note still called SearchUseCase because we'll re-add Search() and ensure both share the same client.
-public partial class SearchUsecase(IFindPageGateway findPageGateway, ILogger<SearchUsecase> logger)
+public partial class FindPageUsecase(IFindPageGateway findPageGateway, ILogger<FindPageUsecase> logger)
 {
 	public async Task<FindPageApiResponse> FindPageAsync(FindPageApiRequest request, Cancel ctx = default)
 	{

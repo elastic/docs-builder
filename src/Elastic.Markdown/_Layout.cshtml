@@ -68,6 +68,9 @@
 	case MarkdownPageLayout.Archive:
 		await RenderPartialAsync(_Archive.Create(Model));
 		break;
+	case MarkdownPageLayout.FullSearch:
+		await RenderPartialAsync(_FullSearch.Create(Model));
+		break;
 	default:
 		await RenderDefault();
 		break;

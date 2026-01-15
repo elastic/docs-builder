@@ -10,6 +10,8 @@ public class LocalParameterProvider : IParameterProvider
 {
 	private readonly string? _elasticUrlFromSecret;
 	private readonly string? _elasticApiKeyFromSecret;
+	private readonly string? _llmGatewayUrlFromSecret;
+	private readonly string? _llmGatewayServiceAccountPath;
 
 	public LocalParameterProvider()
 	{
@@ -20,7 +22,8 @@ public class LocalParameterProvider : IParameterProvider
 
 		_elasticUrlFromSecret = userSecretsConfig["Parameters:DocumentationElasticUrl"];
 		_elasticApiKeyFromSecret = userSecretsConfig["Parameters:DocumentationElasticApiKey"];
-
+		_llmGatewayUrlFromSecret = userSecretsConfig["Parameters:LlmGatewayUrl"];
+		_llmGatewayServiceAccountPath = userSecretsConfig["Parameters:LlmGatewayServiceAccountPath"];
 	}
 
 	public async Task<string> GetParam(string name, bool withDecryption = true, Cancel ctx = default)
@@ -29,7 +32,7 @@ public class LocalParameterProvider : IParameterProvider
 		{
 			case "llm-gateway-service-account":
 				{
-					var serviceAccountKeyPath = GetEnv("LLM_GATEWAY_SERVICE_ACCOUNT_KEY_PATH");
+					var serviceAccountKeyPath = GetEnv("LLM_GATEWAY_SERVICE_ACCOUNT_KEY_PATH", _llmGatewayServiceAccountPath);
 					if (!File.Exists(serviceAccountKeyPath))
 						throw new ArgumentException($"Service account key file not found at '{serviceAccountKeyPath}'.");
 					var serviceAccountKey = await File.ReadAllTextAsync(serviceAccountKeyPath, ctx);
@@ -37,7 +40,7 @@ public class LocalParameterProvider : IParameterProvider
 				}
 			case "llm-gateway-function-url":
 				{
-					return GetEnv("LLM_GATEWAY_FUNCTION_URL");
+					return GetEnv("LLM_GATEWAY_FUNCTION_URL", _llmGatewayUrlFromSecret);
 				}
 			case "docs-elasticsearch-url":
 				{

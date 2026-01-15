@@ -5208,14 +5208,11 @@ public class ChangelogServiceTests : IDisposable
 		yamlContents.Should().Contain(c => c.Contains("pr: https://github.com/elastic/elasticsearch/pull/2222"));
 	}
 
-	// SHA1 is used here only for test checksums, not for security purposes
-#pragma warning disable CA5350
 	private static string ComputeSha1(string content)
 	{
 		var bytes = System.Text.Encoding.UTF8.GetBytes(content);
 		var hash = System.Security.Cryptography.SHA1.HashData(bytes);
 		return Convert.ToHexString(hash).ToLowerInvariant();
 	}
-#pragma warning restore CA5350
 }
 
