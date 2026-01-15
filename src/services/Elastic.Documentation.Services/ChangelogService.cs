@@ -419,7 +419,9 @@ public partial class ChangelogService(
 			// Default: timestamp-slug.yaml
 			var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 			var slug = string.IsNullOrWhiteSpace(input.Title)
-				? $"pr-{prUrl.Replace("/", "-").Replace(":", "-")}"
+				? (string.IsNullOrWhiteSpace(prUrl)
+					? "changelog"
+					: $"pr-{prUrl.Replace("/", "-").Replace(":", "-")}")
 				: SanitizeFilename(input.Title);
 			filename = $"{timestamp}-{slug}.yaml";
 		}
