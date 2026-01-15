@@ -209,7 +209,10 @@ export const AIAnswerPanel = ({
                 })
 
                 // Stream completed successfully (normal close)
-                if (mountedRef.current && streamingQueryRef.current === currentQuery) {
+                if (
+                    mountedRef.current &&
+                    streamingQueryRef.current === currentQuery
+                ) {
                     answeredQueryRef.current = currentQuery
                     streamingQueryRef.current = null
                     setStreaming(false)

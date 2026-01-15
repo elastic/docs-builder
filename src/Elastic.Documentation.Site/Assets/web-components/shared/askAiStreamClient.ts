@@ -2,12 +2,6 @@
  * Shared streaming client for AskAI Lambda communication.
  * Handles AWS CloudFront + Lambda Function URL with OAC authentication.
  */
-
-import {
-    fetchEventSource,
-    EventSourceMessage,
-    EventStreamContentType,
-} from '@microsoft/fetch-event-source'
 import { logWarn } from '../../telemetry/logging'
 import { AskAiEvent, AskAiEventSchema } from '../AskAi/AskAiEvent'
 import {
@@ -15,6 +9,11 @@ import {
     createApiErrorFromResponse,
     isApiError,
 } from './errorHandling'
+import {
+    fetchEventSource,
+    EventSourceMessage,
+    EventStreamContentType,
+} from '@microsoft/fetch-event-source'
 
 export type AiProvider = 'AgentBuilder' | 'LlmGateway'
 
