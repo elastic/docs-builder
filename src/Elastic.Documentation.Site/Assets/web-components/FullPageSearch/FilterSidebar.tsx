@@ -1,4 +1,5 @@
 import type { FullPageSearchFilters } from './fullPageSearch.store'
+import { getProductDisplayName } from './productsConfig'
 import type { SearchAggregations } from './useFullPageSearchQuery'
 import { EuiBadge, EuiIcon, EuiText, useEuiTheme } from '@elastic/eui'
 import { css } from '@emotion/react'
@@ -74,6 +75,18 @@ const CloudIcon = () => (
         fill="currentColor"
     >
         <path d="M10.7458178,5.00539515 C13.6693111,5.13397889 16,7.54480866 16,10.5 C16,13.5375661 13.5375661,16 10.5,16 L4,16 C1.790861,16 0,14.209139 0,12 C0,10.3632968 0.983004846,8.95618668 2.39082809,8.33685609 C2.20209747,7.91526722 2.07902056,7.46524082 2.02752078,7 L0.5,7 C0.223857625,7 0,6.77614237 0,6.5 C0,6.22385763 0.223857625,6 0.5,6 L2.02746439,6 C2.1234088,5.13207349 2.46618907,4.33854089 2.98405031,3.69115709 L1.64644661,2.35355339 C1.45118446,2.15829124 1.45118446,1.84170876 1.64644661,1.64644661 C1.84170876,1.45118446 2.15829124,1.45118446 2.35355339,1.64644661 L3.69115709,2.98405031 C4.33854089,2.46618907 5.13207349,2.1234088 6,2.02746439 L6,0.5 C6,0.223857625 6.22385763,8.8817842e-16 6.5,8.8817842e-16 C6.77614237,8.8817842e-16 7,0.223857625 7,0.5 L7,2.02763291 C7.86199316,2.12340881 8.65776738,2.46398198 9.30889273,2.98400049 L10.6464466,1.64644661 C10.8417088,1.45118446 11.1582912,1.45118446 11.3535534,1.64644661 C11.5488155,1.84170876 11.5488155,2.15829124 11.3535534,2.35355339 L10.0163882,3.69071859 C10.3273281,4.07929253 10.5759739,4.52210317 10.7458178,5.00539515 Z M4,15 L10.5,15 C12.9852814,15 15,12.9852814 15,10.5 C15,8.01471863 12.9852814,6 10.5,6 C8.66116238,6 7.03779702,7.11297909 6.34791295,8.76123609 C7.34903712,9.48824913 8,10.6681043 8,12 C8,12.2761424 7.77614237,12.5 7.5,12.5 C7.22385763,12.5 7,12.2761424 7,12 C7,10.3431458 5.65685425,9 4,9 C2.34314575,9 1,10.3431458 1,12 C1,13.6568542 2.34314575,15 4,15 Z M9.69118222,5.05939327 C9.13621169,3.82983527 7.90059172,3 6.5,3 C4.56700338,3 3,4.56700338 3,6.5 C3,7.04681795 3.12529266,7.57427865 3.36125461,8.05072309 C3.56924679,8.01734375 3.78259797,8 4,8 C4.51800602,8 5.01301412,8.0984658 5.46732834,8.27770144 C6.22579284,6.55947236 7.82085903,5.33623457 9.69118222,5.05939327 Z" />
+    </svg>
+)
+
+const ProductIcon = () => (
+    <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="16"
+        height="16"
+        viewBox="0 0 16 16"
+        fill="currentColor"
+    >
+        <path d="M0 6.5l.004-.228c.039-1.186.678-2.31 1.707-2.956L6.293.57a3.512 3.512 0 013.414 0l4.582 2.746c1.029.646 1.668 1.77 1.707 2.956L16 6.5v3l-.004.228c-.039 1.186-.678 2.31-1.707 2.956l-4.582 2.746a3.512 3.512 0 01-3.414 0L1.711 12.684C.682 12.038.043 10.914.004 9.728L0 9.5v-3zM8 1.5a2.5 2.5 0 00-1.222.318L2.196 4.564A2.5 2.5 0 001 6.732V9.268a2.5 2.5 0 001.196 2.168l4.582 2.746a2.5 2.5 0 002.444 0l4.582-2.746A2.5 2.5 0 0015 9.268V6.732a2.5 2.5 0 00-1.196-2.168L9.222 1.818A2.5 2.5 0 008 1.5z" />
     </svg>
 )
 
@@ -484,6 +497,198 @@ const FacetFilter = ({
     )
 }
 
+interface ProductFilterProps {
+    items: Record<string, number>
+    selected: string[]
+    onChange: (value: string) => void
+}
+
+const ProductFilterItem = ({
+    productId,
+    count,
+    isSelected,
+    onChange,
+}: {
+    productId: string
+    count: number
+    isSelected: boolean
+    onChange: (value: string) => void
+}) => {
+    const { euiTheme } = useEuiTheme()
+    return (
+        <button
+            onClick={() => onChange(productId)}
+            css={css`
+                display: flex;
+                align-items: center;
+                gap: ${euiTheme.size.s};
+                width: 100%;
+                padding: ${euiTheme.size.s} ${euiTheme.size.s};
+                background: ${isSelected
+                    ? `${euiTheme.colors.primary}1A`
+                    : 'transparent'};
+                border: none;
+                border-radius: ${euiTheme.border.radius.small};
+                cursor: pointer;
+                text-align: left;
+                transition: background 0.15s ease;
+
+                &:hover {
+                    background: ${isSelected
+                        ? `${euiTheme.colors.primary}26`
+                        : euiTheme.colors.lightestShade};
+                }
+            `}
+        >
+            <EuiText
+                size="s"
+                css={css`
+                    flex: 1;
+                    font-weight: ${isSelected
+                        ? euiTheme.font.weight.semiBold
+                        : euiTheme.font.weight.regular};
+                    color: ${isSelected ? euiTheme.colors.primary : 'inherit'};
+                `}
+            >
+                {getProductDisplayName(productId)}
+            </EuiText>
+            {isSelected ? (
+                <EuiIcon type="cross" size="s" color="primary" />
+            ) : (
+                <EuiText size="xs" color="subdued">
+                    {count.toLocaleString()}
+                </EuiText>
+            )}
+        </button>
+    )
+}
+
+const ProductFilter = ({ items, selected, onChange }: ProductFilterProps) => {
+    const { euiTheme } = useEuiTheme()
+    const [showAll, setShowAll] = useState(false)
+
+    // Top 5 sorted by count (descending)
+    const sortedByCount = Object.entries(items).sort(([, a], [, b]) => b - a)
+    const topItems = sortedByCount.slice(0, ITEMS_TO_SHOW)
+
+    // Others sorted alphabetically by display name
+    const otherItems = sortedByCount.slice(ITEMS_TO_SHOW).sort(([a], [b]) => {
+        const nameA = getProductDisplayName(a).toLowerCase()
+        const nameB = getProductDisplayName(b).toLowerCase()
+        return nameA.localeCompare(nameB)
+    })
+
+    const hasMore = otherItems.length > 0
+
+    if (sortedByCount.length === 0) return null
+
+    return (
+        <div
+            css={css`
+                margin-bottom: ${euiTheme.size.l};
+            `}
+        >
+            <FacetHeader icon={<ProductIcon />} title="Product" />
+            <div
+                css={css`
+                    margin-top: ${euiTheme.size.xs};
+                `}
+            >
+                {topItems.map(([key, count]) => (
+                    <ProductFilterItem
+                        key={key}
+                        productId={key}
+                        count={count}
+                        isSelected={selected.includes(key)}
+                        onChange={onChange}
+                    />
+                ))}
+
+                {showAll && otherItems.length > 0 && (
+                    <>
+                        <div
+                            css={css`
+                                display: flex;
+                                align-items: center;
+                                gap: ${euiTheme.size.s};
+                                padding: ${euiTheme.size.s} ${euiTheme.size.s};
+                                margin-top: ${euiTheme.size.xs};
+                            `}
+                        >
+                            <div
+                                css={css`
+                                    flex: 1;
+                                    height: 1px;
+                                    background: ${euiTheme.border.color};
+                                `}
+                            />
+                            <EuiText
+                                size="xs"
+                                color="subdued"
+                                css={css`
+                                    text-transform: uppercase;
+                                    font-weight: ${euiTheme.font.weight
+                                        .semiBold};
+                                    letter-spacing: 0.5px;
+                                `}
+                            >
+                                Others
+                            </EuiText>
+                            <div
+                                css={css`
+                                    flex: 1;
+                                    height: 1px;
+                                    background: ${euiTheme.border.color};
+                                `}
+                            />
+                        </div>
+                        {otherItems.map(([key, count]) => (
+                            <ProductFilterItem
+                                key={key}
+                                productId={key}
+                                count={count}
+                                isSelected={selected.includes(key)}
+                                onChange={onChange}
+                            />
+                        ))}
+                    </>
+                )}
+
+                {hasMore && (
+                    <button
+                        onClick={() => setShowAll(!showAll)}
+                        css={css`
+                            display: flex;
+                            align-items: center;
+                            gap: ${euiTheme.size.xs};
+                            width: 100%;
+                            padding: ${euiTheme.size.xs} ${euiTheme.size.s};
+                            background: none;
+                            border: none;
+                            cursor: pointer;
+                            color: ${euiTheme.colors.primary};
+                            font-size: 13px;
+                            margin-top: ${euiTheme.size.xs};
+
+                            &:hover {
+                                text-decoration: underline;
+                            }
+                        `}
+                    >
+                        <EuiIcon
+                            type={showAll ? 'arrowUp' : 'arrowDown'}
+                            size="s"
+                        />
+                        {showAll
+                            ? 'Show less'
+                            : `Show ${otherItems.length} more`}
+                    </button>
+                )}
+            </div>
+        </div>
+    )
+}
+
 interface FilterSidebarProps {
     aggregations?: SearchAggregations
     version: string
@@ -502,6 +707,12 @@ export const FilterSidebar = ({
     return (
         <>
             <VersionFilter selected={version} onChange={onVersionChange} />
+
+            <ProductFilter
+                items={aggregations?.product ?? {}}
+                selected={filters.product}
+                onChange={(v) => onFilterChange('product', v)}
+            />
 
             <TypeFilter
                 items={aggregations?.type ?? {}}

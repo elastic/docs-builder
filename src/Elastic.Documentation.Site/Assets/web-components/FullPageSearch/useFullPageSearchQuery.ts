@@ -37,6 +37,10 @@ const SearchResultParent = z.object({
     title: z.string(),
 })
 
+const SearchProduct = z.object({
+    id: z.string(),
+})
+
 const SearchResultItem = z.object({
     type: z.string(),
     url: z.string(),
@@ -48,6 +52,8 @@ const SearchResultItem = z.object({
     aiRagOptimizedSummary: z.string().nullable().optional(),
     navigationSection: z.string().nullable().optional(),
     lastUpdated: z.string().nullable().optional(),
+    product: SearchProduct.nullable().optional(),
+    relatedProducts: z.array(SearchProduct).nullable().optional(),
 })
 
 export type SearchResultItem = z.infer<typeof SearchResultItem>
@@ -56,6 +62,7 @@ const SearchAggregations = z.object({
     type: z.record(z.string(), z.number()).optional(),
     navigationSection: z.record(z.string(), z.number()).optional(),
     deploymentType: z.record(z.string(), z.number()).optional(),
+    product: z.record(z.string(), z.number()).optional(),
 })
 
 export type SearchAggregations = z.infer<typeof SearchAggregations>
@@ -169,6 +176,9 @@ export const useFullPageSearch = () => {
                 filters.deploymentType.forEach((d) =>
                     params.append('deployment', d)
                 )
+
+                // Add product filters
+                filters.product.forEach((p) => params.append('product', p))
 
                 const response = await fetch(
                     '/docs/_api/v1/search?' + params.toString(),

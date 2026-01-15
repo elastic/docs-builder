@@ -84,6 +84,7 @@ public static class MappingsExtension
 				[FromQuery(Name = "type")] string[]? typeFilter,
 				[FromQuery(Name = "section")] string[]? sectionFilter,
 				[FromQuery(Name = "deployment")] string[]? deploymentFilter,
+				[FromQuery(Name = "product")] string[]? productFilter,
 				[FromQuery(Name = "version")] string? versionFilter,
 				[FromQuery(Name = "sort")] string? sortBy,
 				FullSearchUsecase searchUsecase,
@@ -98,6 +99,7 @@ public static class MappingsExtension
 					TypeFilter = typeFilter,
 					SectionFilter = sectionFilter,
 					DeploymentFilter = deploymentFilter,
+					ProductFilter = productFilter,
 					VersionFilter = versionFilter,
 					SortBy = sortBy ?? "relevance"
 				};

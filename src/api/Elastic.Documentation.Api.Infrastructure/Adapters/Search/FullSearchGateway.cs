@@ -108,6 +108,7 @@ public partial class FullSearchGateway(ElasticsearchClientAccessor clientAccesso
 					.Aggregations(agg => agg
 						.Add("type", a => a.Terms(t => t.Field(f => f.Type)))
 						.Add("navigation_section", a => a.Terms(t => t.Field(f => f.NavigationSection)))
+						.Add("product", a => a.Terms(t => t.Field("related_products.id").Size(100)))
 					)
 					.Source(sf => sf
 						.Filter(f => f
@@ -122,7 +123,9 @@ public partial class FullSearchGateway(ElasticsearchClientAccessor clientAccesso
 								e => e.NavigationSection,
 								e => e.AiShortSummary,
 								e => e.AiRagOptimizedSummary,
-								e => e.LastUpdated
+								e => e.LastUpdated,
+								e => e.Product,
+								e => e.RelatedProducts
 							)
 						)
 					)
@@ -194,6 +197,7 @@ public partial class FullSearchGateway(ElasticsearchClientAccessor clientAccesso
 					.Aggregations(agg => agg
 						.Add("type", a => a.Terms(t => t.Field(f => f.Type)))
 						.Add("navigation_section", a => a.Terms(t => t.Field(f => f.NavigationSection)))
+						.Add("product", a => a.Terms(t => t.Field("related_products.id").Size(100)))
 					)
 					.Source(sf => sf
 						.Filter(f => f
@@ -208,7 +212,9 @@ public partial class FullSearchGateway(ElasticsearchClientAccessor clientAccesso
 								e => e.NavigationSection,
 								e => e.AiShortSummary,
 								e => e.AiRagOptimizedSummary,
-								e => e.LastUpdated
+								e => e.LastUpdated,
+								e => e.Product,
+								e => e.RelatedProducts
 							)
 						)
 					)
@@ -276,6 +282,15 @@ public partial class FullSearchGateway(ElasticsearchClientAccessor clientAccesso
 				new TermsQueryField(request.SectionFilter.Select(s => (FieldValue)s).ToArray())));
 		}
 
+		// Product filter with AND behavior - each selected product must match
+		if (request.ProductFilter is { Length: > 0 })
+		{
+			foreach (var productId in request.ProductFilter)
+			{
+				filters.Add(new TermQuery { Field = "related_products.id", Value = productId });
+			}
+		}
+
 		// TODO: Add nested applies_to filters when deployment/version filters are provided
 		// This requires nested queries for the applies_to field
 
@@ -321,6 +336,7 @@ public partial class FullSearchGateway(ElasticsearchClientAccessor clientAccesso
 
 		var results = response.Hits.Select(hit =>
 		{
+			var doc = hit.Source!;
 			var item = SearchResultProcessor.ProcessHit(hit, searchQuery, clientAccessor.SynonymBiDirectional, FullPageHighlightOptions);
 			return new FullSearchResultItem
 			{
@@ -337,7 +353,12 @@ public partial class FullSearchGateway(ElasticsearchClientAccessor clientAccesso
 				AiShortSummary = item.AiShortSummary,
 				AiRagOptimizedSummary = item.AiRagOptimizedSummary,
 				NavigationSection = item.NavigationSection,
-				LastUpdated = item.LastUpdated
+				LastUpdated = item.LastUpdated,
+				Product = doc.Product?.Id != null ? new FullSearchProduct { Id = doc.Product.Id } : null,
+				RelatedProducts = doc.RelatedProducts?
+					.Where(p => p.Id != null)
+					.Select(p => new FullSearchProduct { Id = p.Id! })
+					.ToArray()
 			};
 		}).ToList();
 
@@ -345,7 +366,8 @@ public partial class FullSearchGateway(ElasticsearchClientAccessor clientAccesso
 		{
 			Type = SearchResultProcessor.ExtractTypeAggregations(response),
 			NavigationSection = SearchResultProcessor.ExtractNavigationSectionAggregations(response),
-			DeploymentType = SearchResultProcessor.ExtractDeploymentTypeAggregations(response)
+			DeploymentType = SearchResultProcessor.ExtractDeploymentTypeAggregations(response),
+			Product = SearchResultProcessor.ExtractProductAggregations(response)
 		};
 
 		return new FullSearchResult

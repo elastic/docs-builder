@@ -1,7 +1,7 @@
 import { DocumentIcon, ConsoleIcon } from './FilterSidebar'
+import { getProductDisplayName } from './productsConfig'
 import type { SearchResultItem } from './useFullPageSearchQuery'
 import {
-    EuiBadge,
     EuiButtonIcon,
     EuiFlexGroup,
     EuiFlexItem,
@@ -360,17 +360,55 @@ export const ResultCard = ({ result }: ResultCardProps) => {
                 `}
             >
                 <EuiFlexItem grow={false}>
-                    <EuiFlexGroup gutterSize="xs" wrap>
-                        <EuiFlexItem grow={false}>
-                            <EuiBadge color="hollow">{result.type}</EuiBadge>
-                        </EuiFlexItem>
-                        {result.navigationSection && (
+                    <EuiFlexGroup gutterSize="s" wrap alignItems="center">
+                        {result.product && (
                             <EuiFlexItem grow={false}>
-                                <EuiBadge color="hollow">
-                                    {result.navigationSection}
-                                </EuiBadge>
+                                <div
+                                    css={css`
+                                        display: inline-flex;
+                                        align-items: center;
+                                        gap: 6px;
+                                        padding: 4px 10px;
+                                        background: ${euiTheme.colors.primary};
+                                        color: #fff;
+                                        border-radius: ${euiTheme.border.radius
+                                            .medium};
+                                        font-size: 13px;
+                                        font-weight: ${euiTheme.font.weight
+                                            .medium};
+                                        line-height: 1.2;
+                                    `}
+                                >
+                                    {getProductDisplayName(result.product.id)}
+                                </div>
                             </EuiFlexItem>
                         )}
+                        {result.relatedProducts
+                            ?.filter((p) => p.id !== result.product?.id)
+                            .map((p) => (
+                                <EuiFlexItem key={p.id} grow={false}>
+                                    <div
+                                        css={css`
+                                            display: inline-flex;
+                                            align-items: center;
+                                            gap: 6px;
+                                            padding: 4px 10px;
+                                            background: transparent;
+                                            color: ${euiTheme.colors.text};
+                                            border: 1px solid
+                                                ${euiTheme.border.color};
+                                            border-radius: ${euiTheme.border
+                                                .radius.medium};
+                                            font-size: 13px;
+                                            font-weight: ${euiTheme.font.weight
+                                                .regular};
+                                            line-height: 1.2;
+                                        `}
+                                    >
+                                        {getProductDisplayName(p.id)}
+                                    </div>
+                                </EuiFlexItem>
+                            ))}
                     </EuiFlexGroup>
                 </EuiFlexItem>
                 {formattedDate && (

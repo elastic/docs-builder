@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using Elastic.ApiExplorer.Elasticsearch;
 using Elastic.Documentation.AppliesTo;
+using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Search;
@@ -131,6 +132,26 @@ public partial class ElasticsearchMarkdownExporter
 			Hidden = fileContext.NavigationItem.Hidden
 		};
 
+		// Infer product and repository metadata
+		var mappedPages = fileContext.SourceFile.YamlFrontMatter?.MappedPages;
+		var frontMatterProducts = fileContext.SourceFile.YamlFrontMatter?.Products;
+		var inference = _documentInferrer.InferForMarkdown(
+			fileContext.BuildContext.Git.RepositoryName,
+			mappedPages,
+			frontMatterProducts,
+			appliesTo
+		);
+		doc.Product = inference.Product is not null
+			? new IndexedProduct { Id = inference.Product.Id, Repository = inference.Repository }
+			: null;
+		doc.RelatedProducts = inference.RelatedProducts.Count > 0
+			? inference.RelatedProducts.Select(p => new IndexedProduct
+			{
+				Id = p.Id,
+				Repository = p.Repository ?? inference.Repository
+			}).ToArray()
+			: null;
+
 		CommonEnrichments(doc, currentNavigation);
 
 		// AI Enrichment - hybrid approach:
@@ -154,7 +175,7 @@ public partial class ElasticsearchMarkdownExporter
 		// we'll rename IMarkdownExporter to IDocumentationFileExporter at that point
 		_logger.LogInformation("Exporting OpenAPI documentation to Elasticsearch");
 
-		var exporter = new OpenApiDocumentExporter(_versionsConfiguration);
+		var exporter = new OpenApiDocumentExporter(_versionsConfiguration, _documentInferrer);
 
 		await foreach (var doc in exporter.ExportDocuments(limitPerSource: null, ctx))
 		{

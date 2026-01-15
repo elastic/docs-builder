@@ -5,6 +5,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
@@ -51,6 +52,9 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	private int _enrichmentCount;
 	private int _cacheHitCount;
 
+	// Document inference service for product and repository metadata
+	private readonly IDocumentInferrerService _documentInferrer;
+
 	public ElasticsearchMarkdownExporter(
 		ILoggerFactory logFactory,
 		IDiagnosticsCollector collector,
@@ -95,6 +99,14 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 			_llmClient = new ElasticsearchLlmClient(_transport, logFactory.CreateLogger<ElasticsearchLlmClient>());
 			_enrichPolicyManager = new EnrichPolicyManager(_transport, logFactory.CreateLogger<EnrichPolicyManager>(), _enrichmentCache.IndexName);
 		}
+
+		// Initialize document inference service for product and repository metadata
+		var assemblyConfiguration = AssemblyConfiguration.Create(context.ConfigurationFileProvider);
+		_documentInferrer = new DocumentInferrerService(
+			context.ProductsConfiguration,
+			context.VersionsConfiguration,
+			context.LegacyUrlMappings,
+			assemblyConfiguration);
 	}
 
 	private const int MaxRetries = 5;
