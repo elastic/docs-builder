@@ -29,6 +29,7 @@ public class EuidEnrichmentIntegrationTests : IAsyncLifetime
 
 	public ValueTask DisposeAsync()
 	{
+		GC.SuppressFinalize(this);
 		Environment.SetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT", null);
 		return ValueTask.CompletedTask;
 	}
