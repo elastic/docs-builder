@@ -98,7 +98,7 @@ describe('Find in Docs Telemetry Integration', () => {
         it('should track find_in_docs_opened when input is focused', async () => {
             // Arrange
             renderWithProviders(<NavigationSearch />)
-            const input = screen.getByPlaceholderText(/find in docs/i)
+            const input = screen.getByPlaceholderText(/jump to page/i)
 
             // Act
             await userEvent.click(input)
@@ -133,7 +133,7 @@ describe('Find in Docs Telemetry Integration', () => {
         it('should track find_in_docs_closed with escape reason when pressing Escape', async () => {
             // Arrange
             renderWithProviders(<NavigationSearch />)
-            const input = screen.getByPlaceholderText(/find in docs/i)
+            const input = screen.getByPlaceholderText(/jump to page/i)
 
             // Act - focus and type, then escape
             await userEvent.click(input)
@@ -160,7 +160,7 @@ describe('Find in Docs Telemetry Integration', () => {
                     <button data-testid="outside">Outside</button>
                 </div>
             )
-            const input = screen.getByPlaceholderText(/find in docs/i)
+            const input = screen.getByPlaceholderText(/jump to page/i)
 
             // Act - focus, type, then click outside
             await userEvent.click(input)
@@ -181,7 +181,7 @@ describe('Find in Docs Telemetry Integration', () => {
         it('should include hadResults and hadSelection in close event', async () => {
             // Arrange
             renderWithProviders(<NavigationSearch />)
-            const input = screen.getByPlaceholderText(/find in docs/i)
+            const input = screen.getByPlaceholderText(/jump to page/i)
 
             // Act - focus, type, then escape without results
             await userEvent.click(input)
@@ -215,7 +215,7 @@ describe('Find in Docs Telemetry Integration', () => {
             })
 
             renderWithProviders(<NavigationSearch />)
-            const input = screen.getByPlaceholderText(/find in docs/i)
+            const input = screen.getByPlaceholderText(/jump to page/i)
 
             // Act
             await userEvent.click(input)
