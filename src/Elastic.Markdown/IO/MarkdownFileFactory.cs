@@ -83,6 +83,8 @@ public class MarkdownFileFactory : IDocumentationFileFactory<MarkdownFile>
 		.Select(f => build.ReadFileSystem.FileInfo.New(f))
 		.Where(f => !f.Attributes.HasFlag(FileAttributes.Hidden) && !f.Attributes.HasFlag(FileAttributes.System))
 		.Where(f => !f.Directory!.Attributes.HasFlag(FileAttributes.Hidden) && !f.Directory!.Attributes.HasFlag(FileAttributes.System))
+		// skip symlinks
+		.Where(f => f.LinkTarget == null)
 		// skip hidden folders
 		.Where(f => !Path.GetRelativePath(sourceDirectory.FullName, f.FullName).StartsWith('.'))
 		.Select<IFileInfo, (IFileInfo,DocumentationFile)>(file => file.Extension switch
