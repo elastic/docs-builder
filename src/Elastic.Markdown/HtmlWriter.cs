@@ -112,7 +112,7 @@ public class HtmlWriter(
 
 		}
 
-		var pageVersioning = VersionInferrerService.InferVersion(DocumentationSet.Context.Git.RepositoryName, legacyPages);
+		var pageVersioning = VersionInferrerService.InferVersion(DocumentationSet.Context.Git.RepositoryName, legacyPages, markdown.YamlFrontMatter?.Products, markdown.YamlFrontMatter?.AppliesTo);
 
 		var currentBaseVersion = $"{pageVersioning.Base.Major}.{pageVersioning.Base.Minor}+";
 
@@ -143,7 +143,7 @@ public class HtmlWriter(
 			AppliesTo = markdown.YamlFrontMatter?.AppliesTo,
 			GithubEditUrl = editUrl,
 			MarkdownUrl = current.Url.TrimEnd('/') + ".md",
-			AllowIndexing = DocumentationSet.Context.AllowIndexing && (markdown.CrossLink.Equals("docs-content://index.md", StringComparison.OrdinalIgnoreCase) || markdown is DetectionRuleFile || !current.Hidden),
+			AllowIndexing = DocumentationSet.Context.AllowIndexing && markdown.YamlFrontMatter?.NoIndex != true && (markdown.CrossLink.Equals("docs-content://index.md", StringComparison.OrdinalIgnoreCase) || markdown is DetectionRuleFile || !current.Hidden),
 			CanonicalBaseUrl = DocumentationSet.Context.CanonicalBaseUrl,
 			GoogleTagManager = DocumentationSet.Context.GoogleTagManager,
 			Features = DocumentationSet.Configuration.Features,
@@ -154,6 +154,7 @@ public class HtmlWriter(
 			LegacyPages = legacyPages?.ToArray(),
 			VersionDropdownItems = VersionDropDownItemViewModel.FromLegacyPageMappings(legacyPages?.ToArray()),
 			Products = pageProducts,
+			VersioningSystem = pageVersioning,
 			VersionsConfig = DocumentationSet.Context.VersionsConfiguration,
 			StructuredBreadcrumbsJson = structuredBreadcrumbsJsonString
 		});

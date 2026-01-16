@@ -5,9 +5,12 @@
 using System.IO.Abstractions;
 using System.IO.Compression;
 using System.Text;
+using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Markdown.Helpers;
+using Elastic.Markdown.Myst.Components;
+using Elastic.Markdown.Myst.Renderers.LlmMarkdown;
 using Markdig.Syntax;
 
 namespace Elastic.Markdown.Exporters;
@@ -48,7 +51,7 @@ public class LlmMarkdownExporter : IMarkdownExporter
 
 	public async ValueTask<bool> FinishExportAsync(IDirectoryInfo outputFolder, Cancel ctx)
 	{
-		var outputDirectory = Path.Combine(outputFolder.FullName, "docs");
+		var outputDirectory = outputFolder.FullName;
 		var zipPath = Path.Combine(outputDirectory, "llm.zip");
 
 		// Create the llms.txt file with boilerplate content
@@ -155,6 +158,19 @@ public class LlmMarkdownExporter : IMarkdownExporter
 				_ = metadata.AppendLine($"  - {item}");
 		}
 
+		// Add applies_to metadata from frontmatter
+		var appliesTo = sourceFile.YamlFrontMatter?.AppliesTo;
+		if (appliesTo is not null && appliesTo != ApplicableTo.All && appliesTo != ApplicableTo.Default)
+		{
+			var appliesItems = GetAppliesToItems(appliesTo, context.BuildContext);
+			if (appliesItems.Count > 0)
+			{
+				_ = metadata.AppendLine("applies_to:");
+				foreach (var item in appliesItems)
+					_ = metadata.AppendLine($"  - {item}");
+			}
+		}
+
 		_ = metadata.AppendLine("---");
 		_ = metadata.AppendLine();
 		_ = metadata.AppendLine($"# {sourceFile.Title}");
@@ -165,6 +181,28 @@ public class LlmMarkdownExporter : IMarkdownExporter
 
 	private static List<Product> GetPageProducts(IReadOnlyCollection<Product>? frontMatterProducts) =>
 		frontMatterProducts?.ToList() ?? [];
+
+	private static List<string> GetAppliesToItems(ApplicableTo appliesTo, IDocumentationConfigurationContext buildContext)
+	{
+		var viewModel = new ApplicableToViewModel
+		{
+			AppliesTo = appliesTo,
+			Inline = true,
+			ShowTooltip = true,
+			VersionsConfig = buildContext.VersionsConfiguration
+		};
+
+		var items = viewModel.GetApplicabilityItems();
+		return items.Select(item =>
+		{
+			var displayName = item.ApplicabilityDefinition.DisplayName.Replace("&nbsp;", " ");
+			var popoverData = item.RenderData.PopoverData;
+			var availabilityText = popoverData?.AvailabilityItems is { Length: > 0 }
+				? string.Join(", ", popoverData.AvailabilityItems.Select(a => a.Text))
+				: "Available";
+			return $"{displayName}: {availabilityText}";
+		}).ToList();
+	}
 }
 
 public static class LlmMarkdownExporterExtensions

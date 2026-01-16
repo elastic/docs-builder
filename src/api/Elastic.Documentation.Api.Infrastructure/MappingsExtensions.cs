@@ -19,7 +19,8 @@ public static class MappingsExtension
 		_ = group.MapGet("/", () => Results.Empty);
 		_ = group.MapPost("/", () => Results.Empty);
 		MapAskAiEndpoint(group);
-		MapSearchEndpoint(group);
+		MapNavigationSearch(group);
+		MapFullSearch(group);
 		MapOtlpProxyEndpoint(group);
 	}
 
@@ -47,26 +48,59 @@ public static class MappingsExtension
 		}).DisableAntiforgery();
 	}
 
-	private static void MapSearchEndpoint(IEndpointRouteBuilder group)
+	private static void MapNavigationSearch(IEndpointRouteBuilder group)
+	{
+		var searchGroup = group.MapGroup("/navigation-search");
+		_ = searchGroup.MapGet("/",
+			async (
+				[FromQuery(Name = "q")] string query,
+				[FromQuery(Name = "page")] int? pageNumber,
+				[FromQuery(Name = "type")] string? typeFilter,
+				FindPageUsecase findPageUsecase,
+				Cancel ctx
+			) =>
+			{
+				var request = new FindPageApiRequest
+				{
+					Query = query,
+					PageNumber = pageNumber ?? 1,
+					TypeFilter = typeFilter
+				};
+				var response = await findPageUsecase.FindPageAsync(request, ctx);
+				return Results.Ok(response);
+			});
+	}
+
+	private static void MapFullSearch(IEndpointRouteBuilder group)
 	{
 		var searchGroup = group.MapGroup("/search");
 		_ = searchGroup.MapGet("/",
 			async (
 				[FromQuery(Name = "q")] string query,
 				[FromQuery(Name = "page")] int? pageNumber,
-				[FromQuery(Name = "type")] string? typeFilter,
-				SearchUsecase searchUsecase,
+				[FromQuery(Name = "size")] int? pageSize,
+				[FromQuery(Name = "type")] string[]? typeFilter,
+				[FromQuery(Name = "section")] string[]? sectionFilter,
+				[FromQuery(Name = "deployment")] string[]? deploymentFilter,
+				[FromQuery(Name = "version")] string? versionFilter,
+				[FromQuery(Name = "sort")] string? sortBy,
+				FullSearchUsecase searchUsecase,
 				Cancel ctx
 			) =>
 			{
-				var searchRequest = new SearchApiRequest
+				var request = new FullSearchApiRequest
 				{
 					Query = query,
 					PageNumber = pageNumber ?? 1,
-					TypeFilter = typeFilter
+					PageSize = pageSize ?? 20,
+					TypeFilter = typeFilter,
+					SectionFilter = sectionFilter,
+					DeploymentFilter = deploymentFilter,
+					VersionFilter = versionFilter,
+					SortBy = sortBy ?? "relevance"
 				};
-				var searchResponse = await searchUsecase.Search(searchRequest, ctx);
-				return Results.Ok(searchResponse);
+				var response = await searchUsecase.SearchAsync(request, ctx);
+				return Results.Ok(response);
 			});
 	}
 

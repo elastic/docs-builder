@@ -7,6 +7,7 @@
 // See the license.txt file in the project root for more information.
 
 using System.IO.Abstractions;
+using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration;
 using Markdig.Helpers;
 using Markdig.Syntax;
@@ -21,6 +22,7 @@ public interface IBlockTitle
 public interface IBlockAppliesTo
 {
 	string? AppliesToDefinition { get; }
+	ApplicableTo? AppliesTo { get; }
 }
 
 public interface IBlockExtension : IBlock
@@ -57,6 +59,12 @@ public abstract class DirectiveBlock(
 	public IFileInfo CurrentFile { get; } = context.MarkdownSourcePath;
 
 	public bool SkipValidation { get; } = context.SkipValidation;
+
+	/// <summary>
+	/// The line number of the include directive that brought this block into the document.
+	/// Null if the block is not inside an included snippet.
+	/// </summary>
+	protected int? IncludeLine { get; } = context.IncludeLine;
 
 	public int OpeningLength => Directive.Length;
 
@@ -148,4 +156,12 @@ public abstract class DirectiveBlock(
 		return default;
 	}
 
+	/// <summary>
+	/// Gets a unique index based on the block's line number that accounts for include context.
+	/// When the block is inside an included snippet, combines the include directive's line
+	/// with the snippet line to ensure uniqueness across multiple includes and multiple blocks.
+	/// </summary>
+	/// <returns>A unique integer index suitable for generating HTML IDs.</returns>
+	protected int GetUniqueLineIndex() =>
+		IncludeLine.HasValue ? (IncludeLine.Value * 1000) + Line : Line;
 }

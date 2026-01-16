@@ -57,6 +57,7 @@
     <Project Path="src/Elastic.Documentation.Svg/Elastic.Documentation.Svg.csproj" />
     <Project Path="src/Elastic.Documentation/Elastic.Documentation.csproj" />
     <Project Path="src/Elastic.Markdown/Elastic.Markdown.csproj" />
+    <Project Path="src/Elastic.Documentation.Mcp/Elastic.Documentation.Mcp.csproj" />
   </Folder>
   <Folder Name="/src/api/">
     <Project Path="src/api/Elastic.Documentation.Api.Core/Elastic.Documentation.Api.Core.csproj" />
@@ -93,6 +94,7 @@
     <Project Path="tests/Elastic.Documentation.LegacyDocs.Tests/Elastic.Documentation.LegacyDocs.Tests.csproj" />
     <Project Path="tests/Elastic.Markdown.Tests/Elastic.Markdown.Tests.csproj" />
     <Project Path="tests/Navigation.Tests/Navigation.Tests.csproj" />
+    <Project Path="tests/Elastic.Documentation.Services.Tests/Elastic.Documentation.Services.Tests.csproj" />
   </Folder>
   <Project Path=".github/.github.csproj">
     <Build Project="false" />

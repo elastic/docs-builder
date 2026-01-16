@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System;
+
 namespace Elastic.Documentation.Services.Changelog;
 
 /// <summary>
@@ -46,6 +48,51 @@ public class ChangelogConfiguration
 
 	public List<string>? AvailableProducts { get; set; }
 
-	public static ChangelogConfiguration Default => new();
+	/// <summary>
+	/// Mapping from GitHub label names to changelog type values
+	/// </summary>
+	public Dictionary<string, string>? LabelToType { get; set; }
+
+	/// <summary>
+	/// Mapping from GitHub label names to changelog area values
+	/// Multiple labels can map to the same area, and a single label can map to multiple areas (comma-separated)
+	/// </summary>
+	public Dictionary<string, string>? LabelToAreas { get; set; }
+
+	/// <summary>
+	/// Product-specific label blocking configuration
+	/// Maps product IDs to lists of labels that should prevent changelog creation for that product
+	/// Keys can be comma-separated product IDs to share the same list of labels across multiple products
+	/// </summary>
+	public Dictionary<string, List<string>>? AddBlockers { get; set; }
+
+	/// <summary>
+	/// Configuration for blocking changelogs from being rendered (commented out in markdown output)
+	/// Dictionary key can be a single product ID or comma-separated product IDs (e.g., "elasticsearch, cloud-serverless")
+	/// Dictionary value contains areas and/or types that should be blocked for those products
+	/// Changelogs matching any product key and any area/type in the corresponding entry will be commented out
+	/// </summary>
+	public Dictionary<string, RenderBlockersEntry>? RenderBlockers { get; set; }
+
+	private static readonly Lazy<ChangelogConfiguration> DefaultLazy = new(() => new ChangelogConfiguration());
+
+	public static ChangelogConfiguration Default => DefaultLazy.Value;
+}
+
+/// <summary>
+/// Configuration entry for blocking changelogs during render
+/// </summary>
+public class RenderBlockersEntry
+{
+	/// <summary>
+	/// List of area values that should be blocked (commented out) during render
+	/// </summary>
+	public List<string>? Areas { get; set; }
+
+	/// <summary>
+	/// List of type values that should be blocked (commented out) during render
+	/// Types must exist in the available_types list (or default AvailableTypes if not specified)
+	/// </summary>
+	public List<string>? Types { get; set; }
 }
 

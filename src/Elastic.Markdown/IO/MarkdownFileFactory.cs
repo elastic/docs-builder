@@ -100,7 +100,7 @@ public class MarkdownFileFactory : IDocumentationFileFactory<MarkdownFile>
 	{
 		var sourceDirectory = context.DocumentationSourceDirectory;
 		var relativePath = Path.GetRelativePath(sourceDirectory.FullName, file.FullName);
-		if (context.Configuration.Exclude.Any(g => g.IsMatch(relativePath)))
+		if (context.Configuration.IsExcluded(relativePath))
 			return new ExcludedFile(file, sourceDirectory, context.Git.RepositoryName);
 
 		if (relativePath.Contains("_snippets"))

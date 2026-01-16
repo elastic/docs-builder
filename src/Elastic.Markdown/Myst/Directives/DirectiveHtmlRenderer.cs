@@ -9,6 +9,7 @@ using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Directives.Admonition;
 using Elastic.Markdown.Myst.Directives.AppliesSwitch;
+using Elastic.Markdown.Myst.Directives.Button;
 using Elastic.Markdown.Myst.Directives.CsvInclude;
 using Elastic.Markdown.Myst.Directives.Diagram;
 using Elastic.Markdown.Myst.Directives.Dropdown;
@@ -104,6 +105,12 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			case StepBlock stepBlock:
 				WriteStepBlock(renderer, stepBlock);
 				return;
+			case ButtonGroupBlock buttonGroupBlock:
+				WriteButtonGroup(renderer, buttonGroupBlock);
+				return;
+			case ButtonBlock buttonBlock:
+				WriteButton(renderer, buttonBlock);
+				return;
 			default:
 				// if (!string.IsNullOrEmpty(directiveBlock.Info) && !directiveBlock.Info.StartsWith('{'))
 				// 	WriteCode(renderer, directiveBlock);
@@ -174,6 +181,28 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			Title = block.Title,
 			Anchor = block.Anchor,
 			HeadingLevel = block.HeadingLevel
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteButtonGroup(HtmlRenderer renderer, ButtonGroupBlock block)
+	{
+		var slice = ButtonGroupView.Create(new ButtonGroupViewModel
+		{
+			DirectiveBlock = block,
+			Align = block.Align
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteButton(HtmlRenderer renderer, ButtonBlock block)
+	{
+		var slice = ButtonView.Create(new ButtonViewModel
+		{
+			DirectiveBlock = block,
+			Type = block.Type,
+			Align = block.Align,
+			IsInGroup = block.IsInGroup
 		});
 		RenderRazorSlice(slice, renderer);
 	}
@@ -279,7 +308,8 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 	private static void WriteAppliesItem(HtmlRenderer renderer, AppliesItemBlock block)
 	{
 		// Parse the applies_to definition to get the ApplicableTo object
-		var appliesTo = ParseApplicableTo(block.AppliesToDefinition, block);
+		// Use the pre-parsed AppliesTo from the block (implementing IBlockAppliesTo)
+		var appliesTo = block.AppliesTo ?? (block.AppliesToDefinition is not null ? ParseApplicableTo(block.AppliesToDefinition, block) : null);
 		var slice = AppliesItemView.Create(new AppliesItemViewModel
 		{
 			DirectiveBlock = block,
@@ -361,7 +391,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		var snippet = block.Build.ReadFileSystem.FileInfo.New(block.IncludePath);
 
 		var parentPath = block.Context.MarkdownParentPath ?? block.Context.MarkdownSourcePath;
-		var document = MarkdownParser.ParseSnippetAsync(block.Build, block.Context, snippet, parentPath, block.Context.YamlFrontMatter, default)
+		var document = MarkdownParser.ParseSnippetAsync(block.Build, block.Context, snippet, parentPath, block.Context.YamlFrontMatter, default, block.Line)
 			.GetAwaiter().GetResult();
 
 		var html = document.ToHtml(MarkdownParser.Pipeline);

@@ -47,3 +47,22 @@ Legume
 :::
 
 ::::
+
+
+## Nested definition list
+
+Definition lists can be also be nested by indenting the child definition list.
+
+```markdown
+Vegetable
+:   Any edible part of a plant that is used in savory dishes. This includes roots, stems, leaves, flowers, and sometimes fruits that are used as vegetables.
+
+Fruit
+:   A sweet and fleshy product of a tree or other plant that contains seed and can be eaten as food. Common examples include apples, oranges, and bananas. Most fruits are rich in vitamins, minerals and fiber.
+    
+    Citrus
+    :   Fruits with a leathery rind and segmented pulp, such as oranges, lemons, and grapefruits. High in vitamin C.  Common examples include oranges, lemons, and grapefruits.
+
+    Stone fruit
+    :   Fruits with a fleshy outer part surrounding a hard pit, such as peaches, plums, and cherries. Common examples include peaches, plums, and cherries.
+```

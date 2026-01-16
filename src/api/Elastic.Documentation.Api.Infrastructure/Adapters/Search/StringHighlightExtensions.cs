@@ -18,11 +18,13 @@ public static class StringHighlightExtensions
 	/// <param name="text">The text to highlight tokens in</param>
 	/// <param name="tokens">The search tokens to highlight</param>
 	/// <param name="synonyms">Optional dictionary of synonyms to also highlight</param>
+	/// <param name="wholeWordOnly">When true, only highlights complete words (requires word boundaries at both start and end)</param>
 	/// <returns>Text with highlighted tokens</returns>
 	public static string HighlightTokens(
 		this string text,
 		ReadOnlySpan<string> tokens,
-		IReadOnlyDictionary<string, string[]>? synonyms = null)
+		IReadOnlyDictionary<string, string[]>? synonyms = null,
+		bool wholeWordOnly = false)
 	{
 		if (tokens.Length == 0 || string.IsNullOrEmpty(text))
 			return text;
@@ -35,7 +37,7 @@ public static class StringHighlightExtensions
 				continue;
 
 			// Highlight the token itself
-			result = HighlightSingleToken(result, token);
+			result = HighlightSingleToken(result, token, wholeWordOnly);
 
 			if (synonyms == null)
 				continue;
@@ -47,7 +49,7 @@ public static class StringHighlightExtensions
 				{
 					var synonymToHighlight = ExtractSynonymTarget(synonym);
 					if (!string.IsNullOrEmpty(synonymToHighlight))
-						result = HighlightSingleToken(result, synonymToHighlight);
+						result = HighlightSingleToken(result, synonymToHighlight, wholeWordOnly);
 				}
 			}
 
@@ -65,7 +67,7 @@ public static class StringHighlightExtensions
 						!string.IsNullOrEmpty(target) &&
 						source.Equals(token, StringComparison.OrdinalIgnoreCase))
 					{
-						result = HighlightSingleToken(result, target);
+						result = HighlightSingleToken(result, target, wholeWordOnly);
 					}
 				}
 			}
@@ -105,7 +107,7 @@ public static class StringHighlightExtensions
 		return (source, target);
 	}
 
-	private static string HighlightSingleToken(string text, string token)
+	private static string HighlightSingleToken(string text, string token, bool wholeWordOnly = false)
 	{
 		// Check if this exact token is already fully highlighted somewhere
 		// This prevents double-highlighting
@@ -144,6 +146,15 @@ public static class StringHighlightExtensions
 			if (!IsAtWordBoundary(textSpan, absoluteIndex))
 			{
 				// Not at word boundary, skip this match
+				_ = sb.Append(remaining[..(matchIndex + tokenSpan.Length)]);
+				pos = absoluteIndex + token.Length;
+				continue;
+			}
+
+			// When wholeWordOnly is true, also check for word boundary at the end of the match
+			if (wholeWordOnly && !IsAtWordBoundaryEnd(textSpan, absoluteIndex + tokenSpan.Length))
+			{
+				// Not a complete word, skip this match
 				_ = sb.Append(remaining[..(matchIndex + tokenSpan.Length)]);
 				pos = absoluteIndex + token.Length;
 				continue;
@@ -192,6 +203,39 @@ public static class StringHighlightExtensions
 
 		// After a digit when current is not a digit, or vice versa - not a word boundary for alphanumeric continuity
 		// After a letter when current is also a letter - not a word boundary
+		return false;
+	}
+
+	/// <summary>
+	/// Checks if the given position is at the end of a word (word boundary after the match).
+	/// A word boundary is: end of string, before whitespace, before punctuation,
+	/// or before an opening mark tag.
+	/// </summary>
+	private static bool IsAtWordBoundaryEnd(ReadOnlySpan<char> text, int position)
+	{
+		// End of string is a word boundary
+		if (position >= text.Length)
+			return true;
+
+		// Check if we're right before an opening <mark> tag
+		if (position + MarkOpen.Length <= text.Length)
+		{
+			var potentialMarkOpen = text[position..(position + MarkOpen.Length)];
+			if (potentialMarkOpen.Equals(MarkOpen.AsSpan(), StringComparison.OrdinalIgnoreCase))
+				return true;
+		}
+
+		var nextChar = text[position];
+
+		// Before whitespace is a word boundary
+		if (char.IsWhiteSpace(nextChar))
+			return true;
+
+		// Before punctuation (but not letters/digits) is a word boundary
+		if (char.IsPunctuation(nextChar) || char.IsSymbol(nextChar))
+			return true;
+
+		// Before a letter/digit means we're still inside a word - not a word boundary
 		return false;
 	}
 

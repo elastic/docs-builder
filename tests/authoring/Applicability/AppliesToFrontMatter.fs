@@ -163,10 +163,7 @@ applies_to:
     [<Fact>]
     let ``apply matches expected`` () =
         markdown |> appliesTo (ApplicableTo(
-            Product=AppliesCollection([
-                Applicability.op_Explicit "removed 9.7";
-                Applicability.op_Explicit "preview 9.5"
-            ] |> Array.ofList)
+            Product=AppliesCollection.op_Explicit "removed 9.7, preview 9.5"
         ))
 
 type ``lenient to defining types at top level`` () =

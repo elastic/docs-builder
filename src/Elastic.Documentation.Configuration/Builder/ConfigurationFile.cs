@@ -8,6 +8,7 @@ using DotNet.Globbing;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Links;
 
 namespace Elastic.Documentation.Configuration.Builder;
@@ -20,7 +21,8 @@ public record ConfigurationFile
 
 	public string? Project { get; }
 
-	public Glob[] Exclude { get; } = [];
+	private Glob[] Exclude { get; } = [];
+	private string[] Include { get; } = [];
 
 	public string[] CrossLinkRepositories { get; } = [];
 
@@ -49,6 +51,13 @@ public record ConfigurationFile
 	/// Setting this to true relaxes a few restrictions such as mixing toc references with file and folder reference
 	public bool DevelopmentDocs { get; }
 
+	public bool IsExcluded(string relativePath)
+	{
+		if (Include.Length > 0 && Include.Any(i => i.Equals(relativePath.OptionalWindowsReplace(), StringComparison.OrdinalIgnoreCase)))
+			return false;
+		return Exclude.Any(g => g.IsMatch(relativePath));
+	}
+
 	public ConfigurationFile(DocumentationSetFile docSetFile, IDocumentationSetContext context, VersionsConfiguration versionsConfig, ProductsConfiguration productsConfig)
 	{
 		_context = context;
@@ -72,7 +81,8 @@ public record ConfigurationFile
 			DevelopmentDocs = docSetFile.DevDocs;
 
 			// Convert exclude patterns to Glob
-			Exclude = [.. docSetFile.Exclude.Where(s => !string.IsNullOrEmpty(s)).Select(Glob.Parse)];
+			Exclude = [.. docSetFile.Exclude.Where(s => !string.IsNullOrEmpty(s) && !s.StartsWith('!')).Select(Glob.Parse)];
+			Include = [.. docSetFile.Exclude.Where(s => !string.IsNullOrEmpty(s) && s.StartsWith('!')).Select(s => s.TrimStart('!'))];
 
 			// Set cross link repositories
 			CrossLinkRepositories = [.. docSetFile.CrossLinks];

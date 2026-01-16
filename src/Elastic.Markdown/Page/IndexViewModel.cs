@@ -12,6 +12,7 @@ using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Markdown.IO;
+using Elastic.Markdown.Myst.Components;
 
 namespace Elastic.Markdown.Page;
 
@@ -54,6 +55,7 @@ public class IndexViewModel
 
 	public required HashSet<Product> Products { get; init; }
 
+	public required VersioningSystem VersioningSystem { get; init; }
 	public required VersionsConfiguration VersionsConfig { get; init; }
 
 	// https://developers.google.com/search/docs/appearance/structured-data/breadcrumb#json-ld
@@ -136,4 +138,5 @@ public class VersionDropDownItemViewModel
 }
 
 [JsonSerializable(typeof(VersionDropDownItemViewModel[]))]
+[JsonSerializable(typeof(ApplicabilityRenderer.PopoverData))]
 public partial class ViewModelSerializerContext : JsonSerializerContext;

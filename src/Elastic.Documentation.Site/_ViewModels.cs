@@ -41,6 +41,8 @@ public record GlobalLayoutViewModel
 
 	public bool RenderHamburgerIcon { get; init; } = true;
 
+	public bool RenderHeaders { get; init; } = true;
+
 	public string Static(string path)
 	{
 		var staticPath = $"_static/{path.TrimStart('/')}";

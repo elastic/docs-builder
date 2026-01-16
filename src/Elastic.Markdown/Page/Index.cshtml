@@ -13,6 +13,7 @@
 		DocsBuilderVersion = ShortId.Create(BuildContext.Version),
 		Layout = Model.CurrentDocument.YamlFrontMatter?.Layout,
 		RenderHamburgerIcon = Model.CurrentDocument.YamlFrontMatter?.Layout != MarkdownPageLayout.LandingPage,
+		RenderHeaders = Model.CurrentDocument.YamlFrontMatter?.Layout != MarkdownPageLayout.FullSearch,
 		DocSetName = Model.DocSetName,
 		Title = $"{Model.Title} | {Model.SiteName}",
 		Description = Model.Description,
@@ -39,6 +40,7 @@
 		Breadcrumbs = Model.Breadcrumbs,
 		CurrentVersion = Model.CurrentDocument.YamlFrontMatter?.Layout == MarkdownPageLayout.LandingPage ? Model.VersionsConfig.VersioningSystems[0].Current : Model.CurrentVersion,
 		AllVersionsUrl = Model.AllVersionsUrl,
+		VersioningSystem = Model.VersioningSystem,
 		VersionDropdownSerializedModel = JsonSerializer.Serialize(Model.VersionDropdownItems,
 			ViewModelSerializerContext.Default.VersionDropDownItemViewModelArray),
 	};
