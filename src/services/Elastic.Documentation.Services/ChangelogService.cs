@@ -393,12 +393,36 @@ public partial class ChangelogService(
 			_ = _fileSystem.Directory.CreateDirectory(outputDir);
 		}
 
-		// Generate filename (timestamp-slug.yaml)
-		var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-		var slug = string.IsNullOrWhiteSpace(input.Title)
-			? (prUrl != null ? $"pr-{prUrl.Replace("/", "-").Replace(":", "-")}" : "changelog")
-			: SanitizeFilename(input.Title);
-		var filename = $"{timestamp}-{slug}.yaml";
+		// Generate filename
+		string filename;
+		if (input.UsePrNumber && !string.IsNullOrWhiteSpace(prUrl))
+		{
+			// Use PR number as filename when --use-pr-number is specified
+			var prNumber = ExtractPrNumber(prUrl, input.Owner, input.Repo);
+			if (prNumber.HasValue)
+			{
+				filename = $"{prNumber.Value}.yaml";
+			}
+			else
+			{
+				// Fall back to timestamp-slug format if PR number extraction fails
+				collector.EmitWarning(string.Empty, $"Failed to extract PR number from '{prUrl}'. Falling back to timestamp-based filename.");
+				var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+				var slug = string.IsNullOrWhiteSpace(input.Title)
+					? (prUrl != null ? $"pr-{prUrl.Replace("/", "-").Replace(":", "-")}" : "changelog")
+					: SanitizeFilename(input.Title);
+				filename = $"{timestamp}-{slug}.yaml";
+			}
+		}
+		else
+		{
+			// Default: timestamp-slug.yaml
+			var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+			var slug = string.IsNullOrWhiteSpace(input.Title)
+				? (prUrl != null ? $"pr-{prUrl.Replace("/", "-").Replace(":", "-")}" : "changelog")
+				: SanitizeFilename(input.Title);
+			filename = $"{timestamp}-{slug}.yaml";
+		}
 		var filePath = _fileSystem.Path.Combine(outputDir, filename);
 
 		// Write file
