@@ -71,6 +71,7 @@ public partial class GitHubPrService(ILoggerFactory loggerFactory) : IGitHubPrSe
 			return new GitHubPrInfo
 			{
 				Title = prData.Title,
+				Body = prData.Body ?? string.Empty,
 				Labels = prData.Labels?.Select(l => l.Name).ToArray() ?? []
 			};
 		}
@@ -140,6 +141,7 @@ public partial class GitHubPrService(ILoggerFactory loggerFactory) : IGitHubPrSe
 	private sealed class GitHubPrResponse
 	{
 		public string Title { get; set; } = string.Empty;
+		public string Body { get; set; } = string.Empty;
 		public List<GitHubLabel>? Labels { get; set; }
 	}
 
@@ -161,6 +163,7 @@ public partial class GitHubPrService(ILoggerFactory loggerFactory) : IGitHubPrSe
 public class GitHubPrInfo
 {
 	public string Title { get; set; } = string.Empty;
+	public string Body { get; set; } = string.Empty;
 	public string[] Labels { get; set; } = [];
 }
 

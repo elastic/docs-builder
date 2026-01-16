@@ -147,7 +147,8 @@ public partial class ChangelogService(
 				Output = input.Output,
 				Config = input.Config,
 				UsePrNumber = input.UsePrNumber,
-				StripTitlePrefix = input.StripTitlePrefix
+				StripTitlePrefix = input.StripTitlePrefix,
+				ExtractReleaseNotes = input.ExtractReleaseNotes
 			};
 
 			// Process this PR (treat as single PR)
@@ -236,6 +237,26 @@ public partial class ChangelogService(
 				{
 					// Return true but don't create changelog (similar to multiple PRs behavior)
 					return true;
+				}
+
+				// Extract release notes from PR body if requested
+				if (input.ExtractReleaseNotes)
+				{
+					var (releaseNoteTitle, releaseNoteDescription) = ReleaseNotesExtractor.ExtractReleaseNotes(prInfo.Body);
+
+					// Use short release note as title if title was not explicitly provided
+					if (releaseNoteTitle != null && string.IsNullOrWhiteSpace(input.Title))
+					{
+						input.Title = releaseNoteTitle;
+						_logger.LogInformation("Using extracted release note as title: {Title}", input.Title);
+					}
+
+					// Use long release note as description if description was not explicitly provided
+					if (releaseNoteDescription != null && string.IsNullOrWhiteSpace(input.Description))
+					{
+						input.Description = releaseNoteDescription;
+						_logger.LogInformation("Using extracted release note as description (length: {Length} characters)", releaseNoteDescription.Length);
+					}
 				}
 
 				// Use PR title if title was not explicitly provided

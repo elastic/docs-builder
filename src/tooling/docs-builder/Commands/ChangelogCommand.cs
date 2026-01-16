@@ -52,6 +52,7 @@ internal sealed class ChangelogCommand(
 	/// <param name="config">Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml'</param>
 	/// <param name="usePrNumber">Optional: Use the PR number as the filename instead of generating it from a unique ID and title</param>
 	/// <param name="stripTitlePrefix">Optional: When used with --prs, remove square brackets and text within them from the beginning of PR titles (e.g., "[Inference API] Title" becomes "Title")</param>
+	/// <param name="extractReleaseNotes">Optional: When used with --prs, extract release notes from PR descriptions. Short release notes (≤120 characters, single line) are used as the title, long release notes (>120 characters or multi-line) are used as the description. Looks for content in formats like "Release Notes: ...", "Release-Notes: ...", "## Release Note", etc.</param>
 	/// <param name="ctx"></param>
 	[Command("add")]
 	public async Task<int> Create(
@@ -73,6 +74,7 @@ internal sealed class ChangelogCommand(
 		string? config = null,
 		bool usePrNumber = false,
 		bool stripTitlePrefix = false,
+		bool extractReleaseNotes = false,
 		Cancel ctx = default
 	)
 	{
@@ -139,7 +141,8 @@ internal sealed class ChangelogCommand(
 			Output = output,
 			Config = config,
 			UsePrNumber = usePrNumber,
-			StripTitlePrefix = stripTitlePrefix
+			StripTitlePrefix = stripTitlePrefix,
+			ExtractReleaseNotes = extractReleaseNotes
 		};
 
 		serviceInvoker.AddCommand(service, input,

@@ -65,6 +65,19 @@ docs-builder changelog add [options...] [-h|--help]
 :   For example, if a PR title is `"[Attack discovery] Improves Attack discovery hallucination detection"`, the changelog title will be `"Improves Attack discovery hallucination detection"`.
 :   This option applies only when the title is derived from the PR (when `--title` is not explicitly provided).
 
+`--extract-release-notes`
+:   Optional: When used with `--prs`, extract release notes from PR descriptions and use them in the changelog.
+:   The extractor looks for content in various formats in the PR description:
+:   - `Release Notes: ...`
+:   - `Release-Notes: ...`
+:   - `release notes: ...`
+:   - `Release Note: ...`
+:   - `Release Notes - ...`
+:   - `## Release Note` (as a markdown header)
+:   Short release notes (≤120 characters, single line) are used as the changelog title (only if `--title` is not explicitly provided).
+:   Long release notes (>120 characters or multi-line) are used as the changelog description (only if `--description` is not explicitly provided).
+:   If no release note is found, no changes are made to the title or description.
+
 `--subtype <string?>`
 :   Optional: Subtype for breaking changes (for example, `api`, `behavioral`, or `configuration`).
 :   The valid subtypes are listed in [ChangelogConfiguration.cs](https://github.com/elastic/docs-builder/blob/main/src/services/Elastic.Documentation.Services/Changelog/ChangelogConfiguration.cs).
