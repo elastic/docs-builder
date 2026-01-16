@@ -1,4 +1,9 @@
-import { useSelectedIndex, useSearchActions } from './navigationSearch.store'
+import {
+    useSelectedIndex,
+    useSearchActions,
+    useSearchTerm,
+} from './navigationSearch.store'
+import { useFindInDocsTelemetry } from './useFindInDocsTelemetry'
 import { useRef, useCallback } from 'react'
 
 interface Options {
@@ -24,7 +29,9 @@ export const useNavigationSearchKeyboardNavigation = ({
     const inputRef = useRef<HTMLInputElement>(null)
     const isKeyboardNavigating = useRef(false)
     const selectedIndex = useSelectedIndex()
+    const searchTerm = useSearchTerm()
     const { setSelectedIndex } = useSearchActions()
+    const { trackNavigation } = useFindInDocsTelemetry()
 
     const handleMouseMove = useCallback(() => {
         isKeyboardNavigating.current = false
@@ -73,6 +80,11 @@ export const useNavigationSearchKeyboardNavigation = ({
                                 : Math.min(selectedIndex + 1, resultsCount - 1)
                         setSelectedIndex(nextIndex)
                         scrollToItem(nextIndex)
+                        trackNavigation({
+                            method: 'keyboard',
+                            direction: 'down',
+                            query: searchTerm,
+                        })
                     }
                     break
 
@@ -83,6 +95,11 @@ export const useNavigationSearchKeyboardNavigation = ({
                         const prevIndex = selectedIndex - 1
                         setSelectedIndex(prevIndex)
                         scrollToItem(prevIndex)
+                        trackNavigation({
+                            method: 'keyboard',
+                            direction: 'up',
+                            query: searchTerm,
+                        })
                     }
                     break
             }
@@ -91,9 +108,11 @@ export const useNavigationSearchKeyboardNavigation = ({
             resultsCount,
             isLoading,
             selectedIndex,
+            searchTerm,
             setSelectedIndex,
             onClose,
             onNavigate,
+            trackNavigation,
         ]
     )
 
