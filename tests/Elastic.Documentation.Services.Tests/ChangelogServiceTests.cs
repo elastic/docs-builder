@@ -233,6 +233,78 @@ public class ChangelogServiceTests : IDisposable
 	}
 
 	[Fact]
+	public async Task CreateChangelog_WithUsePrNumber_CreatesFileWithPrNumberAsFilename()
+	{
+		// Arrange
+		var mockGitHubService = A.Fake<IGitHubPrService>();
+		var prInfo = new GitHubPrInfo
+		{
+			Title = "Fix memory leak in search",
+			Labels = ["type:bug"]
+		};
+
+		A.CallTo(() => mockGitHubService.FetchPrInfoAsync(
+			"https://github.com/elastic/elasticsearch/pull/140034",
+			null,
+			null,
+			A<CancellationToken>._))
+			.Returns(prInfo);
+
+		// Create a config file with label mappings
+		// Note: ChangelogService uses real FileSystem, so we need to use the real file system
+		var fileSystem = new FileSystem();
+		var configDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		fileSystem.Directory.CreateDirectory(configDir);
+		var configPath = fileSystem.Path.Combine(configDir, "changelog.yml");
+		var configContent = """
+			available_types:
+			  - feature
+			  - bug-fix
+			available_subtypes: []
+			available_lifecycles:
+			  - preview
+			  - beta
+			  - ga
+			label_to_type:
+			  "type:bug": bug-fix
+			""";
+		await fileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
+
+		var input = new ChangelogInput
+		{
+			Prs = ["https://github.com/elastic/elasticsearch/pull/140034"],
+			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Config = configPath,
+			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString()),
+			UsePrNumber = true
+		};
+
+		// Act
+		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		_collector.Errors.Should().Be(0);
+
+		// Note: ChangelogService uses real FileSystem, so we need to check the actual file system
+		var outputDir = input.Output ?? Directory.GetCurrentDirectory();
+		if (!Directory.Exists(outputDir))
+			Directory.CreateDirectory(outputDir);
+		var files = Directory.GetFiles(outputDir, "*.yaml");
+		files.Should().HaveCount(1);
+
+		// Verify the filename is the PR number, not a timestamp-based name
+		var fileName = Path.GetFileName(files[0]);
+		fileName.Should().Be("140034.yaml", "the filename should be the PR number when UsePrNumber is true");
+
+		var yamlContent = await File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		yamlContent.Should().Contain("type: bug-fix");
+		yamlContent.Should().Contain("pr: https://github.com/elastic/elasticsearch/pull/140034");
+	}
+
+	[Fact]
 	public async Task CreateChangelog_WithPrOptionAndLabelMapping_MapsLabelsToType()
 	{
 		// Arrange
