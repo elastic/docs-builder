@@ -51,6 +51,7 @@ internal sealed class ChangelogCommand(
 	/// <param name="output">Optional: Output directory for the changelog. Defaults to current directory</param>
 	/// <param name="config">Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml'</param>
 	/// <param name="usePrNumber">Optional: Use the PR number as the filename instead of generating it from a unique ID and title</param>
+	/// <param name="stripTitlePrefix">Optional: When used with --prs, remove square brackets and text within them from the beginning of PR titles (e.g., "[Inference API] Title" becomes "Title")</param>
 	/// <param name="ctx"></param>
 	[Command("add")]
 	public async Task<int> Create(
@@ -71,6 +72,7 @@ internal sealed class ChangelogCommand(
 		string? output = null,
 		string? config = null,
 		bool usePrNumber = false,
+		bool stripTitlePrefix = false,
 		Cancel ctx = default
 	)
 	{
@@ -136,7 +138,8 @@ internal sealed class ChangelogCommand(
 			Highlight = highlight,
 			Output = output,
 			Config = config,
-			UsePrNumber = usePrNumber
+			UsePrNumber = usePrNumber,
+			StripTitlePrefix = stripTitlePrefix
 		};
 
 		serviceInvoker.AddCommand(service, input,

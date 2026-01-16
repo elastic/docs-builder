@@ -140,6 +140,7 @@ Options:
   --output <string?>                Optional: Output directory for the changelog. Defaults to current directory [Default: null]
   --config <string?>                Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml' [Default: null]
   --use-pr-number                   Optional: Use the PR number as the filename instead of generating it from a unique ID and title
+  --strip-title-prefix              Optional: When used with --prs, remove square brackets and text within them from the beginning of PR titles
 ```
 
 ### Authorization
@@ -242,10 +243,17 @@ When you use the `--prs` option to derive information from a pull request, it ca
 docs-builder changelog add \
   --prs https://github.com/elastic/elasticsearch/pull/139272 \
   --products "elasticsearch 9.3.0" \
-  --config test/changelog.yml
+  --config test/changelog.yml \
+  --strip-title-prefix
 ```
 
 In this case, the changelog file derives the title, type, and areas from the pull request.
+
+The `--strip-title-prefix` option in this example means that if the PR title has a prefix in square brackets (such as `[ES|QL]` or `[Security]`), it is automatically removed from the changelog title.
+
+:::{note}
+The `--strip-title-prefix` option only applies when the title is derived from the PR (when `--title` is not explicitly provided). If you specify `--title` explicitly, that title is used as-is without any prefix stripping.
+:::
 
 #### Block changelog creation with PR labels [example-block-label]
 
