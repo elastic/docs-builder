@@ -250,7 +250,7 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 		{
 			// Only output title if it's not a standard admonition type name
 			var title = titledBlock.Title;
-			if (obj is AdmonitionBlock admonition)
+			if (obj is AdmonitionBlock)
 			{
 				// Skip standard titles like "Note", "Warning", "Tip", "Important"
 				var standardTitles = new[] { "Note", "Warning", "Tip", "Important" };
