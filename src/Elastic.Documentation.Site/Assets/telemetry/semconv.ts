@@ -15,6 +15,7 @@ export {
     ATTR_SERVICE_VERSION,
     ATTR_HTTP_RESPONSE_STATUS_CODE,
     ATTR_ERROR_TYPE,
+    ATTR_EXCEPTION_MESSAGE,
 } from '@opentelemetry/semantic-conventions'
 
 // ============================================================================
@@ -103,6 +104,92 @@ export const ATTR_SEARCH_RESULT_POSITION_ON_PAGE =
  * @example 0.85
  */
 export const ATTR_SEARCH_RESULT_SCORE = 'search.result.score'
+
+// ============================================================================
+// FIND IN DOCS ATTRIBUTES (Custom)
+// These are for the navigation "Find in Docs" feature (quick search in sidebar).
+// Separate from the advanced Search page telemetry.
+// ============================================================================
+
+/**
+ * The query string entered by the user in Find in Docs
+ * @example "elasticsearch aggregations"
+ */
+export const ATTR_FIND_IN_DOCS_QUERY = 'find_in_docs.query'
+
+/**
+ * Length of the query string
+ * @example 25
+ */
+export const ATTR_FIND_IN_DOCS_QUERY_LENGTH = 'find_in_docs.query.length'
+
+/**
+ * Total number of results found
+ * @example 142
+ */
+export const ATTR_FIND_IN_DOCS_RESULTS_TOTAL = 'find_in_docs.results.total'
+
+/**
+ * How the Find in Docs was initiated
+ * @example "keyboard_shortcut" | "focus" | "click"
+ */
+export const ATTR_FIND_IN_DOCS_TRIGGER = 'find_in_docs.trigger'
+
+/**
+ * Reason the Find in Docs was closed
+ * @example "escape" | "blur" | "navigate" | "clear"
+ */
+export const ATTR_FIND_IN_DOCS_CLOSE_REASON = 'find_in_docs.close_reason'
+
+/**
+ * Whether Find in Docs had results when closed
+ * @example true
+ */
+export const ATTR_FIND_IN_DOCS_HAD_RESULTS = 'find_in_docs.had_results'
+
+/**
+ * Whether a result was selected when Find in Docs closed
+ * @example true
+ */
+export const ATTR_FIND_IN_DOCS_HAD_SELECTION = 'find_in_docs.had_selection'
+
+/**
+ * Navigation method used (keyboard or mouse)
+ * @example "keyboard" | "mouse"
+ */
+export const ATTR_FIND_IN_DOCS_NAVIGATION_METHOD =
+    'find_in_docs.navigation.method'
+
+/**
+ * Navigation direction
+ * @example "up" | "down"
+ */
+export const ATTR_FIND_IN_DOCS_NAVIGATION_DIRECTION =
+    'find_in_docs.navigation.direction'
+
+/**
+ * URL of the clicked result
+ * @example "/docs/elasticsearch/reference/current/search-aggregations.html"
+ */
+export const ATTR_FIND_IN_DOCS_RESULT_URL = 'find_in_docs.result.url'
+
+/**
+ * Position of the clicked result (0-based)
+ * @example 3
+ */
+export const ATTR_FIND_IN_DOCS_RESULT_POSITION = 'find_in_docs.result.position'
+
+/**
+ * Relevance score of the clicked result
+ * @example 0.85
+ */
+export const ATTR_FIND_IN_DOCS_RESULT_SCORE = 'find_in_docs.result.score'
+
+/**
+ * Retry-After header value in seconds (for rate limiting)
+ * @example 30
+ */
+export const ATTR_FIND_IN_DOCS_RETRY_AFTER = 'find_in_docs.retry_after'
 
 // ============================================================================
 // EVENT ATTRIBUTES (Custom)

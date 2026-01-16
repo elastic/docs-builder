@@ -1,6 +1,7 @@
 import { SanitizedHtmlContent } from './SanitizedHtmlContent'
 import { useSelectedIndex, useSearchActions } from './navigationSearch.store'
 import { useSearchTerm } from './navigationSearch.store'
+import { useFindInDocsTelemetry } from './useFindInDocsTelemetry'
 import {
     useNavigationSearchQuery,
     SearchResultItem,
@@ -84,6 +85,7 @@ export const SearchResultsList = ({
     const { isLoading, data } = useNavigationSearchQuery()
     const containerRef = useRef<HTMLDivElement>(null)
     const searchTerm = useSearchTerm()
+    const { trackResultClicked } = useFindInDocsTelemetry()
 
     const results = data?.results ?? []
     const isInitialLoading = isLoading && !data
@@ -146,6 +148,16 @@ export const SearchResultsList = ({
         }
     }
 
+    const handleResultClick = (result: SearchResultItem, index: number) => {
+        trackResultClicked({
+            query: searchTerm,
+            position: index,
+            url: result.url,
+            score: result.score,
+        })
+        onResultClick()
+    }
+
     return (
         <div ref={containerRef} css={containerStyles}>
             {results.map((result, index) => (
@@ -157,7 +169,7 @@ export const SearchResultsList = ({
                     isKeyboardNavigating={isKeyboardNavigating.current}
                     onMouseEnter={() => handleMouseEnter(index)}
                     onMouseMove={() => handleItemMouseMove(index)}
-                    onClick={onResultClick}
+                    onClick={() => handleResultClick(result, index)}
                 />
             ))}
         </div>
