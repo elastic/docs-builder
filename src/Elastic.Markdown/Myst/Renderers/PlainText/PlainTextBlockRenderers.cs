@@ -321,9 +321,9 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 				_ = renderer.Render(document);
 			}
 			catch (Exception ex) when (ex is not OutOfMemoryException
-			                           && ex is not ThreadAbortException
-			                           && ex is not ThreadInterruptedException
-			                           && ex is not StackOverflowException)
+									   and not ThreadAbortException
+									   and not ThreadInterruptedException
+									   and not StackOverflowException)
 			{
 				// Skip on error
 			}
