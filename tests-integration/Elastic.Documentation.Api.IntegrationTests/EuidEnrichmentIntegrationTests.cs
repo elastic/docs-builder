@@ -17,8 +17,23 @@ namespace Elastic.Documentation.Api.IntegrationTests;
 /// Integration tests for euid cookie enrichment in OpenTelemetry traces and logging.
 /// Uses WebApplicationFactory to test the real API configuration with mocked AskAi services.
 /// </summary>
-public class EuidEnrichmentIntegrationTests
+public class EuidEnrichmentIntegrationTests : IAsyncLifetime
 {
+	private const string OtlpEndpoint = "http://localhost:4318";
+
+	public ValueTask InitializeAsync()
+	{
+		Environment.SetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT", OtlpEndpoint);
+		return ValueTask.CompletedTask;
+	}
+
+	public ValueTask DisposeAsync()
+	{
+		GC.SuppressFinalize(this);
+		Environment.SetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT", null);
+		return ValueTask.CompletedTask;
+	}
+
 	/// <summary>
 	/// Test that verifies euid cookie is added to both HTTP span and custom AskAi span,
 	/// and appears in log entries - using the real API configuration.

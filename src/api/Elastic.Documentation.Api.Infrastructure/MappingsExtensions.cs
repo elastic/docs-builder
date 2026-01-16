@@ -14,14 +14,16 @@ namespace Elastic.Documentation.Api.Infrastructure;
 
 public static class MappingsExtension
 {
-	public static void MapElasticDocsApiEndpoints(this IEndpointRouteBuilder group)
+	public static void MapElasticDocsApiEndpoints(this IEndpointRouteBuilder group, bool mapOtlpEndpoints = true)
 	{
+
 		_ = group.MapGet("/", () => Results.Empty);
 		_ = group.MapPost("/", () => Results.Empty);
 		MapAskAiEndpoint(group);
 		MapNavigationSearch(group);
 		MapFullSearch(group);
-		MapOtlpProxyEndpoint(group);
+		if (mapOtlpEndpoints)
+			MapOtlpProxyEndpoint(group);
 	}
 
 	private static void MapAskAiEndpoint(IEndpointRouteBuilder group)
