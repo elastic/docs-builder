@@ -1,0 +1,27 @@
+@inherits RazorSliceHttpResult<Elastic.Portal.Category.CategoryViewModel>
+@using Elastic.Portal.Category
+@using Elastic.Portal.Navigation
+@implements IUsesLayout<Elastic.Portal._Layout, GlobalLayoutViewModel>
+@functions {
+	public GlobalLayoutViewModel LayoutModel => Model.CreateGlobalLayoutModel();
+}
+<section id="elastic-docs-v3" class="portal-category-page">
+	<div class="portal-header py-8">
+		<h1 class="text-3xl font-bold mb-4">@Model.Category.NavigationTitle</h1>
+		<p class="text-gray-60">Documentation sets in this category</p>
+	</div>
+
+	<div class="portal-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
+		@foreach (var docSet in Model.DocumentationSets.OrderBy(ds => ds.Title))
+		{
+			<a href="@docSet.Url" class="portal-card block p-6 rounded-lg border border-gray-20 hover:border-blue-40 hover:shadow-md transition-all">
+				<div class="portal-card-content">
+					<h3 class="text-xl font-medium mb-2 text-gray-80">@docSet.Title</h3>
+					<div class="portal-card-meta text-sm text-gray-50">
+						<span>@docSet.PageCount pages</span>
+					</div>
+				</div>
+			</a>
+		}
+	</div>
+</section>
