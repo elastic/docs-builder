@@ -62,7 +62,7 @@ public class PlainTextParagraphRenderer : MarkdownObjectRenderer<PlainTextRender
 }
 
 /// <summary>
-/// Renders code blocks as plain text with newlines collapsed to spaces
+/// Renders code blocks as plain text (just the code content without fences)
 /// </summary>
 public class PlainTextCodeBlockRenderer : MarkdownObjectRenderer<PlainTextRenderer, EnhancedCodeBlock>
 {
@@ -78,7 +78,7 @@ public class PlainTextCodeBlockRenderer : MarkdownObjectRenderer<PlainTextRender
 			if (!string.IsNullOrEmpty(appliesText))
 			{
 				renderer.EnsureBlockSpacing();
-				renderer.Write($"({appliesText})");
+				renderer.WriteLine($"({appliesText})");
 			}
 			return;
 		}
@@ -87,22 +87,14 @@ public class PlainTextCodeBlockRenderer : MarkdownObjectRenderer<PlainTextRender
 
 		// Include caption if present
 		if (!string.IsNullOrEmpty(obj.Caption))
-		{
-			renderer.Write(obj.Caption);
-			renderer.Write(" ");
-		}
+			renderer.WriteLine(obj.Caption);
 
-		// Output code content with newlines collapsed to spaces
+		// Output code content without fence markers
 		var lastNonEmptyIndex = GetLastNonEmptyLineIndex(obj);
 		for (var i = 0; i <= lastNonEmptyIndex; i++)
 		{
-			var line = obj.Lines.Lines[i].ToString().Trim();
-			if (string.IsNullOrEmpty(line))
-				continue;
-
-			if (i > 0)
-				renderer.Write(" ");
-			renderer.Write(line);
+			var line = obj.Lines.Lines[i];
+			renderer.WriteLine(line.ToString());
 		}
 	}
 
@@ -155,7 +147,7 @@ public class PlainTextThematicBreakRenderer : MarkdownObjectRenderer<PlainTextRe
 }
 
 /// <summary>
-/// Renders tables as "Header: Value" pairs separated by bullet points for search indexing
+/// Renders tables as "Header: Value" pairs for search indexing
 /// </summary>
 public class PlainTextTableRenderer : MarkdownObjectRenderer<PlainTextRenderer, Table>
 {
@@ -173,24 +165,24 @@ public class PlainTextTableRenderer : MarkdownObjectRenderer<PlainTextRenderer, 
 				.ToArray();
 		}
 
-		// Render each data row as bullet-separated header: value pairs
-		var isFirst = true;
+		// Render each data row as header: value pairs
+		var isFirstRow = true;
 		foreach (var row in table.Skip(1).Cast<TableRow>())
 		{
+			if (!isFirstRow)
+				renderer.EnsureLine();
+			isFirstRow = false;
+
 			var cells = row.Cast<TableCell>().ToArray();
 			for (var i = 0; i < cells.Length; i++)
 			{
-				if (!isFirst)
-					renderer.EnsureLine();
-				isFirst = false;
-
 				var content = RenderCellContent(renderer, cells[i]);
 				if (headers != null && i < headers.Length && !string.IsNullOrEmpty(headers[i]))
 				{
 					renderer.Write(headers[i]);
 					renderer.Write(": ");
 				}
-				renderer.Write(content);
+				renderer.WriteLine(content);
 			}
 		}
 	}

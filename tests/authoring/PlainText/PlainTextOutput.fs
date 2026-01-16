@@ -23,8 +23,10 @@ type ``headings`` () =
 """
 
     [<Fact>]
-    let ``converts headings to plain text with bullet separator`` () =
-        markdown |> convertsToPlainText """Heading 2 • Heading 3"""
+    let ``converts headings to plain text without hash symbols`` () =
+        markdown |> convertsToPlainText """Heading 2
+
+Heading 3"""
 
 type ``inline code`` () =
     static let markdown = Setup.Document """
@@ -44,8 +46,9 @@ def hello():
 """
 
     [<Fact>]
-    let ``renders code content with newlines collapsed to spaces`` () =
-        markdown |> convertsToPlainText """def hello(): print("Hello, world!")"""
+    let ``renders code content without fences`` () =
+        markdown |> convertsToPlainText """def hello():
+    print("Hello, world!")"""
 
 type ``links`` () =
     static let markdown = Setup.Document """
@@ -73,8 +76,10 @@ type ``unordered lists`` () =
 """
 
     [<Fact>]
-    let ``renders list items with bullet separators`` () =
-        markdown |> convertsToPlainText """Item 1 • Item 2 • Item 3"""
+    let ``renders list items without bullets`` () =
+        markdown |> convertsToPlainText """Item 1
+Item 2
+Item 3"""
 
 type ``ordered lists`` () =
     static let markdown = Setup.Document """
@@ -84,8 +89,10 @@ type ``ordered lists`` () =
 """
 
     [<Fact>]
-    let ``renders list items with bullet separators`` () =
-        markdown |> convertsToPlainText """First item • Second item • Third item"""
+    let ``renders list items without numbers`` () =
+        markdown |> convertsToPlainText """First item
+Second item
+Third item"""
 
 type ``nested lists`` () =
     static let markdown = Setup.Document """
@@ -96,8 +103,11 @@ type ``nested lists`` () =
 """
 
     [<Fact>]
-    let ``renders nested list items as single line`` () =
-        markdown |> convertsToPlainText """Item 1 • Nested item 1 • Nested item 2 • Item 2"""
+    let ``renders nested list items as plain text`` () =
+        markdown |> convertsToPlainText """Item 1
+Nested item 1
+Nested item 2
+Item 2"""
 
 type ``tables`` () =
     static let markdown = Setup.Document """
@@ -108,8 +118,11 @@ type ``tables`` () =
 """
 
     [<Fact>]
-    let ``renders tables as bullet-separated header-value pairs`` () =
-        markdown |> convertsToPlainText """Header 1: Cell 1 • Header 2: Cell 2 • Header 1: Cell 3 • Header 2: Cell 4"""
+    let ``renders tables as header-value pairs`` () =
+        markdown |> convertsToPlainText """Header 1: Cell 1
+Header 2: Cell 2
+Header 1: Cell 3
+Header 2: Cell 4"""
 
 type ``blockquotes`` () =
     static let markdown = Setup.Document """
@@ -119,6 +132,7 @@ type ``blockquotes`` () =
 
     [<Fact>]
     let ``strips blockquote markers`` () =
+        // Soft line breaks become spaces in plain text output
         markdown |> convertsToPlainText """This is a quoted text that spans multiple lines."""
 
 type ``admonition directives`` () =
@@ -129,7 +143,7 @@ This is a note admonition.
 """
 
     [<Fact>]
-    let ``renders admonition content as plain text`` () =
+    let ``renders admonition content without XML tags`` () =
         markdown |> convertsToPlainText """This is a note admonition."""
 
 type ``admonition with title`` () =
@@ -140,8 +154,10 @@ This is the admonition content.
 """
 
     [<Fact>]
-    let ``includes title and content with bullet separator`` () =
-        markdown |> convertsToPlainText """Custom Title • This is the admonition content."""
+    let ``includes title and content`` () =
+        markdown |> convertsToPlainText """Custom Title
+
+This is the admonition content."""
 
 type ``warning directive`` () =
     static let markdown = Setup.Document """
@@ -184,8 +200,10 @@ This is dropdown content.
 """
 
     [<Fact>]
-    let ``renders dropdown title and content with bullet separator`` () =
-        markdown |> convertsToPlainText """Dropdown Title • This is dropdown content."""
+    let ``renders dropdown title and content`` () =
+        markdown |> convertsToPlainText """Dropdown Title
+
+This is dropdown content."""
 
 type ``tabs directive`` () =
     static let markdown = Setup.Document """
@@ -203,8 +221,14 @@ Content for tab 2.
 """
 
     [<Fact>]
-    let ``renders all tab content with bullet separators`` () =
-        markdown |> convertsToPlainText """Tab 1 • Content for tab 1. • Tab 2 • Content for tab 2."""
+    let ``renders all tab content`` () =
+        markdown |> convertsToPlainText """Tab 1
+
+Content for tab 1.
+
+Tab 2
+
+Content for tab 2."""
 
 type ``definition list`` () =
     static let markdown = Setup.Document """
@@ -216,8 +240,12 @@ type ``definition list`` () =
 """
 
     [<Fact>]
-    let ``renders terms and definitions with bullet separators`` () =
-        markdown |> convertsToPlainText """Term 1 • Definition for term 1. • Term 2 • Definition for term 2."""
+    let ``renders terms and definitions as plain text`` () =
+        markdown |> convertsToPlainText """Term 1
+Definition for term 1.
+
+Term 2
+Definition for term 2."""
 
 type ``substitutions`` () =
     static let markdown = Setup.Document """---
@@ -273,7 +301,9 @@ This text is also visible.
 
     [<Fact>]
     let ``excludes comments from output`` () =
-        markdown |> convertsToPlainText """This text is visible. • This text is also visible."""
+        markdown |> convertsToPlainText """This text is visible.
+
+This text is also visible."""
 
 type ``thematic break`` () =
     static let markdown = Setup.Document """
@@ -285,8 +315,11 @@ Second section.
 """
 
     [<Fact>]
-    let ``renders thematic break as bullet separator`` () =
-        markdown |> convertsToPlainText """First section. • Second section."""
+    let ``renders thematic break as blank line`` () =
+        markdown |> convertsToPlainText """First section.
+
+
+Second section."""
 
 type ``complex document`` () =
     static let markdown = Setup.Document """
@@ -306,8 +339,17 @@ def hello():
 """
 
     [<Fact>]
-    let ``renders complex document as single line`` () =
-        markdown |> convertsToPlainText """This is a paragraph with bold and italic text. • def hello(): print("Hello!") • List item 1 • List item 2 • Name: foo • Value: bar"""
+    let ``renders complex document as clean text`` () =
+        markdown |> convertsToPlainText """This is a paragraph with bold and italic text.
+
+def hello():
+    print("Hello!")
+
+List item 1
+List item 2
+
+Name: foo
+Value: bar"""
 
 type ``include directive`` () =
     static let generator = Setup.Generate [
@@ -397,5 +439,44 @@ For more details, see the **Configuration Guide** and **API Reference**.
 """
 
     [<Fact>]
-    let ``renders realistic page as searchable single line`` () =
-        markdown |> convertsToPlainText """Getting Started with Elasticsearch • Elasticsearch is a distributed search and analytics engine. This guide helps you get started quickly. • Make sure you have Java 17 or later installed before proceeding. • Installation • You can install Elasticsearch using several methods: • Download directly from the official website • Use package managers like apt or yum • Run with Docker for containerized environments • Quick Start • After installation, start the service: • ./bin/elasticsearch • Verify it's running by visiting http://localhost:9200 in your browser. • Basic Configuration • Setting: cluster.name • Default: elasticsearch • Description: Name of your cluster • Setting: node.name • Default: auto-generated • Description: Unique node identifier • Press Ctrl + c to stop the server gracefully. • Next Steps • Create your first index • Index some documents • Run your first search query • For more details, see the Configuration Guide and API Reference."""
+    let ``renders realistic page with preserved newlines`` () =
+        markdown |> convertsToPlainText """Getting Started with Elasticsearch
+
+Elasticsearch is a distributed search and analytics engine. This guide helps you get started quickly.
+
+Make sure you have Java 17 or later installed before proceeding.
+
+Installation
+
+You can install Elasticsearch using several methods:
+
+Download directly from the official website
+Use package managers like apt or yum
+Run with Docker for containerized environments
+
+Quick Start
+
+After installation, start the service:
+
+./bin/elasticsearch
+
+Verify it's running by visiting http://localhost:9200 in your browser.
+
+Basic Configuration
+
+Setting: cluster.name
+Default: elasticsearch
+Description: Name of your cluster
+Setting: node.name
+Default: auto-generated
+Description: Unique node identifier
+
+Press Ctrl + c to stop the server gracefully.
+
+Next Steps
+
+Create your first index
+Index some documents
+Run your first search query
+
+For more details, see the Configuration Guide and API Reference."""

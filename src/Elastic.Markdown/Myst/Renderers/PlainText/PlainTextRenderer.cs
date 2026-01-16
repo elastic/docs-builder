@@ -10,49 +10,43 @@ namespace Elastic.Markdown.Myst.Renderers.PlainText;
 
 /// <summary>
 /// Renderer that outputs plain text optimized for search indexing.
-/// Strips all markdown formatting and produces single-line output
-/// with bullet separators between blocks.
+/// Strips all markdown formatting while preserving readable content with newlines.
 /// </summary>
 public class PlainTextRenderer : TextRendererBase
 {
-	private const string BlockSeparator = " • ";
-
 	public required IDocumentationConfigurationContext BuildContext { get; set; }
-	private bool _needsBlockSeparator;
-	private bool _hasContent;
+	private bool _isAtLineStart = true;
 
 	/// <summary>
 	/// Resets internal state for pooled reuse
 	/// </summary>
-	public void Reset()
-	{
-		_needsBlockSeparator = false;
-		_hasContent = false;
-	}
+	public void Reset() => _isAtLineStart = true;
 
 	/// <summary>
-	/// Ensures a block separator will be added before the next content
+	/// Ensures that the output ends with a line break (only adds one if needed)
 	/// </summary>
 	public void EnsureLine()
 	{
-		if (_hasContent)
-			_needsBlockSeparator = true;
+		if (_isAtLineStart)
+			return;
+		Writer.WriteLine();
+		_isAtLineStart = true;
 	}
 
 	/// <summary>
-	/// Ensures a block separator will be added before the next content
+	/// Ensures exactly one empty line before a block element (for consistent spacing)
 	/// </summary>
 	public void EnsureBlockSpacing()
 	{
-		if (_hasContent)
-			_needsBlockSeparator = true;
+		EnsureLine();
+		Writer.WriteLine();
+		_isAtLineStart = true;
 	}
 
 	public void WriteLine(string text = "")
 	{
-		if (!string.IsNullOrEmpty(text))
-			Write(text);
-		EnsureLine();
+		Writer.WriteLine(text);
+		_isAtLineStart = true;
 	}
 
 	public void Write(string text)
@@ -60,14 +54,8 @@ public class PlainTextRenderer : TextRendererBase
 		if (string.IsNullOrEmpty(text))
 			return;
 
-		if (_needsBlockSeparator && _hasContent)
-		{
-			Writer.Write(BlockSeparator);
-			_needsBlockSeparator = false;
-		}
-
 		Writer.Write(text);
-		_hasContent = true;
+		_isAtLineStart = text.EndsWith(Environment.NewLine) || text.EndsWith('\n');
 	}
 
 	public void WriteLeafInline(LeafBlock leafBlock)
