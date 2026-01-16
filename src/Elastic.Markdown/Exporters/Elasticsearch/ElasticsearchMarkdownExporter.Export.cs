@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using Elastic.ApiExplorer.Elasticsearch;
 using Elastic.Documentation.AppliesTo;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Search;
 using Elastic.Ingest.Elasticsearch.Indices;
@@ -96,13 +97,12 @@ public partial class ElasticsearchMarkdownExporter
 			_ = fileContext.Document.Remove(h1);
 
 		var body = LlmMarkdownExporter.ConvertToLlmMarkdown(fileContext.Document, fileContext.BuildContext);
+		var strippedBody = PlainTextExporter.ConvertToPlainText(fileContext.Document, fileContext.BuildContext);
 
 		var headings = fileContext.Document.Descendants<HeadingBlock>()
 			.Select(h => h.GetData("header") as string ?? string.Empty) // TODO: Confirm that 'header' data is correctly set for all HeadingBlock instances and that this extraction is reliable.
 			.Where(text => !string.IsNullOrEmpty(text))
 			.ToArray();
-
-		var strippedBody = body.StripMarkdown();
 		var @abstract = !string.IsNullOrEmpty(strippedBody)
 			? strippedBody[..Math.Min(strippedBody.Length, 400)] + " " + string.Join(" \n- ", headings)
 			: string.Empty;
@@ -161,13 +161,12 @@ public partial class ElasticsearchMarkdownExporter
 			var document = MarkdownParser.Parse(doc.Body ?? string.Empty);
 
 			doc.Body = LlmMarkdownExporter.ConvertToLlmMarkdown(document, _context);
+			doc.StrippedBody = PlainTextExporter.ConvertToPlainText(document, _context);
 
 			var headings = document.Descendants<HeadingBlock>()
 				.Select(h => h.GetData("header") as string ?? string.Empty) // TODO: Confirm that 'header' data is correctly set for all HeadingBlock instances and that this extraction is reliable.
 				.Where(text => !string.IsNullOrEmpty(text))
 				.ToArray();
-
-			doc.StrippedBody = doc.Body.StripMarkdown();
 			var @abstract = !string.IsNullOrEmpty(doc.StrippedBody)
 				? doc.Body[..Math.Min(doc.StrippedBody.Length, 400)] + " " + string.Join(" \n- ", doc.Headings)
 				: string.Empty;
