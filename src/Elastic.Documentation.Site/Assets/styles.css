@@ -47,7 +47,7 @@ body {
 	--header-height: calc(var(--spacing) * 21);
 	--banner-height: calc(var(--spacing) * 9);
 	/*--offset-top: calc(var(--header-height) + var(--banner-height));*/
-	--offset-top: 102px;
+	--offset-top: calc(64px + 38px); /* header height + banner height */
 	--max-text-width: clamp(40ch, 90ch, 100%);
 	--max-sidebar-width: calc(var(--spacing) * 65);
 	--content-spacing: calc(var(--spacing) * 8);
@@ -62,7 +62,7 @@ body {
 
 @media screen and (min-width: 767px) {
 	:root {
-		--offset-top: 102px;
+		--offset-top: calc(72px + 38px); /* header height + banner height */
 	}
 }
 
@@ -74,7 +74,7 @@ body {
 
 @media screen and (min-width: 1200px) {
 	:root {
-		--offset-top: 80px;
+		--offset-top: calc(80px + 38px); /* header height + banner height */
 	}
 }
 
