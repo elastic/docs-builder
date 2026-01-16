@@ -36,7 +36,7 @@ public record PortalConfiguration
 	/// </summary>
 	public static PortalConfiguration Deserialize(string yaml)
 	{
-		var input = new StringReader(yaml);
+		using var input = new StringReader(yaml);
 		var config = ConfigurationFileProvider.Deserializer.Deserialize<PortalConfiguration>(input);
 		return NormalizeConfiguration(config);
 	}
