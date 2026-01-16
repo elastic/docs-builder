@@ -347,3 +347,55 @@ flowchart LR
     let ``skips diagram content`` () =
         // Diagrams are visual, not searchable text
         markdown |> convertsToPlainText """"""
+
+type ``realistic documentation page`` () =
+    static let markdown = Setup.Document """
+## Getting Started with Elasticsearch
+
+Elasticsearch is a distributed search and analytics engine. This guide helps you get started quickly.
+
+:::{note}
+Make sure you have Java 17 or later installed before proceeding.
+:::
+
+### Installation
+
+You can install Elasticsearch using several methods:
+
+- **Download directly** from the [official website](https://elastic.co/downloads)
+- Use **package managers** like `apt` or `yum`
+- Run with **Docker** for containerized environments
+
+### Quick Start
+
+After installation, start the service:
+
+```bash
+./bin/elasticsearch
+```
+
+Verify it's running by visiting `http://localhost:9200` in your browser.
+
+### Basic Configuration
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `cluster.name` | elasticsearch | Name of your cluster |
+| `node.name` | auto-generated | Unique node identifier |
+
+:::{tip}
+Press {kbd}`Ctrl+C` to stop the server gracefully.
+:::
+
+### Next Steps
+
+1. Create your first index
+2. Index some documents
+3. Run your first search query
+
+For more details, see the **Configuration Guide** and **API Reference**.
+"""
+
+    [<Fact>]
+    let ``renders realistic page as searchable single line`` () =
+        markdown |> convertsToPlainText """Getting Started with Elasticsearch • Elasticsearch is a distributed search and analytics engine. This guide helps you get started quickly. • Make sure you have Java 17 or later installed before proceeding. • Installation • You can install Elasticsearch using several methods: • Download directly from the official website • Use package managers like apt or yum • Run with Docker for containerized environments • Quick Start • After installation, start the service: • ./bin/elasticsearch • Verify it's running by visiting http://localhost:9200 in your browser. • Basic Configuration • Setting: cluster.name • Default: elasticsearch • Description: Name of your cluster • Setting: node.name • Default: auto-generated • Description: Unique node identifier • Press Ctrl + c to stop the server gracefully. • Next Steps • Create your first index • Index some documents • Run your first search query • For more details, see the Configuration Guide and API Reference."""
