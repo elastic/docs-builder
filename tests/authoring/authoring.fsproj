@@ -30,6 +30,7 @@
     <Compile Include="Framework\ErrorCollectorAssertions.fs"/>
     <Compile Include="Framework\MarkdownDocumentAssertions.fs"/>
     <Compile Include="Framework\LlmMarkdownAssertions.fs" />
+    <Compile Include="Framework\PlainTextAssertions.fs" />
     <Compile Include="Framework\CrossLinkResolverAssertions.fs" />
     <Compile Include="Inline\Substitutions.fs"/>
     <Compile Include="Inline\SubstitutionMutations.fs" />
@@ -55,6 +56,7 @@
     <Compile Include="Directives\IncludeBlocks.fs" />
     <Compile Include="Linters\SpaceNormalizers.fs" />
     <Compile Include="LlmMarkdown\LlmMarkdownOutput.fs" />
+    <Compile Include="PlainText\PlainTextOutput.fs" />
     <Compile Include="FrontMatter\ProductsFrontMatter.fs" />
   </ItemGroup>
 </Project>
