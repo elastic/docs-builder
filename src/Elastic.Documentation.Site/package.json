@@ -47,7 +47,7 @@
     "@babel/preset-env": "7.28.5",
     "@babel/preset-react": "7.27.1",
     "@babel/preset-typescript": "7.28.5",
-    "@elastic/synthetics": "1.20.0",
+    "@elastic/synthetics": "1.22.0",
     "@eslint/js": "9.39.2",
     "@parcel/reporter-bundle-analyzer": "2.16.3",
     "@parcel/transformer-svg-react": "2.16.1",
@@ -78,7 +78,7 @@
     "svgo": "^3.3.2",
     "text-diff": "1.0.1",
     "typescript": "^5.9.3",
-    "typescript-eslint": "8.50.1",
+    "typescript-eslint": "8.51.0",
     "wait-on": "9.0.1"
   },
   "browserslist": [
