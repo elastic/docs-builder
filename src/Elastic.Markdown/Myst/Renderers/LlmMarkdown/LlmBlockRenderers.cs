@@ -720,16 +720,25 @@ public class LlmDefinitionItemRenderer : MarkdownObjectRenderer<LlmMarkdownRende
 {
 	protected override void Write(LlmMarkdownRenderer renderer, DefinitionItem obj)
 	{
-		var first = obj.Cast<LeafBlock>().First();
 		renderer.EnsureBlockSpacing();
+
+		// Render the term (first element) if it's a LeafBlock
+		var first = obj.FirstOrDefault();
+		var hasTermBlock = first is LeafBlock;
+
 		renderer.Write("<definition");
-		renderer.Write(" term=\"");
-		renderer.Write(GetPlainTextFromLeafBlock(renderer, first));
-		renderer.WriteLine("\">");
-		for (var index = 0; index < obj.Count; index++)
+		if (hasTermBlock)
 		{
-			if (index == 0)
-				continue;
+			renderer.Write(" term=\"");
+			renderer.Write(GetPlainTextFromLeafBlock(renderer, (LeafBlock)first!));
+			renderer.Write("\"");
+		}
+		renderer.WriteLine(">");
+
+		// Render the definitions (remaining elements, or all if no term block)
+		var startIndex = hasTermBlock ? 1 : 0;
+		for (var index = startIndex; index < obj.Count; index++)
+		{
 			var block = obj[index];
 			LlmRenderingHelpers.RenderBlockWithIndentation(renderer, block);
 		}
