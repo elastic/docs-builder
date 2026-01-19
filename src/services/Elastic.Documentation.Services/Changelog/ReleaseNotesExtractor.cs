@@ -20,6 +20,8 @@ public static partial class ReleaseNotesExtractor
 	[GeneratedRegex(@"(?:\n|^)\s*#*\s*release[\s-]?notes?[:\s-]*(.*?)(?:(\r?\n|\r){2}|$|((\r?\n|\r)\s*#+))", RegexOptions.IgnoreCase | RegexOptions.Singleline)]
 	private static partial Regex ReleaseNoteRegex();
 
+	private const int MaxReleaseNoteTitleLength = 120;
+
 	/// <summary>
 	/// Strips HTML comments from markdown text.
 	/// This handles both single-line and multi-line comments.
@@ -47,7 +49,7 @@ public static partial class ReleaseNotesExtractor
 	/// It will look for:
 	/// - paragraphs beginning with "release note" (or slight variations of that) and the sentence till the end of line.
 	/// - markdown headers like "## Release Note"
-	/// 
+	///
 	/// HTML comments are stripped before extraction to avoid picking up template instructions.
 	/// </summary>
 	/// <param name="markdown">The PR description body</param>
@@ -99,7 +101,7 @@ public static partial class ReleaseNotesExtractor
 		}
 
 		// Long release note (>120 characters or multi-line): use in description
-		if (releaseNote.Length > 120 || releaseNote.Contains('\n'))
+		if (releaseNote.Length > MaxReleaseNoteTitleLength || releaseNote.Contains('\n'))
 		{
 			return (null, releaseNote);
 		}
