@@ -233,6 +233,139 @@ public class ChangelogServiceTests : IDisposable
 	}
 
 	[Fact]
+	public async Task CreateChangelog_WithStripTitlePrefix_RemovesSquareBracketsAndColon()
+	{
+		// Arrange
+		var mockGitHubService = A.Fake<IGitHubPrService>();
+		var prInfo = new GitHubPrInfo
+		{
+			Title = "[ES|QL]: Update Vector Similarity To Support BFLOAT16",
+			Labels = ["type:feature"]
+		};
+
+		A.CallTo(() => mockGitHubService.FetchPrInfoAsync(
+			"https://github.com/elastic/elasticsearch/pull/12345",
+			null,
+			null,
+			A<CancellationToken>._))
+			.Returns(prInfo);
+
+		// Create a config file with label mappings
+		var fileSystem = new FileSystem();
+		var configDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		fileSystem.Directory.CreateDirectory(configDir);
+		var configPath = fileSystem.Path.Combine(configDir, "changelog.yml");
+		var configContent = """
+			available_types:
+			  - feature
+			  - bug-fix
+			available_subtypes: []
+			available_lifecycles:
+			  - preview
+			  - beta
+			  - ga
+			label_to_type:
+			  "type:feature": feature
+			""";
+		await fileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
+
+		var input = new ChangelogInput
+		{
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
+			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Config = configPath,
+			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString()),
+			StripTitlePrefix = true
+		};
+
+		// Act
+		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		_collector.Errors.Should().Be(0);
+
+		var outputDir = input.Output ?? Directory.GetCurrentDirectory();
+		if (!Directory.Exists(outputDir))
+			Directory.CreateDirectory(outputDir);
+		var files = Directory.GetFiles(outputDir, "*.yaml");
+		files.Should().HaveCount(1);
+
+		var yamlContent = await File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		yamlContent.Should().Contain("title: Update Vector Similarity To Support BFLOAT16");
+		yamlContent.Should().NotContain("[ES|QL]");
+		yamlContent.Should().NotContain("[ES|QL]:");
+	}
+
+	[Fact]
+	public async Task CreateChangelog_WithStripTitlePrefix_RemovesSquareBracketsWithoutColon()
+	{
+		// Arrange
+		var mockGitHubService = A.Fake<IGitHubPrService>();
+		var prInfo = new GitHubPrInfo
+		{
+			Title = "[Security] Improve authentication handling",
+			Labels = ["type:feature"]
+		};
+
+		A.CallTo(() => mockGitHubService.FetchPrInfoAsync(
+			"https://github.com/elastic/elasticsearch/pull/12345",
+			null,
+			null,
+			A<CancellationToken>._))
+			.Returns(prInfo);
+
+		// Create a config file with label mappings
+		var fileSystem = new FileSystem();
+		var configDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		fileSystem.Directory.CreateDirectory(configDir);
+		var configPath = fileSystem.Path.Combine(configDir, "changelog.yml");
+		var configContent = """
+			available_types:
+			  - feature
+			  - bug-fix
+			available_subtypes: []
+			available_lifecycles:
+			  - preview
+			  - beta
+			  - ga
+			label_to_type:
+			  "type:feature": feature
+			""";
+		await fileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
+
+		var input = new ChangelogInput
+		{
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
+			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Config = configPath,
+			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString()),
+			StripTitlePrefix = true
+		};
+
+		// Act
+		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		_collector.Errors.Should().Be(0);
+
+		var outputDir = input.Output ?? Directory.GetCurrentDirectory();
+		if (!Directory.Exists(outputDir))
+			Directory.CreateDirectory(outputDir);
+		var files = Directory.GetFiles(outputDir, "*.yaml");
+		files.Should().HaveCount(1);
+
+		var yamlContent = await File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		yamlContent.Should().Contain("title: Improve authentication handling");
+		yamlContent.Should().NotContain("[Security]");
+	}
+
+	[Fact]
 	public async Task CreateChangelog_WithUsePrNumber_CreatesFileWithPrNumberAsFilename()
 	{
 		// Arrange
