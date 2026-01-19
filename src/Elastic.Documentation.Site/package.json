@@ -78,7 +78,7 @@
     "svgo": "^3.3.2",
     "text-diff": "1.0.1",
     "typescript": "^5.9.3",
-    "typescript-eslint": "8.50.1",
+    "typescript-eslint": "8.51.0",
     "wait-on": "9.0.1"
   },
   "browserslist": [
