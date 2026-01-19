@@ -109,3 +109,96 @@ public class MultipleLineCommentWithLinkTest(ITestOutputHelper output) : InlineT
 		);
 	}
 }
+
+/// <summary>
+/// Tests for GitHub issue #2456: Silent build errors on malformed multiline comments.
+/// When closing --> is on the same line as other content, the comment should still close properly.
+/// </summary>
+public class CommentWithClosingTagAtEndOfLineTest(ITestOutputHelper output) : InlineTest(output,
+	"""
+	content before comment
+
+	<!-- :::{note}
+	TODO: Uncomment once page is live.
+	The chat UI is available in both standalone and flyout modes.
+	::: -->
+
+	content after comment
+	"""
+)
+{
+	[Fact]
+	public void ContentAfterCommentShouldBeRendered()
+	{
+		// This test verifies GitHub issue #2456 is fixed.
+		// The "content after comment" should be rendered, not silently dropped.
+		Html.Should().Contain("<p>content after comment</p>");
+	}
+
+	[Fact]
+	public void ContentBeforeCommentShouldBeRendered() =>
+		Html.Should().Contain("<p>content before comment</p>");
+
+	[Fact]
+	public void CommentContentShouldNotBeRendered() =>
+		Html.Should().NotContain("TODO: Uncomment once page is live.");
+}
+
+/// <summary>
+/// Tests single-line HTML comments like <!-- comment -->
+/// </summary>
+public class SingleLineCommentTest(ITestOutputHelper output) : InlineTest(output,
+	"""
+	content before
+
+	<!-- This is a single line comment -->
+
+	content after
+	"""
+)
+{
+	[Fact]
+	public void ContentBeforeAndAfterShouldBeRendered()
+	{
+		Html.Should()
+			.Contain("<p>content before</p>")
+			.And.Contain("<p>content after</p>");
+	}
+
+	[Fact]
+	public void CommentContentShouldNotBeRendered() =>
+		Html.Should().NotContain("single line comment");
+}
+
+/// <summary>
+/// Tests comment with opening and content on same line, closing on different line
+/// </summary>
+public class CommentWithOpeningContentOnSameLineTest(ITestOutputHelper output) : InlineTest(output,
+	"""
+	content before
+
+	<!-- start of comment
+	middle of comment
+	end of comment -->
+
+	content after
+	"""
+)
+{
+	[Fact]
+	public void ContentBeforeAndAfterShouldBeRendered()
+	{
+		Html.Should()
+			.Contain("<p>content before</p>")
+			.And.Contain("<p>content after</p>");
+	}
+
+	[Fact]
+	public void CommentContentShouldNotBeRendered()
+	{
+		Html.Should()
+			.NotContain("start of comment")
+			.And.NotContain("middle of comment")
+			.And.NotContain("end of comment");
+	}
+}
