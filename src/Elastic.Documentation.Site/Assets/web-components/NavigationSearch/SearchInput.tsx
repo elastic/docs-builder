@@ -85,7 +85,7 @@ export const SearchInput = ({
             <input
                 ref={inputRef}
                 type="text"
-                placeholder="Find in Docs"
+                placeholder="Jump to page"
                 value={value}
                 onChange={onChange}
                 onFocus={onFocus}
