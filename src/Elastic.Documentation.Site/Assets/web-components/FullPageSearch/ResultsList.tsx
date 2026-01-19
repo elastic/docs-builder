@@ -128,7 +128,11 @@ const TYPE_LABELS: Record<string, string> = {
 // Facet configuration for display
 const FACET_CONFIG: Record<
     keyof FullPageSearchFilters | 'version',
-    { label: string; icon: ReactNode; getDisplayValue: (value: string) => string }
+    {
+        label: string
+        icon: ReactNode
+        getDisplayValue: (value: string) => string
+    }
 > = {
     type: {
         label: 'Type',
@@ -255,7 +259,10 @@ const ActiveFilters = ({
 }: ActiveFiltersProps) => {
     const { euiTheme } = useEuiTheme()
 
-    const allFilters: { key: keyof FullPageSearchFilters | 'version'; value: string }[] = []
+    const allFilters: {
+        key: keyof FullPageSearchFilters | 'version'
+        value: string
+    }[] = []
 
     // Add version filter if not default
     if (version !== '9.0+') {
@@ -295,7 +302,10 @@ const ActiveFilters = ({
                                 if (filter.key === 'version') {
                                     onResetVersion()
                                 } else {
-                                    onRemoveFilter(filter.key as keyof FullPageSearchFilters, filter.value)
+                                    onRemoveFilter(
+                                        filter.key as keyof FullPageSearchFilters,
+                                        filter.value
+                                    )
                                 }
                             }}
                         />
