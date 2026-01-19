@@ -419,9 +419,9 @@ public partial class ChangelogService(
 			// Default: timestamp-slug.yaml
 			var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 			var slug = string.IsNullOrWhiteSpace(input.Title)
-				? (string.IsNullOrWhiteSpace(prUrl)
+				? string.IsNullOrWhiteSpace(prUrl)
 					? "changelog"
-					: $"pr-{prUrl.Replace("/", "-").Replace(":", "-")}")
+					: $"pr-{prUrl.Replace("/", "-").Replace(":", "-")}"
 				: SanitizeFilename(input.Title);
 			filename = $"{timestamp}-{slug}.yaml";
 		}
@@ -724,7 +724,7 @@ public partial class ChangelogService(
 			#       An optional string for new features or enhancements that have a specific availability.
 			#       It can be one of:
 			{lifecyclesList}
-			
+
 			##### Optional fields #####
 
 			# action:
@@ -816,7 +816,7 @@ public partial class ChangelogService(
 			// segments[0] is "/", segments[1] is "owner/", segments[2] is "repo/", segments[3] is "pull/", segments[4] is "123"
 			if (segments.Length >= 5 &&
 				segments[3].Equals("pull/", StringComparison.OrdinalIgnoreCase) &&
-				int.TryParse(segments[4], out var prNum))
+				int.TryParse(segments[4].TrimEnd('/'), out var prNum))
 			{
 				return prNum;
 			}
