@@ -393,12 +393,38 @@ public partial class ChangelogService(
 			_ = _fileSystem.Directory.CreateDirectory(outputDir);
 		}
 
-		// Generate filename (timestamp-slug.yaml)
-		var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-		var slug = string.IsNullOrWhiteSpace(input.Title)
-			? (prUrl != null ? $"pr-{prUrl.Replace("/", "-").Replace(":", "-")}" : "changelog")
-			: SanitizeFilename(input.Title);
-		var filename = $"{timestamp}-{slug}.yaml";
+		// Generate filename
+		string filename;
+		if (input.UsePrNumber && !string.IsNullOrWhiteSpace(prUrl))
+		{
+			// Use PR number as filename when --use-pr-number is specified
+			var prNumber = ExtractPrNumber(prUrl, input.Owner, input.Repo);
+			if (prNumber.HasValue)
+			{
+				filename = $"{prNumber.Value}.yaml";
+			}
+			else
+			{
+				// Fall back to timestamp-slug format if PR number extraction fails
+				collector.EmitWarning(string.Empty, $"Failed to extract PR number from '{prUrl}'. Falling back to timestamp-based filename.");
+				var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+				var slug = string.IsNullOrWhiteSpace(input.Title)
+					? $"pr-{prUrl.Replace("/", "-").Replace(":", "-")}"
+					: SanitizeFilename(input.Title);
+				filename = $"{timestamp}-{slug}.yaml";
+			}
+		}
+		else
+		{
+			// Default: timestamp-slug.yaml
+			var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+			var slug = string.IsNullOrWhiteSpace(input.Title)
+				? string.IsNullOrWhiteSpace(prUrl)
+					? "changelog"
+					: $"pr-{prUrl.Replace("/", "-").Replace(":", "-")}"
+				: SanitizeFilename(input.Title);
+			filename = $"{timestamp}-{slug}.yaml";
+		}
 		var filePath = _fileSystem.Path.Combine(outputDir, filename);
 
 		// Write file
@@ -698,7 +724,7 @@ public partial class ChangelogService(
 			#       An optional string for new features or enhancements that have a specific availability.
 			#       It can be one of:
 			{lifecyclesList}
-			
+
 			##### Optional fields #####
 
 			# action:
@@ -790,7 +816,7 @@ public partial class ChangelogService(
 			// segments[0] is "/", segments[1] is "owner/", segments[2] is "repo/", segments[3] is "pull/", segments[4] is "123"
 			if (segments.Length >= 5 &&
 				segments[3].Equals("pull/", StringComparison.OrdinalIgnoreCase) &&
-				int.TryParse(segments[4], out var prNum))
+				int.TryParse(segments[4].TrimEnd('/'), out var prNum))
 			{
 				return prNum;
 			}
