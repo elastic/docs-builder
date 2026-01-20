@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using ConsoleAppFramework;
-using Elastic.Documentation.Services.Changelog;
+using Elastic.Changelog;
 
 namespace Documentation.Builder.Arguments;
 
