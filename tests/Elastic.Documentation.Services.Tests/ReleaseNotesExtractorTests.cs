@@ -194,7 +194,7 @@ public class ReleaseNotesExtractorTests
 			multiple lines
 
 			## Next Section
-			""";
+			""".ReplaceLineEndings("\n");
 
 		// Act
 		var result = ReleaseNotesExtractor.FindReleaseNote(prBody);
@@ -244,7 +244,7 @@ public class ReleaseNotesExtractorTests
 			Release Notes: Adds support for new aggregation types
 			This includes date histogram and range aggregations
 			with improved performance
-			""";
+			""".ReplaceLineEndings("\n");
 
 		// Act
 		var (title, description) = ReleaseNotesExtractor.ExtractReleaseNotes(prBody);
