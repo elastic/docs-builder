@@ -3,11 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Changelog.GitHub;
-using Elastic.Changelog;
-using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Creation;
-using Elastic.Changelog.Configuration;
-using Elastic.Changelog.Rendering;
 using FakeItEasy;
 using FluentAssertions;
 

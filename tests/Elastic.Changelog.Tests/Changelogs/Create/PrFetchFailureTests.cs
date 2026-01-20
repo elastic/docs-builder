@@ -4,11 +4,7 @@
 
 using Elastic.Documentation.Diagnostics;
 using Elastic.Changelog.GitHub;
-using Elastic.Changelog;
-using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Creation;
-using Elastic.Changelog.Configuration;
-using Elastic.Changelog.Rendering;
 using FakeItEasy;
 using FluentAssertions;
 
