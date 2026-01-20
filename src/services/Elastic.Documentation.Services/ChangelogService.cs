@@ -2442,7 +2442,7 @@ public partial class ChangelogService(
 		{
 			// Group by subtype if subsections is enabled, otherwise group by area
 			var groupedEntries = subsections
-				? breakingChanges.GroupBy(e => string.IsNullOrWhiteSpace(e.Subtype) ? string.Empty : e.Subtype).ToList()
+				? breakingChanges.GroupBy(e => string.IsNullOrWhiteSpace(e.Subtype) ? string.Empty : e.Subtype).OrderBy(g => g.Key).ToList()
 				: breakingChanges.GroupBy(e => GetComponent(e)).ToList();
 
 			foreach (var group in groupedEntries)
@@ -2579,7 +2579,9 @@ public partial class ChangelogService(
 
 		if (deprecations.Count > 0)
 		{
-			var groupedByArea = deprecations.GroupBy(e => GetComponent(e)).ToList();
+			var groupedByArea = subsections
+				? deprecations.GroupBy(e => GetComponent(e)).OrderBy(g => g.Key).ToList()
+				: deprecations.GroupBy(e => GetComponent(e)).ToList();
 			foreach (var areaGroup in groupedByArea)
 			{
 				if (subsections && !string.IsNullOrWhiteSpace(areaGroup.Key))
@@ -2714,7 +2716,9 @@ public partial class ChangelogService(
 
 		if (knownIssues.Count > 0)
 		{
-			var groupedByArea = knownIssues.GroupBy(e => GetComponent(e)).ToList();
+			var groupedByArea = subsections
+				? knownIssues.GroupBy(e => GetComponent(e)).OrderBy(g => g.Key).ToList()
+				: knownIssues.GroupBy(e => GetComponent(e)).ToList();
 			foreach (var areaGroup in groupedByArea)
 			{
 				if (subsections && !string.IsNullOrWhiteSpace(areaGroup.Key))
@@ -2826,7 +2830,9 @@ public partial class ChangelogService(
 	[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0058:Expression value is never used", Justification = "StringBuilder methods return builder for chaining")]
 	private void RenderEntriesByArea(StringBuilder sb, List<ChangelogData> entries, bool subsections, HashSet<string> featureIdsToHide, Dictionary<string, RenderBlockersEntry>? renderBlockers, Dictionary<ChangelogData, HashSet<string>> entryToBundleProducts, Dictionary<ChangelogData, string> entryToRepo, Dictionary<ChangelogData, bool> entryToHideLinks)
 	{
-		var groupedByArea = entries.GroupBy(e => GetComponent(e)).ToList();
+		var groupedByArea = subsections
+			? entries.GroupBy(e => GetComponent(e)).OrderBy(g => g.Key).ToList()
+			: entries.GroupBy(e => GetComponent(e)).ToList();
 		foreach (var areaGroup in groupedByArea)
 		{
 			if (subsections && !string.IsNullOrWhiteSpace(areaGroup.Key))
@@ -3402,7 +3408,9 @@ public partial class ChangelogService(
 	[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "Parameter matches interface pattern for consistency")]
 	private void RenderEntriesByAreaAsciidoc(StringBuilder sb, List<ChangelogData> entries, string repo, bool subsections, HashSet<string> featureIdsToHide, Dictionary<string, RenderBlockersEntry>? renderBlockers, Dictionary<ChangelogData, HashSet<string>> entryToBundleProducts, Dictionary<ChangelogData, string> entryToRepo, Dictionary<ChangelogData, bool> entryToHideLinks)
 	{
-		var groupedByArea = entries.GroupBy(e => GetComponent(e)).ToList();
+		var groupedByArea = subsections
+			? entries.GroupBy(e => GetComponent(e)).OrderBy(g => g.Key).ToList()
+			: entries.GroupBy(e => GetComponent(e)).ToList();
 		foreach (var areaGroup in groupedByArea)
 		{
 			var componentName = !string.IsNullOrWhiteSpace(areaGroup.Key) ? areaGroup.Key : "General";
@@ -3478,7 +3486,7 @@ public partial class ChangelogService(
 	{
 		// Group by subtype if subsections is enabled, otherwise group by area
 		var groupedEntries = subsections
-			? breakingChanges.GroupBy(e => string.IsNullOrWhiteSpace(e.Subtype) ? string.Empty : e.Subtype).ToList()
+			? breakingChanges.GroupBy(e => string.IsNullOrWhiteSpace(e.Subtype) ? string.Empty : e.Subtype).OrderBy(g => g.Key).ToList()
 			: breakingChanges.GroupBy(e => GetComponent(e)).ToList();
 
 		foreach (var group in groupedEntries)
@@ -3566,7 +3574,7 @@ public partial class ChangelogService(
 	[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "Parameter matches interface pattern for consistency")]
 	private void RenderDeprecationsAsciidoc(StringBuilder sb, List<ChangelogData> deprecations, string repo, bool subsections, HashSet<string> featureIdsToHide, Dictionary<string, RenderBlockersEntry>? renderBlockers, Dictionary<ChangelogData, HashSet<string>> entryToBundleProducts, Dictionary<ChangelogData, string> entryToRepo, Dictionary<ChangelogData, bool> entryToHideLinks)
 	{
-		var groupedByArea = deprecations.GroupBy(e => GetComponent(e)).ToList();
+		var groupedByArea = deprecations.GroupBy(e => GetComponent(e)).OrderBy(g => g.Key).ToList();
 		foreach (var areaGroup in groupedByArea)
 		{
 			var componentName = !string.IsNullOrWhiteSpace(areaGroup.Key) ? areaGroup.Key : "General";
@@ -3651,7 +3659,7 @@ public partial class ChangelogService(
 	[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "Parameter matches interface pattern for consistency")]
 	private void RenderKnownIssuesAsciidoc(StringBuilder sb, List<ChangelogData> knownIssues, string repo, bool subsections, HashSet<string> featureIdsToHide, Dictionary<string, RenderBlockersEntry>? renderBlockers, Dictionary<ChangelogData, HashSet<string>> entryToBundleProducts, Dictionary<ChangelogData, string> entryToRepo, Dictionary<ChangelogData, bool> entryToHideLinks)
 	{
-		var groupedByArea = knownIssues.GroupBy(e => GetComponent(e)).ToList();
+		var groupedByArea = knownIssues.GroupBy(e => GetComponent(e)).OrderBy(g => g.Key).ToList();
 		foreach (var areaGroup in groupedByArea)
 		{
 			var componentName = !string.IsNullOrWhiteSpace(areaGroup.Key) ? areaGroup.Key : "General";
