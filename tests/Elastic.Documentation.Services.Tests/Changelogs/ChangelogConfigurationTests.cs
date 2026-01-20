@@ -66,7 +66,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			available_types:
 			  - feature
 			available_lifecycles:
-			   ga
+			  - ga
 			""";
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
@@ -152,9 +152,9 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			available_lifecycles:
 			  - ga
 			render_blockers:
-			elasticsearch:
-			  types:
-			    - invalid-type
+			  elasticsearch:
+			    types:
+			      - invalid-type
 			""";
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
