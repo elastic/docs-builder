@@ -821,9 +821,15 @@ public partial class ChangelogService(
 		if (closingBracketIndex < 0)
 			return title; // No matching ']', return as-is
 
-		// Extract everything after the closing bracket and trim whitespace
-		var remaining = title[(closingBracketIndex + 1)..].TrimStart();
-		return remaining;
+		// Extract everything after the closing bracket
+		var remaining = title[(closingBracketIndex + 1)..];
+
+		// Remove colon if it exists right after the closing bracket
+		if (remaining.StartsWith(':'))
+			remaining = remaining[1..];
+
+		// Trim whitespace
+		return remaining.TrimStart();
 	}
 
 	private static int? ExtractPrNumber(string prUrl, string? defaultOwner = null, string? defaultRepo = null)

@@ -124,24 +124,24 @@ Add a new changelog from command-line input
 
 Options:
   --products <List<ProductInfo>>    Required: Products affected in format "product target lifecycle, ..." (e.g., "elasticsearch 9.2.0 ga, cloud-serverless 2025-08-05") [Required]
-  --title <string?>                 Optional: A short, user-facing title (max 80 characters). Required if --prs is not specified. If --prs and --title are specified, the latter value is used instead of what exists in the PR. [Default: null]
-  --type <string?>                  Optional: Type of change (feature, enhancement, bug-fix, breaking-change, etc.). Required if --prs is not specified. If mappings are configured, type can be derived from the PR. [Default: null]
-  --subtype <string?>               Optional: Subtype for breaking changes (api, behavioral, configuration, etc.) [Default: null]
-  --areas <string[]?>               Optional: Area(s) affected (comma-separated or specify multiple times) [Default: null]
-  --prs <string[]?>                 Optional: Pull request URL(s) or PR number(s) (comma-separated, or if --owner and --repo are provided, just numbers). If specified, --title can be derived from the PR. If mappings are configured, --areas and --type can also be derived from the PR. Creates one changelog file per PR. [Default: null]
-  --owner <string?>                 Optional: GitHub repository owner (used when --prs contains just numbers) [Default: null]
-  --repo <string?>                  Optional: GitHub repository name (used when --prs contains just numbers) [Default: null]
-  --issues <string[]?>              Optional: Issue URL(s) (comma-separated or specify multiple times) [Default: null]
-  --description <string?>           Optional: Additional information about the change (max 600 characters) [Default: null]
-  --impact <string?>                Optional: How the user's environment is affected [Default: null]
   --action <string?>                Optional: What users must do to mitigate [Default: null]
+  --areas <string[]?>               Optional: Area(s) affected (comma-separated or specify multiple times) [Default: null]
+  --config <string?>                Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml' [Default: null]
+  --description <string?>           Optional: Additional information about the change (max 600 characters) [Default: null]
+  --extract-release-notes           Optional: When used with --prs, extract release notes from PR descriptions. Short release notes (≤120 characters, single line) are used as the title, long release notes (>120 characters or multi-line) are used as the description. Looks for content in formats like "Release Notes: ...", "Release-Notes: ...", "## Release Note", etc.
   --feature-id <string?>            Optional: Feature flag ID [Default: null]
   --highlight <bool?>               Optional: Include in release highlights [Default: null]
+  --impact <string?>                Optional: How the user's environment is affected [Default: null]
+  --issues <string[]?>              Optional: Issue URL(s) (comma-separated or specify multiple times) [Default: null]
+  --owner <string?>                 Optional: GitHub repository owner (used when --prs contains just numbers) [Default: null]
   --output <string?>                Optional: Output directory for the changelog. Defaults to current directory [Default: null]
-  --config <string?>                Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml' [Default: null]
+  --prs <string[]?>                 Optional: Pull request URL(s) or PR number(s) (comma-separated), or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times. Each occurrence can be either comma-separated PRs (e.g., `--prs "https://github.com/owner/repo/pull/123,6789"`) or a file path (e.g., `--prs /path/to/file.txt`). When specifying PRs directly, provide comma-separated values. When specifying a file path, provide a single value that points to a newline-delimited file. If --owner and --repo are provided, PR numbers can be used instead of URLs. If specified, --title can be derived from the PR. If mappings are configured, --areas and --type can also be derived from the PR. Creates one changelog file per PR. [Default: null]
+  --repo <string?>                  Optional: GitHub repository name (used when --prs contains just numbers) [Default: null]
+  --strip-title-prefix              Optional: When used with --prs, remove square brackets and text within them from the beginning of PR titles, and also remove a colon if it follows the closing bracket (e.g., "[Inference API] Title" becomes "Title", "[ES|QL]: Title" becomes "Title")
+  --subtype <string?>               Optional: Subtype for breaking changes (api, behavioral, configuration, etc.) [Default: null]
+  --title <string?>                 Optional: A short, user-facing title (max 80 characters). Required if --prs is not specified. If --prs and --title are specified, the latter value is used instead of what exists in the PR. [Default: null]
+  --type <string?>                  Optional: Type of change (feature, enhancement, bug-fix, breaking-change, etc.). Required if --prs is not specified. If mappings are configured, type can be derived from the PR. [Default: null]
   --use-pr-number                   Optional: Use the PR number as the filename instead of generating it from a unique ID and title
-  --strip-title-prefix              Optional: When used with --prs, remove square brackets and text within them from the beginning of PR titles
-  --extract-release-notes           Optional: When used with --prs, extract release notes from PR descriptions. Short release notes (≤120 characters, single line) are used as the title, long release notes (>120 characters or multi-line) are used as the description. Looks for content in formats like "Release Notes: ...", "Release-Notes: ...", "## Release Note", etc.
 ```
 
 ### Authorization
@@ -250,7 +250,7 @@ docs-builder changelog add \
 
 In this case, the changelog file derives the title, type, and areas from the pull request.
 
-The `--strip-title-prefix` option in this example means that if the PR title has a prefix in square brackets (such as `[ES|QL]` or `[Security]`), it is automatically removed from the changelog title.
+The `--strip-title-prefix` option in this example means that if the PR title has a prefix in square brackets (such as `[ES|QL]` or `[Security]`), it is automatically removed from the changelog title. If a colon follows the closing bracket, it is also removed.
 
 :::{note}
 The `--strip-title-prefix` option only applies when the title is derived from the PR (when `--title` is not explicitly provided). If you specify `--title` explicitly, that title is used as-is without any prefix stripping.
@@ -358,15 +358,15 @@ For up-to-date details, use the `-h` option:
 Bundle changelogs
 
 Options:
-  --directory <string?>                     Optional: Directory containing changelog YAML files. Defaults to current directory [Default: null]
-  --output <string?>                        Optional: Output path for the bundled changelog. Can be either (1) a directory path, in which case 'changelog-bundle.yaml' is created in that directory, or (2) a file path ending in .yml or .yaml. Defaults to 'changelog-bundle.yaml' in the input directory [Default: null]
   --all                                     Include all changelogs in the directory. Only one filter option can be specified: `--all`, `--input-products`, or `--prs`.
+  --directory <string?>                     Optional: Directory containing changelog YAML files. Defaults to current directory [Default: null]
   --input-products <List<ProductInfo>?>     Filter by products in format "product target lifecycle, ..." (e.g., "cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta"). When specified, all three parts (product, target, lifecycle) are required but can be wildcards (*). Examples: "elasticsearch * *" matches all elasticsearch changelogs, "cloud-serverless 2025-12-02 *" matches cloud-serverless 2025-12-02 with any lifecycle, "* 9.3.* *" matches any product with target starting with "9.3.", "* * *" matches all changelogs (equivalent to --all). Only one filter option can be specified: `--all`, `--input-products`, or `--prs`. [Default: null]
+  --output <string?>                        Optional: Output path for the bundled changelog. Can be either (1) a directory path, in which case 'changelog-bundle.yaml' is created in that directory, or (2) a file path ending in .yml or .yaml. Defaults to 'changelog-bundle.yaml' in the input directory [Default: null]
   --output-products <List<ProductInfo>?>    Optional: Explicitly set the products array in the output file in format "product target lifecycle, ...". Overrides any values from changelogs. [Default: null]
-  --resolve                                 Optional: Copy the contents of each changelog file into the entries array. By default, the bundle contains only the file names and checksums.
-  --prs <string[]?>                         Filter by pull request URLs or numbers (comma-separated), or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times. Only one filter option can be specified: `--all`, `--input-products`, or `--prs`. [Default: null]
   --owner <string?>                         GitHub repository owner (required only when PRs are specified as numbers) [Default: null]
+  --prs <string[]?>                         Filter by pull request URLs or numbers (comma-separated), or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times. Only one filter option can be specified: `--all`, `--input-products`, or `--prs`. [Default: null]
   --repo <string?>                          GitHub repository name (required only when PRs are specified as numbers) [Default: null]
+  --resolve                                 Optional: Copy the contents of each changelog file into the entries array. By default, the bundle contains only the file names and checksums.
 ```
 
 You can specify only one of the following filter options:
@@ -554,13 +554,13 @@ For up-to-date details, use the `-h` command option:
 Render bundled changelog(s) to markdown or asciidoc files
 
 Options:
-  --input <string[]>             Required: Bundle input(s) in format "bundle-file-path|changelog-file-path|repo|link-visibility" (use pipe as delimiter). To merge multiple bundles, separate them with commas. Only bundle-file-path is required. link-visibility can be "hide-links" or "keep-links" (default). Paths must be absolute or use environment variables; tilde (~) expansion is not supported. [Required]
-  --output <string?>             Optional: Output directory for rendered files. Defaults to current directory [Default: null]
-  --title <string?>              Optional: Title to use for section headers in output files. Defaults to version from first bundle [Default: null]
-  --subsections                  Optional: Group entries by area/component in subsections. For breaking changes with a subtype, groups by subtype instead of area. Defaults to false
-  --hide-features <string[]?>    Filter by feature IDs (comma-separated), or a path to a newline-delimited file containing feature IDs. Can be specified multiple times. Entries with matching feature-id values will be commented out in the output. [Default: null]
-  --file-type <string>           Optional: Output file type. Valid values: "markdown" or "asciidoc". Defaults to "markdown" [Default: markdown]
+  --input <string[]?>            Required: Bundle input(s) in format "bundle-file-path|changelog-file-path|repo|link-visibility" (use pipe as delimiter). To merge multiple bundles, separate them with commas. Only bundle-file-path is required. link-visibility can be "hide-links" or "keep-links" (default). Paths must be absolute or use environment variables; tilde (~) expansion is not supported. [Default: null]
   --config <string?>             Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml' [Default: null]
+  --file-type <string?>          Optional: Output file type. Valid values: "markdown" or "asciidoc". Defaults to "markdown" [Default: @"markdown"]
+  --hide-features <string[]?>    Filter by feature IDs (comma-separated), or a path to a newline-delimited file containing feature IDs. Can be specified multiple times. Entries with matching feature-id values will be commented out in the output. [Default: null]
+  --output <string?>             Optional: Output directory for rendered files. Defaults to current directory [Default: null]
+  --subsections                  Optional: Group entries by area/component in subsections. For breaking changes with a subtype, groups by subtype instead of area. Defaults to false
+  --title <string?>              Optional: Title to use for section headers in output files. Defaults to version from first bundle [Default: null]
 ```
 
 Before you can use this command you must create changelog files and collect them into bundles.

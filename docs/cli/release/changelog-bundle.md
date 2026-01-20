@@ -3,9 +3,7 @@
 Bundle changelog files.
 
 To create the changelogs, use [](/cli/release/changelog-add.md).
-<!--
 For details and examples, go to [](/contribute/changelog.md).
--->
 
 ## Usage
 
