@@ -2,9 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Documentation.Diagnostics;
-using Elastic.Changelog.GitHub;
 using Elastic.Changelog.Creation;
+using Elastic.Changelog.GitHub;
+using Elastic.Documentation.Diagnostics;
 using FakeItEasy;
 using FluentAssertions;
 

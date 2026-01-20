@@ -2,10 +2,10 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Documentation.Diagnostics;
 using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Configuration;
 using Elastic.Changelog.Rendering;
+using Elastic.Documentation.Diagnostics;
 using FluentAssertions;
 
 namespace Elastic.Changelog.Tests.Changelogs.Render;

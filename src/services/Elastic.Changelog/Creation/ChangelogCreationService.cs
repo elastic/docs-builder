@@ -3,9 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using Elastic.Changelog.GitHub;
 using Elastic.Changelog;
 using Elastic.Changelog.Configuration;
+using Elastic.Changelog.GitHub;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;
