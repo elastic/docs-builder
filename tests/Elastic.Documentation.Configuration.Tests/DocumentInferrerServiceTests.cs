@@ -112,7 +112,7 @@ public class DocumentInferrerServiceTests
 	}
 
 	[Fact]
-	public void InferForMarkdownWithDirectRepositoryMatch_ReturnsProduct()
+	public void InferForMarkdownWithDirectRepositoryMatchReturnsProduct()
 	{
 		var versionsConfig = CreateVersionsConfiguration();
 		var productsConfig = CreateProductsConfiguration(versionsConfig);
