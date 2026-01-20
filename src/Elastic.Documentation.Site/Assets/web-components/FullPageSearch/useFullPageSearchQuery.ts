@@ -39,6 +39,7 @@ const SearchResultParent = z.object({
 
 const SearchProduct = z.object({
     id: z.string(),
+    displayName: z.string(),
 })
 
 const SearchResultItem = z.object({
@@ -58,11 +59,18 @@ const SearchResultItem = z.object({
 
 export type SearchResultItem = z.infer<typeof SearchResultItem>
 
+const ProductAggregationBucket = z.object({
+    count: z.number(),
+    displayName: z.string(),
+})
+
+export type ProductAggregationBucket = z.infer<typeof ProductAggregationBucket>
+
 const SearchAggregations = z.object({
     type: z.record(z.string(), z.number()).optional(),
     navigationSection: z.record(z.string(), z.number()).optional(),
     deploymentType: z.record(z.string(), z.number()).optional(),
-    product: z.record(z.string(), z.number()).optional(),
+    product: z.record(z.string(), ProductAggregationBucket).optional(),
 })
 
 export type SearchAggregations = z.infer<typeof SearchAggregations>

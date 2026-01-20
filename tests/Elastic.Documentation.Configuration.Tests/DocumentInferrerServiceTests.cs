@@ -79,7 +79,8 @@ public class DocumentInferrerServiceTests
 
 		return new ProductsConfiguration
 		{
-			Products = products.ToFrozenDictionary()
+			Products = products.ToFrozenDictionary(),
+			ProductDisplayNames = products.ToDictionary(p => p.Key, p => p.Value.DisplayName).ToFrozenDictionary()
 		};
 	}
 
@@ -334,7 +335,11 @@ public class DocumentInferrerServiceTests
 			}
 		};
 
-		var productsConfig = new ProductsConfiguration { Products = products.ToFrozenDictionary() };
+		var productsConfig = new ProductsConfiguration
+		{
+			Products = products.ToFrozenDictionary(),
+			ProductDisplayNames = products.ToDictionary(p => p.Key, p => p.Value.DisplayName).ToFrozenDictionary()
+		};
 		var legacyUrlMappings = new LegacyUrlMappingConfiguration { Mappings = [] };
 
 		var inferrer = new DocumentInferrerService(productsConfig, versionsConfig, legacyUrlMappings);

@@ -1,6 +1,8 @@
 import type { FullPageSearchFilters } from './fullPageSearch.store'
-import { getProductDisplayName } from './productsConfig'
-import type { SearchAggregations } from './useFullPageSearchQuery'
+import type {
+    SearchAggregations,
+    ProductAggregationBucket,
+} from './useFullPageSearchQuery'
 import { EuiBadge, EuiIcon, EuiText, useEuiTheme } from '@elastic/eui'
 import { css } from '@emotion/react'
 import { ReactNode, useState } from 'react'
@@ -498,18 +500,20 @@ const FacetFilter = ({
 }
 
 interface ProductFilterProps {
-    items: Record<string, number>
+    items: Record<string, ProductAggregationBucket>
     selected: string[]
     onChange: (value: string) => void
 }
 
 const ProductFilterItem = ({
     productId,
+    displayName,
     count,
     isSelected,
     onChange,
 }: {
     productId: string
+    displayName: string
     count: number
     isSelected: boolean
     onChange: (value: string) => void
@@ -550,7 +554,7 @@ const ProductFilterItem = ({
                     color: ${isSelected ? euiTheme.colors.primary : 'inherit'};
                 `}
             >
-                {getProductDisplayName(productId)}
+                {displayName}
             </EuiText>
             {isSelected ? (
                 <EuiIcon type="cross" size="s" color="primary" />
@@ -568,15 +572,19 @@ const ProductFilter = ({ items, selected, onChange }: ProductFilterProps) => {
     const [showAll, setShowAll] = useState(false)
 
     // Top 5 sorted by count (descending)
-    const sortedByCount = Object.entries(items).sort(([, a], [, b]) => b - a)
+    const sortedByCount = Object.entries(items).sort(
+        ([, a], [, b]) => b.count - a.count
+    )
     const topItems = sortedByCount.slice(0, ITEMS_TO_SHOW)
 
     // Others sorted alphabetically by display name
-    const otherItems = sortedByCount.slice(ITEMS_TO_SHOW).sort(([a], [b]) => {
-        const nameA = getProductDisplayName(a).toLowerCase()
-        const nameB = getProductDisplayName(b).toLowerCase()
-        return nameA.localeCompare(nameB)
-    })
+    const otherItems = sortedByCount
+        .slice(ITEMS_TO_SHOW)
+        .sort(([, a], [, b]) => {
+            return a.displayName
+                .toLowerCase()
+                .localeCompare(b.displayName.toLowerCase())
+        })
 
     const hasMore = otherItems.length > 0
 
@@ -594,11 +602,12 @@ const ProductFilter = ({ items, selected, onChange }: ProductFilterProps) => {
                     margin-top: ${euiTheme.size.xs};
                 `}
             >
-                {topItems.map(([key, count]) => (
+                {topItems.map(([key, bucket]) => (
                     <ProductFilterItem
                         key={key}
                         productId={key}
-                        count={count}
+                        displayName={bucket.displayName}
+                        count={bucket.count}
                         isSelected={selected.includes(key)}
                         onChange={onChange}
                     />
@@ -642,11 +651,12 @@ const ProductFilter = ({ items, selected, onChange }: ProductFilterProps) => {
                                 `}
                             />
                         </div>
-                        {otherItems.map(([key, count]) => (
+                        {otherItems.map(([key, bucket]) => (
                             <ProductFilterItem
                                 key={key}
                                 productId={key}
-                                count={count}
+                                displayName={bucket.displayName}
+                                count={bucket.count}
                                 isSelected={selected.includes(key)}
                                 onChange={onChange}
                             />

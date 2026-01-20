@@ -7,6 +7,7 @@ using Elastic.Clients.Elasticsearch;
 using Elastic.Clients.Elasticsearch.QueryDsl;
 using Elastic.Documentation.Api.Core.Search;
 using Elastic.Documentation.Api.Infrastructure.Adapters.Search.Common;
+using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Search;
 using Microsoft.Extensions.Logging;
 
@@ -16,7 +17,10 @@ namespace Elastic.Documentation.Api.Infrastructure.Adapters.Search;
 /// Full-page search gateway implementation.
 /// Uses hybrid RRF search for semantic queries, lexical-only for keyword queries.
 /// </summary>
-public partial class FullSearchGateway(ElasticsearchClientAccessor clientAccessor, ILogger<FullSearchGateway> logger)
+public partial class FullSearchGateway(
+	ElasticsearchClientAccessor clientAccessor,
+	ProductsConfiguration productsConfiguration,
+	ILogger<FullSearchGateway> logger)
 	: IFullSearchGateway, IDisposable
 {
 	/// <summary>
@@ -354,20 +358,39 @@ public partial class FullSearchGateway(ElasticsearchClientAccessor clientAccesso
 				AiRagOptimizedSummary = item.AiRagOptimizedSummary,
 				NavigationSection = item.NavigationSection,
 				LastUpdated = item.LastUpdated,
-				Product = doc.Product?.Id != null ? new FullSearchProduct { Id = doc.Product.Id } : null,
+				Product = doc.Product?.Id != null
+					? new FullSearchProduct
+					{
+						Id = doc.Product.Id,
+						DisplayName = productsConfiguration.GetDisplayName(doc.Product.Id)
+					}
+					: null,
 				RelatedProducts = doc.RelatedProducts?
 					.Where(p => p.Id != null)
-					.Select(p => new FullSearchProduct { Id = p.Id! })
+					.Select(p => new FullSearchProduct
+					{
+						Id = p.Id!,
+						DisplayName = productsConfiguration.GetDisplayName(p.Id!)
+					})
 					.ToArray()
 			};
 		}).ToList();
+
+		var productAggregations = SearchResultProcessor.ExtractProductAggregations(response);
+		var enrichedProductAggregations = productAggregations.ToDictionary(
+			kvp => kvp.Key,
+			kvp => new ProductAggregationBucket
+			{
+				Count = kvp.Value,
+				DisplayName = productsConfiguration.GetDisplayName(kvp.Key)
+			});
 
 		var aggregations = new FullSearchAggregations
 		{
 			Type = SearchResultProcessor.ExtractTypeAggregations(response),
 			NavigationSection = SearchResultProcessor.ExtractNavigationSectionAggregations(response),
 			DeploymentType = SearchResultProcessor.ExtractDeploymentTypeAggregations(response),
-			Product = SearchResultProcessor.ExtractProductAggregations(response)
+			Product = enrichedProductAggregations
 		};
 
 		return new FullSearchResult

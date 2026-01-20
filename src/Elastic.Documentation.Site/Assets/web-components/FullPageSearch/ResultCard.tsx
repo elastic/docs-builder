@@ -1,5 +1,4 @@
 import { DocumentIcon, ConsoleIcon } from './FilterSidebar'
-import { getProductDisplayName } from './productsConfig'
 import type { SearchResultItem } from './useFullPageSearchQuery'
 import {
     EuiButtonIcon,
@@ -379,7 +378,7 @@ export const ResultCard = ({ result }: ResultCardProps) => {
                                         line-height: 1.2;
                                     `}
                                 >
-                                    {getProductDisplayName(result.product.id)}
+                                    {result.product.displayName}
                                 </div>
                             </EuiFlexItem>
                         )}
@@ -405,7 +404,7 @@ export const ResultCard = ({ result }: ResultCardProps) => {
                                             line-height: 1.2;
                                         `}
                                     >
-                                        {getProductDisplayName(p.id)}
+                                        {p.displayName}
                                     </div>
                                 </EuiFlexItem>
                             ))}

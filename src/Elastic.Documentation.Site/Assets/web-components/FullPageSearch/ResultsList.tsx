@@ -1,8 +1,10 @@
 import { AIAnswerPanel } from './AIAnswerPanel'
 import { ResultCard } from './ResultCard'
 import type { FullPageSearchFilters, SortBy } from './fullPageSearch.store'
-import { getProductDisplayName } from './productsConfig'
-import type { SearchResultItem } from './useFullPageSearchQuery'
+import type {
+    SearchResultItem,
+    SearchAggregations,
+} from './useFullPageSearchQuery'
 import {
     EuiButtonIcon,
     EuiFlexGroup,
@@ -131,7 +133,10 @@ const FACET_CONFIG: Record<
     {
         label: string
         icon: ReactNode
-        getDisplayValue: (value: string) => string
+        getDisplayValue: (
+            value: string,
+            aggregations?: SearchAggregations
+        ) => string
     }
 > = {
     type: {
@@ -152,7 +157,8 @@ const FACET_CONFIG: Record<
     product: {
         label: 'Product',
         icon: <ProductIcon />,
-        getDisplayValue: (value: string) => getProductDisplayName(value),
+        getDisplayValue: (value: string, aggregations?: SearchAggregations) =>
+            aggregations?.product?.[value]?.displayName ?? value,
     },
     version: {
         label: 'Version',
@@ -245,6 +251,7 @@ const ActiveFilterChip = ({
 interface ActiveFiltersProps {
     filters: FullPageSearchFilters
     version: string
+    aggregations?: SearchAggregations
     onRemoveFilter: (key: keyof FullPageSearchFilters, value: string) => void
     onClearAll: () => void
     onResetVersion: () => void
@@ -253,6 +260,7 @@ interface ActiveFiltersProps {
 const ActiveFilters = ({
     filters,
     version,
+    aggregations,
     onRemoveFilter,
     onClearAll,
     onResetVersion,
@@ -297,7 +305,10 @@ const ActiveFilters = ({
                         <ActiveFilterChip
                             facetType={config.label}
                             facetIcon={config.icon}
-                            displayValue={config.getDisplayValue(filter.value)}
+                            displayValue={config.getDisplayValue(
+                                filter.value,
+                                aggregations
+                            )}
                             onRemove={() => {
                                 if (filter.key === 'version') {
                                     onResetVersion()
@@ -354,6 +365,7 @@ interface ResultsListProps {
     isLoading: boolean
     filters: FullPageSearchFilters
     version: string
+    aggregations?: SearchAggregations
     query: string
     inputQuery: string
     showAIAnswer: boolean
@@ -376,6 +388,7 @@ export const ResultsList = ({
     isLoading,
     filters,
     version,
+    aggregations,
     query,
     inputQuery,
     showAIAnswer,
@@ -476,6 +489,7 @@ export const ResultsList = ({
             <ActiveFilters
                 filters={filters}
                 version={version}
+                aggregations={aggregations}
                 onRemoveFilter={onRemoveFilter}
                 onClearAll={onClearAllFilters}
                 onResetVersion={onResetVersion}

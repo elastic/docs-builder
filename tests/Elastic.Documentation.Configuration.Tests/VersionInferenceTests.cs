@@ -107,7 +107,8 @@ public class VersionInferenceTests
 
 		return new ProductsConfiguration
 		{
-			Products = products.ToFrozenDictionary()
+			Products = products.ToFrozenDictionary(),
+			ProductDisplayNames = products.ToDictionary(p => p.Key, p => p.Value.DisplayName).ToFrozenDictionary()
 		};
 	}
 

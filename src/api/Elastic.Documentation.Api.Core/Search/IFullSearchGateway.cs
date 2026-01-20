@@ -48,7 +48,16 @@ public record FullSearchAggregations
 	public IReadOnlyDictionary<string, long> Type { get; init; } = new Dictionary<string, long>();
 	public IReadOnlyDictionary<string, long> NavigationSection { get; init; } = new Dictionary<string, long>();
 	public IReadOnlyDictionary<string, long> DeploymentType { get; init; } = new Dictionary<string, long>();
-	public IReadOnlyDictionary<string, long> Product { get; init; } = new Dictionary<string, long>();
+	public IReadOnlyDictionary<string, ProductAggregationBucket> Product { get; init; } = new Dictionary<string, ProductAggregationBucket>();
+}
+
+/// <summary>
+/// Product aggregation bucket with count and display name.
+/// </summary>
+public record ProductAggregationBucket
+{
+	public required long Count { get; init; }
+	public required string DisplayName { get; init; }
 }
 
 /// <summary>
@@ -71,11 +80,12 @@ public record FullSearchResultItem
 }
 
 /// <summary>
-/// Product reference in search results (contains only id for client-side display name lookup).
+/// Product reference in search results with id and display name.
 /// </summary>
 public record FullSearchProduct
 {
 	public required string Id { get; init; }
+	public required string DisplayName { get; init; }
 }
 
 /// <summary>

@@ -51,43 +51,45 @@ public class ChangelogServiceTests : IDisposable
 			},
 		};
 
+		var products = new Dictionary<string, Product>
+		{
+			{
+				"elasticsearch", new Product
+				{
+					Id = "elasticsearch",
+					DisplayName = "Elasticsearch",
+					VersioningSystem = versionsConfiguration.GetVersioningSystem(VersioningSystemId.Stack)
+				}
+			},
+			{
+				"kibana", new Product
+				{
+					Id = "kibana",
+					DisplayName = "Kibana",
+					VersioningSystem = versionsConfiguration.GetVersioningSystem(VersioningSystemId.Stack)
+				}
+			},
+			{
+				"cloud-hosted", new Product
+				{
+					Id = "cloud-hosted",
+					DisplayName = "Elastic Cloud Hosted",
+					VersioningSystem = versionsConfiguration.GetVersioningSystem(VersioningSystemId.Stack)
+				}
+			},
+			{
+				"cloud-serverless", new Product
+				{
+					Id = "cloud-serverless",
+					DisplayName = "Elastic Cloud Serverless",
+					VersioningSystem = versionsConfiguration.GetVersioningSystem(VersioningSystemId.Stack)
+				}
+			}
+		};
 		var productsConfiguration = new ProductsConfiguration
 		{
-			Products = new Dictionary<string, Product>
-			{
-				{
-					"elasticsearch", new Product
-					{
-						Id = "elasticsearch",
-						DisplayName = "Elasticsearch",
-						VersioningSystem = versionsConfiguration.GetVersioningSystem(VersioningSystemId.Stack)
-					}
-				},
-				{
-					"kibana", new Product
-					{
-						Id = "kibana",
-						DisplayName = "Kibana",
-						VersioningSystem = versionsConfiguration.GetVersioningSystem(VersioningSystemId.Stack)
-					}
-				},
-				{
-					"cloud-hosted", new Product
-					{
-						Id = "cloud-hosted",
-						DisplayName = "Elastic Cloud Hosted",
-						VersioningSystem = versionsConfiguration.GetVersioningSystem(VersioningSystemId.Stack)
-					}
-				},
-				{
-					"cloud-serverless", new Product
-					{
-						Id = "cloud-serverless",
-						DisplayName = "Elastic Cloud Serverless",
-						VersioningSystem = versionsConfiguration.GetVersioningSystem(VersioningSystemId.Stack)
-					}
-				}
-			}.ToFrozenDictionary()
+			Products = products.ToFrozenDictionary(),
+			ProductDisplayNames = products.ToDictionary(p => p.Key, p => p.Value.DisplayName).ToFrozenDictionary()
 		};
 
 		_configurationContext = new ConfigurationContext
