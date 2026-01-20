@@ -190,13 +190,9 @@ document.body.addEventListener(
             el.classList.remove('current')
         })
         const navItems = $$('a[href="' + event.detail.path + '"]', pagesNav)
-        // Only mark nav items if they exist. If nav tree was swapped via OOB, initNav() will handle it
-        // when htmx:load fires for nav-tree. This prevents trying to mark items before the swap completes.
-        if (navItems.length > 0) {
-            navItems.forEach((navItem) => {
-                navItem.classList.add('current')
-            })
-        }
+        navItems.forEach((navItem) => {
+            navItem.classList.add('current')
+        })
     }
 )
 
