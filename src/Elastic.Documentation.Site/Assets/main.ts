@@ -105,12 +105,13 @@ document.addEventListener('htmx:load', function (event: HtmxEvent) {
     initMath()
 
     // We do this so that the navigation is not initialized twice
-    if (isLazyLoadNavigationEnabled) {
-        if (event.detail.elt.id === 'nav-tree') {
+    // When lazy load is enabled, only initialize when nav-tree loads
+    // Defer with requestAnimationFrame to ensure DOM is fully rendered
+    // The throttle with trailing: true will ensure only the last call executes
+    if (!isLazyLoadNavigationEnabled || event.detail.elt.id === 'nav-tree') {
+        requestAnimationFrame(() => {
             initNav()
-        }
-    } else {
-        initNav()
+        })
     }
     initSmoothScroll()
     openDetailsWithAnchor()
@@ -181,14 +182,21 @@ document.body.addEventListener(
     'htmx:pushedIntoHistory',
     function (event: HtmxEvent) {
         const pagesNav = $('#pages-nav')
+        if (!pagesNav) {
+            return
+        }
         const currentNavItem = $$('.current', pagesNav)
         currentNavItem.forEach((el) => {
             el.classList.remove('current')
         })
         const navItems = $$('a[href="' + event.detail.path + '"]', pagesNav)
-        navItems.forEach((navItem) => {
-            navItem.classList.add('current')
-        })
+        // Only mark nav items if they exist. If nav tree was swapped via OOB, initNav() will handle it
+        // when htmx:load fires for nav-tree. This prevents trying to mark items before the swap completes.
+        if (navItems.length > 0) {
+            navItems.forEach((navItem) => {
+                navItem.classList.add('current')
+            })
+        }
     }
 )
 
@@ -196,6 +204,8 @@ document.body.addEventListener(
     'htmx:oobAfterSwap',
     function (event: HtmxEvent) {
         if (event.detail.target.id === 'nav-tree') {
+            // When nav-tree is swapped via OOB, htmx:load will fire for nav-tree and call initNav()
+            // which will mark the current nav item and scroll it into view. No need to do anything here.
             return
         }
 

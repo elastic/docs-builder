@@ -37,11 +37,13 @@ function scrollCurrentNaviItemIntoViewImpl(nav: HTMLElement) {
     nav.scrollTop = newScrollTop
 }
 
-// Throttle with leading: true, trailing: false - only executes the first call within the window
+// Throttle with leading: false, trailing: true - only executes the last call within the window
+// This ensures that when multiple initNav() calls happen in quick succession (e.g., from multiple
+// htmx:load events), only the final call executes after the delay, ensuring the nav tree is fully ready
 export const scrollCurrentNaviItemIntoView = throttle(
     scrollCurrentNaviItemIntoViewImpl,
     100,
-    { leading: true, trailing: false }
+    { leading: false, trailing: true }
 )
 
 function setDropdown(dropdown: HTMLElement) {
