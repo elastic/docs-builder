@@ -22,6 +22,7 @@ public partial class FullSearchUsecase(IFullSearchGateway fullSearchGateway, ILo
 				TypeFilter = request.TypeFilter,
 				SectionFilter = request.SectionFilter,
 				DeploymentFilter = request.DeploymentFilter,
+				ProductFilter = request.ProductFilter,
 				VersionFilter = request.VersionFilter,
 				SortBy = request.SortBy
 			},
@@ -73,6 +74,7 @@ public record FullSearchApiRequest
 	public string[]? TypeFilter { get; init; }
 	public string[]? SectionFilter { get; init; }
 	public string[]? DeploymentFilter { get; init; }
+	public string[]? ProductFilter { get; init; }
 	public string? VersionFilter { get; init; }
 	public string SortBy { get; init; } = "relevance";
 }

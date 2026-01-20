@@ -18,7 +18,9 @@ namespace Elastic.ApiExplorer.Elasticsearch;
 /// <summary>
 /// Exports OpenAPI specifications from CloudFront URLs and converts them to DocumentationDocument instances.
 /// </summary>
-public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfiguration)
+public partial class OpenApiDocumentExporter(
+	VersionsConfiguration versionsConfiguration,
+	IDocumentInferrerService? documentInferrer = null)
 {
 	private static readonly HttpClient HttpClient = new();
 
@@ -160,6 +162,9 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 				// Extract ApplicableTo from x-state
 				var applies = ExtractApplicableTo(operation.Value);
 
+				// Infer product and repository metadata
+				var inference = documentInferrer?.InferForOpenApi(product);
+
 				yield return new DocumentationDocument
 				{
 					Type = "api",
@@ -176,7 +181,17 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 					[
 						new ParentDocument { Title = "API Reference", Url = "/docs/api" },
 						new ParentDocument { Title = product, Url = $"/docs/api/doc/{product}" }
-					]
+					],
+					Product = inference?.Product is not null
+						? new IndexedProduct { Id = inference.Product.Id, Repository = inference.Repository }
+						: null,
+					RelatedProducts = inference?.RelatedProducts.Count > 0
+						? inference.RelatedProducts.Select(p => new IndexedProduct
+						{
+							Id = p.Id,
+							Repository = p.Repository ?? inference.Repository
+						}).ToArray()
+						: null
 				};
 			}
 		}

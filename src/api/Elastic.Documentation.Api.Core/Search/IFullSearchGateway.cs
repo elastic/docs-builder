@@ -24,6 +24,7 @@ public record FullSearchRequest
 	public string[]? TypeFilter { get; init; }
 	public string[]? SectionFilter { get; init; }       // navigation_section
 	public string[]? DeploymentFilter { get; init; }    // applies_to.type
+	public string[]? ProductFilter { get; init; }       // product.id (AND behavior)
 	public string? VersionFilter { get; init; }         // "9.0+" | "8.19" | "7.17"
 	public string SortBy { get; init; } = "relevance";  // relevance | recent | alpha
 }
@@ -47,6 +48,16 @@ public record FullSearchAggregations
 	public IReadOnlyDictionary<string, long> Type { get; init; } = new Dictionary<string, long>();
 	public IReadOnlyDictionary<string, long> NavigationSection { get; init; } = new Dictionary<string, long>();
 	public IReadOnlyDictionary<string, long> DeploymentType { get; init; } = new Dictionary<string, long>();
+	public IReadOnlyDictionary<string, ProductAggregationBucket> Product { get; init; } = new Dictionary<string, ProductAggregationBucket>();
+}
+
+/// <summary>
+/// Product aggregation bucket with count and display name.
+/// </summary>
+public record ProductAggregationBucket
+{
+	public required long Count { get; init; }
+	public required string DisplayName { get; init; }
 }
 
 /// <summary>
@@ -64,6 +75,17 @@ public record FullSearchResultItem
 	public string? AiRagOptimizedSummary { get; init; }
 	public string? NavigationSection { get; init; }
 	public DateTimeOffset? LastUpdated { get; init; }
+	public FullSearchProduct? Product { get; init; }
+	public FullSearchProduct[]? RelatedProducts { get; init; }
+}
+
+/// <summary>
+/// Product reference in search results with id and display name.
+/// </summary>
+public record FullSearchProduct
+{
+	public required string Id { get; init; }
+	public required string DisplayName { get; init; }
 }
 
 /// <summary>

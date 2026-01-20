@@ -31,6 +31,21 @@ public record DocumentationDocument
 	[JsonPropertyName("type")]
 	public required string Type { get; set; } = "doc";
 
+	/// <summary>
+	/// The canonical/primary product for this document (nested object with id and repository).
+	/// Name and version are looked up dynamically by product id.
+	/// </summary>
+	[JsonPropertyName("product")]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+	public IndexedProduct? Product { get; set; }
+
+	/// <summary>
+	/// All related products found during inference (from legacy mappings, applicability, etc.)
+	/// </summary>
+	[JsonPropertyName("related_products")]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+	public IndexedProduct[]? RelatedProducts { get; set; }
+
 	[JsonPropertyName("url")]
 	public required string Url { get; set; } = string.Empty;
 

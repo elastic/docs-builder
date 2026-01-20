@@ -3,4 +3,4 @@ layout: full-search
 noindex: true
 ---
 
-# Search
+# Elastic Documentation Search
