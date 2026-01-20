@@ -6,10 +6,10 @@ using System.Net;
 using System.Text;
 using Elastic.Documentation.Api.Core.AskAi;
 using Elastic.Documentation.Api.Infrastructure.Adapters.AskAi;
-using Elastic.Documentation.Api.Infrastructure.Aws;
 using Elastic.Documentation.Api.Infrastructure.Gcp;
 using FakeItEasy;
 using FluentAssertions;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Xunit;
 
@@ -22,17 +22,24 @@ namespace Elastic.Documentation.Api.IntegrationTests;
 /// </summary>
 public class AskAiGatewayStreamingTests
 {
+	private static IConfiguration CreateTestConfiguration(Dictionary<string, string?> values) =>
+		new ConfigurationBuilder()
+			.AddInMemoryCollection(values)
+			.Build();
+
 	[Fact]
 	public async Task AgentBuilderGatewayDoesNotDisposeHttpResponsePrematurely()
 	{
 		// Arrange
 		var mockHandler = new MockHttpMessageHandler();
 		var sseResponse = """
-data: {"type":"conversationStart","id":"conv123","conversation_id":"conv123"}
+data: {"type":"conversationStart","id":"test","conversation_id":"test"}
 
-data: {"type":"messageChunk","id":"msg1","content":"Hello World"}
+data: {"type":"messageChunk","id":"m1","content":"Hello"}
 
-data: {"type":"conversationEnd","id":"conv123"}
+data: {"type":"messageChunk","id":"m1","content":" World"}
+
+data: {"type":"conversationEnd","id":"test"}
 
 
 """;
@@ -40,14 +47,14 @@ data: {"type":"conversationEnd","id":"conv123"}
 		mockHandler.SetResponse(sseResponse, "text/event-stream");
 
 		using var httpClient = new HttpClient(mockHandler);
-		var mockParameterProvider = A.Fake<IParameterProvider>();
-		A.CallTo(() => mockParameterProvider.GetParam("docs-kibana-url", false, A<CancellationToken>._))
-			.Returns(Task.FromResult("https://test-kibana.example.com"));
-		A.CallTo(() => mockParameterProvider.GetParam("docs-kibana-apikey", true, A<CancellationToken>._))
-			.Returns(Task.FromResult("test-api-key"));
+		var kibanaOptions = new KibanaOptions(CreateTestConfiguration(new Dictionary<string, string?>
+		{
+			["DOCUMENTATION_KIBANA_URL"] = "https://test-kibana.example.com",
+			["DOCUMENTATION_KIBANA_APIKEY"] = "test-api-key"
+		}));
 
 		var mockLogger = A.Fake<ILogger<AgentBuilderAskAiGateway>>();
-		var gateway = new AgentBuilderAskAiGateway(httpClient, mockParameterProvider, mockLogger);
+		var gateway = new AgentBuilderAskAiGateway(httpClient, kibanaOptions, mockLogger);
 
 		var request = new AskAiRequest("Test message", null);
 
@@ -95,14 +102,14 @@ data: {"type":"conversationEnd","id":"test"}
 		mockHandler.SetResponse(sseResponse, "text/event-stream");
 
 		using var httpClient = new HttpClient(mockHandler);
-		var mockParameterProvider = A.Fake<IParameterProvider>();
-		A.CallTo(() => mockParameterProvider.GetParam("docs-kibana-url", A<bool>._, A<CancellationToken>._))
-			.Returns(Task.FromResult("https://test-kibana.example.com"));
-		A.CallTo(() => mockParameterProvider.GetParam("docs-kibana-apikey", A<bool>._, A<CancellationToken>._))
-			.Returns(Task.FromResult("test-api-key"));
+		var kibanaOptions = new KibanaOptions(CreateTestConfiguration(new Dictionary<string, string?>
+		{
+			["DOCUMENTATION_KIBANA_URL"] = "https://test-kibana.example.com",
+			["DOCUMENTATION_KIBANA_APIKEY"] = "test-api-key"
+		}));
 
 		var mockLogger = A.Fake<ILogger<AgentBuilderAskAiGateway>>();
-		var gateway = new AgentBuilderAskAiGateway(httpClient, mockParameterProvider, mockLogger);
+		var gateway = new AgentBuilderAskAiGateway(httpClient, kibanaOptions, mockLogger);
 
 		var request = new AskAiRequest("Test", null);
 
@@ -128,37 +135,34 @@ data: {"type":"conversationEnd","id":"test"}
 	}
 
 	[Fact]
-	public async Task LlmGatewayGatewayDoesNotDisposeHttpResponsePrematurely()
+	public async Task LlmGatewayDoesNotDisposeHttpResponsePrematurely()
 	{
 		// Arrange
 		var mockHandler = new MockHttpMessageHandler();
 		var sseResponse = """
-data: {"type":"conversationStart","id":"conv456","conversation_id":"conv456"}
+data: {"type":"conversationStart","id":"test","conversation_id":"test"}
 
-data: {"type":"reasoning","id":"r1","message":"Analyzing question"}
+data: {"type":"reasoning","content":"thinking..."}
 
-data: {"type":"messageChunk","id":"msg2","content":"Answer"}
+data: {"type":"messageChunk","id":"m1","content":"Response"}
 
-data: {"type":"conversationEnd","id":"conv456"}
+data: {"type":"conversationEnd","id":"test"}
 
 
 """;
 
 		mockHandler.SetResponse(sseResponse, "text/event-stream");
 
-		// Create mock token provider
 		using var httpClient = new HttpClient(mockHandler);
 		var mockTokenProvider = A.Fake<IGcpIdTokenProvider>();
 		A.CallTo(() => mockTokenProvider.GenerateIdTokenAsync(A<string>._, A<string>._, A<CancellationToken>._))
 			.Returns(Task.FromResult("mock-gcp-token"));
 
-		var mockParameterProvider = A.Fake<IParameterProvider>();
-		A.CallTo(() => mockParameterProvider.GetParam("llm-gateway-service-account", A<bool>._, A<CancellationToken>._))
-			.Returns(Task.FromResult("test@example.com"));
-		A.CallTo(() => mockParameterProvider.GetParam("llm-gateway-function-url", A<bool>._, A<CancellationToken>._))
-			.Returns(Task.FromResult("https://test-llm-gateway.example.com"));
-
-		var options = new LlmGatewayOptions(mockParameterProvider);
+		var options = new LlmGatewayOptions(CreateTestConfiguration(new Dictionary<string, string?>
+		{
+			["LLM_GATEWAY_FUNCTION_URL"] = "https://test-llm-gateway.example.com",
+			["LLM_GATEWAY_SERVICE_ACCOUNT"] = "test@example.com"
+		}));
 
 		var gateway = new LlmGatewayAskAiGateway(httpClient, mockTokenProvider, options);
 
@@ -214,13 +218,11 @@ data: {"type":"conversationEnd","id":"test"}
 		A.CallTo(() => mockTokenProvider.GenerateIdTokenAsync(A<string>._, A<string>._, A<CancellationToken>._))
 			.Returns(Task.FromResult("mock-token"));
 
-		var mockParameterProvider = A.Fake<IParameterProvider>();
-		A.CallTo(() => mockParameterProvider.GetParam("llm-gateway-service-account", A<bool>._, A<CancellationToken>._))
-			.Returns(Task.FromResult("test@example.com"));
-		A.CallTo(() => mockParameterProvider.GetParam("llm-gateway-function-url", A<bool>._, A<CancellationToken>._))
-			.Returns(Task.FromResult("https://test.example.com"));
-
-		var options = new LlmGatewayOptions(mockParameterProvider);
+		var options = new LlmGatewayOptions(CreateTestConfiguration(new Dictionary<string, string?>
+		{
+			["LLM_GATEWAY_FUNCTION_URL"] = "https://test.example.com",
+			["LLM_GATEWAY_SERVICE_ACCOUNT"] = "test@example.com"
+		}));
 
 		var gateway = new LlmGatewayAskAiGateway(httpClient, mockTokenProvider, options);
 
@@ -256,14 +258,14 @@ data: {"type":"conversationEnd","id":"test"}
 		mockHandler.SetResponse(sseResponse, "text/event-stream");
 
 		using var httpClient = new HttpClient(mockHandler);
-		var mockParameterProvider = A.Fake<IParameterProvider>();
-		A.CallTo(() => mockParameterProvider.GetParam("docs-kibana-url", A<bool>._, A<CancellationToken>._))
-			.Returns(Task.FromResult("https://test-kibana.example.com"));
-		A.CallTo(() => mockParameterProvider.GetParam("docs-kibana-apikey", A<bool>._, A<CancellationToken>._))
-			.Returns(Task.FromResult("test-api-key"));
+		var kibanaOptions = new KibanaOptions(CreateTestConfiguration(new Dictionary<string, string?>
+		{
+			["DOCUMENTATION_KIBANA_URL"] = "https://test-kibana.example.com",
+			["DOCUMENTATION_KIBANA_APIKEY"] = "test-api-key"
+		}));
 
 		var mockLogger = A.Fake<ILogger<AgentBuilderAskAiGateway>>();
-		var gateway = new AgentBuilderAskAiGateway(httpClient, mockParameterProvider, mockLogger);
+		var gateway = new AgentBuilderAskAiGateway(httpClient, kibanaOptions, mockLogger);
 
 		var request = new AskAiRequest("Test", null);
 

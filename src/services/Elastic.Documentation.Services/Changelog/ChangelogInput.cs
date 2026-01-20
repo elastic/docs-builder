@@ -5,7 +5,7 @@
 namespace Elastic.Documentation.Services.Changelog;
 
 /// <summary>
-/// Input data for creating a changelog fragment
+/// Input data for creating a changelog
 /// </summary>
 public class ChangelogInput
 {
@@ -14,7 +14,7 @@ public class ChangelogInput
 	public required List<ProductInfo> Products { get; set; }
 	public string? Subtype { get; set; }
 	public string[] Areas { get; set; } = [];
-	public string? Pr { get; set; }
+	public string[]? Prs { get; set; }
 	public string? Owner { get; set; }
 	public string? Repo { get; set; }
 	public string[] Issues { get; set; } = [];
@@ -25,5 +25,8 @@ public class ChangelogInput
 	public bool? Highlight { get; set; }
 	public string? Output { get; set; }
 	public string? Config { get; set; }
+	public bool UsePrNumber { get; set; }
+	public bool StripTitlePrefix { get; set; }
+	public bool ExtractReleaseNotes { get; set; }
 }
 

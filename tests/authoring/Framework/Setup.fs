@@ -286,7 +286,9 @@ type Setup =
             VersionsConfiguration = versionConfig,
             ConfigurationFileProvider = configurationFileProvider,
             Endpoints=DocumentationEndpoints(Elasticsearch = ElasticsearchEndpoint.Default),
-            ProductsConfiguration = ProductsConfiguration(Products = productDict.ToFrozenDictionary()),
+            ProductsConfiguration = ProductsConfiguration(
+                Products = productDict.ToFrozenDictionary(),
+                ProductDisplayNames = (productDict |> Seq.map (fun p -> KeyValuePair(p.Key, p.Value.DisplayName)) |> fun s -> Dictionary(s)).ToFrozenDictionary()),
             LegacyUrlMappings = LegacyUrlMappingConfiguration(Mappings = []),
             SearchConfiguration = SearchConfiguration(Synonyms = Dictionary<string, string[]>(), Rules = [], DiminishTerms = [])
         )

@@ -49,7 +49,9 @@ try
 		_ = app.UseDeveloperExceptionPage();
 
 	var v1 = app.MapGroup("/docs/_api/v1");
-	v1.MapElasticDocsApiEndpoints();
+
+	var mapOtlpEndpoints = !string.IsNullOrWhiteSpace(builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]);
+	v1.MapElasticDocsApiEndpoints(mapOtlpEndpoints);
 	Console.WriteLine("API endpoints mapped");
 
 	Console.WriteLine("Application startup completed successfully");

@@ -71,10 +71,13 @@ public static class OpenTelemetryExtensions
 	/// </summary>
 	/// <param name="builder">The web application builder</param>
 	/// <returns>The builder for chaining</returns>
-	public static TBuilder AddDocsApiOpenTelemetry<TBuilder>(
-		this TBuilder builder)
+	public static TBuilder AddDocsApiOpenTelemetry<TBuilder>(this TBuilder builder)
 		where TBuilder : IHostApplicationBuilder
 	{
+		var useOtlpExporter = !string.IsNullOrWhiteSpace(builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]);
+		if (!useOtlpExporter)
+			return builder;
+
 		var options = new ElasticOpenTelemetryOptions
 		{
 			// In AOT mode, assembly scanning is not supported, so we skip it

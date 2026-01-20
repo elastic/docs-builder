@@ -1,6 +1,7 @@
 import { SanitizedHtmlContent } from './SanitizedHtmlContent'
 import { useSelectedIndex, useSearchActions } from './navigationSearch.store'
 import { useSearchTerm } from './navigationSearch.store'
+import { useFindInDocsTelemetry } from './useFindInDocsTelemetry'
 import {
     useNavigationSearchQuery,
     SearchResultItem,
@@ -15,7 +16,7 @@ import {
 } from '@elastic/eui'
 import { css } from '@emotion/react'
 import htmx from 'htmx.org'
-import { useRef, useMemo, MutableRefObject, useEffect } from 'react'
+import { useRef, useMemo, MutableRefObject, useEffect, useState } from 'react'
 
 const RESULTS_MAX_HEIGHT = 465
 const BREADCRUMB_SEPARATOR = ' / '
@@ -31,12 +32,40 @@ const getFirstSegment = (path: string): string =>
  * Returns the appropriate hx-select-oob value based on whether
  * the target URL is in the same top-level group as the current URL.
  */
-const getHxSelectOob = (targetUrl: string): string => {
-    const currentSegment = getFirstSegment(window.location.pathname)
+const getHxSelectOob = (targetUrl: string, currentPathname: string): string => {
+    const currentSegment = getFirstSegment(currentPathname)
     const targetSegment = getFirstSegment(targetUrl)
     return currentSegment === targetSegment
         ? '#content-container,#toc-nav'
         : '#content-container,#toc-nav,#nav-tree,#nav-dropdown'
+}
+
+/**
+ * Hook that tracks the current pathname and updates when htmx navigation occurs.
+ */
+const useCurrentPathname = (): string => {
+    const [pathname, setPathname] = useState(window.location.pathname)
+
+    useEffect(() => {
+        const handleNavigation = () => {
+            setPathname(window.location.pathname)
+        }
+
+        // Listen for htmx history updates (htmx navigation)
+        document.addEventListener('htmx:pushedIntoHistory', handleNavigation)
+        // Listen for browser back/forward navigation
+        window.addEventListener('popstate', handleNavigation)
+
+        return () => {
+            document.removeEventListener(
+                'htmx:pushedIntoHistory',
+                handleNavigation
+            )
+            window.removeEventListener('popstate', handleNavigation)
+        }
+    }, [])
+
+    return pathname
 }
 
 export interface SearchResultsListProps {
@@ -56,6 +85,7 @@ export const SearchResultsList = ({
     const { isLoading, data } = useNavigationSearchQuery()
     const containerRef = useRef<HTMLDivElement>(null)
     const searchTerm = useSearchTerm()
+    const { trackResultClicked } = useFindInDocsTelemetry()
 
     const results = data?.results ?? []
     const isInitialLoading = isLoading && !data
@@ -118,6 +148,16 @@ export const SearchResultsList = ({
         }
     }
 
+    const handleResultClick = (result: SearchResultItem, index: number) => {
+        trackResultClicked({
+            query: searchTerm,
+            position: index,
+            url: result.url,
+            score: result.score,
+        })
+        onResultClick()
+    }
+
     return (
         <div ref={containerRef} css={containerStyles}>
             {results.map((result, index) => (
@@ -129,7 +169,7 @@ export const SearchResultsList = ({
                     isKeyboardNavigating={isKeyboardNavigating.current}
                     onMouseEnter={() => handleMouseEnter(index)}
                     onMouseMove={() => handleItemMouseMove(index)}
-                    onClick={onResultClick}
+                    onClick={() => handleResultClick(result, index)}
                 />
             ))}
         </div>
@@ -158,26 +198,27 @@ const SearchResultRow = ({
     const { euiTheme } = useEuiTheme()
     const isMobile = useIsWithinMaxBreakpoint('s')
     const anchorRef = useRef<HTMLAnchorElement | null>(null)
+    const currentPathname = useCurrentPathname()
 
     const breadcrumbItems = useMemo(() => {
         const typePrefix = result.type === 'api' ? 'API' : 'Docs'
         return [typePrefix, ...result.parents.slice(1).map((p) => p.title)]
     }, [result.type, result.parents])
 
-    const hxSelectOob = getHxSelectOob(result.url)
-
-    // Process htmx when element mounts
+    // Process htmx when element mounts or when pathname changes
     useEffect(() => {
         if (anchorRef.current) {
+            const hxSelectOob = getHxSelectOob(result.url, currentPathname)
+            anchorRef.current.setAttribute('hx-select-oob', hxSelectOob)
+            anchorRef.current.setAttribute('hx-swap', 'none')
             htmx.process(anchorRef.current)
         }
-    }, [])
+    }, [result.url, currentPathname])
 
     return (
         <a
             ref={anchorRef}
             href={result.url}
-            hx-select-oob={hxSelectOob}
             data-search-result-index={index}
             onClick={onClick}
             onMouseEnter={onMouseEnter}

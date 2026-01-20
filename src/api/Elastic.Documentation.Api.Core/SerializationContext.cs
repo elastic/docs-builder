@@ -27,5 +27,9 @@ public record OutputMessage(string Role, MessagePart[] Parts, string FinishReaso
 [JsonSerializable(typeof(OutputMessage[]))]
 [JsonSerializable(typeof(MessagePart))]
 [JsonSerializable(typeof(InputMessage[]))]
+
+[JsonSerializable(typeof(FullSearchApiRequest))]
+[JsonSerializable(typeof(FullSearchApiResponse))]
+[JsonSerializable(typeof(FullSearchAggregations))]
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 public partial class ApiJsonContext : JsonSerializerContext;
