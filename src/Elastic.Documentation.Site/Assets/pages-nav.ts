@@ -24,6 +24,15 @@ function scrollCurrentNaviItemIntoViewImpl(nav: HTMLElement) {
     const navRect = nav.getBoundingClientRect()
     const currentNavItemRect = currentNavItem.getBoundingClientRect()
 
+    // Check if the item is already fully visible in the nav container's viewport
+    // If it's already visible, don't scroll to avoid unnecessary scrolling
+    if (
+        currentNavItemRect.top >= navRect.top &&
+        currentNavItemRect.bottom <= navRect.bottom
+    ) {
+        return
+    }
+
     // Calculate target position: center of nav container
     const targetPosition = navRect.height / 2 - currentNavItemRect.height / 2
 
