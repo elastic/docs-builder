@@ -2,13 +2,11 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Diagnostics.CodeAnalysis;
 using Elastic.Documentation.Services.Changelog;
 using FluentAssertions;
 
 namespace Elastic.Documentation.Services.Tests;
 
-[SuppressMessage("Naming", "CA1707:Identifiers should not contain underscores", Justification = "Test method names with underscores are standard in xUnit")]
 public class ReleaseNotesExtractorTests
 {
 	[Fact]

@@ -152,6 +152,22 @@ public static class SearchResultProcessor
 		}
 		return aggregations;
 	}
+
+	/// <summary>
+	/// Extracts product aggregations from search response.
+	/// </summary>
+	public static IReadOnlyDictionary<string, long> ExtractProductAggregations(
+		Elastic.Clients.Elasticsearch.SearchResponse<DocumentationDocument> response)
+	{
+		var aggregations = new Dictionary<string, long>();
+		var terms = response.Aggregations?.GetStringTerms("product");
+		if (terms is not null)
+		{
+			foreach (var bucket in terms.Buckets)
+				aggregations[bucket.Key.ToString()] = bucket.DocCount;
+		}
+		return aggregations;
+	}
 }
 
 /// <summary>
