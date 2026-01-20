@@ -76,6 +76,13 @@ export function initNav() {
     if (pageVersionDropdown) {
         setDropdown(pageVersionDropdown)
     }
+
+    // Remove current class from all nav items before marking new ones
+    const currentNavItems = $$('.current', pagesNav)
+    currentNavItems.forEach((el) => {
+        el.classList.remove('current')
+    })
+
     const navItems = $$(
         'a[href="' +
             window.location.pathname +

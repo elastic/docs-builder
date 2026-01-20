@@ -179,24 +179,6 @@ document.body.addEventListener(
 )
 
 document.body.addEventListener(
-    'htmx:pushedIntoHistory',
-    function (event: HtmxEvent) {
-        const pagesNav = $('#pages-nav')
-        if (!pagesNav) {
-            return
-        }
-        const currentNavItem = $$('.current', pagesNav)
-        currentNavItem.forEach((el) => {
-            el.classList.remove('current')
-        })
-        const navItems = $$('a[href="' + event.detail.path + '"]', pagesNav)
-        navItems.forEach((navItem) => {
-            navItem.classList.add('current')
-        })
-    }
-)
-
-document.body.addEventListener(
     'htmx:oobAfterSwap',
     function (event: HtmxEvent) {
         if (event.detail.target.id === 'nav-tree') {
