@@ -141,6 +141,7 @@ Options:
   --config <string?>                Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml' [Default: null]
   --use-pr-number                   Optional: Use the PR number as the filename instead of generating it from a unique ID and title
   --strip-title-prefix              Optional: When used with --prs, remove square brackets and text within them from the beginning of PR titles
+  --extract-release-notes           Optional: When used with --prs, extract release notes from PR descriptions. Short release notes (≤120 characters, single line) are used as the title, long release notes (>120 characters or multi-line) are used as the description. Looks for content in formats like "Release Notes: ...", "Release-Notes: ...", "## Release Note", etc.
 ```
 
 ### Authorization
@@ -253,6 +254,29 @@ The `--strip-title-prefix` option in this example means that if the PR title has
 
 :::{note}
 The `--strip-title-prefix` option only applies when the title is derived from the PR (when `--title` is not explicitly provided). If you specify `--title` explicitly, that title is used as-is without any prefix stripping.
+:::
+
+#### Extract release notes from PR descriptions [example-extract-release-notes]
+
+When you use the `--prs` option, you can also add the `--extract-release-notes` option to automatically extract text from the PR descriptions and use them in your changelog.
+
+In particular, it looks for content in these formats in the PR description:
+
+- `Release Notes: This is the extracted sentence.`
+- `Release-Notes: This is the extracted sentence.`
+- `release notes: This is the extracted sentence.`
+- `Release Note: This is the extracted sentence.`
+- `Release Notes - This is the extracted sentence.`
+- `## Release Note` (as a markdown header)
+
+The extracted content is handled differently based on its length:
+
+- **Short release notes (≤120 characters, single line)**: Used as the changelog title (only if `--title` is not explicitly provided)
+- **Long release notes (>120 characters or multi-line)**: Used as the changelog description (only if `--description` is not explicitly provided)
+- **No release note found**: No changes are made to the title or description
+
+:::{note}
+If you explicitly provide `--title` or `--description`, those values take precedence over extracted release notes.
 :::
 
 #### Block changelog creation with PR labels [example-block-label]

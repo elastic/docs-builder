@@ -233,6 +233,78 @@ public class ChangelogServiceTests : IDisposable
 	}
 
 	[Fact]
+	public async Task CreateChangelog_WithUsePrNumber_CreatesFileWithPrNumberAsFilename()
+	{
+		// Arrange
+		var mockGitHubService = A.Fake<IGitHubPrService>();
+		var prInfo = new GitHubPrInfo
+		{
+			Title = "Fix memory leak in search",
+			Labels = ["type:bug"]
+		};
+
+		A.CallTo(() => mockGitHubService.FetchPrInfoAsync(
+			"https://github.com/elastic/elasticsearch/pull/140034",
+			null,
+			null,
+			A<CancellationToken>._))
+			.Returns(prInfo);
+
+		// Create a config file with label mappings
+		// Note: ChangelogService uses real FileSystem, so we need to use the real file system
+		var fileSystem = new FileSystem();
+		var configDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		fileSystem.Directory.CreateDirectory(configDir);
+		var configPath = fileSystem.Path.Combine(configDir, "changelog.yml");
+		var configContent = """
+			available_types:
+			  - feature
+			  - bug-fix
+			available_subtypes: []
+			available_lifecycles:
+			  - preview
+			  - beta
+			  - ga
+			label_to_type:
+			  "type:bug": bug-fix
+			""";
+		await fileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
+
+		var input = new ChangelogInput
+		{
+			Prs = ["https://github.com/elastic/elasticsearch/pull/140034"],
+			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Config = configPath,
+			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString()),
+			UsePrNumber = true
+		};
+
+		// Act
+		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		_collector.Errors.Should().Be(0);
+
+		// Note: ChangelogService uses real FileSystem, so we need to check the actual file system
+		var outputDir = input.Output ?? Directory.GetCurrentDirectory();
+		if (!Directory.Exists(outputDir))
+			Directory.CreateDirectory(outputDir);
+		var files = Directory.GetFiles(outputDir, "*.yaml");
+		files.Should().HaveCount(1);
+
+		// Verify the filename is the PR number, not a timestamp-based name
+		var fileName = Path.GetFileName(files[0]);
+		fileName.Should().Be("140034.yaml", "the filename should be the PR number when UsePrNumber is true");
+
+		var yamlContent = await File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		yamlContent.Should().Contain("type: bug-fix");
+		yamlContent.Should().Contain("pr: https://github.com/elastic/elasticsearch/pull/140034");
+	}
+
+	[Fact]
 	public async Task CreateChangelog_WithPrOptionAndLabelMapping_MapsLabelsToType()
 	{
 		// Arrange
@@ -5404,6 +5476,422 @@ public class ChangelogServiceTests : IDisposable
 		// Verify no invalid markdown syntax (like ##) is present
 		asciidocContent.Should().NotContain("##", "should not contain markdown headers");
 		asciidocContent.Should().NotContain("###", "should not contain markdown headers");
+	}
+
+	[Fact]
+	public async Task CreateChangelog_WithExtractReleaseNotes_ShortReleaseNote_UsesAsTitle()
+	{
+		// Arrange
+		var mockGitHubService = A.Fake<IGitHubPrService>();
+		var prInfo = new GitHubPrInfo
+		{
+			Title = "Implement new aggregation API",
+			Body = "## Summary\n\nThis PR adds a new feature.\n\nRelease Notes: Adds support for new aggregation types",
+			Labels = ["type:feature"]
+		};
+
+		A.CallTo(() => mockGitHubService.FetchPrInfoAsync(
+			"https://github.com/elastic/elasticsearch/pull/12345",
+			null,
+			null,
+			A<CancellationToken>._))
+			.Returns(prInfo);
+
+		var fileSystem = new FileSystem();
+		var configDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		fileSystem.Directory.CreateDirectory(configDir);
+		var configPath = fileSystem.Path.Combine(configDir, "changelog.yml");
+		var configContent = """
+			available_types:
+			  - feature
+			  - bug-fix
+			available_subtypes: []
+			available_lifecycles:
+			  - preview
+			  - beta
+			  - ga
+			label_to_type:
+			  "type:feature": feature
+			""";
+		await fileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
+
+		var input = new ChangelogInput
+		{
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
+			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Config = configPath,
+			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString()),
+			ExtractReleaseNotes = true
+		};
+
+		// Act
+		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		_collector.Errors.Should().Be(0);
+
+		var outputDir = input.Output ?? Directory.GetCurrentDirectory();
+		if (!Directory.Exists(outputDir))
+			Directory.CreateDirectory(outputDir);
+		var files = Directory.GetFiles(outputDir, "*.yaml");
+		files.Should().HaveCount(1);
+
+		var yamlContent = await File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		yamlContent.Should().Contain("title: Adds support for new aggregation types");
+		// Description should not be set when release note is used as title
+		if (yamlContent.Contains("description:"))
+		{
+			// If description field exists, it should be empty or commented out
+			var descriptionLine = yamlContent.Split('\n').FirstOrDefault(l => l.Contains("description:"));
+			descriptionLine.Should().MatchRegex(@"description:\s*(#|$)");
+		}
+	}
+
+	[Fact]
+	public async Task CreateChangelog_WithExtractReleaseNotes_LongReleaseNote_UsesAsDescription()
+	{
+		// Arrange
+		var mockGitHubService = A.Fake<IGitHubPrService>();
+		var longReleaseNote = "Adds support for new aggregation types including date histogram, range aggregations, and nested aggregations with improved performance";
+		var prInfo = new GitHubPrInfo
+		{
+			Title = "Implement new aggregation API",
+			Body = $"## Summary\n\nThis PR adds a new feature.\n\nRelease Notes: {longReleaseNote}",
+			Labels = ["type:feature"]
+		};
+
+		A.CallTo(() => mockGitHubService.FetchPrInfoAsync(
+			"https://github.com/elastic/elasticsearch/pull/12345",
+			null,
+			null,
+			A<CancellationToken>._))
+			.Returns(prInfo);
+
+		var fileSystem = new FileSystem();
+		var configDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		fileSystem.Directory.CreateDirectory(configDir);
+		var configPath = fileSystem.Path.Combine(configDir, "changelog.yml");
+		var configContent = """
+			available_types:
+			  - feature
+			  - bug-fix
+			available_subtypes: []
+			available_lifecycles:
+			  - preview
+			  - beta
+			  - ga
+			label_to_type:
+			  "type:feature": feature
+			""";
+		await fileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
+
+		var input = new ChangelogInput
+		{
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
+			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Config = configPath,
+			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString()),
+			ExtractReleaseNotes = true
+		};
+
+		// Act
+		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		_collector.Errors.Should().Be(0);
+
+		var outputDir = input.Output ?? Directory.GetCurrentDirectory();
+		if (!Directory.Exists(outputDir))
+			Directory.CreateDirectory(outputDir);
+		var files = Directory.GetFiles(outputDir, "*.yaml");
+		files.Should().HaveCount(1);
+
+		var yamlContent = await File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		yamlContent.Should().Contain("title: Implement new aggregation API");
+		yamlContent.Should().Contain($"description: {longReleaseNote}");
+	}
+
+	[Fact]
+	public async Task CreateChangelog_WithExtractReleaseNotes_MultiLineReleaseNote_UsesAsDescription()
+	{
+		// Arrange
+		var mockGitHubService = A.Fake<IGitHubPrService>();
+		// The regex stops at double newline, so we need a release note that spans multiple lines without double newline
+		var multiLineReleaseNote = "Adds support for new aggregation types\nThis includes date histogram and range aggregations\nwith improved performance";
+		var prInfo = new GitHubPrInfo
+		{
+			Title = "Implement new aggregation API",
+			Body = $"## Summary\n\nThis PR adds a new feature.\n\nRelease Notes: {multiLineReleaseNote}",
+			Labels = ["type:feature"]
+		};
+
+		A.CallTo(() => mockGitHubService.FetchPrInfoAsync(
+			"https://github.com/elastic/elasticsearch/pull/12345",
+			null,
+			null,
+			A<CancellationToken>._))
+			.Returns(prInfo);
+
+		var fileSystem = new FileSystem();
+		var configDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		fileSystem.Directory.CreateDirectory(configDir);
+		var configPath = fileSystem.Path.Combine(configDir, "changelog.yml");
+		var configContent = """
+			available_types:
+			  - feature
+			  - bug-fix
+			available_subtypes: []
+			available_lifecycles:
+			  - preview
+			  - beta
+			  - ga
+			label_to_type:
+			  "type:feature": feature
+			""";
+		await fileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
+
+		var input = new ChangelogInput
+		{
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
+			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Config = configPath,
+			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString()),
+			ExtractReleaseNotes = true
+		};
+
+		// Act
+		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		_collector.Errors.Should().Be(0);
+
+		var outputDir = input.Output ?? Directory.GetCurrentDirectory();
+		if (!Directory.Exists(outputDir))
+			Directory.CreateDirectory(outputDir);
+		var files = Directory.GetFiles(outputDir, "*.yaml");
+		files.Should().HaveCount(1);
+
+		var yamlContent = await File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		yamlContent.Should().Contain("title: Implement new aggregation API");
+		yamlContent.Should().Contain("description:");
+		yamlContent.Should().Contain("Adds support for new aggregation types");
+		yamlContent.Should().Contain("date histogram");
+	}
+
+	[Fact]
+	public async Task CreateChangelog_WithExtractReleaseNotes_NoReleaseNote_UsesPrTitle()
+	{
+		// Arrange
+		var mockGitHubService = A.Fake<IGitHubPrService>();
+		var prInfo = new GitHubPrInfo
+		{
+			Title = "Implement new aggregation API",
+			Body = "## Summary\n\nThis PR adds a new feature but has no release notes section.",
+			Labels = ["type:feature"]
+		};
+
+		A.CallTo(() => mockGitHubService.FetchPrInfoAsync(
+			"https://github.com/elastic/elasticsearch/pull/12345",
+			null,
+			null,
+			A<CancellationToken>._))
+			.Returns(prInfo);
+
+		var fileSystem = new FileSystem();
+		var configDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		fileSystem.Directory.CreateDirectory(configDir);
+		var configPath = fileSystem.Path.Combine(configDir, "changelog.yml");
+		var configContent = """
+			available_types:
+			  - feature
+			  - bug-fix
+			available_subtypes: []
+			available_lifecycles:
+			  - preview
+			  - beta
+			  - ga
+			label_to_type:
+			  "type:feature": feature
+			""";
+		await fileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
+
+		var input = new ChangelogInput
+		{
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
+			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Config = configPath,
+			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString()),
+			ExtractReleaseNotes = true
+		};
+
+		// Act
+		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		_collector.Errors.Should().Be(0);
+
+		var outputDir = input.Output ?? Directory.GetCurrentDirectory();
+		if (!Directory.Exists(outputDir))
+			Directory.CreateDirectory(outputDir);
+		var files = Directory.GetFiles(outputDir, "*.yaml");
+		files.Should().HaveCount(1);
+
+		var yamlContent = await File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		yamlContent.Should().Contain("title: Implement new aggregation API");
+		// Description should not be set when no release note is found
+		if (yamlContent.Contains("description:"))
+		{
+			// If description field exists, it should be empty or commented out
+			var descriptionLine = yamlContent.Split('\n').FirstOrDefault(l => l.Contains("description:"));
+			descriptionLine.Should().MatchRegex(@"description:\s*(#|$)");
+		}
+	}
+
+	[Fact]
+	public async Task CreateChangelog_WithExtractReleaseNotes_ExplicitTitle_TakesPrecedence()
+	{
+		// Arrange
+		var mockGitHubService = A.Fake<IGitHubPrService>();
+		var prInfo = new GitHubPrInfo
+		{
+			Title = "Implement new aggregation API",
+			Body = "Release Notes: Adds support for new aggregation types",
+			Labels = ["type:feature"]
+		};
+
+		A.CallTo(() => mockGitHubService.FetchPrInfoAsync(
+			"https://github.com/elastic/elasticsearch/pull/12345",
+			null,
+			null,
+			A<CancellationToken>._))
+			.Returns(prInfo);
+
+		var fileSystem = new FileSystem();
+		var configDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		fileSystem.Directory.CreateDirectory(configDir);
+		var configPath = fileSystem.Path.Combine(configDir, "changelog.yml");
+		var configContent = """
+			available_types:
+			  - feature
+			  - bug-fix
+			available_subtypes: []
+			available_lifecycles:
+			  - preview
+			  - beta
+			  - ga
+			label_to_type:
+			  "type:feature": feature
+			""";
+		await fileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
+
+		var input = new ChangelogInput
+		{
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
+			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Config = configPath,
+			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString()),
+			ExtractReleaseNotes = true,
+			Title = "Custom title"
+		};
+
+		// Act
+		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		_collector.Errors.Should().Be(0);
+
+		var outputDir = input.Output ?? Directory.GetCurrentDirectory();
+		if (!Directory.Exists(outputDir))
+			Directory.CreateDirectory(outputDir);
+		var files = Directory.GetFiles(outputDir, "*.yaml");
+		files.Should().HaveCount(1);
+
+		var yamlContent = await File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		yamlContent.Should().Contain("title: Custom title");
+		yamlContent.Should().NotContain("Adds support for new aggregation types");
+	}
+
+	[Fact]
+	public async Task CreateChangelog_WithExtractReleaseNotes_ExplicitDescription_TakesPrecedence()
+	{
+		// Arrange
+		var mockGitHubService = A.Fake<IGitHubPrService>();
+		var longReleaseNote = "Adds support for new aggregation types including date histogram, range aggregations, and nested aggregations with improved performance";
+		var prInfo = new GitHubPrInfo
+		{
+			Title = "Implement new aggregation API",
+			Body = $"Release Notes: {longReleaseNote}",
+			Labels = ["type:feature"]
+		};
+
+		A.CallTo(() => mockGitHubService.FetchPrInfoAsync(
+			"https://github.com/elastic/elasticsearch/pull/12345",
+			null,
+			null,
+			A<CancellationToken>._))
+			.Returns(prInfo);
+
+		var fileSystem = new FileSystem();
+		var configDir = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		fileSystem.Directory.CreateDirectory(configDir);
+		var configPath = fileSystem.Path.Combine(configDir, "changelog.yml");
+		var configContent = """
+			available_types:
+			  - feature
+			  - bug-fix
+			available_subtypes: []
+			available_lifecycles:
+			  - preview
+			  - beta
+			  - ga
+			label_to_type:
+			  "type:feature": feature
+			""";
+		await fileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var service = new ChangelogService(_loggerFactory, _configurationContext, mockGitHubService);
+
+		var input = new ChangelogInput
+		{
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
+			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Config = configPath,
+			Output = fileSystem.Path.Combine(fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString()),
+			ExtractReleaseNotes = true,
+			Description = "Custom description"
+		};
+
+		// Act
+		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		_collector.Errors.Should().Be(0);
+
+		var outputDir = input.Output ?? Directory.GetCurrentDirectory();
+		if (!Directory.Exists(outputDir))
+			Directory.CreateDirectory(outputDir);
+		var files = Directory.GetFiles(outputDir, "*.yaml");
+		files.Should().HaveCount(1);
+
+		var yamlContent = await File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		yamlContent.Should().Contain("description: Custom description");
+		yamlContent.Should().NotContain(longReleaseNote);
 	}
 
 	[SuppressMessage("Security", "CA5350:Do not use insecure cryptographic algorithm SHA1", Justification = "SHA1 is required for compatibility with existing changelog bundle format")]
