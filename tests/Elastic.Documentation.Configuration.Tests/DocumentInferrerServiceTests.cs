@@ -112,7 +112,7 @@ public class DocumentInferrerServiceTests
 	}
 
 	[Fact]
-	public void InferForMarkdown_WithDirectRepositoryMatch_ReturnsProduct()
+	public void InferForMarkdownWithDirectRepositoryMatch_ReturnsProduct()
 	{
 		var versionsConfig = CreateVersionsConfiguration();
 		var productsConfig = CreateProductsConfiguration(versionsConfig);
@@ -133,7 +133,7 @@ public class DocumentInferrerServiceTests
 	}
 
 	[Fact]
-	public void InferForMarkdown_WithProductRepository_ReturnsProductByRepositoryField()
+	public void InferForMarkdownWithProductRepositoryReturnsProductByRepositoryField()
 	{
 		var versionsConfig = CreateVersionsConfiguration();
 		var productsConfig = CreateProductsConfiguration(versionsConfig);
@@ -154,7 +154,7 @@ public class DocumentInferrerServiceTests
 	}
 
 	[Fact]
-	public void InferForMarkdown_WithLegacyMappedPages_ReturnsProductFromLegacyMapping()
+	public void InferForMarkdownWithLegacyMappedPagesReturnsProductFromLegacyMapping()
 	{
 		var versionsConfig = CreateVersionsConfiguration();
 		var productsConfig = CreateProductsConfiguration(versionsConfig);
@@ -175,7 +175,7 @@ public class DocumentInferrerServiceTests
 	}
 
 	[Fact]
-	public void InferForMarkdown_WithProductApplicability_ReturnsProductFromApplicability()
+	public void InferForMarkdownWithProductApplicabilityReturnsProductFromApplicability()
 	{
 		var versionsConfig = CreateVersionsConfiguration();
 		var productsConfig = CreateProductsConfiguration(versionsConfig);
@@ -199,7 +199,7 @@ public class DocumentInferrerServiceTests
 	}
 
 	[Fact]
-	public void InferForMarkdown_LegacyMappingTakesPriorityOverApplicability()
+	public void InferForMarkdownLegacyMappingTakesPriorityOverApplicability()
 	{
 		var versionsConfig = CreateVersionsConfiguration();
 		var productsConfig = CreateProductsConfiguration(versionsConfig);
@@ -225,7 +225,7 @@ public class DocumentInferrerServiceTests
 	}
 
 	[Fact]
-	public void InferForMarkdown_ApplicabilityTakesPriorityOverRepository()
+	public void InferForMarkdownApplicabilityTakesPriorityOverRepository()
 	{
 		var versionsConfig = CreateVersionsConfiguration();
 		var productsConfig = CreateProductsConfiguration(versionsConfig);
@@ -250,7 +250,7 @@ public class DocumentInferrerServiceTests
 	}
 
 	[Fact]
-	public void InferForMarkdown_CollectsAllRelatedProducts()
+	public void InferForMarkdownCollectsAllRelatedProducts()
 	{
 		var versionsConfig = CreateVersionsConfiguration();
 		var productsConfig = CreateProductsConfiguration(versionsConfig);
@@ -278,7 +278,7 @@ public class DocumentInferrerServiceTests
 	}
 
 	[Fact]
-	public void InferForMarkdown_IncludesFrontmatterProductsInRelatedProducts()
+	public void InferForMarkdownIncludesFrontmatterProductsInRelatedProducts()
 	{
 		var versionsConfig = CreateVersionsConfiguration();
 		var productsConfig = CreateProductsConfiguration(versionsConfig);
@@ -300,7 +300,7 @@ public class DocumentInferrerServiceTests
 	}
 
 	[Fact]
-	public void InferForMarkdown_WithUnknownRepository_ReturnsNullProduct()
+	public void InferForMarkdownWithUnknownRepositoryReturnsNullProduct()
 	{
 		var versionsConfig = CreateVersionsConfiguration();
 		var productsConfig = CreateProductsConfiguration(versionsConfig);
@@ -320,7 +320,7 @@ public class DocumentInferrerServiceTests
 	}
 
 	[Fact]
-	public void InferForMarkdown_WithVersionlessProduct_ReturnsNullVersion()
+	public void InferForMarkdownWithVersionlessProductReturnsNullVersion()
 	{
 		var versionsConfig = CreateVersionsConfiguration();
 
@@ -356,7 +356,7 @@ public class DocumentInferrerServiceTests
 	}
 
 	[Fact]
-	public void InferForOpenApi_WithElasticsearch_ReturnsCorrectProduct()
+	public void InferForOpenApiWithElasticsearchReturnsCorrectProduct()
 	{
 		var versionsConfig = CreateVersionsConfiguration();
 		var productsConfig = CreateProductsConfiguration(versionsConfig);
@@ -375,7 +375,7 @@ public class DocumentInferrerServiceTests
 	}
 
 	[Fact]
-	public void InferForOpenApi_WithKibana_ReturnsCorrectProduct()
+	public void InferForOpenApiWithKibanaReturnsCorrectProduct()
 	{
 		var versionsConfig = CreateVersionsConfiguration();
 		var productsConfig = CreateProductsConfiguration(versionsConfig);
@@ -392,7 +392,7 @@ public class DocumentInferrerServiceTests
 	}
 
 	[Fact]
-	public void InferForOpenApi_WithUnknownProduct_ReturnsNullProductWithStackVersion()
+	public void InferForOpenApiWithUnknownProductReturnsNullProductWithStackVersion()
 	{
 		var versionsConfig = CreateVersionsConfiguration();
 		var productsConfig = CreateProductsConfiguration(versionsConfig);
@@ -409,7 +409,7 @@ public class DocumentInferrerServiceTests
 	}
 
 	[Fact]
-	public void InferForOpenApi_IsCaseInsensitive()
+	public void InferForOpenApiIsCaseInsensitive()
 	{
 		var versionsConfig = CreateVersionsConfiguration();
 		var productsConfig = CreateProductsConfiguration(versionsConfig);
@@ -424,7 +424,7 @@ public class DocumentInferrerServiceTests
 	}
 
 	[Fact]
-	public void NoopDocumentInferrer_ReturnsEmptyResult()
+	public void NoopDocumentInferrerReturnsEmptyResult()
 	{
 		var inferrer = new NoopDocumentInferrer();
 
