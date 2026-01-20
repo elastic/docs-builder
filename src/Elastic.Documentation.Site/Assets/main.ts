@@ -3,7 +3,7 @@ import { initCopyButton } from './copybutton'
 import { initHighlight } from './hljs'
 import { initImageCarousel } from './image-carousel'
 import { openDetailsWithAnchor } from './open-details-with-anchor'
-import { initNav, scrollCurrentNaviItemIntoView } from './pages-nav'
+import { initNav } from './pages-nav'
 import { initSmoothScroll } from './smooth-scroll'
 import { initTabs } from './tabs'
 import { initializeOtel } from './telemetry/instrumentation'
@@ -174,22 +174,6 @@ document.body.addEventListener(
             event.target?.id === 'content-container'
         ) {
             window.scrollTo(0, 0)
-        }
-    }
-)
-
-document.body.addEventListener(
-    'htmx:oobAfterSwap',
-    function (event: HtmxEvent) {
-        if (event.detail.target.id === 'nav-tree') {
-            // When nav-tree is swapped via OOB, htmx:load will fire for nav-tree and call initNav()
-            // which will mark the current nav item and scroll it into view. No need to do anything here.
-            return
-        }
-
-        const pagesNav = $('#pages-nav')
-        if (pagesNav) {
-            scrollCurrentNaviItemIntoView(pagesNav)
         }
     }
 )
