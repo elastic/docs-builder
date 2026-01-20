@@ -20,12 +20,12 @@ namespace Elastic.Documentation.Services;
 public partial class ChangelogService(
 	ILoggerFactory logFactory,
 	IConfigurationContext configurationContext,
-	IGitHubPrService? githubPrService = null
+	IGitHubPrService? githubPrService = null,
+	IFileSystem? fileSystem = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogService>();
-	private readonly IFileSystem _fileSystem = new FileSystem();
-	private readonly IGitHubPrService? _githubPrService = githubPrService;
+	private readonly IFileSystem _fileSystem = fileSystem ?? new FileSystem();
 
 	private static class ChangelogEntryTypes
 	{
@@ -66,11 +66,6 @@ public partial class ChangelogService(
 			// Single PR or no PR - use existing logic
 			return await CreateSingleChangelog(collector, input, config, ctx);
 		}
-		catch (OperationCanceledException)
-		{
-			// If cancelled, don't emit error; propagate cancellation signal.
-			throw;
-		}
 		catch (IOException ioEx)
 		{
 			collector.EmitError(string.Empty, $"IO error creating changelog: {ioEx.Message}", ioEx);
@@ -91,9 +86,7 @@ public partial class ChangelogService(
 	)
 	{
 		if (input.Prs == null || input.Prs.Length == 0)
-		{
 			return false;
-		}
 
 		// Validate that if PRs are just numbers, owner and repo must be provided
 		var allAreNumbers = input.Prs.All(pr => int.TryParse(pr.Trim(), out _));
@@ -108,7 +101,6 @@ public partial class ChangelogService(
 
 		foreach (var prTrimmed in input.Prs.Select(pr => pr.Trim()).Where(prTrimmed => !string.IsNullOrWhiteSpace(prTrimmed)))
 		{
-
 			// Fetch PR information
 			var prInfo = await TryFetchPrInfoAsync(prTrimmed, input.Owner, input.Repo, ctx);
 			if (prInfo == null)
@@ -154,15 +146,11 @@ public partial class ChangelogService(
 			// Process this PR (treat as single PR)
 			var result = await CreateSingleChangelog(collector, prInput, config, ctx);
 			if (result)
-			{
 				successCount++;
-			}
 		}
 
 		if (successCount == 0 && skippedCount == 0)
-		{
 			return false;
-		}
 
 		_logger.LogInformation("Processed {SuccessCount} PR(s) successfully, skipped {SkippedCount} PR(s)", successCount, skippedCount);
 		return successCount > 0;
@@ -177,9 +165,7 @@ public partial class ChangelogService(
 	)
 	{
 		if (config.AddBlockers == null || config.AddBlockers.Count == 0)
-		{
 			return false;
-		}
 
 		foreach (var product in products)
 		{
@@ -408,7 +394,7 @@ public partial class ChangelogService(
 		var yamlContent = GenerateYaml(changelogData, config, string.IsNullOrWhiteSpace(input.Title), string.IsNullOrWhiteSpace(input.Type));
 
 		// Determine output path
-		var outputDir = input.Output ?? Directory.GetCurrentDirectory();
+		var outputDir = input.Output ?? _fileSystem.Directory.GetCurrentDirectory();
 		if (!_fileSystem.Directory.Exists(outputDir))
 		{
 			_ = _fileSystem.Directory.CreateDirectory(outputDir);
@@ -462,7 +448,7 @@ public partial class ChangelogService(
 	)
 	{
 		// Determine config file path
-		var finalConfigPath = configPath ?? _fileSystem.Path.Combine(Directory.GetCurrentDirectory(), "docs", "changelog.yml");
+		var finalConfigPath = configPath ?? _fileSystem.Path.Combine(_fileSystem.Directory.GetCurrentDirectory(), "docs", "changelog.yml");
 
 		if (!_fileSystem.File.Exists(finalConfigPath))
 		{
@@ -872,14 +858,14 @@ public partial class ChangelogService(
 
 	private async Task<GitHubPrInfo?> TryFetchPrInfoAsync(string? prUrl, string? owner, string? repo, Cancel ctx)
 	{
-		if (string.IsNullOrWhiteSpace(prUrl) || _githubPrService == null)
+		if (string.IsNullOrWhiteSpace(prUrl) || githubPrService == null)
 		{
 			return null;
 		}
 
 		try
 		{
-			var prInfo = await _githubPrService.FetchPrInfoAsync(prUrl, owner, repo, ctx);
+			var prInfo = await githubPrService.FetchPrInfoAsync(prUrl, owner, repo, ctx);
 			if (prInfo != null)
 			{
 				_logger.LogInformation("Successfully fetched PR information from GitHub");
@@ -1790,7 +1776,7 @@ public partial class ChangelogService(
 				}
 
 				// Determine directory for resolving file references
-				var bundleDirectory = bundleInput.Directory ?? _fileSystem.Path.GetDirectoryName(bundleInput.BundleFile) ?? Directory.GetCurrentDirectory();
+				var bundleDirectory = bundleInput.Directory ?? _fileSystem.Path.GetDirectoryName(bundleInput.BundleFile) ?? _fileSystem.Directory.GetCurrentDirectory();
 
 				// Validate all referenced files exist and check for duplicates
 				var fileNamesInThisBundle = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -2026,7 +2012,7 @@ public partial class ChangelogService(
 			}
 
 			// Determine output directory
-			var outputDir = input.Output ?? Directory.GetCurrentDirectory();
+			var outputDir = input.Output ?? _fileSystem.Directory.GetCurrentDirectory();
 			if (!_fileSystem.Directory.Exists(outputDir))
 			{
 				_ = _fileSystem.Directory.CreateDirectory(outputDir);
