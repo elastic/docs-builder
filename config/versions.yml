@@ -96,7 +96,7 @@ versioning_systems:
     base: 1.0
     current: 1.11.0
   edot-cf-aws:
-    base: 0.1
+    base: 1.0
     current: 1.2.0
   edot-cf-azure:
     base: 0.1
