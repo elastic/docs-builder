@@ -5,13 +5,10 @@
 using System.IO.Abstractions;
 using Elastic.ApiExplorer.Elasticsearch;
 using Elastic.Documentation.AppliesTo;
-using Elastic.Documentation.Configuration.Products;
-using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Search;
 using Elastic.Ingest.Elasticsearch.Indices;
 using Elastic.Markdown.Exporters.Elasticsearch.Enrichment;
-using Elastic.Markdown.Helpers;
 using Markdig.Syntax;
 using Microsoft.Extensions.Logging;
 using static System.StringSplitOptions;
