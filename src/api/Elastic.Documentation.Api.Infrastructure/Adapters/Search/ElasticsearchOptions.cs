@@ -6,13 +6,34 @@ using Microsoft.Extensions.Configuration;
 
 namespace Elastic.Documentation.Api.Infrastructure.Adapters.Search;
 
-public class ElasticsearchOptions(IConfiguration configuration)
+public class ElasticsearchOptions
 {
+	public ElasticsearchOptions(IConfiguration configuration)
+	{
+		// Build a new ConfigurationBuilder to read user secrets
+		var configBuilder = new ConfigurationBuilder();
+		_ = configBuilder.AddUserSecrets("72f50f33-6fb9-4d08-bff3-39568fe370b3");
+		var userSecretsConfig = configBuilder.Build();
+		var elasticUrlFromSecret = userSecretsConfig["Parameters:DocumentationElasticUrl"];
+		var elasticApiKeyFromSecret = userSecretsConfig["Parameters:DocumentationElasticApiKey"];
+
+		Url = GetEnv("DOCUMENTATION_ELASTIC_URL", elasticUrlFromSecret);
+		ApiKey = GetEnv("DOCUMENTATION_ELASTIC_APIKEY", elasticApiKeyFromSecret);
+		IndexName = configuration["DOCUMENTATION_ELASTIC_INDEX"] ?? "documentation-latest";
+	}
+
+	private static string GetEnv(string name, string? defaultValue = null)
+	{
+		var value = Environment.GetEnvironmentVariable(name);
+		if (!string.IsNullOrEmpty(value))
+			return value;
+		if (defaultValue != null)
+			return defaultValue;
+		throw new ArgumentException($"Environment variable '{name}' not found.");
+	}
+
 	// Read from environment variables (set by Terraform from SSM at deploy time)
-	public string Url { get; } = configuration["DOCUMENTATION_ELASTIC_URL"]
-		?? throw new InvalidOperationException("DOCUMENTATION_ELASTIC_URL not configured");
-	public string ApiKey { get; } = configuration["DOCUMENTATION_ELASTIC_APIKEY"]
-		?? throw new InvalidOperationException("DOCUMENTATION_ELASTIC_APIKEY not configured");
-	public string IndexName { get; } = configuration["DOCUMENTATION_ELASTIC_INDEX"]
-		?? "documentation-latest";
+	public string Url { get; }
+	public string ApiKey { get; }
+	public string IndexName { get; }
 }
