@@ -14,31 +14,31 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 	public async Task RenderChangelogs_WithMissingBundleFile_ReturnsError()
 	{
 		// Arrange
-		var missingBundle = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "nonexistent.yaml");
+		var missingBundle = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "nonexistent.yaml");
 
 		var input = new ChangelogRenderInput
 		{
 			Bundles = [new BundleInput { BundleFile = missingBundle }],
-			Output = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString())
+			Output = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString())
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(_collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
 		result.Should().BeFalse();
-		_collector.Errors.Should().BeGreaterThan(0);
-		_collector.Diagnostics.Should().Contain(d => d.Message.Contains("Bundle file does not exist"));
+		Collector.Errors.Should().BeGreaterThan(0);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Bundle file does not exist"));
 	}
 
 	[Fact]
 	public async Task RenderChangelogs_WithMissingChangelogFile_ReturnsError()
 	{
 		// Arrange
-		var bundleDir = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		_fileSystem.Directory.CreateDirectory(bundleDir);
+		var bundleDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(bundleDir);
 
-		var bundleFile = _fileSystem.Path.Combine(bundleDir, "bundle.yaml");
+		var bundleFile = FileSystem.Path.Combine(bundleDir, "bundle.yaml");
 		// language=yaml
 		var bundleContent =
 			"""
@@ -50,59 +50,59 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 			      name: nonexistent.yaml
 			      checksum: abc123
 			""";
-		await _fileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		var input = new ChangelogRenderInput
 		{
 			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = bundleDir }],
-			Output = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString())
+			Output = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString())
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(_collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
 		result.Should().BeFalse();
-		_collector.Errors.Should().BeGreaterThan(0);
-		_collector.Diagnostics.Should().Contain(d => d.Message.Contains("does not exist"));
+		Collector.Errors.Should().BeGreaterThan(0);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("does not exist"));
 	}
 
 	[Fact]
 	public async Task RenderChangelogs_WithInvalidBundleStructure_ReturnsError()
 	{
 		// Arrange
-		var bundleDir = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		_fileSystem.Directory.CreateDirectory(bundleDir);
+		var bundleDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(bundleDir);
 
-		var bundleFile = _fileSystem.Path.Combine(bundleDir, "bundle.yaml");
+		var bundleFile = FileSystem.Path.Combine(bundleDir, "bundle.yaml");
 		// language=yaml
 		var bundleContent =
 			"""
 			invalid_field: value
 			""";
-		await _fileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		var input = new ChangelogRenderInput
 		{
 			Bundles = [new BundleInput { BundleFile = bundleFile }],
-			Output = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString())
+			Output = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString())
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(_collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
 		result.Should().BeFalse();
-		_collector.Errors.Should().BeGreaterThan(0);
-		_collector.Diagnostics.Should().Contain(d => d.Message.Contains("missing required field") || d.Message.Contains("Failed to deserialize"));
+		Collector.Errors.Should().BeGreaterThan(0);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("missing required field") || d.Message.Contains("Failed to deserialize"));
 	}
 
 	[Fact]
 	public async Task RenderChangelogs_WithInvalidChangelogFile_ReturnsError()
 	{
 		// Arrange
-		var changelogDir = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		_fileSystem.Directory.CreateDirectory(changelogDir);
+		var changelogDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(changelogDir);
 
 		// Create invalid changelog file (missing required fields)
 		// language=yaml
@@ -112,14 +112,14 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 			# Missing type and products
 			""";
 
-		var changelogFile = _fileSystem.Path.Combine(changelogDir, "1755268130-invalid.yaml");
-		await _fileSystem.File.WriteAllTextAsync(changelogFile, invalidChangelog, TestContext.Current.CancellationToken);
+		var changelogFile = FileSystem.Path.Combine(changelogDir, "1755268130-invalid.yaml");
+		await FileSystem.File.WriteAllTextAsync(changelogFile, invalidChangelog, TestContext.Current.CancellationToken);
 
 		// Create bundle file
-		var bundleDir = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		_fileSystem.Directory.CreateDirectory(bundleDir);
+		var bundleDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(bundleDir);
 
-		var bundleFile = _fileSystem.Path.Combine(bundleDir, "bundle.yaml");
+		var bundleFile = FileSystem.Path.Combine(bundleDir, "bundle.yaml");
 		// language=yaml
 		var bundleContent =
 			$"""
@@ -131,31 +131,31 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 			      name: 1755268130-invalid.yaml
 			      checksum: {ComputeSha1(invalidChangelog)}
 			""";
-		await _fileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		var input = new ChangelogRenderInput
 		{
 			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
-			Output = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString())
+			Output = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString())
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(_collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
 		result.Should().BeFalse();
-		_collector.Errors.Should().BeGreaterThan(0);
-		_collector.Diagnostics.Should().Contain(d => d.Message.Contains("missing required field"));
+		Collector.Errors.Should().BeGreaterThan(0);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("missing required field"));
 	}
 
 	[Fact]
 	public async Task RenderChangelogs_WithResolvedEntry_ValidatesAndRenders()
 	{
 		// Arrange
-		var bundleDir = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		_fileSystem.Directory.CreateDirectory(bundleDir);
+		var bundleDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(bundleDir);
 
-		var bundleFile = _fileSystem.Path.Combine(bundleDir, "bundle.yaml");
+		var bundleFile = FileSystem.Path.Combine(bundleDir, "bundle.yaml");
 		// language=yaml
 		var bundleContent =
 			"""
@@ -170,9 +170,9 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 			        target: 9.2.0
 			    pr: https://github.com/elastic/elasticsearch/pull/100
 			""";
-		await _fileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
-		var outputDir = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 
 		var input = new ChangelogRenderInput
 		{
@@ -182,16 +182,16 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(_collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
-		_collector.Errors.Should().Be(0);
+		Collector.Errors.Should().Be(0);
 
-		var indexFile = _fileSystem.Path.Combine(outputDir, "9.2.0", "index.md");
-		_fileSystem.File.Exists(indexFile).Should().BeTrue();
+		var indexFile = FileSystem.Path.Combine(outputDir, "9.2.0", "index.md");
+		FileSystem.File.Exists(indexFile).Should().BeTrue();
 
-		var indexContent = await _fileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
+		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
 		indexContent.Should().Contain("Resolved feature");
 	}
 
@@ -211,8 +211,8 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 
 		try
 		{
-			var changelogDir = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-			_fileSystem.Directory.CreateDirectory(changelogDir);
+			var changelogDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+			FileSystem.Directory.CreateDirectory(changelogDir);
 
 			// Create changelog with an unhandled type
 			// language=yaml
@@ -226,13 +226,13 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 				description: This is an experimental feature
 				""";
 
-			var changelogFile = _fileSystem.Path.Combine(changelogDir, "1755268130-experimental.yaml");
-			await _fileSystem.File.WriteAllTextAsync(changelogFile, changelog1, TestContext.Current.CancellationToken);
+			var changelogFile = FileSystem.Path.Combine(changelogDir, "1755268130-experimental.yaml");
+			await FileSystem.File.WriteAllTextAsync(changelogFile, changelog1, TestContext.Current.CancellationToken);
 
 			// Create bundle file
-			var bundleDir = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-			_fileSystem.Directory.CreateDirectory(bundleDir);
-			var bundleFile = _fileSystem.Path.Combine(bundleDir, "bundle.yaml");
+			var bundleDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+			FileSystem.Directory.CreateDirectory(bundleDir);
+			var bundleFile = FileSystem.Path.Combine(bundleDir, "bundle.yaml");
 			// language=yaml
 			var bundleContent =
 				$"""
@@ -244,9 +244,9 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 				      name: 1755268130-experimental.yaml
 				      checksum: {ComputeSha1(changelog1)}
 				""";
-			await _fileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+			await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
-			var outputDir = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+			var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 
 			var input = new ChangelogRenderInput
 			{
@@ -256,23 +256,23 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 			};
 
 			// Act
-			var result = await Service.RenderChangelogs(_collector, input, TestContext.Current.CancellationToken);
+			var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
 			// Assert
 			result.Should().BeTrue();
-			_collector.Errors.Should().Be(0);
-			_collector.Warnings.Should().BeGreaterThan(0);
-			_collector.Diagnostics.Should().Contain(d =>
+			Collector.Errors.Should().Be(0);
+			Collector.Warnings.Should().BeGreaterThan(0);
+			Collector.Diagnostics.Should().Contain(d =>
 				d.Severity == Severity.Warning &&
 				d.Message.Contains("experimental-feature") &&
 				d.Message.Contains("is valid according to configuration but is not handled in rendering output") &&
 				d.Message.Contains("1 entry/entries of this type will not be included"));
 
 			// Verify that the entry is not included in the output
-			var indexFile = _fileSystem.Path.Combine(outputDir, "9.2.0", "index.md");
-			_fileSystem.File.Exists(indexFile).Should().BeTrue();
+			var indexFile = FileSystem.Path.Combine(outputDir, "9.2.0", "index.md");
+			FileSystem.File.Exists(indexFile).Should().BeTrue();
 
-			var indexContent = await _fileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
+			var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
 			indexContent.Should().NotContain("Experimental feature");
 		}
 		finally

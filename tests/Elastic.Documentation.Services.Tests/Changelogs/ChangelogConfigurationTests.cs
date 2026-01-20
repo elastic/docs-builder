@@ -13,11 +13,11 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	public async Task LoadChangelogConfiguration_WithoutAvailableTypes_UsesDefaults()
 	{
 		// Arrange
-		var service = new ChangelogService(_loggerFactory, _configurationContext, null, _fileSystem);
-		var configDir = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		var docsDir = _fileSystem.Path.Combine(configDir, "docs");
-		_fileSystem.Directory.CreateDirectory(docsDir);
-		var configPath = _fileSystem.Path.Combine(docsDir, "changelog.yml");
+		var service = new ChangelogService(LoggerFactory, ConfigurationContext, null, FileSystem);
+		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		FileSystem.Directory.CreateDirectory(docsDir);
+		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
 		// Config without available_types - should use defaults
 		// language=yaml
 		var configContent =
@@ -26,19 +26,19 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			available_lifecycles:
 			  - ga
 			""";
-		await _fileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
-		var originalDir = _fileSystem.Directory.GetCurrentDirectory();
+		var originalDir = FileSystem.Directory.GetCurrentDirectory();
 		try
 		{
-			_fileSystem.Directory.SetCurrentDirectory(configDir);
+			FileSystem.Directory.SetCurrentDirectory(configDir);
 
 			// Act
-			var config = await service.LoadChangelogConfiguration(_collector, null, TestContext.Current.CancellationToken);
+			var config = await service.LoadChangelogConfiguration(Collector, null, TestContext.Current.CancellationToken);
 
 			// Assert
 			config.Should().NotBeNull();
-			_collector.Errors.Should().Be(0);
+			Collector.Errors.Should().Be(0);
 			// Should have default types
 			config.AvailableTypes.Should().Contain("feature");
 			config.AvailableTypes.Should().Contain("bug-fix");
@@ -46,7 +46,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		}
 		finally
 		{
-			_fileSystem.Directory.SetCurrentDirectory(originalDir);
+			FileSystem.Directory.SetCurrentDirectory(originalDir);
 		}
 	}
 
@@ -54,11 +54,11 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	public async Task LoadChangelogConfiguration_WithoutAvailableSubtypes_UsesDefaults()
 	{
 		// Arrange
-		var service = new ChangelogService(_loggerFactory, _configurationContext, null, _fileSystem);
-		var configDir = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		var docsDir = _fileSystem.Path.Combine(configDir, "docs");
-		_fileSystem.Directory.CreateDirectory(docsDir);
-		var configPath = _fileSystem.Path.Combine(docsDir, "changelog.yml");
+		var service = new ChangelogService(LoggerFactory, ConfigurationContext, null, FileSystem);
+		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		FileSystem.Directory.CreateDirectory(docsDir);
+		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
 		// Config without available_subtypes - should use defaults
 		// language=yaml
 		var configContent =
@@ -68,26 +68,26 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			available_lifecycles:
 			   ga
 			""";
-		await _fileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
-		var originalDir = _fileSystem.Directory.GetCurrentDirectory();
+		var originalDir = FileSystem.Directory.GetCurrentDirectory();
 		try
 		{
-			_fileSystem.Directory.SetCurrentDirectory(configDir);
+			FileSystem.Directory.SetCurrentDirectory(configDir);
 
 			// Act
-			var config = await service.LoadChangelogConfiguration(_collector, null, TestContext.Current.CancellationToken);
+			var config = await service.LoadChangelogConfiguration(Collector, null, TestContext.Current.CancellationToken);
 
 			// Assert
 			config.Should().NotBeNull();
-			_collector.Errors.Should().Be(0);
+			Collector.Errors.Should().Be(0);
 			// Should have default subtypes
 			config.AvailableSubtypes.Should().Contain("api");
 			config.AvailableSubtypes.Should().Contain("behavioral");
 		}
 		finally
 		{
-			_fileSystem.Directory.SetCurrentDirectory(originalDir);
+			FileSystem.Directory.SetCurrentDirectory(originalDir);
 		}
 	}
 
@@ -95,11 +95,11 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	public async Task LoadChangelogConfiguration_WithoutAvailableLifecycles_UsesDefaults()
 	{
 		// Arrange
-		var service = new ChangelogService(_loggerFactory, _configurationContext, null, _fileSystem);
-		var configDir = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		var docsDir = _fileSystem.Path.Combine(configDir, "docs");
-		_fileSystem.Directory.CreateDirectory(docsDir);
-		var configPath = _fileSystem.Path.Combine(docsDir, "changelog.yml");
+		var service = new ChangelogService(LoggerFactory, ConfigurationContext, null, FileSystem);
+		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		FileSystem.Directory.CreateDirectory(docsDir);
+		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
 		// Config without available_lifecycles - should use defaults
 		// language=yaml
 		var configContent =
@@ -108,19 +108,19 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			  - feature
 			available_subtypes: []
 			""";
-		await _fileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
-		var originalDir = _fileSystem.Directory.GetCurrentDirectory();
+		var originalDir = FileSystem.Directory.GetCurrentDirectory();
 		try
 		{
-			_fileSystem.Directory.SetCurrentDirectory(configDir);
+			FileSystem.Directory.SetCurrentDirectory(configDir);
 
 			// Act
-			var config = await service.LoadChangelogConfiguration(_collector, null, TestContext.Current.CancellationToken);
+			var config = await service.LoadChangelogConfiguration(Collector, null, TestContext.Current.CancellationToken);
 
 			// Assert
 			config.Should().NotBeNull();
-			_collector.Errors.Should().Be(0);
+			Collector.Errors.Should().Be(0);
 			// Should have default lifecycles
 			config.AvailableLifecycles.Should().Contain("preview");
 			config.AvailableLifecycles.Should().Contain("beta");
@@ -128,7 +128,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		}
 		finally
 		{
-			_fileSystem.Directory.SetCurrentDirectory(originalDir);
+			FileSystem.Directory.SetCurrentDirectory(originalDir);
 		}
 	}
 
@@ -136,11 +136,11 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	public async Task LoadChangelogConfiguration_WithInvalidRenderBlockersType_ReturnsError()
 	{
 		// Arrange
-		var service = new ChangelogService(_loggerFactory, _configurationContext, null, _fileSystem);
-		var configDir = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		var docsDir = _fileSystem.Path.Combine(configDir, "docs");
-		_fileSystem.Directory.CreateDirectory(docsDir);
-		var configPath = _fileSystem.Path.Combine(docsDir, "changelog.yml");
+		var service = new ChangelogService(LoggerFactory, ConfigurationContext, null, FileSystem);
+		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		FileSystem.Directory.CreateDirectory(docsDir);
+		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
 		// Config with invalid type in render_blockers
 		// language=yaml
 		var configContent =
@@ -156,27 +156,27 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			  types:
 			    - invalid-type
 			""";
-		await _fileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
-		var originalDir = _fileSystem.Directory.GetCurrentDirectory();
+		var originalDir = FileSystem.Directory.GetCurrentDirectory();
 		try
 		{
-			_fileSystem.Directory.SetCurrentDirectory(configDir);
+			FileSystem.Directory.SetCurrentDirectory(configDir);
 
 			// Act
-			var config = await service.LoadChangelogConfiguration(_collector, null, TestContext.Current.CancellationToken);
+			var config = await service.LoadChangelogConfiguration(Collector, null, TestContext.Current.CancellationToken);
 
 			// Assert
 			config.Should().BeNull();
-			_collector.Errors.Should().BeGreaterThan(0);
-			_collector.Diagnostics.Should().Contain(d =>
+			Collector.Errors.Should().BeGreaterThan(0);
+			Collector.Diagnostics.Should().Contain(d =>
 				d.Severity == Severity.Error &&
 				d.Message.Contains("Type 'invalid-type' in render_blockers") &&
 				d.Message.Contains("is not in the list of available types"));
 		}
 		finally
 		{
-			_fileSystem.Directory.SetCurrentDirectory(originalDir);
+			FileSystem.Directory.SetCurrentDirectory(originalDir);
 		}
 	}
 }

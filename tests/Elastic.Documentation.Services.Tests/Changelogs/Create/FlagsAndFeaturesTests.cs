@@ -25,24 +25,24 @@ public class FlagsAndFeaturesTests(ITestOutputHelper output) : CreateChangelogTe
 		};
 
 		// Act
-		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
 		if (!result)
 		{
-			foreach (var diagnostic in _collector.Diagnostics)
-				_output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
+			foreach (var diagnostic in Collector.Diagnostics)
+				Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
 		}
 
 		result.Should().BeTrue();
-		_collector.Errors.Should().Be(0);
+		Collector.Errors.Should().Be(0);
 
 		// Note: ChangelogService uses real FileSystem, so we need to check the actual file system
-		var outputDir = input.Output ?? _fileSystem.Directory.GetCurrentDirectory();
-		if (!_fileSystem.Directory.Exists(outputDir))
-			_fileSystem.Directory.CreateDirectory(outputDir);
-		var files = _fileSystem.Directory.GetFiles(outputDir, "*.yaml");
-		var yamlContent = await _fileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var outputDir = input.Output ?? FileSystem.Directory.GetCurrentDirectory();
+		if (!FileSystem.Directory.Exists(outputDir))
+			FileSystem.Directory.CreateDirectory(outputDir);
+		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
 		yamlContent.Should().Contain("highlight: true");
 	}
 
@@ -62,24 +62,24 @@ public class FlagsAndFeaturesTests(ITestOutputHelper output) : CreateChangelogTe
 		};
 
 		// Act
-		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
 		if (!result)
 		{
-			foreach (var diagnostic in _collector.Diagnostics)
-				_output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
+			foreach (var diagnostic in Collector.Diagnostics)
+				Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
 		}
 
 		result.Should().BeTrue();
-		_collector.Errors.Should().Be(0);
+		Collector.Errors.Should().Be(0);
 
 		// Note: ChangelogService uses real FileSystem, so we need to check the actual file system
-		var outputDir = input.Output ?? _fileSystem.Directory.GetCurrentDirectory();
-		if (!_fileSystem.Directory.Exists(outputDir))
-			_fileSystem.Directory.CreateDirectory(outputDir);
-		var files = _fileSystem.Directory.GetFiles(outputDir, "*.yaml");
-		var yamlContent = await _fileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var outputDir = input.Output ?? FileSystem.Directory.GetCurrentDirectory();
+		if (!FileSystem.Directory.Exists(outputDir))
+			FileSystem.Directory.CreateDirectory(outputDir);
+		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
 		yamlContent.Should().Contain("feature-id: feature:new-search-api");
 	}
 
@@ -103,24 +103,24 @@ public class FlagsAndFeaturesTests(ITestOutputHelper output) : CreateChangelogTe
 		};
 
 		// Act
-		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
 		if (!result)
 		{
-			foreach (var diagnostic in _collector.Diagnostics)
-				_output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
+			foreach (var diagnostic in Collector.Diagnostics)
+				Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
 		}
 
 		result.Should().BeTrue();
-		_collector.Errors.Should().Be(0);
+		Collector.Errors.Should().Be(0);
 
 		// Note: ChangelogService uses real FileSystem, so we need to check the actual file system
-		var outputDir = input.Output ?? _fileSystem.Directory.GetCurrentDirectory();
-		if (!_fileSystem.Directory.Exists(outputDir))
-			_fileSystem.Directory.CreateDirectory(outputDir);
-		var files = _fileSystem.Directory.GetFiles(outputDir, "*.yaml");
-		var yamlContent = await _fileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var outputDir = input.Output ?? FileSystem.Directory.GetCurrentDirectory();
+		if (!FileSystem.Directory.Exists(outputDir))
+			FileSystem.Directory.CreateDirectory(outputDir);
+		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
 		yamlContent.Should().Contain("issues:");
 		yamlContent.Should().Contain("- https://github.com/elastic/elasticsearch/issues/123");
 		yamlContent.Should().Contain("- https://github.com/elastic/elasticsearch/issues/456");

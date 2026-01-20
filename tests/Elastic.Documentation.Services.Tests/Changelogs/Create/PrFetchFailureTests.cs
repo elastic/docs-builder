@@ -34,22 +34,22 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 		};
 
 		// Act
-		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
-		_collector.Errors.Should().Be(0);
-		_collector.Warnings.Should().BeGreaterThan(0);
-		_collector.Diagnostics.Should().Contain(d => d.Message.Contains("Failed to fetch PR information") && d.Severity == Severity.Warning);
+		Collector.Errors.Should().Be(0);
+		Collector.Warnings.Should().BeGreaterThan(0);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Failed to fetch PR information") && d.Severity == Severity.Warning);
 
 		// Verify changelog file was created with provided values
-		var outputDir = input.Output ?? _fileSystem.Directory.GetCurrentDirectory();
-		if (!_fileSystem.Directory.Exists(outputDir))
-			_fileSystem.Directory.CreateDirectory(outputDir);
-		var files = _fileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputDir = input.Output ?? FileSystem.Directory.GetCurrentDirectory();
+		if (!FileSystem.Directory.Exists(outputDir))
+			FileSystem.Directory.CreateDirectory(outputDir);
+		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await _fileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
 		yamlContent.Should().Contain("title: Manual title provided");
 		yamlContent.Should().Contain("type: feature");
 		yamlContent.Should().Contain("pr: https://github.com/elastic/elasticsearch/pull/12345");
@@ -76,24 +76,24 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 		};
 
 		// Act
-		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
-		_collector.Errors.Should().Be(0);
-		_collector.Warnings.Should().BeGreaterThan(0);
-		_collector.Diagnostics.Should().Contain(d => d.Message.Contains("Failed to fetch PR information") && d.Severity == Severity.Warning);
-		_collector.Diagnostics.Should().Contain(d => d.Message.Contains("Title is missing") && d.Severity == Severity.Warning);
-		_collector.Diagnostics.Should().Contain(d => d.Message.Contains("Type is missing") && d.Severity == Severity.Warning);
+		Collector.Errors.Should().Be(0);
+		Collector.Warnings.Should().BeGreaterThan(0);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Failed to fetch PR information") && d.Severity == Severity.Warning);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Title is missing") && d.Severity == Severity.Warning);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Type is missing") && d.Severity == Severity.Warning);
 
 		// Verify changelog file was created with commented title/type
-		var outputDir = input.Output ?? _fileSystem.Directory.GetCurrentDirectory();
-		if (!_fileSystem.Directory.Exists(outputDir))
-			_fileSystem.Directory.CreateDirectory(outputDir);
-		var files = _fileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputDir = input.Output ?? FileSystem.Directory.GetCurrentDirectory();
+		if (!FileSystem.Directory.Exists(outputDir))
+			FileSystem.Directory.CreateDirectory(outputDir);
+		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await _fileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
 		yamlContent.Should().Contain("# title: # TODO: Add title");
 		yamlContent.Should().Contain("# type: # TODO: Add type");
 		yamlContent.Should().Contain("pr: https://github.com/elastic/elasticsearch/pull/12345");
@@ -127,28 +127,28 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 		};
 
 		// Act
-		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
-		_collector.Errors.Should().Be(0);
-		_collector.Warnings.Should().BeGreaterThan(0);
+		Collector.Errors.Should().Be(0);
+		Collector.Warnings.Should().BeGreaterThan(0);
 		// Verify that warnings were emitted for both PRs (may be multiple warnings per PR)
-		var prWarnings = _collector.Diagnostics.Where(d => d.Message.Contains("Failed to fetch PR information")).ToList();
+		var prWarnings = Collector.Diagnostics.Where(d => d.Message.Contains("Failed to fetch PR information")).ToList();
 		prWarnings.Should().HaveCountGreaterThanOrEqualTo(2);
 		// Verify both PR URLs are mentioned in warnings
 		prWarnings.Should().Contain(d => d.Message.Contains("12345"));
 		prWarnings.Should().Contain(d => d.Message.Contains("67890"));
 
 		// Verify changelog file was created (may be 1 file if both PRs have same title/type, which is expected)
-		var outputDir = input.Output ?? _fileSystem.Directory.GetCurrentDirectory();
-		if (!_fileSystem.Directory.Exists(outputDir))
-			_fileSystem.Directory.CreateDirectory(outputDir);
-		var files = _fileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputDir = input.Output ?? FileSystem.Directory.GetCurrentDirectory();
+		if (!FileSystem.Directory.Exists(outputDir))
+			FileSystem.Directory.CreateDirectory(outputDir);
+		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCountGreaterThanOrEqualTo(1);
 
 		// Verify the file contains the provided title/type and at least one PR reference
-		var yamlContent = await _fileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
 		yamlContent.Should().Contain("title: Shared title");
 		yamlContent.Should().Contain("type: bug-fix");
 		// Should reference at least one of the PRs (when filenames collide, the last one wins)

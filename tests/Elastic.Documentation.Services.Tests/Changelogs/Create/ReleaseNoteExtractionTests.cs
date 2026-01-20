@@ -56,19 +56,19 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		};
 
 		// Act
-		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
-		_collector.Errors.Should().Be(0);
+		Collector.Errors.Should().Be(0);
 
-		var outputDir = input.Output ?? _fileSystem.Directory.GetCurrentDirectory();
-		if (!_fileSystem.Directory.Exists(outputDir))
-			_fileSystem.Directory.CreateDirectory(outputDir);
-		var files = _fileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputDir = input.Output ?? FileSystem.Directory.GetCurrentDirectory();
+		if (!FileSystem.Directory.Exists(outputDir))
+			FileSystem.Directory.CreateDirectory(outputDir);
+		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await _fileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
 		yamlContent.Should().Contain("title: Adds support for new aggregation types");
 		// Description should not be set when release note is used as title
 		if (yamlContent.Contains("description:"))
@@ -127,19 +127,19 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		};
 
 		// Act
-		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
-		_collector.Errors.Should().Be(0);
+		Collector.Errors.Should().Be(0);
 
-		var outputDir = input.Output ?? _fileSystem.Directory.GetCurrentDirectory();
-		if (!_fileSystem.Directory.Exists(outputDir))
-			_fileSystem.Directory.CreateDirectory(outputDir);
-		var files = _fileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputDir = input.Output ?? FileSystem.Directory.GetCurrentDirectory();
+		if (!FileSystem.Directory.Exists(outputDir))
+			FileSystem.Directory.CreateDirectory(outputDir);
+		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await _fileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
 		yamlContent.Should().Contain("title: Implement new aggregation API");
 		yamlContent.Should().Contain($"description: {longReleaseNote}");
 	}
@@ -192,19 +192,19 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		};
 
 		// Act
-		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
-		_collector.Errors.Should().Be(0);
+		Collector.Errors.Should().Be(0);
 
-		var outputDir = input.Output ?? _fileSystem.Directory.GetCurrentDirectory();
-		if (!_fileSystem.Directory.Exists(outputDir))
-			_fileSystem.Directory.CreateDirectory(outputDir);
-		var files = _fileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputDir = input.Output ?? FileSystem.Directory.GetCurrentDirectory();
+		if (!FileSystem.Directory.Exists(outputDir))
+			FileSystem.Directory.CreateDirectory(outputDir);
+		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await _fileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
 		yamlContent.Should().Contain("title: Implement new aggregation API");
 		yamlContent.Should().Contain("description:");
 		yamlContent.Should().Contain("Adds support for new aggregation types");
@@ -257,19 +257,19 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		};
 
 		// Act
-		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
-		_collector.Errors.Should().Be(0);
+		Collector.Errors.Should().Be(0);
 
-		var outputDir = input.Output ?? _fileSystem.Directory.GetCurrentDirectory();
-		if (!_fileSystem.Directory.Exists(outputDir))
-			_fileSystem.Directory.CreateDirectory(outputDir);
-		var files = _fileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputDir = input.Output ?? FileSystem.Directory.GetCurrentDirectory();
+		if (!FileSystem.Directory.Exists(outputDir))
+			FileSystem.Directory.CreateDirectory(outputDir);
+		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await _fileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
 		yamlContent.Should().Contain("title: Implement new aggregation API");
 		// Description should not be set when no release note is found
 		if (yamlContent.Contains("description:"))
@@ -327,19 +327,19 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		};
 
 		// Act
-		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
-		_collector.Errors.Should().Be(0);
+		Collector.Errors.Should().Be(0);
 
-		var outputDir = input.Output ?? _fileSystem.Directory.GetCurrentDirectory();
-		if (!_fileSystem.Directory.Exists(outputDir))
-			_fileSystem.Directory.CreateDirectory(outputDir);
-		var files = _fileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputDir = input.Output ?? FileSystem.Directory.GetCurrentDirectory();
+		if (!FileSystem.Directory.Exists(outputDir))
+			FileSystem.Directory.CreateDirectory(outputDir);
+		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await _fileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
 		yamlContent.Should().Contain("title: Custom title");
 		yamlContent.Should().NotContain("Adds support for new aggregation types");
 	}
@@ -393,19 +393,19 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		};
 
 		// Act
-		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
-		_collector.Errors.Should().Be(0);
+		Collector.Errors.Should().Be(0);
 
-		var outputDir = input.Output ?? _fileSystem.Directory.GetCurrentDirectory();
-		if (!_fileSystem.Directory.Exists(outputDir))
-			_fileSystem.Directory.CreateDirectory(outputDir);
-		var files = _fileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputDir = input.Output ?? FileSystem.Directory.GetCurrentDirectory();
+		if (!FileSystem.Directory.Exists(outputDir))
+			FileSystem.Directory.CreateDirectory(outputDir);
+		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await _fileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
 		yamlContent.Should().Contain("description: Custom description");
 		yamlContent.Should().NotContain(longReleaseNote);
 	}

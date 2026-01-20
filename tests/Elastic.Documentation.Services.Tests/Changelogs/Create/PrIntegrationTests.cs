@@ -54,11 +54,11 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		};
 
 		// Act
-		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
-		_collector.Errors.Should().Be(0);
+		Collector.Errors.Should().Be(0);
 
 		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
 				"https://github.com/elastic/elasticsearch/pull/12345",
@@ -68,13 +68,13 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 			.MustHaveHappenedOnceExactly();
 
 		// Note: ChangelogService uses real FileSystem, so we need to check the actual file system
-		var outputDir = input.Output ?? _fileSystem.Directory.GetCurrentDirectory();
-		if (!_fileSystem.Directory.Exists(outputDir))
-			_fileSystem.Directory.CreateDirectory(outputDir);
-		var files = _fileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputDir = input.Output ?? FileSystem.Directory.GetCurrentDirectory();
+		if (!FileSystem.Directory.Exists(outputDir))
+			FileSystem.Directory.CreateDirectory(outputDir);
+		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await _fileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
 		yamlContent.Should().Contain("title: Implement new aggregation API");
 		yamlContent.Should().Contain("type: feature");
 		yamlContent.Should().Contain("pr: https://github.com/elastic/elasticsearch/pull/12345");
@@ -125,24 +125,24 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		};
 
 		// Act
-		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
-		_collector.Errors.Should().Be(0);
+		Collector.Errors.Should().Be(0);
 
 		// Note: ChangelogService uses real FileSystem, so we need to check the actual file system
-		var outputDir = input.Output ?? _fileSystem.Directory.GetCurrentDirectory();
-		if (!_fileSystem.Directory.Exists(outputDir))
-			_fileSystem.Directory.CreateDirectory(outputDir);
-		var files = _fileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputDir = input.Output ?? FileSystem.Directory.GetCurrentDirectory();
+		if (!FileSystem.Directory.Exists(outputDir))
+			FileSystem.Directory.CreateDirectory(outputDir);
+		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(1);
 
 		// Verify the filename is the PR number, not a timestamp-based name
 		var fileName = Path.GetFileName(files[0]);
 		fileName.Should().Be("140034.yaml", "the filename should be the PR number when UsePrNumber is true");
 
-		var yamlContent = await _fileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
 		yamlContent.Should().Contain("type: bug-fix");
 		yamlContent.Should().Contain("pr: https://github.com/elastic/elasticsearch/pull/140034");
 	}
@@ -178,11 +178,11 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		};
 
 		// Act
-		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
-		_collector.Errors.Should().Be(0);
+		Collector.Errors.Should().Be(0);
 
 		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
 				"12345",
@@ -249,21 +249,21 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		};
 
 		// Act
-		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
-		_collector.Errors.Should().Be(0);
+		Collector.Errors.Should().Be(0);
 
-		var outputDir = input.Output ?? _fileSystem.Directory.GetCurrentDirectory();
-		if (!_fileSystem.Directory.Exists(outputDir))
-			_fileSystem.Directory.CreateDirectory(outputDir);
-		var files = _fileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputDir = input.Output ?? FileSystem.Directory.GetCurrentDirectory();
+		if (!FileSystem.Directory.Exists(outputDir))
+			FileSystem.Directory.CreateDirectory(outputDir);
+		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(2);
 
 		var yamlContents = new List<string>();
 		foreach (var file in files)
-			yamlContents.Add(await _fileSystem.File.ReadAllTextAsync(file, TestContext.Current.CancellationToken));
+			yamlContents.Add(await FileSystem.File.ReadAllTextAsync(file, TestContext.Current.CancellationToken));
 
 		// Verify both PRs were processed
 		yamlContents.Should().Contain(c => c.Contains("title: First PR feature"));
@@ -311,21 +311,21 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 				A<CancellationToken>._))
 			.Returns(pr3Info);
 
-		var tempDir = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		_fileSystem.Directory.CreateDirectory(tempDir);
+		var tempDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(tempDir);
 
 		// Create a file with newline-delimited PRs (simulating what ChangelogCommand would read)
-		var prsFile = _fileSystem.Path.Combine(tempDir, "prs.txt");
+		var prsFile = FileSystem.Path.Combine(tempDir, "prs.txt");
 		var prsFileContent =
 			"""
 			https://github.com/elastic/elasticsearch/pull/1111
 			https://github.com/elastic/elasticsearch/pull/2222
 			https://github.com/elastic/elasticsearch/pull/3333
 			""";
-		await _fileSystem.File.WriteAllTextAsync(prsFile, prsFileContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(prsFile, prsFileContent, TestContext.Current.CancellationToken);
 
 		// Read PRs from file (simulating ChangelogCommand behavior)
-		var prsFromFile = await _fileSystem.File.ReadAllLinesAsync(prsFile, TestContext.Current.CancellationToken);
+		var prsFromFile = await FileSystem.File.ReadAllLinesAsync(prsFile, TestContext.Current.CancellationToken);
 		var parsedPrs = prsFromFile
 			.Where(line => !string.IsNullOrWhiteSpace(line))
 			.Select(line => line.Trim())
@@ -361,21 +361,21 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		};
 
 		// Act
-		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
-		_collector.Errors.Should().Be(0);
+		Collector.Errors.Should().Be(0);
 
-		var outputDir = input.Output ?? _fileSystem.Directory.GetCurrentDirectory();
-		if (!_fileSystem.Directory.Exists(outputDir))
-			_fileSystem.Directory.CreateDirectory(outputDir);
-		var files = _fileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputDir = input.Output ?? FileSystem.Directory.GetCurrentDirectory();
+		if (!FileSystem.Directory.Exists(outputDir))
+			FileSystem.Directory.CreateDirectory(outputDir);
+		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(3); // One file per PR
 
 		var yamlContents = new List<string>();
 		foreach (var file in files)
-			yamlContents.Add(await _fileSystem.File.ReadAllTextAsync(file, TestContext.Current.CancellationToken));
+			yamlContents.Add(await FileSystem.File.ReadAllTextAsync(file, TestContext.Current.CancellationToken));
 
 		// Verify all PRs were processed
 		yamlContents.Should().Contain(c => c.Contains("title: First PR from file"));
@@ -412,16 +412,16 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 				A<CancellationToken>._))
 			.Returns(pr2Info);
 
-		var tempDir = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		_fileSystem.Directory.CreateDirectory(tempDir);
+		var tempDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(tempDir);
 
 		// Create a file with PRs
-		var prsFile = _fileSystem.Path.Combine(tempDir, "prs.txt");
+		var prsFile = FileSystem.Path.Combine(tempDir, "prs.txt");
 		var prsFileContent =
 			"""
 			https://github.com/elastic/elasticsearch/pull/2222
 			""";
-		await _fileSystem.File.WriteAllTextAsync(prsFile, prsFileContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(prsFile, prsFileContent, TestContext.Current.CancellationToken);
 
 		// Simulate ChangelogCommand processing: comma-separated PRs + file path
 		var allPrs = new List<string>();
@@ -432,7 +432,7 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		allPrs.AddRange(commaSeparatedPrs);
 
 		// Add PRs from file
-		var prsFromFile = await _fileSystem.File.ReadAllLinesAsync(prsFile, TestContext.Current.CancellationToken);
+		var prsFromFile = await FileSystem.File.ReadAllLinesAsync(prsFile, TestContext.Current.CancellationToken);
 		allPrs.AddRange(
 			prsFromFile
 				.Where(line => !string.IsNullOrWhiteSpace(line))
@@ -467,22 +467,22 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		};
 
 		// Act
-		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
-		_collector.Errors.Should().Be(0);
+		Collector.Errors.Should().Be(0);
 
-		var outputDir = input.Output ?? _fileSystem.Directory.GetCurrentDirectory();
-		if (!_fileSystem.Directory.Exists(outputDir))
-			_fileSystem.Directory.CreateDirectory(outputDir);
-		var files = _fileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputDir = input.Output ?? FileSystem.Directory.GetCurrentDirectory();
+		if (!FileSystem.Directory.Exists(outputDir))
+			FileSystem.Directory.CreateDirectory(outputDir);
+		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(2); // One file per PR
 
 		var yamlContents = new List<string>();
 		foreach (var file in files)
 		{
-			var content = await _fileSystem.File.ReadAllTextAsync(file, TestContext.Current.CancellationToken);
+			var content = await FileSystem.File.ReadAllTextAsync(file, TestContext.Current.CancellationToken);
 			yamlContents.Add(content);
 		}
 

@@ -14,8 +14,8 @@ public class RenderBlockersTests(ITestOutputHelper output) : RenderChangelogTest
 	public async Task RenderChangelogs_WithRenderBlockers_CommentsOutMatchingEntries()
 	{
 		// Arrange
-		var changelogDir = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		_fileSystem.Directory.CreateDirectory(changelogDir);
+		var changelogDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(changelogDir);
 
 		// Create changelog that should be blocked (elasticsearch + search area)
 		// language=yaml
@@ -47,16 +47,16 @@ public class RenderBlockersTests(ITestOutputHelper output) : RenderChangelogTest
 			description: This feature should be visible
 			""";
 
-		var changelogFile1 = _fileSystem.Path.Combine(changelogDir, "1755268130-blocked.yaml");
-		var changelogFile2 = _fileSystem.Path.Combine(changelogDir, "1755268140-visible.yaml");
-		await _fileSystem.File.WriteAllTextAsync(changelogFile1, changelog1, TestContext.Current.CancellationToken);
-		await _fileSystem.File.WriteAllTextAsync(changelogFile2, changelog2, TestContext.Current.CancellationToken);
+		var changelogFile1 = FileSystem.Path.Combine(changelogDir, "1755268130-blocked.yaml");
+		var changelogFile2 = FileSystem.Path.Combine(changelogDir, "1755268140-visible.yaml");
+		await FileSystem.File.WriteAllTextAsync(changelogFile1, changelog1, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(changelogFile2, changelog2, TestContext.Current.CancellationToken);
 
 		// Create config file with render_blockers in docs/ subdirectory
-		var configDir = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		var docsDir = _fileSystem.Path.Combine(configDir, "docs");
-		_fileSystem.Directory.CreateDirectory(docsDir);
-		var configPath = _fileSystem.Path.Combine(docsDir, "changelog.yml");
+		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		FileSystem.Directory.CreateDirectory(docsDir);
+		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
 		// language=yaml
 		var configContent =
 			"""
@@ -70,13 +70,13 @@ public class RenderBlockersTests(ITestOutputHelper output) : RenderChangelogTest
 			    areas:
 			      - search
 			""";
-		await _fileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
 		// Create bundle file
-		var bundleDir = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		_fileSystem.Directory.CreateDirectory(bundleDir);
+		var bundleDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(bundleDir);
 
-		var bundleFile = _fileSystem.Path.Combine(bundleDir, "bundle.yaml");
+		var bundleFile = FileSystem.Path.Combine(bundleDir, "bundle.yaml");
 		// language=yaml
 		var bundleContent =
 			$"""
@@ -91,15 +91,15 @@ public class RenderBlockersTests(ITestOutputHelper output) : RenderChangelogTest
 			      name: 1755268140-visible.yaml
 			      checksum: {ComputeSha1(changelog2)}
 			""";
-		await _fileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		// Set current directory to where config file is located so it can be found
-		var originalDir = _fileSystem.Directory.GetCurrentDirectory();
+		var originalDir = FileSystem.Directory.GetCurrentDirectory();
 		try
 		{
-			_fileSystem.Directory.SetCurrentDirectory(configDir);
+			FileSystem.Directory.SetCurrentDirectory(configDir);
 
-			var outputDir = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+			var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 
 			var input = new ChangelogRenderInput
 			{
@@ -109,23 +109,23 @@ public class RenderBlockersTests(ITestOutputHelper output) : RenderChangelogTest
 			};
 
 			// Act
-			var result = await Service.RenderChangelogs(_collector, input, TestContext.Current.CancellationToken);
+			var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
 			// Assert
 			result.Should().BeTrue();
-			_collector.Errors.Should().Be(0);
-			_collector.Warnings.Should().BeGreaterThan(0);
-			_collector.Diagnostics.Should().Contain(d =>
+			Collector.Errors.Should().Be(0);
+			Collector.Warnings.Should().BeGreaterThan(0);
+			Collector.Diagnostics.Should().Contain(d =>
 				d.Severity == Severity.Warning &&
 				d.Message.Contains("Blocked feature") &&
 				d.Message.Contains("render_blockers") &&
 				d.Message.Contains("product 'elasticsearch'") &&
 				d.Message.Contains("area 'search'"));
 
-			var indexFile = _fileSystem.Path.Combine(outputDir, "9.2.0", "index.md");
-			_fileSystem.File.Exists(indexFile).Should().BeTrue();
+			var indexFile = FileSystem.Path.Combine(outputDir, "9.2.0", "index.md");
+			FileSystem.File.Exists(indexFile).Should().BeTrue();
 
-			var indexContent = await _fileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
+			var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
 			// Blocked entry should be commented out with % prefix
 			indexContent.Should().Contain("% * Blocked feature");
 			// Visible entry should not be commented
@@ -134,7 +134,7 @@ public class RenderBlockersTests(ITestOutputHelper output) : RenderChangelogTest
 		}
 		finally
 		{
-			_fileSystem.Directory.SetCurrentDirectory(originalDir);
+			FileSystem.Directory.SetCurrentDirectory(originalDir);
 		}
 	}
 
@@ -142,8 +142,8 @@ public class RenderBlockersTests(ITestOutputHelper output) : RenderChangelogTest
 	public async Task RenderChangelogs_WithRenderBlockers_CommaSeparatedProducts_CommentsOutMatchingEntries()
 	{
 		// Arrange
-		var changelogDir = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		_fileSystem.Directory.CreateDirectory(changelogDir);
+		var changelogDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(changelogDir);
 
 		// Create changelog with cloud-serverless product that should be blocked
 		// language=yaml
@@ -175,16 +175,16 @@ public class RenderBlockersTests(ITestOutputHelper output) : RenderChangelogTest
 			description: This feature should also be blocked
 			""";
 
-		var changelogFile1 = _fileSystem.Path.Combine(changelogDir, "1755268130-cloud-blocked.yaml");
-		var changelogFile2 = _fileSystem.Path.Combine(changelogDir, "1755268140-es-blocked.yaml");
-		await _fileSystem.File.WriteAllTextAsync(changelogFile1, changelog1, TestContext.Current.CancellationToken);
-		await _fileSystem.File.WriteAllTextAsync(changelogFile2, changelog2, TestContext.Current.CancellationToken);
+		var changelogFile1 = FileSystem.Path.Combine(changelogDir, "1755268130-cloud-blocked.yaml");
+		var changelogFile2 = FileSystem.Path.Combine(changelogDir, "1755268140-es-blocked.yaml");
+		await FileSystem.File.WriteAllTextAsync(changelogFile1, changelog1, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(changelogFile2, changelog2, TestContext.Current.CancellationToken);
 
 		// Create config file with render_blockers using comma-separated products in docs/ subdirectory
-		var configDir = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		var docsDir = _fileSystem.Path.Combine(configDir, "docs");
-		_fileSystem.Directory.CreateDirectory(docsDir);
-		var configPath = _fileSystem.Path.Combine(docsDir, "changelog.yml");
+		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		FileSystem.Directory.CreateDirectory(docsDir);
+		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
 		// language=yaml
 		var configContent =
 			"""
@@ -198,13 +198,13 @@ public class RenderBlockersTests(ITestOutputHelper output) : RenderChangelogTest
 			    areas:
 			      - security
 			""";
-		await _fileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
 		// Create bundle file
-		var bundleDir = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		_fileSystem.Directory.CreateDirectory(bundleDir);
+		var bundleDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(bundleDir);
 
-		var bundleFile = _fileSystem.Path.Combine(bundleDir, "bundle.yaml");
+		var bundleFile = FileSystem.Path.Combine(bundleDir, "bundle.yaml");
 		// language=yaml
 		var bundleContent =
 			$"""
@@ -221,15 +221,15 @@ public class RenderBlockersTests(ITestOutputHelper output) : RenderChangelogTest
 			      name: 1755268140-es-blocked.yaml
 			      checksum: {ComputeSha1(changelog2)}
 			""";
-		await _fileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		// Set current directory to where config file is located so it can be found
-		var originalDir = _fileSystem.Directory.GetCurrentDirectory();
+		var originalDir = FileSystem.Directory.GetCurrentDirectory();
 		try
 		{
-			_fileSystem.Directory.SetCurrentDirectory(configDir);
+			FileSystem.Directory.SetCurrentDirectory(configDir);
 
-			var outputDir = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+			var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 
 			var input = new ChangelogRenderInput
 			{
@@ -239,24 +239,24 @@ public class RenderBlockersTests(ITestOutputHelper output) : RenderChangelogTest
 			};
 
 			// Act
-			var result = await Service.RenderChangelogs(_collector, input, TestContext.Current.CancellationToken);
+			var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
 			// Assert
 			result.Should().BeTrue();
-			_collector.Errors.Should().Be(0);
-			_collector.Warnings.Should().BeGreaterThan(0);
+			Collector.Errors.Should().Be(0);
+			Collector.Warnings.Should().BeGreaterThan(0);
 
-			var indexFile = _fileSystem.Path.Combine(outputDir, "9.2.0", "index.md");
-			_fileSystem.File.Exists(indexFile).Should().BeTrue();
+			var indexFile = FileSystem.Path.Combine(outputDir, "9.2.0", "index.md");
+			FileSystem.File.Exists(indexFile).Should().BeTrue();
 
-			var indexContent = await _fileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
+			var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
 			// Both entries should be commented out
 			indexContent.Should().Contain("% * Blocked cloud feature");
 			indexContent.Should().Contain("% * Blocked elasticsearch feature");
 		}
 		finally
 		{
-			_fileSystem.Directory.SetCurrentDirectory(originalDir);
+			FileSystem.Directory.SetCurrentDirectory(originalDir);
 		}
 	}
 
@@ -264,8 +264,8 @@ public class RenderBlockersTests(ITestOutputHelper output) : RenderChangelogTest
 	public async Task RenderChangelogs_WithRenderBlockers_MultipleProductsInEntry_ChecksAllProducts()
 	{
 		// Arrange
-		var changelogDir = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		_fileSystem.Directory.CreateDirectory(changelogDir);
+		var changelogDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(changelogDir);
 
 		// Create changelog with multiple products - one matches render_blockers
 		// language=yaml
@@ -284,14 +284,14 @@ public class RenderBlockersTests(ITestOutputHelper output) : RenderChangelogTest
 			description: This feature should be blocked because elasticsearch matches
 			""";
 
-		var changelogFile = _fileSystem.Path.Combine(changelogDir, "1755268130-multi-product.yaml");
-		await _fileSystem.File.WriteAllTextAsync(changelogFile, changelog, TestContext.Current.CancellationToken);
+		var changelogFile = FileSystem.Path.Combine(changelogDir, "1755268130-multi-product.yaml");
+		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog, TestContext.Current.CancellationToken);
 
 		// Create config file with render_blockers for elasticsearch only in docs/ subdirectory
-		var configDir = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		var docsDir = _fileSystem.Path.Combine(configDir, "docs");
-		_fileSystem.Directory.CreateDirectory(docsDir);
-		var configPath = _fileSystem.Path.Combine(docsDir, "changelog.yml");
+		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		FileSystem.Directory.CreateDirectory(docsDir);
+		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
 		// language=yaml
 		var configContent =
 			"""
@@ -305,13 +305,13 @@ public class RenderBlockersTests(ITestOutputHelper output) : RenderChangelogTest
 			    areas:
 			      - search
 			""";
-		await _fileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
 		// Create bundle file
-		var bundleDir = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		_fileSystem.Directory.CreateDirectory(bundleDir);
+		var bundleDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(bundleDir);
 
-		var bundleFile = _fileSystem.Path.Combine(bundleDir, "bundle.yaml");
+		var bundleFile = FileSystem.Path.Combine(bundleDir, "bundle.yaml");
 		// language=yaml
 		var bundleContent =
 			$"""
@@ -325,15 +325,15 @@ public class RenderBlockersTests(ITestOutputHelper output) : RenderChangelogTest
 			      name: 1755268130-multi-product.yaml
 			      checksum: {ComputeSha1(changelog)}
 			""";
-		await _fileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		// Set current directory to where config file is located so it can be found
-		var originalDir = _fileSystem.Directory.GetCurrentDirectory();
+		var originalDir = FileSystem.Directory.GetCurrentDirectory();
 		try
 		{
-			_fileSystem.Directory.SetCurrentDirectory(configDir);
+			FileSystem.Directory.SetCurrentDirectory(configDir);
 
-			var outputDir = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+			var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 
 			var input = new ChangelogRenderInput
 			{
@@ -343,27 +343,27 @@ public class RenderBlockersTests(ITestOutputHelper output) : RenderChangelogTest
 			};
 
 			// Act
-			var result = await Service.RenderChangelogs(_collector, input, TestContext.Current.CancellationToken);
+			var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
 			// Assert
 			result.Should().BeTrue();
-			_collector.Errors.Should().Be(0);
-			_collector.Warnings.Should().BeGreaterThan(0);
-			_collector.Diagnostics.Should().Contain(d =>
+			Collector.Errors.Should().Be(0);
+			Collector.Warnings.Should().BeGreaterThan(0);
+			Collector.Diagnostics.Should().Contain(d =>
 				d.Severity == Severity.Warning &&
 				d.Message.Contains("Multi-product feature") &&
 				d.Message.Contains("product 'elasticsearch'"));
 
-			var indexFile = _fileSystem.Path.Combine(outputDir, "9.2.0", "index.md");
-			_fileSystem.File.Exists(indexFile).Should().BeTrue();
+			var indexFile = FileSystem.Path.Combine(outputDir, "9.2.0", "index.md");
+			FileSystem.File.Exists(indexFile).Should().BeTrue();
 
-			var indexContent = await _fileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
+			var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
 			// Should be blocked because elasticsearch matches, even though kibana doesn't
 			indexContent.Should().Contain("% * Multi-product feature");
 		}
 		finally
 		{
-			_fileSystem.Directory.SetCurrentDirectory(originalDir);
+			FileSystem.Directory.SetCurrentDirectory(originalDir);
 		}
 	}
 
@@ -371,8 +371,8 @@ public class RenderBlockersTests(ITestOutputHelper output) : RenderChangelogTest
 	public async Task RenderChangelogs_WithRenderBlockers_TypeBlocking_CommentsOutMatchingEntries()
 	{
 		// Arrange
-		var changelogDir = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		_fileSystem.Directory.CreateDirectory(changelogDir);
+		var changelogDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(changelogDir);
 
 		// Create changelog that should be blocked (elasticsearch + feature type, blocked by type)
 		// language=yaml
@@ -400,16 +400,16 @@ public class RenderBlockersTests(ITestOutputHelper output) : RenderChangelogTest
 			description: This enhancement should be visible
 			""";
 
-		var changelogFile1 = _fileSystem.Path.Combine(changelogDir, "1755268130-blocked.yaml");
-		var changelogFile2 = _fileSystem.Path.Combine(changelogDir, "1755268140-visible.yaml");
-		await _fileSystem.File.WriteAllTextAsync(changelogFile1, changelog1, TestContext.Current.CancellationToken);
-		await _fileSystem.File.WriteAllTextAsync(changelogFile2, changelog2, TestContext.Current.CancellationToken);
+		var changelogFile1 = FileSystem.Path.Combine(changelogDir, "1755268130-blocked.yaml");
+		var changelogFile2 = FileSystem.Path.Combine(changelogDir, "1755268140-visible.yaml");
+		await FileSystem.File.WriteAllTextAsync(changelogFile1, changelog1, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(changelogFile2, changelog2, TestContext.Current.CancellationToken);
 
 		// Create config file with render_blockers blocking docs type
-		var configDir = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		var docsDir = _fileSystem.Path.Combine(configDir, "docs");
-		_fileSystem.Directory.CreateDirectory(docsDir);
-		var configPath = _fileSystem.Path.Combine(docsDir, "changelog.yml");
+		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		FileSystem.Directory.CreateDirectory(docsDir);
+		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
 		// language=yaml
 		var configContent =
 			"""
@@ -424,13 +424,13 @@ public class RenderBlockersTests(ITestOutputHelper output) : RenderChangelogTest
 			    types:
 			      - feature
 			""";
-		await _fileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
 		// Create bundle file
-		var bundleDir = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		_fileSystem.Directory.CreateDirectory(bundleDir);
+		var bundleDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(bundleDir);
 
-		var bundleFile = _fileSystem.Path.Combine(bundleDir, "bundle.yaml");
+		var bundleFile = FileSystem.Path.Combine(bundleDir, "bundle.yaml");
 		// language=yaml
 		var bundleContent =
 			$"""
@@ -445,15 +445,15 @@ public class RenderBlockersTests(ITestOutputHelper output) : RenderChangelogTest
 			      name: 1755268140-visible.yaml
 			      checksum: {ComputeSha1(changelog2)}
 			""";
-		await _fileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		// Set current directory to where config file is located so it can be found
-		var originalDir = _fileSystem.Directory.GetCurrentDirectory();
+		var originalDir = FileSystem.Directory.GetCurrentDirectory();
 		try
 		{
-			_fileSystem.Directory.SetCurrentDirectory(configDir);
+			FileSystem.Directory.SetCurrentDirectory(configDir);
 
-			var outputDir = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+			var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 
 			var input = new ChangelogRenderInput
 			{
@@ -463,23 +463,23 @@ public class RenderBlockersTests(ITestOutputHelper output) : RenderChangelogTest
 			};
 
 			// Act
-			var result = await Service.RenderChangelogs(_collector, input, TestContext.Current.CancellationToken);
+			var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
 			// Assert
 			result.Should().BeTrue();
-			_collector.Errors.Should().Be(0);
-			_collector.Warnings.Should().BeGreaterThan(0);
-			_collector.Diagnostics.Should().Contain(d =>
+			Collector.Errors.Should().Be(0);
+			Collector.Warnings.Should().BeGreaterThan(0);
+			Collector.Diagnostics.Should().Contain(d =>
 				d.Severity == Severity.Warning &&
 				d.Message.Contains("Blocked feature by type") &&
 				d.Message.Contains("render_blockers") &&
 				d.Message.Contains("product 'elasticsearch'") &&
 				d.Message.Contains("type 'feature'"));
 
-			var indexFile = _fileSystem.Path.Combine(outputDir, "9.2.0", "index.md");
-			_fileSystem.File.Exists(indexFile).Should().BeTrue();
+			var indexFile = FileSystem.Path.Combine(outputDir, "9.2.0", "index.md");
+			FileSystem.File.Exists(indexFile).Should().BeTrue();
 
-			var indexContent = await _fileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
+			var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
 			// Blocked entry should be commented out with % prefix
 			indexContent.Should().Contain("% * Blocked feature by type");
 			// Visible entry should not be commented
@@ -488,7 +488,7 @@ public class RenderBlockersTests(ITestOutputHelper output) : RenderChangelogTest
 		}
 		finally
 		{
-			_fileSystem.Directory.SetCurrentDirectory(originalDir);
+			FileSystem.Directory.SetCurrentDirectory(originalDir);
 		}
 	}
 
@@ -496,8 +496,8 @@ public class RenderBlockersTests(ITestOutputHelper output) : RenderChangelogTest
 	public async Task RenderChangelogs_WithRenderBlockers_AreasAndTypes_CommentsOutMatchingEntries()
 	{
 		// Arrange
-		var changelogDir = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		_fileSystem.Directory.CreateDirectory(changelogDir);
+		var changelogDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(changelogDir);
 
 		// Create changelog that should be blocked by area (elasticsearch + search area)
 		// language=yaml
@@ -542,18 +542,18 @@ public class RenderBlockersTests(ITestOutputHelper output) : RenderChangelogTest
 			description: This should be visible
 			""";
 
-		var changelogFile1 = _fileSystem.Path.Combine(changelogDir, "1755268130-area-blocked.yaml");
-		var changelogFile2 = _fileSystem.Path.Combine(changelogDir, "1755268140-type-blocked.yaml");
-		var changelogFile3 = _fileSystem.Path.Combine(changelogDir, "1755268150-visible.yaml");
-		await _fileSystem.File.WriteAllTextAsync(changelogFile1, changelog1, TestContext.Current.CancellationToken);
-		await _fileSystem.File.WriteAllTextAsync(changelogFile2, changelog2, TestContext.Current.CancellationToken);
-		await _fileSystem.File.WriteAllTextAsync(changelogFile3, changelog3, TestContext.Current.CancellationToken);
+		var changelogFile1 = FileSystem.Path.Combine(changelogDir, "1755268130-area-blocked.yaml");
+		var changelogFile2 = FileSystem.Path.Combine(changelogDir, "1755268140-type-blocked.yaml");
+		var changelogFile3 = FileSystem.Path.Combine(changelogDir, "1755268150-visible.yaml");
+		await FileSystem.File.WriteAllTextAsync(changelogFile1, changelog1, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(changelogFile2, changelog2, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(changelogFile3, changelog3, TestContext.Current.CancellationToken);
 
 		// Create config file with render_blockers blocking both areas and types
-		var configDir = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		var docsDir = _fileSystem.Path.Combine(configDir, "docs");
-		_fileSystem.Directory.CreateDirectory(docsDir);
-		var configPath = _fileSystem.Path.Combine(docsDir, "changelog.yml");
+		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		FileSystem.Directory.CreateDirectory(docsDir);
+		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
 		// language=yaml
 		var configContent =
 			"""
@@ -570,13 +570,13 @@ public class RenderBlockersTests(ITestOutputHelper output) : RenderChangelogTest
 			    types:
 			      - enhancement
 			""";
-		await _fileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
 		// Create bundle file
-		var bundleDir = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		_fileSystem.Directory.CreateDirectory(bundleDir);
+		var bundleDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(bundleDir);
 
-		var bundleFile = _fileSystem.Path.Combine(bundleDir, "bundle.yaml");
+		var bundleFile = FileSystem.Path.Combine(bundleDir, "bundle.yaml");
 		// language=yaml
 		var bundleContent =
 			$"""
@@ -594,15 +594,15 @@ public class RenderBlockersTests(ITestOutputHelper output) : RenderChangelogTest
 			      name: 1755268150-visible.yaml
 			      checksum: {ComputeSha1(changelog3)}
 			""";
-		await _fileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		// Set current directory to where config file is located so it can be found
-		var originalDir = _fileSystem.Directory.GetCurrentDirectory();
+		var originalDir = FileSystem.Directory.GetCurrentDirectory();
 		try
 		{
-			_fileSystem.Directory.SetCurrentDirectory(configDir);
+			FileSystem.Directory.SetCurrentDirectory(configDir);
 
-			var outputDir = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+			var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 
 			var input = new ChangelogRenderInput
 			{
@@ -612,17 +612,17 @@ public class RenderBlockersTests(ITestOutputHelper output) : RenderChangelogTest
 			};
 
 			// Act
-			var result = await Service.RenderChangelogs(_collector, input, TestContext.Current.CancellationToken);
+			var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
 			// Assert
 			result.Should().BeTrue();
-			_collector.Errors.Should().Be(0);
-			_collector.Warnings.Should().BeGreaterThan(0);
+			Collector.Errors.Should().Be(0);
+			Collector.Warnings.Should().BeGreaterThan(0);
 
-			var indexFile = _fileSystem.Path.Combine(outputDir, "9.2.0", "index.md");
-			_fileSystem.File.Exists(indexFile).Should().BeTrue();
+			var indexFile = FileSystem.Path.Combine(outputDir, "9.2.0", "index.md");
+			FileSystem.File.Exists(indexFile).Should().BeTrue();
 
-			var indexContent = await _fileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
+			var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
 			// Both blocked entries should be commented out
 			indexContent.Should().Contain("% * Blocked by area");
 			indexContent.Should().Contain("% * Blocked by type");
@@ -632,7 +632,7 @@ public class RenderBlockersTests(ITestOutputHelper output) : RenderChangelogTest
 		}
 		finally
 		{
-			_fileSystem.Directory.SetCurrentDirectory(originalDir);
+			FileSystem.Directory.SetCurrentDirectory(originalDir);
 		}
 	}
 
@@ -640,8 +640,8 @@ public class RenderBlockersTests(ITestOutputHelper output) : RenderChangelogTest
 	public async Task RenderChangelogs_WithRenderBlockers_UsesBundleProductsNotEntryProducts()
 	{
 		// Arrange
-		var changelogDir = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		_fileSystem.Directory.CreateDirectory(changelogDir);
+		var changelogDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(changelogDir);
 
 		// Create changelog with elasticsearch product and search area
 		// But bundle has kibana product - should NOT be blocked because render_blockers matches against bundle products
@@ -659,14 +659,14 @@ public class RenderBlockersTests(ITestOutputHelper output) : RenderChangelogTest
 			description: This should NOT be blocked because bundle product is kibana
 			""";
 
-		var changelogFile1 = _fileSystem.Path.Combine(changelogDir, "1755268130-test.yaml");
-		await _fileSystem.File.WriteAllTextAsync(changelogFile1, changelog1, TestContext.Current.CancellationToken);
+		var changelogFile1 = FileSystem.Path.Combine(changelogDir, "1755268130-test.yaml");
+		await FileSystem.File.WriteAllTextAsync(changelogFile1, changelog1, TestContext.Current.CancellationToken);
 
 		// Create config file with render_blockers blocking elasticsearch
-		var configDir = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		var docsDir = _fileSystem.Path.Combine(configDir, "docs");
-		_fileSystem.Directory.CreateDirectory(docsDir);
-		var configPath = _fileSystem.Path.Combine(docsDir, "changelog.yml");
+		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		FileSystem.Directory.CreateDirectory(docsDir);
+		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
 		// language=yaml
 		var configContent =
 			"""
@@ -680,13 +680,13 @@ public class RenderBlockersTests(ITestOutputHelper output) : RenderChangelogTest
 			    areas:
 			      - search
 			""";
-		await _fileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
 		// Create bundle file with kibana product (not elasticsearch)
-		var bundleDir = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		_fileSystem.Directory.CreateDirectory(bundleDir);
+		var bundleDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(bundleDir);
 
-		var bundleFile = _fileSystem.Path.Combine(bundleDir, "bundle.yaml");
+		var bundleFile = FileSystem.Path.Combine(bundleDir, "bundle.yaml");
 		// language=yaml
 		var bundleContent =
 			$"""
@@ -698,15 +698,15 @@ public class RenderBlockersTests(ITestOutputHelper output) : RenderChangelogTest
 			      name: 1755268130-test.yaml
 			      checksum: {ComputeSha1(changelog1)}
 			""";
-		await _fileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		// Set current directory to where config file is located so it can be found
-		var originalDir = _fileSystem.Directory.GetCurrentDirectory();
+		var originalDir = FileSystem.Directory.GetCurrentDirectory();
 		try
 		{
-			_fileSystem.Directory.SetCurrentDirectory(configDir);
+			FileSystem.Directory.SetCurrentDirectory(configDir);
 
-			var outputDir = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+			var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 
 			var input = new ChangelogRenderInput
 			{
@@ -716,25 +716,25 @@ public class RenderBlockersTests(ITestOutputHelper output) : RenderChangelogTest
 			};
 
 			// Act
-			var result = await Service.RenderChangelogs(_collector, input, TestContext.Current.CancellationToken);
+			var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
 			// Assert
 			result.Should().BeTrue();
-			_collector.Errors.Should().Be(0);
+			Collector.Errors.Should().Be(0);
 			// Should have no warnings because entry is NOT blocked (bundle product is kibana, not elasticsearch)
-			_collector.Warnings.Should().Be(0);
+			Collector.Warnings.Should().Be(0);
 
-			var indexFile = _fileSystem.Path.Combine(outputDir, "9.2.0", "index.md");
-			_fileSystem.File.Exists(indexFile).Should().BeTrue();
+			var indexFile = FileSystem.Path.Combine(outputDir, "9.2.0", "index.md");
+			FileSystem.File.Exists(indexFile).Should().BeTrue();
 
-			var indexContent = await _fileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
+			var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
 			// Entry should NOT be commented out because bundle product is kibana, not elasticsearch
 			indexContent.Should().Contain("* Entry with elasticsearch but bundle has kibana");
 			indexContent.Should().NotContain("% * Entry with elasticsearch but bundle has kibana");
 		}
 		finally
 		{
-			_fileSystem.Directory.SetCurrentDirectory(originalDir);
+			FileSystem.Directory.SetCurrentDirectory(originalDir);
 		}
 	}
 }

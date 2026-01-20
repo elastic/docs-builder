@@ -12,17 +12,17 @@ public abstract class CreateChangelogTestBase(ITestOutputHelper output) : Change
 	protected IGitHubPrService MockGitHubService { get; } = A.Fake<IGitHubPrService>();
 
 	protected ChangelogService CreateService() =>
-		new(_loggerFactory, _configurationContext, MockGitHubService, _fileSystem);
+		new(LoggerFactory, ConfigurationContext, MockGitHubService, FileSystem);
 
 	protected async Task<string> CreateConfigDirectory(string configContent)
 	{
-		var configDir = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		_fileSystem.Directory.CreateDirectory(configDir);
-		var configPath = _fileSystem.Path.Combine(configDir, "changelog.yml");
-		await _fileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(configDir);
+		var configPath = FileSystem.Path.Combine(configDir, "changelog.yml");
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 		return configPath;
 	}
 
 	protected string CreateOutputDirectory() =>
-		_fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 }

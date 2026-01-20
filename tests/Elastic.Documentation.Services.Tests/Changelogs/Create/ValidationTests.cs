@@ -53,12 +53,12 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 		};
 
 		// Act
-		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
 		result.Should().BeFalse();
-		_collector.Errors.Should().BeGreaterThan(0);
-		_collector.Diagnostics.Should().Contain(d => d.Message.Contains("Cannot derive type from PR"));
+		Collector.Errors.Should().BeGreaterThan(0);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Cannot derive type from PR"));
 	}
 
 	[Fact]
@@ -76,12 +76,12 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 		};
 
 		// Act
-		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
 		result.Should().BeFalse();
-		_collector.Errors.Should().BeGreaterThan(0);
-		_collector.Diagnostics.Should().Contain(d => d.Message.Contains("is not in the list of available products"));
+		Collector.Errors.Should().BeGreaterThan(0);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("is not in the list of available products"));
 	}
 
 	[Fact]
@@ -99,12 +99,12 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 		};
 
 		// Act
-		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
 		result.Should().BeFalse();
-		_collector.Errors.Should().BeGreaterThan(0);
-		_collector.Diagnostics.Should().Contain(d => d.Message.Contains("is not in the list of available types"));
+		Collector.Errors.Should().BeGreaterThan(0);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("is not in the list of available types"));
 	}
 
 	[Fact]
@@ -139,12 +139,12 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 		};
 
 		// Act
-		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
 		result.Should().BeFalse();
-		_collector.Errors.Should().BeGreaterThan(0);
-		_collector.Diagnostics.Should().Contain(d =>
+		Collector.Errors.Should().BeGreaterThan(0);
+		Collector.Diagnostics.Should().Contain(d =>
 			d.Message.Contains("Product 'invalid-product' in add_blockers") && d.Message.Contains("is not in the list of available products"));
 	}
 
@@ -182,16 +182,16 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 		};
 
 		// Act
-		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
 		if (!result)
 		{
-			foreach (var diagnostic in _collector.Diagnostics)
-				_output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
+			foreach (var diagnostic in Collector.Diagnostics)
+				Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
 		}
 
 		result.Should().BeTrue();
-		_collector.Errors.Should().Be(0);
+		Collector.Errors.Should().Be(0);
 	}
 }

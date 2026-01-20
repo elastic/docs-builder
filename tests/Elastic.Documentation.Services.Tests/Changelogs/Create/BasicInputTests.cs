@@ -25,26 +25,26 @@ public class BasicInputTests(ITestOutputHelper output) : CreateChangelogTestBase
 		};
 
 		// Act
-		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
 		if (!result)
 		{
-			foreach (var diagnostic in _collector.Diagnostics)
-				_output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
+			foreach (var diagnostic in Collector.Diagnostics)
+				Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
 		}
 
 		result.Should().BeTrue();
-		_collector.Errors.Should().Be(0);
+		Collector.Errors.Should().Be(0);
 
 		// Note: ChangelogService uses real FileSystem, so we need to check the actual file system
-		var outputDir = input.Output ?? _fileSystem.Directory.GetCurrentDirectory();
-		if (!_fileSystem.Directory.Exists(outputDir))
-			_fileSystem.Directory.CreateDirectory(outputDir);
-		var files = _fileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputDir = input.Output ?? FileSystem.Directory.GetCurrentDirectory();
+		if (!FileSystem.Directory.Exists(outputDir))
+			FileSystem.Directory.CreateDirectory(outputDir);
+		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await _fileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
 		yamlContent.Should().Contain("title: Add new search feature");
 		yamlContent.Should().Contain("type: feature");
 		yamlContent.Should().Contain("product: elasticsearch");
@@ -72,24 +72,24 @@ public class BasicInputTests(ITestOutputHelper output) : CreateChangelogTestBase
 		};
 
 		// Act
-		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
 		if (!result)
 		{
-			foreach (var diagnostic in _collector.Diagnostics)
-				_output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
+			foreach (var diagnostic in Collector.Diagnostics)
+				Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
 		}
 
 		result.Should().BeTrue();
-		_collector.Errors.Should().Be(0);
+		Collector.Errors.Should().Be(0);
 
 		// Note: ChangelogService uses real FileSystem, so we need to check the actual file system
-		var outputDir = input.Output ?? _fileSystem.Directory.GetCurrentDirectory();
-		if (!_fileSystem.Directory.Exists(outputDir))
-			_fileSystem.Directory.CreateDirectory(outputDir);
-		var files = _fileSystem.Directory.GetFiles(outputDir, "*.yaml");
-		var yamlContent = await _fileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var outputDir = input.Output ?? FileSystem.Directory.GetCurrentDirectory();
+		if (!FileSystem.Directory.Exists(outputDir))
+			FileSystem.Directory.CreateDirectory(outputDir);
+		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
 		yamlContent.Should().Contain("products:");
 		// Should contain both products
 		var elasticsearchIndex = yamlContent.IndexOf("product: elasticsearch", StringComparison.Ordinal);
@@ -116,24 +116,24 @@ public class BasicInputTests(ITestOutputHelper output) : CreateChangelogTestBase
 		};
 
 		// Act
-		var result = await service.CreateChangelog(_collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
 		if (!result)
 		{
-			foreach (var diagnostic in _collector.Diagnostics)
-				_output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
+			foreach (var diagnostic in Collector.Diagnostics)
+				Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
 		}
 
 		result.Should().BeTrue();
-		_collector.Errors.Should().Be(0);
+		Collector.Errors.Should().Be(0);
 
 		// Note: ChangelogService uses real FileSystem, so we need to check the actual file system
-		var outputDir = input.Output ?? _fileSystem.Directory.GetCurrentDirectory();
-		if (!_fileSystem.Directory.Exists(outputDir))
-			_fileSystem.Directory.CreateDirectory(outputDir);
-		var files = _fileSystem.Directory.GetFiles(outputDir, "*.yaml");
-		var yamlContent = await _fileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var outputDir = input.Output ?? FileSystem.Directory.GetCurrentDirectory();
+		if (!FileSystem.Directory.Exists(outputDir))
+			FileSystem.Directory.CreateDirectory(outputDir);
+		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
 		yamlContent.Should().Contain("type: breaking-change");
 		yamlContent.Should().Contain("subtype: api");
 		yamlContent.Should().Contain("impact: API clients will need to update");

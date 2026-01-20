@@ -17,18 +17,18 @@ namespace Elastic.Documentation.Services.Tests.Changelogs;
 
 public abstract class ChangelogTestBase : IDisposable
 {
-	protected readonly MockFileSystem _fileSystem;
-	protected readonly IConfigurationContext _configurationContext;
-	protected readonly TestDiagnosticsCollector _collector;
-	protected readonly ILoggerFactory _loggerFactory;
-	protected readonly ITestOutputHelper _output;
+	protected MockFileSystem FileSystem { get; }
+	protected IConfigurationContext ConfigurationContext { get; }
+	protected TestDiagnosticsCollector Collector { get; }
+	protected ILoggerFactory LoggerFactory { get; }
+	protected ITestOutputHelper Output { get; }
 
 	protected ChangelogTestBase(ITestOutputHelper output)
 	{
-		_output = output;
-		_fileSystem = new MockFileSystem();
-		_collector = new TestDiagnosticsCollector(output);
-		_loggerFactory = new TestLoggerFactory(output);
+		Output = output;
+		FileSystem = new MockFileSystem();
+		Collector = new TestDiagnosticsCollector(output);
+		LoggerFactory = new TestLoggerFactory(output);
 
 		var versionsConfiguration = new VersionsConfiguration
 		{
@@ -85,13 +85,13 @@ public abstract class ChangelogTestBase : IDisposable
 			ProductDisplayNames = products.ToDictionary(p => p.Key, p => p.Value.DisplayName).ToFrozenDictionary()
 		};
 
-		_configurationContext = new ConfigurationContext
+		ConfigurationContext = new ConfigurationContext
 		{
 			Endpoints = new DocumentationEndpoints
 			{
 				Elasticsearch = ElasticsearchEndpoint.Default,
 			},
-			ConfigurationFileProvider = new ConfigurationFileProvider(NullLoggerFactory.Instance, _fileSystem),
+			ConfigurationFileProvider = new ConfigurationFileProvider(NullLoggerFactory.Instance, FileSystem),
 			VersionsConfiguration = versionsConfiguration,
 			ProductsConfiguration = productsConfiguration,
 			SearchConfiguration = new SearchConfiguration { Synonyms = new Dictionary<string, string[]>(), Rules = [], DiminishTerms = [] },
@@ -101,7 +101,7 @@ public abstract class ChangelogTestBase : IDisposable
 
 	public void Dispose()
 	{
-		_loggerFactory.Dispose();
+		LoggerFactory.Dispose();
 		GC.SuppressFinalize(this);
 	}
 
