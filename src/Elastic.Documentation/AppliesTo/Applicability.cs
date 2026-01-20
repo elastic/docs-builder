@@ -254,7 +254,7 @@ public record Applicability : IComparable<Applicability>, IComparable
 		}
 
 		var lookup = tokens[0].ToLowerInvariant();
-		var lifecycle = lookup switch
+		ProductLifecycle? lifecycle = lookup switch
 		{
 			"preview" => ProductLifecycle.TechnicalPreview,
 			"tech-preview" => ProductLifecycle.TechnicalPreview,
@@ -270,8 +270,14 @@ public record Applicability : IComparable<Applicability>, IComparable
 			"coming" => ProductLifecycle.Planned,
 			"planned" => ProductLifecycle.Planned,
 			"discontinued" => ProductLifecycle.Discontinued,
-			_ => throw new Exception($"Unknown product lifecycle: {tokens[0]}")
+			_ => null
 		};
+		if (lifecycle is null)
+		{
+			diagnostics.Add((Severity.Error, $"Unknown product lifecycle: '{tokens[0]}'. Valid lifecycles are: ga, preview, tech-preview, beta, deprecated, removed."));
+			availability = null;
+			return false;
+		}
 		var deprecatedLifecycles = new[]
 		{
 			ProductLifecycle.Development,
@@ -280,7 +286,7 @@ public record Applicability : IComparable<Applicability>, IComparable
 		};
 
 		// TODO emit as error when all docs have been updated
-		if (deprecatedLifecycles.Contains(lifecycle))
+		if (deprecatedLifecycles.Contains(lifecycle.Value))
 			diagnostics.Add((Severity.Hint, $"The '{lookup}' lifecycle is deprecated and will be removed in a future release."));
 
 		var version = tokens.Length < 2
@@ -292,7 +298,7 @@ public record Applicability : IComparable<Applicability>, IComparable
 				"" => AllVersionsSpec.Instance,
 				var t => VersionSpec.TryParse(t, out var v) ? v : null
 			};
-		availability = new Applicability { Version = version, Lifecycle = lifecycle };
+		availability = new Applicability { Version = version, Lifecycle = lifecycle.Value };
 		return true;
 	}
 
