@@ -6,10 +6,14 @@ using System.IO.Abstractions;
 using System.Linq;
 using ConsoleAppFramework;
 using Documentation.Builder.Arguments;
+using Elastic.Changelog;
+using Elastic.Changelog.Bundling;
+using Elastic.Changelog.Creation;
+using Elastic.Changelog.GitHub;
+using Elastic.Changelog.Rendering;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;
-using Elastic.Documentation.Services.Changelog;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Builder.Commands;
@@ -81,7 +85,7 @@ internal sealed class ChangelogCommand(
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
 		IGitHubPrService githubPrService = new GitHubPrService(logFactory);
-		var service = new ChangelogService(logFactory, configurationContext, githubPrService);
+		var service = new ChangelogCreationService(logFactory, configurationContext, githubPrService);
 
 		// Parse PRs: handle both comma-separated values and file paths
 		string[]? parsedPrs = null;
@@ -181,7 +185,7 @@ internal sealed class ChangelogCommand(
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var service = new ChangelogService(logFactory, configurationContext, null);
+		var service = new ChangelogBundlingService(logFactory);
 
 		// Process each --prs occurrence: each can be comma-separated PRs or a file path
 		var allPrs = new List<string>();
@@ -358,7 +362,7 @@ internal sealed class ChangelogCommand(
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var service = new ChangelogService(logFactory, configurationContext, null);
+		var service = new ChangelogRenderingService(logFactory, configurationContext);
 
 		// Process each --hide-features occurrence: each can be comma-separated feature IDs or a file path
 		var allFeatureIds = new List<string>();
