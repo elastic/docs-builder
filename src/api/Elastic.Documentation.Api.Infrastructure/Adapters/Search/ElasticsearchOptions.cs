@@ -19,7 +19,7 @@ public class ElasticsearchOptions
 
 		Url = GetEnv("DOCUMENTATION_ELASTIC_URL", elasticUrlFromSecret);
 		ApiKey = GetEnv("DOCUMENTATION_ELASTIC_APIKEY", elasticApiKeyFromSecret);
-		IndexName = configuration["DOCUMENTATION_ELASTIC_INDEX"] ?? "documentation-latest";
+		IndexName = configuration["DOCUMENTATION_ELASTIC_INDEX"] ?? "semantic-docs-dev-latest";
 	}
 
 	private static string GetEnv(string name, string? defaultValue = null)
