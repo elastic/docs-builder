@@ -61,9 +61,9 @@ public class RenderBlockersTests(ITestOutputHelper output) : RenderChangelogTest
 		// language=yaml
 		var configContent =
 			"""
-			available_types:
-			  - feature
-			available_subtypes: []
+			pivot:
+			  types:
+			    feature:
 			available_lifecycles:
 			  - ga
 			render_blockers:
@@ -189,9 +189,9 @@ public class RenderBlockersTests(ITestOutputHelper output) : RenderChangelogTest
 		// language=yaml
 		var configContent =
 			"""
-			available_types:
-			  - feature
-			available_subtypes: []
+			pivot:
+			  types:
+			    feature:
 			available_lifecycles:
 			  - ga
 			render_blockers:
@@ -296,9 +296,9 @@ public class RenderBlockersTests(ITestOutputHelper output) : RenderChangelogTest
 		// language=yaml
 		var configContent =
 			"""
-			available_types:
-			  - feature
-			available_subtypes: []
+			pivot:
+			  types:
+			    feature:
 			available_lifecycles:
 			  - ga
 			render_blockers:
@@ -414,10 +414,10 @@ public class RenderBlockersTests(ITestOutputHelper output) : RenderChangelogTest
 		// language=yaml
 		var configContent =
 			"""
-			available_types:
-			  - feature
-			  - enhancement
-			available_subtypes: []
+			pivot:
+			  types:
+			    feature:
+			    enhancement:
 			available_lifecycles:
 			  - ga
 			render_blockers:
@@ -558,10 +558,10 @@ public class RenderBlockersTests(ITestOutputHelper output) : RenderChangelogTest
 		// language=yaml
 		var configContent =
 			"""
-			available_types:
-			  - feature
-			  - enhancement
-			available_subtypes: []
+			pivot:
+			  types:
+			    feature:
+			    enhancement:
 			available_lifecycles:
 			  - ga
 			render_blockers:
@@ -671,9 +671,9 @@ public class RenderBlockersTests(ITestOutputHelper output) : RenderChangelogTest
 		// language=yaml
 		var configContent =
 			"""
-			available_types:
-			  - feature
-			available_subtypes: []
+			pivot:
+			  types:
+			    feature:
 			available_lifecycles:
 			  - ga
 			render_blockers:

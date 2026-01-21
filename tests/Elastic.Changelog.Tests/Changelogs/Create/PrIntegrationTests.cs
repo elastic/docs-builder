@@ -31,16 +31,14 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		// language=yaml
 		var configContent =
 			"""
-			available_types:
-			  - feature
-			  - bug-fix
-			available_subtypes: []
+			pivot:
+			  types:
+			    feature: "type:feature"
+			    bug-fix:
 			available_lifecycles:
 			  - preview
 			  - beta
 			  - ga
-			label_to_type:
-			  "type:feature": feature
 			""";
 		var configPath = await CreateConfigDirectory(configContent);
 
@@ -101,16 +99,14 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		// language=yaml
 		var configContent =
 			"""
-			available_types:
-			  - feature
-			  - bug-fix
-			available_subtypes: []
+			pivot:
+			  types:
+			    feature:
+			    bug-fix: "type:bug"
 			available_lifecycles:
 			  - preview
 			  - beta
 			  - ga
-			label_to_type:
-			  "type:bug": bug-fix
 			""";
 		var configPath = await CreateConfigDirectory(configContent);
 
@@ -225,17 +221,14 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		// language=yaml
 		var configContent =
 			"""
-			available_types:
-			  - feature
-			  - bug-fix
-			available_subtypes: []
+			pivot:
+			  types:
+			    feature: "type:feature"
+			    bug-fix: "type:bug"
 			available_lifecycles:
 			  - preview
 			  - beta
 			  - ga
-			label_to_type:
-			  "type:feature": feature
-			  "type:bug": bug-fix
 			""";
 		var configPath = await CreateConfigDirectory(configContent);
 
@@ -335,19 +328,15 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		// language=yaml
 		var configContent =
 			"""
-			available_types:
-			  - feature
-			  - bug-fix
-			  - enhancement
-			available_subtypes: []
+			pivot:
+			  types:
+			    feature: "type:feature"
+			    bug-fix: "type:bug"
+			    enhancement: "type:enhancement"
 			available_lifecycles:
 			  - preview
 			  - beta
 			  - ga
-			label_to_type:
-			  "type:feature": feature
-			  "type:bug": bug-fix
-			  "type:enhancement": enhancement
 			""";
 		var configPath = await CreateConfigDirectory(configContent);
 
@@ -443,17 +432,14 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		// language=yaml
 		var configContent =
 			"""
-			available_types:
-			  - feature
-			  - bug-fix
-			available_subtypes: []
+			pivot:
+			  types:
+			    feature: "type:feature"
+			    bug-fix: "type:bug"
 			available_lifecycles:
 			  - preview
 			  - beta
 			  - ga
-			label_to_type:
-			  "type:feature": feature
-			  "type:bug": bug-fix
 			""";
 		var configPath = await CreateConfigDirectory(configContent);
 

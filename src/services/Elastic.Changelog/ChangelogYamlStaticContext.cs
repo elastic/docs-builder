@@ -12,6 +12,8 @@ namespace Elastic.Changelog;
 [YamlSerializable(typeof(ChangelogData))]
 [YamlSerializable(typeof(ProductInfo))]
 [YamlSerializable(typeof(ChangelogConfiguration))]
+[YamlSerializable(typeof(PivotConfiguration))]
+[YamlSerializable(typeof(TypeEntry))]
 [YamlSerializable(typeof(RenderBlockersEntry))]
 [YamlSerializable(typeof(BundledChangelogData))]
 [YamlSerializable(typeof(BundledProduct))]
