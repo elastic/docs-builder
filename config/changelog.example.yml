@@ -72,6 +72,20 @@ available_products:
   # - cloud-enterprise
   # Add more products as needed
 
+# Product-specific label blockers (optional)
+# Maps product IDs to lists of pull request labels that prevent changelog creation for that product
+# If you run the changelog add command with the --prs option and a PR has any of these labels, the changelog is not created
+# Product IDs can be comma-separated to share the same list of labels across multiple products
+add_blockers:
+  # Example: Skip changelog creation for elasticsearch product when PR has these labels
+  # elasticsearch:
+  #   - ">non-issue"
+  #   - ">test"
+  #   - ">refactoring"
+  # Example: Share the same blockers across multiple products using comma-separated product IDs
+  # elasticsearch, cloud-serverless:
+  #   - ">non-issue"
+
 # Render blockers (optional - used by the "docs-builder changelog render" command)
 # Changelogs matching the specified products and areas/types will be commented out in rendered output files
 # Dictionary key can be a single product ID or comma-separated product IDs (e.g., "elasticsearch, cloud-serverless")
@@ -88,18 +102,3 @@ render_blockers:
   elasticsearch:
     areas:
       - Security
-
-# Product-specific label blockers (optional)
-# Maps product IDs to lists of pull request labels that prevent changelog creation for that product
-# If you run the changelog add command with the --prs option and a PR has any of these labels, the changelog is not created
-# Product IDs can be comma-separated to share the same list of labels across multiple products
-add_blockers:
-  # Example: Skip changelog creation for elasticsearch product when PR has these labels
-  # elasticsearch:
-  #   - ">non-issue"
-  #   - ">test"
-  #   - ">refactoring"
-  # Example: Share the same blockers across multiple products using comma-separated product IDs
-  # elasticsearch, cloud-serverless:
-  #   - ">non-issue"
-
