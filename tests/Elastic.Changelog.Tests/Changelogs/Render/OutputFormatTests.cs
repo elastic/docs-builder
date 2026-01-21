@@ -153,7 +153,7 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
 			Output = outputDir,
 			Title = "9.2.0",
-			FileType = "asciidoc"
+			FileType = ChangelogFileType.Asciidoc
 		};
 
 		// Act
@@ -267,7 +267,7 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
 			Output = outputDir,
 			Title = "9.2.0",
-			FileType = "asciidoc"
+			FileType = ChangelogFileType.Asciidoc
 		};
 
 		// Act

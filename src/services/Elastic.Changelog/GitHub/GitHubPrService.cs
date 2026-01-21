@@ -46,9 +46,7 @@ public partial class GitHubPrService(ILoggerFactory loggerFactory) : IGitHubPrSe
 			var githubToken = Environment.GetEnvironmentVariable("GITHUB_TOKEN");
 			using var request = new HttpRequestMessage(HttpMethod.Get, $"https://api.github.com/repos/{parsedOwner}/{parsedRepo}/pulls/{prNumber}");
 			if (!string.IsNullOrEmpty(githubToken))
-			{
 				request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", githubToken);
-			}
 
 			_logger.LogDebug("Fetching PR info from: {ApiUrl}", request.RequestUri);
 
@@ -106,9 +104,7 @@ public partial class GitHubPrService(ILoggerFactory loggerFactory) : IGitHubPrSe
 				var owner = segments[1].TrimEnd('/');
 				var repo = segments[2].TrimEnd('/');
 				if (int.TryParse(segments[4], out var prNum))
-				{
 					return (owner, repo, prNum);
-				}
 			}
 		}
 
@@ -122,18 +118,14 @@ public partial class GitHubPrService(ILoggerFactory loggerFactory) : IGitHubPrSe
 			{
 				var repoParts = repoPart.Split('/');
 				if (repoParts.Length == 2)
-				{
 					return (repoParts[0], repoParts[1], prNum);
-				}
 			}
 		}
 
 		// Handle just a PR number when owner/repo are provided
 		if (int.TryParse(prUrl, out var prNumber) &&
 			!string.IsNullOrWhiteSpace(defaultOwner) && !string.IsNullOrWhiteSpace(defaultRepo))
-		{
 			return (defaultOwner, defaultRepo, prNumber);
-		}
 
 		return (null, null, null);
 	}

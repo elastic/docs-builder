@@ -27,9 +27,7 @@ public static partial class ChangelogTextUtilities
 			? char.ToUpperInvariant(text[0]).ToString()
 			: char.ToUpperInvariant(text[0]) + text[1..];
 		if (!result.EndsWith('.'))
-		{
 			result += ".";
-		}
 		return result;
 	}
 
@@ -144,9 +142,7 @@ public static partial class ChangelogTextUtilities
 			if (segments.Length >= 5 &&
 				segments[3].Equals("pull/", StringComparison.OrdinalIgnoreCase) &&
 				int.TryParse(segments[4].TrimEnd('/'), out var prNum))
-			{
 				return prNum;
-			}
 		}
 
 		// Handle short format: owner/repo#123
@@ -155,17 +151,13 @@ public static partial class ChangelogTextUtilities
 		{
 			var prPart = prUrl[(hashIndex + 1)..];
 			if (int.TryParse(prPart, out var prNum))
-			{
 				return prNum;
-			}
 		}
 
 		// Handle just a PR number when owner/repo are provided
 		if (int.TryParse(prUrl, out var prNumber) &&
 			!string.IsNullOrWhiteSpace(defaultOwner) && !string.IsNullOrWhiteSpace(defaultRepo))
-		{
 			return prNumber;
-		}
 
 		return null;
 	}
@@ -182,9 +174,7 @@ public static partial class ChangelogTextUtilities
 		// Format as markdown link
 		string link;
 		if (pr.StartsWith("http", StringComparison.OrdinalIgnoreCase))
-		{
 			link = $"[#{prNumber}]({pr})";
-		}
 		else
 		{
 			var url = $"https://github.com/elastic/{repo}/pull/{prNumber}";
@@ -193,9 +183,7 @@ public static partial class ChangelogTextUtilities
 
 		// Comment out link if hiding private links
 		if (hidePrivateLinks)
-		{
 			return $"% {link}";
-		}
 
 		return link;
 	}
@@ -212,9 +200,7 @@ public static partial class ChangelogTextUtilities
 		// Format as markdown link
 		string link;
 		if (issue.StartsWith("http", StringComparison.OrdinalIgnoreCase))
-		{
 			link = $"[#{issueNumber}]({issue})";
-		}
 		else
 		{
 			var url = $"https://github.com/elastic/{repo}/issues/{issueNumber}";
@@ -223,9 +209,7 @@ public static partial class ChangelogTextUtilities
 
 		// Comment out link if hiding private links
 		if (hidePrivateLinks)
-		{
 			return $"% {link}";
-		}
 
 		return link;
 	}
@@ -246,9 +230,7 @@ public static partial class ChangelogTextUtilities
 
 		// Comment out link if hiding private links
 		if (hidePrivateLinks)
-		{
 			return $"// {link}";
-		}
 
 		return link;
 	}
@@ -269,9 +251,7 @@ public static partial class ChangelogTextUtilities
 
 		// Comment out link if hiding private links
 		if (hidePrivateLinks)
-		{
 			return $"// {link}";
-		}
 
 		return link;
 	}
@@ -282,22 +262,16 @@ public static partial class ChangelogTextUtilities
 	public static string ConvertRepoToAttributeName(string repo, string suffix)
 	{
 		if (string.IsNullOrWhiteSpace(repo))
-		{
 			return $"repo-{suffix}";
-		}
 
 		// Handle common repo name patterns
 		if (repo.Equals("elasticsearch", StringComparison.OrdinalIgnoreCase))
-		{
 			return $"es-{suffix}";
-		}
 
 		// Remove "elastic-" prefix if present
 		var normalized = repo;
 		if (normalized.StartsWith("elastic-", StringComparison.OrdinalIgnoreCase))
-		{
 			normalized = normalized.Substring("elastic-".Length);
-		}
 
 		// Return normalized name with suffix
 		return $"{normalized}-{suffix}";
