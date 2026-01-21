@@ -13,13 +13,13 @@ The changelogs use the following schema:
 Some of the fields in the schema accept only a specific set of values:
 
 - Product values must exist in [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml). Invalid products will cause the `docs-builder changelog add` command to fail.
-- Type, subtype, and lifecycle values must match the available values defined in [ChangelogConfiguration.cs](https://github.com/elastic/docs-builder/blob/main/src/services/Elastic.Documentation.Services/Changelog/ChangelogConfiguration.cs). Invalid values will cause the `docs-builder changelog add` command to fail.
+- Type, subtype, and lifecycle values must match the available values defined in [ChangelogConfiguration.cs](https://github.com/elastic/docs-builder/blob/main/src/services/Elastic.Changelog/Configuration/ChangelogConfiguration.cs). Invalid values will cause the `docs-builder changelog add` command to fail.
 :::
 
 To use the `docs-builder changelog` commands in your development workflow:
 
 1. Ensure that your products exist in [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml).
-1. Add labels to your GitHub pull requests to represent the types defined in [ChangelogConfiguration.cs](https://github.com/elastic/docs-builder/blob/main/src/services/Elastic.Documentation.Services/Changelog/ChangelogConfiguration.cs). For example, `>bug` and `>enhancement` labels.
+1. Add labels to your GitHub pull requests to represent the types defined in [ChangelogConfiguration.cs](https://github.com/elastic/docs-builder/blob/main/src/services/Elastic.Changelog/Configuration/ChangelogConfiguration.cs). For example, `>bug` and `>enhancement` labels.
 1. Optional: Choose areas or components that your changes affect and add labels to your GitHub pull requests (such as `:Analytics/Aggregations`).
 1. Optional: Add labels to your GitHub pull requests to indicate that they are not notable and should not generate changelogs. For example, `non-issue` or `release_notes:skip`.
 1. [Configure changelog settings](#changelog-settings) to correctly interpret your PR labels.
@@ -214,7 +214,7 @@ docs-builder changelog add \
 ```
 
 1. This option is required only if you want to override what's derived from the PR title.
-2. The type values are defined in [ChangelogConfiguration.cs](https://github.com/elastic/docs-builder/blob/main/src/services/Elastic.Documentation.Services/Changelog/ChangelogConfiguration.cs).
+2. The type values are defined in [ChangelogConfiguration.cs](https://github.com/elastic/docs-builder/blob/main/src/services/Elastic.Changelog/Configuration/ChangelogConfiguration.cs).
 3. The product values are defined in [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml).
 4. The `--prs` value can be a full URL (such as `https://github.com/owner/repo/pull/123`), a short format (such as `owner/repo#123`), just a number (in which case you must also provide `--owner` and `--repo` options), or a path to a file containing newline-delimited PR URLs or numbers. Multiple PRs can be provided comma-separated, or you can specify a file path. You can also mix both formats by specifying `--prs` multiple times. One changelog file will be created for each PR.
 
