@@ -4,6 +4,7 @@
 
 using System.Globalization;
 using System.Text;
+using Elastic.Documentation.Changelog;
 
 namespace Elastic.Changelog.Rendering.Asciidoc;
 
