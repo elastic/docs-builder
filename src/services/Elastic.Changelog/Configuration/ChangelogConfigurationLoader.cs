@@ -68,9 +68,7 @@ public class ChangelogConfigurationLoader(
 							expandedBlockers[productKey] = mergedLabels;
 						}
 						else
-						{
 							expandedBlockers[productKey] = kvp.Value.ToList();
-						}
 					}
 				}
 			}
@@ -86,9 +84,7 @@ public class ChangelogConfigurationLoader(
 
 			// If available_types is not specified or empty, use defaults
 			if (config.AvailableTypes == null || config.AvailableTypes.Count == 0)
-			{
 				availableTypes = defaultConfig.AvailableTypes;
-			}
 			else
 			{
 				// Validate available_types - must be subset of defaults
@@ -102,9 +98,7 @@ public class ChangelogConfigurationLoader(
 
 			// If available_subtypes is not specified or empty, use defaults
 			if (config.AvailableSubtypes == null || config.AvailableSubtypes.Count == 0)
-			{
 				availableSubtypes = defaultConfig.AvailableSubtypes;
-			}
 			else
 			{
 				// Validate available_subtypes - must be subset of defaults
@@ -118,9 +112,7 @@ public class ChangelogConfigurationLoader(
 
 			// If available_lifecycles is not specified or empty, use defaults
 			if (config.AvailableLifecycles == null || config.AvailableLifecycles.Count == 0)
-			{
 				availableLifecycles = defaultConfig.AvailableLifecycles;
-			}
 			else
 			{
 				// Validate available_lifecycles - must be subset of defaults

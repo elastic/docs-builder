@@ -47,9 +47,7 @@ public class ChangelogCreationService(
 
 			// Handle multiple PRs if provided (more than one PR)
 			if (input.Prs != null && input.Prs.Length > 1)
-			{
 				return await CreateChangelogsForMultiplePrs(collector, input, config, ctx);
-			}
 
 			// Single PR or no PR - use existing logic
 			return await CreateSingleChangelog(collector, input, config, ctx);
@@ -244,16 +242,12 @@ public class ChangelogCreationService(
 					var prTitle = prInfo.Title;
 					// Strip prefix if requested
 					if (input.StripTitlePrefix)
-					{
 						prTitle = ChangelogTextUtilities.StripSquareBracketPrefix(prTitle);
-					}
 					input.Title = prTitle;
 					_logger.LogInformation("Using PR title: {Title}", input.Title);
 				}
 				else
-				{
 					_logger.LogDebug("Using explicitly provided title, ignoring PR title");
-				}
 
 				// Map labels to type if type was not explicitly provided
 				if (string.IsNullOrWhiteSpace(input.Type))
@@ -275,9 +269,7 @@ public class ChangelogCreationService(
 					_logger.LogInformation("Mapped PR labels to type: {Type}", input.Type);
 				}
 				else
-				{
 					_logger.LogDebug("Using explicitly provided type, ignoring PR labels");
-				}
 
 				// Map labels to areas if areas were not explicitly provided
 				if (input.Areas != null && input.Areas.Length == 0 && config.LabelToAreas != null)
@@ -290,9 +282,7 @@ public class ChangelogCreationService(
 					}
 				}
 				else if (input.Areas != null && input.Areas.Length > 0)
-				{
 					_logger.LogDebug("Using explicitly provided areas, ignoring PR labels");
-				}
 			}
 		}
 
@@ -301,9 +291,7 @@ public class ChangelogCreationService(
 		if (string.IsNullOrWhiteSpace(input.Title))
 		{
 			if (prFetchFailed)
-			{
 				collector.EmitWarning(string.Empty, "Title is missing. The changelog will be created with title commented out. Please manually update the title field.");
-			}
 			else
 			{
 				collector.EmitError(string.Empty, "Title is required. Provide --title or specify --prs to derive it from the PR.");
@@ -314,9 +302,7 @@ public class ChangelogCreationService(
 		if (string.IsNullOrWhiteSpace(input.Type))
 		{
 			if (prFetchFailed)
-			{
 				collector.EmitWarning(string.Empty, "Type is missing. The changelog will be created with type commented out. Please manually update the type field.");
-			}
 			else
 			{
 				collector.EmitError(string.Empty, "Type is required. Provide --type or specify --prs to derive it from PR labels (requires label_to_type mapping in changelog.yml).");
@@ -384,9 +370,7 @@ public class ChangelogCreationService(
 		// Determine output path
 		var outputDir = input.Output ?? _fileSystem.Directory.GetCurrentDirectory();
 		if (!_fileSystem.Directory.Exists(outputDir))
-		{
 			_ = _fileSystem.Directory.CreateDirectory(outputDir);
-		}
 
 		// Generate filename
 		string filename;
@@ -395,9 +379,7 @@ public class ChangelogCreationService(
 			// Use PR number as filename when --use-pr-number is specified
 			var prNumber = ChangelogTextUtilities.ExtractPrNumber(prUrl, input.Owner, input.Repo);
 			if (prNumber.HasValue)
-			{
 				filename = $"{prNumber.Value}.yaml";
-			}
 			else
 			{
 				// Fall back to timestamp-slug format if PR number extraction fails
@@ -477,13 +459,9 @@ public class ChangelogCreationService(
 			var commentedFields = new List<string>();
 
 			if (titleMissing)
-			{
 				commentedFields.Add("# title: # TODO: Add title");
-			}
 			if (typeMissing)
-			{
 				commentedFields.Add("# type: # TODO: Add type (e.g., feature, enhancement, bug-fix, breaking-change)");
-			}
 
 			// Find the first non-empty, non-comment line (start of actual YAML data)
 			var insertIndex = lines.FindIndex(line =>
@@ -581,21 +559,15 @@ public class ChangelogCreationService(
 	private async Task<GitHubPrInfo?> TryFetchPrInfoAsync(string? prUrl, string? owner, string? repo, Cancel ctx)
 	{
 		if (string.IsNullOrWhiteSpace(prUrl) || githubPrService == null)
-		{
 			return null;
-		}
 
 		try
 		{
 			var prInfo = await githubPrService.FetchPrInfoAsync(prUrl, owner, repo, ctx);
 			if (prInfo != null)
-			{
 				_logger.LogInformation("Successfully fetched PR information from GitHub");
-			}
 			else
-			{
 				_logger.LogWarning("Unable to fetch PR information from GitHub. Continuing with provided values.");
-			}
 			return prInfo;
 		}
 		catch (Exception ex)
@@ -604,9 +576,7 @@ public class ChangelogCreationService(
 				StackOverflowException or
 				AccessViolationException or
 				ThreadAbortException)
-			{
 				throw;
-			}
 			_logger.LogWarning(ex, "Error fetching PR information from GitHub. Continuing with provided values.");
 			return null;
 		}
@@ -624,9 +594,7 @@ public class ChangelogCreationService(
 			.SelectMany(label => labelToAreasMapping[label]
 				.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
 		foreach (var area in areaList)
-		{
 			_ = areas.Add(area);
-		}
 		return areas.ToList();
 	}
 }

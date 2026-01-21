@@ -27,9 +27,7 @@ public static partial class ChangelogTextUtilities
 			? char.ToUpperInvariant(text[0]).ToString()
 			: char.ToUpperInvariant(text[0]) + text[1..];
 		if (!result.EndsWith('.'))
-		{
 			result += ".";
-		}
 		return result;
 	}
 
@@ -144,9 +142,7 @@ public static partial class ChangelogTextUtilities
 			if (segments.Length >= 5 &&
 				segments[3].Equals("pull/", StringComparison.OrdinalIgnoreCase) &&
 				int.TryParse(segments[4].TrimEnd('/'), out var prNum))
-			{
 				return prNum;
-			}
 		}
 
 		// Handle short format: owner/repo#123
@@ -186,7 +182,10 @@ public static partial class ChangelogTextUtilities
 		}
 
 		// Comment out link if hiding private links
-		return hidePrivateLinks ? $"% {link}" : link;
+		if (hidePrivateLinks)
+			return $"% {link}";
+
+		return link;
 	}
 
 	/// <summary>
@@ -209,7 +208,10 @@ public static partial class ChangelogTextUtilities
 		}
 
 		// Comment out link if hiding private links
-		return hidePrivateLinks ? $"% {link}" : link;
+		if (hidePrivateLinks)
+			return $"% {link}";
+
+		return link;
 	}
 
 	/// <summary>
@@ -227,7 +229,10 @@ public static partial class ChangelogTextUtilities
 		var link = $"{{{attributeName}}}{prNumber}[#{prNumber}]";
 
 		// Comment out link if hiding private links
-		return hidePrivateLinks ? $"// {link}" : link;
+		if (hidePrivateLinks)
+			return $"// {link}";
+
+		return link;
 	}
 
 	/// <summary>
@@ -245,7 +250,10 @@ public static partial class ChangelogTextUtilities
 		var link = $"{{{attributeName}}}{issueNumber}[#{issueNumber}]";
 
 		// Comment out link if hiding private links
-		return hidePrivateLinks ? $"// {link}" : link;
+		if (hidePrivateLinks)
+			return $"// {link}";
+
+		return link;
 	}
 
 	/// <summary>
@@ -270,6 +278,9 @@ public static partial class ChangelogTextUtilities
 	}
 }
 
+/// <summary>
+/// Constants for changelog entry types
+/// </summary>
 public static class ChangelogEntryTypes
 {
 	public const string Feature = "feature";

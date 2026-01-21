@@ -4,12 +4,12 @@
 
 #pragma warning disable IDE0060 // Remove unused parameter
 
-using System.Globalization;
 using System.IO.Abstractions;
 using System.Text;
 using Elastic.Changelog.Configuration;
 using Elastic.Changelog.Rendering.Markdown;
 using Elastic.Documentation.Changelog;
+using static System.Globalization.CultureInfo;
 
 namespace Elastic.Changelog.Rendering.Asciidoc;
 
@@ -18,30 +18,23 @@ namespace Elastic.Changelog.Rendering.Asciidoc;
 /// </summary>
 public class ChangelogAsciidocRenderer(IFileSystem fileSystem)
 {
-	public async Task RenderAsciidoc(
-		string outputDir,
-		string title,
-		string titleSlug,
-		string repo,
-		List<ChangelogData> entries,
-		Dictionary<string, List<ChangelogData>> entriesByType,
-		bool subsections,
-		HashSet<string> featureIdsToHide,
-		IReadOnlyDictionary<string, RenderBlockersEntry>? renderBlockers,
-		Dictionary<ChangelogData, HashSet<string>> entryToBundleProducts,
-		Dictionary<ChangelogData, string> entryToRepo,
-		Dictionary<ChangelogData, bool> entryToHideLinks,
-		Cancel ctx
-	)
+	public async Task RenderAsciidoc(ChangelogRenderContext context, Cancel ctx)
 	{
 		var sb = new StringBuilder();
 
+		// Create section renderers with shared StringBuilder
+		var entriesByAreaRenderer = new EntriesByAreaAsciidocRenderer(sb);
+		var breakingChangesRenderer = new BreakingChangesAsciidocRenderer(sb);
+		var deprecationsRenderer = new DeprecationsAsciidocRenderer(sb);
+		var knownIssuesRenderer = new KnownIssuesAsciidocRenderer(sb);
+
 		// Add anchor
-		_ = sb.AppendLine(CultureInfo.InvariantCulture, $"[[release-notes-{titleSlug}]]");
-		_ = sb.AppendLine(CultureInfo.InvariantCulture, $"== {title}");
+		_ = sb.AppendLine(InvariantCulture, $"[[release-notes-{context.TitleSlug}]]");
+		_ = sb.AppendLine(InvariantCulture, $"== {context.Title}");
 		_ = sb.AppendLine();
 
 		// Group entries by type
+		var entriesByType = context.EntriesByType;
 		var security = entriesByType.GetValueOrDefault(ChangelogEntryTypes.Security, []);
 		var bugFixes = entriesByType.GetValueOrDefault(ChangelogEntryTypes.BugFix, []);
 		var features = entriesByType.GetValueOrDefault(ChangelogEntryTypes.Feature, []);
@@ -56,490 +49,90 @@ public class ChangelogAsciidocRenderer(IFileSystem fileSystem)
 		// Render security updates
 		if (security.Count > 0)
 		{
-			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"[[security-updates-{titleSlug}]]");
-			_ = sb.AppendLine("[float]");
-			_ = sb.AppendLine("=== Security updates");
-			_ = sb.AppendLine();
-			RenderEntriesByAreaAsciidoc(sb, security, repo, subsections, featureIdsToHide, renderBlockers, entryToBundleProducts, entryToRepo, entryToHideLinks);
+			RenderSectionHeader(sb, "security-updates", context.TitleSlug, "Security updates");
+			entriesByAreaRenderer.Render(security, context);
 			_ = sb.AppendLine();
 		}
 
 		// Render bug fixes
 		if (bugFixes.Count > 0)
 		{
-			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"[[bug-fixes-{titleSlug}]]");
-			_ = sb.AppendLine("[float]");
-			_ = sb.AppendLine("=== Bug fixes");
-			_ = sb.AppendLine();
-			RenderEntriesByAreaAsciidoc(sb, bugFixes, repo, subsections, featureIdsToHide, renderBlockers, entryToBundleProducts, entryToRepo, entryToHideLinks);
+			RenderSectionHeader(sb, "bug-fixes", context.TitleSlug, "Bug fixes");
+			entriesByAreaRenderer.Render(bugFixes, context);
 			_ = sb.AppendLine();
 		}
 
 		// Render features and enhancements
 		if (features.Count > 0 || enhancements.Count > 0)
 		{
-			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"[[features-enhancements-{titleSlug}]]");
-			_ = sb.AppendLine("[float]");
-			_ = sb.AppendLine("=== New features and enhancements");
-			_ = sb.AppendLine();
+			RenderSectionHeader(sb, "features-enhancements", context.TitleSlug, "New features and enhancements");
 			var combined = features.Concat(enhancements).ToList();
-			RenderEntriesByAreaAsciidoc(sb, combined, repo, subsections, featureIdsToHide, renderBlockers, entryToBundleProducts, entryToRepo, entryToHideLinks);
+			entriesByAreaRenderer.Render(combined, context);
 			_ = sb.AppendLine();
 		}
 
 		// Render breaking changes
 		if (breakingChanges.Count > 0)
 		{
-			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"[[breaking-changes-{titleSlug}]]");
-			_ = sb.AppendLine("[float]");
-			_ = sb.AppendLine("=== Breaking changes");
-			_ = sb.AppendLine();
-			RenderBreakingChangesAsciidoc(sb, breakingChanges, repo, subsections, featureIdsToHide, renderBlockers, entryToBundleProducts, entryToRepo, entryToHideLinks);
+			RenderSectionHeader(sb, "breaking-changes", context.TitleSlug, "Breaking changes");
+			breakingChangesRenderer.Render(breakingChanges, context);
 			_ = sb.AppendLine();
 		}
 
 		// Render deprecations
 		if (deprecations.Count > 0)
 		{
-			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"[[deprecations-{titleSlug}]]");
-			_ = sb.AppendLine("[float]");
-			_ = sb.AppendLine("=== Deprecations");
-			_ = sb.AppendLine();
-			RenderDeprecationsAsciidoc(sb, deprecations, repo, subsections, featureIdsToHide, renderBlockers, entryToBundleProducts, entryToRepo, entryToHideLinks);
+			RenderSectionHeader(sb, "deprecations", context.TitleSlug, "Deprecations");
+			deprecationsRenderer.Render(deprecations, context);
 			_ = sb.AppendLine();
 		}
 
 		// Render known issues
 		if (knownIssues.Count > 0)
 		{
-			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"[[known-issues-{titleSlug}]]");
-			_ = sb.AppendLine("[float]");
-			_ = sb.AppendLine("=== Known issues");
-			_ = sb.AppendLine();
-			RenderKnownIssuesAsciidoc(sb, knownIssues, repo, subsections, featureIdsToHide, renderBlockers, entryToBundleProducts, entryToRepo, entryToHideLinks);
+			RenderSectionHeader(sb, "known-issues", context.TitleSlug, "Known issues");
+			knownIssuesRenderer.Render(knownIssues, context);
 			_ = sb.AppendLine();
 		}
 
 		// Render documentation changes
 		if (docs.Count > 0)
 		{
-			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"[[docs-{titleSlug}]]");
-			_ = sb.AppendLine("[float]");
-			_ = sb.AppendLine("=== Documentation");
-			_ = sb.AppendLine();
-			RenderEntriesByAreaAsciidoc(sb, docs, repo, subsections, featureIdsToHide, renderBlockers, entryToBundleProducts, entryToRepo, entryToHideLinks);
+			RenderSectionHeader(sb, "docs", context.TitleSlug, "Documentation");
+			entriesByAreaRenderer.Render(docs, context);
 			_ = sb.AppendLine();
 		}
 
 		// Render regressions
 		if (regressions.Count > 0)
 		{
-			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"[[regressions-{titleSlug}]]");
-			_ = sb.AppendLine("[float]");
-			_ = sb.AppendLine("=== Regressions");
-			_ = sb.AppendLine();
-			RenderEntriesByAreaAsciidoc(sb, regressions, repo, subsections, featureIdsToHide, renderBlockers, entryToBundleProducts, entryToRepo, entryToHideLinks);
+			RenderSectionHeader(sb, "regressions", context.TitleSlug, "Regressions");
+			entriesByAreaRenderer.Render(regressions, context);
 			_ = sb.AppendLine();
 		}
 
 		// Render other changes
 		if (other.Count > 0)
 		{
-			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"[[other-{titleSlug}]]");
-			_ = sb.AppendLine("[float]");
-			_ = sb.AppendLine("=== Other changes");
-			_ = sb.AppendLine();
-			RenderEntriesByAreaAsciidoc(sb, other, repo, subsections, featureIdsToHide, renderBlockers, entryToBundleProducts, entryToRepo, entryToHideLinks);
+			RenderSectionHeader(sb, "other", context.TitleSlug, "Other changes");
+			entriesByAreaRenderer.Render(other, context);
 			_ = sb.AppendLine();
 		}
 
 		// Write the asciidoc file
-		var asciidocPath = fileSystem.Path.Combine(outputDir, $"{titleSlug}.asciidoc");
+		var asciidocPath = fileSystem.Path.Combine(context.OutputDir, $"{context.TitleSlug}.asciidoc");
 		var asciidocDir = fileSystem.Path.GetDirectoryName(asciidocPath);
 		if (!string.IsNullOrWhiteSpace(asciidocDir) && !fileSystem.Directory.Exists(asciidocDir))
-		{
 			_ = fileSystem.Directory.CreateDirectory(asciidocDir);
-		}
 
 		await fileSystem.File.WriteAllTextAsync(asciidocPath, sb.ToString(), ctx);
 	}
 
-	private static void RenderEntriesByAreaAsciidoc(
-		StringBuilder sb,
-		List<ChangelogData> entries,
-		string repo,
-		bool subsections,
-		HashSet<string> featureIdsToHide,
-		IReadOnlyDictionary<string, RenderBlockersEntry>? renderBlockers,
-		Dictionary<ChangelogData, HashSet<string>> entryToBundleProducts,
-		Dictionary<ChangelogData, string> entryToRepo,
-		Dictionary<ChangelogData, bool> entryToHideLinks
-	)
+	private static void RenderSectionHeader(StringBuilder sb, string anchorPrefix, string titleSlug, string title)
 	{
-		var groupedByArea = subsections
-			? entries.GroupBy(e => GetComponent(e)).OrderBy(g => g.Key).ToList()
-			: entries.GroupBy(e => GetComponent(e)).ToList();
-		foreach (var areaGroup in groupedByArea)
-		{
-			var componentName = !string.IsNullOrWhiteSpace(areaGroup.Key) ? areaGroup.Key : "General";
-
-			// Format component name (capitalize first letter, replace hyphens with spaces)
-			var formattedComponent = ChangelogTextUtilities.FormatAreaHeader(componentName);
-
-			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"{formattedComponent}::");
-			_ = sb.AppendLine();
-
-			foreach (var entry in areaGroup)
-			{
-				var bundleProductIds = entryToBundleProducts.GetValueOrDefault(entry, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
-				var shouldHide = (!string.IsNullOrWhiteSpace(entry.FeatureId) && featureIdsToHide.Contains(entry.FeatureId)) ||
-					ChangelogMarkdownRenderer.ShouldBlockEntry(entry, bundleProductIds, renderBlockers, out _);
-
-				if (shouldHide)
-				{
-					_ = sb.AppendLine("// ");
-				}
-
-				_ = sb.Append("* ");
-				_ = sb.Append(ChangelogTextUtilities.Beautify(entry.Title));
-
-				var hasPr = !string.IsNullOrWhiteSpace(entry.Pr);
-				var hasIssues = entry.Issues != null && entry.Issues.Count > 0;
-
-				if (hasPr || hasIssues)
-				{
-					var entryRepo = entryToRepo.GetValueOrDefault(entry, repo);
-					var hideLinks = entryToHideLinks.GetValueOrDefault(entry, false);
-					_ = sb.Append(' ');
-					if (hasPr)
-					{
-						_ = sb.Append(ChangelogTextUtilities.FormatPrLinkAsciidoc(entry.Pr!, entryRepo, hideLinks));
-						_ = sb.Append(' ');
-					}
-					if (hasIssues)
-					{
-						foreach (var issue in entry.Issues!)
-						{
-							_ = sb.Append(ChangelogTextUtilities.FormatIssueLinkAsciidoc(issue, entryRepo, hideLinks));
-							_ = sb.Append(' ');
-						}
-					}
-				}
-
-				if (!string.IsNullOrWhiteSpace(entry.Description))
-				{
-					_ = sb.AppendLine();
-					var indented = ChangelogTextUtilities.Indent(entry.Description);
-					if (shouldHide)
-					{
-						var indentedLines = indented.Split('\n');
-						foreach (var line in indentedLines)
-						{
-							_ = sb.AppendLine(CultureInfo.InvariantCulture, $"// {line}");
-						}
-					}
-					else
-					{
-						_ = sb.AppendLine(indented);
-					}
-				}
-
-				_ = sb.AppendLine();
-			}
-		}
-	}
-
-	private static void RenderBreakingChangesAsciidoc(
-		StringBuilder sb,
-		List<ChangelogData> breakingChanges,
-		string repo,
-		bool subsections,
-		HashSet<string> featureIdsToHide,
-		IReadOnlyDictionary<string, RenderBlockersEntry>? renderBlockers,
-		Dictionary<ChangelogData, HashSet<string>> entryToBundleProducts,
-		Dictionary<ChangelogData, string> entryToRepo,
-		Dictionary<ChangelogData, bool> entryToHideLinks
-	)
-	{
-		// Group by subtype if subsections is enabled, otherwise group by area
-		var groupedEntries = subsections
-			? breakingChanges.GroupBy(e => string.IsNullOrWhiteSpace(e.Subtype) ? string.Empty : e.Subtype).OrderBy(g => g.Key).ToList()
-			: breakingChanges.GroupBy(e => GetComponent(e)).ToList();
-
-		foreach (var group in groupedEntries)
-		{
-			if (subsections && !string.IsNullOrWhiteSpace(group.Key))
-			{
-				var header = ChangelogTextUtilities.FormatSubtypeHeader(group.Key);
-				_ = sb.AppendLine(CultureInfo.InvariantCulture, $"**{header}**");
-				_ = sb.AppendLine();
-			}
-
-			foreach (var entry in group)
-			{
-				var bundleProductIds = entryToBundleProducts.GetValueOrDefault(entry, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
-				var shouldHide = (!string.IsNullOrWhiteSpace(entry.FeatureId) && featureIdsToHide.Contains(entry.FeatureId)) ||
-					ChangelogMarkdownRenderer.ShouldBlockEntry(entry, bundleProductIds, renderBlockers, out _);
-
-				if (shouldHide)
-				{
-					_ = sb.AppendLine("// ");
-				}
-
-				_ = sb.Append("* ");
-				_ = sb.Append(ChangelogTextUtilities.Beautify(entry.Title));
-
-				var hasPr = !string.IsNullOrWhiteSpace(entry.Pr);
-				var hasIssues = entry.Issues != null && entry.Issues.Count > 0;
-
-				if (hasPr || hasIssues)
-				{
-					var entryRepo = entryToRepo.GetValueOrDefault(entry, repo);
-					var hideLinks = entryToHideLinks.GetValueOrDefault(entry, false);
-					_ = sb.Append(' ');
-					if (hasPr)
-					{
-						_ = sb.Append(ChangelogTextUtilities.FormatPrLinkAsciidoc(entry.Pr!, entryRepo, hideLinks));
-						_ = sb.Append(' ');
-					}
-					if (hasIssues)
-					{
-						foreach (var issue in entry.Issues!)
-						{
-							_ = sb.Append(ChangelogTextUtilities.FormatIssueLinkAsciidoc(issue, entryRepo, hideLinks));
-							_ = sb.Append(' ');
-						}
-					}
-				}
-
-				if (!string.IsNullOrWhiteSpace(entry.Description))
-				{
-					_ = sb.AppendLine();
-					var indented = ChangelogTextUtilities.Indent(entry.Description);
-					if (shouldHide)
-					{
-						var indentedLines = indented.Split('\n');
-						foreach (var line in indentedLines)
-						{
-							_ = sb.AppendLine(CultureInfo.InvariantCulture, $"// {line}");
-						}
-					}
-					else
-					{
-						_ = sb.AppendLine(indented);
-					}
-				}
-
-				if (!string.IsNullOrWhiteSpace(entry.Impact))
-				{
-					_ = sb.AppendLine();
-					_ = sb.AppendLine(CultureInfo.InvariantCulture, $"**Impact:** {entry.Impact}");
-				}
-
-				if (!string.IsNullOrWhiteSpace(entry.Action))
-				{
-					_ = sb.AppendLine();
-					_ = sb.AppendLine(CultureInfo.InvariantCulture, $"**Action:** {entry.Action}");
-				}
-
-				_ = sb.AppendLine();
-			}
-		}
-	}
-
-	private static void RenderDeprecationsAsciidoc(
-		StringBuilder sb,
-		List<ChangelogData> deprecations,
-		string repo,
-		bool subsections,
-		HashSet<string> featureIdsToHide,
-		IReadOnlyDictionary<string, RenderBlockersEntry>? renderBlockers,
-		Dictionary<ChangelogData, HashSet<string>> entryToBundleProducts,
-		Dictionary<ChangelogData, string> entryToRepo,
-		Dictionary<ChangelogData, bool> entryToHideLinks
-	)
-	{
-		var groupedByArea = deprecations.GroupBy(e => GetComponent(e)).OrderBy(g => g.Key).ToList();
-		foreach (var areaGroup in groupedByArea)
-		{
-			var componentName = !string.IsNullOrWhiteSpace(areaGroup.Key) ? areaGroup.Key : "General";
-			var formattedComponent = ChangelogTextUtilities.FormatAreaHeader(componentName);
-
-			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"{formattedComponent}::");
-			_ = sb.AppendLine();
-
-			foreach (var entry in areaGroup)
-			{
-				var bundleProductIds = entryToBundleProducts.GetValueOrDefault(entry, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
-				var shouldHide = (!string.IsNullOrWhiteSpace(entry.FeatureId) && featureIdsToHide.Contains(entry.FeatureId)) ||
-					ChangelogMarkdownRenderer.ShouldBlockEntry(entry, bundleProductIds, renderBlockers, out _);
-
-				if (shouldHide)
-				{
-					_ = sb.AppendLine("// ");
-				}
-
-				_ = sb.Append("* ");
-				_ = sb.Append(ChangelogTextUtilities.Beautify(entry.Title));
-
-				var hasPr = !string.IsNullOrWhiteSpace(entry.Pr);
-				var hasIssues = entry.Issues != null && entry.Issues.Count > 0;
-
-				if (hasPr || hasIssues)
-				{
-					var entryRepo = entryToRepo.GetValueOrDefault(entry, repo);
-					var hideLinks = entryToHideLinks.GetValueOrDefault(entry, false);
-					_ = sb.Append(' ');
-					if (hasPr)
-					{
-						_ = sb.Append(ChangelogTextUtilities.FormatPrLinkAsciidoc(entry.Pr!, entryRepo, hideLinks));
-						_ = sb.Append(' ');
-					}
-					if (hasIssues)
-					{
-						foreach (var issue in entry.Issues!)
-						{
-							_ = sb.Append(ChangelogTextUtilities.FormatIssueLinkAsciidoc(issue, entryRepo, hideLinks));
-							_ = sb.Append(' ');
-						}
-					}
-				}
-
-				if (!string.IsNullOrWhiteSpace(entry.Description))
-				{
-					_ = sb.AppendLine();
-					var indented = ChangelogTextUtilities.Indent(entry.Description);
-					if (shouldHide)
-					{
-						var indentedLines = indented.Split('\n');
-						foreach (var line in indentedLines)
-						{
-							_ = sb.AppendLine(CultureInfo.InvariantCulture, $"// {line}");
-						}
-					}
-					else
-					{
-						_ = sb.AppendLine(indented);
-					}
-				}
-
-				if (!string.IsNullOrWhiteSpace(entry.Impact))
-				{
-					_ = sb.AppendLine();
-					_ = sb.AppendLine(CultureInfo.InvariantCulture, $"**Impact:** {entry.Impact}");
-				}
-
-				if (!string.IsNullOrWhiteSpace(entry.Action))
-				{
-					_ = sb.AppendLine();
-					_ = sb.AppendLine(CultureInfo.InvariantCulture, $"**Action:** {entry.Action}");
-				}
-
-				_ = sb.AppendLine();
-			}
-		}
-	}
-
-	private static void RenderKnownIssuesAsciidoc(
-		StringBuilder sb,
-		List<ChangelogData> knownIssues,
-		string repo,
-		bool subsections,
-		HashSet<string> featureIdsToHide,
-		IReadOnlyDictionary<string, RenderBlockersEntry>? renderBlockers,
-		Dictionary<ChangelogData, HashSet<string>> entryToBundleProducts,
-		Dictionary<ChangelogData, string> entryToRepo,
-		Dictionary<ChangelogData, bool> entryToHideLinks
-	)
-	{
-		var groupedByArea = knownIssues.GroupBy(e => GetComponent(e)).OrderBy(g => g.Key).ToList();
-		foreach (var areaGroup in groupedByArea)
-		{
-			var componentName = !string.IsNullOrWhiteSpace(areaGroup.Key) ? areaGroup.Key : "General";
-			var formattedComponent = ChangelogTextUtilities.FormatAreaHeader(componentName);
-
-			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"{formattedComponent}::");
-			_ = sb.AppendLine();
-
-			foreach (var entry in areaGroup)
-			{
-				var bundleProductIds = entryToBundleProducts.GetValueOrDefault(entry, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
-				var shouldHide = (!string.IsNullOrWhiteSpace(entry.FeatureId) && featureIdsToHide.Contains(entry.FeatureId)) ||
-					ChangelogMarkdownRenderer.ShouldBlockEntry(entry, bundleProductIds, renderBlockers, out _);
-
-				if (shouldHide)
-				{
-					_ = sb.AppendLine("// ");
-				}
-
-				_ = sb.Append("* ");
-				_ = sb.Append(ChangelogTextUtilities.Beautify(entry.Title));
-
-				var hasPr = !string.IsNullOrWhiteSpace(entry.Pr);
-				var hasIssues = entry.Issues != null && entry.Issues.Count > 0;
-
-				if (hasPr || hasIssues)
-				{
-					var entryRepo = entryToRepo.GetValueOrDefault(entry, repo);
-					var hideLinks = entryToHideLinks.GetValueOrDefault(entry, false);
-					_ = sb.Append(' ');
-					if (hasPr)
-					{
-						_ = sb.Append(ChangelogTextUtilities.FormatPrLinkAsciidoc(entry.Pr!, entryRepo, hideLinks));
-						_ = sb.Append(' ');
-					}
-					if (hasIssues)
-					{
-						foreach (var issue in entry.Issues!)
-						{
-							_ = sb.Append(ChangelogTextUtilities.FormatIssueLinkAsciidoc(issue, entryRepo, hideLinks));
-							_ = sb.Append(' ');
-						}
-					}
-				}
-
-				if (!string.IsNullOrWhiteSpace(entry.Description))
-				{
-					_ = sb.AppendLine();
-					var indented = ChangelogTextUtilities.Indent(entry.Description);
-					if (shouldHide)
-					{
-						var indentedLines = indented.Split('\n');
-						foreach (var line in indentedLines)
-						{
-							_ = sb.AppendLine(CultureInfo.InvariantCulture, $"// {line}");
-						}
-					}
-					else
-					{
-						_ = sb.AppendLine(indented);
-					}
-				}
-
-				if (!string.IsNullOrWhiteSpace(entry.Impact))
-				{
-					_ = sb.AppendLine();
-					_ = sb.AppendLine(CultureInfo.InvariantCulture, $"**Impact:** {entry.Impact}");
-				}
-
-				if (!string.IsNullOrWhiteSpace(entry.Action))
-				{
-					_ = sb.AppendLine();
-					_ = sb.AppendLine(CultureInfo.InvariantCulture, $"**Action:** {entry.Action}");
-				}
-
-				_ = sb.AppendLine();
-			}
-		}
-	}
-
-	private static string GetComponent(ChangelogData entry)
-	{
-		// Map areas (list) to component (string) - use first area or empty string
-		if (entry.Areas != null && entry.Areas.Count > 0)
-		{
-			return entry.Areas[0];
-		}
-		return string.Empty;
+		_ = sb.AppendLine(InvariantCulture, $"[[{anchorPrefix}-{titleSlug}]]");
+		_ = sb.AppendLine("[float]");
+		_ = sb.AppendLine(InvariantCulture, $"=== {title}");
+		_ = sb.AppendLine();
 	}
 }

@@ -386,9 +386,13 @@ internal sealed class ChangelogCommand(
 			}
 		}
 
-		// Validate file-type
-		if (!string.Equals(fileType, "markdown", StringComparison.OrdinalIgnoreCase) &&
-			!string.Equals(fileType, "asciidoc", StringComparison.OrdinalIgnoreCase))
+		ChangelogFileType? ft = fileType?.ToLowerInvariant() switch
+		{
+			"markdown" => ChangelogFileType.Markdown,
+			"asciidoc" => ChangelogFileType.Asciidoc,
+			_ => null
+		};
+		if (ft is null)
 		{
 			collector.EmitError(string.Empty, $"Invalid file-type '{fileType}'. Valid values are 'markdown' or 'asciidoc'.");
 			return 1;
@@ -404,7 +408,7 @@ internal sealed class ChangelogCommand(
 			Title = title,
 			Subsections = subsections,
 			HideFeatures = allFeatureIds.Count > 0 ? allFeatureIds.ToArray() : null,
-			FileType = fileType ?? "markdown",
+			FileType = ft.Value,
 			Config = config
 		};
 
