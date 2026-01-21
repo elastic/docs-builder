@@ -7,11 +7,11 @@ using Microsoft.Extensions.Logging;
 namespace Elastic.Documentation.Api.Core.Search;
 
 // note still called SearchUseCase because we'll re-add Search() and ensure both share the same client.
-public partial class FindPageUsecase(IFindPageGateway findPageGateway, ILogger<FindPageUsecase> logger)
+public partial class NavigationSearchUsecase(INavigationSearchGateway navigationSearchGateway, ILogger<NavigationSearchUsecase> logger)
 {
-	public async Task<FindPageApiResponse> FindPageAsync(FindPageApiRequest request, Cancel ctx = default)
+	public async Task<NavigationSearchApiResponse> NavigationSearchAsync(NavigationSearchApiRequest request, Cancel ctx = default)
 	{
-		var result = await findPageGateway.FindPageAsync(
+		var result = await navigationSearchGateway.NavigationSearchAsync(
 			request.Query,
 			request.PageNumber,
 			request.PageSize,
@@ -19,16 +19,16 @@ public partial class FindPageUsecase(IFindPageGateway findPageGateway, ILogger<F
 			ctx
 		);
 
-		var response = new FindPageApiResponse
+		var response = new NavigationSearchApiResponse
 		{
 			Results = result.Results,
 			TotalResults = result.TotalHits,
 			PageNumber = request.PageNumber,
 			PageSize = request.PageSize,
-			Aggregations = new FindPageAggregations { Type = result.Aggregations }
+			Aggregations = new NavigationSearchAggregations { Type = result.Aggregations }
 		};
 
-		LogFindPageResults(
+		LogNavigationSearchResults(
 			logger,
 			response.PageSize,
 			response.PageNumber,
@@ -39,13 +39,13 @@ public partial class FindPageUsecase(IFindPageGateway findPageGateway, ILogger<F
 		return response;
 	}
 
-	[LoggerMessage(Level = LogLevel.Information, Message = "Find page completed with {PageSize} (page {PageNumber}) results for query '{SearchQuery}'")]
-	private static partial void LogFindPageResults(ILogger logger, int pageSize, int pageNumber, string searchQuery, [LogProperties] AutoCompleteResultsLogProperties result);
+	[LoggerMessage(Level = LogLevel.Information, Message = "Navigation search completed with {PageSize} (page {PageNumber}) results for query '{SearchQuery}'")]
+	private static partial void LogNavigationSearchResults(ILogger logger, int pageSize, int pageNumber, string searchQuery, [LogProperties] AutoCompleteResultsLogProperties result);
 
 	private sealed record AutoCompleteResultsLogProperties(string[] Urls);
 }
 
-public record FindPageApiRequest
+public record NavigationSearchApiRequest
 {
 	public required string Query { get; init; }
 	public int PageNumber { get; init; } = 1;
@@ -53,35 +53,35 @@ public record FindPageApiRequest
 	public string? TypeFilter { get; init; }
 }
 
-public record FindPageApiResponse
+public record NavigationSearchApiResponse
 {
-	public required IEnumerable<FindPageResultItem> Results { get; init; }
+	public required IEnumerable<NavigationSearchResultItem> Results { get; init; }
 	public required int TotalResults { get; init; }
 	public required int PageNumber { get; init; }
 	public required int PageSize { get; init; }
-	public FindPageAggregations Aggregations { get; init; } = new();
+	public NavigationSearchAggregations Aggregations { get; init; } = new();
 	public int PageCount => TotalResults > 0
 				? (int)Math.Ceiling((double)TotalResults / PageSize)
 				: 0;
 }
 
-public record FindPageAggregations
+public record NavigationSearchAggregations
 {
 	public IReadOnlyDictionary<string, long> Type { get; init; } = new Dictionary<string, long>();
 }
 
-public record FindPageResultItemParent
+public record NavigationSearchResultItemParent
 {
 	public required string Title { get; init; }
 	public required string Url { get; init; }
 }
 
-public record FindPageResultItem
+public record NavigationSearchResultItem
 {
 	public required string Type { get; init; }
 	public required string Url { get; init; }
 	public required string Title { get; init; }
 	public required string Description { get; init; }
-	public required FindPageResultItemParent[] Parents { get; init; }
+	public required NavigationSearchResultItemParent[] Parents { get; init; }
 	public float Score { get; init; }
 }

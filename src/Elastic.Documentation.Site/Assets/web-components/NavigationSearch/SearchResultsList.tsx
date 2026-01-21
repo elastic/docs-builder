@@ -1,11 +1,11 @@
 import { SanitizedHtmlContent } from './SanitizedHtmlContent'
 import { useSelectedIndex, useSearchActions } from './navigationSearch.store'
 import { useSearchTerm } from './navigationSearch.store'
-import { useFindInDocsTelemetry } from './useFindInDocsTelemetry'
 import {
     useNavigationSearchQuery,
     SearchResultItem,
 } from './useNavigationSearchQuery'
+import { useNavigationSearchTelemetry } from './useNavigationSearchTelemetry'
 import {
     EuiBadge,
     EuiIcon,
@@ -85,7 +85,7 @@ export const SearchResultsList = ({
     const { isLoading, data } = useNavigationSearchQuery()
     const containerRef = useRef<HTMLDivElement>(null)
     const searchTerm = useSearchTerm()
-    const { trackResultClicked } = useFindInDocsTelemetry()
+    const { trackResultClicked } = useNavigationSearchTelemetry()
 
     const results = data?.results ?? []
     const isInitialLoading = isLoading && !data

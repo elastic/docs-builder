@@ -36,7 +36,7 @@ public record HighlightOptions
 
 /// <summary>
 /// Shared result processing utilities for search operations.
-/// Used by both FindPage (autocomplete) and FullSearch gateways.
+/// Used by both Navigation Search (autocomplete) and FullSearch gateways.
 /// </summary>
 public static class SearchResultProcessor
 {
@@ -171,7 +171,7 @@ public static class SearchResultProcessor
 }
 
 /// <summary>
-/// Common search result item used by both FindPage and FullSearch.
+/// Common search result item used by both Navigation Search and FullSearch.
 /// </summary>
 public record SearchResultItem
 {

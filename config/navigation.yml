@@ -117,6 +117,10 @@ toc:
           # https://github.com/elastic/apm-agent-android/blob/main/docs/release-notes/toc.yml
           - toc: apm-agent-android://release-notes
             path_prefix: release-notes/edot/sdks/android
+          # EDOT Cloud Forwarder for AWS
+          # https://github.com/elastic/edot-cloud-forwarder-aws/blob/main/docs/release-notes/toc.yml
+          - toc: edot-cloud-forwarder-aws://release-notes
+            path_prefix: release-notes/edot/cloud-forwarder/aws
           # EDOT iOS / Swift
           # https://github.com/elastic/apm-agent-ios/blob/main/docs/release-notes/toc.yml
           - toc: apm-agent-ios://release-notes
@@ -450,6 +454,8 @@ toc:
             children:
               - toc: elastic-agent://reference/edot-collector
                 path_prefix: reference/edot-collector
+              - toc: edot-cloud-forwarder-aws://reference/edot-cf-aws
+                path_prefix: reference/opentelemetry/edot-cloud-forwarder/aws
               - toc: apm-agent-android://reference/edot-android
                 path_prefix: reference/opentelemetry/edot-sdks/android
               - toc: elastic-otel-dotnet://reference/edot-dotnet

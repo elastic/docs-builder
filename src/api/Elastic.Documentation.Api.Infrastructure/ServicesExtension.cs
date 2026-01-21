@@ -199,9 +199,9 @@ public static class ServicesExtension
 		_ = services.AddSingleton<ElasticsearchOptions>();
 		_ = services.AddSingleton<ElasticsearchClientAccessor>();
 
-		// FindPage (autocomplete/navigation search)
-		_ = services.AddScoped<IFindPageGateway, FindPageGateway>();
-		_ = services.AddScoped<FindPageUsecase>();
+		// Navigation Search (autocomplete/navigation search)
+		_ = services.AddScoped<INavigationSearchGateway, NavigationSearchGateway>();
+		_ = services.AddScoped<NavigationSearchUsecase>();
 
 		// FullSearch (full-page search with hybrid RRF)
 		_ = services.AddScoped<IFullSearchGateway, FullSearchGateway>();

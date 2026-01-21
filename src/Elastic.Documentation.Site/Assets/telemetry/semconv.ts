@@ -106,90 +106,98 @@ export const ATTR_SEARCH_RESULT_POSITION_ON_PAGE =
 export const ATTR_SEARCH_RESULT_SCORE = 'search.result.score'
 
 // ============================================================================
-// FIND IN DOCS ATTRIBUTES (Custom)
-// These are for the navigation "Find in Docs" feature (quick search in sidebar).
+// NAVIGATION SEARCH ATTRIBUTES (Custom)
+// These are for the navigation search feature (quick search in sidebar).
 // Separate from the advanced Search page telemetry.
 // ============================================================================
 
 /**
- * The query string entered by the user in Find in Docs
+ * The query string entered by the user in Navigation Search
  * @example "elasticsearch aggregations"
  */
-export const ATTR_FIND_IN_DOCS_QUERY = 'find_in_docs.query'
+export const ATTR_NAVIGATION_SEARCH_QUERY = 'navigation_search.query'
 
 /**
  * Length of the query string
  * @example 25
  */
-export const ATTR_FIND_IN_DOCS_QUERY_LENGTH = 'find_in_docs.query.length'
+export const ATTR_NAVIGATION_SEARCH_QUERY_LENGTH =
+    'navigation_search.query.length'
 
 /**
  * Total number of results found
  * @example 142
  */
-export const ATTR_FIND_IN_DOCS_RESULTS_TOTAL = 'find_in_docs.results.total'
+export const ATTR_NAVIGATION_SEARCH_RESULTS_TOTAL =
+    'navigation_search.results.total'
 
 /**
- * How the Find in Docs was initiated
+ * How the Navigation Search was initiated
  * @example "keyboard_shortcut" | "focus" | "click"
  */
-export const ATTR_FIND_IN_DOCS_TRIGGER = 'find_in_docs.trigger'
+export const ATTR_NAVIGATION_SEARCH_TRIGGER = 'navigation_search.trigger'
 
 /**
- * Reason the Find in Docs was closed
+ * Reason the Navigation Search was closed
  * @example "escape" | "blur" | "navigate" | "clear"
  */
-export const ATTR_FIND_IN_DOCS_CLOSE_REASON = 'find_in_docs.close_reason'
+export const ATTR_NAVIGATION_SEARCH_CLOSE_REASON =
+    'navigation_search.close_reason'
 
 /**
- * Whether Find in Docs had results when closed
+ * Whether Navigation Search had results when closed
  * @example true
  */
-export const ATTR_FIND_IN_DOCS_HAD_RESULTS = 'find_in_docs.had_results'
+export const ATTR_NAVIGATION_SEARCH_HAD_RESULTS =
+    'navigation_search.had_results'
 
 /**
- * Whether a result was selected when Find in Docs closed
+ * Whether a result was selected when Navigation Search closed
  * @example true
  */
-export const ATTR_FIND_IN_DOCS_HAD_SELECTION = 'find_in_docs.had_selection'
+export const ATTR_NAVIGATION_SEARCH_HAD_SELECTION =
+    'navigation_search.had_selection'
 
 /**
  * Navigation method used (keyboard or mouse)
  * @example "keyboard" | "mouse"
  */
-export const ATTR_FIND_IN_DOCS_NAVIGATION_METHOD =
-    'find_in_docs.navigation.method'
+export const ATTR_NAVIGATION_SEARCH_NAVIGATION_METHOD =
+    'navigation_search.navigation.method'
 
 /**
  * Navigation direction
  * @example "up" | "down"
  */
-export const ATTR_FIND_IN_DOCS_NAVIGATION_DIRECTION =
-    'find_in_docs.navigation.direction'
+export const ATTR_NAVIGATION_SEARCH_NAVIGATION_DIRECTION =
+    'navigation_search.navigation.direction'
 
 /**
  * URL of the clicked result
  * @example "/docs/elasticsearch/reference/current/search-aggregations.html"
  */
-export const ATTR_FIND_IN_DOCS_RESULT_URL = 'find_in_docs.result.url'
+export const ATTR_NAVIGATION_SEARCH_RESULT_URL = 'navigation_search.result.url'
 
 /**
  * Position of the clicked result (0-based)
  * @example 3
  */
-export const ATTR_FIND_IN_DOCS_RESULT_POSITION = 'find_in_docs.result.position'
+export const ATTR_NAVIGATION_SEARCH_RESULT_POSITION =
+    'navigation_search.result.position'
 
 /**
  * Relevance score of the clicked result
  * @example 0.85
  */
-export const ATTR_FIND_IN_DOCS_RESULT_SCORE = 'find_in_docs.result.score'
+export const ATTR_NAVIGATION_SEARCH_RESULT_SCORE =
+    'navigation_search.result.score'
 
 /**
  * Retry-After header value in seconds (for rate limiting)
  * @example 30
  */
-export const ATTR_FIND_IN_DOCS_RETRY_AFTER = 'find_in_docs.retry_after'
+export const ATTR_NAVIGATION_SEARCH_RETRY_AFTER =
+    'navigation_search.retry_after'
 
 // ============================================================================
 // EVENT ATTRIBUTES (Custom)

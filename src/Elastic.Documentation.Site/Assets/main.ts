@@ -3,7 +3,7 @@ import { initCopyButton } from './copybutton'
 import { initHighlight } from './hljs'
 import { initImageCarousel } from './image-carousel'
 import { openDetailsWithAnchor } from './open-details-with-anchor'
-import { initNav, scrollCurrentNaviItemIntoView } from './pages-nav'
+import { initNav } from './pages-nav'
 import { initSmoothScroll } from './smooth-scroll'
 import { initTabs } from './tabs'
 import { initializeOtel } from './telemetry/instrumentation'
@@ -105,12 +105,13 @@ document.addEventListener('htmx:load', function (event: HtmxEvent) {
     initMath()
 
     // We do this so that the navigation is not initialized twice
-    if (isLazyLoadNavigationEnabled) {
-        if (event.detail.elt.id === 'nav-tree') {
+    // When lazy load is enabled, only initialize when nav-tree loads
+    // Defer with requestAnimationFrame to ensure DOM is fully rendered
+    // The throttle with trailing: true will ensure only the last call executes
+    if (!isLazyLoadNavigationEnabled || event.detail.elt.id === 'nav-tree') {
+        requestAnimationFrame(() => {
             initNav()
-        }
-    } else {
-        initNav()
+        })
     }
     initSmoothScroll()
     openDetailsWithAnchor()
@@ -173,35 +174,6 @@ document.body.addEventListener(
             event.target?.id === 'content-container'
         ) {
             window.scrollTo(0, 0)
-        }
-    }
-)
-
-document.body.addEventListener(
-    'htmx:pushedIntoHistory',
-    function (event: HtmxEvent) {
-        const pagesNav = $('#pages-nav')
-        const currentNavItem = $$('.current', pagesNav)
-        currentNavItem.forEach((el) => {
-            el.classList.remove('current')
-        })
-        const navItems = $$('a[href="' + event.detail.path + '"]', pagesNav)
-        navItems.forEach((navItem) => {
-            navItem.classList.add('current')
-        })
-    }
-)
-
-document.body.addEventListener(
-    'htmx:oobAfterSwap',
-    function (event: HtmxEvent) {
-        if (event.detail.target.id === 'nav-tree') {
-            return
-        }
-
-        const pagesNav = $('#pages-nav')
-        if (pagesNav) {
-            scrollCurrentNaviItemIntoView(pagesNav)
         }
     }
 )
