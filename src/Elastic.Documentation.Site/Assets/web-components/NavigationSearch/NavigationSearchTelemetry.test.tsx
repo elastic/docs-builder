@@ -84,7 +84,7 @@ const resetStores = () => {
     })
 }
 
-describe('Find in Docs Telemetry Integration', () => {
+describe('Navigation Search Telemetry Integration', () => {
     beforeEach(() => {
         jest.clearAllMocks()
         resetStores()
@@ -94,8 +94,8 @@ describe('Find in Docs Telemetry Integration', () => {
         jest.restoreAllMocks()
     })
 
-    describe('Opening Find in Docs', () => {
-        it('should track find_in_docs_opened when input is focused', async () => {
+    describe('Opening Navigation Search', () => {
+        it('should track navigation_search_opened when input is focused', async () => {
             // Arrange
             renderWithProviders(<NavigationSearch />)
             const input = screen.getByPlaceholderText(/jump to page/i)
@@ -105,9 +105,9 @@ describe('Find in Docs Telemetry Integration', () => {
 
             // Assert
             expect(logging.logInfo).toHaveBeenCalledWith(
-                'find_in_docs_opened',
+                'navigation_search_opened',
                 {
-                    'find_in_docs.trigger': 'focus',
+                    'navigation_search.trigger': 'focus',
                 }
             )
         })
@@ -121,16 +121,16 @@ describe('Find in Docs Telemetry Integration', () => {
 
             // Assert
             expect(logging.logInfo).toHaveBeenCalledWith(
-                'find_in_docs_opened',
+                'navigation_search_opened',
                 {
-                    'find_in_docs.trigger': 'keyboard_shortcut',
+                    'navigation_search.trigger': 'keyboard_shortcut',
                 }
             )
         })
     })
 
-    describe('Closing Find in Docs', () => {
-        it('should track find_in_docs_closed with escape reason when pressing Escape', async () => {
+    describe('Closing Navigation Search', () => {
+        it('should track navigation_search_closed with escape reason when pressing Escape', async () => {
             // Arrange
             renderWithProviders(<NavigationSearch />)
             const input = screen.getByPlaceholderText(/jump to page/i)
@@ -144,15 +144,15 @@ describe('Find in Docs Telemetry Integration', () => {
 
             // Assert
             expect(logging.logInfo).toHaveBeenCalledWith(
-                'find_in_docs_closed',
+                'navigation_search_closed',
                 expect.objectContaining({
-                    'find_in_docs.close_reason': 'escape',
-                    'find_in_docs.query': 'elasticsearch',
+                    'navigation_search.close_reason': 'escape',
+                    'navigation_search.query': 'elasticsearch',
                 })
             )
         })
 
-        it('should track find_in_docs_closed with blur reason when clicking outside', async () => {
+        it('should track navigation_search_closed with blur reason when clicking outside', async () => {
             // Arrange
             renderWithProviders(
                 <div>
@@ -171,9 +171,9 @@ describe('Find in Docs Telemetry Integration', () => {
 
             // Assert
             expect(logging.logInfo).toHaveBeenCalledWith(
-                'find_in_docs_closed',
+                'navigation_search_closed',
                 expect.objectContaining({
-                    'find_in_docs.close_reason': 'blur',
+                    'navigation_search.close_reason': 'blur',
                 })
             )
         })
@@ -192,17 +192,17 @@ describe('Find in Docs Telemetry Integration', () => {
 
             // Assert - should have hadResults and hadSelection fields
             expect(logging.logInfo).toHaveBeenCalledWith(
-                'find_in_docs_closed',
+                'navigation_search_closed',
                 expect.objectContaining({
-                    'find_in_docs.had_results': expect.any(Boolean),
-                    'find_in_docs.had_selection': expect.any(Boolean),
+                    'navigation_search.had_results': expect.any(Boolean),
+                    'navigation_search.had_selection': expect.any(Boolean),
                 })
             )
         })
     })
 
     describe('Error Tracking', () => {
-        it('should track find_in_docs_rate_limited on 429 response', async () => {
+        it('should track navigation_search_rate_limited on 429 response', async () => {
             // Arrange - mock 429 response
             global.fetch = jest.fn().mockResolvedValue({
                 ok: false,
@@ -224,9 +224,9 @@ describe('Find in Docs Telemetry Integration', () => {
             // Assert - wait for rate limit warning
             await waitFor(() => {
                 expect(logging.logWarn).toHaveBeenCalledWith(
-                    'find_in_docs_rate_limited',
+                    'navigation_search_rate_limited',
                     expect.objectContaining({
-                        'find_in_docs.query': expect.any(String),
+                        'navigation_search.query': expect.any(String),
                     })
                 )
             })
@@ -234,7 +234,7 @@ describe('Find in Docs Telemetry Integration', () => {
     })
 })
 
-describe('Find in Docs Result Click Tracking', () => {
+describe('Navigation Search Result Click Tracking', () => {
     // Shared props for SearchResultsList - reduces duplication
     const createResultsListProps = () => ({
         isKeyboardNavigating: { current: false },
@@ -271,12 +271,12 @@ describe('Find in Docs Result Click Tracking', () => {
 
         // Assert - verify all required telemetry fields
         expect(logging.logInfo).toHaveBeenCalledWith(
-            'find_in_docs_result_clicked',
+            'navigation_search_result_clicked',
             {
-                'find_in_docs.query': 'elasticsearch',
-                'find_in_docs.result.position': 0,
-                'find_in_docs.result.url': '/docs/elasticsearch/guide',
-                'find_in_docs.result.score': 0.95,
+                'navigation_search.query': 'elasticsearch',
+                'navigation_search.result.position': 0,
+                'navigation_search.result.url': '/docs/elasticsearch/guide',
+                'navigation_search.result.score': 0.95,
             }
         )
         expect(props.onResultClick).toHaveBeenCalledTimes(1)
@@ -292,9 +292,9 @@ describe('Find in Docs Result Click Tracking', () => {
 
         // Assert
         expect(logging.logInfo).toHaveBeenCalledWith(
-            'find_in_docs_result_clicked',
+            'navigation_search_result_clicked',
             expect.objectContaining({
-                'find_in_docs.result.position': 1,
+                'navigation_search.result.position': 1,
             })
         )
     })
@@ -310,9 +310,9 @@ describe('Find in Docs Result Click Tracking', () => {
 
         // Assert - query should reflect the updated store value
         expect(logging.logInfo).toHaveBeenCalledWith(
-            'find_in_docs_result_clicked',
+            'navigation_search_result_clicked',
             expect.objectContaining({
-                'find_in_docs.query': 'updated query',
+                'navigation_search.query': 'updated query',
             })
         )
     })
