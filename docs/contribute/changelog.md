@@ -38,7 +38,7 @@ Additional workflows are still to come for updating and generating documentation
 
 You can create a configuration file to limit the acceptable product, type, subtype, and lifecycle values.
 You can also use it to prevent the creation of changelogs when certain PR labels are present.
-Refer to [changelog.yml.example](https://github.com/elastic/docs-builder/blob/main/config/changelog.yml.example).
+Refer to [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml).
 
 By default, the `docs-builder changelog add` command checks the following path: `docs/changelog.yml`.
 You can specify a different path with the `--config` command option.
@@ -56,7 +56,7 @@ If not specified, all default values from `ChangelogConfiguration.cs` are used.
 You can optionally add `label_to_type` and `label_to_areas` mappings in your changelog configuration.
 When you run the `docs-builder changelog add` command with the `--prs` option, it can use these mappings to fill in the `type` and `areas` in your changelog based on your pull request labels.
 
-Refer to the file layout in [changelog.yml.example](https://github.com/elastic/docs-builder/blob/main/config/changelog.yml.example) and an [example usage](#example-map-label).
+Refer to the file layout in [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml) and an [example usage](#example-map-label).
 
 ### Add blockers
 
@@ -65,7 +65,7 @@ When you run the `docs-builder changelog add` command with the `--prs` and `--pr
 
 You can use comma-separated product IDs to share the same list of labels across multiple products.
 
-Refer to the file layout in [changelog.yml.example](https://github.com/elastic/docs-builder/blob/main/config/changelog.yml.example) and an [example usage](#example-block-label).
+Refer to the file layout in [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml) and an [example usage](#example-block-label).
 
 ### Render blockers [render-blockers]
 
@@ -107,7 +107,7 @@ When rendering, entries with:
 
 The command will emit warnings indicating which changelog entries were commented out and why.
 
-Refer to [changelog.yml.example](https://github.com/elastic/docs-builder/blob/main/config/changelog.yml.example).
+Refer to [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml).
 
 ## Create changelog files [changelog-add]
 
