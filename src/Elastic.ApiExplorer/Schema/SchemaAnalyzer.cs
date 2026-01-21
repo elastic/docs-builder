@@ -359,13 +359,13 @@ public class SchemaAnalyzer(OpenApiDocument document, string? currentPageType = 
 					if (itemSchema is not null)
 					{
 						var itemInfo = GetTypeInfo(itemSchema);
-						// If the item is not an object and not a linked type, it's a primitive array
-						if (itemInfo is { IsObject: false, HasLink: false })
-						{
-							if (string.IsNullOrEmpty(itemInfo.SchemaRef))
-								arrayItemType = itemInfo.TypeName;
-						}
+						// If the item is not an object, not a linked type, and has no schema reference, it's a primitive array
+						if (itemInfo is { IsObject: false, HasLink: false } && string.IsNullOrEmpty(itemInfo.SchemaRef))
+							arrayItemType = itemInfo.TypeName;
 					}
+
+
+
 				}
 
 				// Get union options from oneOf/anyOf
