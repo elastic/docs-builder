@@ -18,7 +18,9 @@ namespace Elastic.ApiExplorer.Elasticsearch;
 /// <summary>
 /// Exports OpenAPI specifications from CloudFront URLs and converts them to DocumentationDocument instances.
 /// </summary>
-public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfiguration)
+public partial class OpenApiDocumentExporter(
+	VersionsConfiguration versionsConfiguration,
+	IDocumentInferrerService? documentInferrer = null)
 {
 	private static readonly HttpClient HttpClient = new();
 
@@ -160,6 +162,9 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 				// Extract ApplicableTo from x-state
 				var applies = ExtractApplicableTo(operation.Value);
 
+				// Infer product and repository metadata
+				var inference = documentInferrer?.InferForOpenApi(product);
+
 				yield return new DocumentationDocument
 				{
 					Type = "api",
@@ -176,7 +181,17 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 					[
 						new ParentDocument { Title = "API Reference", Url = "/docs/api" },
 						new ParentDocument { Title = product, Url = $"/docs/api/doc/{product}" }
-					]
+					],
+					Product = inference?.Product is not null
+						? new IndexedProduct { Id = inference.Product.Id, Repository = inference.Repository }
+						: null,
+					RelatedProducts = inference?.RelatedProducts.Count > 0
+						? inference.RelatedProducts.Select(p => new IndexedProduct
+						{
+							Id = p.Id,
+							Repository = p.Repository ?? inference.Repository
+						}).ToArray()
+						: null
 				};
 			}
 		}
@@ -209,7 +224,7 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 			return true; // Could not parse version, safe to include
 
 		// Get current version for the product
-		var versioningSystemId = product == "elasticsearch"
+		var versioningSystemId = product.Equals("elasticsearch", StringComparison.OrdinalIgnoreCase)
 			? VersioningSystemId.Stack
 			: VersioningSystemId.Stack; // Both use Stack for now
 
@@ -294,14 +309,14 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 	/// <summary>
 	/// Parses the version from "Added in X.Y.Z" pattern in the x-state string.
 	/// </summary>
-	private static SemVersion? ParseVersion(string stateValue)
+	private static VersionSpec? ParseVersion(string stateValue)
 	{
 		var match = AddedInVersionRegex().Match(stateValue);
 		if (!match.Success)
 			return null;
 
 		var versionString = match.Groups[1].Value;
-		return SemVersion.TryParse(versionString, out var version) ? version : null;
+		return VersionSpec.TryParse(versionString, out var version) ? version : null;
 	}
 
 	/// <summary>

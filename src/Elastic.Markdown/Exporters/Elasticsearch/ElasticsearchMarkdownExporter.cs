@@ -5,11 +5,13 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Ingest.Elasticsearch;
 using Elastic.Ingest.Elasticsearch.Indices;
+using Elastic.Markdown.Exporters.Elasticsearch.Enrichment;
 using Elastic.Transport;
 using Elastic.Transport.Products.Elasticsearch;
 using Microsoft.Extensions.Logging;
@@ -42,6 +44,17 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	private readonly VersionsConfiguration _versionsConfiguration;
 	private readonly string _fixedSynonymsHash;
 
+	// AI Enrichment - hybrid approach: cache hits use enrich processor, misses are applied inline
+	private readonly ElasticsearchEnrichmentCache? _enrichmentCache;
+	private readonly ElasticsearchLlmClient? _llmClient;
+	private readonly EnrichPolicyManager? _enrichPolicyManager;
+	private readonly EnrichmentOptions _enrichmentOptions = new();
+	private int _enrichmentCount;
+	private int _cacheHitCount;
+
+	// Document inference service for product and repository metadata
+	private readonly IDocumentInferrerService _documentInferrer;
+
 	public ElasticsearchMarkdownExporter(
 		ILoggerFactory logFactory,
 		IDiagnosticsCollector collector,
@@ -61,30 +74,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		_rules = context.SearchConfiguration.Rules;
 		var es = endpoints.Elasticsearch;
 
-		var configuration = new ElasticsearchConfiguration(es.Uri)
-		{
-			Authentication = es.ApiKey is { } apiKey
-				? new ApiKey(apiKey)
-				: es is { Username: { } username, Password: { } password }
-					? new BasicAuthentication(username, password)
-					: null,
-			EnableHttpCompression = true,
-			//DebugMode = _endpoint.DebugMode,
-			DebugMode = true,
-			CertificateFingerprint = _endpoint.CertificateFingerprint,
-			ProxyAddress = _endpoint.ProxyAddress,
-			ProxyPassword = _endpoint.ProxyPassword,
-			ProxyUsername = _endpoint.ProxyUsername,
-			ServerCertificateValidationCallback = _endpoint.DisableSslVerification
-				? CertificateValidations.AllowAll
-				: _endpoint.Certificate is { } cert
-					? _endpoint.CertificateIsNotRoot
-						? CertificateValidations.AuthorityPartOfChain(cert)
-						: CertificateValidations.AuthorityIsRoot(cert)
-					: null
-		};
-
-		_transport = new DistributedTransport(configuration);
+		_transport = ElasticsearchTransportFactory.Create(es);
 
 		string[] fixedSynonyms = ["esql", "data-stream", "data-streams", "machine-learning"];
 		var indexTimeSynonyms = _synonyms.Aggregate(new List<SynonymRule>(), (acc, synonym) =>
@@ -95,13 +85,84 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		}).Where(r => fixedSynonyms.Contains(r.Id)).Select(r => r.Synonyms).ToArray();
 		_fixedSynonymsHash = HashedBulkUpdate.CreateHash(string.Join(",", indexTimeSynonyms));
 
-		_lexicalChannel = new ElasticsearchLexicalIngestChannel(logFactory, collector, es, indexNamespace, _transport, indexTimeSynonyms);
-		_semanticChannel = new ElasticsearchSemanticIngestChannel(logFactory, collector, es, indexNamespace, _transport, indexTimeSynonyms);
+		// Use AI enrichment pipeline if enabled - hybrid approach:
+		// - Cache hits: enrich processor applies fields at index time
+		// - Cache misses: apply fields inline before indexing
+		var aiPipeline = es.EnableAiEnrichment ? EnrichPolicyManager.PipelineName : null;
+		_lexicalChannel = new ElasticsearchLexicalIngestChannel(logFactory, collector, es, indexNamespace, _transport, indexTimeSynonyms, aiPipeline);
+		_semanticChannel = new ElasticsearchSemanticIngestChannel(logFactory, collector, es, indexNamespace, _transport, indexTimeSynonyms, aiPipeline);
+
+		// Initialize AI enrichment services if enabled
+		if (es.EnableAiEnrichment)
+		{
+			_enrichmentCache = new ElasticsearchEnrichmentCache(_transport, logFactory.CreateLogger<ElasticsearchEnrichmentCache>());
+			_llmClient = new ElasticsearchLlmClient(_transport, logFactory.CreateLogger<ElasticsearchLlmClient>());
+			_enrichPolicyManager = new EnrichPolicyManager(_transport, logFactory.CreateLogger<EnrichPolicyManager>(), _enrichmentCache.IndexName);
+		}
+
+		// Initialize document inference service for product and repository metadata
+		var assemblyConfiguration = AssemblyConfiguration.Create(context.ConfigurationFileProvider);
+		_documentInferrer = new DocumentInferrerService(
+			context.ProductsConfiguration,
+			context.VersionsConfiguration,
+			context.LegacyUrlMappings,
+			assemblyConfiguration);
+	}
+
+	private const int MaxRetries = 5;
+
+	/// <summary>
+	/// Executes an Elasticsearch API call with exponential backoff retry on 429 (rate limit) errors.
+	/// </summary>
+	private async Task<TResponse> WithRetryAsync<TResponse>(
+		Func<Task<TResponse>> apiCall,
+		string operationName,
+		Cancel ctx) where TResponse : TransportResponse
+	{
+		for (var attempt = 0; attempt <= MaxRetries; attempt++)
+		{
+			var response = await apiCall();
+
+			if (response.ApiCallDetails.HasSuccessfulStatusCode)
+				return response;
+
+			if (response.ApiCallDetails.HttpStatusCode == 429 && attempt < MaxRetries)
+			{
+				var delay = TimeSpan.FromSeconds(Math.Pow(2, attempt)); // 1s, 2s, 4s, 8s, 16s
+				_logger.LogWarning(
+					"Rate limited (429) on {Operation}, retrying in {Delay}s (attempt {Attempt}/{MaxRetries})",
+					operationName, delay.TotalSeconds, attempt + 1, MaxRetries);
+				await Task.Delay(delay, ctx);
+				continue;
+			}
+
+			// Not a 429 or exhausted retries - return the response for caller to handle
+			return response;
+		}
+
+		// Should never reach here, but satisfy compiler
+		return await apiCall();
 	}
 
 	/// <inheritdoc />
 	public async ValueTask StartAsync(Cancel ctx = default)
 	{
+		// Initialize AI enrichment cache (pre-loads existing hashes into memory)
+		if (_enrichmentCache is not null && _enrichPolicyManager is not null)
+		{
+			_logger.LogInformation("Initializing AI enrichment cache...");
+			await _enrichmentCache.InitializeAsync(ctx);
+			_logger.LogInformation("AI enrichment cache ready with {Count} existing entries", _enrichmentCache.Count);
+
+			// The enrich pipeline must exist before indexing (used as default_pipeline).
+			// The pipeline's enrich processor requires the .enrich-* index to exist,
+			// which is created by executing the policy. We execute even with an empty
+			// cache index - it just creates an empty enrich index that returns no matches.
+			_logger.LogInformation("Setting up enrich policy and pipeline...");
+			await _enrichPolicyManager.ExecutePolicyAsync(ctx);
+			await _enrichPolicyManager.EnsurePipelineExistsAsync(ctx);
+		}
+
 		_currentLexicalHash = await _lexicalChannel.Channel.GetIndexTemplateHashAsync(ctx) ?? string.Empty;
 		_currentSemanticHash = await _semanticChannel.Channel.GetIndexTemplateHashAsync(ctx) ?? string.Empty;
 
@@ -173,7 +234,10 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	{
 		var json = JsonSerializer.Serialize(synonymsSet, SynonymSerializerContext.Default.SynonymsSet);
 
-		var response = await _transport.PutAsync<StringResponse>($"_synonyms/{setName}", PostData.String(json), ctx);
+		var response = await WithRetryAsync(
+			() => _transport.PutAsync<StringResponse>($"_synonyms/{setName}", PostData.String(json), ctx),
+			$"PUT _synonyms/{setName}",
+			ctx);
 
 		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
 			_collector.EmitGlobalError($"Failed to publish synonym set '{setName}'. Reason: {response.ApiCallDetails.OriginalException?.Message ?? response.ToString()}");
@@ -213,7 +277,10 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	{
 		var json = JsonSerializer.Serialize(ruleset, QueryRulesetSerializerContext.Default.QueryRuleset);
 
-		var response = await _transport.PutAsync<StringResponse>($"_query_rules/{rulesetName}", PostData.String(json), ctx);
+		var response = await WithRetryAsync(
+			() => _transport.PutAsync<StringResponse>($"_query_rules/{rulesetName}", PostData.String(json), ctx),
+			$"PUT _query_rules/{rulesetName}",
+			ctx);
 
 		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
 			_collector.EmitGlobalError($"Failed to publish query ruleset '{rulesetName}'. Reason: {response.ApiCallDetails.OriginalException?.Message ?? response.ToString()}");
@@ -223,7 +290,10 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 
 	private async ValueTask<long> CountAsync(string index, string body, Cancel ctx = default)
 	{
-		var countResponse = await _transport.PostAsync<DynamicResponse>($"/{index}/_count", PostData.String(body), ctx);
+		var countResponse = await WithRetryAsync(
+			() => _transport.PostAsync<DynamicResponse>($"/{index}/_count", PostData.String(body), ctx),
+			$"POST {index}/_count",
+			ctx);
 		return countResponse.Body.Get<long>("count");
 	}
 
@@ -329,6 +399,82 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 
 		_logger.LogInformation("Finish sync to semantic index using {IndexStrategy} strategy", _indexStrategy.ToStringFast(true));
 		await QueryDocumentCounts(ctx);
+
+		// Execute enrich policy so new cache entries are available for next run
+		await ExecuteEnrichPolicyIfNeededAsync(ctx);
+	}
+
+	private async ValueTask ExecuteEnrichPolicyIfNeededAsync(Cancel ctx)
+	{
+		if (_enrichmentCache is null || _enrichPolicyManager is null)
+			return;
+
+		_logger.LogInformation(
+			"AI enrichment complete: {CacheHits} cache hits, {Enrichments} enrichments generated (limit: {Limit})",
+			_cacheHitCount, _enrichmentCount, _enrichmentOptions.MaxNewEnrichmentsPerRun);
+
+		if (_enrichmentCache.Count > 0)
+		{
+			_logger.LogInformation("Executing enrich policy to update internal index with {Count} total entries...", _enrichmentCache.Count);
+			await _enrichPolicyManager.ExecutePolicyAsync(ctx);
+
+			// Backfill: Apply AI fields to documents that were skipped by hash-based upsert
+			await BackfillMissingAiFieldsAsync(ctx);
+		}
+	}
+
+	private async ValueTask BackfillMissingAiFieldsAsync(Cancel ctx)
+	{
+		// Why backfill is needed:
+		// The exporter uses hash-based upsert - unchanged documents are skipped during indexing.
+		// These skipped documents never pass through the ingest pipeline, so they miss AI fields.
+		// This backfill runs _update_by_query with the AI pipeline to enrich those documents.
+		//
+		// Only backfill the semantic index - it's what the search API uses.
+		// The lexical index is just an intermediate step for reindexing.
+		if (_endpoint.NoSemantic || _enrichmentCache is null)
+			return;
+
+		var semanticAlias = _semanticChannel.Channel.Options.ActiveSearchAlias;
+
+		_logger.LogInformation(
+			"Starting AI backfill for documents missing AI fields (cache has {CacheCount} entries)",
+			_enrichmentCache.Count);
+
+		// Find documents with enrichment_key but missing AI fields - these need the pipeline applied
+		var query = /*lang=json,strict*/ """
+			{
+				"query": {
+					"bool": {
+						"must": { "exists": { "field": "enrichment_key" } },
+						"must_not": { "exists": { "field": "ai_questions" } }
+					}
+				}
+			}
+			""";
+
+		await RunBackfillQuery(semanticAlias, query, ctx);
+	}
+
+	private async ValueTask RunBackfillQuery(string indexAlias, string query, Cancel ctx)
+	{
+		var pipeline = EnrichPolicyManager.PipelineName;
+		var url = $"/{indexAlias}/_update_by_query?pipeline={pipeline}&wait_for_completion=false";
+
+		var response = await WithRetryAsync(
+			() => _transport.PostAsync<DynamicResponse>(url, PostData.String(query), ctx),
+			$"POST {indexAlias}/_update_by_query",
+			ctx);
+
+		var taskId = response.Body.Get<string>("task");
+		if (string.IsNullOrWhiteSpace(taskId))
+		{
+			_logger.LogWarning("AI backfill failed for {Index}: {Response}", indexAlias, response);
+			return;
+		}
+
+		_logger.LogInformation("AI backfill task id: {TaskId}", taskId);
+		await PollTaskUntilComplete(taskId, "_update_by_query (AI backfill)", indexAlias, null, ctx);
 	}
 
 	private async ValueTask QueryIngestStatistics(string lexicalWriteAlias, Cancel ctx)
@@ -370,7 +516,10 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 			}
 		}");
 		var reindexUrl = $"/{lexicalWriteAlias}/_delete_by_query?wait_for_completion=false";
-		var deleteOldLexicalDocs = await _transport.PostAsync<DynamicResponse>(reindexUrl, request, ctx);
+		var deleteOldLexicalDocs = await WithRetryAsync(
+			() => _transport.PostAsync<DynamicResponse>(reindexUrl, request, ctx),
+			$"POST {lexicalWriteAlias}/_delete_by_query",
+			ctx);
 		var taskId = deleteOldLexicalDocs.Body.Get<string>("task");
 		if (string.IsNullOrWhiteSpace(taskId))
 		{
@@ -379,10 +528,18 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 			return;
 		}
 		_logger.LogInformation("_delete_by_query task id: {TaskId}", taskId);
+		await PollTaskUntilComplete(taskId, "_delete_by_query", lexicalWriteAlias, null, ctx);
+	}
+
+	private async ValueTask PollTaskUntilComplete(string taskId, string operation, string sourceIndex, string? destIndex, Cancel ctx)
+	{
 		bool completed;
 		do
 		{
-			var reindexTask = await _transport.GetAsync<DynamicResponse>($"/_tasks/{taskId}", ctx);
+			var reindexTask = await WithRetryAsync(
+				() => _transport.GetAsync<DynamicResponse>($"/_tasks/{taskId}", ctx),
+				$"GET _tasks/{taskId}",
+				ctx);
 			completed = reindexTask.Body.Get<bool>("completed");
 			var total = reindexTask.Body.Get<int>("task.status.total");
 			var updated = reindexTask.Body.Get<int>("task.status.updated");
@@ -391,8 +548,18 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 			var batches = reindexTask.Body.Get<int>("task.status.batches");
 			var runningTimeInNanos = reindexTask.Body.Get<long>("task.running_time_in_nanos");
 			var time = TimeSpan.FromMicroseconds(runningTimeInNanos / 1000);
-			_logger.LogInformation("_delete_by_query '{SourceIndex}': {RunningTimeInNanos} Documents {Total}: {Updated} updated, {Created} created, {Deleted} deleted, {Batches} batches",
-				lexicalWriteAlias, time.ToString(@"hh\:mm\:ss"), total, updated, created, deleted, batches);
+
+			if (destIndex is not null)
+			{
+				_logger.LogInformation("{Operation}: {Time} '{SourceIndex}' => '{DestIndex}'. Documents {Total}: {Updated} updated, {Created} created, {Deleted} deleted, {Batches} batches",
+					operation, time.ToString(@"hh\:mm\:ss"), sourceIndex, destIndex, total, updated, created, deleted, batches);
+			}
+			else
+			{
+				_logger.LogInformation("{Operation} '{SourceIndex}': {Time} Documents {Total}: {Updated} updated, {Created} created, {Deleted} deleted, {Batches} batches",
+					operation, sourceIndex, time.ToString(@"hh\:mm\:ss"), total, updated, created, deleted, batches);
+			}
+
 			if (!completed)
 				await Task.Delay(TimeSpan.FromSeconds(5), ctx);
 
@@ -402,7 +569,10 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	private async ValueTask DoReindex(PostData request, string lexicalWriteAlias, string semanticWriteAlias, string typeOfSync, Cancel ctx)
 	{
 		var reindexUrl = "/_reindex?wait_for_completion=false&scroll=10m";
-		var reindexNewChanges = await _transport.PostAsync<DynamicResponse>(reindexUrl, request, ctx);
+		var reindexNewChanges = await WithRetryAsync(
+			() => _transport.PostAsync<DynamicResponse>(reindexUrl, request, ctx),
+			$"POST _reindex ({typeOfSync})",
+			ctx);
 		var taskId = reindexNewChanges.Body.Get<string>("task");
 		if (string.IsNullOrWhiteSpace(taskId))
 		{
@@ -411,24 +581,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 			return;
 		}
 		_logger.LogInformation("_reindex {Type} task id: {TaskId}", typeOfSync, taskId);
-		bool completed;
-		do
-		{
-			var reindexTask = await _transport.GetAsync<DynamicResponse>($"/_tasks/{taskId}", ctx);
-			completed = reindexTask.Body.Get<bool>("completed");
-			var total = reindexTask.Body.Get<int>("task.status.total");
-			var updated = reindexTask.Body.Get<int>("task.status.updated");
-			var created = reindexTask.Body.Get<int>("task.status.created");
-			var deleted = reindexTask.Body.Get<int>("task.status.deleted");
-			var batches = reindexTask.Body.Get<int>("task.status.batches");
-			var runningTimeInNanos = reindexTask.Body.Get<long>("task.running_time_in_nanos");
-			var time = TimeSpan.FromMicroseconds(runningTimeInNanos / 1000);
-			_logger.LogInformation("_reindex {Type}: {RunningTimeInNanos} '{SourceIndex}' => '{DestinationIndex}'. Documents {Total}: {Updated} updated, {Created} created, {Deleted} deleted, {Batches} batches",
-				typeOfSync, time.ToString(@"hh\:mm\:ss"), lexicalWriteAlias, semanticWriteAlias, total, updated, created, deleted, batches);
-			if (!completed)
-				await Task.Delay(TimeSpan.FromSeconds(5), ctx);
-
-		} while (!completed);
+		await PollTaskUntilComplete(taskId, $"_reindex {typeOfSync}", lexicalWriteAlias, semanticWriteAlias, ctx);
 	}
 
 	/// <inheritdoc />
@@ -436,6 +589,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	{
 		_lexicalChannel.Dispose();
 		_semanticChannel.Dispose();
+		_llmClient?.Dispose();
 		GC.SuppressFinalize(this);
 	}
 }

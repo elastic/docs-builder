@@ -76,6 +76,12 @@ public class NavigationPrefixChecker
 		if (!Path.IsPathRooted(localLinksJson))
 			localLinksJson = Path.Combine(Paths.WorkingDirectoryRoot.FullName, localLinksJson);
 
+		if (!File.Exists(localLinksJson))
+		{
+			collector.EmitError(repository, $"Local links file '{localLinksJson}' not found. This usually means the documentation build step failed or was skipped.");
+			return;
+		}
+
 		var linkReference = await ReadLocalLinksJsonAsync(localLinksJson, ctx);
 		await FetchAndValidateCrossLinks(collector, repository, linkReference, ctx);
 	}

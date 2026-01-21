@@ -44,6 +44,8 @@ public record DetectionRuleOverviewRef : FileRef
 			.EnumerateFiles("*.*", SearchOption.AllDirectories)
 			.Where(f => !f.Attributes.HasFlag(FileAttributes.Hidden) && !f.Attributes.HasFlag(FileAttributes.System))
 			.Where(f => !f.Directory!.Attributes.HasFlag(FileAttributes.Hidden) && !f.Directory!.Attributes.HasFlag(FileAttributes.System))
+			// skip symlinks
+			.Where(f => f.LinkTarget == null)
 			.Where(f => f.Extension is ".md" or ".toml")
 			.Where(f => f.Name != "README.md")
 			.Where(f => !f.FullName.Contains($"{Path.DirectorySeparatorChar}_deprecated{Path.DirectorySeparatorChar}"))

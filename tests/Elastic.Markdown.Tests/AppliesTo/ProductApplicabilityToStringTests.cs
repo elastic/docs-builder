@@ -50,7 +50,7 @@ public class ProductApplicabilityToStringTests
 		var productApplicability = new ProductApplicability
 		{
 			ApmAgentDotnet = AppliesCollection.GenerallyAvailable,
-			Ecctl = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = new SemVersion(1, 0, 0) }])
+			Ecctl = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = VersionSpec.TryParse("1.0.0", out var v) ? v : null }])
 		};
 
 		var result = productApplicability.ToString();

@@ -6,11 +6,11 @@ using Elastic.Documentation.Api.Core.Search;
 
 namespace Elastic.Documentation.Api.Infrastructure.Adapters.Search;
 
-public class MockSearchGateway : ISearchGateway
+public class MockNavigationSearchGateway : INavigationSearchGateway
 {
-	private static readonly List<SearchResultItem> Results =
+	private static readonly List<NavigationSearchResultItem> Results =
 	[
-		new SearchResultItem
+		new NavigationSearchResultItem
 		{
 			Type = "doc",
 			Url = "https://www.elastic.co/kibana",
@@ -19,7 +19,7 @@ public class MockSearchGateway : ISearchGateway
 				"Run data analytics at speed and scale for observability, security, and search with Kibana. Powerful analysis on any data from any source.",
 			Parents = []
 		},
-		new SearchResultItem
+		new NavigationSearchResultItem
 		{
 			Type = "doc",
 			Url = "https://www.elastic.co/docs/explore-analyze",
@@ -27,7 +27,7 @@ public class MockSearchGateway : ISearchGateway
 			Description = "Kibana provides a comprehensive suite of tools to help you search, interact with, explore, and analyze your data effectively.",
 			Parents = []
 		},
-		new SearchResultItem
+		new NavigationSearchResultItem
 		{
 			Type = "doc",
 			Url = "https://www.elastic.co/docs/deploy-manage/deploy/self-managed/install-kibana",
@@ -36,7 +36,7 @@ public class MockSearchGateway : ISearchGateway
 				"Information on how to set up Kibana and get it running, including downloading, enrollment with Elasticsearch cluster, and configuration.",
 			Parents = []
 		},
-		new SearchResultItem
+		new NavigationSearchResultItem
 		{
 			Type = "doc",
 			Url = "https://www.elastic.co/kibana/kibana-lens",
@@ -45,7 +45,7 @@ public class MockSearchGateway : ISearchGateway
 				"Kibana Lens simplifies the process of data visualization through a drag‑and‑drop experience, ideal for exploring logs, trends, and metrics.",
 			Parents = []
 		},
-		new SearchResultItem
+		new NavigationSearchResultItem
 		{
 			Type = "doc",
 			Url = "https://www.elastic.co/docs",
@@ -54,7 +54,7 @@ public class MockSearchGateway : ISearchGateway
 				"Official Elastic documentation. Explore guides for Elastic Cloud (hosted & on‑prem), product documentation, how‑to guides and API reference.",
 			Parents = []
 		},
-		new SearchResultItem
+		new NavigationSearchResultItem
 		{
 			Type = "doc",
 			Url = "https://www.elastic.co/docs/get-started/introduction",
@@ -63,7 +63,7 @@ public class MockSearchGateway : ISearchGateway
 				"Use Elasticsearch to search, index, store, and analyze data of all shapes and sizes in near real time. Kibana is the graphical user interface for Elasticsearch.",
 			Parents = []
 		},
-		new SearchResultItem
+		new NavigationSearchResultItem
 		{
 			Type = "doc",
 			Url = "https://www.elastic.co/docs/solutions/search/elasticsearch-basics-quickstart",
@@ -71,7 +71,7 @@ public class MockSearchGateway : ISearchGateway
 			Description = "Hands‑on introduction to fundamental Elasticsearch concepts: indices, documents, mappings, and search via Console syntax.",
 			Parents = []
 		},
-		new SearchResultItem
+		new NavigationSearchResultItem
 		{
 			Type = "doc",
 			Url = "https://www.elastic.co/docs/api/doc/elasticsearch/group/endpoint-document",
@@ -82,7 +82,7 @@ public class MockSearchGateway : ISearchGateway
 		}
 	];
 
-	public async Task<SearchResult> SearchAsync(string query, int pageNumber, int pageSize, string? filter = null, CancellationToken ctx = default)
+	public async Task<NavigationSearchResult> NavigationSearchAsync(string query, int pageNumber, int pageSize, string? filter = null, CancellationToken ctx = default)
 	{
 		var filteredResults = Results
 			.Where(item =>
@@ -110,7 +110,7 @@ public class MockSearchGateway : ISearchGateway
 		Console.WriteLine($"MockSearchGateway: Paged results count: {pagedResults.Count}");
 
 		await Task.Delay(1000, ctx);
-		return new SearchResult
+		return new NavigationSearchResult
 		{
 			TotalHits = filteredResults.Count,
 			Results = pagedResults,

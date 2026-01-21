@@ -37,11 +37,86 @@ public record AppliesCollection : IReadOnlyCollection<Applicability>
 		if (applications.Count == 0)
 			return false;
 
+		// Infer version semantics when multiple items have GreaterThanOrEqual versions
+		applications = InferVersionSemantics(applications);
+
 		// Sort by version in descending order (the highest version first)
-		// Items without versions (AllVersions.Instance) are sorted last
+		// Items without versions (AllVersionsSpec.Instance) are sorted last
 		var sortedApplications = applications.OrderDescending().ToArray();
 		availability = new AppliesCollection(sortedApplications);
 		return true;
+	}
+
+	/// <summary>
+	/// Infers versioning semantics according to the following ruleset:
+	/// - The highest version keeps GreaterThanOrEqual (e.g., 9.4+)
+	/// - Lower versions become Exact if consecutive, or Range to fill gaps
+	/// - This rule only applies when all versions are at minor level (patch = 0).
+	/// </summary>
+	private static List<Applicability> InferVersionSemantics(List<Applicability> applications)
+	{
+		// Get items with actual GreaterThanOrEqual versions (not AllVersionsSpec, not null, not ranges/exact)
+		var gteItems = applications
+			.Where(a => a.Version is { Kind: VersionSpecKind.GreaterThanOrEqual }
+						&& a.Version != AllVersionsSpec.Instance)
+			.ToList();
+
+		// If 0 or 1 GTE items, no inference needed
+		if (gteItems.Count <= 1)
+			return applications;
+
+		// Only apply inference when all entries are on patch version 0
+		if (gteItems.Any(a => a.Version!.Min.Patch != 0))
+			return applications;
+
+		// Sort GTE items by version ascending to process from lowest to highest
+		var sortedGteVersions = gteItems
+			.Select(a => a.Version!.Min)
+			.Distinct()
+			.OrderBy(v => v)
+			.ToList();
+
+		if (sortedGteVersions.Count <= 1)
+			return applications;
+
+		var versionMapping = new Dictionary<SemVersion, VersionSpec>();
+
+		for (var i = 0; i < sortedGteVersions.Count; i++)
+		{
+			var currentVersion = sortedGteVersions[i];
+
+			if (i == sortedGteVersions.Count - 1)
+			{
+				// Highest version keeps GreaterThanOrEqual
+				versionMapping[currentVersion] = VersionSpec.GreaterThanOrEqual(currentVersion);
+			}
+			else
+			{
+				var nextVersion = sortedGteVersions[i + 1];
+
+				// Define an Exact or Range VersionSpec according to the numeric difference between lifecycles
+				if (currentVersion.Major == nextVersion.Major
+					&& nextVersion.Minor == currentVersion.Minor + 1)
+					versionMapping[currentVersion] = VersionSpec.Exact(currentVersion);
+				else
+				{
+					var rangeEnd = new SemVersion(nextVersion.Major, nextVersion.Minor == 0 ? nextVersion.Minor : nextVersion.Minor - 1, 0);
+					versionMapping[currentVersion] = VersionSpec.Range(currentVersion, rangeEnd);
+				}
+			}
+		}
+
+		// Apply the mapping to create updated applications
+		return applications.Select(a =>
+		{
+			if (a.Version is null or AllVersionsSpec || a is not { Version.Kind: VersionSpecKind.GreaterThanOrEqual })
+				return a;
+
+			if (versionMapping.TryGetValue(a.Version.Min, out var newSpec))
+				return a with { Version = newSpec };
+
+			return a;
+		}).ToList();
 	}
 
 	public virtual bool Equals(AppliesCollection? other)
@@ -98,36 +173,24 @@ public record AppliesCollection : IReadOnlyCollection<Applicability>
 public record Applicability : IComparable<Applicability>, IComparable
 {
 	public ProductLifecycle Lifecycle { get; init; }
-	public SemVersion? Version { get; init; }
+	public VersionSpec? Version { get; init; }
 
 	public static Applicability GenerallyAvailable { get; } = new()
 	{
 		Lifecycle = ProductLifecycle.GenerallyAvailable,
-		Version = AllVersions.Instance
+		Version = AllVersionsSpec.Instance
 	};
 
 
 	public string GetLifeCycleName() =>
-		Lifecycle switch
-		{
-			ProductLifecycle.TechnicalPreview => "Preview",
-			ProductLifecycle.Beta => "Beta",
-			ProductLifecycle.Development => "Development",
-			ProductLifecycle.Deprecated => "Deprecated",
-			ProductLifecycle.Planned => "Planned",
-			ProductLifecycle.Discontinued => "Discontinued",
-			ProductLifecycle.Unavailable => "Unavailable",
-			ProductLifecycle.GenerallyAvailable => "GA",
-			ProductLifecycle.Removed => "Removed",
-			_ => throw new ArgumentOutOfRangeException(nameof(Lifecycle), Lifecycle, null)
-		};
+		ProductLifecycleInfo.GetShortName(Lifecycle);
 
 
 	/// <inheritdoc />
 	public int CompareTo(Applicability? other)
 	{
-		var xIsNonVersioned = Version is null || ReferenceEquals(Version, AllVersions.Instance);
-		var yIsNonVersioned = other?.Version is null || ReferenceEquals(other.Version, AllVersions.Instance);
+		var xIsNonVersioned = Version is null || ReferenceEquals(Version, AllVersionsSpec.Instance);
+		var yIsNonVersioned = other?.Version is null || ReferenceEquals(other.Version, AllVersionsSpec.Instance);
 
 		if (xIsNonVersioned && yIsNonVersioned)
 			return 0;
@@ -158,7 +221,7 @@ public record Applicability : IComparable<Applicability>, IComparable
 			_ => throw new ArgumentOutOfRangeException()
 		};
 		_ = sb.Append(lifecycle);
-		if (Version is not null && Version != AllVersions.Instance)
+		if (Version is not null && Version != AllVersionsSpec.Instance)
 			_ = sb.Append(' ').Append(Version);
 		return sb.ToString();
 	}
@@ -191,7 +254,7 @@ public record Applicability : IComparable<Applicability>, IComparable
 		}
 
 		var lookup = tokens[0].ToLowerInvariant();
-		var lifecycle = lookup switch
+		ProductLifecycle? lifecycle = lookup switch
 		{
 			"preview" => ProductLifecycle.TechnicalPreview,
 			"tech-preview" => ProductLifecycle.TechnicalPreview,
@@ -207,8 +270,14 @@ public record Applicability : IComparable<Applicability>, IComparable
 			"coming" => ProductLifecycle.Planned,
 			"planned" => ProductLifecycle.Planned,
 			"discontinued" => ProductLifecycle.Discontinued,
-			_ => throw new Exception($"Unknown product lifecycle: {tokens[0]}")
+			_ => null
 		};
+		if (lifecycle is null)
+		{
+			diagnostics.Add((Severity.Error, $"Unknown product lifecycle: '{tokens[0]}'. Valid lifecycles are: ga, preview, tech-preview, beta, deprecated, removed."));
+			availability = null;
+			return false;
+		}
 		var deprecatedLifecycles = new[]
 		{
 			ProductLifecycle.Development,
@@ -217,19 +286,19 @@ public record Applicability : IComparable<Applicability>, IComparable
 		};
 
 		// TODO emit as error when all docs have been updated
-		if (deprecatedLifecycles.Contains(lifecycle))
+		if (deprecatedLifecycles.Contains(lifecycle.Value))
 			diagnostics.Add((Severity.Hint, $"The '{lookup}' lifecycle is deprecated and will be removed in a future release."));
 
 		var version = tokens.Length < 2
 			? null
 			: tokens[1] switch
 			{
-				null => AllVersions.Instance,
-				"all" => AllVersions.Instance,
-				"" => AllVersions.Instance,
-				var t => SemVersionConverter.TryParse(t, out var v) ? v : null
+				null => AllVersionsSpec.Instance,
+				"all" => AllVersionsSpec.Instance,
+				"" => AllVersionsSpec.Instance,
+				var t => VersionSpec.TryParse(t, out var v) ? v : null
 			};
-		availability = new Applicability { Version = version, Lifecycle = lifecycle };
+		availability = new Applicability { Version = version, Lifecycle = lifecycle.Value };
 		return true;
 	}
 

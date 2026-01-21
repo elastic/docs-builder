@@ -215,8 +215,8 @@ type Setup =
         versioningSystems.Add(VersioningSystemId.Serverless, 
             VersioningSystem(
                 Id = VersioningSystemId.Serverless,
-                Current = SemVersion(8, 0, 0),
-                Base = SemVersion(8, 0, 0)
+                Current = AllVersions.Instance,
+                Base = AllVersions.Instance
             )
         )
         versioningSystems.Add(VersioningSystemId.ApmAgentJava, 
@@ -286,7 +286,9 @@ type Setup =
             VersionsConfiguration = versionConfig,
             ConfigurationFileProvider = configurationFileProvider,
             Endpoints=DocumentationEndpoints(Elasticsearch = ElasticsearchEndpoint.Default),
-            ProductsConfiguration = ProductsConfiguration(Products = productDict.ToFrozenDictionary()),
+            ProductsConfiguration = ProductsConfiguration(
+                Products = productDict.ToFrozenDictionary(),
+                ProductDisplayNames = (productDict |> Seq.map (fun p -> KeyValuePair(p.Key, p.Value.DisplayName)) |> fun s -> Dictionary(s)).ToFrozenDictionary()),
             LegacyUrlMappings = LegacyUrlMappingConfiguration(Mappings = []),
             SearchConfiguration = SearchConfiguration(Synonyms = Dictionary<string, string[]>(), Rules = [], DiminishTerms = [])
         )

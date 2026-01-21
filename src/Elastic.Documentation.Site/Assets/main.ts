@@ -3,7 +3,6 @@ import { initAppliesSwitch } from './applies-switch'
 import { initCopyButton } from './copybutton'
 import { initHighlight } from './hljs'
 import { initImageCarousel } from './image-carousel'
-import './markdown/applies-to'
 import { openDetailsWithAnchor } from './open-details-with-anchor'
 import { initNav } from './pages-nav'
 import { initSmoothScroll } from './smooth-scroll'
@@ -32,8 +31,11 @@ initializeOtel({
 // Dynamically import web components after telemetry is initialized
 // This ensures telemetry is available when the components execute
 // Parcel will automatically code-split this into a separate chunk
-import('./web-components/SearchOrAskAi/SearchOrAskAi')
+import('./web-components/NavigationSearch/NavigationSearchComponent')
+import('./web-components/AskAi/AskAi')
 import('./web-components/VersionDropdown')
+import('./web-components/AppliesToPopover')
+import('./web-components/FullPageSearch/FullPageSearchComponent')
 
 const { getOS } = new UAParser()
 const isLazyLoadNavigationEnabled =
@@ -105,12 +107,13 @@ document.addEventListener('htmx:load', function (event: HtmxEvent) {
     initApiDocs()
 
     // We do this so that the navigation is not initialized twice
-    if (isLazyLoadNavigationEnabled) {
-        if (event.detail.elt.id === 'nav-tree') {
+    // When lazy load is enabled, only initialize when nav-tree loads
+    // Defer with requestAnimationFrame to ensure DOM is fully rendered
+    // The throttle with trailing: true will ensure only the last call executes
+    if (!isLazyLoadNavigationEnabled || event.detail.elt.id === 'nav-tree') {
+        requestAnimationFrame(() => {
             initNav()
-        }
-    } else {
-        initNav()
+        })
     }
     initSmoothScroll()
     openDetailsWithAnchor()
@@ -135,6 +138,15 @@ document.addEventListener(
 )
 
 document.addEventListener('htmx:beforeRequest', function (event: HtmxEvent) {
+    const path = event.detail.requestConfig?.path
+
+    // Bypass htmx for /api URLs - they require full page navigation
+    if (path?.startsWith('/api')) {
+        event.preventDefault()
+        window.location.href = path
+        return
+    }
+
     if (
         event.detail.requestConfig.verb === 'get' &&
         event.detail.requestConfig.triggeringEvent
@@ -165,21 +177,6 @@ document.body.addEventListener(
         ) {
             window.scrollTo(0, 0)
         }
-    }
-)
-
-document.body.addEventListener(
-    'htmx:pushedIntoHistory',
-    function (event: HtmxEvent) {
-        const pagesNav = $('#pages-nav')
-        const currentNavItem = $$('.current', pagesNav)
-        currentNavItem.forEach((el) => {
-            el.classList.remove('current')
-        })
-        const navItems = $$('a[href="' + event.detail.path + '"]', pagesNav)
-        navItems.forEach((navItem) => {
-            navItem.classList.add('current')
-        })
     }
 )
 

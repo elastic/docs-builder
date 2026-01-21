@@ -6,6 +6,7 @@ using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Myst.Directives.Admonition;
+using Elastic.Markdown.Myst.Directives.AppliesTo;
 using Elastic.Markdown.Myst.Directives.Diagram;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
@@ -130,6 +131,13 @@ public class LlmEnhancedCodeBlockRenderer : MarkdownObjectRenderer<LlmMarkdownRe
 {
 	protected override void Write(LlmMarkdownRenderer renderer, EnhancedCodeBlock obj)
 	{
+		// Handle AppliesToDirective specially - render as human-readable text
+		if (obj is AppliesToDirective appliesToDirective)
+		{
+			WriteAppliesToDirective(renderer, appliesToDirective);
+			return;
+		}
+
 		renderer.EnsureBlockSpacing();
 		if (!string.IsNullOrEmpty(obj.Caption))
 		{
@@ -151,6 +159,33 @@ public class LlmEnhancedCodeBlockRenderer : MarkdownObjectRenderer<LlmMarkdownRe
 		}
 
 		renderer.WriteLine("```");
+	}
+
+	private static void WriteAppliesToDirective(LlmMarkdownRenderer renderer, AppliesToDirective directive)
+	{
+		if (directive.AppliesTo is null)
+			return;
+
+		var appliesText = LlmApplicabilityHelper.RenderForLlm(
+			directive.AppliesTo,
+			renderer.BuildContext.VersionsConfiguration,
+			useInlineTag: false);
+
+		if (string.IsNullOrEmpty(appliesText))
+			return;
+
+		renderer.EnsureBlockSpacing();
+		renderer.WriteLine("<applies-to>");
+
+		// Split by comma and render each as a list item
+		var items = appliesText.Split(", ");
+		foreach (var item in items)
+		{
+			renderer.Write("  - ");
+			renderer.WriteLine(item);
+		}
+
+		renderer.WriteLine("</applies-to>");
 	}
 
 	private static int GetLastNonEmptyLineIndex(EnhancedCodeBlock obj)
@@ -435,8 +470,13 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 
 		switch (obj)
 		{
-			case IBlockAppliesTo appliesBlock when !string.IsNullOrEmpty(appliesBlock.AppliesToDefinition):
-				renderer.Writer.Write($" applies-to=\"{appliesBlock.AppliesToDefinition}\"");
+			case IBlockAppliesTo appliesBlock when appliesBlock.AppliesTo is not null:
+				var appliesText = LlmApplicabilityHelper.RenderForLlm(
+					appliesBlock.AppliesTo,
+					renderer.BuildContext.VersionsConfiguration,
+					useInlineTag: false);
+				if (!string.IsNullOrEmpty(appliesText))
+					renderer.Writer.Write($" applies-to=\"{appliesText}\"");
 				break;
 		}
 
@@ -680,16 +720,25 @@ public class LlmDefinitionItemRenderer : MarkdownObjectRenderer<LlmMarkdownRende
 {
 	protected override void Write(LlmMarkdownRenderer renderer, DefinitionItem obj)
 	{
-		var first = obj.Cast<LeafBlock>().First();
 		renderer.EnsureBlockSpacing();
+
+		// Render the term (first element) if it's a LeafBlock
+		var first = obj.FirstOrDefault();
+		var hasTermBlock = first is LeafBlock;
+
 		renderer.Write("<definition");
-		renderer.Write(" term=\"");
-		renderer.Write(GetPlainTextFromLeafBlock(renderer, first));
-		renderer.WriteLine("\">");
-		for (var index = 0; index < obj.Count; index++)
+		if (hasTermBlock)
 		{
-			if (index == 0)
-				continue;
+			renderer.Write(" term=\"");
+			renderer.Write(GetPlainTextFromLeafBlock(renderer, (LeafBlock)first!));
+			renderer.Write("\"");
+		}
+		renderer.WriteLine(">");
+
+		// Render the definitions (remaining elements, or all if no term block)
+		var startIndex = hasTermBlock ? 1 : 0;
+		for (var index = startIndex; index < obj.Count; index++)
+		{
 			var block = obj[index];
 			LlmRenderingHelpers.RenderBlockWithIndentation(renderer, block);
 		}

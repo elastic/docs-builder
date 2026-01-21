@@ -83,24 +83,38 @@ public class MarkdownFileFactory : IDocumentationFileFactory<MarkdownFile>
 		.Select(f => build.ReadFileSystem.FileInfo.New(f))
 		.Where(f => !f.Attributes.HasFlag(FileAttributes.Hidden) && !f.Attributes.HasFlag(FileAttributes.System))
 		.Where(f => !f.Directory!.Attributes.HasFlag(FileAttributes.Hidden) && !f.Directory!.Attributes.HasFlag(FileAttributes.System))
+		// skip symlinks
+		.Where(f => f.LinkTarget == null)
 		// skip hidden folders
 		.Where(f => !Path.GetRelativePath(sourceDirectory.FullName, f.FullName).StartsWith('.'))
-		.Select<IFileInfo, (IFileInfo,DocumentationFile)>(file => file.Extension switch
+		.Select<IFileInfo, (IFileInfo,DocumentationFile)>(file =>
 		{
-			".jpg" => (file, new ImageFile(file, sourceDirectory, build.Git.RepositoryName, "image/jpeg")),
-			".jpeg" => (file, new ImageFile(file, sourceDirectory, build.Git.RepositoryName, "image/jpeg")),
-			".gif" => (file, new ImageFile(file, sourceDirectory, build.Git.RepositoryName, "image/gif")),
-			".svg" => (file, new ImageFile(file, sourceDirectory, build.Git.RepositoryName, "image/svg+xml")),
-			".png" => (file, new ImageFile(file, sourceDirectory, build.Git.RepositoryName)),
-			".md" => (file, CreateMarkDownFile(file, build)),
-			_ => (file, DefaultFileHandling(file, sourceDirectory))
+			var relativePath = Path.GetRelativePath(sourceDirectory.FullName, file.FullName);
+			return file.Extension switch
+			{
+				".jpg" => (file, CreateImageFile(file, sourceDirectory, build, relativePath, "image/jpeg")),
+				".jpeg" => (file, CreateImageFile(file, sourceDirectory, build, relativePath, "image/jpeg")),
+				".gif" => (file, CreateImageFile(file, sourceDirectory, build, relativePath, "image/gif")),
+				".svg" => (file, CreateImageFile(file, sourceDirectory, build, relativePath, "image/svg+xml")),
+				".png" => (file, CreateImageFile(file, sourceDirectory, build, relativePath)),
+				".md" => (file, CreateMarkDownFile(file, build)),
+				_ => (file, DefaultFileHandling(file, sourceDirectory))
+			};
 		})];
+
+	private DocumentationFile CreateImageFile(IFileInfo file, IDirectoryInfo sourceDirectory, BuildContext context, string relativePath, string mimeType = "image/png")
+	{
+		if (context.Configuration.IsExcluded(relativePath))
+			return new ExcludedFile(file, sourceDirectory, context.Git.RepositoryName);
+
+		return new ImageFile(file, sourceDirectory, context.Git.RepositoryName, mimeType);
+	}
 
 	private DocumentationFile CreateMarkDownFile(IFileInfo file, BuildContext context)
 	{
 		var sourceDirectory = context.DocumentationSourceDirectory;
 		var relativePath = Path.GetRelativePath(sourceDirectory.FullName, file.FullName);
-		if (context.Configuration.Exclude.Any(g => g.IsMatch(relativePath)))
+		if (context.Configuration.IsExcluded(relativePath))
 			return new ExcludedFile(file, sourceDirectory, context.Git.RepositoryName);
 
 		if (relativePath.Contains("_snippets"))

@@ -36,8 +36,8 @@ public class ApplicableToJsonConverterRoundTripTests
 		{
 			Stack = new AppliesCollection(
 			[
-				new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = new SemVersion(8, 0, 0) },
-				new Applicability { Lifecycle = ProductLifecycle.Beta, Version = new SemVersion(7, 17, 0) }
+				new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (VersionSpec)"8.0.0" },
+				new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (VersionSpec)"7.17.0" }
 			])
 		};
 
@@ -57,8 +57,8 @@ public class ApplicableToJsonConverterRoundTripTests
 			Deployment = new DeploymentApplicability
 			{
 				Self = AppliesCollection.GenerallyAvailable,
-				Ece = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (SemVersion)"3.0.0" }]),
-				Eck = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (SemVersion)"2.0.0" }]),
+				Ece = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (VersionSpec)"3.0.0" }]),
+				Eck = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (VersionSpec)"2.0.0" }]),
 				Ess = AppliesCollection.GenerallyAvailable
 			}
 		};
@@ -82,8 +82,8 @@ public class ApplicableToJsonConverterRoundTripTests
 			Serverless = new ServerlessProjectApplicability
 			{
 				Elasticsearch = AppliesCollection.GenerallyAvailable,
-				Observability = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.TechnicalPreview, Version = AllVersions.Instance }]),
-				Security = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (SemVersion)"1.0.0" }])
+				Observability = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.TechnicalPreview, Version = AllVersionsSpec.Instance }]),
+				Security = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (VersionSpec)"1.0.0" }])
 			}
 		};
 
@@ -140,9 +140,9 @@ public class ApplicableToJsonConverterRoundTripTests
 			ProductApplicability = new ProductApplicability
 			{
 				Ecctl = AppliesCollection.GenerallyAvailable,
-				Curator = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Deprecated, Version = (SemVersion)"5.0.0" }]),
-				ApmAgentDotnet = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (SemVersion)"1.2.0" }]),
-				EdotDotnet = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (SemVersion)"0.9.0" }])
+				Curator = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Deprecated, Version = (VersionSpec)"5.0.0" }]),
+				ApmAgentDotnet = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (VersionSpec)"1.2.0" }]),
+				EdotDotnet = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (VersionSpec)"0.9.0" }])
 			}
 		};
 
@@ -165,27 +165,27 @@ public class ApplicableToJsonConverterRoundTripTests
 			ProductApplicability = new ProductApplicability
 			{
 				Ecctl = AppliesCollection.GenerallyAvailable,
-				Curator = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Deprecated, Version = (SemVersion)"5.0.0" }]),
-				ApmAgentAndroid = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (SemVersion)"1.0.0" }]),
-				ApmAgentDotnet = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (SemVersion)"1.2.0" }]),
-				ApmAgentGo = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (SemVersion)"2.0.0" }]),
-				ApmAgentIos = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.TechnicalPreview, Version = (SemVersion)"0.5.0" }]),
-				ApmAgentJava = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (SemVersion)"1.30.0" }]),
-				ApmAgentNode = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (SemVersion)"3.0.0" }]),
-				ApmAgentPhp = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (SemVersion)"1.8.0" }]),
-				ApmAgentPython = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (SemVersion)"6.0.0" }]),
-				ApmAgentRuby = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (SemVersion)"4.0.0" }]),
-				ApmAgentRumJs = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (SemVersion)"5.0.0" }]),
-				EdotIos = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (SemVersion)"0.9.0" }]),
-				EdotAndroid = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (SemVersion)"0.8.0" }]),
-				EdotDotnet = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (SemVersion)"0.9.0" }]),
-				EdotJava = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (SemVersion)"0.7.0" }]),
-				EdotNode = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (SemVersion)"0.6.0" }]),
-				EdotPhp = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (SemVersion)"0.5.0" }]),
-				EdotPython = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (SemVersion)"0.4.0" }]),
-				EdotCfAws = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.TechnicalPreview, Version = (SemVersion)"0.3.0" }]),
-				EdotCfAzure = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.TechnicalPreview, Version = (SemVersion)"0.2.0" }]),
-				EdotCollector = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (SemVersion)"1.0.0" }])
+				Curator = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Deprecated, Version = (VersionSpec)"5.0.0" }]),
+				ApmAgentAndroid = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (VersionSpec)"1.0.0" }]),
+				ApmAgentDotnet = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (VersionSpec)"1.2.0" }]),
+				ApmAgentGo = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (VersionSpec)"2.0.0" }]),
+				ApmAgentIos = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.TechnicalPreview, Version = (VersionSpec)"0.5.0" }]),
+				ApmAgentJava = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (VersionSpec)"1.30.0" }]),
+				ApmAgentNode = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (VersionSpec)"3.0.0" }]),
+				ApmAgentPhp = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (VersionSpec)"1.8.0" }]),
+				ApmAgentPython = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (VersionSpec)"6.0.0" }]),
+				ApmAgentRuby = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (VersionSpec)"4.0.0" }]),
+				ApmAgentRumJs = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (VersionSpec)"5.0.0" }]),
+				EdotIos = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (VersionSpec)"0.9.0" }]),
+				EdotAndroid = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (VersionSpec)"0.8.0" }]),
+				EdotDotnet = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (VersionSpec)"0.9.0" }]),
+				EdotJava = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (VersionSpec)"0.7.0" }]),
+				EdotNode = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (VersionSpec)"0.6.0" }]),
+				EdotPhp = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (VersionSpec)"0.5.0" }]),
+				EdotPython = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (VersionSpec)"0.4.0" }]),
+				EdotCfAws = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.TechnicalPreview, Version = (VersionSpec)"0.3.0" }]),
+				EdotCfAzure = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.TechnicalPreview, Version = (VersionSpec)"0.2.0" }]),
+				EdotCollector = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (VersionSpec)"1.0.0" }])
 			}
 		};
 
@@ -225,27 +225,27 @@ public class ApplicableToJsonConverterRoundTripTests
 		{
 			Stack = new AppliesCollection(
 			[
-				new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (SemVersion)"8.0.0" },
-				new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (SemVersion)"7.17.0" }
+				new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (VersionSpec)"8.0.0" },
+				new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (VersionSpec)"7.17.0" }
 			]),
 			Deployment = new DeploymentApplicability
 			{
 				Self = AppliesCollection.GenerallyAvailable,
-				Ece = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (SemVersion)"3.0.0" }]),
-				Eck = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (SemVersion)"2.0.0" }]),
+				Ece = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (VersionSpec)"3.0.0" }]),
+				Eck = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (VersionSpec)"2.0.0" }]),
 				Ess = AppliesCollection.GenerallyAvailable
 			},
 			Serverless = new ServerlessProjectApplicability
 			{
 				Elasticsearch = AppliesCollection.GenerallyAvailable,
-				Observability = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.TechnicalPreview, Version = AllVersions.Instance }]),
-				Security = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (SemVersion)"1.0.0" }])
+				Observability = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.TechnicalPreview, Version = AllVersionsSpec.Instance }]),
+				Security = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (VersionSpec)"1.0.0" }])
 			},
 			Product = AppliesCollection.GenerallyAvailable,
 			ProductApplicability = new ProductApplicability
 			{
 				Ecctl = AppliesCollection.GenerallyAvailable,
-				ApmAgentDotnet = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (SemVersion)"1.2.0" }])
+				ApmAgentDotnet = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (VersionSpec)"1.2.0" }])
 			}
 		};
 
@@ -274,7 +274,7 @@ public class ApplicableToJsonConverterRoundTripTests
 	{
 		var lifecycles = Enum.GetValues<ProductLifecycle>();
 		var applicabilities = lifecycles.Select(lc =>
-			new Applicability { Lifecycle = lc, Version = (SemVersion)"1.0.0" }
+			new Applicability { Lifecycle = lc, Version = (VersionSpec)"1.0.0" }
 		).ToArray();
 
 		var original = new ApplicableTo
@@ -297,10 +297,10 @@ public class ApplicableToJsonConverterRoundTripTests
 		{
 			Stack = new AppliesCollection(
 			[
-				new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (SemVersion)"8.0.0" },
-				new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (SemVersion)"7.17.0" },
-				new Applicability { Lifecycle = ProductLifecycle.TechnicalPreview, Version = (SemVersion)"7.16.0" },
-				new Applicability { Lifecycle = ProductLifecycle.Deprecated, Version = (SemVersion)"6.0.0" }
+				new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (VersionSpec)"8.0.0" },
+				new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (VersionSpec)"7.17.0" },
+				new Applicability { Lifecycle = ProductLifecycle.TechnicalPreview, Version = (VersionSpec)"7.16.0" },
+				new Applicability { Lifecycle = ProductLifecycle.Deprecated, Version = (VersionSpec)"6.0.0" }
 			])
 		};
 
@@ -345,16 +345,16 @@ public class ApplicableToJsonConverterRoundTripTests
 	{
 		var original = new ApplicableTo
 		{
-			Stack = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = AllVersions.Instance }])
+			Stack = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = AllVersionsSpec.Instance }])
 		};
 
 		var json = JsonSerializer.Serialize(original, _options);
-		json.Should().Contain("\"version\": \"9999.9999.9999\"");
+		json.Should().Contain("\"version\": \"all\"");
 
 		var deserialized = JsonSerializer.Deserialize<ApplicableTo>(json, _options);
 		deserialized.Should().NotBeNull();
 		deserialized!.Stack.Should().NotBeNull();
-		deserialized.Stack!.First().Version.Should().Be(AllVersions.Instance);
+		deserialized.Stack!.First().Version.Should().Be(AllVersionsSpec.Instance);
 	}
 
 	[Fact]
@@ -365,7 +365,7 @@ public class ApplicableToJsonConverterRoundTripTests
 			Product = AppliesCollection.GenerallyAvailable,
 			ProductApplicability = new ProductApplicability
 			{
-				Ecctl = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (SemVersion)"1.0.0" }])
+				Ecctl = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (VersionSpec)"1.0.0" }])
 			}
 		};
 

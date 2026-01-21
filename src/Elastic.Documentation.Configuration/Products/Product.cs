@@ -12,6 +12,18 @@ public record ProductsConfiguration
 {
 	public required FrozenDictionary<string, Product> Products { get; init; }
 
+	/// <summary>
+	/// Product id to display name mappings for fast lookups.
+	/// </summary>
+	public required FrozenDictionary<string, string> ProductDisplayNames { get; init; }
+
+	private FrozenDictionary<string, string>.AlternateLookup<ReadOnlySpan<char>>? _displayNameLookup;
+
+	/// <summary>
+	/// Gets the alternate lookup for span-based product id lookups.
+	/// </summary>
+	public FrozenDictionary<string, string>.AlternateLookup<ReadOnlySpan<char>> DisplayNameLookup =>
+		_displayNameLookup ??= ProductDisplayNames.GetAlternateLookup<ReadOnlySpan<char>>();
 
 	public Product? GetProductByRepositoryName(string repository)
 	{
@@ -22,6 +34,18 @@ public record ProductsConfiguration
 		var match = Products.Values.SingleOrDefault(p => p.Repository is not null && p.Repository.Equals(repositoryName, StringComparison.OrdinalIgnoreCase));
 		return match;
 	}
+
+	/// <summary>
+	/// Gets the display name for a product id. Returns the id if not found.
+	/// </summary>
+	public string GetDisplayName(string productId) =>
+		ProductDisplayNames.TryGetValue(productId, out var displayName) ? displayName : productId;
+
+	/// <summary>
+	/// Gets the display name for a product id using span-based lookup. Returns the span as string if not found.
+	/// </summary>
+	public string GetDisplayName(ReadOnlySpan<char> productId) =>
+		DisplayNameLookup.TryGetValue(productId, out var displayName) ? displayName : productId.ToString();
 }
 
 [YamlSerializable]

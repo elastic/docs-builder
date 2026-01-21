@@ -7,6 +7,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Extensions;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.Renderers.LlmMarkdown;
+using Elastic.Markdown.Myst.Renderers.PlainText;
 using Markdig.Renderers;
 using Microsoft.Extensions.ObjectPool;
 
@@ -20,11 +21,13 @@ internal static class DocumentationObjectPoolProvider
 	public static readonly ObjectPool<ReusableStringWriter> StringWriterPool = PoolProvider.Create(new ReusableStringWriterPooledObjectPolicy());
 	public static readonly ObjectPool<HtmlRenderSubscription> HtmlRendererPool = PoolProvider.Create(new HtmlRendererPooledObjectPolicy());
 	private static readonly ObjectPool<LlmMarkdownRenderSubscription> LlmMarkdownRendererPool = PoolProvider.Create(new LlmMarkdownRendererPooledObjectPolicy());
+	private static readonly ObjectPool<PlainTextRenderSubscription> PlainTextRendererPool = PoolProvider.Create(new PlainTextRendererPooledObjectPolicy());
 
 	public static string UseLlmMarkdownRenderer<TContext>(IDocumentationConfigurationContext buildContext, TContext context, Action<LlmMarkdownRenderer, TContext> action)
 	{
 		var subscription = LlmMarkdownRendererPool.Get();
 		subscription.SetBuildContext(buildContext);
+		subscription.LlmMarkdownRenderer.Reset();
 		try
 		{
 			action(subscription.LlmMarkdownRenderer, context);
@@ -34,6 +37,23 @@ internal static class DocumentationObjectPoolProvider
 		finally
 		{
 			LlmMarkdownRendererPool.Return(subscription);
+		}
+	}
+
+	public static string UsePlainTextRenderer<TContext>(IDocumentationConfigurationContext buildContext, TContext context, Action<PlainTextRenderer, TContext> action)
+	{
+		var subscription = PlainTextRendererPool.Get();
+		subscription.SetBuildContext(buildContext);
+		subscription.PlainTextRenderer.Reset();
+		try
+		{
+			action(subscription.PlainTextRenderer, context);
+			var result = subscription.RentedStringBuilder!.ToString();
+			return result.EnsureTrimmed();
+		}
+		finally
+		{
+			PlainTextRendererPool.Return(subscription);
 		}
 	}
 
@@ -119,6 +139,53 @@ internal static class DocumentationObjectPoolProvider
 			subscription.RentedStringBuilder = null;
 
 			var renderer = subscription.LlmMarkdownRenderer;
+
+			//reset string writer
+			((ReusableStringWriter)renderer.Writer).Reset();
+
+			// reseed string writer with string builder
+			var stringBuilder = StringBuilderPool.Get();
+			subscription.RentedStringBuilder = stringBuilder;
+			((ReusableStringWriter)renderer.Writer).SetStringBuilder(stringBuilder);
+
+			// Reset BuildContext to null for reuse
+			renderer.BuildContext = null!;
+
+			return true;
+		}
+	}
+
+	private sealed class PlainTextRenderSubscription
+	{
+		public required PlainTextRenderer PlainTextRenderer { get; init; }
+		public StringBuilder? RentedStringBuilder { get; internal set; }
+
+		public void SetBuildContext(IDocumentationConfigurationContext buildContext) => PlainTextRenderer.BuildContext = buildContext;
+	}
+
+	private sealed class PlainTextRendererPooledObjectPolicy : IPooledObjectPolicy<PlainTextRenderSubscription>
+	{
+		public PlainTextRenderSubscription Create()
+		{
+			var stringBuilder = StringBuilderPool.Get();
+			using var stringWriter = StringWriterPool.Get();
+			stringWriter.SetStringBuilder(stringBuilder);
+			var renderer = new PlainTextRenderer(stringWriter)
+			{
+				BuildContext = null!
+			};
+			return new PlainTextRenderSubscription { PlainTextRenderer = renderer, RentedStringBuilder = stringBuilder };
+		}
+
+		public bool Return(PlainTextRenderSubscription subscription)
+		{
+			//return string builder
+			if (subscription.RentedStringBuilder is not null)
+				StringBuilderPool.Return(subscription.RentedStringBuilder);
+
+			subscription.RentedStringBuilder = null;
+
+			var renderer = subscription.PlainTextRenderer;
 
 			//reset string writer
 			((ReusableStringWriter)renderer.Writer).Reset();

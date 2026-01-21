@@ -1,4 +1,4 @@
-# Keyboard shortcuts
+# Keyboard markup
 
 You can represent keyboard keys and shortcuts in your documentation using the `{kbd}` role. This is useful for showing keyboard commands and shortcuts in a visually consistent way. See the full list of [available keys](#available-keys).
 

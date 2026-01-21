@@ -25,6 +25,7 @@
   </Folder>
   <Folder Name="/config/">
     <File Path="config/assembler.yml" />
+	<File Path="config/changelog.example.yml" />
     <File Path="config/legacy-url-mappings.yml" />
     <File Path="config/navigation.yml" />
     <File Path="config/products.yml" />
@@ -67,6 +68,7 @@
     <Project Path="src/infra/docs-lambda-index-publisher/docs-lambda-index-publisher.csproj" />
   </Folder>
   <Folder Name="/src/services/">
+    <Project Path="src/services/Elastic.Changelog/Elastic.Changelog.csproj" />
     <Project Path="src/services/Elastic.Documentation.Assembler/Elastic.Documentation.Assembler.csproj" />
     <Project Path="src/services/Elastic.Documentation.Isolated/Elastic.Documentation.Isolated.csproj" />
     <Project Path="src/services/Elastic.Documentation.Services/Elastic.Documentation.Services.csproj" />
@@ -90,6 +92,7 @@
     <Project Path="tests/Elastic.Documentation.LegacyDocs.Tests/Elastic.Documentation.LegacyDocs.Tests.csproj" />
     <Project Path="tests/Elastic.Markdown.Tests/Elastic.Markdown.Tests.csproj" />
     <Project Path="tests/Navigation.Tests/Navigation.Tests.csproj" />
+    <Project Path="tests/Elastic.Changelog.Tests/Elastic.Changelog.Tests.csproj" />
   </Folder>
   <Project Path=".github/.github.csproj">
     <Build Project="false" />

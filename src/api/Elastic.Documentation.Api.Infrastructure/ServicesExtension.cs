@@ -10,8 +10,8 @@ using Elastic.Documentation.Api.Core.Search;
 using Elastic.Documentation.Api.Core.Telemetry;
 using Elastic.Documentation.Api.Infrastructure.Adapters.AskAi;
 using Elastic.Documentation.Api.Infrastructure.Adapters.Search;
+using Elastic.Documentation.Api.Infrastructure.Adapters.Search.Common;
 using Elastic.Documentation.Api.Infrastructure.Adapters.Telemetry;
-using Elastic.Documentation.Api.Infrastructure.Aws;
 using Elastic.Documentation.Api.Infrastructure.Caching;
 using Elastic.Documentation.Api.Infrastructure.Gcp;
 using Microsoft.Extensions.Configuration;
@@ -74,55 +74,13 @@ public static class ServicesExtension
 		// Register AppEnvironment as a singleton for dependency injection
 		_ = services.AddSingleton(new AppEnvironment { Current = appEnv });
 		AddDistributedCache(services, appEnv);
-		AddParameterProvider(services, appEnv);
 		AddAskAiUsecase(services, appEnv);
 		AddSearchUsecase(services, appEnv);
 		AddOtlpProxyUsecase(services, appEnv);
 	}
 
-	// https://docs.aws.amazon.com/systems	-manager/latest/userguide/ps-integration-lambda-extensions.html
-	private static void AddParameterProvider(IServiceCollection services, AppEnv appEnv)
-	{
-		var logger = GetLogger(services);
-
-		switch (appEnv)
-		{
-			case AppEnv.Prod:
-			case AppEnv.Staging:
-			case AppEnv.Edge:
-				{
-					logger?.LogInformation("Configuring LambdaExtensionParameterProvider for environment {AppEnvironment}", appEnv);
-					try
-					{
-						_ = services.AddHttpClient(LambdaExtensionParameterProvider.HttpClientName, client =>
-						{
-							client.BaseAddress = new Uri("http://localhost:2773");
-							client.DefaultRequestHeaders.Add("X-Aws-Parameters-Secrets-Token", Environment.GetEnvironmentVariable("AWS_SESSION_TOKEN"));
-						});
-						logger?.LogInformation("Lambda extension HTTP client configured");
-
-						_ = services.AddSingleton<IParameterProvider, LambdaExtensionParameterProvider>();
-						logger?.LogInformation("LambdaExtensionParameterProvider registered successfully");
-					}
-					catch (Exception ex)
-					{
-						logger?.LogError(ex, "Failed to configure LambdaExtensionParameterProvider for environment {AppEnvironment}", appEnv);
-						throw;
-					}
-					break;
-				}
-			case AppEnv.Dev:
-				{
-					logger?.LogInformation("Configuring LocalParameterProvider for environment {AppEnvironment}", appEnv);
-					_ = services.AddSingleton<IParameterProvider, LocalParameterProvider>();
-					break;
-				}
-			default:
-				{
-					throw new ArgumentOutOfRangeException(nameof(appEnv), appEnv, "Unsupported environment for parameter provider.");
-				}
-		}
-	}
+	// Note: IParameterProvider is no longer needed - all options now read from IConfiguration (env vars)
+	// The LambdaExtensionParameterProvider and LocalParameterProvider can be removed in a future cleanup
 
 	private static void AddDistributedCache(IServiceCollection services, AppEnv appEnv)
 	{
@@ -188,8 +146,12 @@ public static class ServicesExtension
 			_ = services.AddSingleton<IGcpIdTokenProvider, GcpIdTokenProvider>();
 			logger?.LogInformation("GcpIdTokenProvider registered with distributed cache support");
 
-			_ = services.AddScoped<LlmGatewayOptions>();
+			// Register options - DI auto-resolves IConfiguration from primary constructor
+			_ = services.AddSingleton<LlmGatewayOptions>();
 			logger?.LogInformation("LlmGatewayOptions registered successfully");
+
+			_ = services.AddSingleton<KibanaOptions>();
+			logger?.LogInformation("KibanaOptions registered successfully");
 
 			_ = services.AddScoped<AskAiUsecase>();
 			logger?.LogInformation("AskAiUsecase registered successfully");
@@ -232,9 +194,19 @@ public static class ServicesExtension
 	{
 		var logger = GetLogger(services);
 		logger?.LogInformation("Configuring Search use case for environment {AppEnvironment}", appEnv);
+
+		// Shared Elasticsearch options - DI auto-resolves IConfiguration from primary constructor
 		_ = services.AddSingleton<ElasticsearchOptions>();
-		_ = services.AddScoped<ISearchGateway, ElasticsearchGateway>();
-		_ = services.AddScoped<SearchUsecase>();
+		_ = services.AddSingleton<ElasticsearchClientAccessor>();
+
+		// Navigation Search (autocomplete/navigation search)
+		_ = services.AddScoped<INavigationSearchGateway, NavigationSearchGateway>();
+		_ = services.AddScoped<NavigationSearchUsecase>();
+
+		// FullSearch (full-page search with hybrid RRF)
+		_ = services.AddScoped<IFullSearchGateway, FullSearchGateway>();
+		_ = services.AddScoped<FullSearchUsecase>();
+		logger?.LogInformation("Full search use case registered with hybrid RRF support");
 	}
 
 	private static void AddOtlpProxyUsecase(IServiceCollection services, AppEnv appEnv)

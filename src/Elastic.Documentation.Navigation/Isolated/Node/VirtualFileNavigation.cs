@@ -34,7 +34,8 @@ public class VirtualFileNavigation<TModel>(TModel model, IFileInfo fileInfo, Vir
 	public int NavigationIndex { get; set; }
 
 	/// <inheritdoc />
-	public string Id { get; } = ShortId.Create(args.RelativePathToDocumentationSet);
+	// Include NavigationRoot.Id to ensure uniqueness across docsets in assembler builds
+	public string Id => ShortId.Create(NavigationRoot.Id, Index.Url);
 
 	/// <inheritdoc />
 	public ILeafNavigationItem<TModel> Index { get; } =

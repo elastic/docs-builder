@@ -55,7 +55,7 @@ public class SearchIntegrationTests(SearchBootstrapFixture searchFixture, ITestO
 		// Assert - Response should be successful
 		response.EnsureSuccessStatusCode();
 
-		var searchResponse = await response.Content.ReadFromJsonAsync<SearchApiResponse>(cancellationToken: TestContext.Current.CancellationToken);
+		var searchResponse = await response.Content.ReadFromJsonAsync<NavigationSearchApiResponse>(cancellationToken: TestContext.Current.CancellationToken);
 		searchResponse.Should().NotBeNull("Search response should be deserialized");
 
 		// Log results for debugging
@@ -93,12 +93,12 @@ public class SearchIntegrationTests(SearchBootstrapFixture searchFixture, ITestO
 		// Act - Get first page
 		var page1Response = await searchFixture.HttpClient!.GetAsync($"/docs/_api/v1/search?q={Uri.EscapeDataString(query)}&page=1", TestContext.Current.CancellationToken);
 		page1Response.EnsureSuccessStatusCode();
-		var page1Data = await page1Response.Content.ReadFromJsonAsync<SearchApiResponse>(cancellationToken: TestContext.Current.CancellationToken);
+		var page1Data = await page1Response.Content.ReadFromJsonAsync<NavigationSearchApiResponse>(cancellationToken: TestContext.Current.CancellationToken);
 
 		// Act - Get second page
 		var page2Response = await searchFixture.HttpClient.GetAsync($"/docs/_api/v1/search?q={Uri.EscapeDataString(query)}&page=2", TestContext.Current.CancellationToken);
 		page2Response.EnsureSuccessStatusCode();
-		var page2Data = await page2Response.Content.ReadFromJsonAsync<SearchApiResponse>(cancellationToken: TestContext.Current.CancellationToken);
+		var page2Data = await page2Response.Content.ReadFromJsonAsync<NavigationSearchApiResponse>(cancellationToken: TestContext.Current.CancellationToken);
 
 		// Assert
 		page1Data.Should().NotBeNull();

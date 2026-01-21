@@ -26,9 +26,14 @@ public static class ProductExtensions
 				Repository = kvp.Value.Repository ?? kvp.Key
 			});
 
+		var productDisplayNames = productsDto.Products.ToDictionary(
+			kvp => kvp.Key,
+			kvp => kvp.Value.Display);
+
 		return new ProductsConfiguration
 		{
-			Products = products.ToFrozenDictionary()
+			Products = products.ToFrozenDictionary(),
+			ProductDisplayNames = productDisplayNames.ToFrozenDictionary()
 		};
 	}
 }
