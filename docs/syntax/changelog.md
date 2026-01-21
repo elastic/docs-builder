@@ -1,4 +1,4 @@
-# Changelog directive
+# Changelog
 
 The `{changelog}` directive renders all changelog bundles from a folder directly in your documentation pages. This is designed for release notes pages that primarily consist of changelog content.
 
