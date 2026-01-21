@@ -11,7 +11,7 @@ namespace Elastic.Documentation.Api.Infrastructure.Adapters.Search.Common;
 
 /// <summary>
 /// Shared singleton accessor for the Elasticsearch client.
-/// Both FindPage (autocomplete) and FullSearch gateways share this client instance.
+/// Both Navigation Search (autocomplete) and FullSearch gateways share this client instance.
 /// </summary>
 public class ElasticsearchClientAccessor : IDisposable
 {
