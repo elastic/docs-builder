@@ -164,4 +164,14 @@ public abstract class DirectiveBlock(
 	/// <returns>A unique integer index suitable for generating HTML IDs.</returns>
 	protected int GetUniqueLineIndex() =>
 		IncludeLine.HasValue ? (IncludeLine.Value * 1000) + Line : Line;
+
+	/// <summary>
+	/// Additional anchors that this directive will generate during rendering.
+	/// Override in directives that dynamically generate content with anchors.
+	/// </summary>
+	/// <remarks>
+	/// These anchors are registered during parsing so that link validation
+	/// can find them before the directive content is fully rendered.
+	/// </remarks>
+	public virtual IEnumerable<string> GeneratedAnchors => [];
 }

@@ -4,7 +4,7 @@
 
 using System.Text.RegularExpressions;
 
-namespace Elastic.Changelog;
+namespace Elastic.Documentation.Changelog;
 
 /// <summary>
 /// Static utility methods for text processing in changelog generation
@@ -155,17 +155,13 @@ public static partial class ChangelogTextUtilities
 		{
 			var prPart = prUrl[(hashIndex + 1)..];
 			if (int.TryParse(prPart, out var prNum))
-			{
 				return prNum;
-			}
 		}
 
 		// Handle just a PR number when owner/repo are provided
 		if (int.TryParse(prUrl, out var prNumber) &&
 			!string.IsNullOrWhiteSpace(defaultOwner) && !string.IsNullOrWhiteSpace(defaultRepo))
-		{
 			return prNumber;
-		}
 
 		return null;
 	}
@@ -182,9 +178,7 @@ public static partial class ChangelogTextUtilities
 		// Format as markdown link
 		string link;
 		if (pr.StartsWith("http", StringComparison.OrdinalIgnoreCase))
-		{
 			link = $"[#{prNumber}]({pr})";
-		}
 		else
 		{
 			var url = $"https://github.com/elastic/{repo}/pull/{prNumber}";
@@ -192,12 +186,7 @@ public static partial class ChangelogTextUtilities
 		}
 
 		// Comment out link if hiding private links
-		if (hidePrivateLinks)
-		{
-			return $"% {link}";
-		}
-
-		return link;
+		return hidePrivateLinks ? $"% {link}" : link;
 	}
 
 	/// <summary>
@@ -212,9 +201,7 @@ public static partial class ChangelogTextUtilities
 		// Format as markdown link
 		string link;
 		if (issue.StartsWith("http", StringComparison.OrdinalIgnoreCase))
-		{
 			link = $"[#{issueNumber}]({issue})";
-		}
 		else
 		{
 			var url = $"https://github.com/elastic/{repo}/issues/{issueNumber}";
@@ -222,12 +209,7 @@ public static partial class ChangelogTextUtilities
 		}
 
 		// Comment out link if hiding private links
-		if (hidePrivateLinks)
-		{
-			return $"% {link}";
-		}
-
-		return link;
+		return hidePrivateLinks ? $"% {link}" : link;
 	}
 
 	/// <summary>
@@ -245,12 +227,7 @@ public static partial class ChangelogTextUtilities
 		var link = $"{{{attributeName}}}{prNumber}[#{prNumber}]";
 
 		// Comment out link if hiding private links
-		if (hidePrivateLinks)
-		{
-			return $"// {link}";
-		}
-
-		return link;
+		return hidePrivateLinks ? $"// {link}" : link;
 	}
 
 	/// <summary>
@@ -268,45 +245,31 @@ public static partial class ChangelogTextUtilities
 		var link = $"{{{attributeName}}}{issueNumber}[#{issueNumber}]";
 
 		// Comment out link if hiding private links
-		if (hidePrivateLinks)
-		{
-			return $"// {link}";
-		}
-
-		return link;
+		return hidePrivateLinks ? $"// {link}" : link;
 	}
 
 	/// <summary>
 	/// Converts repo name to attribute format for asciidoc links
 	/// </summary>
-	public static string ConvertRepoToAttributeName(string repo, string suffix)
+	private static string ConvertRepoToAttributeName(string repo, string suffix)
 	{
 		if (string.IsNullOrWhiteSpace(repo))
-		{
 			return $"repo-{suffix}";
-		}
 
 		// Handle common repo name patterns
 		if (repo.Equals("elasticsearch", StringComparison.OrdinalIgnoreCase))
-		{
 			return $"es-{suffix}";
-		}
 
 		// Remove "elastic-" prefix if present
 		var normalized = repo;
 		if (normalized.StartsWith("elastic-", StringComparison.OrdinalIgnoreCase))
-		{
 			normalized = normalized.Substring("elastic-".Length);
-		}
 
 		// Return normalized name with suffix
 		return $"{normalized}-{suffix}";
 	}
 }
 
-/// <summary>
-/// Constants for changelog entry types
-/// </summary>
 public static class ChangelogEntryTypes
 {
 	public const string Feature = "feature";

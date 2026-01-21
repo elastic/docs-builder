@@ -10,6 +10,7 @@ using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Directives.Admonition;
 using Elastic.Markdown.Myst.Directives.AppliesSwitch;
 using Elastic.Markdown.Myst.Directives.Button;
+using Elastic.Markdown.Myst.Directives.Changelog;
 using Elastic.Markdown.Myst.Directives.CsvInclude;
 using Elastic.Markdown.Myst.Directives.Diagram;
 using Elastic.Markdown.Myst.Directives.Dropdown;
@@ -95,6 +96,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 				return;
 			case CsvIncludeBlock csvIncludeBlock:
 				WriteCsvIncludeBlock(renderer, csvIncludeBlock);
+				return;
+			case ChangelogBlock changelogBlock:
+				WriteChangelogBlock(renderer, changelogBlock);
 				return;
 			case MathBlock mathBlock:
 				WriteMathBlock(renderer, mathBlock);
@@ -516,6 +520,27 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		var viewModel = CsvIncludeViewModel.Create(block);
 		var slice = CsvIncludeView.Create(viewModel);
 		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteChangelogBlock(HtmlRenderer renderer, ChangelogBlock block)
+	{
+		if (!block.Found || block.BundlesFolderPath is null)
+			return;
+
+		var markdown = ChangelogInlineRenderer.RenderChangelogMarkdown(block);
+		if (string.IsNullOrEmpty(markdown))
+			return;
+
+		var document = MarkdownParser.ParseMarkdownStringAsync(
+			block.Build,
+			block.Context,
+			markdown,
+			block.CurrentFile,
+			block.Context.YamlFrontMatter,
+			MarkdownParser.Pipeline);
+
+		var html = document.ToHtml(MarkdownParser.Pipeline);
+		_ = renderer.Write(html);
 	}
 
 	private static void WriteMathBlock(HtmlRenderer renderer, MathBlock block)

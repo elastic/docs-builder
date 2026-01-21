@@ -7,10 +7,9 @@
 using System.Globalization;
 using System.IO.Abstractions;
 using System.Text;
-using Elastic.Changelog;
-using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Configuration;
 using Elastic.Changelog.Rendering.Markdown;
+using Elastic.Documentation.Changelog;
 
 namespace Elastic.Changelog.Rendering.Asciidoc;
 

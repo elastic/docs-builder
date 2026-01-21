@@ -1,0 +1,10 @@
+type: other
+title: This is a sample other change to show a full set
+products:
+  - product: docs-builder
+    target: 0.100.0
+areas:
+  - Maintenance
+description: |
+  This is a sample "other" entry demonstrating how miscellaneous
+  changes are rendered in the changelog directive output.
