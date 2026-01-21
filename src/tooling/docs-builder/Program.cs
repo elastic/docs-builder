@@ -6,6 +6,7 @@ using ConsoleAppFramework;
 using Documentation.Builder;
 using Documentation.Builder.Commands;
 using Documentation.Builder.Commands.Assembler;
+using Documentation.Builder.Commands.Portal;
 using Documentation.Builder.Filters;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.ServiceDefaults;
@@ -47,5 +48,8 @@ app.Add<ConfigurationCommands>("assembler config");
 app.Add<AssemblerIndexCommand>("assembler index");
 app.Add<AssemblerCommands>("assembler");
 app.Add<AssembleCommands>("assemble");
+
+//portal commands
+app.Add<PortalCommands>("portal");
 
 await app.RunAsync(args).ConfigureAwait(false);
