@@ -25,6 +25,7 @@
   </Folder>
   <Folder Name="/config/">
     <File Path="config/assembler.yml" />
+	<File Path="config/changelog.example.yml" />
     <File Path="config/legacy-url-mappings.yml" />
     <File Path="config/navigation.yml" />
     <File Path="config/products.yml" />

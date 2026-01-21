@@ -31,9 +31,7 @@ public static partial class ReleaseNotesExtractor
 	private static string StripHtmlComments(string markdown)
 	{
 		if (string.IsNullOrWhiteSpace(markdown))
-		{
 			return markdown;
-		}
 
 		// Remove HTML comments
 		var withoutComments = HtmlCommentRegex().Replace(markdown, string.Empty);
@@ -57,9 +55,7 @@ public static partial class ReleaseNotesExtractor
 	public static string? FindReleaseNote(string? markdown)
 	{
 		if (string.IsNullOrWhiteSpace(markdown))
-		{
 			return null;
-		}
 
 		// Strip HTML comments first to avoid extracting template instructions
 		var cleanedMarkdown = StripHtmlComments(markdown);
@@ -96,15 +92,11 @@ public static partial class ReleaseNotesExtractor
 
 		// No release note found: return nulls (use defaults)
 		if (string.IsNullOrWhiteSpace(releaseNote))
-		{
 			return (null, null);
-		}
 
 		// Long release note (>120 characters or multi-line): use in description
 		if (releaseNote.Length > MaxReleaseNoteTitleLength || releaseNote.Contains('\n'))
-		{
 			return (null, releaseNote);
-		}
 
 		// Short release note (≤120 characters, single line): use in title
 		return (releaseNote, null);
