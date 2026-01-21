@@ -10,10 +10,10 @@ namespace Elastic.Changelog.Rendering.Asciidoc;
 /// <summary>
 /// Renderer for asciidoc breaking changes section with subtype grouping
 /// </summary>
-public class BreakingChangesAsciidocRenderer : AsciidocRendererBase
+public class BreakingChangesAsciidocRenderer(StringBuilder sb) : AsciidocRendererBase
 {
 	/// <inheritdoc />
-	public override void Render(StringBuilder sb, List<ChangelogData> entries, ChangelogRenderContext context)
+	public override void Render(IReadOnlyCollection<ChangelogData> entries, ChangelogRenderContext context)
 	{
 		// Group by subtype if subsections is enabled, otherwise group by area
 		var groupedEntries = context.Subsections

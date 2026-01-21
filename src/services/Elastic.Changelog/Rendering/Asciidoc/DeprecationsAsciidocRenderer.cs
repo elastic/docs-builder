@@ -10,10 +10,10 @@ namespace Elastic.Changelog.Rendering.Asciidoc;
 /// <summary>
 /// Renderer for asciidoc deprecations section with area grouping and Impact/Action fields
 /// </summary>
-public class DeprecationsAsciidocRenderer : AsciidocRendererBase
+public class DeprecationsAsciidocRenderer(StringBuilder sb) : AsciidocRendererBase
 {
 	/// <inheritdoc />
-	public override void Render(StringBuilder sb, List<ChangelogData> entries, ChangelogRenderContext context)
+	public override void Render(IReadOnlyCollection<ChangelogData> entries, ChangelogRenderContext context)
 	{
 		var groupedByArea = entries.GroupBy(ChangelogRenderUtilities.GetComponent).OrderBy(g => g.Key).ToList();
 

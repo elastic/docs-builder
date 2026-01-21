@@ -252,7 +252,7 @@ public class ChangelogRenderingService(
 				// Resolve entries
 				foreach (var entry in bundledData.Entries)
 				{
-					ChangelogData? entryData = null;
+					ChangelogData? entryData;
 
 					// If entry has resolved data, use it
 					if (!string.IsNullOrWhiteSpace(entry.Title) && !string.IsNullOrWhiteSpace(entry.Type))
@@ -317,7 +317,11 @@ public class ChangelogRenderingService(
 				collector.EmitWarning(string.Empty, "No --title option provided and bundle files do not contain 'target' values. Output folder and markdown titles will default to 'unknown'. Consider using --title to specify a custom title.");
 
 			// Group entries by type (kind)
-			var entriesByType = allResolvedEntries.Select(e => e.entry).GroupBy(e => e.Type).ToDictionary(g => g.Key, g => g.ToList());
+			var entriesByType = allResolvedEntries
+				.Select(e => e.entry)
+				.GroupBy(e => e.Type)
+				.ToDictionary(g => g.Key, g => (IReadOnlyCollection<ChangelogData>)g.ToArray().AsReadOnly())
+				.AsReadOnly();
 
 			// Use title from input or default to version
 			var title = input.Title ?? version;
@@ -527,7 +531,7 @@ public class ChangelogRenderingService(
 				case ChangelogFileType.Asciidoc:
 					// Render asciidoc file
 					var asciidocRenderer = new ChangelogAsciidocRenderer(_fileSystem);
-					await asciidocRenderer.RenderAsciidoc(context, allResolvedEntries.Select(e => e.entry).ToList(), ctx);
+					await asciidocRenderer.RenderAsciidoc(context, ctx);
 					_logger.LogInformation("Rendered changelog asciidoc file to {OutputDir}", outputDir);
 					break;
 				case ChangelogFileType.Markdown:

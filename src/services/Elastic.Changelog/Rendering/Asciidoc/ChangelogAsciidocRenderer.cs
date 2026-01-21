@@ -15,18 +15,15 @@ namespace Elastic.Changelog.Rendering.Asciidoc;
 /// </summary>
 public class ChangelogAsciidocRenderer(IFileSystem fileSystem)
 {
-	private readonly EntriesByAreaAsciidocRenderer _entriesByAreaRenderer = new();
-	private readonly BreakingChangesAsciidocRenderer _breakingChangesRenderer = new();
-	private readonly DeprecationsAsciidocRenderer _deprecationsRenderer = new();
-	private readonly KnownIssuesAsciidocRenderer _knownIssuesRenderer = new();
-
-	public async Task RenderAsciidoc(
-		ChangelogRenderContext context,
-		List<ChangelogData> entries,
-		Cancel ctx
-	)
+	public async Task RenderAsciidoc(ChangelogRenderContext context, Cancel ctx)
 	{
 		var sb = new StringBuilder();
+
+		// Create section renderers with shared StringBuilder
+		var entriesByAreaRenderer = new EntriesByAreaAsciidocRenderer(sb);
+		var breakingChangesRenderer = new BreakingChangesAsciidocRenderer(sb);
+		var deprecationsRenderer = new DeprecationsAsciidocRenderer(sb);
+		var knownIssuesRenderer = new KnownIssuesAsciidocRenderer(sb);
 
 		// Add anchor
 		_ = sb.AppendLine(CultureInfo.InvariantCulture, $"[[release-notes-{context.TitleSlug}]]");
@@ -50,7 +47,7 @@ public class ChangelogAsciidocRenderer(IFileSystem fileSystem)
 		if (security.Count > 0)
 		{
 			RenderSectionHeader(sb, "security-updates", context.TitleSlug, "Security updates");
-			_entriesByAreaRenderer.Render(sb, security, context);
+			entriesByAreaRenderer.Render(security, context);
 			_ = sb.AppendLine();
 		}
 
@@ -58,7 +55,7 @@ public class ChangelogAsciidocRenderer(IFileSystem fileSystem)
 		if (bugFixes.Count > 0)
 		{
 			RenderSectionHeader(sb, "bug-fixes", context.TitleSlug, "Bug fixes");
-			_entriesByAreaRenderer.Render(sb, bugFixes, context);
+			entriesByAreaRenderer.Render(bugFixes, context);
 			_ = sb.AppendLine();
 		}
 
@@ -67,7 +64,7 @@ public class ChangelogAsciidocRenderer(IFileSystem fileSystem)
 		{
 			RenderSectionHeader(sb, "features-enhancements", context.TitleSlug, "New features and enhancements");
 			var combined = features.Concat(enhancements).ToList();
-			_entriesByAreaRenderer.Render(sb, combined, context);
+			entriesByAreaRenderer.Render(combined, context);
 			_ = sb.AppendLine();
 		}
 
@@ -75,7 +72,7 @@ public class ChangelogAsciidocRenderer(IFileSystem fileSystem)
 		if (breakingChanges.Count > 0)
 		{
 			RenderSectionHeader(sb, "breaking-changes", context.TitleSlug, "Breaking changes");
-			_breakingChangesRenderer.Render(sb, breakingChanges, context);
+			breakingChangesRenderer.Render(breakingChanges, context);
 			_ = sb.AppendLine();
 		}
 
@@ -83,7 +80,7 @@ public class ChangelogAsciidocRenderer(IFileSystem fileSystem)
 		if (deprecations.Count > 0)
 		{
 			RenderSectionHeader(sb, "deprecations", context.TitleSlug, "Deprecations");
-			_deprecationsRenderer.Render(sb, deprecations, context);
+			deprecationsRenderer.Render(deprecations, context);
 			_ = sb.AppendLine();
 		}
 
@@ -91,7 +88,7 @@ public class ChangelogAsciidocRenderer(IFileSystem fileSystem)
 		if (knownIssues.Count > 0)
 		{
 			RenderSectionHeader(sb, "known-issues", context.TitleSlug, "Known issues");
-			_knownIssuesRenderer.Render(sb, knownIssues, context);
+			knownIssuesRenderer.Render(knownIssues, context);
 			_ = sb.AppendLine();
 		}
 
@@ -99,7 +96,7 @@ public class ChangelogAsciidocRenderer(IFileSystem fileSystem)
 		if (docs.Count > 0)
 		{
 			RenderSectionHeader(sb, "docs", context.TitleSlug, "Documentation");
-			_entriesByAreaRenderer.Render(sb, docs, context);
+			entriesByAreaRenderer.Render(docs, context);
 			_ = sb.AppendLine();
 		}
 
@@ -107,7 +104,7 @@ public class ChangelogAsciidocRenderer(IFileSystem fileSystem)
 		if (regressions.Count > 0)
 		{
 			RenderSectionHeader(sb, "regressions", context.TitleSlug, "Regressions");
-			_entriesByAreaRenderer.Render(sb, regressions, context);
+			entriesByAreaRenderer.Render(regressions, context);
 			_ = sb.AppendLine();
 		}
 
@@ -115,7 +112,7 @@ public class ChangelogAsciidocRenderer(IFileSystem fileSystem)
 		if (other.Count > 0)
 		{
 			RenderSectionHeader(sb, "other", context.TitleSlug, "Other changes");
-			_entriesByAreaRenderer.Render(sb, other, context);
+			entriesByAreaRenderer.Render(other, context);
 			_ = sb.AppendLine();
 		}
 

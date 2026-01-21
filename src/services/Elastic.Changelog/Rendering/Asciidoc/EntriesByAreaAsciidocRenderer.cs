@@ -10,10 +10,10 @@ namespace Elastic.Changelog.Rendering.Asciidoc;
 /// <summary>
 /// Renderer for asciidoc sections that group entries by area (security, bug fixes, features, docs, regressions, other)
 /// </summary>
-public class EntriesByAreaAsciidocRenderer : AsciidocRendererBase
+public class EntriesByAreaAsciidocRenderer(StringBuilder sb) : AsciidocRendererBase
 {
 	/// <inheritdoc />
-	public override void Render(StringBuilder sb, List<ChangelogData> entries, ChangelogRenderContext context)
+	public override void Render(IReadOnlyCollection<ChangelogData> entries, ChangelogRenderContext context)
 	{
 		var groupedByArea = context.Subsections
 			? entries.GroupBy(ChangelogRenderUtilities.GetComponent).OrderBy(g => g.Key).ToList()

@@ -98,7 +98,7 @@ public class IndexMarkdownRenderer(IFileSystem fileSystem) : MarkdownRendererBas
 
 	private static void RenderEntriesByArea(
 		StringBuilder sb,
-		List<ChangelogData> entries,
+		IReadOnlyCollection<ChangelogData> entries,
 		ChangelogRenderContext context)
 	{
 		var groupedByArea = context.Subsections

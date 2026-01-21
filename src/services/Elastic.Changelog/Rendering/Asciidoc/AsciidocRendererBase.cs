@@ -10,15 +10,14 @@ namespace Elastic.Changelog.Rendering.Asciidoc;
 /// <summary>
 /// Abstract base class for asciidoc section renderers with shared utility methods
 /// </summary>
-public abstract class AsciidocRendererBase : IAsciidocSectionRenderer
+public abstract class AsciidocRendererBase
 {
-	/// <inheritdoc />
-	public abstract void Render(StringBuilder sb, List<ChangelogData> entries, ChangelogRenderContext context);
+	public abstract void Render(IReadOnlyCollection<ChangelogData> entries, ChangelogRenderContext context);
 
 	/// <summary>
 	/// Gets the entry context (bundleProducts, repo, hideLinks, shouldHide) for a specific entry
 	/// </summary>
-	protected static (HashSet<string> bundleProductIds, string entryRepo, bool hideLinks, bool shouldHide) GetEntryContext(
+	private static (HashSet<string> bundleProductIds, string entryRepo, bool hideLinks, bool shouldHide) GetEntryContext(
 		ChangelogData entry,
 		ChangelogRenderContext context)
 	{
@@ -32,7 +31,7 @@ public abstract class AsciidocRendererBase : IAsciidocSectionRenderer
 	/// <summary>
 	/// Renders an entry's title and PR/issue links
 	/// </summary>
-	protected static void RenderEntryTitleAndLinks(StringBuilder sb, ChangelogData entry, string entryRepo, bool hideLinks, bool shouldHide)
+	private static void RenderEntryTitleAndLinks(StringBuilder sb, ChangelogData entry, string entryRepo, bool hideLinks, bool shouldHide)
 	{
 		if (shouldHide)
 			_ = sb.AppendLine("// ");
@@ -66,7 +65,7 @@ public abstract class AsciidocRendererBase : IAsciidocSectionRenderer
 	/// <summary>
 	/// Renders an entry's description with optional comment handling
 	/// </summary>
-	protected static void RenderEntryDescription(StringBuilder sb, ChangelogData entry, bool shouldHide)
+	private static void RenderEntryDescription(StringBuilder sb, ChangelogData entry, bool shouldHide)
 	{
 		if (string.IsNullOrWhiteSpace(entry.Description))
 			return;
@@ -86,7 +85,7 @@ public abstract class AsciidocRendererBase : IAsciidocSectionRenderer
 	/// <summary>
 	/// Renders Impact and Action fields for breaking changes, deprecations, and known issues
 	/// </summary>
-	protected static void RenderImpactAndAction(StringBuilder sb, ChangelogData entry)
+	private static void RenderImpactAndAction(StringBuilder sb, ChangelogData entry)
 	{
 		if (!string.IsNullOrWhiteSpace(entry.Impact))
 		{
@@ -104,7 +103,7 @@ public abstract class AsciidocRendererBase : IAsciidocSectionRenderer
 	/// <summary>
 	/// Renders a complete entry (title, links, description) without Impact/Action
 	/// </summary>
-	protected static void RenderBasicEntry(StringBuilder sb, ChangelogData entry, ChangelogRenderContext context)
+	protected void RenderBasicEntry(StringBuilder sb, ChangelogData entry, ChangelogRenderContext context)
 	{
 		var (_, entryRepo, hideLinks, shouldHide) = GetEntryContext(entry, context);
 		RenderEntryTitleAndLinks(sb, entry, entryRepo, hideLinks, shouldHide);
@@ -115,7 +114,7 @@ public abstract class AsciidocRendererBase : IAsciidocSectionRenderer
 	/// <summary>
 	/// Renders a complete entry with Impact/Action fields
 	/// </summary>
-	protected static void RenderEntryWithImpactAction(StringBuilder sb, ChangelogData entry, ChangelogRenderContext context)
+	protected void RenderEntryWithImpactAction(StringBuilder sb, ChangelogData entry, ChangelogRenderContext context)
 	{
 		var (_, entryRepo, hideLinks, shouldHide) = GetEntryContext(entry, context);
 		RenderEntryTitleAndLinks(sb, entry, entryRepo, hideLinks, shouldHide);
