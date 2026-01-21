@@ -29,11 +29,9 @@ public static class ChangelogRenderUtilities
 		ChangelogData entry,
 		HashSet<string> featureIdsToHide,
 		HashSet<string> bundleProductIds,
-		IReadOnlyDictionary<string, RenderBlockersEntry>? renderBlockers)
-	{
-		return (!string.IsNullOrWhiteSpace(entry.FeatureId) && featureIdsToHide.Contains(entry.FeatureId)) ||
-			ShouldBlockEntry(entry, bundleProductIds, renderBlockers, out _);
-	}
+		IReadOnlyDictionary<string, RenderBlockersEntry>? renderBlockers) =>
+		(!string.IsNullOrWhiteSpace(entry.FeatureId) && featureIdsToHide.Contains(entry.FeatureId))
+			|| ShouldBlockEntry(entry, bundleProductIds, renderBlockers, out _);
 
 	/// <summary>
 	/// Determines if an entry should be blocked from rendering based on render blockers configuration
