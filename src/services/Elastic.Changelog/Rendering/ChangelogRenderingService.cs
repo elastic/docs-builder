@@ -3,12 +3,10 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using Elastic.Changelog;
 using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Configuration;
 using Elastic.Changelog.Rendering.Asciidoc;
 using Elastic.Changelog.Rendering.Markdown;
-using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;
@@ -30,7 +28,6 @@ public class ChangelogRenderingService(
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogRenderingService>();
 	private readonly IFileSystem _fileSystem = fileSystem ?? new FileSystem();
-	private readonly IConfigurationContext? _configurationContext = configurationContext;
 
 	public async Task<bool> RenderChangelogs(
 		IDiagnosticsCollector collector,
@@ -41,7 +38,7 @@ public class ChangelogRenderingService(
 		try
 		{
 			// Validate input
-			if (input.Bundles == null || input.Bundles.Count == 0)
+			if (input.Bundles.Count == 0)
 			{
 				collector.EmitError(string.Empty, "At least one bundle file is required. Use --input to specify bundle files.");
 				return false;
@@ -86,25 +83,6 @@ public class ChangelogRenderingService(
 					return false;
 				}
 
-				if (bundledData == null)
-				{
-					collector.EmitError(bundleInput.BundleFile, "Failed to deserialize bundle file");
-					return false;
-				}
-
-				// Validate bundle has required structure
-				if (bundledData.Products == null)
-				{
-					collector.EmitError(bundleInput.BundleFile, "Bundle file is missing required field: products");
-					return false;
-				}
-
-				if (bundledData.Entries == null)
-				{
-					collector.EmitError(bundleInput.BundleFile, "Bundle file is missing required field: entries");
-					return false;
-				}
-
 				// Determine directory for resolving file references
 				var bundleDirectory = bundleInput.Directory ?? _fileSystem.Path.GetDirectoryName(bundleInput.BundleFile) ?? _fileSystem.Directory.GetCurrentDirectory();
 
@@ -119,9 +97,7 @@ public class ChangelogRenderingService(
 
 						// Check for duplicates within the same bundle
 						if (!fileNamesInThisBundle.Add(fileName))
-						{
 							collector.EmitWarning(bundleInput.BundleFile, $"Changelog file '{fileName}' appears multiple times in the same bundle");
-						}
 
 						// Track across bundles
 						if (!seenFileNames.TryGetValue(fileName, out var bundleList))
@@ -182,9 +158,7 @@ public class ChangelogRenderingService(
 							var fileContent = await _fileSystem.File.ReadAllTextAsync(filePath, ctx);
 							var checksum = ChangelogBundlingService.ComputeSha1(fileContent);
 							if (checksum != entry.File.Checksum)
-							{
 								collector.EmitWarning(bundleInput.BundleFile, $"Checksum mismatch for file {entry.File.Name}. Expected {entry.File.Checksum}, got {checksum}");
-							}
 
 							// Deserialize YAML (skip comment lines) to validate structure
 							var yamlLines = fileContent.Split('\n');
@@ -194,11 +168,6 @@ public class ChangelogRenderingService(
 							var normalizedYaml = ChangelogBundlingService.VersionToTargetRegex().Replace(yamlWithoutComments, "$1target:");
 
 							var entryData = deserializer.Deserialize<ChangelogData>(normalizedYaml);
-							if (entryData == null)
-							{
-								collector.EmitError(bundleInput.BundleFile, $"Failed to deserialize changelog file '{entry.File.Name}'");
-								return false;
-							}
 
 							// Validate required fields in changelog file
 							if (string.IsNullOrWhiteSpace(entryData.Title))
@@ -213,7 +182,7 @@ public class ChangelogRenderingService(
 								return false;
 							}
 
-							if (entryData.Products == null || entryData.Products.Count == 0)
+							if (entryData.Products.Count == 0)
 							{
 								collector.EmitError(filePath, "Changelog file is missing required field: products");
 								return false;
@@ -247,9 +216,7 @@ public class ChangelogRenderingService(
 			{
 				var uniqueBundles = bundleFiles.Distinct().ToList();
 				if (uniqueBundles.Count > 1)
-				{
 					collector.EmitWarning(string.Empty, $"Changelog file '{fileName}' appears in multiple bundles: {string.Join(", ", uniqueBundles)}");
-				}
 			}
 
 			// Check for duplicate PRs
@@ -257,16 +224,12 @@ public class ChangelogRenderingService(
 			{
 				var uniqueBundles = bundleFiles.Distinct().ToList();
 				if (uniqueBundles.Count > 1)
-				{
 					collector.EmitWarning(string.Empty, $"PR '{pr}' appears in multiple bundles: {string.Join(", ", uniqueBundles)}");
-				}
 			}
 
 			// If validation found errors, stop before merging
 			if (collector.Errors > 0)
-			{
 				return false;
-			}
 
 			// Merge phase: Now that validation passed, load and merge all bundles
 			var allResolvedEntries = new List<(ChangelogData entry, string repo, HashSet<string> bundleProductIds, bool hideLinks)>();
@@ -281,9 +244,7 @@ public class ChangelogRenderingService(
 					var target = product.Target ?? string.Empty;
 					_ = allProducts.Add((product.Product, target));
 					if (!string.IsNullOrWhiteSpace(product.Product))
-					{
 						_ = bundleProductIds.Add(product.Product);
-					}
 				}
 
 				var repo = bundleInput.Repo ?? defaultRepo;
@@ -328,10 +289,7 @@ public class ChangelogRenderingService(
 						entryData = deserializer.Deserialize<ChangelogData>(normalizedYaml);
 					}
 
-					if (entryData != null)
-					{
-						allResolvedEntries.Add((entryData, repo, bundleProductIds, bundleInput.HideLinks));
-					}
+					allResolvedEntries.Add((entryData, repo, bundleProductIds, bundleInput.HideLinks));
 				}
 			}
 
@@ -344,9 +302,7 @@ public class ChangelogRenderingService(
 			// Determine output directory
 			var outputDir = input.Output ?? _fileSystem.Directory.GetCurrentDirectory();
 			if (!_fileSystem.Directory.Exists(outputDir))
-			{
 				_ = _fileSystem.Directory.CreateDirectory(outputDir);
-			}
 
 			// Extract version from products (use first product's target if available, or "unknown")
 			var version = allProducts.Count > 0
@@ -354,15 +310,11 @@ public class ChangelogRenderingService(
 				: "unknown";
 
 			if (string.IsNullOrWhiteSpace(version))
-			{
 				version = "unknown";
-			}
 
 			// Warn if --title was not provided and version defaults to "unknown"
 			if (string.IsNullOrWhiteSpace(input.Title) && version == "unknown")
-			{
 				collector.EmitWarning(string.Empty, "No --title option provided and bundle files do not contain 'target' values. Output folder and markdown titles will default to 'unknown'. Consider using --title to specify a custom title.");
-			}
 
 			// Group entries by type (kind)
 			var entriesByType = allResolvedEntries.Select(e => e.entry).GroupBy(e => e.Type).ToDictionary(g => g.Key, g => g.ToList());
@@ -373,7 +325,7 @@ public class ChangelogRenderingService(
 			var titleSlug = ChangelogTextUtilities.TitleToSlug(title);
 
 			// Load changelog configuration to check for render_blockers
-			var configLoader = new ChangelogConfigurationLoader(logFactory, _configurationContext!, _fileSystem);
+			var configLoader = new ChangelogConfigurationLoader(logFactory, configurationContext!, _fileSystem);
 			var config = await configLoader.LoadChangelogConfiguration(collector, input.Config, ctx);
 			if (config == null)
 			{
@@ -406,9 +358,7 @@ public class ChangelogRenderingService(
 							.ToArray();
 
 						foreach (var featureId in featureIdsFromFile)
-						{
 							_ = featureIdsToHide.Add(featureId);
-						}
 					}
 					else
 					{
@@ -423,11 +373,9 @@ public class ChangelogRenderingService(
 							collector.EmitError(singleValue, $"File does not exist: {singleValue}");
 							return false;
 						}
-						else
-						{
-							// Doesn't look like a file path, treat as feature ID
-							_ = featureIdsToHide.Add(singleValue);
-						}
+
+						// Doesn't look like a file path, treat as feature ID
+						_ = featureIdsToHide.Add(singleValue);
 					}
 				}
 				else
@@ -446,9 +394,7 @@ public class ChangelogRenderingService(
 								.ToArray();
 
 							foreach (var featureId in featureIdsFromFile)
-							{
 								_ = featureIdsToHide.Add(featureId);
-							}
 						}
 						else
 						{
@@ -474,9 +420,7 @@ public class ChangelogRenderingService(
 					if (nonExistentFiles.Count > 0)
 					{
 						foreach (var filePath in nonExistentFiles)
-						{
 							collector.EmitError(filePath, $"File does not exist: {filePath}");
-						}
 						return false;
 					}
 				}
@@ -487,18 +431,14 @@ public class ChangelogRenderingService(
 			foreach (var (entry, _, _, _) in allResolvedEntries)
 			{
 				if (!string.IsNullOrWhiteSpace(entry.FeatureId) && featureIdsToHide.Contains(entry.FeatureId))
-				{
-					hiddenEntries.Add((entry.Title ?? "Unknown", entry.FeatureId));
-				}
+					hiddenEntries.Add((entry.Title, entry.FeatureId));
 			}
 
 			// Emit warnings for hidden entries
 			if (hiddenEntries.Count > 0)
 			{
 				foreach (var (entryTitle, featureId) in hiddenEntries)
-				{
 					collector.EmitWarning(string.Empty, $"Changelog entry '{entryTitle}' with feature-id '{featureId}' will be commented out in markdown output");
-				}
 			}
 
 			// Check entries against render blockers and track blocked entries
@@ -506,11 +446,9 @@ public class ChangelogRenderingService(
 			var blockedEntries = new List<(string title, List<string> reasons)>();
 			foreach (var (entry, _, bundleProductIds, _) in allResolvedEntries)
 			{
-				var isBlocked = ChangelogMarkdownRenderer.ShouldBlockEntry(entry, bundleProductIds, renderBlockers, out var blockReasons);
+				var isBlocked = ChangelogRenderUtilities.ShouldBlockEntry(entry, bundleProductIds, renderBlockers, out var blockReasons);
 				if (isBlocked)
-				{
-					blockedEntries.Add((entry.Title ?? "Unknown", blockReasons));
-				}
+					blockedEntries.Add((entry.Title, blockReasons));
 			}
 
 			// Emit warnings for blocked entries
@@ -553,60 +491,65 @@ public class ChangelogRenderingService(
 			// Use a custom comparer for reference equality since entries are objects
 			var entryToBundleProducts = new Dictionary<ChangelogData, HashSet<string>>();
 			foreach (var (entry, _, bundleProductIds, _) in allResolvedEntries)
-			{
 				entryToBundleProducts[entry] = bundleProductIds;
-			}
 
 			// Create mapping from entries to their repo for PR link formatting
 			var entryToRepo = new Dictionary<ChangelogData, string>();
 			foreach (var (entry, repo, _, _) in allResolvedEntries)
-			{
 				entryToRepo[entry] = repo;
-			}
 
 			// Create mapping from entries to their hideLinks setting for per-bundle link visibility
 			var entryToHideLinks = new Dictionary<ChangelogData, bool>();
 			foreach (var (entry, _, _, hideLinks) in allResolvedEntries)
-			{
 				entryToHideLinks[entry] = hideLinks;
-			}
 
 			// Render files (use first repo found for section anchors, or default)
 			var repoForAnchors = allResolvedEntries.Count > 0 ? allResolvedEntries[0].repo : defaultRepo;
-			var fileType = input.FileType ?? "markdown";
 
-			if (string.Equals(fileType, "asciidoc", StringComparison.OrdinalIgnoreCase))
+			// Create shared render context
+			var context = new ChangelogRenderContext
 			{
-				// Render asciidoc file
-				var asciidocRenderer = new ChangelogAsciidocRenderer(_fileSystem);
-				await asciidocRenderer.RenderAsciidoc(outputDir, title, titleSlug, repoForAnchors, allResolvedEntries.Select(e => e.entry).ToList(), entriesByType, input.Subsections, featureIdsToHide, renderBlockers, entryToBundleProducts, entryToRepo, entryToHideLinks, ctx);
-				_logger.LogInformation("Rendered changelog asciidoc file to {OutputDir}", outputDir);
-			}
-			else
+				OutputDir = outputDir,
+				Title = title,
+				TitleSlug = titleSlug,
+				Repo = repoForAnchors,
+				EntriesByType = entriesByType,
+				Subsections = input.Subsections,
+				FeatureIdsToHide = featureIdsToHide,
+				RenderBlockers = renderBlockers,
+				EntryToBundleProducts = entryToBundleProducts,
+				EntryToRepo = entryToRepo,
+				EntryToHideLinks = entryToHideLinks
+			};
+
+			switch (input.FileType)
 			{
-				// Render markdown files
-				var markdownRenderer = new ChangelogMarkdownRenderer(_fileSystem);
+				case ChangelogFileType.Asciidoc:
+					// Render asciidoc file
+					var asciidocRenderer = new ChangelogAsciidocRenderer(_fileSystem);
+					await asciidocRenderer.RenderAsciidoc(context, allResolvedEntries.Select(e => e.entry).ToList(), ctx);
+					_logger.LogInformation("Rendered changelog asciidoc file to {OutputDir}", outputDir);
+					break;
+				case ChangelogFileType.Markdown:
+					// Render markdown files using specialized renderers
+					IChangelogMarkdownRenderer[] renderers =
+					[
+						new IndexMarkdownRenderer(_fileSystem),
+						new BreakingChangesMarkdownRenderer(_fileSystem),
+						new DeprecationsMarkdownRenderer(_fileSystem),
+						new KnownIssuesMarkdownRenderer(_fileSystem)
+					];
 
-				// Render index.md (features, enhancements, bug fixes, security, docs, regression, other)
-				await markdownRenderer.RenderIndexMarkdown(outputDir, title, titleSlug, repoForAnchors, entriesByType, input.Subsections, featureIdsToHide, renderBlockers, entryToBundleProducts, entryToRepo, entryToHideLinks, ctx);
+					foreach (var renderer in renderers)
+						await renderer.RenderAsync(context, ctx);
 
-				// Render breaking-changes.md
-				await markdownRenderer.RenderBreakingChangesMarkdown(outputDir, title, titleSlug, repoForAnchors, entriesByType, input.Subsections, featureIdsToHide, renderBlockers, entryToBundleProducts, entryToRepo, entryToHideLinks, ctx);
-
-				// Render deprecations.md
-				await markdownRenderer.RenderDeprecationsMarkdown(outputDir, title, titleSlug, repoForAnchors, entriesByType, input.Subsections, featureIdsToHide, renderBlockers, entryToBundleProducts, entryToRepo, entryToHideLinks, ctx);
-
-				// Render known-issues.md
-				await markdownRenderer.RenderKnownIssuesMarkdown(outputDir, title, titleSlug, repoForAnchors, entriesByType, input.Subsections, featureIdsToHide, renderBlockers, entryToBundleProducts, entryToRepo, entryToHideLinks, ctx);
-
-				_logger.LogInformation("Rendered changelog markdown files to {OutputDir}", outputDir);
+					_logger.LogInformation("Rendered changelog markdown files to {OutputDir}", outputDir);
+					break;
+				default:
+					throw new Exception($"Unknown changelog file type: {input.FileType}");
 			}
 
 			return true;
-		}
-		catch (OperationCanceledException)
-		{
-			throw;
 		}
 		catch (IOException ioEx)
 		{

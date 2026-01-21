@@ -2,7 +2,10 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 using Elastic.Changelog.Bundling;
+using NetEscapades.EnumGenerators;
 
 namespace Elastic.Changelog.Rendering;
 
@@ -11,11 +14,22 @@ namespace Elastic.Changelog.Rendering;
 /// </summary>
 public class ChangelogRenderInput
 {
-	public List<BundleInput> Bundles { get; set; } = [];
-	public string? Output { get; set; }
-	public string? Title { get; set; }
-	public bool Subsections { get; set; }
-	public string[]? HideFeatures { get; set; }
-	public string? Config { get; set; }
-	public string FileType { get; set; } = "markdown";
+	public required IReadOnlyCollection<BundleInput> Bundles { get; init; }
+	public string? Output { get; init; }
+	public string? Title { get; init; }
+	public bool Subsections { get; init; }
+	public string[]? HideFeatures { get; init; }
+	public string? Config { get; init; }
+	public ChangelogFileType FileType { get; init; } = ChangelogFileType.Markdown;
+}
+
+[EnumExtensions]
+public enum ChangelogFileType
+{
+	[Display(Name = "markdown")]
+	[JsonStringEnumMemberName("markdown")]
+	Markdown,
+	[Display(Name = "asciidoc")]
+	[JsonStringEnumMemberName("asciidoc")]
+	Asciidoc
 }
