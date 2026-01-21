@@ -4,9 +4,9 @@
 
 #pragma warning disable IDE0060 // Remove unused parameter
 
-using System.Globalization;
 using System.IO.Abstractions;
 using System.Text;
+using static System.Globalization.CultureInfo;
 
 namespace Elastic.Changelog.Rendering.Asciidoc;
 
@@ -26,8 +26,8 @@ public class ChangelogAsciidocRenderer(IFileSystem fileSystem)
 		var knownIssuesRenderer = new KnownIssuesAsciidocRenderer(sb);
 
 		// Add anchor
-		_ = sb.AppendLine(CultureInfo.InvariantCulture, $"[[release-notes-{context.TitleSlug}]]");
-		_ = sb.AppendLine(CultureInfo.InvariantCulture, $"== {context.Title}");
+		_ = sb.AppendLine(InvariantCulture, $"[[release-notes-{context.TitleSlug}]]");
+		_ = sb.AppendLine(InvariantCulture, $"== {context.Title}");
 		_ = sb.AppendLine();
 
 		// Group entries by type
@@ -127,9 +127,9 @@ public class ChangelogAsciidocRenderer(IFileSystem fileSystem)
 
 	private static void RenderSectionHeader(StringBuilder sb, string anchorPrefix, string titleSlug, string title)
 	{
-		_ = sb.AppendLine(CultureInfo.InvariantCulture, $"[[{anchorPrefix}-{titleSlug}]]");
+		_ = sb.AppendLine(InvariantCulture, $"[[{anchorPrefix}-{titleSlug}]]");
 		_ = sb.AppendLine("[float]");
-		_ = sb.AppendLine(CultureInfo.InvariantCulture, $"=== {title}");
+		_ = sb.AppendLine(InvariantCulture, $"=== {title}");
 		_ = sb.AppendLine();
 	}
 }
