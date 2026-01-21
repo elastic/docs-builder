@@ -294,12 +294,14 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 			.ToList();
 
 		var includedAnchors = includes.SelectMany(i => i!.Anchors!.Anchors).ToArray();
+		var directives = document.Descendants<DirectiveBlock>().ToArray();
 		anchors =
 		[
-			..document.Descendants<DirectiveBlock>()
+			..directives
 				.Select(b => b.CrossReferenceName)
 				.Where(l => !string.IsNullOrWhiteSpace(l))
 				.Select(s => s.Slugify())
+				.Concat(directives.SelectMany(b => b.GeneratedAnchors))
 				.Concat(document.Descendants<InlineAnchor>().Select(a => a.Anchor))
 				.Concat(toc.Select(t => t.Slug))
 				.Where(anchor => !string.IsNullOrEmpty(anchor))

@@ -1,0 +1,12 @@
+type: feature
+title: Add PR label blockers to changelog creation
+products:
+  - product: docs-builder
+    target: 0.100.0
+areas:
+  - CLI
+pr: https://github.com/elastic/docs-builder/pull/2350
+description: |
+  Adds support for configuring PR labels that block changelog creation.
+  This allows teams to mark PRs that should not generate changelog entries
+  (e.g., internal changes, automation, or non-notable fixes).

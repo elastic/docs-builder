@@ -4,7 +4,7 @@
 
 using System.Text.RegularExpressions;
 
-namespace Elastic.Changelog;
+namespace Elastic.Documentation.Changelog;
 
 /// <summary>
 /// Static utility methods for text processing in changelog generation
@@ -259,7 +259,7 @@ public static partial class ChangelogTextUtilities
 	/// <summary>
 	/// Converts repo name to attribute format for asciidoc links
 	/// </summary>
-	public static string ConvertRepoToAttributeName(string repo, string suffix)
+	private static string ConvertRepoToAttributeName(string repo, string suffix)
 	{
 		if (string.IsNullOrWhiteSpace(repo))
 			return $"repo-{suffix}";

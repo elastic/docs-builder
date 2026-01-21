@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using Elastic.Changelog.Bundling;
+using Elastic.Documentation.Changelog;
 using YamlDotNet.Serialization;
 
 namespace Elastic.Changelog.Rendering;

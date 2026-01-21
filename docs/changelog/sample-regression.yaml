@@ -1,0 +1,10 @@
+type: regression
+title: This is a sample regression to show a full set
+products:
+  - product: docs-builder
+    target: 0.100.0
+areas:
+  - Rendering
+description: |
+  This is a sample regression entry demonstrating how regressions
+  are rendered in the changelog directive output.
