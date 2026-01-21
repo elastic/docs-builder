@@ -10,7 +10,7 @@ namespace Elastic.Documentation.Api.Infrastructure.Adapters.Search.Common;
 
 /// <summary>
 /// Shared query building utilities for search operations.
-/// Used by both FindPage (autocomplete) and FullSearch gateways.
+/// Used by both Navigation Search (autocomplete) and FullSearch gateways.
 /// </summary>
 public static class SearchQueryBuilder
 {
@@ -169,7 +169,7 @@ public static class SearchQueryBuilder
 	/// <summary>
 	/// Builds the lexical search query optimized for autocomplete behavior.
 	/// Uses prefix completion queries for fast as-you-type search.
-	/// Shared between FindPage (autocomplete) and FullSearch gateways.
+	/// Shared between Navigation Search (autocomplete) and FullSearch gateways.
 	/// </summary>
 	public static Query BuildLexicalQuery(
 		string searchQuery,

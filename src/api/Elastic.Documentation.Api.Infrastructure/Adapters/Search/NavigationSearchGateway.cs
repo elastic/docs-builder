@@ -15,18 +15,18 @@ using Microsoft.Extensions.Logging;
 namespace Elastic.Documentation.Api.Infrastructure.Adapters.Search;
 
 /// <summary>
-/// Elasticsearch gateway for FindPage (autocomplete/navigation search).
+/// Elasticsearch gateway for Navigation Search (autocomplete/navigation search).
 /// Uses shared lexical query optimized for autocomplete.
 /// </summary>
-public class FindPageGateway(ElasticsearchClientAccessor clientAccessor, ILogger<FindPageGateway> logger)
-	: IFindPageGateway, IDisposable
+public class NavigationSearchGateway(ElasticsearchClientAccessor clientAccessor, ILogger<NavigationSearchGateway> logger)
+	: INavigationSearchGateway, IDisposable
 {
 	public async Task<bool> CanConnect(Cancel ctx) => await clientAccessor.CanConnect(ctx);
 
-	public async Task<FindPageResult> FindPageAsync(string query, int pageNumber, int pageSize, string? filter = null, Cancel ctx = default) =>
+	public async Task<NavigationSearchResult> NavigationSearchAsync(string query, int pageNumber, int pageSize, string? filter = null, Cancel ctx = default) =>
 		await SearchImplementation(query, pageNumber, pageSize, filter, ctx);
 
-	public async Task<FindPageResult> SearchImplementation(string query, int pageNumber, int pageSize, string? filter = null, Cancel ctx = default)
+	public async Task<NavigationSearchResult> SearchImplementation(string query, int pageNumber, int pageSize, string? filter = null, Cancel ctx = default)
 	{
 		const string preTag = "<mark>";
 		const string postTag = "</mark>";
@@ -110,7 +110,7 @@ public class FindPageGateway(ElasticsearchClientAccessor clientAccessor, ILogger
 		}
 	}
 
-	private FindPageResult ProcessSearchResponse(
+	private NavigationSearchResult ProcessSearchResponse(
 		SearchResponse<DocumentationDocument> response,
 		string searchQuery)
 	{
@@ -119,13 +119,13 @@ public class FindPageGateway(ElasticsearchClientAccessor clientAccessor, ILogger
 		var results = response.Hits.Select(hit =>
 		{
 			var item = SearchResultProcessor.ProcessHit(hit, searchQuery, clientAccessor.SynonymBiDirectional);
-			return new FindPageResultItem
+			return new NavigationSearchResultItem
 			{
 				Type = item.Type,
 				Url = item.Url,
 				Title = item.Title,
 				Description = item.Description,
-				Parents = item.Parents.Select(p => new FindPageResultItemParent
+				Parents = item.Parents.Select(p => new NavigationSearchResultItemParent
 				{
 					Title = p.Title,
 					Url = p.Url
@@ -137,7 +137,7 @@ public class FindPageGateway(ElasticsearchClientAccessor clientAccessor, ILogger
 		// Extract aggregations
 		var aggregations = SearchResultProcessor.ExtractTypeAggregations(response);
 
-		return new FindPageResult
+		return new NavigationSearchResult
 		{
 			TotalHits = totalHits,
 			Results = results,
