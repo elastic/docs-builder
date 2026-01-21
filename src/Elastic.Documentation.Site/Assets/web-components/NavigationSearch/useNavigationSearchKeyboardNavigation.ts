@@ -3,7 +3,7 @@ import {
     useSearchActions,
     useSearchTerm,
 } from './navigationSearch.store'
-import { useFindInDocsTelemetry } from './useFindInDocsTelemetry'
+import { useNavigationSearchTelemetry } from './useNavigationSearchTelemetry'
 import { useRef, useCallback } from 'react'
 
 interface Options {
@@ -31,7 +31,7 @@ export const useNavigationSearchKeyboardNavigation = ({
     const selectedIndex = useSelectedIndex()
     const searchTerm = useSearchTerm()
     const { setSelectedIndex } = useSearchActions()
-    const { trackNavigation } = useFindInDocsTelemetry()
+    const { trackNavigation } = useNavigationSearchTelemetry()
 
     const handleMouseMove = useCallback(() => {
         isKeyboardNavigating.current = false
