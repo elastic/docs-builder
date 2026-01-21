@@ -454,7 +454,7 @@ toc:
             children:
               - toc: elastic-agent://reference/edot-collector
                 path_prefix: reference/edot-collector
-              - toc: edot-cloud-forwarder-aws://reference/edot-cloud-forwarder-aws
+              - toc: edot-cloud-forwarder-aws://reference/edot-cf-aws
                 path_prefix: reference/opentelemetry/edot-cloud-forwarder/aws
               - toc: apm-agent-android://reference/edot-android
                 path_prefix: reference/opentelemetry/edot-sdks/android
