@@ -40,9 +40,9 @@
 				content: '';
 				left: calc(var(--spacing) * 4 - 1px);
 			}
-			&:last-child::before {
-				@apply bottom-0;
-			}
+		&:last-child::before {
+			@apply hidden;
+		}
 			&::after {
 				@apply border-grey-20 bg-grey-10 absolute top-0 left-0 flex size-8 items-center justify-center rounded-full border-1 text-sm text-black;
 				content: counter(stepper);
