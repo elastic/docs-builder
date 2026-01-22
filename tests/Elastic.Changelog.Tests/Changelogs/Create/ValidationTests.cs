@@ -32,10 +32,11 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 		// language=yaml
 		var configContent =
 			"""
-			available_types:
-			  - feature
-			  - bug-fix
-			available_subtypes: []
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change:
 			available_lifecycles:
 			  - preview
 			  - beta
@@ -115,9 +116,11 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 		// language=yaml
 		var configContent =
 			"""
-			available_types:
-			  - feature
-			available_subtypes: []
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change:
 			available_lifecycles:
 			  - preview
 			  - beta
@@ -156,9 +159,11 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 		// language=yaml
 		var configContent =
 			"""
-			available_types:
-			  - feature
-			available_subtypes: []
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change:
 			available_lifecycles:
 			  - preview
 			  - beta

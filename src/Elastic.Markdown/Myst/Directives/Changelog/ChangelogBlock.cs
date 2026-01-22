@@ -26,7 +26,16 @@ public record LoadedBundle(
 	string Repo,
 	BundledChangelogData Data,
 	string FilePath,
-	IReadOnlyList<ChangelogData> Entries);
+	IReadOnlyList<ChangelogData> Entries)
+{
+	/// <summary>
+	/// Entries grouped by their changelog entry type.
+	/// </summary>
+	public IReadOnlyDictionary<ChangelogEntryType, IReadOnlyCollection<ChangelogData>> EntriesByType =>
+		Entries
+			.GroupBy(e => e.Type)
+			.ToDictionary(g => g.Key, g => (IReadOnlyCollection<ChangelogData>)g.ToList().AsReadOnly());
+}
 
 /// <summary>
 /// A directive block that reads all changelog bundles from a folder and renders them inline,
@@ -136,6 +145,7 @@ public partial class ChangelogBlock(DirectiveBlockParser parser, ParserContext c
 		var fileSystem = Build.ReadFileSystem;
 		var deserializer = new StaticDeserializerBuilder(new YamlStaticContext())
 			.WithNamingConvention(UnderscoredNamingConvention.Instance)
+			.WithTypeConverter(new ChangelogEntryTypeConverter())
 			.Build();
 
 		var yamlFiles = fileSystem.Directory
@@ -208,10 +218,14 @@ public partial class ChangelogBlock(DirectiveBlockParser parser, ParserContext c
 			// If entry has resolved/inline data, use it directly
 			if (!string.IsNullOrWhiteSpace(entry.Title) && !string.IsNullOrWhiteSpace(entry.Type))
 			{
+				var entryType = ChangelogEntryTypeExtensions.TryParse(entry.Type, out var parsed, ignoreCase: true, allowMatchingMetadataAttribute: true)
+					? parsed
+					: ChangelogEntryType.Other;
+
 				entryData = new ChangelogData
 				{
 					Title = entry.Title,
-					Type = entry.Type,
+					Type = entryType,
 					Subtype = entry.Subtype,
 					Description = entry.Description,
 					Impact = entry.Impact,
@@ -273,37 +287,37 @@ public partial class ChangelogBlock(DirectiveBlockParser parser, ParserContext c
 				.ToDictionary(g => g.Key, g => g.Count());
 
 			// Features and enhancements section
-			if (entriesByType.ContainsKey(ChangelogEntryTypes.Feature) ||
-				entriesByType.ContainsKey(ChangelogEntryTypes.Enhancement))
+			if (entriesByType.ContainsKey(ChangelogEntryType.Feature) ||
+				entriesByType.ContainsKey(ChangelogEntryType.Enhancement))
 				yield return $"{repo}-{titleSlug}-features-enhancements";
 
 			// Fixes section
-			if (entriesByType.ContainsKey(ChangelogEntryTypes.Security) ||
-				entriesByType.ContainsKey(ChangelogEntryTypes.BugFix))
+			if (entriesByType.ContainsKey(ChangelogEntryType.Security) ||
+				entriesByType.ContainsKey(ChangelogEntryType.BugFix))
 				yield return $"{repo}-{titleSlug}-fixes";
 
 			// Documentation section
-			if (entriesByType.ContainsKey(ChangelogEntryTypes.Docs))
+			if (entriesByType.ContainsKey(ChangelogEntryType.Docs))
 				yield return $"{repo}-{titleSlug}-docs";
 
 			// Regressions section
-			if (entriesByType.ContainsKey(ChangelogEntryTypes.Regression))
+			if (entriesByType.ContainsKey(ChangelogEntryType.Regression))
 				yield return $"{repo}-{titleSlug}-regressions";
 
 			// Other changes section
-			if (entriesByType.ContainsKey(ChangelogEntryTypes.Other))
+			if (entriesByType.ContainsKey(ChangelogEntryType.Other))
 				yield return $"{repo}-{titleSlug}-other";
 
 			// Breaking changes section
-			if (entriesByType.ContainsKey(ChangelogEntryTypes.BreakingChange))
+			if (entriesByType.ContainsKey(ChangelogEntryType.BreakingChange))
 				yield return $"{repo}-{titleSlug}-breaking-changes";
 
 			// Deprecations section
-			if (entriesByType.ContainsKey(ChangelogEntryTypes.Deprecation))
+			if (entriesByType.ContainsKey(ChangelogEntryType.Deprecation))
 				yield return $"{repo}-{titleSlug}-deprecations";
 
 			// Known issues section
-			if (entriesByType.ContainsKey(ChangelogEntryTypes.KnownIssue))
+			if (entriesByType.ContainsKey(ChangelogEntryType.KnownIssue))
 				yield return $"{repo}-{titleSlug}-known-issues";
 		}
 	}

@@ -48,6 +48,7 @@ public class ChangelogRenderingService(
 
 			var deserializer = new StaticDeserializerBuilder(new ChangelogYamlStaticContext())
 				.WithNamingConvention(UnderscoredNamingConvention.Instance)
+				.WithTypeConverter(new ChangelogEntryTypeConverter())
 				.Build();
 
 			// Validation phase: Load and validate all bundles
@@ -89,7 +90,8 @@ public class ChangelogRenderingService(
 			EmitHiddenEntryWarnings(collector, resolvedResult.Entries, featureHidingResult.FeatureIdsToHide, config.RenderBlockers);
 
 			// Validate entry types
-			ValidateEntryTypes(collector, resolvedResult.Entries, config.AvailableTypes);
+			if (!ValidateEntryTypes(collector, resolvedResult.Entries, config.AvailableTypes))
+				return false;
 
 			// Build render context
 			var context = BuildRenderContext(input, outputSetup, resolvedResult, featureHidingResult.FeatureIdsToHide, config.RenderBlockers);
@@ -170,36 +172,40 @@ public class ChangelogRenderingService(
 		}
 	}
 
-	private static void ValidateEntryTypes(
+	private static bool ValidateEntryTypes(
 		IDiagnosticsCollector collector,
 		IReadOnlyList<ResolvedEntry> entries,
 		IReadOnlyList<string> availableTypes)
 	{
-		var handledTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-		{
-			ChangelogEntryTypes.Feature,
-			ChangelogEntryTypes.Enhancement,
-			ChangelogEntryTypes.Security,
-			ChangelogEntryTypes.BugFix,
-			ChangelogEntryTypes.BreakingChange,
-			ChangelogEntryTypes.Deprecation,
-			ChangelogEntryTypes.KnownIssue,
-			ChangelogEntryTypes.Docs,
-			ChangelogEntryTypes.Regression,
-			ChangelogEntryTypes.Other
-		};
+		var isValid = true;
 
+		// Check for invalid types (unrecognized type strings)
+		var invalidEntries = entries.Where(e => e.Entry.Type == ChangelogEntryType.Invalid).ToList();
+		if (invalidEntries.Count > 0)
+		{
+			foreach (var entry in invalidEntries)
+				collector.EmitError(string.Empty, $"Changelog entry '{entry.Entry.Title}' has an invalid or unrecognized type. Valid types are: {string.Join(", ", availableTypes)}.");
+			isValid = false;
+		}
+
+		// All valid enum values (except Invalid) are handled in rendering
+		var handledTypes = new HashSet<ChangelogEntryType>(
+			ChangelogEntryTypeExtensions.GetValues().Where(t => t != ChangelogEntryType.Invalid));
 		var availableTypesSet = new HashSet<string>(availableTypes, StringComparer.OrdinalIgnoreCase);
 
 		var entriesByType = entries
+			.Where(e => e.Entry.Type != ChangelogEntryType.Invalid)
 			.GroupBy(e => e.Entry.Type)
 			.ToDictionary(g => g.Key, g => g.Count());
 
 		foreach (var (entryType, count) in entriesByType)
 		{
-			if (availableTypesSet.Contains(entryType) && !handledTypes.Contains(entryType))
-				collector.EmitWarning(string.Empty, $"Changelog type '{entryType}' is valid according to configuration but is not handled in rendering output. {count} entry/entries of this type will not be included in the generated markdown files.");
+			var typeString = entryType.ToStringFast(true);
+			if (availableTypesSet.Contains(typeString) && !handledTypes.Contains(entryType))
+				collector.EmitWarning(string.Empty, $"Changelog type '{typeString}' is valid according to configuration but is not handled in rendering output. {count} entry/entries of this type will not be included in the generated markdown files.");
 		}
+
+		return isValid;
 	}
 
 	private static ChangelogRenderContext BuildRenderContext(

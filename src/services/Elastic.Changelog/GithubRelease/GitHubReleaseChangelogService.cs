@@ -190,8 +190,13 @@ public class GitHubReleaseChangelogService(
 			collector.EmitWarning(prUrl, $"Failed to fetch PR info for #{prRef.PrNumber}. Using inferred type from release notes.");
 		}
 
-		// Determine final type (label-derived takes priority)
-		var finalType = labelDerivedType ?? prRef.InferredType ?? ChangelogEntryTypes.Other;
+		// Determine final type string (label-derived takes priority)
+		var finalTypeString = labelDerivedType ?? prRef.InferredType ?? ChangelogEntryType.Other.ToStringFast(true);
+
+		// Parse to enum
+		var finalType = ChangelogEntryTypeExtensions.TryParse(finalTypeString, out var parsed, ignoreCase: true, allowMatchingMetadataAttribute: true)
+			? parsed
+			: ChangelogEntryType.Other;
 
 		// Warn on type mismatch if Release Drafter format and warning enabled
 		if (format == ReleaseNoteFormat.ReleaseDrafter &&
@@ -226,7 +231,7 @@ public class GitHubReleaseChangelogService(
 
 		// Write file with prettier name: <pr_number>-<type>-<slug>.yaml
 		var slug = ChangelogTextUtilities.GenerateSlug(title);
-		var filename = $"{prRef.PrNumber}-{finalType}-{slug}.yaml";
+		var filename = $"{prRef.PrNumber}-{finalType.ToStringFast(true)}-{slug}.yaml";
 		var filePath = _fileSystem.Path.Combine(outputDir, filename);
 		await _fileSystem.File.WriteAllTextAsync(filePath, yamlContent, ctx);
 
@@ -240,6 +245,7 @@ public class GitHubReleaseChangelogService(
 	{
 		var serializer = new StaticSerializerBuilder(new ChangelogYamlStaticContext())
 			.WithNamingConvention(UnderscoredNamingConvention.Instance)
+			.WithTypeConverter(new ChangelogEntryTypeConverter())
 			.ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitNull | DefaultValuesHandling.OmitEmptyCollections)
 			.Build();
 

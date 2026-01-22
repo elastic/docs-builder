@@ -43,9 +43,11 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 		// language=yaml
 		var configContent =
 			"""
-			available_types:
-			  - feature
-			available_subtypes: []
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change:
 			available_lifecycles:
 			  - ga
 			render_blockers:

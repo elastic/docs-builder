@@ -53,21 +53,21 @@ public static class ChangelogInlineRenderer
 		string title,
 		string titleSlug,
 		string repo,
-		Dictionary<string, List<ChangelogData>> entriesByType)
+		Dictionary<ChangelogEntryType, List<ChangelogData>> entriesByType)
 	{
 		var sb = new StringBuilder();
 
 		// Get entries by category
-		var features = entriesByType.GetValueOrDefault(ChangelogEntryTypes.Feature, []);
-		var enhancements = entriesByType.GetValueOrDefault(ChangelogEntryTypes.Enhancement, []);
-		var security = entriesByType.GetValueOrDefault(ChangelogEntryTypes.Security, []);
-		var bugFixes = entriesByType.GetValueOrDefault(ChangelogEntryTypes.BugFix, []);
-		var docs = entriesByType.GetValueOrDefault(ChangelogEntryTypes.Docs, []);
-		var regressions = entriesByType.GetValueOrDefault(ChangelogEntryTypes.Regression, []);
-		var other = entriesByType.GetValueOrDefault(ChangelogEntryTypes.Other, []);
-		var breakingChanges = entriesByType.GetValueOrDefault(ChangelogEntryTypes.BreakingChange, []);
-		var deprecations = entriesByType.GetValueOrDefault(ChangelogEntryTypes.Deprecation, []);
-		var knownIssues = entriesByType.GetValueOrDefault(ChangelogEntryTypes.KnownIssue, []);
+		var features = entriesByType.GetValueOrDefault(ChangelogEntryType.Feature, []);
+		var enhancements = entriesByType.GetValueOrDefault(ChangelogEntryType.Enhancement, []);
+		var security = entriesByType.GetValueOrDefault(ChangelogEntryType.Security, []);
+		var bugFixes = entriesByType.GetValueOrDefault(ChangelogEntryType.BugFix, []);
+		var docs = entriesByType.GetValueOrDefault(ChangelogEntryType.Docs, []);
+		var regressions = entriesByType.GetValueOrDefault(ChangelogEntryType.Regression, []);
+		var other = entriesByType.GetValueOrDefault(ChangelogEntryType.Other, []);
+		var breakingChanges = entriesByType.GetValueOrDefault(ChangelogEntryType.BreakingChange, []);
+		var deprecations = entriesByType.GetValueOrDefault(ChangelogEntryType.Deprecation, []);
+		var knownIssues = entriesByType.GetValueOrDefault(ChangelogEntryType.KnownIssue, []);
 
 		// Build header with links to other sections if they exist
 		_ = sb.AppendLine(CultureInfo.InvariantCulture, $"## {title}");

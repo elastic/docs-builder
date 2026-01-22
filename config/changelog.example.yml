@@ -1,30 +1,52 @@
 # Changelog Configuration
-# This file configures the valid values for changelog fields.
+# This file configures the valid values for changelog fields using the pivot structure.
 # Place this file as `changelog.yml` in the `docs/` directory
 
-# Available types for changelog entries
-available_types:
-  - breaking-change
-  - bug-fix
-  - deprecation
-  - docs
-  - enhancement
-  - feature
-  - known-issue
-  - other
-  - regression
-  - security
+# Pivot configuration for types, subtypes, and areas with label mappings.
+# By default we render entries grouped by type > subtype > area.
+# NOTE: subtype and area are optional and either may be omitted.
+# Labels are specified in a "label -> value" format
+pivot:
+  # Type definitions with optional labels
+  # Keys are type names, values can be:
+  #   - simple string: comma-separated label list (e.g., ">bug, >fix")
+  #   - empty/null: no labels for this type
+  #   - object: { labels: "...", subtypes: {...} } for breaking-change type only
+  types:
+    # Complex object form with subtypes (ONLY allowed for breaking-change)
+    # Subtypes help categorize breaking changes by their nature
+    breaking-change:
+      labels: ">breaking, >bc"
+      subtypes:
+        api: ">api-breaking"
+        behavioral: ">behavioral-breaking"
+        configuration: ">config-breaking"
+        dependency: ">dependency-breaking"
+        subscription: ">subscription-breaking"
+        plugin: ">plugin-breaking"
+        security: ">security-breaking"
+        other:
+    # Simple string form: labels as comma-separated string
+    bug-fix: ">bug"
+    deprecation: ">deprecation"
+    # Empty block: no labels (YAML null)
+    feature:
+    enhancement:
+    docs:
+    known-issue:
+    other:
+    regression:
+    security:
 
-# Available subtypes for breaking changes
-available_subtypes:
-  - api
-  - behavioral
-  - configuration
-  - dependency
-  - subscription
-  - plugin
-  - security
-  - other
+  # Area definitions with labels
+  # Keys are area display names, values are label strings
+  # Multiple labels can be comma-separated
+  areas:
+    # Example mappings - customize based on your label naming conventions
+    # Autoscaling: ":Distributed Coordination/Autoscaling"
+    # Search: ":Search/Search"
+    # Security: ":Security/Security"
+    # Watcher: ":Data Management/Watcher"
 
 # Available lifecycle values
 available_lifecycles:
@@ -32,15 +54,7 @@ available_lifecycles:
   - beta
   - ga
 
-# Available areas (optional - if not specified, all areas are allowed)
-available_areas:
-  # - Autoscaling
-  # - Search
-  # - Security
-  # - Watcher
-  # Add more areas as needed
-
-# Available products (optional - if not specified, all products are allowed)
+# Available products (optional - if not specified, all products from products.yml are allowed)
 available_products:
   # - elasticsearch
   # - kibana
@@ -52,27 +66,6 @@ available_products:
   # - cloud-serverless
   # - cloud-enterprise
   # Add more products as needed
-
-# GitHub label mappings (optional - used when --pr option is specified)
-# Maps GitHub PR labels to changelog type values
-# When a PR has a label that matches a key, the corresponding type value is used
-label_to_type:
-  # Example mappings - customize based on your label naming conventions
-  # ">breaking": breaking-change
-  # ">bug": bug-fix
-  # ">docs": docs
-  # ">enhancement": enhancement
-  # ">feature": feature
-
-# Maps GitHub PR labels to changelog area values
-# Multiple labels can map to the same area, and a single label can map to multiple areas (comma-separated)
-label_to_areas:
-  # Example mappings - customize based on your label naming conventions
-  # ":Distributed Coordination/Autoscaling": Autoscaling
-  # ":Search/Search": Search
-  # ":Security/Security": Security
-  # ":Data Management/Watcher": Watcher
-  # "area:multiple": "Search, Security"  # Multiple areas comma-separated
 
 # Product-specific label blockers (optional)
 # Maps product IDs to lists of pull request labels that prevent changelog creation for that product

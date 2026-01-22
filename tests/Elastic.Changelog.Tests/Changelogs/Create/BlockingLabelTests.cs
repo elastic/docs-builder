@@ -31,15 +31,15 @@ public class BlockingLabelTests(ITestOutputHelper output) : CreateChangelogTestB
 		// language=yaml
 		var configContent =
 			"""
-			available_types:
-			  - feature
-			available_subtypes: []
+			pivot:
+			  types:
+			    feature: "type:feature"
+			    bug-fix:
+			    breaking-change:
 			available_lifecycles:
 			  - preview
 			  - beta
 			  - ga
-			label_to_type:
-			  "type:feature": feature
 			add_blockers:
 			  elasticsearch:
 			    - "skip:releaseNotes"
@@ -91,15 +91,15 @@ public class BlockingLabelTests(ITestOutputHelper output) : CreateChangelogTestB
 		// language=yaml
 		var configContent =
 			"""
-			available_types:
-			  - feature
-			available_subtypes: []
+			pivot:
+			  types:
+			    feature: "type:feature"
+			    bug-fix:
+			    breaking-change:
 			available_lifecycles:
 			  - preview
 			  - beta
 			  - ga
-			label_to_type:
-			  "type:feature": feature
 			add_blockers:
 			  cloud-serverless:
 			    - "ILM"
@@ -155,15 +155,15 @@ public class BlockingLabelTests(ITestOutputHelper output) : CreateChangelogTestB
 		// language=yaml
 		var configContent =
 			"""
-			available_types:
-			  - feature
-			available_subtypes: []
+			pivot:
+			  types:
+			    feature: "type:feature"
+			    bug-fix:
+			    breaking-change:
 			available_lifecycles:
 			  - preview
 			  - beta
 			  - ga
-			label_to_type:
-			  "type:feature": feature
 			add_blockers:
 			  elasticsearch, cloud-serverless:
 			    - ">non-issue"

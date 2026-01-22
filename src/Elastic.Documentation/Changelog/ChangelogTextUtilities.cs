@@ -2,7 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
+using NetEscapades.EnumGenerators;
 
 namespace Elastic.Documentation.Changelog;
 
@@ -366,18 +368,91 @@ public static partial class ChangelogTextUtilities
 }
 
 /// <summary>
-/// Constants for changelog entry types
+/// Enum representing changelog entry types
 /// </summary>
-public static class ChangelogEntryTypes
+[EnumExtensions]
+public enum ChangelogEntryType
 {
-	public const string Feature = "feature";
-	public const string Enhancement = "enhancement";
-	public const string Security = "security";
-	public const string BugFix = "bug-fix";
-	public const string BreakingChange = "breaking-change";
-	public const string Deprecation = "deprecation";
-	public const string KnownIssue = "known-issue";
-	public const string Docs = "docs";
-	public const string Regression = "regression";
-	public const string Other = "other";
+	/// <summary>Invalid or unrecognized type - used for validation errors.</summary>
+	[Display(Name = "invalid")]
+	Invalid = 0,
+
+	/// <summary>A new feature or enhancement.</summary>
+	[Display(Name = "feature")]
+	Feature,
+
+	/// <summary>An improvement to an existing feature.</summary>
+	[Display(Name = "enhancement")]
+	Enhancement,
+
+	/// <summary>An advisory about a potential security vulnerability.</summary>
+	[Display(Name = "security")]
+	Security,
+
+	/// <summary>A bug fix.</summary>
+	[Display(Name = "bug-fix")]
+	BugFix,
+
+	/// <summary>A breaking change to the documented behavior of the product.</summary>
+	[Display(Name = "breaking-change")]
+	BreakingChange,
+
+	/// <summary>Functionality that is deprecated and will be removed in a future release.</summary>
+	[Display(Name = "deprecation")]
+	Deprecation,
+
+	/// <summary>A problem that is known to exist in the product.</summary>
+	[Display(Name = "known-issue")]
+	KnownIssue,
+
+	/// <summary>Major documentation changes or reorganizations.</summary>
+	[Display(Name = "docs")]
+	Docs,
+
+	/// <summary>Functionality that no longer works or behaves incorrectly.</summary>
+	[Display(Name = "regression")]
+	Regression,
+
+	/// <summary>Changes that do not fit into any of the other categories.</summary>
+	[Display(Name = "other")]
+	Other
+}
+
+/// <summary>
+/// Enum representing changelog entry subtypes (only applicable to breaking changes)
+/// </summary>
+[EnumExtensions]
+public enum ChangelogEntrySubtype
+{
+	/// <summary>A change that breaks an API.</summary>
+	[Display(Name = "api")]
+	Api,
+
+	/// <summary>A change that breaks the way something works.</summary>
+	[Display(Name = "behavioral")]
+	Behavioral,
+
+	/// <summary>A change that breaks the configuration.</summary>
+	[Display(Name = "configuration")]
+	Configuration,
+
+	/// <summary>A change that breaks a dependency, such as a third-party product.</summary>
+	[Display(Name = "dependency")]
+	Dependency,
+
+	/// <summary>A change that breaks licensing behavior.</summary>
+	[Display(Name = "subscription")]
+	Subscription,
+
+	/// <summary>A change that breaks a plugin.</summary>
+	[Display(Name = "plugin")]
+	Plugin,
+
+	/// <summary>A change that breaks authentication, authorization, or permissions.</summary>
+	[Display(Name = "security")]
+	Security,
+
+	/// <summary>A breaking change that does not fit into any of the other categories.</summary>
+	[Display(Name = "other")]
+	Other
 }
