@@ -1,0 +1,125 @@
+products:
+  - product: docs-builder
+    target: 0.100.0
+entries:
+  # Features and enhancements
+  - type: feature
+    title: Add PR label blockers to changelog creation
+    products:
+      - product: docs-builder
+        target: 0.100.0
+    areas:
+      - CLI
+    pr: https://github.com/elastic/docs-builder/pull/2350
+    description: |
+      Adds support for configuring PR labels that block changelog creation.
+      This allows teams to mark PRs that should not generate changelog entries
+      (e.g., internal changes, automation, or non-notable fixes).
+
+  # Fixes
+  - type: bug-fix
+    title: Fix HTMX navigation from "Find Pages" dropdown
+    products:
+      - product: docs-builder
+        target: 0.100.0
+    areas:
+      - UI
+    pr: https://github.com/elastic/docs-builder/pull/2470
+    description: |
+      Fixes an issue where HTMX navigation was not working correctly
+      when selecting pages from the "Find Pages" dropdown menu.
+  - type: bug-fix
+    title: Address F# nullability warnings
+    products:
+      - product: docs-builder
+        target: 0.100.0
+    areas:
+      - Build
+    pr: https://github.com/elastic/docs-builder/pull/2473
+    description: |
+      Addresses F# nullability warnings in the codebase to improve
+      code quality and reduce potential null reference issues.
+  - type: bug-fix
+    title: Prevent speculative builds for repositories already publishing with non-versioned branches
+    products:
+      - product: docs-builder
+        target: 0.100.0
+    areas:
+      - Assembler
+    pr: https://github.com/elastic/docs-builder/pull/2471
+    description: |
+      Prevents speculative builds from running for repositories that are
+      already publishing with non-versioned branches, avoiding unnecessary
+      build operations.
+
+  # Breaking changes (rendered with dropdowns)
+  - type: breaking-change
+    title: This is a sample breaking change to show a full set
+    products:
+      - product: docs-builder
+        target: 0.100.0
+    areas:
+      - API
+    description: |
+      This is a sample breaking change entry demonstrating how breaking changes
+      are rendered with dropdowns in the changelog directive output.
+
+  # Deprecations (rendered with dropdowns)
+  - type: deprecation
+    title: This is a sample deprecation to show a full set
+    products:
+      - product: docs-builder
+        target: 0.100.0
+    areas:
+      - CLI
+    description: |
+      This is a sample deprecation entry demonstrating how deprecations
+      are rendered with dropdowns in the changelog directive output.
+
+  # Known issues (rendered with dropdowns)
+  - type: known-issue
+    title: This is a sample known issue to show a full set
+    products:
+      - product: docs-builder
+        target: 0.100.0
+    areas:
+      - Build
+    description: |
+      This is a sample known issue entry demonstrating how known issues
+      are rendered with dropdowns in the changelog directive output.
+
+  # Documentation changes
+  - type: docs
+    title: This is a sample documentation change to show a full set
+    products:
+      - product: docs-builder
+        target: 0.100.0
+    areas:
+      - Documentation
+    description: |
+      This is a sample documentation entry demonstrating how documentation
+      changes are rendered in the changelog directive output.
+
+  # Regressions
+  - type: regression
+    title: This is a sample regression to show a full set
+    products:
+      - product: docs-builder
+        target: 0.100.0
+    areas:
+      - Rendering
+    description: |
+      This is a sample regression entry demonstrating how regressions
+      are rendered in the changelog directive output.
+
+  # Other changes
+  - type: other
+    title: This is a sample other change to show a full set
+    products:
+      - product: docs-builder
+        target: 0.100.0
+    areas:
+      - Maintenance
+    description: |
+      This is a sample "other" entry demonstrating how miscellaneous
+      changes are rendered in the changelog directive output.

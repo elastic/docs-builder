@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using System.Text;
+using Elastic.Documentation.Changelog;
 
 namespace Elastic.Changelog.Rendering.Markdown;
 

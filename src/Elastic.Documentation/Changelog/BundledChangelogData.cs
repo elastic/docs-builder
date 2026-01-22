@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-namespace Elastic.Changelog.Bundling;
+namespace Elastic.Documentation.Changelog;
 
 /// <summary>
 /// Data structure for bundled changelog YAML file
