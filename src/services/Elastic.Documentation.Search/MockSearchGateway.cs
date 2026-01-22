@@ -4,7 +4,7 @@
 
 using Elastic.Documentation.Api.Core.Search;
 
-namespace Elastic.Documentation.Api.Infrastructure.Adapters.Search;
+namespace Elastic.Documentation.Search;
 
 public class MockNavigationSearchGateway : INavigationSearchGateway
 {
@@ -40,18 +40,18 @@ public class MockNavigationSearchGateway : INavigationSearchGateway
 		{
 			Type = "doc",
 			Url = "https://www.elastic.co/kibana/kibana-lens",
-			Title = "Kibana Lens – Data visualization. Simply.",
+			Title = "Kibana Lens - Data visualization. Simply.",
 			Description =
-				"Kibana Lens simplifies the process of data visualization through a drag‑and‑drop experience, ideal for exploring logs, trends, and metrics.",
+				"Kibana Lens simplifies the process of data visualization through a drag-and-drop experience, ideal for exploring logs, trends, and metrics.",
 			Parents = []
 		},
 		new NavigationSearchResultItem
 		{
 			Type = "doc",
 			Url = "https://www.elastic.co/docs",
-			Title = "Elastic Docs – Elastic products, guides & reference",
+			Title = "Elastic Docs - Elastic products, guides & reference",
 			Description =
-				"Official Elastic documentation. Explore guides for Elastic Cloud (hosted & on‑prem), product documentation, how‑to guides and API reference.",
+				"Official Elastic documentation. Explore guides for Elastic Cloud (hosted & on-prem), product documentation, how-to guides and API reference.",
 			Parents = []
 		},
 		new NavigationSearchResultItem
@@ -68,7 +68,7 @@ public class MockNavigationSearchGateway : INavigationSearchGateway
 			Type = "doc",
 			Url = "https://www.elastic.co/docs/solutions/search/elasticsearch-basics-quickstart",
 			Title = "Elasticsearch basics quickstart",
-			Description = "Hands‑on introduction to fundamental Elasticsearch concepts: indices, documents, mappings, and search via Console syntax.",
+			Description = "Hands-on introduction to fundamental Elasticsearch concepts: indices, documents, mappings, and search via Console syntax.",
 			Parents = []
 		},
 		new NavigationSearchResultItem

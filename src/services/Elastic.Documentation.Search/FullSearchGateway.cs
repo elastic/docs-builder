@@ -6,12 +6,11 @@ using System.Text.RegularExpressions;
 using Elastic.Clients.Elasticsearch;
 using Elastic.Clients.Elasticsearch.QueryDsl;
 using Elastic.Documentation.Api.Core.Search;
-using Elastic.Documentation.Api.Infrastructure.Adapters.Search.Common;
 using Elastic.Documentation.Configuration.Products;
-using Elastic.Documentation.Search;
+using Elastic.Documentation.Search.Common;
 using Microsoft.Extensions.Logging;
 
-namespace Elastic.Documentation.Api.Infrastructure.Adapters.Search;
+namespace Elastic.Documentation.Search;
 
 /// <summary>
 /// Full-page search gateway implementation.

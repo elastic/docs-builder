@@ -6,7 +6,7 @@ using Elastic.Clients.Elasticsearch;
 using Elastic.Clients.Elasticsearch.QueryDsl;
 using Elastic.Documentation.Search;
 
-namespace Elastic.Documentation.Api.Infrastructure.Adapters.Search.Common;
+namespace Elastic.Documentation.Search.Common;
 
 /// <summary>
 /// Shared query building utilities for search operations.

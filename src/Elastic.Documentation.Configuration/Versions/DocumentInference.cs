@@ -82,7 +82,8 @@ public class DocumentInferrerService(
 		string repositoryName,
 		IReadOnlyCollection<string>? mappedPages,
 		IReadOnlyCollection<Product>? products,
-		ApplicableTo? applicableTo)
+		ApplicableTo? applicableTo
+	)
 	{
 		var relatedProducts = new HashSet<Product>();
 

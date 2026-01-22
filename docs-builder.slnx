@@ -60,6 +60,7 @@
     <Project Path="src/api/Elastic.Documentation.Api.Core/Elastic.Documentation.Api.Core.csproj" />
     <Project Path="src/api/Elastic.Documentation.Api.Infrastructure/Elastic.Documentation.Api.Infrastructure.csproj" />
     <Project Path="src/api/Elastic.Documentation.Api.Lambda/Elastic.Documentation.Api.Lambda.csproj" />
+	<Project Path="src/api/Elastic.Documentation.Mcp.Lambda/Elastic.Documentation.Mcp.Lambda.csproj" />
   </Folder>
   <Folder Name="/src/authoring/">
     <Project Path="src/authoring/Elastic.Documentation.Refactor/Elastic.Documentation.Refactor.csproj" />
@@ -72,6 +73,7 @@
     <Project Path="src/services/Elastic.Documentation.Assembler/Elastic.Documentation.Assembler.csproj" />
     <Project Path="src/services/Elastic.Documentation.Isolated/Elastic.Documentation.Isolated.csproj" />
     <Project Path="src/services/Elastic.Documentation.Services/Elastic.Documentation.Services.csproj" />
+	<Project Path="src/services/Elastic.Documentation.Search/Elastic.Documentation.Search.csproj" />
   </Folder>
   <Folder Name="/src/tooling/">
     <File Path="src/tooling/Directory.Build.props" />
@@ -82,6 +84,7 @@
     <Project Path="tests-integration/Elastic.Assembler.IntegrationTests/Elastic.Assembler.IntegrationTests.csproj" />
 	<Project Path="tests-integration/Elastic.Documentation.Api.IntegrationTests/Elastic.Documentation.Api.IntegrationTests.csproj" />
     <Project Path="tests-integration/Search.IntegrationTests/Search.IntegrationTests.csproj" />
+	  <Project Path="tests-integration/Mcp.Lambda.IntegrationTests/Mcp.Lambda.IntegrationTests.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <File Path="tests/Directory.Build.props" />

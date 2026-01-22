@@ -7,7 +7,7 @@ using Elastic.Clients.Elasticsearch.Serialization;
 using Elastic.Documentation.Configuration.Search;
 using Elastic.Transport;
 
-namespace Elastic.Documentation.Api.Infrastructure.Adapters.Search.Common;
+namespace Elastic.Documentation.Search.Common;
 
 /// <summary>
 /// Shared singleton accessor for the Elasticsearch client.
@@ -49,7 +49,7 @@ public class ElasticsearchClientAccessor : IDisposable
 
 	/// <summary>
 	/// Extracts the ruleset name from the index name.
-	/// Index name format: "semantic-docs-{namespace}-latest" → ruleset: "docs-ruleset-{namespace}"
+	/// Index name format: "semantic-docs-{namespace}-latest" -> ruleset: "docs-ruleset-{namespace}"
 	/// </summary>
 	private static string? ExtractRulesetName(string indexName)
 	{
