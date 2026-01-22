@@ -74,11 +74,16 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 		return $"{timestamp}-{slug}.yaml";
 	}
 
-	private static ChangelogData BuildChangelogData(ChangelogInput input, string? prUrl) =>
-		new()
+	private static ChangelogData BuildChangelogData(ChangelogInput input, string? prUrl)
+	{
+		var entryType = ChangelogEntryTypeExtensions.TryParse(input.Type, out var parsed, ignoreCase: true, allowMatchingMetadataAttribute: true)
+			? parsed
+			: ChangelogEntryType.Other;
+
+		return new()
 		{
 			Title = input.Title ?? string.Empty,
-			Type = input.Type ?? string.Empty,
+			Type = entryType,
 			Subtype = input.Subtype,
 			Description = input.Description,
 			Impact = input.Impact,
@@ -90,6 +95,7 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 			Areas = input.Areas.Length > 0 ? input.Areas.ToList() : null,
 			Issues = input.Issues.Length > 0 ? input.Issues.ToList() : null
 		};
+	}
 
 	private static string GenerateYaml(ChangelogData data, ChangelogConfiguration config, bool titleMissing, bool typeMissing)
 	{
@@ -97,17 +103,18 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 		var areas = data.Areas;
 		var issues = data.Issues;
 
-		// Temporarily remove title/type if they're missing so they don't appear in YAML
+		// Temporarily remove title if missing so it doesn't appear in YAML
+		// Type is an enum so we keep it and add a comment if missing
 		var serializeData = data with
 		{
 			Title = titleMissing ? string.Empty : data.Title,
-			Type = typeMissing ? string.Empty : data.Type,
 			Areas = areas != null && areas.Count == 0 ? null : areas,
 			Issues = issues != null && issues.Count == 0 ? null : issues
 		};
 
 		var serializer = new StaticSerializerBuilder(new ChangelogYamlStaticContext())
 			.WithNamingConvention(UnderscoredNamingConvention.Instance)
+			.WithTypeConverter(new ChangelogEntryTypeConverter())
 			.ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitNull | DefaultValuesHandling.OmitEmptyCollections)
 			.Build();
 
@@ -122,7 +129,11 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 			if (titleMissing)
 				commentedFields.Add("# title: # TODO: Add title");
 			if (typeMissing)
+			{
 				commentedFields.Add("# type: # TODO: Add type (e.g., feature, enhancement, bug-fix, breaking-change)");
+				// Remove the serialized default type value when type is missing
+				_ = lines.RemoveAll(line => line.TrimStart().StartsWith("type:", StringComparison.Ordinal));
+			}
 
 			// Find the first non-empty, non-comment line (start of actual YAML data)
 			var insertIndex = lines.FindIndex(line =>

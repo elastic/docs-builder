@@ -31,16 +31,15 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 		// language=yaml
 		var configContent =
 			"""
-			available_types:
-			  - feature
-			  - bug-fix
-			available_subtypes: []
+			pivot:
+			  types:
+			    feature: "type:feature"
+			    bug-fix:
+			    breaking-change:
 			available_lifecycles:
 			  - preview
 			  - beta
 			  - ga
-			label_to_type:
-			  "type:feature": feature
 			""";
 		var configPath = await CreateConfigDirectory(configContent);
 
@@ -94,16 +93,15 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 		// language=yaml
 		var configContent =
 			"""
-			available_types:
-			  - feature
-			  - bug-fix
-			available_subtypes: []
+			pivot:
+			  types:
+			    feature: "type:feature"
+			    bug-fix:
+			    breaking-change:
 			available_lifecycles:
 			  - preview
 			  - beta
 			  - ga
-			label_to_type:
-			  "type:feature": feature
 			""";
 		var configPath = await CreateConfigDirectory(configContent);
 

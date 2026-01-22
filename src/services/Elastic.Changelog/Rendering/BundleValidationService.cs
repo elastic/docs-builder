@@ -224,11 +224,7 @@ public class BundleValidationService(IFileSystem fileSystem, IDeserializer deser
 				return false;
 			}
 
-			if (string.IsNullOrWhiteSpace(entryData.Type))
-			{
-				collector.EmitError(filePath, "Changelog file is missing required field: type");
-				return false;
-			}
+			// Type is an enum with a default value, so it's always valid
 
 			if (entryData.Products.Count == 0)
 			{

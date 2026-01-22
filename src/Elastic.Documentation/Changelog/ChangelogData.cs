@@ -14,7 +14,7 @@ public record ChangelogData
 	// Automated fields
 	public string? Pr { get; set; }
 	public IReadOnlyList<string>? Issues { get; set; }
-	public string Type { get; set; } = "";
+	public ChangelogEntryType Type { get; set; } = ChangelogEntryType.Invalid;
 	public string? Subtype { get; set; }
 	public IReadOnlyList<ProductInfo> Products { get; set; } = [];
 	public IReadOnlyList<string>? Areas { get; set; }

@@ -71,6 +71,7 @@ public partial class ChangelogBundlingService(
 			// Match changelog entries
 			var deserializer = new StaticDeserializerBuilder(new ChangelogYamlStaticContext())
 				.WithNamingConvention(UnderscoredNamingConvention.Instance)
+				.WithTypeConverter(new ChangelogEntryTypeConverter())
 				.Build();
 
 			var entryMatcher = new ChangelogEntryMatcher(_fileSystem, deserializer, _logger);

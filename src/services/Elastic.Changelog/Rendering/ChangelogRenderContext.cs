@@ -16,7 +16,7 @@ public record ChangelogRenderContext
 	public required string Title { get; init; }
 	public required string TitleSlug { get; init; }
 	public required string Repo { get; init; }
-	public required IReadOnlyDictionary<string, IReadOnlyCollection<ChangelogData>> EntriesByType { get; init; }
+	public required IReadOnlyDictionary<ChangelogEntryType, IReadOnlyCollection<ChangelogData>> EntriesByType { get; init; }
 	public required bool Subsections { get; init; }
 	public required HashSet<string> FeatureIdsToHide { get; init; }
 	public required IReadOnlyDictionary<string, RenderBlockersEntry>? RenderBlockers { get; init; }

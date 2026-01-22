@@ -59,10 +59,8 @@ public static class ChangelogRenderUtilities
 				.ToHashSet(StringComparer.OrdinalIgnoreCase)
 			: new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-		// Extract type from entry (case-insensitive comparison)
-		var entryType = !string.IsNullOrWhiteSpace(entry.Type)
-			? entry.Type
-			: null;
+		// Extract type from entry (convert enum to string for comparison)
+		var entryType = entry.Type.ToStringFast(true);
 
 		// Check each render_blockers entry
 		foreach (var (productKey, blockersEntry) in renderBlockers)

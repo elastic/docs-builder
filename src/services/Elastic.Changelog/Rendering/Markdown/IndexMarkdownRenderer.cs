@@ -6,6 +6,7 @@ using System.IO.Abstractions;
 using System.Text;
 using Elastic.Documentation.Changelog;
 using static System.Globalization.CultureInfo;
+using static Elastic.Documentation.Changelog.ChangelogEntryType;
 
 namespace Elastic.Changelog.Rendering.Markdown;
 
@@ -21,17 +22,17 @@ public class IndexMarkdownRenderer(IFileSystem fileSystem) : MarkdownRendererBas
 	public override async Task RenderAsync(ChangelogRenderContext context, Cancel ctx)
 	{
 		var entriesByType = context.EntriesByType;
-		var features = entriesByType.GetValueOrDefault(ChangelogEntryTypes.Feature, []);
-		var enhancements = entriesByType.GetValueOrDefault(ChangelogEntryTypes.Enhancement, []);
-		var security = entriesByType.GetValueOrDefault(ChangelogEntryTypes.Security, []);
-		var bugFixes = entriesByType.GetValueOrDefault(ChangelogEntryTypes.BugFix, []);
-		var docs = entriesByType.GetValueOrDefault(ChangelogEntryTypes.Docs, []);
-		var regressions = entriesByType.GetValueOrDefault(ChangelogEntryTypes.Regression, []);
-		var other = entriesByType.GetValueOrDefault(ChangelogEntryTypes.Other, []);
+		var features = entriesByType.GetValueOrDefault(Feature, []);
+		var enhancements = entriesByType.GetValueOrDefault(Enhancement, []);
+		var security = entriesByType.GetValueOrDefault(Security, []);
+		var bugFixes = entriesByType.GetValueOrDefault(BugFix, []);
+		var docs = entriesByType.GetValueOrDefault(Docs, []);
+		var regressions = entriesByType.GetValueOrDefault(Regression, []);
+		var other = entriesByType.GetValueOrDefault(Other, []);
 
-		var hasBreakingChanges = entriesByType.ContainsKey(ChangelogEntryTypes.BreakingChange);
-		var hasDeprecations = entriesByType.ContainsKey(ChangelogEntryTypes.Deprecation);
-		var hasKnownIssues = entriesByType.ContainsKey(ChangelogEntryTypes.KnownIssue);
+		var hasBreakingChanges = entriesByType.ContainsKey(BreakingChange);
+		var hasDeprecations = entriesByType.ContainsKey(Deprecation);
+		var hasKnownIssues = entriesByType.ContainsKey(KnownIssue);
 
 		var otherLinks = new List<string>();
 		if (hasKnownIssues)

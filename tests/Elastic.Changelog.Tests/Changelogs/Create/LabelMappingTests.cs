@@ -31,18 +31,18 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		// language=yaml
 		var configContent =
 			"""
-			available_types:
-			  - feature
-			  - bug-fix
-			  - enhancement
-			available_subtypes: []
+			pivot:
+			  types:
+			    feature:
+			    bug-fix: "type:bug"
+			    breaking-change:
+			    enhancement:
+			  subtypes:
+			    api:
 			available_lifecycles:
 			  - preview
 			  - beta
 			  - ga
-			label_to_type:
-			  "type:bug": bug-fix
-			  "type:feature": feature
 			""";
 		var configPath = await CreateConfigDirectory(configContent);
 
@@ -98,19 +98,21 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		// language=yaml
 		var configContent =
 			"""
-			available_types:
-			  - feature
-			  - enhancement
-			available_subtypes: []
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change:
+			    enhancement: "type:enhancement"
+			  subtypes:
+			    api:
+			  areas:
+			    security: "area:security"
+			    search: "area:search"
 			available_lifecycles:
 			  - preview
 			  - beta
 			  - ga
-			label_to_type:
-			  "type:enhancement": enhancement
-			label_to_areas:
-			  "area:security": security
-			  "area:search": search
 			""";
 		var configPath = await CreateConfigDirectory(configContent);
 
