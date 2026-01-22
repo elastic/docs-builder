@@ -64,7 +64,7 @@ public class HtmlWriter(
 
 		var root = navigationItem.NavigationRoot;
 
-		var navigationHtmlRenderResult = await NavigationHtmlWriter.RenderNavigation(root, navigationItem, INavigationHtmlWriter.AllLevels, ctx);
+		var navigationHtmlRenderResult = await NavigationHtmlWriter.RenderNavigation(root, navigationItem, ctx);
 
 		var current = NavigationTraversable.GetNavigationFor(markdown);
 		var previous = NavigationTraversable.GetPrevious(markdown);
