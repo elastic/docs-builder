@@ -1,5 +1,15 @@
 import { EuiLoadingSpinner, useEuiTheme } from '@elastic/eui'
 import { css } from '@emotion/react'
+import { useMemo } from 'react'
+import { UAParser } from 'ua-parser-js'
+
+const useIsMac = () => {
+    return useMemo(() => {
+        const parser = new UAParser()
+        const os = parser.getOS().name?.toLowerCase() ?? ''
+        return os.includes('mac')
+    }, [])
+}
 
 const CustomSearchIcon = () => {
     const { euiTheme } = useEuiTheme()
@@ -46,6 +56,7 @@ export const SearchInput = ({
     isLoading,
 }: SearchInputProps) => {
     const { euiTheme } = useEuiTheme()
+    const isMac = useIsMac()
 
     return (
         <div
@@ -74,7 +85,7 @@ export const SearchInput = ({
             <input
                 ref={inputRef}
                 type="text"
-                placeholder="Search in Docs"
+                placeholder="Jump to page"
                 value={value}
                 onChange={onChange}
                 onFocus={onFocus}
@@ -86,7 +97,8 @@ export const SearchInput = ({
                     padding: calc(${euiTheme.size.s} + 2px) ${euiTheme.size.m};
                     padding-left: 34px;
                     padding-right: calc(
-                        ${euiTheme.size.m} + 2ch + ${euiTheme.size.m}
+                        ${euiTheme.size.m} + ${isMac ? '2ch' : '4ch'} +
+                            ${euiTheme.size.m}
                     );
                     border: 1px solid ${euiTheme.colors.borderBasePlain};
                     border-radius: ${euiTheme.border.radius.medium};
@@ -118,7 +130,7 @@ export const SearchInput = ({
                     line-height: ${euiTheme.base * 1.25}px;
                 `}
             >
-                ⌘K
+                {isMac ? '⌘K' : 'Ctrl+K'}
             </span>
         </div>
     )

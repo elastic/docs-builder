@@ -1,11 +1,16 @@
 import { availableIcons } from '../../eui-icons-cache'
 import { SearchInput } from './SearchInput'
 import { SearchResultsList } from './SearchResultsList'
-import { useSearchTerm, useSearchActions } from './navigationSearch.store'
+import {
+    useSearchTerm,
+    useSearchActions,
+    useSelectedIndex,
+} from './navigationSearch.store'
 import { useGlobalKeyboardShortcut } from './useGlobalKeyboardShortcut'
 import { useIsNavigationSearchCooldownActive } from './useNavigationSearchCooldown'
 import { useNavigationSearchKeyboardNavigation } from './useNavigationSearchKeyboardNavigation'
 import { useNavigationSearchQuery } from './useNavigationSearchQuery'
+import { useNavigationSearchTelemetry } from './useNavigationSearchTelemetry'
 import {
     EuiInputPopover,
     useEuiTheme,
@@ -18,7 +23,7 @@ import {
     useIsWithinMaxBreakpoint,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 
 export const NavigationSearch = () => {
     const { euiTheme } = useEuiTheme()
@@ -26,17 +31,28 @@ export const NavigationSearch = () => {
     const [isPopoverOpen, setIsPopoverOpen] = useState(false)
     const popoverContentRef = useRef<HTMLDivElement>(null)
     const searchTerm = useSearchTerm()
+    const selectedIndex = useSelectedIndex()
     const { setSearchTerm } = useSearchActions()
     const isSearchCooldownActive = useIsNavigationSearchCooldownActive()
     const { isLoading, isFetching, data } = useNavigationSearchQuery()
+    const { trackOpened, trackClosed } = useNavigationSearchTelemetry()
 
     const results = data?.results ?? []
     const hasContent = !!searchTerm.trim()
     const isSearching = isLoading || isFetching
 
+    const handleResultClick = () => {
+        // Track navigation close (actual click tracking is in SearchResultsList)
+        trackClosed({
+            reason: 'navigate',
+            query: searchTerm,
+            hadResults: results.length > 0,
+            hadSelection: selectedIndex >= 0,
+        })
+    }
+
     const {
         inputRef,
-        itemRefs,
         isKeyboardNavigating,
         handleInputKeyDown,
         handleMouseMove,
@@ -44,6 +60,7 @@ export const NavigationSearch = () => {
         resultsCount: results.length,
         isLoading: isSearching,
         onClose: () => setIsPopoverOpen(false),
+        onNavigate: handleResultClick,
     })
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -55,6 +72,12 @@ export const NavigationSearch = () => {
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Escape') {
             e.preventDefault()
+            trackClosed({
+                reason: 'escape',
+                query: searchTerm,
+                hadResults: results.length > 0,
+                hadSelection: selectedIndex >= 0,
+            })
             setSearchTerm('')
             setIsPopoverOpen(false)
             return
@@ -72,20 +95,55 @@ export const NavigationSearch = () => {
             // Focus is moving inside the popover, don't close
             return
         }
+        if (isPopoverOpen) {
+            trackClosed({
+                reason: 'blur',
+                query: searchTerm,
+                hadResults: results.length > 0,
+                hadSelection: selectedIndex >= 0,
+            })
+        }
         setIsPopoverOpen(false)
     }
 
-    useGlobalKeyboardShortcut('k', () => inputRef.current?.focus())
+    useGlobalKeyboardShortcut('k', () => {
+        trackOpened('keyboard_shortcut')
+        inputRef.current?.focus()
+        inputRef.current?.select()
+    })
+
+    // Close popover and blur input when htmx navigation starts from a search result
+    useEffect(() => {
+        const handleBeforeSend = (event: CustomEvent) => {
+            const trigger = event.detail?.elt as HTMLElement | undefined
+            if (trigger?.hasAttribute('data-search-result-index')) {
+                setIsPopoverOpen(false)
+                inputRef.current?.blur()
+            }
+        }
+
+        document.addEventListener(
+            'htmx:beforeSend',
+            handleBeforeSend as EventListener
+        )
+        return () => {
+            document.removeEventListener(
+                'htmx:beforeSend',
+                handleBeforeSend as EventListener
+            )
+        }
+    }, [inputRef])
 
     return (
         <div
+            className="sticky top-0"
             css={css`
                 padding-top: ${euiTheme.size.l};
                 padding-right: ${euiTheme.size.base};
             `}
         >
             <EuiInputPopover
-                isOpen={isPopoverOpen && hasContent}
+                isOpen={hasContent}
                 closePopover={() => setIsPopoverOpen(false)}
                 ownFocus={false}
                 disableFocusTrap={true}
@@ -95,6 +153,9 @@ export const NavigationSearch = () => {
                 panelProps={{
                     css: css`
                         border-radius: ${euiTheme.size.s};
+                        visibility: ${isPopoverOpen ? 'visible' : 'hidden'};
+                        opacity: ${isPopoverOpen ? 1 : 0};
+                        pointer-events: ${isPopoverOpen ? 'auto' : 'none'};
                     `,
                     onMouseDown: (e: React.MouseEvent) => {
                         // Prevent input blur when clicking anywhere inside the popover panel
@@ -108,7 +169,7 @@ export const NavigationSearch = () => {
                             value={searchTerm}
                             onChange={handleChange}
                             onFocus={() => {
-                                // Solo abrir el popover si hay contenido Y el usuario está interactuando
+                                trackOpened('focus')
                                 if (hasContent) {
                                     setIsPopoverOpen(true)
                                 }
@@ -124,9 +185,9 @@ export const NavigationSearch = () => {
                 {hasContent && (
                     <div ref={popoverContentRef}>
                         <SearchDropdownContent
-                            itemRefs={itemRefs}
                             isKeyboardNavigating={isKeyboardNavigating}
                             onMouseMove={handleMouseMove}
+                            onResultClick={handleResultClick}
                         />
                     </div>
                 )}
@@ -151,22 +212,22 @@ const KEYBOARD_SHORTCUTS = [
 ]
 
 interface SearchDropdownContentProps {
-    itemRefs: React.MutableRefObject<(HTMLAnchorElement | null)[]>
     isKeyboardNavigating: React.MutableRefObject<boolean>
     onMouseMove: () => void
+    onResultClick: () => void
 }
 
 const SearchDropdownContent = ({
-    itemRefs,
     isKeyboardNavigating,
     onMouseMove,
+    onResultClick,
 }: SearchDropdownContentProps) => {
     return (
         <>
             <SearchResultsList
-                itemRefs={itemRefs}
                 isKeyboardNavigating={isKeyboardNavigating}
                 onMouseMove={onMouseMove}
+                onResultClick={onResultClick}
             />
             <SearchDropdownFooter />
         </>

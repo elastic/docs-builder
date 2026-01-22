@@ -1,16 +1,21 @@
-import { useSelectedIndex, useSearchActions } from './navigationSearch.store'
-import { useRef, useCallback, MutableRefObject } from 'react'
+import {
+    useSelectedIndex,
+    useSearchActions,
+    useSearchTerm,
+} from './navigationSearch.store'
+import { useNavigationSearchTelemetry } from './useNavigationSearchTelemetry'
+import { useRef, useCallback } from 'react'
 
 interface Options {
     resultsCount: number
     isLoading: boolean
     onClose: () => void
+    onNavigate: () => void
 }
 
 interface Result {
     inputRef: React.RefObject<HTMLInputElement>
-    itemRefs: MutableRefObject<(HTMLAnchorElement | null)[]>
-    isKeyboardNavigating: MutableRefObject<boolean>
+    isKeyboardNavigating: React.MutableRefObject<boolean>
     handleInputKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void
     handleMouseMove: () => void
 }
@@ -19,24 +24,36 @@ export const useNavigationSearchKeyboardNavigation = ({
     resultsCount,
     isLoading,
     onClose,
+    onNavigate,
 }: Options): Result => {
     const inputRef = useRef<HTMLInputElement>(null)
-    const itemRefs = useRef<(HTMLAnchorElement | null)[]>([])
     const isKeyboardNavigating = useRef(false)
     const selectedIndex = useSelectedIndex()
+    const searchTerm = useSearchTerm()
     const { setSelectedIndex } = useSearchActions()
+    const { trackNavigation } = useNavigationSearchTelemetry()
 
     const handleMouseMove = useCallback(() => {
         isKeyboardNavigating.current = false
     }, [])
 
     const scrollToItem = (index: number) => {
-        const element = itemRefs.current[index]
-        element?.scrollIntoView?.({ block: 'end' })
+        // Use data attribute to find and scroll to item
+        const element = document.querySelector(
+            `[data-search-result-index="${index}"]`
+        )
+        element?.scrollIntoView?.({ block: 'nearest' })
     }
 
     const navigateToResult = (index: number) => {
-        itemRefs.current[index]?.click()
+        // Click the anchor with the matching data attribute
+        const element = document.querySelector<HTMLAnchorElement>(
+            `[data-search-result-index="${index}"]`
+        )
+        if (element) {
+            onNavigate()
+            element.click()
+        }
     }
 
     const handleInputKeyDown = useCallback(
@@ -63,6 +80,11 @@ export const useNavigationSearchKeyboardNavigation = ({
                                 : Math.min(selectedIndex + 1, resultsCount - 1)
                         setSelectedIndex(nextIndex)
                         scrollToItem(nextIndex)
+                        trackNavigation({
+                            method: 'keyboard',
+                            direction: 'down',
+                            query: searchTerm,
+                        })
                     }
                     break
 
@@ -73,16 +95,29 @@ export const useNavigationSearchKeyboardNavigation = ({
                         const prevIndex = selectedIndex - 1
                         setSelectedIndex(prevIndex)
                         scrollToItem(prevIndex)
+                        trackNavigation({
+                            method: 'keyboard',
+                            direction: 'up',
+                            query: searchTerm,
+                        })
                     }
                     break
             }
         },
-        [resultsCount, isLoading, selectedIndex, setSelectedIndex, onClose]
+        [
+            resultsCount,
+            isLoading,
+            selectedIndex,
+            searchTerm,
+            setSelectedIndex,
+            onClose,
+            onNavigate,
+            trackNavigation,
+        ]
     )
 
     return {
         inputRef,
-        itemRefs,
         isKeyboardNavigating,
         handleInputKeyDown,
         handleMouseMove,

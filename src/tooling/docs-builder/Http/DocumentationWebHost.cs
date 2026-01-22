@@ -142,7 +142,8 @@ public class DocumentationWebHost
 
 		var apiV1 = _webApplication.MapGroup("/docs/_api/v1");
 #if DEBUG
-		apiV1.MapElasticDocsApiEndpoints();
+		var mapOtlpEndpoints = !string.IsNullOrWhiteSpace(_webApplication.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]);
+		apiV1.MapElasticDocsApiEndpoints(mapOtlpEndpoints);
 #endif
 
 		_ = _webApplication.MapGet("{**slug}", (string slug, ReloadableGeneratorState holder, Cancel ctx) =>
@@ -171,7 +172,6 @@ public class DocumentationWebHost
 			return Results.NotFound();
 
 		var generator = holder.Generator;
-		const string navPartialSuffix = ".nav.html";
 
 		// Check if the original request is asking for LLM-rendered markdown
 		var requestLlmMarkdown = slug.EndsWith(".md");
@@ -179,16 +179,6 @@ public class DocumentationWebHost
 		// If requesting .md output, remove the .md extension to find the source file
 		if (requestLlmMarkdown)
 			slug = slug[..^3]; // Remove ".md" extension
-
-		if (slug.EndsWith(navPartialSuffix))
-		{
-			var segments = slug.Split("/");
-			var lastSegment = segments.Last();
-			var navigationId = lastSegment.Replace(navPartialSuffix, "");
-			return generator.DocumentationSet.NavigationRenderResults.TryGetValue(navigationId, out var rendered)
-				? Results.Content(rendered.Html, "text/html")
-				: Results.NotFound();
-		}
 
 		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 			slug = slug.Replace('/', Path.DirectorySeparatorChar);

@@ -34,10 +34,9 @@ import('./web-components/NavigationSearch/NavigationSearchComponent')
 import('./web-components/AskAi/AskAi')
 import('./web-components/VersionDropdown')
 import('./web-components/AppliesToPopover')
+import('./web-components/FullPageSearch/FullPageSearchComponent')
 
 const { getOS } = new UAParser()
-const isLazyLoadNavigationEnabled =
-    $('meta[property="docs:feature:lazy-load-navigation"]')?.content === 'true'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type HtmxEvent = any
@@ -95,22 +94,14 @@ document.addEventListener('DOMContentLoaded', function () {
     initMath()
 })
 
-document.addEventListener('htmx:load', function (event: HtmxEvent) {
+document.addEventListener('htmx:load', function () {
     initTocNav()
     initHighlight()
     initCopyButton()
     initTabs()
     initAppliesSwitch()
     initMath()
-
-    // We do this so that the navigation is not initialized twice
-    if (isLazyLoadNavigationEnabled) {
-        if (event.detail.elt.id === 'nav-tree') {
-            initNav()
-        }
-    } else {
-        initNav()
-    }
+    initNav()
     initSmoothScroll()
     openDetailsWithAnchor()
     initImageCarousel()
@@ -134,6 +125,15 @@ document.addEventListener(
 )
 
 document.addEventListener('htmx:beforeRequest', function (event: HtmxEvent) {
+    const path = event.detail.requestConfig?.path
+
+    // Bypass htmx for /api URLs - they require full page navigation
+    if (path?.startsWith('/api')) {
+        event.preventDefault()
+        window.location.href = path
+        return
+    }
+
     if (
         event.detail.requestConfig.verb === 'get' &&
         event.detail.requestConfig.triggeringEvent
@@ -164,21 +164,6 @@ document.body.addEventListener(
         ) {
             window.scrollTo(0, 0)
         }
-    }
-)
-
-document.body.addEventListener(
-    'htmx:pushedIntoHistory',
-    function (event: HtmxEvent) {
-        const pagesNav = $('#pages-nav')
-        const currentNavItem = $$('.current', pagesNav)
-        currentNavItem.forEach((el) => {
-            el.classList.remove('current')
-        })
-        const navItems = $$('a[href="' + event.detail.path + '"]', pagesNav)
-        navItems.forEach((navItem) => {
-            navItem.classList.add('current')
-        })
     }
 )
 
@@ -225,18 +210,3 @@ document.body.addEventListener(
         }
     }
 )
-
-// Clean up web component content before htmx saves to history cache.
-document.body.addEventListener('htmx:beforeHistorySave', function () {
-    // connectedCallback() re-renders
-    $$('applies-to-popover, version-dropdown, search-or-ask-ai').forEach(
-        (el) => {
-            el.innerHTML = ''
-        }
-    )
-
-    // EUI portal containers getting orphaned during navigation
-    $$('[data-euiportal="true"]').forEach((el) => {
-        el.remove()
-    })
-})

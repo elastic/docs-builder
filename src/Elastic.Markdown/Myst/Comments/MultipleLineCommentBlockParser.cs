@@ -32,6 +32,15 @@ public class MultipleLineCommentBlockParser : BlockParser
 				}
 			};
 			processor.NewBlocks.Push(block);
+
+			// Check if the closing --> is on the same line (single-line comment)
+			// Search after the opening <!-- (offset by length of BlockStart)
+			if (currentLine.IndexOf(BlockEnd, BlockStart.Length, false) >= 0)
+			{
+				block.UpdateSpanEnd(currentLine.End);
+				return BlockState.BreakDiscard;
+			}
+
 			processor.GoToColumn(currentLine.End);
 			return BlockState.Continue;
 		}
@@ -42,7 +51,8 @@ public class MultipleLineCommentBlockParser : BlockParser
 	{
 		var currentLine = processor.Line;
 
-		if (!currentLine.Match(BlockEnd))
+		// Check if --> appears anywhere in the line, not just at the start
+		if (currentLine.IndexOf(BlockEnd, 0, false) < 0)
 			return BlockState.Continue;
 
 		block.UpdateSpanEnd(currentLine.End);

@@ -8,12 +8,11 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Elastic.Documentation.Api.Core.AskAi;
-using Elastic.Documentation.Api.Infrastructure.Aws;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Api.Infrastructure.Adapters.AskAi;
 
-public class AgentBuilderAskAiGateway(HttpClient httpClient, IParameterProvider parameterProvider, ILogger<AgentBuilderAskAiGateway> logger) : IAskAiGateway<Stream>
+public class AgentBuilderAskAiGateway(HttpClient httpClient, KibanaOptions kibanaOptions, ILogger<AgentBuilderAskAiGateway> logger) : IAskAiGateway<Stream>
 {
 	/// <summary>
 	/// Model name used by Agent Builder (from AgentId)
@@ -34,14 +33,11 @@ public class AgentBuilderAskAiGateway(HttpClient httpClient, IParameterProvider 
 
 		logger.LogInformation("Sending to Agent Builder with conversation_id: \"{ConversationId}\"", askAiRequest.ConversationId?.ToString() ?? "(null - first request)");
 
-		var kibanaUrl = await parameterProvider.GetParam("docs-kibana-url", false, ctx);
-		var kibanaApiKey = await parameterProvider.GetParam("docs-kibana-apikey", true, ctx);
-
 		using var request = new HttpRequestMessage(HttpMethod.Post,
-			$"{kibanaUrl}/api/agent_builder/converse/async");
+			$"{kibanaOptions.Url}/api/agent_builder/converse/async");
 		request.Content = new StringContent(requestBody, Encoding.UTF8, "application/json");
 		request.Headers.Add("kbn-xsrf", "true");
-		request.Headers.Authorization = new AuthenticationHeaderValue("ApiKey", kibanaApiKey);
+		request.Headers.Authorization = new AuthenticationHeaderValue("ApiKey", kibanaOptions.ApiKey);
 
 		var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ctx);
 

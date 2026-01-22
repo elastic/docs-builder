@@ -17,6 +17,11 @@ public class LlmMarkdownRenderer : TextRendererBase
 	private bool _isAtLineStart = true;
 
 	/// <summary>
+	/// Resets internal state for pooled reuse
+	/// </summary>
+	public void Reset() => _isAtLineStart = true;
+
+	/// <summary>
 	/// Ensures that the output ends with a line break (only adds one if needed)
 	/// </summary>
 	public void EnsureLine()

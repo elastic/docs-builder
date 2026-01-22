@@ -25,7 +25,7 @@ public class GlobalNavigationService(
 		var namespaceChecker = new NavigationPrefixChecker(logFactory, assembleContext);
 
 		var navigationFileInfo = assembleContext.ConfigurationFileProvider.NavigationFile;
-		var navigationYaml = fileSystem.File.ReadAllText(navigationFileInfo.FullName);
+		var navigationYaml = await fileSystem.File.ReadAllTextAsync(navigationFileInfo.FullName, ctx);
 		var siteNavigationFile = SiteNavigationFile.Deserialize(navigationYaml);
 
 		// this validates all path prefixes are unique, early exit if duplicates are detected

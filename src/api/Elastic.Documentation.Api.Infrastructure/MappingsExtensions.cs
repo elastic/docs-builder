@@ -5,6 +5,7 @@
 using Elastic.Documentation.Api.Core.AskAi;
 using Elastic.Documentation.Api.Core.Search;
 using Elastic.Documentation.Api.Core.Telemetry;
+using Elastic.Documentation.Configuration.Products;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -14,13 +15,16 @@ namespace Elastic.Documentation.Api.Infrastructure;
 
 public static class MappingsExtension
 {
-	public static void MapElasticDocsApiEndpoints(this IEndpointRouteBuilder group)
+	public static void MapElasticDocsApiEndpoints(this IEndpointRouteBuilder group, bool mapOtlpEndpoints = true)
 	{
+
 		_ = group.MapGet("/", () => Results.Empty);
 		_ = group.MapPost("/", () => Results.Empty);
 		MapAskAiEndpoint(group);
 		MapNavigationSearch(group);
-		MapOtlpProxyEndpoint(group);
+		MapFullSearch(group);
+		if (mapOtlpEndpoints)
+			MapOtlpProxyEndpoint(group);
 	}
 
 	private static void MapAskAiEndpoint(IEndpointRouteBuilder group)
@@ -55,17 +59,52 @@ public static class MappingsExtension
 				[FromQuery(Name = "q")] string query,
 				[FromQuery(Name = "page")] int? pageNumber,
 				[FromQuery(Name = "type")] string? typeFilter,
-				SearchUsecase searchUsecase,
+				NavigationSearchUsecase navigationSearchUsecase,
 				Cancel ctx
 			) =>
 			{
-				var request = new FindPageApiRequest
+				var request = new NavigationSearchApiRequest
 				{
 					Query = query,
 					PageNumber = pageNumber ?? 1,
 					TypeFilter = typeFilter
 				};
-				var response = await searchUsecase.FindPageAsync(request, ctx);
+				var response = await navigationSearchUsecase.NavigationSearchAsync(request, ctx);
+				return Results.Ok(response);
+			});
+	}
+
+	private static void MapFullSearch(IEndpointRouteBuilder group)
+	{
+		var searchGroup = group.MapGroup("/search");
+		_ = searchGroup.MapGet("/",
+			async (
+				[FromQuery(Name = "q")] string query,
+				[FromQuery(Name = "page")] int? pageNumber,
+				[FromQuery(Name = "size")] int? pageSize,
+				[FromQuery(Name = "type")] string[]? typeFilter,
+				[FromQuery(Name = "section")] string[]? sectionFilter,
+				[FromQuery(Name = "deployment")] string[]? deploymentFilter,
+				[FromQuery(Name = "product")] string[]? productFilter,
+				[FromQuery(Name = "version")] string? versionFilter,
+				[FromQuery(Name = "sort")] string? sortBy,
+				FullSearchUsecase searchUsecase,
+				Cancel ctx
+			) =>
+			{
+				var request = new FullSearchApiRequest
+				{
+					Query = query,
+					PageNumber = pageNumber ?? 1,
+					PageSize = pageSize ?? 20,
+					TypeFilter = typeFilter,
+					SectionFilter = sectionFilter,
+					DeploymentFilter = deploymentFilter,
+					ProductFilter = productFilter,
+					VersionFilter = versionFilter,
+					SortBy = sortBy ?? "relevance"
+				};
+				var response = await searchUsecase.SearchAsync(request, ctx);
 				return Results.Ok(response);
 			});
 	}
