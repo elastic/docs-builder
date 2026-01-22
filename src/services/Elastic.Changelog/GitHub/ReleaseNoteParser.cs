@@ -75,8 +75,20 @@ public static partial class ReleaseNoteParser
 	[GeneratedRegex(@"\*\*Full Changelog\*\*:\s*(https://[^\s]+)", RegexOptions.IgnoreCase)]
 	private static partial Regex FullChangelogRegex();
 
-	// Common emojis used in Release Drafter
-	private static readonly string[] ReleaseDrafterEmojis = ["💥", "✨", "🐛", "📝", "🧰", "⚙️", "🎨", "🔒", "⚠️", "🚀"];
+	// Common emojis used in Release Drafter (Unicode escape sequences)
+	private static readonly string[] ReleaseDrafterEmojis =
+	[
+		"\uD83D\uDCA5", // Breaking Changes
+		"\u2728",       // Features
+		"\uD83D\uDC1B", // Bug Fixes
+		"\uD83D\uDCDD", // Documentation
+		"\uD83E\uDDF0", // Maintenance
+		"\u2699\uFE0F", // Configuration
+		"\uD83C\uDFA8", // Redesign
+		"\uD83D\uDD12", // Security
+		"\u26A0\uFE0F", // Deprecation
+		"\uD83D\uDE80"  // Release
+	];
 
 	// Mapping from section header keywords to changelog types
 	private static readonly Dictionary<string, string> SectionToType = new(StringComparer.OrdinalIgnoreCase)
