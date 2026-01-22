@@ -47,8 +47,6 @@ public class DocumentationSet : INavigationTraversable
 
 	public IReadOnlyCollection<IDocsBuilderExtension> EnabledExtensions { get; }
 
-	public ConcurrentDictionary<string, NavigationRenderResult> NavigationRenderResults { get; } = [];
-
 	public DocumentationSet(
 		BuildContext context,
 		ILoggerFactory logFactory,

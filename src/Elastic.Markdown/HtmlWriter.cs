@@ -64,9 +64,7 @@ public class HtmlWriter(
 
 		var root = navigationItem.NavigationRoot;
 
-		var navigationHtmlRenderResult = DocumentationSet.Context.Configuration.Features.LazyLoadNavigation
-			? await NavigationHtmlWriter.RenderNavigation(root, navigationItem, 1, ctx)
-			: await NavigationHtmlWriter.RenderNavigation(root, navigationItem, INavigationHtmlWriter.AllLevels, ctx);
+		var navigationHtmlRenderResult = await NavigationHtmlWriter.RenderNavigation(root, navigationItem, INavigationHtmlWriter.AllLevels, ctx);
 
 		var current = NavigationTraversable.GetNavigationFor(markdown);
 		var previous = NavigationTraversable.GetPrevious(markdown);
@@ -99,19 +97,6 @@ public class HtmlWriter(
 		//if (PositionalNavigation.MarkdownNavigationLookup.TryGetValue("docs-content://versions.md", out var item))
 		//	allVersionsUrl = item.Url;
 
-		var navigationFileName = $"{navigationHtmlRenderResult.Id}.nav.html";
-		if (DocumentationSet.Configuration.Features.LazyLoadNavigation)
-		{
-			var fullNavigationRenderResult = await NavigationHtmlWriter.RenderNavigation(root, navigationItem, INavigationHtmlWriter.AllLevels, ctx);
-			navigationFileName = $"{fullNavigationRenderResult.Id}.nav.html";
-
-			_ = DocumentationSet.NavigationRenderResults.TryAdd(
-				fullNavigationRenderResult.Id,
-				fullNavigationRenderResult
-			);
-
-		}
-
 		var pageVersioning = VersionInferrerService.InferVersion(DocumentationSet.Context.Git.RepositoryName, legacyPages, markdown.YamlFrontMatter?.Products, markdown.YamlFrontMatter?.AppliesTo);
 
 		var currentBaseVersion = $"{pageVersioning.Base.Major}.{pageVersioning.Base.Minor}+";
@@ -138,7 +123,6 @@ public class HtmlWriter(
 			NextDocument = next,
 			Breadcrumbs = breadcrumbs,
 			NavigationHtml = navigationHtmlRenderResult.Html,
-			NavigationFileName = navigationFileName,
 			UrlPathPrefix = markdown.UrlPathPrefix,
 			AppliesTo = markdown.YamlFrontMatter?.AppliesTo,
 			GithubEditUrl = editUrl,
@@ -161,9 +145,7 @@ public class HtmlWriter(
 
 		return new RenderResult
 		{
-			Html = await slice.RenderAsync(cancellationToken: ctx),
-			FullNavigationPartialHtml = navigationHtmlRenderResult.Html,
-			NavigationFileName = navigationFileName
+			Html = await slice.RenderAsync(cancellationToken: ctx)
 		};
 
 	}
@@ -193,7 +175,7 @@ public class HtmlWriter(
 		return breadcrumbsList;
 	}
 
-	public async Task<MarkdownDocument> WriteAsync(IDirectoryInfo outBaseDir, IFileInfo outputFile, MarkdownFile markdown, IConversionCollector? collector, Cancel ctx = default)
+	public async Task<MarkdownDocument> WriteAsync(IFileInfo outputFile, MarkdownFile markdown, IConversionCollector? collector, Cancel ctx = default)
 	{
 		if (outputFile.Directory is { Exists: false })
 			outputFile.Directory.Create();
@@ -221,12 +203,6 @@ public class HtmlWriter(
 		collector?.Collect(markdown, document, rendered.Html);
 		await writeFileSystem.File.WriteAllTextAsync(path, rendered.Html, ctx);
 
-		if (!DocumentationSet.Configuration.Features.LazyLoadNavigation)
-			return document;
-
-		var navFilePath = Path.Combine(outBaseDir.FullName, rendered.NavigationFileName);
-		if (!writeFileSystem.File.Exists(navFilePath))
-			await writeFileSystem.File.WriteAllTextAsync(navFilePath, rendered.FullNavigationPartialHtml, ctx);
 		return document;
 	}
 
@@ -238,6 +214,4 @@ public class HtmlWriter(
 public record RenderResult
 {
 	public required string Html { get; init; }
-	public required string FullNavigationPartialHtml { get; init; }
-	public required string NavigationFileName { get; init; }
 }

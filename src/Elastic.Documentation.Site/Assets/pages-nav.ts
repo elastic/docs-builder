@@ -55,20 +55,21 @@ export const scrollCurrentNaviItemIntoView = throttle(
     { leading: false, trailing: true }
 )
 
-function setDropdown(dropdown: HTMLElement) {
-    if (dropdown) {
-        const anchors = $$('a', dropdown)
-        anchors.forEach((a) => {
-            a.addEventListener('mousedown', (e) => {
-                e.preventDefault()
-            })
-            a.addEventListener('mouseup', () => {
-                if (document.activeElement instanceof HTMLElement) {
-                    document.activeElement.blur()
-                }
-            })
-        })
-    }
+/**
+ * Prevents focus-based dropdowns from closing before link navigation completes.
+ * Without this, clicking a link inside the dropdown would transfer focus away,
+ * causing the dropdown to close via CSS :focus-within before navigation happens.
+ */
+function preventFocusLossOnLinkClick(anchor: HTMLAnchorElement) {
+    anchor.addEventListener('mousedown', (e) => {
+        e.preventDefault()
+    })
+    // Close dropdown after click completes
+    anchor.addEventListener('mouseup', () => {
+        if (document.activeElement instanceof HTMLElement) {
+            document.activeElement.blur()
+        }
+    })
 }
 
 export function initNav() {
@@ -77,13 +78,9 @@ export function initNav() {
         return
     }
 
-    const pagesDropdown = $('#pages-dropdown')
-    if (pagesDropdown) {
-        setDropdown(pagesDropdown)
-    }
-    const pageVersionDropdown = $('#page-version-dropdown')
-    if (pageVersionDropdown) {
-        setDropdown(pageVersionDropdown)
+    const dropdownActiveAnchor = $('#pages-dropdown a.pages-dropdown_active')
+    if (dropdownActiveAnchor) {
+        preventFocusLossOnLinkClick(dropdownActiveAnchor)
     }
 
     // Remove current class from all nav items before marking new ones
