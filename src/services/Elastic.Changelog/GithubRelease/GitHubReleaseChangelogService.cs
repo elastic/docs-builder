@@ -168,6 +168,10 @@ public class GitHubReleaseChangelogService(
 		// Fetch PR labels
 		var prInfo = await _prService.FetchPrInfoAsync(prUrl, owner, repo, ctx);
 
+		// Check add_blockers - skip PRs with blocking labels
+		if (prInfo != null && ShouldSkipPrDueToLabelBlockers(prInfo.Labels.ToArray(), productInfo, config, collector, prUrl))
+			return false;
+
 		// Derive type from labels
 		string? labelDerivedType = null;
 		List<string>? labelDerivedAreas = null;
@@ -318,5 +322,32 @@ public class GitHubReleaseChangelogService(
 		foreach (var area in areaList)
 			_ = areas.Add(area);
 		return areas.ToList();
+	}
+
+	private bool ShouldSkipPrDueToLabelBlockers(
+		string[] prLabels,
+		ProductInfo productInfo,
+		ChangelogConfiguration config,
+		IDiagnosticsCollector collector,
+		string prUrl)
+	{
+		if (config.AddBlockers == null || config.AddBlockers.Count == 0)
+			return false;
+
+		var normalizedProductId = productInfo.Product.Replace('_', '-');
+		if (config.AddBlockers.TryGetValue(normalizedProductId, out var blockerLabels))
+		{
+			var matchingBlockerLabel = blockerLabels
+				.FirstOrDefault(blockerLabel => prLabels.Contains(blockerLabel, StringComparer.OrdinalIgnoreCase));
+			if (matchingBlockerLabel != null)
+			{
+				collector.EmitWarning(prUrl,
+					$"Skipping changelog creation for PR {prUrl} due to blocking label '{matchingBlockerLabel}' " +
+					$"for product '{productInfo.Product}'. This label is configured to prevent changelog creation for this product.");
+				return true;
+			}
+		}
+
+		return false;
 	}
 }

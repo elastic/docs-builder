@@ -236,11 +236,9 @@ public static partial class ReleaseNoteParser
 		return prReferences;
 	}
 
-	private static List<ExtractedPrReference> ParseUnknownFormat(string body)
-	{
+	private static List<ExtractedPrReference> ParseUnknownFormat(string body) =>
 		// Try to extract any PR references we can find
-		return ParseGitHubDefaultFormat(body);
-	}
+		ParseGitHubDefaultFormat(body);
 
 	private static string? MapSectionToType(string sectionTitle)
 	{
@@ -268,11 +266,10 @@ public static partial class ReleaseNoteParser
 
 		foreach (var emoji in ReleaseDrafterEmojis)
 		{
-			if (result.StartsWith(emoji, StringComparison.Ordinal))
-			{
-				result = result[emoji.Length..].TrimStart();
-				break;
-			}
+			if (!result.StartsWith(emoji, StringComparison.Ordinal))
+				continue;
+			result = result[emoji.Length..].TrimStart();
+			break;
 		}
 
 		return result;
