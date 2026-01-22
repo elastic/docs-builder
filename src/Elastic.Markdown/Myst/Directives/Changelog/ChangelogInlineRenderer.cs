@@ -4,7 +4,7 @@
 
 using System.Globalization;
 using System.Text;
-using Elastic.Documentation.Changelog;
+using Elastic.Changelog;
 
 namespace Elastic.Markdown.Myst.Directives.Changelog;
 

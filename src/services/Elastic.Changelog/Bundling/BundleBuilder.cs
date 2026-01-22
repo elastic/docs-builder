@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Changelog.Serialization;
-using Elastic.Documentation.Changelog;
+using Elastic.Documentation;
 using Elastic.Documentation.Diagnostics;
 
 namespace Elastic.Changelog.Bundling;

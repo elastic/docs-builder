@@ -4,7 +4,6 @@
 
 using System.IO.Abstractions;
 using System.Text.RegularExpressions;
-using Elastic.Documentation.Changelog;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Converters;
 using Elastic.Documentation.Configuration.Serialization;
@@ -29,7 +28,6 @@ public partial class ConfigurationFileProvider
 		.WithTypeConverter(new TocItemYamlConverter())
 		.WithTypeConverter(new SiteTableOfContentsCollectionYamlConverter())
 		.WithTypeConverter(new SiteTableOfContentsRefYamlConverter())
-		.WithTypeConverter(new ChangelogEntryTypeConverter())
 		.Build();
 
 	public ConfigurationSource ConfigurationSource { get; }

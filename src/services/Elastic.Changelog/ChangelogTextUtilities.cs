@@ -6,7 +6,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
 using NetEscapades.EnumGenerators;
 
-namespace Elastic.Documentation.Changelog;
+namespace Elastic.Changelog;
 
 /// <summary>
 /// Static utility methods for text processing in changelog generation
@@ -455,23 +455,4 @@ public enum ChangelogEntrySubtype
 	/// <summary>A breaking change that does not fit into any of the other categories.</summary>
 	[Display(Name = "other")]
 	Other
-}
-
-/// <summary>
-/// Enum representing changelog entry lifecycle stages
-/// </summary>
-[EnumExtensions]
-public enum Lifecycle
-{
-	/// <summary>A technical preview of a feature or enhancement.</summary>
-	[Display(Name = "preview")]
-	Preview,
-
-	/// <summary>A beta release of a feature or enhancement.</summary>
-	[Display(Name = "beta")]
-	Beta,
-
-	/// <summary>A generally available release of a feature or enhancement.</summary>
-	[Display(Name = "ga")]
-	Ga
 }

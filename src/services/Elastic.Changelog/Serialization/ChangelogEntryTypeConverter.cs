@@ -6,7 +6,7 @@ using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
 
-namespace Elastic.Documentation.Changelog;
+namespace Elastic.Changelog.Serialization;
 
 /// <summary>
 /// YAML type converter for ChangelogEntryType that handles string serialization/deserialization.

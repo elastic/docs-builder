@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Documentation.Changelog;
+using Elastic.Documentation;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
@@ -58,6 +58,13 @@ public static class ChangelogYamlSerialization
 	/// </summary>
 	public static ChangelogEntry ConvertEntry(ChangelogEntryYaml yamlDto) =>
 		ChangelogMapper.ToEntry(yamlDto);
+
+	/// <summary>
+	/// Converts a BundledEntry to a ChangelogEntry.
+	/// Used when inline entry data is provided in bundles.
+	/// </summary>
+	public static ChangelogEntry ConvertBundledEntry(BundledEntry entry) =>
+		ChangelogMapper.ToEntry(entry);
 
 	/// <summary>
 	/// Deserializes bundled changelog data YAML content to domain type.

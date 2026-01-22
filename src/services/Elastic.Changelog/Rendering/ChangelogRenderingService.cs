@@ -6,7 +6,7 @@ using System.ComponentModel.DataAnnotations;
 using System.IO.Abstractions;
 using System.Text.Json.Serialization;
 using Elastic.Changelog.Configuration;
-using Elastic.Documentation.Changelog;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;

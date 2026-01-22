@@ -3,13 +3,11 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.RegularExpressions;
+using Elastic.Changelog;
+using Elastic.Changelog.Serialization;
 using Elastic.Documentation;
-using Elastic.Documentation.Changelog;
-using Elastic.Documentation.Configuration.Serialization;
 using Elastic.Markdown.Diagnostics;
 using YamlDotNet.Core;
-using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NamingConventions;
 
 namespace Elastic.Markdown.Myst.Directives.Changelog;
 
@@ -143,10 +141,6 @@ public partial class ChangelogBlock(DirectiveBlockParser parser, ParserContext c
 			return;
 
 		var fileSystem = Build.ReadFileSystem;
-		var deserializer = new StaticDeserializerBuilder(new YamlStaticContext())
-			.WithNamingConvention(UnderscoredNamingConvention.Instance)
-			.WithTypeConverter(new ChangelogEntryTypeConverter())
-			.Build();
 
 		var yamlFiles = fileSystem.Directory
 			.EnumerateFiles(BundlesFolderPath, "*.yaml")
@@ -157,16 +151,16 @@ public partial class ChangelogBlock(DirectiveBlockParser parser, ParserContext c
 
 		foreach (var bundleFile in yamlFiles)
 		{
-			var bundleData = LoadBundle(bundleFile, deserializer);
+			var bundleData = LoadBundle(bundleFile);
 			if (bundleData == null)
 				continue;
 
 			var version = GetVersionFromBundle(bundleData) ?? Path.GetFileNameWithoutExtension(bundleFile);
 			var repo = bundleData.Products.Count > 0
-				? bundleData.Products[0].ProductId ?? "elastic"
+				? bundleData.Products[0].ProductId
 				: "elastic";
 
-			var entries = ResolveEntries(bundleData, bundleFile, deserializer);
+			var entries = ResolveEntries(bundleData, bundleFile);
 
 			loadedBundles.Add(new LoadedBundle(version, repo, bundleData, bundleFile, entries));
 		}
@@ -177,12 +171,12 @@ public partial class ChangelogBlock(DirectiveBlockParser parser, ParserContext c
 			.ToList();
 	}
 
-	private Bundle? LoadBundle(string filePath, IDeserializer deserializer)
+	private Bundle? LoadBundle(string filePath)
 	{
 		try
 		{
 			var bundleContent = Build.ReadFileSystem.File.ReadAllText(filePath);
-			return deserializer.Deserialize<Bundle>(bundleContent);
+			return ChangelogYamlSerialization.DeserializeBundle(bundleContent);
 		}
 		catch (YamlException e)
 		{
@@ -198,10 +192,7 @@ public partial class ChangelogBlock(DirectiveBlockParser parser, ParserContext c
 	private static SemVersion ParseVersion(string version) =>
 		SemVersion.TryParse(version, out var semVersion) ? semVersion : ZeroVersion.Instance;
 
-	private List<ChangelogEntry> ResolveEntries(
-		Bundle bundledData,
-		string bundleFilePath,
-		IDeserializer deserializer)
+	private List<ChangelogEntry> ResolveEntries(Bundle bundledData, string bundleFilePath)
 	{
 		var entries = new List<ChangelogEntry>();
 		var bundleDirectory = Path.GetDirectoryName(bundleFilePath)
@@ -218,21 +209,7 @@ public partial class ChangelogBlock(DirectiveBlockParser parser, ParserContext c
 			// If entry has resolved/inline data, use it directly
 			if (!string.IsNullOrWhiteSpace(entry.Title) && entry.Type != null)
 			{
-				entryData = new ChangelogEntry
-				{
-					Title = entry.Title,
-					Type = entry.Type.Value,
-					Subtype = entry.Subtype,
-					Description = entry.Description,
-					Impact = entry.Impact,
-					Action = entry.Action,
-					FeatureId = entry.FeatureId,
-					Highlight = entry.Highlight,
-					Pr = entry.Pr,
-					Products = entry.Products ?? [],
-					Areas = entry.Areas,
-					Issues = entry.Issues
-				};
+				entryData = ChangelogYamlSerialization.ConvertBundledEntry(entry);
 			}
 			else if (!string.IsNullOrWhiteSpace(entry.File?.Name))
 			{
@@ -254,7 +231,7 @@ public partial class ChangelogBlock(DirectiveBlockParser parser, ParserContext c
 					var yamlWithoutComments = string.Join('\n', yamlLines.Where(line => !line.TrimStart().StartsWith('#')));
 					var normalizedYaml = VersionToTargetRegex().Replace(yamlWithoutComments, "$1target:");
 
-					entryData = deserializer.Deserialize<ChangelogEntry>(normalizedYaml);
+					entryData = ChangelogYamlSerialization.DeserializeEntry(normalizedYaml);
 				}
 				catch (YamlException e)
 				{

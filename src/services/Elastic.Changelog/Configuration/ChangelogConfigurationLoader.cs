@@ -4,7 +4,7 @@
 
 using System.IO.Abstractions;
 using Elastic.Changelog.Serialization;
-using Elastic.Documentation.Changelog;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Diagnostics;

@@ -3,8 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using System.Diagnostics.CodeAnalysis;
+using Elastic.Documentation;
 
-namespace Elastic.Documentation.Changelog;
+namespace Elastic.Changelog;
 
 /// <summary>
 /// Domain type representing bundled changelog data.

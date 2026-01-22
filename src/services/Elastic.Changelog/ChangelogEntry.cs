@@ -2,7 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-namespace Elastic.Documentation.Changelog;
+using Elastic.Documentation;
+
+namespace Elastic.Changelog;
 
 /// <summary>
 /// Domain type representing a changelog entry.

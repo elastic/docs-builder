@@ -5,7 +5,7 @@
 using System.IO.Abstractions;
 using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Serialization;
-using Elastic.Documentation.Changelog;
+using Elastic.Documentation;
 using Elastic.Documentation.Diagnostics;
 using YamlDotNet.Core;
 

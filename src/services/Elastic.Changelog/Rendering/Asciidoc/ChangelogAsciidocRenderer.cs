@@ -7,7 +7,7 @@
 using System.IO.Abstractions;
 using System.Text;
 using static System.Globalization.CultureInfo;
-using static Elastic.Documentation.Changelog.ChangelogEntryType;
+using static Elastic.Changelog.ChangelogEntryType;
 
 namespace Elastic.Changelog.Rendering.Asciidoc;
 

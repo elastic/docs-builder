@@ -4,7 +4,7 @@
 
 using Elastic.Changelog.Configuration;
 using Elastic.Changelog.Serialization;
-using Elastic.Documentation.Changelog;
+using Elastic.Documentation;
 using Elastic.Documentation.Diagnostics;
 using FluentAssertions;
 
