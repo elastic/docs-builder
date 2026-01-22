@@ -390,6 +390,46 @@ flowchart LR
         // Diagrams are visual, not searchable text
         markdown |> convertsToPlainText """"""
 
+type ``csv-include directive`` () =
+    static let generator = Setup.Generate [
+        Index """
+:::{csv-include} data/users.csv
+:::
+"""
+        File("data/users.csv", """Name,Age,City
+John Doe,30,New York
+Jane Smith,25,Los Angeles""")
+    ]
+
+    [<Fact>]
+    let ``renders csv as header-value pairs`` () =
+        generator |> convertsToPlainText """Name: John Doe
+Age: 30
+City: New York
+Name: Jane Smith
+Age: 25
+City: Los Angeles"""
+
+type ``csv-include directive with caption`` () =
+    static let generator = Setup.Generate [
+        Index """
+:::{csv-include} data/products.csv
+:caption: Product List
+:::
+"""
+        File("data/products.csv", """Product,Price
+Widget,9.99
+Gadget,19.99""")
+    ]
+
+    [<Fact>]
+    let ``includes caption in output`` () =
+        generator |> convertsToPlainText """Product List
+Product: Widget
+Price: 9.99
+Product: Gadget
+Price: 19.99"""
+
 type ``realistic documentation page`` () =
     static let markdown = Setup.Document """
 ## Getting Started with Elasticsearch
