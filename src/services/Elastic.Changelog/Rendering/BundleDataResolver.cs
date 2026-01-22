@@ -82,10 +82,14 @@ public class BundleDataResolver(IFileSystem fileSystem, IDeserializer deserializ
 		// If entry has resolved data, use it
 		if (!string.IsNullOrWhiteSpace(entry.Title) && !string.IsNullOrWhiteSpace(entry.Type))
 		{
+			var entryType = ChangelogEntryTypeExtensions.TryParse(entry.Type, out var parsed, ignoreCase: true, allowMatchingMetadataAttribute: true)
+				? parsed
+				: ChangelogEntryType.Other;
+
 			return new ChangelogData
 			{
 				Title = entry.Title,
-				Type = entry.Type,
+				Type = entryType,
 				Subtype = entry.Subtype,
 				Description = entry.Description,
 				Impact = entry.Impact,

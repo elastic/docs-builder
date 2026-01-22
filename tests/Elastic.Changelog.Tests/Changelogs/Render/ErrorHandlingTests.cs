@@ -198,89 +198,64 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 	}
 
 	[Fact]
-	public async Task RenderChangelogs_WithUnhandledType_EmitsWarning()
+	public async Task RenderChangelogs_WithUnknownType_EmitsError()
 	{
 		// Arrange
-		// This test simulates the scenario where a new type is added to ChangelogConfiguration.cs
-		// but the rendering code hasn't been updated to handle it yet.
-		// We create a config with an additional "experimental-feature" type for testing.
-		var defaultConfig = ChangelogConfiguration.Default;
-		var originalTypes = defaultConfig.AvailableTypes.ToList();
-		var testType = "experimental-feature";
+		// When an unknown type string is encountered during YAML deserialization,
+		// it should be parsed as Invalid and an error should be emitted.
+		var changelogDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(changelogDir);
 
-		// Temporarily add the test type to defaults to simulate it being added to ChangelogConfiguration.cs
-		defaultConfig.AvailableTypes = originalTypes.Append(testType).ToList();
+		// Create changelog with an unknown type that will be marked as Invalid
+		// language=yaml
+		var changelog1 =
+			"""
+			title: Unknown type feature
+			type: some-unknown-type
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			description: This has an unknown type
+			""";
 
-		try
+		var changelogFile = FileSystem.Path.Combine(changelogDir, "1755268130-unknown.yaml");
+		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog1, TestContext.Current.CancellationToken);
+
+		// Create bundle file
+		var bundleDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(bundleDir);
+		var bundleFile = FileSystem.Path.Combine(bundleDir, "bundle.yaml");
+		// language=yaml
+		var bundleContent =
+			$"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			entries:
+			  - file:
+			      name: 1755268130-unknown.yaml
+			      checksum: {ComputeSha1(changelog1)}
+			""";
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+
+		var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+
+		var input = new ChangelogRenderInput
 		{
-			var changelogDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-			FileSystem.Directory.CreateDirectory(changelogDir);
+			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
+			Output = outputDir,
+			Title = "9.2.0"
+		};
 
-			// Create changelog with an unhandled type
-			// language=yaml
-			var changelog1 =
-				"""
-				title: Experimental feature
-				type: experimental-feature
-				products:
-				  - product: elasticsearch
-				    target: 9.2.0
-				description: This is an experimental feature
-				""";
+		// Act
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
-			var changelogFile = FileSystem.Path.Combine(changelogDir, "1755268130-experimental.yaml");
-			await FileSystem.File.WriteAllTextAsync(changelogFile, changelog1, TestContext.Current.CancellationToken);
-
-			// Create bundle file
-			var bundleDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-			FileSystem.Directory.CreateDirectory(bundleDir);
-			var bundleFile = FileSystem.Path.Combine(bundleDir, "bundle.yaml");
-			// language=yaml
-			var bundleContent =
-				$"""
-				products:
-				  - product: elasticsearch
-				    target: 9.2.0
-				entries:
-				  - file:
-				      name: 1755268130-experimental.yaml
-				      checksum: {ComputeSha1(changelog1)}
-				""";
-			await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
-
-			var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-
-			var input = new ChangelogRenderInput
-			{
-				Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
-				Output = outputDir,
-				Title = "9.2.0"
-			};
-
-			// Act
-			var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
-
-			// Assert
-			result.Should().BeTrue();
-			Collector.Errors.Should().Be(0);
-			Collector.Warnings.Should().BeGreaterThan(0);
-			Collector.Diagnostics.Should().Contain(d =>
-				d.Severity == Severity.Warning &&
-				d.Message.Contains("experimental-feature") &&
-				d.Message.Contains("is valid according to configuration but is not handled in rendering output") &&
-				d.Message.Contains("1 entry/entries of this type will not be included"));
-
-			// Verify that the entry is not included in the output
-			var indexFile = FileSystem.Path.Combine(outputDir, "9.2.0", "index.md");
-			FileSystem.File.Exists(indexFile).Should().BeTrue();
-
-			var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
-			indexContent.Should().NotContain("Experimental feature");
-		}
-		finally
-		{
-			// Restore original types
-			defaultConfig.AvailableTypes = originalTypes;
-		}
+		// Assert
+		result.Should().BeFalse();
+		Collector.Errors.Should().BeGreaterThan(0);
+		Collector.Diagnostics.Should().Contain(d =>
+			d.Severity == Severity.Error &&
+			d.Message.Contains("Unknown type feature") &&
+			d.Message.Contains("invalid or unrecognized type"));
 	}
 }

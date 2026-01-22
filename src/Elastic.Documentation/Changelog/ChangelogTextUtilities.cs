@@ -373,6 +373,10 @@ public static partial class ChangelogTextUtilities
 [EnumExtensions]
 public enum ChangelogEntryType
 {
+	/// <summary>Invalid or unrecognized type - used for validation errors.</summary>
+	[Display(Name = "invalid")]
+	Invalid = 0,
+
 	/// <summary>A new feature or enhancement.</summary>
 	[Display(Name = "feature")]
 	Feature,

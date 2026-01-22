@@ -139,7 +139,8 @@ public class BundleBuilder
 				return null;
 			}
 
-			if (string.IsNullOrWhiteSpace(data.Type))
+			// Validate type is not Invalid (missing or unrecognized)
+			if (data.Type == ChangelogEntryType.Invalid)
 			{
 				collector.EmitError(entry.FilePath, "Changelog file is missing required field: type");
 				return null;
@@ -165,7 +166,7 @@ public class BundleBuilder
 					Name = entry.FileName,
 					Checksum = entry.Checksum
 				},
-				Type = data.Type,
+				Type = data.Type.ToStringFast(true),
 				Title = data.Title,
 				Products = data.Products.ToList(),
 				Description = data.Description,
