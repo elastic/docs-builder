@@ -38,7 +38,9 @@ public class DocumentationSetFile : TableOfContentsFile
 	[YamlMember(Alias = "api")]
 	public Dictionary<string, string> Api { get; set; } = [];
 
-	// TODO remove this
+	/// <summary>
+	/// Default products for this documentation set. These are merged with page-level frontmatter products.
+	/// </summary>
 	[YamlMember(Alias = "products")]
 	public List<ProductLink> Products { get; set; } = [];
 

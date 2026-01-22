@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using Elastic.ApiExplorer.Elasticsearch;
 using Elastic.Documentation.AppliesTo;
+using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Search;
 using Elastic.Ingest.Elasticsearch.Indices;
@@ -131,11 +132,11 @@ public partial class ElasticsearchMarkdownExporter
 
 		// Infer product and repository metadata
 		var mappedPages = fileContext.SourceFile.YamlFrontMatter?.MappedPages;
-		var frontMatterProducts = fileContext.SourceFile.YamlFrontMatter?.Products;
+		var pageProducts = Product.MergeProducts(fileContext.DocumentationSet.Configuration.Products, fileContext.SourceFile.YamlFrontMatter?.Products);
 		var inference = _documentInferrer.InferForMarkdown(
 			fileContext.BuildContext.Git.RepositoryName,
 			mappedPages,
-			frontMatterProducts,
+			pageProducts,
 			appliesTo
 		);
 		doc.Product = inference.Product is not null
@@ -270,4 +271,5 @@ public partial class ElasticsearchMarkdownExporter
 			_ = Interlocked.Decrement(ref _enrichmentCount);
 		}
 	}
+
 }

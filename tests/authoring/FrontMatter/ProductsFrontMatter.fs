@@ -18,6 +18,11 @@ let frontMatter ([<LanguageInjection("yaml")>]m: string) =
 This is a test page with products frontmatter.
 """
 
+/// Helper to create a docset with elasticsearch as the default product (matching hardcoded test data in Setup.fs)
+let withDocsetProducts ([<LanguageInjection("markdown")>]m: string) =
+    let options = { SetupOptions.Empty with DocsetProducts = Some ["elasticsearch"] }
+    Setup.GenerateWithOptions options [ TestFile.Index m ]
+
 type ``products frontmatter in HTML`` () =
     static let markdownWithProducts = frontMatter """
 products:
@@ -97,3 +102,35 @@ This is a test page without products frontmatter.
                 test <@ products.Count = 0 @>
             | _ -> ()
         | _ -> ()
+
+/// Tests for docset-level products merging with frontmatter products
+type ``docset products merging`` () =
+    
+    static let docsetOnly = withDocsetProducts """
+# Test Page
+
+This is a test page without frontmatter products.
+"""
+    
+    static let docsetAndFrontmatter = withDocsetProducts """---
+products:
+  - id: ecctl
+---
+# Test Page
+
+This page has both docset and frontmatter products.
+"""
+
+    [<Fact>]
+    let ``docset products appear in HTML when no frontmatter products`` () =
+        docsetOnly |> converts "index.md" |> containsHtml """
+<meta class="elastic" name="product_name" content="Elasticsearch"/>
+<meta name="DC.subject" content="Elasticsearch"/>
+"""
+
+    [<Fact>]
+    let ``docset products merge with frontmatter products`` () =
+        docsetAndFrontmatter |> converts "index.md" |> containsHtml """
+<meta class="elastic" name="product_name" content="Elasticsearch,Elastic Cloud Control ECCTL"/>
+<meta name="DC.subject" content="Elasticsearch,Elastic Cloud Control ECCTL"/>
+"""

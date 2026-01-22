@@ -89,7 +89,7 @@ public class HtmlWriter(
 		var siteName = DocumentationSet.Navigation.NavigationTitle;
 		var legacyPages = LegacyUrlMapper.MapLegacyUrl(markdown.YamlFrontMatter?.MappedPages);
 
-		var pageProducts = GetPageProducts(markdown.YamlFrontMatter?.Products);
+		var pageProducts = Product.MergeProducts(DocumentationSet.Configuration.Products, markdown.YamlFrontMatter?.Products);
 
 		string? allVersionsUrl = null;
 
@@ -206,8 +206,6 @@ public class HtmlWriter(
 		return document;
 	}
 
-	private static HashSet<Product> GetPageProducts(IReadOnlyCollection<Product>? frontMatterProducts) =>
-		frontMatterProducts?.ToHashSet() ?? [];
 
 }
 

@@ -150,7 +150,7 @@ public class LlmMarkdownExporter : IMarkdownExporter
 
 		_ = metadata.AppendLine($"url: {context.BuildContext.CanonicalBaseUrl?.Scheme}://{context.BuildContext.CanonicalBaseUrl?.Host}{context.NavigationItem.Url}");
 
-		var pageProducts = GetPageProducts(sourceFile.YamlFrontMatter?.Products);
+		var pageProducts = Product.MergeProducts(context.DocumentationSet.Configuration.Products, sourceFile.YamlFrontMatter?.Products);
 		if (pageProducts.Count > 0)
 		{
 			_ = metadata.AppendLine("products:");
@@ -179,8 +179,6 @@ public class LlmMarkdownExporter : IMarkdownExporter
 		return metadata.ToString();
 	}
 
-	private static List<Product> GetPageProducts(IReadOnlyCollection<Product>? frontMatterProducts) =>
-		frontMatterProducts?.ToList() ?? [];
 
 	private static List<string> GetAppliesToItems(ApplicableTo appliesTo, IDocumentationConfigurationContext buildContext)
 	{

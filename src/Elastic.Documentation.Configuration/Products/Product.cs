@@ -61,5 +61,25 @@ public record Product
 	public required string DisplayName { get; init; }
 	public VersioningSystem? VersioningSystem { get; init; }
 	public string? Repository { get; init; }
+
+	/// <summary>
+	/// Merges docset-level products with page-level frontmatter products.
+	/// Docset products serve as defaults, frontmatter products are appended.
+	/// </summary>
+	/// <param name="docSetProducts">Products defined at the docset level in docset.yml</param>
+	/// <param name="frontMatterProducts">Products defined in page frontmatter (optional)</param>
+	/// <returns>Combined set of products with no duplicates</returns>
+	public static HashSet<Product> MergeProducts(HashSet<Product> docSetProducts, IReadOnlyCollection<Product>? frontMatterProducts)
+	{
+		var products = new HashSet<Product>(docSetProducts);
+
+		if (frontMatterProducts is { Count: > 0 })
+		{
+			foreach (var product in frontMatterProducts)
+				_ = products.Add(product);
+		}
+
+		return products;
+	}
 }
 
