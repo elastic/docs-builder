@@ -1,11 +1,15 @@
 import { create } from 'zustand/react'
 
+const DEFAULT_FLYOUT_WIDTH = 400
+
 interface ModalState {
     isOpen: boolean
+    flyoutWidth: number
     actions: {
         openModal: () => void
         closeModal: () => void
         toggleModal: () => void
+        setFlyoutWidth: (width: number) => void
     }
 }
 
@@ -32,10 +36,12 @@ const closeWithScrollPreservation = (
 
 const askAiModalStore = create<ModalState>((set) => ({
     isOpen: false,
+    flyoutWidth: DEFAULT_FLYOUT_WIDTH,
     actions: {
         openModal: () => set({ isOpen: true }),
         closeModal: () => closeWithScrollPreservation(set),
         toggleModal: () => set((state) => ({ isOpen: !state.isOpen })),
+        setFlyoutWidth: (width: number) => set({ flyoutWidth: width }),
     },
 }))
 
@@ -43,5 +49,7 @@ export const useAskAiModalIsOpen = () =>
     askAiModalStore((state) => state.isOpen)
 export const useAskAiModalActions = () =>
     askAiModalStore((state) => state.actions)
+export const useFlyoutWidth = () =>
+    askAiModalStore((state) => state.flyoutWidth)
 
 export { askAiModalStore }
