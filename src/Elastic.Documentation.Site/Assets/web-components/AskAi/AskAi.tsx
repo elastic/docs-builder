@@ -1,4 +1,5 @@
 import '../../eui-icons-cache'
+import { sharedQueryClient } from '../shared/queryClient'
 import AiIcon from './ai-icon.svg'
 import { useAskAiModalActions, useAskAiModalIsOpen } from './askAi.modal.store'
 import {
@@ -11,14 +12,8 @@ import {
 } from '@elastic/eui'
 import { css } from '@emotion/react'
 import r2wc from '@r2wc/react-to-web-component'
-import {
-    QueryClient,
-    QueryClientProvider,
-    useQuery,
-} from '@tanstack/react-query'
+import { QueryClientProvider, useQuery } from '@tanstack/react-query'
 import { useEffect, Suspense, lazy, StrictMode } from 'react'
-
-const queryClient = new QueryClient()
 
 // Lazy load the modal component
 const LazyAskAiModal = lazy(() =>
@@ -164,7 +159,7 @@ const AskAi = () => {
                 globalStyles={false}
                 utilityClasses={false}
             >
-                <QueryClientProvider client={queryClient}>
+                <QueryClientProvider client={sharedQueryClient}>
                     <AskAiButton />
                 </QueryClientProvider>
             </EuiProvider>
