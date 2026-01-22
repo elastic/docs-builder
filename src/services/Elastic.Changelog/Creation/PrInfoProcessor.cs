@@ -4,6 +4,7 @@
 
 using Elastic.Changelog.Configuration;
 using Elastic.Changelog.GitHub;
+using Elastic.Documentation.Changelog;
 using Elastic.Documentation.Diagnostics;
 using Microsoft.Extensions.Logging;
 

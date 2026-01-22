@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using Elastic.Changelog;
+using Elastic.Documentation.Changelog;
 using Elastic.Documentation.Diagnostics;
 using Microsoft.Extensions.Logging;
 using YamlDotNet.Core;
