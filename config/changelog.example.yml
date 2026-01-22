@@ -11,11 +11,24 @@ pivot:
   # Keys are type names, values can be:
   #   - simple string: comma-separated label list (e.g., ">bug, >fix")
   #   - empty/null: no labels for this type
-  #   - object: { labels: "...", subtypes: {...} } for complex cases
+  #   - object: { labels: "...", subtypes: {...} } for breaking-change type only
   types:
+    # Complex object form with subtypes (ONLY allowed for breaking-change)
+    # Subtypes help categorize breaking changes by their nature
+    breaking-change:
+      labels: ">breaking, >bc"
+      subtypes:
+        api: ">api-breaking"
+        behavioral: ">behavioral-breaking"
+        configuration: ">config-breaking"
+        dependency: ">dependency-breaking"
+        subscription: ">subscription-breaking"
+        plugin: ">plugin-breaking"
+        security: ">security-breaking"
+        other:
     # Simple string form: labels as comma-separated string
-    breaking-change: ">breaking, >bc"
     bug-fix: ">bug"
+    deprecation: ">deprecation"
     # Empty block: no labels (YAML null)
     feature:
     enhancement:
@@ -24,24 +37,6 @@ pivot:
     other:
     regression:
     security:
-    # Complex object form with type-specific subtypes
-    deprecation:
-      labels: ">deprecation"
-      subtypes:
-        api: ">api-deprecation"
-        behavioral: ">behavioral-deprecation"
-
-  # Default subtype definitions (used when type doesn't define its own subtypes)
-  # Keys are subtype names, values are label strings (or null for no labels)
-  subtypes:
-    api:
-    behavioral:
-    configuration:
-    dependency:
-    subscription:
-    plugin:
-    security:
-    other:
 
   # Area definitions with labels
   # Keys are area display names, values are label strings

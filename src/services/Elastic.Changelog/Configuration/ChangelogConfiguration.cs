@@ -10,35 +10,30 @@ namespace Elastic.Changelog.Configuration;
 public record ChangelogConfiguration
 {
 	/// <summary>
-	/// Default types for changelog entries
+	/// Default types for changelog entries (derived from ChangelogEntryType enum)
 	/// </summary>
 	public static IReadOnlyList<string> DefaultTypes { get; } =
-	[
-		"feature", // A new feature or enhancement.
-		"enhancement", // An improvement to an existing feature.
-		"bug-fix", // A bug fix.
-		"known-issue", // A problem that is known to exist in the product.
-		"breaking-change", // A breaking change to the documented behavior of the product.
-		"deprecation", // Functionality that is deprecated and will be removed in a future release.
-		"docs", // Major documentation changes or reorganizations.
-		"regression", // Functionality that no longer works or behaves incorrectly.
-		"security", // An advisory about a potential security vulnerability.
-		"other" // Changes that do not fit into any of the other categories.
-	];
+		ChangelogEntryTypeExtensions.GetValues()
+			.Select(t => t.ToStringFast(true))
+			.ToList();
 
 	/// <summary>
-	/// Default subtypes for breaking changes
+	/// Default subtypes for breaking changes (derived from ChangelogEntrySubtype enum)
 	/// </summary>
 	public static IReadOnlyList<string> DefaultSubtypes { get; } =
+		ChangelogEntrySubtypeExtensions.GetValues()
+			.Select(s => s.ToStringFast(true))
+			.ToList();
+
+	/// <summary>
+	/// Required types that must be present in the configuration.
+	/// At minimum, 'feature', 'bug-fix', and 'breaking-change' must be configured.
+	/// </summary>
+	public static IReadOnlyList<ChangelogEntryType> RequiredTypes { get; } =
 	[
-		"api", // A change that breaks an API.
-		"behavioral", // A change that breaks the way something works.
-		"configuration", // A change that breaks the configuration.
-		"dependency", // A change that breaks a dependency, such as a third-party product.
-		"subscription", // A change that breaks licensing behavior.
-		"plugin", // A change that breaks a plugin.
-		"security", // A change that breaks authentication, authorization, or permissions.
-		"other" // A breaking change that do not fit into any of the other categories.
+		ChangelogEntryType.Feature,
+		ChangelogEntryType.BugFix,
+		ChangelogEntryType.BreakingChange
 	];
 
 	/// <summary>

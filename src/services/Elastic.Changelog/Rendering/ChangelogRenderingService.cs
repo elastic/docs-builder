@@ -172,19 +172,10 @@ public class ChangelogRenderingService(
 		IReadOnlyList<ResolvedEntry> entries,
 		IReadOnlyList<string> availableTypes)
 	{
-		var handledTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-		{
-			ChangelogEntryTypes.Feature,
-			ChangelogEntryTypes.Enhancement,
-			ChangelogEntryTypes.Security,
-			ChangelogEntryTypes.BugFix,
-			ChangelogEntryTypes.BreakingChange,
-			ChangelogEntryTypes.Deprecation,
-			ChangelogEntryTypes.KnownIssue,
-			ChangelogEntryTypes.Docs,
-			ChangelogEntryTypes.Regression,
-			ChangelogEntryTypes.Other
-		};
+		// All enum values are handled in rendering
+		var handledTypes = new HashSet<string>(
+			ChangelogEntryTypeExtensions.GetValues().Select(t => t.ToStringFast(true)),
+			StringComparer.OrdinalIgnoreCase);
 
 		var availableTypesSet = new HashSet<string>(availableTypes, StringComparer.OrdinalIgnoreCase);
 
@@ -206,10 +197,11 @@ public class ChangelogRenderingService(
 		HashSet<string> featureIdsToHide,
 		IReadOnlyDictionary<string, RenderBlockersEntry>? renderBlockers)
 	{
-		// Group entries by type
+		// Group entries by type (parsing string type to enum)
 		var entriesByType = resolved.Entries
 			.Select(e => e.Entry)
-			.GroupBy(e => e.Type)
+			.Where(e => ChangelogEntryTypeExtensions.TryParse(e.Type, out _, ignoreCase: true, allowMatchingMetadataAttribute: true))
+			.GroupBy(e => ChangelogEntryTypeExtensions.TryParse(e.Type, out var t, ignoreCase: true, allowMatchingMetadataAttribute: true) ? t : default)
 			.ToDictionary(g => g.Key, g => (IReadOnlyCollection<ChangelogData>)g.ToArray().AsReadOnly())
 			.AsReadOnly();
 

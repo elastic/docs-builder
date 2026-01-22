@@ -35,6 +35,7 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 			  types:
 			    feature: "type:feature"
 			    bug-fix:
+			    breaking-change:
 			available_lifecycles:
 			  - preview
 			  - beta
@@ -96,6 +97,7 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 			  types:
 			    feature: "type:feature"
 			    bug-fix:
+			    breaking-change:
 			available_lifecycles:
 			  - preview
 			  - beta

@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using System.Text;
 using static System.Globalization.CultureInfo;
+using static Elastic.Changelog.ChangelogEntryType;
 
 namespace Elastic.Changelog.Rendering.Markdown;
 
@@ -19,7 +20,7 @@ public class KnownIssuesMarkdownRenderer(IFileSystem fileSystem) : MarkdownRende
 	/// <inheritdoc />
 	public override async Task RenderAsync(ChangelogRenderContext context, Cancel ctx)
 	{
-		var knownIssues = context.EntriesByType.GetValueOrDefault(ChangelogEntryTypes.KnownIssue, []);
+		var knownIssues = context.EntriesByType.GetValueOrDefault(KnownIssue, []);
 
 		var sb = new StringBuilder();
 		_ = sb.AppendLine(InvariantCulture, $"## {context.Title} [{context.Repo}-{context.TitleSlug}-known-issues]");

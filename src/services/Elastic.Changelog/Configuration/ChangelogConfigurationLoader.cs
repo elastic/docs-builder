@@ -89,12 +89,50 @@ public class ChangelogConfigurationLoader(
 				// Compute available types from pivot.types keys
 				if (config.Pivot.Types != null && config.Pivot.Types.Count > 0)
 				{
-					// Validate types against defaults
-					foreach (var typeName in config.Pivot.Types.Keys.Where(t => !ChangelogConfiguration.DefaultTypes.Contains(t)))
+					// Validate types against enum values using TryParse
+					foreach (var typeName in config.Pivot.Types.Keys)
 					{
-						collector.EmitError(finalConfigPath, $"Type '{typeName}' in pivot.types is not in the list of available types. Available types: {string.Join(", ", ChangelogConfiguration.DefaultTypes)}");
-						return null;
+						if (!ChangelogEntryTypeExtensions.TryParse(typeName, out _, ignoreCase: true, allowMatchingMetadataAttribute: true))
+						{
+							collector.EmitError(finalConfigPath, $"Type '{typeName}' in pivot.types is not a valid type. Valid types: {string.Join(", ", ChangelogConfiguration.DefaultTypes)}");
+							return null;
+						}
 					}
+
+					// Validate required types are present
+					foreach (var requiredType in ChangelogConfiguration.RequiredTypes)
+					{
+						var requiredTypeName = requiredType.ToStringFast(true);
+						if (!config.Pivot.Types.Keys.Any(k => k.Equals(requiredTypeName, StringComparison.OrdinalIgnoreCase)))
+						{
+							collector.EmitError(finalConfigPath, $"Required type '{requiredTypeName}' is missing from pivot.types. Required types: {string.Join(", ", ChangelogConfiguration.RequiredTypes.Select(t => t.ToStringFast(true)))}");
+							return null;
+						}
+					}
+
+					// Validate subtypes only appear under breaking-change
+					foreach (var (typeName, typeEntry) in config.Pivot.Types)
+					{
+						if (typeEntry?.Subtypes != null && typeEntry.Subtypes.Count > 0)
+						{
+							if (!typeName.Equals(ChangelogEntryType.BreakingChange.ToStringFast(true), StringComparison.OrdinalIgnoreCase))
+							{
+								collector.EmitError(finalConfigPath, $"Type '{typeName}' has subtypes defined, but subtypes are only allowed for 'breaking-change' type.");
+								return null;
+							}
+
+							// Validate subtype values against enum
+							foreach (var subtypeName in typeEntry.Subtypes.Keys)
+							{
+								if (!ChangelogEntrySubtypeExtensions.TryParse(subtypeName, out _, ignoreCase: true, allowMatchingMetadataAttribute: true))
+								{
+									collector.EmitError(finalConfigPath, $"Subtype '{subtypeName}' in pivot.types.{typeName}.subtypes is not a valid subtype. Valid subtypes: {string.Join(", ", ChangelogConfiguration.DefaultSubtypes)}");
+									return null;
+								}
+							}
+						}
+					}
+
 					availableTypes = config.Pivot.Types.Keys.ToList();
 				}
 				else
@@ -103,11 +141,14 @@ public class ChangelogConfigurationLoader(
 				// Compute available subtypes from pivot.subtypes keys
 				if (config.Pivot.Subtypes != null && config.Pivot.Subtypes.Count > 0)
 				{
-					// Validate subtypes against defaults
-					foreach (var subtypeName in config.Pivot.Subtypes.Keys.Where(s => !ChangelogConfiguration.DefaultSubtypes.Contains(s)))
+					// Validate subtypes against enum values using TryParse
+					foreach (var subtypeName in config.Pivot.Subtypes.Keys)
 					{
-						collector.EmitError(finalConfigPath, $"Subtype '{subtypeName}' in pivot.subtypes is not in the list of available subtypes. Available subtypes: {string.Join(", ", ChangelogConfiguration.DefaultSubtypes)}");
-						return null;
+						if (!ChangelogEntrySubtypeExtensions.TryParse(subtypeName, out _, ignoreCase: true, allowMatchingMetadataAttribute: true))
+						{
+							collector.EmitError(finalConfigPath, $"Subtype '{subtypeName}' in pivot.subtypes is not a valid subtype. Valid subtypes: {string.Join(", ", ChangelogConfiguration.DefaultSubtypes)}");
+							return null;
+						}
 					}
 					availableSubtypes = config.Pivot.Subtypes.Keys.ToList();
 				}
@@ -154,18 +195,27 @@ public class ChangelogConfigurationLoader(
 				availableLifecycles = config.AvailableLifecycles;
 			}
 
-			// Validate render_blockers types against available_types
+			// Validate render_blockers types against enum and available_types
 			if (config.RenderBlockers != null)
 			{
 				foreach (var (productKey, blockersEntry) in config.RenderBlockers)
 				{
 					if (blockersEntry?.Types != null && blockersEntry.Types.Count > 0)
 					{
-						var invalidType = blockersEntry.Types.FirstOrDefault(type => !availableTypes.Contains(type));
-						if (invalidType != null)
+						foreach (var type in blockersEntry.Types)
 						{
-							collector.EmitError(finalConfigPath, $"Type '{invalidType}' in render_blockers for '{productKey}' is not in the list of available types. Available types: {string.Join(", ", availableTypes)}");
-							return null;
+							// First validate against enum
+							if (!ChangelogEntryTypeExtensions.TryParse(type, out _, ignoreCase: true, allowMatchingMetadataAttribute: true))
+							{
+								collector.EmitError(finalConfigPath, $"Type '{type}' in render_blockers for '{productKey}' is not a valid type. Valid types: {string.Join(", ", ChangelogConfiguration.DefaultTypes)}");
+								return null;
+							}
+							// Then validate against configured available types
+							if (!availableTypes.Contains(type, StringComparer.OrdinalIgnoreCase))
+							{
+								collector.EmitError(finalConfigPath, $"Type '{type}' in render_blockers for '{productKey}' is not in the list of configured available types. Configured types: {string.Join(", ", availableTypes)}");
+								return null;
+							}
 						}
 					}
 				}

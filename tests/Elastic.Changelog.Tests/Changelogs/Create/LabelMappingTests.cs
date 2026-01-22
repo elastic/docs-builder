@@ -35,6 +35,7 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 			  types:
 			    feature:
 			    bug-fix: "type:bug"
+			    breaking-change:
 			    enhancement:
 			  subtypes:
 			    api:
@@ -100,6 +101,8 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 			pivot:
 			  types:
 			    feature:
+			    bug-fix:
+			    breaking-change:
 			    enhancement: "type:enhancement"
 			  subtypes:
 			    api:

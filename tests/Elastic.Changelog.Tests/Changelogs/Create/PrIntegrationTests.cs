@@ -35,6 +35,7 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 			  types:
 			    feature: "type:feature"
 			    bug-fix:
+			    breaking-change:
 			available_lifecycles:
 			  - preview
 			  - beta
@@ -103,6 +104,7 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 			  types:
 			    feature:
 			    bug-fix: "type:bug"
+			    breaking-change:
 			available_lifecycles:
 			  - preview
 			  - beta
@@ -225,6 +227,7 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 			  types:
 			    feature: "type:feature"
 			    bug-fix: "type:bug"
+			    breaking-change:
 			available_lifecycles:
 			  - preview
 			  - beta
@@ -332,6 +335,7 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 			  types:
 			    feature: "type:feature"
 			    bug-fix: "type:bug"
+			    breaking-change:
 			    enhancement: "type:enhancement"
 			available_lifecycles:
 			  - preview
@@ -436,6 +440,7 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 			  types:
 			    feature: "type:feature"
 			    bug-fix: "type:bug"
+			    breaking-change:
 			available_lifecycles:
 			  - preview
 			  - beta

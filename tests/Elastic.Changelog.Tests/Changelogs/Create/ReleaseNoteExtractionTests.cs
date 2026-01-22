@@ -36,6 +36,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 			  types:
 			    feature: "type:feature"
 			    bug-fix:
+			    breaking-change:
 			available_lifecycles:
 			  - preview
 			  - beta
@@ -105,6 +106,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 			  types:
 			    feature: "type:feature"
 			    bug-fix:
+			    breaking-change:
 			available_lifecycles:
 			  - preview
 			  - beta
@@ -168,6 +170,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 			  types:
 			    feature: "type:feature"
 			    bug-fix:
+			    breaking-change:
 			available_lifecycles:
 			  - preview
 			  - beta
@@ -231,6 +234,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 			  types:
 			    feature: "type:feature"
 			    bug-fix:
+			    breaking-change:
 			available_lifecycles:
 			  - preview
 			  - beta
@@ -298,6 +302,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 			  types:
 			    feature: "type:feature"
 			    bug-fix:
+			    breaking-change:
 			available_lifecycles:
 			  - preview
 			  - beta
@@ -362,6 +367,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 			  types:
 			    feature: "type:feature"
 			    bug-fix:
+			    breaking-change:
 			available_lifecycles:
 			  - preview
 			  - beta

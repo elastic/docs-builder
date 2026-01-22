@@ -46,6 +46,8 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 			pivot:
 			  types:
 			    feature:
+			    bug-fix:
+			    breaking-change:
 			available_lifecycles:
 			  - ga
 			render_blockers:

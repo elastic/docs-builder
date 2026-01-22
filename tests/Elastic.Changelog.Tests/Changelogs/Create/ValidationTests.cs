@@ -36,6 +36,7 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 			  types:
 			    feature:
 			    bug-fix:
+			    breaking-change:
 			available_lifecycles:
 			  - preview
 			  - beta
@@ -118,6 +119,8 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 			pivot:
 			  types:
 			    feature:
+			    bug-fix:
+			    breaking-change:
 			available_lifecycles:
 			  - preview
 			  - beta
@@ -159,6 +162,8 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 			pivot:
 			  types:
 			    feature:
+			    bug-fix:
+			    breaking-change:
 			available_lifecycles:
 			  - preview
 			  - beta

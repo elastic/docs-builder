@@ -60,6 +60,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		FileSystem.Directory.CreateDirectory(docsDir);
 		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
 		// Config with pivot.types - should derive available types from keys
+		// Must include required types: feature, bug-fix, breaking-change
 		// language=yaml
 		var configContent =
 			"""
@@ -67,6 +68,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			  types:
 			    feature: ">feature"
 			    bug-fix: ">bug"
+			    breaking-change: ">breaking"
 			available_lifecycles:
 			  - ga
 			""";
@@ -89,7 +91,8 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			// Should have types from pivot.types keys
 			config.AvailableTypes.Should().Contain("feature");
 			config.AvailableTypes.Should().Contain("bug-fix");
-			config.AvailableTypes.Should().HaveCount(2);
+			config.AvailableTypes.Should().Contain("breaking-change");
+			config.AvailableTypes.Should().HaveCount(3);
 		}
 		finally
 		{
@@ -107,12 +110,15 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		FileSystem.Directory.CreateDirectory(docsDir);
 		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
 		// Config without available_lifecycles - should use defaults
+		// Must include required types: feature, bug-fix, breaking-change
 		// language=yaml
 		var configContent =
 			"""
 			pivot:
 			  types:
 			    feature:
+			    bug-fix:
+			    breaking-change:
 			""";
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
@@ -148,12 +154,15 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		FileSystem.Directory.CreateDirectory(docsDir);
 		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
 		// Config with invalid type in render_blockers
+		// Must include required types: feature, bug-fix, breaking-change
 		// language=yaml
 		var configContent =
 			"""
 			pivot:
 			  types:
 			    feature:
+			    bug-fix:
+			    breaking-change:
 			    docs:
 			available_lifecycles:
 			  - ga
@@ -178,7 +187,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			Collector.Diagnostics.Should().Contain(d =>
 				d.Severity == Severity.Error &&
 				d.Message.Contains("Type 'invalid-type' in render_blockers") &&
-				d.Message.Contains("is not in the list of available types"));
+				d.Message.Contains("is not a valid type"));
 		}
 		finally
 		{
@@ -196,12 +205,15 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		FileSystem.Directory.CreateDirectory(docsDir);
 		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
 		// Config with pivot.areas
+		// Must include required types: feature, bug-fix, breaking-change
 		// language=yaml
 		var configContent =
 			"""
 			pivot:
 			  types:
 			    feature:
+			    bug-fix:
+			    breaking-change:
 			  areas:
 			    Search: ":Search/Search"
 			    Security: ":Security/Security"
@@ -301,6 +313,8 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			pivot:
 			  types:
 			    feature:
+			    bug-fix:
+			    breaking-change:
 			    invalid-type: ">invalid"
 			""";
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
@@ -319,7 +333,184 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			Collector.Diagnostics.Should().Contain(d =>
 				d.Severity == Severity.Error &&
 				d.Message.Contains("Type 'invalid-type' in pivot.types") &&
-				d.Message.Contains("is not in the list of available types"));
+				d.Message.Contains("is not a valid type"));
+		}
+		finally
+		{
+			FileSystem.Directory.SetCurrentDirectory(originalDir);
+		}
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_WithMissingRequiredTypes_ReturnsError()
+	{
+		// Arrange
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		FileSystem.Directory.CreateDirectory(docsDir);
+		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
+		// Config missing required type 'breaking-change'
+		// language=yaml
+		var configContent =
+			"""
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			""";
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var originalDir = FileSystem.Directory.GetCurrentDirectory();
+		try
+		{
+			FileSystem.Directory.SetCurrentDirectory(configDir);
+
+			// Act
+			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current.CancellationToken);
+
+			// Assert
+			config.Should().BeNull();
+			Collector.Errors.Should().BeGreaterThan(0);
+			Collector.Diagnostics.Should().Contain(d =>
+				d.Severity == Severity.Error &&
+				d.Message.Contains("Required type 'breaking-change' is missing"));
+		}
+		finally
+		{
+			FileSystem.Directory.SetCurrentDirectory(originalDir);
+		}
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_WithSubtypesOnNonBreakingChange_ReturnsError()
+	{
+		// Arrange
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		FileSystem.Directory.CreateDirectory(docsDir);
+		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
+		// Config with subtypes on a non-breaking-change type (feature)
+		// language=yaml
+		var configContent =
+			"""
+			pivot:
+			  types:
+			    feature:
+			      labels: ">feature"
+			      subtypes:
+			        api: ">api"
+			    bug-fix:
+			    breaking-change:
+			""";
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var originalDir = FileSystem.Directory.GetCurrentDirectory();
+		try
+		{
+			FileSystem.Directory.SetCurrentDirectory(configDir);
+
+			// Act
+			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current.CancellationToken);
+
+			// Assert
+			config.Should().BeNull();
+			Collector.Errors.Should().BeGreaterThan(0);
+			Collector.Diagnostics.Should().Contain(d =>
+				d.Severity == Severity.Error &&
+				d.Message.Contains("Type 'feature' has subtypes defined") &&
+				d.Message.Contains("subtypes are only allowed for 'breaking-change' type"));
+		}
+		finally
+		{
+			FileSystem.Directory.SetCurrentDirectory(originalDir);
+		}
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_WithSubtypesOnBreakingChange_Succeeds()
+	{
+		// Arrange
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		FileSystem.Directory.CreateDirectory(docsDir);
+		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
+		// Config with subtypes on breaking-change type (valid)
+		// language=yaml
+		var configContent =
+			"""
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change:
+			      labels: ">breaking"
+			      subtypes:
+			        api: ">api"
+			        behavioral: ">behavioral"
+			""";
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var originalDir = FileSystem.Directory.GetCurrentDirectory();
+		try
+		{
+			FileSystem.Directory.SetCurrentDirectory(configDir);
+
+			// Act
+			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current.CancellationToken);
+
+			// Assert
+			config.Should().NotBeNull();
+			Collector.Errors.Should().Be(0);
+			config!.AvailableTypes.Should().Contain("breaking-change");
+		}
+		finally
+		{
+			FileSystem.Directory.SetCurrentDirectory(originalDir);
+		}
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_WithInvalidSubtype_ReturnsError()
+	{
+		// Arrange
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		FileSystem.Directory.CreateDirectory(docsDir);
+		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
+		// Config with invalid subtype value
+		// language=yaml
+		var configContent =
+			"""
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change:
+			      labels: ">breaking"
+			      subtypes:
+			        invalid-subtype: ">invalid"
+			""";
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var originalDir = FileSystem.Directory.GetCurrentDirectory();
+		try
+		{
+			FileSystem.Directory.SetCurrentDirectory(configDir);
+
+			// Act
+			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current.CancellationToken);
+
+			// Assert
+			config.Should().BeNull();
+			Collector.Errors.Should().BeGreaterThan(0);
+			Collector.Diagnostics.Should().Contain(d =>
+				d.Severity == Severity.Error &&
+				d.Message.Contains("Subtype 'invalid-subtype'") &&
+				d.Message.Contains("is not a valid subtype"));
 		}
 		finally
 		{

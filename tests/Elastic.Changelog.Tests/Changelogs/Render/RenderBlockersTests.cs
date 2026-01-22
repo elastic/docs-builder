@@ -64,6 +64,8 @@ public class RenderBlockersTests(ITestOutputHelper output) : RenderChangelogTest
 			pivot:
 			  types:
 			    feature:
+			    bug-fix:
+			    breaking-change:
 			available_lifecycles:
 			  - ga
 			render_blockers:
@@ -192,6 +194,8 @@ public class RenderBlockersTests(ITestOutputHelper output) : RenderChangelogTest
 			pivot:
 			  types:
 			    feature:
+			    bug-fix:
+			    breaking-change:
 			available_lifecycles:
 			  - ga
 			render_blockers:
@@ -299,6 +303,8 @@ public class RenderBlockersTests(ITestOutputHelper output) : RenderChangelogTest
 			pivot:
 			  types:
 			    feature:
+			    bug-fix:
+			    breaking-change:
 			available_lifecycles:
 			  - ga
 			render_blockers:
@@ -417,6 +423,8 @@ public class RenderBlockersTests(ITestOutputHelper output) : RenderChangelogTest
 			pivot:
 			  types:
 			    feature:
+			    bug-fix:
+			    breaking-change:
 			    enhancement:
 			available_lifecycles:
 			  - ga
@@ -561,6 +569,8 @@ public class RenderBlockersTests(ITestOutputHelper output) : RenderChangelogTest
 			pivot:
 			  types:
 			    feature:
+			    bug-fix:
+			    breaking-change:
 			    enhancement:
 			available_lifecycles:
 			  - ga
@@ -674,6 +684,8 @@ public class RenderBlockersTests(ITestOutputHelper output) : RenderChangelogTest
 			pivot:
 			  types:
 			    feature:
+			    bug-fix:
+			    breaking-change:
 			available_lifecycles:
 			  - ga
 			render_blockers:
