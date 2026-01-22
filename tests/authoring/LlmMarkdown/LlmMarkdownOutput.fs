@@ -953,3 +953,69 @@ type ``images in tables`` () =
 |---------------------------------------|------|
 | ![logo](https://example.com/logo.png) | Logo |
 """
+
+type ``csv-include directive`` () =
+    static let generator = Setup.Generate [
+        Index """
+:::{csv-include} data/users.csv
+:::
+"""
+        File("data/users.csv", """Name,Age,City
+John Doe,30,New York
+Jane Smith,25,Los Angeles
+Bob Johnson,35,Chicago""")
+    ]
+
+    [<Fact>]
+    let ``renders csv as markdown table`` () =
+        generator |> convertsToNewLLM """
+| Name        | Age | City        |
+|-------------|-----|-------------|
+| John Doe    | 30  | New York    |
+| Jane Smith  | 25  | Los Angeles |
+| Bob Johnson | 35  | Chicago     |
+"""
+
+type ``csv-include directive with caption`` () =
+    static let generator = Setup.Generate [
+        Index """
+:::{csv-include} data/products.csv
+:caption: Product List
+:::
+"""
+        File("data/products.csv", """Product,Price,Stock
+Widget,9.99,100
+Gadget,19.99,50""")
+    ]
+
+    [<Fact>]
+    let ``renders csv with caption as bold title`` () =
+        generator |> convertsToNewLLM """
+**Product List**
+
+| Product | Price | Stock |
+|---------|-------|-------|
+| Widget  | 9.99  | 100   |
+| Gadget  | 19.99 | 50    |
+"""
+
+type ``csv-include directive with custom separator`` () =
+    static let generator = Setup.Generate [
+        Index """
+:::{csv-include} data/semicolon.csv
+:separator: ;
+:::
+"""
+        File("data/semicolon.csv", """Name;Value
+Item1;100
+Item2;200""")
+    ]
+
+    [<Fact>]
+    let ``parses csv with custom separator`` () =
+        generator |> convertsToNewLLM """
+| Name  | Value |
+|-------|-------|
+| Item1 | 100   |
+| Item2 | 200   |
+"""
