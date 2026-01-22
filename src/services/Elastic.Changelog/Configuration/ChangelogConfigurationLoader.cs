@@ -275,8 +275,8 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 
 					var productBlockers = new ProductBlockers
 					{
-						Create = productBlockersYaml?.Create?.ToList(),
-						Publish = productBlockersYaml?.Publish?.ToList()
+						Create = SplitLabels(productBlockersYaml?.Create),
+						Publish = SplitLabels(productBlockersYaml?.Publish)
 					};
 					byProduct[normalizedProductId] = productBlockers;
 				}
@@ -285,10 +285,22 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 
 		return new BlockConfiguration
 		{
-			Create = blockYaml.Create?.ToList(),
-			Publish = blockYaml.Publish?.ToList(),
+			Create = SplitLabels(blockYaml.Create),
+			Publish = SplitLabels(blockYaml.Publish),
 			ByProduct = byProduct
 		};
+	}
+
+	/// <summary>
+	/// Splits a comma-separated label string into a list.
+	/// </summary>
+	private static List<string>? SplitLabels(string? labels)
+	{
+		if (string.IsNullOrWhiteSpace(labels))
+			return null;
+
+		var result = labels.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+		return result.Count > 0 ? result : null;
 	}
 
 	/// <summary>

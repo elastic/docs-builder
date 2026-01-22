@@ -128,8 +128,7 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 			block:
 			  product:
 			    invalid-product:
-			      create:
-			        - "skip:releaseNotes"
+			      create: "skip:releaseNotes"
 			""";
 		var configPath = await CreateConfigDirectory(configContent);
 
@@ -173,11 +172,9 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 			block:
 			  product:
 			    elasticsearch:
-			      create:
-			        - "skip:releaseNotes"
+			      create: "skip:releaseNotes"
 			    cloud-hosted:
-			      create:
-			        - "ILM"
+			      create: "ILM"
 			""";
 		var configPath = await CreateConfigDirectory(configContent);
 

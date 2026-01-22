@@ -43,8 +43,7 @@ public class BlockingLabelTests(ITestOutputHelper output) : CreateChangelogTestB
 			block:
 			  product:
 			    elasticsearch:
-			      create:
-			        - "skip:releaseNotes"
+			      create: "skip:releaseNotes"
 			""";
 		var configPath = await CreateConfigDirectory(configContent);
 
@@ -105,8 +104,7 @@ public class BlockingLabelTests(ITestOutputHelper output) : CreateChangelogTestB
 			block:
 			  product:
 			    cloud-serverless:
-			      create:
-			        - "ILM"
+			      create: "ILM"
 			""";
 		var configPath = await CreateConfigDirectory(configContent);
 
@@ -171,8 +169,7 @@ public class BlockingLabelTests(ITestOutputHelper output) : CreateChangelogTestB
 			block:
 			  product:
 			    elasticsearch, cloud-serverless:
-			      create:
-			        - ">non-issue"
+			      create: ">non-issue"
 			""";
 		var configPath = await CreateConfigDirectory(configContent);
 

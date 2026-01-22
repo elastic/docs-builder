@@ -2,6 +2,27 @@
 # This file configures the valid values for changelog fields using the pivot structure.
 # Place this file as `changelog.yml` in the `docs/` directory
 
+# Available products (optional - if not specified, all products from products.yml are allowed)
+# New name (preferred):
+products:
+# - elasticsearch
+# - kibana
+# - apm
+# - beats
+# - elastic-agent
+# - fleet
+# - cloud-hosted
+# - cloud-serverless
+# - cloud-enterprise
+# Add more products as needed
+
+# Available lifecycle values (strongly typed: preview, beta, ga)
+# New name (preferred):
+lifecycles:
+  - preview
+  - beta
+  - ga
+
 # Pivot configuration for types, subtypes, and areas with label mappings.
 # By default we render entries grouped by type > subtype > area.
 # NOTE: subtype and area are optional and either may be omitted.
@@ -48,81 +69,20 @@ pivot:
     # Security: ":Security/Security"
     # Watcher: ":Data Management/Watcher"
 
-# Available lifecycle values (strongly typed: preview, beta, ga)
-# New name (preferred):
-lifecycles:
-  - preview
-  - beta
-  - ga
-
-# Available products (optional - if not specified, all products from products.yml are allowed)
-# New name (preferred):
-products:
-  # - elasticsearch
-  # - kibana
-  # - apm
-  # - beats
-  # - elastic-agent
-  # - fleet
-  # - cloud-hosted
-  # - cloud-serverless
-  # - cloud-enterprise
-  # Add more products as needed
-
 # Block configuration - combined create and publish blockers
-# New structure (preferred):
+# Labels are specified as comma-separated strings (matching pivot format)
 block:
   # Global labels that block changelog creation for all products
-  create:
-    # - ">non-issue"
-    # - ">test"
+  # create: ">non-issue, >test"
   # Global labels that block changelog publishing/rendering for all products
-  publish:
-    # - ">internal"
+  # publish: ">internal"
   # Product-specific overrides (override global blockers, don't merge)
   # Dictionary key can be a single product ID or comma-separated product IDs
   product:
     # Example: Block these labels for elasticsearch and kibana
     # 'elasticsearch, kibana':
-    #   create:
-    #     - ">test"
-    #   publish:
-    #     - ">es-only"
+    #   create: ">test"
+    #   publish: ">es-only"
     # Example: Block ILM label for cloud-serverless
     # 'cloud-serverless':
-    #   create:
-    #     - "ILM"
-
-# =============================================================================
-# LEGACY FORMAT (still supported for backward compatibility)
-# =============================================================================
-#
-# available_lifecycles:
-#   - preview
-#   - beta
-#   - ga
-#
-# available_products:
-#   - elasticsearch
-#
-# # Product-specific label blockers (maps to block.product.<id>.create)
-# add_blockers:
-#   elasticsearch:
-#     - ">non-issue"
-#     - ">test"
-#   # Comma-separated product IDs supported
-#   elasticsearch, cloud-serverless:
-#     - ">non-issue"
-#
-# # Render blockers - blocks based on areas/types during render
-# # (different from block.product.<id>.publish which uses labels)
-# render_blockers:
-#   "cloud-hosted, cloud-serverless":
-#     areas:
-#       - Autoscaling
-#       - Watcher
-#     types:
-#       - docs
-#   elasticsearch:
-#     areas:
-#       - Security
+    #   create: "ILM"

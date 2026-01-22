@@ -37,14 +37,14 @@ internal record ChangelogConfigurationYaml
 internal record BlockConfigurationYaml
 {
 	/// <summary>
-	/// Global labels that block changelog creation.
+	/// Global labels that block changelog creation (comma-separated string).
 	/// </summary>
-	public List<string>? Create { get; set; }
+	public string? Create { get; set; }
 
 	/// <summary>
-	/// Global labels that block changelog publishing/rendering.
+	/// Global labels that block changelog publishing/rendering (comma-separated string).
 	/// </summary>
-	public List<string>? Publish { get; set; }
+	public string? Publish { get; set; }
 
 	/// <summary>
 	/// Per-product override blockers.
@@ -59,14 +59,14 @@ internal record BlockConfigurationYaml
 internal record ProductBlockersYaml
 {
 	/// <summary>
-	/// Labels that block creation for this product.
+	/// Labels that block creation for this product (comma-separated string).
 	/// </summary>
-	public List<string>? Create { get; set; }
+	public string? Create { get; set; }
 
 	/// <summary>
-	/// Labels that block publishing for this product.
+	/// Labels that block publishing for this product (comma-separated string).
 	/// </summary>
-	public List<string>? Publish { get; set; }
+	public string? Publish { get; set; }
 }
 
 /// <summary>
