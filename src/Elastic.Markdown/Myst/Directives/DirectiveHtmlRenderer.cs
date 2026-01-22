@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System;
 using System.Diagnostics.CodeAnalysis;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Markdown.Diagnostics;
@@ -29,6 +30,7 @@ using Markdig.Renderers;
 using Markdig.Renderers.Html;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
+using Microsoft.AspNetCore.Html;
 using RazorSlices;
 using YamlDotNet.Core;
 
@@ -517,9 +519,61 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 
 	private static void WriteCsvIncludeBlock(HtmlRenderer renderer, CsvIncludeBlock block)
 	{
-		var viewModel = CsvIncludeViewModel.Create(block);
+		var viewModel = CsvIncludeViewModel.Create(block, value => RenderCsvCellMarkdown(block, value));
 		var slice = CsvIncludeView.Create(viewModel);
 		RenderRazorSlice(slice, renderer);
+	}
+
+	private static HtmlString RenderCsvCellMarkdown(CsvIncludeBlock block, string value)
+	{
+		if (string.IsNullOrWhiteSpace(value))
+			return HtmlString.Empty;
+
+		var markdown = NormalizeCsvCellMarkdown(value);
+		var document = MarkdownParser.ParseMarkdownStringAsync(
+			block.Build,
+			block.Context,
+			markdown,
+			block.IncludeFrom,
+			block.Context.YamlFrontMatter,
+			MarkdownParser.Pipeline);
+
+		if (document.Count == 1 && document.FirstOrDefault() is ParagraphBlock paragraph && paragraph.Inline != null)
+			return RenderInlineMarkdown(paragraph);
+
+		var html = document.ToHtml(MarkdownParser.Pipeline);
+		return new HtmlString(html.EnsureTrimmed());
+	}
+
+	private static HtmlString RenderInlineMarkdown(ParagraphBlock paragraph)
+	{
+		if (paragraph.Inline is null)
+			return HtmlString.Empty;
+
+		var subscription = DocumentationObjectPoolProvider.HtmlRendererPool.Get();
+		subscription.HtmlRenderer.WriteChildren(paragraph.Inline);
+
+		var result = subscription.RentedStringBuilder?.ToString();
+		DocumentationObjectPoolProvider.HtmlRendererPool.Return(subscription);
+
+		return result == null ? HtmlString.Empty : new HtmlString(result.EnsureTrimmed());
+	}
+
+	private static string NormalizeCsvCellMarkdown(string value)
+	{
+		var trimmed = value.Trim();
+		return IsPlainUrl(trimmed) ? $"<{trimmed}>" : value;
+	}
+
+	private static bool IsPlainUrl(string value)
+	{
+		if (string.IsNullOrWhiteSpace(value))
+			return false;
+		if (value.IndexOfAny([' ', '\t', '\r', '\n']) >= 0)
+			return false;
+		if (!Uri.TryCreate(value, UriKind.Absolute, out var uri))
+			return false;
+		return uri.Scheme is "http" or "https";
 	}
 
 	private static void WriteChangelogBlock(HtmlRenderer renderer, ChangelogBlock block)

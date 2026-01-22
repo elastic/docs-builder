@@ -123,6 +123,25 @@ Jane Smith,""She replied """"Goodbye"""""));
 	}
 }
 
+public class CsvIncludeRenderLinksTests(ITestOutputHelper output) : DirectiveTest(output,
+"""
+::::{csv-include} test-data.csv
+::::
+""")
+{
+	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
+		fileSystem.AddFile("docs/test-data.csv", new MockFileData(
+@"Name,Link
+Google,https://www.google.com
+Search,[Text](https://www.google.com)"));
+
+	[Fact]
+	public void RendersBareUrlAsLink() => Html.Should().Contain(">https://www.google.com</a>");
+
+	[Fact]
+	public void RendersMarkdownLinkAsLink() => Html.Should().Contain(">Text</a>");
+}
+
 public class CsvIncludeNotFoundTests(ITestOutputHelper output) : DirectiveTest<CsvIncludeBlock>(output,
 """
 :::{csv-include} missing-file.csv

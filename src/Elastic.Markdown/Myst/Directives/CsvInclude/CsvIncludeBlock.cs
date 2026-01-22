@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.IO.Abstractions;
 using Elastic.Markdown.Diagnostics;
 
 namespace Elastic.Markdown.Myst.Directives.CsvInclude;
@@ -9,6 +10,10 @@ namespace Elastic.Markdown.Myst.Directives.CsvInclude;
 public class CsvIncludeBlock(DirectiveBlockParser parser, ParserContext context) : DirectiveBlock(parser, context)
 {
 	public override string Directive => "csv-include";
+
+	public ParserContext Context { get; } = context;
+
+	public IFileInfo IncludeFrom { get; } = context.MarkdownSourcePath;
 
 	public string? CsvFilePath { get; private set; }
 	public string? CsvFilePathRelativeToSource { get; private set; }

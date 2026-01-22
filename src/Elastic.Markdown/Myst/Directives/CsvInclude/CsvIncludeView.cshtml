@@ -26,7 +26,7 @@
             <tr>
                 @for (var i = 0; i < csvRows[0].Length; i++)
                 {
-                    <th>@csvRows[0][i]</th>
+                    <th>@Model.RenderCell(csvRows[0][i])</th>
                 }
             </tr>
         </thead>
@@ -37,7 +37,7 @@
                 <tr>
                     @for (var i = 0; i < csvRows[rowIndex].Length; i++)
                     {
-                        <td>@csvRows[rowIndex][i]</td>
+                        <td>@Model.RenderCell(csvRows[rowIndex][i])</td>
                     }
                 </tr>
             }
