@@ -2,6 +2,7 @@ import { initCopyButton } from '../../copybutton'
 import { hljs } from '../../hljs'
 import { ErrorCallout } from '../shared/ErrorCallout'
 import { ApiError } from '../shared/errorHandling'
+import { useHtmxContainer } from '../shared/htmx/useHtmxContainer'
 import { AskAiEvent, ChunkEvent, EventTypes } from './AskAiEvent'
 import { aiGradients } from './ElasticAiAssitant'
 import { GeneratingStatus } from './GeneratingStatus'
@@ -408,6 +409,9 @@ export const ChatMessage = ({
             return () => clearTimeout(timer)
         }
     }, [isComplete])
+
+    // Process internal docs links for htmx navigation
+    useHtmxContainer(ref, [parsed])
 
     return (
         <EuiFlexGroup
