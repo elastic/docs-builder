@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Changelog;
+using Elastic.Changelog.Serialization;
 using Elastic.Documentation.Changelog;
 using Elastic.Documentation.Diagnostics;
 
@@ -18,8 +18,8 @@ public class BundleBuilder
 	/// </summary>
 	public BundleBuildResult BuildBundle(
 		IDiagnosticsCollector collector,
-		IReadOnlyList<ChangelogEntry> entries,
-		IReadOnlyList<ProductInfo>? outputProducts,
+		IReadOnlyList<MatchedChangelogFile> entries,
+		IReadOnlyList<ProductArgument>? outputProducts,
 		bool resolve)
 	{
 		// Build products list
@@ -39,7 +39,7 @@ public class BundleBuilder
 			};
 		}
 
-		var bundledData = new BundledChangelogData
+		var bundledData = new Bundle
 		{
 			Products = bundledProducts,
 			Entries = bundledEntries
@@ -54,8 +54,8 @@ public class BundleBuilder
 
 	private static List<BundledProduct> BuildProducts(
 		IDiagnosticsCollector collector,
-		IReadOnlyList<ChangelogEntry> entries,
-		IReadOnlyList<ProductInfo>? outputProducts)
+		IReadOnlyList<MatchedChangelogFile> entries,
+		IReadOnlyList<ProductArgument>? outputProducts)
 	{
 		List<BundledProduct> bundledProducts;
 
@@ -67,43 +67,41 @@ public class BundleBuilder
 				.ThenBy(p => p.Lifecycle ?? string.Empty)
 				.Select(p => new BundledProduct
 				{
-					Product = p.Product,
+					ProductId = p.Product ?? "",
 					Target = p.Target == "*" ? null : p.Target,
-					Lifecycle = p.Lifecycle == "*" ? null : p.Lifecycle
+					Lifecycle = ParseLifecycle(p.Lifecycle == "*" ? null : p.Lifecycle)
 				})
 				.ToList();
 		}
 		else if (entries.Count > 0)
 		{
-			var productVersions = new HashSet<(string product, string version, string? lifecycle)>();
+			var productVersions = new HashSet<(string product, string version, Lifecycle? lifecycle)>();
 			foreach (var entry in entries)
 			{
+				if (entry.Data.Products == null)
+					continue;
 				foreach (var product in entry.Data.Products)
 				{
 					var version = product.Target ?? string.Empty;
-					_ = productVersions.Add((product.Product, version, product.Lifecycle));
+					_ = productVersions.Add((product.ProductId, version, product.Lifecycle));
 				}
 			}
 
 			bundledProducts = productVersions
 				.OrderBy(pv => pv.product)
 				.ThenBy(pv => pv.version)
-				.ThenBy(pv => pv.lifecycle ?? string.Empty)
-				.Select(pv => new BundledProduct
-				{
-					Product = pv.product,
-					Target = string.IsNullOrWhiteSpace(pv.version) ? null : pv.version,
-					Lifecycle = pv.lifecycle
-				})
+				.ThenBy(pv => pv.lifecycle?.ToStringFast(true) ?? string.Empty)
+				.Select(pv => new BundledProduct(
+					pv.product,
+					string.IsNullOrWhiteSpace(pv.version) ? null : pv.version,
+					pv.lifecycle))
 				.ToList();
 		}
 		else
-		{
 			bundledProducts = [];
-		}
 
 		// Check for products with same product ID but different versions
-		var productsByProductId = bundledProducts.GroupBy(p => p.Product, StringComparer.OrdinalIgnoreCase)
+		var productsByProductId = bundledProducts.GroupBy(p => p.ProductId, StringComparer.OrdinalIgnoreCase)
 			.Where(g => g.Count() > 1)
 			.ToList();
 
@@ -112,8 +110,8 @@ public class BundleBuilder
 			var targets = productGroup.Select(p =>
 			{
 				var target = string.IsNullOrWhiteSpace(p.Target) ? "(no target)" : p.Target;
-				if (!string.IsNullOrWhiteSpace(p.Lifecycle))
-					target = $"{target} {p.Lifecycle}";
+				if (p.Lifecycle != null)
+					target = $"{target} {p.Lifecycle.Value.ToStringFast(true)}";
 				return target;
 			}).ToList();
 			collector.EmitWarning(string.Empty, $"Product '{productGroup.Key}' has multiple targets in bundle: {string.Join(", ", targets)}");
@@ -122,9 +120,19 @@ public class BundleBuilder
 		return bundledProducts;
 	}
 
+	private static Lifecycle? ParseLifecycle(string? value)
+	{
+		if (string.IsNullOrEmpty(value))
+			return null;
+
+		return LifecycleExtensions.TryParse(value, out var result, ignoreCase: true, allowMatchingMetadataAttribute: true)
+			? result
+			: null;
+	}
+
 	private static List<BundledEntry>? BuildResolvedEntries(
 		IDiagnosticsCollector collector,
-		IReadOnlyList<ChangelogEntry> entries)
+		IReadOnlyList<MatchedChangelogFile> entries)
 	{
 		var resolvedEntries = new List<BundledEntry>();
 
@@ -153,38 +161,27 @@ public class BundleBuilder
 			}
 
 			// Validate products have required fields
-			if (data.Products.Any(product => string.IsNullOrWhiteSpace(product.Product)))
+			if (data.Products.Any(product => string.IsNullOrWhiteSpace(product.ProductId)))
 			{
 				collector.EmitError(entry.FilePath, "Changelog file has product entry missing required field: product");
 				return null;
 			}
 
-			resolvedEntries.Add(new BundledEntry
+			var bundledEntry = ChangelogMapper.ToBundledEntry(data) with
 			{
 				File = new BundledFile
 				{
 					Name = entry.FileName,
 					Checksum = entry.Checksum
-				},
-				Type = data.Type.ToStringFast(true),
-				Title = data.Title,
-				Products = data.Products.ToList(),
-				Description = data.Description,
-				Impact = data.Impact,
-				Action = data.Action,
-				FeatureId = data.FeatureId,
-				Highlight = data.Highlight,
-				Subtype = data.Subtype,
-				Areas = data.Areas?.ToList(),
-				Pr = data.Pr,
-				Issues = data.Issues?.ToList()
-			});
+				}
+			};
+			resolvedEntries.Add(bundledEntry);
 		}
 
 		return resolvedEntries;
 	}
 
-	private static List<BundledEntry> BuildFileOnlyEntries(IReadOnlyList<ChangelogEntry> entries) =>
+	private static List<BundledEntry> BuildFileOnlyEntries(IReadOnlyList<MatchedChangelogFile> entries) =>
 		entries
 			.Select(e => new BundledEntry
 			{
@@ -203,5 +200,5 @@ public class BundleBuilder
 public record BundleBuildResult
 {
 	public required bool IsValid { get; init; }
-	public BundledChangelogData? Data { get; init; }
+	public Bundle? Data { get; init; }
 }

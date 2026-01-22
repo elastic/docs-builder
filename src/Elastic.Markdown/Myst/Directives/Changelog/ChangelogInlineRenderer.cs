@@ -53,7 +53,7 @@ public static class ChangelogInlineRenderer
 		string title,
 		string titleSlug,
 		string repo,
-		Dictionary<ChangelogEntryType, List<ChangelogData>> entriesByType)
+		Dictionary<ChangelogEntryType, List<ChangelogEntry>> entriesByType)
 	{
 		var sb = new StringBuilder();
 
@@ -161,7 +161,7 @@ public static class ChangelogInlineRenderer
 
 	private static void RenderEntriesByArea(
 		StringBuilder sb,
-		List<ChangelogData> entries,
+		List<ChangelogEntry> entries,
 		string repo)
 	{
 		// Always group by area and sort
@@ -213,12 +213,12 @@ public static class ChangelogInlineRenderer
 
 	private static void RenderDetailedEntries(
 		StringBuilder sb,
-		List<ChangelogData> entries,
+		List<ChangelogEntry> entries,
 		string repo,
 		bool groupBySubtype)
 	{
 		var grouped = groupBySubtype
-			? entries.GroupBy(e => string.IsNullOrWhiteSpace(e.Subtype) ? string.Empty : e.Subtype).OrderBy(g => g.Key).ToList()
+			? entries.GroupBy(e => e.Subtype?.ToStringFast(true) ?? string.Empty).OrderBy(g => g.Key).ToList()
 			: entries.GroupBy(GetComponent).OrderBy(g => g.Key).ToList();
 
 		foreach (var group in grouped)
@@ -277,6 +277,6 @@ public static class ChangelogInlineRenderer
 		}
 	}
 
-	private static string GetComponent(ChangelogData entry) =>
+	private static string GetComponent(ChangelogEntry entry) =>
 		entry.Areas is { Count: > 0 } ? entry.Areas[0] : string.Empty;
 }

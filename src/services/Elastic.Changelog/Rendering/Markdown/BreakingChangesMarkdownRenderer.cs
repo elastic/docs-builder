@@ -30,7 +30,7 @@ public class BreakingChangesMarkdownRenderer(IFileSystem fileSystem) : MarkdownR
 		{
 			// Group by subtype if subsections are enabled, otherwise group by area
 			var groupedEntries = context.Subsections
-				? breakingChanges.GroupBy(e => string.IsNullOrWhiteSpace(e.Subtype) ? string.Empty : e.Subtype).OrderBy(g => g.Key).ToList()
+				? breakingChanges.GroupBy(e => e.Subtype?.ToStringFast(true) ?? string.Empty).OrderBy(g => g.Key).ToList()
 				: breakingChanges.GroupBy(ChangelogRenderUtilities.GetComponent).ToList();
 
 			foreach (var group in groupedEntries)
@@ -45,7 +45,7 @@ public class BreakingChangesMarkdownRenderer(IFileSystem fileSystem) : MarkdownR
 				foreach (var entry in group)
 				{
 					var (bundleProductIds, entryRepo, entryHideLinks) = GetEntryContext(entry, context);
-					var shouldHide = ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, bundleProductIds, context.RenderBlockers);
+					var shouldHide = ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide);
 
 					_ = sb.AppendLine();
 					if (shouldHide)

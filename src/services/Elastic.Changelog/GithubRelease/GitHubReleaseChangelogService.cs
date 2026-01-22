@@ -8,15 +8,50 @@ using System.Text;
 using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Configuration;
 using Elastic.Changelog.GitHub;
+using Elastic.Changelog.Serialization;
 using Elastic.Documentation.Changelog;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
-using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NamingConventions;
 
 namespace Elastic.Changelog.GithubRelease;
+
+/// <summary>
+/// Arguments for the CreateChangelogsFromRelease method
+/// </summary>
+public record CreateChangelogsFromReleaseArguments
+{
+	/// <summary>
+	/// Repository in owner/repo format (e.g., "elastic/elasticsearch")
+	/// </summary>
+	public required string Repository { get; init; }
+
+	/// <summary>
+	/// Version tag or "latest" (defaults to "latest")
+	/// </summary>
+	public string Version { get; init; } = "latest";
+
+	/// <summary>
+	/// Path to changelog.yml configuration file (optional)
+	/// </summary>
+	public string? Config { get; init; }
+
+	/// <summary>
+	/// Output directory for changelog files (optional, defaults to ./changelogs)
+	/// </summary>
+	public string? Output { get; init; }
+
+	/// <summary>
+	/// Whether to strip [prefix] from PR titles
+	/// </summary>
+	public bool StripTitlePrefix { get; init; }
+
+	/// <summary>
+	/// Whether to warn when Release Drafter type doesn't match label-derived type (defaults to true)
+	/// </summary>
+	public bool WarnOnTypeMismatch { get; init; } = true;
+}
 
 /// <summary>
 /// Service for creating changelogs from GitHub releases
@@ -37,7 +72,7 @@ public class GitHubReleaseChangelogService(
 
 	public async Task<bool> CreateChangelogsFromRelease(
 		IDiagnosticsCollector collector,
-		GitHubReleaseInput input,
+		CreateChangelogsFromReleaseArguments input,
 		Cancel ctx
 	)
 	{
@@ -103,8 +138,8 @@ public class GitHubReleaseChangelogService(
 
 			_logger.LogInformation("Inferred lifecycle: {Lifecycle}, target version: {Target}", lifecycle, targetVersion);
 
-			// Create product info with inferred values
-			var productInfo = new ProductInfo
+			// Create product filter with inferred values
+			var productInfo = new ProductArgument
 			{
 				Product = product.Id,
 				Target = targetVersion,
@@ -157,8 +192,8 @@ public class GitHubReleaseChangelogService(
 		string owner,
 		string repo,
 		ExtractedPrReference prRef,
-		ProductInfo productInfo,
-		GitHubReleaseInput input,
+		ProductArgument productInfo,
+		CreateChangelogsFromReleaseArguments input,
 		ReleaseNoteFormat format,
 		string outputDir,
 		List<string> createdFiles,
@@ -186,9 +221,7 @@ public class GitHubReleaseChangelogService(
 				labelDerivedAreas = MapLabelsToAreas(prInfo.Labels.ToArray(), config.LabelToAreas);
 		}
 		else
-		{
 			collector.EmitWarning(prUrl, $"Failed to fetch PR info for #{prRef.PrNumber}. Using inferred type from release notes.");
-		}
 
 		// Determine final type string (label-derived takes priority)
 		var finalTypeString = labelDerivedType ?? prRef.InferredType ?? ChangelogEntryType.Other.ToStringFast(true);
@@ -217,11 +250,18 @@ public class GitHubReleaseChangelogService(
 			title = ChangelogTextUtilities.StripSquareBracketPrefix(title);
 
 		// Create changelog data
-		var changelogData = new ChangelogData
+		var changelogData = new ChangelogEntry
 		{
 			Title = title,
 			Type = finalType,
-			Products = [productInfo],
+			Products = [new ProductReference
+			{
+				ProductId = productInfo.Product ?? "",
+				Target = productInfo.Target,
+				Lifecycle = !string.IsNullOrWhiteSpace(productInfo.Lifecycle)
+					? (LifecycleExtensions.TryParse(productInfo.Lifecycle, out var lc, ignoreCase: true, allowMatchingMetadataAttribute: true) ? lc : null)
+					: null
+			}],
 			Areas = labelDerivedAreas,
 			Pr = prUrl
 		};
@@ -241,21 +281,13 @@ public class GitHubReleaseChangelogService(
 		return true;
 	}
 
-	private string GenerateYaml(ChangelogData data)
-	{
-		var serializer = new StaticSerializerBuilder(new ChangelogYamlStaticContext())
-			.WithNamingConvention(UnderscoredNamingConvention.Instance)
-			.WithTypeConverter(new ChangelogEntryTypeConverter())
-			.ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitNull | DefaultValuesHandling.OmitEmptyCollections)
-			.Build();
-
-		return serializer.Serialize(data);
-	}
+	private static string GenerateYaml(ChangelogEntry data) =>
+		ChangelogYamlSerialization.SerializeEntry(data);
 
 	private async Task<string> CreateBundleFile(
 		string outputDir,
 		List<string> createdFiles,
-		ProductInfo productInfo,
+		ProductArgument productInfo,
 		Cancel ctx)
 	{
 		var bundleEntries = new List<BundledEntry>();
@@ -276,23 +308,13 @@ public class GitHubReleaseChangelogService(
 			});
 		}
 
-		var bundleData = new BundledChangelogData
+		var bundleData = new Bundle
 		{
-			Products = [new BundledProduct
-			{
-				Product = productInfo.Product,
-				Target = productInfo.Target,
-				Lifecycle = productInfo.Lifecycle
-			}],
+			Products = [ChangelogMapper.ToBundledProduct(productInfo)],
 			Entries = bundleEntries
 		};
 
-		var serializer = new StaticSerializerBuilder(new ChangelogYamlStaticContext())
-			.WithNamingConvention(UnderscoredNamingConvention.Instance)
-			.ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitNull | DefaultValuesHandling.OmitEmptyCollections)
-			.Build();
-
-		var yamlContent = serializer.Serialize(bundleData);
+		var yamlContent = ChangelogYamlSerialization.SerializeBundle(bundleData);
 
 		// Create bundles subfolder
 		var bundlesDir = _fileSystem.Path.Combine(outputDir, "bundles");
@@ -333,25 +355,43 @@ public class GitHubReleaseChangelogService(
 
 	private bool ShouldSkipPrDueToLabelBlockers(
 		string[] prLabels,
-		ProductInfo productInfo,
+		ProductArgument productInfo,
 		ChangelogConfiguration config,
 		IDiagnosticsCollector collector,
 		string prUrl)
 	{
-		if (config.AddBlockers == null || config.AddBlockers.Count == 0)
-			return false;
-
-		var normalizedProductId = productInfo.Product.Replace('_', '-');
-		if (config.AddBlockers.TryGetValue(normalizedProductId, out var blockerLabels))
+		// Check global create blockers first
+		if (config.Block?.Create != null && config.Block.Create.Count > 0)
 		{
-			var matchingBlockerLabel = blockerLabels
+			var matchingGlobalBlocker = config.Block.Create
 				.FirstOrDefault(blockerLabel => prLabels.Contains(blockerLabel, StringComparer.OrdinalIgnoreCase));
-			if (matchingBlockerLabel != null)
+			if (matchingGlobalBlocker != null)
 			{
 				collector.EmitWarning(prUrl,
-					$"Skipping changelog creation for PR {prUrl} due to blocking label '{matchingBlockerLabel}' " +
-					$"for product '{productInfo.Product}'. This label is configured to prevent changelog creation for this product.");
+					$"Skipping changelog creation for PR {prUrl} due to global blocking label '{matchingGlobalBlocker}'. " +
+					"This label is configured to prevent changelog creation.");
 				return true;
+			}
+		}
+
+		// Check product-specific blockers
+		if (config.Block?.ByProduct == null || config.Block.ByProduct.Count == 0)
+			return false;
+
+		var normalizedProductId = productInfo.Product?.Replace('_', '-') ?? string.Empty;
+		if (config.Block.ByProduct.TryGetValue(normalizedProductId, out var productBlockers))
+		{
+			if (productBlockers.Create != null && productBlockers.Create.Count > 0)
+			{
+				var matchingBlockerLabel = productBlockers.Create
+					.FirstOrDefault(blockerLabel => prLabels.Contains(blockerLabel, StringComparer.OrdinalIgnoreCase));
+				if (matchingBlockerLabel != null)
+				{
+					collector.EmitWarning(prUrl,
+						$"Skipping changelog creation for PR {prUrl} due to blocking label '{matchingBlockerLabel}' " +
+						$"for product '{productInfo.Product}'. This label is configured to prevent changelog creation for this product.");
+					return true;
+				}
 			}
 		}
 

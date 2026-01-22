@@ -15,10 +15,7 @@ public class ChangelogFileDiscovery(IFileSystem fileSystem, ILogger logger)
 	/// <summary>
 	/// Discovers changelog YAML files in the specified directory, excluding bundle files and the output file.
 	/// </summary>
-	public async Task<IReadOnlyList<string>> DiscoverChangelogFilesAsync(
-		string directory,
-		string outputPath,
-		Cancel ctx)
+	public async Task<IReadOnlyList<string>> DiscoverChangelogFilesAsync(string directory, string outputPath, Cancel ctx)
 	{
 		var outputFileName = fileSystem.Path.GetFileName(outputPath);
 

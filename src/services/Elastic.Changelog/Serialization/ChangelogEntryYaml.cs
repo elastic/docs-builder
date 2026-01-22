@@ -4,23 +4,22 @@
 
 using YamlDotNet.Serialization;
 
-namespace Elastic.Documentation.Changelog;
+namespace Elastic.Changelog.Serialization;
 
 /// <summary>
-/// Data structure for changelog YAML file matching the exact schema
+/// DTO for YAML deserialization of changelog entries.
+/// Maps directly to the YAML file structure.
+/// Used by bundling service for direct deserialization with error handling.
 /// </summary>
-public record ChangelogData
+public record ChangelogEntryYaml
 {
-	// Automated fields
 	public string? Pr { get; set; }
-	public IReadOnlyList<string>? Issues { get; set; }
-	public ChangelogEntryType Type { get; set; } = ChangelogEntryType.Invalid;
+	public List<string>? Issues { get; set; }
+	public string? Type { get; set; }
 	public string? Subtype { get; set; }
-	public IReadOnlyList<ProductInfo> Products { get; set; } = [];
-	public IReadOnlyList<string>? Areas { get; set; }
-
-	// Non-automated fields
-	public string Title { get; set; } = "";
+	public List<ProductInfoYaml>? Products { get; set; }
+	public List<string>? Areas { get; set; }
+	public string? Title { get; set; }
 	public string? Description { get; set; }
 	public string? Impact { get; set; }
 	public string? Action { get; set; }
@@ -29,9 +28,13 @@ public record ChangelogData
 	public bool? Highlight { get; set; }
 }
 
-public record ProductInfo
+/// <summary>
+/// DTO for product info in YAML.
+/// Used by bundling service for direct deserialization with error handling.
+/// </summary>
+public record ProductInfoYaml
 {
-	public string Product { get; set; } = "";
+	public string? Product { get; set; }
 	public string? Target { get; set; }
 	public string? Lifecycle { get; set; }
 }

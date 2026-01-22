@@ -20,7 +20,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 	/// </summary>
 	public async Task<PrProcessingResult> ProcessPrAsync(
 		IDiagnosticsCollector collector,
-		ChangelogInput input,
+		CreateChangelogArguments input,
 		ChangelogConfiguration config,
 		string prUrl,
 		Cancel ctx)
@@ -67,7 +67,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		string prUrl,
 		string? owner,
 		string? repo,
-		List<ProductInfo> products,
+		IReadOnlyList<ProductArgument> products,
 		ChangelogConfiguration config,
 		Cancel ctx)
 	{
@@ -85,7 +85,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 
 	private DerivedPrFields? DeriveFieldsFromPr(
 		IDiagnosticsCollector collector,
-		ChangelogInput input,
+		CreateChangelogArguments input,
 		ChangelogConfiguration config,
 		GitHubPrInfo prInfo,
 		string prUrl)
@@ -129,9 +129,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 			logger.LogInformation("Using PR title: {Title}", derived.Title);
 		}
 		else if (!string.IsNullOrWhiteSpace(input.Title))
-		{
 			logger.LogDebug("Using explicitly provided title, ignoring PR title");
-		}
 
 		// Map labels to type if type was not explicitly provided
 		if (string.IsNullOrWhiteSpace(input.Type))
@@ -153,12 +151,10 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 			logger.LogInformation("Mapped PR labels to type: {Type}", derived.Type);
 		}
 		else
-		{
 			logger.LogDebug("Using explicitly provided type, ignoring PR labels");
-		}
 
 		// Map labels to areas if areas were not explicitly provided
-		if (input.Areas != null && input.Areas.Length == 0 && config.LabelToAreas != null)
+		if ((input.Areas == null || input.Areas.Length == 0) && config.LabelToAreas != null)
 		{
 			var mappedAreas = MapLabelsToAreas(prInfo.Labels.ToArray(), config.LabelToAreas);
 			if (mappedAreas.Count > 0)
@@ -167,34 +163,60 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 				logger.LogInformation("Mapped PR labels to areas: {Areas}", string.Join(", ", mappedAreas));
 			}
 		}
-		else if (input.Areas != null && input.Areas.Length > 0)
-		{
+		else if (input.Areas is { Length: > 0 })
 			logger.LogDebug("Using explicitly provided areas, ignoring PR labels");
-		}
 
 		return derived;
 	}
 
 	private bool ShouldSkipPrDueToLabelBlockers(
 		string[] prLabels,
-		List<ProductInfo> products,
+		IReadOnlyList<ProductArgument> products,
 		ChangelogConfiguration config,
 		IDiagnosticsCollector collector,
 		string prUrl)
 	{
-		if (config.AddBlockers == null || config.AddBlockers.Count == 0)
+		if (config.Block?.ByProduct == null || config.Block.ByProduct.Count == 0)
+		{
+			// Check global create blockers
+			if (config.Block?.Create != null && config.Block.Create.Count > 0)
+			{
+				var matchingGlobalBlocker = config.Block.Create
+					.FirstOrDefault(blockerLabel => prLabels.Contains(blockerLabel, StringComparer.OrdinalIgnoreCase));
+				if (matchingGlobalBlocker != null)
+				{
+					collector.EmitWarning(string.Empty, $"Skipping changelog creation for PR {prUrl} due to global blocking label '{matchingGlobalBlocker}'. This label is configured to prevent changelog creation.");
+					return true;
+				}
+			}
 			return false;
+		}
 
 		foreach (var product in products)
 		{
-			var normalizedProductId = product.Product.Replace('_', '-');
-			if (config.AddBlockers.TryGetValue(normalizedProductId, out var blockerLabels))
+			var normalizedProductId = product.Product?.Replace('_', '-') ?? string.Empty;
+			if (config.Block.ByProduct.TryGetValue(normalizedProductId, out var productBlockers))
 			{
-				var matchingBlockerLabel = blockerLabels
-					.FirstOrDefault(blockerLabel => prLabels.Contains(blockerLabel, StringComparer.OrdinalIgnoreCase));
-				if (matchingBlockerLabel != null)
+				// Product-specific blockers override global blockers
+				if (productBlockers.Create != null && productBlockers.Create.Count > 0)
 				{
-					collector.EmitWarning(string.Empty, $"Skipping changelog creation for PR {prUrl} due to blocking label '{matchingBlockerLabel}' for product '{product.Product}'. This label is configured to prevent changelog creation for this product.");
+					var matchingBlockerLabel = productBlockers.Create
+						.FirstOrDefault(blockerLabel => prLabels.Contains(blockerLabel, StringComparer.OrdinalIgnoreCase));
+					if (matchingBlockerLabel != null)
+					{
+						collector.EmitWarning(string.Empty, $"Skipping changelog creation for PR {prUrl} due to blocking label '{matchingBlockerLabel}' for product '{product.Product}'. This label is configured to prevent changelog creation for this product.");
+						return true;
+					}
+				}
+			}
+			else if (config.Block.Create != null && config.Block.Create.Count > 0)
+			{
+				// Fall back to global blockers if no product-specific blockers
+				var matchingGlobalBlocker = config.Block.Create
+					.FirstOrDefault(blockerLabel => prLabels.Contains(blockerLabel, StringComparer.OrdinalIgnoreCase));
+				if (matchingGlobalBlocker != null)
+				{
+					collector.EmitWarning(string.Empty, $"Skipping changelog creation for PR {prUrl} due to global blocking label '{matchingGlobalBlocker}'. This label is configured to prevent changelog creation.");
 					return true;
 				}
 			}

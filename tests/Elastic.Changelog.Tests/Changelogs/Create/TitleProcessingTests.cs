@@ -36,7 +36,7 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 			    feature: "type:feature"
 			    bug-fix:
 			    breaking-change:
-			available_lifecycles:
+			lifecycles:
 			  - preview
 			  - beta
 			  - ga
@@ -45,10 +45,10 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 
 		var service = CreateService();
 
-		var input = new ChangelogInput
+		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			StripTitlePrefix = true
@@ -98,7 +98,7 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 			    feature: "type:feature"
 			    bug-fix:
 			    breaking-change:
-			available_lifecycles:
+			lifecycles:
 			  - preview
 			  - beta
 			  - ga
@@ -107,10 +107,10 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 
 		var service = CreateService();
 
-		var input = new ChangelogInput
+		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			StripTitlePrefix = true
@@ -153,12 +153,12 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 
 		var service = CreateService();
 
-		var input = new ChangelogInput
+		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
 			Title = "Custom Title Override",
 			Type = "feature",
-			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
 			Output = CreateOutputDirectory()
 		};
 
@@ -191,11 +191,11 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 		// Arrange
 		var service = CreateService();
 
-		var input = new ChangelogInput
+		var input = new CreateChangelogArguments
 		{
 			Title = "Fix multiple issues",
 			Type = "bug-fix",
-			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
 			Issues =
 			[
 				"https://github.com/elastic/elasticsearch/issues/123",

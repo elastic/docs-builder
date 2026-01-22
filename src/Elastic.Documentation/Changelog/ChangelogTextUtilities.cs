@@ -456,3 +456,22 @@ public enum ChangelogEntrySubtype
 	[Display(Name = "other")]
 	Other
 }
+
+/// <summary>
+/// Enum representing changelog entry lifecycle stages
+/// </summary>
+[EnumExtensions]
+public enum Lifecycle
+{
+	/// <summary>A technical preview of a feature or enhancement.</summary>
+	[Display(Name = "preview")]
+	Preview,
+
+	/// <summary>A beta release of a feature or enhancement.</summary>
+	[Display(Name = "beta")]
+	Beta,
+
+	/// <summary>A generally available release of a feature or enhancement.</summary>
+	[Display(Name = "ga")]
+	Ga
+}

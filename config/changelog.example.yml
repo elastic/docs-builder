@@ -48,14 +48,16 @@ pivot:
     # Security: ":Security/Security"
     # Watcher: ":Data Management/Watcher"
 
-# Available lifecycle values
-available_lifecycles:
+# Available lifecycle values (strongly typed: preview, beta, ga)
+# New name (preferred):
+lifecycles:
   - preview
   - beta
   - ga
 
 # Available products (optional - if not specified, all products from products.yml are allowed)
-available_products:
+# New name (preferred):
+products:
   # - elasticsearch
   # - kibana
   # - apm
@@ -67,33 +69,60 @@ available_products:
   # - cloud-enterprise
   # Add more products as needed
 
-# Product-specific label blockers (optional)
-# Maps product IDs to lists of pull request labels that prevent changelog creation for that product
-# If you run the changelog add command with the --prs option and a PR has any of these labels, the changelog is not created
-# Product IDs can be comma-separated to share the same list of labels across multiple products
-add_blockers:
-  # Example: Skip changelog creation for elasticsearch product when PR has these labels
-  # elasticsearch:
-  #   - ">non-issue"
-  #   - ">test"
-  #   - ">refactoring"
-  # Example: Share the same blockers across multiple products using comma-separated product IDs
-  # elasticsearch, cloud-serverless:
-  #   - ">non-issue"
+# Block configuration - combined create and publish blockers
+# New structure (preferred):
+block:
+  # Global labels that block changelog creation for all products
+  create:
+    # - ">non-issue"
+    # - ">test"
+  # Global labels that block changelog publishing/rendering for all products
+  publish:
+    # - ">internal"
+  # Product-specific overrides (override global blockers, don't merge)
+  # Dictionary key can be a single product ID or comma-separated product IDs
+  product:
+    # Example: Block these labels for elasticsearch and kibana
+    # 'elasticsearch, kibana':
+    #   create:
+    #     - ">test"
+    #   publish:
+    #     - ">es-only"
+    # Example: Block ILM label for cloud-serverless
+    # 'cloud-serverless':
+    #   create:
+    #     - "ILM"
 
-# Render blockers (optional - used by the "docs-builder changelog render" command)
-# Changelogs matching the specified products and areas/types will be commented out in rendered output files
-# Dictionary key can be a single product ID or comma-separated product IDs (e.g., "elasticsearch, cloud-serverless")
-# Dictionary value contains areas and/or types that should be blocked for those products
-render_blockers:
-  # Multiple products (comma-separated) with areas and types that should be blocked
-  "cloud-hosted, cloud-serverless":
-    areas: # List of area values that should be blocked (commented out) during render
-      - Autoscaling
-      - Watcher
-    types: # List of type values that should be blocked (commented out) during render
-      - docs
-  # Single product with areas that should be blocked
-  elasticsearch:
-    areas:
-      - Security
+# =============================================================================
+# LEGACY FORMAT (still supported for backward compatibility)
+# =============================================================================
+#
+# available_lifecycles:
+#   - preview
+#   - beta
+#   - ga
+#
+# available_products:
+#   - elasticsearch
+#
+# # Product-specific label blockers (maps to block.product.<id>.create)
+# add_blockers:
+#   elasticsearch:
+#     - ">non-issue"
+#     - ">test"
+#   # Comma-separated product IDs supported
+#   elasticsearch, cloud-serverless:
+#     - ">non-issue"
+#
+# # Render blockers - blocks based on areas/types during render
+# # (different from block.product.<id>.publish which uses labels)
+# render_blockers:
+#   "cloud-hosted, cloud-serverless":
+#     areas:
+#       - Autoscaling
+#       - Watcher
+#     types:
+#       - docs
+#   elasticsearch:
+#     areas:
+#       - Security

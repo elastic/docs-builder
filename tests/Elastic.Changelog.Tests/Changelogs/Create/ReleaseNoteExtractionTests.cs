@@ -37,7 +37,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 			    feature: "type:feature"
 			    bug-fix:
 			    breaking-change:
-			available_lifecycles:
+			lifecycles:
 			  - preview
 			  - beta
 			  - ga
@@ -46,10 +46,10 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 
 		var service = CreateService();
 
-		var input = new ChangelogInput
+		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			ExtractReleaseNotes = true
@@ -107,7 +107,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 			    feature: "type:feature"
 			    bug-fix:
 			    breaking-change:
-			available_lifecycles:
+			lifecycles:
 			  - preview
 			  - beta
 			  - ga
@@ -116,10 +116,10 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 
 		var service = CreateService();
 
-		var input = new ChangelogInput
+		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			ExtractReleaseNotes = true
@@ -171,7 +171,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 			    feature: "type:feature"
 			    bug-fix:
 			    breaking-change:
-			available_lifecycles:
+			lifecycles:
 			  - preview
 			  - beta
 			  - ga
@@ -180,10 +180,10 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 
 		var service = CreateService();
 
-		var input = new ChangelogInput
+		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			ExtractReleaseNotes = true
@@ -235,7 +235,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 			    feature: "type:feature"
 			    bug-fix:
 			    breaking-change:
-			available_lifecycles:
+			lifecycles:
 			  - preview
 			  - beta
 			  - ga
@@ -244,10 +244,10 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 
 		var service = CreateService();
 
-		var input = new ChangelogInput
+		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			ExtractReleaseNotes = true
@@ -303,7 +303,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 			    feature: "type:feature"
 			    bug-fix:
 			    breaking-change:
-			available_lifecycles:
+			lifecycles:
 			  - preview
 			  - beta
 			  - ga
@@ -312,10 +312,10 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 
 		var service = CreateService();
 
-		var input = new ChangelogInput
+		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			ExtractReleaseNotes = true,
@@ -368,7 +368,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 			    feature: "type:feature"
 			    bug-fix:
 			    breaking-change:
-			available_lifecycles:
+			lifecycles:
 			  - preview
 			  - beta
 			  - ga
@@ -377,10 +377,10 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 
 		var service = CreateService();
 
-		var input = new ChangelogInput
+		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			ExtractReleaseNotes = true,

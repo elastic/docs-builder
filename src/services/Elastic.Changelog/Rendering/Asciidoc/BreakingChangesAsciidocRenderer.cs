@@ -14,11 +14,11 @@ namespace Elastic.Changelog.Rendering.Asciidoc;
 public class BreakingChangesAsciidocRenderer(StringBuilder sb) : AsciidocRendererBase
 {
 	/// <inheritdoc />
-	public override void Render(IReadOnlyCollection<ChangelogData> entries, ChangelogRenderContext context)
+	public override void Render(IReadOnlyCollection<ChangelogEntry> entries, ChangelogRenderContext context)
 	{
 		// Group by subtype if subsections is enabled, otherwise group by area
 		var groupedEntries = context.Subsections
-			? entries.GroupBy(e => string.IsNullOrWhiteSpace(e.Subtype) ? string.Empty : e.Subtype).OrderBy(g => g.Key).ToList()
+			? entries.GroupBy(e => e.Subtype?.ToStringFast(true) ?? string.Empty).OrderBy(g => g.Key).ToList()
 			: entries.GroupBy(ChangelogRenderUtilities.GetComponent).ToList();
 
 		foreach (var group in groupedEntries)
