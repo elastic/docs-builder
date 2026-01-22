@@ -9,12 +9,9 @@ namespace Elastic.Documentation.Site.Navigation;
 
 public interface INavigationHtmlWriter
 {
-	const int AllLevels = -1;
-
 	Task<NavigationRenderResult> RenderNavigation(
 		IRootNavigationItem<INavigationModel, INavigationItem> currentRootNavigation,
 		INavigationItem currentNavigationItem,
-		int maxLevel,
 		Cancel ctx = default
 	);
 
