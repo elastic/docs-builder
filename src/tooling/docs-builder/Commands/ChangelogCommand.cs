@@ -6,11 +6,12 @@ using System.IO.Abstractions;
 using System.Linq;
 using ConsoleAppFramework;
 using Documentation.Builder.Arguments;
-using Elastic.Changelog;
 using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Creation;
 using Elastic.Changelog.GitHub;
+using Elastic.Changelog.GithubRelease;
 using Elastic.Changelog.Rendering;
+using Elastic.Documentation.Changelog;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;
@@ -31,7 +32,7 @@ internal sealed class ChangelogCommand(
 	[Command("")]
 	public Task<int> Default()
 	{
-		collector.EmitError(string.Empty, "Please specify a subcommand. Available subcommands:\n  - 'changelog add': Create a new changelog from command-line input\n  - 'changelog bundle': Create a consolidated list of changelog files\n  - 'changelog render': Render a bundled changelog to markdown or asciidoc files\n\nRun 'changelog add --help', 'changelog bundle --help', or 'changelog render --help' for usage information.");
+		collector.EmitError(string.Empty, "Please specify a subcommand. Available subcommands:\n  - 'changelog add': Create a new changelog from command-line input\n  - 'changelog bundle': Create a consolidated list of changelog files\n  - 'changelog render': Render a bundled changelog to markdown or asciidoc files\n  - 'changelog gh-release': Create changelogs from a GitHub release\n\nRun 'changelog add --help', 'changelog bundle --help', 'changelog render --help', or 'changelog gh-release --help' for usage information.");
 		return Task.FromResult(1);
 	}
 
@@ -414,6 +415,50 @@ internal sealed class ChangelogCommand(
 
 		serviceInvoker.AddCommand(service, renderInput,
 			async static (s, collector, state, ctx) => await s.RenderChangelogs(collector, state, ctx)
+		);
+
+		return await serviceInvoker.InvokeAsync(ctx);
+	}
+
+	/// <summary>
+	/// Create changelogs from a GitHub release
+	/// </summary>
+	/// <param name="repo">Required: GitHub repository in owner/repo format (e.g., "elastic/elasticsearch" or just "elasticsearch" which defaults to elastic/elasticsearch)</param>
+	/// <param name="version">Optional: Version tag to fetch (e.g., "v9.0.0", "9.0.0"). Defaults to "latest"</param>
+	/// <param name="config">Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml'</param>
+	/// <param name="output">Optional: Output directory for changelog files. Defaults to './changelogs'</param>
+	/// <param name="stripTitlePrefix">Optional: Remove square brackets and text within them from the beginning of PR titles (e.g., "[Inference API] Title" becomes "Title")</param>
+	/// <param name="warnOnTypeMismatch">Optional: Warn when the type inferred from release notes section headers doesn't match the type derived from PR labels. Defaults to true</param>
+	/// <param name="ctx"></param>
+	[Command("gh-release")]
+	public async Task<int> GitHubRelease(
+		[Argument] string repo,
+		[Argument] string version = "latest",
+		string? config = null,
+		string? output = null,
+		bool stripTitlePrefix = false,
+		bool warnOnTypeMismatch = true,
+		Cancel ctx = default
+	)
+	{
+		await using var serviceInvoker = new ServiceInvoker(collector);
+
+		IGitHubReleaseService releaseService = new GitHubReleaseService(logFactory);
+		IGitHubPrService prService = new GitHubPrService(logFactory);
+		var service = new GitHubReleaseChangelogService(logFactory, configurationContext, releaseService, prService);
+
+		var input = new GitHubReleaseInput
+		{
+			Repository = repo,
+			Version = version,
+			Config = config,
+			Output = output,
+			StripTitlePrefix = stripTitlePrefix,
+			WarnOnTypeMismatch = warnOnTypeMismatch
+		};
+
+		serviceInvoker.AddCommand(service, input,
+			async static (s, collector, state, ctx) => await s.CreateChangelogsFromRelease(collector, state, ctx)
 		);
 
 		return await serviceInvoker.InvokeAsync(ctx);

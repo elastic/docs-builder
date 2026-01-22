@@ -2,8 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Configuration;
+using Elastic.Documentation.Changelog;
 using YamlDotNet.Serialization;
 
 namespace Elastic.Changelog;

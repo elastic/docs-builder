@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using System.Text;
 using Elastic.Changelog.Configuration;
+using Elastic.Documentation.Changelog;
 
 namespace Elastic.Changelog.Rendering.Markdown;
 

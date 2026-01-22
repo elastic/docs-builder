@@ -6,7 +6,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
 using NetEscapades.EnumGenerators;
 
-namespace Elastic.Changelog;
+namespace Elastic.Documentation.Changelog;
 
 /// <summary>
 /// Static utility methods for text processing in changelog generation
@@ -261,7 +261,7 @@ public static partial class ChangelogTextUtilities
 	/// <summary>
 	/// Converts repo name to attribute format for asciidoc links
 	/// </summary>
-	public static string ConvertRepoToAttributeName(string repo, string suffix)
+	private static string ConvertRepoToAttributeName(string repo, string suffix)
 	{
 		if (string.IsNullOrWhiteSpace(repo))
 			return $"repo-{suffix}";
@@ -277,6 +277,93 @@ public static partial class ChangelogTextUtilities
 
 		// Return normalized name with suffix
 		return $"{normalized}-{suffix}";
+	}
+
+	/// <summary>
+	/// Infers lifecycle from a version tag name.
+	/// Examples:
+	///   v1.0.0 → ga
+	///   v1.0.0-beta1 → beta
+	///   v1.0.0-preview.1 → preview
+	///   1.0.0-alpha1 → preview
+	///   1.0.0-rc1 → beta
+	/// </summary>
+	public static string InferLifecycleFromVersion(string tagName)
+	{
+		if (string.IsNullOrWhiteSpace(tagName))
+			return "ga";
+
+		var normalizedTag = tagName.TrimStart('v', 'V').ToLowerInvariant();
+
+		// Check for prerelease suffixes
+		if (normalizedTag.Contains("-preview") || normalizedTag.Contains("-alpha"))
+			return "preview";
+
+		if (normalizedTag.Contains("-beta") || normalizedTag.Contains("-rc"))
+			return "beta";
+
+		// No prerelease suffix = GA
+		return "ga";
+	}
+
+	/// <summary>
+	/// Extracts the base version number without prerelease suffix.
+	/// Examples:
+	///   v1.0.0 → 1.0.0
+	///   v1.0.0-beta1 → 1.0.0
+	///   1.2.3-preview.1 → 1.2.3
+	/// </summary>
+	public static string ExtractBaseVersion(string tagName)
+	{
+		if (string.IsNullOrWhiteSpace(tagName))
+			return tagName;
+
+		var normalizedTag = tagName.TrimStart('v', 'V');
+
+		// Remove prerelease suffix (everything after first hyphen)
+		var hyphenIndex = normalizedTag.IndexOf('-');
+		return hyphenIndex > 0 ? normalizedTag[..hyphenIndex] : normalizedTag;
+	}
+
+	/// <summary>
+	/// Parses repository string to extract owner and repo name.
+	/// Handles formats: "owner/repo", "repo"
+	/// </summary>
+	public static (string? Owner, string Repo) ParseRepository(string repository)
+	{
+		if (string.IsNullOrWhiteSpace(repository))
+			return (null, string.Empty);
+
+		var parts = repository.Split('/');
+		return parts.Length >= 2
+			? (parts[0], parts[1])
+			: (null, parts[0]);
+	}
+
+	[GeneratedRegex(@"[^a-z0-9]+", RegexOptions.None)]
+	private static partial Regex NonAlphanumericRegex();
+
+	/// <summary>
+	/// Generates a URL-safe slug from a title.
+	/// Takes first 6 words, lowercased, only A-Z0-9, joined with dashes.
+	/// </summary>
+	public static string GenerateSlug(string title, int maxWords = 6)
+	{
+		if (string.IsNullOrWhiteSpace(title))
+			return "untitled";
+
+		// Split on whitespace and take first N words
+		var words = title
+			.Split([' ', '\t', '\n', '\r'], StringSplitOptions.RemoveEmptyEntries)
+			.Take(maxWords)
+			.Select(word => NonAlphanumericRegex().Replace(word.ToLowerInvariant(), string.Empty))
+			.Where(word => !string.IsNullOrEmpty(word))
+			.ToArray();
+
+		if (words.Length == 0)
+			return "untitled";
+
+		return string.Join("-", words);
 	}
 }
 

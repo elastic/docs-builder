@@ -34,6 +34,17 @@ This command is associated with an ongoing release docs initiative.
 Additional workflows are still to come for updating and generating documentation from changelogs.
 :::
 
+## Include changelogs inline [changelog-directive]
+
+You can use the [`{changelog}` directive](../syntax/changelog.md) to render all changelog bundles directly in your documentation pages, without needing to run the `changelog render` command first.
+
+```markdown
+:::{changelog}
+:::
+```
+
+By default, the directive renders all bundles from `changelog/bundles/` (relative to the docset root), ordered by semantic version (newest first). For full documentation and examples, see the [{changelog} directive syntax reference](../syntax/changelog.md).
+
 ## Create a changelog configuration file [changelog-settings]
 
 You can create a configuration file to limit the acceptable product, type, subtype, and lifecycle values.

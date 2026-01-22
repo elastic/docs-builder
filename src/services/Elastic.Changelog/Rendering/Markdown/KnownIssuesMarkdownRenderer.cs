@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using System.Text;
+using Elastic.Documentation.Changelog;
 using static System.Globalization.CultureInfo;
 using static Elastic.Changelog.ChangelogEntryType;
 

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Changelog.Bundling;
+using Elastic.Documentation.Changelog;
 
 namespace Elastic.Changelog.Rendering;
 

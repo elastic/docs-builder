@@ -6,6 +6,7 @@ using System.Collections.Frozen;
 using Elastic.Markdown.Myst.Directives.Admonition;
 using Elastic.Markdown.Myst.Directives.AppliesSwitch;
 using Elastic.Markdown.Myst.Directives.Button;
+using Elastic.Markdown.Myst.Directives.Changelog;
 using Elastic.Markdown.Myst.Directives.CsvInclude;
 using Elastic.Markdown.Myst.Directives.Diagram;
 using Elastic.Markdown.Myst.Directives.Image;
@@ -134,6 +135,9 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 
 		if (info.IndexOf("{csv-include}") > 0)
 			return new CsvIncludeBlock(this, context);
+
+		if (info.IndexOf("{changelog}") > 0)
+			return new ChangelogBlock(this, context);
 
 		if (info.IndexOf("{math}") > 0)
 			return new MathBlock(this, context);
