@@ -162,9 +162,9 @@ public record BlockConfiguration
 	public IReadOnlyList<string>? Create { get; init; }
 
 	/// <summary>
-	/// Global labels that block changelog publishing/rendering
+	/// Global configuration for blocking changelog entries from publishing based on type or area
 	/// </summary>
-	public IReadOnlyList<string>? Publish { get; init; }
+	public PublishBlocker? Publish { get; init; }
 
 	/// <summary>
 	/// Per-product block overrides (overrides global blockers, does not merge)
@@ -184,7 +184,51 @@ public record ProductBlockers
 	public IReadOnlyList<string>? Create { get; init; }
 
 	/// <summary>
-	/// Labels that block publishing for this product (overrides global publish blockers)
+	/// Configuration for blocking changelog entries from publishing based on type or area
 	/// </summary>
-	public IReadOnlyList<string>? Publish { get; init; }
+	public PublishBlocker? Publish { get; init; }
+}
+
+/// <summary>
+/// Configuration for blocking changelog entries from publishing based on type or area
+/// </summary>
+public record PublishBlocker
+{
+	/// <summary>
+	/// Entry types to block from publishing (e.g., "deprecation", "known-issue")
+	/// </summary>
+	public IReadOnlyList<string>? Types { get; init; }
+
+	/// <summary>
+	/// Entry areas to block from publishing (e.g., "Internal", "Experimental")
+	/// </summary>
+	public IReadOnlyList<string>? Areas { get; init; }
+
+	/// <summary>
+	/// Returns true if this blocker has any blocking rules configured
+	/// </summary>
+	public bool HasBlockingRules => (Types?.Count > 0) || (Areas?.Count > 0);
+
+	/// <summary>
+	/// Checks if a changelog entry should be blocked from publishing
+	/// </summary>
+	public bool ShouldBlock(ChangelogEntry entry)
+	{
+		// Check if entry type is blocked
+		if (Types?.Count > 0)
+		{
+			var entryTypeName = entry.Type.ToStringFast(true);
+			if (Types.Any(t => t.Equals(entryTypeName, StringComparison.OrdinalIgnoreCase)))
+				return true;
+		}
+
+		// Check if any of the entry's areas are blocked
+		if (Areas?.Count > 0 && entry.Areas?.Count > 0)
+		{
+			if (entry.Areas.Any(area => Areas.Any(blocked => blocked.Equals(area, StringComparison.OrdinalIgnoreCase))))
+				return true;
+		}
+
+		return false;
+	}
 }

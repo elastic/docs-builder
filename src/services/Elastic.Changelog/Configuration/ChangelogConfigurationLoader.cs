@@ -276,7 +276,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 					var productBlockers = new ProductBlockers
 					{
 						Create = SplitLabels(productBlockersYaml?.Create),
-						Publish = SplitLabels(productBlockersYaml?.Publish)
+						Publish = ParsePublishBlocker(productBlockersYaml?.Publish)
 					};
 					byProduct[normalizedProductId] = productBlockers;
 				}
@@ -286,8 +286,29 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		return new BlockConfiguration
 		{
 			Create = SplitLabels(blockYaml.Create),
-			Publish = SplitLabels(blockYaml.Publish),
+			Publish = ParsePublishBlocker(blockYaml.Publish),
 			ByProduct = byProduct
+		};
+	}
+
+	/// <summary>
+	/// Parses a PublishBlockerYaml into a PublishBlocker domain type.
+	/// </summary>
+	private static PublishBlocker? ParsePublishBlocker(PublishBlockerYaml? yaml)
+	{
+		if (yaml == null)
+			return null;
+
+		var types = yaml.Types?.Count > 0 ? yaml.Types.ToList() : null;
+		var areas = yaml.Areas?.Count > 0 ? yaml.Areas.ToList() : null;
+
+		if (types == null && areas == null)
+			return null;
+
+		return new PublishBlocker
+		{
+			Types = types,
+			Areas = areas
 		};
 	}
 

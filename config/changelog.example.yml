@@ -70,19 +70,30 @@ pivot:
     # Watcher: ":Data Management/Watcher"
 
 # Block configuration - combined create and publish blockers
-# Labels are specified as comma-separated strings (matching pivot format)
 block:
-  # Global labels that block changelog creation for all products
+  # Global labels that block changelog creation for all products (comma-separated string)
   # create: ">non-issue, >test"
-  # Global labels that block changelog publishing/rendering for all products
-  # publish: ">internal"
+
+  # Block changelog entries from publishing based on entry type or area
+  # publish:
+  #   types:
+  #     - deprecation
+  #     - known-issue
+  #   areas:
+  #     - "Internal"
+
   # Product-specific overrides (override global blockers, don't merge)
   # Dictionary key can be a single product ID or comma-separated product IDs
   product:
     # Example: Block these labels for elasticsearch and kibana
     # 'elasticsearch, kibana':
     #   create: ">test"
-    #   publish: ">es-only"
+    #   publish:
+    #     types:
+    #       - docs
     # Example: Block ILM label for cloud-serverless
     # 'cloud-serverless':
     #   create: "ILM"
+    #   publish:
+    #     areas:
+    #       - "ILM"

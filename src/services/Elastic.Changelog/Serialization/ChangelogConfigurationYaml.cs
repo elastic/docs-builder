@@ -42,9 +42,9 @@ internal record BlockConfigurationYaml
 	public string? Create { get; set; }
 
 	/// <summary>
-	/// Global labels that block changelog publishing/rendering (comma-separated string).
+	/// Configuration for blocking changelog entries from publishing based on type or area.
 	/// </summary>
-	public string? Publish { get; set; }
+	public PublishBlockerYaml? Publish { get; set; }
 
 	/// <summary>
 	/// Per-product override blockers.
@@ -64,9 +64,25 @@ internal record ProductBlockersYaml
 	public string? Create { get; set; }
 
 	/// <summary>
-	/// Labels that block publishing for this product (comma-separated string).
+	/// Configuration for blocking changelog entries from publishing based on type or area.
 	/// </summary>
-	public string? Publish { get; set; }
+	public PublishBlockerYaml? Publish { get; set; }
+}
+
+/// <summary>
+/// Internal DTO for publish blocker configuration in YAML.
+/// </summary>
+internal record PublishBlockerYaml
+{
+	/// <summary>
+	/// Entry types to block from publishing.
+	/// </summary>
+	public List<string>? Types { get; set; }
+
+	/// <summary>
+	/// Entry areas to block from publishing.
+	/// </summary>
+	public List<string>? Areas { get; set; }
 }
 
 /// <summary>
