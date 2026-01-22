@@ -3,9 +3,12 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Configuration;
 using Elastic.Changelog.Rendering.Asciidoc;
 using Elastic.Changelog.Rendering.Markdown;
+using Elastic.Documentation;
+using Elastic.Documentation.Changelog;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;

@@ -4,7 +4,7 @@
 
 using YamlDotNet.Serialization;
 
-namespace Elastic.Changelog;
+namespace Elastic.Documentation.Changelog;
 
 /// <summary>
 /// Data structure for changelog YAML file matching the exact schema

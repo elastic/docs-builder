@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Changelog;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
@@ -34,4 +35,10 @@ namespace Elastic.Documentation.Configuration.Serialization;
 [YamlSerializable(typeof(QueryRuleDto))]
 [YamlSerializable(typeof(QueryRuleCriteriaDto))]
 [YamlSerializable(typeof(QueryRuleActionsDto))]
+[YamlSerializable(typeof(ChangelogData))]
+[YamlSerializable(typeof(ProductInfo))]
+[YamlSerializable(typeof(BundledChangelogData))]
+[YamlSerializable(typeof(BundledProduct))]
+[YamlSerializable(typeof(BundledEntry))]
+[YamlSerializable(typeof(BundledFile))]
 public partial class YamlStaticContext;
