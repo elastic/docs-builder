@@ -108,7 +108,8 @@ public class HtmlWriter(
 		// Get versioning from inference result's product
 		var pageVersioning = inference.Product?.VersioningSystem
 			?? DocumentationSet.Context.VersionsConfiguration?.GetVersioningSystem(VersioningSystemId.Stack)
-			?? new VersioningSystem { Id = VersioningSystemId.Stack, Current = new SemVersion(8, 0, 0), Base = new SemVersion(8, 0, 0) };
+			?? throw new InvalidOperationException($"No versioning system available for page '{markdown.RelativePath}'. " +
+				"Ensure VersionsConfiguration contains a Stack versioning system or the inferred product has a VersioningSystem defined.");
 
 		var currentBaseVersion = $"{pageVersioning.Base.Major}.{pageVersioning.Base.Minor}+";
 
