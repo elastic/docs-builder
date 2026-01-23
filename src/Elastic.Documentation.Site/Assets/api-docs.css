@@ -996,7 +996,7 @@
 #schema-definition h3 {
 	@apply bg-white;
 	position: sticky;
-	top: 72px; /* Offset for fixed header */
+	top: 110px; /* Offset for fixed header */
 	z-index: 10;
 	padding-top: 1rem;
 	padding-bottom: 0.5rem;
