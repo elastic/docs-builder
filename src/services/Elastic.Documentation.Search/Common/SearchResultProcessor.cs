@@ -6,7 +6,7 @@ using System.Text.RegularExpressions;
 using Elastic.Clients.Elasticsearch.Core.Search;
 using Elastic.Documentation.Search;
 
-namespace Elastic.Documentation.Api.Infrastructure.Adapters.Search.Common;
+namespace Elastic.Documentation.Search.Common;
 
 /// <summary>
 /// Options for controlling how search tokens are highlighted.

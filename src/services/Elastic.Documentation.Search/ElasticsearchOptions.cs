@@ -4,7 +4,7 @@
 
 using Microsoft.Extensions.Configuration;
 
-namespace Elastic.Documentation.Api.Infrastructure.Adapters.Search;
+namespace Elastic.Documentation.Search;
 
 public class ElasticsearchOptions
 {

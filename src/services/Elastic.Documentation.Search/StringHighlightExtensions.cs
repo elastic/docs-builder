@@ -4,7 +4,7 @@
 
 using System.Text;
 
-namespace Elastic.Documentation.Api.Infrastructure.Adapters.Search;
+namespace Elastic.Documentation.Search;
 
 public static class StringHighlightExtensions
 {

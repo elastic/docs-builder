@@ -3,16 +3,14 @@
 // See the LICENSE file in the project root for more information
 
 using System.Globalization;
-using System.Text.Json.Serialization;
 using Elastic.Clients.Elasticsearch;
 using Elastic.Clients.Elasticsearch.Core.Explain;
 using Elastic.Clients.Elasticsearch.QueryDsl;
 using Elastic.Documentation.Api.Core.Search;
-using Elastic.Documentation.Api.Infrastructure.Adapters.Search.Common;
-using Elastic.Documentation.Search;
+using Elastic.Documentation.Search.Common;
 using Microsoft.Extensions.Logging;
 
-namespace Elastic.Documentation.Api.Infrastructure.Adapters.Search;
+namespace Elastic.Documentation.Search;
 
 /// <summary>
 /// Elasticsearch gateway for Navigation Search (autocomplete/navigation search).
@@ -299,8 +297,3 @@ public sealed record ExplainResult
 	public double Score { get; init; }
 	public string Explanation { get; init; } = string.Empty;
 }
-
-[JsonSerializable(typeof(DocumentationDocument))]
-[JsonSerializable(typeof(ParentDocument))]
-[JsonSerializable(typeof(RuleQueryMatchCriteria))]
-internal sealed partial class EsJsonContext : JsonSerializerContext;

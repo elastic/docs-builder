@@ -22,6 +22,12 @@ using Microsoft.Extensions.Logging;
 
 namespace Elastic.Markdown.IO;
 
+//create all documentation sets
+// create a portalrootnodenavigationitem
+// foreach doc set.
+//		root.items.add(set.navigation);
+// root.prefix = new provider('prefix)'
+// root.prefixprovider.prefix = 'prefix';
 public class DocumentationSet : INavigationTraversable
 {
 	private readonly ILogger<DocumentationSet> _logger;
