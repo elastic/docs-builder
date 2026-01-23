@@ -33,7 +33,7 @@ public record ConfigurationFile
 
 	public Dictionary<string, LinkRedirect>? Redirects { get; }
 
-	public HashSet<Product> Products { get; } = [];
+	public HashSet<Product> Products { get; private set; } = [];
 
 	private readonly Dictionary<string, string> _substitutions = new(StringComparer.OrdinalIgnoreCase);
 	public IReadOnlyDictionary<string, string> Substitutions => _substitutions;
@@ -106,8 +106,14 @@ public record ConfigurationFile
 				OpenApiSpecifications = specs;
 			}
 
-			// Process products - need to parse from docSetFile if they exist
-			// Note: Products parsing would need to be added to DocumentationSetFile if needed
+			// Process products from docset - resolve ProductLinks to Product objects
+			if (docSetFile.Products.Count > 0)
+			{
+				Products = docSetFile.Products
+					.Select(link => productsConfig.Products.GetValueOrDefault(link.Id.Replace('_', '-')))
+					.Where(product => product is not null)
+					.ToHashSet()!;
+			}
 
 			// Process features
 			_features = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);

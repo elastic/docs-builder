@@ -45,16 +45,19 @@ public interface IDocumentInferrerService
 {
 	/// <summary>
 	/// Infers product, version system, and repository for a markdown page.
+	/// Merges docset-level products with frontmatter products internally.
 	/// </summary>
 	/// <param name="repositoryName">The git repository name from GitCheckoutInformation</param>
 	/// <param name="mappedPages">Legacy mapped page URLs from frontmatter</param>
-	/// <param name="products">Products from frontmatter if available</param>
+	/// <param name="docsetProducts">Products defined at the docset level in docset.yml</param>
+	/// <param name="frontmatterProducts">Products defined in page frontmatter (optional)</param>
 	/// <param name="applicableTo">ApplicableTo metadata from frontmatter</param>
 	/// <returns>Inference result with product, version, repository, and related products</returns>
 	DocumentInferenceResult InferForMarkdown(
 		string repositoryName,
 		IReadOnlyCollection<string>? mappedPages,
-		IReadOnlyCollection<Product>? products,
+		HashSet<Product> docsetProducts,
+		IReadOnlyCollection<Product>? frontmatterProducts,
 		ApplicableTo? applicableTo);
 
 	/// <summary>
@@ -81,9 +84,9 @@ public class DocumentInferrerService(
 	public DocumentInferenceResult InferForMarkdown(
 		string repositoryName,
 		IReadOnlyCollection<string>? mappedPages,
-		IReadOnlyCollection<Product>? products,
-		ApplicableTo? applicableTo
-	)
+		HashSet<Product> docsetProducts,
+		IReadOnlyCollection<Product>? frontmatterProducts,
+		ApplicableTo? applicableTo)
 	{
 		var relatedProducts = new HashSet<Product>();
 
@@ -100,10 +103,14 @@ public class DocumentInferrerService(
 		if (repositoryProduct is not null)
 			_ = relatedProducts.Add(repositoryProduct);
 
-		// Add products from frontmatter
-		if (products is not null)
+		// Merge docset products
+		foreach (var p in docsetProducts)
+			_ = relatedProducts.Add(p);
+
+		// Merge frontmatter products
+		if (frontmatterProducts is { Count: > 0 })
 		{
-			foreach (var p in products)
+			foreach (var p in frontmatterProducts)
 				_ = relatedProducts.Add(p);
 		}
 
@@ -113,8 +120,8 @@ public class DocumentInferrerService(
 		// Map legacy pages to LegacyPageMapping for version inference
 		var legacyPageMappings = MapLegacyPages(mappedPages);
 
-		// Infer version system
-		var versioningSystem = _versionInferrer.InferVersion(repositoryName, legacyPageMappings, products, applicableTo);
+		// Infer version system (use all related products)
+		var versioningSystem = _versionInferrer.InferVersion(repositoryName, legacyPageMappings, relatedProducts, applicableTo);
 
 		// Determine repository (validate against assembler.yml if available)
 		var repository = ValidateRepository(repositoryName);
@@ -240,7 +247,8 @@ public class NoopDocumentInferrer : IDocumentInferrerService
 	public DocumentInferenceResult InferForMarkdown(
 		string repositoryName,
 		IReadOnlyCollection<string>? mappedPages,
-		IReadOnlyCollection<Product>? products,
+		HashSet<Product> docsetProducts,
+		IReadOnlyCollection<Product>? frontmatterProducts,
 		ApplicableTo? applicableTo) => new();
 
 	public DocumentInferenceResult InferForOpenApi(string productSlug) => new();

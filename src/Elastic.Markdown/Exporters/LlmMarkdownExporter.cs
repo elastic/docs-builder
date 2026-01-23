@@ -8,6 +8,7 @@ using System.Text;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Configuration.Versions;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.Components;
 using Elastic.Markdown.Myst.Renderers.LlmMarkdown;
@@ -18,8 +19,10 @@ namespace Elastic.Markdown.Exporters;
 /// <summary>
 /// Exports markdown files as LLM-optimized CommonMark using custom renderers
 /// </summary>
-public class LlmMarkdownExporter : IMarkdownExporter
+public class LlmMarkdownExporter(IDocumentInferrerService? documentInferrerService = null) : IMarkdownExporter
 {
+	private readonly IDocumentInferrerService _documentInferrer = documentInferrerService ?? new NoopDocumentInferrer();
+
 	private const string LlmsTxtTemplate = """
 		# Elastic Documentation
 
@@ -150,7 +153,15 @@ public class LlmMarkdownExporter : IMarkdownExporter
 
 		_ = metadata.AppendLine($"url: {context.BuildContext.CanonicalBaseUrl?.Scheme}://{context.BuildContext.CanonicalBaseUrl?.Host}{context.NavigationItem.Url}");
 
-		var pageProducts = GetPageProducts(sourceFile.YamlFrontMatter?.Products);
+		// Use DocumentInferrerService to get merged products
+		var inference = _documentInferrer.InferForMarkdown(
+			context.BuildContext.Git.RepositoryName,
+			sourceFile.YamlFrontMatter?.MappedPages,
+			context.DocumentationSet.Configuration.Products,
+			sourceFile.YamlFrontMatter?.Products,
+			sourceFile.YamlFrontMatter?.AppliesTo
+		);
+		var pageProducts = inference.RelatedProducts;
 		if (pageProducts.Count > 0)
 		{
 			_ = metadata.AppendLine("products:");
@@ -179,8 +190,6 @@ public class LlmMarkdownExporter : IMarkdownExporter
 		return metadata.ToString();
 	}
 
-	private static List<Product> GetPageProducts(IReadOnlyCollection<Product>? frontMatterProducts) =>
-		frontMatterProducts?.ToList() ?? [];
 
 	private static List<string> GetAppliesToItems(ApplicableTo appliesTo, IDocumentationConfigurationContext buildContext)
 	{
@@ -207,5 +216,6 @@ public class LlmMarkdownExporter : IMarkdownExporter
 
 public static class LlmMarkdownExporterExtensions
 {
-	public static void AddLlmMarkdownExport(this List<IMarkdownExporter> exporters) => exporters.Add(new LlmMarkdownExporter());
+	public static void AddLlmMarkdownExport(this List<IMarkdownExporter> exporters, IDocumentInferrerService? documentInferrer = null) =>
+		exporters.Add(new LlmMarkdownExporter(documentInferrer));
 }

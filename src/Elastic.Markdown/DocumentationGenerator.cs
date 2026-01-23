@@ -72,8 +72,11 @@ public partial class DocumentationGenerator
 		DocumentationSet = docSet;
 		PositionalNavigation = positionalNavigation ?? docSet;
 		Context = docSet.Context;
-		var productVersionInferrer = new ProductVersionInferrerService(DocumentationSet.Context.ProductsConfiguration, DocumentationSet.Context.VersionsConfiguration);
-		HtmlWriter = new HtmlWriter(DocumentationSet, _writeFileSystem, new DescriptionGenerator(), positionalNavigation, navigationHtmlWriter, legacyUrlMapper, productVersionInferrer);
+		var documentInferrer = new DocumentInferrerService(
+			DocumentationSet.Context.ProductsConfiguration,
+			DocumentationSet.Context.VersionsConfiguration,
+			DocumentationSet.Context.LegacyUrlMappings);
+		HtmlWriter = new HtmlWriter(DocumentationSet, _writeFileSystem, new DescriptionGenerator(), positionalNavigation, navigationHtmlWriter, legacyUrlMapper, documentInferrer);
 		_documentationFileExporter =
 			docSet.Context.AvailableExporters.Contains(Exporter.Html)
 				? docSet.EnabledExtensions.FirstOrDefault(e => e.FileExporter != null)?.FileExporter
