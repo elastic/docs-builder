@@ -529,11 +529,10 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		if (string.IsNullOrWhiteSpace(value))
 			return HtmlString.Empty;
 
-		var markdown = NormalizeCsvCellMarkdown(value);
 		var document = MarkdownParser.ParseMarkdownStringAsync(
 			block.Build,
 			block.Context,
-			markdown,
+			value,
 			block.IncludeFrom,
 			block.Context.YamlFrontMatter,
 			MarkdownParser.Pipeline);
@@ -557,23 +556,6 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		DocumentationObjectPoolProvider.HtmlRendererPool.Return(subscription);
 
 		return result == null ? HtmlString.Empty : new HtmlString(result.EnsureTrimmed());
-	}
-
-	private static string NormalizeCsvCellMarkdown(string value)
-	{
-		var trimmed = value.Trim();
-		return IsPlainUrl(trimmed) ? $"<{trimmed}>" : value;
-	}
-
-	private static bool IsPlainUrl(string value)
-	{
-		if (string.IsNullOrWhiteSpace(value))
-			return false;
-		if (value.IndexOfAny([' ', '\t', '\r', '\n']) >= 0)
-			return false;
-		if (!Uri.TryCreate(value, UriKind.Absolute, out var uri))
-			return false;
-		return uri.Scheme is "http" or "https";
 	}
 
 	private static void WriteChangelogBlock(HtmlRenderer renderer, ChangelogBlock block)

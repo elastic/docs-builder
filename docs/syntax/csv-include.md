@@ -59,9 +59,9 @@ The directive includes built-in performance limits to handle large files efficie
 
 ### Markdown rendering in cells
 
-Cells are parsed as Markdown, so they can render inline formatting as well as links. For example, a cell containing `**Bold**` becomes bold text, `https://www.google.com` becomes a link, and `[Text](https://www.google.com)` becomes a link.
+Cells are parsed as Markdown, so they can render inline formatting and links. For example, a cell containing `**Bold**` becomes bold text, and `[Text](https://www.google.com)` becomes a link.
 
-Here is a complete example that uses multiple Markdown formats and both link styles:
+Here is a complete example that uses multiple Markdown formats:
 
 :::::{tab-set}
 
