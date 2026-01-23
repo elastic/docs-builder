@@ -103,10 +103,6 @@ This is a test page without products frontmatter.
             | _ -> ()
         | _ -> ()
 
-/// Helper to create a docset with elasticsearch as the default product (matching hardcoded test data in Setup.fs)
-let withDocsetProducts ([<LanguageInjection("markdown")>]m: string) =
-    let options = { SetupOptions.Empty with DocsetProducts = Some ["elasticsearch"] }
-    Setup.GenerateWithOptions options [ TestFile.Index m ]
 /// Tests for docset-level products merging with frontmatter products
 type ``docset products merging`` () =
     
