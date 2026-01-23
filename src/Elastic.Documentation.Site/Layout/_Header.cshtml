@@ -71,4 +71,28 @@ else
 			</div>
 		</div>
 	</header>
+	<script>
+		(function() {
+			const header = document.getElementById('isolated-header');
+			if (!header) return;
+			let scrolled = false;
+			const onScroll = () => {
+				const isScrolled = window.scrollY > 20;
+				if (isScrolled !== scrolled) {
+					scrolled = isScrolled;
+					document.documentElement.style.setProperty('--offset-top', scrolled ? '48px' : '110px');
+					header.querySelectorAll('img').forEach(img => {
+						img.style.transition = 'all 0.3s';
+						img.style.width = scrolled ? '22px' : '28px';
+						img.style.height = scrolled ? '22px' : '28px';
+					});
+					header.querySelectorAll('.text-lg').forEach(el => {
+						el.style.transition = 'all 0.3s';
+						el.style.fontSize = scrolled ? '0.95rem' : '';
+					});
+				}
+			};
+			window.addEventListener('scroll', onScroll, { passive: true });
+		})();
+	</script>
 }
