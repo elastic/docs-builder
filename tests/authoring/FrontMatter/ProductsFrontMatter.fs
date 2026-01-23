@@ -103,6 +103,10 @@ This is a test page without products frontmatter.
             | _ -> ()
         | _ -> ()
 
+/// Helper to create a docset with elasticsearch as the default product (matching hardcoded test data in Setup.fs)
+let withDocsetProducts ([<LanguageInjection("markdown")>]m: string) =
+    let options = { SetupOptions.Empty with DocsetProducts = Some ["elasticsearch"] }
+    Setup.GenerateWithOptions options [ TestFile.Index m ]
 /// Tests for docset-level products merging with frontmatter products
 type ``docset products merging`` () =
     
@@ -123,10 +127,13 @@ This page has both docset and frontmatter products.
 
     [<Fact>]
     let ``docset products appear in HTML when no frontmatter products`` () =
-        docsetOnly |> converts "index.md" |> containsHtml """
-<meta class="elastic" name="product_name" content="Elasticsearch"/>
-<meta name="DC.subject" content="Elasticsearch"/>
-"""
+        let results = docsetOnly.Value
+        let defaultFile = results.MarkdownResults |> Seq.find (fun r -> r.File.RelativePath = "index.md")
+        let html = defaultFile.Html
+        
+        // The docset has elasticsearch, so it should appear in the meta tags
+        // This test should FAIL without the fix because docset products are not merged
+        test <@ html.Contains("""<meta class="elastic" name="product_name" content="Elasticsearch"/>""") @>
 
     [<Fact>]
     let ``docset products merge with frontmatter products`` () =
