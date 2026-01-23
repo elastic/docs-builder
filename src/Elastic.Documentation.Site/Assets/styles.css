@@ -72,7 +72,7 @@ body {
 	}
 }
 
-@media screen and (min-width: 1200px) {
+@media screen and (min-width: 1180px) {
 	:root {
 		--offset-top: calc(80px + 38px); /* header height + banner height */
 	}
