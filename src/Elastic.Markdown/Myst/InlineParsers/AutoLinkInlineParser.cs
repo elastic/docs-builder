@@ -7,6 +7,7 @@ using Markdig;
 using Markdig.Helpers;
 using Markdig.Parsers;
 using Markdig.Parsers.Inlines;
+using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 
 namespace Elastic.Markdown.Myst.InlineParsers;
@@ -54,11 +55,19 @@ public class AutoLinkInlineParser : InlineParser
 
 		var url = span[..urlLength].ToString();
 
+		// Get source position for proper diagnostics
+		var startPosition = slice.Start;
+		var start = processor.GetSourcePosition(startPosition, out var line, out var column);
+		var spanEnd = start + urlLength - 1;
+
 		// Create a LinkInline with the URL as both href and text
 		var linkInline = new LinkInline(url, string.Empty)
 		{
 			IsClosed = true,
-			IsAutoLink = true
+			IsAutoLink = true,
+			Span = new SourceSpan(start, spanEnd),
+			Line = line,
+			Column = column
 		};
 		_ = linkInline.AppendChild(new LiteralInline(url));
 
@@ -67,18 +76,11 @@ public class AutoLinkInlineParser : InlineParser
 		linkInline.SetData(nameof(context.CurrentUrlPath), context.CurrentUrlPath);
 		linkInline.SetData("isCrossLink", false);
 
-		// Emit hint for elastic.co/docs URLs
-		if (url.Contains("elastic.co/docs", StringComparison.OrdinalIgnoreCase))
-		{
-			processor.EmitHint(
-				processor.LineIndex + 1,
-				slice.Start + 1,
-				urlLength,
-				$"Autolink '{url}' points to elastic.co/docs. Consider using a crosslink or relative link instead."
-			);
-		}
-
 		processor.Inline = linkInline;
+
+		// Emit hint for elastic.co/docs URLs (after setting Inline so position is correct)
+		if (url.Contains("elastic.co/docs", StringComparison.OrdinalIgnoreCase))
+			processor.EmitHint(linkInline, "Autolink points to elastic.co/docs. Consider using a crosslink or relative link instead.");
 
 		// Advance the slice past the URL
 		var end = slice.Start + urlLength;

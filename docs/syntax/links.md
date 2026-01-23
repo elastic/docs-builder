@@ -106,11 +106,7 @@ Link to websites and resources outside the Elastic docs:
 
 ### Autolinks
 
-Bare `https://` URLs in text are automatically converted to clickable links:
-
-```markdown
-Check out https://example.com for more info.
-```
+Bare `https://` URLs in text are automatically converted to clickable links.
 
 Autolinks:
 
@@ -119,9 +115,37 @@ Autolinks:
 - Display the external link indicator.
 - Are not rendered inside code blocks or inline code.
 
-:::{tip}
-If an autolink points to `elastic.co/docs`, consider replacing it with a [cross-repository link](#cross-repository-links) or a relative link for better maintainability.
+#### Examples
+
+::::{tab-set}
+
+:::{tab-item} Output
+
+- Documentation: https://example.com/docs/guide
+- Search: https://example.com/search?q=elasticsearch&page=1
+- Section link: https://example.com/page#configuration
+
 :::
+
+:::{tab-item} Markdown
+
+```markdown
+- Documentation: https://example.com/docs/guide
+- Search: https://example.com/search?q=elasticsearch&page=1
+- Section link: https://example.com/page#configuration
+```
+
+:::
+
+::::
+
+#### Hint for elastic.co/docs URLs
+
+Autolinks pointing to `elastic.co/docs` trigger a hint during build, suggesting you replace them with a [cross-repository link](#cross-repository-links) or relative link for better maintainability.
+
+For example, this autolink triggers the hint: https://www.elastic.co/docs
+
+Instead, use a cross-repository link or a relative link.
 
 ## Link formatting
 
