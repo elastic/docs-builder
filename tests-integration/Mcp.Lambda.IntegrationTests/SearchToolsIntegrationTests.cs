@@ -32,7 +32,7 @@ public class SearchToolsIntegrationTests(ITestOutputHelper output) : McpToolsInt
 		var response = JsonSerializer.Deserialize(resultJson, McpJsonContext.Default.SemanticSearchResponse);
 
 		response.Should().NotBeNull();
-		response!.Results.Should().NotBeEmpty("Search for 'elasticsearch getting started' should return results");
+		response.Results.Should().NotBeEmpty("Search for 'elasticsearch getting started' should return results");
 		response.TotalHits.Should().BeGreaterThan(0);
 		Output.WriteLine($"Total hits: {response.TotalHits}");
 		Output.WriteLine($"Results returned: {response.Results.Count}");
