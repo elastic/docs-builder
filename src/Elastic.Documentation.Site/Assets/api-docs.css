@@ -159,7 +159,8 @@
 	margin-left: calc(var(--spacing) * 2);
 	display: inline-block;
 }
-#elastic-api-v3 {
+#elastic-api-v3,
+#schema-definition {
 	dt a {
 		@apply no-underline;
 		code {
@@ -170,9 +171,974 @@
 		@apply pt-4;
 	}
 	h3 {
-		@apply border-b-grey-20 border-b-1 pb-2;
+		@apply border-b-grey-20 mt-6 border-b-1 pb-2;
 	}
 	h4 {
 		@apply border-b-grey-20 border-b-1 pb-2;
+	}
+}
+
+/* Property list with tree-like nested indentation */
+.property-list {
+	@apply mt-2;
+	position: relative;
+
+	dt {
+		@apply flex items-baseline gap-1;
+		padding-top: calc(var(--spacing) * 3);
+		padding-bottom: 0;
+		margin: 0;
+		line-height: 1.4;
+
+		a {
+			@apply flex items-baseline gap-2 no-underline;
+		}
+
+		code:first-of-type {
+			@apply text-ink font-bold;
+		}
+	}
+
+	dd {
+		@apply text-grey-80;
+		padding: calc(var(--spacing) * 2) 0 0 0;
+		padding-left: calc(var(--spacing) * 2);
+		margin: 0;
+		line-height: 1.4;
+		font-size: 0.9em;
+
+		p {
+			margin: 0;
+		}
+
+		/* Hide empty dd elements */
+		&:empty {
+			display: none;
+		}
+	}
+
+	/* Property item wrapper - handles tree connectors */
+	.property-item {
+		position: relative;
+		padding-left: 0;
+		padding-top: 0;
+		margin-top: 0;
+
+		&.depth-0 {
+			margin-top: 0.125rem;
+		}
+
+		&.depth-1 {
+			padding-left: 1.25rem;
+		}
+		&.depth-2 {
+			padding-left: 1.25rem;
+		}
+		&.depth-3 {
+			padding-left: 1.25rem;
+		}
+		&.depth-4 {
+			padding-left: 1.25rem;
+		}
+
+		/* Vertical line for siblings below - extends through to next sibling */
+		&.depth-1:not(.last-sibling),
+		&.depth-2:not(.last-sibling),
+		&.depth-3:not(.last-sibling),
+		&.depth-4:not(.last-sibling) {
+			&::after {
+				content: '';
+				position: absolute;
+				left: 0.375rem;
+				top: calc(var(--spacing) * 2 + 0.4rem);
+				bottom: calc(-1 * var(--spacing) * 3 - 0.125rem);
+				border-left: 1px solid #cbd5e1;
+			}
+		}
+
+		/* L-shaped branch connector - horizontal aligns to middle of text */
+		&.depth-1,
+		&.depth-2,
+		&.depth-3,
+		&.depth-4 {
+			&::before {
+				content: '';
+				position: absolute;
+				left: 0.375rem;
+				height: calc(var(--spacing) * 5 + 0.525rem);
+				width: 0.5rem;
+				border-left: 1px solid #cbd5e1;
+				border-bottom: 1px solid #cbd5e1;
+				border-bottom-left-radius: 3px;
+			}
+		}
+	}
+
+	/* Nested properties container */
+	.nested-properties {
+		position: relative;
+		margin-left: 0;
+		overflow: visible;
+
+		/* Reset nested dl margins */
+		.property-list {
+			margin-top: 0;
+			overflow: visible;
+			position: relative;
+		}
+	}
+
+	/* Expand/collapse toggle row - aligned with nested properties */
+	.expand-toggle-row {
+		padding: calc(var(--spacing) * 1) 0;
+		padding-left: 1.25rem; /* Same as depth-1 indentation */
+		margin: 0;
+		margin-top: calc(var(--spacing) * 2);
+		position: relative;
+		display: flex;
+		align-items: center;
+
+		/* Vertical line - always visible when has children, extends to button center */
+		&::before {
+			content: '';
+			position: absolute;
+			left: 0.375rem;
+			top: 0;
+			height: 50%;
+			width: 0;
+			border-left: 1px solid #cbd5e1;
+			opacity: 0;
+			transition: opacity 0.1s ease;
+		}
+
+		/* Horizontal connector - only when collapsed */
+		&::after {
+			content: '';
+			position: absolute;
+			left: 0.375rem;
+			top: 50%;
+			width: 0.5rem;
+			border-top: 1px solid #cbd5e1;
+			opacity: 0;
+			transition: opacity 0.1s ease;
+		}
+	}
+
+	/* Expanded state - show vertical line extending through the row */
+	.property-item.expanded > .expand-toggle-row::before {
+		opacity: 1;
+		height: 100%; /* Extend to bottom of toggle row */
+	}
+
+	/* Continuation line from expand toggle down to nested properties */
+	.property-item.expanded > .nested-properties::before {
+		content: '';
+		position: absolute;
+		left: 0.375rem;
+		top: 0;
+		height: calc(
+			var(--spacing) * 5 + 0.4rem
+		); /* Connect to first child's L-connector */
+		border-left: 1px solid #cbd5e1;
+	}
+
+	/* Collapsed state - show both vertical and horizontal connector */
+	.property-item.collapsed > .expand-toggle-row::before,
+	.property-item.collapsed > .expand-toggle-row::after {
+		opacity: 1;
+	}
+
+	/* Expand/collapse toggle button - default grey (expanded state) */
+	.expand-toggle {
+		@apply text-grey-60 bg-grey-10 border-grey-20 cursor-pointer rounded border;
+		padding: 0.25rem 0.5rem;
+		font-size: 0.8rem;
+		line-height: 1.2;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		transition: all 0.1s ease;
+	}
+
+	/* Collapsed state - green button */
+	.property-item.collapsed > .expand-toggle-row > .expand-toggle {
+		@apply text-green-90 bg-green-10 border-green-30;
+	}
+
+	.expand-toggle:hover {
+		@apply text-blue-elastic bg-blue-elastic-10 border-blue-elastic-30;
+	}
+
+	.toggle-icon {
+		font-weight: 700;
+		font-size: 0.85rem;
+	}
+
+	.toggle-label {
+		font-weight: 500;
+	}
+
+	/* Collapsed state - hide nested properties using hidden="until-found" for searchability */
+	/* The hidden attribute handles visibility; this is a fallback for unsupported browsers */
+	.property-item.collapsed > .nested-properties:not([hidden='until-found']) {
+		display: none;
+	}
+
+	/* Expanded state - show nested properties */
+	.property-item.expanded > .nested-properties {
+		display: block;
+	}
+
+	/* Ensure hidden="until-found" elements don't show borders/padding from container */
+	.nested-properties[hidden='until-found'] {
+		content-visibility: hidden;
+	}
+}
+
+/* Schema type styling - visually distinct from property names */
+.schema-type {
+	@apply text-blue-elastic border-0 bg-transparent p-0 text-xs font-normal;
+}
+
+/* Required badge */
+.required {
+	@apply text-red-70 bg-red-10 rounded px-1 py-0.5 text-xs font-medium;
+}
+
+/* Optional badge - more subtle than required */
+.optional {
+	@apply text-grey-60 bg-grey-10 rounded px-1 py-0.5 text-xs font-normal;
+}
+
+/* Recursive badge - amber/yellow with icon */
+.recursive {
+	@apply text-yellow-90 bg-yellow-10 border-yellow-30 rounded border px-1.5 py-0.5 text-xs font-medium;
+}
+.recursive::before {
+	content: '↻ ';
+}
+
+/* Deprecated badge - red warning style */
+.deprecated-badge {
+	@apply text-red-70 bg-red-10 rounded px-1 py-0.5 text-xs font-medium;
+}
+
+/* Deprecated property/parameter styling - strikethrough */
+.property-item.deprecated > dt > a > code:first-child,
+.query-param.deprecated > dt > a > code:first-child,
+.path-param.deprecated > dt > a > code:first-child {
+	@apply line-through opacity-70;
+}
+
+/* Deprecated path styling in api-url-listing */
+.api-url-listing .api-url-list-item.deprecated .api-url {
+	@apply line-through opacity-70;
+}
+
+.api-url-listing .api-url-list-item.deprecated .deprecated-badge {
+	@apply ml-2;
+}
+
+/* Version badge - subtle grey */
+.version-badge {
+	@apply text-grey-60 bg-grey-10 rounded px-1 py-0.5 text-xs font-normal;
+}
+
+/* Beta badge - orange/amber warning */
+.beta-badge {
+	@apply text-yellow-90 bg-yellow-10 border-yellow-30 rounded border px-1 py-0.5 text-xs font-medium;
+}
+
+/* Reference documentation button */
+.docs-reference-btn {
+	@apply inline-flex items-center gap-2 px-4 py-2 text-sm font-medium;
+	@apply bg-blue-elastic-10 text-blue-elastic border-blue-elastic-30 rounded-md border;
+	@apply hover:bg-blue-elastic-20 hover:border-blue-elastic-40 transition-colors;
+	margin-top: 0.75rem;
+}
+.docs-reference-btn::before {
+	content: '📖';
+	font-size: 1em;
+}
+/* External links get an arrow indicator */
+.docs-reference-btn[target='_blank']::after {
+	content: '↗';
+	font-size: 0.85em;
+	margin-left: 0.25rem;
+}
+
+/* Smaller variant for property rows */
+.docs-reference-btn-sm {
+	@apply px-3 py-1.5 text-xs;
+	margin-top: 0.5rem;
+}
+
+/* Container for external docs in property items */
+.external-docs-row {
+	margin-top: 0.25rem;
+}
+
+/* Legacy external documentation link (keeping for backwards compat) */
+.external-docs-link {
+	@apply text-blue-elastic inline-flex items-center gap-1 text-sm hover:underline;
+}
+.external-docs-link::before {
+	content: '📖';
+	font-size: 0.9em;
+}
+
+/* Inline external docs link (for properties) - legacy */
+.external-docs-inline {
+	@apply text-blue-elastic text-xs hover:underline;
+	margin-left: 0.25rem;
+}
+.external-docs-inline::before {
+	content: '↗';
+}
+
+/* Discriminator note styling */
+.discriminator-note {
+	@apply text-grey-60 text-xs italic;
+}
+
+/* Object type icon */
+.object-icon {
+	@apply text-grey-60 font-normal;
+	font-size: 1.2em;
+	font-variant: small-caps;
+}
+
+/* Array type icon */
+.array-icon {
+	@apply text-green-70 font-normal;
+	font-size: 1.2em;
+	font-variant: small-caps;
+}
+
+/* Dictionary/map type icon - same color as object icon */
+.dict-icon {
+	@apply text-grey-60 font-normal;
+	font-size: 1.2em;
+	font-variant: small-caps;
+}
+
+/* Enum type icon - purple to match enum values */
+.enum-icon {
+	@apply text-purple-70 font-normal;
+	font-size: 1.2em;
+	font-variant: small-caps;
+}
+
+/* Union type icon - orange/yellow for distinction */
+.union-icon {
+	@apply text-yellow-90 font-normal;
+	font-size: 1.2em;
+	font-variant: small-caps;
+}
+
+/* Enum values and union options display */
+.enum-values,
+.union-options {
+	@apply mt-1 flex flex-wrap items-center gap-1;
+	padding-left: calc(var(--spacing) * 2);
+}
+
+.values-label {
+	@apply text-grey-60 mr-1 text-xs;
+}
+
+.enum-value {
+	@apply text-purple-70 bg-purple-10 rounded px-1.5 py-0.5 text-xs;
+}
+
+.union-option {
+	@apply text-yellow-90 bg-yellow-10 rounded px-1.5 py-0.5 text-xs;
+}
+
+/* Validation constraints display */
+.validation-constraints {
+	@apply mt-1 flex flex-wrap items-center gap-1;
+	padding-left: calc(var(--spacing) * 2);
+}
+
+.constraints-label {
+	@apply text-grey-60 mr-1 text-xs;
+}
+
+.constraint {
+	@apply text-grey-70 bg-grey-10 rounded px-1.5 py-0.5 text-xs;
+
+	code {
+		@apply text-grey-80 bg-grey-20 rounded px-1 py-0 font-mono text-xs;
+	}
+}
+
+/* Security requirements display */
+.security-requirements {
+	@apply mt-4 mb-4 flex flex-wrap items-center gap-2 rounded p-3;
+	@apply bg-blue-elastic-10 border-blue-elastic-20 border;
+}
+
+.security-label {
+	@apply text-blue-elastic text-sm font-medium;
+}
+
+.security-scheme {
+	@apply flex items-center gap-1;
+
+	code {
+		@apply text-blue-elastic rounded bg-white px-1.5 py-0.5 font-mono text-xs;
+	}
+}
+
+.security-scopes {
+	@apply text-grey-60 text-xs;
+}
+
+/* Response headers display */
+.response-headers {
+	@apply border-grey-20 mt-4 border-t pt-4;
+
+	h5 {
+		@apply text-grey-80 mb-2 text-sm font-medium;
+	}
+}
+
+.header-item {
+	@apply mb-2;
+}
+
+/* Server info display */
+.server-info {
+	@apply mt-2 mb-4 flex flex-wrap items-center gap-2 text-sm;
+}
+
+.server-label {
+	@apply text-grey-60 font-medium;
+}
+
+.server-url {
+	@apply flex items-center gap-1;
+
+	code {
+		@apply text-grey-80 bg-grey-10 rounded px-1.5 py-0.5 font-mono text-xs;
+	}
+}
+
+.server-description {
+	@apply text-grey-50 text-xs;
+}
+
+/* Union type option - styled like regular types, not enum values */
+.union-type-option {
+	@apply text-blue-elastic bg-blue-elastic-10 rounded px-1.5 py-0.5 text-xs;
+}
+
+/* Map keyword styling */
+.map-keyword {
+	@apply text-grey-50 font-normal;
+	font-size: 0.85em;
+}
+
+/* Value type keyword styling - for discovered primitive aliases */
+.value-type-keyword {
+	@apply text-blue-elastic border-0 bg-transparent p-0 text-xs font-normal;
+}
+
+/* Inline union display for simple X | X[] unions */
+.union-inline-row {
+	@apply mt-1 flex flex-wrap items-center gap-1;
+	padding-left: calc(var(--spacing) * 2);
+}
+
+.union-inline-options {
+	@apply flex items-center gap-2;
+}
+
+.union-inline-option {
+	@apply flex items-center gap-1;
+}
+
+.union-inline-separator {
+	@apply text-grey-50 text-xs;
+}
+
+/* Primitive array type display */
+.primitive-array {
+	@apply mt-1 flex flex-wrap items-center gap-1;
+	padding-left: calc(var(--spacing) * 2);
+}
+
+.primitive-type {
+	@apply text-blue-elastic bg-blue-elastic-10 rounded px-1.5 py-0.5 text-xs;
+}
+
+/* Union variants container for expandable union type options */
+.union-variants-container {
+	@apply mt-1;
+	padding-left: calc(var(--spacing) * 2);
+	position: relative;
+}
+
+/* Non-collapsible union variants (just the content wrapper) */
+.union-variants-container:not(.collapsible) > .union-variants {
+	/* No additional styling needed */
+}
+
+/* Collapsible union variants container */
+.union-variants-container.collapsible {
+	/* Container for tree structure */
+}
+
+/* Union collapse toggle row - with tree connectors */
+.union-collapse-toggle {
+	padding: calc(var(--spacing) * 1) 0;
+	padding-left: 1.25rem;
+	margin: 0;
+	position: relative;
+	display: flex;
+	align-items: center;
+
+	/* Vertical line - extends to button center */
+	&::before {
+		content: '';
+		position: absolute;
+		left: 0.375rem;
+		top: 0;
+		height: 50%;
+		width: 0;
+		border-left: 1px solid #cbd5e1;
+		opacity: 0;
+		transition: opacity 0.1s ease;
+	}
+
+	/* Horizontal connector - only when collapsed */
+	&::after {
+		content: '';
+		position: absolute;
+		left: 0.375rem;
+		top: 50%;
+		width: 0.5rem;
+		border-top: 1px solid #cbd5e1;
+		opacity: 0;
+		transition: opacity 0.1s ease;
+	}
+
+	/* Button styling */
+	.union-group-toggle {
+		@apply text-grey-60 bg-grey-10 border-grey-20 cursor-pointer rounded border;
+		padding: 0.25rem 0.5rem;
+		font-size: 0.8rem;
+		line-height: 1.2;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		transition: all 0.1s ease;
+	}
+
+	.union-group-toggle:hover {
+		@apply text-blue-elastic bg-blue-elastic-10 border-blue-elastic-30;
+	}
+}
+
+/* Expanded state - show vertical line extending through the toggle row */
+.union-variants-container.expanded > .union-collapse-toggle::before {
+	opacity: 1;
+	height: 100%; /* Extend to bottom of toggle row */
+}
+
+/* Collapsed state - show both vertical and horizontal connector, green button */
+.union-variants-container.collapsed > .union-collapse-toggle::before,
+.union-variants-container.collapsed > .union-collapse-toggle::after {
+	opacity: 1;
+}
+
+.union-variants-container.collapsed
+	> .union-collapse-toggle
+	.union-group-toggle {
+	@apply text-green-90 bg-green-10 border-green-30;
+}
+
+/* Union variants content - the actual list of type options */
+.union-variants-content {
+	position: relative;
+}
+
+/* Hidden state for collapsed union content */
+.union-variants-container.collapsed
+	> .union-variants-content:not([hidden='until-found']) {
+	display: none;
+}
+
+/* Ensure hidden="until-found" elements work correctly */
+.union-variants-content[hidden='until-found'] {
+	content-visibility: hidden;
+}
+
+.union-variants {
+	/* Variants list styling */
+}
+
+/* Union variant item - type label without tree connectors */
+.union-variant-item {
+	padding: calc(var(--spacing) * 1) 0;
+
+	/* Collapsed state - hide nested properties using hidden="until-found" for searchability */
+	/* The hidden attribute handles visibility; this is a fallback for unsupported browsers */
+	&.collapsed > .nested-properties:not([hidden='until-found']) {
+		display: none;
+	}
+
+	/* Expanded state - show nested properties */
+	&.expanded > .nested-properties {
+		display: block;
+	}
+
+	/* Nested properties */
+	.nested-properties {
+		margin-top: 0;
+	}
+}
+
+.union-variant-label {
+	@apply flex items-center gap-1;
+}
+
+/* Union expand toggle row - on new line with tree connector when collapsed */
+.union-expand-toggle {
+	padding: calc(var(--spacing) * 1) 0;
+	padding-left: 1.25rem;
+	margin: 0;
+	position: relative;
+	display: flex;
+	align-items: center;
+
+	/* Vertical line - extends to button center */
+	&::before {
+		content: '';
+		position: absolute;
+		left: 0.375rem;
+		top: 0;
+		height: 50%;
+		width: 0;
+		border-left: 1px solid #cbd5e1;
+		opacity: 0;
+		transition: opacity 0.1s ease;
+	}
+
+	/* Horizontal connector - only when collapsed */
+	&::after {
+		content: '';
+		position: absolute;
+		left: 0.375rem;
+		top: 50%;
+		width: 0.5rem;
+		border-top: 1px solid #cbd5e1;
+		opacity: 0;
+		transition: opacity 0.1s ease;
+	}
+
+	/* Default button style (expanded state - grey) */
+	.expand-toggle {
+		@apply text-grey-60 bg-grey-10 border-grey-20 cursor-pointer rounded border;
+		padding: 0.25rem 0.5rem;
+		font-size: 0.8rem;
+		line-height: 1.2;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		transition: all 0.1s ease;
+	}
+
+	.expand-toggle:hover {
+		@apply text-blue-elastic bg-blue-elastic-10 border-blue-elastic-30;
+	}
+}
+
+/* Union expanded state - show vertical line extending through the toggle row */
+.union-variant-item.expanded > .union-expand-toggle::before {
+	opacity: 1;
+	height: 100%; /* Extend to bottom of toggle row */
+}
+
+/* Continuation line from union expand toggle down to nested properties */
+.union-variant-item.expanded > .nested-properties {
+	position: relative;
+}
+
+.union-variant-item.expanded > .nested-properties::before {
+	content: '';
+	position: absolute;
+	left: 0.375rem;
+	top: 0;
+	height: calc(
+		var(--spacing) * 5 + 0.4rem
+	); /* Connect to first child's L-connector */
+	border-left: 1px solid #cbd5e1;
+}
+
+/* Union collapsed state - show both vertical and horizontal connector, green button */
+.union-variant-item.collapsed > .union-expand-toggle::before,
+.union-variant-item.collapsed > .union-expand-toggle::after {
+	opacity: 1;
+}
+
+.union-variant-item.collapsed > .union-expand-toggle .expand-toggle {
+	@apply text-green-90 bg-green-10 border-green-30;
+}
+
+/* Union separator between type options */
+.union-separator {
+	@apply text-grey-40 text-xs;
+	padding: calc(var(--spacing) * 0.5) 0;
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.union-separator::before,
+.union-separator::after {
+	content: '';
+	flex: 1;
+	max-width: 2rem;
+	border-top: 1px dashed #cbd5e1;
+}
+
+.variant-description {
+	@apply text-grey-60 mt-1 text-sm;
+}
+
+/* Schema ID display */
+.schema-id {
+	@apply text-grey-60 mb-4 text-sm;
+
+	code {
+		@apply bg-grey-10 rounded px-2 py-1;
+	}
+}
+
+/* Schema type info for container types */
+.schema-type-info {
+	@apply mb-4 flex items-center gap-2;
+}
+
+/* Type link inside schema-type */
+.schema-type .type-link {
+	@apply text-blue-elastic no-underline;
+}
+.schema-type .type-link:hover {
+	@apply underline;
+}
+
+/* Inline code in property descriptions - more distinct */
+.property-list dd code:not(.enum-value):not(.schema-type) {
+	@apply text-yellow-90 bg-yellow-10 rounded px-1 py-0.5 text-xs;
+	font-weight: 500;
+}
+
+/* Type definition link */
+.type-definition-link {
+	@apply text-blue-elastic mt-2 block text-sm italic;
+}
+
+/* Enum/value list styling - improve code: description format */
+.property-list dd ul {
+	@apply mt-2 pl-0;
+	list-style: none;
+}
+
+.property-list dd ul li {
+	@apply relative mb-2 pl-4;
+}
+
+.property-list dd ul li::before {
+	content: '•';
+	@apply text-grey-40 absolute left-0;
+}
+
+/* Style the value code in list items - more prominent */
+.property-list dd ul li > code:first-child {
+	@apply text-purple-70 bg-purple-10 font-semibold;
+}
+
+/* Type link in description - styled as button */
+.type-link-description {
+	@apply mt-1;
+	padding-left: calc(var(--spacing) * 2);
+
+	a {
+		@apply text-blue-elastic text-sm no-underline;
+		@apply bg-blue-elastic-10 rounded px-2 py-1;
+		@apply inline-flex items-center gap-1;
+		@apply border-blue-elastic-30 border;
+		transition:
+			background-color 0.15s ease,
+			border-color 0.15s ease;
+	}
+	a:hover {
+		@apply bg-blue-elastic-20 border-blue-elastic-40;
+	}
+}
+
+/* Sticky section headers - require proper scroll context */
+/* Override parent container overflow for API pages to enable sticky headers */
+#content-container:has(#elastic-api-v3),
+#content-container:has(#schema-definition) {
+	overflow: visible !important;
+}
+
+#elastic-api-v3,
+#schema-definition {
+	overflow: visible;
+}
+
+#elastic-api-v3 h3,
+#schema-definition h3 {
+	@apply bg-white;
+	position: sticky;
+	top: 110px; /* Offset for fixed header */
+	z-index: 10;
+	padding-top: 1rem;
+	padding-bottom: 0.5rem;
+	margin-top: 0;
+}
+
+/* Section header with navigation */
+.section-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.section-nav {
+	display: flex;
+	align-items: center;
+	gap: 0.25rem;
+}
+
+.section-nav-btn {
+	@apply text-grey-50 bg-grey-10 border-grey-20 rounded border;
+	width: 28px;
+	height: 28px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	font-size: 0.7rem;
+	transition: all 0.15s ease;
+}
+
+.section-nav-btn:hover {
+	@apply text-grey-80 bg-grey-20 border-grey-30;
+}
+
+.section-nav-btn:active {
+	@apply bg-grey-30;
+}
+
+/* Section path indicator - right aligned before nav buttons, text style */
+.section-path {
+	@apply text-grey-50 mr-2 text-xs;
+	display: inline-flex;
+	align-items: center;
+	height: 28px; /* Match button height */
+	vertical-align: middle;
+}
+
+/* Content-type badge for request/response headers */
+.content-type-badge {
+	@apply text-grey-60 bg-grey-10 ml-2 rounded px-2 py-0.5 text-xs;
+	font-weight: 500;
+}
+
+/* API description - smaller font like property descriptions */
+#elastic-api-v3 > p,
+#elastic-api-v3 h3[data-section='description'] + p {
+	@apply text-grey-80;
+	font-size: 0.9em;
+	line-height: 1.5;
+}
+
+/* Example blocks */
+.example-block {
+	@apply mb-6;
+	position: relative;
+}
+
+/* Example description - smaller font like property descriptions */
+.example-description {
+	@apply text-grey-80;
+	font-size: 0.9em;
+	line-height: 1.5;
+	margin-bottom: 0.75rem;
+
+	p {
+		margin: 0;
+	}
+
+	code {
+		@apply text-yellow-90 bg-yellow-10 rounded px-1 py-0.5 text-xs;
+		font-weight: 500;
+	}
+}
+
+/* Example h4 titles - sticky within example sections */
+.example-block h4 {
+	@apply border-b-grey-20 border-b-1 bg-white;
+	position: sticky;
+	top: 120px; /* Below h3 sticky header */
+	z-index: 5;
+	padding-top: 0.5rem;
+	padding-bottom: 0.5rem;
+	margin-top: 0;
+	margin-bottom: 0.5rem;
+}
+
+/* Sticky Examples button - bottom right of content area */
+.examples-jump-btn {
+	@apply bg-blue-elastic rounded-full shadow-lg;
+	color: white !important;
+	position: fixed;
+	bottom: 2rem;
+	/* Align with right edge of content area (account for TOC sidebar) */
+	right: calc(var(--max-sidebar-width) + 2rem);
+	padding: 0.75rem 1.25rem;
+	font-size: 0.875rem;
+	font-weight: 500;
+	cursor: pointer;
+	z-index: 50;
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	transition: all 0.2s ease;
+	opacity: 0;
+	transform: translateY(1rem);
+	pointer-events: none;
+	text-decoration: none;
+}
+
+.examples-jump-btn.visible {
+	opacity: 1;
+	transform: translateY(0);
+	pointer-events: auto;
+}
+
+.examples-jump-btn:hover {
+	@apply bg-blue-elastic-80;
+	color: white !important;
+	transform: translateY(-2px);
+	box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+	text-decoration: none;
+}
+
+.examples-jump-btn .icon {
+	font-size: 1rem;
+	color: white !important;
+}
+
+/* Hide button on smaller screens where TOC is hidden */
+@media (max-width: 1023px) {
+	.examples-jump-btn {
+		right: 2rem;
 	}
 }

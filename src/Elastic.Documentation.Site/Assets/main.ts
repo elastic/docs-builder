@@ -1,3 +1,4 @@
+import { initApiDocs } from './api-docs'
 import { initAppliesSwitch } from './applies-switch'
 import { initCopyButton } from './copybutton'
 import { initHighlight } from './hljs'
@@ -102,9 +103,11 @@ document.addEventListener('htmx:load', function () {
     initAppliesSwitch()
     initMath()
     initNav()
+
     initSmoothScroll()
     openDetailsWithAnchor()
     initImageCarousel()
+    initApiDocs()
 
     const urlParams = new URLSearchParams(window.location.search)
     const editParam = urlParams.has('edit')

@@ -1,0 +1,97 @@
+@using Elastic.ApiExplorer.Schema
+@inherits RazorSlice<Elastic.ApiExplorer.Schema.PropertyRenderContext>
+@{
+	var properties = Model.Analyzer.GetSchemaProperties(Model.Schema);
+	if (properties is null || properties.Count == 0)
+	{
+		return;
+	}
+
+	var requiredProps = Model.RequiredProperties ?? Model.Schema?.Required ?? new HashSet<string>();
+	var propArray = properties.ToArray();
+}
+<dl class="property-list">
+	@for (var i = 0; i < propArray.Length; i++)
+	{
+		var property = propArray[i];
+		var propSchema = property.Value;
+		if (propSchema is null) continue;
+
+		var typeInfo = Model.Analyzer.GetTypeInfo(propSchema);
+		var propId = string.IsNullOrEmpty(Model.Prefix) ? property.Key : $"{Model.Prefix}-{property.Key}";
+
+		// Check if this type appears in any ancestor (recursive detection)
+		// Only consider named types - primitive types like "object", "string" cannot be recursive
+		var isRecursive = Model.AncestorTypes != null && !string.IsNullOrEmpty(typeInfo.TypeName)
+			&& !SchemaHelpers.IsPrimitiveTypeName(typeInfo.TypeName) && Model.AncestorTypes.Contains(typeInfo.TypeName);
+
+		// Also check array item types for recursion (e.g., QueryContainer[] when on QueryContainer page)
+		if (!isRecursive && typeInfo.IsArray && propSchema.Items != null)
+		{
+			var arrayItemType = Model.Analyzer.GetTypeInfo(propSchema.Items);
+			isRecursive = Model.AncestorTypes != null && !string.IsNullOrEmpty(arrayItemType.TypeName)
+				&& !SchemaHelpers.IsPrimitiveTypeName(arrayItemType.TypeName) && Model.AncestorTypes.Contains(arrayItemType.TypeName);
+		}
+
+		// Also check dictionary value types for recursion
+		if (!isRecursive && typeInfo.IsDictionary && typeInfo.DictValueSchema != null)
+		{
+			var dictValueType = Model.Analyzer.GetTypeInfo(typeInfo.DictValueSchema);
+			isRecursive = Model.AncestorTypes != null && !string.IsNullOrEmpty(dictValueType.TypeName)
+				&& !SchemaHelpers.IsPrimitiveTypeName(dictValueType.TypeName) && Model.AncestorTypes.Contains(dictValueType.TypeName);
+		}
+
+		// Also check union option types for recursion (e.g., QueryContainer | QueryContainer[] when on QueryContainer page)
+		if (!isRecursive && typeInfo.IsUnion && typeInfo.AnyOfOptions != null && Model.AncestorTypes != null)
+		{
+			isRecursive = typeInfo.AnyOfOptions
+				.Select(option => option.Name.EndsWith("[]") ? option.Name[..^2] : option.Name)
+				.Any(baseName => !string.IsNullOrEmpty(baseName) && !SchemaHelpers.IsPrimitiveTypeName(baseName) && Model.AncestorTypes.Contains(baseName));
+		}
+
+		// Also check schema's direct oneOf/anyOf for recursion (in case typeInfo doesn't capture it)
+		if (!isRecursive && Model.AncestorTypes != null)
+		{
+			var unionSchemas = propSchema.OneOf ?? propSchema.AnyOf;
+			if (unionSchemas is { Count: > 0 })
+			{
+				foreach (var unionSchema in unionSchemas.Where(s => s != null))
+				{
+					var unionTypeInfo = Model.Analyzer.GetTypeInfo(unionSchema!);
+					var typeName = unionTypeInfo.TypeName;
+					// Strip [] suffix for array types
+					var baseName = typeName?.EndsWith("[]") == true ? typeName[..^2] : typeName;
+					if (!string.IsNullOrEmpty(baseName) && !SchemaHelpers.IsPrimitiveTypeName(baseName) && Model.AncestorTypes.Contains(baseName))
+					{
+						isRecursive = true;
+						break;
+					}
+					// Also check if the union option is an array pointing to an ancestor type
+					if (unionTypeInfo.IsArray && unionSchema!.Items != null)
+					{
+						var itemTypeInfo = Model.Analyzer.GetTypeInfo(unionSchema.Items);
+						if (!string.IsNullOrEmpty(itemTypeInfo.TypeName) && !SchemaHelpers.IsPrimitiveTypeName(itemTypeInfo.TypeName) && Model.AncestorTypes.Contains(itemTypeInfo.TypeName))
+						{
+							isRecursive = true;
+							break;
+						}
+					}
+				}
+			}
+		}
+
+		var itemContext = new PropertyItemContext
+		{
+			PropertyName = property.Key,
+			PropertySchema = propSchema,
+			TypeInfo = typeInfo,
+			PropId = propId,
+			IsRequired = requiredProps.Contains(property.Key),
+			IsLast = i == propArray.Length - 1,
+			IsRecursive = isRecursive,
+			ParentContext = Model
+		};
+
+		@(await RenderPartialAsync<_PropertyItem, PropertyItemContext>(itemContext))
+	}
+</dl>
