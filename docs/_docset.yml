@@ -8,7 +8,6 @@ cross_links:
 exclude:
   - '_*.md'
   - '!_search.md'
-  - '.claude/skills/**'
 subs:
   a-global-variable: "This was defined in docset.yml"
   stack: Elastic Stack
