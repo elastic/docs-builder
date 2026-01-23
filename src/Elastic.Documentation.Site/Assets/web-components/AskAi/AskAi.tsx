@@ -1,7 +1,11 @@
 import '../../eui-icons-cache'
 import { sharedQueryClient } from '../shared/queryClient'
 import AiIcon from './ai-icon.svg'
-import { useAskAiModalActions, useAskAiModalIsOpen } from './askAi.modal.store'
+import {
+    useAskAiModalActions,
+    useAskAiModalIsOpen,
+    useFlyoutWidth,
+} from './askAi.modal.store'
 import {
     EuiFlyout,
     EuiFlyoutBody,
@@ -24,7 +28,8 @@ const LazyAskAiModal = lazy(() =>
 
 const AskAiButton = () => {
     const isModalOpen = useAskAiModalIsOpen()
-    const { openModal, closeModal } = useAskAiModalActions()
+    const { openModal, closeModal, setFlyoutWidth } = useAskAiModalActions()
+    const flyoutWidth = useFlyoutWidth()
     const { euiTheme } = useEuiTheme()
 
     const { data: isApiAvailable } = useQuery({
@@ -95,9 +100,7 @@ const AskAiButton = () => {
             }
         }
         window.addEventListener('keydown', handleKeydown)
-        return () => {
-            window.removeEventListener('keydown', handleKeydown)
-        }
+        return () => window.removeEventListener('keydown', handleKeydown)
     }, [openModal, closeModal])
 
     if (!isApiAvailable) {
@@ -116,7 +119,8 @@ const AskAiButton = () => {
                 maxWidth={800}
                 paddingSize="none"
                 hideCloseButton={true}
-                size={400}
+                size={flyoutWidth}
+                onResize={setFlyoutWidth}
                 outsideClickCloses={false}
             >
                 <EuiFlyoutBody>
