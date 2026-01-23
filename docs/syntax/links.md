@@ -119,7 +119,7 @@ Autolinks:
 - Display the external link indicator.
 - Are not rendered inside code blocks or inline code.
 
-:::{hint}
+:::{tip}
 If an autolink points to `elastic.co/docs`, consider replacing it with a [cross-repository link](#cross-repository-links) or a relative link for better maintainability.
 :::
 
