@@ -63,7 +63,7 @@
 <section id="elastic-api-v3">
 	<h1>
 		@operation.Summary
-		@if (operation.Deprecated == true)
+		@if (operation.Deprecated is true)
 		{
 			<span class="deprecated-badge">deprecated</span>
 		}
@@ -140,11 +140,11 @@
 		<dl class="property-list">
 		@foreach (var path in pathParameters)
 		{
-			<div class="path-param @(path.Deprecated == true ? "deprecated" : "")">
+			<div class="path-param @(path.Deprecated is true ? "deprecated" : "")">
 				<dt id="path-@path.Name">
 					<a href="#path-@path.Name">
 						<code>@path.Name</code>
-						@if (path.Deprecated == true)
+						@if (path.Deprecated is true)
 						{
 							<span class="deprecated-badge">deprecated</span>
 						}

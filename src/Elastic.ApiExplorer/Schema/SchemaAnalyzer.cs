@@ -61,11 +61,10 @@ public class SchemaAnalyzer(OpenApiDocument document, string? currentPageType = 
 
 			// Try resolving via Reference.Id
 			var refId = schemaRef.Reference.Id;
-			if (!string.IsNullOrEmpty(refId))
+			if (!string.IsNullOrEmpty(refId) &&
+				document.Components?.Schemas?.TryGetValue(refId, out var resolvedSchema) == true)
 			{
-				// Try to get the resolved schema from the document
-				if (document.Components?.Schemas?.TryGetValue(refId, out var resolvedSchema) == true)
-					return GetSchemaProperties(resolvedSchema);
+				return GetSchemaProperties(resolvedSchema);
 			}
 			// Fall through to try other schema properties
 		}
@@ -78,14 +77,10 @@ public class SchemaAnalyzer(OpenApiDocument document, string? currentPageType = 
 		if (schema.AllOf is { Count: > 0 } allOf)
 		{
 			var props = new Dictionary<string, IOpenApiSchema>();
-			foreach (var subSchema in allOf)
+			foreach (var subProps in allOf.Select(GetSchemaProperties).Where(p => p is not null))
 			{
-				var subProps = GetSchemaProperties(subSchema);
-				if (subProps is not null)
-				{
-					foreach (var prop in subProps)
-						_ = props.TryAdd(prop.Key, prop.Value);
-				}
+				foreach (var prop in subProps!)
+					_ = props.TryAdd(prop.Key, prop.Value);
 			}
 			return props.Count > 0 ? props : null;
 		}

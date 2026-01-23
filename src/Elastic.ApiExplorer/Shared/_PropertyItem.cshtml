@@ -68,13 +68,6 @@
 				if (directProps == null || directProps.Count == 0)
 				{
 					simpleUnionNestedOptions = ctx.Analyzer.GetNestedUnionOptions(baseOption.Schema);
-					if (simpleUnionNestedOptions.Count == 0)
-					{
-						var refId = baseOption.Ref;
-						if (string.IsNullOrEmpty(refId) && baseOption.Schema is OpenApiSchemaReference schemaRef)
-							refId = schemaRef.Reference.Id;
-						// Note: Would need Document access to resolve by refId - simplified here
-					}
 				}
 			}
 		}

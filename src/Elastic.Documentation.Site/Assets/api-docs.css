@@ -1043,13 +1043,6 @@
 	align-items: center;
 	height: 28px; /* Match button height */
 	vertical-align: middle;
-	opacity: 0;
-	transition: opacity 0.2s ease;
-}
-
-/* Show section-path when scrolled (controlled via JS) */
-.section-header.scrolled .section-path {
-	opacity: 1;
 }
 
 /* Content-type badge for request/response headers */

@@ -55,10 +55,9 @@
 			var unionSchemas = propSchema.OneOf ?? propSchema.AnyOf;
 			if (unionSchemas is { Count: > 0 })
 			{
-				foreach (var unionSchema in unionSchemas)
+				foreach (var unionSchema in unionSchemas.Where(s => s != null))
 				{
-					if (unionSchema == null) continue;
-					var unionTypeInfo = Model.Analyzer.GetTypeInfo(unionSchema);
+					var unionTypeInfo = Model.Analyzer.GetTypeInfo(unionSchema!);
 					var typeName = unionTypeInfo.TypeName;
 					// Strip [] suffix for array types
 					var baseName = typeName?.EndsWith("[]") == true ? typeName[..^2] : typeName;
@@ -68,7 +67,7 @@
 						break;
 					}
 					// Also check if the union option is an array pointing to an ancestor type
-					if (unionTypeInfo.IsArray && unionSchema.Items != null)
+					if (unionTypeInfo.IsArray && unionSchema!.Items != null)
 					{
 						var itemTypeInfo = Model.Analyzer.GetTypeInfo(unionSchema.Items);
 						if (!string.IsNullOrEmpty(itemTypeInfo.TypeName) && !SchemaHelpers.IsPrimitiveTypeName(itemTypeInfo.TypeName) && Model.AncestorTypes.Contains(itemTypeInfo.TypeName))

@@ -50,15 +50,7 @@
 		{
 			optionProps = Model.Analyzer.GetSchemaProperties(schemaToRender);
 
-			if (optionProps is null || optionProps.Count == 0)
-			{
-				var refId = primaryOption.Ref;
-				if (string.IsNullOrEmpty(refId) && schemaToRender is OpenApiSchemaReference schemaRef)
-					refId = schemaRef.Reference?.Id;
-
-				// Note: We don't have access to Document here, so we can't resolve by refId
-				// The properties should already be resolved by SchemaAnalyzer
-			}
+			// Note: Properties should already be resolved by SchemaAnalyzer
 		}
 
 		// Check if this type has both array and non-array variants
