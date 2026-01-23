@@ -132,11 +132,11 @@ public partial class ElasticsearchMarkdownExporter
 
 		// Infer product and repository metadata
 		var mappedPages = fileContext.SourceFile.YamlFrontMatter?.MappedPages;
-		var pageProducts = Product.MergeProducts(fileContext.DocumentationSet.Configuration.Products, fileContext.SourceFile.YamlFrontMatter?.Products);
 		var inference = _documentInferrer.InferForMarkdown(
 			fileContext.BuildContext.Git.RepositoryName,
 			mappedPages,
-			pageProducts,
+			fileContext.DocumentationSet.Configuration.Products,
+			fileContext.SourceFile.YamlFrontMatter?.Products,
 			appliesTo
 		);
 		doc.Product = inference.Product is not null

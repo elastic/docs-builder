@@ -27,7 +27,7 @@ public class HtmlWriter(
 	INavigationTraversable? positionalNavigation = null,
 	INavigationHtmlWriter? navigationHtmlWriter = null,
 	ILegacyUrlMapper? legacyUrlMapper = null,
-	IVersionInferrerService? versionInferrerService = null
+	IDocumentInferrerService? documentInferrerService = null
 )
 	: IMarkdownStringRenderer
 {
@@ -40,7 +40,7 @@ public class HtmlWriter(
 	private ILegacyUrlMapper LegacyUrlMapper { get; } = legacyUrlMapper ?? new NoopLegacyUrlMapper();
 	private INavigationTraversable NavigationTraversable { get; } = positionalNavigation ?? documentationSet;
 
-	private IVersionInferrerService VersionInferrerService { get; } = versionInferrerService ?? new NoopVersionInferrer();
+	private IDocumentInferrerService DocumentInferrerService { get; } = documentInferrerService ?? new NoopDocumentInferrer();
 
 	/// <inheritdoc />
 	public string Render(string markdown, IFileInfo? source)
@@ -89,7 +89,15 @@ public class HtmlWriter(
 		var siteName = DocumentationSet.Navigation.NavigationTitle;
 		var legacyPages = LegacyUrlMapper.MapLegacyUrl(markdown.YamlFrontMatter?.MappedPages);
 
-		var pageProducts = Product.MergeProducts(DocumentationSet.Configuration.Products, markdown.YamlFrontMatter?.Products);
+		// Use DocumentInferrerService to get merged products and versioning info
+		var inference = DocumentInferrerService.InferForMarkdown(
+			DocumentationSet.Context.Git.RepositoryName,
+			markdown.YamlFrontMatter?.MappedPages,
+			DocumentationSet.Configuration.Products,
+			markdown.YamlFrontMatter?.Products,
+			markdown.YamlFrontMatter?.AppliesTo
+		);
+		var pageProducts = inference.RelatedProducts.ToHashSet();
 
 		string? allVersionsUrl = null;
 
@@ -97,7 +105,10 @@ public class HtmlWriter(
 		//if (PositionalNavigation.MarkdownNavigationLookup.TryGetValue("docs-content://versions.md", out var item))
 		//	allVersionsUrl = item.Url;
 
-		var pageVersioning = VersionInferrerService.InferVersion(DocumentationSet.Context.Git.RepositoryName, legacyPages, markdown.YamlFrontMatter?.Products, markdown.YamlFrontMatter?.AppliesTo);
+		// Get versioning from inference result's product
+		var pageVersioning = inference.Product?.VersioningSystem
+			?? DocumentationSet.Context.VersionsConfiguration?.GetVersioningSystem(VersioningSystemId.Stack)
+			?? new VersioningSystem { Id = VersioningSystemId.Stack, Current = new SemVersion(8, 0, 0), Base = new SemVersion(8, 0, 0) };
 
 		var currentBaseVersion = $"{pageVersioning.Base.Major}.{pageVersioning.Base.Minor}+";
 
@@ -139,7 +150,7 @@ public class HtmlWriter(
 			VersionDropdownItems = VersionDropDownItemViewModel.FromLegacyPageMappings(legacyPages?.ToArray()),
 			Products = pageProducts,
 			VersioningSystem = pageVersioning,
-			VersionsConfig = DocumentationSet.Context.VersionsConfiguration,
+			VersionsConfig = DocumentationSet.Context.VersionsConfiguration!,
 			StructuredBreadcrumbsJson = structuredBreadcrumbsJsonString
 		});
 
