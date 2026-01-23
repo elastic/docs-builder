@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Changelog.Bundling;
+using Elastic.Changelog.Rendering;
 
 namespace Documentation.Builder.Arguments;
 
@@ -30,30 +30,13 @@ public static class BundleInputParser
 		if (parts.Length == 0 || string.IsNullOrWhiteSpace(parts[0]))
 			return null;
 
-		var bundleInput = new BundleInput
+		return new BundleInput
 		{
-			BundleFile = parts[0]
+			BundleFile = parts[0],
+			Directory = parts.Length > 1 && !string.IsNullOrWhiteSpace(parts[1]) ? parts[1] : null,
+			Repo = parts.Length > 2 && !string.IsNullOrWhiteSpace(parts[2]) ? parts[2] : null,
+			HideLinks = parts.Length > 3 && !string.IsNullOrWhiteSpace(parts[3]) && parts[3].Equals("hide-links", StringComparison.OrdinalIgnoreCase)
 		};
-
-		// Directory is optional (second part)
-		if (parts.Length > 1 && !string.IsNullOrWhiteSpace(parts[1]))
-		{
-			bundleInput.Directory = parts[1];
-		}
-
-		// Repo is optional (third part)
-		if (parts.Length > 2 && !string.IsNullOrWhiteSpace(parts[2]))
-		{
-			bundleInput.Repo = parts[2];
-		}
-
-		// Link visibility is optional (fourth part) - "hide-links" or "keep-links"
-		if (parts.Length > 3 && !string.IsNullOrWhiteSpace(parts[3]))
-		{
-			bundleInput.HideLinks = parts[3].Equals("hide-links", StringComparison.OrdinalIgnoreCase);
-		}
-
-		return bundleInput;
 	}
 
 	/// <summary>

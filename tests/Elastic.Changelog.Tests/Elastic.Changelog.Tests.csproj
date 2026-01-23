@@ -14,4 +14,9 @@
     <PackageReference Include="FakeItEasy" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Using Include="Elastic.Changelog" />
+    <Using Include="Elastic.Documentation" />
+  </ItemGroup>
+
 </Project>

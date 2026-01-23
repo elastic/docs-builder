@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using System.Text;
+using Elastic.Documentation;
 
 namespace Elastic.Changelog.Rendering.Markdown;
 
@@ -37,7 +38,7 @@ public abstract class MarkdownRendererBase(IFileSystem fileSystem) : IChangelogM
 	/// Gets the entry context (bundleProducts, repo, hideLinks) for a specific entry
 	/// </summary>
 	protected static (HashSet<string> bundleProductIds, string entryRepo, bool hideLinks) GetEntryContext(
-		ChangelogData entry,
+		ChangelogEntry entry,
 		ChangelogRenderContext context)
 	{
 		var bundleProductIds = context.EntryToBundleProducts.GetValueOrDefault(entry, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
@@ -49,7 +50,7 @@ public abstract class MarkdownRendererBase(IFileSystem fileSystem) : IChangelogM
 	/// <summary>
 	/// Renders PR and issue links for dropdown entries
 	/// </summary>
-	protected static void RenderPrIssueLinks(StringBuilder sb, ChangelogData entry, string entryRepo, bool entryHideLinks)
+	protected static void RenderPrIssueLinks(StringBuilder sb, ChangelogEntry entry, string entryRepo, bool entryHideLinks)
 	{
 		var hasPr = !string.IsNullOrWhiteSpace(entry.Pr);
 		var hasIssues = entry.Issues is { Count: > 0 };

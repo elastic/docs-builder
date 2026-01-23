@@ -1,11 +1,7 @@
 /** @jsxImportSource @emotion/react */
-import {
-    EuiText,
-    EuiLink,
-    EuiSpacer,
-    useEuiTheme,
-    useEuiFontSize,
-} from '@elastic/eui'
+import { useHtmxLink } from '../shared/htmx/useHtmxLink'
+import { getPathFromUrl } from '../shared/htmx/utils'
+import { EuiText, EuiSpacer, useEuiTheme, useEuiFontSize } from '@elastic/eui'
 import { css } from '@emotion/react'
 
 interface Reference {
@@ -62,31 +58,12 @@ export const References = ({ referencesJson }: ReferencesProps) => {
             <EuiSpacer size="s" />
             <ul>
                 {references.map((ref, index) => (
-                    <li key={index}>
-                        <div
-                            css={css`
-                                border: 1px solid ${euiTheme.border.color};
-                                padding: ${euiTheme.size.s};
-                                padding-top: 3px;
-                                border-radius: ${euiTheme.border.radius.small};
-                                display: inline-block;
-                                margin-top: ${euiTheme.size.s};
-                            `}
-                        >
-                            <EuiLink
-                                href={ref.url}
-                                target="_blank"
-                                css={css`
-                                    ${smallFontsize};
-                                `}
-                            >
-                                {ref.title}
-                            </EuiLink>
-                            <EuiText size="xs" color="subdued">
-                                {ref.description}
-                            </EuiText>
-                        </div>
-                    </li>
+                    <ReferenceItem
+                        key={index}
+                        reference={ref}
+                        euiTheme={euiTheme}
+                        smallFontsize={smallFontsize}
+                    />
                 ))}
             </ul>
             {/* <EuiPanel
@@ -146,5 +123,60 @@ export const References = ({ referencesJson }: ReferencesProps) => {
                 </div>
             </EuiPanel> */}
         </>
+    )
+}
+
+interface ReferenceItemProps {
+    reference: Reference
+    euiTheme: ReturnType<typeof useEuiTheme>['euiTheme']
+    smallFontsize: ReturnType<typeof useEuiFontSize>
+}
+
+const ReferenceItem = ({
+    reference,
+    euiTheme,
+    smallFontsize,
+}: ReferenceItemProps) => {
+    // Extract path from URL, falling back to original URL if extraction fails
+    const path = getPathFromUrl(reference.url) ?? reference.url
+    const anchorRef = useHtmxLink(path)
+
+    return (
+        <li>
+            <a
+                ref={anchorRef}
+                href={path}
+                css={css`
+                    width: 100%;
+                    border: 1px solid ${euiTheme.border.color};
+                    padding: ${euiTheme.size.s};
+                    border-radius: ${euiTheme.border.radius.small};
+                    display: inline-block;
+                    margin-top: ${euiTheme.size.s};
+                    text-decoration: none;
+                    &:hover {
+                        background-color: ${euiTheme.colors
+                            .backgroundBaseSubdued};
+                    }
+                    &:hover .reference-title {
+                        text-decoration: underline;
+                    }
+                `}
+            >
+                <div
+                    className="reference-title"
+                    css={css`
+                        ${smallFontsize};
+                        color: ${euiTheme.colors.link};
+                        margin-bottom: ${euiTheme.size.xxs};
+                    `}
+                >
+                    {reference.title}
+                </div>
+                <EuiText size="xs" color="subdued">
+                    {reference.description}
+                </EuiText>
+            </a>
+        </li>
     )
 }

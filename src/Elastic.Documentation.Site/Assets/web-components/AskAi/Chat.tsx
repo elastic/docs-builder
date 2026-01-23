@@ -2,7 +2,6 @@ import { AskAiSuggestions } from './AskAiSuggestions'
 import { ChatInput } from './ChatInput'
 import { ChatMessageList } from './ChatMessageList'
 import { InfoBanner } from './InfoBanner'
-import { KeyboardShortcutsFooter } from './KeyboardShortcutsFooter'
 import { LegalDisclaimer } from './LegalDisclaimer'
 import AiIcon from './ai-icon.svg'
 import { useAskAiModalActions } from './askAi.modal.store'
@@ -91,12 +90,6 @@ export const Chat = () => {
                 />
             )}
 
-            <ChatInputArea
-                inputRef={inputRef}
-                onMetaSemicolon={handleMetaSemicolon}
-                onStateChange={setScrollAreaProps}
-            />
-
             {isEmpty && (
                 <>
                     <AskAiSuggestions />
@@ -108,12 +101,16 @@ export const Chat = () => {
                     >
                         <LegalDisclaimer />
                     </div>
+                    <EuiSpacer size="m" />
                 </>
             )}
 
+            <ChatInputArea
+                inputRef={inputRef}
+                onMetaSemicolon={handleMetaSemicolon}
+                onStateChange={setScrollAreaProps}
+            />
             <InfoBanner />
-
-            <KeyboardShortcutsFooter shortcuts={KEYBOARD_SHORTCUTS} />
         </EuiFlexGroup>
     )
 }
@@ -206,7 +203,11 @@ const ChatScrollArea = ({
     const messages = useChatMessages()
     const { euiTheme } = useEuiTheme()
     const spacerHeight = useSpacerHeight(scrollRef, isStreaming, messages)
-    const lastUserMessageCountRef = useRef(0)
+    // Initialize with current count to prevent scroll on remount (only scroll on NEW messages)
+    const initialUserMessageCount = messages.filter(
+        (m) => m.type === 'user'
+    ).length
+    const lastUserMessageCountRef = useRef(initialUserMessageCount)
 
     // Scroll to user message when a new one is added
     useLayoutEffect(() => {
@@ -214,13 +215,16 @@ const ChatScrollArea = ({
             (m) => m.type === 'user'
         ).length
         if (userMessageCount > lastUserMessageCountRef.current) {
-            // New user message added - scroll after DOM updates but before paint
-            // useLayoutEffect runs synchronously after DOM mutations, perfect for scrolling
+            // New user message added - use double RAF to ensure spacer DOM update
+            // First RAF: React processes state updates and schedules re-render
+            // Second RAF: DOM is updated with new spacer, safe to scroll
             requestAnimationFrame(() => {
-                if (scrollRef.current) {
-                    const scrollMargin = parseInt(euiTheme.size.l, 10)
-                    scrollUserMessageToTop(scrollRef.current, scrollMargin)
-                }
+                requestAnimationFrame(() => {
+                    if (scrollRef.current) {
+                        const scrollMargin = parseInt(euiTheme.size.l, 10)
+                        scrollUserMessageToTop(scrollRef.current, scrollMargin)
+                    }
+                })
             })
         }
         lastUserMessageCountRef.current = userMessageCount
@@ -421,8 +425,31 @@ function useSpacerHeight(
     const { euiTheme } = useEuiTheme()
     const scrollMargin = parseInt(euiTheme.size.l, 10)
     const [spacerHeight, setSpacerHeight] = useState(0)
+    const [containerSize, setContainerSize] = useState({ width: 0, height: 0 })
 
-    useEffect(() => {
+    // Track container size changes with ResizeObserver
+    useLayoutEffect(() => {
+        if (!scrollRef.current) return
+
+        const container = scrollRef.current
+        const resizeObserver = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+                const { width, height } = entry.contentRect
+                setContainerSize((prev) => {
+                    if (prev.width !== width || prev.height !== height) {
+                        return { width, height }
+                    }
+                    return prev
+                })
+            }
+        })
+
+        resizeObserver.observe(container)
+        return () => resizeObserver.disconnect()
+    }, [scrollRef])
+
+    // Calculate spacer height - use useLayoutEffect for synchronous updates
+    useLayoutEffect(() => {
         if (!scrollRef.current) return
 
         const container = scrollRef.current
@@ -451,7 +478,7 @@ function useSpacerHeight(
                 containerHeight - contentHeight - scrollMargin * 2 - 1
             setSpacerHeight(Math.max(0, remainingSpace))
         }
-    }, [isStreaming, scrollRef, messages, scrollMargin])
+    }, [isStreaming, scrollRef, messages, scrollMargin, containerSize])
 
     return spacerHeight
 }
@@ -459,11 +486,6 @@ function useSpacerHeight(
 // ============================================================================
 // Constants & Styles (implementation details)
 // ============================================================================
-
-const KEYBOARD_SHORTCUTS = [
-    { keys: ['⌘K'], label: 'Search' },
-    { keys: ['Esc'], label: 'Close' },
-]
 
 const CONTENT_AREA_HEIGHT = 400
 
@@ -495,8 +517,7 @@ function scrollUserMessageToTop(container: HTMLElement, margin: number): void {
 }
 
 const containerStyles = css`
-    height: 100%;
-    max-height: 70vh;
+    height: 100vh;
     overflow: hidden;
 `
 

@@ -1,24 +1,23 @@
 import '../../eui-icons-cache'
-import { useAskAiModalActions, useAskAiModalIsOpen } from './askAi.modal.store'
+import { sharedQueryClient } from '../shared/queryClient'
+import AiIcon from './ai-icon.svg'
 import {
-    EuiPortal,
-    EuiOverlayMask,
-    EuiFocusTrap,
-    EuiPanel,
+    useAskAiModalActions,
+    useAskAiModalIsOpen,
+    useFlyoutWidth,
+} from './askAi.modal.store'
+import {
+    EuiFlyout,
+    EuiFlyoutBody,
+    EuiIcon,
     EuiLoadingSpinner,
     EuiProvider,
     useEuiTheme,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
 import r2wc from '@r2wc/react-to-web-component'
-import {
-    QueryClient,
-    QueryClientProvider,
-    useQuery,
-} from '@tanstack/react-query'
+import { QueryClientProvider, useQuery } from '@tanstack/react-query'
 import { useEffect, Suspense, lazy, StrictMode } from 'react'
-
-const queryClient = new QueryClient()
 
 // Lazy load the modal component
 const LazyAskAiModal = lazy(() =>
@@ -28,9 +27,10 @@ const LazyAskAiModal = lazy(() =>
 )
 
 const AskAiButton = () => {
-    const { euiTheme } = useEuiTheme()
     const isModalOpen = useAskAiModalIsOpen()
-    const { openModal, closeModal } = useAskAiModalActions()
+    const { openModal, closeModal, setFlyoutWidth } = useAskAiModalActions()
+    const flyoutWidth = useFlyoutWidth()
+    const { euiTheme } = useEuiTheme()
 
     const { data: isApiAvailable } = useQuery({
         queryKey: ['api-health'],
@@ -42,16 +42,6 @@ const AskAiButton = () => {
         retry: false,
     })
 
-    const positionCss = css`
-        position: absolute;
-        left: 50%;
-        transform: translateX(-50%);
-        top: 48px;
-        width: 640px;
-        max-width: 100%;
-        border-radius: ${euiTheme.size.s};
-    `
-
     const loadingCss = css`
         display: flex;
         justify-content: center;
@@ -59,83 +49,108 @@ const AskAiButton = () => {
         padding: 2rem;
     `
 
+    const fabCss = css`
+        position: fixed;
+        bottom: ${euiTheme.size.xl};
+        right: ${euiTheme.size.xl};
+        height: 44px;
+        padding-inline: ${euiTheme.size.m};
+        border-radius: ${euiTheme.border.radius.medium};
+        background-color: ${euiTheme.colors.primary};
+        color: ${euiTheme.colors.ghost};
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: ${euiTheme.size.s};
+        font-size: ${euiTheme.size.m};
+        font-weight: ${euiTheme.font.weight.medium};
+        box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.15);
+        transition:
+            transform 0.15s ease,
+            box-shadow 0.15s ease,
+            background-color 0.15s ease;
+        z-index: ${euiTheme.levels.mask};
+
+        &:hover {
+            transform: translateY(-2px);
+            box-shadow: 0px 6px 16px rgba(0, 0, 0, 0.2);
+            background-color: ${euiTheme.colors.primaryText};
+        }
+
+        &:active {
+            transform: translateY(0);
+        }
+    `
+
     useEffect(() => {
         const handleKeydown = (event: KeyboardEvent) => {
             if (event.key === 'Escape') {
-                //closeModal()
+                event.preventDefault()
+                closeModal()
             }
-
-            // Cmd+; to open Ask AI modal
+            // Cmd+; to open Ask AI flyout
             if (
                 (event.metaKey || event.ctrlKey) &&
                 event.code === 'Semicolon'
             ) {
-                //event.preventDefault()
-                //openModal()
+                event.preventDefault()
+                openModal()
             }
         }
         window.addEventListener('keydown', handleKeydown)
-        return () => {
-            window.removeEventListener('keydown', handleKeydown)
-        }
+        return () => window.removeEventListener('keydown', handleKeydown)
     }, [openModal, closeModal])
-
-    useEffect(() => {
-        if (!isModalOpen) return
-
-        const html = document.documentElement
-        const body = document.body
-
-        const originalHtmlOverflow = html.style.overflow
-        const originalBodyOverflow = body.style.overflow
-        const originalHtmlPaddingRight = html.style.paddingRight
-
-        const scrollBarWidth =
-            window.innerWidth - document.documentElement.clientWidth
-
-        html.style.overflow = 'hidden'
-        body.style.overflow = 'hidden'
-
-        if (scrollBarWidth > 0) {
-            html.style.paddingRight = `${scrollBarWidth}px`
-        }
-
-        return () => {
-            html.style.overflow = originalHtmlOverflow
-            body.style.overflow = originalBodyOverflow
-            html.style.paddingRight = originalHtmlPaddingRight
-        }
-    }, [isModalOpen])
 
     if (!isApiAvailable) {
         return null
     }
 
+    let flyout
+    if (isModalOpen) {
+        flyout = (
+            <EuiFlyout
+                ownFocus={false}
+                onClose={closeModal}
+                aria-label="Ask AI"
+                resizable={true}
+                minWidth={400}
+                maxWidth={800}
+                paddingSize="none"
+                hideCloseButton={true}
+                size={flyoutWidth}
+                onResize={setFlyoutWidth}
+                outsideClickCloses={false}
+            >
+                <EuiFlyoutBody>
+                    <Suspense
+                        fallback={
+                            <div css={loadingCss}>
+                                <EuiLoadingSpinner size="xl" />
+                            </div>
+                        }
+                    >
+                        <LazyAskAiModal />
+                    </Suspense>
+                </EuiFlyoutBody>
+            </EuiFlyout>
+        )
+    }
+
     return (
         <>
-            {isModalOpen && (
-                <EuiPortal>
-                    <EuiOverlayMask>
-                        <EuiFocusTrap onClickOutside={closeModal}>
-                            <EuiPanel
-                                role="dialog"
-                                css={positionCss}
-                                paddingSize="none"
-                            >
-                                <Suspense
-                                    fallback={
-                                        <div css={loadingCss}>
-                                            <EuiLoadingSpinner size="xl" />
-                                        </div>
-                                    }
-                                >
-                                    <LazyAskAiModal />
-                                </Suspense>
-                            </EuiPanel>
-                        </EuiFocusTrap>
-                    </EuiOverlayMask>
-                </EuiPortal>
+            {!isModalOpen && (
+                <button
+                    css={fabCss}
+                    onClick={openModal}
+                    aria-label="Open Ask AI"
+                >
+                    <EuiIcon type={AiIcon} size="m" color="ghost" />
+                    <span>Ask AI</span>
+                </button>
             )}
+            {flyout}
         </>
     )
 }
@@ -148,7 +163,7 @@ const AskAi = () => {
                 globalStyles={false}
                 utilityClasses={false}
             >
-                <QueryClientProvider client={queryClient}>
+                <QueryClientProvider client={sharedQueryClient}>
                     <AskAiButton />
                 </QueryClientProvider>
             </EuiProvider>

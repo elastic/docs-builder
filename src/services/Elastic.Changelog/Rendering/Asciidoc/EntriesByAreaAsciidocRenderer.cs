@@ -4,6 +4,7 @@
 
 using System.Globalization;
 using System.Text;
+using Elastic.Documentation;
 
 namespace Elastic.Changelog.Rendering.Asciidoc;
 
@@ -13,7 +14,7 @@ namespace Elastic.Changelog.Rendering.Asciidoc;
 public class EntriesByAreaAsciidocRenderer(StringBuilder sb) : AsciidocRendererBase
 {
 	/// <inheritdoc />
-	public override void Render(IReadOnlyCollection<ChangelogData> entries, ChangelogRenderContext context)
+	public override void Render(IReadOnlyCollection<ChangelogEntry> entries, ChangelogRenderContext context)
 	{
 		var groupedByArea = context.Subsections
 			? entries.GroupBy(ChangelogRenderUtilities.GetComponent).OrderBy(g => g.Key).ToList()

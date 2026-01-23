@@ -4,7 +4,9 @@
 
 using System.IO.Abstractions;
 using System.Text;
+using Elastic.Documentation;
 using static System.Globalization.CultureInfo;
+using static Elastic.Changelog.ChangelogEntryType;
 
 namespace Elastic.Changelog.Rendering.Markdown;
 
@@ -20,17 +22,17 @@ public class IndexMarkdownRenderer(IFileSystem fileSystem) : MarkdownRendererBas
 	public override async Task RenderAsync(ChangelogRenderContext context, Cancel ctx)
 	{
 		var entriesByType = context.EntriesByType;
-		var features = entriesByType.GetValueOrDefault(ChangelogEntryTypes.Feature, []);
-		var enhancements = entriesByType.GetValueOrDefault(ChangelogEntryTypes.Enhancement, []);
-		var security = entriesByType.GetValueOrDefault(ChangelogEntryTypes.Security, []);
-		var bugFixes = entriesByType.GetValueOrDefault(ChangelogEntryTypes.BugFix, []);
-		var docs = entriesByType.GetValueOrDefault(ChangelogEntryTypes.Docs, []);
-		var regressions = entriesByType.GetValueOrDefault(ChangelogEntryTypes.Regression, []);
-		var other = entriesByType.GetValueOrDefault(ChangelogEntryTypes.Other, []);
+		var features = entriesByType.GetValueOrDefault(Feature, []);
+		var enhancements = entriesByType.GetValueOrDefault(Enhancement, []);
+		var security = entriesByType.GetValueOrDefault(Security, []);
+		var bugFixes = entriesByType.GetValueOrDefault(BugFix, []);
+		var docs = entriesByType.GetValueOrDefault(Docs, []);
+		var regressions = entriesByType.GetValueOrDefault(Regression, []);
+		var other = entriesByType.GetValueOrDefault(Other, []);
 
-		var hasBreakingChanges = entriesByType.ContainsKey(ChangelogEntryTypes.BreakingChange);
-		var hasDeprecations = entriesByType.ContainsKey(ChangelogEntryTypes.Deprecation);
-		var hasKnownIssues = entriesByType.ContainsKey(ChangelogEntryTypes.KnownIssue);
+		var hasBreakingChanges = entriesByType.ContainsKey(BreakingChange);
+		var hasDeprecations = entriesByType.ContainsKey(Deprecation);
+		var hasKnownIssues = entriesByType.ContainsKey(KnownIssue);
 
 		var otherLinks = new List<string>();
 		if (hasKnownIssues)
@@ -98,7 +100,7 @@ public class IndexMarkdownRenderer(IFileSystem fileSystem) : MarkdownRendererBas
 
 	private static void RenderEntriesByArea(
 		StringBuilder sb,
-		IReadOnlyCollection<ChangelogData> entries,
+		IReadOnlyCollection<ChangelogEntry> entries,
 		ChangelogRenderContext context)
 	{
 		var groupedByArea = context.Subsections
@@ -116,7 +118,7 @@ public class IndexMarkdownRenderer(IFileSystem fileSystem) : MarkdownRendererBas
 			foreach (var entry in areaGroup)
 			{
 				var (bundleProductIds, entryRepo, entryHideLinks) = GetEntryContext(entry, context);
-				var shouldHide = ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, bundleProductIds, context.RenderBlockers);
+				var shouldHide = ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide);
 
 				if (shouldHide)
 					_ = sb.Append("% ");

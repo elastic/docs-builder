@@ -73,6 +73,12 @@ export const AskAiSuggestions = () => {
                                 }
                             }}
                             disabled={disabled}
+                            css={css`
+                                height: auto;
+                                white-space: normal;
+                                text-align: left;
+                                padding: ${euiTheme.size.s};
+                            `}
                         >
                             {suggestion.question}
                         </EuiButton>

@@ -72,7 +72,7 @@ public class DuplicateHandlingTests(ITestOutputHelper output) : RenderChangelogT
 
 		var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 
-		var input = new ChangelogRenderInput
+		var input = new RenderChangelogsArguments
 		{
 			Bundles =
 			[
@@ -140,7 +140,7 @@ public class DuplicateHandlingTests(ITestOutputHelper output) : RenderChangelogT
 
 		var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 
-		var input = new ChangelogRenderInput
+		var input = new RenderChangelogsArguments
 		{
 			Bundles =
 			[
@@ -232,7 +232,7 @@ public class DuplicateHandlingTests(ITestOutputHelper output) : RenderChangelogT
 
 		var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 
-		var input = new ChangelogRenderInput
+		var input = new RenderChangelogsArguments
 		{
 			Bundles =
 			[

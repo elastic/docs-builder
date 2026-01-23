@@ -7,7 +7,7 @@ using Elastic.Clients.Elasticsearch;
 using Elastic.Clients.Elasticsearch.Serialization;
 using Elastic.Documentation.Api.Core;
 using Elastic.Documentation.Api.Core.AskAi;
-using Elastic.Documentation.Api.Infrastructure.Adapters.Search;
+using Elastic.Documentation.Search;
 using Elastic.Transport;
 using Microsoft.Extensions.Logging;
 

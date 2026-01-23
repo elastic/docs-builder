@@ -4,7 +4,9 @@
 
 using System.IO.Abstractions;
 using System.Text;
+using Elastic.Documentation;
 using static System.Globalization.CultureInfo;
+using static Elastic.Changelog.ChangelogEntryType;
 
 namespace Elastic.Changelog.Rendering.Markdown;
 
@@ -19,7 +21,7 @@ public class BreakingChangesMarkdownRenderer(IFileSystem fileSystem) : MarkdownR
 	/// <inheritdoc />
 	public override async Task RenderAsync(ChangelogRenderContext context, Cancel ctx)
 	{
-		var breakingChanges = context.EntriesByType.GetValueOrDefault(ChangelogEntryTypes.BreakingChange, []);
+		var breakingChanges = context.EntriesByType.GetValueOrDefault(BreakingChange, []);
 
 		var sb = new StringBuilder();
 		_ = sb.AppendLine(InvariantCulture, $"## {context.Title} [{context.Repo}-{context.TitleSlug}-breaking-changes]");
@@ -28,7 +30,7 @@ public class BreakingChangesMarkdownRenderer(IFileSystem fileSystem) : MarkdownR
 		{
 			// Group by subtype if subsections are enabled, otherwise group by area
 			var groupedEntries = context.Subsections
-				? breakingChanges.GroupBy(e => string.IsNullOrWhiteSpace(e.Subtype) ? string.Empty : e.Subtype).OrderBy(g => g.Key).ToList()
+				? breakingChanges.GroupBy(e => e.Subtype?.ToStringFast(true) ?? string.Empty).OrderBy(g => g.Key).ToList()
 				: breakingChanges.GroupBy(ChangelogRenderUtilities.GetComponent).ToList();
 
 			foreach (var group in groupedEntries)
@@ -43,7 +45,7 @@ public class BreakingChangesMarkdownRenderer(IFileSystem fileSystem) : MarkdownR
 				foreach (var entry in group)
 				{
 					var (bundleProductIds, entryRepo, entryHideLinks) = GetEntryContext(entry, context);
-					var shouldHide = ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, bundleProductIds, context.RenderBlockers);
+					var shouldHide = ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide);
 
 					_ = sb.AppendLine();
 					if (shouldHide)

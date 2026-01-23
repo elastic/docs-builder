@@ -2,19 +2,60 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.ComponentModel.DataAnnotations;
 using System.IO.Abstractions;
+using System.Text.Json.Serialization;
 using Elastic.Changelog.Configuration;
-using Elastic.Changelog.Rendering.Asciidoc;
-using Elastic.Changelog.Rendering.Markdown;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
+using NetEscapades.EnumGenerators;
 using YamlDotNet.Core;
-using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NamingConventions;
 
 namespace Elastic.Changelog.Rendering;
+
+/// <summary>
+/// Arguments for the RenderChangelogs method
+/// </summary>
+public record RenderChangelogsArguments
+{
+	public required IReadOnlyCollection<BundleInput> Bundles { get; init; }
+	public string? Output { get; init; }
+	public string? Title { get; init; }
+	public bool Subsections { get; init; }
+	public string[]? HideFeatures { get; init; }
+	public string? Config { get; init; }
+	public ChangelogFileType FileType { get; init; } = ChangelogFileType.Markdown;
+}
+
+/// <summary>
+/// Input for a single bundle file with optional directory, repo, and link visibility
+/// </summary>
+public record BundleInput
+{
+	public required string BundleFile { get; init; }
+	public string? Directory { get; init; }
+	public string? Repo { get; init; }
+	/// <summary>
+	/// Whether to hide PR/issue links for entries from this bundle.
+	/// When true, links are commented out in the markdown output.
+	/// Defaults to false (links are shown).
+	/// </summary>
+	public bool HideLinks { get; init; }
+}
+
+[EnumExtensions]
+public enum ChangelogFileType
+{
+	[Display(Name = "markdown")]
+	[JsonStringEnumMemberName("markdown")]
+	Markdown,
+	[Display(Name = "asciidoc")]
+	[JsonStringEnumMemberName("asciidoc")]
+	Asciidoc
+}
 
 /// <summary>
 /// Service for rendering changelog output (markdown or asciidoc)
@@ -30,7 +71,7 @@ public class ChangelogRenderingService(
 
 	public async Task<bool> RenderChangelogs(
 		IDiagnosticsCollector collector,
-		ChangelogRenderInput input,
+		RenderChangelogsArguments input,
 		Cancel ctx
 	)
 	{
@@ -43,19 +84,15 @@ public class ChangelogRenderingService(
 				return false;
 			}
 
-			var deserializer = new StaticDeserializerBuilder(new ChangelogYamlStaticContext())
-				.WithNamingConvention(UnderscoredNamingConvention.Instance)
-				.Build();
-
 			// Validation phase: Load and validate all bundles
-			var validationService = new BundleValidationService(_fileSystem, deserializer);
+			var validationService = new BundleValidationService(_fileSystem);
 			var validationResult = await validationService.ValidateBundlesAsync(collector, input.Bundles, ctx);
 
 			if (!validationResult.IsValid || collector.Errors > 0)
 				return false;
 
 			// Merge phase: Resolve all entries from validated bundles
-			var resolver = new BundleDataResolver(_fileSystem, deserializer);
+			var resolver = new BundleDataResolver(_fileSystem);
 			var resolvedResult = await resolver.ResolveEntriesAsync(validationResult.Bundles, ctx);
 
 			if (resolvedResult.Entries.Count == 0)
@@ -82,17 +119,19 @@ public class ChangelogRenderingService(
 			if (!featureHidingResult.IsValid)
 				return false;
 
-			// Emit warnings for hidden and blocked entries
-			EmitHiddenEntryWarnings(collector, resolvedResult.Entries, featureHidingResult.FeatureIdsToHide, config.RenderBlockers);
+			// Emit warnings for hidden entries
+			EmitHiddenEntryWarnings(collector, resolvedResult.Entries, featureHidingResult.FeatureIdsToHide);
 
 			// Validate entry types
-			ValidateEntryTypes(collector, resolvedResult.Entries, config.AvailableTypes);
+			if (!ValidateEntryTypes(collector, resolvedResult.Entries, config.Types))
+				return false;
 
 			// Build render context
-			var context = BuildRenderContext(input, outputSetup, resolvedResult, featureHidingResult.FeatureIdsToHide, config.RenderBlockers);
+			var context = BuildRenderContext(input, outputSetup, resolvedResult, featureHidingResult.FeatureIdsToHide);
 
 			// Render output
-			await RenderOutputAsync(input.FileType, context, outputSetup.OutputDir, ctx);
+			var renderer = new ChangelogRenderer(_fileSystem, _logger);
+			await renderer.RenderAsync(input.FileType, context, ctx);
 
 			return true;
 		}
@@ -115,7 +154,7 @@ public class ChangelogRenderingService(
 
 	private OutputSetup SetupOutput(
 		IDiagnosticsCollector collector,
-		ChangelogRenderInput input,
+		RenderChangelogsArguments input,
 		IReadOnlySet<(string product, string target)> allProducts)
 	{
 		// Determine output directory
@@ -145,8 +184,7 @@ public class ChangelogRenderingService(
 	private static void EmitHiddenEntryWarnings(
 		IDiagnosticsCollector collector,
 		IReadOnlyList<ResolvedEntry> entries,
-		HashSet<string> featureIdsToHide,
-		IReadOnlyDictionary<string, RenderBlockersEntry>? renderBlockers)
+		HashSet<string> featureIdsToHide)
 	{
 		// Track hidden entries for warnings
 		foreach (var resolved in entries)
@@ -154,69 +192,61 @@ public class ChangelogRenderingService(
 			if (!string.IsNullOrWhiteSpace(resolved.Entry.FeatureId) && featureIdsToHide.Contains(resolved.Entry.FeatureId))
 				collector.EmitWarning(string.Empty, $"Changelog entry '{resolved.Entry.Title}' with feature-id '{resolved.Entry.FeatureId}' will be commented out in markdown output");
 		}
-
-		// Check entries against render blockers
-		foreach (var resolved in entries)
-		{
-			var isBlocked = ChangelogRenderUtilities.ShouldBlockEntry(resolved.Entry, resolved.BundleProductIds, renderBlockers, out var blockReasons);
-			if (isBlocked)
-			{
-				var reasonsText = string.Join(" and ", blockReasons);
-				collector.EmitWarning(string.Empty, $"Changelog entry '{resolved.Entry.Title}' will be commented out in markdown output because it matches render_blockers: {reasonsText}");
-			}
-		}
 	}
 
-	private static void ValidateEntryTypes(
+	private static bool ValidateEntryTypes(
 		IDiagnosticsCollector collector,
 		IReadOnlyList<ResolvedEntry> entries,
 		IReadOnlyList<string> availableTypes)
 	{
-		var handledTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-		{
-			ChangelogEntryTypes.Feature,
-			ChangelogEntryTypes.Enhancement,
-			ChangelogEntryTypes.Security,
-			ChangelogEntryTypes.BugFix,
-			ChangelogEntryTypes.BreakingChange,
-			ChangelogEntryTypes.Deprecation,
-			ChangelogEntryTypes.KnownIssue,
-			ChangelogEntryTypes.Docs,
-			ChangelogEntryTypes.Regression,
-			ChangelogEntryTypes.Other
-		};
+		var isValid = true;
 
+		// Check for invalid types (unrecognized type strings)
+		var invalidEntries = entries.Where(e => e.Entry.Type == ChangelogEntryType.Invalid).ToList();
+		if (invalidEntries.Count > 0)
+		{
+			foreach (var entry in invalidEntries)
+				collector.EmitError(string.Empty, $"Changelog entry '{entry.Entry.Title}' has an invalid or unrecognized type. Valid types are: {string.Join(", ", availableTypes)}.");
+			isValid = false;
+		}
+
+		// All valid enum values (except Invalid) are handled in rendering
+		var handledTypes = new HashSet<ChangelogEntryType>(
+			ChangelogEntryTypeExtensions.GetValues().Where(t => t != ChangelogEntryType.Invalid));
 		var availableTypesSet = new HashSet<string>(availableTypes, StringComparer.OrdinalIgnoreCase);
 
 		var entriesByType = entries
+			.Where(e => e.Entry.Type != ChangelogEntryType.Invalid)
 			.GroupBy(e => e.Entry.Type)
 			.ToDictionary(g => g.Key, g => g.Count());
 
 		foreach (var (entryType, count) in entriesByType)
 		{
-			if (availableTypesSet.Contains(entryType) && !handledTypes.Contains(entryType))
-				collector.EmitWarning(string.Empty, $"Changelog type '{entryType}' is valid according to configuration but is not handled in rendering output. {count} entry/entries of this type will not be included in the generated markdown files.");
+			var typeString = entryType.ToStringFast(true);
+			if (availableTypesSet.Contains(typeString) && !handledTypes.Contains(entryType))
+				collector.EmitWarning(string.Empty, $"Changelog type '{typeString}' is valid according to configuration but is not handled in rendering output. {count} entry/entries of this type will not be included in the generated markdown files.");
 		}
+
+		return isValid;
 	}
 
 	private static ChangelogRenderContext BuildRenderContext(
-		ChangelogRenderInput input,
+		RenderChangelogsArguments input,
 		OutputSetup outputSetup,
 		ResolvedEntriesResult resolved,
-		HashSet<string> featureIdsToHide,
-		IReadOnlyDictionary<string, RenderBlockersEntry>? renderBlockers)
+		HashSet<string> featureIdsToHide)
 	{
 		// Group entries by type
 		var entriesByType = resolved.Entries
 			.Select(e => e.Entry)
 			.GroupBy(e => e.Type)
-			.ToDictionary(g => g.Key, g => (IReadOnlyCollection<ChangelogData>)g.ToArray().AsReadOnly())
+			.ToDictionary(g => g.Key, g => (IReadOnlyCollection<ChangelogEntry>)g.ToArray().AsReadOnly())
 			.AsReadOnly();
 
 		// Create mappings from entries to their metadata
-		var entryToBundleProducts = new Dictionary<ChangelogData, HashSet<string>>();
-		var entryToRepo = new Dictionary<ChangelogData, string>();
-		var entryToHideLinks = new Dictionary<ChangelogData, bool>();
+		var entryToBundleProducts = new Dictionary<ChangelogEntry, HashSet<string>>();
+		var entryToRepo = new Dictionary<ChangelogEntry, string>();
+		var entryToHideLinks = new Dictionary<ChangelogEntry, bool>();
 
 		foreach (var entry in resolved.Entries)
 		{
@@ -237,45 +267,10 @@ public class ChangelogRenderingService(
 			EntriesByType = entriesByType,
 			Subsections = input.Subsections,
 			FeatureIdsToHide = featureIdsToHide,
-			RenderBlockers = renderBlockers,
 			EntryToBundleProducts = entryToBundleProducts,
 			EntryToRepo = entryToRepo,
 			EntryToHideLinks = entryToHideLinks
 		};
-	}
-
-	private async Task RenderOutputAsync(
-		ChangelogFileType fileType,
-		ChangelogRenderContext context,
-		string outputDir,
-		Cancel ctx)
-	{
-		switch (fileType)
-		{
-			case ChangelogFileType.Asciidoc:
-				var asciidocRenderer = new ChangelogAsciidocRenderer(_fileSystem);
-				await asciidocRenderer.RenderAsciidoc(context, ctx);
-				_logger.LogInformation("Rendered changelog asciidoc file to {OutputDir}", outputDir);
-				break;
-
-			case ChangelogFileType.Markdown:
-				IChangelogMarkdownRenderer[] renderers =
-				[
-					new IndexMarkdownRenderer(_fileSystem),
-					new BreakingChangesMarkdownRenderer(_fileSystem),
-					new DeprecationsMarkdownRenderer(_fileSystem),
-					new KnownIssuesMarkdownRenderer(_fileSystem)
-				];
-
-				foreach (var renderer in renderers)
-					await renderer.RenderAsync(context, ctx);
-
-				_logger.LogInformation("Rendered changelog markdown files to {OutputDir}", outputDir);
-				break;
-
-			default:
-				throw new Exception($"Unknown changelog file type: {fileType}");
-		}
 	}
 
 	private record OutputSetup(string OutputDir, string Title, string TitleSlug);

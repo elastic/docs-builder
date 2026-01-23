@@ -2,7 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
+using NetEscapades.EnumGenerators;
 
 namespace Elastic.Changelog;
 
@@ -259,7 +261,7 @@ public static partial class ChangelogTextUtilities
 	/// <summary>
 	/// Converts repo name to attribute format for asciidoc links
 	/// </summary>
-	public static string ConvertRepoToAttributeName(string repo, string suffix)
+	private static string ConvertRepoToAttributeName(string repo, string suffix)
 	{
 		if (string.IsNullOrWhiteSpace(repo))
 			return $"repo-{suffix}";
@@ -276,21 +278,181 @@ public static partial class ChangelogTextUtilities
 		// Return normalized name with suffix
 		return $"{normalized}-{suffix}";
 	}
+
+	/// <summary>
+	/// Infers lifecycle from a version tag name.
+	/// Examples:
+	///   v1.0.0 → ga
+	///   v1.0.0-beta1 → beta
+	///   v1.0.0-preview.1 → preview
+	///   1.0.0-alpha1 → preview
+	///   1.0.0-rc1 → beta
+	/// </summary>
+	public static string InferLifecycleFromVersion(string tagName)
+	{
+		if (string.IsNullOrWhiteSpace(tagName))
+			return "ga";
+
+		var normalizedTag = tagName.TrimStart('v', 'V').ToLowerInvariant();
+
+		// Check for prerelease suffixes
+		if (normalizedTag.Contains("-preview") || normalizedTag.Contains("-alpha"))
+			return "preview";
+
+		if (normalizedTag.Contains("-beta") || normalizedTag.Contains("-rc"))
+			return "beta";
+
+		// No prerelease suffix = GA
+		return "ga";
+	}
+
+	/// <summary>
+	/// Extracts the base version number without prerelease suffix.
+	/// Examples:
+	///   v1.0.0 → 1.0.0
+	///   v1.0.0-beta1 → 1.0.0
+	///   1.2.3-preview.1 → 1.2.3
+	/// </summary>
+	public static string ExtractBaseVersion(string tagName)
+	{
+		if (string.IsNullOrWhiteSpace(tagName))
+			return tagName;
+
+		var normalizedTag = tagName.TrimStart('v', 'V');
+
+		// Remove prerelease suffix (everything after first hyphen)
+		var hyphenIndex = normalizedTag.IndexOf('-');
+		return hyphenIndex > 0 ? normalizedTag[..hyphenIndex] : normalizedTag;
+	}
+
+	/// <summary>
+	/// Parses repository string to extract owner and repo name.
+	/// Handles formats: "owner/repo", "repo"
+	/// </summary>
+	public static (string? Owner, string Repo) ParseRepository(string repository)
+	{
+		if (string.IsNullOrWhiteSpace(repository))
+			return (null, string.Empty);
+
+		var parts = repository.Split('/');
+		return parts.Length >= 2
+			? (parts[0], parts[1])
+			: (null, parts[0]);
+	}
+
+	[GeneratedRegex(@"[^a-z0-9]+", RegexOptions.None)]
+	private static partial Regex NonAlphanumericRegex();
+
+	/// <summary>
+	/// Generates a URL-safe slug from a title.
+	/// Takes first 6 words, lowercased, only A-Z0-9, joined with dashes.
+	/// </summary>
+	public static string GenerateSlug(string title, int maxWords = 6)
+	{
+		if (string.IsNullOrWhiteSpace(title))
+			return "untitled";
+
+		// Split on whitespace and take first N words
+		var words = title
+			.Split([' ', '\t', '\n', '\r'], StringSplitOptions.RemoveEmptyEntries)
+			.Take(maxWords)
+			.Select(word => NonAlphanumericRegex().Replace(word.ToLowerInvariant(), string.Empty))
+			.Where(word => !string.IsNullOrEmpty(word))
+			.ToArray();
+
+		if (words.Length == 0)
+			return "untitled";
+
+		return string.Join("-", words);
+	}
 }
 
 /// <summary>
-/// Constants for changelog entry types
+/// Enum representing changelog entry types
 /// </summary>
-public static class ChangelogEntryTypes
+[EnumExtensions]
+public enum ChangelogEntryType
 {
-	public const string Feature = "feature";
-	public const string Enhancement = "enhancement";
-	public const string Security = "security";
-	public const string BugFix = "bug-fix";
-	public const string BreakingChange = "breaking-change";
-	public const string Deprecation = "deprecation";
-	public const string KnownIssue = "known-issue";
-	public const string Docs = "docs";
-	public const string Regression = "regression";
-	public const string Other = "other";
+	/// <summary>Invalid or unrecognized type - used for validation errors.</summary>
+	[Display(Name = "invalid")]
+	Invalid = 0,
+
+	/// <summary>A new feature or enhancement.</summary>
+	[Display(Name = "feature")]
+	Feature,
+
+	/// <summary>An improvement to an existing feature.</summary>
+	[Display(Name = "enhancement")]
+	Enhancement,
+
+	/// <summary>An advisory about a potential security vulnerability.</summary>
+	[Display(Name = "security")]
+	Security,
+
+	/// <summary>A bug fix.</summary>
+	[Display(Name = "bug-fix")]
+	BugFix,
+
+	/// <summary>A breaking change to the documented behavior of the product.</summary>
+	[Display(Name = "breaking-change")]
+	BreakingChange,
+
+	/// <summary>Functionality that is deprecated and will be removed in a future release.</summary>
+	[Display(Name = "deprecation")]
+	Deprecation,
+
+	/// <summary>A problem that is known to exist in the product.</summary>
+	[Display(Name = "known-issue")]
+	KnownIssue,
+
+	/// <summary>Major documentation changes or reorganizations.</summary>
+	[Display(Name = "docs")]
+	Docs,
+
+	/// <summary>Functionality that no longer works or behaves incorrectly.</summary>
+	[Display(Name = "regression")]
+	Regression,
+
+	/// <summary>Changes that do not fit into any of the other categories.</summary>
+	[Display(Name = "other")]
+	Other
+}
+
+/// <summary>
+/// Enum representing changelog entry subtypes (only applicable to breaking changes)
+/// </summary>
+[EnumExtensions]
+public enum ChangelogEntrySubtype
+{
+	/// <summary>A change that breaks an API.</summary>
+	[Display(Name = "api")]
+	Api,
+
+	/// <summary>A change that breaks the way something works.</summary>
+	[Display(Name = "behavioral")]
+	Behavioral,
+
+	/// <summary>A change that breaks the configuration.</summary>
+	[Display(Name = "configuration")]
+	Configuration,
+
+	/// <summary>A change that breaks a dependency, such as a third-party product.</summary>
+	[Display(Name = "dependency")]
+	Dependency,
+
+	/// <summary>A change that breaks licensing behavior.</summary>
+	[Display(Name = "subscription")]
+	Subscription,
+
+	/// <summary>A change that breaks a plugin.</summary>
+	[Display(Name = "plugin")]
+	Plugin,
+
+	/// <summary>A change that breaks authentication, authorization, or permissions.</summary>
+	[Display(Name = "security")]
+	Security,
+
+	/// <summary>A breaking change that does not fit into any of the other categories.</summary>
+	[Display(Name = "other")]
+	Other
 }

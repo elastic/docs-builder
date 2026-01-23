@@ -31,25 +31,24 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		// language=yaml
 		var configContent =
 			"""
-			available_types:
-			  - feature
-			  - bug-fix
-			available_subtypes: []
-			available_lifecycles:
+			pivot:
+			  types:
+			    feature: "type:feature"
+			    bug-fix:
+			    breaking-change:
+			lifecycles:
 			  - preview
 			  - beta
 			  - ga
-			label_to_type:
-			  "type:feature": feature
 			""";
 		var configPath = await CreateConfigDirectory(configContent);
 
 		var service = CreateService();
 
-		var input = new ChangelogInput
+		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory()
 		};
@@ -101,25 +100,24 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		// language=yaml
 		var configContent =
 			"""
-			available_types:
-			  - feature
-			  - bug-fix
-			available_subtypes: []
-			available_lifecycles:
+			pivot:
+			  types:
+			    feature:
+			    bug-fix: "type:bug"
+			    breaking-change:
+			lifecycles:
 			  - preview
 			  - beta
 			  - ga
-			label_to_type:
-			  "type:bug": bug-fix
 			""";
 		var configPath = await CreateConfigDirectory(configContent);
 
 		var service = CreateService();
 
-		var input = new ChangelogInput
+		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/140034"],
-			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			UsePrNumber = true
@@ -167,14 +165,14 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 
 		var service = CreateService();
 
-		var input = new ChangelogInput
+		var input = new CreateChangelogArguments
 		{
 			Prs = ["12345"],
 			Owner = "elastic",
 			Repo = "elasticsearch",
 			Title = "Update documentation",
 			Type = "docs",
-			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
 			Output = CreateOutputDirectory()
 		};
 
@@ -225,26 +223,24 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		// language=yaml
 		var configContent =
 			"""
-			available_types:
-			  - feature
-			  - bug-fix
-			available_subtypes: []
-			available_lifecycles:
+			pivot:
+			  types:
+			    feature: "type:feature"
+			    bug-fix: "type:bug"
+			    breaking-change:
+			lifecycles:
 			  - preview
 			  - beta
 			  - ga
-			label_to_type:
-			  "type:feature": feature
-			  "type:bug": bug-fix
 			""";
 		var configPath = await CreateConfigDirectory(configContent);
 
 		var service = CreateService();
 
-		var input = new ChangelogInput
+		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/1234", "https://github.com/elastic/elasticsearch/pull/5678"],
-			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory()
 		};
@@ -335,28 +331,25 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		// language=yaml
 		var configContent =
 			"""
-			available_types:
-			  - feature
-			  - bug-fix
-			  - enhancement
-			available_subtypes: []
-			available_lifecycles:
+			pivot:
+			  types:
+			    feature: "type:feature"
+			    bug-fix: "type:bug"
+			    breaking-change:
+			    enhancement: "type:enhancement"
+			lifecycles:
 			  - preview
 			  - beta
 			  - ga
-			label_to_type:
-			  "type:feature": feature
-			  "type:bug": bug-fix
-			  "type:enhancement": enhancement
 			""";
 		var configPath = await CreateConfigDirectory(configContent);
 
 		var service = CreateService();
 
-		var input = new ChangelogInput
+		var input = new CreateChangelogArguments
 		{
 			Prs = parsedPrs, // PRs read from file
-			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory()
 		};
@@ -443,26 +436,24 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		// language=yaml
 		var configContent =
 			"""
-			available_types:
-			  - feature
-			  - bug-fix
-			available_subtypes: []
-			available_lifecycles:
+			pivot:
+			  types:
+			    feature: "type:feature"
+			    bug-fix: "type:bug"
+			    breaking-change:
+			lifecycles:
 			  - preview
 			  - beta
 			  - ga
-			label_to_type:
-			  "type:feature": feature
-			  "type:bug": bug-fix
 			""";
 		var configPath = await CreateConfigDirectory(configContent);
 
 		var service = CreateService();
 
-		var input = new ChangelogInput
+		var input = new CreateChangelogArguments
 		{
 			Prs = allPrs.ToArray(), // Mixed PRs from comma-separated and file
-			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory()
 		};

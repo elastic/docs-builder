@@ -12,5 +12,6 @@ public static class ResourceNames
 	public const string ElasticsearchLocal = "elasticsearch-local";
 	public const string ElasticsearchRemote = "elasticsearch-remote";
 	public const string LambdaApi = "lambda-api";
+	public const string LambdaMcp = "lambda-mcp";
 	public const string ElasticsearchIngest = "elasticsearch-ingest";
 }

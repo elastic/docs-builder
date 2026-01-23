@@ -2,6 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation;
+using Elastic.Documentation.Configuration.Products;
+
 namespace Elastic.Changelog.Configuration;
 
 /// <summary>
@@ -9,68 +12,88 @@ namespace Elastic.Changelog.Configuration;
 /// </summary>
 public record ChangelogConfiguration
 {
-	public IReadOnlyList<string> AvailableTypes { get; set; } =
-	[
-		"feature", // A new feature or enhancement.
-		"enhancement", // An improvement to an existing feature.
-		"bug-fix", // A bug fix.
-		"known-issue", // A problem that is known to exist in the product.
-		"breaking-change", // A breaking change to the documented behavior of the product.
-		"deprecation", // Functionality that is deprecated and will be removed in a future release.
-		"docs", // Major documentation changes or reorganizations.
-		"regression", // Functionality that no longer works or behaves incorrectly.
-		"security", // An advisory about a potential security vulnerability.
-		"other" // Changes that do not fit into any of the other categories.
-	];
-
-	public IReadOnlyList<string> AvailableSubtypes { get; set; } =
-	[
-		"api", // A change that breaks an API.
-		"behavioral", // A change that breaks the way something works.
-		"configuration", // A change that breaks the configuration.
-		"dependency", // A change that breaks a dependency, such as a third-party product.
-		"subscription", // A change that breaks licensing behavior.
-		"plugin", // A change that breaks a plugin.
-		"security", // A change that breaks authentication, authorization, or permissions.
-		"other" // A breaking change that do not fit into any of the other categories.
-	];
-
-	public IReadOnlyList<string> AvailableLifecycles { get; set; } =
-	[
-		"preview", // A technical preview of a feature or enhancement.
-		"beta", // A beta release of a feature or enhancement.
-		"ga", // A generally available release of a feature or enhancement.
-	];
-
-	public IReadOnlyList<string>? AvailableAreas { get; set; }
-
-	public IReadOnlyList<string>? AvailableProducts { get; set; }
-
 	/// <summary>
-	/// Mapping from GitHub label names to changelog type values
+	/// Default types for changelog entries (derived from ChangelogEntryType enum)
 	/// </summary>
-	public IReadOnlyDictionary<string, string>? LabelToType { get; set; }
+	public static IReadOnlyList<string> DefaultTypes { get; } =
+		ChangelogEntryTypeExtensions.GetValues()
+			.Select(t => t.ToStringFast(true))
+			.ToList();
 
 	/// <summary>
-	/// Mapping from GitHub label names to changelog area values
+	/// Default subtypes for breaking changes (derived from ChangelogEntrySubtype enum)
+	/// </summary>
+	public static IReadOnlyList<string> DefaultSubtypes { get; } =
+		ChangelogEntrySubtypeExtensions.GetValues()
+			.Select(s => s.ToStringFast(true))
+			.ToList();
+
+	/// <summary>
+	/// Required types that must be present in the configuration.
+	/// At minimum, 'feature', 'bug-fix', and 'breaking-change' must be configured.
+	/// </summary>
+	public static IReadOnlyList<ChangelogEntryType> RequiredTypes { get; } =
+	[
+		ChangelogEntryType.Feature,
+		ChangelogEntryType.BugFix,
+		ChangelogEntryType.BreakingChange
+	];
+
+	/// <summary>
+	/// Default lifecycle values (strongly typed)
+	/// </summary>
+	public static IReadOnlyList<Lifecycle> DefaultLifecycles { get; } =
+	[
+		Lifecycle.Preview,
+		Lifecycle.Beta,
+		Lifecycle.Ga
+	];
+
+	/// <summary>
+	/// Pivot configuration for types, subtypes, and areas with label mappings
+	/// </summary>
+	public PivotConfiguration? Pivot { get; init; }
+
+	/// <summary>
+	/// Available types for changelog entries (computed from Pivot.Types or defaults)
+	/// </summary>
+	public IReadOnlyList<string> Types { get; init; } = DefaultTypes;
+
+	/// <summary>
+	/// Available subtypes for breaking changes (computed from Pivot.Subtypes or defaults)
+	/// </summary>
+	public IReadOnlyList<string> SubTypes { get; init; } = DefaultSubtypes;
+
+	/// <summary>
+	/// Available lifecycle values (strongly typed, from config or defaults)
+	/// </summary>
+	public IReadOnlyList<Lifecycle> Lifecycles { get; init; } = DefaultLifecycles;
+
+	/// <summary>
+	/// Available areas (computed from Pivot.Areas keys)
+	/// </summary>
+	public IReadOnlyList<string>? Areas { get; init; }
+
+	/// <summary>
+	/// Available products (resolved Product objects from products.yml)
+	/// </summary>
+	public IReadOnlyList<Product>? Products { get; init; }
+
+	/// <summary>
+	/// Mapping from GitHub label names to changelog type values (computed from Pivot.Types)
+	/// </summary>
+	public IReadOnlyDictionary<string, string>? LabelToType { get; init; }
+
+	/// <summary>
+	/// Mapping from GitHub label names to changelog area values (computed from Pivot.Areas)
 	/// Multiple labels can map to the same area, and a single label can map to multiple areas (comma-separated)
 	/// </summary>
-	public IReadOnlyDictionary<string, string>? LabelToAreas { get; set; }
+	public IReadOnlyDictionary<string, string>? LabelToAreas { get; init; }
 
 	/// <summary>
-	/// Product-specific label blocking configuration
-	/// Maps product IDs to lists of labels that should prevent changelog creation for that product
-	/// Keys can be comma-separated product IDs to share the same list of labels across multiple products
+	/// Combined block configuration for create and publish blockers
 	/// </summary>
-	public IReadOnlyDictionary<string, IReadOnlyList<string>>? AddBlockers { get; set; }
-
-	/// <summary>
-	/// Configuration for blocking changelogs from being rendered (commented out in markdown output)
-	/// Dictionary key can be a single product ID or comma-separated product IDs (e.g., "elasticsearch, cloud-serverless")
-	/// Dictionary value contains areas and/or types that should be blocked for those products
-	/// Changelogs matching any product key and any area/type in the corresponding entry will be commented out
-	/// </summary>
-	public IReadOnlyDictionary<string, RenderBlockersEntry>? RenderBlockers { get; set; }
+	public BlockConfiguration? Block { get; init; }
 
 	private static readonly Lazy<ChangelogConfiguration> DefaultLazy = new(() => new ChangelogConfiguration());
 
@@ -78,18 +101,134 @@ public record ChangelogConfiguration
 }
 
 /// <summary>
-/// Configuration entry for blocking changelogs during render
+/// Pivot configuration containing types, subtypes, and areas with label mappings
 /// </summary>
-public record RenderBlockersEntry
+public record PivotConfiguration
 {
 	/// <summary>
-	/// List of area values that should be blocked (commented out) during render
+	/// Type definitions with optional labels and type-specific subtypes
+	/// Keys are type names (e.g., "bug-fix", "breaking-change")
+	/// Values can be: null/empty (no labels), string (labels), or TypeEntry object
 	/// </summary>
-	public IReadOnlyList<string>? Areas { get; set; }
+	public Dictionary<string, TypeEntry?>? Types { get; init; }
 
 	/// <summary>
-	/// List of type values that should be blocked (commented out) during render
-	/// Types must exist in the available_types list (or default AvailableTypes if not specified)
+	/// Default subtype definitions with optional labels
+	/// Used when a type doesn't define its own subtypes
+	/// Keys are subtype names (e.g., "api", "behavioral")
+	/// Values can be: null/empty (no labels) or string (labels)
 	/// </summary>
-	public IReadOnlyList<string>? Types { get; set; }
+	public Dictionary<string, string?>? Subtypes { get; init; }
+
+	/// <summary>
+	/// Area definitions with labels
+	/// Keys are area display names (e.g., "Autoscaling", "Search")
+	/// Values are label strings (e.g., ":Distributed/Auto")
+	/// </summary>
+	public Dictionary<string, string?>? Areas { get; init; }
+}
+
+/// <summary>
+/// Configuration entry for a type in the pivot configuration.
+/// Can represent either a simple label string or a complex object with labels and subtypes.
+/// </summary>
+public record TypeEntry
+{
+	/// <summary>
+	/// Labels for this type (comma-separated string)
+	/// </summary>
+	public string? Labels { get; init; }
+
+	/// <summary>
+	/// Type-specific subtype definitions (overrides pivot.subtypes for this type)
+	/// Keys are subtype names, values are label strings
+	/// </summary>
+	public Dictionary<string, string?>? Subtypes { get; init; }
+
+	/// <summary>
+	/// Creates a TypeEntry from a simple label string
+	/// </summary>
+	public static TypeEntry FromLabels(string? labels) => new() { Labels = labels };
+}
+
+/// <summary>
+/// Combined block configuration for create and publish blockers
+/// </summary>
+public record BlockConfiguration
+{
+	/// <summary>
+	/// Global labels that block changelog creation
+	/// </summary>
+	public IReadOnlyList<string>? Create { get; init; }
+
+	/// <summary>
+	/// Global configuration for blocking changelog entries from publishing based on type or area
+	/// </summary>
+	public PublishBlocker? Publish { get; init; }
+
+	/// <summary>
+	/// Per-product block overrides (overrides global blockers, does not merge)
+	/// Keys are product IDs
+	/// </summary>
+	public IReadOnlyDictionary<string, ProductBlockers>? ByProduct { get; init; }
+}
+
+/// <summary>
+/// Product-specific blockers
+/// </summary>
+public record ProductBlockers
+{
+	/// <summary>
+	/// Labels that block creation for this product (overrides global create blockers)
+	/// </summary>
+	public IReadOnlyList<string>? Create { get; init; }
+
+	/// <summary>
+	/// Configuration for blocking changelog entries from publishing based on type or area
+	/// </summary>
+	public PublishBlocker? Publish { get; init; }
+}
+
+/// <summary>
+/// Configuration for blocking changelog entries from publishing based on type or area
+/// </summary>
+public record PublishBlocker
+{
+	/// <summary>
+	/// Entry types to block from publishing (e.g., "deprecation", "known-issue")
+	/// </summary>
+	public IReadOnlyList<string>? Types { get; init; }
+
+	/// <summary>
+	/// Entry areas to block from publishing (e.g., "Internal", "Experimental")
+	/// </summary>
+	public IReadOnlyList<string>? Areas { get; init; }
+
+	/// <summary>
+	/// Returns true if this blocker has any blocking rules configured
+	/// </summary>
+	public bool HasBlockingRules => (Types?.Count > 0) || (Areas?.Count > 0);
+
+	/// <summary>
+	/// Checks if a changelog entry should be blocked from publishing
+	/// </summary>
+	public bool ShouldBlock(ChangelogEntry entry)
+	{
+		// Check if entry type is blocked
+		if (Types?.Count > 0)
+		{
+			var entryTypeName = entry.Type.ToStringFast(true);
+			if (Types.Any(t => t.Equals(entryTypeName, StringComparison.OrdinalIgnoreCase)))
+				return true;
+		}
+
+		// Check if any of the entry's areas are blocked
+		if (Areas?.Count > 0 && entry.Areas?.Count > 0)
+		{
+			if (entry.Areas.Any(area => Areas.Any(blocked => blocked.Equals(area, StringComparison.OrdinalIgnoreCase))))
+				return true;
+		}
+
+		return false;
+	}
 }

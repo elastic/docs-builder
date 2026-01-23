@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation;
+
 namespace Elastic.Changelog.Rendering;
 
 /// <summary>
@@ -30,7 +32,7 @@ public record ResolvedEntriesResult
 /// </summary>
 public record ResolvedEntry
 {
-	public required ChangelogData Entry { get; init; }
+	public required ChangelogEntry Entry { get; init; }
 	public required string Repo { get; init; }
 	public required HashSet<string> BundleProductIds { get; init; }
 	public required bool HideLinks { get; init; }

@@ -1,15 +1,10 @@
 import '../../eui-icons-cache'
+import { sharedQueryClient } from '../shared/queryClient'
 import { NavigationSearch } from './NavigationSearch'
 import { EuiProvider } from '@elastic/eui'
 import r2wc from '@r2wc/react-to-web-component'
-import {
-    QueryClient,
-    QueryClientProvider,
-    useQuery,
-} from '@tanstack/react-query'
+import { QueryClientProvider, useQuery } from '@tanstack/react-query'
 import { StrictMode } from 'react'
-
-const queryClient = new QueryClient()
 
 const NavigationSearchInner = () => {
     const { data: isApiAvailable } = useQuery({
@@ -37,7 +32,7 @@ const NavigationSearchWrapper = () => {
                 globalStyles={false}
                 utilityClasses={false}
             >
-                <QueryClientProvider client={queryClient}>
+                <QueryClientProvider client={sharedQueryClient}>
                     <NavigationSearchInner />
                 </QueryClientProvider>
             </EuiProvider>

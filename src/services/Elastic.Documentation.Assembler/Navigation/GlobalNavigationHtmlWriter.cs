@@ -16,14 +16,13 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 	private readonly ILogger _logger = logFactory.CreateLogger<GlobalNavigationHtmlWriter>();
 	private readonly SemaphoreSlim _semaphore = new(1, 1);
 
-	private readonly ConcurrentDictionary<(string, int), string> _renderedNavigationCache = [];
+	private readonly ConcurrentDictionary<string, string> _renderedNavigationCache = [];
 
 	public async Task<NavigationRenderResult> RenderNavigation(
 		IRootNavigationItem<INavigationModel, INavigationItem> currentRootNavigation,
 #pragma warning disable IDE0060
 		INavigationItem currentNavigationItem, // temporary https://github.com/elastic/docs-content/pull/3730
 #pragma warning restore IDE0060
-		int maxLevel,
 		Cancel ctx = default
 	)
 	{
@@ -33,7 +32,7 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 		if (currentRootNavigation.Parent is null or not SiteNavigation)
 			collector.EmitGlobalError($"Passed root is not actually a top level navigation item {currentRootNavigation.NavigationTitle} ({currentRootNavigation.Id}) in {currentRootNavigation.Url}, trying to render: {currentNavigationItem.Url}");
 
-		if (_renderedNavigationCache.TryGetValue((currentRootNavigation.Id, maxLevel), out var html))
+		if (_renderedNavigationCache.TryGetValue(currentRootNavigation.Id, out var html))
 			return new NavigationRenderResult { Html = html, Id = currentRootNavigation.Id };
 
 		if (currentRootNavigation is not INodeNavigationItem<INavigationModel, INavigationItem> group)
@@ -43,14 +42,14 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 
 		try
 		{
-			if (_renderedNavigationCache.TryGetValue((currentRootNavigation.Id, maxLevel), out html))
+			if (_renderedNavigationCache.TryGetValue(currentRootNavigation.Id, out html))
 				return new NavigationRenderResult { Html = html, Id = currentRootNavigation.Id };
 
 			_logger.LogInformation("Rendering navigation for {NavigationTitle} ({Id})", currentRootNavigation.NavigationTitle, currentRootNavigation.Id);
 
-			var model = CreateNavigationModel(group, maxLevel);
+			var model = CreateNavigationModel(group);
 			html = await ((INavigationHtmlWriter)this).Render(model, ctx);
-			_renderedNavigationCache[(currentRootNavigation.Id, maxLevel)] = html;
+			_renderedNavigationCache[currentRootNavigation.Id] = html;
 			return new NavigationRenderResult
 			{
 				Html = html,
@@ -63,7 +62,7 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 		}
 	}
 
-	private NavigationViewModel CreateNavigationModel(INodeNavigationItem<INavigationModel, INavigationItem> group, int maxLevel)
+	private NavigationViewModel CreateNavigationModel(INodeNavigationItem<INavigationModel, INavigationItem> group)
 	{
 		var topLevelItems = globalNavigation.TopLevelItems;
 		return new NavigationViewModel
@@ -74,8 +73,7 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 			IsPrimaryNavEnabled = true,
 			IsUsingNavigationDropdown = true,
 			IsGlobalAssemblyBuild = true,
-			TopLevelItems = topLevelItems,
-			MaxLevel = maxLevel
+			TopLevelItems = topLevelItems
 		};
 	}
 

@@ -18,22 +18,20 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 		var changelogDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(changelogDir);
 
-		// Create changelog that should be blocked (elasticsearch + search area)
+		// Create changelog
 		// language=yaml
 		var changelog1 =
 			"""
-			title: Blocked feature
+			title: Test feature
 			type: feature
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			areas:
-			  - search
 			pr: https://github.com/elastic/elasticsearch/pull/100
-			description: This feature should be blocked
+			description: This is a test feature
 			""";
 
-		var changelogFile1 = FileSystem.Path.Combine(changelogDir, "1755268130-blocked.yaml");
+		var changelogFile1 = FileSystem.Path.Combine(changelogDir, "1755268130-test.yaml");
 		await FileSystem.File.WriteAllTextAsync(changelogFile1, changelog1, TestContext.Current.CancellationToken);
 
 		// Create config file in a custom location (not in docs/ subdirectory)
@@ -43,15 +41,13 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 		// language=yaml
 		var configContent =
 			"""
-			available_types:
-			  - feature
-			available_subtypes: []
-			available_lifecycles:
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change:
+			lifecycles:
 			  - ga
-			render_blockers:
-			  elasticsearch:
-			    areas:
-			      - search
 			""";
 		await FileSystem.File.WriteAllTextAsync(customConfigPath, configContent, TestContext.Current.CancellationToken);
 
@@ -68,7 +64,7 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 			    target: 9.2.0
 			entries:
 			  - file:
-			      name: 1755268130-blocked.yaml
+			      name: 1755268130-test.yaml
 			      checksum: {ComputeSha1(changelog1)}
 			""";
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
@@ -76,7 +72,7 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 		// Don't change directory - use custom config path via Config property
 		var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 
-		var input = new ChangelogRenderInput
+		var input = new RenderChangelogsArguments
 		{
 			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
 			Output = outputDir,
@@ -90,20 +86,13 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
-		Collector.Warnings.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Warning &&
-			d.Message.Contains("Blocked feature") &&
-			d.Message.Contains("render_blockers") &&
-			d.Message.Contains("product 'elasticsearch'") &&
-			d.Message.Contains("area 'search'"));
 
 		var indexFile = FileSystem.Path.Combine(outputDir, "9.2.0", "index.md");
 		FileSystem.File.Exists(indexFile).Should().BeTrue();
 
 		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
-		// Blocked entry should be commented out with % prefix
-		indexContent.Should().Contain("% * Blocked feature");
+		// Verify changelog entry is rendered
+		indexContent.Should().Contain("* Test feature");
 	}
 
 	[Fact]
@@ -148,7 +137,7 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 
 		var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 
-		var input = new ChangelogRenderInput
+		var input = new RenderChangelogsArguments
 		{
 			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
 			Output = outputDir,
@@ -262,7 +251,7 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 
 		var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 
-		var input = new ChangelogRenderInput
+		var input = new RenderChangelogsArguments
 		{
 			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
 			Output = outputDir,

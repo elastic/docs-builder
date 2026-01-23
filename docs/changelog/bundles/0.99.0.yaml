@@ -1,0 +1,7 @@
+products:
+  - product: docs-builder
+    target: 0.99.0
+    lifecycle: ga
+entries:
+  - file:
+      name: sample-feature-099.yaml

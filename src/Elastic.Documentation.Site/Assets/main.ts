@@ -38,8 +38,6 @@ import('./web-components/AppliesToPopover')
 import('./web-components/FullPageSearch/FullPageSearchComponent')
 
 const { getOS } = new UAParser()
-const isLazyLoadNavigationEnabled =
-    $('meta[property="docs:feature:lazy-load-navigation"]')?.content === 'true'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type HtmxEvent = any
@@ -97,27 +95,19 @@ document.addEventListener('DOMContentLoaded', function () {
     initMath()
 })
 
-document.addEventListener('htmx:load', function (event: HtmxEvent) {
+document.addEventListener('htmx:load', function () {
     initTocNav()
     initHighlight()
     initCopyButton()
     initTabs()
     initAppliesSwitch()
     initMath()
-    initApiDocs()
+    initNav()
 
-    // We do this so that the navigation is not initialized twice
-    // When lazy load is enabled, only initialize when nav-tree loads
-    // Defer with requestAnimationFrame to ensure DOM is fully rendered
-    // The throttle with trailing: true will ensure only the last call executes
-    if (!isLazyLoadNavigationEnabled || event.detail.elt.id === 'nav-tree') {
-        requestAnimationFrame(() => {
-            initNav()
-        })
-    }
     initSmoothScroll()
     openDetailsWithAnchor()
     initImageCarousel()
+    initApiDocs()
 
     const urlParams = new URLSearchParams(window.location.search)
     const editParam = urlParams.has('edit')

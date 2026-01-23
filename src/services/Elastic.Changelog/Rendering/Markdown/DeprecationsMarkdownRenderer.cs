@@ -4,7 +4,9 @@
 
 using System.IO.Abstractions;
 using System.Text;
+using Elastic.Documentation;
 using static System.Globalization.CultureInfo;
+using static Elastic.Changelog.ChangelogEntryType;
 
 namespace Elastic.Changelog.Rendering.Markdown;
 
@@ -19,7 +21,7 @@ public class DeprecationsMarkdownRenderer(IFileSystem fileSystem) : MarkdownRend
 	/// <inheritdoc />
 	public override async Task RenderAsync(ChangelogRenderContext context, Cancel ctx)
 	{
-		var deprecations = context.EntriesByType.GetValueOrDefault(ChangelogEntryTypes.Deprecation, []);
+		var deprecations = context.EntriesByType.GetValueOrDefault(Deprecation, []);
 
 		var sb = new StringBuilder();
 		_ = sb.AppendLine(InvariantCulture, $"## {context.Title} [{context.Repo}-{context.TitleSlug}-deprecations]");
@@ -41,7 +43,7 @@ public class DeprecationsMarkdownRenderer(IFileSystem fileSystem) : MarkdownRend
 				foreach (var entry in areaGroup)
 				{
 					var (bundleProductIds, entryRepo, entryHideLinks) = GetEntryContext(entry, context);
-					var shouldHide = ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, bundleProductIds, context.RenderBlockers);
+					var shouldHide = ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide);
 
 					_ = sb.AppendLine();
 					if (shouldHide)
