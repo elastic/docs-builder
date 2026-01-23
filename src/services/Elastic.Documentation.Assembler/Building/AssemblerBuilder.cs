@@ -8,6 +8,7 @@ using Elastic.Documentation.Assembler.Links;
 using Elastic.Documentation.Assembler.Navigation;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
+using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation;
@@ -43,7 +44,11 @@ public class AssemblerBuilder(
 
 		var redirects = new Dictionary<string, string>();
 
-		var markdownExporters = exportOptions.CreateMarkdownExporters(logFactory, context, environment.Name);
+		var documentInferrer = new DocumentInferrerService(
+			context.ProductsConfiguration,
+			context.VersionsConfiguration,
+			context.LegacyUrlMappings);
+		var markdownExporters = exportOptions.CreateMarkdownExporters(logFactory, context, environment.Name, documentInferrer);
 		var tasks = markdownExporters.Select(async e => await e.StartAsync(ctx));
 		await Task.WhenAll(tasks);
 

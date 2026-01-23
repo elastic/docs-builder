@@ -22,7 +22,7 @@ type ``static path to image`` () =
        """
 
 type ``supports --url-path-prefix`` () =
-    static let docs = Setup.GenerateWithOptions { UrlPathPrefix = Some "/docs" } [
+    static let docs = Setup.GenerateWithOptions { SetupOptions.Empty with UrlPathPrefix = Some "/docs" } [
         Static "img/observability.png"
 
         Index """# Testing nested inline anchors
@@ -58,7 +58,7 @@ type ``supports --url-path-prefix`` () =
     let ``has no errors`` () = docs |> hasNoErrors
 
 type ``image ref out of scope`` () =
-    static let docs = Setup.GenerateWithOptions { UrlPathPrefix = Some "/docs" } [
+    static let docs = Setup.GenerateWithOptions { SetupOptions.Empty with UrlPathPrefix = Some "/docs" } [
         Static "img/observability.png"
 
         Index """# Testing nested inline anchors
