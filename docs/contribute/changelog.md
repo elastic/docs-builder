@@ -71,7 +71,9 @@ When you run the `docs-builder changelog render` command, changelog entries that
 The command will emit warnings indicating which changelog entries were commented out and why.
 
 :::{note}
-You can define blocks such that they apply to only a subset of products or to all products.
+You can define blocks at the global level (applies to all products) or for specific products.
+Product-specific blocks **override** the global blocks entirely—they do not merge.
+If you define a product-specific `publish.areas` block, you must re-state any global blocked areas that you also want blocked for that product.
 :::
 
 Refer to [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml) and an [example usage](#example-block-label).

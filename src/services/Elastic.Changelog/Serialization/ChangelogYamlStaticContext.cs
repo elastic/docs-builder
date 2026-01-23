@@ -16,6 +16,7 @@ namespace Elastic.Changelog.Serialization;
 [YamlSerializable(typeof(TypeEntryYaml))]
 [YamlSerializable(typeof(BlockConfigurationYaml))]
 [YamlSerializable(typeof(ProductBlockersYaml))]
+[YamlSerializable(typeof(PublishBlockerYaml))]
 // YAML DTOs for bundles
 [YamlSerializable(typeof(BundleYaml))]
 [YamlSerializable(typeof(BundledProductYaml))]
