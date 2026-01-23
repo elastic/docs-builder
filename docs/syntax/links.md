@@ -104,6 +104,25 @@ Link to websites and resources outside the Elastic docs:
 [Elastic Documentation](https://www.elastic.co/guide)
 ```
 
+### Autolinks
+
+Bare `https://` URLs in text are automatically converted to clickable links:
+
+```markdown
+Check out https://example.com for more info.
+```
+
+Autolinks:
+
+- Only work with `https://` URLs (not `http://`).
+- Open in a new tab.
+- Display the external link indicator.
+- Are not rendered inside code blocks or inline code.
+
+:::{hint}
+If an autolink points to `elastic.co/docs`, consider replacing it with a [cross-repository link](#cross-repository-links) or a relative link for better maintainability.
+:::
+
 ## Link formatting
 
 ### Style link text
