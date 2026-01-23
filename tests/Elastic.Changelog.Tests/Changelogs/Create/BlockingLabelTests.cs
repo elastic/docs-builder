@@ -36,22 +36,23 @@ public class BlockingLabelTests(ITestOutputHelper output) : CreateChangelogTestB
 			    feature: "type:feature"
 			    bug-fix:
 			    breaking-change:
-			available_lifecycles:
+			lifecycles:
 			  - preview
 			  - beta
 			  - ga
-			add_blockers:
-			  elasticsearch:
-			    - "skip:releaseNotes"
+			block:
+			  product:
+			    elasticsearch:
+			      create: "skip:releaseNotes"
 			""";
 		var configPath = await CreateConfigDirectory(configContent);
 
 		var service = CreateService();
 
-		var input = new ChangelogInput
+		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/1234"],
-			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory()
 		};
@@ -96,25 +97,26 @@ public class BlockingLabelTests(ITestOutputHelper output) : CreateChangelogTestB
 			    feature: "type:feature"
 			    bug-fix:
 			    breaking-change:
-			available_lifecycles:
+			lifecycles:
 			  - preview
 			  - beta
 			  - ga
-			add_blockers:
-			  cloud-serverless:
-			    - "ILM"
+			block:
+			  product:
+			    cloud-serverless:
+			      create: "ILM"
 			""";
 		var configPath = await CreateConfigDirectory(configContent);
 
 		var service = CreateService();
 
-		var input = new ChangelogInput
+		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/1234"],
 			Products =
 			[
-				new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" },
-				new ProductInfo { Product = "cloud-serverless", Target = "2025-08-05" }
+				new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" },
+				new ProductArgument { Product = "cloud-serverless", Target = "2025-08-05" }
 			],
 			Config = configPath,
 			Output = CreateOutputDirectory()
@@ -160,25 +162,26 @@ public class BlockingLabelTests(ITestOutputHelper output) : CreateChangelogTestB
 			    feature: "type:feature"
 			    bug-fix:
 			    breaking-change:
-			available_lifecycles:
+			lifecycles:
 			  - preview
 			  - beta
 			  - ga
-			add_blockers:
-			  elasticsearch, cloud-serverless:
-			    - ">non-issue"
+			block:
+			  product:
+			    elasticsearch, cloud-serverless:
+			      create: ">non-issue"
 			""";
 		var configPath = await CreateConfigDirectory(configContent);
 
 		var service = CreateService();
 
-		var input = new ChangelogInput
+		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/1234"],
 			Products =
 			[
-				new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" },
-				new ProductInfo { Product = "cloud-serverless", Target = "2025-08-05" }
+				new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" },
+				new ProductArgument { Product = "cloud-serverless", Target = "2025-08-05" }
 			],
 			Config = configPath,
 			Output = CreateOutputDirectory()

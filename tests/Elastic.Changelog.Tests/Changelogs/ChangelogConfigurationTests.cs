@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Changelog.Configuration;
+using Elastic.Changelog.Serialization;
+using Elastic.Documentation;
 using Elastic.Documentation.Diagnostics;
 using FluentAssertions;
 
@@ -23,7 +25,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		// language=yaml
 		var configContent =
 			"""
-			available_lifecycles:
+			lifecycles:
 			  - ga
 			""";
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
@@ -40,9 +42,9 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			config.Should().NotBeNull();
 			Collector.Errors.Should().Be(0);
 			// Should have default types
-			config!.AvailableTypes.Should().Contain("feature");
-			config.AvailableTypes.Should().Contain("bug-fix");
-			config.AvailableTypes.Should().Contain("docs");
+			config!.Types.Should().Contain("feature");
+			config.Types.Should().Contain("bug-fix");
+			config.Types.Should().Contain("docs");
 		}
 		finally
 		{
@@ -69,7 +71,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			    feature: ">feature"
 			    bug-fix: ">bug"
 			    breaking-change: ">breaking"
-			available_lifecycles:
+			lifecycles:
 			  - ga
 			""";
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
@@ -86,13 +88,13 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			config.Should().NotBeNull();
 			Collector.Errors.Should().Be(0);
 			// Should have default subtypes (no pivot.subtypes defined)
-			config!.AvailableSubtypes.Should().Contain("api");
-			config.AvailableSubtypes.Should().Contain("behavioral");
+			config!.SubTypes.Should().Contain("api");
+			config.SubTypes.Should().Contain("behavioral");
 			// Should have types from pivot.types keys
-			config.AvailableTypes.Should().Contain("feature");
-			config.AvailableTypes.Should().Contain("bug-fix");
-			config.AvailableTypes.Should().Contain("breaking-change");
-			config.AvailableTypes.Should().HaveCount(3);
+			config.Types.Should().Contain("feature");
+			config.Types.Should().Contain("bug-fix");
+			config.Types.Should().Contain("breaking-change");
+			config.Types.Should().HaveCount(3);
 		}
 		finally
 		{
@@ -109,7 +111,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		var docsDir = FileSystem.Path.Combine(configDir, "docs");
 		FileSystem.Directory.CreateDirectory(docsDir);
 		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
-		// Config without available_lifecycles - should use defaults
+		// Config without lifecycles - should use defaults
 		// Must include required types: feature, bug-fix, breaking-change
 		// language=yaml
 		var configContent =
@@ -133,61 +135,10 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			// Assert
 			config.Should().NotBeNull();
 			Collector.Errors.Should().Be(0);
-			// Should have default lifecycles
-			config!.AvailableLifecycles.Should().Contain("preview");
-			config.AvailableLifecycles.Should().Contain("beta");
-			config.AvailableLifecycles.Should().Contain("ga");
-		}
-		finally
-		{
-			FileSystem.Directory.SetCurrentDirectory(originalDir);
-		}
-	}
-
-	[Fact]
-	public async Task LoadChangelogConfiguration_WithInvalidRenderBlockersType_ReturnsError()
-	{
-		// Arrange
-		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		var docsDir = FileSystem.Path.Combine(configDir, "docs");
-		FileSystem.Directory.CreateDirectory(docsDir);
-		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
-		// Config with invalid type in render_blockers
-		// Must include required types: feature, bug-fix, breaking-change
-		// language=yaml
-		var configContent =
-			"""
-			pivot:
-			  types:
-			    feature:
-			    bug-fix:
-			    breaking-change:
-			    docs:
-			available_lifecycles:
-			  - ga
-			render_blockers:
-			  elasticsearch:
-			    types:
-			      - invalid-type
-			""";
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
-
-		var originalDir = FileSystem.Directory.GetCurrentDirectory();
-		try
-		{
-			FileSystem.Directory.SetCurrentDirectory(configDir);
-
-			// Act
-			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current.CancellationToken);
-
-			// Assert
-			config.Should().BeNull();
-			Collector.Errors.Should().BeGreaterThan(0);
-			Collector.Diagnostics.Should().Contain(d =>
-				d.Severity == Severity.Error &&
-				d.Message.Contains("Type 'invalid-type' in render_blockers") &&
-				d.Message.Contains("is not a valid type"));
+			// Should have default lifecycles (now strongly typed as Lifecycle enum)
+			config!.Lifecycles.Should().Contain(Lifecycle.Preview);
+			config.Lifecycles.Should().Contain(Lifecycle.Beta);
+			config.Lifecycles.Should().Contain(Lifecycle.Ga);
 		}
 		finally
 		{
@@ -232,9 +183,9 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			config.Should().NotBeNull();
 			Collector.Errors.Should().Be(0);
 			// Should have areas from pivot.areas keys
-			config!.AvailableAreas.Should().NotBeNull();
-			config.AvailableAreas.Should().Contain("Search");
-			config.AvailableAreas.Should().Contain("Security");
+			config!.Areas.Should().NotBeNull();
+			config.Areas.Should().Contain("Search");
+			config.Areas.Should().Contain("Security");
 			// Should have inverted label mappings
 			config.LabelToAreas.Should().NotBeNull();
 			config.LabelToAreas.Should().ContainKey(":Search/Search");
@@ -464,7 +415,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			// Assert
 			config.Should().NotBeNull();
 			Collector.Errors.Should().Be(0);
-			config!.AvailableTypes.Should().Contain("breaking-change");
+			config!.Types.Should().Contain("breaking-change");
 		}
 		finally
 		{

@@ -4,9 +4,9 @@
 
 using System.IO.Abstractions;
 using System.Text;
-using Elastic.Documentation.Changelog;
+using Elastic.Documentation;
 using static System.Globalization.CultureInfo;
-using static Elastic.Documentation.Changelog.ChangelogEntryType;
+using static Elastic.Changelog.ChangelogEntryType;
 
 namespace Elastic.Changelog.Rendering.Markdown;
 
@@ -100,7 +100,7 @@ public class IndexMarkdownRenderer(IFileSystem fileSystem) : MarkdownRendererBas
 
 	private static void RenderEntriesByArea(
 		StringBuilder sb,
-		IReadOnlyCollection<ChangelogData> entries,
+		IReadOnlyCollection<ChangelogEntry> entries,
 		ChangelogRenderContext context)
 	{
 		var groupedByArea = context.Subsections
@@ -118,7 +118,7 @@ public class IndexMarkdownRenderer(IFileSystem fileSystem) : MarkdownRendererBas
 			foreach (var entry in areaGroup)
 			{
 				var (bundleProductIds, entryRepo, entryHideLinks) = GetEntryContext(entry, context);
-				var shouldHide = ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, bundleProductIds, context.RenderBlockers);
+				var shouldHide = ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide);
 
 				if (shouldHide)
 					_ = sb.Append("% ");

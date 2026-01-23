@@ -4,17 +4,17 @@
 
 using System.IO.Abstractions;
 using Elastic.Changelog.Bundling;
-using Elastic.Documentation.Changelog;
+using Elastic.Changelog.Serialization;
+using Elastic.Documentation;
 using Elastic.Documentation.Diagnostics;
 using YamlDotNet.Core;
-using YamlDotNet.Serialization;
 
 namespace Elastic.Changelog.Rendering;
 
 /// <summary>
 /// Service for validating changelog bundles before rendering
 /// </summary>
-public class BundleValidationService(IFileSystem fileSystem, IDeserializer deserializer)
+public class BundleValidationService(IFileSystem fileSystem)
 {
 	/// <summary>
 	/// Validates all bundles and returns validation result with loaded bundle data
@@ -37,10 +37,10 @@ public class BundleValidationService(IFileSystem fileSystem, IDeserializer deser
 			var bundleContent = await fileSystem.File.ReadAllTextAsync(bundleInput.BundleFile, ctx);
 
 			// Validate bundle structure
-			BundledChangelogData? bundledData;
+			Bundle? bundledData;
 			try
 			{
-				bundledData = deserializer.Deserialize<BundledChangelogData>(bundleContent);
+				bundledData = ChangelogYamlSerialization.DeserializeBundle(bundleContent);
 			}
 			catch (YamlException yamlEx)
 			{
@@ -101,7 +101,7 @@ public class BundleValidationService(IFileSystem fileSystem, IDeserializer deser
 	private async Task<bool> ValidateBundleEntriesAsync(
 		IDiagnosticsCollector collector,
 		BundleInput bundleInput,
-		BundledChangelogData bundledData,
+		Bundle bundledData,
 		string bundleDirectory,
 		Dictionary<string, List<string>> seenFileNames,
 		Dictionary<string, List<string>> seenPrs,
@@ -130,7 +130,7 @@ public class BundleValidationService(IFileSystem fileSystem, IDeserializer deser
 			}
 
 			// If entry has resolved data, validate it
-			if (!string.IsNullOrWhiteSpace(entry.Title) && !string.IsNullOrWhiteSpace(entry.Type))
+			if (!string.IsNullOrWhiteSpace(entry.Title) && entry.Type != null)
 			{
 				if (!ValidateResolvedEntry(collector, bundleInput.BundleFile, entry, seenPrs))
 					return false;
@@ -215,7 +215,7 @@ public class BundleValidationService(IFileSystem fileSystem, IDeserializer deser
 			// Normalize "version:" to "target:" in products section
 			var normalizedYaml = ChangelogBundlingService.VersionToTargetRegex().Replace(yamlWithoutComments, "$1target:");
 
-			var entryData = deserializer.Deserialize<ChangelogData>(normalizedYaml);
+			var entryData = ChangelogYamlSerialization.DeserializeEntry(normalizedYaml);
 
 			// Validate required fields in changelog file
 			if (string.IsNullOrWhiteSpace(entryData.Title))
@@ -226,7 +226,7 @@ public class BundleValidationService(IFileSystem fileSystem, IDeserializer deser
 
 			// Type is an enum with a default value, so it's always valid
 
-			if (entryData.Products.Count == 0)
+			if (entryData.Products == null || entryData.Products.Count == 0)
 			{
 				collector.EmitError(filePath, "Changelog file is missing required field: products");
 				return false;

@@ -4,15 +4,15 @@
 
 using System.IO.Abstractions;
 using Elastic.Changelog.Bundling;
-using Elastic.Documentation.Changelog;
-using YamlDotNet.Serialization;
+using Elastic.Changelog.Serialization;
+using Elastic.Documentation;
 
 namespace Elastic.Changelog.Rendering;
 
 /// <summary>
 /// Service for resolving changelog entries from validated bundles
 /// </summary>
-public class BundleDataResolver(IFileSystem fileSystem, IDeserializer deserializer)
+public class BundleDataResolver(IFileSystem fileSystem)
 {
 	private const string DefaultRepo = "elastic";
 
@@ -50,9 +50,9 @@ public class BundleDataResolver(IFileSystem fileSystem, IDeserializer deserializ
 		foreach (var product in bundle.Data.Products)
 		{
 			var target = product.Target ?? string.Empty;
-			_ = allProducts.Add((product.Product, target));
-			if (!string.IsNullOrWhiteSpace(product.Product))
-				_ = bundleProductIds.Add(product.Product);
+			_ = allProducts.Add((product.ProductId, target));
+			if (!string.IsNullOrWhiteSpace(product.ProductId))
+				_ = bundleProductIds.Add(product.ProductId);
 		}
 
 		var repo = bundle.Input.Repo ?? DefaultRepo;
@@ -74,34 +74,14 @@ public class BundleDataResolver(IFileSystem fileSystem, IDeserializer deserializ
 		return resolvedEntries;
 	}
 
-	private async Task<ChangelogData> ResolveEntryAsync(
+	private async Task<ChangelogEntry> ResolveEntryAsync(
 		BundledEntry entry,
 		string bundleDirectory,
 		Cancel ctx)
 	{
-		// If entry has resolved data, use it
-		if (!string.IsNullOrWhiteSpace(entry.Title) && !string.IsNullOrWhiteSpace(entry.Type))
-		{
-			var entryType = ChangelogEntryTypeExtensions.TryParse(entry.Type, out var parsed, ignoreCase: true, allowMatchingMetadataAttribute: true)
-				? parsed
-				: ChangelogEntryType.Other;
-
-			return new ChangelogData
-			{
-				Title = entry.Title,
-				Type = entryType,
-				Subtype = entry.Subtype,
-				Description = entry.Description,
-				Impact = entry.Impact,
-				Action = entry.Action,
-				FeatureId = entry.FeatureId,
-				Highlight = entry.Highlight,
-				Pr = entry.Pr,
-				Products = entry.Products ?? [],
-				Areas = entry.Areas,
-				Issues = entry.Issues
-			};
-		}
+		// If entry has resolved data, use Mapperly to convert
+		if (!string.IsNullOrWhiteSpace(entry.Title) && entry.Type != null)
+			return ChangelogMapper.ToEntry(entry);
 
 		// Load from file (already validated to exist)
 		var filePath = fileSystem.Path.Combine(bundleDirectory, entry.File!.Name);
@@ -114,6 +94,6 @@ public class BundleDataResolver(IFileSystem fileSystem, IDeserializer deserializ
 		// Normalize "version:" to "target:" in products section
 		var normalizedYaml = ChangelogBundlingService.VersionToTargetRegex().Replace(yamlWithoutComments, "$1target:");
 
-		return deserializer.Deserialize<ChangelogData>(normalizedYaml);
+		return ChangelogYamlSerialization.DeserializeEntry(normalizedYaml);
 	}
 }

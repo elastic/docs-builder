@@ -18,7 +18,7 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 		// Arrange
 		var missingBundle = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "nonexistent.yaml");
 
-		var input = new ChangelogRenderInput
+		var input = new RenderChangelogsArguments
 		{
 			Bundles = [new BundleInput { BundleFile = missingBundle }],
 			Output = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString())
@@ -54,7 +54,7 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 			""";
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
-		var input = new ChangelogRenderInput
+		var input = new RenderChangelogsArguments
 		{
 			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = bundleDir }],
 			Output = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString())
@@ -84,7 +84,7 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 			""";
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
-		var input = new ChangelogRenderInput
+		var input = new RenderChangelogsArguments
 		{
 			Bundles = [new BundleInput { BundleFile = bundleFile }],
 			Output = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString())
@@ -135,7 +135,7 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 			""";
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
-		var input = new ChangelogRenderInput
+		var input = new RenderChangelogsArguments
 		{
 			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
 			Output = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString())
@@ -176,7 +176,7 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 
 		var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 
-		var input = new ChangelogRenderInput
+		var input = new RenderChangelogsArguments
 		{
 			Bundles = [new BundleInput { BundleFile = bundleFile }],
 			Output = outputDir,
@@ -240,7 +240,7 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 
 		var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 
-		var input = new ChangelogRenderInput
+		var input = new RenderChangelogsArguments
 		{
 			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
 			Output = outputDir,

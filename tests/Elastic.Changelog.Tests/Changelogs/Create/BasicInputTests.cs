@@ -15,11 +15,11 @@ public class BasicInputTests(ITestOutputHelper output) : CreateChangelogTestBase
 		// Arrange
 		var service = CreateService();
 
-		var input = new ChangelogInput
+		var input = new CreateChangelogArguments
 		{
 			Title = "Add new search feature",
 			Type = "feature",
-			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
 			Description = "This is a new search feature",
 			Output = CreateOutputDirectory()
 		};
@@ -59,14 +59,14 @@ public class BasicInputTests(ITestOutputHelper output) : CreateChangelogTestBase
 		// Arrange
 		var service = CreateService();
 
-		var input = new ChangelogInput
+		var input = new CreateChangelogArguments
 		{
 			Title = "Multi-product feature",
 			Type = "feature",
 			Products =
 			[
-				new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" },
-				new ProductInfo { Product = "kibana", Target = "9.2.0", Lifecycle = "ga" }
+				new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" },
+				new ProductArgument { Product = "kibana", Target = "9.2.0", Lifecycle = "ga" }
 			],
 			Output = CreateOutputDirectory()
 		};
@@ -104,12 +104,12 @@ public class BasicInputTests(ITestOutputHelper output) : CreateChangelogTestBase
 		// Arrange
 		var service = CreateService();
 
-		var input = new ChangelogInput
+		var input = new CreateChangelogArguments
 		{
 			Title = "Breaking API change",
 			Type = "breaking-change",
 			Subtype = "api",
-			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
 			Impact = "API clients will need to update",
 			Action = "Update your API client code",
 			Output = CreateOutputDirectory()

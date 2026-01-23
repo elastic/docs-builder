@@ -56,7 +56,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
 		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
 
-		var input = new ChangelogBundleInput
+		var input = new BundleChangelogsArguments
 		{
 			Directory = _changelogDir,
 			All = true,
@@ -114,10 +114,10 @@ public class BundleChangelogsTests : ChangelogTestBase
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
 		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
 
-		var input = new ChangelogBundleInput
+		var input = new BundleChangelogsArguments
 		{
 			Directory = _changelogDir,
-			InputProducts = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			InputProducts = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
 			Output = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
@@ -178,7 +178,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
 		await FileSystem.File.WriteAllTextAsync(file3, changelog3, TestContext.Current.CancellationToken);
 
-		var input = new ChangelogBundleInput
+		var input = new BundleChangelogsArguments
 		{
 			Directory = _changelogDir,
 			Prs = ["https://github.com/elastic/elasticsearch/pull/100", "https://github.com/elastic/elasticsearch/pull/200"],
@@ -217,7 +217,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-first-pr.yaml");
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
 
-		var input = new ChangelogBundleInput
+		var input = new BundleChangelogsArguments
 		{
 			Directory = _changelogDir,
 			Prs =
@@ -286,7 +286,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			""";
 		await FileSystem.File.WriteAllTextAsync(prsFile, prsContent, TestContext.Current.CancellationToken);
 
-		var input = new ChangelogBundleInput
+		var input = new BundleChangelogsArguments
 		{
 			Directory = _changelogDir,
 			Prs = [prsFile],
@@ -324,7 +324,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-pr-number.yaml");
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
 
-		var input = new ChangelogBundleInput
+		var input = new BundleChangelogsArguments
 		{
 			Directory = _changelogDir,
 			Prs = ["100"],
@@ -363,7 +363,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-short-format.yaml");
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
 
-		var input = new ChangelogBundleInput
+		var input = new BundleChangelogsArguments
 		{
 			Directory = _changelogDir,
 			Prs = ["elastic/elasticsearch#133609"],
@@ -386,10 +386,10 @@ public class BundleChangelogsTests : ChangelogTestBase
 	{
 		// Arrange
 
-		var input = new ChangelogBundleInput
+		var input = new BundleChangelogsArguments
 		{
 			Directory = _changelogDir,
-			InputProducts = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			InputProducts = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
 			Output = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
@@ -408,7 +408,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		// Arrange
 		var invalidDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "nonexistent");
 
-		var input = new ChangelogBundleInput
+		var input = new BundleChangelogsArguments
 		{
 			Directory = invalidDir,
 			All = true,
@@ -457,7 +457,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
 		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
 
-		var input = new ChangelogBundleInput
+		var input = new BundleChangelogsArguments
 		{
 			Directory = _changelogDir,
 			Output = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
@@ -477,11 +477,11 @@ public class BundleChangelogsTests : ChangelogTestBase
 	{
 		// Arrange
 
-		var input = new ChangelogBundleInput
+		var input = new BundleChangelogsArguments
 		{
 			Directory = _changelogDir,
 			All = true,
-			InputProducts = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			InputProducts = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
 			Output = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
@@ -525,13 +525,13 @@ public class BundleChangelogsTests : ChangelogTestBase
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
 		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
 
-		var input = new ChangelogBundleInput
+		var input = new BundleChangelogsArguments
 		{
 			Directory = _changelogDir,
 			InputProducts =
 			[
-				new ProductInfo { Product = "cloud-serverless", Target = "2025-12-02", Lifecycle = "*" },
-				new ProductInfo { Product = "cloud-serverless", Target = "2025-12-06", Lifecycle = "*" }
+				new ProductArgument { Product = "cloud-serverless", Target = "2025-12-02", Lifecycle = "*" },
+				new ProductArgument { Product = "cloud-serverless", Target = "2025-12-06", Lifecycle = "*" }
 			],
 			Output = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
@@ -584,10 +584,10 @@ public class BundleChangelogsTests : ChangelogTestBase
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
 		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
 
-		var input = new ChangelogBundleInput
+		var input = new BundleChangelogsArguments
 		{
 			Directory = _changelogDir,
-			InputProducts = [new ProductInfo { Product = "*", Target = "9.2.0", Lifecycle = "ga" }],
+			InputProducts = [new ProductArgument { Product = "*", Target = "9.2.0", Lifecycle = "ga" }],
 			Output = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
@@ -636,10 +636,10 @@ public class BundleChangelogsTests : ChangelogTestBase
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
 		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
 
-		var input = new ChangelogBundleInput
+		var input = new BundleChangelogsArguments
 		{
 			Directory = _changelogDir,
-			InputProducts = [new ProductInfo { Product = "*", Target = "*", Lifecycle = "*" }],
+			InputProducts = [new ProductArgument { Product = "*", Target = "*", Lifecycle = "*" }],
 			Output = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
@@ -701,10 +701,10 @@ public class BundleChangelogsTests : ChangelogTestBase
 		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
 		await FileSystem.File.WriteAllTextAsync(file3, changelog3, TestContext.Current.CancellationToken);
 
-		var input = new ChangelogBundleInput
+		var input = new BundleChangelogsArguments
 		{
 			Directory = _changelogDir,
-			InputProducts = [new ProductInfo { Product = "elasticsearch", Target = "9.3.*", Lifecycle = "*" }],
+			InputProducts = [new ProductArgument { Product = "elasticsearch", Target = "9.3.*", Lifecycle = "*" }],
 			Output = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
@@ -728,7 +728,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		// Provide a non-existent file path - should return error since there are no other PRs
 		var nonexistentFile = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "nonexistent.txt");
-		var input = new ChangelogBundleInput
+		var input = new BundleChangelogsArguments
 		{
 			Directory = _changelogDir,
 			Prs = [nonexistentFile],
@@ -764,7 +764,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog, TestContext.Current.CancellationToken);
 
 		// Provide a URL - should be treated as a PR identifier, not a file path
-		var input = new ChangelogBundleInput
+		var input = new BundleChangelogsArguments
 		{
 			Directory = _changelogDir,
 			Prs = ["https://github.com/elastic/elasticsearch/pull/123"],
@@ -804,7 +804,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		// Provide a non-existent file path along with a valid PR - should emit warning for file but continue with PR
 		var nonexistentFile = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "nonexistent.txt");
-		var input = new ChangelogBundleInput
+		var input = new BundleChangelogsArguments
 		{
 			Directory = _changelogDir,
 			Prs = [nonexistentFile, "https://github.com/elastic/elasticsearch/pull/123"],
@@ -858,14 +858,14 @@ public class BundleChangelogsTests : ChangelogTestBase
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
 		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
 
-		var input = new ChangelogBundleInput
+		var input = new BundleChangelogsArguments
 		{
 			Directory = _changelogDir,
 			All = true,
 			OutputProducts =
 			[
-				new ProductInfo { Product = "cloud-serverless", Target = "2025-12-02", Lifecycle = "ga" },
-				new ProductInfo { Product = "cloud-serverless", Target = "2025-12-06", Lifecycle = "beta" }
+				new ProductArgument { Product = "cloud-serverless", Target = "2025-12-02", Lifecycle = "ga" },
+				new ProductArgument { Product = "cloud-serverless", Target = "2025-12-06", Lifecycle = "beta" }
 			],
 			Output = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
@@ -938,7 +938,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
 		await FileSystem.File.WriteAllTextAsync(file3, changelog3, TestContext.Current.CancellationToken);
 
-		var input = new ChangelogBundleInput
+		var input = new BundleChangelogsArguments
 		{
 			Directory = _changelogDir,
 			All = true,
@@ -994,13 +994,13 @@ public class BundleChangelogsTests : ChangelogTestBase
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
 		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
 
-		var input = new ChangelogBundleInput
+		var input = new BundleChangelogsArguments
 		{
 			Directory = _changelogDir,
 			InputProducts =
 			[
-				new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" },
-				new ProductInfo { Product = "elasticsearch", Target = "9.3.0", Lifecycle = "beta" }
+				new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" },
+				new ProductArgument { Product = "elasticsearch", Target = "9.3.0", Lifecycle = "beta" }
 			],
 			Output = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
@@ -1040,14 +1040,14 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-elasticsearch.yaml");
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
 
-		var input = new ChangelogBundleInput
+		var input = new BundleChangelogsArguments
 		{
 			Directory = _changelogDir,
 			All = true,
 			OutputProducts =
 			[
-				new ProductInfo { Product = "cloud-serverless", Target = "2025-12-02", Lifecycle = "ga" },
-				new ProductInfo { Product = "cloud-serverless", Target = "2025-12-06", Lifecycle = "beta" }
+				new ProductArgument { Product = "cloud-serverless", Target = "2025-12-02", Lifecycle = "ga" },
+				new ProductArgument { Product = "cloud-serverless", Target = "2025-12-06", Lifecycle = "beta" }
 			],
 			Output = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
@@ -1101,7 +1101,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
 		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
 
-		var input = new ChangelogBundleInput
+		var input = new BundleChangelogsArguments
 		{
 			Directory = _changelogDir,
 			All = true,
@@ -1145,12 +1145,12 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1-feature.yaml");
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
 
-		var input = new ChangelogBundleInput
+		var input = new BundleChangelogsArguments
 		{
 			Directory = _changelogDir,
 			InputProducts =
 			[
-				new ProductInfo { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "*" }
+				new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "*" }
 			],
 			Output = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
@@ -1219,7 +1219,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
 		await FileSystem.File.WriteAllTextAsync(file3, changelog3, TestContext.Current.CancellationToken);
 
-		var input = new ChangelogBundleInput
+		var input = new BundleChangelogsArguments
 		{
 			Directory = _changelogDir,
 			All = true,
@@ -1263,7 +1263,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-test-feature.yaml");
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
 
-		var input = new ChangelogBundleInput
+		var input = new BundleChangelogsArguments
 		{
 			Directory = _changelogDir,
 			All = true,
@@ -1315,7 +1315,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		var outputPath = FileSystem.Path.Combine(outputDir, "changelog-bundle.yaml");
 
-		var input = new ChangelogBundleInput
+		var input = new BundleChangelogsArguments
 		{
 			Directory = _changelogDir,
 			All = true,
@@ -1354,7 +1354,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-test-feature.yaml");
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
 
-		var input = new ChangelogBundleInput
+		var input = new BundleChangelogsArguments
 		{
 			Directory = _changelogDir,
 			All = true,
@@ -1388,7 +1388,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-test-feature.yaml");
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
 
-		var input = new ChangelogBundleInput
+		var input = new BundleChangelogsArguments
 		{
 			Directory = _changelogDir,
 			All = true,
@@ -1420,7 +1420,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-test-feature.yaml");
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
 
-		var input = new ChangelogBundleInput
+		var input = new BundleChangelogsArguments
 		{
 			Directory = _changelogDir,
 			All = true,
@@ -1454,7 +1454,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-test-feature.yaml");
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
 
-		var input = new ChangelogBundleInput
+		var input = new BundleChangelogsArguments
 		{
 			Directory = _changelogDir,
 			All = true,

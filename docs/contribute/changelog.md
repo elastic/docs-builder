@@ -34,17 +34,6 @@ This command is associated with an ongoing release docs initiative.
 Additional workflows are still to come for updating and generating documentation from changelogs.
 :::
 
-## Include changelogs inline [changelog-directive]
-
-You can use the [`{changelog}` directive](../syntax/changelog.md) to render all changelog bundles directly in your documentation pages, without needing to run the `changelog render` command first.
-
-```markdown
-:::{changelog}
-:::
-```
-
-By default, the directive renders all bundles from `changelog/bundles/` (relative to the docset root), ordered by semantic version (newest first). For full documentation and examples, see the [{changelog} directive syntax reference](../syntax/changelog.md).
-
 ## Create a changelog configuration file [changelog-settings]
 
 You can create a configuration file to limit the acceptable product, type, subtype, and lifecycle values.
@@ -56,69 +45,38 @@ You can specify a different path with the `--config` command option.
 
 If a configuration file exists, the command validates its values before generating changelog files:
 
-- If the configuration file contains `lifecycle`, `product`, `subtype`, or `type` values that don't match the values in `products.yml` and `ChangelogConfiguration.cs`, validation fails. The changelog file is not created.
-- If the configuration file contains `areas` values and they don't match what you specify in the `--areas` command option, validation fails. The changelog file is not created.
+- If the configuration file contains `lifecycles`, `products`, `subtype`, or `type` values that don't match the values in `products.yml` and `ChangelogConfiguration.cs`, validation fails.
+- If the configuration file contains `areas` values and they don't match what you specify in the `--areas` command option, validation fails.
+- If the configuration file contains `lifecycles` or `products` values are a subset of what's defined in `ChangelogConfiguration.cs` and you try to create a changelog with values outside that subset, validation fails.
 
-The `available_types`, `available_subtypes`, and `available_lifecycles` fields are optional in the configuration file.
-If not specified, all default values from `ChangelogConfiguration.cs` are used.
+In each of these cases where validation fails, a changelog file is not created.
 
 ### GitHub label mappings
 
-You can optionally add `label_to_type` and `label_to_areas` mappings in your changelog configuration.
-When you run the `docs-builder changelog add` command with the `--prs` option, it can use these mappings to fill in the `type` and `areas` in your changelog based on your pull request labels.
+When you run the `docs-builder changelog add` command with the `--prs` option, it can use label mappings in the changelog configuration file to infer the changelog `type` and `areas` fields from your pull request labels.
 
 Refer to the file layout in [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml) and an [example usage](#example-map-label).
 
-### Add blockers
+### Block creation or publishing
 
-You can optionally use `add_blockers` in your changelog configuration to prevent the creation of some changelogs.
-When you run the `docs-builder changelog add` command with the `--prs` and `--products` options and the PR has a label that you've identified as a blocker for that product, the command does not create a changelog for that PR.
+If you have pull request labels that indicate a changelog is not required (such as `>non-issue` or `release_note:skip`), you can declare these in the `block` section of the changelog configuration.
 
-You can use comma-separated product IDs to share the same list of labels across multiple products.
+When you run the `docs-builder changelog add` command with the `--prs` option and the PR has one of the identified labels, the command does not create a changelog for that PR.
 
-Refer to the file layout in [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml) and an [example usage](#example-block-label).
+Likewise, if there are areas or types of changelogs that should not be published, you can declare these in the `block` section of the changelog configuration.
+For example, you might choose to omit `other` or `docs` changelogs.
+Or you might want to omit all autoscaling-related changelogs from the Cloud Serverless release docs.
 
-### Render blockers [render-blockers]
-
-You can optionally add `render_blockers` in your changelog configuration to prevent the rendering of some changelogs.
-When you run the `docs-builder changelog render` command, changelog entries that match the specified products and areas/types will be commented out of the documentation output files.
-
-By default, the `docs-builder changelog render` command checks the following path: `docs/changelog.yml`.
-You can specify a different path with the `--config` command option.
-
-The `render_blockers` configuration uses a dictionary format where:
-
-- The key can be a single product ID or comma-separated product IDs (e.g., `"elasticsearch, cloud-serverless"`)
-- The value contains `areas` and/or `types` that should be blocked for those products
-
-An entry is blocked if any product in the changelog entry matches any product key in `render_blockers` AND (any area matches OR any type matches).
-If a changelog entry has multiple products, all matching products in `render_blockers` are checked.
-
-The `types` values in `render_blockers` must exist in the `available_types` list (or in the default types if `available_types` is not specified).
-
-Example configuration:
-
-```yaml
-render_blockers:
-  "cloud-hosted, cloud-serverless":
-    areas: # List of area values that should be blocked (commented out) during render
-      - Autoscaling
-      - Watcher
-    types: # List of type values that should be blocked (commented out) during render
-      - docs
-  elasticsearch: # Another single product case
-    areas:
-      - Security
-```
-
-When rendering, entries with:
-
-- Product `cloud-hosted` or `cloud-serverless` AND (area `Autoscaling` or `Watcher` OR type `docs`) will be commented out
-- Product `elasticsearch` AND area `Security` will be commented out
-
+When you run the `docs-builder changelog render` command, changelog entries that match the specified products and areas or types are commented out of the documentation output files.
 The command will emit warnings indicating which changelog entries were commented out and why.
 
-Refer to [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml).
+:::{note}
+You can define blocks at the global level (applies to all products) or for specific products.
+Product-specific blocks **override** the global blocks entirely—they do not merge.
+If you define a product-specific `publish.areas` block, you must re-state any global blocked areas that you also want blocked for that product.
+:::
+
+Refer to [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml) and an [example usage](#example-block-label).
 
 ## Create changelog files [changelog-add]
 
@@ -234,19 +192,25 @@ docs-builder changelog add \
 You can configure label mappings in your changelog configuration file:
 
 ```yaml
-# GitHub label mappings (optional - used when --prs option is specified)
-# Maps GitHub PR labels to changelog type values
-# When a PR has a label that matches a key, the corresponding type value is used
-label_to_type:
-  # Example mappings - customize based on your label naming conventions
-  ">enhancement": enhancement
-  ">breaking": breaking-change
-
-# Maps GitHub PR labels to changelog area values
-# Multiple labels can map to the same area, and a single label can map to multiple areas (comma-separated)
-label_to_areas:
-  # Example mappings - customize based on your label naming conventions
-  ":Search Relevance/ES|QL": "ES|QL"
+pivot:
+  # Keys are type names, values can be:
+  #   - simple string: comma-separated label list (e.g., ">bug, >fix")
+  #   - empty/null: no labels for this type
+  #   - object: { labels: "...", subtypes: {...} } for breaking-change type only
+  types:
+    # Example mappings - customize based on your label naming conventions
+    breaking-change:
+      labels: ">breaking, >bc"
+    bug-fix: ">bug"
+    enhancement: ">enhancement"
+  
+  # Area definitions with labels
+  # Keys are area display names, values are label strings
+  # Multiple labels can be comma-separated
+  areas:
+    # Example mappings - customize based on your label naming conventions
+    Autoscaling: ":Distributed Coordination/Autoscaling"
+    "ES|QL": ":Search Relevance/ES|QL"
 ```
 
 When you use the `--prs` option to derive information from a pull request, it can make use of those mappings:
@@ -290,31 +254,39 @@ The extracted content is handled differently based on its length:
 If you explicitly provide `--title` or `--description`, those values take precedence over extracted release notes.
 :::
 
-#### Block changelog creation with PR labels [example-block-label]
+#### Block changelog creation and publishing [example-block-label]
 
-You can configure product-specific label blockers to prevent changelog creation for certain PRs based on their labels.
+You can prevent changelog creation for certain PRs based on their labels.
+You can likewise refrain from publishing changelogs based on their areas and types.
 
 If you run the `docs-builder changelog add` command with the `--prs` option and a PR has a blocking label for any of the products in the `--products` option, that PR will be skipped and no changelog file will be created for it.
 A warning message will be emitted indicating which PR was skipped and why.
 
-For example, your configuration file can contain `add_blockers` like this:
+For example, your configuration file can contain a `block` section this:
 
 ```yaml
-# Product-specific label blockers (optional)
-# Maps product IDs to lists of labels that prevent changelog creation for that product
-# If you run the changelog add command with the --prs option and a PR has any of these labels, the changelog is not created
-# Product IDs can be comma-separated to share the same list of labels across multiple products
-add_blockers:
-  # Example: Skip changelog for cloud.serverless product when PR has "Watcher" label
-  cloud-serverless:
-    - ":Data Management/Watcher"
-    - ">non-issue"
-  # Example: Skip changelog creation for elasticsearch product when PR has "skip:releaseNotes" label
-  elasticsearch:
-    - ">non-issue"
-  # Example: Share the same blockers across multiple products using comma-separated product IDs
-  elasticsearch, cloud-serverless:
-    - ">non-issue"
+block:
+  # Global labels that block changelog creation for all products (comma-separated string)
+  create: ">non-issue"
+  # Block changelog entries from publishing based on entry type or area
+  publish:
+    types:
+      - docs
+    areas:
+      - "Internal"
+  product:
+    'cloud-serverless':
+      create: ">non-issue, >test"
+      publish:
+        areas:
+          - "Internal"
+          - "Autoscaling"
+          - "Watcher"
+    'elasticsearch, kibana':
+      publish:
+        types:
+          - docs
+          - other
 ```
 
 Those settings affect commands with the `--prs` option, for example:
@@ -326,8 +298,11 @@ docs-builder changelog add --prs "1234, 5678" \
   --config test/changelog.yml
 ```
 
-If PR 1234 has the `>non-issue` or Watcher label, it will be skipped and no changelog will be created for it.
+If PR 1234 has the `>non-issue` or `>test` labels, it will be skipped and no changelog will be created.
 If PR 5678 does not have any blocking labels, a changelog is created.
+
+The `block` settings also affect the publishing stage.
+For example, if you run the `docs-builder changelog render` command for a Cloud Serverless bundle, any changelogs that have "Internal", "Autoscaling", or "Watcher" areas are commmented out.
 
 #### Create changelogs from a file of PRs [example-file-prs]
 
@@ -556,7 +531,20 @@ The `--output` option supports two formats:
 
 If you specify a file path with a different extension (not `.yml` or `.yaml`), the command returns an error.
 
-## Create documentation [render-changelogs]
+## Create documentation
+
+### Include changelogs inline [changelog-directive]
+
+You can use the [`{changelog}` directive](../syntax/changelog.md) to render all changelog bundles directly in your documentation pages, without needing to run the `changelog render` command first.
+
+```markdown
+:::{changelog}
+:::
+```
+
+By default, the directive renders all bundles from `changelog/bundles/` (relative to the docset root), ordered by semantic version (newest first). For full documentation and examples, see the [{changelog} directive syntax reference](../syntax/changelog.md).
+
+### Generate markdown or asciidoc [render-changelogs]
 
 The `docs-builder changelog render` command creates markdown or asciidoc files from changelog bundles for documentation purposes.
 For up-to-date details, use the `-h` command option:

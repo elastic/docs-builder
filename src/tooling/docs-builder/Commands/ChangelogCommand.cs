@@ -6,12 +6,12 @@ using System.IO.Abstractions;
 using System.Linq;
 using ConsoleAppFramework;
 using Documentation.Builder.Arguments;
+using Elastic.Changelog;
 using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Creation;
 using Elastic.Changelog.GitHub;
 using Elastic.Changelog.GithubRelease;
 using Elastic.Changelog.Rendering;
-using Elastic.Documentation.Changelog;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;
@@ -61,7 +61,7 @@ internal sealed class ChangelogCommand(
 	/// <param name="ctx"></param>
 	[Command("add")]
 	public async Task<int> Create(
-		[ProductInfoParser] List<ProductInfo> products,
+		[ProductInfoParser] List<ProductArgument> products,
 		string? action = null,
 		string[]? areas = null,
 		string? config = null,
@@ -127,7 +127,7 @@ internal sealed class ChangelogCommand(
 			parsedPrs = allPrs.ToArray();
 		}
 
-		var input = new ChangelogInput
+		var input = new CreateChangelogArguments
 		{
 			Title = title,
 			Type = type,
@@ -174,9 +174,9 @@ internal sealed class ChangelogCommand(
 	public async Task<int> Bundle(
 		bool all = false,
 		string? directory = null,
-		[ProductInfoParser] List<ProductInfo>? inputProducts = null,
+		[ProductInfoParser] List<ProductArgument>? inputProducts = null,
 		string? output = null,
-		[ProductInfoParser] List<ProductInfo>? outputProducts = null,
+		[ProductInfoParser] List<ProductArgument>? outputProducts = null,
 		string? owner = null,
 		string[]? prs = null,
 		string? repo = null,
@@ -318,7 +318,7 @@ internal sealed class ChangelogCommand(
 			}
 		}
 
-		var input = new ChangelogBundleInput
+		var input = new BundleChangelogsArguments
 		{
 			Directory = directory ?? Directory.GetCurrentDirectory(),
 			Output = processedOutput,
@@ -402,7 +402,7 @@ internal sealed class ChangelogCommand(
 		// Parse each --input value into BundleInput objects
 		var bundles = BundleInputParser.ParseAll(input);
 
-		var renderInput = new ChangelogRenderInput
+		var renderInput = new RenderChangelogsArguments
 		{
 			Bundles = bundles,
 			Output = output,
@@ -447,7 +447,7 @@ internal sealed class ChangelogCommand(
 		IGitHubPrService prService = new GitHubPrService(logFactory);
 		var service = new GitHubReleaseChangelogService(logFactory, configurationContext, releaseService, prService);
 
-		var input = new GitHubReleaseInput
+		var input = new CreateChangelogsFromReleaseArguments
 		{
 			Repository = repo,
 			Version = version,

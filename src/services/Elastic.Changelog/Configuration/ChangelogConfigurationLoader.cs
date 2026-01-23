@@ -3,35 +3,27 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using Elastic.Documentation.Changelog;
+using Elastic.Changelog.Serialization;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Diagnostics;
 using Microsoft.Extensions.Logging;
 using YamlDotNet.Core;
-using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NamingConventions;
 
 namespace Elastic.Changelog.Configuration;
 
 /// <summary>
 /// Service for loading and validating changelog configuration
 /// </summary>
-public class ChangelogConfigurationLoader(
-	ILoggerFactory logFactory,
-	IConfigurationContext configurationContext,
-	IFileSystem fileSystem
-)
+public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurationContext configurationContext, IFileSystem fileSystem)
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogConfigurationLoader>();
 
 	/// <summary>
 	/// Loads changelog configuration from file or returns default configuration
 	/// </summary>
-	public async Task<ChangelogConfiguration?> LoadChangelogConfiguration(
-		IDiagnosticsCollector collector,
-		string? configPath,
-		Cancel ctx
-	)
+	public async Task<ChangelogConfiguration?> LoadChangelogConfiguration(IDiagnosticsCollector collector, string? configPath, Cancel ctx)
 	{
 		// Determine config file path
 		var finalConfigPath = configPath ?? fileSystem.Path.Combine(fileSystem.Directory.GetCurrentDirectory(), "docs", "changelog.yml");
@@ -46,222 +38,9 @@ public class ChangelogConfigurationLoader(
 		try
 		{
 			var yamlContent = await fileSystem.File.ReadAllTextAsync(finalConfigPath, ctx);
-			var deserializer = new StaticDeserializerBuilder(new ChangelogYamlStaticContext())
-				.WithNamingConvention(UnderscoredNamingConvention.Instance)
-				.WithTypeConverter(new TypeEntryConverter())
-				.Build();
+			var yamlConfig = ChangelogYamlSerialization.DeserializeConfiguration(yamlContent);
 
-			var config = deserializer.Deserialize<ChangelogConfiguration>(yamlContent);
-
-			// Expand comma-separated product IDs in add_blockers
-			Dictionary<string, IReadOnlyList<string>>? expandedBlockers = null;
-			if (config.AddBlockers != null && config.AddBlockers.Count > 0)
-			{
-				expandedBlockers = new Dictionary<string, IReadOnlyList<string>>(StringComparer.OrdinalIgnoreCase);
-				foreach (var kvp in config.AddBlockers)
-				{
-					var productKeys = kvp.Key.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-					foreach (var productKey in productKeys)
-					{
-						if (expandedBlockers.TryGetValue(productKey, out var existingLabels))
-						{
-							// Merge labels if product key already exists
-							var mergedLabels = existingLabels.Union(kvp.Value, StringComparer.OrdinalIgnoreCase).ToList();
-							expandedBlockers[productKey] = mergedLabels;
-						}
-						else
-							expandedBlockers[productKey] = kvp.Value.ToList();
-					}
-				}
-			}
-
-			var validProductIds = configurationContext.ProductsConfiguration.Products.Keys.ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-			// Compute values from pivot configuration
-			IReadOnlyList<string> availableTypes;
-			IReadOnlyList<string> availableSubtypes;
-			IReadOnlyList<string>? availableAreas;
-			Dictionary<string, string>? labelToType;
-			Dictionary<string, string>? labelToAreas;
-
-			if (config.Pivot != null)
-			{
-				// Compute available types from pivot.types keys
-				if (config.Pivot.Types != null && config.Pivot.Types.Count > 0)
-				{
-					// Validate types against enum values using TryParse
-					foreach (var typeName in config.Pivot.Types.Keys)
-					{
-						if (!ChangelogEntryTypeExtensions.TryParse(typeName, out _, ignoreCase: true, allowMatchingMetadataAttribute: true))
-						{
-							collector.EmitError(finalConfigPath, $"Type '{typeName}' in pivot.types is not a valid type. Valid types: {string.Join(", ", ChangelogConfiguration.DefaultTypes)}");
-							return null;
-						}
-					}
-
-					// Validate required types are present
-					foreach (var requiredType in ChangelogConfiguration.RequiredTypes)
-					{
-						var requiredTypeName = requiredType.ToStringFast(true);
-						if (!config.Pivot.Types.Keys.Any(k => k.Equals(requiredTypeName, StringComparison.OrdinalIgnoreCase)))
-						{
-							collector.EmitError(finalConfigPath, $"Required type '{requiredTypeName}' is missing from pivot.types. Required types: {string.Join(", ", ChangelogConfiguration.RequiredTypes.Select(t => t.ToStringFast(true)))}");
-							return null;
-						}
-					}
-
-					// Validate subtypes only appear under breaking-change
-					foreach (var (typeName, typeEntry) in config.Pivot.Types)
-					{
-						if (typeEntry?.Subtypes != null && typeEntry.Subtypes.Count > 0)
-						{
-							if (!typeName.Equals(ChangelogEntryType.BreakingChange.ToStringFast(true), StringComparison.OrdinalIgnoreCase))
-							{
-								collector.EmitError(finalConfigPath, $"Type '{typeName}' has subtypes defined, but subtypes are only allowed for 'breaking-change' type.");
-								return null;
-							}
-
-							// Validate subtype values against enum
-							foreach (var subtypeName in typeEntry.Subtypes.Keys)
-							{
-								if (!ChangelogEntrySubtypeExtensions.TryParse(subtypeName, out _, ignoreCase: true, allowMatchingMetadataAttribute: true))
-								{
-									collector.EmitError(finalConfigPath, $"Subtype '{subtypeName}' in pivot.types.{typeName}.subtypes is not a valid subtype. Valid subtypes: {string.Join(", ", ChangelogConfiguration.DefaultSubtypes)}");
-									return null;
-								}
-							}
-						}
-					}
-
-					availableTypes = config.Pivot.Types.Keys.ToList();
-				}
-				else
-					availableTypes = ChangelogConfiguration.DefaultTypes;
-
-				// Compute available subtypes from pivot.subtypes keys
-				if (config.Pivot.Subtypes != null && config.Pivot.Subtypes.Count > 0)
-				{
-					// Validate subtypes against enum values using TryParse
-					foreach (var subtypeName in config.Pivot.Subtypes.Keys)
-					{
-						if (!ChangelogEntrySubtypeExtensions.TryParse(subtypeName, out _, ignoreCase: true, allowMatchingMetadataAttribute: true))
-						{
-							collector.EmitError(finalConfigPath, $"Subtype '{subtypeName}' in pivot.subtypes is not a valid subtype. Valid subtypes: {string.Join(", ", ChangelogConfiguration.DefaultSubtypes)}");
-							return null;
-						}
-					}
-					availableSubtypes = config.Pivot.Subtypes.Keys.ToList();
-				}
-				else
-					availableSubtypes = ChangelogConfiguration.DefaultSubtypes;
-
-				// Compute available areas from pivot.areas keys
-				availableAreas = config.Pivot.Areas != null && config.Pivot.Areas.Count > 0
-					? config.Pivot.Areas.Keys.ToList()
-					: null;
-
-				// Build LabelToType mapping (inverted from pivot.types)
-				labelToType = BuildLabelToTypeMapping(config.Pivot.Types);
-
-				// Build LabelToAreas mapping (inverted from pivot.areas)
-				labelToAreas = BuildLabelToAreasMapping(config.Pivot.Areas);
-			}
-			else
-			{
-				// No pivot configuration - use defaults
-				availableTypes = ChangelogConfiguration.DefaultTypes;
-				availableSubtypes = ChangelogConfiguration.DefaultSubtypes;
-				availableAreas = config.AvailableAreas;
-				labelToType = config.LabelToType != null
-					? new Dictionary<string, string>(config.LabelToType)
-					: null;
-				labelToAreas = config.LabelToAreas != null
-					? new Dictionary<string, string>(config.LabelToAreas)
-					: null;
-			}
-
-			// Process available_lifecycles
-			IReadOnlyList<string> availableLifecycles;
-			if (config.AvailableLifecycles == null || config.AvailableLifecycles.Count == 0)
-				availableLifecycles = ChangelogConfiguration.DefaultLifecycles;
-			else
-			{
-				// Validate available_lifecycles - must be subset of defaults
-				foreach (var lifecycle in config.AvailableLifecycles.Where(l => !ChangelogConfiguration.DefaultLifecycles.Contains(l)))
-				{
-					collector.EmitError(finalConfigPath, $"Lifecycle '{lifecycle}' in changelog.yml is not in the list of available lifecycles. Available lifecycles: {string.Join(", ", ChangelogConfiguration.DefaultLifecycles)}");
-					return null;
-				}
-				availableLifecycles = config.AvailableLifecycles;
-			}
-
-			// Validate render_blockers types against enum and available_types
-			if (config.RenderBlockers != null)
-			{
-				foreach (var (productKey, blockersEntry) in config.RenderBlockers)
-				{
-					if (blockersEntry?.Types != null && blockersEntry.Types.Count > 0)
-					{
-						foreach (var type in blockersEntry.Types)
-						{
-							// First validate against enum
-							if (!ChangelogEntryTypeExtensions.TryParse(type, out _, ignoreCase: true, allowMatchingMetadataAttribute: true))
-							{
-								collector.EmitError(finalConfigPath, $"Type '{type}' in render_blockers for '{productKey}' is not a valid type. Valid types: {string.Join(", ", ChangelogConfiguration.DefaultTypes)}");
-								return null;
-							}
-							// Then validate against configured available types
-							if (!availableTypes.Contains(type, StringComparer.OrdinalIgnoreCase))
-							{
-								collector.EmitError(finalConfigPath, $"Type '{type}' in render_blockers for '{productKey}' is not in the list of configured available types. Configured types: {string.Join(", ", availableTypes)}");
-								return null;
-							}
-						}
-					}
-				}
-			}
-
-			// Validate available_products (if specified) - must be from products.yml
-			if (config.AvailableProducts != null && config.AvailableProducts.Count > 0)
-			{
-				foreach (var product in config.AvailableProducts)
-				{
-					var normalizedProductId = product.Replace('_', '-');
-					if (!validProductIds.Contains(normalizedProductId))
-					{
-						var availableProducts = string.Join(", ", validProductIds.OrderBy(p => p));
-						collector.EmitError(finalConfigPath, $"Product '{product}' in changelog.yml is not in the list of available products from config/products.yml. Available products: {availableProducts}");
-						return null;
-					}
-				}
-			}
-
-			// Validate add_blockers (if specified) - product keys must be from products.yml
-			if (expandedBlockers != null && expandedBlockers.Count > 0)
-			{
-				foreach (var productKey in expandedBlockers.Keys)
-				{
-					var normalizedProductId = productKey.Replace('_', '-');
-					if (!validProductIds.Contains(normalizedProductId))
-					{
-						var availableProducts = string.Join(", ", validProductIds.OrderBy(p => p));
-						collector.EmitError(finalConfigPath, $"Product '{productKey}' in add_blockers in changelog.yml is not in the list of available products from config/products.yml. Available products: {availableProducts}");
-						return null;
-					}
-				}
-			}
-
-			// Return validated configuration with computed values
-			return config with
-			{
-				AvailableTypes = availableTypes,
-				AvailableSubtypes = availableSubtypes,
-				AvailableLifecycles = availableLifecycles,
-				AvailableAreas = availableAreas,
-				LabelToType = labelToType,
-				LabelToAreas = labelToAreas,
-				AddBlockers = expandedBlockers
-			};
+			return ParseConfiguration(collector, yamlConfig, finalConfigPath);
 		}
 		catch (IOException ex)
 		{
@@ -280,11 +59,276 @@ public class ChangelogConfigurationLoader(
 		}
 	}
 
+	private ChangelogConfiguration? ParseConfiguration(IDiagnosticsCollector collector, ChangelogConfigurationYaml yamlConfig, string configPath)
+	{
+		var validProductIds = configurationContext.ProductsConfiguration.Products.Keys.ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+		// Compute values from pivot configuration
+		IReadOnlyList<string> availableTypes;
+		IReadOnlyList<string> availableSubtypes;
+		IReadOnlyList<string>? availableAreas;
+		Dictionary<string, string>? labelToType;
+		Dictionary<string, string>? labelToAreas;
+		PivotConfiguration? pivot = null;
+
+		if (yamlConfig.Pivot != null)
+		{
+			// Convert YAML pivot to domain pivot
+			pivot = ConvertPivot(yamlConfig.Pivot);
+
+			// Compute available types from pivot.types keys
+			if (yamlConfig.Pivot.Types is { Count: > 0 })
+			{
+				// Validate types against enum values using TryParse
+				foreach (var typeName in yamlConfig.Pivot.Types.Keys)
+				{
+					if (ChangelogEntryTypeExtensions.TryParse(typeName, out _, ignoreCase: true, allowMatchingMetadataAttribute: true))
+						continue;
+					collector.EmitError(configPath, $"Type '{typeName}' in pivot.types is not a valid type. Valid types: {string.Join(", ", ChangelogConfiguration.DefaultTypes)}");
+					return null;
+				}
+
+				// Validate required types are present
+				foreach (var requiredType in ChangelogConfiguration.RequiredTypes)
+				{
+					var requiredTypeName = requiredType.ToStringFast(true);
+					if (yamlConfig.Pivot.Types.Keys.Any(k => k.Equals(requiredTypeName, StringComparison.OrdinalIgnoreCase)))
+						continue;
+					collector.EmitError(configPath, $"Required type '{requiredTypeName}' is missing from pivot.types. Required types: {string.Join(", ", ChangelogConfiguration.RequiredTypes.Select(t => t.ToStringFast(true)))}");
+					return null;
+				}
+
+				// Validate subtypes only appear under breaking-change
+				foreach (var (typeName, typeEntry) in yamlConfig.Pivot.Types)
+				{
+					if (typeEntry?.Subtypes is not { Count: > 0 })
+						continue;
+					if (!typeName.Equals(ChangelogEntryType.BreakingChange.ToStringFast(true), StringComparison.OrdinalIgnoreCase))
+					{
+						collector.EmitError(configPath, $"Type '{typeName}' has subtypes defined, but subtypes are only allowed for 'breaking-change' type.");
+						return null;
+					}
+
+					// Validate subtype values against enum
+					foreach (var subtypeName in typeEntry.Subtypes.Keys)
+					{
+						if (ChangelogEntrySubtypeExtensions.TryParse(subtypeName, out _, ignoreCase: true, allowMatchingMetadataAttribute: true))
+							continue;
+						collector.EmitError(configPath, $"Subtype '{subtypeName}' in pivot.types.{typeName}.subtypes is not a valid subtype. Valid subtypes: {string.Join(", ", ChangelogConfiguration.DefaultSubtypes)}");
+						return null;
+					}
+				}
+
+				availableTypes = yamlConfig.Pivot.Types.Keys.ToList();
+			}
+			else
+				availableTypes = ChangelogConfiguration.DefaultTypes;
+
+			// Compute available subtypes from pivot.subtypes keys
+			if (yamlConfig.Pivot.Subtypes != null && yamlConfig.Pivot.Subtypes.Count > 0)
+			{
+				// Validate subtypes against enum values using TryParse
+				foreach (var subtypeName in yamlConfig.Pivot.Subtypes.Keys)
+				{
+					if (!ChangelogEntrySubtypeExtensions.TryParse(subtypeName, out _, ignoreCase: true, allowMatchingMetadataAttribute: true))
+					{
+						collector.EmitError(configPath, $"Subtype '{subtypeName}' in pivot.subtypes is not a valid subtype. Valid subtypes: {string.Join(", ", ChangelogConfiguration.DefaultSubtypes)}");
+						return null;
+					}
+				}
+				availableSubtypes = yamlConfig.Pivot.Subtypes.Keys.ToList();
+			}
+			else
+				availableSubtypes = ChangelogConfiguration.DefaultSubtypes;
+
+			// Compute available areas from pivot.areas keys
+			availableAreas = yamlConfig.Pivot.Areas != null && yamlConfig.Pivot.Areas.Count > 0
+				? yamlConfig.Pivot.Areas.Keys.ToList()
+				: null;
+
+			// Build LabelToType mapping (inverted from pivot.types)
+			labelToType = BuildLabelToTypeMapping(yamlConfig.Pivot.Types);
+
+			// Build LabelToAreas mapping (inverted from pivot.areas)
+			labelToAreas = BuildLabelToAreasMapping(yamlConfig.Pivot.Areas);
+		}
+		else
+		{
+			// No pivot configuration - use defaults
+			availableTypes = ChangelogConfiguration.DefaultTypes;
+			availableSubtypes = ChangelogConfiguration.DefaultSubtypes;
+			availableAreas = null;
+			labelToType = null;
+			labelToAreas = null;
+		}
+
+		// Process lifecycles
+		IReadOnlyList<Lifecycle> lifecycles;
+		if (yamlConfig.Lifecycles == null || yamlConfig.Lifecycles.Count == 0)
+			lifecycles = ChangelogConfiguration.DefaultLifecycles;
+		else
+		{
+			var parsedLifecycles = new List<Lifecycle>();
+			foreach (var lifecycleStr in yamlConfig.Lifecycles)
+			{
+				if (!LifecycleExtensions.TryParse(lifecycleStr, out var lifecycle, ignoreCase: true, allowMatchingMetadataAttribute: true))
+				{
+					collector.EmitError(configPath, $"Lifecycle '{lifecycleStr}' in changelog.yml is not valid. Valid lifecycles: {string.Join(", ", ChangelogConfiguration.DefaultLifecycles.Select(l => l.ToStringFast(true)))}");
+					return null;
+				}
+				parsedLifecycles.Add(lifecycle);
+			}
+			lifecycles = parsedLifecycles;
+		}
+
+		// Process products
+		IReadOnlyList<Product>? products = null;
+		if (yamlConfig.Products != null && yamlConfig.Products.Count > 0)
+		{
+			var resolvedProducts = new List<Product>();
+			foreach (var productId in yamlConfig.Products)
+			{
+				var normalizedProductId = productId.Replace('_', '-');
+				if (!validProductIds.Contains(normalizedProductId))
+				{
+					var availableProducts = string.Join(", ", validProductIds.OrderBy(p => p));
+					collector.EmitError(configPath, $"Product '{productId}' in changelog.yml is not in the list of available products from config/products.yml. Available products: {availableProducts}");
+					return null;
+				}
+				if (configurationContext.ProductsConfiguration.Products.TryGetValue(normalizedProductId, out var product))
+					resolvedProducts.Add(product);
+			}
+			products = resolvedProducts;
+		}
+
+		// Process block configuration
+		var block = ParseBlockConfiguration(collector, yamlConfig.Block, configPath, validProductIds);
+		if (block == null && collector.Errors > 0)
+			return null;
+
+		return new ChangelogConfiguration
+		{
+			Pivot = pivot,
+			Types = availableTypes,
+			SubTypes = availableSubtypes,
+			Lifecycles = lifecycles,
+			Areas = availableAreas,
+			Products = products,
+			LabelToType = labelToType,
+			LabelToAreas = labelToAreas,
+			Block = block
+		};
+	}
+
+	private static PivotConfiguration ConvertPivot(PivotConfigurationYaml yamlPivot)
+	{
+		Dictionary<string, TypeEntry?>? types = null;
+		if (yamlPivot.Types != null)
+		{
+			types = yamlPivot.Types.ToDictionary(
+				kvp => kvp.Key,
+				kvp => kvp.Value == null
+					? null
+					: new TypeEntry
+					{
+						Labels = kvp.Value.Labels,
+						Subtypes = kvp.Value.Subtypes
+					});
+		}
+
+		return new PivotConfiguration
+		{
+			Types = types,
+			Subtypes = yamlPivot.Subtypes,
+			Areas = yamlPivot.Areas
+		};
+	}
+
+	private BlockConfiguration? ParseBlockConfiguration(
+		IDiagnosticsCollector collector,
+		BlockConfigurationYaml? blockYaml,
+		string configPath,
+		HashSet<string> validProductIds)
+	{
+		if (blockYaml == null)
+			return null;
+
+		Dictionary<string, ProductBlockers>? byProduct = null;
+
+		if (blockYaml.Product is { Count: > 0 })
+		{
+			byProduct = new Dictionary<string, ProductBlockers>(StringComparer.OrdinalIgnoreCase);
+
+			foreach (var (productKey, productBlockersYaml) in blockYaml.Product)
+			{
+				// Handle comma-separated product IDs
+				var productIds = productKey.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+				foreach (var productId in productIds)
+				{
+					var normalizedProductId = productId.Replace('_', '-');
+					if (!validProductIds.Contains(normalizedProductId))
+					{
+						var availableProducts = string.Join(", ", validProductIds.OrderBy(p => p));
+						collector.EmitError(configPath, $"Product '{productId}' in block.product in changelog.yml is not in the list of available products from config/products.yml. Available products: {availableProducts}");
+						return null;
+					}
+
+					var productBlockers = new ProductBlockers
+					{
+						Create = SplitLabels(productBlockersYaml?.Create),
+						Publish = ParsePublishBlocker(productBlockersYaml?.Publish)
+					};
+					byProduct[normalizedProductId] = productBlockers;
+				}
+			}
+		}
+
+		return new BlockConfiguration
+		{
+			Create = SplitLabels(blockYaml.Create),
+			Publish = ParsePublishBlocker(blockYaml.Publish),
+			ByProduct = byProduct
+		};
+	}
+
+	/// <summary>
+	/// Parses a PublishBlockerYaml into a PublishBlocker domain type.
+	/// </summary>
+	private static PublishBlocker? ParsePublishBlocker(PublishBlockerYaml? yaml)
+	{
+		if (yaml == null)
+			return null;
+
+		var types = yaml.Types?.Count > 0 ? yaml.Types.ToList() : null;
+		var areas = yaml.Areas?.Count > 0 ? yaml.Areas.ToList() : null;
+
+		if (types == null && areas == null)
+			return null;
+
+		return new PublishBlocker
+		{
+			Types = types,
+			Areas = areas
+		};
+	}
+
+	/// <summary>
+	/// Splits a comma-separated label string into a list.
+	/// </summary>
+	private static List<string>? SplitLabels(string? labels)
+	{
+		if (string.IsNullOrWhiteSpace(labels))
+			return null;
+
+		var result = labels.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+		return result.Count > 0 ? result : null;
+	}
+
 	/// <summary>
 	/// Builds LabelToType mapping by inverting pivot.types entries.
 	/// Each label in a type entry maps to that type name.
 	/// </summary>
-	private static Dictionary<string, string>? BuildLabelToTypeMapping(Dictionary<string, TypeEntry?>? types)
+	private static Dictionary<string, string>? BuildLabelToTypeMapping(Dictionary<string, TypeEntryYaml?>? types)
 	{
 		if (types == null || types.Count == 0)
 			return null;

@@ -4,9 +4,9 @@
 
 using System.IO.Abstractions;
 using System.Text;
-using Elastic.Documentation.Changelog;
+using Elastic.Documentation;
 using static System.Globalization.CultureInfo;
-using static Elastic.Documentation.Changelog.ChangelogEntryType;
+using static Elastic.Changelog.ChangelogEntryType;
 
 namespace Elastic.Changelog.Rendering.Markdown;
 
@@ -43,7 +43,7 @@ public class DeprecationsMarkdownRenderer(IFileSystem fileSystem) : MarkdownRend
 				foreach (var entry in areaGroup)
 				{
 					var (bundleProductIds, entryRepo, entryHideLinks) = GetEntryContext(entry, context);
-					var shouldHide = ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, bundleProductIds, context.RenderBlockers);
+					var shouldHide = ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide);
 
 					_ = sb.AppendLine();
 					if (shouldHide)

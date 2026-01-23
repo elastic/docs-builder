@@ -6,16 +6,16 @@ using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
 
-namespace Elastic.Changelog.Configuration;
+namespace Elastic.Changelog.Serialization;
 
 /// <summary>
-/// YAML type converter for TypeEntry that handles both string and object forms.
+/// YAML type converter for TypeEntryYaml that handles both string and object forms.
 /// String form: "label1, label2"
 /// Object form: { labels: "label1", subtypes: { api: "label" } }
 /// </summary>
-public class TypeEntryConverter : IYamlTypeConverter
+public class TypeEntryYamlConverter : IYamlTypeConverter
 {
-	public bool Accepts(Type type) => type == typeof(TypeEntry);
+	public bool Accepts(Type type) => type == typeof(TypeEntryYaml);
 
 	public object? ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
 	{
@@ -24,16 +24,16 @@ public class TypeEntryConverter : IYamlTypeConverter
 		{
 			// Handle empty scalar (null/empty value)
 			if (string.IsNullOrEmpty(scalar.Value) || scalar.Value == "~")
-				return new TypeEntry();
+				return new TypeEntryYaml();
 
 			// Handle string form: just labels
-			return TypeEntry.FromLabels(scalar.Value);
+			return TypeEntryYaml.FromLabels(scalar.Value);
 		}
 
 		// Handle object form: { labels: "...", subtypes: {...} }
 		if (parser.TryConsume<MappingStart>(out _))
 		{
-			var entry = new TypeEntry();
+			var entry = new TypeEntryYaml();
 
 			while (!parser.TryConsume<MappingEnd>(out _))
 			{
@@ -59,7 +59,7 @@ public class TypeEntryConverter : IYamlTypeConverter
 		}
 
 		// Unknown format
-		return new TypeEntry();
+		return new TypeEntryYaml();
 	}
 
 	private static Dictionary<string, string?>? ParseSubtypes(IParser parser)
@@ -119,7 +119,7 @@ public class TypeEntryConverter : IYamlTypeConverter
 
 	public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer)
 	{
-		if (value is not TypeEntry entry)
+		if (value is not TypeEntryYaml entry)
 		{
 			emitter.Emit(new Scalar(null, null, string.Empty, ScalarStyle.Plain, true, false));
 			return;

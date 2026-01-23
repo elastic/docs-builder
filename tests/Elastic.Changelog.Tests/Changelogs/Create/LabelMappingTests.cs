@@ -39,7 +39,7 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 			    enhancement:
 			  subtypes:
 			    api:
-			available_lifecycles:
+			lifecycles:
 			  - preview
 			  - beta
 			  - ga
@@ -48,10 +48,10 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 
 		var service = CreateService();
 
-		var input = new ChangelogInput
+		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
 			Config = configPath,
 			Output = CreateOutputDirectory()
 		};
@@ -109,7 +109,7 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 			  areas:
 			    security: "area:security"
 			    search: "area:search"
-			available_lifecycles:
+			lifecycles:
 			  - preview
 			  - beta
 			  - ga
@@ -118,10 +118,10 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 
 		var service = CreateService();
 
-		var input = new ChangelogInput
+		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
 			Config = configPath,
 			Output = CreateOutputDirectory()
 		};

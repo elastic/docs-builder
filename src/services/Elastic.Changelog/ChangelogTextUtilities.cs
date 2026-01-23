@@ -6,7 +6,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
 using NetEscapades.EnumGenerators;
 
-namespace Elastic.Documentation.Changelog;
+namespace Elastic.Changelog;
 
 /// <summary>
 /// Static utility methods for text processing in changelog generation

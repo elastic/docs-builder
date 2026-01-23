@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Changelog.Configuration;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 
@@ -11,7 +12,7 @@ namespace Elastic.Changelog.Creation;
 /// <summary>
 /// Service for validating changelog input against configuration
 /// </summary>
-public class ChangelogInputValidator(IConfigurationContext configurationContext)
+public class CreateChangelogArgumentsValidator(IConfigurationContext configurationContext)
 {
 	/// <summary>
 	/// Validates that if a PR is just a number, owner and repo must be provided.
@@ -49,7 +50,7 @@ public class ChangelogInputValidator(IConfigurationContext configurationContext)
 	/// </summary>
 	public bool ValidateRequiredFields(
 		IDiagnosticsCollector collector,
-		ChangelogInput input,
+		CreateChangelogArguments input,
 		bool prFetchFailed)
 	{
 		// Validate title
@@ -91,29 +92,29 @@ public class ChangelogInputValidator(IConfigurationContext configurationContext)
 	/// </summary>
 	public bool ValidateAgainstConfiguration(
 		IDiagnosticsCollector collector,
-		ChangelogInput input,
+		CreateChangelogArguments input,
 		ChangelogConfiguration config)
 	{
 		// Validate type is in allowed list (only if type is provided)
-		if (!string.IsNullOrWhiteSpace(input.Type) && !config.AvailableTypes.Contains(input.Type))
+		if (!string.IsNullOrWhiteSpace(input.Type) && !config.Types.Contains(input.Type))
 		{
-			collector.EmitError(string.Empty, $"Type '{input.Type}' is not in the list of available types. Available types: {string.Join(", ", config.AvailableTypes)}");
+			collector.EmitError(string.Empty, $"Type '{input.Type}' is not in the list of available types. Available types: {string.Join(", ", config.Types)}");
 			return false;
 		}
 
 		// Validate subtype if provided
-		if (!string.IsNullOrWhiteSpace(input.Subtype) && !config.AvailableSubtypes.Contains(input.Subtype))
+		if (!string.IsNullOrWhiteSpace(input.Subtype) && !config.SubTypes.Contains(input.Subtype))
 		{
-			collector.EmitError(string.Empty, $"Subtype '{input.Subtype}' is not in the list of available subtypes. Available subtypes: {string.Join(", ", config.AvailableSubtypes)}");
+			collector.EmitError(string.Empty, $"Subtype '{input.Subtype}' is not in the list of available subtypes. Available subtypes: {string.Join(", ", config.SubTypes)}");
 			return false;
 		}
 
 		// Validate areas if configuration provides available areas
-		if (config.AvailableAreas != null && config.AvailableAreas.Count > 0 && input.Areas != null)
+		if (config.Areas != null && config.Areas.Count > 0 && input.Areas != null)
 		{
-			foreach (var area in input.Areas.Where(area => !config.AvailableAreas.Contains(area)))
+			foreach (var area in input.Areas.Where(area => !config.Areas.Contains(area)))
 			{
-				collector.EmitError(string.Empty, $"Area '{area}' is not in the list of available areas. Available areas: {string.Join(", ", config.AvailableAreas)}");
+				collector.EmitError(string.Empty, $"Area '{area}' is not in the list of available areas. Available areas: {string.Join(", ", config.Areas)}");
 				return false;
 			}
 		}
@@ -123,7 +124,7 @@ public class ChangelogInputValidator(IConfigurationContext configurationContext)
 		foreach (var product in input.Products)
 		{
 			// Normalize product ID (replace underscores with hyphens for comparison)
-			var normalizedProductId = product.Product.Replace('_', '-');
+			var normalizedProductId = product.Product?.Replace('_', '-') ?? string.Empty;
 			if (!validProductIds.Contains(normalizedProductId))
 			{
 				var availableProducts = string.Join(", ", validProductIds.OrderBy(p => p));
@@ -133,10 +134,15 @@ public class ChangelogInputValidator(IConfigurationContext configurationContext)
 		}
 
 		// Validate lifecycle values in products
-		foreach (var product in input.Products.Where(product => !string.IsNullOrWhiteSpace(product.Lifecycle) && !config.AvailableLifecycles.Contains(product.Lifecycle)))
+		var availableLifecycleStrings = config.Lifecycles.Select(l => l.ToStringFast(true)).ToList();
+		foreach (var product in input.Products.Where(product => !string.IsNullOrWhiteSpace(product.Lifecycle)))
 		{
-			collector.EmitError(string.Empty, $"Lifecycle '{product.Lifecycle}' for product '{product.Product}' is not in the list of available lifecycles. Available lifecycles: {string.Join(", ", config.AvailableLifecycles)}");
-			return false;
+			if (!LifecycleExtensions.TryParse(product.Lifecycle, out _, ignoreCase: true, allowMatchingMetadataAttribute: true)
+				|| !availableLifecycleStrings.Contains(product.Lifecycle, StringComparer.OrdinalIgnoreCase))
+			{
+				collector.EmitError(string.Empty, $"Lifecycle '{product.Lifecycle}' for product '{product.Product}' is not in the list of available lifecycles. Available lifecycles: {string.Join(", ", availableLifecycleStrings)}");
+				return false;
+			}
 		}
 
 		return true;

@@ -5,13 +5,39 @@
 using System.IO.Abstractions;
 using Elastic.Changelog.Configuration;
 using Elastic.Changelog.GitHub;
-using Elastic.Documentation.Changelog;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Changelog.Creation;
+
+/// <summary>
+/// Arguments for the CreateChangelog method
+/// </summary>
+public record CreateChangelogArguments
+{
+	public string? Title { get; init; }
+	public string? Type { get; init; }
+	public required IReadOnlyList<ProductArgument> Products { get; init; }
+	public string? Subtype { get; init; }
+	public string[]? Areas { get; init; }
+	public string[]? Prs { get; init; }
+	public string? Owner { get; init; }
+	public string? Repo { get; init; }
+	public string[]? Issues { get; init; }
+	public string? Description { get; init; }
+	public string? Impact { get; init; }
+	public string? Action { get; init; }
+	public string? FeatureId { get; init; }
+	public bool? Highlight { get; init; }
+	public string? Output { get; init; }
+	public string? Config { get; init; }
+	public bool UsePrNumber { get; init; }
+	public bool StripTitlePrefix { get; init; }
+	public bool ExtractReleaseNotes { get; init; }
+}
 
 /// <summary>
 /// Service for creating changelog entries
@@ -25,15 +51,11 @@ public class ChangelogCreationService(
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogCreationService>();
 	private readonly ChangelogConfigurationLoader _configLoader = new(logFactory, configurationContext, fileSystem ?? new FileSystem());
-	private readonly ChangelogInputValidator _validator = new(configurationContext);
+	private readonly CreateChangelogArgumentsValidator _validator = new(configurationContext);
 	private readonly PrInfoProcessor _prProcessor = new(githubPrService, logFactory.CreateLogger<PrInfoProcessor>());
 	private readonly ChangelogFileWriter _fileWriter = new(fileSystem ?? new FileSystem(), logFactory.CreateLogger<ChangelogFileWriter>());
 
-	public async Task<bool> CreateChangelog(
-		IDiagnosticsCollector collector,
-		ChangelogInput input,
-		Cancel ctx
-	)
+	public async Task<bool> CreateChangelog(IDiagnosticsCollector collector, CreateChangelogArguments input, Cancel ctx)
 	{
 		try
 		{
@@ -66,7 +88,7 @@ public class ChangelogCreationService(
 
 	private async Task<bool> CreateChangelogsForMultiplePrsAsync(
 		IDiagnosticsCollector collector,
-		ChangelogInput input,
+		CreateChangelogArguments input,
 		ChangelogConfiguration config,
 		Cancel ctx)
 	{
@@ -110,12 +132,12 @@ public class ChangelogCreationService(
 
 	private async Task<bool> CreateSingleChangelogAsync(
 		IDiagnosticsCollector collector,
-		ChangelogInput input,
+		CreateChangelogArguments input,
 		ChangelogConfiguration config,
 		Cancel ctx)
 	{
 		// Get the PR URL if Prs is provided (for single PR processing)
-		var prUrl = input.Prs != null && input.Prs.Length > 0 ? input.Prs[0] : null;
+		var prUrl = input.Prs is { Length: > 0 } ? input.Prs[0] : null;
 		var prFetchFailed = false;
 
 		// Validate PR format
@@ -134,9 +156,7 @@ public class ChangelogCreationService(
 
 			// Apply derived fields if available
 			if (prResult.DerivedFields != null)
-			{
-				ApplyDerivedFields(input, prResult.DerivedFields);
-			}
+				input = ApplyDerivedFields(input, prResult.DerivedFields);
 			else if (!prFetchFailed)
 			{
 				// DerivedFields is null and fetch didn't fail means validation error occurred
@@ -163,42 +183,15 @@ public class ChangelogCreationService(
 			ctx);
 	}
 
-	private static ChangelogInput CreateInputForSinglePr(ChangelogInput input, string prUrl) =>
-		new()
+	private static CreateChangelogArguments CreateInputForSinglePr(CreateChangelogArguments input, string prUrl) =>
+		input with { Prs = [prUrl] };
+
+	private static CreateChangelogArguments ApplyDerivedFields(CreateChangelogArguments input, DerivedPrFields derived) =>
+		input with
 		{
-			Title = input.Title,
-			Type = input.Type,
-			Products = input.Products,
-			Subtype = input.Subtype,
-			Areas = input.Areas,
-			Prs = [prUrl],
-			Owner = input.Owner,
-			Repo = input.Repo,
-			Issues = input.Issues,
-			Description = input.Description,
-			Impact = input.Impact,
-			Action = input.Action,
-			FeatureId = input.FeatureId,
-			Highlight = input.Highlight,
-			Output = input.Output,
-			Config = input.Config,
-			UsePrNumber = input.UsePrNumber,
-			StripTitlePrefix = input.StripTitlePrefix,
-			ExtractReleaseNotes = input.ExtractReleaseNotes
+			Title = derived.Title != null && string.IsNullOrWhiteSpace(input.Title) ? derived.Title : input.Title,
+			Type = derived.Type != null && string.IsNullOrWhiteSpace(input.Type) ? derived.Type : input.Type,
+			Description = derived.Description != null && string.IsNullOrWhiteSpace(input.Description) ? derived.Description : input.Description,
+			Areas = derived.Areas != null && (input.Areas == null || input.Areas.Length == 0) ? derived.Areas : input.Areas
 		};
-
-	private static void ApplyDerivedFields(ChangelogInput input, DerivedPrFields derived)
-	{
-		if (derived.Title != null && string.IsNullOrWhiteSpace(input.Title))
-			input.Title = derived.Title;
-
-		if (derived.Type != null && string.IsNullOrWhiteSpace(input.Type))
-			input.Type = derived.Type;
-
-		if (derived.Description != null && string.IsNullOrWhiteSpace(input.Description))
-			input.Description = derived.Description;
-
-		if (derived.Areas != null && (input.Areas == null || input.Areas.Length == 0))
-			input.Areas = derived.Areas;
-	}
 }
