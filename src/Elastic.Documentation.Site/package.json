@@ -120,6 +120,7 @@
     "ua-parser-js": "2.0.6",
     "uuid": "11.1.0",
     "zod": "4.1.12",
-    "zustand": "5.0.8"
+    "zustand": "5.0.8",
+    "zustand-indexeddb": "^0.1.1"
   }
 }

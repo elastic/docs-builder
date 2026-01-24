@@ -1,6 +1,5 @@
 import { initCopyButton } from '../../copybutton'
 import { hljs } from '../../hljs'
-import { ErrorCallout } from '../shared/ErrorCallout'
 import { ApiError } from '../shared/errorHandling'
 import { useHtmxContainer } from '../shared/htmx/useHtmxContainer'
 import { AskAiEvent, ChunkEvent, EventTypes } from './AskAiEvent'
@@ -11,11 +10,11 @@ import { ChatMessage as ChatMessageType, useConversationId } from './chat.store'
 import { useMessageFeedback } from './useMessageFeedback'
 import { useStatusMinDisplay } from './useStatusMinDisplay'
 import {
+    EuiButtonEmpty,
     EuiButtonIcon,
     EuiCopy,
     EuiFlexGroup,
     EuiFlexItem,
-    EuiIcon,
     EuiPanel,
     EuiSpacer,
     EuiText,
@@ -63,6 +62,8 @@ interface ChatMessageProps {
     streamingContent?: string
     error?: ApiError | Error
     onRetry?: () => void
+    onAskAgain?: (question: string) => void
+    askAgainDisabled?: boolean
     onCountdownChange?: (countdown: number | null) => void
     showError?: boolean
 }
@@ -94,8 +95,12 @@ const splitContentAndReferences = (
 const getMessageState = (message: ChatMessageType) => ({
     isUser: message.type === 'user',
     isLoading: message.status === 'streaming',
-    isComplete: message.status === 'complete' || message.status === 'error',
+    isComplete:
+        message.status === 'complete' ||
+        message.status === 'error' ||
+        message.status === 'interrupted',
     hasError: message.status === 'error',
+    isInterrupted: message.status === 'interrupted',
 })
 
 // Status message constants
@@ -282,10 +287,13 @@ export const ChatMessage = ({
     streamingContent,
     error,
     onRetry,
+    onAskAgain,
+    askAgainDisabled = false,
     showError = true,
 }: ChatMessageProps) => {
     const { euiTheme } = useEuiTheme()
-    const { isUser, isLoading, isComplete } = getMessageState(message)
+    const { isUser, isLoading, isComplete, isInterrupted } =
+        getMessageState(message)
 
     if (isUser) {
         return (
@@ -421,7 +429,7 @@ export const ChatMessage = ({
             data-message-type="ai"
             data-message-id={message.id}
         >
-            {!hasError && shouldRenderContent && (
+            {(shouldRenderContent || hasError || isInterrupted) && (
                 <EuiFlexItem>
                     <EuiPanel
                         paddingSize="none"
@@ -431,7 +439,7 @@ export const ChatMessage = ({
                             padding-top: 8px;
                         `}
                     >
-                        {content && (
+                        {content && !hasError && (
                             <div
                                 ref={ref}
                                 className="markdown-content"
@@ -452,52 +460,64 @@ export const ChatMessage = ({
                         {content && isLoading && <EuiSpacer size="m" />}
                         <GeneratingStatus status={aiStatus} />
 
-                        {isComplete && content && (
+                        {isComplete &&
+                            content &&
+                            !isInterrupted &&
+                            !hasError && (
+                                <>
+                                    <EuiSpacer size="m" />
+                                    <ActionBar
+                                        content={mainContent}
+                                        messageId={message.id}
+                                        onRetry={onRetry}
+                                    />
+                                </>
+                            )}
+
+                        {(isInterrupted || hasError) && (
                             <>
                                 <EuiSpacer size="m" />
-                                <ActionBar
-                                    content={mainContent}
-                                    messageId={message.id}
-                                    onRetry={onRetry}
-                                />
+                                <EuiFlexGroup
+                                    justifyContent="flexEnd"
+                                    gutterSize="s"
+                                    alignItems="center"
+                                    responsive={false}
+                                >
+                                    <EuiFlexItem grow={false}>
+                                        <EuiText
+                                            size="xs"
+                                            color="subdued"
+                                            css={css`
+                                                font-style: italic;
+                                            `}
+                                        >
+                                            {isInterrupted
+                                                ? content
+                                                    ? 'Response stopped early.'
+                                                    : 'Response stopped before starting.'
+                                                : 'Something went wrong.'}
+                                        </EuiText>
+                                    </EuiFlexItem>
+                                    {onAskAgain && message.question && (
+                                        <EuiFlexItem grow={false}>
+                                            <EuiButtonEmpty
+                                                iconType="editorRedo"
+                                                size="xs"
+                                                disabled={askAgainDisabled}
+                                                onClick={() =>
+                                                    onAskAgain(
+                                                        message.question!
+                                                    )
+                                                }
+                                            >
+                                                Ask again
+                                            </EuiButtonEmpty>
+                                        </EuiFlexItem>
+                                    )}
+                                </EuiFlexGroup>
                             </>
                         )}
                     </EuiPanel>
-                </EuiFlexItem>
-            )}
-            {hasError && (
-                <EuiFlexItem>
-                    <EuiFlexGroup
-                        gutterSize="s"
-                        alignItems="flexStart"
-                        responsive={false}
-                    >
-                        <EuiFlexItem grow={false}>
-                            <div
-                                css={css`
-                                    block-size: 32px;
-                                    inline-size: 32px;
-                                    border-radius: 50%;
-                                    display: flex;
-                                    align-items: center;
-                                    justify-content: center;
-                                `}
-                            >
-                                <EuiIcon
-                                    name="Elastic Docs AI"
-                                    size="xl"
-                                    type="logoElastic"
-                                />
-                            </div>
-                        </EuiFlexItem>
-                        <EuiFlexItem>
-                            <ErrorCallout
-                                error={message.error || error || null}
-                                domain="askAi"
-                                inline={true}
-                            />
-                        </EuiFlexItem>
-                    </EuiFlexGroup>
                 </EuiFlexItem>
             )}
         </EuiFlexGroup>

@@ -10,6 +10,7 @@ import {
     useChatActions,
     useChatMessages,
     useChatScrollPosition,
+    useHasHydrated,
     useIsChatEmpty,
     useIsStreaming,
 } from './chat.store'
@@ -40,6 +41,7 @@ import {
 export const Chat = () => {
     const { euiTheme } = useEuiTheme()
     const isEmpty = useIsChatEmpty()
+    const hasHydrated = useHasHydrated()
     const inputRef = useRef<HTMLTextAreaElement>(null)
     const scrollRef = useRef<HTMLDivElement>(null)
 
@@ -67,7 +69,7 @@ export const Chat = () => {
         >
             <ChatHeader />
 
-            {isEmpty ? (
+            {hasHydrated && isEmpty ? (
                 <EuiFlexItem grow={true} css={emptyStateContainerStyles}>
                     <EuiEmptyPrompt
                         icon={<EuiIcon type={AiIcon} size="xxl" />}
@@ -81,6 +83,9 @@ export const Chat = () => {
                         }
                     />
                 </EuiFlexItem>
+            ) : !hasHydrated ? (
+                // Show nothing while hydrating to prevent empty state flash
+                <EuiFlexItem grow={true} />
             ) : (
                 <ChatScrollArea
                     scrollRef={scrollRef}
@@ -90,7 +95,7 @@ export const Chat = () => {
                 />
             )}
 
-            {isEmpty && (
+            {hasHydrated && isEmpty && (
                 <>
                     <AskAiSuggestions />
                     <EuiSpacer size="m" />
@@ -366,17 +371,19 @@ function useChatSubmit() {
  */
 function useScrollPersistence(scrollRef: RefObject<HTMLDivElement | null>) {
     const savedPosition = useChatScrollPosition()
+    const hasHydrated = useHasHydrated()
     const { setScrollPosition } = useChatActions()
 
+    // Restore scroll position after hydration completes
     useEffect(() => {
-        if (scrollRef.current && savedPosition > 0) {
+        if (hasHydrated && scrollRef.current && savedPosition > 0) {
             requestAnimationFrame(() => {
                 if (scrollRef.current) {
                     scrollRef.current.scrollTop = savedPosition
                 }
             })
         }
-    }, [])
+    }, [hasHydrated])
 
     const handleScroll = useCallback(() => {
         if (scrollRef.current) {
