@@ -1,4 +1,4 @@
-import { ElasticAiAssistantButtonIcon } from './ElasticAiAssitant'
+import { ElasticAiAssistantButtonIcon } from './ElasticAiAssistantButton'
 import { euiShadow, useEuiScrollBar, useEuiTheme } from '@elastic/eui'
 import { css } from '@emotion/react'
 import { useCallback, useEffect, useRef } from 'react'

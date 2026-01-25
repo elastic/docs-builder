@@ -135,10 +135,10 @@ const ChatHeader = () => {
         >
             <div
                 css={css`
-                    padding-block: ${euiTheme.size.m};
+                    // padding-block: ${euiTheme.size.m};
                     padding-inline: ${euiTheme.size.base};
                     display: grid;
-                    height: 56px;
+                    height: 37px;
                     grid-template-columns: 1fr auto auto;
                     align-items: center;
                 `}
@@ -225,10 +225,15 @@ const ChatScrollArea = ({
             // Second RAF: DOM is updated with new spacer, safe to scroll
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
-                    if (scrollRef.current) {
-                        const scrollMargin = parseInt(euiTheme.size.l, 10)
-                        scrollUserMessageToTop(scrollRef.current, scrollMargin)
-                    }
+                    setTimeout(() => {
+                        if (scrollRef.current) {
+                            const scrollMargin = parseInt(euiTheme.size.l, 10)
+                            scrollUserMessageToTop(
+                                scrollRef.current,
+                                scrollMargin
+                            )
+                        }
+                    }, 0)
                 })
             })
         }
@@ -494,7 +499,7 @@ function useSpacerHeight(
 // Constants & Styles (implementation details)
 // ============================================================================
 
-const CONTENT_AREA_HEIGHT = 400
+const CONTENT_AREA_HEIGHT = 200
 
 // ============================================================================
 // DOM Helpers
@@ -524,6 +529,7 @@ function scrollUserMessageToTop(container: HTMLElement, margin: number): void {
 }
 
 const containerStyles = css`
+    // height: calc(100vh - var(--offset-top) - 1px);
     height: 100vh;
     overflow: hidden;
 `

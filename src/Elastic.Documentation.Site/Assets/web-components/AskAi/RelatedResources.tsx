@@ -148,6 +148,7 @@ const ReferenceItem = ({
                 href={path}
                 css={css`
                     width: 100%;
+                    background-color: #fff;
                     border: 1px solid ${euiTheme.border.color};
                     padding: ${euiTheme.size.s};
                     border-radius: ${euiTheme.border.radius.small};

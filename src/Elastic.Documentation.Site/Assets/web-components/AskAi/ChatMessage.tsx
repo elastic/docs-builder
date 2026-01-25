@@ -3,7 +3,7 @@ import { hljs } from '../../hljs'
 import { ApiError } from '../shared/errorHandling'
 import { useHtmxContainer } from '../shared/htmx/useHtmxContainer'
 import { AskAiEvent, ChunkEvent, EventTypes } from './AskAiEvent'
-import { aiGradients } from './ElasticAiAssitant'
+import { aiGradients } from './ElasticAiAssistantButton'
 import { GeneratingStatus } from './GeneratingStatus'
 import { References } from './RelatedResources'
 import { ChatMessage as ChatMessageType, useConversationId } from './chat.store'
@@ -437,6 +437,7 @@ export const ChatMessage = ({
                         hasBorder={false}
                         css={css`
                             padding-top: 8px;
+                            background-color: transparent;
                         `}
                     >
                         {content && !hasError && (
@@ -478,7 +479,6 @@ export const ChatMessage = ({
                             <>
                                 <EuiSpacer size="m" />
                                 <EuiFlexGroup
-                                    justifyContent="flexEnd"
                                     gutterSize="s"
                                     alignItems="center"
                                     responsive={false}
@@ -501,7 +501,7 @@ export const ChatMessage = ({
                                     {onAskAgain && message.question && (
                                         <EuiFlexItem grow={false}>
                                             <EuiButtonEmpty
-                                                iconType="editorRedo"
+                                                iconType="refresh"
                                                 size="xs"
                                                 disabled={askAgainDisabled}
                                                 onClick={() =>
