@@ -510,7 +510,7 @@ export const ChatMessage = ({
                                                     )
                                                 }
                                             >
-                                                Ask again
+                                                Retry
                                             </EuiButtonEmpty>
                                         </EuiFlexItem>
                                     )}

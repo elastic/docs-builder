@@ -220,9 +220,10 @@ const ChatScrollArea = ({
             (m) => m.type === 'user'
         ).length
         if (userMessageCount > lastUserMessageCountRef.current) {
-            // New user message added - use double RAF to ensure spacer DOM update
-            // First RAF: React processes state updates and schedules re-render
-            // Second RAF: DOM is updated with new spacer, safe to scroll
+            // New user message added - use double RAF + setTimeout to ensure:
+            // 1. React processes state updates and schedules re-render
+            // 2. DOM is updated with new spacer
+            // 3. React's commit-phase operations complete
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
                     setTimeout(() => {
@@ -250,7 +251,12 @@ const ChatScrollArea = ({
 
     return (
         <EuiFlexItem grow={true} css={scrollContainerStyles}>
-            <div ref={scrollRef} css={scrollableStyles} onScroll={onScroll}>
+            <div
+                ref={scrollRef}
+                css={scrollableStyles}
+                onScroll={onScroll}
+                data-chat-scroll-area
+            >
                 <div css={messagesStyles}>
                     <ChatMessageList
                         messages={messages}

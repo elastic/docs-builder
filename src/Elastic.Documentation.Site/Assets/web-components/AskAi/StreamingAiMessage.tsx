@@ -39,6 +39,14 @@ export const StreamingAiMessage = ({
     // Handler for re-asking an interrupted question
     const handleAskAgain = useCallback(
         (question: string) => {
+            // Focus the chat input before state change to prevent scroll jump
+            // When React re-renders after state change, the browser may try to focus
+            // a new element, causing unwanted scrolling. By focusing the stable input
+            // element first (with preventScroll), we prevent this behavior.
+            const chatInput = document.getElementById(
+                'ask-ai-chat-input'
+            ) as HTMLTextAreaElement | null
+            chatInput?.focus({ preventScroll: true })
             submitQuestion(question)
         },
         [submitQuestion]

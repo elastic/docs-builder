@@ -127,6 +127,7 @@ export const ChatInput = ({
         >
             <textarea
                 ref={textareaRefCallback}
+                id="ask-ai-chat-input"
                 name="chat-input"
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
