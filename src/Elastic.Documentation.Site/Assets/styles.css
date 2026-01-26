@@ -133,28 +133,30 @@ body {
 		}
 	}
 
-	/* Isolated header specific styles */
-	.has-isolated-header {
-		/* Ensure grid container is tall enough for sticky sidebars to work */
-		#main-container > div:first-child {
-			min-height: calc(100vh + 500px);
-		}
+	/* Isolated header specific styles - only apply on lg screens (matches --breakpoint-lg) */
+	@media screen and (min-width: 1280px) {
+		.has-isolated-header {
+			/* Ensure grid container is tall enough for sticky sidebars to work */
+			#main-container > div:first-child {
+				min-height: calc(100vh + 500px);
+			}
 
-		.sidebar {
-			position: sticky !important;
-			top: var(--offset-top) !important;
-			height: fit-content;
-			max-height: calc(100vh - var(--offset-top));
-			overflow-y: auto;
-			align-self: start;
-			transition:
-				top 0.3s ease,
-				max-height 0.3s ease;
+			.sidebar {
+				position: sticky !important;
+				top: var(--offset-top) !important;
+				height: fit-content;
+				max-height: calc(100vh - var(--offset-top));
+				overflow-y: auto;
+				align-self: start;
+				transition:
+					top 0.3s ease,
+					max-height 0.3s ease;
 
-			.sidebar-nav {
-				position: relative !important;
-				top: 0 !important;
-				max-height: 100%;
+				.sidebar-nav {
+					position: relative !important;
+					top: 0 !important;
+					max-height: 100%;
+				}
 			}
 		}
 	}
