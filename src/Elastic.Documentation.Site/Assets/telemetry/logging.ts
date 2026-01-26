@@ -6,7 +6,11 @@
  */
 import { logs, SeverityNumber, type AnyValueMap } from '@opentelemetry/api-logs'
 
-const logger = logs.getLogger('docs-frontend-logger')
+// Lazy-initialize the logger to avoid errors when this module is imported
+// before the OpenTelemetry LoggerProvider is set up
+function getLogger() {
+    return logs.getLogger('docs-frontend-logger')
+}
 
 /**
  * Log an informational message.
@@ -23,7 +27,7 @@ const logger = logs.getLogger('docs-frontend-logger')
  * ```
  */
 export function logInfo(body: string, attrs: AnyValueMap = {}) {
-    logger.emit({
+    getLogger().emit({
         body,
         severityNumber: SeverityNumber.INFO,
         severityText: 'INFO',
@@ -46,7 +50,7 @@ export function logInfo(body: string, attrs: AnyValueMap = {}) {
  * ```
  */
 export function logWarn(body: string, attrs: AnyValueMap = {}) {
-    logger.emit({
+    getLogger().emit({
         body,
         severityNumber: SeverityNumber.WARN,
         severityText: 'WARN',
@@ -70,7 +74,7 @@ export function logWarn(body: string, attrs: AnyValueMap = {}) {
  * ```
  */
 export function logError(body: string, attrs: AnyValueMap = {}) {
-    logger.emit({
+    getLogger().emit({
         body,
         severityNumber: SeverityNumber.ERROR,
         severityText: 'ERROR',
@@ -93,7 +97,7 @@ export function logError(body: string, attrs: AnyValueMap = {}) {
  * ```
  */
 export function logDebug(body: string, attrs: AnyValueMap = {}) {
-    logger.emit({
+    getLogger().emit({
         body,
         severityNumber: SeverityNumber.DEBUG,
         severityText: 'DEBUG',
