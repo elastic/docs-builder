@@ -153,7 +153,7 @@ const DiagnosticRow: React.FC<{ diagnostic: DiagnosticItem }> = ({ diagnostic })
                 </div>
                 <button
                     onClick={handleCopy}
-                    className={`flex-shrink-0 p-1.5 rounded transition-colors ${
+                    className={`flex-shrink-0 p-1.5 rounded transition-colors cursor-pointer ${
                         copied
                             ? 'text-green bg-green/20'
                             : 'text-grey-70 hover:text-white hover:bg-grey-120'
@@ -186,7 +186,7 @@ const FilterButton: React.FC<FilterButtonProps> = ({
 }) => (
     <button
         onClick={onClick}
-        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
+        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all cursor-pointer ${
             active
                 ? `${colorClass} text-white`
                 : 'bg-grey-120 text-grey-70 hover:text-white'
@@ -283,7 +283,7 @@ export const DiagnosticsHud: React.FC = () => {
                     {anyFilterInactive && (
                         <button
                             onClick={showAllFilters}
-                            className="px-2.5 py-1 rounded-full text-xs font-medium bg-grey-120 text-grey-70 hover:text-white transition-colors"
+                            className="px-2.5 py-1 rounded-full text-xs font-medium bg-grey-120 text-grey-70 hover:text-white transition-colors cursor-pointer"
                             title="Show all"
                         >
                             All
@@ -327,7 +327,7 @@ export const DiagnosticsHud: React.FC = () => {
 
                     <button
                         onClick={() => setHudOpen(false)}
-                        className="text-grey-70 hover:text-white transition-colors p-1 rounded hover:bg-grey-120"
+                        className="text-grey-70 hover:text-white transition-colors p-1 rounded hover:bg-grey-120 cursor-pointer"
                         aria-label="Close diagnostics panel"
                     >
                         <CloseIcon />

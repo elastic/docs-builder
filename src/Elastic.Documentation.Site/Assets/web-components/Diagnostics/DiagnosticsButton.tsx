@@ -98,7 +98,7 @@ export const DiagnosticsButton: React.FC = () => {
 
     // Base pill styling for special states
     const pillBase =
-        'diagnostics-pill rounded-full transition-all duration-200 text-white font-medium'
+        'diagnostics-pill rounded-full transition-all duration-200 text-white font-medium cursor-pointer'
 
     // Not connected yet, show connecting state
     if (!isConnected && status === 'idle') {
@@ -169,7 +169,7 @@ export const DiagnosticsButton: React.FC = () => {
         return (
             <button
                 onClick={handleClick}
-                className="diagnostics-segmented-pill flex items-stretch overflow-hidden rounded-full shadow-md animate-wobble"
+                className="diagnostics-segmented-pill flex items-stretch overflow-hidden rounded-full shadow-md animate-wobble cursor-pointer"
                 title="Click to view diagnostics"
             >
                 {isBuilding && (
