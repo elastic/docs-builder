@@ -6,6 +6,15 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
 import * as React from 'react'
 
+// Mock zustand-indexeddb (IndexedDB not available in Node.js test environment)
+jest.mock('zustand-indexeddb', () => ({
+    createIndexedDBStorage: () => ({
+        getItem: jest.fn().mockResolvedValue(null),
+        setItem: jest.fn().mockResolvedValue(undefined),
+        removeItem: jest.fn().mockResolvedValue(undefined),
+    }),
+}))
+
 // Create a fresh QueryClient for each test
 const createTestQueryClient = () =>
     new QueryClient({
@@ -180,9 +189,9 @@ describe('ChatMessage Component', () => {
                 <ChatMessage message={createErrorMessage()} />
             )
 
-            // Assert - error callout should be visible with title
+            // Assert - error message should be visible
             expect(
-                screen.getByText(/sorry, there was an error/i)
+                screen.getByText(/Something went wrong/i)
             ).toBeInTheDocument()
         })
 
@@ -192,9 +201,9 @@ describe('ChatMessage Component', () => {
                 <ChatMessage message={createErrorMessage()} />
             )
 
-            // Assert - error guidance should be displayed
+            // Assert - error message should be displayed
             expect(
-                screen.getByText(/We are unable to process your request/i)
+                screen.getByText(/Something went wrong/i)
             ).toBeInTheDocument()
         })
     })

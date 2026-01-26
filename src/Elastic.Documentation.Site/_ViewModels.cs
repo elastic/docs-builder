@@ -29,6 +29,14 @@ public record GlobalLayoutViewModel
 	public required string NavigationHtml { get; init; }
 	public required string? UrlPathPrefix { get; init; }
 	public required Uri? CanonicalBaseUrl { get; init; }
+
+	// Header properties for isolated mode
+	public string? HeaderTitle { get; init; }
+	public string? HeaderVersion { get; init; }
+	public string? GitBranch { get; init; }
+	public string? GitCommitShort { get; init; }
+	public string? GitRepository { get; init; }
+	public string? GitHubDocsUrl { get; init; }
 	public string? CanonicalUrl => CanonicalBaseUrl is not null ?
 		new Uri(CanonicalBaseUrl, CurrentNavigationItem.Url).ToString().TrimEnd('/') : null;
 

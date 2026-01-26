@@ -6,6 +6,15 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import * as React from 'react'
 
+// Mock zustand-indexeddb (IndexedDB not available in Node.js test environment)
+jest.mock('zustand-indexeddb', () => ({
+    createIndexedDBStorage: () => ({
+        getItem: jest.fn().mockResolvedValue(null),
+        setItem: jest.fn().mockResolvedValue(undefined),
+        removeItem: jest.fn().mockResolvedValue(undefined),
+    }),
+}))
+
 // Create a fresh QueryClient for each test
 const createTestQueryClient = () =>
     new QueryClient({
@@ -33,7 +42,8 @@ jest.mock('@microsoft/fetch-event-source', () => ({
 const resetStores = () => {
     chatStore.setState({
         chatMessages: [],
-        conversationId: null,
+        conversations: {},
+        activeConversationId: null,
         aiProvider: 'LlmGateway',
         scrollPosition: 0,
     })
@@ -118,7 +128,7 @@ describe('Chat Component', () => {
                         status: 'complete',
                     },
                 ],
-                conversationId: 'thread-1',
+                activeConversationId: 'thread-1',
             })
         }
 
@@ -293,7 +303,7 @@ describe('Chat Component', () => {
                             status: 'complete',
                         },
                     ],
-                    conversationId: 'thread-1',
+                    activeConversationId: 'thread-1',
                 })
 
                 // Act

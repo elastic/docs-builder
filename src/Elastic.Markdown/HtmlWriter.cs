@@ -119,6 +119,14 @@ public class HtmlWriter(
 		var structuredBreadcrumbsJsonString = JsonSerializer.Serialize(breadcrumbsList, BreadcrumbsContext.Default.BreadcrumbsList);
 
 
+		// Git info for isolated header
+		var gitRepo = DocumentationSet.Context.Git.RepositoryName;
+		var gitBranch = DocumentationSet.Context.Git.Branch;
+		var gitRef = DocumentationSet.Context.Git.Ref;
+		string? gitHubDocsUrl = null;
+		if (!string.IsNullOrEmpty(gitRepo) && gitRepo != "unavailable" && !string.IsNullOrEmpty(gitBranch) && gitBranch != "unavailable")
+			gitHubDocsUrl = $"https://github.com/elastic/{gitRepo}/tree/{gitBranch}/docs";
+
 		var slice = Page.Index.Create(new IndexViewModel
 		{
 			IsAssemblerBuild = DocumentationSet.Context.AssemblerBuild,
@@ -152,7 +160,12 @@ public class HtmlWriter(
 			Products = pageProducts,
 			VersioningSystem = pageVersioning,
 			VersionsConfig = DocumentationSet.Context.VersionsConfiguration!,
-			StructuredBreadcrumbsJson = structuredBreadcrumbsJsonString
+			StructuredBreadcrumbsJson = structuredBreadcrumbsJsonString,
+			// Git info for isolated header
+			GitBranch = gitBranch != "unavailable" ? gitBranch : null,
+			GitCommitShort = gitRef is { Length: >= 7 } r && r != "unavailable" ? r[..7] : null,
+			GitRepository = gitRepo != "unavailable" ? gitRepo : null,
+			GitHubDocsUrl = gitHubDocsUrl
 		});
 
 		return new RenderResult

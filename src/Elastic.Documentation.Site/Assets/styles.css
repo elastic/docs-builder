@@ -72,7 +72,7 @@ body {
 	}
 }
 
-@media screen and (min-width: 1200px) {
+@media screen and (min-width: 1180px) {
 	:root {
 		--offset-top: calc(80px + 38px); /* header height + banner height */
 	}
@@ -122,11 +122,42 @@ body {
 			@apply sticky top-(--offset-top) z-30 overflow-y-auto;
 			max-height: calc(100vh - var(--offset-top));
 			scrollbar-gutter: stable;
+			transition:
+				top 0.3s ease,
+				max-height 0.3s ease;
 		}
 
 		.sidebar-link {
 			@apply text-ink-light inline-block leading-[1.2em] text-pretty hover:text-black md:text-sm;
 			word-break: break-word;
+		}
+	}
+
+	/* Isolated header specific styles - only apply on lg screens (matches --breakpoint-lg) */
+	@media screen and (min-width: 1280px) {
+		.has-isolated-header {
+			/* Ensure grid container is tall enough for sticky sidebars to work */
+			#main-container > div:first-child {
+				min-height: calc(100vh + 500px);
+			}
+
+			.sidebar {
+				position: sticky !important;
+				top: var(--offset-top) !important;
+				height: fit-content;
+				max-height: calc(100vh - var(--offset-top));
+				overflow-y: auto;
+				align-self: start;
+				transition:
+					top 0.3s ease,
+					max-height 0.3s ease;
+
+				.sidebar-nav {
+					position: relative !important;
+					top: 0 !important;
+					max-height: 100%;
+				}
+			}
 		}
 	}
 }

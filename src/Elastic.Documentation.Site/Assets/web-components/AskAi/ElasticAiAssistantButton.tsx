@@ -22,6 +22,8 @@ const buttonLightCss = css`
 const buttonFillCss = css`
     background: ${aiGradients.dark};
 
+    border-radius: 9999px;
+
     /* Make the icon white */
     .euiIcon {
         filter: brightness(0) invert(1);
@@ -56,11 +58,10 @@ export const ElasticAiAssistantButton = ({
     children,
     fill = false,
     ...rest
-}: ButtonProps) => {
+}: ButtonProps & { fill?: boolean }) => {
     return (
         <EuiButton
             css={fill ? buttonFillCss : buttonLightCss}
-            size="s"
             fill
             iconType={AiIcon}
             {...rest}

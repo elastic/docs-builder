@@ -22,16 +22,16 @@
     <PackageVersion Include="AngleSharp" Version="1.4.0" />
     <PackageVersion Include="Aspire.Hosting" Version="13.0.0" />
     <PackageVersion Include="Aspire.Hosting.Testing" Version="13.0.0" />
-    <PackageVersion Include="AWSSDK.Core" Version="4.0.3.9" />
+    <PackageVersion Include="AWSSDK.Core" Version="4.0.3.10" />
     <PackageVersion Include="AWSSDK.DynamoDBv2" Version="4.0.10.5" />
-    <PackageVersion Include="AWSSDK.SQS" Version="4.0.2.12" />
+    <PackageVersion Include="AWSSDK.SQS" Version="4.0.2.13" />
     <PackageVersion Include="AWSSDK.S3" Version="4.0.16.2" />
     <PackageVersion Include="Elastic.OpenTelemetry" Version="1.1.0" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.UserSecrets" Version="10.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.1" />
     <PackageVersion Include="Microsoft.Extensions.Telemetry.Abstractions" Version="10.0.0" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.13.0" />
-    <PackageVersion Include="Generator.Equals" Version="3.2.1" PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
+    <PackageVersion Include="Generator.Equals" Version="3.3.0" PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
     <PackageVersion Include="KubernetesClient" Version="18.0.5" />
     <PackageVersion Include="Elastic.Aspire.Hosting.Elasticsearch" Version="9.3.0" />
     <PackageVersion Include="Elastic.Clients.Elasticsearch" Version="9.2.2" />
@@ -52,7 +52,7 @@
     <PackageVersion Include="Proc.Fs" Version="0.9.1" />
     <PackageVersion Include="Fake.Tools.Git" Version="6.1.4" />
     <PackageVersion Include="Fake.IO.Zip" Version="6.1.4" />
-    <PackageVersion Include="FSharp.Core" Version="10.0.101" />
+    <PackageVersion Include="FSharp.Core" Version="10.0.102" />
   </ItemGroup>
   <ItemGroup>
     <PackageVersion Include="ConsoleAppFramework" Version="5.7.13" PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />

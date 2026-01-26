@@ -78,7 +78,7 @@
     "svgo": "^3.3.2",
     "text-diff": "1.0.1",
     "typescript": "^5.9.3",
-    "typescript-eslint": "8.51.0",
+    "typescript-eslint": "8.52.0",
     "wait-on": "9.0.1"
   },
   "browserslist": [
@@ -86,7 +86,7 @@
   ],
   "dependencies": {
     "@elastic/eui": "111.0.0",
-    "@elastic/highlightjs-esql": "1.2.0",
+    "@elastic/highlightjs-esql": "1.2.2",
     "@emotion/css": "11.13.5",
     "@emotion/react": "11.14.0",
     "@microsoft/fetch-event-source": "2.0.1",
@@ -100,7 +100,7 @@
     "@opentelemetry/instrumentation-fetch": "^0.208.0",
     "@opentelemetry/otlp-exporter-base": "^0.208.0",
     "@opentelemetry/resources": "^2.2.0",
-    "@opentelemetry/sdk-logs": "^0.208.0",
+    "@opentelemetry/sdk-logs": "^0.209.0",
     "@opentelemetry/sdk-trace-web": "^2.2.0",
     "@opentelemetry/semantic-conventions": "^1.38.0",
     "@r2wc/react-to-web-component": "2.1.0",
@@ -120,6 +120,7 @@
     "ua-parser-js": "2.0.6",
     "uuid": "11.1.0",
     "zod": "4.1.12",
-    "zustand": "5.0.8"
+    "zustand": "5.0.8",
+    "zustand-indexeddb": "^0.1.1"
   }
 }

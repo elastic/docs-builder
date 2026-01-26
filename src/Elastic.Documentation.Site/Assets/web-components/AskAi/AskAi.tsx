@@ -1,6 +1,6 @@
 import '../../eui-icons-cache'
 import { sharedQueryClient } from '../shared/queryClient'
-import AiIcon from './ai-icon.svg'
+import { ElasticAiAssistantButton } from './ElasticAiAssistantButton'
 import {
     useAskAiModalActions,
     useAskAiModalIsOpen,
@@ -9,9 +9,10 @@ import {
 import {
     EuiFlyout,
     EuiFlyoutBody,
-    EuiIcon,
     EuiLoadingSpinner,
     EuiProvider,
+    euiShadow,
+    euiShadowHover,
     useEuiTheme,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
@@ -30,7 +31,8 @@ const AskAiButton = () => {
     const isModalOpen = useAskAiModalIsOpen()
     const { openModal, closeModal, setFlyoutWidth } = useAskAiModalActions()
     const flyoutWidth = useFlyoutWidth()
-    const { euiTheme } = useEuiTheme()
+    const euiThemeContext = useEuiTheme()
+    const { euiTheme } = euiThemeContext
 
     const { data: isApiAvailable } = useQuery({
         queryKey: ['api-health'],
@@ -49,34 +51,18 @@ const AskAiButton = () => {
         padding: 2rem;
     `
 
-    const fabCss = css`
+    const fabContainerCss = css`
         position: fixed;
-        bottom: ${euiTheme.size.xl};
-        right: ${euiTheme.size.xl};
-        height: 44px;
-        padding-inline: ${euiTheme.size.m};
-        border-radius: ${euiTheme.border.radius.medium};
-        background-color: ${euiTheme.colors.primary};
-        color: ${euiTheme.colors.ghost};
-        border: none;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: ${euiTheme.size.s};
-        font-size: ${euiTheme.size.m};
-        font-weight: ${euiTheme.font.weight.medium};
-        box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.15);
-        transition:
-            transform 0.15s ease,
-            box-shadow 0.15s ease,
-            background-color 0.15s ease;
+        bottom: ${euiTheme.size.xxxxl};
+        right: ${euiTheme.size.xxxxl};
         z-index: ${euiTheme.levels.mask};
+        border-radius: 9999px;
+        ${euiShadow(euiThemeContext, 'm')};
+        transition: transform 0.15s ease;
 
         &:hover {
             transform: translateY(-2px);
-            box-shadow: 0px 6px 16px rgba(0, 0, 0, 0.2);
-            background-color: ${euiTheme.colors.primaryText};
+            ${euiShadowHover(euiThemeContext, 'm')};
         }
 
         &:active {
@@ -115,8 +101,8 @@ const AskAiButton = () => {
                 onClose={closeModal}
                 aria-label="Ask AI"
                 resizable={true}
-                minWidth={400}
-                maxWidth={800}
+                minWidth={376}
+                maxWidth={700}
                 paddingSize="none"
                 hideCloseButton={true}
                 size={flyoutWidth}
@@ -124,15 +110,17 @@ const AskAiButton = () => {
                 outsideClickCloses={false}
             >
                 <EuiFlyoutBody>
-                    <Suspense
-                        fallback={
-                            <div css={loadingCss}>
-                                <EuiLoadingSpinner size="xl" />
-                            </div>
-                        }
-                    >
-                        <LazyAskAiModal />
-                    </Suspense>
+                    <div css={backgroundWrapperCss}>
+                        <Suspense
+                            fallback={
+                                <div css={loadingCss}>
+                                    <EuiLoadingSpinner size="xl" />
+                                </div>
+                            }
+                        >
+                            <LazyAskAiModal />
+                        </Suspense>
+                    </div>
                 </EuiFlyoutBody>
             </EuiFlyout>
         )
@@ -141,19 +129,61 @@ const AskAiButton = () => {
     return (
         <>
             {!isModalOpen && (
-                <button
-                    css={fabCss}
-                    onClick={openModal}
-                    aria-label="Open Ask AI"
-                >
-                    <EuiIcon type={AiIcon} size="m" color="ghost" />
-                    <span>Ask AI</span>
-                </button>
+                <div css={fabContainerCss}>
+                    <ElasticAiAssistantButton
+                        onClick={openModal}
+                        aria-label="Open Ask AI"
+                        fill={true}
+                    >
+                        Ask AI
+                    </ElasticAiAssistantButton>
+                </div>
             )}
             {flyout}
         </>
     )
 }
+
+const backgroundWrapperCss = css`
+    position: relative;
+    min-height: 100%;
+
+    &::before {
+        content: '';
+        position: absolute;
+        top: 38px;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #e5e5f7;
+        pointer-events: none;
+        z-index: 0;
+
+        opacity: 0.4;
+        background-image: radial-gradient(#444cf7 0.5px, #ffffff 0.5px);
+        background-size: 10px 10px;
+
+        mask-image: linear-gradient(
+            to bottom,
+            rgba(0, 0, 0, 1) 0%,
+            rgba(0, 0, 0, 1) 10%,
+            rgba(0, 0, 0, 0.5) 20%,
+            rgba(0, 0, 0, 0) 30%
+        );
+        -webkit-mask-image: linear-gradient(
+            to bottom,
+            rgba(0, 0, 0, 1) 0%,
+            rgba(0, 0, 0, 1) 10%,
+            rgba(0, 0, 0, 0.5) 20%,
+            rgba(0, 0, 0, 0) 30%
+        );
+    }
+
+    & > * {
+        position: relative;
+        z-index: 1;
+    }
+`
 
 const AskAi = () => {
     return (
