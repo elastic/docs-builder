@@ -1,5 +1,9 @@
+import {
+    useDiagnosticsStore,
+    DiagnosticItem,
+    BuildStatus,
+} from './diagnostics.store'
 import { fetchEventSource } from '@microsoft/fetch-event-source'
-import { useDiagnosticsStore, DiagnosticItem, BuildStatus } from './diagnostics.store'
 
 interface DiagnosticData {
     severity: string
@@ -38,7 +42,10 @@ export function connectToDiagnosticsStream(): void {
                 store.setConnected(true)
                 console.log('[Diagnostics] SSE connection established')
             } else {
-                console.error('[Diagnostics] SSE connection failed:', response.status)
+                console.error(
+                    '[Diagnostics] SSE connection failed:',
+                    response.status
+                )
                 store.setConnected(false)
             }
         },
@@ -89,7 +96,11 @@ function handleBuildEvent(event: BuildEvent): void {
     switch (event.type) {
         case 'state':
             // Initial state from server - includes status, counts, and historical diagnostics
-            store.setCounts(event.errors ?? 0, event.warnings ?? 0, event.hints ?? 0)
+            store.setCounts(
+                event.errors ?? 0,
+                event.warnings ?? 0,
+                event.hints ?? 0
+            )
             if (event.status) {
                 store.setStatus(event.status as BuildStatus)
             }
@@ -97,7 +108,11 @@ function handleBuildEvent(event: BuildEvent): void {
             if (event.diagnostics && event.diagnostics.length > 0) {
                 store.clearDiagnostics()
                 // Restore counts since clearDiagnostics resets them
-                store.setCounts(event.errors ?? 0, event.warnings ?? 0, event.hints ?? 0)
+                store.setCounts(
+                    event.errors ?? 0,
+                    event.warnings ?? 0,
+                    event.hints ?? 0
+                )
                 event.diagnostics.forEach((diag) => {
                     const diagnostic: DiagnosticItem = {
                         id: `diag-${++diagnosticIdCounter}`,
@@ -121,7 +136,11 @@ function handleBuildEvent(event: BuildEvent): void {
 
         case 'build_complete':
             store.setStatus('complete')
-            store.setCounts(event.errors ?? 0, event.warnings ?? 0, event.hints ?? 0)
+            store.setCounts(
+                event.errors ?? 0,
+                event.warnings ?? 0,
+                event.hints ?? 0
+            )
             break
 
         case 'build_cancelled':
@@ -132,7 +151,8 @@ function handleBuildEvent(event: BuildEvent): void {
             if (event.diagnostic) {
                 const diagnostic: DiagnosticItem = {
                     id: `diag-${++diagnosticIdCounter}`,
-                    severity: event.diagnostic.severity as DiagnosticItem['severity'],
+                    severity: event.diagnostic
+                        .severity as DiagnosticItem['severity'],
                     file: event.diagnostic.file,
                     message: event.diagnostic.message,
                     line: event.diagnostic.line,

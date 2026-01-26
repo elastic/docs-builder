@@ -1,12 +1,12 @@
-import * as React from 'react'
-import { useEffect } from 'react'
-import r2wc from '@r2wc/react-to-web-component'
 import { DiagnosticsButton } from './DiagnosticsButton'
 import { DiagnosticsHud } from './DiagnosticsHud'
 import {
     connectToDiagnosticsStream,
     disconnectFromDiagnosticsStream,
 } from './diagnosticsStreamClient'
+import r2wc from '@r2wc/react-to-web-component'
+import * as React from 'react'
+import { useEffect } from 'react'
 
 const DiagnosticsPanel: React.FC = () => {
     useEffect(() => {

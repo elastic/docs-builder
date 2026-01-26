@@ -83,7 +83,8 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set) => ({
             diagnostics: [...state.diagnostics, diagnostic],
         })),
 
-    clearDiagnostics: () => set({ diagnostics: [], errors: 0, warnings: 0, hints: 0 }),
+    clearDiagnostics: () =>
+        set({ diagnostics: [], errors: 0, warnings: 0, hints: 0 }),
 
     toggleHud: () =>
         set((state) => {

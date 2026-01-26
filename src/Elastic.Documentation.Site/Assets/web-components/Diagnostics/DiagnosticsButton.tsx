@@ -1,8 +1,10 @@
-import * as React from 'react'
 import { useDiagnosticsStore } from './diagnostics.store'
+import * as React from 'react'
 
 // Animated spinner for building state
-const BuildingSpinner: React.FC<{ className?: string }> = ({ className = '' }) => (
+const BuildingSpinner: React.FC<{ className?: string }> = ({
+    className = '',
+}) => (
     <svg
         className={`w-4 h-4 animate-spin ${className}`}
         viewBox="0 0 24 24"

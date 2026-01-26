@@ -216,7 +216,8 @@ body {
 
 /* Wobble animation for diagnostics button */
 @keyframes wobble {
-	0%, 100% {
+	0%,
+	100% {
 		transform: rotate(0deg);
 	}
 	15% {
@@ -266,23 +267,58 @@ body {
 }
 
 .diagnostics-pill-error {
-	background: linear-gradient(135deg, #dc2626, #b91c1c, #991b1b, #b91c1c, #dc2626);
+	background: linear-gradient(
+		135deg,
+		#dc2626,
+		#b91c1c,
+		#991b1b,
+		#b91c1c,
+		#dc2626
+	);
 }
 
 .diagnostics-pill-warning {
-	background: linear-gradient(135deg, #d97706, #b45309, #92400e, #b45309, #d97706);
+	background: linear-gradient(
+		135deg,
+		#d97706,
+		#b45309,
+		#92400e,
+		#b45309,
+		#d97706
+	);
 }
 
 .diagnostics-pill-hint {
-	background: linear-gradient(135deg, #0077cc, #005fa3, #004d85, #005fa3, #0077cc);
+	background: linear-gradient(
+		135deg,
+		#0077cc,
+		#005fa3,
+		#004d85,
+		#005fa3,
+		#0077cc
+	);
 }
 
 .diagnostics-pill-success {
-	background: linear-gradient(135deg, #16a34a, #15803d, #166534, #15803d, #16a34a);
+	background: linear-gradient(
+		135deg,
+		#16a34a,
+		#15803d,
+		#166534,
+		#15803d,
+		#16a34a
+	);
 }
 
 .diagnostics-pill-building {
-	background: linear-gradient(135deg, #3b82f6, #2563eb, #1d4ed8, #2563eb, #3b82f6);
+	background: linear-gradient(
+		135deg,
+		#3b82f6,
+		#2563eb,
+		#1d4ed8,
+		#2563eb,
+		#3b82f6
+	);
 }
 
 /* Segmented diagnostics pill */
@@ -300,19 +336,47 @@ body {
 }
 
 .diagnostics-segment-error {
-	background: linear-gradient(135deg, #dc2626, #b91c1c, #991b1b, #b91c1c, #dc2626);
+	background: linear-gradient(
+		135deg,
+		#dc2626,
+		#b91c1c,
+		#991b1b,
+		#b91c1c,
+		#dc2626
+	);
 }
 
 .diagnostics-segment-warning {
-	background: linear-gradient(135deg, #d97706, #b45309, #92400e, #b45309, #d97706);
+	background: linear-gradient(
+		135deg,
+		#d97706,
+		#b45309,
+		#92400e,
+		#b45309,
+		#d97706
+	);
 }
 
 .diagnostics-segment-hint {
-	background: linear-gradient(135deg, #0077cc, #005fa3, #004d85, #005fa3, #0077cc);
+	background: linear-gradient(
+		135deg,
+		#0077cc,
+		#005fa3,
+		#004d85,
+		#005fa3,
+		#0077cc
+	);
 }
 
 .diagnostics-segment-building {
-	background: linear-gradient(135deg, #3b82f6, #2563eb, #1d4ed8, #2563eb, #3b82f6);
+	background: linear-gradient(
+		135deg,
+		#3b82f6,
+		#2563eb,
+		#1d4ed8,
+		#2563eb,
+		#3b82f6
+	);
 }
 
 #pages-nav .current {

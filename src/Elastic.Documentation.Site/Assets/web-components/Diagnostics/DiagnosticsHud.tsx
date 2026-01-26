@@ -1,10 +1,15 @@
+import { useDiagnosticsStore, DiagnosticItem } from './diagnostics.store'
 import * as React from 'react'
 import { useEffect, useRef, useMemo, useCallback } from 'react'
-import { useDiagnosticsStore, DiagnosticItem } from './diagnostics.store'
 
 // Close icon
 const CloseIcon: React.FC = () => (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg
+        className="w-5 h-5"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+    >
         <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -16,7 +21,12 @@ const CloseIcon: React.FC = () => (
 
 // Copy icon
 const CopyIcon: React.FC = () => (
-    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg
+        className="w-4 h-4"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+    >
         <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -28,7 +38,12 @@ const CopyIcon: React.FC = () => (
 
 // Check icon for copy confirmation
 const CheckIcon: React.FC = () => (
-    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg
+        className="w-4 h-4"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+    >
         <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -105,7 +120,9 @@ const getSeverityIcon = (severity: DiagnosticItem['severity']) => {
     }
 }
 
-const DiagnosticRow: React.FC<{ diagnostic: DiagnosticItem }> = ({ diagnostic }) => {
+const DiagnosticRow: React.FC<{ diagnostic: DiagnosticItem }> = ({
+    diagnostic,
+}) => {
     const styles = getSeverityStyles(diagnostic.severity)
     const [copied, setCopied] = React.useState(false)
 
@@ -135,7 +152,9 @@ const DiagnosticRow: React.FC<{ diagnostic: DiagnosticItem }> = ({ diagnostic })
             <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 text-xs text-grey-70 mb-1">
-                        <span className={styles.icon}>{getSeverityIcon(diagnostic.severity)}</span>
+                        <span className={styles.icon}>
+                            {getSeverityIcon(diagnostic.severity)}
+                        </span>
                         <span
                             className={`uppercase font-semibold ${styles.icon}`}
                         >
@@ -231,15 +250,21 @@ export const DiagnosticsHud: React.FC = () => {
                 if (d.severity === 'hint' && !filters.hints) return false
                 return true
             })
-            .sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity])
+            .sort(
+                (a, b) => severityOrder[a.severity] - severityOrder[b.severity]
+            )
     }, [diagnostics, filters])
 
     // Check if all filters are active
-    const anyFilterInactive = !filters.errors || !filters.warnings || !filters.hints
+    const anyFilterInactive =
+        !filters.errors || !filters.warnings || !filters.hints
 
     // Auto-scroll to bottom when new diagnostics are added
     useEffect(() => {
-        if (diagnostics.length > prevDiagnosticsLength.current && listRef.current) {
+        if (
+            diagnostics.length > prevDiagnosticsLength.current &&
+            listRef.current
+        ) {
             listRef.current.scrollTop = listRef.current.scrollHeight
         }
         prevDiagnosticsLength.current = diagnostics.length
@@ -269,7 +294,9 @@ export const DiagnosticsHud: React.FC = () => {
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-2 bg-grey-130 border-b border-grey-120">
                 <div className="flex items-center gap-4">
-                    <h3 className="text-white font-semibold">Build Diagnostics</h3>
+                    <h3 className="text-white font-semibold">
+                        Build Diagnostics
+                    </h3>
                     {status === 'building' && (
                         <span className="text-sm text-blue-elastic animate-pulse">
                             Building...
@@ -318,9 +345,14 @@ export const DiagnosticsHud: React.FC = () => {
                             colorClass="bg-blue-elastic"
                         />
                     )}
-                    {errors === 0 && warnings === 0 && hints === 0 && status === 'complete' && (
-                        <span className="text-sm text-green">No issues found</span>
-                    )}
+                    {errors === 0 &&
+                        warnings === 0 &&
+                        hints === 0 &&
+                        status === 'complete' && (
+                            <span className="text-sm text-green">
+                                No issues found
+                            </span>
+                        )}
 
                     <div className="w-px h-5 bg-grey-120 mx-1" />
 
@@ -350,7 +382,10 @@ export const DiagnosticsHud: React.FC = () => {
                     </div>
                 ) : (
                     filteredDiagnostics.map((diagnostic) => (
-                        <DiagnosticRow key={diagnostic.id} diagnostic={diagnostic} />
+                        <DiagnosticRow
+                            key={diagnostic.id}
+                            diagnostic={diagnostic}
+                        />
                     ))
                 )}
             </div>
