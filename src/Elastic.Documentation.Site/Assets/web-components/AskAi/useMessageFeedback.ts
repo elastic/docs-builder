@@ -1,6 +1,11 @@
 import { logWarn } from '../../telemetry/logging'
 import { traceSpan } from '../../telemetry/tracing'
-import { Reaction, useChatActions, useMessageReaction } from './chat.store'
+import {
+    ConversationId,
+    Reaction,
+    useChatActions,
+    useMessageReaction,
+} from './chat.store'
 import { useMutation } from '@tanstack/react-query'
 import { useCallback, useRef } from 'react'
 
@@ -10,7 +15,7 @@ const DEBOUNCE_MS = 500
 
 interface MessageFeedbackRequest {
     messageId: string
-    conversationId: string
+    conversationId: ConversationId
     reaction: Reaction
 }
 
@@ -47,7 +52,7 @@ const submitFeedbackToApi = async (
 
 export const useMessageFeedback = (
     messageId: string,
-    conversationId: string | null
+    conversationId: ConversationId | null
 ): UseMessageFeedbackReturn => {
     const selectedReaction = useMessageReaction(messageId)
     const { setMessageFeedback } = useChatActions()

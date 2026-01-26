@@ -10,6 +10,8 @@ import {
     useChatActions,
     useChatMessages,
     useChatScrollPosition,
+    useHasHydrated,
+    useInputValue,
     useIsChatEmpty,
     useIsStreaming,
 } from './chat.store'
@@ -40,6 +42,7 @@ import {
 export const Chat = () => {
     const { euiTheme } = useEuiTheme()
     const isEmpty = useIsChatEmpty()
+    const hasHydrated = useHasHydrated()
     const inputRef = useRef<HTMLTextAreaElement>(null)
     const scrollRef = useRef<HTMLDivElement>(null)
 
@@ -67,7 +70,7 @@ export const Chat = () => {
         >
             <ChatHeader />
 
-            {isEmpty ? (
+            {hasHydrated && isEmpty ? (
                 <EuiFlexItem grow={true} css={emptyStateContainerStyles}>
                     <EuiEmptyPrompt
                         icon={<EuiIcon type={AiIcon} size="xxl" />}
@@ -81,6 +84,9 @@ export const Chat = () => {
                         }
                     />
                 </EuiFlexItem>
+            ) : !hasHydrated ? (
+                // Show nothing while hydrating to prevent empty state flash
+                <EuiFlexItem grow={true} />
             ) : (
                 <ChatScrollArea
                     scrollRef={scrollRef}
@@ -90,7 +96,7 @@ export const Chat = () => {
                 />
             )}
 
-            {isEmpty && (
+            {hasHydrated && isEmpty && (
                 <>
                     <AskAiSuggestions />
                     <EuiSpacer size="m" />
@@ -130,10 +136,10 @@ const ChatHeader = () => {
         >
             <div
                 css={css`
-                    padding-block: ${euiTheme.size.m};
+                    // padding-block: ${euiTheme.size.m};
                     padding-inline: ${euiTheme.size.base};
                     display: grid;
-                    height: 56px;
+                    height: 37px;
                     grid-template-columns: 1fr auto auto;
                     align-items: center;
                 `}
@@ -215,15 +221,21 @@ const ChatScrollArea = ({
             (m) => m.type === 'user'
         ).length
         if (userMessageCount > lastUserMessageCountRef.current) {
-            // New user message added - use double RAF to ensure spacer DOM update
-            // First RAF: React processes state updates and schedules re-render
-            // Second RAF: DOM is updated with new spacer, safe to scroll
+            // New user message added - use double RAF + setTimeout to ensure:
+            // 1. React processes state updates and schedules re-render
+            // 2. DOM is updated with new spacer
+            // 3. React's commit-phase operations complete
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
-                    if (scrollRef.current) {
-                        const scrollMargin = parseInt(euiTheme.size.l, 10)
-                        scrollUserMessageToTop(scrollRef.current, scrollMargin)
-                    }
+                    setTimeout(() => {
+                        if (scrollRef.current) {
+                            const scrollMargin = parseInt(euiTheme.size.l, 10)
+                            scrollUserMessageToTop(
+                                scrollRef.current,
+                                scrollMargin
+                            )
+                        }
+                    }, 0)
                 })
             })
         }
@@ -240,7 +252,12 @@ const ChatScrollArea = ({
 
     return (
         <EuiFlexItem grow={true} css={scrollContainerStyles}>
-            <div ref={scrollRef} css={scrollableStyles} onScroll={onScroll}>
+            <div
+                ref={scrollRef}
+                css={scrollableStyles}
+                onScroll={onScroll}
+                data-chat-scroll-area
+            >
                 <div css={messagesStyles}>
                     <ChatMessageList
                         messages={messages}
@@ -311,13 +328,17 @@ const ChatInputArea = ({
 }
 
 function useChatSubmit() {
-    const { submitQuestion, clearNon429Errors, cancelStreaming } =
-        useChatActions()
+    const {
+        submitQuestion,
+        clearNon429Errors,
+        cancelStreaming,
+        setInputValue,
+    } = useChatActions()
+    const inputValue = useInputValue()
     const isCooldownActive = useIsAskAiCooldownActive()
     const isStreaming = useIsStreaming()
     // Note: Scrolling is now handled in ChatScrollArea via useLayoutEffect
 
-    const [inputValue, setInputValue] = useState('')
     const abortRef = useRef<(() => void) | null>(null)
 
     useEffect(() => {
@@ -335,7 +356,7 @@ function useChatSubmit() {
             submitQuestion(trimmed)
             setInputValue('')
         },
-        [submitQuestion, isCooldownActive, clearNon429Errors]
+        [submitQuestion, isCooldownActive, clearNon429Errors, setInputValue]
     )
 
     const handleAbort = useCallback(() => {
@@ -366,17 +387,19 @@ function useChatSubmit() {
  */
 function useScrollPersistence(scrollRef: RefObject<HTMLDivElement | null>) {
     const savedPosition = useChatScrollPosition()
+    const hasHydrated = useHasHydrated()
     const { setScrollPosition } = useChatActions()
 
+    // Restore scroll position after hydration completes
     useEffect(() => {
-        if (scrollRef.current && savedPosition > 0) {
+        if (hasHydrated && scrollRef.current && savedPosition > 0) {
             requestAnimationFrame(() => {
                 if (scrollRef.current) {
                     scrollRef.current.scrollTop = savedPosition
                 }
             })
         }
-    }, [])
+    }, [hasHydrated])
 
     const handleScroll = useCallback(() => {
         if (scrollRef.current) {
@@ -487,7 +510,7 @@ function useSpacerHeight(
 // Constants & Styles (implementation details)
 // ============================================================================
 
-const CONTENT_AREA_HEIGHT = 400
+const CONTENT_AREA_HEIGHT = 200
 
 // ============================================================================
 // DOM Helpers
@@ -517,6 +540,7 @@ function scrollUserMessageToTop(container: HTMLElement, margin: number): void {
 }
 
 const containerStyles = css`
+    // height: calc(100vh - var(--offset-top) - 1px);
     height: 100vh;
     overflow: hidden;
 `
