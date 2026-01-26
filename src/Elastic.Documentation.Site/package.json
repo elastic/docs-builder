@@ -100,7 +100,7 @@
     "@opentelemetry/instrumentation-fetch": "^0.208.0",
     "@opentelemetry/otlp-exporter-base": "^0.208.0",
     "@opentelemetry/resources": "^2.2.0",
-    "@opentelemetry/sdk-logs": "^0.208.0",
+    "@opentelemetry/sdk-logs": "^0.209.0",
     "@opentelemetry/sdk-trace-web": "^2.2.0",
     "@opentelemetry/semantic-conventions": "^1.38.0",
     "@r2wc/react-to-web-component": "2.1.0",
