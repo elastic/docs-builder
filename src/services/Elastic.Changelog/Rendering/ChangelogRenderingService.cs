@@ -207,14 +207,12 @@ public class ChangelogRenderingService(
 
 		foreach (var resolved in entries)
 		{
-			var entry = resolved.Entry;
-			
 			// Skip if already hidden by feature ID
-			if (!string.IsNullOrWhiteSpace(entry.FeatureId) && context.FeatureIdsToHide.Contains(entry.FeatureId))
+			if (!string.IsNullOrWhiteSpace(resolved.Entry.FeatureId) && context.FeatureIdsToHide.Contains(resolved.Entry.FeatureId))
 				continue;
 
 			// Get product IDs for this entry
-			var productIds = context.EntryToBundleProducts.GetValueOrDefault(entry, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+			var productIds = context.EntryToBundleProducts.GetValueOrDefault(resolved.Entry, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
 			if (productIds.Count == 0)
 				continue;
 
@@ -222,11 +220,11 @@ public class ChangelogRenderingService(
 			foreach (var productId in productIds)
 			{
 				var blocker = GetPublishBlockerForProduct(context.Configuration.Block, productId);
-				if (blocker != null && blocker.ShouldBlock(entry))
+				if (blocker != null && blocker.ShouldBlock(resolved.Entry))
 				{
-					var reasons = GetBlockReasons(entry, blocker);
+					var reasons = GetBlockReasons(resolved.Entry, blocker);
 					var productInfo = productIds.Count > 1 ? $" for product '{productId}'" : "";
-					collector.EmitWarning(string.Empty, $"Changelog entry '{entry.Title}' will be commented out{productInfo} because it matches block configuration: {reasons}");
+					collector.EmitWarning(string.Empty, $"Changelog entry '{resolved.Entry.Title}' will be commented out{productInfo} because it matches block configuration: {reasons}");
 				}
 			}
 		}
