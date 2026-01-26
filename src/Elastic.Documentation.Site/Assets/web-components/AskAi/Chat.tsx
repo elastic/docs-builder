@@ -11,6 +11,7 @@ import {
     useChatMessages,
     useChatScrollPosition,
     useHasHydrated,
+    useInputValue,
     useIsChatEmpty,
     useIsStreaming,
 } from './chat.store'
@@ -327,13 +328,17 @@ const ChatInputArea = ({
 }
 
 function useChatSubmit() {
-    const { submitQuestion, clearNon429Errors, cancelStreaming } =
-        useChatActions()
+    const {
+        submitQuestion,
+        clearNon429Errors,
+        cancelStreaming,
+        setInputValue,
+    } = useChatActions()
+    const inputValue = useInputValue()
     const isCooldownActive = useIsAskAiCooldownActive()
     const isStreaming = useIsStreaming()
     // Note: Scrolling is now handled in ChatScrollArea via useLayoutEffect
 
-    const [inputValue, setInputValue] = useState('')
     const abortRef = useRef<(() => void) | null>(null)
 
     useEffect(() => {
@@ -351,7 +356,7 @@ function useChatSubmit() {
             submitQuestion(trimmed)
             setInputValue('')
         },
-        [submitQuestion, isCooldownActive, clearNon429Errors]
+        [submitQuestion, isCooldownActive, clearNon429Errors, setInputValue]
     )
 
     const handleAbort = useCallback(() => {

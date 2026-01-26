@@ -49,6 +49,7 @@ interface ChatState {
     aiProvider: AiProvider
     messageFeedback: Record<string, Reaction> // messageId -> reaction
     scrollPosition: number
+    inputValue: string // Draft input text (persisted so user doesn't lose it)
     hasHydrated: boolean // True after IndexedDB hydration completes (not persisted)
     actions: {
         submitQuestion: (question: string) => void
@@ -68,6 +69,7 @@ interface ChatState {
         abortMessage: (messageId: string) => void
         isStreaming: (messageId: string) => boolean
         setScrollPosition: (position: number) => void
+        setInputValue: (value: string) => void
     }
 }
 
@@ -81,6 +83,7 @@ export const chatStore = createStore<ChatState>()(
             messageFeedback: {},
             hasHydrated: false, // Will be set to true after IndexedDB hydration
             scrollPosition: 0,
+            inputValue: '',
             actions: {
                 submitQuestion: (question: string) => {
                     const state = get()
@@ -243,6 +246,10 @@ export const chatStore = createStore<ChatState>()(
                 setScrollPosition: (position) => {
                     set({ scrollPosition: position })
                 },
+
+                setInputValue: (value) => {
+                    set({ inputValue: value })
+                },
             },
         }),
         {
@@ -259,6 +266,7 @@ export const chatStore = createStore<ChatState>()(
                     conversationId: state.conversationId,
                     messageFeedback: state.messageFeedback,
                     scrollPosition: state.scrollPosition,
+                    inputValue: state.inputValue,
                 }) as ChatState,
             onRehydrateStorage: () => (state) => {
                 // Mark any messages that were streaming when page was closed as interrupted
@@ -305,6 +313,7 @@ if (typeof window !== 'undefined') {
                     conversationId: persistedState.conversationId ?? null,
                     messageFeedback: persistedState.messageFeedback ?? {},
                     scrollPosition: persistedState.scrollPosition ?? 0,
+                    inputValue: persistedState.inputValue ?? '',
                     hasHydrated: true,
                 })
             } else {
@@ -474,6 +483,8 @@ export const useAiProvider = () =>
     useStore(chatStore, (state) => state.aiProvider)
 export const useChatScrollPosition = () =>
     useStore(chatStore, (state) => state.scrollPosition)
+export const useInputValue = () =>
+    useStore(chatStore, (state) => state.inputValue)
 export const useChatActions = () =>
     useStore(chatStore, (state) => state.actions)
 export const useMessageReaction = (messageId: string) =>

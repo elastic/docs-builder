@@ -49,12 +49,11 @@ const askAiModalStore = create<ModalState>()(
         }),
         {
             name: 'elastic-docs-ask-ai-state',
-            version: 1,
-            storage: createJSONStorage(() => localStorage),
+            version: 2,
+            storage: createJSONStorage(() => sessionStorage),
             partialize: (state) => ({
                 isOpen: state.isOpen,
                 flyoutWidth: state.flyoutWidth,
-                // Exclude actions (functions)
             }),
         }
     )
