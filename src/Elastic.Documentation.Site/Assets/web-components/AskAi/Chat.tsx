@@ -127,6 +127,26 @@ const ChatHeader = () => {
     const messages = useChatMessages()
     const { euiTheme } = useEuiTheme()
     const smallFontsize = useEuiFontSize('s').fontSize
+
+    // Prevent EUI's focus management from auto-focusing the clear button when it first appears.
+    // EUI components have internal focus management that tries to focus the first focusable
+    // element in a flyout when content changes. By temporarily setting tabIndex={-1}, we tell
+    // the focus management to skip this button during the initial render cycle.
+    const [isClearButtonFocusable, setIsClearButtonFocusable] = useState(false)
+    const prevHasMessages = useRef(messages.length > 0)
+
+    useEffect(() => {
+        const hasMessages = messages.length > 0
+        if (hasMessages && !prevHasMessages.current) {
+            // Button just appeared - delay focusability to avoid EUI's auto-focus
+            setIsClearButtonFocusable(false)
+            const timer = setTimeout(() => setIsClearButtonFocusable(true), 150)
+            prevHasMessages.current = hasMessages
+            return () => clearTimeout(timer)
+        }
+        prevHasMessages.current = hasMessages
+    }, [messages.length])
+
     return (
         <EuiFlexItem
             grow={false}
@@ -167,19 +187,17 @@ const ChatHeader = () => {
                         gap: ${euiTheme.size.s};
                     `}
                 >
-                    <EuiToolTip content="Clear conversation">
-                        <EuiButtonIcon
-                            aria-label="Clear conversation"
-                            iconType="trash"
-                            color="text"
-                            onClick={() => clearChat()}
-                            css={css`
-                                visibility: ${messages.length > 0
-                                    ? 'visible'
-                                    : 'hidden'};
-                            `}
-                        />
-                    </EuiToolTip>
+                    {messages.length > 0 && (
+                        <EuiToolTip content="Clear conversation">
+                            <EuiButtonIcon
+                                aria-label="Clear conversation"
+                                iconType="trash"
+                                color="text"
+                                onClick={() => clearChat()}
+                                tabIndex={isClearButtonFocusable ? 0 : -1}
+                            />
+                        </EuiToolTip>
+                    )}
                     <EuiButtonIcon
                         aria-label="Close Ask AI modal"
                         iconType="cross"
