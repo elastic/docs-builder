@@ -22,9 +22,9 @@
     <PackageVersion Include="AngleSharp" Version="1.4.0" />
     <PackageVersion Include="Aspire.Hosting" Version="13.0.0" />
     <PackageVersion Include="Aspire.Hosting.Testing" Version="13.0.0" />
-    <PackageVersion Include="AWSSDK.Core" Version="4.0.3.9" />
+    <PackageVersion Include="AWSSDK.Core" Version="4.0.3.10" />
     <PackageVersion Include="AWSSDK.DynamoDBv2" Version="4.0.10.5" />
-    <PackageVersion Include="AWSSDK.SQS" Version="4.0.2.12" />
+    <PackageVersion Include="AWSSDK.SQS" Version="4.0.2.13" />
     <PackageVersion Include="AWSSDK.S3" Version="4.0.16.2" />
     <PackageVersion Include="Elastic.OpenTelemetry" Version="1.1.0" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.UserSecrets" Version="10.0.0" />
