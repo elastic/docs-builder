@@ -1293,6 +1293,93 @@ public class BundleChangelogsTests : ChangelogTestBase
 	}
 
 	[Fact]
+	public async Task BundleChangelogs_WithResolve_PreservesSpecialCharactersInUtf8()
+	{
+		// Arrange - Create changelog with special characters that could be corrupted
+		// These characters were reported as being corrupted to "&o0" and "*o0" in the original issue
+
+		// language=yaml
+		var changelog1 =
+			"""
+			title: Feature with special characters & symbols
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			    lifecycle: ga
+			pr: https://github.com/elastic/elasticsearch/pull/100
+			description: |
+			  This feature includes special characters:
+			  - Ampersand: & symbol
+			  - Asterisk: * symbol
+			  - Other special chars: < > " ' / \
+			  - Unicode: © ® ™ € £ ¥
+			""";
+
+		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-special-chars.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, System.Text.Encoding.UTF8, TestContext.Current.CancellationToken);
+
+		var outputPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			All = true,
+			Resolve = true,
+			Output = outputPath
+		};
+
+		// Act
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+
+		// Read the bundle file with explicit UTF-8 encoding
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, System.Text.Encoding.UTF8, TestContext.Current.CancellationToken);
+
+		// Verify special characters are preserved correctly (not corrupted)
+		// The original issue reported "&o0" and "*o0" corruption, so we verify the characters are correct
+		bundleContent.Should().Contain("&"); // Ampersand should be preserved
+		bundleContent.Should().Contain("Feature with special characters & symbols"); // Ampersand in title
+		bundleContent.Should().Contain("Ampersand: & symbol"); // Ampersand in description
+
+		// Check that asterisk appears correctly (not corrupted to "*o0")
+		bundleContent.Should().Contain("*"); // Asterisk should be preserved
+		bundleContent.Should().Contain("Asterisk: * symbol"); // Asterisk in description
+
+		// Verify the ampersand and asterisk are not corrupted
+		// The corruption pattern would be "&o0" or "*o0" appearing where we expect "&" or "*"
+		// We check that the title contains the correct pattern, not the corrupted one
+		var titleLine = bundleContent.Split('\n').FirstOrDefault(l => l.Contains("title:"));
+		titleLine.Should().NotBeNull();
+		titleLine.Should().Contain("&");
+		titleLine.Should().NotContain("&o0"); // Should not be corrupted in title
+
+		// Verify no corruption patterns exist (these would indicate encoding issues)
+		bundleContent.Should().NotContain("&o0"); // Should not contain corrupted ampersand
+		bundleContent.Should().NotContain("*o0"); // Should not contain corrupted asterisk
+
+		// Verify other special characters are preserved
+		bundleContent.Should().Contain("<");
+		bundleContent.Should().Contain(">");
+		bundleContent.Should().Contain("\"");
+
+		// Verify Unicode characters are preserved
+		bundleContent.Should().Contain("©");
+		bundleContent.Should().Contain("®");
+		bundleContent.Should().Contain("™");
+		bundleContent.Should().Contain("€");
+
+		// Verify the content structure is correct
+		bundleContent.Should().Contain("title: Feature with special characters & symbols");
+		bundleContent.Should().Contain("type: feature");
+		bundleContent.Should().Contain("product: elasticsearch");
+		bundleContent.Should().Contain("target: 9.3.0");
+		bundleContent.Should().Contain("lifecycle: ga");
+	}
+
+	[Fact]
 	public async Task BundleChangelogs_WithDirectoryOutputPath_CreatesDefaultFilename()
 	{
 		// Arrange

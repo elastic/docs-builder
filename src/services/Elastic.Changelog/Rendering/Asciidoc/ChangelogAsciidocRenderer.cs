@@ -123,7 +123,7 @@ public class ChangelogAsciidocRenderer(IFileSystem fileSystem)
 		if (!string.IsNullOrWhiteSpace(asciidocDir) && !fileSystem.Directory.Exists(asciidocDir))
 			_ = fileSystem.Directory.CreateDirectory(asciidocDir);
 
-		await fileSystem.File.WriteAllTextAsync(asciidocPath, sb.ToString(), ctx);
+		await fileSystem.File.WriteAllTextAsync(asciidocPath, sb.ToString(), Encoding.UTF8, ctx);
 	}
 
 	private static void RenderSectionHeader(StringBuilder sb, string anchorPrefix, string titleSlug, string title)

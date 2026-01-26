@@ -35,6 +35,8 @@ public static class ChangelogYamlSerialization
 		new StaticSerializerBuilder(new ChangelogYamlStaticContext())
 			.WithNamingConvention(UnderscoredNamingConvention.Instance)
 			.ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitNull | DefaultValuesHandling.OmitEmptyCollections)
+			.WithQuotingNecessaryStrings()
+			.DisableAliases()
 			.Build();
 
 	/// <summary>
