@@ -2,6 +2,27 @@ import { create } from 'zustand'
 
 export type BuildStatus = 'idle' | 'building' | 'complete'
 
+// SessionStorage key for persisting HUD open state
+const HUD_OPEN_KEY = 'diagnostics-hud-open'
+
+// Helper to get persisted HUD state
+function getPersistedHudOpen(): boolean {
+    try {
+        return sessionStorage.getItem(HUD_OPEN_KEY) === 'true'
+    } catch {
+        return false
+    }
+}
+
+// Helper to persist HUD state
+function persistHudOpen(open: boolean): void {
+    try {
+        sessionStorage.setItem(HUD_OPEN_KEY, String(open))
+    } catch {
+        // Ignore storage errors
+    }
+}
+
 export type DiagnosticSeverity = 'error' | 'warning' | 'hint'
 
 export interface DiagnosticItem {
@@ -49,7 +70,7 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set) => ({
     warnings: 0,
     hints: 0,
     diagnostics: [],
-    isHudOpen: false,
+    isHudOpen: getPersistedHudOpen(),
     isConnected: false,
     filters: { errors: true, warnings: true, hints: true },
 
@@ -64,9 +85,17 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set) => ({
 
     clearDiagnostics: () => set({ diagnostics: [], errors: 0, warnings: 0, hints: 0 }),
 
-    toggleHud: () => set((state) => ({ isHudOpen: !state.isHudOpen })),
+    toggleHud: () =>
+        set((state) => {
+            const newOpen = !state.isHudOpen
+            persistHudOpen(newOpen)
+            return { isHudOpen: newOpen }
+        }),
 
-    setHudOpen: (open) => set({ isHudOpen: open }),
+    setHudOpen: (open) => {
+        persistHudOpen(open)
+        return set({ isHudOpen: open })
+    },
 
     setConnected: (connected) => set({ isConnected: connected }),
 
