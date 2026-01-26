@@ -235,7 +235,6 @@ export const DiagnosticsHud: React.FC = () => {
     }, [diagnostics, filters])
 
     // Check if all filters are active
-    const allFiltersActive = filters.errors && filters.warnings && filters.hints
     const anyFilterInactive = !filters.errors || !filters.warnings || !filters.hints
 
     // Auto-scroll to bottom when new diagnostics are added
