@@ -2,6 +2,15 @@ import { chatStore } from './chat.store'
 import { act } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 
+// Mock zustand-indexeddb (IndexedDB not available in Node.js test environment)
+jest.mock('zustand-indexeddb', () => ({
+    createIndexedDBStorage: () => ({
+        getItem: jest.fn().mockResolvedValue(null),
+        setItem: jest.fn().mockResolvedValue(undefined),
+        removeItem: jest.fn().mockResolvedValue(undefined),
+    }),
+}))
+
 // Mock uuid
 jest.mock('uuid', () => ({
     v4: jest.fn(),
@@ -22,9 +31,9 @@ describe('chat.store', () => {
             // Ignore if localStorage is not available in test environment
         }
 
-        // Reset store state before each test
+        // Reset store state before each test (clearAllConversations resets everything)
         act(() => {
-            chatStore.getState().actions.clearChat()
+            chatStore.getState().actions.clearAllConversations()
         })
     })
 
@@ -172,7 +181,9 @@ describe('chat.store', () => {
         // Verify the store has the persist API available
         // The persist middleware adds a persist property to the store
         expect(chatStore.persist).toBeDefined()
-        expect(chatStore.persist.getOptions().name).toBe('ask-ai-chat')
+        expect(chatStore.persist.getOptions().name).toBe(
+            'elastic-docs-conversations-index'
+        )
         expect(chatStore.persist.getOptions().version).toBe(1)
     })
 
@@ -206,4 +217,110 @@ describe('chat.store', () => {
      * This requires system/E2E testing with a real LLM backend, which is
      * outside the scope of frontend unit tests.
      */
+
+    describe('multi-conversation support', () => {
+        it('should create a new ConversationMeta when setConversationId is called with new ID', () => {
+            // Submit a question first (so there are messages)
+            act(() => {
+                chatStore.getState().actions.submitQuestion('Hello')
+            })
+
+            expect(chatStore.getState().conversations).toHaveLength(0)
+            expect(chatStore.getState().activeConversationId).toBeNull()
+
+            // Simulate backend returning conversation ID
+            act(() => {
+                chatStore.getState().actions.setConversationId('conv-123')
+            })
+
+            const state = chatStore.getState()
+            expect(state.activeConversationId).toBe('conv-123')
+            expect(state.conversations).toHaveLength(1)
+            expect(state.conversations[0].id).toBe('conv-123')
+            expect(state.conversations[0].title).toBe('Hello')
+            expect(state.conversations[0].messageCount).toBe(2)
+            expect(state.conversations[0].createdAt).toBeDefined()
+            expect(state.conversations[0].updatedAt).toBeDefined()
+        })
+
+        it('should update existing ConversationMeta when setConversationId is called with existing ID', () => {
+            // Create initial conversation
+            act(() => {
+                chatStore.getState().actions.submitQuestion('First question')
+                chatStore.getState().actions.setConversationId('conv-123')
+            })
+
+            const initialUpdatedAt =
+                chatStore.getState().conversations[0].updatedAt
+
+            // Add another message and update conversation
+            act(() => {
+                chatStore.getState().actions.submitQuestion('Follow-up')
+                chatStore.getState().actions.setConversationId('conv-123')
+            })
+
+            const state = chatStore.getState()
+            expect(state.conversations).toHaveLength(1) // Still only one conversation
+            expect(state.conversations[0].messageCount).toBe(4) // Now 4 messages
+            expect(state.conversations[0].updatedAt).toBeGreaterThanOrEqual(
+                initialUpdatedAt
+            )
+        })
+
+        it('should reset state when createConversation is called', () => {
+            // Create a conversation with messages
+            act(() => {
+                chatStore.getState().actions.submitQuestion('Hello')
+                chatStore.getState().actions.setConversationId('conv-123')
+            })
+
+            expect(chatStore.getState().chatMessages).toHaveLength(2)
+            expect(chatStore.getState().activeConversationId).toBe('conv-123')
+
+            // Create new conversation
+            act(() => {
+                chatStore.getState().actions.createConversation()
+            })
+
+            const state = chatStore.getState()
+            expect(state.chatMessages).toHaveLength(0)
+            expect(state.activeConversationId).toBeNull()
+            expect(state.totalMessageCount).toBe(0)
+            expect(state.inputValue).toBe('')
+            // Conversations list should still contain the old conversation
+            expect(state.conversations).toHaveLength(1)
+        })
+
+        it('should clear all conversations when clearAllConversations is called', () => {
+            // Create multiple conversations
+            act(() => {
+                chatStore.getState().actions.submitQuestion('Question 1')
+                chatStore.getState().actions.setConversationId('conv-1')
+            })
+
+            act(() => {
+                chatStore.getState().actions.createConversation()
+                chatStore.getState().actions.submitQuestion('Question 2')
+                chatStore.getState().actions.setConversationId('conv-2')
+            })
+
+            expect(chatStore.getState().conversations).toHaveLength(2)
+
+            // Clear all
+            act(() => {
+                chatStore.getState().actions.clearAllConversations()
+            })
+
+            const state = chatStore.getState()
+            expect(state.conversations).toHaveLength(0)
+            expect(state.chatMessages).toHaveLength(0)
+            expect(state.activeConversationId).toBeNull()
+            expect(state.totalMessageCount).toBe(0)
+        })
+
+        it('should initialize with empty conversations array', () => {
+            // beforeEach already calls clearAllConversations, so state should be clean
+            expect(chatStore.getState().conversations).toEqual([])
+        })
+    })
 })

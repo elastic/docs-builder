@@ -6,6 +6,15 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import * as React from 'react'
 
+// Mock zustand-indexeddb (IndexedDB not available in Node.js test environment)
+jest.mock('zustand-indexeddb', () => ({
+    createIndexedDBStorage: () => ({
+        getItem: jest.fn().mockResolvedValue(null),
+        setItem: jest.fn().mockResolvedValue(undefined),
+        removeItem: jest.fn().mockResolvedValue(undefined),
+    }),
+}))
+
 // Create a fresh QueryClient for each test
 const createTestQueryClient = () =>
     new QueryClient({
