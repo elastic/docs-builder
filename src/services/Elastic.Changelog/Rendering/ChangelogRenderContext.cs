@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Changelog.Configuration;
 using Elastic.Documentation;
 
 namespace Elastic.Changelog.Rendering;
@@ -21,4 +22,5 @@ public record ChangelogRenderContext
 	public required Dictionary<ChangelogEntry, HashSet<string>> EntryToBundleProducts { get; init; }
 	public required Dictionary<ChangelogEntry, string> EntryToRepo { get; init; }
 	public required Dictionary<ChangelogEntry, bool> EntryToHideLinks { get; init; }
+	public ChangelogConfiguration? Configuration { get; init; }
 }
