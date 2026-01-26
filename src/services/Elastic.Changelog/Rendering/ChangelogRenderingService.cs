@@ -122,12 +122,15 @@ public class ChangelogRenderingService(
 			// Emit warnings for hidden entries
 			EmitHiddenEntryWarnings(collector, resolvedResult.Entries, featureHidingResult.FeatureIdsToHide);
 
+			// Build render context (needed for block checking)
+			var context = BuildRenderContext(input, outputSetup, resolvedResult, featureHidingResult.FeatureIdsToHide, config);
+
+			// Emit warnings for blocked entries
+			EmitBlockedEntryWarnings(collector, resolvedResult.Entries, context);
+
 			// Validate entry types
 			if (!ValidateEntryTypes(collector, resolvedResult.Entries, config.Types))
 				return false;
-
-			// Build render context
-			var context = BuildRenderContext(input, outputSetup, resolvedResult, featureHidingResult.FeatureIdsToHide, config);
 
 			// Render output
 			var renderer = new ChangelogRenderer(_fileSystem, _logger);
@@ -192,6 +195,76 @@ public class ChangelogRenderingService(
 			if (!string.IsNullOrWhiteSpace(resolved.Entry.FeatureId) && featureIdsToHide.Contains(resolved.Entry.FeatureId))
 				collector.EmitWarning(string.Empty, $"Changelog entry '{resolved.Entry.Title}' with feature-id '{resolved.Entry.FeatureId}' will be commented out in markdown output");
 		}
+	}
+
+	private static void EmitBlockedEntryWarnings(
+		IDiagnosticsCollector collector,
+		IReadOnlyList<ResolvedEntry> entries,
+		ChangelogRenderContext context)
+	{
+		if (context.Configuration?.Block == null)
+			return;
+
+		foreach (var resolved in entries)
+		{
+			var entry = resolved.Entry;
+			
+			// Skip if already hidden by feature ID
+			if (!string.IsNullOrWhiteSpace(entry.FeatureId) && context.FeatureIdsToHide.Contains(entry.FeatureId))
+				continue;
+
+			// Get product IDs for this entry
+			var productIds = context.EntryToBundleProducts.GetValueOrDefault(entry, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+			if (productIds.Count == 0)
+				continue;
+
+			// Check each product's block configuration
+			foreach (var productId in productIds)
+			{
+				var blocker = GetPublishBlockerForProduct(context.Configuration.Block, productId);
+				if (blocker != null && blocker.ShouldBlock(entry))
+				{
+					var reasons = GetBlockReasons(entry, blocker);
+					var productInfo = productIds.Count > 1 ? $" for product '{productId}'" : "";
+					collector.EmitWarning(string.Empty, $"Changelog entry '{entry.Title}' will be commented out{productInfo} because it matches block configuration: {reasons}");
+				}
+			}
+		}
+	}
+
+	private static string GetBlockReasons(ChangelogEntry entry, Configuration.PublishBlocker blocker)
+	{
+		var reasons = new List<string>();
+
+		// Check if blocked by type
+		if (blocker.Types?.Count > 0)
+		{
+			var entryTypeName = entry.Type.ToStringFast(true);
+			if (blocker.Types.Any(t => t.Equals(entryTypeName, StringComparison.OrdinalIgnoreCase)))
+				reasons.Add($"type '{entryTypeName}'");
+		}
+
+		// Check if blocked by area
+		if (blocker.Areas?.Count > 0 && entry.Areas?.Count > 0)
+		{
+			var blockedAreas = entry.Areas
+				.Where(area => blocker.Areas.Any(blocked => blocked.Equals(area, StringComparison.OrdinalIgnoreCase)))
+				.ToList();
+			if (blockedAreas.Count > 0)
+				reasons.Add($"area{(blockedAreas.Count > 1 ? "s" : "")} '{string.Join("', '", blockedAreas)}'");
+		}
+
+		return string.Join(" and ", reasons);
+	}
+
+	private static Configuration.PublishBlocker? GetPublishBlockerForProduct(Configuration.BlockConfiguration blockConfig, string productId)
+	{
+		// Check product-specific override first
+		if (blockConfig.ByProduct?.TryGetValue(productId, out var productBlockers) == true)
+			return productBlockers.Publish;
+
+		// Fall back to global publish blocker
+		return blockConfig.Publish;
 	}
 
 	private static bool ValidateEntryTypes(
