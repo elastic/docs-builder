@@ -231,7 +231,7 @@ public class ChangelogRenderingService(
 		}
 	}
 
-	private static string GetBlockReasons(ChangelogEntry entry, Configuration.PublishBlocker blocker)
+	private static string GetBlockReasons(ChangelogEntry entry, PublishBlocker blocker)
 	{
 		var reasons = new List<string>();
 
@@ -256,7 +256,7 @@ public class ChangelogRenderingService(
 		return string.Join(" and ", reasons);
 	}
 
-	private static Configuration.PublishBlocker? GetPublishBlockerForProduct(Configuration.BlockConfiguration blockConfig, string productId)
+	private static PublishBlocker? GetPublishBlockerForProduct(BlockConfiguration blockConfig, string productId)
 	{
 		// Check product-specific override first
 		if (blockConfig.ByProduct?.TryGetValue(productId, out var productBlockers) == true)
