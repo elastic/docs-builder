@@ -3,6 +3,7 @@ import { initAppliesSwitch } from './applies-switch'
 import { initCopyButton } from './copybutton'
 import { initHighlight } from './hljs'
 import { initImageCarousel } from './image-carousel'
+import { initIsolatedHeader } from './isolated-header'
 import { openDetailsWithAnchor } from './open-details-with-anchor'
 import { initNav } from './pages-nav'
 import { initSmoothScroll } from './smooth-scroll'
@@ -90,9 +91,10 @@ function initMath() {
     })
 }
 
-// Initialize math on initial page load
+// Initialize on initial page load
 document.addEventListener('DOMContentLoaded', function () {
     initMath()
+    initIsolatedHeader()
 })
 
 document.addEventListener('htmx:load', function () {
