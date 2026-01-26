@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using System.Text;
 using Elastic.Changelog.Configuration;
 using Elastic.Changelog.Serialization;
 using Elastic.Documentation;
@@ -43,8 +44,8 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 		var filename = GenerateFilename(collector, input, prUrl);
 		var filePath = fileSystem.Path.Combine(outputDir, filename);
 
-		// Write file
-		await fileSystem.File.WriteAllTextAsync(filePath, yamlContent, ctx);
+		// Write file with explicit UTF-8 encoding to ensure proper character handling
+		await fileSystem.File.WriteAllTextAsync(filePath, yamlContent, Encoding.UTF8, ctx);
 		logger.LogInformation("Created changelog fragment: {FilePath}", filePath);
 
 		return true;

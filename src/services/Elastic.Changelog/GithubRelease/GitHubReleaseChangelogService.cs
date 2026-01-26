@@ -273,7 +273,7 @@ public class GitHubReleaseChangelogService(
 		var slug = ChangelogTextUtilities.GenerateSlug(title);
 		var filename = $"{prRef.PrNumber}-{finalType.ToStringFast(true)}-{slug}.yaml";
 		var filePath = _fileSystem.Path.Combine(outputDir, filename);
-		await _fileSystem.File.WriteAllTextAsync(filePath, yamlContent, ctx);
+		await _fileSystem.File.WriteAllTextAsync(filePath, yamlContent, Encoding.UTF8, ctx);
 
 		createdFiles.Add(filename);
 		_logger.LogDebug("Created changelog: {FilePath}", filePath);
@@ -324,7 +324,7 @@ public class GitHubReleaseChangelogService(
 		// Name format: <version>-<product>-bundle.yml
 		var bundleFilename = $"{productInfo.Target}-{productInfo.Product}-bundle.yml";
 		var bundlePath = _fileSystem.Path.Combine(bundlesDir, bundleFilename);
-		await _fileSystem.File.WriteAllTextAsync(bundlePath, yamlContent, ctx);
+		await _fileSystem.File.WriteAllTextAsync(bundlePath, yamlContent, Encoding.UTF8, ctx);
 
 		return bundlePath;
 	}

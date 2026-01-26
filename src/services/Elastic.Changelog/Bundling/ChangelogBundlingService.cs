@@ -199,8 +199,8 @@ public partial class ChangelogBundlingService(ILoggerFactory logFactory, IFileSy
 			_logger.LogInformation("Output file already exists, using unique filename: {OutputPath}", outputPath);
 		}
 
-		// Write bundled file
-		await _fileSystem.File.WriteAllTextAsync(outputPath, bundledYaml, ctx);
+		// Write bundled file with explicit UTF-8 encoding to ensure proper character handling
+		await _fileSystem.File.WriteAllTextAsync(outputPath, bundledYaml, Encoding.UTF8, ctx);
 		_logger.LogInformation("Created bundled changelog: {OutputPath}", outputPath);
 	}
 
