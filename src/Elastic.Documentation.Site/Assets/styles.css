@@ -34,6 +34,12 @@ html {
 	@apply font-body;
 }
 
+/* Disable all transitions during initial page load to prevent layout shift */
+.no-transitions,
+.no-transitions * {
+	transition: none !important;
+}
+
 body {
 	/* This is still needed because of some usages of ch units and to maintain the previous behavior */
 	font-size: 16px;
