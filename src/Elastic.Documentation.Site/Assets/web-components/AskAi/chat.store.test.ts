@@ -101,7 +101,7 @@ describe('chat.store', () => {
 
         // Verify fresh state
         expect(chatStore.getState().chatMessages).toHaveLength(0)
-        expect(chatStore.getState().conversationId).toBeNull()
+        expect(chatStore.getState().activeConversationId).toBeNull()
 
         // Start new conversation
         act(() => {

@@ -33,7 +33,8 @@ jest.mock('@microsoft/fetch-event-source', () => ({
 const resetStores = () => {
     chatStore.setState({
         chatMessages: [],
-        conversationId: null,
+        conversations: [],
+        activeConversationId: null,
         aiProvider: 'LlmGateway',
         scrollPosition: 0,
     })
@@ -118,7 +119,7 @@ describe('Chat Component', () => {
                         status: 'complete',
                     },
                 ],
-                conversationId: 'thread-1',
+                activeConversationId: 'thread-1',
             })
         }
 
@@ -293,7 +294,7 @@ describe('Chat Component', () => {
                             status: 'complete',
                         },
                     ],
-                    conversationId: 'thread-1',
+                    activeConversationId: 'thread-1',
                 })
 
                 // Act
