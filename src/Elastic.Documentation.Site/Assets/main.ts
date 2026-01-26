@@ -3,7 +3,7 @@ import { initAppliesSwitch } from './applies-switch'
 import { initCopyButton } from './copybutton'
 import { initHighlight } from './hljs'
 import { initImageCarousel } from './image-carousel'
-import { initIsolatedHeader } from './isolated-header'
+import { initIsolatedHeader, setInitialHeaderOffset } from './isolated-header'
 import { openDetailsWithAnchor } from './open-details-with-anchor'
 import { initNav } from './pages-nav'
 import { initSmoothScroll } from './smooth-scroll'
@@ -28,6 +28,10 @@ initializeOtel({
     baseUrl: '/docs',
     debug: false,
 })
+
+// Set header offset immediately to prevent layout shift on reload
+// This runs before DOMContentLoaded to avoid visual jump
+setInitialHeaderOffset()
 
 // Dynamically import web components after telemetry is initialized
 // This ensures telemetry is available when the components execute
