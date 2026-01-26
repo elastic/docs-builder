@@ -127,7 +127,7 @@ public class ChangelogRenderingService(
 				return false;
 
 			// Build render context
-			var context = BuildRenderContext(input, outputSetup, resolvedResult, featureHidingResult.FeatureIdsToHide);
+			var context = BuildRenderContext(input, outputSetup, resolvedResult, featureHidingResult.FeatureIdsToHide, config);
 
 			// Render output
 			var renderer = new ChangelogRenderer(_fileSystem, _logger);
@@ -234,7 +234,8 @@ public class ChangelogRenderingService(
 		RenderChangelogsArguments input,
 		OutputSetup outputSetup,
 		ResolvedEntriesResult resolved,
-		HashSet<string> featureIdsToHide)
+		HashSet<string> featureIdsToHide,
+		ChangelogConfiguration? config)
 	{
 		// Group entries by type
 		var entriesByType = resolved.Entries
@@ -269,7 +270,8 @@ public class ChangelogRenderingService(
 			FeatureIdsToHide = featureIdsToHide,
 			EntryToBundleProducts = entryToBundleProducts,
 			EntryToRepo = entryToRepo,
-			EntryToHideLinks = entryToHideLinks
+			EntryToHideLinks = entryToHideLinks,
+			Configuration = config
 		};
 	}
 

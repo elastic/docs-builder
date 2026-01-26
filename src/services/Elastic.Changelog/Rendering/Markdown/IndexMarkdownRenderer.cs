@@ -118,7 +118,7 @@ public class IndexMarkdownRenderer(IFileSystem fileSystem) : MarkdownRendererBas
 			foreach (var entry in areaGroup)
 			{
 				var (bundleProductIds, entryRepo, entryHideLinks) = GetEntryContext(entry, context);
-				var shouldHide = ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide);
+				var shouldHide = ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context);
 
 				if (shouldHide)
 					_ = sb.Append("% ");

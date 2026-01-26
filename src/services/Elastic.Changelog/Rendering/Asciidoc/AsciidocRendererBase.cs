@@ -25,7 +25,7 @@ public abstract class AsciidocRendererBase
 		var bundleProductIds = context.EntryToBundleProducts.GetValueOrDefault(entry, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
 		var entryRepo = context.EntryToRepo.GetValueOrDefault(entry, context.Repo);
 		var hideLinks = context.EntryToHideLinks.GetValueOrDefault(entry, false);
-		var shouldHide = ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide);
+		var shouldHide = ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context);
 		return (bundleProductIds, entryRepo, hideLinks, shouldHide);
 	}
 
