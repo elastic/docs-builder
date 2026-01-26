@@ -41,8 +41,12 @@ else
 				</a>
 			</div>
 
-			<!-- Right side: GitHub + git info -->
+			<!-- Right side: Diagnostics + GitHub + git info -->
 			<div class="hidden md:flex items-center gap-4 text-sm">
+				@if (Model.Features.DiagnosticsPanelEnabled)
+				{
+					<diagnostics-panel></diagnostics-panel>
+				}
 				@if (!string.IsNullOrEmpty(Model.GitHubDocsUrl))
 				{
 					<a href="@Model.GitHubDocsUrl"
