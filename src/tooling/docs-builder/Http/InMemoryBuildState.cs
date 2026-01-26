@@ -6,15 +6,15 @@ using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using System.Text.Json.Serialization;
 using System.Threading.Channels;
+using Actions.Core;
+using Actions.Core.Services;
+using Actions.Core.Summaries;
 using Documentation.Builder.Diagnostics;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Isolated;
 using Microsoft.Extensions.Logging;
-using Actions.Core;
-using Actions.Core.Services;
-using Actions.Core.Summaries;
 
 namespace Documentation.Builder.Http;
 

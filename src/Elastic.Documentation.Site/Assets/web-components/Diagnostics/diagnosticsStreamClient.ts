@@ -40,7 +40,6 @@ export function connectToDiagnosticsStream(): void {
         onopen: async (response) => {
             if (response.ok) {
                 store.setConnected(true)
-                console.log('[Diagnostics] SSE connection established')
             } else {
                 console.error(
                     '[Diagnostics] SSE connection failed:',
@@ -72,7 +71,6 @@ export function connectToDiagnosticsStream(): void {
         },
 
         onclose: () => {
-            console.log('[Diagnostics] SSE connection closed')
             store.setConnected(false)
         },
     }).catch((err) => {
@@ -186,6 +184,6 @@ function handleBuildEvent(event: BuildEvent): void {
             break
 
         default:
-            console.log('[Diagnostics] Unknown event type:', event.type)
+            console.warn('[Diagnostics] Unknown event type:', event.type)
     }
 }
