@@ -225,7 +225,9 @@ describe('chat.store', () => {
                 chatStore.getState().actions.submitQuestion('Hello')
             })
 
-            expect(chatStore.getState().conversations).toHaveLength(0)
+            expect(
+                Object.keys(chatStore.getState().conversations)
+            ).toHaveLength(0)
             expect(chatStore.getState().activeConversationId).toBeNull()
 
             // Simulate backend returning conversation ID
@@ -235,12 +237,15 @@ describe('chat.store', () => {
 
             const state = chatStore.getState()
             expect(state.activeConversationId).toBe('conv-123')
-            expect(state.conversations).toHaveLength(1)
-            expect(state.conversations[0].id).toBe('conv-123')
-            expect(state.conversations[0].title).toBe('Hello')
-            expect(state.conversations[0].messageCount).toBe(2)
-            expect(state.conversations[0].createdAt).toBeDefined()
-            expect(state.conversations[0].updatedAt).toBeDefined()
+            expect(Object.keys(state.conversations)).toHaveLength(1)
+            expect(state.conversations['conv-123'].id).toBe('conv-123')
+            expect(state.conversations['conv-123'].title).toBe('Hello')
+            expect(state.conversations['conv-123'].messageCount).toBe(2)
+            expect(state.conversations['conv-123'].createdAt).toBeDefined()
+            expect(state.conversations['conv-123'].updatedAt).toBeDefined()
+            expect(state.conversations['conv-123'].aiProvider).toBe(
+                'LlmGateway'
+            )
         })
 
         it('should update existing ConversationMeta when setConversationId is called with existing ID', () => {
@@ -251,7 +256,7 @@ describe('chat.store', () => {
             })
 
             const initialUpdatedAt =
-                chatStore.getState().conversations[0].updatedAt
+                chatStore.getState().conversations['conv-123'].updatedAt
 
             // Add another message and update conversation
             act(() => {
@@ -260,11 +265,11 @@ describe('chat.store', () => {
             })
 
             const state = chatStore.getState()
-            expect(state.conversations).toHaveLength(1) // Still only one conversation
-            expect(state.conversations[0].messageCount).toBe(4) // Now 4 messages
-            expect(state.conversations[0].updatedAt).toBeGreaterThanOrEqual(
-                initialUpdatedAt
-            )
+            expect(Object.keys(state.conversations)).toHaveLength(1) // Still only one conversation
+            expect(state.conversations['conv-123'].messageCount).toBe(4) // Now 4 messages
+            expect(
+                state.conversations['conv-123'].updatedAt
+            ).toBeGreaterThanOrEqual(initialUpdatedAt)
         })
 
         it('should reset state when createConversation is called', () => {
@@ -287,8 +292,8 @@ describe('chat.store', () => {
             expect(state.activeConversationId).toBeNull()
             expect(state.totalMessageCount).toBe(0)
             expect(state.inputValue).toBe('')
-            // Conversations list should still contain the old conversation
-            expect(state.conversations).toHaveLength(1)
+            // Conversations map should still contain the old conversation
+            expect(Object.keys(state.conversations)).toHaveLength(1)
         })
 
         it('should clear all conversations when clearAllConversations is called', () => {
@@ -304,7 +309,9 @@ describe('chat.store', () => {
                 chatStore.getState().actions.setConversationId('conv-2')
             })
 
-            expect(chatStore.getState().conversations).toHaveLength(2)
+            expect(
+                Object.keys(chatStore.getState().conversations)
+            ).toHaveLength(2)
 
             // Clear all
             act(() => {
@@ -312,15 +319,15 @@ describe('chat.store', () => {
             })
 
             const state = chatStore.getState()
-            expect(state.conversations).toHaveLength(0)
+            expect(Object.keys(state.conversations)).toHaveLength(0)
             expect(state.chatMessages).toHaveLength(0)
             expect(state.activeConversationId).toBeNull()
             expect(state.totalMessageCount).toBe(0)
         })
 
-        it('should initialize with empty conversations array', () => {
+        it('should initialize with empty conversations map', () => {
             // beforeEach already calls clearAllConversations, so state should be clean
-            expect(chatStore.getState().conversations).toEqual([])
+            expect(chatStore.getState().conversations).toEqual({})
         })
     })
 })

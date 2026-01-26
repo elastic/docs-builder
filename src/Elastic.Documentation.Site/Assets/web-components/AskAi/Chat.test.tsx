@@ -42,7 +42,7 @@ jest.mock('@microsoft/fetch-event-source', () => ({
 const resetStores = () => {
     chatStore.setState({
         chatMessages: [],
-        conversations: [],
+        conversations: {},
         activeConversationId: null,
         aiProvider: 'LlmGateway',
         scrollPosition: 0,
