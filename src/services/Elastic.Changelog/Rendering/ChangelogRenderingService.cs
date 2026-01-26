@@ -5,6 +5,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.IO.Abstractions;
 using System.Text.Json.Serialization;
+using System.Linq;
 using Elastic.Changelog.Configuration;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
@@ -205,12 +206,12 @@ public class ChangelogRenderingService(
 		if (context.Configuration?.Block == null)
 			return;
 
-		foreach (var resolved in entries)
-		{
-			// Skip if already hidden by feature ID
-			if (!string.IsNullOrWhiteSpace(resolved.Entry.FeatureId) && context.FeatureIdsToHide.Contains(resolved.Entry.FeatureId))
-				continue;
+		var visibleEntries = entries.Where(resolved =>
+			string.IsNullOrWhiteSpace(resolved.Entry.FeatureId) ||
+			!context.FeatureIdsToHide.Contains(resolved.Entry.FeatureId));
 
+		foreach (var resolved in visibleEntries)
+		{
 			// Get product IDs for this entry
 			var productIds = context.EntryToBundleProducts.GetValueOrDefault(resolved.Entry, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
 			if (productIds.Count == 0)
