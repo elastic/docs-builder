@@ -26,6 +26,10 @@ public class KnownIssuesMarkdownRenderer(IFileSystem fileSystem) : MarkdownRende
 		var sb = new StringBuilder();
 		_ = sb.AppendLine(InvariantCulture, $"## {context.Title} [{context.Repo}-{context.TitleSlug}-known-issues]");
 
+		// Check if all entries are hidden
+		var allEntriesHidden = knownIssues.Count > 0 && knownIssues.All(entry =>
+			ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context));
+
 		if (knownIssues.Count > 0)
 		{
 			var groupedByArea = context.Subsections
@@ -33,11 +37,19 @@ public class KnownIssuesMarkdownRenderer(IFileSystem fileSystem) : MarkdownRende
 				: knownIssues.GroupBy(ChangelogRenderUtilities.GetComponent).ToList();
 			foreach (var areaGroup in groupedByArea)
 			{
+				// Check if all entries in this area group are hidden
+				var allGroupEntriesHidden = areaGroup.All(entry =>
+					ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context));
+
 				if (context.Subsections && !string.IsNullOrWhiteSpace(areaGroup.Key))
 				{
 					var header = ChangelogTextUtilities.FormatAreaHeader(areaGroup.Key);
 					_ = sb.AppendLine();
+					if (allGroupEntriesHidden)
+						_ = sb.AppendLine("<!--");
 					_ = sb.AppendLine(InvariantCulture, $"**{header}**");
+					if (allGroupEntriesHidden)
+						_ = sb.AppendLine("-->");
 				}
 
 				foreach (var entry in areaGroup)
@@ -68,9 +80,18 @@ public class KnownIssuesMarkdownRenderer(IFileSystem fileSystem) : MarkdownRende
 						_ = sb.AppendLine("-->");
 				}
 			}
+
+			// Add message if all entries are hidden
+			if (allEntriesHidden)
+			{
+				_ = sb.AppendLine();
+				_ = sb.AppendLine("_There are no known issues associated with this release._");
+			}
 		}
 		else
-			_ = sb.AppendLine("_No known issues._");
+		{
+			_ = sb.AppendLine("_There are no known issues associated with this release._");
+		}
 
 		await WriteOutputFileAsync(context.OutputDir, context.TitleSlug, sb.ToString(), ctx);
 	}

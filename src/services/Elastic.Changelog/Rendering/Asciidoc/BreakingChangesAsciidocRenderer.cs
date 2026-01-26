@@ -23,10 +23,15 @@ public class BreakingChangesAsciidocRenderer(StringBuilder sb) : AsciidocRendere
 
 		foreach (var group in groupedEntries)
 		{
+			// Check if all entries in this group are hidden
+			var allEntriesHidden = group.All(entry =>
+				ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context));
+
 			if (context.Subsections && !string.IsNullOrWhiteSpace(group.Key))
 			{
 				var header = ChangelogTextUtilities.FormatSubtypeHeader(group.Key);
-				_ = sb.AppendLine(CultureInfo.InvariantCulture, $"**{header}**");
+				var headerLine = allEntriesHidden ? $"// **{header}**" : $"**{header}**";
+				_ = sb.AppendLine(headerLine);
 				_ = sb.AppendLine();
 			}
 

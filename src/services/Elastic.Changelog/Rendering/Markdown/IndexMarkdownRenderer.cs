@@ -54,20 +54,36 @@ public class IndexMarkdownRenderer(IFileSystem fileSystem) : MarkdownRendererBas
 
 		var hasAnyEntries = features.Count > 0 || enhancements.Count > 0 || security.Count > 0 || bugFixes.Count > 0 || docs.Count > 0 || regressions.Count > 0 || other.Count > 0;
 
+		// Helper to check if all entries in a collection are hidden
+		bool AllEntriesHidden(IReadOnlyCollection<ChangelogEntry> entries) =>
+			entries.Count > 0 && entries.All(entry =>
+				ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context));
+
+		// Check if each category has visible entries
+		var hasVisibleFeatures = (features.Count > 0 || enhancements.Count > 0) &&
+			!(AllEntriesHidden(features) && AllEntriesHidden(enhancements));
+		var hasVisibleFixes = (security.Count > 0 || bugFixes.Count > 0) &&
+			!(AllEntriesHidden(security) && AllEntriesHidden(bugFixes));
+		var hasVisibleDocs = docs.Count > 0 && !AllEntriesHidden(docs);
+		var hasVisibleRegressions = regressions.Count > 0 && !AllEntriesHidden(regressions);
+		var hasVisibleOther = other.Count > 0 && !AllEntriesHidden(other);
+
+		var hasAnyVisibleEntries = hasVisibleFeatures || hasVisibleFixes || hasVisibleDocs || hasVisibleRegressions || hasVisibleOther;
+
 		if (hasAnyEntries)
 		{
 			if (features.Count > 0 || enhancements.Count > 0)
 			{
-				_ = sb.AppendLine(InvariantCulture, $"### Features and enhancements [{context.Repo}-{context.TitleSlug}-features-enhancements]");
 				var combined = features.Concat(enhancements).ToList();
+				_ = sb.AppendLine(InvariantCulture, $"### Features and enhancements [{context.Repo}-{context.TitleSlug}-features-enhancements]");
 				RenderEntriesByArea(sb, combined, context);
 			}
 
 			if (security.Count > 0 || bugFixes.Count > 0)
 			{
+				var combined = security.Concat(bugFixes).ToList();
 				_ = sb.AppendLine();
 				_ = sb.AppendLine(InvariantCulture, $"### Fixes [{context.Repo}-{context.TitleSlug}-fixes]");
-				var combined = security.Concat(bugFixes).ToList();
 				RenderEntriesByArea(sb, combined, context);
 			}
 
@@ -91,9 +107,18 @@ public class IndexMarkdownRenderer(IFileSystem fileSystem) : MarkdownRendererBas
 				_ = sb.AppendLine(InvariantCulture, $"### Other changes [{context.Repo}-{context.TitleSlug}-other]");
 				RenderEntriesByArea(sb, other, context);
 			}
+
+			// Add message if all entries are hidden
+			if (!hasAnyVisibleEntries)
+			{
+				_ = sb.AppendLine();
+				_ = sb.AppendLine("_There are no new features, enhancements, or fixes associated with this release._");
+			}
 		}
 		else
-			_ = sb.AppendLine("_No new features, enhancements, or fixes._");
+		{
+			_ = sb.AppendLine("_There are no new features, enhancements, or fixes associated with this release._");
+		}
 
 		await WriteOutputFileAsync(context.OutputDir, context.TitleSlug, sb.ToString(), ctx);
 	}
@@ -108,10 +133,16 @@ public class IndexMarkdownRenderer(IFileSystem fileSystem) : MarkdownRendererBas
 			: entries.GroupBy(ChangelogRenderUtilities.GetComponent).ToList();
 		foreach (var areaGroup in groupedByArea)
 		{
+			// Check if all entries in this area group are hidden
+			var allEntriesHidden = areaGroup.All(entry =>
+				ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context));
+
 			if (context.Subsections && !string.IsNullOrWhiteSpace(areaGroup.Key))
 			{
 				var header = ChangelogTextUtilities.FormatAreaHeader(areaGroup.Key);
 				_ = sb.AppendLine();
+				if (allEntriesHidden)
+					_ = sb.Append("% ");
 				_ = sb.AppendLine(InvariantCulture, $"**{header}**");
 			}
 
