@@ -452,10 +452,17 @@ toc:
           - toc: opentelemetry://reference
             path_prefix: reference/opentelemetry
             children:
+              - toc: opentelemetry://reference/edot-cloud-forwarder
+                path_prefix: reference/opentelemetry/edot-cloud-forwarder
+                children:
+                  - toc: edot-cloud-forwarder-aws://reference/edot-cf-aws
+                    path_prefix: reference/opentelemetry/edot-cloud-forwarder/aws
+                  - toc: opentelemetry://reference/edot-cloud-forwarder/azure
+                    path_prefix: reference/opentelemetry/edot-cloud-forwarder/azure
+                  - toc: opentelemetry://reference/edot-cloud-forwarder/gcp
+                    path_prefix: reference/opentelemetry/edot-cloud-forwarder/gcp
               - toc: elastic-agent://reference/edot-collector
                 path_prefix: reference/edot-collector
-              - toc: edot-cloud-forwarder-aws://reference/edot-cf-aws
-                path_prefix: reference/opentelemetry/edot-cloud-forwarder/aws
               - toc: apm-agent-android://reference/edot-android
                 path_prefix: reference/opentelemetry/edot-sdks/android
               - toc: elastic-otel-dotnet://reference/edot-dotnet
