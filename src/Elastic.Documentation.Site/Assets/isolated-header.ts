@@ -10,7 +10,7 @@ const COMPACT_OFFSET = '48px'
 /**
  * Set the CSS variable immediately based on scroll position.
  * Called early (before DOMContentLoaded) to prevent layout shift.
- * Temporarily disables transitions to avoid visual animation on load.
+ * Adds no-transitions class that will be removed by initIsolatedHeader.
  */
 export function setInitialHeaderOffset() {
     // Check if isolated header exists in the DOM
@@ -18,17 +18,11 @@ export function setInitialHeaderOffset() {
     if (!document.getElementById('isolated-header')) return
 
     // Add class to disable all transitions during initial load
+    // This will be removed by initIsolatedHeader after layout is set
     document.documentElement.classList.add('no-transitions')
 
     const offset = window.scrollY > 0 ? COMPACT_OFFSET : EXPANDED_OFFSET
     document.documentElement.style.setProperty('--offset-top', offset)
-
-    // Re-enable transitions after a frame to ensure the value is applied
-    requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-            document.documentElement.classList.remove('no-transitions')
-        })
-    })
 }
 
 /**
@@ -78,5 +72,12 @@ export function initIsolatedHeader() {
     window.addEventListener('scroll', onScroll, { passive: true })
 
     // Set initial state based on current scroll position
-    //updateLayout(isCompact)
+    updateLayout(isCompact)
+
+    // Re-enable transitions after layout is set
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            document.documentElement.classList.remove('no-transitions')
+        })
+    })
 }
