@@ -1635,21 +1635,21 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 		// Verify warnings for blocked entries
 		var warnings = Collector.Diagnostics.Where(d => d.Severity == Documentation.Diagnostics.Severity.Warning).ToList();
 
-		// Should have warning for Allocation feature (blocked by area)
+		// Should have warning for Allocation feature (blocked by area) - PR 100
 		warnings.Should().Contain(w =>
-			w.Message.Contains("Blocked Allocation feature") &&
+			w.Message.Contains("for PR 100") &&
 			w.Message.Contains("will be commented out") &&
 			w.Message.Contains("area 'Allocation'"));
 
-		// Should have warning for deprecation (blocked by type)
+		// Should have warning for deprecation (blocked by type) - PR 101
 		warnings.Should().Contain(w =>
-			w.Message.Contains("Blocked deprecation") &&
+			w.Message.Contains("for PR 101") &&
 			w.Message.Contains("will be commented out") &&
 			w.Message.Contains("type 'deprecation'"));
 
-		// Should have warning for Internal feature (blocked by areas)
+		// Should have warning for Internal feature (blocked by areas) - PR 102
 		warnings.Should().Contain(w =>
-			w.Message.Contains("Blocked Internal feature") &&
+			w.Message.Contains("for PR 102") &&
 			w.Message.Contains("will be commented out") &&
 			w.Message.Contains("areas 'Allocation', 'Internal'"));
 	}
