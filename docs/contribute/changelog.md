@@ -36,8 +36,12 @@ Additional workflows are still to come for updating and generating documentation
 
 ## Create a changelog configuration file [changelog-settings]
 
-You can create a configuration file to limit the acceptable product, type, subtype, and lifecycle values.
-You can also use it to prevent the creation of changelogs when certain PR labels are present.
+You can create a configuration file to:
+
+- define the acceptable product, type, subtype, and lifecycle values.
+- prevent the creation of changelogs when certain PR labels are present.
+- set default options, such as whether to extract issues and release note text from pull requests.
+
 Refer to [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml).
 
 By default, the `docs-builder changelog add` command checks the following path: `docs/changelog.yml`.
