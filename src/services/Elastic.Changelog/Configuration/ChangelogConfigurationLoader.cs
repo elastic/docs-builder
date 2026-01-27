@@ -21,6 +21,23 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogConfigurationLoader>();
 
 	/// <summary>
+	/// Loads the publish blocker configuration from a changelog.
+	/// </summary>
+	/// <param name="fileSystem">The file system to read from.</param>
+	/// <param name="configPath">The path to the changelog.yml configuration file.</param>
+	/// <returns>The publish blocker configuration, or null if not found.</returns>
+	public static PublishBlocker? LoadPublishBlocker(IFileSystem fileSystem, string configPath)
+	{
+		if (!fileSystem.File.Exists(configPath))
+			return null;
+
+		var yamlContent = fileSystem.File.ReadAllText(configPath);
+		var yamlConfig = ChangelogYamlSerialization.DeserializeConfiguration(yamlContent);
+
+		return ParsePublishBlocker(yamlConfig.Block?.Publish);
+	}
+
+	/// <summary>
 	/// Loads changelog configuration from file or returns default configuration
 	/// </summary>
 	public async Task<ChangelogConfiguration?> LoadChangelogConfiguration(IDiagnosticsCollector collector, string? configPath, Cancel ctx)

@@ -5,6 +5,7 @@
 using System.Globalization;
 using System.Text;
 using Elastic.Changelog;
+using Elastic.Changelog.Configuration;
 
 namespace Elastic.Markdown.Myst.Directives.Changelog;
 
@@ -28,7 +29,7 @@ public static class ChangelogInlineRenderer
 			if (!isFirst)
 				_ = sb.AppendLine();
 
-			var bundleMarkdown = RenderSingleBundle(bundle, block.Subsections);
+			var bundleMarkdown = RenderSingleBundle(bundle, block.Subsections, block.PublishBlocker);
 			_ = sb.Append(bundleMarkdown);
 
 			isFirst = false;
@@ -37,16 +38,32 @@ public static class ChangelogInlineRenderer
 		return sb.ToString();
 	}
 
-	private static string RenderSingleBundle(LoadedBundle bundle, bool subsections)
+	private static string RenderSingleBundle(LoadedBundle bundle, bool subsections, PublishBlocker? publishBlocker)
 	{
 		var titleSlug = ChangelogTextUtilities.TitleToSlug(bundle.Version);
 
+		// Filter entries based on publish blockers
+		var filteredEntries = FilterEntries(bundle.Entries, publishBlocker);
+
 		// Group entries by type
-		var entriesByType = bundle.Entries
+		var entriesByType = filteredEntries
 			.GroupBy(e => e.Type)
 			.ToDictionary(g => g.Key, g => g.ToList());
 
 		return GenerateMarkdown(bundle.Version, titleSlug, bundle.Repo, entriesByType, subsections);
+	}
+
+	/// <summary>
+	/// Filters entries based on publish blocker configuration.
+	/// </summary>
+	private static IReadOnlyList<ChangelogEntry> FilterEntries(
+		IReadOnlyList<ChangelogEntry> entries,
+		PublishBlocker? publishBlocker)
+	{
+		if (publishBlocker == null || !publishBlocker.HasBlockingRules)
+			return entries;
+
+		return entries.Where(e => !publishBlocker.ShouldBlock(e)).ToList();
 	}
 
 	private static string GenerateMarkdown(
@@ -131,9 +148,7 @@ public static class ChangelogInlineRenderer
 			}
 		}
 		else
-		{
 			_ = sb.AppendLine("_No new features, enhancements, or fixes._");
-		}
 
 		// Render special sections
 		if (breakingChanges.Count > 0)
