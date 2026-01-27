@@ -247,7 +247,8 @@ public class LlmGatewayStreamTransformerTests
 		events[4].Should().BeOfType<AskAiEvent.ToolResult>();
 		var toolResult = events[4] as AskAiEvent.ToolResult;
 		toolResult!.ToolCallId.Should().Be("tool1");
-		toolResult.Result.Should().Contain("Found 10 docs");
+		// Result is intentionally empty - payload stripped to prevent CloudFront OAC buffering issues
+		toolResult.Result.Should().BeEmpty();
 
 		// Event 6: ai_message
 		events[5].Should().BeOfType<AskAiEvent.MessageComplete>();
