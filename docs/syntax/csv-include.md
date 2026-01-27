@@ -83,6 +83,34 @@ The directive includes built-in performance limits to handle large files efficie
 - **Column limit**: Maximum of 15 columns will be displayed  
 - **File size limit**: Maximum file size of 10MB
 
+### Markdown rendering in cells
+
+Cells are parsed as Markdown, so they can render inline formatting and links. For example, a cell containing `**Bold**` becomes bold text, and `[Text](https://www.google.com)` becomes a link.
+
+Here is a complete example that uses multiple Markdown formats:
+
+:::::{tab-set}
+
+::::{tab-item} Output
+
+:::{csv-include} ../_snippets/sample-data-markdown.csv
+:caption: Sample data with Markdown formatting
+:::
+
+::::
+
+::::{tab-item} Markdown
+
+```markdown
+:::{csv-include} _snippets/sample-data-markdown.csv
+:caption: Sample data with Markdown formatting
+:::
+```
+
+::::
+
+:::::
+
 ## Performance considerations
 
 The CSV directive is optimized for large files:
