@@ -6,14 +6,12 @@ using System.ComponentModel.DataAnnotations;
 using Amazon.DynamoDBv2;
 using Elastic.Documentation.Api.Core;
 using Elastic.Documentation.Api.Core.AskAi;
-using Elastic.Documentation.Api.Core.Search;
 using Elastic.Documentation.Api.Core.Telemetry;
 using Elastic.Documentation.Api.Infrastructure.Adapters.AskAi;
-using Elastic.Documentation.Api.Infrastructure.Adapters.Search;
-using Elastic.Documentation.Api.Infrastructure.Adapters.Search.Common;
 using Elastic.Documentation.Api.Infrastructure.Adapters.Telemetry;
 using Elastic.Documentation.Api.Infrastructure.Caching;
 using Elastic.Documentation.Api.Infrastructure.Gcp;
+using Elastic.Documentation.Search;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -175,7 +173,7 @@ public static class ServicesExtension
 			logger?.LogInformation("Both stream transformers registered as concrete types");
 
 			// Register factories as interface implementations
-			_ = services.AddScoped<IAskAiGateway<Stream>, AskAiGatewayFactory>();
+			_ = services.AddScoped<IAskAiGateway, AskAiGatewayFactory>();
 			_ = services.AddScoped<IStreamTransformer, StreamTransformerFactory>();
 			logger?.LogInformation("Gateway and transformer factories registered successfully - provider switchable via X-AI-Provider header");
 
@@ -195,18 +193,8 @@ public static class ServicesExtension
 		var logger = GetLogger(services);
 		logger?.LogInformation("Configuring Search use case for environment {AppEnvironment}", appEnv);
 
-		// Shared Elasticsearch options - DI auto-resolves IConfiguration from primary constructor
-		_ = services.AddSingleton<ElasticsearchOptions>();
-		_ = services.AddSingleton<ElasticsearchClientAccessor>();
-
-		// Navigation Search (autocomplete/navigation search)
-		_ = services.AddScoped<INavigationSearchGateway, NavigationSearchGateway>();
-		_ = services.AddScoped<NavigationSearchUsecase>();
-
-		// FullSearch (full-page search with hybrid RRF)
-		_ = services.AddScoped<IFullSearchGateway, FullSearchGateway>();
-		_ = services.AddScoped<FullSearchUsecase>();
-		logger?.LogInformation("Full search use case registered with hybrid RRF support");
+		// Use the shared search service for DI registration
+		_ = services.AddSearchServices();
 	}
 
 	private static void AddOtlpProxyUsecase(IServiceCollection services, AppEnv appEnv)

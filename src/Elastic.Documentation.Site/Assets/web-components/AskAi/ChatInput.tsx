@@ -1,4 +1,4 @@
-import { ElasticAiAssistantButtonIcon } from './ElasticAiAssitant'
+import { ElasticAiAssistantButtonIcon } from './ElasticAiAssistantButton'
 import { euiShadow, useEuiScrollBar, useEuiTheme } from '@elastic/eui'
 import { css } from '@emotion/react'
 import { useCallback, useEffect, useRef } from 'react'
@@ -127,6 +127,7 @@ export const ChatInput = ({
         >
             <textarea
                 ref={textareaRefCallback}
+                id="ask-ai-chat-input"
                 name="chat-input"
                 value={value}
                 onChange={(e) => onChange(e.target.value)}

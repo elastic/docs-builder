@@ -1,0 +1,102 @@
+@using Elastic.ApiExplorer.Schema
+@using Microsoft.AspNetCore.Html
+@inherits RazorSlice<Elastic.ApiExplorer.Schema.SchemaTypeContext>
+@{
+	string result;
+
+	if (Model == null || Model.TypeInfo == null)
+	{
+		result = "unknown";
+	}
+	else
+	{
+		var typeInfo = Model.TypeInfo;
+		var typeName = typeInfo.TypeName ?? "unknown";
+		var sb = new System.Text.StringBuilder();
+
+		// Build the display text with [] for arrays, {} for objects, enum/union markers
+		if (typeInfo.IsArray)
+		{
+			sb.Append("<span class=\"array-icon\">[] </span>");
+			if (typeInfo.IsValueType && !string.IsNullOrEmpty(typeInfo.ValueTypeBase))
+			{
+				sb.Append("<span class=\"value-type-keyword\">");
+				sb.Append(System.Web.HttpUtility.HtmlEncode(typeInfo.ValueTypeBase));
+				sb.Append("</span> ");
+			}
+			else if (typeInfo.IsEnum)
+			{
+				sb.Append("<span class=\"enum-icon\">enum </span>");
+			}
+			else if (typeInfo.IsUnion)
+			{
+				sb.Append("<span class=\"union-icon\">union </span>");
+			}
+			else if (typeInfo.IsObject && !string.IsNullOrEmpty(typeInfo.SchemaRef) && (Model.HasActualProperties || typeInfo.HasLink))
+			{
+				sb.Append("<span class=\"object-icon\">{} </span>");
+			}
+		}
+		else if (typeInfo.IsDictionary)
+		{
+			// Dictionary uses "map string to TypeName" format
+			var valueTypeName = typeName.StartsWith("string to ") ? typeName.Substring("string to ".Length) : typeName;
+			if (string.IsNullOrEmpty(valueTypeName))
+			{
+				valueTypeName = "unknown";
+			}
+
+			sb.Append("<span class=\"map-keyword\">map </span>");
+			sb.Append("<span>string</span>");
+			sb.Append("<span class=\"map-keyword\"> to </span>");
+			if (typeInfo.HasLink || Model.HasActualProperties)
+			{
+				sb.Append("<span class=\"object-icon\">{} </span>");
+			}
+			sb.Append("<span>");
+			sb.Append(System.Web.HttpUtility.HtmlEncode(valueTypeName));
+			sb.Append("</span>");
+		}
+		else if (typeInfo.IsEnum)
+		{
+			sb.Append("<span class=\"enum-icon\">enum </span>");
+		}
+		else if (typeInfo.IsUnion)
+		{
+			sb.Append("<span class=\"union-icon\">union </span>");
+		}
+		else if (typeInfo.IsValueType && !string.IsNullOrEmpty(typeInfo.ValueTypeBase))
+		{
+			sb.Append("<span class=\"value-type-keyword\">");
+			sb.Append(System.Web.HttpUtility.HtmlEncode(typeInfo.ValueTypeBase));
+			sb.Append("</span> ");
+		}
+		else if (typeInfo.IsObject && !string.IsNullOrEmpty(typeInfo.SchemaRef) && !typeInfo.HasLink && Model.HasActualProperties)
+		{
+			sb.Append("<span class=\"object-icon\">{} </span>");
+		}
+
+		// Only add the type name span if not a dictionary (dictionaries have their own format)
+		if (!typeInfo.IsDictionary)
+		{
+			var displayName = System.Web.HttpUtility.HtmlEncode(typeName) ?? "unknown";
+			var schemaRef = typeInfo.SchemaRef ?? "";
+			var titleAttr = !string.IsNullOrEmpty(schemaRef) ? " title=\"" + System.Web.HttpUtility.HtmlEncode(schemaRef) + "\"" : "";
+
+			// Add {} prefix for linked types (they have dedicated pages)
+			if (typeInfo.HasLink)
+			{
+				sb.Append("<span class=\"object-icon\">{} </span>");
+			}
+
+			sb.Append("<span");
+			sb.Append(titleAttr);
+			sb.Append(">");
+			sb.Append(displayName);
+			sb.Append("</span>");
+		}
+
+		result = sb.ToString();
+	}
+}
+<code class="schema-type">@(new HtmlString(result))</code>

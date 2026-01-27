@@ -73,7 +73,7 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 
 		var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 
-		var input = new ChangelogRenderInput
+		var input = new RenderChangelogsArguments
 		{
 			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
 			Output = outputDir,
@@ -149,7 +149,7 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 
 		var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 
-		var input = new ChangelogRenderInput
+		var input = new RenderChangelogsArguments
 		{
 			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
 			Output = outputDir,
@@ -221,7 +221,7 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 
 		var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 
-		var input = new ChangelogRenderInput
+		var input = new RenderChangelogsArguments
 		{
 			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
 			Output = outputDir,
@@ -320,7 +320,7 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 
 		var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 
-		var input = new ChangelogRenderInput
+		var input = new RenderChangelogsArguments
 		{
 			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
 			Output = outputDir,
@@ -389,7 +389,7 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 
 		var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 
-		var input = new ChangelogRenderInput
+		var input = new RenderChangelogsArguments
 		{
 			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
 			Output = outputDir,
@@ -450,7 +450,7 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 
 		var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 
-		var input = new ChangelogRenderInput
+		var input = new RenderChangelogsArguments
 		{
 			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
 			Output = outputDir,

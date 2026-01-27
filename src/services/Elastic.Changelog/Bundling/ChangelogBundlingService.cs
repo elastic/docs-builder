@@ -6,22 +6,35 @@ using System.IO.Abstractions;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
-using Elastic.Documentation.Changelog;
+using Elastic.Changelog.Serialization;
+using Elastic.Documentation;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
-using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NamingConventions;
 
 namespace Elastic.Changelog.Bundling;
 
 /// <summary>
+/// Arguments for the BundleChangelogs method
+/// </summary>
+public record BundleChangelogsArguments
+{
+	public required string Directory { get; init; }
+	public string? Output { get; init; }
+	public bool All { get; init; }
+	public IReadOnlyList<ProductArgument>? InputProducts { get; init; }
+	public IReadOnlyList<ProductArgument>? OutputProducts { get; init; }
+	public bool Resolve { get; init; }
+	public string[]? Prs { get; init; }
+	public string? Owner { get; init; }
+	public string? Repo { get; init; }
+}
+
+/// <summary>
 /// Service for bundling changelog files
 /// </summary>
-public partial class ChangelogBundlingService(
-	ILoggerFactory logFactory,
-	IFileSystem? fileSystem = null
-) : IService
+public partial class ChangelogBundlingService(ILoggerFactory logFactory, IFileSystem? fileSystem = null)
+	: IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogBundlingService>();
 	private readonly IFileSystem _fileSystem = fileSystem ?? new FileSystem();
@@ -30,13 +43,9 @@ public partial class ChangelogBundlingService(
 	internal static partial Regex VersionToTargetRegex();
 
 	[GeneratedRegex(@"github\.com/([^/]+)/([^/]+)/pull/(\d+)", RegexOptions.IgnoreCase)]
-	internal static partial Regex GitHubPrUrlRegex();
+	private static partial Regex GitHubPrUrlRegex();
 
-	public async Task<bool> BundleChangelogs(
-		IDiagnosticsCollector collector,
-		ChangelogBundleInput input,
-		Cancel ctx
-	)
+	public async Task<bool> BundleChangelogs(IDiagnosticsCollector collector, BundleChangelogsArguments input, Cancel ctx)
 	{
 		try
 		{
@@ -69,12 +78,7 @@ public partial class ChangelogBundlingService(
 			var filterCriteria = BuildFilterCriteria(input, prFilterResult.PrsToMatch);
 
 			// Match changelog entries
-			var deserializer = new StaticDeserializerBuilder(new ChangelogYamlStaticContext())
-				.WithNamingConvention(UnderscoredNamingConvention.Instance)
-				.WithTypeConverter(new ChangelogEntryTypeConverter())
-				.Build();
-
-			var entryMatcher = new ChangelogEntryMatcher(_fileSystem, deserializer, _logger);
+			var entryMatcher = new ChangelogEntryMatcher(_fileSystem, ChangelogYamlSerialization.GetEntryDeserializer(), _logger);
 			var matchResult = await entryMatcher.MatchChangelogsAsync(collector, yamlFiles, filterCriteria, ctx);
 
 			_logger.LogInformation("Found {Count} matching changelog entries", matchResult.Entries.Count);
@@ -109,7 +113,7 @@ public partial class ChangelogBundlingService(
 		}
 	}
 
-	private bool ValidateInput(IDiagnosticsCollector collector, ChangelogBundleInput input)
+	private bool ValidateInput(IDiagnosticsCollector collector, BundleChangelogsArguments input)
 	{
 		if (string.IsNullOrWhiteSpace(input.Directory))
 		{
@@ -147,7 +151,7 @@ public partial class ChangelogBundlingService(
 		return true;
 	}
 
-	private static ChangelogFilterCriteria BuildFilterCriteria(ChangelogBundleInput input, HashSet<string> prsToMatch)
+	private static ChangelogFilterCriteria BuildFilterCriteria(BundleChangelogsArguments input, HashSet<string> prsToMatch)
 	{
 		var productFilters = new List<ProductFilter>();
 		if (input.InputProducts is { Count: > 0 })
@@ -173,15 +177,10 @@ public partial class ChangelogBundlingService(
 		};
 	}
 
-	private async Task WriteBundleFileAsync(BundledChangelogData bundledData, string outputPath, Cancel ctx)
+	private async Task WriteBundleFileAsync(Bundle bundledData, string outputPath, Cancel ctx)
 	{
 		// Generate bundled YAML
-		var bundleSerializer = new StaticSerializerBuilder(new ChangelogYamlStaticContext())
-			.WithNamingConvention(UnderscoredNamingConvention.Instance)
-			.ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitNull | DefaultValuesHandling.OmitEmptyCollections)
-			.Build();
-
-		var bundledYaml = bundleSerializer.Serialize(bundledData);
+		var bundledYaml = ChangelogYamlSerialization.SerializeBundle(bundledData);
 
 		// Ensure output directory exists
 		var outputDir = _fileSystem.Path.GetDirectoryName(outputPath);
@@ -200,8 +199,8 @@ public partial class ChangelogBundlingService(
 			_logger.LogInformation("Output file already exists, using unique filename: {OutputPath}", outputPath);
 		}
 
-		// Write bundled file
-		await _fileSystem.File.WriteAllTextAsync(outputPath, bundledYaml, ctx);
+		// Write bundled file with explicit UTF-8 encoding to ensure proper character handling
+		await _fileSystem.File.WriteAllTextAsync(outputPath, bundledYaml, Encoding.UTF8, ctx);
 		_logger.LogInformation("Created bundled changelog: {OutputPath}", outputPath);
 	}
 
@@ -234,9 +233,7 @@ public partial class ChangelogBundlingService(
 				var prPart = match.Groups[3].Value.Trim();
 				if (!string.IsNullOrWhiteSpace(owner) && !string.IsNullOrWhiteSpace(repo) &&
 					int.TryParse(prPart, out var prNum))
-				{
 					return $"{owner}/{repo}#{prNum}".ToLowerInvariant();
-				}
 			}
 
 			// Fallback to URI parsing if regex fails
@@ -252,9 +249,7 @@ public partial class ChangelogBundlingService(
 					var prPart = segments[4].TrimEnd('/').Trim();
 					if (!string.IsNullOrWhiteSpace(owner) && !string.IsNullOrWhiteSpace(repo) &&
 						int.TryParse(prPart, out var prNum))
-					{
 						return $"{owner}/{repo}#{prNum}".ToLowerInvariant();
-					}
 				}
 			}
 			catch (UriFormatException)
@@ -277,9 +272,7 @@ public partial class ChangelogBundlingService(
 					var owner = repoParts[0].Trim();
 					var repo = repoParts[1].Trim();
 					if (!string.IsNullOrWhiteSpace(owner) && !string.IsNullOrWhiteSpace(repo))
-					{
 						return $"{owner}/{repo}#{prNum}".ToLowerInvariant();
-					}
 				}
 			}
 		}
@@ -287,9 +280,7 @@ public partial class ChangelogBundlingService(
 		// Handle just a PR number when owner/repo are provided
 		if (int.TryParse(pr, out var prNumber) &&
 			!string.IsNullOrWhiteSpace(defaultOwner) && !string.IsNullOrWhiteSpace(defaultRepo))
-		{
 			return $"{defaultOwner}/{defaultRepo}#{prNumber}".ToLowerInvariant();
-		}
 
 		// Return as-is for comparison (fallback)
 		return pr.ToLowerInvariant();

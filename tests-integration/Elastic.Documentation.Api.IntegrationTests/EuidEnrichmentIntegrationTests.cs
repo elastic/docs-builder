@@ -51,13 +51,13 @@ public class EuidEnrichmentIntegrationTests : IAsyncLifetime
 		using var factory = ApiWebApplicationFactory.WithMockedServices(services =>
 		{
 			// Mock IAskAiGateway to avoid external AI service calls
-			var mockAskAiGateway = A.Fake<IAskAiGateway<Stream>>();
+			var mockAskAiGateway = A.Fake<IAskAiGateway>();
 			A.CallTo(() => mockAskAiGateway.AskAi(A<AskAiRequest>._, A<Cancel>._))
 				.ReturnsLazily(() =>
 				{
 					var stream = new MemoryStream(Encoding.UTF8.GetBytes("data: test\n\n"));
 					mockStreams.Add(stream);
-					return Task.FromResult<Stream>(stream);
+					return Task.FromResult(new AskAiGatewayResponse(stream, GeneratedConversationId: Guid.NewGuid()));
 				});
 			services.AddSingleton(mockAskAiGateway);
 
@@ -65,8 +65,8 @@ public class EuidEnrichmentIntegrationTests : IAsyncLifetime
 			var mockTransformer = A.Fake<IStreamTransformer>();
 			A.CallTo(() => mockTransformer.AgentProvider).Returns("test-provider");
 			A.CallTo(() => mockTransformer.AgentId).Returns("test-agent");
-			A.CallTo(() => mockTransformer.TransformAsync(A<Stream>._, A<string?>._, A<Activity?>._, A<Cancel>._))
-				.ReturnsLazily((Stream s, string? _, Activity? activity, Cancel _) =>
+			A.CallTo(() => mockTransformer.TransformAsync(A<Stream>._, A<Guid?>._, A<Activity?>._, A<Cancel>._))
+				.ReturnsLazily((Stream s, Guid? _, Activity? activity, Cancel _) =>
 				{
 					// Dispose the activity if provided (simulating what the real transformer does)
 					activity?.Dispose();

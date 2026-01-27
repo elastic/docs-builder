@@ -15,7 +15,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Using Include="Elastic.Documentation.Changelog" />
+    <Using Include="Elastic.Changelog" />
+    <Using Include="Elastic.Documentation" />
   </ItemGroup>
 
 </Project>

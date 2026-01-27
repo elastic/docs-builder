@@ -62,6 +62,24 @@ async Task BuildAspireHost(bool startElasticsearch, bool assumeCloned, bool assu
 			.WithEnvironment("DOCUMENTATION_ELASTIC_APIKEY", elasticsearchApiKey)
 			.WithExplicitStart();
 
+	var mcp = builder.AddProject<Projects.Elastic_Documentation_Mcp_Lambda>(LambdaMcp)
+		.WithArgs(globalArguments)
+		.WithEnvironment("ENVIRONMENT", "dev");
+
+	// ReSharper disable once RedundantAssignment
+	mcp = startElasticsearch
+		? mcp
+			.WithReference(elasticsearchLocal)
+			.WithEnvironment("DOCUMENTATION_ELASTIC_URL", elasticsearchLocal.GetEndpoint("http"))
+			.WithEnvironment(context => context.EnvironmentVariables["DOCUMENTATION_ELASTIC_PASSWORD"] = elasticsearchLocal.Resource.PasswordParameter)
+			.WithParentRelationship(elasticsearchLocal)
+			.WaitFor(elasticsearchLocal)
+			.WithExplicitStart()
+		: mcp.WithReference(elasticsearchRemote)
+			.WithEnvironment("DOCUMENTATION_ELASTIC_URL", elasticsearchUrl)
+			.WithEnvironment("DOCUMENTATION_ELASTIC_APIKEY", elasticsearchApiKey)
+			.WithExplicitStart();
+
 	var indexElasticsearch = builder.AddProject<Projects.docs_builder>(ElasticsearchIngest)
 		.WithArgs(["assembler", "index", .. globalArguments])
 		.WaitForCompletion(cloneAll)

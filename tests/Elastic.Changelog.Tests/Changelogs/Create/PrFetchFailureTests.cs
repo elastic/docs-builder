@@ -25,12 +25,12 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 
 		var service = CreateService();
 
-		var input = new ChangelogInput
+		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
 			Title = "Manual title provided",
 			Type = "feature",
-			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
 			Output = CreateOutputDirectory()
 		};
 
@@ -69,10 +69,10 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 
 		var service = CreateService();
 
-		var input = new ChangelogInput
+		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
 			Output = CreateOutputDirectory()
 		};
 
@@ -118,12 +118,12 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 
 		var service = CreateService();
 
-		var input = new ChangelogInput
+		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345", "https://github.com/elastic/elasticsearch/pull/67890"],
 			Title = "Shared title",
 			Type = "bug-fix",
-			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
 			Output = CreateOutputDirectory()
 		};
 

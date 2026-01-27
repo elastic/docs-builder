@@ -6,6 +6,7 @@ using System.IO.Abstractions;
 using Actions.Core.Services;
 using Elastic.ApiExplorer;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Services;
@@ -44,6 +45,9 @@ public class IsolatedBuildService(
 		bool? metadataOnly = null,
 		IReadOnlySet<Exporter>? exporters = null,
 		string? canonicalBaseUrl = null,
+		IFileSystem? writeFileSystem = null,
+		bool skipOpenApi = false,
+		bool skipCrossLinks = false,
 		Cancel ctx = default
 	)
 	{
@@ -74,7 +78,7 @@ public class IsolatedBuildService(
 
 		try
 		{
-			context = new BuildContext(collector, fileSystem, fileSystem, configurationContext, exporters, path, output)
+			context = new BuildContext(collector, fileSystem, writeFileSystem ?? fileSystem, configurationContext, exporters, path, output)
 			{
 				UrlPathPrefix = pathPrefix,
 				Force = force ?? false,
@@ -103,16 +107,29 @@ public class IsolatedBuildService(
 		if (runningOnCi)
 			await githubActionsService.SetOutputAsync("skip", "false");
 
-		var crossLinkFetcher = new DocSetConfigurationCrossLinkFetcher(logFactory, context.Configuration);
-		var crossLinks = await crossLinkFetcher.FetchCrossLinks(ctx);
-		var crossLinkResolver = new CrossLinkResolver(crossLinks);
+		ICrossLinkResolver crossLinkResolver;
+		if (skipCrossLinks)
+		{
+			_logger.LogInformation("Skipping cross-link fetching for fast validation build");
+			crossLinkResolver = NoopCrossLinkResolver.Instance;
+		}
+		else
+		{
+			var crossLinkFetcher = new DocSetConfigurationCrossLinkFetcher(logFactory, context.Configuration);
+			var crossLinks = await crossLinkFetcher.FetchCrossLinks(ctx);
+			crossLinkResolver = new CrossLinkResolver(crossLinks);
+		}
 
 		// always delete output folder on CI
 		var set = new DocumentationSet(context, logFactory, crossLinkResolver);
 		if (runningOnCi)
 			set.ClearOutputDirectory();
 
-		var markdownExporters = exporters.CreateMarkdownExporters(logFactory, context, "isolated");
+		var documentInferrer = new DocumentInferrerService(
+			context.ProductsConfiguration,
+			context.VersionsConfiguration,
+			context.LegacyUrlMappings);
+		var markdownExporters = exporters.CreateMarkdownExporters(logFactory, context, "isolated", documentInferrer);
 
 		var tasks = markdownExporters.Select(async e => await e.StartAsync(ctx));
 		await Task.WhenAll(tasks);
@@ -121,8 +138,11 @@ public class IsolatedBuildService(
 		var generator = new DocumentationGenerator(set, logFactory, set, null, null, markdownExporters.ToArray());
 		_ = await generator.GenerateAll(ctx);
 
-		var openApiGenerator = new OpenApiGenerator(logFactory, context, generator.MarkdownStringRenderer);
-		await openApiGenerator.Generate(ctx);
+		if (!skipOpenApi)
+		{
+			var openApiGenerator = new OpenApiGenerator(logFactory, context, generator.MarkdownStringRenderer);
+			await openApiGenerator.Generate(ctx);
+		}
 
 		if (runningOnCi)
 			await githubActionsService.SetOutputAsync("landing-page-path", set.FirstInterestingUrl);

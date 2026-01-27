@@ -1,3 +1,4 @@
+import { persist, createJSONStorage } from 'zustand/middleware'
 import { create } from 'zustand/react'
 
 const DEFAULT_FLYOUT_WIDTH = 400
@@ -34,16 +35,29 @@ const closeWithScrollPreservation = (
     })
 }
 
-const askAiModalStore = create<ModalState>((set) => ({
-    isOpen: false,
-    flyoutWidth: DEFAULT_FLYOUT_WIDTH,
-    actions: {
-        openModal: () => set({ isOpen: true }),
-        closeModal: () => closeWithScrollPreservation(set),
-        toggleModal: () => set((state) => ({ isOpen: !state.isOpen })),
-        setFlyoutWidth: (width: number) => set({ flyoutWidth: width }),
-    },
-}))
+const askAiModalStore = create<ModalState>()(
+    persist(
+        (set) => ({
+            isOpen: false,
+            flyoutWidth: DEFAULT_FLYOUT_WIDTH,
+            actions: {
+                openModal: () => set({ isOpen: true }),
+                closeModal: () => closeWithScrollPreservation(set),
+                toggleModal: () => set((state) => ({ isOpen: !state.isOpen })),
+                setFlyoutWidth: (width: number) => set({ flyoutWidth: width }),
+            },
+        }),
+        {
+            name: 'elastic-docs-ask-ai-state',
+            version: 2,
+            storage: createJSONStorage(() => sessionStorage),
+            partialize: (state) => ({
+                isOpen: state.isOpen,
+                flyoutWidth: state.flyoutWidth,
+            }),
+        }
+    )
+)
 
 export const useAskAiModalIsOpen = () =>
     askAiModalStore((state) => state.isOpen)

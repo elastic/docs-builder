@@ -22,10 +22,15 @@ public static class HotReloadManager
 	});
 }
 
-public sealed class ReloadGeneratorService(ReloadableGeneratorState reloadableGenerator, ILogger<ReloadGeneratorService> logger) : IHostedService, IDisposable
+public sealed class ReloadGeneratorService(
+	ReloadableGeneratorState reloadableGenerator,
+	InMemoryBuildState inMemoryBuildState,
+	ILogger<ReloadGeneratorService> logger
+) : IHostedService, IDisposable
 {
 	private FileSystemWatcher? _watcher;
 	private ReloadableGeneratorState ReloadableGenerator { get; } = reloadableGenerator;
+	private InMemoryBuildState InMemoryBuildState { get; } = inMemoryBuildState;
 	private ILogger Logger { get; } = logger;
 
 	//debounce reload requests due to many file changes
@@ -33,7 +38,12 @@ public sealed class ReloadGeneratorService(ReloadableGeneratorState reloadableGe
 
 	public async Task StartAsync(Cancel cancellationToken)
 	{
-		await ReloadableGenerator.ReloadAsync(cancellationToken);
+		// Run live reload and in-memory validation build in parallel
+		var sourcePath = ReloadableGenerator.Generator.Context.DocumentationSourceDirectory.FullName;
+		await Task.WhenAll(
+			ReloadableGenerator.ReloadAsync(cancellationToken),
+			InMemoryBuildState.StartBuildAsync(sourcePath, cancellationToken)
+		);
 
 		// ReSharper disable once RedundantAssignment
 		var directory = ReloadableGenerator.Generator.DocumentationSet.SourceDirectory.FullName;
@@ -71,10 +81,18 @@ public sealed class ReloadGeneratorService(ReloadableGeneratorState reloadableGe
 	private void Reload() =>
 		_ = _debouncer.ExecuteAsync(async ctx =>
 		{
+			var sourcePath = ReloadableGenerator.Generator.Context.DocumentationSourceDirectory.FullName;
+
+			// Start in-memory validation build (runs in parallel)
+			var validationTask = InMemoryBuildState.StartBuildAsync(sourcePath, ctx);
+
+			// Wait for live reload to complete, then refresh the browser immediately
 			await ReloadableGenerator.ReloadAsync(ctx);
 			Logger.LogInformation("Reload complete!");
-
 			_ = LiveReloadMiddleware.RefreshWebSocketRequest();
+
+			// Wait for validation build to complete
+			await validationTask;
 		}, Cancel.None);
 
 	public Task StopAsync(Cancel cancellationToken)
@@ -83,9 +101,19 @@ public sealed class ReloadGeneratorService(ReloadableGeneratorState reloadableGe
 		return Task.CompletedTask;
 	}
 
+	// Check if a path should be ignored (output directories, hidden folders, etc.)
+	private static bool ShouldIgnorePath(string path) =>
+		path.Contains("/.artifacts/") || path.Contains("\\.artifacts\\") ||
+		path.Contains("/_site/") || path.Contains("\\_site\\") ||
+		path.Contains("/node_modules/") || path.Contains("\\node_modules\\") ||
+		path.Contains("/.git/") || path.Contains("\\.git\\");
+
 	private void OnChanged(object sender, FileSystemEventArgs e)
 	{
 		if (e.ChangeType != WatcherChangeTypes.Changed)
+			return;
+
+		if (ShouldIgnorePath(e.FullPath))
 			return;
 
 		Logger.LogInformation("Changed: {FullPath}", e.FullPath);
@@ -103,6 +131,9 @@ public sealed class ReloadGeneratorService(ReloadableGeneratorState reloadableGe
 
 	private void OnCreated(object sender, FileSystemEventArgs e)
 	{
+		if (ShouldIgnorePath(e.FullPath))
+			return;
+
 		Logger.LogInformation("Created: {FullPath}", e.FullPath);
 		if (e.FullPath.EndsWith(".md"))
 			Reload();
@@ -110,6 +141,9 @@ public sealed class ReloadGeneratorService(ReloadableGeneratorState reloadableGe
 
 	private void OnDeleted(object sender, FileSystemEventArgs e)
 	{
+		if (ShouldIgnorePath(e.FullPath))
+			return;
+
 		Logger.LogInformation("Deleted: {FullPath}", e.FullPath);
 		if (e.FullPath.EndsWith(".md"))
 			Reload();
@@ -117,6 +151,9 @@ public sealed class ReloadGeneratorService(ReloadableGeneratorState reloadableGe
 
 	private void OnRenamed(object sender, RenamedEventArgs e)
 	{
+		if (ShouldIgnorePath(e.FullPath))
+			return;
+
 		Logger.LogInformation("Renamed:");
 		Logger.LogInformation("    Old: {OldFullPath}", e.OldFullPath);
 		Logger.LogInformation("    New: {NewFullPath}", e.FullPath);
