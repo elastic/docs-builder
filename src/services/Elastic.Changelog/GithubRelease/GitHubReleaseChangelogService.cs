@@ -11,6 +11,7 @@ using Elastic.Changelog.GitHub;
 using Elastic.Changelog.Serialization;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;

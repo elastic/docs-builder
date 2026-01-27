@@ -8,6 +8,7 @@ using System.Text.Json.Serialization;
 using Elastic.Changelog.Configuration;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
@@ -85,7 +86,7 @@ public class ChangelogRenderingService(
 			}
 
 			// Validation phase: Load and validate all bundles
-			var validationService = new BundleValidationService(_fileSystem);
+			var validationService = new BundleValidationService(logFactory, _fileSystem);
 			var validationResult = await validationService.ValidateBundlesAsync(collector, input.Bundles, ctx);
 
 			if (!validationResult.IsValid || collector.Errors > 0)

@@ -5,6 +5,7 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Changelog.GitHub;
@@ -66,11 +67,15 @@ public partial class GitHubPrService(ILoggerFactory loggerFactory) : IGitHubPrSe
 				return null;
 			}
 
+			// Extract linked issues from PR body
+			var linkedIssues = ExtractLinkedIssues(prData.Body ?? string.Empty, parsedOwner, parsedRepo);
+
 			return new GitHubPrInfo
 			{
 				Title = prData.Title,
 				Body = prData.Body ?? string.Empty,
-				Labels = prData.Labels?.Select(l => l.Name).ToList() ?? []
+				Labels = prData.Labels?.Select(l => l.Name).ToList() ?? [],
+				LinkedIssues = linkedIssues
 			};
 		}
 		catch (HttpRequestException ex)
@@ -128,6 +133,49 @@ public partial class GitHubPrService(ILoggerFactory loggerFactory) : IGitHubPrSe
 			return (defaultOwner, defaultRepo, prNumber);
 
 		return (null, null, null);
+	}
+
+	/// <summary>
+	/// Extracts linked issues from PR body.
+	/// Matches patterns like "Fixes #123", "Closes #456", "Resolves #789", "Fixes owner/repo#123"
+	/// </summary>
+	private static IReadOnlyList<string> ExtractLinkedIssues(string body, string prOwner, string prRepo)
+	{
+		if (string.IsNullOrWhiteSpace(body))
+			return [];
+
+		var issues = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+		// Pattern for keywords followed by issue references
+		// Matches: Fixes #123, Closes owner/repo#456, Resolves https://github.com/owner/repo/issues/789
+		var keywordPattern = @"(?:fix(?:es|ed)?|close[sd]?|resolve[sd]?)\s+";
+
+		// Pattern for cross-repo issue: owner/repo#123
+		var crossRepoPattern = $@"{keywordPattern}([a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+)#(\d+)";
+		foreach (Match match in Regex.Matches(body, crossRepoPattern, RegexOptions.IgnoreCase))
+		{
+			var repoPath = match.Groups[1].Value;
+			var issueNum = match.Groups[2].Value;
+			_ = issues.Add($"https://github.com/{repoPath}/issues/{issueNum}");
+		}
+
+		// Pattern for full GitHub issue URL
+		var urlPattern = $@"{keywordPattern}(https://github\.com/([a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+)/issues/(\d+))";
+		foreach (Match match in Regex.Matches(body, urlPattern, RegexOptions.IgnoreCase))
+			_ = issues.Add(match.Groups[1].Value);
+
+		// Pattern for same-repo issue: #123
+		var sameRepoPattern = $@"{keywordPattern}#(\d+)";
+		foreach (Match match in Regex.Matches(body, sameRepoPattern, RegexOptions.IgnoreCase))
+		{
+			// Skip if this is part of a cross-repo reference (already handled above)
+			var issueNum = match.Groups[1].Value;
+			var fullMatch = match.Value;
+			if (!fullMatch.Contains('/'))
+				_ = issues.Add($"https://github.com/{prOwner}/{prRepo}/issues/{issueNum}");
+		}
+
+		return [.. issues];
 	}
 
 	private sealed class GitHubPrResponse

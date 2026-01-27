@@ -5,8 +5,9 @@
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Configuration.Versions;
 
-namespace Elastic.Documentation.Configuration.Versions;
+namespace Elastic.Documentation.Configuration.Inference;
 
 public interface IVersionInferrerService
 {

@@ -4,7 +4,6 @@
 
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Markdown.Exporters.Elasticsearch;
 using Microsoft.Extensions.Logging;
 
@@ -16,13 +15,12 @@ public static class ExporterExtensions
 		this IReadOnlySet<Exporter> exportOptions,
 		ILoggerFactory logFactory,
 		IDocumentationConfigurationContext context,
-		string indexNamespace,
-		IDocumentInferrerService? documentInferrer = null
+		string indexNamespace
 	)
 	{
 		var markdownExporters = new List<IMarkdownExporter>(4);
 		if (exportOptions.Contains(Exporter.LLMText))
-			markdownExporters.Add(new LlmMarkdownExporter(documentInferrer));
+			markdownExporters.Add(new LlmMarkdownExporter());
 		if (exportOptions.Contains(Exporter.Configuration))
 			markdownExporters.Add(new ConfigurationExporter(logFactory, context.ConfigurationFileProvider, context));
 		if (exportOptions.Contains(Exporter.Elasticsearch))

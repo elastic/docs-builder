@@ -7,8 +7,8 @@ using System.Text.Json;
 using Elastic.Documentation.Assembler.Links;
 using Elastic.Documentation.Assembler.Navigation;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation;
@@ -44,11 +44,8 @@ public class AssemblerBuilder(
 
 		var redirects = new Dictionary<string, string>();
 
-		var documentInferrer = new DocumentInferrerService(
-			context.ProductsConfiguration,
-			context.VersionsConfiguration,
-			context.LegacyUrlMappings);
-		var markdownExporters = exportOptions.CreateMarkdownExporters(logFactory, context, environment.Name, documentInferrer);
+		// Create exporters without inferrer - inferrer is created per-repository
+		var markdownExporters = exportOptions.CreateMarkdownExporters(logFactory, context, environment.Name);
 		var tasks = markdownExporters.Select(async e => await e.StartAsync(ctx));
 		await Task.WhenAll(tasks);
 
@@ -62,9 +59,18 @@ public class AssemblerBuilder(
 				continue;
 			}
 
+			// Create inferrer per-repository with git context
+			var documentInferrer = new DocumentInferrerService(
+				context.ProductsConfiguration,
+				context.VersionsConfiguration,
+				context.LegacyUrlMappings,
+				set.DocumentationSet.Configuration,
+				set.DocumentationSet.Context.Git
+			);
+
 			try
 			{
-				var result = await BuildAsync(set, markdownExporters.ToArray(), ctx);
+				var result = await BuildAsync(set, markdownExporters.ToArray(), documentInferrer, ctx);
 				CollectRedirects(redirects, result.Redirects, checkout.Repository.Name, set.DocumentationSet.CrossLinkResolver);
 			}
 			catch (Exception e) when (e.Message.Contains("Can not locate docset.yml file in"))
@@ -135,7 +141,7 @@ public class AssemblerBuilder(
 		}
 	}
 
-	private async Task<GenerationResult> BuildAsync(AssemblerDocumentationSet set, IMarkdownExporter[]? markdownExporters, Cancel ctx)
+	private async Task<GenerationResult> BuildAsync(AssemblerDocumentationSet set, IMarkdownExporter[]? markdownExporters, IDocumentInferrerService documentInferrer, Cancel ctx)
 	{
 		SetFeatureFlags(set);
 		var generator = new DocumentationGenerator(
@@ -143,7 +149,8 @@ public class AssemblerBuilder(
 			logFactory, NavigationTraversable, HtmlWriter,
 			pathProvider,
 			legacyUrlMapper: LegacyUrlMapper,
-			markdownExporters: markdownExporters
+			markdownExporters: markdownExporters,
+			documentInferrer: documentInferrer
 		);
 		return await generator.GenerateAll(ctx);
 	}

@@ -6,8 +6,9 @@
 
 using System.IO.Abstractions;
 using System.Text;
+using Elastic.Documentation;
 using static System.Globalization.CultureInfo;
-using static Elastic.Changelog.ChangelogEntryType;
+using static Elastic.Documentation.ChangelogEntryType;
 
 namespace Elastic.Changelog.Rendering.Asciidoc;
 
