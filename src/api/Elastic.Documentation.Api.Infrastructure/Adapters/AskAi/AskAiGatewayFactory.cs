@@ -14,13 +14,13 @@ namespace Elastic.Documentation.Api.Infrastructure.Adapters.AskAi;
 public class AskAiGatewayFactory(
 	IServiceProvider serviceProvider,
 	AskAiProviderResolver providerResolver,
-	ILogger<AskAiGatewayFactory> logger) : IAskAiGateway<Stream>
+	ILogger<AskAiGatewayFactory> logger) : IAskAiGateway
 {
-	public async Task<Stream> AskAi(AskAiRequest askAiRequest, Cancel ctx = default)
+	public async Task<AskAiGatewayResponse> AskAi(AskAiRequest askAiRequest, Cancel ctx = default)
 	{
 		var provider = providerResolver.ResolveProvider();
 
-		IAskAiGateway<Stream> gateway = provider switch
+		IAskAiGateway gateway = provider switch
 		{
 			"LlmGateway" => serviceProvider.GetRequiredService<LlmGatewayAskAiGateway>(),
 			"AgentBuilder" => serviceProvider.GetRequiredService<AgentBuilderAskAiGateway>(),

@@ -173,7 +173,7 @@ public static class ServicesExtension
 			logger?.LogInformation("Both stream transformers registered as concrete types");
 
 			// Register factories as interface implementations
-			_ = services.AddScoped<IAskAiGateway<Stream>, AskAiGatewayFactory>();
+			_ = services.AddScoped<IAskAiGateway, AskAiGatewayFactory>();
 			_ = services.AddScoped<IStreamTransformer, StreamTransformerFactory>();
 			logger?.LogInformation("Gateway and transformer factories registered successfully - provider switchable via X-AI-Provider header");
 
