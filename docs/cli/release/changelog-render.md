@@ -35,6 +35,10 @@ docs-builder changelog render [options...] [-h|--help]
 :   Use `link-visibility` to control whether PR/issue links are shown or hidden for entries from this bundle. Valid values are `keep-links` (default) or `hide-links`. Use `hide-links` for bundles from private repositories.
 :   **Important**: Paths must be absolute or use environment variables. Tilde (`~`) expansion is not supported.
 
+:::{note}
+The `render` command automatically discovers and merges `.amend-*.yaml` files with their parent bundle. For more information about amended bundles, go to [](changelog-bundle-amend.md).
+:::
+
 `--file-type <string>`
 :   Optional: Output file type. Valid values: `"markdown"` or `"asciidoc"`.
 :   Defaults to `"markdown"`.
