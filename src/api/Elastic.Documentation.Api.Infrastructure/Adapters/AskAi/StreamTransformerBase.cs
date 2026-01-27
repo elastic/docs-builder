@@ -76,40 +76,37 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 		using var activityScope = parentActivity;
 		try
 		{
+			await ProcessStreamAsync(reader, writer, generatedConversationId, parentActivity, cancellationToken);
+		}
+		catch (OperationCanceledException ex)
+		{
+			Logger.LogDebug(ex, "Stream processing was cancelled for transformer {TransformerType}", GetType().Name);
+		}
+		catch (Exception ex)
+		{
+			Logger.LogError(ex, "Error transforming stream for transformer {TransformerType}. Stream processing will be terminated.", GetType().Name);
+			_ = parentActivity?.SetTag("error.type", ex.GetType().Name);
 			try
 			{
-				await ProcessStreamAsync(reader, writer, generatedConversationId, parentActivity, cancellationToken);
+				// Complete writer first, then reader - but don't try to complete reader
+				// if the exception came from reading (would cause "read operation pending" error)
+				await writer.CompleteAsync(ex);
 			}
-			catch (OperationCanceledException ex)
+			catch (Exception completeEx)
 			{
-				Logger.LogDebug(ex, "Stream processing was cancelled for transformer {TransformerType}", GetType().Name);
+				Logger.LogError(completeEx, "Error completing pipe after transformation error for transformer {TransformerType}", GetType().Name);
 			}
-			catch (Exception ex)
-			{
-				Logger.LogError(ex, "Error transforming stream for transformer {TransformerType}. Stream processing will be terminated.", GetType().Name);
-				_ = parentActivity?.SetTag("error.type", ex.GetType().Name);
-				try
-				{
-					// Complete writer first, then reader - but don't try to complete reader
-					// if the exception came from reading (would cause "read operation pending" error)
-					await writer.CompleteAsync(ex);
-				}
-				catch (Exception completeEx)
-				{
-					Logger.LogError(completeEx, "Error completing pipe after transformation error for transformer {TransformerType}", GetType().Name);
-				}
-				return;
-			}
+			return;
+		}
 
-			// Normal completion - ensure cleanup happens
-			try
-			{
-				await writer.CompleteAsync();
-			}
-			catch (Exception ex)
-			{
-				Logger.LogError(ex, "Error completing pipe after successful transformation");
-			}
+		// Normal completion - ensure cleanup happens
+		try
+		{
+			await writer.CompleteAsync();
+		}
+		catch (Exception ex)
+		{
+			Logger.LogError(ex, "Error completing pipe after successful transformation");
 		}
 	}
 

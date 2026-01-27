@@ -43,7 +43,8 @@ public class AskAiUsecase(
 		if (conversationId is not null)
 			_ = activity?.SetTag("gen_ai.conversation.id", conversationId.ToString());
 
-		// The stream transformer will handle disposing the activity when streaming completes
+		// The stream transformer takes ownership of the activity and disposes it when streaming completes.
+		// This is necessary because streaming happens asynchronously after this method returns.
 		var transformedStream = await streamTransformer.TransformAsync(
 			response.Stream,
 			response.GeneratedConversationId,
