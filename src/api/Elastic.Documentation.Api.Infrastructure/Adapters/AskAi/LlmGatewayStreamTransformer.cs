@@ -74,9 +74,10 @@ public class LlmGatewayStreamTransformer(ILogger<LlmGatewayStreamTransformer> lo
 			"tool_call" when messageData.TryGetProperty("toolCalls", out var toolCalls) =>
 				TransformToolCall(id, timestamp, toolCalls),
 
-			"tool_message" when messageData.TryGetProperty("toolCallId", out var toolCallId)
-				&& messageData.TryGetProperty("result", out var result) =>
-				new AskAiEvent.ToolResult(id, timestamp, toolCallId.GetString()!, result.GetString()!),
+			// Frontend only uses tool_result to show "Analyzing..." status - result content not displayed
+			// Skip sending the large payload (~30KB) to prevent CloudFront OAC buffering issues
+			"tool_message" when messageData.TryGetProperty("toolCallId", out var toolCallId) =>
+				new AskAiEvent.ToolResult(id, timestamp, toolCallId.GetString()!, ""),
 
 			"agent_end" =>
 				new AskAiEvent.ConversationEnd(id, timestamp),
