@@ -225,13 +225,29 @@ public class ChangelogRenderingService(
 				{
 					var reasons = GetBlockReasons(resolved.Entry, blocker);
 					var productInfo = productIds.Count > 1 ? $" for product '{productId}'" : "";
-					collector.EmitWarning(string.Empty, $"Changelog entry '{resolved.Entry.Title}' will be commented out{productInfo} because it matches block configuration: {reasons}");
+					var entryIdentifier = GetEntryIdentifier(resolved.Entry, context);
+					collector.EmitWarning(string.Empty, $"Changelog entry {entryIdentifier} will be commented out{productInfo} because it matches block configuration: {reasons}");
 				}
 			}
 		}
 	}
 
-	private static string GetBlockReasons(ChangelogEntry entry, Configuration.PublishBlocker blocker)
+	private static string GetEntryIdentifier(ChangelogEntry entry, ChangelogRenderContext context)
+	{
+		// Try to extract PR number if available
+		if (!string.IsNullOrWhiteSpace(entry.Pr))
+		{
+			var repo = context.EntryToRepo.GetValueOrDefault(entry, context.Repo);
+			var prNumber = ChangelogTextUtilities.ExtractPrNumber(entry.Pr, "elastic", repo);
+			if (prNumber.HasValue)
+				return $"for PR {prNumber.Value}";
+		}
+
+		// Fall back to title if no PR is available
+		return $"'{entry.Title}'";
+	}
+
+	private static string GetBlockReasons(ChangelogEntry entry, PublishBlocker blocker)
 	{
 		var reasons = new List<string>();
 
@@ -256,7 +272,7 @@ public class ChangelogRenderingService(
 		return string.Join(" and ", reasons);
 	}
 
-	private static Configuration.PublishBlocker? GetPublishBlockerForProduct(Configuration.BlockConfiguration blockConfig, string productId)
+	private static PublishBlocker? GetPublishBlockerForProduct(BlockConfiguration blockConfig, string productId)
 	{
 		// Check product-specific override first
 		if (blockConfig.ByProduct?.TryGetValue(productId, out var productBlockers) == true)

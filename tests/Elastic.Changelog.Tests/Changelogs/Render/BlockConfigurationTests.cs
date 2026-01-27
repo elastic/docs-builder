@@ -1502,4 +1502,155 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 		knownIssuesContent.Should().Contain("Blocked Allocation known issue");
 		knownIssuesContent.Should().Contain("<!--");
 	}
+
+	[Fact]
+	public async Task RenderChangelogs_WithBlockedEntries_EmitsWarnings()
+	{
+		// Arrange
+		var changelogDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(changelogDir);
+
+		// Create changelog with blocked area
+		// language=yaml
+		var changelog1 =
+			"""
+			title: Blocked Allocation feature
+			type: feature
+			products:
+			  - product: cloud-serverless
+			    target: 2026-01-26
+			areas:
+			  - Allocation
+			pr: https://github.com/elastic/elasticsearch/pull/100
+			description: This feature should be blocked
+			""";
+
+		// Create changelog with blocked type
+		// language=yaml
+		var changelog2 =
+			"""
+			title: Blocked deprecation
+			type: deprecation
+			products:
+			  - product: cloud-serverless
+			    target: 2026-01-26
+			pr: https://github.com/elastic/elasticsearch/pull/101
+			description: This deprecation should be blocked
+			""";
+
+		// Create changelog with multiple blocked areas
+		// language=yaml
+		var changelog3 =
+			"""
+			title: Blocked Internal feature
+			type: feature
+			products:
+			  - product: cloud-serverless
+			    target: 2026-01-26
+			areas:
+			  - Allocation
+			  - Internal
+			pr: https://github.com/elastic/elasticsearch/pull/102
+			description: This feature should be blocked
+			""";
+
+		var changelogFile1 = FileSystem.Path.Combine(changelogDir, "1755268130-allocation.yaml");
+		var changelogFile2 = FileSystem.Path.Combine(changelogDir, "1755268140-deprecation.yaml");
+		var changelogFile3 = FileSystem.Path.Combine(changelogDir, "1755268150-internal.yaml");
+		await FileSystem.File.WriteAllTextAsync(changelogFile1, changelog1, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(changelogFile2, changelog2, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(changelogFile3, changelog3, TestContext.Current.CancellationToken);
+
+		// Create bundle file
+		var bundleDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(bundleDir);
+
+		var bundleFile = FileSystem.Path.Combine(bundleDir, "bundle.yaml");
+		// language=yaml
+		var bundleContent =
+			$"""
+			products:
+			  - product: cloud-serverless
+			    target: 2026-01-26
+			entries:
+			  - file:
+			      name: 1755268130-allocation.yaml
+			      checksum: {ComputeSha1(changelog1)}
+			  - file:
+			      name: 1755268140-deprecation.yaml
+			      checksum: {ComputeSha1(changelog2)}
+			  - file:
+			      name: 1755268150-internal.yaml
+			      checksum: {ComputeSha1(changelog3)}
+			""";
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+
+		// Create config with block configuration
+		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(configDir);
+		var configFile = FileSystem.Path.Combine(configDir, "changelog.yml");
+		// language=yaml
+		var configContent =
+			"""
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change:
+			    deprecation:
+			lifecycles:
+			  - preview
+			  - beta
+			  - ga
+			block:
+			  product:
+			    cloud-serverless:
+			      publish:
+			        types:
+			          - deprecation
+			        areas:
+			          - Allocation
+			          - Internal
+			""";
+		await FileSystem.File.WriteAllTextAsync(configFile, configContent, TestContext.Current.CancellationToken);
+
+		var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+
+		var input = new RenderChangelogsArguments
+		{
+			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
+			Output = outputDir,
+			Title = "2026-01-26",
+			Config = configFile
+		};
+
+		// Act
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		Collector.Warnings.Should().BeGreaterThan(0);
+
+		// Verify warnings for blocked entries
+		var warnings = Collector.Diagnostics.Where(d => d.Severity == Documentation.Diagnostics.Severity.Warning).ToList();
+
+		// Should have warning for Allocation feature (blocked by area) - PR 100
+		warnings.Should().Contain(w =>
+			w.Message.Contains("for PR 100") &&
+			w.Message.Contains("will be commented out") &&
+			w.Message.Contains("area 'Allocation'"));
+
+		// Should have warning for deprecation (blocked by type) - PR 101
+		warnings.Should().Contain(w =>
+			w.Message.Contains("for PR 101") &&
+			w.Message.Contains("will be commented out") &&
+			w.Message.Contains("type 'deprecation'"));
+
+		// Should have warning for Internal feature (blocked by areas) - PR 102
+		warnings.Should().Contain(w =>
+			w.Message.Contains("for PR 102") &&
+			w.Message.Contains("will be commented out") &&
+			w.Message.Contains("areas 'Allocation', 'Internal'"));
+	}
 }
