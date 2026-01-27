@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Globalization;
 using System.IO.Abstractions;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -134,16 +135,12 @@ public partial class ChangelogBundleAmendService(ILoggerFactory logFactory, IFil
 		// Find existing amend files
 		var existingAmendFiles = _fileSystem.Directory.GetFiles(directory, $"{baseName}.amend-*.y*ml");
 
-		var maxNumber = 0;
-		foreach (var file in existingAmendFiles)
-		{
-			var match = AmendFileRegex().Match(file);
-			if (match.Success && int.TryParse(match.Groups[1].Value, out var number))
-			{
-				if (number > maxNumber)
-					maxNumber = number;
-			}
-		}
+		var maxNumber = existingAmendFiles
+			.Select(file => AmendFileRegex().Match(file))
+			.Where(match => match.Success && int.TryParse(match.Groups[1].Value, out _))
+			.Select(match => int.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture))
+			.DefaultIfEmpty(0)
+			.Max();
 
 		return maxNumber + 1;
 	}

@@ -268,10 +268,10 @@ public partial class ChangelogBundlingService(
 
 		// Apply directory default if not specified
 		var directory = input.Directory;
-		if (string.IsNullOrWhiteSpace(directory) || directory == Directory.GetCurrentDirectory())
+		if ((string.IsNullOrWhiteSpace(directory) || directory == Directory.GetCurrentDirectory())
+			&& !string.IsNullOrWhiteSpace(config.Bundle.Directory))
 		{
-			if (!string.IsNullOrWhiteSpace(config.Bundle.Directory))
-				directory = config.Bundle.Directory;
+			directory = config.Bundle.Directory;
 		}
 
 		// Apply resolve default if not specified by CLI

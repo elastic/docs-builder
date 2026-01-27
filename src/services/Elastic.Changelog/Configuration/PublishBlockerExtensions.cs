@@ -26,10 +26,11 @@ public static class PublishBlockerExtensions
 		}
 
 		// Check if any of the entry's areas are blocked
-		if (blocker.Areas?.Count > 0 && entry.Areas?.Count > 0)
+		if (blocker.Areas?.Count > 0
+			&& entry.Areas?.Count > 0
+			&& entry.Areas.Any(area => blocker.Areas.Any(blocked => blocked.Equals(area, StringComparison.OrdinalIgnoreCase))))
 		{
-			if (entry.Areas.Any(area => blocker.Areas.Any(blocked => blocked.Equals(area, StringComparison.OrdinalIgnoreCase))))
-				return true;
+			return true;
 		}
 
 		return false;
