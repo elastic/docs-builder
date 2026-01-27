@@ -48,6 +48,9 @@ docs-builder changelog add [options...] [-h|--help]
 `--issues <string[]?>`
 :   Optional: Issue numbers (comma-separated or specify multiple times).
 
+`--no-extract-issues`
+:   Optional: Turn off extraction of linked issues from PR body (for example, "Fixes #123"). By default, linked issues are extracted when using `--prs`.
+
 `--output <string?>`
 :   Optional: Output directory for the changelog fragment. Defaults to current directory.
 

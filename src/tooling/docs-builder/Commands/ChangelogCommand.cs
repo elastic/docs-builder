@@ -44,8 +44,8 @@ internal sealed class ChangelogCommand(
 	/// <param name="areas">Optional: Area(s) affected (comma-separated or specify multiple times)</param>
 	/// <param name="config">Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml'</param>
 	/// <param name="description">Optional: Additional information about the change (max 600 characters)</param>
-	/// <param name="noExtractReleaseNotes">Optional: Disable extraction of release notes from PR descriptions. By default, release notes are extracted when using --prs. Short release notes (≤120 characters, single line) are used as the title, long release notes (>120 characters or multi-line) are used as the description.</param>
-	/// <param name="noExtractIssues">Optional: Disable extraction of linked issues from PR body (e.g., "Fixes #123"). By default, linked issues are extracted when using --prs.</param>
+	/// <param name="noExtractReleaseNotes">Optional: Turn off extraction of release notes from PR descriptions. By default, release notes are extracted when using --prs. Short release notes (≤120 characters, single line) are used as the title, long release notes (>120 characters or multi-line) are used as the description.</param>
+	/// <param name="noExtractIssues">Optional: Turn off extraction of linked issues from PR body (e.g., "Fixes #123"). By default, linked issues are extracted when using --prs.</param>
 	/// <param name="featureId">Optional: Feature flag ID</param>
 	/// <param name="highlight">Optional: Include in release highlights</param>
 	/// <param name="impact">Optional: How the user's environment is affected</param>
@@ -181,7 +181,7 @@ internal sealed class ChangelogCommand(
 	/// <param name="prs">Filter by pull request URLs or numbers (comma-separated), or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times. Only one filter option can be specified: `--all`, `--input-products`, or `--prs`.</param>
 	/// <param name="repo">GitHub repository name (required only when PRs are specified as numbers)</param>
 	/// <param name="resolve">Optional: Copy the contents of each changelog file into the entries array. Uses config bundle.resolve or defaults to false.</param>
-	/// <param name="noResolve">Optional: Explicitly disable resolve (overrides config).</param>
+	/// <param name="noResolve">Optional: Explicitly turn off resolve (overrides config).</param>
 	/// <param name="ctx"></param>
 	[Command("bundle")]
 	public async Task<int> Bundle(
