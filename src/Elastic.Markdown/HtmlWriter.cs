@@ -27,7 +27,7 @@ public class HtmlWriter(
 	INavigationTraversable? positionalNavigation = null,
 	INavigationHtmlWriter? navigationHtmlWriter = null,
 	ILegacyUrlMapper? legacyUrlMapper = null,
-	IVersionInferrerService? versionInferrerService = null
+	IDocumentInferrerService? documentInferrerService = null
 )
 	: IMarkdownStringRenderer
 {
@@ -40,7 +40,7 @@ public class HtmlWriter(
 	private ILegacyUrlMapper LegacyUrlMapper { get; } = legacyUrlMapper ?? new NoopLegacyUrlMapper();
 	private INavigationTraversable NavigationTraversable { get; } = positionalNavigation ?? documentationSet;
 
-	private IVersionInferrerService VersionInferrerService { get; } = versionInferrerService ?? new NoopVersionInferrer();
+	private IDocumentInferrerService DocumentInferrerService { get; } = documentInferrerService ?? new NoopDocumentInferrer();
 
 	/// <inheritdoc />
 	public string Render(string markdown, IFileInfo? source)
@@ -64,9 +64,7 @@ public class HtmlWriter(
 
 		var root = navigationItem.NavigationRoot;
 
-		var navigationHtmlRenderResult = DocumentationSet.Context.Configuration.Features.LazyLoadNavigation
-			? await NavigationHtmlWriter.RenderNavigation(root, navigationItem, 1, ctx)
-			: await NavigationHtmlWriter.RenderNavigation(root, navigationItem, INavigationHtmlWriter.AllLevels, ctx);
+		var navigationHtmlRenderResult = await NavigationHtmlWriter.RenderNavigation(root, navigationItem, ctx);
 
 		var current = NavigationTraversable.GetNavigationFor(markdown);
 		var previous = NavigationTraversable.GetPrevious(markdown);
@@ -91,7 +89,15 @@ public class HtmlWriter(
 		var siteName = DocumentationSet.Navigation.NavigationTitle;
 		var legacyPages = LegacyUrlMapper.MapLegacyUrl(markdown.YamlFrontMatter?.MappedPages);
 
-		var pageProducts = GetPageProducts(markdown.YamlFrontMatter?.Products);
+		// Use DocumentInferrerService to get merged products and versioning info
+		var inference = DocumentInferrerService.InferForMarkdown(
+			DocumentationSet.Context.Git.RepositoryName,
+			markdown.YamlFrontMatter?.MappedPages,
+			DocumentationSet.Configuration.Products,
+			markdown.YamlFrontMatter?.Products,
+			markdown.YamlFrontMatter?.AppliesTo
+		);
+		var pageProducts = inference.RelatedProducts.ToHashSet();
 
 		string? allVersionsUrl = null;
 
@@ -99,20 +105,11 @@ public class HtmlWriter(
 		//if (PositionalNavigation.MarkdownNavigationLookup.TryGetValue("docs-content://versions.md", out var item))
 		//	allVersionsUrl = item.Url;
 
-		var navigationFileName = $"{navigationHtmlRenderResult.Id}.nav.html";
-		if (DocumentationSet.Configuration.Features.LazyLoadNavigation)
-		{
-			var fullNavigationRenderResult = await NavigationHtmlWriter.RenderNavigation(root, navigationItem, INavigationHtmlWriter.AllLevels, ctx);
-			navigationFileName = $"{fullNavigationRenderResult.Id}.nav.html";
-
-			_ = DocumentationSet.NavigationRenderResults.TryAdd(
-				fullNavigationRenderResult.Id,
-				fullNavigationRenderResult
-			);
-
-		}
-
-		var pageVersioning = VersionInferrerService.InferVersion(DocumentationSet.Context.Git.RepositoryName, legacyPages, markdown.YamlFrontMatter?.Products, markdown.YamlFrontMatter?.AppliesTo);
+		// Get versioning from inference result's product
+		var pageVersioning = inference.Product?.VersioningSystem
+			?? DocumentationSet.Context.VersionsConfiguration?.GetVersioningSystem(VersioningSystemId.Stack)
+			?? throw new InvalidOperationException($"No versioning system available for page '{markdown.RelativePath}'. " +
+				"Ensure VersionsConfiguration contains a Stack versioning system or the inferred product has a VersioningSystem defined.");
 
 		var currentBaseVersion = $"{pageVersioning.Base.Major}.{pageVersioning.Base.Minor}+";
 
@@ -121,6 +118,14 @@ public class HtmlWriter(
 		var breadcrumbsList = CreateStructuredBreadcrumbsData(markdown, breadcrumbs);
 		var structuredBreadcrumbsJsonString = JsonSerializer.Serialize(breadcrumbsList, BreadcrumbsContext.Default.BreadcrumbsList);
 
+
+		// Git info for isolated header
+		var gitRepo = DocumentationSet.Context.Git.RepositoryName;
+		var gitBranch = DocumentationSet.Context.Git.Branch;
+		var gitRef = DocumentationSet.Context.Git.Ref;
+		string? gitHubDocsUrl = null;
+		if (!string.IsNullOrEmpty(gitRepo) && gitRepo != "unavailable" && !string.IsNullOrEmpty(gitBranch) && gitBranch != "unavailable")
+			gitHubDocsUrl = $"https://github.com/elastic/{gitRepo}/tree/{gitBranch}/docs";
 
 		var slice = Page.Index.Create(new IndexViewModel
 		{
@@ -138,7 +143,6 @@ public class HtmlWriter(
 			NextDocument = next,
 			Breadcrumbs = breadcrumbs,
 			NavigationHtml = navigationHtmlRenderResult.Html,
-			NavigationFileName = navigationFileName,
 			UrlPathPrefix = markdown.UrlPathPrefix,
 			AppliesTo = markdown.YamlFrontMatter?.AppliesTo,
 			GithubEditUrl = editUrl,
@@ -155,15 +159,18 @@ public class HtmlWriter(
 			VersionDropdownItems = VersionDropDownItemViewModel.FromLegacyPageMappings(legacyPages?.ToArray()),
 			Products = pageProducts,
 			VersioningSystem = pageVersioning,
-			VersionsConfig = DocumentationSet.Context.VersionsConfiguration,
-			StructuredBreadcrumbsJson = structuredBreadcrumbsJsonString
+			VersionsConfig = DocumentationSet.Context.VersionsConfiguration!,
+			StructuredBreadcrumbsJson = structuredBreadcrumbsJsonString,
+			// Git info for isolated header
+			GitBranch = gitBranch != "unavailable" ? gitBranch : null,
+			GitCommitShort = gitRef is { Length: >= 7 } r && r != "unavailable" ? r[..7] : null,
+			GitRepository = gitRepo != "unavailable" ? gitRepo : null,
+			GitHubDocsUrl = gitHubDocsUrl
 		});
 
 		return new RenderResult
 		{
-			Html = await slice.RenderAsync(cancellationToken: ctx),
-			FullNavigationPartialHtml = navigationHtmlRenderResult.Html,
-			NavigationFileName = navigationFileName
+			Html = await slice.RenderAsync(cancellationToken: ctx)
 		};
 
 	}
@@ -193,7 +200,7 @@ public class HtmlWriter(
 		return breadcrumbsList;
 	}
 
-	public async Task<MarkdownDocument> WriteAsync(IDirectoryInfo outBaseDir, IFileInfo outputFile, MarkdownFile markdown, IConversionCollector? collector, Cancel ctx = default)
+	public async Task<MarkdownDocument> WriteAsync(IFileInfo outputFile, MarkdownFile markdown, IConversionCollector? collector, Cancel ctx = default)
 	{
 		if (outputFile.Directory is { Exists: false })
 			outputFile.Directory.Create();
@@ -221,23 +228,13 @@ public class HtmlWriter(
 		collector?.Collect(markdown, document, rendered.Html);
 		await writeFileSystem.File.WriteAllTextAsync(path, rendered.Html, ctx);
 
-		if (!DocumentationSet.Configuration.Features.LazyLoadNavigation)
-			return document;
-
-		var navFilePath = Path.Combine(outBaseDir.FullName, rendered.NavigationFileName);
-		if (!writeFileSystem.File.Exists(navFilePath))
-			await writeFileSystem.File.WriteAllTextAsync(navFilePath, rendered.FullNavigationPartialHtml, ctx);
 		return document;
 	}
 
-	private static HashSet<Product> GetPageProducts(IReadOnlyCollection<Product>? frontMatterProducts) =>
-		frontMatterProducts?.ToHashSet() ?? [];
 
 }
 
 public record RenderResult
 {
 	public required string Html { get; init; }
-	public required string FullNavigationPartialHtml { get; init; }
-	public required string NavigationFileName { get; init; }
 }

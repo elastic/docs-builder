@@ -6,7 +6,7 @@
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <UseMicrosoftTestingPlatformRunner>false</UseMicrosoftTestingPlatformRunner>
     <DisableTestingPlatformServerCapability>true</DisableTestingPlatformServerCapability>
-    <NoWarn>CA1822;xUnit1004</NoWarn>
+    <NoWarn>CA1822;CA1707;xUnit1004</NoWarn>
 
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>

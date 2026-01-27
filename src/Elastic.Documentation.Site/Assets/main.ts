@@ -1,9 +1,11 @@
+import { initApiDocs } from './api-docs'
 import { initAppliesSwitch } from './applies-switch'
 import { initCopyButton } from './copybutton'
 import { initHighlight } from './hljs'
 import { initImageCarousel } from './image-carousel'
+import { initIsolatedHeader, setInitialHeaderOffset } from './isolated-header'
 import { openDetailsWithAnchor } from './open-details-with-anchor'
-import { initNav, scrollCurrentNaviItemIntoView } from './pages-nav'
+import { initNav } from './pages-nav'
 import { initSmoothScroll } from './smooth-scroll'
 import { initTabs } from './tabs'
 import { initializeOtel } from './telemetry/instrumentation'
@@ -27,6 +29,10 @@ initializeOtel({
     debug: false,
 })
 
+// Set header offset immediately to prevent layout shift on reload
+// This runs before DOMContentLoaded to avoid visual jump
+setInitialHeaderOffset()
+
 // Dynamically import web components after telemetry is initialized
 // This ensures telemetry is available when the components execute
 // Parcel will automatically code-split this into a separate chunk
@@ -35,10 +41,9 @@ import('./web-components/AskAi/AskAi')
 import('./web-components/VersionDropdown')
 import('./web-components/AppliesToPopover')
 import('./web-components/FullPageSearch/FullPageSearchComponent')
+import('./web-components/Diagnostics/DiagnosticsComponent')
 
 const { getOS } = new UAParser()
-const isLazyLoadNavigationEnabled =
-    $('meta[property="docs:feature:lazy-load-navigation"]')?.content === 'true'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type HtmxEvent = any
@@ -91,30 +96,25 @@ function initMath() {
     })
 }
 
-// Initialize math on initial page load
+// Initialize on initial page load
 document.addEventListener('DOMContentLoaded', function () {
     initMath()
+    initIsolatedHeader()
 })
 
-document.addEventListener('htmx:load', function (event: HtmxEvent) {
+document.addEventListener('htmx:load', function () {
     initTocNav()
     initHighlight()
     initCopyButton()
     initTabs()
     initAppliesSwitch()
     initMath()
+    initNav()
 
-    // We do this so that the navigation is not initialized twice
-    if (isLazyLoadNavigationEnabled) {
-        if (event.detail.elt.id === 'nav-tree') {
-            initNav()
-        }
-    } else {
-        initNav()
-    }
     initSmoothScroll()
     openDetailsWithAnchor()
     initImageCarousel()
+    initApiDocs()
 
     const urlParams = new URLSearchParams(window.location.search)
     const editParam = urlParams.has('edit')
@@ -173,35 +173,6 @@ document.body.addEventListener(
             event.target?.id === 'content-container'
         ) {
             window.scrollTo(0, 0)
-        }
-    }
-)
-
-document.body.addEventListener(
-    'htmx:pushedIntoHistory',
-    function (event: HtmxEvent) {
-        const pagesNav = $('#pages-nav')
-        const currentNavItem = $$('.current', pagesNav)
-        currentNavItem.forEach((el) => {
-            el.classList.remove('current')
-        })
-        const navItems = $$('a[href="' + event.detail.path + '"]', pagesNav)
-        navItems.forEach((navItem) => {
-            navItem.classList.add('current')
-        })
-    }
-)
-
-document.body.addEventListener(
-    'htmx:oobAfterSwap',
-    function (event: HtmxEvent) {
-        if (event.detail.target.id === 'nav-tree') {
-            return
-        }
-
-        const pagesNav = $('#pages-nav')
-        if (pagesNav) {
-            scrollCurrentNaviItemIntoView(pagesNav)
         }
     }
 )

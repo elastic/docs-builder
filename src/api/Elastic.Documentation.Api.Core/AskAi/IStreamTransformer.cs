@@ -23,9 +23,12 @@ public interface IStreamTransformer
 	/// Transforms a raw SSE stream into a stream of AskAiEvent objects
 	/// </summary>
 	/// <param name="rawStream">Raw SSE stream from gateway (Agent Builder, LLM Gateway, etc.)</param>
-	/// <param name="conversationId">Thread/conversation ID (if known)</param>
+	/// <param name="generatedConversationId">
+	/// Non-null if the gateway generated a new conversation ID (LLM Gateway only).
+	/// When set, transformer should emit ConversationStart event with this ID.
+	/// </param>
 	/// <param name="parentActivity">Parent activity to track the streaming operation (will be disposed when stream completes)</param>
 	/// <param name="cancellationToken">Cancellation token</param>
 	/// <returns>Stream containing SSE-formatted AskAiEvent objects</returns>
-	Task<Stream> TransformAsync(Stream rawStream, string? conversationId, System.Diagnostics.Activity? parentActivity, CancellationToken cancellationToken = default);
+	Task<Stream> TransformAsync(Stream rawStream, Guid? generatedConversationId, System.Diagnostics.Activity? parentActivity, CancellationToken cancellationToken = default);
 }

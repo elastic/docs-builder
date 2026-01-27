@@ -7,7 +7,6 @@
 	} 
 	<div class="sticky top-0 z-10 bg-white">
 		<navigation-search></navigation-search>
-		<ask-ai></ask-ai>
 		<div id="nav-dropdown">
 		@if (Model.IsUsingNavigationDropdown)
 			{
@@ -71,8 +70,7 @@
 			IsGlobalAssemblyBuild = Model.IsGlobalAssemblyBuild,
 			Level = 0,
 			SubTree = Model.Tree,
-			RootNavigationId = Model.Tree.Id,
-			MaxLevel = Model.MaxLevel
+			RootNavigationId = Model.Tree.Id
 		}))
 	</ul>
 </div>

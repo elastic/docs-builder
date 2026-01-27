@@ -1,9 +1,9 @@
 import { logInfo, logWarn } from '../../telemetry/logging'
 import {
-    ATTR_FIND_IN_DOCS_QUERY,
-    ATTR_FIND_IN_DOCS_QUERY_LENGTH,
-    ATTR_FIND_IN_DOCS_RESULTS_TOTAL,
-    ATTR_FIND_IN_DOCS_RETRY_AFTER,
+    ATTR_NAVIGATION_SEARCH_QUERY,
+    ATTR_NAVIGATION_SEARCH_QUERY_LENGTH,
+    ATTR_NAVIGATION_SEARCH_RESULTS_TOTAL,
+    ATTR_NAVIGATION_SEARCH_RETRY_AFTER,
     ATTR_ERROR_TYPE,
 } from '../../telemetry/semconv'
 import { traceSpan } from '../../telemetry/tracing'
@@ -109,10 +109,13 @@ export const useNavigationSearchQuery = () => {
                 })
             }
 
-            return traceSpan('find_in_docs', async (span) => {
-                // Track Find in Docs query (even if backend response is cached by CloudFront)
-                span.setAttribute(ATTR_FIND_IN_DOCS_QUERY, debouncedSearchTerm)
-                span.setAttribute('find_in_docs.page', pageNumber)
+            return traceSpan('navigation_search', async (span) => {
+                // Track Navigation Search query (even if backend response is cached by CloudFront)
+                span.setAttribute(
+                    ATTR_NAVIGATION_SEARCH_QUERY,
+                    debouncedSearchTerm
+                )
+                span.setAttribute('navigation_search.page', pageNumber)
 
                 const params = new URLSearchParams({
                     q: debouncedSearchTerm,
@@ -136,25 +139,25 @@ export const useNavigationSearchQuery = () => {
 
                 // Add result metrics to span
                 span.setAttribute(
-                    ATTR_FIND_IN_DOCS_RESULTS_TOTAL,
+                    ATTR_NAVIGATION_SEARCH_RESULTS_TOTAL,
                     searchResponse.totalResults
                 )
                 span.setAttribute(
-                    'find_in_docs.results.count',
+                    'navigation_search.results.count',
                     searchResponse.results.length
                 )
                 span.setAttribute(
-                    'find_in_docs.page.count',
+                    'navigation_search.page.count',
                     searchResponse.pageCount
                 )
 
                 // Track zero results for quality analysis
                 if (searchResponse.totalResults === 0) {
-                    logInfo('find_in_docs_zero_results', {
-                        [ATTR_FIND_IN_DOCS_QUERY]: debouncedSearchTerm,
-                        [ATTR_FIND_IN_DOCS_QUERY_LENGTH]:
+                    logInfo('navigation_search_zero_results', {
+                        [ATTR_NAVIGATION_SEARCH_QUERY]: debouncedSearchTerm,
+                        [ATTR_NAVIGATION_SEARCH_QUERY_LENGTH]:
                             debouncedSearchTerm.length,
-                        [ATTR_FIND_IN_DOCS_RESULTS_TOTAL]: 0,
+                        [ATTR_NAVIGATION_SEARCH_RESULTS_TOTAL]: 0,
                     })
                 }
 
@@ -186,14 +189,14 @@ export const useNavigationSearchQuery = () => {
     useEffect(() => {
         if (query.error && isApiError(query.error)) {
             if (isRateLimitError(query.error)) {
-                logWarn('find_in_docs_rate_limited', {
-                    [ATTR_FIND_IN_DOCS_QUERY]: debouncedSearchTerm,
-                    [ATTR_FIND_IN_DOCS_RETRY_AFTER]:
+                logWarn('navigation_search_rate_limited', {
+                    [ATTR_NAVIGATION_SEARCH_QUERY]: debouncedSearchTerm,
+                    [ATTR_NAVIGATION_SEARCH_RETRY_AFTER]:
                         query.error.retryAfter ?? 0,
                 })
             } else {
-                logWarn('find_in_docs_error', {
-                    [ATTR_FIND_IN_DOCS_QUERY]: debouncedSearchTerm,
+                logWarn('navigation_search_error', {
+                    [ATTR_NAVIGATION_SEARCH_QUERY]: debouncedSearchTerm,
                     [ATTR_ERROR_TYPE]: `${query.error.statusCode}`,
                     'error.message': query.error.message,
                 })

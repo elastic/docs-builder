@@ -22,6 +22,12 @@ using Microsoft.Extensions.Logging;
 
 namespace Elastic.Markdown.IO;
 
+//create all documentation sets
+// create a portalrootnodenavigationitem
+// foreach doc set.
+//		root.items.add(set.navigation);
+// root.prefix = new provider('prefix)'
+// root.prefixprovider.prefix = 'prefix';
 public class DocumentationSet : INavigationTraversable
 {
 	private readonly ILogger<DocumentationSet> _logger;
@@ -46,8 +52,6 @@ public class DocumentationSet : INavigationTraversable
 	public ConditionalWeakTable<IDocumentationFile, INavigationItem> NavigationDocumentationFileLookup { get; }
 
 	public IReadOnlyCollection<IDocsBuilderExtension> EnabledExtensions { get; }
-
-	public ConcurrentDictionary<string, NavigationRenderResult> NavigationRenderResults { get; } = [];
 
 	public DocumentationSet(
 		BuildContext context,
