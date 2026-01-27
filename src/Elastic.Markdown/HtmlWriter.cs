@@ -5,8 +5,8 @@
 using System.IO.Abstractions;
 using System.Text.Json;
 using Elastic.Documentation;
-using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Inference;
+using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Navigation;

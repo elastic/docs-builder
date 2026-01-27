@@ -4,8 +4,8 @@
 
 using System.Collections.Frozen;
 using Elastic.Documentation.AppliesTo;
-using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Inference;
+using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Versions;
 using FluentAssertions;
