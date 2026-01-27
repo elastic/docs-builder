@@ -97,8 +97,8 @@ Options:
   --areas <string[]?>                    Optional: Area(s) affected (comma-separated or specify multiple times) [Default: null]
   --config <string?>                     Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml' [Default: null]
   --description <string?>                Optional: Additional information about the change (max 600 characters) [Default: null]
-  --no-extract-release-notes             Optional: Disable extraction of release notes from PR descriptions. By default, release notes are extracted when using --prs. Short release notes (≤120 characters, single line) are used as the title, long release notes (>120 characters or multi-line) are used as the description.
-  --no-extract-issues                    Optional: Disable extraction of linked issues from PR body (e.g., "Fixes #123"). By default, linked issues are extracted when using --prs.
+  --no-extract-release-notes             Optional: Turn off extraction of release notes from PR descriptions. By default, release notes are extracted when using --prs. Short release notes (≤120 characters, single line) are used as the title, long release notes (>120 characters or multi-line) are used as the description.
+  --no-extract-issues                    Optional: Turn off extraction of linked issues from PR body (e.g., "Fixes #123"). By default, linked issues are extracted when using --prs.
   --feature-id <string?>                 Optional: Feature flag ID [Default: null]
   --highlight <bool?>                    Optional: Include in release highlights [Default: null]
   --impact <string?>                     Optional: How the user's environment is affected [Default: null]
@@ -235,7 +235,7 @@ The `--strip-title-prefix` option only applies when the title is derived from th
 
 #### Extract release notes from PR descriptions [example-extract-release-notes]
 
-When you use the `--prs` option, you can also add the `--extract-release-notes` option to automatically extract text from the PR descriptions and use them in your changelog.
+When you use the `--prs` option, by default the `docs-builder changelog add` command automatically extracts text from the PR descriptions and use it in your changelog.
 
 In particular, it looks for content in these formats in the PR description:
 
@@ -254,6 +254,7 @@ The extracted content is handled differently based on its length:
 
 :::{note}
 If you explicitly provide `--title` or `--description`, those values take precedence over extracted release notes.
+You can turn off the release note extraction in the changelog configuration file or by using the `--no-extract-release-notes` option.
 :::
 
 #### Block changelog creation and publishing [example-block-label]
