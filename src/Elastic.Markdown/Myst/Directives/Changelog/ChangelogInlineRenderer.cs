@@ -28,7 +28,7 @@ public static class ChangelogInlineRenderer
 			if (!isFirst)
 				_ = sb.AppendLine();
 
-			var bundleMarkdown = RenderSingleBundle(bundle);
+			var bundleMarkdown = RenderSingleBundle(bundle, block.Subsections);
 			_ = sb.Append(bundleMarkdown);
 
 			isFirst = false;
@@ -37,7 +37,7 @@ public static class ChangelogInlineRenderer
 		return sb.ToString();
 	}
 
-	private static string RenderSingleBundle(LoadedBundle bundle)
+	private static string RenderSingleBundle(LoadedBundle bundle, bool subsections)
 	{
 		var titleSlug = ChangelogTextUtilities.TitleToSlug(bundle.Version);
 
@@ -46,14 +46,15 @@ public static class ChangelogInlineRenderer
 			.GroupBy(e => e.Type)
 			.ToDictionary(g => g.Key, g => g.ToList());
 
-		return GenerateMarkdown(bundle.Version, titleSlug, bundle.Repo, entriesByType);
+		return GenerateMarkdown(bundle.Version, titleSlug, bundle.Repo, entriesByType, subsections);
 	}
 
 	private static string GenerateMarkdown(
 		string title,
 		string titleSlug,
 		string repo,
-		Dictionary<ChangelogEntryType, List<ChangelogEntry>> entriesByType)
+		Dictionary<ChangelogEntryType, List<ChangelogEntry>> entriesByType,
+		bool subsections)
 	{
 		var sb = new StringBuilder();
 
@@ -97,7 +98,7 @@ public static class ChangelogInlineRenderer
 			{
 				_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Features and enhancements [{repo}-{titleSlug}-features-enhancements]");
 				var combined = features.Concat(enhancements).ToList();
-				RenderEntriesByArea(sb, combined, repo);
+				RenderEntriesByArea(sb, combined, repo, subsections);
 			}
 
 			if (security.Count > 0 || bugFixes.Count > 0)
@@ -105,28 +106,28 @@ public static class ChangelogInlineRenderer
 				_ = sb.AppendLine();
 				_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Fixes [{repo}-{titleSlug}-fixes]");
 				var combined = security.Concat(bugFixes).ToList();
-				RenderEntriesByArea(sb, combined, repo);
+				RenderEntriesByArea(sb, combined, repo, subsections);
 			}
 
 			if (docs.Count > 0)
 			{
 				_ = sb.AppendLine();
 				_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Documentation [{repo}-{titleSlug}-docs]");
-				RenderEntriesByArea(sb, docs, repo);
+				RenderEntriesByArea(sb, docs, repo, subsections);
 			}
 
 			if (regressions.Count > 0)
 			{
 				_ = sb.AppendLine();
 				_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Regressions [{repo}-{titleSlug}-regressions]");
-				RenderEntriesByArea(sb, regressions, repo);
+				RenderEntriesByArea(sb, regressions, repo, subsections);
 			}
 
 			if (other.Count > 0)
 			{
 				_ = sb.AppendLine();
 				_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Other changes [{repo}-{titleSlug}-other]");
-				RenderEntriesByArea(sb, other, repo);
+				RenderEntriesByArea(sb, other, repo, subsections);
 			}
 		}
 		else
@@ -162,52 +163,64 @@ public static class ChangelogInlineRenderer
 	private static void RenderEntriesByArea(
 		StringBuilder sb,
 		List<ChangelogEntry> entries,
-		string repo)
+		string repo,
+		bool subsections)
 	{
-		// Always group by area and sort
-		var groupedByArea = entries.GroupBy(GetComponent).OrderBy(g => g.Key).ToList();
-
-		foreach (var areaGroup in groupedByArea)
+		if (subsections)
 		{
-			if (!string.IsNullOrWhiteSpace(areaGroup.Key))
+			// Group by area and sort when subsections is enabled
+			var groupedByArea = entries.GroupBy(GetComponent).OrderBy(g => g.Key).ToList();
+
+			foreach (var areaGroup in groupedByArea)
 			{
-				var header = ChangelogTextUtilities.FormatAreaHeader(areaGroup.Key);
-				_ = sb.AppendLine();
-				_ = sb.AppendLine(CultureInfo.InvariantCulture, $"**{header}**");
+				if (!string.IsNullOrWhiteSpace(areaGroup.Key))
+				{
+					var header = ChangelogTextUtilities.FormatAreaHeader(areaGroup.Key);
+					_ = sb.AppendLine();
+					_ = sb.AppendLine(CultureInfo.InvariantCulture, $"**{header}**");
+				}
+
+				foreach (var entry in areaGroup)
+					RenderSingleEntry(sb, entry, repo);
 			}
+		}
+		else
+		{
+			foreach (var entry in entries)
+				RenderSingleEntry(sb, entry, repo);
+		}
+	}
 
-			foreach (var entry in areaGroup)
+	private static void RenderSingleEntry(StringBuilder sb, ChangelogEntry entry, string repo)
+	{
+		_ = sb.Append("* ");
+		_ = sb.Append(ChangelogTextUtilities.Beautify(entry.Title));
+
+		_ = sb.Append(' ');
+		if (!string.IsNullOrWhiteSpace(entry.Pr))
+		{
+			_ = sb.Append(ChangelogTextUtilities.FormatPrLink(entry.Pr, repo, hidePrivateLinks: false));
+			_ = sb.Append(' ');
+		}
+
+		if (entry.Issues is { Count: > 0 })
+		{
+			foreach (var issue in entry.Issues)
 			{
-				_ = sb.Append("* ");
-				_ = sb.Append(ChangelogTextUtilities.Beautify(entry.Title));
-
+				_ = sb.Append(ChangelogTextUtilities.FormatIssueLink(issue, repo, hidePrivateLinks: false));
 				_ = sb.Append(' ');
-				if (!string.IsNullOrWhiteSpace(entry.Pr))
-				{
-					_ = sb.Append(ChangelogTextUtilities.FormatPrLink(entry.Pr, repo, hidePrivateLinks: false));
-					_ = sb.Append(' ');
-				}
-
-				if (entry.Issues != null && entry.Issues.Count > 0)
-				{
-					foreach (var issue in entry.Issues)
-					{
-						_ = sb.Append(ChangelogTextUtilities.FormatIssueLink(issue, repo, hidePrivateLinks: false));
-						_ = sb.Append(' ');
-					}
-				}
-
-				if (!string.IsNullOrWhiteSpace(entry.Description))
-				{
-					_ = sb.AppendLine();
-					var indented = ChangelogTextUtilities.Indent(entry.Description);
-					_ = sb.AppendLine(indented);
-				}
-				else
-				{
-					_ = sb.AppendLine();
-				}
 			}
+		}
+
+		if (!string.IsNullOrWhiteSpace(entry.Description))
+		{
+			_ = sb.AppendLine();
+			var indented = ChangelogTextUtilities.Indent(entry.Description);
+			_ = sb.AppendLine(indented);
+		}
+		else
+		{
+			_ = sb.AppendLine();
 		}
 	}
 
