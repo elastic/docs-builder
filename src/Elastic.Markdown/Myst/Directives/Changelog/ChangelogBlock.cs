@@ -37,7 +37,8 @@ public record LoadedBundle(
 
 /// <summary>
 /// A directive block that reads all changelog bundles from a folder and renders them inline,
-/// ordered by version number (semver, descending).
+/// ordered by version (descending). Supports both semver (e.g., "9.3.0") and date-based
+/// versions (e.g., "2025-08-05") for Serverless and similar release strategies.
 /// </summary>
 /// <remarks>
 /// Usage:
@@ -172,9 +173,10 @@ public partial class ChangelogBlock(DirectiveBlockParser parser, ParserContext c
 			loadedBundles.Add(new LoadedBundle(version, repo, bundleData, bundleFile, entries));
 		}
 
-		// Sort by semver (descending - newest first)
+		// Sort by version (descending - newest first)
+		// Supports both semver (e.g., "9.3.0") and date-based (e.g., "2025-08-05") versions
 		LoadedBundles = loadedBundles
-			.OrderByDescending(b => ParseVersion(b.Version))
+			.OrderByDescending(b => VersionOrDate.Parse(b.Version))
 			.ToList();
 	}
 
@@ -195,9 +197,6 @@ public partial class ChangelogBlock(DirectiveBlockParser parser, ParserContext c
 
 	private static string? GetVersionFromBundle(Bundle bundledData) =>
 		bundledData.Products.Count > 0 ? bundledData.Products[0].Target : null;
-
-	private static SemVersion ParseVersion(string version) =>
-		SemVersion.TryParse(version, out var semVersion) ? semVersion : ZeroVersion.Instance;
 
 	private List<ChangelogEntry> ResolveEntries(Bundle bundledData, string bundleFilePath)
 	{
