@@ -36,7 +36,7 @@ public record PivotConfiguration
 	/// When a PR has any of these labels, highlight is set to true.
 	/// Example: ">highlight, >release-highlight"
 	/// </summary>
-	public string? HighlightLabels { get; init; }
+	public string? Highlight { get; init; }
 }
 
 /// <summary>

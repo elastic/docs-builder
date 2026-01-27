@@ -210,8 +210,8 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 
 		// Process highlight labels from pivot configuration
 		IReadOnlyList<string>? highlightLabels = null;
-		if (!string.IsNullOrWhiteSpace(yamlConfig.Pivot?.HighlightLabels))
-			highlightLabels = SplitLabels(yamlConfig.Pivot.HighlightLabels);
+		if (!string.IsNullOrWhiteSpace(yamlConfig.Pivot?.Highlight))
+			highlightLabels = SplitLabels(yamlConfig.Pivot.Highlight);
 
 		// Process products configuration
 		ProductsConfig? productsConfig = null;
@@ -269,7 +269,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			Types = types,
 			Subtypes = yamlPivot.Subtypes,
 			Areas = yamlPivot.Areas,
-			HighlightLabels = yamlPivot.HighlightLabels
+			Highlight = yamlPivot.Highlight
 		};
 	}
 

@@ -74,10 +74,6 @@ pivot:
     # Security: ":Security/Security"
     # Watcher: ":Data Management/Watcher"
 
-  # Labels that trigger the highlight flag (comma-separated string)
-  # When a PR has any of these labels, highlight is set to true
-  # highlight_labels: ">highlight, >release-highlight"
-
 # Block configuration - combined create and publish blockers
 block:
   # Global labels that block changelog creation for all products (comma-separated string)

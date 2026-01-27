@@ -121,7 +121,7 @@ internal record PivotConfigurationYaml
 	/// <summary>
 	/// Labels that trigger the highlight flag (comma-separated string).
 	/// </summary>
-	public string? HighlightLabels { get; set; }
+	public string? Highlight { get; set; }
 }
 
 /// <summary>
