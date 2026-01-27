@@ -2,11 +2,23 @@
   <PropertyGroup>
     <!-- Enable central package management, https://learn.microsoft.com/en-us/nuget/consume-packages/Central-Package-Management -->
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-    <MinVerSkip Condition="'$(Configuration)' == 'Debug'">true</MinVerSkip>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
   </PropertyGroup>
+  <!-- MinVer: only run in CI or Release builds to speed up local development -->
+  <Choose>
+    <When Condition="'$(CI)' == 'true' OR '$(Configuration)' == 'Release'">
+      <PropertyGroup>
+        <MinVerSkip>false</MinVerSkip>
+      </PropertyGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup>
+        <MinVerSkip>true</MinVerSkip>
+      </PropertyGroup>
+    </Otherwise>
+  </Choose>
   <ItemGroup>
     <GlobalPackageReference Include="MinVer" Version="6.0.0" PrivateAssets="All" />
   </ItemGroup>
