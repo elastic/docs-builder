@@ -2,13 +2,12 @@ import { chatStore } from './chat.store'
 import { act } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 
-// Mock zustand-indexeddb (IndexedDB not available in Node.js test environment)
-jest.mock('zustand-indexeddb', () => ({
-    createIndexedDBStorage: () => ({
-        getItem: jest.fn().mockResolvedValue(null),
-        setItem: jest.fn().mockResolvedValue(undefined),
-        removeItem: jest.fn().mockResolvedValue(undefined),
-    }),
+// Mock idb-keyval (IndexedDB not available in Node.js test environment)
+jest.mock('idb-keyval', () => ({
+    get: jest.fn().mockResolvedValue(null),
+    set: jest.fn().mockResolvedValue(undefined),
+    del: jest.fn().mockResolvedValue(undefined),
+    createStore: jest.fn().mockReturnValue({}),
 }))
 
 // Mock uuid
@@ -182,7 +181,7 @@ describe('chat.store', () => {
         // The persist middleware adds a persist property to the store
         expect(chatStore.persist).toBeDefined()
         expect(chatStore.persist.getOptions().name).toBe(
-            'elastic-docs-conversations-index'
+            'ask-ai/conversations-index'
         )
         expect(chatStore.persist.getOptions().version).toBe(1)
     })
@@ -243,9 +242,7 @@ describe('chat.store', () => {
             expect(state.conversations['conv-123'].messageCount).toBe(2)
             expect(state.conversations['conv-123'].createdAt).toBeDefined()
             expect(state.conversations['conv-123'].updatedAt).toBeDefined()
-            expect(state.conversations['conv-123'].aiProvider).toBe(
-                'LlmGateway'
-            )
+            // aiProvider is stored per-conversation, not in the index
         })
 
         it('should update existing ConversationMeta when setConversationId is called with existing ID', () => {
@@ -297,7 +294,7 @@ describe('chat.store', () => {
         })
 
         it('should clear all conversations when clearAllConversations is called', () => {
-            // Create multiple conversations
+            // Create multiple conversations (MAX_CONVERSATIONS = 2)
             act(() => {
                 chatStore.getState().actions.submitQuestion('Question 1')
                 chatStore.getState().actions.setConversationId('conv-1')
