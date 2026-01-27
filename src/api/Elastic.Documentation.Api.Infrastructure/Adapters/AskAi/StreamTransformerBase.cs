@@ -73,6 +73,7 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 	/// </summary>
 	private async Task ProcessPipeAsync(PipeReader reader, PipeWriter writer, Guid? generatedConversationId, Activity? parentActivity, CancellationToken cancellationToken)
 	{
+		using var activityScope = parentActivity;
 		try
 		{
 			try
@@ -109,10 +110,6 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 			{
 				Logger.LogError(ex, "Error completing pipe after successful transformation");
 			}
-		}
-		finally
-		{
-			parentActivity?.Dispose();
 		}
 	}
 
