@@ -48,7 +48,6 @@ applies_to:
 ```
 
 
-For more examples, refer to [Page level examples](#examples).
 
 ### Section level
 
