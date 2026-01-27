@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Api.Infrastructure.Adapters.AskAi;
 
-public class AgentBuilderAskAiGateway(HttpClient httpClient, KibanaOptions kibanaOptions, ILogger<AgentBuilderAskAiGateway> logger) : IAskAiGateway<Stream>
+public class AgentBuilderAskAiGateway(HttpClient httpClient, KibanaOptions kibanaOptions, ILogger<AgentBuilderAskAiGateway> logger) : IAskAiGateway
 {
 	/// <summary>
 	/// Model name used by Agent Builder (from AgentId)
@@ -23,8 +23,10 @@ public class AgentBuilderAskAiGateway(HttpClient httpClient, KibanaOptions kiban
 	/// Provider name for tracing
 	/// </summary>
 	public const string ProviderName = "agent-builder";
-	public async Task<Stream> AskAi(AskAiRequest askAiRequest, Cancel ctx = default)
+	public async Task<AskAiGatewayResponse> AskAi(AskAiRequest askAiRequest, Cancel ctx = default)
 	{
+		// Agent Builder returns the conversation ID in the stream via conversation_id_set event
+		// We don't generate IDs - Agent Builder handles that in the stream
 		var agentBuilderPayload = new AgentBuilderPayload(
 			askAiRequest.Message,
 			"docs-agent",
@@ -55,7 +57,9 @@ public class AgentBuilderAskAiGateway(HttpClient httpClient, KibanaOptions kiban
 		logger.LogInformation("Response Content-Length: {ContentLength}", response.Content.Headers.ContentLength?.ToString(CultureInfo.InvariantCulture));
 
 		// Agent Builder already returns SSE format, just return the stream directly
-		return await response.Content.ReadAsStreamAsync(ctx);
+		// The conversation ID will be extracted from the stream by the transformer
+		var stream = await response.Content.ReadAsStreamAsync(ctx);
+		return new AskAiGatewayResponse(stream, GeneratedConversationId: null);
 	}
 }
 

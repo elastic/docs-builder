@@ -76,8 +76,8 @@ public class AgentBuilderStreamTransformerTests
 
 		var inputStream = new MemoryStream(Encoding.UTF8.GetBytes(sseData));
 
-		// Act
-		var outputStream = await _transformer.TransformAsync(inputStream, null, null, CancellationToken.None);
+		// Act - No generated ID (Agent Builder handles IDs in stream)
+		var outputStream = await _transformer.TransformAsync(inputStream, generatedConversationId: null, null, CancellationToken.None);
 		var events = await StreamTransformerTestHelpers.ParseAskAiEventsAsync(outputStream);
 
 		// Assert
@@ -85,7 +85,7 @@ public class AgentBuilderStreamTransformerTests
 		// In production, real SSE streams stay open, so this isn't an issue
 		events.Should().HaveCountGreaterOrEqualTo(7);
 
-		// Verify we got the key events
+		// Verify we got the key events (ConversationStart comes from stream for Agent Builder)
 		events.Should().ContainSingle(e => e is AskAiEvent.ConversationStart);
 		events.Should().ContainSingle(e => e is AskAiEvent.Reasoning);
 		events.Should().ContainSingle(e => e is AskAiEvent.SearchToolCall);
@@ -139,7 +139,7 @@ public class AgentBuilderStreamTransformerTests
 		var inputStream = new MemoryStream(Encoding.UTF8.GetBytes(sseData));
 
 		// Act
-		var outputStream = await _transformer.TransformAsync(inputStream, null, null, CancellationToken.None);
+		var outputStream = await _transformer.TransformAsync(inputStream, generatedConversationId: null, null, CancellationToken.None);
 		var events = await StreamTransformerTestHelpers.ParseAskAiEventsAsync(outputStream);
 
 		// Assert - Should have at least 1 event (round_complete might not be written in time)
@@ -162,7 +162,7 @@ public class AgentBuilderStreamTransformerTests
 		var inputStream = new MemoryStream(Encoding.UTF8.GetBytes(sseData));
 
 		// Act
-		var outputStream = await _transformer.TransformAsync(inputStream, null, null, CancellationToken.None);
+		var outputStream = await _transformer.TransformAsync(inputStream, generatedConversationId: null, null, CancellationToken.None);
 		var events = await StreamTransformerTestHelpers.ParseAskAiEventsAsync(outputStream);
 
 
@@ -210,21 +210,18 @@ public class LlmGatewayStreamTransformerTests
 
 		var inputStream = new MemoryStream(Encoding.UTF8.GetBytes(sseData));
 
-		// Act
-		var outputStream = await _transformer.TransformAsync(inputStream, null, null, CancellationToken.None);
+		// Act - Simulate new conversation to get ConversationStart event
+		var testConversationId = Guid.NewGuid().ToString();
+		var outputStream = await _transformer.TransformAsync(inputStream, Guid.Parse(testConversationId), null, CancellationToken.None);
 		var events = await StreamTransformerTestHelpers.ParseAskAiEventsAsync(outputStream);
 
 		// Assert
 		events.Should().HaveCount(7);
 
-		// Event 1: agent_start -> ConversationStart (with generated UUID)
+		// Event 1: ConversationStart (emitted by transformer for new conversation)
 		events[0].Should().BeOfType<AskAiEvent.ConversationStart>();
 		var convStart = events[0] as AskAiEvent.ConversationStart;
-		convStart!.ConversationId.Should().NotBeNullOrEmpty();
-
-		// convStart!.ConversationId.Should().Be("1");
-
-		_ = Guid.TryParse(convStart.ConversationId, out _).Should().BeTrue();
+		convStart!.ConversationId.Should().Be(testConversationId);
 
 
 		// Event 2: ai_message_chunk (first)
@@ -280,11 +277,12 @@ public class LlmGatewayStreamTransformerTests
 
 		var inputStream = new MemoryStream(Encoding.UTF8.GetBytes(sseData));
 
-		// Act
-		var outputStream = await _transformer.TransformAsync(inputStream, null, null, CancellationToken.None);
+		// Act - Simulate new conversation
+		var testConversationId = Guid.NewGuid().ToString();
+		var outputStream = await _transformer.TransformAsync(inputStream, Guid.Parse(testConversationId), null, CancellationToken.None);
 		var events = await StreamTransformerTestHelpers.ParseAskAiEventsAsync(outputStream);
 
-		// Assert - Should only have 2 events
+		// Assert - Should only have 2 events (ConversationStart + ConversationEnd)
 		events.Should().HaveCount(2);
 		events[0].Should().BeOfType<AskAiEvent.ConversationStart>();
 		events[1].Should().BeOfType<AskAiEvent.ConversationEnd>();
@@ -305,11 +303,12 @@ public class LlmGatewayStreamTransformerTests
 
 		var inputStream = new MemoryStream(Encoding.UTF8.GetBytes(sseData));
 
-		// Act
-		var outputStream = await _transformer.TransformAsync(inputStream, null, null, CancellationToken.None);
+		// Act - Simulate new conversation
+		var testConversationId = Guid.NewGuid().ToString();
+		var outputStream = await _transformer.TransformAsync(inputStream, Guid.Parse(testConversationId), null, CancellationToken.None);
 		var events = await StreamTransformerTestHelpers.ParseAskAiEventsAsync(outputStream);
 
-		// Assert - Should only have the message chunk, model events skipped
+		// Assert - Should only have the ConversationStart and message chunk, model events skipped
 		events.Should().HaveCount(2);
 		events[0].Should().BeOfType<AskAiEvent.ConversationStart>();
 		events[1].Should().BeOfType<AskAiEvent.MessageChunk>();
@@ -355,33 +354,26 @@ public class StreamTransformerCommonBehaviorTests
 
 	[Theory]
 	[MemberData(nameof(StreamTransformerTestCases))]
-	public async Task TransformAsyncWhenConversationIdIsNullEmitsConversationStartEvent(
+	public async Task TransformAsyncWhenIsNewConversationEmitsConversationStartEvent(
 		string transformerName,
 		IStreamTransformer transformer,
 		string sseData)
 	{
 		// Arrange
 		var inputStream = new MemoryStream(Encoding.UTF8.GetBytes(sseData));
+		var testConversationId = Guid.NewGuid().ToString();
 
-		// Act - Pass null conversationId to simulate new conversation
-		var outputStream = await transformer.TransformAsync(inputStream, null, null, CancellationToken.None);
+		// Act - Pass isNewConversation: true to simulate new conversation
+		var outputStream = await transformer.TransformAsync(inputStream, Guid.Parse(testConversationId), null, CancellationToken.None);
 		var events = await StreamTransformerTestHelpers.ParseAskAiEventsAsync(outputStream);
 
 		// Assert - Should have ConversationStart event
 		events.Should().ContainSingle(e => e is AskAiEvent.ConversationStart,
-			$"{transformerName} should emit ConversationStart when conversationId is null");
+			$"{transformerName} should emit ConversationStart when isNewConversation is true");
 
 		var conversationStart = events.OfType<AskAiEvent.ConversationStart>().First();
 		conversationStart.ConversationId.Should().NotBeNullOrEmpty(
 			$"{transformerName} should have a non-empty conversation ID in ConversationStart event");
-
-		// For LlmGateway, when conversationId is null, we generate a pure GUID
-		// For AgentBuilder, the conversation ID comes from the SSE event and may have a different format
-		if (transformerName == "LlmGatewayStreamTransformer")
-		{
-			Guid.TryParse(conversationStart.ConversationId, out _).Should().BeTrue(
-				$"{transformerName} should generate a valid GUID as conversation ID when conversationId is null");
-		}
 	}
 
 	[Theory]
@@ -393,9 +385,10 @@ public class StreamTransformerCommonBehaviorTests
 	{
 		// Arrange
 		var inputStream = new MemoryStream(Encoding.UTF8.GetBytes(sseData));
+		var testConversationId = Guid.NewGuid().ToString();
 
 		// Act
-		var outputStream = await transformer.TransformAsync(inputStream, null, null, CancellationToken.None);
+		var outputStream = await transformer.TransformAsync(inputStream, Guid.Parse(testConversationId), null, CancellationToken.None);
 		var events = new List<AskAiEvent>();
 		var reader = PipeReader.Create(outputStream);
 		await foreach (var sseEvent in SseParser.ParseAsync(reader, CancellationToken.None))
@@ -423,9 +416,10 @@ public class StreamTransformerCommonBehaviorTests
 	{
 		// Arrange
 		var inputStream = new MemoryStream(Encoding.UTF8.GetBytes(sseData));
+		var testConversationId = Guid.NewGuid().ToString();
 
 		// Act
-		var outputStream = await transformer.TransformAsync(inputStream, null, null, CancellationToken.None);
+		var outputStream = await transformer.TransformAsync(inputStream, Guid.Parse(testConversationId), null, CancellationToken.None);
 		var events = new List<AskAiEvent>();
 		var reader = PipeReader.Create(outputStream);
 		await foreach (var sseEvent in SseParser.ParseAsync(reader, CancellationToken.None))
