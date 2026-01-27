@@ -48,7 +48,7 @@ applies_to:
 ```
 
 
-For more examples, refer to [Page annotation examples](#page-annotation-examples).
+For more examples, refer to [Page level examples](#examples).
 
 ### Section level
 
