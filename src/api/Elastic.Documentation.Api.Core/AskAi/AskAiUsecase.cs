@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 namespace Elastic.Documentation.Api.Core.AskAi;
 
 public class AskAiUsecase(
-	IAskAiGateway<Stream> askAiGateway,
+	IAskAiGateway askAiGateway,
 	IStreamTransformer streamTransformer,
 	ILogger<AskAiUsecase> logger)
 {
@@ -24,6 +24,7 @@ public class AskAiUsecase(
 		_ = activity?.SetTag("gen_ai.agent.id", streamTransformer.AgentId); // docs-agent or docs_assistant
 		if (askAiRequest.ConversationId is not null)
 			_ = activity?.SetTag("gen_ai.conversation.id", askAiRequest.ConversationId.ToString());
+
 		var inputMessages = new[]
 		{
 			new InputMessage("user", [new MessagePart("text", askAiRequest.Message)])
@@ -33,9 +34,21 @@ public class AskAiUsecase(
 		var sanitizedMessage = askAiRequest.Message?.Replace("\r", "").Replace("\n", "");
 		logger.LogInformation("AskAI input message: <{ask_ai.input.message}>", sanitizedMessage);
 		logger.LogInformation("Streaming AskAI response");
-		var rawStream = await askAiGateway.AskAi(askAiRequest, ctx);
+
+		// Gateway handles conversation ID generation if needed
+		var response = await askAiGateway.AskAi(askAiRequest, ctx);
+
+		// Use generated ID if available, otherwise use the original request ID
+		var conversationId = response.GeneratedConversationId ?? askAiRequest.ConversationId;
+		if (conversationId is not null)
+			_ = activity?.SetTag("gen_ai.conversation.id", conversationId.ToString());
+
 		// The stream transformer will handle disposing the activity when streaming completes
-		var transformedStream = await streamTransformer.TransformAsync(rawStream, askAiRequest.ConversationId?.ToString(), activity, ctx);
+		var transformedStream = await streamTransformer.TransformAsync(
+			response.Stream,
+			response.GeneratedConversationId,
+			activity,
+			ctx);
 		return transformedStream;
 	}
 }
