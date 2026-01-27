@@ -16,6 +16,55 @@ Or with a custom bundles folder:
 :::
 ```
 
+## Options
+
+The directive supports the following options:
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `:hide-links:` | Hide PR and issue links (comment them out) | false |
+| `:hide-features: id1, id2` | Hide entries with specified feature IDs | (none) |
+| `:subsections:` | Group entries by area/component | false |
+| `:config: path` | Path to changelog.yml configuration | auto-discover |
+| `:merge:` | Merge bundles with the same target version/date | false |
+
+### Example with options
+
+```markdown
+:::{changelog} /path/to/bundles
+:hide-links:
+:hide-features: experimental-api, internal-feature
+:subsections:
+:merge:
+:::
+```
+
+### Option details
+
+#### `:hide-links:`
+
+When enabled, PR and issue links are commented out instead of rendered as clickable links. Useful when bundles reference private repositories.
+
+#### `:hide-features:`
+
+A comma-separated list of feature IDs. Entries with matching `feature-id` values will be filtered out from the rendered output. Feature ID matching is case-insensitive.
+
+#### `:subsections:`
+
+When enabled, entries are grouped by their area/component within each section. By default, entries are listed without area grouping (matching CLI behavior).
+
+#### `:config:`
+
+Explicit path to a `changelog.yml` configuration file. If not specified, the directive auto-discovers from:
+1. `changelog.yml` in the docset root
+2. `docs/changelog.yml` relative to docset root
+
+The configuration can include publish blockers to filter entries by type or area.
+
+#### `:merge:`
+
+When enabled, bundles with the same target version/date are merged into a single section. This is useful for Cloud Serverless releases where multiple repositories contribute to a single dated release.
+
 ## Default folder structure
 
 The directive expects bundles in `changelog/bundles/` relative to the docset root:
