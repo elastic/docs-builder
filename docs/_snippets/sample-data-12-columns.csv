@@ -1,0 +1,6 @@
+Product,SKU,Category,Brand,Price,Stock,Weight,Rating,Reviews,Color,Size,Material
+Laptop Pro,LP-001,Electronics,TechCorp,1299.99,45,2.3kg,4.5,1250,Silver,15 inch,Aluminum
+Wireless Mouse,WM-002,Accessories,ClickMaster,49.99,230,0.1kg,4.2,890,Black,Standard,Plastic
+USB-C Hub,UH-003,Accessories,ConnectAll,79.99,180,0.2kg,4.7,654,Gray,Compact,Metal
+Mechanical Keyboard,MK-004,Accessories,TypeFast,159.99,92,0.8kg,4.8,2100,White,Full,ABS Plastic
+Monitor Stand,MS-005,Furniture,DeskPro,89.99,67,1.5kg,4.1,445,Black,Large,Steel
