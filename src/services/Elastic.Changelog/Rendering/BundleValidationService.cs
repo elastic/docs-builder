@@ -5,8 +5,8 @@
 using System.IO.Abstractions;
 using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Serialization;
-using Elastic.Documentation;
 using Elastic.Documentation.Diagnostics;
+using Microsoft.Extensions.Logging;
 using YamlDotNet.Core;
 
 namespace Elastic.Changelog.Rendering;
@@ -14,8 +14,9 @@ namespace Elastic.Changelog.Rendering;
 /// <summary>
 /// Service for validating changelog bundles before rendering
 /// </summary>
-public class BundleValidationService(IFileSystem fileSystem)
+public class BundleValidationService(ILoggerFactory logFactory, IFileSystem fileSystem)
 {
+	private readonly ILogger _logger = logFactory.CreateLogger<BundleValidationService>();
 	/// <summary>
 	/// Validates all bundles and returns validation result with loaded bundle data
 	/// </summary>
@@ -51,6 +52,17 @@ public class BundleValidationService(IFileSystem fileSystem)
 			// Determine directory for resolving file references
 			var bundleDirectory = bundleInput.Directory ?? fileSystem.Path.GetDirectoryName(bundleInput.BundleFile) ?? fileSystem.Directory.GetCurrentDirectory();
 
+			// Auto-discover and merge amend files
+			var amendFiles = ChangelogBundleAmendService.DiscoverAmendFiles(fileSystem, bundleInput.BundleFile);
+			if (amendFiles.Count > 0)
+			{
+				_logger.LogInformation("Found {Count} amend file(s) for bundle {BundleFile}", amendFiles.Count, bundleInput.BundleFile);
+				var mergedData = await MergeAmendFilesAsync(collector, bundledData, amendFiles, ctx);
+				if (mergedData == null)
+					return CreateInvalidResult(bundleDataList, seenFileNames, seenPrs);
+				bundledData = mergedData;
+			}
+
 			// Validate all entries in this bundle
 			var result = await ValidateBundleEntriesAsync(collector, bundleInput, bundledData, bundleDirectory, seenFileNames, seenPrs, ctx);
 			if (!result)
@@ -73,6 +85,38 @@ public class BundleValidationService(IFileSystem fileSystem)
 			Bundles = bundleDataList,
 			SeenFileNames = seenFileNames,
 			SeenPrs = seenPrs
+		};
+	}
+
+	private async Task<Bundle?> MergeAmendFilesAsync(
+		IDiagnosticsCollector collector,
+		Bundle mainBundle,
+		IReadOnlyList<string> amendFiles,
+		Cancel ctx)
+	{
+		var mergedEntries = new List<BundledEntry>(mainBundle.Entries);
+
+		foreach (var amendFile in amendFiles)
+		{
+			try
+			{
+				var amendContent = await fileSystem.File.ReadAllTextAsync(amendFile, ctx);
+				var amendBundle = ChangelogYamlSerialization.DeserializeBundle(amendContent);
+
+				_logger.LogInformation("Merging {Count} entries from amend file {AmendFile}", amendBundle.Entries.Count, amendFile);
+				mergedEntries.AddRange(amendBundle.Entries);
+			}
+			catch (YamlException yamlEx)
+			{
+				collector.EmitError(amendFile, $"Failed to deserialize amend file: {yamlEx.Message}", yamlEx);
+				return null;
+			}
+		}
+
+		return new Bundle
+		{
+			Products = mainBundle.Products,
+			Entries = mergedEntries
 		};
 	}
 

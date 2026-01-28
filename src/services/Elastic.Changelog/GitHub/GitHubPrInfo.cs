@@ -12,4 +12,10 @@ public record GitHubPrInfo
 	public string Title { get; set; } = "";
 	public string Body { get; set; } = "";
 	public IReadOnlyList<string> Labels { get; set; } = [];
+
+	/// <summary>
+	/// Linked issues extracted from PR body.
+	/// Contains issue URLs or references (e.g., "#123", "owner/repo#456").
+	/// </summary>
+	public IReadOnlyList<string> LinkedIssues { get; set; } = [];
 }

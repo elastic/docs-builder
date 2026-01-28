@@ -15,7 +15,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 	public BundleChangelogsTests(ITestOutputHelper output) : base(output)
 	{
-		Service = new(LoggerFactory, FileSystem);
+		Service = new(LoggerFactory, null, FileSystem);
 		_changelogDir = CreateChangelogDir();
 	}
 

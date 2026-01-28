@@ -7,8 +7,8 @@ using System.IO.Compression;
 using System.Text;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.Products;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.Components;
 using Elastic.Markdown.Myst.Renderers.LlmMarkdown;
@@ -19,9 +19,8 @@ namespace Elastic.Markdown.Exporters;
 /// <summary>
 /// Exports markdown files as LLM-optimized CommonMark using custom renderers
 /// </summary>
-public class LlmMarkdownExporter(IDocumentInferrerService? documentInferrerService = null) : IMarkdownExporter
+public class LlmMarkdownExporter : IMarkdownExporter
 {
-	private readonly IDocumentInferrerService _documentInferrer = documentInferrerService ?? new NoopDocumentInferrer();
 
 	private const string LlmsTxtTemplate = """
 		# Elastic Documentation
@@ -134,9 +133,10 @@ public class LlmMarkdownExporter(IDocumentInferrerService? documentInferrerServi
 	}
 
 
-	private string CreateLlmContentWithMetadata(MarkdownExportFileContext context, string llmMarkdown)
+	private static string CreateLlmContentWithMetadata(MarkdownExportFileContext context, string llmMarkdown)
 	{
 		var sourceFile = context.SourceFile;
+		var inferrer = context.InferenceService ?? new NoopDocumentInferrer();
 		var metadata = DocumentationObjectPoolProvider.StringBuilderPool.Get();
 
 		_ = metadata.AppendLine("---");
@@ -151,10 +151,11 @@ public class LlmMarkdownExporter(IDocumentInferrerService? documentInferrerServi
 			_ = metadata.AppendLine($"description: {generateDescription}");
 		}
 
-		_ = metadata.AppendLine($"url: {context.BuildContext.CanonicalBaseUrl?.Scheme}://{context.BuildContext.CanonicalBaseUrl?.Host}{context.NavigationItem.Url}");
+		var url = $"{context.BuildContext.CanonicalBaseUrl?.Scheme}://{context.BuildContext.CanonicalBaseUrl?.Host}{context.NavigationItem.Url}";
+		_ = metadata.AppendLine($"url: {url}");
 
 		// Use DocumentInferrerService to get merged products
-		var inference = _documentInferrer.InferForMarkdown(
+		var inference = inferrer.InferForMarkdown(
 			context.BuildContext.Git.RepositoryName,
 			sourceFile.YamlFrontMatter?.MappedPages,
 			context.DocumentationSet.Configuration.Products,
@@ -216,6 +217,6 @@ public class LlmMarkdownExporter(IDocumentInferrerService? documentInferrerServi
 
 public static class LlmMarkdownExporterExtensions
 {
-	public static void AddLlmMarkdownExport(this List<IMarkdownExporter> exporters, IDocumentInferrerService? documentInferrer = null) =>
-		exporters.Add(new LlmMarkdownExporter(documentInferrer));
+	public static void AddLlmMarkdownExport(this List<IMarkdownExporter> exporters) =>
+		exporters.Add(new LlmMarkdownExporter());
 }

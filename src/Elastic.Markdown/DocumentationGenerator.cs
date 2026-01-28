@@ -7,8 +7,8 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Serialization;
@@ -46,6 +46,7 @@ public partial class DocumentationGenerator
 	private readonly IFileSystem _writeFileSystem;
 	private readonly IDocumentationFileExporter _documentationFileExporter;
 	private readonly IMarkdownExporter[] _markdownExporters;
+	private readonly IDocumentInferrerService _documentInferrer;
 	private HtmlWriter HtmlWriter { get; }
 
 	public DocumentationSet DocumentationSet { get; }
@@ -60,7 +61,8 @@ public partial class DocumentationGenerator
 		IDocumentationFileOutputProvider? documentationFileOutputProvider = null,
 		IMarkdownExporter[]? markdownExporters = null,
 		IConversionCollector? conversionCollector = null,
-		ILegacyUrlMapper? legacyUrlMapper = null
+		ILegacyUrlMapper? legacyUrlMapper = null,
+		IDocumentInferrerService? documentInferrer = null
 	)
 	{
 		_markdownExporters = markdownExporters ?? [];
@@ -72,11 +74,17 @@ public partial class DocumentationGenerator
 		DocumentationSet = docSet;
 		PositionalNavigation = positionalNavigation ?? docSet;
 		Context = docSet.Context;
-		var documentInferrer = new DocumentInferrerService(
+
+		// Use the provided inferrer or create a default one
+		_documentInferrer = documentInferrer ?? new DocumentInferrerService(
 			DocumentationSet.Context.ProductsConfiguration,
 			DocumentationSet.Context.VersionsConfiguration,
-			DocumentationSet.Context.LegacyUrlMappings);
-		HtmlWriter = new HtmlWriter(DocumentationSet, _writeFileSystem, new DescriptionGenerator(), positionalNavigation, navigationHtmlWriter, legacyUrlMapper, documentInferrer);
+			DocumentationSet.Context.LegacyUrlMappings,
+			DocumentationSet.Configuration,
+			DocumentationSet.Context.Git
+		);
+
+		HtmlWriter = new HtmlWriter(DocumentationSet, _writeFileSystem, new DescriptionGenerator(), positionalNavigation, navigationHtmlWriter, legacyUrlMapper, _documentInferrer);
 		_documentationFileExporter =
 			docSet.Context.AvailableExporters.Contains(Exporter.Html)
 				? docSet.EnabledExtensions.FirstOrDefault(e => e.FileExporter != null)?.FileExporter
@@ -309,7 +317,8 @@ public partial class DocumentationGenerator
 						DefaultOutputFile = outputFile,
 						DocumentationSet = DocumentationSet,
 						PositionaNavigation = PositionalNavigation,
-						NavigationItem = navigationItem
+						NavigationItem = navigationItem,
+						InferenceService = _documentInferrer
 					}, ctx);
 				}
 			}

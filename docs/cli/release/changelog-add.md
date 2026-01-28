@@ -23,9 +23,9 @@ docs-builder changelog add [options...] [-h|--help]
 `--description <string?>`
 :   Optional: Additional information about the change (max 600 characters).
 
-`--extract-release-notes`
-:   Optional: When used with `--prs`, extract release notes from PR descriptions and use them in the changelog.
-:   The extractor looks for content in various formats in the PR description:
+`--no-extract-release-notes`
+:   Optional: Turn off extraction of release notes from PR descriptions.
+:   By default, the extractor looks for content in various formats in the PR description:
 :   - `Release Notes: ...`
 :   - `Release-Notes: ...`
 :   - `release notes: ...`
@@ -34,7 +34,6 @@ docs-builder changelog add [options...] [-h|--help]
 :   - `## Release Note` (as a markdown header)
 :   Short release notes (≤120 characters, single line) are used as the changelog title (only if `--title` is not explicitly provided).
 :   Long release notes (>120 characters or multi-line) are used as the changelog description (only if `--description` is not explicitly provided).
-:   If no release note is found, no changes are made to the title or description.
 
 `--feature-id <string?>`
 :   Optional: Feature flag ID
@@ -47,6 +46,9 @@ docs-builder changelog add [options...] [-h|--help]
 
 `--issues <string[]?>`
 :   Optional: Issue numbers (comma-separated or specify multiple times).
+
+`--no-extract-issues`
+:   Optional: Turn off extraction of linked issues from PR body (for example, "Fixes #123"). By default, linked issues are extracted when using `--prs`.
 
 `--output <string?>`
 :   Optional: Output directory for the changelog fragment. Defaults to current directory.

@@ -4,10 +4,12 @@
 
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Configuration.Versions;
 
-namespace Elastic.Documentation.Configuration.Versions;
+namespace Elastic.Documentation.Configuration.Inference;
 
 /// <summary>
 /// Result of document inference containing product, versioning system, and repository information.
@@ -76,9 +78,15 @@ public class DocumentInferrerService(
 	ProductsConfiguration productsConfiguration,
 	VersionsConfiguration versionsConfiguration,
 	LegacyUrlMappingConfiguration legacyUrlMappings,
+	ConfigurationFile? configurationFile = null,
+	GitCheckoutInformation? gitCheckout = null,
 	AssemblyConfiguration? assemblyConfiguration = null) : IDocumentInferrerService
 {
 	private readonly IVersionInferrerService _versionInferrer = new ProductVersionInferrerService(productsConfiguration, versionsConfiguration);
+	private readonly ProductInferService _productInferService = new(productsConfiguration, gitCheckout);
+
+	public ConfigurationFile? ConfigurationFile => configurationFile;
+	public GitCheckoutInformation? GitCheckout => gitCheckout;
 
 	/// <inheritdoc />
 	public DocumentInferenceResult InferForMarkdown(
@@ -93,7 +101,7 @@ public class DocumentInferrerService(
 		// Collect all products from different sources
 		var legacyProduct = InferProductFromLegacyMappings(mappedPages);
 		var applicabilityProduct = InferProductFromApplicability(applicableTo);
-		var repositoryProduct = InferProductFromRepository(repositoryName);
+		var repositoryProduct = _productInferService.InferProductFromRepository(repositoryName);
 
 		// Add all found products to related products
 		if (legacyProduct is not null)
@@ -188,19 +196,6 @@ public class DocumentInferrerService(
 			return null;
 
 		return productsConfiguration.Products.GetValueOrDefault(productId);
-	}
-
-	/// <summary>
-	/// Infers product from repository name by direct match or repository configuration.
-	/// </summary>
-	private Product? InferProductFromRepository(string repositoryName)
-	{
-		// Priority 1: Direct product match by repository name
-		if (productsConfiguration.Products.TryGetValue(repositoryName, out var directMatch))
-			return directMatch;
-
-		// Priority 2: Product by repository configuration
-		return productsConfiguration.GetProductByRepositoryName(repositoryName);
 	}
 
 	/// <summary>
