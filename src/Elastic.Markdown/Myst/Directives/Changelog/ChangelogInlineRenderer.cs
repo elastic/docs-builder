@@ -5,6 +5,7 @@
 using System.Globalization;
 using System.Text;
 using Elastic.Changelog;
+using Elastic.Changelog.BundleLoading;
 using Elastic.Changelog.Configuration;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Changelog;

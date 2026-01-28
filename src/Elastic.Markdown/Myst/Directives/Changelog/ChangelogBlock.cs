@@ -2,39 +2,13 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Text.RegularExpressions;
 using Elastic.Changelog;
-using Elastic.Changelog.Serialization;
+using Elastic.Changelog.BundleLoading;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Markdown.Diagnostics;
-using YamlDotNet.Core;
 
 namespace Elastic.Markdown.Myst.Directives.Changelog;
-
-/// <summary>
-/// Represents a loaded and parsed changelog bundle with its metadata.
-/// </summary>
-/// <param name="Version">The semantic version extracted from the bundle.</param>
-/// <param name="Repo">The repository/product name.</param>
-/// <param name="Data">The full parsed bundle data.</param>
-/// <param name="FilePath">The absolute path to the bundle file.</param>
-/// <param name="Entries">Resolved changelog entries (from inline data or file references).</param>
-public record LoadedBundle(
-	string Version,
-	string Repo,
-	Bundle Data,
-	string FilePath,
-	IReadOnlyList<ChangelogEntry> Entries)
-{
-	/// <summary>
-	/// Entries grouped by their changelog entry type.
-	/// </summary>
-	public IReadOnlyDictionary<ChangelogEntryType, IReadOnlyCollection<ChangelogEntry>> EntriesByType =>
-		Entries
-			.GroupBy(e => e.Type)
-			.ToDictionary(g => g.Key, g => (IReadOnlyCollection<ChangelogEntry>)g.ToList().AsReadOnly());
-}
 
 /// <summary>
 /// A directive block that reads all changelog bundles from a folder and renders them inline,
@@ -56,16 +30,12 @@ public record LoadedBundle(
 ///
 /// Default bundles folder is <c>changelog/bundles/</c> relative to the docset root.
 /// </remarks>
-public partial class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) : DirectiveBlock(parser, context)
+public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) : DirectiveBlock(parser, context)
 {
 	/// <summary>
 	/// Default folder for changelog bundles, relative to the documentation source directory.
 	/// </summary>
 	private const string DefaultBundlesFolder = "changelog/bundles";
-
-	// Regex to normalize "version:" to "target:" in changelog YAML files
-	[GeneratedRegex(@"(\s+)version:", RegexOptions.Multiline)]
-	private static partial Regex VersionToTargetRegex();
 
 	public override string Directive => "changelog";
 
@@ -238,30 +208,12 @@ public partial class ChangelogBlock(DirectiveBlockParser parser, ParserContext c
 		if (BundlesFolderPath is null)
 			return;
 
-		var fileSystem = Build.ReadFileSystem;
+		var loader = new BundleLoader(Build.ReadFileSystem);
 
-		var yamlFiles = fileSystem.Directory
-			.EnumerateFiles(BundlesFolderPath, "*.yaml")
-			.Concat(fileSystem.Directory.EnumerateFiles(BundlesFolderPath, "*.yml"))
-			.ToList();
-
-		var loadedBundles = new List<LoadedBundle>();
-
-		foreach (var bundleFile in yamlFiles)
-		{
-			var bundleData = LoadBundle(bundleFile);
-			if (bundleData == null)
-				continue;
-
-			var version = GetVersionFromBundle(bundleData) ?? Path.GetFileNameWithoutExtension(bundleFile);
-			var repo = bundleData.Products.Count > 0
-				? bundleData.Products[0].ProductId
-				: "elastic";
-
-			var entries = ResolveEntries(bundleData, bundleFile);
-
-			loadedBundles.Add(new LoadedBundle(version, repo, bundleData, bundleFile, entries));
-		}
+		// Load bundles using the BundleLoader service
+		var loadedBundles = loader.LoadBundles(
+			BundlesFolderPath,
+			msg => this.EmitWarning(msg));
 
 		// Sort by version (descending - newest first)
 		// Supports both semver (e.g., "9.3.0") and date-based (e.g., "2025-08-05") versions
@@ -271,128 +223,8 @@ public partial class ChangelogBlock(DirectiveBlockParser parser, ParserContext c
 
 		// Optionally merge bundles with the same target version
 		LoadedBundles = MergeSameTarget
-			? MergeBundlesByTarget(sortedBundles)
+			? loader.MergeBundlesByTarget(sortedBundles)
 			: sortedBundles;
-	}
-
-	/// <summary>
-	/// Merges bundles that share the same target version/date into a single bundle.
-	/// </summary>
-	/// <param name="bundles">The sorted list of bundles to merge.</param>
-	/// <returns>A list of bundles where same-target bundles are merged.</returns>
-	private static List<LoadedBundle> MergeBundlesByTarget(List<LoadedBundle> bundles)
-	{
-		if (bundles.Count <= 1)
-			return bundles;
-
-		return bundles
-			.GroupBy(b => b.Version)
-			.Select(MergeBundleGroup)
-			.OrderByDescending(b => VersionOrDate.Parse(b.Version))
-			.ToList();
-	}
-
-	/// <summary>
-	/// Merges a group of bundles with the same target version into a single bundle.
-	/// </summary>
-	/// <param name="group">The group of bundles to merge.</param>
-	/// <returns>A single merged bundle.</returns>
-	private static LoadedBundle MergeBundleGroup(IGrouping<string, LoadedBundle> group)
-	{
-		var bundlesList = group.ToList();
-
-		if (bundlesList.Count == 1)
-			return bundlesList[0];
-
-		// Merge entries from all bundles
-		var mergedEntries = bundlesList.SelectMany(b => b.Entries).ToList();
-
-		// Combine repo names from all contributing bundles
-		var combinedRepo = string.Join("+", bundlesList.Select(b => b.Repo).Distinct().OrderBy(r => r));
-
-		// Use the first bundle's metadata as the base
-		var first = bundlesList[0];
-
-		return new LoadedBundle(
-			first.Version,
-			combinedRepo,
-			first.Data,
-			first.FilePath,
-			mergedEntries
-		);
-	}
-
-	private Bundle? LoadBundle(string filePath)
-	{
-		try
-		{
-			var bundleContent = Build.ReadFileSystem.File.ReadAllText(filePath);
-			return ChangelogYamlSerialization.DeserializeBundle(bundleContent);
-		}
-		catch (YamlException e)
-		{
-			var fileName = Path.GetFileName(filePath);
-			this.EmitWarning($"Failed to parse changelog bundle '{fileName}': {e.Message}");
-			return null;
-		}
-	}
-
-	private static string? GetVersionFromBundle(Bundle bundledData) =>
-		bundledData.Products.Count > 0 ? bundledData.Products[0].Target : null;
-
-	private List<ChangelogEntry> ResolveEntries(Bundle bundledData, string bundleFilePath)
-	{
-		var entries = new List<ChangelogEntry>();
-		var bundleDirectory = Path.GetDirectoryName(bundleFilePath)
-			?? Build.DocumentationSourceDirectory.FullName;
-
-		// Default changelog directory is parent of bundles folder
-		var changelogDirectory = Path.GetDirectoryName(bundleDirectory)
-			?? Build.DocumentationSourceDirectory.FullName;
-
-		foreach (var entry in bundledData.Entries)
-		{
-			ChangelogEntry? entryData = null;
-
-			// If entry has resolved/inline data, use it directly
-			if (!string.IsNullOrWhiteSpace(entry.Title) && entry.Type != null)
-			{
-				entryData = ChangelogYamlSerialization.ConvertBundledEntry(entry);
-			}
-			else if (!string.IsNullOrWhiteSpace(entry.File?.Name))
-			{
-				// Load from file reference - look in changelog directory (parent of bundles)
-				var filePath = Path.Combine(changelogDirectory, entry.File.Name);
-
-				if (!Build.ReadFileSystem.File.Exists(filePath))
-				{
-					this.EmitWarning($"Referenced changelog file '{entry.File.Name}' not found at '{filePath}'.");
-					continue;
-				}
-
-				try
-				{
-					var fileContent = Build.ReadFileSystem.File.ReadAllText(filePath);
-
-					// Skip comment lines and normalize version to target
-					var yamlLines = fileContent.Split('\n');
-					var yamlWithoutComments = string.Join('\n', yamlLines.Where(line => !line.TrimStart().StartsWith('#')));
-					var normalizedYaml = VersionToTargetRegex().Replace(yamlWithoutComments, "$1target:");
-
-					entryData = ChangelogYamlSerialization.DeserializeEntry(normalizedYaml);
-				}
-				catch (YamlException e)
-				{
-					this.EmitWarning($"Failed to parse changelog file '{entry.File.Name}': {e.Message}");
-					continue;
-				}
-			}
-
-			if (entryData != null)
-				entries.Add(entryData);
-		}
-
-		return entries;
 	}
 
 	private IEnumerable<string> ComputeGeneratedAnchors()
