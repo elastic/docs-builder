@@ -16,7 +16,7 @@ docs-builder changelog render [options...] [-h|--help]
 `--config <string?>`
 :   Optional: Path to the changelog.yml configuration file.
 :   Defaults to `docs/changelog.yml`.
-:   This configuration file is where the command looks for `render_blockers` details.
+:   This configuration file is where the command looks `block ... publish` definitions.
 
 `--hide-features <string[]?>`
 :   Optional: Filter by feature IDs (comma-separated), or a path to a newline-delimited file containing feature IDs. Can be specified multiple times.
@@ -54,7 +54,7 @@ docs-builder changelog render [options...] [-h|--help]
 :   Defaults to the version in the first bundle.
 :   If the string contains spaces, they are replaced with dashes when used in directory names and anchors.
 
-You can configure `render_blockers` in your `changelog.yml` configuration file to automatically block changelog entries from being rendered based on their products, areas, and/or types.
+You can configure `block` definitions in your `changelog.yml` configuration file to automatically comment out changelog entries  based on their products, areas, and/or types.
 For more information, refer to [](/contribute/changelog.md#example-block-label).
 
 ## Output formats

@@ -20,10 +20,15 @@ public class DeprecationsAsciidocRenderer(StringBuilder sb) : AsciidocRendererBa
 
 		foreach (var areaGroup in groupedByArea)
 		{
+			// Check if all entries in this area group are hidden
+			var allEntriesHidden = areaGroup.All(entry =>
+				ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context));
+
 			var componentName = !string.IsNullOrWhiteSpace(areaGroup.Key) ? areaGroup.Key : "General";
 			var formattedComponent = ChangelogTextUtilities.FormatAreaHeader(componentName);
 
-			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"{formattedComponent}::");
+			var headerLine = allEntriesHidden ? $"// {formattedComponent}::" : $"{formattedComponent}::";
+			_ = sb.AppendLine(headerLine);
 			_ = sb.AppendLine();
 
 			foreach (var entry in areaGroup)

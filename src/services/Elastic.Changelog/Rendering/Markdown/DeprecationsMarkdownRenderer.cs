@@ -26,6 +26,10 @@ public class DeprecationsMarkdownRenderer(IFileSystem fileSystem) : MarkdownRend
 		var sb = new StringBuilder();
 		_ = sb.AppendLine(InvariantCulture, $"## {context.Title} [{context.Repo}-{context.TitleSlug}-deprecations]");
 
+		// Check if all entries are hidden
+		var allEntriesHidden = deprecations.Count > 0 && deprecations.All(entry =>
+			ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context));
+
 		if (deprecations.Count > 0)
 		{
 			var groupedByArea = context.Subsections
@@ -33,11 +37,19 @@ public class DeprecationsMarkdownRenderer(IFileSystem fileSystem) : MarkdownRend
 				: deprecations.GroupBy(ChangelogRenderUtilities.GetComponent).ToList();
 			foreach (var areaGroup in groupedByArea)
 			{
+				// Check if all entries in this area group are hidden
+				var allGroupEntriesHidden = areaGroup.All(entry =>
+					ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context));
+
 				if (context.Subsections && !string.IsNullOrWhiteSpace(areaGroup.Key))
 				{
 					var header = ChangelogTextUtilities.FormatAreaHeader(areaGroup.Key);
 					_ = sb.AppendLine();
+					if (allGroupEntriesHidden)
+						_ = sb.AppendLine("<!--");
 					_ = sb.AppendLine(InvariantCulture, $"**{header}**");
+					if (allGroupEntriesHidden)
+						_ = sb.AppendLine("-->");
 				}
 
 				foreach (var entry in areaGroup)
@@ -68,9 +80,18 @@ public class DeprecationsMarkdownRenderer(IFileSystem fileSystem) : MarkdownRend
 						_ = sb.AppendLine("-->");
 				}
 			}
+
+			// Add message if all entries are hidden
+			if (allEntriesHidden)
+			{
+				_ = sb.AppendLine();
+				_ = sb.AppendLine("_There are no deprecations associated with this release._");
+			}
 		}
 		else
-			_ = sb.AppendLine("_No deprecations._");
+		{
+			_ = sb.AppendLine("_There are no deprecations associated with this release._");
+		}
 
 		await WriteOutputFileAsync(context.OutputDir, context.TitleSlug, sb.ToString(), ctx);
 	}
