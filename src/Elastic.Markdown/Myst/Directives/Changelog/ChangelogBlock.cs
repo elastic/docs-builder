@@ -4,9 +4,9 @@
 
 using System.Text.RegularExpressions;
 using Elastic.Changelog;
-using Elastic.Changelog.Configuration;
 using Elastic.Changelog.Serialization;
 using Elastic.Documentation;
+using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Markdown.Diagnostics;
 using YamlDotNet.Core;
 
@@ -230,7 +230,7 @@ public partial class ChangelogBlock(DirectiveBlockParser parser, ParserContext c
 		if (string.IsNullOrWhiteSpace(configPath))
 			return;
 
-		PublishBlocker = ChangelogConfigurationLoader.LoadPublishBlocker(fileSystem, configPath);
+		PublishBlocker = PublishBlockerLoader.Load(fileSystem, configPath);
 	}
 
 	private void LoadAndCacheBundles()
