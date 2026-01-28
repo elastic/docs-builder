@@ -183,8 +183,8 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		else
 		{
 			// Auto-discover: try changelog.yml first, then docs/changelog.yml
-			var changelogYml = Path.Combine(Build.DocumentationSourceDirectory.FullName, "changelog.yml");
-			var docsChangelogYml = Path.Combine(Build.DocumentationSourceDirectory.FullName, "docs", "changelog.yml");
+			var changelogYml = Build.DocumentationSourceDirectory.ResolvePathFrom("changelog.yml");
+			var docsChangelogYml = Build.DocumentationSourceDirectory.ResolvePathFrom("docs/changelog.yml");
 
 			if (fileSystem.File.Exists(changelogYml))
 				configPath = changelogYml;
