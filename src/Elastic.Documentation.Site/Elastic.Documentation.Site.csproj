@@ -71,12 +71,23 @@
     <Touch Files="_static/.build-stamp" AlwaysCreate="true" />
   </Target>
 
+  <!-- Clean old hashed assets during publish to avoid accumulating stale files -->
+  <Target Name="CleanOldHashedAssets" BeforeTargets="NpmRunBuild" Condition="'$(PublishDir)' != ''">
+    <ItemGroup>
+      <OldHashedFiles Include="_static/*.????????*.js" />
+      <OldHashedFiles Include="_static/*.????????*.css" />
+      <OldHashedFiles Include="_static/*.????????*.js.map" />
+      <OldHashedFiles Include="_static/*.????????*.css.map" />
+    </ItemGroup>
+    <Delete Files="@(OldHashedFiles)" ContinueOnError="true" />
+  </Target>
+
   <Target Name="EmbedGeneratedAssets" AfterTargets="NpmRunBuild">
     <ItemGroup>
       <EmbeddedResource Include="_static/*.js" Watch="false" />
-      <EmbeddedResource Include="_static/*.js.map" Watch="false" />
+      <EmbeddedResource Include="_static/*.js.map" Watch="false" Condition="'$(Configuration)' == 'Debug'" />
       <EmbeddedResource Include="_static/*.css" Watch="false" />
-      <EmbeddedResource Include="_static/*.css.map" Watch="false" />
+      <EmbeddedResource Include="_static/*.css.map" Watch="false" Condition="'$(Configuration)' == 'Debug'" />
       <EmbeddedResource Include="_static/*.svg" Watch="false" />
       <EmbeddedResource Include="_static/*.png" Watch="false" />
       <EmbeddedResource Include="_static/*.ttf" Watch="false" />
