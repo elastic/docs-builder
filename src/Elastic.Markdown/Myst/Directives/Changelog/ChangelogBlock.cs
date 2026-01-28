@@ -6,6 +6,7 @@ using Elastic.Changelog;
 using Elastic.Changelog.BundleLoading;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Changelog;
+using Elastic.Documentation.Extensions;
 using Elastic.Markdown.Diagnostics;
 
 namespace Elastic.Markdown.Myst.Directives.Changelog;
@@ -134,11 +135,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		if (string.IsNullOrWhiteSpace(folderPath))
 			folderPath = DefaultBundlesFolder;
 
-		var resolveFrom = Build.DocumentationSourceDirectory.FullName;
-		if (folderPath.StartsWith('/'))
-			folderPath = folderPath.TrimStart('/');
-
-		BundlesFolderPath = Path.Combine(resolveFrom, folderPath);
+		BundlesFolderPath = Build.DocumentationSourceDirectory.ResolvePathFrom(folderPath);
 		BundlesFolderRelativeToSource = Path.GetRelativePath(Build.DocumentationSourceDirectory.FullName, BundlesFolderPath);
 
 		if (!Build.ReadFileSystem.Directory.Exists(BundlesFolderPath))
@@ -176,9 +173,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		// Try explicit config path first
 		if (!string.IsNullOrWhiteSpace(ConfigPath))
 		{
-			var explicitPath = ConfigPath.StartsWith('/')
-				? Path.Combine(Build.DocumentationSourceDirectory.FullName, ConfigPath.TrimStart('/'))
-				: Path.Combine(Build.DocumentationSourceDirectory.FullName, ConfigPath);
+			var explicitPath = Build.DocumentationSourceDirectory.ResolvePathFrom(ConfigPath);
 
 			if (fileSystem.File.Exists(explicitPath))
 				configPath = explicitPath;
