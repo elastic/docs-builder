@@ -11,32 +11,34 @@ namespace Elastic.Markdown.Tests.Directives;
 public class ChangelogSubsectionsDisabledByDefaultTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogSubsectionsDisabledByDefaultTests(ITestOutputHelper output) : base(output,
-"""
-:::{changelog}
-:::
-""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-"""
-products:
-- product: elasticsearch
-  target: 9.3.0
-entries:
-- title: Feature in Search
-  type: feature
-  products:
-  - product: elasticsearch
-    target: 9.3.0
-  areas:
-  - Search
-  pr: "111111"
-- title: Feature in Indexing
-  type: feature
-  products:
-  - product: elasticsearch
-    target: 9.3.0
-  areas:
-  - Indexing
-  pr: "222222"
-"""));
+		// language=markdown
+		"""
+		:::{changelog}
+		:::
+		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
+		// language=yaml
+		"""
+		products:
+		- product: elasticsearch
+		  target: 9.3.0
+		entries:
+		- title: Feature in Search
+		  type: feature
+		  products:
+		  - product: elasticsearch
+		    target: 9.3.0
+		  areas:
+		  - Search
+		  pr: "111111"
+		- title: Feature in Indexing
+		  type: feature
+		  products:
+		  - product: elasticsearch
+		    target: 9.3.0
+		  areas:
+		  - Indexing
+		  pr: "222222"
+		"""));
 
 	[Fact]
 	public void SubsectionsPropertyDefaultsToFalse() => Block!.Subsections.Should().BeFalse();
@@ -61,33 +63,35 @@ entries:
 public class ChangelogSubsectionsEnabledTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogSubsectionsEnabledTests(ITestOutputHelper output) : base(output,
-"""
-:::{changelog}
-:subsections:
-:::
-""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-"""
-products:
-- product: elasticsearch
-  target: 9.3.0
-entries:
-- title: Feature in Search
-  type: feature
-  products:
-  - product: elasticsearch
-    target: 9.3.0
-  areas:
-  - Search
-  pr: "111111"
-- title: Feature in Indexing
-  type: feature
-  products:
-  - product: elasticsearch
-    target: 9.3.0
-  areas:
-  - Indexing
-  pr: "222222"
-"""));
+		// language=markdown
+		"""
+		:::{changelog}
+		:subsections:
+		:::
+		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
+		// language=yaml
+		"""
+		products:
+		- product: elasticsearch
+		  target: 9.3.0
+		entries:
+		- title: Feature in Search
+		  type: feature
+		  products:
+		  - product: elasticsearch
+		    target: 9.3.0
+		  areas:
+		  - Search
+		  pr: "111111"
+		- title: Feature in Indexing
+		  type: feature
+		  products:
+		  - product: elasticsearch
+		    target: 9.3.0
+		  areas:
+		  - Indexing
+		  pr: "222222"
+		"""));
 
 	[Fact]
 	public void SubsectionsPropertyIsTrue() => Block!.Subsections.Should().BeTrue();
@@ -112,25 +116,27 @@ entries:
 public class ChangelogSubsectionsExplicitFalseTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogSubsectionsExplicitFalseTests(ITestOutputHelper output) : base(output,
-"""
-:::{changelog}
-:subsections: false
-:::
-""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-"""
-products:
-- product: elasticsearch
-  target: 9.3.0
-entries:
-- title: Feature in Search
-  type: feature
-  products:
-  - product: elasticsearch
-    target: 9.3.0
-  areas:
-  - Search
-  pr: "111111"
-"""));
+		// language=markdown
+		"""
+		:::{changelog}
+		:subsections: false
+		:::
+		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
+		// language=yaml
+		"""
+		products:
+		- product: elasticsearch
+		  target: 9.3.0
+		entries:
+		- title: Feature in Search
+		  type: feature
+		  products:
+		  - product: elasticsearch
+		    target: 9.3.0
+		  areas:
+		  - Search
+		  pr: "111111"
+		"""));
 
 	[Fact]
 	public void SubsectionsPropertyIsFalse() => Block!.Subsections.Should().BeFalse();

@@ -11,81 +11,86 @@ namespace Elastic.Markdown.Tests.Directives;
 public class ChangelogMergeSameTargetTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogMergeSameTargetTests(ITestOutputHelper output) : base(output,
-"""
-:::{changelog}
-:merge:
-:::
-""")
+		// language=markdown
+		"""
+		:::{changelog}
+		:merge:
+		:::
+		""")
 	{
 		// Cloud Serverless scenario: multiple repos contributing to the same dated release
 		FileSystem.AddFile("docs/changelog/bundles/kibana-2025-08-05.yaml", new MockFileData(
-"""
-products:
-- product: kibana
-  target: 2025-08-05
-entries:
-- title: Kibana feature for August 5th
-  type: feature
-  products:
-  - product: kibana
-    target: 2025-08-05
-  areas:
-  - Dashboard
-  pr: "111111"
-"""));
+			// language=yaml
+			"""
+			products:
+			- product: kibana
+			  target: 2025-08-05
+			entries:
+			- title: Kibana feature for August 5th
+			  type: feature
+			  products:
+			  - product: kibana
+			    target: 2025-08-05
+			  areas:
+			  - Dashboard
+			  pr: "111111"
+			"""));
 
 		FileSystem.AddFile("docs/changelog/bundles/elasticsearch-2025-08-05.yaml", new MockFileData(
-"""
-products:
-- product: elasticsearch
-  target: 2025-08-05
-entries:
-- title: Elasticsearch feature for August 5th
-  type: feature
-  products:
-  - product: elasticsearch
-    target: 2025-08-05
-  areas:
-  - Search
-  pr: "222222"
-- title: Elasticsearch bugfix for August 5th
-  type: bug-fix
-  products:
-  - product: elasticsearch
-    target: 2025-08-05
-  pr: "222223"
-"""));
+			// language=yaml
+			"""
+			products:
+			- product: elasticsearch
+			  target: 2025-08-05
+			entries:
+			- title: Elasticsearch feature for August 5th
+			  type: feature
+			  products:
+			  - product: elasticsearch
+			    target: 2025-08-05
+			  areas:
+			  - Search
+			  pr: "222222"
+			- title: Elasticsearch bugfix for August 5th
+			  type: bug-fix
+			  products:
+			  - product: elasticsearch
+			    target: 2025-08-05
+			  pr: "222223"
+			"""));
 
 		FileSystem.AddFile("docs/changelog/bundles/serverless-2025-08-05.yaml", new MockFileData(
-"""
-products:
-- product: elasticsearch-serverless
-  target: 2025-08-05
-entries:
-- title: Serverless feature for August 5th
-  type: feature
-  products:
-  - product: elasticsearch-serverless
-    target: 2025-08-05
-  areas:
-  - API
-  pr: "333333"
-"""));
+			// language=yaml
+			"""
+			products:
+			- product: elasticsearch-serverless
+			  target: 2025-08-05
+			entries:
+			- title: Serverless feature for August 5th
+			  type: feature
+			  products:
+			  - product: elasticsearch-serverless
+			    target: 2025-08-05
+			  areas:
+			  - API
+			  pr: "333333"
+			"""));
 
 		// A different release date with single bundle
 		FileSystem.AddFile("docs/changelog/bundles/kibana-2025-08-01.yaml", new MockFileData(
-"""
-products:
-- product: kibana
-  target: 2025-08-01
-entries:
-- title: Kibana feature for August 1st
-  type: feature
-  products:
-  - product: kibana
-    target: 2025-08-01
-  pr: "444444"
-"""));
+			// language=yaml
+			"""
+			products:
+			- product: kibana
+			  target: 2025-08-01
+			entries:
+			- title: Kibana feature for August 1st
+			  type: feature
+			  products:
+			  - product: kibana
+			    target: 2025-08-01
+			  pr: "444444"
+			"""));
 	}
 
 	[Fact]
@@ -163,54 +168,58 @@ entries:
 public class ChangelogMergeDifferentTargetsTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogMergeDifferentTargetsTests(ITestOutputHelper output) : base(output,
-"""
-:::{changelog}
-:merge:
-:::
-""")
+		// language=markdown
+		"""
+		:::{changelog}
+		:merge:
+		:::
+		""")
 	{
 		// Bundles with different targets should remain separate even with :merge:
 		FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-"""
-products:
-- product: elasticsearch
-  target: 9.3.0
-entries:
-- title: Feature in 9.3.0
-  type: feature
-  products:
-  - product: elasticsearch
-    target: 9.3.0
-  pr: "111111"
-"""));
+			// language=yaml
+			"""
+			products:
+			- product: elasticsearch
+			  target: 9.3.0
+			entries:
+			- title: Feature in 9.3.0
+			  type: feature
+			  products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			  pr: "111111"
+			"""));
 
 		FileSystem.AddFile("docs/changelog/bundles/9.2.0.yaml", new MockFileData(
-"""
-products:
-- product: elasticsearch
-  target: 9.2.0
-entries:
-- title: Feature in 9.2.0
-  type: feature
-  products:
-  - product: elasticsearch
-    target: 9.2.0
-  pr: "222222"
-"""));
+			// language=yaml
+			"""
+			products:
+			- product: elasticsearch
+			  target: 9.2.0
+			entries:
+			- title: Feature in 9.2.0
+			  type: feature
+			  products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			  pr: "222222"
+			"""));
 
 		FileSystem.AddFile("docs/changelog/bundles/9.1.0.yaml", new MockFileData(
-"""
-products:
-- product: elasticsearch
-  target: 9.1.0
-entries:
-- title: Feature in 9.1.0
-  type: feature
-  products:
-  - product: elasticsearch
-    target: 9.1.0
-  pr: "333333"
-"""));
+			// language=yaml
+			"""
+			products:
+			- product: elasticsearch
+			  target: 9.1.0
+			entries:
+			- title: Feature in 9.1.0
+			  type: feature
+			  products:
+			  - product: elasticsearch
+			    target: 9.1.0
+			  pr: "333333"
+			"""));
 	}
 
 	[Fact]
@@ -243,39 +252,42 @@ entries:
 public class ChangelogMergeDisabledByDefaultTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogMergeDisabledByDefaultTests(ITestOutputHelper output) : base(output,
-"""
-:::{changelog}
-:::
-""")
+		// language=markdown
+		"""
+		:::{changelog}
+		:::
+		""")
 	{
 		// Same setup as merge enabled, but without :merge: option
 		FileSystem.AddFile("docs/changelog/bundles/kibana-2025-08-05.yaml", new MockFileData(
-"""
-products:
-- product: kibana
-  target: 2025-08-05
-entries:
-- title: Kibana feature
-  type: feature
-  products:
-  - product: kibana
-    target: 2025-08-05
-  pr: "111111"
-"""));
+			// language=yaml
+			"""
+			products:
+			- product: kibana
+			  target: 2025-08-05
+			entries:
+			- title: Kibana feature
+			  type: feature
+			  products:
+			  - product: kibana
+			    target: 2025-08-05
+			  pr: "111111"
+			"""));
 
 		FileSystem.AddFile("docs/changelog/bundles/elasticsearch-2025-08-05.yaml", new MockFileData(
-"""
-products:
-- product: elasticsearch
-  target: 2025-08-05
-entries:
-- title: Elasticsearch feature
-  type: feature
-  products:
-  - product: elasticsearch
-    target: 2025-08-05
-  pr: "222222"
-"""));
+			// language=yaml
+			"""
+			products:
+			- product: elasticsearch
+			  target: 2025-08-05
+			entries:
+			- title: Elasticsearch feature
+			  type: feature
+			  products:
+			  - product: elasticsearch
+			    target: 2025-08-05
+			  pr: "222222"
+			"""));
 	}
 
 	[Fact]
@@ -300,39 +312,42 @@ entries:
 public class ChangelogMergeExplicitFalseTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogMergeExplicitFalseTests(ITestOutputHelper output) : base(output,
-"""
-:::{changelog}
-:merge: false
-:::
-""")
+		// language=markdown
+		"""
+		:::{changelog}
+		:merge: false
+		:::
+		""")
 	{
 		FileSystem.AddFile("docs/changelog/bundles/kibana-2025-08-05.yaml", new MockFileData(
-"""
-products:
-- product: kibana
-  target: 2025-08-05
-entries:
-- title: Kibana feature
-  type: feature
-  products:
-  - product: kibana
-    target: 2025-08-05
-  pr: "111111"
-"""));
+			// language=yaml
+			"""
+			products:
+			- product: kibana
+			  target: 2025-08-05
+			entries:
+			- title: Kibana feature
+			  type: feature
+			  products:
+			  - product: kibana
+			    target: 2025-08-05
+			  pr: "111111"
+			"""));
 
 		FileSystem.AddFile("docs/changelog/bundles/elasticsearch-2025-08-05.yaml", new MockFileData(
-"""
-products:
-- product: elasticsearch
-  target: 2025-08-05
-entries:
-- title: Elasticsearch feature
-  type: feature
-  products:
-  - product: elasticsearch
-    target: 2025-08-05
-  pr: "222222"
-"""));
+			// language=yaml
+			"""
+			products:
+			- product: elasticsearch
+			  target: 2025-08-05
+			entries:
+			- title: Elasticsearch feature
+			  type: feature
+			  products:
+			  - product: elasticsearch
+			    target: 2025-08-05
+			  pr: "222222"
+			"""));
 	}
 
 	[Fact]

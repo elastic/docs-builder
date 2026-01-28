@@ -11,53 +11,57 @@ namespace Elastic.Markdown.Tests.Directives;
 public class ChangelogDateVersionedBundlesTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogDateVersionedBundlesTests(ITestOutputHelper output) : base(output,
-"""
-:::{changelog}
-:::
-""")
+		// language=markdown
+		"""
+		:::{changelog}
+		:::
+		""")
 	{
 		// Create multiple bundles with date-based versions (Cloud Serverless style)
 		FileSystem.AddFile("docs/changelog/bundles/2025-08-01.yaml", new MockFileData(
-"""
-products:
-- product: cloud-serverless
-  target: 2025-08-01
-entries:
-- title: August 1st feature
-  type: feature
-  products:
-  - product: cloud-serverless
-    target: 2025-08-01
-  pr: "111111"
-"""));
+			// language=yaml
+			"""
+			products:
+			- product: cloud-serverless
+			  target: 2025-08-01
+			entries:
+			- title: August 1st feature
+			  type: feature
+			  products:
+			  - product: cloud-serverless
+			    target: 2025-08-01
+			  pr: "111111"
+			"""));
 
 		FileSystem.AddFile("docs/changelog/bundles/2025-08-15.yaml", new MockFileData(
-"""
-products:
-- product: cloud-serverless
-  target: 2025-08-15
-entries:
-- title: August 15th feature
-  type: feature
-  products:
-  - product: cloud-serverless
-    target: 2025-08-15
-  pr: "222222"
-"""));
+			// language=yaml
+			"""
+			products:
+			- product: cloud-serverless
+			  target: 2025-08-15
+			entries:
+			- title: August 15th feature
+			  type: feature
+			  products:
+			  - product: cloud-serverless
+			    target: 2025-08-15
+			  pr: "222222"
+			"""));
 
 		FileSystem.AddFile("docs/changelog/bundles/2025-08-05.yaml", new MockFileData(
-"""
-products:
-- product: cloud-serverless
-  target: 2025-08-05
-entries:
-- title: August 5th feature
-  type: feature
-  products:
-  - product: cloud-serverless
-    target: 2025-08-05
-  pr: "333333"
-"""));
+			// language=yaml
+			"""
+			products:
+			- product: cloud-serverless
+			  target: 2025-08-05
+			entries:
+			- title: August 5th feature
+			  type: feature
+			  products:
+			  - product: cloud-serverless
+			    target: 2025-08-05
+			  pr: "333333"
+			"""));
 	}
 
 	[Fact]
@@ -95,67 +99,72 @@ entries:
 public class ChangelogMixedVersionTypesTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogMixedVersionTypesTests(ITestOutputHelper output) : base(output,
-"""
-:::{changelog}
-:::
-""")
+		// language=markdown
+		"""
+		:::{changelog}
+		:::
+		""")
 	{
 		// Create bundles with mixed version types (semver and dates)
 		FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-"""
-products:
-- product: elasticsearch
-  target: 9.3.0
-entries:
-- title: Semver 9.3.0 feature
-  type: feature
-  products:
-  - product: elasticsearch
-    target: 9.3.0
-  pr: "111111"
-"""));
+			// language=yaml
+			"""
+			products:
+			- product: elasticsearch
+			  target: 9.3.0
+			entries:
+			- title: Semver 9.3.0 feature
+			  type: feature
+			  products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			  pr: "111111"
+			"""));
 
 		FileSystem.AddFile("docs/changelog/bundles/9.2.0.yaml", new MockFileData(
-"""
-products:
-- product: elasticsearch
-  target: 9.2.0
-entries:
-- title: Semver 9.2.0 feature
-  type: feature
-  products:
-  - product: elasticsearch
-    target: 9.2.0
-  pr: "222222"
-"""));
+			// language=yaml
+			"""
+			products:
+			- product: elasticsearch
+			  target: 9.2.0
+			entries:
+			- title: Semver 9.2.0 feature
+			  type: feature
+			  products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			  pr: "222222"
+			"""));
 
 		FileSystem.AddFile("docs/changelog/bundles/2025-08-05.yaml", new MockFileData(
-"""
-products:
-- product: cloud-serverless
-  target: 2025-08-05
-entries:
-- title: Date-based feature
-  type: feature
-  products:
-  - product: cloud-serverless
-    target: 2025-08-05
-  pr: "333333"
-"""));
+			// language=yaml
+			"""
+			products:
+			- product: cloud-serverless
+			  target: 2025-08-05
+			entries:
+			- title: Date-based feature
+			  type: feature
+			  products:
+			  - product: cloud-serverless
+			    target: 2025-08-05
+			  pr: "333333"
+			"""));
 
 		FileSystem.AddFile("docs/changelog/bundles/2025-07-01.yaml", new MockFileData(
-"""
-products:
-- product: cloud-serverless
-  target: 2025-07-01
-entries:
-- title: Earlier date feature
-  type: feature
-  products:
-  - product: cloud-serverless
-    target: 2025-07-01
-  pr: "444444"
-"""));
+			// language=yaml
+			"""
+			products:
+			- product: cloud-serverless
+			  target: 2025-07-01
+			entries:
+			- title: Earlier date feature
+			  type: feature
+			  products:
+			  - product: cloud-serverless
+			    target: 2025-07-01
+			  pr: "444444"
+			"""));
 	}
 
 	[Fact]
@@ -203,39 +212,42 @@ entries:
 public class ChangelogRawVersionFallbackTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogRawVersionFallbackTests(ITestOutputHelper output) : base(output,
-"""
-:::{changelog}
-:::
-""")
+		// language=markdown
+		"""
+		:::{changelog}
+		:::
+		""")
 	{
 		// Create bundles with non-standard version formats (edge case)
 		FileSystem.AddFile("docs/changelog/bundles/release-alpha.yaml", new MockFileData(
-"""
-products:
-- product: experimental
-  target: release-alpha
-entries:
-- title: Alpha release feature
-  type: feature
-  products:
-  - product: experimental
-    target: release-alpha
-  pr: "111111"
-"""));
+			// language=yaml
+			"""
+			products:
+			- product: experimental
+			  target: release-alpha
+			entries:
+			- title: Alpha release feature
+			  type: feature
+			  products:
+			  - product: experimental
+			    target: release-alpha
+			  pr: "111111"
+			"""));
 
 		FileSystem.AddFile("docs/changelog/bundles/release-beta.yaml", new MockFileData(
-"""
-products:
-- product: experimental
-  target: release-beta
-entries:
-- title: Beta release feature
-  type: feature
-  products:
-  - product: experimental
-    target: release-beta
-  pr: "222222"
-"""));
+			// language=yaml
+			"""
+			products:
+			- product: experimental
+			  target: release-beta
+			entries:
+			- title: Beta release feature
+			  type: feature
+			  products:
+			  - product: experimental
+			    target: release-beta
+			  pr: "222222"
+			"""));
 	}
 
 	[Fact]

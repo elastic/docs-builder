@@ -11,52 +11,55 @@ namespace Elastic.Markdown.Tests.Directives;
 public class ChangelogConfigLoadAutoDiscoverTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogConfigLoadAutoDiscoverTests(ITestOutputHelper output) : base(output,
-"""
-:::{changelog}
-:::
-""")
+		// language=markdown
+		"""
+		:::{changelog}
+		:::
+		""")
 	{
 		// Create bundles with entries of different types
 		FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-"""
-products:
-- product: elasticsearch
-  target: 9.3.0
-entries:
-- title: Regular feature
-  type: feature
-  products:
-  - product: elasticsearch
-    target: 9.3.0
-  pr: "111111"
-- title: Deprecation notice
-  type: deprecation
-  products:
-  - product: elasticsearch
-    target: 9.3.0
-  description: This API is deprecated.
-  impact: Users should migrate.
-  action: Use the new API.
-  pr: "222222"
-- title: Known issue
-  type: known-issue
-  products:
-  - product: elasticsearch
-    target: 9.3.0
-  description: There is a known issue.
-  impact: Some users may be affected.
-  pr: "333333"
-"""));
+			// language=yaml
+			"""
+			products:
+			- product: elasticsearch
+			  target: 9.3.0
+			entries:
+			- title: Regular feature
+			  type: feature
+			  products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			  pr: "111111"
+			- title: Deprecation notice
+			  type: deprecation
+			  products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			  description: This API is deprecated.
+			  impact: Users should migrate.
+			  action: Use the new API.
+			  pr: "222222"
+			- title: Known issue
+			  type: known-issue
+			  products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			  description: There is a known issue.
+			  impact: Some users may be affected.
+			  pr: "333333"
+			"""));
 
 		// Add changelog config with publish blockers
 		FileSystem.AddFile("docs/changelog.yml", new MockFileData(
-"""
-block:
-  publish:
-    types:
-      - deprecation
-      - known-issue
-"""));
+			// language=yaml
+			"""
+			block:
+			  publish:
+			    types:
+			      - deprecation
+			      - known-issue
+			"""));
 	}
 
 	[Fact]
@@ -92,42 +95,45 @@ block:
 public class ChangelogConfigLoadExplicitPathTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogConfigLoadExplicitPathTests(ITestOutputHelper output) : base(output,
-"""
-:::{changelog}
-:config: custom/path/my-changelog.yml
-:::
-""")
+		// language=markdown
+		"""
+		:::{changelog}
+		:config: custom/path/my-changelog.yml
+		:::
+		""")
 	{
 		FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-"""
-products:
-- product: elasticsearch
-  target: 9.3.0
-entries:
-- title: Regular feature
-  type: feature
-  products:
-  - product: elasticsearch
-    target: 9.3.0
-  pr: "111111"
-- title: Internal docs
-  type: docs
-  products:
-  - product: elasticsearch
-    target: 9.3.0
-  areas:
-  - Internal
-  pr: "222222"
-"""));
+			// language=yaml
+			"""
+			products:
+			- product: elasticsearch
+			  target: 9.3.0
+			entries:
+			- title: Regular feature
+			  type: feature
+			  products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			  pr: "111111"
+			- title: Internal docs
+			  type: docs
+			  products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			  areas:
+			  - Internal
+			  pr: "222222"
+			"""));
 
 		// Add custom config at explicit path
 		FileSystem.AddFile("docs/custom/path/my-changelog.yml", new MockFileData(
-"""
-block:
-  publish:
-    areas:
-      - Internal
-"""));
+			// language=yaml
+			"""
+			block:
+			  publish:
+			    areas:
+			      - Internal
+			"""));
 	}
 
 	[Fact]
@@ -154,39 +160,42 @@ block:
 public class ChangelogConfigLoadFromDocsSubfolderTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogConfigLoadFromDocsSubfolderTests(ITestOutputHelper output) : base(output,
-"""
-:::{changelog}
-:::
-""")
+		// language=markdown
+		"""
+		:::{changelog}
+		:::
+		""")
 	{
 		FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-"""
-products:
-- product: elasticsearch
-  target: 9.3.0
-entries:
-- title: Regular feature
-  type: feature
-  products:
-  - product: elasticsearch
-    target: 9.3.0
-  pr: "111111"
-- title: Other change
-  type: other
-  products:
-  - product: elasticsearch
-    target: 9.3.0
-  pr: "222222"
-"""));
+			// language=yaml
+			"""
+			products:
+			- product: elasticsearch
+			  target: 9.3.0
+			entries:
+			- title: Regular feature
+			  type: feature
+			  products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			  pr: "111111"
+			- title: Other change
+			  type: other
+			  products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			  pr: "222222"
+			"""));
 
 		// Add config in docs/docs/changelog.yml (docs subfolder)
 		FileSystem.AddFile("docs/docs/changelog.yml", new MockFileData(
-"""
-block:
-  publish:
-    types:
-      - other
-"""));
+			// language=yaml
+			"""
+			block:
+			  publish:
+			    types:
+			      - other
+			"""));
 	}
 
 	[Fact]
@@ -203,22 +212,24 @@ block:
 public class ChangelogConfigNotFoundTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogConfigNotFoundTests(ITestOutputHelper output) : base(output,
-"""
-:::{changelog}
-:::
-""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-"""
-products:
-- product: elasticsearch
-  target: 9.3.0
-entries:
-- title: Regular feature
-  type: feature
-  products:
-  - product: elasticsearch
-    target: 9.3.0
-  pr: "111111"
-"""));
+		// language=markdown
+		"""
+		:::{changelog}
+		:::
+		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
+		// language=yaml
+		"""
+		products:
+		- product: elasticsearch
+		  target: 9.3.0
+		entries:
+		- title: Regular feature
+		  type: feature
+		  products:
+		  - product: elasticsearch
+		    target: 9.3.0
+		  pr: "111111"
+		"""));
 
 	[Fact]
 	public void PublishBlockerIsNullWhenNoConfig() => Block!.PublishBlocker.Should().BeNull();
@@ -234,23 +245,25 @@ entries:
 public class ChangelogConfigExplicitPathNotFoundTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogConfigExplicitPathNotFoundTests(ITestOutputHelper output) : base(output,
-"""
-:::{changelog}
-:config: nonexistent/config.yml
-:::
-""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-"""
-products:
-- product: elasticsearch
-  target: 9.3.0
-entries:
-- title: Regular feature
-  type: feature
-  products:
-  - product: elasticsearch
-    target: 9.3.0
-  pr: "111111"
-"""));
+		// language=markdown
+		"""
+		:::{changelog}
+		:config: nonexistent/config.yml
+		:::
+		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
+		// language=yaml
+		"""
+		products:
+		- product: elasticsearch
+		  target: 9.3.0
+		entries:
+		- title: Regular feature
+		  type: feature
+		  products:
+		  - product: elasticsearch
+		    target: 9.3.0
+		  pr: "111111"
+		"""));
 
 	[Fact]
 	public void PublishBlockerIsNullWhenExplicitConfigNotFound() => Block!.PublishBlocker.Should().BeNull();
@@ -266,56 +279,60 @@ entries:
 public class ChangelogConfigPriorityTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogConfigPriorityTests(ITestOutputHelper output) : base(output,
-"""
-:::{changelog}
-:::
-""")
+		// language=markdown
+		"""
+		:::{changelog}
+		:::
+		""")
 	{
 		FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-"""
-products:
-- product: elasticsearch
-  target: 9.3.0
-entries:
-- title: Regular feature
-  type: feature
-  products:
-  - product: elasticsearch
-    target: 9.3.0
-  pr: "111111"
-- title: Deprecation notice
-  type: deprecation
-  products:
-  - product: elasticsearch
-    target: 9.3.0
-  description: Deprecated.
-  impact: None.
-  action: Upgrade.
-  pr: "222222"
-- title: Other change
-  type: other
-  products:
-  - product: elasticsearch
-    target: 9.3.0
-  pr: "333333"
-"""));
+			// language=yaml
+			"""
+			products:
+			- product: elasticsearch
+			  target: 9.3.0
+			entries:
+			- title: Regular feature
+			  type: feature
+			  products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			  pr: "111111"
+			- title: Deprecation notice
+			  type: deprecation
+			  products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			  description: Deprecated.
+			  impact: None.
+			  action: Upgrade.
+			  pr: "222222"
+			- title: Other change
+			  type: other
+			  products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			  pr: "333333"
+			"""));
 
 		// Add both config files - root should take priority
 		FileSystem.AddFile("docs/changelog.yml", new MockFileData(
-"""
-block:
-  publish:
-    types:
-      - deprecation
-"""));
+			// language=yaml
+			"""
+			block:
+			  publish:
+			    types:
+			      - deprecation
+			"""));
 
 		FileSystem.AddFile("docs/docs/changelog.yml", new MockFileData(
-"""
-block:
-  publish:
-    types:
-      - other
-"""));
+			// language=yaml
+			"""
+			block:
+			  publish:
+			    types:
+			      - other
+			"""));
 	}
 
 	[Fact]
@@ -331,33 +348,36 @@ block:
 public class ChangelogConfigEmptyBlockTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogConfigEmptyBlockTests(ITestOutputHelper output) : base(output,
-"""
-:::{changelog}
-:::
-""")
+		// language=markdown
+		"""
+		:::{changelog}
+		:::
+		""")
 	{
 		FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-"""
-products:
-- product: elasticsearch
-  target: 9.3.0
-entries:
-- title: Regular feature
-  type: feature
-  products:
-  - product: elasticsearch
-    target: 9.3.0
-  pr: "111111"
-"""));
+			// language=yaml
+			"""
+			products:
+			- product: elasticsearch
+			  target: 9.3.0
+			entries:
+			- title: Regular feature
+			  type: feature
+			  products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			  pr: "111111"
+			"""));
 
 		// Config file exists but has no block section
 		FileSystem.AddFile("docs/changelog.yml", new MockFileData(
-"""
-lifecycles:
-  - preview
-  - beta
-  - ga
-"""));
+			// language=yaml
+			"""
+			lifecycles:
+			  - preview
+			  - beta
+			  - ga
+			"""));
 	}
 
 	[Fact]
@@ -370,62 +390,65 @@ lifecycles:
 public class ChangelogConfigMixedBlockersTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogConfigMixedBlockersTests(ITestOutputHelper output) : base(output,
-"""
-:::{changelog}
-:::
-""")
+		// language=markdown
+		"""
+		:::{changelog}
+		:::
+		""")
 	{
 		FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-"""
-products:
-- product: elasticsearch
-  target: 9.3.0
-entries:
-- title: Regular feature in Search
-  type: feature
-  products:
-  - product: elasticsearch
-    target: 9.3.0
-  areas:
-  - Search
-  pr: "111111"
-- title: Deprecation in Search
-  type: deprecation
-  products:
-  - product: elasticsearch
-    target: 9.3.0
-  areas:
-  - Search
-  description: Deprecated.
-  impact: None.
-  action: Upgrade.
-  pr: "222222"
-- title: Feature in Internal
-  type: feature
-  products:
-  - product: elasticsearch
-    target: 9.3.0
-  areas:
-  - Internal
-  pr: "333333"
-- title: Bug fix
-  type: bug-fix
-  products:
-  - product: elasticsearch
-    target: 9.3.0
-  pr: "444444"
-"""));
+			// language=yaml
+			"""
+			products:
+			- product: elasticsearch
+			  target: 9.3.0
+			entries:
+			- title: Regular feature in Search
+			  type: feature
+			  products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			  areas:
+			  - Search
+			  pr: "111111"
+			- title: Deprecation in Search
+			  type: deprecation
+			  products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			  areas:
+			  - Search
+			  description: Deprecated.
+			  impact: None.
+			  action: Upgrade.
+			  pr: "222222"
+			- title: Feature in Internal
+			  type: feature
+			  products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			  areas:
+			  - Internal
+			  pr: "333333"
+			- title: Bug fix
+			  type: bug-fix
+			  products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			  pr: "444444"
+			"""));
 
 		// Config with both type and area blockers
 		FileSystem.AddFile("docs/changelog.yml", new MockFileData(
-"""
-block:
-  publish:
-    types:
-      - deprecation
-    areas:
-      - Internal
-"""));
+			// language=yaml
+			"""
+			block:
+			  publish:
+			    types:
+			      - deprecation
+			    areas:
+			      - Internal
+			"""));
 	}
 
 	[Fact]
