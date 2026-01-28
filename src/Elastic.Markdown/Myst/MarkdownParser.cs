@@ -157,6 +157,7 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 				.UsePreciseSourceLocation()
 				.UseFootnotes() // Must be before UseDiagnosticLinks to ensure FootnoteLinkParser is inserted correctly
 				.UseDiagnosticLinks()
+				.UseAutoLinks()
 				.UseHeadingsWithSlugs()
 				.UseEmphasisExtras(EmphasisExtraOptions.Default)
 				.UseSubstitutionInlineCode()
