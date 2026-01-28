@@ -152,7 +152,7 @@ versioning_systems:
     current: 9.2.4
   elasticsearch-client-javascript:
     base: 9.0
-    current: 9.2.0
+    current: 9.2.1
   elasticsearch-client-dotnet:
     base: 9.0
     current: 9.2.3
