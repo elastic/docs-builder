@@ -39,6 +39,9 @@ public class AutoLinkBuilderExtension : IMarkdownExtension
 /// </summary>
 public class AutoLinkInlineParser : InlineParser
 {
+	// Domains that should never be autolinked (example/placeholder domains)
+	private static readonly string[] ExcludedDomains = ["localhost", "127.0.0.1", "example.com", "example.org", "example.net"];
+
 	public AutoLinkInlineParser() => OpeningCharacters = ['h'];
 
 	public override bool Match(InlineProcessor processor, ref StringSlice slice)
@@ -54,6 +57,10 @@ public class AutoLinkInlineParser : InlineParser
 			return false; // Just "https://" with nothing after is not valid
 
 		var url = span[..urlLength].ToString();
+
+		// Apply exclusion rules - if URL matches any, don't create an autolink
+		if (ShouldExcludeUrl(url))
+			return false;
 
 		// Get source position for proper diagnostics
 		var startPosition = slice.Start;
@@ -141,5 +148,76 @@ public class AutoLinkInlineParser : InlineParser
 			length--;
 
 		return length;
+	}
+
+	/// <summary>
+	/// Determines if a URL should be excluded from autolinking based on hard-coded rules.
+	/// </summary>
+	private static bool ShouldExcludeUrl(string url)
+	{
+		// Rule 1: Skip URLs containing brackets (broken AsciiDoc-style links like url[text])
+		if (url.Contains('[') || url.Contains(']'))
+			return true;
+
+		// Rule 2: Skip URLs containing template placeholders
+		if (url.Contains("{{") || url.Contains("}}"))
+			return true;
+
+		// Extract the authority (host:port) from the URL
+		// URL format: https://host[:port][/path][?query][#fragment]
+		var authorityStart = "https://".Length;
+		var authoritySpan = url.AsSpan(authorityStart);
+
+		// Find where the authority ends (at /, ?, or # or end of string)
+		var authorityEnd = authoritySpan.Length;
+		for (var i = 0; i < authoritySpan.Length; i++)
+		{
+			if (authoritySpan[i] is '/' or '?' or '#')
+			{
+				authorityEnd = i;
+				break;
+			}
+		}
+
+		var authority = authoritySpan[..authorityEnd];
+
+		// Rule 3: Skip URLs with explicit ports
+		// Look for :port pattern - but be careful not to match IPv6 addresses
+		// IPv6 would be in brackets like [::1], which we already excluded above
+		var colonIndex = authority.LastIndexOf(':');
+		if (colonIndex > 0)
+		{
+			// Check if everything after the colon is digits (a port number)
+			var afterColon = authority[(colonIndex + 1)..];
+			if (afterColon.Length > 0 && IsAllDigits(afterColon))
+				return true;
+		}
+
+		// Rule 4: Skip URLs with excluded domains (localhost, 127.0.0.1, example.*)
+		var host = colonIndex > 0 ? authority[..colonIndex] : authority;
+		var hostString = host.ToString().ToLowerInvariant();
+
+		foreach (var excluded in ExcludedDomains)
+		{
+			// Exact match
+			if (hostString == excluded)
+				return true;
+
+			// Subdomain match (e.g., sub.example.com matches example.com)
+			if (hostString.EndsWith("." + excluded, StringComparison.OrdinalIgnoreCase))
+				return true;
+		}
+
+		return false;
+	}
+
+	private static bool IsAllDigits(ReadOnlySpan<char> span)
+	{
+		foreach (var c in span)
+		{
+			if (!char.IsDigit(c))
+				return false;
+		}
+		return true;
 	}
 }

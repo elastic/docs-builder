@@ -115,6 +115,17 @@ Autolinks:
 - Display the external link indicator.
 - Are not rendered inside code blocks or inline code.
 
+#### Excluded URLs
+
+Certain URLs are intentionally excluded from autolinking:
+
+| Pattern | Example | Reason |
+|---------|---------|--------|
+| URLs with explicit ports | `https://example.co:443/path` | Typically configuration examples. |
+| Example and placeholder domains (`localhost`, `127.0.0.1`, `example.com`, `example.org`, `example.net`, and subdomains) | `https://localhost/api` | Reserved for documentation examples. |
+| URLs with template placeholders (`{{` or `}}`) | `https://{{cluster_id}}.example.co` | Contain variables meant to be replaced. |
+| Broken AsciiDoc-style links (`[` or `]` in URL) | `https://example.org/page[text` | Malformed links needing manual correction. |
+
 #### Examples
 
 ::::{tab-set}

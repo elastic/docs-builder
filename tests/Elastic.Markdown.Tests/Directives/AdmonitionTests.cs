@@ -186,8 +186,9 @@ A regular paragraph.
 	{
 		var html = Html;
 		html.Should().Contain("Time: 10:30 AM");
-		// URL is now autolinked
-		html.Should().Contain("""URL: <a href="https://example.com:8080/path" target="_blank" rel="noopener noreferrer">https://example.com:8080/path</a>""");
+		// URL with port is NOT autolinked (excluded by autolink rules)
+		html.Should().Contain("URL: https://example.com:8080/path");
+		html.Should().NotContain("""<a href="https://example.com:8080/path""");
 		html.Should().Contain("Configuration: key:value pairs");
 		html.Should().Contain("function test() { return &quot;hello:world&quot;; }");
 	}
