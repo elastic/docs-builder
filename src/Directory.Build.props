@@ -2,13 +2,33 @@
 <Project>
   <!-- Src Directory Build Properties -->
   <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+  <!-- Build optimizations: disable expensive tasks locally, enable in CI/Release -->
+  <Choose>
+    <When Condition="'$(CI)' == 'true' OR '$(Configuration)' == 'Release'">
+      <PropertyGroup>
+        <!-- NuGet audit -->
+        <NuGetAudit>true</NuGetAudit>
+        <NuGetAuditMode>all</NuGetAuditMode>
+        <NuGetAuditLevel>low</NuGetAuditLevel>
+        <!-- SourceLink for debugging published packages -->
+        <PublishRepositoryUrl>true</PublishRepositoryUrl>
+        <EnableSourceLink>true</EnableSourceLink>
+        <EnableSourceControlManagerQueries>true</EnableSourceControlManagerQueries>
+      </PropertyGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup>
+        <!-- Disable for faster local builds -->
+        <NuGetAudit>false</NuGetAudit>
+        <EnableSourceLink>false</EnableSourceLink>
+        <EnableSourceControlManagerQueries>false</EnableSourceControlManagerQueries>
+      </PropertyGroup>
+    </Otherwise>
+  </Choose>
   <PropertyGroup>
-    <NuGetAuditMode>all</NuGetAuditMode>
-    <NuGetAuditLevel>low</NuGetAuditLevel>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
 
     <!-- TODO ENABLE to document our code properly <GenerateDocumentationFile>true</GenerateDocumentationFile> -->
-    <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <StartupHookSupport Condition="'$(Configuration)' == 'Debug'">true</StartupHookSupport>
   </PropertyGroup>
 </Project>
