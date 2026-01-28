@@ -36,8 +36,12 @@ Additional workflows are still to come for updating and generating documentation
 
 ## Create a changelog configuration file [changelog-settings]
 
-You can create a configuration file to limit the acceptable product, type, subtype, and lifecycle values.
-You can also use it to prevent the creation of changelogs when certain PR labels are present.
+You can create a configuration file to:
+
+- define the acceptable product, type, subtype, and lifecycle values.
+- prevent the creation of changelogs when certain PR labels are present.
+- set default options, such as whether to extract issues and release note text from pull requests.
+
 Refer to [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml).
 
 By default, the `docs-builder changelog add` command checks the following path: `docs/changelog.yml`.
@@ -92,25 +96,26 @@ For up-to-date command usage information, use the `-h` option:
 Add a new changelog from command-line input
 
 Options:
-  --products <List<ProductInfo>>    Required: Products affected in format "product target lifecycle, ..." (e.g., "elasticsearch 9.2.0 ga, cloud-serverless 2025-08-05") [Required]
-  --action <string?>                Optional: What users must do to mitigate [Default: null]
-  --areas <string[]?>               Optional: Area(s) affected (comma-separated or specify multiple times) [Default: null]
-  --config <string?>                Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml' [Default: null]
-  --description <string?>           Optional: Additional information about the change (max 600 characters) [Default: null]
-  --extract-release-notes           Optional: When used with --prs, extract release notes from PR descriptions. Short release notes (≤120 characters, single line) are used as the title, long release notes (>120 characters or multi-line) are used as the description. Looks for content in formats like "Release Notes: ...", "Release-Notes: ...", "## Release Note", etc.
-  --feature-id <string?>            Optional: Feature flag ID [Default: null]
-  --highlight <bool?>               Optional: Include in release highlights [Default: null]
-  --impact <string?>                Optional: How the user's environment is affected [Default: null]
-  --issues <string[]?>              Optional: Issue URL(s) (comma-separated or specify multiple times) [Default: null]
-  --owner <string?>                 Optional: GitHub repository owner (used when --prs contains just numbers) [Default: null]
-  --output <string?>                Optional: Output directory for the changelog. Defaults to current directory [Default: null]
-  --prs <string[]?>                 Optional: Pull request URL(s) or PR number(s) (comma-separated), or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times. Each occurrence can be either comma-separated PRs (e.g., `--prs "https://github.com/owner/repo/pull/123,6789"`) or a file path (e.g., `--prs /path/to/file.txt`). When specifying PRs directly, provide comma-separated values. When specifying a file path, provide a single value that points to a newline-delimited file. If --owner and --repo are provided, PR numbers can be used instead of URLs. If specified, --title can be derived from the PR. If mappings are configured, --areas and --type can also be derived from the PR. Creates one changelog file per PR. [Default: null]
-  --repo <string?>                  Optional: GitHub repository name (used when --prs contains just numbers) [Default: null]
-  --strip-title-prefix              Optional: When used with --prs, remove square brackets and text within them from the beginning of PR titles, and also remove a colon if it follows the closing bracket (e.g., "[Inference API] Title" becomes "Title", "[ES|QL]: Title" becomes "Title")
-  --subtype <string?>               Optional: Subtype for breaking changes (api, behavioral, configuration, etc.) [Default: null]
-  --title <string?>                 Optional: A short, user-facing title (max 80 characters). Required if --prs is not specified. If --prs and --title are specified, the latter value is used instead of what exists in the PR. [Default: null]
-  --type <string?>                  Optional: Type of change (feature, enhancement, bug-fix, breaking-change, etc.). Required if --prs is not specified. If mappings are configured, type can be derived from the PR. [Default: null]
-  --use-pr-number                   Optional: Use the PR number as the filename instead of generating it from a unique ID and title
+  --products <List<ProductArgument>?>    Optional: Products affected in format "product target lifecycle, ..." (e.g., "elasticsearch 9.2.0 ga, cloud-serverless 2025-08-05"). If not specified, will be inferred from repository or config defaults. [Default: null]
+  --action <string?>                     Optional: What users must do to mitigate [Default: null]
+  --areas <string[]?>                    Optional: Area(s) affected (comma-separated or specify multiple times) [Default: null]
+  --config <string?>                     Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml' [Default: null]
+  --description <string?>                Optional: Additional information about the change (max 600 characters) [Default: null]
+  --no-extract-release-notes             Optional: Turn off extraction of release notes from PR descriptions. By default, release notes are extracted when using --prs. Short release notes (≤120 characters, single line) are used as the title, long release notes (>120 characters or multi-line) are used as the description.
+  --no-extract-issues                    Optional: Turn off extraction of linked issues from PR body (e.g., "Fixes #123"). By default, linked issues are extracted when using --prs.
+  --feature-id <string?>                 Optional: Feature flag ID [Default: null]
+  --highlight <bool?>                    Optional: Include in release highlights [Default: null]
+  --impact <string?>                     Optional: How the user's environment is affected [Default: null]
+  --issues <string[]?>                   Optional: Issue URL(s) (comma-separated or specify multiple times) [Default: null]
+  --owner <string?>                      Optional: GitHub repository owner (used when --prs contains just numbers) [Default: null]
+  --output <string?>                     Optional: Output directory for the changelog. Defaults to current directory [Default: null]
+  --prs <string[]?>                      Optional: Pull request URL(s) or PR number(s) (comma-separated), or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times. Each occurrence can be either comma-separated PRs (e.g., `--prs "https://github.com/owner/repo/pull/123,6789"`) or a file path (e.g., `--prs /path/to/file.txt`). When specifying PRs directly, provide comma-separated values. When specifying a file path, provide a single value that points to a newline-delimited file. If --owner and --repo are provided, PR numbers can be used instead of URLs. If specified, --title can be derived from the PR. If mappings are configured, --areas and --type can also be derived from the PR. Creates one changelog file per PR. [Default: null]
+  --repo <string?>                       Optional: GitHub repository name (used when --prs contains just numbers) [Default: null]
+  --strip-title-prefix                   Optional: When used with --prs, remove square brackets and text within them from the beginning of PR titles, and also remove a colon if it follows the closing bracket (e.g., "[Inference API] Title" becomes "Title", "[ES|QL]: Title" becomes "Title")
+  --subtype <string?>                    Optional: Subtype for breaking changes (api, behavioral, configuration, etc.) [Default: null]
+  --title <string?>                      Optional: A short, user-facing title (max 80 characters). Required if --pr is not specified. If --pr and --title are specified, the latter value is used instead of what exists in the PR. [Default: null]
+  --type <string?>                       Optional: Type of change (feature, enhancement, bug-fix, breaking-change, etc.). Required if --pr is not specified. If mappings are configured, type can be derived from the PR. [Default: null]
+  --use-pr-number                        Optional: Use the PR number as the filename instead of generating it from a unique ID and title
 ```
 
 ### Authorization
@@ -224,6 +229,7 @@ docs-builder changelog add \
 ```
 
 In this case, the changelog file derives the title, type, and areas from the pull request.
+The command also looks for patterns like `Fixes #123`, `Closes owner/repo#456`, `Resolves https://github.com/.../issues/789` in the pull request to derive its issues (unless you turn off this behavior in the changelog configuration file or use `--no-extract-issues`).
 
 The `--strip-title-prefix` option in this example means that if the PR title has a prefix in square brackets (such as `[ES|QL]` or `[Security]`), it is automatically removed from the changelog title. If a colon follows the closing bracket, it is also removed.
 
@@ -233,7 +239,7 @@ The `--strip-title-prefix` option only applies when the title is derived from th
 
 #### Extract release notes from PR descriptions [example-extract-release-notes]
 
-When you use the `--prs` option, you can also add the `--extract-release-notes` option to automatically extract text from the PR descriptions and use them in your changelog.
+When you use the `--prs` option, by default the `docs-builder changelog add` command automatically extracts text from the PR descriptions and use it in your changelog.
 
 In particular, it looks for content in these formats in the PR description:
 
@@ -252,6 +258,7 @@ The extracted content is handled differently based on its length:
 
 :::{note}
 If you explicitly provide `--title` or `--description`, those values take precedence over extracted release notes.
+You can turn off the release note extraction in the changelog configuration file or by using the `--no-extract-release-notes` option.
 :::
 
 #### Block changelog creation and publishing [example-block-label]

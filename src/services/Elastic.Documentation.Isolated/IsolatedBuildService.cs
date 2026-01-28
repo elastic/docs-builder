@@ -6,7 +6,7 @@ using System.IO.Abstractions;
 using Actions.Core.Services;
 using Elastic.ApiExplorer;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Services;
@@ -128,14 +128,16 @@ public class IsolatedBuildService(
 		var documentInferrer = new DocumentInferrerService(
 			context.ProductsConfiguration,
 			context.VersionsConfiguration,
-			context.LegacyUrlMappings);
-		var markdownExporters = exporters.CreateMarkdownExporters(logFactory, context, "isolated", documentInferrer);
+			context.LegacyUrlMappings,
+			set.Configuration,
+			context.Git);
+		var markdownExporters = exporters.CreateMarkdownExporters(logFactory, context, "isolated");
 
 		var tasks = markdownExporters.Select(async e => await e.StartAsync(ctx));
 		await Task.WhenAll(tasks);
 
 
-		var generator = new DocumentationGenerator(set, logFactory, set, null, null, markdownExporters.ToArray());
+		var generator = new DocumentationGenerator(set, logFactory, set, null, null, markdownExporters.ToArray(), documentInferrer: documentInferrer);
 		_ = await generator.GenerateAll(ctx);
 
 		if (!skipOpenApi)

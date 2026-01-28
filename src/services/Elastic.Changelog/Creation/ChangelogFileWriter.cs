@@ -4,9 +4,9 @@
 
 using System.IO.Abstractions;
 using System.Text;
-using Elastic.Changelog.Configuration;
 using Elastic.Changelog.Serialization;
 using Elastic.Documentation;
+using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Diagnostics;
 using Microsoft.Extensions.Logging;
 

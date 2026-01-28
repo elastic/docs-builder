@@ -39,12 +39,13 @@ internal sealed class ChangelogCommand(
 	/// <summary>
 	/// Add a new changelog from command-line input
 	/// </summary>
-	/// <param name="products">Required: Products affected in format "product target lifecycle, ..." (e.g., "elasticsearch 9.2.0 ga, cloud-serverless 2025-08-05")</param>
+	/// <param name="products">Optional: Products affected in format "product target lifecycle, ..." (e.g., "elasticsearch 9.2.0 ga, cloud-serverless 2025-08-05"). If not specified, will be inferred from repository or config defaults.</param>
 	/// <param name="action">Optional: What users must do to mitigate</param>
 	/// <param name="areas">Optional: Area(s) affected (comma-separated or specify multiple times)</param>
 	/// <param name="config">Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml'</param>
 	/// <param name="description">Optional: Additional information about the change (max 600 characters)</param>
-	/// <param name="extractReleaseNotes">Optional: When used with --prs, extract release notes from PR descriptions. Short release notes (≤120 characters, single line) are used as the title, long release notes (>120 characters or multi-line) are used as the description. Looks for content in formats like "Release Notes: ...", "Release-Notes: ...", "## Release Note", etc.</param>
+	/// <param name="noExtractReleaseNotes">Optional: Turn off extraction of release notes from PR descriptions. By default, release notes are extracted when using --prs. Short release notes (≤120 characters, single line) are used as the title, long release notes (>120 characters or multi-line) are used as the description.</param>
+	/// <param name="noExtractIssues">Optional: Turn off extraction of linked issues from PR body (e.g., "Fixes #123"). By default, linked issues are extracted when using --prs.</param>
 	/// <param name="featureId">Optional: Feature flag ID</param>
 	/// <param name="highlight">Optional: Include in release highlights</param>
 	/// <param name="impact">Optional: How the user's environment is affected</param>
@@ -61,12 +62,13 @@ internal sealed class ChangelogCommand(
 	/// <param name="ctx"></param>
 	[Command("add")]
 	public async Task<int> Create(
-		[ProductInfoParser] List<ProductArgument> products,
+		[ProductInfoParser] List<ProductArgument>? products = null,
 		string? action = null,
 		string[]? areas = null,
 		string? config = null,
 		string? description = null,
-		bool extractReleaseNotes = false,
+		bool noExtractReleaseNotes = false,
+		bool noExtractIssues = false,
 		string? featureId = null,
 		bool? highlight = null,
 		string? impact = null,
@@ -127,11 +129,17 @@ internal sealed class ChangelogCommand(
 			parsedPrs = allPrs.ToArray();
 		}
 
+		var shouldExtractReleaseNotes = !noExtractReleaseNotes;
+		var shouldExtractIssues = !noExtractIssues;
+
+		// Use provided products or empty list (service will infer from repo/config if empty)
+		var resolvedProducts = products ?? [];
+
 		var input = new CreateChangelogArguments
 		{
 			Title = title,
 			Type = type,
-			Products = products,
+			Products = resolvedProducts,
 			Subtype = subtype,
 			Areas = areas ?? [],
 			Prs = parsedPrs,
@@ -147,7 +155,8 @@ internal sealed class ChangelogCommand(
 			Config = config,
 			UsePrNumber = usePrNumber,
 			StripTitlePrefix = stripTitlePrefix,
-			ExtractReleaseNotes = extractReleaseNotes
+			ExtractReleaseNotes = shouldExtractReleaseNotes,
+			ExtractIssues = shouldExtractIssues
 		};
 
 		serviceInvoker.AddCommand(service, input,
@@ -158,21 +167,28 @@ internal sealed class ChangelogCommand(
 	}
 
 	/// <summary>
-	/// Bundle changelog files
+	/// Bundle changelog files. Can use either profile-based bundling (e.g., "bundle elasticsearch-release 9.2.0") or raw flags (e.g., "bundle --all").
 	/// </summary>
+	/// <param name="profile">Optional: Profile name from bundle.profiles in config (e.g., "elasticsearch-release"). When specified, the second argument is the version or promotion report URL.</param>
+	/// <param name="profileArg">Optional: Version number or promotion report URL/path when using a profile (e.g., "9.2.0" or "https://buildkite.../promotion-report.html")</param>
 	/// <param name="all">Include all changelogs in the directory. Only one filter option can be specified: `--all`, `--input-products`, or `--prs`.</param>
-	/// <param name="directory">Optional: Directory containing changelog YAML files. Defaults to current directory</param>
+	/// <param name="config">Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml'</param>
+	/// <param name="directory">Optional: Directory containing changelog YAML files. Uses config bundle.directory or defaults to current directory</param>
 	/// <param name="inputProducts">Filter by products in format "product target lifecycle, ..." (e.g., "cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta"). When specified, all three parts (product, target, lifecycle) are required but can be wildcards (*). Examples: "elasticsearch * *" matches all elasticsearch changelogs, "cloud-serverless 2025-12-02 *" matches cloud-serverless 2025-12-02 with any lifecycle, "* 9.3.* *" matches any product with target starting with "9.3.", "* * *" matches all changelogs (equivalent to --all). Only one filter option can be specified: `--all`, `--input-products`, or `--prs`.</param>
-	/// <param name="output">Optional: Output path for the bundled changelog. Can be either (1) a directory path, in which case 'changelog-bundle.yaml' is created in that directory, or (2) a file path ending in .yml or .yaml. Defaults to 'changelog-bundle.yaml' in the input directory</param>
+	/// <param name="output">Optional: Output path for the bundled changelog. Can be either (1) a directory path, in which case 'changelog-bundle.yaml' is created in that directory, or (2) a file path ending in .yml or .yaml. Uses config bundle.output_directory or defaults to 'changelog-bundle.yaml' in the input directory</param>
 	/// <param name="outputProducts">Optional: Explicitly set the products array in the output file in format "product target lifecycle, ...". Overrides any values from changelogs.</param>
 	/// <param name="owner">GitHub repository owner (required only when PRs are specified as numbers)</param>
 	/// <param name="prs">Filter by pull request URLs or numbers (comma-separated), or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times. Only one filter option can be specified: `--all`, `--input-products`, or `--prs`.</param>
 	/// <param name="repo">GitHub repository name (required only when PRs are specified as numbers)</param>
-	/// <param name="resolve">Optional: Copy the contents of each changelog file into the entries array. By default, the bundle contains only the file names and checksums.</param>
+	/// <param name="resolve">Optional: Copy the contents of each changelog file into the entries array. Uses config bundle.resolve or defaults to false.</param>
+	/// <param name="noResolve">Optional: Explicitly turn off resolve (overrides config).</param>
 	/// <param name="ctx"></param>
 	[Command("bundle")]
 	public async Task<int> Bundle(
+		[Argument] string? profile = null,
+		[Argument] string? profileArg = null,
 		bool all = false,
+		string? config = null,
 		string? directory = null,
 		[ProductInfoParser] List<ProductArgument>? inputProducts = null,
 		string? output = null,
@@ -180,13 +196,17 @@ internal sealed class ChangelogCommand(
 		string? owner = null,
 		string[]? prs = null,
 		string? repo = null,
-		bool resolve = false,
+		bool? resolve = null,
+		bool noResolve = false,
 		Cancel ctx = default
 	)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var service = new ChangelogBundlingService(logFactory);
+		var service = new ChangelogBundlingService(logFactory, configurationContext);
+
+		// Check if using profile mode vs raw flag mode
+		var isProfileMode = !string.IsNullOrWhiteSpace(profile);
 
 		// Process each --prs occurrence: each can be comma-separated PRs or a file path
 		var allPrs = new List<string>();
@@ -210,31 +230,46 @@ internal sealed class ChangelogCommand(
 			}
 		}
 
-		// Validate filter options - at least one must be specified
-		var specifiedFilters = new List<string>();
-		if (all)
-			specifiedFilters.Add("--all");
-		if (inputProducts != null && inputProducts.Count > 0)
-			specifiedFilters.Add("--input-products");
-		if (allPrs.Count > 0)
-			specifiedFilters.Add("--prs");
-
-		if (specifiedFilters.Count == 0)
+		// In raw mode (no profile), validate filter options
+		if (!isProfileMode)
 		{
-			collector.EmitError(string.Empty, "At least one filter option must be specified: --all, --input-products, or --prs");
-			_ = collector.StartAsync(ctx);
-			await collector.WaitForDrain();
-			await collector.StopAsync(ctx);
-			return 1;
+			var specifiedFilters = new List<string>();
+			if (all)
+				specifiedFilters.Add("--all");
+			if (inputProducts != null && inputProducts.Count > 0)
+				specifiedFilters.Add("--input-products");
+			if (allPrs.Count > 0)
+				specifiedFilters.Add("--prs");
+
+			if (specifiedFilters.Count == 0)
+			{
+				collector.EmitError(string.Empty, "At least one filter option must be specified: --all, --input-products, --prs, or use a profile (e.g., 'bundle elasticsearch-release 9.2.0')");
+				_ = collector.StartAsync(ctx);
+				await collector.WaitForDrain();
+				await collector.StopAsync(ctx);
+				return 1;
+			}
+
+			if (specifiedFilters.Count > 1)
+			{
+				collector.EmitError(string.Empty, $"Multiple filter options cannot be specified together. You specified: {string.Join(", ", specifiedFilters)}. Please use only one filter option: --all, --input-products, or --prs");
+				_ = collector.StartAsync(ctx);
+				await collector.WaitForDrain();
+				await collector.StopAsync(ctx);
+				return 1;
+			}
 		}
-
-		if (specifiedFilters.Count > 1)
+		else
 		{
-			collector.EmitError(string.Empty, $"Multiple filter options cannot be specified together. You specified: {string.Join(", ", specifiedFilters)}. Please use only one filter option: --all, --input-products, or --prs");
-			_ = collector.StartAsync(ctx);
-			await collector.WaitForDrain();
-			await collector.StopAsync(ctx);
-			return 1;
+			// In profile mode, validate that no raw flags are used
+			if (all || (inputProducts != null && inputProducts.Count > 0) || allPrs.Count > 0)
+			{
+				collector.EmitError(string.Empty, "When using a profile, do not specify --all, --input-products, or --prs. The profile configuration determines the filter.");
+				_ = collector.StartAsync(ctx);
+				await collector.WaitForDrain();
+				await collector.StopAsync(ctx);
+				return 1;
+			}
 		}
 
 		// Validate that if inputProducts is provided, all three parts (product, target, lifecycle) are present for each entry
@@ -318,6 +353,9 @@ internal sealed class ChangelogCommand(
 			}
 		}
 
+		// Determine resolve: CLI --no-resolve takes precedence, then CLI --resolve, then config default
+		var shouldResolve = noResolve ? false : resolve;
+
 		var input = new BundleChangelogsArguments
 		{
 			Directory = directory ?? Directory.GetCurrentDirectory(),
@@ -325,10 +363,13 @@ internal sealed class ChangelogCommand(
 			All = all,
 			InputProducts = inputProducts,
 			OutputProducts = outputProducts,
-			Resolve = resolve,
+			Resolve = shouldResolve ?? false, // Will be overridden by config if null
 			Prs = allPrs.Count > 0 ? allPrs.ToArray() : null,
 			Owner = owner,
-			Repo = repo
+			Repo = repo,
+			Profile = profile,
+			ProfileArgument = profileArg,
+			Config = config
 		};
 
 		serviceInvoker.AddCommand(service, input,
@@ -459,6 +500,48 @@ internal sealed class ChangelogCommand(
 
 		serviceInvoker.AddCommand(service, input,
 			async static (s, collector, state, ctx) => await s.CreateChangelogsFromRelease(collector, state, ctx)
+		);
+
+		return await serviceInvoker.InvokeAsync(ctx);
+	}
+
+	/// <summary>
+	/// Amend a bundle with additional changelog entries, creating an immutable .amend-N.yaml file
+	/// </summary>
+	/// <param name="bundlePath">Required: Path to the original bundle file to amend</param>
+	/// <param name="add">Required: Path(s) to changelog YAML file(s) to add. Can be specified multiple times.</param>
+	/// <param name="resolve">Optional: Copy the contents of each changelog file into the entries array. Defaults to false.</param>
+	/// <param name="ctx"></param>
+	[Command("bundle-amend")]
+	public async Task<int> BundleAmend(
+		[Argument] string bundlePath,
+		string[]? add = null,
+		bool resolve = false,
+		Cancel ctx = default
+	)
+	{
+		await using var serviceInvoker = new ServiceInvoker(collector);
+
+		var service = new ChangelogBundleAmendService(logFactory);
+
+		if (add == null || add.Length == 0)
+		{
+			collector.EmitError(string.Empty, "At least one file must be specified with --add");
+			_ = collector.StartAsync(ctx);
+			await collector.WaitForDrain();
+			await collector.StopAsync(ctx);
+			return 1;
+		}
+
+		var input = new AmendBundleArguments
+		{
+			BundlePath = bundlePath,
+			AddFiles = add,
+			Resolve = resolve
+		};
+
+		serviceInvoker.AddCommand(service, input,
+			async static (s, collector, state, ctx) => await s.AmendBundle(collector, state, ctx)
 		);
 
 		return await serviceInvoker.InvokeAsync(ctx);
