@@ -1,5 +1,5 @@
 @inherits RazorSlice<Elastic.Documentation.Site.GlobalLayoutViewModel>
-@if (Model.Features.PrimaryNavEnabled)
+@if (Model.Features is { PrimaryNavEnabled: true, DiagnosticsPanelEnabled: false })
 {
 	<div id="elastic-nav-wrapper">
 		<div id="elastic-nav" hx-disable="true"></div>

@@ -59,7 +59,7 @@
           DependsOnTargets="NpmInstall;MinVer"
           BeforeTargets="BeforeBuild"
           Inputs="@(NpmBuildInputFiles)"
-          Outputs="_static/.build-stamp">
+          Outputs="_static/.build-stamp;_static/main.js;_static/styles.css">
     <Message Text="Building frontend with version: $(MinVerVersion)" Importance="high" />
     <Exec Command="npm run build"
           WorkingDirectory="$(MSBuildThisFileDirectory)"
@@ -72,7 +72,7 @@
   </Target>
 
   <!-- Clean old hashed assets during publish to avoid accumulating stale files -->
-  <Target Name="CleanOldHashedAssets" BeforeTargets="NpmRunBuild" Condition="'$(PublishDir)' != ''">
+  <Target Name="CleanOldHashedAssets" BeforeTargets="NpmRunBuild" Condition="'$(IsPublishing)' == 'true'">
     <ItemGroup>
       <OldHashedFiles Include="_static/*.????????*.js" />
       <OldHashedFiles Include="_static/*.????????*.css" />
