@@ -205,7 +205,7 @@ public class GitHubReleaseChangelogService(
 		// Fetch PR labels
 		var prInfo = await _prService.FetchPrInfoAsync(prUrl, owner, repo, ctx);
 
-		// Check add_blockers - skip PRs with blocking labels
+		// Check block.create - skip PRs with blocking labels
 		if (prInfo != null && ShouldSkipPrDueToLabelBlockers(prInfo.Labels.ToArray(), productInfo, config, collector, prUrl))
 			return false;
 
