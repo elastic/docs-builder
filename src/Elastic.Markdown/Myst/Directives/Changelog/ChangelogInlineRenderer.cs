@@ -29,7 +29,12 @@ public static class ChangelogInlineRenderer
 			if (!isFirst)
 				_ = sb.AppendLine();
 
-			var bundleMarkdown = RenderSingleBundle(bundle, block.Subsections, block.PublishBlocker, block.FeatureIdsToHide, block.HideLinks);
+			var bundleMarkdown = RenderSingleBundle(
+				bundle,
+				block.Subsections,
+				block.PublishBlocker,
+				block.FeatureIdsToHide,
+				block.HideLinks);
 			_ = sb.Append(bundleMarkdown);
 
 			isFirst = false;
@@ -38,7 +43,12 @@ public static class ChangelogInlineRenderer
 		return sb.ToString();
 	}
 
-	private static string RenderSingleBundle(LoadedBundle bundle, bool subsections, PublishBlocker? publishBlocker, HashSet<string> featureIdsToHide, bool hideLinks)
+	private static string RenderSingleBundle(
+		LoadedBundle bundle,
+		bool subsections,
+		PublishBlocker? publishBlocker,
+		HashSet<string> featureIdsToHide,
+		bool hideLinks)
 	{
 		var titleSlug = ChangelogTextUtilities.TitleToSlug(bundle.Version);
 
@@ -108,75 +118,38 @@ public static class ChangelogInlineRenderer
 		var deprecations = entriesByType.GetValueOrDefault(ChangelogEntryType.Deprecation, []);
 		var knownIssues = entriesByType.GetValueOrDefault(ChangelogEntryType.KnownIssue, []);
 
-		// Build header with links to other sections if they exist
 		_ = sb.AppendLine(CultureInfo.InvariantCulture, $"## {title}");
 
-		var otherLinks = new List<string>();
-		if (knownIssues.Count > 0)
-			otherLinks.Add($"[Known issues](#{repo}-{titleSlug}-known-issues)");
-		if (breakingChanges.Count > 0)
-			otherLinks.Add($"[Breaking changes](#{repo}-{titleSlug}-breaking-changes)");
-		if (deprecations.Count > 0)
-			otherLinks.Add($"[Deprecations](#{repo}-{titleSlug}-deprecations)");
+		// Check if we have any content at all
+		var hasAnyContent = features.Count > 0 || enhancements.Count > 0 || security.Count > 0 ||
+							bugFixes.Count > 0 || docs.Count > 0 || regressions.Count > 0 || other.Count > 0 ||
+							breakingChanges.Count > 0 || deprecations.Count > 0 || knownIssues.Count > 0;
 
-		if (otherLinks.Count > 0)
+		if (!hasAnyContent)
 		{
-			var linksText = string.Join(" and ", otherLinks);
-			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"_{linksText}._");
-			_ = sb.AppendLine();
-		}
-
-		// Render main content sections
-		var hasMainContent = features.Count > 0 || enhancements.Count > 0 || security.Count > 0 ||
-							 bugFixes.Count > 0 || docs.Count > 0 || regressions.Count > 0 || other.Count > 0;
-
-		if (hasMainContent)
-		{
-			if (features.Count > 0 || enhancements.Count > 0)
-			{
-				_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Features and enhancements [{repo}-{titleSlug}-features-enhancements]");
-				var combined = features.Concat(enhancements).ToList();
-				RenderEntriesByArea(sb, combined, repo, subsections, hideLinks);
-			}
-
-			if (security.Count > 0 || bugFixes.Count > 0)
-			{
-				_ = sb.AppendLine();
-				_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Fixes [{repo}-{titleSlug}-fixes]");
-				var combined = security.Concat(bugFixes).ToList();
-				RenderEntriesByArea(sb, combined, repo, subsections, hideLinks);
-			}
-
-			if (docs.Count > 0)
-			{
-				_ = sb.AppendLine();
-				_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Documentation [{repo}-{titleSlug}-docs]");
-				RenderEntriesByArea(sb, docs, repo, subsections, hideLinks);
-			}
-
-			if (regressions.Count > 0)
-			{
-				_ = sb.AppendLine();
-				_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Regressions [{repo}-{titleSlug}-regressions]");
-				RenderEntriesByArea(sb, regressions, repo, subsections, hideLinks);
-			}
-
-			if (other.Count > 0)
-			{
-				_ = sb.AppendLine();
-				_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Other changes [{repo}-{titleSlug}-other]");
-				RenderEntriesByArea(sb, other, repo, subsections, hideLinks);
-			}
-		}
-		else
 			_ = sb.AppendLine("_No new features, enhancements, or fixes._");
+			return sb.ToString();
+		}
 
-		// Render special sections
 		if (breakingChanges.Count > 0)
 		{
 			_ = sb.AppendLine();
 			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Breaking changes [{repo}-{titleSlug}-breaking-changes]");
 			RenderDetailedEntries(sb, breakingChanges, repo, groupBySubtype: true, hideLinks);
+		}
+
+		if (security.Count > 0)
+		{
+			_ = sb.AppendLine();
+			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Security [{repo}-{titleSlug}-security]");
+			RenderEntriesByArea(sb, security, repo, subsections, hideLinks);
+		}
+
+		if (knownIssues.Count > 0)
+		{
+			_ = sb.AppendLine();
+			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Known issues [{repo}-{titleSlug}-known-issues]");
+			RenderDetailedEntries(sb, knownIssues, repo, groupBySubtype: false, hideLinks);
 		}
 
 		if (deprecations.Count > 0)
@@ -186,11 +159,40 @@ public static class ChangelogInlineRenderer
 			RenderDetailedEntries(sb, deprecations, repo, groupBySubtype: false, hideLinks);
 		}
 
-		if (knownIssues.Count > 0)
+		if (features.Count > 0 || enhancements.Count > 0)
 		{
 			_ = sb.AppendLine();
-			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Known issues [{repo}-{titleSlug}-known-issues]");
-			RenderDetailedEntries(sb, knownIssues, repo, groupBySubtype: false, hideLinks);
+			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Features and enhancements [{repo}-{titleSlug}-features-enhancements]");
+			var combined = features.Concat(enhancements).ToList();
+			RenderEntriesByArea(sb, combined, repo, subsections, hideLinks);
+		}
+
+		if (bugFixes.Count > 0)
+		{
+			_ = sb.AppendLine();
+			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Fixes [{repo}-{titleSlug}-fixes]");
+			RenderEntriesByArea(sb, bugFixes, repo, subsections, hideLinks);
+		}
+
+		if (docs.Count > 0)
+		{
+			_ = sb.AppendLine();
+			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Documentation [{repo}-{titleSlug}-docs]");
+			RenderEntriesByArea(sb, docs, repo, subsections, hideLinks);
+		}
+
+		if (regressions.Count > 0)
+		{
+			_ = sb.AppendLine();
+			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Regressions [{repo}-{titleSlug}-regressions]");
+			RenderEntriesByArea(sb, regressions, repo, subsections, hideLinks);
+		}
+
+		if (other.Count > 0)
+		{
+			_ = sb.AppendLine();
+			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Other changes [{repo}-{titleSlug}-other]");
+			RenderEntriesByArea(sb, other, repo, subsections, hideLinks);
 		}
 
 		return sb.ToString();

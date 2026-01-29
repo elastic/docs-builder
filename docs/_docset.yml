@@ -223,3 +223,6 @@ toc:
           - folder: baz
             children:
               - file: qux.md
+      - folder: release-notes
+        children:
+          - file: index.md

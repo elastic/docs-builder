@@ -220,6 +220,10 @@ public class ChangelogDefaultPathMissingTests(ITestOutputHelper output) : Direct
 	}
 }
 
+/// <summary>
+/// Tests for breaking changes rendering.
+/// Breaking changes should always render on the page with the new ordering (critical types first).
+/// </summary>
 public class ChangelogWithBreakingChangesTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogWithBreakingChangesTests(ITestOutputHelper output) : base(output,
@@ -262,6 +266,10 @@ public class ChangelogWithBreakingChangesTests : DirectiveTest<ChangelogBlock>
 	}
 }
 
+/// <summary>
+/// Tests for deprecations rendering.
+/// Deprecations should always render on the page with the new ordering (critical types first).
+/// </summary>
 public class ChangelogWithDeprecationsTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogWithDeprecationsTests(ITestOutputHelper output) : base(output,
@@ -367,4 +375,178 @@ public class ChangelogAbsolutePathTests : DirectiveTest<ChangelogBlock>
 
 	[Fact]
 	public void SetsCorrectBundlesFolderPath() => Block!.BundlesFolderPath.Should().Contain("release-notes");
+}
+
+/// <summary>
+/// Tests the section order - critical types (breaking changes, security, known issues, deprecations)
+/// should appear BEFORE features/fixes.
+/// </summary>
+public class ChangelogSectionOrderTests : DirectiveTest<ChangelogBlock>
+{
+	public ChangelogSectionOrderTests(ITestOutputHelper output) : base(output,
+		// language=markdown
+		"""
+		:::{changelog}
+		:::
+		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
+		// language=yaml
+		"""
+		products:
+		- product: elasticsearch
+		  target: 9.3.0
+		entries:
+		- title: New feature
+		  type: feature
+		  products:
+		  - product: elasticsearch
+		    target: 9.3.0
+		  pr: "111111"
+		- title: Security fix
+		  type: security
+		  products:
+		  - product: elasticsearch
+		    target: 9.3.0
+		  pr: "222222"
+		- title: Breaking API change
+		  type: breaking-change
+		  products:
+		  - product: elasticsearch
+		    target: 9.3.0
+		  description: API changed.
+		  impact: Users must update.
+		  action: Follow guide.
+		  pr: "333333"
+		- title: Known issue
+		  type: known-issue
+		  products:
+		  - product: elasticsearch
+		    target: 9.3.0
+		  description: Issue exists.
+		  impact: Some impact.
+		  action: Workaround available.
+		  pr: "444444"
+		- title: Deprecated feature
+		  type: deprecation
+		  products:
+		  - product: elasticsearch
+		    target: 9.3.0
+		  description: Feature deprecated.
+		  impact: Will be removed.
+		  action: Use new feature.
+		  pr: "555555"
+		- title: Bug fix
+		  type: bug-fix
+		  products:
+		  - product: elasticsearch
+		    target: 9.3.0
+		  pr: "666666"
+		"""));
+
+	[Fact]
+	public void BreakingChangesAppearsFirst()
+	{
+		var breakingIdx = Html.IndexOf("Breaking changes", StringComparison.Ordinal);
+		var featuresIdx = Html.IndexOf("Features and enhancements", StringComparison.Ordinal);
+		var fixesIdx = Html.IndexOf(">Fixes<", StringComparison.Ordinal);
+
+		breakingIdx.Should().BeLessThan(featuresIdx, "Breaking changes should appear before Features");
+		breakingIdx.Should().BeLessThan(fixesIdx, "Breaking changes should appear before Fixes");
+	}
+
+	[Fact]
+	public void SecurityAppearsBeforeFeatures()
+	{
+		var securityIdx = Html.IndexOf(">Security<", StringComparison.Ordinal);
+		var featuresIdx = Html.IndexOf("Features and enhancements", StringComparison.Ordinal);
+
+		securityIdx.Should().BeLessThan(featuresIdx, "Security should appear before Features");
+	}
+
+	[Fact]
+	public void KnownIssuesAppearsBeforeFeatures()
+	{
+		var knownIssuesIdx = Html.IndexOf("Known issues", StringComparison.Ordinal);
+		var featuresIdx = Html.IndexOf("Features and enhancements", StringComparison.Ordinal);
+
+		knownIssuesIdx.Should().BeLessThan(featuresIdx, "Known issues should appear before Features");
+	}
+
+	[Fact]
+	public void DeprecationsAppearsBeforeFeatures()
+	{
+		var deprecationsIdx = Html.IndexOf("Deprecations", StringComparison.Ordinal);
+		var featuresIdx = Html.IndexOf("Features and enhancements", StringComparison.Ordinal);
+
+		deprecationsIdx.Should().BeLessThan(featuresIdx, "Deprecations should appear before Features");
+	}
+}
+
+/// <summary>
+/// Tests header levels: ## (h2) for versions, ### (h3) for sections.
+/// </summary>
+public class ChangelogHeaderLevelsTests : DirectiveTest<ChangelogBlock>
+{
+	public ChangelogHeaderLevelsTests(ITestOutputHelper output) : base(output,
+		// language=markdown
+		"""
+		:::{changelog}
+		:::
+		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
+		// language=yaml
+		"""
+		products:
+		- product: elasticsearch
+		  target: 9.3.0
+		entries:
+		- title: New feature
+		  type: feature
+		  products:
+		  - product: elasticsearch
+		    target: 9.3.0
+		  pr: "111111"
+		- title: Bug fix
+		  type: bug-fix
+		  products:
+		  - product: elasticsearch
+		    target: 9.3.0
+		  pr: "222222"
+		"""));
+
+	[Fact]
+	public void VersionHeaderIsH2()
+	{
+		// Version should be h2
+		Html.Should().Contain("<h2");
+		Html.Should().Contain("9.3.0");
+	}
+
+	[Fact]
+	public void OnlyOneH2ForVersion()
+	{
+		// Only one h2 for the version header
+		var h2Count = CountOccurrences(Html, "<h2");
+		h2Count.Should().Be(1, "Should have exactly one h2 for the version");
+	}
+
+	[Fact]
+	public void SectionHeadersAreH3()
+	{
+		// Section headers should be h3 (children of version)
+		Html.Should().Contain("<h3");
+		// Should have h3 for features + fixes = 2
+		var h3Count = CountOccurrences(Html, "<h3");
+		h3Count.Should().Be(2, "Should have h3 for each section (features, fixes)");
+	}
+
+	private static int CountOccurrences(string text, string pattern)
+	{
+		var count = 0;
+		var index = 0;
+		while ((index = text.IndexOf(pattern, index, StringComparison.Ordinal)) != -1)
+		{
+			count++;
+			index += pattern.Length;
+		}
+		return count;
+	}
 }

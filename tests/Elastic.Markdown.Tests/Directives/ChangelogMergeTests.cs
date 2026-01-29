@@ -124,13 +124,15 @@ public class ChangelogMergeSameTargetTests : DirectiveTest<ChangelogBlock>
 	}
 
 	[Fact]
-	public void RendersOnlyOneSectionPerMergedTarget()
+	public void RendersOnlyOneVersionHeaderPerMergedTarget()
 	{
-		// Should render only one ## 2025-08-05 header, not three
-		// The version appears in the header and potentially in anchor links
-		// But there should be only ONE h2 header for this version
-		var h2Count = CountOccurrences(Html, "<h2");
-		h2Count.Should().Be(2, "Should have exactly 2 h2 headers (one per merged target)");
+		// Should render only one version header for 2025-08-05, not three separate ones
+		// Count occurrences of the version string in h2 context
+		var aug05Count = CountOccurrences(Html, ">2025-08-05<");
+		var aug01Count = CountOccurrences(Html, ">2025-08-01<");
+
+		aug05Count.Should().Be(1, "Should have exactly 1 version header for 2025-08-05 (merged)");
+		aug01Count.Should().Be(1, "Should have exactly 1 version header for 2025-08-01");
 	}
 
 	[Fact]
