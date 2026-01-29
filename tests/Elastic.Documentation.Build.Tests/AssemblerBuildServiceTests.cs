@@ -100,16 +100,10 @@ namespace Elastic.Documentation.Build.Tests;
  * - "environment": Build environment (dev, staging, prod)
  */
 
-public class AssemblerBuildServiceTests
+public class AssemblerBuildServiceTests : IDisposable
 {
-	private readonly TestLoggerFactory _loggerFactory;
-	private readonly NullCoreService _coreService;
-
-	public AssemblerBuildServiceTests()
-	{
-		_loggerFactory = new TestLoggerFactory(TestContext.Current.TestOutputHelper);
-		_coreService = new NullCoreService();
-	}
+	private readonly TestLoggerFactory _loggerFactory = new(TestContext.Current.TestOutputHelper);
+	private readonly NullCoreService _coreService = new();
 
 	[Fact]
 	public void Constructor_AcceptsIEnvironmentVariables()
@@ -216,5 +210,11 @@ public class AssemblerBuildServiceTests
 		var shouldThrow = assumeBuild && localEnv.IsRunningOnCI;
 
 		shouldThrow.Should().BeFalse("Local + assumeBuild=true should be allowed");
+	}
+
+	public void Dispose()
+	{
+		_loggerFactory.Dispose();
+		GC.SuppressFinalize(this);
 	}
 }
