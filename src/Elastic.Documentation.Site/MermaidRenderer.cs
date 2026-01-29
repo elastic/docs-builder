@@ -4,15 +4,19 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Web;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Site;
 
 /// <summary>
 /// Renders Mermaid diagrams to SVG using the beautiful-mermaid library via Node.js.
+/// Falls back to client-side rendering when Node.js is not available.
 /// </summary>
 public class MermaidRenderer
 {
+	private static bool? IsNodeAvailableCached;
+
 	private readonly ILogger<MermaidRenderer>? _logger;
 	private readonly string _projectRoot;
 	private readonly string _scriptPath;
@@ -36,30 +40,74 @@ public class MermaidRenderer
 	}
 
 	/// <summary>
+	/// Checks if Node.js is available for server-side rendering.
+	/// </summary>
+	public bool IsNodeAvailable()
+	{
+		if (IsNodeAvailableCached.HasValue)
+			return IsNodeAvailableCached.Value;
+
+		// Check if script and node_modules exist
+		if (!File.Exists(_scriptPath) || !Directory.Exists(Path.Combine(_projectRoot, "node_modules")))
+		{
+			IsNodeAvailableCached = false;
+			return false;
+		}
+
+		// Check if node is in PATH
+		try
+		{
+			using var process = new Process
+			{
+				StartInfo = new ProcessStartInfo
+				{
+					FileName = "node",
+					Arguments = "--version",
+					RedirectStandardOutput = true,
+					RedirectStandardError = true,
+					UseShellExecute = false,
+					CreateNoWindow = true
+				}
+			};
+			if (!process.Start())
+			{
+				IsNodeAvailableCached = false;
+				return false;
+			}
+			_ = process.WaitForExit(5000);
+			IsNodeAvailableCached = process.ExitCode == 0;
+		}
+		catch
+		{
+			IsNodeAvailableCached = false;
+		}
+
+		_logger?.LogDebug("Node.js availability: {IsAvailable}", IsNodeAvailableCached);
+		return IsNodeAvailableCached.Value;
+	}
+
+	/// <summary>
+	/// Returns HTML for client-side Mermaid rendering when Node.js is not available.
+	/// </summary>
+	public static string GetClientSideHtml(string mermaidCode) =>
+		$"<pre class=\"mermaid\">{HttpUtility.HtmlEncode(mermaidCode)}</pre>";
+
+	/// <summary>
 	/// Renders Mermaid diagram code to SVG.
 	/// </summary>
 	/// <param name="mermaidCode">The Mermaid diagram code to render.</param>
 	/// <param name="cancellationToken">Cancellation token.</param>
-	/// <returns>The rendered SVG string.</returns>
-	/// <exception cref="InvalidOperationException">Thrown when rendering fails.</exception>
+	/// <returns>The rendered SVG string, or client-side HTML if Node.js is not available.</returns>
 	public async Task<string> RenderAsync(string mermaidCode, CancellationToken cancellationToken = default)
 	{
 		if (string.IsNullOrWhiteSpace(mermaidCode))
 			throw new ArgumentException("Mermaid code cannot be null or empty", nameof(mermaidCode));
 
-		if (!File.Exists(_scriptPath))
+		// Fall back to client-side rendering if Node.js is not available
+		if (!IsNodeAvailable())
 		{
-			throw new InvalidOperationException(
-				$"Mermaid renderer script not found at: {_scriptPath}. " +
-				"Ensure npm dependencies are installed by running 'npm ci' in the Elastic.Documentation.Site directory.");
-		}
-
-		var nodeModulesPath = Path.Combine(_projectRoot, "node_modules");
-		if (!Directory.Exists(nodeModulesPath))
-		{
-			throw new InvalidOperationException(
-				$"Node modules not found at: {nodeModulesPath}. " +
-				"Run 'npm ci' in the Elastic.Documentation.Site directory to install dependencies.");
+			_logger?.LogDebug("Node.js not available, using client-side Mermaid rendering");
+			return GetClientSideHtml(mermaidCode);
 		}
 
 		_logger?.LogDebug("Rendering Mermaid diagram using script at {ScriptPath}", _scriptPath);

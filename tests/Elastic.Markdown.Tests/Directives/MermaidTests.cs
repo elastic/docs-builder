@@ -24,7 +24,7 @@ flowchart LR
 	public void ExtractsContent() => Block!.Content.Should().Contain("flowchart LR");
 
 	[Fact]
-	public void GeneratesRenderedSvg() => Block!.RenderedSvg.Should().StartWith("<svg");
+	public void GeneratesRenderedHtml() => Block!.RenderedHtml.Should().StartWith("<svg");
 
 	[Fact]
 	public void RendersSvgInDiv() => Html.Should().Contain("<div class=\"mermaid\">");
@@ -33,7 +33,10 @@ flowchart LR
 	public void RendersInlineSvg() => Html.Should().Contain("<svg");
 
 	[Fact]
-	public void SvgHasNoGoogleFontsImport() => Block!.RenderedSvg.Should().NotContain("fonts.googleapis.com");
+	public void SvgHasNoGoogleFontsImport() => Block!.RenderedHtml.Should().NotContain("fonts.googleapis.com");
+
+	[Fact]
+	public void IsNotClientSide() => Block!.IsClientSide.Should().BeFalse();
 }
 
 public class MermaidSequenceTests(ITestOutputHelper output) : DirectiveTest<MermaidBlock>(output,
@@ -54,7 +57,7 @@ sequenceDiagram
 	public void ExtractsSequenceContent() => Block!.Content.Should().Contain("sequenceDiagram");
 
 	[Fact]
-	public void GeneratesRenderedSvg() => Block!.RenderedSvg.Should().StartWith("<svg");
+	public void GeneratesRenderedHtml() => Block!.RenderedHtml.Should().StartWith("<svg");
 }
 
 public class MermaidStateDiagramTests(ITestOutputHelper output) : DirectiveTest<MermaidBlock>(output,
@@ -76,10 +79,10 @@ stateDiagram-v2
 	public void ExtractsStateContent() => Block!.Content.Should().Contain("stateDiagram-v2");
 
 	[Fact]
-	public void GeneratesRenderedSvg() => Block!.RenderedSvg.Should().StartWith("<svg");
+	public void GeneratesRenderedHtml() => Block!.RenderedHtml.Should().StartWith("<svg");
 
 	[Fact]
-	public void ContainsStateNodes() => Block!.RenderedSvg.Should().Contain("Idle");
+	public void ContainsStateNodes() => Block!.RenderedHtml.Should().Contain("Idle");
 }
 
 public class MermaidClassDiagramTests(ITestOutputHelper output) : DirectiveTest<MermaidBlock>(output,
@@ -100,10 +103,10 @@ classDiagram
 	public void ExtractsClassContent() => Block!.Content.Should().Contain("classDiagram");
 
 	[Fact]
-	public void GeneratesRenderedSvg() => Block!.RenderedSvg.Should().StartWith("<svg");
+	public void GeneratesRenderedHtml() => Block!.RenderedHtml.Should().StartWith("<svg");
 
 	[Fact]
-	public void ContainsClassNames() => Block!.RenderedSvg.Should().Contain("Animal");
+	public void ContainsClassNames() => Block!.RenderedHtml.Should().Contain("Animal");
 }
 
 public class MermaidErDiagramTests(ITestOutputHelper output) : DirectiveTest<MermaidBlock>(output,
@@ -123,10 +126,10 @@ erDiagram
 	public void ExtractsErContent() => Block!.Content.Should().Contain("erDiagram");
 
 	[Fact]
-	public void GeneratesRenderedSvg() => Block!.RenderedSvg.Should().StartWith("<svg");
+	public void GeneratesRenderedHtml() => Block!.RenderedHtml.Should().StartWith("<svg");
 
 	[Fact]
-	public void ContainsEntityNames() => Block!.RenderedSvg.Should().Contain("CUSTOMER");
+	public void ContainsEntityNames() => Block!.RenderedHtml.Should().Contain("CUSTOMER");
 }
 
 public class MermaidEmptyContentTests(ITestOutputHelper output) : DirectiveTest<MermaidBlock>(output,
@@ -154,5 +157,5 @@ invalid syntax here
 		Collector.Diagnostics.Should().ContainSingle(d => d.Message.Contains("Failed to render Mermaid diagram"));
 
 	[Fact]
-	public void RenderedSvgIsNull() => Block!.RenderedSvg.Should().BeNull();
+	public void RenderedHtmlIsNull() => Block!.RenderedHtml.Should().BeNull();
 }

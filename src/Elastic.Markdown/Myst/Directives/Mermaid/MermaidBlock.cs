@@ -20,9 +20,14 @@ public class MermaidBlock(DirectiveBlockParser parser, ParserContext context) : 
 	public string? Content { get; private set; }
 
 	/// <summary>
-	/// The rendered SVG content.
+	/// The rendered HTML content (either SVG or client-side HTML).
 	/// </summary>
-	public string? RenderedSvg { get; private set; }
+	public string? RenderedHtml { get; private set; }
+
+	/// <summary>
+	/// Whether the diagram is rendered client-side (requires Mermaid.js).
+	/// </summary>
+	public bool IsClientSide { get; private set; }
 
 	public override void FinalizeAndValidate(ParserContext context)
 	{
@@ -35,10 +40,13 @@ public class MermaidBlock(DirectiveBlockParser parser, ParserContext context) : 
 			return;
 		}
 
-		// Render the Mermaid diagram to SVG
+		// Check if we need client-side rendering
+		IsClientSide = !Renderer.Value.IsNodeAvailable();
+
+		// Render the Mermaid diagram
 		try
 		{
-			RenderedSvg = Renderer.Value.Render(Content);
+			RenderedHtml = Renderer.Value.Render(Content);
 		}
 		catch (Exception ex) when (ex is not OutOfMemoryException
 								   and not StackOverflowException

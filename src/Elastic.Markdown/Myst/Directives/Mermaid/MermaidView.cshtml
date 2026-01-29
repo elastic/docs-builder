@@ -1,11 +1,22 @@
 @inherits RazorSlice<Elastic.Markdown.Myst.Directives.Mermaid.MermaidViewModel>
 @{
 	var mermaid = Model.MermaidBlock;
-	if (!string.IsNullOrEmpty(mermaid?.RenderedSvg))
+	if (!string.IsNullOrEmpty(mermaid?.RenderedHtml))
 	{
-		<div class="mermaid">
-			@(new Microsoft.AspNetCore.Html.HtmlString(mermaid.RenderedSvg))
-		</div>
+		if (mermaid.IsClientSide)
+		{
+			// Client-side rendering: output pre tag for Mermaid.js to process
+			<div class="mermaid-container" data-mermaid-client="true">
+				@(new Microsoft.AspNetCore.Html.HtmlString(mermaid.RenderedHtml))
+			</div>
+		}
+		else
+		{
+			// Server-side rendering: output SVG directly
+			<div class="mermaid">
+				@(new Microsoft.AspNetCore.Html.HtmlString(mermaid.RenderedHtml))
+			</div>
+		}
 	}
 	// Errors are reported via diagnostics, no fallback rendering needed
 }
