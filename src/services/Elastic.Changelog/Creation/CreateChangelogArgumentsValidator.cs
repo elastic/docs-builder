@@ -72,7 +72,7 @@ public class CreateChangelogArgumentsValidator(IConfigurationContext configurati
 				collector.EmitWarning(string.Empty, "Type is missing. The changelog will be created with type commented out. Please manually update the type field.");
 			else
 			{
-				collector.EmitError(string.Empty, "Type is required. Provide --type or specify --prs to derive it from PR labels (requires label_to_type mapping in changelog.yml).");
+				collector.EmitError(string.Empty, "Type is required. Provide --type or specify --prs to derive it from PR labels (requires pivot.types mapping in changelog.yml).");
 				return false;
 			}
 		}
