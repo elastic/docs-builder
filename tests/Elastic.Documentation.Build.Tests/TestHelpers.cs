@@ -4,7 +4,7 @@
 
 using System.Collections.Frozen;
 using System.IO.Abstractions;
-using System.IO.Abstractions.TestingHelpers;
+using System.Text.Json.Serialization.Metadata;
 using Actions.Core;
 using Actions.Core.Services;
 using Actions.Core.Summaries;
@@ -76,19 +76,6 @@ public static class TestHelpers
 			LegacyUrlMappings = new LegacyUrlMappingConfiguration { Mappings = [] },
 		};
 	}
-
-	public static MockFileSystem CreateMockFileSystemWithDocset(string rootPath = "/docs")
-	{
-		var fs = new MockFileSystem();
-		var docsetPath = fs.Path.Combine(rootPath, "docset.yml");
-		fs.AddFile(docsetPath, new MockFileData(@"
-project: test-project
-toc:
-  - file: index.md
-"));
-		fs.AddFile(fs.Path.Combine(rootPath, "index.md"), new MockFileData("# Test"));
-		return fs;
-	}
 }
 
 /// <summary>
@@ -97,12 +84,10 @@ toc:
 #pragma warning disable IDE0060 // Remove unused parameter - required by interface
 public sealed class NullCoreService : ICoreService
 {
-	public string GetInput(string name) => string.Empty;
 	public string GetInput(string name, InputOptions? options) => string.Empty;
 	public string[] GetMultilineInput(string name, InputOptions? options = null) => [];
 	public bool GetBoolInput(string name, InputOptions? options = null) => false;
-	public Task SetOutputAsync(string name, string value) => Task.CompletedTask;
-	public ValueTask SetOutputAsync<T>(string name, T value, System.Text.Json.Serialization.Metadata.JsonTypeInfo<T>? jsonTypeInfo = null) => ValueTask.CompletedTask;
+	public ValueTask SetOutputAsync<T>(string name, T value, JsonTypeInfo<T>? typeInfo = null) => ValueTask.CompletedTask;
 	public ValueTask ExportVariableAsync(string name, string value) => ValueTask.CompletedTask;
 	public void SetSecret(string secret) { }
 	public ValueTask AddPathAsync(string inputPath) => ValueTask.CompletedTask;
@@ -116,7 +101,7 @@ public sealed class NullCoreService : ICoreService
 	public void StartGroup(string name) { }
 	public void EndGroup() { }
 	public ValueTask<T> GroupAsync<T>(string name, Func<ValueTask<T>> action) => action();
-	public ValueTask SaveStateAsync<T>(string name, T value, System.Text.Json.Serialization.Metadata.JsonTypeInfo<T>? jsonTypeInfo = null) => ValueTask.CompletedTask;
+	public ValueTask SaveStateAsync<T>(string name, T value, JsonTypeInfo<T>? typeInfo = null) => ValueTask.CompletedTask;
 	public string GetState(string name) => string.Empty;
 	public Summary Summary { get; } = new();
 	public bool IsDebug => false;
@@ -127,20 +112,14 @@ public class TestLoggerFactory(ITestOutputHelper? output) : ILoggerFactory
 {
 	public void AddProvider(ILoggerProvider provider) { }
 	public ILogger CreateLogger(string categoryName) => new TestLogger(output);
-	public void Dispose() { }
+
+	public void Dispose() => GC.SuppressFinalize(this);
 }
 
 public class TestLogger(ITestOutputHelper? output) : ILogger
 {
 	public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
 	public bool IsEnabled(LogLevel logLevel) => true;
-	public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
-	{
+	public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) =>
 		output?.WriteLine($"[{logLevel}] {formatter(state, exception)}");
-	}
-}
-
-public class TestDiagnosticsCollector : DiagnosticsCollector
-{
-	public TestDiagnosticsCollector() : base([]) { }
 }
