@@ -9,7 +9,7 @@ using FluentAssertions;
 namespace Elastic.Documentation.Configuration.Tests.ReleaseNotes;
 
 /// <summary>
-/// Unit tests for ReleaseNotesYamlSerialization.LoadPublishBlocker.
+/// Unit tests for ReleaseNotesSerialization.LoadPublishBlocker.
 /// These tests verify the publish blocker loading functionality that
 /// was consolidated from the old PublishBlockerLoader.
 /// </summary>
