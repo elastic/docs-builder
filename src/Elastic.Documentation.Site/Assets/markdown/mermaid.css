@@ -1,0 +1,32 @@
+.mermaid-rendered {
+	@apply rounded-md border-2 border-grey-10 mt-4 p-4 overflow-x-auto;
+
+	svg {
+		@apply mx-auto;
+		font-family: Inter, system-ui, sans-serif;
+	}
+
+	.nodeLabel,
+	.labelText,
+	.loopText,
+	.noteText,
+	.messageText {
+		@apply font-mono;
+		font-size: 0.875em;
+	}
+
+	text.actor {
+		@apply font-mono;
+		font-size: 0.875em;
+	}
+}
+
+/* Fallback styling for unprocessed mermaid blocks */
+pre.mermaid {
+	@apply rounded-md border-2 border-grey-10 mt-4 p-4 font-mono text-sm;
+}
+
+/* Error state */
+pre.mermaid.mermaid-error {
+	@apply border-red-30 bg-red-10;
+}

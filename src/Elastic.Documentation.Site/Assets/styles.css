@@ -19,6 +19,7 @@
 @import './markdown/footnotes.css';
 @import './markdown/images.css';
 @import './markdown/math.css';
+@import './markdown/mermaid.css';
 @import './markdown/image-carousel.css';
 @import './markdown/hr.css';
 @import './modal.css';

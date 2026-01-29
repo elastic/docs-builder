@@ -6,6 +6,7 @@ declare const mermaid: {
 
 let mermaidLoaded = false
 let mermaidLoading: Promise<void> | null = null
+let diagramCounter = 0
 
 /**
  * Load Mermaid.js from CDN
@@ -65,7 +66,7 @@ export async function initMermaid() {
 
             try {
                 // Generate unique ID for this diagram
-                const id = `mermaid-diagram-${Date.now()}-${i}`
+                const id = `mermaid-${++diagramCounter}`
 
                 // Render the diagram
                 const { svg } = await mermaid.render(id, content)
