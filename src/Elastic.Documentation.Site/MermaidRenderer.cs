@@ -97,10 +97,10 @@ public class MermaidRenderer
 
 			if (process.ExitCode != 0)
 			{
+				var errorMessage = string.IsNullOrWhiteSpace(error) ? "Unknown error" : error.Trim();
 				_logger?.LogError("Mermaid rendering failed with exit code {ExitCode}: {Error}",
-					process.ExitCode, error);
-				throw new InvalidOperationException(
-					$"Mermaid rendering failed: {(string.IsNullOrWhiteSpace(error) ? "Unknown error" : error.Trim())}");
+					process.ExitCode, errorMessage);
+				throw new InvalidOperationException(errorMessage);
 			}
 
 			if (string.IsNullOrWhiteSpace(output))

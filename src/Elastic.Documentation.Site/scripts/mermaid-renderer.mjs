@@ -9,10 +9,44 @@
  * Usage: echo "graph LR; A --> B" | node mermaid-renderer.mjs
  */
 
-import { renderMermaid, DEFAULTS } from 'beautiful-mermaid';
+import { renderMermaid } from 'beautiful-mermaid';
+
+// High-contrast theme configuration
+// beautiful-mermaid generates CSS variables that don't resolve correctly in all contexts,
+// so we resolve them to actual colors during post-processing
+const colors = {
+	background: '#FFFFFF',
+	foreground: '#000000',
+	nodeFill: '#F5F5F5',
+	nodeStroke: '#000000',
+	line: '#000000',
+	innerStroke: '#333333',
+};
+
+// Map CSS variables to resolved colors
+const variableReplacements = {
+	'--_text': colors.foreground,
+	'--_text-sec': colors.foreground,
+	'--_text-muted': colors.foreground,
+	'--_text-faint': colors.foreground,  // "+ ", ": ", "(no attributes)"
+	'--_line': colors.line,
+	'--_arrow': colors.foreground,
+	'--_node-fill': colors.nodeFill,
+	'--_node-stroke': colors.nodeStroke,
+	'--_inner-stroke': colors.innerStroke,
+	'--bg': colors.background,
+};
+
+function resolveVariables(svg) {
+	let result = svg;
+	for (const [variable, color] of Object.entries(variableReplacements)) {
+		const pattern = new RegExp(`(fill|stroke)="var\\(${variable.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\)"`, 'g');
+		result = result.replace(pattern, `$1="${color}"`);
+	}
+	return result;
+}
 
 async function main() {
-	// Read from stdin
 	const chunks = [];
 	for await (const chunk of process.stdin) {
 		chunks.push(chunk);
@@ -20,15 +54,16 @@ async function main() {
 	const mermaidCode = Buffer.concat(chunks).toString('utf-8').trim();
 
 	if (!mermaidCode) {
-		console.error('Error: No Mermaid code provided via stdin');
+		console.error('No Mermaid code provided');
 		process.exit(1);
 	}
 
 	try {
-		const svg = await renderMermaid(mermaidCode, DEFAULTS);
-		process.stdout.write(svg);
+		const svg = await renderMermaid(mermaidCode);
+		process.stdout.write(resolveVariables(svg));
 	} catch (error) {
-		console.error(`Error rendering Mermaid diagram: ${error.message}`);
+		// Output just the error message - the C# caller adds context
+		console.error(error.message);
 		process.exit(1);
 	}
 }
