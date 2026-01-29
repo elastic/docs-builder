@@ -303,33 +303,10 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		};
 
 		// Act
-		var filtered = service.FilterEntries(entries, null, []);
+		var filtered = service.FilterEntries(entries, null);
 
 		// Assert
 		filtered.Should().HaveCount(2);
-	}
-
-	[Fact]
-	public void FilterEntries_WithFeatureIdFilter_HidesMatchingEntries()
-	{
-		// Arrange
-		var service = CreateService();
-		var entries = new List<ChangelogEntry>
-		{
-			new() { Title = "Public feature", Type = ChangelogEntryType.Feature },
-			new() { Title = "Hidden feature", Type = ChangelogEntryType.Feature, FeatureId = "experimental-api" },
-			new() { Title = "Another hidden", Type = ChangelogEntryType.Feature, FeatureId = "internal-only" }
-		};
-
-		var featureIdsToHide = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "experimental-api" };
-
-		// Act
-		var filtered = service.FilterEntries(entries, null, featureIdsToHide);
-
-		// Assert
-		filtered.Should().HaveCount(2);
-		filtered.Select(e => e.Title).Should().Contain(["Public feature", "Another hidden"]);
-		filtered.Select(e => e.Title).Should().NotContain("Hidden feature");
 	}
 
 	[Fact]
@@ -350,7 +327,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		};
 
 		// Act
-		var filtered = service.FilterEntries(entries, publishBlocker, []);
+		var filtered = service.FilterEntries(entries, publishBlocker);
 
 		// Assert
 		filtered.Should().HaveCount(2);
@@ -375,7 +352,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		};
 
 		// Act
-		var filtered = service.FilterEntries(entries, publishBlocker, []);
+		var filtered = service.FilterEntries(entries, publishBlocker);
 
 		// Assert
 		filtered.Should().HaveCount(1);
@@ -383,22 +360,25 @@ public class BundleLoaderTests(ITestOutputHelper output)
 	}
 
 	[Fact]
-	public void FilterEntries_CombinesPublishBlockerAndFeatureIdFilter()
+	public void FilterEntries_WithPublishBlocker_CombinesTypeAndAreaBlocking()
 	{
 		// Arrange
 		var service = CreateService();
 		var entries = new List<ChangelogEntry>
 		{
-			new() { Title = "Visible", Type = ChangelogEntryType.Feature },
-			new() { Title = "Hidden by type", Type = ChangelogEntryType.Regression },
-			new() { Title = "Hidden by feature", Type = ChangelogEntryType.Feature, FeatureId = "hidden" }
+			new() { Title = "Visible", Type = ChangelogEntryType.Feature, Areas = ["Search"] },
+			new() { Title = "Hidden by type", Type = ChangelogEntryType.Regression, Areas = ["Search"] },
+			new() { Title = "Hidden by area", Type = ChangelogEntryType.Feature, Areas = ["Internal"] }
 		};
 
-		var publishBlocker = new PublishBlocker { Types = ["regression"] };
-		var featureIdsToHide = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "hidden" };
+		var publishBlocker = new PublishBlocker
+		{
+			Types = ["regression"],
+			Areas = ["Internal"]
+		};
 
 		// Act
-		var filtered = service.FilterEntries(entries, publishBlocker, featureIdsToHide);
+		var filtered = service.FilterEntries(entries, publishBlocker);
 
 		// Assert
 		filtered.Should().HaveCount(1);

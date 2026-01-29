@@ -22,7 +22,6 @@ The directive supports the following options:
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `:hide-features: id1, id2` | Hide entries with specified feature IDs | (none) |
 | `:subsections:` | Group entries by area/component | false |
 | `:config: path` | Path to changelog.yml configuration | auto-discover |
 
@@ -30,16 +29,11 @@ The directive supports the following options:
 
 ```markdown
 :::{changelog} /path/to/bundles
-:hide-features: experimental-api, internal-feature
 :subsections:
 :::
 ```
 
 ### Option details
-
-#### `:hide-features:`
-
-A comma-separated list of feature IDs. Entries with matching `feature-id` values will be filtered out from the rendered output. Feature ID matching is case-insensitive.
 
 #### `:subsections:`
 
@@ -52,6 +46,99 @@ Explicit path to a `changelog.yml` configuration file. If not specified, the dir
 2. `docs/changelog.yml` relative to docset root
 
 The configuration can include publish blockers to filter entries by type or area.
+
+## Filtering entries with publish blockers
+
+You can filter changelog entries from the rendered output using the `block.publish` configuration in your `changelog.yml` file. This is useful for hiding entries that shouldn't appear in public documentation, such as internal changes or documentation-only updates.
+
+### Configuration syntax
+
+Create a `changelog.yml` file in your docset root (or `docs/changelog.yml`):
+
+```yaml
+block:
+  publish:
+    types:
+      - docs           # Hide documentation entries
+      - regression     # Hide regression entries
+    areas:
+      - Internal       # Hide entries with "Internal" area
+      - Experimental   # Hide entries with "Experimental" area
+```
+
+### Filtering by type
+
+The `types` list filters entries based on their changelog entry type. Matching is **case-insensitive**.
+
+| Type | Description |
+|------|-------------|
+| `feature` | New features |
+| `enhancement` | Improvements to existing features |
+| `security` | Security advisories and fixes |
+| `bug-fix` | Bug fixes |
+| `breaking-change` | Breaking changes |
+| `deprecation` | Deprecated functionality |
+| `known-issue` | Known issues |
+| `docs` | Documentation changes |
+| `regression` | Regressions |
+| `other` | Other changes |
+
+Example - hide documentation and regression entries:
+
+```yaml
+block:
+  publish:
+    types:
+      - docs
+      - regression
+```
+
+### Filtering by area
+
+The `areas` list filters entries based on their area/component tags. An entry is blocked if **any** of its areas match a blocked area. Matching is **case-insensitive**.
+
+Example - hide internal and experimental entries:
+
+```yaml
+block:
+  publish:
+    areas:
+      - Internal
+      - Experimental
+      - Testing
+```
+
+### Combining type and area filters
+
+You can combine both `types` and `areas` filters. An entry is blocked if it matches **either** a blocked type **or** a blocked area.
+
+```yaml
+block:
+  publish:
+    types:
+      - docs
+      - deprecation
+    areas:
+      - Internal
+```
+
+This configuration will hide:
+- All entries with type `docs` or `deprecation`
+- All entries with the `Internal` area tag (regardless of type)
+
+### Example: Cloud Serverless configuration
+
+For Cloud Serverless releases where you want to hide certain entry types:
+
+```yaml
+# changelog.yml
+block:
+  publish:
+    types:
+      - docs           # Documentation changes handled separately
+      - deprecation    # Deprecations shown on dedicated page
+      - known-issue    # Known issues shown on dedicated page
+```
 
 ## Private repository link hiding
 

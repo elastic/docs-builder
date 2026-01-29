@@ -107,25 +107,20 @@ public class BundleLoader(IFileSystem fileSystem)
 	}
 
 	/// <summary>
-	/// Filters entries based on publish blocker configuration and feature IDs to hide.
+	/// Filters entries based on publish blocker configuration.
 	/// Uses PublishBlockerExtensions.ShouldBlock() for publish blocker filtering.
 	/// </summary>
 	/// <param name="entries">The entries to filter.</param>
 	/// <param name="publishBlocker">Optional publish blocker configuration.</param>
-	/// <param name="featureIdsToHide">Set of feature IDs to hide.</param>
 	/// <returns>Filtered list of entries.</returns>
 	public IReadOnlyList<ChangelogEntry> FilterEntries(
 		IReadOnlyList<ChangelogEntry> entries,
-		PublishBlocker? publishBlocker,
-		HashSet<string> featureIdsToHide)
+		PublishBlocker? publishBlocker)
 	{
-		var hasPublishBlocker = publishBlocker is { HasBlockingRules: true };
-		var hasFeaturesToHide = featureIdsToHide.Count > 0;
-
-		if (!hasPublishBlocker && !hasFeaturesToHide)
+		if (publishBlocker is not { HasBlockingRules: true })
 			return entries;
 
-		return entries.Where(e => !ShouldHideEntry(e, publishBlocker, featureIdsToHide)).ToList();
+		return entries.Where(e => !publishBlocker.ShouldBlock(e)).ToList();
 	}
 
 	/// <summary>
@@ -197,19 +192,4 @@ public class BundleLoader(IFileSystem fileSystem)
 		);
 	}
 
-	/// <summary>
-	/// Determines if an entry should be hidden based on feature IDs or publish blocker configuration.
-	/// </summary>
-	private static bool ShouldHideEntry(
-		ChangelogEntry entry,
-		PublishBlocker? publishBlocker,
-		HashSet<string> featureIdsToHide)
-	{
-		// Check feature IDs first
-		if (!string.IsNullOrWhiteSpace(entry.FeatureId) && featureIdsToHide.Contains(entry.FeatureId))
-			return true;
-
-		// Check publish blocker
-		return publishBlocker?.ShouldBlock(entry) == true;
-	}
 }

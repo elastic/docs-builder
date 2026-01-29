@@ -33,7 +33,6 @@ public static class ChangelogInlineRenderer
 				bundle,
 				block.Subsections,
 				block.PublishBlocker,
-				block.FeatureIdsToHide,
 				block.PrivateRepositories);
 			_ = sb.Append(bundleMarkdown);
 
@@ -47,13 +46,12 @@ public static class ChangelogInlineRenderer
 		LoadedBundle bundle,
 		bool subsections,
 		PublishBlocker? publishBlocker,
-		HashSet<string> featureIdsToHide,
 		HashSet<string> privateRepositories)
 	{
 		var titleSlug = ChangelogTextUtilities.TitleToSlug(bundle.Version);
 
-		// Filter entries based on publish blockers and feature IDs
-		var filteredEntries = FilterEntries(bundle.Entries, publishBlocker, featureIdsToHide);
+		// Filter entries based on publish blocker configuration
+		var filteredEntries = FilterEntries(bundle.Entries, publishBlocker);
 
 		// Group entries by type
 		var entriesByType = filteredEntries
@@ -85,36 +83,16 @@ public static class ChangelogInlineRenderer
 	}
 
 	/// <summary>
-	/// Filters entries based on publish blocker configuration and feature IDs to hide.
+	/// Filters entries based on publish blocker configuration.
 	/// </summary>
 	private static IReadOnlyList<ChangelogEntry> FilterEntries(
 		IReadOnlyList<ChangelogEntry> entries,
-		PublishBlocker? publishBlocker,
-		HashSet<string> featureIdsToHide)
+		PublishBlocker? publishBlocker)
 	{
-		var hasPublishBlocker = publishBlocker is { HasBlockingRules: true };
-		var hasFeaturesToHide = featureIdsToHide.Count > 0;
-
-		if (!hasPublishBlocker && !hasFeaturesToHide)
+		if (publishBlocker is not { HasBlockingRules: true })
 			return entries;
 
-		return entries.Where(e => !ShouldHideEntry(e, publishBlocker, featureIdsToHide)).ToList();
-	}
-
-	/// <summary>
-	/// Determines if an entry should be hidden based on feature IDs or publish blocker configuration.
-	/// </summary>
-	private static bool ShouldHideEntry(
-		ChangelogEntry entry,
-		PublishBlocker? publishBlocker,
-		HashSet<string> featureIdsToHide)
-	{
-		// Check feature IDs first
-		if (!string.IsNullOrWhiteSpace(entry.FeatureId) && featureIdsToHide.Contains(entry.FeatureId))
-			return true;
-
-		// Check publish blocker
-		return publishBlocker?.ShouldBlock(entry) == true;
+		return entries.Where(e => !publishBlocker.ShouldBlock(e)).ToList();
 	}
 
 	private static string GenerateMarkdown(
