@@ -47,4 +47,8 @@ namespace Elastic.Documentation.Configuration.Serialization;
 [YamlSerializable(typeof(BundledProductDto))]
 [YamlSerializable(typeof(BundledEntryDto))]
 [YamlSerializable(typeof(BundledFileDto))]
+// Changelog configuration minimal DTOs
+[YamlSerializable(typeof(ChangelogConfigMinimalDto))]
+[YamlSerializable(typeof(BlockConfigMinimalDto))]
+[YamlSerializable(typeof(PublishBlockerMinimalDto))]
 public partial class YamlStaticContext;

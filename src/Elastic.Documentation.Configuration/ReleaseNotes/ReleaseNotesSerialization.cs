@@ -27,11 +27,6 @@ public static partial class ReleaseNotesSerialization
 	private static readonly IDeserializer YamlDeserializer =
 		new StaticDeserializerBuilder(new YamlStaticContext())
 			.WithNamingConvention(UnderscoredNamingConvention.Instance)
-			.Build();
-
-	private static readonly IDeserializer IgnoreUnmatchedDeserializer =
-		new DeserializerBuilder()
-			.WithNamingConvention(UnderscoredNamingConvention.Instance)
 			.IgnoreUnmatchedProperties()
 			.Build();
 
@@ -309,6 +304,7 @@ public static partial class ReleaseNotesSerialization
 
 	/// <summary>
 	/// Loads the publish blocker configuration from a changelog.yml file.
+	/// Uses AOT-compatible deserialization via YamlStaticContext.
 	/// </summary>
 	/// <param name="fileSystem">The file system to read from.</param>
 	/// <param name="configPath">The path to the changelog.yml configuration file.</param>
@@ -322,7 +318,7 @@ public static partial class ReleaseNotesSerialization
 		if (string.IsNullOrWhiteSpace(yamlContent))
 			return null;
 
-		var yamlConfig = IgnoreUnmatchedDeserializer.Deserialize<ChangelogConfigMinimal>(yamlContent);
+		var yamlConfig = YamlDeserializer.Deserialize<ChangelogConfigMinimalDto>(yamlContent);
 		if (yamlConfig?.Block?.Publish is null)
 			return null;
 
@@ -330,15 +326,15 @@ public static partial class ReleaseNotesSerialization
 	}
 
 	/// <summary>
-	/// Parses a PublishBlockerYamlMinimal into a PublishBlocker domain type.
+	/// Parses a PublishBlockerMinimalDto into a PublishBlocker domain type.
 	/// </summary>
-	private static PublishBlocker? ParsePublishBlocker(PublishBlockerMinimal? yaml)
+	private static PublishBlocker? ParsePublishBlocker(PublishBlockerMinimalDto? dto)
 	{
-		if (yaml == null)
+		if (dto == null)
 			return null;
 
-		var types = yaml.Types?.Count > 0 ? yaml.Types.ToList() : null;
-		var areas = yaml.Areas?.Count > 0 ? yaml.Areas.ToList() : null;
+		var types = dto.Types?.Count > 0 ? dto.Types.ToList() : null;
+		var areas = dto.Areas?.Count > 0 ? dto.Areas.ToList() : null;
 
 		if (types == null && areas == null)
 			return null;
@@ -353,26 +349,34 @@ public static partial class ReleaseNotesSerialization
 
 /// <summary>
 /// Minimal DTO for changelog configuration - only includes block configuration.
-/// Used for lightweight loading of publish blocker configuration.
+/// Used for AOT-compatible lightweight loading of publish blocker configuration.
+/// Registered with YamlStaticContext for source-generated deserialization.
 /// </summary>
-internal sealed class ChangelogConfigMinimal
+public sealed class ChangelogConfigMinimalDto
 {
-	public BlockConfigMinimal? Block { get; set; }
+	/// <summary>Block configuration section.</summary>
+	public BlockConfigMinimalDto? Block { get; set; }
 }
 
 /// <summary>
 /// Minimal DTO for block configuration.
+/// Registered with YamlStaticContext for source-generated deserialization.
 /// </summary>
-internal sealed class BlockConfigMinimal
+public sealed class BlockConfigMinimalDto
 {
-	public PublishBlockerMinimal? Publish { get; set; }
+	/// <summary>Publish blocker configuration.</summary>
+	public PublishBlockerMinimalDto? Publish { get; set; }
 }
 
 /// <summary>
 /// Minimal DTO for publish blocker configuration.
+/// Registered with YamlStaticContext for source-generated deserialization.
 /// </summary>
-internal sealed class PublishBlockerMinimal
+public sealed class PublishBlockerMinimalDto
 {
+	/// <summary>Entry types to block from publishing.</summary>
 	public List<string>? Types { get; set; }
+
+	/// <summary>Entry areas to block from publishing.</summary>
 	public List<string>? Areas { get; set; }
 }
