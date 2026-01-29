@@ -136,7 +136,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		{
 			if (config.LabelToType == null || config.LabelToType.Count == 0)
 			{
-				collector.EmitError(string.Empty, $"Cannot derive type from PR {prUrl} labels: no label-to-type mapping configured in changelog.yml. Please provide --type or configure label_to_type in changelog.yml.");
+				collector.EmitError(string.Empty, $"Cannot derive type from PR {prUrl} labels: no type mapping configured in changelog.yml. Please provide --type or configure pivot.types in changelog.yml.");
 				return null;
 			}
 
@@ -144,7 +144,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 			if (mappedType == null)
 			{
 				var availableLabels = prInfo.Labels.Count > 0 ? string.Join(", ", prInfo.Labels) : "none";
-				collector.EmitError(string.Empty, $"Cannot derive type from PR {prUrl} labels ({availableLabels}). No matching label found in label_to_type mapping. Please provide --type or add a label mapping in changelog.yml.");
+				collector.EmitError(string.Empty, $"Cannot derive type from PR {prUrl} labels ({availableLabels}). No matching label found in type mapping. Please provide --type or add pivot.types with labels in changelog.yml.");
 				return null;
 			}
 			derived.Type = mappedType;

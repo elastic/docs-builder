@@ -40,14 +40,17 @@ public class AssembleSources
 		Cancel ctx
 	)
 	{
+		var logger = logFactory.CreateLogger<AssembleSources>();
+
 		var linkIndexProvider = Aws3LinkIndexReader.CreateAnonymous();
 		var navigationTocMappings = GetTocMappings(context);
 		var uriResolver = new PublishEnvironmentUriResolver(navigationTocMappings, context.Environment);
 
+		var sw = System.Diagnostics.Stopwatch.StartNew();
 		var crossLinkFetcher = new AssemblerCrossLinkFetcher(logFactory, context.Configuration, context.Environment, linkIndexProvider);
 		var crossLinks = await crossLinkFetcher.FetchCrossLinks(ctx);
 		var crossLinkResolver = new CrossLinkResolver(crossLinks, uriResolver);
-		var logger = logFactory.CreateLogger<AssembleSources>();
+		logger.LogInformation("  AssembleAsync: FetchCrossLinks in {Elapsed:mm\\:ss\\.fff}", sw.Elapsed);
 
 		var sources = new AssembleSources(
 			logFactory,
@@ -60,11 +63,13 @@ public class AssembleSources
 			crossLinkResolver,
 			availableExporters
 		);
+
 		foreach (var (_, set) in sources.AssembleSets)
 		{
 			logger.LogInformation("Resolving directory tree for {RepositoryName}", set.Checkout.Repository.Name);
 			await set.DocumentationSet.ResolveDirectoryTree(ctx);
 		}
+
 		return sources;
 	}
 
