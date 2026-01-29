@@ -22,6 +22,7 @@ The directive supports the following options:
 
 | Option | Description | Default |
 |--------|-------------|---------|
+| `:type: value` | Filter entries by type | Excludes separated types |
 | `:subsections:` | Group entries by area/component | false |
 | `:config: path` | Path to changelog.yml configuration | auto-discover |
 
@@ -29,11 +30,65 @@ The directive supports the following options:
 
 ```markdown
 :::{changelog} /path/to/bundles
+:type: all
 :subsections:
 :::
 ```
 
 ### Option details
+
+#### `:type:`
+
+Controls which entry types are displayed. By default, the directive excludes "separated types" (known issues, breaking changes, and deprecations) which are typically shown on their own dedicated pages.
+
+| Value | Description |
+|-------|-------------|
+| (omitted) | Default: shows all types EXCEPT known issues, breaking changes, and deprecations |
+| `all` | Shows all entry types including known issues, breaking changes, and deprecations |
+| `breaking-change` | Shows only breaking change entries |
+| `deprecation` | Shows only deprecation entries |
+| `known-issue` | Shows only known issue entries |
+
+This allows you to create separate pages for different entry types:
+
+```markdown
+# Release Notes
+
+:::{changelog}
+:::
+```
+
+```markdown
+# Breaking Changes
+
+:::{changelog}
+:type: breaking-change
+:::
+```
+
+```markdown
+# Known Issues
+
+:::{changelog}
+:type: known-issue
+:::
+```
+
+```markdown
+# Deprecations
+
+:::{changelog}
+:type: deprecation
+:::
+```
+
+To show all entries on a single page (previous default behavior):
+
+```markdown
+:::{changelog}
+:type: all
+:::
+```
 
 #### `:subsections:`
 

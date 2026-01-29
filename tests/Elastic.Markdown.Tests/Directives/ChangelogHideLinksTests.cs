@@ -205,6 +205,7 @@ public class ChangelogLinksHiddenForPrivateRepoTests : DirectiveTest<ChangelogBl
 
 /// <summary>
 /// Tests link hiding behavior with detailed entries (breaking changes, deprecations).
+/// Uses :type: all to show breaking changes and deprecations.
 /// </summary>
 public class ChangelogLinksHiddenInDetailedEntriesTests : DirectiveTest<ChangelogBlock>
 {
@@ -212,6 +213,7 @@ public class ChangelogLinksHiddenInDetailedEntriesTests : DirectiveTest<Changelo
 		// language=markdown
 		"""
 		:::{changelog}
+		:type: all
 		:::
 		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
 		// language=yaml

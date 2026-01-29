@@ -12,6 +12,38 @@ using Elastic.Markdown.Diagnostics;
 namespace Elastic.Markdown.Myst.Directives.Changelog;
 
 /// <summary>
+/// Specifies which changelog entry types to display in the directive output.
+/// </summary>
+public enum ChangelogTypeFilter
+{
+	/// <summary>
+	/// Default behavior: show all types EXCEPT known issues, breaking changes, and deprecations.
+	/// These "separated types" are typically shown on their own dedicated pages.
+	/// </summary>
+	Default,
+
+	/// <summary>
+	/// Show all entry types including known issues, breaking changes, and deprecations.
+	/// </summary>
+	All,
+
+	/// <summary>
+	/// Show only breaking change entries.
+	/// </summary>
+	BreakingChange,
+
+	/// <summary>
+	/// Show only deprecation entries.
+	/// </summary>
+	Deprecation,
+
+	/// <summary>
+	/// Show only known issue entries.
+	/// </summary>
+	KnownIssue
+}
+
+/// <summary>
 /// A directive block that reads all changelog bundles from a folder and renders them inline,
 /// ordered by version (descending). Supports both semver (e.g., "9.3.0") and date-based
 /// versions (e.g., "2025-08-05") for Serverless and similar release strategies.
@@ -81,6 +113,23 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 	public PublishBlocker? PublishBlocker { get; private set; }
 
 	/// <summary>
+	/// The type filter to apply when rendering changelog entries.
+	/// Default behavior excludes known issues, breaking changes, and deprecations.
+	/// </summary>
+	public ChangelogTypeFilter TypeFilter { get; private set; }
+
+	/// <summary>
+	/// The entry types that are considered "separated" and excluded by default.
+	/// These types are typically shown on their own dedicated pages (e.g., known issues page, breaking changes page).
+	/// </summary>
+	public static readonly HashSet<ChangelogEntryType> SeparatedTypes =
+	[
+		ChangelogEntryType.KnownIssue,
+		ChangelogEntryType.BreakingChange,
+		ChangelogEntryType.Deprecation
+	];
+
+	/// <summary>
 	/// Repository names that are marked as private in assembler.yml.
 	/// Links to these repositories will be hidden (commented out) in the rendered output.
 	/// Auto-detected from assembler configuration when available.
@@ -102,10 +151,38 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		ExtractBundlesFolderPath();
 		Subsections = PropBool("subsections");
 		ConfigPath = Prop("config");
+		TypeFilter = ParseTypeFilter();
 		LoadConfiguration();
 		LoadPrivateRepositories();
 		if (Found)
 			LoadAndCacheBundles();
+	}
+
+	/// <summary>
+	/// Parses and validates the :type: option.
+	/// Valid values: all, breaking-change, deprecation, known-issue.
+	/// If not specified, returns Default (excludes separated types).
+	/// </summary>
+	private ChangelogTypeFilter ParseTypeFilter()
+	{
+		var typeValue = Prop("type");
+		if (string.IsNullOrWhiteSpace(typeValue))
+			return ChangelogTypeFilter.Default;
+
+		return typeValue.ToLowerInvariant() switch
+		{
+			"all" => ChangelogTypeFilter.All,
+			"breaking-change" => ChangelogTypeFilter.BreakingChange,
+			"deprecation" => ChangelogTypeFilter.Deprecation,
+			"known-issue" => ChangelogTypeFilter.KnownIssue,
+			_ => EmitInvalidTypeFilterWarning(typeValue)
+		};
+	}
+
+	private ChangelogTypeFilter EmitInvalidTypeFilterWarning(string typeValue)
+	{
+		this.EmitWarning($"Invalid :type: value '{typeValue}'. Valid values are: all, breaking-change, deprecation, known-issue. Using default behavior.");
+		return ChangelogTypeFilter.Default;
 	}
 
 	private void ExtractBundlesFolderPath()
@@ -233,41 +310,58 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 				.GroupBy(e => e.Type)
 				.ToDictionary(g => g.Key, g => g.Count());
 
+			// Apply type filter to determine which sections to include
+			var shouldInclude = CreateTypeFilterPredicate();
+
 			// Critical sections
-			if (entriesByType.ContainsKey(ChangelogEntryType.BreakingChange))
+			if (shouldInclude(ChangelogEntryType.BreakingChange) && entriesByType.ContainsKey(ChangelogEntryType.BreakingChange))
 				yield return $"{repo}-{titleSlug}-breaking-changes";
 
-			if (entriesByType.ContainsKey(ChangelogEntryType.Security))
+			if (shouldInclude(ChangelogEntryType.Security) && entriesByType.ContainsKey(ChangelogEntryType.Security))
 				yield return $"{repo}-{titleSlug}-security";
 
-			if (entriesByType.ContainsKey(ChangelogEntryType.KnownIssue))
+			if (shouldInclude(ChangelogEntryType.KnownIssue) && entriesByType.ContainsKey(ChangelogEntryType.KnownIssue))
 				yield return $"{repo}-{titleSlug}-known-issues";
 
-			if (entriesByType.ContainsKey(ChangelogEntryType.Deprecation))
+			if (shouldInclude(ChangelogEntryType.Deprecation) && entriesByType.ContainsKey(ChangelogEntryType.Deprecation))
 				yield return $"{repo}-{titleSlug}-deprecations";
 
 			// Features and enhancements section
-			if (entriesByType.ContainsKey(ChangelogEntryType.Feature) ||
-				entriesByType.ContainsKey(ChangelogEntryType.Enhancement))
+			if (shouldInclude(ChangelogEntryType.Feature) &&
+				(entriesByType.ContainsKey(ChangelogEntryType.Feature) ||
+				 entriesByType.ContainsKey(ChangelogEntryType.Enhancement)))
 				yield return $"{repo}-{titleSlug}-features-enhancements";
 
 			// Fixes section (bug fixes only, security is separate)
-			if (entriesByType.ContainsKey(ChangelogEntryType.BugFix))
+			if (shouldInclude(ChangelogEntryType.BugFix) && entriesByType.ContainsKey(ChangelogEntryType.BugFix))
 				yield return $"{repo}-{titleSlug}-fixes";
 
 			// Documentation section
-			if (entriesByType.ContainsKey(ChangelogEntryType.Docs))
+			if (shouldInclude(ChangelogEntryType.Docs) && entriesByType.ContainsKey(ChangelogEntryType.Docs))
 				yield return $"{repo}-{titleSlug}-docs";
 
 			// Regressions section
-			if (entriesByType.ContainsKey(ChangelogEntryType.Regression))
+			if (shouldInclude(ChangelogEntryType.Regression) && entriesByType.ContainsKey(ChangelogEntryType.Regression))
 				yield return $"{repo}-{titleSlug}-regressions";
 
 			// Other changes section
-			if (entriesByType.ContainsKey(ChangelogEntryType.Other))
+			if (shouldInclude(ChangelogEntryType.Other) && entriesByType.ContainsKey(ChangelogEntryType.Other))
 				yield return $"{repo}-{titleSlug}-other";
 		}
 	}
+
+	/// <summary>
+	/// Creates a predicate that returns true if the given entry type should be included based on the TypeFilter.
+	/// </summary>
+	private Func<ChangelogEntryType, bool> CreateTypeFilterPredicate() =>
+		TypeFilter switch
+		{
+			ChangelogTypeFilter.All => _ => true,
+			ChangelogTypeFilter.BreakingChange => type => type == ChangelogEntryType.BreakingChange,
+			ChangelogTypeFilter.Deprecation => type => type == ChangelogEntryType.Deprecation,
+			ChangelogTypeFilter.KnownIssue => type => type == ChangelogEntryType.KnownIssue,
+			_ => type => !SeparatedTypes.Contains(type) // Default: exclude separated types
+		};
 
 	private IEnumerable<PageTocItem> ComputeTableOfContent()
 	{
@@ -289,8 +383,11 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 				.GroupBy(e => e.Type)
 				.ToDictionary(g => g.Key, g => g.Count());
 
+			// Apply type filter to determine which sections to include
+			var shouldInclude = CreateTypeFilterPredicate();
+
 			// Critical sections first (new ordering) - all at h3 level (children of version)
-			if (entriesByType.ContainsKey(ChangelogEntryType.BreakingChange))
+			if (shouldInclude(ChangelogEntryType.BreakingChange) && entriesByType.ContainsKey(ChangelogEntryType.BreakingChange))
 				yield return new PageTocItem
 				{
 					Heading = "Breaking changes",
@@ -298,7 +395,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 					Level = 3
 				};
 
-			if (entriesByType.ContainsKey(ChangelogEntryType.Security))
+			if (shouldInclude(ChangelogEntryType.Security) && entriesByType.ContainsKey(ChangelogEntryType.Security))
 				yield return new PageTocItem
 				{
 					Heading = "Security",
@@ -306,7 +403,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 					Level = 3
 				};
 
-			if (entriesByType.ContainsKey(ChangelogEntryType.KnownIssue))
+			if (shouldInclude(ChangelogEntryType.KnownIssue) && entriesByType.ContainsKey(ChangelogEntryType.KnownIssue))
 				yield return new PageTocItem
 				{
 					Heading = "Known issues",
@@ -314,7 +411,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 					Level = 3
 				};
 
-			if (entriesByType.ContainsKey(ChangelogEntryType.Deprecation))
+			if (shouldInclude(ChangelogEntryType.Deprecation) && entriesByType.ContainsKey(ChangelogEntryType.Deprecation))
 				yield return new PageTocItem
 				{
 					Heading = "Deprecations",
@@ -323,8 +420,9 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 				};
 
 			// Features and enhancements section
-			if (entriesByType.ContainsKey(ChangelogEntryType.Feature) ||
-				entriesByType.ContainsKey(ChangelogEntryType.Enhancement))
+			if (shouldInclude(ChangelogEntryType.Feature) &&
+				(entriesByType.ContainsKey(ChangelogEntryType.Feature) ||
+				 entriesByType.ContainsKey(ChangelogEntryType.Enhancement)))
 				yield return new PageTocItem
 				{
 					Heading = "Features and enhancements",
@@ -333,7 +431,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 				};
 
 			// Fixes section (bug fixes only, security is separate)
-			if (entriesByType.ContainsKey(ChangelogEntryType.BugFix))
+			if (shouldInclude(ChangelogEntryType.BugFix) && entriesByType.ContainsKey(ChangelogEntryType.BugFix))
 				yield return new PageTocItem
 				{
 					Heading = "Fixes",
@@ -342,7 +440,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 				};
 
 			// Documentation section
-			if (entriesByType.ContainsKey(ChangelogEntryType.Docs))
+			if (shouldInclude(ChangelogEntryType.Docs) && entriesByType.ContainsKey(ChangelogEntryType.Docs))
 				yield return new PageTocItem
 				{
 					Heading = "Documentation",
@@ -351,7 +449,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 				};
 
 			// Regressions section
-			if (entriesByType.ContainsKey(ChangelogEntryType.Regression))
+			if (shouldInclude(ChangelogEntryType.Regression) && entriesByType.ContainsKey(ChangelogEntryType.Regression))
 				yield return new PageTocItem
 				{
 					Heading = "Regressions",
@@ -360,7 +458,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 				};
 
 			// Other changes section
-			if (entriesByType.ContainsKey(ChangelogEntryType.Other))
+			if (shouldInclude(ChangelogEntryType.Other) && entriesByType.ContainsKey(ChangelogEntryType.Other))
 				yield return new PageTocItem
 				{
 					Heading = "Other changes",

@@ -21,6 +21,7 @@ public static class ChangelogInlineRenderer
 			return "_No changelog entries._";
 
 		var sb = new StringBuilder();
+		var typeFilter = block.TypeFilter;
 
 		// Render each bundle as a version section (already sorted by semver descending)
 		var isFirst = true;
@@ -33,7 +34,8 @@ public static class ChangelogInlineRenderer
 				bundle,
 				block.Subsections,
 				block.PublishBlocker,
-				block.PrivateRepositories);
+				block.PrivateRepositories,
+				typeFilter);
 			_ = sb.Append(bundleMarkdown);
 
 			isFirst = false;
@@ -46,12 +48,16 @@ public static class ChangelogInlineRenderer
 		LoadedBundle bundle,
 		bool subsections,
 		PublishBlocker? publishBlocker,
-		HashSet<string> privateRepositories)
+		HashSet<string> privateRepositories,
+		ChangelogTypeFilter typeFilter)
 	{
 		var titleSlug = ChangelogTextUtilities.TitleToSlug(bundle.Version);
 
 		// Filter entries based on publish blocker configuration
 		var filteredEntries = FilterEntries(bundle.Entries, publishBlocker);
+
+		// Apply type filter
+		filteredEntries = FilterEntriesByType(filteredEntries, typeFilter);
 
 		// Group entries by type
 		var entriesByType = filteredEntries
@@ -64,6 +70,20 @@ public static class ChangelogInlineRenderer
 
 		return GenerateMarkdown(bundle.Version, titleSlug, bundle.Repo, entriesByType, subsections, hideLinks);
 	}
+
+	/// <summary>
+	/// Filters entries based on the type filter.
+	/// </summary>
+	private static IReadOnlyList<ChangelogEntry> FilterEntriesByType(
+		IReadOnlyList<ChangelogEntry> entries,
+		ChangelogTypeFilter typeFilter) => typeFilter switch
+		{
+			ChangelogTypeFilter.All => entries,
+			ChangelogTypeFilter.BreakingChange => entries.Where(e => e.Type == ChangelogEntryType.BreakingChange).ToList(),
+			ChangelogTypeFilter.Deprecation => entries.Where(e => e.Type == ChangelogEntryType.Deprecation).ToList(),
+			ChangelogTypeFilter.KnownIssue => entries.Where(e => e.Type == ChangelogEntryType.KnownIssue).ToList(),
+			_ => entries.Where(e => !ChangelogBlock.SeparatedTypes.Contains(e.Type)).ToList() // Default: exclude separated types
+		};
 
 	/// <summary>
 	/// Determines if links should be hidden for a bundle based on its repository.

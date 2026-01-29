@@ -222,7 +222,7 @@ public class ChangelogDefaultPathMissingTests(ITestOutputHelper output) : Direct
 
 /// <summary>
 /// Tests for breaking changes rendering.
-/// Breaking changes should always render on the page with the new ordering (critical types first).
+/// Breaking changes should always render on the page when using :type: all.
 /// </summary>
 public class ChangelogWithBreakingChangesTests : DirectiveTest<ChangelogBlock>
 {
@@ -230,6 +230,7 @@ public class ChangelogWithBreakingChangesTests : DirectiveTest<ChangelogBlock>
 		// language=markdown
 		"""
 		:::{changelog}
+		:type: all
 		:::
 		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
 		// language=yaml
@@ -268,7 +269,7 @@ public class ChangelogWithBreakingChangesTests : DirectiveTest<ChangelogBlock>
 
 /// <summary>
 /// Tests for deprecations rendering.
-/// Deprecations should always render on the page with the new ordering (critical types first).
+/// Deprecations should always render on the page when using :type: all.
 /// </summary>
 public class ChangelogWithDeprecationsTests : DirectiveTest<ChangelogBlock>
 {
@@ -276,6 +277,7 @@ public class ChangelogWithDeprecationsTests : DirectiveTest<ChangelogBlock>
 		// language=markdown
 		"""
 		:::{changelog}
+		:type: all
 		:::
 		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
 		// language=yaml
@@ -379,7 +381,7 @@ public class ChangelogAbsolutePathTests : DirectiveTest<ChangelogBlock>
 
 /// <summary>
 /// Tests the section order - critical types (breaking changes, security, known issues, deprecations)
-/// should appear BEFORE features/fixes.
+/// should appear BEFORE features/fixes when using :type: all.
 /// </summary>
 public class ChangelogSectionOrderTests : DirectiveTest<ChangelogBlock>
 {
@@ -387,6 +389,7 @@ public class ChangelogSectionOrderTests : DirectiveTest<ChangelogBlock>
 		// language=markdown
 		"""
 		:::{changelog}
+		:type: all
 		:::
 		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
 		// language=yaml
