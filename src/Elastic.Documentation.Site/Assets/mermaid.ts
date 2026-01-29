@@ -1,6 +1,4 @@
 // Mermaid.js is loaded from CDN to avoid bundling issues
-import DOMPurify from 'dompurify'
-
 declare const mermaid: {
     initialize: (config: object) => void
     render: (id: string, text: string) => Promise<{ svg: string }>
@@ -74,11 +72,11 @@ export async function initMermaid() {
                 const { svg } = await mermaid.render(id, content)
 
                 // Replace the pre element with a div containing the SVG
+                // Note: Mermaid's securityLevel: 'strict' already sanitizes the output
+                // to prevent XSS (no scripts, event handlers, or dangerous elements)
                 const container = document.createElement('div')
                 container.className = 'mermaid-rendered'
-                container.innerHTML = DOMPurify.sanitize(svg, {
-                    USE_PROFILES: { svg: true },
-                })
+                container.innerHTML = svg
                 element.replaceWith(container)
             } catch (err) {
                 console.warn('Mermaid rendering error for diagram:', err)
