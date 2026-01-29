@@ -8,10 +8,10 @@ using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Myst.Directives.Admonition;
 using Elastic.Markdown.Myst.Directives.AppliesTo;
 using Elastic.Markdown.Myst.Directives.CsvInclude;
-using Elastic.Markdown.Myst.Directives.Diagram;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Math;
+using Elastic.Markdown.Myst.Directives.Mermaid;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Markdig.Extensions.DefinitionLists;
 using Markdig.Extensions.Tables;
@@ -442,8 +442,8 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 			case IncludeBlock includeBlock:
 				WriteIncludeBlock(renderer, includeBlock);
 				return;
-			case DiagramBlock diagramBlock:
-				WriteDiagramBlock(renderer, diagramBlock);
+			case MermaidBlock mermaidBlock:
+				WriteMermaidBlock(renderer, mermaidBlock);
 				return;
 			case SettingsBlock settingsBlock:
 				WriteSettingsBlock(renderer, settingsBlock);
@@ -511,22 +511,22 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		renderer.EnsureLine();
 	}
 
-	private static void WriteDiagramBlock(LlmMarkdownRenderer renderer, DiagramBlock diagramBlock)
+	private static void WriteMermaidBlock(LlmMarkdownRenderer renderer, MermaidBlock mermaidBlock)
 	{
 		renderer.EnsureBlockSpacing();
 
-		// Render diagram as structured comment with type information
-		renderer.WriteLine($"<diagram type=\"{diagramBlock.DiagramType}\">");
+		// Render Mermaid diagram as structured comment
+		renderer.WriteLine("<mermaid>");
 
 		// Render the diagram content with indentation
-		if (!string.IsNullOrWhiteSpace(diagramBlock.Content))
+		if (!string.IsNullOrWhiteSpace(mermaidBlock.Content))
 		{
-			var reader = new StringReader(diagramBlock.Content);
+			var reader = new StringReader(mermaidBlock.Content);
 			while (reader.ReadLine() is { } line)
 				renderer.WriteLine(string.IsNullOrWhiteSpace(line) ? string.Empty : "  " + line);
 		}
 
-		renderer.WriteLine("</diagram>");
+		renderer.WriteLine("</mermaid>");
 		renderer.EnsureLine();
 	}
 

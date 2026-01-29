@@ -8,7 +8,6 @@ using Elastic.Markdown.Myst.Directives.AppliesSwitch;
 using Elastic.Markdown.Myst.Directives.Button;
 using Elastic.Markdown.Myst.Directives.Changelog;
 using Elastic.Markdown.Myst.Directives.CsvInclude;
-using Elastic.Markdown.Myst.Directives.Diagram;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Math;
@@ -59,7 +58,6 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		{ "grid", 26 },
 		{ "grid-item-card", 26 },
 		{ "card", 25 },
-		{ "mermaid", 20 },
 		{ "aside", 4 },
 		{ "margin", 4 },
 		{ "sidebar", 4 },
@@ -115,14 +113,8 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		if (info.IndexOf("{figure-md}") > 0)
 			return new FigureBlock(this, context);
 
-		// this is currently listed as unsupported
-		// leaving the parsing in until we are confident we don't want this
-		// for dev-docs
 		if (info.IndexOf("{mermaid}") > 0)
 			return new MermaidBlock(this, context);
-
-		if (info.IndexOf("{diagram}") > 0)
-			return new DiagramBlock(this, context);
 
 		if (info.IndexOf("{include}") > 0)
 			return new IncludeBlock(this, context);

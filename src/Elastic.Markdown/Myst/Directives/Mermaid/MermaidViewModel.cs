@@ -4,4 +4,10 @@
 
 namespace Elastic.Markdown.Myst.Directives.Mermaid;
 
-public class MermaidViewModel : DirectiveViewModel;
+public class MermaidViewModel : DirectiveViewModel
+{
+	/// <summary>
+	/// The Mermaid block containing the rendered SVG and content.
+	/// </summary>
+	public MermaidBlock? MermaidBlock { get; set; }
+}

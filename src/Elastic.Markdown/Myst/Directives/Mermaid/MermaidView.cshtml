@@ -1,4 +1,16 @@
 @inherits RazorSlice<Elastic.Markdown.Myst.Directives.Mermaid.MermaidViewModel>
-<div class="mermaid">
-	[CONTENT]
-</div>
+@{
+	var mermaid = Model.MermaidBlock;
+	if (!string.IsNullOrEmpty(mermaid?.RenderedSvg))
+	{
+		<div class="mermaid">
+			@(new Microsoft.AspNetCore.Html.HtmlString(mermaid.RenderedSvg))
+		</div>
+	}
+	else
+	{
+		<div class="mermaid-error">
+			<p>Failed to render Mermaid diagram</p>
+		</div>
+	}
+}

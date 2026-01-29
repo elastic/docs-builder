@@ -8,10 +8,10 @@ using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Myst.Directives.Admonition;
 using Elastic.Markdown.Myst.Directives.AppliesTo;
 using Elastic.Markdown.Myst.Directives.CsvInclude;
-using Elastic.Markdown.Myst.Directives.Diagram;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Math;
+using Elastic.Markdown.Myst.Directives.Mermaid;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.Directives.Tabs;
 using Elastic.Markdown.Myst.Renderers.LlmMarkdown;
@@ -218,8 +218,8 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 				WriteIncludeBlock(renderer, includeBlock);
 				return;
 
-			case DiagramBlock:
-				// Skip diagrams - not text searchable
+			case MermaidBlock:
+				// Skip Mermaid diagrams - not text searchable
 				return;
 
 			case SettingsBlock settingsBlock:

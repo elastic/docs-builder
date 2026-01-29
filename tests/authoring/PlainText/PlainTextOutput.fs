@@ -377,17 +377,17 @@ E = mc^2
     let ``renders math content as text`` () =
         markdown |> convertsToPlainText """E = mc^2"""
 
-type ``diagram directive`` () =
+type ``mermaid directive`` () =
     static let markdown = Setup.Document """
-::::{diagram} mermaid
+::::{mermaid}
 flowchart LR
     A --> B
 ::::
 """
 
     [<Fact>]
-    let ``skips diagram content`` () =
-        // Diagrams are visual, not searchable text
+    let ``skips mermaid content`` () =
+        // Mermaid diagrams are visual, not searchable text
         markdown |> convertsToPlainText """"""
 
 type ``csv-include directive`` () =

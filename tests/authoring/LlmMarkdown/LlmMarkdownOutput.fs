@@ -753,9 +753,9 @@ Hello, this is a substitution: Hello World!
 ```
 """
 
-type ``diagram directive`` () =
+type ``mermaid directive`` () =
     static let markdown = Setup.Document """
-::::{diagram} mermaid
+::::{mermaid}
 flowchart LR
     A[Start] --> B{Decision}
     B -->|Yes| C[Action 1]
@@ -763,29 +763,19 @@ flowchart LR
     C --> E[End]
     D --> E
 ::::
-
-::::{diagram} d2
-x -> y: hello world
-y -> z: nice to meet you
-::::
 """
 
     [<Fact>]
-    let ``renders diagram with type information`` () =
+    let ``renders mermaid as structured content`` () =
         markdown |> convertsToNewLLM """
-<diagram type="mermaid">
+<mermaid>
   flowchart LR
       A[Start] --> B{Decision}
       B -->|Yes| C[Action 1]
       B -->|No| D[Action 2]
       C --> E[End]
       D --> E
-</diagram>
-
-<diagram type="d2">
-  x -> y: hello world
-  y -> z: nice to meet you
-</diagram>
+</mermaid>
 """
         
 type ``substitution in heading`` () =

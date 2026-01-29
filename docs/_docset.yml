@@ -96,7 +96,6 @@ toc:
       - file: comments.md
       - file: conditionals.md
       - file: csv-include.md
-      - hidden: diagrams.md
       - file: directives.md
       - file: dropdowns.md
       - file: definition-lists.md
@@ -108,6 +107,7 @@ toc:
       - file: images.md
       - file: kbd.md
       - file: math.md
+      - file: mermaid.md
       - file: lists.md
       - file: line_breaks.md
       - file: links.md
