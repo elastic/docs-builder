@@ -27,6 +27,14 @@ public static partial class ReleaseNotesSerialization
 	private static readonly IDeserializer YamlDeserializer =
 		new StaticDeserializerBuilder(new YamlStaticContext())
 			.WithNamingConvention(UnderscoredNamingConvention.Instance)
+			.Build();
+
+	/// <summary>
+	/// Used for loading minimal changelog configuration (publish blocker).
+	/// </summary>
+	private static readonly IDeserializer IgnoreUnmatchedDeserializer =
+		new StaticDeserializerBuilder(new YamlStaticContext())
+			.WithNamingConvention(UnderscoredNamingConvention.Instance)
 			.IgnoreUnmatchedProperties()
 			.Build();
 
@@ -318,7 +326,7 @@ public static partial class ReleaseNotesSerialization
 		if (string.IsNullOrWhiteSpace(yamlContent))
 			return null;
 
-		var yamlConfig = YamlDeserializer.Deserialize<ChangelogConfigMinimalDto>(yamlContent);
+		var yamlConfig = IgnoreUnmatchedDeserializer.Deserialize<ChangelogConfigMinimalDto>(yamlContent);
 		if (yamlConfig?.Block?.Publish is null)
 			return null;
 
