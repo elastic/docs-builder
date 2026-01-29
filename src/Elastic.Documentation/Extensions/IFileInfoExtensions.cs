@@ -143,4 +143,45 @@ public static class IDirectoryInfoExtensions
 
 		return null;
 	}
+
+	/// <summary>
+	/// Resolves a path relative to this directory, handling three cases:
+	/// <list type="bullet">
+	/// <item>Directory-relative paths (starting with '/') - resolved relative to this directory after trimming the leading slash</item>
+	/// <item>Absolute filesystem paths (e.g., C:\path on Windows) - returned as-is</item>
+	/// <item>Relative paths - resolved relative to this directory</item>
+	/// </list>
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// This method prevents the issue where <c>Path.Combine</c> silently drops the base directory
+	/// when passed an absolute path as the second argument.
+	/// </para>
+	/// <para>
+	/// Input paths from markdown always use forward slashes ('/'), but the returned path is normalized
+	/// to use the OS-appropriate directory separator for file system access.
+	/// </para>
+	/// </remarks>
+	/// <param name="directory">The base directory to resolve from</param>
+	/// <param name="relativePath">The path to resolve (typically from markdown, using '/' separators)</param>
+	/// <returns>The resolved absolute path with OS-appropriate separators</returns>
+	public static string ResolvePathFrom(this IDirectoryInfo directory, string relativePath)
+	{
+		var fsPath = directory.FileSystem.Path;
+
+		var normalizedPath = relativePath.Replace('/', fsPath.DirectorySeparatorChar);
+
+		// Handle directory-relative paths (convention: paths starting with '/')
+		// This convention means "relative to this directory" rather than an absolute filesystem path
+		if (relativePath.StartsWith('/'))
+			return fsPath.Combine(directory.FullName, normalizedPath.TrimStart(fsPath.DirectorySeparatorChar));
+
+		// Handle absolute filesystem paths - use directly
+		// This prevents Path.Combine from silently dropping the base directory
+		if (fsPath.IsPathRooted(normalizedPath))
+			return normalizedPath;
+
+		// Handle relative paths
+		return fsPath.Combine(directory.FullName, normalizedPath);
+	}
 }

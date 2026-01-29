@@ -7,10 +7,7 @@ using YamlDotNet.Serialization;
 namespace Elastic.Changelog.Serialization;
 
 [YamlStaticContext]
-// YAML DTOs for changelog entries
-[YamlSerializable(typeof(ChangelogEntryYaml))]
-[YamlSerializable(typeof(ProductInfoYaml))]
-// YAML DTOs for configuration
+// YAML DTOs for CLI configuration (changelog.yml)
 [YamlSerializable(typeof(ChangelogConfigurationYaml))]
 [YamlSerializable(typeof(PivotConfigurationYaml))]
 [YamlSerializable(typeof(TypeEntryYaml))]
@@ -22,9 +19,4 @@ namespace Elastic.Changelog.Serialization;
 [YamlSerializable(typeof(BundleConfigurationYaml))]
 [YamlSerializable(typeof(BundleProfileYaml))]
 [YamlSerializable(typeof(ExtractConfigurationYaml))]
-// YAML DTOs for bundles
-[YamlSerializable(typeof(BundleYaml))]
-[YamlSerializable(typeof(BundledProductYaml))]
-[YamlSerializable(typeof(BundledEntryYaml))]
-[YamlSerializable(typeof(BundledFileYaml))]
 public partial class ChangelogYamlStaticContext;

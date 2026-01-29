@@ -4,22 +4,22 @@
 
 using YamlDotNet.Serialization;
 
-namespace Elastic.Changelog.Serialization;
+namespace Elastic.Documentation.Configuration.ReleaseNotes;
 
 /// <summary>
-/// Internal DTO for YAML serialization of bundled changelog data.
+/// DTO for YAML serialization of bundled changelog data.
 /// Maps directly to the bundle YAML file structure.
 /// </summary>
-internal record BundleYaml
+public sealed record BundleDto
 {
-	public List<BundledProductYaml>? Products { get; set; }
-	public List<BundledEntryYaml>? Entries { get; set; }
+	public List<BundledProductDto>? Products { get; set; }
+	public List<BundledEntryDto>? Entries { get; set; }
 }
 
 /// <summary>
-/// Internal DTO for bundled product info in YAML.
+/// DTO for bundled product info in YAML.
 /// </summary>
-internal record BundledProductYaml
+public sealed record BundledProductDto
 {
 	public string? Product { get; set; }
 	public string? Target { get; set; }
@@ -27,14 +27,14 @@ internal record BundledProductYaml
 }
 
 /// <summary>
-/// Internal DTO for bundled entry in YAML.
+/// DTO for bundled entry in YAML.
 /// </summary>
-internal record BundledEntryYaml
+public sealed record BundledEntryDto
 {
-	public BundledFileYaml? File { get; set; }
+	public BundledFileDto? File { get; set; }
 	public string? Type { get; set; }
 	public string? Title { get; set; }
-	public List<ProductInfoYaml>? Products { get; set; }
+	public List<ProductInfoDto>? Products { get; set; }
 	public string? Description { get; set; }
 	public string? Impact { get; set; }
 	public string? Action { get; set; }
@@ -48,9 +48,9 @@ internal record BundledEntryYaml
 }
 
 /// <summary>
-/// Internal DTO for bundled file info in YAML.
+/// DTO for bundled file info in YAML.
 /// </summary>
-internal record BundledFileYaml
+public sealed record BundledFileDto
 {
 	public string? Name { get; set; }
 	public string? Checksum { get; set; }

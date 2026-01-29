@@ -6,7 +6,6 @@
 
 using System.IO.Abstractions;
 using System.Text;
-using Elastic.Documentation;
 using static System.Globalization.CultureInfo;
 using static Elastic.Documentation.ChangelogEntryType;
 
