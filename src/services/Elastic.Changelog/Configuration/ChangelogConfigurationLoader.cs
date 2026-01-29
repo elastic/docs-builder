@@ -12,6 +12,8 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
 using Microsoft.Extensions.Logging;
 using YamlDotNet.Core;
+using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
 
 namespace Elastic.Changelog.Configuration;
 
@@ -21,6 +23,18 @@ namespace Elastic.Changelog.Configuration;
 public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurationContext configurationContext, IFileSystem fileSystem)
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogConfigurationLoader>();
+
+	private static readonly IDeserializer ConfigurationDeserializer =
+		new StaticDeserializerBuilder(new ChangelogYamlStaticContext())
+			.WithNamingConvention(UnderscoredNamingConvention.Instance)
+			.WithTypeConverter(new TypeEntryYamlConverter())
+			.Build();
+
+	/// <summary>
+	/// Deserializes changelog configuration YAML content.
+	/// </summary>
+	internal static ChangelogConfigurationYaml DeserializeConfiguration(string yaml) =>
+		ConfigurationDeserializer.Deserialize<ChangelogConfigurationYaml>(yaml);
 
 	/// <summary>
 	/// Loads the publish blocker configuration from a changelog.
@@ -34,7 +48,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			return null;
 
 		var yamlContent = fileSystem.File.ReadAllText(configPath);
-		var yamlConfig = ChangelogYamlSerialization.DeserializeConfiguration(yamlContent);
+		var yamlConfig = DeserializeConfiguration(yamlContent);
 
 		return ParsePublishBlocker(yamlConfig.Block?.Publish);
 	}
@@ -57,7 +71,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		try
 		{
 			var yamlContent = await fileSystem.File.ReadAllTextAsync(finalConfigPath, ctx);
-			var yamlConfig = ChangelogYamlSerialization.DeserializeConfiguration(yamlContent);
+			var yamlConfig = DeserializeConfiguration(yamlContent);
 
 			return ParseConfiguration(collector, yamlConfig, finalConfigPath);
 		}

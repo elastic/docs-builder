@@ -4,7 +4,7 @@
 
 using System.IO.Abstractions;
 using Elastic.Changelog.Bundling;
-using Elastic.Changelog.Serialization;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
 using Microsoft.Extensions.Logging;
@@ -42,7 +42,7 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 			Bundle? bundledData;
 			try
 			{
-				bundledData = ChangelogYamlSerialization.DeserializeBundle(bundleContent);
+				bundledData = ReleaseNotesSerialization.DeserializeBundle(bundleContent);
 			}
 			catch (YamlException yamlEx)
 			{
@@ -102,7 +102,7 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 			try
 			{
 				var amendContent = await fileSystem.File.ReadAllTextAsync(amendFile, ctx);
-				var amendBundle = ChangelogYamlSerialization.DeserializeBundle(amendContent);
+				var amendBundle = ReleaseNotesSerialization.DeserializeBundle(amendContent);
 
 				_logger.LogInformation("Merging {Count} entries from amend file {AmendFile}", amendBundle.Entries.Count, amendFile);
 				mergedEntries.AddRange(amendBundle.Entries);
@@ -260,7 +260,7 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 			// Normalize "version:" to "target:" in products section
 			var normalizedYaml = ChangelogBundlingService.VersionToTargetRegex().Replace(yamlWithoutComments, "$1target:");
 
-			var entryData = ChangelogYamlSerialization.DeserializeEntry(normalizedYaml);
+			var entryData = ReleaseNotesSerialization.DeserializeEntry(normalizedYaml);
 
 			// Validate required fields in changelog file
 			if (string.IsNullOrWhiteSpace(entryData.Title))

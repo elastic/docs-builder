@@ -7,10 +7,10 @@ using System.Security.Cryptography;
 using System.Text;
 using Elastic.Changelog.Configuration;
 using Elastic.Changelog.GitHub;
-using Elastic.Changelog.Serialization;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
@@ -283,7 +283,7 @@ public class GitHubReleaseChangelogService(
 	}
 
 	private static string GenerateYaml(ChangelogEntry data) =>
-		ChangelogYamlSerialization.SerializeEntry(data);
+		ReleaseNotesSerialization.SerializeEntry(data);
 
 	private async Task<string> CreateBundleFile(
 		string outputDir,
@@ -311,11 +311,11 @@ public class GitHubReleaseChangelogService(
 
 		var bundleData = new Bundle
 		{
-			Products = [ChangelogMapper.ToBundledProduct(productInfo)],
+			Products = [productInfo.ToBundledProduct()],
 			Entries = bundleEntries
 		};
 
-		var yamlContent = ChangelogYamlSerialization.SerializeBundle(bundleData);
+		var yamlContent = ReleaseNotesSerialization.SerializeBundle(bundleData);
 
 		// Create bundles subfolder
 		var bundlesDir = _fileSystem.Path.Combine(outputDir, "bundles");

@@ -4,7 +4,7 @@
 
 using System.IO.Abstractions;
 using Elastic.Changelog.Bundling;
-using Elastic.Changelog.Serialization;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.ReleaseNotes;
 
 namespace Elastic.Changelog.Rendering;
@@ -79,9 +79,9 @@ public class BundleDataResolver(IFileSystem fileSystem)
 		string bundleDirectory,
 		Cancel ctx)
 	{
-		// If entry has resolved data, use Mapperly to convert
+		// If entry has resolved data, convert to ChangelogEntry
 		if (!string.IsNullOrWhiteSpace(entry.Title) && entry.Type != null)
-			return ChangelogMapper.ToEntry(entry);
+			return ReleaseNotesSerialization.ConvertBundledEntry(entry);
 
 		// Load from file (already validated to exist)
 		var filePath = fileSystem.Path.Combine(bundleDirectory, entry.File!.Name);
@@ -94,6 +94,6 @@ public class BundleDataResolver(IFileSystem fileSystem)
 		// Normalize "version:" to "target:" in products section
 		var normalizedYaml = ChangelogBundlingService.VersionToTargetRegex().Replace(yamlWithoutComments, "$1target:");
 
-		return ChangelogYamlSerialization.DeserializeEntry(normalizedYaml);
+		return ReleaseNotesSerialization.DeserializeEntry(normalizedYaml);
 	}
 }

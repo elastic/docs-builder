@@ -6,7 +6,7 @@ using System.Globalization;
 using System.IO.Abstractions;
 using System.Text;
 using System.Text.RegularExpressions;
-using Elastic.Changelog.Serialization;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
@@ -103,7 +103,7 @@ public partial class ChangelogBundleAmendService(ILoggerFactory logFactory, IFil
 			};
 
 			// Serialize and write the amend file
-			var yaml = ChangelogYamlSerialization.SerializeBundle(amendBundle);
+			var yaml = ReleaseNotesSerialization.SerializeBundle(amendBundle);
 
 			// Ensure output directory exists
 			var outputDir = _fileSystem.Path.GetDirectoryName(amendFilePath);
@@ -189,7 +189,7 @@ public partial class ChangelogBundleAmendService(ILoggerFactory logFactory, IFil
 			// Normalize "version:" to "target:" in products section
 			var normalizedYaml = ChangelogBundlingService.VersionToTargetRegex().Replace(yamlWithoutComments, "$1target:");
 
-			var entry = ChangelogYamlSerialization.DeserializeEntry(normalizedYaml);
+			var entry = ReleaseNotesSerialization.DeserializeEntry(normalizedYaml);
 
 			return new BundledEntry
 			{

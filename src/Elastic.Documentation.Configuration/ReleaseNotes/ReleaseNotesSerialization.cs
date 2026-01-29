@@ -35,6 +35,20 @@ public static partial class ReleaseNotesSerialization
 			.IgnoreUnmatchedProperties()
 			.Build();
 
+	private static readonly ISerializer YamlSerializer =
+		new StaticSerializerBuilder(new YamlStaticContext())
+			.WithNamingConvention(UnderscoredNamingConvention.Instance)
+			.ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitNull | DefaultValuesHandling.OmitEmptyCollections)
+			.WithQuotingNecessaryStrings()
+			.DisableAliases()
+			.Build();
+
+	/// <summary>
+	/// Gets the raw YAML deserializer for changelog entry DTOs.
+	/// Used by bundling service for direct deserialization with error handling.
+	/// </summary>
+	public static IDeserializer GetEntryDeserializer() => YamlDeserializer;
+
 	/// <summary>
 	/// Deserializes a changelog entry YAML content to domain type.
 	/// </summary>
@@ -43,6 +57,12 @@ public static partial class ReleaseNotesSerialization
 		var yamlDto = YamlDeserializer.Deserialize<ChangelogEntryDto>(yaml);
 		return ToEntry(yamlDto);
 	}
+
+	/// <summary>
+	/// Converts a raw YAML DTO to domain type.
+	/// Used by bundling service that handles deserialization separately for error handling.
+	/// </summary>
+	public static ChangelogEntry ConvertEntry(ChangelogEntryDto dto) => ToEntry(dto);
 
 	/// <summary>
 	/// Converts a BundledEntry to a ChangelogEntry.
@@ -57,6 +77,24 @@ public static partial class ReleaseNotesSerialization
 	{
 		var yamlDto = YamlDeserializer.Deserialize<BundleDto>(yaml);
 		return ToBundle(yamlDto);
+	}
+
+	/// <summary>
+	/// Serializes a changelog entry to YAML.
+	/// </summary>
+	public static string SerializeEntry(ChangelogEntry entry)
+	{
+		var dto = ToDto(entry);
+		return YamlSerializer.Serialize(dto);
+	}
+
+	/// <summary>
+	/// Serializes bundled changelog data to YAML.
+	/// </summary>
+	public static string SerializeBundle(Bundle bundle)
+	{
+		var dto = ToDto(bundle);
+		return YamlSerializer.Serialize(dto);
 	}
 
 	#region Manual Mapping Methods
@@ -176,6 +214,81 @@ public static partial class ReleaseNotesSerialization
 			: null;
 	}
 
+	// Reverse mappings (Domain → DTO) for serialization
+
+	private static ChangelogEntryDto ToDto(ChangelogEntry entry) => new()
+	{
+		Pr = entry.Pr,
+		Issues = entry.Issues?.ToList(),
+		Type = EntryTypeToString(entry.Type),
+		Subtype = EntrySubtypeToString(entry.Subtype),
+		Products = entry.Products?.Select(ToDto).ToList(),
+		Areas = entry.Areas?.ToList(),
+		Title = entry.Title,
+		Description = entry.Description,
+		Impact = entry.Impact,
+		Action = entry.Action,
+		FeatureId = entry.FeatureId,
+		Highlight = entry.Highlight
+	};
+
+	private static ProductInfoDto ToDto(ProductReference product) => new()
+	{
+		Product = product.ProductId,
+		Target = product.Target,
+		Lifecycle = LifecycleToString(product.Lifecycle)
+	};
+
+	private static BundleDto ToDto(Bundle bundle) => new()
+	{
+		Products = bundle.Products.Select(ToDto).ToList(),
+		Entries = bundle.Entries.Select(ToDto).ToList()
+	};
+
+	private static BundledProductDto ToDto(BundledProduct product) => new()
+	{
+		Product = product.ProductId,
+		Target = product.Target,
+		Lifecycle = LifecycleToString(product.Lifecycle)
+	};
+
+	private static BundledEntryDto ToDto(BundledEntry entry) => new()
+	{
+		File = entry.File != null ? ToDto(entry.File) : null,
+		Type = EntryTypeNullableToString(entry.Type),
+		Title = entry.Title,
+		Products = entry.Products?.Select(ToDto).ToList(),
+		Description = entry.Description,
+		Impact = entry.Impact,
+		Action = entry.Action,
+		FeatureId = entry.FeatureId,
+		Highlight = entry.Highlight,
+		Subtype = EntrySubtypeToString(entry.Subtype),
+		Areas = entry.Areas?.ToList(),
+		Pr = entry.Pr,
+		Issues = entry.Issues?.ToList()
+	};
+
+	private static BundledFileDto ToDto(BundledFile file) => new()
+	{
+		Name = file.Name,
+		Checksum = file.Checksum
+	};
+
+	// Reverse enum conversion helpers
+
+	private static string? EntryTypeToString(ChangelogEntryType value) =>
+		value != ChangelogEntryType.Invalid ? value.ToStringFast(true) : null;
+
+	private static string? EntryTypeNullableToString(ChangelogEntryType? value) =>
+		value?.ToStringFast(true);
+
+	private static string? EntrySubtypeToString(ChangelogEntrySubtype? value) =>
+		value?.ToStringFast(true);
+
+	private static string? LifecycleToString(Lifecycle? value) =>
+		value?.ToStringFast(true);
+
 	#endregion
 
 	/// <summary>
@@ -206,13 +319,14 @@ public static partial class ReleaseNotesSerialization
 			return null;
 
 		var yamlContent = fileSystem.File.ReadAllText(configPath);
-		var yamlConfig = IgnoreUnmatchedDeserializer.Deserialize<ChangelogConfigMinimal>(yamlContent);
+		if (string.IsNullOrWhiteSpace(yamlContent))
+			return null;
 
-		return yamlConfig.Block?.Publish switch
-		{
-			null => null,
-			_ => ParsePublishBlocker(yamlConfig.Block.Publish)
-		};
+		var yamlConfig = IgnoreUnmatchedDeserializer.Deserialize<ChangelogConfigMinimal>(yamlContent);
+		if (yamlConfig?.Block?.Publish is null)
+			return null;
+
+		return ParsePublishBlocker(yamlConfig.Block.Publish);
 	}
 
 	/// <summary>

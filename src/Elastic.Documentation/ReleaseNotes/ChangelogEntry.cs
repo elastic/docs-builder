@@ -45,4 +45,25 @@ public record ChangelogEntry
 
 	/// <summary>Whether this entry should be highlighted.</summary>
 	public bool? Highlight { get; init; }
+
+	/// <summary>
+	/// Converts this ChangelogEntry to a BundledEntry for embedding in bundles.
+	/// File property is set to null; set it separately using a 'with' expression.
+	/// </summary>
+	public BundledEntry ToBundledEntry() => new()
+	{
+		File = null,
+		Type = Type != ChangelogEntryType.Invalid ? Type : null,
+		Title = Title,
+		Products = Products,
+		Description = Description,
+		Impact = Impact,
+		Action = Action,
+		FeatureId = FeatureId,
+		Highlight = Highlight,
+		Subtype = Subtype,
+		Areas = Areas,
+		Pr = Pr,
+		Issues = Issues
+	};
 }

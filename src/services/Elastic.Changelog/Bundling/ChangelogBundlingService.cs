@@ -7,9 +7,9 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using Elastic.Changelog.Configuration;
-using Elastic.Changelog.Serialization;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
@@ -125,7 +125,7 @@ public partial class ChangelogBundlingService(
 			var filterCriteria = BuildFilterCriteria(input, prFilterResult.PrsToMatch);
 
 			// Match changelog entries
-			var entryMatcher = new ChangelogEntryMatcher(_fileSystem, ChangelogYamlSerialization.GetEntryDeserializer(), _logger);
+			var entryMatcher = new ChangelogEntryMatcher(_fileSystem, ReleaseNotesSerialization.GetEntryDeserializer(), _logger);
 			var matchResult = await entryMatcher.MatchChangelogsAsync(collector, yamlFiles, filterCriteria, ctx);
 
 			_logger.LogInformation("Found {Count} matching changelog entries", matchResult.Entries.Count);
@@ -351,7 +351,7 @@ public partial class ChangelogBundlingService(
 	private async Task WriteBundleFileAsync(Bundle bundledData, string outputPath, Cancel ctx)
 	{
 		// Generate bundled YAML
-		var bundledYaml = ChangelogYamlSerialization.SerializeBundle(bundledData);
+		var bundledYaml = ReleaseNotesSerialization.SerializeBundle(bundledData);
 
 		// Ensure output directory exists
 		var outputDir = _fileSystem.Path.GetDirectoryName(outputPath);
