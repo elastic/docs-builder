@@ -159,11 +159,11 @@ public class AssemblerBuildServiceTests
 		var localEnv = MockEnvironmentVariables.CreateLocal();
 
 		// On CI, assumeBuild=true would cause validation to fail
-		var ciWithAssumeBuild = true && ciEnv.IsRunningOnCI;
+		var ciWithAssumeBuild = ciEnv.IsRunningOnCI;
 		ciWithAssumeBuild.Should().BeTrue("CI with assumeBuild should trigger validation error");
 
 		// Locally, assumeBuild=true is allowed
-		var localWithAssumeBuild = true && localEnv.IsRunningOnCI;
+		var localWithAssumeBuild = localEnv.IsRunningOnCI;
 		localWithAssumeBuild.Should().BeFalse("Local with assumeBuild should not trigger validation error");
 	}
 
