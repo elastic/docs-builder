@@ -4,6 +4,7 @@
 
 using Elastic.Documentation.Site;
 using Elastic.Markdown.Diagnostics;
+using Markdig.Syntax;
 
 namespace Elastic.Markdown.Myst.Directives.Mermaid;
 
@@ -39,7 +40,9 @@ public class MermaidBlock(DirectiveBlockParser parser, ParserContext context) : 
 		{
 			RenderedSvg = Renderer.Value.Render(Content);
 		}
-		catch (Exception ex)
+		catch (Exception ex) when (ex is not OutOfMemoryException
+								   and not StackOverflowException
+								   and not TaskCanceledException)
 		{
 			this.EmitError($"Failed to render Mermaid diagram: {ex.Message}");
 		}
@@ -50,16 +53,11 @@ public class MermaidBlock(DirectiveBlockParser parser, ParserContext context) : 
 		if (!this.Any())
 			return null;
 
-		var lines = new List<string>();
-		foreach (var block in this)
-		{
-			if (block is Markdig.Syntax.LeafBlock leafBlock)
-			{
-				var content = leafBlock.Lines.ToString();
-				if (!string.IsNullOrWhiteSpace(content))
-					lines.Add(content);
-			}
-		}
+		var lines = this
+			.OfType<LeafBlock>()
+			.Select(leafBlock => leafBlock.Lines.ToString())
+			.Where(content => !string.IsNullOrWhiteSpace(content))
+			.ToList();
 
 		return lines.Count > 0 ? string.Join("\n", lines) : null;
 	}
