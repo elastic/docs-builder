@@ -226,3 +226,6 @@ toc:
       - folder: release-notes
         children:
           - file: index.md
+          - file: breaking-changes.md
+          - file: deprecations.md
+          - file: known-issues.md
