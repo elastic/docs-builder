@@ -3,11 +3,11 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation;
+using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Markdown.Diagnostics;
-using PageTocItem = Elastic.Markdown.PageTocItem;
 
 namespace Elastic.Markdown.Myst.Directives.Changelog;
 
@@ -81,10 +81,11 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 	public PublishBlocker? PublishBlocker { get; private set; }
 
 	/// <summary>
-	/// Whether to hide PR and issue links in the rendered output.
-	/// When true, links are commented out. Defaults to false.
+	/// Repository names that are marked as private in assembler.yml.
+	/// Links to these repositories will be hidden (commented out) in the rendered output.
+	/// Auto-detected from assembler configuration when available.
 	/// </summary>
-	public bool HideLinks { get; private set; }
+	public HashSet<string> PrivateRepositories { get; private set; } = new(StringComparer.OrdinalIgnoreCase);
 
 	/// <summary>
 	/// Feature IDs to hide from the rendered output.
@@ -107,10 +108,10 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 	{
 		ExtractBundlesFolderPath();
 		Subsections = PropBool("subsections");
-		HideLinks = PropBool("hide-links");
 		ConfigPath = Prop("config");
 		ParseHideFeatures();
 		LoadConfiguration();
+		LoadPrivateRepositories();
 		if (Found)
 			LoadAndCacheBundles();
 	}
@@ -193,6 +194,26 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 			return;
 
 		PublishBlocker = ReleaseNotesSerialization.LoadPublishBlocker(fileSystem, configPath);
+	}
+
+	/// <summary>
+	/// Loads private repository names from assembler configuration.
+	/// Links to private repositories will be hidden in the rendered output.
+	/// </summary>
+	private void LoadPrivateRepositories()
+	{
+		try
+		{
+			// Try to load assembler configuration to get private repositories
+			var assemblerConfig = AssemblyConfiguration.Create(Build.ConfigurationFileProvider);
+			foreach (var repoName in assemblerConfig.PrivateRepositories.Keys)
+				_ = PrivateRepositories.Add(repoName);
+		}
+		catch
+		{
+			// If assembler.yml is not available (standalone builds), no repos are private
+			// This is expected behavior - we silently continue with empty private repos
+		}
 	}
 
 	private void LoadAndCacheBundles()

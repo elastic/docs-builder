@@ -34,7 +34,7 @@ public static class ChangelogInlineRenderer
 				block.Subsections,
 				block.PublishBlocker,
 				block.FeatureIdsToHide,
-				block.HideLinks);
+				block.PrivateRepositories);
 			_ = sb.Append(bundleMarkdown);
 
 			isFirst = false;
@@ -48,7 +48,7 @@ public static class ChangelogInlineRenderer
 		bool subsections,
 		PublishBlocker? publishBlocker,
 		HashSet<string> featureIdsToHide,
-		bool hideLinks)
+		HashSet<string> privateRepositories)
 	{
 		var titleSlug = ChangelogTextUtilities.TitleToSlug(bundle.Version);
 
@@ -60,7 +60,28 @@ public static class ChangelogInlineRenderer
 			.GroupBy(e => e.Type)
 			.ToDictionary(g => g.Key, g => g.ToList());
 
+		// Check if the bundle's repo (which may be merged like "elasticsearch+kibana")
+		// contains any private repositories - if so, hide links for this bundle
+		var hideLinks = ShouldHideLinksForRepo(bundle.Repo, privateRepositories);
+
 		return GenerateMarkdown(bundle.Version, titleSlug, bundle.Repo, entriesByType, subsections, hideLinks);
+	}
+
+	/// <summary>
+	/// Determines if links should be hidden for a bundle based on its repository.
+	/// For merged bundles (e.g., "elasticsearch+kibana+private-repo"), returns true
+	/// if ANY component repository is in the private repositories set.
+	/// </summary>
+	public static bool ShouldHideLinksForRepo(string bundleRepo, HashSet<string> privateRepositories)
+	{
+		if (privateRepositories.Count == 0)
+			return false;
+
+		// Split on '+' to handle merged bundles (e.g., "elasticsearch+kibana+private-repo")
+		var repos = bundleRepo.Split('+', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+		// Hide links if ANY component repo is private
+		return repos.Any(privateRepositories.Contains);
 	}
 
 	/// <summary>

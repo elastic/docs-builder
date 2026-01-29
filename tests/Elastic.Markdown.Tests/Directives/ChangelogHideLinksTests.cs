@@ -8,9 +8,91 @@ using FluentAssertions;
 
 namespace Elastic.Markdown.Tests.Directives;
 
-public class ChangelogHideLinksDefaultTests : DirectiveTest<ChangelogBlock>
+/// <summary>
+/// Tests for the ShouldHideLinksForRepo method which determines if links should be hidden
+/// based on whether any component of the bundle's repository is private.
+/// </summary>
+public class ChangelogShouldHideLinksForRepoTests
 {
-	public ChangelogHideLinksDefaultTests(ITestOutputHelper output) : base(output,
+	[Fact]
+	public void ReturnsTrue_WhenSingleRepoIsPrivate()
+	{
+		var privateRepos = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "private-repo" };
+
+		var result = ChangelogInlineRenderer.ShouldHideLinksForRepo("private-repo", privateRepos);
+
+		result.Should().BeTrue();
+	}
+
+	[Fact]
+	public void ReturnsFalse_WhenSingleRepoIsNotPrivate()
+	{
+		var privateRepos = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "other-repo" };
+
+		var result = ChangelogInlineRenderer.ShouldHideLinksForRepo("elasticsearch", privateRepos);
+
+		result.Should().BeFalse();
+	}
+
+	[Fact]
+	public void ReturnsFalse_WhenPrivateReposIsEmpty()
+	{
+		var privateRepos = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+		var result = ChangelogInlineRenderer.ShouldHideLinksForRepo("elasticsearch", privateRepos);
+
+		result.Should().BeFalse();
+	}
+
+	[Fact]
+	public void ReturnsTrue_WhenMergedRepoContainsPrivateRepo()
+	{
+		// Merged bundle repos are joined with '+'
+		var privateRepos = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "private-repo" };
+
+		var result = ChangelogInlineRenderer.ShouldHideLinksForRepo("elasticsearch+kibana+private-repo", privateRepos);
+
+		result.Should().BeTrue();
+	}
+
+	[Fact]
+	public void ReturnsFalse_WhenMergedRepoContainsNoPrivateRepos()
+	{
+		var privateRepos = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "other-private" };
+
+		var result = ChangelogInlineRenderer.ShouldHideLinksForRepo("elasticsearch+kibana", privateRepos);
+
+		result.Should().BeFalse();
+	}
+
+	[Fact]
+	public void IsCaseInsensitive_ForRepoNames()
+	{
+		var privateRepos = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Private-Repo" };
+
+		var result = ChangelogInlineRenderer.ShouldHideLinksForRepo("private-repo", privateRepos);
+
+		result.Should().BeTrue();
+	}
+
+	[Fact]
+	public void HandlesWhitespace_InMergedRepoNames()
+	{
+		var privateRepos = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "private-repo" };
+
+		// The split uses TrimEntries, so whitespace around names should be handled
+		var result = ChangelogInlineRenderer.ShouldHideLinksForRepo("elasticsearch + private-repo + kibana", privateRepos);
+
+		result.Should().BeTrue();
+	}
+}
+
+/// <summary>
+/// Tests that links are shown for public repositories.
+/// </summary>
+public class ChangelogLinksDefaultBehaviorTests : DirectiveTest<ChangelogBlock>
+{
+	public ChangelogLinksDefaultBehaviorTests(ITestOutputHelper output) : base(output,
 		// language=markdown
 		"""
 		:::{changelog}
@@ -34,32 +116,38 @@ public class ChangelogHideLinksDefaultTests : DirectiveTest<ChangelogBlock>
 		"""));
 
 	[Fact]
-	public void HideLinksPropertyDefaultsToFalse() => Block!.HideLinks.Should().BeFalse();
+	public void PrivateRepositoriesPropertyIsAccessible() =>
+		// The PrivateRepositories property should be accessible
+		// (may contain repos from embedded assembler.yml)
+		Block!.PrivateRepositories.Should().NotBeNull();
 
 	[Fact]
-	public void RendersPrLinksWhenNotHidden()
+	public void RendersPrLinksForPublicRepo()
 	{
-		// PR link should be visible in the output
+		// elasticsearch is a public repo, so PR link should be visible in the output
 		Html.Should().Contain("123456");
 		Html.Should().Contain("github.com");
 	}
 
 	[Fact]
-	public void RendersIssueLinksWhenNotHidden()
+	public void RendersIssueLinksForPublicRepo()
 	{
-		// Issue links should be visible
+		// elasticsearch is public, so issue links should be visible
 		Html.Should().Contain("78901");
 		Html.Should().Contain("78902");
 	}
 }
 
-public class ChangelogHideLinksEnabledTests : DirectiveTest<ChangelogBlock>
+/// <summary>
+/// Tests that links are hidden when the bundle's repository is marked as private.
+/// Uses internal setter to simulate private repo detection from assembler.yml.
+/// </summary>
+public class ChangelogLinksHiddenForPrivateRepoTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogHideLinksEnabledTests(ITestOutputHelper output) : base(output,
+	public ChangelogLinksHiddenForPrivateRepoTests(ITestOutputHelper output) : base(output,
 		// language=markdown
 		"""
 		:::{changelog}
-		:hide-links:
 		:::
 		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
 		// language=yaml
@@ -79,68 +167,51 @@ public class ChangelogHideLinksEnabledTests : DirectiveTest<ChangelogBlock>
 		  - "78902"
 		"""));
 
-	[Fact]
-	public void HideLinksPropertyIsTrue() => Block!.HideLinks.Should().BeTrue();
-
-	[Fact]
-	public void RendersEntryTitle() => Html.Should().Contain("Feature with PR and issues");
-
-	[Fact]
-	public void HidesPrLinksAsComments() =>
-		// When hide-links is enabled, links should be commented out
-		// The ChangelogTextUtilities.FormatPrLink with hidePrivateLinks=true returns "% [#123456](...)"
-		Html.Should().NotContain("<a href=\"https://github.com/elastic/elasticsearch/pull/123456\"");
-
-	[Fact]
-	public void HidesIssueLinksAsComments()
+	public override async ValueTask InitializeAsync()
 	{
-		// Issue links should also be commented out
-		Html.Should().NotContain("<a href=\"https://github.com/elastic/elasticsearch/issues/78901\"");
-		Html.Should().NotContain("<a href=\"https://github.com/elastic/elasticsearch/issues/78902\"");
+		await base.InitializeAsync();
+		// Simulate that 'elasticsearch' is a private repository
+		Block!.PrivateRepositories.Add("elasticsearch");
+	}
+
+	[Fact]
+	public void PrivateRepositoriesContainsConfiguredRepo() =>
+		Block!.PrivateRepositories.Should().Contain("elasticsearch");
+
+	[Fact]
+	public void HidesPrLinksForPrivateRepo()
+	{
+		// Re-render after setting private repos
+		var markdown = ChangelogInlineRenderer.RenderChangelogMarkdown(Block!);
+
+		// PR links should NOT be rendered as clickable links
+		markdown.Should().NotBeNull();
+		markdown.Should().Contain("123456"); // PR number still appears
+		markdown.Should().Contain("%"); // Links are commented out
+	}
+
+	[Fact]
+	public void HidesIssueLinksForPrivateRepo()
+	{
+		// Re-render after setting private repos
+		var markdown = ChangelogInlineRenderer.RenderChangelogMarkdown(Block!);
+
+		// Issue links should be commented out
+		markdown.Should().Contain("78901");
+		markdown.Should().Contain("78902");
+		markdown.Should().Contain("%"); // Links are commented out
 	}
 }
 
-public class ChangelogHideLinksExplicitFalseTests : DirectiveTest<ChangelogBlock>
+/// <summary>
+/// Tests link hiding behavior with detailed entries (breaking changes, deprecations).
+/// </summary>
+public class ChangelogLinksHiddenInDetailedEntriesTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogHideLinksExplicitFalseTests(ITestOutputHelper output) : base(output,
+	public ChangelogLinksHiddenInDetailedEntriesTests(ITestOutputHelper output) : base(output,
 		// language=markdown
 		"""
 		:::{changelog}
-		:hide-links: false
-		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
-		"""
-		products:
-		- product: elasticsearch
-		  target: 9.3.0
-		entries:
-		- title: Feature with PR
-		  type: feature
-		  products:
-		  - product: elasticsearch
-		    target: 9.3.0
-		  pr: "123456"
-		"""));
-
-	[Fact]
-	public void HideLinksPropertyIsFalse() => Block!.HideLinks.Should().BeFalse();
-
-	[Fact]
-	public void RendersPrLinksWhenExplicitlyNotHidden()
-	{
-		Html.Should().Contain("123456");
-		Html.Should().Contain("github.com");
-	}
-}
-
-public class ChangelogHideLinksInDetailedEntriesTests : DirectiveTest<ChangelogBlock>
-{
-	public ChangelogHideLinksInDetailedEntriesTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
-		:::{changelog}
-		:hide-links:
 		:::
 		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
 		// language=yaml
@@ -171,40 +242,57 @@ public class ChangelogHideLinksInDetailedEntriesTests : DirectiveTest<ChangelogB
 		  pr: "555444"
 		"""));
 
+	public override async ValueTask InitializeAsync()
+	{
+		await base.InitializeAsync();
+		// Simulate that 'elasticsearch' is a private repository
+		Block!.PrivateRepositories.Add("elasticsearch");
+	}
+
 	[Fact]
 	public void HidesLinksInBreakingChangesSection()
 	{
-		// The breaking change section should have the links hidden
-		Html.Should().Contain("Breaking change with PR");
-		Html.Should().NotContain("<a href=\"https://github.com/elastic/elasticsearch/pull/999888\"");
+		var markdown = ChangelogInlineRenderer.RenderChangelogMarkdown(Block!);
+
+		// The breaking change section should have the links hidden (commented out)
+		markdown.Should().Contain("Breaking change with PR");
+		markdown.Should().Contain("999888"); // PR number appears
+		markdown.Should().Contain("%"); // Links are commented out
 	}
 
 	[Fact]
 	public void HidesLinksInDeprecationsSection()
 	{
+		var markdown = ChangelogInlineRenderer.RenderChangelogMarkdown(Block!);
+
 		// The deprecation section should have the links hidden
-		Html.Should().Contain("Deprecation with PR");
-		Html.Should().NotContain("<a href=\"https://github.com/elastic/elasticsearch/pull/555444\"");
+		markdown.Should().Contain("Deprecation with PR");
+		markdown.Should().Contain("555444"); // PR number appears
+		markdown.Should().Contain("%"); // Links are commented out
 	}
 
 	[Fact]
 	public void RendersImpactAndActionSections()
 	{
+		var markdown = ChangelogInlineRenderer.RenderChangelogMarkdown(Block!);
+
 		// Impact and action should still be rendered
-		Html.Should().Contain("Impact");
-		Html.Should().Contain("Users must update");
-		Html.Should().Contain("Action");
-		Html.Should().Contain("Follow migration guide");
+		markdown.Should().Contain("Impact");
+		markdown.Should().Contain("Users must update");
+		markdown.Should().Contain("Action");
+		markdown.Should().Contain("Follow migration guide");
 	}
 }
 
-public class ChangelogHideLinksWithMultipleEntriesTests : DirectiveTest<ChangelogBlock>
+/// <summary>
+/// Tests that links are shown for public repos even when some private repos are configured.
+/// </summary>
+public class ChangelogLinksShownForPublicRepoTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogHideLinksWithMultipleEntriesTests(ITestOutputHelper output) : base(output,
+	public ChangelogLinksShownForPublicRepoTests(ITestOutputHelper output) : base(output,
 		// language=markdown
 		"""
 		:::{changelog}
-		:hide-links:
 		:::
 		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
 		// language=yaml
@@ -213,46 +301,170 @@ public class ChangelogHideLinksWithMultipleEntriesTests : DirectiveTest<Changelo
 		- product: elasticsearch
 		  target: 9.3.0
 		entries:
-		- title: Feature one
+		- title: Feature from public repo
 		  type: feature
 		  products:
 		  - product: elasticsearch
 		    target: 9.3.0
 		  pr: "111111"
-		- title: Feature two
-		  type: feature
-		  products:
-		  - product: elasticsearch
-		    target: 9.3.0
-		  pr: "222222"
-		- title: Bug fix
-		  type: bug-fix
-		  products:
-		  - product: elasticsearch
-		    target: 9.3.0
-		  pr: "333333"
-		  issues:
-		  - "444444"
 		"""));
 
-	[Fact]
-	public void RendersAllEntryTitles()
+	public override async ValueTask InitializeAsync()
 	{
-		Html.Should().Contain("Feature one");
-		Html.Should().Contain("Feature two");
-		Html.Should().Contain("Bug fix");
+		await base.InitializeAsync();
+		// Configure a different repo as private - not elasticsearch
+		Block!.PrivateRepositories.Add("private-internal-repo");
 	}
 
 	[Fact]
-	public void HidesAllPrLinks()
+	public void ShowsPrLinksForPublicRepo()
 	{
-		// None of the PR links should be rendered as clickable links
-		Html.Should().NotContain("<a href=\"https://github.com/elastic/elasticsearch/pull/111111\"");
-		Html.Should().NotContain("<a href=\"https://github.com/elastic/elasticsearch/pull/222222\"");
-		Html.Should().NotContain("<a href=\"https://github.com/elastic/elasticsearch/pull/333333\"");
+		var markdown = ChangelogInlineRenderer.RenderChangelogMarkdown(Block!);
+
+		// PR links should be visible (not commented out) since elasticsearch is public
+		markdown.Should().Contain("111111");
+		// The link should be a proper GitHub URL, not commented out
+		markdown.Should().Contain("[#111111]");
+		markdown.Should().Contain("github.com/elastic/elasticsearch/pull/111111");
+	}
+}
+
+/// <summary>
+/// Tests link hiding with merged bundles where one repo is private.
+/// </summary>
+public class ChangelogLinksWithMergedBundlesTests : DirectiveTest<ChangelogBlock>
+{
+	public ChangelogLinksWithMergedBundlesTests(ITestOutputHelper output) : base(output,
+		// language=markdown
+		"""
+		:::{changelog}
+		:::
+		""")
+	{
+		// Add bundles from two repos with the same target version (will be merged)
+		FileSystem.AddFile("docs/changelog/bundles/elasticsearch-2025-08-05.yaml", new MockFileData(
+			// language=yaml
+			"""
+			products:
+			- product: elasticsearch
+			  target: 2025-08-05
+			entries:
+			- title: ES Feature
+			  type: feature
+			  products:
+			  - product: elasticsearch
+			    target: 2025-08-05
+			  pr: "111111"
+			"""));
+
+		FileSystem.AddFile("docs/changelog/bundles/kibana-2025-08-05.yaml", new MockFileData(
+			// language=yaml
+			"""
+			products:
+			- product: kibana
+			  target: 2025-08-05
+			entries:
+			- title: Kibana Feature
+			  type: feature
+			  products:
+			  - product: kibana
+			    target: 2025-08-05
+			  pr: "222222"
+			"""));
+	}
+
+	public override async ValueTask InitializeAsync()
+	{
+		await base.InitializeAsync();
+		// Kibana is a private repo
+		Block!.PrivateRepositories.Add("kibana");
 	}
 
 	[Fact]
-	public void HidesAllIssueLinks() =>
-		Html.Should().NotContain("<a href=\"https://github.com/elastic/elasticsearch/issues/444444\"");
+	public void MergedBundleRepoContainsBothRepos()
+	{
+		// Bundles with same target version are merged, repo names combined with '+'
+		Block!.LoadedBundles.Should().HaveCount(1);
+		Block!.LoadedBundles[0].Repo.Should().Contain("elasticsearch");
+		Block!.LoadedBundles[0].Repo.Should().Contain("kibana");
+		Block!.LoadedBundles[0].Repo.Should().Contain("+");
+	}
+
+	[Fact]
+	public void HidesLinksWhenAnyMergedRepoIsPrivate()
+	{
+		var markdown = ChangelogInlineRenderer.RenderChangelogMarkdown(Block!);
+
+		// Since kibana is private, all links in the merged bundle should be hidden
+		markdown.Should().Contain("ES Feature");
+		markdown.Should().Contain("Kibana Feature");
+		// Links should be commented out (% prefix)
+		markdown.Should().Contain("%");
+	}
+}
+
+/// <summary>
+/// Tests that merged bundles with only public repos show links.
+/// </summary>
+public class ChangelogLinksWithMergedPublicReposTests : DirectiveTest<ChangelogBlock>
+{
+	public ChangelogLinksWithMergedPublicReposTests(ITestOutputHelper output) : base(output,
+		// language=markdown
+		"""
+		:::{changelog}
+		:::
+		""")
+	{
+		// Add bundles from two public repos with the same target version
+		FileSystem.AddFile("docs/changelog/bundles/elasticsearch-2025-08-05.yaml", new MockFileData(
+			// language=yaml
+			"""
+			products:
+			- product: elasticsearch
+			  target: 2025-08-05
+			entries:
+			- title: ES Feature
+			  type: feature
+			  products:
+			  - product: elasticsearch
+			    target: 2025-08-05
+			  pr: "111111"
+			"""));
+
+		FileSystem.AddFile("docs/changelog/bundles/kibana-2025-08-05.yaml", new MockFileData(
+			// language=yaml
+			"""
+			products:
+			- product: kibana
+			  target: 2025-08-05
+			entries:
+			- title: Kibana Feature
+			  type: feature
+			  products:
+			  - product: kibana
+			    target: 2025-08-05
+			  pr: "222222"
+			"""));
+	}
+
+	public override async ValueTask InitializeAsync()
+	{
+		await base.InitializeAsync();
+		// Only unrelated repos are private - elasticsearch and kibana are public
+		Block!.PrivateRepositories.Add("some-other-private-repo");
+	}
+
+	[Fact]
+	public void ShowsLinksWhenAllMergedReposArePublic()
+	{
+		var markdown = ChangelogInlineRenderer.RenderChangelogMarkdown(Block!);
+
+		// Both repos are public, so links should be visible
+		markdown.Should().Contain("ES Feature");
+		markdown.Should().Contain("Kibana Feature");
+		// Links should be proper GitHub URLs
+		markdown.Should().Contain("[#111111]");
+		markdown.Should().Contain("[#222222]");
+		markdown.Should().Contain("github.com");
+	}
 }

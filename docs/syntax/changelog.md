@@ -22,7 +22,6 @@ The directive supports the following options:
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `:hide-links:` | Hide PR and issue links (comment them out) | false |
 | `:hide-features: id1, id2` | Hide entries with specified feature IDs | (none) |
 | `:subsections:` | Group entries by area/component | false |
 | `:config: path` | Path to changelog.yml configuration | auto-discover |
@@ -31,17 +30,12 @@ The directive supports the following options:
 
 ```markdown
 :::{changelog} /path/to/bundles
-:hide-links:
 :hide-features: experimental-api, internal-feature
 :subsections:
 :::
 ```
 
 ### Option details
-
-#### `:hide-links:`
-
-When enabled, PR and issue links are commented out instead of rendered as clickable links. Useful when bundles reference private repositories.
 
 #### `:hide-features:`
 
@@ -58,6 +52,14 @@ Explicit path to a `changelog.yml` configuration file. If not specified, the dir
 2. `docs/changelog.yml` relative to docset root
 
 The configuration can include publish blockers to filter entries by type or area.
+
+## Private repository link hiding
+
+PR and issue links are automatically hidden (commented out) for bundles from private repositories. This is determined by checking the `assembler.yml` configuration:
+
+- Repositories marked with `private: true` in `assembler.yml` will have their links hidden
+- For merged bundles (e.g., `elasticsearch+kibana`), links are hidden if ANY component repository is private
+- In standalone builds without `assembler.yml`, all links are shown by default
 
 ## Bundle merging
 
