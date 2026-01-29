@@ -108,28 +108,28 @@ public static partial class ChangelogTextUtilities
 		if (string.IsNullOrWhiteSpace(title))
 			return title;
 
-		var remaining = title;
+		var span = title.AsSpan();
 
 		// Keep stripping square bracket prefixes until there are no more at the start
-		while (remaining.StartsWith('['))
+		while (span.Length > 0 && span[0] == '[')
 		{
 			// Find the matching ']'
-			var closingBracketIndex = remaining.IndexOf(']', 1);
+			var closingBracketIndex = span.IndexOf(']');
 			if (closingBracketIndex < 0)
-				return remaining; // No matching ']', return as-is
+				return span.ToString(); // No matching ']', return as-is
 
-			// Extract everything after the closing bracket
-			remaining = remaining[(closingBracketIndex + 1)..];
+			// Skip past the closing bracket
+			span = span[(closingBracketIndex + 1)..];
 
-			// Trim whitespace after the bracket
-			remaining = remaining.TrimStart();
+			// Trim leading whitespace
+			span = span.TrimStart();
 		}
 
-		// Remove colon if it exists right after the last closing bracket
-		if (remaining.StartsWith(':'))
-			remaining = remaining[1..].TrimStart();
+		// Remove colon if it exists at the start
+		if (span.Length > 0 && span[0] == ':')
+			span = span[1..].TrimStart();
 
-		return remaining;
+		return span.ToString();
 	}
 
 	/// <summary>
