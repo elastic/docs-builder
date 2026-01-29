@@ -17,7 +17,6 @@ using Elastic.Markdown.Myst.Directives.Dropdown;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Math;
-using Elastic.Markdown.Myst.Directives.Mermaid;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.Directives.Stepper;
 using Elastic.Markdown.Myst.Directives.Tabs;
@@ -47,9 +46,6 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 
 		switch (directiveBlock)
 		{
-			case MermaidBlock mermaidBlock:
-				WriteMermaid(renderer, mermaidBlock);
-				return;
 			case FigureBlock imageBlock:
 				WriteFigure(renderer, imageBlock);
 				return;
@@ -344,16 +340,6 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		}
 
 		return null;
-	}
-
-	private static void WriteMermaid(HtmlRenderer renderer, MermaidBlock block)
-	{
-		var slice = MermaidView.Create(new MermaidViewModel
-		{
-			DirectiveBlock = block,
-			MermaidBlock = block
-		});
-		RenderRazorSlice(slice, renderer);
 	}
 
 	private static void WriteLiteralIncludeBlock(HtmlRenderer renderer, IncludeBlock block)

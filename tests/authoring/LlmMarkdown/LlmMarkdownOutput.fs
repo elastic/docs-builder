@@ -753,29 +753,29 @@ Hello, this is a substitution: Hello World!
 ```
 """
 
-type ``mermaid directive`` () =
+type ``mermaid code block`` () =
     static let markdown = Setup.Document """
-::::{mermaid}
+```mermaid
 flowchart LR
     A[Start] --> B{Decision}
     B -->|Yes| C[Action 1]
     B -->|No| D[Action 2]
     C --> E[End]
     D --> E
-::::
+```
 """
 
     [<Fact>]
-    let ``renders mermaid as structured content`` () =
+    let ``renders mermaid as code block`` () =
         markdown |> convertsToNewLLM """
-<mermaid>
-  flowchart LR
-      A[Start] --> B{Decision}
-      B -->|Yes| C[Action 1]
-      B -->|No| D[Action 2]
-      C --> E[End]
-      D --> E
-</mermaid>
+```mermaid
+flowchart LR
+A[Start] --> B{Decision}
+B -->|Yes| C[Action 1]
+B -->|No| D[Action 2]
+C --> E[End]
+D --> E
+```
 """
         
 type ``substitution in heading`` () =

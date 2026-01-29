@@ -2,160 +2,129 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Markdown.Myst.Directives.Mermaid;
+using Elastic.Markdown.Myst.CodeBlocks;
 using FluentAssertions;
+using Markdig.Syntax;
 
 namespace Elastic.Markdown.Tests.Directives;
 
-public class MermaidFlowchartTests(ITestOutputHelper output) : DirectiveTest<MermaidBlock>(output,
+public class MermaidFlowchartTests(ITestOutputHelper output) : DirectiveTest(output,
 """
-::::{mermaid}
+```mermaid
 flowchart LR
-  A[Start] --> B[Process]
-  B --> C[End]
-::::
+A[Start] --> B[Process]
+B --> C[End]
+```
 """
 )
 {
+	private EnhancedCodeBlock? Block => Document.Descendants<EnhancedCodeBlock>().FirstOrDefault();
+
 	[Fact]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
 	[Fact]
-	public void ExtractsContent() => Block!.Content.Should().Contain("flowchart LR");
+	public void HasMermaidLanguage() => Block!.Language.Should().Be("mermaid");
 
 	[Fact]
-	public void GeneratesRenderedHtml() => Block!.RenderedHtml.Should().StartWith("<svg");
+	public void RendersPreMermaidTag() => Html.Should().Contain("<pre class=\"mermaid\">");
 
 	[Fact]
-	public void RendersSvgInDiv() => Html.Should().Contain("<div class=\"mermaid\">");
+	public void ContainsDiagramContent() => Html.Should().Contain("flowchart LR");
 
 	[Fact]
-	public void RendersInlineSvg() => Html.Should().Contain("<svg");
-
-	[Fact]
-	public void SvgHasNoGoogleFontsImport() => Block!.RenderedHtml.Should().NotContain("fonts.googleapis.com");
-
-	[Fact]
-	public void IsNotClientSide() => Block!.IsClientSide.Should().BeFalse();
+	public void PreservesArrows() => Html.Should().Contain("--&gt;");
 }
 
-public class MermaidSequenceTests(ITestOutputHelper output) : DirectiveTest<MermaidBlock>(output,
+public class MermaidSequenceTests(ITestOutputHelper output) : DirectiveTest(output,
 """
-::::{mermaid}
+```mermaid
 sequenceDiagram
     participant A as Alice
     participant B as Bob
-    A->>B: Hello!
-::::
+    A->>B: Hello Bob, how are you?
+    B-->>A: Great!
+```
 """
 )
 {
+	private EnhancedCodeBlock? Block => Document.Descendants<EnhancedCodeBlock>().FirstOrDefault();
+
 	[Fact]
 	public void ParsesSequenceDiagram() => Block.Should().NotBeNull();
 
 	[Fact]
-	public void ExtractsSequenceContent() => Block!.Content.Should().Contain("sequenceDiagram");
+	public void RendersPreMermaidTag() => Html.Should().Contain("<pre class=\"mermaid\">");
 
 	[Fact]
-	public void GeneratesRenderedHtml() => Block!.RenderedHtml.Should().StartWith("<svg");
+	public void PreservesIndentation() => Html.Should().Contain("participant A as Alice");
 }
 
-public class MermaidStateDiagramTests(ITestOutputHelper output) : DirectiveTest<MermaidBlock>(output,
+public class MermaidStateDiagramTests(ITestOutputHelper output) : DirectiveTest(output,
 """
-::::{mermaid}
+```mermaid
 stateDiagram-v2
     [*] --> Idle
     Idle --> Processing: start
     Processing --> Complete: done
     Complete --> [*]
-::::
+```
 """
 )
 {
+	private EnhancedCodeBlock? Block => Document.Descendants<EnhancedCodeBlock>().FirstOrDefault();
+
 	[Fact]
 	public void ParsesStateDiagram() => Block.Should().NotBeNull();
 
 	[Fact]
-	public void ExtractsStateContent() => Block!.Content.Should().Contain("stateDiagram-v2");
+	public void RendersPreMermaidTag() => Html.Should().Contain("<pre class=\"mermaid\">");
 
 	[Fact]
-	public void GeneratesRenderedHtml() => Block!.RenderedHtml.Should().StartWith("<svg");
-
-	[Fact]
-	public void ContainsStateNodes() => Block!.RenderedHtml.Should().Contain("Idle");
+	public void PreservesSpecialCharacters() => Html.Should().Contain("[*]");
 }
 
-public class MermaidClassDiagramTests(ITestOutputHelper output) : DirectiveTest<MermaidBlock>(output,
+public class MermaidClassDiagramTests(ITestOutputHelper output) : DirectiveTest(output,
 """
-::::{mermaid}
+```mermaid
 classDiagram
     Animal <|-- Duck
-    Animal: +int age
-    Duck: +quack()
-::::
+    Animal <|-- Fish
+    Animal : +int age
+```
 """
 )
 {
+	private EnhancedCodeBlock? Block => Document.Descendants<EnhancedCodeBlock>().FirstOrDefault();
+
 	[Fact]
 	public void ParsesClassDiagram() => Block.Should().NotBeNull();
 
 	[Fact]
-	public void ExtractsClassContent() => Block!.Content.Should().Contain("classDiagram");
+	public void RendersPreMermaidTag() => Html.Should().Contain("<pre class=\"mermaid\">");
 
 	[Fact]
-	public void GeneratesRenderedHtml() => Block!.RenderedHtml.Should().StartWith("<svg");
-
-	[Fact]
-	public void ContainsClassNames() => Block!.RenderedHtml.Should().Contain("Animal");
+	public void PreservesInheritanceArrow() => Html.Should().Contain("&lt;|--");
 }
 
-public class MermaidErDiagramTests(ITestOutputHelper output) : DirectiveTest<MermaidBlock>(output,
+public class MermaidErDiagramTests(ITestOutputHelper output) : DirectiveTest(output,
 """
-::::{mermaid}
+```mermaid
 erDiagram
     CUSTOMER ||--o{ ORDER : places
     ORDER ||--|{ LINE_ITEM : contains
-::::
+```
 """
 )
 {
+	private EnhancedCodeBlock? Block => Document.Descendants<EnhancedCodeBlock>().FirstOrDefault();
+
 	[Fact]
 	public void ParsesErDiagram() => Block.Should().NotBeNull();
 
 	[Fact]
-	public void ExtractsErContent() => Block!.Content.Should().Contain("erDiagram");
+	public void RendersPreMermaidTag() => Html.Should().Contain("<pre class=\"mermaid\">");
 
 	[Fact]
-	public void GeneratesRenderedHtml() => Block!.RenderedHtml.Should().StartWith("<svg");
-
-	[Fact]
-	public void ContainsEntityNames() => Block!.RenderedHtml.Should().Contain("CUSTOMER");
-}
-
-public class MermaidEmptyContentTests(ITestOutputHelper output) : DirectiveTest<MermaidBlock>(output,
-"""
-::::{mermaid}
-::::
-"""
-)
-{
-	[Fact]
-	public void EmptyContentGeneratesError() =>
-		Collector.Diagnostics.Should().ContainSingle(d => d.Message.Contains("Mermaid directive requires content"));
-}
-
-public class MermaidInvalidSyntaxTests(ITestOutputHelper output) : DirectiveTest<MermaidBlock>(output,
-"""
-::::{mermaid}
-invalid syntax here
-::::
-"""
-)
-{
-	[Fact]
-	public void InvalidSyntaxGeneratesError() =>
-		Collector.Diagnostics.Should().ContainSingle(d => d.Message.Contains("Failed to render Mermaid diagram"));
-
-	[Fact]
-	public void RenderedHtmlIsNull() => Block!.RenderedHtml.Should().BeNull();
+	public void PreservesErSyntax() => Html.Should().Contain("||--o{");
 }

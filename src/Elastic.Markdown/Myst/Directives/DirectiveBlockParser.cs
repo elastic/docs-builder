@@ -11,7 +11,6 @@ using Elastic.Markdown.Myst.Directives.CsvInclude;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Math;
-using Elastic.Markdown.Myst.Directives.Mermaid;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.Directives.Stepper;
 using Elastic.Markdown.Myst.Directives.Tabs;
@@ -112,9 +111,6 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 
 		if (info.IndexOf("{figure-md}") > 0)
 			return new FigureBlock(this, context);
-
-		if (info.IndexOf("{mermaid}") > 0)
-			return new MermaidBlock(this, context);
 
 		if (info.IndexOf("{include}") > 0)
 			return new IncludeBlock(this, context);

@@ -11,7 +11,6 @@ using Elastic.Markdown.Myst.Directives.CsvInclude;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Math;
-using Elastic.Markdown.Myst.Directives.Mermaid;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Markdig.Extensions.DefinitionLists;
 using Markdig.Extensions.Tables;
@@ -442,9 +441,6 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 			case IncludeBlock includeBlock:
 				WriteIncludeBlock(renderer, includeBlock);
 				return;
-			case MermaidBlock mermaidBlock:
-				WriteMermaidBlock(renderer, mermaidBlock);
-				return;
 			case SettingsBlock settingsBlock:
 				WriteSettingsBlock(renderer, settingsBlock);
 				return;
@@ -508,25 +504,6 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		// Make image URL absolute for better LLM consumption
 		var absoluteImageUrl = LlmRenderingHelpers.MakeAbsoluteUrl(renderer, imageBlock.ImageUrl);
 		renderer.WriteLine($"![{imageBlock.Alt}]({absoluteImageUrl})");
-		renderer.EnsureLine();
-	}
-
-	private static void WriteMermaidBlock(LlmMarkdownRenderer renderer, MermaidBlock mermaidBlock)
-	{
-		renderer.EnsureBlockSpacing();
-
-		// Render Mermaid diagram as structured comment
-		renderer.WriteLine("<mermaid>");
-
-		// Render the diagram content with indentation
-		if (!string.IsNullOrWhiteSpace(mermaidBlock.Content))
-		{
-			using var reader = new StringReader(mermaidBlock.Content);
-			while (reader.ReadLine() is { } line)
-				renderer.WriteLine(string.IsNullOrWhiteSpace(line) ? string.Empty : "  " + line);
-		}
-
-		renderer.WriteLine("</mermaid>");
 		renderer.EnsureLine();
 	}
 

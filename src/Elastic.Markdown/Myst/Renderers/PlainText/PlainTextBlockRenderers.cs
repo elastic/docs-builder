@@ -11,7 +11,6 @@ using Elastic.Markdown.Myst.Directives.CsvInclude;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Math;
-using Elastic.Markdown.Myst.Directives.Mermaid;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.Directives.Tabs;
 using Elastic.Markdown.Myst.Renderers.LlmMarkdown;
@@ -216,10 +215,6 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 
 			case IncludeBlock includeBlock:
 				WriteIncludeBlock(renderer, includeBlock);
-				return;
-
-			case MermaidBlock:
-				// Skip Mermaid diagrams - not text searchable
 				return;
 
 			case SettingsBlock settingsBlock:
