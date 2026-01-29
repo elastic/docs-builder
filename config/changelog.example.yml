@@ -34,6 +34,7 @@ lifecycles:
 # Labels are specified in a "label -> value" format
 pivot:
   # Type definitions with optional labels
+  # At a minimum, feature, bug-fix, and breaking-change must be configured.
   # Keys are type names, values can be:
   #   - simple string: comma-separated label list (e.g., ">bug, >fix")
   #   - empty/null: no labels for this type
