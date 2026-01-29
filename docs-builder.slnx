@@ -91,6 +91,7 @@
     <Project Path="tests/authoring/authoring.fsproj" />
     <Project Path="tests/Elastic.ApiExplorer.Tests/Elastic.ApiExplorer.Tests.csproj" />
     <Project Path="tests/Elastic.Documentation.Api.Infrastructure.Tests/Elastic.Documentation.Api.Infrastructure.Tests.csproj" />
+    <Project Path="tests/Elastic.Documentation.Build.Tests/Elastic.Documentation.Build.Tests.csproj" />
     <Project Path="tests/Elastic.Documentation.Configuration.Tests/Elastic.Documentation.Configuration.Tests.csproj" />
     <Project Path="tests/Elastic.Documentation.LegacyDocs.Tests/Elastic.Documentation.LegacyDocs.Tests.csproj" />
     <Project Path="tests/Elastic.Markdown.Tests/Elastic.Markdown.Tests.csproj" />

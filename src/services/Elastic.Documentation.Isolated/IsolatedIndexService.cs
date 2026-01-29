@@ -15,8 +15,9 @@ namespace Elastic.Documentation.Isolated;
 public class IsolatedIndexService(
 	ILoggerFactory logFactory,
 	IConfigurationContext configurationContext,
-	ICoreService githubActionsService
-) : IsolatedBuildService(logFactory, configurationContext, githubActionsService)
+	ICoreService githubActionsService,
+	IEnvironmentVariables environmentVariables
+) : IsolatedBuildService(logFactory, configurationContext, githubActionsService, environmentVariables)
 {
 	private readonly IConfigurationContext _configurationContext = configurationContext;
 
