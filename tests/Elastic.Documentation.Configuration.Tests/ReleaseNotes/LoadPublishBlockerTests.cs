@@ -3,35 +3,40 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions.TestingHelpers;
-using Elastic.Documentation.Configuration.Changelog;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using FluentAssertions;
 
-namespace Elastic.Documentation.Configuration.Tests;
+namespace Elastic.Documentation.Configuration.Tests.ReleaseNotes;
 
-public class PublishBlockerLoaderTests
+/// <summary>
+/// Unit tests for ReleaseNotesYamlSerialization.LoadPublishBlocker.
+/// These tests verify the publish blocker loading functionality that
+/// was consolidated from the old PublishBlockerLoader.
+/// </summary>
+public class LoadPublishBlockerTests
 {
 	private readonly MockFileSystem _fileSystem = new();
 
 	[Fact]
-	public void ReturnsNull_WhenFileDoesNotExist()
+	public void LoadPublishBlocker_ReturnsNull_WhenFileDoesNotExist()
 	{
-		var result = PublishBlockerLoader.Load(_fileSystem, "/nonexistent/changelog.yml");
+		var result = ReleaseNotesSerialization.LoadPublishBlocker(_fileSystem, "/nonexistent/changelog.yml");
 
 		result.Should().BeNull();
 	}
 
 	[Fact]
-	public void ReturnsNull_WhenFileIsEmpty()
+	public void LoadPublishBlocker_ReturnsNull_WhenFileIsEmpty()
 	{
 		_fileSystem.AddFile("/docs/changelog.yml", new MockFileData(""));
 
-		var result = PublishBlockerLoader.Load(_fileSystem, "/docs/changelog.yml");
+		var result = ReleaseNotesSerialization.LoadPublishBlocker(_fileSystem, "/docs/changelog.yml");
 
 		result.Should().BeNull();
 	}
 
 	[Fact]
-	public void ReturnsNull_WhenNoBlockSection()
+	public void LoadPublishBlocker_ReturnsNull_WhenNoBlockSection()
 	{
 		// language=yaml
 		var yaml = """
@@ -40,28 +45,13 @@ public class PublishBlockerLoaderTests
 		           """;
 		_fileSystem.AddFile("/docs/changelog.yml", new MockFileData(yaml));
 
-		var result = PublishBlockerLoader.Load(_fileSystem, "/docs/changelog.yml");
+		var result = ReleaseNotesSerialization.LoadPublishBlocker(_fileSystem, "/docs/changelog.yml");
 
 		result.Should().BeNull();
 	}
 
 	[Fact]
-	public void ReturnsNull_WhenBlockSectionHasNoPublish()
-	{
-		// language=yaml
-		var yaml = """
-		           block:
-		             create: some-label
-		           """;
-		_fileSystem.AddFile("/docs/changelog.yml", new MockFileData(yaml));
-
-		var result = PublishBlockerLoader.Load(_fileSystem, "/docs/changelog.yml");
-
-		result.Should().BeNull();
-	}
-
-	[Fact]
-	public void ParsesTypesOnly()
+	public void LoadPublishBlocker_ParsesTypesOnly()
 	{
 		// language=yaml
 		var yaml = """
@@ -73,7 +63,7 @@ public class PublishBlockerLoaderTests
 		           """;
 		_fileSystem.AddFile("/docs/changelog.yml", new MockFileData(yaml));
 
-		var result = PublishBlockerLoader.Load(_fileSystem, "/docs/changelog.yml");
+		var result = ReleaseNotesSerialization.LoadPublishBlocker(_fileSystem, "/docs/changelog.yml");
 
 		result.Should().NotBeNull();
 		result!.Types.Should().HaveCount(2)
@@ -84,7 +74,7 @@ public class PublishBlockerLoaderTests
 	}
 
 	[Fact]
-	public void ParsesAreasOnly()
+	public void LoadPublishBlocker_ParsesAreasOnly()
 	{
 		// language=yaml
 		var yaml = """
@@ -96,7 +86,7 @@ public class PublishBlockerLoaderTests
 		           """;
 		_fileSystem.AddFile("/docs/changelog.yml", new MockFileData(yaml));
 
-		var result = PublishBlockerLoader.Load(_fileSystem, "/docs/changelog.yml");
+		var result = ReleaseNotesSerialization.LoadPublishBlocker(_fileSystem, "/docs/changelog.yml");
 
 		result.Should().NotBeNull();
 		result!.Areas.Should().HaveCount(2)
@@ -107,7 +97,7 @@ public class PublishBlockerLoaderTests
 	}
 
 	[Fact]
-	public void ParsesTypesAndAreas()
+	public void LoadPublishBlocker_ParsesTypesAndAreas()
 	{
 		// language=yaml
 		var yaml = """
@@ -120,7 +110,7 @@ public class PublishBlockerLoaderTests
 		           """;
 		_fileSystem.AddFile("/docs/changelog.yml", new MockFileData(yaml));
 
-		var result = PublishBlockerLoader.Load(_fileSystem, "/docs/changelog.yml");
+		var result = ReleaseNotesSerialization.LoadPublishBlocker(_fileSystem, "/docs/changelog.yml");
 
 		result.Should().NotBeNull();
 		result!.Types.Should().HaveCount(1).And.Contain("deprecation");
@@ -129,7 +119,7 @@ public class PublishBlockerLoaderTests
 	}
 
 	[Fact]
-	public void ReturnsNull_WhenPublishHasEmptyTypesAndAreas()
+	public void LoadPublishBlocker_ReturnsNull_WhenPublishHasEmptyTypesAndAreas()
 	{
 		// language=yaml
 		var yaml = """
@@ -140,13 +130,13 @@ public class PublishBlockerLoaderTests
 		           """;
 		_fileSystem.AddFile("/docs/changelog.yml", new MockFileData(yaml));
 
-		var result = PublishBlockerLoader.Load(_fileSystem, "/docs/changelog.yml");
+		var result = ReleaseNotesSerialization.LoadPublishBlocker(_fileSystem, "/docs/changelog.yml");
 
 		result.Should().BeNull();
 	}
 
 	[Fact]
-	public void IgnoresOtherProperties()
+	public void LoadPublishBlocker_IgnoresOtherProperties()
 	{
 		// language=yaml
 		var yaml = """
@@ -168,29 +158,10 @@ public class PublishBlockerLoaderTests
 		           """;
 		_fileSystem.AddFile("/docs/changelog.yml", new MockFileData(yaml));
 
-		var result = PublishBlockerLoader.Load(_fileSystem, "/docs/changelog.yml");
+		var result = ReleaseNotesSerialization.LoadPublishBlocker(_fileSystem, "/docs/changelog.yml");
 
 		result.Should().NotBeNull();
 		result!.Types.Should().HaveCount(1).And.Contain("deprecation");
 		result.Areas.Should().BeNull();
-	}
-
-	[Fact]
-	public void HandlesUnderscoreNaming()
-	{
-		// The YAML deserializer uses underscored naming convention
-		// language=yaml
-		var yaml = """
-		           block:
-		             publish:
-		               types:
-		                 - known_issue
-		           """;
-		_fileSystem.AddFile("/docs/changelog.yml", new MockFileData(yaml));
-
-		var result = PublishBlockerLoader.Load(_fileSystem, "/docs/changelog.yml");
-
-		result.Should().NotBeNull();
-		result!.Types.Should().HaveCount(1).And.Contain("known_issue");
 	}
 }

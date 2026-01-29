@@ -9,6 +9,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.ReleaseNotes;
 using Microsoft.Extensions.Logging;
 using YamlDotNet.Core;
 

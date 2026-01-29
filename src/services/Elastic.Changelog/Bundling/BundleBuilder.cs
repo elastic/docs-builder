@@ -5,6 +5,7 @@
 using Elastic.Changelog.Serialization;
 using Elastic.Documentation;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.ReleaseNotes;
 
 namespace Elastic.Changelog.Bundling;
 

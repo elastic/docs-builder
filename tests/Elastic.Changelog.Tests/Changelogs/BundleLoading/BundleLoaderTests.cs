@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions.TestingHelpers;
-using Elastic.Changelog.BundleLoading;
-using Elastic.Documentation.Configuration.Changelog;
+using Elastic.Documentation.Configuration.ReleaseNotes;
+using Elastic.Documentation.ReleaseNotes;
 using FluentAssertions;
 
 namespace Elastic.Changelog.Tests.Changelogs.BundleLoading;

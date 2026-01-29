@@ -2,11 +2,10 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Changelog;
-using Elastic.Changelog.BundleLoading;
 using Elastic.Documentation;
-using Elastic.Documentation.Configuration.Changelog;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Extensions;
+using Elastic.Documentation.ReleaseNotes;
 using Elastic.Markdown.Diagnostics;
 
 namespace Elastic.Markdown.Myst.Directives.Changelog;
@@ -195,7 +194,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		if (string.IsNullOrWhiteSpace(configPath))
 			return;
 
-		PublishBlocker = PublishBlockerLoader.Load(fileSystem, configPath);
+		PublishBlocker = ReleaseNotesSerialization.LoadPublishBlocker(fileSystem, configPath);
 	}
 
 	private void LoadAndCacheBundles()

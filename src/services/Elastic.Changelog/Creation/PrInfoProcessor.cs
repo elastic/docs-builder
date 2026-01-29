@@ -3,9 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Changelog.GitHub;
-using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.ReleaseNotes;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Changelog.Creation;

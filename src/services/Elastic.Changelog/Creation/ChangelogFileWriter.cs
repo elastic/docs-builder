@@ -8,6 +8,7 @@ using Elastic.Changelog.Serialization;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.ReleaseNotes;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Changelog.Creation;

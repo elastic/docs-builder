@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation;
+using Elastic.Documentation.ReleaseNotes;
 using Riok.Mapperly.Abstractions;
 
 namespace Elastic.Changelog.Serialization;

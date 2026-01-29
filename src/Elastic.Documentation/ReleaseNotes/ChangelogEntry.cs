@@ -2,9 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Documentation;
-
-namespace Elastic.Changelog;
+namespace Elastic.Documentation.ReleaseNotes;
 
 /// <summary>
 /// Domain type representing a changelog entry.
@@ -47,19 +45,4 @@ public record ChangelogEntry
 
 	/// <summary>Whether this entry should be highlighted.</summary>
 	public bool? Highlight { get; init; }
-}
-
-/// <summary>
-/// Product reference with strongly typed lifecycle.
-/// </summary>
-public record ProductReference
-{
-	/// <summary>The product identifier.</summary>
-	public required string ProductId { get; init; }
-
-	/// <summary>Optional target version.</summary>
-	public string? Target { get; init; }
-
-	/// <summary>The lifecycle stage of the feature for this product.</summary>
-	public Lifecycle? Lifecycle { get; init; }
 }

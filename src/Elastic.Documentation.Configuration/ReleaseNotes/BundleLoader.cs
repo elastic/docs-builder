@@ -3,14 +3,10 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using Elastic.Changelog.Bundling;
-using Elastic.Changelog.Configuration;
-using Elastic.Changelog.Serialization;
-using Elastic.Documentation;
-using Elastic.Documentation.Configuration.Changelog;
+using Elastic.Documentation.ReleaseNotes;
 using YamlDotNet.Core;
 
-namespace Elastic.Changelog.BundleLoading;
+namespace Elastic.Documentation.Configuration.ReleaseNotes;
 
 /// <summary>
 /// Service for loading, resolving, filtering, and merging changelog bundles.
@@ -78,7 +74,7 @@ public class BundleLoader(IFileSystem fileSystem)
 
 			// If entry has resolved/inline data, use it directly
 			if (!string.IsNullOrWhiteSpace(entry.Title) && entry.Type != null)
-				entryData = ChangelogYamlSerialization.ConvertBundledEntry(entry);
+				entryData = ReleaseNotesSerialization.ConvertBundledEntry(entry);
 			else if (!string.IsNullOrWhiteSpace(entry.File?.Name))
 			{
 				// Load from file reference - look in changelog directory (parent of bundles)
@@ -93,14 +89,8 @@ public class BundleLoader(IFileSystem fileSystem)
 				try
 				{
 					var fileContent = fileSystem.File.ReadAllText(filePath);
-
-					// Skip comment lines and normalize version to target
-					var yamlLines = fileContent.Split('\n');
-					var yamlWithoutComments = string.Join('\n', yamlLines.Where(line => !line.TrimStart().StartsWith('#')));
-					// Reuse the regex from ChangelogBundlingService
-					var normalizedYaml = ChangelogBundlingService.VersionToTargetRegex().Replace(yamlWithoutComments, "$1target:");
-
-					entryData = ChangelogYamlSerialization.DeserializeEntry(normalizedYaml);
+					var normalizedYaml = ReleaseNotesSerialization.NormalizeYaml(fileContent);
+					entryData = ReleaseNotesSerialization.DeserializeEntry(normalizedYaml);
 				}
 				catch (YamlException e)
 				{
@@ -163,7 +153,7 @@ public class BundleLoader(IFileSystem fileSystem)
 		try
 		{
 			var bundleContent = fileSystem.File.ReadAllText(filePath);
-			return ChangelogYamlSerialization.DeserializeBundle(bundleContent);
+			return ReleaseNotesSerialization.DeserializeBundle(bundleContent);
 		}
 		catch (YamlException e)
 		{

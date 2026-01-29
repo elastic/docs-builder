@@ -5,7 +5,7 @@
 using System.IO.Abstractions;
 using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Serialization;
-using Elastic.Documentation;
+using Elastic.Documentation.ReleaseNotes;
 
 namespace Elastic.Changelog.Rendering;
 

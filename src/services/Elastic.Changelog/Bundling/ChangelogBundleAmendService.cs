@@ -7,8 +7,8 @@ using System.IO.Abstractions;
 using System.Text;
 using System.Text.RegularExpressions;
 using Elastic.Changelog.Serialization;
-using Elastic.Documentation;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 
