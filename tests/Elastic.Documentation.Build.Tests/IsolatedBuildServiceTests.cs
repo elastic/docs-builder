@@ -75,16 +75,10 @@ namespace Elastic.Documentation.Build.Tests;
  * - "prefix": URL path prefix for the build
  */
 
-public class IsolatedBuildServiceTests
+public class IsolatedBuildServiceTests : IDisposable
 {
-	private readonly TestLoggerFactory _loggerFactory;
-	private readonly NullCoreService _coreService;
-
-	public IsolatedBuildServiceTests()
-	{
-		_loggerFactory = new TestLoggerFactory(TestContext.Current.TestOutputHelper);
-		_coreService = new NullCoreService();
-	}
+	private readonly TestLoggerFactory _loggerFactory = new(TestContext.Current.TestOutputHelper);
+	private readonly NullCoreService _coreService = new();
 
 	[Fact]
 	public void Constructor_AcceptsIEnvironmentVariables()
@@ -236,5 +230,11 @@ public class IsolatedBuildServiceTests
 
 		// Assert
 		env.IsRunningOnCI.Should().BeFalse();
+	}
+
+	public void Dispose()
+	{
+		_loggerFactory.Dispose();
+		GC.SuppressFinalize(this);
 	}
 }
