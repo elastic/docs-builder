@@ -7,7 +7,7 @@ using FluentAssertions;
 
 namespace Elastic.Markdown.Tests.Directives;
 
-public class MermaidBlockTests(ITestOutputHelper output) : DirectiveTest<MermaidBlock>(output,
+public class MermaidFlowchartTests(ITestOutputHelper output) : DirectiveTest<MermaidBlock>(output,
 """
 ::::{mermaid}
 flowchart LR
@@ -31,9 +31,12 @@ flowchart LR
 
 	[Fact]
 	public void RendersInlineSvg() => Html.Should().Contain("<svg");
+
+	[Fact]
+	public void SvgHasNoGoogleFontsImport() => Block!.RenderedSvg.Should().NotContain("fonts.googleapis.com");
 }
 
-public class MermaidBlockSequenceTests(ITestOutputHelper output) : DirectiveTest<MermaidBlock>(output,
+public class MermaidSequenceTests(ITestOutputHelper output) : DirectiveTest<MermaidBlock>(output,
 """
 ::::{mermaid}
 sequenceDiagram
@@ -54,7 +57,79 @@ sequenceDiagram
 	public void GeneratesRenderedSvg() => Block!.RenderedSvg.Should().StartWith("<svg");
 }
 
-public class MermaidBlockEmptyTests(ITestOutputHelper output) : DirectiveTest<MermaidBlock>(output,
+public class MermaidStateDiagramTests(ITestOutputHelper output) : DirectiveTest<MermaidBlock>(output,
+"""
+::::{mermaid}
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> Processing: start
+    Processing --> Complete: done
+    Complete --> [*]
+::::
+"""
+)
+{
+	[Fact]
+	public void ParsesStateDiagram() => Block.Should().NotBeNull();
+
+	[Fact]
+	public void ExtractsStateContent() => Block!.Content.Should().Contain("stateDiagram-v2");
+
+	[Fact]
+	public void GeneratesRenderedSvg() => Block!.RenderedSvg.Should().StartWith("<svg");
+
+	[Fact]
+	public void ContainsStateNodes() => Block!.RenderedSvg.Should().Contain("Idle");
+}
+
+public class MermaidClassDiagramTests(ITestOutputHelper output) : DirectiveTest<MermaidBlock>(output,
+"""
+::::{mermaid}
+classDiagram
+    Animal <|-- Duck
+    Animal: +int age
+    Duck: +quack()
+::::
+"""
+)
+{
+	[Fact]
+	public void ParsesClassDiagram() => Block.Should().NotBeNull();
+
+	[Fact]
+	public void ExtractsClassContent() => Block!.Content.Should().Contain("classDiagram");
+
+	[Fact]
+	public void GeneratesRenderedSvg() => Block!.RenderedSvg.Should().StartWith("<svg");
+
+	[Fact]
+	public void ContainsClassNames() => Block!.RenderedSvg.Should().Contain("Animal");
+}
+
+public class MermaidErDiagramTests(ITestOutputHelper output) : DirectiveTest<MermaidBlock>(output,
+"""
+::::{mermaid}
+erDiagram
+    CUSTOMER ||--o{ ORDER : places
+    ORDER ||--|{ LINE_ITEM : contains
+::::
+"""
+)
+{
+	[Fact]
+	public void ParsesErDiagram() => Block.Should().NotBeNull();
+
+	[Fact]
+	public void ExtractsErContent() => Block!.Content.Should().Contain("erDiagram");
+
+	[Fact]
+	public void GeneratesRenderedSvg() => Block!.RenderedSvg.Should().StartWith("<svg");
+
+	[Fact]
+	public void ContainsEntityNames() => Block!.RenderedSvg.Should().Contain("CUSTOMER");
+}
+
+public class MermaidEmptyContentTests(ITestOutputHelper output) : DirectiveTest<MermaidBlock>(output,
 """
 ::::{mermaid}
 ::::
@@ -64,4 +139,20 @@ public class MermaidBlockEmptyTests(ITestOutputHelper output) : DirectiveTest<Me
 	[Fact]
 	public void EmptyContentGeneratesError() =>
 		Collector.Diagnostics.Should().ContainSingle(d => d.Message.Contains("Mermaid directive requires content"));
+}
+
+public class MermaidInvalidSyntaxTests(ITestOutputHelper output) : DirectiveTest<MermaidBlock>(output,
+"""
+::::{mermaid}
+invalid syntax here
+::::
+"""
+)
+{
+	[Fact]
+	public void InvalidSyntaxGeneratesError() =>
+		Collector.Diagnostics.Should().ContainSingle(d => d.Message.Contains("Failed to render Mermaid diagram"));
+
+	[Fact]
+	public void RenderedSvgIsNull() => Block!.RenderedSvg.Should().BeNull();
 }

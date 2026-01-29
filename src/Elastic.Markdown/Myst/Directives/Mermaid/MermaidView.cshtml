@@ -7,10 +7,5 @@
 			@(new Microsoft.AspNetCore.Html.HtmlString(mermaid.RenderedSvg))
 		</div>
 	}
-	else
-	{
-		<div class="mermaid-error">
-			<p>Failed to render Mermaid diagram</p>
-		</div>
-	}
+	// Errors are reported via diagnostics, no fallback rendering needed
 }

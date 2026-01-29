@@ -46,6 +46,12 @@ function resolveVariables(svg) {
 	return result;
 }
 
+function removeGoogleFonts(svg) {
+	// Remove Google Fonts @import to avoid external network dependency
+	// Keep the rest of the style block for CSS variables that we don't inline
+	return svg.replace(/@import url\('https:\/\/fonts\.googleapis\.com[^']*'\);\s*/g, '');
+}
+
 async function main() {
 	const chunks = [];
 	for await (const chunk of process.stdin) {
@@ -59,8 +65,10 @@ async function main() {
 	}
 
 	try {
-		const svg = await renderMermaid(mermaidCode);
-		process.stdout.write(resolveVariables(svg));
+		let svg = await renderMermaid(mermaidCode);
+		svg = resolveVariables(svg);
+		svg = removeGoogleFonts(svg);
+		process.stdout.write(svg);
 	} catch (error) {
 		// Output just the error message - the C# caller adds context
 		console.error(error.message);
