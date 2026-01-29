@@ -41,7 +41,7 @@ public class MermaidBlock(DirectiveBlockParser parser, ParserContext context) : 
 		}
 		catch (Exception ex)
 		{
-			this.EmitError($"Failed to render Mermaid diagram: {ex.Message}", ex);
+			this.EmitError($"Failed to render Mermaid diagram: {ex.Message}");
 		}
 	}
 
