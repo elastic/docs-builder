@@ -69,13 +69,6 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 	public bool Subsections { get; private set; }
 
 	/// <summary>
-	/// Whether to merge bundles that share the same target version/date into a single section.
-	/// Useful for Cloud Serverless releases where multiple repos contribute to a single dated release.
-	/// Defaults to false.
-	/// </summary>
-	public bool MergeSameTarget { get; private set; }
-
-	/// <summary>
 	/// Explicit path to the changelog configuration file, parsed from the :config: option.
 	/// If not specified, auto-discovers from docs/changelog.yml or changelog.yml relative to docset root.
 	/// </summary>
@@ -114,7 +107,6 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 	{
 		ExtractBundlesFolderPath();
 		Subsections = PropBool("subsections");
-		MergeSameTarget = PropBool("merge");
 		HideLinks = PropBool("hide-links");
 		ConfigPath = Prop("config");
 		ParseHideFeatures();
@@ -221,10 +213,9 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 			.OrderByDescending(b => VersionOrDate.Parse(b.Version))
 			.ToList();
 
-		// Optionally merge bundles with the same target version
-		LoadedBundles = MergeSameTarget
-			? loader.MergeBundlesByTarget(sortedBundles)
-			: sortedBundles;
+		// Always merge bundles with the same target version
+		// (e.g., Cloud Serverless with multiple repos contributing to a single dated release)
+		LoadedBundles = loader.MergeBundlesByTarget(sortedBundles);
 	}
 
 	private IEnumerable<string> ComputeGeneratedAnchors()

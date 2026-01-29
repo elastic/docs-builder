@@ -8,13 +8,16 @@ using FluentAssertions;
 
 namespace Elastic.Markdown.Tests.Directives;
 
+/// <summary>
+/// Tests for automatic merging of bundles with the same target version/date.
+/// Merging is now the default behavior (no longer requires `:merge:` option).
+/// </summary>
 public class ChangelogMergeSameTargetTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogMergeSameTargetTests(ITestOutputHelper output) : base(output,
 		// language=markdown
 		"""
 		:::{changelog}
-		:merge:
 		:::
 		""")
 	{
@@ -94,10 +97,7 @@ public class ChangelogMergeSameTargetTests : DirectiveTest<ChangelogBlock>
 	}
 
 	[Fact]
-	public void MergeSameTargetPropertyIsTrue() => Block!.MergeSameTarget.Should().BeTrue();
-
-	[Fact]
-	public void MergesBundlesWithSameTarget() =>
+	public void MergesBundlesWithSameTargetByDefault() =>
 		// Three bundles with 2025-08-05 should be merged into one
 		// Plus one bundle with 2025-08-01 = 2 total bundles
 		Block!.LoadedBundles.Should().HaveCount(2);
@@ -167,17 +167,19 @@ public class ChangelogMergeSameTargetTests : DirectiveTest<ChangelogBlock>
 	}
 }
 
+/// <summary>
+/// Tests that bundles with different target versions remain separate (not merged).
+/// </summary>
 public class ChangelogMergeDifferentTargetsTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogMergeDifferentTargetsTests(ITestOutputHelper output) : base(output,
 		// language=markdown
 		"""
 		:::{changelog}
-		:merge:
 		:::
 		""")
 	{
-		// Bundles with different targets should remain separate even with :merge:
+		// Bundles with different targets should remain separate
 		FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
 			// language=yaml
 			"""
@@ -251,110 +253,113 @@ public class ChangelogMergeDifferentTargetsTests : DirectiveTest<ChangelogBlock>
 	}
 }
 
-public class ChangelogMergeDisabledByDefaultTests : DirectiveTest<ChangelogBlock>
+/// <summary>
+/// Tests that merging works correctly with a single bundle (no actual merge needed).
+/// </summary>
+public class ChangelogMergeSingleBundleTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogMergeDisabledByDefaultTests(ITestOutputHelper output) : base(output,
+	public ChangelogMergeSingleBundleTests(ITestOutputHelper output) : base(output,
+		// language=markdown
+		"""
+		:::{changelog}
+		:::
+		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
+			// language=yaml
+			"""
+			products:
+			- product: elasticsearch
+			  target: 9.3.0
+			entries:
+			- title: Feature in 9.3.0
+			  type: feature
+			  products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			  pr: "111111"
+			- title: Bug fix in 9.3.0
+			  type: bug-fix
+			  products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			  pr: "111112"
+			"""));
+
+	[Fact]
+	public void SingleBundleRemainsUnchanged() =>
+		Block!.LoadedBundles.Should().HaveCount(1);
+
+	[Fact]
+	public void SingleBundleHasCorrectVersion() =>
+		Block!.LoadedBundles[0].Version.Should().Be("9.3.0");
+
+	[Fact]
+	public void SingleBundleHasAllEntries() =>
+		Block!.LoadedBundles[0].Entries.Should().HaveCount(2);
+
+	[Fact]
+	public void SingleBundleRendersCorrectly()
+	{
+		Html.Should().Contain("Feature in 9.3.0");
+		Html.Should().Contain("Bug fix in 9.3.0");
+	}
+}
+
+/// <summary>
+/// Tests that merging preserves sort order when bundles have both semver and date-based versions.
+/// </summary>
+public class ChangelogMergeMixedVersionTypesTests : DirectiveTest<ChangelogBlock>
+{
+	public ChangelogMergeMixedVersionTypesTests(ITestOutputHelper output) : base(output,
 		// language=markdown
 		"""
 		:::{changelog}
 		:::
 		""")
 	{
-		// Same setup as merge enabled, but without :merge: option
-		FileSystem.AddFile("docs/changelog/bundles/kibana-2025-08-05.yaml", new MockFileData(
+		// Semver version
+		FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
+			// language=yaml
+			"""
+			products:
+			- product: elasticsearch
+			  target: 9.3.0
+			entries:
+			- title: Feature in 9.3.0
+			  type: feature
+			  products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			  pr: "111111"
+			"""));
+
+		// Date-based version
+		FileSystem.AddFile("docs/changelog/bundles/2025-08-05.yaml", new MockFileData(
 			// language=yaml
 			"""
 			products:
 			- product: kibana
 			  target: 2025-08-05
 			entries:
-			- title: Kibana feature
+			- title: Feature for August 5th
 			  type: feature
 			  products:
 			  - product: kibana
-			    target: 2025-08-05
-			  pr: "111111"
-			"""));
-
-		FileSystem.AddFile("docs/changelog/bundles/elasticsearch-2025-08-05.yaml", new MockFileData(
-			// language=yaml
-			"""
-			products:
-			- product: elasticsearch
-			  target: 2025-08-05
-			entries:
-			- title: Elasticsearch feature
-			  type: feature
-			  products:
-			  - product: elasticsearch
 			    target: 2025-08-05
 			  pr: "222222"
 			"""));
 	}
 
 	[Fact]
-	public void MergeSameTargetPropertyDefaultsToFalse() => Block!.MergeSameTarget.Should().BeFalse();
-
-	[Fact]
-	public void DoesNotMergeBundlesWithSameTarget()
+	public void MixedVersionTypesRemainSeparate()
 	{
-		// Without :merge:, same-target bundles should remain separate
+		// Semver and date-based versions should not be merged
 		Block!.LoadedBundles.Should().HaveCount(2);
 	}
 
 	[Fact]
-	public void RendersSeparateSectionsForSameTarget()
+	public void RendersAllVersions()
 	{
-		// Should render both bundles as separate sections
-		Html.Should().Contain("Kibana feature");
-		Html.Should().Contain("Elasticsearch feature");
+		Html.Should().Contain("9.3.0");
+		Html.Should().Contain("2025-08-05");
 	}
-}
-
-public class ChangelogMergeExplicitFalseTests : DirectiveTest<ChangelogBlock>
-{
-	public ChangelogMergeExplicitFalseTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
-		:::{changelog}
-		:merge: false
-		:::
-		""")
-	{
-		FileSystem.AddFile("docs/changelog/bundles/kibana-2025-08-05.yaml", new MockFileData(
-			// language=yaml
-			"""
-			products:
-			- product: kibana
-			  target: 2025-08-05
-			entries:
-			- title: Kibana feature
-			  type: feature
-			  products:
-			  - product: kibana
-			    target: 2025-08-05
-			  pr: "111111"
-			"""));
-
-		FileSystem.AddFile("docs/changelog/bundles/elasticsearch-2025-08-05.yaml", new MockFileData(
-			// language=yaml
-			"""
-			products:
-			- product: elasticsearch
-			  target: 2025-08-05
-			entries:
-			- title: Elasticsearch feature
-			  type: feature
-			  products:
-			  - product: elasticsearch
-			    target: 2025-08-05
-			  pr: "222222"
-			"""));
-	}
-
-	[Fact]
-	public void MergeSameTargetPropertyIsFalse() => Block!.MergeSameTarget.Should().BeFalse();
-
-	[Fact]
-	public void DoesNotMergeBundlesWhenExplicitlyDisabled() => Block!.LoadedBundles.Should().HaveCount(2);
 }

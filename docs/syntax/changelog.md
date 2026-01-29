@@ -26,7 +26,6 @@ The directive supports the following options:
 | `:hide-features: id1, id2` | Hide entries with specified feature IDs | (none) |
 | `:subsections:` | Group entries by area/component | false |
 | `:config: path` | Path to changelog.yml configuration | auto-discover |
-| `:merge:` | Merge bundles with the same target version/date | false |
 
 ### Example with options
 
@@ -35,7 +34,6 @@ The directive supports the following options:
 :hide-links:
 :hide-features: experimental-api, internal-feature
 :subsections:
-:merge:
 :::
 ```
 
@@ -61,9 +59,9 @@ Explicit path to a `changelog.yml` configuration file. If not specified, the dir
 
 The configuration can include publish blockers to filter entries by type or area.
 
-#### `:merge:`
+## Bundle merging
 
-When enabled, bundles with the same target version/date are merged into a single section. This is useful for Cloud Serverless releases where multiple repositories contribute to a single dated release.
+Bundles with the same target version/date are automatically merged into a single section. This is useful for Cloud Serverless releases where multiple repositories (e.g., Elasticsearch, Kibana) contribute to a single dated release like `2025-08-05`.
 
 ## Default folder structure
 
