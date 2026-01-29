@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+/* eslint-env node */
+
 /**
  * CLI tool to render Mermaid diagrams to SVG using beautiful-mermaid.
  * Reads Mermaid code from stdin and outputs SVG to stdout.
