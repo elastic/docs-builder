@@ -77,7 +77,7 @@ public class MermaidRenderer
 			_ = process.WaitForExit(5000);
 			IsNodeAvailableCached = process.ExitCode == 0;
 		}
-		catch
+		catch (Exception)
 		{
 			IsNodeAvailableCached = false;
 		}
