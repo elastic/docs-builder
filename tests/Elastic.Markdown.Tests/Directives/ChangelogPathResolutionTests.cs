@@ -42,7 +42,7 @@ public class ChangelogBundlesFolderRelativePathTests : DirectiveTest<ChangelogBl
 
 	[Fact]
 	public void PathCombinedWithDocsetRoot() =>
-		Block!.BundlesFolderPath.Should().EndWith("custom/path/bundles");
+		Block!.BundlesFolderPath.Should().EndWith("custom/path/bundles".Replace('/', Path.DirectorySeparatorChar));
 
 	[Fact]
 	public void RendersContent() => Html.Should().Contain("Test feature");
@@ -75,7 +75,7 @@ public class ChangelogBundlesFolderDocsetRootRelativeTests : DirectiveTest<Chang
 
 	[Fact]
 	public void SlashPrefixIsTrimmed() =>
-		Block!.BundlesFolderPath.Should().EndWith("release-notes/versions");
+		Block!.BundlesFolderPath.Should().EndWith("release-notes/versions".Replace('/', Path.DirectorySeparatorChar));
 
 	[Fact]
 	public void PathDoesNotContainDoubleSlashes() =>

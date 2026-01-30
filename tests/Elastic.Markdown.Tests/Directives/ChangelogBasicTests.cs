@@ -54,7 +54,7 @@ public class ChangelogBasicTests : DirectiveTest<ChangelogBlock>
 	public void FindsBundlesFolder() => Block!.Found.Should().BeTrue();
 
 	[Fact]
-	public void SetsCorrectBundlesFolderPath() => Block!.BundlesFolderPath.Should().EndWith("changelog/bundles");
+	public void SetsCorrectBundlesFolderPath() => Block!.BundlesFolderPath.Should().EndWith("changelog/bundles".Replace('/', Path.DirectorySeparatorChar));
 
 	[Fact]
 	public void LoadsBundles() => Block!.LoadedBundles.Should().HaveCount(1);
@@ -176,7 +176,7 @@ public class ChangelogCustomPathTests : DirectiveTest<ChangelogBlock>
 	public void FindsBundlesFolder() => Block!.Found.Should().BeTrue();
 
 	[Fact]
-	public void SetsCorrectBundlesFolderPath() => Block!.BundlesFolderPath.Should().EndWith("release-notes/bundles");
+	public void SetsCorrectBundlesFolderPath() => Block!.BundlesFolderPath.Should().EndWith("release-notes/bundles".Replace('/', Path.DirectorySeparatorChar));
 
 	[Fact]
 	public void RendersContent()
