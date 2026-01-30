@@ -64,9 +64,11 @@ public record ApplicableTo
 		Product = AppliesCollection.GenerallyAvailable
 	};
 
+	private static readonly VersionSpec DefaultVersion = VersionSpec.TryParse("9.0", out var v) ? v! : AllVersionsSpec.Instance;
+
 	public static ApplicableTo Default { get; } = new()
 	{
-		Stack = new AppliesCollection([new Applicability { Version = new SemVersion(9, 0, 0), Lifecycle = ProductLifecycle.GenerallyAvailable }]),
+		Stack = new AppliesCollection([new Applicability { Version = DefaultVersion, Lifecycle = ProductLifecycle.GenerallyAvailable }]),
 		Serverless = ServerlessProjectApplicability.All
 	};
 
@@ -232,118 +234,6 @@ public record ServerlessProjectApplicability
 				_ = sb.Append(", ");
 			_ = sb.Append("security=").Append(Security);
 		}
-
-		return sb.ToString();
-	}
-}
-
-[YamlSerializable]
-public record ProductApplicability
-{
-	[YamlMember(Alias = "ecctl")]
-	public AppliesCollection? Ecctl { get; set; }
-
-	[YamlMember(Alias = "curator")]
-	public AppliesCollection? Curator { get; set; }
-
-	[YamlMember(Alias = "apm-agent-android")]
-	public AppliesCollection? ApmAgentAndroid { get; set; }
-
-	[YamlMember(Alias = "apm-agent-dotnet")]
-	public AppliesCollection? ApmAgentDotnet { get; set; }
-
-	[YamlMember(Alias = "apm-agent-go")]
-	public AppliesCollection? ApmAgentGo { get; set; }
-
-	[YamlMember(Alias = "apm-agent-ios")]
-	public AppliesCollection? ApmAgentIos { get; set; }
-
-	[YamlMember(Alias = "apm-agent-java")]
-	public AppliesCollection? ApmAgentJava { get; set; }
-
-	[YamlMember(Alias = "apm-agent-node")]
-	public AppliesCollection? ApmAgentNode { get; set; }
-
-	[YamlMember(Alias = "apm-agent-php")]
-	public AppliesCollection? ApmAgentPhp { get; set; }
-
-	[YamlMember(Alias = "apm-agent-python")]
-	public AppliesCollection? ApmAgentPython { get; set; }
-
-	[YamlMember(Alias = "apm-agent-ruby")]
-	public AppliesCollection? ApmAgentRuby { get; set; }
-
-	[YamlMember(Alias = "apm-agent-rum-js")]
-	public AppliesCollection? ApmAgentRumJs { get; set; }
-
-	[YamlMember(Alias = "edot-ios")]
-	public AppliesCollection? EdotIos { get; set; }
-
-	[YamlMember(Alias = "edot-android")]
-	public AppliesCollection? EdotAndroid { get; set; }
-
-	[YamlMember(Alias = "edot-dotnet")]
-	public AppliesCollection? EdotDotnet { get; set; }
-
-	[YamlMember(Alias = "edot-java")]
-	public AppliesCollection? EdotJava { get; set; }
-
-	[YamlMember(Alias = "edot-node")]
-	public AppliesCollection? EdotNode { get; set; }
-
-	[YamlMember(Alias = "edot-php")]
-	public AppliesCollection? EdotPhp { get; set; }
-
-	[YamlMember(Alias = "edot-python")]
-	public AppliesCollection? EdotPython { get; set; }
-
-	[YamlMember(Alias = "edot-cf-aws")]
-	public AppliesCollection? EdotCfAws { get; set; }
-
-	[YamlMember(Alias = "edot-cf-azure")]
-	public AppliesCollection? EdotCfAzure { get; set; }
-
-	[YamlMember(Alias = "edot-collector")]
-	public AppliesCollection? EdotCollector { get; set; }
-
-	/// <inheritdoc />
-	public override string ToString()
-	{
-		var sb = new StringBuilder();
-		var hasContent = false;
-
-		void AppendProduct(string name, AppliesCollection? value)
-		{
-			if (value is null)
-				return;
-			if (hasContent)
-				_ = sb.Append(", ");
-			_ = sb.Append(name).Append('=').Append(value);
-			hasContent = true;
-		}
-
-		AppendProduct("ecctl", Ecctl);
-		AppendProduct("curator", Curator);
-		AppendProduct("apm-agent-android", ApmAgentAndroid);
-		AppendProduct("apm-agent-dotnet", ApmAgentDotnet);
-		AppendProduct("apm-agent-go", ApmAgentGo);
-		AppendProduct("apm-agent-ios", ApmAgentIos);
-		AppendProduct("apm-agent-java", ApmAgentJava);
-		AppendProduct("apm-agent-node", ApmAgentNode);
-		AppendProduct("apm-agent-php", ApmAgentPhp);
-		AppendProduct("apm-agent-python", ApmAgentPython);
-		AppendProduct("apm-agent-ruby", ApmAgentRuby);
-		AppendProduct("apm-agent-rum-js", ApmAgentRumJs);
-		AppendProduct("edot-ios", EdotIos);
-		AppendProduct("edot-android", EdotAndroid);
-		AppendProduct("edot-dotnet", EdotDotnet);
-		AppendProduct("edot-java", EdotJava);
-		AppendProduct("edot-node", EdotNode);
-		AppendProduct("edot-php", EdotPhp);
-		AppendProduct("edot-python", EdotPython);
-		AppendProduct("edot-cf-aws", EdotCfAws);
-		AppendProduct("edot-cf-azure", EdotCfAzure);
-		AppendProduct("edot-collector", EdotCollector);
 
 		return sb.ToString();
 	}

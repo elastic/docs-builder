@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\services\Elastic.Changelog\Elastic.Changelog.csproj" />
+    <ProjectReference Include="..\..\src\services\Elastic.Documentation.Services\Elastic.Documentation.Services.csproj" />
+    <ProjectReference Include="..\..\src\Elastic.Documentation.Configuration\Elastic.Documentation.Configuration.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FakeItEasy" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Elastic.Changelog" />
+    <Using Include="Elastic.Documentation" />
+  </ItemGroup>
+
+</Project>

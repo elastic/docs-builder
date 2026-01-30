@@ -34,6 +34,7 @@ public class AssemblerIndexService(
 	/// <param name="username">Elasticsearch username (basic auth), alternatively set env DOCUMENTATION_ELASTIC_USERNAME</param>
 	/// <param name="password">Elasticsearch password (basic auth), alternatively set env DOCUMENTATION_ELASTIC_PASSWORD</param>
 	/// <param name="noSemantic">Index without semantic fields</param>
+	/// <param name="enableAiEnrichment">Enable AI enrichment of documents using LLM-generated metadata</param>
 	/// <param name="searchNumThreads">The number of search threads the inference endpoint should use. Defaults: 8</param>
 	/// <param name="indexNumThreads">The number of index threads the inference endpoint should use. Defaults: 8</param>
 	/// <param name="noEis">Do not use the Elastic Inference Service, bootstrap inference endpoint</param>
@@ -61,6 +62,7 @@ public class AssemblerIndexService(
 		string? password = null,
 		// inference options
 		bool? noSemantic = null,
+		bool? enableAiEnrichment = null,
 		int? searchNumThreads = null,
 		int? indexNumThreads = null,
 		bool? noEis = null,
@@ -139,11 +141,13 @@ public class AssemblerIndexService(
 
 		if (noSemantic.HasValue)
 			cfg.NoSemantic = noSemantic.Value;
+		if (enableAiEnrichment.HasValue)
+			cfg.EnableAiEnrichment = enableAiEnrichment.Value;
 		if (forceReindex.HasValue)
 			cfg.ForceReindex = forceReindex.Value;
 
 		var exporters = new HashSet<Exporter> { Elasticsearch };
 
-		return await BuildAll(collector, strict: false, environment, metadataOnly: true, showHints: false, exporters, fileSystem, ctx);
+		return await BuildAll(collector, strict: false, environment, metadataOnly: true, showHints: false, exporters, assumeBuild: false, fileSystem, ctx);
 	}
 }

@@ -4,6 +4,8 @@
 
 using Elastic.Documentation.Api.Core.AskAi;
 using Elastic.Documentation.Api.Core.Search;
+using Elastic.Documentation.Api.Core.Telemetry;
+using Elastic.Documentation.Configuration.Products;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -13,12 +15,16 @@ namespace Elastic.Documentation.Api.Infrastructure;
 
 public static class MappingsExtension
 {
-	public static void MapElasticDocsApiEndpoints(this IEndpointRouteBuilder group)
+	public static void MapElasticDocsApiEndpoints(this IEndpointRouteBuilder group, bool mapOtlpEndpoints = true)
 	{
+
 		_ = group.MapGet("/", () => Results.Empty);
 		_ = group.MapPost("/", () => Results.Empty);
 		MapAskAiEndpoint(group);
-		MapSearchEndpoint(group);
+		MapNavigationSearch(group);
+		MapFullSearch(group);
+		if (mapOtlpEndpoints)
+			MapOtlpProxyEndpoint(group);
 	}
 
 	private static void MapAskAiEndpoint(IEndpointRouteBuilder group)
@@ -33,26 +39,102 @@ public static class MappingsExtension
 			var stream = await askAiUsecase.AskAi(askAiRequest, ctx);
 			await stream.CopyToAsync(context.Response.Body, ctx);
 		});
+
+		// UUID validation is automatic via Guid type deserialization (returns 400 if invalid)
+		_ = askAiGroup.MapPost("/message-feedback", async (HttpContext context, AskAiMessageFeedbackRequest request, AskAiMessageFeedbackUsecase feedbackUsecase, Cancel ctx) =>
+		{
+			// Extract euid cookie for user tracking
+			_ = context.Request.Cookies.TryGetValue("euid", out var euid);
+
+			await feedbackUsecase.SubmitFeedback(request, euid, ctx);
+			return Results.NoContent();
+		}).DisableAntiforgery();
 	}
 
-	private static void MapSearchEndpoint(IEndpointRouteBuilder group)
+	private static void MapNavigationSearch(IEndpointRouteBuilder group)
+	{
+		var searchGroup = group.MapGroup("/navigation-search");
+		_ = searchGroup.MapGet("/",
+			async (
+				[FromQuery(Name = "q")] string query,
+				[FromQuery(Name = "page")] int? pageNumber,
+				[FromQuery(Name = "type")] string? typeFilter,
+				NavigationSearchUsecase navigationSearchUsecase,
+				Cancel ctx
+			) =>
+			{
+				var request = new NavigationSearchApiRequest
+				{
+					Query = query,
+					PageNumber = pageNumber ?? 1,
+					TypeFilter = typeFilter
+				};
+				var response = await navigationSearchUsecase.NavigationSearchAsync(request, ctx);
+				return Results.Ok(response);
+			});
+	}
+
+	private static void MapFullSearch(IEndpointRouteBuilder group)
 	{
 		var searchGroup = group.MapGroup("/search");
 		_ = searchGroup.MapGet("/",
 			async (
 				[FromQuery(Name = "q")] string query,
 				[FromQuery(Name = "page")] int? pageNumber,
-				SearchUsecase searchUsecase,
+				[FromQuery(Name = "size")] int? pageSize,
+				[FromQuery(Name = "type")] string[]? typeFilter,
+				[FromQuery(Name = "section")] string[]? sectionFilter,
+				[FromQuery(Name = "deployment")] string[]? deploymentFilter,
+				[FromQuery(Name = "product")] string[]? productFilter,
+				[FromQuery(Name = "version")] string? versionFilter,
+				[FromQuery(Name = "sort")] string? sortBy,
+				FullSearchUsecase searchUsecase,
 				Cancel ctx
 			) =>
 			{
-				var searchRequest = new SearchRequest
+				var request = new FullSearchApiRequest
 				{
 					Query = query,
-					PageNumber = pageNumber ?? 1
+					PageNumber = pageNumber ?? 1,
+					PageSize = pageSize ?? 20,
+					TypeFilter = typeFilter,
+					SectionFilter = sectionFilter,
+					DeploymentFilter = deploymentFilter,
+					ProductFilter = productFilter,
+					VersionFilter = versionFilter,
+					SortBy = sortBy ?? "relevance"
 				};
-				var searchResponse = await searchUsecase.Search(searchRequest, ctx);
-				return Results.Ok(searchResponse);
+				var response = await searchUsecase.SearchAsync(request, ctx);
+				return Results.Ok(response);
 			});
 	}
+
+	private static void MapOtlpProxyEndpoint(IEndpointRouteBuilder group)
+	{
+		// Use /o/* to avoid adblocker detection (common blocklists target /otlp, /telemetry, etc.)
+		var otlpGroup = group.MapGroup("/o");
+
+		MapOtlpSignalEndpoint(otlpGroup, "/t", OtlpSignalType.Traces);
+		MapOtlpSignalEndpoint(otlpGroup, "/l", OtlpSignalType.Logs);
+		MapOtlpSignalEndpoint(otlpGroup, "/m", OtlpSignalType.Metrics);
+	}
+
+	private static void MapOtlpSignalEndpoint(
+		IEndpointRouteBuilder group,
+		string path,
+		OtlpSignalType signalType) =>
+		group.MapPost(path,
+			async (HttpContext context, OtlpProxyUsecase proxyUsecase, Cancel ctx) =>
+			{
+				var contentType = context.Request.ContentType ?? "application/json";
+				var result = await proxyUsecase.ProxyOtlp(
+					signalType,
+					context.Request.Body,
+					contentType,
+					ctx);
+				return result.IsSuccess
+					? Results.NoContent()
+					: Results.StatusCode(result.StatusCode);
+			})
+			.DisableAntiforgery();
 }

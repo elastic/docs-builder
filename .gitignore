@@ -4,6 +4,9 @@
 ## Get latest from https://github.com/github/gitignore/blob/main/VisualStudio.gitignore
 
 .artifacts
+.claude/*
+!.claude/settings.json
+!.claude/skills/
 
 # User-specific files
 *.rsuser

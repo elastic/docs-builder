@@ -18,11 +18,18 @@ public record InputMessage(string Role, MessagePart[] Parts);
 public record OutputMessage(string Role, MessagePart[] Parts, string FinishReason);
 
 [JsonSerializable(typeof(AskAiRequest))]
-[JsonSerializable(typeof(SearchRequest))]
-[JsonSerializable(typeof(SearchResponse))]
+[JsonSerializable(typeof(AskAiMessageFeedbackRequest))]
+[JsonSerializable(typeof(Reaction))]
+[JsonSerializable(typeof(NavigationSearchApiRequest))]
+[JsonSerializable(typeof(NavigationSearchApiResponse))]
+[JsonSerializable(typeof(NavigationSearchAggregations))]
 [JsonSerializable(typeof(InputMessage))]
 [JsonSerializable(typeof(OutputMessage[]))]
 [JsonSerializable(typeof(MessagePart))]
 [JsonSerializable(typeof(InputMessage[]))]
+
+[JsonSerializable(typeof(FullSearchApiRequest))]
+[JsonSerializable(typeof(FullSearchApiResponse))]
+[JsonSerializable(typeof(FullSearchAggregations))]
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 public partial class ApiJsonContext : JsonSerializerContext;

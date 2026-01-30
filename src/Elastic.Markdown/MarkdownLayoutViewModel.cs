@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Documentation.Configuration.LegacyUrlMappings;
+using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site;
 
@@ -23,6 +23,8 @@ public record MarkdownLayoutViewModel : GlobalLayoutViewModel
 
 	public required MarkdownPageLayout? Layout { get; init; }
 
+	public required VersioningSystem VersioningSystem { get; init; }
+
 	public required string? VersionDropdownSerializedModel { get; init; }
 
 	public required string? CurrentVersion { get; init; }
@@ -35,4 +37,11 @@ public record PageTocItem
 	public required string Heading { get; init; }
 	public required string Slug { get; init; }
 	public required int Level { get; init; }
+
+	/// <summary>
+	/// Indicates if this ToC item came from a stepper step.
+	/// Used to distinguish stepper steps (which may need level adjustment in includes)
+	/// from regular headings (which should preserve their levels).
+	/// </summary>
+	public bool IsStepperStep { get; init; }
 }

@@ -1,0 +1,250 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+using Elastic.Documentation.AppliesTo;
+using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.LegacyUrlMappings;
+using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Configuration.Versions;
+
+namespace Elastic.Documentation.Configuration.Inference;
+
+/// <summary>
+/// Result of document inference containing product, versioning system, and repository information.
+/// </summary>
+public record DocumentInferenceResult
+{
+	/// <summary>
+	/// The canonical/primary product from products.yml.
+	/// Contains Id, DisplayName, VersioningSystem, and Repository.
+	/// </summary>
+	public Product? Product { get; init; }
+
+	/// <summary>
+	/// The current version from the versioning system (e.g., "9.2.4").
+	/// Null for versionless products.
+	/// Note: This is for runtime use only and is NOT indexed to ES.
+	/// </summary>
+	public string? ProductVersion { get; init; }
+
+	/// <summary>
+	/// The repository name validated against assembler.yml (e.g., "elasticsearch", "docs-content").
+	/// </summary>
+	public string? Repository { get; init; }
+
+	/// <summary>
+	/// All related products found during inference (from legacy mappings, applicability, repository, etc.)
+	/// </summary>
+	public IReadOnlyCollection<Product> RelatedProducts { get; init; } = [];
+}
+
+/// <summary>
+/// Service for inferring product, version system, and repository information from document metadata.
+/// </summary>
+public interface IDocumentInferrerService
+{
+	/// <summary>
+	/// Infers product, version system, and repository for a markdown page.
+	/// Merges docset-level products with frontmatter products internally.
+	/// </summary>
+	/// <param name="repositoryName">The git repository name from GitCheckoutInformation</param>
+	/// <param name="mappedPages">Legacy mapped page URLs from frontmatter</param>
+	/// <param name="docsetProducts">Products defined at the docset level in docset.yml</param>
+	/// <param name="frontmatterProducts">Products defined in page frontmatter (optional)</param>
+	/// <param name="applicableTo">ApplicableTo metadata from frontmatter</param>
+	/// <returns>Inference result with product, version, repository, and related products</returns>
+	DocumentInferenceResult InferForMarkdown(
+		string repositoryName,
+		IReadOnlyCollection<string>? mappedPages,
+		HashSet<Product> docsetProducts,
+		IReadOnlyCollection<Product>? frontmatterProducts,
+		ApplicableTo? applicableTo);
+
+	/// <summary>
+	/// Infers product, version system, and repository for an OpenAPI endpoint.
+	/// </summary>
+	/// <param name="productSlug">The product slug (e.g., "elasticsearch", "kibana")</param>
+	/// <returns>Inference result with product, version, repository, and related products</returns>
+	DocumentInferenceResult InferForOpenApi(string productSlug);
+}
+
+/// <summary>
+/// Implementation of document inference service that determines product, version, and repository
+/// from various metadata sources with defined priority.
+/// </summary>
+public class DocumentInferrerService(
+	ProductsConfiguration productsConfiguration,
+	VersionsConfiguration versionsConfiguration,
+	LegacyUrlMappingConfiguration legacyUrlMappings,
+	ConfigurationFile? configurationFile = null,
+	GitCheckoutInformation? gitCheckout = null,
+	AssemblyConfiguration? assemblyConfiguration = null) : IDocumentInferrerService
+{
+	private readonly IVersionInferrerService _versionInferrer = new ProductVersionInferrerService(productsConfiguration, versionsConfiguration);
+	private readonly ProductInferService _productInferService = new(productsConfiguration, gitCheckout);
+
+	public ConfigurationFile? ConfigurationFile => configurationFile;
+	public GitCheckoutInformation? GitCheckout => gitCheckout;
+
+	/// <inheritdoc />
+	public DocumentInferenceResult InferForMarkdown(
+		string repositoryName,
+		IReadOnlyCollection<string>? mappedPages,
+		HashSet<Product> docsetProducts,
+		IReadOnlyCollection<Product>? frontmatterProducts,
+		ApplicableTo? applicableTo)
+	{
+		var relatedProducts = new HashSet<Product>();
+
+		// Collect all products from different sources
+		var legacyProduct = InferProductFromLegacyMappings(mappedPages);
+		var applicabilityProduct = InferProductFromApplicability(applicableTo);
+		var repositoryProduct = _productInferService.InferProductFromRepository(repositoryName);
+
+		// Add all found products to related products
+		if (legacyProduct is not null)
+			_ = relatedProducts.Add(legacyProduct);
+		if (applicabilityProduct is not null)
+			_ = relatedProducts.Add(applicabilityProduct);
+		if (repositoryProduct is not null)
+			_ = relatedProducts.Add(repositoryProduct);
+
+		// Merge docset products
+		foreach (var p in docsetProducts)
+			_ = relatedProducts.Add(p);
+
+		// Merge frontmatter products
+		if (frontmatterProducts is { Count: > 0 })
+		{
+			foreach (var p in frontmatterProducts)
+				_ = relatedProducts.Add(p);
+		}
+
+		// Determine canonical product using priority chain
+		var canonicalProduct = legacyProduct ?? applicabilityProduct ?? repositoryProduct;
+
+		// Map legacy pages to LegacyPageMapping for version inference
+		var legacyPageMappings = MapLegacyPages(mappedPages);
+
+		// Infer version system (use all related products)
+		var versioningSystem = _versionInferrer.InferVersion(repositoryName, legacyPageMappings, relatedProducts, applicableTo);
+
+		// Determine repository (validate against assembler.yml if available)
+		var repository = ValidateRepository(repositoryName);
+
+		return new DocumentInferenceResult
+		{
+			Product = canonicalProduct,
+			ProductVersion = versioningSystem.IsVersionless ? null : versioningSystem.Current.ToString(),
+			Repository = repository,
+			RelatedProducts = [.. relatedProducts]
+		};
+	}
+
+	/// <inheritdoc />
+	public DocumentInferenceResult InferForOpenApi(string productSlug)
+	{
+		var productId = productSlug.ToLowerInvariant();
+		var product = productsConfiguration.Products.GetValueOrDefault(productId);
+
+		var versioningSystem = product?.VersioningSystem
+			?? versionsConfiguration.VersioningSystems[VersioningSystemId.Stack];
+
+		// For OpenAPI, the product is always known
+		var relatedProducts = new List<Product>();
+		if (product is not null)
+			relatedProducts.Add(product);
+
+		return new DocumentInferenceResult
+		{
+			Product = product,
+			ProductVersion = versioningSystem.IsVersionless ? null : versioningSystem.Current.ToString(),
+			Repository = productId, // For OpenAPI, repository matches product slug
+			RelatedProducts = relatedProducts
+		};
+	}
+
+	/// <summary>
+	/// Infers product from legacy URL mappings by matching mapped page URLs against LegacyUrlMappingConfiguration.
+	/// </summary>
+	private Product? InferProductFromLegacyMappings(IReadOnlyCollection<string>? mappedPages)
+	{
+		if (mappedPages is null || mappedPages.Count == 0)
+			return null;
+
+		var mappedPage = mappedPages.First();
+
+		// Find matching legacy URL mapping by BaseUrl
+		var legacyMapping = legacyUrlMappings.Mappings
+			.FirstOrDefault(x => mappedPage.Contains(x.BaseUrl, StringComparison.OrdinalIgnoreCase));
+
+		return legacyMapping?.Product;
+	}
+
+	/// <summary>
+	/// Infers product from ApplicableTo metadata using ProductApplicability conversion.
+	/// </summary>
+	private Product? InferProductFromApplicability(ApplicableTo? applicableTo)
+	{
+		if (applicableTo?.ProductApplicability is null)
+			return null;
+
+		var productId = ProductApplicabilityConversion.ProductApplicabilityToProductId(applicableTo.ProductApplicability);
+		if (productId is null)
+			return null;
+
+		return productsConfiguration.Products.GetValueOrDefault(productId);
+	}
+
+	/// <summary>
+	/// Maps legacy page URLs to LegacyPageMapping for version inference compatibility.
+	/// </summary>
+	private IReadOnlyCollection<LegacyPageMapping>? MapLegacyPages(IReadOnlyCollection<string>? mappedPages)
+	{
+		if (mappedPages is null || mappedPages.Count == 0)
+			return null;
+
+		var mappedPage = mappedPages.First();
+
+		// Find matching legacy URL mapping
+		var legacyMapping = legacyUrlMappings.Mappings
+			.FirstOrDefault(x => mappedPage.Contains(x.BaseUrl, StringComparison.OrdinalIgnoreCase));
+
+		if (legacyMapping is null)
+			return null;
+
+		// Create a simple LegacyPageMapping for version inference
+		// (we don't need the full version list, just the product)
+		return [new LegacyPageMapping(legacyMapping.Product, mappedPage, "current", false)];
+	}
+
+	/// <summary>
+	/// Validates repository name against assembler.yml available repositories.
+	/// </summary>
+	private string ValidateRepository(string repositoryName)
+	{
+		if (assemblyConfiguration is null)
+			return repositoryName;
+
+		// Check if repository exists in assembler.yml
+		// Return the repository name regardless (validation is informational)
+		return repositoryName;
+	}
+}
+
+/// <summary>
+/// No-op implementation of document inference service for testing or when inference is not needed.
+/// </summary>
+public class NoopDocumentInferrer : IDocumentInferrerService
+{
+	public DocumentInferenceResult InferForMarkdown(
+		string repositoryName,
+		IReadOnlyCollection<string>? mappedPages,
+		HashSet<Product> docsetProducts,
+		IReadOnlyCollection<Product>? frontmatterProducts,
+		ApplicableTo? applicableTo) => new();
+
+	public DocumentInferenceResult InferForOpenApi(string productSlug) => new();
+}

@@ -36,4 +36,7 @@ public class YamlFrontMatter
 
 	[YamlMember(Alias = "products")]
 	public IReadOnlyCollection<Product>? Products { get; set; }
+
+	[YamlMember(Alias = "noindex")]
+	public bool? NoIndex { get; set; }
 }

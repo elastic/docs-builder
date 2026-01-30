@@ -113,17 +113,43 @@ public enum VersioningSystemId
 	EdotCfAws,
 	[Display(Name = "edot-cf-azure")]
 	EdotCfAzure,
+	[Display(Name = "edot-cf-gcp")]
+	EdotCfGcp,
+	[Display(Name = "terraform-google-edot-cf")]
+	TerraformGoogleEdotCf,
 	[Display(Name = "edot-collector")]
 	EdotCollector,
 	[Display(Name = "search-ui")]
 	SearchUI,
 	[Display(Name = "cloud-terraform")]
 	CloudTerraform,
+	[Display(Name = "elasticsearch-client-go")]
+	ElasticsearchClientGo,
+	[Display(Name = "elasticsearch-client-java")]
+	ElasticsearchClientJava,
+	[Display(Name = "elasticsearch-client-javascript")]
+	ElasticsearchClientJavascript,
+	[Display(Name = "elasticsearch-client-dotnet")]
+	ElasticsearchClientDotnet,
+	[Display(Name = "elasticsearch-client-php")]
+	ElasticsearchClientPhp,
+	[Display(Name = "elasticsearch-client-python")]
+	ElasticsearchClientPython,
+	[Display(Name = "elasticsearch-client-ruby")]
+	ElasticsearchClientRuby,
+	[Display(Name = "elasticsearch-client-rust")]
+	ElasticsearchClientRust,
 }
 
 [YamlSerializable]
 public record VersioningSystem
 {
+	/// <summary>
+	/// The sentinel major version value used for "versionless" products (serverless, cloud, etc.)
+	/// Products with this version should not display a version dropdown.
+	/// </summary>
+	public const int VersionlessSentinel = 99999;
+
 	public required VersioningSystemId Id { get; init; }
 
 	[YamlMember(Alias = "base")]
@@ -131,4 +157,11 @@ public record VersioningSystem
 
 	[YamlMember(Alias = "current")]
 	public required SemVersion Current { get; init; }
+
+	public bool IsVersioned() => Base.Major != AllVersions.Instance.Major;
+	/// <summary>
+	/// Returns true if this versioning system represents a "versionless" product
+	/// (e.g., serverless, cloud services) that should not display a version dropdown.
+	/// </summary>
+	public bool IsVersionless => Current.Major >= VersionlessSentinel;
 }

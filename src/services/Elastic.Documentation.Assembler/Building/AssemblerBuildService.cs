@@ -33,6 +33,7 @@ public class AssemblerBuildService(
 		bool? metadataOnly,
 		bool? showHints,
 		IReadOnlySet<Exporter>? exporters,
+		bool? assumeBuild,
 		FileSystem fs,
 		Cancel ctx
 	)
@@ -44,6 +45,8 @@ public class AssemblerBuildService(
 		if (exporters.Contains(Exporter.DocumentationState))
 			exporters = new HashSet<Exporter>(exporters.Except([Exporter.DocumentationState]));
 
+		var elasticsearchExportOnly = exporters.SetEquals([Exporter.Elasticsearch]);
+
 		var githubEnvironmentInput = githubActionsService.GetInput("environment");
 		environment ??= !string.IsNullOrEmpty(githubEnvironmentInput) ? githubEnvironmentInput : "dev";
 
@@ -53,10 +56,29 @@ public class AssemblerBuildService(
 
 		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, fs, fs, null, null);
 
+		// Early return if --assume-build is specified and output already exists
+		if (assumeBuild.GetValueOrDefault(false))
+		{
+			var indexHtmlPath = Path.Combine(assembleContext.OutputDirectory.FullName, "docs", "index.html");
+			if (assembleContext.OutputDirectory.Exists && fs.File.Exists(indexHtmlPath))
+			{
+				_logger.LogInformation("Assuming build already exists (--assume-build). Found index.html at {Path}. Skipping build.", indexHtmlPath);
+				return true;
+			}
+			_logger.LogInformation("--assume-build specified but output directory does not exist or is incomplete. Proceeding with build.");
+		}
+
 		if (assembleContext.OutputDirectory.Exists)
 		{
-			_logger.LogInformation("Cleaning target output directory");
-			assembleContext.OutputDirectory.Delete(true);
+			if (elasticsearchExportOnly)
+			{
+				_logger.LogInformation("Elasticsearch export only. Skipping clean up of target output directory");
+			}
+			else
+			{
+				_logger.LogInformation("Cleaning target output directory");
+				assembleContext.OutputDirectory.Delete(true);
+			}
 		}
 
 		_logger.LogInformation("Get all clone directory information");
@@ -98,7 +120,7 @@ public class AssemblerBuildService(
 
 		if (exporters.Contains(Exporter.Html))
 		{
-			var sitemapBuilder = new SitemapBuilder(navigation.NavigationItems, assembleContext.WriteFileSystem, assembleContext.OutputDirectory);
+			var sitemapBuilder = new SitemapBuilder(navigation.NavigationItems, assembleContext.WriteFileSystem, assembleContext.OutputWithPathPrefixDirectory);
 			sitemapBuilder.Generate();
 		}
 
@@ -118,13 +140,13 @@ public class AssemblerBuildService(
 
 	private static async Task EnhanceLlmsTxtFile(AssembleContext context, SiteNavigation navigation, LlmsNavigationEnhancer enhancer, Cancel ctx)
 	{
-		var llmsTxtPath = Path.Combine(context.OutputDirectory.FullName, "docs", "llms.txt");
+		var pathPrefixedOutputFolder = context.OutputWithPathPrefixDirectory;
+		var llmsTxtPath = context.ReadFileSystem.Path.Combine(pathPrefixedOutputFolder.FullName, "llms.txt");
 
-		var readFs = context.ReadFileSystem;
-		if (!readFs.File.Exists(llmsTxtPath))
+		if (!context.ReadFileSystem.File.Exists(llmsTxtPath))
 			return; // No llms.txt file to enhance
 
-		var existingContent = await readFs.File.ReadAllTextAsync(llmsTxtPath, ctx);
+		var existingContent = await context.ReadFileSystem.File.ReadAllTextAsync(llmsTxtPath, ctx);
 		// Assembler always uses the production URL as canonical base URL
 		var canonicalBaseUrl = new Uri(context.Environment.Uri);
 		var navigationSections = enhancer.GenerateNavigationSections(navigation, canonicalBaseUrl);
@@ -132,7 +154,6 @@ public class AssemblerBuildService(
 		// Append the navigation sections to the existing boilerplate
 		var enhancedContent = existingContent + Environment.NewLine + navigationSections;
 
-		var writeFs = context.WriteFileSystem;
-		await writeFs.File.WriteAllTextAsync(llmsTxtPath, enhancedContent, Encoding.UTF8, ctx);
+		await context.WriteFileSystem.File.WriteAllTextAsync(llmsTxtPath, enhancedContent, Encoding.UTF8, ctx);
 	}
 }

@@ -21,8 +21,10 @@ public class DocumentationDocumentSerializationTests
 	{
 		var doc = new DocumentationDocument
 		{
+			Type = "doc",
 			Url = "/test/page",
 			Title = "Test Page",
+			SearchTitle = "Test Page",
 			Applies = new ApplicableTo
 			{
 				Stack = AppliesCollection.GenerallyAvailable
@@ -45,7 +47,7 @@ public class DocumentationDocumentSerializationTests
 		stackEntry.GetProperty("type").GetString().Should().Be("stack");
 		stackEntry.GetProperty("sub_type").GetString().Should().Be("stack");
 		stackEntry.GetProperty("lifecycle").GetString().Should().Be("ga");
-		stackEntry.GetProperty("version").GetString().Should().Be("9999.9999.9999");
+		stackEntry.GetProperty("version").GetString().Should().Be("all");
 	}
 
 	[Fact]
@@ -53,14 +55,16 @@ public class DocumentationDocumentSerializationTests
 	{
 		var doc = new DocumentationDocument
 		{
+			Type = "doc",
 			Url = "/test/deployment",
 			Title = "Deployment Test",
+			SearchTitle = "Deployment Test",
 			Applies = new ApplicableTo
 			{
 				Deployment = new DeploymentApplicability
 				{
 					Ess = AppliesCollection.GenerallyAvailable,
-					Ece = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (SemVersion)"3.5.0" }])
+					Ece = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (VersionSpec)"3.5.0" }])
 				}
 			}
 		};
@@ -78,14 +82,14 @@ public class DocumentationDocumentSerializationTests
 		essEntry.ValueKind.Should().NotBe(JsonValueKind.Undefined);
 		essEntry.GetProperty("type").GetString().Should().Be("deployment");
 		essEntry.GetProperty("lifecycle").GetString().Should().Be("ga");
-		essEntry.GetProperty("version").GetString().Should().Be("9999.9999.9999");
+		essEntry.GetProperty("version").GetString().Should().Be("all");
 
 		// Verify ECE entry
 		var eceEntry = appliesArray.FirstOrDefault(e => e.GetProperty("sub_type").GetString() == "ece");
 		eceEntry.ValueKind.Should().NotBe(JsonValueKind.Undefined);
 		eceEntry.GetProperty("type").GetString().Should().Be("deployment");
 		eceEntry.GetProperty("lifecycle").GetString().Should().Be("beta");
-		eceEntry.GetProperty("version").GetString().Should().Be("3.5.0");
+		eceEntry.GetProperty("version").GetString().Should().Be("3.5+");
 	}
 
 	[Fact]
@@ -93,14 +97,16 @@ public class DocumentationDocumentSerializationTests
 	{
 		var doc = new DocumentationDocument
 		{
+			Type = "doc",
 			Url = "/test/serverless",
 			Title = "Serverless Test",
+			SearchTitle = "Serverless Test",
 			Applies = new ApplicableTo
 			{
 				Serverless = new ServerlessProjectApplicability
 				{
-					Elasticsearch = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (SemVersion)"8.0.0" }]),
-					Security = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.TechnicalPreview, Version = (SemVersion)"1.0.0" }])
+					Elasticsearch = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (VersionSpec)"8.0.0" }]),
+					Security = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.TechnicalPreview, Version = (VersionSpec)"1.0.0" }])
 				}
 			}
 		};
@@ -118,14 +124,14 @@ public class DocumentationDocumentSerializationTests
 		esEntry.ValueKind.Should().NotBe(JsonValueKind.Undefined);
 		esEntry.GetProperty("type").GetString().Should().Be("serverless");
 		esEntry.GetProperty("lifecycle").GetString().Should().Be("ga");
-		esEntry.GetProperty("version").GetString().Should().Be("8.0.0");
+		esEntry.GetProperty("version").GetString().Should().Be("8.0+");
 
 		// Verify security entry
 		var secEntry = appliesArray.FirstOrDefault(e => e.GetProperty("sub_type").GetString() == "security");
 		secEntry.ValueKind.Should().NotBe(JsonValueKind.Undefined);
 		secEntry.GetProperty("type").GetString().Should().Be("serverless");
 		secEntry.GetProperty("lifecycle").GetString().Should().Be("preview");
-		secEntry.GetProperty("version").GetString().Should().Be("1.0.0");
+		secEntry.GetProperty("version").GetString().Should().Be("1.0+");
 	}
 
 	[Fact]
@@ -133,11 +139,13 @@ public class DocumentationDocumentSerializationTests
 	{
 		var doc = new DocumentationDocument
 		{
+			Type = "doc",
 			Url = "/test/product",
 			Title = "Product Test",
+			SearchTitle = "Product Test",
 			Applies = new ApplicableTo
 			{
-				Product = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (SemVersion)"2.0.0" }])
+				Product = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (VersionSpec)"2.0.0" }])
 			}
 		};
 
@@ -153,7 +161,7 @@ public class DocumentationDocumentSerializationTests
 		productEntry.GetProperty("type").GetString().Should().Be("product");
 		productEntry.GetProperty("sub_type").GetString().Should().Be("product");
 		productEntry.GetProperty("lifecycle").GetString().Should().Be("beta");
-		productEntry.GetProperty("version").GetString().Should().Be("2.0.0");
+		productEntry.GetProperty("version").GetString().Should().Be("2.0+");
 	}
 
 	[Fact]
@@ -161,14 +169,16 @@ public class DocumentationDocumentSerializationTests
 	{
 		var doc = new DocumentationDocument
 		{
+			Type = "doc",
 			Url = "/test/apm",
 			Title = "APM Test",
+			SearchTitle = "APM Test",
 			Applies = new ApplicableTo
 			{
 				ProductApplicability = new ProductApplicability
 				{
-					ApmAgentDotnet = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (SemVersion)"1.5.0" }]),
-					ApmAgentNode = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Deprecated, Version = (SemVersion)"2.0.0" }])
+					ApmAgentDotnet = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (VersionSpec)"1.5.0" }]),
+					ApmAgentNode = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Deprecated, Version = (VersionSpec)"2.0.0" }])
 				}
 			}
 		};
@@ -186,14 +196,14 @@ public class DocumentationDocumentSerializationTests
 		dotnetEntry.ValueKind.Should().NotBe(JsonValueKind.Undefined);
 		dotnetEntry.GetProperty("type").GetString().Should().Be("product");
 		dotnetEntry.GetProperty("lifecycle").GetString().Should().Be("ga");
-		dotnetEntry.GetProperty("version").GetString().Should().Be("1.5.0");
+		dotnetEntry.GetProperty("version").GetString().Should().Be("1.5+");
 
 		// Verify apm-agent-node entry
 		var nodeEntry = appliesArray.FirstOrDefault(e => e.GetProperty("sub_type").GetString() == "apm-agent-node");
 		nodeEntry.ValueKind.Should().NotBe(JsonValueKind.Undefined);
 		nodeEntry.GetProperty("type").GetString().Should().Be("product");
 		nodeEntry.GetProperty("lifecycle").GetString().Should().Be("deprecated");
-		nodeEntry.GetProperty("version").GetString().Should().Be("2.0.0");
+		nodeEntry.GetProperty("version").GetString().Should().Be("2.0+");
 	}
 
 	[Fact]
@@ -201,11 +211,13 @@ public class DocumentationDocumentSerializationTests
 	{
 		var doc = new DocumentationDocument
 		{
+			Type = "doc",
 			Url = "/test/complex",
 			Title = "Complex Test",
+			SearchTitle = "Complex Test",
 			Applies = new ApplicableTo
 			{
-				Stack = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (SemVersion)"8.0.0" }]),
+				Stack = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (VersionSpec)"8.0.0" }]),
 				Deployment = new DeploymentApplicability
 				{
 					Ess = AppliesCollection.GenerallyAvailable
@@ -236,8 +248,10 @@ public class DocumentationDocumentSerializationTests
 	{
 		var doc = new DocumentationDocument
 		{
+			Type = "doc",
 			Url = "/test/no-applies",
 			Title = "No Applies Test",
+			SearchTitle = "No Applies Test",
 			Applies = null
 		};
 
@@ -261,8 +275,10 @@ public class DocumentationDocumentSerializationTests
 	{
 		var doc = new DocumentationDocument
 		{
+			Type = "doc",
 			Url = "/test/empty-applies",
 			Title = "Empty Applies Test",
+			SearchTitle = "Empty Applies Test",
 			Applies = new ApplicableTo()
 		};
 
@@ -280,17 +296,19 @@ public class DocumentationDocumentSerializationTests
 	{
 		var original = new DocumentationDocument
 		{
+			Type = "doc",
 			Url = "/test/roundtrip",
 			Title = "Round Trip Test",
+			SearchTitle = "Round Trip Test",
 			Hash = "abc123",
 			BatchIndexDate = DateTimeOffset.Parse("2024-01-15T10:00:00Z", CultureInfo.InvariantCulture),
 			LastUpdated = DateTimeOffset.Parse("2024-01-15T09:00:00Z", CultureInfo.InvariantCulture),
 			Applies = new ApplicableTo
 			{
-				Stack = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (SemVersion)"8.5.0" }]),
+				Stack = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (VersionSpec)"8.5.0" }]),
 				Deployment = new DeploymentApplicability
 				{
-					Ess = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (SemVersion)"8.6.0" }])
+					Ess = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (VersionSpec)"8.6.0" }])
 				}
 			},
 			Headings = ["Introduction", "Getting Started"],
@@ -317,15 +335,17 @@ public class DocumentationDocumentSerializationTests
 	{
 		var doc = new DocumentationDocument
 		{
+			Type = "doc",
 			Url = "/test/multiple",
 			Title = "Multiple Test",
+			SearchTitle = "Multiple Test",
 			Applies = new ApplicableTo
 			{
 				Stack = new AppliesCollection(
 				[
-					new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (SemVersion)"8.0.0" },
-					new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (SemVersion)"7.17.0" },
-					new Applicability { Lifecycle = ProductLifecycle.Deprecated, Version = (SemVersion)"7.0.0" }
+					new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (VersionSpec)"8.0.0" },
+					new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (VersionSpec)"7.17.0" },
+					new Applicability { Lifecycle = ProductLifecycle.Deprecated, Version = (VersionSpec)"7.0.0" }
 				])
 			}
 		};

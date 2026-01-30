@@ -2,29 +2,36 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Elastic.Documentation.Api.Infrastructure.Caching;
 
 namespace Elastic.Documentation.Api.Infrastructure.Gcp;
 
 // This is a custom implementation to create an ID token for GCP.
 // Because Google.Api.Auth.OAuth2 is not compatible with AOT
-public class GcpIdTokenProvider(HttpClient httpClient)
+// Clean Architecture: Depends on IDistributedCache abstraction from Infrastructure layer
+public class GcpIdTokenProvider(IHttpClientFactory httpClientFactory, IDistributedCache cache) : IGcpIdTokenProvider
 {
-	// Cache tokens by target audience to avoid regenerating them on every request
-	private static readonly ConcurrentDictionary<string, CachedToken> TokenCache = new();
-
-	private sealed record CachedToken(string Token, DateTimeOffset ExpiresAt);
+	private readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
+	private readonly IDistributedCache _cache = cache;
 
 	public async Task<string> GenerateIdTokenAsync(string serviceAccount, string targetAudience, Cancel cancellationToken = default)
 	{
-		// Check if we have a valid cached token
-		if (TokenCache.TryGetValue(targetAudience, out var cachedToken) &&
-			cachedToken.ExpiresAt > DateTimeOffset.UtcNow.AddMinutes(1)) // Refresh 1 minute before expiry
-			return cachedToken.Token;
+		// Check distributed cache first (works across all Lambda containers)
+		// CacheKey automatically hashes the identifier to prevent exposing sensitive data
+		// DynamoDB ExpiresAt attribute handles expiration checking
+		var cacheKey = CacheKey.Create("idtoken", targetAudience);
+		var cachedToken = await _cache.GetAsync(cacheKey, cancellationToken);
+
+		if (cachedToken != null)
+		{
+			// Cache implementation (DynamoDbDistributedCache) already checked ExpiresAt
+			// If we get here, the token is still valid
+			return cachedToken;
+		}
 
 		// Read and parse service account key file using System.Text.Json source generation (AOT compatible)
 		var serviceAccountJson = JsonSerializer.Deserialize(serviceAccount, GcpJsonContext.Default.ServiceAccountKey);
@@ -72,10 +79,12 @@ public class GcpIdTokenProvider(HttpClient httpClient)
 		// Exchange JWT for ID token
 		var idToken = await ExchangeJwtForIdToken(jwt, targetAudience, cancellationToken);
 
-		var expiresAt = expirationTime.Subtract(TimeSpan.FromMinutes(1));
-		_ = TokenCache.AddOrUpdate(targetAudience,
-			new CachedToken(idToken, expiresAt),
-			(_, _) => new CachedToken(idToken, expiresAt));
+		// Cache the token in distributed cache (shared across all Lambda containers)
+		// Use 15-minute buffer for maximum safety against clock skew and edge cases
+		// DynamoDB will use ExpiresAt attribute for expiration checking and TTL for cleanup
+		var cacheExpiry = expirationTime.Subtract(TimeSpan.FromMinutes(15));
+		var cacheTtl = cacheExpiry - now;
+		await _cache.SetAsync(cacheKey, idToken, cacheTtl, cancellationToken);
 
 		return idToken;
 	}
@@ -89,6 +98,7 @@ public class GcpIdTokenProvider(HttpClient httpClient)
 			new KeyValuePair<string, string>("target_audience", targetAudience)
 		]);
 
+		var httpClient = _httpClientFactory.CreateClient();
 		var response = await httpClient.PostAsync("https://oauth2.googleapis.com/token", requestContent, cancellationToken);
 		_ = response.EnsureSuccessStatusCode();
 
@@ -107,6 +117,7 @@ public class GcpIdTokenProvider(HttpClient httpClient)
 		// Convert base64 to base64url encoding
 		return base64.Replace('+', '-').Replace('/', '_').TrimEnd('=');
 	}
+
 }
 
 internal readonly record struct ServiceAccountKey(

@@ -1,22 +1,27 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck: EUI icons do not have types
 import { icon as EuiIconVisualizeApp } from '@elastic/eui/es/components/icon/assets/app_visualize'
-import { icon as EuiIconArrowEnd } from '@elastic/eui/es/components/icon/assets/arrowEnd'
-import { icon as EuiIconArrowStart } from '@elastic/eui/es/components/icon/assets/arrowStart'
 import { icon as EuiIconArrowDown } from '@elastic/eui/es/components/icon/assets/arrow_down'
 import { icon as EuiIconArrowLeft } from '@elastic/eui/es/components/icon/assets/arrow_left'
 import { icon as EuiIconArrowRight } from '@elastic/eui/es/components/icon/assets/arrow_right'
+import { icon as EuiIconArrowUp } from '@elastic/eui/es/components/icon/assets/arrow_up'
 import { icon as EuiIconCheck } from '@elastic/eui/es/components/icon/assets/check'
+import { icon as EuiIconCode } from '@elastic/eui/es/components/icon/assets/code'
 import { icon as EuiIconComment } from '@elastic/eui/es/components/icon/assets/comment'
+import { icon as EuiIconConsole } from '@elastic/eui/es/components/icon/assets/console'
 import { icon as EuiIconCopy } from '@elastic/eui/es/components/icon/assets/copy'
 import { icon as EuiIconCopyClipboard } from '@elastic/eui/es/components/icon/assets/copy_clipboard'
 import { icon as EuiIconCross } from '@elastic/eui/es/components/icon/assets/cross'
 import { icon as EuiIconDocument } from '@elastic/eui/es/components/icon/assets/document'
+import { icon as EuiIconDocumentation } from '@elastic/eui/es/components/icon/assets/documentation'
 import { icon as EuiIconDot } from '@elastic/eui/es/components/icon/assets/dot'
+import { icon as EuiIconRedo } from '@elastic/eui/es/components/icon/assets/editor_redo'
 import { icon as EuiIconEmpty } from '@elastic/eui/es/components/icon/assets/empty'
 import { icon as EuiIconError } from '@elastic/eui/es/components/icon/assets/error'
 import { icon as EuiIconFaceHappy } from '@elastic/eui/es/components/icon/assets/face_happy'
 import { icon as EuiIconFaceSad } from '@elastic/eui/es/components/icon/assets/face_sad'
+import { icon as EuiIconGlobe } from '@elastic/eui/es/components/icon/assets/globe'
+import { icon as EuiIconKqlFunction } from '@elastic/eui/es/components/icon/assets/kql_function'
 import { icon as EuiIconLogoElastic } from '@elastic/eui/es/components/icon/assets/logo_elastic'
 import { icon as EuiIconNewChat } from '@elastic/eui/es/components/icon/assets/new_chat'
 import { icon as EuiIconPlay } from '@elastic/eui/es/components/icon/assets/play'
@@ -24,8 +29,10 @@ import { icon as EuiIconPopout } from '@elastic/eui/es/components/icon/assets/po
 import { icon as EuiIconRefresh } from '@elastic/eui/es/components/icon/assets/refresh'
 import { icon as EuiIconReturnKey } from '@elastic/eui/es/components/icon/assets/return_key'
 import { icon as EuiIconSearch } from '@elastic/eui/es/components/icon/assets/search'
+import { icon as EuiIconSortDown } from '@elastic/eui/es/components/icon/assets/sort_down'
 import { icon as EuiIconSortUp } from '@elastic/eui/es/components/icon/assets/sort_up'
 import { icon as EuiIconSparkles } from '@elastic/eui/es/components/icon/assets/sparkles'
+import { icon as EuiIconStop } from '@elastic/eui/es/components/icon/assets/stop'
 import { icon as EuiIconThumbDown } from '@elastic/eui/es/components/icon/assets/thumbDown'
 import { icon as EuiIconThumbUp } from '@elastic/eui/es/components/icon/assets/thumbUp'
 import { icon as EuiIconTrash } from '@elastic/eui/es/components/icon/assets/trash'
@@ -33,12 +40,15 @@ import { icon as EuiIconUser } from '@elastic/eui/es/components/icon/assets/user
 import { icon as EuiIconWrench } from '@elastic/eui/es/components/icon/assets/wrench'
 import { appendIconComponentCache } from '@elastic/eui/es/components/icon/icon'
 
-appendIconComponentCache({
+const iconMapping = {
     newChat: EuiIconNewChat,
+    arrowUp: EuiIconArrowUp,
     arrowDown: EuiIconArrowDown,
     arrowLeft: EuiIconArrowLeft,
     arrowRight: EuiIconArrowRight,
+    code: EuiIconCode,
     document: EuiIconDocument,
+    documentation: EuiIconDocumentation,
     dot: EuiIconDot,
     empty: EuiIconEmpty,
     search: EuiIconSearch,
@@ -62,7 +72,15 @@ appendIconComponentCache({
     copy: EuiIconCopy,
     play: EuiIconPlay,
     sortUp: EuiIconSortUp,
-    arrowStart: EuiIconArrowStart,
-    arrowEnd: EuiIconArrowEnd,
+    sortDown: EuiIconSortDown,
+    stop: EuiIconStop,
     comment: EuiIconComment,
-})
+    kqlFunction: EuiIconKqlFunction,
+    globe: EuiIconGlobe,
+    console: EuiIconConsole,
+    editorRedo: EuiIconRedo,
+}
+
+appendIconComponentCache(iconMapping)
+
+export const availableIcons = Object.keys(iconMapping)

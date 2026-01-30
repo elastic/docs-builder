@@ -6,6 +6,8 @@ using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Myst.Directives.Admonition;
+using Elastic.Markdown.Myst.Directives.AppliesTo;
+using Elastic.Markdown.Myst.Directives.CsvInclude;
 using Elastic.Markdown.Myst.Directives.Diagram;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
@@ -86,6 +88,69 @@ public static class LlmRenderingHelpers
 			return url;
 		}
 	}
+
+	/// <summary>
+	/// Renders a markdown table from a list of rows (each row is a list of cell values).
+	/// The first row is treated as the header row.
+	/// </summary>
+	public static void RenderMarkdownTable(LlmMarkdownRenderer renderer, IReadOnlyList<IReadOnlyList<string>> rows, int? maxColumns = null)
+	{
+		if (rows.Count == 0)
+			return;
+
+		// Determine column count
+		var columnCount = rows.Max(r => r.Count);
+		if (maxColumns.HasValue)
+			columnCount = Math.Min(columnCount, maxColumns.Value);
+
+		// Calculate column widths for better alignment
+		var columnWidths = CalculateColumnWidths(rows, columnCount);
+
+		// Render header row (first row)
+		RenderTableRow(renderer, rows[0], columnWidths, columnCount);
+
+		// Render separator row
+		renderer.Write("|");
+		for (var i = 0; i < columnCount; i++)
+		{
+			renderer.Write(new string('-', columnWidths[i] + 2));
+			renderer.Write("|");
+		}
+		renderer.WriteLine();
+
+		// Render data rows
+		foreach (var row in rows.Skip(1))
+			RenderTableRow(renderer, row, columnWidths, columnCount);
+	}
+
+	private static int[] CalculateColumnWidths(IReadOnlyList<IReadOnlyList<string>> rows, int columnCount)
+	{
+		var widths = new int[columnCount];
+		foreach (var row in rows)
+		{
+			for (var i = 0; i < Math.Min(row.Count, columnCount); i++)
+				widths[i] = Math.Max(widths[i], row[i].Length);
+		}
+
+		// Ensure minimum width for separator
+		for (var i = 0; i < widths.Length; i++)
+			widths[i] = Math.Max(widths[i], 3);
+
+		return widths;
+	}
+
+	private static void RenderTableRow(LlmMarkdownRenderer renderer, IReadOnlyList<string> row, int[] columnWidths, int columnCount)
+	{
+		renderer.Write("|");
+		for (var i = 0; i < columnCount; i++)
+		{
+			renderer.Write(" ");
+			var cellValue = i < row.Count ? row[i] : "";
+			renderer.Write(cellValue.PadRight(columnWidths[i]));
+			renderer.Write(" |");
+		}
+		renderer.WriteLine();
+	}
 }
 
 /// <summary>
@@ -130,6 +195,13 @@ public class LlmEnhancedCodeBlockRenderer : MarkdownObjectRenderer<LlmMarkdownRe
 {
 	protected override void Write(LlmMarkdownRenderer renderer, EnhancedCodeBlock obj)
 	{
+		// Handle AppliesToDirective specially - render as human-readable text
+		if (obj is AppliesToDirective appliesToDirective)
+		{
+			WriteAppliesToDirective(renderer, appliesToDirective);
+			return;
+		}
+
 		renderer.EnsureBlockSpacing();
 		if (!string.IsNullOrEmpty(obj.Caption))
 		{
@@ -151,6 +223,33 @@ public class LlmEnhancedCodeBlockRenderer : MarkdownObjectRenderer<LlmMarkdownRe
 		}
 
 		renderer.WriteLine("```");
+	}
+
+	private static void WriteAppliesToDirective(LlmMarkdownRenderer renderer, AppliesToDirective directive)
+	{
+		if (directive.AppliesTo is null)
+			return;
+
+		var appliesText = LlmApplicabilityHelper.RenderForLlm(
+			directive.AppliesTo,
+			renderer.BuildContext.VersionsConfiguration,
+			useInlineTag: false);
+
+		if (string.IsNullOrEmpty(appliesText))
+			return;
+
+		renderer.EnsureBlockSpacing();
+		renderer.WriteLine("<applies-to>");
+
+		// Split by comma and render each as a list item
+		var items = appliesText.Split(", ");
+		foreach (var item in items)
+		{
+			renderer.Write("  - ");
+			renderer.WriteLine(item);
+		}
+
+		renderer.WriteLine("</applies-to>");
 	}
 
 	private static int GetLastNonEmptyLineIndex(EnhancedCodeBlock obj)
@@ -303,77 +402,17 @@ public class LlmTableRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, Tabl
 		renderer.EnsureBlockSpacing();
 		renderer.Writer.WriteLine();
 
-		// Calculate column widths for better alignment
-		var columnWidths = CalculateColumnWidths(renderer, table);
-
-		// Render table header
-		if (table.Count > 0 && table[0] is TableRow headerRow)
-		{
-			RenderTableRowCells(renderer, headerRow, columnWidths);
-
-			// Render separator row with proper alignment
-			renderer.Writer.Write("|");
-			for (var i = 0; i < headerRow.Count; i++)
-			{
-				renderer.Writer.Write(new string('-', columnWidths[i] + 2));
-				renderer.Writer.Write("|");
-			}
-
-			renderer.WriteLine();
-		}
-
-		// Render table body with aligned columns
-		foreach (var row in table.Skip(1).Cast<TableRow>())
-			RenderTableRowCells(renderer, row, columnWidths);
-	}
-
-	/// <summary>
-	/// Renders a table row with proper cell alignment and padding
-	/// </summary>
-	private static void RenderTableRowCells(LlmMarkdownRenderer renderer, TableRow row, int[] columnWidths)
-	{
-		renderer.Writer.Write("|");
-		var cellIndex = 0;
-		foreach (var cell in row.Cast<TableCell>())
-		{
-			renderer.Writer.Write(" ");
-			var content = RenderTableCellContent(renderer, cell);
-			renderer.Writer.Write(content.PadRight(columnWidths[cellIndex]));
-			renderer.Writer.Write(" |");
-			cellIndex++;
-		}
-
-		renderer.WriteLine();
-	}
-
-	/// <summary>
-	/// Calculate the optimal width for each column based on content
-	/// </summary>
-	private static int[] CalculateColumnWidths(LlmMarkdownRenderer renderer, Table table)
-	{
 		if (table.Count == 0)
-			return [];
+			return;
 
-		// Initialize array with column count from header row
-		var headerRow = table[0] as TableRow;
-		var columnCount = headerRow?.Count ?? 0;
-		var widths = new int[columnCount];
+		// Convert Table to list of string arrays for shared rendering
+		var rows = table.Cast<TableRow>()
+			.Select(row => row.Cast<TableCell>()
+				.Select(cell => RenderTableCellContent(renderer, cell))
+				.ToArray() as IReadOnlyList<string>)
+			.ToList();
 
-		// Process all rows to find maximum width for each column
-		foreach (var row in table.Cast<TableRow>())
-		{
-			for (var cellIndex = 0; cellIndex < row.Count; cellIndex++)
-			{
-				var cell = row[cellIndex] as TableCell;
-				// Capture cell content
-				var content = RenderTableCellContent(renderer, cell!);
-
-				// Update width if this cell is wider
-				widths[cellIndex] = Math.Max(widths[cellIndex], content.Length);
-			}
-		}
-
-		return widths;
+		LlmRenderingHelpers.RenderMarkdownTable(renderer, rows);
 	}
 
 	/// <summary>
@@ -382,12 +421,13 @@ public class LlmTableRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, Tabl
 	private static string RenderTableCellContent(LlmMarkdownRenderer renderer, TableCell cell) =>
 		DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(
 			renderer.BuildContext,
-			cell.Descendants().OfType<Inline>(),
-			static (tmpRenderer, obj) =>
+			cell,
+			static (tmpRenderer, c) =>
 			{
-				foreach (var inline in obj)
-					tmpRenderer.Write(inline);
-			});
+				// Render the cell's child blocks (e.g., ParagraphBlock) which properly
+				// handles the inline hierarchy without duplicating nested inline content
+				tmpRenderer.WriteChildren(c);
+			}).Trim();
 }
 
 public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, DirectiveBlock>
@@ -410,6 +450,9 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 				return;
 			case MathBlock mathBlock:
 				WriteMathBlock(renderer, mathBlock);
+				return;
+			case CsvIncludeBlock csvIncludeBlock:
+				WriteCsvIncludeBlock(renderer, csvIncludeBlock);
 				return;
 		}
 
@@ -434,8 +477,13 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 
 		switch (obj)
 		{
-			case IBlockAppliesTo appliesBlock when !string.IsNullOrEmpty(appliesBlock.AppliesToDefinition):
-				renderer.Writer.Write($" applies-to=\"{appliesBlock.AppliesToDefinition}\"");
+			case IBlockAppliesTo appliesBlock when appliesBlock.AppliesTo is not null:
+				var appliesText = LlmApplicabilityHelper.RenderForLlm(
+					appliesBlock.AppliesTo,
+					renderer.BuildContext.VersionsConfiguration,
+					useInlineTag: false);
+				if (!string.IsNullOrEmpty(appliesText))
+					renderer.Writer.Write($" applies-to=\"{appliesText}\"");
 				break;
 		}
 
@@ -519,7 +567,7 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 			try
 			{
 				var parentPath = block.Context.MarkdownParentPath ?? block.Context.MarkdownSourcePath;
-				var document = MarkdownParser.ParseSnippetAsync(block.Build, block.Context, snippet, parentPath, block.Context.YamlFrontMatter, Cancel.None)
+				var document = MarkdownParser.ParseSnippetAsync(block.Build, block.Context, snippet, parentPath, block.Context.YamlFrontMatter, Cancel.None, block.Line)
 					.GetAwaiter().GetResult();
 				_ = renderer.Render(document);
 			}
@@ -651,6 +699,44 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		renderer.EnsureLine();
 	}
 
+	private static void WriteCsvIncludeBlock(LlmMarkdownRenderer renderer, CsvIncludeBlock block)
+	{
+		if (!block.Found || string.IsNullOrEmpty(block.CsvFilePath))
+		{
+			renderer.BuildContext.Collector.EmitError(
+				block.CsvFilePath ?? string.Empty,
+				"CSV file not found or invalid path");
+			return;
+		}
+
+		renderer.EnsureBlockSpacing();
+
+		// Add caption if present
+		if (!string.IsNullOrEmpty(block.Caption))
+		{
+			renderer.Write("**");
+			renderer.Write(block.Caption);
+			renderer.WriteLine("**");
+			renderer.WriteLine();
+		}
+
+		// Read CSV data using CsvReader
+		var csvRows = CsvReader.ReadCsvFile(block.CsvFilePath, block.Separator, block.Build.ReadFileSystem)
+			.Take(block.MaxRows)
+			.Select(row => row as IReadOnlyList<string>)
+			.ToList();
+
+		if (csvRows.Count == 0)
+		{
+			renderer.WriteLine("*Empty CSV file*");
+			renderer.EnsureLine();
+			return;
+		}
+
+		LlmRenderingHelpers.RenderMarkdownTable(renderer, csvRows, block.MaxColumns);
+		renderer.EnsureLine();
+	}
+
 	private static void WriteChildrenWithIndentation(LlmMarkdownRenderer renderer, Block container, string indent)
 	{
 		// Capture output and manually add indentation
@@ -679,16 +765,25 @@ public class LlmDefinitionItemRenderer : MarkdownObjectRenderer<LlmMarkdownRende
 {
 	protected override void Write(LlmMarkdownRenderer renderer, DefinitionItem obj)
 	{
-		var first = obj.Cast<LeafBlock>().First();
 		renderer.EnsureBlockSpacing();
+
+		// Render the term (first element) if it's a LeafBlock
+		var first = obj.FirstOrDefault();
+		var hasTermBlock = first is LeafBlock;
+
 		renderer.Write("<definition");
-		renderer.Write(" term=\"");
-		renderer.Write(GetPlainTextFromLeafBlock(renderer, first));
-		renderer.WriteLine("\">");
-		for (var index = 0; index < obj.Count; index++)
+		if (hasTermBlock)
 		{
-			if (index == 0)
-				continue;
+			renderer.Write(" term=\"");
+			renderer.Write(GetPlainTextFromLeafBlock(renderer, (LeafBlock)first!));
+			renderer.Write("\"");
+		}
+		renderer.WriteLine(">");
+
+		// Render the definitions (remaining elements, or all if no term block)
+		var startIndex = hasTermBlock ? 1 : 0;
+		for (var index = startIndex; index < obj.Count; index++)
+		{
 			var block = obj[index];
 			LlmRenderingHelpers.RenderBlockWithIndentation(renderer, block);
 		}

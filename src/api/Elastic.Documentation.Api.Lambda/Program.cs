@@ -9,10 +9,16 @@ using Elastic.Documentation.Api.Core.AskAi;
 using Elastic.Documentation.Api.Core.Search;
 using Elastic.Documentation.Api.Infrastructure;
 using Elastic.Documentation.Api.Infrastructure.OpenTelemetry;
+using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.ServiceDefaults;
 
 try
 {
 	var builder = WebApplication.CreateSlimBuilder(args);
+	_ = builder.AddDocumentationServiceDefaults(ref args, (s, p) =>
+	{
+		_ = s.AddSingleton(AssemblyConfiguration.Create(p));
+	});
 	// Add logging configuration for Lambda
 	_ = builder.AddDocsApiOpenTelemetry();
 
@@ -39,8 +45,13 @@ try
 	builder.Services.AddElasticDocsApiUsecases(environment);
 	var app = builder.Build();
 
+	if (app.Environment.IsDevelopment())
+		_ = app.UseDeveloperExceptionPage();
+
 	var v1 = app.MapGroup("/docs/_api/v1");
-	v1.MapElasticDocsApiEndpoints();
+
+	var mapOtlpEndpoints = !string.IsNullOrWhiteSpace(builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]);
+	v1.MapElasticDocsApiEndpoints(mapOtlpEndpoints);
 	Console.WriteLine("API endpoints mapped");
 
 	Console.WriteLine("Application startup completed successfully");
@@ -57,8 +68,9 @@ catch (Exception ex)
 [JsonSerializable(typeof(APIGatewayHttpApiV2ProxyRequest))]
 [JsonSerializable(typeof(APIGatewayHttpApiV2ProxyResponse))]
 [JsonSerializable(typeof(AskAiRequest))]
-[JsonSerializable(typeof(SearchRequest))]
-[JsonSerializable(typeof(SearchResponse))]
+[JsonSerializable(typeof(NavigationSearchApiRequest))]
+[JsonSerializable(typeof(NavigationSearchApiResponse))]
+[JsonSerializable(typeof(NavigationSearchAggregations))]
 internal sealed partial class LambdaJsonSerializerContext : JsonSerializerContext;
 
 // Make the Program class accessible for integration testing

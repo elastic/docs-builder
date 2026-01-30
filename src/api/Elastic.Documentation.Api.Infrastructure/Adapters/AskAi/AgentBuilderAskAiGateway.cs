@@ -8,12 +8,11 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Elastic.Documentation.Api.Core.AskAi;
-using Elastic.Documentation.Api.Infrastructure.Aws;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Api.Infrastructure.Adapters.AskAi;
 
-public class AgentBuilderAskAiGateway(HttpClient httpClient, IParameterProvider parameterProvider, ILogger<AgentBuilderAskAiGateway> logger) : IAskAiGateway<Stream>
+public class AgentBuilderAskAiGateway(HttpClient httpClient, KibanaOptions kibanaOptions, ILogger<AgentBuilderAskAiGateway> logger) : IAskAiGateway
 {
 	/// <summary>
 	/// Model name used by Agent Builder (from AgentId)
@@ -24,26 +23,23 @@ public class AgentBuilderAskAiGateway(HttpClient httpClient, IParameterProvider 
 	/// Provider name for tracing
 	/// </summary>
 	public const string ProviderName = "agent-builder";
-	public async Task<Stream> AskAi(AskAiRequest askAiRequest, Cancel ctx = default)
+	public async Task<AskAiGatewayResponse> AskAi(AskAiRequest askAiRequest, Cancel ctx = default)
 	{
+		// Agent Builder returns the conversation ID in the stream via conversation_id_set event
+		// We don't generate IDs - Agent Builder handles that in the stream
 		var agentBuilderPayload = new AgentBuilderPayload(
 			askAiRequest.Message,
 			"docs-agent",
-			askAiRequest.ConversationId);
+			askAiRequest.ConversationId?.ToString());
 		var requestBody = JsonSerializer.Serialize(agentBuilderPayload, AgentBuilderContext.Default.AgentBuilderPayload);
 
-		logger.LogInformation("Sending to Agent Builder with conversation_id: {ConversationId}", askAiRequest.ConversationId ?? "(null - first request)");
+		logger.LogInformation("Sending to Agent Builder with conversation_id: \"{ConversationId}\"", askAiRequest.ConversationId?.ToString() ?? "(null - first request)");
 
-		var kibanaUrl = await parameterProvider.GetParam("docs-kibana-url", false, ctx);
-		var kibanaApiKey = await parameterProvider.GetParam("docs-kibana-apikey", true, ctx);
-
-		var request = new HttpRequestMessage(HttpMethod.Post,
-			$"{kibanaUrl}/api/agent_builder/converse/async")
-		{
-			Content = new StringContent(requestBody, Encoding.UTF8, "application/json")
-		};
+		using var request = new HttpRequestMessage(HttpMethod.Post,
+			$"{kibanaOptions.Url}/api/agent_builder/converse/async");
+		request.Content = new StringContent(requestBody, Encoding.UTF8, "application/json");
 		request.Headers.Add("kbn-xsrf", "true");
-		request.Headers.Authorization = new AuthenticationHeaderValue("ApiKey", kibanaApiKey);
+		request.Headers.Authorization = new AuthenticationHeaderValue("ApiKey", kibanaOptions.ApiKey);
 
 		var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ctx);
 
@@ -61,7 +57,9 @@ public class AgentBuilderAskAiGateway(HttpClient httpClient, IParameterProvider 
 		logger.LogInformation("Response Content-Length: {ContentLength}", response.Content.Headers.ContentLength?.ToString(CultureInfo.InvariantCulture));
 
 		// Agent Builder already returns SSE format, just return the stream directly
-		return await response.Content.ReadAsStreamAsync(ctx);
+		// The conversation ID will be extracted from the stream by the transformer
+		var stream = await response.Content.ReadAsStreamAsync(ctx);
+		return new AskAiGatewayResponse(stream, GeneratedConversationId: null);
 	}
 }
 

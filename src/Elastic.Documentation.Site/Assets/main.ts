@@ -1,12 +1,14 @@
+import { initApiDocs } from './api-docs'
 import { initAppliesSwitch } from './applies-switch'
 import { initCopyButton } from './copybutton'
 import { initHighlight } from './hljs'
 import { initImageCarousel } from './image-carousel'
-import './markdown/applies-to'
+import { initIsolatedHeader, setInitialHeaderOffset } from './isolated-header'
 import { openDetailsWithAnchor } from './open-details-with-anchor'
 import { initNav } from './pages-nav'
 import { initSmoothScroll } from './smooth-scroll'
 import { initTabs } from './tabs'
+import { initializeOtel } from './telemetry/instrumentation'
 import { initTocNav } from './toc-nav'
 import 'htmx-ext-head-support'
 import 'htmx-ext-preload'
@@ -14,9 +16,34 @@ import * as katex from 'katex'
 import { $, $$ } from 'select-dom'
 import { UAParser } from 'ua-parser-js'
 
+// Injected at build time from MinVer
+const DOCS_BUILDER_VERSION =
+    process.env.DOCS_BUILDER_VERSION?.trim() ?? '0.0.0-dev'
+
+// Initialize OpenTelemetry FIRST, before any other code runs
+// This must happen early so all subsequent code is instrumented
+initializeOtel({
+    serviceName: 'docs-frontend',
+    serviceVersion: DOCS_BUILDER_VERSION,
+    baseUrl: '/docs',
+    debug: false,
+})
+
+// Set header offset immediately to prevent layout shift on reload
+// This runs before DOMContentLoaded to avoid visual jump
+setInitialHeaderOffset()
+
+// Dynamically import web components after telemetry is initialized
+// This ensures telemetry is available when the components execute
+// Parcel will automatically code-split this into a separate chunk
+import('./web-components/NavigationSearch/NavigationSearchComponent')
+import('./web-components/AskAi/AskAi')
+import('./web-components/VersionDropdown')
+import('./web-components/AppliesToPopover')
+import('./web-components/FullPageSearch/FullPageSearchComponent')
+import('./web-components/Diagnostics/DiagnosticsComponent')
+
 const { getOS } = new UAParser()
-const isLazyLoadNavigationEnabled =
-    $('meta[property="docs:feature:lazy-load-navigation"]')?.content === 'true'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type HtmxEvent = any
@@ -69,30 +96,25 @@ function initMath() {
     })
 }
 
-// Initialize math on initial page load
+// Initialize on initial page load
 document.addEventListener('DOMContentLoaded', function () {
     initMath()
+    initIsolatedHeader()
 })
 
-document.addEventListener('htmx:load', function (event: HtmxEvent) {
+document.addEventListener('htmx:load', function () {
     initTocNav()
     initHighlight()
     initCopyButton()
     initTabs()
     initAppliesSwitch()
     initMath()
+    initNav()
 
-    // We do this so that the navigation is not initialized twice
-    if (isLazyLoadNavigationEnabled) {
-        if (event.detail.elt.id === 'nav-tree') {
-            initNav()
-        }
-    } else {
-        initNav()
-    }
     initSmoothScroll()
     openDetailsWithAnchor()
     initImageCarousel()
+    initApiDocs()
 
     const urlParams = new URLSearchParams(window.location.search)
     const editParam = urlParams.has('edit')
@@ -113,6 +135,15 @@ document.addEventListener(
 )
 
 document.addEventListener('htmx:beforeRequest', function (event: HtmxEvent) {
+    const path = event.detail.requestConfig?.path
+
+    // Bypass htmx for /api URLs - they require full page navigation
+    if (path?.startsWith('/api')) {
+        event.preventDefault()
+        window.location.href = path
+        return
+    }
+
     if (
         event.detail.requestConfig.verb === 'get' &&
         event.detail.requestConfig.triggeringEvent
@@ -143,21 +174,6 @@ document.body.addEventListener(
         ) {
             window.scrollTo(0, 0)
         }
-    }
-)
-
-document.body.addEventListener(
-    'htmx:pushedIntoHistory',
-    function (event: HtmxEvent) {
-        const pagesNav = $('#pages-nav')
-        const currentNavItem = $$('.current', pagesNav)
-        currentNavItem.forEach((el) => {
-            el.classList.remove('current')
-        })
-        const navItems = $$('a[href="' + event.detail.path + '"]', pagesNav)
-        navItems.forEach((navItem) => {
-            navItem.classList.add('current')
-        })
     }
 )
 

@@ -5,9 +5,13 @@
 using System.IO.Abstractions;
 using System.IO.Compression;
 using System.Text;
+using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Markdown.Helpers;
+using Elastic.Markdown.Myst.Components;
+using Elastic.Markdown.Myst.Renderers.LlmMarkdown;
 using Markdig.Syntax;
 
 namespace Elastic.Markdown.Exporters;
@@ -17,6 +21,7 @@ namespace Elastic.Markdown.Exporters;
 /// </summary>
 public class LlmMarkdownExporter : IMarkdownExporter
 {
+
 	private const string LlmsTxtTemplate = """
 		# Elastic Documentation
 
@@ -48,7 +53,7 @@ public class LlmMarkdownExporter : IMarkdownExporter
 
 	public async ValueTask<bool> FinishExportAsync(IDirectoryInfo outputFolder, Cancel ctx)
 	{
-		var outputDirectory = Path.Combine(outputFolder.FullName, "docs");
+		var outputDirectory = outputFolder.FullName;
 		var zipPath = Path.Combine(outputDirectory, "llm.zip");
 
 		// Create the llms.txt file with boilerplate content
@@ -128,9 +133,10 @@ public class LlmMarkdownExporter : IMarkdownExporter
 	}
 
 
-	private string CreateLlmContentWithMetadata(MarkdownExportFileContext context, string llmMarkdown)
+	private static string CreateLlmContentWithMetadata(MarkdownExportFileContext context, string llmMarkdown)
 	{
 		var sourceFile = context.SourceFile;
+		var inferrer = context.InferenceService ?? new NoopDocumentInferrer();
 		var metadata = DocumentationObjectPoolProvider.StringBuilderPool.Get();
 
 		_ = metadata.AppendLine("---");
@@ -145,14 +151,36 @@ public class LlmMarkdownExporter : IMarkdownExporter
 			_ = metadata.AppendLine($"description: {generateDescription}");
 		}
 
-		_ = metadata.AppendLine($"url: {context.BuildContext.CanonicalBaseUrl?.Scheme}://{context.BuildContext.CanonicalBaseUrl?.Host}{context.NavigationItem.Url}");
+		var url = $"{context.BuildContext.CanonicalBaseUrl?.Scheme}://{context.BuildContext.CanonicalBaseUrl?.Host}{context.NavigationItem.Url}";
+		_ = metadata.AppendLine($"url: {url}");
 
-		var pageProducts = GetPageProducts(sourceFile.YamlFrontMatter?.Products);
+		// Use DocumentInferrerService to get merged products
+		var inference = inferrer.InferForMarkdown(
+			context.BuildContext.Git.RepositoryName,
+			sourceFile.YamlFrontMatter?.MappedPages,
+			context.DocumentationSet.Configuration.Products,
+			sourceFile.YamlFrontMatter?.Products,
+			sourceFile.YamlFrontMatter?.AppliesTo
+		);
+		var pageProducts = inference.RelatedProducts;
 		if (pageProducts.Count > 0)
 		{
 			_ = metadata.AppendLine("products:");
 			foreach (var item in pageProducts.Select(p => p.DisplayName).Order())
 				_ = metadata.AppendLine($"  - {item}");
+		}
+
+		// Add applies_to metadata from frontmatter
+		var appliesTo = sourceFile.YamlFrontMatter?.AppliesTo;
+		if (appliesTo is not null && appliesTo != ApplicableTo.All && appliesTo != ApplicableTo.Default)
+		{
+			var appliesItems = GetAppliesToItems(appliesTo, context.BuildContext);
+			if (appliesItems.Count > 0)
+			{
+				_ = metadata.AppendLine("applies_to:");
+				foreach (var item in appliesItems)
+					_ = metadata.AppendLine($"  - {item}");
+			}
 		}
 
 		_ = metadata.AppendLine("---");
@@ -163,11 +191,32 @@ public class LlmMarkdownExporter : IMarkdownExporter
 		return metadata.ToString();
 	}
 
-	private static List<Product> GetPageProducts(IReadOnlyCollection<Product>? frontMatterProducts) =>
-		frontMatterProducts?.ToList() ?? [];
+
+	private static List<string> GetAppliesToItems(ApplicableTo appliesTo, IDocumentationConfigurationContext buildContext)
+	{
+		var viewModel = new ApplicableToViewModel
+		{
+			AppliesTo = appliesTo,
+			Inline = true,
+			ShowTooltip = true,
+			VersionsConfig = buildContext.VersionsConfiguration
+		};
+
+		var items = viewModel.GetApplicabilityItems();
+		return items.Select(item =>
+		{
+			var displayName = item.ApplicabilityDefinition.DisplayName.Replace("&nbsp;", " ");
+			var popoverData = item.RenderData.PopoverData;
+			var availabilityText = popoverData?.AvailabilityItems is { Length: > 0 }
+				? string.Join(", ", popoverData.AvailabilityItems.Select(a => a.Text))
+				: "Available";
+			return $"{displayName}: {availabilityText}";
+		}).ToList();
+	}
 }
 
 public static class LlmMarkdownExporterExtensions
 {
-	public static void AddLlmMarkdownExport(this List<IMarkdownExporter> exporters) => exporters.Add(new LlmMarkdownExporter());
+	public static void AddLlmMarkdownExport(this List<IMarkdownExporter> exporters) =>
+		exporters.Add(new LlmMarkdownExporter());
 }

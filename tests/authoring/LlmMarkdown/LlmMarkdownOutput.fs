@@ -133,10 +133,196 @@ This is an inline {applies_to}`stack: preview 9.1` element.
 """
 
     [<Fact>]
-    let ``converts to plain text with optional comment`` () =
+    let ``converts to human readable format`` () =
+        markdown |> convertsToNewLLM """This is an inline <applies-to>Elastic Stack: Planned</applies-to> element.
+"""
+
+type ``applies_to role with ga future version`` () =
+    static let markdown = Setup.Document """
+This is an inline {applies_to}`stack: ga 9.0` element.
+"""
+
+    [<Fact>]
+    let ``shows planned text for unreleased version`` () =
+        markdown |> convertsToNewLLM """This is an inline <applies-to>Elastic Stack: Planned</applies-to> element.
+"""
+
+type ``applies_to role with ga released version`` () =
+    static let markdown = Setup.Document """
+This is an inline {applies_to}`stack: ga 7.3` element.
+"""
+
+    [<Fact>]
+    let ``shows ga text for released version`` () =
+        markdown |> convertsToNewLLM """This is an inline <applies-to>Elastic Stack: Generally available since 7.3</applies-to> element.
+"""
+
+type ``applies_to role in sentence with serverless`` () =
+    static let markdown = Setup.Document """
+This feature is available on {applies_to}`serverless: ga` for all users.
+"""
+
+    [<Fact>]
+    let ``shows serverless availability in sentence`` () =
+        markdown |> convertsToNewLLM """This feature is available on <applies-to>Elastic Cloud Serverless: Generally available</applies-to> for all users.
+"""
+
+type ``applies_to role in sentence with preview`` () =
+    static let markdown = Setup.Document """
+The new API {applies_to}`stack: preview 7.5` provides enhanced functionality.
+"""
+
+    [<Fact>]
+    let ``shows preview availability in sentence`` () =
+        markdown |> convertsToNewLLM """The new API <applies-to>Elastic Stack: Preview since 7.5</applies-to> provides enhanced functionality.
+"""
+
+type ``applies_to role in sentence with deprecated`` () =
+    static let markdown = Setup.Document """
+This method {applies_to}`stack: deprecated 7.0` should not be used in new code.
+"""
+
+    [<Fact>]
+    let ``shows deprecated availability in sentence`` () =
+        markdown |> convertsToNewLLM """This method <applies-to>Elastic Stack: Deprecated since 7.0</applies-to> should not be used in new code.
+"""
+
+type ``applies_to inline role formats`` () =
+    // Test cases: (input applies_to syntax, expected output text)
+    static let testCases = [
+        // GA with released version
+        ("stack: ga 7.3", "Elastic Stack: Generally available since 7.3")
+        ("stack: ga 8.0", "Elastic Stack: Generally available since 8.0")
+        ("stack: ga 8.0+", "Elastic Stack: Generally available since 8.0")
+        
+        // GA with future version (shows Planned)
+        ("stack: ga 9.0", "Elastic Stack: Planned")
+        
+        // Preview with released version
+        ("stack: preview 7.5", "Elastic Stack: Preview since 7.5")
+        
+        // Preview with exact version
+        ("stack: preview =7.0", "Elastic Stack: Preview in 7.0")
+        
+        // GA with range (both ends released)
+        ("stack: ga 7.0-8.0", "Elastic Stack: Generally available from 7.0 to 8.0")
+        
+        // Beta with range
+        ("stack: beta 7.0-7.5", "Elastic Stack: Beta from 7.0 to 7.5")
+        
+        // Preview with future version (shows Planned)
+        ("stack: preview 9.1", "Elastic Stack: Planned")
+        
+        // Beta with released version
+        ("stack: beta 7.0", "Elastic Stack: Beta since 7.0")
+        
+        // Deprecated with released version
+        ("stack: deprecated 7.0", "Elastic Stack: Deprecated since 7.0")
+        
+        // Serverless GA (unversioned product - no version shown)
+        ("serverless: ga", "Elastic Cloud Serverless: Generally available")
+        
+        // Elasticsearch preview (no version - uses base version)
+        ("elasticsearch: preview", "Serverless Elasticsearch projects: Preview in 8.0+")
+    ]
+    
+    [<Fact>]
+    let ``renders all lifecycle types correctly`` () =
+        for (input, expected) in testCases do
+            let markdown = Setup.Document $"Test {{applies_to}}`{input}` here."
+            let expectedOutput = $"Test <applies-to>{expected}</applies-to> here.\n"
+            markdown |> convertsToNewLLM expectedOutput
+
+type ``applies_to inline role with multiple lifecycles`` () =
+    static let markdown = Setup.Document """
+This feature {applies_to}`stack: beta 7.0-7.1, ga 7.2` has multiple lifecycles.
+"""
+
+    [<Fact>]
+    let ``renders multiple lifecycles with product name for each`` () =
+        markdown |> convertsToNewLLM """This feature <applies-to>Elastic Stack: Generally available since 7.2, Elastic Stack: Beta from 7.0 to 7.1</applies-to> has multiple lifecycles.
+"""
+
+type ``frontmatter applies_to in metadata`` () =
+    static let generator = Setup.Generate [
+        Index """---
+applies_to:
+  stack: ga 7.0
+---
+# Test Page
+
+This is test content.
+"""
+    ]
+
+    [<Fact>]
+    let ``includes applies_to in LLM metadata output`` () =
+        generator |> convertsToLlmWithMetadata """---
+title: Test Page
+applies_to:
+  - Elastic Stack: Generally available since 7.0
+---
+
+# Test Page
+This is test content.
+"""
+
+type ``applies_to code block directive`` () =
+    static let markdown = Setup.Document """
+```{applies_to}
+stack: ga 7.0
+serverless: ga
+```
+"""
+
+    [<Fact>]
+    let ``renders applies_to block with human-readable text`` () =
+        markdown |> convertsToNewLLM """<applies-to>
+  - Elastic Cloud Serverless: Generally available
+  - Elastic Stack: Generally available since 7.0
+</applies-to>
+"""
+
+type ``applies_to code block with multiple lifecycles`` () =
+    static let markdown = Setup.Document """
+```{applies_to}
+stack: beta 7.0-7.1, ga 7.2
+```
+"""
+
+    [<Fact>]
+    let ``renders multiple lifecycles with product name for each`` () =
+        markdown |> convertsToNewLLM """<applies-to>
+  - Elastic Stack: Generally available since 7.2
+  - Elastic Stack: Beta from 7.0 to 7.1
+</applies-to>
+"""
+
+type ``applies-switch directive`` () =
+    static let markdown = Setup.Document """
+::::{applies-switch}
+:::{applies-item} stack: ga 7.0
+Content for Elastic Stack users.
+:::
+:::{applies-item} serverless: ga
+Content for Serverless users.
+:::
+::::
+"""
+
+    [<Fact>]
+    let ``renders applies-switch with human-readable applies-to`` () =
         markdown |> convertsToNewLLM """
-        This is an inline `stack: preview 9.1` element.
-        """
+<applies-switch>
+  <applies-item title="stack: ga 7.0" applies-to="Elastic Stack: Generally available since 7.0">
+    Content for Elastic Stack users.
+  </applies-item>
+
+  <applies-item title="serverless: ga" applies-to="Elastic Cloud Serverless: Generally available">
+    Content for Serverless users.
+  </applies-item>
+</applies-switch>
+"""
 
 type ``admonition directive`` () =
     static let markdown = Setup.Document """
@@ -202,11 +388,11 @@ This is a warning admonition with applies_to information.
 This is a tip admonition with applies_to information.
 :::
 :::{important}
-:applies_to: stack: ga, serverless: ga
+:applies_to: { stack: ga, serverless: ga }
 This is an important admonition with applies_to information.
 :::
 :::{admonition} Custom Admonition
-:applies_to: stack: ga, serverless: ga, elasticsearch: preview
+:applies_to: { stack: ga, serverless: ga, elasticsearch: preview }
 This is a custom admonition with applies_to information.
 :::
 """
@@ -214,25 +400,41 @@ This is a custom admonition with applies_to information.
     [<Fact>]
     let ``renders correctly with applies_to information`` () =
         markdown |> convertsToNewLLM """
-<note applies-to="stack: ga">
+<note applies-to="Elastic Stack: Generally available in 8.0+">
   This is a note admonition with applies_to information.
 </note>
 
-<warning applies-to="serverless: ga">
+<warning applies-to="Elastic Cloud Serverless: Generally available">
   This is a warning admonition with applies_to information.
 </warning>
 
-<tip applies-to="elasticsearch: preview">
+<tip applies-to="Serverless Elasticsearch projects: Preview in 8.0+">
   This is a tip admonition with applies_to information.
 </tip>
 
-<important applies-to="stack: ga, serverless: ga">
+<important applies-to="Elastic Cloud Serverless: Generally available, Elastic Stack: Generally available in 8.0+">
   This is an important admonition with applies_to information.
 </important>
 
-<admonition title="Custom Admonition" applies-to="stack: ga, serverless: ga, elasticsearch: preview">
+<admonition title="Custom Admonition" applies-to="Serverless Elasticsearch projects: Preview in 8.0+, Elastic Stack: Generally available in 8.0+">
   This is a custom admonition with applies_to information.
 </admonition>
+"""
+
+type ``admonition directive with multiple lifecycles`` () =
+    static let markdown = Setup.Document """
+:::{note}
+:applies_to: stack: beta 7.0-7.1, ga 7.2
+This note has multiple lifecycle states.
+:::
+"""
+
+    [<Fact>]
+    let ``renders multiple lifecycles with product name for each`` () =
+        markdown |> convertsToNewLLM """
+<note applies-to="Elastic Stack: Generally available since 7.2, Elastic Stack: Beta from 7.0 to 7.1">
+  This note has multiple lifecycle states.
+</note>
 """
 
 type ``image directive`` () =
@@ -410,7 +612,7 @@ This is where the content for the dropdown goes.
 type ``dropdown with applies_to`` () =
     static let markdown = Setup.Document """
 :::{dropdown} Dropdown title
-:applies_to: stack: 9.1.0
+:applies_to: stack: ga 8.0
 This is where the content for the dropdown goes.
 :::
 """
@@ -418,7 +620,7 @@ This is where the content for the dropdown goes.
     [<Fact>]
     let ``rendered correctly`` () =
         markdown |> convertsToNewLLM """
-<dropdown title="Dropdown title" applies-to="stack: 9.1.0">
+<dropdown title="Dropdown title" applies-to="Elastic Stack: Generally available since 8.0">
   This is where the content for the dropdown goes.
 </dropdown>
 """
@@ -640,4 +842,180 @@ Another setting description.
 #### xpack.advanced.option
 
 An advanced option.
+"""
+
+type ``links in paragraphs`` () =
+    static let markdown = Setup.Document """
+This is a paragraph with a [link to docs](https://www.elastic.co/docs/deploy-manage/security) in it.
+"""
+
+    [<Fact>]
+    let ``renders links without duplication`` () =
+        markdown |> convertsToNewLLM """This is a paragraph with a [link to docs](https://www.elastic.co/docs/deploy-manage/security) in it.
+"""
+
+type ``links in tables`` () =
+    static let markdown = Setup.Document """
+| Feature | Availability |
+|---------|--------------|
+| [Security configurations](https://www.elastic.co/docs/deploy-manage/security) | Full control |
+| [Authentication realms](https://www.elastic.co/docs/deploy-manage/users-roles) | Available |
+"""
+
+    [<Fact>]
+    let ``renders links in table cells without duplication`` () =
+        markdown |> convertsToNewLLM """
+| Feature                                                                        | Availability |
+|--------------------------------------------------------------------------------|--------------|
+| [Security configurations](https://www.elastic.co/docs/deploy-manage/security)  | Full control |
+| [Authentication realms](https://www.elastic.co/docs/deploy-manage/users-roles) | Available    |
+"""
+
+type ``multiple links in table cells`` () =
+    static let markdown = Setup.Document """
+| Feature | Links |
+|---------|-------|
+| Security | [Config](https://example.com/config) and [Auth](https://example.com/auth) |
+"""
+
+    [<Fact>]
+    let ``renders multiple links in same cell without duplication`` () =
+        markdown |> convertsToNewLLM """
+| Feature  | Links                                                                     |
+|----------|---------------------------------------------------------------------------|
+| Security | [Config](https://example.com/config) and [Auth](https://example.com/auth) |
+"""
+
+type ``links with formatting in tables`` () =
+    static let markdown = Setup.Document """
+| Feature | Description |
+|---------|-------------|
+| [**Bold link**](https://example.com) | Description |
+| [*Italic link*](https://example.com/italic) | Another |
+"""
+
+    [<Fact>]
+    let ``renders formatted links in table cells correctly`` () =
+        markdown |> convertsToNewLLM """
+| Feature                                     | Description |
+|---------------------------------------------|-------------|
+| [**Bold link**](https://example.com)        | Description |
+| [*Italic link*](https://example.com/italic) | Another     |
+"""
+
+type ``bold and italic in tables`` () =
+    static let markdown = Setup.Document """
+| Format | Example |
+|--------|---------|
+| Bold | This is **bold text** here |
+| Italic | This is *italic text* here |
+| Both | This is **bold** and *italic* |
+"""
+
+    [<Fact>]
+    let ``renders bold and italic in table cells without duplication`` () =
+        markdown |> convertsToNewLLM """
+| Format | Example                       |
+|--------|-------------------------------|
+| Bold   | This is **bold text** here    |
+| Italic | This is *italic text* here    |
+| Both   | This is **bold** and *italic* |
+"""
+
+type ``code inline in tables`` () =
+    static let markdown = Setup.Document """
+| Command | Description |
+|---------|-------------|
+| `git status` | Shows status |
+| `git commit` | Commits changes |
+"""
+
+    [<Fact>]
+    let ``renders code inline in table cells correctly`` () =
+        markdown |> convertsToNewLLM """
+| Command      | Description     |
+|--------------|-----------------|
+| `git status` | Shows status    |
+| `git commit` | Commits changes |
+"""
+
+type ``images in tables`` () =
+    static let markdown = Setup.Document """
+| Icon | Name |
+|------|------|
+| ![logo](https://example.com/logo.png) | Logo |
+"""
+
+    [<Fact>]
+    let ``renders images in table cells without duplication`` () =
+        markdown |> convertsToNewLLM """
+| Icon                                  | Name |
+|---------------------------------------|------|
+| ![logo](https://example.com/logo.png) | Logo |
+"""
+
+type ``csv-include directive`` () =
+    static let generator = Setup.Generate [
+        Index """
+:::{csv-include} data/users.csv
+:::
+"""
+        File("data/users.csv", """Name,Age,City
+John Doe,30,New York
+Jane Smith,25,Los Angeles
+Bob Johnson,35,Chicago""")
+    ]
+
+    [<Fact>]
+    let ``renders csv as markdown table`` () =
+        generator |> convertsToNewLLM """
+| Name        | Age | City        |
+|-------------|-----|-------------|
+| John Doe    | 30  | New York    |
+| Jane Smith  | 25  | Los Angeles |
+| Bob Johnson | 35  | Chicago     |
+"""
+
+type ``csv-include directive with caption`` () =
+    static let generator = Setup.Generate [
+        Index """
+:::{csv-include} data/products.csv
+:caption: Product List
+:::
+"""
+        File("data/products.csv", """Product,Price,Stock
+Widget,9.99,100
+Gadget,19.99,50""")
+    ]
+
+    [<Fact>]
+    let ``renders csv with caption as bold title`` () =
+        generator |> convertsToNewLLM """
+**Product List**
+
+| Product | Price | Stock |
+|---------|-------|-------|
+| Widget  | 9.99  | 100   |
+| Gadget  | 19.99 | 50    |
+"""
+
+type ``csv-include directive with custom separator`` () =
+    static let generator = Setup.Generate [
+        Index """
+:::{csv-include} data/semicolon.csv
+:separator: ;
+:::
+"""
+        File("data/semicolon.csv", """Name;Value
+Item1;100
+Item2;200""")
+    ]
+
+    [<Fact>]
+    let ``parses csv with custom separator`` () =
+        generator |> convertsToNewLLM """
+| Name  | Value |
+|-------|-------|
+| Item1 | 100   |
+| Item2 | 200   |
 """

@@ -42,7 +42,7 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 	/// </summary>
 	public string AgentProvider => GetAgentProvider();
 
-	public Task<Stream> TransformAsync(Stream rawStream, string? conversationId, Activity? parentActivity, Cancel cancellationToken = default)
+	public Task<Stream> TransformAsync(Stream rawStream, Guid? generatedConversationId, Activity? parentActivity, Cancel cancellationToken = default)
 	{
 		// Configure pipe for low-latency streaming
 		var pipeOptions = new PipeOptions(
@@ -61,7 +61,7 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 		// Note: We intentionally don't await this task as we need to return the stream immediately
 		// The pipe handles synchronization and backpressure between producer and consumer
 		// Pass parent activity - it will be disposed when streaming completes
-		_ = ProcessPipeAsync(reader, pipe.Writer, conversationId, parentActivity, cancellationToken);
+		_ = ProcessPipeAsync(reader, pipe.Writer, generatedConversationId, parentActivity, cancellationToken);
 
 		// Return the read side of the pipe as a stream
 		return Task.FromResult(pipe.Reader.AsStream());
@@ -71,48 +71,42 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 	/// Process the pipe reader and write transformed events to the pipe writer.
 	/// This runs concurrently with the consumer reading from the output stream.
 	/// </summary>
-	private async Task ProcessPipeAsync(PipeReader reader, PipeWriter writer, string? conversationId, Activity? parentActivity, CancellationToken cancellationToken)
+	private async Task ProcessPipeAsync(PipeReader reader, PipeWriter writer, Guid? generatedConversationId, Activity? parentActivity, CancellationToken cancellationToken)
 	{
+		using var activityScope = parentActivity;
 		try
 		{
-			try
-			{
-				await ProcessStreamAsync(reader, writer, conversationId, parentActivity, cancellationToken);
-			}
-			catch (OperationCanceledException ex)
-			{
-				Logger.LogDebug(ex, "Stream processing was cancelled for transformer {TransformerType}", GetType().Name);
-			}
-			catch (Exception ex)
-			{
-				Logger.LogError(ex, "Error transforming stream for transformer {TransformerType}. Stream processing will be terminated.", GetType().Name);
-				_ = parentActivity?.SetTag("error.type", ex.GetType().Name);
-				try
-				{
-					await writer.CompleteAsync(ex);
-					await reader.CompleteAsync(ex);
-				}
-				catch (Exception completeEx)
-				{
-					Logger.LogError(completeEx, "Error completing pipe after transformation error for transformer {TransformerType}", GetType().Name);
-				}
-				return;
-			}
-
-			// Normal completion - ensure cleanup happens
-			try
-			{
-				await writer.CompleteAsync();
-				await reader.CompleteAsync();
-			}
-			catch (Exception ex)
-			{
-				Logger.LogError(ex, "Error completing pipe after successful transformation");
-			}
+			await ProcessStreamAsync(reader, writer, generatedConversationId, parentActivity, cancellationToken);
 		}
-		finally
+		catch (OperationCanceledException ex)
 		{
-			parentActivity?.Dispose();
+			Logger.LogDebug(ex, "Stream processing was cancelled for transformer {TransformerType}", GetType().Name);
+		}
+		catch (Exception ex)
+		{
+			Logger.LogError(ex, "Error transforming stream for transformer {TransformerType}. Stream processing will be terminated.", GetType().Name);
+			_ = parentActivity?.SetTag("error.type", ex.GetType().Name);
+			try
+			{
+				// Complete writer first, then reader - but don't try to complete reader
+				// if the exception came from reading (would cause "read operation pending" error)
+				await writer.CompleteAsync(ex);
+			}
+			catch (Exception completeEx)
+			{
+				Logger.LogError(completeEx, "Error completing pipe after transformation error for transformer {TransformerType}", GetType().Name);
+			}
+			return;
+		}
+
+		// Normal completion - ensure cleanup happens
+		try
+		{
+			await writer.CompleteAsync();
+		}
+		catch (Exception ex)
+		{
+			Logger.LogError(ex, "Error completing pipe after successful transformation");
 		}
 	}
 
@@ -122,7 +116,7 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 	/// Default implementation parses SSE events and JSON, then calls TransformJsonEvent.
 	/// </summary>
 	/// <returns>Stream processing result with metrics and captured output</returns>
-	protected virtual async Task ProcessStreamAsync(PipeReader reader, PipeWriter writer, string? conversationId, Activity? parentActivity, CancellationToken cancellationToken)
+	protected virtual async Task ProcessStreamAsync(PipeReader reader, PipeWriter writer, Guid? generatedConversationId, Activity? parentActivity, CancellationToken cancellationToken)
 	{
 		using var activity = StreamTransformerActivitySource.StartActivity("process ask_ai stream", ActivityKind.Internal);
 

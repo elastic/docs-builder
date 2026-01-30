@@ -37,7 +37,7 @@ jobs:
       - uses: actions/checkout@v6
           
       - name: Download bootstrap binary
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: api-lambda-binary # Defined in build-api-lambda.yml
 
@@ -45,7 +45,7 @@ jobs:
         run: |
           zip -j "${ZIP_FILE}" ./bootstrap
 
-      - uses: aws-actions/configure-aws-credentials@00943011d9042930efac3dcd3a170e4273319bc8 # v5.1.0
+      - uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708 # v5.1.1
         with:
           role-to-assume: arn:aws:iam::197730964718:role/elastic-docs-v3-api-deployer-${{ inputs.environment }}
           aws-region: us-east-1

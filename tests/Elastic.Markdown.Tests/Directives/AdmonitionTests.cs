@@ -186,7 +186,9 @@ A regular paragraph.
 	{
 		var html = Html;
 		html.Should().Contain("Time: 10:30 AM");
+		// URL with port is NOT autolinked (excluded by autolink rules)
 		html.Should().Contain("URL: https://example.com:8080/path");
+		html.Should().NotContain("""<a href="https://example.com:8080/path""");
 		html.Should().Contain("Configuration: key:value pairs");
 		html.Should().Contain("function test() { return &quot;hello:world&quot;; }");
 	}
@@ -267,7 +269,7 @@ A regular paragraph.
 		var html = Html;
 		html.Should().Contain("applies applies-admonition");
 		html.Should().Contain("admonition-title__separator");
-		html.Should().Contain("applicable-info");
+		html.Should().Contain("applies-to-popover");
 	}
 }
 
@@ -299,7 +301,7 @@ A regular paragraph.
 		var html = Html;
 		html.Should().Contain("applies applies-admonition");
 		html.Should().Contain("admonition-title__separator");
-		html.Should().Contain("applicable-info");
+		html.Should().Contain("applies-to-popover");
 	}
 }
 
@@ -331,7 +333,7 @@ A regular paragraph.
 		var html = Html;
 		html.Should().Contain("applies applies-admonition");
 		html.Should().Contain("admonition-title__separator");
-		html.Should().Contain("applicable-info");
+		html.Should().Contain("applies-to-popover");
 	}
 }
 
@@ -363,7 +365,7 @@ A regular paragraph.
 		var html = Html;
 		html.Should().Contain("applies applies-admonition");
 		html.Should().Contain("admonition-title__separator");
-		html.Should().Contain("applicable-info");
+		html.Should().Contain("applies-to-popover");
 	}
 }
 
@@ -395,6 +397,6 @@ A regular paragraph.
 		var html = Html;
 		html.Should().Contain("applies applies-admonition");
 		html.Should().Contain("admonition-title__separator");
-		html.Should().Contain("applicable-info");
+		html.Should().Contain("applies-to-popover");
 	}
 }

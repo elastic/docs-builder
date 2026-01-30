@@ -7,6 +7,7 @@ cross_links:
   - docs-content
 exclude:
   - '_*.md'
+  - '!_search.md'
 subs:
   a-global-variable: "This was defined in docset.yml"
   stack: Elastic Stack
@@ -28,6 +29,7 @@ api:
 toc:
   - file: index.md
   - hidden: 404.md
+  - hidden: _search.md
   - hidden: developer-notes.md
   - hidden: contribute/cumulative-docs/index.md
   - hidden: contribute/cumulative-docs/guidelines.md
@@ -42,6 +44,7 @@ toc:
       - file: branching-strategy.md
       - file: add-repo.md
       - file: release-new-version.md
+      - file: changelog.md
       - hidden: locally.md
       - hidden: on-the-web.md
   - folder: building-blocks
@@ -87,6 +90,8 @@ toc:
       - file: applies.md
       - file: applies-switch.md
       - file: automated_settings.md
+      - file: buttons.md
+      - file: changelog.md
       - file: code.md
       - file: comments.md
       - file: conditionals.md
@@ -97,6 +102,7 @@ toc:
       - file: definition-lists.md
       - file: example_blocks.md
       - file: file_inclusion.md
+      - file: footnotes.md
       - file: frontmatter.md
       - file: icons.md
       - file: images.md
@@ -151,6 +157,16 @@ toc:
           - file: inbound-links-validate.md
           - file: inbound-links-validate-all.md
           - file: inbound-links-validate-link-reference.md
+      - folder: release
+        children:
+          - file: index.md
+          - file: changelog-add.md
+          - file: changelog-bundle.md
+          - file: changelog-bundle-amend.md
+          - file: changelog-render.md
+  - folder: mcp
+    children:
+      - file: index.md
   - folder: migration
     children:
       - file: index.md

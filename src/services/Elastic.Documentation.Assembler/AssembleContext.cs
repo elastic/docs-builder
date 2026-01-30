@@ -7,7 +7,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
-using Elastic.Documentation.Configuration.Synonyms;
+using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 
@@ -32,7 +32,7 @@ public class AssembleContext : IDocumentationConfigurationContext
 
 	public ProductsConfiguration ProductsConfiguration { get; }
 	public LegacyUrlMappingConfiguration LegacyUrlMappings { get; }
-	public SynonymsConfiguration SynonymsConfiguration { get; }
+	public SearchConfiguration SearchConfiguration { get; }
 
 	// Always use the production URL. In case a page is leaked to a search engine, it should point to the production site.
 	/// <inheritdoc />
@@ -41,6 +41,12 @@ public class AssembleContext : IDocumentationConfigurationContext
 	public IDirectoryInfo CheckoutDirectory { get; }
 
 	public IDirectoryInfo OutputDirectory { get; }
+
+	/// <summary>
+	/// The output directory with the path prefix applied.
+	/// This is where assembled content (sitemap.xml, llms.txt, link-index.snapshot.json, etc.) should be written.
+	/// </summary>
+	public IDirectoryInfo OutputWithPathPrefixDirectory { get; }
 
 	/// <inheritdoc />
 	public IFileInfo ConfigurationPath { get; }
@@ -69,7 +75,7 @@ public class AssembleContext : IDocumentationConfigurationContext
 		ConfigurationFileProvider = configurationContext.ConfigurationFileProvider;
 		ConfigurationPath = ConfigurationFileProvider.AssemblerFile;
 		VersionsConfiguration = configurationContext.VersionsConfiguration;
-		SynonymsConfiguration = configurationContext.SynonymsConfiguration;
+		SearchConfiguration = configurationContext.SearchConfiguration;
 		Endpoints = configurationContext.Endpoints;
 		ProductsConfiguration = configurationContext.ProductsConfiguration;
 		LegacyUrlMappings = configurationContext.LegacyUrlMappings;
@@ -83,5 +89,11 @@ public class AssembleContext : IDocumentationConfigurationContext
 		CheckoutDirectory = ReadFileSystem.DirectoryInfo.New(checkoutDirectory ?? defaultCheckoutDirectory);
 		var defaultOutputDirectory = Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly");
 		OutputDirectory = ReadFileSystem.DirectoryInfo.New(output ?? defaultOutputDirectory);
+
+		// Calculate the output directory with path prefix once
+		var pathPrefix = Environment.PathPrefix;
+		OutputWithPathPrefixDirectory = string.IsNullOrEmpty(pathPrefix)
+			? OutputDirectory
+			: WriteFileSystem.DirectoryInfo.New(WriteFileSystem.Path.Combine(OutputDirectory.FullName, pathPrefix));
 	}
 }

@@ -10,7 +10,7 @@ using Elastic.Documentation.Api.Infrastructure.Gcp;
 
 namespace Elastic.Documentation.Api.Infrastructure.Adapters.AskAi;
 
-public class LlmGatewayAskAiGateway(HttpClient httpClient, GcpIdTokenProvider tokenProvider, LlmGatewayOptions options) : IAskAiGateway<Stream>
+public class LlmGatewayAskAiGateway(HttpClient httpClient, IGcpIdTokenProvider tokenProvider, LlmGatewayOptions options) : IAskAiGateway
 {
 	/// <summary>
 	/// Model name used by LLM Gateway (from PlatformContext.UseCase)
@@ -21,14 +21,16 @@ public class LlmGatewayAskAiGateway(HttpClient httpClient, GcpIdTokenProvider to
 	/// Provider name for tracing
 	/// </summary>
 	public const string ProviderName = "llm-gateway";
-	public async Task<Stream> AskAi(AskAiRequest askAiRequest, Cancel ctx = default)
+	public async Task<AskAiGatewayResponse> AskAi(AskAiRequest askAiRequest, Cancel ctx = default)
 	{
-		var llmGatewayRequest = LlmGatewayRequest.CreateFromRequest(askAiRequest);
+		// LLM Gateway requires a ThreadId - generate one if not provided
+		var generatedId = askAiRequest.ConversationId is null ? Guid.NewGuid() : (Guid?)null;
+		var threadId = askAiRequest.ConversationId ?? generatedId!.Value;
+
+		var llmGatewayRequest = LlmGatewayRequest.CreateFromRequest(askAiRequest, threadId);
 		var requestBody = JsonSerializer.Serialize(llmGatewayRequest, LlmGatewayContext.Default.LlmGatewayRequest);
-		var request = new HttpRequestMessage(HttpMethod.Post, options.FunctionUrl)
-		{
-			Content = new StringContent(requestBody, Encoding.UTF8, "application/json")
-		};
+		using var request = new HttpRequestMessage(HttpMethod.Post, options.FunctionUrl);
+		request.Content = new StringContent(requestBody, Encoding.UTF8, "application/json");
 		var authToken = await tokenProvider.GenerateIdTokenAsync(options.ServiceAccount, options.TargetAudience, ctx);
 		request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken);
 		request.Headers.Add("User-Agent", "elastic-docs-proxy/1.0");
@@ -48,7 +50,8 @@ public class LlmGatewayAskAiGateway(HttpClient httpClient, GcpIdTokenProvider to
 
 		// Return the response stream directly - this enables true streaming
 		// The stream will be consumed as data arrives from the LLM Gateway
-		return await response.Content.ReadAsStreamAsync(ctx);
+		var stream = await response.Content.ReadAsStreamAsync(ctx);
+		return new AskAiGatewayResponse(stream, generatedId);
 	}
 }
 
@@ -59,16 +62,16 @@ public record LlmGatewayRequest(
 	string ThreadId
 )
 {
-	public static LlmGatewayRequest CreateFromRequest(AskAiRequest request) =>
+	public static LlmGatewayRequest CreateFromRequest(AskAiRequest request, Guid conversationId) =>
 		new(
 			UserContext: new UserContext("elastic-docs-v3@invalid"),
 			PlatformContext: new PlatformContext("docs_site", "docs_assistant", []),
 			Input:
 			[
-				new ChatInput("user", AskAiRequest.SystemPrompt),
+				// new ChatInput("user", AskAiRequest.SystemPrompt),
 				new ChatInput("user", request.Message)
 			],
-			ThreadId: request.ConversationId ?? Guid.NewGuid().ToString()
+			ThreadId: conversationId.ToString()
 		);
 }
 

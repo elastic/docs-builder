@@ -7,9 +7,11 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\api\Elastic.Documentation.Api.Infrastructure\Elastic.Documentation.Api.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\api\Elastic.Documentation.Api.Core\Elastic.Documentation.Api.Core.csproj" />
+    <ProjectReference Include="..\..\src\services\Elastic.Documentation.Search\Elastic.Documentation.Search.csproj" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="FakeItEasy" />
     <PackageReference Include="Microsoft.AspNetCore.TestHost" />
     <PackageReference Include="OpenTelemetry" />
     <PackageReference Include="OpenTelemetry.Exporter.InMemory" />

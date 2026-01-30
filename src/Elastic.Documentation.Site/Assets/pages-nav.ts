@@ -1,3 +1,4 @@
+import { throttle } from 'lodash'
 import { $, $$ } from 'select-dom'
 
 function expandAllParents(navItem: HTMLElement) {
@@ -11,55 +12,74 @@ function expandAllParents(navItem: HTMLElement) {
     }
 }
 
-function scrollCurrentNaviItemIntoView(nav: HTMLElement) {
+function scrollCurrentNaviItemIntoViewImpl(nav: HTMLElement) {
     const currentNavItem = $('.current', nav)
 
-    if (currentNavItem) {
-        expandAllParents(currentNavItem)
+    if (!currentNavItem) {
+        return
     }
 
-    if (currentNavItem && !isElementInViewport(nav, currentNavItem)) {
-        const navRect = nav.getBoundingClientRect()
-        const currentNavItemRect = currentNavItem.getBoundingClientRect()
-        // Calculate the offset needed to scroll the current navigation item into view.
-        // The offset is determined by the difference between the top of the current navigation item and the top of the navigation container,
-        // adjusted by one-third of the height of the navigation container and half the height of the current navigation item.
-        const offset =
-            currentNavItemRect.top -
-            navRect.top -
-            navRect.height / 3 +
-            currentNavItemRect.height / 2
+    expandAllParents(currentNavItem)
 
-        // Scroll the navigation container by the calculated offset to bring the current navigation item into view.
-        nav.scrollTop = nav.scrollTop + offset
+    const navRect = nav.getBoundingClientRect()
+    const currentNavItemRect = currentNavItem.getBoundingClientRect()
+
+    // Get the sticky element's height to account for content hidden under it
+    // The sticky element contains the search and dropdown, staying fixed at top when scrolling
+    const stickyElement = $('.sticky', nav)
+    const stickyHeight = stickyElement?.getBoundingClientRect().height ?? 0
+
+    // The effective visible top of the nav is below the sticky element
+    const effectiveNavTop = navRect.top + stickyHeight
+
+    // Check if the item is already fully visible in the nav container's viewport
+    // Account for sticky element that may be covering the top portion
+    if (
+        currentNavItemRect.top >= effectiveNavTop &&
+        currentNavItemRect.bottom <= navRect.bottom
+    ) {
+        return
     }
+
+    // Calculate target position: center of nav container (accounting for sticky area)
+    const visibleNavHeight = navRect.height - stickyHeight
+    const targetPosition =
+        stickyHeight + visibleNavHeight / 2 - currentNavItemRect.height / 2
+
+    // Calculate how much we need to scroll to position the item at the target
+    const currentPositionInNav = currentNavItemRect.top - navRect.top
+    const scrollOffset = currentPositionInNav - targetPosition
+
+    // Apply the scroll, clamping to valid scroll range
+    const newScrollTop = Math.max(0, nav.scrollTop + scrollOffset)
+
+    nav.scrollTop = newScrollTop
 }
 
-function isElementInViewport(parent: HTMLElement, child: HTMLElement): boolean {
-    const childRect = child.getBoundingClientRect()
-    const parentRect = parent.getBoundingClientRect()
-    return (
-        childRect.top >= parentRect.top &&
-        childRect.left >= parentRect.left &&
-        childRect.bottom <= parentRect.bottom &&
-        childRect.right <= parentRect.right
-    )
-}
+// Throttle with leading: false, trailing: true - only executes the last call within the window
+// This ensures that when multiple initNav() calls happen in quick succession (e.g., from multiple
+// htmx:load events), only the final call executes after the delay, ensuring the nav tree is fully ready
+export const scrollCurrentNaviItemIntoView = throttle(
+    scrollCurrentNaviItemIntoViewImpl,
+    100,
+    { leading: false, trailing: true }
+)
 
-function setDropdown(dropdown: HTMLElement) {
-    if (dropdown) {
-        const anchors = $$('a', dropdown)
-        anchors.forEach((a) => {
-            a.addEventListener('mousedown', (e) => {
-                e.preventDefault()
-            })
-            a.addEventListener('mouseup', () => {
-                if (document.activeElement instanceof HTMLElement) {
-                    document.activeElement.blur()
-                }
-            })
-        })
-    }
+/**
+ * Prevents focus-based dropdowns from closing before link navigation completes.
+ * Without this, clicking a link inside the dropdown would transfer focus away,
+ * causing the dropdown to close via CSS :focus-within before navigation happens.
+ */
+function preventFocusLossOnLinkClick(anchor: HTMLAnchorElement) {
+    anchor.addEventListener('mousedown', (e) => {
+        e.preventDefault()
+    })
+    // Close dropdown after click completes
+    anchor.addEventListener('mouseup', () => {
+        if (document.activeElement instanceof HTMLElement) {
+            document.activeElement.blur()
+        }
+    })
 }
 
 export function initNav() {
@@ -68,14 +88,17 @@ export function initNav() {
         return
     }
 
-    const pagesDropdown = $('#pages-dropdown')
-    if (pagesDropdown) {
-        setDropdown(pagesDropdown)
+    const dropdownActiveAnchor = $('#pages-dropdown a.pages-dropdown_active')
+    if (dropdownActiveAnchor) {
+        preventFocusLossOnLinkClick(dropdownActiveAnchor)
     }
-    const pageVersionDropdown = $('#page-version-dropdown')
-    if (pageVersionDropdown) {
-        setDropdown(pageVersionDropdown)
-    }
+
+    // Remove current class from all nav items before marking new ones
+    const currentNavItems = $$('.current', pagesNav)
+    currentNavItems.forEach((el) => {
+        el.classList.remove('current')
+    })
+
     const navItems = $$(
         'a[href="' +
             window.location.pathname +

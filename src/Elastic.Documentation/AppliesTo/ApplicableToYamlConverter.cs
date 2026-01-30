@@ -228,7 +228,8 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 			{ "edot_php", a => productAvailability.EdotPhp = a },
 			{ "edot_python", a => productAvailability.EdotPython = a },
 			{ "edot_cf_aws", a => productAvailability.EdotCfAws = a },
-			{ "edot_cf_azure", a => productAvailability.EdotCfAzure = a }
+			{ "edot_cf_azure", a => productAvailability.EdotCfAzure = a },
+			{ "edot_cf_gcp", a => productAvailability.EdotCfGcp = a }
 		};
 
 		foreach (var (key, action) in mapping)
@@ -255,9 +256,108 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		if (target is null || (target is string s && string.IsNullOrWhiteSpace(s)))
 			availability = AppliesCollection.GenerallyAvailable;
 		else if (target is string stackString)
+		{
 			availability = AppliesCollection.TryParse(stackString, diagnostics, out var a) ? a : null;
+
+			if (availability is not null)
+				ValidateApplicabilityCollection(key, availability, diagnostics);
+		}
 		return availability is not null;
 	}
+
+	private static void ValidateApplicabilityCollection(string key, AppliesCollection collection, List<(Severity, string)> diagnostics)
+	{
+		var items = collection.ToList();
+
+		// Rule: Only one version declaration per lifecycle
+		var lifecycleGroups = items.GroupBy(a => a.Lifecycle).ToList();
+		var lifecyclesWithMultipleVersions = lifecycleGroups
+			.Where(group => group.Count(a => a.Version is not null && a.Version != AllVersionsSpec.Instance) > 1)
+			.Select(g => g.Key)
+			.ToList();
+
+		if (lifecyclesWithMultipleVersions.Count > 0)
+		{
+			var lifecycleNames = string.Join(", ", lifecyclesWithMultipleVersions);
+			diagnostics.Add((Severity.Hint, // Temporary downgrade to Hint until the currently available docs are adjusted
+				$"Key '{key}': Multiple version declarations found for lifecycle(s): {lifecycleNames}. Only one version per lifecycle is allowed."));
+		}
+
+		// Rule: Only one item per key can use greater-than syntax
+		var greaterThanItems = items.Where(a =>
+			a.Version is { Kind: VersionSpecKind.GreaterThanOrEqual } &&
+			a.Version != AllVersionsSpec.Instance).ToList();
+
+		if (greaterThanItems.Count > 1)
+		{
+			diagnostics.Add((Severity.Hint, // Temporary downgrade to Hint until the currently available docs are adjusted
+				$"Key '{key}': Multiple items use greater-than-or-equal syntax. Only one item per key can use this syntax."));
+		}
+
+		// Rule: In a range, the first version must be less than or equal the last version
+		var invalidRanges = items
+			.Where(a => a.Version is { Kind: VersionSpecKind.Range } && a.Version!.Min.CompareTo(a.Version.Max!) > 0)
+			.ToList();
+
+		if (invalidRanges.Count > 0)
+		{
+			var rangeDescriptions = invalidRanges.Select(item =>
+				$"{item.Lifecycle} ({item.Version!.Min.Major}.{item.Version.Min.Minor}-{item.Version.Max!.Major}.{item.Version.Max.Minor})");
+			diagnostics.Add((Severity.Hint, // Temporary downgrade to Hint until the currently available docs are adjusted
+				$"Key '{key}': Invalid range(s) where first version is greater than last version: {string.Join(", ", rangeDescriptions)}."));
+		}
+
+		// Rule: No overlapping version ranges
+		var versionedItems = items
+			.Where(a => a.Version is not null && a.Version != AllVersionsSpec.Instance)
+			.ToList();
+
+		var hasOverlaps = false;
+		for (var i = 0; i < versionedItems.Count && !hasOverlaps; i++)
+		{
+			for (var j = i + 1; j < versionedItems.Count && !hasOverlaps; j++)
+			{
+				if (CheckVersionOverlap(versionedItems[i].Version!, versionedItems[j].Version!))
+					hasOverlaps = true;
+			}
+		}
+
+		if (hasOverlaps)
+		{
+			diagnostics.Add((Severity.Hint, // Temporary downgrade to Hint until the currently available docs are adjusted
+				$"Key '{key}': Overlapping version ranges detected. Ensure version ranges do not overlap within the same key."));
+		}
+	}
+
+	private static bool CheckVersionOverlap(VersionSpec v1, VersionSpec v2)
+	{
+		// Allow overlap in case there is a version bump
+		if (v1.Kind == VersionSpecKind.Range && v2.Kind == VersionSpecKind.GreaterThanOrEqual &&
+			v1.Max is not null && v1.Max.CompareTo(v2.Min) <= 0)
+			return false;
+		if (v2.Kind == VersionSpecKind.Range && v1.Kind == VersionSpecKind.GreaterThanOrEqual &&
+			v2.Max is not null && v2.Max.CompareTo(v1.Min) <= 0)
+			return false;
+
+		// Get the effective ranges for each version spec
+		// For GreaterThanOrEqual: [min, infinity)
+		// For Range: [min, max]
+		// For Exact: [exact, exact]
+
+		var (v1Min, v1Max) = GetEffectiveRange(v1);
+		var (v2Min, v2Max) = GetEffectiveRange(v2);
+
+		return v1Min.CompareTo(v2Max ?? AllVersions.Instance) <= 0 &&
+			   v2Min.CompareTo(v1Max ?? AllVersions.Instance) <= 0;
+	}
+
+	private static (SemVersion min, SemVersion? max) GetEffectiveRange(VersionSpec spec) => spec.Kind switch
+	{
+		VersionSpecKind.Exact => (spec.Min, spec.Min),
+		VersionSpecKind.Range => (spec.Min, spec.Max),
+		VersionSpecKind.GreaterThanOrEqual => (spec.Min, null),
+		_ => throw new ArgumentOutOfRangeException(nameof(spec), spec.Kind, "Unknown VersionSpecKind")
+	};
 
 	public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer) =>
 		serializer.Invoke(value, type);

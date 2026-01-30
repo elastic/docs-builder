@@ -41,7 +41,7 @@ public class ProductApplicabilityToStringTests
 		}
 
 		// Verify we have the expected number of properties
-		properties.Should().HaveCount(22, "ProductApplicability should have exactly 22 product properties");
+		properties.Should().HaveCount(23, "ProductApplicability should have exactly 23 product properties");
 	}
 
 	[Fact]
@@ -50,7 +50,7 @@ public class ProductApplicabilityToStringTests
 		var productApplicability = new ProductApplicability
 		{
 			ApmAgentDotnet = AppliesCollection.GenerallyAvailable,
-			Ecctl = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = new SemVersion(1, 0, 0) }])
+			Ecctl = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = VersionSpec.TryParse("1.0.0", out var v) ? v : null }])
 		};
 
 		var result = productApplicability.ToString();

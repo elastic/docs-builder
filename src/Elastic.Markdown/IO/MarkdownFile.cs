@@ -47,7 +47,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		//todo refactor mutability of MarkdownFile as a whole
 		ScopeDirectory = build.Configuration.ScopeDirectory;
 		Products = build.ProductsConfiguration;
-
+		Title = RelativePath;
 	}
 
 	public ProductsConfiguration Products { get; }
@@ -61,12 +61,12 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 	public YamlFrontMatter? YamlFrontMatter { get; private set; }
 	public string? TitleRaw { get; protected set; }
 
-	public string? Title
+	public string Title
 	{
 		get;
 		protected set
 		{
-			field = value?.StripMarkdown();
+			field = value.StripMarkdown();
 			TitleRaw = value;
 		}
 	}
@@ -148,9 +148,9 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 
 	protected void ReadDocumentInstructions(MarkdownDocument document, Func<string, DocumentationFile?> documentationFileLookup)
 	{
-		Title ??= document
+		Title = document
 			.FirstOrDefault(block => block is HeadingBlock { Level: 1 })?
-			.GetData("header") as string;
+			.GetData("header") as string ?? Title;
 
 		var yamlFrontMatter = ProcessYamlFrontMatter(document);
 		YamlFrontMatter = yamlFrontMatter;
@@ -165,11 +165,8 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 				NavigationTitle = replacement;
 		}
 
-		if (string.IsNullOrEmpty(Title))
-		{
-			Title = RelativePath;
+		if (Title == RelativePath)
 			Collector.EmitWarning(FilePath, "Document has no title, using file name as title.");
-		}
 		else if (Title.AsSpan().ReplaceSubstitutions(subs, Collector, out var replacement))
 			Title = replacement;
 
@@ -214,8 +211,27 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 			.ToArray();
 
 		var includedTocs = includes
-			.SelectMany(i => i!.Anchors!.TableOfContentItems
-				.Select(item => new { TocItem = item, i.Block.Line }))
+			.SelectMany(i =>
+			{
+				// Calculate the heading level context at the include block position
+				var precedingLevel = GetPrecedingHeadingLevel(i!.Block);
+
+				return i.Anchors!.TableOfContentItems
+					.Select(item =>
+					{
+						// Only adjust stepper steps, not regular headings
+						// Stepper steps default to level 2 when parsed in isolation (no preceding heading in snippet),
+						// but should be relative to the preceding heading in the parent document
+						var adjustedItem = item;
+						if (item.IsStepperStep && precedingLevel.HasValue && item.Level == 2)
+						{
+							// The step was parsed without context (defaulted to h2)
+							// Adjust it to be one level deeper than the preceding heading
+							adjustedItem = item with { Level = Math.Min(precedingLevel.Value + 1, 6) };
+						}
+						return new { TocItem = adjustedItem, i.Block.Line };
+					});
+			})
 			.ToArray();
 
 		// Collect headings from standard markdown
@@ -258,7 +274,8 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 					{
 						Heading = processedTitle,
 						Slug = step.Anchor,
-						Level = step.HeadingLevel // Use dynamic heading level
+						Level = step.HeadingLevel, // Use dynamic heading level
+						IsStepperStep = true
 					},
 					step.Line
 				};
@@ -277,12 +294,14 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 			.ToList();
 
 		var includedAnchors = includes.SelectMany(i => i!.Anchors!.Anchors).ToArray();
+		var directives = document.Descendants<DirectiveBlock>().ToArray();
 		anchors =
 		[
-			..document.Descendants<DirectiveBlock>()
+			..directives
 				.Select(b => b.CrossReferenceName)
 				.Where(l => !string.IsNullOrWhiteSpace(l))
 				.Select(s => s.Slugify())
+				.Concat(directives.SelectMany(b => b.GeneratedAnchors))
 				.Concat(document.Descendants<InlineAnchor>().Select(a => a.Anchor))
 				.Concat(toc.Select(t => t.Slug))
 				.Where(anchor => !string.IsNullOrEmpty(anchor))
@@ -301,6 +320,38 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 			parent = parent.Parent;
 		}
 		return false;
+	}
+
+	/// <summary>
+	/// Finds the heading level that precedes the given block in the document.
+	/// Used to provide context for included snippets so stepper heading levels
+	/// can be adjusted relative to the parent document's structure.
+	/// </summary>
+	private static int? GetPrecedingHeadingLevel(MarkdownObject block)
+	{
+		// Find the document root
+		var current = block;
+		while (current is ContainerBlock container && container.Parent != null)
+			current = container.Parent;
+
+		if (current is not ContainerBlock root)
+			return null;
+
+		// Find all blocks and locate this one
+		var allBlocks = root.Descendants().ToList();
+		var thisIndex = allBlocks.IndexOf(block);
+
+		if (thisIndex == -1)
+			return null;
+
+		// Look backwards for the most recent heading
+		for (var i = thisIndex - 1; i >= 0; i--)
+		{
+			if (allBlocks[i] is HeadingBlock heading)
+				return heading.Level;
+		}
+
+		return null;
 	}
 
 	private YamlFrontMatter ProcessYamlFrontMatter(MarkdownDocument document)
@@ -367,6 +418,27 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		var h1 = document.Descendants<HeadingBlock>().FirstOrDefault(h => h.Level == 1);
 		if (h1 is not null)
 			_ = document.Remove(h1);
-		return document.ToHtml(MarkdownParser.Pipeline);
+
+		var html = document.ToHtml(MarkdownParser.Pipeline);
+		return InsertFootnotesHeading(html);
+	}
+
+	private static string InsertFootnotesHeading(string html)
+	{
+		const string footnotesContainer = "<div class=\"footnotes\">";
+
+		var containerIndex = html.IndexOf(footnotesContainer, StringComparison.Ordinal);
+		if (containerIndex < 0)
+			return html;
+
+		var hrIndex = html.IndexOf("<hr", containerIndex, StringComparison.Ordinal);
+		if (hrIndex < 0)
+			return html;
+
+		var endOfHr = html.IndexOf('>', hrIndex);
+		if (endOfHr < 0)
+			return html;
+
+		return html.Insert(endOfHr + 1, "\n<h4>Footnotes</h4>");
 	}
 }

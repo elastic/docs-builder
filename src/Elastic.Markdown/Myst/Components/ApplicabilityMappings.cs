@@ -23,7 +23,7 @@ public static class ApplicabilityMappings
 	public static readonly ApplicabilityDefinition Ech = new("ECH", "Elastic&nbsp;Cloud&nbsp;Hosted", VersioningSystemId.Ess);
 	public static readonly ApplicabilityDefinition Eck = new("ECK", "Elastic&nbsp;Cloud&nbsp;on&nbsp;Kubernetes", VersioningSystemId.Eck);
 	public static readonly ApplicabilityDefinition Ece = new("ECE", "Elastic&nbsp;Cloud&nbsp;Enterprise", VersioningSystemId.Ece);
-	public static readonly ApplicabilityDefinition Self = new("Self-Managed", "Self-managed Elastic&nbsp;deployments", VersioningSystemId.Self);
+	public static readonly ApplicabilityDefinition Self = new("Self-managed", "Self-managed Elastic&nbsp;deployments", VersioningSystemId.Self);
 
 	// Product Applicability
 	public static readonly ApplicabilityDefinition Ecctl = new("ECCTL", "Elastic&nbsp;Cloud&nbsp;Control", VersioningSystemId.Ecctl);
@@ -33,6 +33,7 @@ public static class ApplicabilityMappings
 	public static readonly ApplicabilityDefinition EdotAndroid = new("EDOT Android", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;Android", VersioningSystemId.EdotAndroid);
 	public static readonly ApplicabilityDefinition EdotCfAws = new("EDOT CF AWS", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;Cloud&nbsp;Forwarder for AWS", VersioningSystemId.EdotCfAws);
 	public static readonly ApplicabilityDefinition EdotCfAzure = new("EDOT CF Azure", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;Cloud&nbsp;Forwarder for Azure", VersioningSystemId.EdotCfAzure);
+	public static readonly ApplicabilityDefinition EdotCfGcp = new("EDOT CF GCP", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;Cloud&nbsp;Forwarder for GCP", VersioningSystemId.EdotCfGcp);
 	public static readonly ApplicabilityDefinition EdotCollector = new("EDOT Collector", "Elastic Distribution of OpenTelemetry Collector", VersioningSystemId.EdotCollector);
 	public static readonly ApplicabilityDefinition EdotDotnet = new("EDOT .NET", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;.NET", VersioningSystemId.EdotDotnet);
 	public static readonly ApplicabilityDefinition EdotIos = new("EDOT iOS", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;iOS", VersioningSystemId.EdotIos);

@@ -3,10 +3,13 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
+using System.Diagnostics;
+using System.Globalization;
 using System.Text.Json;
 using Elastic.Documentation.Assembler.Links;
 using Elastic.Documentation.Assembler.Navigation;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
@@ -42,7 +45,9 @@ public class AssemblerBuilder(
 		context.OutputDirectory.Create();
 
 		var redirects = new Dictionary<string, string>();
+		var buildTimes = new List<(string Name, int FileCount, TimeSpan Duration)>();
 
+		// Create exporters without inferrer - inferrer is created per-repository
 		var markdownExporters = exportOptions.CreateMarkdownExporters(logFactory, context, environment.Name);
 		var tasks = markdownExporters.Select(async e => await e.StartAsync(ctx));
 		await Task.WhenAll(tasks);
@@ -57,9 +62,19 @@ public class AssemblerBuilder(
 				continue;
 			}
 
+			// Create inferrer per-repository with git context
+			var documentInferrer = new DocumentInferrerService(
+				context.ProductsConfiguration,
+				context.VersionsConfiguration,
+				context.LegacyUrlMappings,
+				set.DocumentationSet.Configuration,
+				set.DocumentationSet.Context.Git
+			);
+
+			var stopwatch = Stopwatch.StartNew();
 			try
 			{
-				var result = await BuildAsync(set, markdownExporters.ToArray(), ctx);
+				var result = await BuildAsync(set, markdownExporters.ToArray(), documentInferrer, ctx);
 				CollectRedirects(redirects, result.Redirects, checkout.Repository.Name, set.DocumentationSet.CrossLinkResolver);
 			}
 			catch (Exception e) when (e.Message.Contains("Can not locate docset.yml file in"))
@@ -71,11 +86,18 @@ public class AssemblerBuilder(
 				Console.WriteLine(e);
 				throw;
 			}
+			finally
+			{
+				stopwatch.Stop();
+				buildTimes.Add((checkout.Repository.Name, set.DocumentationSet.Files.Count, stopwatch.Elapsed));
+			}
 		}
+
+		LogBuildTimes(buildTimes);
 		foreach (var exporter in markdownExporters)
 		{
 			_logger.LogInformation("Calling FinishExportAsync on {ExporterName}", exporter.GetType().Name);
-			_ = await exporter.FinishExportAsync(context.OutputDirectory, ctx);
+			_ = await exporter.FinishExportAsync(context.OutputWithPathPrefixDirectory, ctx);
 		}
 
 		if (exportOptions.Contains(Exporter.Redirects))
@@ -116,7 +138,7 @@ public class AssemblerBuilder(
 			if (Uri.IsWellFormedUriString(path, UriKind.Absolute)) // Cross-repo links
 			{
 				_ = linkResolver.TryResolve(
-					e => _logger.LogError("An error occurred while resolving cross-link {Path}: {Error}", path, e),
+					specificErrorMessage => context.Collector.EmitError(path, $"An error occurred while resolving cross-link {path}", specificErrorMessage),
 					new Uri(path),
 					out uri);
 			}
@@ -130,7 +152,7 @@ public class AssemblerBuilder(
 		}
 	}
 
-	private async Task<GenerationResult> BuildAsync(AssemblerDocumentationSet set, IMarkdownExporter[]? markdownExporters, Cancel ctx)
+	private async Task<GenerationResult> BuildAsync(AssemblerDocumentationSet set, IMarkdownExporter[]? markdownExporters, IDocumentInferrerService documentInferrer, Cancel ctx)
 	{
 		SetFeatureFlags(set);
 		var generator = new DocumentationGenerator(
@@ -138,7 +160,8 @@ public class AssemblerBuilder(
 			logFactory, NavigationTraversable, HtmlWriter,
 			pathProvider,
 			legacyUrlMapper: LegacyUrlMapper,
-			markdownExporters: markdownExporters
+			markdownExporters: markdownExporters,
+			documentInferrer: documentInferrer
 		);
 		return await generator.GenerateAll(ctx);
 	}
@@ -152,6 +175,39 @@ public class AssemblerBuilder(
 			_logger.LogInformation("Setting feature flag: {ConfigurationFeatureFlagKey}={ConfigurationFeatureFlagValue}", configurationFeatureFlag.Key, configurationFeatureFlag.Value);
 			set.DocumentationSet.Configuration.Features.Set(configurationFeatureFlag.Key, configurationFeatureFlag.Value);
 		}
+	}
+
+	private void LogBuildTimes(List<(string Name, int FileCount, TimeSpan Duration)> buildTimes)
+	{
+		if (buildTimes.Count == 0)
+			return;
+
+		var sortedTimes = buildTimes.OrderByDescending(x => x.Duration).ToList();
+		var totalDuration = TimeSpan.FromTicks(buildTimes.Sum(x => x.Duration.Ticks));
+		var totalFiles = buildTimes.Sum(x => x.FileCount);
+		var avgMsPerFile = totalFiles > 0 ? totalDuration.TotalMilliseconds / totalFiles : 0;
+
+		var significantBuilds = sortedTimes.Where(x => x.Duration.TotalSeconds >= 1).ToList();
+		var omittedCount = sortedTimes.Count - significantBuilds.Count;
+
+		var maxNameLength = significantBuilds.Count > 0 ? significantBuilds.Max(x => x.Name.Length) : 0;
+		var maxFileCountLength = significantBuilds.Count > 0 ? significantBuilds.Max(x => x.FileCount.ToString(CultureInfo.InvariantCulture).Length) : 0;
+
+		_logger.LogInformation("Build times (descending):");
+		foreach (var (name, fileCount, duration) in significantBuilds)
+		{
+			var msPerFile = fileCount > 0 ? duration.TotalMilliseconds / fileCount : 0;
+			var paddedTime = $"{duration:mm\\:ss\\.fff}";
+			var paddedFiles = fileCount.ToString(CultureInfo.InvariantCulture).PadLeft(maxFileCountLength);
+			var paddedName = name.PadRight(maxNameLength);
+			var paddedMsPerFile = msPerFile.ToString("F2", CultureInfo.InvariantCulture).PadLeft(5);
+			_logger.LogInformation("  {Time}  {Files} files  {MsPerFile} ms/file  {Name}", paddedTime, paddedFiles, paddedMsPerFile, paddedName);
+		}
+
+		if (omittedCount > 0)
+			_logger.LogInformation("  ... omitted {OmittedCount} repositories with insignificant contribution to build times", omittedCount);
+
+		_logger.LogInformation("Total: {TotalDuration:mm\\:ss\\.fff}  {TotalFiles} files  {AvgMsPerFile:F2} ms/file", totalDuration, totalFiles, avgMsPerFile);
 	}
 
 	private async Task OutputRedirectsAsync(Dictionary<string, string> redirects, Cancel ctx)

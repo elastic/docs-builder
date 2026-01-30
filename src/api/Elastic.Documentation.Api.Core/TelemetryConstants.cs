@@ -25,4 +25,22 @@ public static class TelemetryConstants
 	/// Tag/baggage name used to annotate spans with the user's EUID value.
 	/// </summary>
 	public const string UserEuidAttributeName = "user.euid";
+
+	/// <summary>
+	/// ActivitySource name for OTLP proxy operations.
+	/// Used to trace frontend telemetry proxying.
+	/// </summary>
+	public const string OtlpProxySourceName = "Elastic.Documentation.Api.OtlpProxy";
+
+	/// <summary>
+	/// ActivitySource name for distributed cache operations.
+	/// Used to trace cache hits, misses, and performance.
+	/// </summary>
+	public const string CacheSourceName = "Elastic.Documentation.Api.Cache";
+
+	/// <summary>
+	/// ActivitySource name for Ask AI feedback operations.
+	/// Used to trace feedback submissions.
+	/// </summary>
+	public const string AskAiFeedbackSourceName = "Elastic.Documentation.Api.AskAiFeedback";
 }

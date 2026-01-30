@@ -1,6 +1,7 @@
 import { UAParser } from 'ua-parser-js'
 
-const { browser } = UAParser()
+const parser = new UAParser()
+const browser = parser.getBrowser()
 
 // This is a fix for anchors in details elements in non-Chrome browsers.
 export function openDetailsWithAnchor() {

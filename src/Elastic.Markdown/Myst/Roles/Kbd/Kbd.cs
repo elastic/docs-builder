@@ -80,6 +80,22 @@ public class KeyboardShortcut(IReadOnlyList<IKeyNode> keys)
 		return string.Join(" + ", kbdElements);
 	}
 
+	/// <summary>
+	/// Renders keyboard shortcut as plain text without any HTML formatting.
+	/// </summary>
+	public static string RenderPlainText(KeyboardShortcut shortcut)
+	{
+		var viewModels = shortcut.Keys.Select(ToViewModel);
+		var keyElements = viewModels.Select(viewModel => viewModel switch
+		{
+			SingleKeyboardKeyViewModel singleKeyboardKeyViewModel => singleKeyboardKeyViewModel.DisplayText,
+			AlternateKeyboardKeyViewModel alternateKeyboardKeyViewModel =>
+				$"{alternateKeyboardKeyViewModel.Primary.DisplayText} / {alternateKeyboardKeyViewModel.Alternate.DisplayText}",
+			_ => throw new ArgumentException($"Unsupported key: {viewModel}", nameof(viewModel))
+		});
+		return string.Join(" + ", keyElements);
+	}
+
 	private static string RenderLlm(SingleKeyboardKeyViewModel singleKeyboardKeyViewModel)
 	{
 		var sb = new StringBuilder();
