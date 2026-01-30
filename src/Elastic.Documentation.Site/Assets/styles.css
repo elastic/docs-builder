@@ -432,3 +432,22 @@ body {
 math {
 	margin-top: 1.5rem;
 }
+
+/* Adjust look and feel of the navigation-search in the landing page hero */
+#hero navigation-search {
+	& > div > .euiHorizontalRule {
+		display: none;
+	}
+
+	& > div {
+		padding-right: 0;
+	}
+
+	& .euiPopover {
+		max-inline-size: 100%;
+
+		@media screen and (min-width: 1180px) {
+			max-inline-size: 500px;
+		}
+	}
+}
