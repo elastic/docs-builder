@@ -29,7 +29,6 @@
     <File Path="config/legacy-url-mappings.yml" />
     <File Path="config/navigation.yml" />
 	<File Path="config/portal.example.yml" />
-	<File Path="config/changelog.example.yml" />
     <File Path="config/products.yml" />
     <File Path="config/versions.yml" />
     <File Path="config/search.yml" />

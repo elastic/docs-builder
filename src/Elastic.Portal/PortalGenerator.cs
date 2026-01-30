@@ -117,7 +117,6 @@ public class PortalGenerator(ILoggerFactory logFactory, BuildContext context, ID
 		var navigationRenderResult = await navigationRenderer.RenderNavigation(
 			portalNavigation,
 			portalNavigation.Index,
-			INavigationHtmlWriter.AllLevels,
 			ctx);
 
 		renderContext = renderContext with
@@ -153,7 +152,6 @@ public class PortalGenerator(ILoggerFactory logFactory, BuildContext context, ID
 		var navigationRenderResult = await navigationRenderer.RenderNavigation(
 			category.NavigationRoot,
 			category.Index,
-			INavigationHtmlWriter.AllLevels,
 			ctx);
 
 		renderContext = renderContext with
