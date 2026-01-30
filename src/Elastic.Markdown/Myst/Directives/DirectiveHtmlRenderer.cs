@@ -13,12 +13,10 @@ using Elastic.Markdown.Myst.Directives.AppliesSwitch;
 using Elastic.Markdown.Myst.Directives.Button;
 using Elastic.Markdown.Myst.Directives.Changelog;
 using Elastic.Markdown.Myst.Directives.CsvInclude;
-using Elastic.Markdown.Myst.Directives.Diagram;
 using Elastic.Markdown.Myst.Directives.Dropdown;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Math;
-using Elastic.Markdown.Myst.Directives.Mermaid;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.Directives.Stepper;
 using Elastic.Markdown.Myst.Directives.Tabs;
@@ -48,12 +46,6 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 
 		switch (directiveBlock)
 		{
-			case DiagramBlock diagramBlock:
-				WriteDiagram(renderer, diagramBlock);
-				return;
-			case MermaidBlock mermaidBlock:
-				WriteMermaid(renderer, mermaidBlock);
-				return;
 			case FigureBlock imageBlock:
 				WriteFigure(renderer, imageBlock);
 				return;
@@ -348,22 +340,6 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		}
 
 		return null;
-	}
-
-	private static void WriteDiagram(HtmlRenderer renderer, DiagramBlock block)
-	{
-		var slice = DiagramView.Create(new DiagramViewModel
-		{
-			DirectiveBlock = block,
-			DiagramBlock = block
-		});
-		RenderRazorSlice(slice, renderer);
-	}
-
-	private static void WriteMermaid(HtmlRenderer renderer, MermaidBlock block)
-	{
-		var slice = MermaidView.Create(new MermaidViewModel { DirectiveBlock = block });
-		RenderRazorSliceRawContent(slice, renderer, block);
 	}
 
 	private static void WriteLiteralIncludeBlock(HtmlRenderer renderer, IncludeBlock block)

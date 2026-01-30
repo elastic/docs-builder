@@ -4,6 +4,7 @@ import { initCopyButton } from './copybutton'
 import { initHighlight } from './hljs'
 import { initImageCarousel } from './image-carousel'
 import { initIsolatedHeader, setInitialHeaderOffset } from './isolated-header'
+import { initMermaid } from './mermaid'
 import { openDetailsWithAnchor } from './open-details-with-anchor'
 import { initNav } from './pages-nav'
 import { initSmoothScroll } from './smooth-scroll'
@@ -99,6 +100,7 @@ function initMath() {
 // Initialize on initial page load
 document.addEventListener('DOMContentLoaded', function () {
     initMath()
+    initMermaid()
     initIsolatedHeader()
 })
 
@@ -109,6 +111,7 @@ document.addEventListener('htmx:load', function () {
     initTabs()
     initAppliesSwitch()
     initMath()
+    initMermaid()
     initNav()
 
     initSmoothScroll()
