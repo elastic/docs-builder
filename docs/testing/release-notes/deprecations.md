@@ -1,0 +1,5 @@
+# Deprecations
+
+:::{changelog}
+:type: deprecation
+:::

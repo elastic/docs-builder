@@ -4,20 +4,20 @@
 
 using YamlDotNet.Serialization;
 
-namespace Elastic.Changelog.Serialization;
+namespace Elastic.Documentation.Configuration.ReleaseNotes;
 
 /// <summary>
 /// DTO for YAML deserialization of changelog entries.
 /// Maps directly to the YAML file structure.
 /// Used by bundling service for direct deserialization with error handling.
 /// </summary>
-public record ChangelogEntryYaml
+public record ChangelogEntryDto
 {
 	public string? Pr { get; set; }
 	public List<string>? Issues { get; set; }
 	public string? Type { get; set; }
 	public string? Subtype { get; set; }
-	public List<ProductInfoYaml>? Products { get; set; }
+	public List<ProductInfoDto>? Products { get; set; }
 	public List<string>? Areas { get; set; }
 	public string? Title { get; set; }
 	public string? Description { get; set; }
@@ -32,7 +32,7 @@ public record ChangelogEntryYaml
 /// DTO for product info in YAML.
 /// Used by bundling service for direct deserialization with error handling.
 /// </summary>
-public record ProductInfoYaml
+public record ProductInfoDto
 {
 	public string? Product { get; set; }
 	public string? Target { get; set; }
