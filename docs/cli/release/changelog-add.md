@@ -78,6 +78,7 @@ docs-builder changelog add [options...] [-h|--help]
 `--strip-title-prefix`
 :   Optional: When used with `--prs`, remove square brackets and text within them from the beginning of PR titles, and also remove a colon if it follows the closing bracket.
 :   For example, if a PR title is `"[Attack discovery]: Improves Attack discovery hallucination detection"`, the changelog title will be `"Improves Attack discovery hallucination detection"`.
+:   Multiple square bracket prefixes are also supported (e.g., `"[Discover][ESQL] Fix filtering by multiline string fields"` becomes `"Fix filtering by multiline string fields"`).
 :   This option applies only when the title is derived from the PR (when `--title` is not explicitly provided).
 
 `--subtype <string?>`

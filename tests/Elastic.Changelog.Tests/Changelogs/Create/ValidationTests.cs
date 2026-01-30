@@ -28,7 +28,7 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 				A<CancellationToken>._))
 			.Returns(prInfo);
 
-		// Config without label_to_type mapping
+		// Config without pivot.types mapping
 		// language=yaml
 		var configContent =
 			"""

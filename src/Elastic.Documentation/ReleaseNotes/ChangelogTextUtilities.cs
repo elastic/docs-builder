@@ -100,31 +100,35 @@ public static partial class ChangelogTextUtilities
 	}
 
 	/// <summary>
-	/// Strips square bracket prefix and optional colon from title (e.g., "[Inference API] Title" -> "Title").
+	/// Strips square bracket prefix(es) and optional colon from title (e.g., "[Inference API] Title" -> "Title", "[Discover][ESQL] Title" -> "Title")
 	/// </summary>
 	public static string StripSquareBracketPrefix(string title)
 	{
 		if (string.IsNullOrWhiteSpace(title))
 			return title;
 
-		// Check if title starts with '['
-		if (!title.StartsWith('['))
-			return title;
+		var span = title.AsSpan();
 
-		// Find the matching ']'
-		var closingBracketIndex = title.IndexOf(']', 1);
-		if (closingBracketIndex < 0)
-			return title; // No matching ']', return as-is
+		// Keep stripping square bracket prefixes until there are no more at the start
+		while (span.Length > 0 && span[0] == '[')
+		{
+			// Find the matching ']'
+			var closingBracketIndex = span.IndexOf(']');
+			if (closingBracketIndex < 0)
+				return span.ToString(); // No matching ']', return as-is
 
-		// Extract everything after the closing bracket
-		var remaining = title[(closingBracketIndex + 1)..];
+			// Skip past the closing bracket
+			span = span[(closingBracketIndex + 1)..];
 
-		// Remove colon if it exists right after the closing bracket
-		if (remaining.StartsWith(':'))
-			remaining = remaining[1..];
+			// Trim leading whitespace
+			span = span.TrimStart();
+		}
 
-		// Trim whitespace
-		return remaining.TrimStart();
+		// Remove colon if it exists at the start
+		if (span.Length > 0 && span[0] == ':')
+			span = span[1..].TrimStart();
+
+		return span.ToString();
 	}
 
 	/// <summary>

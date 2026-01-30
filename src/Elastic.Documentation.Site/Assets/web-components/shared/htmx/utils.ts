@@ -1,6 +1,14 @@
 import { useEffect, useState } from 'react'
 
 /**
+ * Checks if a URL points to an external site that should not use HTMX navigation.
+ * Currently, /docs/api paths are served from a separate external site.
+ */
+export const isExternalDocsUrl = (url: string): boolean => {
+    return url.startsWith('/docs/api/') || url === '/docs/api'
+}
+
+/**
  * Extracts the pathname from a URL string.
  * Handles both full URLs (https://...) and relative paths (/docs/...).
  * For full URLs, only returns the pathname if it's an elastic.co docs link.
@@ -16,7 +24,7 @@ export const getPathFromUrl = (url: string): string | null => {
         const parsed = new URL(url)
         // Only process elastic.co docs links
         if (
-            parsed.hostname.includes('elastic.co') &&
+            parsed.hostname.endsWith('elastic.co') &&
             parsed.pathname.startsWith('/docs')
         ) {
             return parsed.pathname

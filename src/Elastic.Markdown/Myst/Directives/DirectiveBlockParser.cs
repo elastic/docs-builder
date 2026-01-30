@@ -8,11 +8,9 @@ using Elastic.Markdown.Myst.Directives.AppliesSwitch;
 using Elastic.Markdown.Myst.Directives.Button;
 using Elastic.Markdown.Myst.Directives.Changelog;
 using Elastic.Markdown.Myst.Directives.CsvInclude;
-using Elastic.Markdown.Myst.Directives.Diagram;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Math;
-using Elastic.Markdown.Myst.Directives.Mermaid;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.Directives.Stepper;
 using Elastic.Markdown.Myst.Directives.Tabs;
@@ -39,11 +37,11 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		InfoPrefix = null;
 	}
 
-	private readonly string[] _admonitions = ["important", "warning", "note", "tip", "admonition"];
+	private static readonly string[] Admonitions = ["{important}", "{warning}", "{note}", "{tip}", "{admonition}"];
 
-	private readonly string[] _versionBlocks = ["versionadded", "versionchanged", "versionremoved", "deprecated"];
+	private static readonly string[] VersionBlocks = ["{versionadded}", "{versionchanged}", "{versionremoved}", "{deprecated}"];
 
-	private readonly string[] _codeBlocks = ["code", "code-block", "sourcecode"];
+	private static readonly string[] CodeBlocks = ["{code}", "{code-block}", "{sourcecode}"];
 
 	private static readonly FrozenDictionary<string, int> UnsupportedBlocks = new Dictionary<string, int>
 	{
@@ -59,7 +57,6 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		{ "grid", 26 },
 		{ "grid-item-card", 26 },
 		{ "card", 25 },
-		{ "mermaid", 20 },
 		{ "aside", 4 },
 		{ "margin", 4 },
 		{ "sidebar", 4 },
@@ -115,15 +112,6 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		if (info.IndexOf("{figure-md}") > 0)
 			return new FigureBlock(this, context);
 
-		// this is currently listed as unsupported
-		// leaving the parsing in until we are confident we don't want this
-		// for dev-docs
-		if (info.IndexOf("{mermaid}") > 0)
-			return new MermaidBlock(this, context);
-
-		if (info.IndexOf("{diagram}") > 0)
-			return new DiagramBlock(this, context);
-
 		if (info.IndexOf("{include}") > 0)
 			return new IncludeBlock(this, context);
 
@@ -142,16 +130,16 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		if (info.IndexOf("{math}") > 0)
 			return new MathBlock(this, context);
 
-		foreach (var admonition in _admonitions)
+		foreach (var admonition in Admonitions)
 		{
-			if (info.IndexOf($"{{{admonition}}}") > 0)
-				return new AdmonitionBlock(this, admonition, context);
+			if (info.IndexOf(admonition) > 0)
+				return new AdmonitionBlock(this, admonition[1..^1], context);
 		}
 
-		foreach (var version in _versionBlocks)
+		foreach (var version in VersionBlocks)
 		{
-			if (info.IndexOf($"{{{version}}}") > 0)
-				return new VersionBlock(this, version, context);
+			if (info.IndexOf(version) > 0)
+				return new VersionBlock(this, version[1..^1], context);
 		}
 
 		if (info.IndexOf("{stepper}") > 0)
@@ -188,9 +176,9 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 
 		var line = processor.Line;
 
-		foreach (var code in _codeBlocks)
+		foreach (var code in CodeBlocks)
 		{
-			if (line.IndexOf($"{{{code}}}") > 0)
+			if (line.IndexOf(code) > 0)
 				return BlockState.None;
 		}
 
