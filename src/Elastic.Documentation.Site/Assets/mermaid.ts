@@ -1,4 +1,5 @@
-// Mermaid.js is loaded from CDN to avoid bundling issues
+// Mermaid.js is loaded from CDN to avoid Parcel bundling issues
+// (Mermaid has complex ESM dependencies that don't resolve correctly)
 declare const mermaid: {
     initialize: (config: object) => void
     render: (id: string, text: string) => Promise<{ svg: string }>
@@ -9,7 +10,7 @@ let mermaidLoading: Promise<void> | null = null
 let diagramCounter = 0
 
 /**
- * Load Mermaid.js from CDN
+ * Lazy-load Mermaid.js from CDN only when diagrams exist on the page
  */
 async function loadMermaid(): Promise<void> {
     if (mermaidLoaded) return
@@ -51,7 +52,7 @@ export async function initMermaid() {
     }
 
     try {
-        // Load Mermaid.js from CDN if not already loaded
+        // Lazy-load Mermaid.js from CDN only when diagrams exist
         await loadMermaid()
 
         // Render each diagram individually
@@ -69,11 +70,11 @@ export async function initMermaid() {
                 const id = `mermaid-${++diagramCounter}`
 
                 // Render the diagram
+                // Note: Mermaid's securityLevel: 'strict' sanitizes the output
+                // to prevent XSS (no scripts, event handlers, or dangerous elements)
                 const { svg } = await mermaid.render(id, content)
 
                 // Replace the pre element with a div containing the SVG
-                // Note: Mermaid's securityLevel: 'strict' already sanitizes the output
-                // to prevent XSS (no scripts, event handlers, or dangerous elements)
                 const container = document.createElement('div')
                 container.className = 'mermaid-rendered'
                 container.innerHTML = svg
