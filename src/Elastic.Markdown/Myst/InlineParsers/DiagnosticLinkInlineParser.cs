@@ -277,9 +277,9 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 				processor.EmitError(link, $"`{url}` is not a valid internal link. Did you forget to add the .md extension?");
 			}
 			else
-      {
+			{
 				processor.EmitError(link, $"`{url}` does not exist. If it was recently removed add a redirect. resolved to `{pathOnDisk}`");
-      }
+			}
 		}
 	}
 
