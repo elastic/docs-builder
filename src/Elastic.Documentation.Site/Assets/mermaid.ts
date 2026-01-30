@@ -1,5 +1,5 @@
-// Mermaid.js is loaded from CDN to avoid Parcel bundling issues
-// (Mermaid has complex ESM dependencies that don't resolve correctly)
+// Mermaid.js is loaded from local _static/ to avoid client-side CDN calls
+// The file is copied from node_modules during build (see package.json copy:mermaid)
 declare const mermaid: {
     initialize: (config: object) => void
     render: (id: string, text: string) => Promise<{ svg: string }>
@@ -10,7 +10,7 @@ let mermaidLoading: Promise<void> | null = null
 let diagramCounter = 0
 
 /**
- * Lazy-load Mermaid.js from CDN only when diagrams exist on the page
+ * Lazy-load Mermaid.js from local _static/ only when diagrams exist on the page
  */
 async function loadMermaid(): Promise<void> {
     if (mermaidLoaded) return
@@ -18,8 +18,7 @@ async function loadMermaid(): Promise<void> {
 
     mermaidLoading = new Promise((resolve, reject) => {
         const script = document.createElement('script')
-        script.src =
-            'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js'
+        script.src = '/_static/mermaid.min.js'
         script.async = true
         script.onload = () => {
             mermaidLoaded = true
@@ -52,7 +51,7 @@ export async function initMermaid() {
     }
 
     try {
-        // Lazy-load Mermaid.js from CDN only when diagrams exist
+        // Lazy-load Mermaid.js only when diagrams exist
         await loadMermaid()
 
         // Render each diagram individually
