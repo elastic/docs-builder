@@ -10,6 +10,26 @@ let mermaidLoading: Promise<void> | null = null
 let diagramCounter = 0
 
 /**
+ * Get the base path for _static/ assets by finding main.js script location
+ */
+function getStaticBasePath(): string {
+    // Find the main.js script element to get the correct path prefix
+    const scripts = document.querySelectorAll('script[src*="main.js"]')
+    for (const script of scripts) {
+        const src = script.getAttribute('src')
+        if (src) {
+            // Extract path up to and including _static/
+            const match = src.match(/^(.*\/_static\/)/)
+            if (match) {
+                return match[1]
+            }
+        }
+    }
+    // Fallback for local development
+    return '/_static/'
+}
+
+/**
  * Lazy-load Mermaid.js from local _static/ only when diagrams exist on the page
  */
 async function loadMermaid(): Promise<void> {
@@ -18,7 +38,7 @@ async function loadMermaid(): Promise<void> {
 
     mermaidLoading = new Promise((resolve, reject) => {
         const script = document.createElement('script')
-        script.src = '/_static/mermaid.min.js'
+        script.src = getStaticBasePath() + 'mermaid.min.js'
         script.async = true
         script.onload = () => {
             mermaidLoaded = true
