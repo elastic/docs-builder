@@ -33,7 +33,7 @@ public class OtlpProxyOptions(IConfiguration configuration)
 	private static string ResolveEndpoint(IConfiguration configuration)
 	{
 		const string configKey = "OtlpProxy:Endpoint";
-		const string envVarKey = "OTEL_EXPORTER_OTLP_ENDPOINT";
+		const string envVarKey = "OTLP_PROXY_ENDPOINT";
 		const string defaultEndpoint = "http://localhost:4318";
 
 		// Priority 1: Explicit configuration (for tests or custom deployments)

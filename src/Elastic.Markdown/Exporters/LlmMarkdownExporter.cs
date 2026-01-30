@@ -7,6 +7,7 @@ using System.IO.Compression;
 using System.Text;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.Components;
@@ -20,6 +21,7 @@ namespace Elastic.Markdown.Exporters;
 /// </summary>
 public class LlmMarkdownExporter : IMarkdownExporter
 {
+
 	private const string LlmsTxtTemplate = """
 		# Elastic Documentation
 
@@ -131,9 +133,10 @@ public class LlmMarkdownExporter : IMarkdownExporter
 	}
 
 
-	private string CreateLlmContentWithMetadata(MarkdownExportFileContext context, string llmMarkdown)
+	private static string CreateLlmContentWithMetadata(MarkdownExportFileContext context, string llmMarkdown)
 	{
 		var sourceFile = context.SourceFile;
+		var inferrer = context.InferenceService ?? new NoopDocumentInferrer();
 		var metadata = DocumentationObjectPoolProvider.StringBuilderPool.Get();
 
 		_ = metadata.AppendLine("---");
@@ -148,9 +151,18 @@ public class LlmMarkdownExporter : IMarkdownExporter
 			_ = metadata.AppendLine($"description: {generateDescription}");
 		}
 
-		_ = metadata.AppendLine($"url: {context.BuildContext.CanonicalBaseUrl?.Scheme}://{context.BuildContext.CanonicalBaseUrl?.Host}{context.NavigationItem.Url}");
+		var url = $"{context.BuildContext.CanonicalBaseUrl?.Scheme}://{context.BuildContext.CanonicalBaseUrl?.Host}{context.NavigationItem.Url}";
+		_ = metadata.AppendLine($"url: {url}");
 
-		var pageProducts = GetPageProducts(sourceFile.YamlFrontMatter?.Products);
+		// Use DocumentInferrerService to get merged products
+		var inference = inferrer.InferForMarkdown(
+			context.BuildContext.Git.RepositoryName,
+			sourceFile.YamlFrontMatter?.MappedPages,
+			context.DocumentationSet.Configuration.Products,
+			sourceFile.YamlFrontMatter?.Products,
+			sourceFile.YamlFrontMatter?.AppliesTo
+		);
+		var pageProducts = inference.RelatedProducts;
 		if (pageProducts.Count > 0)
 		{
 			_ = metadata.AppendLine("products:");
@@ -179,8 +191,6 @@ public class LlmMarkdownExporter : IMarkdownExporter
 		return metadata.ToString();
 	}
 
-	private static List<Product> GetPageProducts(IReadOnlyCollection<Product>? frontMatterProducts) =>
-		frontMatterProducts?.ToList() ?? [];
 
 	private static List<string> GetAppliesToItems(ApplicableTo appliesTo, IDocumentationConfigurationContext buildContext)
 	{
@@ -207,5 +217,6 @@ public class LlmMarkdownExporter : IMarkdownExporter
 
 public static class LlmMarkdownExporterExtensions
 {
-	public static void AddLlmMarkdownExport(this List<IMarkdownExporter> exporters) => exporters.Add(new LlmMarkdownExporter());
+	public static void AddLlmMarkdownExport(this List<IMarkdownExporter> exporters) =>
+		exporters.Add(new LlmMarkdownExporter());
 }

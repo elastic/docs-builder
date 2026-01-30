@@ -2,10 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Documentation.Api.Infrastructure.Adapters.Search;
-using Elastic.Documentation.Api.Infrastructure.Adapters.Search.Common;
-using Elastic.Documentation.Api.Infrastructure.Aws;
 using Elastic.Documentation.Configuration.Search;
+using Elastic.Documentation.Search;
+using Elastic.Documentation.Search.Common;
 using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -221,28 +220,37 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 	/// <summary>
 	/// Creates an ElasticsearchGateway instance using configuration from the distributed application.
 	/// </summary>
-	private FindPageGateway? CreateFindPageGateway()
+	private NavigationSearchGateway? CreateFindPageGateway()
 	{
-		// Build a new ConfigurationBuilder to read user secrets
+		// Build a new ConfigurationBuilder to read user secrets and environment variables
 		var configBuilder = new ConfigurationBuilder();
 		configBuilder.AddUserSecrets("72f50f33-6fb9-4d08-bff3-39568fe370b3");
-		var userSecretsConfig = configBuilder.Build();
+		configBuilder.AddEnvironmentVariables();
+		var config = configBuilder.Build();
 
-		// Get Elasticsearch configuration with fallback chain: user secrets → configuration → environment
+		// Get Elasticsearch configuration with fallback chain: user secrets → environment
 		var elasticsearchUrl =
-			userSecretsConfig["Parameters:DocumentationElasticUrl"]
-			?? Environment.GetEnvironmentVariable("DOCUMENTATION_ELASTIC_URL");
+			config["Parameters:DocumentationElasticUrl"]
+			?? config["DOCUMENTATION_ELASTIC_URL"];
 
 		var elasticsearchApiKey =
-			userSecretsConfig["Parameters:DocumentationElasticApiKey"]
-			?? Environment.GetEnvironmentVariable("DOCUMENTATION_ELASTIC_APIKEY");
+			config["Parameters:DocumentationElasticApiKey"]
+			?? config["DOCUMENTATION_ELASTIC_APIKEY"];
 
 		if (elasticsearchUrl is null or "" || elasticsearchApiKey is null or "")
 			return null;
 
-		// Create a test parameter provider with the configuration values
-		var parameterProvider = new TestParameterProvider(elasticsearchUrl, elasticsearchApiKey, "semantic-docs-dev-latest");
-		var options = new ElasticsearchOptions(parameterProvider);
+		// Create IConfiguration with the required values for ElasticsearchOptions
+		var testConfig = new ConfigurationBuilder()
+			.AddInMemoryCollection(new Dictionary<string, string?>
+			{
+				["DOCUMENTATION_ELASTIC_URL"] = elasticsearchUrl,
+				["DOCUMENTATION_ELASTIC_APIKEY"] = elasticsearchApiKey,
+				["DOCUMENTATION_ELASTIC_INDEX"] = "semantic-docs-dev-latest"
+			})
+			.Build();
+
+		var options = new ElasticsearchOptions(testConfig);
 		var searchConfig = new SearchConfiguration
 		{
 			Synonyms = new Dictionary<string, string[]>(),
@@ -271,21 +279,6 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 		};
 
 		var clientAccessor = new ElasticsearchClientAccessor(options, searchConfig);
-		return new FindPageGateway(clientAccessor, NullLogger<FindPageGateway>.Instance);
-	}
-
-	/// <summary>
-	/// Simple test implementation of IParameterProvider that returns configured values.
-	/// </summary>
-	private sealed class TestParameterProvider(string url, string apiKey, string indexName) : IParameterProvider
-	{
-		public Task<string> GetParam(string name, bool withDecryption = true, Cancel ctx = default) =>
-			name switch
-			{
-				"docs-elasticsearch-url" => Task.FromResult(url),
-				"docs-elasticsearch-apikey" => Task.FromResult(apiKey),
-				"docs-elasticsearch-index" => Task.FromResult(indexName),
-				_ => throw new ArgumentException($"Parameter '{name}' not configured in test provider")
-			};
+		return new NavigationSearchGateway(clientAccessor, NullLogger<NavigationSearchGateway>.Instance);
 	}
 }

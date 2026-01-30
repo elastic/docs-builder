@@ -6,6 +6,7 @@ using System.IO.Abstractions;
 using System.Text.RegularExpressions;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Operations;
+using Elastic.ApiExplorer.Schemas;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Navigation;
@@ -174,6 +175,9 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 			else
 				CreateTagNavigationItems(apiUrlSuffix, classification, rootNavigation, rootNavigation, topLevelNavigationItems);
 		}
+		// Add schema type pages for shared types
+		CreateSchemaNavigationItems(apiUrlSuffix, openApiDocument, rootNavigation, topLevelNavigationItems);
+
 		rootNavigation.NavigationItems = topLevelNavigationItems;
 		return rootNavigation;
 	}
@@ -298,7 +302,7 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 		if (!outputFile.Directory!.Exists)
 			outputFile.Directory.Create();
 
-		var navigationRenderResult = await navigationRenderer.RenderNavigation(current.NavigationRoot, current, INavigationHtmlWriter.AllLevels, ctx);
+		var navigationRenderResult = await navigationRenderer.RenderNavigation(current.NavigationRoot, current, ctx);
 		renderContext = renderContext with
 		{
 			CurrentNavigation = current,
@@ -315,6 +319,81 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 			var fileInfo = _writeFileSystem.FileInfo.New(Path.Combine(context.OutputDirectory.FullName, fileName.Trim('/')));
 			return fileInfo;
 		}
+	}
+
+	private void CreateSchemaNavigationItems(
+		string apiUrlSuffix,
+		OpenApiDocument openApiDocument,
+		LandingNavigationItem rootNavigation,
+		List<IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem>> topLevelNavigationItems
+	)
+	{
+		var schemas = openApiDocument.Components?.Schemas;
+		if (schemas is null || schemas.Count == 0)
+			return;
+
+		var typesCategory = new SchemaCategory("Types", "Shared type definitions");
+		var typesCategoryNav = new SchemaCategoryNavigationItem(typesCategory, rootNavigation, rootNavigation);
+		var categoryNavigationItems = new List<IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem>>();
+
+		// Query DSL - only show QueryContainer (individual queries are shown as properties within it)
+		var queryContainerSchema = schemas
+			.FirstOrDefault(s => s.Key == "_types.query_dsl.QueryContainer");
+
+		if (queryContainerSchema.Value is not null)
+		{
+			var queryCategory = new SchemaCategory("Query DSL", "Query type definitions");
+			var queryCategoryNav = new SchemaCategoryNavigationItem(queryCategory, rootNavigation, typesCategoryNav);
+			var apiSchema = new ApiSchema(queryContainerSchema.Key, "QueryContainer", "query-dsl", queryContainerSchema.Value);
+			var queryNavigationItems = new List<INavigationItem>
+			{
+				new SchemaNavigationItem(context.UrlPathPrefix, apiUrlSuffix, apiSchema, rootNavigation, queryCategoryNav)
+			};
+			queryCategoryNav.NavigationItems = queryNavigationItems;
+			categoryNavigationItems.Add(queryCategoryNav);
+		}
+
+		// Aggregations - only show AggregationContainer and Aggregate
+		var aggContainerSchema = schemas
+			.FirstOrDefault(s => s.Key == "_types.aggregations.AggregationContainer");
+
+		var aggregateSchema = schemas
+			.FirstOrDefault(s => s.Key == "_types.aggregations.Aggregate");
+
+		if (aggContainerSchema.Value is not null || aggregateSchema.Value is not null)
+		{
+			var aggCategory = new SchemaCategory("Aggregations", "Aggregation type definitions");
+			var aggCategoryNav = new SchemaCategoryNavigationItem(aggCategory, rootNavigation, typesCategoryNav);
+			var aggNavigationItems = new List<INavigationItem>();
+
+			if (aggContainerSchema.Value is not null)
+			{
+				var apiSchema = new ApiSchema(aggContainerSchema.Key, "AggregationContainer", "aggregations", aggContainerSchema.Value);
+				aggNavigationItems.Add(new SchemaNavigationItem(context.UrlPathPrefix, apiUrlSuffix, apiSchema, rootNavigation, aggCategoryNav));
+			}
+
+			if (aggregateSchema.Value is not null)
+			{
+				var apiSchema = new ApiSchema(aggregateSchema.Key, "Aggregate", "aggregations", aggregateSchema.Value);
+				aggNavigationItems.Add(new SchemaNavigationItem(context.UrlPathPrefix, apiUrlSuffix, apiSchema, rootNavigation, aggCategoryNav));
+			}
+
+			aggCategoryNav.NavigationItems = aggNavigationItems;
+			categoryNavigationItems.Add(aggCategoryNav);
+		}
+
+		if (categoryNavigationItems.Count > 0)
+		{
+			typesCategoryNav.NavigationItems = categoryNavigationItems;
+			topLevelNavigationItems.Add(typesCategoryNav);
+		}
+	}
+
+	private static string FormatSchemaDisplayName(string schemaId)
+	{
+		// Convert schema IDs like "_types.query_dsl.QueryContainer" to "QueryContainer"
+		var parts = schemaId.Split('.');
+		return parts.Length > 0 ? parts[^1] : schemaId;
 	}
 
 	private static string ClassifyElasticsearchTag(string tag)

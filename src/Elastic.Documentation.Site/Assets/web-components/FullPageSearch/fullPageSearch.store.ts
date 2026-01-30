@@ -6,6 +6,7 @@ export interface FullPageSearchFilters {
     type: string[]
     navigationSection: string[]
     deploymentType: string[]
+    product: string[]
 }
 
 interface FullPageSearchState {
@@ -41,6 +42,7 @@ const initialFilters: FullPageSearchFilters = {
     type: [],
     navigationSection: [],
     deploymentType: [],
+    product: [],
 }
 
 // URL parameter helpers
@@ -73,12 +75,14 @@ function getStateFromUrl(): Partial<FullPageSearchState> {
 
     const type = params.getAll('type')
     const section = params.getAll('section')
+    const product = params.getAll('product')
 
-    if (type.length > 0 || section.length > 0) {
+    if (type.length > 0 || section.length > 0 || product.length > 0) {
         state.filters = {
             type: type,
             navigationSection: section,
             deploymentType: [],
+            product: product,
         }
     }
 
@@ -100,6 +104,7 @@ function syncUrlToState(state: FullPageSearchState) {
 
     state.filters.type.forEach((t) => params.append('type', t))
     state.filters.navigationSection.forEach((s) => params.append('section', s))
+    state.filters.product.forEach((p) => params.append('product', p))
 
     // Preserve demo mode parameters (fail=slow, fail=ai)
     const currentParams = new URLSearchParams(window.location.search)
@@ -245,6 +250,7 @@ export const useHasActiveFilters = () =>
             version !== DEFAULT_VERSION ||
             filters.type.length > 0 ||
             filters.navigationSection.length > 0 ||
-            filters.deploymentType.length > 0
+            filters.deploymentType.length > 0 ||
+            filters.product.length > 0
         )
     })

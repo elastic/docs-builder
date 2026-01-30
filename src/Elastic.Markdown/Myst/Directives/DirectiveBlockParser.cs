@@ -6,6 +6,7 @@ using System.Collections.Frozen;
 using Elastic.Markdown.Myst.Directives.Admonition;
 using Elastic.Markdown.Myst.Directives.AppliesSwitch;
 using Elastic.Markdown.Myst.Directives.Button;
+using Elastic.Markdown.Myst.Directives.Changelog;
 using Elastic.Markdown.Myst.Directives.CsvInclude;
 using Elastic.Markdown.Myst.Directives.Diagram;
 using Elastic.Markdown.Myst.Directives.Image;
@@ -38,11 +39,11 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		InfoPrefix = null;
 	}
 
-	private readonly string[] _admonitions = ["important", "warning", "note", "tip", "admonition"];
+	private static readonly string[] Admonitions = ["{important}", "{warning}", "{note}", "{tip}", "{admonition}"];
 
-	private readonly string[] _versionBlocks = ["versionadded", "versionchanged", "versionremoved", "deprecated"];
+	private static readonly string[] VersionBlocks = ["{versionadded}", "{versionchanged}", "{versionremoved}", "{deprecated}"];
 
-	private readonly string[] _codeBlocks = ["code", "code-block", "sourcecode"];
+	private static readonly string[] CodeBlocks = ["{code}", "{code-block}", "{sourcecode}"];
 
 	private static readonly FrozenDictionary<string, int> UnsupportedBlocks = new Dictionary<string, int>
 	{
@@ -135,19 +136,22 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		if (info.IndexOf("{csv-include}") > 0)
 			return new CsvIncludeBlock(this, context);
 
+		if (info.IndexOf("{changelog}") > 0)
+			return new ChangelogBlock(this, context);
+
 		if (info.IndexOf("{math}") > 0)
 			return new MathBlock(this, context);
 
-		foreach (var admonition in _admonitions)
+		foreach (var admonition in Admonitions)
 		{
-			if (info.IndexOf($"{{{admonition}}}") > 0)
-				return new AdmonitionBlock(this, admonition, context);
+			if (info.IndexOf(admonition) > 0)
+				return new AdmonitionBlock(this, admonition[1..^1], context);
 		}
 
-		foreach (var version in _versionBlocks)
+		foreach (var version in VersionBlocks)
 		{
-			if (info.IndexOf($"{{{version}}}") > 0)
-				return new VersionBlock(this, version, context);
+			if (info.IndexOf(version) > 0)
+				return new VersionBlock(this, version[1..^1], context);
 		}
 
 		if (info.IndexOf("{stepper}") > 0)
@@ -184,9 +188,9 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 
 		var line = processor.Line;
 
-		foreach (var code in _codeBlocks)
+		foreach (var code in CodeBlocks)
 		{
-			if (line.IndexOf($"{{{code}}}") > 0)
+			if (line.IndexOf(code) > 0)
 				return BlockState.None;
 		}
 

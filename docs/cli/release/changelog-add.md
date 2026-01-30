@@ -23,6 +23,18 @@ docs-builder changelog add [options...] [-h|--help]
 `--description <string?>`
 :   Optional: Additional information about the change (max 600 characters).
 
+`--no-extract-release-notes`
+:   Optional: Turn off extraction of release notes from PR descriptions.
+:   By default, the extractor looks for content in various formats in the PR description:
+:   - `Release Notes: ...`
+:   - `Release-Notes: ...`
+:   - `release notes: ...`
+:   - `Release Note: ...`
+:   - `Release Notes - ...`
+:   - `## Release Note` (as a markdown header)
+:   Short release notes (≤120 characters, single line) are used as the changelog title (only if `--title` is not explicitly provided).
+:   Long release notes (>120 characters or multi-line) are used as the changelog description (only if `--description` is not explicitly provided).
+
 `--feature-id <string?>`
 :   Optional: Feature flag ID
 
@@ -35,12 +47,11 @@ docs-builder changelog add [options...] [-h|--help]
 `--issues <string[]?>`
 :   Optional: Issue numbers (comma-separated or specify multiple times).
 
+`--no-extract-issues`
+:   Optional: Turn off extraction of linked issues from PR body (for example, "Fixes #123"). By default, linked issues are extracted when using `--prs`.
+
 `--output <string?>`
 :   Optional: Output directory for the changelog fragment. Defaults to current directory.
-
-`--use-pr-number`
-:   Optional: Use the PR number as the filename instead of generating it from a unique ID and title.
-:   When using this option, you must also provide the `--pr` option.
 
 `--owner <string?>`
 :   Optional: GitHub repository owner (used when `--pr` is just a number).
@@ -59,10 +70,16 @@ docs-builder changelog add [options...] [-h|--help]
 :   If specified, `--title` can be derived from the PR.
 :   If mappings are configured, `--areas` and `--type` can also be derived from the PR.
 :   Creates one changelog file per PR.
-:   If `add_blockers` are configured in the changelog configuration file and a PR has a blocking label for any product in `--products`, that PR is skipped and no changelog file is created for it.
+:   If there are `block ... create` definitions in the changelog configuration file and a PR has a blocking label for any product in `--products`, that PR is skipped and no changelog file is created for it.
 
 `--repo <string?>`
 :   Optional: GitHub repository name (used when `--pr` is just a number).
+
+`--strip-title-prefix`
+:   Optional: When used with `--prs`, remove square brackets and text within them from the beginning of PR titles, and also remove a colon if it follows the closing bracket.
+:   For example, if a PR title is `"[Attack discovery]: Improves Attack discovery hallucination detection"`, the changelog title will be `"Improves Attack discovery hallucination detection"`.
+:   Multiple square bracket prefixes are also supported (e.g., `"[Discover][ESQL] Fix filtering by multiline string fields"` becomes `"Fix filtering by multiline string fields"`).
+:   This option applies only when the title is derived from the PR (when `--title` is not explicitly provided).
 
 `--subtype <string?>`
 :   Optional: Subtype for breaking changes (for example, `api`, `behavioral`, or `configuration`).
@@ -76,3 +93,7 @@ docs-builder changelog add [options...] [-h|--help]
 `--type <string>`
 :   Required: Type of change (for example, `feature`, `enhancement`, `bug-fix`, or `breaking-change`).
 :   The valid types are listed in [ChangelogConfiguration.cs](https://github.com/elastic/docs-builder/blob/main/src/services/Elastic.Documentation.Services/Changelog/ChangelogConfiguration.cs).
+
+`--use-pr-number`
+:   Optional: Use the PR number as the filename instead of generating it from a unique ID and title.
+:   When using this option, you must also provide the `--pr` option.

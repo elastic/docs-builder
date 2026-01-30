@@ -5,11 +5,11 @@
 using System.IO.Abstractions;
 using Elastic.ApiExplorer.Elasticsearch;
 using Elastic.Documentation.AppliesTo;
+using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Search;
 using Elastic.Ingest.Elasticsearch.Indices;
 using Elastic.Markdown.Exporters.Elasticsearch.Enrichment;
-using Elastic.Markdown.Helpers;
 using Markdig.Syntax;
 using Microsoft.Extensions.Logging;
 using static System.StringSplitOptions;
@@ -19,6 +19,8 @@ namespace Elastic.Markdown.Exporters.Elasticsearch;
 
 public partial class ElasticsearchMarkdownExporter
 {
+	private IDocumentInferrerService? _inferService;
+
 	/// <summary>
 	/// Assigns hash, last updated, and batch index date to a documentation document.
 	/// </summary>
@@ -82,6 +84,8 @@ public partial class ElasticsearchMarkdownExporter
 		var currentNavigation = navigation.GetNavigationFor(file);
 		var url = currentNavigation.Url;
 
+		_inferService ??= fileContext.InferenceService;
+
 		if (url is "/docs" or "/docs/404")
 		{
 			// Skip the root and 404 pages
@@ -96,13 +100,12 @@ public partial class ElasticsearchMarkdownExporter
 			_ = fileContext.Document.Remove(h1);
 
 		var body = LlmMarkdownExporter.ConvertToLlmMarkdown(fileContext.Document, fileContext.BuildContext);
+		var strippedBody = PlainTextExporter.ConvertToPlainText(fileContext.Document, fileContext.BuildContext);
 
 		var headings = fileContext.Document.Descendants<HeadingBlock>()
 			.Select(h => h.GetData("header") as string ?? string.Empty) // TODO: Confirm that 'header' data is correctly set for all HeadingBlock instances and that this extraction is reliable.
 			.Where(text => !string.IsNullOrEmpty(text))
 			.ToArray();
-
-		var strippedBody = body.StripMarkdown();
 		var @abstract = !string.IsNullOrEmpty(strippedBody)
 			? strippedBody[..Math.Min(strippedBody.Length, 400)] + " " + string.Join(" \n- ", headings)
 			: string.Empty;
@@ -131,6 +134,26 @@ public partial class ElasticsearchMarkdownExporter
 			Hidden = fileContext.NavigationItem.Hidden
 		};
 
+		// Infer product and repository metadata
+		var mappedPages = fileContext.SourceFile.YamlFrontMatter?.MappedPages;
+		var inference = fileContext.InferenceService.InferForMarkdown(
+			fileContext.BuildContext.Git.RepositoryName,
+			mappedPages,
+			fileContext.DocumentationSet.Configuration.Products,
+			fileContext.SourceFile.YamlFrontMatter?.Products,
+			appliesTo
+		);
+		doc.Product = inference.Product is not null
+			? new IndexedProduct { Id = inference.Product.Id, Repository = inference.Repository }
+			: null;
+		doc.RelatedProducts = inference.RelatedProducts.Count > 0
+			? inference.RelatedProducts.Select(p => new IndexedProduct
+			{
+				Id = p.Id,
+				Repository = p.Repository ?? inference.Repository
+			}).ToArray()
+			: null;
+
 		CommonEnrichments(doc, currentNavigation);
 
 		// AI Enrichment - hybrid approach:
@@ -154,20 +177,19 @@ public partial class ElasticsearchMarkdownExporter
 		// we'll rename IMarkdownExporter to IDocumentationFileExporter at that point
 		_logger.LogInformation("Exporting OpenAPI documentation to Elasticsearch");
 
-		var exporter = new OpenApiDocumentExporter(_versionsConfiguration);
+		var exporter = new OpenApiDocumentExporter(_versionsConfiguration, _inferService);
 
 		await foreach (var doc in exporter.ExportDocuments(limitPerSource: null, ctx))
 		{
 			var document = MarkdownParser.Parse(doc.Body ?? string.Empty);
 
 			doc.Body = LlmMarkdownExporter.ConvertToLlmMarkdown(document, _context);
+			doc.StrippedBody = PlainTextExporter.ConvertToPlainText(document, _context);
 
 			var headings = document.Descendants<HeadingBlock>()
 				.Select(h => h.GetData("header") as string ?? string.Empty) // TODO: Confirm that 'header' data is correctly set for all HeadingBlock instances and that this extraction is reliable.
 				.Where(text => !string.IsNullOrEmpty(text))
 				.ToArray();
-
-			doc.StrippedBody = doc.Body.StripMarkdown();
 			var @abstract = !string.IsNullOrEmpty(doc.StrippedBody)
 				? doc.Body[..Math.Min(doc.StrippedBody.Length, 400)] + " " + string.Join(" \n- ", doc.Headings)
 				: string.Empty;
@@ -253,4 +275,5 @@ public partial class ElasticsearchMarkdownExporter
 			_ = Interlocked.Decrement(ref _enrichmentCount);
 		}
 	}
+
 }

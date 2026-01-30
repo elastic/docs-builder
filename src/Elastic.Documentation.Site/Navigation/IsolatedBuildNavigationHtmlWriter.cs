@@ -12,17 +12,17 @@ namespace Elastic.Documentation.Site.Navigation;
 public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNavigationItem<INavigationModel, INavigationItem> siteRoot)
 	: INavigationHtmlWriter
 {
-	private readonly ConcurrentDictionary<(string, int), string> _renderedNavigationCache = [];
+	private readonly ConcurrentDictionary<string, string> _renderedNavigationCache = [];
 
 	public async Task<NavigationRenderResult> RenderNavigation(
-		IRootNavigationItem<INavigationModel, INavigationItem> currentRootNavigation, INavigationItem currentNavigationItem, int maxLevel, Cancel ctx = default
+		IRootNavigationItem<INavigationModel, INavigationItem> currentRootNavigation, INavigationItem currentNavigationItem, Cancel ctx = default
 	)
 	{
 		var navigation = context.Configuration.Features.PrimaryNavEnabled || currentRootNavigation.IsUsingNavigationDropdown
 			? currentRootNavigation
 			: siteRoot;
-		var id = ShortId.Create($"{(navigation.Id, maxLevel).GetHashCode()}");
-		if (_renderedNavigationCache.TryGetValue((navigation.Id, maxLevel), out var value))
+		var id = ShortId.Create($"{navigation.Id.GetHashCode()}");
+		if (_renderedNavigationCache.TryGetValue(navigation.Id, out var value))
 		{
 			return new NavigationRenderResult
 			{
@@ -30,9 +30,9 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNaviga
 				Id = id
 			};
 		}
-		var model = CreateNavigationModel(navigation, maxLevel);
+		var model = CreateNavigationModel(navigation);
 		value = await ((INavigationHtmlWriter)this).Render(model, ctx);
-		_renderedNavigationCache[(navigation.Id, maxLevel)] = value;
+		_renderedNavigationCache[navigation.Id] = value;
 		return new NavigationRenderResult
 		{
 			Html = value,
@@ -40,7 +40,7 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNaviga
 		};
 	}
 
-	private NavigationViewModel CreateNavigationModel(IRootNavigationItem<INavigationModel, INavigationItem> navigation, int maxLevel) =>
+	private NavigationViewModel CreateNavigationModel(IRootNavigationItem<INavigationModel, INavigationItem> navigation) =>
 		new()
 		{
 			Title = navigation.NavigationTitle,
@@ -49,7 +49,6 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNaviga
 			IsPrimaryNavEnabled = context.Configuration.Features.PrimaryNavEnabled,
 			IsUsingNavigationDropdown = context.Configuration.Features.PrimaryNavEnabled || navigation.IsUsingNavigationDropdown,
 			IsGlobalAssemblyBuild = false,
-			TopLevelItems = siteRoot.NavigationItems.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>().ToList(),
-			MaxLevel = maxLevel
+			TopLevelItems = siteRoot.NavigationItems.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>().ToList()
 		};
 }

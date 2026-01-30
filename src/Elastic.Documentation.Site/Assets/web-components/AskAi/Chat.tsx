@@ -2,7 +2,6 @@ import { AskAiSuggestions } from './AskAiSuggestions'
 import { ChatInput } from './ChatInput'
 import { ChatMessageList } from './ChatMessageList'
 import { InfoBanner } from './InfoBanner'
-import { KeyboardShortcutsFooter } from './KeyboardShortcutsFooter'
 import { LegalDisclaimer } from './LegalDisclaimer'
 import AiIcon from './ai-icon.svg'
 import { useAskAiModalActions } from './askAi.modal.store'
@@ -11,6 +10,8 @@ import {
     useChatActions,
     useChatMessages,
     useChatScrollPosition,
+    useHasHydrated,
+    useInputValue,
     useIsChatEmpty,
     useIsStreaming,
 } from './chat.store'
@@ -41,6 +42,7 @@ import {
 export const Chat = () => {
     const { euiTheme } = useEuiTheme()
     const isEmpty = useIsChatEmpty()
+    const hasHydrated = useHasHydrated()
     const inputRef = useRef<HTMLTextAreaElement>(null)
     const scrollRef = useRef<HTMLDivElement>(null)
 
@@ -68,7 +70,7 @@ export const Chat = () => {
         >
             <ChatHeader />
 
-            {isEmpty ? (
+            {hasHydrated && isEmpty ? (
                 <EuiFlexItem grow={true} css={emptyStateContainerStyles}>
                     <EuiEmptyPrompt
                         icon={<EuiIcon type={AiIcon} size="xxl" />}
@@ -82,6 +84,9 @@ export const Chat = () => {
                         }
                     />
                 </EuiFlexItem>
+            ) : !hasHydrated ? (
+                // Show nothing while hydrating to prevent empty state flash
+                <EuiFlexItem grow={true} />
             ) : (
                 <ChatScrollArea
                     scrollRef={scrollRef}
@@ -91,13 +96,7 @@ export const Chat = () => {
                 />
             )}
 
-            <ChatInputArea
-                inputRef={inputRef}
-                onMetaSemicolon={handleMetaSemicolon}
-                onStateChange={setScrollAreaProps}
-            />
-
-            {isEmpty && (
+            {hasHydrated && isEmpty && (
                 <>
                     <AskAiSuggestions />
                     <EuiSpacer size="m" />
@@ -108,12 +107,16 @@ export const Chat = () => {
                     >
                         <LegalDisclaimer />
                     </div>
+                    <EuiSpacer size="m" />
                 </>
             )}
 
+            <ChatInputArea
+                inputRef={inputRef}
+                onMetaSemicolon={handleMetaSemicolon}
+                onStateChange={setScrollAreaProps}
+            />
             <InfoBanner />
-
-            <KeyboardShortcutsFooter shortcuts={KEYBOARD_SHORTCUTS} />
         </EuiFlexGroup>
     )
 }
@@ -124,6 +127,26 @@ const ChatHeader = () => {
     const messages = useChatMessages()
     const { euiTheme } = useEuiTheme()
     const smallFontsize = useEuiFontSize('s').fontSize
+
+    // Prevent EUI's focus management from auto-focusing the clear button when it first appears.
+    // EUI components have internal focus management that tries to focus the first focusable
+    // element in a flyout when content changes. By temporarily setting tabIndex={-1}, we tell
+    // the focus management to skip this button during the initial render cycle.
+    const [isClearButtonFocusable, setIsClearButtonFocusable] = useState(false)
+    const prevHasMessages = useRef(messages.length > 0)
+
+    useEffect(() => {
+        const hasMessages = messages.length > 0
+        if (hasMessages && !prevHasMessages.current) {
+            // Button just appeared - delay focusability to avoid EUI's auto-focus
+            setIsClearButtonFocusable(false)
+            const timer = setTimeout(() => setIsClearButtonFocusable(true), 150)
+            prevHasMessages.current = hasMessages
+            return () => clearTimeout(timer)
+        }
+        prevHasMessages.current = hasMessages
+    }, [messages.length])
+
     return (
         <EuiFlexItem
             grow={false}
@@ -133,10 +156,10 @@ const ChatHeader = () => {
         >
             <div
                 css={css`
-                    padding-block: ${euiTheme.size.m};
+                    // padding-block: ${euiTheme.size.m};
                     padding-inline: ${euiTheme.size.base};
                     display: grid;
-                    height: 56px;
+                    height: 37px;
                     grid-template-columns: 1fr auto auto;
                     align-items: center;
                 `}
@@ -164,19 +187,17 @@ const ChatHeader = () => {
                         gap: ${euiTheme.size.s};
                     `}
                 >
-                    <EuiToolTip content="Clear conversation">
-                        <EuiButtonIcon
-                            aria-label="Clear conversation"
-                            iconType="trash"
-                            color="text"
-                            onClick={() => clearChat()}
-                            css={css`
-                                visibility: ${messages.length > 0
-                                    ? 'visible'
-                                    : 'hidden'};
-                            `}
-                        />
-                    </EuiToolTip>
+                    {messages.length > 0 && (
+                        <EuiToolTip content="Clear conversation">
+                            <EuiButtonIcon
+                                aria-label="Clear conversation"
+                                iconType="trash"
+                                color="text"
+                                onClick={() => clearChat()}
+                                tabIndex={isClearButtonFocusable ? 0 : -1}
+                            />
+                        </EuiToolTip>
+                    )}
                     <EuiButtonIcon
                         aria-label="Close Ask AI modal"
                         iconType="cross"
@@ -206,7 +227,11 @@ const ChatScrollArea = ({
     const messages = useChatMessages()
     const { euiTheme } = useEuiTheme()
     const spacerHeight = useSpacerHeight(scrollRef, isStreaming, messages)
-    const lastUserMessageCountRef = useRef(0)
+    // Initialize with current count to prevent scroll on remount (only scroll on NEW messages)
+    const initialUserMessageCount = messages.filter(
+        (m) => m.type === 'user'
+    ).length
+    const lastUserMessageCountRef = useRef(initialUserMessageCount)
 
     // Scroll to user message when a new one is added
     useLayoutEffect(() => {
@@ -214,13 +239,22 @@ const ChatScrollArea = ({
             (m) => m.type === 'user'
         ).length
         if (userMessageCount > lastUserMessageCountRef.current) {
-            // New user message added - scroll after DOM updates but before paint
-            // useLayoutEffect runs synchronously after DOM mutations, perfect for scrolling
+            // New user message added - use double RAF + setTimeout to ensure:
+            // 1. React processes state updates and schedules re-render
+            // 2. DOM is updated with new spacer
+            // 3. React's commit-phase operations complete
             requestAnimationFrame(() => {
-                if (scrollRef.current) {
-                    const scrollMargin = parseInt(euiTheme.size.l, 10)
-                    scrollUserMessageToTop(scrollRef.current, scrollMargin)
-                }
+                requestAnimationFrame(() => {
+                    setTimeout(() => {
+                        if (scrollRef.current) {
+                            const scrollMargin = parseInt(euiTheme.size.l, 10)
+                            scrollUserMessageToTop(
+                                scrollRef.current,
+                                scrollMargin
+                            )
+                        }
+                    }, 0)
+                })
             })
         }
         lastUserMessageCountRef.current = userMessageCount
@@ -236,7 +270,12 @@ const ChatScrollArea = ({
 
     return (
         <EuiFlexItem grow={true} css={scrollContainerStyles}>
-            <div ref={scrollRef} css={scrollableStyles} onScroll={onScroll}>
+            <div
+                ref={scrollRef}
+                css={scrollableStyles}
+                onScroll={onScroll}
+                data-chat-scroll-area
+            >
                 <div css={messagesStyles}>
                     <ChatMessageList
                         messages={messages}
@@ -307,13 +346,17 @@ const ChatInputArea = ({
 }
 
 function useChatSubmit() {
-    const { submitQuestion, clearNon429Errors, cancelStreaming } =
-        useChatActions()
+    const {
+        submitQuestion,
+        clearNon429Errors,
+        cancelStreaming,
+        setInputValue,
+    } = useChatActions()
+    const inputValue = useInputValue()
     const isCooldownActive = useIsAskAiCooldownActive()
     const isStreaming = useIsStreaming()
     // Note: Scrolling is now handled in ChatScrollArea via useLayoutEffect
 
-    const [inputValue, setInputValue] = useState('')
     const abortRef = useRef<(() => void) | null>(null)
 
     useEffect(() => {
@@ -331,7 +374,7 @@ function useChatSubmit() {
             submitQuestion(trimmed)
             setInputValue('')
         },
-        [submitQuestion, isCooldownActive, clearNon429Errors]
+        [submitQuestion, isCooldownActive, clearNon429Errors, setInputValue]
     )
 
     const handleAbort = useCallback(() => {
@@ -362,17 +405,19 @@ function useChatSubmit() {
  */
 function useScrollPersistence(scrollRef: RefObject<HTMLDivElement | null>) {
     const savedPosition = useChatScrollPosition()
+    const hasHydrated = useHasHydrated()
     const { setScrollPosition } = useChatActions()
 
+    // Restore scroll position after hydration completes
     useEffect(() => {
-        if (scrollRef.current && savedPosition > 0) {
+        if (hasHydrated && scrollRef.current && savedPosition > 0) {
             requestAnimationFrame(() => {
                 if (scrollRef.current) {
                     scrollRef.current.scrollTop = savedPosition
                 }
             })
         }
-    }, [])
+    }, [hasHydrated])
 
     const handleScroll = useCallback(() => {
         if (scrollRef.current) {
@@ -421,8 +466,31 @@ function useSpacerHeight(
     const { euiTheme } = useEuiTheme()
     const scrollMargin = parseInt(euiTheme.size.l, 10)
     const [spacerHeight, setSpacerHeight] = useState(0)
+    const [containerSize, setContainerSize] = useState({ width: 0, height: 0 })
 
-    useEffect(() => {
+    // Track container size changes with ResizeObserver
+    useLayoutEffect(() => {
+        if (!scrollRef.current) return
+
+        const container = scrollRef.current
+        const resizeObserver = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+                const { width, height } = entry.contentRect
+                setContainerSize((prev) => {
+                    if (prev.width !== width || prev.height !== height) {
+                        return { width, height }
+                    }
+                    return prev
+                })
+            }
+        })
+
+        resizeObserver.observe(container)
+        return () => resizeObserver.disconnect()
+    }, [scrollRef])
+
+    // Calculate spacer height - use useLayoutEffect for synchronous updates
+    useLayoutEffect(() => {
         if (!scrollRef.current) return
 
         const container = scrollRef.current
@@ -451,7 +519,7 @@ function useSpacerHeight(
                 containerHeight - contentHeight - scrollMargin * 2 - 1
             setSpacerHeight(Math.max(0, remainingSpace))
         }
-    }, [isStreaming, scrollRef, messages, scrollMargin])
+    }, [isStreaming, scrollRef, messages, scrollMargin, containerSize])
 
     return spacerHeight
 }
@@ -460,12 +528,7 @@ function useSpacerHeight(
 // Constants & Styles (implementation details)
 // ============================================================================
 
-const KEYBOARD_SHORTCUTS = [
-    { keys: ['⌘K'], label: 'Search' },
-    { keys: ['Esc'], label: 'Close' },
-]
-
-const CONTENT_AREA_HEIGHT = 400
+const CONTENT_AREA_HEIGHT = 200
 
 // ============================================================================
 // DOM Helpers
@@ -495,8 +558,8 @@ function scrollUserMessageToTop(container: HTMLElement, margin: number): void {
 }
 
 const containerStyles = css`
-    height: 100%;
-    max-height: 70vh;
+    // height: calc(100vh - var(--offset-top) - 1px);
+    height: 100vh;
     overflow: hidden;
 `
 

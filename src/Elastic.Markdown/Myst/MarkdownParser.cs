@@ -23,6 +23,7 @@ using Markdig;
 using Markdig.Extensions.EmphasisExtras;
 using Markdig.Parsers;
 using Markdig.Syntax;
+using Microsoft.Extensions.Logging;
 
 namespace Elastic.Markdown.Myst;
 
@@ -121,6 +122,7 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 		var preprocessedMarkdown = PreprocessLinkSubstitutions(inputMarkdown, (ParserContext)context);
 
 		var markdownDocument = Markdig.Markdown.Parse(preprocessedMarkdown, pipeline, context);
+
 		return markdownDocument;
 	}
 
@@ -157,6 +159,7 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 				.UsePreciseSourceLocation()
 				.UseFootnotes() // Must be before UseDiagnosticLinks to ensure FootnoteLinkParser is inserted correctly
 				.UseDiagnosticLinks()
+				.UseAutoLinks()
 				.UseHeadingsWithSlugs()
 				.UseEmphasisExtras(EmphasisExtraOptions.Default)
 				.UseSubstitutionInlineCode()
@@ -197,9 +200,7 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 		{
 			// Check if this link is inside a code block with subs=false
 			if (IsInsideSubsDisabledCodeBlock(match.Index, codeBlockRanges))
-			{
 				return match.Value; // Don't process links in subs=false code blocks
-			}
 
 			var linkText = match.Groups[1].Value;
 			var linkUrl = match.Groups[2].Value;
@@ -222,33 +223,58 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 	private static List<(int start, int end, bool subsDisabled)> GetCodeBlockRanges(string markdown)
 	{
 		var ranges = new List<(int start, int end, bool subsDisabled)>();
-		var lines = markdown.Split('\n');
-		var currentPos = 0;
+		var span = markdown.AsSpan();
+		var pos = 0;
 
-		for (var i = 0; i < lines.Length; i++)
+		while (pos < span.Length)
 		{
-			var line = lines[i];
+			var lineStart = pos;
 
-			// Check for code block start (``` or ````)
-			if (line.TrimStart().StartsWith("```"))
+			// Skip leading whitespace
+			while (pos < span.Length && span[pos] is ' ' or '\t')
+				pos++;
+
+			// Check if the line starts with ```
+			if (pos + 2 < span.Length && span[pos] == '`' && span[pos + 1] == '`' && span[pos + 2] == '`')
 			{
-				// Check if this line contains subs=false
-				var subsDisabled = line.Contains("subs=false");
-				var blockStart = currentPos;
+				// Find end of opening line
+				var lineEnd = span[pos..].IndexOf('\n');
+				lineEnd = lineEnd == -1 ? span.Length : pos + lineEnd;
 
-				// Find the end of the code block
-				var blockEnd = currentPos + line.Length;
-				for (var j = i + 1; j < lines.Length; j++)
+				var subsDisabled = span[pos..lineEnd].Contains("subs=false".AsSpan(), StringComparison.Ordinal);
+				var blockStart = lineStart;
+
+				// Move past an opening fence
+				pos = lineEnd < span.Length ? lineEnd + 1 : span.Length;
+
+				// Find closing fence
+				while (pos < span.Length)
 				{
-					blockEnd += lines[j].Length + 1; // +1 for newline
-					if (lines[j].TrimStart().StartsWith("```"))
+					// Skip whitespace
+					while (pos < span.Length && span[pos] is ' ' or '\t')
+						pos++;
+
+					// Check for closing ```
+					if (pos + 2 < span.Length && span[pos] == '`' && span[pos + 1] == '`' && span[pos + 2] == '`')
+					{
+						var closingEnd = span[pos..].IndexOf('\n');
+						closingEnd = closingEnd == -1 ? span.Length : pos + closingEnd;
+						ranges.Add((blockStart, closingEnd, subsDisabled));
+						pos = closingEnd < span.Length ? closingEnd + 1 : span.Length;
 						break;
+					}
+
+					// Move to the next line
+					var nextNewline = span[pos..].IndexOf('\n');
+					pos = nextNewline == -1 ? span.Length : pos + nextNewline + 1;
 				}
-
-				ranges.Add((blockStart, blockEnd, subsDisabled));
 			}
-
-			currentPos += line.Length + 1; // +1 for newline
+			else
+			{
+				// Move to the next line
+				var nextNewline = span[pos..].IndexOf('\n');
+				pos = nextNewline == -1 ? span.Length : pos + nextNewline + 1;
+			}
 		}
 
 		return ranges;
@@ -259,9 +285,7 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 		foreach (var (start, end, subsDisabled) in codeBlockRanges)
 		{
 			if (index >= start && index <= end && subsDisabled)
-			{
 				return true;
-			}
 		}
 		return false;
 	}

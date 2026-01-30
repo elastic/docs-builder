@@ -4,22 +4,165 @@ import { cooldownStore } from '../shared/cooldown.store'
 import { ApiError, isApiError, isRateLimitError } from '../shared/errorHandling'
 import { AskAiEvent } from './AskAiEvent'
 import { MessageThrottler } from './MessageThrottler'
+import {
+    get as idbGet,
+    set as idbSet,
+    del as idbDel,
+    createStore as createIdbStore,
+} from 'idb-keyval'
 import { v4 as uuidv4 } from 'uuid'
-import { create } from 'zustand/react'
+import { createStore } from 'zustand'
+import { persist, PersistStorage, StorageValue } from 'zustand/middleware'
+import { useStore } from 'zustand/react'
+
+// =============================================================================
+// IndexedDB Storage via idb-keyval
+// =============================================================================
+// We use idb-keyval for IndexedDB access. It provides a simple key-value API
+// without the complexity of managing object stores and schema versions.
+//
+// IndexedDB supports structured cloning, so we store objects directly without
+// JSON serialization (unlike localStorage which only stores strings).
+//
+// Key naming convention:
+//   - "ask-ai/conversations-index"  - lightweight index for listing (zustand persist)
+//   - "ask-ai/conversation-{id}"    - conversation data (messages, feedback, etc.)
+//
+// To add new IndexedDB storage for other features, simply use new key prefixes
+// with the get/set/del helpers below.
+// =============================================================================
+
+// Custom IndexedDB store for elastic-docs data
+const elasticDocsStore = createIdbStore(
+    'elastic-docs-keyval-store',
+    'elastic-docs-keyval-store'
+)
+
+// Typed wrappers around idb-keyval that use our custom store
+const get = <T>(key: string) => idbGet<T>(key, elasticDocsStore)
+const set = <T>(key: string, value: T) => idbSet(key, value, elasticDocsStore)
+const del = (key: string) => idbDel(key, elasticDocsStore)
+
+// PersistStorage adapter for zustand's persist middleware
+// Uses IndexedDB's native object storage (no JSON serialization needed)
+function createIdbStorage<T>(): PersistStorage<T> {
+    return {
+        getItem: async (name: string): Promise<StorageValue<T> | null> => {
+            const value = await get<StorageValue<T>>(name)
+            return value ?? null
+        },
+        setItem: async (
+            name: string,
+            value: StorageValue<T>
+        ): Promise<void> => {
+            await set(name, value)
+        },
+        removeItem: async (name: string): Promise<void> => {
+            await del(name)
+        },
+    }
+}
+
+// Zustand persist storage for conversations index
+const conversationsIndexStorage = createIdbStorage<Partial<ChatState>>()
+
+// Conversation storage key helper
+const getConversationKey = (conversationId: ConversationId) =>
+    `ask-ai/conversation-${conversationId}`
+
+// Type for persisted conversation data (messages, feedback, and settings)
+interface PersistedConversation {
+    state: {
+        chatMessages: ChatMessage[]
+        totalMessageCount: number
+        messageFeedback: Record<string, Reaction>
+        aiProvider: AiProvider
+    }
+    version: number
+}
+
+// Helper to save a conversation's data
+async function saveConversationData(
+    conversationId: ConversationId,
+    messages: ChatMessage[],
+    totalMessageCount: number,
+    messageFeedback: Record<string, Reaction>,
+    aiProvider: AiProvider
+) {
+    const data: PersistedConversation = {
+        state: {
+            chatMessages: messages,
+            totalMessageCount,
+            messageFeedback,
+            aiProvider,
+        },
+        version: 1,
+    }
+    await set(getConversationKey(conversationId), data)
+}
+
+// Helper to load a conversation's data
+async function loadConversationData(conversationId: ConversationId): Promise<{
+    chatMessages: ChatMessage[]
+    totalMessageCount: number
+    messageFeedback: Record<string, Reaction>
+    aiProvider: AiProvider
+} | null> {
+    try {
+        const stored = await get<PersistedConversation>(
+            getConversationKey(conversationId)
+        )
+        if (stored?.state) {
+            // Mark any streaming messages as interrupted
+            const messages = (stored.state.chatMessages ?? []).map(
+                (msg: ChatMessage) =>
+                    msg.status === 'streaming'
+                        ? { ...msg, status: 'interrupted' as const }
+                        : msg
+            )
+
+            return {
+                chatMessages: messages,
+                totalMessageCount:
+                    stored.state.totalMessageCount ?? messages.length,
+                messageFeedback: stored.state.messageFeedback ?? {},
+                aiProvider: stored.state.aiProvider ?? 'LlmGateway',
+            }
+        }
+    } catch {
+        // Ignore errors
+    }
+    return null
+}
+
+// Helper to delete a conversation's data
+async function deleteConversationData(conversationId: ConversationId) {
+    await del(getConversationKey(conversationId))
+}
 
 export type { AiProvider }
+export type ConversationId = string
 export type Reaction = 'thumbsUp' | 'thumbsDown'
 
 export interface ChatMessage {
     id: string
     type: 'user' | 'ai'
     content: string
-    conversationId: string
+    conversationId: ConversationId
     timestamp: number
-    status?: 'streaming' | 'complete' | 'error'
+    status?: 'streaming' | 'complete' | 'error' | 'interrupted'
     question?: string // For AI messages, store the question
     error?: ApiError | Error | null
     reasoning?: AskAiEvent[] // Reasoning steps for status display (search, tool calls, etc.)
+}
+
+// Conversation metadata stored in the index (for listing and sorting)
+export interface ConversationMeta {
+    id: ConversationId // Backend conversation ID (set on conversation_start)
+    title: string // First user message, truncated
+    createdAt: number // When conversation started
+    updatedAt: number // When last message was added
+    messageCount: number
 }
 
 interface ActiveStream {
@@ -33,13 +176,26 @@ const activeStreams = new Map<string, ActiveStream>()
 
 const sentAiMessageIds = new Set<string>()
 
+// Maximum number of conversations to keep (oldest are deleted when exceeded)
+// This is a temporary limit to prevent the IndexedDB from growing too large
+// As soon as we support multiple conversation in the UI, we will set a more reasonable limit
+const MAX_CONVERSATIONS = 2
+
 interface ChatState {
+    // Conversation index (lightweight, always loaded) - keyed by conversation ID for O(1) lookup
+    conversations: Record<ConversationId, ConversationMeta>
+    activeConversationId: ConversationId | null
+    // Active conversation data (lazy loaded)
     chatMessages: ChatMessage[]
-    conversationId: string | null
+    totalMessageCount: number // Tracks all messages ever sent (for "X earlier messages not shown")
+    // Other state
     aiProvider: AiProvider
     messageFeedback: Record<string, Reaction> // messageId -> reaction
     scrollPosition: number
+    inputValue: string // Draft input text (persisted so user doesn't lose it)
+    hasHydrated: boolean // True after IndexedDB hydration completes (not persisted)
     actions: {
+        // Existing actions
         submitQuestion: (question: string) => void
         updateAiMessage: (
             id: string,
@@ -48,7 +204,7 @@ interface ChatState {
             error?: ApiError | Error | null
         ) => void
         addReasoningToMessage: (id: string, event: AskAiEvent) => void
-        setConversationId: (conversationId: string) => void
+        setConversationId: (conversationId: ConversationId) => void
         setAiProvider: (provider: AiProvider) => void
         clearChat: () => void
         clearNon429Errors: () => void
@@ -57,155 +213,511 @@ interface ChatState {
         abortMessage: (messageId: string) => void
         isStreaming: (messageId: string) => boolean
         setScrollPosition: (position: number) => void
+        setInputValue: (value: string) => void
+        // New multi-conversation actions
+        switchConversation: (id: ConversationId) => Promise<void>
+        createConversation: () => void
+        deleteConversation: (id: ConversationId) => Promise<void>
+        clearAllConversations: () => void
     }
 }
 
-export const chatStore = create<ChatState>((set, get) => ({
-    chatMessages: [],
-    conversationId: null, // Start with null - will be set by backend on first request
-    aiProvider: 'LlmGateway', // Default to LLM Gateway
-    messageFeedback: {},
-    scrollPosition: 0,
-    actions: {
-        submitQuestion: (question: string) => {
-            const state = get()
-            const aiMessageId = uuidv4()
+export const chatStore = createStore<ChatState>()(
+    persist(
+        (set, get) => ({
+            // Conversation index
+            conversations: {},
+            activeConversationId: null,
+            // Active conversation data
+            chatMessages: [],
+            totalMessageCount: 0,
+            // Other state
+            aiProvider: 'LlmGateway', // Default to LLM Gateway
+            messageFeedback: {},
+            hasHydrated: false, // Will be set to true after IndexedDB hydration
+            scrollPosition: 0,
+            inputValue: '',
+            actions: {
+                submitQuestion: (question: string) => {
+                    const state = get()
+                    const aiMessageId = uuidv4()
 
-            const userMessage: ChatMessage = {
-                id: uuidv4(),
-                type: 'user',
-                content: question,
-                conversationId: state.conversationId ?? '',
-                timestamp: Date.now(),
-            }
-
-            const aiMessage: ChatMessage = {
-                id: aiMessageId,
-                type: 'ai',
-                content: '',
-                question,
-                conversationId: state.conversationId ?? '',
-                timestamp: Date.now(),
-                status: 'streaming',
-                reasoning: [],
-            }
-
-            set({
-                chatMessages: [...state.chatMessages, userMessage, aiMessage],
-            })
-
-            // Start streaming (runs outside React lifecycle)
-            startStream(
-                aiMessageId,
-                question,
-                state.conversationId,
-                state.aiProvider
-            )
-        },
-
-        updateAiMessage: (id, content, status, error = null) => {
-            set((state) => ({
-                chatMessages: state.chatMessages.map((msg) =>
-                    msg.id === id ? { ...msg, content, status, error } : msg
-                ),
-            }))
-        },
-
-        addReasoningToMessage: (id, event) => {
-            set((state) => ({
-                chatMessages: state.chatMessages.map((msg) =>
-                    msg.id === id && msg.reasoning
-                        ? { ...msg, reasoning: [...msg.reasoning, event] }
-                        : msg
-                ),
-            }))
-        },
-
-        setConversationId: (conversationId) => {
-            set({ conversationId })
-        },
-
-        setAiProvider: (provider) => {
-            set({ aiProvider: provider })
-        },
-
-        clearChat: () => {
-            // Abort all active streams and clear their throttlers
-            for (const [, stream] of activeStreams) {
-                stream.throttler.clear()
-                stream.controller.abort()
-            }
-            sentAiMessageIds.clear()
-            activeStreams.clear()
-            set({ chatMessages: [], conversationId: null, messageFeedback: {} })
-        },
-
-        clearNon429Errors: () => {
-            set((state) => ({
-                chatMessages: state.chatMessages.map((msg) => {
-                    if (
-                        msg.status === 'error' &&
-                        msg.error &&
-                        !isRateLimitError(msg.error)
-                    ) {
-                        return {
-                            ...msg,
-                            status: 'complete',
-                            error: null,
-                            content: '',
-                        }
+                    const userMessage: ChatMessage = {
+                        id: uuidv4(),
+                        type: 'user',
+                        content: question,
+                        conversationId: state.activeConversationId ?? '',
+                        timestamp: Date.now(),
                     }
-                    return msg
-                }),
-            }))
-        },
 
-        cancelStreaming: () => {
-            const state = get()
-            state.chatMessages.forEach((msg) => {
-                if (msg.type === 'ai' && msg.status === 'streaming') {
-                    const stream = activeStreams.get(msg.id)
+                    const aiMessage: ChatMessage = {
+                        id: aiMessageId,
+                        type: 'ai',
+                        content: '',
+                        question,
+                        conversationId: state.activeConversationId ?? '',
+                        timestamp: Date.now(),
+                        status: 'streaming',
+                        reasoning: [],
+                    }
+
+                    set({
+                        chatMessages: [
+                            ...state.chatMessages,
+                            userMessage,
+                            aiMessage,
+                        ],
+                        totalMessageCount: state.totalMessageCount + 2, // user + AI message
+                    })
+
+                    // Start streaming (runs outside React lifecycle)
+                    startStream(
+                        aiMessageId,
+                        question,
+                        state.activeConversationId,
+                        state.aiProvider
+                    )
+                },
+
+                updateAiMessage: (id, content, status, error = null) => {
+                    set((state) => ({
+                        chatMessages: state.chatMessages.map((msg) =>
+                            msg.id === id
+                                ? { ...msg, content, status, error }
+                                : msg
+                        ),
+                    }))
+                },
+
+                addReasoningToMessage: (id, event) => {
+                    set((state) => ({
+                        chatMessages: state.chatMessages.map((msg) =>
+                            msg.id === id && msg.reasoning
+                                ? {
+                                      ...msg,
+                                      reasoning: [...msg.reasoning, event],
+                                  }
+                                : msg
+                        ),
+                    }))
+                },
+
+                setConversationId: (conversationId) => {
+                    const state = get()
+                    const existingConv = state.conversations[conversationId]
+
+                    if (existingConv) {
+                        // Update existing conversation's metadata
+                        set({
+                            activeConversationId: conversationId,
+                            conversations: {
+                                ...state.conversations,
+                                [conversationId]: {
+                                    ...existingConv,
+                                    updatedAt: Date.now(),
+                                    messageCount: state.chatMessages.length,
+                                },
+                            },
+                        })
+                    } else {
+                        // Create new conversation entry
+                        const firstUserMessage = state.chatMessages.find(
+                            (m) => m.type === 'user'
+                        )
+                        const newConv: ConversationMeta = {
+                            id: conversationId,
+                            title:
+                                firstUserMessage?.content.slice(0, 100) ??
+                                'New conversation',
+                            createdAt: Date.now(),
+                            updatedAt: Date.now(),
+                            messageCount: state.chatMessages.length,
+                        }
+
+                        // Enforce MAX_CONVERSATIONS limit - delete oldest if exceeded
+                        let updatedConversations = {
+                            ...state.conversations,
+                            [conversationId]: newConv,
+                        }
+
+                        const convList = Object.values(updatedConversations)
+                        if (convList.length > MAX_CONVERSATIONS) {
+                            // Sort by updatedAt descending, keep only the newest
+                            const sorted = convList.sort(
+                                (a, b) => b.updatedAt - a.updatedAt
+                            )
+                            const toKeep = sorted.slice(0, MAX_CONVERSATIONS)
+                            const toDelete = sorted.slice(MAX_CONVERSATIONS)
+
+                            // Delete old conversation data from IndexedDB
+                            toDelete.forEach((conv) =>
+                                deleteConversationData(conv.id)
+                            )
+
+                            // Rebuild conversations map with only kept ones
+                            updatedConversations = Object.fromEntries(
+                                toKeep.map((c) => [c.id, c])
+                            )
+                        }
+
+                        set({
+                            activeConversationId: conversationId,
+                            conversations: updatedConversations,
+                        })
+                    }
+                },
+
+                setAiProvider: (provider) => {
+                    set({ aiProvider: provider })
+                },
+
+                clearChat: () => {
+                    // Abort all active streams and clear their throttlers
+                    for (const [, stream] of activeStreams) {
+                        stream.throttler.clear()
+                        stream.controller.abort()
+                    }
+                    sentAiMessageIds.clear()
+                    activeStreams.clear()
+                    set({
+                        chatMessages: [],
+                        totalMessageCount: 0,
+                        activeConversationId: null,
+                        messageFeedback: {},
+                    })
+                },
+
+                clearNon429Errors: () => {
+                    set((state) => ({
+                        chatMessages: state.chatMessages.map((msg) => {
+                            if (
+                                msg.status === 'error' &&
+                                msg.error &&
+                                !isRateLimitError(msg.error)
+                            ) {
+                                return {
+                                    ...msg,
+                                    status: 'complete',
+                                    error: null,
+                                    content: '',
+                                }
+                            }
+                            return msg
+                        }),
+                    }))
+                },
+
+                cancelStreaming: () => {
+                    const state = get()
+                    // Collect latest content from active streams before aborting
+                    const streamContents = new Map<string, string>()
+                    state.chatMessages.forEach((msg) => {
+                        if (msg.type === 'ai' && msg.status === 'streaming') {
+                            const stream = activeStreams.get(msg.id)
+                            if (stream) {
+                                streamContents.set(msg.id, stream.content)
+                                stream.throttler.clear()
+                                stream.controller.abort()
+                                activeStreams.delete(msg.id)
+                            }
+                        }
+                    })
+                    set((state) => ({
+                        chatMessages: state.chatMessages.map((msg) =>
+                            msg.type === 'ai' && msg.status === 'streaming'
+                                ? {
+                                      ...msg,
+                                      content:
+                                          streamContents.get(msg.id) ||
+                                          msg.content,
+                                      status: 'interrupted' as const,
+                                  }
+                                : msg
+                        ),
+                    }))
+                },
+
+                setMessageFeedback: (messageId: string, reaction: Reaction) => {
+                    set((state) => ({
+                        messageFeedback: {
+                            ...state.messageFeedback,
+                            [messageId]: reaction,
+                        },
+                    }))
+                },
+
+                abortMessage: (messageId) => {
+                    const stream = activeStreams.get(messageId)
                     if (stream) {
                         stream.throttler.clear()
                         stream.controller.abort()
-                        activeStreams.delete(msg.id)
+                        activeStreams.delete(messageId)
                     }
-                }
-            })
-            set((state) => ({
-                chatMessages: state.chatMessages.map((msg) =>
-                    msg.type === 'ai' && msg.status === 'streaming'
-                        ? { ...msg, status: 'complete' }
-                        : msg
-                ),
-            }))
-        },
-
-        setMessageFeedback: (messageId: string, reaction: Reaction) => {
-            set((state) => ({
-                messageFeedback: {
-                    ...state.messageFeedback,
-                    [messageId]: reaction,
                 },
-            }))
-        },
 
-        abortMessage: (messageId) => {
-            const stream = activeStreams.get(messageId)
-            if (stream) {
-                stream.throttler.clear()
-                stream.controller.abort()
-                activeStreams.delete(messageId)
+                isStreaming: (messageId) => activeStreams.has(messageId),
+
+                setScrollPosition: (position) => {
+                    set({ scrollPosition: position })
+                },
+
+                setInputValue: (value) => {
+                    set({ inputValue: value })
+                },
+
+                // Multi-conversation actions
+                switchConversation: async (id) => {
+                    const state = get()
+
+                    // Save current conversation's data before switching
+                    if (
+                        state.activeConversationId &&
+                        state.chatMessages.length > 0
+                    ) {
+                        await saveConversationData(
+                            state.activeConversationId,
+                            state.chatMessages,
+                            state.totalMessageCount,
+                            state.messageFeedback,
+                            state.aiProvider
+                        )
+                    }
+
+                    // Load the new conversation's data
+                    const loaded = await loadConversationData(id)
+
+                    set({
+                        activeConversationId: id,
+                        chatMessages: loaded?.chatMessages ?? [],
+                        totalMessageCount: loaded?.totalMessageCount ?? 0,
+                        messageFeedback: loaded?.messageFeedback ?? {},
+                        aiProvider: loaded?.aiProvider ?? state.aiProvider,
+                        scrollPosition: 0,
+                        inputValue: '',
+                    })
+                },
+
+                createConversation: () => {
+                    const state = get()
+
+                    // Save current conversation before creating new one
+                    if (
+                        state.activeConversationId &&
+                        state.chatMessages.length > 0
+                    ) {
+                        saveConversationData(
+                            state.activeConversationId,
+                            state.chatMessages,
+                            state.totalMessageCount,
+                            state.messageFeedback,
+                            state.aiProvider
+                        )
+                    }
+
+                    // Clear for new conversation (ID will be set by backend)
+                    set({
+                        activeConversationId: null,
+                        chatMessages: [],
+                        totalMessageCount: 0,
+                        messageFeedback: {},
+                        scrollPosition: 0,
+                        inputValue: '',
+                    })
+                },
+
+                deleteConversation: async (id) => {
+                    const state = get()
+
+                    // Delete from IndexedDB
+                    await deleteConversationData(id)
+
+                    // Remove from conversations map
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                    const { [id]: _, ...updatedConversations } =
+                        state.conversations
+
+                    // If deleting active conversation, switch to most recent or clear
+                    if (state.activeConversationId === id) {
+                        // Find most recent conversation by updatedAt
+                        const remaining = Object.values(updatedConversations)
+                        const mostRecent = remaining.sort(
+                            (a, b) => b.updatedAt - a.updatedAt
+                        )[0]
+
+                        if (mostRecent) {
+                            const loaded = await loadConversationData(
+                                mostRecent.id
+                            )
+                            set({
+                                conversations: updatedConversations,
+                                activeConversationId: mostRecent.id,
+                                chatMessages: loaded?.chatMessages ?? [],
+                                totalMessageCount:
+                                    loaded?.totalMessageCount ?? 0,
+                                messageFeedback: loaded?.messageFeedback ?? {},
+                                aiProvider:
+                                    loaded?.aiProvider ?? state.aiProvider,
+                                scrollPosition: 0,
+                            })
+                        } else {
+                            set({
+                                conversations: updatedConversations,
+                                activeConversationId: null,
+                                chatMessages: [],
+                                totalMessageCount: 0,
+                                messageFeedback: {},
+                                scrollPosition: 0,
+                            })
+                        }
+                    } else {
+                        set({ conversations: updatedConversations })
+                    }
+                },
+
+                clearAllConversations: () => {
+                    const state = get()
+
+                    // Abort all active streams
+                    for (const [, stream] of activeStreams) {
+                        stream.throttler.clear()
+                        stream.controller.abort()
+                    }
+                    sentAiMessageIds.clear()
+                    activeStreams.clear()
+
+                    // Delete all conversation messages from IndexedDB
+                    for (const conv of Object.values(state.conversations)) {
+                        deleteConversationData(conv.id)
+                    }
+
+                    set({
+                        conversations: {},
+                        activeConversationId: null,
+                        chatMessages: [],
+                        totalMessageCount: 0,
+                        messageFeedback: {},
+                        scrollPosition: 0,
+                        inputValue: '',
+                    })
+                },
+            },
+        }),
+        {
+            name: 'ask-ai/conversations-index',
+            version: 1,
+            storage: conversationsIndexStorage,
+            skipHydration: true, // Manual hydration to properly sequence loading
+            // Only persist conversations index and UI state (not messages - those are stored per-conversation)
+            partialize: (state) =>
+                ({
+                    conversations: state.conversations,
+                    activeConversationId: state.activeConversationId,
+                    aiProvider: state.aiProvider,
+                    scrollPosition: state.scrollPosition,
+                    inputValue: state.inputValue,
+                }) as Partial<ChatState>,
+        }
+    )
+)
+
+// Two-phase hydration from IndexedDB:
+// 1. Load conversations index (lightweight, fast)
+// 2. Load active conversation's messages (if any)
+if (typeof window !== 'undefined') {
+    ;(async () => {
+        try {
+            // Phase 1: Load conversations index
+            const stored = await conversationsIndexStorage.getItem(
+                'ask-ai/conversations-index'
+            )
+
+            let conversations: Record<ConversationId, ConversationMeta> = {}
+            let activeConversationId: ConversationId | null = null
+            let aiProvider: AiProvider = 'LlmGateway'
+            let scrollPosition = 0
+            let inputValue = ''
+
+            if (stored && typeof stored === 'object' && 'state' in stored) {
+                const persistedState = (
+                    stored as { state: Partial<ChatState>; version?: number }
+                ).state
+
+                conversations = persistedState.conversations ?? {}
+                activeConversationId =
+                    persistedState.activeConversationId ?? null
+                scrollPosition = persistedState.scrollPosition ?? 0
+                inputValue = persistedState.inputValue ?? ''
+                // Use stored aiProvider as fallback (will be overridden by conversation data if available)
+                aiProvider = persistedState.aiProvider ?? 'LlmGateway'
             }
-        },
 
-        isStreaming: (messageId) => activeStreams.has(messageId),
+            // Phase 2: Load active conversation's data (if any)
+            let chatMessages: ChatMessage[] = []
+            let totalMessageCount = 0
+            let messageFeedback: Record<string, Reaction> = {}
 
-        setScrollPosition: (position) => {
-            set({ scrollPosition: position })
-        },
-    },
-}))
+            if (activeConversationId) {
+                const loaded = await loadConversationData(activeConversationId)
+                if (loaded) {
+                    chatMessages = loaded.chatMessages
+                    totalMessageCount = loaded.totalMessageCount
+                    messageFeedback = loaded.messageFeedback
+                    aiProvider = loaded.aiProvider
+                }
+            }
+
+            // Set the complete state
+            chatStore.setState({
+                conversations,
+                activeConversationId,
+                chatMessages,
+                totalMessageCount,
+                aiProvider,
+                messageFeedback,
+                scrollPosition,
+                inputValue,
+                hasHydrated: true,
+            })
+        } catch {
+            // Hydration failed - continue with empty state but mark as hydrated
+            chatStore.setState({ hasHydrated: true })
+        }
+    })()
+}
+
+/**
+ * Save messages and mark streaming ones as interrupted before the page unloads.
+ * The persist middleware handles the conversations index; we manually save messages.
+ */
+if (typeof window !== 'undefined') {
+    window.addEventListener('beforeunload', () => {
+        const state = chatStore.getState()
+
+        // Mark streaming messages as interrupted
+        const messages = state.chatMessages.map((msg) => {
+            if (msg.status === 'streaming') {
+                const stream = activeStreams.get(msg.id)
+                return {
+                    ...msg,
+                    content: stream?.content || msg.content,
+                    status: 'interrupted' as const,
+                }
+            }
+            return msg
+        })
+
+        // Save current conversation's data to IndexedDB
+        if (state.activeConversationId && messages.length > 0) {
+            saveConversationData(
+                state.activeConversationId,
+                messages,
+                state.totalMessageCount,
+                state.messageFeedback,
+                state.aiProvider
+            )
+        }
+    })
+}
 
 /**
  * Start streaming for a message. Runs outside React lifecycle.
@@ -213,7 +725,7 @@ export const chatStore = create<ChatState>((set, get) => ({
 async function startStream(
     messageId: string,
     question: string,
-    conversationId: string | null,
+    conversationId: ConversationId | null,
     aiProvider: AiProvider
 ): Promise<void> {
     if (activeStreams.has(messageId)) return
@@ -290,6 +802,18 @@ function handleStreamEvent(messageId: string, event: AskAiEvent): void {
         actions.updateAiMessage(messageId, stream.content, 'complete')
         stream.throttler.clear()
         activeStreams.delete(messageId)
+
+        // Save conversation data to IndexedDB after streaming completes
+        const state = chatStore.getState()
+        if (state.activeConversationId) {
+            saveConversationData(
+                state.activeConversationId,
+                state.chatMessages,
+                state.totalMessageCount,
+                state.messageFeedback,
+                state.aiProvider
+            )
+        }
     }
 }
 
@@ -321,20 +845,37 @@ function handleStreamError(messageId: string, error: ApiError | Error): void {
     activeStreams.delete(messageId)
 }
 
-// Selectors
-export const useChatMessages = () => chatStore((state) => state.chatMessages)
+// Selectors - using useStore with the vanilla store for React compatibility
+export const useChatMessages = () =>
+    useStore(chatStore, (state) => state.chatMessages)
 export const useConversationId = () =>
-    chatStore((state) => state.conversationId)
-export const useAiProvider = () => chatStore((state) => state.aiProvider)
+    useStore(chatStore, (state) => state.activeConversationId)
+export const useAiProvider = () =>
+    useStore(chatStore, (state) => state.aiProvider)
 export const useChatScrollPosition = () =>
-    chatStore((state) => state.scrollPosition)
-export const useChatActions = () => chatStore((state) => state.actions)
+    useStore(chatStore, (state) => state.scrollPosition)
+export const useInputValue = () =>
+    useStore(chatStore, (state) => state.inputValue)
+export const useChatActions = () =>
+    useStore(chatStore, (state) => state.actions)
 export const useMessageReaction = (messageId: string) =>
-    chatStore((state) => state.messageFeedback[messageId] ?? null)
+    useStore(chatStore, (state) => state.messageFeedback[messageId] ?? null)
 export const useIsStreaming = () =>
-    chatStore((state) => {
+    useStore(chatStore, (state) => {
         const last = state.chatMessages[state.chatMessages.length - 1]
         return last?.type === 'ai' && last?.status === 'streaming'
     })
 export const useIsChatEmpty = () =>
-    chatStore((state) => state.chatMessages.length === 0)
+    useStore(chatStore, (state) => state.chatMessages.length === 0)
+export const useTrimmedMessageCount = () =>
+    useStore(chatStore, (state) =>
+        Math.max(0, state.totalMessageCount - state.chatMessages.length)
+    )
+export const useHasHydrated = () =>
+    useStore(chatStore, (state) => state.hasHydrated)
+
+// Multi-conversation selectors
+export const useConversations = () =>
+    useStore(chatStore, (state) => state.conversations)
+export const useActiveConversationId = () =>
+    useStore(chatStore, (state) => state.activeConversationId)

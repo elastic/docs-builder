@@ -12,7 +12,6 @@ using Elastic.Ingest.Elasticsearch;
 using Elastic.Ingest.Elasticsearch.Indices;
 using Elastic.Markdown.Exporters.Elasticsearch.Enrichment;
 using Elastic.Transport;
-using Elastic.Transport.Products.Elasticsearch;
 using Microsoft.Extensions.Logging;
 using NetEscapades.EnumGenerators;
 

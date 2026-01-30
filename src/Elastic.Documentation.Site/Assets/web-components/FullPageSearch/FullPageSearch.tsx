@@ -390,6 +390,7 @@ export const FullPageSearch = () => {
                                 isLoading={isLoading || isFetching}
                                 filters={filters}
                                 version={version}
+                                aggregations={aggregations}
                                 query={submittedQuery}
                                 inputQuery={inputQuery}
                                 showAIAnswer={showAIAnswer}

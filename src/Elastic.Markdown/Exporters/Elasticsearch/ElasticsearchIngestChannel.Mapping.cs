@@ -116,6 +116,20 @@ public abstract partial class ElasticsearchIngestChannel<TChannelOptions, TChann
 		  {
 		    "properties": {
 		      "type": { "type" : "keyword", "normalizer": "keyword_normalizer" },
+		      "product": {
+		        "type": "object",
+		        "properties": {
+		          "id": { "type": "keyword", "normalizer": "keyword_normalizer" },
+		          "repository": { "type": "keyword", "normalizer": "keyword_normalizer" }
+		        }
+		      },
+		      "related_products": {
+		        "type": "object",
+		        "properties": {
+		          "id": { "type": "keyword", "normalizer": "keyword_normalizer" },
+		          "repository": { "type": "keyword", "normalizer": "keyword_normalizer" }
+		        }
+		      },
 		      "url": {
 		        "type": "keyword",
 		        "fields": {

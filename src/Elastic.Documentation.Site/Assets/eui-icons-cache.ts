@@ -1,8 +1,6 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck: EUI icons do not have types
 import { icon as EuiIconVisualizeApp } from '@elastic/eui/es/components/icon/assets/app_visualize'
-import { icon as EuiIconArrowEnd } from '@elastic/eui/es/components/icon/assets/arrowEnd'
-import { icon as EuiIconArrowStart } from '@elastic/eui/es/components/icon/assets/arrowStart'
 import { icon as EuiIconArrowDown } from '@elastic/eui/es/components/icon/assets/arrow_down'
 import { icon as EuiIconArrowLeft } from '@elastic/eui/es/components/icon/assets/arrow_left'
 import { icon as EuiIconArrowRight } from '@elastic/eui/es/components/icon/assets/arrow_right'
@@ -17,6 +15,7 @@ import { icon as EuiIconCross } from '@elastic/eui/es/components/icon/assets/cro
 import { icon as EuiIconDocument } from '@elastic/eui/es/components/icon/assets/document'
 import { icon as EuiIconDocumentation } from '@elastic/eui/es/components/icon/assets/documentation'
 import { icon as EuiIconDot } from '@elastic/eui/es/components/icon/assets/dot'
+import { icon as EuiIconRedo } from '@elastic/eui/es/components/icon/assets/editor_redo'
 import { icon as EuiIconEmpty } from '@elastic/eui/es/components/icon/assets/empty'
 import { icon as EuiIconError } from '@elastic/eui/es/components/icon/assets/error'
 import { icon as EuiIconFaceHappy } from '@elastic/eui/es/components/icon/assets/face_happy'
@@ -75,12 +74,11 @@ const iconMapping = {
     sortUp: EuiIconSortUp,
     sortDown: EuiIconSortDown,
     stop: EuiIconStop,
-    arrowStart: EuiIconArrowStart,
-    arrowEnd: EuiIconArrowEnd,
     comment: EuiIconComment,
     kqlFunction: EuiIconKqlFunction,
     globe: EuiIconGlobe,
     console: EuiIconConsole,
+    editorRedo: EuiIconRedo,
 }
 
 appendIconComponentCache(iconMapping)

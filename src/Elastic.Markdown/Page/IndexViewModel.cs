@@ -34,7 +34,6 @@ public class IndexViewModel
 
 	public required string NavigationHtml { get; init; }
 
-	public required string NavigationFileName { get; init; }
 	public required string CurrentVersion { get; init; }
 
 	public required string? AllVersionsUrl { get; init; }
@@ -60,6 +59,12 @@ public class IndexViewModel
 
 	// https://developers.google.com/search/docs/appearance/structured-data/breadcrumb#json-ld
 	public required string StructuredBreadcrumbsJson { get; init; }
+
+	// Git info for isolated header
+	public string? GitBranch { get; init; }
+	public string? GitCommitShort { get; init; }
+	public string? GitRepository { get; init; }
+	public string? GitHubDocsUrl { get; init; }
 }
 
 public class VersionDropDownItemViewModel

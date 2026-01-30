@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System;
 using System.Diagnostics.CodeAnalysis;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Markdown.Diagnostics;
@@ -10,6 +11,7 @@ using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Directives.Admonition;
 using Elastic.Markdown.Myst.Directives.AppliesSwitch;
 using Elastic.Markdown.Myst.Directives.Button;
+using Elastic.Markdown.Myst.Directives.Changelog;
 using Elastic.Markdown.Myst.Directives.CsvInclude;
 using Elastic.Markdown.Myst.Directives.Diagram;
 using Elastic.Markdown.Myst.Directives.Dropdown;
@@ -28,6 +30,7 @@ using Markdig.Renderers;
 using Markdig.Renderers.Html;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
+using Microsoft.AspNetCore.Html;
 using RazorSlices;
 using YamlDotNet.Core;
 
@@ -95,6 +98,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 				return;
 			case CsvIncludeBlock csvIncludeBlock:
 				WriteCsvIncludeBlock(renderer, csvIncludeBlock);
+				return;
+			case ChangelogBlock changelogBlock:
+				WriteChangelogBlock(renderer, changelogBlock);
 				return;
 			case MathBlock mathBlock:
 				WriteMathBlock(renderer, mathBlock);
@@ -513,9 +519,64 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 
 	private static void WriteCsvIncludeBlock(HtmlRenderer renderer, CsvIncludeBlock block)
 	{
-		var viewModel = CsvIncludeViewModel.Create(block);
+		var viewModel = CsvIncludeViewModel.Create(block, value => RenderCsvCellMarkdown(block, value));
 		var slice = CsvIncludeView.Create(viewModel);
 		RenderRazorSlice(slice, renderer);
+	}
+
+	private static HtmlString RenderCsvCellMarkdown(CsvIncludeBlock block, string value)
+	{
+		if (string.IsNullOrWhiteSpace(value))
+			return HtmlString.Empty;
+
+		var document = MarkdownParser.ParseMarkdownStringAsync(
+			block.Build,
+			block.Context,
+			value,
+			block.IncludeFrom,
+			block.Context.YamlFrontMatter,
+			MarkdownParser.Pipeline);
+
+		if (document.Count == 1 && document.FirstOrDefault() is ParagraphBlock paragraph && paragraph.Inline != null)
+			return RenderInlineMarkdown(paragraph);
+
+		var html = document.ToHtml(MarkdownParser.Pipeline);
+		return new HtmlString(html.EnsureTrimmed());
+	}
+
+	private static HtmlString RenderInlineMarkdown(ParagraphBlock paragraph)
+	{
+		if (paragraph.Inline is null)
+			return HtmlString.Empty;
+
+		var subscription = DocumentationObjectPoolProvider.HtmlRendererPool.Get();
+		subscription.HtmlRenderer.WriteChildren(paragraph.Inline);
+
+		var result = subscription.RentedStringBuilder?.ToString();
+		DocumentationObjectPoolProvider.HtmlRendererPool.Return(subscription);
+
+		return result == null ? HtmlString.Empty : new HtmlString(result.EnsureTrimmed());
+	}
+
+	private static void WriteChangelogBlock(HtmlRenderer renderer, ChangelogBlock block)
+	{
+		if (!block.Found || block.BundlesFolderPath is null)
+			return;
+
+		var markdown = ChangelogInlineRenderer.RenderChangelogMarkdown(block);
+		if (string.IsNullOrEmpty(markdown))
+			return;
+
+		var document = MarkdownParser.ParseMarkdownStringAsync(
+			block.Build,
+			block.Context,
+			markdown,
+			block.CurrentFile,
+			block.Context.YamlFrontMatter,
+			MarkdownParser.Pipeline);
+
+		var html = document.ToHtml(MarkdownParser.Pipeline);
+		_ = renderer.Write(html);
 	}
 
 	private static void WriteMathBlock(HtmlRenderer renderer, MathBlock block)

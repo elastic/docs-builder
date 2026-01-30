@@ -38,6 +38,7 @@
     <ProjectReference Include="..\Elastic.Documentation.Site\Elastic.Documentation.Site.csproj" />
     <ProjectReference Include="..\Elastic.Documentation.LinkIndex\Elastic.Documentation.LinkIndex.csproj" />
     <ProjectReference Include="..\Elastic.Documentation\Elastic.Documentation.csproj" />
+    <ProjectReference Include="..\services\Elastic.Changelog\Elastic.Changelog.csproj" />
     <ProjectReference Include="..\Elastic.Documentation.Configuration\Elastic.Documentation.Configuration.csproj" />
     <ProjectReference Include="..\Elastic.Documentation.Navigation\Elastic.Documentation.Navigation.csproj" />
   </ItemGroup>

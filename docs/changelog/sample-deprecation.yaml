@@ -1,0 +1,10 @@
+type: deprecation
+title: This is a sample deprecation to show a full set
+products:
+  - product: docs-builder
+    target: 0.100.0
+areas:
+  - CLI
+description: |
+  This is a sample deprecation entry demonstrating how deprecations
+  are rendered with dropdowns in the changelog directive output.

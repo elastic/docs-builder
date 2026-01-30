@@ -49,13 +49,67 @@ Specify a custom field separator (default is comma):
 :::
 ```
 
+### Wide tables
+
+CSV files with many columns are rendered as scrollable tables:
+
+:::::{tab-set}
+
+::::{tab-item} Output
+
+:::{csv-include} ../_snippets/sample-data-12-columns.csv
+:caption: Product inventory with 12 columns
+:::
+
+::::
+
+::::{tab-item} Markdown
+
+```markdown
+:::{csv-include} _snippets/sample-data-12-columns.csv
+:caption: Product inventory with 12 columns
+:::
+```
+
+::::
+
+:::::
+
 ### Performance limits
 
 The directive includes built-in performance limits to handle large files efficiently:
 
 - **Row limit**: Maximum of 25,000 rows will be displayed
-- **Column limit**: Maximum of 10 columns will be displayed  
+- **Column limit**: Maximum of 15 columns will be displayed  
 - **File size limit**: Maximum file size of 10MB
+
+### Markdown rendering in cells
+
+Cells are parsed as Markdown, so they can render inline formatting and links. For example, a cell containing `**Bold**` becomes bold text, and `[Text](https://www.google.com)` becomes a link.
+
+Here is a complete example that uses multiple Markdown formats:
+
+:::::{tab-set}
+
+::::{tab-item} Output
+
+:::{csv-include} ../_snippets/sample-data-markdown.csv
+:caption: Sample data with Markdown formatting
+:::
+
+::::
+
+::::{tab-item} Markdown
+
+```markdown
+:::{csv-include} _snippets/sample-data-markdown.csv
+:caption: Sample data with Markdown formatting
+:::
+```
+
+::::
+
+:::::
 
 ## Performance considerations
 

@@ -91,6 +91,7 @@ toc:
       - file: applies-switch.md
       - file: automated_settings.md
       - file: buttons.md
+      - file: changelog.md
       - file: code.md
       - file: comments.md
       - file: conditionals.md
@@ -161,6 +162,7 @@ toc:
           - file: index.md
           - file: changelog-add.md
           - file: changelog-bundle.md
+          - file: changelog-bundle-amend.md
           - file: changelog-render.md
   - folder: mcp
     children:

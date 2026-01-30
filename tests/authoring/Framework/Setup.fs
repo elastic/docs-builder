@@ -46,16 +46,19 @@ type TestFile =
         SnippetFile(path , m)
 
 type SetupOptions =
-    { UrlPathPrefix: string option }
+    { UrlPathPrefix: string option
+      DocsetProducts: string list option }
     static member Empty = {
         UrlPathPrefix = None
+        DocsetProducts = None
     }
 
 type Setup =
 
     static let GenerateDocSetYaml(
         fileSystem: MockFileSystem,
-        globalVariables: Dictionary<string, string> option
+        globalVariables: Dictionary<string, string> option,
+        docsetProducts: string list option
     ) =
         let root = fileSystem.DirectoryInfo.New(Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs/"));
         let yaml = new StringWriter();
@@ -65,6 +68,14 @@ type Setup =
         yaml.WriteLine("  - kibana")
         yaml.WriteLine("exclude:")
         yaml.WriteLine("  - '_*.md'")
+        
+        // Add docset-level products if specified
+        match docsetProducts with
+        | Some products when products.Length > 0 ->
+            yaml.WriteLine("products:")
+            products |> List.iter (fun p -> yaml.WriteLine($"  - id: {p}"))
+        | _ -> ()
+        
         yaml.WriteLine("toc:")
         let markdownFiles = fileSystem.Directory.EnumerateFiles(root.FullName, "*.md", SearchOption.AllDirectories)
         markdownFiles
@@ -117,7 +128,7 @@ type Setup =
         let opts = MockFileSystemOptions(CurrentDirectory=Paths.WorkingDirectoryRoot.FullName)
         let fileSystem = MockFileSystem(d, opts)
 
-        GenerateDocSetYaml (fileSystem, None)
+        GenerateDocSetYaml (fileSystem, None, options.DocsetProducts)
 
         let collector = TestDiagnosticsCollector()
         let versioningSystems = Dictionary<VersioningSystemId, VersioningSystem>()
@@ -286,7 +297,9 @@ type Setup =
             VersionsConfiguration = versionConfig,
             ConfigurationFileProvider = configurationFileProvider,
             Endpoints=DocumentationEndpoints(Elasticsearch = ElasticsearchEndpoint.Default),
-            ProductsConfiguration = ProductsConfiguration(Products = productDict.ToFrozenDictionary()),
+            ProductsConfiguration = ProductsConfiguration(
+                Products = productDict.ToFrozenDictionary(),
+                ProductDisplayNames = (productDict |> Seq.map (fun p -> KeyValuePair(p.Key, p.Value.DisplayName)) |> fun s -> Dictionary(s)).ToFrozenDictionary()),
             LegacyUrlMappings = LegacyUrlMappingConfiguration(Mappings = []),
             SearchConfiguration = SearchConfiguration(Synonyms = Dictionary<string, string[]>(), Rules = [], DiminishTerms = [])
         )

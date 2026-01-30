@@ -165,3 +165,37 @@ public class NestedHeadingTest(ITestOutputHelper output) : AnchorLinkTestBase(ou
 	[Fact]
 	public void HasError() => Collector.Diagnostics.Should().HaveCount(0);
 }
+
+public class MissingMdExtensionTests(ITestOutputHelper output) : AnchorLinkTestBase(output,
+"""
+[Link](testing/req)
+"""
+)
+{
+	[Fact]
+	public void HasMdExtensionHintError() => Collector.Diagnostics.Should().HaveCount(1)
+		.And.Contain(d => d.Message.Contains("Did you forget to add the .md extension?"));
+}
+
+public class MissingMdExtensionWithAnchorTests(ITestOutputHelper output) : AnchorLinkTestBase(output,
+"""
+[Link](testing/req#sub-requirements)
+"""
+)
+{
+	[Fact]
+	public void HasMdExtensionHintError() => Collector.Diagnostics.Should().HaveCount(1)
+		.And.Contain(d => d.Message.Contains("Did you forget to add the .md extension?"));
+}
+
+public class MissingFileNoMdHintTests(ITestOutputHelper output) : AnchorLinkTestBase(output,
+"""
+[Link](testing/nonexistent)
+"""
+)
+{
+	[Fact]
+	public void HasGenericNotFoundError() => Collector.Diagnostics.Should().HaveCount(1)
+		.And.Contain(d => d.Message.Contains("does not exist"))
+		.And.NotContain(d => d.Message.Contains("Did you forget to add the .md extension?"));
+}
