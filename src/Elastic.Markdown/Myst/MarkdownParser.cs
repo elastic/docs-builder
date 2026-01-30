@@ -63,7 +63,8 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 	private MarkdownDocument ParseMarkdownStringAsync(string markdown, IFileInfo path, YamlFrontMatter? matter, MarkdownPipeline pipeline) =>
 		ParseMarkdownStringAsync(Build, Resolvers, markdown, path, matter, pipeline);
 
-	public static MarkdownDocument ParseMarkdownStringAsync(BuildContext build, IParserResolvers resolvers, string markdown, IFileInfo path, YamlFrontMatter? matter, MarkdownPipeline pipeline)
+	public static MarkdownDocument ParseMarkdownStringAsync(BuildContext build, IParserResolvers resolvers, string markdown, IFileInfo path,
+		YamlFrontMatter? matter, MarkdownPipeline pipeline)
 	{
 		var state = new ParserState(build)
 		{
@@ -169,12 +170,11 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 				.UseSubstitution()
 				.UseComments()
 				.UseYamlFrontMatter()
-				.UseGridTables()
 				.UsePipeTables()
-			   .UseDirectives()
-			   .UseDefinitionLists()
-			   .UseEnhancedCodeBlocks()
-			   .UseHtmxLinkInlineRenderer()
+				.UseDirectives()
+				.UseDefinitionLists()
+				.UseEnhancedCodeBlocks()
+				.UseHtmxLinkInlineRenderer()
 				.DisableHtml()
 				.UseSpaceNormalizer()
 				.UseHardBreaks();
@@ -287,6 +287,7 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 			if (index >= start && index <= end && subsDisabled)
 				return true;
 		}
+
 		return false;
 	}
 }
