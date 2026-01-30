@@ -3,12 +3,11 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.RegularExpressions;
-using Elastic.Documentation;
 
-namespace Elastic.Changelog;
+namespace Elastic.Documentation.ReleaseNotes;
 
 /// <summary>
-/// Static utility methods for text processing in changelog generation
+/// Static utility methods for text processing in changelog generation.
 /// </summary>
 public static partial class ChangelogTextUtilities
 {
@@ -16,7 +15,7 @@ public static partial class ChangelogTextUtilities
 	private static partial Regex TrailingNumberRegex();
 
 	/// <summary>
-	/// Capitalizes first letter and ensures text ends with period
+	/// Capitalizes first letter and ensures text ends with period.
 	/// </summary>
 	public static string Beautify(string text)
 	{
@@ -33,7 +32,7 @@ public static partial class ChangelogTextUtilities
 	}
 
 	/// <summary>
-	/// Indents each line with two spaces
+	/// Indents each line with two spaces.
 	/// </summary>
 	public static string Indent(string text)
 	{
@@ -42,7 +41,7 @@ public static partial class ChangelogTextUtilities
 	}
 
 	/// <summary>
-	/// Converts title to slug format for folder names and anchors (lowercase, dashes instead of spaces)
+	/// Converts title to slug format for folder names and anchors (lowercase, dashes instead of spaces).
 	/// </summary>
 	public static string TitleToSlug(string title)
 	{
@@ -53,7 +52,7 @@ public static partial class ChangelogTextUtilities
 	}
 
 	/// <summary>
-	/// Formats area header - capitalizes first letter and replaces hyphens with spaces
+	/// Formats area header - capitalizes first letter and replaces hyphens with spaces.
 	/// </summary>
 	public static string FormatAreaHeader(string area)
 	{
@@ -67,7 +66,7 @@ public static partial class ChangelogTextUtilities
 	}
 
 	/// <summary>
-	/// Formats subtype header - capitalizes first letter and replaces hyphens with spaces
+	/// Formats subtype header - capitalizes first letter and replaces hyphens with spaces.
 	/// </summary>
 	public static string FormatSubtypeHeader(string subtype)
 	{
@@ -81,7 +80,7 @@ public static partial class ChangelogTextUtilities
 	}
 
 	/// <summary>
-	/// Sanitizes filename by converting to lowercase, replacing special characters with dashes, and limiting length
+	/// Sanitizes filename by converting to lowercase, replacing special characters with dashes, and limiting length.
 	/// </summary>
 	public static string SanitizeFilename(string input)
 	{
@@ -133,7 +132,7 @@ public static partial class ChangelogTextUtilities
 	}
 
 	/// <summary>
-	/// Extracts PR number from PR URL or reference
+	/// Extracts PR number from PR URL or reference.
 	/// </summary>
 	public static int? ExtractPrNumber(string prUrl, string? defaultOwner = null, string? defaultRepo = null)
 	{
@@ -168,7 +167,7 @@ public static partial class ChangelogTextUtilities
 	}
 
 	/// <summary>
-	/// Formats PR link as markdown
+	/// Formats PR link as markdown.
 	/// </summary>
 	public static string FormatPrLink(string pr, string repo, bool hidePrivateLinks)
 	{
@@ -194,7 +193,7 @@ public static partial class ChangelogTextUtilities
 	}
 
 	/// <summary>
-	/// Formats issue link as markdown
+	/// Formats issue link as markdown.
 	/// </summary>
 	public static string FormatIssueLink(string issue, string repo, bool hidePrivateLinks)
 	{
@@ -220,7 +219,7 @@ public static partial class ChangelogTextUtilities
 	}
 
 	/// <summary>
-	/// Formats PR link as asciidoc
+	/// Formats PR link as asciidoc.
 	/// </summary>
 	public static string FormatPrLinkAsciidoc(string pr, string repo, bool hidePrivateLinks)
 	{
@@ -241,7 +240,7 @@ public static partial class ChangelogTextUtilities
 	}
 
 	/// <summary>
-	/// Formats issue link as asciidoc
+	/// Formats issue link as asciidoc.
 	/// </summary>
 	public static string FormatIssueLinkAsciidoc(string issue, string repo, bool hidePrivateLinks)
 	{
@@ -262,7 +261,7 @@ public static partial class ChangelogTextUtilities
 	}
 
 	/// <summary>
-	/// Converts repo name to attribute format for asciidoc links
+	/// Converts repo name to attribute format for asciidoc links.
 	/// </summary>
 	private static string ConvertRepoToAttributeName(string repo, string suffix)
 	{
@@ -363,9 +362,6 @@ public static partial class ChangelogTextUtilities
 			.Where(word => !string.IsNullOrEmpty(word))
 			.ToArray();
 
-		if (words.Length == 0)
-			return "untitled";
-
-		return string.Join("-", words);
+		return words.Length == 0 ? "untitled" : string.Join("-", words);
 	}
 }

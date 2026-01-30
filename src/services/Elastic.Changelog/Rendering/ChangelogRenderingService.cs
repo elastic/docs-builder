@@ -4,13 +4,13 @@
 
 using System.ComponentModel.DataAnnotations;
 using System.IO.Abstractions;
-using System.Linq;
 using System.Text.Json.Serialization;
 using Elastic.Changelog.Configuration;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 using NetEscapades.EnumGenerators;

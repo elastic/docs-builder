@@ -2,18 +2,15 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Documentation;
-using Elastic.Documentation.Configuration.Changelog;
-
-namespace Elastic.Changelog.Configuration;
+namespace Elastic.Documentation.ReleaseNotes;
 
 /// <summary>
-/// Extension methods for PublishBlocker that depend on ChangelogEntry
+/// Extension methods for PublishBlocker that depend on ChangelogEntry.
 /// </summary>
 public static class PublishBlockerExtensions
 {
 	/// <summary>
-	/// Checks if a changelog entry should be blocked from publishing
+	/// Checks if a changelog entry should be blocked from publishing.
 	/// </summary>
 	public static bool ShouldBlock(this PublishBlocker blocker, ChangelogEntry entry)
 	{
@@ -26,13 +23,8 @@ public static class PublishBlockerExtensions
 		}
 
 		// Check if any of the entry's areas are blocked
-		if (blocker.Areas?.Count > 0
-			&& entry.Areas?.Count > 0
-			&& entry.Areas.Any(area => blocker.Areas.Any(blocked => blocked.Equals(area, StringComparison.OrdinalIgnoreCase))))
-		{
-			return true;
-		}
-
-		return false;
+		return blocker.Areas?.Count > 0
+			   && entry.Areas?.Count > 0
+			   && entry.Areas.Any(area => blocker.Areas.Any(blocked => blocked.Equals(area, StringComparison.OrdinalIgnoreCase)));
 	}
 }

@@ -96,7 +96,6 @@ toc:
       - file: comments.md
       - file: conditionals.md
       - file: csv-include.md
-      - hidden: diagrams.md
       - file: directives.md
       - file: dropdowns.md
       - file: definition-lists.md
@@ -108,6 +107,7 @@ toc:
       - file: images.md
       - file: kbd.md
       - file: math.md
+      - file: diagrams.md
       - file: lists.md
       - file: line_breaks.md
       - file: links.md
@@ -223,3 +223,9 @@ toc:
           - folder: baz
             children:
               - file: qux.md
+      - folder: release-notes
+        children:
+          - file: index.md
+          - file: breaking-changes.md
+          - file: deprecations.md
+          - file: known-issues.md
