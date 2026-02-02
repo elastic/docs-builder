@@ -69,9 +69,22 @@ public class ErrataFileSourceRepository : ISourceRepository
 		if (id == string.Empty)
 			return true;
 
-		using var reader = new Utf8StreamReader(id);
-		var text = Encoding.UTF8.GetString(reader.ReadToEndAsync().GetAwaiter().GetResult());
-		source = new Source(id, text);
+		try
+		{
+			using var reader = new Utf8StreamReader(id);
+			var text = Encoding.UTF8.GetString(reader.ReadToEndAsync().GetAwaiter().GetResult());
+			source = new Source(id, text);
+		}
+		catch (FileNotFoundException)
+		{
+			// Virtual files generated from source files (e.g., TOML) don't exist on disk
+			// Return empty source - the diagnostic will still be shown but without source context
+		}
+		catch (DirectoryNotFoundException)
+		{
+			// Parent directory may not exist for virtual paths
+		}
+
 		return true;
 	}
 
@@ -113,6 +126,10 @@ public class ErrataFileSourceRepository : ISourceRepository
 			}
 			else
 				d = d.WithNote(item.File);
+
+			// Add note about original source file when available (for virtual/generated files)
+			if (!string.IsNullOrEmpty(item.OriginalSourceFile))
+				d = d.WithNote($"Generated from: {item.OriginalSourceFile}");
 
 			if (item.Severity == Severity.Hint)
 				d = d.WithColor(Color.Yellow).WithCategory("Hint");

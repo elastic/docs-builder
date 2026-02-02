@@ -2,7 +2,10 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
+using System.Text;
+using Cysharp.IO;
 using Tomlet;
 using Tomlet.Models;
 
@@ -36,6 +39,9 @@ public record DetectionRuleTechnique : DetectionRuleSubTechnique
 
 public record DetectionRule
 {
+	// Reuse a single TomlParser instance for better performance
+	private static readonly TomlParser Parser = new();
+
 	public required string Name { get; init; }
 
 	public required string[]? Authors { get; init; }
@@ -70,13 +76,16 @@ public record DetectionRule
 
 	public required DetectionRuleThreat[] Threats { get; init; } = [];
 
+	[SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly")]
 	public static DetectionRule From(IFileInfo source)
 	{
 		TomlDocument model;
 		try
 		{
-			var sourceText = File.ReadAllText(source.FullName);
-			model = new TomlParser().Parse(sourceText);
+			// Use optimized Utf8StreamReader for better I/O performance
+			using var reader = new Utf8StreamReader(source.FullName, fileOpenMode: FileOpenMode.Throughput);
+			var sourceText = Encoding.UTF8.GetString(reader.ReadToEndAsync().GetAwaiter().GetResult());
+			model = Parser.Parse(sourceText);
 		}
 		catch (Exception e)
 		{

@@ -185,6 +185,7 @@ Valid suppression values:
 
 - `DeepLinkingVirtualFile`
 - `FolderFileNameMismatch`
+- `AutolinkElasticCoDocs`
 
 Example:
 
@@ -265,6 +266,32 @@ toc:
   - folder: getting-started
     children:
       - file: index.md
+```
+
+#### `AutolinkElasticCoDocs`
+
+Suppresses hints about autolinks pointing to elastic.co/docs URLs.
+
+By default, when the builder encounters a bare URL starting with `https://` that contains `elastic.co/docs`, it emits a hint suggesting to use crosslinks or relative links instead:
+
+```markdown
+See https://www.elastic.co/docs/solutions/search for more details.
+```
+
+**Hint message**: "Autolink points to elastic.co/docs. Consider using a crosslink or relative link instead."
+
+**Why this is discouraged**: Using crosslinks (`{{< xref "repo:path" >}}`) or relative links allows the documentation system to validate that the link target exists and enables proper URL handling across different environments.
+
+**When to suppress**: This hint can be useful to suppress when:
+
+- Processing generated content from external sources (e.g., TOML files) that contain elastic.co URLs
+- During migration periods when converting large amounts of legacy content
+- For documentation that intentionally links to specific hosted versions
+
+**Preferred alternative**: Use crosslinks to reference other documentation:
+
+```markdown
+See {doc}`/solutions/search` for more details.
 ```
 
 ## Navigation configuration patterns
