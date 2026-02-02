@@ -99,7 +99,9 @@ public class StaticWebHost
 		if (fileInfo.Exists)
 			return Task.FromResult(Results.File(fileInfo.FullName, "text/html"));
 
-		return Task.FromResult(Results.NotFound());
+		// Fall back to redirect for backward compatibility with assemblies that don't have a root index.html
+		// TODO: Integration tests are failing without this. Adapt this when portal is actually in use.
+		return Task.FromResult(Results.Redirect("docs"));
 	}
 
 	private async Task<IResult> ServeDocumentationFile(string slug, Cancel _)
