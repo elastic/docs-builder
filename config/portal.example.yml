@@ -20,28 +20,28 @@ title: "Elastic's Internal Dev Docs"
 # Each documentation set is cloned from a git repository and built separately
 documentation_sets:
   # APM Managed Intake Service documentation
-  - name: docs-builder
+  - name: docs-eng-team
     branch: main
     repo_name: apm-intake
     display_name: "APM Managed Intake Service"
     icon: apm
 
   # CI Developer Guide
-  - name: docs-builder
+  - name: docs-eng-team
     branch: main
     repo_name: ci-guide
     display_name: "CI Developer Guide"
     icon: ci
 
   # Content Architecture documentation
-  - name: docs-builder
+  - name: docs-eng-team
     branch: main
     repo_name: content-arch
     display_name: "Content Architecture"
     icon: architecture
 
   # Benchmarking documentation in observability category
-  - name: docs-builder
+  - name: docs-eng-team
     branch: main
     category: observability
     repo_name: benchmarking
@@ -49,7 +49,7 @@ documentation_sets:
     icon: benchmark
 
   # Migration Guide in tooling category
-  - name: docs-builder
+  - name: docs-eng-team
     branch: main
     category: tooling
     repo_name: migration-guide
@@ -57,7 +57,7 @@ documentation_sets:
     icon: migration
 
   # Artifactory documentation in tooling category
-  - name: docs-builder
+  - name: docs-eng-team
     branch: main
     category: tooling
     repo_name: artifactory
@@ -65,14 +65,14 @@ documentation_sets:
     icon: artifactory
 
   # QA Team documentation
-  - name: docs-builder
+  - name: docs-eng-team
     branch: main
     repo_name: qa-team
     display_name: "QA Team Handbook"
     icon: testing
 
   # Consulting documentation
-  - name: docs-builder
+  - name: docs-eng-team
     branch: main
     repo_name: consulting
     display_name: "Consulting Team"
