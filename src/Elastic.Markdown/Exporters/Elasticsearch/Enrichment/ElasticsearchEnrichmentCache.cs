@@ -95,9 +95,51 @@ public sealed class ElasticsearchEnrichmentCache(
 			ct);
 
 		if (response.ApiCallDetails.HasSuccessfulStatusCode)
+		{
 			_ = _validEntries.TryAdd(enrichmentKey, 0);
+
+			// Clean up any older entries for the same URL (but different enrichment_key)
+			await DeleteOldEntriesForUrlAsync(enrichmentKey, url, ct);
+		}
 		else
+		{
 			_logger.LogWarning("Failed to store enrichment: {StatusCode}", response.ApiCallDetails.HttpStatusCode);
+		}
+	}
+
+	/// <summary>
+	/// Deletes older cache entries for the same URL, keeping only the current one.
+	/// This cleans up stale entries left behind when documents are re-enriched.
+	/// </summary>
+	private async Task DeleteOldEntriesForUrlAsync(string currentEnrichmentKey, string url, CancellationToken ct)
+	{
+		// Delete all entries with this URL except the current one
+		var deleteQuery = $$"""
+			{
+				"query": {
+					"bool": {
+						"must": { "term": { "url": "{{url}}" } },
+						"must_not": { "term": { "_id": "{{currentEnrichmentKey}}" } }
+					}
+				}
+			}
+			""";
+
+		var response = await _transport.PostAsync<StringResponse>(
+			$"{IndexName}/_delete_by_query",
+			PostData.String(deleteQuery),
+			ct);
+
+		if (response.ApiCallDetails.HasSuccessfulStatusCode)
+		{
+			// Parse deleted count from response
+			using var doc = JsonDocument.Parse(response.Body ?? "{}");
+			if (doc.RootElement.TryGetProperty("deleted", out var deletedProp) && deletedProp.GetInt32() > 0)
+			{
+				var deleted = deletedProp.GetInt32();
+				_logger.LogDebug("Cleaned up {Count} old cache entries for URL {Url}", deleted, url);
+			}
+		}
 	}
 
 	private async Task EnsureIndexExistsAsync(CancellationToken ct)
