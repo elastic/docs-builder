@@ -4,6 +4,7 @@
 
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
+using Elastic.Documentation.Configuration.Portal;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Configuration.Search;
@@ -14,6 +15,9 @@ using YamlDotNet.Serialization;
 namespace Elastic.Documentation.Configuration.Serialization;
 
 [YamlStaticContext]
+// Portal configuration
+[YamlSerializable(typeof(PortalConfiguration))]
+[YamlSerializable(typeof(PortalDocumentationSetReference))]
 // Assembly configuration
 [YamlSerializable(typeof(AssemblyConfiguration))]
 [YamlSerializable(typeof(Repository))]

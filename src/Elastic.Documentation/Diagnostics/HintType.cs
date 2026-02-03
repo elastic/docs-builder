@@ -19,5 +19,10 @@ public enum HintType
 	/// Hint about file name not matching folder name in folder+file combinations.
 	/// Best practice is to name the file the same as the folder.
 	/// </summary>
-	FolderFileNameMismatch
+	FolderFileNameMismatch,
+
+	/// <summary>
+	/// Hint about autolinks pointing to elastic.co/docs that should use crosslinks or relative links instead.
+	/// </summary>
+	AutolinkElasticCoDocs
 }

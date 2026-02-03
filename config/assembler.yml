@@ -46,8 +46,8 @@ environments:
 
 shared_configuration:
   stack: &stack
-    current:  9.2
-    next: 9.3
+    current:  9.3
+    next: main
     edge: main
 
   master: &master
