@@ -210,4 +210,94 @@ public class ChunkingTests
 		// Assert
 		chunks.Should().HaveCount(2);
 	}
+
+	// === Content integrity tests ===
+
+	[Fact]
+	public void SplitIntoChunks_ContentIntegrity_NothingLost()
+	{
+		// Arrange - paragraphs with unique markers
+		var paragraphs = Enumerable.Range(1, 100).Select(i => $"[P{i}]{new string('x', 5_000)}[/P{i}]").ToList();
+		var body = string.Join("\n\n", paragraphs);
+
+		// Act
+		var chunks = SplitIntoChunks(body);
+		var reassembled = string.Join("\n\n", chunks);
+
+		// Assert - every paragraph marker present
+		foreach (var i in Enumerable.Range(1, 100))
+		{
+			reassembled.Should().Contain($"[P{i}]");
+			reassembled.Should().Contain($"[/P{i}]");
+		}
+	}
+
+	[Fact]
+	public void SplitIntoChunks_ContentIntegrity_NoDuplicates()
+	{
+		// Arrange - paragraphs with unique IDs
+		var paragraphs = Enumerable.Range(1, 50).Select(i => $"ID={i:D5}|{new string('y', 8_000)}").ToList();
+		var body = string.Join("\n\n", paragraphs);
+
+		// Act
+		var chunks = SplitIntoChunks(body);
+		var reassembled = string.Join("\n\n", chunks);
+
+		// Assert - each ID appears exactly once
+		foreach (var i in Enumerable.Range(1, 50))
+		{
+			var id = $"ID={i:D5}|";
+			var count = CountOccurrences(reassembled, id);
+			count.Should().Be(1, $"ID {i} should appear exactly once");
+		}
+	}
+
+	[Fact]
+	public void SplitIntoChunks_ContentIntegrity_PreservesOrder()
+	{
+		// Arrange - numbered paragraphs
+		var paragraphs = Enumerable.Range(1, 60).Select(i => $"SEQ{i:D4}").ToList();
+		var body = string.Join("\n\n", paragraphs);
+
+		// Act
+		var chunks = SplitIntoChunks(body);
+		var reassembled = string.Join("\n\n", chunks);
+
+		// Assert - sequence numbers appear in order
+		var lastIndex = -1;
+		foreach (var i in Enumerable.Range(1, 60))
+		{
+			var marker = $"SEQ{i:D4}";
+			var index = reassembled.IndexOf(marker, StringComparison.Ordinal);
+			index.Should().BeGreaterThan(lastIndex, $"SEQ{i} should come after SEQ{i - 1}");
+			lastIndex = index;
+		}
+	}
+
+	[Fact]
+	public void SplitIntoChunks_ContentIntegrity_ExactMatch()
+	{
+		// Arrange - small enough to fit in one chunk
+		var paragraphs = Enumerable.Range(1, 20).Select(i => $"Para {i}").ToList();
+		var body = string.Join("\n\n", paragraphs);
+
+		// Act
+		var chunks = SplitIntoChunks(body);
+		var reassembled = string.Join("\n\n", chunks);
+
+		// Assert - exact match
+		reassembled.Should().Be(body);
+	}
+
+	private static int CountOccurrences(string text, string pattern)
+	{
+		var count = 0;
+		var index = 0;
+		while ((index = text.IndexOf(pattern, index, StringComparison.Ordinal)) != -1)
+		{
+			count++;
+			index += pattern.Length;
+		}
+		return count;
+	}
 }
