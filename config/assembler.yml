@@ -103,6 +103,8 @@ references:
   ecs-logging:
   edot-cloud-forwarder-aws:
     private: true
+  edot-cloud-forwarder-azure:
+    private: true
   elastic-agent:
   elastic-otel-dotnet:
   elastic-otel-java:
