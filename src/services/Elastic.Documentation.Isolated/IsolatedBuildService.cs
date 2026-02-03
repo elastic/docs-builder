@@ -9,7 +9,9 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Links.CrossLinks;
+using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Services;
+using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
@@ -154,5 +156,45 @@ public class IsolatedBuildService(
 		_logger.LogInformation("Finished building and exporting exporters {Exporters}", exporters);
 
 		return strict.Value ? context.Collector.Errors + context.Collector.Warnings == 0 : context.Collector.Errors == 0;
+	}
+
+	/// <summary>
+	/// Builds a pre-configured documentation set with optional injected navigation.
+	/// Used by portal builds where navigation spans multiple documentation sets.
+	/// </summary>
+	public async Task<bool> BuildDocumentationSet(
+		DocumentationSet documentationSet,
+		INavigationTraversable? navigation = null,
+		INavigationHtmlWriter? navigationHtmlWriter = null,
+		IReadOnlySet<Exporter>? exporters = null,
+		Cancel ctx = default)
+	{
+		var context = documentationSet.Context;
+		exporters ??= ExportOptions.Default;
+
+		var markdownExporters = exporters.CreateMarkdownExporters(logFactory, context, "portal");
+
+		var tasks = markdownExporters.Select(async e => await e.StartAsync(ctx));
+		await Task.WhenAll(tasks);
+
+		// Use the provided navigation or fall back to the doc set's own navigation
+		var effectiveNavigation = navigation ?? documentationSet;
+
+		var generator = new DocumentationGenerator(
+			documentationSet,
+			logFactory,
+			effectiveNavigation,
+			navigationHtmlWriter,
+			null,
+			markdownExporters.ToArray());
+
+		_ = await generator.GenerateAll(ctx);
+
+		tasks = markdownExporters.Select(async e => await e.StopAsync(ctx));
+		await Task.WhenAll(tasks);
+
+		_logger.LogInformation("Finished building documentation set {Name}", documentationSet.Context.Git.RepositoryName);
+
+		return context.Collector.Errors == 0;
 	}
 }

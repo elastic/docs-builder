@@ -20,20 +20,21 @@ namespace Documentation.Builder.Http;
 public class StaticWebHost
 {
 	public WebApplication WebApplication { get; }
+	private readonly string _contentRoot;
 
 	public StaticWebHost(int port, string? path)
 	{
-		var contentRoot = path ?? Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly");
+		_contentRoot = path ?? Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly");
 		var fs = new FileSystem();
-		var dir = fs.DirectoryInfo.New(contentRoot);
+		var dir = fs.DirectoryInfo.New(_contentRoot);
 		if (!dir.Exists)
-			throw new Exception($"Can not serve empty directory: {contentRoot}");
+			throw new Exception($"Can not serve empty directory: {_contentRoot}");
 		if (!dir.IsSubPathOf(fs.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName)))
 			throw new Exception($"Can not serve directory outside of: {Paths.WorkingDirectoryRoot.FullName}");
 
 		var builder = WebApplication.CreateBuilder(new WebApplicationOptions
 		{
-			ContentRootPath = contentRoot
+			ContentRootPath = _contentRoot
 		});
 
 		_ = builder.AddDocumentationServiceDefaults();
@@ -78,7 +79,7 @@ public class StaticWebHost
 				.UseDeveloperExceptionPage(new DeveloperExceptionPageOptions())
 				.UseRouting();
 
-		_ = WebApplication.MapGet("/", (Cancel _) => Results.Redirect("docs"));
+		_ = WebApplication.MapGet("/", ServeRootIndex);
 
 		_ = WebApplication.MapGet("{**slug}", ServeDocumentationFile);
 
@@ -91,6 +92,18 @@ public class StaticWebHost
 
 	}
 
+	private Task<IResult> ServeRootIndex(Cancel _)
+	{
+		var indexPath = Path.Combine(_contentRoot, "index.html");
+		var fileInfo = new FileInfo(indexPath);
+		if (fileInfo.Exists)
+			return Task.FromResult(Results.File(fileInfo.FullName, "text/html"));
+
+		// Fall back to redirect for backward compatibility with assemblies that don't have a root index.html
+		// TODO: Integration tests are failing without this. Adapt this when portal is actually in use.
+		return Task.FromResult(Results.Redirect("docs"));
+	}
+
 	private async Task<IResult> ServeDocumentationFile(string slug, Cancel _)
 	{
 		// from the injected top level navigation which expects us to run on elastic.co
@@ -98,8 +111,7 @@ public class StaticWebHost
 			return Results.NotFound();
 
 		await Task.CompletedTask;
-		var path = Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly");
-		var localPath = Path.Combine(path, slug.Replace('/', Path.DirectorySeparatorChar));
+		var localPath = Path.Combine(_contentRoot, slug.Replace('/', Path.DirectorySeparatorChar));
 		var fileInfo = new FileInfo(localPath);
 		var directoryInfo = new DirectoryInfo(localPath);
 		if (directoryInfo.Exists)
