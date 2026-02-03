@@ -125,6 +125,13 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 			return;
 		}
 
+		// Render Mermaid diagrams as pre.mermaid for client-side rendering
+		if (block.Language == "mermaid")
+		{
+			RenderMermaidBlock(renderer, block);
+			return;
+		}
+
 		var callOuts = block.UniqueCallOuts;
 
 		var slice = Code.Create(new CodeViewModel
@@ -249,5 +256,34 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 
 		var slice = AppliesToView.Create(viewModel);
 		slice.RenderAsync(renderer.Writer).GetAwaiter().GetResult();
+	}
+
+	/// <summary>
+	/// Renders a Mermaid code block as a pre.mermaid element for client-side rendering by Mermaid.js.
+	/// </summary>
+	private static void RenderMermaidBlock(HtmlRenderer renderer, EnhancedCodeBlock block)
+	{
+		_ = renderer.Write("<pre class=\"mermaid\">");
+
+		var commonIndent = GetCommonIndent(block);
+		for (var i = 0; i < block.Lines.Count; i++)
+		{
+			var line = block.Lines.Lines[i];
+			var slice = line.Slice;
+
+			// Skip empty lines at beginning and end
+			if ((i == 0 || i == block.Lines.Count - 1) && slice.IsEmptyOrWhitespace())
+				continue;
+
+			// Remove common indentation
+			var indent = CountIndentation(slice);
+			if (indent >= commonIndent)
+				slice.Start += commonIndent;
+
+			_ = renderer.WriteEscape(slice);
+			_ = renderer.WriteLine();
+		}
+
+		_ = renderer.Write("</pre>");
 	}
 }

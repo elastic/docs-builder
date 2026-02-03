@@ -33,6 +33,10 @@ public class ConsoleDiagnosticsCollector(ILoggerFactory logFactory, ICoreService
 		if (_stopped)
 			return;
 		_stopped = true;
+
+		// Drain the channel first to ensure all diagnostics are collected
+		await base.StopAsync(cancellationToken);
+
 		var repository = new ErrataFileSourceRepository();
 		repository.WriteDiagnosticsToConsole(_errors, _warnings, _hints);
 
@@ -40,7 +44,5 @@ public class ConsoleDiagnosticsCollector(ILoggerFactory logFactory, ICoreService
 		AnsiConsole.Write(new Markup($"	[bold red]{Errors} Errors[/] / [bold blue]{Warnings} Warnings[/] / [bold yellow]{Hints} Hints[/]"));
 		AnsiConsole.WriteLine();
 		AnsiConsole.WriteLine();
-
-		await Task.CompletedTask;
 	}
 }

@@ -6,11 +6,11 @@ import {
     useSearchActions,
     useSelectedIndex,
 } from './navigationSearch.store'
-import { useFindInDocsTelemetry } from './useFindInDocsTelemetry'
 import { useGlobalKeyboardShortcut } from './useGlobalKeyboardShortcut'
 import { useIsNavigationSearchCooldownActive } from './useNavigationSearchCooldown'
 import { useNavigationSearchKeyboardNavigation } from './useNavigationSearchKeyboardNavigation'
 import { useNavigationSearchQuery } from './useNavigationSearchQuery'
+import { useNavigationSearchTelemetry } from './useNavigationSearchTelemetry'
 import {
     EuiInputPopover,
     useEuiTheme,
@@ -35,7 +35,7 @@ export const NavigationSearch = () => {
     const { setSearchTerm } = useSearchActions()
     const isSearchCooldownActive = useIsNavigationSearchCooldownActive()
     const { isLoading, isFetching, data } = useNavigationSearchQuery()
-    const { trackOpened, trackClosed } = useFindInDocsTelemetry()
+    const { trackOpened, trackClosed } = useNavigationSearchTelemetry()
 
     const results = data?.results ?? []
     const hasContent = !!searchTerm.trim()

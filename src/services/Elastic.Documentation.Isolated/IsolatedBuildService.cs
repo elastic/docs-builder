@@ -6,9 +6,12 @@ using System.IO.Abstractions;
 using Actions.Core.Services;
 using Elastic.ApiExplorer;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Links.CrossLinks;
+using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Services;
+using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
@@ -44,6 +47,9 @@ public class IsolatedBuildService(
 		bool? metadataOnly = null,
 		IReadOnlySet<Exporter>? exporters = null,
 		string? canonicalBaseUrl = null,
+		IFileSystem? writeFileSystem = null,
+		bool skipOpenApi = false,
+		bool skipCrossLinks = false,
 		Cancel ctx = default
 	)
 	{
@@ -74,7 +80,7 @@ public class IsolatedBuildService(
 
 		try
 		{
-			context = new BuildContext(collector, fileSystem, fileSystem, configurationContext, exporters, path, output)
+			context = new BuildContext(collector, fileSystem, writeFileSystem ?? fileSystem, configurationContext, exporters, path, output)
 			{
 				UrlPathPrefix = pathPrefix,
 				Force = force ?? false,
@@ -103,26 +109,44 @@ public class IsolatedBuildService(
 		if (runningOnCi)
 			await githubActionsService.SetOutputAsync("skip", "false");
 
-		var crossLinkFetcher = new DocSetConfigurationCrossLinkFetcher(logFactory, context.Configuration);
-		var crossLinks = await crossLinkFetcher.FetchCrossLinks(ctx);
-		var crossLinkResolver = new CrossLinkResolver(crossLinks);
+		ICrossLinkResolver crossLinkResolver;
+		if (skipCrossLinks)
+		{
+			_logger.LogInformation("Skipping cross-link fetching for fast validation build");
+			crossLinkResolver = NoopCrossLinkResolver.Instance;
+		}
+		else
+		{
+			var crossLinkFetcher = new DocSetConfigurationCrossLinkFetcher(logFactory, context.Configuration);
+			var crossLinks = await crossLinkFetcher.FetchCrossLinks(ctx);
+			crossLinkResolver = new CrossLinkResolver(crossLinks);
+		}
 
 		// always delete output folder on CI
 		var set = new DocumentationSet(context, logFactory, crossLinkResolver);
 		if (runningOnCi)
 			set.ClearOutputDirectory();
 
+		var documentInferrer = new DocumentInferrerService(
+			context.ProductsConfiguration,
+			context.VersionsConfiguration,
+			context.LegacyUrlMappings,
+			set.Configuration,
+			context.Git);
 		var markdownExporters = exporters.CreateMarkdownExporters(logFactory, context, "isolated");
 
 		var tasks = markdownExporters.Select(async e => await e.StartAsync(ctx));
 		await Task.WhenAll(tasks);
 
 
-		var generator = new DocumentationGenerator(set, logFactory, set, null, null, markdownExporters.ToArray());
+		var generator = new DocumentationGenerator(set, logFactory, set, null, null, markdownExporters.ToArray(), documentInferrer: documentInferrer);
 		_ = await generator.GenerateAll(ctx);
 
-		var openApiGenerator = new OpenApiGenerator(logFactory, context, generator.MarkdownStringRenderer);
-		await openApiGenerator.Generate(ctx);
+		if (!skipOpenApi)
+		{
+			var openApiGenerator = new OpenApiGenerator(logFactory, context, generator.MarkdownStringRenderer);
+			await openApiGenerator.Generate(ctx);
+		}
 
 		if (runningOnCi)
 			await githubActionsService.SetOutputAsync("landing-page-path", set.FirstInterestingUrl);
@@ -132,5 +156,45 @@ public class IsolatedBuildService(
 		_logger.LogInformation("Finished building and exporting exporters {Exporters}", exporters);
 
 		return strict.Value ? context.Collector.Errors + context.Collector.Warnings == 0 : context.Collector.Errors == 0;
+	}
+
+	/// <summary>
+	/// Builds a pre-configured documentation set with optional injected navigation.
+	/// Used by portal builds where navigation spans multiple documentation sets.
+	/// </summary>
+	public async Task<bool> BuildDocumentationSet(
+		DocumentationSet documentationSet,
+		INavigationTraversable? navigation = null,
+		INavigationHtmlWriter? navigationHtmlWriter = null,
+		IReadOnlySet<Exporter>? exporters = null,
+		Cancel ctx = default)
+	{
+		var context = documentationSet.Context;
+		exporters ??= ExportOptions.Default;
+
+		var markdownExporters = exporters.CreateMarkdownExporters(logFactory, context, "portal");
+
+		var tasks = markdownExporters.Select(async e => await e.StartAsync(ctx));
+		await Task.WhenAll(tasks);
+
+		// Use the provided navigation or fall back to the doc set's own navigation
+		var effectiveNavigation = navigation ?? documentationSet;
+
+		var generator = new DocumentationGenerator(
+			documentationSet,
+			logFactory,
+			effectiveNavigation,
+			navigationHtmlWriter,
+			null,
+			markdownExporters.ToArray());
+
+		_ = await generator.GenerateAll(ctx);
+
+		tasks = markdownExporters.Select(async e => await e.StopAsync(ctx));
+		await Task.WhenAll(tasks);
+
+		_logger.LogInformation("Finished building documentation set {Name}", documentationSet.Context.Git.RepositoryName);
+
+		return context.Collector.Errors == 0;
 	}
 }

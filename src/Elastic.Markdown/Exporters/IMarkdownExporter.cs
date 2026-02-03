@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Navigation;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Myst;
@@ -21,6 +22,7 @@ public record MarkdownExportFileContext
 	public required DocumentationSet DocumentationSet { get; init; }
 	public required INavigationItem NavigationItem { get; init; }
 	public required INavigationTraversable PositionaNavigation { get; init; }
+	public required IDocumentInferrerService InferenceService { get; init; }
 }
 
 public interface IMarkdownExporter

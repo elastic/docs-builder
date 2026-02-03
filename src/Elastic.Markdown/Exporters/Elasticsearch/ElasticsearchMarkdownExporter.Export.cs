@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using Elastic.ApiExplorer.Elasticsearch;
 using Elastic.Documentation.AppliesTo;
+using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Search;
 using Elastic.Ingest.Elasticsearch.Indices;
@@ -18,6 +19,8 @@ namespace Elastic.Markdown.Exporters.Elasticsearch;
 
 public partial class ElasticsearchMarkdownExporter
 {
+	private IDocumentInferrerService? _inferService;
+
 	/// <summary>
 	/// Assigns hash, last updated, and batch index date to a documentation document.
 	/// </summary>
@@ -81,6 +84,8 @@ public partial class ElasticsearchMarkdownExporter
 		var currentNavigation = navigation.GetNavigationFor(file);
 		var url = currentNavigation.Url;
 
+		_inferService ??= fileContext.InferenceService;
+
 		if (url is "/docs" or "/docs/404")
 		{
 			// Skip the root and 404 pages
@@ -131,11 +136,11 @@ public partial class ElasticsearchMarkdownExporter
 
 		// Infer product and repository metadata
 		var mappedPages = fileContext.SourceFile.YamlFrontMatter?.MappedPages;
-		var frontMatterProducts = fileContext.SourceFile.YamlFrontMatter?.Products;
-		var inference = _documentInferrer.InferForMarkdown(
+		var inference = fileContext.InferenceService.InferForMarkdown(
 			fileContext.BuildContext.Git.RepositoryName,
 			mappedPages,
-			frontMatterProducts,
+			fileContext.DocumentationSet.Configuration.Products,
+			fileContext.SourceFile.YamlFrontMatter?.Products,
 			appliesTo
 		);
 		doc.Product = inference.Product is not null
@@ -172,7 +177,7 @@ public partial class ElasticsearchMarkdownExporter
 		// we'll rename IMarkdownExporter to IDocumentationFileExporter at that point
 		_logger.LogInformation("Exporting OpenAPI documentation to Elasticsearch");
 
-		var exporter = new OpenApiDocumentExporter(_versionsConfiguration, _documentInferrer);
+		var exporter = new OpenApiDocumentExporter(_versionsConfiguration, _inferService);
 
 		await foreach (var doc in exporter.ExportDocuments(limitPerSource: null, ctx))
 		{
@@ -270,4 +275,5 @@ public partial class ElasticsearchMarkdownExporter
 			_ = Interlocked.Decrement(ref _enrichmentCount);
 		}
 	}
+
 }

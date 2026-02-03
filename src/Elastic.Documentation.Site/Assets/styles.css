@@ -19,6 +19,7 @@
 @import './markdown/footnotes.css';
 @import './markdown/images.css';
 @import './markdown/math.css';
+@import './markdown/mermaid.css';
 @import './markdown/image-carousel.css';
 @import './markdown/hr.css';
 @import './modal.css';
@@ -32,6 +33,12 @@ html {
 	/* We need to use 14px because EUI works best with a 14px base */
 	font-size: 14px;
 	@apply font-body;
+}
+
+/* Disable all transitions during initial page load to prevent layout shift */
+.no-transitions,
+.no-transitions * {
+	transition: none !important;
 }
 
 body {
@@ -72,7 +79,7 @@ body {
 	}
 }
 
-@media screen and (min-width: 1200px) {
+@media screen and (min-width: 1180px) {
 	:root {
 		--offset-top: calc(80px + 38px); /* header height + banner height */
 	}
@@ -122,11 +129,42 @@ body {
 			@apply sticky top-(--offset-top) z-30 overflow-y-auto;
 			max-height: calc(100vh - var(--offset-top));
 			scrollbar-gutter: stable;
+			transition:
+				top 0.3s ease,
+				max-height 0.3s ease;
 		}
 
 		.sidebar-link {
 			@apply text-ink-light inline-block leading-[1.2em] text-pretty hover:text-black md:text-sm;
 			word-break: break-word;
+		}
+	}
+
+	/* Isolated header specific styles - only apply on lg screens (matches --breakpoint-lg) */
+	@media screen and (min-width: 1280px) {
+		.has-isolated-header {
+			/* Ensure grid container is tall enough for sticky sidebars to work */
+			#main-container > div:first-child {
+				min-height: calc(100vh + 500px);
+			}
+
+			.sidebar {
+				position: sticky !important;
+				top: var(--offset-top) !important;
+				height: fit-content;
+				max-height: calc(100vh - var(--offset-top));
+				overflow-y: auto;
+				align-self: start;
+				transition:
+					top 0.3s ease,
+					max-height 0.3s ease;
+
+				.sidebar-nav {
+					position: relative !important;
+					top: 0 !important;
+					max-height: 100%;
+				}
+			}
 		}
 	}
 }
@@ -175,6 +213,171 @@ body {
 	100% {
 		transform: translateX(100%) scaleX(0.5);
 	}
+}
+
+/* Wobble animation for diagnostics button */
+@keyframes wobble {
+	0%,
+	100% {
+		transform: rotate(0deg);
+	}
+	15% {
+		transform: rotate(-3deg);
+	}
+	30% {
+		transform: rotate(3deg);
+	}
+	45% {
+		transform: rotate(-2deg);
+	}
+	60% {
+		transform: rotate(2deg);
+	}
+	75% {
+		transform: rotate(-1deg);
+	}
+}
+
+.animate-wobble {
+	animation: wobble 0.8s ease-in-out;
+	animation-delay: 2s;
+	animation-iteration-count: 3;
+}
+
+/* Animated gradient for diagnostics pill */
+@keyframes gradient-shift {
+	0% {
+		background-position: 0% 50%;
+	}
+	50% {
+		background-position: 100% 50%;
+	}
+	100% {
+		background-position: 0% 50%;
+	}
+}
+
+/* Diagnostics pill base styling */
+.diagnostics-pill {
+	box-shadow:
+		inset 0 1px 2px rgba(0, 0, 0, 0.3),
+		0 1px 0 rgba(255, 255, 255, 0.1);
+	background-size: 200% 200%;
+	animation: gradient-shift 3s ease infinite;
+	cursor: pointer !important;
+}
+
+.diagnostics-pill-error {
+	background: linear-gradient(
+		135deg,
+		#dc2626,
+		#b91c1c,
+		#991b1b,
+		#b91c1c,
+		#dc2626
+	);
+}
+
+.diagnostics-pill-warning {
+	background: linear-gradient(
+		135deg,
+		#d97706,
+		#b45309,
+		#92400e,
+		#b45309,
+		#d97706
+	);
+}
+
+.diagnostics-pill-hint {
+	background: linear-gradient(
+		135deg,
+		#0077cc,
+		#005fa3,
+		#004d85,
+		#005fa3,
+		#0077cc
+	);
+}
+
+.diagnostics-pill-success {
+	background: linear-gradient(
+		135deg,
+		#16a34a,
+		#15803d,
+		#166534,
+		#15803d,
+		#16a34a
+	);
+}
+
+.diagnostics-pill-building {
+	background: linear-gradient(
+		135deg,
+		#3b82f6,
+		#2563eb,
+		#1d4ed8,
+		#2563eb,
+		#3b82f6
+	);
+}
+
+/* Segmented diagnostics pill */
+.diagnostics-segmented-pill {
+	box-shadow:
+		inset 0 1px 2px rgba(0, 0, 0, 0.2),
+		0 2px 4px rgba(0, 0, 0, 0.3);
+	cursor: pointer !important;
+}
+
+.diagnostics-segment {
+	background-size: 200% 200%;
+	animation: gradient-shift 3s ease infinite;
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.diagnostics-segment-error {
+	background: linear-gradient(
+		135deg,
+		#dc2626,
+		#b91c1c,
+		#991b1b,
+		#b91c1c,
+		#dc2626
+	);
+}
+
+.diagnostics-segment-warning {
+	background: linear-gradient(
+		135deg,
+		#d97706,
+		#b45309,
+		#92400e,
+		#b45309,
+		#d97706
+	);
+}
+
+.diagnostics-segment-hint {
+	background: linear-gradient(
+		135deg,
+		#0077cc,
+		#005fa3,
+		#004d85,
+		#005fa3,
+		#0077cc
+	);
+}
+
+.diagnostics-segment-building {
+	background: linear-gradient(
+		135deg,
+		#3b82f6,
+		#2563eb,
+		#1d4ed8,
+		#2563eb,
+		#3b82f6
+	);
 }
 
 #pages-nav .current {
@@ -229,4 +432,23 @@ body {
 
 math {
 	margin-top: 1.5rem;
+}
+
+/* Adjust look and feel of the navigation-search in the landing page hero */
+#hero navigation-search {
+	& > div > .euiHorizontalRule {
+		display: none;
+	}
+
+	& > div {
+		padding-right: 0;
+	}
+
+	& .euiPopover {
+		max-inline-size: 100%;
+
+		@media screen and (min-width: 1180px) {
+			max-inline-size: 500px;
+		}
+	}
 }

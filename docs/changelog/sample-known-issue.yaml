@@ -1,0 +1,10 @@
+type: known-issue
+title: This is a sample known issue to show a full set
+products:
+  - product: docs-builder
+    target: 0.100.0
+areas:
+  - Build
+description: |
+  This is a sample known issue entry demonstrating how known issues
+  are rendered with dropdowns in the changelog directive output.

@@ -25,8 +25,10 @@
   </Folder>
   <Folder Name="/config/">
     <File Path="config/assembler.yml" />
+	<File Path="config/changelog.example.yml" />
     <File Path="config/legacy-url-mappings.yml" />
     <File Path="config/navigation.yml" />
+	<File Path="config/portal.example.yml" />
     <File Path="config/products.yml" />
     <File Path="config/versions.yml" />
     <File Path="config/search.yml" />
@@ -43,6 +45,7 @@
   </Folder>
   <Folder Name="/src/">
     <File Path="src/Directory.Build.props" />
+    <Project Path="src/Elastic.Portal/Elastic.Portal.csproj" />
     <Project Path="src/Elastic.ApiExplorer/Elastic.ApiExplorer.csproj" />
     <Project Path="src/Elastic.Documentation.Configuration/Elastic.Documentation.Configuration.csproj" />
     <Project Path="src/Elastic.Documentation.LegacyDocs/Elastic.Documentation.LegacyDocs.csproj" />
@@ -51,6 +54,7 @@
     <Project Path="src/Elastic.Documentation.Navigation/Elastic.Documentation.Navigation.csproj" />
     <Project Path="src/Elastic.Documentation.ServiceDefaults/Elastic.Documentation.ServiceDefaults.csproj" />
     <Project Path="src/Elastic.Documentation.Site/Elastic.Documentation.Site.csproj" />
+    <Project Path="src/Elastic.Documentation.Svg/Elastic.Documentation.Svg.csproj" />
     <Project Path="src/Elastic.Documentation/Elastic.Documentation.csproj" />
     <Project Path="src/Elastic.Markdown/Elastic.Markdown.csproj" />
     <Project Path="src/Elastic.Documentation.Mcp/Elastic.Documentation.Mcp.csproj" />
@@ -59,6 +63,7 @@
     <Project Path="src/api/Elastic.Documentation.Api.Core/Elastic.Documentation.Api.Core.csproj" />
     <Project Path="src/api/Elastic.Documentation.Api.Infrastructure/Elastic.Documentation.Api.Infrastructure.csproj" />
     <Project Path="src/api/Elastic.Documentation.Api.Lambda/Elastic.Documentation.Api.Lambda.csproj" />
+	<Project Path="src/api/Elastic.Documentation.Mcp.Lambda/Elastic.Documentation.Mcp.Lambda.csproj" />
   </Folder>
   <Folder Name="/src/authoring/">
     <Project Path="src/authoring/Elastic.Documentation.Refactor/Elastic.Documentation.Refactor.csproj" />
@@ -67,9 +72,11 @@
     <Project Path="src/infra/docs-lambda-index-publisher/docs-lambda-index-publisher.csproj" />
   </Folder>
   <Folder Name="/src/services/">
+    <Project Path="src/services/Elastic.Changelog/Elastic.Changelog.csproj" />
     <Project Path="src/services/Elastic.Documentation.Assembler/Elastic.Documentation.Assembler.csproj" />
     <Project Path="src/services/Elastic.Documentation.Isolated/Elastic.Documentation.Isolated.csproj" />
     <Project Path="src/services/Elastic.Documentation.Services/Elastic.Documentation.Services.csproj" />
+	<Project Path="src/services/Elastic.Documentation.Search/Elastic.Documentation.Search.csproj" />
   </Folder>
   <Folder Name="/src/tooling/">
     <File Path="src/tooling/Directory.Build.props" />
@@ -80,6 +87,7 @@
     <Project Path="tests-integration/Elastic.Assembler.IntegrationTests/Elastic.Assembler.IntegrationTests.csproj" />
 	<Project Path="tests-integration/Elastic.Documentation.Api.IntegrationTests/Elastic.Documentation.Api.IntegrationTests.csproj" />
     <Project Path="tests-integration/Search.IntegrationTests/Search.IntegrationTests.csproj" />
+	  <Project Path="tests-integration/Mcp.Lambda.IntegrationTests/Mcp.Lambda.IntegrationTests.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <File Path="tests/Directory.Build.props" />
@@ -90,7 +98,7 @@
     <Project Path="tests/Elastic.Documentation.LegacyDocs.Tests/Elastic.Documentation.LegacyDocs.Tests.csproj" />
     <Project Path="tests/Elastic.Markdown.Tests/Elastic.Markdown.Tests.csproj" />
     <Project Path="tests/Navigation.Tests/Navigation.Tests.csproj" />
-    <Project Path="tests/Elastic.Documentation.Services.Tests/Elastic.Documentation.Services.Tests.csproj" />
+    <Project Path="tests/Elastic.Changelog.Tests/Elastic.Changelog.Tests.csproj" />
   </Folder>
   <Project Path=".github/.github.csproj">
     <Build Project="false" />

@@ -48,6 +48,7 @@ public static class CodeBlock
 		{ "apiheader", "" },
 		{ "eql", "" },
 		{ "esql", "" },
+		{ "mermaid", "" },
 		{ "painless", "" }
 	};
 

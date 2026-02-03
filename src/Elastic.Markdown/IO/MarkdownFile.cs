@@ -11,6 +11,7 @@ using Elastic.Documentation.Navigation;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.Directives;
+using Elastic.Markdown.Myst.Directives.Changelog;
 using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Stepper;
 using Elastic.Markdown.Myst.FrontMatter;
@@ -281,8 +282,16 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 				};
 			});
 
+		// Collect headings from Changelog directives
+		var changelogTocs = document
+			.Descendants<DirectiveBlock>()
+			.OfType<ChangelogBlock>()
+			.SelectMany(changelog => changelog.GeneratedTableOfContent
+				.Select(tocItem => new { TocItem = tocItem, changelog.Line }));
+
 		var toc = headingTocs
 			.Concat(stepperTocs)
+			.Concat(changelogTocs)
 			.Concat(includedTocs)
 			.OrderBy(item => item.Line)
 			.Select(item => item.TocItem)
@@ -294,12 +303,14 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 			.ToList();
 
 		var includedAnchors = includes.SelectMany(i => i!.Anchors!.Anchors).ToArray();
+		var directives = document.Descendants<DirectiveBlock>().ToArray();
 		anchors =
 		[
-			..document.Descendants<DirectiveBlock>()
+			..directives
 				.Select(b => b.CrossReferenceName)
 				.Where(l => !string.IsNullOrWhiteSpace(l))
 				.Select(s => s.Slugify())
+				.Concat(directives.SelectMany(b => b.GeneratedAnchors))
 				.Concat(document.Descendants<InlineAnchor>().Select(a => a.Anchor))
 				.Concat(toc.Select(t => t.Slug))
 				.Where(anchor => !string.IsNullOrEmpty(anchor))

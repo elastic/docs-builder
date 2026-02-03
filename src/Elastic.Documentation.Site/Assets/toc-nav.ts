@@ -12,7 +12,10 @@ interface TocElements {
 const HEADING_OFFSET = 34 * 4
 
 function initializeTocElements(): TocElements {
-    const headings = $$('#markdown-content h2, #markdown-content h3')
+    // Support both regular docs (#markdown-content) and API docs (#elastic-api-v3)
+    const headings = $$(
+        '#markdown-content h2, #markdown-content h3, #elastic-api-v3 h3[data-section]'
+    )
     const tocLinks = $$('#toc-nav li>a') as HTMLAnchorElement[]
     const tocContainer = $('#toc-nav .toc-progress-container') as HTMLDivElement
     const progressIndicator = $(
@@ -20,6 +23,19 @@ function initializeTocElements(): TocElements {
         tocContainer
     ) as HTMLDivElement
     return { headings, tocLinks, tocContainer, progressIndicator }
+}
+
+// Get the anchor ID for a heading element
+// Supports both regular docs (.heading-wrapper with id) and API docs (data-section attribute)
+function getHeadingAnchorId(heading: Element): string | null {
+    // For API docs: h3[data-section]
+    const dataSection = heading.getAttribute('data-section')
+    if (dataSection) {
+        return dataSection
+    }
+    // For regular docs: .heading-wrapper parent with id
+    const wrapper = heading.closest('.heading-wrapper')
+    return wrapper?.id || null
 }
 
 // Find the current TOC links based on visible headings
@@ -34,10 +50,9 @@ function findCurrentTocLinks(elements: TocElements): HTMLAnchorElement[] {
                 currentTocLinks = []
             }
             currentTop = rect.top
+            const anchorId = getHeadingAnchorId(heading)
             const foundLink = elements.tocLinks.find(
-                (link) =>
-                    link.getAttribute('href') ===
-                    `#${heading.closest('.heading-wrapper')?.id}`
+                (link) => link.getAttribute('href') === `#${anchorId}`
             )
             if (foundLink) {
                 currentTocLinks.push(foundLink)
@@ -67,19 +82,26 @@ function handleBottomScroll(elements: TocElements) {
     if (visibleHeadings.length === 0) return
     const firstHeading = visibleHeadings[0]
     const lastHeading = visibleHeadings[visibleHeadings.length - 1]
-    const firstLink = elements.tocLinks
-        .find(
-            (link) =>
-                link.getAttribute('href') ===
-                `#${firstHeading.parentElement?.id}`
+    const firstAnchorId = getHeadingAnchorId(firstHeading)
+    const lastAnchorId = getHeadingAnchorId(lastHeading)
+
+    // Find all TOC links for visible headings and mark them as current
+    const visibleLinks = visibleHeadings
+        .map((h) => getHeadingAnchorId(h))
+        .filter((id): id is string => id !== null)
+        .map((id) =>
+            elements.tocLinks.find(
+                (link) => link.getAttribute('href') === `#${id}`
+            )
         )
+        .filter((link): link is HTMLAnchorElement => link !== undefined)
+    updateCurrentClass(elements.tocLinks, visibleLinks)
+
+    const firstLink = elements.tocLinks
+        .find((link) => link.getAttribute('href') === `#${firstAnchorId}`)
         ?.closest('li')
     const lastLink = elements.tocLinks
-        .find(
-            (link) =>
-                link.getAttribute('href') ===
-                `#${lastHeading.parentElement?.id}`
-        )
+        .find((link) => link.getAttribute('href') === `#${lastAnchorId}`)
         ?.closest('li')
     if (firstLink && lastLink && elements.tocContainer) {
         const tocRect = elements.tocContainer.getBoundingClientRect()
@@ -102,6 +124,14 @@ function updateProgressIndicatorPosition(
     indicator.style.height = `${height}px`
 }
 
+function updateCurrentClass(
+    allLinks: HTMLAnchorElement[],
+    currentLinks: HTMLAnchorElement[]
+) {
+    allLinks.forEach((link) => link.classList.remove('current'))
+    currentLinks.forEach((link) => link.classList.add('current'))
+}
+
 function updateIndicator(elements: TocElements) {
     if (!elements.tocContainer) return
 
@@ -109,6 +139,9 @@ function updateIndicator(elements: TocElements) {
         window.innerHeight + window.scrollY >=
         document.documentElement.scrollHeight - 10
     const currentTocLinks = findCurrentTocLinks(elements)
+
+    // Update the current class on TOC links
+    updateCurrentClass(elements.tocLinks, currentTocLinks)
 
     if (isAtBottom) {
         handleBottomScroll(elements)

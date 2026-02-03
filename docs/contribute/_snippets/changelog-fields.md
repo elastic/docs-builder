@@ -9,8 +9,7 @@ title:
 type: 
 
 # A required string that contains the type of change.
-# Refer to https://github.com/elastic/docs-builder/blob/main/src/services/Elastic.Documentation.Services/Changelog/ChangelogConfiguration.cs for the acceptable values.
-
+# For the acceptable values, refer to https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/ChangelogEntryType.cs
 products:
 
 # A required array of objects that denote the affected products and their target release.
@@ -31,7 +30,7 @@ products:
       lifecycle:
 
       # An optional string for new features and enhancements that have a specific availability.
-      # Refer to https://github.com/elastic/docs-builder/blob/main/src/services/Elastic.Documentation.Services/Changelog/ChangelogConfiguration.cs for the acceptable values.
+      # For the acceptable values, refer to https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/Lifecycle.cs
 
 ##### Optional fields #####
 action:
@@ -79,5 +78,5 @@ pr:
 subtype:
 
 # An optional string that applies only to breaking changes and further subdivides that type.
-# Refer to https://github.com/elastic/docs-builder/blob/main/src/services/Elastic.Documentation.Services/Changelog/ChangelogConfiguration.cs for the acceptable values.
+# For the acceptable values, refer to https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/ChangelogEntrySubtype.cs
 ```

@@ -3,11 +3,14 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Markdown.Diagnostics;
+using Microsoft.AspNetCore.Html;
 
 namespace Elastic.Markdown.Myst.Directives.CsvInclude;
 
 public class CsvIncludeViewModel : DirectiveViewModel
 {
+	public required Func<string, HtmlString> RenderMarkdown { get; init; }
+
 	public IEnumerable<string[]> GetCsvRows()
 	{
 		if (DirectiveBlock is not CsvIncludeBlock csvBlock || !csvBlock.Found || string.IsNullOrEmpty(csvBlock.CsvFilePath))
@@ -48,9 +51,18 @@ public class CsvIncludeViewModel : DirectiveViewModel
 		});
 	}
 
-	public static CsvIncludeViewModel Create(CsvIncludeBlock csvBlock) =>
+	public HtmlString RenderCell(string? value)
+	{
+		if (string.IsNullOrEmpty(value))
+			return HtmlString.Empty;
+
+		return RenderMarkdown(value);
+	}
+
+	public static CsvIncludeViewModel Create(CsvIncludeBlock csvBlock, Func<string, HtmlString> renderMarkdown) =>
 		new()
 		{
-			DirectiveBlock = csvBlock
+			DirectiveBlock = csvBlock,
+			RenderMarkdown = renderMarkdown
 		};
 }

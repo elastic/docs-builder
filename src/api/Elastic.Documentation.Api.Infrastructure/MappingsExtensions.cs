@@ -59,17 +59,17 @@ public static class MappingsExtension
 				[FromQuery(Name = "q")] string query,
 				[FromQuery(Name = "page")] int? pageNumber,
 				[FromQuery(Name = "type")] string? typeFilter,
-				FindPageUsecase findPageUsecase,
+				NavigationSearchUsecase navigationSearchUsecase,
 				Cancel ctx
 			) =>
 			{
-				var request = new FindPageApiRequest
+				var request = new NavigationSearchApiRequest
 				{
 					Query = query,
 					PageNumber = pageNumber ?? 1,
 					TypeFilter = typeFilter
 				};
-				var response = await findPageUsecase.FindPageAsync(request, ctx);
+				var response = await navigationSearchUsecase.NavigationSearchAsync(request, ctx);
 				return Results.Ok(response);
 			});
 	}

@@ -753,39 +753,29 @@ Hello, this is a substitution: Hello World!
 ```
 """
 
-type ``diagram directive`` () =
+type ``mermaid code block`` () =
     static let markdown = Setup.Document """
-::::{diagram} mermaid
+```mermaid
 flowchart LR
     A[Start] --> B{Decision}
     B -->|Yes| C[Action 1]
     B -->|No| D[Action 2]
     C --> E[End]
     D --> E
-::::
-
-::::{diagram} d2
-x -> y: hello world
-y -> z: nice to meet you
-::::
+```
 """
 
     [<Fact>]
-    let ``renders diagram with type information`` () =
+    let ``renders mermaid as code block`` () =
         markdown |> convertsToNewLLM """
-<diagram type="mermaid">
-  flowchart LR
-      A[Start] --> B{Decision}
-      B -->|Yes| C[Action 1]
-      B -->|No| D[Action 2]
-      C --> E[End]
-      D --> E
-</diagram>
-
-<diagram type="d2">
-  x -> y: hello world
-  y -> z: nice to meet you
-</diagram>
+```mermaid
+flowchart LR
+A[Start] --> B{Decision}
+B -->|Yes| C[Action 1]
+B -->|No| D[Action 2]
+C --> E[End]
+D --> E
+```
 """
         
 type ``substitution in heading`` () =
@@ -952,4 +942,70 @@ type ``images in tables`` () =
 | Icon                                  | Name |
 |---------------------------------------|------|
 | ![logo](https://example.com/logo.png) | Logo |
+"""
+
+type ``csv-include directive`` () =
+    static let generator = Setup.Generate [
+        Index """
+:::{csv-include} data/users.csv
+:::
+"""
+        File("data/users.csv", """Name,Age,City
+John Doe,30,New York
+Jane Smith,25,Los Angeles
+Bob Johnson,35,Chicago""")
+    ]
+
+    [<Fact>]
+    let ``renders csv as markdown table`` () =
+        generator |> convertsToNewLLM """
+| Name        | Age | City        |
+|-------------|-----|-------------|
+| John Doe    | 30  | New York    |
+| Jane Smith  | 25  | Los Angeles |
+| Bob Johnson | 35  | Chicago     |
+"""
+
+type ``csv-include directive with caption`` () =
+    static let generator = Setup.Generate [
+        Index """
+:::{csv-include} data/products.csv
+:caption: Product List
+:::
+"""
+        File("data/products.csv", """Product,Price,Stock
+Widget,9.99,100
+Gadget,19.99,50""")
+    ]
+
+    [<Fact>]
+    let ``renders csv with caption as bold title`` () =
+        generator |> convertsToNewLLM """
+**Product List**
+
+| Product | Price | Stock |
+|---------|-------|-------|
+| Widget  | 9.99  | 100   |
+| Gadget  | 19.99 | 50    |
+"""
+
+type ``csv-include directive with custom separator`` () =
+    static let generator = Setup.Generate [
+        Index """
+:::{csv-include} data/semicolon.csv
+:separator: ;
+:::
+"""
+        File("data/semicolon.csv", """Name;Value
+Item1;100
+Item2;200""")
+    ]
+
+    [<Fact>]
+    let ``parses csv with custom separator`` () =
+        generator |> convertsToNewLLM """
+| Name  | Value |
+|-------|-------|
+| Item1 | 100   |
+| Item2 | 200   |
 """

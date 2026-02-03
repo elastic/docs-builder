@@ -5,6 +5,7 @@ using System.IO.Abstractions;
 using Elastic.ApiExplorer;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Markdown;
 using Elastic.Markdown.Exporters;
@@ -43,6 +44,9 @@ public class ReloadableGeneratorState : IDisposable
 
 	public DocumentationGenerator Generator => _generator;
 
+	// Track OpenAPI spec file modification times to detect changes
+	private readonly Dictionary<string, DateTimeOffset> _openApiSpecLastModified = [];
+
 	public async Task ReloadAsync(Cancel ctx)
 	{
 		SourcePath.Refresh();
@@ -59,7 +63,46 @@ public class ReloadableGeneratorState : IDisposable
 		await generator.ResolveDirectoryTree(ctx);
 		_ = Interlocked.Exchange(ref _generator, generator);
 
-		await ReloadApiReferences(generator.MarkdownStringRenderer, ctx);
+		// Only regenerate OpenAPI if spec files have changed
+		if (HaveOpenApiSpecsChanged(docSet.Configuration))
+		{
+			await ReloadApiReferences(generator.MarkdownStringRenderer, ctx);
+			UpdateOpenApiSpecTimestamps(docSet.Configuration);
+		}
+	}
+
+	private bool HaveOpenApiSpecsChanged(ConfigurationFile config)
+	{
+		if (config.OpenApiSpecifications is null)
+			return false;
+
+		// First run - no timestamps yet
+		if (_openApiSpecLastModified.Count == 0)
+			return true;
+
+		foreach (var (_, fileInfo) in config.OpenApiSpecifications)
+		{
+			fileInfo.Refresh();
+			if (!_openApiSpecLastModified.TryGetValue(fileInfo.FullName, out var lastModified))
+				return true; // New file
+			if (fileInfo.LastWriteTimeUtc > lastModified)
+				return true; // File modified
+		}
+
+		return false;
+	}
+
+	private void UpdateOpenApiSpecTimestamps(ConfigurationFile config)
+	{
+		if (config.OpenApiSpecifications is null)
+			return;
+
+		_openApiSpecLastModified.Clear();
+		foreach (var (_, fileInfo) in config.OpenApiSpecifications)
+		{
+			fileInfo.Refresh();
+			_openApiSpecLastModified[fileInfo.FullName] = fileInfo.LastWriteTimeUtc;
+		}
 	}
 
 	public async Task ReloadApiReferences(Cancel ctx) => await ReloadApiReferences(_generator.MarkdownStringRenderer, ctx);

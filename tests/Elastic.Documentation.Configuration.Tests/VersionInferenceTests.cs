@@ -5,6 +5,7 @@
 using System.Collections.Frozen;
 using System.IO.Abstractions;
 using Elastic.Documentation.AppliesTo;
+using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Versions;
 using FluentAssertions;

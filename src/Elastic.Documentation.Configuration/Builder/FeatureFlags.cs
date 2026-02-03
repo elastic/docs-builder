@@ -20,12 +20,6 @@ public class FeatureFlags(Dictionary<string, bool> initFeatureFlags)
 		set => _featureFlags["primary-nav"] = value;
 	}
 
-	public bool LazyLoadNavigation
-	{
-		get => IsEnabled("lazy-load-navigation");
-		set => _featureFlags["lazy-load-navigation"] = value;
-	}
-
 	public bool DisableGitHubEditLink
 	{
 		get => IsEnabled("disable-github-edit-link");
@@ -42,6 +36,12 @@ public class FeatureFlags(Dictionary<string, bool> initFeatureFlags)
 	{
 		get => IsEnabled("staging-elastic-nav");
 		set => _featureFlags["staging-elastic-nav"] = value;
+	}
+
+	public bool DiagnosticsPanelEnabled
+	{
+		get => IsEnabled("diagnostics-panel");
+		set => _featureFlags["diagnostics-panel"] = value;
 	}
 
 	private bool IsEnabled(string key)

@@ -2,9 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Documentation.Api.Infrastructure.Adapters.Search;
-using Elastic.Documentation.Api.Infrastructure.Adapters.Search.Common;
 using Elastic.Documentation.Configuration.Search;
+using Elastic.Documentation.Search;
+using Elastic.Documentation.Search.Common;
 using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -220,7 +220,7 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 	/// <summary>
 	/// Creates an ElasticsearchGateway instance using configuration from the distributed application.
 	/// </summary>
-	private FindPageGateway? CreateFindPageGateway()
+	private NavigationSearchGateway? CreateFindPageGateway()
 	{
 		// Build a new ConfigurationBuilder to read user secrets and environment variables
 		var configBuilder = new ConfigurationBuilder();
@@ -279,6 +279,6 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 		};
 
 		var clientAccessor = new ElasticsearchClientAccessor(options, searchConfig);
-		return new FindPageGateway(clientAccessor, NullLogger<FindPageGateway>.Instance);
+		return new NavigationSearchGateway(clientAccessor, NullLogger<NavigationSearchGateway>.Instance);
 	}
 }

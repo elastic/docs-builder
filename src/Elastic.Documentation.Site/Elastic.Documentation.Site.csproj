@@ -41,23 +41,53 @@
       2. Run npm run build before building the .NET project.
       MSBuild runs NpmInstall before this task because of the DependsOnTargets attribute.
       DependsOnTargets ensures MinVer runs first so $(MinVerVersion) is available.
+
+      Inputs/Outputs enable incremental builds - the target only runs when source files change.
    -->
-  <Target Name="NpmRunBuild" DependsOnTargets="NpmInstall;MinVer" BeforeTargets="BeforeBuild">
+  <ItemGroup>
+    <NpmBuildInputFiles Include="Assets/**/*.ts" />
+    <NpmBuildInputFiles Include="Assets/**/*.tsx" />
+    <NpmBuildInputFiles Include="Assets/**/*.css" />
+    <NpmBuildInputFiles Include="package.json" />
+    <NpmBuildInputFiles Include="package-lock.json" />
+    <NpmBuildInputFiles Include="tsconfig.json" />
+    <NpmBuildInputFiles Include="tailwind.config.js" />
+    <NpmBuildInputFiles Include=".parcelrc" />
+    <NpmBuildInputFiles Include=".postcssrc" />
+  </ItemGroup>
+  <Target Name="NpmRunBuild"
+          DependsOnTargets="NpmInstall;MinVer"
+          BeforeTargets="BeforeBuild"
+          Inputs="@(NpmBuildInputFiles)"
+          Outputs="_static/.build-stamp;_static/main.js;_static/styles.css">
     <Message Text="Building frontend with version: $(MinVerVersion)" Importance="high" />
-    <Exec Command="npm run build" 
-          WorkingDirectory="$(MSBuildThisFileDirectory)" 
+    <Exec Command="npm run build"
+          WorkingDirectory="$(MSBuildThisFileDirectory)"
           ConsoleToMsBuild="true"
           EnvironmentVariables="DOCS_BUILDER_VERSION=$(MinVerVersion)">
       <Output TaskParameter="ConsoleOutput" PropertyName="OutputOfExec" />
     </Exec>
+    <!-- Write the stamp file, so incremental builds work -->
+    <Touch Files="_static/.build-stamp" AlwaysCreate="true" />
+  </Target>
+
+  <!-- Clean old hashed assets during publish to avoid accumulating stale files -->
+  <Target Name="CleanOldHashedAssets" BeforeTargets="NpmRunBuild" Condition="'$(IsPublishing)' == 'true'">
+    <ItemGroup>
+      <OldHashedFiles Include="_static/*.????????*.js" />
+      <OldHashedFiles Include="_static/*.????????*.css" />
+      <OldHashedFiles Include="_static/*.????????*.js.map" />
+      <OldHashedFiles Include="_static/*.????????*.css.map" />
+    </ItemGroup>
+    <Delete Files="@(OldHashedFiles)" ContinueOnError="true" />
   </Target>
 
   <Target Name="EmbedGeneratedAssets" AfterTargets="NpmRunBuild">
     <ItemGroup>
       <EmbeddedResource Include="_static/*.js" Watch="false" />
-      <EmbeddedResource Include="_static/*.js.map" Watch="false" />
+      <EmbeddedResource Include="_static/*.js.map" Watch="false" Condition="'$(Configuration)' == 'Debug'" />
       <EmbeddedResource Include="_static/*.css" Watch="false" />
-      <EmbeddedResource Include="_static/*.css.map" Watch="false" />
+      <EmbeddedResource Include="_static/*.css.map" Watch="false" Condition="'$(Configuration)' == 'Debug'" />
       <EmbeddedResource Include="_static/*.svg" Watch="false" />
       <EmbeddedResource Include="_static/*.png" Watch="false" />
       <EmbeddedResource Include="_static/*.ttf" Watch="false" />

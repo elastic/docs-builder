@@ -7,7 +7,7 @@ using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Myst.Directives.Admonition;
 using Elastic.Markdown.Myst.Directives.AppliesTo;
-using Elastic.Markdown.Myst.Directives.Diagram;
+using Elastic.Markdown.Myst.Directives.CsvInclude;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Math;
@@ -217,10 +217,6 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 				WriteIncludeBlock(renderer, includeBlock);
 				return;
 
-			case DiagramBlock:
-				// Skip diagrams - not text searchable
-				return;
-
 			case SettingsBlock settingsBlock:
 				WriteSettingsBlock(renderer, settingsBlock);
 				return;
@@ -240,6 +236,10 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 
 			case TabItemBlock tabItemBlock:
 				WriteTabItemBlock(renderer, tabItemBlock);
+				return;
+
+			case CsvIncludeBlock csvIncludeBlock:
+				WriteCsvIncludeBlock(renderer, csvIncludeBlock);
 				return;
 		}
 
@@ -374,6 +374,54 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 					_ = renderer.Render(document);
 					renderer.EnsureBlockSpacing();
 				}
+			}
+		}
+
+		renderer.EnsureLine();
+	}
+
+	private static void WriteCsvIncludeBlock(PlainTextRenderer renderer, CsvIncludeBlock block)
+	{
+		if (!block.Found || string.IsNullOrEmpty(block.CsvFilePath))
+			return;
+
+		renderer.EnsureBlockSpacing();
+
+		// Include caption if present
+		if (!string.IsNullOrEmpty(block.Caption))
+		{
+			renderer.WriteLine(block.Caption);
+			renderer.EnsureLine();
+		}
+
+		// Read CSV data
+		var csvRows = CsvReader.ReadCsvFile(block.CsvFilePath, block.Separator, block.Build.ReadFileSystem)
+			.Take(block.MaxRows)
+			.ToList();
+
+		if (csvRows.Count == 0)
+			return;
+
+		// Get headers from first row
+		var headers = csvRows[0];
+		var columnCount = Math.Min(headers.Length, block.MaxColumns);
+
+		// Render each data row as header: value pairs (same format as PlainTextTableRenderer)
+		var isFirstRow = true;
+		foreach (var row in csvRows.Skip(1))
+		{
+			if (!isFirstRow)
+				renderer.EnsureLine();
+			isFirstRow = false;
+
+			for (var i = 0; i < Math.Min(row.Length, columnCount); i++)
+			{
+				if (i < headers.Length && !string.IsNullOrEmpty(headers[i]))
+				{
+					renderer.Write(headers[i]);
+					renderer.Write(": ");
+				}
+				renderer.WriteLine(row[i]);
 			}
 		}
 

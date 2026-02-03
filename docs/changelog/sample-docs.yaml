@@ -1,0 +1,10 @@
+type: docs
+title: This is a sample documentation change to show a full set
+products:
+  - product: docs-builder
+    target: 0.100.0
+areas:
+  - Documentation
+description: |
+  This is a sample documentation entry demonstrating how documentation
+  changes are rendered in the changelog directive output.
