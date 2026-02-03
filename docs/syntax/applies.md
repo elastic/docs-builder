@@ -30,20 +30,24 @@ Where:
 
 ### Page level
 
-Page level annotations are added in the YAML frontmatter, starting with the `applies_to` key and following the [key-value reference](#key-value-reference). For example:
+Page level annotations are added in the YAML frontmatter, starting with the `applies_to` key and following the [key-value reference](#key-value-reference).
+
+All documentation pages must include an `applies_to` tag in the YAML frontmatter.
+
+:::{note}
+In the page front matter, you should only refer to one dimension (stack/serverless, deployment, or product). Refer to the [cumulative documentation guidelines](https://www.elastic.co/docs/contribute-docs/how-to/cumulative-docs/guidelines#dimensions) for details.
+:::
+
+For example:
 
 ```yaml
 ---
 applies_to:
   stack: ga
-  deployment:
-    ece: ga
 ---
 ```
 
-:::{important}
-All documentation pages must include an `applies_to` tag in the YAML frontmatter.
-:::
+
 
 ### Section level
 
@@ -221,8 +225,6 @@ Versioned products require a `version` tag to be used with the `lifecycle` tag:
 ```yaml
 applies_to:
   stack: preview 9.1, ga 9.4
-  deployment:
-    ece: deprecated 9.2, removed 9.8
 ```
 
 :::{include} _snippets/versioned-lifecycle.md
