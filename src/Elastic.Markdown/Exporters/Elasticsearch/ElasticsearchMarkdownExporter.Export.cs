@@ -247,7 +247,7 @@ public partial class ElasticsearchMarkdownExporter
 			return;
 		}
 
-		if (status.Exists && status.IsStale && status.Entry is not null)
+		if (status.Exists && status.Entry is not null)
 		{
 			// Stale cache hit - apply stale data inline (better than nothing)
 			ApplyEnrichmentFromCache(doc, status.Entry);
