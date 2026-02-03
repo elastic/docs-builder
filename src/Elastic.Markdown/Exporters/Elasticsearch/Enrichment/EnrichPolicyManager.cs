@@ -49,15 +49,16 @@ public sealed class EnrichPolicyManager(
 
 	/// <summary>
 	/// Generates the ingest pipeline body with the current policy name.
+	/// Pipeline uses URL-based matching to always find enrichment even when content changes.
 	/// </summary>
 	private static string GetIngestPipelineBody() => $$"""
 		{
-			"description": "Enriches documents with AI-generated fields from the enrichment cache",
+			"description": "Enriches documents with AI-generated fields from the enrichment cache (matched by URL)",
 			"processors": [
 				{
 					"enrich": {
 						"policy_name": "{{PolicyName}}",
-						"field": "enrichment_key",
+						"field": "url",
 						"target_field": "ai_enrichment",
 						"max_matches": 1,
 						"ignore_missing": true
@@ -91,12 +92,13 @@ public sealed class EnrichPolicyManager(
 
 		_logger.LogInformation("Creating enrich policy {PolicyName} for index {CacheIndex}...", PolicyName, _cacheIndexName);
 
+		// Match by URL to always find enrichment even when document content changes
 		var enrichFieldsJson = string.Join(", ", EnrichFields.Select(f => $"\"{f}\""));
 		var policyBody = $$"""
 			{
 				"match": {
 					"indices": "{{_cacheIndexName}}",
-					"match_field": "enrichment_key",
+					"match_field": "url",
 					"enrich_fields": [{{enrichFieldsJson}}]
 				}
 			}
