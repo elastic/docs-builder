@@ -20,10 +20,12 @@ namespace Elastic.Markdown.Exporters.Elasticsearch.Enrichment;
 public sealed class ElasticsearchEnrichmentCache(
 	ITransport transport,
 	ILogger<ElasticsearchEnrichmentCache> logger,
+	ElasticsearchOperations? operations = null,
 	string indexName = "docs-ai-enriched-fields-cache") : IEnrichmentCache
 {
 	private readonly ITransport _transport = transport;
 	private readonly ILogger _logger = logger;
+	private readonly ElasticsearchOperations? _operations = operations;
 
 	// Only contains entries with current prompt hash - stale entries are excluded
 	private readonly ConcurrentDictionary<string, byte> _validEntries = new();
@@ -110,11 +112,12 @@ public sealed class ElasticsearchEnrichmentCache(
 	/// <summary>
 	/// Deletes older cache entries for the same URL, keeping only the current one.
 	/// This cleans up stale entries left behind when documents are re-enriched.
+	/// Uses wait_for_completion=false for async execution (fire-and-forget).
 	/// </summary>
 	private async Task DeleteOldEntriesForUrlAsync(string currentEnrichmentKey, string url, CancellationToken ct)
 	{
 		// Delete all entries with this URL except the current one
-		var deleteQuery = $$"""
+		var deleteQuery = PostData.String($$"""
 			{
 				"query": {
 					"bool": {
@@ -123,21 +126,28 @@ public sealed class ElasticsearchEnrichmentCache(
 					}
 				}
 			}
-			""";
+			""");
 
-		var response = await _transport.PostAsync<StringResponse>(
-			$"{IndexName}/_delete_by_query",
-			PostData.String(deleteQuery),
-			ct);
-
-		if (response.ApiCallDetails.HasSuccessfulStatusCode)
+		if (_operations is not null)
 		{
-			// Parse deleted count from response
-			using var doc = JsonDocument.Parse(response.Body ?? "{}");
-			if (doc.RootElement.TryGetProperty("deleted", out var deletedProp) && deletedProp.GetInt32() > 0)
+			// Use shared operations for fire-and-forget delete
+			var taskId = await _operations.DeleteByQueryFireAndForgetAsync(IndexName, deleteQuery, ct);
+			if (taskId is not null)
+				_logger.LogDebug("Started cleanup task {TaskId} for URL {Url}", taskId, url);
+		}
+		else
+		{
+			// Fallback for when operations not provided
+			var response = await _transport.PostAsync<StringResponse>(
+				$"{IndexName}/_delete_by_query?wait_for_completion=false",
+				deleteQuery,
+				ct);
+
+			if (response.ApiCallDetails.HasSuccessfulStatusCode)
 			{
-				var deleted = deletedProp.GetInt32();
-				_logger.LogDebug("Cleaned up {Count} old cache entries for URL {Url}", deleted, url);
+				using var doc = JsonDocument.Parse(response.Body ?? "{}");
+				if (doc.RootElement.TryGetProperty("task", out var taskProp))
+					_logger.LogDebug("Started cleanup task {TaskId} for URL {Url}", taskProp.GetString(), url);
 			}
 		}
 	}

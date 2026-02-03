@@ -21,15 +21,15 @@ namespace Elastic.Markdown.Exporters.Elasticsearch.Enrichment;
 public sealed class ElasticsearchLlmClient(
 	ITransport transport,
 	ILogger<ElasticsearchLlmClient> logger,
+	ElasticsearchOperations? operations = null,
 	int maxConcurrency = 10,
-	int maxRetries = 5,
 	string inferenceEndpointId = ".gp-llm-v2-completion") : ILlmClient, IDisposable
 {
 	private readonly ITransport _transport = transport;
 	private readonly ILogger _logger = logger;
+	private readonly ElasticsearchOperations? _operations = operations;
 	private readonly SemaphoreSlim _throttle = new(maxConcurrency);
 	private readonly string _inferenceEndpointId = inferenceEndpointId;
-	private readonly int _maxRetries = maxRetries;
 
 	/// <summary>
 	/// Maximum body length in characters for direct enrichment.
@@ -219,40 +219,26 @@ public sealed class ElasticsearchLlmClient(
 	{
 		var request = new InferenceRequest { Input = prompt };
 		var requestBody = JsonSerializer.Serialize(request, EnrichmentSerializerContext.Default.InferenceRequest);
+		var url = $"_inference/completion/{_inferenceEndpointId}";
+		var postData = PostData.String(requestBody);
 
-		for (var attempt = 0; attempt <= _maxRetries; attempt++)
-		{
-			var response = await _transport.PostAsync<StringResponse>(
-				$"_inference/completion/{_inferenceEndpointId}",
-				PostData.String(requestBody),
-				ct);
+		var response = _operations is not null
+			? await _operations.WithRetryAsync(
+				() => _transport.PostAsync<StringResponse>(url, postData, ct),
+				"inference",
+				ct)
+			: await _transport.PostAsync<StringResponse>(url, postData, ct);
 
-			if (response.ApiCallDetails.HasSuccessfulStatusCode)
-				return ExtractCompletionText(response.Body);
+		if (response.ApiCallDetails.HasSuccessfulStatusCode)
+			return ExtractCompletionText(response.Body);
 
-			var statusCode = response.ApiCallDetails.HttpStatusCode;
-			var isRetryable = statusCode is 429 or >= 500;
+		var responsePreview = response.Body?.Length > 1000
+			? response.Body[..1000] + "..."
+			: response.Body;
 
-			if (isRetryable && attempt < _maxRetries)
-			{
-				var delay = TimeSpan.FromSeconds(Math.Pow(2, attempt)); // 1s, 2s, 4s, 8s, 16s
-				_logger.LogDebug("Retryable error ({StatusCode}), retrying in {Delay}s (attempt {Attempt}/{MaxRetries})",
-					statusCode, delay.TotalSeconds, attempt + 1, _maxRetries);
-				await Task.Delay(delay, ct);
-				continue;
-			}
-
-			var responsePreview = response.Body?.Length > 1000
-				? response.Body[..1000] + "..."
-				: response.Body;
-
-			_logger.LogWarning(
-				"LLM inference failed: HTTP {StatusCode}. Prompt length: {PromptLength} chars. Response: {Response}",
-				response.ApiCallDetails.HttpStatusCode, prompt.Length, responsePreview);
-			return null;
-		}
-
-		_logger.LogWarning("LLM inference exhausted retries. Prompt length: {PromptLength} chars", prompt.Length);
+		_logger.LogWarning(
+			"LLM inference failed: HTTP {StatusCode}. Prompt length: {PromptLength} chars. Response: {Response}",
+			response.ApiCallDetails.HttpStatusCode, prompt.Length, responsePreview);
 		return null;
 	}
 
