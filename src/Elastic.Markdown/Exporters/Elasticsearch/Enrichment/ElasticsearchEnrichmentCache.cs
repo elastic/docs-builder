@@ -316,7 +316,7 @@ public sealed class ElasticsearchEnrichmentCache(
 				PromptHash = source.TryGetProperty("prompt_hash", out var ph) ? ph.GetString() ?? "" : ""
 			};
 		}
-		catch (Exception ex)
+		catch (JsonException ex)
 		{
 			logger.LogWarning(ex, "Failed to parse cache entry with id {Id}", id);
 			return null;
