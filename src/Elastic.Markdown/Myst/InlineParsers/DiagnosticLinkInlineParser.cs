@@ -162,7 +162,12 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		if (!uri.Scheme.StartsWith("http") && !uri.Scheme.StartsWith("mailto"))
 			return false;
 
-		var baseDomain = uri.Host == "localhost" ? "localhost" : string.Join('.', uri.Host.Split('.')[^2..]);
+		var hostParts = uri.Host.Split('.');
+		var baseDomain = uri.Host == "localhost"
+			? "localhost"
+			: hostParts.Length >= 2
+				? string.Join('.', hostParts[^2..])
+				: uri.Host;
 		if (uri.Scheme == "mailto" && baseDomain != "elastic.co")
 		{
 			processor.EmitWarning(
