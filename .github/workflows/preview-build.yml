@@ -63,7 +63,11 @@ on:
         type: boolean
         default: false
         required: false
-        
+      include-paths:
+        description: 'Paths to include for Vale linting (multi-line). Only files matching these paths will be linted.'
+        type: string
+        default: ''
+        required: false
 
 permissions:
   contents: read
@@ -686,6 +690,7 @@ jobs:
         uses: elastic/vale-rules/lint@main
         with: 
           files: ${{ needs.check.outputs.all_changed_files }}
+          include-paths: ${{ inputs.include-paths }}
       - name: Post Vale Results
         uses: elastic/vale-rules/report@main
         with:
