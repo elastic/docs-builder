@@ -244,6 +244,9 @@ public abstract partial class ElasticsearchIngestChannel<TChannelOptions, TChann
 		        "fields": {
 		          {{(!string.IsNullOrWhiteSpace(inferenceId) ? $"\"semantic_text\": {{{InferenceMapping(inferenceId)}}}" : "")}}
 		        }
+		      },
+		      "enrichment_prompt_hash": {
+		        "type": "keyword"
 		      }
 		    }
 		  }

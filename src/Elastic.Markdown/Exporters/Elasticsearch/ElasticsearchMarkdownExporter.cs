@@ -388,24 +388,34 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		// These skipped documents never pass through the ingest pipeline, so they miss AI fields.
 		// This backfill runs _update_by_query with the AI pipeline to enrich those documents.
 		//
+		// Additionally, when prompts change, existing documents have stale AI fields.
+		// We detect this by checking if the document's prompt_hash differs from the current one.
+		//
 		// Only backfill the semantic index - it's what the search API uses.
 		// The lexical index is just an intermediate step for reindexing.
-		if (_endpoint.NoSemantic || _enrichmentCache is null)
+		if (_endpoint.NoSemantic || _enrichmentCache is null || _llmClient is null)
 			return;
 
 		var semanticAlias = _semanticChannel.Channel.Options.ActiveSearchAlias;
+		var currentPromptHash = ElasticsearchLlmClient.PromptHash;
 
 		_logger.LogInformation(
-			"Starting AI backfill for documents missing AI fields (cache has {CacheCount} entries)",
-			_enrichmentCache.Count);
+			"Starting AI backfill for documents missing or stale AI fields (cache has {CacheCount} entries, prompt hash: {PromptHash})",
+			_enrichmentCache.Count, currentPromptHash[..8]);
 
-		// Find documents with enrichment_key but missing AI fields - these need the pipeline applied
-		var query = /*lang=json,strict*/ """
+		// Find documents with enrichment_key that either:
+		// 1. Missing AI fields (never enriched), OR
+		// 2. Have stale/missing enrichment_prompt_hash (enriched with old prompts)
+		var query = $$"""
 			{
 				"query": {
 					"bool": {
 						"must": { "exists": { "field": "enrichment_key" } },
-						"must_not": { "exists": { "field": "ai_questions" } }
+						"should": [
+							{ "bool": { "must_not": { "exists": { "field": "ai_questions" } } } },
+							{ "bool": { "must_not": { "term": { "enrichment_prompt_hash": "{{currentPromptHash}}" } } } }
+						],
+						"minimum_should_match": 1
 					}
 				}
 			}
