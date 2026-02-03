@@ -141,11 +141,12 @@ public class ChunkingTests
 	}
 
 	// === Boundary tests around MaxChunkSize (200,000) ===
+	// Note: MaxBodyLength is 400K (for direct enrichment), but MaxChunkSize is 200K (for chunking)
 
 	[Fact]
 	public void SplitIntoChunks_Boundary_Minus100_SingleChunk()
 	{
-		// Arrange - 199,900 chars (100 below boundary)
+		// Arrange - 199,900 chars (100 below MaxChunkSize)
 		var body = new string('a', 199_900);
 
 		// Act
@@ -158,7 +159,7 @@ public class ChunkingTests
 	[Fact]
 	public void SplitIntoChunks_Boundary_Minus1_SingleChunk()
 	{
-		// Arrange - 199,999 chars (1 below boundary)
+		// Arrange - 199,999 chars (1 below MaxChunkSize)
 		var body = new string('b', 199_999);
 
 		// Act
@@ -171,7 +172,7 @@ public class ChunkingTests
 	[Fact]
 	public void SplitIntoChunks_Boundary_Exact_SingleChunk()
 	{
-		// Arrange - exactly 200,000 chars (at boundary)
+		// Arrange - exactly 200,000 chars (at MaxChunkSize)
 		var body = new string('c', 200_000);
 
 		// Act
@@ -184,7 +185,7 @@ public class ChunkingTests
 	[Fact]
 	public void SplitIntoChunks_Boundary_Plus1_TwoChunks()
 	{
-		// Arrange - 200,001 chars (1 above boundary)
+		// Arrange - 200,001 chars (1 above MaxChunkSize)
 		// numChunks = ceil(200001 / 200000) = 2
 		// With paragraphs, this splits into 2 chunks
 		var paragraph = new string('d', 100_000);
@@ -200,7 +201,7 @@ public class ChunkingTests
 	[Fact]
 	public void SplitIntoChunks_Boundary_Plus100_TwoChunks()
 	{
-		// Arrange - 200,100 chars (100 above boundary)
+		// Arrange - 200,100 chars (100 above MaxChunkSize)
 		var paragraph = new string('e', 100_000);
 		var body = $"{paragraph}\n\n{paragraph}{new string('f', 98)}"; // 200,100 chars
 

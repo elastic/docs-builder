@@ -34,11 +34,11 @@ public sealed class ElasticsearchLlmClient(
 	/// <summary>
 	/// Maximum body length in characters for direct enrichment.
 	/// Documents larger than this use hierarchical summarization.
-	/// Based on analysis: ~13 docs exceed 200K stripped chars (0.1%).
+	/// Based on analysis: only ~2 docs exceed 400K stripped chars.
 	/// EIS uses Claude Sonnet models with 200K token (~800K char) context windows.
 	/// See: https://www.elastic.co/docs/explore-analyze/elastic-inference/eis
 	/// </summary>
-	private const int MaxBodyLength = 200_000;
+	private const int MaxBodyLength = 400_000;
 
 	/// <summary>
 	/// Maximum chunk size for hierarchical summarization.
