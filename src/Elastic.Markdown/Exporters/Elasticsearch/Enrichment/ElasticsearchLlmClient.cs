@@ -19,13 +19,13 @@ namespace Elastic.Markdown.Exporters.Elasticsearch.Enrichment;
 /// that exceeds LLM context windows.
 /// </summary>
 public sealed class ElasticsearchLlmClient(
-	DistributedTransport transport,
+	ITransport transport,
 	ILogger<ElasticsearchLlmClient> logger,
 	int maxConcurrency = 10,
 	int maxRetries = 5,
 	string inferenceEndpointId = ".gp-llm-v2-completion") : ILlmClient, IDisposable
 {
-	private readonly DistributedTransport _transport = transport;
+	private readonly ITransport _transport = transport;
 	private readonly ILogger _logger = logger;
 	private readonly SemaphoreSlim _throttle = new(maxConcurrency);
 	private readonly string _inferenceEndpointId = inferenceEndpointId;
@@ -134,36 +134,40 @@ public sealed class ElasticsearchLlmClient(
 	{
 		// Calculate dynamic chunk size for even distribution
 		var numChunks = (int)Math.Ceiling((double)body.Length / MaxChunkSize);
-		var targetChunkSize = (int)Math.Ceiling((double)body.Length / numChunks);
+		var targetSize = (int)Math.Ceiling((double)body.Length / numChunks);
 
-		var chunks = new List<string>();
 		var paragraphs = body.Split(["\n\n", "\r\n\r\n"], StringSplitOptions.RemoveEmptyEntries);
+		var chunks = new List<string>();
+		var currentParagraphs = new List<string>();
+		var currentSize = 0;
 
-		var currentChunk = new StringBuilder();
-		foreach (var paragraph in paragraphs)
+		void FlushCurrentChunk()
 		{
-			// If adding this paragraph exceeds target chunk size, finalize current chunk
-			if (currentChunk.Length > 0 && currentChunk.Length + paragraph.Length > targetChunkSize)
-			{
-				chunks.Add(currentChunk.ToString().Trim());
-				_ = currentChunk.Clear();
-			}
+			if (currentParagraphs.Count == 0)
+				return;
 
-			if (currentChunk.Length > 0)
-				_ = currentChunk.Append("\n\n");
-			_ = currentChunk.Append(paragraph);
-
-			// Handle very long paragraphs that exceed target chunk size
-			if (currentChunk.Length > targetChunkSize)
-			{
-				chunks.Add(currentChunk.ToString().Trim());
-				_ = currentChunk.Clear();
-			}
+			chunks.Add(string.Join("\n\n", currentParagraphs));
+			currentParagraphs.Clear();
+			currentSize = 0;
 		}
 
-		// Don't forget the last chunk
-		if (currentChunk.Length > 0)
-			chunks.Add(currentChunk.ToString().Trim());
+		foreach (var paragraph in paragraphs)
+		{
+			var wouldExceedTarget = currentSize + paragraph.Length > targetSize;
+
+			// Start new chunk if adding this paragraph would exceed target
+			if (currentParagraphs.Count > 0 && wouldExceedTarget)
+				FlushCurrentChunk();
+
+			currentParagraphs.Add(paragraph);
+			currentSize += paragraph.Length;
+
+			// Immediately flush oversized paragraphs
+			if (currentSize > targetSize)
+				FlushCurrentChunk();
+		}
+
+		FlushCurrentChunk();
 
 		return chunks;
 	}

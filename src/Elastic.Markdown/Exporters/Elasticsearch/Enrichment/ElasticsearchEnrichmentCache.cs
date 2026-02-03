@@ -18,11 +18,11 @@ namespace Elastic.Markdown.Exporters.Elasticsearch.Enrichment;
 /// Only entries with the current prompt hash are considered valid - stale entries are treated as non-existent.
 /// </summary>
 public sealed class ElasticsearchEnrichmentCache(
-	DistributedTransport transport,
+	ITransport transport,
 	ILogger<ElasticsearchEnrichmentCache> logger,
 	string indexName = "docs-ai-enriched-fields-cache") : IEnrichmentCache
 {
-	private readonly DistributedTransport _transport = transport;
+	private readonly ITransport _transport = transport;
 	private readonly ILogger _logger = logger;
 
 	// Only contains entries with current prompt hash - stale entries are excluded
