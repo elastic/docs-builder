@@ -25,14 +25,15 @@ public sealed class EnrichPolicyManager(
 
 
 	// language=json
+	// Pipeline uses URL-based matching to always find enrichment even when content changes
 	private const string IngestPipelineBody = """
 		{
-			"description": "Enriches documents with AI-generated fields from the enrichment cache",
+			"description": "Enriches documents with AI-generated fields from the enrichment cache (matched by URL)",
 			"processors": [
 				{
 					"enrich": {
 						"policy_name": "ai-enrichment-policy",
-						"field": "enrichment_key",
+						"field": "url",
 						"target_field": "ai_enrichment",
 						"max_matches": 1,
 						"ignore_missing": true
@@ -84,11 +85,12 @@ public sealed class EnrichPolicyManager(
 		_logger.LogInformation("Creating enrich policy {PolicyName} for index {CacheIndex}...", PolicyName, _cacheIndexName);
 
 		var enrichFieldsJson = string.Join(", ", ExpectedEnrichFields.Select(f => $"\"{f}\""));
+		// Match by URL to always find enrichment even when document content changes
 		var policyBody = $$"""
 			{
 				"match": {
 					"indices": "{{_cacheIndexName}}",
-					"match_field": "enrichment_key",
+					"match_field": "url",
 					"enrich_fields": [{{enrichFieldsJson}}]
 				}
 			}
@@ -107,10 +109,11 @@ public sealed class EnrichPolicyManager(
 	}
 
 	/// <summary>
-	/// Checks if the existing policy response contains all expected enrich_fields.
+	/// Checks if the existing policy response contains all expected enrich_fields and uses URL matching.
 	/// </summary>
 	private static bool PolicyHasExpectedFields(string policyResponse) =>
-		ExpectedEnrichFields.All(field => policyResponse.Contains($"\"{field}\""));
+		ExpectedEnrichFields.All(field => policyResponse.Contains($"\"{field}\"")) &&
+		policyResponse.Contains("\"match_field\":\"url\"");
 
 	/// <summary>
 	/// Executes the enrich policy to rebuild the enrich index with latest data.
