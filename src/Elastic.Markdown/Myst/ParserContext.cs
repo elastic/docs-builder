@@ -56,6 +56,12 @@ public record ParserState(BuildContext Build) : ParserResolvers
 	public bool SkipValidation { get; init; }
 
 	/// <summary>
+	/// Optional path to the original source file (e.g., .toml file) when MarkdownSourcePath
+	/// points to a virtual/generated file that may not exist on disk.
+	/// </summary>
+	public IFileInfo? OriginalSourcePath { get; init; }
+
+	/// <summary>
 	/// The line number of the include directive in the parent file.
 	/// Used to generate unique IDs for blocks within included snippets.
 	/// </summary>
@@ -84,6 +90,12 @@ public class ParserContext : MarkdownParserContext, IParserResolvers
 	/// </summary>
 	public int? IncludeLine { get; }
 
+	/// <summary>
+	/// Optional path to the original source file (e.g., .toml file) when MarkdownSourcePath
+	/// points to a virtual/generated file that may not exist on disk.
+	/// </summary>
+	public IFileInfo? OriginalSourcePath { get; }
+
 	public ParserContext(ParserState state)
 	{
 		Build = state.Build;
@@ -92,6 +104,7 @@ public class ParserContext : MarkdownParserContext, IParserResolvers
 		SkipValidation = state.SkipValidation;
 		MarkdownParentPath = state.ParentMarkdownPath;
 		IncludeLine = state.IncludeLine;
+		OriginalSourcePath = state.OriginalSourcePath;
 
 		CrossLinkResolver = state.CrossLinkResolver;
 		MarkdownSourcePath = state.MarkdownSourcePath;
