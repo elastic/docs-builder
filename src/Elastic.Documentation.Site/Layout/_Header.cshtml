@@ -28,6 +28,8 @@ else
 					</svg>
 				</label>
 				<a href="@Model.Link("/")"
+				   hx-swap="none"
+				   hx-select-oob="#main-container"
 				   class="flex items-center gap-2.5 px-4 py-2 rounded-full transition-all duration-200 hover:scale-[1.02]"
 				   style="background: rgba(255,255,255,0.08); box-shadow: 0 2px 8px rgba(0,0,0,0.25), inset 0 -8px 12px -8px rgba(255,255,255,0.15);"
 				   onmouseover="this.style.background='rgba(255,255,255,0.12)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.3), inset 0 -8px 12px -8px rgba(255,255,255,0.2)';"
