@@ -255,9 +255,15 @@ public partial class ElasticsearchMarkdownExporter
 		// Cache miss (or stale) - generate enrichment inline and apply directly
 		try
 		{
-			var enrichment = await _llmClient.EnrichAsync(doc.Title, doc.StrippedBody ?? string.Empty, ctx);
+			var body = doc.StrippedBody ?? string.Empty;
+			var enrichment = await _llmClient.EnrichAsync(doc.Title, body, ctx);
 			if (enrichment is not { HasData: true })
+			{
+				_logger.LogWarning(
+					"Enrichment returned no data for {Url} (title: {Title}, body: {BodyLength} chars)",
+					doc.Url, doc.Title, body.Length);
 				return;
+			}
 
 			// Store in cache for future runs
 			await _enrichmentCache.StoreAsync(doc.EnrichmentKey, doc.Url, enrichment, ctx);
@@ -268,6 +274,7 @@ public partial class ElasticsearchMarkdownExporter
 			doc.AiSearchQuery = enrichment.SearchQuery;
 			doc.AiQuestions = enrichment.Questions;
 			doc.AiUseCases = enrichment.UseCases;
+			doc.EnrichmentPromptHash = ElasticsearchLlmClient.PromptHash;
 		}
 		catch (Exception ex) when (ex is not OperationCanceledException)
 		{

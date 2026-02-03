@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.Diagnostics;
 using Markdig;
 using Markdig.Helpers;
@@ -87,7 +88,7 @@ public class AutoLinkInlineParser : InlineParser
 
 		// Emit hint for elastic.co/docs URLs (after setting Inline so position is correct)
 		if (url.Contains("elastic.co/docs", StringComparison.OrdinalIgnoreCase))
-			processor.EmitHint(linkInline, "Autolink points to elastic.co/docs. Consider using a crosslink or relative link instead.");
+			processor.EmitHint(linkInline, HintType.AutolinkElasticCoDocs, "Autolink points to elastic.co/docs. Consider using a crosslink or relative link instead.");
 
 		// Advance the slice past the URL
 		var end = slice.Start + urlLength;

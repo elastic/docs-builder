@@ -121,14 +121,16 @@ public record DetectionRuleFile : MarkdownFile
 	{
 		Title = Rule.Name;
 		var markdown = GetMarkdown();
-		var document = MarkdownParser.MinimalParseStringAsync(markdown, RuleSourceMarkdownPath, null);
+		// Pass SourceFile (the .toml file) as originalSourcePath for better diagnostic context
+		var document = MarkdownParser.MinimalParseStringAsync(markdown, RuleSourceMarkdownPath, null, SourceFile);
 		return Task.FromResult(document);
 	}
 
 	protected override Task<MarkdownDocument> GetParseDocumentAsync(Cancel ctx)
 	{
 		var markdown = GetMarkdown();
-		var document = MarkdownParser.ParseStringAsync(markdown, RuleSourceMarkdownPath, null);
+		// Pass SourceFile (the .toml file) as originalSourcePath for better diagnostic context
+		var document = MarkdownParser.ParseStringAsync(markdown, RuleSourceMarkdownPath, null, SourceFile);
 		return Task.FromResult(document);
 	}
 
