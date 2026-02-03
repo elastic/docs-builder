@@ -10,10 +10,7 @@ exclude:
   - '!_search.md'
 subs:
   a-global-variable: "This was defined in docset.yml"
-  stack: Elastic Stack
   serverless-short: Serverless
-  ece:   "Elastic Cloud Enterprise"
-  eck:   "Elastic Cloud on Kubernetes"
   ech:  "Elastic Cloud Hosted"
   serverless-full: "Elastic Cloud Serverless"
   ecloud: "Elastic Cloud"
@@ -21,6 +18,10 @@ subs:
 
 features:
   primary-nav: false
+  
+suppress:
+  - AutolinkElasticCoDocs
+  - DeepLinkingVirtualFile
 
 api:
    elasticsearch: elasticsearch-openapi.json
