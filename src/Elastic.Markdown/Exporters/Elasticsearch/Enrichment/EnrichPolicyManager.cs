@@ -42,7 +42,7 @@ public sealed class EnrichPolicyManager(
 					"script": {
 						"description": "Flatten ai_enrichment fields to document root",
 						"if": "ctx.ai_enrichment != null",
-						"source": "if (ctx.ai_enrichment.ai_rag_optimized_summary != null) ctx.ai_rag_optimized_summary = ctx.ai_enrichment.ai_rag_optimized_summary; if (ctx.ai_enrichment.ai_short_summary != null) ctx.ai_short_summary = ctx.ai_enrichment.ai_short_summary; if (ctx.ai_enrichment.ai_search_query != null) ctx.ai_search_query = ctx.ai_enrichment.ai_search_query; if (ctx.ai_enrichment.ai_questions != null) ctx.ai_questions = ctx.ai_enrichment.ai_questions; if (ctx.ai_enrichment.ai_use_cases != null) ctx.ai_use_cases = ctx.ai_enrichment.ai_use_cases; ctx.remove('ai_enrichment');"
+						"source": "if (ctx.ai_enrichment.ai_rag_optimized_summary != null) ctx.ai_rag_optimized_summary = ctx.ai_enrichment.ai_rag_optimized_summary; if (ctx.ai_enrichment.ai_short_summary != null) ctx.ai_short_summary = ctx.ai_enrichment.ai_short_summary; if (ctx.ai_enrichment.ai_search_query != null) ctx.ai_search_query = ctx.ai_enrichment.ai_search_query; if (ctx.ai_enrichment.ai_questions != null) ctx.ai_questions = ctx.ai_enrichment.ai_questions; if (ctx.ai_enrichment.ai_use_cases != null) ctx.ai_use_cases = ctx.ai_enrichment.ai_use_cases; if (ctx.ai_enrichment.prompt_hash != null) ctx.enrichment_prompt_hash = ctx.ai_enrichment.prompt_hash; ctx.remove('ai_enrichment');"
 					}
 				}
 			]
@@ -50,29 +50,46 @@ public sealed class EnrichPolicyManager(
 		""";
 
 	/// <summary>
-	/// Ensures the enrich policy exists and creates it if not.
+	/// The fields we expect the enrich policy to include.
+	/// </summary>
+	private static readonly string[] ExpectedEnrichFields =
+		["ai_rag_optimized_summary", "ai_short_summary", "ai_search_query", "ai_questions", "ai_use_cases", "prompt_hash"];
+
+	/// <summary>
+	/// Ensures the enrich policy exists with the current definition.
+	/// Compares existing policy fields and only recreates if different.
 	/// </summary>
 	public async Task EnsurePolicyExistsAsync(CancellationToken ct)
 	{
-		// Check if policy exists - GET returns 200 with policies array, or 404 if not found
 		var existsResponse = await _transport.GetAsync<StringResponse>($"_enrich/policy/{PolicyName}", ct);
 
 		if (existsResponse.ApiCallDetails.HasSuccessfulStatusCode &&
 			existsResponse.Body?.Contains(PolicyName) == true)
 		{
-			_logger.LogInformation("Enrich policy {PolicyName} already exists", PolicyName);
-			return;
+			// Check if policy has the expected enrich_fields
+			if (PolicyHasExpectedFields(existsResponse.Body))
+			{
+				_logger.LogInformation("Enrich policy {PolicyName} already exists with correct fields", PolicyName);
+				return;
+			}
+
+			_logger.LogInformation("Enrich policy {PolicyName} has outdated fields, recreating...", PolicyName);
+			_ = await _transport.DeleteAsync<StringResponse>(
+				$"_enrich/policy/{PolicyName}",
+				default!,
+				default,
+				ct);
 		}
 
 		_logger.LogInformation("Creating enrich policy {PolicyName} for index {CacheIndex}...", PolicyName, _cacheIndexName);
 
-		// language=json
+		var enrichFieldsJson = string.Join(", ", ExpectedEnrichFields.Select(f => $"\"{f}\""));
 		var policyBody = $$"""
 			{
 				"match": {
 					"indices": "{{_cacheIndexName}}",
 					"match_field": "enrichment_key",
-					"enrich_fields": ["ai_rag_optimized_summary", "ai_short_summary", "ai_search_query", "ai_questions", "ai_use_cases"]
+					"enrich_fields": [{{enrichFieldsJson}}]
 				}
 			}
 			""";
@@ -82,15 +99,18 @@ public sealed class EnrichPolicyManager(
 			PostData.String(policyBody),
 			ct);
 
-		_logger.LogInformation("Policy creation response: {StatusCode} - {Response}",
-			createResponse.ApiCallDetails.HttpStatusCode, createResponse.Body);
-
 		if (createResponse.ApiCallDetails.HasSuccessfulStatusCode)
 			_logger.LogInformation("Created enrich policy {PolicyName}", PolicyName);
 		else
 			_logger.LogError("Failed to create enrich policy: {StatusCode} - {Response}",
 				createResponse.ApiCallDetails.HttpStatusCode, createResponse.Body);
 	}
+
+	/// <summary>
+	/// Checks if the existing policy response contains all expected enrich_fields.
+	/// </summary>
+	private static bool PolicyHasExpectedFields(string policyResponse) =>
+		ExpectedEnrichFields.All(field => policyResponse.Contains($"\"{field}\""));
 
 	/// <summary>
 	/// Executes the enrich policy to rebuild the enrich index with latest data.
@@ -127,26 +147,20 @@ public sealed class EnrichPolicyManager(
 	}
 
 	/// <summary>
-	/// Ensures the ingest pipeline exists and creates it if not.
+	/// Ensures the ingest pipeline exists with the current definition.
+	/// Always overwrites to pick up any script/processor changes.
 	/// </summary>
 	public async Task EnsurePipelineExistsAsync(CancellationToken ct)
 	{
-		var existsResponse = await _transport.GetAsync<StringResponse>($"_ingest/pipeline/{PipelineName}", ct);
-
-		if (existsResponse.ApiCallDetails.HasSuccessfulStatusCode)
-		{
-			_logger.LogInformation("Ingest pipeline {PipelineName} already exists", PipelineName);
-			return;
-		}
-
-		_logger.LogInformation("Creating ingest pipeline {PipelineName}...", PipelineName);
+		// PUT is idempotent - always update to ensure pipeline definition is current
+		_logger.LogInformation("Creating/updating ingest pipeline {PipelineName}...", PipelineName);
 		var createResponse = await _transport.PutAsync<StringResponse>(
 			$"_ingest/pipeline/{PipelineName}",
 			PostData.String(IngestPipelineBody),
 			ct);
 
 		if (createResponse.ApiCallDetails.HasSuccessfulStatusCode)
-			_logger.LogInformation("Created ingest pipeline {PipelineName}", PipelineName);
+			_logger.LogInformation("Created/updated ingest pipeline {PipelineName}", PipelineName);
 		else
 			_logger.LogError("Failed to create ingest pipeline: {StatusCode} - {Response}",
 				createResponse.ApiCallDetails.HttpStatusCode, createResponse.Body);

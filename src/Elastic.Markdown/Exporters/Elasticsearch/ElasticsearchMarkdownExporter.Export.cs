@@ -274,6 +274,7 @@ public partial class ElasticsearchMarkdownExporter
 			doc.AiSearchQuery = enrichment.SearchQuery;
 			doc.AiQuestions = enrichment.Questions;
 			doc.AiUseCases = enrichment.UseCases;
+			doc.EnrichmentPromptHash = ElasticsearchLlmClient.PromptHash;
 		}
 		catch (Exception ex) when (ex is not OperationCanceledException)
 		{
