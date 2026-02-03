@@ -299,7 +299,7 @@ public sealed class ElasticsearchEnrichmentCache(
 		return (total, stale, scrollId);
 	}
 
-	private static CacheIndexEntry? ParseCacheEntry(JsonElement source, string id)
+	private CacheIndexEntry? ParseCacheEntry(JsonElement source, string id)
 	{
 		try
 		{
@@ -316,8 +316,9 @@ public sealed class ElasticsearchEnrichmentCache(
 				PromptHash = source.TryGetProperty("prompt_hash", out var ph) ? ph.GetString() ?? "" : ""
 			};
 		}
-		catch
+		catch (Exception ex)
 		{
+			logger.LogWarning(ex, "Failed to parse cache entry with id {Id}", id);
 			return null;
 		}
 	}
