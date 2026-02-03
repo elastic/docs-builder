@@ -121,6 +121,10 @@ toc:
           # https://github.com/elastic/edot-cloud-forwarder-aws/blob/main/docs/release-notes/toc.yml
           - toc: edot-cloud-forwarder-aws://release-notes
             path_prefix: release-notes/edot/cloud-forwarder/aws
+          # EDOT Cloud Forwarder for Azure
+          # https://github.com/elastic/edot-cloud-forwarder-azure/blob/main/docs/release-notes/toc.yml
+          - toc: edot-cloud-forwarder-azure://release-notes
+            path_prefix: release-notes/edot/cloud-forwarder/azure
           # EDOT iOS / Swift
           # https://github.com/elastic/apm-agent-ios/blob/main/docs/release-notes/toc.yml
           - toc: apm-agent-ios://release-notes
