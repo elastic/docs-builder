@@ -206,6 +206,58 @@ var json = """
 - **Minimal try-catch** — catch at boundaries only
 - **Let exceptions propagate** through the stack
 - **No empty catch blocks**
+- **Never use broad `catch (Exception)`** — triggers CodeQL warnings and swallows critical exceptions
+
+### Catch Specific Exception Types
+
+When exception handling is needed, catch only the specific types expected for the operations being performed:
+
+```csharp
+// BAD - overly broad, swallows unexpected errors
+try
+{
+	var data = JsonSerializer.Deserialize<MyType>(json);
+	var date = DateTime.Parse(value);
+}
+catch (Exception ex)
+{
+	_logger.LogWarning(ex, "Failed to parse");
+	return null;
+}
+
+// GOOD - catch specific expected exceptions
+try
+{
+	var data = JsonSerializer.Deserialize<MyType>(json);
+	var date = DateTime.Parse(value);
+}
+catch (JsonException ex)
+{
+	_logger.LogWarning(ex, "Invalid JSON format");
+	return null;
+}
+catch (FormatException ex)
+{
+	_logger.LogWarning(ex, "Invalid date/time format");
+	return null;
+}
+catch (InvalidOperationException ex)
+{
+	_logger.LogWarning(ex, "Unexpected JSON structure");
+	return null;
+}
+```
+
+### Common Exception Types by Operation
+
+| Operation | Expected Exceptions |
+|-----------|---------------------|
+| JSON parsing | `JsonException`, `InvalidOperationException` |
+| Date/time parsing | `FormatException` |
+| Numeric parsing | `FormatException`, `OverflowException` |
+| File I/O | `IOException`, `UnauthorizedAccessException` |
+| HTTP requests | `HttpRequestException`, `TaskCanceledException` |
+| Elasticsearch operations | `ElasticsearchClientException` |
 
 ## Dispose Pattern
 
