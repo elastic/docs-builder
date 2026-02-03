@@ -125,8 +125,7 @@ public record DetectionRule
 
 		try
 		{
-			using var reader = new Utf8StreamReader(versionLockPath, fileOpenMode: FileOpenMode.Throughput);
-			var json = Encoding.UTF8.GetString(reader.ReadToEndAsync().GetAwaiter().GetResult());
+			var json = fileSystem.File.ReadAllText(versionLockPath, Encoding.UTF8);
 			var versionData = JsonSerializer.Deserialize(json, VersionLockJsonContext.Default.DictionaryStringVersionLockEntry);
 			VersionLock = versionData?.ToFrozenDictionary() ?? FrozenDictionary<string, VersionLockEntry>.Empty;
 		}

@@ -69,10 +69,18 @@ public class ErrataFileSourceRepository : ISourceRepository
 		if (id == string.Empty)
 			return true;
 
+		var fileInfo = new FileInfo(id);
+		if (!fileInfo.Exists || fileInfo.LinkTarget != null)
+			return true;
+		if (fileInfo.Attributes.HasFlag(FileAttributes.Hidden) || fileInfo.Attributes.HasFlag(FileAttributes.System))
+			return true;
+		if (fileInfo.Attributes.HasFlag(FileAttributes.Hidden) || fileInfo.Attributes.HasFlag(FileAttributes.System))
+			return true;
+
 		try
 		{
 			using var reader = new Utf8StreamReader(id);
-			var text = Encoding.UTF8.GetString(reader.ReadToEndAsync().GetAwaiter().GetResult());
+			var text = File.ReadAllText(id, Encoding.UTF8);
 			source = new Source(id, text);
 		}
 		catch (FileNotFoundException)
