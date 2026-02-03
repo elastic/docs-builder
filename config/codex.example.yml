@@ -1,22 +1,22 @@
-# Portal Configuration Example
-# This file demonstrates how to configure a documentation portal that
+# Codex Configuration Example
+# This file demonstrates how to configure a documentation codex that
 # composes multiple isolated documentation sets.
 #
 # Usage:
-#   docs-builder portal config/portal.example.yml
-#   docs-builder portal clone config/portal.example.yml
-#   docs-builder portal build config/portal.example.yml
-#   docs-builder portal serve
+#   docs-builder codex config/codex.example.yml
+#   docs-builder codex clone config/codex.example.yml
+#   docs-builder codex build config/codex.example.yml
+#   docs-builder codex serve
 
-# Site prefix for all portal URLs
+# Site prefix for all codex URLs
 # All documentation sets will be served under this prefix
 # e.g., /internal-docs, /dev-docs, /docs
 site_prefix: /internal-docs
 
-# Title displayed on the portal index page
+# Title displayed on the codex index page
 title: "Elastic's Internal Dev Docs"
 
-# Documentation sets to include in the portal
+# Documentation sets to include in the codex
 # Each documentation set is cloned from a git repository and built separately
 documentation_sets:
   # APM Managed Intake Service documentation
@@ -106,11 +106,11 @@ documentation_sets:
 #   repository multiple times with different URL paths.
 #
 # display_name (optional):
-#   The title shown on the portal landing page card.
+#   The title shown on the codex landing page card.
 #   If not specified, uses the documentation set's title from docset.yml.
 #
 # icon (optional):
-#   Icon shown on the portal landing page card.
+#   Icon shown on the codex landing page card.
 #   Available icons: elasticsearch, kibana, observability, security,
 #   enterprise-search, logstash, beats, apm, fleet, cloud, integrations,
 #   docs, dev-tools, benchmark, migration, testing, ci, architecture,

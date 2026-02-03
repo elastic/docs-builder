@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Codex.Navigation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
@@ -9,14 +10,13 @@ using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.FileProviders;
-using Elastic.Portal.Navigation;
 
-namespace Elastic.Portal;
+namespace Elastic.Codex;
 
 /// <summary>
-/// Base view model for portal pages.
+/// Base view model for codex pages.
 /// </summary>
-public abstract class PortalViewModel(PortalRenderContext context)
+public abstract class CodexViewModel(CodexRenderContext context)
 {
 	/// <summary>
 	/// Pre-rendered navigation HTML.
@@ -34,9 +34,9 @@ public abstract class PortalViewModel(PortalRenderContext context)
 	public INavigationItem CurrentNavigationItem { get; } = context.CurrentNavigation;
 
 	/// <summary>
-	/// The portal navigation root.
+	/// The codex navigation root.
 	/// </summary>
-	public PortalNavigation PortalNavigation { get; } = context.PortalNavigation;
+	public CodexNavigation CodexNavigation { get; } = context.CodexNavigation;
 
 	/// <summary>
 	/// The build context.
@@ -50,8 +50,8 @@ public abstract class PortalViewModel(PortalRenderContext context)
 		new()
 		{
 			DocsBuilderVersion = ShortId.Create(BuildContext.Version),
-			DocSetName = PortalNavigation.NavigationTitle,
-			Description = "Documentation Portal",
+			DocSetName = CodexNavigation.NavigationTitle,
+			Description = "Documentation Codex",
 			CurrentNavigationItem = CurrentNavigationItem,
 			Previous = null,
 			Next = null,

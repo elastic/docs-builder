@@ -4,17 +4,17 @@
 
 using Elastic.Documentation.Navigation;
 
-namespace Elastic.Portal.Navigation;
+namespace Elastic.Codex.Navigation;
 
 /// <summary>
-/// Represents the portal's index page that shows all documentation sets.
+/// Represents the codex's index page that shows all documentation sets.
 /// </summary>
-public record PortalIndexPage(string NavigationTitle) : IDocumentationFile;
+public record CodexIndexPage(string NavigationTitle) : IDocumentationFile;
 
 /// <summary>
-/// Contains information about a documentation set for display on the portal index page.
+/// Contains information about a documentation set for display on the codex index page.
 /// </summary>
-public record PortalDocumentationSetInfo
+public record CodexDocumentationSetInfo
 {
 	/// <summary>
 	/// The name of the documentation set (used in URL).
@@ -42,7 +42,7 @@ public record PortalDocumentationSetInfo
 	public int PageCount { get; init; }
 
 	/// <summary>
-	/// Optional icon identifier for display on the portal card.
+	/// Optional icon identifier for display on the codex card.
 	/// </summary>
 	public string? Icon { get; init; }
 }

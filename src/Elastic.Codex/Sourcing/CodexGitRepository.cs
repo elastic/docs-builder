@@ -7,16 +7,16 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ExternalCommands;
 using Microsoft.Extensions.Logging;
 
-namespace Elastic.Portal.Sourcing;
+namespace Elastic.Codex.Sourcing;
 
 /// <summary>
 /// Git repository operations optimized for shallow clones.
 /// </summary>
-public class PortalGitRepository(ILoggerFactory logFactory, IDiagnosticsCollector collector, IDirectoryInfo workingDirectory)
+public class CodexGitRepository(ILoggerFactory logFactory, IDiagnosticsCollector collector, IDirectoryInfo workingDirectory)
 	: ExternalCommandExecutor(collector, workingDirectory, Environment.GetEnvironmentVariable("CI") is null or "" ? null : TimeSpan.FromMinutes(10))
 {
 	/// <inheritdoc />
-	protected override ILogger Logger { get; } = logFactory.CreateLogger<PortalGitRepository>();
+	protected override ILogger Logger { get; } = logFactory.CreateLogger<CodexGitRepository>();
 
 	private static readonly Dictionary<string, string> EnvironmentVars = new()
 	{

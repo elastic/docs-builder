@@ -2,22 +2,22 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Codex.Navigation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
-using Elastic.Portal.Navigation;
 
-namespace Elastic.Portal;
+namespace Elastic.Codex;
 
 /// <summary>
-/// Context for rendering portal pages.
+/// Context for rendering codex pages.
 /// </summary>
-public record PortalRenderContext(
+public record CodexRenderContext(
 	BuildContext BuildContext,
-	PortalNavigation PortalNavigation,
+	CodexNavigation CodexNavigation,
 	StaticFileContentHashProvider StaticFileContentHashProvider
-) : RenderContext<PortalNavigation>(BuildContext, PortalNavigation)
+) : RenderContext<CodexNavigation>(BuildContext, CodexNavigation)
 {
 	/// <summary>
 	/// Pre-rendered navigation HTML.

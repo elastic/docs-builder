@@ -5,29 +5,29 @@
 using System.Collections.Frozen;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using Elastic.Documentation.Configuration.Portal;
+using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Isolated.Node;
 
-namespace Elastic.Portal.Navigation;
+namespace Elastic.Codex.Navigation;
 
 /// <summary>
-/// Root navigation for a documentation portal that composes multiple isolated documentation sets.
-/// Unlike SiteNavigation, PortalNavigation uses a simplified structure with optional category grouping.
+/// Root navigation for a documentation codex that composes multiple isolated documentation sets.
+/// Unlike SiteNavigation, CodexNavigation uses a simplified structure with optional category grouping.
 /// </summary>
 [DebuggerDisplay("{Url}")]
-public class PortalNavigation : IRootNavigationItem<IDocumentationFile, INavigationItem>, INavigationTraversable
+public class CodexNavigation : IRootNavigationItem<IDocumentationFile, INavigationItem>, INavigationTraversable
 {
 	/// <summary>
-	/// Creates a new portal navigation from a portal configuration and documentation set navigations.
+	/// Creates a new codex navigation from a codex configuration and documentation set navigations.
 	/// </summary>
-	/// <param name="configuration">The portal configuration.</param>
+	/// <param name="configuration">The codex configuration.</param>
 	/// <param name="context">The documentation context for error reporting.</param>
 	/// <param name="documentationSetNavigations">The documentation set navigations keyed by name.</param>
-	public PortalNavigation(
-		PortalConfiguration configuration,
-		IPortalDocumentationContext context,
+	public CodexNavigation(
+		CodexConfiguration configuration,
+		ICodexDocumentationContext context,
 		IReadOnlyDictionary<string, IDocumentationSetNavigation> documentationSetNavigations)
 	{
 		Url = NormalizeSitePrefix(configuration.SitePrefix) ?? "/docs";
@@ -36,17 +36,17 @@ public class PortalNavigation : IRootNavigationItem<IDocumentationFile, INavigat
 		NavigationRoot = this;
 		Parent = null;
 		Hidden = false;
-		Id = ShortId.Create("portal");
+		Id = ShortId.Create("codex");
 		IsUsingNavigationDropdown = false;
 		NavigationTitle = configuration.Title;
 
-		// Create the portal index page
-		var portalIndexPage = new PortalIndexPage(configuration.Title);
-		var portalIndexLeaf = new PortalIndexLeaf(portalIndexPage, this);
+		// Create the codex index page
+		var codexIndexPage = new CodexIndexPage(configuration.Title);
+		var codexIndexLeaf = new CodexIndexLeaf(codexIndexPage, this);
 
 		// Build navigation items from configuration
-		var items = new List<INavigationItem> { portalIndexLeaf };
-		var documentationSetInfos = new List<PortalDocumentationSetInfo>();
+		var items = new List<INavigationItem> { codexIndexLeaf };
+		var documentationSetInfos = new List<CodexDocumentationSetInfo>();
 		var navigationIndex = 0;
 
 		// Group documentation sets by category
@@ -96,7 +96,7 @@ public class PortalNavigation : IRootNavigationItem<IDocumentationFile, INavigat
 				parentNode = this;
 			}
 
-			// Re-home the documentation set navigation to the portal
+			// Re-home the documentation set navigation to the codex
 			if (docSetNav is INavigationHomeAccessor homeAccessor)
 			{
 				homeAccessor.HomeProvider = new NavigationHomeProvider(pathPrefix, this);
@@ -110,7 +110,7 @@ public class PortalNavigation : IRootNavigationItem<IDocumentationFile, INavigat
 
 				if (string.IsNullOrEmpty(docSetRef.Category))
 				{
-					// Direct child of portal
+					// Direct child of codex
 					items.Add(rootNavItem);
 				}
 				else if (categories.TryGetValue(docSetRef.Category, out var categoryNav))
@@ -121,9 +121,9 @@ public class PortalNavigation : IRootNavigationItem<IDocumentationFile, INavigat
 					((IAssignableChildrenNavigation)categoryNav).SetNavigationItems(categoryChildren);
 				}
 
-				// Collect info for portal index display
+				// Collect info for codex index display
 				var pageCount = CountPages(rootNavItem);
-				documentationSetInfos.Add(new PortalDocumentationSetInfo
+				documentationSetInfos.Add(new CodexDocumentationSetInfo
 				{
 					Name = repoName,
 					Title = docSetRef.DisplayName ?? rootNavItem.NavigationTitle ?? repoName,
@@ -136,7 +136,7 @@ public class PortalNavigation : IRootNavigationItem<IDocumentationFile, INavigat
 		}
 
 		// Set up index and navigation items
-		Index = portalIndexLeaf;
+		Index = codexIndexLeaf;
 		NavigationItems = items.Skip(1).ToArray(); // Skip the index leaf
 
 		// Update navigation indices
@@ -151,12 +151,12 @@ public class PortalNavigation : IRootNavigationItem<IDocumentationFile, INavigat
 	}
 
 	/// <summary>
-	/// Gets information about all documentation sets for rendering on the portal index.
+	/// Gets information about all documentation sets for rendering on the codex index.
 	/// </summary>
-	public FrozenSet<PortalDocumentationSetInfo> DocumentationSetInfos { get; }
+	public FrozenSet<CodexDocumentationSetInfo> DocumentationSetInfos { get; }
 
 	/// <inheritdoc />
-	public Uri Identifier { get; } = new Uri("portal://");
+	public Uri Identifier { get; } = new Uri("codex://");
 
 	/// <inheritdoc />
 	public string Url { get; }
@@ -190,7 +190,7 @@ public class PortalNavigation : IRootNavigationItem<IDocumentationFile, INavigat
 
 	/// <inheritdoc />
 	void IAssignableChildrenNavigation.SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems) =>
-		throw new NotSupportedException("SetNavigationItems is not supported on PortalNavigation");
+		throw new NotSupportedException("SetNavigationItems is not supported on CodexNavigation");
 
 	/// <inheritdoc />
 	public ConditionalWeakTable<IDocumentationFile, INavigationItem> NavigationDocumentationFileLookup { get; }
@@ -256,10 +256,10 @@ public class PortalNavigation : IRootNavigationItem<IDocumentationFile, INavigat
 }
 
 /// <summary>
-/// Represents the leaf navigation item for the portal's index page.
+/// Represents the leaf navigation item for the codex's index page.
 /// </summary>
 [DebuggerDisplay("{Url}")]
-public class PortalIndexLeaf(PortalIndexPage model, PortalNavigation parent) : ILeafNavigationItem<IDocumentationFile>
+public class CodexIndexLeaf(CodexIndexPage model, CodexNavigation parent) : ILeafNavigationItem<IDocumentationFile>
 {
 	/// <inheritdoc />
 	public IDocumentationFile Model { get; } = model;

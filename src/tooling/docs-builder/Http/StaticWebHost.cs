@@ -100,7 +100,7 @@ public class StaticWebHost
 			return Task.FromResult(Results.File(fileInfo.FullName, "text/html"));
 
 		// Fall back to redirect for backward compatibility with assemblies that don't have a root index.html
-		// TODO: Integration tests are failing without this. Adapt this when portal is actually in use.
+		// TODO: Integration tests are failing without this. Adapt this when codex is actually in use.
 		return Task.FromResult(Results.Redirect("docs"));
 	}
 
