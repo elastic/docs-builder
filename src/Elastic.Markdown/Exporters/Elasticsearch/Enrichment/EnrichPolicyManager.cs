@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Security.Cryptography;
+using System.Text;
 using Elastic.Transport;
 using Elastic.Transport.Products.Elasticsearch;
 using Microsoft.Extensions.Logging;
@@ -10,6 +12,7 @@ namespace Elastic.Markdown.Exporters.Elasticsearch.Enrichment;
 
 /// <summary>
 /// Manages the Elasticsearch enrich policy and ingest pipeline for AI document enrichment.
+/// Policy name is versioned based on the enrich fields, allowing seamless schema evolution.
 /// </summary>
 public sealed class EnrichPolicyManager(
 	DistributedTransport transport,
@@ -20,18 +23,40 @@ public sealed class EnrichPolicyManager(
 	private readonly ILogger _logger = logger;
 	private readonly string _cacheIndexName = cacheIndexName;
 
-	public const string PolicyName = "ai-enrichment-policy";
+	/// <summary>
+	/// The fields included in the enrich policy. Changes here auto-version the policy.
+	/// </summary>
+	private static readonly string[] EnrichFields =
+		["ai_rag_optimized_summary", "ai_short_summary", "ai_search_query", "ai_questions", "ai_use_cases", "prompt_hash"];
+
+	/// <summary>
+	/// Policy name includes a short hash of the fields for automatic versioning.
+	/// When fields change, a new policy is created without deleting the old one.
+	/// </summary>
+	public static string PolicyName { get; } = $"ai-enrichment-policy-{ComputeFieldsHash()}";
+
 	public const string PipelineName = "ai-enrichment-pipeline";
 
+	/// <summary>
+	/// Computes a short hash of the enrich fields for policy versioning.
+	/// </summary>
+	private static string ComputeFieldsHash()
+	{
+		var fieldsString = string.Join(",", EnrichFields);
+		var hashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(fieldsString));
+		return Convert.ToHexString(hashBytes)[..8].ToLowerInvariant();
+	}
 
-	// language=json
-	private const string IngestPipelineBody = """
+	/// <summary>
+	/// Generates the ingest pipeline body with the current policy name.
+	/// </summary>
+	private static string GetIngestPipelineBody() => $$"""
 		{
 			"description": "Enriches documents with AI-generated fields from the enrichment cache",
 			"processors": [
 				{
 					"enrich": {
-						"policy_name": "ai-enrichment-policy",
+						"policy_name": "{{PolicyName}}",
 						"field": "enrichment_key",
 						"target_field": "ai_enrichment",
 						"max_matches": 1,
@@ -50,14 +75,8 @@ public sealed class EnrichPolicyManager(
 		""";
 
 	/// <summary>
-	/// The fields we expect the enrich policy to include.
-	/// </summary>
-	private static readonly string[] ExpectedEnrichFields =
-		["ai_rag_optimized_summary", "ai_short_summary", "ai_search_query", "ai_questions", "ai_use_cases", "prompt_hash"];
-
-	/// <summary>
-	/// Ensures the enrich policy exists with the current definition.
-	/// Compares existing policy fields and only recreates if different.
+	/// Ensures the enrich policy exists. Policy name is versioned based on fields,
+	/// so if the policy exists, it has the correct definition by design.
 	/// </summary>
 	public async Task EnsurePolicyExistsAsync(CancellationToken ct)
 	{
@@ -66,24 +85,13 @@ public sealed class EnrichPolicyManager(
 		if (existsResponse.ApiCallDetails.HasSuccessfulStatusCode &&
 			existsResponse.Body?.Contains(PolicyName) == true)
 		{
-			// Check if policy has the expected enrich_fields
-			if (PolicyHasExpectedFields(existsResponse.Body))
-			{
-				_logger.LogInformation("Enrich policy {PolicyName} already exists with correct fields", PolicyName);
-				return;
-			}
-
-			_logger.LogInformation("Enrich policy {PolicyName} has outdated fields, recreating...", PolicyName);
-			_ = await _transport.DeleteAsync<StringResponse>(
-				$"_enrich/policy/{PolicyName}",
-				default!,
-				default,
-				ct);
+			_logger.LogInformation("Enrich policy {PolicyName} already exists", PolicyName);
+			return;
 		}
 
 		_logger.LogInformation("Creating enrich policy {PolicyName} for index {CacheIndex}...", PolicyName, _cacheIndexName);
 
-		var enrichFieldsJson = string.Join(", ", ExpectedEnrichFields.Select(f => $"\"{f}\""));
+		var enrichFieldsJson = string.Join(", ", EnrichFields.Select(f => $"\"{f}\""));
 		var policyBody = $$"""
 			{
 				"match": {
@@ -105,12 +113,6 @@ public sealed class EnrichPolicyManager(
 			_logger.LogError("Failed to create enrich policy: {StatusCode} - {Response}",
 				createResponse.ApiCallDetails.HttpStatusCode, createResponse.Body);
 	}
-
-	/// <summary>
-	/// Checks if the existing policy response contains all expected enrich_fields.
-	/// </summary>
-	private static bool PolicyHasExpectedFields(string policyResponse) =>
-		ExpectedEnrichFields.All(field => policyResponse.Contains($"\"{field}\""));
 
 	/// <summary>
 	/// Executes the enrich policy to rebuild the enrich index with latest data.
@@ -153,10 +155,10 @@ public sealed class EnrichPolicyManager(
 	public async Task EnsurePipelineExistsAsync(CancellationToken ct)
 	{
 		// PUT is idempotent - always update to ensure pipeline definition is current
-		_logger.LogInformation("Creating/updating ingest pipeline {PipelineName}...", PipelineName);
+		_logger.LogInformation("Creating/updating ingest pipeline {PipelineName} (using policy {PolicyName})...", PipelineName, PolicyName);
 		var createResponse = await _transport.PutAsync<StringResponse>(
 			$"_ingest/pipeline/{PipelineName}",
-			PostData.String(IngestPipelineBody),
+			PostData.String(GetIngestPipelineBody()),
 			ct);
 
 		if (createResponse.ApiCallDetails.HasSuccessfulStatusCode)
