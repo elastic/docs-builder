@@ -198,10 +198,26 @@ function setupControls(
     const controls = document.createElement('div')
     controls.className = 'mermaid-controls'
 
-    const zoomInBtn = createControlButton(icons.zoomIn, 'Zoom in', 'mermaid-zoom-in')
-    const zoomOutBtn = createControlButton(icons.zoomOut, 'Zoom out', 'mermaid-zoom-out')
-    const resetBtn = createControlButton(icons.reset, 'Reset view', 'mermaid-reset')
-    const fullscreenBtn = createControlButton(icons.fullscreen, 'View fullscreen', 'mermaid-fullscreen')
+    const zoomInBtn = createControlButton(
+        icons.zoomIn,
+        'Zoom in',
+        'mermaid-zoom-in'
+    )
+    const zoomOutBtn = createControlButton(
+        icons.zoomOut,
+        'Zoom out',
+        'mermaid-zoom-out'
+    )
+    const resetBtn = createControlButton(
+        icons.reset,
+        'Reset view',
+        'mermaid-reset'
+    )
+    const fullscreenBtn = createControlButton(
+        icons.fullscreen,
+        'View fullscreen',
+        'mermaid-fullscreen'
+    )
 
     controls.appendChild(zoomInBtn)
     controls.appendChild(zoomOutBtn)
@@ -270,7 +286,10 @@ function setupControls(
         e.preventDefault()
 
         const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP
-        const newZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, state.zoom + delta))
+        const newZoom = Math.max(
+            ZOOM_MIN,
+            Math.min(ZOOM_MAX, state.zoom + delta)
+        )
 
         if (newZoom !== state.zoom) {
             state.zoom = newZoom
@@ -346,9 +365,21 @@ function openFullscreenModal(svgContent: string): void {
     const controls = document.createElement('div')
     controls.className = 'mermaid-modal-controls'
 
-    const zoomInBtn = createControlButton(icons.zoomIn, 'Zoom in', 'mermaid-zoom-in')
-    const zoomOutBtn = createControlButton(icons.zoomOut, 'Zoom out', 'mermaid-zoom-out')
-    const resetBtn = createControlButton(icons.reset, 'Reset view', 'mermaid-reset')
+    const zoomInBtn = createControlButton(
+        icons.zoomIn,
+        'Zoom in',
+        'mermaid-zoom-in'
+    )
+    const zoomOutBtn = createControlButton(
+        icons.zoomOut,
+        'Zoom out',
+        'mermaid-zoom-out'
+    )
+    const resetBtn = createControlButton(
+        icons.reset,
+        'Reset view',
+        'mermaid-reset'
+    )
 
     controls.appendChild(zoomInBtn)
     controls.appendChild(zoomOutBtn)
@@ -410,7 +441,10 @@ function openFullscreenModal(svgContent: string): void {
         e.preventDefault()
 
         const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP
-        const newZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, state.zoom + delta))
+        const newZoom = Math.max(
+            ZOOM_MIN,
+            Math.min(ZOOM_MAX, state.zoom + delta)
+        )
 
         if (newZoom !== state.zoom) {
             state.zoom = newZoom
