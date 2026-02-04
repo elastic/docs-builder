@@ -52,6 +52,32 @@ const variableReplacements: Record<string, string> = {
     '--bg': colors.background,
 }
 
+// Zoom configuration
+const ZOOM_MIN = 0.5
+const ZOOM_MAX = 3
+const ZOOM_STEP = 0.25
+
+// SVG icons for controls
+const icons = {
+    zoomIn: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>`,
+    zoomOut: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>`,
+    reset: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>`,
+    fullscreen: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>`,
+    close: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
+}
+
+/**
+ * State for a single mermaid diagram's zoom/pan
+ */
+interface DiagramState {
+    zoom: number
+    panX: number
+    panY: number
+    isDragging: boolean
+    startX: number
+    startY: number
+}
+
 /**
  * Resolve CSS variables to actual colors in the SVG output
  */
@@ -121,6 +147,325 @@ async function loadMermaid(): Promise<void> {
 }
 
 /**
+ * Create a control button with icon and tooltip
+ */
+function createControlButton(
+    icon: string,
+    tooltip: string,
+    className: string
+): HTMLButtonElement {
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.className = `mermaid-btn ${className}`
+    button.setAttribute('aria-label', tooltip)
+    button.setAttribute('title', tooltip)
+    button.innerHTML = icon
+    return button
+}
+
+/**
+ * Apply transform to the rendered element based on state
+ */
+function applyTransform(rendered: HTMLElement, state: DiagramState): void {
+    rendered.style.transform = `scale(${state.zoom}) translate(${state.panX}px, ${state.panY}px)`
+}
+
+/**
+ * Set up zoom and pan controls for a mermaid container
+ */
+function setupControls(
+    container: HTMLElement,
+    viewport: HTMLElement,
+    rendered: HTMLElement,
+    svgContent: string
+): void {
+    const state: DiagramState = {
+        zoom: 1,
+        panX: 0,
+        panY: 0,
+        isDragging: false,
+        startX: 0,
+        startY: 0,
+    }
+
+    // Create controls toolbar
+    const controls = document.createElement('div')
+    controls.className = 'mermaid-controls'
+
+    const zoomInBtn = createControlButton(icons.zoomIn, 'Zoom in', 'mermaid-zoom-in')
+    const zoomOutBtn = createControlButton(icons.zoomOut, 'Zoom out', 'mermaid-zoom-out')
+    const resetBtn = createControlButton(icons.reset, 'Reset view', 'mermaid-reset')
+    const fullscreenBtn = createControlButton(icons.fullscreen, 'View fullscreen', 'mermaid-fullscreen')
+
+    controls.appendChild(zoomInBtn)
+    controls.appendChild(zoomOutBtn)
+    controls.appendChild(resetBtn)
+    controls.appendChild(fullscreenBtn)
+
+    // Insert controls at the beginning of container
+    container.insertBefore(controls, container.firstChild)
+
+    // Zoom in handler
+    zoomInBtn.addEventListener('click', () => {
+        if (state.zoom < ZOOM_MAX) {
+            state.zoom = Math.min(ZOOM_MAX, state.zoom + ZOOM_STEP)
+            applyTransform(rendered, state)
+        }
+    })
+
+    // Zoom out handler
+    zoomOutBtn.addEventListener('click', () => {
+        if (state.zoom > ZOOM_MIN) {
+            state.zoom = Math.max(ZOOM_MIN, state.zoom - ZOOM_STEP)
+            applyTransform(rendered, state)
+        }
+    })
+
+    // Reset handler
+    resetBtn.addEventListener('click', () => {
+        state.zoom = 1
+        state.panX = 0
+        state.panY = 0
+        applyTransform(rendered, state)
+    })
+
+    // Fullscreen handler
+    fullscreenBtn.addEventListener('click', () => {
+        openFullscreenModal(svgContent)
+    })
+
+    // Pan with mouse drag
+    viewport.addEventListener('mousedown', (e: MouseEvent) => {
+        if (e.button !== 0) return // Only left click
+        state.isDragging = true
+        state.startX = e.clientX - state.panX * state.zoom
+        state.startY = e.clientY - state.panY * state.zoom
+        viewport.classList.add('is-dragging')
+        e.preventDefault()
+    })
+
+    document.addEventListener('mousemove', (e: MouseEvent) => {
+        if (!state.isDragging) return
+        state.panX = (e.clientX - state.startX) / state.zoom
+        state.panY = (e.clientY - state.startY) / state.zoom
+        applyTransform(rendered, state)
+    })
+
+    document.addEventListener('mouseup', () => {
+        if (state.isDragging) {
+            state.isDragging = false
+            viewport.classList.remove('is-dragging')
+        }
+    })
+
+    // Zoom with wheel (requires Ctrl/Cmd)
+    viewport.addEventListener('wheel', (e: WheelEvent) => {
+        if (!e.ctrlKey && !e.metaKey) return
+        e.preventDefault()
+
+        const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP
+        const newZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, state.zoom + delta))
+
+        if (newZoom !== state.zoom) {
+            state.zoom = newZoom
+            applyTransform(rendered, state)
+        }
+    })
+}
+
+/**
+ * Calculate scale to fit diagram in viewport while filling at least 80% of space
+ */
+function calculateFitScale(
+    svgWidth: number,
+    svgHeight: number,
+    viewportWidth: number,
+    viewportHeight: number
+): number {
+    // Calculate scale to fit within viewport (with some padding)
+    const padding = 80 // pixels of padding
+    const availableWidth = viewportWidth - padding
+    const availableHeight = viewportHeight - padding
+
+    const scaleX = availableWidth / svgWidth
+    const scaleY = availableHeight / svgHeight
+
+    // Use the smaller scale to ensure it fits, but at least 1x
+    return Math.max(1, Math.min(scaleX, scaleY))
+}
+
+/**
+ * Open fullscreen modal with the diagram
+ */
+function openFullscreenModal(svgContent: string): void {
+    // Create modal elements
+    const modal = document.createElement('div')
+    modal.className = 'mermaid-modal'
+
+    const modalContent = document.createElement('div')
+    modalContent.className = 'mermaid-modal-content'
+
+    const closeBtn = document.createElement('button')
+    closeBtn.type = 'button'
+    closeBtn.className = 'mermaid-modal-close'
+    closeBtn.setAttribute('aria-label', 'Close fullscreen')
+    closeBtn.innerHTML = icons.close
+
+    const viewport = document.createElement('div')
+    viewport.className = 'mermaid-modal-viewport'
+
+    const rendered = document.createElement('div')
+    rendered.className = 'mermaid-rendered'
+    rendered.innerHTML = svgContent
+
+    viewport.appendChild(rendered)
+    modalContent.appendChild(closeBtn)
+    modalContent.appendChild(viewport)
+    modal.appendChild(modalContent)
+
+    // State for modal zoom/pan - initial zoom will be calculated after mount
+    const state: DiagramState = {
+        zoom: 1,
+        panX: 0,
+        panY: 0,
+        isDragging: false,
+        startX: 0,
+        startY: 0,
+    }
+
+    // Store initial zoom for reset
+    let initialZoom = 1
+
+    // Create modal controls
+    const controls = document.createElement('div')
+    controls.className = 'mermaid-modal-controls'
+
+    const zoomInBtn = createControlButton(icons.zoomIn, 'Zoom in', 'mermaid-zoom-in')
+    const zoomOutBtn = createControlButton(icons.zoomOut, 'Zoom out', 'mermaid-zoom-out')
+    const resetBtn = createControlButton(icons.reset, 'Reset view', 'mermaid-reset')
+
+    controls.appendChild(zoomInBtn)
+    controls.appendChild(zoomOutBtn)
+    controls.appendChild(resetBtn)
+    modalContent.appendChild(controls)
+
+    // Modal zoom handlers
+    zoomInBtn.addEventListener('click', () => {
+        if (state.zoom < ZOOM_MAX) {
+            state.zoom = Math.min(ZOOM_MAX, state.zoom + ZOOM_STEP)
+            applyTransform(rendered, state)
+        }
+    })
+
+    zoomOutBtn.addEventListener('click', () => {
+        if (state.zoom > ZOOM_MIN) {
+            state.zoom = Math.max(ZOOM_MIN, state.zoom - ZOOM_STEP)
+            applyTransform(rendered, state)
+        }
+    })
+
+    resetBtn.addEventListener('click', () => {
+        state.zoom = initialZoom
+        state.panX = 0
+        state.panY = 0
+        applyTransform(rendered, state)
+    })
+
+    // Modal pan handlers
+    viewport.addEventListener('mousedown', (e: MouseEvent) => {
+        if (e.button !== 0) return
+        state.isDragging = true
+        state.startX = e.clientX - state.panX * state.zoom
+        state.startY = e.clientY - state.panY * state.zoom
+        viewport.classList.add('is-dragging')
+        e.preventDefault()
+    })
+
+    const onMouseMove = (e: MouseEvent) => {
+        if (!state.isDragging) return
+        state.panX = (e.clientX - state.startX) / state.zoom
+        state.panY = (e.clientY - state.startY) / state.zoom
+        applyTransform(rendered, state)
+    }
+
+    const onMouseUp = () => {
+        if (state.isDragging) {
+            state.isDragging = false
+            viewport.classList.remove('is-dragging')
+        }
+    }
+
+    document.addEventListener('mousemove', onMouseMove)
+    document.addEventListener('mouseup', onMouseUp)
+
+    // Modal wheel zoom
+    viewport.addEventListener('wheel', (e: WheelEvent) => {
+        if (!e.ctrlKey && !e.metaKey) return
+        e.preventDefault()
+
+        const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP
+        const newZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, state.zoom + delta))
+
+        if (newZoom !== state.zoom) {
+            state.zoom = newZoom
+            applyTransform(rendered, state)
+        }
+    })
+
+    // Close modal function
+    const closeModal = () => {
+        document.removeEventListener('mousemove', onMouseMove)
+        document.removeEventListener('mouseup', onMouseUp)
+        document.body.style.overflow = ''
+        modal.remove()
+    }
+
+    // Close on button click
+    closeBtn.addEventListener('click', closeModal)
+
+    // Close on backdrop click
+    modal.addEventListener('click', (e: MouseEvent) => {
+        if (e.target === modal) {
+            closeModal()
+        }
+    })
+
+    // Close on Escape key
+    const onKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+            closeModal()
+            document.removeEventListener('keydown', onKeyDown)
+        }
+    }
+    document.addEventListener('keydown', onKeyDown)
+
+    // Prevent body scroll
+    document.body.style.overflow = 'hidden'
+
+    // Add modal to document
+    document.body.appendChild(modal)
+
+    // Calculate and apply initial zoom to fit diagram in viewport
+    requestAnimationFrame(() => {
+        const svg = rendered.querySelector('svg')
+        if (svg) {
+            const svgRect = svg.getBoundingClientRect()
+            const viewportRect = viewport.getBoundingClientRect()
+
+            initialZoom = calculateFitScale(
+                svgRect.width,
+                svgRect.height,
+                viewportRect.width,
+                viewportRect.height
+            )
+
+            state.zoom = initialZoom
+            applyTransform(rendered, state)
+        }
+    })
+}
+
+/**
  * Initialize Mermaid diagram rendering for elements with class 'mermaid'
  */
 export async function initMermaid() {
@@ -154,10 +499,24 @@ export async function initMermaid() {
                 svg = resolveVariables(svg)
                 svg = removeGoogleFonts(svg)
 
-                // Replace the pre element with a div containing the SVG
+                // Create container structure with controls
                 const container = document.createElement('div')
-                container.className = 'mermaid-rendered'
-                container.innerHTML = svg
+                container.className = 'mermaid-container'
+
+                const viewport = document.createElement('div')
+                viewport.className = 'mermaid-viewport'
+
+                const rendered = document.createElement('div')
+                rendered.className = 'mermaid-rendered'
+                rendered.innerHTML = svg
+
+                viewport.appendChild(rendered)
+                container.appendChild(viewport)
+
+                // Set up interactive controls
+                setupControls(container, viewport, rendered, svg)
+
+                // Replace the pre element with the new container
                 element.replaceWith(container)
             } catch (err) {
                 console.warn('Mermaid rendering error for diagram:', err)
