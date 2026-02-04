@@ -31,13 +31,19 @@
 	max-width: 100%;
 }
 
-/* Controls toolbar */
+/* Controls toolbar - light bar at top */
 .mermaid-controls {
 	position: absolute;
-	top: 0.5rem;
-	right: 0.5rem;
+	top: 0;
+	left: 0;
+	right: 0;
 	display: flex;
-	gap: 0.25rem;
+	justify-content: flex-end;
+	gap: 0.5rem;
+	padding: 0.5rem 0.75rem;
+	background-color: #f5f7fa;
+	border-bottom: 1px solid #e5e5e5;
+	border-radius: 0.5rem 0.5rem 0 0;
 	opacity: 0;
 	transition: opacity 0.2s ease;
 	z-index: 10;
@@ -47,7 +53,7 @@
 	opacity: 1;
 }
 
-/* Control buttons */
+/* Control buttons - transparent with dark icons */
 .mermaid-btn {
 	display: flex;
 	align-items: center;
@@ -57,25 +63,26 @@
 	padding: 0;
 	border: none;
 	border-radius: 0.375rem;
-	background-color: rgb(34, 39, 46);
-	color: #fafafa;
+	background-color: transparent;
+	color: #343741;
 	cursor: pointer;
 	transition:
-		background-color 0.2s ease,
-		transform 0.1s ease;
+		background-color 0.15s ease,
+		color 0.15s ease;
 }
 
 .mermaid-btn:hover {
-	background-color: rgb(55, 62, 71);
+	background-color: rgba(0, 0, 0, 0.05);
+	color: #1a1c21;
 }
 
 .mermaid-btn:active {
-	transform: scale(0.95);
+	background-color: rgba(0, 0, 0, 0.1);
 }
 
 .mermaid-btn svg {
-	width: 1rem;
-	height: 1rem;
+	width: 1.125rem;
+	height: 1.125rem;
 }
 
 /* Fullscreen modal */
@@ -123,21 +130,22 @@
 	padding: 0;
 	border: none;
 	border-radius: 0.5rem;
-	background-color: rgb(34, 39, 46);
-	color: #fafafa;
+	background-color: #f5f7fa;
+	color: #343741;
 	cursor: pointer;
 	z-index: 10;
 	transition:
-		background-color 0.2s ease,
-		transform 0.1s ease;
+		background-color 0.15s ease,
+		color 0.15s ease;
 }
 
 .mermaid-modal-close:hover {
-	background-color: rgb(55, 62, 71);
+	background-color: #e9edf3;
+	color: #1a1c21;
 }
 
 .mermaid-modal-close:active {
-	transform: scale(0.95);
+	background-color: #d3dae6;
 }
 
 .mermaid-modal-close svg {
@@ -171,9 +179,11 @@
 	transform: translateX(-50%);
 	display: flex;
 	gap: 0.5rem;
-	padding: 0.5rem;
-	background-color: rgba(34, 39, 46, 0.9);
+	padding: 0.5rem 0.75rem;
+	background-color: #f5f7fa;
+	border: 1px solid #e5e5e5;
 	border-radius: 0.5rem;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 	z-index: 10;
 }
 
