@@ -83,13 +83,14 @@ public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavi
 		// Get the standalone repo's navigation
 		var standaloneNav = docSetNavigations["standalone"] as INavigationHomeAccessor;
 		standaloneNav.Should().NotBeNull();
+		var homeProvider = standaloneNav!.HomeProvider;
 
 		// Assert: The HomeProvider's NavigationRoot should be the repo itself
-		standaloneNav!.HomeProvider.Should().NotBeNull();
+		homeProvider.Should().NotBeNull();
 
 		// The navigation root for an ungrouped repo should be itself (DocumentationSetNavigation)
 		// This means when rendering, it will show only its own navigation tree
-		var navRoot = standaloneNav.HomeProvider!.NavigationRoot;
+		var navRoot = homeProvider!.NavigationRoot;
 		navRoot.Should().BeAssignableTo<IDocumentationSetNavigation>();
 		navRoot.Url.Should().Be("/docs/r/standalone");
 	}
