@@ -172,8 +172,14 @@ public class CodexGenerator(ILoggerFactory logFactory, BuildContext context, IDi
 	private IFileInfo GetOutputFile(string url)
 	{
 		const string indexHtml = "index.html";
+
+		// Validate URL doesn't contain path traversal sequences
+		var trimmedUrl = url.TrimStart('/');
+		if (trimmedUrl.Contains(".."))
+			throw new ArgumentException($"URL contains invalid path traversal sequences: {url}", nameof(url));
+
 		// Keep the full URL path so file structure matches URLs
-		var fileName = url.TrimStart('/') + "/" + indexHtml;
+		var fileName = trimmedUrl + "/" + indexHtml;
 		return _writeFileSystem.FileInfo.New(Path.Combine(_outputDirectory.FullName, fileName.Trim('/')));
 	}
 }

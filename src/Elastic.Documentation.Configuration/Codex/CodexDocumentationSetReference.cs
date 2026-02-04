@@ -15,7 +15,11 @@ public record CodexDocumentationSetReference
 	/// The name of the documentation set. This is used in the URL path.
 	/// </summary>
 	[YamlMember(Alias = "name")]
-	public string Name { get; set; } = string.Empty;
+	public string Name
+	{
+		get;
+		set => field = PathValidator.ValidatePathComponent(value, nameof(Name));
+	} = string.Empty;
 
 	/// <summary>
 	/// The git origin for the repository. Defaults to "elastic/{name}" if not specified.
@@ -33,14 +37,22 @@ public record CodexDocumentationSetReference
 	/// The path within the repository where documentation lives. Defaults to "docs".
 	/// </summary>
 	[YamlMember(Alias = "path")]
-	public string Path { get; set; } = "docs";
+	public string Path
+	{
+		get;
+		set => field = PathValidator.ValidateRelativePath(value, nameof(Path));
+	} = "docs";
 
 	/// <summary>
 	/// Optional category for grouping documentation sets. If specified, the URL will be
 	/// /{site-prefix}/{category}/{name}/. If not specified, the URL will be /{site-prefix}/{name}/.
 	/// </summary>
 	[YamlMember(Alias = "category")]
-	public string? Category { get; set; }
+	public string? Category
+	{
+		get;
+		set => field = string.IsNullOrWhiteSpace(value) ? null : PathValidator.ValidatePathComponent(value, nameof(Category));
+	}
 
 	/// <summary>
 	/// Optional override for the repository name used in checkout directories and URL paths.
@@ -70,7 +82,14 @@ public record CodexDocumentationSetReference
 	/// This is used for checkout directories and URL paths.
 	/// </summary>
 	[YamlIgnore]
-	public string ResolvedRepoName => RepoName ?? Name;
+	public string ResolvedRepoName
+	{
+		get
+		{
+			var repoName = RepoName ?? Name;
+			return PathValidator.ValidatePathComponent(repoName, nameof(RepoName));
+		}
+	}
 
 	/// <summary>
 	/// Gets the resolved origin, defaulting to "elastic/{name}" if not explicitly set.

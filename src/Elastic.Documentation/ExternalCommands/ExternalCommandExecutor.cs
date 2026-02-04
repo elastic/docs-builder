@@ -14,6 +14,25 @@ public abstract class ExternalCommandExecutor(IDiagnosticsCollector collector, I
 {
 	protected abstract ILogger Logger { get; }
 
+	/// <summary>
+	/// Sanitizes command arguments to prevent logging of sensitive information like tokens or passwords.
+	/// </summary>
+	/// <param name="binary">The binary being executed.</param>
+	/// <param name="args">The arguments to sanitize.</param>
+	/// <returns>Sanitized arguments safe for logging.</returns>
+	private static string SanitizeArgs(string binary, string[] args)
+	{
+		// For git remote add commands, hide the URL if it contains authentication
+		if (binary == "git" && args.Length >= 3 && args[0] == "remote" && args[1] == "add")
+		{
+			// args[2] is the remote name (e.g., "origin"), args[3] would be the URL
+			if (args.Length > 3 && (args[3].Contains('@') || args[3].Contains("oauth")))
+				return $"{args[0]} {args[1]} {args[2]} <URL-REDACTED>";
+		}
+
+		return string.Join(" ", args);
+	}
+
 	private void Log(Action<ILogger> logAction)
 	{
 		if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("CI")))
@@ -33,7 +52,7 @@ public abstract class ExternalCommandExecutor(IDiagnosticsCollector collector, I
 		};
 		var result = Proc.Exec(arguments);
 		if (result != 0)
-			collector.EmitError("", $"Exit code: {result} while executing {binary} {string.Join(" ", args)} in {workingDirectory}");
+			collector.EmitError("", $"Exit code: {result} while executing {binary} {SanitizeArgs(binary, args)} in {workingDirectory}");
 	}
 
 	protected void ExecInSilent(Dictionary<string, string> environmentVars, string binary, params string[] args)
@@ -47,7 +66,7 @@ public abstract class ExternalCommandExecutor(IDiagnosticsCollector collector, I
 		};
 		var result = Proc.Start(arguments);
 		if (result.ExitCode != 0)
-			collector.EmitError("", $"Exit code: {result.ExitCode} while executing {binary} {string.Join(" ", args)} in {workingDirectory}");
+			collector.EmitError("", $"Exit code: {result.ExitCode} while executing {binary} {SanitizeArgs(binary, args)} in {workingDirectory}");
 	}
 
 	protected string[] CaptureMultiple(string binary, params string[] args) => CaptureMultiple(false, 10, binary, args);
@@ -72,7 +91,7 @@ public abstract class ExternalCommandExecutor(IDiagnosticsCollector collector, I
 		if (e is not null && !muteExceptions)
 			collector.EmitError("", "failure capturing stdout", e);
 		if (e is not null)
-			Log(l => l.LogError(e, "[{Binary} {Args}] failure capturing stdout executing in {WorkingDirectory}", binary, string.Join(" ", args), workingDirectory.FullName));
+			Log(l => l.LogError(e, "[{Binary} {Args}] failure capturing stdout executing in {WorkingDirectory}", binary, SanitizeArgs(binary, args), workingDirectory.FullName));
 
 		return [];
 
@@ -96,16 +115,16 @@ public abstract class ExternalCommandExecutor(IDiagnosticsCollector collector, I
 					if (output.Length == 0)
 					{
 						Log(l => l.LogInformation("[{Binary} {Args}] captured no output. ({Iteration}/{MaxIteration}) pwd: {WorkingDirectory}",
-							binary, string.Join(" ", args), iteration, max, workingDirectory.FullName)
+							binary, SanitizeArgs(binary, args), iteration, max, workingDirectory.FullName)
 						);
-						throw new Exception($"No output captured executing in pwd: {workingDirectory} from {binary} {string.Join(" ", args)}", previousException);
+						throw new Exception($"No output captured executing in pwd: {workingDirectory} from {binary} {SanitizeArgs(binary, args)}", previousException);
 					}
 					break;
 				case (not 0, false):
 					Log(l => l.LogInformation("[{Binary} {Args}] Exit code is not 0 but {ExitCode}. ({Iteration}/{MaxIteration}) pwd: {WorkingDirectory}",
-						binary, string.Join(" ", args), result.ExitCode, iteration, max, workingDirectory.FullName)
+						binary, SanitizeArgs(binary, args), result.ExitCode, iteration, max, workingDirectory.FullName)
 					);
-					throw new Exception($"Exit code not 0. Received {result.ExitCode} in pwd: {workingDirectory} from {binary} {string.Join(" ", args)}", previousException);
+					throw new Exception($"Exit code not 0. Received {result.ExitCode} in pwd: {workingDirectory} from {binary} {SanitizeArgs(binary, args)}", previousException);
 			}
 
 			return output;
@@ -119,6 +138,6 @@ public abstract class ExternalCommandExecutor(IDiagnosticsCollector collector, I
 	{
 		var lines = CaptureMultiple(muteExceptions, attempts, binary, args);
 		return lines.FirstOrDefault() ??
-			(muteExceptions ? string.Empty : throw new Exception($"[{binary} {string.Join(" ", args)}] No output captured executing in : {workingDirectory}"));
+			(muteExceptions ? string.Empty : throw new Exception($"[{binary} {SanitizeArgs(binary, args)}] No output captured executing in : {workingDirectory}"));
 	}
 }

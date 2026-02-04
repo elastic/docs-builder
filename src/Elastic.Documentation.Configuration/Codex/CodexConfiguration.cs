@@ -74,6 +74,9 @@ public record CodexConfiguration
 		}
 		else
 		{
+			// Validate for path traversal
+			_ = PathValidator.ValidateRelativePath(sitePrefix.TrimStart('/'), nameof(SitePrefix));
+
 			// Ensure it starts with / and doesn't end with /
 			if (!sitePrefix.StartsWith('/'))
 				sitePrefix = "/" + sitePrefix;
