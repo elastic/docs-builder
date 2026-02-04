@@ -158,7 +158,7 @@ versioning_systems:
     current: 9.2.3
   elasticsearch-client-php:
     base: 9.0
-    current: 9.2.0
+    current: 9.3.0
   elasticsearch-client-python:
     base: 9.0
     current: 9.3.0
