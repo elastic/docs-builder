@@ -7,7 +7,7 @@ namespace Elastic.Documentation.Configuration.Codex;
 /// <summary>
 /// Validates path components to prevent path traversal attacks.
 /// </summary>
-internal static class PathValidator
+public static class PathValidator
 {
 	/// <summary>
 	/// Validates that a path component does not contain path traversal sequences.

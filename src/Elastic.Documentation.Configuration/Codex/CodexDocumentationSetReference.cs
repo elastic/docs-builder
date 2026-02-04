@@ -60,7 +60,11 @@ public record CodexDocumentationSetReference
 	/// repository multiple times with different URL paths.
 	/// </summary>
 	[YamlMember(Alias = "repo_name")]
-	public string? RepoName { get; set; }
+	public string? RepoName
+	{
+		get;
+		set => field = string.IsNullOrWhiteSpace(value) ? null : PathValidator.ValidatePathComponent(value, nameof(RepoName));
+	}
 
 	/// <summary>
 	/// Optional display name shown on the codex landing page.
