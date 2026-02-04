@@ -146,7 +146,7 @@ versioning_systems:
   # Elasticsearch clients (separate from Elasticsearch)
   elasticsearch-client-go:
     base: 9.0
-    current: 9.2.1
+    current: 9.3.0
   elasticsearch-client-java:
     base: 9.0
     current: 9.2.4
