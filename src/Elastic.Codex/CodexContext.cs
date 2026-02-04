@@ -4,26 +4,26 @@
 
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.Portal;
+using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Diagnostics;
 
-namespace Elastic.Portal;
+namespace Elastic.Codex;
 
 /// <summary>
-/// Context for portal operations containing configuration, file systems, and directories.
+/// Context for codex operations containing configuration, file systems, and directories.
 /// </summary>
-public class PortalContext
+public class CodexContext
 {
 	public IFileSystem ReadFileSystem { get; }
 	public IFileSystem WriteFileSystem { get; }
 	public IDiagnosticsCollector Collector { get; }
-	public PortalConfiguration Configuration { get; }
+	public CodexConfiguration Configuration { get; }
 	public IFileInfo ConfigurationPath { get; }
 	public IDirectoryInfo CheckoutDirectory { get; }
 	public IDirectoryInfo OutputDirectory { get; }
 
-	public PortalContext(
-		PortalConfiguration configuration,
+	public CodexContext(
+		CodexConfiguration configuration,
 		IFileInfo configurationPath,
 		IDiagnosticsCollector collector,
 		IFileSystem readFileSystem,
@@ -37,10 +37,10 @@ public class PortalContext
 		ReadFileSystem = readFileSystem;
 		WriteFileSystem = writeFileSystem;
 
-		var defaultCheckoutDirectory = Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "portal", "clone");
+		var defaultCheckoutDirectory = Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "codex", "clone");
 		CheckoutDirectory = ReadFileSystem.DirectoryInfo.New(checkoutDirectory ?? defaultCheckoutDirectory);
 
-		var defaultOutputDirectory = Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "portal", "docs");
+		var defaultOutputDirectory = Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "codex", "docs");
 		OutputDirectory = ReadFileSystem.DirectoryInfo.New(outputDirectory ?? defaultOutputDirectory);
 	}
 }

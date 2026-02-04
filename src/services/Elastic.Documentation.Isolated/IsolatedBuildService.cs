@@ -172,7 +172,7 @@ public class IsolatedBuildService(
 		var context = documentationSet.Context;
 		exporters ??= ExportOptions.Default;
 
-		var markdownExporters = exporters.CreateMarkdownExporters(logFactory, context, "portal");
+		var markdownExporters = exporters.CreateMarkdownExporters(logFactory, context, "codex");
 
 		var tasks = markdownExporters.Select(async e => await e.StartAsync(ctx));
 		await Task.WhenAll(tasks);

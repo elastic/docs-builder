@@ -6,11 +6,11 @@ using System.Diagnostics;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
 
-namespace Elastic.Portal.Navigation;
+namespace Elastic.Codex.Navigation;
 
 /// <summary>
 /// Represents a category navigation node that groups documentation sets.
-/// Categories provide one level of hierarchy under the portal root.
+/// Categories provide one level of hierarchy under the codex root.
 /// </summary>
 [DebuggerDisplay("{Url}")]
 public class CategoryNavigation(

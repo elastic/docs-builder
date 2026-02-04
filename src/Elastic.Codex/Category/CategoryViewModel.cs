@@ -2,14 +2,14 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Portal.Navigation;
+using Elastic.Codex.Navigation;
 
-namespace Elastic.Portal.Category;
+namespace Elastic.Codex.Category;
 
 /// <summary>
 /// View model for category index pages.
 /// </summary>
-public class CategoryViewModel(PortalRenderContext context) : PortalViewModel(context)
+public class CategoryViewModel(CodexRenderContext context) : CodexViewModel(context)
 {
 	/// <summary>
 	/// The category navigation item.
@@ -19,6 +19,6 @@ public class CategoryViewModel(PortalRenderContext context) : PortalViewModel(co
 	/// <summary>
 	/// Documentation sets in this category.
 	/// </summary>
-	public IEnumerable<PortalDocumentationSetInfo> DocumentationSets =>
-		PortalNavigation.DocumentationSetInfos.Where(ds => ds.Category == Category.CategoryName);
+	public IEnumerable<CodexDocumentationSetInfo> DocumentationSets =>
+		CodexNavigation.DocumentationSetInfos.Where(ds => ds.Category == Category.CategoryName);
 }

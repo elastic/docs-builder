@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.Codex.Navigation;
+using Elastic.Codex.Sourcing;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
@@ -13,28 +15,26 @@ using Elastic.Documentation.Navigation.Isolated.Node;
 using Elastic.Documentation.Services;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.IO;
-using Elastic.Portal.Navigation;
-using Elastic.Portal.Sourcing;
 using Microsoft.Extensions.Logging;
 
-namespace Elastic.Portal.Building;
+namespace Elastic.Codex.Building;
 
 /// <summary>
-/// Service for building all documentation sets in a portal.
+/// Service for building all documentation sets in a codex.
 /// </summary>
-public class PortalBuildService(
+public class CodexBuildService(
 	ILoggerFactory logFactory,
 	IConfigurationContext configurationContext,
 	IsolatedBuildService isolatedBuildService) : IService
 {
-	private readonly ILogger _logger = logFactory.CreateLogger<PortalBuildService>();
+	private readonly ILogger _logger = logFactory.CreateLogger<CodexBuildService>();
 
 	/// <summary>
 	/// Builds all documentation sets from the cloned checkouts.
 	/// </summary>
-	public async Task<PortalBuildResult> BuildAll(
-		PortalContext context,
-		PortalCloneResult cloneResult,
+	public async Task<CodexBuildResult> BuildAll(
+		CodexContext context,
+		CodexCloneResult cloneResult,
 		IFileSystem fileSystem,
 		Cancel ctx)
 	{
@@ -46,7 +46,7 @@ public class PortalBuildService(
 			cloneResult.Checkouts.Count, outputDir.FullName);
 
 		var documentationSets = new Dictionary<string, IDocumentationSetNavigation>();
-		var buildContexts = new List<PortalDocumentationSetBuildContext>();
+		var buildContexts = new List<CodexDocumentationSetBuildContext>();
 
 		// Phase 1: Load and parse all documentation sets
 		foreach (var checkout in cloneResult.Checkouts)
@@ -59,26 +59,26 @@ public class PortalBuildService(
 			}
 		}
 
-		// Phase 2: Create portal navigation
-		var portalNavigation = new PortalNavigation(
+		// Phase 2: Create codex navigation
+		var codexNavigation = new CodexNavigation(
 			context.Configuration,
-			new PortalDocumentationContext(context),
+			new CodexDocumentationContext(context),
 			documentationSets);
 
 		// Phase 3: Build each documentation set
 		foreach (var buildContext in buildContexts)
 			await BuildDocumentationSet(context, buildContext, ctx);
 
-		// Phase 4: Generate portal index and category pages using PortalGenerator
+		// Phase 4: Generate codex index and category pages using CodexGenerator
 		if (buildContexts.Count > 0)
-			await GeneratePortalPages(context, buildContexts[0].BuildContext, portalNavigation, ctx);
+			await GenerateCodexPages(context, buildContexts[0].BuildContext, codexNavigation, ctx);
 
-		return new PortalBuildResult(portalNavigation, buildContexts.Select(b => b.DocumentationSet).ToList());
+		return new CodexBuildResult(codexNavigation, buildContexts.Select(b => b.DocumentationSet).ToList());
 	}
 
-	private async Task<PortalDocumentationSetBuildContext?> LoadDocumentationSet(
-		PortalContext context,
-		PortalCheckout checkout,
+	private async Task<CodexDocumentationSetBuildContext?> LoadDocumentationSet(
+		CodexContext context,
+		CodexCheckout checkout,
 		IFileSystem fileSystem,
 		Cancel ctx)
 	{
@@ -124,14 +124,14 @@ public class PortalBuildService(
 				AllowIndexing = false
 			};
 
-			// Create cross-link resolver (simplified for portal - no external links)
+			// Create cross-link resolver (simplified for codex - no external links)
 			var crossLinkResolver = NoopCrossLinkResolver.Instance;
 
 			// Create documentation set
 			var documentationSet = new DocumentationSet(buildContext, logFactory, crossLinkResolver);
 			await documentationSet.ResolveDirectoryTree(ctx);
 
-			return new PortalDocumentationSetBuildContext(checkout, buildContext, documentationSet);
+			return new CodexDocumentationSetBuildContext(checkout, buildContext, documentationSet);
 		}
 		catch (Exception ex)
 		{
@@ -143,8 +143,8 @@ public class PortalBuildService(
 	}
 
 	private async Task BuildDocumentationSet(
-		PortalContext context,
-		PortalDocumentationSetBuildContext buildContext,
+		CodexContext context,
+		CodexDocumentationSetBuildContext buildContext,
 		Cancel ctx)
 	{
 		_logger.LogInformation("Building documentation set: {Name}", buildContext.Checkout.Reference.Name);
@@ -152,7 +152,7 @@ public class PortalBuildService(
 		try
 		{
 			// Use the documentation set's own navigation for traversal (file lookups, prev/next)
-			// TODO: Create a PortalNavigationHtmlWriter to render portal-wide navigation
+			// TODO: Create a CodexNavigationHtmlWriter to render codex-wide navigation
 			_ = await isolatedBuildService.BuildDocumentationSet(
 				buildContext.DocumentationSet,
 				null, // Use doc set's navigation for traversal
@@ -168,70 +168,70 @@ public class PortalBuildService(
 		}
 	}
 
-	private async Task GeneratePortalPages(
-		PortalContext context,
+	private async Task GenerateCodexPages(
+		CodexContext context,
 		BuildContext docSetBuildContext,
-		PortalNavigation portalNavigation,
+		CodexNavigation codexNavigation,
 		Cancel ctx)
 	{
-		_logger.LogInformation("Generating portal pages");
+		_logger.LogInformation("Generating codex pages");
 
-		// Create a portal-specific build context using the doc set's context as a base
-		// but with portal-specific URL prefix
-		var portalBuildContext = docSetBuildContext with
+		// Create a codex-specific build context using the doc set's context as a base
+		// but with codex-specific URL prefix
+		var codexBuildContext = docSetBuildContext with
 		{
 			UrlPathPrefix = context.Configuration.SitePrefix,
 			Force = true,
 			AllowIndexing = false
 		};
 
-		// Use PortalGenerator to render the portal pages to the portal's output directory
-		var portalGenerator = new PortalGenerator(logFactory, portalBuildContext, context.OutputDirectory);
-		await portalGenerator.Generate(portalNavigation, ctx);
+		// Use CodexGenerator to render the codex pages to the codex's output directory
+		var codexGenerator = new CodexGenerator(logFactory, codexBuildContext, context.OutputDirectory);
+		await codexGenerator.Generate(codexNavigation, ctx);
 	}
 }
 
 /// <summary>
-/// Result of building a portal.
+/// Result of building a codex.
 /// </summary>
-/// <param name="Navigation">The portal navigation structure.</param>
+/// <param name="Navigation">The codex navigation structure.</param>
 /// <param name="DocumentationSets">The built documentation sets.</param>
-public record PortalBuildResult(
-	PortalNavigation Navigation,
+public record CodexBuildResult(
+	CodexNavigation Navigation,
 	IReadOnlyList<DocumentationSet> DocumentationSets);
 
 /// <summary>
-/// Build context for a single documentation set within the portal.
+/// Build context for a single documentation set within the codex.
 /// </summary>
-public record PortalDocumentationSetBuildContext(
-	PortalCheckout Checkout,
+public record CodexDocumentationSetBuildContext(
+	CodexCheckout Checkout,
 	BuildContext BuildContext,
 	DocumentationSet DocumentationSet);
 
 /// <summary>
-/// Documentation context adapter for portal navigation creation.
+/// Documentation context adapter for codex navigation creation.
 /// </summary>
-internal sealed class PortalDocumentationContext(PortalContext portalContext) : IPortalDocumentationContext
+internal sealed class CodexDocumentationContext(CodexContext codexContext) : ICodexDocumentationContext
 {
 	/// <inheritdoc />
-	public IFileInfo ConfigurationPath => portalContext.ConfigurationPath;
+	public IFileInfo ConfigurationPath => codexContext.ConfigurationPath;
 
 	/// <inheritdoc />
-	public IDiagnosticsCollector Collector => portalContext.Collector;
+	public IDiagnosticsCollector Collector => codexContext.Collector;
 
 	/// <inheritdoc />
-	public IFileSystem ReadFileSystem => portalContext.ReadFileSystem;
+	public IFileSystem ReadFileSystem => codexContext.ReadFileSystem;
 
 	/// <inheritdoc />
-	public IFileSystem WriteFileSystem => portalContext.WriteFileSystem;
+	public IFileSystem WriteFileSystem => codexContext.WriteFileSystem;
 
 	/// <inheritdoc />
-	public IDirectoryInfo OutputDirectory => portalContext.OutputDirectory;
+	public IDirectoryInfo OutputDirectory => codexContext.OutputDirectory;
 
 	/// <inheritdoc />
 	public bool AssemblerBuild => false;
 
 	/// <inheritdoc />
 	public void EmitError(string message) =>
-		portalContext.Collector.EmitError(portalContext.ConfigurationPath, message);
+		codexContext.Collector.EmitError(codexContext.ConfigurationPath, message);
 }

@@ -3,30 +3,30 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using Elastic.Documentation.Configuration.Portal;
+using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 
-namespace Elastic.Portal.Sourcing;
+namespace Elastic.Codex.Sourcing;
 
 /// <summary>
-/// Service for cloning repositories defined in a portal configuration.
+/// Service for cloning repositories defined in a codex configuration.
 /// </summary>
-public class PortalCloneService(ILoggerFactory logFactory) : IService
+public class CodexCloneService(ILoggerFactory logFactory) : IService
 {
-	private readonly ILogger _logger = logFactory.CreateLogger<PortalCloneService>();
+	private readonly ILogger _logger = logFactory.CreateLogger<CodexCloneService>();
 
 	/// <summary>
-	/// Clones all repositories defined in the portal configuration.
+	/// Clones all repositories defined in the codex configuration.
 	/// </summary>
-	public async Task<PortalCloneResult> CloneAll(
-		PortalContext context,
+	public async Task<CodexCloneResult> CloneAll(
+		CodexContext context,
 		bool fetchLatest,
 		bool assumeCloned,
 		Cancel ctx)
 	{
-		var checkouts = new List<PortalCheckout>();
+		var checkouts = new List<CodexCheckout>();
 		var checkoutDir = context.CheckoutDirectory;
 
 		if (!checkoutDir.Exists)
@@ -48,12 +48,12 @@ public class PortalCloneService(ILoggerFactory logFactory) : IService
 				}
 			});
 
-		return new PortalCloneResult(checkouts);
+		return new CodexCloneResult(checkouts);
 	}
 
-	private async Task<PortalCheckout?> CloneRepository(
-		PortalContext context,
-		PortalDocumentationSetReference docSetRef,
+	private async Task<CodexCheckout?> CloneRepository(
+		CodexContext context,
+		CodexDocumentationSetReference docSetRef,
 		bool fetchLatest,
 		bool assumeCloned,
 		Cancel _)
@@ -70,7 +70,7 @@ public class PortalCloneService(ILoggerFactory logFactory) : IService
 
 		try
 		{
-			var git = new PortalGitRepository(logFactory, context.Collector, repoDir);
+			var git = new CodexGitRepository(logFactory, context.Collector, repoDir);
 
 			if (assumeCloned && git.IsInitialized())
 			{
@@ -108,7 +108,7 @@ public class PortalCloneService(ILoggerFactory logFactory) : IService
 				return null;
 			}
 
-			return new PortalCheckout(docSetRef, repoDir, docsDirectory, currentCommit);
+			return new CodexCheckout(docSetRef, repoDir, docsDirectory, currentCommit);
 		}
 		catch (Exception ex)
 		{
@@ -121,15 +121,15 @@ public class PortalCloneService(ILoggerFactory logFactory) : IService
 }
 
 /// <summary>
-/// Result of cloning portal repositories.
+/// Result of cloning codex repositories.
 /// </summary>
-public record PortalCloneResult(IReadOnlyList<PortalCheckout> Checkouts);
+public record CodexCloneResult(IReadOnlyList<CodexCheckout> Checkouts);
 
 /// <summary>
-/// Represents a cloned repository checkout for the portal.
+/// Represents a cloned repository checkout for the codex.
 /// </summary>
-public record PortalCheckout(
-	PortalDocumentationSetReference Reference,
+public record CodexCheckout(
+	CodexDocumentationSetReference Reference,
 	IDirectoryInfo RepositoryDirectory,
 	IDirectoryInfo DocsDirectory,
 	string CommitHash);

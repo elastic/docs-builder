@@ -4,12 +4,12 @@
 
 using YamlDotNet.Serialization;
 
-namespace Elastic.Documentation.Configuration.Portal;
+namespace Elastic.Documentation.Configuration.Codex;
 
 /// <summary>
-/// Represents a reference to a documentation set in a portal configuration.
+/// Represents a reference to a documentation set in a codex configuration.
 /// </summary>
-public record PortalDocumentationSetReference
+public record CodexDocumentationSetReference
 {
 	/// <summary>
 	/// The name of the documentation set. This is used in the URL path.
@@ -51,7 +51,7 @@ public record PortalDocumentationSetReference
 	public string? RepoName { get; set; }
 
 	/// <summary>
-	/// Optional display name shown on the portal landing page.
+	/// Optional display name shown on the codex landing page.
 	/// If not specified, uses the documentation set's title from docset.yml.
 	/// </summary>
 	[YamlMember(Alias = "display_name")]

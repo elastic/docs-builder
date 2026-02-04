@@ -6,22 +6,22 @@ using System.IO.Abstractions;
 using Actions.Core.Services;
 using ConsoleAppFramework;
 using Documentation.Builder.Http;
+using Elastic.Codex;
+using Elastic.Codex.Building;
+using Elastic.Codex.Sourcing;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.Portal;
+using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Isolated;
 using Elastic.Documentation.Services;
-using Elastic.Portal;
-using Elastic.Portal.Building;
-using Elastic.Portal.Sourcing;
 using Microsoft.Extensions.Logging;
 
-namespace Documentation.Builder.Commands.Portal;
+namespace Documentation.Builder.Commands.Codex;
 
 /// <summary>
-/// Commands for building documentation portals from multiple isolated documentation sets.
+/// Commands for building documentation codexes from multiple isolated documentation sets.
 /// </summary>
-internal sealed class PortalCommands(
+internal sealed class CodexCommands(
 	ILoggerFactory logFactory,
 	IDiagnosticsCollector collector,
 	IConfigurationContext configurationContext,
@@ -29,13 +29,13 @@ internal sealed class PortalCommands(
 )
 {
 	/// <summary>
-	/// Clone and build a documentation portal in one step.
+	/// Clone and build a documentation codex in one step.
 	/// </summary>
-	/// <param name="config">Path to the portal.yml configuration file.</param>
+	/// <param name="config">Path to the codex.yml configuration file.</param>
 	/// <param name="strict">Treat warnings as errors and fail on warnings.</param>
 	/// <param name="fetchLatest">Fetch the latest commit even if already cloned.</param>
 	/// <param name="assumeCloned">Assume repositories are already cloned.</param>
-	/// <param name="output">Output directory for the built portal.</param>
+	/// <param name="output">Output directory for the built codex.</param>
 	/// <param name="serve">Serve the documentation on port 4000 after build.</param>
 	/// <param name="ctx">Cancellation token.</param>
 	[Command("")]
@@ -51,39 +51,39 @@ internal sealed class PortalCommands(
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		var fs = new FileSystem();
 
-		// Load portal configuration
+		// Load codex configuration
 		var configPath = fs.Path.GetFullPath(config);
 		var configFile = fs.FileInfo.New(configPath);
 
 		if (!configFile.Exists)
 		{
-			collector.EmitGlobalError($"Portal configuration file not found: {configPath}");
+			collector.EmitGlobalError($"Codex configuration file not found: {configPath}");
 			return 1;
 		}
 
-		var portalConfig = PortalConfiguration.Load(configFile);
-		var portalContext = new PortalContext(portalConfig, configFile, collector, fs, fs, null, output);
+		var codexConfig = CodexConfiguration.Load(configFile);
+		var codexContext = new CodexContext(codexConfig, configFile, collector, fs, fs, null, output);
 
 		// Clone service
-		var cloneService = new PortalCloneService(logFactory);
-		PortalCloneResult? cloneResult = null;
+		var cloneService = new CodexCloneService(logFactory);
+		CodexCloneResult? cloneResult = null;
 
-		serviceInvoker.AddCommand(cloneService, (portalContext, fetchLatest, assumeCloned), strict,
+		serviceInvoker.AddCommand(cloneService, (codexContext, fetchLatest, assumeCloned), strict,
 			async (s, col, state, c) =>
 			{
-				cloneResult = await s.CloneAll(state.portalContext, state.fetchLatest, state.assumeCloned, c);
+				cloneResult = await s.CloneAll(state.codexContext, state.fetchLatest, state.assumeCloned, c);
 				return cloneResult.Checkouts.Count > 0;
 			});
 
 		// Build service
 		var isolatedBuildService = new IsolatedBuildService(logFactory, configurationContext, githubActionsService);
-		var buildService = new PortalBuildService(logFactory, configurationContext, isolatedBuildService);
-		serviceInvoker.AddCommand(buildService, (portalContext, cloneResult, fs), strict,
+		var buildService = new CodexBuildService(logFactory, configurationContext, isolatedBuildService);
+		serviceInvoker.AddCommand(buildService, (codexContext, cloneResult, fs), strict,
 			async (s, col, state, c) =>
 			{
 				if (cloneResult == null)
 					return false;
-				var result = await s.BuildAll(state.portalContext, cloneResult, state.fs, c);
+				var result = await s.BuildAll(state.codexContext, cloneResult, state.fs, c);
 				return result.DocumentationSets.Count > 0;
 			});
 
@@ -91,7 +91,7 @@ internal sealed class PortalCommands(
 
 		if (serve && result == 0)
 		{
-			var host = new StaticWebHost(4000, portalContext.OutputDirectory.FullName);
+			var host = new StaticWebHost(4000, codexContext.OutputDirectory.FullName);
 			await host.RunAsync(ctx);
 			await host.StopAsync(ctx);
 		}
@@ -100,9 +100,9 @@ internal sealed class PortalCommands(
 	}
 
 	/// <summary>
-	/// Clone all repositories defined in the portal configuration.
+	/// Clone all repositories defined in the codex configuration.
 	/// </summary>
-	/// <param name="config">Path to the portal.yml configuration file.</param>
+	/// <param name="config">Path to the codex.yml configuration file.</param>
 	/// <param name="strict">Treat warnings as errors and fail on warnings.</param>
 	/// <param name="fetchLatest">Fetch the latest commit even if already cloned.</param>
 	/// <param name="assumeCloned">Assume repositories are already cloned.</param>
@@ -123,18 +123,18 @@ internal sealed class PortalCommands(
 
 		if (!configFile.Exists)
 		{
-			collector.EmitGlobalError($"Portal configuration file not found: {configPath}");
+			collector.EmitGlobalError($"Codex configuration file not found: {configPath}");
 			return 1;
 		}
 
-		var portalConfig = PortalConfiguration.Load(configFile);
-		var portalContext = new PortalContext(portalConfig, configFile, collector, fs, fs, null, null);
+		var codexConfig = CodexConfiguration.Load(configFile);
+		var codexContext = new CodexContext(codexConfig, configFile, collector, fs, fs, null, null);
 
-		var cloneService = new PortalCloneService(logFactory);
-		serviceInvoker.AddCommand(cloneService, (portalContext, fetchLatest, assumeCloned), strict,
+		var cloneService = new CodexCloneService(logFactory);
+		serviceInvoker.AddCommand(cloneService, (codexContext, fetchLatest, assumeCloned), strict,
 			async (s, col, state, c) =>
 			{
-				var result = await s.CloneAll(state.portalContext, state.fetchLatest, state.assumeCloned, c);
+				var result = await s.CloneAll(state.codexContext, state.fetchLatest, state.assumeCloned, c);
 				return result.Checkouts.Count > 0;
 			});
 
@@ -144,9 +144,9 @@ internal sealed class PortalCommands(
 	/// <summary>
 	/// Build all documentation sets from already cloned repositories.
 	/// </summary>
-	/// <param name="config">Path to the portal.yml configuration file.</param>
+	/// <param name="config">Path to the codex.yml configuration file.</param>
 	/// <param name="strict">Treat warnings as errors and fail on warnings.</param>
-	/// <param name="output">Output directory for the built portal.</param>
+	/// <param name="output">Output directory for the built codex.</param>
 	/// <param name="ctx">Cancellation token.</param>
 	[Command("build")]
 	public async Task<int> Build(
@@ -163,29 +163,29 @@ internal sealed class PortalCommands(
 
 		if (!configFile.Exists)
 		{
-			collector.EmitGlobalError($"Portal configuration file not found: {configPath}");
+			collector.EmitGlobalError($"Codex configuration file not found: {configPath}");
 			return 1;
 		}
 
-		var portalConfig = PortalConfiguration.Load(configFile);
-		var portalContext = new PortalContext(portalConfig, configFile, collector, fs, fs, null, output);
+		var codexConfig = CodexConfiguration.Load(configFile);
+		var codexContext = new CodexContext(codexConfig, configFile, collector, fs, fs, null, output);
 
 		// First, we need to load the checkouts that should already exist
-		var cloneService = new PortalCloneService(logFactory);
-		var cloneResult = await cloneService.CloneAll(portalContext, fetchLatest: false, assumeCloned: true, ctx);
+		var cloneService = new CodexCloneService(logFactory);
+		var cloneResult = await cloneService.CloneAll(codexContext, fetchLatest: false, assumeCloned: true, ctx);
 
 		if (cloneResult.Checkouts.Count == 0)
 		{
-			collector.EmitGlobalError("No documentation sets found. Run 'docs-builder portal clone' first.");
+			collector.EmitGlobalError("No documentation sets found. Run 'docs-builder codex clone' first.");
 			return 1;
 		}
 
 		var isolatedBuildService = new IsolatedBuildService(logFactory, configurationContext, githubActionsService);
-		var buildService = new PortalBuildService(logFactory, configurationContext, isolatedBuildService);
-		serviceInvoker.AddCommand(buildService, (portalContext, cloneResult, fs), strict,
+		var buildService = new CodexBuildService(logFactory, configurationContext, isolatedBuildService);
+		serviceInvoker.AddCommand(buildService, (codexContext, cloneResult, fs), strict,
 			async (s, col, state, c) =>
 			{
-				var result = await s.BuildAll(state.portalContext, state.cloneResult, state.fs, c);
+				var result = await s.BuildAll(state.codexContext, state.cloneResult, state.fs, c);
 				return result.DocumentationSets.Count > 0;
 			});
 
@@ -193,10 +193,10 @@ internal sealed class PortalCommands(
 	}
 
 	/// <summary>
-	/// Serve the built portal documentation.
+	/// Serve the built codex documentation.
 	/// </summary>
 	/// <param name="port">Port to serve on.</param>
-	/// <param name="path">Path to the portal output directory.</param>
+	/// <param name="path">Path to the codex output directory.</param>
 	/// <param name="ctx">Cancellation token.</param>
 	[Command("serve")]
 	public async Task Serve(
@@ -206,7 +206,7 @@ internal sealed class PortalCommands(
 	{
 		var fs = new FileSystem();
 		var servePath = path ?? fs.Path.Combine(
-			Environment.CurrentDirectory, ".artifacts", "portal", "docs");
+			Environment.CurrentDirectory, ".artifacts", "codex", "docs");
 
 		var host = new StaticWebHost(port, servePath);
 		await host.RunAsync(ctx);

@@ -4,67 +4,67 @@
 
 using System.IO.Abstractions;
 using System.Text.RegularExpressions;
+using Elastic.Codex.Category;
+using Elastic.Codex.Landing;
+using Elastic.Codex.Navigation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
-using Elastic.Portal.Category;
-using Elastic.Portal.Landing;
-using Elastic.Portal.Navigation;
 using Microsoft.Extensions.Logging;
 using RazorSlices;
 
-namespace Elastic.Portal;
+namespace Elastic.Codex;
 
 /// <summary>
-/// Interface for portal models that can render themselves.
+/// Interface for codex models that can render themselves.
 /// </summary>
-public interface IPortalModel : INavigationModel, IPortalPageRenderer;
+public interface ICodexModel : INavigationModel, ICodexPageRenderer;
 
 /// <summary>
-/// Interface for rendering portal pages.
+/// Interface for rendering codex pages.
 /// </summary>
-public interface IPortalPageRenderer
+public interface ICodexPageRenderer
 {
 	/// <summary>
 	/// Renders the page to the given stream.
 	/// </summary>
-	Task RenderAsync(FileSystemStream stream, PortalRenderContext context, CancellationToken ctx = default);
+	Task RenderAsync(FileSystemStream stream, CodexRenderContext context, CancellationToken ctx = default);
 }
 
 /// <summary>
-/// Generator for portal HTML pages.
+/// Generator for codex HTML pages.
 /// </summary>
-public class PortalGenerator(ILoggerFactory logFactory, BuildContext context, IDirectoryInfo outputDirectory)
+public class CodexGenerator(ILoggerFactory logFactory, BuildContext context, IDirectoryInfo outputDirectory)
 {
-	private readonly ILogger _logger = logFactory.CreateLogger<PortalGenerator>();
+	private readonly ILogger _logger = logFactory.CreateLogger<CodexGenerator>();
 	private readonly IFileSystem _writeFileSystem = context.WriteFileSystem;
 	private readonly StaticFileContentHashProvider _contentHashProvider = new(new EmbeddedOrPhysicalFileProvider(context));
 	private readonly IDirectoryInfo _outputDirectory = outputDirectory;
 
 	/// <summary>
-	/// Generates all portal pages (landing and category pages).
+	/// Generates all codex pages (landing and category pages).
 	/// </summary>
-	public async Task Generate(PortalNavigation portalNavigation, Cancel ctx = default)
+	public async Task Generate(CodexNavigation codexNavigation, Cancel ctx = default)
 	{
-		_logger.LogInformation("Generating portal pages for {Title}", portalNavigation.NavigationTitle);
+		_logger.LogInformation("Generating codex pages for {Title}", codexNavigation.NavigationTitle);
 
-		// Extract static files to the portal's _static directory
+		// Extract static files to the codex's _static directory
 		await ExtractEmbeddedStaticResources(ctx);
 
-		var navigationRenderer = new PortalNavigationHtmlWriter(context, portalNavigation);
+		var navigationRenderer = new CodexNavigationHtmlWriter(context, codexNavigation);
 
-		var renderContext = new PortalRenderContext(context, portalNavigation, _contentHashProvider)
+		var renderContext = new CodexRenderContext(context, codexNavigation, _contentHashProvider)
 		{
 			NavigationHtml = string.Empty,
-			CurrentNavigation = portalNavigation.Index
+			CurrentNavigation = codexNavigation.Index
 		};
 
-		// Render the portal landing page
-		await RenderLandingPage(portalNavigation, renderContext, navigationRenderer, ctx);
+		// Render the codex landing page
+		await RenderLandingPage(codexNavigation, renderContext, navigationRenderer, ctx);
 
 		// Render category pages
-		foreach (var item in portalNavigation.NavigationItems)
+		foreach (var item in codexNavigation.NavigationItems)
 		{
 			if (item is CategoryNavigation category)
 			{
@@ -75,7 +75,7 @@ public class PortalGenerator(ILoggerFactory logFactory, BuildContext context, ID
 
 	private async Task ExtractEmbeddedStaticResources(Cancel ctx)
 	{
-		_logger.LogInformation("Copying static files to portal output directory");
+		_logger.LogInformation("Copying static files to codex output directory");
 		var assembly = typeof(EmbeddedOrPhysicalFileProvider).Assembly;
 		var embeddedStaticFiles = assembly
 			.GetManifestResourceNames()
@@ -92,7 +92,7 @@ public class PortalGenerator(ILoggerFactory logFactory, BuildContext context, ID
 				.Replace("Elastic.Documentation.Site.", "")
 				.Replace("_static.", $"_static{Path.DirectorySeparatorChar}");
 
-			// Output to portal's URL prefix directory (e.g., internal-docs/_static/)
+			// Output to codex's URL prefix directory (e.g., internal-docs/_static/)
 			var outputPath = Path.Combine(
 				_outputDirectory.FullName,
 				context.UrlPathPrefix?.Trim('/') ?? string.Empty,
@@ -109,28 +109,28 @@ public class PortalGenerator(ILoggerFactory logFactory, BuildContext context, ID
 	}
 
 	private async Task RenderLandingPage(
-		PortalNavigation portalNavigation,
-		PortalRenderContext renderContext,
-		PortalNavigationHtmlWriter navigationRenderer,
+		CodexNavigation codexNavigation,
+		CodexRenderContext renderContext,
+		CodexNavigationHtmlWriter navigationRenderer,
 		CancellationToken ctx)
 	{
 		var navigationRenderResult = await navigationRenderer.RenderNavigation(
-			portalNavigation,
-			portalNavigation.Index,
+			codexNavigation,
+			codexNavigation.Index,
 			ctx);
 
 		renderContext = renderContext with
 		{
-			CurrentNavigation = portalNavigation.Index,
+			CurrentNavigation = codexNavigation.Index,
 			NavigationHtml = navigationRenderResult.Html
 		};
 
 		var viewModel = new LandingViewModel(renderContext)
 		{
-			IndexPage = (PortalIndexPage)portalNavigation.Index.Model
+			IndexPage = (CodexIndexPage)codexNavigation.Index.Model
 		};
 
-		var outputFile = GetOutputFile(portalNavigation.Url);
+		var outputFile = GetOutputFile(codexNavigation.Url);
 		if (!outputFile.Directory!.Exists)
 			outputFile.Directory.Create();
 
@@ -140,13 +140,13 @@ public class PortalGenerator(ILoggerFactory logFactory, BuildContext context, ID
 		await slice.RenderAsync(stream, cancellationToken: ctx);
 
 
-		_logger.LogDebug("Generated portal landing page: {Path}", outputFile.FullName);
+		_logger.LogDebug("Generated codex landing page: {Path}", outputFile.FullName);
 	}
 
 	private async Task RenderCategoryPage(
 		CategoryNavigation category,
-		PortalRenderContext renderContext,
-		PortalNavigationHtmlWriter navigationRenderer,
+		CodexRenderContext renderContext,
+		CodexNavigationHtmlWriter navigationRenderer,
 		CancellationToken ctx)
 	{
 		var navigationRenderResult = await navigationRenderer.RenderNavigation(
@@ -186,7 +186,7 @@ public class PortalGenerator(ILoggerFactory logFactory, BuildContext context, ID
 }
 
 /// <summary>
-/// Navigation HTML writer for portal builds.
+/// Navigation HTML writer for codex builds.
 /// </summary>
-internal sealed class PortalNavigationHtmlWriter(BuildContext context, PortalNavigation portalNavigation)
-	: IsolatedBuildNavigationHtmlWriter(context, portalNavigation);
+internal sealed class CodexNavigationHtmlWriter(BuildContext context, CodexNavigation codexNavigation)
+	: IsolatedBuildNavigationHtmlWriter(context, codexNavigation);

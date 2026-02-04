@@ -5,15 +5,15 @@
 using System.IO.Abstractions;
 using Elastic.Documentation;
 
-namespace Elastic.Portal.Navigation;
+namespace Elastic.Codex.Navigation;
 
 /// <summary>
-/// Context interface for portal navigation creation and error reporting.
+/// Context interface for codex navigation creation and error reporting.
 /// </summary>
-public interface IPortalDocumentationContext : IDocumentationContext
+public interface ICodexDocumentationContext : IDocumentationContext
 {
 	/// <summary>
-	/// Emits an error during portal navigation construction.
+	/// Emits an error during codex navigation construction.
 	/// </summary>
 	void EmitError(string message);
 }
