@@ -11,7 +11,8 @@
 # Site prefix for all codex URLs
 # All documentation sets will be served under this prefix
 # e.g., /internal-docs, /dev-docs, /docs
-site_prefix: /internal-docs
+# Set to "/" or omit for no prefix (site hosted at root, e.g., codex.elastic.dev)
+site_prefix: /
 
 # Title displayed on the codex index page
 title: "Elastic's Internal Dev Docs"
@@ -40,13 +41,27 @@ documentation_sets:
     display_name: "Content Architecture"
     icon: architecture
 
-  # Benchmarking documentation in observability category
+  # Observability group (multiple members)
+  - name: docs-eng-team
+    branch: feature/test
+    category: docs
+    repo_name: docs-eng-team
+    display_name: "Docs Engineering"
+    icon: documentation
+
   - name: docs-eng-team
     branch: main
     category: observability
-    repo_name: benchmarking
-    display_name: "Benchmarking Elasticsearch"
-    icon: benchmark
+    repo_name: uptime-docs
+    display_name: "Uptime Monitoring"
+    icon: observability
+
+  - name: docs-eng-team
+    branch: main
+    category: observability
+    repo_name: apm-agent-docs
+    display_name: "APM Agent"
+    icon: apm
 
   # Migration Guide in tooling category
   - name: docs-eng-team
@@ -96,9 +111,10 @@ documentation_sets:
 #   Defaults to "docs".
 #
 # category (optional):
-#   Group documentation sets under a category.
-#   Creates URL structure: /{site_prefix}/{category}/{repo_name}/
-#   If not specified, URL is: /{site_prefix}/{repo_name}/
+#   Group documentation sets under a category (group).
+#   Repos use stable URLs: /r/{repo_name}/ (or /{site_prefix}/r/{repo_name}/ with prefix)
+#   Group landing: /g/{category}/ (or /{site_prefix}/g/{category}/ with prefix)
+#   Group membership only affects which sidebar navigation is shown, not the URL.
 #
 # repo_name (optional):
 #   Override the name used for checkout directories and URL paths.
