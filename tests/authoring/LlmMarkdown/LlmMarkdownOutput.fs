@@ -222,7 +222,7 @@ type ``applies_to inline role formats`` () =
         // Serverless GA (unversioned product - no version shown)
         ("serverless: ga", "Elastic Cloud Serverless: Generally available")
         
-        // Elasticsearch preview (no version - uses base version)
+        // Elasticsearch preview (no version - no version shown in badge)
         ("elasticsearch: preview", "Serverless Elasticsearch projects: Preview in 8.0+")
     ]
     

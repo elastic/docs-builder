@@ -213,12 +213,12 @@ public static class ApplicabilityRenderer
 			if (!versioningSystem.IsVersioned())
 				return ProductLifecycleInfo.GetDisplayText(lifecycle);
 
-			var baseVersion = $"{versioningSystem.Base.Major}.{versioningSystem.Base.Minor}";
+			// When no version is specified, do not use base version in the text
 			return lifecycle switch
 			{
-				ProductLifecycle.Removed => $"Removed in {baseVersion}+",
-				ProductLifecycle.Unavailable => $"Unavailable in {baseVersion}+",
-				_ => $"{ProductLifecycleInfo.GetDisplayText(lifecycle)} in {baseVersion}+"
+				ProductLifecycle.Removed => "Removed",
+				ProductLifecycle.Unavailable => "Unavailable",
+				_ => ProductLifecycleInfo.GetDisplayText(lifecycle)
 			};
 		}
 
@@ -410,15 +410,12 @@ public static class ApplicabilityRenderer
 	/// </summary>
 	private static string GetBadgeVersionText(VersionSpec? versionSpec, VersioningSystem versioningSystem)
 	{
-		// When no version is specified (null or AllVersionsSpec), check if we should show the base version
+		// When no version is specified (null or AllVersionsSpec), do not show a version in the badge
 		switch (versionSpec)
 		{
 			case AllVersionsSpec:
 			case null:
-				// Only show base version if the product is versioned
-				return versioningSystem.IsVersioned()
-					? $"{versioningSystem.Base.Major}.{versioningSystem.Base.Minor}+"
-					: string.Empty;
+				return string.Empty;
 			default:
 				var kind = versionSpec.Kind;
 				var min = versionSpec.Min;
