@@ -15,6 +15,11 @@ namespace Elastic.Documentation.Navigation.Isolated.Node;
 public interface IDocumentationSetNavigation
 {
 	IReadOnlyDictionary<Uri, IRootNavigationItem<IDocumentationFile, INavigationItem>> TableOfContentNodes { get; }
+
+	/// <summary>
+	/// Optional override for the navigation title. When set, this is used instead of the index page's title.
+	/// </summary>
+	string? NavigationTitleOverride { get; set; }
 }
 
 [DebuggerDisplay("{Url}")]
@@ -114,8 +119,14 @@ public class DocumentationSetNavigation<TModel>
 	/// <inheritdoc />
 	public string Url => Index.Url;
 
+	/// <summary>
+	/// Optional override for the navigation title. When set, this is used instead of the index page's title.
+	/// Useful for codex builds where the display name is configured externally.
+	/// </summary>
+	public string? NavigationTitleOverride { get; set; }
+
 	/// <inheritdoc />
-	public string NavigationTitle => Index.NavigationTitle;
+	public string NavigationTitle => NavigationTitleOverride ?? Index.NavigationTitle;
 
 	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot =>
 		HomeProvider == this ? field : HomeProvider.NavigationRoot;

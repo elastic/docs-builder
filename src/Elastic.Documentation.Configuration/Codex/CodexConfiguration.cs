@@ -15,9 +15,10 @@ public record CodexConfiguration
 	/// <summary>
 	/// The URL prefix for all codex URLs (e.g., "/internal-docs").
 	/// All documentation sets will be served under this prefix.
+	/// Set to "/" or empty for no prefix (site hosted at root, e.g., codex.elastic.dev).
 	/// </summary>
 	[YamlMember(Alias = "site_prefix")]
-	public string SitePrefix { get; set; } = "/docs";
+	public string SitePrefix { get; set; } = "/";
 
 	/// <summary>
 	/// The title displayed on the codex index page.
@@ -64,11 +65,20 @@ public record CodexConfiguration
 
 	private static CodexConfiguration NormalizeConfiguration(CodexConfiguration config)
 	{
-		// Normalize site prefix to ensure it starts with / and doesn't end with /
-		var sitePrefix = config.SitePrefix.Trim();
-		if (!sitePrefix.StartsWith('/'))
-			sitePrefix = "/" + sitePrefix;
-		sitePrefix = sitePrefix.TrimEnd('/');
+		// Normalize site prefix: empty or "/" means root (no prefix)
+		var sitePrefix = config.SitePrefix?.Trim() ?? "";
+		if (string.IsNullOrEmpty(sitePrefix) || sitePrefix == "/")
+		{
+			// Root prefix - no path segment
+			sitePrefix = "";
+		}
+		else
+		{
+			// Ensure it starts with / and doesn't end with /
+			if (!sitePrefix.StartsWith('/'))
+				sitePrefix = "/" + sitePrefix;
+			sitePrefix = sitePrefix.TrimEnd('/');
+		}
 
 		return config with { SitePrefix = sitePrefix };
 	}

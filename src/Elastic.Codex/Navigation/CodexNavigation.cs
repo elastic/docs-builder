@@ -22,17 +22,12 @@ public class CodexNavigation : IRootNavigationItem<IDocumentationFile, INavigati
 	/// <summary>
 	/// Creates a new codex navigation from a codex configuration and documentation set navigations.
 	/// </summary>
-	/// <param name="configuration">The codex configuration.</param>
-	/// <param name="context">The documentation context for error reporting.</param>
-	/// <param name="documentationSetNavigations">The documentation set navigations keyed by name.</param>
 	public CodexNavigation(
 		CodexConfiguration configuration,
 		ICodexDocumentationContext context,
 		IReadOnlyDictionary<string, IDocumentationSetNavigation> documentationSetNavigations)
 	{
-		Url = NormalizeSitePrefix(configuration.SitePrefix) ?? "/docs";
-
-		// Initialize root properties
+		Url = string.IsNullOrEmpty(configuration.SitePrefix) ? "" : configuration.SitePrefix;
 		NavigationRoot = this;
 		Parent = null;
 		Hidden = false;
@@ -40,115 +35,174 @@ public class CodexNavigation : IRootNavigationItem<IDocumentationFile, INavigati
 		IsUsingNavigationDropdown = false;
 		NavigationTitle = configuration.Title;
 
-		// Create the codex index page
-		var codexIndexPage = new CodexIndexPage(configuration.Title);
-		var codexIndexLeaf = new CodexIndexLeaf(codexIndexPage, this);
+		var codexIndexLeaf = new CodexIndexLeaf(new CodexIndexPage(configuration.Title), this);
+		var builder = new NavigationBuilder(this, context, documentationSetNavigations);
+		var result = builder.Build(configuration.DocumentationSets);
 
-		// Build navigation items from configuration
-		var items = new List<INavigationItem> { codexIndexLeaf };
-		var documentationSetInfos = new List<CodexDocumentationSetInfo>();
-		var navigationIndex = 0;
+		Index = codexIndexLeaf;
+		NavigationItems = result.NavigationItems;
+		GroupNavigations = result.Groups.Values.ToFrozenSet();
+		DocumentationSetInfos = result.DocumentationSetInfos.ToFrozenSet();
 
-		// Group documentation sets by category
-		var categories = new Dictionary<string, CategoryNavigation>();
+		_ = this.UpdateNavigationIndex(context);
+		NavigationDocumentationFileLookup = [];
+		NavigationIndexedByOrder = this.BuildNavigationLookups(NavigationDocumentationFileLookup);
+	}
 
-		foreach (var docSetRef in configuration.DocumentationSets)
+	/// <summary>
+	/// Encapsulates the logic for building navigation items from configuration.
+	/// </summary>
+	private sealed class NavigationBuilder(
+		CodexNavigation codex,
+		ICodexDocumentationContext context,
+		IReadOnlyDictionary<string, IDocumentationSetNavigation> documentationSetNavigations)
+	{
+		private readonly List<INavigationItem> _items = [];
+		private readonly List<CodexDocumentationSetInfo> _docSetInfos = [];
+		private readonly Dictionary<string, GroupNavigation> _groups = [];
+		private readonly Dictionary<string, List<CodexDocumentationSetInfo>> _groupDocSetInfos = [];
+		private int _navigationIndex;
+
+		public sealed record BuildResult(
+			IReadOnlyCollection<INavigationItem> NavigationItems,
+			Dictionary<string, GroupNavigation> Groups,
+			List<CodexDocumentationSetInfo> DocumentationSetInfos);
+
+		public BuildResult Build(IReadOnlyList<CodexDocumentationSetReference> docSetRefs)
+		{
+			foreach (var docSetRef in docSetRefs)
+				ProcessDocumentationSet(docSetRef);
+
+			FinalizeGroupDocumentationSetInfos();
+
+			return new BuildResult(_items.ToArray(), _groups, _docSetInfos);
+		}
+
+		private void ProcessDocumentationSet(CodexDocumentationSetReference docSetRef)
 		{
 			var repoName = docSetRef.ResolvedRepoName;
 
-			// Find the matching documentation set navigation
 			if (!documentationSetNavigations.TryGetValue(repoName, out var docSetNav))
 			{
-				context.EmitError($"Documentation set '{docSetRef.Name}' (repo_name: {repoName}) not found in built documentation sets");
-				continue;
+				context.EmitError($"Documentation set '{docSetRef.Name}' (repo_name: {repoName}) not found");
+				return;
 			}
 
-			// Calculate the path prefix for this documentation set
-			string pathPrefix;
-			INodeNavigationItem<INavigationModel, INavigationItem> parentNode;
+			if (docSetNav is not IRootNavigationItem<IDocumentationFile, INavigationItem> rootNavItem)
+				return;
+
+			var pathPrefix = $"{codex.Url}/r/{repoName}";
+			var docSetInfo = CreateDocumentationSetInfo(docSetRef, rootNavItem, repoName);
+			_docSetInfos.Add(docSetInfo);
+
+			ApplyDisplayNameOverride(docSetNav, docSetRef.DisplayName);
 
 			if (!string.IsNullOrEmpty(docSetRef.Category))
-			{
-				// Get or create the category navigation
-				if (!categories.TryGetValue(docSetRef.Category, out var categoryNav))
-				{
-					var categoryPathPrefix = $"{Url}/{docSetRef.Category}";
-					var categoryDisplayTitle = FormatCategoryTitle(docSetRef.Category);
-					categoryNav = new CategoryNavigation(
-						docSetRef.Category,
-						categoryDisplayTitle,
-						categoryPathPrefix,
-						this,
-						this)
-					{
-						NavigationIndex = ++navigationIndex
-					};
-					categories[docSetRef.Category] = categoryNav;
-					items.Add(categoryNav);
-				}
-
-				pathPrefix = $"{Url}/{docSetRef.Category}/{repoName}";
-				parentNode = categoryNav;
-			}
+				AttachToGroup(docSetRef, docSetNav, rootNavItem, pathPrefix, docSetInfo);
 			else
-			{
-				pathPrefix = $"{Url}/{repoName}";
-				parentNode = this;
-			}
+				AttachToCodexRoot(docSetNav, rootNavItem, pathPrefix);
+		}
 
-			// Re-home the documentation set navigation to the codex
+		private CodexDocumentationSetInfo CreateDocumentationSetInfo(
+			CodexDocumentationSetReference docSetRef,
+			IRootNavigationItem<IDocumentationFile, INavigationItem> rootNavItem,
+			string repoName) =>
+			new()
+			{
+				Name = repoName,
+				Title = docSetRef.DisplayName ?? rootNavItem.NavigationTitle ?? repoName,
+				Url = $"{codex.Url}/r/{repoName}",
+				Category = docSetRef.Category,
+				PageCount = CountPages(rootNavItem),
+				Icon = docSetRef.Icon
+			};
+
+		private static void ApplyDisplayNameOverride(IDocumentationSetNavigation docSetNav, string? displayName)
+		{
+			if (!string.IsNullOrEmpty(displayName))
+				docSetNav.NavigationTitleOverride = displayName;
+		}
+
+		private void AttachToGroup(
+			CodexDocumentationSetReference docSetRef,
+			IDocumentationSetNavigation docSetNav,
+			IRootNavigationItem<IDocumentationFile, INavigationItem> rootNavItem,
+			string pathPrefix,
+			CodexDocumentationSetInfo docSetInfo)
+		{
+			var category = docSetRef.Category!;
+			var groupNav = GetOrCreateGroup(category);
+
 			if (docSetNav is INavigationHomeAccessor homeAccessor)
+				homeAccessor.HomeProvider = new NavigationHomeProvider(pathPrefix, groupNav);
+
+			rootNavItem.Parent = groupNav;
+			rootNavItem.NavigationIndex = ++_navigationIndex;
+
+			var groupChildren = groupNav.NavigationItems.ToList();
+			groupChildren.Add(rootNavItem);
+			((IAssignableChildrenNavigation)groupNav).SetNavigationItems(groupChildren);
+
+			if (!_groupDocSetInfos.TryGetValue(category, out var list))
 			{
-				homeAccessor.HomeProvider = new NavigationHomeProvider(pathPrefix, this);
+				list = [];
+				_groupDocSetInfos[category] = list;
 			}
+			list.Add(docSetInfo);
+		}
 
-			// Get the actual navigation root (which implements the navigation interfaces)
-			if (docSetNav is IRootNavigationItem<IDocumentationFile, INavigationItem> rootNavItem)
+		private GroupNavigation GetOrCreateGroup(string category)
+		{
+			if (_groups.TryGetValue(category, out var existing))
+				return existing;
+
+			var groupUrl = $"{codex.Url}/g/{category}";
+			var groupNav = new GroupNavigation(category, FormatCategoryTitle(category), groupUrl);
+			_groups[category] = groupNav;
+
+			var groupLink = new GroupLinkLeaf(new GroupLinkPage(groupNav.DisplayTitle, groupUrl), codex)
 			{
-				rootNavItem.Parent = parentNode;
-				rootNavItem.NavigationIndex = ++navigationIndex;
+				NavigationIndex = ++_navigationIndex
+			};
+			_items.Add(groupLink);
 
-				if (string.IsNullOrEmpty(docSetRef.Category))
-				{
-					// Direct child of codex
-					items.Add(rootNavItem);
-				}
-				else if (categories.TryGetValue(docSetRef.Category, out var categoryNav))
-				{
-					// Add to category's children
-					var categoryChildren = categoryNav.NavigationItems.ToList();
-					categoryChildren.Add(rootNavItem);
-					((IAssignableChildrenNavigation)categoryNav).SetNavigationItems(categoryChildren);
-				}
+			return groupNav;
+		}
 
-				// Collect info for codex index display
-				var pageCount = CountPages(rootNavItem);
-				documentationSetInfos.Add(new CodexDocumentationSetInfo
-				{
-					Name = repoName,
-					Title = docSetRef.DisplayName ?? rootNavItem.NavigationTitle ?? repoName,
-					Url = rootNavItem.Url,
-					Category = docSetRef.Category,
-					PageCount = pageCount,
-					Icon = docSetRef.Icon
-				});
+		private void AttachToCodexRoot(
+			IDocumentationSetNavigation docSetNav,
+			IRootNavigationItem<IDocumentationFile, INavigationItem> rootNavItem,
+			string pathPrefix)
+		{
+			if (docSetNav is INavigationHomeAccessor homeAccessor)
+				homeAccessor.HomeProvider = new NavigationHomeProvider(pathPrefix, rootNavItem);
+
+			rootNavItem.Parent = codex;
+			rootNavItem.NavigationIndex = ++_navigationIndex;
+			_items.Add(rootNavItem);
+		}
+
+		private void FinalizeGroupDocumentationSetInfos()
+		{
+			foreach (var (slug, infos) in _groupDocSetInfos)
+			{
+				if (_groups.TryGetValue(slug, out var group))
+					group.DocumentationSetInfos = infos.ToFrozenSet();
 			}
 		}
 
-		// Set up index and navigation items
-		Index = codexIndexLeaf;
-		NavigationItems = items.Skip(1).ToArray(); // Skip the index leaf
-
-		// Update navigation indices
-		_ = this.UpdateNavigationIndex(context);
-
-		// Build navigation lookup tables
-		NavigationDocumentationFileLookup = [];
-		NavigationIndexedByOrder = this.BuildNavigationLookups(NavigationDocumentationFileLookup);
-
-		// Store documentation set infos for rendering
-		DocumentationSetInfos = documentationSetInfos.ToFrozenSet();
+		private static string FormatCategoryTitle(string slug) =>
+			string.Join(" ", slug
+				.Replace('-', ' ')
+				.Replace('_', ' ')
+				.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+				.Select(w => char.ToUpperInvariant(w[0]) + w[1..].ToLowerInvariant()));
 	}
+
+	/// <summary>
+	/// Gets the group navigations (one per category) for rendering group landing pages.
+	/// </summary>
+	public FrozenSet<GroupNavigation> GroupNavigations { get; }
 
 	/// <summary>
 	/// Gets information about all documentation sets for rendering on the codex index.
@@ -198,61 +252,14 @@ public class CodexNavigation : IRootNavigationItem<IDocumentationFile, INavigati
 	/// <inheritdoc />
 	public FrozenDictionary<int, INavigationItem> NavigationIndexedByOrder { get; }
 
-	/// <summary>
-	/// Normalizes the site prefix to ensure it has a leading slash and no trailing slash.
-	/// </summary>
-	private static string? NormalizeSitePrefix(string? sitePrefix)
-	{
-		if (string.IsNullOrWhiteSpace(sitePrefix))
-			return null;
-
-		var normalized = sitePrefix.Trim();
-
-		if (!normalized.StartsWith('/'))
-			normalized = "/" + normalized;
-
-		normalized = normalized.TrimEnd('/');
-
-		return normalized;
-	}
-
-	/// <summary>
-	/// Formats a category name for display (e.g., "developer-tools" -> "Developer Tools").
-	/// </summary>
-	private static string FormatCategoryTitle(string categoryName)
-	{
-		if (string.IsNullOrEmpty(categoryName))
-			return categoryName;
-
-		// Replace hyphens and underscores with spaces, then title case
-		var words = categoryName
-			.Replace('-', ' ')
-			.Replace('_', ' ')
-			.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-
-		return string.Join(" ", words.Select(w =>
-			char.ToUpperInvariant(w[0]) + w[1..].ToLowerInvariant()));
-	}
-
-	/// <summary>
-	/// Counts the number of pages in a navigation tree.
-	/// </summary>
-	private static int CountPages(INavigationItem item)
-	{
-		var count = 0;
-
-		if (item is ILeafNavigationItem<IDocumentationFile>)
-			count = 1;
-
-		if (item is INodeNavigationItem<INavigationModel, INavigationItem> node)
+	private static int CountPages(INavigationItem item) =>
+		item switch
 		{
-			count = 1; // Count the index
-			foreach (var child in node.NavigationItems)
-				count += CountPages(child);
-		}
-
-		return count;
-	}
+			INodeNavigationItem<INavigationModel, INavigationItem> node =>
+				1 + node.NavigationItems.Sum(CountPages),
+			ILeafNavigationItem<IDocumentationFile> => 1,
+			_ => 0
+		};
 }
 
 /// <summary>

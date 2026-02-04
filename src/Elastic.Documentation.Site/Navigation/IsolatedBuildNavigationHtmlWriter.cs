@@ -15,12 +15,11 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNaviga
 	private readonly ConcurrentDictionary<string, string> _renderedNavigationCache = [];
 
 	public async Task<NavigationRenderResult> RenderNavigation(
-		IRootNavigationItem<INavigationModel, INavigationItem> currentRootNavigation, INavigationItem currentNavigationItem, Cancel ctx = default
-	)
+		IRootNavigationItem<INavigationModel, INavigationItem> currentRootNavigation,
+		INavigationItem currentNavigationItem,
+		Cancel ctx = default)
 	{
-		var navigation = context.Configuration.Features.PrimaryNavEnabled || currentRootNavigation.IsUsingNavigationDropdown
-			? currentRootNavigation
-			: siteRoot;
+		var navigation = SelectNavigationRoot(currentRootNavigation);
 		var id = ShortId.Create($"{navigation.Id.GetHashCode()}");
 		if (_renderedNavigationCache.TryGetValue(navigation.Id, out var value))
 		{
@@ -40,6 +39,21 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNaviga
 		};
 	}
 
+	/// <summary>
+	/// Determines which navigation root to use for rendering.
+	/// Uses the requested root when it differs from site root (e.g. group nav in codex)
+	/// or when primary nav/dropdown features are enabled.
+	/// </summary>
+	private IRootNavigationItem<INavigationModel, INavigationItem> SelectNavigationRoot(
+		IRootNavigationItem<INavigationModel, INavigationItem> requestedRoot)
+	{
+		var useRequestedRoot = requestedRoot != siteRoot
+			|| context.Configuration.Features.PrimaryNavEnabled
+			|| requestedRoot.IsUsingNavigationDropdown;
+
+		return useRequestedRoot ? requestedRoot : siteRoot;
+	}
+
 	private NavigationViewModel CreateNavigationModel(IRootNavigationItem<INavigationModel, INavigationItem> navigation) =>
 		new()
 		{
@@ -49,6 +63,6 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNaviga
 			IsPrimaryNavEnabled = context.Configuration.Features.PrimaryNavEnabled,
 			IsUsingNavigationDropdown = context.Configuration.Features.PrimaryNavEnabled || navigation.IsUsingNavigationDropdown,
 			IsGlobalAssemblyBuild = false,
-			TopLevelItems = siteRoot.NavigationItems.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>().ToList()
+			TopLevelItems = navigation.NavigationItems.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>().ToList()
 		};
 }

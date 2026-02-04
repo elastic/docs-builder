@@ -69,7 +69,7 @@ public class CodexBuildService(
 		foreach (var buildContext in buildContexts)
 			await BuildDocumentationSet(context, buildContext, ctx);
 
-		// Phase 4: Generate codex index and category pages using CodexGenerator
+		// Phase 4: Generate codex landing and category pages
 		if (buildContexts.Count > 0)
 			await GenerateCodexPages(context, buildContexts[0].BuildContext, codexNavigation, ctx);
 
@@ -86,18 +86,19 @@ public class CodexBuildService(
 
 		try
 		{
-			// Calculate output path based on category (using ResolvedRepoName for directory/URL paths)
-			// Include site prefix in output path so file structure matches URL structure
+			// All repos use stable /r/repoName paths (group-independent)
 			var repoName = checkout.Reference.ResolvedRepoName;
-			var sitePrefix = context.Configuration.SitePrefix.Trim('/');
-			var outputPath = string.IsNullOrEmpty(checkout.Reference.Category)
-				? fileSystem.Path.Combine(context.OutputDirectory.FullName, sitePrefix, repoName)
-				: fileSystem.Path.Combine(context.OutputDirectory.FullName, sitePrefix, checkout.Reference.Category, repoName);
+			var sitePrefix = context.Configuration.SitePrefix?.Trim('/') ?? "";
 
-			// Calculate URL path prefix
-			var pathPrefix = string.IsNullOrEmpty(checkout.Reference.Category)
-				? $"{context.Configuration.SitePrefix}/{repoName}"
-				: $"{context.Configuration.SitePrefix}/{checkout.Reference.Category}/{repoName}";
+			// Build output path: {outputDir}/{sitePrefix}/r/{repoName} or {outputDir}/r/{repoName} if no prefix
+			var outputPath = string.IsNullOrEmpty(sitePrefix)
+				? fileSystem.Path.Combine(context.OutputDirectory.FullName, "r", repoName)
+				: fileSystem.Path.Combine(context.OutputDirectory.FullName, sitePrefix, "r", repoName);
+
+			// Build URL path prefix: /r/{repoName} or /{sitePrefix}/r/{repoName}
+			var pathPrefix = string.IsNullOrEmpty(sitePrefix)
+				? $"/r/{repoName}"
+				: $"/{sitePrefix}/r/{repoName}";
 
 			// Create git checkout information
 			var git = new GitCheckoutInformation
@@ -151,8 +152,6 @@ public class CodexBuildService(
 
 		try
 		{
-			// Use the documentation set's own navigation for traversal (file lookups, prev/next)
-			// TODO: Create a CodexNavigationHtmlWriter to render codex-wide navigation
 			_ = await isolatedBuildService.BuildDocumentationSet(
 				buildContext.DocumentationSet,
 				null, // Use doc set's navigation for traversal

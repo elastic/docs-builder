@@ -4,7 +4,7 @@
 
 using System.IO.Abstractions;
 using System.Text.RegularExpressions;
-using Elastic.Codex.Category;
+using Elastic.Codex.Group;
 using Elastic.Codex.Landing;
 using Elastic.Codex.Navigation;
 using Elastic.Documentation.Configuration;
@@ -63,14 +63,9 @@ public class CodexGenerator(ILoggerFactory logFactory, BuildContext context, IDi
 		// Render the codex landing page
 		await RenderLandingPage(codexNavigation, renderContext, navigationRenderer, ctx);
 
-		// Render category pages
-		foreach (var item in codexNavigation.NavigationItems)
-		{
-			if (item is CategoryNavigation category)
-			{
-				await RenderCategoryPage(category, renderContext, navigationRenderer, ctx);
-			}
-		}
+		// Render group landing pages (/g/slug)
+		foreach (var groupNav in codexNavigation.GroupNavigations)
+			await RenderGroupLandingPage(groupNav, renderContext, navigationRenderer, ctx);
 	}
 
 	private async Task ExtractEmbeddedStaticResources(Cancel ctx)
@@ -138,42 +133,40 @@ public class CodexGenerator(ILoggerFactory logFactory, BuildContext context, IDi
 
 		await using var stream = _writeFileSystem.FileStream.New(outputFile.FullName, FileMode.Create);
 		await slice.RenderAsync(stream, cancellationToken: ctx);
-
-
 		_logger.LogDebug("Generated codex landing page: {Path}", outputFile.FullName);
 	}
 
-	private async Task RenderCategoryPage(
-		CategoryNavigation category,
+	private async Task RenderGroupLandingPage(
+		GroupNavigation groupNav,
 		CodexRenderContext renderContext,
 		CodexNavigationHtmlWriter navigationRenderer,
 		CancellationToken ctx)
 	{
 		var navigationRenderResult = await navigationRenderer.RenderNavigation(
-			category.NavigationRoot,
-			category.Index,
+			groupNav,
+			groupNav.Index,
 			ctx);
 
 		renderContext = renderContext with
 		{
-			CurrentNavigation = category.Index,
+			CurrentNavigation = groupNav.Index,
 			NavigationHtml = navigationRenderResult.Html
 		};
 
-		var viewModel = new CategoryViewModel(renderContext)
+		var viewModel = new GroupLandingViewModel(renderContext)
 		{
-			Category = category
+			Group = groupNav
 		};
 
-		var outputFile = GetOutputFile(category.Url);
+		var outputFile = GetOutputFile(groupNav.Url);
 		if (!outputFile.Directory!.Exists)
 			outputFile.Directory.Create();
 
 		await using var stream = _writeFileSystem.FileStream.New(outputFile.FullName, FileMode.Create);
-		var slice = CategoryView.Create(viewModel);
+		var slice = GroupLandingView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);
 
-		_logger.LogDebug("Generated category page: {Path}", outputFile.FullName);
+		_logger.LogDebug("Generated group landing page: {Path}", outputFile.FullName);
 	}
 
 	private IFileInfo GetOutputFile(string url)
