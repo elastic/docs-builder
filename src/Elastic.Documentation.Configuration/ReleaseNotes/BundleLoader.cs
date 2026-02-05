@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using System.Text.RegularExpressions;
 using Elastic.Documentation.ReleaseNotes;
 using YamlDotNet.Core;
 
@@ -11,7 +12,7 @@ namespace Elastic.Documentation.Configuration.ReleaseNotes;
 /// <summary>
 /// Service for loading, resolving, filtering, and merging changelog bundles.
 /// </summary>
-public class BundleLoader(IFileSystem fileSystem)
+public partial class BundleLoader(IFileSystem fileSystem)
 {
 	/// <summary>
 	/// Loads all changelog bundles from a folder.
@@ -50,6 +51,9 @@ public class BundleLoader(IFileSystem fileSystem)
 
 			loadedBundles.Add(new LoadedBundle(version, repo, bundleData, bundleFile, entries));
 		}
+
+		// Merge amend files with their parent bundles
+		loadedBundles = MergeAmendFiles(loadedBundles);
 
 		return loadedBundles;
 	}
@@ -191,5 +195,107 @@ public class BundleLoader(IFileSystem fileSystem)
 			mergedEntries
 		);
 	}
+
+	/// <summary>
+	/// Merges amend files with their parent bundles.
+	/// Amend files follow the naming pattern: {baseName}.amend-{N}.yaml
+	/// </summary>
+	/// <param name="bundles">The list of loaded bundles including amend files.</param>
+	/// <returns>A list of bundles with amend file entries merged into their parent bundles.</returns>
+	private List<LoadedBundle> MergeAmendFiles(List<LoadedBundle> bundles)
+	{
+		if (bundles.Count <= 1)
+			return bundles;
+
+		// Build a lookup of bundles by their file path for quick access
+		var bundlesByPath = bundles.ToDictionary(b => b.FilePath, StringComparer.OrdinalIgnoreCase);
+
+		// Identify amend files and their parent bundles
+		var amendBundles = bundles.Where(b => IsAmendFile(b.FilePath)).ToList();
+
+		if (amendBundles.Count == 0)
+			return bundles;
+
+		// Track which bundles to remove (amend files that were merged)
+		var mergedAmendPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+		// Track parent bundles with their merged entries
+		var mergedParents = new Dictionary<string, LoadedBundle>(StringComparer.OrdinalIgnoreCase);
+
+		foreach (var amendBundle in amendBundles)
+		{
+			var parentPath = GetParentBundlePath(amendBundle.FilePath);
+
+			if (parentPath == null || !bundlesByPath.TryGetValue(parentPath, out var parentBundle))
+				continue; // No parent found, amend file will remain standalone
+
+			// Get or create the merged parent entry
+			if (!mergedParents.TryGetValue(parentPath, out var mergedParent))
+				mergedParent = parentBundle;
+
+			// Merge the amend entries into the parent
+			var combinedEntries = mergedParent.Entries.Concat(amendBundle.Entries).ToList();
+
+			mergedParents[parentPath] = new LoadedBundle(
+				mergedParent.Version,
+				mergedParent.Repo,
+				mergedParent.Data,
+				mergedParent.FilePath,
+				combinedEntries
+			);
+
+			_ = mergedAmendPaths.Add(amendBundle.FilePath);
+		}
+
+		// Build the final result: replace parent bundles with merged versions, exclude merged amend files
+		var result = new List<LoadedBundle>();
+		foreach (var bundle in bundles)
+		{
+			// Skip amend files that were merged into a parent
+			if (mergedAmendPaths.Contains(bundle.FilePath))
+				continue;
+
+			// Use merged version if this is a parent that had amend files
+			if (mergedParents.TryGetValue(bundle.FilePath, out var mergedBundle))
+				result.Add(mergedBundle);
+			else
+				result.Add(bundle);
+		}
+
+		return result;
+	}
+
+	/// <summary>
+	/// Determines if a file path represents an amend file.
+	/// </summary>
+	/// <param name="filePath">The file path to check.</param>
+	/// <returns>True if the file is an amend file.</returns>
+	private static bool IsAmendFile(string filePath) =>
+		AmendFileRegex().IsMatch(filePath);
+
+	/// <summary>
+	/// Gets the parent bundle path from an amend file path.
+	/// </summary>
+	/// <param name="amendFilePath">The amend file path.</param>
+	/// <returns>The parent bundle path, or null if not an amend file.</returns>
+	private string? GetParentBundlePath(string amendFilePath)
+	{
+		var match = AmendFileRegex().Match(amendFilePath);
+		if (!match.Success)
+			return null;
+
+		// Replace the ".amend-N" part with just the extension
+		var directory = fileSystem.Path.GetDirectoryName(amendFilePath) ?? string.Empty;
+		var fileName = fileSystem.Path.GetFileName(amendFilePath);
+		var extension = fileSystem.Path.GetExtension(amendFilePath);
+
+		// Remove the .amend-N part from the filename
+		var parentFileName = AmendFileRegex().Replace(fileName, extension);
+
+		return fileSystem.Path.Combine(directory, parentFileName);
+	}
+
+	[GeneratedRegex(@"\.amend-\d+\.ya?ml$", RegexOptions.IgnoreCase)]
+	private static partial Regex AmendFileRegex();
 
 }
