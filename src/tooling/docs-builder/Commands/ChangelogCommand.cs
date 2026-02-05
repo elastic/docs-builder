@@ -174,6 +174,7 @@ internal sealed class ChangelogCommand(
 	/// <param name="all">Include all changelogs in the directory. Only one filter option can be specified: `--all`, `--input-products`, or `--prs`.</param>
 	/// <param name="config">Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml'</param>
 	/// <param name="directory">Optional: Directory containing changelog YAML files. Uses config bundle.directory or defaults to current directory</param>
+	/// <param name="hideFeatures">Filter by feature IDs (comma-separated), or a path to a newline-delimited file containing feature IDs. Can be specified multiple times. Entries with matching feature-id values will be commented out when the bundle is rendered (by CLI render or {changelog} directive).</param>
 	/// <param name="inputProducts">Filter by products in format "product target lifecycle, ..." (e.g., "cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta"). When specified, all three parts (product, target, lifecycle) are required but can be wildcards (*). Examples: "elasticsearch * *" matches all elasticsearch changelogs, "cloud-serverless 2025-12-02 *" matches cloud-serverless 2025-12-02 with any lifecycle, "* 9.3.* *" matches any product with target starting with "9.3.", "* * *" matches all changelogs (equivalent to --all). Only one filter option can be specified: `--all`, `--input-products`, or `--prs`.</param>
 	/// <param name="output">Optional: Output path for the bundled changelog. Can be either (1) a directory path, in which case 'changelog-bundle.yaml' is created in that directory, or (2) a file path ending in .yml or .yaml. Uses config bundle.output_directory or defaults to 'changelog-bundle.yaml' in the input directory</param>
 	/// <param name="outputProducts">Optional: Explicitly set the products array in the output file in format "product target lifecycle, ...". Overrides any values from changelogs.</param>
@@ -190,6 +191,7 @@ internal sealed class ChangelogCommand(
 		bool all = false,
 		string? config = null,
 		string? directory = null,
+		string[]? hideFeatures = null,
 		[ProductInfoParser] List<ProductArgument>? inputProducts = null,
 		string? output = null,
 		[ProductInfoParser] List<ProductArgument>? outputProducts = null,
@@ -356,6 +358,28 @@ internal sealed class ChangelogCommand(
 		// Determine resolve: CLI --no-resolve takes precedence, then CLI --resolve, then config default
 		var shouldResolve = noResolve ? false : resolve;
 
+		// Process each --hide-features occurrence: each can be comma-separated feature IDs or a file path
+		var allFeatureIdsForBundle = new List<string>();
+		if (hideFeatures is { Length: > 0 })
+		{
+			foreach (var hideFeaturesValue in hideFeatures.Where(v => !string.IsNullOrWhiteSpace(v)))
+			{
+				// Check if it contains commas - if so, split and add each as a feature ID
+				if (hideFeaturesValue.Contains(','))
+				{
+					var commaSeparatedFeatureIds = hideFeaturesValue
+						.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+						.Where(f => !string.IsNullOrWhiteSpace(f));
+					allFeatureIdsForBundle.AddRange(commaSeparatedFeatureIds);
+				}
+				else
+				{
+					// Single value - pass as-is (will be handled by service layer as file path or feature ID)
+					allFeatureIdsForBundle.Add(hideFeaturesValue);
+				}
+			}
+		}
+
 		var input = new BundleChangelogsArguments
 		{
 			Directory = directory ?? Directory.GetCurrentDirectory(),
@@ -369,7 +393,8 @@ internal sealed class ChangelogCommand(
 			Repo = repo,
 			Profile = profile,
 			ProfileArgument = profileArg,
-			Config = config
+			Config = config,
+			HideFeatures = allFeatureIdsForBundle.Count > 0 ? allFeatureIdsForBundle.ToArray() : null
 		};
 
 		serviceInvoker.AddCommand(service, input,

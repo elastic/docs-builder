@@ -7,6 +7,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using Elastic.Changelog.Configuration;
+using Elastic.Changelog.Rendering;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.ReleaseNotes;
@@ -52,6 +53,13 @@ public record BundleChangelogsArguments
 	/// Path to the changelog.yml configuration file
 	/// </summary>
 	public string? Config { get; init; }
+
+	/// <summary>
+	/// Feature IDs to mark as hidden in the bundle output.
+	/// When the bundle is rendered (by CLI render or {changelog} directive),
+	/// entries with matching feature-id values will be commented out.
+	/// </summary>
+	public string[]? HideFeatures { get; init; }
 }
 
 /// <summary>
@@ -136,9 +144,22 @@ public partial class ChangelogBundlingService(
 				return false;
 			}
 
+			// Load feature IDs to hide
+			var featureHidingLoader = new FeatureHidingLoader(_fileSystem);
+			var featureHidingResult = await featureHidingLoader.LoadFeatureIdsAsync(collector, input.HideFeatures, ctx);
+			if (!featureHidingResult.IsValid)
+				return false;
+
 			// Build bundle
 			var bundleBuilder = new BundleBuilder();
-			var buildResult = bundleBuilder.BuildBundle(collector, matchResult.Entries, input.OutputProducts, input.Resolve, input.Repo);
+			var buildResult = bundleBuilder.BuildBundle(
+				collector,
+				matchResult.Entries,
+				input.OutputProducts,
+				input.Resolve,
+				input.Repo,
+				featureHidingResult.FeatureIdsToHide
+			);
 
 			if (!buildResult.IsValid || buildResult.Data == null)
 				return false;

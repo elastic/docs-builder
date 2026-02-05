@@ -21,12 +21,14 @@ public class BundleBuilder
 	/// <param name="outputProducts">Optional explicit products to set in the output.</param>
 	/// <param name="resolve">Whether to resolve changelog file contents into entries.</param>
 	/// <param name="repo">Optional GitHub repository name to set on products for link generation.</param>
+	/// <param name="hideFeatures">Optional feature IDs to mark as hidden in the bundle.</param>
 	public BundleBuildResult BuildBundle(
 		IDiagnosticsCollector collector,
 		IReadOnlyList<MatchedChangelogFile> entries,
 		IReadOnlyList<ProductArgument>? outputProducts,
 		bool resolve,
-		string? repo = null)
+		string? repo = null,
+		HashSet<string>? hideFeatures = null)
 	{
 		// Build products list
 		var bundledProducts = BuildProducts(collector, entries, outputProducts, repo);
@@ -48,6 +50,7 @@ public class BundleBuilder
 		var bundledData = new Bundle
 		{
 			Products = bundledProducts,
+			HideFeatures = hideFeatures?.Count > 0 ? hideFeatures.ToList() : [],
 			Entries = bundledEntries
 		};
 

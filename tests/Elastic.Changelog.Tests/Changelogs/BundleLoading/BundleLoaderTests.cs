@@ -977,6 +977,141 @@ public class BundleLoaderTests(ITestOutputHelper output)
 
 	#endregion
 
+	#region HideFeatures Tests
+
+	[Fact]
+	public void LoadBundles_WithHideFeaturesField_LoadsHideFeatures()
+	{
+		// Arrange
+		var bundlesFolder = "/docs/changelog/bundles";
+		_fileSystem.Directory.CreateDirectory(bundlesFolder);
+
+		// Bundle with hide-features field
+		// language=yaml
+		var bundleContent =
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			hide-features:
+			  - feature:hidden-api
+			  - feature:another-hidden
+			entries:
+			  - title: Test feature
+			    type: feature
+			""";
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.yaml", bundleContent);
+
+		var service = CreateService();
+
+		// Act
+		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+
+		// Assert
+		bundles.Should().HaveCount(1);
+		bundles[0].HideFeatures.Should().HaveCount(2);
+		bundles[0].HideFeatures.Should().Contain("feature:hidden-api");
+		bundles[0].HideFeatures.Should().Contain("feature:another-hidden");
+		_warnings.Should().BeEmpty();
+	}
+
+	[Fact]
+	public void LoadBundles_WithoutHideFeaturesField_ReturnsEmptyHideFeatures()
+	{
+		// Arrange
+		var bundlesFolder = "/docs/changelog/bundles";
+		_fileSystem.Directory.CreateDirectory(bundlesFolder);
+
+		// Bundle without hide-features field
+		// language=yaml
+		var bundleContent =
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			entries:
+			  - title: Test feature
+			    type: feature
+			""";
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.yaml", bundleContent);
+
+		var service = CreateService();
+
+		// Act
+		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+
+		// Assert
+		bundles.Should().HaveCount(1);
+		bundles[0].HideFeatures.Should().BeEmpty();
+		_warnings.Should().BeEmpty();
+	}
+
+	[Fact]
+	public void LoadBundles_HideFeaturesSerializesAndDeserializesCorrectly()
+	{
+		// Arrange - Test round-trip serialization of hide-features field
+		var bundlesFolder = "/docs/changelog/bundles";
+		_fileSystem.Directory.CreateDirectory(bundlesFolder);
+
+		var originalBundle = new Bundle
+		{
+			Products =
+			[
+				new BundledProduct { ProductId = "elasticsearch", Target = "9.3.0" }
+			],
+			HideFeatures = ["feature:first", "feature:second", "feature:third"],
+			Entries =
+			[
+				new BundledEntry
+				{
+					Title = "Test feature",
+					Type = ChangelogEntryType.Feature,
+					File = new BundledFile { Name = "test.yaml", Checksum = "abc123" }
+				}
+			]
+		};
+
+		var serializedYaml = ReleaseNotesSerialization.SerializeBundle(originalBundle);
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.yaml", serializedYaml);
+
+		var service = CreateService();
+
+		// Act
+		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+
+		// Assert
+		bundles.Should().HaveCount(1);
+		bundles[0].HideFeatures.Should().HaveCount(3);
+		bundles[0].HideFeatures.Should().ContainInOrder("feature:first", "feature:second", "feature:third");
+		bundles[0].Data.HideFeatures.Should().BeEquivalentTo(originalBundle.HideFeatures);
+		_warnings.Should().BeEmpty();
+	}
+
+	[Fact]
+	public void LoadedBundle_HideFeatures_ExposedFromBundleData()
+	{
+		// Arrange - Verify that LoadedBundle.HideFeatures properly exposes Data.HideFeatures
+		var bundleData = new Bundle
+		{
+			Products = [],
+			HideFeatures = ["feature:a", "feature:b"],
+			Entries = []
+		};
+		var entries = new List<ChangelogEntry>();
+		var bundle = new LoadedBundle("9.3.0", "elasticsearch", bundleData, "/path/to/bundle.yaml", entries);
+
+		// Act
+		var hideFeatures = bundle.HideFeatures;
+
+		// Assert
+		hideFeatures.Should().HaveCount(2);
+		hideFeatures.Should().Contain("feature:a");
+		hideFeatures.Should().Contain("feature:b");
+		hideFeatures.Should().BeSameAs(bundleData.HideFeatures);
+	}
+
+	#endregion
+
 	#region EntriesByType Tests
 
 	[Fact]

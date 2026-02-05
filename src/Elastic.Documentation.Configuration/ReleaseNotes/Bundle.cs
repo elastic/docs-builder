@@ -13,6 +13,12 @@ namespace Elastic.Documentation.Configuration.ReleaseNotes;
 public sealed record BundleDto
 {
 	public List<BundledProductDto>? Products { get; set; }
+	/// <summary>
+	/// Feature IDs that should be hidden when rendering this bundle.
+	/// Entries with matching feature-id values will be commented out in the output.
+	/// </summary>
+	[YamlMember(Alias = "hide-features", ApplyNamingConventions = false)]
+	public List<string>? HideFeatures { get; set; }
 	public List<BundledEntryDto>? Entries { get; set; }
 }
 

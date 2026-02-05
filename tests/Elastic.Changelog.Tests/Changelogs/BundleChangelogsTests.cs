@@ -1559,6 +1559,134 @@ public class BundleChangelogsTests : ChangelogTestBase
 	}
 
 	[Fact]
+	public async Task BundleChangelogs_WithHideFeaturesOption_IncludesHideFeaturesInBundle()
+	{
+		// Arrange - Test that --hide-features option writes feature IDs to the bundle output
+
+		// language=yaml
+		var changelog1 =
+			"""
+			title: Feature with hidden flag
+			type: feature
+			feature-id: feature:hidden-api
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			pr: https://github.com/elastic/elasticsearch/pull/100
+			""";
+
+		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-feature.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			All = true,
+			HideFeatures = ["feature:hidden-api", "feature:another-hidden"],
+			Output = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
+		};
+
+		// Act
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+		// Verify that hide-features field is included in the bundle output
+		bundleContent.Should().Contain("hide-features:");
+		bundleContent.Should().Contain("- feature:hidden-api");
+		bundleContent.Should().Contain("- feature:another-hidden");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithoutHideFeaturesOption_OmitsHideFeaturesFieldInOutput()
+	{
+		// Arrange - Test that without --hide-features option, no hide-features field is written
+
+		// language=yaml
+		var changelog1 =
+			"""
+			title: Regular feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			pr: https://github.com/elastic/elasticsearch/pull/100
+			""";
+
+		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-feature.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			All = true,
+			// No HideFeatures
+			Output = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
+		};
+
+		// Act
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+		// Verify that hide-features field is NOT written when not specified
+		bundleContent.Should().NotContain("hide-features:");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithHideFeaturesFromFile_IncludesHideFeaturesInBundle()
+	{
+		// Arrange - Test that --hide-features can read feature IDs from a file
+
+		// language=yaml
+		var changelog1 =
+			"""
+			title: Feature with hidden flag
+			type: feature
+			feature-id: feature:from-file
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			pr: https://github.com/elastic/elasticsearch/pull/100
+			""";
+
+		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-feature.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+
+		// Create feature IDs file
+		var featureIdsFile = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "feature-ids.txt");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(featureIdsFile)!);
+		await FileSystem.File.WriteAllTextAsync(featureIdsFile, "feature:from-file\nfeature:another", TestContext.Current.CancellationToken);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			All = true,
+			HideFeatures = [featureIdsFile],
+			Output = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
+		};
+
+		// Act
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+		// Verify that hide-features field contains feature IDs from the file
+		bundleContent.Should().Contain("hide-features:");
+		bundleContent.Should().Contain("- feature:from-file");
+		bundleContent.Should().Contain("- feature:another");
+	}
+
+	[Fact]
 	public async Task BundleChangelogs_WithRepoOption_IncludesRepoInBundleProducts()
 	{
 		// Arrange - Test that --repo option sets the repo field in the bundle output

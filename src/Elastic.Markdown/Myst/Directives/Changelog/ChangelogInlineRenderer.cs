@@ -35,6 +35,7 @@ public static class ChangelogInlineRenderer
 				block.Subsections,
 				block.PublishBlocker,
 				block.PrivateRepositories,
+				block.HideFeatures,
 				typeFilter);
 			_ = sb.Append(bundleMarkdown);
 
@@ -49,12 +50,16 @@ public static class ChangelogInlineRenderer
 		bool subsections,
 		PublishBlocker? publishBlocker,
 		HashSet<string> privateRepositories,
+		HashSet<string> hideFeatures,
 		ChangelogTypeFilter typeFilter)
 	{
 		var titleSlug = ChangelogTextUtilities.TitleToSlug(bundle.Version);
 
 		// Filter entries based on publish blocker configuration
 		var filteredEntries = FilterEntries(bundle.Entries, publishBlocker);
+
+		// Filter entries based on hide-features (from bundle metadata)
+		filteredEntries = FilterEntriesByHideFeatures(filteredEntries, hideFeatures);
 
 		// Apply type filter
 		filteredEntries = FilterEntriesByType(filteredEntries, typeFilter);
@@ -84,6 +89,22 @@ public static class ChangelogInlineRenderer
 			ChangelogTypeFilter.KnownIssue => entries.Where(e => e.Type == ChangelogEntryType.KnownIssue).ToList(),
 			_ => entries.Where(e => !ChangelogBlock.SeparatedTypes.Contains(e.Type)).ToList() // Default: exclude separated types
 		};
+
+	/// <summary>
+	/// Filters entries based on hide-features configuration from bundle metadata.
+	/// Entries with matching feature-id values are excluded from the output.
+	/// </summary>
+	private static IReadOnlyList<ChangelogEntry> FilterEntriesByHideFeatures(
+		IReadOnlyList<ChangelogEntry> entries,
+		HashSet<string> hideFeatures)
+	{
+		if (hideFeatures.Count == 0)
+			return entries;
+
+		return entries
+			.Where(e => string.IsNullOrWhiteSpace(e.FeatureId) || !hideFeatures.Contains(e.FeatureId))
+			.ToList();
+	}
 
 	/// <summary>
 	/// Determines if links should be hidden for a bundle based on its repository.
