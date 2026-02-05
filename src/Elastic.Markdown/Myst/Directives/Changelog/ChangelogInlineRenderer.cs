@@ -68,7 +68,7 @@ public static class ChangelogInlineRenderer
 		// contains any private repositories - if so, hide links for this bundle
 		var hideLinks = ShouldHideLinksForRepo(bundle.Repo, privateRepositories);
 
-		return GenerateMarkdown(bundle.Version, titleSlug, bundle.Repo, entriesByType, subsections, hideLinks);
+		return GenerateMarkdown(bundle.Version, titleSlug, bundle.Repo, entriesByType, subsections, hideLinks, typeFilter);
 	}
 
 	/// <summary>
@@ -121,7 +121,8 @@ public static class ChangelogInlineRenderer
 		string repo,
 		Dictionary<ChangelogEntryType, List<ChangelogEntry>> entriesByType,
 		bool subsections,
-		bool hideLinks)
+		bool hideLinks,
+		ChangelogTypeFilter typeFilter)
 	{
 		var sb = new StringBuilder();
 
@@ -146,7 +147,7 @@ public static class ChangelogInlineRenderer
 
 		if (!hasAnyContent)
 		{
-			_ = sb.AppendLine("_No new features, enhancements, or fixes._");
+			_ = sb.AppendLine(GetEmptyMessage(typeFilter));
 			return sb.ToString();
 		}
 
@@ -384,4 +385,17 @@ public static class ChangelogInlineRenderer
 
 	private static string GetComponent(ChangelogEntry entry) =>
 		entry.Areas is { Count: > 0 } ? entry.Areas[0] : string.Empty;
+
+	/// <summary>
+	/// Gets the appropriate empty message based on the type filter.
+	/// Matches messages used by CLI renderers for consistency.
+	/// </summary>
+	private static string GetEmptyMessage(ChangelogTypeFilter typeFilter) =>
+		typeFilter switch
+		{
+			ChangelogTypeFilter.BreakingChange => "_There are no breaking changes associated with this release._",
+			ChangelogTypeFilter.Deprecation => "_There are no deprecations associated with this release._",
+			ChangelogTypeFilter.KnownIssue => "_There are no known issues associated with this release._",
+			_ => "_No new features, enhancements, or fixes._"
+		};
 }
