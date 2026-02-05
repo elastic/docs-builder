@@ -150,6 +150,11 @@ The build process enforces the following validation rules:
 - **One "greater than" per key**: Only one lifecycle per product key can use the `+` (greater than or equal to) syntax.
   - ✅ `stack: ga 9.2+, beta 9.0-9.1`
   - ❌ `stack: ga 9.2+, beta 9.0+`
+  :::{note}
+  Only `ga 9.3+, removed 9.5+` (with the two `+`) is forbidden while other equivalent notations are allowed:
+  - `ga 9.3, removed 9.5` corresponds to a previous version of the applies_to syntax, which we continue to support to avoid breaking changes.
+  - `ga 9.3-9.4, removed 9.5+` is the new encouraged notation to communicate this versioning scenario in the most explicit way possible, to ease future contributions.
+  :::
 - **Valid range order**: In ranges, the first version must be less than or equal to the second version.
   - ✅ `stack: preview 9.0-9.2`
   - ❌ `stack: preview 9.2-9.0`
