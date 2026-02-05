@@ -410,14 +410,17 @@ Inline applies annotations are rendered in the order they appear in the source f
 
 :::::{dropdown} No version declared (Other versioning systems)
 
+When no version is declared, the badge does not show a version. The lifecycle name is shown only when it is not GA, or when there are multiple lifecycles (to disambiguate). **GA is never shown when it is the only lifecycle** — only the product name is shown (e.g. `Stack`).
+
 | Lifecycle | Release status | Lifecycle count | Rendered output |
 |:----------|:---------------|-----------------|:----------------|
-| GA | – | – | `{product}\|{base}+` |
-| Preview | – | – | `{product}\|Preview {base}+` |
-| Beta | – | – | `{product}\|Beta {base}+` |
-| Deprecated | – | – | `{product}\|Deprecated {base}+` |
-| Removed | – | – | `{product}\|Removed {base}+` |
-| Unavailable | – | – | `{product}\|Unavailable {base}+` |
+| GA | – | 1 | `{product}` |
+| GA | – | \>= 2 | `{product}\|GA` |
+| Preview | – | – | `{product}\|Preview` |
+| Beta | – | – | `{product}\|Beta` |
+| Deprecated | – | – | `{product}\|Deprecated` |
+| Removed | – | – | `{product}\|Removed` |
+| Unavailable | – | – | `{product}\|Unavailable` |
 
 :::::
 
@@ -510,14 +513,16 @@ Inline applies annotations are rendered in the order they appear in the source f
 
 :::::{dropdown} No version declared (Other versioning systems)
 
+When no version is declared, the popover shows only the lifecycle state (no base version):
+
 | Lifecycle | Release status | Lifecycle count | Rendered output |
 |:----------|:---------------|-----------------|:----------------|
-| GA | – | 1 | `Generally available since {base}` |
-| Preview | – | 1 | `Preview since {base}` |
-| Beta | – | 1 | `Beta since {base}` |
-| Deprecated | – | 1 | `Deprecated since {base}` |
-| Removed | – | 1 | `Removed in {base}` |
-| Unavailable | – | 1 | `Unavailable since {base}` |
+| GA | – | 1 | `Generally available` |
+| Preview | – | 1 | `Preview` |
+| Beta | – | 1 | `Beta` |
+| Deprecated | – | 1 | `Deprecated` |
+| Removed | – | 1 | `Removed` |
+| Unavailable | – | 1 | `Unavailable` |
 
 :::::
 

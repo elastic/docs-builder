@@ -77,10 +77,15 @@ public static class ApplicabilityRenderer
 			}
 		}
 
-		// If we've exhausted all options (none had displayable data), use the first one with "Planned"
-		// But only for versioned products - unversioned products should show empty badge
-		if (badgeData is null && firstBadgeData is not null && versioningSystem.IsVersioned())
-			badgeData = firstBadgeData with { BadgeLifecycleText = "Planned" };
+		// If we've exhausted all options (none had displayable data), use the first one.
+		// Only show "Planned" when the first applicability is actually future/unreleased (has a version spec that is not yet released).
+		// When the first applicability has no version (null/AllVersionsSpec), it means GA for all versions - keep badge text empty.
+		if (badgeData is null && firstBadgeData is not null && firstApplicability is not null && versioningSystem.IsVersioned())
+		{
+			var versionSpec = firstApplicability.Version;
+			var isFutureVersion = versionSpec is not null && versionSpec != AllVersionsSpec.Instance && versionSpec.Min > versioningSystem.Current;
+			badgeData = isFutureVersion ? firstBadgeData with { BadgeLifecycleText = "Planned" } : firstBadgeData;
+		}
 
 		badgeData ??= GetBadgeData(sortedApplicabilities.First(), versioningSystem, allApplications);
 
@@ -213,12 +218,12 @@ public static class ApplicabilityRenderer
 			if (!versioningSystem.IsVersioned())
 				return ProductLifecycleInfo.GetDisplayText(lifecycle);
 
-			var baseVersion = $"{versioningSystem.Base.Major}.{versioningSystem.Base.Minor}";
+			// When no version is specified, do not use base version in the text
 			return lifecycle switch
 			{
-				ProductLifecycle.Removed => $"Removed in {baseVersion}+",
-				ProductLifecycle.Unavailable => $"Unavailable in {baseVersion}+",
-				_ => $"{ProductLifecycleInfo.GetDisplayText(lifecycle)} in {baseVersion}+"
+				ProductLifecycle.Removed => "Removed",
+				ProductLifecycle.Unavailable => "Unavailable",
+				_ => ProductLifecycleInfo.GetDisplayText(lifecycle)
 			};
 		}
 
@@ -410,15 +415,12 @@ public static class ApplicabilityRenderer
 	/// </summary>
 	private static string GetBadgeVersionText(VersionSpec? versionSpec, VersioningSystem versioningSystem)
 	{
-		// When no version is specified (null or AllVersionsSpec), check if we should show the base version
+		// When no version is specified (null or AllVersionsSpec), do not show a version in the badge
 		switch (versionSpec)
 		{
 			case AllVersionsSpec:
 			case null:
-				// Only show base version if the product is versioned
-				return versioningSystem.IsVersioned()
-					? $"{versioningSystem.Base.Major}.{versioningSystem.Base.Minor}+"
-					: string.Empty;
+				return string.Empty;
 			default:
 				var kind = versionSpec.Kind;
 				var min = versionSpec.Min;
