@@ -99,12 +99,10 @@ export function initNav() {
         el.classList.remove('current')
     })
 
+    // Normalize pathname by removing trailing slash to handle both URL variants
+    const pathname = window.location.pathname.replace(/\/$/, '')
     const navItems = $$(
-        'a[href="' +
-            window.location.pathname +
-            '"], a[href="' +
-            window.location.pathname +
-            '/"]',
+        'a[href="' + pathname + '"], a[href="' + pathname + '/"]',
         pagesNav
     )
     navItems.forEach((el) => {
