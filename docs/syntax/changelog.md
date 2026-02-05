@@ -195,6 +195,28 @@ block:
       - known-issue    # Known issues shown on dedicated page
 ```
 
+## Feature hiding from bundles
+
+When bundles contain a `hide-features` field, entries with matching `feature-id` values are automatically filtered out from the rendered output. This allows you to hide unreleased or experimental features without modifying the bundle at render time.
+
+```yaml
+# Example bundle with hide-features
+products:
+  - product: elasticsearch
+    target: 9.3.0
+hide-features:
+  - feature:hidden-api
+  - feature:experimental
+entries:
+  - file:
+      name: new-feature.yaml
+      checksum: abc123
+```
+
+When the directive loads multiple bundles, `hide-features` from **all bundles are aggregated** and applied to all entries. This means if bundle A hides `feature:x` and bundle B hides `feature:y`, both features are hidden in the combined output.
+
+To add `hide-features` to a bundle, use the `--hide-features` option when running `changelog bundle`. For more details, see [Hide features in bundles](../contribute/changelog.md#changelog-bundle-hide-features).
+
 ## Private repository link hiding
 
 PR and issue links are automatically hidden (commented out) for bundles from private repositories. This is determined by checking the `assembler.yml` configuration:
@@ -206,6 +228,21 @@ PR and issue links are automatically hidden (commented out) for bundles from pri
 ## Bundle merging
 
 Bundles with the same target version/date are automatically merged into a single section. This is useful for Cloud Serverless releases where multiple repositories (e.g., Elasticsearch, Kibana) contribute to a single dated release like `2025-08-05`.
+
+### Amend bundle merging
+
+Bundles can have associated **amend files** that follow the naming pattern `{bundle-name}.amend-{N}.yaml` (e.g., `9.3.0.amend-1.yaml`). When loading bundles, the directive automatically discovers and merges amend files with their parent bundles.
+
+This allows you to add late additions to a release without modifying the original bundle file:
+
+```
+bundles/
+├── 9.3.0.yaml           # Parent bundle
+├── 9.3.0.amend-1.yaml   # First amend (auto-merged with parent)
+└── 9.3.0.amend-2.yaml   # Second amend (auto-merged with parent)
+```
+
+All entries from the parent and amend bundles are rendered together as a single release section. The parent bundle's metadata (products, hide-features, repo) is preserved.
 
 ## Default folder structure
 
