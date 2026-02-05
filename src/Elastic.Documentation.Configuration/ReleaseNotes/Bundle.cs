@@ -24,6 +24,11 @@ public sealed record BundledProductDto
 	public string? Product { get; set; }
 	public string? Target { get; set; }
 	public string? Lifecycle { get; set; }
+	/// <summary>
+	/// GitHub repository name for generating PR/issue links.
+	/// If not specified, falls back to Product ID.
+	/// </summary>
+	public string? Repo { get; set; }
 }
 
 /// <summary>

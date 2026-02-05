@@ -38,9 +38,7 @@ public partial class BundleLoader(IFileSystem fileSystem)
 				continue;
 
 			var version = GetVersionFromBundle(bundleData) ?? fileSystem.Path.GetFileNameWithoutExtension(bundleFile);
-			var repo = bundleData.Products.Count > 0
-				? bundleData.Products[0].ProductId
-				: "elastic";
+			var repo = GetRepoFromBundle(bundleData);
 
 			// Bundle directory is the directory containing the bundle file
 			var bundleDirectory = fileSystem.Path.GetDirectoryName(bundleFile) ?? bundlesFolderPath;
@@ -167,6 +165,22 @@ public partial class BundleLoader(IFileSystem fileSystem)
 	/// </summary>
 	private static string? GetVersionFromBundle(Bundle bundledData) =>
 		bundledData.Products.Count > 0 ? bundledData.Products[0].Target : null;
+
+	/// <summary>
+	/// Gets the repository name from a bundle's first product.
+	/// Uses the explicit Repo field if set, otherwise falls back to ProductId.
+	/// </summary>
+	private static string GetRepoFromBundle(Bundle bundledData)
+	{
+		if (bundledData.Products.Count == 0)
+			return "elastic";
+
+		var firstProduct = bundledData.Products[0];
+		// Use explicit Repo if provided, otherwise fall back to ProductId
+		return !string.IsNullOrWhiteSpace(firstProduct.Repo)
+			? firstProduct.Repo
+			: firstProduct.ProductId;
+	}
 
 	/// <summary>
 	/// Merges a group of bundles with the same target version into a single bundle.

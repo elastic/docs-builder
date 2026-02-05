@@ -1557,4 +1557,131 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().BeGreaterThan(0);
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("product entry missing required field: product"));
 	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithRepoOption_IncludesRepoInBundleProducts()
+	{
+		// Arrange - Test that --repo option sets the repo field in the bundle output
+
+		// language=yaml
+		var changelog1 =
+			"""
+			title: Serverless feature
+			type: feature
+			products:
+			  - product: cloud-serverless
+			    target: 2025-12-02
+			pr: https://github.com/elastic/cloud/pull/100
+			""";
+
+		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-serverless-feature.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			All = true,
+			Repo = "cloud", // Set repo to "cloud" - different from product ID "cloud-serverless"
+			Output = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
+		};
+
+		// Act
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+		// Verify that repo field is included in the bundle output
+		bundleContent.Should().Contain("product: cloud-serverless");
+		bundleContent.Should().Contain("repo: cloud");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithoutRepoOption_OmitsRepoFieldInOutput()
+	{
+		// Arrange - Test that without --repo option, no repo field is written to the bundle
+
+		// language=yaml
+		var changelog1 =
+			"""
+			title: Elasticsearch feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			pr: https://github.com/elastic/elasticsearch/pull/100
+			""";
+
+		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-es-feature.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			All = true,
+			// No --repo option
+			Output = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
+		};
+
+		// Act
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+		// Verify that no repo field is written when not specified
+		bundleContent.Should().Contain("product: elasticsearch");
+		bundleContent.Should().NotContain("repo:");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithOutputProductsAndRepo_IncludesRepoInAllProducts()
+	{
+		// Arrange - Test that --repo option works with --output-products
+
+		// language=yaml
+		var changelog1 =
+			"""
+			title: Feature for serverless
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			pr: https://github.com/elastic/cloud/pull/100
+			""";
+
+		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-feature.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			All = true,
+			Repo = "cloud",
+			OutputProducts =
+			[
+				new ProductArgument { Product = "cloud-serverless", Target = "2025-12-02", Lifecycle = "ga" },
+				new ProductArgument { Product = "elasticsearch-serverless", Target = "2025-12-02", Lifecycle = "ga" }
+			],
+			Output = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
+		};
+
+		// Act
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+		// Verify that repo field is included for all products
+		bundleContent.Should().Contain("product: cloud-serverless");
+		bundleContent.Should().Contain("product: elasticsearch-serverless");
+		// The repo field should appear for each product (or at least once)
+		bundleContent.Should().Contain("repo: cloud");
+	}
 }

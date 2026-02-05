@@ -836,6 +836,147 @@ public class BundleLoaderTests(ITestOutputHelper output)
 
 	#endregion
 
+	#region Repository Field Tests
+
+	[Fact]
+	public void LoadBundles_WithExplicitRepoField_UsesRepoInsteadOfProductId()
+	{
+		// Arrange
+		var bundlesFolder = "/docs/changelog/bundles";
+		_fileSystem.Directory.CreateDirectory(bundlesFolder);
+
+		// Bundle with explicit repo field that differs from product ID
+		// language=yaml
+		var bundleContent =
+			"""
+			products:
+			  - product: cloud-serverless
+			    target: 2025-01-28
+			    repo: cloud
+			entries:
+			  - title: Test feature
+			    type: feature
+			""";
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/2025-01-28.yaml", bundleContent);
+
+		var service = CreateService();
+
+		// Act
+		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+
+		// Assert
+		bundles.Should().HaveCount(1);
+		bundles[0].Version.Should().Be("2025-01-28");
+		// Repo should be "cloud" from explicit field, not "cloud-serverless" from ProductId
+		bundles[0].Repo.Should().Be("cloud");
+		_warnings.Should().BeEmpty();
+	}
+
+	[Fact]
+	public void LoadBundles_WithoutRepoField_FallsBackToProductId()
+	{
+		// Arrange
+		var bundlesFolder = "/docs/changelog/bundles";
+		_fileSystem.Directory.CreateDirectory(bundlesFolder);
+
+		// Bundle without repo field - should fall back to product ID
+		// language=yaml
+		var bundleContent =
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			entries:
+			  - title: Test feature
+			    type: feature
+			""";
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.yaml", bundleContent);
+
+		var service = CreateService();
+
+		// Act
+		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+
+		// Assert
+		bundles.Should().HaveCount(1);
+		bundles[0].Version.Should().Be("9.3.0");
+		// Repo should fall back to ProductId "elasticsearch"
+		bundles[0].Repo.Should().Be("elasticsearch");
+		_warnings.Should().BeEmpty();
+	}
+
+	[Fact]
+	public void LoadBundles_WithEmptyRepoField_FallsBackToProductId()
+	{
+		// Arrange
+		var bundlesFolder = "/docs/changelog/bundles";
+		_fileSystem.Directory.CreateDirectory(bundlesFolder);
+
+		// Bundle with empty repo field - should fall back to product ID
+		// language=yaml
+		var bundleContent =
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			    repo: ""
+			entries:
+			  - title: Test feature
+			    type: feature
+			""";
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.yaml", bundleContent);
+
+		var service = CreateService();
+
+		// Act
+		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+
+		// Assert
+		bundles.Should().HaveCount(1);
+		// Repo should fall back to ProductId when repo is empty
+		bundles[0].Repo.Should().Be("elasticsearch");
+		_warnings.Should().BeEmpty();
+	}
+
+	[Fact]
+	public void LoadBundles_RepoFieldSerializesAndDeserializesCorrectly()
+	{
+		// Arrange
+		var bundlesFolder = "/docs/changelog/bundles";
+		_fileSystem.Directory.CreateDirectory(bundlesFolder);
+
+		// Bundle with repo field
+		// language=yaml
+		var bundleContent =
+			"""
+			products:
+			  - product: elasticsearch-serverless
+			    target: 2025-02-01
+			    lifecycle: ga
+			    repo: elasticsearch
+			entries:
+			  - title: Test feature
+			    type: feature
+			    pr: https://github.com/elastic/elasticsearch/pull/123
+			""";
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/2025-02-01.yaml", bundleContent);
+
+		var service = CreateService();
+
+		// Act
+		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+
+		// Assert
+		bundles.Should().HaveCount(1);
+		bundles[0].Repo.Should().Be("elasticsearch");
+		bundles[0].Data.Products.Should().HaveCount(1);
+		bundles[0].Data.Products[0].Repo.Should().Be("elasticsearch");
+		bundles[0].Data.Products[0].ProductId.Should().Be("elasticsearch-serverless");
+		_warnings.Should().BeEmpty();
+	}
+
+	#endregion
+
 	#region EntriesByType Tests
 
 	[Fact]

@@ -138,7 +138,7 @@ public partial class ChangelogBundlingService(
 
 			// Build bundle
 			var bundleBuilder = new BundleBuilder();
-			var buildResult = bundleBuilder.BuildBundle(collector, matchResult.Entries, input.OutputProducts, input.Resolve);
+			var buildResult = bundleBuilder.BuildBundle(collector, matchResult.Entries, input.OutputProducts, input.Resolve, input.Repo);
 
 			if (!buildResult.IsValid || buildResult.Data == null)
 				return false;
