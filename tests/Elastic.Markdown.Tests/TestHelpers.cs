@@ -44,6 +44,14 @@ public static class TestHelpers
 					}
 				},
 				{
+					"kibana", new Product
+					{
+						Id = "kibana",
+						DisplayName = "Kibana",
+						VersioningSystem = versionsConfiguration.GetVersioningSystem(VersioningSystemId.Stack)
+					}
+				},
+				{
 					"apm", new Product
 					{
 						Id = "apm",

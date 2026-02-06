@@ -25,6 +25,7 @@ The directive supports the following options:
 | `:type: value` | Filter entries by type | Excludes separated types |
 | `:subsections:` | Group entries by area/component | false |
 | `:config: path` | Path to changelog.yml configuration | auto-discover |
+| `:product: id` | Product ID for product-specific publish blockers | auto from docset |
 
 ### Example with options
 
@@ -32,6 +33,7 @@ The directive supports the following options:
 :::{changelog} /path/to/bundles
 :type: all
 :subsections:
+:product: kibana
 :::
 ```
 
@@ -102,9 +104,65 @@ Explicit path to a `changelog.yml` configuration file. If not specified, the dir
 
 The configuration can include publish blockers to filter entries by type or area.
 
+#### `:product:`
+
+Product ID for loading product-specific publish blockers from `changelog.yml`. The directive resolves the product ID in this order:
+
+1. **Explicit `:product:` option** - if specified, uses that product ID
+2. **Docset's single product** - if the docset has exactly one product configured in `docset.yml`, uses that product ID automatically
+3. **Global fallback** - uses the global `block.publish` configuration
+
+This automatic fallback means most single-product docsets don't need to specify `:product:` explicitly - the directive will automatically use the docset's product for publish blocker lookup.
+
+**Example docset with single product:**
+
+```yaml
+# docset.yml
+products:
+  - id: kibana
+toc:
+  - file: release-notes.md
+```
+
+```yaml
+# changelog.yml
+block:
+  product:
+    kibana:
+      publish:
+        types:
+          - docs
+        areas:
+          - "Elastic Observability solution"
+          - "Elastic Security solution"
+```
+
+With this configuration, the directive will automatically use the `kibana` product blockers:
+
+```markdown
+:::{changelog}
+:::
+```
+
+**Explicit override:**
+
+You can override the automatic product detection by specifying `:product:` explicitly:
+
+```markdown
+:::{changelog}
+:product: elasticsearch
+:::
+```
+
+This is useful when:
+- The docset has multiple products and you want a specific one
+- You want to use a different product's blockers than the docset default
+
+The product ID matching is case-insensitive.
+
 ## Filtering entries with publish blockers
 
-You can filter changelog entries from the rendered output using the `block.publish` configuration in your `changelog.yml` file. This is useful for hiding entries that shouldn't appear in public documentation, such as internal changes or documentation-only updates.
+You can filter changelog entries from the rendered output using the `block.publish` or `block.product.{productId}.publish` configuration in your `changelog.yml` file. This is useful for hiding entries that shouldn't appear in public documentation, such as internal changes or documentation-only updates.
 
 ### Configuration syntax
 
@@ -112,6 +170,7 @@ Create a `changelog.yml` file in your docset root (or `docs/changelog.yml`):
 
 ```yaml
 block:
+  # Global publish blocker (applies to all products)
   publish:
     types:
       - docs           # Hide documentation entries
@@ -119,6 +178,30 @@ block:
     areas:
       - Internal       # Hide entries with "Internal" area
       - Experimental   # Hide entries with "Experimental" area
+  
+  # Product-specific blockers (override global blockers)
+  product:
+    kibana:
+      publish:
+        types:
+          - docs
+        areas:
+          - "Elastic Observability solution"
+          - "Elastic Security solution"
+    cloud-serverless:
+      publish:
+        types:
+          - docs
+        areas:
+          - "Snapshot and restore"
+```
+
+Product-specific blockers are applied automatically when your docset has a single product configured. For docsets with multiple products or to override the automatic detection, specify the `:product:` option:
+
+```markdown
+:::{changelog}
+:product: kibana
+:::
 ```
 
 ### Filtering by type

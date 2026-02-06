@@ -320,8 +320,9 @@ public static partial class ReleaseNotesSerialization
 	/// </summary>
 	/// <param name="fileSystem">The file system to read from.</param>
 	/// <param name="configPath">The path to the changelog.yml configuration file.</param>
+	/// <param name="productId">Optional product ID to load product-specific blocker. If specified, checks block.product.{productId}.publish first, then falls back to block.publish.</param>
 	/// <returns>The publish blocker configuration, or null if not found or not configured.</returns>
-	public static PublishBlocker? LoadPublishBlocker(IFileSystem fileSystem, string configPath)
+	public static PublishBlocker? LoadPublishBlocker(IFileSystem fileSystem, string configPath, string? productId = null)
 	{
 		if (!fileSystem.File.Exists(configPath))
 			return null;
@@ -331,9 +332,25 @@ public static partial class ReleaseNotesSerialization
 			return null;
 
 		var yamlConfig = IgnoreUnmatchedDeserializer.Deserialize<ChangelogConfigMinimalDto>(yamlContent);
-		if (yamlConfig?.Block?.Publish is null)
+		if (yamlConfig.Block is null)
 			return null;
 
+		// Check product-specific blocker first if productId is specified
+		if (!string.IsNullOrWhiteSpace(productId) && yamlConfig.Block.Product is { Count: > 0 })
+		{
+			// Try exact match first, then fall back to case-insensitive match
+			if (!yamlConfig.Block.Product.TryGetValue(productId, out var productBlockers))
+			{
+				var found = yamlConfig.Block.Product.FirstOrDefault(kvp =>
+					kvp.Key.Equals(productId, StringComparison.OrdinalIgnoreCase));
+				productBlockers = found.Value;
+			}
+
+			if (productBlockers?.Publish != null)
+				return ParsePublishBlocker(productBlockers.Publish);
+		}
+
+		// Fall back to global publish blocker
 		return ParsePublishBlocker(yamlConfig.Block.Publish);
 	}
 
@@ -376,7 +393,20 @@ public sealed class ChangelogConfigMinimalDto
 /// </summary>
 public sealed class BlockConfigMinimalDto
 {
-	/// <summary>Publish blocker configuration.</summary>
+	/// <summary>Global publish blocker configuration.</summary>
+	public PublishBlockerMinimalDto? Publish { get; set; }
+
+	/// <summary>Per-product blocker overrides.</summary>
+	public Dictionary<string, ProductBlockersMinimalDto?>? Product { get; set; }
+}
+
+/// <summary>
+/// Minimal DTO for product-specific blockers.
+/// Registered with YamlStaticContext for source-generated deserialization.
+/// </summary>
+public sealed class ProductBlockersMinimalDto
+{
+	/// <summary>Publish blocker configuration for this product.</summary>
 	public PublishBlockerMinimalDto? Publish { get; set; }
 }
 

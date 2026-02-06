@@ -107,6 +107,15 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 	public string? ConfigPath { get; private set; }
 
 	/// <summary>
+	/// Product ID for product-specific publish blocker configuration.
+	/// Resolution order:
+	/// 1. Explicit :product: option if specified
+	/// 2. Docset's single product ID (when exactly one product is configured)
+	/// 3. Falls back to global block.publish if no product can be determined
+	/// </summary>
+	public string? ProductId { get; private set; }
+
+	/// <summary>
 	/// The loaded publish blocker configuration used to filter entries.
 	/// If null, no publish filtering is applied.
 	/// </summary>
@@ -158,6 +167,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		ExtractBundlesFolderPath();
 		Subsections = PropBool("subsections");
 		ConfigPath = Prop("config");
+		ProductId = Prop("product");
 		TypeFilter = ParseTypeFilter();
 		LoadConfiguration();
 		LoadPrivateRepositories();
@@ -259,7 +269,27 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		if (string.IsNullOrWhiteSpace(configPath))
 			return;
 
-		PublishBlocker = ReleaseNotesSerialization.LoadPublishBlocker(fileSystem, configPath);
+		// Resolve product ID: explicit option > single docset product > null (global fallback)
+		var resolvedProductId = ResolveProductId();
+
+		PublishBlocker = ReleaseNotesSerialization.LoadPublishBlocker(fileSystem, configPath, resolvedProductId);
+	}
+
+	/// <summary>
+	/// Resolves the product ID for publish blocker lookup.
+	/// Priority: explicit :product: option > single docset product > null.
+	/// </summary>
+	private string? ResolveProductId()
+	{
+		// Use explicit :product: option if specified
+		if (!string.IsNullOrWhiteSpace(ProductId))
+			return ProductId;
+
+		// Fall back to docset's single product if available
+		var docsetProducts = Context.Configuration.Products;
+		return docsetProducts.Count == 1 ? docsetProducts.First().Id :
+			// No product could be determined - will use global blocker
+			null;
 	}
 
 	/// <summary>
