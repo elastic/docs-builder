@@ -44,9 +44,13 @@ public class CodexNavigation : IRootNavigationItem<IDocumentationFile, INavigati
 		GroupNavigations = result.Groups.Values.ToFrozenSet();
 		DocumentationSetInfos = result.DocumentationSetInfos.ToFrozenSet();
 
-		_ = this.UpdateNavigationIndex(context);
+		// Don't call UpdateNavigationIndex here — it would mutate NavigationIndex on
+		// items shared with individual DocumentationSet instances, corrupting their
+		// NavigationIndexedByOrder lookups and breaking prev/next buttons.
+		// Codex-level pages (landing, group) don't use prev/next navigation,
+		// so empty traversal lookups are sufficient.
 		NavigationDocumentationFileLookup = [];
-		NavigationIndexedByOrder = this.BuildNavigationLookups(NavigationDocumentationFileLookup);
+		NavigationIndexedByOrder = FrozenDictionary<int, INavigationItem>.Empty;
 	}
 
 	/// <summary>
@@ -137,7 +141,6 @@ public class CodexNavigation : IRootNavigationItem<IDocumentationFile, INavigati
 				homeAccessor.HomeProvider = new NavigationHomeProvider(pathPrefix, groupNav);
 
 			rootNavItem.Parent = groupNav;
-			rootNavItem.NavigationIndex = ++_navigationIndex;
 
 			var groupChildren = groupNav.NavigationItems.ToList();
 			groupChildren.Add(rootNavItem);
@@ -178,7 +181,6 @@ public class CodexNavigation : IRootNavigationItem<IDocumentationFile, INavigati
 				homeAccessor.HomeProvider = new NavigationHomeProvider(pathPrefix, rootNavItem);
 
 			rootNavItem.Parent = codex;
-			rootNavItem.NavigationIndex = ++_navigationIndex;
 			_items.Add(rootNavItem);
 		}
 
