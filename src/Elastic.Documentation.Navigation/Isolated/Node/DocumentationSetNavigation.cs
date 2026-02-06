@@ -382,7 +382,7 @@ public class DocumentationSetNavigation<TModel>
 			context.ReadFileSystem.Path.Combine(context.DocumentationSourceDirectory.FullName, fullTocPath)
 		);
 
-		var assemblerBuild = context.AssemblerBuild;
+		var assemblerBuild = context.BuildType == BuildType.Assembler;
 		// for assembler builds we ensure toc's create their own home provider sot that they can be re-homed easily
 		var isolatedHomeProvider = assemblerBuild
 			? new NavigationHomeProvider(homeAccessor.HomeProvider.PathPrefix, homeAccessor.HomeProvider.NavigationRoot)

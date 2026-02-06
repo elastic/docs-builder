@@ -122,7 +122,8 @@ public class CodexBuildService(
 			{
 				UrlPathPrefix = pathPrefix,
 				Force = true,
-				AllowIndexing = false
+				AllowIndexing = false,
+				BuildType = BuildType.Codex
 			};
 
 			// Create cross-link resolver (simplified for codex - no external links)
@@ -228,7 +229,7 @@ internal sealed class CodexDocumentationContext(CodexContext codexContext) : ICo
 	public IDirectoryInfo OutputDirectory => codexContext.OutputDirectory;
 
 	/// <inheritdoc />
-	public bool AssemblerBuild => false;
+	public BuildType BuildType => BuildType.Codex;
 
 	/// <inheritdoc />
 	public void EmitError(string message) =>

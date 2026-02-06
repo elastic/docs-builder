@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.Json.Serialization;
+using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
@@ -18,7 +19,7 @@ namespace Elastic.Markdown.Page;
 
 public class IndexViewModel
 {
-	public required bool IsAssemblerBuild { get; init; }
+	public required BuildType BuildType { get; init; }
 	public required string SiteName { get; init; }
 	public required string DocSetName { get; init; }
 	public required string Title { get; init; }

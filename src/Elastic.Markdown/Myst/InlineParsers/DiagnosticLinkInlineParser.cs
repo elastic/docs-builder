@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Links;
 using Elastic.Markdown.Diagnostics;
@@ -410,7 +411,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 				newUrl = new Uri(baseUri, relativePath).AbsolutePath;
 		}
 
-		if (context.Build.AssemblerBuild && context.TryFindDocument(fi) is MarkdownFile currentMarkdown)
+		if (context.Build.BuildType == BuildType.Assembler && context.TryFindDocument(fi) is MarkdownFile currentMarkdown)
 		{
 			// Acquire navigation-aware path
 			if (context.NavigationTraversable.NavigationDocumentationFileLookup.TryGetValue(currentMarkdown, out var currentNavigation))

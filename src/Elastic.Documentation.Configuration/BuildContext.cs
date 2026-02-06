@@ -48,7 +48,7 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 
 	public bool Force { get; init; }
 
-	public bool AssemblerBuild { get; init; }
+	public BuildType BuildType { get; init; } = BuildType.Isolated;
 
 	// This property is used to determine if the site should be indexed by search engines
 	public bool AllowIndexing { get; init; }

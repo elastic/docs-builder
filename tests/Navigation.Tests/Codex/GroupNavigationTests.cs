@@ -140,7 +140,7 @@ public class GroupNavigationTests
 		public System.IO.Abstractions.IFileSystem ReadFileSystem => _fs;
 		public System.IO.Abstractions.IFileSystem WriteFileSystem => _fs;
 		public System.IO.Abstractions.IDirectoryInfo OutputDirectory => _fs.DirectoryInfo.New("/output");
-		public bool AssemblerBuild => false;
+		public BuildType BuildType => BuildType.Codex;
 		public void EmitError(string message) { }
 	}
 }
