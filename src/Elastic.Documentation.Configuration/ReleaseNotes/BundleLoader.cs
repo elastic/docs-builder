@@ -262,19 +262,13 @@ public partial class BundleLoader(IFileSystem fileSystem)
 		}
 
 		// Build the final result: replace parent bundles with merged versions, exclude merged amend files
-		var result = new List<LoadedBundle>();
-		foreach (var bundle in bundles)
-		{
-			// Skip amend files that were merged into a parent
-			if (mergedAmendPaths.Contains(bundle.FilePath))
-				continue;
-
-			// Use merged version if this is a parent that had amend files
-			if (mergedParents.TryGetValue(bundle.FilePath, out var mergedBundle))
-				result.Add(mergedBundle);
-			else
-				result.Add(bundle);
-		}
+		var result = bundles
+			.Where(bundle => !mergedAmendPaths.Contains(bundle.FilePath))
+			.Select(bundle =>
+				mergedParents.TryGetValue(bundle.FilePath, out var mergedBundle)
+					? mergedBundle
+					: bundle)
+			.ToList();
 
 		return result;
 	}
