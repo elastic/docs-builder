@@ -731,3 +731,28 @@ docs-builder changelog render \
 ```
 
 1. Generate a single asciidoc file instead of multiple markdown files.
+
+#### Release highlights
+
+The `highlight` field allows you to mark changelog entries that should appear in a dedicated highlights page. Highlights are most commonly used for major or minor version releases to draw attention to the most important changes.
+
+When you set `highlight: true` on a changelog entry:
+
+- The entry appears in both the highlights page (`highlights.md`) and its normal type section (e.g., "Features and enhancements")
+- The highlights page is only created when at least one entry has `highlight: true` (unlike other special pages like `known-issues.md` which are always created)
+- Highlights can be any type of changelog entry (features, enhancements, bug fixes, etc.)
+
+Example changelog entry with highlight:
+
+```yaml
+type: feature
+products:
+- product: elasticsearch
+  target: 9.3.0
+  lifecycle: ga
+title: New Cloud Connect UI for self-managed installations
+description: Adds Cloud Connect functionality to Kibana, which allows you to use cloud solutions like AutoOps and Elastic Inference Service in your self-managed Elasticsearch clusters.
+highlight: true
+```
+
+When rendering changelogs, entries with `highlight: true` are collected from all types and rendered in a dedicated highlights section. In markdown output, this creates a separate `highlights.md` file. In asciidoc output, highlights appear as a dedicated section in the single asciidoc file.
