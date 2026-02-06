@@ -33,6 +33,18 @@
     "css": {
       "distDir": "_static",
       "source": "Assets/styles.css"
+    },
+    "assembler-css": {
+      "distDir": "_static",
+      "source": "Assets/assembler.css"
+    },
+    "isolated-css": {
+      "distDir": "_static",
+      "source": "Assets/isolated.css"
+    },
+    "codex-css": {
+      "distDir": "_static",
+      "source": "Assets/codex.css"
     }
   },
   "alias": {

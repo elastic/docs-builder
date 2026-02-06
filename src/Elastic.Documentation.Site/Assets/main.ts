@@ -43,6 +43,7 @@ import('./web-components/VersionDropdown')
 import('./web-components/AppliesToPopover')
 import('./web-components/FullPageSearch/FullPageSearchComponent')
 import('./web-components/Diagnostics/DiagnosticsComponent')
+import('./web-components/Header/Header')
 
 const { getOS } = new UAParser()
 
@@ -102,9 +103,134 @@ document.addEventListener('DOMContentLoaded', function () {
     initMath()
     initMermaid()
     initIsolatedHeader()
+    // #region agent log
+    setTimeout(() => {
+        const elasticDocsHeader = document.querySelector('elastic-docs-header')
+        const headerHeight = elasticDocsHeader
+            ? elasticDocsHeader.getBoundingClientRect().height
+            : 0
+        const headerRect = elasticDocsHeader
+            ? elasticDocsHeader.getBoundingClientRect()
+            : null
+        const computedOffsetTop = getComputedStyle(
+            document.documentElement
+        ).getPropertyValue('--offset-top')
+        const stickyNav = document.querySelector('.sidebar')
+        const stickyNavRect = stickyNav
+            ? (stickyNav as HTMLElement).getBoundingClientRect()
+            : null
+        const stickyNavTop = stickyNav
+            ? getComputedStyle(stickyNav as HTMLElement).top
+            : ''
+        const mainContainer = document.getElementById('main-container')
+        const mainContainerRect = mainContainer
+            ? mainContainer.getBoundingClientRect()
+            : null
+        const bodyRect = document.body.getBoundingClientRect()
+        const htmlHeight = getComputedStyle(document.documentElement).height
+        const bodyHeight = getComputedStyle(document.body).height
+        const bodyDisplay = getComputedStyle(document.body).display
+        const bodyFlexDirection = getComputedStyle(document.body).flexDirection
+        const mainContainerHeight = mainContainer
+            ? getComputedStyle(mainContainer).height
+            : ''
+        const mainContainerFlex = mainContainer
+            ? getComputedStyle(mainContainer).flex
+            : ''
+        const mainContainerParent = mainContainer?.parentElement
+        const mainContainerParentDisplay = mainContainerParent
+            ? getComputedStyle(mainContainerParent).display
+            : ''
+        const bodyChildren = Array.from(document.body.children).map(
+            (child, i) => ({
+                index: i,
+                tagName: child.tagName,
+                id: child.id,
+                className: child.className,
+            })
+        )
+        const footer = document.querySelector('footer')
+        const footerRect = footer ? footer.getBoundingClientRect() : null
+        fetch(
+            'http://127.0.0.1:7242/ingest/9d6d8669-b090-4d8a-8c8e-a640fc9736de',
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    location: 'main.ts:102',
+                    message: 'DOMContentLoaded POST-FIX structure analysis',
+                    data: {
+                        headerHeight,
+                        headerTop: headerRect?.top,
+                        computedOffsetTop,
+                        stickyNavTop,
+                        stickyNavActualTop: stickyNavRect?.top,
+                        mainContainerTop: mainContainerRect?.top,
+                        mainContainerHeight,
+                        mainContainerRectHeight: mainContainerRect?.height,
+                        mainContainerFlex,
+                        mainContainerParentTag: mainContainerParent?.tagName,
+                        mainContainerParentDisplay,
+                        bodyHeight,
+                        bodyDisplay,
+                        bodyFlexDirection,
+                        bodyChildren,
+                        bodyRectHeight: bodyRect.height,
+                        htmlHeight,
+                        viewportHeight: window.innerHeight,
+                        footerTop: footerRect?.top,
+                        footerHeight: footerRect?.height,
+                        scrollY: window.scrollY,
+                        pathname: window.location.pathname,
+                    },
+                    timestamp: Date.now(),
+                    sessionId: 'debug-session',
+                    runId: 'post-fix',
+                    hypothesisId: 'D',
+                }),
+            }
+        ).catch(() => {})
+    }, 100)
+    // #endregion
 })
 
 document.addEventListener('htmx:load', function () {
+    // #region agent log
+    const elasticDocsHeader = document.querySelector('elastic-docs-header')
+    const headerHeight = elasticDocsHeader
+        ? elasticDocsHeader.getBoundingClientRect().height
+        : 0
+    const computedOffsetTop = getComputedStyle(
+        document.documentElement
+    ).getPropertyValue('--offset-top')
+    const stickyNav = document.querySelector('.sidebar')
+    const stickyNavRect = stickyNav
+        ? (stickyNav as HTMLElement).getBoundingClientRect()
+        : null
+    const stickyNavTop = stickyNav
+        ? getComputedStyle(stickyNav as HTMLElement).top
+        : ''
+    fetch('http://127.0.0.1:7242/ingest/9d6d8669-b090-4d8a-8c8e-a640fc9736de', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            location: 'main.ts:121',
+            message: 'htmx:load entry - BEFORE init',
+            data: {
+                headerHeight,
+                computedOffsetTop,
+                stickyNavTop,
+                stickyNavActualTop: stickyNavRect?.top,
+                scrollY: window.scrollY,
+                pathname: window.location.pathname,
+            },
+            timestamp: Date.now(),
+            sessionId: 'debug-session',
+            runId: 'run1',
+            hypothesisId: 'A',
+        }),
+    }).catch(() => {})
+    // #endregion
     initTocNav()
     initHighlight()
     initCopyButton()
@@ -118,6 +244,76 @@ document.addEventListener('htmx:load', function () {
     openDetailsWithAnchor()
     initImageCarousel()
     initApiDocs()
+    // #region agent log
+    setTimeout(() => {
+        const elasticDocsHeaderAfter = document.querySelector(
+            'elastic-docs-header'
+        )
+        const headerHeightAfter = elasticDocsHeaderAfter
+            ? elasticDocsHeaderAfter.getBoundingClientRect().height
+            : 0
+        const headerRectAfter = elasticDocsHeaderAfter
+            ? elasticDocsHeaderAfter.getBoundingClientRect()
+            : null
+        const computedOffsetTopAfter = getComputedStyle(
+            document.documentElement
+        ).getPropertyValue('--offset-top')
+        const stickyNavAfter = document.querySelector('.sidebar')
+        const stickyNavRectAfter = stickyNavAfter
+            ? (stickyNavAfter as HTMLElement).getBoundingClientRect()
+            : null
+        const stickyNavTopAfter = stickyNavAfter
+            ? getComputedStyle(stickyNavAfter as HTMLElement).top
+            : ''
+        const mainContainerAfter = document.getElementById('main-container')
+        const mainContainerRectAfter = mainContainerAfter
+            ? mainContainerAfter.getBoundingClientRect()
+            : null
+        const bodyHeightAfter = getComputedStyle(document.body).height
+        const mainContainerHeightAfter = mainContainerAfter
+            ? getComputedStyle(mainContainerAfter).height
+            : ''
+        const mainContainerFlexAfter = mainContainerAfter
+            ? getComputedStyle(mainContainerAfter).flex
+            : ''
+        const footerAfter = document.querySelector('footer')
+        const footerRectAfter = footerAfter
+            ? footerAfter.getBoundingClientRect()
+            : null
+        fetch(
+            'http://127.0.0.1:7242/ingest/9d6d8669-b090-4d8a-8c8e-a640fc9736de',
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    location: 'main.ts:135',
+                    message: 'htmx:load POST-FIX flex layout',
+                    data: {
+                        headerHeightAfter,
+                        headerTopAfter: headerRectAfter?.top,
+                        computedOffsetTopAfter,
+                        stickyNavTopAfter,
+                        stickyNavActualTopAfter: stickyNavRectAfter?.top,
+                        mainContainerTopAfter: mainContainerRectAfter?.top,
+                        mainContainerHeightAfter,
+                        mainContainerRectHeightAfter:
+                            mainContainerRectAfter?.height,
+                        mainContainerFlexAfter,
+                        bodyHeightAfter,
+                        footerTopAfter: footerRectAfter?.top,
+                        footerHeightAfter: footerRectAfter?.height,
+                        scrollY: window.scrollY,
+                        pathname: window.location.pathname,
+                    },
+                    timestamp: Date.now(),
+                    sessionId: 'debug-session',
+                    runId: 'post-fix',
+                    hypothesisId: 'D',
+                }),
+            }
+        ).catch(() => {})
+    }, 100)
+    // #endregion
 
     const urlParams = new URLSearchParams(window.location.search)
     const editParam = urlParams.has('edit')
@@ -169,6 +365,46 @@ document.addEventListener('htmx:beforeRequest', function (event: HtmxEvent) {
 document.body.addEventListener(
     'htmx:oobBeforeSwap',
     function (event: HtmxEvent) {
+        // #region agent log
+        const elasticDocsHeader = document.querySelector('elastic-docs-header')
+        const headerHeight = elasticDocsHeader
+            ? elasticDocsHeader.getBoundingClientRect().height
+            : 0
+        const computedOffsetTop = getComputedStyle(
+            document.documentElement
+        ).getPropertyValue('--offset-top')
+        const stickyNav = document.querySelector('.sidebar')
+        const stickyNavRect = stickyNav
+            ? (stickyNav as HTMLElement).getBoundingClientRect()
+            : null
+        const stickyNavTop = stickyNav
+            ? getComputedStyle(stickyNav as HTMLElement).top
+            : ''
+        fetch(
+            'http://127.0.0.1:7242/ingest/9d6d8669-b090-4d8a-8c8e-a640fc9736de',
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    location: 'main.ts:183',
+                    message: 'htmx:oobBeforeSwap',
+                    data: {
+                        targetId: event.target?.id,
+                        headerHeight,
+                        computedOffsetTop,
+                        stickyNavTop,
+                        stickyNavActualTop: stickyNavRect?.top,
+                        scrollY: window.scrollY,
+                        pathname: window.location.pathname,
+                    },
+                    timestamp: Date.now(),
+                    sessionId: 'debug-session',
+                    runId: 'run1',
+                    hypothesisId: 'A',
+                }),
+            }
+        ).catch(() => {})
+        // #endregion
         // This is needed to scroll to the top of the page when the content is swapped
         if (
             event.target?.id === 'main-container' ||
@@ -176,6 +412,42 @@ document.body.addEventListener(
             event.target?.id === 'content-container'
         ) {
             window.scrollTo(0, 0)
+            // #region agent log
+            setTimeout(() => {
+                const computedOffsetTopAfter = getComputedStyle(
+                    document.documentElement
+                ).getPropertyValue('--offset-top')
+                const stickyNavAfter = document.querySelector('.sidebar')
+                const stickyNavRectAfter = stickyNavAfter
+                    ? (stickyNavAfter as HTMLElement).getBoundingClientRect()
+                    : null
+                const stickyNavTopAfter = stickyNavAfter
+                    ? getComputedStyle(stickyNavAfter as HTMLElement).top
+                    : ''
+                fetch(
+                    'http://127.0.0.1:7242/ingest/9d6d8669-b090-4d8a-8c8e-a640fc9736de',
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            location: 'main.ts:195',
+                            message: 'After scrollTo(0,0)',
+                            data: {
+                                computedOffsetTopAfter,
+                                stickyNavTopAfter,
+                                stickyNavActualTopAfter:
+                                    stickyNavRectAfter?.top,
+                                scrollY: window.scrollY,
+                            },
+                            timestamp: Date.now(),
+                            sessionId: 'debug-session',
+                            runId: 'run1',
+                            hypothesisId: 'A',
+                        }),
+                    }
+                ).catch(() => {})
+            }, 50)
+            // #endregion
         }
     }
 )

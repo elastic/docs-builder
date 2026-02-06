@@ -8,6 +8,15 @@
 }
 
 <ol id="breadcrumbs" class="flex flex-wrap gap-1 items-center w-full py-6">
+	<li class="text-ink-light text-sm leading-[1.2em]">
+		<a
+			itemprop="item"
+			href="/"
+		>
+			<span class="hover:text-black">Home</span>
+		</a>
+		<span class="px-1">/</span>
+	</li>
 	@for (var i = 0; i < crumbs.Count; i++)
 	{
 		var item = crumbs[i];
@@ -16,8 +25,7 @@
 				itemprop="item"
 				href="@item.Url"
 				@(i == 0 ? "hx-disable=true" : "")
-				@Htmx.GetHxAttributes(Model.CurrentNavigationItem?.NavigationRoot.Id == item.NavigationRoot.Id)
-			>
+				@Htmx.GetHxAttributes(Model.CurrentNavigationItem?.NavigationRoot.Id == item.NavigationRoot.Id)>
 				<span class="hover:text-black">@item.NavigationTitle</span>
 			</a>
 			@if (i < crumbs.Count - 1)

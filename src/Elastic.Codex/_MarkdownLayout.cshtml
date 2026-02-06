@@ -1,9 +1,21 @@
-@inherits RazorLayoutSlice<GlobalLayoutViewModel>
+@inherits RazorLayoutSlice<MarkdownLayoutViewModel>
 @implements IUsesLayout<Elastic.Documentation.Site._GlobalLayout, GlobalLayoutViewModel>
 @functions {
 	public GlobalLayoutViewModel LayoutModel => Model;
+	protected override async Task ExecuteSectionAsync(string name)
+	{
+		if (name == GlobalSections.Footer)
+		{
+			await RenderSectionAsync(GlobalSections.Footer);
+		}
+
+		if (name == GlobalSections.Head)
+		{
+			await RenderSectionAsync(GlobalSections.Head);
+		}
+	}
 }
-@(await RenderPartialAsync(_CodexHeader.Create(Model)))
+@(await RenderPartialAsync(_CodexHeader.Create<GlobalLayoutViewModel>(Model)))
 <div id="main-container" class="flex flex-col items-center border-t-1 border-grey-20">
 	<div class="w-full h-full flex justify-center">
 		<main id="content-container" class="w-full max-w-6xl flex flex-col relative pb-12 px-6 lg:px-8">
@@ -13,10 +25,14 @@
 				</div>
 				<div class="sr-only">Loading</div>
 			</div>
+			<div class="content-container">
+				@await RenderPartialAsync(_Breadcrumbs.Create(Model))
+			</div>
 			<article id="markdown-content" class="content-container markdown-content">
 				@await RenderBodyAsync()
 			</article>
+			@await RenderPartialAsync(_PrevNextNav.Create(Model))
 		</main>
 	</div>
 </div>
-@await RenderPartialAsync(_Footer.Create(Model))
+@await RenderPartialAsync(_Footer.Create<GlobalLayoutViewModel>(Model))

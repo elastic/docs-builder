@@ -1,0 +1,38 @@
+/* Assembler build type specific styles */
+
+:root {
+	/* Assembler uses Elastic global nav with banner - different heights at different breakpoints */
+	--offset-top: calc(64px + 38px); /* header height + banner height */
+}
+
+@media screen and (min-width: 767px) {
+	:root {
+		--offset-top: calc(72px + 38px); /* header height + banner height */
+	}
+}
+
+@media screen and (min-width: 992px) {
+	:root {
+		--offset-top: 110px;
+	}
+}
+
+@media screen and (min-width: 1180px) {
+	:root {
+		--offset-top: calc(80px + 38px); /* header height + banner height */
+	}
+}
+
+/* Elastic nav wrapper and nav styles - assembler specific */
+#elastic-nav-wrapper {
+	min-height: var(--offset-top);
+}
+
+#elastic-nav {
+	@media screen and (min-width: 1200px) {
+		[data-component='Container'] {
+			/* subtract the padding */
+			max-width: calc(var(--max-layout-width) - (var(--spacing) * 10));
+		}
+	}
+}

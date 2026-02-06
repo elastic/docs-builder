@@ -1,0 +1,6 @@
+/* Isolated build type specific styles */
+
+:root {
+	/* Isolated uses elastic-docs-header web component - fixed 48px height */
+	--offset-top: 48px;
+}
