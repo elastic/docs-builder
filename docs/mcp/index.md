@@ -16,6 +16,16 @@ The MCP server currently exposes the following tools:
 | `FindCrossLinks` | Finds all cross-links between repositories. Can filter by source or target repository. |
 | `ValidateCrossLinks` | Validates cross-links to a repository and reports any broken links. |
 
+### Content type tools
+
+These tools help authors create and evaluate documentation using the [Elastic Docs content types](https://www.elastic.co/docs/contribute-docs/content-types).
+
+| Tool | Description |
+|------|-------------|
+| `ListContentTypes` | Lists all Elastic Docs content types with descriptions and guidance on when to use each. |
+| `GenerateTemplate` | Generates a ready-to-use template for a specific content type (overview, how-to, tutorial, troubleshooting, or changelog). Optionally pre-fills title, description, and product. Templates are fetched from the [docs-content repository](https://github.com/elastic/docs-content) when online, with embedded fallbacks for offline use. |
+| `GetContentTypeGuidelines` | Returns detailed authoring and evaluation guidelines for a content type, including required elements, best practices, and anti-patterns. Use this to write new content or evaluate existing pages. |
+
 ## Configuration
 
 To use the {{dbuild}} MCP server, add it to your IDE's MCP configuration.

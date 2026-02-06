@@ -5,6 +5,7 @@
 using Elastic.Documentation.Assembler.Links;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links.InboundLinks;
+using Elastic.Documentation.Mcp;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -16,6 +17,8 @@ builder.Logging.AddConsole(options =>
 builder.Services.AddSingleton<ILinkIndexReader>(_ => Aws3LinkIndexReader.CreateAnonymous());
 builder.Services.AddSingleton<LinksIndexCrossLinkFetcher>();
 builder.Services.AddSingleton<ILinkUtilService, LinkUtilService>();
+
+builder.Services.AddHttpClient<ContentTypeProvider>();
 
 builder.Services
 	.AddMcpServer()

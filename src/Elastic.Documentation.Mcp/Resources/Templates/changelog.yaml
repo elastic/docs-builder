@@ -1,0 +1,57 @@
+##### Required fields #####
+
+title:
+# A short, user-facing headline (max 80 characters).
+# Start with action verbs: "Fixes...", "Adds...", "Improves...", "Removes...".
+# Focus on user impact, not implementation details.
+
+type:
+# The type of change. One of:
+#   feature, enhancement, bug-fix, breaking-change, deprecation,
+#   known-issue, docs, regression, security, other
+
+products:
+# The affected Elastic products and their target release.
+  - product:
+    # A product ID from config/products.yml
+    target:
+    # Optional: target version (V.R.M) or release date
+    lifecycle:
+    # Optional: preview, beta, or ga
+
+##### Optional fields #####
+
+description: |
+  # Additional information about what changed (max 600 characters).
+  # Focus on user value. Explain what users can do or what problems are solved.
+
+pr:
+# The pull request number or URL.
+
+issues:
+# An array of related issue URLs.
+#  - https://github.com/elastic/example/issues/123
+
+areas:
+# An array of affected components, features, or product areas.
+#  - Example Area
+
+# For breaking changes only:
+# subtype:
+#   One of: api, behavioral, configuration, dependency, subscription, plugin, security, other
+# impact:
+#   Describe how the user's environment is affected.
+# action:
+#   Describe what users must do to mitigate the change.
+
+# For deprecations and known issues:
+# impact:
+#   Describe how the user's environment is affected.
+# action:
+#   Describe what users must do (workaround or migration steps).
+
+# highlight: false
+# Set to true for items that should appear in release highlights.
+
+# feature-id:
+# Optional unique identifier to associate with a feature flag.
