@@ -23,7 +23,7 @@ using Microsoft.Extensions.Logging;
 namespace Elastic.Markdown.IO;
 
 //create all documentation sets
-// create a portalrootnodenavigationitem
+// create a codexrootnodenavigationitem
 // foreach doc set.
 //		root.items.add(set.navigation);
 // root.prefix = new provider('prefix)'

@@ -1,0 +1,133 @@
+# Codex Configuration Example
+# This file demonstrates how to configure a documentation codex that
+# composes multiple isolated documentation sets.
+#
+# Usage:
+#   docs-builder codex config/codex.example.yml
+#   docs-builder codex clone config/codex.example.yml
+#   docs-builder codex build config/codex.example.yml
+#   docs-builder codex serve
+
+# Site prefix for all codex URLs
+# All documentation sets will be served under this prefix
+# e.g., /internal-docs, /dev-docs, /docs
+# Set to "/" or omit for no prefix (site hosted at root, e.g., codex.elastic.dev)
+site_prefix: /
+
+# Title displayed on the codex index page
+title: "Elastic's Internal Dev Docs"
+
+# Documentation sets to include in the codex
+# Each documentation set is cloned from a git repository and built separately
+documentation_sets:
+  # APM Managed Intake Service documentation
+  - name: docs-eng-team
+    branch: main
+    repo_name: apm-intake
+    display_name: "APM Managed Intake Service"
+    icon: apm
+
+  # CI Developer Guide
+  - name: docs-eng-team
+    branch: main
+    repo_name: ci-guide
+    display_name: "CI Developer Guide"
+    icon: ci
+
+  # Content Architecture documentation
+  - name: docs-eng-team
+    branch: main
+    repo_name: content-arch
+    display_name: "Content Architecture"
+    icon: architecture
+
+  # Observability group (multiple members)
+  - name: docs-eng-team
+    branch: feature/test
+    category: docs
+    repo_name: docs-eng-team
+    display_name: "Docs Engineering"
+    icon: documentation
+
+  - name: docs-eng-team
+    branch: main
+    category: observability
+    repo_name: uptime-docs
+    display_name: "Uptime Monitoring"
+    icon: observability
+
+  - name: docs-eng-team
+    branch: main
+    category: observability
+    repo_name: apm-agent-docs
+    display_name: "APM Agent"
+    icon: apm
+
+  # Migration Guide in tooling category
+  - name: docs-eng-team
+    branch: main
+    category: tooling
+    repo_name: migration-guide
+    display_name: "AsciiDoc-to-MDX Migration"
+    icon: migration
+
+  # Artifactory documentation in tooling category
+  - name: docs-eng-team
+    branch: main
+    category: tooling
+    repo_name: artifactory
+    display_name: "Artifactory"
+    icon: artifactory
+
+  # QA Team documentation
+  - name: docs-eng-team
+    branch: main
+    repo_name: qa-team
+    display_name: "QA Team Handbook"
+    icon: testing
+
+  # Consulting documentation
+  - name: docs-eng-team
+    branch: main
+    repo_name: consulting
+    display_name: "Consulting Team"
+    icon: consulting
+
+# Configuration options reference:
+#
+# name (required):
+#   The identifier for the documentation set. Used as the default for
+#   origin (elastic/{name}) and repo_name.
+#
+# origin (optional):
+#   The git repository to clone from. Defaults to "elastic/{name}".
+#   Can be a short form like "elastic/my-repo" or a full URL.
+#
+# branch (required):
+#   The git branch to checkout.
+#
+# path (optional):
+#   The directory within the repository containing documentation.
+#   Defaults to "docs".
+#
+# category (optional):
+#   Group documentation sets under a category (group).
+#   Repos use stable URLs: /r/{repo_name}/ (or /{site_prefix}/r/{repo_name}/ with prefix)
+#   Group landing: /g/{category}/ (or /{site_prefix}/g/{category}/ with prefix)
+#   Group membership only affects which sidebar navigation is shown, not the URL.
+#
+# repo_name (optional):
+#   Override the name used for checkout directories and URL paths.
+#   Defaults to the value of "name". This allows including the same
+#   repository multiple times with different URL paths.
+#
+# display_name (optional):
+#   The title shown on the codex landing page card.
+#   If not specified, uses the documentation set's title from docset.yml.
+#
+# icon (optional):
+#   Icon shown on the codex landing page card.
+#   Available icons: elasticsearch, kibana, observability, security,
+#   enterprise-search, logstash, beats, apm, fleet, cloud, integrations,
+#   docs, dev-tools, benchmark, migration, testing, ci, architecture,
+#   consulting, artifactory

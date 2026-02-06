@@ -138,6 +138,30 @@ Search,[Text](https://www.google.com)"));
 	public void RendersMarkdownLinkAsLink() => Html.Should().Contain(">Text</a>");
 }
 
+public class CsvIncludeWithHtmlBreaksTests(ITestOutputHelper output) : DirectiveTest(output,
+"""
+::::{csv-include} test-data.csv
+::::
+""")
+{
+	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
+		fileSystem.AddFile("docs/test-data.csv", new MockFileData(
+			"""
+			Name,Terms
+			"OpenAI","[Terms A](https://example.com/a)<br>[Terms B](https://example.com/b)"
+			"""));
+
+	[Fact]
+	public void RendersHtmlBreaksInCsvCells() => Html.Should().Contain("<br");
+
+	[Fact]
+	public void RendersLinksWithBreaks()
+	{
+		Html.Should().Contain(">Terms A</a>");
+		Html.Should().Contain(">Terms B</a>");
+	}
+}
+
 public class CsvIncludeNotFoundTests(ITestOutputHelper output) : DirectiveTest<CsvIncludeBlock>(output,
 """
 :::{csv-include} missing-file.csv

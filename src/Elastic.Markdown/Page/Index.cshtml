@@ -1,4 +1,5 @@
 @using System.Text.Json
+@using Elastic.Documentation
 @using Elastic.Documentation.Configuration
 @using Elastic.Documentation.Extensions
 @using Elastic.Markdown
@@ -29,7 +30,8 @@
 		UrlPathPrefix = Model.UrlPathPrefix,
 		GithubEditUrl = Model.GithubEditUrl,
 		MarkdownUrl = Model.MarkdownUrl,
-		HideEditThisPage = Model.Features.DisableGitHubEditLink && Model.IsAssemblerBuild,
+		BuildType = Model.BuildType,
+		HideEditThisPage = Model.Features.DisableGitHubEditLink && Model.BuildType != BuildType.Isolated,
 		AllowIndexing = Model.AllowIndexing,
 		CanonicalBaseUrl = Model.CanonicalBaseUrl,
 		GoogleTagManager = Model.GoogleTagManager,
