@@ -74,6 +74,7 @@ public abstract partial class ApiViewModel(ApiRenderContext context)
 			GoogleTagManager = new GoogleTagManagerConfiguration(),
 			Features = new FeatureFlags([]),
 			StaticFileContentHashProvider = StaticFileContentHashProvider,
+			BuildType = BuildContext.BuildType,
 			TocItems = GetTocItems(),
 			// Header properties for isolated mode
 			HeaderTitle = Document.Info.Title,

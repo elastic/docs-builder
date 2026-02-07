@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Navigation;
@@ -46,6 +47,8 @@ public record GlobalLayoutViewModel
 	public required bool AllowIndexing { get; init; }
 	public required StaticFileContentHashProvider StaticFileContentHashProvider { get; init; }
 
+	public BuildType BuildType { get; init; } = BuildType.Isolated;
+
 	public bool RenderHamburgerIcon { get; init; } = true;
 
 	public bool RenderHeaders { get; init; } = true;
@@ -54,9 +57,34 @@ public record GlobalLayoutViewModel
 	{
 		var staticPath = $"_static/{path.TrimStart('/')}";
 		var contentHash = StaticFileContentHashProvider.GetContentHash(path.TrimStart('/'));
+
+		// For codex builds, static assets are in the root, not in each documentation set's directory
+		// Extract the root path by removing the /r/repoName part from the URL path prefix
+		var staticPrefix = GetStaticPathPrefix();
+
+		var fullPath = string.IsNullOrEmpty(staticPrefix)
+			? $"/{staticPath}"
+			: $"{staticPrefix}/{staticPath}";
+
 		return string.IsNullOrEmpty(contentHash)
-			? $"{UrlPathPrefix}/{staticPath}"
-			: $"{UrlPathPrefix}/{staticPath}?v={contentHash}";
+			? fullPath
+			: $"{fullPath}?v={contentHash}";
+	}
+
+	private string GetStaticPathPrefix()
+	{
+		if (BuildType == BuildType.Codex)
+		{
+			// Extract site prefix from URL path (e.g., /internal-docs/r/repoName -> /internal-docs)
+			if (UrlPathPrefix?.Contains("/r/", StringComparison.Ordinal) == true)
+			{
+				var rIndex = UrlPathPrefix.IndexOf("/r/", StringComparison.Ordinal);
+				if (rIndex > 0)
+					return UrlPathPrefix[..rIndex];
+			}
+			return string.Empty;
+		}
+		return UrlPathPrefix ?? string.Empty;
 	}
 
 	public string Link(string path)

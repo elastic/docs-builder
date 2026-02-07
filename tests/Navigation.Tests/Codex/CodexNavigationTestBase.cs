@@ -84,7 +84,7 @@ internal sealed class TestCodexDocumentationContext(IDiagnosticsCollector collec
 	public IFileSystem ReadFileSystem => _fileSystem;
 	public IFileSystem WriteFileSystem => _fileSystem;
 	public IDirectoryInfo OutputDirectory => _fileSystem.DirectoryInfo.New("/output");
-	public bool AssemblerBuild => false;
+	public BuildType BuildType => BuildType.Codex;
 
 	public void EmitError(string message) => collector.EmitError(ConfigurationPath, message);
 }
