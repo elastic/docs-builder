@@ -349,10 +349,8 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 			var titleSlug = ChangelogTextUtilities.TitleToSlug(bundle.Version);
 			var repo = bundle.Repo;
 
-			// Group entries by type to determine which sections will exist
-			var entriesByType = bundle.Entries
-				.GroupBy(e => e.Type)
-				.ToDictionary(g => g.Key, g => g.Count());
+			// Group filtered entries by type to determine which sections will exist
+			var entriesByType = GetFilteredEntryCounts(bundle);
 
 			// Apply type filter to determine which sections to include
 			var shouldInclude = CreateTypeFilterPredicate();
@@ -407,6 +405,27 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 			_ => type => !SeparatedTypes.Contains(type) // Default: exclude separated types
 		};
 
+	/// <summary>
+	/// Returns entry counts by type after applying publish blocker and hide-features filters.
+	/// This ensures the TOC and generated anchors match what the renderer actually outputs.
+	/// </summary>
+	private Dictionary<ChangelogEntryType, int> GetFilteredEntryCounts(LoadedBundle bundle)
+	{
+		IEnumerable<ChangelogEntry> entries = bundle.Entries;
+
+		// Filter by publish blocker
+		if (PublishBlocker is { HasBlockingRules: true })
+			entries = entries.Where(e => !PublishBlocker.ShouldBlock(e));
+
+		// Filter by hide-features
+		if (HideFeatures.Count > 0)
+			entries = entries.Where(e => string.IsNullOrWhiteSpace(e.FeatureId) || !HideFeatures.Contains(e.FeatureId));
+
+		return entries
+			.GroupBy(e => e.Type)
+			.ToDictionary(g => g.Key, g => g.Count());
+	}
+
 	private IEnumerable<PageTocItem> ComputeTableOfContent()
 	{
 		foreach (var bundle in LoadedBundles)
@@ -422,10 +441,8 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 				Level = 2
 			};
 
-			// Group entries by type to determine which sections will exist
-			var entriesByType = bundle.Entries
-				.GroupBy(e => e.Type)
-				.ToDictionary(g => g.Key, g => g.Count());
+			// Group filtered entries by type to determine which sections will exist
+			var entriesByType = GetFilteredEntryCounts(bundle);
 
 			// Apply type filter to determine which sections to include
 			var shouldInclude = CreateTypeFilterPredicate();
