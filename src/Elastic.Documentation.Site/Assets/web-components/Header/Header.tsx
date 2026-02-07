@@ -1,30 +1,56 @@
+import { DiagnosticsPanel } from '../Diagnostics/DiagnosticsComponent'
+import { useHtmxLink } from '../shared/htmx/useHtmxLink'
+import githubSvg from './GitHub_Invertocat_Black.svg'
 import {
-    EuiAvatar,
     EuiBadge,
     EuiHeader,
-    // EuiHeaderLink,
-    // EuiHeaderLinks,
+    EuiHeaderLink,
+    EuiHeaderLinks,
     EuiHeaderLogo,
+    EuiHeaderSectionItem,
     EuiHeaderSectionItemButton,
-    EuiIcon,
     useEuiTheme,
 } from '@elastic/eui'
+import { css } from '@emotion/react'
 // import { css } from '@emotion/react'
 import r2wc from '@r2wc/react-to-web-component'
 
 interface Props {
     title: string
+    logoHref: string
+    githubRepository: string
+    githubLink: string
+    gitBranch: string
+    gitCommit: string
 }
 
-export const Header = ({ title }: Props) => {
+export const Header = ({
+    title,
+    logoHref,
+    githubRepository,
+    githubLink,
+    gitCommit,
+    gitBranch,
+}: Props) => {
     const { euiTheme } = useEuiTheme()
+    const logoLink = useHtmxLink(logoHref)
     return (
         <EuiHeader
             theme="dark"
             sections={[
                 {
                     items: [
-                        <EuiHeaderLogo>{title}</EuiHeaderLogo>,
+                        <a
+                            key="logo"
+                            ref={logoLink.ref}
+                            href={logoLink.href}
+                            css={css`
+                                text-decoration: none;
+                                color: inherit;
+                            `}
+                        >
+                            <EuiHeaderLogo>{title}</EuiHeaderLogo>
+                        </a>,
                         // <EuiHeaderLinks aria-label="App navigation dark theme example">
                         //     <EuiHeaderLink isActive>Docs</EuiHeaderLink>
                         //     <EuiHeaderLink>Code</EuiHeaderLink>
@@ -34,22 +60,44 @@ export const Header = ({ title }: Props) => {
                 },
                 {
                     items: [
+                        <EuiHeaderSectionItemButton>
+                            <DiagnosticsPanel />
+                        </EuiHeaderSectionItemButton>,
+
+                        // <EuiHeaderSectionItem>
+                        //     <EuiBadge color="accent" iconType="branch">
+                        //         {gitBranch}
+                        //     </EuiBadge>
+                        // </EuiHeaderSectionItem>,
+                        <EuiHeaderSectionItem>
+                            <EuiHeaderLinks>
+                                <EuiHeaderLink
+                                    iconType={githubSvg}
+                                    href={githubLink}
+                                    target="_blank"
+                                    rel="noopener"
+                                >
+                                    elastic/{githubRepository}@{gitBranch}
+                                </EuiHeaderLink>
+                            </EuiHeaderLinks>
+                        </EuiHeaderSectionItem>,
                         <EuiBadge
-                            color={euiTheme.colors.darkestShade}
-                            iconType="arrowDown"
-                            iconSide="right"
+                            iconType="dotInCircle"
+                            css={css`
+                                margin-inline: ${euiTheme.size.s};
+                            `}
                         >
-                            Production logs
+                            {gitCommit}
                         </EuiBadge>,
-                        <EuiHeaderSectionItemButton
-                            aria-label="2 Notifications"
-                            notification={'2'}
-                        >
-                            <EuiIcon type="cheer" size="m" />
-                        </EuiHeaderSectionItemButton>,
-                        <EuiHeaderSectionItemButton aria-label="Account menu">
-                            <EuiAvatar name="John Username" size="s" />
-                        </EuiHeaderSectionItemButton>,
+                        // <EuiHeaderSectionItemButton
+                        // aria-controls="headerFlyoutNewsFeed"
+                        // aria-haspopup="true"
+                        // aria-label={'Alerts feed: Updates available'}
+                        // // onClick={() => showFlyout()}
+                        // notification={true}
+                        // >
+                        // <EuiIcon type="bell" />
+                        // </EuiHeaderSectionItemButton>
                     ],
                 },
             ]}
@@ -62,6 +110,11 @@ customElements.define(
     r2wc(Header, {
         props: {
             title: 'string',
+            logoHref: 'string',
+            githubRepository: 'string',
+            githubLink: 'string',
+            gitBranch: 'string',
+            gitCommit: 'string',
         },
     })
 )

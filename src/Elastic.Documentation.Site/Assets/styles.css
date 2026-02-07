@@ -354,9 +354,7 @@ body {
 }
 
 .container {
-	@apply lg:px-3;
-	max-width: var(--max-layout-width) !important;
-
+	@apply max-w-(--max-layout-width) px-4;
 	* {
 		@apply font-body;
 	}

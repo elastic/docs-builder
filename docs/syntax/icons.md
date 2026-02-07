@@ -1,5 +1,8 @@
 # Icons
 
+[](/lol.md)
+
+
 You can include icons in your documentation using the `` {icon}`icon-name` `` syntax. For example, writing `` {icon}`check` `` will render a checkmark icon.
 
 ## Available Icons

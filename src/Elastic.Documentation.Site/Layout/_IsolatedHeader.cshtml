@@ -1,4 +1,10 @@
 @inherits RazorSlice<Elastic.Documentation.Site.GlobalLayoutViewModel>
-<div class="sticky top-0 z-10">
-    <elastic-docs-header title="@(Model.HeaderTitle ?? Model.DocSetName)"></elastic-docs-header>
+<div class="sticky top-0 z-10 h-12">
+	<elastic-docs-header title="@(Model.HeaderTitle ?? Model.DocSetName)"
+	                     logo-href="@(Model.Link("/"))"
+	                     github-repository="@(Model.GitRepository)"
+	                     github-link="@(Model.GitHubDocsUrl)"
+	                     git-branch="@(Model.GitBranch)"
+	                     git-commit="@(Model.GitCommitShort)">
+	</elastic-docs-header>
 </div>

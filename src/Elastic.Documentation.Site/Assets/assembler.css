@@ -31,8 +31,7 @@
 #elastic-nav {
 	@media screen and (min-width: 1200px) {
 		[data-component='Container'] {
-			/* subtract the padding */
-			max-width: calc(var(--max-layout-width) - (var(--spacing) * 10));
+			max-width: var(--max-layout-width);
 		}
 	}
 }

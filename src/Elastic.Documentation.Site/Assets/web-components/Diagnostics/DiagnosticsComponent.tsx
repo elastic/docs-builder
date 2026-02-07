@@ -1,5 +1,5 @@
 import { DiagnosticsButton } from './DiagnosticsButton'
-import { DiagnosticsHud } from './DiagnosticsHud'
+import { ResizableDiagnosticsHud } from './ResizableDiagnosticsHud'
 import {
     connectToDiagnosticsStream,
     disconnectFromDiagnosticsStream,
@@ -8,7 +8,7 @@ import r2wc from '@r2wc/react-to-web-component'
 import * as React from 'react'
 import { useEffect } from 'react'
 
-const DiagnosticsPanel: React.FC = () => {
+export const DiagnosticsPanel: React.FC = () => {
     useEffect(() => {
         // Connect to SSE stream on mount
         connectToDiagnosticsStream()
@@ -22,7 +22,7 @@ const DiagnosticsPanel: React.FC = () => {
     return (
         <>
             <DiagnosticsButton />
-            <DiagnosticsHud />
+            <ResizableDiagnosticsHud />
         </>
     )
 }

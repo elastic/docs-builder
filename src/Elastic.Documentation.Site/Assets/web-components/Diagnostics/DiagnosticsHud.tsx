@@ -225,7 +225,9 @@ const severityOrder: Record<DiagnosticItem['severity'], number> = {
     hint: 2,
 }
 
-export const DiagnosticsHud: React.FC = () => {
+export const DiagnosticsHud: React.FC<{ embedded?: boolean }> = ({
+    embedded = false,
+}) => {
     const {
         isHudOpen,
         setHudOpen,
@@ -282,14 +284,18 @@ export const DiagnosticsHud: React.FC = () => {
         return () => document.removeEventListener('keydown', handleKeyDown)
     }, [isHudOpen, setHudOpen])
 
-    if (!isHudOpen) {
+    if (!embedded && !isHudOpen) {
         return null
     }
 
     return (
         <div
-            className="fixed bottom-0 left-0 right-0 bg-grey-140 border-t border-grey-120 shadow-2xl"
-            style={{ height: '300px', zIndex: 9998 }}
+            className={`bg-grey-140 border-t border-grey-120 shadow-2xl flex flex-col min-h-0 ${embedded ? '' : 'fixed bottom-0 left-0 right-0'}`}
+            style={
+                embedded
+                    ? { height: '100%' }
+                    : { height: '300px', zIndex: 9998 }
+            }
         >
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-2 bg-grey-130 border-b border-grey-120">
@@ -369,8 +375,8 @@ export const DiagnosticsHud: React.FC = () => {
             {/* Diagnostics list */}
             <div
                 ref={listRef}
-                className="overflow-y-auto p-4"
-                style={{ height: 'calc(100% - 48px)' }}
+                className={`overflow-y-auto p-4 ${embedded ? 'flex-1 min-h-0' : ''}`}
+                style={embedded ? undefined : { height: 'calc(100% - 48px)' }}
             >
                 {filteredDiagnostics.length === 0 ? (
                     <div className="flex items-center justify-center h-full text-grey-80">

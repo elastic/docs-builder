@@ -1,4 +1,5 @@
 @inherits RazorSlice<Elastic.Documentation.Site.GlobalLayoutViewModel>
 <div class="sticky top-0 z-10">
-    <elastic-docs-header title="@(Model.HeaderTitle ?? Model.DocSetName)"></elastic-docs-header>
+    <elastic-docs-header title="@(Model.HeaderTitle ?? Model.DocSetName)"
+                         logo-href="@(Model.Link("/"))"></elastic-docs-header>
 </div>

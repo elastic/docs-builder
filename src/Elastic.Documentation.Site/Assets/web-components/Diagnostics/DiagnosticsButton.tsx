@@ -1,4 +1,5 @@
 import { useDiagnosticsStore } from './diagnostics.store'
+import { EuiBadge } from '@elastic/eui'
 import * as React from 'react'
 
 // Animated spinner for building state
@@ -28,63 +29,27 @@ const CheckIcon: React.FC = () => (
     </svg>
 )
 
-// Error icon (X in circle)
-const ErrorIcon: React.FC = () => (
-    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-        <path
-            fillRule="evenodd"
-            d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-            clipRule="evenodd"
-        />
-    </svg>
-)
-
-// Warning icon (exclamation triangle)
-const WarningIcon: React.FC = () => (
-    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-        <path
-            fillRule="evenodd"
-            d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-            clipRule="evenodd"
-        />
-    </svg>
-)
-
-// Hint icon (info circle)
-const HintIcon: React.FC = () => (
-    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-        <path
-            fillRule="evenodd"
-            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-            clipRule="evenodd"
-        />
-    </svg>
-)
-
 interface SegmentProps {
-    icon: React.ReactNode
+    icon: string
     count: number
     label: string
     gradientClass: string
     isFirst: boolean
     isLast: boolean
+    type: 'danger' | 'warning' | 'primary' | 'success'
 }
 
-const Segment: React.FC<SegmentProps> = ({
-    icon,
-    count,
-    label,
-    gradientClass,
-    isFirst,
-    isLast,
-}) => (
-    <div
-        className={`diagnostics-segment ${gradientClass} flex items-center gap-1.5 px-2.5 py-1.5 text-white text-sm font-medium ${isFirst ? 'rounded-l-full' : ''} ${isLast ? 'rounded-r-full' : ''}`}
-    >
-        {icon}
-        <span>{count}</span>
-        <span className="hidden sm:inline">{label}</span>
-    </div>
+const Segment: React.FC<SegmentProps> = ({ icon, count, label, type }) => (
+    <EuiBadge color={type} iconType={icon}>
+        {count} {label}
+    </EuiBadge>
+    // <div
+    //     className={`diagnostics-segment ${gradientClass} flex items-center gap-1.5 px-2.5 py-1.5 text-white text-sm font-medium ${isFirst ? 'rounded-l-full' : ''} ${isLast ? 'rounded-r-full' : ''}`}
+    // >
+    //     {icon}
+    //     <span>{count}</span>
+    //     <span className="hidden sm:inline">{label}</span>
+    // </div>
 )
 
 export const DiagnosticsButton: React.FC = () => {
@@ -105,27 +70,27 @@ export const DiagnosticsButton: React.FC = () => {
     // Not connected yet, show connecting state
     if (!isConnected && status === 'idle') {
         return (
-            <button
+            <div
                 onClick={handleClick}
                 className={`${pillBase} diagnostics-pill-building flex items-center justify-center p-2`}
                 title="Connecting to diagnostics..."
             >
                 <BuildingSpinner />
-            </button>
+            </div>
         )
     }
 
     // Building state with no prior issues - spinner only
     if (isBuilding && !hasIssues) {
         return (
-            <button
+            <div
                 onClick={handleClick}
                 className={`${pillBase} diagnostics-pill-building flex items-center gap-2 px-3 py-1.5 text-sm`}
                 title="Building..."
             >
                 <BuildingSpinner />
                 <span>Building...</span>
-            </button>
+            </div>
         )
     }
 
@@ -134,46 +99,46 @@ export const DiagnosticsButton: React.FC = () => {
         // Build segments array for items with count > 0
         const segments: {
             key: string
-            icon: React.ReactNode
+            icon: string
             count: number
             label: string
             gradientClass: string
+            type: 'danger' | 'warning' | 'primary' | 'success'
         }[] = []
 
         if (errors > 0) {
             segments.push({
                 key: 'errors',
-                icon: <ErrorIcon />,
+                icon: 'error',
                 count: errors,
                 label: 'errors',
                 gradientClass: 'diagnostics-segment-error',
+                type: 'danger',
             })
         }
         if (warnings > 0) {
             segments.push({
                 key: 'warnings',
-                icon: <WarningIcon />,
+                icon: 'warning',
                 count: warnings,
                 label: 'warnings',
                 gradientClass: 'diagnostics-segment-warning',
+                type: 'warning',
             })
         }
         if (hints > 0) {
             segments.push({
                 key: 'hints',
-                icon: <HintIcon />,
+                icon: 'info',
                 count: hints,
                 label: 'hints',
                 gradientClass: 'diagnostics-segment-hint',
+                type: 'primary',
             })
         }
 
         return (
-            <button
-                onClick={handleClick}
-                className="diagnostics-segmented-pill flex items-stretch overflow-hidden rounded-full shadow-md animate-wobble cursor-pointer"
-                title="Click to view diagnostics"
-            >
+            <div onClick={handleClick} title="Click to view diagnostics">
                 {isBuilding && (
                     <div className="diagnostics-segment diagnostics-segment-building flex items-center px-2.5 py-1.5 rounded-l-full">
                         <BuildingSpinner />
@@ -188,21 +153,22 @@ export const DiagnosticsButton: React.FC = () => {
                         gradientClass={segment.gradientClass}
                         isFirst={!isBuilding && index === 0}
                         isLast={index === segments.length - 1}
+                        type={segment.type}
                     />
                 ))}
-            </button>
+            </div>
         )
     }
 
     // All good state - green gradient with checkmark
     return (
-        <button
+        <div
             onClick={handleClick}
             className={`${pillBase} diagnostics-pill-success flex items-center gap-2 px-3 py-1.5 text-sm`}
             title="All good! No issues found."
         >
             <CheckIcon />
             <span>All good!</span>
-        </button>
+        </div>
     )
 }
