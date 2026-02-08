@@ -61,7 +61,7 @@
   <ItemGroup>
     <PackageVersion Include="Argu" Version="6.2.5" />
     <PackageVersion Include="Bullseye" Version="6.1.0" />
-    <PackageVersion Include="Proc.Fs" Version="0.9.1" />
+    <PackageVersion Include="Proc.Fs" Version="0.13.0" />
     <PackageVersion Include="Fake.Tools.Git" Version="6.1.4" />
     <PackageVersion Include="Fake.IO.Zip" Version="6.1.4" />
     <PackageVersion Include="FSharp.Core" Version="10.0.102" />
@@ -80,7 +80,7 @@
     <PackageVersion Include="ModelContextProtocol.AspNetCore" Version="0.2.0-preview.1" />
     <PackageVersion Include="NetEscapades.EnumGenerators" Version="1.0.0-beta12" PrivateAssets="all" ExcludeAssets="runtime" />
     <PackageVersion Include="Riok.Mapperly" Version="4.2.1" PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
-    <PackageVersion Include="Proc" Version="0.9.1" />
+    <PackageVersion Include="Proc" Version="0.13.0" />
     <PackageVersion Include="RazorSlices" Version="0.9.4" />
     <PackageVersion Include="Samboy063.Tomlet" Version="6.0.0" />
     <PackageVersion Include="Sep" Version="0.11.0" />
