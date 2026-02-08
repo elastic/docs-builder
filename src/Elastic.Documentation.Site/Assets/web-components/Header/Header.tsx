@@ -1,4 +1,3 @@
-import { DiagnosticsPanel } from '../Diagnostics/DiagnosticsComponent'
 import { useHtmxLink } from '../shared/htmx/useHtmxLink'
 import githubSvg from './GitHub_Invertocat_Black.svg'
 import {
@@ -8,7 +7,6 @@ import {
     EuiHeaderLinks,
     EuiHeaderLogo,
     EuiHeaderSectionItem,
-    EuiHeaderSectionItemButton,
     useEuiTheme,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
@@ -60,15 +58,6 @@ export const Header = ({
                 },
                 {
                     items: [
-                        <EuiHeaderSectionItemButton>
-                            <DiagnosticsPanel />
-                        </EuiHeaderSectionItemButton>,
-
-                        // <EuiHeaderSectionItem>
-                        //     <EuiBadge color="accent" iconType="branch">
-                        //         {gitBranch}
-                        //     </EuiBadge>
-                        // </EuiHeaderSectionItem>,
                         <EuiHeaderSectionItem>
                             <EuiHeaderLinks>
                                 <EuiHeaderLink

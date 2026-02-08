@@ -1,74 +1,69 @@
 import { DiagnosticsHud } from './DiagnosticsHud'
 import { useDiagnosticsStore } from './diagnostics.store'
-import { EuiResizableButton, keys } from '@elastic/eui'
+import { EuiResizableButton, keys, useEuiTheme } from '@elastic/eui'
 import * as React from 'react'
 import { useState, useCallback, useRef } from 'react'
 
-const MIN_PANEL_HEIGHT = 150
-const DEFAULT_PANEL_HEIGHT = 300
-const MAX_PANEL_HEIGHT_VH = 50
-const MAX_PANEL_HEIGHT = '50vh'
-const KEYBOARD_OFFSET = 10
+const MIN_HEIGHT = 125
+const DEFAULT_HEIGHT = 200
+const MAX_HEIGHT_VH = 66
+const MAX_HEIGHT = `${MAX_HEIGHT_VH}vh`
+const KEYBOARD_STEP = 10
 
-const getMaxPanelHeightPx = () =>
-    (window.innerHeight * MAX_PANEL_HEIGHT_VH) / 100
+const getMaxHeightPx = () => (window.innerHeight * MAX_HEIGHT_VH) / 100
 
-const getMouseOrTouchY = (
+const getPointerY = (
     e: TouchEvent | MouseEvent | React.MouseEvent | React.TouchEvent
-): number => {
-    const y = (e as TouchEvent).targetTouches
+): number =>
+    (e as TouchEvent).targetTouches
         ? (e as TouchEvent).targetTouches[0].pageY
         : (e as MouseEvent).pageY
-    return y
-}
 
 export const ResizableDiagnosticsHud: React.FC = () => {
     const { isHudOpen } = useDiagnosticsStore()
-    const [panelHeight, setPanelHeight] = useState(DEFAULT_PANEL_HEIGHT)
-    const initialPanelHeight = useRef(panelHeight)
-    const initialMouseY = useRef(0)
+    const { euiTheme } = useEuiTheme()
+    const [panelHeight, setPanelHeight] = useState(DEFAULT_HEIGHT)
+    const startHeight = useRef(panelHeight)
+    const startY = useRef(0)
 
-    const onMouseMove = useCallback((e: MouseEvent | TouchEvent) => {
-        const mouseOffset = initialMouseY.current - getMouseOrTouchY(e)
-        const changedPanelHeight = initialPanelHeight.current + mouseOffset
-        const maxPx = getMaxPanelHeightPx()
+    const onPointerMove = useCallback((e: MouseEvent | TouchEvent) => {
+        const offset = startY.current - getPointerY(e)
+        const maxPx = getMaxHeightPx()
         setPanelHeight(
-            Math.max(MIN_PANEL_HEIGHT, Math.min(changedPanelHeight, maxPx))
+            Math.max(MIN_HEIGHT, Math.min(startHeight.current + offset, maxPx))
         )
     }, [])
 
-    const onMouseUp = useCallback(() => {
-        initialMouseY.current = 0
-        window.removeEventListener('mousemove', onMouseMove)
-        window.removeEventListener('mouseup', onMouseUp)
-        window.removeEventListener('touchmove', onMouseMove)
-        window.removeEventListener('touchend', onMouseUp)
-    }, [onMouseMove])
+    const onPointerUp = useCallback(() => {
+        startY.current = 0
+        window.removeEventListener('mousemove', onPointerMove)
+        window.removeEventListener('mouseup', onPointerUp)
+        window.removeEventListener('touchmove', onPointerMove)
+        window.removeEventListener('touchend', onPointerUp)
+    }, [onPointerMove])
 
     const onResizeStart = useCallback(
         (e: React.MouseEvent | React.TouchEvent) => {
-            initialMouseY.current = getMouseOrTouchY(e)
-            initialPanelHeight.current = panelHeight
-            window.addEventListener('mousemove', onMouseMove)
-            window.addEventListener('mouseup', onMouseUp)
-            window.addEventListener('touchmove', onMouseMove)
-            window.addEventListener('touchend', onMouseUp)
+            startY.current = getPointerY(e)
+            startHeight.current = panelHeight
+            window.addEventListener('mousemove', onPointerMove)
+            window.addEventListener('mouseup', onPointerUp)
+            window.addEventListener('touchmove', onPointerMove)
+            window.addEventListener('touchend', onPointerUp)
         },
-        [panelHeight, onMouseMove, onMouseUp]
+        [panelHeight, onPointerMove, onPointerUp]
     )
 
     const onKeyDown = useCallback((e: React.KeyboardEvent) => {
-        const maxPx = getMaxPanelHeightPx()
+        const maxPx = getMaxHeightPx()
         switch (e.key) {
             case keys.ARROW_UP:
                 e.preventDefault()
-                setPanelHeight((h) => Math.min(h + KEYBOARD_OFFSET, maxPx))
+                setPanelHeight((h) => Math.min(h + KEYBOARD_STEP, maxPx))
                 break
             case keys.ARROW_DOWN:
                 e.preventDefault()
-                setPanelHeight((h) =>
-                    Math.max(h - KEYBOARD_OFFSET, MIN_PANEL_HEIGHT)
-                )
+                setPanelHeight((h) => Math.max(h - KEYBOARD_STEP, MIN_HEIGHT))
                 break
         }
     }, [])
@@ -79,11 +74,14 @@ export const ResizableDiagnosticsHud: React.FC = () => {
 
     return (
         <div
-            className="fixed bottom-0 left-0 right-0 flex flex-col bg-grey-140 border-t border-grey-120 shadow-2xl"
             style={{
+                display: 'flex',
+                flexDirection: 'column',
                 height: panelHeight,
-                maxHeight: MAX_PANEL_HEIGHT,
-                zIndex: 9998,
+                maxHeight: MAX_HEIGHT,
+                backgroundColor: euiTheme.colors.body,
+                borderTop: `1px solid ${euiTheme.border.color}`,
+                flexShrink: 0,
             }}
         >
             <EuiResizableButton
@@ -93,8 +91,15 @@ export const ResizableDiagnosticsHud: React.FC = () => {
                 onKeyDown={onKeyDown}
                 aria-label="Resize diagnostics panel"
             />
-            <div className="flex-1 min-h-0 flex flex-col">
-                <DiagnosticsHud embedded />
+            <div
+                style={{
+                    flex: 1,
+                    minHeight: 0,
+                    display: 'flex',
+                    flexDirection: 'column',
+                }}
+            >
+                <DiagnosticsHud />
             </div>
         </div>
     )

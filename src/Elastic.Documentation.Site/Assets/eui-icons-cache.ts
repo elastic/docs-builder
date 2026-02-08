@@ -7,7 +7,9 @@ import { icon as EuiIconArrowRight } from '@elastic/eui/es/components/icon/asset
 import { icon as EuiIconArrowUp } from '@elastic/eui/es/components/icon/assets/arrow_up'
 import { icon as EuiIconBranch } from '@elastic/eui/es/components/icon/assets/branch'
 import { icon as EuiIconCheck } from '@elastic/eui/es/components/icon/assets/check'
+import { icon as EuiIconCheckCircle } from '@elastic/eui/es/components/icon/assets/check_circle'
 import { icon as EuiIconChevronSingleDown } from '@elastic/eui/es/components/icon/assets/chevron_single_down'
+import { icon as EuiIconChevronSingleUp } from '@elastic/eui/es/components/icon/assets/chevron_single_up'
 import { icon as EuiIconCode } from '@elastic/eui/es/components/icon/assets/code'
 import { icon as EuiIconComment } from '@elastic/eui/es/components/icon/assets/comment'
 import { icon as EuiIconConsole } from '@elastic/eui/es/components/icon/assets/console'
@@ -23,6 +25,7 @@ import { icon as EuiIconEmpty } from '@elastic/eui/es/components/icon/assets/emp
 import { icon as EuiIconError } from '@elastic/eui/es/components/icon/assets/error'
 import { icon as EuiIconFaceHappy } from '@elastic/eui/es/components/icon/assets/face_happy'
 import { icon as EuiIconFaceSad } from '@elastic/eui/es/components/icon/assets/face_sad'
+import { icon as EuiIconFilter } from '@elastic/eui/es/components/icon/assets/filter'
 import { icon as EuiIconGlobe } from '@elastic/eui/es/components/icon/assets/globe'
 import { icon as EuiIconInfo } from '@elastic/eui/es/components/icon/assets/info'
 import { icon as EuiIconKqlFunction } from '@elastic/eui/es/components/icon/assets/kql_function'
@@ -61,6 +64,7 @@ const iconMapping = {
     user: EuiIconUser,
     wrench: EuiIconWrench,
     visualizeApp: EuiIconVisualizeApp,
+    checkCircle: EuiIconCheckCircle,
     check: EuiIconCheck,
     sparkles: EuiIconSparkles,
     cross: EuiIconCross,
@@ -88,8 +92,10 @@ const iconMapping = {
     warning: EuiIconWarning,
     error: EuiIconError,
     chevronSingleDown: EuiIconChevronSingleDown,
+    chevronSingleUp: EuiIconChevronSingleUp,
     dotInCircle: EuiIconDotInCircle,
     branch: EuiIconBranch,
+    filter: EuiIconFilter,
 }
 
 appendIconComponentCache(iconMapping)

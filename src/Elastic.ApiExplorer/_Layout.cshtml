@@ -36,4 +36,11 @@ else
 		</div>
 	</div>
 </div>
-@await RenderPartialAsync(_Footer.Create<GlobalLayoutViewModel>(Model))
+@if (Model.BuildType == BuildType.Assembler)
+{
+	@(await RenderPartialAsync(_AssemblerFooter.Create<GlobalLayoutViewModel>(Model)))
+}
+else
+{
+	@(await RenderPartialAsync(_IsolatedFooter.Create<GlobalLayoutViewModel>(Model)))
+}
