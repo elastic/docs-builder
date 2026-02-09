@@ -2,7 +2,6 @@ import githubSvg from './GitHub_Invertocat_Black.svg'
 import commitSvg from './commit.svg'
 import pullRequestSvg from './pull-request.svg'
 import {
-    EuiBadge,
     EuiIcon,
     EuiHeaderSectionItem,
     EuiPopover,
@@ -13,6 +12,7 @@ import {
     useGeneratedHtmlId,
     IconType,
     EuiThemeComputed,
+    EuiButton,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
 import { useState } from 'react'
@@ -43,10 +43,12 @@ export const DeploymentInfo = ({
 
     const popoverButton = (
         <EuiHeaderSectionItem>
-            <EuiBadge
-                onClick={() => setIsOpen((prev) => !prev)}
-                onClickAriaLabel="Show deployment info"
+            <EuiButton
+                size="s"
+                fill
                 color="primary"
+                // onClickAriaLabel="Show deployment info"
+                onClick={() => setIsOpen((prev) => !prev)}
                 css={css`
                     margin-inline: ${euiTheme.size.s};
                     font-family: ${euiTheme.font.familyCode};
@@ -65,7 +67,7 @@ export const DeploymentInfo = ({
                             gap: ${euiTheme.size.xs};
                         `}
                     >
-                        <EuiIcon type="branch" size="s" />
+                        <EuiIcon type="branch" />
                         {gitBranch}
                     </span>
                     <span
@@ -75,11 +77,11 @@ export const DeploymentInfo = ({
                             gap: ${euiTheme.size.xs};
                         `}
                     >
-                        <EuiIcon type={commitSvg} size="s" />
+                        <EuiIcon type={commitSvg} />
                         {gitCommit}
                     </span>
                 </div>
-            </EuiBadge>
+            </EuiButton>
         </EuiHeaderSectionItem>
     )
 
@@ -90,6 +92,7 @@ export const DeploymentInfo = ({
             button={popoverButton}
             closePopover={() => setIsOpen(false)}
             panelPaddingSize="none"
+            anchorPosition="downRight"
             isOpen={isOpen}
         >
             <EuiPopoverTitle paddingSize="s">
@@ -263,7 +266,7 @@ function getDeploymentLinks(
         pull?.kind === 'pull' ? `${base}/pull/${pull.number}` : undefined
     return {
         ref: pullUrl,
-        branch: pullUrl ?? `${base}/tree/${gitBranch}`,
+        branch: `${base}/tree/${gitBranch}`,
         commit: `${base}/commit/${gitCommit}`,
         repository: base,
     }

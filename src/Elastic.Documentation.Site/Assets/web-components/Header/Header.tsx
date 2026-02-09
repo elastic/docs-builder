@@ -1,7 +1,13 @@
 import '../../eui-icons-cache'
 import { useHtmxContainer } from '../shared/htmx/useHtmxContainer'
 import { DeploymentInfo } from './DeploymentInfo'
-import { EuiHeader, EuiHeaderLogo, EuiProvider } from '@elastic/eui'
+import {
+    EuiHeader,
+    EuiHeaderLogo,
+    EuiProvider,
+    useEuiTheme,
+} from '@elastic/eui'
+import { css } from '@emotion/react'
 import r2wc from '@r2wc/react-to-web-component'
 import { useRef } from 'react'
 
@@ -24,6 +30,7 @@ export const Header = ({
     gitCommit,
     githubRef,
 }: Props) => {
+    const { euiTheme } = useEuiTheme()
     const containerRef = useRef<HTMLSpanElement>(null)
     useHtmxContainer(containerRef)
 
@@ -34,12 +41,21 @@ export const Header = ({
             utilityClasses={false}
         >
             <EuiHeader
-                theme="dark"
+                css={css`
+                    background-color: ${euiTheme.colors.primary};
+                `}
                 sections={[
                     {
                         items: [
                             <span ref={containerRef}>
-                                <EuiHeaderLogo href={logoHref}>
+                                <EuiHeaderLogo
+                                    href={logoHref}
+                                    css={css`
+                                        & > span {
+                                            color: var(--color-white);
+                                        }
+                                    `}
+                                >
                                     {title}
                                 </EuiHeaderLogo>
                             </span>,
