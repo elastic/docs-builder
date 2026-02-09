@@ -46,7 +46,7 @@
     <PackageVersion Include="Generator.Equals" Version="3.3.0" PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
     <PackageVersion Include="KubernetesClient" Version="18.0.5" />
     <PackageVersion Include="Elastic.Aspire.Hosting.Elasticsearch" Version="9.3.0" />
-    <PackageVersion Include="Elastic.Clients.Elasticsearch" Version="9.2.3" />
+    <PackageVersion Include="Elastic.Clients.Elasticsearch" Version="9.3.0" />
     <PackageVersion Include="FakeItEasy" Version="9.0.1" />
     <PackageVersion Include="Elastic.Ingest.Elasticsearch" Version="0.17.1" />
     <PackageVersion Include="InMemoryLogger" Version="1.0.66" />
