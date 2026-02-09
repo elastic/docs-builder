@@ -6,10 +6,7 @@ declare global {
     interface Window {
         mermaid: {
             initialize: (config: Record<string, unknown>) => void
-            render: (
-                id: string,
-                code: string
-            ) => Promise<{ svg: string }>
+            render: (id: string, code: string) => Promise<{ svg: string }>
         }
     }
 }
@@ -92,8 +89,7 @@ async function loadMermaid(): Promise<void> {
 
             resolve()
         }
-        script.onerror = () =>
-            reject(new Error('Failed to load Mermaid.js'))
+        script.onerror = () => reject(new Error('Failed to load Mermaid.js'))
         document.head.appendChild(script)
     })
 
