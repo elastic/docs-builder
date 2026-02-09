@@ -49,6 +49,7 @@ public class IndexViewModel
 	public required Uri? CanonicalBaseUrl { get; init; }
 
 	public required GoogleTagManagerConfiguration GoogleTagManager { get; init; }
+	public required OptimizelyConfiguration Optimizely { get; init; }
 
 	public required FeatureFlags Features { get; init; }
 	public required StaticFileContentHashProvider StaticFileContentHashProvider { get; init; }
