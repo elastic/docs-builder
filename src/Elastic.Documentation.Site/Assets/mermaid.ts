@@ -1,6 +1,8 @@
 // Mermaid is loaded from local _static/ to avoid client-side CDN calls
 // The file is copied from node_modules during build (see package.json copy:mermaid)
 
+import DOMPurify from 'dompurify'
+
 // Type declaration for mermaid UMD global
 declare global {
     interface Window {
@@ -81,6 +83,12 @@ async function waitForFonts(): Promise<void> {
 	} catch {
 		// Ignore font loading failures and continue rendering
 	}
+}
+
+function sanitizeSvg(svg: string): string {
+	// Use DOMPurify to sanitize the SVG output from mermaid before inserting it into the DOM.
+	// Restrict to the SVG profile to avoid allowing unexpected HTML.
+	return DOMPurify.sanitize(svg, { USE_PROFILES: { svg: true } }) as string
 }
 
 async function renderMermaidDiagram(
@@ -193,7 +201,7 @@ async function renderMermaidElement(element: HTMLElement): Promise<void> {
 
 		const rendered = document.createElement('div')
 		rendered.className = 'mermaid-rendered'
-		rendered.innerHTML = svg
+		rendered.innerHTML = sanitizeSvg(svg)
 
 		viewport.appendChild(rendered)
 		container.appendChild(viewport)
