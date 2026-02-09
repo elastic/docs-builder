@@ -1,3 +1,12 @@
+/* Hide raw source text to prevent flash before JS renders the diagram */
+pre.mermaid {
+	visibility: hidden;
+	height: 0;
+	margin: 0;
+	padding: 0;
+	overflow: hidden;
+}
+
 /* Mermaid diagram container */
 .mermaid-container {
 	position: relative;
