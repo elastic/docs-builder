@@ -198,6 +198,11 @@ internal record BundleProfileYaml
 	/// Supports {version} placeholder.
 	/// </summary>
 	public string? Output { get; set; }
+
+	/// <summary>
+	/// Feature IDs to mark as hidden in the bundle output.
+	/// </summary>
+	public List<string>? HideFeatures { get; set; }
 }
 
 /// <summary>

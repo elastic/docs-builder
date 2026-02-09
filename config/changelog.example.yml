@@ -124,3 +124,7 @@ bundle:
     # serverless-release:
     #   products: "cloud-serverless {version} *"
     #   output: "serverless-{version}.yaml"
+    #   # Feature IDs to hide when bundling with this profile
+    #   hide_features:
+    #     - feature-flag-1
+    #     - feature-flag-2

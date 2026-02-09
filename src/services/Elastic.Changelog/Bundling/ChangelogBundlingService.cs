@@ -250,14 +250,31 @@ public partial class ChangelogBundlingService(
 			outputPath = _fileSystem.Path.Combine(outputDir, outputPattern);
 		}
 
+		// Merge profile hide-features with any CLI-provided hide-features
+		var mergedHideFeatures = MergeHideFeatures(input.HideFeatures, profile.HideFeatures);
+
 		// If we have PRs from a promotion report, use those; otherwise use input products filter
 		return input with
 		{
 			InputProducts = prsFromReport == null ? inputProducts : null,
 			Prs = prsFromReport,
 			All = false,
-			Output = outputPath ?? input.Output
+			Output = outputPath ?? input.Output,
+			HideFeatures = mergedHideFeatures
 		};
+	}
+
+	private static string[]? MergeHideFeatures(string[]? cliHideFeatures, IReadOnlyList<string>? profileHideFeatures)
+	{
+		if (cliHideFeatures is not { Length: > 0 } && profileHideFeatures is not { Count: > 0 })
+			return null;
+
+		var merged = new HashSet<string>(cliHideFeatures ?? [], StringComparer.OrdinalIgnoreCase);
+
+		if (profileHideFeatures is { Count: > 0 })
+			merged.UnionWith(profileHideFeatures);
+
+		return merged.Count > 0 ? [.. merged] : null;
 	}
 
 	private static List<ProductArgument> ParseProfileProducts(string pattern)
