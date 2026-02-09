@@ -33,6 +33,26 @@
     "css": {
       "distDir": "_static",
       "source": "Assets/styles.css"
+    },
+    "assembler-css": {
+      "distDir": "_static",
+      "source": "Assets/assembler.css"
+    },
+    "isolated-css": {
+      "distDir": "_static",
+      "source": "Assets/isolated.css"
+    },
+    "codex-css": {
+      "distDir": "_static",
+      "source": "Assets/codex.css"
+    },
+    "isolated-js": {
+      "distDir": "_static",
+      "source": "Assets/isolated.ts"
+    },
+    "codex-js": {
+      "distDir": "_static",
+      "source": "Assets/codex.ts"
     }
   },
   "alias": {
@@ -86,7 +106,7 @@
     "defaults"
   ],
   "dependencies": {
-    "@elastic/eui": "111.1.0",
+    "@elastic/eui": "112.2.0",
     "@elastic/highlightjs-esql": "1.2.2",
     "@emotion/css": "11.13.5",
     "@emotion/react": "11.14.0",
@@ -107,6 +127,7 @@
     "@r2wc/react-to-web-component": "2.1.0",
     "@tanstack/react-query": "^5.90.6",
     "@uidotdev/usehooks": "2.4.1",
+    "beautiful-mermaid": "^0.1.3",
     "dompurify": "3.3.1",
     "highlight.js": "11.11.1",
     "htmx-ext-head-support": "2.0.4",

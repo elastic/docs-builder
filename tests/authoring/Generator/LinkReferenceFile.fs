@@ -59,7 +59,8 @@ Through various means $$$including-this-inline-syntax$$$
            "branch": "unavailable",
            "remote": "unavailable",
            "ref": "unavailable",
-           "name": "unavailable"
+           "name": "unavailable",
+           "github_ref": null
          },
          "url_path_prefix": "",
          "links": {

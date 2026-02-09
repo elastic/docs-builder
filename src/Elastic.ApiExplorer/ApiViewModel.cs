@@ -82,6 +82,7 @@ public abstract partial class ApiViewModel(ApiRenderContext context)
 			GitBranch = BuildContext.Git.Branch != "unavailable" ? BuildContext.Git.Branch : null,
 			GitCommitShort = BuildContext.Git.Ref is { Length: >= 7 } r && r != "unavailable" ? r[..7] : null,
 			GitRepository = BuildContext.Git.RepositoryName != "unavailable" ? BuildContext.Git.RepositoryName : null,
-			GitHubDocsUrl = GetGitHubDocsUrl()
+			GitHubDocsUrl = GetGitHubDocsUrl(),
+			GitHubRef = BuildContext.Git.GitHubRef
 		};
 }

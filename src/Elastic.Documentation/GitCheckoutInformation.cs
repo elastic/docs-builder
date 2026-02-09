@@ -33,6 +33,12 @@ public partial record GitCheckoutInformation
 	[JsonPropertyName("name")]
 	public string RepositoryName { get; init; } = "unavailable";
 
+	/// <summary>
+	/// The full git ref from GitHub Actions (e.g. refs/pull/123/merge). Set from GITHUB_REF when running in CI.
+	/// </summary>
+	[JsonPropertyName("github_ref")]
+	public string? GitHubRef { get; init; }
+
 	// manual read because libgit2sharp is not yet AOT ready
 	public static GitCheckoutInformation Create(IDirectoryInfo? source, IFileSystem fileSystem, ILogger? logger = null)
 	{
@@ -119,12 +125,14 @@ public partial record GitCheckoutInformation
 		}
 		remote = CutOffGitExtension().Replace(remote, string.Empty);
 
+		var githubRef = Environment.GetEnvironmentVariable("GITHUB_REF");
 		var info = new GitCheckoutInformation
 		{
 			Ref = gitRef,
 			Branch = branch,
 			Remote = remote,
-			RepositoryName = remote.Split('/').Last()
+			RepositoryName = remote.Split('/').Last(),
+			GitHubRef = string.IsNullOrEmpty(githubRef) ? null : githubRef
 		};
 
 		logger?.LogInformation("-> Remote Name: {GitRemote}", info.Remote);

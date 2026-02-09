@@ -1,0 +1,25 @@
+@inherits RazorSlice<Elastic.Documentation.Site.GlobalLayoutViewModel>
+
+<footer class="py-8 px-6 w-full mx-auto bg-ink-dark">
+	<div class="max-w-(--max-layout-width) w-full mx-auto text-grey-20 text-[12px]">
+		<a href="https://www.elastic.co/">
+			<img class="block" loading="lazy" alt="Elastic logo" src="@Model.Static("logo-elastic-horizontal-white.svg")" width="120" height="41"/>
+		</a>
+		<p class="mt-4">
+			© @(DateTime.Today.Year) Elasticsearch B.V. All Rights Reserved.
+		</p>
+		<ul class="mt-2 flex gap-3">
+			<li>
+				<a class="underline hover:text-white" href="https://www.elastic.co/legal/terms-of-use">Terms of Use</a>
+			</li>
+			<li>
+				<a class="underline hover:text-white" href="https://www.elastic.co/legal/privacy-statement">Privacy</a>
+			</li>
+		</ul>
+	</div>
+	@if (Model.Features.DiagnosticsPanelEnabled)
+	{
+		<div class="h-10">@* height of the diagnostics panel as placeholder so we can see the full footer *@</div>
+		<diagnostics-panel></diagnostics-panel>
+	}
+</footer>
