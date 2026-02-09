@@ -8,15 +8,18 @@
 }
 
 <ol id="breadcrumbs" class="flex flex-wrap gap-1 items-center w-full py-6">
-	<li class="text-ink-light text-sm leading-[1.2em]">
-		<a
-			itemprop="item"
-			href="/"
-		>
-			<span class="hover:text-black">Home</span>
-		</a>
-		<span class="px-1">/</span>
-	</li>
+	@if (Model.BuildType == BuildType.Isolated)
+	{
+		<li class="text-ink-light text-sm leading-[1.2em]">
+			<a
+				itemprop="item"
+				href="@Model.Link("/")"
+			>
+				<span class="hover:text-black">Home</span>
+			</a>
+			<span class="px-1">/</span>
+		</li>
+	}
 	@for (var i = 0; i < crumbs.Count; i++)
 	{
 		var item = crumbs[i];

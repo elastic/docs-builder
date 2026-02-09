@@ -45,6 +45,14 @@
     "codex-css": {
       "distDir": "_static",
       "source": "Assets/codex.css"
+    },
+    "isolated-js": {
+      "distDir": "_static",
+      "source": "Assets/isolated.ts"
+    },
+    "codex-js": {
+      "distDir": "_static",
+      "source": "Assets/codex.ts"
     }
   },
   "alias": {
