@@ -97,7 +97,7 @@ async function renderMermaidDiagram(
 ): Promise<string> {
 	const { svg } = await window.mermaid.render(id, content)
 
-	if (!/viewBox=\"-8 -8 16 16\"/.test(svg)) {
+	if (!/viewBox="-8 -8 16 16"/.test(svg)) {
 		return svg
 	}
 
