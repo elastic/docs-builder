@@ -74,18 +74,13 @@ public record GlobalLayoutViewModel
 
 	private string GetStaticPathPrefix()
 	{
-		if (BuildType == BuildType.Codex)
-		{
-			// Extract site prefix from URL path (e.g., /internal-docs/r/repoName -> /internal-docs)
-			if (UrlPathPrefix?.Contains("/r/", StringComparison.Ordinal) == true)
-			{
-				var rIndex = UrlPathPrefix.IndexOf("/r/", StringComparison.Ordinal);
-				if (rIndex > 0)
-					return UrlPathPrefix[..rIndex];
-			}
+		if (BuildType != BuildType.Codex)
+			return UrlPathPrefix ?? string.Empty;
+		// Extract site prefix from URL path (e.g., /internal-docs/r/repoName -> /internal-docs)
+		if (UrlPathPrefix?.Contains("/r/", StringComparison.Ordinal) != true)
 			return string.Empty;
-		}
-		return UrlPathPrefix ?? string.Empty;
+		var rIndex = UrlPathPrefix.IndexOf("/r/", StringComparison.Ordinal);
+		return rIndex > 0 ? UrlPathPrefix[..rIndex] : string.Empty;
 	}
 
 	public string Link(string path)
