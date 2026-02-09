@@ -610,77 +610,14 @@ If the `repo` field is not specified, the product ID is used as a fallback for l
 When you need to add entries to an existing bundle without modifying the original file, you can use the `docs-builder changelog bundle-amend` command to create amend bundles.
 Amend bundles follow a specific naming convention: `{parent-bundle-name}.amend-{N}.yaml` where `{N}` is a sequence number.
 
-For example, if you have a bundle named `9.3.0.yaml`, the command creates amend files:
-- `9.3.0.amend-1.yaml`
-- `9.3.0.amend-2.yaml`
+When bundles are loaded (either via the `changelog render` command or the `{changelog}` directive), amend files are **automatically merged** with their parent bundles.
+The entries from all matching amend files are combined with the parent bundle's entries, and the result is rendered as a single release.
 
-For up-to-date command usage information, use the `-h` option:
-
-```sh
-Amend a bundle with additional changelog entries, creating an immutable .amend-N.yaml file
-
-Arguments:
-  [0] <string>    Required: Path to the original bundle file to amend
-
-Options:
-  --add <string[]?>       Required: Path(s) to changelog YAML file(s) to add. Can be specified multiple times. [Default: null]
-  --resolve               Optional: Copy the contents of each changelog file into the entries array. When not specified, inferred from the original bundle.
-  --no-resolve            Optional: Explicitly turn off resolve (overrides inference from original bundle).
-```
-
-#### Resolve behaviour
-
-By default, the `bundle-amend` command **infers** whether to resolve entries from the original bundle.
-If the original bundle contains resolved entries (with inline `title`, `type`, etc.), the amend file will also be resolved.
-If the original bundle contains only file references, the amend file will also contain only file references.
-
-This inference ensures that amend files are portable—they contain everything needed to be understood alongside the original bundle, even when copied to another repository.
-
-You can override this behaviour:
-
-- `--resolve`: Force entries to be resolved (inline content), regardless of the original bundle.
-- `--no-resolve`: Force entries to contain only file references, regardless of the original bundle.
-
-#### Examples
-
-Create an amend file that automatically matches the resolve style of the original bundle:
-
-```sh
-docs-builder changelog bundle-amend 9.3.0.yaml \
-  --add /path/to/late-addition.yaml
-```
-
-Force resolved entries even if the original bundle is unresolved:
-
-```sh
-docs-builder changelog bundle-amend 9.3.0.yaml \
-  --add /path/to/late-addition.yaml \
-  --resolve
-```
-
-Force file-only references even if the original bundle is resolved:
-
-```sh
-docs-builder changelog bundle-amend 9.3.0.yaml \
-  --add /path/to/late-addition.yaml \
-  --no-resolve
-```
-
-Amend bundles contain only the additional entries:
-
-```yaml
-# 9.3.0.amend-1.yaml
-entries:
-- file:
-    name: late-addition.yaml
-    checksum: abc123def456
-```
-
-When bundles are loaded (either via the `changelog render` command or the `{changelog}` directive), amend files are **automatically merged** with their parent bundles. The entries from all matching amend files are combined with the parent bundle's entries, and the result is rendered as a single release.
-
-:::{note}
-Amend bundles do not need to include `products` or `hide-features` fields—they inherit these from their parent bundle. If an amend bundle is found without a matching parent bundle, it remains standalone.
+:::{warning}
+If you explicitly list the amend bundles in the `--input` option of the `docs-builder changelog render` command, you'll get duplicate entries in the output files. List only the original bundles.
 :::
+
+For more details and examples, go to [](/cli/release/changelog-bundle-amend.md).
 
 ## Create documentation
 
