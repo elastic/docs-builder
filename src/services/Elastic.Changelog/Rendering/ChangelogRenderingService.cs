@@ -115,17 +115,25 @@ public class ChangelogRenderingService(
 				return false;
 			}
 
-			// Load feature IDs to hide
+			// Load feature IDs to hide from CLI
 			var featureHidingLoader = new FeatureHidingLoader(_fileSystem);
 			var featureHidingResult = await featureHidingLoader.LoadFeatureIdsAsync(collector, input.HideFeatures, ctx);
 			if (!featureHidingResult.IsValid)
 				return false;
 
+			// Collect hide-features from bundles and merge with CLI hide-features
+			var combinedHideFeatures = new HashSet<string>(featureHidingResult.FeatureIdsToHide, StringComparer.OrdinalIgnoreCase);
+			foreach (var bundle in validationResult.Bundles)
+			{
+				foreach (var featureId in bundle.Data.HideFeatures)
+					_ = combinedHideFeatures.Add(featureId);
+			}
+
 			// Emit warnings for hidden entries
-			EmitHiddenEntryWarnings(collector, resolvedResult.Entries, featureHidingResult.FeatureIdsToHide);
+			EmitHiddenEntryWarnings(collector, resolvedResult.Entries, combinedHideFeatures);
 
 			// Build render context (needed for block checking)
-			var context = BuildRenderContext(input, outputSetup, resolvedResult, featureHidingResult.FeatureIdsToHide, config);
+			var context = BuildRenderContext(input, outputSetup, resolvedResult, combinedHideFeatures, config);
 
 			// Emit warnings for blocked entries
 			EmitBlockedEntryWarnings(collector, resolvedResult.Entries, context);

@@ -472,3 +472,239 @@ public class ChangelogConfigMixedBlockersTests : DirectiveTest<ChangelogBlock>
 		Html.Should().Contain("Bug fix");
 	}
 }
+
+public class ChangelogProductFallbackSingleProductTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(output,
+	// language=markdown
+	"""
+		:::{changelog}
+		:::
+		""")
+{
+	protected override void AddToFileSystem(MockFileSystem fileSystem)
+	{
+		fileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
+			// language=yaml
+			"""
+			products:
+			- product: kibana
+			  target: 9.3.0
+			entries:
+			- title: Regular Kibana feature
+			  type: feature
+			  products:
+			  - product: kibana
+			    target: 9.3.0
+			  pr: "111111"
+			- title: Internal feature
+			  type: feature
+			  products:
+			  - product: kibana
+			    target: 9.3.0
+			  areas:
+			  - Internal
+			  pr: "222222"
+			- title: Observability feature
+			  type: feature
+			  products:
+			  - product: kibana
+			    target: 9.3.0
+			  areas:
+			  - Elastic Observability
+			  pr: "333333"
+			"""));
+
+		// Config with product-specific blocker for kibana
+		fileSystem.AddFile("docs/changelog.yml", new MockFileData(
+			// language=yaml
+			"""
+			block:
+			  publish:
+			    areas:
+			      - Global Area
+			  product:
+			    kibana:
+			      publish:
+			        areas:
+			          - Internal
+			          - Elastic Observability
+			"""));
+	}
+
+	protected override IReadOnlyList<string>? GetDocsetProducts() => ["kibana"];
+
+	[Fact]
+	public void UsesProductSpecificBlockerWhenDocsetHasSingleProduct() =>
+		Block!.PublishBlocker.Should().NotBeNull();
+
+	[Fact]
+	public void ProductBlockerHasCorrectAreas()
+	{
+		Block!.PublishBlocker!.Areas.Should().NotBeNull();
+		Block!.PublishBlocker!.Areas.Should().Contain("Internal");
+		Block!.PublishBlocker!.Areas.Should().Contain("Elastic Observability");
+		// Should NOT contain global area - product-specific blocker takes precedence
+		Block!.PublishBlocker!.Areas.Should().NotContain("Global Area");
+	}
+
+	[Fact]
+	public void FiltersEntriesMatchingProductBlockedAreas()
+	{
+		Html.Should().Contain("Regular Kibana feature");
+		Html.Should().NotContain("Internal feature");
+		Html.Should().NotContain("Observability feature");
+	}
+}
+
+public class ChangelogProductFallbackMultipleProductsTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(output,
+	// language=markdown
+	"""
+		:::{changelog}
+		:::
+		""")
+{
+	protected override void AddToFileSystem(MockFileSystem fileSystem)
+	{
+		fileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
+			// language=yaml
+			"""
+			products:
+			- product: elasticsearch
+			  target: 9.3.0
+			entries:
+			- title: Regular feature
+			  type: feature
+			  products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			  pr: "111111"
+			- title: Internal feature
+			  type: feature
+			  products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			  areas:
+			  - Internal
+			  pr: "222222"
+			"""));
+
+		// Config with product-specific blockers
+		fileSystem.AddFile("docs/changelog.yml", new MockFileData(
+			// language=yaml
+			"""
+			block:
+			  publish:
+			    areas:
+			      - Global Area
+			  product:
+			    elasticsearch:
+			      publish:
+			        areas:
+			          - Internal
+			"""));
+	}
+
+	// Docset with multiple products - should fall back to global blocker
+	protected override IReadOnlyList<string>? GetDocsetProducts() => ["elasticsearch", "kibana"];
+
+	[Fact]
+	public void FallsBackToGlobalBlockerWhenMultipleProducts() =>
+		Block!.PublishBlocker.Should().NotBeNull();
+
+	[Fact]
+	public void GlobalBlockerHasCorrectAreas()
+	{
+		Block!.PublishBlocker!.Areas.Should().NotBeNull();
+		Block!.PublishBlocker!.Areas.Should().Contain("Global Area");
+		// Should NOT contain product-specific area
+		Block!.PublishBlocker!.Areas.Should().NotContain("Internal");
+	}
+
+	[Fact]
+	public void RendersAllEntriesWithGlobalBlocker()
+	{
+		// Global blocker only blocks "Global Area", not "Internal"
+		Html.Should().Contain("Regular feature");
+		Html.Should().Contain("Internal feature");
+	}
+}
+
+public class ChangelogProductExplicitOptionOverridesDocsetTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(output,
+	// language=markdown
+	"""
+		:::{changelog}
+		:product: elasticsearch
+		:::
+		""")
+{
+	protected override void AddToFileSystem(MockFileSystem fileSystem)
+	{
+		fileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
+			// language=yaml
+			"""
+			products:
+			- product: elasticsearch
+			  target: 9.3.0
+			entries:
+			- title: Regular feature
+			  type: feature
+			  products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			  pr: "111111"
+			- title: ES Internal feature
+			  type: feature
+			  products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			  areas:
+			  - ES Internal
+			  pr: "222222"
+			- title: Kibana Internal feature
+			  type: feature
+			  products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			  areas:
+			  - Kibana Internal
+			  pr: "333333"
+			"""));
+
+		// Config with different blockers for different products
+		fileSystem.AddFile("docs/changelog.yml", new MockFileData(
+			// language=yaml
+			"""
+			block:
+			  product:
+			    elasticsearch:
+			      publish:
+			        areas:
+			          - ES Internal
+			    kibana:
+			      publish:
+			        areas:
+			          - Kibana Internal
+			"""));
+	}
+
+	// Docset has kibana as single product, but directive explicitly requests elasticsearch
+	protected override IReadOnlyList<string>? GetDocsetProducts() => ["kibana"];
+
+	[Fact]
+	public void ExplicitProductOptionIsSet() =>
+		Block!.ProductId.Should().Be("elasticsearch");
+
+	[Fact]
+	public void UsesExplicitProductBlockerNotDocsetProduct()
+	{
+		Block!.PublishBlocker!.Areas.Should().Contain("ES Internal");
+		Block!.PublishBlocker!.Areas.Should().NotContain("Kibana Internal");
+	}
+
+	[Fact]
+	public void FiltersCorrectAreas()
+	{
+		Html.Should().Contain("Regular feature");
+		Html.Should().NotContain("ES Internal feature");
+		Html.Should().Contain("Kibana Internal feature");
+	}
+}

@@ -16,14 +16,22 @@ public class BundleBuilder
 	/// <summary>
 	/// Builds the bundled changelog data from matched entries.
 	/// </summary>
+	/// <param name="collector">The diagnostics collector.</param>
+	/// <param name="entries">Matched changelog files to bundle.</param>
+	/// <param name="outputProducts">Optional explicit products to set in the output.</param>
+	/// <param name="resolve">Whether to resolve changelog file contents into entries.</param>
+	/// <param name="repo">Optional GitHub repository name to set on products for link generation.</param>
+	/// <param name="hideFeatures">Optional feature IDs to mark as hidden in the bundle.</param>
 	public BundleBuildResult BuildBundle(
 		IDiagnosticsCollector collector,
 		IReadOnlyList<MatchedChangelogFile> entries,
 		IReadOnlyList<ProductArgument>? outputProducts,
-		bool resolve)
+		bool resolve,
+		string? repo = null,
+		HashSet<string>? hideFeatures = null)
 	{
 		// Build products list
-		var bundledProducts = BuildProducts(collector, entries, outputProducts);
+		var bundledProducts = BuildProducts(collector, entries, outputProducts, repo);
 
 		// Build entries list
 		var bundledEntries = resolve
@@ -42,6 +50,7 @@ public class BundleBuilder
 		var bundledData = new Bundle
 		{
 			Products = bundledProducts,
+			HideFeatures = hideFeatures?.Count > 0 ? hideFeatures.ToList() : [],
 			Entries = bundledEntries
 		};
 
@@ -55,7 +64,8 @@ public class BundleBuilder
 	private static List<BundledProduct> BuildProducts(
 		IDiagnosticsCollector collector,
 		IReadOnlyList<MatchedChangelogFile> entries,
-		IReadOnlyList<ProductArgument>? outputProducts)
+		IReadOnlyList<ProductArgument>? outputProducts,
+		string? repo)
 	{
 		List<BundledProduct> bundledProducts;
 
@@ -69,7 +79,8 @@ public class BundleBuilder
 				{
 					ProductId = p.Product ?? "",
 					Target = p.Target == "*" ? null : p.Target,
-					Lifecycle = ParseLifecycle(p.Lifecycle == "*" ? null : p.Lifecycle)
+					Lifecycle = ParseLifecycle(p.Lifecycle == "*" ? null : p.Lifecycle),
+					Repo = repo
 				})
 				.ToList();
 		}
@@ -94,7 +105,8 @@ public class BundleBuilder
 				.Select(pv => new BundledProduct(
 					pv.product,
 					string.IsNullOrWhiteSpace(pv.version) ? null : pv.version,
-					pv.lifecycle))
+					pv.lifecycle,
+					repo))
 				.ToList();
 		}
 		else

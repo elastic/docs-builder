@@ -375,7 +375,8 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 				kvp => new BundleProfile
 				{
 					Products = kvp.Value.Products,
-					Output = kvp.Value.Output
+					Output = kvp.Value.Output,
+					HideFeatures = kvp.Value.HideFeatures
 				});
 		}
 

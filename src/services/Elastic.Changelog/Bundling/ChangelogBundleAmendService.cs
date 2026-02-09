@@ -182,13 +182,7 @@ public partial class ChangelogBundleAmendService(ILoggerFactory logFactory, IFil
 			}
 
 			// Parse the changelog file and include full entry data
-			// Filter out comment lines
-			var yamlLines = content.Split('\n');
-			var yamlWithoutComments = string.Join('\n', yamlLines.Where(line => !line.TrimStart().StartsWith('#')));
-
-			// Normalize "version:" to "target:" in products section
-			var normalizedYaml = ChangelogBundlingService.VersionToTargetRegex().Replace(yamlWithoutComments, "$1target:");
-
+			var normalizedYaml = ReleaseNotesSerialization.NormalizeYaml(content);
 			var entry = ReleaseNotesSerialization.DeserializeEntry(normalizedYaml);
 
 			return new BundledEntry

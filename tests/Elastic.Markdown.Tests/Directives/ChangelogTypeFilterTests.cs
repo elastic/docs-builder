@@ -659,10 +659,11 @@ public class ChangelogTypeFilterTableOfContentsTests : DirectiveTest<ChangelogBl
 
 /// <summary>
 /// Tests that empty result shows appropriate message when type filter excludes all entries.
+/// For known-issue filter, we should show known-issue-specific message.
 /// </summary>
-public class ChangelogTypeFilterEmptyResultTests : DirectiveTest<ChangelogBlock>
+public class ChangelogTypeFilterEmptyKnownIssueTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogTypeFilterEmptyResultTests(ITestOutputHelper output) : base(output,
+	public ChangelogTypeFilterEmptyKnownIssueTests(ITestOutputHelper output) : base(output,
 		// language=markdown
 		"""
 		:::{changelog}
@@ -684,10 +685,146 @@ public class ChangelogTypeFilterEmptyResultTests : DirectiveTest<ChangelogBlock>
 		"""));
 
 	[Fact]
-	public void ShowsNoEntriesMessageWhenFilterExcludesAll()
+	public void ShowsKnownIssueSpecificEmptyMessage()
 	{
 		// When filtering to known-issue but bundle only has features,
-		// should show "no entries" message
+		// should show known-issue-specific message
+		Html.Should().Contain("There are no known issues associated with this release");
+	}
+}
+
+/// <summary>
+/// Tests that empty result shows breaking-change-specific message when using breaking-change filter.
+/// </summary>
+public class ChangelogTypeFilterEmptyBreakingChangeTests : DirectiveTest<ChangelogBlock>
+{
+	public ChangelogTypeFilterEmptyBreakingChangeTests(ITestOutputHelper output) : base(output,
+		// language=markdown
+		"""
+		:::{changelog}
+		:type: breaking-change
+		:::
+		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
+		// language=yaml
+		"""
+		products:
+		- product: elasticsearch
+		  target: 9.3.0
+		entries:
+		- title: New feature
+		  type: feature
+		  products:
+		  - product: elasticsearch
+		    target: 9.3.0
+		  pr: "111111"
+		"""));
+
+	[Fact]
+	public void ShowsBreakingChangeSpecificEmptyMessage()
+	{
+		// When filtering to breaking-change but bundle only has features,
+		// should show breaking-change-specific message
+		Html.Should().Contain("There are no breaking changes associated with this release");
+	}
+}
+
+/// <summary>
+/// Tests that empty result shows deprecation-specific message when using deprecation filter.
+/// </summary>
+public class ChangelogTypeFilterEmptyDeprecationTests : DirectiveTest<ChangelogBlock>
+{
+	public ChangelogTypeFilterEmptyDeprecationTests(ITestOutputHelper output) : base(output,
+		// language=markdown
+		"""
+		:::{changelog}
+		:type: deprecation
+		:::
+		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
+		// language=yaml
+		"""
+		products:
+		- product: elasticsearch
+		  target: 9.3.0
+		entries:
+		- title: New feature
+		  type: feature
+		  products:
+		  - product: elasticsearch
+		    target: 9.3.0
+		  pr: "111111"
+		"""));
+
+	[Fact]
+	public void ShowsDeprecationSpecificEmptyMessage()
+	{
+		// When filtering to deprecation but bundle only has features,
+		// should show deprecation-specific message
+		Html.Should().Contain("There are no deprecations associated with this release");
+	}
+}
+
+/// <summary>
+/// Tests that empty result shows generic message when using default filter.
+/// </summary>
+public class ChangelogTypeFilterEmptyDefaultTests : DirectiveTest<ChangelogBlock>
+{
+	public ChangelogTypeFilterEmptyDefaultTests(ITestOutputHelper output) : base(output,
+		// language=markdown
+		"""
+		:::{changelog}
+		:::
+		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
+		// language=yaml
+		"""
+		products:
+		- product: elasticsearch
+		  target: 9.3.0
+		entries:
+		- title: Breaking change only
+		  type: breaking-change
+		  products:
+		  - product: elasticsearch
+		    target: 9.3.0
+		  description: API changed.
+		  impact: Users must update.
+		  action: Follow guide.
+		  pr: "111111"
+		"""));
+
+	[Fact]
+	public void ShowsGenericEmptyMessageForDefaultFilter()
+	{
+		// When using default filter but bundle only has breaking changes (which are excluded by default),
+		// should show the generic "no features, enhancements, or fixes" message
+		Html.Should().Contain("No new features, enhancements, or fixes");
+	}
+}
+
+/// <summary>
+/// Tests that empty result shows generic message when using "all" filter with empty bundle.
+/// </summary>
+public class ChangelogTypeFilterEmptyAllTests : DirectiveTest<ChangelogBlock>
+{
+	public ChangelogTypeFilterEmptyAllTests(ITestOutputHelper output) : base(output,
+		// language=markdown
+		"""
+		:::{changelog}
+		:type: all
+		:::
+		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
+		// language=yaml
+		"""
+		products:
+		- product: elasticsearch
+		  target: 9.3.0
+		entries: []
+		"""));
+
+	[Fact]
+	public void ShowsGenericEmptyMessageForAllFilter()
+	{
+		// When using "all" filter with empty entries,
+		// should show the generic message (not type-specific since All includes everything)
 		Html.Should().Contain("No new features, enhancements, or fixes");
 	}
 }
