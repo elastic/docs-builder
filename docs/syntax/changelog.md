@@ -41,15 +41,16 @@ The directive supports the following options:
 
 #### `:type:`
 
-Controls which entry types are displayed. By default, the directive excludes "separated types" (known issues, breaking changes, and deprecations) which are typically shown on their own dedicated pages.
+Controls which entry types are displayed. By default, the directive excludes "separated types" (known issues, breaking changes, deprecations, and highlights) which are typically shown on their own dedicated pages.
 
 | Value | Description |
 |-------|-------------|
-| (omitted) | Default: shows all types EXCEPT known issues, breaking changes, and deprecations |
-| `all` | Shows all entry types including known issues, breaking changes, and deprecations |
+| (omitted) | Default: shows all types EXCEPT known issues, breaking changes, deprecations, and highlights |
+| `all` | Shows all entry types including known issues, breaking changes, deprecations, and highlights |
 | `breaking-change` | Shows only breaking change entries |
 | `deprecation` | Shows only deprecation entries |
 | `known-issue` | Shows only known issue entries |
+| `highlight` | Shows only highlighted entries |
 
 This allows you to create separate pages for different entry types:
 
@@ -81,6 +82,14 @@ This allows you to create separate pages for different entry types:
 
 :::{changelog}
 :type: deprecation
+:::
+```
+
+```markdown
+# Highlights
+
+:::{changelog}
+:type: highlight
 :::
 ```
 
@@ -379,8 +388,15 @@ Each bundle renders as a `## {version}` section with subsections beneath:
 | Regressions | `regression` | Grouped by area |
 | Other changes | `other` | Grouped by area |
 | Breaking changes | `breaking-change` | Expandable dropdowns |
+| Highlights | Entries with `highlight: true` | Expandable dropdowns |
 | Deprecations | `deprecation` | Expandable dropdowns |
 | Known issues | `known-issue` | Expandable dropdowns |
+
+**Note about highlights:**
+- Highlights only appear when using `:type: all` (they are excluded from the default view)
+- When rendered, highlighted entries appear in BOTH the "Highlights" section AND their original type section (for example, a highlighted feature appears in both "Highlights" and "Features and enhancements")
+- The "Highlights" section is only created when at least one entry has `highlight: true`
+- When using `:type: highlight`, only highlighted entries are shown (no section headers or other content)
 
 Sections with no entries of that type are omitted from the output.
 
