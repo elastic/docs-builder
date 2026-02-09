@@ -106,7 +106,8 @@ public class CodexBuildService(
 				Branch = checkout.Reference.Branch,
 				Remote = checkout.Reference.ResolvedOrigin,
 				Ref = checkout.CommitHash,
-				RepositoryName = checkout.Reference.Name
+				RepositoryName = checkout.Reference.Name,
+				GitHubRef = Environment.GetEnvironmentVariable("GITHUB_REF")
 			};
 
 			// Create build context for this documentation set
