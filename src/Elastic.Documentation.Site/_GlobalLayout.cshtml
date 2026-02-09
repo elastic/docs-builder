@@ -8,6 +8,7 @@
 
 <body
 	hx-history="false"
+	hx-indicator="#htmx-indicator"
 	class="group/body text-ink has-[#primary-nav-hamburger:checked]:overflow-hidden min-h-screen build-type-@(Model.BuildType.ToString().ToLowerInvariant())"
 	hx-ext="preload, head-support"
 	data-docs-builder-version="@Model.DocsBuilderVersion"
@@ -19,6 +20,14 @@
 	<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=@(Model.GoogleTagManager.Id)@(new HtmlString(Model.GoogleTagManager.QueryString()))"
 	                  height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 }
+
+<div class="w-full fixed top-(--offset-top) left-0 right-0 htmx-indicator" id="htmx-indicator" role="status">
+	<div class="h-px w-full overflow-hidden">
+		<div class="progress w-full h-full bg-pink-70 left-right"></div>
+	</div>
+	<div class="sr-only">Loading</div>
+</div>
+
 @(await RenderBodyAsync())
 @await RenderSectionAsync(GlobalSections.Footer)
 </body>
