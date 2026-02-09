@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Razor">
+﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -75,7 +75,7 @@
        Without this, multiple Parcel runs (e.g. across dotnet build vs dotnet run) can leave
        old hashed filenames in _static; all get embedded and then copied to assembler output,
        causing duplicated JS/CSS with different hashes in the final _static folder. -->
-  <Target Name="CleanOldHashedAssets" BeforeTargets="NpmRunBuild">
+  <Target Name="CleanOldHashedAssets" BeforeTargets="NpmRunBuild" Condition="'$(IsPublishing)' == 'true'">
     <ItemGroup>
       <OldHashedFiles Include="_static/*.????????*.js" />
       <OldHashedFiles Include="_static/*.????????*.css" />
