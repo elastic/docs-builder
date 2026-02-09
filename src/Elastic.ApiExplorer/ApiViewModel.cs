@@ -72,6 +72,7 @@ public abstract partial class ApiViewModel(ApiRenderContext context)
 			AllowIndexing = BuildContext.AllowIndexing,
 			CanonicalBaseUrl = BuildContext.CanonicalBaseUrl,
 			GoogleTagManager = new GoogleTagManagerConfiguration(),
+			Optimizely = new OptimizelyConfiguration(),
 			Features = new FeatureFlags([]),
 			StaticFileContentHashProvider = StaticFileContentHashProvider,
 			BuildType = BuildContext.BuildType,

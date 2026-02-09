@@ -24,6 +24,7 @@ namespace Elastic.Documentation.Configuration.Serialization;
 [YamlSerializable(typeof(NarrativeRepository))]
 [YamlSerializable(typeof(PublishEnvironment))]
 [YamlSerializable(typeof(GoogleTagManager))]
+[YamlSerializable(typeof(Optimizely))]
 [YamlSerializable(typeof(ContentSource))]
 // Versions configuration
 [YamlSerializable(typeof(VersionsConfigDto))]

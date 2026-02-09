@@ -4,6 +4,10 @@
 	<meta charset="utf-8">
 	<title>@Model.Title</title>
 	<meta name="description" content="@Model.Description">
+	@if (Model.Optimizely.Enabled && !string.IsNullOrEmpty(Model.Optimizely.Id))
+	{
+		<script src="https://cdn.optimizely.com/js/@(Model.Optimizely.Id).js"></script>
+	}
 	@foreach (var fontFile in await FontPreloader.GetFontUrisAsync(@Model.UrlPathPrefix))
 	{
 		<link rel="preload" href="@fontFile" as="font" type="font/woff2" crossorigin>
