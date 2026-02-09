@@ -478,26 +478,6 @@ entries:
 When a changelog matches multiple `--input-products` filters, it appears only once in the bundle. This deduplication applies even when using `--all` or `--prs`.
 :::
 
-### Output file location
-
-The `--output` option supports two formats:
-
-1. **Directory path**: If you specify a directory path (without a filename), the command creates `changelog-bundle.yaml` in that directory:
-
-   ```sh
-   docs-builder changelog bundle --all --output /path/to/output/dir
-   # Creates /path/to/output/dir/changelog-bundle.yaml
-   ```
-
-2. **File path**: If you specify a file path ending in `.yml` or `.yaml`, the command uses that exact path:
-
-   ```sh
-   docs-builder changelog bundle --all --output /path/to/custom-bundle.yaml
-   # Creates /path/to/custom-bundle.yaml
-   ```
-
-If you specify a file path with a different extension (not `.yml` or `.yaml`), the command returns an error.
-
 ### Hide features in bundles [changelog-bundle-hide-features]
 
 You can use the `--hide-features` option to embed feature IDs that should be hidden when the bundle is rendered. This is useful for features that are not yet ready for public documentation.
@@ -530,38 +510,6 @@ When this bundle is rendered (either via the `changelog render` command or the `
 
 :::{note}
 The `--hide-features` option on the `render` command and the `hide-features` field in bundles are **combined**. If you specify `--hide-features` on both the `bundle` and `render` commands, all specified features are hidden. The `{changelog}` directive automatically reads `hide-features` from all loaded bundles and applies them.
-:::
-
-### Repository name in bundles [changelog-bundle-repo]
-
-When you specify the `--repo` option, the repository name is stored in the bundle's product metadata. This ensures that PR and issue links are generated correctly when the bundle is rendered.
-
-```sh
-docs-builder changelog bundle \
-  --input-products "cloud-serverless 2025-12-02 *" \
-  --repo cloud \ <1>
-  --output /path/to/bundles/2025-12-02.yaml
-```
-
-1. The GitHub repository name. This is stored in each product entry in the bundle.
-
-The bundle output will include a `repo` field in each product:
-
-```yaml
-products:
-- product: cloud-serverless
-  target: 2025-12-02
-  repo: cloud
-entries:
-- file:
-    name: 1765495972-new-feature.yaml
-    checksum: 6c3243f56279b1797b5dfff6c02ebf90b9658464
-```
-
-When rendering, PR/issue links will use `https://github.com/elastic/cloud/...` instead of the product ID in the URL.
-
-:::{note}
-If the `repo` field is not specified, the product ID is used as a fallback for link generation. This may result in broken links if the product ID doesn't match the GitHub repository name (e.g., `cloud-serverless` vs `cloud`).
 :::
 
 ### Amend bundles [changelog-bundle-amend]
