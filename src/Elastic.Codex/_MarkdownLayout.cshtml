@@ -19,12 +19,6 @@
 <div id="main-container" class="flex flex-col items-center border-t-1 border-grey-20">
 	<div class="w-full h-full flex justify-center">
 		<main id="content-container" class="w-full max-w-6xl flex flex-col relative pb-12 px-6 lg:px-8">
-			<div class="w-full absolute top-0 left-0 right-0 htmx-indicator" id="htmx-indicator" role="status">
-				<div class="h-[2px] w-full overflow-hidden">
-					<div class="progress w-full h-full bg-pink-70 left-right"></div>
-				</div>
-				<div class="sr-only">Loading</div>
-			</div>
 			<div class="content-container">
 				@await RenderPartialAsync(_Breadcrumbs.Create(Model))
 			</div>
