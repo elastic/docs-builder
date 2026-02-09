@@ -1,7 +1,7 @@
 .parcel-cache/
 node_modules/
-_static/styles.css
-_static/styles.css.map
+_static/*.css
+_static/*.css.map
 _static/*.ttf
 _static/*.woff
 _static/*.woff2

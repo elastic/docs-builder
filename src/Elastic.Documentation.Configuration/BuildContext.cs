@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using System.Reflection;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;

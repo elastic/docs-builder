@@ -1,4 +1,5 @@
 @inherits RazorSlice<Elastic.Documentation.Site.GlobalLayoutViewModel>
+@using Elastic.Documentation
 @using FontPreloader = Elastic.Documentation.Site.FileProviders.FontPreloader
 	<meta charset="utf-8">
 	<title>@Model.Title</title>
@@ -8,7 +9,28 @@
 		<link rel="preload" href="@fontFile" as="font" type="font/woff2" crossorigin>
 	}
 	<link rel="stylesheet preload" as="style" type="text/css" href="@Model.Static("styles.css")" crossorigin/>
+	@switch (Model.BuildType)
+	{
+		case BuildType.Assembler:
+			<link rel="stylesheet preload" as="style" type="text/css" href="@Model.Static("assembler.css")" crossorigin/>
+			break;
+		case BuildType.Isolated:
+			<link rel="stylesheet preload" as="style" type="text/css" href="@Model.Static("isolated.css")" crossorigin/>
+			break;
+		case BuildType.Codex:
+			<link rel="stylesheet preload" as="style" type="text/css" href="@Model.Static("codex.css")" crossorigin/>
+			break;
+	}
 	<script src="@Model.Static("main.js")" defer></script>
+	@switch (Model.BuildType)
+	{
+		case BuildType.Isolated:
+			<script src="@Model.Static("isolated.js")" defer></script>
+			break;
+		case BuildType.Codex:
+			<script src="@Model.Static("codex.js")" defer></script>
+			break;
+	}
 	@if (Model.CanonicalBaseUrl is not null)
 	{
 		<link rel="canonical" href="@Model.CanonicalUrl" />
