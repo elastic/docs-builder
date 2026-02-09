@@ -17,5 +17,9 @@
 			</li>
 		</ul>
 	</div>
-	<diagnostics-panel></diagnostics-panel>
+	@if (Model.Features.DiagnosticsPanelEnabled)
+	{
+		<div class="h-10">@* height of the diagnostics panel as placeholder so we can see the full footer *@</div>
+		<diagnostics-panel></diagnostics-panel>
+	}
 </footer>

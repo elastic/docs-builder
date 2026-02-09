@@ -39,6 +39,8 @@ public record GlobalLayoutViewModel
 	public string? GitCommitShort { get; init; }
 	public string? GitRepository { get; init; }
 	public string? GitHubDocsUrl { get; init; }
+	/// <summary>Full ref from GitHub Actions (e.g. refs/pull/123/merge). Set when built in a pull request workflow.</summary>
+	public string? GitHubRef { get; init; }
 	public string? CanonicalUrl => CanonicalBaseUrl is not null ?
 		new Uri(CanonicalBaseUrl, CurrentNavigationItem.Url).ToString().TrimEnd('/') : null;
 

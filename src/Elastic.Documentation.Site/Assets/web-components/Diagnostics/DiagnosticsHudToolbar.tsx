@@ -40,6 +40,7 @@ export const DiagnosticsHudToolbar: React.FC = () => {
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 borderBottom: `1px solid ${euiTheme.border.color}`,
+                backgroundColor: '#0B1628',
                 paddingBlock: `${euiTheme.size.xs}`,
                 paddingInline: `${euiTheme.size.m}`,
                 flexShrink: 0,

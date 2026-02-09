@@ -1,21 +1,10 @@
 import { DiagnosticsSummary } from './DiagnosticsSummary'
 import { useDiagnosticsStore } from './diagnostics.store'
+import { getSeverityColor } from './severityUtils'
 import { EuiText, EuiIcon, useEuiTheme } from '@elastic/eui'
 import { css } from '@emotion/react'
 import * as React from 'react'
 import { useCallback } from 'react'
-
-/** Priority: error > warning > hint. Returns theme color key or null when no issues. */
-function getSeverityColor(
-    errors: number,
-    warnings: number,
-    hints: number
-): 'danger' | 'warning' | 'primary' | null {
-    if (errors > 0) return 'danger'
-    if (warnings > 0) return 'warning'
-    if (hints > 0) return 'primary'
-    return null
-}
 
 export const DiagnosticsFooterBar: React.FC = () => {
     const { isHudOpen, toggleHud, errors, warnings, hints } =
@@ -53,11 +42,11 @@ export const DiagnosticsFooterBar: React.FC = () => {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                width: '100vw',
+                width: '100%',
                 minHeight: euiTheme.size.xl,
                 padding: `${euiTheme.size.m} ${euiTheme.size.m}`,
                 borderTop: `1px solid ${borderColor}`,
-                backgroundColor: euiTheme.colors.body,
+                backgroundColor: '#0B1628',
                 flexShrink: 0,
                 cursor: 'pointer',
             }}

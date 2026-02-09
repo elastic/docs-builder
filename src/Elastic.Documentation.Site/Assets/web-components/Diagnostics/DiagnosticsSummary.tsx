@@ -1,5 +1,6 @@
 import { SeverityIndicator } from './SeverityIndicator'
 import { useDiagnosticsStore } from './diagnostics.store'
+import { getSeverityColor } from './severityUtils'
 import {
     EuiFlexGroup,
     EuiIcon,
@@ -44,6 +45,8 @@ export const DiagnosticsSummary: React.FC = () => {
     }
 
     if (hasIssues) {
+        const severityColor =
+            getSeverityColor(errors, warnings, hints) ?? 'danger'
         return (
             <EuiFlexGroup
                 alignItems="center"
@@ -62,7 +65,11 @@ export const DiagnosticsSummary: React.FC = () => {
                         responsive={false}
                     >
                         <EuiFlexItem grow={0}>
-                            <EuiIcon type="dot" color="danger" size="s" />
+                            <EuiIcon
+                                type="dot"
+                                color={severityColor}
+                                size="s"
+                            />
                         </EuiFlexItem>
                         <EuiFlexItem grow={0}>
                             <EuiText size="xs" color="subdued">

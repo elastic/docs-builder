@@ -46,17 +46,6 @@ body {
 	font-size: 16px;
 }
 
-/* Main viewport scrollbar (right edge of browser) and any .simple-scrollbar elements */
-html,
-body {
-	scrollbar-width: auto;
-	scrollbar-color: rgba(90, 109, 140, 0.5) rgb(236, 241, 249);
-}
-.simple-scrollbar {
-	scrollbar-width: thin;
-	scrollbar-color: rgba(90, 109, 140, 0.5) transparent;
-}
-
 :root {
 	--outline-size: max(2px, 0.08em);
 	--outline-style: auto;

@@ -1,17 +1,8 @@
-import { useHtmxLink } from '../shared/htmx/useHtmxLink'
-import githubSvg from './GitHub_Invertocat_Black.svg'
-import {
-    EuiBadge,
-    EuiHeader,
-    EuiHeaderLink,
-    EuiHeaderLinks,
-    EuiHeaderLogo,
-    EuiHeaderSectionItem,
-    useEuiTheme,
-} from '@elastic/eui'
-import { css } from '@emotion/react'
-// import { css } from '@emotion/react'
+import { useHtmxContainer } from '../shared/htmx/useHtmxContainer'
+import { DeploymentInfo } from './DeploymentInfo'
+import { EuiHeader, EuiHeaderLogo, EuiProvider } from '@elastic/eui'
 import r2wc from '@r2wc/react-to-web-component'
+import { useRef } from 'react'
 
 interface Props {
     title: string
@@ -20,77 +11,52 @@ interface Props {
     githubLink: string
     gitBranch: string
     gitCommit: string
+    /** Full ref from GitHub Actions (e.g. refs/pull/123/merge). */
+    githubRef?: string
 }
 
 export const Header = ({
     title,
     logoHref,
     githubRepository,
-    githubLink,
-    gitCommit,
     gitBranch,
+    gitCommit,
+    githubRef,
 }: Props) => {
-    const { euiTheme } = useEuiTheme()
-    const logoLink = useHtmxLink(logoHref)
+    const containerRef = useRef<HTMLSpanElement>(null)
+    useHtmxContainer(containerRef)
+
     return (
-        <EuiHeader
-            theme="dark"
-            sections={[
-                {
-                    items: [
-                        <a
-                            key="logo"
-                            ref={logoLink.ref}
-                            href={logoLink.href}
-                            css={css`
-                                text-decoration: none;
-                                color: inherit;
-                            `}
-                        >
-                            <EuiHeaderLogo>{title}</EuiHeaderLogo>
-                        </a>,
-                        // <EuiHeaderLinks aria-label="App navigation dark theme example">
-                        //     <EuiHeaderLink isActive>Docs</EuiHeaderLink>
-                        //     <EuiHeaderLink>Code</EuiHeaderLink>
-                        //     <EuiHeaderLink iconType="help"> Help</EuiHeaderLink>
-                        // </EuiHeaderLinks>,
-                    ],
-                },
-                {
-                    items: [
-                        <EuiHeaderSectionItem>
-                            <EuiHeaderLinks>
-                                <EuiHeaderLink
-                                    iconType={githubSvg}
-                                    href={githubLink}
-                                    target="_blank"
-                                    rel="noopener"
-                                >
-                                    elastic/{githubRepository}@{gitBranch}
-                                </EuiHeaderLink>
-                            </EuiHeaderLinks>
-                        </EuiHeaderSectionItem>,
-                        <EuiBadge
-                            iconType="dotInCircle"
-                            css={css`
-                                margin-inline: ${euiTheme.size.s};
-                            `}
-                        >
-                            {gitCommit}
-                        </EuiBadge>,
-                        // <EuiHeaderSectionItemButton
-                        // aria-controls="headerFlyoutNewsFeed"
-                        // aria-haspopup="true"
-                        // aria-label={'Alerts feed: Updates available'}
-                        // // onClick={() => showFlyout()}
-                        // notification={true}
-                        // >
-                        // <EuiIcon type="bell" />
-                        // </EuiHeaderSectionItemButton>
-                    ],
-                },
-            ]}
-        />
+        <EuiProvider
+            colorMode="light"
+            globalStyles={false}
+            utilityClasses={false}
+        >
+            <EuiHeader
+                theme="dark"
+                sections={[
+                    {
+                        items: [
+                            <span ref={containerRef}>
+                                <EuiHeaderLogo href={logoHref}>
+                                    {title}
+                                </EuiHeaderLogo>
+                            </span>,
+                        ],
+                    },
+                    {
+                        items: [
+                            <DeploymentInfo
+                                gitBranch={gitBranch}
+                                gitCommit={gitCommit}
+                                githubRepository={'elastic/' + githubRepository}
+                                githubRef={githubRef}
+                            />,
+                        ],
+                    },
+                ]}
+            />
+        </EuiProvider>
     )
 }
 
@@ -104,6 +70,7 @@ customElements.define(
             githubLink: 'string',
             gitBranch: 'string',
             gitCommit: 'string',
+            githubRef: 'string',
         },
     })
 )
