@@ -257,7 +257,7 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 					"This can happen if the file was edited after bundling, or if the render directory " +
 					"contains a different copy of the file. To fix, re-run 'bundle' or 'bundle-amend' " +
 					"to update the checksum, or use '--resolve' when amending to embed the entry data " +
-					"directly in the amend file."
+					$"directly in the amend file. Expected {entry.File.Checksum}, got {checksum}"
 				);
 			}
 
