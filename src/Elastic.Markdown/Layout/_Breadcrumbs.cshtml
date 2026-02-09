@@ -1,27 +1,10 @@
 @inherits RazorSlice<Elastic.Markdown.MarkdownLayoutViewModel>
 @{
-	var targets =
-		Model.Features.PrimaryNavEnabled
-			? Model.Breadcrumbs
-			: Model.Breadcrumbs.Skip(1);
+	var targets = Model.Breadcrumbs;
 	var crumbs = targets.ToList();
 }
 
 <ol id="breadcrumbs" class="flex flex-wrap gap-1 items-center w-full py-6">
-	@if (Model.BuildType == BuildType.Isolated)
-	{
-		<li class="text-ink-light text-sm leading-[1.2em]">
-			<a
-				itemprop="item"
-				href="@Model.Link("/")"
-				hx-swap="none"
-				hx-select-oob="#main-container"
-			>
-				<span class="hover:text-black">Home</span>
-			</a>
-			<span class="px-1">/</span>
-		</li>
-	}
 	@for (var i = 0; i < crumbs.Count; i++)
 	{
 		var item = crumbs[i];
