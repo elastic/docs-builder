@@ -1,6 +1,5 @@
 // Mermaid is loaded from local _static/ to avoid client-side CDN calls
 // The file is copied from node_modules during build (see package.json copy:mermaid)
-import DOMPurify from 'dompurify'
 
 // Type declaration for mermaid UMD global
 declare global {
@@ -82,9 +81,16 @@ async function waitForFonts(): Promise<void> {
 }
 
 function sanitizeSvg(svg: string): string {
-    // Use DOMPurify to sanitize the SVG output from mermaid before inserting it into the DOM.
-    // Restrict to the SVG profile to avoid allowing unexpected HTML.
-    return DOMPurify.sanitize(svg, { USE_PROFILES: { svg: true } }) as string
+    // Mermaid renders diagrams locally from author-supplied code blocks, so the SVG
+    // is not untrusted user input. DOMPurify's SVG profile strips <foreignObject>
+    // elements that Mermaid uses for text labels, and combining svg+html profiles
+    // returns an empty string entirely. We therefore apply a lightweight sanitisation
+    // that removes <script> tags and on* event-handler attributes while preserving
+    // the full SVG structure including foreignObject/XHTML content.
+    const cleaned = svg
+        .replace(/<script[\s>][\s\S]*?<\/script>/gi, '')
+        .replace(/\son\w+\s*=\s*["'][^"']*["']/gi, '')
+    return cleaned
 }
 
 async function renderMermaidDiagram(
