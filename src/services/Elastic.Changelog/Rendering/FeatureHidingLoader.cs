@@ -165,7 +165,7 @@ public class FeatureHidingLoader(IFileSystem fileSystem)
 		var trimmedPath = path.Trim();
 
 		// Expand tilde to user's home directory
-		if (trimmedPath.StartsWith("~/") || trimmedPath.StartsWith("~\\"))
+		if (trimmedPath.StartsWith("~/", StringComparison.Ordinal) || trimmedPath.StartsWith("~\\", StringComparison.Ordinal))
 		{
 			var homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
 			trimmedPath = Path.Combine(homeDirectory, trimmedPath[2..]);

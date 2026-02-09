@@ -534,7 +534,7 @@ internal sealed class ChangelogCommand(
 	}
 
 	/// <summary>
-	/// Amend a bundle with additional changelog entries, creating an immutable .amend-N.yaml file
+	/// Amend a bundle with additional changelog entries, creating an immutable .amend-N.yaml file.
 	/// </summary>
 	/// <param name="bundlePath">Required: Path to the original bundle file to amend</param>
 	/// <param name="add">Required: Path(s) to changelog YAML file(s) to add as comma-separated values (e.g., --add "file1.yaml,file2.yaml"). Supports tilde (~) expansion and relative paths.</param>
@@ -612,7 +612,7 @@ internal sealed class ChangelogCommand(
 		var trimmedPath = path.Trim();
 
 		// Expand tilde to user's home directory
-		if (trimmedPath.StartsWith("~/") || trimmedPath.StartsWith("~\\"))
+		if (trimmedPath.StartsWith("~/", StringComparison.Ordinal) || trimmedPath.StartsWith("~\\", StringComparison.Ordinal))
 		{
 			var homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
 			trimmedPath = Path.Combine(homeDirectory, trimmedPath[2..]);
