@@ -191,7 +191,7 @@ public class HighlightsRenderTests(ITestOutputHelper output) : RenderChangelogTe
 			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
 			Output = outputDir,
 			Title = "9.3.0",
-			FileType = "asciidoc"
+			FileType = ChangelogFileType.Asciidoc
 		};
 
 		// Act
