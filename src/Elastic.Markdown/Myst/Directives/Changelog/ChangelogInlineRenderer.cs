@@ -87,6 +87,7 @@ public static class ChangelogInlineRenderer
 			ChangelogTypeFilter.BreakingChange => entries.Where(e => e.Type == ChangelogEntryType.BreakingChange).ToList(),
 			ChangelogTypeFilter.Deprecation => entries.Where(e => e.Type == ChangelogEntryType.Deprecation).ToList(),
 			ChangelogTypeFilter.KnownIssue => entries.Where(e => e.Type == ChangelogEntryType.KnownIssue).ToList(),
+			ChangelogTypeFilter.Highlight => entries.Where(e => e.Highlight == true).ToList(),
 			_ => entries.Where(e => !ChangelogBlock.SeparatedTypes.Contains(e.Type)).ToList() // Default: exclude separated types
 		};
 
@@ -186,7 +187,7 @@ public static class ChangelogInlineRenderer
 			RenderDetailedEntries(sb, breakingChanges, repo, groupBySubtype: true, hideLinks);
 		}
 
-		if (highlights.Count > 0)
+		if (highlights.Count > 0 && typeFilter == ChangelogTypeFilter.All)
 		{
 			_ = sb.AppendLine();
 			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Highlights [{repo}-{titleSlug}-highlights]");

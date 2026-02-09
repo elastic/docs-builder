@@ -453,22 +453,32 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 			// Apply type filter to determine which sections to include
 			var shouldInclude = CreateTypeFilterPredicate();
 
-			// Critical sections first (new ordering) - all at h3 level (children of version)
-			if (shouldInclude(ChangelogEntryType.BreakingChange) && entriesByType.ContainsKey(ChangelogEntryType.BreakingChange))
-				yield return new PageTocItem
-				{
-					Heading = "Breaking changes",
-					Slug = $"{repo}-{titleSlug}-breaking-changes",
-					Level = 3
-				};
+		// Critical sections first (new ordering) - all at h3 level (children of version)
+		if (shouldInclude(ChangelogEntryType.BreakingChange) && entriesByType.ContainsKey(ChangelogEntryType.BreakingChange))
+			yield return new PageTocItem
+			{
+				Heading = "Breaking changes",
+				Slug = $"{repo}-{titleSlug}-breaking-changes",
+				Level = 3
+			};
 
-			if (shouldInclude(ChangelogEntryType.Security) && entriesByType.ContainsKey(ChangelogEntryType.Security))
-				yield return new PageTocItem
-				{
-					Heading = "Security",
-					Slug = $"{repo}-{titleSlug}-security",
-					Level = 3
-				};
+		// Check for highlights (any entry with highlight == true) - only show in :type: all
+		var hasHighlights = bundle.Entries.Any(e => e.Highlight == true);
+		if (hasHighlights && TypeFilter == ChangelogTypeFilter.All)
+			yield return new PageTocItem
+			{
+				Heading = "Highlights",
+				Slug = $"{repo}-{titleSlug}-highlights",
+				Level = 3
+			};
+
+		if (shouldInclude(ChangelogEntryType.Security) && entriesByType.ContainsKey(ChangelogEntryType.Security))
+			yield return new PageTocItem
+			{
+				Heading = "Security",
+				Slug = $"{repo}-{titleSlug}-security",
+				Level = 3
+			};
 
 			if (shouldInclude(ChangelogEntryType.KnownIssue) && entriesByType.ContainsKey(ChangelogEntryType.KnownIssue))
 				yield return new PageTocItem
