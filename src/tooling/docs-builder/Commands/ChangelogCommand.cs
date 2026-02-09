@@ -98,13 +98,16 @@ internal sealed class ChangelogCommand(
 			var validPrs = prs.Where(prValue => !string.IsNullOrWhiteSpace(prValue));
 			foreach (var trimmedValue in validPrs.Select(prValue => prValue.Trim()))
 			{
+				// Try to normalize as a file path to handle ~ and relative paths
+				var normalizedPath = NormalizePath(trimmedValue);
+
 				// Check if this is a file path
-				if (_fileSystem.File.Exists(trimmedValue))
+				if (_fileSystem.File.Exists(normalizedPath))
 				{
 					// Read all lines from the file (newline-delimited)
 					try
 					{
-						var fileLines = await _fileSystem.File.ReadAllLinesAsync(trimmedValue, ctx);
+						var fileLines = await _fileSystem.File.ReadAllLinesAsync(normalizedPath, ctx);
 						foreach (var line in fileLines)
 						{
 							if (!string.IsNullOrWhiteSpace(line))
@@ -115,7 +118,7 @@ internal sealed class ChangelogCommand(
 					}
 					catch (IOException ex)
 					{
-						collector.EmitError(string.Empty, $"Failed to read PRs from file '{trimmedValue}': {ex.Message}", ex);
+						collector.EmitError(string.Empty, $"Failed to read PRs from file '{normalizedPath}': {ex.Message}", ex);
 						return 1;
 					}
 				}
@@ -534,7 +537,7 @@ internal sealed class ChangelogCommand(
 	/// Amend a bundle with additional changelog entries, creating an immutable .amend-N.yaml file
 	/// </summary>
 	/// <param name="bundlePath">Required: Path to the original bundle file to amend</param>
-	/// <param name="add">Required: Path(s) to changelog YAML file(s) to add. Can be specified multiple times.</param>
+	/// <param name="add">Required: Path(s) to changelog YAML file(s) to add as comma-separated values (e.g., --add "file1.yaml,file2.yaml"). Supports tilde (~) expansion and relative paths.</param>
 	/// <param name="resolve">Optional: Copy the contents of each changelog file into the entries array. Defaults to false.</param>
 	/// <param name="ctx"></param>
 	[Command("bundle-amend")]
@@ -558,10 +561,33 @@ internal sealed class ChangelogCommand(
 			return 1;
 		}
 
+		// Normalize the bundle path
+		var normalizedBundlePath = NormalizePath(bundlePath);
+
+		// Process and normalize all add file paths (handles comma-separated values)
+		var normalizedAddFiles = new List<string>();
+		foreach (var addValue in add.Where(a => !string.IsNullOrWhiteSpace(a)))
+		{
+			// Check if it contains commas - if so, split and normalize each path
+			if (addValue.Contains(','))
+			{
+				var commaSeparatedPaths = addValue
+					.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+					.Where(p => !string.IsNullOrWhiteSpace(p))
+					.Select(NormalizePath);
+				normalizedAddFiles.AddRange(commaSeparatedPaths);
+			}
+			else
+			{
+				// Single path - normalize it
+				normalizedAddFiles.Add(NormalizePath(addValue));
+			}
+		}
+
 		var input = new AmendBundleArguments
 		{
-			BundlePath = bundlePath,
-			AddFiles = add,
+			BundlePath = normalizedBundlePath,
+			AddFiles = normalizedAddFiles.ToArray(),
 			Resolve = resolve
 		};
 
@@ -570,6 +596,34 @@ internal sealed class ChangelogCommand(
 		);
 
 		return await serviceInvoker.InvokeAsync(ctx);
+	}
+
+	/// <summary>
+	/// Normalizes a file path by expanding tilde (~) to the user's home directory
+	/// and converting relative paths to absolute paths.
+	/// </summary>
+	/// <param name="path">The path to normalize</param>
+	/// <returns>The normalized absolute path</returns>
+	private static string NormalizePath(string path)
+	{
+		if (string.IsNullOrWhiteSpace(path))
+			return path;
+
+		var trimmedPath = path.Trim();
+
+		// Expand tilde to user's home directory
+		if (trimmedPath.StartsWith("~/") || trimmedPath.StartsWith("~\\"))
+		{
+			var homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+			trimmedPath = Path.Combine(homeDirectory, trimmedPath[2..]);
+		}
+		else if (trimmedPath == "~")
+		{
+			trimmedPath = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+		}
+
+		// Convert to absolute path (handles relative paths like ./file or ../file)
+		return Path.GetFullPath(trimmedPath);
 	}
 }
 
