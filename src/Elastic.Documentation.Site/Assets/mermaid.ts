@@ -1,6 +1,5 @@
 // Mermaid is loaded from local _static/ to avoid client-side CDN calls
 // The file is copied from node_modules during build (see package.json copy:mermaid)
-
 import DOMPurify from 'dompurify'
 
 // Type declaration for mermaid UMD global
@@ -8,10 +7,7 @@ declare global {
     interface Window {
         mermaid: {
             initialize: (config: Record<string, unknown>) => void
-            render: (
-                id: string,
-                code: string
-            ) => Promise<{ svg: string }>
+            render: (id: string, code: string) => Promise<{ svg: string }>
         }
     }
 }
@@ -74,144 +70,148 @@ function getStaticBasePath(): string {
 }
 
 async function waitForFonts(): Promise<void> {
-	if (!document.fonts?.ready) {
-		return
-	}
+    if (!document.fonts?.ready) {
+        return
+    }
 
-	try {
-		await document.fonts.ready
-	} catch {
-		// Ignore font loading failures and continue rendering
-	}
+    try {
+        await document.fonts.ready
+    } catch {
+        // Ignore font loading failures and continue rendering
+    }
 }
 
 function sanitizeSvg(svg: string): string {
-	// Use DOMPurify to sanitize the SVG output from mermaid before inserting it into the DOM.
-	// Restrict to the SVG profile to avoid allowing unexpected HTML.
-	return DOMPurify.sanitize(svg, { USE_PROFILES: { svg: true } }) as string
+    // Use DOMPurify to sanitize the SVG output from mermaid before inserting it into the DOM.
+    // Restrict to the SVG profile to avoid allowing unexpected HTML.
+    return DOMPurify.sanitize(svg, { USE_PROFILES: { svg: true } }) as string
 }
 
 async function renderMermaidDiagram(
-	id: string,
-	content: string
+    id: string,
+    content: string
 ): Promise<string> {
-	const { svg } = await window.mermaid.render(id, content)
+    const { svg } = await window.mermaid.render(id, content)
 
-	if (!/viewBox="-8 -8 16 16"/.test(svg)) {
-		return svg
-	}
+    if (!/viewBox="-8 -8 16 16"/.test(svg)) {
+        return svg
+    }
 
-	await waitForFonts()
-	await new Promise(requestAnimationFrame)
+    await waitForFonts()
+    await new Promise(requestAnimationFrame)
 
-	const retry = await window.mermaid.render(id, content)
-	return retry.svg
+    const retry = await window.mermaid.render(id, content)
+    return retry.svg
 }
 
-function getTabInputForElement(
-	element: HTMLElement
-): HTMLInputElement | null {
-	const panel = element.closest('.tabs-content')
-	if (!panel) {
-		return null
-	}
+function getTabInputForElement(element: HTMLElement): HTMLInputElement | null {
+    const panel = element.closest('.tabs-content')
+    if (!panel) {
+        return null
+    }
 
-	const label = panel.previousElementSibling
-	const input = label?.previousElementSibling
-	if (input instanceof HTMLInputElement && input.classList.contains('tabs-input')) {
-		return input
-	}
+    const label = panel.previousElementSibling
+    const input = label?.previousElementSibling
+    if (
+        input instanceof HTMLInputElement &&
+        input.classList.contains('tabs-input')
+    ) {
+        return input
+    }
 
-	return null
+    return null
 }
 
 function isElementVisible(element: HTMLElement): boolean {
-	const tabInput = getTabInputForElement(element)
-	if (tabInput && !tabInput.checked) {
-		return false
-	}
+    const tabInput = getTabInputForElement(element)
+    if (tabInput && !tabInput.checked) {
+        return false
+    }
 
-	const rect = element.getBoundingClientRect()
-	if (rect.width === 0 || rect.height === 0) {
-		return false
-	}
+    const rect = element.getBoundingClientRect()
+    if (rect.width === 0 || rect.height === 0) {
+        return false
+    }
 
-	return element.getClientRects().length > 0
+    return element.getClientRects().length > 0
 }
 
 function getTabPanelForInput(input: HTMLInputElement): HTMLElement | null {
-	const label = input.nextElementSibling
-	const panel = label?.nextElementSibling
-	if (panel instanceof HTMLElement && panel.classList.contains('tabs-content')) {
-		return panel
-	}
+    const label = input.nextElementSibling
+    const panel = label?.nextElementSibling
+    if (
+        panel instanceof HTMLElement &&
+        panel.classList.contains('tabs-content')
+    ) {
+        return panel
+    }
 
-	return null
+    return null
 }
 
 function attachTabChangeListener(): void {
-	if (tabListenerAttached) {
-		return
-	}
+    if (tabListenerAttached) {
+        return
+    }
 
-	document.addEventListener('change', (event) => {
-		const target = event.target
-		if (!(target instanceof HTMLInputElement)) {
-			return
-		}
+    document.addEventListener('change', (event) => {
+        const target = event.target
+        if (!(target instanceof HTMLInputElement)) {
+            return
+        }
 
-		if (!target.classList.contains('tabs-input') || !target.checked) {
-			return
-		}
+        if (!target.classList.contains('tabs-input') || !target.checked) {
+            return
+        }
 
-		const panel = getTabPanelForInput(target)
-		if (!panel) {
-			return
-		}
+        const panel = getTabPanelForInput(target)
+        if (!panel) {
+            return
+        }
 
-		const mermaidNodes = panel.querySelectorAll(
-			'pre.mermaid:not([data-mermaid-processed])'
-		)
-		for (const node of mermaidNodes) {
-			void renderMermaidElement(node as HTMLElement)
-		}
-	})
+        const mermaidNodes = panel.querySelectorAll(
+            'pre.mermaid:not([data-mermaid-processed])'
+        )
+        for (const node of mermaidNodes) {
+            void renderMermaidElement(node as HTMLElement)
+        }
+    })
 
-	tabListenerAttached = true
+    tabListenerAttached = true
 }
 
 async function renderMermaidElement(element: HTMLElement): Promise<void> {
-	const content = element.textContent?.trim()
-	if (!content) {
-		return
-	}
+    const content = element.textContent?.trim()
+    if (!content) {
+        return
+    }
 
-	// Mark as processed to prevent double rendering
-	element.setAttribute('data-mermaid-processed', 'true')
+    // Mark as processed to prevent double rendering
+    element.setAttribute('data-mermaid-processed', 'true')
 
-	try {
-		const diagramId = `mermaid-diagram-${mermaidDiagramIndex++}`
-		const svg = await renderMermaidDiagram(diagramId, content)
+    try {
+        const diagramId = `mermaid-diagram-${mermaidDiagramIndex++}`
+        const svg = await renderMermaidDiagram(diagramId, content)
 
-		const container = document.createElement('div')
-		container.className = 'mermaid-container'
+        const container = document.createElement('div')
+        container.className = 'mermaid-container'
 
-		const viewport = document.createElement('div')
-		viewport.className = 'mermaid-viewport'
+        const viewport = document.createElement('div')
+        viewport.className = 'mermaid-viewport'
 
-		const rendered = document.createElement('div')
-		rendered.className = 'mermaid-rendered'
-		rendered.innerHTML = sanitizeSvg(svg)
+        const rendered = document.createElement('div')
+        rendered.className = 'mermaid-rendered'
+        rendered.innerHTML = sanitizeSvg(svg)
 
-		viewport.appendChild(rendered)
-		container.appendChild(viewport)
+        viewport.appendChild(rendered)
+        container.appendChild(viewport)
 
-		setupControls(container, viewport, rendered, svg)
-		element.replaceWith(container)
-	} catch (err) {
-		console.warn('Mermaid rendering error for diagram:', err)
-		element.classList.add('mermaid-error')
-	}
+        setupControls(container, viewport, rendered, svg)
+        element.replaceWith(container)
+    } catch (err) {
+        console.warn('Mermaid rendering error for diagram:', err)
+        element.classList.add('mermaid-error')
+    }
 }
 
 /**
@@ -234,8 +234,7 @@ async function loadMermaid(): Promise<void> {
             })
             resolve()
         }
-        script.onerror = () =>
-            reject(new Error('Failed to load Mermaid'))
+        script.onerror = () => reject(new Error('Failed to load Mermaid'))
         document.head.appendChild(script)
     })
 
@@ -610,28 +609,28 @@ export async function initMermaid() {
     try {
         // Lazy-load Mermaid only when diagrams exist
         await loadMermaid()
-		await waitForFonts()
-		attachTabChangeListener()
+        await waitForFonts()
+        attachTabChangeListener()
 
-		const observer = new IntersectionObserver((entries, instance) => {
-			for (const entry of entries) {
-				if (!entry.isIntersecting) continue
-				const target = entry.target as HTMLElement
-				instance.unobserve(target)
-				void renderMermaidElement(target)
-			}
-		})
+        const observer = new IntersectionObserver((entries, instance) => {
+            for (const entry of entries) {
+                if (!entry.isIntersecting) continue
+                const target = entry.target as HTMLElement
+                instance.unobserve(target)
+                void renderMermaidElement(target)
+            }
+        })
 
-		// Render each diagram once it is visible
-		for (let i = 0; i < mermaidElements.length; i++) {
-			const element = mermaidElements[i] as HTMLElement
+        // Render each diagram once it is visible
+        for (let i = 0; i < mermaidElements.length; i++) {
+            const element = mermaidElements[i] as HTMLElement
 
-			if (isElementVisible(element)) {
-				await renderMermaidElement(element)
-			} else {
-				observer.observe(element)
-			}
-		}
+            if (isElementVisible(element)) {
+                await renderMermaidElement(element)
+            } else {
+                observer.observe(element)
+            }
+        }
     } catch (error) {
         console.warn('Mermaid initialization error:', error)
     }
