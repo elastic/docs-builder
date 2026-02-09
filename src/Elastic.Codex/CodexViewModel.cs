@@ -62,7 +62,6 @@ public abstract class CodexViewModel(CodexRenderContext context)
 			GoogleTagManager = new GoogleTagManagerConfiguration(),
 			Features = new FeatureFlags([]),
 			StaticFileContentHashProvider = StaticFileContentHashProvider,
-			BuildType = BuildContext.BuildType,
-			RenderHamburgerIcon = false
+			BuildType = BuildContext.BuildType
 		};
 }

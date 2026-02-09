@@ -14,7 +14,6 @@
 		DocsBuilderVersion = ShortId.Create(BuildContext.Version),
 		Layout = Model.CurrentDocument.YamlFrontMatter?.Layout,
 		RenderHamburgerIcon = Model.CurrentDocument.YamlFrontMatter?.Layout != MarkdownPageLayout.LandingPage,
-		RenderHeaders = Model.CurrentDocument.YamlFrontMatter?.Layout != MarkdownPageLayout.FullSearch,
 		DocSetName = Model.DocSetName,
 		Title = $"{Model.Title} | {Model.SiteName}",
 		Description = Model.Description,
@@ -51,6 +50,7 @@
 		GitCommitShort = Model.GitCommitShort,
 		GitRepository = Model.GitRepository,
 		GitHubDocsUrl = Model.GitHubDocsUrl,
+		GitHubRef = Model.GitHubRef,
 	};
 	protected override Task ExecuteSectionAsync(string name)
 	{

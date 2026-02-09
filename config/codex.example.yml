@@ -22,76 +22,15 @@ title: "Elastic's Internal Dev Docs"
 documentation_sets:
   # APM Managed Intake Service documentation
   - name: docs-eng-team
-    branch: main
-    repo_name: apm-intake
-    display_name: "APM Managed Intake Service"
-    icon: apm
+    category: docs
+    display_name: "Docs Engineering"
+    icon: wordWrap
 
   # CI Developer Guide
-  - name: docs-eng-team
-    branch: main
-    repo_name: ci-guide
-    display_name: "CI Developer Guide"
-    icon: ci
-
-  # Content Architecture documentation
-  - name: docs-eng-team
-    branch: main
-    repo_name: content-arch
-    display_name: "Content Architecture"
-    icon: architecture
-
-  # Observability group (multiple members)
-  - name: docs-eng-team
-    branch: feature/test
+  - name: docs-content-internal
     category: docs
-    repo_name: docs-eng-team
-    display_name: "Docs Engineering"
-    icon: documentation
-
-  - name: docs-eng-team
-    branch: main
-    category: observability
-    repo_name: uptime-docs
-    display_name: "Uptime Monitoring"
-    icon: observability
-
-  - name: docs-eng-team
-    branch: main
-    category: observability
-    repo_name: apm-agent-docs
-    display_name: "APM Agent"
-    icon: apm
-
-  # Migration Guide in tooling category
-  - name: docs-eng-team
-    branch: main
-    category: tooling
-    repo_name: migration-guide
-    display_name: "AsciiDoc-to-MDX Migration"
-    icon: migration
-
-  # Artifactory documentation in tooling category
-  - name: docs-eng-team
-    branch: main
-    category: tooling
-    repo_name: artifactory
-    display_name: "Artifactory"
-    icon: artifactory
-
-  # QA Team documentation
-  - name: docs-eng-team
-    branch: main
-    repo_name: qa-team
-    display_name: "QA Team Handbook"
-    icon: testing
-
-  # Consulting documentation
-  - name: docs-eng-team
-    branch: main
-    repo_name: consulting
-    display_name: "Consulting Team"
-    icon: consulting
+    display_name: "Docs Content Internal"
+    icon: ci
 
 # Configuration options reference:
 #

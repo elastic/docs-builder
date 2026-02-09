@@ -166,7 +166,8 @@ public class HtmlWriter(
 			GitBranch = gitBranch != "unavailable" ? gitBranch : null,
 			GitCommitShort = gitRef is { Length: >= 7 } r && r != "unavailable" ? r[..7] : null,
 			GitRepository = gitRepo != "unavailable" ? gitRepo : null,
-			GitHubDocsUrl = gitHubDocsUrl
+			GitHubDocsUrl = gitHubDocsUrl,
+			GitHubRef = DocumentationSet.Context.Git.GitHubRef
 		});
 
 		return new RenderResult

@@ -66,6 +66,7 @@ public class IndexViewModel
 	public string? GitCommitShort { get; init; }
 	public string? GitRepository { get; init; }
 	public string? GitHubDocsUrl { get; init; }
+	public string? GitHubRef { get; init; }
 }
 
 public class VersionDropDownItemViewModel
