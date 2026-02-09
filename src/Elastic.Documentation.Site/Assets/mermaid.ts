@@ -85,16 +85,25 @@ function sanitizeSvgNode(svg: string): Node {
     // is not untrusted user input. DOMPurify's SVG profile strips <foreignObject>
     // elements that Mermaid uses for text labels, and combining svg+html profiles
     // returns an empty string entirely. We use DOM-based sanitisation instead:
-    // parse the SVG into a document, remove all <script> elements and on* event
-    // handler attributes, then return the sanitised root element as a DOM node
-    // (avoiding innerHTML entirely).
-    const doc = new DOMParser().parseFromString(svg, 'image/svg+xml')
+    // parse the SVG, remove all <script> elements and on* event handler attributes,
+    // then return the sanitised root element as a DOM node (avoiding innerHTML).
+    //
+    // We parse as text/html rather than image/svg+xml because Mermaid's SVG contains
+    // <foreignObject> with HTML content (e.g. <br> tags) that the strict XML parser
+    // rejects due to void-element tag mismatch.
+    const doc = new DOMParser().parseFromString(svg, 'text/html')
+    const svgEl = doc.querySelector('svg')
 
-    for (const script of doc.querySelectorAll('script')) {
+    if (!svgEl) {
+        // Fallback: return the raw text as a text node
+        return document.createTextNode('')
+    }
+
+    for (const script of svgEl.querySelectorAll('script')) {
         script.remove()
     }
 
-    for (const el of doc.querySelectorAll('*')) {
+    for (const el of svgEl.querySelectorAll('*')) {
         for (const attr of [...el.attributes]) {
             if (attr.name.toLowerCase().startsWith('on')) {
                 el.removeAttribute(attr.name)
@@ -102,7 +111,7 @@ function sanitizeSvgNode(svg: string): Node {
         }
     }
 
-    return document.importNode(doc.documentElement, true)
+    return document.importNode(svgEl, true)
 }
 
 async function renderMermaidDiagram(
