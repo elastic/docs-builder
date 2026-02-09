@@ -253,13 +253,8 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 			if (checksum != entry.File.Checksum)
 				collector.EmitWarning(bundleFile, $"Checksum mismatch for file {entry.File.Name}. Expected {entry.File.Checksum}, got {checksum}");
 
-			// Deserialize YAML (skip comment lines) to validate structure
-			var yamlLines = fileContent.Split('\n');
-			var yamlWithoutComments = string.Join('\n', yamlLines.Where(line => !line.TrimStart().StartsWith('#')));
-
-			// Normalize "version:" to "target:" in products section
-			var normalizedYaml = ChangelogBundlingService.VersionToTargetRegex().Replace(yamlWithoutComments, "$1target:");
-
+			// Deserialize YAML to validate structure
+			var normalizedYaml = ReleaseNotesSerialization.NormalizeYaml(fileContent);
 			var entryData = ReleaseNotesSerialization.DeserializeEntry(normalizedYaml);
 
 			// Validate required fields in changelog file

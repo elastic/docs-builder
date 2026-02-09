@@ -353,12 +353,13 @@ Bundle changelogs
 Options:
   --all                                     Include all changelogs in the directory. Only one filter option can be specified: `--all`, `--input-products`, or `--prs`.
   --directory <string?>                     Optional: Directory containing changelog YAML files. Defaults to current directory [Default: null]
+  --hide-features <string[]?>               Optional: Feature IDs to mark as hidden in the bundle output (comma-separated), or a path to a newline-delimited file containing feature IDs. Can be specified multiple times. When the bundle is rendered (by CLI render or {changelog} directive), entries with matching feature-id values will be commented out. [Default: null]
   --input-products <List<ProductInfo>?>     Filter by products in format "product target lifecycle, ..." (e.g., "cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta"). When specified, all three parts (product, target, lifecycle) are required but can be wildcards (*). Examples: "elasticsearch * *" matches all elasticsearch changelogs, "cloud-serverless 2025-12-02 *" matches cloud-serverless 2025-12-02 with any lifecycle, "* 9.3.* *" matches any product with target starting with "9.3.", "* * *" matches all changelogs (equivalent to --all). Only one filter option can be specified: `--all`, `--input-products`, or `--prs`. [Default: null]
   --output <string?>                        Optional: Output path for the bundled changelog. Can be either (1) a directory path, in which case 'changelog-bundle.yaml' is created in that directory, or (2) a file path ending in .yml or .yaml. Defaults to 'changelog-bundle.yaml' in the input directory [Default: null]
   --output-products <List<ProductInfo>?>    Optional: Explicitly set the products array in the output file in format "product target lifecycle, ...". Overrides any values from changelogs. [Default: null]
   --owner <string?>                         GitHub repository owner (required only when PRs are specified as numbers) [Default: null]
   --prs <string[]?>                         Filter by pull request URLs or numbers (comma-separated), or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times. Only one filter option can be specified: `--all`, `--input-products`, or `--prs`. [Default: null]
-  --repo <string?>                          GitHub repository name (required only when PRs are specified as numbers) [Default: null]
+  --repo <string?>                          GitHub repository name. When specified, this value is stored in the bundle's product metadata and used to generate correct PR/issue links during rendering. Required when PRs are specified as numbers. [Default: null]
   --resolve                                 Optional: Copy the contents of each changelog file into the entries array. By default, the bundle contains only the file names and checksums.
 ```
 
@@ -538,6 +539,96 @@ The `--output` option supports two formats:
 
 If you specify a file path with a different extension (not `.yml` or `.yaml`), the command returns an error.
 
+### Hide features in bundles [changelog-bundle-hide-features]
+
+You can use the `--hide-features` option to embed feature IDs that should be hidden when the bundle is rendered. This is useful for features that are not yet ready for public documentation.
+
+```sh
+docs-builder changelog bundle \
+  --input-products "elasticsearch 9.3.0 *" \
+  --hide-features "feature:hidden-api,feature:experimental" \ <1>
+  --output /path/to/bundles/9.3.0.yaml
+```
+
+1. Feature IDs to hide. Entries with matching `feature-id` values will be commented out when rendered.
+
+The bundle output will include a `hide-features` field:
+
+```yaml
+products:
+- product: elasticsearch
+  target: 9.3.0
+hide-features:
+  - feature:hidden-api
+  - feature:experimental
+entries:
+- file:
+    name: 1765495972-new-feature.yaml
+    checksum: 6c3243f56279b1797b5dfff6c02ebf90b9658464
+```
+
+When this bundle is rendered (either via the `changelog render` command or the `{changelog}` directive), entries with `feature-id` values matching any of the listed features will be commented out in the output.
+
+:::{note}
+The `--hide-features` option on the `render` command and the `hide-features` field in bundles are **combined**. If you specify `--hide-features` on both the `bundle` and `render` commands, all specified features are hidden. The `{changelog}` directive automatically reads `hide-features` from all loaded bundles and applies them.
+:::
+
+### Repository name in bundles [changelog-bundle-repo]
+
+When you specify the `--repo` option, the repository name is stored in the bundle's product metadata. This ensures that PR and issue links are generated correctly when the bundle is rendered.
+
+```sh
+docs-builder changelog bundle \
+  --input-products "cloud-serverless 2025-12-02 *" \
+  --repo cloud \ <1>
+  --output /path/to/bundles/2025-12-02.yaml
+```
+
+1. The GitHub repository name. This is stored in each product entry in the bundle.
+
+The bundle output will include a `repo` field in each product:
+
+```yaml
+products:
+- product: cloud-serverless
+  target: 2025-12-02
+  repo: cloud
+entries:
+- file:
+    name: 1765495972-new-feature.yaml
+    checksum: 6c3243f56279b1797b5dfff6c02ebf90b9658464
+```
+
+When rendering, PR/issue links will use `https://github.com/elastic/cloud/...` instead of the product ID in the URL.
+
+:::{note}
+If the `repo` field is not specified, the product ID is used as a fallback for link generation. This may result in broken links if the product ID doesn't match the GitHub repository name (e.g., `cloud-serverless` vs `cloud`).
+:::
+
+### Amend bundles [changelog-bundle-amend]
+
+When you need to add entries to an existing bundle without modifying the original file, you can create amend bundles. Amend bundles follow a specific naming convention: `{parent-bundle-name}.amend-{N}.yaml` where `{N}` is a sequence number.
+
+For example, if you have a bundle named `9.3.0.yaml`, you can create amend files:
+- `9.3.0.amend-1.yaml`
+- `9.3.0.amend-2.yaml`
+
+Amend bundles contain only the additional entries:
+
+```yaml
+# 9.3.0.amend-1.yaml
+entries:
+- file:
+    name: late-addition.yaml
+    checksum: abc123def456
+```
+
+When bundles are loaded (either via the `changelog render` command or the `{changelog}` directive), amend files are **automatically merged** with their parent bundles. The entries from all matching amend files are combined with the parent bundle's entries, and the result is rendered as a single release.
+
+:::{note}
+Amend bundles do not need to include `products` or `hide-features` fields—they inherit these from their parent bundle. If an amend bundle is found without a matching parent bundle, it remains standalone.
+:::
+
 ## Create documentation
 
 ### Include changelogs inline [changelog-directive]
@@ -626,8 +717,7 @@ For example, the `index.md` output file contains information derived from the ch
 
 To comment out the pull request and issue links, for example if they relate to a private repository, add `hide-links` to the `--input` option for that bundle. This allows you to selectively hide links per bundle when merging changelogs from multiple repositories.
 
-If you have changelogs with `feature-id` values and you want them to be omitted from the output, use the `--hide-features` option.
-For more information, refer to [](/cli/release/changelog-render.md).
+If you have changelogs with `feature-id` values and you want them to be omitted from the output, use the `--hide-features` option. Feature IDs specified via `--hide-features` are **merged** with any `hide-features` already present in the bundle files. This means both CLI-specified and bundle-embedded features are hidden in the output.
 
 To create an asciidoc file instead of markdown files, add the `--file-type asciidoc` option:
 

@@ -7,6 +7,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using Elastic.Changelog.Configuration;
+using Elastic.Changelog.Rendering;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.ReleaseNotes;
@@ -52,6 +53,13 @@ public record BundleChangelogsArguments
 	/// Path to the changelog.yml configuration file
 	/// </summary>
 	public string? Config { get; init; }
+
+	/// <summary>
+	/// Feature IDs to mark as hidden in the bundle output.
+	/// When the bundle is rendered (by CLI render or {changelog} directive),
+	/// entries with matching feature-id values will be commented out.
+	/// </summary>
+	public string[]? HideFeatures { get; init; }
 }
 
 /// <summary>
@@ -136,9 +144,22 @@ public partial class ChangelogBundlingService(
 				return false;
 			}
 
+			// Load feature IDs to hide
+			var featureHidingLoader = new FeatureHidingLoader(_fileSystem);
+			var featureHidingResult = await featureHidingLoader.LoadFeatureIdsAsync(collector, input.HideFeatures, ctx);
+			if (!featureHidingResult.IsValid)
+				return false;
+
 			// Build bundle
 			var bundleBuilder = new BundleBuilder();
-			var buildResult = bundleBuilder.BuildBundle(collector, matchResult.Entries, input.OutputProducts, input.Resolve);
+			var buildResult = bundleBuilder.BuildBundle(
+				collector,
+				matchResult.Entries,
+				input.OutputProducts,
+				input.Resolve,
+				input.Repo,
+				featureHidingResult.FeatureIdsToHide
+			);
 
 			if (!buildResult.IsValid || buildResult.Data == null)
 				return false;
@@ -229,14 +250,31 @@ public partial class ChangelogBundlingService(
 			outputPath = _fileSystem.Path.Combine(outputDir, outputPattern);
 		}
 
+		// Merge profile hide-features with any CLI-provided hide-features
+		var mergedHideFeatures = MergeHideFeatures(input.HideFeatures, profile.HideFeatures);
+
 		// If we have PRs from a promotion report, use those; otherwise use input products filter
 		return input with
 		{
 			InputProducts = prsFromReport == null ? inputProducts : null,
 			Prs = prsFromReport,
 			All = false,
-			Output = outputPath ?? input.Output
+			Output = outputPath ?? input.Output,
+			HideFeatures = mergedHideFeatures
 		};
+	}
+
+	private static string[]? MergeHideFeatures(string[]? cliHideFeatures, IReadOnlyList<string>? profileHideFeatures)
+	{
+		if (cliHideFeatures is not { Length: > 0 } && profileHideFeatures is not { Count: > 0 })
+			return null;
+
+		var merged = new HashSet<string>(cliHideFeatures ?? [], StringComparer.OrdinalIgnoreCase);
+
+		if (profileHideFeatures is { Count: > 0 })
+			merged.UnionWith(profileHideFeatures);
+
+		return merged.Count > 0 ? [.. merged] : null;
 	}
 
 	private static List<ProductArgument> ParseProfileProducts(string pattern)

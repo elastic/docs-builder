@@ -56,6 +56,8 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 
 	public GoogleTagManagerConfiguration GoogleTagManager { get; init; }
 
+	public OptimizelyConfiguration Optimizely { get; init; }
+
 	// This property is used for the canonical URL
 	public Uri? CanonicalBaseUrl { get; init; }
 
@@ -120,6 +122,10 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 
 		Configuration = new ConfigurationFile(ConfigurationYaml, this, VersionsConfiguration, ProductsConfiguration);
 		GoogleTagManager = new GoogleTagManagerConfiguration
+		{
+			Enabled = false
+		};
+		Optimizely = new OptimizelyConfiguration
 		{
 			Enabled = false
 		};

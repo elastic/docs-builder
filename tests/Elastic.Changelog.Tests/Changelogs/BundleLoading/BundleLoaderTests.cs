@@ -498,6 +498,620 @@ public class BundleLoaderTests(ITestOutputHelper output)
 
 	#endregion
 
+	#region Amend File Merging Tests
+
+	[Fact]
+	public void LoadBundles_WithAmendFile_MergesEntriesIntoParentBundle()
+	{
+		// Arrange
+		var bundlesFolder = "/docs/changelog/bundles";
+		_fileSystem.Directory.CreateDirectory(bundlesFolder);
+
+		// language=yaml
+		var parentBundle =
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			entries:
+			  - title: Original feature
+			    type: feature
+			""";
+		// language=yaml
+		var amendBundle =
+			"""
+			products: []
+			entries:
+			  - title: Late addition
+			    type: enhancement
+			""";
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.yaml", parentBundle);
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.amend-1.yaml", amendBundle);
+
+		var service = CreateService();
+
+		// Act
+		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+
+		// Assert
+		bundles.Should().HaveCount(1);
+		bundles[0].Version.Should().Be("9.3.0");
+		bundles[0].Entries.Should().HaveCount(2);
+		bundles[0].Entries.Select(e => e.Title).Should().Contain(["Original feature", "Late addition"]);
+		_warnings.Should().BeEmpty();
+	}
+
+	[Fact]
+	public void LoadBundles_WithMultipleAmendFiles_MergesAllIntoParent()
+	{
+		// Arrange
+		var bundlesFolder = "/docs/changelog/bundles";
+		_fileSystem.Directory.CreateDirectory(bundlesFolder);
+
+		// language=yaml
+		var parentBundle =
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			entries:
+			  - title: Original feature
+			    type: feature
+			""";
+		// language=yaml
+		var amendBundle1 =
+			"""
+			products: []
+			entries:
+			  - title: First amendment
+			    type: enhancement
+			""";
+		// language=yaml
+		var amendBundle2 =
+			"""
+			products: []
+			entries:
+			  - title: Second amendment
+			    type: bug-fix
+			""";
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.yaml", parentBundle);
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.amend-1.yaml", amendBundle1);
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.amend-2.yaml", amendBundle2);
+
+		var service = CreateService();
+
+		// Act
+		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+
+		// Assert
+		bundles.Should().HaveCount(1);
+		bundles[0].Version.Should().Be("9.3.0");
+		bundles[0].Entries.Should().HaveCount(3);
+		bundles[0].Entries.Select(e => e.Title).Should().Contain(["Original feature", "First amendment", "Second amendment"]);
+	}
+
+	[Fact]
+	public void LoadBundles_AmendFileWithoutParent_RemainsStandalone()
+	{
+		// Arrange
+		var bundlesFolder = "/docs/changelog/bundles";
+		_fileSystem.Directory.CreateDirectory(bundlesFolder);
+
+		// No parent bundle, only amend file
+		// language=yaml
+		var amendBundle =
+			"""
+			products: []
+			entries:
+			  - title: Orphan entry
+			    type: feature
+			""";
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.amend-1.yaml", amendBundle);
+
+		var service = CreateService();
+
+		// Act
+		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+
+		// Assert
+		bundles.Should().HaveCount(1);
+		bundles[0].Version.Should().Be("9.3.0.amend-1"); // Falls back to filename without parent
+		bundles[0].Entries.Should().HaveCount(1);
+	}
+
+	[Fact]
+	public void LoadBundles_WithYmlExtension_AmendFileMergesCorrectly()
+	{
+		// Arrange
+		var bundlesFolder = "/docs/changelog/bundles";
+		_fileSystem.Directory.CreateDirectory(bundlesFolder);
+
+		// language=yaml
+		var parentBundle =
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			entries:
+			  - title: Original feature
+			    type: feature
+			""";
+		// language=yaml
+		var amendBundle =
+			"""
+			products: []
+			entries:
+			  - title: Amendment
+			    type: enhancement
+			""";
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.yml", parentBundle);
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.amend-1.yml", amendBundle);
+
+		var service = CreateService();
+
+		// Act
+		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+
+		// Assert
+		bundles.Should().HaveCount(1);
+		bundles[0].Version.Should().Be("9.3.0");
+		bundles[0].Entries.Should().HaveCount(2);
+	}
+
+	[Fact]
+	public void LoadBundles_MixedExtensions_AmendFileMergesWithMatchingParent()
+	{
+		// Arrange
+		var bundlesFolder = "/docs/changelog/bundles";
+		_fileSystem.Directory.CreateDirectory(bundlesFolder);
+
+		// language=yaml
+		var parentBundle =
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			entries:
+			  - title: Original
+			    type: feature
+			""";
+		// language=yaml
+		var amendBundle =
+			"""
+			products: []
+			entries:
+			  - title: Amendment
+			    type: enhancement
+			""";
+		// Parent uses .yaml, amend uses .yml - they share the same base name
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.yaml", parentBundle);
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.amend-1.yaml", amendBundle);
+
+		var service = CreateService();
+
+		// Act
+		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+
+		// Assert
+		bundles.Should().HaveCount(1);
+		bundles[0].Entries.Should().HaveCount(2);
+	}
+
+	[Fact]
+	public void LoadBundles_AmendPreservesParentMetadata()
+	{
+		// Arrange
+		var bundlesFolder = "/docs/changelog/bundles";
+		_fileSystem.Directory.CreateDirectory(bundlesFolder);
+
+		// language=yaml
+		var parentBundle =
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			    lifecycle: ga
+			entries:
+			  - title: Original
+			    type: feature
+			""";
+		// language=yaml
+		var amendBundle =
+			"""
+			products: []
+			entries:
+			  - title: Amendment
+			    type: enhancement
+			""";
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.yaml", parentBundle);
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.amend-1.yaml", amendBundle);
+
+		var service = CreateService();
+
+		// Act
+		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+
+		// Assert
+		bundles.Should().HaveCount(1);
+		bundles[0].Version.Should().Be("9.3.0");
+		bundles[0].Repo.Should().Be("elasticsearch");
+		bundles[0].FilePath.Should().EndWith("9.3.0.yaml");
+		bundles[0].Data.Products.Should().HaveCount(1);
+	}
+
+	[Fact]
+	public void LoadBundles_MultipleBundlesWithAmends_MergesCorrectly()
+	{
+		// Arrange
+		var bundlesFolder = "/docs/changelog/bundles";
+		_fileSystem.Directory.CreateDirectory(bundlesFolder);
+
+		// language=yaml
+		var parent930 =
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			entries:
+			  - title: Feature 9.3.0
+			    type: feature
+			""";
+		// language=yaml
+		var amend930 =
+			"""
+			products: []
+			entries:
+			  - title: Amendment 9.3.0
+			    type: enhancement
+			""";
+		// language=yaml
+		var parent920 =
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			entries:
+			  - title: Feature 9.2.0
+			    type: feature
+			""";
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.yaml", parent930);
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.amend-1.yaml", amend930);
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.2.0.yaml", parent920);
+
+		var service = CreateService();
+
+		// Act
+		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+
+		// Assert
+		bundles.Should().HaveCount(2);
+		var bundle930 = bundles.Single(b => b.Version == "9.3.0");
+		var bundle920 = bundles.Single(b => b.Version == "9.2.0");
+
+		bundle930.Entries.Should().HaveCount(2);
+		bundle930.Entries.Select(e => e.Title).Should().Contain(["Feature 9.3.0", "Amendment 9.3.0"]);
+
+		bundle920.Entries.Should().HaveCount(1);
+		bundle920.Entries[0].Title.Should().Be("Feature 9.2.0");
+	}
+
+	[Fact]
+	public void LoadBundles_DateBasedBundleWithAmend_MergesCorrectly()
+	{
+		// Arrange - serverless-style date-based bundles
+		var bundlesFolder = "/docs/changelog/bundles";
+		_fileSystem.Directory.CreateDirectory(bundlesFolder);
+
+		// language=yaml
+		var parentBundle =
+			"""
+			products:
+			  - product: cloud-serverless
+			    target: 2025-01-28
+			entries:
+			  - title: Serverless feature
+			    type: feature
+			""";
+		// language=yaml
+		var amendBundle =
+			"""
+			products: []
+			entries:
+			  - title: Late serverless fix
+			    type: bug-fix
+			""";
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/2025-01-28.yaml", parentBundle);
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/2025-01-28.amend-1.yaml", amendBundle);
+
+		var service = CreateService();
+
+		// Act
+		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+
+		// Assert
+		bundles.Should().HaveCount(1);
+		bundles[0].Version.Should().Be("2025-01-28");
+		bundles[0].Entries.Should().HaveCount(2);
+	}
+
+	#endregion
+
+	#region Repository Field Tests
+
+	[Fact]
+	public void LoadBundles_WithExplicitRepoField_UsesRepoInsteadOfProductId()
+	{
+		// Arrange
+		var bundlesFolder = "/docs/changelog/bundles";
+		_fileSystem.Directory.CreateDirectory(bundlesFolder);
+
+		// Bundle with explicit repo field that differs from product ID
+		// language=yaml
+		var bundleContent =
+			"""
+			products:
+			  - product: cloud-serverless
+			    target: 2025-01-28
+			    repo: cloud
+			entries:
+			  - title: Test feature
+			    type: feature
+			""";
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/2025-01-28.yaml", bundleContent);
+
+		var service = CreateService();
+
+		// Act
+		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+
+		// Assert
+		bundles.Should().HaveCount(1);
+		bundles[0].Version.Should().Be("2025-01-28");
+		// Repo should be "cloud" from explicit field, not "cloud-serverless" from ProductId
+		bundles[0].Repo.Should().Be("cloud");
+		_warnings.Should().BeEmpty();
+	}
+
+	[Fact]
+	public void LoadBundles_WithoutRepoField_FallsBackToProductId()
+	{
+		// Arrange
+		var bundlesFolder = "/docs/changelog/bundles";
+		_fileSystem.Directory.CreateDirectory(bundlesFolder);
+
+		// Bundle without repo field - should fall back to product ID
+		// language=yaml
+		var bundleContent =
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			entries:
+			  - title: Test feature
+			    type: feature
+			""";
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.yaml", bundleContent);
+
+		var service = CreateService();
+
+		// Act
+		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+
+		// Assert
+		bundles.Should().HaveCount(1);
+		bundles[0].Version.Should().Be("9.3.0");
+		// Repo should fall back to ProductId "elasticsearch"
+		bundles[0].Repo.Should().Be("elasticsearch");
+		_warnings.Should().BeEmpty();
+	}
+
+	[Fact]
+	public void LoadBundles_WithEmptyRepoField_FallsBackToProductId()
+	{
+		// Arrange
+		var bundlesFolder = "/docs/changelog/bundles";
+		_fileSystem.Directory.CreateDirectory(bundlesFolder);
+
+		// Bundle with empty repo field - should fall back to product ID
+		// language=yaml
+		var bundleContent =
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			    repo: ""
+			entries:
+			  - title: Test feature
+			    type: feature
+			""";
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.yaml", bundleContent);
+
+		var service = CreateService();
+
+		// Act
+		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+
+		// Assert
+		bundles.Should().HaveCount(1);
+		// Repo should fall back to ProductId when repo is empty
+		bundles[0].Repo.Should().Be("elasticsearch");
+		_warnings.Should().BeEmpty();
+	}
+
+	[Fact]
+	public void LoadBundles_RepoFieldSerializesAndDeserializesCorrectly()
+	{
+		// Arrange
+		var bundlesFolder = "/docs/changelog/bundles";
+		_fileSystem.Directory.CreateDirectory(bundlesFolder);
+
+		// Bundle with repo field
+		// language=yaml
+		var bundleContent =
+			"""
+			products:
+			  - product: elasticsearch-serverless
+			    target: 2025-02-01
+			    lifecycle: ga
+			    repo: elasticsearch
+			entries:
+			  - title: Test feature
+			    type: feature
+			    pr: https://github.com/elastic/elasticsearch/pull/123
+			""";
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/2025-02-01.yaml", bundleContent);
+
+		var service = CreateService();
+
+		// Act
+		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+
+		// Assert
+		bundles.Should().HaveCount(1);
+		bundles[0].Repo.Should().Be("elasticsearch");
+		bundles[0].Data.Products.Should().HaveCount(1);
+		bundles[0].Data.Products[0].Repo.Should().Be("elasticsearch");
+		bundles[0].Data.Products[0].ProductId.Should().Be("elasticsearch-serverless");
+		_warnings.Should().BeEmpty();
+	}
+
+	#endregion
+
+	#region HideFeatures Tests
+
+	[Fact]
+	public void LoadBundles_WithHideFeaturesField_LoadsHideFeatures()
+	{
+		// Arrange
+		var bundlesFolder = "/docs/changelog/bundles";
+		_fileSystem.Directory.CreateDirectory(bundlesFolder);
+
+		// Bundle with hide-features field
+		// language=yaml
+		var bundleContent =
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			hide-features:
+			  - feature:hidden-api
+			  - feature:another-hidden
+			entries:
+			  - title: Test feature
+			    type: feature
+			""";
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.yaml", bundleContent);
+
+		var service = CreateService();
+
+		// Act
+		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+
+		// Assert
+		bundles.Should().HaveCount(1);
+		bundles[0].HideFeatures.Should().HaveCount(2);
+		bundles[0].HideFeatures.Should().Contain("feature:hidden-api");
+		bundles[0].HideFeatures.Should().Contain("feature:another-hidden");
+		_warnings.Should().BeEmpty();
+	}
+
+	[Fact]
+	public void LoadBundles_WithoutHideFeaturesField_ReturnsEmptyHideFeatures()
+	{
+		// Arrange
+		var bundlesFolder = "/docs/changelog/bundles";
+		_fileSystem.Directory.CreateDirectory(bundlesFolder);
+
+		// Bundle without hide-features field
+		// language=yaml
+		var bundleContent =
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			entries:
+			  - title: Test feature
+			    type: feature
+			""";
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.yaml", bundleContent);
+
+		var service = CreateService();
+
+		// Act
+		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+
+		// Assert
+		bundles.Should().HaveCount(1);
+		bundles[0].HideFeatures.Should().BeEmpty();
+		_warnings.Should().BeEmpty();
+	}
+
+	[Fact]
+	public void LoadBundles_HideFeaturesSerializesAndDeserializesCorrectly()
+	{
+		// Arrange - Test round-trip serialization of hide-features field
+		var bundlesFolder = "/docs/changelog/bundles";
+		_fileSystem.Directory.CreateDirectory(bundlesFolder);
+
+		var originalBundle = new Bundle
+		{
+			Products =
+			[
+				new BundledProduct { ProductId = "elasticsearch", Target = "9.3.0" }
+			],
+			HideFeatures = ["feature:first", "feature:second", "feature:third"],
+			Entries =
+			[
+				new BundledEntry
+				{
+					Title = "Test feature",
+					Type = ChangelogEntryType.Feature,
+					File = new BundledFile { Name = "test.yaml", Checksum = "abc123" }
+				}
+			]
+		};
+
+		var serializedYaml = ReleaseNotesSerialization.SerializeBundle(originalBundle);
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.yaml", serializedYaml);
+
+		var service = CreateService();
+
+		// Act
+		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+
+		// Assert
+		bundles.Should().HaveCount(1);
+		bundles[0].HideFeatures.Should().HaveCount(3);
+		bundles[0].HideFeatures.Should().ContainInOrder("feature:first", "feature:second", "feature:third");
+		bundles[0].Data.HideFeatures.Should().BeEquivalentTo(originalBundle.HideFeatures);
+		_warnings.Should().BeEmpty();
+	}
+
+	[Fact]
+	public void LoadedBundle_HideFeatures_ExposedFromBundleData()
+	{
+		// Arrange - Verify that LoadedBundle.HideFeatures properly exposes Data.HideFeatures
+		var bundleData = new Bundle
+		{
+			Products = [],
+			HideFeatures = ["feature:a", "feature:b"],
+			Entries = []
+		};
+		var entries = new List<ChangelogEntry>();
+		var bundle = new LoadedBundle("9.3.0", "elasticsearch", bundleData, "/path/to/bundle.yaml", entries);
+
+		// Act
+		var hideFeatures = bundle.HideFeatures;
+
+		// Assert
+		hideFeatures.Should().HaveCount(2);
+		hideFeatures.Should().Contain("feature:a");
+		hideFeatures.Should().Contain("feature:b");
+		hideFeatures.Should().BeSameAs(bundleData.HideFeatures);
+	}
+
+	#endregion
+
 	#region EntriesByType Tests
 
 	[Fact]
