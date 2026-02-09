@@ -1,3 +1,4 @@
+import '../../eui-icons-cache'
 import { useHtmxContainer } from '../shared/htmx/useHtmxContainer'
 import { DeploymentInfo } from './DeploymentInfo'
 import { EuiHeader, EuiHeaderLogo, EuiProvider } from '@elastic/eui'
