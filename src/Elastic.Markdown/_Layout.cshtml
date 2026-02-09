@@ -21,18 +21,13 @@
 
 	private async Task RenderDefault()
 	{
-		<div>
-			<div class="w-full absolute top-0 left-0 right-0 htmx-indicator" id="htmx-indicator" role="status">
-				<div class="progress w-full h-full bg-pink-70 left-right"></div>
-				<div class="h-[2px] w-full overflow-hidden">
-				</div>
-				<div class="sr-only">Loading</div>
-			</div>
+		<div class="relative">
+			
 			<div class="min-h-screen
 						w-full
 						max-w-(--max-layout-width)
 						mx-auto
-						px-4		
+						md:px-4
 			">
 				<div class="min-h-screen grid grid-cols-1 md:grid-cols-[var(--max-sidebar-width)_1fr] gap-4">
 					@await RenderPartialAsync(_PagesNav.Create<GlobalLayoutViewModel>(Model))
