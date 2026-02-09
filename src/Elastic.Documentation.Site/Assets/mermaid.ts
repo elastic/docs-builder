@@ -1,56 +1,23 @@
-// Beautiful Mermaid is loaded from local _static/ to avoid client-side CDN calls
+// Mermaid is loaded from local _static/ to avoid client-side CDN calls
 // The file is copied from node_modules during build (see package.json copy:mermaid)
 
-// Type declaration for beautiful-mermaid browser global
+// Type declaration for mermaid UMD global
 declare global {
     interface Window {
-        __mermaid: {
-            renderMermaid: (
-                code: string,
-                options?: {
-                    bg?: string
-                    fg?: string
-                    font?: string
-                    transparent?: boolean
-                    line?: string
-                    accent?: string
-                    muted?: string
-                    surface?: string
-                    border?: string
-                }
-            ) => Promise<string>
+        mermaid: {
+            initialize: (config: Record<string, unknown>) => void
+            render: (
+                id: string,
+                code: string
+            ) => Promise<{ svg: string }>
         }
     }
 }
 
 let mermaidLoaded = false
 let mermaidLoading: Promise<void> | null = null
-
-// High-contrast theme configuration
-// beautiful-mermaid generates CSS variables that don't resolve correctly in all contexts,
-// so we resolve them to actual colors during post-processing
-const colors = {
-    background: '#FFFFFF',
-    foreground: '#000000',
-    nodeFill: '#F5F5F5',
-    nodeStroke: '#000000',
-    line: '#000000',
-    innerStroke: '#333333',
-}
-
-// Map CSS variables to resolved colors
-const variableReplacements: Record<string, string> = {
-    '--_text': colors.foreground,
-    '--_text-sec': colors.foreground,
-    '--_text-muted': colors.foreground,
-    '--_text-faint': colors.foreground, // "+ ", ": ", "(no attributes)"
-    '--_line': colors.line,
-    '--_arrow': colors.foreground,
-    '--_node-fill': colors.nodeFill,
-    '--_node-stroke': colors.nodeStroke,
-    '--_inner-stroke': colors.innerStroke,
-    '--bg': colors.background,
-}
+let mermaidDiagramIndex = 0
+let tabListenerAttached = false
 
 // Zoom configuration
 const ZOOM_MIN = 0.5
@@ -85,31 +52,6 @@ interface DiagramState {
 }
 
 /**
- * Resolve CSS variables to actual colors in the SVG output
- */
-function resolveVariables(svg: string): string {
-    let result = svg
-    for (const [variable, color] of Object.entries(variableReplacements)) {
-        const pattern = new RegExp(
-            `(fill|stroke)="var\\(${variable.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\)"`,
-            'g'
-        )
-        result = result.replace(pattern, `$1="${color}"`)
-    }
-    return result
-}
-
-/**
- * Remove Google Fonts @import to avoid external network dependency
- */
-function removeGoogleFonts(svg: string): string {
-    return svg.replace(
-        /@import url\('https:\/\/fonts\.googleapis\.com[^']*'\);\s*/g,
-        ''
-    )
-}
-
-/**
  * Get the base path for _static/ assets by finding main.js script location
  */
 function getStaticBasePath(): string {
@@ -129,8 +71,143 @@ function getStaticBasePath(): string {
     return '/_static/'
 }
 
+async function waitForFonts(): Promise<void> {
+	if (!document.fonts?.ready) {
+		return
+	}
+
+	try {
+		await document.fonts.ready
+	} catch {
+		// Ignore font loading failures and continue rendering
+	}
+}
+
+async function renderMermaidDiagram(
+	id: string,
+	content: string
+): Promise<string> {
+	const { svg } = await window.mermaid.render(id, content)
+
+	if (!/viewBox=\"-8 -8 16 16\"/.test(svg)) {
+		return svg
+	}
+
+	await waitForFonts()
+	await new Promise(requestAnimationFrame)
+
+	const retry = await window.mermaid.render(id, content)
+	return retry.svg
+}
+
+function getTabInputForElement(
+	element: HTMLElement
+): HTMLInputElement | null {
+	const panel = element.closest('.tabs-content')
+	if (!panel) {
+		return null
+	}
+
+	const label = panel.previousElementSibling
+	const input = label?.previousElementSibling
+	if (input instanceof HTMLInputElement && input.classList.contains('tabs-input')) {
+		return input
+	}
+
+	return null
+}
+
+function isElementVisible(element: HTMLElement): boolean {
+	const tabInput = getTabInputForElement(element)
+	if (tabInput && !tabInput.checked) {
+		return false
+	}
+
+	const rect = element.getBoundingClientRect()
+	if (rect.width === 0 || rect.height === 0) {
+		return false
+	}
+
+	return element.getClientRects().length > 0
+}
+
+function getTabPanelForInput(input: HTMLInputElement): HTMLElement | null {
+	const label = input.nextElementSibling
+	const panel = label?.nextElementSibling
+	if (panel instanceof HTMLElement && panel.classList.contains('tabs-content')) {
+		return panel
+	}
+
+	return null
+}
+
+function attachTabChangeListener(): void {
+	if (tabListenerAttached) {
+		return
+	}
+
+	document.addEventListener('change', (event) => {
+		const target = event.target
+		if (!(target instanceof HTMLInputElement)) {
+			return
+		}
+
+		if (!target.classList.contains('tabs-input') || !target.checked) {
+			return
+		}
+
+		const panel = getTabPanelForInput(target)
+		if (!panel) {
+			return
+		}
+
+		const mermaidNodes = panel.querySelectorAll(
+			'pre.mermaid:not([data-mermaid-processed])'
+		)
+		for (const node of mermaidNodes) {
+			void renderMermaidElement(node as HTMLElement)
+		}
+	})
+
+	tabListenerAttached = true
+}
+
+async function renderMermaidElement(element: HTMLElement): Promise<void> {
+	const content = element.textContent?.trim()
+	if (!content) {
+		return
+	}
+
+	// Mark as processed to prevent double rendering
+	element.setAttribute('data-mermaid-processed', 'true')
+
+	try {
+		const diagramId = `mermaid-diagram-${mermaidDiagramIndex++}`
+		const svg = await renderMermaidDiagram(diagramId, content)
+
+		const container = document.createElement('div')
+		container.className = 'mermaid-container'
+
+		const viewport = document.createElement('div')
+		viewport.className = 'mermaid-viewport'
+
+		const rendered = document.createElement('div')
+		rendered.className = 'mermaid-rendered'
+		rendered.innerHTML = svg
+
+		viewport.appendChild(rendered)
+		container.appendChild(viewport)
+
+		setupControls(container, viewport, rendered, svg)
+		element.replaceWith(container)
+	} catch (err) {
+		console.warn('Mermaid rendering error for diagram:', err)
+		element.classList.add('mermaid-error')
+	}
+}
+
 /**
- * Lazy-load Beautiful Mermaid from local _static/ only when diagrams exist on the page
+ * Lazy-load Mermaid from local _static/ only when diagrams exist on the page
  */
 async function loadMermaid(): Promise<void> {
     if (mermaidLoaded) return
@@ -142,10 +219,15 @@ async function loadMermaid(): Promise<void> {
         script.async = true
         script.onload = () => {
             mermaidLoaded = true
+            // Initialize with startOnLoad disabled since we render manually
+            window.mermaid.initialize({
+                startOnLoad: false,
+                theme: 'default',
+            })
             resolve()
         }
         script.onerror = () =>
-            reject(new Error('Failed to load Beautiful Mermaid'))
+            reject(new Error('Failed to load Mermaid'))
         document.head.appendChild(script)
     })
 
@@ -518,52 +600,30 @@ export async function initMermaid() {
     }
 
     try {
-        // Lazy-load Beautiful Mermaid only when diagrams exist
+        // Lazy-load Mermaid only when diagrams exist
         await loadMermaid()
+		await waitForFonts()
+		attachTabChangeListener()
 
-        // Render each diagram individually
-        for (let i = 0; i < mermaidElements.length; i++) {
-            const element = mermaidElements[i]
-            const content = element.textContent?.trim()
+		const observer = new IntersectionObserver((entries, instance) => {
+			for (const entry of entries) {
+				if (!entry.isIntersecting) continue
+				const target = entry.target as HTMLElement
+				instance.unobserve(target)
+				void renderMermaidElement(target)
+			}
+		})
 
-            if (!content) continue
+		// Render each diagram once it is visible
+		for (let i = 0; i < mermaidElements.length; i++) {
+			const element = mermaidElements[i] as HTMLElement
 
-            // Mark as processed to prevent double rendering
-            element.setAttribute('data-mermaid-processed', 'true')
-
-            try {
-                // Render the diagram using Beautiful Mermaid
-                let svg = await window.__mermaid.renderMermaid(content)
-
-                // Post-process the SVG
-                svg = resolveVariables(svg)
-                svg = removeGoogleFonts(svg)
-
-                // Create container structure with controls
-                const container = document.createElement('div')
-                container.className = 'mermaid-container'
-
-                const viewport = document.createElement('div')
-                viewport.className = 'mermaid-viewport'
-
-                const rendered = document.createElement('div')
-                rendered.className = 'mermaid-rendered'
-                rendered.innerHTML = svg
-
-                viewport.appendChild(rendered)
-                container.appendChild(viewport)
-
-                // Set up interactive controls
-                setupControls(container, viewport, rendered, svg)
-
-                // Replace the pre element with the new container
-                element.replaceWith(container)
-            } catch (err) {
-                console.warn('Mermaid rendering error for diagram:', err)
-                // Keep the original content as fallback
-                element.classList.add('mermaid-error')
-            }
-        }
+			if (isElementVisible(element)) {
+				await renderMermaidElement(element)
+			} else {
+				observer.observe(element)
+			}
+		}
     } catch (error) {
         console.warn('Mermaid initialization error:', error)
     }
