@@ -86,7 +86,7 @@
     "defaults"
   ],
   "dependencies": {
-    "@elastic/eui": "111.1.0",
+    "@elastic/eui": "112.0.0",
     "@elastic/highlightjs-esql": "1.2.2",
     "@emotion/css": "11.13.5",
     "@emotion/react": "11.14.0",
