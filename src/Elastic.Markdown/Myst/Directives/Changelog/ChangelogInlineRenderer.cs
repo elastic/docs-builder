@@ -180,6 +180,14 @@ public static class ChangelogInlineRenderer
 			return sb.ToString();
 		}
 
+		// Special case: When filtering by highlight, render only highlights without type-based sections
+		if (typeFilter == ChangelogTypeFilter.Highlight)
+		{
+			if (highlights.Count > 0)
+				RenderDetailedEntries(sb, highlights, repo, groupBySubtype: false, hideLinks);
+			return sb.ToString();
+		}
+
 		if (breakingChanges.Count > 0)
 		{
 			_ = sb.AppendLine();

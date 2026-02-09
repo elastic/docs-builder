@@ -472,6 +472,10 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 					Level = 3
 				};
 
+			// When filtering by highlight, skip all other type-based sections
+			if (TypeFilter == ChangelogTypeFilter.Highlight)
+				continue;
+
 			if (shouldInclude(ChangelogEntryType.Security) && entriesByType.ContainsKey(ChangelogEntryType.Security))
 				yield return new PageTocItem
 				{
