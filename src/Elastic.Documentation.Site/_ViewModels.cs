@@ -47,6 +47,7 @@ public record GlobalLayoutViewModel
 	public required FeatureFlags Features { get; init; }
 	// TODO move to @inject
 	public required GoogleTagManagerConfiguration GoogleTagManager { get; init; }
+	public required OptimizelyConfiguration Optimizely { get; init; }
 	public required bool AllowIndexing { get; init; }
 	public required StaticFileContentHashProvider StaticFileContentHashProvider { get; init; }
 
