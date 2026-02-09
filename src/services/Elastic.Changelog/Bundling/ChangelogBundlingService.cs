@@ -413,10 +413,15 @@ public partial class ChangelogBundlingService(
 		_logger.LogInformation("Created bundled changelog: {OutputPath}", outputPath);
 	}
 
+	/// <summary>
+	/// Computes a SHA1 hash from the normalized YAML content (comments stripped, version→target).
+	/// This ensures checksums represent semantic content, not formatting or comments.
+	/// </summary>
 	[System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5350:Do not use insecure cryptographic algorithm SHA1", Justification = "SHA1 is required for compatibility with existing changelog bundle format")]
 	internal static string ComputeSha1(string content)
 	{
-		var bytes = Encoding.UTF8.GetBytes(content);
+		var normalized = ReleaseNotesSerialization.NormalizeYaml(content);
+		var bytes = Encoding.UTF8.GetBytes(normalized);
 		var hash = SHA1.HashData(bytes);
 		return Convert.ToHexString(hash).ToLowerInvariant();
 	}
