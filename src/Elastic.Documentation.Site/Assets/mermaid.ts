@@ -80,13 +80,14 @@ async function waitForFonts(): Promise<void> {
     }
 }
 
-function sanitizeSvg(svg: string): string {
+function sanitizeSvgNode(svg: string): Node {
     // Mermaid renders diagrams locally from author-supplied code blocks, so the SVG
     // is not untrusted user input. DOMPurify's SVG profile strips <foreignObject>
     // elements that Mermaid uses for text labels, and combining svg+html profiles
     // returns an empty string entirely. We use DOM-based sanitisation instead:
     // parse the SVG into a document, remove all <script> elements and on* event
-    // handler attributes, then serialise back to a string.
+    // handler attributes, then return the sanitised root element as a DOM node
+    // (avoiding innerHTML entirely).
     const doc = new DOMParser().parseFromString(svg, 'image/svg+xml')
 
     for (const script of doc.querySelectorAll('script')) {
@@ -101,7 +102,7 @@ function sanitizeSvg(svg: string): string {
         }
     }
 
-    return new XMLSerializer().serializeToString(doc.documentElement)
+    return document.importNode(doc.documentElement, true)
 }
 
 async function renderMermaidDiagram(
@@ -218,7 +219,7 @@ async function renderMermaidElement(element: HTMLElement): Promise<void> {
 
         const rendered = document.createElement('div')
         rendered.className = 'mermaid-rendered'
-        rendered.innerHTML = sanitizeSvg(svg)
+        rendered.appendChild(sanitizeSvgNode(svg))
 
         viewport.appendChild(rendered)
         container.appendChild(viewport)
@@ -447,7 +448,7 @@ function openFullscreenModal(svgContent: string): void {
 
     const rendered = document.createElement('div')
     rendered.className = 'mermaid-rendered'
-    rendered.innerHTML = sanitizeSvg(svgContent)
+    rendered.appendChild(sanitizeSvgNode(svgContent))
 
     viewport.appendChild(rendered)
     modalContent.appendChild(closeBtn)
