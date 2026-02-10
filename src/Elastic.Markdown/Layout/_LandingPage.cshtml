@@ -1,21 +1,28 @@
 @inherits RazorSlice<Elastic.Markdown.MarkdownLayoutViewModel>
 <div hx-select-oob="#main-container" hx-swap="none" class="w-full text-ink relative text-pretty">
 	<section class="w-full bg-grey-10" id="hero">
-		<div class="container mx-auto pt-16 pb-10 grid md:grid-cols-2 items-center gap-6">
-			<div>
-				<h1 class="text-4xl font-bold font-sans text-black">Elastic Docs</h1>
-				<p class="mt-4">Welcome to the docs that cover all changes in <span class="whitespace-nowrap">Elastic Stack 9.0.0</span> and later, including <span class="whitespace-nowrap">Elastic Stack @Model.CurrentVersion</span> and <span class="whitespace-nowrap">Elastic Cloud Serverless</span>.
-					For easy reference, changes in 9.1.0 are marked inline. For details, check <a href="@Model.Link("/get-started/versioning-availability")" class="link">Understanding versioning and availability.</a></p>
-				
-				<navigation-search></navigation-search>
+		<div class="container mx-auto pt-16 pb-10 grid md:grid-cols-[1fr_600px] items-center gap-6">
+			<div class="max-w-165">
+				<h1 class="text-6xl font-bold font-sans text-black">Elastic Docs</h1>
+				<p class="mt-4">Welcome to the docs that cover all changes in <span class="whitespace-nowrap">Elastic Stack 9.0.0</span>
+					and later, including <span class="whitespace-nowrap">Elastic Stack @Model.CurrentVersion</span> and
+					<span class="whitespace-nowrap">Elastic Cloud Serverless</span>.
+					For easy reference, changes in 9.1.0 are marked inline. For details, check <a
+						href="@Model.Link("/get-started/versioning-availability")" class="link">Understanding versioning
+						and availability.</a></p>
 
-				<div class="flex md:inline-flex gap-3 mt-6">
-					<a href="@Model.Link("/get-started")" class="grow select-none cursor-pointer text-white text-nowrap bg-blue-elastic hover:bg-blue-elastic-110 focus:ring-4 focus:ring-blue-elastic-50 font-semibold font-sans rounded-sm px-6 py-2 focus:outline-none h-10 flex items-center justify-center">
-						Elastic Fundamentals
-					</a>
-					<a href="https://cloud.elastic.co/registration?page=docs&placement=docs-body" class="grow cursor-pointer text-blue-elastic hover:text-blue-elastic-100 text-nowrap border-2 border-blue-elastic hover:border-blue-elastic-100 focus:ring-4 focus:outline-none focus:ring-blue-elastic-50 font-semibold font-sans rounded-sm px-6 py-2 text-center h-10 flex items-center justify-center">
-						Start free trial
-					</a>
+				<div class="flex md:inline-flex flex-col gap-6 mt-6">
+					<navigation-search></navigation-search>
+					<div class="flex gap-3">
+						<a href="@Model.Link("/get-started")"
+						   class="grow select-none cursor-pointer text-white text-nowrap bg-blue-elastic hover:bg-blue-elastic-110 focus:ring-4 focus:ring-blue-elastic-50 font-semibold font-sans rounded-sm px-6 py-2 focus:outline-none h-10 flex items-center justify-center">
+							Elastic Fundamentals
+						</a>
+						<a href="https://cloud.elastic.co/registration?page=docs&placement=docs-body"
+						   class="grow cursor-pointer text-blue-elastic hover:text-blue-elastic-100 text-nowrap border-2 border-blue-elastic hover:border-blue-elastic-100 focus:ring-4 focus:outline-none focus:ring-blue-elastic-50 font-semibold font-sans rounded-sm px-6 py-2 text-center h-10 flex items-center justify-center">
+							Start free trial
+						</a>
+					</div>
 				</div>
 				@if (Model.AllVersionsUrl is not null)
 				{
@@ -31,9 +38,7 @@
 				}
 			</div>
 			<div class="flex justify-center items-center">
-				<a href="https://www.elastic.co/events/elasticon" target="_blank">
-					<img src="@Model.Static("elasticon-2025-docs-page-banner-v3.png")" alt="Register now for ElasticON" width="1200">
-				</a>
+				<img src="@Model.Static("hero.png")" alt="Elastic Docs" width="600">
 			</div>
 		</div>
 	</section>
@@ -154,7 +159,24 @@
 			</div>
 		</div>
 	</section>
-	
+
+	<section class="w-full">
+		<div class="container mx-auto py-10">
+			<div class="rounded-xl px-12 py-8 bg-blue-elastic bg-cover bg-center flex items-center gap-4"
+			     style="background-image: url('@Model.Static("elasticon-bg.png")')">
+				<div class="grow">
+					<h2 class="font-bold font-sans text-3xl text-white">Looking for more?</h2>
+					<p class="mt-2 text-white text-base">We'll show you how to solve toughest challenges with Search AI.
+						Join us at an Elastic{ON} event near you!</p>
+				</div>
+				<a href="https://www.elastic.co/events/elasticon" target="_blank" rel="noopener noreferrer"
+				   class="shrink-0 cursor-pointer text-blue-elastic hover:text-blue-elastic-100 text-nowrap border-2 border-white hover:border-grey-20 bg-white hover:bg-grey-10 focus:ring-4 focus:outline-none focus:ring-blue-elastic-50 font-semibold font-sans rounded-sm px-6 py-2 text-center h-10 flex items-center justify-center">
+					Register now
+				</a>
+			</div>
+		</div>
+	</section>
+
 	<section class="w-full">
 		<div class="container mx-auto py-10">
 			<div class="heading-wrapper" id="references">
