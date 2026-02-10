@@ -31,27 +31,27 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		// language=yaml
 		var configContent =
 			"""
-			available_types:
-			  - feature
-			  - bug-fix
-			  - enhancement
-			available_subtypes: []
-			available_lifecycles:
+			pivot:
+			  types:
+			    feature:
+			    bug-fix: "type:bug"
+			    breaking-change:
+			    enhancement:
+			  subtypes:
+			    api:
+			lifecycles:
 			  - preview
 			  - beta
 			  - ga
-			label_to_type:
-			  "type:bug": bug-fix
-			  "type:feature": feature
 			""";
 		var configPath = await CreateConfigDirectory(configContent);
 
 		var service = CreateService();
 
-		var input = new ChangelogInput
+		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
 			Config = configPath,
 			Output = CreateOutputDirectory()
 		};
@@ -98,28 +98,30 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		// language=yaml
 		var configContent =
 			"""
-			available_types:
-			  - feature
-			  - enhancement
-			available_subtypes: []
-			available_lifecycles:
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change:
+			    enhancement: "type:enhancement"
+			  subtypes:
+			    api:
+			  areas:
+			    security: "area:security"
+			    search: "area:search"
+			lifecycles:
 			  - preview
 			  - beta
 			  - ga
-			label_to_type:
-			  "type:enhancement": enhancement
-			label_to_areas:
-			  "area:security": security
-			  "area:search": search
 			""";
 		var configPath = await CreateConfigDirectory(configContent);
 
 		var service = CreateService();
 
-		var input = new ChangelogInput
+		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
 			Config = configPath,
 			Output = CreateOutputDirectory()
 		};

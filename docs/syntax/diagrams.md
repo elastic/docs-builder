@@ -1,148 +1,191 @@
-# Diagrams
+# Mermaid diagrams
 
-The `diagram` directive allows you to render various types of diagrams using the [Kroki](https://kroki.io/) service. Kroki supports many diagram types including Mermaid, D2, Graphviz, PlantUML, and more.
+You can create diagrams using [Mermaid](https://mermaid.js.org/) with standard fenced code blocks. Diagrams are rendered client-side in the browser.
 
 ## Basic usage
 
-The basic syntax for the diagram directive is:
+Use a fenced code block with `mermaid` as the language:
 
-```markdown
-::::{diagram} [diagram-type]
-<diagram content>
-::::
+````markdown
+```mermaid
+flowchart LR
+A --> B
 ```
-
-If no diagram type is specified, it defaults to `mermaid`.
+````
 
 ## Supported diagram types
 
-The diagram directive supports the following diagram types:
+All [Mermaid diagram types](https://mermaid.js.org/intro/) are supported, including:
 
-- `mermaid` - Mermaid diagrams (default)
-- `d2` - D2 diagrams
-- `graphviz` - Graphviz/DOT diagrams
-- `plantuml` - PlantUML diagrams
-- `ditaa` - Ditaa diagrams
-- `erd` - Entity Relationship diagrams
-- `excalidraw` - Excalidraw diagrams
-- `nomnoml` - Nomnoml diagrams
-- `pikchr` - Pikchr diagrams
-- `structurizr` - Structurizr diagrams
-- `svgbob` - Svgbob diagrams
-- `vega` - Vega diagrams
-- `vegalite` - Vega-Lite diagrams
-- `wavedrom` - WaveDrom diagrams
+- Flowcharts
+- Sequence diagrams
+- State diagrams
+- Class diagrams
+- Entity relationship (ER) diagrams
+- And more
 
 ## Examples
 
-### Mermaid flowchart (default)
+### Flowchart
 
-::::::{tab-set}
+:::::{tab-set}
 
-:::::{tab-item} Source
-```markdown
-::::{diagram}
+::::{tab-item} Source
+````markdown
+```mermaid
 flowchart LR
     A[Start] --> B{Decision}
     B -->|Yes| C[Action 1]
     B -->|No| D[Action 2]
     C --> E[End]
     D --> E
-::::
 ```
-:::::
+````
+::::
 
-:::::{tab-item} Rendered
-::::{diagram}
+::::{tab-item} Rendered
+```mermaid
 flowchart LR
     A[Start] --> B{Decision}
     B -->|Yes| C[Action 1]
     B -->|No| D[Action 2]
     C --> E[End]
     D --> E
+```
 ::::
+
 :::::
 
-::::::
+### Sequence diagram
 
-### Mermaid sequence diagram
+:::::{tab-set}
 
-::::::{tab-set}
-
-:::::{tab-item} Source
-```markdown
-::::{diagram} mermaid
+::::{tab-item} Source
+````markdown
+```mermaid
 sequenceDiagram
     participant A as Alice
     participant B as Bob
     A->>B: Hello Bob, how are you?
     B-->>A: Great!
-::::
 ```
-:::::
+````
+::::
 
-:::::{tab-item} Rendered
-::::{diagram} mermaid
+::::{tab-item} Rendered
+```mermaid
 sequenceDiagram
     participant A as Alice
     participant B as Bob
     A->>B: Hello Bob, how are you?
     B-->>A: Great!
-::::
-:::::
-
-::::::
-
-### D2 diagram
-
-::::::{tab-set}
-
-:::::{tab-item} Source
-```markdown
-::::{diagram} d2
-x -> y: hello world
-y -> z: nice to meet you
-::::
 ```
+::::
+
 :::::
 
-:::::{tab-item} Rendered
-::::{diagram} d2
-x -> y: hello world
-y -> z: nice to meet you
-::::
-:::::
+### State diagram
 
-::::::
+:::::{tab-set}
 
-### Graphviz diagram
-
-::::::{tab-set}
-
-:::::{tab-item} Source
-```markdown
-::::{diagram} graphviz
-digraph G {
-    rankdir=LR;
-    A -> B -> C;
-    A -> C;
-}
-::::
+::::{tab-item} Source
+````markdown
+```mermaid
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> Processing: start
+    Processing --> Complete: done
+    Complete --> [*]
 ```
-:::::
-
-:::::{tab-item} Rendered
-::::{diagram} graphviz
-digraph G {
-    rankdir=LR;
-    A -> B -> C;
-    A -> C;
-}
+````
 ::::
+
+::::{tab-item} Rendered
+```mermaid
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> Processing: start
+    Processing --> Complete: done
+    Complete --> [*]
+```
+::::
+
 :::::
 
-::::::
+### Class diagram
 
-## Error handling
+:::::{tab-set}
 
-If the diagram content is empty or the encoding fails, an error message will be displayed instead of the diagram.
+::::{tab-item} Source
+````markdown
+```mermaid
+classDiagram
+    Animal <|-- Duck
+    Animal <|-- Fish
+    Animal : +int age
+    Animal : +isMammal() bool
+    Duck : +String beakColor
+    Duck : +quack()
+    Fish : +int sizeInFeet
+    Fish : +canEat()
+```
+````
+::::
+
+::::{tab-item} Rendered
+```mermaid
+classDiagram
+    Animal <|-- Duck
+    Animal <|-- Fish
+    Animal : +int age
+    Animal : +isMammal() bool
+    Duck : +String beakColor
+    Duck : +quack()
+    Fish : +int sizeInFeet
+    Fish : +canEat()
+```
+::::
+
+:::::
+
+### ER diagram
+
+:::::{tab-set}
+
+::::{tab-item} Source
+````markdown
+```mermaid
+erDiagram
+    CUSTOMER ||--o{ ORDER : places
+    ORDER ||--|{ LINE_ITEM : contains
+    PRODUCT ||--o{ LINE_ITEM : "is in"
+```
+````
+::::
+
+::::{tab-item} Rendered
+```mermaid
+erDiagram
+    CUSTOMER ||--o{ ORDER : places
+    ORDER ||--|{ LINE_ITEM : contains
+    PRODUCT ||--o{ LINE_ITEM : "is in"
+```
+::::
+
+:::::
+
+## Interactive controls
+
+Mermaid diagrams include interactive controls that appear when you hover over the diagram:
+
+- **Zoom in/out**: Click the `+` and `-` buttons to zoom in or out. You can also hold `Ctrl` (or `Cmd` on macOS) and use the mouse wheel to zoom.
+- **Reset**: Click the reset button to return to the default view.
+- **Fullscreen**: Click the expand button to view the diagram in a fullscreen modal.
+- **Pan**: Click and drag the diagram to pan around when zoomed in.
+
+These controls are particularly useful for large or complex diagrams.
+
+## Notes
+
+- Diagrams require JavaScript to render. Users with JavaScript disabled will see the raw Mermaid code.
+- For the full list of diagram types and syntax, see the [Mermaid documentation](https://mermaid.js.org/intro/).

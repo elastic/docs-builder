@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using System.IO.Abstractions.TestingHelpers;
 using Actions.Core.Services;
 using ConsoleAppFramework;
 using Documentation.Builder.Arguments;
@@ -39,6 +40,8 @@ internal sealed class IsolatedBuildCommand(
 	///					Defaults to (html, config, links, state, redirect) or 'default'.
 	/// </param>
 	/// <param name="canonicalBaseUrl"> The base URL for the canonical url tag</param>
+	/// <param name="inMemory"> Run the build in memory without writing to disk</param>
+	/// <param name="skipApi"> Skip OpenAPI documentation generation for faster builds</param>
 	/// <param name="ctx"></param>
 	[Command("")]
 	public async Task<int> Build(
@@ -51,21 +54,23 @@ internal sealed class IsolatedBuildCommand(
 		bool? metadataOnly = null,
 		[ExporterParser] IReadOnlySet<Exporter>? exporters = null,
 		string? canonicalBaseUrl = null,
+		bool inMemory = false,
+		bool skipApi = false,
 		Cancel ctx = default
 	)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
 		var service = new IsolatedBuildService(logFactory, configurationContext, githubActionsService);
-		var fs = new FileSystem();
+		IFileSystem fs = inMemory ? new MockFileSystem() : new FileSystem();
 		var strictCommand = service.IsStrict(strict);
 
 		serviceInvoker.AddCommand(service,
-			(path, output, pathPrefix, force, strict, allowIndexing, metadataOnly, exporters, canonicalBaseUrl, fs), strictCommand,
+			(path, output, pathPrefix, force, strict, allowIndexing, metadataOnly, exporters, canonicalBaseUrl, fs, skipApi), strictCommand,
 			async static (s, collector, state, ctx) => await s.Build(
 				collector, state.fs, state.path, state.output, state.pathPrefix,
 				state.force, state.strict, state.allowIndexing, state.metadataOnly,
-				state.exporters, state.canonicalBaseUrl, ctx
+				state.exporters, state.canonicalBaseUrl, null, state.skipApi, false, ctx
 			)
 		);
 		return await serviceInvoker.InvokeAsync(ctx);

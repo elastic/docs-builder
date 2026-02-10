@@ -2,11 +2,23 @@
   <PropertyGroup>
     <!-- Enable central package management, https://learn.microsoft.com/en-us/nuget/consume-packages/Central-Package-Management -->
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-    <MinVerSkip Condition="'$(Configuration)' == 'Debug'">true</MinVerSkip>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
   </PropertyGroup>
+  <!-- MinVer: only run in CI or Release builds to speed up local development -->
+  <Choose>
+    <When Condition="'$(CI)' == 'true' OR '$(Configuration)' == 'Release'">
+      <PropertyGroup>
+        <MinVerSkip>false</MinVerSkip>
+      </PropertyGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup>
+        <MinVerSkip>true</MinVerSkip>
+      </PropertyGroup>
+    </Otherwise>
+  </Choose>
   <ItemGroup>
     <GlobalPackageReference Include="MinVer" Version="6.0.0" PrivateAssets="All" />
   </ItemGroup>
@@ -22,25 +34,25 @@
     <PackageVersion Include="AngleSharp" Version="1.4.0" />
     <PackageVersion Include="Aspire.Hosting" Version="13.0.0" />
     <PackageVersion Include="Aspire.Hosting.Testing" Version="13.0.0" />
-    <PackageVersion Include="AWSSDK.Core" Version="4.0.3.9" />
+    <PackageVersion Include="AWSSDK.Core" Version="4.0.3.12" />
     <PackageVersion Include="AWSSDK.DynamoDBv2" Version="4.0.10.5" />
-    <PackageVersion Include="AWSSDK.SQS" Version="4.0.2.12" />
+    <PackageVersion Include="AWSSDK.SQS" Version="4.0.2.14" />
     <PackageVersion Include="AWSSDK.S3" Version="4.0.16.2" />
     <PackageVersion Include="Elastic.OpenTelemetry" Version="1.1.0" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.UserSecrets" Version="10.0.0" />
-    <PackageVersion Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.1" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.2" />
     <PackageVersion Include="Microsoft.Extensions.Telemetry.Abstractions" Version="10.0.0" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.13.0" />
-    <PackageVersion Include="Generator.Equals" Version="3.2.1" PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
+    <PackageVersion Include="Generator.Equals" Version="3.3.0" PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
     <PackageVersion Include="KubernetesClient" Version="18.0.5" />
     <PackageVersion Include="Elastic.Aspire.Hosting.Elasticsearch" Version="9.3.0" />
-    <PackageVersion Include="Elastic.Clients.Elasticsearch" Version="9.2.2" />
-    <PackageVersion Include="FakeItEasy" Version="9.0.0" />
+    <PackageVersion Include="Elastic.Clients.Elasticsearch" Version="9.2.3" />
+    <PackageVersion Include="FakeItEasy" Version="9.0.1" />
     <PackageVersion Include="Elastic.Ingest.Elasticsearch" Version="0.17.1" />
     <PackageVersion Include="InMemoryLogger" Version="1.0.66" />
     <PackageVersion Include="MartinCostello.Logging.XUnit.v3" Version="0.7.0" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.0" />
-    <PackageVersion Include="Microsoft.OpenApi" Version="3.0.1" />
+    <PackageVersion Include="Microsoft.OpenApi" Version="3.1.1" />
     <PackageVersion Include="TUnit" Version="0.25.21" />
     <PackageVersion Include="xunit.v3.extensibility.core" Version="2.0.2" />
     <PackageVersion Include="WireMock.Net" Version="1.6.11" />
@@ -49,10 +61,10 @@
   <ItemGroup>
     <PackageVersion Include="Argu" Version="6.2.5" />
     <PackageVersion Include="Bullseye" Version="6.1.0" />
-    <PackageVersion Include="Proc.Fs" Version="0.9.1" />
+    <PackageVersion Include="Proc.Fs" Version="0.13.0" />
     <PackageVersion Include="Fake.Tools.Git" Version="6.1.4" />
     <PackageVersion Include="Fake.IO.Zip" Version="6.1.4" />
-    <PackageVersion Include="FSharp.Core" Version="10.0.101" />
+    <PackageVersion Include="FSharp.Core" Version="10.0.102" />
   </ItemGroup>
   <ItemGroup>
     <PackageVersion Include="ConsoleAppFramework" Version="5.7.13" PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
@@ -65,8 +77,10 @@
     <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="10.0.0" />
     <PackageVersion Include="Markdig" Version="0.44.0" />
     <PackageVersion Include="ModelContextProtocol" Version="0.2.0-preview.1" />
+    <PackageVersion Include="ModelContextProtocol.AspNetCore" Version="0.2.0-preview.1" />
     <PackageVersion Include="NetEscapades.EnumGenerators" Version="1.0.0-beta12" PrivateAssets="all" ExcludeAssets="runtime" />
-    <PackageVersion Include="Proc" Version="0.9.1" />
+    <PackageVersion Include="Riok.Mapperly" Version="4.2.1" PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
+    <PackageVersion Include="Proc" Version="0.13.0" />
     <PackageVersion Include="RazorSlices" Version="0.9.4" />
     <PackageVersion Include="Samboy063.Tomlet" Version="6.0.0" />
     <PackageVersion Include="Sep" Version="0.11.0" />
@@ -100,7 +114,7 @@
     <PackageVersion Include="GitHubActionsTestLogger" Version="2.4.1" />
     <PackageVersion Include="JetBrains.Annotations" Version="2025.2.4" />
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.0" />
-    <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="10.0.1" />
+    <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="10.0.2" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
     <PackageVersion Include="OpenTelemetry.Exporter.InMemory" Version="1.13.0" />
     <PackageVersion Include="System.IO.Abstractions.TestingHelpers" Version="22.1.0" />

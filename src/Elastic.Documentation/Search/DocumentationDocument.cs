@@ -143,4 +143,12 @@ public record DocumentationDocument
 	[JsonPropertyName("ai_use_cases")]
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 	public string[]? AiUseCases { get; set; }
+
+	/// <summary>
+	/// Hash of the LLM prompt templates used to generate AI fields.
+	/// Used to detect stale enrichments when prompts change.
+	/// </summary>
+	[JsonPropertyName("enrichment_prompt_hash")]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+	public string? EnrichmentPromptHash { get; set; }
 }

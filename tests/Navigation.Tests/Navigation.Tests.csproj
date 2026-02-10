@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Elastic.Codex\Elastic.Codex.csproj"/>
     <ProjectReference Include="..\..\src\Elastic.Documentation.Configuration\Elastic.Documentation.Configuration.csproj"/>
     <ProjectReference Include="..\..\src\Elastic.Documentation.Navigation\Elastic.Documentation.Navigation.csproj"/>
     <ProjectReference Include="..\..\src\Elastic.Documentation.ServiceDefaults\Elastic.Documentation.ServiceDefaults.csproj" />

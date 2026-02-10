@@ -1,0 +1,215 @@
+@using Elastic.ApiExplorer.Landing
+@using Elastic.ApiExplorer.Schema
+@using Elastic.ApiExplorer.Schemas
+@using Elastic.ApiExplorer.Shared
+@using Microsoft.OpenApi
+@inherits RazorSliceHttpResult<Elastic.ApiExplorer.Schemas.SchemaViewModel>
+@implements IUsesLayout<Elastic.ApiExplorer._Layout, ApiLayoutViewModel>
+@functions {
+	public ApiLayoutViewModel LayoutModel => Model.CreateGlobalLayoutModel();
+
+	// Schema analyzer instance - created lazily with current page type for self-link prevention
+	private SchemaAnalyzer? _analyzer;
+	private SchemaAnalyzer Analyzer => _analyzer ??= new SchemaAnalyzer(Model.Document, _currentPageType);
+
+	// Delegate schema analysis to Analyzer
+	private IDictionary<string, IOpenApiSchema>? GetSchemaProperties(IOpenApiSchema? schema) => Analyzer.GetSchemaProperties(schema);
+	private TypeInfo GetTypeInfo(IOpenApiSchema? schema) => Analyzer.GetTypeInfo(schema);
+
+	// Current page type is set from the model to prevent self-linking
+	private string? _currentPageType;
+
+	// Helper to create PropertyRenderContext for SchemaView
+	private PropertyRenderContext CreatePropertyContext(IOpenApiSchema? schema, string prefix, HashSet<string>? ancestors = null)
+		=> new PropertyRenderContext
+		{
+			Schema = schema,
+			RequiredProperties = schema?.Required,
+			Prefix = prefix,
+			Depth = 0,
+			AncestorTypes = ancestors,
+			IsRequest = false,
+			Analyzer = Analyzer,
+			RenderMarkdown = Model.RenderMarkdown,
+			// SchemaView defaults - disable OperationView-specific features
+			ShowDeprecated = false,
+			ShowVersionInfo = false,
+			ShowExternalDocs = false,
+			UseHiddenUntilFound = false,
+			CollapseMode = CollapseMode.DepthBased
+		};
+
+	// Helper to create SchemaTypeContext
+	private SchemaTypeContext CreateSchemaTypeContext(IOpenApiSchema schema)
+		=> new SchemaTypeContext
+		{
+			Schema = schema,
+			TypeInfo = GetTypeInfo(schema),
+			HasActualProperties = GetSchemaProperties(schema)?.Count > 0
+		};
+
+	// Helper to create UnionVariantsContext for oneOf/anyOf
+	private UnionVariantsContext CreateUnionContext(IList<IOpenApiSchema> unionSchemas, string prefix, HashSet<string>? ancestors = null)
+	{
+		var options = unionSchemas.Where(s => s is not null).Select(s =>
+		{
+			var info = GetTypeInfo(s);
+			var displayName = info.IsArray ? $"{info.TypeName}[]" : info.TypeName;
+			return new UnionOption(displayName, info.SchemaRef, info.IsObject, s);
+		}).ToList();
+
+		return new UnionVariantsContext
+		{
+			Options = options,
+			Prefix = prefix,
+			Depth = 0,
+			AncestorTypes = ancestors,
+			IsRequest = false,
+			Analyzer = Analyzer,
+			RenderMarkdown = Model.RenderMarkdown,
+			UseHiddenUntilFound = false,
+			CollapseMode = CollapseMode.DepthBased
+		};
+	}
+}
+@{
+	var schema = Model.Schema;
+	var openApiSchema = schema.Schema;
+	var isAggregation = schema.Category == "aggregations";
+
+	// Set the current page type for self-link prevention
+	_currentPageType = schema.DisplayName;
+
+	// Check if this is a container type that represents a dictionary
+	var dictionaryTypeName = schema.DisplayName switch
+	{
+		"AggregationContainer" => "Dictionary<string, AggregationContainer>",
+		"Aggregate" => "Dictionary<string, Aggregate>",
+		_ => null
+	};
+
+	// Initialize ancestor set with the root type name to detect recursive references
+	var rootAncestors = new HashSet<string> { schema.DisplayName };
+
+	// Determine which sections exist
+	var hasDescription = !string.IsNullOrEmpty(openApiSchema.Description);
+	var hasEnum = openApiSchema.Enum is { Count: > 0 };
+	var hasOneOf = openApiSchema.OneOf is { Count: > 0 };
+	var hasAnyOf = openApiSchema.AnyOf is { Count: > 0 };
+	var hasAggRequest = isAggregation && schema.RelatedAggregation is not null;
+	var hasProperties = !hasAggRequest && GetSchemaProperties(openApiSchema) is { Count: > 0 };
+	var hasAggResponse = isAggregation && schema.RelatedAggregate is not null;
+	var hasAdditionalProps = openApiSchema.AdditionalProperties is IOpenApiSchema;
+	var hasExample = openApiSchema.Example is not null;
+}
+
+<section id="schema-definition">
+	<h1>@schema.DisplayName</h1>
+	<p class="schema-id"><code>@schema.SchemaId</code></p>
+
+	@if (!string.IsNullOrEmpty(dictionaryTypeName))
+	{
+		<p class="schema-type-info">
+			<span class="dict-icon">(map) </span>
+			<code class="schema-type">@dictionaryTypeName</code>
+		</p>
+		<p>This type represents a dictionary mapping string keys to <code>@schema.DisplayName</code> values.</p>
+	}
+
+	@if (hasDescription)
+	{
+		<h3 class="section-header" id="description" data-section="description">
+			<span>Description</span>
+		</h3>
+		<p>@Model.RenderMarkdown(openApiSchema.Description)</p>
+		@if (openApiSchema.ExternalDocs?.Url != null)
+		{
+			var externalDocsUrl = openApiSchema.ExternalDocs.Url.ToString();
+			var isElasticDocs = externalDocsUrl.Contains("www.elastic.co/docs") || externalDocsUrl.Contains("elastic.co/guide");
+			<a href="@externalDocsUrl" class="docs-reference-btn" @(isElasticDocs ? "" : "target=\"_blank\" rel=\"noopener\"")>
+				@(isElasticDocs ? "Read the reference documentation" : "External documentation")
+			</a>
+		}
+	}
+	else if (openApiSchema.ExternalDocs?.Url != null)
+	{
+		var externalDocsUrl = openApiSchema.ExternalDocs.Url.ToString();
+		var isElasticDocs = externalDocsUrl.Contains("www.elastic.co/docs") || externalDocsUrl.Contains("elastic.co/guide");
+		<a href="@externalDocsUrl" class="docs-reference-btn" @(isElasticDocs ? "" : "target=\"_blank\" rel=\"noopener\"")>
+			@(isElasticDocs ? "Read the reference documentation" : "External documentation")
+		</a>
+	}
+
+	@if (hasEnum)
+	{
+		<h3 class="section-header" id="enum-values" data-section="enum-values">
+			<span>Enum Values</span>
+		</h3>
+		<ul class="enum-values">
+			@foreach (var enumValue in openApiSchema.Enum!)
+			{
+				<li><code>@enumValue</code></li>
+			}
+		</ul>
+	}
+
+	@if (hasOneOf)
+	{
+		<h3 class="section-header" id="union-types" data-section="union-types">
+			<span>Union Types (oneOf)</span>
+		</h3>
+		<p>This type can be one of the following:</p>
+		@(await RenderPartialAsync<_UnionOptions, UnionVariantsContext>(CreateUnionContext(openApiSchema.OneOf!, "oneof", rootAncestors)))
+	}
+
+	@if (hasAnyOf)
+	{
+		<h3 class="section-header" id="union-types" data-section="union-types">
+			<span>Union Types (anyOf)</span>
+		</h3>
+		<p>This type can be any of the following:</p>
+		@(await RenderPartialAsync<_UnionOptions, UnionVariantsContext>(CreateUnionContext(openApiSchema.AnyOf!, "anyof", rootAncestors)))
+	}
+
+	@* For aggregations, show both aggregation request and aggregate response *@
+	@if (hasAggRequest)
+	{
+		<h3 class="section-header" id="aggregation-request" data-section="aggregation-request">
+			<span>Aggregation Request</span>
+		</h3>
+		<p>Properties for configuring the <code>@(schema.DisplayName)</code> aggregation:</p>
+		@(await RenderPartialAsync<_PropertyList, PropertyRenderContext>(CreatePropertyContext(schema.RelatedAggregation, "agg", rootAncestors)))
+	}
+	else if (hasProperties)
+	{
+		<h3 class="section-header" id="properties" data-section="properties">
+			<span>Properties</span>
+		</h3>
+		@(await RenderPartialAsync<_PropertyList, PropertyRenderContext>(CreatePropertyContext(openApiSchema, "", rootAncestors)))
+	}
+
+	@if (hasAggResponse)
+	{
+		<h3 class="section-header" id="aggregate-response" data-section="aggregate-response">
+			<span>Aggregate Response</span>
+		</h3>
+		<p>Properties returned in the <code>@(schema.DisplayName)</code> aggregate response:</p>
+		@(await RenderPartialAsync<_PropertyList, PropertyRenderContext>(CreatePropertyContext(schema.RelatedAggregate, "result", rootAncestors)))
+	}
+
+	@if (hasAdditionalProps && openApiSchema.AdditionalProperties is IOpenApiSchema addPropsSchema)
+	{
+		<h3 class="section-header" id="additional-properties" data-section="additional-properties">
+			<span>Additional Properties</span>
+		</h3>
+		<p>This type allows additional properties of type: @(await RenderPartialAsync<_SchemaType, SchemaTypeContext>(CreateSchemaTypeContext(addPropsSchema)))</p>
+	}
+
+	@if (hasExample)
+	{
+		<h3 class="section-header" id="example" data-section="example">
+			<span>Example</span>
+		</h3>
+		<pre><code class="language-json">@openApiSchema.Example</code></pre>
+	}
+</section>

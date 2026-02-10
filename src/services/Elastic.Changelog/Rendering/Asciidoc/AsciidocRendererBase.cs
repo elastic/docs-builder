@@ -4,7 +4,7 @@
 
 using System.Globalization;
 using System.Text;
-using Elastic.Documentation.Changelog;
+using Elastic.Documentation.ReleaseNotes;
 
 namespace Elastic.Changelog.Rendering.Asciidoc;
 
@@ -13,26 +13,26 @@ namespace Elastic.Changelog.Rendering.Asciidoc;
 /// </summary>
 public abstract class AsciidocRendererBase
 {
-	public abstract void Render(IReadOnlyCollection<ChangelogData> entries, ChangelogRenderContext context);
+	public abstract void Render(IReadOnlyCollection<ChangelogEntry> entries, ChangelogRenderContext context);
 
 	/// <summary>
 	/// Gets the entry context (bundleProducts, repo, hideLinks, shouldHide) for a specific entry
 	/// </summary>
 	private static (HashSet<string> bundleProductIds, string entryRepo, bool hideLinks, bool shouldHide) GetEntryContext(
-		ChangelogData entry,
+		ChangelogEntry entry,
 		ChangelogRenderContext context)
 	{
 		var bundleProductIds = context.EntryToBundleProducts.GetValueOrDefault(entry, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
 		var entryRepo = context.EntryToRepo.GetValueOrDefault(entry, context.Repo);
 		var hideLinks = context.EntryToHideLinks.GetValueOrDefault(entry, false);
-		var shouldHide = ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, bundleProductIds, context.RenderBlockers);
+		var shouldHide = ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context);
 		return (bundleProductIds, entryRepo, hideLinks, shouldHide);
 	}
 
 	/// <summary>
 	/// Renders an entry's title and PR/issue links
 	/// </summary>
-	private static void RenderEntryTitleAndLinks(StringBuilder sb, ChangelogData entry, string entryRepo, bool hideLinks, bool shouldHide)
+	private static void RenderEntryTitleAndLinks(StringBuilder sb, ChangelogEntry entry, string entryRepo, bool hideLinks, bool shouldHide)
 	{
 		if (shouldHide)
 			_ = sb.AppendLine("// ");
@@ -66,7 +66,7 @@ public abstract class AsciidocRendererBase
 	/// <summary>
 	/// Renders an entry's description with optional comment handling
 	/// </summary>
-	private static void RenderEntryDescription(StringBuilder sb, ChangelogData entry, bool shouldHide)
+	private static void RenderEntryDescription(StringBuilder sb, ChangelogEntry entry, bool shouldHide)
 	{
 		if (string.IsNullOrWhiteSpace(entry.Description))
 			return;
@@ -86,7 +86,7 @@ public abstract class AsciidocRendererBase
 	/// <summary>
 	/// Renders Impact and Action fields for breaking changes, deprecations, and known issues
 	/// </summary>
-	private static void RenderImpactAndAction(StringBuilder sb, ChangelogData entry)
+	private static void RenderImpactAndAction(StringBuilder sb, ChangelogEntry entry)
 	{
 		if (!string.IsNullOrWhiteSpace(entry.Impact))
 		{
@@ -104,7 +104,7 @@ public abstract class AsciidocRendererBase
 	/// <summary>
 	/// Renders a complete entry (title, links, description) without Impact/Action
 	/// </summary>
-	protected void RenderBasicEntry(StringBuilder sb, ChangelogData entry, ChangelogRenderContext context)
+	protected void RenderBasicEntry(StringBuilder sb, ChangelogEntry entry, ChangelogRenderContext context)
 	{
 		var (_, entryRepo, hideLinks, shouldHide) = GetEntryContext(entry, context);
 		RenderEntryTitleAndLinks(sb, entry, entryRepo, hideLinks, shouldHide);
@@ -115,7 +115,7 @@ public abstract class AsciidocRendererBase
 	/// <summary>
 	/// Renders a complete entry with Impact/Action fields
 	/// </summary>
-	protected void RenderEntryWithImpactAction(StringBuilder sb, ChangelogData entry, ChangelogRenderContext context)
+	protected void RenderEntryWithImpactAction(StringBuilder sb, ChangelogEntry entry, ChangelogRenderContext context)
 	{
 		var (_, entryRepo, hideLinks, shouldHide) = GetEntryContext(entry, context);
 		RenderEntryTitleAndLinks(sb, entry, entryRepo, hideLinks, shouldHide);

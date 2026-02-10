@@ -4,6 +4,7 @@
 
 using System.Collections.Frozen;
 using Elastic.Documentation.AppliesTo;
+using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Versions;
@@ -123,7 +124,8 @@ public class DocumentInferrerServiceTests
 		var result = inferrer.InferForMarkdown(
 			repositoryName: "elasticsearch",
 			mappedPages: null,
-			products: null,
+			docsetProducts: [],
+			frontmatterProducts: null,
 			applicableTo: null);
 
 		result.Product.Should().NotBeNull();
@@ -145,7 +147,8 @@ public class DocumentInferrerServiceTests
 		var result = inferrer.InferForMarkdown(
 			repositoryName: "elastic-otel-java",
 			mappedPages: null,
-			products: null,
+			docsetProducts: [],
+			frontmatterProducts: null,
 			applicableTo: null);
 
 		result.Product.Should().NotBeNull();
@@ -167,7 +170,8 @@ public class DocumentInferrerServiceTests
 		var result = inferrer.InferForMarkdown(
 			repositoryName: "docs-content",
 			mappedPages: mappedPages,
-			products: null,
+			docsetProducts: [],
+			frontmatterProducts: null,
 			applicableTo: null);
 
 		result.Product.Should().NotBeNull();
@@ -191,7 +195,8 @@ public class DocumentInferrerServiceTests
 		var result = inferrer.InferForMarkdown(
 			repositoryName: "docs-content",
 			mappedPages: null,
-			products: null,
+			docsetProducts: [],
+			frontmatterProducts: null,
 			applicableTo: applicableTo);
 
 		result.Product.Should().NotBeNull();
@@ -216,7 +221,8 @@ public class DocumentInferrerServiceTests
 		var result = inferrer.InferForMarkdown(
 			repositoryName: "docs-content",
 			mappedPages: mappedPages,
-			products: null,
+			docsetProducts: [],
+			frontmatterProducts: null,
 			applicableTo: applicableTo);
 
 		// Legacy mapping should take priority
@@ -241,7 +247,8 @@ public class DocumentInferrerServiceTests
 		var result = inferrer.InferForMarkdown(
 			repositoryName: "elasticsearch",
 			mappedPages: null,
-			products: null,
+			docsetProducts: [],
+			frontmatterProducts: null,
 			applicableTo: applicableTo);
 
 		// Applicability should take priority over repository match
@@ -267,7 +274,8 @@ public class DocumentInferrerServiceTests
 		var result = inferrer.InferForMarkdown(
 			repositoryName: "kibana",
 			mappedPages: mappedPages,
-			products: null,
+			docsetProducts: [],
+			frontmatterProducts: null,
 			applicableTo: applicableTo);
 
 		// Should collect all products: elasticsearch (from legacy), curator (from applicability), kibana (from repo)
@@ -291,12 +299,61 @@ public class DocumentInferrerServiceTests
 		var result = inferrer.InferForMarkdown(
 			repositoryName: "docs-content",
 			mappedPages: null,
-			products: frontmatterProducts,
+			docsetProducts: [],
+			frontmatterProducts: frontmatterProducts,
 			applicableTo: null);
 
 		result.RelatedProducts.Should().HaveCount(2);
 		result.RelatedProducts.Select(p => p.Id).Should().Contain("elasticsearch");
 		result.RelatedProducts.Select(p => p.Id).Should().Contain("kibana");
+	}
+
+	[Fact]
+	public void InferForMarkdownMergesDocsetAndFrontmatterProducts()
+	{
+		var versionsConfig = CreateVersionsConfiguration();
+		var productsConfig = CreateProductsConfiguration(versionsConfig);
+		var legacyUrlMappings = CreateLegacyUrlMappings(productsConfig);
+
+		var inferrer = new DocumentInferrerService(productsConfig, versionsConfig, legacyUrlMappings);
+
+		var docsetProducts = new HashSet<Product> { productsConfig.Products["elasticsearch"] };
+		var frontmatterProducts = new[] { productsConfig.Products["kibana"] };
+
+		var result = inferrer.InferForMarkdown(
+			repositoryName: "docs-content",
+			mappedPages: null,
+			docsetProducts: docsetProducts,
+			frontmatterProducts: frontmatterProducts,
+			applicableTo: null);
+
+		// Should merge both docset and frontmatter products
+		result.RelatedProducts.Should().HaveCount(2);
+		result.RelatedProducts.Select(p => p.Id).Should().Contain("elasticsearch");
+		result.RelatedProducts.Select(p => p.Id).Should().Contain("kibana");
+	}
+
+	[Fact]
+	public void InferForMarkdownIncludesDocsetProductsWhenNoFrontmatterProducts()
+	{
+		var versionsConfig = CreateVersionsConfiguration();
+		var productsConfig = CreateProductsConfiguration(versionsConfig);
+		var legacyUrlMappings = CreateLegacyUrlMappings(productsConfig);
+
+		var inferrer = new DocumentInferrerService(productsConfig, versionsConfig, legacyUrlMappings);
+
+		var docsetProducts = new HashSet<Product> { productsConfig.Products["elasticsearch"] };
+
+		var result = inferrer.InferForMarkdown(
+			repositoryName: "docs-content",
+			mappedPages: null,
+			docsetProducts: docsetProducts,
+			frontmatterProducts: null,
+			applicableTo: null);
+
+		// Should include docset products even when no frontmatter products
+		result.RelatedProducts.Should().HaveCount(1);
+		result.RelatedProducts.Select(p => p.Id).Should().Contain("elasticsearch");
 	}
 
 	[Fact]
@@ -311,7 +368,8 @@ public class DocumentInferrerServiceTests
 		var result = inferrer.InferForMarkdown(
 			repositoryName: "unknown-repo",
 			mappedPages: null,
-			products: null,
+			docsetProducts: [],
+			frontmatterProducts: null,
 			applicableTo: null);
 
 		result.Product.Should().BeNull();
@@ -347,7 +405,8 @@ public class DocumentInferrerServiceTests
 		var result = inferrer.InferForMarkdown(
 			repositoryName: "serverless-es",
 			mappedPages: null,
-			products: null,
+			docsetProducts: [],
+			frontmatterProducts: null,
 			applicableTo: null);
 
 		result.Product.Should().NotBeNull();
@@ -428,7 +487,7 @@ public class DocumentInferrerServiceTests
 	{
 		var inferrer = new NoopDocumentInferrer();
 
-		var markdownResult = inferrer.InferForMarkdown("repo", null, null, null);
+		var markdownResult = inferrer.InferForMarkdown("repo", null, [], null, null);
 		var openApiResult = inferrer.InferForOpenApi("product");
 
 		markdownResult.Product.Should().BeNull();

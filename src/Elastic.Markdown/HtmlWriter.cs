@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using System.Text.Json;
 using Elastic.Documentation;
+using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Versions;
@@ -27,7 +28,7 @@ public class HtmlWriter(
 	INavigationTraversable? positionalNavigation = null,
 	INavigationHtmlWriter? navigationHtmlWriter = null,
 	ILegacyUrlMapper? legacyUrlMapper = null,
-	IVersionInferrerService? versionInferrerService = null
+	IDocumentInferrerService? documentInferrerService = null
 )
 	: IMarkdownStringRenderer
 {
@@ -40,7 +41,7 @@ public class HtmlWriter(
 	private ILegacyUrlMapper LegacyUrlMapper { get; } = legacyUrlMapper ?? new NoopLegacyUrlMapper();
 	private INavigationTraversable NavigationTraversable { get; } = positionalNavigation ?? documentationSet;
 
-	private IVersionInferrerService VersionInferrerService { get; } = versionInferrerService ?? new NoopVersionInferrer();
+	private IDocumentInferrerService DocumentInferrerService { get; } = documentInferrerService ?? new NoopDocumentInferrer();
 
 	/// <inheritdoc />
 	public string Render(string markdown, IFileInfo? source)
@@ -89,7 +90,15 @@ public class HtmlWriter(
 		var siteName = DocumentationSet.Navigation.NavigationTitle;
 		var legacyPages = LegacyUrlMapper.MapLegacyUrl(markdown.YamlFrontMatter?.MappedPages);
 
-		var pageProducts = GetPageProducts(markdown.YamlFrontMatter?.Products);
+		// Use DocumentInferrerService to get merged products and versioning info
+		var inference = DocumentInferrerService.InferForMarkdown(
+			DocumentationSet.Context.Git.RepositoryName,
+			markdown.YamlFrontMatter?.MappedPages,
+			DocumentationSet.Configuration.Products,
+			markdown.YamlFrontMatter?.Products,
+			markdown.YamlFrontMatter?.AppliesTo
+		);
+		var pageProducts = inference.RelatedProducts.ToHashSet();
 
 		string? allVersionsUrl = null;
 
@@ -97,7 +106,11 @@ public class HtmlWriter(
 		//if (PositionalNavigation.MarkdownNavigationLookup.TryGetValue("docs-content://versions.md", out var item))
 		//	allVersionsUrl = item.Url;
 
-		var pageVersioning = VersionInferrerService.InferVersion(DocumentationSet.Context.Git.RepositoryName, legacyPages, markdown.YamlFrontMatter?.Products, markdown.YamlFrontMatter?.AppliesTo);
+		// Get versioning from inference result's product
+		var pageVersioning = inference.Product?.VersioningSystem
+			?? DocumentationSet.Context.VersionsConfiguration?.GetVersioningSystem(VersioningSystemId.Stack)
+			?? throw new InvalidOperationException($"No versioning system available for page '{markdown.RelativePath}'. " +
+				"Ensure VersionsConfiguration contains a Stack versioning system or the inferred product has a VersioningSystem defined.");
 
 		var currentBaseVersion = $"{pageVersioning.Base.Major}.{pageVersioning.Base.Minor}+";
 
@@ -107,9 +120,17 @@ public class HtmlWriter(
 		var structuredBreadcrumbsJsonString = JsonSerializer.Serialize(breadcrumbsList, BreadcrumbsContext.Default.BreadcrumbsList);
 
 
+		// Git info for isolated header
+		var gitRepo = DocumentationSet.Context.Git.RepositoryName;
+		var gitBranch = DocumentationSet.Context.Git.Branch;
+		var gitRef = DocumentationSet.Context.Git.Ref;
+		string? gitHubDocsUrl = null;
+		if (!string.IsNullOrEmpty(gitRepo) && gitRepo != "unavailable" && !string.IsNullOrEmpty(gitBranch) && gitBranch != "unavailable")
+			gitHubDocsUrl = $"https://github.com/elastic/{gitRepo}/tree/{gitBranch}/docs";
+
 		var slice = Page.Index.Create(new IndexViewModel
 		{
-			IsAssemblerBuild = DocumentationSet.Context.AssemblerBuild,
+			BuildType = DocumentationSet.Context.BuildType,
 			SiteName = siteName,
 			DocSetName = DocumentationSet.Name,
 			Title = markdown.Title ?? "[TITLE NOT SET]",
@@ -130,6 +151,7 @@ public class HtmlWriter(
 			AllowIndexing = DocumentationSet.Context.AllowIndexing && markdown.YamlFrontMatter?.NoIndex != true && (markdown.CrossLink.Equals("docs-content://index.md", StringComparison.OrdinalIgnoreCase) || markdown is DetectionRuleFile || !current.Hidden),
 			CanonicalBaseUrl = DocumentationSet.Context.CanonicalBaseUrl,
 			GoogleTagManager = DocumentationSet.Context.GoogleTagManager,
+			Optimizely = DocumentationSet.Context.Optimizely,
 			Features = DocumentationSet.Configuration.Features,
 			StaticFileContentHashProvider = StaticFileContentHashProvider,
 			ReportIssueUrl = reportUrl,
@@ -139,8 +161,14 @@ public class HtmlWriter(
 			VersionDropdownItems = VersionDropDownItemViewModel.FromLegacyPageMappings(legacyPages?.ToArray()),
 			Products = pageProducts,
 			VersioningSystem = pageVersioning,
-			VersionsConfig = DocumentationSet.Context.VersionsConfiguration,
-			StructuredBreadcrumbsJson = structuredBreadcrumbsJsonString
+			VersionsConfig = DocumentationSet.Context.VersionsConfiguration!,
+			StructuredBreadcrumbsJson = structuredBreadcrumbsJsonString,
+			// Git info for isolated header
+			GitBranch = gitBranch != "unavailable" ? gitBranch : null,
+			GitCommitShort = gitRef is { Length: >= 7 } r && r != "unavailable" ? r[..7] : null,
+			GitRepository = gitRepo != "unavailable" ? gitRepo : null,
+			GitHubDocsUrl = gitHubDocsUrl,
+			GitHubRef = DocumentationSet.Context.Git.GitHubRef
 		});
 
 		return new RenderResult
@@ -206,8 +234,6 @@ public class HtmlWriter(
 		return document;
 	}
 
-	private static HashSet<Product> GetPageProducts(IReadOnlyCollection<Product>? frontMatterProducts) =>
-		frontMatterProducts?.ToHashSet() ?? [];
 
 }
 

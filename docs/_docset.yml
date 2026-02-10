@@ -10,17 +10,18 @@ exclude:
   - '!_search.md'
 subs:
   a-global-variable: "This was defined in docset.yml"
-  stack: Elastic Stack
   serverless-short: Serverless
-  ece:   "Elastic Cloud Enterprise"
-  eck:   "Elastic Cloud on Kubernetes"
   ech:  "Elastic Cloud Hosted"
   serverless-full: "Elastic Cloud Serverless"
   ecloud: "Elastic Cloud"
   dbuild: "docs-builder"
 
 features:
-  primary-nav: true
+  primary-nav: false
+  
+suppress:
+  - AutolinkElasticCoDocs
+  - DeepLinkingVirtualFile
 
 api:
    elasticsearch: elasticsearch-openapi.json
@@ -96,7 +97,6 @@ toc:
       - file: comments.md
       - file: conditionals.md
       - file: csv-include.md
-      - hidden: diagrams.md
       - file: directives.md
       - file: dropdowns.md
       - file: definition-lists.md
@@ -108,6 +108,7 @@ toc:
       - file: images.md
       - file: kbd.md
       - file: math.md
+      - file: diagrams.md
       - file: lists.md
       - file: line_breaks.md
       - file: links.md
@@ -162,6 +163,7 @@ toc:
           - file: index.md
           - file: changelog-add.md
           - file: changelog-bundle.md
+          - file: changelog-bundle-amend.md
           - file: changelog-render.md
   - folder: mcp
     children:
@@ -222,3 +224,9 @@ toc:
           - folder: baz
             children:
               - file: qux.md
+      - folder: release-notes
+        children:
+          - file: index.md
+          - file: breaking-changes.md
+          - file: deprecations.md
+          - file: known-issues.md

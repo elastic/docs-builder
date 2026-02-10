@@ -3,12 +3,13 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using Elastic.Changelog.Configuration;
-using Elastic.Documentation.Changelog;
+using System.Text;
+using Elastic.Documentation;
+using Elastic.Documentation.Configuration.Changelog;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.ReleaseNotes;
 using Microsoft.Extensions.Logging;
-using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NamingConventions;
 
 namespace Elastic.Changelog.Creation;
 
@@ -22,7 +23,7 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 	/// </summary>
 	public async Task<bool> WriteChangelogAsync(
 		IDiagnosticsCollector collector,
-		ChangelogInput input,
+		CreateChangelogArguments input,
 		ChangelogConfiguration config,
 		string? prUrl,
 		bool titleMissing,
@@ -44,14 +45,14 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 		var filename = GenerateFilename(collector, input, prUrl);
 		var filePath = fileSystem.Path.Combine(outputDir, filename);
 
-		// Write file
-		await fileSystem.File.WriteAllTextAsync(filePath, yamlContent, ctx);
+		// Write file with explicit UTF-8 encoding to ensure proper character handling
+		await fileSystem.File.WriteAllTextAsync(filePath, yamlContent, Encoding.UTF8, ctx);
 		logger.LogInformation("Created changelog fragment: {FilePath}", filePath);
 
 		return true;
 	}
 
-	private string GenerateFilename(IDiagnosticsCollector collector, ChangelogInput input, string? prUrl)
+	private string GenerateFilename(IDiagnosticsCollector collector, CreateChangelogArguments input, string? prUrl)
 	{
 		if (input.UsePrNumber && !string.IsNullOrWhiteSpace(prUrl))
 		{
@@ -74,44 +75,52 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 		return $"{timestamp}-{slug}.yaml";
 	}
 
-	private static ChangelogData BuildChangelogData(ChangelogInput input, string? prUrl) =>
-		new()
+	private static ChangelogEntry BuildChangelogData(CreateChangelogArguments input, string? prUrl)
+	{
+		var entryType = ChangelogEntryTypeExtensions.TryParse(input.Type, out var parsed, ignoreCase: true, allowMatchingMetadataAttribute: true)
+			? parsed
+			: ChangelogEntryType.Other;
+
+		var subtype = !string.IsNullOrWhiteSpace(input.Subtype)
+			? (ChangelogEntrySubtypeExtensions.TryParse(input.Subtype, out var subtypeParsed, ignoreCase: true, allowMatchingMetadataAttribute: true)
+				? subtypeParsed
+				: (ChangelogEntrySubtype?)null)
+			: null;
+
+		return new()
 		{
 			Title = input.Title ?? string.Empty,
-			Type = input.Type ?? string.Empty,
-			Subtype = input.Subtype,
+			Type = entryType,
+			Subtype = subtype,
 			Description = input.Description,
 			Impact = input.Impact,
 			Action = input.Action,
 			FeatureId = input.FeatureId,
 			Highlight = input.Highlight,
 			Pr = prUrl ?? (input.Prs != null && input.Prs.Length > 0 ? input.Prs[0] : null),
-			Products = input.Products.Select(p => new ProductInfo { Product = p.Product, Target = p.Target, Lifecycle = p.Lifecycle }).ToList(),
-			Areas = input.Areas.Length > 0 ? input.Areas.ToList() : null,
-			Issues = input.Issues.Length > 0 ? input.Issues.ToList() : null
+			Products = input.Products.Select(p => p.ToProductReference()).ToList(),
+			Areas = input.Areas is { Length: > 0 } ? input.Areas.ToList() : null,
+			Issues = input.Issues is { Length: > 0 } ? input.Issues.ToList() : null
 		};
+	}
 
-	private static string GenerateYaml(ChangelogData data, ChangelogConfiguration config, bool titleMissing, bool typeMissing)
+	private static string GenerateYaml(ChangelogEntry data, ChangelogConfiguration config, bool titleMissing, bool typeMissing)
 	{
 		// Create a mutable copy for serialization adjustments
 		var areas = data.Areas;
 		var issues = data.Issues;
 
-		// Temporarily remove title/type if they're missing so they don't appear in YAML
+		// Temporarily remove title if missing so it doesn't appear in YAML
+		// Type is an enum so we keep it and add a comment if missing
 		var serializeData = data with
 		{
 			Title = titleMissing ? string.Empty : data.Title,
-			Type = typeMissing ? string.Empty : data.Type,
 			Areas = areas != null && areas.Count == 0 ? null : areas,
 			Issues = issues != null && issues.Count == 0 ? null : issues
 		};
 
-		var serializer = new StaticSerializerBuilder(new ChangelogYamlStaticContext())
-			.WithNamingConvention(UnderscoredNamingConvention.Instance)
-			.ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitNull | DefaultValuesHandling.OmitEmptyCollections)
-			.Build();
-
-		var yaml = serializer.Serialize(serializeData);
+		// Use centralized serialization which handles DTO conversion
+		var yaml = ReleaseNotesSerialization.SerializeEntry(serializeData);
 
 		// Comment out missing title/type fields - insert at the beginning of the YAML data
 		if (titleMissing || typeMissing)
@@ -122,7 +131,11 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 			if (titleMissing)
 				commentedFields.Add("# title: # TODO: Add title");
 			if (typeMissing)
+			{
 				commentedFields.Add("# type: # TODO: Add type (e.g., feature, enhancement, bug-fix, breaking-change)");
+				// Remove the serialized default type value when type is missing
+				_ = lines.RemoveAll(line => line.TrimStart().StartsWith("type:", StringComparison.Ordinal));
+			}
 
 			// Find the first non-empty, non-comment line (start of actual YAML data)
 			var insertIndex = lines.FindIndex(line =>
@@ -136,13 +149,13 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 		}
 
 		// Build types list
-		var typesList = string.Join("\n", config.AvailableTypes.Select(t => $"#   - {t}"));
+		var typesList = string.Join("\n", config.Types.Select(t => $"#   - {t}"));
 
 		// Build subtypes list
-		var subtypesList = string.Join("\n", config.AvailableSubtypes.Select(s => $"#   - {s}"));
+		var subtypesList = string.Join("\n", config.SubTypes.Select(s => $"#   - {s}"));
 
 		// Build lifecycles list
-		var lifecyclesList = string.Join("\n", config.AvailableLifecycles.Select(l => $"#       - {l}"));
+		var lifecyclesList = string.Join("\n", config.Lifecycles.Select(l => $"#       - {l.ToStringFast(true)}"));
 
 		// Add schema comments using raw string literal
 		var result = $"""

@@ -24,17 +24,27 @@ function scrollCurrentNaviItemIntoViewImpl(nav: HTMLElement) {
     const navRect = nav.getBoundingClientRect()
     const currentNavItemRect = currentNavItem.getBoundingClientRect()
 
+    // Get the sticky element's height to account for content hidden under it
+    // The sticky element contains the search and dropdown, staying fixed at top when scrolling
+    const stickyElement = $('.sticky', nav)
+    const stickyHeight = stickyElement?.getBoundingClientRect().height ?? 0
+
+    // The effective visible top of the nav is below the sticky element
+    const effectiveNavTop = navRect.top + stickyHeight
+
     // Check if the item is already fully visible in the nav container's viewport
-    // If it's already visible, don't scroll to avoid unnecessary scrolling
+    // Account for sticky element that may be covering the top portion
     if (
-        currentNavItemRect.top >= navRect.top &&
+        currentNavItemRect.top >= effectiveNavTop &&
         currentNavItemRect.bottom <= navRect.bottom
     ) {
         return
     }
 
-    // Calculate target position: center of nav container
-    const targetPosition = navRect.height / 2 - currentNavItemRect.height / 2
+    // Calculate target position: center of nav container (accounting for sticky area)
+    const visibleNavHeight = navRect.height - stickyHeight
+    const targetPosition =
+        stickyHeight + visibleNavHeight / 2 - currentNavItemRect.height / 2
 
     // Calculate how much we need to scroll to position the item at the target
     const currentPositionInNav = currentNavItemRect.top - navRect.top
@@ -89,12 +99,10 @@ export function initNav() {
         el.classList.remove('current')
     })
 
+    // Normalize pathname by removing trailing slash to handle both URL variants
+    const pathname = window.location.pathname.replace(/\/$/, '')
     const navItems = $$(
-        'a[href="' +
-            window.location.pathname +
-            '"], a[href="' +
-            window.location.pathname +
-            '/"]',
+        'a[href="' + pathname + '"], a[href="' + pathname + '/"]',
         pagesNav
     )
     navItems.forEach((el) => {

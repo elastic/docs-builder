@@ -38,7 +38,9 @@ public class DocumentationSetFile : TableOfContentsFile
 	[YamlMember(Alias = "api")]
 	public Dictionary<string, string> Api { get; set; } = [];
 
-	// TODO remove this
+	/// <summary>
+	/// Default products for this documentation set. These are merged with page-level frontmatter products.
+	/// </summary>
 	[YamlMember(Alias = "products")]
 	public List<ProductLink> Products { get; set; } = [];
 
@@ -63,12 +65,12 @@ public class DocumentationSetFile : TableOfContentsFile
 	/// replacing them with their resolved children and ensuring file paths carry over parent paths.
 	/// Validates the table of contents structure and emits diagnostics for issues.
 	/// </summary>
-	public static DocumentationSetFile LoadAndResolve(IDiagnosticsCollector collector, IFileInfo docsetPath, IFileSystem? fileSystem = null)
+	public static DocumentationSetFile LoadAndResolve(IDiagnosticsCollector collector, IFileInfo docsetPath, IFileSystem? fileSystem = null, HashSet<HintType>? noSuppress = null)
 	{
 		fileSystem ??= docsetPath.FileSystem;
 		var yaml = fileSystem.File.ReadAllText(docsetPath.FullName);
 		var sourceDirectory = docsetPath.Directory!;
-		return LoadAndResolve(collector, yaml, sourceDirectory, fileSystem);
+		return LoadAndResolve(collector, yaml, sourceDirectory, fileSystem, noSuppress);
 	}
 
 	/// <summary>
@@ -76,11 +78,12 @@ public class DocumentationSetFile : TableOfContentsFile
 	/// replacing them with their resolved children and ensuring file paths carry over parent paths.
 	/// Validates the table of contents structure and emits diagnostics for issues.
 	/// </summary>
-	public static DocumentationSetFile LoadAndResolve(IDiagnosticsCollector collector, string yaml, IDirectoryInfo sourceDirectory, IFileSystem? fileSystem = null)
+	public static DocumentationSetFile LoadAndResolve(IDiagnosticsCollector collector, string yaml, IDirectoryInfo sourceDirectory, IFileSystem? fileSystem = null, HashSet<HintType>? noSuppress = null)
 	{
 		fileSystem ??= sourceDirectory.FileSystem;
 		var docSet = Deserialize(yaml);
 		var docsetPath = fileSystem.Path.Combine(sourceDirectory.FullName, "docset.yml").OptionalWindowsReplace();
+		docSet.SuppressDiagnostics.ExceptWith(noSuppress ?? []);
 		docSet.TableOfContents = ResolveTableOfContents(collector, docSet.TableOfContents, sourceDirectory, fileSystem, parentPath: "", containerPath: "", context: docsetPath, docSet.SuppressDiagnostics);
 		return docSet;
 	}

@@ -3,14 +3,14 @@
 // See the LICENSE file in the project root for more information
 
 using ConsoleAppFramework;
-using Elastic.Documentation.Changelog;
+using Elastic.Changelog;
 
 namespace Documentation.Builder.Arguments;
 
 [AttributeUsage(AttributeTargets.Parameter)]
-public class ProductInfoParserAttribute : Attribute, IArgumentParser<List<ProductInfo>>
+public class ProductInfoParserAttribute : Attribute, IArgumentParser<List<ProductArgument>>
 {
-	public static bool TryParse(ReadOnlySpan<char> s, out List<ProductInfo> result)
+	public static bool TryParse(ReadOnlySpan<char> s, out List<ProductArgument> result)
 	{
 		result = [];
 
@@ -25,22 +25,12 @@ public class ProductInfoParserAttribute : Attribute, IArgumentParser<List<Produc
 			if (parts.Length == 0)
 				continue;
 
-			var productInfo = new ProductInfo
+			var productInfo = new ProductArgument
 			{
-				Product = parts[0]
+				Product = parts[0],
+				Target = parts.Length > 1 ? parts[1] : null,
+				Lifecycle = parts.Length > 2 ? parts[2] : null
 			};
-
-			// Target is optional (second part)
-			if (parts.Length > 1)
-			{
-				productInfo.Target = parts[1];
-			}
-
-			// Lifecycle is optional (third part)
-			if (parts.Length > 2)
-			{
-				productInfo.Lifecycle = parts[2];
-			}
 
 			result.Add(productInfo);
 		}

@@ -2,8 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Changelog.Bundling;
-using Elastic.Documentation.Changelog;
+using Elastic.Documentation.ReleaseNotes;
 
 namespace Elastic.Changelog.Rendering;
 
@@ -38,7 +37,7 @@ public record BundleValidationResult
 /// </summary>
 public record ValidatedBundle
 {
-	public required BundledChangelogData Data { get; init; }
+	public required Bundle Data { get; init; }
 	public required BundleInput Input { get; init; }
 	public required string Directory { get; init; }
 }

@@ -377,18 +377,59 @@ E = mc^2
     let ``renders math content as text`` () =
         markdown |> convertsToPlainText """E = mc^2"""
 
-type ``diagram directive`` () =
+type ``mermaid code block`` () =
     static let markdown = Setup.Document """
-::::{diagram} mermaid
+```mermaid
 flowchart LR
     A --> B
-::::
+```
 """
 
     [<Fact>]
-    let ``skips diagram content`` () =
-        // Diagrams are visual, not searchable text
-        markdown |> convertsToPlainText """"""
+    let ``renders mermaid as code content`` () =
+        // Mermaid code blocks render like any code block
+        markdown |> convertsToPlainText """flowchart LR
+A --> B"""
+
+type ``csv-include directive`` () =
+    static let generator = Setup.Generate [
+        Index """
+:::{csv-include} data/users.csv
+:::
+"""
+        File("data/users.csv", """Name,Age,City
+John Doe,30,New York
+Jane Smith,25,Los Angeles""")
+    ]
+
+    [<Fact>]
+    let ``renders csv as header-value pairs`` () =
+        generator |> convertsToPlainText """Name: John Doe
+Age: 30
+City: New York
+Name: Jane Smith
+Age: 25
+City: Los Angeles"""
+
+type ``csv-include directive with caption`` () =
+    static let generator = Setup.Generate [
+        Index """
+:::{csv-include} data/products.csv
+:caption: Product List
+:::
+"""
+        File("data/products.csv", """Product,Price
+Widget,9.99
+Gadget,19.99""")
+    ]
+
+    [<Fact>]
+    let ``includes caption in output`` () =
+        generator |> convertsToPlainText """Product List
+Product: Widget
+Price: 9.99
+Product: Gadget
+Price: 19.99"""
 
 type ``realistic documentation page`` () =
     static let markdown = Setup.Document """

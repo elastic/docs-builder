@@ -8,6 +8,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
+using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Search;
 using Microsoft.OpenApi;

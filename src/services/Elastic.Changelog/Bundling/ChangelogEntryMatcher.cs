@@ -3,9 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using Elastic.Changelog;
-using Elastic.Documentation.Changelog;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.ReleaseNotes;
 using Microsoft.Extensions.Logging;
 using YamlDotNet.Core;
 using YamlDotNet.Serialization;
@@ -26,7 +26,7 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, IDeserializer deseria
 		ChangelogFilterCriteria criteria,
 		Cancel ctx)
 	{
-		var changelogEntries = new List<ChangelogEntry>();
+		var changelogEntries = new List<MatchedChangelogFile>();
 		var matchedPrs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		var seenChangelogs = new HashSet<string>(); // For deduplication (using checksum)
 
@@ -52,7 +52,7 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, IDeserializer deseria
 		};
 	}
 
-	private async Task<ChangelogEntry?> ProcessFileAsync(
+	private async Task<MatchedChangelogFile?> ProcessFileAsync(
 		IDiagnosticsCollector collector,
 		string filePath,
 		ChangelogFilterCriteria criteria,
@@ -68,20 +68,9 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, IDeserializer deseria
 			// Compute checksum (SHA1)
 			var checksum = ChangelogBundlingService.ComputeSha1(fileContent);
 
-			// Deserialize YAML (skip comment lines)
-			var yamlLines = fileContent.Split('\n');
-			var yamlWithoutComments = string.Join('\n', yamlLines.Where(line => !line.TrimStart().StartsWith('#')));
-
-			// Normalize "version:" to "target:" in products section for compatibility
-			var normalizedYaml = ChangelogBundlingService.VersionToTargetRegex().Replace(yamlWithoutComments, "$1target:");
-
-			var data = deserializer.Deserialize<ChangelogData>(normalizedYaml);
-
-			if (data == null)
-			{
-				logger.LogWarning("Skipping file {FileName}: failed to deserialize", fileName);
-				return null;
-			}
+			// Deserialize YAML
+			var normalizedYaml = ReleaseNotesSerialization.NormalizeYaml(fileContent);
+			var yamlDto = deserializer.Deserialize<ChangelogEntryDto>(normalizedYaml);
 
 			// Check for duplicates (using checksum)
 			if (seenChangelogs.Contains(checksum))
@@ -90,14 +79,17 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, IDeserializer deseria
 				return null;
 			}
 
-			// Apply filters
-			if (!MatchesFilter(data, criteria, matchedPrs))
+			// Apply filters using YAML DTO (string-based for wildcard matching)
+			if (!MatchesFilter(yamlDto, criteria, matchedPrs))
 				return null;
 
 			// Add to seen set
 			_ = seenChangelogs.Add(checksum);
 
-			return new ChangelogEntry
+			// Convert to domain type
+			var data = ReleaseNotesSerialization.ConvertEntry(yamlDto);
+
+			return new MatchedChangelogFile
 			{
 				Data = data,
 				FilePath = filePath,
@@ -120,7 +112,7 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, IDeserializer deseria
 	}
 
 	private static bool MatchesFilter(
-		ChangelogData data,
+		ChangelogEntryDto data,
 		ChangelogFilterCriteria criteria,
 		HashSet<string> matchedPrs)
 	{
@@ -137,9 +129,12 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, IDeserializer deseria
 	}
 
 	private static bool MatchesProductFilter(
-		ChangelogData data,
+		ChangelogEntryDto data,
 		IReadOnlyList<ProductFilter> productFilters)
 	{
+		if (data.Products == null || data.Products.Count == 0)
+			return false;
+
 		foreach (var filter in productFilters)
 		{
 			// Check if any product in the changelog matches this filter
@@ -158,7 +153,7 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, IDeserializer deseria
 	}
 
 	private static bool MatchesPrFilter(
-		ChangelogData data,
+		ChangelogEntryDto data,
 		ChangelogFilterCriteria criteria,
 		HashSet<string> matchedPrs)
 	{
@@ -223,11 +218,11 @@ public record ProductFilter
 }
 
 /// <summary>
-/// A matched changelog entry
+/// A matched changelog file with parsed data and file metadata
 /// </summary>
-public record ChangelogEntry
+public record MatchedChangelogFile
 {
-	public required ChangelogData Data { get; init; }
+	public required ChangelogEntry Data { get; init; }
 	public required string FilePath { get; init; }
 	public required string FileName { get; init; }
 	public required string Checksum { get; init; }
@@ -238,6 +233,6 @@ public record ChangelogEntry
 /// </summary>
 public record ChangelogMatchResult
 {
-	public required IReadOnlyList<ChangelogEntry> Entries { get; init; }
+	public required IReadOnlyList<MatchedChangelogFile> Entries { get; init; }
 	public required HashSet<string> MatchedPrs { get; init; }
 }

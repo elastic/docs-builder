@@ -7,8 +7,8 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Serialization;
@@ -46,6 +46,7 @@ public partial class DocumentationGenerator
 	private readonly IFileSystem _writeFileSystem;
 	private readonly IDocumentationFileExporter _documentationFileExporter;
 	private readonly IMarkdownExporter[] _markdownExporters;
+	private readonly IDocumentInferrerService _documentInferrer;
 	private HtmlWriter HtmlWriter { get; }
 
 	public DocumentationSet DocumentationSet { get; }
@@ -60,7 +61,8 @@ public partial class DocumentationGenerator
 		IDocumentationFileOutputProvider? documentationFileOutputProvider = null,
 		IMarkdownExporter[]? markdownExporters = null,
 		IConversionCollector? conversionCollector = null,
-		ILegacyUrlMapper? legacyUrlMapper = null
+		ILegacyUrlMapper? legacyUrlMapper = null,
+		IDocumentInferrerService? documentInferrer = null
 	)
 	{
 		_markdownExporters = markdownExporters ?? [];
@@ -72,8 +74,17 @@ public partial class DocumentationGenerator
 		DocumentationSet = docSet;
 		PositionalNavigation = positionalNavigation ?? docSet;
 		Context = docSet.Context;
-		var productVersionInferrer = new ProductVersionInferrerService(DocumentationSet.Context.ProductsConfiguration, DocumentationSet.Context.VersionsConfiguration);
-		HtmlWriter = new HtmlWriter(DocumentationSet, _writeFileSystem, new DescriptionGenerator(), positionalNavigation, navigationHtmlWriter, legacyUrlMapper, productVersionInferrer);
+
+		// Use the provided inferrer or create a default one
+		_documentInferrer = documentInferrer ?? new DocumentInferrerService(
+			DocumentationSet.Context.ProductsConfiguration,
+			DocumentationSet.Context.VersionsConfiguration,
+			DocumentationSet.Context.LegacyUrlMappings,
+			DocumentationSet.Configuration,
+			DocumentationSet.Context.Git
+		);
+
+		HtmlWriter = new HtmlWriter(DocumentationSet, _writeFileSystem, new DescriptionGenerator(), positionalNavigation, navigationHtmlWriter, legacyUrlMapper, _documentInferrer);
 		_documentationFileExporter =
 			docSet.Context.AvailableExporters.Contains(Exporter.Html)
 				? docSet.EnabledExtensions.FirstOrDefault(e => e.FileExporter != null)?.FileExporter
@@ -109,25 +120,27 @@ public partial class DocumentationGenerator
 		var result = new GenerationResult();
 
 		var generateState = Context.AvailableExporters.Contains(Exporter.DocumentationState);
-		var generationState = generateState ? null : GetPreviousGenerationState();
+		var generationState = !generateState ? null : GetPreviousGenerationState();
 
 		// clear the output directory if force is true but never for assembler builds since these build multiple times to the output.
-		if (Context is { AssemblerBuild: false, Force: true }
+		if (Context is { BuildType: not BuildType.Assembler, Force: true }
 			// clear the output directory if force is false but generation state is null, except for assembler builds.
-			|| (Context is { AssemblerBuild: false, Force: false } && generationState == null))
+			|| (Context is { BuildType: not BuildType.Assembler, Force: false } && generationState == null))
 		{
 			_logger.LogInformation($"Clearing output directory");
 			DocumentationSet.ClearOutputDirectory();
 		}
 
-		if (CompilationNotNeeded(generationState, out var offendingFiles, out var outputSeenChanges))
+		var mode = GetCompilationMode(generationState, out var offendingFiles, out var outputSeenChanges);
+		if (mode == CompilationMode.Skip)
 			return result;
 
 		await ResolveDirectoryTree(ctx);
 
 		await ProcessDocumentationFiles(offendingFiles, outputSeenChanges, ctx);
 
-		HintUnusedSubstitutionKeys();
+		if (mode == CompilationMode.Full)
+			HintUnusedSubstitutionKeys();
 
 		await ExtractEmbeddedStaticResources(ctx);
 
@@ -211,6 +224,13 @@ public partial class DocumentationGenerator
 
 	private async Task ExtractEmbeddedStaticResources(Cancel ctx)
 	{
+		// Skip copying static assets for codex builds - they are copied once to the root by CodexGenerator
+		if (Context.BuildType == BuildType.Codex)
+		{
+			_logger.LogDebug("Skipping static asset extraction for codex documentation set (assets copied to root)");
+			return;
+		}
+
 		_logger.LogInformation($"Copying static files to output directory");
 		var assembly = typeof(EmbeddedOrPhysicalFileProvider).Assembly;
 		var embeddedStaticFiles = assembly
@@ -304,7 +324,8 @@ public partial class DocumentationGenerator
 						DefaultOutputFile = outputFile,
 						DocumentationSet = DocumentationSet,
 						PositionaNavigation = PositionalNavigation,
-						NavigationItem = navigationItem
+						NavigationItem = navigationItem,
+						InferenceService = _documentInferrer
 					}, ctx);
 				}
 			}
@@ -322,43 +343,53 @@ public partial class DocumentationGenerator
 			: outputFile;
 	}
 
-	private bool CompilationNotNeeded(GenerationState? generationState, out HashSet<string> offendingFiles,
+	private enum CompilationMode { Full, Incremental, Skip }
+
+	private CompilationMode GetCompilationMode(GenerationState? generationState, out HashSet<string> offendingFiles,
 		out DateTimeOffset outputSeenChanges)
 	{
 		offendingFiles = [.. generationState?.InvalidFiles ?? []];
 		outputSeenChanges = generationState?.LastSeenChanges ?? DateTimeOffset.MinValue;
 		if (generationState == null)
-			return false;
+			return CompilationMode.Full;
+
+		if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CI")))
+			return CompilationMode.Full;
+
 		if (Context.Force)
 		{
 			_logger.LogInformation("Full compilation: --force was specified");
-			return false;
+			return CompilationMode.Full;
 		}
 
 		if (Context.Git != generationState.Git)
 		{
 			_logger.LogInformation("Full compilation: current git context: {CurrentGitContext} differs from previous git context: {PreviousGitContext}",
 				Context.Git, generationState.Git);
-			return false;
+			return CompilationMode.Full;
 		}
 
 		if (offendingFiles.Count > 0)
 		{
 			_logger.LogInformation("Incremental compilation. since: {LastWrite}", DocumentationSet.LastWrite);
 			_logger.LogInformation("Incremental compilation. {FileCount} files with errors/warnings", offendingFiles.Count);
+			return CompilationMode.Incremental;
 		}
 		else if (DocumentationSet.LastWrite > outputSeenChanges)
+		{
 			_logger.LogInformation("Incremental compilation. since: {LastSeenChanges}", generationState.LastSeenChanges);
+			return CompilationMode.Incremental;
+		}
 		else if (DocumentationSet.LastWrite <= outputSeenChanges)
 		{
 			_logger.LogInformation(
 				"No compilation: no changes since last observed: {LastSeenChanges}. " +
 				"Pass --force to force a full regeneration", generationState.LastSeenChanges
 			);
-			return true;
+			return CompilationMode.Skip;
 		}
 
-		return false;
+		return CompilationMode.Full;
 	}
 
 	private async Task<RepositoryLinks> GenerateLinkReference(bool writeToDisk, Cancel ctx)

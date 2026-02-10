@@ -6,6 +6,7 @@ using System.IO.Abstractions;
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.Json;
 using Documentation.Builder.Diagnostics.LiveMode;
 using Elastic.Documentation;
 #if DEBUG
@@ -25,12 +26,17 @@ using Westwind.AspNetCore.LiveReload;
 
 namespace Documentation.Builder.Http;
 
+/// <summary>
+/// Hosts the documentation web server for local development with live reload support.
+/// </summary>
 public class DocumentationWebHost
 {
 	private readonly WebApplication _webApplication;
 
 	private readonly IHostedService _hostedService;
 	private readonly IFileSystem _writeFileSystem;
+
+	public InMemoryBuildState InMemoryBuildState { get; }
 
 	public DocumentationWebHost(
 		ILoggerFactory logFactory,
@@ -65,6 +71,13 @@ public class DocumentationWebHost
 		{
 			CanonicalBaseUrl = new Uri(hostUrl)
 		};
+
+		// Enable diagnostics panel in serve mode
+		Context.Configuration.Features.DiagnosticsPanelEnabled = true;
+
+		// Create InMemoryBuildState for background validation builds
+		InMemoryBuildState = new InMemoryBuildState(logFactory, configurationContext);
+
 		GeneratorState = new ReloadableGeneratorState(logFactory, Context.DocumentationSourceDirectory, Context.OutputDirectory, Context);
 		_ = builder.Services
 			.AddAotLiveReload(s =>
@@ -73,7 +86,8 @@ public class DocumentationWebHost
 				s.ClientFileExtensions = ".md,.yml";
 			})
 			.AddSingleton<ReloadableGeneratorState>(_ => GeneratorState)
-			.AddHostedService<ReloadGeneratorService>((_) => new ReloadGeneratorService(GeneratorState, logFactory.CreateLogger<ReloadGeneratorService>()));
+			.AddSingleton(_ => InMemoryBuildState)
+			.AddHostedService<ReloadGeneratorService>(sp => new ReloadGeneratorService(GeneratorState, InMemoryBuildState, logFactory.CreateLogger<ReloadGeneratorService>()));
 
 		if (IsDotNetWatchBuild())
 			_ = builder.Services.AddHostedService<ParcelWatchService>();
@@ -146,14 +160,57 @@ public class DocumentationWebHost
 		apiV1.MapElasticDocsApiEndpoints(mapOtlpEndpoints);
 #endif
 
+		// SSE endpoint for diagnostics streaming
+		_ = _webApplication.MapGet("/_api/diagnostics/stream", async (InMemoryBuildState buildState, HttpContext context, Cancel ct) =>
+		{
+			context.Response.Headers.Append("Content-Type", "text/event-stream");
+			context.Response.Headers.Append("Cache-Control", "no-cache");
+			context.Response.Headers.Append("Connection", "keep-alive");
+
+			// Subscribe this client to receive broadcast events
+			var clientReader = buildState.Subscribe();
+
+			try
+			{
+				// Send initial state
+				var initialState = buildState.GetCurrentState();
+				await WriteSSEEvent(context.Response, "state", initialState, ct);
+
+				// Stream events as they occur (broadcast to all clients)
+				await foreach (var buildEvent in clientReader.ReadAllAsync(ct))
+				{
+					await WriteSSEEvent(context.Response, buildEvent.Type, buildEvent, ct);
+				}
+			}
+			catch (OperationCanceledException)
+			{
+				// Client disconnected - this is expected, no need to log
+			}
+			finally
+			{
+				// Unsubscribe when client disconnects
+				buildState.Unsubscribe(clientReader);
+			}
+		});
+
+		// Current state endpoint (non-streaming)
+		_ = _webApplication.MapGet("/_api/diagnostics/state", (InMemoryBuildState buildState) =>
+			Results.Json(buildState.GetCurrentState(), DiagnosticsJsonContext.Default.BuildEvent));
+
 		_ = _webApplication.MapGet("{**slug}", (string slug, ReloadableGeneratorState holder, Cancel ctx) =>
 			ServeDocumentationFile(holder, slug, ctx));
 	}
 
+	private static async Task WriteSSEEvent(HttpResponse response, string eventType, BuildEvent data, Cancel ct)
+	{
+		var json = JsonSerializer.Serialize(data, DiagnosticsJsonContext.Default.BuildEvent);
+		await response.WriteAsync($"event: {eventType}\n", ct);
+		await response.WriteAsync($"data: {json}\n\n", ct);
+		await response.Body.FlushAsync(ct);
+	}
+
 	private async Task<IResult> ServeApiFile(ReloadableGeneratorState holder, string slug, Cancel ctx)
 	{
-		var x = LiveReloadConfiguration.Current.LiveReloadScriptUrl;
-
 		var path = Path.Combine(holder.ApiPath.FullName, slug.Trim('/'), "index.html");
 		var info = _writeFileSystem.FileInfo.New(path);
 		if (info.Exists)

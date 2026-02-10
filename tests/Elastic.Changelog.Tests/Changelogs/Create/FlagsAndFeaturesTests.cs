@@ -15,11 +15,11 @@ public class FlagsAndFeaturesTests(ITestOutputHelper output) : CreateChangelogTe
 		// Arrange
 		var service = CreateService();
 
-		var input = new ChangelogInput
+		var input = new CreateChangelogArguments
 		{
 			Title = "Important feature",
 			Type = "feature",
-			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
 			Highlight = true,
 			Output = CreateOutputDirectory()
 		};
@@ -52,11 +52,11 @@ public class FlagsAndFeaturesTests(ITestOutputHelper output) : CreateChangelogTe
 		// Arrange
 		var service = CreateService();
 
-		var input = new ChangelogInput
+		var input = new CreateChangelogArguments
 		{
 			Title = "New feature with flag",
 			Type = "feature",
-			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
 			FeatureId = "feature:new-search-api",
 			Output = CreateOutputDirectory()
 		};
@@ -89,11 +89,11 @@ public class FlagsAndFeaturesTests(ITestOutputHelper output) : CreateChangelogTe
 		// Arrange
 		var service = CreateService();
 
-		var input = new ChangelogInput
+		var input = new CreateChangelogArguments
 		{
 			Title = "Fix multiple issues",
 			Type = "bug-fix",
-			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
 			Issues =
 			[
 				"https://github.com/elastic/elasticsearch/issues/123",

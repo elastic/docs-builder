@@ -28,15 +28,16 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 				A<CancellationToken>._))
 			.Returns(prInfo);
 
-		// Config without label_to_type mapping
+		// Config without pivot.types mapping
 		// language=yaml
 		var configContent =
 			"""
-			available_types:
-			  - feature
-			  - bug-fix
-			available_subtypes: []
-			available_lifecycles:
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change:
+			lifecycles:
 			  - preview
 			  - beta
 			  - ga
@@ -45,10 +46,10 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 
 		var service = CreateService();
 
-		var input = new ChangelogInput
+		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
 			Config = configPath,
 			Output = CreateOutputDirectory()
 		};
@@ -68,11 +69,11 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 		// Arrange
 		var service = CreateService();
 
-		var input = new ChangelogInput
+		var input = new CreateChangelogArguments
 		{
 			Title = "Test",
 			Type = "feature",
-			Products = [new ProductInfo { Product = "invalid-product", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "invalid-product", Target = "9.2.0" }],
 			Output = CreateOutputDirectory()
 		};
 
@@ -91,11 +92,11 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 		// Arrange
 		var service = CreateService();
 
-		var input = new ChangelogInput
+		var input = new CreateChangelogArguments
 		{
 			Title = "Test",
 			Type = "invalid-type",
-			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
 			Output = CreateOutputDirectory()
 		};
 
@@ -115,26 +116,29 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 		// language=yaml
 		var configContent =
 			"""
-			available_types:
-			  - feature
-			available_subtypes: []
-			available_lifecycles:
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change:
+			lifecycles:
 			  - preview
 			  - beta
 			  - ga
-			add_blockers:
-			  invalid-product:
-			    - "skip:releaseNotes"
+			block:
+			  product:
+			    invalid-product:
+			      create: "skip:releaseNotes"
 			""";
 		var configPath = await CreateConfigDirectory(configContent);
 
 		var service = CreateService();
 
-		var input = new ChangelogInput
+		var input = new CreateChangelogArguments
 		{
 			Title = "Test",
 			Type = "feature",
-			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
 			Config = configPath,
 			Output = CreateOutputDirectory()
 		};
@@ -146,7 +150,7 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 		result.Should().BeFalse();
 		Collector.Errors.Should().BeGreaterThan(0);
 		Collector.Diagnostics.Should().Contain(d =>
-			d.Message.Contains("Product 'invalid-product' in add_blockers") && d.Message.Contains("is not in the list of available products"));
+			d.Message.Contains("Product 'invalid-product' in block.product") && d.Message.Contains("is not in the list of available products"));
 	}
 
 	[Fact]
@@ -156,28 +160,31 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 		// language=yaml
 		var configContent =
 			"""
-			available_types:
-			  - feature
-			available_subtypes: []
-			available_lifecycles:
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change:
+			lifecycles:
 			  - preview
 			  - beta
 			  - ga
-			add_blockers:
-			  elasticsearch:
-			    - "skip:releaseNotes"
-			  cloud-hosted:
-			    - "ILM"
+			block:
+			  product:
+			    elasticsearch:
+			      create: "skip:releaseNotes"
+			    cloud-hosted:
+			      create: "ILM"
 			""";
 		var configPath = await CreateConfigDirectory(configContent);
 
 		var service = CreateService();
 
-		var input = new ChangelogInput
+		var input = new CreateChangelogArguments
 		{
 			Title = "Test",
 			Type = "feature",
-			Products = [new ProductInfo { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
 			Config = configPath,
 			Output = CreateOutputDirectory()
 		};

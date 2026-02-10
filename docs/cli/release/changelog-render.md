@@ -16,7 +16,7 @@ docs-builder changelog render [options...] [-h|--help]
 `--config <string?>`
 :   Optional: Path to the changelog.yml configuration file.
 :   Defaults to `docs/changelog.yml`.
-:   This configuration file is where the command looks for `render_blockers` details.
+:   This configuration file is where the command looks for `block ... publish` definitions.
 
 `--hide-features <string[]?>`
 :   Optional: Filter by feature IDs (comma-separated), or a path to a newline-delimited file containing feature IDs. Can be specified multiple times.
@@ -24,6 +24,7 @@ docs-builder changelog render [options...] [-h|--help]
 :   When specifying feature IDs directly, provide comma-separated values.
 :   When specifying a file path, provide a single value that points to a newline-delimited file. The file should contain one feature ID per line.
 :   Entries with matching `feature-id` values will be commented out in the output and a warning will be emitted.
+:   If the bundle contains `hide-features` values (that is to say, it was created with the `--hide-features` option), those values are merged with this list and are also hidden.
 
 `--input <string[]>`
 :   One or more bundle input files.
@@ -34,6 +35,10 @@ docs-builder changelog render [options...] [-h|--help]
 :   Use `repo` if your changelogs do not contain full URLs for the pull requests or issues; otherwise they will be incorrectly derived with "elastic/elastic" in the URL by default.
 :   Use `link-visibility` to control whether PR/issue links are shown or hidden for entries from this bundle. Valid values are `keep-links` (default) or `hide-links`. Use `hide-links` for bundles from private repositories.
 :   **Important**: Paths must be absolute or use environment variables. Tilde (`~`) expansion is not supported.
+
+:::{note}
+The `render` command automatically discovers and merges `.amend-*.yaml` files with their parent bundle. For more information about amended bundles, go to [](changelog-bundle-amend.md).
+:::
 
 `--file-type <string>`
 :   Optional: Output file type. Valid values: `"markdown"` or `"asciidoc"`.
@@ -54,8 +59,8 @@ docs-builder changelog render [options...] [-h|--help]
 :   Defaults to the version in the first bundle.
 :   If the string contains spaces, they are replaced with dashes when used in directory names and anchors.
 
-You can configure `render_blockers` in your `changelog.yml` configuration file to automatically block changelog entries from being rendered based on their products, areas, and/or types.
-For more information, refer to [](/contribute/changelog.md#render-blockers).
+You can configure `block` definitions in your `changelog.yml` configuration file to automatically comment out changelog entries  based on their products, areas, and/or types.
+For more information, refer to [](/contribute/changelog.md#example-block-label).
 
 ## Output formats
 

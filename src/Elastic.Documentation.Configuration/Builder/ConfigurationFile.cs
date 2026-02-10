@@ -8,6 +8,7 @@ using DotNet.Globbing;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Links;
 
@@ -33,7 +34,7 @@ public record ConfigurationFile
 
 	public Dictionary<string, LinkRedirect>? Redirects { get; }
 
-	public HashSet<Product> Products { get; } = [];
+	public HashSet<Product> Products { get; private set; } = [];
 
 	private readonly Dictionary<string, string> _substitutions = new(StringComparer.OrdinalIgnoreCase);
 	public IReadOnlyDictionary<string, string> Substitutions => _substitutions;
@@ -46,6 +47,11 @@ public record ConfigurationFile
 	public IDirectoryInfo ScopeDirectory { get; }
 
 	public IReadOnlyDictionary<string, IFileInfo>? OpenApiSpecifications { get; }
+
+	/// <summary>
+	/// Set of diagnostic hint types to suppress for this documentation set.
+	/// </summary>
+	public HashSet<HintType> SuppressDiagnostics { get; } = [];
 
 	/// This is a documentation set not linked to by assembler.
 	/// Setting this to true relaxes a few restrictions such as mixing toc references with file and folder reference
@@ -90,6 +96,9 @@ public record ConfigurationFile
 			// Extensions - assuming they're not in DocumentationSetFile yet
 			Extensions = new EnabledExtensions(docSetFile.Extensions);
 
+			// Copy suppression settings
+			SuppressDiagnostics = docSetFile.SuppressDiagnostics;
+
 			// Read substitutions
 			_substitutions = new(docSetFile.Subs, StringComparer.OrdinalIgnoreCase);
 
@@ -106,8 +115,14 @@ public record ConfigurationFile
 				OpenApiSpecifications = specs;
 			}
 
-			// Process products - need to parse from docSetFile if they exist
-			// Note: Products parsing would need to be added to DocumentationSetFile if needed
+			// Process products from docset - resolve ProductLinks to Product objects
+			if (docSetFile.Products.Count > 0)
+			{
+				Products = docSetFile.Products
+					.Select(link => productsConfig.Products.GetValueOrDefault(link.Id.Replace('_', '-')))
+					.Where(product => product is not null)
+					.ToHashSet()!;
+			}
 
 			// Process features
 			_features = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);

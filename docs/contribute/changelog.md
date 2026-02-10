@@ -13,15 +13,15 @@ The changelogs use the following schema:
 Some of the fields in the schema accept only a specific set of values:
 
 - Product values must exist in [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml). Invalid products will cause the `docs-builder changelog add` command to fail.
-- Type, subtype, and lifecycle values must match the available values defined in [ChangelogConfiguration.cs](https://github.com/elastic/docs-builder/blob/main/src/services/Elastic.Changelog/Configuration/ChangelogConfiguration.cs). Invalid values will cause the `docs-builder changelog add` command to fail.
+- Type, subtype, and lifecycle values must match the available values defined in [ChangelogEntryType.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/ChangelogEntryType.cs), [ChangelogEntrySubtype.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/ChangelogEntrySubtype.cs), and [Lifecycle.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/Lifecycle.cs) respectively. Invalid values will cause the `docs-builder changelog add` command to fail.
 :::
 
 To use the `docs-builder changelog` commands in your development workflow:
 
 1. Ensure that your products exist in [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml).
-1. Add labels to your GitHub pull requests to represent the types defined in [ChangelogConfiguration.cs](https://github.com/elastic/docs-builder/blob/main/src/services/Elastic.Changelog/Configuration/ChangelogConfiguration.cs). For example, `>bug` and `>enhancement` labels.
+1. Add labels to your GitHub pull requests that map to [changelog types](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/ChangelogEntryType.cs). At a minimum, create labels for the `feature`, `bug-fix`, and `breaking-change` types.
 1. Optional: Choose areas or components that your changes affect and add labels to your GitHub pull requests (such as `:Analytics/Aggregations`).
-1. Optional: Add labels to your GitHub pull requests to indicate that they are not notable and should not generate changelogs. For example, `non-issue` or `release_notes:skip`.
+1. Optional: Add labels to your GitHub pull requests to indicate that they are not notable and should not generate changelogs. For example, `non-issue` or `release_notes:skip`. Alternatively, you can assume that all PRs are *not* notable unless a specific label is present (for example, `@Public`).
 1. [Configure changelog settings](#changelog-settings) to correctly interpret your PR labels.
 1. [Create changelogs](#changelog-add) with the `docs-builder changelog add` command.
 1. [Create changelog bundles](#changelog-bundle) with the `docs-builder changelog bundle` command. For example, create a bundle for the pull requests that are included in a product release.
@@ -34,21 +34,14 @@ This command is associated with an ongoing release docs initiative.
 Additional workflows are still to come for updating and generating documentation from changelogs.
 :::
 
-## Include changelogs inline [changelog-directive]
-
-You can use the [`{changelog}` directive](../syntax/changelog.md) to render all changelog bundles directly in your documentation pages, without needing to run the `changelog render` command first.
-
-```markdown
-:::{changelog}
-:::
-```
-
-By default, the directive renders all bundles from `changelog/bundles/` (relative to the docset root), ordered by semantic version (newest first). For full documentation and examples, see the [{changelog} directive syntax reference](../syntax/changelog.md).
-
 ## Create a changelog configuration file [changelog-settings]
 
-You can create a configuration file to limit the acceptable product, type, subtype, and lifecycle values.
-You can also use it to prevent the creation of changelogs when certain PR labels are present.
+You can create a configuration file to:
+
+- define the acceptable product, type, subtype, and lifecycle values.
+- prevent the creation of changelogs when certain PR labels are present.
+- set default options, such as whether to extract issues and release note text from pull requests.
+
 Refer to [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml).
 
 By default, the `docs-builder changelog add` command checks the following path: `docs/changelog.yml`.
@@ -56,69 +49,38 @@ You can specify a different path with the `--config` command option.
 
 If a configuration file exists, the command validates its values before generating changelog files:
 
-- If the configuration file contains `lifecycle`, `product`, `subtype`, or `type` values that don't match the values in `products.yml` and `ChangelogConfiguration.cs`, validation fails. The changelog file is not created.
-- If the configuration file contains `areas` values and they don't match what you specify in the `--areas` command option, validation fails. The changelog file is not created.
+- If the configuration file contains `lifecycles`, `products`, `subtype`, or `type` values that don't match the values in `ChangelogEntryType.cs`, `ChangelogEntrySubtype.cs`, or `Lifecycle.cs`, validation fails.
+- If the configuration file contains `areas` values and they don't match what you specify in the `--areas` command option, validation fails.
+- If the configuration file contains `lifecycles` or `products` values are a subset of the available values and you try to create a changelog with values outside that subset, validation fails.
 
-The `available_types`, `available_subtypes`, and `available_lifecycles` fields are optional in the configuration file.
-If not specified, all default values from `ChangelogConfiguration.cs` are used.
+In each of these cases where validation fails, a changelog file is not created.
 
 ### GitHub label mappings
 
-You can optionally add `label_to_type` and `label_to_areas` mappings in your changelog configuration.
-When you run the `docs-builder changelog add` command with the `--prs` option, it can use these mappings to fill in the `type` and `areas` in your changelog based on your pull request labels.
+When you run the `docs-builder changelog add` command with the `--prs` option, it can use label mappings in the changelog configuration file to infer the changelog `type` and `areas` fields from your pull request labels.
 
 Refer to the file layout in [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml) and an [example usage](#example-map-label).
 
-### Add blockers
+### Block creation or publishing
 
-You can optionally use `add_blockers` in your changelog configuration to prevent the creation of some changelogs.
-When you run the `docs-builder changelog add` command with the `--prs` and `--products` options and the PR has a label that you've identified as a blocker for that product, the command does not create a changelog for that PR.
+If you have pull request labels that indicate a changelog is not required (such as `>non-issue` or `release_note:skip`), you can declare these in the `block` section of the changelog configuration.
 
-You can use comma-separated product IDs to share the same list of labels across multiple products.
+When you run the `docs-builder changelog add` command with the `--prs` option and the PR has one of the identified labels, the command does not create a changelog for that PR.
 
-Refer to the file layout in [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml) and an [example usage](#example-block-label).
+Likewise, if there are areas or types of changelogs that should not be published, you can declare these in the `block` section of the changelog configuration.
+For example, you might choose to omit `other` or `docs` changelogs.
+Or you might want to omit all autoscaling-related changelogs from the Cloud Serverless release docs.
 
-### Render blockers [render-blockers]
-
-You can optionally add `render_blockers` in your changelog configuration to prevent the rendering of some changelogs.
-When you run the `docs-builder changelog render` command, changelog entries that match the specified products and areas/types will be commented out of the documentation output files.
-
-By default, the `docs-builder changelog render` command checks the following path: `docs/changelog.yml`.
-You can specify a different path with the `--config` command option.
-
-The `render_blockers` configuration uses a dictionary format where:
-
-- The key can be a single product ID or comma-separated product IDs (e.g., `"elasticsearch, cloud-serverless"`)
-- The value contains `areas` and/or `types` that should be blocked for those products
-
-An entry is blocked if any product in the changelog entry matches any product key in `render_blockers` AND (any area matches OR any type matches).
-If a changelog entry has multiple products, all matching products in `render_blockers` are checked.
-
-The `types` values in `render_blockers` must exist in the `available_types` list (or in the default types if `available_types` is not specified).
-
-Example configuration:
-
-```yaml
-render_blockers:
-  "cloud-hosted, cloud-serverless":
-    areas: # List of area values that should be blocked (commented out) during render
-      - Autoscaling
-      - Watcher
-    types: # List of type values that should be blocked (commented out) during render
-      - docs
-  elasticsearch: # Another single product case
-    areas:
-      - Security
-```
-
-When rendering, entries with:
-
-- Product `cloud-hosted` or `cloud-serverless` AND (area `Autoscaling` or `Watcher` OR type `docs`) will be commented out
-- Product `elasticsearch` AND area `Security` will be commented out
-
+When you run the `docs-builder changelog render` command, changelog entries that match the specified products and areas or types are commented out of the documentation output files.
 The command will emit warnings indicating which changelog entries were commented out and why.
 
-Refer to [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml).
+:::{note}
+You can define blocks at the global level (applies to all products) or for specific products.
+Product-specific blocks **override** the global blocks entirely—they do not merge.
+If you define a product-specific `publish.areas` block, you must re-state any global blocked areas that you also want blocked for that product.
+:::
+
+Refer to [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml) and an [example usage](#example-block-label).
 
 ## Create changelog files [changelog-add]
 
@@ -134,25 +96,26 @@ For up-to-date command usage information, use the `-h` option:
 Add a new changelog from command-line input
 
 Options:
-  --products <List<ProductInfo>>    Required: Products affected in format "product target lifecycle, ..." (e.g., "elasticsearch 9.2.0 ga, cloud-serverless 2025-08-05") [Required]
-  --action <string?>                Optional: What users must do to mitigate [Default: null]
-  --areas <string[]?>               Optional: Area(s) affected (comma-separated or specify multiple times) [Default: null]
-  --config <string?>                Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml' [Default: null]
-  --description <string?>           Optional: Additional information about the change (max 600 characters) [Default: null]
-  --extract-release-notes           Optional: When used with --prs, extract release notes from PR descriptions. Short release notes (≤120 characters, single line) are used as the title, long release notes (>120 characters or multi-line) are used as the description. Looks for content in formats like "Release Notes: ...", "Release-Notes: ...", "## Release Note", etc.
-  --feature-id <string?>            Optional: Feature flag ID [Default: null]
-  --highlight <bool?>               Optional: Include in release highlights [Default: null]
-  --impact <string?>                Optional: How the user's environment is affected [Default: null]
-  --issues <string[]?>              Optional: Issue URL(s) (comma-separated or specify multiple times) [Default: null]
-  --owner <string?>                 Optional: GitHub repository owner (used when --prs contains just numbers) [Default: null]
-  --output <string?>                Optional: Output directory for the changelog. Defaults to current directory [Default: null]
-  --prs <string[]?>                 Optional: Pull request URL(s) or PR number(s) (comma-separated), or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times. Each occurrence can be either comma-separated PRs (e.g., `--prs "https://github.com/owner/repo/pull/123,6789"`) or a file path (e.g., `--prs /path/to/file.txt`). When specifying PRs directly, provide comma-separated values. When specifying a file path, provide a single value that points to a newline-delimited file. If --owner and --repo are provided, PR numbers can be used instead of URLs. If specified, --title can be derived from the PR. If mappings are configured, --areas and --type can also be derived from the PR. Creates one changelog file per PR. [Default: null]
-  --repo <string?>                  Optional: GitHub repository name (used when --prs contains just numbers) [Default: null]
-  --strip-title-prefix              Optional: When used with --prs, remove square brackets and text within them from the beginning of PR titles, and also remove a colon if it follows the closing bracket (e.g., "[Inference API] Title" becomes "Title", "[ES|QL]: Title" becomes "Title")
-  --subtype <string?>               Optional: Subtype for breaking changes (api, behavioral, configuration, etc.) [Default: null]
-  --title <string?>                 Optional: A short, user-facing title (max 80 characters). Required if --prs is not specified. If --prs and --title are specified, the latter value is used instead of what exists in the PR. [Default: null]
-  --type <string?>                  Optional: Type of change (feature, enhancement, bug-fix, breaking-change, etc.). Required if --prs is not specified. If mappings are configured, type can be derived from the PR. [Default: null]
-  --use-pr-number                   Optional: Use the PR number as the filename instead of generating it from a unique ID and title
+  --products <List<ProductArgument>?>    Optional: Products affected in format "product target lifecycle, ..." (e.g., "elasticsearch 9.2.0 ga, cloud-serverless 2025-08-05"). If not specified, will be inferred from repository or config defaults. [Default: null]
+  --action <string?>                     Optional: What users must do to mitigate [Default: null]
+  --areas <string[]?>                    Optional: Area(s) affected (comma-separated or specify multiple times) [Default: null]
+  --config <string?>                     Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml' [Default: null]
+  --description <string?>                Optional: Additional information about the change (max 600 characters) [Default: null]
+  --no-extract-release-notes             Optional: Turn off extraction of release notes from PR descriptions. By default, release notes are extracted when using --prs. Short release notes (≤120 characters, single line) are used as the title, long release notes (>120 characters or multi-line) are used as the description.
+  --no-extract-issues                    Optional: Turn off extraction of linked issues from PR body (e.g., "Fixes #123"). By default, linked issues are extracted when using --prs.
+  --feature-id <string?>                 Optional: Feature flag ID [Default: null]
+  --highlight <bool?>                    Optional: Include in release highlights [Default: null]
+  --impact <string?>                     Optional: How the user's environment is affected [Default: null]
+  --issues <string[]?>                   Optional: Issue URL(s) (comma-separated or specify multiple times) [Default: null]
+  --owner <string?>                      Optional: GitHub repository owner (used when --prs contains just numbers) [Default: null]
+  --output <string?>                     Optional: Output directory for the changelog. Defaults to current directory [Default: null]
+  --prs <string[]?>                      Optional: Pull request URL(s) or PR number(s) (comma-separated), or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times. Each occurrence can be either comma-separated PRs (e.g., `--prs "https://github.com/owner/repo/pull/123,6789"`) or a file path (e.g., `--prs /path/to/file.txt`). When specifying PRs directly, provide comma-separated values. When specifying a file path, provide a single value that points to a newline-delimited file. If --owner and --repo are provided, PR numbers can be used instead of URLs. If specified, --title can be derived from the PR. If mappings are configured, --areas and --type can also be derived from the PR. Creates one changelog file per PR. [Default: null]
+  --repo <string?>                       Optional: GitHub repository name (used when --prs contains just numbers) [Default: null]
+  --strip-title-prefix                   Optional: When used with --prs, remove square brackets and text within them from the beginning of PR titles, and also remove a colon if it follows the closing bracket (e.g., "[Inference API] Title" becomes "Title", "[ES|QL]: Title" becomes "Title", "[Discover][ESQL] Title" becomes "Title")
+  --subtype <string?>                    Optional: Subtype for breaking changes (api, behavioral, configuration, etc.) [Default: null]
+  --title <string?>                      Optional: A short, user-facing title (max 80 characters). Required if --pr is not specified. If --pr and --title are specified, the latter value is used instead of what exists in the PR. [Default: null]
+  --type <string?>                       Optional: Type of change (feature, enhancement, bug-fix, breaking-change, etc.). Required if --pr is not specified. If mappings are configured, type can be derived from the PR. [Default: null]
+  --use-pr-number                        Optional: Use the PR number as the filename instead of generating it from a unique ID and title
 ```
 
 ### Authorization
@@ -225,7 +188,7 @@ docs-builder changelog add \
 ```
 
 1. This option is required only if you want to override what's derived from the PR title.
-2. The type values are defined in [ChangelogConfiguration.cs](https://github.com/elastic/docs-builder/blob/main/src/services/Elastic.Changelog/Configuration/ChangelogConfiguration.cs).
+2. The type values are defined in [ChangelogEntryType.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/ChangelogEntryType.cs).
 3. The product values are defined in [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml).
 4. The `--prs` value can be a full URL (such as `https://github.com/owner/repo/pull/123`), a short format (such as `owner/repo#123`), just a number (in which case you must also provide `--owner` and `--repo` options), or a path to a file containing newline-delimited PR URLs or numbers. Multiple PRs can be provided comma-separated, or you can specify a file path. You can also mix both formats by specifying `--prs` multiple times. One changelog file will be created for each PR.
 
@@ -234,19 +197,25 @@ docs-builder changelog add \
 You can configure label mappings in your changelog configuration file:
 
 ```yaml
-# GitHub label mappings (optional - used when --prs option is specified)
-# Maps GitHub PR labels to changelog type values
-# When a PR has a label that matches a key, the corresponding type value is used
-label_to_type:
-  # Example mappings - customize based on your label naming conventions
-  ">enhancement": enhancement
-  ">breaking": breaking-change
-
-# Maps GitHub PR labels to changelog area values
-# Multiple labels can map to the same area, and a single label can map to multiple areas (comma-separated)
-label_to_areas:
-  # Example mappings - customize based on your label naming conventions
-  ":Search Relevance/ES|QL": "ES|QL"
+pivot:
+  # Keys are type names, values can be:
+  #   - simple string: comma-separated label list (e.g., ">bug, >fix")
+  #   - empty/null: no labels for this type
+  #   - object: { labels: "...", subtypes: {...} } for breaking-change type only
+  types:
+    # Example mappings - customize based on your label naming conventions
+    breaking-change:
+      labels: ">breaking, >bc"
+    bug-fix: ">bug"
+    enhancement: ">enhancement"
+  
+  # Area definitions with labels
+  # Keys are area display names, values are label strings
+  # Multiple labels can be comma-separated
+  areas:
+    # Example mappings - customize based on your label naming conventions
+    Autoscaling: ":Distributed Coordination/Autoscaling"
+    "ES|QL": ":Search Relevance/ES|QL"
 ```
 
 When you use the `--prs` option to derive information from a pull request, it can make use of those mappings:
@@ -260,8 +229,9 @@ docs-builder changelog add \
 ```
 
 In this case, the changelog file derives the title, type, and areas from the pull request.
+The command also looks for patterns like `Fixes #123`, `Closes owner/repo#456`, `Resolves https://github.com/.../issues/789` in the pull request to derive its issues (unless you turn off this behavior in the changelog configuration file or use `--no-extract-issues`).
 
-The `--strip-title-prefix` option in this example means that if the PR title has a prefix in square brackets (such as `[ES|QL]` or `[Security]`), it is automatically removed from the changelog title. If a colon follows the closing bracket, it is also removed.
+The `--strip-title-prefix` option in this example means that if the PR title has a prefix in square brackets (such as `[ES|QL]` or `[Security]`), it is automatically removed from the changelog title. Multiple square bracket prefixes are also supported (e.g., `[Discover][ESQL] Title` becomes `Title`). If a colon follows the closing bracket, it is also removed.
 
 :::{note}
 The `--strip-title-prefix` option only applies when the title is derived from the PR (when `--title` is not explicitly provided). If you specify `--title` explicitly, that title is used as-is without any prefix stripping.
@@ -269,7 +239,7 @@ The `--strip-title-prefix` option only applies when the title is derived from th
 
 #### Extract release notes from PR descriptions [example-extract-release-notes]
 
-When you use the `--prs` option, you can also add the `--extract-release-notes` option to automatically extract text from the PR descriptions and use them in your changelog.
+When you use the `--prs` option, by default the `docs-builder changelog add` command automatically extracts text from the PR descriptions and use it in your changelog.
 
 In particular, it looks for content in these formats in the PR description:
 
@@ -288,33 +258,42 @@ The extracted content is handled differently based on its length:
 
 :::{note}
 If you explicitly provide `--title` or `--description`, those values take precedence over extracted release notes.
+You can turn off the release note extraction in the changelog configuration file or by using the `--no-extract-release-notes` option.
 :::
 
-#### Block changelog creation with PR labels [example-block-label]
+#### Block changelog creation and publishing [example-block-label]
 
-You can configure product-specific label blockers to prevent changelog creation for certain PRs based on their labels.
+You can prevent changelog creation for certain PRs based on their labels.
+You can likewise refrain from publishing changelogs based on their areas and types.
 
 If you run the `docs-builder changelog add` command with the `--prs` option and a PR has a blocking label for any of the products in the `--products` option, that PR will be skipped and no changelog file will be created for it.
 A warning message will be emitted indicating which PR was skipped and why.
 
-For example, your configuration file can contain `add_blockers` like this:
+For example, your configuration file can contain a `block` section this:
 
 ```yaml
-# Product-specific label blockers (optional)
-# Maps product IDs to lists of labels that prevent changelog creation for that product
-# If you run the changelog add command with the --prs option and a PR has any of these labels, the changelog is not created
-# Product IDs can be comma-separated to share the same list of labels across multiple products
-add_blockers:
-  # Example: Skip changelog for cloud.serverless product when PR has "Watcher" label
-  cloud-serverless:
-    - ":Data Management/Watcher"
-    - ">non-issue"
-  # Example: Skip changelog creation for elasticsearch product when PR has "skip:releaseNotes" label
-  elasticsearch:
-    - ">non-issue"
-  # Example: Share the same blockers across multiple products using comma-separated product IDs
-  elasticsearch, cloud-serverless:
-    - ">non-issue"
+block:
+  # Global labels that block changelog creation for all products (comma-separated string)
+  create: ">non-issue"
+  # Block changelog entries from publishing based on entry type or area
+  publish:
+    types:
+      - docs
+    areas:
+      - "Internal"
+  product:
+    'cloud-serverless':
+      create: ">non-issue, >test"
+      publish:
+        areas:
+          - "Internal"
+          - "Autoscaling"
+          - "Watcher"
+    'elasticsearch, kibana':
+      publish:
+        types:
+          - docs
+          - other
 ```
 
 Those settings affect commands with the `--prs` option, for example:
@@ -326,8 +305,11 @@ docs-builder changelog add --prs "1234, 5678" \
   --config test/changelog.yml
 ```
 
-If PR 1234 has the `>non-issue` or Watcher label, it will be skipped and no changelog will be created for it.
+If PR 1234 has the `>non-issue` or `>test` labels, it will be skipped and no changelog will be created.
 If PR 5678 does not have any blocking labels, a changelog is created.
+
+The `block` settings also affect the publishing stage.
+For example, if you run the `docs-builder changelog render` command for a Cloud Serverless bundle, any changelogs that have "Internal", "Autoscaling", or "Watcher" areas are commmented out.
 
 #### Create changelogs from a file of PRs [example-file-prs]
 
@@ -371,12 +353,13 @@ Bundle changelogs
 Options:
   --all                                     Include all changelogs in the directory. Only one filter option can be specified: `--all`, `--input-products`, or `--prs`.
   --directory <string?>                     Optional: Directory containing changelog YAML files. Defaults to current directory [Default: null]
+  --hide-features <string[]?>               Optional: Feature IDs to mark as hidden in the bundle output (comma-separated), or a path to a newline-delimited file containing feature IDs. Can be specified multiple times. When the bundle is rendered (by CLI render or {changelog} directive), entries with matching feature-id values will be commented out. [Default: null]
   --input-products <List<ProductInfo>?>     Filter by products in format "product target lifecycle, ..." (e.g., "cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta"). When specified, all three parts (product, target, lifecycle) are required but can be wildcards (*). Examples: "elasticsearch * *" matches all elasticsearch changelogs, "cloud-serverless 2025-12-02 *" matches cloud-serverless 2025-12-02 with any lifecycle, "* 9.3.* *" matches any product with target starting with "9.3.", "* * *" matches all changelogs (equivalent to --all). Only one filter option can be specified: `--all`, `--input-products`, or `--prs`. [Default: null]
   --output <string?>                        Optional: Output path for the bundled changelog. Can be either (1) a directory path, in which case 'changelog-bundle.yaml' is created in that directory, or (2) a file path ending in .yml or .yaml. Defaults to 'changelog-bundle.yaml' in the input directory [Default: null]
   --output-products <List<ProductInfo>?>    Optional: Explicitly set the products array in the output file in format "product target lifecycle, ...". Overrides any values from changelogs. [Default: null]
   --owner <string?>                         GitHub repository owner (required only when PRs are specified as numbers) [Default: null]
   --prs <string[]?>                         Filter by pull request URLs or numbers (comma-separated), or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times. Only one filter option can be specified: `--all`, `--input-products`, or `--prs`. [Default: null]
-  --repo <string?>                          GitHub repository name (required only when PRs are specified as numbers) [Default: null]
+  --repo <string?>                          GitHub repository name. When specified, this value is stored in the bundle's product metadata and used to generate correct PR/issue links during rendering. Required when PRs are specified as numbers. [Default: null]
   --resolve                                 Optional: Copy the contents of each changelog file into the entries array. By default, the bundle contains only the file names and checksums.
 ```
 
@@ -556,7 +539,110 @@ The `--output` option supports two formats:
 
 If you specify a file path with a different extension (not `.yml` or `.yaml`), the command returns an error.
 
-## Create documentation [render-changelogs]
+### Hide features in bundles [changelog-bundle-hide-features]
+
+You can use the `--hide-features` option to embed feature IDs that should be hidden when the bundle is rendered. This is useful for features that are not yet ready for public documentation.
+
+```sh
+docs-builder changelog bundle \
+  --input-products "elasticsearch 9.3.0 *" \
+  --hide-features "feature:hidden-api,feature:experimental" \ <1>
+  --output /path/to/bundles/9.3.0.yaml
+```
+
+1. Feature IDs to hide. Entries with matching `feature-id` values will be commented out when rendered.
+
+The bundle output will include a `hide-features` field:
+
+```yaml
+products:
+- product: elasticsearch
+  target: 9.3.0
+hide-features:
+  - feature:hidden-api
+  - feature:experimental
+entries:
+- file:
+    name: 1765495972-new-feature.yaml
+    checksum: 6c3243f56279b1797b5dfff6c02ebf90b9658464
+```
+
+When this bundle is rendered (either via the `changelog render` command or the `{changelog}` directive), entries with `feature-id` values matching any of the listed features will be commented out in the output.
+
+:::{note}
+The `--hide-features` option on the `render` command and the `hide-features` field in bundles are **combined**. If you specify `--hide-features` on both the `bundle` and `render` commands, all specified features are hidden. The `{changelog}` directive automatically reads `hide-features` from all loaded bundles and applies them.
+:::
+
+### Repository name in bundles [changelog-bundle-repo]
+
+When you specify the `--repo` option, the repository name is stored in the bundle's product metadata. This ensures that PR and issue links are generated correctly when the bundle is rendered.
+
+```sh
+docs-builder changelog bundle \
+  --input-products "cloud-serverless 2025-12-02 *" \
+  --repo cloud \ <1>
+  --output /path/to/bundles/2025-12-02.yaml
+```
+
+1. The GitHub repository name. This is stored in each product entry in the bundle.
+
+The bundle output will include a `repo` field in each product:
+
+```yaml
+products:
+- product: cloud-serverless
+  target: 2025-12-02
+  repo: cloud
+entries:
+- file:
+    name: 1765495972-new-feature.yaml
+    checksum: 6c3243f56279b1797b5dfff6c02ebf90b9658464
+```
+
+When rendering, PR/issue links will use `https://github.com/elastic/cloud/...` instead of the product ID in the URL.
+
+:::{note}
+If the `repo` field is not specified, the product ID is used as a fallback for link generation. This may result in broken links if the product ID doesn't match the GitHub repository name (e.g., `cloud-serverless` vs `cloud`).
+:::
+
+### Amend bundles [changelog-bundle-amend]
+
+When you need to add entries to an existing bundle without modifying the original file, you can create amend bundles. Amend bundles follow a specific naming convention: `{parent-bundle-name}.amend-{N}.yaml` where `{N}` is a sequence number.
+
+For example, if you have a bundle named `9.3.0.yaml`, you can create amend files:
+- `9.3.0.amend-1.yaml`
+- `9.3.0.amend-2.yaml`
+
+Amend bundles contain only the additional entries:
+
+```yaml
+# 9.3.0.amend-1.yaml
+entries:
+- file:
+    name: late-addition.yaml
+    checksum: abc123def456
+```
+
+When bundles are loaded (either via the `changelog render` command or the `{changelog}` directive), amend files are **automatically merged** with their parent bundles. The entries from all matching amend files are combined with the parent bundle's entries, and the result is rendered as a single release.
+
+:::{note}
+Amend bundles do not need to include `products` or `hide-features` fields—they inherit these from their parent bundle. If an amend bundle is found without a matching parent bundle, it remains standalone.
+:::
+
+## Create documentation
+
+### Include changelogs inline [changelog-directive]
+
+You can use the [`{changelog}` directive](../syntax/changelog.md) to render all changelog bundles directly in your documentation pages, without needing to run the `changelog render` command first.
+
+```markdown
+:::{changelog}
+:::
+```
+
+By default, the directive renders all bundles from `changelog/bundles/` (relative to the docset root), ordered by semantic version (newest first). For full documentation and examples, see the [{changelog} directive syntax reference](../syntax/changelog.md).
+
+### Generate markdown or asciidoc [render-changelogs]
 
 The `docs-builder changelog render` command creates markdown or asciidoc files from changelog bundles for documentation purposes.
 For up-to-date details, use the `-h` command option:
@@ -631,8 +717,7 @@ For example, the `index.md` output file contains information derived from the ch
 
 To comment out the pull request and issue links, for example if they relate to a private repository, add `hide-links` to the `--input` option for that bundle. This allows you to selectively hide links per bundle when merging changelogs from multiple repositories.
 
-If you have changelogs with `feature-id` values and you want them to be omitted from the output, use the `--hide-features` option.
-For more information, refer to [](/cli/release/changelog-render.md).
+If you have changelogs with `feature-id` values and you want them to be omitted from the output, use the `--hide-features` option. Feature IDs specified via `--hide-features` are **merged** with any `hide-features` already present in the bundle files. This means both CLI-specified and bundle-embedded features are hidden in the output.
 
 To create an asciidoc file instead of markdown files, add the `--file-type asciidoc` option:
 

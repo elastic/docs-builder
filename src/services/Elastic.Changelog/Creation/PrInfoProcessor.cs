@@ -2,10 +2,10 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Changelog.Configuration;
 using Elastic.Changelog.GitHub;
-using Elastic.Documentation.Changelog;
+using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.ReleaseNotes;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Changelog.Creation;
@@ -20,7 +20,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 	/// </summary>
 	public async Task<PrProcessingResult> ProcessPrAsync(
 		IDiagnosticsCollector collector,
-		ChangelogInput input,
+		CreateChangelogArguments input,
 		ChangelogConfiguration config,
 		string prUrl,
 		Cancel ctx)
@@ -67,7 +67,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		string prUrl,
 		string? owner,
 		string? repo,
-		List<ProductInfo> products,
+		IReadOnlyList<ProductArgument> products,
 		ChangelogConfiguration config,
 		Cancel ctx)
 	{
@@ -85,7 +85,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 
 	private DerivedPrFields? DeriveFieldsFromPr(
 		IDiagnosticsCollector collector,
-		ChangelogInput input,
+		CreateChangelogArguments input,
 		ChangelogConfiguration config,
 		GitHubPrInfo prInfo,
 		string prUrl)
@@ -129,16 +129,14 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 			logger.LogInformation("Using PR title: {Title}", derived.Title);
 		}
 		else if (!string.IsNullOrWhiteSpace(input.Title))
-		{
 			logger.LogDebug("Using explicitly provided title, ignoring PR title");
-		}
 
 		// Map labels to type if type was not explicitly provided
 		if (string.IsNullOrWhiteSpace(input.Type))
 		{
 			if (config.LabelToType == null || config.LabelToType.Count == 0)
 			{
-				collector.EmitError(string.Empty, $"Cannot derive type from PR {prUrl} labels: no label-to-type mapping configured in changelog.yml. Please provide --type or configure label_to_type in changelog.yml.");
+				collector.EmitError(string.Empty, $"Cannot derive type from PR {prUrl} labels: no type mapping configured in changelog.yml. Please provide --type or configure pivot.types in changelog.yml.");
 				return null;
 			}
 
@@ -146,19 +144,17 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 			if (mappedType == null)
 			{
 				var availableLabels = prInfo.Labels.Count > 0 ? string.Join(", ", prInfo.Labels) : "none";
-				collector.EmitError(string.Empty, $"Cannot derive type from PR {prUrl} labels ({availableLabels}). No matching label found in label_to_type mapping. Please provide --type or add a label mapping in changelog.yml.");
+				collector.EmitError(string.Empty, $"Cannot derive type from PR {prUrl} labels ({availableLabels}). No matching label found in type mapping. Please provide --type or add pivot.types with labels in changelog.yml.");
 				return null;
 			}
 			derived.Type = mappedType;
 			logger.LogInformation("Mapped PR labels to type: {Type}", derived.Type);
 		}
 		else
-		{
 			logger.LogDebug("Using explicitly provided type, ignoring PR labels");
-		}
 
 		// Map labels to areas if areas were not explicitly provided
-		if (input.Areas != null && input.Areas.Length == 0 && config.LabelToAreas != null)
+		if ((input.Areas == null || input.Areas.Length == 0) && config.LabelToAreas != null)
 		{
 			var mappedAreas = MapLabelsToAreas(prInfo.Labels.ToArray(), config.LabelToAreas);
 			if (mappedAreas.Count > 0)
@@ -167,34 +163,87 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 				logger.LogInformation("Mapped PR labels to areas: {Areas}", string.Join(", ", mappedAreas));
 			}
 		}
-		else if (input.Areas != null && input.Areas.Length > 0)
-		{
+		else if (input.Areas is { Length: > 0 })
 			logger.LogDebug("Using explicitly provided areas, ignoring PR labels");
+
+		// Check highlight labels if CLI highlight not set
+		if (input.Highlight == null && config.HighlightLabels is { Count: > 0 })
+		{
+			var hasHighlightLabel = prInfo.Labels.Any(label =>
+				config.HighlightLabels.Contains(label, StringComparer.OrdinalIgnoreCase));
+			if (hasHighlightLabel)
+			{
+				derived.Highlight = true;
+				logger.LogInformation("PR has highlight label, setting highlight: true");
+			}
 		}
+		else if (input.Highlight != null)
+			logger.LogDebug("Using explicitly provided highlight value, ignoring PR labels");
+
+		// Extract linked issues from PR body if config enabled and issues not provided
+		if (input.ExtractIssues && (input.Issues == null || input.Issues.Length == 0))
+		{
+			if (prInfo.LinkedIssues.Count > 0)
+			{
+				derived.Issues = prInfo.LinkedIssues.ToArray();
+				logger.LogInformation("Extracted {Count} linked issues from PR body: {Issues}",
+					prInfo.LinkedIssues.Count, string.Join(", ", prInfo.LinkedIssues));
+			}
+		}
+		else if (input.Issues is { Length: > 0 })
+			logger.LogDebug("Using explicitly provided issues, ignoring PR body");
 
 		return derived;
 	}
 
 	private bool ShouldSkipPrDueToLabelBlockers(
 		string[] prLabels,
-		List<ProductInfo> products,
+		IReadOnlyList<ProductArgument> products,
 		ChangelogConfiguration config,
 		IDiagnosticsCollector collector,
 		string prUrl)
 	{
-		if (config.AddBlockers == null || config.AddBlockers.Count == 0)
+		if (config.Block?.ByProduct == null || config.Block.ByProduct.Count == 0)
+		{
+			// Check global create blockers
+			if (config.Block?.Create != null && config.Block.Create.Count > 0)
+			{
+				var matchingGlobalBlocker = config.Block.Create
+					.FirstOrDefault(blockerLabel => prLabels.Contains(blockerLabel, StringComparer.OrdinalIgnoreCase));
+				if (matchingGlobalBlocker != null)
+				{
+					collector.EmitWarning(string.Empty, $"Skipping changelog creation for PR {prUrl} due to global blocking label '{matchingGlobalBlocker}'. This label is configured to prevent changelog creation.");
+					return true;
+				}
+			}
 			return false;
+		}
 
 		foreach (var product in products)
 		{
-			var normalizedProductId = product.Product.Replace('_', '-');
-			if (config.AddBlockers.TryGetValue(normalizedProductId, out var blockerLabels))
+			var normalizedProductId = product.Product?.Replace('_', '-') ?? string.Empty;
+			if (config.Block.ByProduct.TryGetValue(normalizedProductId, out var productBlockers))
 			{
-				var matchingBlockerLabel = blockerLabels
-					.FirstOrDefault(blockerLabel => prLabels.Contains(blockerLabel, StringComparer.OrdinalIgnoreCase));
-				if (matchingBlockerLabel != null)
+				// Product-specific blockers override global blockers
+				if (productBlockers.Create != null && productBlockers.Create.Count > 0)
 				{
-					collector.EmitWarning(string.Empty, $"Skipping changelog creation for PR {prUrl} due to blocking label '{matchingBlockerLabel}' for product '{product.Product}'. This label is configured to prevent changelog creation for this product.");
+					var matchingBlockerLabel = productBlockers.Create
+						.FirstOrDefault(blockerLabel => prLabels.Contains(blockerLabel, StringComparer.OrdinalIgnoreCase));
+					if (matchingBlockerLabel != null)
+					{
+						collector.EmitWarning(string.Empty, $"Skipping changelog creation for PR {prUrl} due to blocking label '{matchingBlockerLabel}' for product '{product.Product}'. This label is configured to prevent changelog creation for this product.");
+						return true;
+					}
+				}
+			}
+			else if (config.Block.Create != null && config.Block.Create.Count > 0)
+			{
+				// Fall back to global blockers if no product-specific blockers
+				var matchingGlobalBlocker = config.Block.Create
+					.FirstOrDefault(blockerLabel => prLabels.Contains(blockerLabel, StringComparer.OrdinalIgnoreCase));
+				if (matchingGlobalBlocker != null)
+				{
+					collector.EmitWarning(string.Empty, $"Skipping changelog creation for PR {prUrl} due to global blocking label '{matchingGlobalBlocker}'. This label is configured to prevent changelog creation.");
 					return true;
 				}
 			}
@@ -266,4 +315,6 @@ public record DerivedPrFields
 	public string? Type { get; set; }
 	public string? Description { get; set; }
 	public string[]? Areas { get; set; }
+	public bool? Highlight { get; set; }
+	public string[]? Issues { get; set; }
 }

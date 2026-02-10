@@ -48,26 +48,28 @@ public sealed class EmbeddedOrPhysicalFileProvider : IFileProvider, IDisposable
 
 	public IDirectoryContents GetDirectoryContents(string subpath)
 	{
-		var contents = FirstYielding(subpath, static (a, p) => p.GetDirectoryContents(a));
+		var path = subpath.TrimStart('/');
+		var contents = FirstYielding(path, static (a, p) => p.GetDirectoryContents(a));
 		if (contents is null || !contents.Exists)
-			contents = _embeddedProvider.GetDirectoryContents(subpath);
+			contents = _embeddedProvider.GetDirectoryContents(path);
 		return contents;
 	}
 
 	public IFileInfo GetFileInfo(string subpath)
 	{
-		var path = subpath.Replace($"{Path.DirectorySeparatorChar}_static", "");
+		var path = subpath.Replace($"{Path.DirectorySeparatorChar}_static", "").TrimStart('/');
 		var fileInfo = FirstYielding(path, static (a, p) => p.GetFileInfo(a));
 		if (fileInfo is null || !fileInfo.Exists)
-			fileInfo = _embeddedProvider.GetFileInfo(subpath);
+			fileInfo = _embeddedProvider.GetFileInfo(path);
 		return fileInfo;
 	}
 
 	public IChangeToken Watch(string filter)
 	{
-		var changeToken = FirstYielding(filter, static (f, p) => p.Watch(f));
+		var path = filter.TrimStart('/');
+		var changeToken = FirstYielding(path, static (f, p) => p.Watch(f));
 		if (changeToken is null or NullChangeToken)
-			changeToken = _embeddedProvider.Watch(filter);
+			changeToken = _embeddedProvider.Watch(path);
 		return changeToken;
 	}
 
