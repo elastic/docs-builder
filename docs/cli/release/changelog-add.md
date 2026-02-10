@@ -13,6 +13,7 @@ docs-builder changelog add [options...] [-h|--help]
 
 `--action <string?>`
 :   Optional: What users must do to mitigate.
+:   If the content contains any special characters such as backquotes(`), you must precede it with a backslash escape character (`\`).
 
 `--areas <string[]?>`
 :   Optional: Areas affected (comma-separated or specify multiple times).
@@ -22,6 +23,7 @@ docs-builder changelog add [options...] [-h|--help]
 
 `--description <string?>`
 :   Optional: Additional information about the change (max 600 characters).
+:   If the content contains any special characters such as backquotes, you must precede it with a backslash escape character (`\`).
 
 `--no-extract-release-notes`
 :   Optional: Turn off extraction of release notes from PR descriptions.
@@ -43,6 +45,7 @@ docs-builder changelog add [options...] [-h|--help]
 
 `--impact <string?>`
 :   Optional: How the user's environment is affected.
+:   If the content contains any special characters such as backquotes, you must precede it with a backslash escape character (`\`).
 
 `--issues <string[]?>`
 :   Optional: Issue numbers (comma-separated or specify multiple times).
@@ -89,6 +92,7 @@ docs-builder changelog add [options...] [-h|--help]
 :    A short, user-facing title (max 80 characters)
 :    Required if `--pr` is not specified.
 :    If both `--pr` and `--title` are specified, the latter value is used instead of what exists in the PR.
+:    If the content contains any special characters such as backquotes, you must precede it with a backslash escape character (`\`).
 
 `--type <string>`
 :   Required: Type of change (for example, `feature`, `enhancement`, `bug-fix`, or `breaking-change`).
