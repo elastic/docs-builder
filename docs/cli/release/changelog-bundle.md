@@ -83,3 +83,57 @@ These arguments apply to profile-based bundling:
 `--resolve`
 :   Optional: Copy the contents of each changelog file into the entries array.
 :   By default, the bundle contains only the file names and checksums.
+
+## Output file location
+
+The `--output` option supports two formats:
+
+1. **Directory path**: If you specify a directory path (without a filename), the command creates `changelog-bundle.yaml` in that directory:
+
+   ```sh
+   docs-builder changelog bundle --all --output /path/to/output/dir
+   # Creates /path/to/output/dir/changelog-bundle.yaml
+   ```
+
+2. **File path**: If you specify a file path ending in `.yml` or `.yaml`, the command uses that exact path:
+
+   ```sh
+   docs-builder changelog bundle --all --output /path/to/custom-bundle.yaml
+   # Creates /path/to/custom-bundle.yaml
+   ```
+
+If you specify a file path with a different extension (not `.yml` or `.yaml`), the command returns an error.
+
+## Repository name in bundles [changelog-bundle-repo]
+
+When you specify the `--repo` option, the repository name is stored in the bundle's product metadata.
+This ensures that PR and issue links are generated correctly when the bundle is rendered.
+
+```sh
+docs-builder changelog bundle \
+  --input-products "cloud-serverless 2025-12-02 *" \
+  --repo cloud \ <1>
+  --output /path/to/bundles/2025-12-02.yaml
+```
+
+1. The GitHub repository name. This is stored in each product entry in the bundle.
+
+The bundle output will include a `repo` field in each product:
+
+```yaml
+products:
+- product: cloud-serverless
+  target: 2025-12-02
+  repo: cloud
+entries:
+- file:
+    name: 1765495972-new-feature.yaml
+    checksum: 6c3243f56279b1797b5dfff6c02ebf90b9658464
+```
+
+When rendering, pull request and issue links will use `https://github.com/elastic/cloud/...` instead of the product ID in the URL.
+
+:::{note}
+If the `repo` field is not specified, the product ID is used as a fallback for link generation.
+This may result in broken links if the product ID doesn't match the GitHub repository name (for example, `cloud-serverless` vs `cloud`).
+:::

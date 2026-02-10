@@ -98,7 +98,6 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 			"terminal" => "bash",
 			"painless" => "java",
 			//TODO support these natively
-			"kuery" => "json",
 			"lucene" => "json",
 			_ => codeBlock.Language
 		};
