@@ -14,6 +14,7 @@ using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Isolated.Node;
 using Elastic.Documentation.Services;
 using Elastic.Documentation.Site.Navigation;
+using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
 
@@ -31,12 +32,15 @@ public class CodexBuildService(
 
 	/// <summary>
 	/// Builds all documentation sets from the cloned checkouts.
+	/// When <paramref name="exporters"/> includes the Elasticsearch exporter, a single shared exporter
+	/// is created and its lifecycle is managed across all documentation sets.
 	/// </summary>
 	public async Task<CodexBuildResult> BuildAll(
 		CodexContext context,
 		CodexCloneResult cloneResult,
 		IFileSystem fileSystem,
-		Cancel ctx)
+		Cancel ctx,
+		IReadOnlySet<Exporter>? exporters = null)
 	{
 		var outputDir = context.OutputDirectory;
 		if (!outputDir.Exists)
@@ -66,8 +70,31 @@ public class CodexBuildService(
 			documentationSets);
 
 		// Phase 3: Build each documentation set
+		// When exporters are specified (e.g., Elasticsearch), create a single shared exporter
+		// with one _batchIndexDate across all doc sets, mirroring AssemblerBuilder.BuildAllAsync
+		IMarkdownExporter[]? sharedExporters = null;
+		if (exporters is not null && buildContexts.Count > 0)
+		{
+			var firstContext = buildContexts[0].BuildContext;
+			sharedExporters = exporters.CreateMarkdownExporters(logFactory, firstContext, context.IndexNamespace).ToArray();
+			var startTasks = sharedExporters.Select(async e => await e.StartAsync(ctx));
+			await Task.WhenAll(startTasks);
+		}
+
 		foreach (var buildContext in buildContexts)
-			await BuildDocumentationSet(context, buildContext, ctx);
+			await BuildDocumentationSet(context, buildContext, sharedExporters, ctx);
+
+		if (sharedExporters is not null)
+		{
+			foreach (var exporter in sharedExporters)
+			{
+				_logger.LogInformation("Calling FinishExportAsync on {ExporterName}", exporter.GetType().Name);
+				_ = await exporter.FinishExportAsync(context.OutputDirectory, ctx);
+			}
+
+			var stopTasks = sharedExporters.Select(async e => await e.StopAsync(ctx));
+			await Task.WhenAll(stopTasks);
+		}
 
 		// Phase 4: Generate codex landing and category pages
 		if (buildContexts.Count > 0)
@@ -148,6 +175,7 @@ public class CodexBuildService(
 	private async Task BuildDocumentationSet(
 		CodexContext context,
 		CodexDocumentationSetBuildContext buildContext,
+		IMarkdownExporter[]? sharedExporters,
 		Cancel ctx)
 	{
 		_logger.LogInformation("Building documentation set: {Name}", buildContext.Checkout.Reference.Name);
@@ -159,6 +187,7 @@ public class CodexBuildService(
 				null, // Use doc set's navigation for traversal
 				null, // Use default navigation HTML writer (doc set's navigation)
 				ExportOptions.Default,
+				sharedExporters,
 				ctx);
 		}
 		catch (Exception ex)

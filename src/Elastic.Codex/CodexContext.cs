@@ -22,6 +22,14 @@ public class CodexContext
 	public IDirectoryInfo CheckoutDirectory { get; }
 	public IDirectoryInfo OutputDirectory { get; }
 
+	/// <summary>
+	/// The Elasticsearch index namespace for this codex, derived from the environment name.
+	/// Falls back to "codex" when no environment is specified.
+	/// </summary>
+	public string IndexNamespace => string.IsNullOrEmpty(Configuration.Environment)
+		? "codex"
+		: $"codex-{Configuration.Environment}";
+
 	public CodexContext(
 		CodexConfiguration configuration,
 		IFileInfo configurationPath,
