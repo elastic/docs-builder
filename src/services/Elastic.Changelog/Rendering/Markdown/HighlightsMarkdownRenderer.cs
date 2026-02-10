@@ -57,7 +57,7 @@ public class HighlightsMarkdownRenderer(IFileSystem fileSystem) : MarkdownRender
 
 				foreach (var entry in areaGroup)
 				{
-					var (bundleProductIds, entryRepo, entryHideLinks) = GetEntryContext(entry, context);
+					var (_, entryRepo, entryHideLinks) = GetEntryContext(entry, context);
 					var shouldHide = ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context);
 
 					_ = sb.AppendLine();
