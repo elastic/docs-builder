@@ -79,24 +79,8 @@ public static class BundleInputParser
 		if (trimmedPath.StartsWith("~/", StringComparison.Ordinal) || trimmedPath.StartsWith("~\\", StringComparison.Ordinal))
 		{
 			var homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-			var relativeFromHome = trimmedPath[2..].TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-			// Ensure that the path segment after "~/" is treated as relative so that
-			// Path.Combine does not discard the home directory if an absolute path is supplied.
-			if (Path.IsPathRooted(relativeFromHome))
-			{
-				var root = Path.GetPathRoot(relativeFromHome);
-				if (!string.IsNullOrEmpty(root) && relativeFromHome.Length > root.Length)
-					relativeFromHome = relativeFromHome.Substring(root.Length).TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-			}
-			// Final safeguard: ensure the segment passed to Path.Combine is never rooted.
-			if (Path.IsPathRooted(relativeFromHome))
-			{
-				var root = Path.GetPathRoot(relativeFromHome);
-				relativeFromHome =
-					!string.IsNullOrEmpty(root) && relativeFromHome.Length > root.Length
-						? relativeFromHome.Substring(root.Length).TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
-						: relativeFromHome.TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-			}
+			var afterTilde = trimmedPath[2..];
+			var relativeFromHome = GetRelativePathSegment(afterTilde);
 			trimmedPath = Path.Combine(homeDirectory, relativeFromHome);
 		}
 		else if (trimmedPath == "~")
@@ -106,6 +90,28 @@ public static class BundleInputParser
 
 		// Convert to absolute path (handles relative paths like ./file or ../file)
 		return Path.GetFullPath(trimmedPath);
+	}
+
+	/// <summary>
+	/// Ensures that the provided path segment is treated as a relative path segment,
+	/// removing any root and leading directory separators so it can be safely
+	/// combined with another base path without discarding the base.
+	/// </summary>
+	private static string GetRelativePathSegment(string pathSegment)
+	{
+		if (string.IsNullOrWhiteSpace(pathSegment))
+			return string.Empty;
+
+		var segment = pathSegment.Trim();
+
+		if (Path.IsPathRooted(segment))
+		{
+			var root = Path.GetPathRoot(segment);
+			if (!string.IsNullOrEmpty(root) && segment.Length > root.Length)
+				segment = segment.Substring(root.Length);
+		}
+
+		return segment.TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 	}
 }
 
