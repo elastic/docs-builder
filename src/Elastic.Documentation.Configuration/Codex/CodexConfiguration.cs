@@ -21,11 +21,11 @@ public record CodexConfiguration
 	public string SitePrefix { get; set; } = "/";
 
 	/// <summary>
-	/// The namespace for this codex (e.g., "engineering", "security").
-	/// Used as part of the Elasticsearch index name.
+	/// The environment name for this codex (e.g., "engineering", "security").
+	/// Used as part of the Elasticsearch index namespace.
 	/// </summary>
-	[YamlMember(Alias = "namespace")]
-	public string? Namespace { get; set; }
+	[YamlMember(Alias = "environment")]
+	public string? Environment { get; set; }
 
 	/// <summary>
 	/// The title displayed on the codex index page.
