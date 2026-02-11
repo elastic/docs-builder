@@ -38,9 +38,6 @@ jobs:
   build-api-lambda:
     uses: ./.github/workflows/build-api-lambda.yml
 
-  build-mcp-lambda:
-    uses: ./.github/workflows/build-mcp-lambda.yml
-    
   
   synthetics:
     runs-on: ubuntu-latest
