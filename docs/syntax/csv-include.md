@@ -49,6 +49,34 @@ Specify a custom field separator (default is comma):
 :::
 ```
 
+### Column widths
+
+Control column widths using the `:widths:` option, exactly like the [`{table}` directive](/syntax/tables#column-widths). Values are relative and normalized to percentages:
+
+:::::{tab-set}
+
+::::{tab-item} Output
+
+:::{csv-include} ../_snippets/sample-data.csv
+:widths: 20 10 20 50
+:caption: User data with fixed column widths
+:::
+
+::::
+
+::::{tab-item} Markdown
+
+```markdown
+:::{csv-include} _snippets/sample-data.csv
+:widths: 20 10 20 50
+:caption: User data with fixed column widths
+:::
+```
+
+::::
+
+:::::
+
 ### Wide tables
 
 CSV files with many columns are rendered as scrollable tables:
