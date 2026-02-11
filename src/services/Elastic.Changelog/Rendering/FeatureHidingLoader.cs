@@ -171,9 +171,16 @@ public class FeatureHidingLoader(IFileSystem fileSystem)
 			var relativePath = trimmedPath[2..].TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 			// Ensure that an accidentally rooted path segment does not cause the home directory
 			// to be ignored by Path.Combine.
-			trimmedPath = Path.IsPathRooted(relativePath)
-				? relativePath
-				: Path.Combine(homeDirectory, relativePath);
+			string fullPath;
+			if (Path.IsPathRooted(relativePath))
+			{
+				fullPath = relativePath;
+			}
+			else
+			{
+				fullPath = Path.Combine(homeDirectory, relativePath);
+			}
+			trimmedPath = fullPath;
 		}
 		else if (trimmedPath == "~")
 		{
