@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Globalization;
+using System.Linq;
 using Markdig.Extensions.Tables;
 using Markdig.Renderers;
 using Markdig.Renderers.Html;
@@ -51,10 +52,8 @@ public class WrappedTableRenderer : HtmlTableRenderer
 		var isHeaderOpen = false;
 		var hasBody = false;
 
-		foreach (var rowObj in table)
+		foreach (var row in table.Cast<TableRow>())
 		{
-			var row = (TableRow)rowObj;
-
 			if (row.IsHeader)
 			{
 				if (!hasAlreadyHeader)
@@ -135,9 +134,8 @@ public class WrappedTableRenderer : HtmlTableRenderer
 		var implicitParagraph = renderer.ImplicitParagraph;
 		renderer.ImplicitParagraph = true;
 
-		foreach (var rowObj in table)
+		foreach (var row in table.Cast<TableRow>())
 		{
-			var row = (TableRow)rowObj;
 			for (var i = 0; i < row.Count; i++)
 			{
 				var cell = (TableCell)row[i];
