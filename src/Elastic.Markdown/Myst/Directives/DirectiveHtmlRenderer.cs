@@ -19,6 +19,7 @@ using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Math;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.Directives.Stepper;
+using Elastic.Markdown.Myst.Directives.Table;
 using Elastic.Markdown.Myst.Directives.Tabs;
 using Elastic.Markdown.Myst.Directives.Version;
 using Elastic.Markdown.Myst.InlineParsers.Substitution;
@@ -108,6 +109,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 				return;
 			case ButtonBlock buttonBlock:
 				WriteButton(renderer, buttonBlock);
+				return;
+			case TableBlock tableBlock:
+				WriteTable(renderer, tableBlock);
 				return;
 			default:
 				// if (!string.IsNullOrEmpty(directiveBlock.Info) && !directiveBlock.Info.StartsWith('{'))
@@ -226,6 +230,21 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			ImageUrl = imageUrl,
 		});
 		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteTable(HtmlRenderer renderer, TableBlock block)
+	{
+		// Apply column widths at render time, when the inner table is fully parsed
+		_ = block.ApplyWidthsToInnerTable();
+
+		if (!string.IsNullOrWhiteSpace(block.Caption))
+		{
+			_ = renderer.Write("<div class=\"table-caption\">");
+			_ = renderer.WriteEscape(block.Caption);
+			_ = renderer.Write("</div>");
+		}
+
+		WriteChildren(renderer, block);
 	}
 
 	private static void WriteChildren(HtmlRenderer renderer, DirectiveBlock directiveBlock) =>

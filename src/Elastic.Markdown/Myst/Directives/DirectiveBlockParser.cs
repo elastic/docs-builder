@@ -13,6 +13,7 @@ using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Math;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.Directives.Stepper;
+using Elastic.Markdown.Myst.Directives.Table;
 using Elastic.Markdown.Myst.Directives.Tabs;
 using Elastic.Markdown.Myst.Directives.Version;
 using Markdig.Parsers;
@@ -120,6 +121,9 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 
 		if (info.IndexOf("{settings}") > 0)
 			return new SettingsBlock(this, context);
+
+		if (info.IndexOf("{table}") > 0)
+			return new TableBlock(this, context);
 
 		if (info.IndexOf("{csv-include}") > 0)
 			return new CsvIncludeBlock(this, context);

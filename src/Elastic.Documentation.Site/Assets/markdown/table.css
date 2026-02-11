@@ -1,4 +1,12 @@
 @layer components {
+	.table-caption {
+		@apply mt-4 mb-1 font-sans text-sm font-semibold;
+	}
+
+	.table-caption + .table-wrapper {
+		@apply mt-0;
+	}
+
 	.table-wrapper {
 		@apply my-4 w-full overflow-x-auto;
 
@@ -18,9 +26,18 @@
 			@apply border-grey-20 w-full border-collapse border-1;
 		}
 
+		table.fixed-widths {
+			table-layout: fixed;
+		}
+
 		th,
 		td {
 			@apply border-grey-20 min-w-30 px-4 py-2 not-first:border-l-1;
+		}
+
+		table.fixed-widths th,
+		table.fixed-widths td {
+			min-width: unset;
 		}
 
 		thead {
