@@ -25,6 +25,7 @@ public class ChangelogAsciidocRenderer(IFileSystem fileSystem)
 		var breakingChangesRenderer = new BreakingChangesAsciidocRenderer(sb);
 		var deprecationsRenderer = new DeprecationsAsciidocRenderer(sb);
 		var knownIssuesRenderer = new KnownIssuesAsciidocRenderer(sb);
+		var highlightsRenderer = new HighlightsAsciidocRenderer(sb);
 
 		// Add anchor
 		_ = sb.AppendLine(InvariantCulture, $"[[release-notes-{context.TitleSlug}]]");
@@ -57,6 +58,18 @@ public class ChangelogAsciidocRenderer(IFileSystem fileSystem)
 		{
 			RenderSectionHeader(sb, "bug-fixes", context.TitleSlug, "Bug fixes");
 			entriesByAreaRenderer.Render(bugFixes, context);
+			_ = sb.AppendLine();
+		}
+
+		// Render highlights (only if any entries have highlight == true)
+		var highlights = entriesByType.Values
+			.SelectMany(e => e)
+			.Where(e => e.Highlight == true)
+			.ToList();
+		if (highlights.Count > 0)
+		{
+			RenderSectionHeader(sb, "highlights", context.TitleSlug, "Highlights");
+			highlightsRenderer.Render(highlights, context);
 			_ = sb.AppendLine();
 		}
 

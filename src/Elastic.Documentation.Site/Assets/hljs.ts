@@ -165,6 +165,52 @@ hljs.registerLanguage('painless', function () {
     }
 })
 
+hljs.registerLanguage('kuery', function () {
+    return {
+        case_insensitive: true,
+        keywords: {
+            keyword: 'and or not',
+            literal: ['true', 'false', 'null'],
+        },
+        contains: [
+            // Field names followed by : or range operators
+            {
+                scope: 'attribute',
+                match: /[a-zA-Z_][a-zA-Z0-9._]*(?=\s*(?::|<=|>=|<|>))/,
+            },
+            // Quoted strings
+            {
+                scope: 'string',
+                begin: /"/,
+                end: /"/,
+                contains: [
+                    {
+                        scope: 'char.escape',
+                        match: /\\[\\"\t\r\n]|\\u[0-9a-fA-F]{4}/,
+                    },
+                ],
+            },
+            // Range and match operators
+            {
+                scope: 'operator',
+                match: /<=|>=|<|>|:/,
+            },
+            // Wildcards
+            {
+                scope: 'operator',
+                match: /\*/,
+            },
+            // Parentheses and braces (grouping / nested queries)
+            {
+                scope: 'punctuation',
+                match: /[(){}]/,
+            },
+            NUMBER,
+        ],
+    }
+})
+hljs.registerAliases(['kql'], { languageName: 'kuery' })
+
 hljs.addPlugin(mergeHTMLPlugin)
 
 // The unescaped HTML warning is caused by the mergeHTMLPlugin which we are using
