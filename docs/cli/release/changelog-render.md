@@ -16,7 +16,7 @@ docs-builder changelog render [options...] [-h|--help]
 `--config <string?>`
 :   Optional: Path to the changelog.yml configuration file.
 :   Defaults to `docs/changelog.yml`.
-:   This configuration file is where the command looks `block ... publish` definitions.
+:   This configuration file is where the command looks for `block ... publish` definitions.
 
 `--hide-features <string[]?>`
 :   Optional: Filter by feature IDs (comma-separated), or a path to a newline-delimited file containing feature IDs. Can be specified multiple times.
@@ -24,6 +24,7 @@ docs-builder changelog render [options...] [-h|--help]
 :   When specifying feature IDs directly, provide comma-separated values.
 :   When specifying a file path, provide a single value that points to a newline-delimited file. The file should contain one feature ID per line.
 :   Entries with matching `feature-id` values will be commented out in the output and a warning will be emitted.
+:   If the bundle contains `hide-features` values (that is to say, it was created with the `--hide-features` option), those values are merged with this list and are also hidden.
 
 `--input <string[]>`
 :   One or more bundle input files.
@@ -71,6 +72,7 @@ When `--file-type markdown` is specified (the default), the command generates mu
 - `breaking-changes.md` - Contains breaking changes
 - `deprecations.md` - Contains deprecations
 - `known-issues.md` - Contains known issues
+- `highlights.md` - Contains highlighted entries (only created when at least one entry has `highlight: true`)
 
 ### Asciidoc format
 
@@ -78,6 +80,7 @@ When `--file-type asciidoc` is specified, the command generates a single asciido
 
 - Security updates
 - Bug fixes
+- Highlights (only included when at least one entry has `highlight: true`)
 - New features and enhancements
 - Breaking changes
 - Deprecations

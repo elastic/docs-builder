@@ -164,4 +164,124 @@ public class LoadPublishBlockerTests
 		result!.Types.Should().HaveCount(1).And.Contain("deprecation");
 		result.Areas.Should().BeNull();
 	}
+
+	[Fact]
+	public void LoadPublishBlocker_LoadsProductSpecificBlocker_WhenProductIdSpecified()
+	{
+		// language=yaml
+		var yaml = """
+		           block:
+		             publish:
+		               types:
+		                 - regression
+		             product:
+		               kibana:
+		                 publish:
+		                   types:
+		                     - docs
+		                   areas:
+		                     - "Elastic Security solution"
+		           """;
+		_fileSystem.AddFile("/docs/changelog.yml", new MockFileData(yaml));
+
+		var result = ReleaseNotesSerialization.LoadPublishBlocker(_fileSystem, "/docs/changelog.yml", "kibana");
+
+		result.Should().NotBeNull();
+		result!.Types.Should().HaveCount(1).And.Contain("docs");
+		result.Areas.Should().HaveCount(1).And.Contain("Elastic Security solution");
+	}
+
+	[Fact]
+	public void LoadPublishBlocker_FallsBackToGlobal_WhenProductNotFound()
+	{
+		// language=yaml
+		var yaml = """
+		           block:
+		             publish:
+		               types:
+		                 - regression
+		             product:
+		               kibana:
+		                 publish:
+		                   types:
+		                     - docs
+		           """;
+		_fileSystem.AddFile("/docs/changelog.yml", new MockFileData(yaml));
+
+		var result = ReleaseNotesSerialization.LoadPublishBlocker(_fileSystem, "/docs/changelog.yml", "elasticsearch");
+
+		result.Should().NotBeNull();
+		result!.Types.Should().HaveCount(1).And.Contain("regression");
+	}
+
+	[Fact]
+	public void LoadPublishBlocker_FallsBackToGlobal_WhenProductIdNotSpecified()
+	{
+		// language=yaml
+		var yaml = """
+		           block:
+		             publish:
+		               types:
+		                 - regression
+		             product:
+		               kibana:
+		                 publish:
+		                   types:
+		                     - docs
+		           """;
+		_fileSystem.AddFile("/docs/changelog.yml", new MockFileData(yaml));
+
+		var result = ReleaseNotesSerialization.LoadPublishBlocker(_fileSystem, "/docs/changelog.yml");
+
+		result.Should().NotBeNull();
+		result!.Types.Should().HaveCount(1).And.Contain("regression");
+	}
+
+	[Fact]
+	public void LoadPublishBlocker_ProductIdIsCaseInsensitive()
+	{
+		// language=yaml
+		var yaml = """
+		           block:
+		             product:
+		               kibana:
+		                 publish:
+		                   types:
+		                     - docs
+		           """;
+		_fileSystem.AddFile("/docs/changelog.yml", new MockFileData(yaml));
+
+		var result = ReleaseNotesSerialization.LoadPublishBlocker(_fileSystem, "/docs/changelog.yml", "KIBANA");
+
+		result.Should().NotBeNull();
+		result!.Types.Should().HaveCount(1).And.Contain("docs");
+	}
+
+	[Fact]
+	public void LoadPublishBlocker_ProductOnly_NoGlobalFallback()
+	{
+		// language=yaml
+		var yaml = """
+		           block:
+		             product:
+		               kibana:
+		                 publish:
+		                   types:
+		                     - docs
+		                   areas:
+		                     - "Elastic Observability solution"
+		                     - "Elastic Security solution"
+		           """;
+		_fileSystem.AddFile("/docs/changelog.yml", new MockFileData(yaml));
+
+		// With product specified, should get product-specific blocker
+		var resultWithProduct = ReleaseNotesSerialization.LoadPublishBlocker(_fileSystem, "/docs/changelog.yml", "kibana");
+		resultWithProduct.Should().NotBeNull();
+		resultWithProduct!.Types.Should().Contain("docs");
+		resultWithProduct.Areas.Should().Contain("Elastic Observability solution");
+
+		// Without product, should get null (no global blocker)
+		var resultWithoutProduct = ReleaseNotesSerialization.LoadPublishBlocker(_fileSystem, "/docs/changelog.yml");
+		resultWithoutProduct.Should().BeNull();
+	}
 }

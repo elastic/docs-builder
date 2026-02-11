@@ -12,4 +12,10 @@ public readonly record struct Diagnostic
 	public int? Length { get; init; }
 	public string File { get; init; }
 	public string Message { get; init; }
+
+	/// <summary>
+	/// Optional path to the original source file when File points to a generated/virtual file.
+	/// Used to provide context when the virtual file doesn't exist on disk.
+	/// </summary>
+	public string? OriginalSourceFile { get; init; }
 }

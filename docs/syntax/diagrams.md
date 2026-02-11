@@ -1,6 +1,6 @@
 # Mermaid diagrams
 
-Create diagrams using [Mermaid](https://mermaid.js.org/) with standard fenced code blocks. Diagrams are rendered client-side in the browser.
+You can create diagrams using [Mermaid](https://mermaid.js.org/) with standard fenced code blocks. Diagrams are rendered client-side in the browser.
 
 ## Basic usage
 
@@ -173,6 +173,17 @@ erDiagram
 ::::
 
 :::::
+
+## Interactive controls
+
+Mermaid diagrams include interactive controls that appear when you hover over the diagram:
+
+- **Zoom in/out**: Click the `+` and `-` buttons to zoom in or out. You can also hold `Ctrl` (or `Cmd` on macOS) and use the mouse wheel to zoom.
+- **Reset**: Click the reset button to return to the default view.
+- **Fullscreen**: Click the expand button to view the diagram in a fullscreen modal.
+- **Pan**: Click and drag the diagram to pan around when zoomed in.
+
+These controls are particularly useful for large or complex diagrams.
 
 ## Notes
 

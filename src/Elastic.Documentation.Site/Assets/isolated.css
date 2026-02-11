@@ -1,0 +1,10 @@
+/* Isolated build type specific styles */
+
+:root {
+	/* Isolated uses elastic-docs-header web component - fixed 48px height */
+	--offset-top: 48px;
+}
+
+elastic-docs-header .euiHeader {
+	padding-inline: calc((100vw - var(--max-layout-width)) / 2 + 8px);
+}

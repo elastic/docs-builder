@@ -52,7 +52,7 @@ public class AssembleContext : IDocumentationConfigurationContext
 	public IFileInfo ConfigurationPath { get; }
 
 	/// <inheritdoc />
-	public bool AssemblerBuild => true;
+	public BuildType BuildType => BuildType.Assembler;
 
 	public PublishEnvironment Environment { get; }
 

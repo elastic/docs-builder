@@ -68,13 +68,8 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, IDeserializer deseria
 			// Compute checksum (SHA1)
 			var checksum = ChangelogBundlingService.ComputeSha1(fileContent);
 
-			// Deserialize YAML (skip comment lines)
-			var yamlLines = fileContent.Split('\n');
-			var yamlWithoutComments = string.Join('\n', yamlLines.Where(line => !line.TrimStart().StartsWith('#')));
-
-			// Normalize "version:" to "target:" in products section for compatibility
-			var normalizedYaml = ChangelogBundlingService.VersionToTargetRegex().Replace(yamlWithoutComments, "$1target:");
-
+			// Deserialize YAML
+			var normalizedYaml = ReleaseNotesSerialization.NormalizeYaml(fileContent);
 			var yamlDto = deserializer.Deserialize<ChangelogEntryDto>(normalizedYaml);
 
 			// Check for duplicates (using checksum)

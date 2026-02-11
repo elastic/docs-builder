@@ -20,11 +20,12 @@ public record BundledProduct
 	/// Constructor with all parameters.
 	/// </summary>
 	[SetsRequiredMembers]
-	public BundledProduct(string productId, string? target = null, Lifecycle? lifecycle = null)
+	public BundledProduct(string productId, string? target = null, Lifecycle? lifecycle = null, string? repo = null)
 	{
 		ProductId = productId;
 		Target = target;
 		Lifecycle = lifecycle;
+		Repo = repo;
 	}
 
 	/// <summary>The product identifier.</summary>
@@ -35,4 +36,10 @@ public record BundledProduct
 
 	/// <summary>The lifecycle stage of the feature for this product.</summary>
 	public Lifecycle? Lifecycle { get; init; }
+
+	/// <summary>
+	/// GitHub repository name for generating PR/issue links.
+	/// If not specified, falls back to ProductId.
+	/// </summary>
+	public string? Repo { get; init; }
 }

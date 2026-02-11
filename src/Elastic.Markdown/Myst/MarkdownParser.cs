@@ -57,18 +57,32 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 	public MarkdownDocument ParseStringAsync(string markdown, IFileInfo path, YamlFrontMatter? matter) =>
 		ParseMarkdownStringAsync(markdown, path, matter, Pipeline);
 
+	public MarkdownDocument ParseStringAsync(string markdown, IFileInfo path, YamlFrontMatter? matter, IFileInfo? originalSourcePath) =>
+		ParseMarkdownStringAsync(markdown, path, matter, originalSourcePath, Pipeline);
+
 	public MarkdownDocument MinimalParseStringAsync(string markdown, IFileInfo path, YamlFrontMatter? matter) =>
 		ParseMarkdownStringAsync(markdown, path, matter, MinimalPipeline);
 
+	public MarkdownDocument MinimalParseStringAsync(string markdown, IFileInfo path, YamlFrontMatter? matter, IFileInfo? originalSourcePath) =>
+		ParseMarkdownStringAsync(markdown, path, matter, originalSourcePath, MinimalPipeline);
+
 	private MarkdownDocument ParseMarkdownStringAsync(string markdown, IFileInfo path, YamlFrontMatter? matter, MarkdownPipeline pipeline) =>
-		ParseMarkdownStringAsync(Build, Resolvers, markdown, path, matter, pipeline);
+		ParseMarkdownStringAsync(Build, Resolvers, markdown, path, matter, null, pipeline);
+
+	private MarkdownDocument ParseMarkdownStringAsync(string markdown, IFileInfo path, YamlFrontMatter? matter, IFileInfo? originalSourcePath, MarkdownPipeline pipeline) =>
+		ParseMarkdownStringAsync(Build, Resolvers, markdown, path, matter, originalSourcePath, pipeline);
 
 	public static MarkdownDocument ParseMarkdownStringAsync(BuildContext build, IParserResolvers resolvers, string markdown, IFileInfo path,
-		YamlFrontMatter? matter, MarkdownPipeline pipeline)
+		YamlFrontMatter? matter, MarkdownPipeline pipeline) =>
+		ParseMarkdownStringAsync(build, resolvers, markdown, path, matter, null, pipeline);
+
+	public static MarkdownDocument ParseMarkdownStringAsync(BuildContext build, IParserResolvers resolvers, string markdown, IFileInfo path,
+		YamlFrontMatter? matter, IFileInfo? originalSourcePath, MarkdownPipeline pipeline)
 	{
 		var state = new ParserState(build)
 		{
 			MarkdownSourcePath = path,
+			OriginalSourcePath = originalSourcePath,
 			YamlFrontMatter = matter,
 			TryFindDocument = resolvers.TryFindDocument,
 			TryFindDocumentByRelativePath = resolvers.TryFindDocumentByRelativePath,

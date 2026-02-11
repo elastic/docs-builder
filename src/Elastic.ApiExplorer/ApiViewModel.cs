@@ -72,8 +72,10 @@ public abstract partial class ApiViewModel(ApiRenderContext context)
 			AllowIndexing = BuildContext.AllowIndexing,
 			CanonicalBaseUrl = BuildContext.CanonicalBaseUrl,
 			GoogleTagManager = new GoogleTagManagerConfiguration(),
+			Optimizely = new OptimizelyConfiguration(),
 			Features = new FeatureFlags([]),
 			StaticFileContentHashProvider = StaticFileContentHashProvider,
+			BuildType = BuildContext.BuildType,
 			TocItems = GetTocItems(),
 			// Header properties for isolated mode
 			HeaderTitle = Document.Info.Title,
@@ -81,6 +83,7 @@ public abstract partial class ApiViewModel(ApiRenderContext context)
 			GitBranch = BuildContext.Git.Branch != "unavailable" ? BuildContext.Git.Branch : null,
 			GitCommitShort = BuildContext.Git.Ref is { Length: >= 7 } r && r != "unavailable" ? r[..7] : null,
 			GitRepository = BuildContext.Git.RepositoryName != "unavailable" ? BuildContext.Git.RepositoryName : null,
-			GitHubDocsUrl = GetGitHubDocsUrl()
+			GitHubDocsUrl = GetGitHubDocsUrl(),
+			GitHubRef = BuildContext.Git.GitHubRef
 		};
 }

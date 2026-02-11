@@ -71,7 +71,10 @@
     <Touch Files="_static/.build-stamp" AlwaysCreate="true" />
   </Target>
 
-  <!-- Clean old hashed assets during publish to avoid accumulating stale files -->
+  <!-- Clean old hashed assets before each frontend build to avoid accumulating stale files.
+       Without this, multiple Parcel runs (e.g. across dotnet build vs dotnet run) can leave
+       old hashed filenames in _static; all get embedded and then copied to assembler output,
+       causing duplicated JS/CSS with different hashes in the final _static folder. -->
   <Target Name="CleanOldHashedAssets" BeforeTargets="NpmRunBuild" Condition="'$(IsPublishing)' == 'true'">
     <ItemGroup>
       <OldHashedFiles Include="_static/*.????????*.js" />

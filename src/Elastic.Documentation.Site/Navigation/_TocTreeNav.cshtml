@@ -33,7 +33,7 @@
 	{
 		var g = folder;
 		var allHidden = folder.NavigationItems.All(n => n.Hidden);
-		<li class="flex flex-wrap group-navigation @(isTopLevel ? "mt-6 first:mt-2" : "mt-4") relative">
+		<li class="flex flex-wrap group-navigation @(isTopLevel ? "mt-6" : "mt-4") relative">
 			<div class="peer grid grid-cols-[1fr_auto] w-full">
 				<a
 					href="@(g.Url)"

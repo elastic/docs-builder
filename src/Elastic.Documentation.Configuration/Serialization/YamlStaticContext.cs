@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
-using Elastic.Documentation.Configuration.Portal;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Configuration.Search;
@@ -15,15 +15,16 @@ using YamlDotNet.Serialization;
 namespace Elastic.Documentation.Configuration.Serialization;
 
 [YamlStaticContext]
-// Portal configuration
-[YamlSerializable(typeof(PortalConfiguration))]
-[YamlSerializable(typeof(PortalDocumentationSetReference))]
+// Codex configuration
+[YamlSerializable(typeof(CodexConfiguration))]
+[YamlSerializable(typeof(CodexDocumentationSetReference))]
 // Assembly configuration
 [YamlSerializable(typeof(AssemblyConfiguration))]
 [YamlSerializable(typeof(Repository))]
 [YamlSerializable(typeof(NarrativeRepository))]
 [YamlSerializable(typeof(PublishEnvironment))]
 [YamlSerializable(typeof(GoogleTagManager))]
+[YamlSerializable(typeof(Optimizely))]
 [YamlSerializable(typeof(ContentSource))]
 // Versions configuration
 [YamlSerializable(typeof(VersionsConfigDto))]
@@ -55,4 +56,5 @@ namespace Elastic.Documentation.Configuration.Serialization;
 [YamlSerializable(typeof(ChangelogConfigMinimalDto))]
 [YamlSerializable(typeof(BlockConfigMinimalDto))]
 [YamlSerializable(typeof(PublishBlockerMinimalDto))]
+[YamlSerializable(typeof(ProductBlockersMinimalDto))]
 public partial class YamlStaticContext;

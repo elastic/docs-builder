@@ -161,21 +161,36 @@ public class IsolatedBuildService(
 	/// <summary>
 	/// Builds a pre-configured documentation set with optional injected navigation.
 	/// Used by portal builds where navigation spans multiple documentation sets.
+	/// When <paramref name="externalExporters"/> is provided, those exporters are used instead of
+	/// creating new ones, and their lifecycle (Start/Stop) is not managed by this method.
 	/// </summary>
 	public async Task<bool> BuildDocumentationSet(
 		DocumentationSet documentationSet,
 		INavigationTraversable? navigation = null,
 		INavigationHtmlWriter? navigationHtmlWriter = null,
 		IReadOnlySet<Exporter>? exporters = null,
+		IMarkdownExporter[]? externalExporters = null,
 		Cancel ctx = default)
 	{
 		var context = documentationSet.Context;
-		exporters ??= ExportOptions.Default;
+		var manageLifecycle = externalExporters is null;
 
-		var markdownExporters = exporters.CreateMarkdownExporters(logFactory, context, "portal");
+		IMarkdownExporter[] allExporters;
+		if (externalExporters is not null)
+		{
+			allExporters = externalExporters;
+		}
+		else
+		{
+			exporters ??= ExportOptions.Default;
+			allExporters = exporters.CreateMarkdownExporters(logFactory, context, "codex").ToArray();
+		}
 
-		var tasks = markdownExporters.Select(async e => await e.StartAsync(ctx));
-		await Task.WhenAll(tasks);
+		if (manageLifecycle)
+		{
+			var startTasks = allExporters.Select(async e => await e.StartAsync(ctx));
+			await Task.WhenAll(startTasks);
+		}
 
 		// Use the provided navigation or fall back to the doc set's own navigation
 		var effectiveNavigation = navigation ?? documentationSet;
@@ -186,12 +201,15 @@ public class IsolatedBuildService(
 			effectiveNavigation,
 			navigationHtmlWriter,
 			null,
-			markdownExporters.ToArray());
+			allExporters);
 
 		_ = await generator.GenerateAll(ctx);
 
-		tasks = markdownExporters.Select(async e => await e.StopAsync(ctx));
-		await Task.WhenAll(tasks);
+		if (manageLifecycle)
+		{
+			var stopTasks = allExporters.Select(async e => await e.StopAsync(ctx));
+			await Task.WhenAll(stopTasks);
+		}
 
 		_logger.LogInformation("Finished building documentation set {Name}", documentationSet.Context.Git.RepositoryName);
 

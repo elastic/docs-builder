@@ -251,15 +251,18 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 			var fileContent = await fileSystem.File.ReadAllTextAsync(filePath, ctx);
 			var checksum = ChangelogBundlingService.ComputeSha1(fileContent);
 			if (checksum != entry.File.Checksum)
-				collector.EmitWarning(bundleFile, $"Checksum mismatch for file {entry.File.Name}. Expected {entry.File.Checksum}, got {checksum}");
+			{
+				collector.EmitWarning(bundleFile,
+					$"Checksum mismatch for file {entry.File.Name}: the file content has changed since it was bundled. " +
+					"This can happen if the file was edited after bundling, or if the render directory " +
+					"contains a different copy of the file. To fix, re-run 'bundle' or 'bundle-amend' " +
+					"to update the checksum, or use '--resolve' when amending to embed the entry data " +
+					$"directly in the amend file. Expected {entry.File.Checksum}, got {checksum}"
+				);
+			}
 
-			// Deserialize YAML (skip comment lines) to validate structure
-			var yamlLines = fileContent.Split('\n');
-			var yamlWithoutComments = string.Join('\n', yamlLines.Where(line => !line.TrimStart().StartsWith('#')));
-
-			// Normalize "version:" to "target:" in products section
-			var normalizedYaml = ChangelogBundlingService.VersionToTargetRegex().Replace(yamlWithoutComments, "$1target:");
-
+			// Deserialize YAML to validate structure
+			var normalizedYaml = ReleaseNotesSerialization.NormalizeYaml(fileContent);
 			var entryData = ReleaseNotesSerialization.DeserializeEntry(normalizedYaml);
 
 			// Validate required fields in changelog file
