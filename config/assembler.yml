@@ -104,7 +104,10 @@ references:
   ecs-logging-python:
   ecs-logging-ruby:
   ecs-logging:
+  # CF repos
   edot-cloud-forwarder-aws:
+    private: true
+  edot-cloud-forwarder-azure:
     private: true
   elastic-agent:
   elastic-otel-dotnet:
