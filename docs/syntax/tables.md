@@ -72,7 +72,7 @@ A table is an arrangement of data with rows and columns. Each row consists of ce
 
 By default, column widths are determined automatically by the browser based on content. To control column widths explicitly, wrap the table in a `{table}` directive with the `:widths:` option.
 
-The `:widths:` option takes space-separated integers representing **relative** column widths. These are normalized to percentages. For example, `:widths: 30 70` produces columns at 30% and 70%, while `:widths: 1 2 3` produces columns at ~17%, ~33%, and ~50%.
+The `:widths:` option takes space-separated integers representing relative column widths. These are normalized to percentages. For example, `:widths: 30 70` produces columns at 30% and 70%, while `:widths: 1 2 3` produces columns at ~17%, ~33%, and ~50%.
 
 ### Fixed-width columns
 
