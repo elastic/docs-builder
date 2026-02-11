@@ -168,7 +168,8 @@ public class FeatureHidingLoader(IFileSystem fileSystem)
 		if (trimmedPath.StartsWith("~/", StringComparison.Ordinal) || trimmedPath.StartsWith("~\\", StringComparison.Ordinal))
 		{
 			var homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-			trimmedPath = Path.Combine(homeDirectory, trimmedPath[2..]);
+			var relativePath = trimmedPath[2..].TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+			trimmedPath = Path.Combine(homeDirectory, relativePath);
 		}
 		else if (trimmedPath == "~")
 		{

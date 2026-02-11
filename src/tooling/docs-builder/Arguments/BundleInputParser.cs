@@ -80,6 +80,14 @@ public static class BundleInputParser
 		{
 			var homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
 			var relativeFromHome = trimmedPath[2..].TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+			// Ensure that the path segment after "~/" is treated as relative so that
+			// Path.Combine does not discard the home directory if an absolute path is supplied.
+			if (Path.IsPathRooted(relativeFromHome))
+			{
+				var root = Path.GetPathRoot(relativeFromHome);
+				if (!string.IsNullOrEmpty(root) && relativeFromHome.Length > root.Length)
+					relativeFromHome = relativeFromHome.Substring(root.Length).TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+			}
 			trimmedPath = Path.Combine(homeDirectory, relativeFromHome);
 		}
 		else if (trimmedPath == "~")
