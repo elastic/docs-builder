@@ -23,12 +23,12 @@ public class CodexContext
 	public IDirectoryInfo OutputDirectory { get; }
 
 	/// <summary>
-	/// The Elasticsearch index namespace for this codex, derived from the environment name.
-	/// Falls back to "codex" when no environment is specified.
+	/// The Elasticsearch index namespace for this codex, derived from the namespace field.
+	/// Falls back to "codex" when no namespace is specified.
 	/// </summary>
-	public string IndexNamespace => string.IsNullOrEmpty(Configuration.Environment)
+	public string IndexNamespace => string.IsNullOrEmpty(Configuration.Namespace)
 		? "codex"
-		: $"codex-{Configuration.Environment}";
+		: $"codex-{Configuration.Namespace}";
 
 	public CodexContext(
 		CodexConfiguration configuration,
