@@ -59,6 +59,27 @@ public class CsvIncludeViewModel : DirectiveViewModel
 		return RenderMarkdown(value);
 	}
 
+	/// <summary>
+	/// Returns normalized column width percentages, or null if no widths are specified.
+	/// Validates that the width count matches the column count and emits an error if not.
+	/// </summary>
+	public double[]? GetColumnWidthPercentages(int columnCount)
+	{
+		if (DirectiveBlock is not CsvIncludeBlock csvBlock || csvBlock.Widths is null)
+			return null;
+
+		if (csvBlock.Widths.Length != columnCount)
+		{
+			csvBlock.EmitError(
+				$"{{csv-include}} :widths: specifies {csvBlock.Widths.Length} values but the CSV has {columnCount} columns. " +
+				$"The number of widths must match the number of columns."
+			);
+			return null;
+		}
+
+		return WidthsParser.NormalizeToPercentages(csvBlock.Widths);
+	}
+
 	public static CsvIncludeViewModel Create(CsvIncludeBlock csvBlock, Func<string, HtmlString> renderMarkdown) =>
 		new()
 		{

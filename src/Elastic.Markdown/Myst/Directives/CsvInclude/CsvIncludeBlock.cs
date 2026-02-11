@@ -20,6 +20,7 @@ public class CsvIncludeBlock(DirectiveBlockParser parser, ParserContext context)
 	public bool Found { get; private set; }
 	public string? Caption { get; private set; }
 	public string Separator { get; private set; } = ",";
+	public int[]? Widths { get; private set; }
 	public int MaxRows { get; private set; } = 25000;
 	public long MaxFileSizeBytes { get; private set; } = 10 * 1024 * 1024; // 10MB
 	public int MaxColumns { get; private set; } = 15;
@@ -32,7 +33,7 @@ public class CsvIncludeBlock(DirectiveBlockParser parser, ParserContext context)
 		if (!string.IsNullOrEmpty(separator))
 			Separator = separator;
 
-
+		Widths = WidthsParser.Parse(Prop("widths"), this);
 
 		ExtractCsvPath(context);
 	}

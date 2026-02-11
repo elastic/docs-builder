@@ -41,7 +41,7 @@ public class TableBlock(DirectiveBlockParser parser, ParserContext context)
 	public override void FinalizeAndValidate(ParserContext context)
 	{
 		Caption = Arguments?.ReplaceSubstitutions(context);
-		ParseWidths();
+		Widths = WidthsParser.Parse(Prop("widths"), this);
 	}
 
 	/// <summary>
@@ -81,37 +81,9 @@ public class TableBlock(DirectiveBlockParser parser, ParserContext context)
 		innerTable.GetAttributes().AddClass("fixed-widths");
 
 		// Normalize widths to percentages and store on the table for the renderer
-		var total = (float)Widths.Sum();
-		var percentages = Widths.Select(w => System.Math.Round(w / total * 100f, 2)).ToArray();
+		var percentages = WidthsParser.NormalizeToPercentages(Widths);
 		innerTable.SetData("column-widths", percentages);
 
 		return true;
-	}
-
-	private void ParseWidths()
-	{
-		var widthsProp = Prop("widths");
-		if (string.IsNullOrWhiteSpace(widthsProp))
-			return;
-
-		// "auto" means let the browser decide — no explicit widths
-		if (widthsProp.Trim().Equals("auto", StringComparison.OrdinalIgnoreCase))
-			return;
-
-		var parts = widthsProp.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-		var widths = new List<int>(parts.Length);
-
-		foreach (var part in parts)
-		{
-			if (!int.TryParse(part, out var width) || width <= 0)
-			{
-				this.EmitError($"Invalid column width '{part}' in {{table}} :widths: option. Values must be positive integers.");
-				return;
-			}
-
-			widths.Add(width);
-		}
-
-		Widths = [.. widths];
 	}
 }

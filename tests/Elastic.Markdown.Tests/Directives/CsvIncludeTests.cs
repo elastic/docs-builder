@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions.TestingHelpers;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.Myst.Directives.CsvInclude;
 using FluentAssertions;
 
@@ -190,5 +191,131 @@ public class CsvIncludeNoArgumentTests(ITestOutputHelper output) : DirectiveTest
 	{
 		Collector.Diagnostics.Should().NotBeNullOrEmpty();
 		Collector.Diagnostics.Should().OnlyContain(d => d.Message.Contains("requires an argument"));
+	}
+}
+
+public class CsvIncludeWithWidthsTests : DirectiveTest<CsvIncludeBlock>
+{
+	public CsvIncludeWithWidthsTests(ITestOutputHelper output) : base(output,
+"""
+:::{csv-include} test-data.csv
+:widths: 25 25 50
+:::
+""") =>
+		FileSystem.AddFile("docs/test-data.csv", new MockFileData(
+@"Name,Age,City
+John Doe,30,New York
+Jane Smith,25,Los Angeles"));
+
+	[Fact]
+	public void ParsesWidths() => Block!.Widths.Should().BeEquivalentTo([25, 25, 50]);
+
+	[Fact]
+	public void HasNoErrors() => Collector.Diagnostics.Should().BeEmpty();
+
+	[Fact]
+	public void HtmlContainsColgroup() => Html.Should().Contain("<colgroup>");
+
+	[Fact]
+	public void HtmlContainsColumnWidths()
+	{
+		Html.Should().Contain("width:25%");
+		Html.Should().Contain("width:50%");
+	}
+
+	[Fact]
+	public void HtmlContainsFixedWidthsClass() => Html.Should().Contain("fixed-widths");
+}
+
+public class CsvIncludeWithNormalizedWidthsTests : DirectiveTest<CsvIncludeBlock>
+{
+	public CsvIncludeWithNormalizedWidthsTests(ITestOutputHelper output) : base(output,
+"""
+:::{csv-include} test-data.csv
+:widths: 1 2
+:::
+""") =>
+		FileSystem.AddFile("docs/test-data.csv", new MockFileData(
+@"Name,City
+John,New York
+Jane,LA"));
+
+	[Fact]
+	public void NormalizesWidthsToPercentages()
+	{
+		Html.Should().Contain("width:33.33%");
+		Html.Should().Contain("width:66.67%");
+	}
+
+	[Fact]
+	public void HasNoErrors() => Collector.Diagnostics.Should().BeEmpty();
+}
+
+public class CsvIncludeWithoutWidthsTests : DirectiveTest<CsvIncludeBlock>
+{
+	public CsvIncludeWithoutWidthsTests(ITestOutputHelper output) : base(output,
+"""
+:::{csv-include} test-data.csv
+:::
+""") =>
+		FileSystem.AddFile("docs/test-data.csv", new MockFileData(
+@"Name,City
+John,New York"));
+
+	[Fact]
+	public void WidthsAreNull() => Block!.Widths.Should().BeNull();
+
+	[Fact]
+	public void HtmlDoesNotContainColgroup() => Html.Should().NotContain("<colgroup>");
+
+	[Fact]
+	public void HtmlDoesNotContainFixedWidthsClass() => Html.Should().NotContain("fixed-widths");
+}
+
+public class CsvIncludeMismatchedWidthsTests : DirectiveTest<CsvIncludeBlock>
+{
+	public CsvIncludeMismatchedWidthsTests(ITestOutputHelper output) : base(output,
+"""
+:::{csv-include} test-data.csv
+:widths: 30 40 30
+:::
+""") =>
+		FileSystem.AddFile("docs/test-data.csv", new MockFileData(
+@"Name,City
+John,New York"));
+
+	[Fact]
+	public void EmitsErrorForMismatchedWidths()
+	{
+		Collector.Diagnostics.Should().NotBeNullOrEmpty();
+		Collector.Diagnostics.Should().Contain(d =>
+			d.Severity == Severity.Error &&
+			d.Message.Contains("specifies 3 values but the CSV has 2 columns")
+		);
+	}
+
+	[Fact]
+	public void HtmlDoesNotContainColgroup() => Html.Should().NotContain("<colgroup>");
+}
+
+public class CsvIncludeInvalidWidthTests : DirectiveTest<CsvIncludeBlock>
+{
+	public CsvIncludeInvalidWidthTests(ITestOutputHelper output) : base(output,
+"""
+:::{csv-include} test-data.csv
+:widths: 30 abc
+:::
+""") =>
+		FileSystem.AddFile("docs/test-data.csv", new MockFileData(
+@"Name,City
+John,New York"));
+
+	[Fact]
+	public void EmitsErrorForInvalidWidth()
+	{
+		Collector.Diagnostics.Should().Contain(d =>
+			d.Severity == Severity.Error &&
+			d.Message.Contains("Invalid column width 'abc'")
+		);
 	}
 }

@@ -1,6 +1,7 @@
 @using Elastic.Markdown.Myst.Directives.CsvInclude
 @inherits RazorSlice<CsvIncludeViewModel>
 
+@using System.Globalization
 @{
     var csvBlock = (CsvIncludeBlock)Model.DirectiveBlock;
     if (!csvBlock.Found)
@@ -13,15 +14,27 @@
     {
         return;
     }
+    
+    var columnCount = csvRows[0].Length;
+    var columnWidths = Model.GetColumnWidthPercentages(columnCount);
 }
 
 <div class="table-wrapper">
     @if (!string.IsNullOrEmpty(csvBlock.Caption))
     {
-        <caption>@csvBlock.Caption</caption>
+        <div class="table-caption">@csvBlock.Caption</div>
     }
     
-    <table>
+    <table@(columnWidths is not null ? " class=\"fixed-widths\"" : "")>
+        @if (columnWidths is not null)
+        {
+            <colgroup>
+                @foreach (var width in columnWidths)
+                {
+                    <col style="width:@(width.ToString("0.##", CultureInfo.InvariantCulture))%" />
+                }
+            </colgroup>
+        }
         <thead>
             <tr>
                 @for (var i = 0; i < csvRows[0].Length; i++)
