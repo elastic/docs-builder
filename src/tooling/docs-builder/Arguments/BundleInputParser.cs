@@ -88,6 +88,15 @@ public static class BundleInputParser
 				if (!string.IsNullOrEmpty(root) && relativeFromHome.Length > root.Length)
 					relativeFromHome = relativeFromHome.Substring(root.Length).TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 			}
+			// Final safeguard: ensure the segment passed to Path.Combine is never rooted.
+			if (Path.IsPathRooted(relativeFromHome))
+			{
+				var root = Path.GetPathRoot(relativeFromHome);
+				if (!string.IsNullOrEmpty(root) && relativeFromHome.Length > root.Length)
+					relativeFromHome = relativeFromHome.Substring(root.Length).TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+				else
+					relativeFromHome = relativeFromHome.TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+			}
 			trimmedPath = Path.Combine(homeDirectory, relativeFromHome);
 		}
 		else if (trimmedPath == "~")
