@@ -36,7 +36,7 @@ try
 	_ = app.MapHealthChecks("/health");
 	_ = app.MapHealthChecks("/alive", new HealthCheckOptions { Predicate = r => r.Tags.Contains("live") });
 
-	_ = app.MapMcp();
+	_ = app.MapMcp("/docs/_mcp");
 
 	Console.WriteLine("MCP server startup completed successfully");
 	app.Run();
