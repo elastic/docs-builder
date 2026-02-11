@@ -37,7 +37,6 @@ jobs:
 
   build-api-lambda:
     uses: ./.github/workflows/build-api-lambda.yml
-
   
   synthetics:
     runs-on: ubuntu-latest
