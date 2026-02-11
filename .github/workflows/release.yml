@@ -87,6 +87,17 @@ jobs:
       environment: staging
       ref: refs/tags/${{ needs.release-drafter.outputs.tag_name }}
 
+  deploy-api-lambda-codex-engineering:
+    needs: 
+      - release-drafter
+    uses: ./.github/workflows/deploy-api-lambda-codex.yml
+    permissions:
+      id-token: write
+      contents: read
+    with:
+      environment: engineering
+      ref: refs/tags/${{ needs.release-drafter.outputs.tag_name }}
+
   deploy-link-index-updater-lambda-prod:
     environment: 
       name: link-index-updater-prod
@@ -180,6 +191,7 @@ jobs:
       - release
       - release-drafter
       - deploy-api-lambda-staging
+      - deploy-api-lambda-codex-engineering
       - deploy-link-index-updater-lambda-prod
     runs-on: ubuntu-latest
     permissions: 
