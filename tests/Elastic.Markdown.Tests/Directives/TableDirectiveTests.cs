@@ -215,3 +215,73 @@ public class TableDirectiveNegativeWidthTests(ITestOutputHelper output) : Direct
 		);
 	}
 }
+
+public class TableDirectiveZeroWidthTests(ITestOutputHelper output) : DirectiveTest<TableBlock>(output,
+"""
+:::{table}
+:widths: 0 50
+
+| Name  | Description |
+| ----- | ----------- |
+| Alpha | A short one |
+:::
+"""
+)
+{
+	[Fact]
+	public void EmitsErrorForZeroWidth()
+	{
+		Collector.Diagnostics.Should().NotBeNullOrEmpty();
+		Collector.Diagnostics.Should().Contain(d =>
+			d.Severity == Severity.Error &&
+			d.Message.Contains("Invalid column width '0'")
+		);
+	}
+}
+
+public class TableDirectiveDecimalWidthTests(ITestOutputHelper output) : DirectiveTest<TableBlock>(output,
+"""
+:::{table}
+:widths: 30.5 69.5
+
+| Name  | Description |
+| ----- | ----------- |
+| Alpha | A short one |
+:::
+"""
+)
+{
+	[Fact]
+	public void EmitsErrorForDecimalWidth()
+	{
+		Collector.Diagnostics.Should().NotBeNullOrEmpty();
+		Collector.Diagnostics.Should().Contain(d =>
+			d.Severity == Severity.Error &&
+			d.Message.Contains("Invalid column width '30.5'")
+		);
+	}
+}
+
+public class TableDirectiveWithNonTableContentTests(ITestOutputHelper output) : DirectiveTest<TableBlock>(output,
+"""
+:::{table}
+:widths: 30 70
+
+This is just a paragraph, not a table.
+:::
+"""
+)
+{
+	[Fact]
+	public void EmitsWarningForMissingTable()
+	{
+		Collector.Diagnostics.Should().NotBeNullOrEmpty();
+		Collector.Diagnostics.Should().Contain(d =>
+			d.Severity == Severity.Warning &&
+			d.Message.Contains("does not contain a pipe table")
+		);
+	}
+
+	[Fact]
+	public void HtmlDoesNotContainColgroup() => Html.Should().NotContain("<colgroup>");
+}
