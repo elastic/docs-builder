@@ -81,7 +81,10 @@ public static class BundleInputParser
 			var homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
 			var afterTilde = trimmedPath[2..];
 			var relativeFromHome = GetRelativePathSegment(afterTilde);
-			trimmedPath = Path.Combine(homeDirectory, relativeFromHome);
+			// Ensure that combining with homeDirectory cannot drop the base path if the segment is rooted
+			trimmedPath = Path.IsPathRooted(relativeFromHome)
+				? homeDirectory
+				: Path.Combine(homeDirectory, relativeFromHome);
 		}
 		else if (trimmedPath == "~")
 		{
