@@ -26,9 +26,9 @@ journey('navigation test', ({ page, params }) => {
         await expect(page).toHaveTitle(/Elastic Docs \| Elastic Docs/)
     })
 
-    step('Click on "Elastic Fundamentals"', async () => {
+    step('Click on "Get started"', async () => {
         await page
-            .getByRole('link', { name: 'Elastic Fundamentals' })
+            .getByRole('link', { name: 'Get started' })
             .first()
             .click()
         await expect(page).toHaveURL(`${host}/docs/get-started`)
