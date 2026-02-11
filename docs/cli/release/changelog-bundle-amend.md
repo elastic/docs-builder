@@ -15,12 +15,12 @@ docs-builder changelog bundle-amend [arguments...] [options...] [-h|--help]
 ## Arguments
 
 `<string>`
-:   Required: Path to the original bundle file.
+:   Required: Path to the original bundle file to amend.
 
 ## Options
 
 `--add <string[]?>`
-:   Required: Path(s) to changelog YAML file(s) to add. Can be specified multiple times.
+:   Required: Path(s) to changelog YAML file(s) to add as comma-separated values. Supports tilde (~) expansion and relative paths.
 
 `--no-resolve`:
 :   Optional: Explicitly turn off resolve (overrides inference from original bundle).
@@ -41,32 +41,10 @@ You can override this behaviour:
 - `--resolve`: Force entries to be resolved (inline content), regardless of the original bundle.
 - `--no-resolve`: Force entries to contain only file references, regardless of the original bundle.
 
-## Examples
+## Output
 
-Create an amend file that automatically matches the resolve style of the original bundle:
-
-```sh
-docs-builder changelog bundle-amend 9.3.0.yaml \
-  --add /path/to/late-addition.yaml
-```
-
-Force resolved entries even if the original bundle is unresolved:
-
-```sh
-docs-builder changelog bundle-amend 9.3.0.yaml \
-  --add /path/to/late-addition.yaml \
-  --resolve
-```
-
-Force file-only references even if the original bundle is resolved:
-
-```sh
-docs-builder changelog bundle-amend 9.3.0.yaml \
-  --add /path/to/late-addition.yaml \
-  --no-resolve
-```
-
-Amend bundles contain only the additional entries:
+Amend bundles contain only the additional entries, they are not a full repetition of the original bundle.
+For example:
 
 ```yaml
 # 9.3.0.amend-1.yaml
@@ -76,8 +54,71 @@ entries:
     checksum: abc123def456
 ```
 
-When bundles are loaded (either via the `changelog render` command or the `{changelog}` directive), amend files are **automatically merged** with their parent bundles. The entries from all matching amend files are combined with the parent bundle's entries, and the result is rendered as a single release.
+When bundles are loaded (either via the `changelog render` command or the `{changelog}` directive), amend files are **automatically merged** with their parent bundles.
+The entries from all matching amend files are combined with the parent bundle's entries, and the result is rendered as a single release.
 
 :::{note}
 Amend bundles do not need to include `products` or `hide-features` fields—they inherit these from their parent bundle. If an amend bundle is found without a matching parent bundle, it remains standalone.
 :::
+
+## Examples
+
+### Add a single changelog to a bundle
+
+```sh
+docs-builder changelog bundle-amend \
+  ./docs/changelog/bundles/9.3.0.yaml \
+  --add ./docs/changelog/138723.yaml
+```
+
+The new bundle automatically matches the resolve style of the original bundle.
+
+### Add multiple changelogs to a bundle
+
+Specify multiple files as comma-separated values:
+
+```sh
+docs-builder changelog bundle-amend \
+  ./docs/changelog/bundles/9.3.0.yaml \
+  --add "./docs/changelog/138723.yaml,./docs/changelog/1770424335.yaml"
+```
+
+### Using different path styles
+
+The command supports tilde expansion, relative paths, and absolute paths:
+
+```sh
+# With tilde expansion
+docs-builder changelog bundle-amend \
+  ~/docs/changelog/bundles/9.3.0.yaml \
+  --add "~/docs/changelog/138723.yaml,~/docs/changelog/1770424335.yaml"
+
+# With relative paths
+docs-builder changelog bundle-amend \
+  ./bundles/9.3.0.yaml \
+  --add "./138723.yaml,./1770424335.yaml"
+
+# With absolute paths
+docs-builder changelog bundle-amend \
+  /path/to/bundles/9.3.0.yaml \
+  --add "/path/to/138723.yaml,/path/to/1770424335.yaml"
+```
+
+### Resolving changelog contents
+
+Use `--resolve` to copy the full contents of each changelog file into the new bundle even if the original bundle is unresolved:
+
+```sh
+docs-builder changelog bundle-amend \
+  ./docs/changelog/bundles/9.3.0.yaml \
+  --add "./docs/changelog/138723.yaml,./docs/changelog/1770424335.yaml" \
+  --resolve
+```
+
+Likewise, you can force file-only references even if the original bundle is resolved:
+
+```sh
+docs-builder changelog bundle-amend 9.3.0.yaml \
+  --add ./docs/changelog/late-addition.yaml \
+  --no-resolve
+```
