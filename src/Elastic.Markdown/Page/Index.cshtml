@@ -1,4 +1,5 @@
 @using System.Text.Json
+@using Elastic.Documentation
 @using Elastic.Documentation.Configuration
 @using Elastic.Documentation.Extensions
 @using Elastic.Markdown
@@ -13,7 +14,6 @@
 		DocsBuilderVersion = ShortId.Create(BuildContext.Version),
 		Layout = Model.CurrentDocument.YamlFrontMatter?.Layout,
 		RenderHamburgerIcon = Model.CurrentDocument.YamlFrontMatter?.Layout != MarkdownPageLayout.LandingPage,
-		RenderHeaders = Model.CurrentDocument.YamlFrontMatter?.Layout != MarkdownPageLayout.FullSearch,
 		DocSetName = Model.DocSetName,
 		Title = $"{Model.Title} | {Model.SiteName}",
 		Description = Model.Description,
@@ -29,10 +29,12 @@
 		UrlPathPrefix = Model.UrlPathPrefix,
 		GithubEditUrl = Model.GithubEditUrl,
 		MarkdownUrl = Model.MarkdownUrl,
-		HideEditThisPage = Model.Features.DisableGitHubEditLink && Model.IsAssemblerBuild,
+		BuildType = Model.BuildType,
+		HideEditThisPage = Model.Features.DisableGitHubEditLink && Model.BuildType != BuildType.Isolated,
 		AllowIndexing = Model.AllowIndexing,
 		CanonicalBaseUrl = Model.CanonicalBaseUrl,
 		GoogleTagManager = Model.GoogleTagManager,
+		Optimizely = Model.Optimizely,
 		Features = Model.Features,
 		StaticFileContentHashProvider = Model.StaticFileContentHashProvider,
 		ReportIssueUrl = Model.ReportIssueUrl,
@@ -42,6 +44,14 @@
 		VersioningSystem = Model.VersioningSystem,
 		VersionDropdownSerializedModel = JsonSerializer.Serialize(Model.VersionDropdownItems,
 			ViewModelSerializerContext.Default.VersionDropDownItemViewModelArray),
+		// Header properties for isolated mode
+		HeaderTitle = Model.DocSetName,
+		HeaderVersion = null,
+		GitBranch = Model.GitBranch,
+		GitCommitShort = Model.GitCommitShort,
+		GitRepository = Model.GitRepository,
+		GitHubDocsUrl = Model.GitHubDocsUrl,
+		GitHubRef = Model.GitHubRef,
 	};
 	protected override Task ExecuteSectionAsync(string name)
 	{

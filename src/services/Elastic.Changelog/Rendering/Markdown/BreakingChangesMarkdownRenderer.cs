@@ -5,8 +5,9 @@
 using System.IO.Abstractions;
 using System.Text;
 using Elastic.Documentation;
+using Elastic.Documentation.ReleaseNotes;
 using static System.Globalization.CultureInfo;
-using static Elastic.Changelog.ChangelogEntryType;
+using static Elastic.Documentation.ChangelogEntryType;
 
 namespace Elastic.Changelog.Rendering.Markdown;
 
@@ -26,6 +27,10 @@ public class BreakingChangesMarkdownRenderer(IFileSystem fileSystem) : MarkdownR
 		var sb = new StringBuilder();
 		_ = sb.AppendLine(InvariantCulture, $"## {context.Title} [{context.Repo}-{context.TitleSlug}-breaking-changes]");
 
+		// Check if all entries are hidden
+		var allEntriesHidden = breakingChanges.Count > 0 && breakingChanges.All(entry =>
+			ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context));
+
 		if (breakingChanges.Count > 0)
 		{
 			// Group by subtype if subsections are enabled, otherwise group by area
@@ -35,17 +40,25 @@ public class BreakingChangesMarkdownRenderer(IFileSystem fileSystem) : MarkdownR
 
 			foreach (var group in groupedEntries)
 			{
+				// Check if all entries in this group are hidden
+				var allGroupEntriesHidden = group.All(entry =>
+					ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context));
+
 				if (context.Subsections && !string.IsNullOrWhiteSpace(group.Key))
 				{
 					var header = ChangelogTextUtilities.FormatSubtypeHeader(group.Key);
 					_ = sb.AppendLine();
+					if (allGroupEntriesHidden)
+						_ = sb.AppendLine("<!--");
 					_ = sb.AppendLine(InvariantCulture, $"**{header}**");
+					if (allGroupEntriesHidden)
+						_ = sb.AppendLine("-->");
 				}
 
 				foreach (var entry in group)
 				{
 					var (bundleProductIds, entryRepo, entryHideLinks) = GetEntryContext(entry, context);
-					var shouldHide = ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide);
+					var shouldHide = ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context);
 
 					_ = sb.AppendLine();
 					if (shouldHide)
@@ -70,9 +83,18 @@ public class BreakingChangesMarkdownRenderer(IFileSystem fileSystem) : MarkdownR
 						_ = sb.AppendLine("-->");
 				}
 			}
+
+			// Add message if all entries are hidden
+			if (allEntriesHidden)
+			{
+				_ = sb.AppendLine();
+				_ = sb.AppendLine("_There are no breaking changes associated with this release._");
+			}
 		}
 		else
-			_ = sb.AppendLine("_No breaking changes._");
+		{
+			_ = sb.AppendLine("_There are no breaking changes associated with this release._");
+		}
 
 		await WriteOutputFileAsync(context.OutputDir, context.TitleSlug, sb.ToString(), ctx);
 	}

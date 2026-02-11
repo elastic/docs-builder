@@ -49,6 +49,15 @@ public abstract partial class ApiViewModel(ApiRenderContext context)
 
 	protected virtual IReadOnlyList<ApiTocItem> GetTocItems() => [];
 
+	private string? GetGitHubDocsUrl()
+	{
+		var repo = BuildContext.Git.RepositoryName;
+		var branch = BuildContext.Git.Branch;
+		if (string.IsNullOrEmpty(repo) || repo == "unavailable" || string.IsNullOrEmpty(branch) || branch == "unavailable")
+			return null;
+		return $"https://github.com/elastic/{repo}/tree/{branch}/docs";
+	}
+
 	public ApiLayoutViewModel CreateGlobalLayoutModel() =>
 		new()
 		{
@@ -63,8 +72,18 @@ public abstract partial class ApiViewModel(ApiRenderContext context)
 			AllowIndexing = BuildContext.AllowIndexing,
 			CanonicalBaseUrl = BuildContext.CanonicalBaseUrl,
 			GoogleTagManager = new GoogleTagManagerConfiguration(),
+			Optimizely = new OptimizelyConfiguration(),
 			Features = new FeatureFlags([]),
 			StaticFileContentHashProvider = StaticFileContentHashProvider,
-			TocItems = GetTocItems()
+			BuildType = BuildContext.BuildType,
+			TocItems = GetTocItems(),
+			// Header properties for isolated mode
+			HeaderTitle = Document.Info.Title,
+			HeaderVersion = Document.Info.Version,
+			GitBranch = BuildContext.Git.Branch != "unavailable" ? BuildContext.Git.Branch : null,
+			GitCommitShort = BuildContext.Git.Ref is { Length: >= 7 } r && r != "unavailable" ? r[..7] : null,
+			GitRepository = BuildContext.Git.RepositoryName != "unavailable" ? BuildContext.Git.RepositoryName : null,
+			GitHubDocsUrl = GetGitHubDocsUrl(),
+			GitHubRef = BuildContext.Git.GitHubRef
 		};
 }

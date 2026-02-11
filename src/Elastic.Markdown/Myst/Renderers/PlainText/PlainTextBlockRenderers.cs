@@ -8,7 +8,6 @@ using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Myst.Directives.Admonition;
 using Elastic.Markdown.Myst.Directives.AppliesTo;
 using Elastic.Markdown.Myst.Directives.CsvInclude;
-using Elastic.Markdown.Myst.Directives.Diagram;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Math;
@@ -216,10 +215,6 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 
 			case IncludeBlock includeBlock:
 				WriteIncludeBlock(renderer, includeBlock);
-				return;
-
-			case DiagramBlock:
-				// Skip diagrams - not text searchable
 				return;
 
 			case SettingsBlock settingsBlock:

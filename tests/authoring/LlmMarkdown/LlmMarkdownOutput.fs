@@ -222,8 +222,8 @@ type ``applies_to inline role formats`` () =
         // Serverless GA (unversioned product - no version shown)
         ("serverless: ga", "Elastic Cloud Serverless: Generally available")
         
-        // Elasticsearch preview (no version - uses base version)
-        ("elasticsearch: preview", "Serverless Elasticsearch projects: Preview in 8.0+")
+        // Elasticsearch preview (no version - no version shown)
+        ("elasticsearch: preview", "Serverless Elasticsearch projects: Preview")
     ]
     
     [<Fact>]
@@ -400,7 +400,7 @@ This is a custom admonition with applies_to information.
     [<Fact>]
     let ``renders correctly with applies_to information`` () =
         markdown |> convertsToNewLLM """
-<note applies-to="Elastic Stack: Generally available in 8.0+">
+<note applies-to="Elastic Stack: Generally available">
   This is a note admonition with applies_to information.
 </note>
 
@@ -408,15 +408,15 @@ This is a custom admonition with applies_to information.
   This is a warning admonition with applies_to information.
 </warning>
 
-<tip applies-to="Serverless Elasticsearch projects: Preview in 8.0+">
+<tip applies-to="Serverless Elasticsearch projects: Preview">
   This is a tip admonition with applies_to information.
 </tip>
 
-<important applies-to="Elastic Cloud Serverless: Generally available, Elastic Stack: Generally available in 8.0+">
+<important applies-to="Elastic Cloud Serverless: Generally available, Elastic Stack: Generally available">
   This is an important admonition with applies_to information.
 </important>
 
-<admonition title="Custom Admonition" applies-to="Serverless Elasticsearch projects: Preview in 8.0+, Elastic Stack: Generally available in 8.0+">
+<admonition title="Custom Admonition" applies-to="Serverless Elasticsearch projects: Preview, Elastic Stack: Generally available">
   This is a custom admonition with applies_to information.
 </admonition>
 """
@@ -753,39 +753,29 @@ Hello, this is a substitution: Hello World!
 ```
 """
 
-type ``diagram directive`` () =
+type ``mermaid code block`` () =
     static let markdown = Setup.Document """
-::::{diagram} mermaid
+```mermaid
 flowchart LR
     A[Start] --> B{Decision}
     B -->|Yes| C[Action 1]
     B -->|No| D[Action 2]
     C --> E[End]
     D --> E
-::::
-
-::::{diagram} d2
-x -> y: hello world
-y -> z: nice to meet you
-::::
+```
 """
 
     [<Fact>]
-    let ``renders diagram with type information`` () =
+    let ``renders mermaid as code block`` () =
         markdown |> convertsToNewLLM """
-<diagram type="mermaid">
-  flowchart LR
-      A[Start] --> B{Decision}
-      B -->|Yes| C[Action 1]
-      B -->|No| D[Action 2]
-      C --> E[End]
-      D --> E
-</diagram>
-
-<diagram type="d2">
-  x -> y: hello world
-  y -> z: nice to meet you
-</diagram>
+```mermaid
+flowchart LR
+A[Start] --> B{Decision}
+B -->|Yes| C[Action 1]
+B -->|No| D[Action 2]
+C --> E[End]
+D --> E
+```
 """
         
 type ``substitution in heading`` () =

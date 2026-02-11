@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Security.Cryptography;
+using System.Text;
 using Elastic.Transport;
 using Elastic.Transport.Products.Elasticsearch;
 using Microsoft.Extensions.Logging;
@@ -10,6 +12,7 @@ namespace Elastic.Markdown.Exporters.Elasticsearch.Enrichment;
 
 /// <summary>
 /// Manages the Elasticsearch enrich policy and ingest pipeline for AI document enrichment.
+/// Policy name is versioned based on the enrich fields, allowing seamless schema evolution.
 /// </summary>
 public sealed class EnrichPolicyManager(
 	DistributedTransport transport,
@@ -20,19 +23,42 @@ public sealed class EnrichPolicyManager(
 	private readonly ILogger _logger = logger;
 	private readonly string _cacheIndexName = cacheIndexName;
 
-	public const string PolicyName = "ai-enrichment-policy";
+	/// <summary>
+	/// The fields included in the enrich policy. Changes here auto-version the policy.
+	/// </summary>
+	private static readonly string[] EnrichFields =
+		["ai_rag_optimized_summary", "ai_short_summary", "ai_search_query", "ai_questions", "ai_use_cases", "prompt_hash"];
+
+	/// <summary>
+	/// Policy name includes a short hash of the fields for automatic versioning.
+	/// When fields change, a new policy is created without deleting the old one.
+	/// </summary>
+	public static string PolicyName { get; } = $"ai-enrichment-policy-{ComputeFieldsHash()}";
+
 	public const string PipelineName = "ai-enrichment-pipeline";
 
+	/// <summary>
+	/// Computes a short hash of the enrich fields for policy versioning.
+	/// </summary>
+	private static string ComputeFieldsHash()
+	{
+		var fieldsString = string.Join(",", EnrichFields);
+		var hashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(fieldsString));
+		return Convert.ToHexString(hashBytes)[..8].ToLowerInvariant();
+	}
 
-	// language=json
-	private const string IngestPipelineBody = """
+	/// <summary>
+	/// Generates the ingest pipeline body with the current policy name.
+	/// Pipeline uses URL-based matching to always find enrichment even when content changes.
+	/// </summary>
+	private static string GetIngestPipelineBody() => $$"""
 		{
-			"description": "Enriches documents with AI-generated fields from the enrichment cache",
+			"description": "Enriches documents with AI-generated fields from the enrichment cache (matched by URL)",
 			"processors": [
 				{
 					"enrich": {
-						"policy_name": "ai-enrichment-policy",
-						"field": "enrichment_key",
+						"policy_name": "{{PolicyName}}",
+						"field": "url",
 						"target_field": "ai_enrichment",
 						"max_matches": 1,
 						"ignore_missing": true
@@ -42,7 +68,7 @@ public sealed class EnrichPolicyManager(
 					"script": {
 						"description": "Flatten ai_enrichment fields to document root",
 						"if": "ctx.ai_enrichment != null",
-						"source": "if (ctx.ai_enrichment.ai_rag_optimized_summary != null) ctx.ai_rag_optimized_summary = ctx.ai_enrichment.ai_rag_optimized_summary; if (ctx.ai_enrichment.ai_short_summary != null) ctx.ai_short_summary = ctx.ai_enrichment.ai_short_summary; if (ctx.ai_enrichment.ai_search_query != null) ctx.ai_search_query = ctx.ai_enrichment.ai_search_query; if (ctx.ai_enrichment.ai_questions != null) ctx.ai_questions = ctx.ai_enrichment.ai_questions; if (ctx.ai_enrichment.ai_use_cases != null) ctx.ai_use_cases = ctx.ai_enrichment.ai_use_cases; ctx.remove('ai_enrichment');"
+						"source": "if (ctx.ai_enrichment.ai_rag_optimized_summary != null) ctx.ai_rag_optimized_summary = ctx.ai_enrichment.ai_rag_optimized_summary; if (ctx.ai_enrichment.ai_short_summary != null) ctx.ai_short_summary = ctx.ai_enrichment.ai_short_summary; if (ctx.ai_enrichment.ai_search_query != null) ctx.ai_search_query = ctx.ai_enrichment.ai_search_query; if (ctx.ai_enrichment.ai_questions != null) ctx.ai_questions = ctx.ai_enrichment.ai_questions; if (ctx.ai_enrichment.ai_use_cases != null) ctx.ai_use_cases = ctx.ai_enrichment.ai_use_cases; if (ctx.ai_enrichment.prompt_hash != null) ctx.enrichment_prompt_hash = ctx.ai_enrichment.prompt_hash; ctx.remove('ai_enrichment');"
 					}
 				}
 			]
@@ -50,11 +76,11 @@ public sealed class EnrichPolicyManager(
 		""";
 
 	/// <summary>
-	/// Ensures the enrich policy exists and creates it if not.
+	/// Ensures the enrich policy exists. Policy name is versioned based on fields,
+	/// so if the policy exists, it has the correct definition by design.
 	/// </summary>
 	public async Task EnsurePolicyExistsAsync(CancellationToken ct)
 	{
-		// Check if policy exists - GET returns 200 with policies array, or 404 if not found
 		var existsResponse = await _transport.GetAsync<StringResponse>($"_enrich/policy/{PolicyName}", ct);
 
 		if (existsResponse.ApiCallDetails.HasSuccessfulStatusCode &&
@@ -66,13 +92,14 @@ public sealed class EnrichPolicyManager(
 
 		_logger.LogInformation("Creating enrich policy {PolicyName} for index {CacheIndex}...", PolicyName, _cacheIndexName);
 
-		// language=json
+		// Match by URL to always find enrichment even when document content changes
+		var enrichFieldsJson = string.Join(", ", EnrichFields.Select(f => $"\"{f}\""));
 		var policyBody = $$"""
 			{
 				"match": {
 					"indices": "{{_cacheIndexName}}",
-					"match_field": "enrichment_key",
-					"enrich_fields": ["ai_rag_optimized_summary", "ai_short_summary", "ai_search_query", "ai_questions", "ai_use_cases"]
+					"match_field": "url",
+					"enrich_fields": [{{enrichFieldsJson}}]
 				}
 			}
 			""";
@@ -81,9 +108,6 @@ public sealed class EnrichPolicyManager(
 			$"_enrich/policy/{PolicyName}",
 			PostData.String(policyBody),
 			ct);
-
-		_logger.LogInformation("Policy creation response: {StatusCode} - {Response}",
-			createResponse.ApiCallDetails.HttpStatusCode, createResponse.Body);
 
 		if (createResponse.ApiCallDetails.HasSuccessfulStatusCode)
 			_logger.LogInformation("Created enrich policy {PolicyName}", PolicyName);
@@ -127,26 +151,20 @@ public sealed class EnrichPolicyManager(
 	}
 
 	/// <summary>
-	/// Ensures the ingest pipeline exists and creates it if not.
+	/// Ensures the ingest pipeline exists with the current definition.
+	/// Always overwrites to pick up any script/processor changes.
 	/// </summary>
 	public async Task EnsurePipelineExistsAsync(CancellationToken ct)
 	{
-		var existsResponse = await _transport.GetAsync<StringResponse>($"_ingest/pipeline/{PipelineName}", ct);
-
-		if (existsResponse.ApiCallDetails.HasSuccessfulStatusCode)
-		{
-			_logger.LogInformation("Ingest pipeline {PipelineName} already exists", PipelineName);
-			return;
-		}
-
-		_logger.LogInformation("Creating ingest pipeline {PipelineName}...", PipelineName);
+		// PUT is idempotent - always update to ensure pipeline definition is current
+		_logger.LogInformation("Creating/updating ingest pipeline {PipelineName} (using policy {PolicyName})...", PipelineName, PolicyName);
 		var createResponse = await _transport.PutAsync<StringResponse>(
 			$"_ingest/pipeline/{PipelineName}",
-			PostData.String(IngestPipelineBody),
+			PostData.String(GetIngestPipelineBody()),
 			ct);
 
 		if (createResponse.ApiCallDetails.HasSuccessfulStatusCode)
-			_logger.LogInformation("Created ingest pipeline {PipelineName}", PipelineName);
+			_logger.LogInformation("Created/updated ingest pipeline {PipelineName}", PipelineName);
 		else
 			_logger.LogError("Failed to create ingest pipeline: {StatusCode} - {Response}",
 				createResponse.ApiCallDetails.HttpStatusCode, createResponse.Body);

@@ -21,14 +21,27 @@ internal record ChangelogConfigurationYaml
 	public List<string>? Lifecycles { get; set; }
 
 	/// <summary>
-	/// Available products - list of product IDs.
+	/// Products configuration.
+	/// Can be either:
+	/// - A simple list of product IDs (backward compatible) -> parsed as products.available
+	/// - A ProductsConfigYaml object with available/default
 	/// </summary>
-	public List<string>? Products { get; set; }
+	public ProductsConfigYaml? Products { get; set; }
 
 	/// <summary>
 	/// Block configuration combining create and publish blockers.
 	/// </summary>
 	public BlockConfigurationYaml? Block { get; set; }
+
+	/// <summary>
+	/// Extraction configuration for release notes and issues.
+	/// </summary>
+	public ExtractConfigurationYaml? Extract { get; set; }
+
+	/// <summary>
+	/// Bundle configuration with profiles and defaults.
+	/// </summary>
+	public BundleConfigurationYaml? Bundle { get; set; }
 }
 
 /// <summary>
@@ -104,6 +117,110 @@ internal record PivotConfigurationYaml
 	/// Area definitions with labels.
 	/// </summary>
 	public Dictionary<string, string?>? Areas { get; set; }
+
+	/// <summary>
+	/// Labels that trigger the highlight flag (comma-separated string).
+	/// </summary>
+	public string? Highlight { get; set; }
+}
+
+/// <summary>
+/// Internal DTO for products configuration in YAML.
+/// </summary>
+internal record ProductsConfigYaml
+{
+	/// <summary>
+	/// List of available product IDs (empty = all from products.yml).
+	/// </summary>
+	public List<string>? Available { get; set; }
+
+	/// <summary>
+	/// Default products to use when --products is not specified.
+	/// </summary>
+	public List<DefaultProductYaml>? Default { get; set; }
+}
+
+/// <summary>
+/// Internal DTO for default product specification in YAML.
+/// </summary>
+internal record DefaultProductYaml
+{
+	/// <summary>
+	/// Product ID.
+	/// </summary>
+	public string? Product { get; set; }
+
+	/// <summary>
+	/// Default lifecycle (defaults to "ga").
+	/// </summary>
+	public string? Lifecycle { get; set; }
+}
+
+/// <summary>
+/// Internal DTO for bundle configuration in YAML.
+/// </summary>
+internal record BundleConfigurationYaml
+{
+	/// <summary>
+	/// Input directory containing changelog YAML files.
+	/// </summary>
+	public string? Directory { get; set; }
+
+	/// <summary>
+	/// Output directory for bundled changelog files.
+	/// </summary>
+	public string? OutputDirectory { get; set; }
+
+	/// <summary>
+	/// Whether to resolve (copy contents) by default.
+	/// </summary>
+	public bool? Resolve { get; set; }
+
+	/// <summary>
+	/// Named bundle profiles.
+	/// </summary>
+	public Dictionary<string, BundleProfileYaml>? Profiles { get; set; }
+}
+
+/// <summary>
+/// Internal DTO for bundle profile in YAML.
+/// </summary>
+internal record BundleProfileYaml
+{
+	/// <summary>
+	/// Product filter pattern for input changelogs.
+	/// Supports {version} and {lifecycle} placeholders.
+	/// </summary>
+	public string? Products { get; set; }
+
+	/// <summary>
+	/// Output filename pattern.
+	/// Supports {version} placeholder.
+	/// </summary>
+	public string? Output { get; set; }
+
+	/// <summary>
+	/// Feature IDs to mark as hidden in the bundle output.
+	/// </summary>
+	public List<string>? HideFeatures { get; set; }
+}
+
+/// <summary>
+/// Internal DTO for extract configuration in YAML.
+/// </summary>
+internal record ExtractConfigurationYaml
+{
+	/// <summary>
+	/// Whether to extract release notes from PR descriptions by default.
+	/// Defaults to true.
+	/// </summary>
+	public bool? ReleaseNotes { get; set; }
+
+	/// <summary>
+	/// Whether to extract linked issues from PR body by default.
+	/// Defaults to true.
+	/// </summary>
+	public bool? Issues { get; set; }
 }
 
 /// <summary>

@@ -28,6 +28,7 @@
 	<File Path="config/changelog.example.yml" />
     <File Path="config/legacy-url-mappings.yml" />
     <File Path="config/navigation.yml" />
+	<File Path="config/codex.example.yml" />
     <File Path="config/products.yml" />
     <File Path="config/versions.yml" />
     <File Path="config/search.yml" />
@@ -44,6 +45,7 @@
   </Folder>
   <Folder Name="/src/">
     <File Path="src/Directory.Build.props" />
+    <Project Path="src/Elastic.Codex/Elastic.Codex.csproj" />
     <Project Path="src/Elastic.ApiExplorer/Elastic.ApiExplorer.csproj" />
     <Project Path="src/Elastic.Documentation.Configuration/Elastic.Documentation.Configuration.csproj" />
     <Project Path="src/Elastic.Documentation.LegacyDocs/Elastic.Documentation.LegacyDocs.csproj" />
@@ -52,6 +54,7 @@
     <Project Path="src/Elastic.Documentation.Navigation/Elastic.Documentation.Navigation.csproj" />
     <Project Path="src/Elastic.Documentation.ServiceDefaults/Elastic.Documentation.ServiceDefaults.csproj" />
     <Project Path="src/Elastic.Documentation.Site/Elastic.Documentation.Site.csproj" />
+    <Project Path="src/Elastic.Documentation.Svg/Elastic.Documentation.Svg.csproj" />
     <Project Path="src/Elastic.Documentation/Elastic.Documentation.csproj" />
     <Project Path="src/Elastic.Markdown/Elastic.Markdown.csproj" />
     <Project Path="src/Elastic.Documentation.Mcp/Elastic.Documentation.Mcp.csproj" />

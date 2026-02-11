@@ -1,6 +1,5 @@
 /** @jsxImportSource @emotion/react */
 import { useHtmxLink } from '../shared/htmx/useHtmxLink'
-import { getPathFromUrl } from '../shared/htmx/utils'
 import { EuiText, EuiSpacer, useEuiTheme, useEuiFontSize } from '@elastic/eui'
 import { css } from '@emotion/react'
 
@@ -137,17 +136,16 @@ const ReferenceItem = ({
     euiTheme,
     smallFontsize,
 }: ReferenceItemProps) => {
-    // Extract path from URL, falling back to original URL if extraction fails
-    const path = getPathFromUrl(reference.url) ?? reference.url
-    const anchorRef = useHtmxLink(path)
+    const { ref, href } = useHtmxLink(reference.url)
 
     return (
         <li>
             <a
-                ref={anchorRef}
-                href={path}
+                ref={ref}
+                href={href}
                 css={css`
                     width: 100%;
+                    background-color: #fff;
                     border: 1px solid ${euiTheme.border.color};
                     padding: ${euiTheme.size.s};
                     border-radius: ${euiTheme.border.radius.small};

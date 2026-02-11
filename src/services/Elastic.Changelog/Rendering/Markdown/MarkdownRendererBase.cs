@@ -4,7 +4,7 @@
 
 using System.IO.Abstractions;
 using System.Text;
-using Elastic.Documentation;
+using Elastic.Documentation.ReleaseNotes;
 
 namespace Elastic.Changelog.Rendering.Markdown;
 
@@ -31,7 +31,7 @@ public abstract class MarkdownRendererBase(IFileSystem fileSystem) : IChangelogM
 		if (!string.IsNullOrWhiteSpace(outputDirectory) && !FileSystem.Directory.Exists(outputDirectory))
 			_ = FileSystem.Directory.CreateDirectory(outputDirectory);
 
-		await FileSystem.File.WriteAllTextAsync(outputPath, content, ctx);
+		await FileSystem.File.WriteAllTextAsync(outputPath, content, Encoding.UTF8, ctx);
 	}
 
 	/// <summary>

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Abstractions.TestingHelpers;
 using System.Threading.Tasks;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Navigation;
 using Elastic.Markdown.IO;
@@ -24,8 +25,8 @@ public class ImagePathResolutionTests(ITestOutputHelper output)
 	public async Task UpdateRelativeUrlUsesNavigationPathWhenAssemblerBuildEnabled()
 	{
 		const string relativeAssetPath = "images/pic.png";
-		var nonAssemblerResult = await ResolveUrlForBuildMode(relativeAssetPath, assemblerBuild: false, pathPrefix: "this-is-not-relevant");
-		var assemblerResult = await ResolveUrlForBuildMode(relativeAssetPath, assemblerBuild: true, pathPrefix: "platform");
+		var nonAssemblerResult = await ResolveUrlForBuildMode(relativeAssetPath, buildType: BuildType.Isolated, pathPrefix: "this-is-not-relevant");
+		var assemblerResult = await ResolveUrlForBuildMode(relativeAssetPath, buildType: BuildType.Assembler, pathPrefix: "platform");
 
 		nonAssemblerResult.Should().AllBe("/docs/setup/images/pic.png");
 		assemblerResult.Should().AllBe("/docs/platform/setup/images/pic.png");
@@ -35,7 +36,7 @@ public class ImagePathResolutionTests(ITestOutputHelper output)
 	public async Task UpdateRelativeUrlWithoutPathPrefixKeepsGlobalPrefix()
 	{
 		var relativeAssetPath = "images/funny-image.png";
-		var assemblerResult = await ResolveUrlForBuildMode(relativeAssetPath, assemblerBuild: true, pathPrefix: null);
+		var assemblerResult = await ResolveUrlForBuildMode(relativeAssetPath, buildType: BuildType.Assembler, pathPrefix: null);
 
 		assemblerResult.Should().AllBe("/docs/setup/images/funny-image.png");
 	}
@@ -44,7 +45,7 @@ public class ImagePathResolutionTests(ITestOutputHelper output)
 	public async Task UpdateRelativeUrlAppliesCustomPathPrefix()
 	{
 		var relativeAssetPath = "images/image.png";
-		var assemblerResult = await ResolveUrlForBuildMode(relativeAssetPath, assemblerBuild: true, pathPrefix: "custom");
+		var assemblerResult = await ResolveUrlForBuildMode(relativeAssetPath, buildType: BuildType.Assembler, pathPrefix: "custom");
 
 		assemblerResult.Should().AllBe("/docs/custom/setup/images/image.png");
 	}
@@ -52,7 +53,7 @@ public class ImagePathResolutionTests(ITestOutputHelper output)
 	/// <summary>
 	/// Resolves a relative asset URL the same way the assembler would for a single markdown file, using the provided navigation path prefix.
 	/// </summary>
-	private async Task<string[]> ResolveUrlForBuildMode(string relativeAssetPath, bool assemblerBuild, string? pathPrefix)
+	private async Task<string[]> ResolveUrlForBuildMode(string relativeAssetPath, BuildType buildType, string? pathPrefix)
 	{
 		const string guideRelativePath = "setup/guide.md";
 		var files = new Dictionary<string, MockFileData>
@@ -94,7 +95,7 @@ public class ImagePathResolutionTests(ITestOutputHelper output)
 		var buildContext = new BuildContext(collector, fileSystem, configurationContext)
 		{
 			UrlPathPrefix = "/docs",
-			AssemblerBuild = assemblerBuild
+			BuildType = buildType
 		};
 
 		var documentationSet = new DocumentationSet(buildContext, new TestLoggerFactory(output), new TestCrossLinkResolver());
@@ -132,7 +133,7 @@ public class ImagePathResolutionTests(ITestOutputHelper output)
 
 			var context = new ParserContext(parserState);
 			context.TryFindDocument(context.MarkdownSourcePath).Should().BeSameAs(markdownFile);
-			context.Build.AssemblerBuild.Should().Be(assemblerBuild);
+			context.Build.BuildType.Should().Be(buildType);
 
 			toReturn.Add(DiagnosticLinkInlineParser.UpdateRelativeUrl(context, normalizedPath.Item2));
 

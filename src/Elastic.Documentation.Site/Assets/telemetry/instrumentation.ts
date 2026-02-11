@@ -21,6 +21,8 @@ import {
 import {
     LoggerProvider,
     BatchLogRecordProcessor,
+    type LogRecordProcessor,
+    type SdkLogRecord,
 } from '@opentelemetry/sdk-logs'
 import {
     WebTracerProvider,
@@ -164,11 +166,12 @@ function initializeLogging(
         headers: { ...commonHeaders },
     })
 
-    const logProcessor = new BatchLogRecordProcessor(logExporter)
+    const batchLogProcessor = new BatchLogRecordProcessor(logExporter)
+    const euidLogProcessor = new EuidLogRecordProcessor()
 
     loggerProvider = new LoggerProvider({
         resource,
-        processors: [logProcessor],
+        processors: [euidLogProcessor, batchLogProcessor],
     })
 
     logs.setGlobalLoggerProvider(loggerProvider)
@@ -283,6 +286,23 @@ class EuidSpanProcessor implements SpanProcessor {
     }
 
     onEnd(): void {}
+
+    shutdown(): Promise<void> {
+        return Promise.resolve()
+    }
+
+    forceFlush(): Promise<void> {
+        return Promise.resolve()
+    }
+}
+
+class EuidLogRecordProcessor implements LogRecordProcessor {
+    onEmit(logRecord: SdkLogRecord): void {
+        const euid = getCookie('euid')
+        if (euid) {
+            logRecord.setAttribute('user.euid', euid)
+        }
+    }
 
     shutdown(): Promise<void> {
         return Promise.resolve()

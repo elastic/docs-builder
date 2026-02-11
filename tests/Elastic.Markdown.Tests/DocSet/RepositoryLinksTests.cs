@@ -75,7 +75,8 @@ public class LinkReferenceSerializationTests
 			    "branch": "branch",
 			    "remote": "remote",
 			    "ref": "ref",
-			    "name": "unavailable"
+			    "name": "unavailable",
+			    "github_ref": null
 			  },
 			  "url_path_prefix": "",
 			  "links": {},
@@ -96,7 +97,8 @@ public class LinkReferenceSerializationTests
 			    "branch": "branch",
 			    "remote": "remote",
 			    "ref": "ref",
-			    "name": "unavailable"
+			    "name": "unavailable",
+			    "github_ref": null
 			  },
 			  "url_path_prefix": "",
 			  "links": {},

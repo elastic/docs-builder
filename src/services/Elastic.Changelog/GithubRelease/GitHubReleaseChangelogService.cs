@@ -5,13 +5,14 @@
 using System.IO.Abstractions;
 using System.Security.Cryptography;
 using System.Text;
-using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Configuration;
 using Elastic.Changelog.GitHub;
-using Elastic.Changelog.Serialization;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Changelog;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 
@@ -204,7 +205,7 @@ public class GitHubReleaseChangelogService(
 		// Fetch PR labels
 		var prInfo = await _prService.FetchPrInfoAsync(prUrl, owner, repo, ctx);
 
-		// Check add_blockers - skip PRs with blocking labels
+		// Check block.create - skip PRs with blocking labels
 		if (prInfo != null && ShouldSkipPrDueToLabelBlockers(prInfo.Labels.ToArray(), productInfo, config, collector, prUrl))
 			return false;
 
@@ -273,7 +274,7 @@ public class GitHubReleaseChangelogService(
 		var slug = ChangelogTextUtilities.GenerateSlug(title);
 		var filename = $"{prRef.PrNumber}-{finalType.ToStringFast(true)}-{slug}.yaml";
 		var filePath = _fileSystem.Path.Combine(outputDir, filename);
-		await _fileSystem.File.WriteAllTextAsync(filePath, yamlContent, ctx);
+		await _fileSystem.File.WriteAllTextAsync(filePath, yamlContent, Encoding.UTF8, ctx);
 
 		createdFiles.Add(filename);
 		_logger.LogDebug("Created changelog: {FilePath}", filePath);
@@ -282,7 +283,7 @@ public class GitHubReleaseChangelogService(
 	}
 
 	private static string GenerateYaml(ChangelogEntry data) =>
-		ChangelogYamlSerialization.SerializeEntry(data);
+		ReleaseNotesSerialization.SerializeEntry(data);
 
 	private async Task<string> CreateBundleFile(
 		string outputDir,
@@ -310,11 +311,11 @@ public class GitHubReleaseChangelogService(
 
 		var bundleData = new Bundle
 		{
-			Products = [ChangelogMapper.ToBundledProduct(productInfo)],
+			Products = [productInfo.ToBundledProduct()],
 			Entries = bundleEntries
 		};
 
-		var yamlContent = ChangelogYamlSerialization.SerializeBundle(bundleData);
+		var yamlContent = ReleaseNotesSerialization.SerializeBundle(bundleData);
 
 		// Create bundles subfolder
 		var bundlesDir = _fileSystem.Path.Combine(outputDir, "bundles");
@@ -324,7 +325,7 @@ public class GitHubReleaseChangelogService(
 		// Name format: <version>-<product>-bundle.yml
 		var bundleFilename = $"{productInfo.Target}-{productInfo.Product}-bundle.yml";
 		var bundlePath = _fileSystem.Path.Combine(bundlesDir, bundleFilename);
-		await _fileSystem.File.WriteAllTextAsync(bundlePath, yamlContent, ctx);
+		await _fileSystem.File.WriteAllTextAsync(bundlePath, yamlContent, Encoding.UTF8, ctx);
 
 		return bundlePath;
 	}
@@ -379,19 +380,18 @@ public class GitHubReleaseChangelogService(
 			return false;
 
 		var normalizedProductId = productInfo.Product?.Replace('_', '-') ?? string.Empty;
-		if (config.Block.ByProduct.TryGetValue(normalizedProductId, out var productBlockers))
+		if (config.Block.ByProduct.TryGetValue(normalizedProductId, out var productBlockers)
+			&& productBlockers.Create is { Count: > 0 })
 		{
-			if (productBlockers.Create != null && productBlockers.Create.Count > 0)
+			var matchingBlockerLabel = productBlockers.Create
+				.FirstOrDefault(blockerLabel => prLabels.Contains(blockerLabel, StringComparer.OrdinalIgnoreCase));
+
+			if (matchingBlockerLabel != null)
 			{
-				var matchingBlockerLabel = productBlockers.Create
-					.FirstOrDefault(blockerLabel => prLabels.Contains(blockerLabel, StringComparer.OrdinalIgnoreCase));
-				if (matchingBlockerLabel != null)
-				{
-					collector.EmitWarning(prUrl,
-						$"Skipping changelog creation for PR {prUrl} due to blocking label '{matchingBlockerLabel}' " +
-						$"for product '{productInfo.Product}'. This label is configured to prevent changelog creation for this product.");
-					return true;
-				}
+				collector.EmitWarning(prUrl,
+					$"Skipping changelog creation for PR {prUrl} due to blocking label '{matchingBlockerLabel}' " +
+					$"for product '{productInfo.Product}'. This label is configured to prevent changelog creation for this product.");
+				return true;
 			}
 		}
 

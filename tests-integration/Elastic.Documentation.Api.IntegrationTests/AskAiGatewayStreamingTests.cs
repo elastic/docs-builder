@@ -58,15 +58,15 @@ data: {"type":"conversationEnd","id":"test"}
 
 		var request = new AskAiRequest("Test message", null);
 
-		// Act - get the stream from the gateway
-		var stream = await gateway.AskAi(request, TestContext.Current.CancellationToken);
+		// Act - get the response from the gateway
+		var response = await gateway.AskAi(request, TestContext.Current.CancellationToken);
 
 		// Assert - the stream should be readable (not disposed)
-		stream.Should().NotBeNull();
-		stream.CanRead.Should().BeTrue("stream should not be disposed by the gateway");
+		response.Should().NotBeNull();
+		response.Stream.CanRead.Should().BeTrue("stream should not be disposed by the gateway");
 
 		// Read the entire stream to verify it works
-		using var reader = new StreamReader(stream);
+		using var reader = new StreamReader(response.Stream);
 		var content = await reader.ReadToEndAsync(TestContext.Current.CancellationToken);
 
 		content.Should().NotBeEmpty();
@@ -113,14 +113,14 @@ data: {"type":"conversationEnd","id":"test"}
 
 		var request = new AskAiRequest("Test", null);
 
-		// Act - get the stream and read it in chunks
-		var stream = await gateway.AskAi(request, TestContext.Current.CancellationToken);
+		// Act - get the response and read it in chunks
+		var response = await gateway.AskAi(request, TestContext.Current.CancellationToken);
 
 		var chunks = new List<string>();
 		var buffer = new byte[16]; // Small buffer to force multiple reads
 		int bytesRead;
 
-		while ((bytesRead = await stream.ReadAsync(buffer.AsMemory(0, buffer.Length), TestContext.Current.CancellationToken)) > 0)
+		while ((bytesRead = await response.Stream.ReadAsync(buffer.AsMemory(0, buffer.Length), TestContext.Current.CancellationToken)) > 0)
 		{
 			var chunk = Encoding.UTF8.GetString(buffer, 0, bytesRead);
 			chunks.Add(chunk);
@@ -168,15 +168,15 @@ data: {"type":"conversationEnd","id":"test"}
 
 		var request = new AskAiRequest("Test message", null);
 
-		// Act - get the stream from the gateway
-		var stream = await gateway.AskAi(request, TestContext.Current.CancellationToken);
+		// Act - get the response from the gateway
+		var response = await gateway.AskAi(request, TestContext.Current.CancellationToken);
 
 		// Assert - the stream should be readable (not disposed)
-		stream.Should().NotBeNull();
-		stream.CanRead.Should().BeTrue("stream should not be disposed by the gateway");
+		response.Should().NotBeNull();
+		response.Stream.CanRead.Should().BeTrue("stream should not be disposed by the gateway");
 
 		// Read the entire stream to verify it works
-		using var reader = new StreamReader(stream);
+		using var reader = new StreamReader(response.Stream);
 		var content = await reader.ReadToEndAsync(TestContext.Current.CancellationToken);
 
 		content.Should().NotBeEmpty();
@@ -228,14 +228,14 @@ data: {"type":"conversationEnd","id":"test"}
 
 		var request = new AskAiRequest("Test", null);
 
-		// Act - get the stream and read it in chunks
-		var stream = await gateway.AskAi(request, TestContext.Current.CancellationToken);
+		// Act - get the response and read it in chunks
+		var response = await gateway.AskAi(request, TestContext.Current.CancellationToken);
 
 		var chunks = new List<string>();
 		var buffer = new byte[16]; // Small buffer to force multiple reads
 		int bytesRead;
 
-		while ((bytesRead = await stream.ReadAsync(buffer.AsMemory(0, buffer.Length), TestContext.Current.CancellationToken)) > 0)
+		while ((bytesRead = await response.Stream.ReadAsync(buffer.AsMemory(0, buffer.Length), TestContext.Current.CancellationToken)) > 0)
 		{
 			var chunk = Encoding.UTF8.GetString(buffer, 0, bytesRead);
 			chunks.Add(chunk);
@@ -270,16 +270,16 @@ data: {"type":"conversationEnd","id":"test"}
 		var request = new AskAiRequest("Test", null);
 
 		// Act
-		var stream = await gateway.AskAi(request, TestContext.Current.CancellationToken);
+		var response = await gateway.AskAi(request, TestContext.Current.CancellationToken);
 
 		// Assert
-		stream.Should().NotBeNull();
-		stream.CanRead.Should().BeTrue();
+		response.Should().NotBeNull();
+		response.Stream.CanRead.Should().BeTrue();
 
 		// The fact that we can immediately read from the stream indicates
 		// that ResponseHeadersRead was used (otherwise it would buffer)
 		var buffer = new byte[10];
-		var bytesRead = await stream.ReadAsync(buffer.AsMemory(0, buffer.Length), TestContext.Current.CancellationToken);
+		var bytesRead = await response.Stream.ReadAsync(buffer.AsMemory(0, buffer.Length), TestContext.Current.CancellationToken);
 		bytesRead.Should().BeGreaterThan(0, "stream should be readable immediately");
 	}
 }

@@ -6,10 +6,14 @@ using System.IO.Abstractions;
 using Elastic.Changelog.Serialization;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.ReleaseNotes;
 using Microsoft.Extensions.Logging;
 using YamlDotNet.Core;
+using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
 
 namespace Elastic.Changelog.Configuration;
 
@@ -19,6 +23,35 @@ namespace Elastic.Changelog.Configuration;
 public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurationContext configurationContext, IFileSystem fileSystem)
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogConfigurationLoader>();
+
+	private static readonly IDeserializer ConfigurationDeserializer =
+		new StaticDeserializerBuilder(new ChangelogYamlStaticContext())
+			.WithNamingConvention(UnderscoredNamingConvention.Instance)
+			.WithTypeConverter(new TypeEntryYamlConverter())
+			.Build();
+
+	/// <summary>
+	/// Deserializes changelog configuration YAML content.
+	/// </summary>
+	internal static ChangelogConfigurationYaml DeserializeConfiguration(string yaml) =>
+		ConfigurationDeserializer.Deserialize<ChangelogConfigurationYaml>(yaml);
+
+	/// <summary>
+	/// Loads the publish blocker configuration from a changelog.
+	/// </summary>
+	/// <param name="fileSystem">The file system to read from.</param>
+	/// <param name="configPath">The path to the changelog.yml configuration file.</param>
+	/// <returns>The publish blocker configuration, or null if not found.</returns>
+	public static PublishBlocker? LoadPublishBlocker(IFileSystem fileSystem, string configPath)
+	{
+		if (!fileSystem.File.Exists(configPath))
+			return null;
+
+		var yamlContent = fileSystem.File.ReadAllText(configPath);
+		var yamlConfig = DeserializeConfiguration(yamlContent);
+
+		return ParsePublishBlocker(yamlConfig.Block?.Publish);
+	}
 
 	/// <summary>
 	/// Loads changelog configuration from file or returns default configuration
@@ -38,7 +71,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		try
 		{
 			var yamlContent = await fileSystem.File.ReadAllTextAsync(finalConfigPath, ctx);
-			var yamlConfig = ChangelogYamlSerialization.DeserializeConfiguration(yamlContent);
+			var yamlConfig = DeserializeConfiguration(yamlContent);
 
 			return ParseConfiguration(collector, yamlConfig, finalConfigPath);
 		}
@@ -181,12 +214,13 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			lifecycles = parsedLifecycles;
 		}
 
-		// Process products
+		// Process products from products.available
 		IReadOnlyList<Product>? products = null;
-		if (yamlConfig.Products != null && yamlConfig.Products.Count > 0)
+		var productIdList = yamlConfig.Products?.Available;
+		if (productIdList is { Count: > 0 })
 		{
 			var resolvedProducts = new List<Product>();
-			foreach (var productId in yamlConfig.Products)
+			foreach (var productId in productIdList)
 			{
 				var normalizedProductId = productId.Replace('_', '-');
 				if (!validProductIds.Contains(normalizedProductId))
@@ -206,6 +240,28 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		if (block == null && collector.Errors > 0)
 			return null;
 
+		// Process highlight labels from pivot configuration
+		IReadOnlyList<string>? highlightLabels = null;
+		if (!string.IsNullOrWhiteSpace(yamlConfig.Pivot?.Highlight))
+			highlightLabels = SplitLabels(yamlConfig.Pivot.Highlight);
+
+		// Process products configuration
+		ProductsConfig? productsConfig = null;
+		if (yamlConfig.Products != null)
+			productsConfig = ParseProductsConfig(collector, yamlConfig.Products, configPath, validProductIds);
+
+		// Process bundle configuration
+		BundleConfiguration? bundleConfig = null;
+		if (yamlConfig.Bundle != null)
+			bundleConfig = ParseBundleConfiguration(yamlConfig.Bundle);
+
+		// Process extract configuration
+		var extract = new ExtractConfiguration
+		{
+			ReleaseNotes = yamlConfig.Extract?.ReleaseNotes ?? true,
+			Issues = yamlConfig.Extract?.Issues ?? true
+		};
+
 		return new ChangelogConfiguration
 		{
 			Pivot = pivot,
@@ -216,7 +272,11 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			Products = products,
 			LabelToType = labelToType,
 			LabelToAreas = labelToAreas,
-			Block = block
+			Block = block,
+			HighlightLabels = highlightLabels,
+			ProductsConfiguration = productsConfig,
+			Bundle = bundleConfig,
+			Extract = extract
 		};
 	}
 
@@ -240,7 +300,92 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		{
 			Types = types,
 			Subtypes = yamlPivot.Subtypes,
-			Areas = yamlPivot.Areas
+			Areas = yamlPivot.Areas,
+			Highlight = yamlPivot.Highlight
+		};
+	}
+
+	private ProductsConfig? ParseProductsConfig(
+		IDiagnosticsCollector collector,
+		ProductsConfigYaml yaml,
+		string configPath,
+		HashSet<string> validProductIds)
+	{
+		// Validate available products
+		List<string>? available = null;
+		if (yaml.Available is { Count: > 0 })
+		{
+			available = [];
+			foreach (var productId in yaml.Available)
+			{
+				var normalizedProductId = productId.Replace('_', '-');
+				if (!validProductIds.Contains(normalizedProductId))
+				{
+					var availableProducts = string.Join(", ", validProductIds.OrderBy(p => p));
+					collector.EmitError(configPath, $"Product '{productId}' in products_config.available is not in the list of available products from config/products.yml. Available products: {availableProducts}");
+					return null;
+				}
+				available.Add(normalizedProductId);
+			}
+		}
+
+		// Parse default products
+		List<DefaultProduct>? defaultProducts = null;
+		if (yaml.Default is { Count: > 0 })
+		{
+			defaultProducts = [];
+			foreach (var defaultYaml in yaml.Default)
+			{
+				if (string.IsNullOrWhiteSpace(defaultYaml.Product))
+				{
+					collector.EmitError(configPath, "Default product in products_config.default must have a product ID");
+					return null;
+				}
+
+				var normalizedProductId = defaultYaml.Product.Replace('_', '-');
+				if (!validProductIds.Contains(normalizedProductId))
+				{
+					var availableProducts = string.Join(", ", validProductIds.OrderBy(p => p));
+					collector.EmitError(configPath, $"Product '{defaultYaml.Product}' in products_config.default is not in the list of available products from config/products.yml. Available products: {availableProducts}");
+					return null;
+				}
+
+				defaultProducts.Add(new DefaultProduct
+				{
+					Product = normalizedProductId,
+					Lifecycle = defaultYaml.Lifecycle ?? "ga"
+				});
+			}
+		}
+
+		return new ProductsConfig
+		{
+			Available = available,
+			Default = defaultProducts
+		};
+	}
+
+	private static BundleConfiguration ParseBundleConfiguration(BundleConfigurationYaml yaml)
+	{
+		Dictionary<string, BundleProfile>? profiles = null;
+		if (yaml.Profiles is { Count: > 0 })
+		{
+			profiles = yaml.Profiles.ToDictionary(
+				kvp => kvp.Key,
+				kvp => new BundleProfile
+				{
+					Products = kvp.Value.Products,
+					Output = kvp.Value.Output,
+					HideFeatures = kvp.Value.HideFeatures
+				});
+		}
+
+		return new BundleConfiguration
+		{
+			Directory = yaml.Directory,
+			OutputDirectory = yaml.OutputDirectory,
+			Resolve = yaml.Resolve ?? true,
+			Profiles = profiles
 		};
 	}
 

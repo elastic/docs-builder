@@ -7,8 +7,8 @@ using System.IO.Compression;
 using System.Text;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.Products;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.Components;
 using Elastic.Markdown.Myst.Renderers.LlmMarkdown;
@@ -19,9 +19,8 @@ namespace Elastic.Markdown.Exporters;
 /// <summary>
 /// Exports markdown files as LLM-optimized CommonMark using custom renderers
 /// </summary>
-public class LlmMarkdownExporter(IDocumentInferrerService? documentInferrerService = null) : IMarkdownExporter
+public class LlmMarkdownExporter : IMarkdownExporter
 {
-	private readonly IDocumentInferrerService _documentInferrer = documentInferrerService ?? new NoopDocumentInferrer();
 
 	private const string LlmsTxtTemplate = """
 		# Elastic Documentation
@@ -77,14 +76,15 @@ public class LlmMarkdownExporter(IDocumentInferrerService? documentInferrerServi
 
 	public async ValueTask<bool> ExportAsync(MarkdownExportFileContext fileContext, Cancel ctx)
 	{
+		var fs = fileContext.BuildContext.WriteFileSystem;
 		var llmMarkdown = ConvertToLlmMarkdown(fileContext.Document, fileContext.BuildContext);
-		var outputFile = GetLlmOutputFile(fileContext);
+		var outputFile = GetLlmOutputFile(fs, fileContext);
 		if (outputFile.Directory is { Exists: false })
 			outputFile.Directory.Create();
 
 		var content = IsRootIndexFile(fileContext) ? LlmsTxtTemplate : CreateLlmContentWithMetadata(fileContext, llmMarkdown);
 
-		await fileContext.SourceFile.SourceFile.FileSystem.File.WriteAllTextAsync(
+		await fs.File.WriteAllTextAsync(
 			outputFile.FullName,
 			content,
 			Encoding.UTF8,
@@ -105,7 +105,7 @@ public class LlmMarkdownExporter(IDocumentInferrerService? documentInferrerServi
 		var expected = fs.FileInfo.New(Path.Combine(fileContext.BuildContext.OutputDirectory.FullName, "index.html"));
 		return fileContext.DefaultOutputFile.FullName == expected.FullName;
 	}
-	private static IFileInfo GetLlmOutputFile(MarkdownExportFileContext fileContext)
+	private static IFileInfo GetLlmOutputFile(IFileSystem writeFileSystem, MarkdownExportFileContext fileContext)
 	{
 		var source = fileContext.SourceFile.SourceFile;
 		var fs = source.FileSystem;
@@ -117,12 +117,12 @@ public class LlmMarkdownExporter(IDocumentInferrerService? documentInferrerServi
 			var root = fileContext.BuildContext.OutputDirectory;
 
 			if (defaultOutputFile.Directory!.FullName == root.FullName)
-				return fs.FileInfo.New(Path.Combine(root.FullName, "llms.txt"));
+				return writeFileSystem.FileInfo.New(Path.Combine(root.FullName, "llms.txt"));
 
 			// For index files: /docs/section/index.html -> /docs/section.md
 			// This allows users to append .md to any URL path
 			var folderName = defaultOutputFile.Directory!.Name;
-			return fs.FileInfo.New(Path.Combine(
+			return writeFileSystem.FileInfo.New(Path.Combine(
 				defaultOutputFile.Directory!.Parent!.FullName,
 				$"{folderName}.md"
 			));
@@ -130,13 +130,14 @@ public class LlmMarkdownExporter(IDocumentInferrerService? documentInferrerServi
 		// Regular files: /docs/section/page.html -> /docs/section/page.llm.md
 		var directory = defaultOutputFile.Directory!.FullName;
 		var baseName = Path.GetFileNameWithoutExtension(defaultOutputFile.Name);
-		return fs.FileInfo.New(Path.Combine(directory, $"{baseName}.md"));
+		return writeFileSystem.FileInfo.New(Path.Combine(directory, $"{baseName}.md"));
 	}
 
 
-	private string CreateLlmContentWithMetadata(MarkdownExportFileContext context, string llmMarkdown)
+	private static string CreateLlmContentWithMetadata(MarkdownExportFileContext context, string llmMarkdown)
 	{
 		var sourceFile = context.SourceFile;
+		var inferrer = context.InferenceService ?? new NoopDocumentInferrer();
 		var metadata = DocumentationObjectPoolProvider.StringBuilderPool.Get();
 
 		_ = metadata.AppendLine("---");
@@ -151,10 +152,11 @@ public class LlmMarkdownExporter(IDocumentInferrerService? documentInferrerServi
 			_ = metadata.AppendLine($"description: {generateDescription}");
 		}
 
-		_ = metadata.AppendLine($"url: {context.BuildContext.CanonicalBaseUrl?.Scheme}://{context.BuildContext.CanonicalBaseUrl?.Host}{context.NavigationItem.Url}");
+		var url = $"{context.BuildContext.CanonicalBaseUrl?.Scheme}://{context.BuildContext.CanonicalBaseUrl?.Host}{context.NavigationItem.Url}";
+		_ = metadata.AppendLine($"url: {url}");
 
 		// Use DocumentInferrerService to get merged products
-		var inference = _documentInferrer.InferForMarkdown(
+		var inference = inferrer.InferForMarkdown(
 			context.BuildContext.Git.RepositoryName,
 			sourceFile.YamlFrontMatter?.MappedPages,
 			context.DocumentationSet.Configuration.Products,
@@ -216,6 +218,6 @@ public class LlmMarkdownExporter(IDocumentInferrerService? documentInferrerServi
 
 public static class LlmMarkdownExporterExtensions
 {
-	public static void AddLlmMarkdownExport(this List<IMarkdownExporter> exporters, IDocumentInferrerService? documentInferrer = null) =>
-		exporters.Add(new LlmMarkdownExporter(documentInferrer));
+	public static void AddLlmMarkdownExport(this List<IMarkdownExporter> exporters) =>
+		exporters.Add(new LlmMarkdownExporter());
 }

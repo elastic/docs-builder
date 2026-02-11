@@ -3,9 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using Elastic.Changelog.Serialization;
-using Elastic.Documentation;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.ReleaseNotes;
 using Microsoft.Extensions.Logging;
 using YamlDotNet.Core;
 using YamlDotNet.Serialization;
@@ -68,14 +68,9 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, IDeserializer deseria
 			// Compute checksum (SHA1)
 			var checksum = ChangelogBundlingService.ComputeSha1(fileContent);
 
-			// Deserialize YAML (skip comment lines)
-			var yamlLines = fileContent.Split('\n');
-			var yamlWithoutComments = string.Join('\n', yamlLines.Where(line => !line.TrimStart().StartsWith('#')));
-
-			// Normalize "version:" to "target:" in products section for compatibility
-			var normalizedYaml = ChangelogBundlingService.VersionToTargetRegex().Replace(yamlWithoutComments, "$1target:");
-
-			var yamlDto = deserializer.Deserialize<ChangelogEntryYaml>(normalizedYaml);
+			// Deserialize YAML
+			var normalizedYaml = ReleaseNotesSerialization.NormalizeYaml(fileContent);
+			var yamlDto = deserializer.Deserialize<ChangelogEntryDto>(normalizedYaml);
 
 			// Check for duplicates (using checksum)
 			if (seenChangelogs.Contains(checksum))
@@ -92,7 +87,7 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, IDeserializer deseria
 			_ = seenChangelogs.Add(checksum);
 
 			// Convert to domain type
-			var data = ChangelogYamlSerialization.ConvertEntry(yamlDto);
+			var data = ReleaseNotesSerialization.ConvertEntry(yamlDto);
 
 			return new MatchedChangelogFile
 			{
@@ -117,7 +112,7 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, IDeserializer deseria
 	}
 
 	private static bool MatchesFilter(
-		ChangelogEntryYaml data,
+		ChangelogEntryDto data,
 		ChangelogFilterCriteria criteria,
 		HashSet<string> matchedPrs)
 	{
@@ -134,7 +129,7 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, IDeserializer deseria
 	}
 
 	private static bool MatchesProductFilter(
-		ChangelogEntryYaml data,
+		ChangelogEntryDto data,
 		IReadOnlyList<ProductFilter> productFilters)
 	{
 		if (data.Products == null || data.Products.Count == 0)
@@ -158,7 +153,7 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, IDeserializer deseria
 	}
 
 	private static bool MatchesPrFilter(
-		ChangelogEntryYaml data,
+		ChangelogEntryDto data,
 		ChangelogFilterCriteria criteria,
 		HashSet<string> matchedPrs)
 	{

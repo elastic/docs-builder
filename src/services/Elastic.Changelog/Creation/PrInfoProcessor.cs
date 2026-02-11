@@ -2,10 +2,10 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Changelog.Configuration;
 using Elastic.Changelog.GitHub;
-using Elastic.Documentation;
+using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.ReleaseNotes;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Changelog.Creation;
@@ -136,7 +136,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		{
 			if (config.LabelToType == null || config.LabelToType.Count == 0)
 			{
-				collector.EmitError(string.Empty, $"Cannot derive type from PR {prUrl} labels: no label-to-type mapping configured in changelog.yml. Please provide --type or configure label_to_type in changelog.yml.");
+				collector.EmitError(string.Empty, $"Cannot derive type from PR {prUrl} labels: no type mapping configured in changelog.yml. Please provide --type or configure pivot.types in changelog.yml.");
 				return null;
 			}
 
@@ -144,7 +144,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 			if (mappedType == null)
 			{
 				var availableLabels = prInfo.Labels.Count > 0 ? string.Join(", ", prInfo.Labels) : "none";
-				collector.EmitError(string.Empty, $"Cannot derive type from PR {prUrl} labels ({availableLabels}). No matching label found in label_to_type mapping. Please provide --type or add a label mapping in changelog.yml.");
+				collector.EmitError(string.Empty, $"Cannot derive type from PR {prUrl} labels ({availableLabels}). No matching label found in type mapping. Please provide --type or add pivot.types with labels in changelog.yml.");
 				return null;
 			}
 			derived.Type = mappedType;
@@ -165,6 +165,33 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		}
 		else if (input.Areas is { Length: > 0 })
 			logger.LogDebug("Using explicitly provided areas, ignoring PR labels");
+
+		// Check highlight labels if CLI highlight not set
+		if (input.Highlight == null && config.HighlightLabels is { Count: > 0 })
+		{
+			var hasHighlightLabel = prInfo.Labels.Any(label =>
+				config.HighlightLabels.Contains(label, StringComparer.OrdinalIgnoreCase));
+			if (hasHighlightLabel)
+			{
+				derived.Highlight = true;
+				logger.LogInformation("PR has highlight label, setting highlight: true");
+			}
+		}
+		else if (input.Highlight != null)
+			logger.LogDebug("Using explicitly provided highlight value, ignoring PR labels");
+
+		// Extract linked issues from PR body if config enabled and issues not provided
+		if (input.ExtractIssues && (input.Issues == null || input.Issues.Length == 0))
+		{
+			if (prInfo.LinkedIssues.Count > 0)
+			{
+				derived.Issues = prInfo.LinkedIssues.ToArray();
+				logger.LogInformation("Extracted {Count} linked issues from PR body: {Issues}",
+					prInfo.LinkedIssues.Count, string.Join(", ", prInfo.LinkedIssues));
+			}
+		}
+		else if (input.Issues is { Length: > 0 })
+			logger.LogDebug("Using explicitly provided issues, ignoring PR body");
 
 		return derived;
 	}
@@ -288,4 +315,6 @@ public record DerivedPrFields
 	public string? Type { get; set; }
 	public string? Description { get; set; }
 	public string[]? Areas { get; set; }
+	public bool? Highlight { get; set; }
+	public string[]? Issues { get; set; }
 }

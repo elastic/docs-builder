@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation;
+using Elastic.Documentation.Configuration.Changelog;
+using Elastic.Documentation.ReleaseNotes;
 
 namespace Elastic.Changelog.Rendering;
 
@@ -21,4 +23,5 @@ public record ChangelogRenderContext
 	public required Dictionary<ChangelogEntry, HashSet<string>> EntryToBundleProducts { get; init; }
 	public required Dictionary<ChangelogEntry, string> EntryToRepo { get; init; }
 	public required Dictionary<ChangelogEntry, bool> EntryToHideLinks { get; init; }
+	public ChangelogConfiguration? Configuration { get; init; }
 }

@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using System.Text.Json;
 using Elastic.Documentation;
+using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Versions;
@@ -119,9 +120,17 @@ public class HtmlWriter(
 		var structuredBreadcrumbsJsonString = JsonSerializer.Serialize(breadcrumbsList, BreadcrumbsContext.Default.BreadcrumbsList);
 
 
+		// Git info for isolated header
+		var gitRepo = DocumentationSet.Context.Git.RepositoryName;
+		var gitBranch = DocumentationSet.Context.Git.Branch;
+		var gitRef = DocumentationSet.Context.Git.Ref;
+		string? gitHubDocsUrl = null;
+		if (!string.IsNullOrEmpty(gitRepo) && gitRepo != "unavailable" && !string.IsNullOrEmpty(gitBranch) && gitBranch != "unavailable")
+			gitHubDocsUrl = $"https://github.com/elastic/{gitRepo}/tree/{gitBranch}/docs";
+
 		var slice = Page.Index.Create(new IndexViewModel
 		{
-			IsAssemblerBuild = DocumentationSet.Context.AssemblerBuild,
+			BuildType = DocumentationSet.Context.BuildType,
 			SiteName = siteName,
 			DocSetName = DocumentationSet.Name,
 			Title = markdown.Title ?? "[TITLE NOT SET]",
@@ -142,6 +151,7 @@ public class HtmlWriter(
 			AllowIndexing = DocumentationSet.Context.AllowIndexing && markdown.YamlFrontMatter?.NoIndex != true && (markdown.CrossLink.Equals("docs-content://index.md", StringComparison.OrdinalIgnoreCase) || markdown is DetectionRuleFile || !current.Hidden),
 			CanonicalBaseUrl = DocumentationSet.Context.CanonicalBaseUrl,
 			GoogleTagManager = DocumentationSet.Context.GoogleTagManager,
+			Optimizely = DocumentationSet.Context.Optimizely,
 			Features = DocumentationSet.Configuration.Features,
 			StaticFileContentHashProvider = StaticFileContentHashProvider,
 			ReportIssueUrl = reportUrl,
@@ -152,7 +162,13 @@ public class HtmlWriter(
 			Products = pageProducts,
 			VersioningSystem = pageVersioning,
 			VersionsConfig = DocumentationSet.Context.VersionsConfiguration!,
-			StructuredBreadcrumbsJson = structuredBreadcrumbsJsonString
+			StructuredBreadcrumbsJson = structuredBreadcrumbsJsonString,
+			// Git info for isolated header
+			GitBranch = gitBranch != "unavailable" ? gitBranch : null,
+			GitCommitShort = gitRef is { Length: >= 7 } r && r != "unavailable" ? r[..7] : null,
+			GitRepository = gitRepo != "unavailable" ? gitRepo : null,
+			GitHubDocsUrl = gitHubDocsUrl,
+			GitHubRef = DocumentationSet.Context.Git.GitHubRef
 		});
 
 		return new RenderResult

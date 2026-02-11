@@ -104,6 +104,60 @@ Link to websites and resources outside the Elastic docs:
 [Elastic Documentation](https://www.elastic.co/guide)
 ```
 
+### Autolinks
+
+Bare `https://` URLs in text are automatically converted to clickable links.
+
+Autolinks:
+
+- Only work with `https://` URLs (not `http://`).
+- Open in a new tab.
+- Display the external link indicator.
+- Are not rendered inside code blocks or inline code.
+
+#### Excluded URLs
+
+Certain URLs are intentionally excluded from autolinking:
+
+| Pattern | Example | Reason |
+|---------|---------|--------|
+| URLs with explicit ports | `https://example.co:443/path` | Typically configuration examples. |
+| Example and placeholder domains (`localhost`, `127.0.0.1`, `example.com`, `example.org`, `example.net`, and subdomains) | `https://localhost/api` | Reserved for documentation examples. |
+| URLs with template placeholders (`{{` or `}}`) | `https://{{cluster_id}}.example.co` | Contain variables meant to be replaced. |
+| Broken AsciiDoc-style links (`[` or `]` in URL) | `https://example.org/page[text` | Malformed links needing manual correction. |
+
+#### Examples
+
+::::{tab-set}
+
+:::{tab-item} Output
+
+- Documentation: https://example.com/docs/guide
+- Search: https://example.com/search?q=elasticsearch&page=1
+- Section link: https://example.com/page#configuration
+
+:::
+
+:::{tab-item} Markdown
+
+```markdown
+- Documentation: https://example.com/docs/guide
+- Search: https://example.com/search?q=elasticsearch&page=1
+- Section link: https://example.com/page#configuration
+```
+
+:::
+
+::::
+
+#### Hint for elastic.co/docs URLs
+
+Autolinks pointing to `elastic.co/docs` trigger a hint during build, suggesting you replace them with a [cross-repository link](#cross-repository-links) or relative link for better maintainability.
+
+For example, this autolink triggers the hint: https://www.elastic.co/docs
+
+Instead, use a cross-repository link or a relative link.
+
 ## Link formatting
 
 ### Style link text

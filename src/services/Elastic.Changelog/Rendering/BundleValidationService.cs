@@ -4,9 +4,10 @@
 
 using System.IO.Abstractions;
 using Elastic.Changelog.Bundling;
-using Elastic.Changelog.Serialization;
-using Elastic.Documentation;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.ReleaseNotes;
+using Microsoft.Extensions.Logging;
 using YamlDotNet.Core;
 
 namespace Elastic.Changelog.Rendering;
@@ -14,8 +15,9 @@ namespace Elastic.Changelog.Rendering;
 /// <summary>
 /// Service for validating changelog bundles before rendering
 /// </summary>
-public class BundleValidationService(IFileSystem fileSystem)
+public class BundleValidationService(ILoggerFactory logFactory, IFileSystem fileSystem)
 {
+	private readonly ILogger _logger = logFactory.CreateLogger<BundleValidationService>();
 	/// <summary>
 	/// Validates all bundles and returns validation result with loaded bundle data
 	/// </summary>
@@ -40,7 +42,7 @@ public class BundleValidationService(IFileSystem fileSystem)
 			Bundle? bundledData;
 			try
 			{
-				bundledData = ChangelogYamlSerialization.DeserializeBundle(bundleContent);
+				bundledData = ReleaseNotesSerialization.DeserializeBundle(bundleContent);
 			}
 			catch (YamlException yamlEx)
 			{
@@ -50,6 +52,17 @@ public class BundleValidationService(IFileSystem fileSystem)
 
 			// Determine directory for resolving file references
 			var bundleDirectory = bundleInput.Directory ?? fileSystem.Path.GetDirectoryName(bundleInput.BundleFile) ?? fileSystem.Directory.GetCurrentDirectory();
+
+			// Auto-discover and merge amend files
+			var amendFiles = ChangelogBundleAmendService.DiscoverAmendFiles(fileSystem, bundleInput.BundleFile);
+			if (amendFiles.Count > 0)
+			{
+				_logger.LogInformation("Found {Count} amend file(s) for bundle {BundleFile}", amendFiles.Count, bundleInput.BundleFile);
+				var mergedData = await MergeAmendFilesAsync(collector, bundledData, amendFiles, ctx);
+				if (mergedData == null)
+					return CreateInvalidResult(bundleDataList, seenFileNames, seenPrs);
+				bundledData = mergedData;
+			}
 
 			// Validate all entries in this bundle
 			var result = await ValidateBundleEntriesAsync(collector, bundleInput, bundledData, bundleDirectory, seenFileNames, seenPrs, ctx);
@@ -73,6 +86,38 @@ public class BundleValidationService(IFileSystem fileSystem)
 			Bundles = bundleDataList,
 			SeenFileNames = seenFileNames,
 			SeenPrs = seenPrs
+		};
+	}
+
+	private async Task<Bundle?> MergeAmendFilesAsync(
+		IDiagnosticsCollector collector,
+		Bundle mainBundle,
+		IReadOnlyList<string> amendFiles,
+		Cancel ctx)
+	{
+		var mergedEntries = new List<BundledEntry>(mainBundle.Entries);
+
+		foreach (var amendFile in amendFiles)
+		{
+			try
+			{
+				var amendContent = await fileSystem.File.ReadAllTextAsync(amendFile, ctx);
+				var amendBundle = ReleaseNotesSerialization.DeserializeBundle(amendContent);
+
+				_logger.LogInformation("Merging {Count} entries from amend file {AmendFile}", amendBundle.Entries.Count, amendFile);
+				mergedEntries.AddRange(amendBundle.Entries);
+			}
+			catch (YamlException yamlEx)
+			{
+				collector.EmitError(amendFile, $"Failed to deserialize amend file: {yamlEx.Message}", yamlEx);
+				return null;
+			}
+		}
+
+		return new Bundle
+		{
+			Products = mainBundle.Products,
+			Entries = mergedEntries
 		};
 	}
 
@@ -206,16 +251,19 @@ public class BundleValidationService(IFileSystem fileSystem)
 			var fileContent = await fileSystem.File.ReadAllTextAsync(filePath, ctx);
 			var checksum = ChangelogBundlingService.ComputeSha1(fileContent);
 			if (checksum != entry.File.Checksum)
-				collector.EmitWarning(bundleFile, $"Checksum mismatch for file {entry.File.Name}. Expected {entry.File.Checksum}, got {checksum}");
+			{
+				collector.EmitWarning(bundleFile,
+					$"Checksum mismatch for file {entry.File.Name}: the file content has changed since it was bundled. " +
+					"This can happen if the file was edited after bundling, or if the render directory " +
+					"contains a different copy of the file. To fix, re-run 'bundle' or 'bundle-amend' " +
+					"to update the checksum, or use '--resolve' when amending to embed the entry data " +
+					$"directly in the amend file. Expected {entry.File.Checksum}, got {checksum}"
+				);
+			}
 
-			// Deserialize YAML (skip comment lines) to validate structure
-			var yamlLines = fileContent.Split('\n');
-			var yamlWithoutComments = string.Join('\n', yamlLines.Where(line => !line.TrimStart().StartsWith('#')));
-
-			// Normalize "version:" to "target:" in products section
-			var normalizedYaml = ChangelogBundlingService.VersionToTargetRegex().Replace(yamlWithoutComments, "$1target:");
-
-			var entryData = ChangelogYamlSerialization.DeserializeEntry(normalizedYaml);
+			// Deserialize YAML to validate structure
+			var normalizedYaml = ReleaseNotesSerialization.NormalizeYaml(fileContent);
+			var entryData = ReleaseNotesSerialization.DeserializeEntry(normalizedYaml);
 
 			// Validate required fields in changelog file
 			if (string.IsNullOrWhiteSpace(entryData.Title))

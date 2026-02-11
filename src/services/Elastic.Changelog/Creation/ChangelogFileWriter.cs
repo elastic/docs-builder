@@ -3,10 +3,12 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using Elastic.Changelog.Configuration;
-using Elastic.Changelog.Serialization;
+using System.Text;
 using Elastic.Documentation;
+using Elastic.Documentation.Configuration.Changelog;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.ReleaseNotes;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Changelog.Creation;
@@ -43,8 +45,8 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 		var filename = GenerateFilename(collector, input, prUrl);
 		var filePath = fileSystem.Path.Combine(outputDir, filename);
 
-		// Write file
-		await fileSystem.File.WriteAllTextAsync(filePath, yamlContent, ctx);
+		// Write file with explicit UTF-8 encoding to ensure proper character handling
+		await fileSystem.File.WriteAllTextAsync(filePath, yamlContent, Encoding.UTF8, ctx);
 		logger.LogInformation("Created changelog fragment: {FilePath}", filePath);
 
 		return true;
@@ -96,7 +98,7 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 			FeatureId = input.FeatureId,
 			Highlight = input.Highlight,
 			Pr = prUrl ?? (input.Prs != null && input.Prs.Length > 0 ? input.Prs[0] : null),
-			Products = input.Products.Select(ChangelogMapper.ToProductReference).ToList(),
+			Products = input.Products.Select(p => p.ToProductReference()).ToList(),
 			Areas = input.Areas is { Length: > 0 } ? input.Areas.ToList() : null,
 			Issues = input.Issues is { Length: > 0 } ? input.Issues.ToList() : null
 		};
@@ -118,7 +120,7 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 		};
 
 		// Use centralized serialization which handles DTO conversion
-		var yaml = ChangelogYamlSerialization.SerializeEntry(serializeData);
+		var yaml = ReleaseNotesSerialization.SerializeEntry(serializeData);
 
 		// Comment out missing title/type fields - insert at the beginning of the YAML data
 		if (titleMissing || typeMissing)

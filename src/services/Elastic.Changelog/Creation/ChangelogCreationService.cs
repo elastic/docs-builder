@@ -5,8 +5,9 @@
 using System.IO.Abstractions;
 using Elastic.Changelog.Configuration;
 using Elastic.Changelog.GitHub;
-using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Changelog;
+using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
@@ -37,6 +38,7 @@ public record CreateChangelogArguments
 	public bool UsePrNumber { get; init; }
 	public bool StripTitlePrefix { get; init; }
 	public bool ExtractReleaseNotes { get; init; }
+	public bool ExtractIssues { get; init; }
 }
 
 /// <summary>
@@ -54,6 +56,8 @@ public class ChangelogCreationService(
 	private readonly CreateChangelogArgumentsValidator _validator = new(configurationContext);
 	private readonly PrInfoProcessor _prProcessor = new(githubPrService, logFactory.CreateLogger<PrInfoProcessor>());
 	private readonly ChangelogFileWriter _fileWriter = new(fileSystem ?? new FileSystem(), logFactory.CreateLogger<ChangelogFileWriter>());
+	private readonly ProductInferService _productInferService = new(
+		configurationContext.ProductsConfiguration);
 
 	public async Task<bool> CreateChangelog(IDiagnosticsCollector collector, CreateChangelogArguments input, Cancel ctx)
 	{
@@ -65,6 +69,17 @@ public class ChangelogCreationService(
 			{
 				collector.EmitError(string.Empty, "Failed to load changelog configuration");
 				return false;
+			}
+
+			// Apply config defaults to input (for extract_release_notes, extract_issues)
+			input = ApplyConfigDefaults(input, config);
+
+			// If no products provided, try to infer from config defaults or repository
+			if (input.Products.Count == 0)
+			{
+				var inferredProducts = InferProducts(config.ProductsConfiguration);
+				if (inferredProducts != null)
+					input = input with { Products = inferredProducts };
 			}
 
 			// Handle multiple PRs if provided (more than one PR)
@@ -84,6 +99,40 @@ public class ChangelogCreationService(
 			collector.EmitError(string.Empty, $"Access denied creating changelog: {uaEx.Message}", uaEx);
 			return false;
 		}
+	}
+
+	private static CreateChangelogArguments ApplyConfigDefaults(CreateChangelogArguments input, ChangelogConfiguration _) =>
+		// Config defaults are already handled by CLI layer, but this ensures service layer has proper defaults too
+		input;
+
+	/// <summary>
+	/// Infers products from configuration defaults or git repository name.
+	/// </summary>
+	private IReadOnlyList<ProductArgument>? InferProducts(ProductsConfig? productsConfig)
+	{
+		// First, try config defaults
+		if (productsConfig?.Default is { Count: > 0 })
+		{
+			var products = productsConfig.Default.Select(d => new ProductArgument
+			{
+				Product = d.Product,
+				Lifecycle = d.Lifecycle
+			}).ToList();
+			_logger.LogInformation("Using default products from config: {Products}",
+				string.Join(", ", products.Select(p => $"{p.Product} ({p.Lifecycle})")));
+			return products;
+		}
+
+		// Second, try generic product inference from current git repo
+		var product = _productInferService.InferProductFromCurrentRepository();
+		if (product == null)
+		{
+			_logger.LogDebug("Could not infer product from repository");
+			return null;
+		}
+
+		_logger.LogInformation("Inferred product '{ProductId}' from repository", product.Id);
+		return [new ProductArgument { Product = product.Id, Lifecycle = "ga" }];
 	}
 
 	private async Task<bool> CreateChangelogsForMultiplePrsAsync(
@@ -192,6 +241,8 @@ public class ChangelogCreationService(
 			Title = derived.Title != null && string.IsNullOrWhiteSpace(input.Title) ? derived.Title : input.Title,
 			Type = derived.Type != null && string.IsNullOrWhiteSpace(input.Type) ? derived.Type : input.Type,
 			Description = derived.Description != null && string.IsNullOrWhiteSpace(input.Description) ? derived.Description : input.Description,
-			Areas = derived.Areas != null && (input.Areas == null || input.Areas.Length == 0) ? derived.Areas : input.Areas
+			Areas = derived.Areas != null && (input.Areas == null || input.Areas.Length == 0) ? derived.Areas : input.Areas,
+			Highlight = derived.Highlight ?? input.Highlight,
+			Issues = derived.Issues != null && (input.Issues == null || input.Issues.Length == 0) ? derived.Issues : input.Issues
 		};
 }

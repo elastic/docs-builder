@@ -6,11 +6,16 @@ using System.IO.Abstractions;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
-using Elastic.Changelog.Serialization;
-using Elastic.Documentation;
+using Elastic.Changelog.Configuration;
+using Elastic.Changelog.Rendering;
+using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Changelog;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Changelog.Bundling;
 
@@ -28,16 +33,49 @@ public record BundleChangelogsArguments
 	public string[]? Prs { get; init; }
 	public string? Owner { get; init; }
 	public string? Repo { get; init; }
+
+	/// <summary>
+	/// Profile name to use (from bundle.profiles in config)
+	/// </summary>
+	public string? Profile { get; init; }
+
+	/// <summary>
+	/// Version number or promotion report URL/path for profile-based bundling
+	/// </summary>
+	public string? ProfileArgument { get; init; }
+
+	/// <summary>
+	/// Output directory for bundled changelog files (from config bundle.output_directory)
+	/// </summary>
+	public string? OutputDirectory { get; init; }
+
+	/// <summary>
+	/// Path to the changelog.yml configuration file
+	/// </summary>
+	public string? Config { get; init; }
+
+	/// <summary>
+	/// Feature IDs to mark as hidden in the bundle output.
+	/// When the bundle is rendered (by CLI render or {changelog} directive),
+	/// entries with matching feature-id values will be commented out.
+	/// </summary>
+	public string[]? HideFeatures { get; init; }
 }
 
 /// <summary>
 /// Service for bundling changelog files
 /// </summary>
-public partial class ChangelogBundlingService(ILoggerFactory logFactory, IFileSystem? fileSystem = null)
+public partial class ChangelogBundlingService(
+	ILoggerFactory logFactory,
+	IConfigurationContext? configurationContext = null,
+	IFileSystem? fileSystem = null)
 	: IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogBundlingService>();
 	private readonly IFileSystem _fileSystem = fileSystem ?? new FileSystem();
+	private readonly ChangelogConfigurationLoader? _configLoader = configurationContext != null
+		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem ?? new FileSystem())
+		: null;
 
 	[GeneratedRegex(@"(\s+)version:", RegexOptions.Multiline)]
 	internal static partial Regex VersionToTargetRegex();
@@ -49,6 +87,23 @@ public partial class ChangelogBundlingService(ILoggerFactory logFactory, IFileSy
 	{
 		try
 		{
+			// Load changelog configuration if available
+			ChangelogConfiguration? config = null;
+			if (_configLoader != null)
+				config = await _configLoader.LoadChangelogConfiguration(collector, input.Config, ctx);
+
+			// Handle profile-based bundling
+			if (!string.IsNullOrWhiteSpace(input.Profile))
+			{
+				var profileResult = await ProcessProfile(collector, input, config, ctx);
+				if (profileResult == null)
+					return false;
+				input = profileResult;
+			}
+
+			// Apply config defaults if available
+			input = ApplyConfigDefaults(input, config);
+
 			// Validate input
 			if (!ValidateInput(collector, input))
 				return false;
@@ -78,7 +133,7 @@ public partial class ChangelogBundlingService(ILoggerFactory logFactory, IFileSy
 			var filterCriteria = BuildFilterCriteria(input, prFilterResult.PrsToMatch);
 
 			// Match changelog entries
-			var entryMatcher = new ChangelogEntryMatcher(_fileSystem, ChangelogYamlSerialization.GetEntryDeserializer(), _logger);
+			var entryMatcher = new ChangelogEntryMatcher(_fileSystem, ReleaseNotesSerialization.GetEntryDeserializer(), _logger);
 			var matchResult = await entryMatcher.MatchChangelogsAsync(collector, yamlFiles, filterCriteria, ctx);
 
 			_logger.LogInformation("Found {Count} matching changelog entries", matchResult.Entries.Count);
@@ -89,9 +144,22 @@ public partial class ChangelogBundlingService(ILoggerFactory logFactory, IFileSy
 				return false;
 			}
 
+			// Load feature IDs to hide
+			var featureHidingLoader = new FeatureHidingLoader(_fileSystem);
+			var featureHidingResult = await featureHidingLoader.LoadFeatureIdsAsync(collector, input.HideFeatures, ctx);
+			if (!featureHidingResult.IsValid)
+				return false;
+
 			// Build bundle
 			var bundleBuilder = new BundleBuilder();
-			var buildResult = bundleBuilder.BuildBundle(collector, matchResult.Entries, input.OutputProducts, input.Resolve);
+			var buildResult = bundleBuilder.BuildBundle(
+				collector,
+				matchResult.Entries,
+				input.OutputProducts,
+				input.Resolve,
+				input.Repo,
+				featureHidingResult.FeatureIdsToHide
+			);
 
 			if (!buildResult.IsValid || buildResult.Data == null)
 				return false;
@@ -111,6 +179,147 @@ public partial class ChangelogBundlingService(ILoggerFactory logFactory, IFileSy
 			collector.EmitError(string.Empty, $"Access denied bundling changelogs: {uaEx.Message}", uaEx);
 			return false;
 		}
+	}
+
+	private async Task<BundleChangelogsArguments?> ProcessProfile(IDiagnosticsCollector collector, BundleChangelogsArguments input, ChangelogConfiguration? config, Cancel ctx)
+	{
+		if (config?.Bundle?.Profiles == null || !config.Bundle.Profiles.TryGetValue(input.Profile!, out var profile))
+		{
+			collector.EmitError(string.Empty, $"Profile '{input.Profile}' not found in bundle.profiles configuration");
+			return null;
+		}
+
+		if (string.IsNullOrWhiteSpace(input.ProfileArgument))
+		{
+			collector.EmitError(string.Empty, $"Profile '{input.Profile}' requires a version number or promotion report URL as the second argument");
+			return null;
+		}
+
+		// Auto-detect argument type
+		var argType = PromotionReportParser.DetectArgumentType(input.ProfileArgument);
+
+		// Check if it's a local file
+		if (argType == ProfileArgumentType.Version && _fileSystem.File.Exists(input.ProfileArgument))
+			argType = ProfileArgumentType.PromotionReportFile;
+
+		string version;
+		string[]? prsFromReport = null;
+
+		if (argType is ProfileArgumentType.PromotionReportUrl or ProfileArgumentType.PromotionReportFile)
+		{
+			// Parse promotion report to get PR list
+			var parser = new PromotionReportParser(NullLoggerFactory.Instance, _fileSystem);
+			var reportResult = await parser.ParsePromotionReportAsync(input.ProfileArgument, ctx);
+
+			if (!reportResult.IsValid)
+			{
+				collector.EmitError(string.Empty, reportResult.ErrorMessage ?? "Failed to parse promotion report");
+				return null;
+			}
+
+			prsFromReport = reportResult.PrUrls.ToArray();
+			_logger.LogInformation("Extracted {Count} PRs from promotion report", prsFromReport.Length);
+
+			// Extract version from PR URLs or use "unknown"
+			// Try to extract from first PR URL path
+			version = "unknown";
+		}
+		else
+		{
+			// Use the argument as the version number
+			version = input.ProfileArgument;
+		}
+
+		// Substitute {version} and {lifecycle} in profile patterns
+		var lifecycle = VersionLifecycleInference.InferLifecycle(version);
+		var productsPattern = profile.Products?
+			.Replace("{version}", version)
+			.Replace("{lifecycle}", lifecycle);
+		var outputPattern = profile.Output?.Replace("{version}", version);
+
+		// Parse products pattern
+		List<ProductArgument>? inputProducts = null;
+		if (!string.IsNullOrWhiteSpace(productsPattern))
+			inputProducts = ParseProfileProducts(productsPattern);
+
+		// Determine output path
+		string? outputPath = null;
+		if (!string.IsNullOrWhiteSpace(outputPattern))
+		{
+			var outputDir = config.Bundle.OutputDirectory ?? input.OutputDirectory ?? input.Directory;
+			outputPath = _fileSystem.Path.Combine(outputDir, outputPattern);
+		}
+
+		// Merge profile hide-features with any CLI-provided hide-features
+		var mergedHideFeatures = MergeHideFeatures(input.HideFeatures, profile.HideFeatures);
+
+		// If we have PRs from a promotion report, use those; otherwise use input products filter
+		return input with
+		{
+			InputProducts = prsFromReport == null ? inputProducts : null,
+			Prs = prsFromReport,
+			All = false,
+			Output = outputPath ?? input.Output,
+			HideFeatures = mergedHideFeatures
+		};
+	}
+
+	private static string[]? MergeHideFeatures(string[]? cliHideFeatures, IReadOnlyList<string>? profileHideFeatures)
+	{
+		if (cliHideFeatures is not { Length: > 0 } && profileHideFeatures is not { Count: > 0 })
+			return null;
+
+		var merged = new HashSet<string>(cliHideFeatures ?? [], StringComparer.OrdinalIgnoreCase);
+
+		if (profileHideFeatures is { Count: > 0 })
+			merged.UnionWith(profileHideFeatures);
+
+		return merged.Count > 0 ? [.. merged] : null;
+	}
+
+	private static List<ProductArgument> ParseProfileProducts(string pattern)
+	{
+		// Parse pattern like "elasticsearch {version} ga" or "cloud-serverless {version} *"
+		var parts = pattern.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+		if (parts.Length < 1)
+			return [];
+
+		var productId = parts[0];
+		var target = parts.Length > 1 ? parts[1] : "*";
+		var lifecycle = parts.Length > 2 ? parts[2] : "*";
+
+		return
+		[
+			new ProductArgument
+			{
+				Product = productId == "*" ? "*" : productId,
+				Target = target == "*" ? "*" : target,
+				Lifecycle = lifecycle == "*" ? "*" : lifecycle
+			}
+		];
+	}
+
+	private static BundleChangelogsArguments ApplyConfigDefaults(BundleChangelogsArguments input, ChangelogConfiguration? config)
+	{
+		if (config?.Bundle == null)
+			return input;
+
+		// Apply directory default if not specified
+		var directory = input.Directory;
+		if ((string.IsNullOrWhiteSpace(directory) || directory == Directory.GetCurrentDirectory())
+			&& !string.IsNullOrWhiteSpace(config.Bundle.Directory))
+		{
+			directory = config.Bundle.Directory;
+		}
+
+		// Apply resolve default if not specified by CLI
+		var resolve = input.Resolve || config.Bundle.Resolve;
+
+		return input with
+		{
+			Directory = directory,
+			Resolve = resolve
+		};
 	}
 
 	private bool ValidateInput(IDiagnosticsCollector collector, BundleChangelogsArguments input)
@@ -180,7 +389,7 @@ public partial class ChangelogBundlingService(ILoggerFactory logFactory, IFileSy
 	private async Task WriteBundleFileAsync(Bundle bundledData, string outputPath, Cancel ctx)
 	{
 		// Generate bundled YAML
-		var bundledYaml = ChangelogYamlSerialization.SerializeBundle(bundledData);
+		var bundledYaml = ReleaseNotesSerialization.SerializeBundle(bundledData);
 
 		// Ensure output directory exists
 		var outputDir = _fileSystem.Path.GetDirectoryName(outputPath);
@@ -199,15 +408,20 @@ public partial class ChangelogBundlingService(ILoggerFactory logFactory, IFileSy
 			_logger.LogInformation("Output file already exists, using unique filename: {OutputPath}", outputPath);
 		}
 
-		// Write bundled file
-		await _fileSystem.File.WriteAllTextAsync(outputPath, bundledYaml, ctx);
+		// Write bundled file with explicit UTF-8 encoding to ensure proper character handling
+		await _fileSystem.File.WriteAllTextAsync(outputPath, bundledYaml, Encoding.UTF8, ctx);
 		_logger.LogInformation("Created bundled changelog: {OutputPath}", outputPath);
 	}
 
+	/// <summary>
+	/// Computes a SHA1 hash from the normalized YAML content (comments stripped, version→target).
+	/// This ensures checksums represent semantic content, not formatting or comments.
+	/// </summary>
 	[System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5350:Do not use insecure cryptographic algorithm SHA1", Justification = "SHA1 is required for compatibility with existing changelog bundle format")]
 	internal static string ComputeSha1(string content)
 	{
-		var bytes = Encoding.UTF8.GetBytes(content);
+		var normalized = ReleaseNotesSerialization.NormalizeYaml(content);
+		var bytes = Encoding.UTF8.GetBytes(normalized);
 		var hash = SHA1.HashData(bytes);
 		return Convert.ToHexString(hash).ToLowerInvariant();
 	}

@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System;
 using System.Diagnostics.CodeAnalysis;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Markdown.Diagnostics;
@@ -12,12 +13,10 @@ using Elastic.Markdown.Myst.Directives.AppliesSwitch;
 using Elastic.Markdown.Myst.Directives.Button;
 using Elastic.Markdown.Myst.Directives.Changelog;
 using Elastic.Markdown.Myst.Directives.CsvInclude;
-using Elastic.Markdown.Myst.Directives.Diagram;
 using Elastic.Markdown.Myst.Directives.Dropdown;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Math;
-using Elastic.Markdown.Myst.Directives.Mermaid;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.Directives.Stepper;
 using Elastic.Markdown.Myst.Directives.Tabs;
@@ -29,6 +28,7 @@ using Markdig.Renderers;
 using Markdig.Renderers.Html;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
+using Microsoft.AspNetCore.Html;
 using RazorSlices;
 using YamlDotNet.Core;
 
@@ -46,12 +46,6 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 
 		switch (directiveBlock)
 		{
-			case DiagramBlock diagramBlock:
-				WriteDiagram(renderer, diagramBlock);
-				return;
-			case MermaidBlock mermaidBlock:
-				WriteMermaid(renderer, mermaidBlock);
-				return;
 			case FigureBlock imageBlock:
 				WriteFigure(renderer, imageBlock);
 				return;
@@ -348,22 +342,6 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		return null;
 	}
 
-	private static void WriteDiagram(HtmlRenderer renderer, DiagramBlock block)
-	{
-		var slice = DiagramView.Create(new DiagramViewModel
-		{
-			DirectiveBlock = block,
-			DiagramBlock = block
-		});
-		RenderRazorSlice(slice, renderer);
-	}
-
-	private static void WriteMermaid(HtmlRenderer renderer, MermaidBlock block)
-	{
-		var slice = MermaidView.Create(new MermaidViewModel { DirectiveBlock = block });
-		RenderRazorSliceRawContent(slice, renderer, block);
-	}
-
 	private static void WriteLiteralIncludeBlock(HtmlRenderer renderer, IncludeBlock block)
 	{
 		if (!block.Found || block.IncludePath is null)
@@ -517,9 +495,43 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 
 	private static void WriteCsvIncludeBlock(HtmlRenderer renderer, CsvIncludeBlock block)
 	{
-		var viewModel = CsvIncludeViewModel.Create(block);
+		var viewModel = CsvIncludeViewModel.Create(block, value => RenderCsvCellMarkdown(block, value));
 		var slice = CsvIncludeView.Create(viewModel);
 		RenderRazorSlice(slice, renderer);
+	}
+
+	private static HtmlString RenderCsvCellMarkdown(CsvIncludeBlock block, string value)
+	{
+		if (string.IsNullOrWhiteSpace(value))
+			return HtmlString.Empty;
+
+		var document = MarkdownParser.ParseMarkdownStringAsync(
+			block.Build,
+			block.Context,
+			value,
+			block.IncludeFrom,
+			block.Context.YamlFrontMatter,
+			MarkdownParser.Pipeline);
+
+		if (document.Count == 1 && document.FirstOrDefault() is ParagraphBlock paragraph && paragraph.Inline != null)
+			return RenderInlineMarkdown(paragraph);
+
+		var html = document.ToHtml(MarkdownParser.Pipeline);
+		return new HtmlString(html.EnsureTrimmed());
+	}
+
+	private static HtmlString RenderInlineMarkdown(ParagraphBlock paragraph)
+	{
+		if (paragraph.Inline is null)
+			return HtmlString.Empty;
+
+		var subscription = DocumentationObjectPoolProvider.HtmlRendererPool.Get();
+		subscription.HtmlRenderer.WriteChildren(paragraph.Inline);
+
+		var result = subscription.RentedStringBuilder?.ToString();
+		DocumentationObjectPoolProvider.HtmlRendererPool.Return(subscription);
+
+		return result == null ? HtmlString.Empty : new HtmlString(result.EnsureTrimmed());
 	}
 
 	private static void WriteChangelogBlock(HtmlRenderer renderer, ChangelogBlock block)
