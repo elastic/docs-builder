@@ -112,7 +112,12 @@ public class WrappedTableRenderer : HtmlTableRenderer
 					_ = renderer.Write($" rowspan=\"{cell.RowSpan}\"");
 
 				_ = renderer.Write(">");
+
+				var savedImplicitParagraph = renderer.ImplicitParagraph;
+				renderer.ImplicitParagraph = true;
 				renderer.Write(cell);
+				renderer.ImplicitParagraph = savedImplicitParagraph;
+
 				_ = renderer.Write("</");
 				_ = renderer.Write(tag);
 				_ = renderer.WriteLine(">");
