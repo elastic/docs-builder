@@ -51,7 +51,7 @@ Specify a custom field separator (default is comma):
 
 ### Column widths
 
-Control column widths using the `:widths:` option, exactly like the [`{table}` directive](/syntax/tables#column-widths). Values are relative and normalized to percentages:
+Control column widths using the `:widths:` option, exactly like the [`{table}` directive](/syntax/tables.md#column-widths). Values are relative and normalized to percentages:
 
 :::::{tab-set}
 
