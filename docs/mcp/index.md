@@ -16,6 +16,8 @@ The MCP server currently exposes the following tools:
 | `FindCrossLinks` | Finds all cross-links between repositories. Can filter by source or target repository. |
 | `ValidateCrossLinks` | Validates cross-links to a repository and reports any broken links. |
 
+The MCP server is started using the [`{{dbuild}} mcp`](../cli/mcp.md) command.
+
 ## Configuration
 
 To use the {{dbuild}} MCP server, add it to your IDE's MCP configuration.
