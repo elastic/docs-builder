@@ -72,6 +72,7 @@ When `--file-type markdown` is specified (the default), the command generates mu
 - `breaking-changes.md` - Contains breaking changes
 - `deprecations.md` - Contains deprecations
 - `known-issues.md` - Contains known issues
+- `highlights.md` - Contains highlighted entries (only created when at least one entry has `highlight: true`)
 
 ### Asciidoc format
 
@@ -79,6 +80,7 @@ When `--file-type asciidoc` is specified, the command generates a single asciido
 
 - Security updates
 - Bug fixes
+- Highlights (only included when at least one entry has `highlight: true`)
 - New features and enhancements
 - Breaking changes
 - Deprecations

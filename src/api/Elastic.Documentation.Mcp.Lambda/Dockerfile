@@ -32,3 +32,12 @@ RUN arch=$TARGETARCH \
     && echo $TARGETOS-$arch > /tmp/rid
 
 RUN dotnet publish src/api/Elastic.Documentation.Mcp.Lambda -r linux-x64 -c Release
+
+# Runtime stage for ECS Fargate deployment
+FROM public.ecr.aws/amazonlinux/amazonlinux:2023-minimal AS runtime
+WORKDIR /app
+COPY --from=base /app/.artifacts/publish/Elastic.Documentation.Mcp.Lambda/release_linux-x64/bootstrap /app/bootstrap
+RUN chmod +x /app/bootstrap
+EXPOSE 8080
+ENV ASPNETCORE_URLS=http://+:8080
+ENTRYPOINT ["/app/bootstrap"]

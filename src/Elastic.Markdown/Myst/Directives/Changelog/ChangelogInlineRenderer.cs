@@ -87,6 +87,7 @@ public static class ChangelogInlineRenderer
 			ChangelogTypeFilter.BreakingChange => entries.Where(e => e.Type == ChangelogEntryType.BreakingChange).ToList(),
 			ChangelogTypeFilter.Deprecation => entries.Where(e => e.Type == ChangelogEntryType.Deprecation).ToList(),
 			ChangelogTypeFilter.KnownIssue => entries.Where(e => e.Type == ChangelogEntryType.KnownIssue).ToList(),
+			ChangelogTypeFilter.Highlight => entries.Where(e => e.Highlight == true).ToList(),
 			_ => entries.Where(e => !ChangelogBlock.SeparatedTypes.Contains(e.Type)).ToList() // Default: exclude separated types
 		};
 
@@ -159,16 +160,31 @@ public static class ChangelogInlineRenderer
 		var deprecations = entriesByType.GetValueOrDefault(ChangelogEntryType.Deprecation, []);
 		var knownIssues = entriesByType.GetValueOrDefault(ChangelogEntryType.KnownIssue, []);
 
+		// Get highlighted entries from all types
+		var highlights = entriesByType.Values
+			.SelectMany(e => e)
+			.Where(e => e.Highlight == true)
+			.ToList();
+
 		_ = sb.AppendLine(CultureInfo.InvariantCulture, $"## {title}");
 
 		// Check if we have any content at all
 		var hasAnyContent = features.Count > 0 || enhancements.Count > 0 || security.Count > 0 ||
 							bugFixes.Count > 0 || docs.Count > 0 || regressions.Count > 0 || other.Count > 0 ||
-							breakingChanges.Count > 0 || deprecations.Count > 0 || knownIssues.Count > 0;
+							breakingChanges.Count > 0 || deprecations.Count > 0 || knownIssues.Count > 0 ||
+							highlights.Count > 0;
 
 		if (!hasAnyContent)
 		{
 			_ = sb.AppendLine(GetEmptyMessage(typeFilter));
+			return sb.ToString();
+		}
+
+		// Special case: When filtering by highlight, render only highlights without type-based sections
+		if (typeFilter == ChangelogTypeFilter.Highlight)
+		{
+			if (highlights.Count > 0)
+				RenderDetailedEntries(sb, highlights, repo, groupBySubtype: false, hideLinks);
 			return sb.ToString();
 		}
 
@@ -177,6 +193,13 @@ public static class ChangelogInlineRenderer
 			_ = sb.AppendLine();
 			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Breaking changes [{repo}-{titleSlug}-breaking-changes]");
 			RenderDetailedEntries(sb, breakingChanges, repo, groupBySubtype: true, hideLinks);
+		}
+
+		if (highlights.Count > 0 && typeFilter == ChangelogTypeFilter.All)
+		{
+			_ = sb.AppendLine();
+			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Highlights [{repo}-{titleSlug}-highlights]");
+			RenderDetailedEntries(sb, highlights, repo, groupBySubtype: false, hideLinks);
 		}
 
 		if (security.Count > 0)
