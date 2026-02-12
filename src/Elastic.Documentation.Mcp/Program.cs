@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Assembler.Links;
+using Elastic.Documentation.Assembler.Mcp;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links.InboundLinks;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,6 +21,6 @@ builder.Services.AddSingleton<ILinkUtilService, LinkUtilService>();
 builder.Services
 	.AddMcpServer()
 	.WithStdioServerTransport()
-	.WithToolsFromAssembly();
+	.WithTools<LinkTools>();
 
 await builder.Build().RunAsync();

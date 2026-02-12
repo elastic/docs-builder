@@ -31,13 +31,7 @@
     <PackageReference Include="System.IO.Abstractions.TestingHelpers" />
     <PackageReference Include="Elastic.OpenTelemetry" />
     <PackageReference Include="Errata" />
-    <PackageReference Include="ModelContextProtocol" />
     <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Include="..\..\Elastic.Documentation.Mcp\LinkTools.cs" Link="Mcp\LinkTools.cs" />
-    <Compile Include="..\..\Elastic.Documentation.Mcp\Responses.cs" Link="Mcp\Responses.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)' == 'Debug'">

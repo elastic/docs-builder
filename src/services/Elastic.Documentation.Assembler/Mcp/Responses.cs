@@ -4,7 +4,7 @@
 
 using System.Text.Json.Serialization;
 
-namespace Elastic.Documentation.Mcp.Responses;
+namespace Elastic.Documentation.Assembler.Mcp.Responses;
 
 // Common error response
 public sealed record ErrorResponse(string Error, List<string>? Details = null, List<string>? AvailableRepositories = null);

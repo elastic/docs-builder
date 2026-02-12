@@ -6,7 +6,7 @@ using ConsoleAppFramework;
 using Elastic.Documentation.Assembler.Links;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links.InboundLinks;
-using Elastic.Documentation.Mcp;
+using Elastic.Documentation.Assembler.Mcp;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
