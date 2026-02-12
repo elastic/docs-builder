@@ -100,7 +100,7 @@
     "text-diff": "1.0.1",
     "typescript": "^5.9.3",
     "typescript-eslint": "8.54.0",
-    "wait-on": "9.0.1"
+    "wait-on": "9.0.3"
   },
   "browserslist": [
     "defaults"
