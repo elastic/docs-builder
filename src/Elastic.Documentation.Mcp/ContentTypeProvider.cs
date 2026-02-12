@@ -21,20 +21,20 @@ public class ContentTypeProvider(HttpClient httpClient)
 
 	private static readonly Dictionary<string, string> EmbeddedTemplateNames = new()
 	{
-		["overview"] = "Elastic.Documentation.Mcp.Resources.Templates.overview.md",
-		["how-to"] = "Elastic.Documentation.Mcp.Resources.Templates.how-to.md",
-		["tutorial"] = "Elastic.Documentation.Mcp.Resources.Templates.tutorial.md",
-		["troubleshooting"] = "Elastic.Documentation.Mcp.Resources.Templates.troubleshooting.md",
+		["overview"] = "Elastic.Documentation.Mcp.Resources.Templates.overview.md.txt",
+		["how-to"] = "Elastic.Documentation.Mcp.Resources.Templates.how-to.md.txt",
+		["tutorial"] = "Elastic.Documentation.Mcp.Resources.Templates.tutorial.md.txt",
+		["troubleshooting"] = "Elastic.Documentation.Mcp.Resources.Templates.troubleshooting.md.txt",
 		["changelog"] = "Elastic.Documentation.Mcp.Resources.Templates.changelog.yaml"
 	};
 
 	private static readonly Dictionary<string, string> EmbeddedGuidelineNames = new()
 	{
-		["overview"] = "Elastic.Documentation.Mcp.Resources.Guidelines.overview.md",
-		["how-to"] = "Elastic.Documentation.Mcp.Resources.Guidelines.how-to.md",
-		["tutorial"] = "Elastic.Documentation.Mcp.Resources.Guidelines.tutorial.md",
-		["troubleshooting"] = "Elastic.Documentation.Mcp.Resources.Guidelines.troubleshooting.md",
-		["changelog"] = "Elastic.Documentation.Mcp.Resources.Guidelines.changelog.md"
+		["overview"] = "Elastic.Documentation.Mcp.Resources.Guidelines.overview.md.txt",
+		["how-to"] = "Elastic.Documentation.Mcp.Resources.Guidelines.how-to.md.txt",
+		["tutorial"] = "Elastic.Documentation.Mcp.Resources.Guidelines.tutorial.md.txt",
+		["troubleshooting"] = "Elastic.Documentation.Mcp.Resources.Guidelines.troubleshooting.md.txt",
+		["changelog"] = "Elastic.Documentation.Mcp.Resources.Guidelines.changelog.md.txt"
 	};
 
 	public static readonly string[] ValidContentTypes = ["overview", "how-to", "tutorial", "troubleshooting", "changelog"];
