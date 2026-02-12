@@ -29,7 +29,7 @@ public static class AppDefaultsExtensions
 		GlobalCli.Process(ref args, out var globalArgs);
 
 		var services = builder.Services;
-		_ = builder.Services.AddElasticDocumentationLogging(globalArgs.LogLevel, globalArgs.IsMcp);
+		_ = builder.Services.AddElasticDocumentationLogging(globalArgs.LogLevel, noConsole: globalArgs.IsMcp);
 		_ = services
 			.AddConfigurationFileProvider(globalArgs.SkipPrivateRepositories, globalArgs.ConfigurationSource, (s, p) =>
 			{
@@ -42,19 +42,19 @@ public static class AppDefaultsExtensions
 				_ = s.AddSingleton(search);
 				configure?.Invoke(s, p);
 			});
-		_ = builder.Services.AddElasticDocumentationLogging(globalArgs.LogLevel, globalArgs.IsMcp);
+		_ = builder.Services.AddElasticDocumentationLogging(globalArgs.LogLevel, noConsole: globalArgs.IsMcp);
 		_ = services.AddSingleton(globalArgs);
 
 		return builder.AddServiceDefaults();
 	}
 
-	public static TServiceCollection AddElasticDocumentationLogging<TServiceCollection>(this TServiceCollection services, LogLevel logLevel, bool isMcp = false)
+	public static TServiceCollection AddElasticDocumentationLogging<TServiceCollection>(this TServiceCollection services, LogLevel logLevel, bool noConsole = false)
 		where TServiceCollection : IServiceCollection
 	{
 		_ = services.AddLogging(x =>
 		{
 			_ = x.ClearProviders().SetMinimumLevel(logLevel);
-			if (!isMcp)
+			if (!noConsole)
 			{
 				services.TryAddEnumerable(ServiceDescriptor.Singleton<ConsoleFormatter, CondensedConsoleFormatter>());
 				_ = x.AddConsole(c => c.FormatterName = "condensed");
