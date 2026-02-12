@@ -4,11 +4,11 @@
 
 using System.ComponentModel;
 using System.Text.Json;
-using Elastic.Documentation.Mcp.Lambda.Gateways;
-using Elastic.Documentation.Mcp.Lambda.Responses;
+using Elastic.Documentation.Mcp.Remote.Gateways;
+using Elastic.Documentation.Mcp.Remote.Responses;
 using ModelContextProtocol.Server;
 
-namespace Elastic.Documentation.Mcp.Lambda.Tools;
+namespace Elastic.Documentation.Mcp.Remote.Tools;
 
 /// <summary>
 /// MCP tools for document-specific operations.
