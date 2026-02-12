@@ -27,6 +27,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 	private static readonly IDeserializer ConfigurationDeserializer =
 		new StaticDeserializerBuilder(new ChangelogYamlStaticContext())
 			.WithNamingConvention(UnderscoredNamingConvention.Instance)
+			.WithTypeConverter(new YamlLenientListConverter())
 			.WithTypeConverter(new TypeEntryYamlConverter())
 			.Build();
 
@@ -197,12 +198,13 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 
 		// Process lifecycles
 		IReadOnlyList<Lifecycle> lifecycles;
-		if (yamlConfig.Lifecycles == null || yamlConfig.Lifecycles.Count == 0)
+		var lifecycleValues = yamlConfig.Lifecycles?.Values;
+		if (lifecycleValues == null || lifecycleValues.Count == 0)
 			lifecycles = ChangelogConfiguration.DefaultLifecycles;
 		else
 		{
 			var parsedLifecycles = new List<Lifecycle>();
-			foreach (var lifecycleStr in yamlConfig.Lifecycles)
+			foreach (var lifecycleStr in lifecycleValues)
 			{
 				if (!LifecycleExtensions.TryParse(lifecycleStr, out var lifecycle, ignoreCase: true, allowMatchingMetadataAttribute: true))
 				{
@@ -216,7 +218,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 
 		// Process products from products.available
 		IReadOnlyList<Product>? products = null;
-		var productIdList = yamlConfig.Products?.Available;
+		var productIdList = yamlConfig.Products?.Available?.Values;
 		if (productIdList is { Count: > 0 })
 		{
 			var resolvedProducts = new List<Product>();
@@ -241,9 +243,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			return null;
 
 		// Process highlight labels from pivot configuration
-		IReadOnlyList<string>? highlightLabels = null;
-		if (!string.IsNullOrWhiteSpace(yamlConfig.Pivot?.Highlight))
-			highlightLabels = SplitLabels(yamlConfig.Pivot.Highlight);
+		var highlightLabels = yamlConfig.Pivot?.Highlight?.Values;
 
 		// Process products configuration
 		ProductsConfig? productsConfig = null;
@@ -292,18 +292,38 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 					: new TypeEntry
 					{
 						Labels = kvp.Value.Labels,
-						Subtypes = kvp.Value.Subtypes
+						Subtypes = ConvertLenientDictToStringDict(kvp.Value.Subtypes)
 					});
 		}
 
 		return new PivotConfiguration
 		{
 			Types = types,
-			Subtypes = yamlPivot.Subtypes,
-			Areas = yamlPivot.Areas,
-			Highlight = yamlPivot.Highlight
+			Subtypes = ConvertLenientDictToStringDict(yamlPivot.Subtypes),
+			Areas = ConvertLenientDictToStringDict(yamlPivot.Areas),
+			Highlight = JoinLenientList(yamlPivot.Highlight)
 		};
 	}
+
+	/// <summary>
+	/// Converts a dictionary with YamlLenientList values to a dictionary with comma-joined string values.
+	/// </summary>
+	private static Dictionary<string, string?>? ConvertLenientDictToStringDict(Dictionary<string, YamlLenientList?>? source)
+	{
+		if (source == null || source.Count == 0)
+			return null;
+
+		return source.ToDictionary(
+			kvp => kvp.Key,
+			kvp => JoinLenientList(kvp.Value)
+		);
+	}
+
+	/// <summary>
+	/// Joins a YamlLenientList into a comma-separated string, or returns null.
+	/// </summary>
+	private static string? JoinLenientList(YamlLenientList? list) =>
+		list?.Values is { Count: > 0 } values ? string.Join(", ", values) : null;
 
 	private ProductsConfig? ParseProductsConfig(
 		IDiagnosticsCollector collector,
@@ -313,10 +333,11 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 	{
 		// Validate available products
 		List<string>? available = null;
-		if (yaml.Available is { Count: > 0 })
+		var availableValues = yaml.Available?.Values;
+		if (availableValues is { Count: > 0 })
 		{
 			available = [];
-			foreach (var productId in yaml.Available)
+			foreach (var productId in availableValues)
 			{
 				var normalizedProductId = productId.Replace('_', '-');
 				if (!validProductIds.Contains(normalizedProductId))
@@ -376,7 +397,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 				{
 					Products = kvp.Value.Products,
 					Output = kvp.Value.Output,
-					HideFeatures = kvp.Value.HideFeatures
+					HideFeatures = kvp.Value.HideFeatures?.Values
 				});
 		}
 
@@ -420,7 +441,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 
 					var productBlockers = new ProductBlockers
 					{
-						Create = SplitLabels(productBlockersYaml?.Create),
+						Create = productBlockersYaml?.Create?.Values,
 						Publish = ParsePublishBlocker(productBlockersYaml?.Publish)
 					};
 					byProduct[normalizedProductId] = productBlockers;
@@ -430,7 +451,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 
 		return new BlockConfiguration
 		{
-			Create = SplitLabels(blockYaml.Create),
+			Create = blockYaml.Create?.Values,
 			Publish = ParsePublishBlocker(blockYaml.Publish),
 			ByProduct = byProduct
 		};
@@ -444,8 +465,8 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		if (yaml == null)
 			return null;
 
-		var types = yaml.Types?.Count > 0 ? yaml.Types.ToList() : null;
-		var areas = yaml.Areas?.Count > 0 ? yaml.Areas.ToList() : null;
+		var types = yaml.Types?.Values;
+		var areas = yaml.Areas?.Values;
 
 		if (types == null && areas == null)
 			return null;
@@ -455,18 +476,6 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			Types = types,
 			Areas = areas
 		};
-	}
-
-	/// <summary>
-	/// Splits a comma-separated label string into a list.
-	/// </summary>
-	private static List<string>? SplitLabels(string? labels)
-	{
-		if (string.IsNullOrWhiteSpace(labels))
-			return null;
-
-		var result = labels.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
-		return result.Count > 0 ? result : null;
 	}
 
 	/// <summary>
@@ -497,20 +506,19 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 	/// Builds LabelToAreas mapping by inverting pivot.areas entries.
 	/// Each label in an area entry maps to that area name.
 	/// </summary>
-	private static Dictionary<string, string>? BuildLabelToAreasMapping(Dictionary<string, string?>? areas)
+	private static Dictionary<string, string>? BuildLabelToAreasMapping(Dictionary<string, YamlLenientList?>? areas)
 	{
 		if (areas == null || areas.Count == 0)
 			return null;
 
 		var labelToAreas = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-		foreach (var (areaName, labels) in areas)
+		foreach (var (areaName, labelList) in areas)
 		{
-			if (string.IsNullOrWhiteSpace(labels))
+			if (labelList?.Values == null)
 				continue;
 
-			var labelList = labels.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-			foreach (var label in labelList)
+			foreach (var label in labelList.Values)
 				labelToAreas[label] = areaName;
 		}
 
