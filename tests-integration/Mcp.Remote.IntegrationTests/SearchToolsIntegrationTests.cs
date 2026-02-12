@@ -3,10 +3,10 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.Json;
-using Elastic.Documentation.Mcp.Lambda.Responses;
+using Elastic.Documentation.Mcp.Remote.Responses;
 using FluentAssertions;
 
-namespace Mcp.Lambda.IntegrationTests;
+namespace Mcp.Remote.IntegrationTests;
 
 /// <summary>
 /// Integration tests for SearchTools MCP tools.

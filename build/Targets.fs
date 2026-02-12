@@ -132,7 +132,8 @@ let private publishContainers _ =
             | _ -> []
         exec { run "dotnet" (args @ registry) }
     createImage "src/tooling/docs-builder/docs-builder.csproj" "docs-builder"
-    createImage "src/api/Elastic.Documentation.Mcp.Lambda/Elastic.Documentation.Mcp.Lambda.csproj" "docs-builder-mcp"
+    createImage "src/api/Elastic.Documentation.Mcp.Remote/Elastic.Documentation.Mcp.Remote.csproj" "docs-builder-mcp"
+    createImage "src/api/Elastic.Documentation.Api.App/Elastic.Documentation.Api.App.csproj" "docs-builder-api"
 
 let private runTests (testSuite: TestSuite) _ =
     let testFilter =

@@ -6,14 +6,14 @@ using System.Collections.Frozen;
 using Elastic.Documentation.Api.Core.Search;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Search;
-using Elastic.Documentation.Mcp.Lambda.Gateways;
-using Elastic.Documentation.Mcp.Lambda.Tools;
+using Elastic.Documentation.Mcp.Remote.Gateways;
+using Elastic.Documentation.Mcp.Remote.Tools;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Common;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 
-namespace Mcp.Lambda.IntegrationTests;
+namespace Mcp.Remote.IntegrationTests;
 
 /// <summary>
 /// Base class for MCP Lambda integration tests providing shared configuration and factory methods.
