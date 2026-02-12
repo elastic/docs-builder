@@ -37,7 +37,7 @@ RUN dotnet publish src/api/Elastic.Documentation.Api.App -r linux-x64 -c Release
 FROM public.ecr.aws/amazonlinux/amazonlinux:2023-minimal AS runtime
 WORKDIR /app
 COPY --from=base /app/.artifacts/publish/Elastic.Documentation.Api.App/release_linux-x64/ /app/
-RUN chmod +x /app/Elastic.Documentation.Api.App
+RUN chmod +x /app/docs-builder-api
 EXPOSE 8080
 ENV ASPNETCORE_URLS=http://+:8080
-ENTRYPOINT ["/app/Elastic.Documentation.Api.App"]
+ENTRYPOINT ["/app/docs-builder-api"]
