@@ -2,6 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Assembler.Links;
+using Elastic.Documentation.LinkIndex;
+using Elastic.Documentation.Links.InboundLinks;
 using Elastic.Documentation.Mcp.Remote.Gateways;
 using Elastic.Documentation.Mcp.Remote.Tools;
 using Elastic.Documentation.Search;
@@ -21,12 +24,20 @@ try
 
 	_ = builder.Services.AddScoped<IDocumentGateway, DocumentGateway>();
 
+	_ = builder.Services.AddSingleton<ILinkIndexReader>(_ => Aws3LinkIndexReader.CreateAnonymous());
+	_ = builder.Services.AddSingleton<LinksIndexCrossLinkFetcher>();
+	_ = builder.Services.AddSingleton<ILinkUtilService, LinkUtilService>();
+
+	_ = builder.Services.AddHttpClient<ContentTypeProvider>();
+
 	_ = builder.Services
 		.AddMcpServer()
 		.WithHttpTransport()
 		.WithTools<SearchTools>()
 		.WithTools<CoherenceTools>()
-		.WithTools<DocumentTools>();
+		.WithTools<DocumentTools>()
+		.WithTools<LinkTools>()
+		.WithTools<ContentTypeTools>();
 
 	var app = builder.Build();
 

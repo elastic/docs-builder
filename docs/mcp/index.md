@@ -2,9 +2,30 @@
 
 {{dbuild}} includes an [MCP (Model Context Protocol)](https://modelcontextprotocol.io/introduction) server that allows AI assistants to interact with the documentation tooling directly.
 
+The MCP server is deployed as an HTTP service and exposes all tools through a single endpoint.
+
 ## Available tools
 
-The MCP server currently exposes the following tools:
+### Search tools
+
+| Tool | Description |
+|------|-------------|
+| `SemanticSearch` | Performs semantic search across all Elastic documentation. Returns relevant documents with summaries, scores, and navigation context. |
+| `FindRelatedDocs` | Finds documents related to a given topic or document. Useful for discovering related content and building context. |
+
+### Document tools
+
+| Tool | Description |
+|------|-------------|
+| `GetDocumentByUrl` | Gets a specific documentation page by its URL. Returns full document content including AI summaries and metadata. |
+| `AnalyzeDocumentStructure` | Analyzes the structure of a documentation page. Returns heading count, links, parents, and AI enrichment status. |
+
+### Coherence tools
+
+| Tool | Description |
+|------|-------------|
+| `CheckCoherence` | Checks documentation coherence for a given topic by finding all related documents and analyzing their coverage. |
+| `FindInconsistencies` | Finds potential inconsistencies in documentation by comparing documents about the same topic. |
 
 ### Cross-link tools
 
@@ -39,8 +60,7 @@ Create or edit `.cursor/mcp.json` in your workspace:
 {
   "mcpServers": {
     "docs-builder": {
-      "command": "docs-builder",
-      "args": ["mcp"]
+      "url": "https://docs-builder.elastic.dev/docs/_mcp"
     }
   }
 }
@@ -56,9 +76,8 @@ Create or edit `.vscode/mcp.json` in your workspace:
 {
   "servers": {
     "docs-builder": {
-      "type": "stdio",
-      "command": "docs-builder",
-      "args": ["mcp"]
+      "type": "http",
+      "url": "https://docs-builder.elastic.dev/docs/_mcp"
     }
   }
 }
@@ -74,8 +93,7 @@ Requires GitHub Copilot with MCP support enabled.
 You can test the MCP server using the [MCP Inspector](https://github.com/modelcontextprotocol/inspector):
 
 ```bash
-npx @modelcontextprotocol/inspector docs-builder mcp
+npx @modelcontextprotocol/inspector --url https://docs-builder.elastic.dev/docs/_mcp
 ```
 
 This opens a web UI where you can browse all available tools and invoke them manually.
-

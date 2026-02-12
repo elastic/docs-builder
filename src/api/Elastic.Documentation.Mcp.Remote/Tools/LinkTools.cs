@@ -5,10 +5,10 @@
 using System.ComponentModel;
 using System.Text.Json;
 using Elastic.Documentation.Assembler.Links;
-using Elastic.Documentation.Mcp.Responses;
 using ModelContextProtocol.Server;
+using Responses = Elastic.Documentation.Mcp.Remote.Responses;
 
-namespace Elastic.Documentation.Mcp;
+namespace Elastic.Documentation.Mcp.Remote.Tools;
 
 [McpServerToolType]
 public class LinkTools(ILinkUtilService linkUtilService)
@@ -29,13 +29,13 @@ public class LinkTools(ILinkUtilService linkUtilService)
 			{
 				var value = result.Value;
 				return JsonSerializer.Serialize(
-					new CrossLinkResolved(value.ResolvedUrl, value.Repository, value.Path, value.Anchors, value.Fragment),
-					McpJsonContext.Default.CrossLinkResolved);
+					new Responses.CrossLinkResolved(value.ResolvedUrl, value.Repository, value.Path, value.Anchors, value.Fragment),
+					Responses.McpJsonContext.Default.CrossLinkResolved);
 			}
 
 			return JsonSerializer.Serialize(
-				new ErrorResponse(result.Error.Message, result.Error.Details, result.Error.AvailableRepositories),
-				McpJsonContext.Default.ErrorResponse);
+				new Responses.ErrorResponse(result.Error.Message, result.Error.Details, result.Error.AvailableRepositories),
+				Responses.McpJsonContext.Default.ErrorResponse);
 		}
 		catch (OperationCanceledException)
 		{
@@ -43,7 +43,7 @@ public class LinkTools(ILinkUtilService linkUtilService)
 		}
 		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
 		{
-			return JsonSerializer.Serialize(new ErrorResponse(ex.Message), McpJsonContext.Default.ErrorResponse);
+			return JsonSerializer.Serialize(new Responses.ErrorResponse(ex.Message), Responses.McpJsonContext.Default.ErrorResponse);
 		}
 	}
 
@@ -63,13 +63,13 @@ public class LinkTools(ILinkUtilService linkUtilService)
 				var repos = value.Repositories.Select(r =>
 					new Responses.RepositoryInfo(r.Repository, r.Branch, r.Path, r.GitRef, r.UpdatedAt)).ToList();
 				return JsonSerializer.Serialize(
-					new ListRepositoriesResponse(value.Count, repos),
-					McpJsonContext.Default.ListRepositoriesResponse);
+					new Responses.ListRepositoriesResponse(value.Count, repos),
+					Responses.McpJsonContext.Default.ListRepositoriesResponse);
 			}
 
 			return JsonSerializer.Serialize(
-				new ErrorResponse(result.Error.Message, result.Error.Details, result.Error.AvailableRepositories),
-				McpJsonContext.Default.ErrorResponse);
+				new Responses.ErrorResponse(result.Error.Message, result.Error.Details, result.Error.AvailableRepositories),
+				Responses.McpJsonContext.Default.ErrorResponse);
 		}
 		catch (OperationCanceledException)
 		{
@@ -77,7 +77,7 @@ public class LinkTools(ILinkUtilService linkUtilService)
 		}
 		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
 		{
-			return JsonSerializer.Serialize(new ErrorResponse(ex.Message), McpJsonContext.Default.ErrorResponse);
+			return JsonSerializer.Serialize(new Responses.ErrorResponse(ex.Message), Responses.McpJsonContext.Default.ErrorResponse);
 		}
 	}
 
@@ -99,19 +99,19 @@ public class LinkTools(ILinkUtilService linkUtilService)
 				var pages = value.Pages.Select(p =>
 					new Responses.PageInfo(p.Path, p.Anchors, p.Hidden)).ToList();
 				return JsonSerializer.Serialize(
-					new RepositoryLinksResponse(
+					new Responses.RepositoryLinksResponse(
 						value.Repository,
 						new Responses.OriginInfo(value.Origin.RepositoryName, value.Origin.GitRef),
 						value.UrlPathPrefix,
 						value.PageCount,
 						value.CrossLinkCount,
 						pages),
-					McpJsonContext.Default.RepositoryLinksResponse);
+					Responses.McpJsonContext.Default.RepositoryLinksResponse);
 			}
 
 			return JsonSerializer.Serialize(
-				new ErrorResponse(result.Error.Message, result.Error.Details, result.Error.AvailableRepositories),
-				McpJsonContext.Default.ErrorResponse);
+				new Responses.ErrorResponse(result.Error.Message, result.Error.Details, result.Error.AvailableRepositories),
+				Responses.McpJsonContext.Default.ErrorResponse);
 		}
 		catch (OperationCanceledException)
 		{
@@ -119,7 +119,7 @@ public class LinkTools(ILinkUtilService linkUtilService)
 		}
 		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
 		{
-			return JsonSerializer.Serialize(new ErrorResponse(ex.Message), McpJsonContext.Default.ErrorResponse);
+			return JsonSerializer.Serialize(new Responses.ErrorResponse(ex.Message), Responses.McpJsonContext.Default.ErrorResponse);
 		}
 	}
 
@@ -142,13 +142,13 @@ public class LinkTools(ILinkUtilService linkUtilService)
 				var links = value.Links.Select(l =>
 					new Responses.CrossLinkInfo(l.FromRepository, l.ToRepository, l.Link)).ToList();
 				return JsonSerializer.Serialize(
-					new FindCrossLinksResponse(value.Count, links),
-					McpJsonContext.Default.FindCrossLinksResponse);
+					new Responses.FindCrossLinksResponse(value.Count, links),
+					Responses.McpJsonContext.Default.FindCrossLinksResponse);
 			}
 
 			return JsonSerializer.Serialize(
-				new ErrorResponse(result.Error.Message, result.Error.Details, result.Error.AvailableRepositories),
-				McpJsonContext.Default.ErrorResponse);
+				new Responses.ErrorResponse(result.Error.Message, result.Error.Details, result.Error.AvailableRepositories),
+				Responses.McpJsonContext.Default.ErrorResponse);
 		}
 		catch (OperationCanceledException)
 		{
@@ -156,7 +156,7 @@ public class LinkTools(ILinkUtilService linkUtilService)
 		}
 		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
 		{
-			return JsonSerializer.Serialize(new ErrorResponse(ex.Message), McpJsonContext.Default.ErrorResponse);
+			return JsonSerializer.Serialize(new Responses.ErrorResponse(ex.Message), Responses.McpJsonContext.Default.ErrorResponse);
 		}
 	}
 
@@ -178,13 +178,13 @@ public class LinkTools(ILinkUtilService linkUtilService)
 				var broken = value.Broken.Select(b =>
 					new Responses.BrokenLinkInfo(b.FromRepository, b.Link, b.Errors)).ToList();
 				return JsonSerializer.Serialize(
-					new ValidateCrossLinksResponse(value.Repository, value.ValidLinks, value.BrokenLinks, broken),
-					McpJsonContext.Default.ValidateCrossLinksResponse);
+					new Responses.ValidateCrossLinksResponse(value.Repository, value.ValidLinks, value.BrokenLinks, broken),
+					Responses.McpJsonContext.Default.ValidateCrossLinksResponse);
 			}
 
 			return JsonSerializer.Serialize(
-				new ErrorResponse(result.Error.Message, result.Error.Details, result.Error.AvailableRepositories),
-				McpJsonContext.Default.ErrorResponse);
+				new Responses.ErrorResponse(result.Error.Message, result.Error.Details, result.Error.AvailableRepositories),
+				Responses.McpJsonContext.Default.ErrorResponse);
 		}
 		catch (OperationCanceledException)
 		{
@@ -192,7 +192,7 @@ public class LinkTools(ILinkUtilService linkUtilService)
 		}
 		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
 		{
-			return JsonSerializer.Serialize(new ErrorResponse(ex.Message), McpJsonContext.Default.ErrorResponse);
+			return JsonSerializer.Serialize(new Responses.ErrorResponse(ex.Message), Responses.McpJsonContext.Default.ErrorResponse);
 		}
 	}
 }

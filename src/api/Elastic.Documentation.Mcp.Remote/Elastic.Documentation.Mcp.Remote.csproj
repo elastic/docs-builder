@@ -22,6 +22,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Elastic.Documentation.ServiceDefaults\Elastic.Documentation.ServiceDefaults.csproj" />
     <ProjectReference Include="..\..\services\Elastic.Documentation.Search\Elastic.Documentation.Search.csproj" />
+    <ProjectReference Include="..\..\services\Elastic.Documentation.Assembler\Elastic.Documentation.Assembler.csproj" />
     <ProjectReference Include="..\Elastic.Documentation.Api.Core\Elastic.Documentation.Api.Core.csproj"/>
   </ItemGroup>
 
@@ -29,6 +30,11 @@
     <PackageReference Include="ModelContextProtocol.AspNetCore" />
     <PackageReference Include="Elastic.OpenTelemetry" />
     <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Templates\**\*" />
+    <EmbeddedResource Include="Resources\Guidelines\**\*" />
   </ItemGroup>
 
 </Project>
