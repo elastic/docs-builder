@@ -16,9 +16,9 @@ internal record ChangelogConfigurationYaml
 	public PivotConfigurationYaml? Pivot { get; set; }
 
 	/// <summary>
-	/// Available lifecycle values.
+	/// Available lifecycle values (string or list).
 	/// </summary>
-	public List<string>? Lifecycles { get; set; }
+	public YamlLenientList? Lifecycles { get; set; }
 
 	/// <summary>
 	/// Products configuration.
@@ -50,9 +50,9 @@ internal record ChangelogConfigurationYaml
 internal record BlockConfigurationYaml
 {
 	/// <summary>
-	/// Global labels that block changelog creation (comma-separated string).
+	/// Global labels that block changelog creation (string or list).
 	/// </summary>
-	public string? Create { get; set; }
+	public YamlLenientList? Create { get; set; }
 
 	/// <summary>
 	/// Configuration for blocking changelog entries from publishing based on type or area.
@@ -72,9 +72,9 @@ internal record BlockConfigurationYaml
 internal record ProductBlockersYaml
 {
 	/// <summary>
-	/// Labels that block creation for this product (comma-separated string).
+	/// Labels that block creation for this product (string or list).
 	/// </summary>
-	public string? Create { get; set; }
+	public YamlLenientList? Create { get; set; }
 
 	/// <summary>
 	/// Configuration for blocking changelog entries from publishing based on type or area.
@@ -88,14 +88,14 @@ internal record ProductBlockersYaml
 internal record PublishBlockerYaml
 {
 	/// <summary>
-	/// Entry types to block from publishing.
+	/// Entry types to block from publishing (string or list).
 	/// </summary>
-	public List<string>? Types { get; set; }
+	public YamlLenientList? Types { get; set; }
 
 	/// <summary>
-	/// Entry areas to block from publishing.
+	/// Entry areas to block from publishing (string or list).
 	/// </summary>
-	public List<string>? Areas { get; set; }
+	public YamlLenientList? Areas { get; set; }
 }
 
 /// <summary>
@@ -109,19 +109,19 @@ internal record PivotConfigurationYaml
 	public Dictionary<string, TypeEntryYaml?>? Types { get; set; }
 
 	/// <summary>
-	/// Default subtype definitions with optional labels.
+	/// Default subtype definitions with optional labels (string or list per value).
 	/// </summary>
-	public Dictionary<string, string?>? Subtypes { get; set; }
+	public Dictionary<string, YamlLenientList?>? Subtypes { get; set; }
 
 	/// <summary>
-	/// Area definitions with labels.
+	/// Area definitions with labels (string or list per value).
 	/// </summary>
-	public Dictionary<string, string?>? Areas { get; set; }
+	public Dictionary<string, YamlLenientList?>? Areas { get; set; }
 
 	/// <summary>
-	/// Labels that trigger the highlight flag (comma-separated string).
+	/// Labels that trigger the highlight flag (string or list).
 	/// </summary>
-	public string? Highlight { get; set; }
+	public YamlLenientList? Highlight { get; set; }
 }
 
 /// <summary>
@@ -130,9 +130,9 @@ internal record PivotConfigurationYaml
 internal record ProductsConfigYaml
 {
 	/// <summary>
-	/// List of available product IDs (empty = all from products.yml).
+	/// List of available product IDs (string or list, empty = all from products.yml).
 	/// </summary>
-	public List<string>? Available { get; set; }
+	public YamlLenientList? Available { get; set; }
 
 	/// <summary>
 	/// Default products to use when --products is not specified.
@@ -200,9 +200,9 @@ internal record BundleProfileYaml
 	public string? Output { get; set; }
 
 	/// <summary>
-	/// Feature IDs to mark as hidden in the bundle output.
+	/// Feature IDs to mark as hidden in the bundle output (string or list).
 	/// </summary>
-	public List<string>? HideFeatures { get; set; }
+	public YamlLenientList? HideFeatures { get; set; }
 }
 
 /// <summary>
@@ -235,9 +235,9 @@ internal record TypeEntryYaml
 	public string? Labels { get; set; }
 
 	/// <summary>
-	/// Type-specific subtype definitions.
+	/// Type-specific subtype definitions (string or list per value).
 	/// </summary>
-	public Dictionary<string, string?>? Subtypes { get; set; }
+	public Dictionary<string, YamlLenientList?>? Subtypes { get; set; }
 
 	/// <summary>
 	/// Creates a TypeEntryYaml from a simple label string.
