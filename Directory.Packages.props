@@ -37,7 +37,7 @@
     <PackageVersion Include="AWSSDK.Core" Version="4.0.3.12" />
     <PackageVersion Include="AWSSDK.DynamoDBv2" Version="4.0.14" />
     <PackageVersion Include="AWSSDK.SQS" Version="4.0.2.14" />
-    <PackageVersion Include="AWSSDK.S3" Version="4.0.16.2" />
+    <PackageVersion Include="AWSSDK.S3" Version="4.0.18.3" />
     <PackageVersion Include="Elastic.OpenTelemetry" Version="1.1.0" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.UserSecrets" Version="10.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.2" />
