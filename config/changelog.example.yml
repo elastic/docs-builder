@@ -75,34 +75,52 @@ pivot:
     # Security: ":Security/Security"
     # Watcher: ":Data Management/Watcher"
 
-# Block configuration - combined create and publish blockers
-block:
-  # Global labels that block changelog creation for all products (comma-separated string)
-  # create: ">non-issue, >test"
+# Rules configuration — controls which PRs create changelogs and which entries are published.
+#
+# Global match default for multi-valued fields (labels, areas).
+#   any (default) = match if ANY item matches the list
+#   all           = match only if ALL items match the list
+# Inherited by create, publish, and all product overrides.
+rules:
+  # match: any
 
-  # Block changelog entries from publishing based on entry type or area
+  # Create — controls which PRs generate changelog entries.
+  #   exclude: block PRs with these labels (comma-separated)
+  #   include: only create changelogs for PRs with these labels
+  # Cannot specify both.
+  #
+  # create:
+  #   exclude: ">non-issue, >test"
+  #   # match: any
+  #   products:
+  #     'elasticsearch, kibana':
+  #       exclude: ">test"
+  #     'cloud-serverless':
+  #       exclude: "ILM"
+
+  # Publish — controls which entries appear in rendered output.
+  #   exclude_types / include_types
+  #   exclude_areas / include_areas
+  # Cannot mix exclude_ and include_ for the same field.
+  #
+  # match_areas inherits from rules.match if not specified.
+  #
   # publish:
-  #   types:
+  #   # match_areas: any
+  #   exclude_types:
   #     - deprecation
   #     - known-issue
-  #   areas:
+  #   exclude_areas:
   #     - "Internal"
-
-  # Product-specific overrides (override global blockers, don't merge)
-  # Dictionary key can be a single product ID or comma-separated product IDs
-  product:
-    # Example: Block these labels for elasticsearch and kibana
-    # 'elasticsearch, kibana':
-    #   create: ">test"
-    #   publish:
-    #     types:
-    #       - docs
-    # Example: Block ILM label for cloud-serverless
-    # 'cloud-serverless':
-    #   create: "ILM"
-    #   publish:
-    #     areas:
-    #       - "ILM"
+  #   products:
+  #     'elasticsearch, kibana':
+  #       exclude_types:
+  #         - docs
+  #     'cloud-serverless':
+  #       # match_areas: any
+  #       include_areas:
+  #         - "Search"
+  #         - "Monitoring"
 
 # Bundle configuration (profiles and defaults)
 bundle:

@@ -29,9 +29,14 @@ internal record ChangelogConfigurationYaml
 	public ProductsConfigYaml? Products { get; set; }
 
 	/// <summary>
-	/// Block configuration combining create and publish blockers.
+	/// Rules configuration combining create and publish blockers (new format).
 	/// </summary>
-	public BlockConfigurationYaml? Block { get; set; }
+	public RulesConfigurationYaml? Rules { get; set; }
+
+	/// <summary>
+	/// Old block configuration key. If present, emit error directing user to rename to 'rules'.
+	/// </summary>
+	public object? Block { get; set; }
 
 	/// <summary>
 	/// Extraction configuration for release notes and issues.
@@ -45,57 +50,88 @@ internal record ChangelogConfigurationYaml
 }
 
 /// <summary>
-/// Internal DTO for block configuration in YAML.
+/// Internal DTO for rules configuration in YAML.
 /// </summary>
-internal record BlockConfigurationYaml
+internal record RulesConfigurationYaml
 {
 	/// <summary>
-	/// Global labels that block changelog creation (comma-separated string).
+	/// Global match mode for multi-valued fields ("any" or "all"). Default: "any".
 	/// </summary>
-	public string? Create { get; set; }
+	public string? Match { get; set; }
 
 	/// <summary>
-	/// Configuration for blocking changelog entries from publishing based on type or area.
+	/// Create rules controlling which PRs generate changelog entries.
 	/// </summary>
-	public PublishBlockerYaml? Publish { get; set; }
+	public CreateRulesYaml? Create { get; set; }
 
 	/// <summary>
-	/// Per-product override blockers.
+	/// Publish rules controlling which entries appear in rendered output.
+	/// </summary>
+	public PublishRulesYaml? Publish { get; set; }
+}
+
+/// <summary>
+/// Internal DTO for create rules in YAML.
+/// </summary>
+internal record CreateRulesYaml
+{
+	/// <summary>
+	/// Labels to exclude (comma-separated string). Cannot be combined with Include.
+	/// </summary>
+	public string? Exclude { get; set; }
+
+	/// <summary>
+	/// Labels to include (comma-separated string). Cannot be combined with Exclude.
+	/// </summary>
+	public string? Include { get; set; }
+
+	/// <summary>
+	/// Match mode for labels ("any" or "all"). Inherits from rules.match if not set.
+	/// </summary>
+	public string? Match { get; set; }
+
+	/// <summary>
+	/// Per-product create rule overrides.
 	/// Keys can be comma-separated product IDs.
 	/// </summary>
-	public Dictionary<string, ProductBlockersYaml?>? Product { get; set; }
+	public Dictionary<string, CreateRulesYaml?>? Products { get; set; }
 }
 
 /// <summary>
-/// Internal DTO for product-specific blockers in YAML.
+/// Internal DTO for publish rules in YAML.
 /// </summary>
-internal record ProductBlockersYaml
+internal record PublishRulesYaml
 {
 	/// <summary>
-	/// Labels that block creation for this product (comma-separated string).
+	/// Match mode for areas ("any" or "all"). Inherits from rules.match if not set.
 	/// </summary>
-	public string? Create { get; set; }
+	public string? MatchAreas { get; set; }
 
 	/// <summary>
-	/// Configuration for blocking changelog entries from publishing based on type or area.
+	/// Entry types to exclude from publishing.
 	/// </summary>
-	public PublishBlockerYaml? Publish { get; set; }
-}
-
-/// <summary>
-/// Internal DTO for publish blocker configuration in YAML.
-/// </summary>
-internal record PublishBlockerYaml
-{
-	/// <summary>
-	/// Entry types to block from publishing.
-	/// </summary>
-	public List<string>? Types { get; set; }
+	public List<string>? ExcludeTypes { get; set; }
 
 	/// <summary>
-	/// Entry areas to block from publishing.
+	/// Entry types to include for publishing (only these types are shown).
 	/// </summary>
-	public List<string>? Areas { get; set; }
+	public List<string>? IncludeTypes { get; set; }
+
+	/// <summary>
+	/// Entry areas to exclude from publishing.
+	/// </summary>
+	public List<string>? ExcludeAreas { get; set; }
+
+	/// <summary>
+	/// Entry areas to include for publishing (only these areas are shown).
+	/// </summary>
+	public List<string>? IncludeAreas { get; set; }
+
+	/// <summary>
+	/// Per-product publish rule overrides.
+	/// Keys can be comma-separated product IDs.
+	/// </summary>
+	public Dictionary<string, PublishRulesYaml?>? Products { get; set; }
 }
 
 /// <summary>
