@@ -8,6 +8,7 @@ cross_links:
 exclude:
   - '_*.md'
   - '!_search.md'
+  - 'src/**/Resources/**'
 subs:
   a-global-variable: "This was defined in docset.yml"
   serverless-short: Serverless
