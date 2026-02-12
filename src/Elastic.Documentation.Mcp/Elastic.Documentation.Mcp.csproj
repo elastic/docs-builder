@@ -11,4 +11,8 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Console" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\services\Elastic.Documentation.Assembler\Elastic.Documentation.Assembler.csproj" />
+  </ItemGroup>
+
 </Project>

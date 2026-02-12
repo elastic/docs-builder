@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Assembler.Links;
+using Elastic.Documentation.Assembler.Mcp;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links.InboundLinks;
 using Elastic.Documentation.Mcp.Remote.Gateways;
@@ -37,7 +38,8 @@ try
 		.WithTools<CoherenceTools>()
 		.WithTools<DocumentTools>()
 		.WithTools<LinkTools>()
-		.WithTools<ContentTypeTools>();
+		.WithTools<ContentTypeTools>()
+		.WithTools<DiagnosticTools>();
 
 	var app = builder.Build();
 

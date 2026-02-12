@@ -4,7 +4,7 @@
 
 using System.Reflection;
 
-namespace Elastic.Documentation.Mcp.Remote.Tools;
+namespace Elastic.Documentation.Assembler.Mcp;
 
 /// <summary>Provides content type templates and guidelines with GitHub-first fetching and embedded fallback.</summary>
 public class ContentTypeProvider(HttpClient httpClient)
@@ -21,20 +21,20 @@ public class ContentTypeProvider(HttpClient httpClient)
 
 	private static readonly Dictionary<string, string> EmbeddedTemplateNames = new()
 	{
-		["overview"] = "Elastic.Documentation.Mcp.Remote.Resources.Templates.overview.md.txt",
-		["how-to"] = "Elastic.Documentation.Mcp.Remote.Resources.Templates.how-to.md.txt",
-		["tutorial"] = "Elastic.Documentation.Mcp.Remote.Resources.Templates.tutorial.md.txt",
-		["troubleshooting"] = "Elastic.Documentation.Mcp.Remote.Resources.Templates.troubleshooting.md.txt",
-		["changelog"] = "Elastic.Documentation.Mcp.Remote.Resources.Templates.changelog.yaml"
+		["overview"] = "Elastic.Documentation.Assembler.Mcp.Resources.Templates.overview.md.txt",
+		["how-to"] = "Elastic.Documentation.Assembler.Mcp.Resources.Templates.how-to.md.txt",
+		["tutorial"] = "Elastic.Documentation.Assembler.Mcp.Resources.Templates.tutorial.md.txt",
+		["troubleshooting"] = "Elastic.Documentation.Assembler.Mcp.Resources.Templates.troubleshooting.md.txt",
+		["changelog"] = "Elastic.Documentation.Assembler.Mcp.Resources.Templates.changelog.yaml"
 	};
 
 	private static readonly Dictionary<string, string> EmbeddedGuidelineNames = new()
 	{
-		["overview"] = "Elastic.Documentation.Mcp.Remote.Resources.Guidelines.overview.md.txt",
-		["how-to"] = "Elastic.Documentation.Mcp.Remote.Resources.Guidelines.how-to.md.txt",
-		["tutorial"] = "Elastic.Documentation.Mcp.Remote.Resources.Guidelines.tutorial.md.txt",
-		["troubleshooting"] = "Elastic.Documentation.Mcp.Remote.Resources.Guidelines.troubleshooting.md.txt",
-		["changelog"] = "Elastic.Documentation.Mcp.Remote.Resources.Guidelines.changelog.md.txt"
+		["overview"] = "Elastic.Documentation.Assembler.Mcp.Resources.Guidelines.overview.md.txt",
+		["how-to"] = "Elastic.Documentation.Assembler.Mcp.Resources.Guidelines.how-to.md.txt",
+		["tutorial"] = "Elastic.Documentation.Assembler.Mcp.Resources.Guidelines.tutorial.md.txt",
+		["troubleshooting"] = "Elastic.Documentation.Assembler.Mcp.Resources.Guidelines.troubleshooting.md.txt",
+		["changelog"] = "Elastic.Documentation.Assembler.Mcp.Resources.Guidelines.changelog.md.txt"
 	};
 
 	public static readonly string[] ValidContentTypes = ["overview", "how-to", "tutorial", "troubleshooting", "changelog"];

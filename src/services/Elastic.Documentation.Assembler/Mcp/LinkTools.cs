@@ -6,9 +6,9 @@ using System.ComponentModel;
 using System.Text.Json;
 using Elastic.Documentation.Assembler.Links;
 using ModelContextProtocol.Server;
-using Responses = Elastic.Documentation.Mcp.Remote.Responses;
+using Responses = Elastic.Documentation.Assembler.Mcp.Responses;
 
-namespace Elastic.Documentation.Mcp.Remote.Tools;
+namespace Elastic.Documentation.Assembler.Mcp;
 
 [McpServerToolType]
 public class LinkTools(ILinkUtilService linkUtilService)

@@ -7,7 +7,7 @@ using System.Text.Json.Serialization;
 namespace Elastic.Documentation.Mcp.Remote.Responses;
 
 // Common error response
-public sealed record ErrorResponse(string Error, List<string>? Details = null, List<string>? AvailableRepositories = null);
+public sealed record ErrorResponse(string Error, List<string>? Details = null);
 
 // SemanticSearch response
 public sealed record SemanticSearchResponse
@@ -151,24 +151,6 @@ public sealed record AiEnrichmentStatusDto
 	public required bool HasUseCases { get; init; }
 }
 
-// Cross-link tool responses
-public sealed record CrossLinkResolved(string Resolved, string Repository, string Path, string[]? Anchors, string Fragment);
-public sealed record RepositoryInfo(string Repository, string Branch, string Path, string GitRef, DateTimeOffset UpdatedAt);
-public sealed record ListRepositoriesResponse(int Count, List<RepositoryInfo> Repositories);
-public sealed record OriginInfo(string RepositoryName, string GitRef);
-public sealed record PageInfo(string Path, string[]? Anchors, bool Hidden);
-public sealed record RepositoryLinksResponse(string Repository, OriginInfo Origin, string? UrlPathPrefix, int PageCount, int CrossLinkCount, List<PageInfo> Pages);
-public sealed record CrossLinkInfo(string FromRepository, string ToRepository, string Link);
-public sealed record FindCrossLinksResponse(int Count, List<CrossLinkInfo> Links);
-public sealed record BrokenLinkInfo(string FromRepository, string Link, List<string> Errors);
-public sealed record ValidateCrossLinksResponse(string Repository, int ValidLinks, int BrokenLinks, List<BrokenLinkInfo> Broken);
-
-// Content type tool responses
-public sealed record ContentTypeSummary(string Name, string Description, string WhenToUse, string WhenNotToUse);
-public sealed record ListContentTypesResponse(int Count, List<ContentTypeSummary> ContentTypes);
-public sealed record GenerateTemplateResponse(string ContentType, string Template, string Source);
-public sealed record ContentTypeGuidelinesResponse(string ContentType, string Guidelines);
-
 [JsonSourceGenerationOptions(WriteIndented = true, PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 [JsonSerializable(typeof(ErrorResponse))]
 [JsonSerializable(typeof(SemanticSearchResponse))]
@@ -185,12 +167,4 @@ public sealed record ContentTypeGuidelinesResponse(string ContentType, string Gu
 [JsonSerializable(typeof(ProductDto))]
 [JsonSerializable(typeof(DocumentStructureResponse))]
 [JsonSerializable(typeof(AiEnrichmentStatusDto))]
-[JsonSerializable(typeof(CrossLinkResolved))]
-[JsonSerializable(typeof(ListRepositoriesResponse))]
-[JsonSerializable(typeof(RepositoryLinksResponse))]
-[JsonSerializable(typeof(FindCrossLinksResponse))]
-[JsonSerializable(typeof(ValidateCrossLinksResponse))]
-[JsonSerializable(typeof(ListContentTypesResponse))]
-[JsonSerializable(typeof(GenerateTemplateResponse))]
-[JsonSerializable(typeof(ContentTypeGuidelinesResponse))]
 public sealed partial class McpJsonContext : JsonSerializerContext;

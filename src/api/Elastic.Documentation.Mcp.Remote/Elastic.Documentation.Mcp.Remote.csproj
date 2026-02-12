@@ -32,9 +32,4 @@
     <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" />
   </ItemGroup>
 
-  <ItemGroup>
-    <EmbeddedResource Include="Resources\Templates\**\*" />
-    <EmbeddedResource Include="Resources\Guidelines\**\*" />
-  </ItemGroup>
-
 </Project>

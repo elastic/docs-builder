@@ -5,10 +5,10 @@
 using System.ComponentModel;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using Elastic.Documentation.Mcp.Remote.Responses;
+using Elastic.Documentation.Assembler.Mcp.Responses;
 using ModelContextProtocol.Server;
 
-namespace Elastic.Documentation.Mcp.Remote.Tools;
+namespace Elastic.Documentation.Assembler.Mcp;
 
 [McpServerToolType]
 public partial class ContentTypeTools(ContentTypeProvider provider)
