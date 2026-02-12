@@ -12,6 +12,7 @@ public record GlobalCliArgs
 	public ConfigurationSource? ConfigurationSource { get; init; }
 	public bool SkipPrivateRepositories { get; init; }
 	public bool IsHelpOrVersion { get; init; }
+	public bool IsMcp { get; init; }
 }
 public static class GlobalCli
 {
@@ -61,6 +62,9 @@ public static class GlobalCli
 
 		args = [.. filteredArguments];
 		globalArguments = [.. globalArgs];
+
+		if (filteredArguments.Count > 0 && filteredArguments[0] == "mcp")
+			cli = cli with { IsMcp = true };
 	}
 
 	private static LogLevel GetLogLevel(string? logLevel) => logLevel switch

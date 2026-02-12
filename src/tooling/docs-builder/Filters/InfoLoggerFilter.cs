@@ -22,7 +22,7 @@ internal sealed class InfoLoggerFilter(
 	{
 		var assemblyVersion = Assembly.GetExecutingAssembly().GetCustomAttributes<AssemblyInformationalVersionAttribute>()
 			.FirstOrDefault()?.InformationalVersion;
-		if (cli.IsHelpOrVersion)
+		if (cli.IsHelpOrVersion || cli.IsMcp)
 		{
 			await Next.InvokeAsync(context, cancellationToken);
 			return;

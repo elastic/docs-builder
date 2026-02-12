@@ -13,12 +13,6 @@ using Elastic.Documentation.ServiceDefaults;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
-if (args is ["mcp", ..])
-{
-	await McpHost.RunAsync(args[1..]);
-	return;
-}
-
 var builder = Host.CreateApplicationBuilder()
 	.AddDocumentationServiceDefaults(ref args, (s, p) =>
 	{
@@ -43,6 +37,7 @@ app.Add<ServeCommand>("serve");
 app.Add<IndexCommand>("index");
 app.Add<FormatCommand>("format");
 app.Add<ChangelogCommand>("changelog");
+app.Add<McpCommand>("mcp");
 
 //assembler commands
 
