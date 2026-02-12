@@ -7,5 +7,13 @@ namespace Elastic.Changelog.Serialization;
 /// <summary>
 /// Wrapper type for YAML fields that can be specified as either a comma-separated string
 /// or a YAML list/sequence. Deserialized by <see cref="YamlLenientListConverter"/>.
+/// Uses mutable property for compatibility with YamlDotNet source generator.
 /// </summary>
-internal record YamlLenientList(List<string>? Values);
+internal class YamlLenientList
+{
+	public List<string>? Values { get; set; }
+
+	public YamlLenientList() { }
+
+	public YamlLenientList(List<string>? values) => Values = values;
+}
