@@ -30,42 +30,36 @@ public static class AppDefaultsExtensions
 
 		var services = builder.Services;
 		_ = builder.Services.AddElasticDocumentationLogging(globalArgs.LogLevel, globalArgs.IsMcp);
-
-		Action<IServiceCollection, ConfigurationFileProvider> configureProvider = globalArgs.IsMcp
-			? (_, _) => { }
-		: (s, p) =>
-		{
-			var versionConfiguration = p.CreateVersionConfiguration();
-			var products = p.CreateProducts(versionConfiguration);
-			var search = p.CreateSearchConfiguration();
-			_ = s.AddSingleton(p.CreateLegacyUrlMappings(products));
-			_ = s.AddSingleton(products);
-			_ = s.AddSingleton(versionConfiguration);
-			_ = s.AddSingleton(search);
-			configure?.Invoke(s, p);
-		};
-		_ = services.AddConfigurationFileProvider(globalArgs.SkipPrivateRepositories, globalArgs.ConfigurationSource, configureProvider);
-
+		_ = services
+			.AddConfigurationFileProvider(globalArgs.SkipPrivateRepositories, globalArgs.ConfigurationSource, (s, p) =>
+			{
+				var versionConfiguration = p.CreateVersionConfiguration();
+				var products = p.CreateProducts(versionConfiguration);
+				var search = p.CreateSearchConfiguration();
+				_ = s.AddSingleton(p.CreateLegacyUrlMappings(products));
+				_ = s.AddSingleton(products);
+				_ = s.AddSingleton(versionConfiguration);
+				_ = s.AddSingleton(search);
+				configure?.Invoke(s, p);
+			});
 		_ = builder.Services.AddElasticDocumentationLogging(globalArgs.LogLevel, globalArgs.IsMcp);
 		_ = services.AddSingleton(globalArgs);
 
 		return builder.AddServiceDefaults();
 	}
 
-	public static TServiceCollection AddElasticDocumentationLogging<TServiceCollection>(this TServiceCollection services, LogLevel logLevel, bool useStdErr = false)
+	public static TServiceCollection AddElasticDocumentationLogging<TServiceCollection>(this TServiceCollection services, LogLevel logLevel, bool isMcp = false)
 		where TServiceCollection : IServiceCollection
 	{
-		services.TryAddEnumerable(ServiceDescriptor.Singleton<ConsoleFormatter, CondensedConsoleFormatter>());
-		_ = services.AddLogging(x => x
-			.ClearProviders()
-			.SetMinimumLevel(logLevel)
-			.AddConsole(c =>
+		_ = services.AddLogging(x =>
+		{
+			_ = x.ClearProviders().SetMinimumLevel(logLevel);
+			if (!isMcp)
 			{
-				c.FormatterName = "condensed";
-				if (useStdErr)
-					c.LogToStandardErrorThreshold = LogLevel.Trace;
-			})
-		);
+				services.TryAddEnumerable(ServiceDescriptor.Singleton<ConsoleFormatter, CondensedConsoleFormatter>());
+				_ = x.AddConsole(c => c.FormatterName = "condensed");
+			}
+		});
 		return services;
 	}
 
