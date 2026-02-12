@@ -58,10 +58,13 @@ public class FeatureHidingLoader(IFileSystem fileSystem)
 		HashSet<string> featureIdsToHide,
 		Cancel ctx)
 	{
-		if (fileSystem.File.Exists(singleValue))
+		// Try to normalize the path to handle ~ and relative paths
+		var normalizedValue = NormalizePath(singleValue);
+
+		if (fileSystem.File.Exists(normalizedValue))
 		{
 			// File exists, read feature IDs from it
-			await ReadFeatureIdsFromFileAsync(singleValue, featureIdsToHide, ctx);
+			await ReadFeatureIdsFromFileAsync(normalizedValue, featureIdsToHide, ctx);
 			return true;
 		}
 
@@ -69,7 +72,12 @@ public class FeatureHidingLoader(IFileSystem fileSystem)
 		if (LooksLikeFilePath(singleValue))
 		{
 			// File path doesn't exist
-			collector.EmitError(singleValue, $"File does not exist: {singleValue}");
+			var currentDir = fileSystem.Directory.GetCurrentDirectory();
+			collector.EmitError(
+				normalizedValue,
+				$"File does not exist: {normalizedValue}. Current directory: {currentDir}. " +
+				"Paths support tilde (~) expansion and can be relative or absolute."
+			);
 			return false;
 		}
 
@@ -88,15 +96,18 @@ public class FeatureHidingLoader(IFileSystem fileSystem)
 
 		foreach (var value in values)
 		{
-			if (fileSystem.File.Exists(value))
+			// Try to normalize the path to handle ~ and relative paths
+			var normalizedValue = NormalizePath(value);
+
+			if (fileSystem.File.Exists(normalizedValue))
 			{
 				// File exists, read feature IDs from it
-				await ReadFeatureIdsFromFileAsync(value, featureIdsToHide, ctx);
+				await ReadFeatureIdsFromFileAsync(normalizedValue, featureIdsToHide, ctx);
 			}
 			else if (LooksLikeFilePath(value))
 			{
 				// Track non-existent files to check later
-				nonExistentFiles.Add(value);
+				nonExistentFiles.Add(normalizedValue);
 			}
 			else
 			{
@@ -108,8 +119,15 @@ public class FeatureHidingLoader(IFileSystem fileSystem)
 		// Report errors for non-existent files
 		if (nonExistentFiles.Count > 0)
 		{
+			var currentDir = fileSystem.Directory.GetCurrentDirectory();
 			foreach (var filePath in nonExistentFiles)
-				collector.EmitError(filePath, $"File does not exist: {filePath}");
+			{
+				collector.EmitError(
+					filePath,
+					$"File does not exist: {filePath}. Current directory: {currentDir}. " +
+					"Paths support tilde (~) expansion and can be relative or absolute."
+				);
+			}
 			return false;
 		}
 
@@ -134,6 +152,38 @@ public class FeatureHidingLoader(IFileSystem fileSystem)
 		value.Contains(fileSystem.Path.DirectorySeparatorChar) ||
 		value.Contains(fileSystem.Path.AltDirectorySeparatorChar) ||
 		fileSystem.Path.HasExtension(value);
+
+	/// <summary>
+	/// Normalizes a file path by expanding tilde (~) to the user's home directory
+	/// and converting relative paths to absolute paths.
+	/// </summary>
+	private static string NormalizePath(string path)
+	{
+		if (string.IsNullOrWhiteSpace(path))
+			return path;
+
+		var trimmedPath = path.Trim();
+
+		// Expand tilde to user's home directory
+		if (trimmedPath.StartsWith("~/", StringComparison.Ordinal) || trimmedPath.StartsWith("~\\", StringComparison.Ordinal))
+		{
+			var homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+			var relativePath = trimmedPath[2..].TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+			// Ensure that an accidentally rooted path segment does not cause the home directory
+			// to be ignored by Path.Combine.
+			var fullPath = Path.IsPathRooted(relativePath)
+				? relativePath
+				: Path.Combine(homeDirectory, relativePath);
+			trimmedPath = fullPath;
+		}
+		else if (trimmedPath == "~")
+		{
+			trimmedPath = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+		}
+
+		// Convert to absolute path (handles relative paths like ./file or ../file)
+		return Path.GetFullPath(trimmedPath);
+	}
 }
 
 /// <summary>
