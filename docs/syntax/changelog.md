@@ -25,6 +25,7 @@ The directive supports the following options:
 | `:type: value` | Filter entries by type | Excludes separated types |
 | `:subsections:` | Group entries by area/component | false |
 | `:config: path` | Path to changelog.yml configuration | auto-discover |
+| `:product: id` | Product ID for product-specific publish blockers | auto from docset |
 
 ### Example with options
 
@@ -32,6 +33,7 @@ The directive supports the following options:
 :::{changelog} /path/to/bundles
 :type: all
 :subsections:
+:product: kibana
 :::
 ```
 
@@ -39,15 +41,16 @@ The directive supports the following options:
 
 #### `:type:`
 
-Controls which entry types are displayed. By default, the directive excludes "separated types" (known issues, breaking changes, and deprecations) which are typically shown on their own dedicated pages.
+Controls which entry types are displayed. By default, the directive excludes "separated types" (known issues, breaking changes, deprecations, and highlights) which are typically shown on their own dedicated pages.
 
 | Value | Description |
 |-------|-------------|
-| (omitted) | Default: shows all types EXCEPT known issues, breaking changes, and deprecations |
-| `all` | Shows all entry types including known issues, breaking changes, and deprecations |
+| (omitted) | Default: shows all types EXCEPT known issues, breaking changes, deprecations, and highlights |
+| `all` | Shows all entry types including known issues, breaking changes, deprecations, and highlights |
 | `breaking-change` | Shows only breaking change entries |
 | `deprecation` | Shows only deprecation entries |
 | `known-issue` | Shows only known issue entries |
+| `highlight` | Shows only highlighted entries |
 
 This allows you to create separate pages for different entry types:
 
@@ -82,6 +85,14 @@ This allows you to create separate pages for different entry types:
 :::
 ```
 
+```markdown
+# Highlights
+
+:::{changelog}
+:type: highlight
+:::
+```
+
 To show all entries on a single page (previous default behavior):
 
 ```markdown
@@ -102,9 +113,65 @@ Explicit path to a `changelog.yml` configuration file. If not specified, the dir
 
 The configuration can include publish blockers to filter entries by type or area.
 
+#### `:product:`
+
+Product ID for loading product-specific publish blockers from `changelog.yml`. The directive resolves the product ID in this order:
+
+1. **Explicit `:product:` option** - if specified, uses that product ID
+2. **Docset's single product** - if the docset has exactly one product configured in `docset.yml`, uses that product ID automatically
+3. **Global fallback** - uses the global `block.publish` configuration
+
+This automatic fallback means most single-product docsets don't need to specify `:product:` explicitly - the directive will automatically use the docset's product for publish blocker lookup.
+
+**Example docset with single product:**
+
+```yaml
+# docset.yml
+products:
+  - id: kibana
+toc:
+  - file: release-notes.md
+```
+
+```yaml
+# changelog.yml
+block:
+  product:
+    kibana:
+      publish:
+        types:
+          - docs
+        areas:
+          - "Elastic Observability solution"
+          - "Elastic Security solution"
+```
+
+With this configuration, the directive will automatically use the `kibana` product blockers:
+
+```markdown
+:::{changelog}
+:::
+```
+
+**Explicit override:**
+
+You can override the automatic product detection by specifying `:product:` explicitly:
+
+```markdown
+:::{changelog}
+:product: elasticsearch
+:::
+```
+
+This is useful when:
+- The docset has multiple products and you want a specific one
+- You want to use a different product's blockers than the docset default
+
+The product ID matching is case-insensitive.
+
 ## Filtering entries with publish blockers
 
-You can filter changelog entries from the rendered output using the `block.publish` configuration in your `changelog.yml` file. This is useful for hiding entries that shouldn't appear in public documentation, such as internal changes or documentation-only updates.
+You can filter changelog entries from the rendered output using the `block.publish` or `block.product.{productId}.publish` configuration in your `changelog.yml` file. This is useful for hiding entries that shouldn't appear in public documentation, such as internal changes or documentation-only updates.
 
 ### Configuration syntax
 
@@ -112,6 +179,7 @@ Create a `changelog.yml` file in your docset root (or `docs/changelog.yml`):
 
 ```yaml
 block:
+  # Global publish blocker (applies to all products)
   publish:
     types:
       - docs           # Hide documentation entries
@@ -119,6 +187,30 @@ block:
     areas:
       - Internal       # Hide entries with "Internal" area
       - Experimental   # Hide entries with "Experimental" area
+  
+  # Product-specific blockers (override global blockers)
+  product:
+    kibana:
+      publish:
+        types:
+          - docs
+        areas:
+          - "Elastic Observability solution"
+          - "Elastic Security solution"
+    cloud-serverless:
+      publish:
+        types:
+          - docs
+        areas:
+          - "Snapshot and restore"
+```
+
+Product-specific blockers are applied automatically when your docset has a single product configured. For docsets with multiple products or to override the automatic detection, specify the `:product:` option:
+
+```markdown
+:::{changelog}
+:product: kibana
+:::
 ```
 
 ### Filtering by type
@@ -195,6 +287,28 @@ block:
       - known-issue    # Known issues shown on dedicated page
 ```
 
+## Feature hiding from bundles
+
+When bundles contain a `hide-features` field, entries with matching `feature-id` values are automatically filtered out from the rendered output. This allows you to hide unreleased or experimental features without modifying the bundle at render time.
+
+```yaml
+# Example bundle with hide-features
+products:
+  - product: elasticsearch
+    target: 9.3.0
+hide-features:
+  - feature:hidden-api
+  - feature:experimental
+entries:
+  - file:
+      name: new-feature.yaml
+      checksum: abc123
+```
+
+When the directive loads multiple bundles, `hide-features` from **all bundles are aggregated** and applied to all entries. This means if bundle A hides `feature:x` and bundle B hides `feature:y`, both features are hidden in the combined output.
+
+To add `hide-features` to a bundle, use the `--hide-features` option when running `changelog bundle`. For more details, see [Hide features in bundles](../contribute/changelog.md#changelog-bundle-hide-features).
+
 ## Private repository link hiding
 
 PR and issue links are automatically hidden (commented out) for bundles from private repositories. This is determined by checking the `assembler.yml` configuration:
@@ -206,6 +320,21 @@ PR and issue links are automatically hidden (commented out) for bundles from pri
 ## Bundle merging
 
 Bundles with the same target version/date are automatically merged into a single section. This is useful for Cloud Serverless releases where multiple repositories (e.g., Elasticsearch, Kibana) contribute to a single dated release like `2025-08-05`.
+
+### Amend bundle merging
+
+Bundles can have associated **amend files** that follow the naming pattern `{bundle-name}.amend-{N}.yaml` (e.g., `9.3.0.amend-1.yaml`). When loading bundles, the directive automatically discovers and merges amend files with their parent bundles.
+
+This allows you to add late additions to a release without modifying the original bundle file:
+
+```
+bundles/
+├── 9.3.0.yaml           # Parent bundle
+├── 9.3.0.amend-1.yaml   # First amend (auto-merged with parent)
+└── 9.3.0.amend-2.yaml   # Second amend (auto-merged with parent)
+```
+
+All entries from the parent and amend bundles are rendered together as a single release section. The parent bundle's metadata (products, hide-features, repo) is preserved.
 
 ## Default folder structure
 
@@ -259,8 +388,15 @@ Each bundle renders as a `## {version}` section with subsections beneath:
 | Regressions | `regression` | Grouped by area |
 | Other changes | `other` | Grouped by area |
 | Breaking changes | `breaking-change` | Expandable dropdowns |
+| Highlights | Entries with `highlight: true` | Expandable dropdowns |
 | Deprecations | `deprecation` | Expandable dropdowns |
 | Known issues | `known-issue` | Expandable dropdowns |
+
+**Note about highlights:**
+- Highlights only appear when using `:type: all` (they are excluded from the default view)
+- When rendered, highlighted entries appear in BOTH the "Highlights" section AND their original type section (for example, a highlighted feature appears in both "Highlights" and "Features and enhancements")
+- The "Highlights" section is only created when at least one entry has `highlight: true`
+- When using `:type: highlight`, only highlighted entries are shown (no section headers or other content)
 
 Sections with no entries of that type are omitted from the output.
 

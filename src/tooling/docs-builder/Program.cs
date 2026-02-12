@@ -50,6 +50,7 @@ app.Add<AssemblerCommands>("assembler");
 app.Add<AssembleCommands>("assemble");
 
 //codex commands
+app.Add<CodexIndexCommand>("codex index");
 app.Add<CodexCommands>("codex");
 
 await app.RunAsync(args).ConfigureAwait(false);

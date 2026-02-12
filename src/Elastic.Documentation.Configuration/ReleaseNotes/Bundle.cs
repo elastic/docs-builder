@@ -13,6 +13,12 @@ namespace Elastic.Documentation.Configuration.ReleaseNotes;
 public sealed record BundleDto
 {
 	public List<BundledProductDto>? Products { get; set; }
+	/// <summary>
+	/// Feature IDs that should be hidden when rendering this bundle.
+	/// Entries with matching feature-id values will be commented out in the output.
+	/// </summary>
+	[YamlMember(Alias = "hide-features", ApplyNamingConventions = false)]
+	public List<string>? HideFeatures { get; set; }
 	public List<BundledEntryDto>? Entries { get; set; }
 }
 
@@ -24,6 +30,11 @@ public sealed record BundledProductDto
 	public string? Product { get; set; }
 	public string? Target { get; set; }
 	public string? Lifecycle { get; set; }
+	/// <summary>
+	/// GitHub repository name for generating PR/issue links.
+	/// If not specified, falls back to Product ID.
+	/// </summary>
+	public string? Repo { get; set; }
 }
 
 /// <summary>

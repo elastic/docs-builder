@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation;
 using Elastic.Documentation.Assembler.Sourcing;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
@@ -69,6 +70,11 @@ public record AssemblerDocumentationSet
 				Auth = env.GoogleTagManager.Auth,
 				Preview = env.GoogleTagManager.Preview,
 				CookiesWin = env.GoogleTagManager.CookiesWin
+			},
+			Optimizely = new OptimizelyConfiguration
+			{
+				Enabled = env.Optimizely.Enabled,
+				Id = env.Optimizely.Id
 			},
 			CanonicalBaseUrl = new Uri("https://www.elastic.co"), // Always use the production URL. In case a page is leaked to a search engine, it should point to the production site.
 			BuildType = BuildType.Assembler

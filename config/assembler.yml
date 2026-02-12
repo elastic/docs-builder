@@ -7,6 +7,9 @@ environments:
     google_tag_manager:
       enabled: true
       id: GTM-KNJMG2M
+    optimizely:
+      enabled: true
+      id: "18132920325"
     feature_flags:
       SEARCH_OR_ASK_AI: true
   staging:
@@ -101,7 +104,10 @@ references:
   ecs-logging-python:
   ecs-logging-ruby:
   ecs-logging:
+  # CF repos
   edot-cloud-forwarder-aws:
+    private: true
+  edot-cloud-forwarder-azure:
     private: true
   elastic-agent:
   elastic-otel-dotnet:

@@ -151,6 +151,7 @@ public class HtmlWriter(
 			AllowIndexing = DocumentationSet.Context.AllowIndexing && markdown.YamlFrontMatter?.NoIndex != true && (markdown.CrossLink.Equals("docs-content://index.md", StringComparison.OrdinalIgnoreCase) || markdown is DetectionRuleFile || !current.Hidden),
 			CanonicalBaseUrl = DocumentationSet.Context.CanonicalBaseUrl,
 			GoogleTagManager = DocumentationSet.Context.GoogleTagManager,
+			Optimizely = DocumentationSet.Context.Optimizely,
 			Features = DocumentationSet.Configuration.Features,
 			StaticFileContentHashProvider = StaticFileContentHashProvider,
 			ReportIssueUrl = reportUrl,
@@ -166,7 +167,8 @@ public class HtmlWriter(
 			GitBranch = gitBranch != "unavailable" ? gitBranch : null,
 			GitCommitShort = gitRef is { Length: >= 7 } r && r != "unavailable" ? r[..7] : null,
 			GitRepository = gitRepo != "unavailable" ? gitRepo : null,
-			GitHubDocsUrl = gitHubDocsUrl
+			GitHubDocsUrl = gitHubDocsUrl,
+			GitHubRef = DocumentationSet.Context.Git.GitHubRef
 		});
 
 		return new RenderResult

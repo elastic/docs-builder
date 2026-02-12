@@ -49,6 +49,7 @@ public class IndexViewModel
 	public required Uri? CanonicalBaseUrl { get; init; }
 
 	public required GoogleTagManagerConfiguration GoogleTagManager { get; init; }
+	public required OptimizelyConfiguration Optimizely { get; init; }
 
 	public required FeatureFlags Features { get; init; }
 	public required StaticFileContentHashProvider StaticFileContentHashProvider { get; init; }
@@ -66,6 +67,7 @@ public class IndexViewModel
 	public string? GitCommitShort { get; init; }
 	public string? GitRepository { get; init; }
 	public string? GitHubDocsUrl { get; init; }
+	public string? GitHubRef { get; init; }
 }
 
 public class VersionDropDownItemViewModel

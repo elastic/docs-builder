@@ -27,7 +27,7 @@ let mermaidLoaded = false
 let mermaidLoading: Promise<void> | null = null
 
 // High-contrast theme configuration
-// beautiful-mermaid generates CSS variables that don't resolve correctly in all contexts,
+// beautiful-mermaid generates CSS vars that don't resolve correctly in all contexts,
 // so we resolve them to actual colors during post-processing
 const colors = {
     background: '#FFFFFF',

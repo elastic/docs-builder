@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Navigation;
@@ -38,20 +39,21 @@ public record GlobalLayoutViewModel
 	public string? GitCommitShort { get; init; }
 	public string? GitRepository { get; init; }
 	public string? GitHubDocsUrl { get; init; }
+	/// <summary>Full ref from GitHub Actions (e.g. refs/pull/123/merge). Set when built in a pull request workflow.</summary>
+	public string? GitHubRef { get; init; }
 	public string? CanonicalUrl => CanonicalBaseUrl is not null ?
 		new Uri(CanonicalBaseUrl, CurrentNavigationItem.Url).ToString().TrimEnd('/') : null;
 
 	public required FeatureFlags Features { get; init; }
 	// TODO move to @inject
 	public required GoogleTagManagerConfiguration GoogleTagManager { get; init; }
+	public required OptimizelyConfiguration Optimizely { get; init; }
 	public required bool AllowIndexing { get; init; }
 	public required StaticFileContentHashProvider StaticFileContentHashProvider { get; init; }
 
 	public BuildType BuildType { get; init; } = BuildType.Isolated;
 
 	public bool RenderHamburgerIcon { get; init; } = true;
-
-	public bool RenderHeaders { get; init; } = true;
 
 	public string Static(string path)
 	{
@@ -73,18 +75,13 @@ public record GlobalLayoutViewModel
 
 	private string GetStaticPathPrefix()
 	{
-		if (BuildType == BuildType.Codex)
-		{
-			// Extract site prefix from URL path (e.g., /internal-docs/r/repoName -> /internal-docs)
-			if (UrlPathPrefix?.Contains("/r/", StringComparison.Ordinal) == true)
-			{
-				var rIndex = UrlPathPrefix.IndexOf("/r/", StringComparison.Ordinal);
-				if (rIndex > 0)
-					return UrlPathPrefix[..rIndex];
-			}
+		if (BuildType != BuildType.Codex)
+			return UrlPathPrefix ?? string.Empty;
+		// Extract site prefix from URL path (e.g., /internal-docs/r/repoName -> /internal-docs)
+		if (UrlPathPrefix?.Contains("/r/", StringComparison.Ordinal) != true)
 			return string.Empty;
-		}
-		return UrlPathPrefix ?? string.Empty;
+		var rIndex = UrlPathPrefix.IndexOf("/r/", StringComparison.Ordinal);
+		return rIndex > 0 ? UrlPathPrefix[..rIndex] : string.Empty;
 	}
 
 	public string Link(string path)
