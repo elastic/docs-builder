@@ -44,7 +44,7 @@ public class DiagnosticTools
 		var dir = new DirectoryInfo(startDir);
 		while (dir is not null)
 		{
-			var candidate = Path.Combine(dir.FullName, "_docset.yml");
+			var candidate = Path.Join(dir.FullName, "_docset.yml");
 			if (File.Exists(candidate))
 				return candidate;
 
