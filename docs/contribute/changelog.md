@@ -514,27 +514,17 @@ The `--hide-features` option on the `render` command and the `hide-features` fie
 
 ### Amend bundles [changelog-bundle-amend]
 
-When you need to add entries to an existing bundle without modifying the original file, you can create amend bundles. Amend bundles follow a specific naming convention: `{parent-bundle-name}.amend-{N}.yaml` where `{N}` is a sequence number.
+When you need to add entries to an existing bundle without modifying the original file, you can use the `docs-builder changelog bundle-amend` command to create amend bundles.
+Amend bundles follow a specific naming convention: `{parent-bundle-name}.amend-{N}.yaml` where `{N}` is a sequence number.
 
-For example, if you have a bundle named `9.3.0.yaml`, you can create amend files:
-- `9.3.0.amend-1.yaml`
-- `9.3.0.amend-2.yaml`
+When bundles are loaded (either via the `changelog render` command or the `{changelog}` directive), amend files are **automatically merged** with their parent bundles.
+The entries from all matching amend files are combined with the parent bundle's entries, and the result is rendered as a single release.
 
-Amend bundles contain only the additional entries:
-
-```yaml
-# 9.3.0.amend-1.yaml
-entries:
-- file:
-    name: late-addition.yaml
-    checksum: abc123def456
-```
-
-When bundles are loaded (either via the `changelog render` command or the `{changelog}` directive), amend files are **automatically merged** with their parent bundles. The entries from all matching amend files are combined with the parent bundle's entries, and the result is rendered as a single release.
-
-:::{note}
-Amend bundles do not need to include `products` or `hide-features` fields—they inherit these from their parent bundle. If an amend bundle is found without a matching parent bundle, it remains standalone.
+:::{warning}
+If you explicitly list the amend bundles in the `--input` option of the `docs-builder changelog render` command, you'll get duplicate entries in the output files. List only the original bundles.
 :::
+
+For more details and examples, go to [](/cli/release/changelog-bundle-amend.md).
 
 ## Create documentation
 
