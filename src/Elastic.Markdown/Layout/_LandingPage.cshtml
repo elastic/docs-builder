@@ -1,7 +1,7 @@
 @inherits RazorSlice<Elastic.Markdown.MarkdownLayoutViewModel>
 <div hx-select-oob="#main-container" hx-swap="none" class="w-full max-w-[100vw] text-ink relative text-pretty overflow-x-hidden">
 	<section class="w-full bg-grey-10" id="hero">
-		<div class="container mx-auto pt-28 pb-28 grid md:grid-cols-[1fr_600px] items-center gap-6">
+		<div class="container mx-auto pt-28 pb-28 grid lg:grid-cols-[1fr_600px] items-center gap-6">
 			<div class="max-w-165">
 				<h1 class="text-6xl font-bold font-sans text-black">Elastic Docs</h1>
 				<p class="mt-4">Welcome to the technical documentation for <span class="whitespace-nowrap">Elastic Stack 9.0.0</span>
@@ -35,7 +35,7 @@
 					</div>
 				}
 			</div>
-			<div class="hidden md:flex justify-center items-center">
+			<div class="hidden lg:flex justify-center items-center">
 				<img src="@Model.Static("hero.png")" alt="Elastic Docs" width="600">
 			</div>
 		</div>
@@ -183,17 +183,17 @@
 				</h2>
 			</div>
 			<div class="grid grid-cols-1 min-[1024px]:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
-				<div class="min-h-61 rounded-2xl bg-[#111C2C] border-1 border-grey-20 text-white p-8 flex flex-col items-start">
+				<div class="min-h-61 rounded-2xl bg-ink-navy border-1 border-grey-20 text-white p-8 flex flex-col items-start">
 					<p class="font-sans font-bold text-xl">Release notes</p>
 					<p class="mt-2 grow">Explore the latest features and changes in Elastic.</p>
 					<a href="@Model.Link("/release-notes/")" class="text-white hover:text-grey-20 font-sans font-semibold mt-3">View release notes →</a>
 				</div>
-				<div class="min-h-61 rounded-2xl bg-[#111C2C] border-1 border-grey-20 text-white p-8 flex flex-col items-start">
+				<div class="min-h-61 rounded-2xl bg-ink-navy border-1 border-grey-20 text-white p-8 flex flex-col items-start">
 					<p class="font-sans font-bold text-xl">Extend and contribute</p>
 					<p class="mt-2 grow">Learn how to contribute to Elastic products and extend capabilities.</p>
 					<a href="@Model.Link("extend/")" class="text-white hover:text-grey-20 font-sans font-semibold mt-3">View extend and contribute docs →</a>
 				</div>
-				<div class="min-h-61 rounded-2xl bg-[#111C2C] border-1 border-grey-20 text-white p-8 flex flex-col items-start">
+				<div class="min-h-61 rounded-2xl bg-ink-navy border-1 border-grey-20 text-white p-8 flex flex-col items-start">
 					<p class="font-sans font-bold text-xl">Troubleshoot</p>
 					<p class="mt-2 grow">Check troubleshooting guides for common fixes.</p>
 					<a href="@Model.Link("/troubleshoot/")" class="text-white hover:text-grey-20 font-sans font-semibold mt-3">View troubleshooting docs →</a>
