@@ -62,7 +62,7 @@ async Task BuildAspireHost(bool startElasticsearch, bool assumeCloned, bool assu
 			.WithEnvironment("DOCUMENTATION_ELASTIC_APIKEY", elasticsearchApiKey)
 			.WithExplicitStart();
 
-	var mcp = builder.AddProject<Projects.Elastic_Documentation_Mcp_Lambda>(LambdaMcp)
+	var mcp = builder.AddProject<Projects.Elastic_Documentation_Mcp_Remote>(RemoteMcp)
 		.WithArgs(globalArguments)
 		.WithEnvironment("ENVIRONMENT", "dev");
 

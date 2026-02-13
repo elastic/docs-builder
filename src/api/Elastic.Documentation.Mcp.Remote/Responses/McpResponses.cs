@@ -4,7 +4,7 @@
 
 using System.Text.Json.Serialization;
 
-namespace Elastic.Documentation.Mcp.Lambda.Responses;
+namespace Elastic.Documentation.Mcp.Remote.Responses;
 
 // Common error response
 public sealed record ErrorResponse(string Error, List<string>? Details = null);

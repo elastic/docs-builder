@@ -1,6 +1,6 @@
 {
   "profiles": {
-    "Elastic.Documentation.Mcp.Lambda": {
+    "Elastic.Documentation.Mcp.Remote": {
       "commandName": "Project",
       "dotnetRunMessages": true,
       "launchBrowser": false,

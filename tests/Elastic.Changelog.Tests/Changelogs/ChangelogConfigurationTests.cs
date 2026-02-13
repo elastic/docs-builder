@@ -5,6 +5,7 @@
 using Elastic.Changelog.Configuration;
 using Elastic.Changelog.Serialization;
 using Elastic.Documentation;
+using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Diagnostics;
 using FluentAssertions;
 
@@ -462,6 +463,415 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 				d.Severity == Severity.Error &&
 				d.Message.Contains("Subtype 'invalid-subtype'") &&
 				d.Message.Contains("is not a valid subtype"));
+		}
+		finally
+		{
+			FileSystem.Directory.SetCurrentDirectory(originalDir);
+		}
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_BlockCreate_AsString_ParsesCorrectly()
+	{
+		// Arrange - block.create as comma-separated string
+		var config = await LoadConfig(
+			"""
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change:
+			block:
+			  create: ">non-issue, >test, >skip"
+			""");
+
+		// Assert
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config!.Block.Should().NotBeNull();
+		config.Block!.Create.Should().BeEquivalentTo([">non-issue", ">test", ">skip"]);
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_BlockCreate_AsList_ParsesCorrectly()
+	{
+		// Arrange - block.create as YAML list
+		var config = await LoadConfig(
+			"""
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change:
+			block:
+			  create:
+			    - ">non-issue"
+			    - ">test"
+			    - ">skip"
+			""");
+
+		// Assert
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config!.Block.Should().NotBeNull();
+		config.Block!.Create.Should().BeEquivalentTo([">non-issue", ">test", ">skip"]);
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_PublishBlockerTypes_AsString_ParsesCorrectly()
+	{
+		// Arrange - block.publish.types as comma-separated string
+		var config = await LoadConfig(
+			"""
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change:
+			block:
+			  publish:
+			    types: "deprecation, known-issue"
+			""");
+
+		// Assert
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config!.Block.Should().NotBeNull();
+		config.Block!.Publish.Should().NotBeNull();
+		config.Block.Publish!.Types.Should().BeEquivalentTo(["deprecation", "known-issue"]);
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_PublishBlockerTypes_AsList_ParsesCorrectly()
+	{
+		// Arrange - block.publish.types as YAML list
+		var config = await LoadConfig(
+			"""
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change:
+			block:
+			  publish:
+			    types:
+			      - deprecation
+			      - known-issue
+			""");
+
+		// Assert
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config!.Block.Should().NotBeNull();
+		config.Block!.Publish.Should().NotBeNull();
+		config.Block.Publish!.Types.Should().BeEquivalentTo(["deprecation", "known-issue"]);
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_PublishBlockerAreas_AsString_ParsesCorrectly()
+	{
+		// Arrange - block.publish.areas as comma-separated string
+		var config = await LoadConfig(
+			"""
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change:
+			block:
+			  publish:
+			    areas: "Internal, Experimental"
+			""");
+
+		// Assert
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config!.Block.Should().NotBeNull();
+		config.Block!.Publish.Should().NotBeNull();
+		config.Block.Publish!.Areas.Should().BeEquivalentTo(["Internal", "Experimental"]);
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_PublishBlockerAreas_AsList_ParsesCorrectly()
+	{
+		// Arrange - block.publish.areas as YAML list
+		var config = await LoadConfig(
+			"""
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change:
+			block:
+			  publish:
+			    areas:
+			      - Internal
+			      - Experimental
+			""");
+
+		// Assert
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config!.Block.Should().NotBeNull();
+		config.Block!.Publish.Should().NotBeNull();
+		config.Block.Publish!.Areas.Should().BeEquivalentTo(["Internal", "Experimental"]);
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_PivotHighlight_AsString_ParsesCorrectly()
+	{
+		// Arrange - pivot.highlight as comma-separated string
+		var config = await LoadConfig(
+			"""
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change:
+			  highlight: ">highlight, >release-highlight"
+			""");
+
+		// Assert
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config!.HighlightLabels.Should().BeEquivalentTo([">highlight", ">release-highlight"]);
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_PivotHighlight_AsList_ParsesCorrectly()
+	{
+		// Arrange - pivot.highlight as YAML list
+		var config = await LoadConfig(
+			"""
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change:
+			  highlight:
+			    - ">highlight"
+			    - ">release-highlight"
+			""");
+
+		// Assert
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config!.HighlightLabels.Should().BeEquivalentTo([">highlight", ">release-highlight"]);
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_PivotAreas_AsListValues_ComputesMapping()
+	{
+		// Arrange - pivot.areas with list values instead of comma-separated strings
+		var config = await LoadConfig(
+			"""
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change:
+			  areas:
+			    Search:
+			      - ":Search/Search"
+			      - ":Search/Ranking"
+			    Security: ":Security/Security"
+			""");
+
+		// Assert
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config!.Areas.Should().NotBeNull();
+		config.Areas.Should().Contain("Search");
+		config.Areas.Should().Contain("Security");
+		// Both labels from the list should map to "Search"
+		config.LabelToAreas.Should().NotBeNull();
+		config.LabelToAreas.Should().ContainKey(":Search/Search");
+		config.LabelToAreas![":Search/Search"].Should().Be("Search");
+		config.LabelToAreas.Should().ContainKey(":Search/Ranking");
+		config.LabelToAreas[":Search/Ranking"].Should().Be("Search");
+		// String form should still work
+		config.LabelToAreas.Should().ContainKey(":Security/Security");
+		config.LabelToAreas[":Security/Security"].Should().Be("Security");
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_TypeLabels_AsList_ComputesMapping()
+	{
+		// Arrange - pivot.types labels as YAML list instead of comma-separated string
+		var config = await LoadConfig(
+			"""
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			      labels:
+			        - ">bug"
+			        - ">fix"
+			    breaking-change:
+			      labels:
+			        - ">breaking"
+			        - ">bc"
+			""");
+
+		// Assert
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config!.LabelToType.Should().NotBeNull();
+		// bug-fix labels (list form)
+		config.LabelToType.Should().ContainKey(">bug");
+		config.LabelToType![">bug"].Should().Be("bug-fix");
+		config.LabelToType.Should().ContainKey(">fix");
+		config.LabelToType[">fix"].Should().Be("bug-fix");
+		// breaking-change labels (list form)
+		config.LabelToType.Should().ContainKey(">breaking");
+		config.LabelToType[">breaking"].Should().Be("breaking-change");
+		config.LabelToType.Should().ContainKey(">bc");
+		config.LabelToType[">bc"].Should().Be("breaking-change");
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_SubtypeLabels_AsList_ParsesCorrectly()
+	{
+		// Arrange - breaking-change subtype labels as YAML list
+		var config = await LoadConfig(
+			"""
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change:
+			      labels: ">breaking"
+			      subtypes:
+			        api:
+			          - ">api-breaking"
+			          - ">api-change"
+			        behavioral: ">behavioral-breaking"
+			""");
+
+		// Assert
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config!.Pivot.Should().NotBeNull();
+		config.Pivot!.Types.Should().ContainKey("breaking-change");
+		var breakingChange = config.Pivot.Types!["breaking-change"];
+		breakingChange.Should().NotBeNull();
+		breakingChange!.Subtypes.Should().NotBeNull();
+		// List form subtype labels should be joined as comma-separated
+		breakingChange.Subtypes!["api"].Should().Be(">api-breaking, >api-change");
+		// String form should still work
+		breakingChange.Subtypes["behavioral"].Should().Be(">behavioral-breaking");
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_ProductBlockCreate_AsList_ParsesCorrectly()
+	{
+		// Arrange - product-specific block.product.*.create as YAML list
+		var config = await LoadConfig(
+			"""
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change:
+			block:
+			  product:
+			    elasticsearch:
+			      create:
+			        - ">test"
+			        - ">skip"
+			""");
+
+		// Assert
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config!.Block.Should().NotBeNull();
+		config.Block!.ByProduct.Should().NotBeNull();
+		config.Block.ByProduct.Should().ContainKey("elasticsearch");
+		config.Block.ByProduct!["elasticsearch"].Create.Should().BeEquivalentTo([">test", ">skip"]);
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_MixedStringAndListForms_ParsesCorrectly()
+	{
+		// Arrange - mix of string and list forms in the same config
+		var config = await LoadConfig(
+			"""
+			pivot:
+			  types:
+			    feature:
+			    bug-fix: ">bug"
+			    breaking-change:
+			      labels:
+			        - ">breaking"
+			        - ">bc"
+			      subtypes:
+			        api: ">api-breaking"
+			        behavioral:
+			          - ">behavioral-breaking"
+			  areas:
+			    Search: ":Search/Search, :Search/Ranking"
+			    Security:
+			      - ":Security/Security"
+			      - ":Security/Auth"
+			  highlight:
+			    - ">highlight"
+			block:
+			  create: ">non-issue, >test"
+			  publish:
+			    types: "deprecation, known-issue"
+			    areas:
+			      - Internal
+			""");
+
+		// Assert
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+
+		// block.create as string
+		config!.Block.Should().NotBeNull();
+		config.Block!.Create.Should().BeEquivalentTo([">non-issue", ">test"]);
+
+		// publish.types as string, publish.areas as list
+		config.Block.Publish.Should().NotBeNull();
+		config.Block.Publish!.Types.Should().BeEquivalentTo(["deprecation", "known-issue"]);
+		config.Block.Publish.Areas.Should().BeEquivalentTo(["Internal"]);
+
+		// highlight as list
+		config.HighlightLabels.Should().BeEquivalentTo([">highlight"]);
+
+		// Type labels: string for bug-fix, list for breaking-change
+		config.LabelToType.Should().ContainKey(">bug");
+		config.LabelToType![">bug"].Should().Be("bug-fix");
+		config.LabelToType.Should().ContainKey(">breaking");
+		config.LabelToType[">breaking"].Should().Be("breaking-change");
+
+		// Areas: string for Search, list for Security
+		config.LabelToAreas.Should().ContainKey(":Search/Search");
+		config.LabelToAreas![":Search/Search"].Should().Be("Search");
+		config.LabelToAreas.Should().ContainKey(":Security/Security");
+		config.LabelToAreas[":Security/Security"].Should().Be("Security");
+		config.LabelToAreas.Should().ContainKey(":Security/Auth");
+		config.LabelToAreas[":Security/Auth"].Should().Be("Security");
+	}
+
+	/// <summary>
+	/// Helper to reduce boilerplate in lenient list tests.
+	/// Creates a temporary config file and loads the configuration.
+	/// </summary>
+	private async Task<ChangelogConfiguration?> LoadConfig(string yamlContent)
+	{
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		FileSystem.Directory.CreateDirectory(docsDir);
+		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
+		await FileSystem.File.WriteAllTextAsync(configPath, yamlContent, TestContext.Current.CancellationToken);
+
+		var originalDir = FileSystem.Directory.GetCurrentDirectory();
+		try
+		{
+			FileSystem.Directory.SetCurrentDirectory(configDir);
+			return await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current.CancellationToken);
 		}
 		finally
 		{
