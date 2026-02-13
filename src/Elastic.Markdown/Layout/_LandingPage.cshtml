@@ -1,5 +1,5 @@
 @inherits RazorSlice<Elastic.Markdown.MarkdownLayoutViewModel>
-<div hx-select-oob="#main-container" hx-swap="none" class="w-full text-ink relative text-pretty">
+<div hx-select-oob="#main-container" hx-swap="none" class="w-full max-w-[100vw] text-ink relative text-pretty overflow-x-hidden">
 	<section class="w-full bg-grey-10" id="hero">
 		<div class="container mx-auto pt-28 pb-28 grid md:grid-cols-[1fr_600px] items-center gap-6">
 			<div class="max-w-165">
@@ -48,8 +48,8 @@
 					<a href="#solutions-use-cases">Solutions and use cases</a>
 				</h2>
 			</div>
-			<div class="flex flex-col lg:flex-row gap-6 mt-6 items-start">
-				<div class="flex-1 rounded-2xl border-1 border-grey-20 p-8 bg-white flex gap-6 items-start">
+			<div class="grid grid-cols-1 min-[1024px]:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+				<div class="rounded-2xl border-1 border-grey-20 p-8 bg-white flex gap-6 items-start">
 					<img loading="lazy" alt="Search logo" src="@Model.Static("elasticsearch-logo-color-64px.svg")" class="size-8"/>
 					<div class="flex flex-col">
 						<p class="font-sans font-bold text-xl">Elasticsearch</p>
@@ -60,7 +60,7 @@
 						</div>
 					</div>
 				</div>
-				<div class="flex-1 rounded-2xl border-1 border-grey-20 p-8 bg-white flex gap-6 items-start">
+				<div class="rounded-2xl border-1 border-grey-20 p-8 bg-white flex gap-6 items-start">
 					<img loading="lazy" alt="Observability logo" src="@Model.Static("observability-logo-color-64px.svg")" class="size-8"/>
 					<div class="flex flex-col">
 						<p class="font-sans font-bold text-xl">Observability</p>
@@ -71,7 +71,7 @@
 						</div>
 					</div>
 				</div>
-				<div class="flex-1 rounded-2xl border-1 border-grey-20 p-8 bg-white flex gap-6 items-start">
+				<div class="rounded-2xl border-1 border-grey-20 p-8 bg-white flex gap-6 items-start">
 					<img loading="lazy" alt="Security logo" src="@Model.Static("security-logo-color-64px.svg")" class="size-8"/>
 					<div class="flex flex-col">
 						<p class="font-sans font-bold text-xl">Security</p>
@@ -95,8 +95,8 @@
 					</a>
 				</h2>
 			</div>
-			<div class="flex flex-col lg:flex-row gap-6 mt-6 items-start">
-				<div class="flex-1 h-60.75 rounded-2xl border-1 border-grey-20 p-8 bg-white flex flex-col gap-6 items-start">
+			<div class="grid grid-cols-1 min-[1024px]:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
+				<div class="min-h-61 rounded-2xl border-1 border-grey-20 p-8 bg-white flex flex-col gap-6 items-start">
 					<img loading="lazy" alt="Manage data icon" src="@Model.Static("productStreamsWired.svg")" class="size-8"/>
 					<div class="flex flex-col grow">
 						<p class="font-sans font-bold text-xl">Manage data</p>
@@ -104,7 +104,7 @@
 						<a href="@Model.Link("/manage-data")" class="text-blue-elastic-100 hover:text-blue-elastic-110 font-sans font-semibold mt-3">View docs</a>
 					</div>
 				</div>
-				<div class="flex-1 h-60.75 rounded-2xl border-1 border-grey-20 p-8 bg-white flex flex-col gap-6 items-start">
+				<div class="min-h-61 rounded-2xl border-1 border-grey-20 p-8 bg-white flex flex-col gap-6 items-start">
 					<img loading="lazy" alt="Explore and analyze icon" src="@Model.Static("productDashboard.svg")" class="size-8"/>
 					<div class="flex flex-col grow">
 						<p class="font-sans font-bold text-xl">Explore and analyze</p>
@@ -112,7 +112,7 @@
 						<a href="@Model.Link("/explore-analyze")" class="text-blue-elastic-100 hover:text-blue-elastic-110 font-sans font-semibold mt-3">View docs</a>
 					</div>
 				</div>
-				<div class="flex-1 h-60.75 rounded-2xl border-1 border-grey-20 p-8 bg-white flex flex-col gap-6 items-start">
+				<div class="min-h-61 rounded-2xl border-1 border-grey-20 p-8 bg-white flex flex-col gap-6 items-start">
 					<img loading="lazy" alt="Deploy and manage icon" src="@Model.Static("storage.svg")" class="size-8"/>
 					<div class="flex flex-col grow">
 						<p class="font-sans font-bold text-xl">Deploy and manage</p>
@@ -120,7 +120,7 @@
 						<a href="@Model.Link("/deploy-manage")" class="text-blue-elastic-100 hover:text-blue-elastic-110 font-sans font-semibold mt-3">View docs</a>
 					</div>
 				</div>
-				<div class="flex-1 h-60.75 rounded-2xl border-1 border-grey-20 p-8 bg-white flex flex-col gap-6 items-start">
+				<div class="min-h-61 rounded-2xl border-1 border-grey-20 p-8 bg-white flex flex-col gap-6 items-start">
 					<img loading="lazy" alt="Manage Cloud account icon" src="@Model.Static("cloud.svg")" class="size-8"/>
 					<div class="flex flex-col grow">
 						<p class="font-sans font-bold text-xl">Manage Cloud account</p>
@@ -139,23 +139,23 @@
 					<a href="#references">Reference</a>
 				</h2>
 			</div>
-			<div class="flex flex-col lg:flex-row gap-6 mt-6 items-start">
-				<div class="flex-1 h-[243px] rounded-2xl border-1 border-grey-20 p-8 bg-white flex flex-col items-start">
+			<div class="grid grid-cols-1 min-[1024px]:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
+				<div class="min-h-61 rounded-2xl border-1 border-grey-20 p-8 bg-white flex flex-col items-start">
 					<p class="font-sans font-bold text-xl">Elastic APIs</p>
 					<p class="mt-2 grow">Browse the API docs for Elasticsearch, Kibana, Elastic Cloud, and more.</p>
 					<a href="https://www.elastic.co/docs/api" target="_blank" rel="noopener noreferrer" class="text-blue-elastic-100 hover:text-blue-elastic-110 font-sans font-semibold mt-3">View docs</a>
 				</div>
-				<div class="flex-1 h-[243px] rounded-2xl border-1 border-grey-20 p-8 bg-white flex flex-col items-start">
+				<div class="min-h-61 rounded-2xl border-1 border-grey-20 p-8 bg-white flex flex-col items-start">
 					<p class="font-sans font-bold text-xl">Elasticsearch clients</p>
 					<p class="mt-2 grow">Browse the Elasticsearch client libraries for Java, .Net, Python, and more.</p>
 					<a href="@Model.Link("/reference/elasticsearch-clients/")" class="text-blue-elastic-100 hover:text-blue-elastic-110 font-sans font-semibold mt-3">View docs</a>
 				</div>
-				<div class="flex-1 h-[243px] rounded-2xl border-1 border-grey-20 p-8 bg-white flex flex-col items-start">
+				<div class="min-h-61 rounded-2xl border-1 border-grey-20 p-8 bg-white flex flex-col items-start">
 					<p class="font-sans font-bold text-xl">OpenTelemetry</p>
 					<p class="mt-2 grow">Browse the docs for the Elastic Distributions of OpenTelemetry (EDOT).</p>
 					<a href="@Model.Link("/reference/opentelemetry/")" class="text-blue-elastic-100 hover:text-blue-elastic-110 font-sans font-semibold mt-3">View docs</a>
 				</div>
-				<div class="flex-1 h-[243px] rounded-2xl border-1 border-grey-20 p-8 bg-white flex flex-col items-start">
+				<div class="min-h-61 rounded-2xl border-1 border-grey-20 p-8 bg-white flex flex-col items-start">
 					<p class="font-sans font-bold text-xl">Query languages</p>
 					<p class="mt-2 grow">Browse the docs for Query DSL, <span class="whitespace-nowrap">ES|QL</span>, KQL, and more.</p>
 					<a href="@Model.Link("/reference/query-languages/")" class="text-blue-elastic-100 hover:text-blue-elastic-110 font-sans font-semibold mt-3">View docs</a>
@@ -182,23 +182,23 @@
 					</a>
 				</h2>
 			</div>
-			<div class="flex flex-col lg:flex-row gap-6 mt-6 items-start">
-				<div class="flex-1 h-60.75 rounded-2xl bg-[#111C2C] border-1 border-grey-20 text-white p-8 flex flex-col items-start">
+			<div class="grid grid-cols-1 min-[1024px]:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
+				<div class="min-h-61 rounded-2xl bg-[#111C2C] border-1 border-grey-20 text-white p-8 flex flex-col items-start">
 					<p class="font-sans font-bold text-xl">Release notes</p>
 					<p class="mt-2 grow">Explore the latest features and changes in Elastic.</p>
 					<a href="@Model.Link("/release-notes/")" class="text-white hover:text-grey-20 font-sans font-semibold mt-3">View release notes →</a>
 				</div>
-				<div class="flex-1 h-60.75 rounded-2xl bg-[#111C2C] border-1 border-grey-20 text-white p-8 flex flex-col items-start">
+				<div class="min-h-61 rounded-2xl bg-[#111C2C] border-1 border-grey-20 text-white p-8 flex flex-col items-start">
 					<p class="font-sans font-bold text-xl">Extend and contribute</p>
 					<p class="mt-2 grow">Learn how to contribute to Elastic products and extend capabilities.</p>
 					<a href="@Model.Link("extend/")" class="text-white hover:text-grey-20 font-sans font-semibold mt-3">View extend and contribute docs →</a>
 				</div>
-				<div class="flex-1 h-60.75 rounded-2xl bg-[#111C2C] border-1 border-grey-20 text-white p-8 flex flex-col items-start">
+				<div class="min-h-61 rounded-2xl bg-[#111C2C] border-1 border-grey-20 text-white p-8 flex flex-col items-start">
 					<p class="font-sans font-bold text-xl">Previous versions</p>
 					<p class="mt-2 grow">Browse the docs for previous Elastic product versions.</p>
 					<a href="https://www.elastic.co/guide?lang=en" target="_blank" rel="noopener noreferrer" class="text-white hover:text-grey-20 font-sans font-semibold mt-3">View previous versions →</a>
 				</div>
-				<div class="flex-1 h-60.75 rounded-2xl bg-[#111C2C] border-1 border-grey-20 text-white p-8 flex flex-col items-start">
+				<div class="min-h-61 rounded-2xl bg-[#111C2C] border-1 border-grey-20 text-white p-8 flex flex-col items-start">
 					<p class="font-sans font-bold text-xl">Troubleshoot</p>
 					<p class="mt-2 grow">Check troubleshooting guides for common fixes.</p>
 					<a href="@Model.Link("/troubleshoot/")" class="text-white hover:text-grey-20 font-sans font-semibold mt-3">View troubleshooting docs →</a>
@@ -246,8 +246,8 @@
 
 	<section class="w-full">
 		<div class="container mx-auto pt-10 pb-20">
-			<div class="rounded-2xl overflow-hidden px-12 py-8 bg-cover bg-center flex items-center gap-4"
-			     style="background-image: url('@Model.Static("elasticon-bg.png")')">
+			<div class="rounded-2xl overflow-hidden px-12 py-8 bg-blue-elastic bg-no-repeat bg-right bg-contain flex items-center gap-4"
+			     style="background-image: url('@Model.Static("elasticon-bg-b.png")')">
 				<div class="grow">
 					<h2 class="font-bold font-sans text-3xl text-white">Looking for more?</h2>
 					<p class="mt-2 text-white text-base">We'll show you how to solve toughest challenges with Search AI.
