@@ -38,9 +38,9 @@ try
 
 	_ = api.MapHealthChecks("/health");
 	_ = api.MapHealthChecks("/alive", new HealthCheckOptions { Predicate = r => r.Tags.Contains("live") });
-	
+
 	var v1 = api.MapGroup("/v1");
-	
+
 	var mapOtlpEndpoints = !string.IsNullOrWhiteSpace(builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]);
 	v1.MapElasticDocsApiEndpoints(mapOtlpEndpoints);
 	Console.WriteLine("API endpoints mapped");
