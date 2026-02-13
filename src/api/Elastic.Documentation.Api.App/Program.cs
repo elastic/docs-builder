@@ -6,6 +6,7 @@ using Elastic.Documentation.Api.Infrastructure;
 using Elastic.Documentation.Api.Infrastructure.OpenTelemetry;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.ServiceDefaults;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
 try
 {
@@ -15,6 +16,7 @@ try
 		_ = s.AddSingleton(AssemblyConfiguration.Create(p));
 	});
 
+	_ = builder.AddDefaultHealthChecks();
 	_ = builder.AddDocsApiOpenTelemetry();
 
 	// Configure Kestrel to listen on port 8080 (standard container port)
@@ -32,10 +34,12 @@ try
 	if (app.Environment.IsDevelopment())
 		_ = app.UseDeveloperExceptionPage();
 
-	// Health check endpoint for load balancer target groups
-	_ = app.MapGet("/health", () => Results.Ok(new { status = "healthy" }));
+	var api = app.MapGroup("/docs/_api");
 
-	var v1 = app.MapGroup("/docs/_api/v1");
+	_ = api.MapHealthChecks("/health");
+	_ = api.MapHealthChecks("/alive", new HealthCheckOptions { Predicate = r => r.Tags.Contains("live") });
+
+	var v1 = api.MapGroup("/v1");
 
 	var mapOtlpEndpoints = !string.IsNullOrWhiteSpace(builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]);
 	v1.MapElasticDocsApiEndpoints(mapOtlpEndpoints);
