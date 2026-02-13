@@ -40,10 +40,11 @@ public class BlockingLabelTests(ITestOutputHelper output) : CreateChangelogTestB
 			  - preview
 			  - beta
 			  - ga
-			block:
-			  product:
-			    elasticsearch:
-			      create: "skip:releaseNotes"
+			rules:
+			  create:
+			    products:
+			      elasticsearch:
+			        exclude: "skip:releaseNotes"
 			""";
 		var configPath = await CreateConfigDirectory(configContent);
 
@@ -101,10 +102,11 @@ public class BlockingLabelTests(ITestOutputHelper output) : CreateChangelogTestB
 			  - preview
 			  - beta
 			  - ga
-			block:
-			  product:
-			    cloud-serverless:
-			      create: "ILM"
+			rules:
+			  create:
+			    products:
+			      cloud-serverless:
+			        exclude: "ILM"
 			""";
 		var configPath = await CreateConfigDirectory(configContent);
 
@@ -166,10 +168,11 @@ public class BlockingLabelTests(ITestOutputHelper output) : CreateChangelogTestB
 			  - preview
 			  - beta
 			  - ga
-			block:
-			  product:
-			    elasticsearch, cloud-serverless:
-			      create: ">non-issue"
+			rules:
+			  create:
+			    products:
+			      'elasticsearch, cloud-serverless':
+			        exclude: ">non-issue"
 			""";
 		var configPath = await CreateConfigDirectory(configContent);
 
