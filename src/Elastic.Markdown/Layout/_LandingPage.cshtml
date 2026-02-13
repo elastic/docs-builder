@@ -35,7 +35,7 @@
 					</div>
 				}
 			</div>
-			<div class="flex justify-center items-center">
+			<div class="hidden md:flex justify-center items-center">
 				<img src="@Model.Static("hero.png")" alt="Elastic Docs" width="600">
 			</div>
 		</div>
@@ -100,7 +100,7 @@
 					<img loading="lazy" alt="Manage data icon" src="@Model.Static("productStreamsWired.svg")" class="size-8"/>
 					<div class="flex flex-col grow">
 						<p class="font-sans font-bold text-xl">Manage data</p>
-						<p class="mt-2 grow">Learn how to ingest and manage your data throughout its entire lifecycle.</p>
+						<p class="mt-2 grow">Learn how to ingest, enrich, and manage your data in Elastic.</p>
 						<a href="@Model.Link("/manage-data")" class="text-blue-elastic-100 hover:text-blue-elastic-110 font-sans font-semibold mt-3">View docs</a>
 					</div>
 				</div>
@@ -194,14 +194,14 @@
 					<a href="@Model.Link("extend/")" class="text-white hover:text-grey-20 font-sans font-semibold mt-3">View extend and contribute docs →</a>
 				</div>
 				<div class="min-h-61 rounded-2xl bg-[#111C2C] border-1 border-grey-20 text-white p-8 flex flex-col items-start">
-					<p class="font-sans font-bold text-xl">Previous versions</p>
-					<p class="mt-2 grow">Browse the docs for previous Elastic product versions.</p>
-					<a href="https://www.elastic.co/guide?lang=en" target="_blank" rel="noopener noreferrer" class="text-white hover:text-grey-20 font-sans font-semibold mt-3">View previous versions →</a>
-				</div>
-				<div class="min-h-61 rounded-2xl bg-[#111C2C] border-1 border-grey-20 text-white p-8 flex flex-col items-start">
 					<p class="font-sans font-bold text-xl">Troubleshoot</p>
 					<p class="mt-2 grow">Check troubleshooting guides for common fixes.</p>
 					<a href="@Model.Link("/troubleshoot/")" class="text-white hover:text-grey-20 font-sans font-semibold mt-3">View troubleshooting docs →</a>
+				</div>
+				<div class="min-h-61 rounded-2xl border-1 border-grey-20 bg-white p-8 flex flex-col items-start">
+					<p class="font-sans font-bold text-xl">Previous versions</p>
+					<p class="mt-2 grow">Browse the docs for previous Elastic product versions.</p>
+					<a href="https://www.elastic.co/guide?lang=en" target="_blank" rel="noopener noreferrer" class="text-blue-elastic-100 hover:text-blue-elastic-110 font-sans font-semibold mt-3">View previous versions →</a>
 				</div>
 			</div>
 		</div>
