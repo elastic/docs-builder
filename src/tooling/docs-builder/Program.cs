@@ -37,6 +37,7 @@ app.Add<ServeCommand>("serve");
 app.Add<IndexCommand>("index");
 app.Add<FormatCommand>("format");
 app.Add<ChangelogCommand>("changelog");
+app.Add<McpCommand>("mcp");
 
 //assembler commands
 
@@ -50,6 +51,7 @@ app.Add<AssemblerCommands>("assembler");
 app.Add<AssembleCommands>("assemble");
 
 //codex commands
+app.Add<CodexIndexCommand>("codex index");
 app.Add<CodexCommands>("codex");
 
 await app.RunAsync(args).ConfigureAwait(false);

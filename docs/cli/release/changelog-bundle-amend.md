@@ -60,7 +60,6 @@ The entries from all matching amend files are combined with the parent bundle's 
 :::{note}
 Amend bundles do not need to include `products` or `hide-features` fields—they inherit these from their parent bundle. If an amend bundle is found without a matching parent bundle, it remains standalone.
 :::
-
 ## Examples
 
 ### Add a single changelog to a bundle

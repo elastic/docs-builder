@@ -57,7 +57,11 @@ public partial class ChangelogBundleAmendService(ILoggerFactory logFactory, IFil
 			// Validate bundle file exists
 			if (!_fileSystem.File.Exists(input.BundlePath))
 			{
-				collector.EmitError(input.BundlePath, "Bundle file does not exist");
+				var currentDir = _fileSystem.Directory.GetCurrentDirectory();
+				collector.EmitError(
+					input.BundlePath,
+					$"Bundle file does not exist. Current directory: {currentDir}"
+				);
 				return false;
 			}
 
@@ -74,7 +78,13 @@ public partial class ChangelogBundleAmendService(ILoggerFactory logFactory, IFil
 			{
 				if (!_fileSystem.File.Exists(addFile))
 				{
-					collector.EmitError(addFile, "File does not exist");
+					var currentDir = _fileSystem.Directory.GetCurrentDirectory();
+					collector.EmitError(
+						addFile,
+						$"File does not exist. Current directory: {currentDir}. " +
+						"Tip: Specify multiple files as comma-separated values (e.g., --add \"file1.yaml,file2.yaml\"). " +
+						"Paths support tilde (~) expansion and can be relative or absolute."
+					);
 					return false;
 				}
 				addFilePaths.Add(addFile);
