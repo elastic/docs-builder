@@ -34,11 +34,13 @@ try
 	if (app.Environment.IsDevelopment())
 		_ = app.UseDeveloperExceptionPage();
 
-	// Health check endpoints for ECS / load balancer target groups
-	_ = app.MapHealthChecks("/health");
-	_ = app.MapHealthChecks("/alive", new HealthCheckOptions { Predicate = r => r.Tags.Contains("live") });
+	var api = app.MapGroup("/docs/_api");
 
-	var v1 = app.MapGroup("/docs/_api/v1");
+	_ = api.MapHealthChecks("/health");
+	_ = api.MapHealthChecks("/alive", new HealthCheckOptions { Predicate = r => r.Tags.Contains("live") });
+	
+	var v1 = api.MapGroup("/docs/_api/v1");
+	
 
 	var mapOtlpEndpoints = !string.IsNullOrWhiteSpace(builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]);
 	v1.MapElasticDocsApiEndpoints(mapOtlpEndpoints);
