@@ -128,6 +128,8 @@ public record ConfigurationFile
 			_features = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
 			if (docSetFile.Features.PrimaryNav.HasValue)
 				_features["primary-nav"] = docSetFile.Features.PrimaryNav.Value;
+			if (docSetFile.Features.DisableGithubEditLink.HasValue)
+				_features["disable-github-edit-link"] = docSetFile.Features.DisableGithubEditLink.Value;
 
 			// Add version substitutions
 			foreach (var (id, system) in versionsConfig.VersioningSystems)
