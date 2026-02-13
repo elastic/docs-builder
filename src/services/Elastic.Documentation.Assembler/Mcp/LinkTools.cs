@@ -5,10 +5,10 @@
 using System.ComponentModel;
 using System.Text.Json;
 using Elastic.Documentation.Assembler.Links;
-using Elastic.Documentation.Mcp.Responses;
+using Elastic.Documentation.Assembler.Mcp.Responses;
 using ModelContextProtocol.Server;
 
-namespace Elastic.Documentation.Mcp;
+namespace Elastic.Documentation.Assembler.Mcp;
 
 [McpServerToolType]
 public class LinkTools(ILinkUtilService linkUtilService)

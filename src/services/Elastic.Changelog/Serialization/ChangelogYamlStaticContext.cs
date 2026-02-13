@@ -19,4 +19,5 @@ namespace Elastic.Changelog.Serialization;
 [YamlSerializable(typeof(BundleConfigurationYaml))]
 [YamlSerializable(typeof(BundleProfileYaml))]
 [YamlSerializable(typeof(ExtractConfigurationYaml))]
+[YamlSerializable(typeof(YamlLenientList))]
 public partial class ChangelogYamlStaticContext;

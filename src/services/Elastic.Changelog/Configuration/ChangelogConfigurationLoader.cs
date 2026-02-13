@@ -27,6 +27,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 	private static readonly IDeserializer ConfigurationDeserializer =
 		new StaticDeserializerBuilder(new ChangelogYamlStaticContext())
 			.WithNamingConvention(UnderscoredNamingConvention.Instance)
+			.WithTypeConverter(new YamlLenientListConverter())
 			.WithTypeConverter(new TypeEntryYamlConverter())
 			.Build();
 
@@ -210,12 +211,13 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 
 		// Process lifecycles
 		IReadOnlyList<Lifecycle> lifecycles;
-		if (yamlConfig.Lifecycles == null || yamlConfig.Lifecycles.Count == 0)
+		var lifecycleValues = yamlConfig.Lifecycles?.Values;
+		if (lifecycleValues == null || lifecycleValues.Count == 0)
 			lifecycles = ChangelogConfiguration.DefaultLifecycles;
 		else
 		{
 			var parsedLifecycles = new List<Lifecycle>();
-			foreach (var lifecycleStr in yamlConfig.Lifecycles)
+			foreach (var lifecycleStr in lifecycleValues)
 			{
 				if (!LifecycleExtensions.TryParse(lifecycleStr, out var lifecycle, ignoreCase: true, allowMatchingMetadataAttribute: true))
 				{
@@ -229,7 +231,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 
 		// Process products from products.available
 		IReadOnlyList<Product>? products = null;
-		var productIdList = yamlConfig.Products?.Available;
+		var productIdList = yamlConfig.Products?.Available?.Values;
 		if (productIdList is { Count: > 0 })
 		{
 			var resolvedProducts = new List<Product>();
@@ -254,9 +256,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			return null;
 
 		// Process highlight labels from pivot configuration
-		IReadOnlyList<string>? highlightLabels = null;
-		if (!string.IsNullOrWhiteSpace(yamlConfig.Pivot?.Highlight))
-			highlightLabels = SplitLabels(yamlConfig.Pivot.Highlight);
+		var highlightLabels = yamlConfig.Pivot?.Highlight?.Values;
 
 		// Process products configuration
 		ProductsConfig? productsConfig = null;
@@ -305,18 +305,38 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 					: new TypeEntry
 					{
 						Labels = kvp.Value.Labels,
-						Subtypes = kvp.Value.Subtypes
+						Subtypes = ConvertLenientDictToStringDict(kvp.Value.Subtypes)
 					});
 		}
 
 		return new PivotConfiguration
 		{
 			Types = types,
-			Subtypes = yamlPivot.Subtypes,
-			Areas = yamlPivot.Areas,
-			Highlight = yamlPivot.Highlight
+			Subtypes = ConvertLenientDictToStringDict(yamlPivot.Subtypes),
+			Areas = ConvertLenientDictToStringDict(yamlPivot.Areas),
+			Highlight = JoinLenientList(yamlPivot.Highlight)
 		};
 	}
+
+	/// <summary>
+	/// Converts a dictionary with YamlLenientList values to a dictionary with comma-joined string values.
+	/// </summary>
+	private static Dictionary<string, string?>? ConvertLenientDictToStringDict(Dictionary<string, YamlLenientList?>? source)
+	{
+		if (source == null || source.Count == 0)
+			return null;
+
+		return source.ToDictionary(
+			kvp => kvp.Key,
+			kvp => JoinLenientList(kvp.Value)
+		);
+	}
+
+	/// <summary>
+	/// Joins a YamlLenientList into a comma-separated string, or returns null.
+	/// </summary>
+	private static string? JoinLenientList(YamlLenientList? list) =>
+		list?.Values is { Count: > 0 } values ? string.Join(", ", values) : null;
 
 	private ProductsConfig? ParseProductsConfig(
 		IDiagnosticsCollector collector,
@@ -326,10 +346,11 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 	{
 		// Validate available products
 		List<string>? available = null;
-		if (yaml.Available is { Count: > 0 })
+		var availableValues = yaml.Available?.Values;
+		if (availableValues is { Count: > 0 })
 		{
 			available = [];
-			foreach (var productId in yaml.Available)
+			foreach (var productId in availableValues)
 			{
 				var normalizedProductId = productId.Replace('_', '-');
 				if (!validProductIds.Contains(normalizedProductId))
@@ -389,7 +410,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 				{
 					Products = kvp.Value.Products,
 					Output = kvp.Value.Output,
-					HideFeatures = kvp.Value.HideFeatures
+					HideFeatures = kvp.Value.HideFeatures?.Values
 				});
 		}
 
@@ -454,7 +475,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			return null;
 
 		// Validate mutual exclusivity
-		if (!string.IsNullOrWhiteSpace(yaml.Exclude) && !string.IsNullOrWhiteSpace(yaml.Include))
+		if (yaml.Exclude?.Values is { Count: > 0 } && yaml.Include?.Values is { Count: > 0 })
 		{
 			collector.EmitError(configPath, $"{path}: cannot have both 'exclude' and 'include'. Use one or the other.");
 			return null;
@@ -473,9 +494,8 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			match = parsed.Value;
 		}
 
-		var mode = !string.IsNullOrWhiteSpace(yaml.Include) ? FieldMode.Include : FieldMode.Exclude;
-		var labelsStr = mode == FieldMode.Include ? yaml.Include : yaml.Exclude;
-		var labels = SplitLabels(labelsStr);
+		var mode = yaml.Include?.Values is { Count: > 0 } ? FieldMode.Include : FieldMode.Exclude;
+		var labels = mode == FieldMode.Include ? yaml.Include?.Values : yaml.Exclude?.Values;
 
 		// Parse per-product overrides
 		Dictionary<string, CreateRules>? byProduct = null;
@@ -599,27 +619,31 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		MatchMode matchAreas)
 	{
 		// Validate mutual exclusivity for types
-		if (yaml.ExcludeTypes?.Count > 0 && yaml.IncludeTypes?.Count > 0)
+		var excludeTypes = yaml.ExcludeTypes?.Values;
+		var includeTypes = yaml.IncludeTypes?.Values;
+		if (excludeTypes is { Count: > 0 } && includeTypes is { Count: > 0 })
 		{
 			collector.EmitError(configPath, $"{path}: cannot have both 'exclude_types' and 'include_types'. Use one or the other.");
 			return null;
 		}
 
 		// Validate mutual exclusivity for areas
-		if (yaml.ExcludeAreas?.Count > 0 && yaml.IncludeAreas?.Count > 0)
+		var excludeAreas = yaml.ExcludeAreas?.Values;
+		var includeAreas = yaml.IncludeAreas?.Values;
+		if (excludeAreas is { Count: > 0 } && includeAreas is { Count: > 0 })
 		{
 			collector.EmitError(configPath, $"{path}: cannot have both 'exclude_areas' and 'include_areas'. Use one or the other.");
 			return null;
 		}
 
-		var types = yaml.ExcludeTypes ?? yaml.IncludeTypes;
-		var areas = yaml.ExcludeAreas ?? yaml.IncludeAreas;
+		var types = excludeTypes ?? includeTypes;
+		var areas = excludeAreas ?? includeAreas;
 
 		if ((types == null || types.Count == 0) && (areas == null || areas.Count == 0))
 			return null;
 
-		var typesMode = yaml.IncludeTypes?.Count > 0 ? FieldMode.Include : FieldMode.Exclude;
-		var areasMode = yaml.IncludeAreas?.Count > 0 ? FieldMode.Include : FieldMode.Exclude;
+		var typesMode = includeTypes is { Count: > 0 } ? FieldMode.Include : FieldMode.Exclude;
+		var areasMode = includeAreas is { Count: > 0 } ? FieldMode.Include : FieldMode.Exclude;
 
 		return new PublishBlocker
 		{
@@ -636,8 +660,13 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		if (yaml == null)
 			return null;
 
-		var types = yaml.ExcludeTypes ?? yaml.IncludeTypes;
-		var areas = yaml.ExcludeAreas ?? yaml.IncludeAreas;
+		var excludeTypes = yaml.ExcludeTypes?.Values;
+		var includeTypes = yaml.IncludeTypes?.Values;
+		var excludeAreas = yaml.ExcludeAreas?.Values;
+		var includeAreas = yaml.IncludeAreas?.Values;
+
+		var types = excludeTypes ?? includeTypes;
+		var areas = excludeAreas ?? includeAreas;
 
 		if ((types == null || types.Count == 0) && (areas == null || areas.Count == 0))
 			return null;
@@ -645,9 +674,9 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		return new PublishBlocker
 		{
 			Types = types?.Count > 0 ? types.ToList() : null,
-			TypesMode = yaml.IncludeTypes?.Count > 0 ? FieldMode.Include : FieldMode.Exclude,
+			TypesMode = includeTypes is { Count: > 0 } ? FieldMode.Include : FieldMode.Exclude,
 			Areas = areas?.Count > 0 ? areas.ToList() : null,
-			AreasMode = yaml.IncludeAreas?.Count > 0 ? FieldMode.Include : FieldMode.Exclude,
+			AreasMode = includeAreas is { Count: > 0 } ? FieldMode.Include : FieldMode.Exclude,
 			MatchAreas = matchAreas
 		};
 	}
@@ -659,18 +688,6 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			"all" => MatchMode.All,
 			_ => string.IsNullOrWhiteSpace(value) ? null : null
 		};
-
-	/// <summary>
-	/// Splits a comma-separated label string into a list.
-	/// </summary>
-	private static List<string>? SplitLabels(string? labels)
-	{
-		if (string.IsNullOrWhiteSpace(labels))
-			return null;
-
-		var result = labels.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
-		return result.Count > 0 ? result : null;
-	}
 
 	/// <summary>
 	/// Builds LabelToType mapping by inverting pivot.types entries.
@@ -700,20 +717,19 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 	/// Builds LabelToAreas mapping by inverting pivot.areas entries.
 	/// Each label in an area entry maps to that area name.
 	/// </summary>
-	private static Dictionary<string, string>? BuildLabelToAreasMapping(Dictionary<string, string?>? areas)
+	private static Dictionary<string, string>? BuildLabelToAreasMapping(Dictionary<string, YamlLenientList?>? areas)
 	{
 		if (areas == null || areas.Count == 0)
 			return null;
 
 		var labelToAreas = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-		foreach (var (areaName, labels) in areas)
+		foreach (var (areaName, labelList) in areas)
 		{
-			if (string.IsNullOrWhiteSpace(labels))
+			if (labelList?.Values == null)
 				continue;
 
-			var labelList = labels.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-			foreach (var label in labelList)
+			foreach (var label in labelList.Values)
 				labelToAreas[label] = areaName;
 		}
 

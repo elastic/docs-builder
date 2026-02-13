@@ -18,7 +18,7 @@ internal sealed class CheckForUpdatesFilter(ConsoleAppFilter next, GlobalCliArgs
 		await Next.InvokeAsync(context, ctx);
 		if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CI")))
 			return;
-		if (cli.IsHelpOrVersion)
+		if (cli.IsHelpOrVersion || cli.IsMcp)
 			return;
 
 		var latestVersionUrl = await GetLatestVersion(ctx);

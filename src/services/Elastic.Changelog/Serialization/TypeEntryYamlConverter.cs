@@ -12,6 +12,7 @@ namespace Elastic.Changelog.Serialization;
 /// YAML type converter for TypeEntryYaml that handles both string and object forms.
 /// String form: "label1, label2"
 /// Object form: { labels: "label1", subtypes: { api: "label" } }
+/// Labels and subtype values accept both scalar (comma-separated) and sequence (list) forms.
 /// </summary>
 public class TypeEntryYamlConverter : IYamlTypeConverter
 {
@@ -42,8 +43,8 @@ public class TypeEntryYamlConverter : IYamlTypeConverter
 				switch (key.Value)
 				{
 					case "labels":
-						var labelsScalar = parser.Consume<Scalar>();
-						entry = entry with { Labels = string.IsNullOrEmpty(labelsScalar.Value) ? null : labelsScalar.Value };
+						// Accept both scalar and sequence for labels
+						entry = entry with { Labels = YamlLenientListConverter.ReadAsString(parser) };
 						break;
 					case "subtypes":
 						entry = entry with { Subtypes = ParseSubtypes(parser) };
@@ -62,7 +63,7 @@ public class TypeEntryYamlConverter : IYamlTypeConverter
 		return new TypeEntryYaml();
 	}
 
-	private static Dictionary<string, string?>? ParseSubtypes(IParser parser)
+	private static Dictionary<string, YamlLenientList?>? ParseSubtypes(IParser parser)
 	{
 		if (!parser.TryConsume<MappingStart>(out _))
 		{
@@ -72,13 +73,38 @@ public class TypeEntryYamlConverter : IYamlTypeConverter
 			return null;
 		}
 
-		var subtypes = new Dictionary<string, string?>();
+		var subtypes = new Dictionary<string, YamlLenientList?>();
 
 		while (!parser.TryConsume<MappingEnd>(out _))
 		{
 			var key = parser.Consume<Scalar>();
-			var value = parser.Consume<Scalar>();
-			subtypes[key.Value] = string.IsNullOrEmpty(value.Value) ? null : value.Value;
+
+			// Accept both scalar and sequence for each subtype value
+			if (parser.TryConsume<Scalar>(out var valueScalar))
+			{
+				if (string.IsNullOrEmpty(valueScalar.Value) || valueScalar.Value == "~")
+					subtypes[key.Value] = null;
+				else
+				{
+					var items = valueScalar.Value
+						.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+						.ToList();
+					subtypes[key.Value] = new YamlLenientList(items.Count > 0 ? items : null);
+				}
+			}
+			else if (parser.TryConsume<SequenceStart>(out _))
+			{
+				var items = new List<string>();
+				while (!parser.TryConsume<SequenceEnd>(out _))
+				{
+					var item = parser.Consume<Scalar>();
+					if (!string.IsNullOrWhiteSpace(item.Value))
+						items.Add(item.Value.Trim());
+				}
+				subtypes[key.Value] = new YamlLenientList(items.Count > 0 ? items : null);
+			}
+			else
+				subtypes[key.Value] = null;
 		}
 
 		return subtypes;
@@ -149,7 +175,10 @@ public class TypeEntryYamlConverter : IYamlTypeConverter
 			foreach (var (subKey, subValue) in entry.Subtypes)
 			{
 				emitter.Emit(new Scalar(null, null, subKey, ScalarStyle.Plain, true, false));
-				emitter.Emit(new Scalar(null, null, subValue ?? string.Empty, ScalarStyle.Plain, true, false));
+				var joinedValue = subValue?.Values is { Count: > 0 } vals
+					? string.Join(", ", vals)
+					: string.Empty;
+				emitter.Emit(new Scalar(null, null, joinedValue, ScalarStyle.Plain, true, false));
 			}
 
 			emitter.Emit(new MappingEnd());
