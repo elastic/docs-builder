@@ -33,8 +33,9 @@ try
 	if (app.Environment.IsDevelopment())
 		_ = app.UseDeveloperExceptionPage();
 
-	_ = app.MapHealthChecks("/health");
-	_ = app.MapHealthChecks("/alive", new HealthCheckOptions { Predicate = r => r.Tags.Contains("live") });
+	var mcp = app.MapGroup("/docs/_mcp");
+	_ = mcp.MapHealthChecks("/health");
+	_ = mcp.MapHealthChecks("/alive", new HealthCheckOptions { Predicate = r => r.Tags.Contains("live") });
 
 	_ = app.MapMcp("/docs/_mcp");
 
