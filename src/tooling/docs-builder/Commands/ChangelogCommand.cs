@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using System.Linq;
+using System.Text;
 using ConsoleAppFramework;
 using Documentation.Builder.Arguments;
 using Elastic.Changelog;
@@ -26,14 +27,144 @@ internal sealed class ChangelogCommand(
 )
 {
 	private readonly IFileSystem _fileSystem = new FileSystem();
+	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogCommand>();
 	/// <summary>
 	/// Changelog commands. Use 'changelog add' to create a new changelog or 'changelog bundle' to create a consolidated list of changelogs.
 	/// </summary>
 	[Command("")]
 	public Task<int> Default()
 	{
-		collector.EmitError(string.Empty, "Please specify a subcommand. Available subcommands:\n  - 'changelog add': Create a new changelog from command-line input\n  - 'changelog bundle': Create a consolidated list of changelog files\n  - 'changelog render': Render a bundled changelog to markdown or asciidoc files\n  - 'changelog gh-release': Create changelogs from a GitHub release\n\nRun 'changelog add --help', 'changelog bundle --help', 'changelog render --help', or 'changelog gh-release --help' for usage information.");
+		collector.EmitError(string.Empty, "Please specify a subcommand. Available subcommands:\n  - 'changelog add': Create a new changelog from command-line input\n  - 'changelog bundle': Create a consolidated list of changelog files\n  - 'changelog init': Initialize changelog configuration and folder structure\n  - 'changelog render': Render a bundled changelog to markdown or asciidoc files\n  - 'changelog gh-release': Create changelogs from a GitHub release\n\nRun 'changelog add --help', 'changelog bundle --help', 'changelog init --help', 'changelog render --help', or 'changelog gh-release --help' for usage information.");
 		return Task.FromResult(1);
+	}
+
+	/// <summary>
+	/// Initialize changelog configuration and folder structure. Creates changelog.yml from the example template, and creates docs/changelog and docs/releases directories if they do not exist.
+	/// </summary>
+	/// <param name="repository">Optional: Repository root path. Defaults to current directory.</param>
+	/// <param name="docs">Optional: Docs folder path. Defaults to {repository}/docs.</param>
+	/// <param name="config">Optional: Path to changelog.yml configuration file. Defaults to {docs}/changelog.yml.</param>
+	/// <param name="changelogDir">Optional: Path to changelog directory. Defaults to {docs}/changelog.</param>
+	/// <param name="bundlesDir">Optional: Path to bundles output directory. Defaults to {docs}/releases.</param>
+	[Command("init")]
+	public Task<int> Init(
+		string? repository = null,
+		string? docs = null,
+		string? config = null,
+		string? changelogDir = null,
+		string? bundlesDir = null
+	)
+	{
+		var repoPath = NormalizePath(repository ?? ".");
+		var docsPath = NormalizePath(docs ?? Path.Combine(repoPath, "docs"));
+		var configPath = NormalizePath(config ?? Path.Combine(docsPath, "changelog.yml"));
+		var defaultChangelogPath = Path.Combine(docsPath, "changelog");
+		var defaultBundlesPath = Path.Combine(docsPath, "releases");
+		var changelogPath = NormalizePath(changelogDir ?? defaultChangelogPath);
+		var bundlesPath = NormalizePath(bundlesDir ?? defaultBundlesPath);
+
+		var useNonDefaultChangelogDir = changelogDir != null;
+		var useNonDefaultBundlesDir = bundlesDir != null;
+
+		// Create config directory if needed (for config path like docs/changelog.yml, ensure docs exists)
+		var configDirectory = Path.GetDirectoryName(configPath);
+		if (!string.IsNullOrEmpty(configDirectory) && !_fileSystem.Directory.Exists(configDirectory))
+		{
+			try
+			{
+				_ = _fileSystem.Directory.CreateDirectory(configDirectory);
+				_logger.LogInformation("Created directory: {Directory}", configDirectory);
+			}
+			catch (IOException ex)
+			{
+				collector.EmitError(string.Empty, $"Failed to create directory '{configDirectory}': {ex.Message}", ex);
+				return Task.FromResult(1);
+			}
+		}
+
+		// Create changelog.yml from example if it does not exist
+		if (!_fileSystem.File.Exists(configPath))
+		{
+			byte[]? templateBytes = null;
+			using (var stream = typeof(ChangelogCommand).Assembly.GetManifestResourceStream("Documentation.Builder.changelog.example.yml"))
+			{
+				if (stream == null)
+				{
+					// Fallback: try config relative to current directory (for development)
+					var localConfigPath = Path.Combine(Directory.GetCurrentDirectory(), "config", "changelog.example.yml");
+					if (_fileSystem.File.Exists(localConfigPath))
+					{
+						templateBytes = _fileSystem.File.ReadAllBytes(localConfigPath);
+					}
+				}
+				else
+				{
+					using var ms = new MemoryStream();
+					stream.CopyTo(ms);
+					templateBytes = ms.ToArray();
+				}
+			}
+
+			if (templateBytes == null || templateBytes.Length == 0)
+			{
+				collector.EmitError(string.Empty, "Could not find changelog.example.yml template. Ensure docs-builder is built correctly.");
+				return Task.FromResult(1);
+			}
+
+			var content = Encoding.UTF8.GetString(templateBytes);
+
+			// Update bundle.directory and bundle.output_directory when non-default paths are specified
+			if (useNonDefaultChangelogDir)
+			{
+				var directoryValue = GetPathForConfig(repoPath, changelogPath);
+				content = content.Replace("directory: docs/changelog", $"directory: {directoryValue}");
+			}
+
+			if (useNonDefaultBundlesDir)
+			{
+				var outputValue = GetPathForConfig(repoPath, bundlesPath);
+				content = content.Replace("output_directory: docs/releases", $"output_directory: {outputValue}");
+			}
+
+			try
+			{
+				_fileSystem.File.WriteAllBytes(configPath, Encoding.UTF8.GetBytes(content));
+				_logger.LogInformation("Created changelog configuration: {ConfigPath}", configPath);
+			}
+			catch (IOException ex)
+			{
+				collector.EmitError(string.Empty, $"Failed to write changelog configuration to '{configPath}': {ex.Message}", ex);
+				return Task.FromResult(1);
+			}
+		}
+		else
+		{
+			_logger.LogInformation("Changelog configuration already exists: {ConfigPath}", configPath);
+		}
+
+		// Create docs/changelog and docs/releases if they do not exist
+		foreach (var dir in new[] { changelogPath, bundlesPath })
+		{
+			if (!_fileSystem.Directory.Exists(dir))
+			{
+				try
+				{
+					_ = _fileSystem.Directory.CreateDirectory(dir);
+					_logger.LogInformation("Created directory: {Directory}", dir);
+				}
+				catch (IOException ex)
+				{
+					collector.EmitError(string.Empty, $"Failed to create directory '{dir}': {ex.Message}", ex);
+					return Task.FromResult(1);
+				}
+			}
+			else
+			{
+				_logger.LogInformation("Directory already exists: {Directory}", dir);
+			}
+		}
+
+		return Task.FromResult(0);
 	}
 
 	/// <summary>
@@ -601,6 +732,29 @@ internal sealed class ChangelogCommand(
 		);
 
 		return await serviceInvoker.InvokeAsync(ctx);
+	}
+
+	/// <summary>
+	/// Returns a path suitable for changelog.yml config (relative to repo when possible, forward slashes).
+	/// Quotes the value if it contains YAML-special characters.
+	/// </summary>
+	private static string GetPathForConfig(string repoPath, string targetPath)
+	{
+		var relativePath = Path.GetRelativePath(repoPath, targetPath);
+
+		// Prefer relative path when it does not escape the repo (e.g. not ".." or "..\..")
+		var useRelative = !relativePath.StartsWith("..", StringComparison.Ordinal) &&
+			!Path.IsPathRooted(relativePath) &&
+			relativePath != targetPath;
+
+		var pathForConfig = useRelative ? relativePath : targetPath;
+		pathForConfig = pathForConfig.Replace('\\', '/');
+
+		// Quote if path contains characters that need escaping in YAML
+		if (pathForConfig.Contains(':') || pathForConfig.Contains(' ') || pathForConfig.Contains('#'))
+			return $"\"{pathForConfig.Replace("\"", "\\\"")}\"";
+
+		return pathForConfig;
 	}
 
 	/// <summary>

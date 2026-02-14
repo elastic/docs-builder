@@ -36,6 +36,8 @@ Additional workflows are still to come for updating and generating documentation
 
 ## Create a changelog configuration file [changelog-settings]
 
+You can use the `docs-builder changelog init` command to create the changelog configuration file and folder structure automatically, or create them manually.
+
 You can create a configuration file to:
 
 - define the acceptable product, type, subtype, and lifecycle values.
