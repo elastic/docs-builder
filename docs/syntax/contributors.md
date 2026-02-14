@@ -128,6 +128,105 @@ Control the number of grid columns with the `:columns:` property. The default is
 ::::::
 :::::::
 
+## Grouped sections
+
+A single `{contributors}` directive renders all its entries in one grid, automatically wrapping into rows based on the `:columns:` value. You do not need a separate directive for each row.
+
+To organize contributors into labeled groups (for example, by team or department), use multiple directives with regular Markdown headings between them:
+
+:::::::{tab-set}
+::::::{tab-item} Output
+
+### Engineering
+
+:::{contributors}
+:columns: 4
+
+- @elastic
+  name: Alice
+  title: Platform Engineer
+
+- @github
+  name: Bob
+  title: Backend Engineer
+
+- @elastic
+  name: Carol
+  title: Frontend Engineer
+
+- @github
+  name: Dave
+  title: SRE
+
+- @elastic
+  name: Eve
+  title: Data Engineer
+
+:::
+
+### Security
+
+:::{contributors}
+:columns: 4
+
+- @github
+  name: Frank
+  title: Security Engineer
+
+- @elastic
+  name: Grace
+  title: Security Analyst
+
+:::
+::::::
+
+::::::{tab-item} Markdown
+```markdown
+### Engineering
+
+:::{contributors}
+:columns: 4
+
+- @alice
+  name: Alice
+  title: Platform Engineer
+
+- @bob
+  name: Bob
+  title: Backend Engineer
+
+- @carol
+  name: Carol
+  title: Frontend Engineer
+
+- @dave
+  name: Dave
+  title: SRE
+
+- @eve
+  name: Eve
+  title: Data Engineer
+
+:::
+
+### Security
+
+:::{contributors}
+:columns: 4
+
+- @frank
+  name: Frank
+  title: Security Engineer
+
+- @grace
+  name: Grace
+  title: Security Analyst
+
+:::
+```
+::::::
+:::::::
+
 ## Custom avatar image
 
 Override the default GitHub avatar with a local image using the `image:` property:
