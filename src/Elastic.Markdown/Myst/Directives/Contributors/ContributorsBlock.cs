@@ -54,16 +54,10 @@ public class ContributorsBlock(DirectiveBlockParser parser, ParserContext contex
 		if (int.TryParse(Prop("columns"), out var cols) && cols > 0)
 			Columns = cols;
 
-		foreach (var child in this)
+		foreach (var listBlock in this.OfType<ListBlock>())
 		{
-			if (child is not ListBlock listBlock)
-				continue;
-
-			foreach (var item in listBlock)
+			foreach (var listItem in listBlock.OfType<ListItemBlock>())
 			{
-				if (item is not ListItemBlock listItem)
-					continue;
-
 				var contributor = ParseContributor(context, listItem);
 				if (contributor is not null)
 					_contributors.Add(contributor);
@@ -76,11 +70,8 @@ public class ContributorsBlock(DirectiveBlockParser parser, ParserContext contex
 
 	private Contributor? ParseContributor(ParserContext context, ListItemBlock listItem)
 	{
-		foreach (var block in listItem)
+		foreach (var paragraph in listItem.OfType<ParagraphBlock>())
 		{
-			if (block is not ParagraphBlock paragraph)
-				continue;
-
 			var text = paragraph.Lines.ToString();
 			if (string.IsNullOrWhiteSpace(text))
 				continue;
