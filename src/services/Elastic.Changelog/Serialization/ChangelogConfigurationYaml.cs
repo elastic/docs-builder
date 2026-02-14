@@ -16,9 +16,9 @@ internal record ChangelogConfigurationYaml
 	public PivotConfigurationYaml? Pivot { get; set; }
 
 	/// <summary>
-	/// Available lifecycle values.
+	/// Available lifecycle values (string or list).
 	/// </summary>
-	public List<string>? Lifecycles { get; set; }
+	public YamlLenientList? Lifecycles { get; set; }
 
 	/// <summary>
 	/// Products configuration.
@@ -29,9 +29,14 @@ internal record ChangelogConfigurationYaml
 	public ProductsConfigYaml? Products { get; set; }
 
 	/// <summary>
-	/// Block configuration combining create and publish blockers.
+	/// Rules configuration combining create and publish blockers (new format).
 	/// </summary>
-	public BlockConfigurationYaml? Block { get; set; }
+	public RulesConfigurationYaml? Rules { get; set; }
+
+	/// <summary>
+	/// Old block configuration key. If present, emit error directing user to rename to 'rules'.
+	/// </summary>
+	public object? Block { get; set; }
 
 	/// <summary>
 	/// Extraction configuration for release notes and issues.
@@ -45,57 +50,88 @@ internal record ChangelogConfigurationYaml
 }
 
 /// <summary>
-/// Internal DTO for block configuration in YAML.
+/// Internal DTO for rules configuration in YAML.
 /// </summary>
-internal record BlockConfigurationYaml
+internal record RulesConfigurationYaml
 {
 	/// <summary>
-	/// Global labels that block changelog creation (comma-separated string).
+	/// Global match mode for multi-valued fields ("any" or "all"). Default: "any".
 	/// </summary>
-	public string? Create { get; set; }
+	public string? Match { get; set; }
 
 	/// <summary>
-	/// Configuration for blocking changelog entries from publishing based on type or area.
+	/// Create rules controlling which PRs generate changelog entries.
 	/// </summary>
-	public PublishBlockerYaml? Publish { get; set; }
+	public CreateRulesYaml? Create { get; set; }
 
 	/// <summary>
-	/// Per-product override blockers.
+	/// Publish rules controlling which entries appear in rendered output.
+	/// </summary>
+	public PublishRulesYaml? Publish { get; set; }
+}
+
+/// <summary>
+/// Internal DTO for create rules in YAML.
+/// </summary>
+internal record CreateRulesYaml
+{
+	/// <summary>
+	/// Labels to exclude (string or list). Cannot be combined with Include.
+	/// </summary>
+	public YamlLenientList? Exclude { get; set; }
+
+	/// <summary>
+	/// Labels to include (string or list). Cannot be combined with Include.
+	/// </summary>
+	public YamlLenientList? Include { get; set; }
+
+	/// <summary>
+	/// Match mode for labels ("any" or "all"). Inherits from rules.match if not set.
+	/// </summary>
+	public string? Match { get; set; }
+
+	/// <summary>
+	/// Per-product create rule overrides.
 	/// Keys can be comma-separated product IDs.
 	/// </summary>
-	public Dictionary<string, ProductBlockersYaml?>? Product { get; set; }
+	public Dictionary<string, CreateRulesYaml?>? Products { get; set; }
 }
 
 /// <summary>
-/// Internal DTO for product-specific blockers in YAML.
+/// Internal DTO for publish rules in YAML.
 /// </summary>
-internal record ProductBlockersYaml
+internal record PublishRulesYaml
 {
 	/// <summary>
-	/// Labels that block creation for this product (comma-separated string).
+	/// Match mode for areas ("any" or "all"). Inherits from rules.match if not set.
 	/// </summary>
-	public string? Create { get; set; }
+	public string? MatchAreas { get; set; }
 
 	/// <summary>
-	/// Configuration for blocking changelog entries from publishing based on type or area.
+	/// Entry types to exclude from publishing (string or list).
 	/// </summary>
-	public PublishBlockerYaml? Publish { get; set; }
-}
-
-/// <summary>
-/// Internal DTO for publish blocker configuration in YAML.
-/// </summary>
-internal record PublishBlockerYaml
-{
-	/// <summary>
-	/// Entry types to block from publishing.
-	/// </summary>
-	public List<string>? Types { get; set; }
+	public YamlLenientList? ExcludeTypes { get; set; }
 
 	/// <summary>
-	/// Entry areas to block from publishing.
+	/// Entry types to include for publishing (string or list, only these types are shown).
 	/// </summary>
-	public List<string>? Areas { get; set; }
+	public YamlLenientList? IncludeTypes { get; set; }
+
+	/// <summary>
+	/// Entry areas to exclude from publishing (string or list).
+	/// </summary>
+	public YamlLenientList? ExcludeAreas { get; set; }
+
+	/// <summary>
+	/// Entry areas to include for publishing (string or list, only these areas are shown).
+	/// </summary>
+	public YamlLenientList? IncludeAreas { get; set; }
+
+	/// <summary>
+	/// Per-product publish rule overrides.
+	/// Keys can be comma-separated product IDs.
+	/// </summary>
+	public Dictionary<string, PublishRulesYaml?>? Products { get; set; }
 }
 
 /// <summary>
@@ -109,19 +145,19 @@ internal record PivotConfigurationYaml
 	public Dictionary<string, TypeEntryYaml?>? Types { get; set; }
 
 	/// <summary>
-	/// Default subtype definitions with optional labels.
+	/// Default subtype definitions with optional labels (string or list per value).
 	/// </summary>
-	public Dictionary<string, string?>? Subtypes { get; set; }
+	public Dictionary<string, YamlLenientList?>? Subtypes { get; set; }
 
 	/// <summary>
-	/// Area definitions with labels.
+	/// Area definitions with labels (string or list per value).
 	/// </summary>
-	public Dictionary<string, string?>? Areas { get; set; }
+	public Dictionary<string, YamlLenientList?>? Areas { get; set; }
 
 	/// <summary>
-	/// Labels that trigger the highlight flag (comma-separated string).
+	/// Labels that trigger the highlight flag (string or list).
 	/// </summary>
-	public string? Highlight { get; set; }
+	public YamlLenientList? Highlight { get; set; }
 }
 
 /// <summary>
@@ -130,9 +166,9 @@ internal record PivotConfigurationYaml
 internal record ProductsConfigYaml
 {
 	/// <summary>
-	/// List of available product IDs (empty = all from products.yml).
+	/// List of available product IDs (string or list, empty = all from products.yml).
 	/// </summary>
-	public List<string>? Available { get; set; }
+	public YamlLenientList? Available { get; set; }
 
 	/// <summary>
 	/// Default products to use when --products is not specified.
@@ -200,9 +236,9 @@ internal record BundleProfileYaml
 	public string? Output { get; set; }
 
 	/// <summary>
-	/// Feature IDs to mark as hidden in the bundle output.
+	/// Feature IDs to mark as hidden in the bundle output (string or list).
 	/// </summary>
-	public List<string>? HideFeatures { get; set; }
+	public YamlLenientList? HideFeatures { get; set; }
 }
 
 /// <summary>
@@ -235,9 +271,9 @@ internal record TypeEntryYaml
 	public string? Labels { get; set; }
 
 	/// <summary>
-	/// Type-specific subtype definitions.
+	/// Type-specific subtype definitions (string or list per value).
 	/// </summary>
-	public Dictionary<string, string?>? Subtypes { get; set; }
+	public Dictionary<string, YamlLenientList?>? Subtypes { get; set; }
 
 	/// <summary>
 	/// Creates a TypeEntryYaml from a simple label string.

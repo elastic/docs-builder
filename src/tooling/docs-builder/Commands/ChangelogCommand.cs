@@ -538,13 +538,15 @@ internal sealed class ChangelogCommand(
 	/// </summary>
 	/// <param name="bundlePath">Required: Path to the original bundle file to amend</param>
 	/// <param name="add">Required: Path(s) to changelog YAML file(s) to add as comma-separated values (e.g., --add "file1.yaml,file2.yaml"). Supports tilde (~) expansion and relative paths.</param>
-	/// <param name="resolve">Optional: Copy the contents of each changelog file into the entries array. Defaults to false.</param>
+	/// <param name="resolve">Optional: Copy the contents of each changelog file into the entries array. When not specified, inferred from the original bundle.</param>
+	/// <param name="noResolve">Optional: Explicitly turn off resolve (overrides inference from original bundle).</param>
 	/// <param name="ctx"></param>
 	[Command("bundle-amend")]
 	public async Task<int> BundleAmend(
 		[Argument] string bundlePath,
 		string[]? add = null,
-		bool resolve = false,
+		bool? resolve = null,
+		bool noResolve = false,
 		Cancel ctx = default
 	)
 	{
@@ -584,11 +586,14 @@ internal sealed class ChangelogCommand(
 			}
 		}
 
+		// Determine resolve: CLI --no-resolve takes precedence, then CLI --resolve, then infer from bundle
+		var shouldResolve = noResolve ? false : resolve;
+
 		var input = new AmendBundleArguments
 		{
 			BundlePath = normalizedBundlePath,
 			AddFiles = normalizedAddFiles.ToArray(),
-			Resolve = resolve
+			Resolve = shouldResolve
 		};
 
 		serviceInvoker.AddCommand(service, input,

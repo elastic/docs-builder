@@ -30,9 +30,10 @@ public record AmendBundleArguments
 	public required IReadOnlyList<string> AddFiles { get; init; }
 
 	/// <summary>
-	/// Whether to resolve (copy contents) the added entries
+	/// Whether to resolve (copy contents) the added entries.
+	/// When null, inferred from the original bundle.
 	/// </summary>
-	public bool Resolve { get; init; }
+	public bool? Resolve { get; init; }
 }
 
 /// <summary>
@@ -89,17 +90,20 @@ public partial class ChangelogBundleAmendService(ILoggerFactory logFactory, IFil
 				addFilePaths.Add(addFile);
 			}
 
+			// Determine resolve: explicit CLI value takes precedence, otherwise infer from original bundle
+			var shouldResolve = InferResolve(input);
+
 			// Determine the next amend file number
 			var nextAmendNumber = GetNextAmendNumber(input.BundlePath);
 			var amendFilePath = GenerateAmendFilePath(input.BundlePath, nextAmendNumber);
 
-			_logger.LogInformation("Creating amend file: {AmendFilePath}", amendFilePath);
+			_logger.LogInformation("Creating amend file: {AmendFilePath} (resolve={Resolve})", amendFilePath, shouldResolve);
 
 			// Load and process the files to add
 			var entries = new List<BundledEntry>();
 			foreach (var filePath in addFilePaths)
 			{
-				var entry = await LoadChangelogFileAsync(collector, filePath, input.Resolve, ctx);
+				var entry = await LoadChangelogFileAsync(collector, filePath, shouldResolve, ctx);
 				if (entry == null)
 					return false;
 				entries.Add(entry);
@@ -133,6 +137,26 @@ public partial class ChangelogBundleAmendService(ILoggerFactory logFactory, IFil
 		catch (UnauthorizedAccessException uaEx)
 		{
 			collector.EmitError(string.Empty, $"Access denied creating amend file: {uaEx.Message}", uaEx);
+			return false;
+		}
+	}
+
+	private bool InferResolve(AmendBundleArguments input)
+	{
+		if (input.Resolve.HasValue)
+			return input.Resolve.Value;
+
+		try
+		{
+			var bundleContent = _fileSystem.File.ReadAllText(input.BundlePath);
+			var originalBundle = ReleaseNotesSerialization.DeserializeBundle(bundleContent);
+			var inferred = originalBundle.IsResolved;
+			_logger.LogInformation("Inferred resolve={Resolve} from original bundle", inferred);
+			return inferred;
+		}
+		catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException))
+		{
+			_logger.LogWarning(ex, "Could not read original bundle to infer resolve; defaulting to false");
 			return false;
 		}
 	}
