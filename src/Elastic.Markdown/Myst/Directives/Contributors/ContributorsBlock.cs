@@ -15,12 +15,16 @@ public class ContributorEntry
 	[YamlMember(Alias = "gh")]
 	public string? GitHub { get; set; }
 
+	[YamlMember(Alias = "name")]
 	public string? Name { get; set; }
 
+	[YamlMember(Alias = "title")]
 	public string? Title { get; set; }
 
+	[YamlMember(Alias = "location")]
 	public string? Location { get; set; }
 
+	[YamlMember(Alias = "image")]
 	public string? Image { get; set; }
 }
 
