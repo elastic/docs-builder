@@ -31,13 +31,13 @@ RUN arch=$TARGETARCH \
     && if [ "$arch" = "amd64" ]; then arch="x64"; fi \
     && echo $TARGETOS-$arch > /tmp/rid
 
-RUN dotnet publish src/api/Elastic.Documentation.Mcp.Lambda -r linux-x64 -c Release
+RUN dotnet publish src/api/Elastic.Documentation.Api.App -r linux-x64 -c Release
 
-# Runtime stage for ECS Fargate deployment
+# Runtime stage
 FROM public.ecr.aws/amazonlinux/amazonlinux:2023-minimal AS runtime
 WORKDIR /app
-COPY --from=base /app/.artifacts/publish/Elastic.Documentation.Mcp.Lambda/release_linux-x64/bootstrap /app/bootstrap
-RUN chmod +x /app/bootstrap
+COPY --from=base /app/.artifacts/publish/Elastic.Documentation.Api.App/release_linux-x64/ /app/
+RUN chmod +x /app/docs-builder-api
 EXPOSE 8080
 ENV ASPNETCORE_URLS=http://+:8080
-ENTRYPOINT ["/app/bootstrap"]
+ENTRYPOINT ["/app/docs-builder-api"]

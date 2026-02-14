@@ -61,26 +61,145 @@ When you run the `docs-builder changelog add` command with the `--prs` option, i
 
 Refer to the file layout in [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml) and an [example usage](#example-map-label).
 
-### Block creation or publishing
+### Rules for creation and publishing
 
-If you have pull request labels that indicate a changelog is not required (such as `>non-issue` or `release_note:skip`), you can declare these in the `block` section of the changelog configuration.
+If you have pull request labels that indicate a changelog is not required (such as `>non-issue` or `release_note:skip`), you can declare these in the `rules` section of the changelog configuration.
 
 When you run the `docs-builder changelog add` command with the `--prs` option and the PR has one of the identified labels, the command does not create a changelog for that PR.
 
-Likewise, if there are areas or types of changelogs that should not be published, you can declare these in the `block` section of the changelog configuration.
+Likewise, if there are areas or types of changelogs that should not be published, you can declare these in the `rules` section of the changelog configuration.
 For example, you might choose to omit `other` or `docs` changelogs.
 Or you might want to omit all autoscaling-related changelogs from the Cloud Serverless release docs.
 
 When you run the `docs-builder changelog render` command, changelog entries that match the specified products and areas or types are commented out of the documentation output files.
-The command will emit warnings indicating which changelog entries were commented out and why.
+The command will emit warnings prefixed with `[-exclude]` or `[+include]` indicating which changelog entries were commented out and why.
+
+Each field supports **exclude** (block if matches) or **include** (block if doesn't match) semantics. You cannot mix both for the same field.
+
+For multi-valued fields (labels, areas), you can control the matching mode:
+- `any` (default): match if ANY item matches the list
+- `all`: match only if ALL items match the list
 
 :::{note}
-You can define blocks at the global level (applies to all products) or for specific products.
-Product-specific blocks **override** the global blocks entirely—they do not merge.
-If you define a product-specific `publish.areas` block, you must re-state any global blocked areas that you also want blocked for that product.
+You can define rules at the global level (applies to all products) or for specific products.
+Product-specific rules **override** the global rules entirely—they do not merge.
+If you define a product-specific `publish` rule, you must re-state any global rules that you also want applied for that product.
 :::
 
 Refer to [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml) and an [example usage](#example-block-label).
+
+### Rules reference
+
+The `rules:` section supports the following options:
+
+#### `rules.match`
+
+Global match default for multi-valued fields (labels, areas). Inherited by `create`, `publish`, and all product overrides.
+
+| Value | Description |
+|-------|-------------|
+| `any` (default) | Match if ANY item in the entry matches an item in the configured list |
+| `all` | Match only if ALL items in the entry match items in the configured list |
+
+#### `rules.create`
+
+Controls which PRs generate changelog entries. Evaluated when running `docs-builder changelog add` with `--prs`.
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `exclude` | string | Comma-separated labels that prevent changelog creation. A PR with any matching label is skipped. |
+| `include` | string | Comma-separated labels required for changelog creation. A PR without any matching label is skipped. |
+| `match` | string | Override `rules.match` for create rules. Values: `any`, `all`. |
+| `products` | map | Product-specific create rules (see below). |
+
+You cannot specify both `exclude` and `include`.
+
+**Product-specific create rules** (`rules.create.products`):
+
+Product keys can be a single product ID or a comma-separated list of product IDs (for example, `'elasticsearch, kibana'`).
+Each product override supports the same `exclude`, `include`, and `match` options.
+Product-specific rules **override** the global create rules entirely.
+
+```yaml
+rules:
+  create:
+    exclude: ">non-issue"
+    products:
+      'elasticsearch, kibana':
+        exclude: ">test"
+      cloud-serverless:
+        exclude: ">non-issue, ILM"
+```
+
+#### `rules.publish`
+
+Controls which entries appear in rendered output. Evaluated when running `docs-builder changelog render` or using the `{changelog}` directive.
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `exclude_types` | list | Entry types to hide from output |
+| `include_types` | list | Only these entry types are shown; all others are hidden |
+| `exclude_areas` | list | Entry areas to hide from output |
+| `include_areas` | list | Only entries with these areas are shown; all others are hidden |
+| `match_areas` | string | Override `rules.match` for area matching. Values: `any`, `all`. |
+| `products` | map | Product-specific publish rules (see below). |
+
+You cannot specify both `exclude_types` and `include_types`, or both `exclude_areas` and `include_areas`.
+You **can** mix exclude and include across different fields (for example, `exclude_types` with `include_areas`).
+
+**Product-specific publish rules** (`rules.publish.products`):
+
+Product keys can be a single product ID or a comma-separated list.
+Each product override supports the same options as the global publish rules (`exclude_types`, `include_types`, `exclude_areas`, `include_areas`, `match_areas`).
+Product-specific rules **override** the global publish rules entirely.
+
+```yaml
+rules:
+  publish:
+    exclude_types:
+      - docs
+    products:
+      cloud-serverless:
+        include_areas:
+          - "Search"
+          - "Monitoring"
+```
+
+#### Match inheritance
+
+The `match` setting cascades from global to section to product:
+
+```
+rules.match (global default, "any" if omitted)
+  ├─ rules.create.match → rules.create.products.{id}.match
+  └─ rules.publish.match_areas → rules.publish.products.{id}.match_areas
+```
+
+If a lower-level `match` or `match_areas` is specified, it overrides the inherited value.
+
+#### Area matching behavior
+
+With `match_areas`, the behavior differs depending on the mode:
+
+| Config | Entry areas | match_areas | Result |
+|--------|------------|-------------|--------|
+| `exclude_areas: [Internal]` | `[Search, Internal]` | `any` | **Hidden** ("Internal" matches) |
+| `exclude_areas: [Internal]` | `[Search, Internal]` | `all` | **Shown** (not all areas are in the exclude list) |
+| `include_areas: [Search]` | `[Search, Internal]` | `any` | **Shown** ("Search" matches) |
+| `include_areas: [Search]` | `[Search, Internal]` | `all` | **Hidden** ("Internal" is not in the include list) |
+
+#### Validation
+
+The following configurations cause validation errors:
+
+| Condition | Error |
+|-----------|-------|
+| Old `block:` key found | `'block' is no longer supported. Rename to 'rules'. See changelog.example.yml.` |
+| Both `exclude` and `include` in create | `rules.create: cannot have both 'exclude' and 'include'. Use one or the other.` |
+| Both `exclude_types` and `include_types` | `rules.publish: cannot have both 'exclude_types' and 'include_types'. Use one or the other.` |
+| Both `exclude_areas` and `include_areas` | `rules.publish: cannot have both 'exclude_areas' and 'include_areas'. Use one or the other.` |
+| Invalid match value | `rules.match: '{value}' is not valid. Use 'any' or 'all'.` |
+| Unknown product ID | `rules.create.products: '{id}' not in available products.` |
 
 ## Create changelog files [changelog-add]
 
@@ -236,7 +355,7 @@ If you explicitly provide `--title` or `--description`, those values take preced
 You can turn off the release note extraction in the changelog configuration file or by using the `--no-extract-release-notes` option.
 :::
 
-#### Block changelog creation and publishing [example-block-label]
+#### Control changelog creation and publishing [example-block-label]
 
 You can prevent changelog creation for certain PRs based on their labels.
 You can likewise refrain from publishing changelogs based on their areas and types.
@@ -244,29 +363,38 @@ You can likewise refrain from publishing changelogs based on their areas and typ
 If you run the `docs-builder changelog add` command with the `--prs` option and a PR has a blocking label for any of the products in the `--products` option, that PR will be skipped and no changelog file will be created for it.
 A warning message will be emitted indicating which PR was skipped and why.
 
-For example, your configuration file can contain a `block` section this:
+For example, your configuration file can contain a `rules` section like this:
 
 ```yaml
-block:
-  # Global labels that block changelog creation for all products (comma-separated string)
-  create: ">non-issue"
-  # Block changelog entries from publishing based on entry type or area
+rules:
+  # Global match default for multi-valued fields (labels, areas).
+  #   any (default) = match if ANY item matches the list
+  #   all           = match only if ALL items match the list
+  # match: any
+
+  # Create — controls which PRs generate changelog entries.
+  create:
+    # Labels that block changelog creation (comma-separated string)
+    exclude: ">non-issue"
+    # Product-specific overrides
+    products:
+      'cloud-serverless':
+        exclude: ">non-issue, >test"
+
+  # Publish — controls which entries appear in rendered output.
   publish:
-    types:
+    exclude_types:
       - docs
-    areas:
+    exclude_areas:
       - "Internal"
-  product:
-    'cloud-serverless':
-      create: ">non-issue, >test"
-      publish:
-        areas:
+    products:
+      'cloud-serverless':
+        exclude_areas:
           - "Internal"
           - "Autoscaling"
           - "Watcher"
-    'elasticsearch, kibana':
-      publish:
-        types:
+      'elasticsearch, kibana':
+        exclude_types:
           - docs
           - other
 ```
@@ -283,8 +411,20 @@ docs-builder changelog add --prs "1234, 5678" \
 If PR 1234 has the `>non-issue` or `>test` labels, it will be skipped and no changelog will be created.
 If PR 5678 does not have any blocking labels, a changelog is created.
 
-The `block` settings also affect the publishing stage.
-For example, if you run the `docs-builder changelog render` command for a Cloud Serverless bundle, any changelogs that have "Internal", "Autoscaling", or "Watcher" areas are commmented out.
+The `rules` settings also affect the publishing stage.
+For example, if you run the `docs-builder changelog render` command for a Cloud Serverless bundle, any changelogs that have "Internal", "Autoscaling", or "Watcher" areas are commented out.
+
+You can also use **include** mode instead of **exclude** mode. For example, to only create changelogs for PRs with specific labels or only publish entries with specific areas:
+
+```yaml
+rules:
+  create:
+    include: "@Public, @Notable"
+  publish:
+    include_areas:
+      - "Search"
+      - "Monitoring"
+```
 
 #### Create changelogs from a file of PRs [example-file-prs]
 
@@ -514,27 +654,17 @@ The `--hide-features` option on the `render` command and the `hide-features` fie
 
 ### Amend bundles [changelog-bundle-amend]
 
-When you need to add entries to an existing bundle without modifying the original file, you can create amend bundles. Amend bundles follow a specific naming convention: `{parent-bundle-name}.amend-{N}.yaml` where `{N}` is a sequence number.
+When you need to add entries to an existing bundle without modifying the original file, you can use the `docs-builder changelog bundle-amend` command to create amend bundles.
+Amend bundles follow a specific naming convention: `{parent-bundle-name}.amend-{N}.yaml` where `{N}` is a sequence number.
 
-For example, if you have a bundle named `9.3.0.yaml`, you can create amend files:
-- `9.3.0.amend-1.yaml`
-- `9.3.0.amend-2.yaml`
+When bundles are loaded (either via the `changelog render` command or the `{changelog}` directive), amend files are **automatically merged** with their parent bundles.
+The entries from all matching amend files are combined with the parent bundle's entries, and the result is rendered as a single release.
 
-Amend bundles contain only the additional entries:
-
-```yaml
-# 9.3.0.amend-1.yaml
-entries:
-- file:
-    name: late-addition.yaml
-    checksum: abc123def456
-```
-
-When bundles are loaded (either via the `changelog render` command or the `{changelog}` directive), amend files are **automatically merged** with their parent bundles. The entries from all matching amend files are combined with the parent bundle's entries, and the result is rendered as a single release.
-
-:::{note}
-Amend bundles do not need to include `products` or `hide-features` fields—they inherit these from their parent bundle. If an amend bundle is found without a matching parent bundle, it remains standalone.
+:::{warning}
+If you explicitly list the amend bundles in the `--input` option of the `docs-builder changelog render` command, you'll get duplicate entries in the output files. List only the original bundles.
 :::
+
+For more details and examples, go to [](/cli/release/changelog-bundle-amend.md).
 
 ## Create documentation
 

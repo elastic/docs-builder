@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-namespace Elastic.Documentation.Mcp.Lambda.Gateways;
+namespace Elastic.Documentation.Mcp.Remote.Gateways;
 
 /// <summary>
 /// Gateway interface for document-specific operations in the MCP Lambda.

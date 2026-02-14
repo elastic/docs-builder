@@ -7,7 +7,7 @@ using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Common;
 using Microsoft.Extensions.Logging;
 
-namespace Elastic.Documentation.Mcp.Lambda.Gateways;
+namespace Elastic.Documentation.Mcp.Remote.Gateways;
 
 /// <summary>
 /// Gateway implementation for document-specific operations.

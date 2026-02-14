@@ -98,13 +98,16 @@ internal sealed class ChangelogCommand(
 			var validPrs = prs.Where(prValue => !string.IsNullOrWhiteSpace(prValue));
 			foreach (var trimmedValue in validPrs.Select(prValue => prValue.Trim()))
 			{
+				// Try to normalize as a file path to handle ~ and relative paths
+				var normalizedPath = NormalizePath(trimmedValue);
+
 				// Check if this is a file path
-				if (_fileSystem.File.Exists(trimmedValue))
+				if (_fileSystem.File.Exists(normalizedPath))
 				{
 					// Read all lines from the file (newline-delimited)
 					try
 					{
-						var fileLines = await _fileSystem.File.ReadAllLinesAsync(trimmedValue, ctx);
+						var fileLines = await _fileSystem.File.ReadAllLinesAsync(normalizedPath, ctx);
 						foreach (var line in fileLines)
 						{
 							if (!string.IsNullOrWhiteSpace(line))
@@ -115,7 +118,7 @@ internal sealed class ChangelogCommand(
 					}
 					catch (IOException ex)
 					{
-						collector.EmitError(string.Empty, $"Failed to read PRs from file '{trimmedValue}': {ex.Message}", ex);
+						collector.EmitError(string.Empty, $"Failed to read PRs from file '{normalizedPath}': {ex.Message}", ex);
 						return 1;
 					}
 				}
@@ -407,7 +410,7 @@ internal sealed class ChangelogCommand(
 	/// <summary>
 	/// Render bundled changelog(s) to markdown or asciidoc files
 	/// </summary>
-	/// <param name="input">Required: Bundle input(s) in format "bundle-file-path|changelog-file-path|repo|link-visibility" (use pipe as delimiter). To merge multiple bundles, separate them with commas. Only bundle-file-path is required. link-visibility can be "hide-links" or "keep-links" (default). Paths must be absolute or use environment variables; tilde (~) expansion is not supported.</param>
+	/// <param name="input">Required: Bundle input(s) in format "bundle-file-path|changelog-file-path|repo|link-visibility" (use pipe as delimiter). To merge multiple bundles, separate them with commas. Only bundle-file-path is required. link-visibility can be "hide-links" or "keep-links" (default). Paths support tilde (~) expansion and relative paths.</param>
 	/// <param name="config">Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml'</param>
 	/// <param name="fileType">Optional: Output file type. Valid values: "markdown" or "asciidoc". Defaults to "markdown"</param>
 	/// <param name="hideFeatures">Filter by feature IDs (comma-separated), or a path to a newline-delimited file containing feature IDs. Can be specified multiple times. Entries with matching feature-id values will be commented out in the output.</param>
@@ -531,17 +534,19 @@ internal sealed class ChangelogCommand(
 	}
 
 	/// <summary>
-	/// Amend a bundle with additional changelog entries, creating an immutable .amend-N.yaml file
+	/// Amend a bundle with additional changelog entries, creating an immutable .amend-N.yaml file.
 	/// </summary>
 	/// <param name="bundlePath">Required: Path to the original bundle file to amend</param>
-	/// <param name="add">Required: Path(s) to changelog YAML file(s) to add. Can be specified multiple times.</param>
-	/// <param name="resolve">Optional: Copy the contents of each changelog file into the entries array. Defaults to false.</param>
+	/// <param name="add">Required: Path(s) to changelog YAML file(s) to add as comma-separated values (e.g., --add "file1.yaml,file2.yaml"). Supports tilde (~) expansion and relative paths.</param>
+	/// <param name="resolve">Optional: Copy the contents of each changelog file into the entries array. When not specified, inferred from the original bundle.</param>
+	/// <param name="noResolve">Optional: Explicitly turn off resolve (overrides inference from original bundle).</param>
 	/// <param name="ctx"></param>
 	[Command("bundle-amend")]
 	public async Task<int> BundleAmend(
 		[Argument] string bundlePath,
 		string[]? add = null,
-		bool resolve = false,
+		bool? resolve = null,
+		bool noResolve = false,
 		Cancel ctx = default
 	)
 	{
@@ -558,11 +563,37 @@ internal sealed class ChangelogCommand(
 			return 1;
 		}
 
+		// Normalize the bundle path
+		var normalizedBundlePath = NormalizePath(bundlePath);
+
+		// Process and normalize all add file paths (handles comma-separated values)
+		var normalizedAddFiles = new List<string>();
+		foreach (var addValue in add.Where(a => !string.IsNullOrWhiteSpace(a)))
+		{
+			// Check if it contains commas - if so, split and normalize each path
+			if (addValue.Contains(','))
+			{
+				var commaSeparatedPaths = addValue
+					.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+					.Where(p => !string.IsNullOrWhiteSpace(p))
+					.Select(NormalizePath);
+				normalizedAddFiles.AddRange(commaSeparatedPaths);
+			}
+			else
+			{
+				// Single path - normalize it
+				normalizedAddFiles.Add(NormalizePath(addValue));
+			}
+		}
+
+		// Determine resolve: CLI --no-resolve takes precedence, then CLI --resolve, then infer from bundle
+		var shouldResolve = noResolve ? false : resolve;
+
 		var input = new AmendBundleArguments
 		{
-			BundlePath = bundlePath,
-			AddFiles = add,
-			Resolve = resolve
+			BundlePath = normalizedBundlePath,
+			AddFiles = normalizedAddFiles.ToArray(),
+			Resolve = shouldResolve
 		};
 
 		serviceInvoker.AddCommand(service, input,
@@ -570,6 +601,35 @@ internal sealed class ChangelogCommand(
 		);
 
 		return await serviceInvoker.InvokeAsync(ctx);
+	}
+
+	/// <summary>
+	/// Normalizes a file path by expanding tilde (~) to the user's home directory
+	/// and converting relative paths to absolute paths.
+	/// </summary>
+	/// <param name="path">The path to normalize</param>
+	/// <returns>The normalized absolute path</returns>
+	private static string NormalizePath(string path)
+	{
+		if (string.IsNullOrWhiteSpace(path))
+			return path;
+
+		var trimmedPath = path.Trim();
+
+		// Expand tilde to user's home directory
+		if (trimmedPath.StartsWith("~/", StringComparison.Ordinal) || trimmedPath.StartsWith("~\\", StringComparison.Ordinal))
+		{
+			var homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+			homeDirectory = homeDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+			trimmedPath = homeDirectory + Path.DirectorySeparatorChar + trimmedPath[2..];
+		}
+		else if (trimmedPath == "~")
+		{
+			trimmedPath = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+		}
+
+		// Convert to absolute path (handles relative paths like ./file or ../file)
+		return Path.GetFullPath(trimmedPath);
 	}
 }
 
