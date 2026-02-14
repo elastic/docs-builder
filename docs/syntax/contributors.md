@@ -2,135 +2,117 @@
 
 The `{contributors}` directive renders a grid of contributor cards with circular avatars, names, titles, and locations. Avatars are fetched from GitHub by default, with optional image overrides.
 
+This directive uses backtick fences with a YAML body, similar to `{applies_to}`. For maximum IDE integration, you can prefix the directive with `yaml` to enable syntax highlighting in your editor.
+
 ## Basic usage
 
 :::::::{tab-set}
 ::::::{tab-item} Output
-:::{contributors}
-
-- @elastic
+```yaml {contributors}
+- gh: elastic
   name: Elastic
   title: Open source search company
 
-- @github
+- gh: github
   name: GitHub
   title: Code hosting platform
-
-:::
+```
 ::::::
 
 ::::::{tab-item} Markdown
-```markdown
-:::{contributors}
-
-- @elastic
+````markdown
+```yaml {contributors}
+- gh: elastic
   name: Elastic
   title: Open source search company
 
-- @github
+- gh: github
   name: GitHub
   title: Code hosting platform
-
-:::
 ```
+````
 ::::::
 :::::::
 
 ## Full contributor details
 
-Each contributor entry starts with `@github_username` and supports the following properties:
+Each contributor entry is a YAML list item with the following properties:
 
 :::::::{tab-set}
 ::::::{tab-item} Output
-:::{contributors}
-:columns: 3
-
-- @elastic
+```yaml {contributors}
+- gh: elastic
   name: Elastic
   title: Search company
   location: Distributed
 
-- @github
+- gh: github
   name: GitHub
   title: Code hosting
   location: San Francisco, CA
 
-- @elastic
+- gh: elastic
   name: Elastic (again)
   title: Repeated entry for demo
-
-:::
+```
 ::::::
 
 ::::::{tab-item} Markdown
-```markdown
-:::{contributors}
-:columns: 3
-
-- @elastic
+````markdown
+```yaml {contributors}
+- gh: elastic
   name: Elastic
   title: Search company
   location: Distributed
 
-- @github
+- gh: github
   name: GitHub
   title: Code hosting
   location: San Francisco, CA
 
-- @elastic
+- gh: elastic
   name: Elastic (again)
   title: Repeated entry for demo
-
-:::
 ```
+````
 ::::::
 :::::::
 
-## Custom columns
+## Contributors without GitHub
 
-Control the number of grid columns with the `:columns:` property. The default is `4`.
+The `gh` property is optional. When omitted, no avatar is fetched from GitHub, and no profile link is generated. You can still supply a custom avatar via the `image` property:
 
 :::::::{tab-set}
 ::::::{tab-item} Output
-:::{contributors}
-:columns: 2
+```yaml {contributors}
+- name: Ada Lovelace
+  title: Mathematician
+  location: London, UK
 
-- @elastic
-  name: Elastic
-  title: Open source search company
-  location: Distributed
-
-- @github
+- gh: github
   name: GitHub
   title: Code hosting platform
-  location: San Francisco, CA
-
-:::
+```
 ::::::
 
 ::::::{tab-item} Markdown
-```markdown
-:::{contributors}
-:columns: 2
+````markdown
+```yaml {contributors}
+- name: Ada Lovelace
+  title: Mathematician
+  location: London, UK
 
-- @elastic
-  name: Elastic
-  title: Open source search company
-  location: Distributed
-
-- @github
+- gh: github
   name: GitHub
   title: Code hosting platform
-  location: San Francisco, CA
-
-:::
 ```
+````
 ::::::
 :::::::
 
 ## Grouped sections
 
-A single `{contributors}` directive renders all its entries in one grid, automatically wrapping into rows based on the `:columns:` value. You do not need a separate directive for each row.
+A single `{contributors}` directive renders all its entries in one grid, automatically wrapping into rows. You do not need a separate directive for each row.
 
 To organize contributors into labeled groups (for example, by team or department), use multiple directives with regular Markdown headings between them:
 
@@ -139,108 +121,94 @@ To organize contributors into labeled groups (for example, by team or department
 
 ### Engineering
 
-:::{contributors}
-:columns: 4
-
-- @elastic
+```yaml {contributors}
+- gh: elastic
   name: Alice
   title: Platform Engineer
 
-- @github
+- gh: github
   name: Bob
   title: Backend Engineer
 
-- @elastic
+- gh: elastic
   name: Carol
   title: Frontend Engineer
 
-- @github
+- gh: github
   name: Dave
   title: SRE
 
-- @elastic
+- gh: elastic
   name: Eve
   title: Data Engineer
-
-:::
+```
 
 ### Security
 
-:::{contributors}
-:columns: 4
-
-- @github
+```yaml {contributors}
+- gh: github
   name: Frank
   title: Security Engineer
 
-- @elastic
+- gh: elastic
   name: Grace
   title: Security Analyst
-
-:::
+```
 ::::::
 
 ::::::{tab-item} Markdown
-```markdown
+````markdown
 ### Engineering
 
-:::{contributors}
-:columns: 4
-
-- @alice
+```yaml {contributors}
+- gh: alice
   name: Alice
   title: Platform Engineer
 
-- @bob
+- gh: bob
   name: Bob
   title: Backend Engineer
 
-- @carol
+- gh: carol
   name: Carol
   title: Frontend Engineer
 
-- @dave
+- gh: dave
   name: Dave
   title: SRE
 
-- @eve
+- gh: eve
   name: Eve
   title: Data Engineer
-
-:::
+```
 
 ### Security
 
-:::{contributors}
-:columns: 4
-
-- @frank
+```yaml {contributors}
+- gh: frank
   name: Frank
   title: Security Engineer
 
-- @grace
+- gh: grace
   name: Grace
   title: Security Analyst
-
-:::
 ```
+````
 ::::::
 :::::::
 
 ## Custom avatar image
 
-Override the default GitHub avatar with a local image using the `image:` property:
+Override the default GitHub avatar with a local image using the `image` property:
 
-```markdown
-:::{contributors}
-
-- @theletterf
+````markdown
+```yaml {contributors}
+- gh: theletterf
   name: Fabrizio Ferri-Benedetti
   title: Senior Technical Writer
   image: ./assets/custom-avatar.png
-
-:::
 ```
+````
 
 The image path is resolved relative to the current file, just like `{image}` directives.
 
@@ -248,14 +216,8 @@ The image path is resolved relative to the current file, just like `{image}` dir
 
 | Property | Required | Description |
 |----------|----------|-------------|
-| `@username` (first line) | Yes | GitHub username. Used for the avatar URL and profile link. |
-| `name:` | Yes | Display name shown below the avatar. |
-| `title:` | No | Job title or role. |
-| `location:` | No | Geographic location. |
-| `image:` | No | Custom avatar image path, overriding the GitHub avatar. Supports relative paths and URLs. |
-
-## Directive properties
-
-| Property | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `:columns:` | No | `4` | Number of columns in the grid. Responsive breakpoints reduce columns on smaller screens. |
+| `gh` | No | GitHub username. Used for the avatar URL and profile link. |
+| `name` | Yes | Display name shown below the avatar. |
+| `title` | No | Job title or role. |
+| `location` | No | Geographic location. |
+| `image` | No | Custom avatar image path, overriding the GitHub avatar. Supports relative paths and URLs. |

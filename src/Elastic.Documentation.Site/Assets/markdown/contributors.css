@@ -1,6 +1,6 @@
 .contributors-grid {
 	display: grid;
-	grid-template-columns: repeat(var(--contributor-columns, 4), 1fr);
+	grid-template-columns: repeat(4, 1fr);
 	gap: 2rem 1.5rem;
 	margin: 1.5rem 0;
 }
@@ -72,10 +72,7 @@
 /* Responsive breakpoints */
 @media (max-width: 1024px) {
 	.contributors-grid {
-		grid-template-columns: repeat(
-			min(var(--contributor-columns, 4), 3),
-			1fr
-		);
+		grid-template-columns: repeat(3, 1fr);
 	}
 }
 

@@ -7,6 +7,7 @@ using Elastic.Documentation.AppliesTo;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.Directives.AppliesTo;
+using Elastic.Markdown.Myst.Directives.Contributors;
 using Markdig.Helpers;
 using Markdig.Parsers;
 using Markdig.Syntax;
@@ -34,14 +35,10 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 
 		var lineSpan = processor.Line.AsSpan();
 		var codeBlock = lineSpan.IndexOf("{applies_to}") > -1
-			? new AppliesToDirective(this, context)
-			{
-				IndentCount = processor.Indent
-			}
-			: new EnhancedCodeBlock(this, context)
-			{
-				IndentCount = processor.Indent
-			};
+			? new AppliesToDirective(this, context) { IndentCount = processor.Indent }
+			: lineSpan.IndexOf("{contributors}") > -1
+				? new ContributorsBlock(this, context) { IndentCount = processor.Indent }
+				: new EnhancedCodeBlock(this, context) { IndentCount = processor.Indent };
 
 		if (processor.TrackTrivia)
 		{
@@ -109,10 +106,12 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 		if (lines.Lines is null)
 			return base.Close(processor, block);
 
-		if (codeBlock is not AppliesToDirective appliesToDirective)
-			ProcessCodeBlock(lines, language, codeBlock, context);
-		else
+		if (codeBlock is AppliesToDirective appliesToDirective)
 			ProcessAppliesToDirective(appliesToDirective, lines);
+		else if (codeBlock is ContributorsBlock contributorsBlock)
+			ProcessContributorsDirective(contributorsBlock, lines, context);
+		else
+			ProcessCodeBlock(lines, language, codeBlock, context);
 
 		return base.Close(processor, block);
 	}
@@ -134,6 +133,24 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 		catch (Exception e)
 		{
 			appliesToDirective.EmitError($"Unable to parse applies_to directive: {yaml}", e);
+		}
+	}
+
+	private static void ProcessContributorsDirective(
+		ContributorsBlock contributorsBlock,
+		StringLineGroup lines,
+		ParserContext context)
+	{
+		var yaml = lines.ToSlice().AsSpan().ToString();
+
+		try
+		{
+			var entries = YamlSerialization.Deserialize<List<ContributorEntry>>(yaml, contributorsBlock.Build.ProductsConfiguration);
+			contributorsBlock.ResolveContributors(entries, context);
+		}
+		catch (Exception e)
+		{
+			contributorsBlock.EmitError($"Unable to parse contributors directive: {e.Message}", e);
 		}
 	}
 

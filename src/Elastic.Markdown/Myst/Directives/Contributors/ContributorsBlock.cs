@@ -3,138 +3,104 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Markdown.Diagnostics;
-using Elastic.Markdown.Myst.InlineParsers;
-using Markdig.Syntax;
+using Elastic.Markdown.Myst.CodeBlocks;
+using Markdig.Parsers;
+using YamlDotNet.Serialization;
 
 namespace Elastic.Markdown.Myst.Directives.Contributors;
 
-/// <summary>Represents a single contributor parsed from the directive body.</summary>
+/// <summary>YAML model for a single contributor entry.</summary>
+public class ContributorEntry
+{
+	[YamlMember(Alias = "gh")]
+	public string? GitHub { get; set; }
+
+	public string? Name { get; set; }
+
+	public string? Title { get; set; }
+
+	public string? Location { get; set; }
+
+	public string? Image { get; set; }
+}
+
+/// <summary>Resolved contributor ready for rendering.</summary>
 public record Contributor(
-	string GitHub,
+	string? GitHub,
 	string Name,
 	string? Title,
 	string? Location,
 	string AvatarUrl,
-	string ProfileUrl
+	string? ProfileUrl
 );
 
 /// <summary>
-/// A directive that renders a grid of contributor cards with avatars, names, titles, and locations.
+/// A backtick-fenced directive that renders a grid of contributor cards from YAML content.
 /// </summary>
 /// <example>
-/// :::{contributors}
-/// :columns: 4
-///
-/// - @theletterf
+/// ```yaml {contributors}
+/// - gh: theletterf
 ///   name: Fabrizio Ferri-Benedetti
 ///   title: Senior Software Engineer
 ///   location: Barcelona, Spain
 ///   image: ./assets/override.png
 ///
-/// - @costin
-///   name: Costin Leau
+/// - name: Costin Leau
 ///   title: Principal Engineer
 ///   location: Bucharest, Romania
-/// :::
+/// ```
 /// </example>
-public class ContributorsBlock(DirectiveBlockParser parser, ParserContext context) : DirectiveBlock(parser, context)
+public class ContributorsBlock(BlockParser parser, ParserContext context)
+	: EnhancedCodeBlock(parser, context)
 {
-	public override string Directive => "contributors";
-
-	/// <summary>Number of columns in the grid layout.</summary>
-	public int Columns { get; private set; } = 4;
-
-	/// <summary>Parsed contributor entries.</summary>
+	/// <summary>Resolved contributor entries ready for rendering.</summary>
 	public IReadOnlyList<Contributor> Contributors => _contributors;
 
 	private readonly List<Contributor> _contributors = [];
 
-	public override void FinalizeAndValidate(ParserContext context)
+	/// <summary>Resolves YAML entries into display-ready contributors.</summary>
+	public void ResolveContributors(IReadOnlyList<ContributorEntry> entries, ParserContext parserContext)
 	{
-		if (int.TryParse(Prop("columns"), out var cols) && cols > 0)
-			Columns = cols;
-
-		foreach (var listBlock in this.OfType<ListBlock>())
+		foreach (var entry in entries)
 		{
-			foreach (var listItem in listBlock.OfType<ListItemBlock>())
+			if (string.IsNullOrWhiteSpace(entry.Name))
 			{
-				var contributor = ParseContributor(context, listItem);
-				if (contributor is not null)
-					_contributors.Add(contributor);
+				this.EmitError("Contributor entry is missing a required 'name' property.");
+				continue;
 			}
+
+			var avatarUrl = ResolveAvatarUrl(parserContext, entry.GitHub, entry.Image);
+			var profileUrl = !string.IsNullOrWhiteSpace(entry.GitHub)
+				? $"https://github.com/{entry.GitHub}"
+				: null;
+
+			_contributors.Add(new Contributor(
+				entry.GitHub,
+				entry.Name,
+				entry.Title,
+				entry.Location,
+				avatarUrl,
+				profileUrl
+			));
 		}
 
 		if (_contributors.Count == 0)
 			this.EmitWarning("Contributors directive has no contributor entries.");
 	}
 
-	private Contributor? ParseContributor(ParserContext context, ListItemBlock listItem)
+	private static string ResolveAvatarUrl(ParserContext context, string? github, string? image)
 	{
-		foreach (var paragraph in listItem.OfType<ParagraphBlock>())
+		if (!string.IsNullOrWhiteSpace(image))
 		{
-			var text = paragraph.Lines.ToString();
-			if (string.IsNullOrWhiteSpace(text))
-				continue;
+			if (Uri.TryCreate(image, UriKind.Absolute, out var uri) && uri.Scheme.StartsWith("http"))
+				return image;
 
-			var lines = text.Split('\n', StringSplitOptions.TrimEntries);
-			if (lines.Length == 0)
-				return null;
-
-			var firstLine = lines[0];
-			if (!firstLine.StartsWith('@'))
-			{
-				this.EmitError($"Contributor entry must start with @username, found: '{firstLine}'");
-				return null;
-			}
-
-			var github = firstLine[1..].Trim();
-			if (string.IsNullOrWhiteSpace(github))
-			{
-				this.EmitError("Contributor entry has an empty @username.");
-				return null;
-			}
-
-			string? name = null;
-			string? title = null;
-			string? location = null;
-			string? image = null;
-
-			for (var i = 1; i < lines.Length; i++)
-			{
-				var line = lines[i];
-				if (line.StartsWith("name:", StringComparison.OrdinalIgnoreCase))
-					name = line[5..].Trim();
-				else if (line.StartsWith("title:", StringComparison.OrdinalIgnoreCase))
-					title = line[6..].Trim();
-				else if (line.StartsWith("location:", StringComparison.OrdinalIgnoreCase))
-					location = line[9..].Trim();
-				else if (line.StartsWith("image:", StringComparison.OrdinalIgnoreCase))
-					image = line[6..].Trim();
-			}
-
-			if (string.IsNullOrWhiteSpace(name))
-			{
-				this.EmitError($"Contributor @{github} is missing a required 'name:' property.");
-				return null;
-			}
-
-			var avatarUrl = ResolveAvatarUrl(context, github, image);
-			var profileUrl = $"https://github.com/{github}";
-
-			return new Contributor(github, name, title, location, avatarUrl, profileUrl);
+			return InlineParsers.DiagnosticLinkInlineParser.UpdateRelativeUrl(context, image);
 		}
 
-		return null;
-	}
-
-	private static string ResolveAvatarUrl(ParserContext context, string github, string? image)
-	{
-		if (string.IsNullOrWhiteSpace(image))
+		if (!string.IsNullOrWhiteSpace(github))
 			return $"https://github.com/{github}.png?size=200";
 
-		if (Uri.TryCreate(image, UriKind.Absolute, out var uri) && uri.Scheme.StartsWith("http"))
-			return image;
-
-		return DiagnosticLinkInlineParser.UpdateRelativeUrl(context, image);
+		return string.Empty;
 	}
 }

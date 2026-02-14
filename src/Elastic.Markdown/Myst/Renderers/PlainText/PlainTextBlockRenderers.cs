@@ -84,6 +84,12 @@ public class PlainTextCodeBlockRenderer : MarkdownObjectRenderer<PlainTextRender
 			return;
 		}
 
+		if (obj is ContributorsBlock contributorsBlock)
+		{
+			WriteContributorsBlock(renderer, contributorsBlock);
+			return;
+		}
+
 		renderer.EnsureBlockSpacing();
 
 		// Include caption if present
@@ -105,6 +111,29 @@ public class PlainTextCodeBlockRenderer : MarkdownObjectRenderer<PlainTextRender
 		while (lastNonEmptyIndex >= 0 && string.IsNullOrWhiteSpace(obj.Lines.Lines[lastNonEmptyIndex].ToString()))
 			lastNonEmptyIndex--;
 		return lastNonEmptyIndex;
+	}
+
+	private static void WriteContributorsBlock(PlainTextRenderer renderer, ContributorsBlock block)
+	{
+		renderer.EnsureBlockSpacing();
+
+		foreach (var contributor in block.Contributors)
+		{
+			renderer.Write(contributor.Name);
+			if (!string.IsNullOrEmpty(contributor.Title))
+			{
+				renderer.Write(", ");
+				renderer.Write(contributor.Title);
+			}
+			if (!string.IsNullOrEmpty(contributor.Location))
+			{
+				renderer.Write(", ");
+				renderer.Write(contributor.Location);
+			}
+			renderer.EnsureLine();
+		}
+
+		renderer.EnsureLine();
 	}
 }
 
@@ -241,10 +270,6 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 
 			case CsvIncludeBlock csvIncludeBlock:
 				WriteCsvIncludeBlock(renderer, csvIncludeBlock);
-				return;
-
-			case ContributorsBlock contributorsBlock:
-				WriteContributorsBlock(renderer, contributorsBlock);
 				return;
 		}
 
@@ -433,28 +458,6 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 		renderer.EnsureLine();
 	}
 
-	private static void WriteContributorsBlock(PlainTextRenderer renderer, ContributorsBlock block)
-	{
-		renderer.EnsureBlockSpacing();
-
-		foreach (var contributor in block.Contributors)
-		{
-			renderer.Write(contributor.Name);
-			if (!string.IsNullOrEmpty(contributor.Title))
-			{
-				renderer.Write(", ");
-				renderer.Write(contributor.Title);
-			}
-			if (!string.IsNullOrEmpty(contributor.Location))
-			{
-				renderer.Write(", ");
-				renderer.Write(contributor.Location);
-			}
-			renderer.EnsureLine();
-		}
-
-		renderer.EnsureLine();
-	}
 }
 
 /// <summary>

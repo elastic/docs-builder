@@ -202,6 +202,12 @@ public class LlmEnhancedCodeBlockRenderer : MarkdownObjectRenderer<LlmMarkdownRe
 			return;
 		}
 
+		if (obj is ContributorsBlock contributorsBlock)
+		{
+			WriteContributorsBlock(renderer, contributorsBlock);
+			return;
+		}
+
 		renderer.EnsureBlockSpacing();
 		if (!string.IsNullOrEmpty(obj.Caption))
 		{
@@ -250,6 +256,40 @@ public class LlmEnhancedCodeBlockRenderer : MarkdownObjectRenderer<LlmMarkdownRe
 		}
 
 		renderer.WriteLine("</applies-to>");
+	}
+
+	private static void WriteContributorsBlock(LlmMarkdownRenderer renderer, ContributorsBlock block)
+	{
+		renderer.EnsureBlockSpacing();
+		renderer.WriteLine("<contributors>");
+
+		foreach (var contributor in block.Contributors)
+		{
+			renderer.Write("  - **");
+			renderer.Write(contributor.Name);
+			renderer.Write("**");
+			if (!string.IsNullOrEmpty(contributor.Title))
+			{
+				renderer.Write(", ");
+				renderer.Write(contributor.Title);
+			}
+			if (!string.IsNullOrEmpty(contributor.Location))
+			{
+				renderer.Write(" (");
+				renderer.Write(contributor.Location);
+				renderer.Write(")");
+			}
+			if (!string.IsNullOrEmpty(contributor.ProfileUrl))
+			{
+				renderer.Write(" — [GitHub](");
+				renderer.Write(contributor.ProfileUrl);
+				renderer.Write(")");
+			}
+			renderer.WriteLine();
+		}
+
+		renderer.WriteLine("</contributors>");
+		renderer.EnsureLine();
 	}
 
 	private static int GetLastNonEmptyLineIndex(EnhancedCodeBlock obj)
@@ -450,9 +490,6 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 				return;
 			case CsvIncludeBlock csvIncludeBlock:
 				WriteCsvIncludeBlock(renderer, csvIncludeBlock);
-				return;
-			case ContributorsBlock contributorsBlock:
-				WriteContributorsBlock(renderer, contributorsBlock);
 				return;
 		}
 
@@ -715,36 +752,6 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		}
 
 		LlmRenderingHelpers.RenderMarkdownTable(renderer, csvRows, block.MaxColumns);
-		renderer.EnsureLine();
-	}
-
-	private static void WriteContributorsBlock(LlmMarkdownRenderer renderer, ContributorsBlock block)
-	{
-		renderer.EnsureBlockSpacing();
-		renderer.WriteLine("<contributors>");
-
-		foreach (var contributor in block.Contributors)
-		{
-			renderer.Write("  - **");
-			renderer.Write(contributor.Name);
-			renderer.Write("**");
-			if (!string.IsNullOrEmpty(contributor.Title))
-			{
-				renderer.Write(", ");
-				renderer.Write(contributor.Title);
-			}
-			if (!string.IsNullOrEmpty(contributor.Location))
-			{
-				renderer.Write(" (");
-				renderer.Write(contributor.Location);
-				renderer.Write(")");
-			}
-			renderer.Write(" — [GitHub](");
-			renderer.Write(contributor.ProfileUrl);
-			renderer.WriteLine(")");
-		}
-
-		renderer.WriteLine("</contributors>");
 		renderer.EnsureLine();
 	}
 

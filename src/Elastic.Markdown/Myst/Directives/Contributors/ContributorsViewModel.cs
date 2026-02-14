@@ -5,11 +5,8 @@
 namespace Elastic.Markdown.Myst.Directives.Contributors;
 
 /// <summary>View model for the contributors grid directive.</summary>
-public class ContributorsViewModel : DirectiveViewModel
+public class ContributorsViewModel
 {
-	/// <summary>Number of columns in the grid layout.</summary>
-	public required int Columns { get; init; }
-
-	/// <summary>Parsed contributor entries.</summary>
+	/// <summary>Resolved contributor entries.</summary>
 	public required IReadOnlyList<Contributor> Contributors { get; init; }
 }
