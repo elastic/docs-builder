@@ -11,6 +11,7 @@ using Elastic.Markdown.Myst.Directives.Contributors;
 using Markdig.Helpers;
 using Markdig.Parsers;
 using Markdig.Syntax;
+using YamlDotNet.Core;
 
 namespace Elastic.Markdown.Myst.CodeBlocks;
 
@@ -148,7 +149,7 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 			var entries = YamlSerialization.Deserialize<List<ContributorEntry>>(yaml, contributorsBlock.Build.ProductsConfiguration);
 			contributorsBlock.ResolveContributors(entries, context);
 		}
-		catch (Exception e)
+		catch (YamlException e)
 		{
 			contributorsBlock.EmitError($"Unable to parse contributors directive: {e.Message}", e);
 		}
