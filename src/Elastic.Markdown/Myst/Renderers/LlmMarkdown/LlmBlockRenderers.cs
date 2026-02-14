@@ -7,6 +7,7 @@ using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Myst.Directives.Admonition;
 using Elastic.Markdown.Myst.Directives.AppliesTo;
+using Elastic.Markdown.Myst.Directives.Contributors;
 using Elastic.Markdown.Myst.Directives.CsvInclude;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
@@ -450,6 +451,9 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 			case CsvIncludeBlock csvIncludeBlock:
 				WriteCsvIncludeBlock(renderer, csvIncludeBlock);
 				return;
+			case ContributorsBlock contributorsBlock:
+				WriteContributorsBlock(renderer, contributorsBlock);
+				return;
 		}
 
 		// Ensure single empty line before directive
@@ -711,6 +715,36 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		}
 
 		LlmRenderingHelpers.RenderMarkdownTable(renderer, csvRows, block.MaxColumns);
+		renderer.EnsureLine();
+	}
+
+	private static void WriteContributorsBlock(LlmMarkdownRenderer renderer, ContributorsBlock block)
+	{
+		renderer.EnsureBlockSpacing();
+		renderer.WriteLine("<contributors>");
+
+		foreach (var contributor in block.Contributors)
+		{
+			renderer.Write("  - **");
+			renderer.Write(contributor.Name);
+			renderer.Write("**");
+			if (!string.IsNullOrEmpty(contributor.Title))
+			{
+				renderer.Write(", ");
+				renderer.Write(contributor.Title);
+			}
+			if (!string.IsNullOrEmpty(contributor.Location))
+			{
+				renderer.Write(" (");
+				renderer.Write(contributor.Location);
+				renderer.Write(")");
+			}
+			renderer.Write(" — [GitHub](");
+			renderer.Write(contributor.ProfileUrl);
+			renderer.WriteLine(")");
+		}
+
+		renderer.WriteLine("</contributors>");
 		renderer.EnsureLine();
 	}
 

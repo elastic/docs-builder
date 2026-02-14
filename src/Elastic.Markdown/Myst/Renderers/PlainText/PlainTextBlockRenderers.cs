@@ -7,6 +7,7 @@ using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Myst.Directives.Admonition;
 using Elastic.Markdown.Myst.Directives.AppliesTo;
+using Elastic.Markdown.Myst.Directives.Contributors;
 using Elastic.Markdown.Myst.Directives.CsvInclude;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
@@ -241,6 +242,10 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 			case CsvIncludeBlock csvIncludeBlock:
 				WriteCsvIncludeBlock(renderer, csvIncludeBlock);
 				return;
+
+			case ContributorsBlock contributorsBlock:
+				WriteContributorsBlock(renderer, contributorsBlock);
+				return;
 		}
 
 		renderer.EnsureBlockSpacing();
@@ -423,6 +428,29 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 				}
 				renderer.WriteLine(row[i]);
 			}
+		}
+
+		renderer.EnsureLine();
+	}
+
+	private static void WriteContributorsBlock(PlainTextRenderer renderer, ContributorsBlock block)
+	{
+		renderer.EnsureBlockSpacing();
+
+		foreach (var contributor in block.Contributors)
+		{
+			renderer.Write(contributor.Name);
+			if (!string.IsNullOrEmpty(contributor.Title))
+			{
+				renderer.Write(", ");
+				renderer.Write(contributor.Title);
+			}
+			if (!string.IsNullOrEmpty(contributor.Location))
+			{
+				renderer.Write(", ");
+				renderer.Write(contributor.Location);
+			}
+			renderer.EnsureLine();
 		}
 
 		renderer.EnsureLine();

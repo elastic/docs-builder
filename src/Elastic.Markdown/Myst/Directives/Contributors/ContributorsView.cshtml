@@ -1,0 +1,22 @@
+@inherits RazorSlice<Elastic.Markdown.Myst.Directives.Contributors.ContributorsViewModel>
+<div class="contributors-grid" style="--contributor-columns: @Model.Columns">
+	@foreach (var contributor in Model.Contributors)
+	{
+		<div class="contributor-card">
+			<a href="@contributor.ProfileUrl" class="contributor-avatar" target="_blank" rel="noopener noreferrer">
+				<img src="@contributor.AvatarUrl" alt="@contributor.Name" loading="lazy" />
+			</a>
+			<div class="contributor-info">
+				<a href="@contributor.ProfileUrl" class="contributor-name" target="_blank" rel="noopener noreferrer">@contributor.Name</a>
+				@if (!string.IsNullOrEmpty(contributor.Title))
+				{
+					<span class="contributor-title">@contributor.Title</span>
+				}
+				@if (!string.IsNullOrEmpty(contributor.Location))
+				{
+					<span class="contributor-location">@contributor.Location</span>
+				}
+			</div>
+		</div>
+	}
+</div>

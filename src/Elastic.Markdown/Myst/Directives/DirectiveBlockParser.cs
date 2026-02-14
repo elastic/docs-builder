@@ -7,6 +7,7 @@ using Elastic.Markdown.Myst.Directives.Admonition;
 using Elastic.Markdown.Myst.Directives.AppliesSwitch;
 using Elastic.Markdown.Myst.Directives.Button;
 using Elastic.Markdown.Myst.Directives.Changelog;
+using Elastic.Markdown.Myst.Directives.Contributors;
 using Elastic.Markdown.Myst.Directives.CsvInclude;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
@@ -141,6 +142,9 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 			if (info.IndexOf(version) > 0)
 				return new VersionBlock(this, version[1..^1], context);
 		}
+
+		if (info.IndexOf("{contributors}") > 0)
+			return new ContributorsBlock(this, context);
 
 		if (info.IndexOf("{stepper}") > 0)
 			return new StepperBlock(this, context);
