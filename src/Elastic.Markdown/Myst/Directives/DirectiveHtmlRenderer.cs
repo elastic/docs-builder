@@ -239,7 +239,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 
 		if (!string.IsNullOrWhiteSpace(block.Caption))
 		{
-			_ = renderer.Write("<div class=\"table-caption\">");
+			_ = renderer.Write("<div class=\"md-table-caption\">");
 			_ = renderer.WriteEscape(block.Caption);
 			_ = renderer.Write("</div>");
 		}

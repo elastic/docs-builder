@@ -144,7 +144,7 @@ public class TableDirectiveWithCaptionTests(ITestOutputHelper output) : Directiv
 	public void HtmlContainsCaption() => Html.Should().Contain("Frozen delights");
 
 	[Fact]
-	public void HtmlContainsCaptionClass() => Html.Should().Contain("table-caption");
+	public void HtmlContainsCaptionClass() => Html.Should().Contain("md-table-caption");
 }
 
 public class TableDirectiveMismatchedWidthsTests(ITestOutputHelper output) : DirectiveTest<TableBlock>(output,

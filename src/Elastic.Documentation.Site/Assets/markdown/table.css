@@ -1,9 +1,9 @@
 @layer components {
-	.table-caption {
+	.md-table-caption {
 		@apply mt-4 mb-1 font-sans text-sm font-semibold;
 	}
 
-	.table-caption + .table-wrapper {
+	.md-table-caption + .table-wrapper {
 		@apply mt-0;
 	}
 

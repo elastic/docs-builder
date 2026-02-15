@@ -21,7 +21,7 @@
 
 @if (!string.IsNullOrEmpty(csvBlock.Caption))
 {
-    <div class="table-caption">@csvBlock.Caption</div>
+    <div class="md-table-caption">@csvBlock.Caption</div>
 }
 <div class="table-wrapper">
     <table@(columnWidths is not null ? " class=\"fixed-widths\"" : "")>
