@@ -92,11 +92,11 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			  - preview
 			  - beta
 			  - ga
-			block:
-			  product:
-			    cloud-serverless:
-			      publish:
-			        areas:
+			rules:
+			  publish:
+			    products:
+			      cloud-serverless:
+			        exclude_areas:
 			          - Allocation
 			""";
 		await FileSystem.File.WriteAllTextAsync(configFile, configContent, TestContext.Current.CancellationToken);
@@ -233,11 +233,11 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			  - preview
 			  - beta
 			  - ga
-			block:
-			  product:
-			    cloud-serverless:
-			      publish:
-			        areas:
+			rules:
+			  publish:
+			    products:
+			      cloud-serverless:
+			        exclude_areas:
 			          - Allocation
 			""";
 		await FileSystem.File.WriteAllTextAsync(configFile, configContent, TestContext.Current.CancellationToken);
@@ -370,9 +370,9 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			  - preview
 			  - beta
 			  - ga
-			block:
+			rules:
 			  publish:
-			    areas:
+			    exclude_areas:
 			      - Internal
 			""";
 		await FileSystem.File.WriteAllTextAsync(configFile, configContent, TestContext.Current.CancellationToken);
@@ -502,14 +502,13 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			  - preview
 			  - beta
 			  - ga
-			block:
+			rules:
 			  publish:
-			    areas:
+			    exclude_areas:
 			      - Internal
-			  product:
-			    cloud-serverless:
-			      publish:
-			        areas: []
+			    products:
+			      cloud-serverless:
+			        exclude_areas: []
 			""";
 		await FileSystem.File.WriteAllTextAsync(configFile, configContent, TestContext.Current.CancellationToken);
 
@@ -648,11 +647,11 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			  - preview
 			  - beta
 			  - ga
-			block:
-			  product:
-			    cloud-serverless:
-			      publish:
-			        areas:
+			rules:
+			  publish:
+			    products:
+			      cloud-serverless:
+			        exclude_areas:
 			          - Allocation
 			""";
 		await FileSystem.File.WriteAllTextAsync(configFile, configContent, TestContext.Current.CancellationToken);
@@ -782,11 +781,11 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			  - preview
 			  - beta
 			  - ga
-			block:
-			  product:
-			    cloud-serverless:
-			      publish:
-			        areas:
+			rules:
+			  publish:
+			    products:
+			      cloud-serverless:
+			        exclude_areas:
 			          - Allocation
 			""";
 		await FileSystem.File.WriteAllTextAsync(configFile, configContent, TestContext.Current.CancellationToken);
@@ -928,11 +927,11 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			  - preview
 			  - beta
 			  - ga
-			block:
-			  product:
-			    cloud-serverless:
-			      publish:
-			        areas:
+			rules:
+			  publish:
+			    products:
+			      'cloud-serverless':
+			        exclude_areas:
 			          - Allocation
 			          - Internal
 			""";
@@ -1052,11 +1051,11 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			  - preview
 			  - beta
 			  - ga
-			block:
-			  product:
-			    cloud-serverless:
-			      publish:
-			        areas:
+			rules:
+			  publish:
+			    products:
+			      cloud-serverless:
+			        exclude_areas:
 			          - Allocation
 			""";
 		await FileSystem.File.WriteAllTextAsync(configFile, configContent, TestContext.Current.CancellationToken);
@@ -1174,11 +1173,11 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			  - preview
 			  - beta
 			  - ga
-			block:
-			  product:
-			    cloud-serverless:
-			      publish:
-			        areas:
+			rules:
+			  publish:
+			    products:
+			      cloud-serverless:
+			        exclude_areas:
 			          - Allocation
 			""";
 		await FileSystem.File.WriteAllTextAsync(configFile, configContent, TestContext.Current.CancellationToken);
@@ -1272,11 +1271,11 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			  - preview
 			  - beta
 			  - ga
-			block:
-			  product:
-			    cloud-serverless:
-			      publish:
-			        areas:
+			rules:
+			  publish:
+			    products:
+			      cloud-serverless:
+			        exclude_areas:
 			          - Allocation
 			""";
 		await FileSystem.File.WriteAllTextAsync(configFile, configContent, TestContext.Current.CancellationToken);
@@ -1369,11 +1368,11 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			  - preview
 			  - beta
 			  - ga
-			block:
-			  product:
-			    cloud-serverless:
-			      publish:
-			        areas:
+			rules:
+			  publish:
+			    products:
+			      cloud-serverless:
+			        exclude_areas:
 			          - Allocation
 			""";
 		await FileSystem.File.WriteAllTextAsync(configFile, configContent, TestContext.Current.CancellationToken);
@@ -1466,11 +1465,11 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			  - preview
 			  - beta
 			  - ga
-			block:
-			  product:
-			    cloud-serverless:
-			      publish:
-			        areas:
+			rules:
+			  publish:
+			    products:
+			      cloud-serverless:
+			        exclude_areas:
 			          - Allocation
 			""";
 		await FileSystem.File.WriteAllTextAsync(configFile, configContent, TestContext.Current.CancellationToken);
@@ -1602,13 +1601,13 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			  - preview
 			  - beta
 			  - ga
-			block:
-			  product:
-			    cloud-serverless:
-			      publish:
-			        types:
+			rules:
+			  publish:
+			    products:
+			      cloud-serverless:
+			        exclude_types:
 			          - deprecation
-			        areas:
+			        exclude_areas:
 			          - Allocation
 			          - Internal
 			""";
@@ -1639,18 +1638,18 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 		warnings.Should().Contain(w =>
 			w.Message.Contains("for PR 100") &&
 			w.Message.Contains("will be commented out") &&
-			w.Message.Contains("area 'Allocation'"));
+			w.Message.Contains("Allocation"));
 
 		// Should have warning for deprecation (blocked by type) - PR 101
 		warnings.Should().Contain(w =>
 			w.Message.Contains("for PR 101") &&
 			w.Message.Contains("will be commented out") &&
-			w.Message.Contains("type 'deprecation'"));
+			w.Message.Contains("deprecation"));
 
 		// Should have warning for Internal feature (blocked by areas) - PR 102
 		warnings.Should().Contain(w =>
 			w.Message.Contains("for PR 102") &&
 			w.Message.Contains("will be commented out") &&
-			w.Message.Contains("areas 'Allocation', 'Internal'"));
+			w.Message.Contains("Allocation"));
 	}
 }

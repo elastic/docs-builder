@@ -99,7 +99,7 @@
     "svgo": "^4.0.0",
     "text-diff": "1.0.1",
     "typescript": "^5.9.3",
-    "typescript-eslint": "8.53.0",
+    "typescript-eslint": "8.54.0",
     "wait-on": "9.0.1"
   },
   "browserslist": [
@@ -142,7 +142,7 @@
     "tippy.js": "6.3.7",
     "ua-parser-js": "2.0.6",
     "uuid": "11.1.0",
-    "zod": "4.1.12",
+    "zod": "4.3.6",
     "zustand": "5.0.8"
   }
 }
