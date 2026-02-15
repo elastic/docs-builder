@@ -19,12 +19,11 @@
     var columnWidths = Model.GetColumnWidthPercentages(columnCount);
 }
 
+@if (!string.IsNullOrEmpty(csvBlock.Caption))
+{
+    <div class="table-caption">@csvBlock.Caption</div>
+}
 <div class="table-wrapper">
-    @if (!string.IsNullOrEmpty(csvBlock.Caption))
-    {
-        <div class="table-caption">@csvBlock.Caption</div>
-    }
-    
     <table@(columnWidths is not null ? " class=\"fixed-widths\"" : "")>
         @if (columnWidths is not null)
         {
