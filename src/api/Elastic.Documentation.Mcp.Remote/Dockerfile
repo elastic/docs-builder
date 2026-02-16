@@ -35,7 +35,6 @@ RUN dotnet publish src/api/Elastic.Documentation.Mcp.Remote -r linux-x64 -c Rele
 
 # Runtime stage for ECS Fargate deployment
 FROM public.ecr.aws/amazonlinux/amazonlinux:2023-minimal AS runtime
-RUN microdnf install -y curl && microdnf clean all
 WORKDIR /app
 COPY --from=base /app/.artifacts/publish/Elastic.Documentation.Mcp.Remote/release_linux-x64/bootstrap /app/bootstrap
 RUN chmod +x /app/bootstrap
