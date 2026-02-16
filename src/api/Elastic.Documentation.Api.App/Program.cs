@@ -5,7 +5,9 @@
 using Elastic.Documentation.Api.Infrastructure;
 using Elastic.Documentation.Api.Infrastructure.OpenTelemetry;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Search;
 using Elastic.Documentation.ServiceDefaults;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
 try
@@ -31,8 +33,25 @@ try
 	builder.Services.AddElasticDocsApiUsecases(environment);
 	var app = builder.Build();
 
-	if (app.Environment.IsDevelopment())
-		_ = app.UseDeveloperExceptionPage();
+	var logger = app.Services.GetRequiredService<ILogger<Program>>();
+
+	LogElasticsearchConfiguration(app, logger);
+
+	var lifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
+	_ = lifetime.ApplicationStarted.Register(() => logger.LogInformation("Application started"));
+	_ = lifetime.ApplicationStopping.Register(() => logger.LogWarning("Application is shutting down"));
+	_ = lifetime.ApplicationStopped.Register(() => logger.LogWarning("Application has stopped"));
+
+	_ = app.Environment.IsDevelopment()
+		? app.UseDeveloperExceptionPage()
+		: app.UseExceptionHandler(err => err.Run(context =>
+		{
+			var ex = context.Features.Get<IExceptionHandlerFeature>()?.Error;
+			if (ex != null)
+				logger.LogError(ex, "Unhandled exception on {Method} {Path}", context.Request.Method, context.Request.Path);
+			context.Response.StatusCode = 500;
+			return Task.CompletedTask;
+		}));
 
 	var api = app.MapGroup("/docs/_api");
 
@@ -50,10 +69,35 @@ try
 }
 catch (Exception ex)
 {
-	Console.WriteLine($"FATAL ERROR during startup: {ex}");
-	Console.WriteLine($"Exception type: {ex.GetType().Name}");
+	Console.WriteLine($"FATAL ERROR: {ex}");
+	Console.WriteLine($"Exception type: {ex.GetType().FullName}");
+	Console.WriteLine($"Message: {ex.Message}");
+	if (ex.InnerException != null)
+		Console.WriteLine($"Inner exception: {ex.InnerException.GetType().FullName}: {ex.InnerException.Message}");
 	Console.WriteLine($"Stack trace: {ex.StackTrace}");
 	throw;
+}
+
+static void LogElasticsearchConfiguration(WebApplication app, ILogger logger)
+{
+	try
+	{
+		var esOptions = app.Services.GetService<ElasticsearchOptions>();
+		if (esOptions != null)
+		{
+			logger.LogInformation(
+				"Elasticsearch configuration - Url: {Url}, Index: {Index}",
+				esOptions.Url,
+				esOptions.IndexName
+			);
+		}
+		else
+			logger.LogWarning("ElasticsearchOptions could not be resolved from DI");
+	}
+	catch (Exception ex)
+	{
+		logger.LogError(ex, "Failed to resolve Elasticsearch configuration");
+	}
 }
 
 // Make the Program class accessible for integration testing
