@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Site;
 
 namespace Elastic.Documentation.Site.Navigation;
 
@@ -14,4 +15,5 @@ public class NavigationTreeItem
 	public required bool IsPrimaryNavEnabled { get; init; }
 	public required bool IsGlobalAssemblyBuild { get; init; }
 	public required string RootNavigationId { get; set; }
+	public required IHtmxAttributeProvider Htmx { get; init; }
 }

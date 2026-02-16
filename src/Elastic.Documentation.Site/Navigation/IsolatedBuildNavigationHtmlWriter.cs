@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Site;
 
 namespace Elastic.Documentation.Site.Navigation;
 
@@ -54,8 +55,10 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNaviga
 		return useRequestedRoot ? requestedRoot : siteRoot;
 	}
 
-	private NavigationViewModel CreateNavigationModel(IRootNavigationItem<INavigationModel, INavigationItem> navigation) =>
-		new()
+	private NavigationViewModel CreateNavigationModel(IRootNavigationItem<INavigationModel, INavigationItem> navigation)
+	{
+		var rootPath = context.SiteRootPath ?? GetDefaultRootPath(context.UrlPathPrefix);
+		return new()
 		{
 			Title = navigation.NavigationTitle,
 			TitleUrl = navigation.Url,
@@ -63,6 +66,14 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNaviga
 			IsPrimaryNavEnabled = context.Configuration.Features.PrimaryNavEnabled,
 			IsUsingNavigationDropdown = context.Configuration.Features.PrimaryNavEnabled || navigation.IsUsingNavigationDropdown,
 			IsGlobalAssemblyBuild = false,
-			TopLevelItems = navigation.NavigationItems.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>().ToList()
+			TopLevelItems = navigation.NavigationItems.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>().ToList(),
+			Htmx = new DefaultHtmxAttributeProvider(rootPath)
 		};
+	}
+
+	private static string GetDefaultRootPath(string? urlPathPrefix)
+	{
+		var prefix = urlPathPrefix?.Trim('/') ?? "";
+		return string.IsNullOrEmpty(prefix) ? "/" : $"/{prefix}/";
+	}
 }

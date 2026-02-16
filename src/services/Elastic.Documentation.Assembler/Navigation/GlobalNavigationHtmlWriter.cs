@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Assembler;
+using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.Navigation;
 using Microsoft.Extensions.Logging;
 
@@ -73,7 +74,8 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 			IsPrimaryNavEnabled = true,
 			IsUsingNavigationDropdown = true,
 			IsGlobalAssemblyBuild = true,
-			TopLevelItems = topLevelItems
+			TopLevelItems = topLevelItems,
+			Htmx = new DefaultHtmxAttributeProvider("/")
 		};
 	}
 

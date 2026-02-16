@@ -30,6 +30,7 @@ public record GlobalLayoutViewModel
 
 	public required string NavigationHtml { get; init; }
 	public required string? UrlPathPrefix { get; init; }
+	public required IHtmxAttributeProvider Htmx { get; init; }
 	public required Uri? CanonicalBaseUrl { get; init; }
 
 	// Header properties for isolated mode
@@ -88,5 +89,13 @@ public record GlobalLayoutViewModel
 	{
 		path = path.AsSpan().Trim('/').ToString();
 		return $"{UrlPathPrefix}/{path}";
+	}
+
+	/// <summary>Link to the site root. For codex builds, returns the codex root (not the doc set root).</summary>
+	public string SiteLink(string path)
+	{
+		path = path.AsSpan().Trim('/').ToString();
+		var prefix = GetStaticPathPrefix();
+		return string.IsNullOrEmpty(prefix) ? $"/{path}" : $"{prefix}/{path}";
 	}
 }

@@ -8,7 +8,7 @@
 @using Markdig
 @using ViewModelSerializerContext = Elastic.Markdown.Page.ViewModelSerializerContext
 @inherits RazorSliceHttpResult<Elastic.Markdown.Page.IndexViewModel>
-@implements IUsesLayout<Elastic.Markdown._Layout, MarkdownLayoutViewModel>
+@implements IUsesLayout<Elastic.Codex._MarkdownLayout, MarkdownLayoutViewModel>
 @functions {
 	static string GetRootPath(string? siteRootPath, string? urlPathPrefix)
 	{
@@ -55,7 +55,7 @@
 		VersionDropdownSerializedModel = JsonSerializer.Serialize(Model.VersionDropdownItems,
 			ViewModelSerializerContext.Default.VersionDropDownItemViewModelArray),
 		// Header properties for isolated mode
-		HeaderTitle = Model.DocSetName,
+		HeaderTitle = Model.SiteHeaderTitle ?? Model.DocSetName,
 		HeaderVersion = null,
 		GitBranch = Model.GitBranch,
 		GitCommitShort = Model.GitCommitShort,

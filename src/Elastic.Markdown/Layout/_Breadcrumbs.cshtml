@@ -13,7 +13,7 @@
 				itemprop="item"
 				href="@item.Url"
 				@(i == 0 ? "hx-disable=true" : "")
-				@Htmx.GetHxAttributes(Model.CurrentNavigationItem?.NavigationRoot.Id == item.NavigationRoot.Id)>
+				@Model.Htmx.GetHxAttributes(Model.CurrentNavigationItem?.NavigationRoot.Id == item.NavigationRoot.Id)>
 				<span class="hover:text-black">@item.NavigationTitle</span>
 			</a>
 			@if (i < crumbs.Count - 1)
