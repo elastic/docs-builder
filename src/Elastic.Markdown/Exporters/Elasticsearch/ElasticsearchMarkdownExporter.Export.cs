@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using Elastic.ApiExplorer.Elasticsearch;
+using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Navigation;
@@ -172,6 +173,11 @@ public partial class ElasticsearchMarkdownExporter
 	/// <inheritdoc />
 	public async ValueTask<bool> FinishExportAsync(IDirectoryInfo outputFolder, Cancel ctx)
 	{
+		if (_context.BuildType != BuildType.Assembler)
+		{
+			_logger.LogInformation("Skipping OpenAPI export for non-assembler build");
+			return true;
+		}
 
 		// this is temporary; once we implement Elastic.ApiExplorer, this should flow through
 		// we'll rename IMarkdownExporter to IDocumentationFileExporter at that point

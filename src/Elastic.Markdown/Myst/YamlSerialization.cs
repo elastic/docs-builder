@@ -4,6 +4,7 @@
 
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Products;
+using Elastic.Markdown.Myst.Directives.Contributors;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.FrontMatter;
 using YamlDotNet.Serialization;
@@ -37,4 +38,5 @@ public static class YamlSerialization
 [YamlSerializable(typeof(AllowedValue))]
 [YamlSerializable(typeof(SettingMutability))]
 [YamlSerializable(typeof(ApplicableTo))]
+[YamlSerializable(typeof(ContributorEntry))]
 public partial class DocsBuilderYamlStaticContext;

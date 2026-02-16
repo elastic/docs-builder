@@ -11,6 +11,7 @@ using Elastic.Documentation.Api.Infrastructure;
 using Elastic.Documentation.Api.Infrastructure.OpenTelemetry;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.ServiceDefaults;
+using Microsoft.AspNetCore.Diagnostics;
 
 try
 {
@@ -45,8 +46,23 @@ try
 	builder.Services.AddElasticDocsApiUsecases(environment);
 	var app = builder.Build();
 
-	if (app.Environment.IsDevelopment())
-		_ = app.UseDeveloperExceptionPage();
+	var logger = app.Services.GetRequiredService<ILogger<Program>>();
+
+	var lifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
+	_ = lifetime.ApplicationStarted.Register(() => logger.LogInformation("Application started"));
+	_ = lifetime.ApplicationStopping.Register(() => logger.LogWarning("Application is shutting down"));
+	_ = lifetime.ApplicationStopped.Register(() => logger.LogWarning("Application has stopped"));
+
+	_ = app.Environment.IsDevelopment()
+		? app.UseDeveloperExceptionPage()
+		: app.UseExceptionHandler(err => err.Run(context =>
+		{
+			var ex = context.Features.Get<IExceptionHandlerFeature>()?.Error;
+			if (ex != null)
+				logger.LogError(ex, "Unhandled exception on {Method} {Path}", context.Request.Method, context.Request.Path);
+			context.Response.StatusCode = 500;
+			return Task.CompletedTask;
+		}));
 
 	var v1 = app.MapGroup("/docs/_api/v1");
 
@@ -59,8 +75,11 @@ try
 }
 catch (Exception ex)
 {
-	Console.WriteLine($"FATAL ERROR during startup: {ex}");
-	Console.WriteLine($"Exception type: {ex.GetType().Name}");
+	Console.WriteLine($"FATAL ERROR: {ex}");
+	Console.WriteLine($"Exception type: {ex.GetType().FullName}");
+	Console.WriteLine($"Message: {ex.Message}");
+	if (ex.InnerException != null)
+		Console.WriteLine($"Inner exception: {ex.InnerException.GetType().FullName}: {ex.InnerException.Message}");
 	Console.WriteLine($"Stack trace: {ex.StackTrace}");
 	throw;
 }
