@@ -96,6 +96,7 @@ toc:
       - file: code.md
       - file: comments.md
       - file: conditionals.md
+      - file: contributors.md
       - file: csv-include.md
       - file: directives.md
       - file: dropdowns.md
