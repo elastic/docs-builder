@@ -17,6 +17,9 @@ public static class GlobalSections
 	public const string Footer = "footer";
 }
 
+/// <summary>Configuration injected into the frontend for build-type-specific behavior (OTEL, HTMX).</summary>
+public record FrontendConfig(string BuildType, string ServiceName, bool TelemetryEnabled, string RootPath);
+
 public record GlobalLayoutViewModel
 {
 	public required string DocsBuilderVersion { get; init; }
@@ -55,6 +58,24 @@ public record GlobalLayoutViewModel
 	public BuildType BuildType { get; init; } = BuildType.Isolated;
 
 	public bool RenderHamburgerIcon { get; init; } = true;
+
+	public FrontendConfig FrontendConfig =>
+		BuildType switch
+		{
+			BuildType.Assembler => new FrontendConfig("assembler", "docs-frontend", true, "/docs"),
+			BuildType.Codex => new FrontendConfig("codex", "codex-frontend", true, ""),
+			_ => new FrontendConfig("isolated", "docs-frontend", false, ""),
+		};
+
+	public string FrontendConfigJson => ToJson(FrontendConfig);
+
+	private static string ToJson(FrontendConfig c) =>
+		$$"""
+		{"buildType":"{{c.BuildType}}","serviceName":"{{c.ServiceName}}","telemetryEnabled":{{(c.TelemetryEnabled ? "true" : "false")}},"rootPath":"{{Escape(c.RootPath)}}"}
+		""";
+
+	private static string Escape(string? s) =>
+		(s ?? "").Replace("\\", "\\\\").Replace("\"", "\\\"");
 
 	public string Static(string path)
 	{

@@ -4,12 +4,13 @@
  *
  * Based on: https://signoz.io/docs/frontend-monitoring/sending-logs-with-opentelemetry/
  */
+import { config } from '../config'
 import { logs, SeverityNumber, type AnyValueMap } from '@opentelemetry/api-logs'
 
 // Lazy-initialize the logger to avoid errors when this module is imported
 // before the OpenTelemetry LoggerProvider is set up
 function getLogger() {
-    return logs.getLogger('docs-frontend-logger')
+    return logs.getLogger(`${config.serviceName}-logger`)
 }
 
 /**

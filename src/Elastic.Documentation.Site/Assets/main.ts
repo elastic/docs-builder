@@ -1,5 +1,6 @@
 import { initApiDocs } from './api-docs'
 import { initAppliesSwitch } from './applies-switch'
+import { config } from './config'
 import { initCopyButton } from './copybutton'
 import { initHighlight } from './hljs'
 import { initImageCarousel } from './image-carousel'
@@ -20,14 +21,16 @@ import { UAParser } from 'ua-parser-js'
 const DOCS_BUILDER_VERSION =
     process.env.DOCS_BUILDER_VERSION?.trim() ?? '0.0.0-dev'
 
-// Initialize OpenTelemetry FIRST, before any other code runs
+// Initialize OpenTelemetry FIRST, before any other code runs (when enabled)
 // This must happen early so all subsequent code is instrumented
-initializeOtel({
-    serviceName: 'docs-frontend',
-    serviceVersion: DOCS_BUILDER_VERSION,
-    baseUrl: '/docs',
-    debug: false,
-})
+if (config.telemetryEnabled) {
+    initializeOtel({
+        serviceName: config.serviceName,
+        serviceVersion: DOCS_BUILDER_VERSION,
+        baseUrl: config.rootPath,
+        debug: false,
+    })
+}
 
 // Dynamically import web components after telemetry is initialized.
 // Parcel code-splits these into separate chunks loaded on demand.
