@@ -57,7 +57,7 @@ public class ElasticsearchClientAccessor : IDisposable
 	{
 		const string prefix = "semantic-docs-";
 		const string suffix = "-latest";
-		if (!indexName.StartsWith(prefix) || !indexName.EndsWith(suffix))
+		if (!indexName.StartsWith(prefix, StringComparison.Ordinal) || !indexName.EndsWith(suffix, StringComparison.Ordinal))
 			return null;
 
 		var ns = indexName[prefix.Length..^suffix.Length];
