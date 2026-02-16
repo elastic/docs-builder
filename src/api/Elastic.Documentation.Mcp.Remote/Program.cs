@@ -40,10 +40,8 @@ try
 
 	_ = builder.Services.ConfigureHttpJsonOptions(options =>
 	{
-		if (McpJsonUtilities.DefaultOptions.TypeInfoResolver is not null)
-			options.SerializerOptions.TypeInfoResolverChain.Insert(0, McpJsonUtilities.DefaultOptions.TypeInfoResolver);
-		else
-			logger.LogWarning("McpJsonUtilities.DefaultOptions.TypeInfoResolver is null");
+		if (McpJsonUtilities.DefaultOptions.TypeInfoResolver is { } resolver)
+			options.SerializerOptions.TypeInfoResolverChain.Insert(0, resolver);
 	});
 
 	var app = builder.Build();
