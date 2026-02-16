@@ -45,6 +45,13 @@ try
 	builder.Services.AddElasticDocsApiUsecases(environment);
 	var app = builder.Build();
 
+	var logger = app.Services.GetRequiredService<ILogger<Program>>();
+
+	var lifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
+	_ = lifetime.ApplicationStarted.Register(() => logger.LogInformation("Application started"));
+	_ = lifetime.ApplicationStopping.Register(() => logger.LogWarning("Application is shutting down"));
+	_ = lifetime.ApplicationStopped.Register(() => logger.LogWarning("Application has stopped"));
+
 	if (app.Environment.IsDevelopment())
 		_ = app.UseDeveloperExceptionPage();
 
@@ -59,8 +66,11 @@ try
 }
 catch (Exception ex)
 {
-	Console.WriteLine($"FATAL ERROR during startup: {ex}");
-	Console.WriteLine($"Exception type: {ex.GetType().Name}");
+	Console.WriteLine($"FATAL ERROR: {ex}");
+	Console.WriteLine($"Exception type: {ex.GetType().FullName}");
+	Console.WriteLine($"Message: {ex.Message}");
+	if (ex.InnerException != null)
+		Console.WriteLine($"Inner exception: {ex.InnerException.GetType().FullName}: {ex.InnerException.Message}");
 	Console.WriteLine($"Stack trace: {ex.StackTrace}");
 	throw;
 }

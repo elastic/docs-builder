@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Text.Json;
 using Elastic.Documentation.Api.Core.Search;
 using Elastic.Documentation.Mcp.Remote.Responses;
+using Microsoft.Extensions.Logging;
 using ModelContextProtocol.Server;
 
 namespace Elastic.Documentation.Mcp.Remote.Tools;
@@ -14,7 +15,7 @@ namespace Elastic.Documentation.Mcp.Remote.Tools;
 /// MCP tools for semantic search operations on Elastic documentation.
 /// </summary>
 [McpServerToolType]
-public class SearchTools(IFullSearchGateway fullSearchGateway)
+public class SearchTools(IFullSearchGateway fullSearchGateway, ILogger<SearchTools> logger)
 {
 	/// <summary>
 	/// Performs semantic search across all Elastic documentation.
@@ -70,6 +71,7 @@ public class SearchTools(IFullSearchGateway fullSearchGateway)
 		}
 		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
 		{
+			logger.LogError(ex, "SemanticSearch failed for query '{Query}'", query);
 			return JsonSerializer.Serialize(new ErrorResponse(ex.Message), McpJsonContext.Default.ErrorResponse);
 		}
 	}
@@ -121,6 +123,7 @@ public class SearchTools(IFullSearchGateway fullSearchGateway)
 		}
 		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
 		{
+			logger.LogError(ex, "FindRelatedDocs failed for topic '{Topic}'", topic);
 			return JsonSerializer.Serialize(new ErrorResponse(ex.Message), McpJsonContext.Default.ErrorResponse);
 		}
 	}
