@@ -9,6 +9,7 @@ using Elastic.Documentation.Search;
 using Elastic.Documentation.ServiceDefaults;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using ModelContextProtocol;
 
 try
 {
@@ -36,6 +37,11 @@ try
 		.WithTools<SearchTools>()
 		.WithTools<CoherenceTools>()
 		.WithTools<DocumentTools>();
+
+	_ = builder.Services.ConfigureHttpJsonOptions(options =>
+	{
+		options.SerializerOptions.TypeInfoResolverChain.Insert(0, McpJsonUtilities.DefaultOptions.TypeInfoResolver!);
+	});
 
 	var app = builder.Build();
 
