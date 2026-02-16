@@ -37,7 +37,6 @@ app.Add<ServeCommand>("serve");
 app.Add<IndexCommand>("index");
 app.Add<FormatCommand>("format");
 app.Add<ChangelogCommand>("changelog");
-app.Add<McpCommand>("mcp");
 
 //assembler commands
 
