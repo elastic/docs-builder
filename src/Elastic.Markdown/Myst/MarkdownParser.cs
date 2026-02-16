@@ -16,6 +16,7 @@ using Elastic.Markdown.Myst.InlineParsers.Substitution;
 using Elastic.Markdown.Myst.InlineParsers.SubstitutionInlineCode;
 using Elastic.Markdown.Myst.Linters;
 using Elastic.Markdown.Myst.Renderers;
+using Elastic.Documentation.Site;
 using Elastic.Markdown.Myst.Roles.AppliesTo;
 using Elastic.Markdown.Myst.Roles.Icons;
 using Elastic.Markdown.Myst.Roles.Kbd;
@@ -94,8 +95,7 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 		// Preprocess substitutions in link patterns before Markdig parsing
 		var preprocessedMarkdown = PreprocessLinkSubstitutions(markdown, context);
 
-		var markdownDocument = Markdig.Markdown.Parse(preprocessedMarkdown, pipeline, context);
-		return markdownDocument;
+		return Markdig.Markdown.Parse(preprocessedMarkdown, pipeline, context);
 	}
 
 	public static Task<MarkdownDocument> ParseSnippetAsync(BuildContext build, IParserResolvers resolvers, IFileInfo path, IFileInfo parentPath,
@@ -136,9 +136,7 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 		// Preprocess substitutions in link patterns before Markdig parsing
 		var preprocessedMarkdown = PreprocessLinkSubstitutions(inputMarkdown, (ParserContext)context);
 
-		var markdownDocument = Markdig.Markdown.Parse(preprocessedMarkdown, pipeline, context);
-
-		return markdownDocument;
+		return Markdig.Markdown.Parse(preprocessedMarkdown, pipeline, context);
 	}
 
 	[field: AllowNull, MaybeNull]
@@ -304,4 +302,5 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 
 		return false;
 	}
+
 }

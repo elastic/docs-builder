@@ -10,9 +10,12 @@ namespace Elastic.Codex.Page;
 /// <summary>
 /// Page view factory for codex builds. Uses the codex-specific layout with _CodexHeader and _CodexFooter.
 /// </summary>
-public class CodexPageViewFactory : IPageViewFactory
+public class CodexPageViewFactory(string siteHeaderTitle) : IPageViewFactory
 {
 	/// <inheritdoc />
-	public RazorSlice Create(IndexViewModel viewModel) =>
-		Index.Create(viewModel);
+	public RazorSlice Create(IndexViewModel viewModel)
+	{
+		viewModel.SiteHeaderTitle = siteHeaderTitle;
+		return Index.Create(viewModel);
+	}
 }

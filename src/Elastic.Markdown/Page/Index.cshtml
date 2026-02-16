@@ -2,6 +2,7 @@
 @using Elastic.Documentation
 @using Elastic.Documentation.Configuration
 @using Elastic.Documentation.Extensions
+@using Elastic.Documentation.Site
 @using Elastic.Markdown
 @using Elastic.Markdown.Myst.Components
 @using Markdig
@@ -9,6 +10,14 @@
 @inherits RazorSliceHttpResult<Elastic.Markdown.Page.IndexViewModel>
 @implements IUsesLayout<Elastic.Markdown._Layout, MarkdownLayoutViewModel>
 @functions {
+	static string GetRootPath(string? siteRootPath, string? urlPathPrefix)
+	{
+		if (!string.IsNullOrEmpty(siteRootPath))
+			return siteRootPath;
+		var prefix = urlPathPrefix?.Trim('/') ?? "";
+		return string.IsNullOrEmpty(prefix) ? "/" : $"/{prefix}/";
+	}
+
 	public MarkdownLayoutViewModel LayoutModel => new()
 	{
 		DocsBuilderVersion = ShortId.Create(BuildContext.Version),
@@ -39,6 +48,9 @@
 		StaticFileContentHashProvider = Model.StaticFileContentHashProvider,
 		ReportIssueUrl = Model.ReportIssueUrl,
 		Breadcrumbs = Model.Breadcrumbs,
+		Htmx = Model.BuildType == BuildType.Codex
+			? (IHtmxAttributeProvider)new CodexHtmxAttributeProvider(GetRootPath(Model.SiteRootPath, Model.UrlPathPrefix))
+			: new DefaultHtmxAttributeProvider(GetRootPath(Model.SiteRootPath, Model.UrlPathPrefix)),
 		CurrentVersion = Model.CurrentDocument.YamlFrontMatter?.Layout == MarkdownPageLayout.LandingPage ? Model.VersionsConfig.VersioningSystems[0].Current : Model.CurrentVersion,
 		AllVersionsUrl = Model.AllVersionsUrl,
 		VersioningSystem = Model.VersioningSystem,

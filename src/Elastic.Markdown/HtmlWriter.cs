@@ -147,6 +147,7 @@ public class HtmlWriter(
 			Breadcrumbs = breadcrumbs,
 			NavigationHtml = navigationHtmlRenderResult.Html,
 			UrlPathPrefix = markdown.UrlPathPrefix,
+			SiteRootPath = DocumentationSet.Context.SiteRootPath,
 			AppliesTo = markdown.YamlFrontMatter?.AppliesTo,
 			GithubEditUrl = editUrl,
 			MarkdownUrl = current.Url.TrimEnd('/') + ".md",

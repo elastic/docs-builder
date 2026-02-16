@@ -7,6 +7,7 @@ using System.IO.Abstractions;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using Elastic.Documentation;
+using Elastic.Documentation.Site;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Links;
 using Elastic.Markdown.Diagnostics;
@@ -56,6 +57,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 		var context = processor.GetContext();
 		link.SetData(nameof(context.CurrentUrlPath), context.CurrentUrlPath);
+		link.SetData(nameof(IHtmxAttributeProvider), context.Htmx);
 
 		if (IsInCommentBlock(link) || context.SkipValidation)
 			return match;
