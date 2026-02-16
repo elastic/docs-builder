@@ -2,11 +2,12 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Api.Infrastructure.OpenTelemetry;
 using Elastic.Documentation.Mcp.Remote.Gateways;
 using Elastic.Documentation.Mcp.Remote.Tools;
 using Elastic.Documentation.Search;
-using Elastic.Documentation.Search.Common;
 using Elastic.Documentation.ServiceDefaults;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
 try
@@ -14,6 +15,13 @@ try
 	var builder = WebApplication.CreateSlimBuilder(args);
 	_ = builder.AddDocumentationServiceDefaults(ref args);
 	_ = builder.AddDefaultHealthChecks();
+	_ = builder.AddDocsApiOpenTelemetry();
+
+	// Configure Kestrel to listen on port 8080 (standard container port)
+	_ = builder.WebHost.ConfigureKestrel(serverOptions =>
+	{
+		serverOptions.ListenAnyIP(8080);
+	});
 
 	var environment = Environment.GetEnvironmentVariable("ENVIRONMENT");
 	Console.WriteLine($"Docs Environment: {environment}");
@@ -40,8 +48,16 @@ try
 	_ = lifetime.ApplicationStopping.Register(() => logger.LogWarning("Application is shutting down"));
 	_ = lifetime.ApplicationStopped.Register(() => logger.LogWarning("Application has stopped"));
 
-	if (app.Environment.IsDevelopment())
-		_ = app.UseDeveloperExceptionPage();
+	_ = app.Environment.IsDevelopment()
+		? app.UseDeveloperExceptionPage()
+		: app.UseExceptionHandler(err => err.Run(context =>
+		{
+			var ex = context.Features.Get<IExceptionHandlerFeature>()?.Error;
+			if (ex != null)
+				logger.LogError(ex, "Unhandled exception on {Method} {Path}", context.Request.Method, context.Request.Path);
+			context.Response.StatusCode = 500;
+			return Task.CompletedTask;
+		}));
 
 	var mcp = app.MapGroup("/docs/_mcp");
 	_ = mcp.MapHealthChecks("/health");
