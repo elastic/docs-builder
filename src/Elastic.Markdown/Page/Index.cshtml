@@ -48,9 +48,7 @@
 		StaticFileContentHashProvider = Model.StaticFileContentHashProvider,
 		ReportIssueUrl = Model.ReportIssueUrl,
 		Breadcrumbs = Model.Breadcrumbs,
-		Htmx = Model.BuildType == BuildType.Codex
-			? (IHtmxAttributeProvider)new CodexHtmxAttributeProvider(GetRootPath(Model.SiteRootPath, Model.UrlPathPrefix))
-			: new DefaultHtmxAttributeProvider(GetRootPath(Model.SiteRootPath, Model.UrlPathPrefix)),
+		Htmx = new DefaultHtmxAttributeProvider(GetRootPath(Model.SiteRootPath, Model.UrlPathPrefix)),
 		CurrentVersion = Model.CurrentDocument.YamlFrontMatter?.Layout == MarkdownPageLayout.LandingPage ? Model.VersionsConfig.VersioningSystems[0].Current : Model.CurrentVersion,
 		AllVersionsUrl = Model.AllVersionsUrl,
 		VersioningSystem = Model.VersioningSystem,

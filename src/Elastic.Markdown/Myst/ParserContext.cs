@@ -153,9 +153,7 @@ public class ParserContext : MarkdownParserContext, IParserResolvers
 		ContextSubstitutions = contextSubs;
 
 		var rootPath = Build.SiteRootPath ?? GetDefaultRootPath(Build.UrlPathPrefix);
-		Htmx = Build.BuildType == BuildType.Codex
-			? new CodexHtmxAttributeProvider(rootPath)
-			: new DefaultHtmxAttributeProvider(rootPath);
+		Htmx = new DefaultHtmxAttributeProvider(rootPath);
 	}
 
 	private static string GetDefaultRootPath(string? urlPathPrefix)

@@ -58,9 +58,6 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNaviga
 	private NavigationViewModel CreateNavigationModel(IRootNavigationItem<INavigationModel, INavigationItem> navigation)
 	{
 		var rootPath = context.SiteRootPath ?? GetDefaultRootPath(context.UrlPathPrefix);
-		var htmx = context.BuildType == BuildType.Codex
-			? (IHtmxAttributeProvider)new CodexHtmxAttributeProvider(rootPath)
-			: new DefaultHtmxAttributeProvider(rootPath);
 		return new()
 		{
 			Title = navigation.NavigationTitle,
@@ -70,7 +67,7 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNaviga
 			IsUsingNavigationDropdown = context.Configuration.Features.PrimaryNavEnabled || navigation.IsUsingNavigationDropdown,
 			IsGlobalAssemblyBuild = false,
 			TopLevelItems = navigation.NavigationItems.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>().ToList(),
-			Htmx = htmx
+			Htmx = new DefaultHtmxAttributeProvider(rootPath)
 		};
 	}
 
