@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System;
+using System.Text.Json;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
@@ -67,15 +68,8 @@ public record GlobalLayoutViewModel
 			_ => new FrontendConfig("isolated", "docs-frontend", false, GetStaticPathPrefix()),
 		};
 
-	public string FrontendConfigJson => ToJson(FrontendConfig);
-
-	private static string ToJson(FrontendConfig c) =>
-		$$"""
-		{"buildType":"{{c.BuildType}}","serviceName":"{{c.ServiceName}}","telemetryEnabled":{{(c.TelemetryEnabled ? "true" : "false")}},"rootPath":"{{Escape(c.RootPath)}}"}
-		""";
-
-	private static string Escape(string? s) =>
-		(s ?? "").Replace("\\", "\\\\").Replace("\"", "\\\"");
+	public string FrontendConfigJson =>
+		JsonSerializer.Serialize(FrontendConfig, FrontendConfigJsonContext.Default.FrontendConfig);
 
 	public string Static(string path)
 	{
