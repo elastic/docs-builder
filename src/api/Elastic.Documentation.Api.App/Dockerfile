@@ -35,6 +35,7 @@ RUN dotnet publish src/api/Elastic.Documentation.Api.App -r linux-x64 -c Release
 
 # Runtime stage
 FROM public.ecr.aws/amazonlinux/amazonlinux:2023-minimal AS runtime
+RUN microdnf install -y curl && microdnf clean all
 WORKDIR /app
 COPY --from=base /app/.artifacts/publish/Elastic.Documentation.Api.App/release_linux-x64/ /app/
 RUN chmod +x /app/docs-builder-api
