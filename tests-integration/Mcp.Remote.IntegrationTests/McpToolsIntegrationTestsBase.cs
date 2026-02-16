@@ -37,7 +37,7 @@ public abstract class McpToolsIntegrationTestsBase(ITestOutputHelper output)
 			productsConfig,
 			NullLogger<FullSearchGateway>.Instance);
 
-		var searchTools = new SearchTools(fullSearchGateway);
+		var searchTools = new SearchTools(fullSearchGateway, NullLogger<SearchTools>.Instance);
 		return (searchTools, clientAccessor);
 	}
 
@@ -54,7 +54,7 @@ public abstract class McpToolsIntegrationTestsBase(ITestOutputHelper output)
 			clientAccessor,
 			NullLogger<DocumentGateway>.Instance);
 
-		var documentTools = new DocumentTools(documentGateway);
+		var documentTools = new DocumentTools(documentGateway, NullLogger<DocumentTools>.Instance);
 		return (documentTools, clientAccessor);
 	}
 
@@ -73,7 +73,7 @@ public abstract class McpToolsIntegrationTestsBase(ITestOutputHelper output)
 			productsConfig,
 			NullLogger<FullSearchGateway>.Instance);
 
-		var coherenceTools = new CoherenceTools(fullSearchGateway);
+		var coherenceTools = new CoherenceTools(fullSearchGateway, NullLogger<CoherenceTools>.Instance);
 		return (coherenceTools, clientAccessor);
 	}
 

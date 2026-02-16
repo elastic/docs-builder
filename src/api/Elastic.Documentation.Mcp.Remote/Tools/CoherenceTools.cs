@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Text.Json;
 using Elastic.Documentation.Api.Core.Search;
 using Elastic.Documentation.Mcp.Remote.Responses;
+using Microsoft.Extensions.Logging;
 using ModelContextProtocol.Server;
 
 namespace Elastic.Documentation.Mcp.Remote.Tools;
@@ -14,7 +15,7 @@ namespace Elastic.Documentation.Mcp.Remote.Tools;
 /// MCP tools for checking documentation coherence and finding inconsistencies.
 /// </summary>
 [McpServerToolType]
-public class CoherenceTools(IFullSearchGateway fullSearchGateway)
+public class CoherenceTools(IFullSearchGateway fullSearchGateway, ILogger<CoherenceTools> logger)
 {
 	/// <summary>
 	/// Checks documentation coherence for a given topic.
@@ -85,6 +86,7 @@ public class CoherenceTools(IFullSearchGateway fullSearchGateway)
 		}
 		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
 		{
+			logger.LogError(ex, "CheckCoherence failed for topic '{Topic}'", topic);
 			return JsonSerializer.Serialize(new ErrorResponse(ex.Message), McpJsonContext.Default.ErrorResponse);
 		}
 	}
@@ -177,6 +179,7 @@ public class CoherenceTools(IFullSearchGateway fullSearchGateway)
 		}
 		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
 		{
+			logger.LogError(ex, "FindInconsistencies failed for topic '{Topic}' with focus area '{FocusArea}'", topic, focusArea);
 			return JsonSerializer.Serialize(new ErrorResponse(ex.Message), McpJsonContext.Default.ErrorResponse);
 		}
 	}
