@@ -62,9 +62,9 @@ public record GlobalLayoutViewModel
 	public FrontendConfig FrontendConfig =>
 		BuildType switch
 		{
-			BuildType.Assembler => new FrontendConfig("assembler", "docs-frontend", true, "/docs"),
-			BuildType.Codex => new FrontendConfig("codex", "codex-frontend", true, ""),
-			_ => new FrontendConfig("isolated", "docs-frontend", false, ""),
+			BuildType.Assembler => new FrontendConfig("assembler", "docs-frontend", true, GetStaticPathPrefix()),
+			BuildType.Codex => new FrontendConfig("codex", "codex-frontend", true, GetStaticPathPrefix()),
+			_ => new FrontendConfig("isolated", "docs-frontend", false, GetStaticPathPrefix()),
 		};
 
 	public string FrontendConfigJson => ToJson(FrontendConfig);
