@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using Elastic.Codex.Navigation;
+using Elastic.Codex.Page;
 using Elastic.Codex.Sourcing;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
@@ -188,6 +189,7 @@ public class CodexBuildService(
 				null, // Use default navigation HTML writer (doc set's navigation)
 				ExportOptions.Default,
 				sharedExporters,
+				pageViewFactory: new CodexPageViewFactory(),
 				ctx);
 		}
 		catch (Exception ex)

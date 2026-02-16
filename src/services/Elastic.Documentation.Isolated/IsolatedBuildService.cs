@@ -15,6 +15,7 @@ using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
+using Elastic.Markdown.Page;
 using Microsoft.Extensions.Logging;
 using static System.StringComparison;
 
@@ -170,6 +171,7 @@ public class IsolatedBuildService(
 		INavigationHtmlWriter? navigationHtmlWriter = null,
 		IReadOnlySet<Exporter>? exporters = null,
 		IMarkdownExporter[]? externalExporters = null,
+		IPageViewFactory? pageViewFactory = null,
 		Cancel ctx = default)
 	{
 		var context = documentationSet.Context;
@@ -201,7 +203,8 @@ public class IsolatedBuildService(
 			effectiveNavigation,
 			navigationHtmlWriter,
 			null,
-			allExporters);
+			allExporters,
+			pageViewFactory: pageViewFactory);
 
 		_ = await generator.GenerateAll(ctx);
 
