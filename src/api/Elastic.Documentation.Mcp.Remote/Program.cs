@@ -87,10 +87,13 @@ try
 
 	_ = app.UseMiddleware<SseKeepAliveMiddleware>();
 
-	var mcp = app.MapGroup("/docs/_mcp");
+	const string mcpPrefix = "/docs/_mcp";
+
+	var mcp = app.MapGroup(mcpPrefix);
 	_ = mcp.MapHealthChecks("/health");
 	_ = mcp.MapHealthChecks("/alive", new HealthCheckOptions { Predicate = r => r.Tags.Contains("live") });
-	_ = mcp.MapMcp("/");
+	_ = mcp.MapMcp("");
+	_ = mcp.MapGet("/", () => Results.Redirect(mcpPrefix, permanent: true));
 
 	Console.WriteLine("MCP server startup completed successfully");
 	app.Run();
