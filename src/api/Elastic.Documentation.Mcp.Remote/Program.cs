@@ -7,6 +7,7 @@ using Elastic.Documentation.Assembler.Links;
 using Elastic.Documentation.Assembler.Mcp;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links.InboundLinks;
+using Elastic.Documentation.Mcp.Remote;
 using Elastic.Documentation.Mcp.Remote.Gateways;
 using Elastic.Documentation.Mcp.Remote.Tools;
 using Elastic.Documentation.Search;
@@ -83,6 +84,8 @@ try
 			context.Response.StatusCode = 500;
 			return Task.CompletedTask;
 		}));
+
+	_ = app.UseMiddleware<SseKeepAliveMiddleware>();
 
 	var mcp = app.MapGroup("/docs/_mcp");
 	_ = mcp.MapHealthChecks("/health");
