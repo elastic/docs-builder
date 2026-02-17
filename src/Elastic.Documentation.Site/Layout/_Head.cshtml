@@ -51,7 +51,7 @@
 	}
 	@await RenderPartialAsync(_Favicon.Create())
 	<meta name="robots" content="@(Model.AllowIndexing ? "index, follow" : "noindex, nofollow")">
-	<meta name="htmx-config" content='{"selfRequestsOnly": false}'>
+	<meta name="htmx-config" content='{"selfRequestsOnly": true}'>
 	<meta property="og:type" content="website"/>
 	<meta property="og:title" content="@Model.Title"/>
 	<meta property="og:description" content="@Model.Description"/>
