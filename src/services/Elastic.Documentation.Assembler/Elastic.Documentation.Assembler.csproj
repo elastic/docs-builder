@@ -12,6 +12,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Mcp\Resources\Templates\**\*" />
+    <EmbeddedResource Include="Mcp\Resources\Guidelines\**\*" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="$(SolutionRoot)\src\Elastic.Documentation\Elastic.Documentation.csproj" />
     <ProjectReference Include="$(SolutionRoot)\src\Elastic.Documentation.Configuration\Elastic.Documentation.Configuration.csproj" />
     <ProjectReference Include="$(SolutionRoot)\src\Elastic.Documentation.ServiceDefaults\Elastic.Documentation.ServiceDefaults.csproj" />

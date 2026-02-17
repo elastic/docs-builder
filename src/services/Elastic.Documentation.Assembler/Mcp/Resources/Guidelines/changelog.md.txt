@@ -1,0 +1,83 @@
+# Changelog content type guidelines
+
+Source: https://www.elastic.co/docs/contribute-docs/content-types/changelogs
+
+## What are changelogs
+
+Changelogs describe product changes, including new features, enhancements, bug fixes, breaking changes, deprecations, and more. They are the building blocks of release notes, which help users understand what changed, why it matters, and what they need to do about it.
+
+Changelogs are YAML files that follow a common schema. Each file describes a single change.
+
+## Required fields checklist
+
+- [ ] **`title`:** Short, user-facing headline (max 80 characters). Start with action verbs ("Fixes...", "Adds...", "Improves...", "Removes..."). Focus on user impact, not implementation. Use present tense.
+- [ ] **`type`:** One of: `feature`, `enhancement`, `bug-fix`, `breaking-change`, `deprecation`, `known-issue`, `docs`, `regression`, `security`, `other`.
+- [ ] **`products`:** Array of affected products with `product` ID (from config/products.yml), optional `target` version/date, and optional `lifecycle` (preview, beta, ga).
+
+## Optional fields checklist
+
+- [ ] **`description`:** Additional context (max 600 characters). Include when title alone is not self-explanatory.
+- [ ] **`pr`:** Pull request number or URL.
+- [ ] **`issues`:** Array of related issue URLs.
+- [ ] **`areas`:** Array of affected components, features, or product areas.
+- [ ] **`highlight`:** Boolean for release highlights.
+- [ ] **`feature-id`:** Unique feature flag identifier.
+
+## Type-specific fields
+
+For **breaking changes**:
+
+- [ ] **`subtype`:** One of: `api`, `behavioral`, `configuration`, `dependency`, `subscription`, `plugin`, `security`, `other`.
+- [ ] **`impact`:** (Required) How the user's environment is affected.
+- [ ] **`action`:** (Required) What users must do to mitigate the change.
+
+For **deprecations** and **known issues**:
+
+- [ ] **`impact`:** (Recommended) How the user's environment is affected.
+- [ ] **`action`:** (Recommended) What users must do (workaround or migration steps).
+
+## Type selection guide
+
+- **`feature`:** New user-facing functionality or significant capabilities. Focus on what users can now do.
+- **`enhancement`:** Minor improvements that don't break or fix existing behavior. Focus on how existing functionality is improved.
+- **`bug-fix`:** Resolution of a bug from previous releases. Focus on what was wrong and what is now correct.
+- **`breaking-change`:** Intentional changes that can break previously working functionality. Always include impact and action.
+- **`deprecation`:** Functionality to be removed in a later release. Focus on migration guidance.
+- **`known-issue`:** Problems not fixed in the release, actively being worked on. Include affected versions.
+- **`docs`:** Major documentation changes or reorganizations.
+- **`regression`:** Unintended changes where functionality no longer works correctly. Unlike breaking changes, these are accidental.
+- **`security`:** Security advisories about vulnerabilities. Follow security team guidelines.
+- **`other`:** Use sparingly for anything that doesn't fit other categories.
+
+## Best practices
+
+- Test descriptions: have someone unfamiliar with the change read the entry.
+- Link to related content: include documentation and issue links when helpful.
+- Use consistent language: follow product documentation terminology.
+- Be specific: avoid vague descriptions like "Bug fixes and performance improvements".
+- Keep it concise: release notes should be scannable.
+- Consider the audience: developers, admins, end users, and support teams.
+- Focus on user impact, not implementation details.
+
+## Title best practices
+
+Good examples:
+
+- "Removes deprecated `_all` field from search API"
+- "Improves query performance for date range filters"
+- "Fixes memory leak in long-running queries"
+- "Adds support for custom authentication providers"
+
+Poor examples:
+
+- "Performance improvements" (too vague).
+- "Fixed bug #12345" (internal reference, no user impact).
+- "Refactored internal query processing" (implementation-focused).
+
+## Anti-patterns to avoid
+
+- Including unnecessary technical details about internal architecture.
+- Being too vague ("Bug fixes and performance improvements").
+- Using internal references without summarizing the change.
+- Focusing on implementation rather than user impact.
+- Repeating the title verbatim in the description.

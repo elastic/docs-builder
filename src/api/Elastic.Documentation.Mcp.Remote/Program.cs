@@ -3,12 +3,20 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Api.Infrastructure.OpenTelemetry;
+using Elastic.Documentation.Assembler.Links;
+using Elastic.Documentation.Assembler.Mcp;
+using Elastic.Documentation.LinkIndex;
+using Elastic.Documentation.Links.InboundLinks;
 using Elastic.Documentation.Mcp.Remote.Gateways;
 using Elastic.Documentation.Mcp.Remote.Tools;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.ServiceDefaults;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using ModelContextProtocol;
 
 try
@@ -31,6 +39,12 @@ try
 
 	_ = builder.Services.AddScoped<IDocumentGateway, DocumentGateway>();
 
+	_ = builder.Services.AddSingleton<ILinkIndexReader>(_ => Aws3LinkIndexReader.CreateAnonymous());
+	_ = builder.Services.AddSingleton<LinksIndexCrossLinkFetcher>();
+	_ = builder.Services.AddSingleton<ILinkUtilService, LinkUtilService>();
+
+	_ = builder.Services.AddSingleton<ContentTypeProvider>();
+
 	// CreateSlimBuilder disables reflection-based JSON serialization.
 	// The MCP SDK's legacy SSE handler uses Results.BadRequest(string) which needs
 	// ASP.NET Core's HTTP JSON options to have type metadata for System.String.
@@ -44,7 +58,9 @@ try
 		.WithHttpTransport()
 		.WithTools<SearchTools>()
 		.WithTools<CoherenceTools>()
-		.WithTools<DocumentTools>();
+		.WithTools<DocumentTools>()
+		.WithTools<LinkTools>()
+		.WithTools<ContentTypeTools>();
 
 	var app = builder.Build();
 
