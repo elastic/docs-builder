@@ -68,6 +68,12 @@ public class IndexViewModel
 	public string? GitRepository { get; init; }
 	public string? GitHubDocsUrl { get; init; }
 	public string? GitHubRef { get; init; }
+
+	/// <summary>Codex site header title. When set (codex builds), overrides DocSetName in the header.</summary>
+	public string? SiteHeaderTitle { get; set; }
+
+	/// <summary>Pre-computed site root path for HTMX. When set (codex builds), used as data-root-path.</summary>
+	public string? SiteRootPath { get; set; }
 }
 
 public class VersionDropDownItemViewModel

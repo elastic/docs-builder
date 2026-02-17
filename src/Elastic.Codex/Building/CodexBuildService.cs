@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using Elastic.Codex.Navigation;
+using Elastic.Codex.Page;
 using Elastic.Codex.Sourcing;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
@@ -137,6 +138,9 @@ public class CodexBuildService(
 				GitHubRef = Environment.GetEnvironmentVariable("GITHUB_REF")
 			};
 
+			// Pre-compute codex site root for HTMX (no URL parsing in providers)
+			var siteRootPath = string.IsNullOrEmpty(sitePrefix) ? "/" : $"/{sitePrefix.Trim('/')}/";
+
 			// Create build context for this documentation set
 			var buildContext = new BuildContext(
 				context.Collector,
@@ -149,6 +153,7 @@ public class CodexBuildService(
 				git)
 			{
 				UrlPathPrefix = pathPrefix,
+				SiteRootPath = siteRootPath,
 				Force = true,
 				AllowIndexing = false,
 				BuildType = BuildType.Codex
@@ -188,6 +193,7 @@ public class CodexBuildService(
 				null, // Use default navigation HTML writer (doc set's navigation)
 				ExportOptions.Default,
 				sharedExporters,
+				pageViewFactory: new CodexPageViewFactory(context.Configuration.Title),
 				ctx);
 		}
 		catch (Exception ex)
@@ -206,11 +212,17 @@ public class CodexBuildService(
 	{
 		_logger.LogInformation("Generating codex pages");
 
+		// Pre-compute codex site root for HTMX
+		var siteRootPath = string.IsNullOrEmpty(context.Configuration.SitePrefix)
+			? "/"
+			: $"/{context.Configuration.SitePrefix.Trim('/')}/";
+
 		// Create a codex-specific build context using the doc set's context as a base
 		// but with codex-specific URL prefix
 		var codexBuildContext = docSetBuildContext with
 		{
 			UrlPathPrefix = context.Configuration.SitePrefix,
+			SiteRootPath = siteRootPath,
 			Force = true,
 			AllowIndexing = false
 		};

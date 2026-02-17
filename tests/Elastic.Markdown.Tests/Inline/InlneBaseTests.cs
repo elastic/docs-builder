@@ -113,10 +113,7 @@ $"""
 
 		Collector = new TestDiagnosticsCollector(output);
 		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem);
-		var context = new BuildContext(Collector, FileSystem, configurationContext)
-		{
-			UrlPathPrefix = "/docs"
-		};
+		var context = CreateBuildContext(Collector, FileSystem, configurationContext);
 		var linkResolver = new TestCrossLinkResolver();
 		Set = new DocumentationSet(context, logger, linkResolver);
 		File = Set.TryFindDocument(FileSystem.FileInfo.New("docs/index.md")) as MarkdownFile ?? throw new NullReferenceException();
@@ -125,6 +122,16 @@ $"""
 	}
 
 	protected virtual void AddToFileSystem(MockFileSystem fileSystem) { }
+
+	/// <summary>Override to customize BuildContext (e.g. for codex tests).</summary>
+	protected virtual BuildContext CreateBuildContext(
+		TestDiagnosticsCollector collector,
+		MockFileSystem fileSystem,
+		IConfigurationContext configurationContext) =>
+		new(collector, fileSystem, configurationContext)
+		{
+			UrlPathPrefix = "/docs"
+		};
 
 	public virtual async ValueTask InitializeAsync()
 	{

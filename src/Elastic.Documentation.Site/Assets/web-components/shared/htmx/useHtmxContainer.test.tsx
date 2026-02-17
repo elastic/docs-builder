@@ -3,6 +3,16 @@ import { render, screen } from '@testing-library/react'
 import htmx from 'htmx.org'
 import { useRef } from 'react'
 
+// Mock config to use assembler build type (tests were written for assembler behavior)
+jest.mock('../../../config', () => ({
+    config: {
+        buildType: 'assembler',
+        serviceName: 'docs-frontend',
+        telemetryEnabled: true,
+        rootPath: '/docs',
+    },
+}))
+
 // Mock htmx - it uses XPath which jsdom doesn't support properly
 jest.mock('htmx.org', () => ({
     on: jest.fn(),

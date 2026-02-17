@@ -1,6 +1,7 @@
 redirects:
   'migration/freeze/gh-action.md' : 'index.md'
   'migration/freeze/index.md' : 'index.md'
+  'cli/mcp.md': 'index.md'
   'testing/redirects/4th-page.md': 'testing/redirects/5th-page.md'
   'testing/redirects/9th-page.md': '!testing/redirects/5th-page.md'
   'testing/redirects/6th-page.md':

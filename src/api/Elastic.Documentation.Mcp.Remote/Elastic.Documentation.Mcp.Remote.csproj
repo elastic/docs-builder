@@ -22,7 +22,9 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Elastic.Documentation.ServiceDefaults\Elastic.Documentation.ServiceDefaults.csproj" />
     <ProjectReference Include="..\..\services\Elastic.Documentation.Search\Elastic.Documentation.Search.csproj" />
+    <ProjectReference Include="..\..\services\Elastic.Documentation.Assembler\Elastic.Documentation.Assembler.csproj" />
     <ProjectReference Include="..\Elastic.Documentation.Api.Core\Elastic.Documentation.Api.Core.csproj"/>
+    <ProjectReference Include="..\Elastic.Documentation.Api.Infrastructure\Elastic.Documentation.Api.Infrastructure.csproj"/>
   </ItemGroup>
 
   <ItemGroup>
