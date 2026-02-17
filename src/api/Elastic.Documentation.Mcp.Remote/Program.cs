@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Api.Infrastructure.OpenTelemetry;
+using Elastic.Documentation.Mcp.Remote;
 using Elastic.Documentation.Mcp.Remote.Gateways;
 using Elastic.Documentation.Mcp.Remote.Tools;
 using Elastic.Documentation.Search;
@@ -67,6 +68,8 @@ try
 			context.Response.StatusCode = 500;
 			return Task.CompletedTask;
 		}));
+
+	_ = app.UseMiddleware<SseKeepAliveMiddleware>();
 
 	var mcp = app.MapGroup("/docs/_mcp");
 	_ = mcp.MapHealthChecks("/health");
