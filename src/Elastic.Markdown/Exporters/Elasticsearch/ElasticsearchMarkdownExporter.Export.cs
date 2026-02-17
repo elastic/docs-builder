@@ -27,8 +27,8 @@ public partial class ElasticsearchMarkdownExporter
 	/// </summary>
 	private void AssignDocumentMetadata(DocumentationDocument doc)
 	{
-		var semanticHash = _semanticChannel.Channel.ChannelHash;
-		var lexicalHash = _lexicalChannel.Channel.ChannelHash;
+		var semanticHash = _semanticTypeContext?.Hash ?? string.Empty;
+		var lexicalHash = _lexicalTypeContext.Hash;
 		var hash = HashedBulkUpdate.CreateHash(semanticHash, lexicalHash,
 			doc.Url, doc.Type, doc.StrippedBody ?? string.Empty, string.Join(",", doc.Headings.OrderBy(h => h)),
 			doc.SearchTitle ?? string.Empty,
@@ -165,9 +165,7 @@ public partial class ElasticsearchMarkdownExporter
 
 		AssignDocumentMetadata(doc);
 
-		if (_indexStrategy == IngestStrategy.Multiplex)
-			return await _lexicalChannel.TryWrite(doc, ctx) && await _semanticChannel.TryWrite(doc, ctx);
-		return await _lexicalChannel.TryWrite(doc, ctx);
+		return await WriteDocumentAsync(doc, ctx);
 	}
 
 	/// <inheritdoc />
@@ -209,22 +207,10 @@ public partial class ElasticsearchMarkdownExporter
 
 			AssignDocumentMetadata(doc);
 
-			// Write to channels following the multiplex or reindex strategy
-			if (_indexStrategy == IngestStrategy.Multiplex)
+			if (!await WriteDocumentAsync(doc, ctx))
 			{
-				if (!await _lexicalChannel.TryWrite(doc, ctx) || !await _semanticChannel.TryWrite(doc, ctx))
-				{
-					_logger.LogError("Failed to write OpenAPI document {Url}", doc.Url);
-					return false;
-				}
-			}
-			else
-			{
-				if (!await _lexicalChannel.TryWrite(doc, ctx))
-				{
-					_logger.LogError("Failed to write OpenAPI document {Url}", doc.Url);
-					return false;
-				}
+				_logger.LogError("Failed to write OpenAPI document {Url}", doc.Url);
+				return false;
 			}
 		}
 

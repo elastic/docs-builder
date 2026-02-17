@@ -4,38 +4,42 @@
 
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Elastic.Channels;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Search;
+using Elastic.Documentation.Serialization;
 using Elastic.Ingest.Elasticsearch;
 using Elastic.Ingest.Elasticsearch.Indices;
+using Elastic.Mapping;
 using Elastic.Markdown.Exporters.Elasticsearch.Enrichment;
 using Elastic.Transport;
 using Microsoft.Extensions.Logging;
-using NetEscapades.EnumGenerators;
 
 namespace Elastic.Markdown.Exporters.Elasticsearch;
-
-[EnumExtensions]
-public enum IngestStrategy { Reindex, Multiplex }
 
 public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 {
 	private readonly IDiagnosticsCollector _collector;
 	private readonly IDocumentationConfigurationContext _context;
 	private readonly ILogger _logger;
-	private readonly ElasticsearchLexicalIngestChannel _lexicalChannel;
-	private readonly ElasticsearchSemanticIngestChannel _semanticChannel;
-
 	private readonly ElasticsearchEndpoint _endpoint;
-
-	private readonly DateTimeOffset _batchIndexDate = DateTimeOffset.UtcNow;
 	private readonly DistributedTransport _transport;
-	private IngestStrategy _indexStrategy;
 	private readonly string _indexNamespace;
-	private string _currentLexicalHash = string.Empty;
-	private string _currentSemanticHash = string.Empty;
+	private readonly DateTimeOffset _batchIndexDate;
+
+	// Ingest: orchestrator for dual-index mode, plain channel for --no-semantic
+	private readonly IncrementalSyncOrchestrator<DocumentationDocument>? _orchestrator;
+	private readonly IngestChannel<DocumentationDocument>? _lexicalOnlyChannel;
+
+	// Type context hashes for document content hash computation
+	private readonly ElasticsearchTypeContext _lexicalTypeContext;
+	private readonly ElasticsearchTypeContext? _semanticTypeContext;
+
+	// Alias names for queries/statistics
+	private readonly string _lexicalAlias;
 
 	private readonly IReadOnlyDictionary<string, string[]> _synonyms;
 	private readonly IReadOnlyCollection<QueryRule> _rules;
@@ -65,7 +69,6 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		_context = context;
 		_logger = logFactory.CreateLogger<ElasticsearchMarkdownExporter>();
 		_endpoint = endpoints.Elasticsearch;
-		_indexStrategy = IngestStrategy.Reindex;
 		_indexNamespace = indexNamespace;
 		_versionsConfiguration = context.VersionsConfiguration;
 		_synonyms = context.SearchConfiguration.Synonyms;
@@ -73,6 +76,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		var es = endpoints.Elasticsearch;
 
 		_transport = ElasticsearchTransportFactory.Create(es);
+		_operations = new ElasticsearchOperations(_transport, _logger, collector);
 
 		string[] fixedSynonyms = ["esql", "data-stream", "data-streams", "machine-learning"];
 		var indexTimeSynonyms = _synonyms.Aggregate(new List<SynonymRule>(), (acc, synonym) =>
@@ -83,15 +87,16 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		}).Where(r => fixedSynonyms.Contains(r.Id)).Select(r => r.Synonyms).ToArray();
 		_fixedSynonymsHash = HashedBulkUpdate.CreateHash(string.Join(",", indexTimeSynonyms));
 
-		// Use AI enrichment pipeline if enabled - hybrid approach:
-		// - Cache hits: enrich processor applies fields at index time
-		// - Cache misses: apply fields inline before indexing
 		var aiPipeline = es.EnableAiEnrichment ? EnrichPolicyManager.PipelineName : null;
-		_lexicalChannel = new ElasticsearchLexicalIngestChannel(logFactory, collector, es, indexNamespace, _transport, indexTimeSynonyms, aiPipeline);
-		_semanticChannel = new ElasticsearchSemanticIngestChannel(logFactory, collector, es, indexNamespace, _transport, indexTimeSynonyms, aiPipeline);
+		var synonymSetName = $"docs-{indexNamespace}";
+		var ns = indexNamespace.ToLowerInvariant();
+		var lexicalPrefix = es.IndexNamePrefix.Replace("semantic", "lexical").ToLowerInvariant();
+		_lexicalAlias = $"{lexicalPrefix}-{ns}";
 
-		// Initialize shared ES operations
-		_operations = new ElasticsearchOperations(_transport, _logger, collector);
+		_lexicalTypeContext = DocumentationAnalysisFactory.CreateContext(
+			DocumentationMappingContext.DocumentationDocument.Context,
+			_lexicalAlias, synonymSetName, indexTimeSynonyms, aiPipeline
+		);
 
 		// Initialize AI enrichment services if enabled
 		if (es.EnableAiEnrichment)
@@ -100,76 +105,177 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 			_llmClient = new ElasticsearchLlmClient(_transport, logFactory.CreateLogger<ElasticsearchLlmClient>(), _operations);
 			_enrichPolicyManager = new EnrichPolicyManager(_transport, logFactory.CreateLogger<EnrichPolicyManager>(), _enrichmentCache.IndexName);
 		}
+
+		if (!es.NoSemantic)
+		{
+			var semanticAlias = $"{es.IndexNamePrefix.ToLowerInvariant()}-{ns}";
+			_semanticTypeContext = DocumentationAnalysisFactory.CreateContext(
+				DocumentationMappingContext.DocumentationDocumentSemantic.Context,
+				semanticAlias, synonymSetName, indexTimeSynonyms, aiPipeline
+			);
+
+			_orchestrator = new IncrementalSyncOrchestrator<DocumentationDocument>(_transport, _lexicalTypeContext, _semanticTypeContext)
+			{
+				ConfigurePrimary = ConfigureChannelOptions,
+				ConfigureSecondary = ConfigureChannelOptions,
+				OnPostComplete = es.EnableAiEnrichment
+					? async (ctx, ct) => await PostCompleteAsync(ctx, ct)
+					: null
+			};
+			_ = _orchestrator.AddPreBootstrapTask(async (_, ct) =>
+			{
+				await InitializeEnrichmentAsync(ct);
+				await PublishSynonymsAsync(ct);
+				await PublishQueryRulesAsync(ct);
+			});
+
+			_batchIndexDate = _orchestrator.BatchTimestamp;
+		}
+		else
+		{
+			_batchIndexDate = DateTimeOffset.UtcNow;
+			var options = new IngestChannelOptions<DocumentationDocument>(_transport, _lexicalTypeContext);
+			ConfigureChannelOptions(options);
+			_lexicalOnlyChannel = new IngestChannel<DocumentationDocument>(options);
+		}
+	}
+
+	private void ConfigureChannelOptions(IngestChannelOptions<DocumentationDocument> options)
+	{
+		options.BufferOptions = new BufferOptions
+		{
+			OutboundBufferMaxSize = _endpoint.BufferSize,
+			ExportMaxConcurrency = _endpoint.IndexNumThreads,
+			ExportMaxRetries = _endpoint.MaxRetries
+		};
+		options.SerializerContext = SourceGenerationContext.Default;
+		options.ExportExceptionCallback = e =>
+		{
+			_logger.LogError(e, "Failed to export document");
+			_collector.EmitGlobalError("Elasticsearch export: failed to export document", e);
+		};
+		options.ServerRejectionCallback = items =>
+		{
+			foreach (var (doc, responseItem) in items)
+			{
+				_collector.EmitGlobalError(
+					$"Server rejection: {responseItem.Status} {responseItem.Error?.Type} {responseItem.Error?.Reason} for document {doc.Url}");
+			}
+		};
 	}
 
 	/// <inheritdoc />
 	public async ValueTask StartAsync(Cancel ctx = default)
 	{
-		// Initialize AI enrichment cache (pre-loads existing hashes into memory)
-		if (_enrichmentCache is not null && _enrichPolicyManager is not null)
+		if (_orchestrator is not null)
 		{
-			_logger.LogInformation("Initializing AI enrichment cache...");
-			await _enrichmentCache.InitializeAsync(ctx);
-			_logger.LogInformation("AI enrichment cache ready with {Count} existing entries", _enrichmentCache.Count);
-
-			// The enrich pipeline must exist before indexing (used as default_pipeline).
-			// The pipeline's enrich processor requires the .enrich-* index to exist,
-			// which is created by executing the policy. We execute even with an empty
-			// cache index - it just creates an empty enrich index that returns no matches.
-			_logger.LogInformation("Setting up enrich policy and pipeline...");
-			await _enrichPolicyManager.ExecutePolicyAsync(ctx);
-			await _enrichPolicyManager.EnsurePipelineExistsAsync(ctx);
+			_ = await _orchestrator.StartAsync(BootstrapMethod.Failure, ctx);
+			_logger.LogInformation("Orchestrator started with {Strategy} strategy", _orchestrator.Strategy);
+			return;
 		}
 
-		_currentLexicalHash = await _lexicalChannel.Channel.GetIndexTemplateHashAsync(ctx) ?? string.Empty;
-		_currentSemanticHash = await _semanticChannel.Channel.GetIndexTemplateHashAsync(ctx) ?? string.Empty;
-
+		// NoSemantic path
+		await InitializeEnrichmentAsync(ctx);
 		await PublishSynonymsAsync(ctx);
 		await PublishQueryRulesAsync(ctx);
-		_ = await _lexicalChannel.Channel.BootstrapElasticsearchAsync(BootstrapMethod.Failure, null, ctx);
+		_ = await _lexicalOnlyChannel!.BootstrapElasticsearchAsync(BootstrapMethod.Failure, ctx);
+	}
 
-		// if the previous hash does not match the current hash, we know already we want to multiplex to a new index
-		if (_currentLexicalHash != _lexicalChannel.Channel.ChannelHash)
-			_indexStrategy = IngestStrategy.Multiplex;
-
-		if (!_endpoint.NoSemantic)
+	/// <inheritdoc />
+	public async ValueTask StopAsync(Cancel ctx = default)
+	{
+		if (_orchestrator is not null)
 		{
-			var semanticWriteAlias = string.Format(_semanticChannel.Channel.Options.IndexFormat, "latest");
-			var semanticIndexAvailable = await _transport.HeadAsync(semanticWriteAlias, ctx);
-			if (!semanticIndexAvailable.ApiCallDetails.HasSuccessfulStatusCode && _endpoint is { ForceReindex: false, NoSemantic: false })
+			_ = await _orchestrator.CompleteAsync(null, ctx);
+			return;
+		}
+
+		// NoSemantic path — drain, delete stale, refresh, alias
+		var drained = await _lexicalOnlyChannel!.WaitForDrainAsync(null, ctx);
+		if (!drained)
+			_collector.EmitGlobalError("Elasticsearch export: failed to drain in a timely fashion");
+
+		// Delete stale documents not part of this batch
+		var deleteQuery = PostData.String($$"""
 			{
-				_indexStrategy = IngestStrategy.Multiplex;
-				_logger.LogInformation("Index strategy set to multiplex because {SemanticIndex} does not exist, pass --force-reindex to always use reindex", semanticWriteAlias);
+				"query": {
+					"range": {
+						"batch_index_date": {
+							"lt": "{{_batchIndexDate:o}}"
+						}
+					}
+				}
 			}
+			""");
+		await _operations.DeleteByQueryAsync(_lexicalAlias, deleteQuery, ctx);
 
-			//try re-use index if we are re-indexing. Multiplex should always go to a new index
-			_semanticChannel.Channel.Options.TryReuseIndex = _indexStrategy == IngestStrategy.Reindex;
-			_ = await _semanticChannel.Channel.BootstrapElasticsearchAsync(BootstrapMethod.Failure, null, ctx);
-		}
+		_ = await _lexicalOnlyChannel.RefreshAsync(ctx);
+		_ = await _lexicalOnlyChannel.ApplyAliasesAsync(_lexicalAlias, ctx);
+	}
 
-		var lexicalIndexExists = await IndexExists(_lexicalChannel.Channel.IndexName) ? "existing" : "new";
-		var semanticIndexExists = await IndexExists(_semanticChannel.Channel.IndexName) ? "existing" : "new";
-		if (_currentLexicalHash != _lexicalChannel.Channel.ChannelHash)
+	private async Task InitializeEnrichmentAsync(Cancel ctx)
+	{
+		if (_enrichmentCache is null || _enrichPolicyManager is null)
+			return;
+
+		_logger.LogInformation("Initializing AI enrichment cache...");
+		await _enrichmentCache.InitializeAsync(ctx);
+		_logger.LogInformation("AI enrichment cache ready with {Count} existing entries", _enrichmentCache.Count);
+
+		_logger.LogInformation("Setting up enrich policy and pipeline...");
+		await _enrichPolicyManager.ExecutePolicyAsync(ctx);
+		await _enrichPolicyManager.EnsurePipelineExistsAsync(ctx);
+	}
+
+	private async Task PostCompleteAsync(OrchestratorContext<DocumentationDocument> context, Cancel ctx) =>
+		await ExecuteEnrichPolicyIfNeededAsync(context.SecondaryWriteAlias, ctx);
+
+	private async ValueTask ExecuteEnrichPolicyIfNeededAsync(string? semanticAlias, Cancel ctx)
+	{
+		if (_enrichmentCache is null || _enrichPolicyManager is null)
+			return;
+
+		_logger.LogInformation(
+			"AI enrichment complete: {CacheHits} cache hits, {Enrichments} enrichments generated (limit: {Limit})",
+			_cacheHitCount, _enrichmentCount, _enrichmentOptions.MaxNewEnrichmentsPerRun);
+
+		if (_enrichmentCache.Count > 0)
 		{
-			_indexStrategy = IngestStrategy.Multiplex;
-			_logger.LogInformation("Multiplexing lexical new index: '{Index}' since current hash on server '{HashCurrent}' does not match new '{HashNew}'",
-				_lexicalChannel.Channel.IndexName, _currentLexicalHash, _lexicalChannel.Channel.ChannelHash);
+			_logger.LogInformation("Executing enrich policy to update internal index with {Count} total entries...", _enrichmentCache.Count);
+			await _enrichPolicyManager.ExecutePolicyAsync(ctx);
+
+			if (semanticAlias is not null)
+				await BackfillMissingAiFieldsAsync(semanticAlias, ctx);
 		}
-		else
-			_logger.LogInformation("Targeting {State} lexical: '{Index}'", lexicalIndexExists, _lexicalChannel.Channel.IndexName);
+	}
 
-		if (!_endpoint.NoSemantic && _currentSemanticHash != _semanticChannel.Channel.ChannelHash)
-		{
-			_indexStrategy = IngestStrategy.Multiplex;
-			_logger.LogInformation("Multiplexing new index '{Index}' since current hash on server '{HashCurrent}' does not match new '{HashNew}'",
-				_semanticChannel.Channel.IndexName, _currentSemanticHash, _semanticChannel.Channel.ChannelHash);
-		}
-		else if (!_endpoint.NoSemantic)
-			_logger.LogInformation("Targeting {State} semantical: '{Index}'", semanticIndexExists, _semanticChannel.Channel.IndexName);
+	private async ValueTask BackfillMissingAiFieldsAsync(string semanticAlias, Cancel ctx)
+	{
+		if (_endpoint.NoSemantic || _enrichmentCache is null || _llmClient is null)
+			return;
 
-		_logger.LogInformation("Using {IndexStrategy} to sync lexical index to semantic index", _indexStrategy.ToStringFast(true));
+		var currentPromptHash = ElasticsearchLlmClient.PromptHash;
 
-		async ValueTask<bool> IndexExists(string name) => (await _transport.HeadAsync(name, ctx)).ApiCallDetails.HasSuccessfulStatusCode;
+		_logger.LogInformation(
+			"Starting AI backfill for documents missing or stale AI fields (cache has {CacheCount} entries, prompt hash: {PromptHash})",
+			_enrichmentCache.Count, currentPromptHash[..8]);
+
+		var query = $$"""
+			{
+				"query": {
+					"bool": {
+						"must": { "exists": { "field": "enrichment_key" } },
+						"should": [
+							{ "bool": { "must_not": { "exists": { "field": "ai_questions" } } } },
+							{ "bool": { "must_not": { "term": { "enrichment_prompt_hash": "{{currentPromptHash}}" } } } }
+						],
+						"minimum_should_match": 1
+					}
+				}
+			}
+			""";
+
+		await _operations.UpdateByQueryAsync(semanticAlias, PostData.String(query), EnrichPolicyManager.PipelineName, ctx);
 	}
 
 	private async Task PublishSynonymsAsync(Cancel ctx)
@@ -246,236 +352,28 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 			_logger.LogInformation("Successfully published query ruleset '{RulesetName}'.", rulesetName);
 	}
 
-	private async ValueTask<long> CountAsync(string index, string body, Cancel ctx = default)
+	internal async ValueTask<bool> WriteDocumentAsync(DocumentationDocument doc, Cancel ctx)
 	{
-		var countResponse = await _operations.WithRetryAsync(
-			() => _transport.PostAsync<DynamicResponse>($"/{index}/_count", PostData.String(body), ctx),
-			$"POST {index}/_count",
-			ctx);
-		return countResponse.Body.Get<long>("count");
-	}
-
-	/// <inheritdoc />
-	public async ValueTask StopAsync(Cancel ctx = default)
-	{
-		var semanticWriteAlias = string.Format(_semanticChannel.Channel.Options.IndexFormat, "latest");
-		var lexicalWriteAlias = string.Format(_lexicalChannel.Channel.Options.IndexFormat, "latest");
-
-		var stopped = await _lexicalChannel.StopAsync(ctx);
-		if (!stopped)
-			throw new Exception($"Failed to stop {_lexicalChannel.GetType().Name}");
-
-		await QueryIngestStatistics(lexicalWriteAlias, ctx);
-
-		if (_indexStrategy == IngestStrategy.Multiplex)
+		if (_orchestrator is not null)
 		{
-			if (!_endpoint.NoSemantic)
-				_ = await _semanticChannel.StopAsync(ctx);
-
-			// cleanup lexical index of old data
-			await DoDeleteByQuery(lexicalWriteAlias, ctx);
-			// need to refresh the lexical index to ensure that the delete by query is available
-			_ = await _lexicalChannel.RefreshAsync(ctx);
-			await QueryDocumentCounts(ctx);
-			// ReSharper disable once ConvertIfStatementToConditionalTernaryExpression
-			if (_endpoint.NoSemantic)
-				_logger.LogInformation("Finish indexing {IndexStrategy} strategy", _indexStrategy.ToStringFast(true));
-			else
-				_logger.LogInformation("Finish syncing to semantic in {IndexStrategy} strategy", _indexStrategy.ToStringFast(true));
-			return;
+			if (_orchestrator.TryWrite(doc))
+				return true;
+			_ = await _orchestrator.WaitToWriteAsync(doc, ctx);
+			return true;
 		}
 
-		if (_endpoint.NoSemantic)
-		{
-			_logger.LogInformation("--no-semantic was specified so exiting early before reindexing to {Index}", lexicalWriteAlias);
-			return;
-		}
-
-		var semanticIndex = _semanticChannel.Channel.IndexName;
-		// check if the alias exists
-		var semanticIndexHead = await _transport.HeadAsync(semanticWriteAlias, ctx);
-		if (!semanticIndexHead.ApiCallDetails.HasSuccessfulStatusCode)
-		{
-			_logger.LogInformation("No semantic index exists yet, creating index {Index} for semantic search", semanticIndex);
-			_ = await _semanticChannel.Channel.BootstrapElasticsearchAsync(BootstrapMethod.Failure, null, ctx);
-			var semanticIndexPut = await _transport.PutAsync<StringResponse>(semanticIndex, PostData.String("{}"), ctx);
-			if (!semanticIndexPut.ApiCallDetails.HasSuccessfulStatusCode)
-				throw new Exception($"Failed to create index {semanticIndex}: {semanticIndexPut}");
-		}
-		var destinationIndex = _semanticChannel.Channel.IndexName;
-
-		_logger.LogInformation("_reindex updates: '{SourceIndex}' => '{DestinationIndex}'", lexicalWriteAlias, destinationIndex);
-		var request = PostData.String(@"
-		{
-			""dest"": {
-				""index"": """ + destinationIndex + @"""
-			},
-			""source"": {
-				""index"": """ + lexicalWriteAlias + @""",
-				""size"": 100,
-				""query"": {
-					""range"": {
-						""last_updated"": {
-							""gte"": """ + _batchIndexDate.ToString("o") + @"""
-						}
-					}
-				}
-			}
-		}");
-		await DoReindex(request, lexicalWriteAlias, destinationIndex, "updates", ctx);
-
-		_logger.LogInformation("_reindex deletions: '{SourceIndex}' => '{DestinationIndex}'", lexicalWriteAlias, destinationIndex);
-		request = PostData.String(@"
-		{
-			""dest"": {
-				""index"": """ + destinationIndex + @"""
-			},
-			""script"": {
-				""source"": ""ctx.op = \""delete\""""
-			},
-			""source"": {
-				""index"": """ + lexicalWriteAlias + @""",
-				""size"": 100,
-				""query"": {
-					""range"": {
-						""batch_index_date"": {
-							""lt"": """ + _batchIndexDate.ToString("o") + @"""
-						}
-					}
-				}
-			}
-		}");
-		await DoReindex(request, lexicalWriteAlias, destinationIndex, "deletions", ctx);
-
-		await DoDeleteByQuery(lexicalWriteAlias, ctx);
-
-		_ = await _lexicalChannel.Channel.ApplyLatestAliasAsync(ctx);
-		_ = await _semanticChannel.Channel.ApplyAliasesAsync(ctx);
-
-		_ = await _lexicalChannel.RefreshAsync(ctx);
-		_ = await _semanticChannel.RefreshAsync(ctx);
-
-		_logger.LogInformation("Finish sync to semantic index using {IndexStrategy} strategy", _indexStrategy.ToStringFast(true));
-		await QueryDocumentCounts(ctx);
-
-		// Execute enrich policy so new cache entries are available for next run
-		await ExecuteEnrichPolicyIfNeededAsync(ctx);
+		if (_lexicalOnlyChannel!.TryWrite(doc))
+			return true;
+		if (await _lexicalOnlyChannel.WaitToWriteAsync(ctx))
+			return _lexicalOnlyChannel.TryWrite(doc);
+		return false;
 	}
-
-	private async ValueTask ExecuteEnrichPolicyIfNeededAsync(Cancel ctx)
-	{
-		if (_enrichmentCache is null || _enrichPolicyManager is null)
-			return;
-
-		_logger.LogInformation(
-			"AI enrichment complete: {CacheHits} cache hits, {Enrichments} enrichments generated (limit: {Limit})",
-			_cacheHitCount, _enrichmentCount, _enrichmentOptions.MaxNewEnrichmentsPerRun);
-
-		if (_enrichmentCache.Count > 0)
-		{
-			_logger.LogInformation("Executing enrich policy to update internal index with {Count} total entries...", _enrichmentCache.Count);
-			await _enrichPolicyManager.ExecutePolicyAsync(ctx);
-
-			// Backfill: Apply AI fields to documents that were skipped by hash-based upsert
-			await BackfillMissingAiFieldsAsync(ctx);
-		}
-	}
-
-	private async ValueTask BackfillMissingAiFieldsAsync(Cancel ctx)
-	{
-		// Why backfill is needed:
-		// The exporter uses hash-based upsert - unchanged documents are skipped during indexing.
-		// These skipped documents never pass through the ingest pipeline, so they miss AI fields.
-		// This backfill runs _update_by_query with the AI pipeline to enrich those documents.
-		//
-		// Additionally, when prompts change, existing documents have stale AI fields.
-		// We detect this by checking if the document's prompt_hash differs from the current one.
-		//
-		// Only backfill the semantic index - it's what the search API uses.
-		// The lexical index is just an intermediate step for reindexing.
-		if (_endpoint.NoSemantic || _enrichmentCache is null || _llmClient is null)
-			return;
-
-		var semanticAlias = _semanticChannel.Channel.Options.ActiveSearchAlias;
-		var currentPromptHash = ElasticsearchLlmClient.PromptHash;
-
-		_logger.LogInformation(
-			"Starting AI backfill for documents missing or stale AI fields (cache has {CacheCount} entries, prompt hash: {PromptHash})",
-			_enrichmentCache.Count, currentPromptHash[..8]);
-
-		// Find documents with enrichment_key that either:
-		// 1. Missing AI fields (never enriched), OR
-		// 2. Have stale/missing enrichment_prompt_hash (enriched with old prompts)
-		var query = $$"""
-			{
-				"query": {
-					"bool": {
-						"must": { "exists": { "field": "enrichment_key" } },
-						"should": [
-							{ "bool": { "must_not": { "exists": { "field": "ai_questions" } } } },
-							{ "bool": { "must_not": { "term": { "enrichment_prompt_hash": "{{currentPromptHash}}" } } } }
-						],
-						"minimum_should_match": 1
-					}
-				}
-			}
-			""";
-
-		await RunBackfillQuery(semanticAlias, query, ctx);
-	}
-
-	private async ValueTask RunBackfillQuery(string indexAlias, string query, Cancel ctx) =>
-		await _operations.UpdateByQueryAsync(indexAlias, PostData.String(query), EnrichPolicyManager.PipelineName, ctx);
-
-	private async ValueTask QueryIngestStatistics(string lexicalWriteAlias, Cancel ctx)
-	{
-		var lexicalSearchAlias = _lexicalChannel.Channel.Options.ActiveSearchAlias;
-		var updated = await CountAsync(lexicalSearchAlias, $$""" { "query": { "range": { "last_updated": { "gte": "{{_batchIndexDate:o}}" } } } }""", ctx);
-		var total = await CountAsync(lexicalSearchAlias, $$""" { "query": { "range": { "batch_index_date": { "gte": "{{_batchIndexDate:o}}" } } } }""", ctx);
-		var deleted = await CountAsync(lexicalSearchAlias, $$""" { "query": { "range": { "batch_index_date": { "lt": "{{_batchIndexDate:o}}" } } } }""", ctx);
-
-		// TODO emit these as metrics
-		_logger.LogInformation("Exported {Total}, Updated {Updated}, Deleted, {Deleted} documents to {LexicalIndex}", total, updated, deleted, lexicalWriteAlias);
-		_logger.LogInformation("Syncing to semantic index using {IndexStrategy} strategy", _indexStrategy.ToStringFast(true));
-	}
-
-	private async ValueTask QueryDocumentCounts(Cancel ctx)
-	{
-		var semanticWriteAlias = string.Format(_semanticChannel.Channel.Options.IndexFormat, "latest");
-		var lexicalWriteAlias = string.Format(_lexicalChannel.Channel.Options.IndexFormat, "latest");
-		var totalLexical = await CountAsync(lexicalWriteAlias, "{}", ctx);
-		var totalSemantic = await CountAsync(semanticWriteAlias, "{}", ctx);
-
-		// TODO emit these as metrics
-		_logger.LogInformation("Document counts -> Semantic Index: {TotalSemantic}, Lexical Index: {TotalLexical}", totalSemantic, totalLexical);
-	}
-
-	private async ValueTask DoDeleteByQuery(string lexicalWriteAlias, Cancel ctx)
-	{
-		// delete all documents with batch_index_date < _batchIndexDate
-		// they weren't part of the current export
-		_logger.LogInformation("Delete data in '{SourceIndex}' not part of batch date: {Date}", lexicalWriteAlias, _batchIndexDate.ToString("o"));
-		var query = PostData.String(@"
-		{
-			""query"": {
-				""range"": {
-					""batch_index_date"": {
-						""lt"": """ + _batchIndexDate.ToString("o") + @"""
-					}
-				}
-			}
-		}");
-		await _operations.DeleteByQueryAsync(lexicalWriteAlias, query, ctx);
-	}
-
-	private async ValueTask DoReindex(PostData request, string lexicalWriteAlias, string semanticWriteAlias, string typeOfSync, Cancel ctx) =>
-		await _operations.ReindexAsync(request, lexicalWriteAlias, semanticWriteAlias, typeOfSync, ctx);
 
 	/// <inheritdoc />
 	public void Dispose()
 	{
-		_lexicalChannel.Dispose();
-		_semanticChannel.Dispose();
+		_orchestrator?.Dispose();
+		_lexicalOnlyChannel?.Dispose();
 		_llmClient?.Dispose();
 		GC.SuppressFinalize(this);
 	}

@@ -7,7 +7,10 @@ using Aspire.Hosting.Testing;
 using Documentation.Builder.Diagnostics.Console;
 using Elastic.Documentation.Aspire;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Search;
 using Elastic.Ingest.Elasticsearch;
+using Elastic.Ingest.Elasticsearch.Indices;
+using Elastic.Mapping;
 using Elastic.Markdown.Exporters.Elasticsearch;
 using Elastic.Transport;
 using Elastic.Transport.Products.Elasticsearch;
@@ -175,22 +178,23 @@ public class SearchBootstrapFixture(DocumentationFixture fixture) : IAsyncLifeti
 			var loggerFactory = fixture.DistributedApplication.Services.GetRequiredService<ILoggerFactory>();
 			var collector = new ConsoleDiagnosticsCollector(loggerFactory);
 
-			// Create semantic exporter to check channel hash (index namespace is 'dev' for tests)
-			using var semanticExporter = new ElasticsearchSemanticIngestChannel(
-				loggerFactory,
-				collector,
-				endpoint,
-				"dev", // index namespace
-				transport,
+			// Create semantic type context to check channel hash (index namespace is 'dev' for tests)
+			var semanticTypeContext = DocumentationAnalysisFactory.CreateContext(
+				DocumentationMappingContext.DocumentationDocumentSemantic.Context,
+				$"{endpoint.IndexNamePrefix.ToLowerInvariant()}-dev",
+				"docs-dev",
 				[]
 			);
 
-			// Get the current hash from Elasticsearch index template
-			var currentSemanticHash = await semanticExporter.Channel.GetIndexTemplateHashAsync(TestContext.Current.CancellationToken) ?? string.Empty;
+			var options = new IngestChannelOptions<DocumentationDocument>(transport, semanticTypeContext);
+			using var channel = new IngestChannel<DocumentationDocument>(options);
 
-			// Get the expected channel hash from the semantic exporter
-			await semanticExporter.Channel.BootstrapElasticsearchAsync(BootstrapMethod.Silent, ctx: TestContext.Current.CancellationToken);
-			var expectedSemanticHash = semanticExporter.Channel.ChannelHash;
+			// Get the current hash from Elasticsearch index template
+			var currentSemanticHash = await channel.GetIndexTemplateHashAsync(TestContext.Current.CancellationToken) ?? string.Empty;
+
+			// Get the expected channel hash
+			_ = await channel.BootstrapElasticsearchAsync(BootstrapMethod.Silent, TestContext.Current.CancellationToken);
+			var expectedSemanticHash = channel.ChannelHash;
 
 			Console.WriteLine($"Elasticsearch semantic hash: '{currentSemanticHash}'");
 			Console.WriteLine($"Expected semantic hash: '{expectedSemanticHash}'");
