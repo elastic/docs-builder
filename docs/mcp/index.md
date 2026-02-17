@@ -66,7 +66,7 @@ Create or edit `.cursor/mcp.json` in your workspace:
 {
   "mcpServers": {
     "elastic-docs": {
-      "url": "https://docs-builder.elastic.dev/docs/_mcp"
+      "url": "https://www.elastic.co/docs/_mcp/"
     }
   }
 }
@@ -83,7 +83,7 @@ Create or edit `.vscode/mcp.json` in your workspace:
   "servers": {
     "elastic-docs": {
       "type": "http",
-      "url": "https://docs-builder.elastic.dev/docs/_mcp"
+      "url": "https://www.elastic.co/docs/_mcp/"
     }
   }
 }
@@ -99,7 +99,7 @@ Requires GitHub Copilot with MCP support enabled.
 You can test the MCP server using the [MCP Inspector](https://github.com/modelcontextprotocol/inspector):
 
 ```bash
-npx @modelcontextprotocol/inspector --url https://docs-builder.elastic.dev/docs/_mcp
+npx @modelcontextprotocol/inspector --url https://www.elastic.co/docs/_mcp/
 ```
 
 This opens a web UI where you can browse all available tools and invoke them manually.
