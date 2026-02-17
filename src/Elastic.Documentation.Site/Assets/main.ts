@@ -143,16 +143,26 @@ document.addEventListener(
         if (elt?.tagName !== 'A') {
             return
         }
+        const href = elt.getAttribute('href')
+        if (!href) {
+            return
+        }
+
         const disablehtmx = (el: HTMLElement) => {
             el.setAttribute('hx-disable', 'true')
         }
-        const url = new URL(elt.getAttribute('href') || '')
 
-        if (url.hostname !== window.location.hostname) {
-            disablehtmx(elt)
+        let url: URL
+        try {
+            url = new URL(href)
+        } catch {
             return
         }
-        if (!url.pathname?.startsWith('/docs')) {
+        // Not checking for same hostname because htmx `selfRequestsOnly` is enabled
+        if (
+            config.buildType === 'assembler' &&
+            !url.pathname?.startsWith('/docs')
+        ) {
             disablehtmx(elt)
         }
     }
