@@ -16,8 +16,6 @@
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
 
-    <EnableRequestDelegateGenerator>true</EnableRequestDelegateGenerator>
-    <InterceptorsPreviewNamespaces>$(InterceptorsPreviewNamespaces);Microsoft.AspNetCore.Http.Generated</InterceptorsPreviewNamespaces>
     <RootNamespace>Elastic.Documentation.Mcp.Remote</RootNamespace>
   </PropertyGroup>
 
