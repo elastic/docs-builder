@@ -9,6 +9,7 @@ namespace Elastic.Documentation.Mcp.Remote;
 /// <summary>
 /// Middleware that sends periodic SSE keepalive comments on <c>text/event-stream</c> responses
 /// to prevent clients (notably Cursor) from timing out idle SSE connections.
+/// Covers both Streamable HTTP (<c>/docs/_mcp/</c>) and legacy SSE (<c>/docs/_mcp/sse</c>) endpoints.
 /// </summary>
 public class SseKeepAliveMiddleware(RequestDelegate next, ILogger<SseKeepAliveMiddleware> logger)
 {
@@ -29,7 +30,7 @@ public class SseKeepAliveMiddleware(RequestDelegate next, ILogger<SseKeepAliveMi
 		context.Response.OnStarting(() =>
 		{
 			if (context.Response.ContentType?.Contains("text/event-stream", StringComparison.OrdinalIgnoreCase) == true)
-				wrapper.StartKeepAlive();
+				wrapper.StartKeepAlive(context.RequestAborted);
 
 			return Task.CompletedTask;
 		});
@@ -54,6 +55,7 @@ internal sealed class SseKeepAliveStream(Stream inner, TimeSpan interval, ILogge
 {
 	private static readonly byte[] KeepAliveBytes = Encoding.UTF8.GetBytes(": keepalive\n\n");
 
+	// Used as an async mutex to synchronize writes between the MCP SDK and the keepalive timer
 	private readonly SemaphoreSlim _writeLock = new(1, 1);
 
 	private PeriodicTimer? _timer;
@@ -61,20 +63,23 @@ internal sealed class SseKeepAliveStream(Stream inner, TimeSpan interval, ILogge
 	private Task? _keepAliveTask;
 	private long _lastWriteTicks = Environment.TickCount64;
 
-	public void StartKeepAlive()
+	/// <summary>Starts the periodic keepalive task, linked to the request's cancellation token.</summary>
+	public void StartKeepAlive(CancellationToken requestAborted)
 	{
-		_cts = new CancellationTokenSource();
+		_cts = CancellationTokenSource.CreateLinkedTokenSource(requestAborted);
 		_timer = new PeriodicTimer(interval);
 		_keepAliveTask = RunKeepAlive(_cts.Token);
 		logger.LogDebug("SSE keepalive started with {Interval}s interval", interval.TotalSeconds);
 	}
 
+	/// <summary>Signals the keepalive task to stop and awaits its completion. Safe to call multiple times.</summary>
 	public async Task StopKeepAlive()
 	{
-		if (_cts is null)
+		var cts = Interlocked.Exchange(ref _cts, null);
+		if (cts is null)
 			return;
 
-		await _cts.CancelAsync();
+		await cts.CancelAsync();
 
 		if (_keepAliveTask is not null)
 		{
@@ -88,8 +93,13 @@ internal sealed class SseKeepAliveStream(Stream inner, TimeSpan interval, ILogge
 			}
 		}
 
+		_timer?.Dispose();
+		cts.Dispose();
+
 		logger.LogDebug("SSE keepalive stopped");
 	}
+
+	private bool IsKeepAliveActive => _keepAliveTask is not null;
 
 	private async Task RunKeepAlive(CancellationToken ct)
 	{
@@ -130,6 +140,12 @@ internal sealed class SseKeepAliveStream(Stream inner, TimeSpan interval, ILogge
 
 	public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
 	{
+		if (!IsKeepAliveActive)
+		{
+			await inner.WriteAsync(buffer.AsMemory(offset, count), cancellationToken);
+			return;
+		}
+
 		await _writeLock.WaitAsync(cancellationToken);
 		try
 		{
@@ -144,6 +160,12 @@ internal sealed class SseKeepAliveStream(Stream inner, TimeSpan interval, ILogge
 
 	public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
 	{
+		if (!IsKeepAliveActive)
+		{
+			await inner.WriteAsync(buffer, cancellationToken);
+			return;
+		}
+
 		await _writeLock.WaitAsync(cancellationToken);
 		try
 		{
@@ -158,20 +180,24 @@ internal sealed class SseKeepAliveStream(Stream inner, TimeSpan interval, ILogge
 
 	public override void Write(byte[] buffer, int offset, int count)
 	{
-		_writeLock.Wait();
-		try
+		if (!IsKeepAliveActive)
 		{
 			inner.Write(buffer, offset, count);
-			_ = Interlocked.Exchange(ref _lastWriteTicks, Environment.TickCount64);
+			return;
 		}
-		finally
-		{
-			_ = _writeLock.Release();
-		}
+
+		// SSE streams should always use async writes; blocking here risks threadpool starvation
+		throw new NotSupportedException("Synchronous writes are not supported on active SSE keepalive streams.");
 	}
 
 	public override async Task FlushAsync(CancellationToken cancellationToken)
 	{
+		if (!IsKeepAliveActive)
+		{
+			await inner.FlushAsync(cancellationToken);
+			return;
+		}
+
 		await _writeLock.WaitAsync(cancellationToken);
 		try
 		{
@@ -183,7 +209,16 @@ internal sealed class SseKeepAliveStream(Stream inner, TimeSpan interval, ILogge
 		}
 	}
 
-	public override void Flush() => inner.Flush();
+	public override void Flush()
+	{
+		if (!IsKeepAliveActive)
+		{
+			inner.Flush();
+			return;
+		}
+
+		throw new NotSupportedException("Synchronous flush is not supported on active SSE keepalive streams.");
+	}
 
 	public override int Read(byte[] buffer, int offset, int count) => inner.Read(buffer, offset, count);
 
@@ -214,9 +249,6 @@ internal sealed class SseKeepAliveStream(Stream inner, TimeSpan interval, ILogge
 	public override async ValueTask DisposeAsync()
 	{
 		await StopKeepAlive();
-
-		_timer?.Dispose();
-		_cts?.Dispose();
 		_writeLock.Dispose();
 
 		await base.DisposeAsync();
@@ -226,8 +258,24 @@ internal sealed class SseKeepAliveStream(Stream inner, TimeSpan interval, ILogge
 	{
 		if (disposing)
 		{
-			_timer?.Dispose();
-			_cts?.Dispose();
+			// Signal the background task to stop before disposing resources
+			var cts = Interlocked.Exchange(ref _cts, null);
+			if (cts is not null)
+			{
+				cts.Cancel();
+				try
+				{
+					_keepAliveTask?.GetAwaiter().GetResult();
+				}
+				catch (OperationCanceledException)
+				{
+					// Expected on cancellation
+				}
+
+				_timer?.Dispose();
+				cts.Dispose();
+			}
+
 			_writeLock.Dispose();
 		}
 
