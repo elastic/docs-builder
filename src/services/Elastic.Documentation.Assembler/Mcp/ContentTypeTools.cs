@@ -74,12 +74,11 @@ public partial class ContentTypeTools(ContentTypeProvider provider)
 		"Generates a ready-to-use documentation template for a specific Elastic Docs content type. " +
 		"Returns a Markdown template (or YAML for changelogs) with correct frontmatter and structure. " +
 		"Optionally pre-fills title, description, and product fields.")]
-	public async Task<string> GenerateTemplate(
+	public string GenerateTemplate(
 		[Description("The content type: 'overview', 'how-to', 'tutorial', 'troubleshooting', or 'changelog'")] string contentType,
 		[Description("Optional: pre-fill the page title or changelog title")] string? title = null,
 		[Description("Optional: pre-fill the frontmatter description")] string? description = null,
-		[Description("Optional: pre-fill the product field")] string? product = null,
-		CancellationToken cancellationToken = default)
+		[Description("Optional: pre-fill the product field")] string? product = null)
 	{
 		try
 		{
@@ -92,19 +91,15 @@ public partial class ContentTypeTools(ContentTypeProvider provider)
 					McpJsonContext.Default.ErrorResponse);
 			}
 
-			var (template, source) = await provider.GetTemplateAsync(contentType, cancellationToken);
+			var template = provider.GetTemplate(contentType);
 
 			template = ApplyTemplateSubstitutions(template, contentType, title, description, product);
 
 			return JsonSerializer.Serialize(
-				new GenerateTemplateResponse(contentType, template, source),
+				new GenerateTemplateResponse(contentType, template),
 				McpJsonContext.Default.GenerateTemplateResponse);
 		}
-		catch (OperationCanceledException)
-		{
-			throw;
-		}
-		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
+		catch (Exception ex) when (ex is not OperationCanceledException and not OutOfMemoryException and not StackOverflowException)
 		{
 			return JsonSerializer.Serialize(new ErrorResponse(ex.Message), McpJsonContext.Default.ErrorResponse);
 		}

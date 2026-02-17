@@ -43,7 +43,7 @@ try
 	_ = builder.Services.AddSingleton<LinksIndexCrossLinkFetcher>();
 	_ = builder.Services.AddSingleton<ILinkUtilService, LinkUtilService>();
 
-	_ = builder.Services.AddHttpClient<ContentTypeProvider>();
+	_ = builder.Services.AddSingleton<ContentTypeProvider>();
 
 	// CreateSlimBuilder disables reflection-based JSON serialization.
 	// The MCP SDK's legacy SSE handler uses Results.BadRequest(string) which needs
@@ -60,8 +60,7 @@ try
 		.WithTools<CoherenceTools>()
 		.WithTools<DocumentTools>()
 		.WithTools<LinkTools>()
-		.WithTools<ContentTypeTools>()
-		.WithTools<DiagnosticTools>();
+		.WithTools<ContentTypeTools>();
 
 	var app = builder.Build();
 

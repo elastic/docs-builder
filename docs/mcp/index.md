@@ -23,14 +23,8 @@ These tools help authors create and evaluate documentation using the [Elastic Do
 | Tool | Description |
 |------|-------------|
 | `ListContentTypes` | Lists all Elastic Docs content types with descriptions and guidance on when to use each. |
-| `GenerateTemplate` | Generates a ready-to-use template for a specific content type (overview, how-to, tutorial, troubleshooting, or changelog). Optionally pre-fills title, description, and product. Templates are fetched from the [docs-content repository](https://github.com/elastic/docs-content) when online, with embedded fallbacks for offline use. |
+| `GenerateTemplate` | Generates a ready-to-use template for a specific content type (overview, how-to, tutorial, troubleshooting, or changelog). Optionally pre-fills title, description, and product. |
 | `GetContentTypeGuidelines` | Returns detailed authoring and evaluation guidelines for a content type, including required elements, best practices, and anti-patterns. |
-
-### Diagnostic tools
-
-| Tool | Description |
-|------|-------------|
-| `GetDiagnostics` | Returns {{dbuild}} version, runtime environment, and workspace diagnostics. |
 
 ### Search tools
 

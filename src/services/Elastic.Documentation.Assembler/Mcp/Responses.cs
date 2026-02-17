@@ -32,11 +32,8 @@ public sealed record ValidateCrossLinksResponse(string Repository, int ValidLink
 // Content type tool responses
 public sealed record ContentTypeSummary(string Name, string Description, string WhenToUse, string WhenNotToUse);
 public sealed record ListContentTypesResponse(int Count, List<ContentTypeSummary> ContentTypes);
-public sealed record GenerateTemplateResponse(string ContentType, string Template, string Source);
+public sealed record GenerateTemplateResponse(string ContentType, string Template);
 public sealed record ContentTypeGuidelinesResponse(string ContentType, string Guidelines);
-
-// Diagnostic tool responses
-public sealed record DiagnosticsResponse(string Version, string Runtime, string WorkingDirectory, bool DocsetFound, string? DocsetPath);
 
 [JsonSourceGenerationOptions(WriteIndented = true, PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 [JsonSerializable(typeof(ErrorResponse))]
@@ -48,5 +45,4 @@ public sealed record DiagnosticsResponse(string Version, string Runtime, string 
 [JsonSerializable(typeof(ListContentTypesResponse))]
 [JsonSerializable(typeof(GenerateTemplateResponse))]
 [JsonSerializable(typeof(ContentTypeGuidelinesResponse))]
-[JsonSerializable(typeof(DiagnosticsResponse))]
 public sealed partial class McpJsonContext : JsonSerializerContext;
