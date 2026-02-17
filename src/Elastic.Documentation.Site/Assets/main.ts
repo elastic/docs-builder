@@ -130,16 +130,32 @@ document.addEventListener(
     }
 )
 
-document.addEventListener('htmx:beforeRequest', function (event: HtmxEvent) {
-    const path = event.detail.requestConfig?.path
+// Disable htmx boost for links that don't point to /docs paths.
+// This runs before htmx wires up event listeners, so these links
+// behave as normal anchors and htmx never intercepts their clicks.
+document.addEventListener(
+    'htmx:beforeProcessNode',
+    function (event: HtmxEvent) {
+        const elt = event.detail.elt
+        if (elt?.tagName !== 'A') {
+            return
+        }
+        const disablehtmx = (el: HTMLElement) => {
+            el.setAttribute('hx-disable', 'true')
+        }
+        const url = new URL(elt.getAttribute('href') || '')
 
-    // Bypass htmx for /api URLs - they require full page navigation
-    if (path?.startsWith('/api')) {
-        event.preventDefault()
-        window.location.href = path
-        return
+        if (url.hostname !== window.location.hostname) {
+            disablehtmx(elt)
+            return
+        }
+        if (!url.pathname?.startsWith('/docs')) {
+            disablehtmx(elt)
+        }
     }
+)
 
+document.addEventListener('htmx:beforeRequest', function (event: HtmxEvent) {
     if (
         event.detail.requestConfig.verb === 'get' &&
         event.detail.requestConfig.triggeringEvent
