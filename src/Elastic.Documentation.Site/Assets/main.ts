@@ -152,7 +152,10 @@ document.addEventListener(
             disablehtmx(elt)
             return
         }
-        if (!url.pathname?.startsWith('/docs')) {
+        if (
+            config.buildType === 'assembler' &&
+            !url.pathname?.startsWith('/docs')
+        ) {
             disablehtmx(elt)
         }
     }
