@@ -17,6 +17,7 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using ModelContextProtocol;
 
 try
 {
@@ -43,6 +44,14 @@ try
 	_ = builder.Services.AddSingleton<ILinkUtilService, LinkUtilService>();
 
 	_ = builder.Services.AddHttpClient<ContentTypeProvider>();
+
+	// CreateSlimBuilder disables reflection-based JSON serialization.
+	// The MCP SDK's legacy SSE handler uses Results.BadRequest(string) which needs
+	// ASP.NET Core's HTTP JSON options to have type metadata for System.String.
+	_ = builder.Services.ConfigureHttpJsonOptions(options =>
+	{
+		options.SerializerOptions.TypeInfoResolverChain.Insert(0, McpJsonUtilities.DefaultOptions.TypeInfoResolver!);
+	});
 
 	_ = builder.Services
 		.AddMcpServer()
