@@ -2,9 +2,9 @@
 
 {{dbuild}} includes an [MCP (Model Context Protocol)](https://modelcontextprotocol.io/introduction) server that allows AI assistants to interact with the documentation tooling directly.
 
-## Available tools
+The MCP server is deployed as an HTTP service and exposes all tools through a single endpoint.
 
-The MCP server currently exposes the following tools:
+## Available tools
 
 ### Cross-link tools
 
@@ -16,7 +16,36 @@ The MCP server currently exposes the following tools:
 | `FindCrossLinks` | Finds all cross-links between repositories. Can filter by source or target repository. |
 | `ValidateCrossLinks` | Validates cross-links to a repository and reports any broken links. |
 
-The MCP server is started using the [`{{dbuild}} mcp`](../cli/mcp.md) command.
+### Content type tools
+
+These tools help authors create and evaluate documentation using the [Elastic Docs content types](https://www.elastic.co/docs/contribute-docs/content-types).
+
+| Tool | Description |
+|------|-------------|
+| `ListContentTypes` | Lists all Elastic Docs content types with descriptions and guidance on when to use each. |
+| `GenerateTemplate` | Generates a ready-to-use template for a specific content type (overview, how-to, tutorial, troubleshooting, or changelog). Optionally pre-fills title, description, and product. |
+| `GetContentTypeGuidelines` | Returns detailed authoring and evaluation guidelines for a content type, including required elements, best practices, and anti-patterns. |
+
+### Search tools
+
+| Tool | Description |
+|------|-------------|
+| `SemanticSearch` | Performs semantic search across all Elastic documentation. Returns relevant documents with summaries, scores, and navigation context. |
+| `FindRelatedDocs` | Finds documents related to a given topic or document. Useful for discovering related content and building context. |
+
+### Document tools
+
+| Tool | Description |
+|------|-------------|
+| `GetDocumentByUrl` | Gets a specific documentation page by its URL. Returns full document content including AI summaries and metadata. |
+| `AnalyzeDocumentStructure` | Analyzes the structure of a documentation page. Returns heading count, links, parents, and AI enrichment status. |
+
+### Coherence tools
+
+| Tool | Description |
+|------|-------------|
+| `CheckCoherence` | Checks documentation coherence for a given topic by finding all related documents and analyzing their coverage. |
+| `FindInconsistencies` | Finds potential inconsistencies in documentation by comparing documents about the same topic. |
 
 ## Configuration
 
@@ -30,9 +59,8 @@ Create or edit `.cursor/mcp.json` in your workspace:
 ```json
 {
   "mcpServers": {
-    "docs-builder": {
-      "command": "docs-builder",
-      "args": ["mcp"]
+    "elastic-docs": {
+      "url": "https://www.elastic.co/docs/_mcp/"
     }
   }
 }
@@ -41,16 +69,15 @@ Create or edit `.cursor/mcp.json` in your workspace:
 Then restart Cursor or reload the window. The tools will be available in **Agent mode**.
 :::
 
-:::{tab-item} VS Code
+:::{tab-item} Visual Studio Code
 Create or edit `.vscode/mcp.json` in your workspace:
 
 ```json
 {
   "servers": {
-    "docs-builder": {
-      "type": "stdio",
-      "command": "docs-builder",
-      "args": ["mcp"]
+    "elastic-docs": {
+      "type": "http",
+      "url": "https://www.elastic.co/docs/_mcp/"
     }
   }
 }
@@ -66,8 +93,7 @@ Requires GitHub Copilot with MCP support enabled.
 You can test the MCP server using the [MCP Inspector](https://github.com/modelcontextprotocol/inspector):
 
 ```bash
-npx @modelcontextprotocol/inspector docs-builder mcp
+npx @modelcontextprotocol/inspector --url https://www.elastic.co/docs/_mcp/
 ```
 
 This opens a web UI where you can browse all available tools and invoke them manually.
-

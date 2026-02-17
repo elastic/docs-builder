@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System;
+using System.Text.Json;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
@@ -16,6 +17,9 @@ public static class GlobalSections
 	public const string Head = "head";
 	public const string Footer = "footer";
 }
+
+/// <summary>Configuration injected into the frontend for build-type-specific behavior (OTEL, HTMX).</summary>
+public record FrontendConfig(string BuildType, string ServiceName, bool TelemetryEnabled, string RootPath);
 
 public record GlobalLayoutViewModel
 {
@@ -55,6 +59,17 @@ public record GlobalLayoutViewModel
 	public BuildType BuildType { get; init; } = BuildType.Isolated;
 
 	public bool RenderHamburgerIcon { get; init; } = true;
+
+	public FrontendConfig FrontendConfig =>
+		BuildType switch
+		{
+			BuildType.Assembler => new FrontendConfig("assembler", "docs-frontend", true, GetStaticPathPrefix()),
+			BuildType.Codex => new FrontendConfig("codex", "codex-frontend", true, GetStaticPathPrefix()),
+			_ => new FrontendConfig("isolated", "docs-frontend", false, GetStaticPathPrefix()),
+		};
+
+	public string FrontendConfigJson =>
+		JsonSerializer.Serialize(FrontendConfig, FrontendConfigJsonContext.Default.FrontendConfig);
 
 	public string Static(string path)
 	{
