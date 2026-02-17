@@ -130,7 +130,7 @@
     "@theletterf/beautiful-mermaid": "0.1.5",
     "dompurify": "3.3.1",
     "highlight.js": "11.11.1",
-    "htmx-ext-head-support": "2.0.4",
+    "htmx-ext-head-support": "2.0.5",
     "htmx-ext-preload": "2.1.2",
     "htmx.org": "2.0.8",
     "idb-keyval": "6.2.2",
