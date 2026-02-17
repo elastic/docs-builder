@@ -1,3 +1,5 @@
+@using Elastic.Documentation.Svg
+@using Microsoft.AspNetCore.Html
 @inherits RazorSlice<Elastic.Markdown.MarkdownLayoutViewModel>
 <aside class="sidebar md:block w-full lg:max-w-65 md:order-2">
 	<nav id="toc-nav" class="sidebar-nav lg:h-full flex flex-row-reverse lg:block items-center justify-between md:justify-start gap-4 pb-3 md:pb-9 simple-scrollbar">
@@ -63,6 +65,29 @@
 				</a>
 			</li>
 		</ul>
+		<div class="mt-4 hidden lg:block">
+			<div class="sidebar-trial-card">
+				<div class="sidebar-trial-card__inner">
+					<a href="https://cloud.elastic.co/registration?page=docs&placement=docs-body" class="w-full min-h-[30px] cursor-pointer text-white text-nowrap bg-blue-elastic hover:bg-blue-elastic-110 focus:ring-4 focus:outline-none focus:ring-blue-elastic-50 font-semibold font-sans rounded-sm px-6 py-2 text-center flex items-center justify-center leading-[30px]">
+					Get started free
+				</a>
+					<ul class="mt-4 list-none text-sm">
+						<li class="flex items-start gap-2 py-1 text-ink-light leading-[17px]">
+							<span class="sidebar-trial-card__icon">@(new HtmlString(EuiSvgIcons.GetIcon("checkInCircleFilled") ?? string.Empty))</span>
+							<span>14-day free trial</span>
+						</li>
+						<li class="flex items-start gap-2 py-1 text-ink-light leading-[17px]">
+							<span class="sidebar-trial-card__icon">@(new HtmlString(EuiSvgIcons.GetIcon("checkInCircleFilled") ?? string.Empty))</span>
+							<span>All features included</span>
+						</li>
+						<li class="flex items-start gap-2 py-1 text-ink-light leading-[17px]">
+							<span class="sidebar-trial-card__icon">@(new HtmlString(EuiSvgIcons.GetIcon("checkInCircleFilled") ?? string.Empty))</span>
+							<span>No setup required</span>
+						</li>
+					</ul>
+				</div>
+			</div>
+		</div>
 		<div class="pt-6 hidden lg:block">
 			@if (Model.PageTocItems.Count > 0)
 			{
