@@ -1,5 +1,6 @@
 import { initApiDocs } from './api-docs'
 import { initAppliesSwitch } from './applies-switch'
+import { config } from './config'
 import { initCopyButton } from './copybutton'
 import { initHighlight } from './hljs'
 import { initImageCarousel } from './image-carousel'
@@ -20,14 +21,16 @@ import { UAParser } from 'ua-parser-js'
 const DOCS_BUILDER_VERSION =
     process.env.DOCS_BUILDER_VERSION?.trim() ?? '0.0.0-dev'
 
-// Initialize OpenTelemetry FIRST, before any other code runs
+// Initialize OpenTelemetry FIRST, before any other code runs (when enabled)
 // This must happen early so all subsequent code is instrumented
-initializeOtel({
-    serviceName: 'docs-frontend',
-    serviceVersion: DOCS_BUILDER_VERSION,
-    baseUrl: '/docs',
-    debug: false,
-})
+if (config.telemetryEnabled) {
+    initializeOtel({
+        serviceName: config.serviceName,
+        serviceVersion: DOCS_BUILDER_VERSION,
+        baseUrl: config.rootPath,
+        debug: false,
+    })
+}
 
 // Dynamically import web components after telemetry is initialized.
 // Parcel code-splits these into separate chunks loaded on demand.
@@ -130,16 +133,42 @@ document.addEventListener(
     }
 )
 
-document.addEventListener('htmx:beforeRequest', function (event: HtmxEvent) {
-    const path = event.detail.requestConfig?.path
+// Disable htmx boost for links that don't point to /docs paths.
+// This runs before htmx wires up event listeners, so these links
+// behave as normal anchors and htmx never intercepts their clicks.
+document.addEventListener(
+    'htmx:beforeProcessNode',
+    function (event: HtmxEvent) {
+        const elt = event.detail.elt
+        if (elt?.tagName !== 'A') {
+            return
+        }
+        const href = elt.getAttribute('href')
+        if (!href) {
+            return
+        }
 
-    // Bypass htmx for /api URLs - they require full page navigation
-    if (path?.startsWith('/api')) {
-        event.preventDefault()
-        window.location.href = path
-        return
+        const disablehtmx = (el: HTMLElement) => {
+            el.setAttribute('hx-disable', 'true')
+        }
+
+        let url: URL
+        try {
+            url = new URL(href)
+        } catch {
+            return
+        }
+        // Not checking for same hostname because htmx `selfRequestsOnly` is enabled
+        if (
+            config.buildType === 'assembler' &&
+            !url.pathname?.startsWith('/docs')
+        ) {
+            disablehtmx(elt)
+        }
     }
+)
 
+document.addEventListener('htmx:beforeRequest', function (event: HtmxEvent) {
     if (
         event.detail.requestConfig.verb === 'get' &&
         event.detail.requestConfig.triggeringEvent

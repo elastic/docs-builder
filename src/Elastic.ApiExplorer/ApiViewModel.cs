@@ -58,8 +58,10 @@ public abstract partial class ApiViewModel(ApiRenderContext context)
 		return $"https://github.com/elastic/{repo}/tree/{branch}/docs";
 	}
 
-	public ApiLayoutViewModel CreateGlobalLayoutModel() =>
-		new()
+	public ApiLayoutViewModel CreateGlobalLayoutModel()
+	{
+		var rootPath = BuildContext.SiteRootPath ?? GetDefaultRootPath(BuildContext.UrlPathPrefix);
+		return new()
 		{
 			DocsBuilderVersion = ShortId.Create(BuildContext.Version),
 			DocSetName = "Api Explorer",
@@ -69,6 +71,7 @@ public abstract partial class ApiViewModel(ApiRenderContext context)
 			Next = null,
 			NavigationHtml = NavigationHtml,
 			UrlPathPrefix = BuildContext.UrlPathPrefix,
+			Htmx = new DefaultHtmxAttributeProvider(rootPath),
 			AllowIndexing = BuildContext.AllowIndexing,
 			CanonicalBaseUrl = BuildContext.CanonicalBaseUrl,
 			GoogleTagManager = new GoogleTagManagerConfiguration(),
@@ -86,4 +89,11 @@ public abstract partial class ApiViewModel(ApiRenderContext context)
 			GitHubDocsUrl = GetGitHubDocsUrl(),
 			GitHubRef = BuildContext.Git.GitHubRef
 		};
+	}
+
+	private static string GetDefaultRootPath(string? urlPathPrefix)
+	{
+		var prefix = urlPathPrefix?.Trim('/') ?? "";
+		return string.IsNullOrEmpty(prefix) ? "/" : $"/{prefix}/";
+	}
 }

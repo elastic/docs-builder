@@ -11,7 +11,6 @@ These commands can be roughly grouped into four main categories
 - [Link commands](#link-commands)
 - [Assembler commands](#assembler-commands)
 - [Changelog commands](#changelog-commands)
-- [MCP command](#mcp-command)
 
 ### Global options 
 
@@ -53,9 +52,3 @@ Assembler builds bring together all isolated documentation set builds and turn t
 Commands that pertain to creating and publishing product release documentation.
 
 [See available CLI commands for release docs](release/index.md)
-
-## MCP command
-
-Starts an [MCP (Model Context Protocol)](../mcp/index.md) server that allows AI assistants to interact with documentation tooling directly.
-
-[See the `mcp` command reference](mcp.md)

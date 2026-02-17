@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System;
+using System.Text.Json;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
@@ -17,6 +18,9 @@ public static class GlobalSections
 	public const string Footer = "footer";
 }
 
+/// <summary>Configuration injected into the frontend for build-type-specific behavior (OTEL, HTMX).</summary>
+public record FrontendConfig(string BuildType, string ServiceName, bool TelemetryEnabled, string RootPath);
+
 public record GlobalLayoutViewModel
 {
 	public required string DocsBuilderVersion { get; init; }
@@ -30,6 +34,7 @@ public record GlobalLayoutViewModel
 
 	public required string NavigationHtml { get; init; }
 	public required string? UrlPathPrefix { get; init; }
+	public required IHtmxAttributeProvider Htmx { get; init; }
 	public required Uri? CanonicalBaseUrl { get; init; }
 
 	// Header properties for isolated mode
@@ -54,6 +59,17 @@ public record GlobalLayoutViewModel
 	public BuildType BuildType { get; init; } = BuildType.Isolated;
 
 	public bool RenderHamburgerIcon { get; init; } = true;
+
+	public FrontendConfig FrontendConfig =>
+		BuildType switch
+		{
+			BuildType.Assembler => new FrontendConfig("assembler", "docs-frontend", true, GetStaticPathPrefix()),
+			BuildType.Codex => new FrontendConfig("codex", "codex-frontend", true, GetStaticPathPrefix()),
+			_ => new FrontendConfig("isolated", "docs-frontend", false, GetStaticPathPrefix()),
+		};
+
+	public string FrontendConfigJson =>
+		JsonSerializer.Serialize(FrontendConfig, FrontendConfigJsonContext.Default.FrontendConfig);
 
 	public string Static(string path)
 	{
@@ -88,5 +104,13 @@ public record GlobalLayoutViewModel
 	{
 		path = path.AsSpan().Trim('/').ToString();
 		return $"{UrlPathPrefix}/{path}";
+	}
+
+	/// <summary>Link to the site root. For codex builds, returns the codex root (not the doc set root).</summary>
+	public string SiteLink(string path)
+	{
+		path = path.AsSpan().Trim('/').ToString();
+		var prefix = GetStaticPathPrefix();
+		return string.IsNullOrEmpty(prefix) ? $"/{path}" : $"{prefix}/{path}";
 	}
 }
