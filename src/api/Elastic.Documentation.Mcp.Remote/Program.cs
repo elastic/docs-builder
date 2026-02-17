@@ -2,9 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Api.Infrastructure.OpenTelemetry;
 using Elastic.Documentation.Assembler.Links;
 using Elastic.Documentation.Assembler.Mcp;
-using Elastic.Documentation.Api.Infrastructure.OpenTelemetry;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links.InboundLinks;
 using Elastic.Documentation.Mcp.Remote.Gateways;
