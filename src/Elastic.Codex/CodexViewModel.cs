@@ -4,11 +4,11 @@
 
 using Elastic.Codex.Navigation;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Site;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.FileProviders;
 
 namespace Elastic.Codex;
