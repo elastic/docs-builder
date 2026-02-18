@@ -1,0 +1,525 @@
+<!-- Vector Sizing Calculator — Asciidoctor embed
+     Paste this inside a ++++/++++ passthrough block in your .adoc file.
+     All CSS is scoped under #vsc to avoid conflicts with the docs page. -->
+
+<style>
+#vsc {
+  --vsc-page-bg: #FFFFFF;
+  --vsc-panel-bg: #FFFFFF;
+  --vsc-highlight-bg: #ECF1F9;
+  --vsc-text: #1D2A3E;
+  --vsc-text-heading: #111C2C;
+  --vsc-text-subdued: #516381;
+  --vsc-link: #1750BA;
+  --vsc-primary: #0B64DD;
+  --vsc-primary-light: #BFDBFF;
+  --vsc-accent-secondary: #008B87;
+  --vsc-warning: #FACB3D;
+  --vsc-danger: #C61E25;
+  --vsc-border: #E3E8F2;
+  --vsc-border-strong: #CAD3E2;
+  --vsc-radius: 4px;
+  --vsc-shadow: 0 2px 4px rgba(0,0,0,0.05), 0 6px 12px rgba(0,0,0,0.05);
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--vsc-text);
+  margin: 24px 0;
+}
+#vsc *, #vsc *::before, #vsc *::after { box-sizing: border-box; }
+#vsc .vsc-card {
+  background: var(--vsc-panel-bg);
+  border: 1px solid var(--vsc-border);
+  border-radius: var(--vsc-radius);
+  padding: 24px;
+  margin-bottom: 16px;
+  box-shadow: var(--vsc-shadow);
+}
+#vsc .vsc-card-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--vsc-text-subdued);
+  margin: 0 0 16px 0;
+  padding: 0 0 8px 0;
+  border-bottom: 1px solid var(--vsc-border);
+}
+#vsc .vsc-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+#vsc .vsc-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+@media (max-width: 640px) {
+  #vsc .vsc-grid-2, #vsc .vsc-grid-3 { grid-template-columns: 1fr; }
+}
+#vsc .vsc-field { display: flex; flex-direction: column; gap: 4px; }
+#vsc .vsc-field label {
+  font-size: 0.857rem;
+  font-weight: 600;
+  color: var(--vsc-text);
+  margin: 0;
+}
+#vsc .vsc-field input, #vsc .vsc-field select {
+  background: var(--vsc-page-bg);
+  border: 1px solid var(--vsc-border-strong);
+  border-radius: var(--vsc-radius);
+  padding: 8px 12px;
+  font-size: 0.875rem;
+  color: var(--vsc-text);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  font-family: inherit;
+  line-height: 1.5;
+  width: 100%;
+}
+#vsc .vsc-field input:focus, #vsc .vsc-field select:focus {
+  border-color: var(--vsc-primary);
+  box-shadow: 0 0 0 1px var(--vsc-primary);
+}
+#vsc .vsc-field input::placeholder { color: #A2B1C9; }
+#vsc .vsc-field select option { background: var(--vsc-page-bg); color: var(--vsc-text); }
+#vsc .vsc-hint {
+  font-size: 0.75rem;
+  color: var(--vsc-text-subdued);
+  margin: 0;
+}
+#vsc .vsc-results-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 640px) {
+  #vsc .vsc-results-grid { grid-template-columns: 1fr; }
+}
+#vsc .vsc-result-block {
+  background: var(--vsc-highlight-bg);
+  border-radius: var(--vsc-radius);
+  padding: 16px 20px;
+  border: 1px solid var(--vsc-border);
+}
+#vsc .vsc-result-block.vsc-highlight {
+  border-color: var(--vsc-primary-light);
+  background: #F0F6FF;
+}
+#vsc .vsc-result-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--vsc-text-subdued);
+  margin: 0 0 4px 0;
+}
+#vsc .vsc-result-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--vsc-text-heading);
+  margin: 0;
+}
+#vsc .vsc-result-value .vsc-unit {
+  font-size: 0.857rem;
+  font-weight: 500;
+  color: var(--vsc-text-subdued);
+  margin-left: 2px;
+}
+#vsc .vsc-result-sub {
+  font-size: 0.75rem;
+  color: var(--vsc-text-subdued);
+  margin: 2px 0 0 0;
+  font-variant-numeric: tabular-nums;
+}
+#vsc .vsc-breakdown { margin-top: 20px; }
+#vsc .vsc-breakdown-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--vsc-text-subdued);
+  margin: 0 0 8px 0;
+}
+#vsc .vsc-breakdown-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--vsc-border);
+  font-size: 0.857rem;
+}
+#vsc .vsc-breakdown-row:last-child { border-bottom: none; }
+#vsc .vsc-breakdown-row .vsc-label { color: var(--vsc-text-subdued); }
+#vsc .vsc-breakdown-row .vsc-value { font-weight: 600; color: var(--vsc-text); font-variant-numeric: tabular-nums; }
+#vsc .vsc-bar-chart { margin-top: 12px; }
+#vsc .vsc-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+#vsc .vsc-bar-label {
+  font-size: 0.75rem;
+  color: var(--vsc-text-subdued);
+  width: 160px;
+  min-width: 160px;
+  text-align: right;
+}
+#vsc .vsc-bar-track {
+  flex: 1;
+  height: 16px;
+  background: var(--vsc-highlight-bg);
+  border-radius: var(--vsc-radius);
+  overflow: hidden;
+}
+#vsc .vsc-bar-fill {
+  height: 100%;
+  border-radius: var(--vsc-radius);
+  transition: width 0.4s ease;
+  min-width: 2px;
+}
+#vsc .vsc-bar-fill.vsc-disk-raw { background: var(--vsc-primary); }
+#vsc .vsc-bar-fill.vsc-disk-quant { background: var(--vsc-accent-secondary); }
+#vsc .vsc-bar-fill.vsc-disk-index { background: var(--vsc-warning); }
+#vsc .vsc-bar-fill.vsc-ram-vec { background: var(--vsc-primary); }
+#vsc .vsc-bar-fill.vsc-ram-index { background: var(--vsc-accent-secondary); }
+#vsc .vsc-bar-amount {
+  font-size: 0.75rem;
+  color: var(--vsc-text-subdued);
+  min-width: 70px;
+  font-variant-numeric: tabular-nums;
+}
+#vsc .vsc-legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 8px; }
+#vsc .vsc-legend-item { display: flex; align-items: center; gap: 5px; font-size: 0.75rem; color: var(--vsc-text-subdued); }
+#vsc .vsc-legend-dot { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
+#vsc .vsc-note-box {
+  background: #E6F9F7;
+  border: 1px solid #B3ECE8;
+  border-radius: var(--vsc-radius);
+  padding: 12px 16px;
+  font-size: 0.857rem;
+  color: var(--vsc-text);
+  line-height: 1.5;
+  margin-top: 12px;
+}
+#vsc .vsc-note-box strong { color: var(--vsc-accent-secondary); font-weight: 600; }
+#vsc .vsc-warn-box {
+  background: #FFF0F5;
+  border: 1px solid #F5C2D8;
+  border-radius: var(--vsc-radius);
+  padding: 12px 16px;
+  font-size: 0.857rem;
+  color: var(--vsc-text);
+  line-height: 1.5;
+  margin-top: 12px;
+  display: none;
+}
+#vsc .vsc-warn-box strong { color: var(--vsc-danger); font-weight: 600; }
+#vsc .vsc-warn-box a { color: var(--vsc-link); text-decoration: underline; }
+#vsc .vsc-warn-box.vsc-visible { display: block; }
+#vsc .vsc-advanced summary {
+  font-size: 0.857rem;
+  color: var(--vsc-link);
+  cursor: pointer;
+  user-select: none;
+  font-weight: 500;
+}
+#vsc .vsc-advanced summary:hover { text-decoration: underline; }
+#vsc .vsc-formula-ref {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--vsc-border);
+}
+#vsc .vsc-formula-ref summary {
+  font-size: 0.857rem;
+  color: var(--vsc-link);
+  cursor: pointer;
+  user-select: none;
+  font-weight: 500;
+}
+#vsc .vsc-formula-ref summary:hover { text-decoration: underline; }
+#vsc .vsc-formulas {
+  margin-top: 10px;
+  padding: 12px 16px;
+  font-size: 0.8125rem;
+  color: var(--vsc-text);
+  background: var(--vsc-highlight-bg);
+  border: 1px solid var(--vsc-border);
+  border-radius: var(--vsc-radius);
+  font-family: 'Roboto Mono', Menlo, Courier, monospace;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+#vsc .vsc-footnote {
+  font-size: 0.75rem;
+  color: var(--vsc-text-subdued);
+  margin-top: 8px;
+  font-style: italic;
+}
+</style>
+
+<div id="vsc">
+
+  <!-- Configuration -->
+  <div class="vsc-card">
+    <div class="vsc-card-title">Configuration</div>
+    <div class="vsc-grid-3">
+      <div class="vsc-field">
+        <label for="vscNumVectors">Number of vectors</label>
+        <input type="text" id="vscNumVectors" placeholder="e.g. 10,000,000" inputmode="numeric">
+      </div>
+      <div class="vsc-field">
+        <label for="vscNumDims">Dimensions</label>
+        <input type="number" id="vscNumDims" placeholder="e.g. 768" min="1" max="4096">
+      </div>
+      <div class="vsc-field">
+        <label for="vscElType">Element type</label>
+        <select id="vscElType">
+          <option value="float">float (4 bytes/dim)</option>
+          <option value="bfloat16">bfloat16 (2 bytes/dim)</option>
+          <option value="byte">byte (1 byte/dim)</option>
+          <option value="bit">bit (1 bit/dim)</option>
+        </select>
+      </div>
+    </div>
+    <div class="vsc-grid-3" style="margin-top:16px">
+      <div class="vsc-field">
+        <label for="vscIdxType">Index structure</label>
+        <select id="vscIdxType">
+          <option value="hnsw">HNSW</option>
+          <option value="flat">Flat (brute-force)</option>
+          <option value="disk_bbq">DiskBBQ</option>
+        </select>
+      </div>
+      <div class="vsc-field">
+        <label for="vscQuant">Quantization</label>
+        <select id="vscQuant">
+          <option value="none">None</option>
+          <option value="int8">int8</option>
+          <option value="int4">int4</option>
+          <option value="bbq">BBQ</option>
+        </select>
+      </div>
+      <div class="vsc-field">
+        <label for="vscReplicas">Number of replicas</label>
+        <input type="number" id="vscReplicas" value="1" min="0">
+        <span class="vsc-hint">Total copies = 1 primary + replicas</span>
+      </div>
+    </div>
+    <div id="vscHnswAdv" class="vsc-advanced" style="display:none;margin-top:16px">
+      <details>
+        <summary>Advanced HNSW parameters</summary>
+        <div class="vsc-grid-3" style="margin-top:12px">
+          <div class="vsc-field">
+            <label for="vscM">m (connections per node)</label>
+            <input type="number" id="vscM" value="16" min="2" max="512">
+            <span class="vsc-hint">Default: 16</span>
+          </div>
+          <div class="vsc-field">
+            <label for="vscEf">ef_construction</label>
+            <input type="number" id="vscEf" value="100" min="1">
+            <span class="vsc-hint">Default: 100 — build-time quality, no sizing impact</span>
+          </div>
+        </div>
+      </details>
+    </div>
+    <div id="vscBbqAdv" class="vsc-advanced" style="display:none;margin-top:16px">
+      <details>
+        <summary>Advanced DiskBBQ parameters</summary>
+        <div class="vsc-grid-3" style="margin-top:12px">
+          <div class="vsc-field">
+            <label for="vscVpc">Vectors per cluster</label>
+            <input type="number" id="vscVpc" value="384" min="1">
+            <span class="vsc-hint">Default: 384</span>
+          </div>
+        </div>
+      </details>
+    </div>
+    <div id="vscWarn" class="vsc-warn-box">
+      <strong>Invalid combination.</strong> <span id="vscWarnMsg"></span>
+    </div>
+    <div id="vscNote" class="vsc-note-box" style="display:none"></div>
+  </div>
+
+  <!-- Per-replica results -->
+  <div class="vsc-card">
+    <div class="vsc-card-title">Estimated Requirements (per replica)</div>
+    <div class="vsc-results-grid">
+      <div class="vsc-result-block vsc-highlight">
+        <div class="vsc-result-label">Total Disk</div>
+        <div class="vsc-result-value" id="vscTotalDisk">—</div>
+        <div class="vsc-result-sub" id="vscTotalDiskB"></div>
+      </div>
+      <div class="vsc-result-block vsc-highlight">
+        <div class="vsc-result-label">Off-Heap RAM</div>
+        <div class="vsc-result-value" id="vscTotalRam">—</div>
+        <div class="vsc-result-sub" id="vscTotalRamB"></div>
+      </div>
+    </div>
+    <div class="vsc-breakdown">
+      <div class="vsc-breakdown-title">Disk Breakdown</div>
+      <div id="vscDiskBD"></div>
+      <div class="vsc-bar-chart" id="vscDiskChart"></div>
+    </div>
+    <div class="vsc-breakdown" style="margin-top:24px">
+      <div class="vsc-breakdown-title">Off-Heap RAM Breakdown</div>
+      <div id="vscRamBD"></div>
+      <div class="vsc-bar-chart" id="vscRamChart"></div>
+    </div>
+  </div>
+
+  <!-- Cluster totals -->
+  <div class="vsc-card" id="vscCluster" style="display:none">
+    <div class="vsc-card-title">Cluster-Wide Totals</div>
+    <div class="vsc-results-grid">
+      <div class="vsc-result-block">
+        <div class="vsc-result-label">Total Disk (all copies)</div>
+        <div class="vsc-result-value" id="vscClDisk">—</div>
+        <div class="vsc-result-sub" id="vscClDiskSub"></div>
+      </div>
+      <div class="vsc-result-block">
+        <div class="vsc-result-label">Total Off-Heap RAM (all copies)</div>
+        <div class="vsc-result-value" id="vscClRam">—</div>
+        <div class="vsc-result-sub" id="vscClRamSub"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Formulas -->
+  <div class="vsc-card">
+    <div class="vsc-formula-ref">
+      <details>
+        <summary>Show formulas used</summary>
+        <div class="vsc-formulas" id="vscFormulas"></div>
+      </details>
+    </div>
+  </div>
+
+  <div class="vsc-footnote">
+    Estimates are approximate — run benchmarks with your specific dataset for production sizing.
+  </div>
+</div>
+
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  var ids = ['vscNumVectors','vscNumDims','vscElType','vscIdxType','vscQuant','vscM','vscEf','vscVpc','vscReplicas'];
+  ids.forEach(function(id){ var e=$(id); e.addEventListener('input',calc); e.addEventListener('change',calc); });
+  $('vscNumVectors').addEventListener('blur',function(){
+    var v=pv(this.value); if(!isNaN(v)&&v>0) this.value=v.toLocaleString('en-US');
+  });
+  function pv(s){
+    if(!s)return NaN; s=s.trim().replace(/,/g,'');
+    var mu={k:1e3,K:1e3,m:1e6,M:1e6,b:1e9,B:1e9};
+    var r=s.match(/^(\d+\.?\d*)\s*([kKmMbB])?$/);
+    if(!r)return parseInt(s,10);
+    return Math.round(parseFloat(r[1])*(r[2]?mu[r[2]]:1));
+  }
+  function fb(b){
+    if(b===0)return{v:'0',u:'bytes'};
+    var u=['bytes','KB','MB','GB','TB','PB'],i=0,x=b;
+    while(x>=1024&&i<u.length-1){x/=1024;i++;}
+    return{v:x<10?x.toFixed(2):x<100?x.toFixed(1):x.toFixed(0),u:u[i]};
+  }
+  function fs(b){var f=fb(b);return f.v+' '+f.u;}
+  function fe(b){return b.toLocaleString('en-US')+' bytes';}
+
+  function calc(){
+    var idx=$('vscIdxType').value, et=$('vscElType').value, qs=$('vscQuant');
+    $('vscHnswAdv').style.display=idx==='hnsw'?'block':'none';
+    $('vscBbqAdv').style.display=idx==='disk_bbq'?'block':'none';
+    var pq=qs.value; qs.innerHTML='';
+    if(idx==='disk_bbq'){qs.innerHTML='<option value="bbq">BBQ (built-in)</option>';qs.disabled=true;}
+    else{qs.disabled=false;var oo=[{v:'none',l:'None'}];
+      if(et==='float'||et==='bfloat16'){oo.push({v:'int8',l:'int8'},{v:'int4',l:'int4'},{v:'bbq',l:'BBQ'});}
+      oo.forEach(function(o){var op=document.createElement('option');op.value=o.v;op.textContent=o.l;if(o.v===pq)op.selected=true;qs.appendChild(op);});
+    }
+
+    var V=pv($('vscNumVectors').value), D=parseInt($('vscNumDims').value,10);
+    var q=qs.value, m=parseInt($('vscM').value,10)||16, vpc=parseInt($('vscVpc').value,10)||384;
+    var rep=parseInt($('vscReplicas').value,10)||0;
+    var w=$('vscWarn'),wm=$('vscWarnMsg'); w.classList.remove('vsc-visible');
+
+    if(isNaN(V)||isNaN(D)||V<=0||D<=0){
+      $('vscTotalDisk').textContent='—';$('vscTotalRam').textContent='—';
+      $('vscTotalDiskB').textContent='';$('vscTotalRamB').textContent='';
+      $('vscDiskBD').innerHTML='';$('vscRamBD').innerHTML='';
+      $('vscDiskChart').innerHTML='';$('vscRamChart').innerHTML='';
+      $('vscCluster').style.display='none';$('vscFormulas').textContent='';return;
+    }
+    if(D>4096){
+      w.classList.add('vsc-visible');
+      wm.innerHTML='Elasticsearch supports a maximum of 4,096 dimensions for dense_vector fields. <a href="https://www.elastic.co/docs/reference/elasticsearch/mapping-reference/dense-vector#dense-vector-params" target="_blank" rel="noopener">See documentation</a>.';
+      return;
+    }
+    if((et==='byte'||et==='bit')&&q!=='none'&&idx!=='disk_bbq'){
+      w.classList.add('vsc-visible');wm.textContent='Quantization is not applicable to '+et+' element type.';
+    }
+    var noteEl=$('vscNote');
+    if(et==='float'&&D>=384&&q==='none'&&idx!=='disk_bbq'){
+      noteEl.style.display='block';
+      noteEl.innerHTML='<strong>Recommendation:</strong> For float vectors with dimensions \u2265 384, Elastic strongly recommends using a quantized index to reduce memory footprint.';
+    }else{noteEl.style.display='none';}
+
+    var F=[];
+    var rpv; switch(et){case'float':rpv=D*4;break;case'bfloat16':rpv=D*2;break;case'byte':rpv=D;break;case'bit':rpv=Math.ceil(D/8);break;}
+    var rawD=V*rpv; F.push('Raw vectors on disk = '+V.toLocaleString()+' \u00d7 '+rpv+' = '+fs(rawD));
+
+    var qD=0,qL='';
+    if(idx!=='disk_bbq'){switch(q){
+      case'int8':qD=V*(D+4);qL='int8 quantized vectors';F.push('int8 quantized = V \u00d7 (D + 4) = '+fs(qD));break;
+      case'int4':qD=V*(Math.ceil(D/2)+4);qL='int4 quantized vectors';F.push('int4 quantized = V \u00d7 (D/2 + 4) = '+fs(qD));break;
+      case'bbq':qD=V*(Math.ceil(D/8)+14);qL='BBQ quantized vectors';F.push('BBQ quantized = V \u00d7 (D/8 + 14) = '+fs(qD));break;
+    }}
+
+    var iD=0,iL='',bbqC=0,bbqV=0;
+    if(idx==='hnsw'){iD=V*4*m;iL='HNSW graph';F.push('HNSW graph = V \u00d7 4 \u00d7 '+m+' = '+fs(iD));}
+    else if(idx==='disk_bbq'){
+      var nc=Math.ceil(V/vpc);bbqC=nc*D*4+nc*(D+14);bbqV=V*((Math.ceil(D/8)+14+2)*2);
+      iD=bbqC+bbqV;iL='DiskBBQ structures';
+      F.push('DiskBBQ clusters = ceil(V / '+vpc+') = '+nc.toLocaleString());
+      F.push('Centroid bytes = '+fs(bbqC));F.push('Quantized cluster vectors = '+fs(bbqV));
+    }
+    var tD=rawD+qD+iD; F.push('Total disk (per replica) = '+fs(tD));
+
+    var rV=0,rVL='',rI=0,rIL='';
+    if(idx==='hnsw'||idx==='flat'){
+      switch(q){
+        case'none':rV=rawD;rVL='Raw vectors in RAM';F.push('Vector RAM = '+fs(rV));break;
+        case'int8':rV=V*(D+4);rVL='int8 vectors in RAM';F.push('Vector RAM (int8) = '+fs(rV));break;
+        case'int4':rV=V*(Math.ceil(D/2)+4);rVL='int4 vectors in RAM';F.push('Vector RAM (int4) = '+fs(rV));break;
+        case'bbq':rV=V*(Math.ceil(D/8)+14);rVL='BBQ vectors in RAM';F.push('Vector RAM (BBQ) = '+fs(rV));break;
+      }
+      if(idx==='hnsw'){rI=V*4*m;rIL='HNSW graph in RAM';F.push('HNSW graph RAM = '+fs(rI));}
+    }else if(idx==='disk_bbq'){
+      var full=bbqC+bbqV;rV=Math.ceil(full*0.05);rVL='DiskBBQ structures (~5% in RAM)';
+      F.push('DiskBBQ RAM \u2248 5% \u00d7 '+fs(full)+' = '+fs(rV));
+      F.push('  Note: 1\u20135% of index structure in RAM is typically sufficient');
+    }
+    var tR=rV+rI; F.push('Total off-heap RAM (per replica) = '+fs(tR));
+
+    var df=fb(tD);$('vscTotalDisk').innerHTML=df.v+'<span class="vsc-unit">'+df.u+'</span>';
+    $('vscTotalDiskB').textContent=fe(tD);
+    var rf=fb(tR);$('vscTotalRam').innerHTML=rf.v+'<span class="vsc-unit">'+rf.u+'</span>';
+    $('vscTotalRamB').textContent=fe(tR);
+
+    var di=[{l:'Raw vectors',v:rawD,c:'vsc-disk-raw'}];
+    if(qD>0)di.push({l:qL,v:qD,c:'vsc-disk-quant'});
+    if(iD>0)di.push({l:iL,v:iD,c:'vsc-disk-index'});
+
+    $('vscDiskBD').innerHTML=di.map(function(i){return'<div class="vsc-breakdown-row"><span class="vsc-label">'+i.l+'</span><span class="vsc-value">'+fs(i.v)+'</span></div>';}).join('');
+    $('vscDiskChart').innerHTML=di.map(function(i){
+      var p=Math.max((i.v/tD)*100,0.5);
+      return'<div class="vsc-bar-row"><span class="vsc-bar-label">'+i.l+'</span><div class="vsc-bar-track"><div class="vsc-bar-fill '+i.c+'" style="width:'+p+'%"></div></div><span class="vsc-bar-amount">'+fs(i.v)+'</span></div>';
+    }).join('')+'<div class="vsc-legend"><div class="vsc-legend-item"><span class="vsc-legend-dot" style="background:var(--vsc-primary)"></span>Raw vectors</div>'+(qD>0?'<div class="vsc-legend-item"><span class="vsc-legend-dot" style="background:var(--vsc-accent-secondary)"></span>Quantized</div>':'')+(iD>0?'<div class="vsc-legend-item"><span class="vsc-legend-dot" style="background:var(--vsc-warning)"></span>Index structure</div>':'')+'</div>';
+
+    var ri=[];if(rV>0)ri.push({l:rVL,v:rV,c:'vsc-ram-vec'});if(rI>0)ri.push({l:rIL,v:rI,c:'vsc-ram-index'});
+    $('vscRamBD').innerHTML=ri.map(function(i){return'<div class="vsc-breakdown-row"><span class="vsc-label">'+i.l+'</span><span class="vsc-value">'+fs(i.v)+'</span></div>';}).join('');
+    $('vscRamChart').innerHTML=ri.map(function(i){
+      var p=Math.max((i.v/tR)*100,0.5);
+      return'<div class="vsc-bar-row"><span class="vsc-bar-label">'+i.l+'</span><div class="vsc-bar-track"><div class="vsc-bar-fill '+i.c+'" style="width:'+p+'%"></div></div><span class="vsc-bar-amount">'+fs(i.v)+'</span></div>';
+    }).join('')+(ri.length>1?'<div class="vsc-legend"><div class="vsc-legend-item"><span class="vsc-legend-dot" style="background:var(--vsc-primary)"></span>Vector data</div><div class="vsc-legend-item"><span class="vsc-legend-dot" style="background:var(--vsc-accent-secondary)"></span>Index structure</div></div>':'');
+
+    var tc=1+rep;
+    if(rep>0){
+      $('vscCluster').style.display='block';
+      var cd=tD*tc,cr=tR*tc;
+      var cdf=fb(cd),crf=fb(cr);
+      $('vscClDisk').innerHTML=cdf.v+'<span class="vsc-unit">'+cdf.u+'</span>';
+      $('vscClDiskSub').textContent='1 primary + '+rep+' replica(s) = '+tc+' total copies';
+      $('vscClRam').innerHTML=crf.v+'<span class="vsc-unit">'+crf.u+'</span>';
+      $('vscClRamSub').textContent='Spread across data nodes holding these replicas';
+      F.push('\nCluster total disk = per-replica \u00d7 '+tc+' copies = '+fs(cd));
+      F.push('Cluster total RAM = per-replica \u00d7 '+tc+' copies = '+fs(cr));
+    }else{$('vscCluster').style.display='none';}
+
+    $('vscFormulas').textContent=F.join('\n');
+  }
+  calc();
+})();
+</script>
