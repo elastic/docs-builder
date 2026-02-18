@@ -30,13 +30,13 @@ public class CodexNavigationTests(ITestOutputHelper output) : CodexNavigationTes
 	}
 
 	[Fact]
-	public void GroupedRepos_UseStableRUrls_NotCategoryUrls()
+	public void GroupedRepos_UseStableRUrls_NotGroupUrls()
 	{
 		var config = CreateCodexConfiguration(
 			sitePrefix: "/docs",
 			docSets: [
-				new CodexDocumentationSetReference { Name = "apm-agent", Branch = "main", Category = "observability" },
-				new CodexDocumentationSetReference { Name = "uptime", Branch = "main", Category = "observability" }
+				new CodexDocumentationSetReference { Name = "apm-agent", Branch = "main", Group = "observability" },
+				new CodexDocumentationSetReference { Name = "uptime", Branch = "main", Group = "observability" }
 			]);
 
 		var docSetNavigations = CreateMockDocSetNavigations(["apm-agent", "uptime"]);
@@ -45,7 +45,7 @@ public class CodexNavigationTests(ITestOutputHelper output) : CodexNavigationTes
 		// Repos still use /r/ prefix even when in a category
 		codexNav.DocumentationSetInfos.Select(d => d.Url).Should().BeEquivalentTo(["/docs/r/apm-agent", "/docs/r/uptime"]);
 
-		// Category landing pages use /g/ prefix
+		// Group landing pages use /g/ prefix
 		codexNav.GroupNavigations.Should().HaveCount(1);
 		codexNav.GroupNavigations.First().Url.Should().Be("/docs/g/observability");
 	}
@@ -56,8 +56,8 @@ public class CodexNavigationTests(ITestOutputHelper output) : CodexNavigationTes
 		var config = CreateCodexConfiguration(
 			sitePrefix: "/docs",
 			docSets: [
-				new CodexDocumentationSetReference { Name = "apm-agent", Branch = "main", Category = "observability" },
-				new CodexDocumentationSetReference { Name = "uptime", Branch = "main", Category = "observability" },
+				new CodexDocumentationSetReference { Name = "apm-agent", Branch = "main", Group = "observability" },
+				new CodexDocumentationSetReference { Name = "uptime", Branch = "main", Group = "observability" },
 				new CodexDocumentationSetReference { Name = "standalone", Branch = "main" }
 			]);
 
@@ -76,7 +76,7 @@ public class CodexNavigationTests(ITestOutputHelper output) : CodexNavigationTes
 		var config = CreateCodexConfiguration(
 			sitePrefix: "/docs",
 			docSets: [
-				new CodexDocumentationSetReference { Name = "apm-agent", Branch = "main", Category = "observability" }
+				new CodexDocumentationSetReference { Name = "apm-agent", Branch = "main", Group = "observability" }
 			]);
 
 		var docSetNavigations = CreateMockDocSetNavigations(["apm-agent"]);
@@ -151,7 +151,7 @@ public class CodexNavigationTests(ITestOutputHelper output) : CodexNavigationTes
 			sitePrefix: "",
 			docSets: [
 				new CodexDocumentationSetReference { Name = "repo-a", Branch = "main" },
-				new CodexDocumentationSetReference { Name = "repo-b", Branch = "main", Category = "tools" }
+				new CodexDocumentationSetReference { Name = "repo-b", Branch = "main", Group = "tools" }
 			]);
 
 		var docSetNavigations = CreateMockDocSetNavigations(["repo-a", "repo-b"]);
@@ -191,10 +191,10 @@ public class CodexNavigationTests(ITestOutputHelper output) : CodexNavigationTes
 		var config = CreateCodexConfiguration(
 			sitePrefix: "/docs",
 			docSets: [
-				new CodexDocumentationSetReference { Name = "apm", Branch = "main", Category = "observability" },
-				new CodexDocumentationSetReference { Name = "uptime", Branch = "main", Category = "observability" },
-				new CodexDocumentationSetReference { Name = "siem", Branch = "main", Category = "security" },
-				new CodexDocumentationSetReference { Name = "endpoint", Branch = "main", Category = "security" }
+				new CodexDocumentationSetReference { Name = "apm", Branch = "main", Group = "observability" },
+				new CodexDocumentationSetReference { Name = "uptime", Branch = "main", Group = "observability" },
+				new CodexDocumentationSetReference { Name = "siem", Branch = "main", Group = "security" },
+				new CodexDocumentationSetReference { Name = "endpoint", Branch = "main", Group = "security" }
 			]);
 
 		var docSetNavigations = CreateMockDocSetNavigations(["apm", "uptime", "siem", "endpoint"]);
@@ -212,12 +212,12 @@ public class CodexNavigationTests(ITestOutputHelper output) : CodexNavigationTes
 	}
 
 	[Fact]
-	public void CategoryTitle_FormatsSlugToTitleCase()
+	public void GroupTitle_FormatsSlugToTitleCase()
 	{
 		var config = CreateCodexConfiguration(
 			sitePrefix: "/docs",
 			docSets: [
-				new CodexDocumentationSetReference { Name = "tool", Branch = "main", Category = "developer-tools" }
+				new CodexDocumentationSetReference { Name = "tool", Branch = "main", Group = "developer-tools" }
 			]);
 
 		var docSetNavigations = CreateMockDocSetNavigations(["tool"]);
@@ -233,8 +233,8 @@ public class CodexNavigationTests(ITestOutputHelper output) : CodexNavigationTes
 		var config = CreateCodexConfiguration(
 			sitePrefix: "/docs",
 			docSets: [
-				new CodexDocumentationSetReference { Name = "grouped1", Branch = "main", Category = "tools" },
-				new CodexDocumentationSetReference { Name = "grouped2", Branch = "main", Category = "tools" },
+				new CodexDocumentationSetReference { Name = "grouped1", Branch = "main", Group = "tools" },
+				new CodexDocumentationSetReference { Name = "grouped2", Branch = "main", Group = "tools" },
 				new CodexDocumentationSetReference { Name = "ungrouped", Branch = "main" }
 			]);
 
