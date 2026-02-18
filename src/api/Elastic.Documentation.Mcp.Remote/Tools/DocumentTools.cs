@@ -22,7 +22,7 @@ public class DocumentTools(IDocumentGateway documentGateway, ILogger<DocumentToo
 	/// </summary>
 	[McpServerTool, Description("Gets a specific documentation page by its URL. Returns full document content including AI summaries and metadata.")]
 	public async Task<string> GetDocumentByUrl(
-		[Description("The URL of the document (e.g., '/docs/elasticsearch/reference/index')")] string url,
+		[Description("The URL of the document. Accepts a full URL (e.g. 'https://www.elastic.co/docs/deploy-manage/api-keys') or a path (e.g. '/docs/deploy-manage/api-keys'). Query strings, fragments, and trailing slashes are ignored.")] string url,
 		[Description("Include full body content (default: false, set true for detailed analysis)")] bool includeBody = false,
 		CancellationToken cancellationToken = default)
 	{
@@ -87,7 +87,7 @@ public class DocumentTools(IDocumentGateway documentGateway, ILogger<DocumentToo
 	/// </summary>
 	[McpServerTool, Description("Analyzes the structure of a documentation page. Returns heading count, links, parents, and AI enrichment status.")]
 	public async Task<string> AnalyzeDocumentStructure(
-		[Description("The URL of the document to analyze")] string url,
+		[Description("The URL of the document to analyze. Accepts a full URL (e.g. 'https://www.elastic.co/docs/deploy-manage/api-keys') or a path (e.g. '/docs/deploy-manage/api-keys'). Query strings, fragments, and trailing slashes are ignored.")] string url,
 		CancellationToken cancellationToken = default)
 	{
 		try
