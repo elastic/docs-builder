@@ -14,9 +14,7 @@ Add the {{dbuild}} MCP server to your editor or AI assistant using one of the op
 
 One-click installation:
 
-:::{button}
-[Install in Cursor](https://ela.st/elastic-mcp-cursor)
-:::
+<a href="cursor://anysphere.cursor-deeplink/mcp/install?name=elastic-docs&config=eyJ1cmwiOiJodHRwczovL3d3dy5lbGFzdGljLmNvL2RvY3MvX21jcC8ifQ==" class="btn btn-primary">Install in Cursor</a>
 
 Or configure manually. Create or edit `.cursor/mcp.json` in your workspace:
 
@@ -65,9 +63,7 @@ Or add it manually to your project's `.mcp.json` file:
 
 One-click installation (requires VS Code 1.99+):
 
-:::{button}
-[Install in VS Code](https://ela.st/elastic-mcp-vscode)
-:::
+<a href="vscode:mcp/install?%7B%22name%22%3A%22elastic-docs%22%2C%22type%22%3A%22http%22%2C%22url%22%3A%22https%3A%2F%2Fwww.elastic.co%2Fdocs%2F_mcp%2F%22%7D" class="btn btn-primary">Install in VS Code</a>
 
 Or configure manually. Create or edit `.vscode/mcp.json` in your workspace:
 
