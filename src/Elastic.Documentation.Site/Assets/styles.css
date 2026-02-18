@@ -122,6 +122,28 @@ body {
 			word-break: break-word;
 		}
 	}
+
+	.sidebar-trial-card {
+		background: var(--color-green-30);
+		border-radius: 8px;
+		padding: 1px;
+	}
+
+	.sidebar-trial-card__inner {
+		background: var(--color-white);
+		border-radius: 7px;
+		padding: 24px 24px 16px;
+	}
+
+	.sidebar-trial-card__icon {
+		color: var(--color-green-90);
+	}
+
+	.sidebar-trial-card__icon svg {
+		height: 16px;
+		width: 16px;
+		fill: currentColor;
+	}
 }
 
 * {
