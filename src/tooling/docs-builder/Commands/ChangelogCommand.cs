@@ -79,7 +79,7 @@ internal sealed partial class ChangelogCommand(
 			docsFolder = _fileSystem.DirectoryInfo.New(docsFolderPath);
 		}
 
-		var configPath = Path.Combine(docsFolder.FullName, "changelog.yml");
+		var configPath = _fileSystem.Path.Combine(docsFolder.FullName, "changelog.yml");
 		var changelogPath = NormalizePath(changelogDir ?? "changelog");
 		var bundlesPath = NormalizePath(bundlesDir ?? "releases");
 
