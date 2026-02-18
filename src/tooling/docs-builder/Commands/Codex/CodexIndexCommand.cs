@@ -24,7 +24,8 @@ internal sealed class CodexIndexCommand(
 	ILoggerFactory logFactory,
 	IDiagnosticsCollector collector,
 	IConfigurationContext configurationContext,
-	ICoreService githubActionsService
+	ICoreService githubActionsService,
+	IEnvironmentVariables environmentVariables
 )
 {
 	/// <summary>
@@ -146,7 +147,7 @@ internal sealed class CodexIndexCommand(
 			CertificateNotRoot = certificateNotRoot
 		};
 
-		var isolatedBuildService = new IsolatedBuildService(logFactory, configurationContext, githubActionsService);
+		var isolatedBuildService = new IsolatedBuildService(logFactory, configurationContext, githubActionsService, environmentVariables);
 		var service = new CodexIndexService(logFactory, configurationContext, isolatedBuildService);
 		serviceInvoker.AddCommand(service, (codexContext, cloneResult, fs, esOptions),
 			static async (s, col, state, c) =>

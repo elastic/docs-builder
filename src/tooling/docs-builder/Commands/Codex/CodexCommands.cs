@@ -25,7 +25,8 @@ internal sealed class CodexCommands(
 	ILoggerFactory logFactory,
 	IDiagnosticsCollector collector,
 	IConfigurationContext configurationContext,
-	ICoreService githubActionsService
+	ICoreService githubActionsService,
+	IEnvironmentVariables environmentVariables
 )
 {
 	/// <summary>
@@ -76,7 +77,7 @@ internal sealed class CodexCommands(
 			});
 
 		// Build service
-		var isolatedBuildService = new IsolatedBuildService(logFactory, configurationContext, githubActionsService);
+		var isolatedBuildService = new IsolatedBuildService(logFactory, configurationContext, githubActionsService, environmentVariables);
 		var buildService = new CodexBuildService(logFactory, configurationContext, isolatedBuildService);
 		serviceInvoker.AddCommand(buildService, (codexContext, cloneResult, fs), strict,
 			async (s, col, state, c) =>
@@ -180,7 +181,7 @@ internal sealed class CodexCommands(
 			return 1;
 		}
 
-		var isolatedBuildService = new IsolatedBuildService(logFactory, configurationContext, githubActionsService);
+		var isolatedBuildService = new IsolatedBuildService(logFactory, configurationContext, githubActionsService, environmentVariables);
 		var buildService = new CodexBuildService(logFactory, configurationContext, isolatedBuildService);
 		serviceInvoker.AddCommand(buildService, (codexContext, cloneResult, fs), strict,
 			async (s, col, state, c) =>
