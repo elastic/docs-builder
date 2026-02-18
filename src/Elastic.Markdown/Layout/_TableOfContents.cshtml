@@ -71,6 +71,8 @@
 				</li>
 			}
 		</ul>
+		@if (Model.BuildType == BuildType.Assembler) 
+		{
 		<div class="mt-4 hidden lg:block">
 			<div class="sidebar-trial-card">
 				<div class="sidebar-trial-card__inner">
@@ -94,6 +96,7 @@
 				</div>
 			</div>
 		</div>
+		}
 		<div class="pt-6 hidden lg:block">
 			@if (Model.PageTocItems.Count > 0)
 			{
