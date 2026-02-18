@@ -21,6 +21,9 @@ public static class GlobalSections
 /// <summary>Configuration injected into the frontend for build-type-specific behavior (OTEL, HTMX).</summary>
 public record FrontendConfig(string BuildType, string ServiceName, bool TelemetryEnabled, string RootPath);
 
+/// <summary>Single breadcrumb item for the codex sub-header.</summary>
+public record CodexBreadcrumb(string Title, string? Url);
+
 public record GlobalLayoutViewModel
 {
 	public required string DocsBuilderVersion { get; init; }
@@ -36,6 +39,10 @@ public record GlobalLayoutViewModel
 	public required string? UrlPathPrefix { get; init; }
 	public required IHtmxAttributeProvider Htmx { get; init; }
 	public required Uri? CanonicalBaseUrl { get; init; }
+
+	/// <summary>Breadcrumb trail for codex sub-header (Home / Group / Docset).</summary>
+	public IReadOnlyList<CodexBreadcrumb>? CodexBreadcrumbs { get; init; }
+
 
 	// Header properties for isolated mode
 	public string? HeaderTitle { get; init; }
@@ -60,12 +67,15 @@ public record GlobalLayoutViewModel
 
 	public bool RenderHamburgerIcon { get; init; } = true;
 
+	/// <summary>Root path for static assets. For codex builds, strips the /r/repoName segment from the URL path prefix.</summary>
+	public string StaticPathPrefix => GetStaticPathPrefix();
+
 	public FrontendConfig FrontendConfig =>
 		BuildType switch
 		{
-			BuildType.Assembler => new FrontendConfig("assembler", "docs-frontend", true, GetStaticPathPrefix()),
-			BuildType.Codex => new FrontendConfig("codex", "codex-frontend", true, GetStaticPathPrefix()),
-			_ => new FrontendConfig("isolated", "docs-frontend", false, GetStaticPathPrefix()),
+			BuildType.Assembler => new FrontendConfig("assembler", "docs-frontend", true, StaticPathPrefix),
+			BuildType.Codex => new FrontendConfig("codex", "codex-frontend", true, StaticPathPrefix),
+			_ => new FrontendConfig("isolated", "docs-frontend", false, StaticPathPrefix),
 		};
 
 	public string FrontendConfigJson =>
@@ -76,13 +86,9 @@ public record GlobalLayoutViewModel
 		var staticPath = $"_static/{path.TrimStart('/')}";
 		var contentHash = StaticFileContentHashProvider.GetContentHash(path.TrimStart('/'));
 
-		// For codex builds, static assets are in the root, not in each documentation set's directory
-		// Extract the root path by removing the /r/repoName part from the URL path prefix
-		var staticPrefix = GetStaticPathPrefix();
-
-		var fullPath = string.IsNullOrEmpty(staticPrefix)
+		var fullPath = string.IsNullOrEmpty(StaticPathPrefix)
 			? $"/{staticPath}"
-			: $"{staticPrefix}/{staticPath}";
+			: $"{StaticPathPrefix}/{staticPath}";
 
 		return string.IsNullOrEmpty(contentHash)
 			? fullPath
@@ -110,7 +116,6 @@ public record GlobalLayoutViewModel
 	public string SiteLink(string path)
 	{
 		path = path.AsSpan().Trim('/').ToString();
-		var prefix = GetStaticPathPrefix();
-		return string.IsNullOrEmpty(prefix) ? $"/{path}" : $"{prefix}/{path}";
+		return string.IsNullOrEmpty(StaticPathPrefix) ? $"/{path}" : $"{StaticPathPrefix}/{path}";
 	}
 }

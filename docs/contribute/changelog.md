@@ -473,6 +473,9 @@ You can specify only one of the following filter options:
 By default, the output file contains only the changelog file names and checksums.
 You can optionally use the `--resolve` command option to pull all of the content from each changelog into the bundle.
 
+When you do not specify `--directory`, the command reads changelog files from `bundle.directory` in your changelog configuration if it is set, otherwise from the current directory.
+When you do not specify `--output`, the command writes the bundle to `bundle.output_directory` from your changelog configuration (creating `changelog-bundle.yaml` in that directory) if it is set, otherwise to `changelog-bundle.yaml` in the input directory.
+
 ### Filter by product [changelog-bundle-product]
 
 You can use the `--input-products` option to create a bundle of changelogs that match the product details.

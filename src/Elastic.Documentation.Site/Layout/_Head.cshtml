@@ -8,7 +8,7 @@
 	{
 		<script src="https://cdn.optimizely.com/js/@(Model.Optimizely.Id).js"></script>
 	}
-	@foreach (var fontFile in await FontPreloader.GetFontUrisAsync(@Model.UrlPathPrefix))
+	@foreach (var fontFile in await FontPreloader.GetFontUrisAsync(@Model.StaticPathPrefix))
 	{
 		<link rel="preload" href="@fontFile" as="font" type="font/woff2" crossorigin>
 	}

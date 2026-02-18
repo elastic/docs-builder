@@ -8,12 +8,14 @@ using Elastic.Codex.Page;
 using Elastic.Codex.Sourcing;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Isolated;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Isolated.Node;
 using Elastic.Documentation.Services;
+using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
@@ -44,8 +46,13 @@ public class CodexBuildService(
 		IReadOnlySet<Exporter>? exporters = null)
 	{
 		var outputDir = context.OutputDirectory;
-		if (!outputDir.Exists)
-			outputDir.Create();
+		if (outputDir.Exists)
+		{
+			_logger.LogInformation("Cleaning target output directory: {Directory}", outputDir.FullName);
+			outputDir.Delete(true);
+		}
+
+		outputDir.Create();
 
 		_logger.LogInformation("Building {Count} documentation sets to {Directory}",
 			cloneResult.Checkouts.Count, outputDir.FullName);
@@ -97,11 +104,14 @@ public class CodexBuildService(
 			await Task.WhenAll(stopTasks);
 		}
 
-		// Phase 4: Generate codex landing and category pages
+		// Phase 4: Generate codex landing and group pages
+		CodexGenerator? codexGenerator = null;
 		if (buildContexts.Count > 0)
-			await GenerateCodexPages(context, buildContexts[0].BuildContext, codexNavigation, ctx);
+		{
+			codexGenerator = await GenerateCodexPages(context, buildContexts[0].BuildContext, codexNavigation, ctx);
+		}
 
-		return new CodexBuildResult(codexNavigation, buildContexts.Select(b => b.DocumentationSet).ToList());
+		return new CodexBuildResult(codexNavigation, buildContexts.Select(b => b.DocumentationSet).ToList(), codexGenerator);
 	}
 
 	private async Task<CodexDocumentationSetBuildContext?> LoadDocumentationSet(
@@ -187,13 +197,16 @@ public class CodexBuildService(
 
 		try
 		{
+			var reference = buildContext.Checkout.Reference;
+			var codexBreadcrumbs = ResolveCodexBreadcrumbs(context, reference);
+
 			_ = await isolatedBuildService.BuildDocumentationSet(
 				buildContext.DocumentationSet,
 				null, // Use doc set's navigation for traversal
 				null, // Use default navigation HTML writer (doc set's navigation)
 				ExportOptions.Default,
 				sharedExporters,
-				pageViewFactory: new CodexPageViewFactory(context.Configuration.Title),
+				pageViewFactory: new CodexPageViewFactory(context.Configuration.Title, codexBreadcrumbs),
 				ctx);
 		}
 		catch (Exception ex)
@@ -204,7 +217,27 @@ public class CodexBuildService(
 		}
 	}
 
-	private async Task GenerateCodexPages(
+	private static IReadOnlyList<CodexBreadcrumb> ResolveCodexBreadcrumbs(
+		CodexContext context,
+		CodexDocumentationSetReference reference)
+	{
+		var sitePrefix = context.Configuration.SitePrefix?.Trim('/') ?? "";
+		var repoName = reference.ResolvedRepoName;
+		var groupId = reference.Group;
+		var homeUrl = string.IsNullOrEmpty(sitePrefix) ? "/" : $"/{sitePrefix}/";
+		var docSetUrl = string.IsNullOrEmpty(sitePrefix) ? $"/r/{repoName}" : $"/{sitePrefix}/r/{repoName}";
+		var docSetTitle = reference.DisplayName ?? repoName;
+
+		if (string.IsNullOrEmpty(groupId))
+			return [new CodexBreadcrumb("Home", homeUrl), new CodexBreadcrumb(docSetTitle, docSetUrl)];
+
+		var groupUrl = string.IsNullOrEmpty(sitePrefix) ? $"/g/{groupId}" : $"/{sitePrefix}/g/{groupId}";
+		var groupDef = context.Configuration.Groups.FirstOrDefault(g => g.Id == groupId);
+		var groupTitle = groupDef?.Name ?? groupId;
+		return [new CodexBreadcrumb("Home", homeUrl), new CodexBreadcrumb(groupTitle, groupUrl), new CodexBreadcrumb(docSetTitle, docSetUrl)];
+	}
+
+	private async Task<CodexGenerator> GenerateCodexPages(
 		CodexContext context,
 		BuildContext docSetBuildContext,
 		CodexNavigation codexNavigation,
@@ -230,6 +263,7 @@ public class CodexBuildService(
 		// Use CodexGenerator to render the codex pages to the codex's output directory
 		var codexGenerator = new CodexGenerator(logFactory, codexBuildContext, context.OutputDirectory);
 		await codexGenerator.Generate(codexNavigation, ctx);
+		return codexGenerator;
 	}
 }
 
@@ -238,9 +272,11 @@ public class CodexBuildService(
 /// </summary>
 /// <param name="Navigation">The codex navigation structure.</param>
 /// <param name="DocumentationSets">The built documentation sets.</param>
+/// <param name="CodexGenerator">Generator for re-rendering codex pages (e.g. for dev server).</param>
 public record CodexBuildResult(
 	CodexNavigation Navigation,
-	IReadOnlyList<DocumentationSet> DocumentationSets);
+	IReadOnlyList<DocumentationSet> DocumentationSets,
+	CodexGenerator? CodexGenerator = null);
 
 /// <summary>
 /// Build context for a single documentation set within the codex.

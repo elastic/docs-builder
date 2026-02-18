@@ -34,6 +34,12 @@ public record CodexConfiguration
 	public string Title { get; set; } = "Documentation Codex";
 
 	/// <summary>
+	/// Predefined groups with id, name, description, and icon. Documentation sets reference groups by id.
+	/// </summary>
+	[YamlMember(Alias = "groups")]
+	public IReadOnlyList<CodexGroupDefinition> Groups { get; set; } = [];
+
+	/// <summary>
 	/// The list of documentation sets to include in the codex.
 	/// </summary>
 	[YamlMember(Alias = "documentation_sets")]
@@ -91,22 +97,22 @@ public record CodexConfiguration
 	}
 
 	/// <summary>
-	/// Gets all unique categories defined in the documentation sets.
+	/// Gets all unique group ids defined in the documentation sets.
 	/// </summary>
 	[YamlIgnore]
-	public IReadOnlyList<string> Categories =>
+	public IReadOnlyList<string> GroupIds =>
 		DocumentationSets
-			.Where(ds => !string.IsNullOrEmpty(ds.Category))
-			.Select(ds => ds.Category!)
+			.Where(ds => !string.IsNullOrEmpty(ds.Group))
+			.Select(ds => ds.Group!)
 			.Distinct()
-			.OrderBy(c => c)
+			.OrderBy(g => g)
 			.ToList();
 
 	/// <summary>
-	/// Gets documentation sets grouped by category.
-	/// Documentation sets without a category are grouped under null.
+	/// Gets documentation sets grouped by group id.
+	/// Documentation sets without a group are grouped under null.
 	/// </summary>
 	[YamlIgnore]
-	public ILookup<string?, CodexDocumentationSetReference> DocumentationSetsByCategory =>
-		DocumentationSets.ToLookup(ds => ds.Category);
+	public ILookup<string?, CodexDocumentationSetReference> DocumentationSetsByGroup =>
+		DocumentationSets.ToLookup(ds => ds.Group);
 }

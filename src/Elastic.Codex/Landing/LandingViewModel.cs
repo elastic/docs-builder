@@ -17,9 +17,19 @@ public class LandingViewModel(CodexRenderContext context) : CodexViewModel(conte
 	public required CodexIndexPage IndexPage { get; init; }
 
 	/// <summary>
-	/// Information about all documentation sets grouped by category.
+	/// Group navigations for rendering group cards on the landing page.
+	/// Each group aggregates one or more documentation sets.
 	/// </summary>
-	public ILookup<string?, CodexDocumentationSetInfo> DocumentationSetsByCategory =>
-		CodexNavigation?.DocumentationSetInfos?.ToLookup(ds => ds.Category)
-		?? Array.Empty<CodexDocumentationSetInfo>().ToLookup(ds => ds.Category);
+	public IEnumerable<GroupNavigation> Groups =>
+		CodexNavigation?.GroupNavigations?.OrderBy(g => g.DisplayTitle)
+		?? Enumerable.Empty<GroupNavigation>();
+
+	/// <summary>
+	/// Documentation sets that are not part of any group, for rendering individual docset cards.
+	/// </summary>
+	public IEnumerable<CodexDocumentationSetInfo> UngroupedDocumentationSets =>
+		CodexNavigation?.DocumentationSetInfos?
+			.Where(ds => string.IsNullOrEmpty(ds.Group))
+			.OrderBy(ds => ds.Title)
+		?? Enumerable.Empty<CodexDocumentationSetInfo>();
 }

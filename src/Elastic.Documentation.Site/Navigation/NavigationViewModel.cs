@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site;
 
@@ -20,4 +21,6 @@ public class NavigationViewModel
 	public required bool IsUsingNavigationDropdown { get; init; }
 
 	public required IHtmxAttributeProvider Htmx { get; init; }
+
+	public BuildType BuildType { get; init; } = BuildType.Isolated;
 }

@@ -35,6 +35,8 @@ const CustomSearchIcon = () => {
 }
 
 export interface SearchInputProps {
+    placeholder: string
+    size: 's' | 'm' | 'l'
     inputRef: React.RefObject<HTMLInputElement>
     value: string
     onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
@@ -46,6 +48,8 @@ export interface SearchInputProps {
 }
 
 export const SearchInput = ({
+    placeholder,
+    size,
     inputRef,
     value,
     onChange,
@@ -85,7 +89,7 @@ export const SearchInput = ({
             <input
                 ref={inputRef}
                 type="text"
-                placeholder="Jump to page"
+                placeholder={placeholder}
                 value={value}
                 onChange={onChange}
                 onFocus={onFocus}
@@ -94,7 +98,13 @@ export const SearchInput = ({
                 disabled={disabled}
                 css={css`
                     width: 100%;
-                    padding: calc(${euiTheme.size.s} + 2px) ${euiTheme.size.m};
+                    padding: calc(
+                            ${size === 's'
+                                    ? euiTheme.size.xs
+                                    : euiTheme.size.s} +
+                                2px
+                        )
+                        ${size === 's' ? euiTheme.size.s : euiTheme.size.m};
                     padding-left: 34px;
                     padding-right: calc(
                         ${euiTheme.size.m} + ${isMac ? '2ch' : '4ch'} +

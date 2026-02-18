@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
+<Project Sdk="Microsoft.NET.Sdk.Razor">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -54,6 +54,11 @@
     <NpmBuildInputFiles Include="tailwind.config.js" />
     <NpmBuildInputFiles Include=".parcelrc" />
     <NpmBuildInputFiles Include=".postcssrc" />
+    <!-- Tailwind scans these directories for utility class usage (see tailwind.config.js content paths) -->
+    <NpmBuildInputFiles Include="../Elastic.Markdown/**/*.cshtml" />
+    <NpmBuildInputFiles Include="../Elastic.Codex/**/*.cshtml" />
+    <NpmBuildInputFiles Include="../Elastic.ApiExplorer/**/*.cshtml" />
+    <NpmBuildInputFiles Include="**/*.cshtml" />
   </ItemGroup>
   <Target Name="NpmRunBuild"
           DependsOnTargets="NpmInstall;MinVer"

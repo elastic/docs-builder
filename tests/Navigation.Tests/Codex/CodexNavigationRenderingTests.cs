@@ -24,9 +24,9 @@ public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavi
 		var config = CreateCodexConfiguration(
 			sitePrefix: "/docs",
 			docSets: [
-				new CodexDocumentationSetReference { Name = "apm-agent", Branch = "main", Category = "observability", DisplayName = "APM Agent" },
-				new CodexDocumentationSetReference { Name = "uptime", Branch = "main", Category = "observability", DisplayName = "Uptime" },
-				new CodexDocumentationSetReference { Name = "logs", Branch = "main", Category = "observability", DisplayName = "Logs" }
+				new CodexDocumentationSetReference { Name = "apm-agent", Branch = "main", Group = "observability", DisplayName = "APM Agent" },
+				new CodexDocumentationSetReference { Name = "uptime", Branch = "main", Group = "observability", DisplayName = "Uptime" },
+				new CodexDocumentationSetReference { Name = "logs", Branch = "main", Group = "observability", DisplayName = "Logs" }
 			]);
 
 		var docSetNavigations = CreateMockDocSetNavigations(["apm-agent", "uptime", "logs"]);
@@ -51,8 +51,8 @@ public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavi
 		var config = CreateCodexConfiguration(
 			sitePrefix: "/docs",
 			docSets: [
-				new CodexDocumentationSetReference { Name = "apm-agent", Branch = "main", Category = "observability", DisplayName = "APM Agent Docs" },
-				new CodexDocumentationSetReference { Name = "uptime", Branch = "main", Category = "observability", DisplayName = "Uptime Monitoring" }
+				new CodexDocumentationSetReference { Name = "apm-agent", Branch = "main", Group = "observability", DisplayName = "APM Agent Docs" },
+				new CodexDocumentationSetReference { Name = "uptime", Branch = "main", Group = "observability", DisplayName = "Uptime Monitoring" }
 			]);
 
 		var docSetNavigations = CreateMockDocSetNavigations(["apm-agent", "uptime"]);
@@ -102,8 +102,8 @@ public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavi
 		var config = CreateCodexConfiguration(
 			sitePrefix: "/docs",
 			docSets: [
-				new CodexDocumentationSetReference { Name = "apm", Branch = "main", Category = "observability" },
-				new CodexDocumentationSetReference { Name = "uptime", Branch = "main", Category = "observability" }
+				new CodexDocumentationSetReference { Name = "apm", Branch = "main", Group = "observability" },
+				new CodexDocumentationSetReference { Name = "uptime", Branch = "main", Group = "observability" }
 			]);
 
 		var docSetNavigations = CreateMockDocSetNavigations(["apm", "uptime"]);
@@ -132,8 +132,8 @@ public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavi
 		var config = CreateCodexConfiguration(
 			sitePrefix: "/docs",
 			docSets: [
-				new CodexDocumentationSetReference { Name = "apm", Branch = "main", Category = "observability" },
-				new CodexDocumentationSetReference { Name = "uptime", Branch = "main", Category = "observability" },
+				new CodexDocumentationSetReference { Name = "apm", Branch = "main", Group = "observability" },
+				new CodexDocumentationSetReference { Name = "uptime", Branch = "main", Group = "observability" },
 				new CodexDocumentationSetReference { Name = "standalone1", Branch = "main" },
 				new CodexDocumentationSetReference { Name = "standalone2", Branch = "main" }
 			]);
@@ -163,9 +163,9 @@ public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavi
 		var config = CreateCodexConfiguration(
 			sitePrefix: "/docs",
 			docSets: [
-				new CodexDocumentationSetReference { Name = "repo1", Branch = "main", Category = "group1" },
-				new CodexDocumentationSetReference { Name = "repo2", Branch = "main", Category = "group1" },
-				new CodexDocumentationSetReference { Name = "repo3", Branch = "main", Category = "group1" }
+				new CodexDocumentationSetReference { Name = "repo1", Branch = "main", Group = "group1" },
+				new CodexDocumentationSetReference { Name = "repo2", Branch = "main", Group = "group1" },
+				new CodexDocumentationSetReference { Name = "repo3", Branch = "main", Group = "group1" }
 			]);
 
 		var docSetNavigations = CreateMockDocSetNavigations(["repo1", "repo2", "repo3"]);
@@ -189,8 +189,8 @@ public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavi
 		var config = CreateCodexConfiguration(
 			sitePrefix: "/docs",
 			docSets: [
-				new CodexDocumentationSetReference { Name = "obs-repo", Branch = "main", Category = "observability" },
-				new CodexDocumentationSetReference { Name = "sec-repo", Branch = "main", Category = "security" }
+				new CodexDocumentationSetReference { Name = "obs-repo", Branch = "main", Group = "observability" },
+				new CodexDocumentationSetReference { Name = "sec-repo", Branch = "main", Group = "security" }
 			]);
 
 		var docSetNavigations = CreateMockDocSetNavigations(["obs-repo", "sec-repo"]);
@@ -213,9 +213,9 @@ public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavi
 		var config = CreateCodexConfiguration(
 			sitePrefix: "",
 			docSets: [
-				new CodexDocumentationSetReference { Name = "a", Branch = "main", Category = "tools" },
-				new CodexDocumentationSetReference { Name = "b", Branch = "main", Category = "tools" },
-				new CodexDocumentationSetReference { Name = "c", Branch = "main", Category = "tools" }
+				new CodexDocumentationSetReference { Name = "a", Branch = "main", Group = "tools" },
+				new CodexDocumentationSetReference { Name = "b", Branch = "main", Group = "tools" },
+				new CodexDocumentationSetReference { Name = "c", Branch = "main", Group = "tools" }
 			]);
 
 		var docSetNavigations = CreateMockDocSetNavigations(["a", "b", "c"]);

@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Site;
 using Elastic.Markdown.Page;
 using RazorSlices;
 
@@ -10,12 +11,13 @@ namespace Elastic.Codex.Page;
 /// <summary>
 /// Page view factory for codex builds. Uses the codex-specific layout with _CodexHeader and _CodexFooter.
 /// </summary>
-public class CodexPageViewFactory(string siteHeaderTitle) : IPageViewFactory
+public class CodexPageViewFactory(string siteHeaderTitle, IReadOnlyList<CodexBreadcrumb>? codexBreadcrumbs = null) : IPageViewFactory
 {
 	/// <inheritdoc />
 	public RazorSlice Create(IndexViewModel viewModel)
 	{
 		viewModel.SiteHeaderTitle = siteHeaderTitle;
+		viewModel.CodexBreadcrumbs = codexBreadcrumbs;
 		return Index.Create(viewModel);
 	}
 }

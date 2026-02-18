@@ -7,6 +7,7 @@ using Elastic.Documentation.Assembler.Links;
 using Elastic.Documentation.Assembler.Mcp;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links.InboundLinks;
+using Elastic.Documentation.Mcp.Remote;
 using Elastic.Documentation.Mcp.Remote.Gateways;
 using Elastic.Documentation.Mcp.Remote.Tools;
 using Elastic.Documentation.Search;
@@ -53,9 +54,13 @@ try
 		options.SerializerOptions.TypeInfoResolverChain.Insert(0, McpJsonUtilities.DefaultOptions.TypeInfoResolver!);
 	});
 
+	// Stateless mode: no Mcp-Session-Id header is issued or expected, which avoids a known
+	// Cursor bug where it opens the SSE stream without the session header and receives 400.
+	// Stateless mode is appropriate here because all tools are pure request/response (no
+	// server-initiated push) and the server runs behind a load balancer without session affinity.
 	_ = builder.Services
 		.AddMcpServer()
-		.WithHttpTransport()
+		.WithHttpTransport(o => o.Stateless = true)
 		.WithTools<SearchTools>()
 		.WithTools<CoherenceTools>()
 		.WithTools<DocumentTools>()
@@ -84,10 +89,14 @@ try
 			return Task.CompletedTask;
 		}));
 
-	var mcp = app.MapGroup("/docs/_mcp");
+	_ = app.UseMiddleware<SseKeepAliveMiddleware>();
+
+	const string mcpPrefix = "/docs/_mcp";
+
+	var mcp = app.MapGroup(mcpPrefix);
 	_ = mcp.MapHealthChecks("/health");
 	_ = mcp.MapHealthChecks("/alive", new HealthCheckOptions { Predicate = r => r.Tags.Contains("live") });
-	_ = mcp.MapMcp("/");
+	_ = mcp.MapMcp("");
 
 	Console.WriteLine("MCP server startup completed successfully");
 	app.Run();
