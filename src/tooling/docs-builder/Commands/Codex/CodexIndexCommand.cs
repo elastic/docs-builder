@@ -12,6 +12,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Isolated;
+using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 
@@ -110,8 +111,8 @@ internal sealed class CodexIndexCommand(
 		var codexConfig = CodexConfiguration.Load(configFile);
 		var codexContext = new CodexContext(codexConfig, configFile, collector, fs, fs, null, null);
 
-		// Load the checkouts that should already exist
-		var cloneService = new CodexCloneService(logFactory);
+		using var linkIndexReader = new GitLinkIndexReader(codexConfig.Environment ?? "dev");
+		var cloneService = new CodexCloneService(logFactory, linkIndexReader);
 		var cloneResult = await cloneService.CloneAll(codexContext, fetchLatest: false, assumeCloned: true, ctx);
 
 		if (cloneResult.Checkouts.Count == 0)

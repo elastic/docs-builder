@@ -5,6 +5,8 @@
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.LinkIndex;
+using Elastic.Documentation.Links;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 
@@ -13,8 +15,9 @@ namespace Elastic.Codex.Sourcing;
 /// <summary>
 /// Service for cloning repositories defined in a codex configuration.
 /// </summary>
-public class CodexCloneService(ILoggerFactory logFactory) : IService
+public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkIndexReader) : IService
 {
+	private const string LinkRegistrySnapshotFileName = "link-index.snapshot.json";
 	private readonly ILogger _logger = logFactory.CreateLogger<CodexCloneService>();
 
 	/// <summary>
@@ -32,6 +35,8 @@ public class CodexCloneService(ILoggerFactory logFactory) : IService
 		if (!checkoutDir.Exists)
 			checkoutDir.Create();
 
+		var linkRegistry = await linkIndexReader.GetRegistry(ctx);
+
 		_logger.LogInformation("Cloning {Count} documentation sets to {Directory}",
 			context.Configuration.DocumentationSets.Count, checkoutDir.FullName);
 
@@ -40,7 +45,7 @@ public class CodexCloneService(ILoggerFactory logFactory) : IService
 			new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount, CancellationToken = ctx },
 			async (docSetRef, c) =>
 			{
-				var checkout = await CloneRepository(context, docSetRef, fetchLatest, assumeCloned, c);
+				var checkout = await CloneRepository(context, docSetRef, linkRegistry, fetchLatest, assumeCloned, c);
 				if (checkout != null)
 				{
 					lock (checkouts)
@@ -48,12 +53,18 @@ public class CodexCloneService(ILoggerFactory logFactory) : IService
 				}
 			});
 
-		return new CodexCloneResult(checkouts);
+		await context.WriteFileSystem.File.WriteAllTextAsync(
+			Path.Combine(context.CheckoutDirectory.FullName, LinkRegistrySnapshotFileName),
+			LinkRegistry.Serialize(linkRegistry),
+			ctx);
+
+		return new CodexCloneResult(checkouts, linkRegistry);
 	}
 
 	private async Task<CodexCheckout?> CloneRepository(
 		CodexContext context,
 		CodexDocumentationSetReference docSetRef,
+		LinkRegistry linkRegistry,
 		bool fetchLatest,
 		bool assumeCloned,
 		Cancel _)
@@ -65,8 +76,13 @@ public class CodexCloneService(ILoggerFactory logFactory) : IService
 		var branch = docSetRef.Branch;
 		var docsPath = docSetRef.Path;
 
-		_logger.LogInformation("Cloning {Name} from {Origin} branch {Branch}",
-			docSetRef.Name, docSetRef.ResolvedOrigin, branch);
+		var gitRef = branch;
+		if (!fetchLatest && linkRegistry.Repositories.TryGetValue(docSetRef.ResolvedRepoName, out var entry) &&
+			entry.TryGetValue(branch, out var entryInfo))
+			gitRef = entryInfo.GitReference;
+
+		_logger.LogInformation("Cloning {Name} from {Origin} at {GitRef}",
+			docSetRef.Name, docSetRef.ResolvedOrigin, gitRef);
 
 		try
 		{
@@ -93,7 +109,7 @@ public class CodexCloneService(ILoggerFactory logFactory) : IService
 
 				// Enable sparse checkout for just the docs folder
 				git.EnableSparseCheckout([docsPath]);
-				git.Fetch(branch);
+				git.Fetch(gitRef);
 				git.Checkout("FETCH_HEAD");
 			}
 
@@ -123,7 +139,7 @@ public class CodexCloneService(ILoggerFactory logFactory) : IService
 /// <summary>
 /// Result of cloning codex repositories.
 /// </summary>
-public record CodexCloneResult(IReadOnlyList<CodexCheckout> Checkouts);
+public record CodexCloneResult(IReadOnlyList<CodexCheckout> Checkouts, LinkRegistry LinkRegistrySnapshot);
 
 /// <summary>
 /// Represents a cloned repository checkout for the codex.
