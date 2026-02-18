@@ -46,7 +46,7 @@ public class NavigationSearchGateway(ElasticsearchClientAccessor clientAccessor,
 			var response = await clientAccessor.Client.SearchAsync<DocumentationDocument>(s =>
 			{
 				_ = s
-					.Indices(clientAccessor.Options.IndexName)
+					.Indices(clientAccessor.Endpoint.IndexName)
 					.From(Math.Max(pageNumber - 1, 0) * pageSize)
 					.Size(pageSize)
 					.Query(lexicalQuery)
@@ -167,7 +167,7 @@ public class NavigationSearchGateway(ElasticsearchClientAccessor clientAccessor,
 		{
 			// First, find the document by URL
 			var getDocResponse = await clientAccessor.Client.SearchAsync<DocumentationDocument>(s => s
-				.Indices(clientAccessor.Options.IndexName)
+				.Indices(clientAccessor.Endpoint.IndexName)
 				.Query(q => q.Term(t => t.Field(f => f.Url).Value(documentUrl)))
 				.Size(1), ctx);
 
@@ -186,7 +186,7 @@ public class NavigationSearchGateway(ElasticsearchClientAccessor clientAccessor,
 
 			// Now explain why this document matches (or doesn't match) the query
 			var explainResponse = await clientAccessor.Client.ExplainAsync<DocumentationDocument>(
-				clientAccessor.Options.IndexName, documentId, e => e.Query(combinedQuery), ctx);
+				clientAccessor.Endpoint.IndexName, documentId, e => e.Query(combinedQuery), ctx);
 
 			if (!explainResponse.IsValidResponse)
 			{

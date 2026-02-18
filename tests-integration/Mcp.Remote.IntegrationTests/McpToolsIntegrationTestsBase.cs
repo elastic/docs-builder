@@ -10,7 +10,7 @@ using Elastic.Documentation.Mcp.Remote.Gateways;
 using Elastic.Documentation.Mcp.Remote.Tools;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Common;
-using Microsoft.Extensions.Configuration;
+using Elastic.Documentation.ServiceDefaults;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Mcp.Remote.IntegrationTests;
@@ -25,17 +25,16 @@ public abstract class McpToolsIntegrationTestsBase(ITestOutputHelper output)
 	/// <summary>
 	/// Creates SearchTools with all required dependencies.
 	/// </summary>
-	protected (SearchTools? Tools, ElasticsearchClientAccessor? ClientAccessor) CreateSearchTools()
+	protected (SearchTools Tools, ElasticsearchClientAccessor? ClientAccessor) CreateSearchTools()
 	{
 		var clientAccessor = CreateElasticsearchClientAccessor();
-		if (clientAccessor == null)
-			return (null, null);
 
 		var productsConfig = CreateProductsConfiguration();
 		var fullSearchGateway = new FullSearchGateway(
 			clientAccessor,
 			productsConfig,
-			NullLogger<FullSearchGateway>.Instance);
+			NullLogger<FullSearchGateway>.Instance
+		);
 
 		var searchTools = new SearchTools(fullSearchGateway, NullLogger<SearchTools>.Instance);
 		return (searchTools, clientAccessor);
@@ -44,16 +43,11 @@ public abstract class McpToolsIntegrationTestsBase(ITestOutputHelper output)
 	/// <summary>
 	/// Creates DocumentTools with all required dependencies.
 	/// </summary>
-	protected (DocumentTools? Tools, ElasticsearchClientAccessor? ClientAccessor) CreateDocumentTools()
+	protected (DocumentTools Tools, ElasticsearchClientAccessor? ClientAccessor) CreateDocumentTools()
 	{
 		var clientAccessor = CreateElasticsearchClientAccessor();
-		if (clientAccessor == null)
-			return (null, null);
 
-		var documentGateway = new DocumentGateway(
-			clientAccessor,
-			NullLogger<DocumentGateway>.Instance);
-
+		var documentGateway = new DocumentGateway(clientAccessor, NullLogger<DocumentGateway>.Instance);
 		var documentTools = new DocumentTools(documentGateway, NullLogger<DocumentTools>.Instance);
 		return (documentTools, clientAccessor);
 	}
@@ -61,18 +55,12 @@ public abstract class McpToolsIntegrationTestsBase(ITestOutputHelper output)
 	/// <summary>
 	/// Creates CoherenceTools with all required dependencies.
 	/// </summary>
-	protected (CoherenceTools? Tools, ElasticsearchClientAccessor? ClientAccessor) CreateCoherenceTools()
+	protected (CoherenceTools Tools, ElasticsearchClientAccessor? ClientAccessor) CreateCoherenceTools()
 	{
 		var clientAccessor = CreateElasticsearchClientAccessor();
-		if (clientAccessor == null)
-			return (null, null);
 
 		var productsConfig = CreateProductsConfiguration();
-		var fullSearchGateway = new FullSearchGateway(
-			clientAccessor,
-			productsConfig,
-			NullLogger<FullSearchGateway>.Instance);
-
+		var fullSearchGateway = new FullSearchGateway(clientAccessor, productsConfig, NullLogger<FullSearchGateway>.Instance);
 		var coherenceTools = new CoherenceTools(fullSearchGateway, NullLogger<CoherenceTools>.Instance);
 		return (coherenceTools, clientAccessor);
 	}
@@ -80,34 +68,12 @@ public abstract class McpToolsIntegrationTestsBase(ITestOutputHelper output)
 	/// <summary>
 	/// Creates an ElasticsearchClientAccessor using configuration from user secrets and environment variables.
 	/// </summary>
-	private static ElasticsearchClientAccessor? CreateElasticsearchClientAccessor()
+	private static ElasticsearchClientAccessor CreateElasticsearchClientAccessor()
 	{
-		var configBuilder = new ConfigurationBuilder();
-		configBuilder.AddUserSecrets("72f50f33-6fb9-4d08-bff3-39568fe370b3");
-		configBuilder.AddEnvironmentVariables();
-		var config = configBuilder.Build();
+		var endpoints = ElasticsearchEndpointFactory.Create();
 
-		var elasticsearchUrl =
-			config["Parameters:DocumentationElasticUrl"]
-			?? config["DOCUMENTATION_ELASTIC_URL"];
+		endpoints.Elasticsearch.IndexName = "semantic-docs-dev-latest";
 
-		var elasticsearchApiKey =
-			config["Parameters:DocumentationElasticApiKey"]
-			?? config["DOCUMENTATION_ELASTIC_APIKEY"];
-
-		if (string.IsNullOrEmpty(elasticsearchUrl) || string.IsNullOrEmpty(elasticsearchApiKey))
-			return null;
-
-		var testConfig = new ConfigurationBuilder()
-			.AddInMemoryCollection(new Dictionary<string, string?>
-			{
-				["DOCUMENTATION_ELASTIC_URL"] = elasticsearchUrl,
-				["DOCUMENTATION_ELASTIC_APIKEY"] = elasticsearchApiKey,
-				["DOCUMENTATION_ELASTIC_INDEX"] = "semantic-docs-dev-latest"
-			})
-			.Build();
-
-		var options = new ElasticsearchOptions(testConfig);
 		var searchConfig = new SearchConfiguration
 		{
 			Synonyms = new Dictionary<string, string[]>(),
@@ -115,7 +81,7 @@ public abstract class McpToolsIntegrationTestsBase(ITestOutputHelper output)
 			DiminishTerms = ["plugin", "client", "integration", "glossary"]
 		};
 
-		return new ElasticsearchClientAccessor(options, searchConfig);
+		return new ElasticsearchClientAccessor(endpoints, searchConfig);
 	}
 
 	/// <summary>

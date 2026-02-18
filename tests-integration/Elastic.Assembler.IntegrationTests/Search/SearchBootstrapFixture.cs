@@ -8,6 +8,7 @@ using Documentation.Builder.Diagnostics.Console;
 using Elastic.Documentation.Aspire;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Search;
+using Elastic.Documentation.ServiceDefaults;
 using Elastic.Ingest.Elasticsearch;
 using Elastic.Ingest.Elasticsearch.Indices;
 using Elastic.Mapping;
@@ -15,7 +16,6 @@ using Elastic.Markdown.Exporters.Elasticsearch;
 using Elastic.Transport;
 using Elastic.Transport.Products.Elasticsearch;
 using FluentAssertions;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -139,39 +139,12 @@ public class SearchBootstrapFixture(DocumentationFixture fixture) : IAsyncLifeti
 	{
 		try
 		{
-			// Get Elasticsearch configuration from Aspire
-			var (elasticsearchUrl, apiKey, password, username) = GetElasticsearchConfiguration();
+			var endpoints = ElasticsearchEndpointFactory.Create();
 
-			if (string.IsNullOrEmpty(elasticsearchUrl))
-			{
-				Console.WriteLine("No Elasticsearch URL configured, indexing will be performed.");
-				Connected = false;
-				return false;
-			}
+			var endpoint = endpoints.Elasticsearch;
+			Console.WriteLine($"Checking remote Elasticsearch at {endpoint.Uri} for existing data...");
 
-			Console.WriteLine($"Checking remote Elasticsearch at {elasticsearchUrl} for existing data...");
-
-			// Create Elasticsearch endpoint configuration
-			var endpoint = new ElasticsearchEndpoint
-			{
-				Uri = new Uri(elasticsearchUrl),
-				ApiKey = apiKey,
-				Username = username,
-				Password = password
-			};
-
-			// Create transport configuration (similar to ElasticsearchMarkdownExporter)
-			var configuration = new ElasticsearchConfiguration(endpoint.Uri)
-			{
-				Authentication = endpoint.ApiKey is { } eApiKey
-					? new ApiKey(eApiKey)
-					: endpoint is { Username: { } eUsername, Password: { } ePassword }
-						? new BasicAuthentication(eUsername, ePassword)
-						: null,
-				EnableHttpCompression = true
-			};
-
-			var transport = new DistributedTransport(configuration);
+			var transport = ElasticsearchTransportFactory.Create(endpoint);
 			Connected = (await transport.HeadAsync("/", TestContext.Current.CancellationToken)).ApiCallDetails.HasSuccessfulStatusCode;
 
 			// Create a logger factory and diagnostics collector
@@ -234,41 +207,6 @@ public class SearchBootstrapFixture(DocumentationFixture fixture) : IAsyncLifeti
 		}
 
 		Console.WriteLine($"{resourceName} completed with exit code 0");
-	}
-
-	/// <summary>
-	/// Gets Elasticsearch configuration from Aspire parameters and environment.
-	/// Manually reads user secrets from the aspire project, then falls back to environment variables.
-	/// </summary>
-	private (string? Url, string? ApiKey, string? Password, string? Username) GetElasticsearchConfiguration()
-	{
-		// Manually read user secrets from the aspire project
-		// UserSecretsId from aspire.csproj: 72f50f33-6fb9-4d08-bff3-39568fe370b3
-		var configBuilder = new ConfigurationBuilder();
-		configBuilder.AddUserSecrets("72f50f33-6fb9-4d08-bff3-39568fe370b3");
-		var userSecretsConfig = configBuilder.Build();
-
-		// Get URL - try user secrets first, then Aspire configuration, then environment
-		var url = userSecretsConfig["Parameters:DocumentationElasticUrl"]
-			?? fixture.DistributedApplication.Services.GetService<IConfiguration>()?["Parameters:DocumentationElasticUrl"]
-			?? Environment.GetEnvironmentVariable("DOCUMENTATION_ELASTIC_URL");
-
-		// Get API Key - try user secrets first, then Aspire configuration, then environment
-		var apiKey = userSecretsConfig["Parameters:DocumentationElasticApiKey"]
-			?? fixture.DistributedApplication.Services.GetService<IConfiguration>()?["Parameters:DocumentationElasticApiKey"]
-			?? Environment.GetEnvironmentVariable("DOCUMENTATION_ELASTIC_APIKEY");
-
-		// Get password for local Elasticsearch (when using --start-elasticsearch)
-		var password = userSecretsConfig["Parameters:DocumentationElasticPassword"] ?? Environment.GetEnvironmentVariable("DOCUMENTATION_ELASTIC_PASSWORD");
-
-		// Get username (defaults to "elastic")
-		var username = userSecretsConfig["Parameters:DocumentationElasticUsername"]
-			?? Environment.GetEnvironmentVariable("DOCUMENTATION_ELASTIC_USERNAME")
-			?? "elastic";
-
-		Console.WriteLine($"Elasticsearch configuration retrieved: URL={url != null}, ApiKey={apiKey != null}, Password={password != null}");
-
-		return (url, apiKey, password, username);
 	}
 
 	public ValueTask DisposeAsync()

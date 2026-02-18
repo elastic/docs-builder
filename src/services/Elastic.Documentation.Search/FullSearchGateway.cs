@@ -104,7 +104,7 @@ public partial class FullSearchGateway(
 			var response = await clientAccessor.Client.SearchAsync<DocumentationDocument>(s =>
 			{
 				_ = s
-					.Indices(clientAccessor.Options.IndexName)
+					.Indices(clientAccessor.Endpoint.IndexName)
 					.From(Math.Max(request.PageNumber - 1, 0) * request.PageSize)
 					.Size(request.PageSize)
 					.Query(filteredQuery)
@@ -193,7 +193,7 @@ public partial class FullSearchGateway(
 			var response = await clientAccessor.Client.SearchAsync<DocumentationDocument>(s =>
 			{
 				_ = s
-					.Indices(clientAccessor.Options.IndexName)
+					.Indices(clientAccessor.Endpoint.IndexName)
 					.From(Math.Max(request.PageNumber - 1, 0) * request.PageSize)
 					.Size(request.PageSize)
 					.Query(filteredQuery)

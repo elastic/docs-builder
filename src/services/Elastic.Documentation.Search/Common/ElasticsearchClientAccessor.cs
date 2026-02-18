@@ -4,6 +4,7 @@
 
 using Elastic.Clients.Elasticsearch;
 using Elastic.Clients.Elasticsearch.Serialization;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Search;
 using Elastic.Transport;
 
@@ -18,31 +19,38 @@ public class ElasticsearchClientAccessor : IDisposable
 	private readonly ElasticsearchClientSettings _clientSettings;
 	private readonly SingleNodePool _nodePool;
 	public ElasticsearchClient Client { get; }
-	public ElasticsearchOptions Options { get; }
+	public ElasticsearchEndpoint Endpoint { get; }
 	public SearchConfiguration SearchConfiguration { get; }
 	public string? RulesetName { get; }
 	public IReadOnlyDictionary<string, string[]> SynonymBiDirectional { get; }
 	public IReadOnlyCollection<string> DiminishTerms { get; }
 
 	public ElasticsearchClientAccessor(
-		ElasticsearchOptions elasticsearchOptions,
+		DocumentationEndpoints endpoints,
 		SearchConfiguration searchConfiguration)
 	{
-		Options = elasticsearchOptions;
+		var endpoint = endpoints.Elasticsearch;
+		Endpoint = endpoint;
 		SearchConfiguration = searchConfiguration;
 		SynonymBiDirectional = searchConfiguration.SynonymBiDirectional;
 		DiminishTerms = searchConfiguration.DiminishTerms;
 		RulesetName = searchConfiguration.Rules.Count > 0
-			? ExtractRulesetName(elasticsearchOptions.IndexName)
+			? ExtractRulesetName(endpoint.IndexName)
 			: null;
 
-		_nodePool = new SingleNodePool(new Uri(elasticsearchOptions.Url.Trim()));
+		_nodePool = new SingleNodePool(endpoint.Uri);
+		var auth = endpoint.ApiKey is { } apiKey
+			? (AuthorizationHeader)new ApiKey(apiKey)
+			: endpoint is { Username: { } username, Password: { } password }
+				? new BasicAuthentication(username, password)
+				: null!;
+
 		_clientSettings = new ElasticsearchClientSettings(
 				_nodePool,
 				sourceSerializer: (_, settings) => new DefaultSourceSerializer(settings, EsJsonContext.Default)
 			)
-			.DefaultIndex(elasticsearchOptions.IndexName)
-			.Authentication(new ApiKey(elasticsearchOptions.ApiKey));
+			.DefaultIndex(endpoint.IndexName)
+			.Authentication(auth);
 
 		Client = new ElasticsearchClient(_clientSettings);
 	}

@@ -24,7 +24,7 @@ public class DocumentGateway(
 		try
 		{
 			var response = await clientAccessor.Client.SearchAsync<DocumentationDocument>(s => s
-				.Indices(clientAccessor.Options.IndexName)
+				.Indices(clientAccessor.Endpoint.IndexName)
 				.Query(q => q.Term(t => t.Field(f => f.Url.Suffix("keyword")).Value(url)))
 				.Size(1)
 				.Source(sf => sf.Filter(f => f.Includes(
@@ -101,7 +101,7 @@ public class DocumentGateway(
 		try
 		{
 			var response = await clientAccessor.Client.SearchAsync<DocumentationDocument>(s => s
-				.Indices(clientAccessor.Options.IndexName)
+				.Indices(clientAccessor.Endpoint.IndexName)
 				.Query(q => q.Term(t => t.Field(f => f.Url.Suffix("keyword")).Value(url)))
 				.Size(1)
 				.Source(sf => sf.Filter(f => f.Includes(

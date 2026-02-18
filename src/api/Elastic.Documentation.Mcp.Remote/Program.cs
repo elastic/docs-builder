@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Api.Infrastructure.OpenTelemetry;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Mcp.Remote.Gateways;
 using Elastic.Documentation.Mcp.Remote.Tools;
 using Elastic.Documentation.Search;
@@ -82,17 +83,18 @@ static void LogElasticsearchConfiguration(WebApplication app, ILogger logger)
 {
 	try
 	{
-		var esOptions = app.Services.GetService<ElasticsearchOptions>();
-		if (esOptions != null)
+		var endpoints = app.Services.GetService<DocumentationEndpoints>();
+		if (endpoints is not null)
 		{
+			var endpoint = endpoints.Elasticsearch;
 			logger.LogInformation(
 				"Elasticsearch configuration - Url: {Url}, Index: {Index}",
-				esOptions.Url,
-				esOptions.IndexName
+				endpoint.Uri,
+				endpoint.IndexName
 			);
 		}
 		else
-			logger.LogWarning("ElasticsearchOptions could not be resolved from DI");
+			logger.LogWarning("DocumentationEndpoints could not be resolved from DI");
 	}
 	catch (Exception ex)
 	{
