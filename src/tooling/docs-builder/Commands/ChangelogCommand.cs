@@ -39,48 +39,38 @@ internal sealed class ChangelogCommand(
 	}
 
 	/// <summary>
-	/// Initialize changelog configuration and folder structure. Creates changelog.yml from the example template, and creates docs/changelog and docs/releases directories if they do not exist.
+	/// Initialize changelog configuration and folder structure. Creates changelog.yml from the example template in the same directory as docset.yml, and creates changelog and releases subdirectories if they do not exist. Fails if docset.yml cannot be found.
 	/// </summary>
-	/// <param name="path">Optional: Repository root path. Defaults to the output of pwd (current directory).</param>
-	/// <param name="docs">Optional: Docs folder path. Defaults to {path}/docs.</param>
-	/// <param name="config">Optional: Path to changelog.yml configuration file. Defaults to {docs}/changelog.yml.</param>
-	/// <param name="changelogDir">Optional: Path to changelog directory. Defaults to {docs}/changelog.</param>
-	/// <param name="bundlesDir">Optional: Path to bundles output directory. Defaults to {docs}/releases.</param>
+	/// <param name="path">Optional: Repository root path to search for docset.yml. Defaults to the output of pwd (current directory).</param>
+	/// <param name="changelogDir">Optional: Path to changelog directory. Defaults to {docsFolder}/changelog.</param>
+	/// <param name="bundlesDir">Optional: Path to bundles output directory. Defaults to {docsFolder}/releases.</param>
 	[Command("init")]
 	public Task<int> Init(
 		string? path = null,
-		string? docs = null,
-		string? config = null,
 		string? changelogDir = null,
 		string? bundlesDir = null
 	)
 	{
-		var repoPath = NormalizePath(path ?? ".");
-		var docsPath = NormalizePath(docs ?? Path.Combine(repoPath, "docs"));
-		var configPath = NormalizePath(config ?? Path.Combine(docsPath, "changelog.yml"));
-		var defaultChangelogPath = Path.Combine(docsPath, "changelog");
-		var defaultBundlesPath = Path.Combine(docsPath, "releases");
-		var changelogPath = NormalizePath(changelogDir ?? defaultChangelogPath);
-		var bundlesPath = NormalizePath(bundlesDir ?? defaultBundlesPath);
+		var rootDir = _fileSystem.DirectoryInfo.New(NormalizePath(path ?? "."));
+
+		IDirectoryInfo docsFolder;
+		try
+		{
+			(docsFolder, _) = Paths.FindDocsFolderFromRoot(_fileSystem, rootDir);
+		}
+		catch (Exception ex)
+		{
+			collector.EmitError(string.Empty, ex.Message, ex);
+			return Task.FromResult(1);
+		}
+
+		var configPath = Path.Combine(docsFolder.FullName, "changelog.yml");
+		var changelogPath = NormalizePath(changelogDir ?? Path.Combine(docsFolder.FullName, "changelog"));
+		var bundlesPath = NormalizePath(bundlesDir ?? Path.Combine(docsFolder.FullName, "releases"));
 
 		var useNonDefaultChangelogDir = changelogDir != null;
 		var useNonDefaultBundlesDir = bundlesDir != null;
-
-		// Create config directory if needed (for config path like docs/changelog.yml, ensure docs exists)
-		var configDirectory = Path.GetDirectoryName(configPath);
-		if (!string.IsNullOrEmpty(configDirectory) && !_fileSystem.Directory.Exists(configDirectory))
-		{
-			try
-			{
-				_ = _fileSystem.Directory.CreateDirectory(configDirectory);
-				_logger.LogInformation("Created directory: {Directory}", configDirectory);
-			}
-			catch (IOException ex)
-			{
-				collector.EmitError(string.Empty, $"Failed to create directory '{configDirectory}': {ex.Message}", ex);
-				return Task.FromResult(1);
-			}
-		}
+		var repoRoot = Paths.DetermineSourceDirectoryRoot(docsFolder)?.FullName ?? docsFolder.FullName;
 
 		// Create changelog.yml from example if it does not exist
 		if (!_fileSystem.File.Exists(configPath))
@@ -116,13 +106,13 @@ internal sealed class ChangelogCommand(
 			// Update bundle.directory and bundle.output_directory when non-default paths are specified
 			if (useNonDefaultChangelogDir)
 			{
-				var directoryValue = GetPathForConfig(repoPath, changelogPath);
+				var directoryValue = GetPathForConfig(repoRoot, changelogPath);
 				content = content.Replace("directory: docs/changelog", $"directory: {directoryValue}");
 			}
 
 			if (useNonDefaultBundlesDir)
 			{
-				var outputValue = GetPathForConfig(repoPath, bundlesPath);
+				var outputValue = GetPathForConfig(repoRoot, bundlesPath);
 				content = content.Replace("output_directory: docs/releases", $"output_directory: {outputValue}");
 			}
 
