@@ -162,11 +162,8 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		if (uri == null)
 			return false;
 
-		// Any absolute URI that isn't a cross-link and doesn't use http(s)/mailto is an
-		// opaque external-protocol link (e.g. cursor://, vscode:, mailto:, ftp://) — skip
-		// internal file-path validation entirely.
 		if (!uri.Scheme.StartsWith("http") && !uri.Scheme.StartsWith("mailto"))
-			return true;
+			return false;
 
 		var hostParts = uri.Host.Split('.');
 		var baseDomain = uri.Host == "localhost"
