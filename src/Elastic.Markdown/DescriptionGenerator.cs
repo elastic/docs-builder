@@ -80,13 +80,11 @@ public class DescriptionGenerator : IDescriptionGenerator
 				if (listItemBlock is not ParagraphBlock listItemParagraph || listItemParagraph.Inline == null)
 					continue;
 
-			var paragraphText = GetInlineText(listItemParagraph.Inline);
-			if (string.IsNullOrEmpty(paragraphText))
-				continue;
-			_ = description.Append(paragraphText);
-			var lastChar = paragraphText[^1];
-			if (lastChar is not '.' and not ',' and not '!' and not '?')
-				_ = description.Append(listItem == listBlock.LastChild ? ". " : ", ");
+				var paragraphText = GetInlineText(listItemParagraph.Inline);
+				_ = description.Append(paragraphText);
+				var lastChar = paragraphText[^1];
+				if (lastChar is not '.' and not ',' and not '!' and not '?')
+					_ = description.Append(listItem == listBlock.LastChild ? ". " : ", ");
 			}
 		}
 	}
