@@ -40,6 +40,7 @@ import('./web-components/VersionDropdown')
 import('./web-components/AppliesToPopover')
 import('./web-components/FullPageSearch/FullPageSearchComponent')
 import('./web-components/Diagnostics/DiagnosticsComponent')
+import('./web-components/VectorSizingCalculator/VectorSizingCalculatorComponent')
 
 const { getOS } = new UAParser()
 
