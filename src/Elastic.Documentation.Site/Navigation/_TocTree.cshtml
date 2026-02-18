@@ -6,7 +6,7 @@
 	@{
 		var currentTopLevelItem = Model.TopLevelItems.FirstOrDefault(i => i.Id == Model.Tree.Id) ?? Model.Tree;
 	} 
-	<div class="sticky top-0 z-10 bg-white">
+	<div class="sticky top-0 z-10 bg-page">
 		@if (Model.BuildType != BuildType.Codex)
 		{
 			<navigation-search></navigation-search>
@@ -14,18 +14,18 @@
 		<div id="nav-dropdown">
 		@if (Model.IsUsingNavigationDropdown)
 			{
-				<div class="py-4 bg-white border-grey-20 pr-4">
-					<div tabindex="0" id="pages-dropdown" class="block group border border-grey-20 rounded-sm font-sans relative">
-						<button class="w-full text-left grid grid-cols-[1fr_auto] cursor-pointer font-semibold gap-1 hover:text-black pl-4 pr-2 py-2 group-open:border-b-1 border-grey-20">
+				<div class="py-4 bg-page border-border-default pr-4">
+					<div tabindex="0" id="pages-dropdown" class="block group border border-border-default rounded-sm font-sans relative">
+						<button class="w-full text-left grid grid-cols-[1fr_auto] cursor-pointer font-semibold gap-1 hover:text-text-primary pl-4 pr-2 py-2 group-open:border-b-1 border-border-default">
 							<div>
 								<a
-									class="pages-dropdown_active hover:underline text-blue-elastic hover:text-blue-elastic-100"
+									class="pages-dropdown_active hover:underline text-link hover:text-link-hover"
 									href="@currentTopLevelItem.Url"
 									@Model.Htmx.GetNavHxAttributes(true)>
 									@currentTopLevelItem.NavigationTitle
 								</a>
 							</div>
-							<div class="flex items-center justify-center size-6 hover:bg-grey-20 rounded-sm">
+							<div class="flex items-center justify-center size-6 hover:bg-surface-hover rounded-sm">
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
 									fill="none"
@@ -38,12 +38,12 @@
 							</div>
 						</button>
 					<div class="hidden group-focus-within:block left-0 right-0 absolute top-full">
-						<ul class="mt-1 py-2 bg-white border-1 border-grey-20 rounded-sm shadow-md">
+						<ul class="mt-1 py-2 bg-page border-1 border-border-default rounded-sm shadow-md">
 				@foreach (var item in Model.TopLevelItems)
 				{
 								<li class="block">
 									<a
-										class="block py-2 px-4 hover:underline hover:text-black hover:bg-grey-10 active:bg-blue-elastic-70 active:text-white font-semibold @(item.NavigationRoot.Id == Model.Tree.Id ? "text-blue-elastic" : "")"
+										class="block py-2 px-4 hover:underline hover:text-text-primary hover:bg-surface-hover active:bg-blue-elastic-70 active:text-white font-semibold @(item.NavigationRoot.Id == Model.Tree.Id ? "text-link" : "")"
 										href="@item.Url"
 										@Model.Htmx.GetNavHxAttributes(false, "mouseover")>
 							@item.NavigationTitle
@@ -67,7 +67,7 @@
 		</div>
 	</div>
 
-	<ul class="block px-4" id="nav-tree">
+	<ul class="block px-4 bg-page" id="nav-tree">
 		@await RenderPartialAsync(_TocTreeNav.Create(new NavigationTreeItem
 		{
 			IsPrimaryNavEnabled = Model.IsPrimaryNavEnabled,

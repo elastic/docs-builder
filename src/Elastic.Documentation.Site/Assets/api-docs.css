@@ -31,15 +31,15 @@
 		list-style-type: none;
 		margin-left: 0;
 		a {
-			@apply text-grey-80 inline-block w-full p-4 pr-4 pl-4 no-underline;
-			@apply border-grey-20 bg-grey-10 rounded-sm border;
+			@apply text-text-body inline-block w-full p-4 pr-4 pl-4 no-underline;
+			@apply border-border-default bg-surface rounded-sm border;
 		}
 		a.current {
-			@apply border-grey-30 text-grey-120 bg-white p-4;
+			@apply border-border-default text-text-heading bg-page p-4;
 			font-weight: bold;
 		}
 		a:hover {
-			@apply border-grey-30 text-grey-120 bg-white;
+			@apply border-border-default text-text-heading bg-page;
 			font-weight: bold;
 		}
 		a.api-url-list-item-landing {
@@ -51,10 +51,10 @@
 	}
 	li:only-child {
 		a.current {
-			@apply border-grey-20 rounded-sm border bg-white;
+			@apply border-border-default bg-page rounded-sm border;
 		}
 		a.current:hover {
-			@apply border-grey-20 bg-white;
+			@apply border-border-default bg-page;
 		}
 	}
 	.api-url-list-item {
@@ -70,29 +70,29 @@
 	}
 	li {
 		a {
-			@apply text-grey-80 inline-block w-full p-2 pr-2 pl-2 no-underline;
-			@apply rounded-sm border border-white;
+			@apply text-text-body inline-block w-full p-2 pr-2 pl-2 no-underline;
+			@apply border-border-light rounded-sm border;
 		}
 		a:hover {
-			@apply bg-grey-10;
-			@apply border-grey-20;
+			@apply bg-surface;
+			@apply border-border-default;
 		}
 		a.current {
-			@apply text-grey-80 inline-block w-full p-2 pr-2 pl-2 no-underline;
-			@apply rounded-sm border border-white;
+			@apply text-text-body inline-block w-full p-2 pr-2 pl-2 no-underline;
+			@apply border-border-light rounded-sm border;
 		}
 		a.current:hover {
-			@apply bg-grey-10;
-			@apply border-grey-20;
+			@apply bg-surface;
+			@apply border-border-default;
 		}
 	}
 	li:only-child {
 		a.current {
-			@apply text-grey-80 inline-block w-full p-2 pr-2 pl-2 no-underline;
-			@apply rounded-sm border border-white;
+			@apply text-text-body inline-block w-full p-2 pr-2 pl-2 no-underline;
+			@apply border-border-light rounded-sm border;
 		}
 		a.current:hover {
-			@apply bg-grey-10;
+			@apply bg-surface;
 		}
 	}
 	table {
@@ -200,7 +200,7 @@
 	}
 
 	dd {
-		@apply text-grey-80;
+		@apply text-text-body;
 		padding: calc(var(--spacing) * 2) 0 0 0;
 		padding-left: calc(var(--spacing) * 2);
 		margin: 0;
@@ -252,7 +252,7 @@
 				left: 0.375rem;
 				top: calc(var(--spacing) * 2 + 0.4rem);
 				bottom: calc(-1 * var(--spacing) * 3 - 0.125rem);
-				border-left: 1px solid #cbd5e1;
+				border-left: 1px solid var(--border-default);
 			}
 		}
 
@@ -267,8 +267,8 @@
 				left: 0.375rem;
 				height: calc(var(--spacing) * 5 + 0.525rem);
 				width: 0.5rem;
-				border-left: 1px solid #cbd5e1;
-				border-bottom: 1px solid #cbd5e1;
+				border-left: 1px solid var(--border-default);
+				border-bottom: 1px solid var(--border-default);
 				border-bottom-left-radius: 3px;
 			}
 		}
@@ -306,7 +306,7 @@
 			top: 0;
 			height: 50%;
 			width: 0;
-			border-left: 1px solid #cbd5e1;
+			border-left: 1px solid var(--border-default);
 			opacity: 0;
 			transition: opacity 0.1s ease;
 		}
@@ -318,7 +318,7 @@
 			left: 0.375rem;
 			top: 50%;
 			width: 0.5rem;
-			border-top: 1px solid #cbd5e1;
+			border-top: 1px solid var(--border-default);
 			opacity: 0;
 			transition: opacity 0.1s ease;
 		}
@@ -339,7 +339,7 @@
 		height: calc(
 			var(--spacing) * 5 + 0.4rem
 		); /* Connect to first child's L-connector */
-		border-left: 1px solid #cbd5e1;
+		border-left: 1px solid var(--border-default);
 	}
 
 	/* Collapsed state - show both vertical and horizontal connector */
@@ -350,7 +350,7 @@
 
 	/* Expand/collapse toggle button - default grey (expanded state) */
 	.expand-toggle {
-		@apply text-grey-60 bg-grey-10 border-grey-20 cursor-pointer rounded border;
+		@apply text-text-secondary bg-surface border-border-default cursor-pointer rounded border;
 		padding: 0.25rem 0.5rem;
 		font-size: 0.8rem;
 		line-height: 1.2;
@@ -407,7 +407,7 @@
 
 /* Optional badge - more subtle than required */
 .optional {
-	@apply text-grey-60 bg-grey-10 rounded px-1 py-0.5 text-xs font-normal;
+	@apply text-text-secondary bg-surface rounded px-1 py-0.5 text-xs font-normal;
 }
 
 /* Recursive badge - amber/yellow with icon */
@@ -441,7 +441,7 @@
 
 /* Version badge - subtle grey */
 .version-badge {
-	@apply text-grey-60 bg-grey-10 rounded px-1 py-0.5 text-xs font-normal;
+	@apply text-text-secondary bg-surface rounded px-1 py-0.5 text-xs font-normal;
 }
 
 /* Beta badge - orange/amber warning */
@@ -498,12 +498,12 @@
 
 /* Discriminator note styling */
 .discriminator-note {
-	@apply text-grey-60 text-xs italic;
+	@apply text-text-secondary text-xs italic;
 }
 
 /* Object type icon */
 .object-icon {
-	@apply text-grey-60 font-normal;
+	@apply text-text-secondary font-normal;
 	font-size: 1.2em;
 	font-variant: small-caps;
 }
@@ -517,7 +517,7 @@
 
 /* Dictionary/map type icon - same color as object icon */
 .dict-icon {
-	@apply text-grey-60 font-normal;
+	@apply text-text-secondary font-normal;
 	font-size: 1.2em;
 	font-variant: small-caps;
 }
@@ -544,7 +544,7 @@
 }
 
 .values-label {
-	@apply text-grey-60 mr-1 text-xs;
+	@apply text-text-secondary mr-1 text-xs;
 }
 
 .enum-value {
@@ -562,14 +562,14 @@
 }
 
 .constraints-label {
-	@apply text-grey-60 mr-1 text-xs;
+	@apply text-text-secondary mr-1 text-xs;
 }
 
 .constraint {
-	@apply text-grey-70 bg-grey-10 rounded px-1.5 py-0.5 text-xs;
+	@apply text-text-secondary bg-surface rounded px-1.5 py-0.5 text-xs;
 
 	code {
-		@apply text-grey-80 bg-grey-20 rounded px-1 py-0 font-mono text-xs;
+		@apply text-text-body bg-grey-20 rounded px-1 py-0 font-mono text-xs;
 	}
 }
 
@@ -587,20 +587,20 @@
 	@apply flex items-center gap-1;
 
 	code {
-		@apply text-blue-elastic rounded bg-white px-1.5 py-0.5 font-mono text-xs;
+		@apply text-blue-elastic bg-page rounded px-1.5 py-0.5 font-mono text-xs;
 	}
 }
 
 .security-scopes {
-	@apply text-grey-60 text-xs;
+	@apply text-text-secondary text-xs;
 }
 
 /* Response headers display */
 .response-headers {
-	@apply border-grey-20 mt-4 border-t pt-4;
+	@apply border-border-default mt-4 border-t pt-4;
 
 	h5 {
-		@apply text-grey-80 mb-2 text-sm font-medium;
+		@apply text-text-body mb-2 text-sm font-medium;
 	}
 }
 
@@ -614,19 +614,19 @@
 }
 
 .server-label {
-	@apply text-grey-60 font-medium;
+	@apply text-text-secondary font-medium;
 }
 
 .server-url {
 	@apply flex items-center gap-1;
 
 	code {
-		@apply text-grey-80 bg-grey-10 rounded px-1.5 py-0.5 font-mono text-xs;
+		@apply text-text-body bg-surface rounded px-1.5 py-0.5 font-mono text-xs;
 	}
 }
 
 .server-description {
-	@apply text-grey-50 text-xs;
+	@apply text-text-secondary text-xs;
 }
 
 /* Union type option - styled like regular types, not enum values */
@@ -636,7 +636,7 @@
 
 /* Map keyword styling */
 .map-keyword {
-	@apply text-grey-50 font-normal;
+	@apply text-text-secondary font-normal;
 	font-size: 0.85em;
 }
 
@@ -660,7 +660,7 @@
 }
 
 .union-inline-separator {
-	@apply text-grey-50 text-xs;
+	@apply text-text-secondary text-xs;
 }
 
 /* Primitive array type display */
@@ -707,7 +707,7 @@
 		top: 0;
 		height: 50%;
 		width: 0;
-		border-left: 1px solid #cbd5e1;
+		border-left: 1px solid var(--border-default);
 		opacity: 0;
 		transition: opacity 0.1s ease;
 	}
@@ -719,14 +719,14 @@
 		left: 0.375rem;
 		top: 50%;
 		width: 0.5rem;
-		border-top: 1px solid #cbd5e1;
+		border-top: 1px solid var(--border-default);
 		opacity: 0;
 		transition: opacity 0.1s ease;
 	}
 
 	/* Button styling */
 	.union-group-toggle {
-		@apply text-grey-60 bg-grey-10 border-grey-20 cursor-pointer rounded border;
+		@apply text-text-secondary bg-surface border-border-default cursor-pointer rounded border;
 		padding: 0.25rem 0.5rem;
 		font-size: 0.8rem;
 		line-height: 1.2;
@@ -821,7 +821,7 @@
 		top: 0;
 		height: 50%;
 		width: 0;
-		border-left: 1px solid #cbd5e1;
+		border-left: 1px solid var(--border-default);
 		opacity: 0;
 		transition: opacity 0.1s ease;
 	}
@@ -833,14 +833,14 @@
 		left: 0.375rem;
 		top: 50%;
 		width: 0.5rem;
-		border-top: 1px solid #cbd5e1;
+		border-top: 1px solid var(--border-default);
 		opacity: 0;
 		transition: opacity 0.1s ease;
 	}
 
 	/* Default button style (expanded state - grey) */
 	.expand-toggle {
-		@apply text-grey-60 bg-grey-10 border-grey-20 cursor-pointer rounded border;
+		@apply text-text-secondary bg-surface border-border-default cursor-pointer rounded border;
 		padding: 0.25rem 0.5rem;
 		font-size: 0.8rem;
 		line-height: 1.2;
@@ -874,7 +874,7 @@
 	height: calc(
 		var(--spacing) * 5 + 0.4rem
 	); /* Connect to first child's L-connector */
-	border-left: 1px solid #cbd5e1;
+	border-left: 1px solid var(--border-default);
 }
 
 /* Union collapsed state - show both vertical and horizontal connector, green button */
@@ -889,7 +889,7 @@
 
 /* Union separator between type options */
 .union-separator {
-	@apply text-grey-40 text-xs;
+	@apply text-text-secondary text-xs;
 	padding: calc(var(--spacing) * 0.5) 0;
 	display: flex;
 	align-items: center;
@@ -901,19 +901,19 @@
 	content: '';
 	flex: 1;
 	max-width: 2rem;
-	border-top: 1px dashed #cbd5e1;
+	border-top: 1px dashed var(--border-default);
 }
 
 .variant-description {
-	@apply text-grey-60 mt-1 text-sm;
+	@apply text-text-secondary mt-1 text-sm;
 }
 
 /* Schema ID display */
 .schema-id {
-	@apply text-grey-60 mb-4 text-sm;
+	@apply text-text-secondary mb-4 text-sm;
 
 	code {
-		@apply bg-grey-10 rounded px-2 py-1;
+		@apply bg-surface rounded px-2 py-1;
 	}
 }
 
@@ -953,7 +953,7 @@
 
 .property-list dd ul li::before {
 	content: '•';
-	@apply text-grey-40 absolute left-0;
+	@apply text-text-secondary absolute left-0;
 }
 
 /* Style the value code in list items - more prominent */
@@ -994,7 +994,7 @@
 
 #elastic-api-v3 h3,
 #schema-definition h3 {
-	@apply bg-white;
+	@apply bg-page;
 	position: sticky;
 	top: var(--offset-top); /* Offset for fixed header */
 	z-index: 10;
@@ -1018,7 +1018,7 @@
 }
 
 .section-nav-btn {
-	@apply text-grey-50 bg-grey-10 border-grey-20 rounded border;
+	@apply text-text-secondary bg-surface border-border-default rounded border;
 	width: 28px;
 	height: 28px;
 	display: flex;
@@ -1030,7 +1030,7 @@
 }
 
 .section-nav-btn:hover {
-	@apply text-grey-80 bg-grey-20 border-grey-30;
+	@apply text-text-body bg-grey-20 border-border-default;
 }
 
 .section-nav-btn:active {
@@ -1039,7 +1039,7 @@
 
 /* Section path indicator - right aligned before nav buttons, text style */
 .section-path {
-	@apply text-grey-50 mr-2 text-xs;
+	@apply text-text-secondary mr-2 text-xs;
 	display: inline-flex;
 	align-items: center;
 	height: 28px; /* Match button height */
@@ -1048,14 +1048,14 @@
 
 /* Content-type badge for request/response headers */
 .content-type-badge {
-	@apply text-grey-60 bg-grey-10 ml-2 rounded px-2 py-0.5 text-xs;
+	@apply text-text-secondary bg-surface ml-2 rounded px-2 py-0.5 text-xs;
 	font-weight: 500;
 }
 
 /* API description - smaller font like property descriptions */
 #elastic-api-v3 > p,
 #elastic-api-v3 h3[data-section='description'] + p {
-	@apply text-grey-80;
+	@apply text-text-body;
 	font-size: 0.9em;
 	line-height: 1.5;
 }
@@ -1068,7 +1068,7 @@
 
 /* Example description - smaller font like property descriptions */
 .example-description {
-	@apply text-grey-80;
+	@apply text-text-body;
 	font-size: 0.9em;
 	line-height: 1.5;
 	margin-bottom: 0.75rem;
@@ -1085,7 +1085,7 @@
 
 /* Example h4 titles - sticky within example sections */
 .example-block h4 {
-	@apply border-b-grey-20 border-b-1 bg-white;
+	@apply border-b-grey-20 bg-page border-b-1;
 	position: sticky;
 	top: calc(var(--offset-top) + 3rem); /* Below h3 sticky header */
 	z-index: 5;

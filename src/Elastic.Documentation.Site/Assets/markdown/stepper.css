@@ -5,7 +5,7 @@
 		}
 
 		.title {
-			@apply font-sans text-2xl font-semibold text-black no-underline hover:text-black;
+			@apply text-text-primary hover:text-text-primary font-sans text-2xl font-semibold no-underline;
 		}
 
 		& > ol {
@@ -36,7 +36,7 @@
 			counter-increment: stepper;
 			position: relative;
 			&::before {
-				@apply bg-grey-20 absolute top-8 -bottom-10 block w-[1px];
+				@apply bg-border-default absolute top-8 -bottom-10 block w-[1px];
 				content: '';
 				left: calc(var(--spacing) * 4 - 1px);
 			}
@@ -44,7 +44,7 @@
 				@apply hidden;
 			}
 			&::after {
-				@apply border-grey-20 bg-grey-10 absolute top-0 left-0 flex size-8 items-center justify-center rounded-full border-1 text-sm text-black;
+				@apply border-border-default bg-surface-hover text-text-primary absolute top-0 left-0 flex size-8 items-center justify-center rounded-full border-1 text-sm;
 				content: counter(stepper);
 			}
 		}

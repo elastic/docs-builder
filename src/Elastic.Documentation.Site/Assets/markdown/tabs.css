@@ -3,13 +3,13 @@
 		@apply relative mt-4 flex flex-wrap overflow-hidden;
 
 		.tabs-label {
-			@apply text-ink-light border-grey-20 z-20 -mb-[1px] flex cursor-pointer items-center border-1 px-6 py-2;
+			@apply text-text-secondary border-border-default z-20 -mb-[1px] flex cursor-pointer items-center border-1 px-6 py-2;
 			&:not(:nth-of-type(1)) {
 				margin-left: -1px;
 			}
 
 			&:hover {
-				@apply bg-grey-10 border-b-1 border-b-black text-black;
+				@apply bg-surface-hover border-b-text-primary text-text-primary border-b-1;
 			}
 		}
 
@@ -18,7 +18,7 @@
 		}
 
 		.tabs-content {
-			@apply border-grey-20 z-0 order-99 hidden w-full border-1 px-6 pt-2 pb-6;
+			@apply border-border-default z-0 order-99 hidden w-full border-1 px-6 pt-2 pb-6;
 		}
 
 		.tabs-input:checked + .tabs-label + .tabs-content {

@@ -12,7 +12,7 @@
 
 .footnotes li {
 	/* Tighter spacing between items than between heading and list. */
-	@apply text-ink-light mt-2 text-sm leading-relaxed;
+	@apply text-text-secondary mt-2 text-sm leading-relaxed;
 }
 
 .footnotes li p {
@@ -25,7 +25,7 @@
 
 /* Footnote reference (superscript link in text) */
 .footnote-ref {
-	@apply text-blue-elastic hover:text-blue-elastic-100 font-semibold no-underline;
+	@apply text-link hover:text-link-hover font-semibold no-underline;
 	text-decoration: none !important;
 	display: inline-block;
 	padding: 0.15em 0.2em;
@@ -40,7 +40,7 @@
 
 /* Back reference (return arrow in footnote) */
 .footnote-back-ref {
-	@apply text-blue-elastic hover:text-blue-elastic-100 no-underline;
+	@apply text-link hover:text-link-hover no-underline;
 	font-family: monospace;
 	text-decoration: none !important;
 	vertical-align: super;

@@ -15,6 +15,9 @@
 			.applicable-separator {
 				mix-blend-mode: multiply;
 			}
+			:root[data-theme='dark'] & .applicable-separator {
+				/* mix-blend-mode: unset; */
+			}
 		}
 		.admonition-content {
 			@apply px-4;
@@ -25,57 +28,57 @@
 		}
 
 		&.note {
-			@apply border-blue-elastic-40 bg-blue-elastic-10;
+			@apply border-blue-elastic-40 bg-blue-elastic-10 dark:border-blue-elastic-100 dark:bg-blue-elastic-130;
 
 			.admonition-header {
-				@apply text-blue-elastic-110 bg-blue-elastic-20;
+				@apply text-blue-elastic-110 bg-blue-elastic-20 dark:text-blue-elastic-30 dark:bg-blue-elastic-120;
 
 				.applicable-info {
-					@apply border-blue-elastic-40;
+					@apply border-blue-elastic-40 dark:border-blue-elastic-100;
 				}
 			}
 		}
 
 		&.tip {
-			@apply border-teal-40 bg-teal-10;
+			@apply border-teal-40 bg-teal-10 dark:bg-teal-130 dark:border-teal-100;
 			.admonition-header {
-				@apply text-teal-110 bg-teal-20;
+				@apply text-teal-110 bg-teal-20 dark:text-teal-30 dark:bg-teal-120;
 
 				.applicable-info {
-					@apply border-teal-40;
+					@apply border-teal-40 dark:border-teal-100;
 				}
 			}
 		}
 
 		&.warning {
-			@apply border-yellow-40 bg-yellow-10;
+			@apply border-yellow-40 bg-yellow-10 dark:bg-yellow-130 dark:border-yellow-100;
 
 			.admonition-header {
-				@apply text-yellow-110 bg-yellow-20;
+				@apply text-yellow-110 bg-yellow-20 dark:text-yellow-30 dark:bg-yellow-120;
 				.applicable-info {
-					@apply border-yellow-40;
+					@apply border-yellow-40 dark:border-yellow-100;
 				}
 			}
 		}
 
 		&.important {
-			@apply border-purple-40 bg-purple-10;
+			@apply border-purple-40 bg-purple-10 dark:bg-purple-130 dark:border-purple-100;
 
 			.admonition-header {
-				@apply text-purple-110 bg-purple-20;
+				@apply text-purple-110 bg-purple-20 dark:text-purple-30 dark:bg-purple-120;
 				.applicable-info {
-					@apply border-purple-40;
+					@apply border-purple-40 dark:border-purple-100;
 				}
 			}
 		}
 
 		&.plain {
-			@apply border-grey-40 bg-grey-10;
+			@apply border-grey-40 bg-grey-10 dark:border-grey-100 dark:bg-grey-130;
 
 			.admonition-header {
-				@apply text-grey-110 bg-grey-20;
+				@apply text-grey-110 bg-grey-20 dark:text-grey-30 dark:bg-grey-120;
 				.applicable-info {
-					@apply border-grey-40;
+					@apply border-grey-40 dark:border-grey-100;
 				}
 			}
 		}

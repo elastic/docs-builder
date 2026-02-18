@@ -1,7 +1,8 @@
 'use strict'
 
 import '../eui-icons-cache'
-import { EuiPopover, useGeneratedHtmlId } from '@elastic/eui'
+import { useTheme } from './shared/useTheme'
+import { EuiPopover, EuiProvider, useGeneratedHtmlId } from '@elastic/eui'
 import { css } from '@emotion/react'
 import r2wc from '@r2wc/react-to-web-component'
 import * as React from 'react'
@@ -47,6 +48,7 @@ const AppliesToPopover = ({
     showPopover = true,
     isInline = false,
 }: AppliesToPopoverProps) => {
+    const { theme } = useTheme()
     const [isOpen, setIsOpen] = useState(false)
     const [isPinned, setIsPinned] = useState(false)
     const [openItems, setOpenItems] = useState<Set<number>>(new Set())
@@ -247,7 +249,15 @@ const AppliesToPopover = ({
     )
 
     if (!showPopover || !hasPopoverContent) {
-        return badgeButton
+        return (
+            <EuiProvider
+                colorMode={theme}
+                globalStyles={false}
+                utilityClasses={false}
+            >
+                {badgeButton}
+            </EuiProvider>
+        )
     }
 
     const renderAvailabilityItem = (
@@ -338,158 +348,177 @@ const AppliesToPopover = ({
     }
 
     return (
-        <EuiPopover
-            id={popoverId}
-            button={badgeButton}
-            isOpen={isOpen}
-            closePopover={handleClosePopover}
-            panelPaddingSize="none"
-            anchorPosition="downLeft"
-            repositionOnScroll={true}
-            css={css`
-                display: ${isInline ? 'inline-flex' : 'flex'};
-                vertical-align: ${isInline ? 'bottom' : 'baseline'};
-            `}
-            panelProps={{
-                onMouseEnter: handleMouseEnter,
-                onMouseLeave: handleMouseLeave,
-                css: css`
-                    max-width: 420px;
-                    z-index: 40 !important; /* Show below the main header if needed */
-
-                    /* Remove all focus styling from panel */
-                    &,
-                    &:focus,
-                    &:focus-visible,
-                    &:focus-within {
-                        outline: none !important;
-                        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
-                    }
-
-                    .euiPopover__panelArrow {
-                        display: none;
-                    }
-                `,
-            }}
+        <EuiProvider
+            colorMode={theme}
+            globalStyles={false}
+            utilityClasses={false}
         >
-            <div
-                ref={contentRef}
+            <EuiPopover
+                id={popoverId}
+                button={badgeButton}
+                isOpen={isOpen}
+                closePopover={handleClosePopover}
+                panelPaddingSize="none"
+                anchorPosition="downLeft"
+                repositionOnScroll={true}
                 css={css`
-                    padding: 16px;
-                    font-size: 14px;
-                    line-height: 1.5;
-                    color: var(--color-grey-100, #1a1c21);
+                    display: ${isInline ? 'inline-flex' : 'flex'};
+                    vertical-align: ${isInline ? 'bottom' : 'baseline'};
                 `}
+                panelProps={{
+                    onMouseEnter: handleMouseEnter,
+                    onMouseLeave: handleMouseLeave,
+                    css: css`
+                        max-width: 420px;
+                        z-index: 40 !important; /* Show below the main header if needed */
+
+                        /* Remove all focus styling from panel */
+                        &,
+                        &:focus,
+                        &:focus-visible,
+                        &:focus-within {
+                            outline: none !important;
+                            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
+                        }
+
+                        .euiPopover__panelArrow {
+                            display: none;
+                        }
+                    `,
+                }}
             >
-                {/* Product description */}
-                {popoverData?.productDescription && (
-                    <p
-                        css={css`
-                            margin: 0 0 16px 0;
-                            color: var(--color-grey-80, #343741);
-
-                            strong {
-                                display: inline;
-                                font-weight: 700;
-                                color: var(--color-grey-100, #1a1c21);
-                            }
-                        `}
-                        dangerouslySetInnerHTML={{
-                            __html: popoverData.productDescription,
-                        }}
-                    />
-                )}
-
-                {/* Availability section */}
-                {popoverData && popoverData.availabilityItems.length > 0 && (
-                    <>
+                <div
+                    ref={contentRef}
+                    css={css`
+                        padding: 16px;
+                        font-size: 14px;
+                        line-height: 1.5;
+                        color: var(--color-grey-100, #1a1c21);
+                    `}
+                >
+                    {/* Product description */}
+                    {popoverData?.productDescription && (
                         <p
                             css={css`
-                                margin: 0 0 4px 0;
-                            `}
-                        >
-                            <strong
-                                css={css`
+                                margin: 0 0 16px 0;
+                                color: var(--color-grey-80, #343741);
+
+                                strong {
                                     display: inline;
                                     font-weight: 700;
-                                    font-size: 15px;
                                     color: var(--color-grey-100, #1a1c21);
-                                `}
-                            >
-                                Availability
-                            </strong>
-                        </p>
-                        <p
-                            css={css`
-                                margin: 0 0 8px 0;
-                                color: var(--color-grey-70, #535966);
-                                font-size: 13px;
-                            `}
-                        ></p>
-                        {popoverData.availabilityItems.map((item, index) =>
-                            renderAvailabilityItem(item, index)
-                        )}
-                    </>
-                )}
-
-                {/* Additional availability info */}
-                {popoverData?.additionalInfo && (
-                    <p
-                        css={css`
-                            margin: 12px 0 0 0;
-                            padding-top: 12px;
-                            border-top: 1px solid var(--color-grey-15, #e0e5ee);
-                            color: var(--color-grey-70, #535966);
-                            font-size: 13px;
-                        `}
-                    >
-                        {popoverData.additionalInfo}
-                    </p>
-                )}
-
-                {/* Version note */}
-                {popoverData?.showVersionNote && popoverData?.versionNote && (
-                    <p
-                        css={css`
-                            display: flex;
-                            align-items: flex-start;
-                            gap: 8px;
-                            margin: 12px 0 0 0;
-                            padding: 8px 12px;
-                            background: var(--color-grey-5, #f5f7fa);
-                            border-radius: 4px;
-                            font-size: 12px;
-                            color: var(--color-grey-70, #535966);
-                            line-height: 1.5;
-                        `}
-                    >
-                        <span
-                            css={css`
-                                flex-shrink: 0;
-                                color: var(--color-blue-elastic, #0077cc);
-                                font-size: 14px;
-                            `}
-                        >
-                            ⓘ
-                        </span>
-                        <span
-                            css={css`
-                                a {
-                                    color: var(--color-blue-elastic, #0077cc);
-                                    text-decoration: none;
-                                    &:hover {
-                                        text-decoration: underline;
-                                    }
                                 }
                             `}
                             dangerouslySetInnerHTML={{
-                                __html: popoverData.versionNote,
+                                __html: popoverData.productDescription,
                             }}
                         />
-                    </p>
-                )}
-            </div>
-        </EuiPopover>
+                    )}
+
+                    {/* Availability section */}
+                    {popoverData &&
+                        popoverData.availabilityItems.length > 0 && (
+                            <>
+                                <p
+                                    css={css`
+                                        margin: 0 0 4px 0;
+                                    `}
+                                >
+                                    <strong
+                                        css={css`
+                                            display: inline;
+                                            font-weight: 700;
+                                            font-size: 15px;
+                                            color: var(
+                                                --color-grey-100,
+                                                #1a1c21
+                                            );
+                                        `}
+                                    >
+                                        Availability
+                                    </strong>
+                                </p>
+                                <p
+                                    css={css`
+                                        margin: 0 0 8px 0;
+                                        color: var(--color-grey-70, #535966);
+                                        font-size: 13px;
+                                    `}
+                                ></p>
+                                {popoverData.availabilityItems.map(
+                                    (item, index) =>
+                                        renderAvailabilityItem(item, index)
+                                )}
+                            </>
+                        )}
+
+                    {/* Additional availability info */}
+                    {popoverData?.additionalInfo && (
+                        <p
+                            css={css`
+                                margin: 12px 0 0 0;
+                                padding-top: 12px;
+                                border-top: 1px solid
+                                    var(--color-grey-15, #e0e5ee);
+                                color: var(--color-grey-70, #535966);
+                                font-size: 13px;
+                            `}
+                        >
+                            {popoverData.additionalInfo}
+                        </p>
+                    )}
+
+                    {/* Version note */}
+                    {popoverData?.showVersionNote &&
+                        popoverData?.versionNote && (
+                            <p
+                                css={css`
+                                    display: flex;
+                                    align-items: flex-start;
+                                    gap: 8px;
+                                    margin: 12px 0 0 0;
+                                    padding: 8px 12px;
+                                    background: var(--color-grey-5, #f5f7fa);
+                                    border-radius: 4px;
+                                    font-size: 12px;
+                                    color: var(--color-grey-70, #535966);
+                                    line-height: 1.5;
+                                `}
+                            >
+                                <span
+                                    css={css`
+                                        flex-shrink: 0;
+                                        color: var(
+                                            --color-blue-elastic,
+                                            #0077cc
+                                        );
+                                        font-size: 14px;
+                                    `}
+                                >
+                                    ⓘ
+                                </span>
+                                <span
+                                    css={css`
+                                        a {
+                                            color: var(
+                                                --color-blue-elastic,
+                                                #0077cc
+                                            );
+                                            text-decoration: none;
+                                            &:hover {
+                                                text-decoration: underline;
+                                            }
+                                        }
+                                    `}
+                                    dangerouslySetInnerHTML={{
+                                        __html: popoverData.versionNote,
+                                    }}
+                                />
+                            </p>
+                        )}
+                </div>
+            </EuiPopover>
+        </EuiProvider>
     )
 }
 

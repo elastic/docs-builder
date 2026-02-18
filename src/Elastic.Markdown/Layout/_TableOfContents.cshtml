@@ -103,11 +103,11 @@
 				<div class="font-sans">
 					<div class="font-bold mb-2">On this page</div>
 					<div class="relative toc-progress-container font-body">
-						<div class="toc-progress-indicator absolute top-0 h-0 w-[1px] bg-blue-elastic transition-all duration-200 ease-out "></div>
+						<div class="toc-progress-indicator absolute top-0 h-0 w-[1px] bg-link transition-all duration-200 ease-out "></div>
 						<ul class="block w-full">
 							@foreach (var item in Model.PageTocItems)
 							{
-								<li class="has-[:hover]:border-l-grey-80 items-center px-4 border-l-1 border-l-grey-20 has-[.current]:border-l-blue-elastic!">
+								<li class="has-[:hover]:border-l-text-secondary items-center px-4 border-l-1 border-l-border-default has-[.current]:border-l-link!">
 									<a
 										class="sidebar-link inline-block my-1.5 @(item.Level == 3 ? "ml-4" : string.Empty)"
 										href="#@item.Slug">

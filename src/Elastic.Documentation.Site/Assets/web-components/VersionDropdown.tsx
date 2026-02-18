@@ -1,6 +1,7 @@
 'strict'
 
 import '../eui-icons-cache'
+import { useTheme } from './shared/useTheme'
 import {
     EuiButton,
     EuiContextMenu,
@@ -15,6 +16,7 @@ import {
     useGeneratedHtmlId,
     useEuiTheme,
     useEuiFontSize,
+    EuiProvider,
 } from '@elastic/eui'
 import {
     EuiContextMenuPanelDescriptor,
@@ -38,7 +40,7 @@ type VersionDropdownProps = {
     items?: VersionDropdownItem[]
 }
 
-const VersionDropdown = ({
+const VersionDropdownInner = ({
     allVersionsUrl,
     currentVersion,
     items,
@@ -245,6 +247,20 @@ const VersionDropdown = ({
                 `}
             />
         </EuiPopover>
+    )
+}
+
+const VersionDropdown = (props: VersionDropdownProps) => {
+    const { theme } = useTheme()
+
+    return (
+        <EuiProvider
+            colorMode={theme}
+            globalStyles={false}
+            utilityClasses={false}
+        >
+            <VersionDropdownInner {...props} />
+        </EuiProvider>
     )
 }
 

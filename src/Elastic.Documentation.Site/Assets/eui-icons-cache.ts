@@ -30,6 +30,7 @@ import { icon as EuiIconGlobe } from '@elastic/eui/es/components/icon/assets/glo
 import { icon as EuiIconInfo } from '@elastic/eui/es/components/icon/assets/info'
 import { icon as EuiIconKqlFunction } from '@elastic/eui/es/components/icon/assets/kql_function'
 import { icon as EuiIconLogoElastic } from '@elastic/eui/es/components/icon/assets/logo_elastic'
+import { icon as EuiIconMoon } from '@elastic/eui/es/components/icon/assets/moon'
 import { icon as EuiIconNewChat } from '@elastic/eui/es/components/icon/assets/new_chat'
 import { icon as EuiIconPlay } from '@elastic/eui/es/components/icon/assets/play'
 import { icon as EuiIconPopout } from '@elastic/eui/es/components/icon/assets/popout'
@@ -97,6 +98,7 @@ const iconMapping = {
     dotInCircle: EuiIconDotInCircle,
     branch: EuiIconBranch,
     filter: EuiIconFilter,
+    moon: EuiIconMoon,
     sun: EuiIconSun,
 }
 

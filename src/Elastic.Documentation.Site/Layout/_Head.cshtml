@@ -12,6 +12,12 @@
 	{
 		<link rel="preload" href="@fontFile" as="font" type="font/woff2" crossorigin>
 	}
+	@if (Model.BuildType == BuildType.Isolated || Model.BuildType == BuildType.Codex)
+	{
+		<script>
+			(function(){var t=localStorage.getItem("theme");var d=!("theme"in localStorage)&&window.matchMedia("(prefers-color-scheme: dark)").matches;document.documentElement.dataset.theme=t==="dark"||(!t&&d)?"dark":"light";})();
+		</script>
+	}
 	<link rel="stylesheet preload" as="style" type="text/css" href="@Model.Static("styles.css")" crossorigin/>
 	@switch (Model.BuildType)
 	{

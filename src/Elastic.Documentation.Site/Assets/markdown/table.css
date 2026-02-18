@@ -3,7 +3,7 @@
 		@apply my-4 w-full overflow-x-auto;
 
 		&::-webkit-scrollbar {
-			@apply bg-grey-10 border-grey-20 h-2 border-b-1;
+			@apply bg-surface border-border-default h-2 border-b-1;
 		}
 
 		&::-webkit-scrollbar-thumb {
@@ -15,16 +15,16 @@
 		}
 
 		table {
-			@apply border-grey-20 w-full border-collapse border-1;
+			@apply border-border-default w-full border-collapse border-1;
 		}
 
 		th,
 		td {
-			@apply border-grey-20 min-w-30 px-4 py-2 not-first:border-l-1;
+			@apply border-border-default min-w-30 px-4 py-2 not-first:border-l-1;
 		}
 
 		thead {
-			@apply border-grey-20 bg-grey-10 border-b-1 text-left align-top font-sans font-semibold;
+			@apply border-border-default bg-surface border-b-1 text-left align-top font-sans font-semibold;
 			&:not(:has(th:not(:empty))) {
 				/* If no th within thead is not empty, all are empty, so hide the thead */
 				display: none;
@@ -34,7 +34,7 @@
 		tbody {
 			@apply align-top;
 			tr {
-				@apply border-grey-20 hover:bg-grey-10 not-last:border-b-1;
+				@apply border-border-default hover:bg-surface-hover not-last:border-b-1;
 			}
 		}
 	}

@@ -5,13 +5,13 @@
 		}
 
 		details.dropdown {
-			@apply border-grey-20 mt-4 block rounded-sm border-1 shadow-xs;
+			@apply border-border-default mt-4 block rounded-sm border-1 shadow-xs;
 			summary.dropdown-title {
-				@apply text-ink-dark flex cursor-pointer items-stretch justify-between font-sans text-lg font-bold;
+				@apply text-text-primary flex cursor-pointer items-stretch justify-between font-sans text-lg font-bold;
 			}
 
 			&[open] .dropdown-title {
-				@apply border-b-grey-20 border-b-1;
+				@apply border-b-border-default border-b-1;
 				svg {
 					transform: rotate(90deg);
 				}
@@ -26,7 +26,7 @@
 			}
 
 			.dropdown-title__separator {
-				@apply bg-grey-20 block w-[1px];
+				@apply bg-border-default block w-[1px];
 			}
 
 			.dropdown-title__icon {

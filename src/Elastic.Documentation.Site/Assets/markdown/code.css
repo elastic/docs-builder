@@ -25,7 +25,7 @@
 
 			code.language-json + code.language-apiheader,
 			code.language-apiheader + code.language-apiheader {
-				@apply border-t-grey-100 border-t-1 border-dotted;
+				@apply border-t-border-default border-t-1 border-dotted;
 			}
 		}
 
@@ -62,7 +62,7 @@
 		}
 
 		code {
-			@apply bg-grey-10 border-grey-20 rounded-xs border-1 font-mono;
+			@apply bg-surface-hover border-border-default rounded-xs border-1 font-mono;
 			font-size: 0.875em;
 			line-height: 1.4em;
 			padding-left: 0.2em;
@@ -71,6 +71,10 @@
 			font-weight: inherit;
 			mix-blend-mode: multiply;
 			word-break: break-word;
+		}
+
+		:root[data-theme='dark'] & code {
+			mix-blend-mode: unset;
 		}
 
 		.hljs-built_in,

@@ -1,9 +1,12 @@
 import '../../eui-icons-cache'
 import { useHtmxContainer } from '../shared/htmx/useHtmxContainer'
+import { useTheme } from '../shared/useTheme'
 import { DeploymentInfo } from './DeploymentInfo'
 import {
     EuiHeader,
     EuiHeaderLogo,
+    EuiHeaderSectionItemButton,
+    EuiIcon,
     EuiProvider,
     useEuiTheme,
 } from '@elastic/eui'
@@ -33,10 +36,11 @@ export const Header = ({
     const { euiTheme } = useEuiTheme()
     const containerRef = useRef<HTMLSpanElement>(null)
     useHtmxContainer(containerRef)
+    const { theme, toggleTheme } = useTheme()
 
     return (
         <EuiProvider
-            colorMode="light"
+            colorMode={theme}
             globalStyles={false}
             utilityClasses={false}
         >
@@ -63,6 +67,18 @@ export const Header = ({
                     },
                     {
                         items: [
+                            <EuiHeaderSectionItemButton
+                                onClick={toggleTheme}
+                                aria-label={
+                                    theme === 'dark'
+                                        ? 'Switch to light mode'
+                                        : 'Switch to dark mode'
+                                }
+                            >
+                                <EuiIcon
+                                    type={theme === 'dark' ? 'sun' : 'moon'}
+                                />
+                            </EuiHeaderSectionItemButton>,
                             <DeploymentInfo
                                 gitBranch={gitBranch}
                                 gitCommit={gitCommit}

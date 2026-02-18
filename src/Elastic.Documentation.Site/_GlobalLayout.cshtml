@@ -9,7 +9,7 @@
 <body
 	hx-history="false"
 	hx-indicator="#htmx-indicator"
-	class="group/body text-ink has-[#primary-nav-hamburger:checked]:overflow-hidden min-h-screen build-type-@(Model.BuildType.ToString().ToLowerInvariant())"
+	class="group/body bg-page text-text-body has-[#primary-nav-hamburger:checked]:overflow-hidden min-h-screen build-type-@(Model.BuildType.ToString().ToLowerInvariant())"
 	hx-ext="preload, head-support"
 	data-docs-builder-version="@Model.DocsBuilderVersion"
 	data-root-path="@(Model.Htmx.GetRootPath())"

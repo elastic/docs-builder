@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 @config '../tailwind.config.js';
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
 
 @import './fonts.css';
 @import './theme.css';
@@ -77,20 +78,20 @@ body {
 		left: -1px;
 		width: calc(var(--spacing) * 6);
 		height: 1px;
-		background-color: var(--color-grey-10);
+		background-color: var(--border-default);
 	}
 }
 
 #toc-nav a.current {
-	color: var(--color-blue-elastic);
+	color: var(--link-color);
 	&:hover {
-		color: var(--color-blue-elastic);
+		color: var(--link-color-hover);
 	}
 }
 
 @layer components {
 	.link {
-		@apply text-blue-elastic hover:text-blue-elastic-100 inline-flex items-center justify-center font-sans font-semibold text-nowrap;
+		@apply text-link hover:text-link-hover inline-flex items-center justify-center font-sans font-semibold text-nowrap;
 
 		.link-icon {
 			@apply mr-2 ml-0 size-4 shrink-0;
@@ -118,7 +119,7 @@ body {
 		}
 
 		.sidebar-link {
-			@apply text-ink-light inline-block leading-[1.2em] text-pretty hover:text-black md:text-sm;
+			@apply text-text-secondary hover:text-text-primary inline-block leading-[1.2em] text-pretty md:text-sm;
 			word-break: break-word;
 		}
 	}
@@ -130,7 +131,7 @@ body {
 	}
 
 	.sidebar-trial-card__inner {
-		background: var(--color-white);
+		background: var(--bg-page);
 		border-radius: 7px;
 		padding: 24px 24px 16px;
 	}
@@ -358,7 +359,7 @@ body {
 }
 
 #pages-nav .current {
-	@apply text-blue-elastic! font-semibold;
+	@apply text-link! font-semibold;
 }
 
 .markdown-content {

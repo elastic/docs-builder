@@ -2,6 +2,7 @@ import '../../eui-icons-cache'
 import { NavigationSearch } from '../NavigationSearch/NavigationSearch'
 import { useHtmxContainer } from '../shared/htmx/useHtmxContainer'
 import { sharedQueryClient } from '../shared/queryClient'
+import { useTheme } from '../shared/useTheme'
 import {
     EuiHeader,
     EuiHeaderLogo,
@@ -26,11 +27,12 @@ interface Props {
 export const Header = ({ title, logoHref }: Props) => {
     const containerRef = useRef<HTMLSpanElement>(null)
     useHtmxContainer(containerRef)
+    const { theme, toggleTheme } = useTheme()
 
     return (
         <QueryClientProvider client={sharedQueryClient}>
             <EuiProvider
-                colorMode="dark"
+                colorMode={theme}
                 globalStyles={false}
                 utilityClasses={false}
             >
@@ -51,8 +53,17 @@ export const Header = ({ title, logoHref }: Props) => {
                                     size="s"
                                     placeholder="Search"
                                 />,
-                                <EuiHeaderSectionItemButton>
-                                    <EuiIcon type="sun" />
+                                <EuiHeaderSectionItemButton
+                                    onClick={toggleTheme}
+                                    aria-label={
+                                        theme === 'dark'
+                                            ? 'Switch to light mode'
+                                            : 'Switch to dark mode'
+                                    }
+                                >
+                                    <EuiIcon
+                                        type={theme === 'dark' ? 'sun' : 'moon'}
+                                    />
                                 </EuiHeaderSectionItemButton>,
                             ],
                         },

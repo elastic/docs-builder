@@ -1,5 +1,6 @@
 import '../../eui-icons-cache'
 import { sharedQueryClient } from '../shared/queryClient'
+import { useTheme } from '../shared/useTheme'
 import { NavigationSearch } from './NavigationSearch'
 import { EuiHorizontalRule, EuiProvider, useEuiTheme } from '@elastic/eui'
 import { css } from '@emotion/react'
@@ -43,10 +44,12 @@ const NavigationSearchInner = () => {
 }
 
 const NavigationSearchWrapper = () => {
+    const { theme } = useTheme()
+
     return (
         <StrictMode>
             <EuiProvider
-                colorMode="light"
+                colorMode={theme}
                 globalStyles={false}
                 utilityClasses={false}
             >

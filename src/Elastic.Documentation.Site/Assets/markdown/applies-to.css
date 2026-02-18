@@ -9,7 +9,7 @@
 		}
 
 		.applicable-info {
-			@apply border-grey-20 inline-flex cursor-default rounded-full border-[1px] bg-white pt-1.5 pr-3 pb-1.5 pl-3;
+			@apply border-border-default bg-page inline-flex cursor-default rounded-full border-[1px] pt-1.5 pr-3 pb-1.5 pl-3;
 		}
 
 		.applicable-info--clickable {
@@ -41,14 +41,14 @@
 		/* Desktop: no pinned state styling */
 		@media (hover: hover) and (pointer: fine) {
 			.applicable-info--pinned {
-				@apply border-grey-20 bg-white;
+				@apply border-border-default bg-page;
 			}
 		}
 
 		/* Mobile/touch: show pinned state */
 		@media (hover: none), (pointer: coarse) {
 			.applicable-info--pinned {
-				@apply border-blue-elastic bg-grey-10;
+				@apply border-blue-elastic bg-surface-hover;
 			}
 		}
 
@@ -62,14 +62,17 @@
 		}
 
 		.applicable-separator {
-			@apply bg-grey-20 mx-2 self-stretch;
+			@apply bg-border-default mx-2 self-stretch;
 			mix-blend-mode: multiply;
 			width: 1px;
+		}
+		:root[data-theme='dark'] & .applicable-separator {
+			mix-blend-mode: unset;
 		}
 	}
 
 	.applies.applies-block {
-		@apply border-b-grey-20 flex flex-wrap gap-2 border-b-1 pb-4;
+		@apply border-b-border-default flex flex-wrap gap-2 border-b-1 pb-4;
 	}
 
 	.applies.applies-inline {
@@ -95,7 +98,7 @@
 	}
 
 	.applicable-ellipsis {
-		@apply bg-grey-20 inline-flex h-full items-center gap-0.5 rounded-md px-0.5 py-1;
+		@apply bg-border-default inline-flex h-full items-center gap-0.5 rounded-md px-0.5 py-1;
 	}
 
 	.applicable-ellipsis__dot {

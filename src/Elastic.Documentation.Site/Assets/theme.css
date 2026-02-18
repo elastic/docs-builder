@@ -1,3 +1,32 @@
+/* Semantic color tokens for light/dark mode - swap via [data-theme="dark"] */
+:root {
+	--bg-page: #ffffff;
+	--bg-surface: #ffffff;
+	--bg-surface-hover: #e5e9f0;
+	--text-heading: #111c2c;
+	--text-primary: #1d2a3e;
+	--text-body: #1d2a3e;
+	--text-secondary: #516381;
+	--link-color: #0b64dd;
+	--link-color-hover: #1750ba;
+	--border-default: #e5e9f0;
+	--border-light: #f6f9fc;
+}
+
+:root[data-theme='dark'] {
+	--bg-page: #0b1629;
+	--bg-surface: #0b1629;
+	--bg-surface-hover: #172336;
+	--text-heading: #e3e8f2;
+	--text-primary: #cad3e2;
+	--text-body: #cad3e2;
+	--text-secondary: #98a8c3;
+	--link-color: #61a2ff;
+	--link-color-hover: #85b7ff;
+	--border-default: #2b394f;
+	--border-light: #243147;
+}
+
 @theme {
 	--breakpoint-sm: 640px;
 	--breakpoint-md: 768px;
@@ -187,4 +216,17 @@
 	--text-3xl: 2.143rem; /* 30px */
 	--text-4xl: 2.571rem; /* 36px */
 	--text-5xl: 3.429rem; /* 48px */
+
+	/* Semantic tokens for light/dark mode */
+	--color-page: var(--bg-page);
+	--color-surface: var(--bg-surface);
+	--color-surface-hover: var(--bg-surface-hover);
+	--color-text-heading: var(--text-heading);
+	--color-text-primary: var(--text-primary);
+	--color-text-body: var(--text-body);
+	--color-text-secondary: var(--text-secondary);
+	--color-link: var(--link-color);
+	--color-link-hover: var(--link-color-hover);
+	--color-border-default: var(--border-default);
+	--color-border-light: var(--border-light);
 }
