@@ -9,7 +9,6 @@ namespace Elastic.Documentation.Mcp.Remote;
 /// <summary>
 /// Middleware that sends periodic SSE keepalive comments on <c>text/event-stream</c> responses
 /// to prevent clients (notably Cursor) from timing out idle SSE connections.
-/// Covers both Streamable HTTP (<c>/docs/_mcp/</c>) and legacy SSE (<c>/docs/_mcp/sse</c>) endpoints.
 /// </summary>
 public class SseKeepAliveMiddleware(RequestDelegate next, ILogger<SseKeepAliveMiddleware> logger)
 {
