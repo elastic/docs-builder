@@ -41,6 +41,12 @@ import('./web-components/AppliesToPopover')
 import('./web-components/FullPageSearch/FullPageSearchComponent')
 import('./web-components/Diagnostics/DiagnosticsComponent')
 
+if (config.buildType === 'isolated') {
+    import('./isolated')
+} else if (config.buildType === 'codex') {
+    import('./codex')
+}
+
 const { getOS } = new UAParser()
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
