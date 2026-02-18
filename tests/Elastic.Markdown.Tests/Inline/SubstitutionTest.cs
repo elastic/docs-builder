@@ -223,8 +223,12 @@ Major.x: {{version|M.x}}
 Major.x with space: {{version | M.x}}
 Increase major: {{version|M+1}}
 Increase major with space: {{version | M+1}}
+Decrease major: {{version|M-1}}
+Decrease major with space: {{version | M-1}}
 Increase minor: {{version|M.M+1}}
 Increase minor with space: {{version | M.M+1}}
+Decrease minor: {{version|M.M-1}}
+Decrease minor with space: {{version | M.M-1}}
 """
 )
 {
@@ -240,8 +244,72 @@ Increase minor with space: {{version | M.M+1}}
 			.And.Contain("Major.x with space: 9.x")
 			.And.Contain("Increase major: 10.0.0")
 			.And.Contain("Increase major with space: 10.0.0")
+			.And.Contain("Decrease major: 8.0.0")
+			.And.Contain("Decrease major with space: 8.0.0")
 			.And.Contain("Increase minor: 9.1.0")
-			.And.Contain("Increase minor with space: 9.1.0");
+			.And.Contain("Increase minor with space: 9.1.0")
+			.And.Contain("Decrease minor: 9.0.4")
+			.And.Contain("Decrease minor with space: 9.0.4");
+	}
+
+	[Fact]
+	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+}
+
+public class DecreaseMinorMutationTest(ITestOutputHelper output) : InlineTest(output,
+"""
+---
+sub:
+  version-with-minor: "9.2.3"
+  version-with-zero-minor: "9.0.4"
+---
+
+# Testing Decrease Minor Mutation
+
+Version with minor greater than 0: {{version-with-minor|M.M-1}}
+Version with minor greater than 0 and M.M: {{version-with-minor|M.M-1|M.M}}
+Version with minor 0: {{version-with-zero-minor|M.M-1}}
+"""
+)
+{
+	[Fact]
+	public void DecreaseMinorWorksCorrectly()
+	{
+		// When minor > 0, should decrease minor
+		Html.Should().Contain("Version with minor greater than 0: 9.1.0")
+			.And.Contain("Version with minor greater than 0 and M.M: 9.1")
+			// When minor = 0, should return original value
+			.And.Contain("Version with minor 0: 9.0.4");
+	}
+
+	[Fact]
+	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+}
+
+public class DecreaseMajorMutationTest(ITestOutputHelper output) : InlineTest(output,
+"""
+---
+sub:
+  version-with-major: "9.2.3"
+  version-with-zero-major: "0.5.2"
+---
+
+# Testing Decrease Major Mutation
+
+Version with major greater than 0: {{version-with-major|M-1}}
+Version with major greater than 0 and M.M: {{version-with-major|M-1|M.M}}
+Version with major 0: {{version-with-zero-major|M-1}}
+"""
+)
+{
+	[Fact]
+	public void DecreaseMajorWorksCorrectly()
+	{
+		// When major > 0, should decrease major and set minor/patch to 0
+		Html.Should().Contain("Version with major greater than 0: 8.0.0")
+			.And.Contain("Version with major greater than 0 and M.M: 8.0")
+			// When major = 0, should return original value
+			.And.Contain("Version with major 0: 0.5.2");
 	}
 
 	[Fact]

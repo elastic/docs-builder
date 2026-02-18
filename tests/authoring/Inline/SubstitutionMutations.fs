@@ -26,8 +26,10 @@ sub:
 * M.M: {{versions.stack | M.M }}
 * M: {{versions.stack | M }}
 * M+1: {{versions.stack | M+1 }}
+* M-1: {{versions.stack | M-1 }}
 * M+1 | M.M: {{versions.stack | M+1 | M.M }}
 * M.M+1: {{versions.stack | M.M+1 }}
+* M.M-1: {{versions.stack | M.M-1 }}
 """
 
     [<Fact>]
@@ -46,7 +48,9 @@ sub:
  	<li>M.M: 9.1</li>
  	<li>M: 9</li>
  	<li>M+1: 10.0.0</li>
+ 	<li>M-1: 8.0.0</li>
  	<li>M+1 | M.M: 10.0</li>
  	<li>M.M+1: 9.2.0</li>
+ 	<li>M.M-1: 9.0.0</li>
  </ul>
         """
