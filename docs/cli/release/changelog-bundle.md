@@ -37,7 +37,7 @@ These arguments apply to profile-based bundling:
 
 `--directory <string?>`
 :   Optional: The directory that contains the changelog YAML files.
-:   Defaults to the current directory.
+:   When not specified, uses `bundle.directory` from the changelog configuration if set, otherwise the current directory.
 
 `--hide-features <string[]?>`
 :   Optional: Filter by feature IDs (comma-separated), or a path to a newline-delimited file containing feature IDs.
@@ -61,7 +61,7 @@ These arguments apply to profile-based bundling:
 `--output <string?>`
 :   Optional: The output path for the bundle.
 :   Can be either (1) a directory path, in which case `changelog-bundle.yaml` is created in that directory, or (2) a file path ending in `.yml` or `.yaml`.
-:   Defaults to `changelog-bundle.yaml` in the input directory.
+:   When not specified, uses `bundle.output_directory` from the changelog configuration (creating `changelog-bundle.yaml` in that directory) if set, otherwise `changelog-bundle.yaml` in the input directory.
 
 `--output-products <List<ProductInfo>?>`
 :   Optional: Explicitly set the products array in the output file in format "product target lifecycle, ...".
@@ -86,7 +86,9 @@ These arguments apply to profile-based bundling:
 
 ## Output file location
 
-The `--output` option supports two formats:
+When you do not specify `--output`, the command uses `bundle.output_directory` from your changelog configuration if it is set (creating `changelog-bundle.yaml` in that directory), otherwise writes to `changelog-bundle.yaml` in the input directory.
+
+When you specify `--output`, it supports two formats:
 
 1. **Directory path**: If you specify a directory path (without a filename), the command creates `changelog-bundle.yaml` in that directory:
 
