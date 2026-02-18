@@ -28,24 +28,25 @@ public class DocumentGateway(
 				.Indices(clientAccessor.Options.IndexName)
 				.Query(q => q.Term(t => t.Field(f => f.Url).Value(normalizedUrl)))
 				.Size(1)
-				.Source(sf => sf.Filter(f => f.Includes(
-					e => e.Url,
-					e => e.Title,
-					e => e.Type,
-					e => e.Description,
-					e => e.NavigationSection,
-					e => e.Body,
-					e => e.Parents,
-					e => e.Headings,
-					e => e.Links,
-					e => e.AiShortSummary,
-					e => e.AiRagOptimizedSummary,
-					e => e.AiQuestions,
-					e => e.AiUseCases,
-					e => e.LastUpdated,
-					e => e.Product,
-					e => e.RelatedProducts
-				))),
+			.Source(sf => sf.Filter(f => f.Includes(
+				e => e.Url,
+				e => e.Title,
+				e => e.SearchTitle,
+				e => e.Type,
+				e => e.Description,
+				e => e.NavigationSection,
+				e => e.Body,
+				e => e.Parents,
+				e => e.Headings,
+				e => e.Links,
+				e => e.AiShortSummary,
+				e => e.AiRagOptimizedSummary,
+				e => e.AiQuestions,
+				e => e.AiUseCases,
+				e => e.LastUpdated,
+				e => e.Product,
+				e => e.RelatedProducts
+			))),
 				ct);
 
 			if (!response.IsValidResponse || response.Documents.Count == 0)
@@ -106,17 +107,19 @@ public class DocumentGateway(
 				.Indices(clientAccessor.Options.IndexName)
 				.Query(q => q.Term(t => t.Field(f => f.Url).Value(normalizedUrl)))
 				.Size(1)
-				.Source(sf => sf.Filter(f => f.Includes(
-					e => e.Url,
-					e => e.Title,
-					e => e.Parents,
-					e => e.Headings,
-					e => e.Links,
-					e => e.Body,
-					e => e.AiShortSummary,
-					e => e.AiQuestions,
-					e => e.AiUseCases
-				))),
+			.Source(sf => sf.Filter(f => f.Includes(
+				e => e.Url,
+				e => e.Title,
+				e => e.SearchTitle,
+				e => e.Type,
+				e => e.Parents,
+				e => e.Headings,
+				e => e.Links,
+				e => e.Body,
+				e => e.AiShortSummary,
+				e => e.AiQuestions,
+				e => e.AiUseCases
+			))),
 				ct);
 
 			if (!response.IsValidResponse || response.Documents.Count == 0)
