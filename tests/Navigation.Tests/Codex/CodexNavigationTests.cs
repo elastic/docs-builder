@@ -108,9 +108,9 @@ public class CodexNavigationTests(ITestOutputHelper output) : CodexNavigationTes
 		var docSetNavigations = CreateMockDocSetNavigations(["standalone"]);
 		var codexNav = new CodexNavigation(config, CreateContext(), docSetNavigations);
 
-		// Ungrouped repos are direct children of codex
+		// Ungrouped repos are NOT parented to codex (so breadcrumbs start at the docset root)
 		var standaloneNavItem = codexNav.NavigationItems.First();
-		standaloneNavItem.Parent.Should().BeSameAs(codexNav);
+		standaloneNavItem.Parent.Should().BeNull();
 
 		// Verify the HomeProvider points to itself (for isolated sidebar)
 		if (docSetNavigations["standalone"] is INavigationHomeAccessor homeAccessor)

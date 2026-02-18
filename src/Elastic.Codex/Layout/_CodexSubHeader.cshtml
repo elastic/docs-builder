@@ -1,0 +1,62 @@
+@inherits RazorSlice<Elastic.Documentation.Site.GlobalLayoutViewModel>
+@using Elastic.Documentation.Svg
+@{
+	var showFullBreadcrumbs = false; // Set to true to show full trail (Home / Group / Docset)
+}
+	@if (Model.CodexBreadcrumbs is { Count: > 1 } breadcrumbs)
+	{
+		<div id="codex-breadcrumbs" class="bg-grey-10 border-b border-grey-20 px-4 py-2 sticky top-(--header-height) z-10">
+
+	<nav class="flex items-center gap-2 text-sm text-subdued" aria-label="Breadcrumb">
+		@if (showFullBreadcrumbs)
+		{
+			@for (var i = 0; i < breadcrumbs.Count - 1; i++)
+			{
+				var crumb = breadcrumbs[i];
+				if (i > 0)
+				{
+					<span class="text-grey-40">/</span>
+				}
+				@if (!string.IsNullOrEmpty(crumb.Url))
+				{
+					<a href="@crumb.Url"
+					   hx-select-oob="#main-container"
+					   preload="mousedown"
+					   class="inline-flex items-center gap-1 font-medium hover:text-black hover:underline"
+					   @(crumb.Title == "Home" ? " aria-label=\"Home\"" : "")>@(crumb.Title == "Home" ? new HtmlString(EuiSvgIcons.GetIcon("home", "size-4 fill-current") ?? "") : (object)crumb.Title)</a>
+				}
+				else
+				{
+					<span class="font-medium">@crumb.Title</span>
+				}
+			}
+		}
+		else
+		{
+			var home = breadcrumbs[0];
+			var header = breadcrumbs[1];
+			@if (!string.IsNullOrEmpty(home.Url))
+			{
+				<a href="@home.Url"
+				   hx-select-oob="#main-container"
+				   preload="mousedown"
+				   class="inline-flex items-center font-medium hover:text-black hover:underline"
+				   aria-label="Back">@(new HtmlString(EuiSvgIcons.GetIcon("grid", "size-4 fill-current") ?? ""))</a>
+				<span class="text-grey-40">|</span>
+			}
+			@if (!string.IsNullOrEmpty(header.Url))
+			{
+				<a href="@header.Url"
+				   hx-select-oob="#main-container"
+				   preload="mousedown"
+				   class="font-medium hover:text-black hover:underline">@header.Title</a>
+			}
+			else
+			{
+				<span class="font-medium">@header.Title</span>
+			}
+		}
+	</nav>
+	</div>
+
+	}

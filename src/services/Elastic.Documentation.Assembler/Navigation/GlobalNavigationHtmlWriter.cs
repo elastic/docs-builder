@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Concurrent;
+using Elastic.Documentation;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Assembler;
@@ -75,7 +76,8 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 			IsUsingNavigationDropdown = true,
 			IsGlobalAssemblyBuild = true,
 			TopLevelItems = topLevelItems,
-			Htmx = new DefaultHtmxAttributeProvider("/")
+			Htmx = new DefaultHtmxAttributeProvider("/"),
+			BuildType = BuildType.Assembler
 		};
 	}
 

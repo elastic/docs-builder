@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using System.IO.Compression;
 using System.Text;
+using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Inference;
@@ -101,6 +102,9 @@ public class LlmMarkdownExporter : IMarkdownExporter
 
 	private static bool IsRootIndexFile(MarkdownExportFileContext fileContext)
 	{
+		if (fileContext.BuildContext.BuildType == BuildType.Codex)
+			return false;
+
 		var fs = fileContext.BuildContext.ReadFileSystem;
 		var expected = fs.FileInfo.New(Path.Combine(fileContext.BuildContext.OutputDirectory.FullName, "index.html"));
 		return fileContext.DefaultOutputFile.FullName == expected.FullName;
@@ -116,7 +120,7 @@ public class LlmMarkdownExporter : IMarkdownExporter
 		{
 			var root = fileContext.BuildContext.OutputDirectory;
 
-			if (defaultOutputFile.Directory!.FullName == root.FullName)
+			if (fileContext.BuildContext.BuildType != BuildType.Codex && defaultOutputFile.Directory!.FullName == root.FullName)
 				return writeFileSystem.FileInfo.New(Path.Combine(root.FullName, "llms.txt"));
 
 			// For index files: /docs/section/index.html -> /docs/section.md

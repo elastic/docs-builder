@@ -17,7 +17,7 @@
 }
 @(await RenderPartialAsync(_CodexHeader.Create<GlobalLayoutViewModel>(Model)))
 <div id="main-container" class="relative">
-	
+	@await RenderPartialAsync(_CodexSubHeader.Create<GlobalLayoutViewModel>(Model))
 	<div class="min-h-screen
 				w-full
 				max-w-full
