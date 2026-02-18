@@ -83,8 +83,8 @@ internal sealed class ChangelogCommand(
 		}
 
 		var configPath = Path.Combine(docsFolder.FullName, "changelog.yml");
-		var changelogPath = NormalizePath(changelogDir ?? Path.Combine(docsFolder.FullName, "changelog"));
-		var bundlesPath = NormalizePath(bundlesDir ?? Path.Combine(docsFolder.FullName, "releases"));
+		var changelogPath = NormalizePath(changelogDir ?? "changelog");
+		var bundlesPath = NormalizePath(bundlesDir ?? "releases");
 
 		var useNonDefaultChangelogDir = changelogDir != null;
 		var useNonDefaultBundlesDir = bundlesDir != null;
