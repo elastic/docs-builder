@@ -252,12 +252,12 @@
 
 	<section class="w-full">
 		<div class="container mx-auto py-10">
-			<div class="rounded-xl border-1 border-grey-20 px-12 py-8 grid lg:grid-cols-[1fr_auto] gap-12 items-center justify-center text-center lg:text-left">
+			<div class="rounded-xl border-1 border-grey-20 px-12 py-8 grid lg:grid-cols-[1fr_auto] gap-12 items-center text-center lg:text-left">
 				<div>
 					<h2 class="font-semibold font-sans text-3xl text-black leading-[1.2em]">Welcome to our community of developers</h2>
 					<p class="mt-2">Learn from your peers and share code examples.</p>
 				</div>
-				<a href="https://discuss.elastic.co" target="_blank" rel="noopener noreferrer" class="grow cursor-pointer text-blue-elastic hover:text-blue-elastic-100 text-nowrap border-2 border-blue-elastic hover:border-blue-elastic-100 focus:ring-4 focus:outline-none focus:ring-blue-elastic-50 font-semibold rounded-sm px-6 py-2 text-center h-10 flex items-center justify-center">
+				<a href="https://discuss.elastic.co" target="_blank" rel="noopener noreferrer" class="w-full cursor-pointer text-blue-elastic hover:text-blue-elastic-100 text-nowrap border-2 border-blue-elastic hover:border-blue-elastic-100 focus:ring-4 focus:outline-none focus:ring-blue-elastic-50 font-semibold rounded-sm px-6 py-2 text-center h-10 flex items-center justify-center min-w-40 max-w-md lg:max-w-none justify-self-center lg:justify-self-auto">
 					Join now
 				</a>
 			</div>
@@ -266,15 +266,15 @@
 
 	<section class="w-full">
 		<div class="container mx-auto pt-10 pb-20">
-			<div class="rounded-2xl overflow-hidden px-12 py-8 bg-blue-elastic bg-no-repeat bg-right bg-contain flex items-center gap-4"
-			     style="background-image: url('@Model.Static("elasticon-bg-b.png")')">
-				<div class="grow">
+			<div class="rounded-2xl overflow-hidden px-12 py-8 bg-blue-elastic bg-no-repeat bg-auto grid lg:grid-cols-[1fr_auto] gap-12 items-center text-center lg:text-left"
+			     style="background-image: url('@Model.Static("elasticon-bg-b.png")'); background-position: center 65%">
+				<div>
 					<h2 class="font-bold font-sans text-3xl text-white">Looking for more?</h2>
 					<p class="mt-2 text-white text-base">We'll show you how to solve toughest challenges with Search AI.
 						Join us at an Elastic{ON} event near you!</p>
 				</div>
 				<a href="https://www.elastic.co/events/elasticon" target="_blank" rel="noopener noreferrer"
-				   class="shrink-0 cursor-pointer text-blue-elastic hover:text-blue-elastic-100 text-nowrap border-2 border-white hover:border-grey-20 bg-white hover:bg-grey-10 focus:ring-4 focus:outline-none focus:ring-blue-elastic-50 font-semibold font-sans rounded-sm px-6 py-2 text-center h-10 flex items-center justify-center">
+				   class="w-full cursor-pointer text-blue-elastic hover:text-blue-elastic-100 text-nowrap border-2 border-white hover:border-grey-20 bg-white hover:bg-grey-10 focus:ring-4 focus:outline-none focus:ring-blue-elastic-50 font-semibold font-sans rounded-sm px-6 py-2 text-center h-10 flex items-center justify-center min-w-40 max-w-md lg:max-w-none justify-self-center lg:justify-self-auto">
 					Register now
 				</a>
 			</div>
