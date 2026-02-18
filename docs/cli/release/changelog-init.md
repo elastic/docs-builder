@@ -16,13 +16,13 @@ docs-builder changelog init [options...] [-h|--help]
 
 ## Options
 
-`--repository <string?>`
+`--path <string?>`
 :   Optional: Repository root path.
-:   Defaults to the current directory.
+:   Defaults to the output of `pwd` (current directory).
 
 `--docs <string?>`
 :   Optional: Docs folder path.
-:   Defaults to `{repository}/docs`.
+:   Defaults to `{path}/docs`.
 
 `--config <string?>`
 :   Optional: Path to the changelog.yml configuration file.
@@ -44,10 +44,10 @@ Initialize changelog in the current directory (creates `docs/changelog.yml`, `do
 docs-builder changelog init
 ```
 
-Initialize in a specific repository:
+Initialize in a specific path:
 
 ```sh
-docs-builder changelog init --repository /path/to/my-repo
+docs-builder changelog init --path /path/to/my-repo
 ```
 
 Override the docs folder location:
@@ -60,7 +60,7 @@ Use custom paths for all locations. The `bundle.directory` and `bundle.output_di
 
 ```sh
 docs-builder changelog init \
-  --repository . \
+  --path . \
   --config ./my-config/changelog.yml \
   --changelog-dir ./my-changelogs \
   --bundles-dir ./my-releases

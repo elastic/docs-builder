@@ -41,21 +41,21 @@ internal sealed class ChangelogCommand(
 	/// <summary>
 	/// Initialize changelog configuration and folder structure. Creates changelog.yml from the example template, and creates docs/changelog and docs/releases directories if they do not exist.
 	/// </summary>
-	/// <param name="repository">Optional: Repository root path. Defaults to current directory.</param>
-	/// <param name="docs">Optional: Docs folder path. Defaults to {repository}/docs.</param>
+	/// <param name="path">Optional: Repository root path. Defaults to the output of pwd (current directory).</param>
+	/// <param name="docs">Optional: Docs folder path. Defaults to {path}/docs.</param>
 	/// <param name="config">Optional: Path to changelog.yml configuration file. Defaults to {docs}/changelog.yml.</param>
 	/// <param name="changelogDir">Optional: Path to changelog directory. Defaults to {docs}/changelog.</param>
 	/// <param name="bundlesDir">Optional: Path to bundles output directory. Defaults to {docs}/releases.</param>
 	[Command("init")]
 	public Task<int> Init(
-		string? repository = null,
+		string? path = null,
 		string? docs = null,
 		string? config = null,
 		string? changelogDir = null,
 		string? bundlesDir = null
 	)
 	{
-		var repoPath = NormalizePath(repository ?? ".");
+		var repoPath = NormalizePath(path ?? ".");
 		var docsPath = NormalizePath(docs ?? Path.Combine(repoPath, "docs"));
 		var configPath = NormalizePath(config ?? Path.Combine(docsPath, "changelog.yml"));
 		var defaultChangelogPath = Path.Combine(docsPath, "changelog");
