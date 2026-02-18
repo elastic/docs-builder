@@ -9,6 +9,7 @@ namespace Elastic.Documentation.Configuration;
 public class DocumentationEndpoints
 {
 	public required ElasticsearchEndpoint Elasticsearch { get; init; }
+	public string Namespace { get; set; } = "dev";
 }
 
 public class ElasticsearchEndpoint
@@ -27,12 +28,6 @@ public class ElasticsearchEndpoint
 
 	// index options
 	public string IndexNamePrefix { get; set; } = "semantic-docs";
-
-	public string IndexName
-	{
-		get => field ?? $"{IndexNamePrefix}-dev-latest";
-		set;
-	}
 
 	// channel buffer options
 	public int BufferSize { get; set; } = 50; // Reduced for Serverless rate limits

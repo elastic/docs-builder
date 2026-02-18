@@ -2,12 +2,10 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Documentation.Search;
-using Elastic.Ingest.Elasticsearch.Indices;
 using Elastic.Mapping;
 using Elastic.Mapping.Analysis;
 
-namespace Elastic.Markdown.Exporters.Elasticsearch;
+namespace Elastic.Documentation.Search;
 
 [ElasticsearchMappingContext]
 [Entity<DocumentationDocument>(
@@ -185,8 +183,8 @@ public static class DocumentationAnalysisFactory
 		string? defaultPipeline = null)
 	{
 		var settingsJson = BuildSettingsJson(synonymSetName, indexTimeSynonyms, defaultPipeline);
-		var settingsHash = HashedBulkUpdate.CreateHash(settingsJson);
-		var hash = HashedBulkUpdate.CreateHash(settingsHash, baseContext.MappingsHash);
+		var settingsHash = ContentHash.Create(settingsJson);
+		var hash = ContentHash.Create(settingsHash, baseContext.MappingsHash);
 
 		return baseContext.WithIndexName(indexName) with
 		{

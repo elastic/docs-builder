@@ -72,8 +72,6 @@ public abstract class McpToolsIntegrationTestsBase(ITestOutputHelper output)
 	{
 		var endpoints = ElasticsearchEndpointFactory.Create();
 
-		endpoints.Elasticsearch.IndexName = "semantic-docs-dev-latest";
-
 		var searchConfig = new SearchConfiguration
 		{
 			Synonyms = new Dictionary<string, string[]>(),

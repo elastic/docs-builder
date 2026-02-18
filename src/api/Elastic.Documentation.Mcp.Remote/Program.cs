@@ -87,10 +87,12 @@ static void LogElasticsearchConfiguration(WebApplication app, ILogger logger)
 		if (endpoints is not null)
 		{
 			var endpoint = endpoints.Elasticsearch;
+			var searchIndex = $"{endpoint.IndexNamePrefix.ToLowerInvariant()}-{endpoints.Namespace}-latest";
 			logger.LogInformation(
-				"Elasticsearch configuration - Url: {Url}, Index: {Index}",
+				"Elasticsearch configuration - Url: {Url}, Namespace: {Namespace}, SearchIndex: {SearchIndex}",
 				endpoint.Uri,
-				endpoint.IndexName
+				endpoints.Namespace,
+				searchIndex
 			);
 		}
 		else

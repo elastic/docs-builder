@@ -21,6 +21,7 @@ public class ElasticsearchClientAccessor : IDisposable
 	public ElasticsearchClient Client { get; }
 	public ElasticsearchEndpoint Endpoint { get; }
 	public SearchConfiguration SearchConfiguration { get; }
+	public string SearchIndex { get; }
 	public string? RulesetName { get; }
 	public IReadOnlyDictionary<string, string[]> SynonymBiDirectional { get; }
 	public IReadOnlyCollection<string> DiminishTerms { get; }
@@ -34,8 +35,11 @@ public class ElasticsearchClientAccessor : IDisposable
 		SearchConfiguration = searchConfiguration;
 		SynonymBiDirectional = searchConfiguration.SynonymBiDirectional;
 		DiminishTerms = searchConfiguration.DiminishTerms;
+
+		SearchIndex = $"{endpoint.IndexNamePrefix.ToLowerInvariant()}-{endpoints.Namespace}-latest";
+
 		RulesetName = searchConfiguration.Rules.Count > 0
-			? ExtractRulesetName(endpoint.IndexName)
+			? $"docs-ruleset-{endpoints.Namespace}"
 			: null;
 
 		_nodePool = new SingleNodePool(endpoint.Uri);
@@ -49,27 +53,10 @@ public class ElasticsearchClientAccessor : IDisposable
 				_nodePool,
 				sourceSerializer: (_, settings) => new DefaultSourceSerializer(settings, EsJsonContext.Default)
 			)
-			.DefaultIndex(endpoint.IndexName)
+			.DefaultIndex(SearchIndex)
 			.Authentication(auth);
 
 		Client = new ElasticsearchClient(_clientSettings);
-	}
-
-	/// <summary>
-	/// Extracts the ruleset name from the index name.
-	/// Index name format: "semantic-docs-{namespace}-latest" -> ruleset: "docs-ruleset-{namespace}"
-	/// The namespace may contain hyphens (e.g., "codex-engineering"), so we extract everything
-	/// between the "semantic-docs-" prefix and the "-latest" suffix.
-	/// </summary>
-	private static string? ExtractRulesetName(string indexName)
-	{
-		const string prefix = "semantic-docs-";
-		const string suffix = "-latest";
-		if (!indexName.StartsWith(prefix, StringComparison.Ordinal) || !indexName.EndsWith(suffix, StringComparison.Ordinal))
-			return null;
-
-		var ns = indexName[prefix.Length..^suffix.Length];
-		return string.IsNullOrEmpty(ns) ? null : $"docs-ruleset-{ns}";
 	}
 
 	/// <summary>

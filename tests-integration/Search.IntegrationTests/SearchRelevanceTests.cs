@@ -224,8 +224,6 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 	{
 		var endpoints = ElasticsearchEndpointFactory.Create();
 
-		endpoints.Elasticsearch.IndexName = "semantic-docs-dev-latest";
-
 		var searchConfig = new SearchConfiguration
 		{
 			Synonyms = new Dictionary<string, string[]>(),

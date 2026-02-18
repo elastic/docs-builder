@@ -48,8 +48,6 @@ public static class ElasticsearchEndpointFactory
 			};
 		}
 
-		var indexName = appConfiguration?["DOCUMENTATION_ELASTIC_INDEX"];
-
 		var endpoint = new ElasticsearchEndpoint
 		{
 			Uri = new Uri(url),
@@ -58,9 +56,39 @@ public static class ElasticsearchEndpointFactory
 			Username = username
 		};
 
-		if (indexName is not null)
-			endpoint.IndexName = indexName;
+		var ns = ResolveNamespace(config, appConfiguration, endpoint.IndexNamePrefix);
 
-		return new DocumentationEndpoints { Elasticsearch = endpoint };
+		return new DocumentationEndpoints { Elasticsearch = endpoint, Namespace = ns };
+	}
+
+	/// <summary>
+	/// Resolves the deployment namespace using this priority:
+	/// 1. <c>DOCUMENTATION_ELASTIC_INDEX</c> env var — strip prefix and <c>-latest</c> suffix
+	/// 2. <c>DOTNET_ENVIRONMENT</c> env var
+	/// 3. <c>ENVIRONMENT</c> env var
+	/// 4. Fallback: <c>"dev"</c>
+	/// </summary>
+	private static string ResolveNamespace(IConfiguration config, IConfiguration? appConfiguration, string indexNamePrefix)
+	{
+		var indexName = appConfiguration?["DOCUMENTATION_ELASTIC_INDEX"]
+			?? config["DOCUMENTATION_ELASTIC_INDEX"];
+
+		if (!string.IsNullOrEmpty(indexName))
+		{
+			var prefix = $"{indexNamePrefix}-";
+			const string suffix = "-latest";
+			if (indexName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) &&
+				indexName.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+			{
+				var ns = indexName[prefix.Length..^suffix.Length];
+				if (!string.IsNullOrEmpty(ns))
+					return ns;
+			}
+		}
+
+		var env = config["DOTNET_ENVIRONMENT"]
+			?? config["ENVIRONMENT"];
+
+		return !string.IsNullOrEmpty(env) ? env.ToLowerInvariant() : "dev";
 	}
 }
