@@ -128,7 +128,6 @@ jobs:
 
   release:
     needs: 
-      - containers
       - release-drafter
     strategy:
       fail-fast: false
@@ -178,6 +177,7 @@ jobs:
   publish-release:
     needs:
       - release
+      - containers
       - release-drafter
       - deploy-api-lambda-staging
       - deploy-link-index-updater-lambda-prod
