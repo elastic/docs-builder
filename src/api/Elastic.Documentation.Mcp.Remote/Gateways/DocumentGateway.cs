@@ -157,7 +157,7 @@ public class DocumentGateway(
 	/// Accepts full URLs (<c>https://www.elastic.co/docs/…</c>), path-only URLs with or without leading slash,
 	/// and strips query strings, fragments, and trailing slashes.
 	/// </summary>
-	private static string NormalizeUrl(string url)
+	internal static string NormalizeUrl(string url)
 	{
 		url = url.Trim();
 

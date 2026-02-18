@@ -28,6 +28,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Mcp.Remote.IntegrationTests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="ModelContextProtocol.AspNetCore" />
     <PackageReference Include="Elastic.OpenTelemetry" />
     <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" />
