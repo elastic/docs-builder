@@ -27,15 +27,6 @@
 	}
 	<script>window.__DOCS_CONFIG__=@(new HtmlString(Model.FrontendConfigJson));</script>
 	<script src="@Model.Static("main.js")" defer></script>
-	@switch (Model.BuildType)
-	{
-		case BuildType.Isolated:
-			<script src="@Model.Static("isolated.js")" defer></script>
-			break;
-		case BuildType.Codex:
-			<script src="@Model.Static("codex.js")" defer></script>
-			break;
-	}
 	@if (Model.CanonicalBaseUrl is not null)
 	{
 		<link rel="canonical" href="@Model.CanonicalUrl" />
