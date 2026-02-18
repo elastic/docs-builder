@@ -109,7 +109,7 @@ Or add it manually to your project's `.mcp.json` file:
 One-click installation (requires VS Code 1.99+):
 
 :::{button}
-[Install in VS Code](vscode:mcp/install?%7B%22name%22%3A%22elastic-docs%22%2C%22type%22%3A%22http%22%2C%22url%22%3A%22https%3A//www.elastic.co/docs/_mcp/%22%7D)
+[Install in VS Code](vscode:mcp/install?%7B%22name%22%3A%22elastic-docs%22%2C%22type%22%3A%22http%22%2C%22url%22%3A%22https%3A%2F%2Fwww.elastic.co%2Fdocs%2F_mcp%2F%22%7D)
 :::
 
 Or configure manually. Create or edit `.vscode/mcp.json` in your workspace:
