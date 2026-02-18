@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.Json.Serialization;
+using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
@@ -18,7 +19,7 @@ namespace Elastic.Markdown.Page;
 
 public class IndexViewModel
 {
-	public required bool IsAssemblerBuild { get; init; }
+	public required BuildType BuildType { get; init; }
 	public required string SiteName { get; init; }
 	public required string DocSetName { get; init; }
 	public required string Title { get; init; }
@@ -48,6 +49,7 @@ public class IndexViewModel
 	public required Uri? CanonicalBaseUrl { get; init; }
 
 	public required GoogleTagManagerConfiguration GoogleTagManager { get; init; }
+	public required OptimizelyConfiguration Optimizely { get; init; }
 
 	public required FeatureFlags Features { get; init; }
 	public required StaticFileContentHashProvider StaticFileContentHashProvider { get; init; }
@@ -65,6 +67,13 @@ public class IndexViewModel
 	public string? GitCommitShort { get; init; }
 	public string? GitRepository { get; init; }
 	public string? GitHubDocsUrl { get; init; }
+	public string? GitHubRef { get; init; }
+
+	/// <summary>Codex site header title. When set (codex builds), overrides DocSetName in the header.</summary>
+	public string? SiteHeaderTitle { get; set; }
+
+	/// <summary>Pre-computed site root path for HTMX. When set (codex builds), used as data-root-path.</summary>
+	public string? SiteRootPath { get; set; }
 }
 
 public class VersionDropDownItemViewModel

@@ -1,0 +1,43 @@
+@inherits RazorLayoutSlice<MarkdownLayoutViewModel>
+@implements IUsesLayout<Elastic.Documentation.Site._GlobalLayout, GlobalLayoutViewModel>
+@functions {
+	public GlobalLayoutViewModel LayoutModel => Model;
+	protected override async Task ExecuteSectionAsync(string name)
+	{
+		if (name == GlobalSections.Footer)
+		{
+			await RenderSectionAsync(GlobalSections.Footer);
+		}
+
+		if (name == GlobalSections.Head)
+		{
+			await RenderSectionAsync(GlobalSections.Head);
+		}
+	}
+}
+@(await RenderPartialAsync(_CodexHeader.Create<GlobalLayoutViewModel>(Model)))
+<div id="main-container" class="relative">
+	
+	<div class="min-h-screen
+				w-full
+				max-w-full
+				mx-auto
+				md:px-4
+	">
+		<div class="min-h-screen grid grid-cols-1 md:grid-cols-[var(--max-sidebar-width)_1fr] gap-4">
+			@await RenderPartialAsync(_PagesNav.Create<GlobalLayoutViewModel>(Model))
+			<main id="content-container" class="min-w-0 lg:grid lg:grid-cols-[minmax(0,var(--max-text-width))_minmax(0,var(--max-sidebar-width))] justify-center mx-4 gap-4">
+				@await RenderPartialAsync(_TableOfContents.Create(Model))
+				<div class="mb-9 mt-0 min-w-0">
+					@await RenderPartialAsync(_Breadcrumbs.Create(Model))
+					<article id="markdown-content" class="markdown-content min-w-0">
+						<input type="checkbox" class="hidden" id="pages-nav-hamburger">
+						@await RenderBodyAsync()
+					</article>
+					@await RenderPartialAsync(_PrevNextNav.Create(Model))
+				</div>
+			</main>
+		</div>
+	</div>
+</div>
+@await RenderPartialAsync(_CodexFooter.Create<GlobalLayoutViewModel>(Model))

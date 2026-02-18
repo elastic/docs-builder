@@ -17,6 +17,7 @@ using Elastic.Documentation.Site.Navigation;
 using Elastic.Documentation.State;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
+using Elastic.Markdown.Page;
 using Markdig.Syntax;
 using Microsoft.Extensions.Logging;
 
@@ -62,7 +63,8 @@ public partial class DocumentationGenerator
 		IMarkdownExporter[]? markdownExporters = null,
 		IConversionCollector? conversionCollector = null,
 		ILegacyUrlMapper? legacyUrlMapper = null,
-		IDocumentInferrerService? documentInferrer = null
+		IDocumentInferrerService? documentInferrer = null,
+		IPageViewFactory? pageViewFactory = null
 	)
 	{
 		_markdownExporters = markdownExporters ?? [];
@@ -84,7 +86,7 @@ public partial class DocumentationGenerator
 			DocumentationSet.Context.Git
 		);
 
-		HtmlWriter = new HtmlWriter(DocumentationSet, _writeFileSystem, new DescriptionGenerator(), positionalNavigation, navigationHtmlWriter, legacyUrlMapper, _documentInferrer);
+		HtmlWriter = new HtmlWriter(DocumentationSet, _writeFileSystem, new DescriptionGenerator(), pageViewFactory, positionalNavigation, navigationHtmlWriter, legacyUrlMapper, _documentInferrer);
 		_documentationFileExporter =
 			docSet.Context.AvailableExporters.Contains(Exporter.Html)
 				? docSet.EnabledExtensions.FirstOrDefault(e => e.FileExporter != null)?.FileExporter
@@ -123,9 +125,9 @@ public partial class DocumentationGenerator
 		var generationState = !generateState ? null : GetPreviousGenerationState();
 
 		// clear the output directory if force is true but never for assembler builds since these build multiple times to the output.
-		if (Context is { AssemblerBuild: false, Force: true }
+		if (Context is { BuildType: not BuildType.Assembler, Force: true }
 			// clear the output directory if force is false but generation state is null, except for assembler builds.
-			|| (Context is { AssemblerBuild: false, Force: false } && generationState == null))
+			|| (Context is { BuildType: not BuildType.Assembler, Force: false } && generationState == null))
 		{
 			_logger.LogInformation($"Clearing output directory");
 			DocumentationSet.ClearOutputDirectory();
@@ -224,6 +226,13 @@ public partial class DocumentationGenerator
 
 	private async Task ExtractEmbeddedStaticResources(Cancel ctx)
 	{
+		// Skip copying static assets for codex builds - they are copied once to the root by CodexGenerator
+		if (Context.BuildType == BuildType.Codex)
+		{
+			_logger.LogDebug("Skipping static asset extraction for codex documentation set (assets copied to root)");
+			return;
+		}
+
 		_logger.LogInformation($"Copying static files to output directory");
 		var assembly = typeof(EmbeddedOrPhysicalFileProvider).Assembly;
 		var embeddedStaticFiles = assembly

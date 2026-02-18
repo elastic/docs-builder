@@ -1,9 +1,10 @@
 import { initApiDocs } from './api-docs'
 import { initAppliesSwitch } from './applies-switch'
+import { config } from './config'
 import { initCopyButton } from './copybutton'
 import { initHighlight } from './hljs'
 import { initImageCarousel } from './image-carousel'
-import { initIsolatedHeader, setInitialHeaderOffset } from './isolated-header'
+import { initMermaid } from './mermaid'
 import { openDetailsWithAnchor } from './open-details-with-anchor'
 import { initNav } from './pages-nav'
 import { initSmoothScroll } from './smooth-scroll'
@@ -20,22 +21,19 @@ import { UAParser } from 'ua-parser-js'
 const DOCS_BUILDER_VERSION =
     process.env.DOCS_BUILDER_VERSION?.trim() ?? '0.0.0-dev'
 
-// Initialize OpenTelemetry FIRST, before any other code runs
+// Initialize OpenTelemetry FIRST, before any other code runs (when enabled)
 // This must happen early so all subsequent code is instrumented
-initializeOtel({
-    serviceName: 'docs-frontend',
-    serviceVersion: DOCS_BUILDER_VERSION,
-    baseUrl: '/docs',
-    debug: false,
-})
+if (config.telemetryEnabled) {
+    initializeOtel({
+        serviceName: config.serviceName,
+        serviceVersion: DOCS_BUILDER_VERSION,
+        baseUrl: config.rootPath,
+        debug: false,
+    })
+}
 
-// Set header offset immediately to prevent layout shift on reload
-// This runs before DOMContentLoaded to avoid visual jump
-setInitialHeaderOffset()
-
-// Dynamically import web components after telemetry is initialized
-// This ensures telemetry is available when the components execute
-// Parcel will automatically code-split this into a separate chunk
+// Dynamically import web components after telemetry is initialized.
+// Parcel code-splits these into separate chunks loaded on demand.
 import('./web-components/NavigationSearch/NavigationSearchComponent')
 import('./web-components/AskAi/AskAi')
 import('./web-components/VersionDropdown')
@@ -99,7 +97,7 @@ function initMath() {
 // Initialize on initial page load
 document.addEventListener('DOMContentLoaded', function () {
     initMath()
-    initIsolatedHeader()
+    initMermaid()
 })
 
 document.addEventListener('htmx:load', function () {
@@ -109,6 +107,7 @@ document.addEventListener('htmx:load', function () {
     initTabs()
     initAppliesSwitch()
     initMath()
+    initMermaid()
     initNav()
 
     initSmoothScroll()
@@ -135,15 +134,6 @@ document.addEventListener(
 )
 
 document.addEventListener('htmx:beforeRequest', function (event: HtmxEvent) {
-    const path = event.detail.requestConfig?.path
-
-    // Bypass htmx for /api URLs - they require full page navigation
-    if (path?.startsWith('/api')) {
-        event.preventDefault()
-        window.location.href = path
-        return
-    }
-
     if (
         event.detail.requestConfig.verb === 'get' &&
         event.detail.requestConfig.triggeringEvent
@@ -166,7 +156,7 @@ document.addEventListener('htmx:beforeRequest', function (event: HtmxEvent) {
 document.body.addEventListener(
     'htmx:oobBeforeSwap',
     function (event: HtmxEvent) {
-        // This is needed to scroll to the top of the page when the content is swapped
+        // Scroll to the top of the page when the content is swapped
         if (
             event.target?.id === 'main-container' ||
             event.target?.id === 'markdown-content' ||

@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using Elastic.ApiExplorer.Elasticsearch;
+using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Navigation;
@@ -172,6 +173,11 @@ public partial class ElasticsearchMarkdownExporter
 	/// <inheritdoc />
 	public async ValueTask<bool> FinishExportAsync(IDirectoryInfo outputFolder, Cancel ctx)
 	{
+		if (_context.BuildType != BuildType.Assembler)
+		{
+			_logger.LogInformation("Skipping OpenAPI export for non-assembler build");
+			return true;
+		}
 
 		// this is temporary; once we implement Elastic.ApiExplorer, this should flow through
 		// we'll rename IMarkdownExporter to IDocumentationFileExporter at that point
@@ -227,53 +233,84 @@ public partial class ElasticsearchMarkdownExporter
 	}
 
 	/// <summary>
-	/// Hybrid AI enrichment: cache hits rely on enrich processor, cache misses apply fields inline.
-	/// Stale entries (with old prompt hash) are treated as non-existent and will be regenerated.
+	/// Hybrid AI enrichment with staleness detection:
+	/// - Fresh cache hit: enrich processor will apply fields at index time
+	/// - Stale cache hit: apply stale data inline (better than nothing), queue for re-enrichment
+	/// - Cache miss: generate new enrichment if under limit, otherwise no AI fields
 	/// </summary>
 	private async ValueTask TryEnrichDocumentAsync(DocumentationDocument doc, Cancel ctx)
 	{
 		if (_enrichmentCache is null || _llmClient is null || string.IsNullOrWhiteSpace(doc.EnrichmentKey))
 			return;
 
-		// Check if valid enrichment exists in cache (current prompt hash)
-		// Stale entries are treated as non-existent and will be regenerated
-		if (_enrichmentCache.Exists(doc.EnrichmentKey))
+		// Check cache status by URL (handles content changes gracefully)
+		var status = _enrichmentCache.GetStatus(doc.Url, doc.EnrichmentKey);
+
+		if (status.Exists && !status.IsStale)
 		{
-			// Cache hit - enrich processor will apply fields at index time
+			// Fresh cache hit - enrich processor will apply fields at index time
 			_ = Interlocked.Increment(ref _cacheHitCount);
 			return;
 		}
 
-		// Check if we've hit the limit for enrichments
+		if (status.Exists && status.Entry is not null)
+		{
+			// Stale cache hit - apply stale data inline (better than nothing)
+			ApplyEnrichmentFromCache(doc, status.Entry);
+			_logger.LogDebug("Applied stale enrichment for {Url} (content changed)", doc.Url);
+		}
+
+		// Try to generate fresh enrichment if under limit
 		var current = Interlocked.Increment(ref _enrichmentCount);
 		if (current > _enrichmentOptions.MaxNewEnrichmentsPerRun)
 		{
 			_ = Interlocked.Decrement(ref _enrichmentCount);
+			// Already applied stale data if available, otherwise no AI fields
 			return;
 		}
 
-		// Cache miss (or stale) - generate enrichment inline and apply directly
+		// Generate fresh enrichment
 		try
 		{
-			var enrichment = await _llmClient.EnrichAsync(doc.Title, doc.StrippedBody ?? string.Empty, ctx);
+			var body = doc.StrippedBody ?? string.Empty;
+			var enrichment = await _llmClient.EnrichAsync(doc.Title, body, ctx);
 			if (enrichment is not { HasData: true })
+			{
+				_logger.LogWarning(
+					"Enrichment returned no data for {Url} (title: {Title}, body: {BodyLength} chars)",
+					doc.Url, doc.Title, body.Length);
 				return;
+			}
 
 			// Store in cache for future runs
 			await _enrichmentCache.StoreAsync(doc.EnrichmentKey, doc.Url, enrichment, ctx);
 
-			// Apply fields directly (enrich processor won't have this entry yet)
+			// Apply fresh fields directly
 			doc.AiRagOptimizedSummary = enrichment.RagOptimizedSummary;
 			doc.AiShortSummary = enrichment.ShortSummary;
 			doc.AiSearchQuery = enrichment.SearchQuery;
 			doc.AiQuestions = enrichment.Questions;
 			doc.AiUseCases = enrichment.UseCases;
+			doc.EnrichmentPromptHash = ElasticsearchLlmClient.PromptHash;
 		}
 		catch (Exception ex) when (ex is not OperationCanceledException)
 		{
 			_logger.LogWarning(ex, "Failed to enrich document {Url}", doc.Url);
 			_ = Interlocked.Decrement(ref _enrichmentCount);
 		}
+	}
+
+	/// <summary>
+	/// Applies AI enrichment fields from a cache entry to the document.
+	/// </summary>
+	private static void ApplyEnrichmentFromCache(DocumentationDocument doc, CacheIndexEntry entry)
+	{
+		doc.AiRagOptimizedSummary = entry.AiRagOptimizedSummary;
+		doc.AiShortSummary = entry.AiShortSummary;
+		doc.AiSearchQuery = entry.AiSearchQuery;
+		doc.AiQuestions = entry.AiQuestions;
+		doc.AiUseCases = entry.AiUseCases;
+		doc.EnrichmentPromptHash = entry.PromptHash;
 	}
 
 }

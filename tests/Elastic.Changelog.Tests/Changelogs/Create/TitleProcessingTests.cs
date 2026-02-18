@@ -135,6 +135,68 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 	}
 
 	[Fact]
+	public async Task CreateChangelog_WithStripTitlePrefix_RemovesMultipleSquareBracketPrefixes()
+	{
+		// Arrange
+		var prInfo = new GitHubPrInfo
+		{
+			Title = "[Discover][ESQL] Fix filtering by multiline string fields",
+			Labels = ["type:bug-fix"]
+		};
+
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+				"https://github.com/elastic/elasticsearch/pull/12345",
+				null,
+				null,
+				A<CancellationToken>._))
+			.Returns(prInfo);
+
+		// language=yaml
+		var configContent =
+			"""
+			pivot:
+			  types:
+			    feature:
+			    bug-fix: "type:bug-fix"
+			    breaking-change:
+			lifecycles:
+			  - preview
+			  - beta
+			  - ga
+			""";
+		var configPath = await CreateConfigDirectory(configContent);
+
+		var service = CreateService();
+
+		var input = new CreateChangelogArguments
+		{
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
+			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Config = configPath,
+			Output = CreateOutputDirectory(),
+			StripTitlePrefix = true
+		};
+
+		// Act
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+
+		var outputDir = input.Output ?? FileSystem.Directory.GetCurrentDirectory();
+		if (!FileSystem.Directory.Exists(outputDir))
+			FileSystem.Directory.CreateDirectory(outputDir);
+		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		files.Should().HaveCount(1);
+
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		yamlContent.Should().Contain("title: Fix filtering by multiline string fields");
+		yamlContent.Should().NotContain("[Discover]");
+		yamlContent.Should().NotContain("[ESQL]");
+	}
+
+	[Fact]
 	public async Task CreateChangelog_WithExplicitTitle_OverridesPrTitle()
 	{
 		// Arrange

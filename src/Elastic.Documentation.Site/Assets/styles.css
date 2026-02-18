@@ -19,12 +19,14 @@
 @import './markdown/footnotes.css';
 @import './markdown/images.css';
 @import './markdown/math.css';
+@import './markdown/mermaid.css';
 @import './markdown/image-carousel.css';
 @import './markdown/hr.css';
 @import './modal.css';
 @import './archive.css';
 @import './markdown/stepper.css';
 @import './markdown/button.css';
+@import './markdown/contributors.css';
 @import './api-docs.css';
 @import 'tippy.js/dist/tippy.css';
 
@@ -52,9 +54,9 @@ body {
 	--outline-offset: 5;
 	--header-height: calc(var(--spacing) * 21);
 	--banner-height: calc(var(--spacing) * 9);
-	/*--offset-top: calc(var(--header-height) + var(--banner-height));*/
-	--offset-top: calc(64px + 38px); /* header height + banner height */
-	--max-text-width: clamp(40ch, 90ch, 100%);
+	/* --offset-top is set by build-type-specific CSS files */
+	--offset-top: 48px; /* Default fallback - will be overridden by build-type CSS */
+	--max-text-width: clamp(600px, 900px, 100%);
 	--max-sidebar-width: calc(var(--spacing) * 65);
 	--content-spacing: calc(var(--spacing) * 8);
 	--max-layout-width: calc(
@@ -64,24 +66,6 @@ body {
 
 	--max-api-sidebar-width: calc(var(--spacing) * 70);
 	--max-examples-width: calc(var(--max-api-sidebar-width) * 2);
-}
-
-@media screen and (min-width: 767px) {
-	:root {
-		--offset-top: calc(72px + 38px); /* header height + banner height */
-	}
-}
-
-@media screen and (min-width: 992px) {
-	:root {
-		--offset-top: 110px;
-	}
-}
-
-@media screen and (min-width: 1180px) {
-	:root {
-		--offset-top: calc(80px + 38px); /* header height + banner height */
-	}
 }
 
 #pages-nav li.current {
@@ -125,7 +109,7 @@ body {
 
 	.sidebar {
 		.sidebar-nav {
-			@apply sticky top-(--offset-top) z-30 overflow-y-auto;
+			@apply sticky top-(--offset-top) overflow-y-auto;
 			max-height: calc(100vh - var(--offset-top));
 			scrollbar-gutter: stable;
 			transition:
@@ -139,32 +123,26 @@ body {
 		}
 	}
 
-	/* Isolated header specific styles - only apply on lg screens (matches --breakpoint-lg) */
-	@media screen and (min-width: 1280px) {
-		.has-isolated-header {
-			/* Ensure grid container is tall enough for sticky sidebars to work */
-			#main-container > div:first-child {
-				min-height: calc(100vh + 500px);
-			}
+	.sidebar-trial-card {
+		background: var(--color-green-30);
+		border-radius: 8px;
+		padding: 1px;
+	}
 
-			.sidebar {
-				position: sticky !important;
-				top: var(--offset-top) !important;
-				height: fit-content;
-				max-height: calc(100vh - var(--offset-top));
-				overflow-y: auto;
-				align-self: start;
-				transition:
-					top 0.3s ease,
-					max-height 0.3s ease;
+	.sidebar-trial-card__inner {
+		background: var(--color-white);
+		border-radius: 7px;
+		padding: 24px 24px 16px;
+	}
 
-				.sidebar-nav {
-					position: relative !important;
-					top: 0 !important;
-					max-height: 100%;
-				}
-			}
-		}
+	.sidebar-trial-card__icon {
+		color: var(--color-green-90);
+	}
+
+	.sidebar-trial-card__icon svg {
+		height: 16px;
+		width: 16px;
+		fill: currentColor;
 	}
 }
 
@@ -388,24 +366,9 @@ body {
 }
 
 .container {
-	@apply lg:px-3;
-	max-width: var(--max-layout-width) !important;
-
+	@apply max-w-(--max-layout-width) px-4;
 	* {
 		@apply font-body;
-	}
-}
-
-#elastic-nav-wrapper {
-	min-height: var(--offset-top);
-}
-
-#elastic-nav {
-	@media screen and (min-width: 1200px) {
-		[data-component='Container'] {
-			/* subtract the padding */
-			max-width: calc(var(--max-layout-width) - (var(--spacing) * 10));
-		}
 	}
 }
 
@@ -431,4 +394,23 @@ body {
 
 math {
 	margin-top: 1.5rem;
+}
+
+/* Adjust look and feel of the navigation-search in the landing page hero */
+#hero navigation-search {
+	& > div > .euiHorizontalRule {
+		display: none;
+	}
+
+	& > div {
+		padding-right: 0;
+	}
+
+	& .euiPopover {
+		max-inline-size: 100%;
+
+		@media screen and (min-width: 1180px) {
+			max-inline-size: 500px;
+		}
+	}
 }

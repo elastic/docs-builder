@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using System.Security.Cryptography.X509Certificates;
 using Actions.Core.Services;
 using Elastic.Documentation.Assembler.Building;
 using Elastic.Documentation.Configuration;
@@ -87,65 +86,32 @@ public class AssemblerIndexService(
 	)
 	{
 		var cfg = _configurationContext.Endpoints.Elasticsearch;
-		if (!string.IsNullOrEmpty(endpoint))
+		var options = new ElasticsearchIndexOptions
 		{
-			if (!Uri.TryCreate(endpoint, UriKind.Absolute, out var uri))
-				collector.EmitGlobalError($"'{endpoint}' is not a valid URI");
-			else
-				cfg.Uri = uri;
-		}
-
-		if (!string.IsNullOrEmpty(apiKey))
-			cfg.ApiKey = apiKey;
-		if (!string.IsNullOrEmpty(username))
-			cfg.Username = username;
-		if (!string.IsNullOrEmpty(password))
-			cfg.Password = password;
-
-		if (searchNumThreads.HasValue)
-			cfg.SearchNumThreads = searchNumThreads.Value;
-		if (indexNumThreads.HasValue)
-			cfg.IndexNumThreads = indexNumThreads.Value;
-		if (noEis.HasValue)
-			cfg.NoElasticInferenceService = noEis.Value;
-		if (!string.IsNullOrEmpty(indexNamePrefix))
-			cfg.IndexNamePrefix = indexNamePrefix;
-		if (bufferSize.HasValue)
-			cfg.BufferSize = bufferSize.Value;
-		if (maxRetries.HasValue)
-			cfg.MaxRetries = maxRetries.Value;
-		if (debugMode.HasValue)
-			cfg.DebugMode = debugMode.Value;
-		if (!string.IsNullOrEmpty(certificateFingerprint))
-			cfg.CertificateFingerprint = certificateFingerprint;
-		if (!string.IsNullOrEmpty(proxyAddress))
-			cfg.ProxyAddress = proxyAddress;
-		if (!string.IsNullOrEmpty(proxyPassword))
-			cfg.ProxyPassword = proxyPassword;
-		if (!string.IsNullOrEmpty(proxyUsername))
-			cfg.ProxyUsername = proxyUsername;
-		if (disableSslVerification.HasValue)
-			cfg.DisableSslVerification = disableSslVerification.Value;
-		if (!string.IsNullOrEmpty(certificatePath))
-		{
-			if (!fileSystem.File.Exists(certificatePath))
-				collector.EmitGlobalError($"'{certificatePath}' does not exist");
-			var bytes = await fileSystem.File.ReadAllBytesAsync(certificatePath, ctx);
-			var loader = X509CertificateLoader.LoadCertificate(bytes);
-			cfg.Certificate = loader;
-		}
-
-		if (certificateNotRoot.HasValue)
-			cfg.CertificateIsNotRoot = certificateNotRoot.Value;
-		if (bootstrapTimeout.HasValue)
-			cfg.BootstrapTimeout = bootstrapTimeout.Value;
-
-		if (noSemantic.HasValue)
-			cfg.NoSemantic = noSemantic.Value;
-		if (enableAiEnrichment.HasValue)
-			cfg.EnableAiEnrichment = enableAiEnrichment.Value;
-		if (forceReindex.HasValue)
-			cfg.ForceReindex = forceReindex.Value;
+			Endpoint = endpoint,
+			ApiKey = apiKey,
+			Username = username,
+			Password = password,
+			NoSemantic = noSemantic,
+			EnableAiEnrichment = enableAiEnrichment,
+			SearchNumThreads = searchNumThreads,
+			IndexNumThreads = indexNumThreads,
+			NoEis = noEis,
+			BootstrapTimeout = bootstrapTimeout,
+			IndexNamePrefix = indexNamePrefix,
+			ForceReindex = forceReindex,
+			BufferSize = bufferSize,
+			MaxRetries = maxRetries,
+			DebugMode = debugMode,
+			ProxyAddress = proxyAddress,
+			ProxyPassword = proxyPassword,
+			ProxyUsername = proxyUsername,
+			DisableSslVerification = disableSslVerification,
+			CertificateFingerprint = certificateFingerprint,
+			CertificatePath = certificatePath,
+			CertificateNotRoot = certificateNotRoot
+		};
+		await ElasticsearchEndpointConfigurator.ApplyAsync(cfg, options, collector, fileSystem, ctx);
 
 		var exporters = new HashSet<Exporter> { Elasticsearch };
 

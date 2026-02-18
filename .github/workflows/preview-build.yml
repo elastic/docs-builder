@@ -63,7 +63,11 @@ on:
         type: boolean
         default: false
         required: false
-        
+      include-paths:
+        description: 'Paths to include for Vale linting (multi-line). Only files matching these paths will be linted.'
+        type: string
+        default: ''
+        required: false
 
 permissions:
   contents: read
@@ -326,19 +330,21 @@ jobs:
 
       - name: Bootstrap Action Workspace
         if: >
-          env.MATCH == 'true' 
+          env.MATCH == 'true'
           && github.repository == 'elastic/docs-builder'
           && steps.deployment.outputs.result
+          && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
         uses: elastic/docs-builder/.github/actions/bootstrap@main
 
       - name: 'Validate redirect rules'
         if: >
           env.MATCH == 'true'
           && github.repository == 'elastic/docs-builder'
+          && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
           && (
             steps.deployment.outputs.result
             || (
-              needs.check.outputs.any_modified == 'true' 
+              needs.check.outputs.any_modified == 'true'
               && github.event_name == 'merge_group'
             )
           )
@@ -368,6 +374,7 @@ jobs:
           env.MATCH == 'true'
           && github.repository == 'elastic/docs-builder'
           && steps.deployment.outputs.result
+          && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
         run: |
           dotnet run --project src/tooling/docs-builder -- --strict --path-prefix "${PATH_PREFIX}"
 
@@ -415,11 +422,12 @@ jobs:
           && (
             !cancelled()
             && github.repository == 'elastic/docs-builder'
-            && steps.internal-docs-build.outputs.skip != 'true' 
+            && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+            && steps.internal-docs-build.outputs.skip != 'true'
             && (
               steps.deployment.outputs.result
               || (
-                needs.check.outputs.any_modified == 'true' 
+                needs.check.outputs.any_modified == 'true'
                 && github.event_name == 'merge_group'
               )
             )
@@ -449,14 +457,15 @@ jobs:
         if: >
           env.MATCH == 'true'
           && (
-            !cancelled() 
+            !cancelled()
             && github.repository == 'elastic/docs-builder'
+            && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
             && steps.internal-docs-build.outputs.skip != 'true'
             && steps.internal-docs-build.outcome != 'skipped'
             && (
-              steps.deployment.outputs.result 
+              steps.deployment.outputs.result
               || (
-                needs.check.outputs.any_modified == 'true' 
+                needs.check.outputs.any_modified == 'true'
                 && github.event_name == 'merge_group'
               )
             )
@@ -686,6 +695,7 @@ jobs:
         uses: elastic/vale-rules/lint@main
         with: 
           files: ${{ needs.check.outputs.all_changed_files }}
+          include-paths: ${{ inputs.include-paths }}
       - name: Post Vale Results
         uses: elastic/vale-rules/report@main
         with:

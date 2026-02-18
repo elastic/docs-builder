@@ -54,7 +54,7 @@ internal sealed class ChangelogCommand(
 	/// <param name="output">Optional: Output directory for the changelog. Defaults to current directory</param>
 	/// <param name="prs">Optional: Pull request URL(s) or PR number(s) (comma-separated), or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times. Each occurrence can be either comma-separated PRs (e.g., `--prs "https://github.com/owner/repo/pull/123,6789"`) or a file path (e.g., `--prs /path/to/file.txt`). When specifying PRs directly, provide comma-separated values. When specifying a file path, provide a single value that points to a newline-delimited file. If --owner and --repo are provided, PR numbers can be used instead of URLs. If specified, --title can be derived from the PR. If mappings are configured, --areas and --type can also be derived from the PR. Creates one changelog file per PR.</param>
 	/// <param name="repo">Optional: GitHub repository name (used when --prs contains just numbers)</param>
-	/// <param name="stripTitlePrefix">Optional: When used with --prs, remove square brackets and text within them from the beginning of PR titles, and also remove a colon if it follows the closing bracket (e.g., "[Inference API] Title" becomes "Title", "[ES|QL]: Title" becomes "Title")</param>
+	/// <param name="stripTitlePrefix">Optional: When used with --prs, remove square brackets and text within them from the beginning of PR titles, and also remove a colon if it follows the closing bracket (e.g., "[Inference API] Title" becomes "Title", "[ES|QL]: Title" becomes "Title", "[Discover][ESQL] Title" becomes "Title")</param>
 	/// <param name="subtype">Optional: Subtype for breaking changes (api, behavioral, configuration, etc.)</param>
 	/// <param name="title">Optional: A short, user-facing title (max 80 characters). Required if --pr is not specified. If --pr and --title are specified, the latter value is used instead of what exists in the PR.</param>
 	/// <param name="type">Optional: Type of change (feature, enhancement, bug-fix, breaking-change, etc.). Required if --pr is not specified. If mappings are configured, type can be derived from the PR.</param>
@@ -98,13 +98,16 @@ internal sealed class ChangelogCommand(
 			var validPrs = prs.Where(prValue => !string.IsNullOrWhiteSpace(prValue));
 			foreach (var trimmedValue in validPrs.Select(prValue => prValue.Trim()))
 			{
+				// Try to normalize as a file path to handle ~ and relative paths
+				var normalizedPath = NormalizePath(trimmedValue);
+
 				// Check if this is a file path
-				if (_fileSystem.File.Exists(trimmedValue))
+				if (_fileSystem.File.Exists(normalizedPath))
 				{
 					// Read all lines from the file (newline-delimited)
 					try
 					{
-						var fileLines = await _fileSystem.File.ReadAllLinesAsync(trimmedValue, ctx);
+						var fileLines = await _fileSystem.File.ReadAllLinesAsync(normalizedPath, ctx);
 						foreach (var line in fileLines)
 						{
 							if (!string.IsNullOrWhiteSpace(line))
@@ -115,7 +118,7 @@ internal sealed class ChangelogCommand(
 					}
 					catch (IOException ex)
 					{
-						collector.EmitError(string.Empty, $"Failed to read PRs from file '{trimmedValue}': {ex.Message}", ex);
+						collector.EmitError(string.Empty, $"Failed to read PRs from file '{normalizedPath}': {ex.Message}", ex);
 						return 1;
 					}
 				}
@@ -174,12 +177,13 @@ internal sealed class ChangelogCommand(
 	/// <param name="all">Include all changelogs in the directory. Only one filter option can be specified: `--all`, `--input-products`, or `--prs`.</param>
 	/// <param name="config">Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml'</param>
 	/// <param name="directory">Optional: Directory containing changelog YAML files. Uses config bundle.directory or defaults to current directory</param>
+	/// <param name="hideFeatures">Filter by feature IDs (comma-separated), or a path to a newline-delimited file containing feature IDs. Can be specified multiple times. Entries with matching feature-id values will be commented out when the bundle is rendered (by CLI render or {changelog} directive).</param>
 	/// <param name="inputProducts">Filter by products in format "product target lifecycle, ..." (e.g., "cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta"). When specified, all three parts (product, target, lifecycle) are required but can be wildcards (*). Examples: "elasticsearch * *" matches all elasticsearch changelogs, "cloud-serverless 2025-12-02 *" matches cloud-serverless 2025-12-02 with any lifecycle, "* 9.3.* *" matches any product with target starting with "9.3.", "* * *" matches all changelogs (equivalent to --all). Only one filter option can be specified: `--all`, `--input-products`, or `--prs`.</param>
 	/// <param name="output">Optional: Output path for the bundled changelog. Can be either (1) a directory path, in which case 'changelog-bundle.yaml' is created in that directory, or (2) a file path ending in .yml or .yaml. Uses config bundle.output_directory or defaults to 'changelog-bundle.yaml' in the input directory</param>
 	/// <param name="outputProducts">Optional: Explicitly set the products array in the output file in format "product target lifecycle, ...". Overrides any values from changelogs.</param>
 	/// <param name="owner">GitHub repository owner (required only when PRs are specified as numbers)</param>
 	/// <param name="prs">Filter by pull request URLs or numbers (comma-separated), or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times. Only one filter option can be specified: `--all`, `--input-products`, or `--prs`.</param>
-	/// <param name="repo">GitHub repository name (required only when PRs are specified as numbers)</param>
+	/// <param name="repo">GitHub repository name. Used for PR filtering when PRs are specified as numbers, and also sets the repo field in the bundle output for generating correct PR/issue links. If not specified, the product ID is used as the repo name in links.</param>
 	/// <param name="resolve">Optional: Copy the contents of each changelog file into the entries array. Uses config bundle.resolve or defaults to false.</param>
 	/// <param name="noResolve">Optional: Explicitly turn off resolve (overrides config).</param>
 	/// <param name="ctx"></param>
@@ -190,6 +194,7 @@ internal sealed class ChangelogCommand(
 		bool all = false,
 		string? config = null,
 		string? directory = null,
+		string[]? hideFeatures = null,
 		[ProductInfoParser] List<ProductArgument>? inputProducts = null,
 		string? output = null,
 		[ProductInfoParser] List<ProductArgument>? outputProducts = null,
@@ -356,6 +361,28 @@ internal sealed class ChangelogCommand(
 		// Determine resolve: CLI --no-resolve takes precedence, then CLI --resolve, then config default
 		var shouldResolve = noResolve ? false : resolve;
 
+		// Process each --hide-features occurrence: each can be comma-separated feature IDs or a file path
+		var allFeatureIdsForBundle = new List<string>();
+		if (hideFeatures is { Length: > 0 })
+		{
+			foreach (var hideFeaturesValue in hideFeatures.Where(v => !string.IsNullOrWhiteSpace(v)))
+			{
+				// Check if it contains commas - if so, split and add each as a feature ID
+				if (hideFeaturesValue.Contains(','))
+				{
+					var commaSeparatedFeatureIds = hideFeaturesValue
+						.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+						.Where(f => !string.IsNullOrWhiteSpace(f));
+					allFeatureIdsForBundle.AddRange(commaSeparatedFeatureIds);
+				}
+				else
+				{
+					// Single value - pass as-is (will be handled by service layer as file path or feature ID)
+					allFeatureIdsForBundle.Add(hideFeaturesValue);
+				}
+			}
+		}
+
 		var input = new BundleChangelogsArguments
 		{
 			Directory = directory ?? Directory.GetCurrentDirectory(),
@@ -369,7 +396,8 @@ internal sealed class ChangelogCommand(
 			Repo = repo,
 			Profile = profile,
 			ProfileArgument = profileArg,
-			Config = config
+			Config = config,
+			HideFeatures = allFeatureIdsForBundle.Count > 0 ? allFeatureIdsForBundle.ToArray() : null
 		};
 
 		serviceInvoker.AddCommand(service, input,
@@ -382,7 +410,7 @@ internal sealed class ChangelogCommand(
 	/// <summary>
 	/// Render bundled changelog(s) to markdown or asciidoc files
 	/// </summary>
-	/// <param name="input">Required: Bundle input(s) in format "bundle-file-path|changelog-file-path|repo|link-visibility" (use pipe as delimiter). To merge multiple bundles, separate them with commas. Only bundle-file-path is required. link-visibility can be "hide-links" or "keep-links" (default). Paths must be absolute or use environment variables; tilde (~) expansion is not supported.</param>
+	/// <param name="input">Required: Bundle input(s) in format "bundle-file-path|changelog-file-path|repo|link-visibility" (use pipe as delimiter). To merge multiple bundles, separate them with commas. Only bundle-file-path is required. link-visibility can be "hide-links" or "keep-links" (default). Paths support tilde (~) expansion and relative paths.</param>
 	/// <param name="config">Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml'</param>
 	/// <param name="fileType">Optional: Output file type. Valid values: "markdown" or "asciidoc". Defaults to "markdown"</param>
 	/// <param name="hideFeatures">Filter by feature IDs (comma-separated), or a path to a newline-delimited file containing feature IDs. Can be specified multiple times. Entries with matching feature-id values will be commented out in the output.</param>
@@ -506,17 +534,19 @@ internal sealed class ChangelogCommand(
 	}
 
 	/// <summary>
-	/// Amend a bundle with additional changelog entries, creating an immutable .amend-N.yaml file
+	/// Amend a bundle with additional changelog entries, creating an immutable .amend-N.yaml file.
 	/// </summary>
 	/// <param name="bundlePath">Required: Path to the original bundle file to amend</param>
-	/// <param name="add">Required: Path(s) to changelog YAML file(s) to add. Can be specified multiple times.</param>
-	/// <param name="resolve">Optional: Copy the contents of each changelog file into the entries array. Defaults to false.</param>
+	/// <param name="add">Required: Path(s) to changelog YAML file(s) to add as comma-separated values (e.g., --add "file1.yaml,file2.yaml"). Supports tilde (~) expansion and relative paths.</param>
+	/// <param name="resolve">Optional: Copy the contents of each changelog file into the entries array. When not specified, inferred from the original bundle.</param>
+	/// <param name="noResolve">Optional: Explicitly turn off resolve (overrides inference from original bundle).</param>
 	/// <param name="ctx"></param>
 	[Command("bundle-amend")]
 	public async Task<int> BundleAmend(
 		[Argument] string bundlePath,
 		string[]? add = null,
-		bool resolve = false,
+		bool? resolve = null,
+		bool noResolve = false,
 		Cancel ctx = default
 	)
 	{
@@ -533,11 +563,37 @@ internal sealed class ChangelogCommand(
 			return 1;
 		}
 
+		// Normalize the bundle path
+		var normalizedBundlePath = NormalizePath(bundlePath);
+
+		// Process and normalize all add file paths (handles comma-separated values)
+		var normalizedAddFiles = new List<string>();
+		foreach (var addValue in add.Where(a => !string.IsNullOrWhiteSpace(a)))
+		{
+			// Check if it contains commas - if so, split and normalize each path
+			if (addValue.Contains(','))
+			{
+				var commaSeparatedPaths = addValue
+					.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+					.Where(p => !string.IsNullOrWhiteSpace(p))
+					.Select(NormalizePath);
+				normalizedAddFiles.AddRange(commaSeparatedPaths);
+			}
+			else
+			{
+				// Single path - normalize it
+				normalizedAddFiles.Add(NormalizePath(addValue));
+			}
+		}
+
+		// Determine resolve: CLI --no-resolve takes precedence, then CLI --resolve, then infer from bundle
+		var shouldResolve = noResolve ? false : resolve;
+
 		var input = new AmendBundleArguments
 		{
-			BundlePath = bundlePath,
-			AddFiles = add,
-			Resolve = resolve
+			BundlePath = normalizedBundlePath,
+			AddFiles = normalizedAddFiles.ToArray(),
+			Resolve = shouldResolve
 		};
 
 		serviceInvoker.AddCommand(service, input,
@@ -545,6 +601,35 @@ internal sealed class ChangelogCommand(
 		);
 
 		return await serviceInvoker.InvokeAsync(ctx);
+	}
+
+	/// <summary>
+	/// Normalizes a file path by expanding tilde (~) to the user's home directory
+	/// and converting relative paths to absolute paths.
+	/// </summary>
+	/// <param name="path">The path to normalize</param>
+	/// <returns>The normalized absolute path</returns>
+	private static string NormalizePath(string path)
+	{
+		if (string.IsNullOrWhiteSpace(path))
+			return path;
+
+		var trimmedPath = path.Trim();
+
+		// Expand tilde to user's home directory
+		if (trimmedPath.StartsWith("~/", StringComparison.Ordinal) || trimmedPath.StartsWith("~\\", StringComparison.Ordinal))
+		{
+			var homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+			homeDirectory = homeDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+			trimmedPath = homeDirectory + Path.DirectorySeparatorChar + trimmedPath[2..];
+		}
+		else if (trimmedPath == "~")
+		{
+			trimmedPath = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+		}
+
+		// Convert to absolute path (handles relative paths like ./file or ../file)
+		return Path.GetFullPath(trimmedPath);
 	}
 }
 

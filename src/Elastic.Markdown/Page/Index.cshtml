@@ -1,6 +1,8 @@
 @using System.Text.Json
+@using Elastic.Documentation
 @using Elastic.Documentation.Configuration
 @using Elastic.Documentation.Extensions
+@using Elastic.Documentation.Site
 @using Elastic.Markdown
 @using Elastic.Markdown.Myst.Components
 @using Markdig
@@ -8,12 +10,19 @@
 @inherits RazorSliceHttpResult<Elastic.Markdown.Page.IndexViewModel>
 @implements IUsesLayout<Elastic.Markdown._Layout, MarkdownLayoutViewModel>
 @functions {
+	static string GetRootPath(string? siteRootPath, string? urlPathPrefix)
+	{
+		if (!string.IsNullOrEmpty(siteRootPath))
+			return siteRootPath;
+		var prefix = urlPathPrefix?.Trim('/') ?? "";
+		return string.IsNullOrEmpty(prefix) ? "/" : $"/{prefix}/";
+	}
+
 	public MarkdownLayoutViewModel LayoutModel => new()
 	{
 		DocsBuilderVersion = ShortId.Create(BuildContext.Version),
 		Layout = Model.CurrentDocument.YamlFrontMatter?.Layout,
 		RenderHamburgerIcon = Model.CurrentDocument.YamlFrontMatter?.Layout != MarkdownPageLayout.LandingPage,
-		RenderHeaders = Model.CurrentDocument.YamlFrontMatter?.Layout != MarkdownPageLayout.FullSearch,
 		DocSetName = Model.DocSetName,
 		Title = $"{Model.Title} | {Model.SiteName}",
 		Description = Model.Description,
@@ -29,14 +38,17 @@
 		UrlPathPrefix = Model.UrlPathPrefix,
 		GithubEditUrl = Model.GithubEditUrl,
 		MarkdownUrl = Model.MarkdownUrl,
-		HideEditThisPage = Model.Features.DisableGitHubEditLink && Model.IsAssemblerBuild,
+		BuildType = Model.BuildType,
+		HideEditThisPage = Model.Features.DisableGitHubEditLink && Model.BuildType != BuildType.Isolated,
 		AllowIndexing = Model.AllowIndexing,
 		CanonicalBaseUrl = Model.CanonicalBaseUrl,
 		GoogleTagManager = Model.GoogleTagManager,
+		Optimizely = Model.Optimizely,
 		Features = Model.Features,
 		StaticFileContentHashProvider = Model.StaticFileContentHashProvider,
 		ReportIssueUrl = Model.ReportIssueUrl,
 		Breadcrumbs = Model.Breadcrumbs,
+		Htmx = new DefaultHtmxAttributeProvider(GetRootPath(Model.SiteRootPath, Model.UrlPathPrefix)),
 		CurrentVersion = Model.CurrentDocument.YamlFrontMatter?.Layout == MarkdownPageLayout.LandingPage ? Model.VersionsConfig.VersioningSystems[0].Current : Model.CurrentVersion,
 		AllVersionsUrl = Model.AllVersionsUrl,
 		VersioningSystem = Model.VersioningSystem,
@@ -49,6 +61,7 @@
 		GitCommitShort = Model.GitCommitShort,
 		GitRepository = Model.GitRepository,
 		GitHubDocsUrl = Model.GitHubDocsUrl,
+		GitHubRef = Model.GitHubRef,
 	};
 	protected override Task ExecuteSectionAsync(string name)
 	{

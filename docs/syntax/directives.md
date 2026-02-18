@@ -67,8 +67,9 @@ The following directives are available:
 
 - [Admonitions](admonitions.md) - Callouts and warnings
 - [Code blocks](code.md) - Syntax-highlighted code
+- [Contributors](contributors.md) - Team roster grids with avatars
 - [CSV include](csv-include.md) - Render CSV files as tables
-- [Diagrams](diagrams.md) - Visual diagrams and charts
+- [Diagrams](diagrams.md) - Mermaid diagrams
 - [Dropdowns](dropdowns.md) - Collapsible content
 - [Images](images.md) - Enhanced image handling
 - [Include](file_inclusion.md) - Include content from other files

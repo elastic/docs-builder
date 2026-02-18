@@ -25,6 +25,7 @@ public class HtmlWriter(
 	DocumentationSet documentationSet,
 	IFileSystem writeFileSystem,
 	IDescriptionGenerator descriptionGenerator,
+	IPageViewFactory? pageViewFactory = null,
 	INavigationTraversable? positionalNavigation = null,
 	INavigationHtmlWriter? navigationHtmlWriter = null,
 	ILegacyUrlMapper? legacyUrlMapper = null,
@@ -42,6 +43,7 @@ public class HtmlWriter(
 	private INavigationTraversable NavigationTraversable { get; } = positionalNavigation ?? documentationSet;
 
 	private IDocumentInferrerService DocumentInferrerService { get; } = documentInferrerService ?? new NoopDocumentInferrer();
+	private IPageViewFactory PageViewFactory { get; } = pageViewFactory ?? new DefaultPageViewFactory();
 
 	/// <inheritdoc />
 	public string Render(string markdown, IFileInfo? source)
@@ -128,9 +130,9 @@ public class HtmlWriter(
 		if (!string.IsNullOrEmpty(gitRepo) && gitRepo != "unavailable" && !string.IsNullOrEmpty(gitBranch) && gitBranch != "unavailable")
 			gitHubDocsUrl = $"https://github.com/elastic/{gitRepo}/tree/{gitBranch}/docs";
 
-		var slice = Page.Index.Create(new IndexViewModel
+		var slice = PageViewFactory.Create(new IndexViewModel
 		{
-			IsAssemblerBuild = DocumentationSet.Context.AssemblerBuild,
+			BuildType = DocumentationSet.Context.BuildType,
 			SiteName = siteName,
 			DocSetName = DocumentationSet.Name,
 			Title = markdown.Title ?? "[TITLE NOT SET]",
@@ -145,12 +147,14 @@ public class HtmlWriter(
 			Breadcrumbs = breadcrumbs,
 			NavigationHtml = navigationHtmlRenderResult.Html,
 			UrlPathPrefix = markdown.UrlPathPrefix,
+			SiteRootPath = DocumentationSet.Context.SiteRootPath,
 			AppliesTo = markdown.YamlFrontMatter?.AppliesTo,
 			GithubEditUrl = editUrl,
 			MarkdownUrl = current.Url.TrimEnd('/') + ".md",
 			AllowIndexing = DocumentationSet.Context.AllowIndexing && markdown.YamlFrontMatter?.NoIndex != true && (markdown.CrossLink.Equals("docs-content://index.md", StringComparison.OrdinalIgnoreCase) || markdown is DetectionRuleFile || !current.Hidden),
 			CanonicalBaseUrl = DocumentationSet.Context.CanonicalBaseUrl,
 			GoogleTagManager = DocumentationSet.Context.GoogleTagManager,
+			Optimizely = DocumentationSet.Context.Optimizely,
 			Features = DocumentationSet.Configuration.Features,
 			StaticFileContentHashProvider = StaticFileContentHashProvider,
 			ReportIssueUrl = reportUrl,
@@ -166,7 +170,8 @@ public class HtmlWriter(
 			GitBranch = gitBranch != "unavailable" ? gitBranch : null,
 			GitCommitShort = gitRef is { Length: >= 7 } r && r != "unavailable" ? r[..7] : null,
 			GitRepository = gitRepo != "unavailable" ? gitRepo : null,
-			GitHubDocsUrl = gitHubDocsUrl
+			GitHubDocsUrl = gitHubDocsUrl,
+			GitHubRef = DocumentationSet.Context.Git.GitHubRef
 		});
 
 		return new RenderResult

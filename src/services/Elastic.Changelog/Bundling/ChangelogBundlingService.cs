@@ -7,11 +7,12 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using Elastic.Changelog.Configuration;
-using Elastic.Changelog.Serialization;
-using Elastic.Documentation;
+using Elastic.Changelog.Rendering;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -52,6 +53,13 @@ public record BundleChangelogsArguments
 	/// Path to the changelog.yml configuration file
 	/// </summary>
 	public string? Config { get; init; }
+
+	/// <summary>
+	/// Feature IDs to mark as hidden in the bundle output.
+	/// When the bundle is rendered (by CLI render or {changelog} directive),
+	/// entries with matching feature-id values will be commented out.
+	/// </summary>
+	public string[]? HideFeatures { get; init; }
 }
 
 /// <summary>
@@ -125,7 +133,7 @@ public partial class ChangelogBundlingService(
 			var filterCriteria = BuildFilterCriteria(input, prFilterResult.PrsToMatch);
 
 			// Match changelog entries
-			var entryMatcher = new ChangelogEntryMatcher(_fileSystem, ChangelogYamlSerialization.GetEntryDeserializer(), _logger);
+			var entryMatcher = new ChangelogEntryMatcher(_fileSystem, ReleaseNotesSerialization.GetEntryDeserializer(), _logger);
 			var matchResult = await entryMatcher.MatchChangelogsAsync(collector, yamlFiles, filterCriteria, ctx);
 
 			_logger.LogInformation("Found {Count} matching changelog entries", matchResult.Entries.Count);
@@ -136,9 +144,22 @@ public partial class ChangelogBundlingService(
 				return false;
 			}
 
+			// Load feature IDs to hide
+			var featureHidingLoader = new FeatureHidingLoader(_fileSystem);
+			var featureHidingResult = await featureHidingLoader.LoadFeatureIdsAsync(collector, input.HideFeatures, ctx);
+			if (!featureHidingResult.IsValid)
+				return false;
+
 			// Build bundle
 			var bundleBuilder = new BundleBuilder();
-			var buildResult = bundleBuilder.BuildBundle(collector, matchResult.Entries, input.OutputProducts, input.Resolve);
+			var buildResult = bundleBuilder.BuildBundle(
+				collector,
+				matchResult.Entries,
+				input.OutputProducts,
+				input.Resolve,
+				input.Repo,
+				featureHidingResult.FeatureIdsToHide
+			);
 
 			if (!buildResult.IsValid || buildResult.Data == null)
 				return false;
@@ -229,14 +250,31 @@ public partial class ChangelogBundlingService(
 			outputPath = _fileSystem.Path.Combine(outputDir, outputPattern);
 		}
 
+		// Merge profile hide-features with any CLI-provided hide-features
+		var mergedHideFeatures = MergeHideFeatures(input.HideFeatures, profile.HideFeatures);
+
 		// If we have PRs from a promotion report, use those; otherwise use input products filter
 		return input with
 		{
 			InputProducts = prsFromReport == null ? inputProducts : null,
 			Prs = prsFromReport,
 			All = false,
-			Output = outputPath ?? input.Output
+			Output = outputPath ?? input.Output,
+			HideFeatures = mergedHideFeatures
 		};
+	}
+
+	private static string[]? MergeHideFeatures(string[]? cliHideFeatures, IReadOnlyList<string>? profileHideFeatures)
+	{
+		if (cliHideFeatures is not { Length: > 0 } && profileHideFeatures is not { Count: > 0 })
+			return null;
+
+		var merged = new HashSet<string>(cliHideFeatures ?? [], StringComparer.OrdinalIgnoreCase);
+
+		if (profileHideFeatures is { Count: > 0 })
+			merged.UnionWith(profileHideFeatures);
+
+		return merged.Count > 0 ? [.. merged] : null;
 	}
 
 	private static List<ProductArgument> ParseProfileProducts(string pattern)
@@ -274,12 +312,18 @@ public partial class ChangelogBundlingService(
 			directory = config.Bundle.Directory;
 		}
 
+		// Apply output default when --output not specified: use bundle.output_directory if set
+		var output = input.Output;
+		if (string.IsNullOrWhiteSpace(output) && !string.IsNullOrWhiteSpace(config.Bundle.OutputDirectory))
+			output = Path.Combine(config.Bundle.OutputDirectory, "changelog-bundle.yaml");
+
 		// Apply resolve default if not specified by CLI
 		var resolve = input.Resolve || config.Bundle.Resolve;
 
 		return input with
 		{
 			Directory = directory,
+			Output = output,
 			Resolve = resolve
 		};
 	}
@@ -351,7 +395,7 @@ public partial class ChangelogBundlingService(
 	private async Task WriteBundleFileAsync(Bundle bundledData, string outputPath, Cancel ctx)
 	{
 		// Generate bundled YAML
-		var bundledYaml = ChangelogYamlSerialization.SerializeBundle(bundledData);
+		var bundledYaml = ReleaseNotesSerialization.SerializeBundle(bundledData);
 
 		// Ensure output directory exists
 		var outputDir = _fileSystem.Path.GetDirectoryName(outputPath);
@@ -375,10 +419,15 @@ public partial class ChangelogBundlingService(
 		_logger.LogInformation("Created bundled changelog: {OutputPath}", outputPath);
 	}
 
+	/// <summary>
+	/// Computes a SHA1 hash from the normalized YAML content (comments stripped, version→target).
+	/// This ensures checksums represent semantic content, not formatting or comments.
+	/// </summary>
 	[System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5350:Do not use insecure cryptographic algorithm SHA1", Justification = "SHA1 is required for compatibility with existing changelog bundle format")]
 	internal static string ComputeSha1(string content)
 	{
-		var bytes = Encoding.UTF8.GetBytes(content);
+		var normalized = ReleaseNotesSerialization.NormalizeYaml(content);
+		var bytes = Encoding.UTF8.GetBytes(normalized);
 		var hash = SHA1.HashData(bytes);
 		return Convert.ToHexString(hash).ToLowerInvariant();
 	}

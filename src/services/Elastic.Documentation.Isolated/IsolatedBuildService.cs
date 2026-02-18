@@ -9,10 +9,13 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Links.CrossLinks;
+using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Services;
+using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
+using Elastic.Markdown.Page;
 using Microsoft.Extensions.Logging;
 using static System.StringComparison;
 
@@ -156,5 +159,65 @@ public class IsolatedBuildService(
 		_logger.LogInformation("Finished building and exporting exporters {Exporters}", exporters);
 
 		return strict.Value ? context.Collector.Errors + context.Collector.Warnings == 0 : context.Collector.Errors == 0;
+	}
+
+	/// <summary>
+	/// Builds a pre-configured documentation set with optional injected navigation.
+	/// Used by portal builds where navigation spans multiple documentation sets.
+	/// When <paramref name="externalExporters"/> is provided, those exporters are used instead of
+	/// creating new ones, and their lifecycle (Start/Stop) is not managed by this method.
+	/// </summary>
+	public async Task<bool> BuildDocumentationSet(
+		DocumentationSet documentationSet,
+		INavigationTraversable? navigation = null,
+		INavigationHtmlWriter? navigationHtmlWriter = null,
+		IReadOnlySet<Exporter>? exporters = null,
+		IMarkdownExporter[]? externalExporters = null,
+		IPageViewFactory? pageViewFactory = null,
+		Cancel ctx = default)
+	{
+		var context = documentationSet.Context;
+		var manageLifecycle = externalExporters is null;
+
+		IMarkdownExporter[] allExporters;
+		if (externalExporters is not null)
+		{
+			allExporters = externalExporters;
+		}
+		else
+		{
+			exporters ??= ExportOptions.Default;
+			allExporters = exporters.CreateMarkdownExporters(logFactory, context, "codex").ToArray();
+		}
+
+		if (manageLifecycle)
+		{
+			var startTasks = allExporters.Select(async e => await e.StartAsync(ctx));
+			await Task.WhenAll(startTasks);
+		}
+
+		// Use the provided navigation or fall back to the doc set's own navigation
+		var effectiveNavigation = navigation ?? documentationSet;
+
+		var generator = new DocumentationGenerator(
+			documentationSet,
+			logFactory,
+			effectiveNavigation,
+			navigationHtmlWriter,
+			null,
+			allExporters,
+			pageViewFactory: pageViewFactory);
+
+		_ = await generator.GenerateAll(ctx);
+
+		if (manageLifecycle)
+		{
+			var stopTasks = allExporters.Select(async e => await e.StopAsync(ctx));
+			await Task.WhenAll(stopTasks);
+		}
+
+		_logger.LogInformation("Finished building documentation set {Name}", documentationSet.Context.Git.RepositoryName);
+
+		return context.Collector.Errors == 0;
 	}
 }

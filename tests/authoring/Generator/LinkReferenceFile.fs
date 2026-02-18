@@ -59,7 +59,8 @@ Through various means $$$including-this-inline-syntax$$$
            "branch": "unavailable",
            "remote": "unavailable",
            "ref": "unavailable",
-           "name": "unavailable"
+           "name": "unavailable",
+           "github_ref": null
          },
          "url_path_prefix": "",
          "links": {
@@ -90,6 +91,9 @@ Through various means $$$including-this-inline-syntax$$$
               "to": "index.md"
            },
            "migration/freeze/index.md": {
+             "to": "index.md"
+           },
+           "cli/mcp.md": {
              "to": "index.md"
            },
            "testing/redirects/4th-page.md": {

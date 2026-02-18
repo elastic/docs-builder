@@ -7,8 +7,8 @@ using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Myst.Directives.Admonition;
 using Elastic.Markdown.Myst.Directives.AppliesTo;
+using Elastic.Markdown.Myst.Directives.Contributors;
 using Elastic.Markdown.Myst.Directives.CsvInclude;
-using Elastic.Markdown.Myst.Directives.Diagram;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Math;
@@ -202,6 +202,12 @@ public class LlmEnhancedCodeBlockRenderer : MarkdownObjectRenderer<LlmMarkdownRe
 			return;
 		}
 
+		if (obj is ContributorsBlock contributorsBlock)
+		{
+			WriteContributorsBlock(renderer, contributorsBlock);
+			return;
+		}
+
 		renderer.EnsureBlockSpacing();
 		if (!string.IsNullOrEmpty(obj.Caption))
 		{
@@ -250,6 +256,40 @@ public class LlmEnhancedCodeBlockRenderer : MarkdownObjectRenderer<LlmMarkdownRe
 		}
 
 		renderer.WriteLine("</applies-to>");
+	}
+
+	private static void WriteContributorsBlock(LlmMarkdownRenderer renderer, ContributorsBlock block)
+	{
+		renderer.EnsureBlockSpacing();
+		renderer.WriteLine("<contributors>");
+
+		foreach (var contributor in block.Contributors)
+		{
+			renderer.Write("  - **");
+			renderer.Write(contributor.Name);
+			renderer.Write("**");
+			if (!string.IsNullOrEmpty(contributor.Title))
+			{
+				renderer.Write(", ");
+				renderer.Write(contributor.Title);
+			}
+			if (!string.IsNullOrEmpty(contributor.Location))
+			{
+				renderer.Write(" (");
+				renderer.Write(contributor.Location);
+				renderer.Write(")");
+			}
+			if (!string.IsNullOrEmpty(contributor.ProfileUrl))
+			{
+				renderer.Write(" — [GitHub](");
+				renderer.Write(contributor.ProfileUrl);
+				renderer.Write(")");
+			}
+			renderer.WriteLine();
+		}
+
+		renderer.WriteLine("</contributors>");
+		renderer.EnsureLine();
 	}
 
 	private static int GetLastNonEmptyLineIndex(EnhancedCodeBlock obj)
@@ -442,9 +482,6 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 			case IncludeBlock includeBlock:
 				WriteIncludeBlock(renderer, includeBlock);
 				return;
-			case DiagramBlock diagramBlock:
-				WriteDiagramBlock(renderer, diagramBlock);
-				return;
 			case SettingsBlock settingsBlock:
 				WriteSettingsBlock(renderer, settingsBlock);
 				return;
@@ -508,25 +545,6 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		// Make image URL absolute for better LLM consumption
 		var absoluteImageUrl = LlmRenderingHelpers.MakeAbsoluteUrl(renderer, imageBlock.ImageUrl);
 		renderer.WriteLine($"![{imageBlock.Alt}]({absoluteImageUrl})");
-		renderer.EnsureLine();
-	}
-
-	private static void WriteDiagramBlock(LlmMarkdownRenderer renderer, DiagramBlock diagramBlock)
-	{
-		renderer.EnsureBlockSpacing();
-
-		// Render diagram as structured comment with type information
-		renderer.WriteLine($"<diagram type=\"{diagramBlock.DiagramType}\">");
-
-		// Render the diagram content with indentation
-		if (!string.IsNullOrWhiteSpace(diagramBlock.Content))
-		{
-			var reader = new StringReader(diagramBlock.Content);
-			while (reader.ReadLine() is { } line)
-				renderer.WriteLine(string.IsNullOrWhiteSpace(line) ? string.Empty : "  " + line);
-		}
-
-		renderer.WriteLine("</diagram>");
 		renderer.EnsureLine();
 	}
 

@@ -4,7 +4,7 @@
 
 using System.IO.Abstractions;
 using System.Text;
-using Elastic.Documentation;
+using Elastic.Documentation.ReleaseNotes;
 using static System.Globalization.CultureInfo;
 using static Elastic.Documentation.ChangelogEntryType;
 
@@ -33,8 +33,13 @@ public class IndexMarkdownRenderer(IFileSystem fileSystem) : MarkdownRendererBas
 		var hasBreakingChanges = entriesByType.ContainsKey(BreakingChange);
 		var hasDeprecations = entriesByType.ContainsKey(Deprecation);
 		var hasKnownIssues = entriesByType.ContainsKey(KnownIssue);
+		var hasHighlights = entriesByType.Values
+			.SelectMany(e => e)
+			.Any(e => e.Highlight == true);
 
 		var otherLinks = new List<string>();
+		if (hasHighlights)
+			otherLinks.Add($"[Highlights](/release-notes/highlights.md#{context.Repo}-{context.TitleSlug}-highlights)");
 		if (hasKnownIssues)
 			otherLinks.Add($"[Known issues](/release-notes/known-issues.md#{context.Repo}-{context.TitleSlug}-known-issues)");
 		if (hasBreakingChanges)

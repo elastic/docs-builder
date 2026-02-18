@@ -44,11 +44,13 @@ public static class CodeBlock
 		{ "xml", "html, xhtml, rss, atom, xjb, xsd, xsl, plist, svg" }, // HTML, XML
 		{ "yml", "yaml" }, // YAML
 
-		//CUSTOM, Elastic language we wrote highlighters for
-		{ "apiheader", "" },
-		{ "eql", "" },
-		{ "esql", "" },
-		{ "painless", "" }
+	//CUSTOM, Elastic language we wrote highlighters for
+	{ "apiheader", "" },
+	{ "eql", "" },
+	{ "esql", "" },
+	{ "kuery", "kql" },
+	{ "mermaid", "" },
+	{ "painless", "" }
 	};
 
 	public static HashSet<string> Languages { get; } = new(

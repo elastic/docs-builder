@@ -7,6 +7,9 @@ environments:
     google_tag_manager:
       enabled: true
       id: GTM-KNJMG2M
+    optimizely:
+      enabled: true
+      id: "18132920325"
     feature_flags:
       SEARCH_OR_ASK_AI: true
   staging:
@@ -46,8 +49,8 @@ environments:
 
 shared_configuration:
   stack: &stack
-    current:  9.2
-    next: 9.3
+    current:  9.3
+    next: main
     edge: main
 
   master: &master
@@ -89,7 +92,7 @@ references:
   apm-aws-lambda:
   apm-k8s-attacher:
   ecs:
-    current: 9.2 # releases do not always align with the Stack version
+    current: 9.3 # releases do not always align with the Stack version
     next: main
   ecs-dotnet:
   ecs-logging-go-logrus:
@@ -101,7 +104,10 @@ references:
   ecs-logging-python:
   ecs-logging-ruby:
   ecs-logging:
+  # CF repos
   edot-cloud-forwarder-aws:
+    private: true
+  edot-cloud-forwarder-azure:
     private: true
   elastic-agent:
   elastic-otel-dotnet:

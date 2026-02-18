@@ -14,7 +14,7 @@ public interface IDocumentationContext
 	IFileSystem WriteFileSystem { get; }
 	IDirectoryInfo OutputDirectory { get; }
 	IFileInfo ConfigurationPath { get; }
-	bool AssemblerBuild { get; }
+	BuildType BuildType { get; }
 }
 
 public interface IDocumentationSetContext : IDocumentationContext

@@ -89,7 +89,7 @@ public class DocumentationFixture : IAsyncLifetime
 		{
 			_ = await DistributedApplication.ResourceNotifications
 				.WaitForResourceHealthyAsync(AssemblerServe, cancellationToken: TestContext.Current.CancellationToken)
-				.WaitAsync(TimeSpan.FromMinutes(1), TestContext.Current.CancellationToken);
+				.WaitAsync(TimeSpan.FromMinutes(3), TestContext.Current.CancellationToken);
 		}
 		catch (Exception e)
 		{

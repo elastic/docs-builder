@@ -107,23 +107,21 @@ let private runLocalContainer _ =
 
 let private publishContainers _ =
 
-    let createImage project =
+    let createImage projectPath containerName =
         let ci = Environment.environVarOrNone "GITHUB_ACTIONS"
         let pr = prNumber()
-        let baseImageTag =
-            match project with
-            | _ -> "9.0-noble-chiseled-aot"
+        let baseImageTag = "9.0-noble-chiseled-aot"
         let labels = imageTags()
         let args =
-            ["publish"; $"src/tooling/%s{project}/%s{project}.csproj"]
+            ["publish"; projectPath]
             @ [
                 "/t:PublishContainer";
                 "-p"; "DebugType=none";
                 "-p"; $"ContainerBaseImage=mcr.microsoft.com/dotnet/nightly/runtime-deps:%s{baseImageTag}";
                 "-p"; $"ContainerImageTags=\"%s{labels};%s{Software.Version.Normalize()}\""
-                "-p"; $"ContainerRepository=elastic/%s{project}"
+                "-p"; $"ContainerRepository=elastic/%s{containerName}"
             ]
-            
+
         let noPublish = Environment.environVarOrNone "DOCKER_NO_PUBLISH"
         let registry =
             match (ci, pr, noPublish) with
@@ -133,7 +131,9 @@ let private publishContainers _ =
                 ]
             | _ -> []
         exec { run "dotnet" (args @ registry) }
-    createImage "docs-builder"
+    createImage "src/tooling/docs-builder/docs-builder.csproj" "docs-builder"
+    createImage "src/api/Elastic.Documentation.Mcp.Remote/Elastic.Documentation.Mcp.Remote.csproj" "docs-builder-mcp"
+    createImage "src/api/Elastic.Documentation.Api.App/Elastic.Documentation.Api.App.csproj" "docs-builder-api"
 
 let private runTests (testSuite: TestSuite) _ =
     let testFilter =

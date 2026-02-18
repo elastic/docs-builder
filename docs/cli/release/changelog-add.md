@@ -13,6 +13,7 @@ docs-builder changelog add [options...] [-h|--help]
 
 `--action <string?>`
 :   Optional: What users must do to mitigate.
+:   If the content contains any special characters such as backquotes(`), you must precede it with a backslash escape character (`\`).
 
 `--areas <string[]?>`
 :   Optional: Areas affected (comma-separated or specify multiple times).
@@ -22,6 +23,7 @@ docs-builder changelog add [options...] [-h|--help]
 
 `--description <string?>`
 :   Optional: Additional information about the change (max 600 characters).
+:   If the content contains any special characters such as backquotes, you must precede it with a backslash escape character (`\`).
 
 `--no-extract-release-notes`
 :   Optional: Turn off extraction of release notes from PR descriptions.
@@ -43,6 +45,7 @@ docs-builder changelog add [options...] [-h|--help]
 
 `--impact <string?>`
 :   Optional: How the user's environment is affected.
+:   If the content contains any special characters such as backquotes, you must precede it with a backslash escape character (`\`).
 
 `--issues <string[]?>`
 :   Optional: Issue numbers (comma-separated or specify multiple times).
@@ -78,6 +81,7 @@ docs-builder changelog add [options...] [-h|--help]
 `--strip-title-prefix`
 :   Optional: When used with `--prs`, remove square brackets and text within them from the beginning of PR titles, and also remove a colon if it follows the closing bracket.
 :   For example, if a PR title is `"[Attack discovery]: Improves Attack discovery hallucination detection"`, the changelog title will be `"Improves Attack discovery hallucination detection"`.
+:   Multiple square bracket prefixes are also supported (e.g., `"[Discover][ESQL] Fix filtering by multiline string fields"` becomes `"Fix filtering by multiline string fields"`).
 :   This option applies only when the title is derived from the PR (when `--title` is not explicitly provided).
 
 `--subtype <string?>`
@@ -88,6 +92,7 @@ docs-builder changelog add [options...] [-h|--help]
 :    A short, user-facing title (max 80 characters)
 :    Required if `--pr` is not specified.
 :    If both `--pr` and `--title` are specified, the latter value is used instead of what exists in the PR.
+:    If the content contains any special characters such as backquotes, you must precede it with a backslash escape character (`\`).
 
 `--type <string>`
 :   Required: Type of change (for example, `feature`, `enhancement`, `bug-fix`, or `breaking-change`).

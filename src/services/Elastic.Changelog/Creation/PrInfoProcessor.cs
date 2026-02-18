@@ -3,9 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Changelog.GitHub;
-using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.ReleaseNotes;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Changelog.Creation;
@@ -136,7 +136,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		{
 			if (config.LabelToType == null || config.LabelToType.Count == 0)
 			{
-				collector.EmitError(string.Empty, $"Cannot derive type from PR {prUrl} labels: no label-to-type mapping configured in changelog.yml. Please provide --type or configure label_to_type in changelog.yml.");
+				collector.EmitError(string.Empty, $"Cannot derive type from PR {prUrl} labels: no type mapping configured in changelog.yml. Please provide --type or configure pivot.types in changelog.yml.");
 				return null;
 			}
 
@@ -144,7 +144,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 			if (mappedType == null)
 			{
 				var availableLabels = prInfo.Labels.Count > 0 ? string.Join(", ", prInfo.Labels) : "none";
-				collector.EmitError(string.Empty, $"Cannot derive type from PR {prUrl} labels ({availableLabels}). No matching label found in label_to_type mapping. Please provide --type or add a label mapping in changelog.yml.");
+				collector.EmitError(string.Empty, $"Cannot derive type from PR {prUrl} labels ({availableLabels}). No matching label found in type mapping. Please provide --type or add pivot.types with labels in changelog.yml.");
 				return null;
 			}
 			derived.Type = mappedType;
@@ -203,49 +203,78 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		IDiagnosticsCollector collector,
 		string prUrl)
 	{
-		if (config.Block?.ByProduct == null || config.Block.ByProduct.Count == 0)
+		var createRules = config.Rules?.Create;
+		if (createRules == null)
+			return false;
+
+		// Check product-specific overrides first, then fall back to global
+		if (createRules.ByProduct is { Count: > 0 })
 		{
-			// Check global create blockers
-			if (config.Block?.Create != null && config.Block.Create.Count > 0)
+			foreach (var product in products)
 			{
-				var matchingGlobalBlocker = config.Block.Create
-					.FirstOrDefault(blockerLabel => prLabels.Contains(blockerLabel, StringComparer.OrdinalIgnoreCase));
-				if (matchingGlobalBlocker != null)
+				var normalizedProductId = product.Product?.Replace('_', '-') ?? string.Empty;
+				if (createRules.ByProduct.TryGetValue(normalizedProductId, out var productRules))
 				{
-					collector.EmitWarning(string.Empty, $"Skipping changelog creation for PR {prUrl} due to global blocking label '{matchingGlobalBlocker}'. This label is configured to prevent changelog creation.");
-					return true;
+					// Product-specific rules override global rules
+					if (ShouldSkipByCreateRules(prLabels, productRules, collector, prUrl, product.Product))
+						return true;
 				}
+				else if (ShouldSkipByCreateRules(prLabels, createRules, collector, prUrl, null))
+					return true;
 			}
 			return false;
 		}
 
-		foreach (var product in products)
+		// No product-specific rules - check global
+		return ShouldSkipByCreateRules(prLabels, createRules, collector, prUrl, null);
+	}
+
+	private static bool ShouldSkipByCreateRules(
+		string[] prLabels,
+		CreateRules rules,
+		IDiagnosticsCollector collector,
+		string prUrl,
+		string? productContext)
+	{
+		if (rules.Labels == null || rules.Labels.Count == 0)
+			return false;
+
+		var mode = rules.Mode;
+		var match = rules.Match;
+		var prefix = mode == FieldMode.Include ? "[+include]" : "[-exclude]";
+		var productSuffix = productContext != null ? $" for product '{productContext}'" : "";
+
+		if (mode == FieldMode.Exclude)
 		{
-			var normalizedProductId = product.Product?.Replace('_', '-') ?? string.Empty;
-			if (config.Block.ByProduct.TryGetValue(normalizedProductId, out var productBlockers))
+			// Exclude mode: skip if any/all labels match
+			var matchingLabel = match switch
 			{
-				// Product-specific blockers override global blockers
-				if (productBlockers.Create != null && productBlockers.Create.Count > 0)
-				{
-					var matchingBlockerLabel = productBlockers.Create
-						.FirstOrDefault(blockerLabel => prLabels.Contains(blockerLabel, StringComparer.OrdinalIgnoreCase));
-					if (matchingBlockerLabel != null)
-					{
-						collector.EmitWarning(string.Empty, $"Skipping changelog creation for PR {prUrl} due to blocking label '{matchingBlockerLabel}' for product '{product.Product}'. This label is configured to prevent changelog creation for this product.");
-						return true;
-					}
-				}
+				MatchMode.All => prLabels.All(label => rules.Labels.Contains(label, StringComparer.OrdinalIgnoreCase))
+					? string.Join(", ", prLabels)
+					: null,
+				_ => rules.Labels.FirstOrDefault(blockerLabel => prLabels.Contains(blockerLabel, StringComparer.OrdinalIgnoreCase))
+			};
+
+			if (matchingLabel != null)
+			{
+				collector.EmitWarning(string.Empty, $"{prefix} Skipping changelog creation for PR {prUrl} due to blocking label '{matchingLabel}'{productSuffix} (match: {match.ToString().ToLowerInvariant()}).");
+				return true;
 			}
-			else if (config.Block.Create != null && config.Block.Create.Count > 0)
+		}
+		else
+		{
+			// Include mode: skip if labels do NOT match
+			var hasMatch = match switch
 			{
-				// Fall back to global blockers if no product-specific blockers
-				var matchingGlobalBlocker = config.Block.Create
-					.FirstOrDefault(blockerLabel => prLabels.Contains(blockerLabel, StringComparer.OrdinalIgnoreCase));
-				if (matchingGlobalBlocker != null)
-				{
-					collector.EmitWarning(string.Empty, $"Skipping changelog creation for PR {prUrl} due to global blocking label '{matchingGlobalBlocker}'. This label is configured to prevent changelog creation.");
-					return true;
-				}
+				MatchMode.All => prLabels.All(label => rules.Labels.Contains(label, StringComparer.OrdinalIgnoreCase)),
+				_ => prLabels.Any(label => rules.Labels.Contains(label, StringComparer.OrdinalIgnoreCase))
+			};
+
+			if (!hasMatch)
+			{
+				var labelsList = string.Join(", ", rules.Labels);
+				collector.EmitWarning(string.Empty, $"{prefix} Skipping changelog creation for PR {prUrl}, no labels match rules.create.include [{labelsList}]{productSuffix} (match: {match.ToString().ToLowerInvariant()}).");
+				return true;
 			}
 		}
 

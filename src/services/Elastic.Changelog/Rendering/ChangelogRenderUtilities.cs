@@ -2,9 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Changelog.Configuration;
-using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Changelog;
+using Elastic.Documentation.ReleaseNotes;
 
 namespace Elastic.Changelog.Rendering;
 
@@ -25,7 +24,7 @@ public static class ChangelogRenderUtilities
 	}
 
 	/// <summary>
-	/// Determines if an entry should be hidden based on feature IDs or block configuration
+	/// Determines if an entry should be hidden based on feature IDs or rules configuration
 	/// </summary>
 	public static bool ShouldHideEntry(
 		ChangelogEntry entry,
@@ -36,8 +35,8 @@ public static class ChangelogRenderUtilities
 		if (!string.IsNullOrWhiteSpace(entry.FeatureId) && featureIdsToHide.Contains(entry.FeatureId))
 			return true;
 
-		// Check block configuration if context and configuration are available
-		if (context?.Configuration?.Block == null)
+		// Check rules configuration if context and configuration are available
+		if (context?.Configuration?.Rules?.Publish == null)
 			return false;
 
 		// Get product IDs for this entry
@@ -45,10 +44,10 @@ public static class ChangelogRenderUtilities
 		if (productIds.Count == 0)
 			return false;
 
-		// Check each product's block configuration
+		// Check each product's publish configuration
 		foreach (var productId in productIds)
 		{
-			var blocker = GetPublishBlockerForProduct(context.Configuration.Block, productId);
+			var blocker = GetPublishBlockerForProduct(context.Configuration.Rules.Publish, productId);
 			if (blocker != null && blocker.ShouldBlock(entry))
 				return true;
 		}
@@ -59,13 +58,13 @@ public static class ChangelogRenderUtilities
 	/// <summary>
 	/// Gets the publish blocker configuration for a specific product, checking product-specific overrides first
 	/// </summary>
-	private static PublishBlocker? GetPublishBlockerForProduct(BlockConfiguration blockConfig, string productId)
+	private static PublishBlocker? GetPublishBlockerForProduct(PublishRules publishRules, string productId)
 	{
 		// Check product-specific override first
-		if (blockConfig.ByProduct?.TryGetValue(productId, out var productBlockers) == true)
-			return productBlockers.Publish;
+		if (publishRules.ByProduct?.TryGetValue(productId, out var productBlocker) == true)
+			return productBlocker;
 
 		// Fall back to global publish blocker
-		return blockConfig.Publish;
+		return publishRules.Blocker;
 	}
 }

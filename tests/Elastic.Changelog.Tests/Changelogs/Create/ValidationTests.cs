@@ -28,7 +28,7 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 				A<CancellationToken>._))
 			.Returns(prInfo);
 
-		// Config without label_to_type mapping
+		// Config without pivot.types mapping
 		// language=yaml
 		var configContent =
 			"""
@@ -125,10 +125,11 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 			  - preview
 			  - beta
 			  - ga
-			block:
-			  product:
-			    invalid-product:
-			      create: "skip:releaseNotes"
+			rules:
+			  create:
+			    products:
+			      invalid-product:
+			        exclude: "skip:releaseNotes"
 			""";
 		var configPath = await CreateConfigDirectory(configContent);
 
@@ -150,7 +151,7 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 		result.Should().BeFalse();
 		Collector.Errors.Should().BeGreaterThan(0);
 		Collector.Diagnostics.Should().Contain(d =>
-			d.Message.Contains("Product 'invalid-product' in block.product") && d.Message.Contains("is not in the list of available products"));
+			d.Message.Contains("invalid-product") && d.Message.Contains("not in available products"));
 	}
 
 	[Fact]
@@ -169,12 +170,13 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 			  - preview
 			  - beta
 			  - ga
-			block:
-			  product:
-			    elasticsearch:
-			      create: "skip:releaseNotes"
-			    cloud-hosted:
-			      create: "ILM"
+			rules:
+			  create:
+			    products:
+			      elasticsearch:
+			        exclude: "skip:releaseNotes"
+			      cloud-hosted:
+			        exclude: "ILM"
 			""";
 		var configPath = await CreateConfigDirectory(configContent);
 

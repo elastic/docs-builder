@@ -31,7 +31,8 @@ public static class ProcessorDiagnosticExtensions
 		var d = new Diagnostic
 		{
 			Severity = severity,
-			File = processor.GetContext().MarkdownSourcePath.FullName,
+			File = context.MarkdownSourcePath.FullName,
+			OriginalSourceFile = context.OriginalSourcePath?.FullName,
 			Column = column ?? 1,
 			Line = line ?? (processor.LineIndex + 1),
 			Message = message,
@@ -58,7 +59,8 @@ public static class ProcessorDiagnosticExtensions
 		var d = new Diagnostic
 		{
 			Severity = severity,
-			File = processor.GetContext().MarkdownSourcePath.FullName,
+			File = context.MarkdownSourcePath.FullName,
+			OriginalSourceFile = context.OriginalSourcePath?.FullName,
 			Column = column,
 			Line = line,
 			Message = message,
@@ -75,6 +77,7 @@ public static class ProcessorDiagnosticExtensions
 		{
 			Severity = Severity.Error,
 			File = context.MarkdownSourcePath.FullName,
+			OriginalSourceFile = context.OriginalSourcePath?.FullName,
 			Message = CreateExceptionMessage(message, e),
 		};
 		context.Build.Collector.Write(d);
@@ -88,6 +91,7 @@ public static class ProcessorDiagnosticExtensions
 		{
 			Severity = Severity.Warning,
 			File = context.MarkdownSourcePath.FullName,
+			OriginalSourceFile = context.OriginalSourcePath?.FullName,
 			Column = column,
 			Line = line,
 			Message = message,
@@ -131,7 +135,8 @@ public static class ProcessorDiagnosticExtensions
 		var d = new Diagnostic
 		{
 			Severity = severity,
-			File = processor.GetContext().MarkdownSourcePath.FullName,
+			File = context.MarkdownSourcePath.FullName,
+			OriginalSourceFile = context.OriginalSourcePath?.FullName,
 			Column = Math.Max(column, 1),
 			Line = line,
 			Message = CreateExceptionMessage(message, e),
@@ -148,6 +153,17 @@ public static class ProcessorDiagnosticExtensions
 
 	public static void EmitHint(this InlineProcessor processor, LinkInline inline, string message) =>
 		Emit(processor, Severity.Hint, inline, inline.Url?.Length ?? 1, message);
+
+	/// <summary>
+	/// Emits a hint with a specific HintType that can be suppressed via docset.yml configuration.
+	/// </summary>
+	public static void EmitHint(this InlineProcessor processor, LinkInline inline, HintType hintType, string message)
+	{
+		var context = processor.GetContext();
+		if (context.Build.Configuration.SuppressDiagnostics.ShouldSuppress(hintType))
+			return;
+		Emit(processor, Severity.Hint, inline, inline.Url?.Length ?? 1, message);
+	}
 
 	public static void EmitError(this InlineProcessor processor, Inline inline, int length, string message, Exception? e = null) =>
 		Emit(processor, Severity.Error, inline, length, message, e);

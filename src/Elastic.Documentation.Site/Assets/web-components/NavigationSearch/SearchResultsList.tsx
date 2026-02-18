@@ -150,7 +150,7 @@ const SearchResultRow = ({
 }: SearchResultRowProps) => {
     const { euiTheme } = useEuiTheme()
     const isMobile = useIsWithinMaxBreakpoint('s')
-    const anchorRef = useHtmxLink(result.url)
+    const { ref, href } = useHtmxLink(result.url)
 
     const breadcrumbItems = useMemo(() => {
         const typePrefix = result.type === 'api' ? 'API' : 'Docs'
@@ -159,8 +159,8 @@ const SearchResultRow = ({
 
     return (
         <a
-            ref={anchorRef}
-            href={result.url}
+            ref={ref}
+            href={href}
             data-search-result-index={index}
             onClick={onClick}
             onMouseEnter={onMouseEnter}

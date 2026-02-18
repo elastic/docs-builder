@@ -8,6 +8,7 @@ using DotNet.Globbing;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Links;
 
@@ -46,6 +47,11 @@ public record ConfigurationFile
 	public IDirectoryInfo ScopeDirectory { get; }
 
 	public IReadOnlyDictionary<string, IFileInfo>? OpenApiSpecifications { get; }
+
+	/// <summary>
+	/// Set of diagnostic hint types to suppress for this documentation set.
+	/// </summary>
+	public HashSet<HintType> SuppressDiagnostics { get; } = [];
 
 	/// This is a documentation set not linked to by assembler.
 	/// Setting this to true relaxes a few restrictions such as mixing toc references with file and folder reference
@@ -90,6 +96,9 @@ public record ConfigurationFile
 			// Extensions - assuming they're not in DocumentationSetFile yet
 			Extensions = new EnabledExtensions(docSetFile.Extensions);
 
+			// Copy suppression settings
+			SuppressDiagnostics = docSetFile.SuppressDiagnostics;
+
 			// Read substitutions
 			_substitutions = new(docSetFile.Subs, StringComparer.OrdinalIgnoreCase);
 
@@ -119,6 +128,8 @@ public record ConfigurationFile
 			_features = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
 			if (docSetFile.Features.PrimaryNav.HasValue)
 				_features["primary-nav"] = docSetFile.Features.PrimaryNav.Value;
+			if (docSetFile.Features.DisableGithubEditLink.HasValue)
+				_features["disable-github-edit-link"] = docSetFile.Features.DisableGithubEditLink.Value;
 
 			// Add version substitutions
 			foreach (var (id, system) in versionsConfig.VersioningSystems)
