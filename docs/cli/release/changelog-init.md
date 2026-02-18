@@ -5,12 +5,12 @@ navigation_title: "changelog init"
 # changelog init
 
 Initialize changelog configuration and folder structure for a repository.
-Discovers the `docs` folder by locating `docset.yml` using the same heuristics as other `docs-builder` commands (checks root and `docs/` first, then searches recursively).
-Fails with an error if no `docs` folder is found. 
-Creates a `changelog.yml` configuration file (from the built-in template) in the same directory as `docset.yml` if it does not exist, and creates the `changelog` and `releases` subdirectories there. 
-When non-default paths are specified with `--changelog-dir` or `--bundles-dir`, the corresponding `bundle.directory` and `bundle.output_directory` values in the created `changelog.yml` are updated accordingly.
 
-For details and examples, go to [](/contribute/changelog.md).
+If a docs folder that contains `docset.yml` exists (in the repository root or `docs/` directory), the command uses that folder.
+If a `docs` folder exists without `docset.yml`, the command uses it.
+If no docs folder exists, the command creates `{path}/docs` and places `changelog.yml` there.
+
+The command creates a `changelog.yml` configuration file (from the built-in template) and `changelog` and `releases` subdirectories in the docs folder. When non-default paths are specified with `--changelog-dir` or `--bundles-dir`, the corresponding `bundle.directory` and `bundle.output_directory` values in the created `changelog.yml` are updated accordingly.
 
 ## Usage
 
@@ -21,12 +21,12 @@ docs-builder changelog init [options...] [-h|--help]
 ## Options
 
 `--path <string?>`
-:   Optional: Root path to search for `docset.yml`.
-:   Defaults to the output of `pwd` (current directory).
+:   Optional: Repository root path.
+:   Defaults to the output of `pwd` (current directory). The docs folder is `{path}/docs`, created if it does not exist.
 
 `--changelog-dir <string?>`
 :   Optional: Path to the changelog directory.
-:   Defaults to `{docsFolder}/changelog`, where the docs folder is the directory containing `docset.yml`.
+:   Defaults to `{docsFolder}/changelog`.
 
 `--bundles-dir <string?>`
 :   Optional: Path to the bundles output directory.
@@ -34,13 +34,13 @@ docs-builder changelog init [options...] [-h|--help]
 
 ## Examples
 
-Initialize changelog (creates `changelog.yml` next to `docset.yml`, plus `changelog` and `releases` subdirectories):
+Initialize changelog (creates or uses docs folder, places `changelog.yml` there, plus `changelog` and `releases` subdirectories):
 
 ```sh
 docs-builder changelog init
 ```
 
-Initialize when run from a subdirectory, specifying the root path to search:
+Initialize when run from a subdirectory, specifying the root path:
 
 ```sh
 docs-builder changelog init --path /path/to/my-repo

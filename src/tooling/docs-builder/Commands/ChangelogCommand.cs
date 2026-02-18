@@ -57,9 +57,9 @@ internal sealed class ChangelogCommand(
 	}
 
 	/// <summary>
-	/// Initialize changelog configuration and folder structure. Creates changelog.yml from the example template in the same directory as docset.yml, and creates changelog and releases subdirectories if they do not exist. Fails if docset.yml cannot be found.
+	/// Initialize changelog configuration and folder structure. Creates changelog.yml from the example template in the docs folder (discovered via docset.yml when present, or at {path}/docs which is created if needed), and creates changelog and releases subdirectories if they do not exist.
 	/// </summary>
-	/// <param name="path">Optional: Repository root path to search for docset.yml. Defaults to the output of pwd (current directory).</param>
+	/// <param name="path">Optional: Repository root path. Defaults to the output of pwd (current directory). Docs folder is {path}/docs, created if it does not exist.</param>
 	/// <param name="changelogDir">Optional: Path to changelog directory. Defaults to {docsFolder}/changelog.</param>
 	/// <param name="bundlesDir">Optional: Path to bundles output directory. Defaults to {docsFolder}/releases.</param>
 	[Command("init")]
@@ -69,17 +69,24 @@ internal sealed class ChangelogCommand(
 		string? bundlesDir = null
 	)
 	{
-		var rootDir = _fileSystem.DirectoryInfo.New(NormalizePath(path ?? "."));
+		var rootPath = NormalizePath(path ?? ".");
+		var rootDir = _fileSystem.DirectoryInfo.New(rootPath);
 
 		IDirectoryInfo docsFolder;
-		try
+		if (Paths.TryFindDocsFolderFromKnownLocationsOnly(_fileSystem, rootDir, out var foundDocsFolder, out _))
 		{
-			(docsFolder, _) = Paths.FindDocsFolderFromRoot(_fileSystem, rootDir);
+			docsFolder = foundDocsFolder!;
 		}
-		catch (DocsFolderNotFoundException ex)
+		else
 		{
-			collector.EmitError(string.Empty, ex.Message, ex);
-			return Task.FromResult(1);
+			var docsFolderPath = Path.Combine(rootPath, "docs");
+			if (!_fileSystem.Directory.Exists(docsFolderPath))
+			{
+				_logger.LogInformation("Creating docs folder at {DocsFolderPath}", docsFolderPath);
+				_ = _fileSystem.Directory.CreateDirectory(docsFolderPath);
+			}
+
+			docsFolder = _fileSystem.DirectoryInfo.New(docsFolderPath);
 		}
 
 		var configPath = Path.Combine(docsFolder.FullName, "changelog.yml");
