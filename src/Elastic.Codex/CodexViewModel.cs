@@ -46,7 +46,7 @@ public abstract class CodexViewModel(CodexRenderContext context)
 	/// <summary>
 	/// Creates the global layout model for the page.
 	/// </summary>
-	public GlobalLayoutViewModel CreateGlobalLayoutModel()
+	public GlobalLayoutViewModel CreateGlobalLayoutModel(IReadOnlyList<CodexBreadcrumb>? codexBreadcrumbs = null)
 	{
 		var rootPath = BuildContext.SiteRootPath ?? GetDefaultRootPath(BuildContext.UrlPathPrefix);
 		return new()
@@ -66,7 +66,8 @@ public abstract class CodexViewModel(CodexRenderContext context)
 			Optimizely = new OptimizelyConfiguration(),
 			Features = new FeatureFlags([]),
 			StaticFileContentHashProvider = StaticFileContentHashProvider,
-			BuildType = BuildContext.BuildType
+			BuildType = BuildContext.BuildType,
+			CodexBreadcrumbs = codexBreadcrumbs
 		};
 	}
 
