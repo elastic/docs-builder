@@ -1,3 +1,4 @@
+import { config } from '../../../config'
 import { urlStrategy } from './urlStrategy'
 import { useEffect, useState } from 'react'
 
@@ -10,13 +11,16 @@ export const getPathFromUrl = (url: string): string | null =>
 /**
  * Returns the appropriate hx-select-oob value based on whether
  * the target URL is in the same top-level group as the current URL.
+ * Includes #codex-breadcrumbs for codex builds so the sub-header updates on navigation.
  */
 const getHxSelectOob = (targetUrl: string, currentPathname: string): string => {
     const currentSegment = urlStrategy.getFirstSegment(currentPathname)
     const targetSegment = urlStrategy.getFirstSegment(targetUrl)
-    return currentSegment === targetSegment
-        ? '#content-container,#toc-nav'
-        : '#content-container,#toc-nav,#nav-tree,#nav-dropdown'
+    const base =
+        currentSegment === targetSegment
+            ? '#content-container,#toc-nav'
+            : '#content-container,#toc-nav,#nav-tree,#nav-dropdown'
+    return config.buildType === 'codex' ? `${base},#codex-breadcrumbs` : base
 }
 
 /**

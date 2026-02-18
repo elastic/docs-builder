@@ -16,10 +16,12 @@ namespace Elastic.Codex.Navigation;
 [DebuggerDisplay("{Url}")]
 public class GroupNavigation : IRootNavigationItem<IDocumentationFile, INavigationItem>
 {
-	public GroupNavigation(string groupSlug, string displayTitle, string url)
+	public GroupNavigation(string groupSlug, string displayTitle, string url, string? description = null, string? icon = null)
 	{
 		GroupSlug = groupSlug;
 		DisplayTitle = displayTitle;
+		Description = description;
+		Icon = icon;
 		Url = url.TrimEnd('/');
 		Id = ShortId.Create($"group-{groupSlug}");
 		Identifier = new Uri($"codex://group/{groupSlug}");
@@ -37,6 +39,16 @@ public class GroupNavigation : IRootNavigationItem<IDocumentationFile, INavigati
 	/// Gets the display title for the group.
 	/// </summary>
 	public string DisplayTitle { get; }
+
+	/// <summary>
+	/// Gets the optional description for the group landing page card.
+	/// </summary>
+	public string? Description { get; }
+
+	/// <summary>
+	/// Gets the optional icon identifier for the group landing page card.
+	/// </summary>
+	public string? Icon { get; }
 
 	/// <summary>
 	/// Gets information about documentation sets in this group for the group landing page.

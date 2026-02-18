@@ -32,14 +32,19 @@ public record CodexDocumentationSetInfo
 	public required string Url { get; init; }
 
 	/// <summary>
-	/// The category this documentation set belongs to, if any.
+	/// The group id this documentation set belongs to, if any.
 	/// </summary>
-	public string? Category { get; init; }
+	public string? Group { get; init; }
 
 	/// <summary>
 	/// The total number of pages in the documentation set.
 	/// </summary>
 	public int PageCount { get; init; }
+
+	/// <summary>
+	/// Optional short description for display on the codex card.
+	/// </summary>
+	public string? Description { get; init; }
 
 	/// <summary>
 	/// Optional icon identifier for display on the codex card.

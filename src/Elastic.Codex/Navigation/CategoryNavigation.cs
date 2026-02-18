@@ -10,7 +10,7 @@ namespace Elastic.Codex.Navigation;
 
 /// <summary>
 /// Represents a category navigation node that groups documentation sets.
-/// Categories provide one level of hierarchy under the codex root.
+/// Groups provide one level of hierarchy under the codex root.
 /// </summary>
 [DebuggerDisplay("{Url}")]
 public class CategoryNavigation(

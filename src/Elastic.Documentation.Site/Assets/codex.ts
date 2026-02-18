@@ -5,4 +5,4 @@
  * Codex builds via _Head.cshtml. Registers the <elastic-docs-header>
  * web component without bloating main.js with React / EUI dependencies.
  */
-import './web-components/Header/Header'
+import './web-components/CodexHeader/Header'

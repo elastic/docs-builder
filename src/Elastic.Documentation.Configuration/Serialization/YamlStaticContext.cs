@@ -17,6 +17,7 @@ namespace Elastic.Documentation.Configuration.Serialization;
 [YamlStaticContext]
 // Codex configuration
 [YamlSerializable(typeof(CodexConfiguration))]
+[YamlSerializable(typeof(CodexGroupDefinition))]
 [YamlSerializable(typeof(CodexDocumentationSetReference))]
 // Assembly configuration
 [YamlSerializable(typeof(AssemblyConfiguration))]

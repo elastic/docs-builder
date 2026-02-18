@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Concurrent;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
@@ -58,6 +59,9 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNaviga
 	private NavigationViewModel CreateNavigationModel(IRootNavigationItem<INavigationModel, INavigationItem> navigation)
 	{
 		var rootPath = context.SiteRootPath ?? GetDefaultRootPath(context.UrlPathPrefix);
+		var htmx = context.BuildType == BuildType.Codex
+			? new CodexHtmxAttributeProvider(rootPath)
+			: new DefaultHtmxAttributeProvider(rootPath);
 		return new()
 		{
 			Title = navigation.NavigationTitle,
@@ -67,7 +71,8 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNaviga
 			IsUsingNavigationDropdown = context.Configuration.Features.PrimaryNavEnabled || navigation.IsUsingNavigationDropdown,
 			IsGlobalAssemblyBuild = false,
 			TopLevelItems = navigation.NavigationItems.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>().ToList(),
-			Htmx = new DefaultHtmxAttributeProvider(rootPath)
+			Htmx = htmx,
+			BuildType = context.BuildType
 		};
 	}
 

@@ -18,6 +18,20 @@
 		return string.IsNullOrEmpty(prefix) ? "/" : $"/{prefix}/";
 	}
 
+	static bool IsDocsetRootUrl(string? navUrl, string? docsetUrl, string? urlPathPrefix)
+	{
+		if (string.IsNullOrEmpty(docsetUrl))
+			return false;
+		var docsetNorm = docsetUrl.TrimEnd('/');
+		var navNorm = navUrl?.TrimEnd('/') ?? "";
+		if (string.IsNullOrEmpty(navNorm) || navNorm == "/")
+			return string.Equals((urlPathPrefix ?? "").TrimEnd('/'), docsetNorm, StringComparison.OrdinalIgnoreCase);
+		if (navNorm.StartsWith("/"))
+			return string.Equals(navNorm, docsetNorm, StringComparison.OrdinalIgnoreCase);
+		var navFull = $"{urlPathPrefix?.TrimEnd('/')}/{navNorm.TrimStart('/')}".TrimEnd('/');
+		return string.Equals(navFull, docsetNorm, StringComparison.OrdinalIgnoreCase);
+	}
+
 	public MarkdownLayoutViewModel LayoutModel => new()
 	{
 		DocsBuilderVersion = ShortId.Create(BuildContext.Version),
@@ -54,6 +68,9 @@
 		VersioningSystem = Model.VersioningSystem,
 		VersionDropdownSerializedModel = JsonSerializer.Serialize(Model.VersionDropdownItems,
 			ViewModelSerializerContext.Default.VersionDropDownItemViewModelArray),
+		CodexBreadcrumbs = Model.CodexBreadcrumbs is { } cb
+			? [.. cb, .. Model.Breadcrumbs.Skip(1).Where(b => !IsDocsetRootUrl(b.Url, cb[^1].Url, Model.UrlPathPrefix)).Select(b => new CodexBreadcrumb(b.NavigationTitle ?? "", b.Url)), .. (Model.Breadcrumbs.Length > 1 && !IsDocsetRootUrl(Model.CurrentNavigationItem.Url, cb[^1].Url, Model.UrlPathPrefix) ? new[] { new CodexBreadcrumb(Model.CurrentNavigationItem.NavigationTitle ?? "", Model.CurrentNavigationItem.Url) } : Array.Empty<CodexBreadcrumb>())]
+			: null,
 		// Header properties for isolated mode
 		HeaderTitle = Model.SiteHeaderTitle ?? Model.DocSetName,
 		HeaderVersion = null,
