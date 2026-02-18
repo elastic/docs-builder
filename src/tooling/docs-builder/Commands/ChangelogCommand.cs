@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using ConsoleAppFramework;
 using Documentation.Builder.Arguments;
 using Elastic.Changelog;
@@ -20,30 +21,18 @@ using Microsoft.Extensions.Logging;
 
 namespace Documentation.Builder.Commands;
 
-[Serializable]
-internal sealed class DocsFolderNotFoundException : Exception
-{
-	public DocsFolderNotFoundException()
-	{
-	}
-
-	public DocsFolderNotFoundException(string message)
-		: base(message)
-	{
-	}
-
-	public DocsFolderNotFoundException(string message, Exception innerException)
-		: base(message, innerException)
-	{
-	}
-}
-
-internal sealed class ChangelogCommand(
+internal sealed partial class ChangelogCommand(
 	ILoggerFactory logFactory,
 	IDiagnosticsCollector collector,
 	IConfigurationContext configurationContext
 )
 {
+	[GeneratedRegex(@"^( *directory:\s*).+$", RegexOptions.Multiline)]
+	private static partial Regex BundleDirectoryRegex();
+
+	[GeneratedRegex(@"^( *output_directory:\s*).+$", RegexOptions.Multiline)]
+	private static partial Regex BundleOutputDirectoryRegex();
+
 	private readonly IFileSystem _fileSystem = new FileSystem();
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogCommand>();
 	/// <summary>
@@ -58,6 +47,7 @@ internal sealed class ChangelogCommand(
 
 	/// <summary>
 	/// Initialize changelog configuration and folder structure. Creates changelog.yml from the example template in the docs folder (discovered via docset.yml when present, or at {path}/docs which is created if needed), and creates changelog and releases subdirectories if they do not exist.
+	/// When changelog.yml already exists and --changelog-dir or --bundles-dir is specified, updates the bundle.directory and/or bundle.output_directory fields accordingly.
 	/// </summary>
 	/// <param name="path">Optional: Repository root path. Defaults to the output of pwd (current directory). Docs folder is {path}/docs, created if it does not exist.</param>
 	/// <param name="changelogDir">Optional: Path to changelog directory. Defaults to {docsFolder}/changelog.</param>
@@ -149,6 +139,33 @@ internal sealed class ChangelogCommand(
 			catch (IOException ex)
 			{
 				collector.EmitError(string.Empty, $"Failed to write changelog configuration to '{configPath}': {ex.Message}", ex);
+				return Task.FromResult(1);
+			}
+		}
+		else if (useNonDefaultChangelogDir || useNonDefaultBundlesDir)
+		{
+			try
+			{
+				var content = _fileSystem.File.ReadAllText(configPath);
+
+				if (useNonDefaultChangelogDir)
+				{
+					var directoryValue = GetPathForConfig(repoRoot, changelogPath);
+					content = BundleDirectoryRegex().Replace(content, "$1" + directoryValue);
+				}
+
+				if (useNonDefaultBundlesDir)
+				{
+					var outputValue = GetPathForConfig(repoRoot, bundlesPath);
+					content = BundleOutputDirectoryRegex().Replace(content, "$1" + outputValue);
+				}
+
+				_fileSystem.File.WriteAllText(configPath, content);
+				_logger.LogInformation("Updated bundle paths in changelog configuration: {ConfigPath}", configPath);
+			}
+			catch (IOException ex)
+			{
+				collector.EmitError(string.Empty, $"Failed to update changelog configuration at '{configPath}': {ex.Message}", ex);
 				return Task.FromResult(1);
 			}
 		}
@@ -800,5 +817,8 @@ internal sealed class ChangelogCommand(
 		// Convert to absolute path (handles relative paths like ./file or ../file)
 		return Path.GetFullPath(trimmedPath);
 	}
+
+	[GeneratedRegex(@"^( *directory:\s*).+$", RegexOptions.Multiline)]
+	private static partial Regex MyRegex();
 }
 

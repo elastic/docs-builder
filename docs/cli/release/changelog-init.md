@@ -10,7 +10,8 @@ If a docs folder that contains `docset.yml` exists (in the repository root or `d
 If a `docs` folder exists without `docset.yml`, the command uses it.
 If no docs folder exists, the command creates `{path}/docs` and places `changelog.yml` there.
 
-The command creates a `changelog.yml` configuration file (from the built-in template) and `changelog` and `releases` subdirectories in the docs folder. When non-default paths are specified with `--changelog-dir` or `--bundles-dir`, the corresponding `bundle.directory` and `bundle.output_directory` values in the created `changelog.yml` are updated accordingly.
+The command creates a `changelog.yml` configuration file (from the built-in template) and `changelog` and `releases` subdirectories in the `docs` folder.
+When `--changelog-dir` or `--bundles-dir` is specified, the corresponding `bundle.directory` and `bundle.output_directory` values in `changelog.yml` are set or updated (whether creating a new file or the file already exists).
 
 ## Usage
 
@@ -46,7 +47,8 @@ Initialize when run from a subdirectory, specifying the root path:
 docs-builder changelog init --path /path/to/my-repo
 ```
 
-Use custom changelog and bundles directories. The `bundle.directory` and `bundle.output_directory` in the created `changelog.yml` are set to the specified values:
+Use custom changelog and bundles directories.
+Sets or updates `bundle.directory` and `bundle.output_directory` in `changelog.yml` (creating the file if it does not exist):
 
 ```sh
 docs-builder changelog init \
