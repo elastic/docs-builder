@@ -20,6 +20,24 @@ using Microsoft.Extensions.Logging;
 
 namespace Documentation.Builder.Commands;
 
+[Serializable]
+internal sealed class DocsFolderNotFoundException : Exception
+{
+	public DocsFolderNotFoundException()
+	{
+	}
+
+	public DocsFolderNotFoundException(string message)
+		: base(message)
+	{
+	}
+
+	public DocsFolderNotFoundException(string message, Exception innerException)
+		: base(message, innerException)
+	{
+	}
+}
+
 internal sealed class ChangelogCommand(
 	ILoggerFactory logFactory,
 	IDiagnosticsCollector collector,
@@ -58,7 +76,7 @@ internal sealed class ChangelogCommand(
 		{
 			(docsFolder, _) = Paths.FindDocsFolderFromRoot(_fileSystem, rootDir);
 		}
-		catch (Exception ex)
+		catch (DocsFolderNotFoundException ex)
 		{
 			collector.EmitError(string.Empty, ex.Message, ex);
 			return Task.FromResult(1);
