@@ -17,7 +17,9 @@ public static class CrossLinkValidator
 	/// </summary>
 	private static readonly ImmutableHashSet<string> ExcludedSchemes =
 		ImmutableHashSet.Create(StringComparer.OrdinalIgnoreCase,
-			"http", "https", "ftp", "file", "tel", "jdbc", "mailto");
+			"http", "https", "ftp", "file", "tel", "jdbc", "mailto",
+			// IDE deep-link schemes used for one-click MCP server installation
+			"cursor", "vscode", "vscode-insiders");
 
 	/// <summary>
 	/// Validates that a URI string is a valid cross-repository link.
