@@ -12,7 +12,13 @@ Add the {{dbuild}} MCP server to your editor or AI assistant using one of the op
 
 ::::{tab-item} Cursor
 
-Create or edit `.cursor/mcp.json` in your workspace:
+One-click installation:
+
+:::{button}
+[Install in Cursor](https://ela.st/elastic-mcp-cursor)
+:::
+
+Or configure manually. Create or edit `.cursor/mcp.json` in your workspace:
 
 ```json
 {
@@ -57,7 +63,13 @@ Or add it manually to your project's `.mcp.json` file:
 
 ::::{tab-item} Visual Studio Code
 
-Create or edit `.vscode/mcp.json` in your workspace:
+One-click installation (requires VS Code 1.99+):
+
+:::{button}
+[Install in VS Code](https://ela.st/elastic-mcp-vscode)
+:::
+
+Or configure manually. Create or edit `.vscode/mcp.json` in your workspace:
 
 ```json
 {
