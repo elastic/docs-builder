@@ -85,7 +85,7 @@ This skill provides access to Elastic documentation through a remote MCP server.
 **Trigger words:** get document, fetch, URL, specific page, retrieve, show page
 
 **Parameters:**
-- `url` (required): The document URL (e.g., '/docs/elasticsearch/reference/index')
+- `url` (required): The document URL. Accepts a full URL (e.g., `https://www.elastic.co/docs/deploy-manage/api-keys`) or a path (e.g., `/docs/deploy-manage/api-keys`). Query strings, fragments, and trailing slashes are ignored.
 - `includeBody` (optional, default: false): Include full body content (set true for detailed analysis)
 
 **Returns:** Full document content including:
@@ -106,7 +106,7 @@ This skill provides access to Elastic documentation through a remote MCP server.
 **Trigger words:** structure, hierarchy, organization, headings, parents, layout, analyze
 
 **Parameters:**
-- `url` (required): Document URL to analyze
+- `url` (required): The document URL to analyze. Accepts a full URL (e.g., `https://www.elastic.co/docs/deploy-manage/api-keys`) or a path (e.g., `/docs/deploy-manage/api-keys`). Query strings, fragments, and trailing slashes are ignored.
 
 **Returns:** Structure analysis including:
 - Heading count and list of headings
