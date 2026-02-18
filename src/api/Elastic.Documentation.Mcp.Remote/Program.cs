@@ -97,7 +97,6 @@ try
 	_ = mcp.MapHealthChecks("/health");
 	_ = mcp.MapHealthChecks("/alive", new HealthCheckOptions { Predicate = r => r.Tags.Contains("live") });
 	_ = mcp.MapMcp("");
-	_ = mcp.MapGet("/", () => Results.Redirect(mcpPrefix, permanent: true));
 
 	Console.WriteLine("MCP server startup completed successfully");
 	app.Run();
