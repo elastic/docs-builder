@@ -54,9 +54,9 @@ public class ChangelogConfigLoadAutoDiscoverTests : DirectiveTest<ChangelogBlock
 		FileSystem.AddFile("docs/changelog.yml", new MockFileData(
 			// language=yaml
 			"""
-			block:
+			rules:
 			  publish:
-			    types:
+			    exclude_types:
 			      - deprecation
 			      - known-issue
 			"""));
@@ -129,9 +129,9 @@ public class ChangelogConfigLoadExplicitPathTests : DirectiveTest<ChangelogBlock
 		FileSystem.AddFile("docs/custom/path/my-changelog.yml", new MockFileData(
 			// language=yaml
 			"""
-			block:
+			rules:
 			  publish:
-			    areas:
+			    exclude_areas:
 			      - Internal
 			"""));
 	}
@@ -191,9 +191,9 @@ public class ChangelogConfigLoadFromDocsSubfolderTests : DirectiveTest<Changelog
 		FileSystem.AddFile("docs/docs/changelog.yml", new MockFileData(
 			// language=yaml
 			"""
-			block:
+			rules:
 			  publish:
-			    types:
+			    exclude_types:
 			      - other
 			"""));
 	}
@@ -319,18 +319,18 @@ public class ChangelogConfigPriorityTests : DirectiveTest<ChangelogBlock>
 		FileSystem.AddFile("docs/changelog.yml", new MockFileData(
 			// language=yaml
 			"""
-			block:
+			rules:
 			  publish:
-			    types:
+			    exclude_types:
 			      - deprecation
 			"""));
 
 		FileSystem.AddFile("docs/docs/changelog.yml", new MockFileData(
 			// language=yaml
 			"""
-			block:
+			rules:
 			  publish:
-			    types:
+			    exclude_types:
 			      - other
 			"""));
 	}
@@ -442,11 +442,11 @@ public class ChangelogConfigMixedBlockersTests : DirectiveTest<ChangelogBlock>
 		FileSystem.AddFile("docs/changelog.yml", new MockFileData(
 			// language=yaml
 			"""
-			block:
+			rules:
 			  publish:
-			    types:
+			    exclude_types:
 			      - deprecation
-			    areas:
+			    exclude_areas:
 			      - Internal
 			"""));
 	}
@@ -517,14 +517,13 @@ public class ChangelogProductFallbackSingleProductTests(ITestOutputHelper output
 		fileSystem.AddFile("docs/changelog.yml", new MockFileData(
 			// language=yaml
 			"""
-			block:
+			rules:
 			  publish:
-			    areas:
+			    exclude_areas:
 			      - Global Area
-			  product:
-			    kibana:
-			      publish:
-			        areas:
+			    products:
+			      kibana:
+			        exclude_areas:
 			          - Internal
 			          - Elastic Observability
 			"""));
@@ -591,14 +590,13 @@ public class ChangelogProductFallbackMultipleProductsTests(ITestOutputHelper out
 		fileSystem.AddFile("docs/changelog.yml", new MockFileData(
 			// language=yaml
 			"""
-			block:
+			rules:
 			  publish:
-			    areas:
+			    exclude_areas:
 			      - Global Area
-			  product:
-			    elasticsearch:
-			      publish:
-			        areas:
+			    products:
+			      elasticsearch:
+			        exclude_areas:
 			          - Internal
 			"""));
 	}
@@ -673,15 +671,14 @@ public class ChangelogProductExplicitOptionOverridesDocsetTests(ITestOutputHelpe
 		fileSystem.AddFile("docs/changelog.yml", new MockFileData(
 			// language=yaml
 			"""
-			block:
-			  product:
-			    elasticsearch:
-			      publish:
-			        areas:
+			rules:
+			  publish:
+			    products:
+			      elasticsearch:
+			        exclude_areas:
 			          - ES Internal
-			    kibana:
-			      publish:
-			        areas:
+			      kibana:
+			        exclude_areas:
 			          - Kibana Internal
 			"""));
 	}

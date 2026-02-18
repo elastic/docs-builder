@@ -122,9 +122,9 @@ public class ChangelogConfigRelativePathTests : DirectiveTest<ChangelogBlock>
 		FileSystem.AddFile("docs/config/my-changelog.yml", new MockFileData(
 			// language=yaml
 			"""
-			block:
+			rules:
 			  publish:
-			    types:
+			    exclude_types:
 			      - deprecation
 			"""));
 	}
@@ -179,9 +179,9 @@ public class ChangelogConfigDocsetRootRelativePathTests : DirectiveTest<Changelo
 		FileSystem.AddFile("docs/settings/changelog-config.yml", new MockFileData(
 			// language=yaml
 			"""
-			block:
+			rules:
 			  publish:
-			    areas:
+			    exclude_areas:
 			      - Internal
 			"""));
 	}
@@ -305,9 +305,9 @@ public class ChangelogConfigAndBundlesRelativePathsTests : DirectiveTest<Changel
 		FileSystem.AddFile("docs/config/changelog.yml", new MockFileData(
 			// language=yaml
 			"""
-			block:
+			rules:
 			  publish:
-			    types:
+			    exclude_types:
 			      - other
 			"""));
 	}

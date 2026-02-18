@@ -12,7 +12,7 @@
 	class="group/body text-ink has-[#primary-nav-hamburger:checked]:overflow-hidden min-h-screen build-type-@(Model.BuildType.ToString().ToLowerInvariant())"
 	hx-ext="preload, head-support"
 	data-docs-builder-version="@Model.DocsBuilderVersion"
-	data-root-path="@Model.Link("/")"
+	data-root-path="@(Model.Htmx.GetRootPath())"
 	hx-boost="true" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator"
 	>
 @if (Model.GoogleTagManager.Enabled)

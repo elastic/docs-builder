@@ -8,6 +8,7 @@ using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.Comments;
 using Elastic.Markdown.Myst.Directives.AppliesTo;
+using Elastic.Markdown.Myst.Directives.Contributors;
 using Markdig.Helpers;
 using Markdig.Renderers;
 using Markdig.Renderers.Html;
@@ -122,6 +123,12 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 		if (block is AppliesToDirective appliesToDirective)
 		{
 			RenderAppliesToHtml(renderer, appliesToDirective);
+			return;
+		}
+
+		if (block is ContributorsBlock contributorsBlock)
+		{
+			RenderContributorsHtml(renderer, contributorsBlock);
 			return;
 		}
 
@@ -256,6 +263,15 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 
 		var slice = AppliesToView.Create(viewModel);
 		slice.RenderAsync(renderer.Writer).GetAwaiter().GetResult();
+	}
+
+	private static void RenderContributorsHtml(HtmlRenderer renderer, ContributorsBlock block)
+	{
+		var slice = ContributorsView.Create(new ContributorsViewModel
+		{
+			Contributors = block.Contributors
+		});
+		RenderRazorSlice(slice, renderer);
 	}
 
 	/// <summary>

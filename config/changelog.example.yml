@@ -103,46 +103,61 @@ pivot:
     #   - ":Search/Search"
     #   - ":Search/Ranking"
 
-# Block configuration - combined create and publish blockers
-# All list-like fields (create, types, areas) accept string or list form
-block:
-  # Global labels that block changelog creation for all products
-  # String form:
-  # create: ">non-issue, >test"
-  # List form:
+# Rules configuration — controls which PRs create changelogs and which entries are published.
+# All list-like fields (exclude, include, exclude_types, etc.) accept BOTH forms:
+#   - Comma-separated string: "value1, value2, value3"
+#   - YAML list: [value1, value2, value3]
+#
+# Global match default for multi-valued fields (labels, areas).
+#   any (default) = match if ANY item matches the list
+#   all           = match only if ALL items match the list
+# Inherited by create, publish, and all product overrides.
+rules:
+  # match: any
+
+  # Create — controls which PRs generate changelog entries.
+  #   exclude: block PRs with these labels (string or list)
+  #   include: only create changelogs for PRs with these labels (string or list)
+  # Cannot specify both.
+  #
   # create:
-  #   - ">non-issue"
-  #   - ">test"
+  #   exclude: ">non-issue, >test"
+  #   # Or equivalently:
+  #   # exclude:
+  #   #   - ">non-issue"
+  #   #   - ">test"
+  #   # match: any
+  #   products:
+  #     'elasticsearch, kibana':
+  #       exclude: ">test"
+  #     'cloud-serverless':
+  #       exclude: "ILM"
 
-  # Block changelog entries from publishing based on entry type or area
-  # Both types and areas accept string or list form
+  # Publish — controls which entries appear in rendered output.
+  #   exclude_types / include_types (string or list)
+  #   exclude_areas / include_areas (string or list)
+  # Cannot mix exclude_ and include_ for the same field.
+  #
+  # match_areas inherits from rules.match if not specified.
+  #
   # publish:
-  #   types: "deprecation, known-issue"
-  #   areas: "Internal"
-  # Or equivalently:
-  # publish:
-  #   types:
-  #     - deprecation
-  #     - known-issue
-  #   areas:
+  #   # match_areas: any
+  #   exclude_types: "deprecation, known-issue"
+  #   # Or equivalently:
+  #   # exclude_types:
+  #   #   - deprecation
+  #   #   - known-issue
+  #   exclude_areas:
   #     - "Internal"
-
-  # Product-specific overrides (override global blockers, don't merge)
-  # Dictionary key can be a single product ID or comma-separated product IDs
-  # The create and publish fields accept string or list form
-  product:
-    # Example: Block these labels for elasticsearch and kibana
-    # 'elasticsearch, kibana':
-    #   create: ">test"
-    #   publish:
-    #     types:
-    #       - docs
-    # Example: Block ILM label for cloud-serverless
-    # 'cloud-serverless':
-    #   create: "ILM"
-    #   publish:
-    #     areas:
-    #       - "ILM"
+  #   products:
+  #     'elasticsearch, kibana':
+  #       exclude_types:
+  #         - docs
+  #     'cloud-serverless':
+  #       # match_areas: any
+  #       include_areas:
+  #         - "Search"
+  #         - "Monitoring"
 
 # Bundle configuration (profiles and defaults)
 bundle:

@@ -17,7 +17,7 @@
 								<a
 									class="pages-dropdown_active hover:underline text-blue-elastic hover:text-blue-elastic-100"
 									href="@currentTopLevelItem.Url"
-									@Htmx.GetNavHxAttributes(true)>
+									@Model.Htmx.GetNavHxAttributes(true)>
 									@currentTopLevelItem.NavigationTitle
 								</a>
 							</div>
@@ -41,7 +41,7 @@
 									<a
 										class="block py-2 px-4 hover:underline hover:text-black hover:bg-grey-10 active:bg-blue-elastic-70 active:text-white font-semibold @(item.NavigationRoot.Id == Model.Tree.Id ? "text-blue-elastic" : "")"
 										href="@item.Url"
-										@Htmx.GetNavHxAttributes(false, "mouseover")>
+										@Model.Htmx.GetNavHxAttributes(false, "mouseover")>
 							@item.NavigationTitle
 						</a>
 					</li>
@@ -70,7 +70,8 @@
 			IsGlobalAssemblyBuild = Model.IsGlobalAssemblyBuild,
 			Level = 0,
 			SubTree = Model.Tree,
-			RootNavigationId = Model.Tree.Id
+			RootNavigationId = Model.Tree.Id,
+			Htmx = Model.Htmx
 		}))
 	</ul>
 </div>

@@ -7,6 +7,7 @@ using Elastic.Changelog.Serialization;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.ReleaseNotes;
 using FluentAssertions;
 
 namespace Elastic.Changelog.Tests.Changelogs;
@@ -471,9 +472,9 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	}
 
 	[Fact]
-	public async Task LoadChangelogConfiguration_BlockCreate_AsString_ParsesCorrectly()
+	public async Task LoadChangelogConfiguration_RulesCreateExclude_AsString_ParsesCorrectly()
 	{
-		// Arrange - block.create as comma-separated string
+		// Arrange - rules.create.exclude as comma-separated string
 		var config = await LoadConfig(
 			"""
 			pivot:
@@ -481,46 +482,24 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			    feature:
 			    bug-fix:
 			    breaking-change:
-			block:
-			  create: ">non-issue, >test, >skip"
-			""");
-
-		// Assert
-		config.Should().NotBeNull();
-		Collector.Errors.Should().Be(0);
-		config!.Block.Should().NotBeNull();
-		config.Block!.Create.Should().BeEquivalentTo([">non-issue", ">test", ">skip"]);
-	}
-
-	[Fact]
-	public async Task LoadChangelogConfiguration_BlockCreate_AsList_ParsesCorrectly()
-	{
-		// Arrange - block.create as YAML list
-		var config = await LoadConfig(
-			"""
-			pivot:
-			  types:
-			    feature:
-			    bug-fix:
-			    breaking-change:
-			block:
+			rules:
 			  create:
-			    - ">non-issue"
-			    - ">test"
-			    - ">skip"
+			    exclude: ">non-issue, >test, >skip"
 			""");
 
 		// Assert
 		config.Should().NotBeNull();
 		Collector.Errors.Should().Be(0);
-		config!.Block.Should().NotBeNull();
-		config.Block!.Create.Should().BeEquivalentTo([">non-issue", ">test", ">skip"]);
+		config!.Rules.Should().NotBeNull();
+		config.Rules!.Create.Should().NotBeNull();
+		config.Rules.Create!.Labels.Should().BeEquivalentTo([">non-issue", ">test", ">skip"]);
+		config.Rules.Create.Mode.Should().Be(FieldMode.Exclude);
 	}
 
 	[Fact]
-	public async Task LoadChangelogConfiguration_PublishBlockerTypes_AsString_ParsesCorrectly()
+	public async Task LoadChangelogConfiguration_RulesCreateExclude_AsList_ParsesCorrectly()
 	{
-		// Arrange - block.publish.types as comma-separated string
+		// Arrange - rules.create.exclude as YAML list
 		var config = await LoadConfig(
 			"""
 			pivot:
@@ -528,23 +507,27 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			    feature:
 			    bug-fix:
 			    breaking-change:
-			block:
-			  publish:
-			    types: "deprecation, known-issue"
+			rules:
+			  create:
+			    exclude:
+			      - ">non-issue"
+			      - ">test"
+			      - ">skip"
 			""");
 
 		// Assert
 		config.Should().NotBeNull();
 		Collector.Errors.Should().Be(0);
-		config!.Block.Should().NotBeNull();
-		config.Block!.Publish.Should().NotBeNull();
-		config.Block.Publish!.Types.Should().BeEquivalentTo(["deprecation", "known-issue"]);
+		config!.Rules.Should().NotBeNull();
+		config.Rules!.Create.Should().NotBeNull();
+		config.Rules.Create!.Labels.Should().BeEquivalentTo([">non-issue", ">test", ">skip"]);
+		config.Rules.Create.Mode.Should().Be(FieldMode.Exclude);
 	}
 
 	[Fact]
-	public async Task LoadChangelogConfiguration_PublishBlockerTypes_AsList_ParsesCorrectly()
+	public async Task LoadChangelogConfiguration_PublishExcludeTypes_AsString_ParsesCorrectly()
 	{
-		// Arrange - block.publish.types as YAML list
+		// Arrange - rules.publish.exclude_types as comma-separated string
 		var config = await LoadConfig(
 			"""
 			pivot:
@@ -552,9 +535,35 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			    feature:
 			    bug-fix:
 			    breaking-change:
-			block:
+			rules:
 			  publish:
-			    types:
+			    exclude_types: "deprecation, known-issue"
+			""");
+
+		// Assert
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config!.Rules.Should().NotBeNull();
+		config.Rules!.Publish.Should().NotBeNull();
+		config.Rules.Publish!.Blocker.Should().NotBeNull();
+		config.Rules.Publish.Blocker!.Types.Should().BeEquivalentTo(["deprecation", "known-issue"]);
+		config.Rules.Publish.Blocker.TypesMode.Should().Be(FieldMode.Exclude);
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_PublishExcludeTypes_AsList_ParsesCorrectly()
+	{
+		// Arrange - rules.publish.exclude_types as YAML list
+		var config = await LoadConfig(
+			"""
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change:
+			rules:
+			  publish:
+			    exclude_types:
 			      - deprecation
 			      - known-issue
 			""");
@@ -562,15 +571,17 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		// Assert
 		config.Should().NotBeNull();
 		Collector.Errors.Should().Be(0);
-		config!.Block.Should().NotBeNull();
-		config.Block!.Publish.Should().NotBeNull();
-		config.Block.Publish!.Types.Should().BeEquivalentTo(["deprecation", "known-issue"]);
+		config!.Rules.Should().NotBeNull();
+		config.Rules!.Publish.Should().NotBeNull();
+		config.Rules.Publish!.Blocker.Should().NotBeNull();
+		config.Rules.Publish.Blocker!.Types.Should().BeEquivalentTo(["deprecation", "known-issue"]);
+		config.Rules.Publish.Blocker.TypesMode.Should().Be(FieldMode.Exclude);
 	}
 
 	[Fact]
-	public async Task LoadChangelogConfiguration_PublishBlockerAreas_AsString_ParsesCorrectly()
+	public async Task LoadChangelogConfiguration_PublishExcludeAreas_AsString_ParsesCorrectly()
 	{
-		// Arrange - block.publish.areas as comma-separated string
+		// Arrange - rules.publish.exclude_areas as comma-separated string
 		var config = await LoadConfig(
 			"""
 			pivot:
@@ -578,23 +589,25 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			    feature:
 			    bug-fix:
 			    breaking-change:
-			block:
+			rules:
 			  publish:
-			    areas: "Internal, Experimental"
+			    exclude_areas: "Internal, Experimental"
 			""");
 
 		// Assert
 		config.Should().NotBeNull();
 		Collector.Errors.Should().Be(0);
-		config!.Block.Should().NotBeNull();
-		config.Block!.Publish.Should().NotBeNull();
-		config.Block.Publish!.Areas.Should().BeEquivalentTo(["Internal", "Experimental"]);
+		config!.Rules.Should().NotBeNull();
+		config.Rules!.Publish.Should().NotBeNull();
+		config.Rules.Publish!.Blocker.Should().NotBeNull();
+		config.Rules.Publish.Blocker!.Areas.Should().BeEquivalentTo(["Internal", "Experimental"]);
+		config.Rules.Publish.Blocker.AreasMode.Should().Be(FieldMode.Exclude);
 	}
 
 	[Fact]
-	public async Task LoadChangelogConfiguration_PublishBlockerAreas_AsList_ParsesCorrectly()
+	public async Task LoadChangelogConfiguration_PublishExcludeAreas_AsList_ParsesCorrectly()
 	{
-		// Arrange - block.publish.areas as YAML list
+		// Arrange - rules.publish.exclude_areas as YAML list
 		var config = await LoadConfig(
 			"""
 			pivot:
@@ -602,9 +615,9 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			    feature:
 			    bug-fix:
 			    breaking-change:
-			block:
+			rules:
 			  publish:
-			    areas:
+			    exclude_areas:
 			      - Internal
 			      - Experimental
 			""");
@@ -612,9 +625,11 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		// Assert
 		config.Should().NotBeNull();
 		Collector.Errors.Should().Be(0);
-		config!.Block.Should().NotBeNull();
-		config.Block!.Publish.Should().NotBeNull();
-		config.Block.Publish!.Areas.Should().BeEquivalentTo(["Internal", "Experimental"]);
+		config!.Rules.Should().NotBeNull();
+		config.Rules!.Publish.Should().NotBeNull();
+		config.Rules.Publish!.Blocker.Should().NotBeNull();
+		config.Rules.Publish.Blocker!.Areas.Should().BeEquivalentTo(["Internal", "Experimental"]);
+		config.Rules.Publish.Blocker.AreasMode.Should().Be(FieldMode.Exclude);
 	}
 
 	[Fact]
@@ -763,9 +778,9 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	}
 
 	[Fact]
-	public async Task LoadChangelogConfiguration_ProductBlockCreate_AsList_ParsesCorrectly()
+	public async Task LoadChangelogConfiguration_ProductCreateExclude_AsList_ParsesCorrectly()
 	{
-		// Arrange - product-specific block.product.*.create as YAML list
+		// Arrange - product-specific rules.create.products.*.exclude as YAML list
 		var config = await LoadConfig(
 			"""
 			pivot:
@@ -773,21 +788,24 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			    feature:
 			    bug-fix:
 			    breaking-change:
-			block:
-			  product:
-			    elasticsearch:
-			      create:
-			        - ">test"
-			        - ">skip"
+			rules:
+			  create:
+			    products:
+			      elasticsearch:
+			        exclude:
+			          - ">test"
+			          - ">skip"
 			""");
 
 		// Assert
 		config.Should().NotBeNull();
 		Collector.Errors.Should().Be(0);
-		config!.Block.Should().NotBeNull();
-		config.Block!.ByProduct.Should().NotBeNull();
-		config.Block.ByProduct.Should().ContainKey("elasticsearch");
-		config.Block.ByProduct!["elasticsearch"].Create.Should().BeEquivalentTo([">test", ">skip"]);
+		config!.Rules.Should().NotBeNull();
+		config.Rules!.Create.Should().NotBeNull();
+		config.Rules.Create!.ByProduct.Should().NotBeNull();
+		config.Rules.Create.ByProduct.Should().ContainKey("elasticsearch");
+		config.Rules.Create.ByProduct!["elasticsearch"].Labels.Should().BeEquivalentTo([">test", ">skip"]);
+		config.Rules.Create.ByProduct["elasticsearch"].Mode.Should().Be(FieldMode.Exclude);
 	}
 
 	[Fact]
@@ -815,11 +833,12 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			      - ":Security/Auth"
 			  highlight:
 			    - ">highlight"
-			block:
-			  create: ">non-issue, >test"
+			rules:
+			  create:
+			    exclude: ">non-issue, >test"
 			  publish:
-			    types: "deprecation, known-issue"
-			    areas:
+			    exclude_types: "deprecation, known-issue"
+			    exclude_areas:
 			      - Internal
 			""");
 
@@ -827,14 +846,17 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		config.Should().NotBeNull();
 		Collector.Errors.Should().Be(0);
 
-		// block.create as string
-		config!.Block.Should().NotBeNull();
-		config.Block!.Create.Should().BeEquivalentTo([">non-issue", ">test"]);
+		// rules.create.exclude as string
+		config!.Rules.Should().NotBeNull();
+		config.Rules!.Create.Should().NotBeNull();
+		config.Rules.Create!.Labels.Should().BeEquivalentTo([">non-issue", ">test"]);
+		config.Rules.Create.Mode.Should().Be(FieldMode.Exclude);
 
-		// publish.types as string, publish.areas as list
-		config.Block.Publish.Should().NotBeNull();
-		config.Block.Publish!.Types.Should().BeEquivalentTo(["deprecation", "known-issue"]);
-		config.Block.Publish.Areas.Should().BeEquivalentTo(["Internal"]);
+		// publish.exclude_types as string, publish.exclude_areas as list
+		config.Rules.Publish.Should().NotBeNull();
+		config.Rules.Publish!.Blocker.Should().NotBeNull();
+		config.Rules.Publish.Blocker!.Types.Should().BeEquivalentTo(["deprecation", "known-issue"]);
+		config.Rules.Publish.Blocker.Areas.Should().BeEquivalentTo(["Internal"]);
 
 		// highlight as list
 		config.HighlightLabels.Should().BeEquivalentTo([">highlight"]);

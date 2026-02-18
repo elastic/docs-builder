@@ -29,6 +29,12 @@ public sealed record FindCrossLinksResponse(int Count, List<CrossLinkInfo> Links
 public sealed record BrokenLinkInfo(string FromRepository, string Link, List<string> Errors);
 public sealed record ValidateCrossLinksResponse(string Repository, int ValidLinks, int BrokenLinks, List<BrokenLinkInfo> Broken);
 
+// Content type tool responses
+public sealed record ContentTypeSummary(string Name, string Description, string WhenToUse, string WhenNotToUse);
+public sealed record ListContentTypesResponse(int Count, List<ContentTypeSummary> ContentTypes);
+public sealed record GenerateTemplateResponse(string ContentType, string Template);
+public sealed record ContentTypeGuidelinesResponse(string ContentType, string Guidelines);
+
 [JsonSourceGenerationOptions(WriteIndented = true, PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 [JsonSerializable(typeof(ErrorResponse))]
 [JsonSerializable(typeof(CrossLinkResolved))]
@@ -36,4 +42,7 @@ public sealed record ValidateCrossLinksResponse(string Repository, int ValidLink
 [JsonSerializable(typeof(RepositoryLinksResponse))]
 [JsonSerializable(typeof(FindCrossLinksResponse))]
 [JsonSerializable(typeof(ValidateCrossLinksResponse))]
+[JsonSerializable(typeof(ListContentTypesResponse))]
+[JsonSerializable(typeof(GenerateTemplateResponse))]
+[JsonSerializable(typeof(ContentTypeGuidelinesResponse))]
 public sealed partial class McpJsonContext : JsonSerializerContext;

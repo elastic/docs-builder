@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Text.Json;
 using Elastic.Documentation.Mcp.Remote.Gateways;
 using Elastic.Documentation.Mcp.Remote.Responses;
+using Microsoft.Extensions.Logging;
 using ModelContextProtocol.Server;
 
 namespace Elastic.Documentation.Mcp.Remote.Tools;
@@ -14,7 +15,7 @@ namespace Elastic.Documentation.Mcp.Remote.Tools;
 /// MCP tools for document-specific operations.
 /// </summary>
 [McpServerToolType]
-public class DocumentTools(IDocumentGateway documentGateway)
+public class DocumentTools(IDocumentGateway documentGateway, ILogger<DocumentTools> logger)
 {
 	/// <summary>
 	/// Gets a document by its URL.
@@ -76,6 +77,7 @@ public class DocumentTools(IDocumentGateway documentGateway)
 		}
 		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
 		{
+			logger.LogError(ex, "GetDocumentByUrl failed for URL '{Url}'", url);
 			return JsonSerializer.Serialize(new ErrorResponse(ex.Message), McpJsonContext.Default.ErrorResponse);
 		}
 	}
@@ -129,6 +131,7 @@ public class DocumentTools(IDocumentGateway documentGateway)
 		}
 		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
 		{
+			logger.LogError(ex, "AnalyzeDocumentStructure failed for URL '{Url}'", url);
 			return JsonSerializer.Serialize(new ErrorResponse(ex.Message), McpJsonContext.Default.ErrorResponse);
 		}
 	}

@@ -46,8 +46,10 @@ public abstract class CodexViewModel(CodexRenderContext context)
 	/// <summary>
 	/// Creates the global layout model for the page.
 	/// </summary>
-	public GlobalLayoutViewModel CreateGlobalLayoutModel() =>
-		new()
+	public GlobalLayoutViewModel CreateGlobalLayoutModel()
+	{
+		var rootPath = BuildContext.SiteRootPath ?? GetDefaultRootPath(BuildContext.UrlPathPrefix);
+		return new()
 		{
 			DocsBuilderVersion = ShortId.Create(BuildContext.Version),
 			DocSetName = CodexNavigation.NavigationTitle,
@@ -57,6 +59,7 @@ public abstract class CodexViewModel(CodexRenderContext context)
 			Next = null,
 			NavigationHtml = NavigationHtml,
 			UrlPathPrefix = BuildContext.UrlPathPrefix,
+			Htmx = new DefaultHtmxAttributeProvider(rootPath),
 			AllowIndexing = BuildContext.AllowIndexing,
 			CanonicalBaseUrl = BuildContext.CanonicalBaseUrl,
 			GoogleTagManager = new GoogleTagManagerConfiguration(),
@@ -65,4 +68,11 @@ public abstract class CodexViewModel(CodexRenderContext context)
 			StaticFileContentHashProvider = StaticFileContentHashProvider,
 			BuildType = BuildContext.BuildType
 		};
+	}
+
+	private static string GetDefaultRootPath(string? urlPathPrefix)
+	{
+		var prefix = urlPathPrefix?.Trim('/') ?? "";
+		return string.IsNullOrEmpty(prefix) ? "/" : $"/{prefix}/";
+	}
 }
