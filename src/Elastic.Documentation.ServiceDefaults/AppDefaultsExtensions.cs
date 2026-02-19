@@ -57,11 +57,7 @@ public static class AppDefaultsExtensions
 			if (!noConsole)
 			{
 				services.TryAddEnumerable(ServiceDescriptor.Singleton<ConsoleFormatter, CondensedConsoleFormatter>());
-				_ = x.AddConsole(c =>
-				{
-					c.FormatterName = "condensed";
-					c.LogToStandardErrorThreshold = LogLevel.Trace;
-				});
+				_ = x.AddConsole(c => c.FormatterName = "condensed");
 			}
 		});
 		return services;
