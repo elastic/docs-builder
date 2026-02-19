@@ -32,6 +32,18 @@ public class DocumentationSetFile : TableOfContentsFile
 	[YamlMember(Alias = "subs")]
 	public Dictionary<string, string> Subs { get; set; } = [];
 
+	[YamlMember(Alias = "display_name")]
+	public string? DisplayName { get; set; }
+
+	[YamlMember(Alias = "description")]
+	public string? Description { get; set; }
+
+	[YamlMember(Alias = "icon")]
+	public string? Icon { get; set; }
+
+	[YamlMember(Alias = "registry")]
+	public string? Registry { get; set; }
+
 	[YamlMember(Alias = "features")]
 	public DocumentationSetFeatures Features { get; set; } = new();
 
@@ -45,8 +57,7 @@ public class DocumentationSetFile : TableOfContentsFile
 	public List<ProductLink> Products { get; set; } = [];
 
 	/// <summary>
-	/// Optional codex-specific metadata for display on the codex landing page.
-	/// Used when this documentation set is included in a codex environment.
+	/// Optional codex-specific metadata. Only contains <c>group</c> for codex navigation grouping.
 	/// </summary>
 	[YamlMember(Alias = "codex")]
 	public CodexDocSetMetadata? Codex { get; set; }
@@ -560,20 +571,11 @@ public class DocumentationSetFeatures
 }
 
 /// <summary>
-/// Codex-specific metadata for a documentation set. Used when the docset is included in a codex environment.
+/// Codex-specific metadata. Only contains <c>group</c> for navigation grouping in a codex environment.
 /// </summary>
 [YamlSerializable]
 public class CodexDocSetMetadata
 {
 	[YamlMember(Alias = "group")]
 	public string? Group { get; set; }
-
-	[YamlMember(Alias = "display_name")]
-	public string? DisplayName { get; set; }
-
-	[YamlMember(Alias = "description")]
-	public string? Description { get; set; }
-
-	[YamlMember(Alias = "icon")]
-	public string? Icon { get; set; }
 }

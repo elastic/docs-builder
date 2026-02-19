@@ -159,7 +159,7 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 			var docsPathForRef = string.IsNullOrEmpty(docsPath) || docsPath == "."
 				? "."
 				: docsPath.Replace('\\', '/');
-			var docSetRef = CreateDocumentationSetReference(repoName, entry, docsPathForRef, docSet.Codex, docSet.Project);
+			var docSetRef = CreateDocumentationSetReference(repoName, entry, docsPathForRef, docSet);
 
 			return new CodexCheckout(docSetRef, repoDir, docsDirectory, currentCommit);
 		}
@@ -220,17 +220,16 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 		string repoName,
 		LinkRegistryEntry entry,
 		string docsPath,
-		CodexDocSetMetadata? codex,
-		string? projectTitle) => new()
+		DocumentationSetFile docSet) => new()
 		{
 			Name = repoName,
 			Origin = $"elastic/{repoName}",
 			Branch = entry.Branch,
 			Path = docsPath,
-			Group = codex?.Group,
-			DisplayName = codex?.DisplayName ?? projectTitle,
-			Description = codex?.Description,
-			Icon = codex?.Icon
+			Group = docSet.Codex?.Group,
+			DisplayName = docSet.DisplayName ?? docSet.Project,
+			Description = docSet.Description,
+			Icon = docSet.Icon
 		};
 
 	private static string GetGitUrl(string origin)
