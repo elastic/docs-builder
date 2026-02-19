@@ -74,6 +74,7 @@ public class CodexBuildService(
 		// Phase 2: Create codex navigation
 		var codexNavigation = new CodexNavigation(
 			context.Configuration,
+			cloneResult.DocumentationSetReferences,
 			new CodexDocumentationContext(context),
 			documentationSets);
 

@@ -44,6 +44,13 @@ public class DocumentationSetFile : TableOfContentsFile
 	[YamlMember(Alias = "products")]
 	public List<ProductLink> Products { get; set; } = [];
 
+	/// <summary>
+	/// Optional codex-specific metadata for display on the codex landing page.
+	/// Used when this documentation set is included in a codex environment.
+	/// </summary>
+	[YamlMember(Alias = "codex")]
+	public CodexDocSetMetadata? Codex { get; set; }
+
 	public static FileRef[] GetFileRefs(ITableOfContentsItem item)
 	{
 		if (item is FileRef fileRef)
@@ -59,6 +66,16 @@ public class DocumentationSetFile : TableOfContentsFile
 
 	private static new DocumentationSetFile Deserialize(string json) =>
 		ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(json);
+
+	/// <summary>
+	/// Loads a DocumentationSetFile from a file for reading metadata only (e.g. codex section).
+	/// Does not perform full TOC resolution.
+	/// </summary>
+	public static DocumentationSetFile LoadMetadata(IFileInfo file)
+	{
+		var yaml = file.FileSystem.File.ReadAllText(file.FullName);
+		return Deserialize(yaml);
+	}
 
 	/// <summary>
 	/// Loads a DocumentationSetFile and recursively resolves all IsolatedTableOfContentsRef items,
@@ -540,4 +557,23 @@ public class DocumentationSetFeatures
 	public bool? PrimaryNav { get; set; }
 	[YamlMember(Alias = "disable-github-edit-link", ApplyNamingConventions = false)]
 	public bool? DisableGithubEditLink { get; set; }
+}
+
+/// <summary>
+/// Codex-specific metadata for a documentation set. Used when the docset is included in a codex environment.
+/// </summary>
+[YamlSerializable]
+public class CodexDocSetMetadata
+{
+	[YamlMember(Alias = "group")]
+	public string? Group { get; set; }
+
+	[YamlMember(Alias = "display_name")]
+	public string? DisplayName { get; set; }
+
+	[YamlMember(Alias = "description")]
+	public string? Description { get; set; }
+
+	[YamlMember(Alias = "icon")]
+	public string? Icon { get; set; }
 }

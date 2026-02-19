@@ -20,10 +20,11 @@ namespace Elastic.Codex.Navigation;
 public class CodexNavigation : IRootNavigationItem<IDocumentationFile, INavigationItem>, INavigationTraversable
 {
 	/// <summary>
-	/// Creates a new codex navigation from a codex configuration and documentation set navigations.
+	/// Creates a new codex navigation from a codex configuration, documentation set references, and navigations.
 	/// </summary>
 	public CodexNavigation(
 		CodexConfiguration configuration,
+		IReadOnlyList<CodexDocumentationSetReference> documentationSetReferences,
 		ICodexDocumentationContext context,
 		IReadOnlyDictionary<string, IDocumentationSetNavigation> documentationSetNavigations)
 	{
@@ -37,7 +38,7 @@ public class CodexNavigation : IRootNavigationItem<IDocumentationFile, INavigati
 
 		var codexIndexLeaf = new CodexIndexLeaf(new CodexIndexPage(configuration.Title), this);
 		var builder = new NavigationBuilder(this, context, documentationSetNavigations, configuration);
-		var result = builder.Build(configuration.DocumentationSets);
+		var result = builder.Build(documentationSetReferences);
 
 		Index = codexIndexLeaf;
 		NavigationItems = result.NavigationItems;
