@@ -304,9 +304,9 @@ public partial class GitHubPrService(ILoggerFactory loggerFactory) : IGitHubPrSe
 
 		// Same-repo: #123
 		var sameRepoPattern = @"(?:fixed\s+by|pr|merge[sd]?|via)\s+#(\d+)";
-		foreach (var prNum in System.Linq.Enumerable
+		foreach (var prNum in Enumerable
 			.Select(
-				System.Linq.Enumerable.Cast<Match>(Regex.Matches(body, sameRepoPattern, RegexOptions.IgnoreCase)),
+				Enumerable.Cast<Match>(Regex.Matches(body, sameRepoPattern, RegexOptions.IgnoreCase)),
 				match => match.Groups[1].Value))
 		{
 			_ = prs.Add($"https://github.com/{issueOwner}/{issueRepo}/pull/{prNum}");

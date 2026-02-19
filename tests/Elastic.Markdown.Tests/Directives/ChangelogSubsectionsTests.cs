@@ -30,7 +30,7 @@ public class ChangelogSubsectionsDisabledByDefaultTests : DirectiveTest<Changelo
 		  areas:
 		  - Search
 		  prs:
-			  - "111111"
+		  - "111111"
 		- title: Feature in Indexing
 		  type: feature
 		  products:
@@ -39,7 +39,7 @@ public class ChangelogSubsectionsDisabledByDefaultTests : DirectiveTest<Changelo
 		  areas:
 		  - Indexing
 		  prs:
-			  - "222222"
+		  - "222222"
 		"""));
 
 	[Fact]
@@ -85,7 +85,7 @@ public class ChangelogSubsectionsEnabledTests : DirectiveTest<ChangelogBlock>
 		  areas:
 		  - Search
 		  prs:
-			  - "111111"
+		  - "111111"
 		- title: Feature in Indexing
 		  type: feature
 		  products:
@@ -94,7 +94,7 @@ public class ChangelogSubsectionsEnabledTests : DirectiveTest<ChangelogBlock>
 		  areas:
 		  - Indexing
 		  prs:
-			  - "222222"
+		  - "222222"
 		"""));
 
 	[Fact]
@@ -140,7 +140,7 @@ public class ChangelogSubsectionsExplicitFalseTests : DirectiveTest<ChangelogBlo
 		  areas:
 		  - Search
 		  prs:
-			  - "111111"
+		  - "111111"
 		"""));
 
 	[Fact]

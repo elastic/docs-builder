@@ -3,13 +3,13 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using System.Linq;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
 using Microsoft.Extensions.Logging;
 using YamlDotNet.Core;
 using YamlDotNet.Serialization;
-using System.Linq;
 
 namespace Elastic.Changelog.Bundling;
 

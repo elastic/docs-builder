@@ -110,7 +110,7 @@ public class ChangelogLinksDefaultBehaviorTests : DirectiveTest<ChangelogBlock>
 		  - product: elasticsearch
 		    target: 9.3.0
 		  prs:
-			  - "123456"
+		  - "123456"
 		  issues:
 		  - "78901"
 		  - "78902"
@@ -163,7 +163,7 @@ public class ChangelogLinksHiddenForPrivateRepoTests : DirectiveTest<ChangelogBl
 		  - product: elasticsearch
 		    target: 9.3.0
 		  prs:
-			  - "123456"
+		  - "123456"
 		  issues:
 		  - "78901"
 		  - "78902"
@@ -233,7 +233,7 @@ public class ChangelogLinksHiddenInDetailedEntriesTests : DirectiveTest<Changelo
 		  impact: Users must update.
 		  action: Follow migration guide.
 		  prs:
-			  - "999888"
+		  - "999888"
 		  issues:
 		  - "777666"
 		- title: Deprecation with PR
@@ -245,7 +245,7 @@ public class ChangelogLinksHiddenInDetailedEntriesTests : DirectiveTest<Changelo
 		  impact: Will be removed.
 		  action: Use new API.
 		  prs:
-			  - "555444"
+		  - "555444"
 		"""));
 
 	public override async ValueTask InitializeAsync()
@@ -313,7 +313,7 @@ public class ChangelogLinksShownForPublicRepoTests : DirectiveTest<ChangelogBloc
 		  - product: elasticsearch
 		    target: 9.3.0
 		  prs:
-			  - "111111"
+		  - "111111"
 		"""));
 
 	public override async ValueTask InitializeAsync()

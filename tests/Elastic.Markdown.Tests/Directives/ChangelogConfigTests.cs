@@ -236,7 +236,7 @@ public class ChangelogConfigNotFoundTests : DirectiveTest<ChangelogBlock>
 		  - product: elasticsearch
 		    target: 9.3.0
 		  prs:
-			  - "111111"
+		  - "111111"
 		"""));
 
 	[Fact]
@@ -271,7 +271,7 @@ public class ChangelogConfigExplicitPathNotFoundTests : DirectiveTest<ChangelogB
 		  - product: elasticsearch
 		    target: 9.3.0
 		  prs:
-			  - "111111"
+		  - "111111"
 		"""));
 
 	[Fact]

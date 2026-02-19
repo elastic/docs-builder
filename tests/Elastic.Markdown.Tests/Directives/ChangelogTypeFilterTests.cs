@@ -36,14 +36,14 @@ public class ChangelogTypeFilterDefaultTests : DirectiveTest<ChangelogBlock>
 		  - product: elasticsearch
 		    target: 9.3.0
 		  prs:
-			  - "111111"
+		  - "111111"
 		- title: Bug fix
 		  type: bug-fix
 		  products:
 		  - product: elasticsearch
 		    target: 9.3.0
 		  prs:
-			  - "222222"
+		  - "222222"
 		- title: Breaking API change
 		  type: breaking-change
 		  products:
@@ -53,7 +53,7 @@ public class ChangelogTypeFilterDefaultTests : DirectiveTest<ChangelogBlock>
 		  impact: Users must update.
 		  action: Follow guide.
 		  prs:
-			  - "333333"
+		  - "333333"
 		- title: Known issue
 		  type: known-issue
 		  products:
@@ -63,7 +63,7 @@ public class ChangelogTypeFilterDefaultTests : DirectiveTest<ChangelogBlock>
 		  impact: Some impact.
 		  action: Workaround available.
 		  prs:
-			  - "444444"
+		  - "444444"
 		- title: Deprecated feature
 		  type: deprecation
 		  products:
@@ -73,7 +73,7 @@ public class ChangelogTypeFilterDefaultTests : DirectiveTest<ChangelogBlock>
 		  impact: Will be removed.
 		  action: Use new feature.
 		  prs:
-			  - "555555"
+		  - "555555"
 		"""));
 
 	[Fact]
@@ -142,14 +142,14 @@ public class ChangelogTypeFilterAllTests : DirectiveTest<ChangelogBlock>
 		  - product: elasticsearch
 		    target: 9.3.0
 		  prs:
-			  - "111111"
+		  - "111111"
 		- title: Bug fix
 		  type: bug-fix
 		  products:
 		  - product: elasticsearch
 		    target: 9.3.0
 		  prs:
-			  - "222222"
+		  - "222222"
 		- title: Breaking API change
 		  type: breaking-change
 		  products:
@@ -159,7 +159,7 @@ public class ChangelogTypeFilterAllTests : DirectiveTest<ChangelogBlock>
 		  impact: Users must update.
 		  action: Follow guide.
 		  prs:
-			  - "333333"
+		  - "333333"
 		- title: Known issue
 		  type: known-issue
 		  products:
@@ -169,7 +169,7 @@ public class ChangelogTypeFilterAllTests : DirectiveTest<ChangelogBlock>
 		  impact: Some impact.
 		  action: Workaround available.
 		  prs:
-			  - "444444"
+		  - "444444"
 		- title: Deprecated feature
 		  type: deprecation
 		  products:
@@ -179,7 +179,7 @@ public class ChangelogTypeFilterAllTests : DirectiveTest<ChangelogBlock>
 		  impact: Will be removed.
 		  action: Use new feature.
 		  prs:
-			  - "555555"
+		  - "555555"
 		"""));
 
 	[Fact]
@@ -228,7 +228,7 @@ public class ChangelogTypeFilterBreakingChangeTests : DirectiveTest<ChangelogBlo
 		  - product: elasticsearch
 		    target: 9.3.0
 		  prs:
-			  - "111111"
+		  - "111111"
 		- title: Breaking API change
 		  type: breaking-change
 		  products:
@@ -238,7 +238,7 @@ public class ChangelogTypeFilterBreakingChangeTests : DirectiveTest<ChangelogBlo
 		  impact: Users must update.
 		  action: Follow guide.
 		  prs:
-			  - "333333"
+		  - "333333"
 		- title: Known issue
 		  type: known-issue
 		  products:
@@ -248,7 +248,7 @@ public class ChangelogTypeFilterBreakingChangeTests : DirectiveTest<ChangelogBlo
 		  impact: Some impact.
 		  action: Workaround available.
 		  prs:
-			  - "444444"
+		  - "444444"
 		"""));
 
 	[Fact]
@@ -298,7 +298,7 @@ public class ChangelogTypeFilterDeprecationTests : DirectiveTest<ChangelogBlock>
 		  - product: elasticsearch
 		    target: 9.3.0
 		  prs:
-			  - "111111"
+		  - "111111"
 		- title: Deprecated feature
 		  type: deprecation
 		  products:
@@ -308,7 +308,7 @@ public class ChangelogTypeFilterDeprecationTests : DirectiveTest<ChangelogBlock>
 		  impact: Will be removed.
 		  action: Use new feature.
 		  prs:
-			  - "555555"
+		  - "555555"
 		- title: Another deprecation
 		  type: deprecation
 		  products:
@@ -318,7 +318,7 @@ public class ChangelogTypeFilterDeprecationTests : DirectiveTest<ChangelogBlock>
 		  impact: Also will be removed.
 		  action: Migrate to new API.
 		  prs:
-			  - "666666"
+		  - "666666"
 		"""));
 
 	[Fact]
@@ -367,7 +367,7 @@ public class ChangelogTypeFilterKnownIssueTests : DirectiveTest<ChangelogBlock>
 		  - product: elasticsearch
 		    target: 9.3.0
 		  prs:
-			  - "111111"
+		  - "111111"
 		- title: Known issue 1
 		  type: known-issue
 		  products:
@@ -377,7 +377,7 @@ public class ChangelogTypeFilterKnownIssueTests : DirectiveTest<ChangelogBlock>
 		  impact: Some impact.
 		  action: Workaround available.
 		  prs:
-			  - "444444"
+		  - "444444"
 		- title: Known issue 2
 		  type: known-issue
 		  products:
@@ -387,7 +387,7 @@ public class ChangelogTypeFilterKnownIssueTests : DirectiveTest<ChangelogBlock>
 		  impact: Different impact.
 		  action: Different workaround.
 		  prs:
-			  - "555555"
+		  - "555555"
 		"""));
 
 	[Fact]
@@ -436,7 +436,7 @@ public class ChangelogTypeFilterInvalidTests : DirectiveTest<ChangelogBlock>
 		  - product: elasticsearch
 		    target: 9.3.0
 		  prs:
-			  - "111111"
+		  - "111111"
 		- title: Breaking change
 		  type: breaking-change
 		  products:
@@ -446,7 +446,7 @@ public class ChangelogTypeFilterInvalidTests : DirectiveTest<ChangelogBlock>
 		  impact: Impact.
 		  action: Action.
 		  prs:
-			  - "222222"
+		  - "222222"
 		"""));
 
 	[Fact]
@@ -494,7 +494,7 @@ public class ChangelogTypeFilterCaseInsensitiveTests : DirectiveTest<ChangelogBl
 		  - product: elasticsearch
 		    target: 9.3.0
 		  prs:
-			  - "111111"
+		  - "111111"
 		- title: Breaking change
 		  type: breaking-change
 		  products:
@@ -504,7 +504,7 @@ public class ChangelogTypeFilterCaseInsensitiveTests : DirectiveTest<ChangelogBl
 		  impact: Impact.
 		  action: Action.
 		  prs:
-			  - "222222"
+		  - "222222"
 		"""));
 
 	[Fact]
@@ -548,7 +548,7 @@ public class ChangelogTypeFilterWithSubsectionsTests : DirectiveTest<ChangelogBl
 		  areas:
 		  - Search
 		  prs:
-			  - "111111"
+		  - "111111"
 		- title: Indexing feature
 		  type: feature
 		  products:
@@ -557,7 +557,7 @@ public class ChangelogTypeFilterWithSubsectionsTests : DirectiveTest<ChangelogBl
 		  areas:
 		  - Indexing
 		  prs:
-			  - "222222"
+		  - "222222"
 		- title: Breaking change
 		  type: breaking-change
 		  products:
@@ -567,7 +567,7 @@ public class ChangelogTypeFilterWithSubsectionsTests : DirectiveTest<ChangelogBl
 		  impact: Impact.
 		  action: Action.
 		  prs:
-			  - "333333"
+		  - "333333"
 		"""));
 
 	[Fact]
@@ -611,7 +611,7 @@ public class ChangelogTypeFilterGeneratedAnchorsTests : DirectiveTest<ChangelogB
 		  - product: elasticsearch
 		    target: 9.3.0
 		  prs:
-			  - "111111"
+		  - "111111"
 		- title: Breaking change
 		  type: breaking-change
 		  products:
@@ -621,7 +621,7 @@ public class ChangelogTypeFilterGeneratedAnchorsTests : DirectiveTest<ChangelogB
 		  impact: Impact.
 		  action: Action.
 		  prs:
-			  - "222222"
+		  - "222222"
 		"""));
 
 	[Fact]
@@ -661,7 +661,7 @@ public class ChangelogTypeFilterTableOfContentsTests : DirectiveTest<ChangelogBl
 		  - product: elasticsearch
 		    target: 9.3.0
 		  prs:
-			  - "111111"
+		  - "111111"
 		- title: Deprecated feature
 		  type: deprecation
 		  products:
@@ -671,7 +671,7 @@ public class ChangelogTypeFilterTableOfContentsTests : DirectiveTest<ChangelogBl
 		  impact: Impact.
 		  action: Action.
 		  prs:
-			  - "222222"
+		  - "222222"
 		"""));
 
 	[Fact]
@@ -712,7 +712,7 @@ public class ChangelogTypeFilterEmptyKnownIssueTests : DirectiveTest<ChangelogBl
 		  - product: elasticsearch
 		    target: 9.3.0
 		  prs:
-			  - "111111"
+		  - "111111"
 		"""));
 
 	[Fact]
@@ -748,7 +748,7 @@ public class ChangelogTypeFilterEmptyBreakingChangeTests : DirectiveTest<Changel
 		  - product: elasticsearch
 		    target: 9.3.0
 		  prs:
-			  - "111111"
+		  - "111111"
 		"""));
 
 	[Fact]
@@ -784,7 +784,7 @@ public class ChangelogTypeFilterEmptyDeprecationTests : DirectiveTest<ChangelogB
 		  - product: elasticsearch
 		    target: 9.3.0
 		  prs:
-			  - "111111"
+		  - "111111"
 		"""));
 
 	[Fact]
@@ -822,7 +822,7 @@ public class ChangelogTypeFilterEmptyDefaultTests : DirectiveTest<ChangelogBlock
 		  impact: Users must update.
 		  action: Follow guide.
 		  prs:
-			  - "111111"
+		  - "111111"
 		"""));
 
 	[Fact]

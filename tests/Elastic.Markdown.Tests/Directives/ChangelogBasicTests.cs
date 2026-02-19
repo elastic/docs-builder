@@ -175,7 +175,7 @@ public class ChangelogCustomPathTests : DirectiveTest<ChangelogBlock>
 		  - product: my-product
 		    target: 1.0.0
 		  prs:
-			  - "1"
+		  - "1"
 		"""));
 
 	[Fact]
@@ -254,7 +254,7 @@ public class ChangelogWithBreakingChangesTests : DirectiveTest<ChangelogBlock>
 		  impact: Users must update their code.
 		  action: Follow the migration guide.
 		  prs:
-			  - "222222"
+		  - "222222"
 		"""));
 
 	[Fact]
@@ -302,7 +302,7 @@ public class ChangelogWithDeprecationsTests : DirectiveTest<ChangelogBlock>
 		  impact: The API will be removed in a future version.
 		  action: Use the new API instead.
 		  prs:
-			  - "333333"
+		  - "333333"
 		"""));
 
 	[Fact]
@@ -378,7 +378,7 @@ public class ChangelogAbsolutePathTests : DirectiveTest<ChangelogBlock>
 		  - product: elasticsearch
 		    target: 9.3.0
 		  prs:
-			  - "444444"
+		  - "444444"
 		"""));
 
 	[Fact]
@@ -413,14 +413,14 @@ public class ChangelogSectionOrderTests : DirectiveTest<ChangelogBlock>
 		  - product: elasticsearch
 		    target: 9.3.0
 		  prs:
-			  - "111111"
+		  - "111111"
 		- title: Security fix
 		  type: security
 		  products:
 		  - product: elasticsearch
 		    target: 9.3.0
 		  prs:
-			  - "222222"
+		  - "222222"
 		- title: Breaking API change
 		  type: breaking-change
 		  products:
@@ -430,7 +430,7 @@ public class ChangelogSectionOrderTests : DirectiveTest<ChangelogBlock>
 		  impact: Users must update.
 		  action: Follow guide.
 		  prs:
-			  - "333333"
+		  - "333333"
 		- title: Known issue
 		  type: known-issue
 		  products:
@@ -440,7 +440,7 @@ public class ChangelogSectionOrderTests : DirectiveTest<ChangelogBlock>
 		  impact: Some impact.
 		  action: Workaround available.
 		  prs:
-			  - "444444"
+		  - "444444"
 		- title: Deprecated feature
 		  type: deprecation
 		  products:
@@ -450,14 +450,14 @@ public class ChangelogSectionOrderTests : DirectiveTest<ChangelogBlock>
 		  impact: Will be removed.
 		  action: Use new feature.
 		  prs:
-			  - "555555"
+		  - "555555"
 		- title: Bug fix
 		  type: bug-fix
 		  products:
 		  - product: elasticsearch
 		    target: 9.3.0
 		  prs:
-			  - "666666"
+		  - "666666"
 		"""));
 
 	[Fact]
@@ -522,14 +522,14 @@ public class ChangelogHeaderLevelsTests : DirectiveTest<ChangelogBlock>
 		  - product: elasticsearch
 		    target: 9.3.0
 		  prs:
-			  - "111111"
+		  - "111111"
 		- title: Bug fix
 		  type: bug-fix
 		  products:
 		  - product: elasticsearch
 		    target: 9.3.0
 		  prs:
-			  - "222222"
+		  - "222222"
 		"""));
 
 	[Fact]
