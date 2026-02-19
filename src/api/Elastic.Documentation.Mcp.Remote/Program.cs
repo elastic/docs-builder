@@ -65,7 +65,7 @@ try
 				The Elastic documentation server provides tools to search, retrieve, analyze, and author
 				Elastic product documentation published at elastic.co/docs.
 
-				Use this server when the user:
+				Use the server when the user:
 				- Asks about Elastic product documentation, features, configuration, or APIs.
 				- Wants to find, read, or verify existing documentation pages.
 				- Needs to check whether a topic is already documented or how it is covered.
