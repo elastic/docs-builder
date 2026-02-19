@@ -240,8 +240,8 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 			#   An optional array of strings that contain the issues that are
 			#   relevant to the PR.
 
-		# prs:
-		#   An optional array of strings that contain the pull request numbers.
+			# prs:
+			#   An optional array of strings that contain the pull request numbers.
 
 			# subtype:
 			#   An optional string that applies only to breaking changes.

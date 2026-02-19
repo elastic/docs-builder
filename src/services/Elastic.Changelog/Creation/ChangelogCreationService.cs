@@ -95,6 +95,13 @@ IFileSystem? fileSystem = null
 			// Issues-only flow: derive from GitHub issues when no PRs
 			if (input.Issues is { Length: > 0 } && (input.Prs == null || input.Prs.Length == 0))
 			{
+				// If all required fields are already provided, no GitHub derivation is needed.
+				// Create a single changelog file with all issues recorded as metadata.
+				var titleProvided = !string.IsNullOrWhiteSpace(input.Title);
+				var typeProvided = !string.IsNullOrWhiteSpace(input.Type);
+				if (titleProvided && typeProvided)
+					return await CreateSingleChangelogAsync(collector, input, config, ctx);
+
 				if (input.Issues.Length > 1)
 					return await CreateChangelogsForMultipleIssuesAsync(collector, input, config, ctx);
 				return await CreateSingleChangelogFromIssueAsync(collector, input, config, ctx);
