@@ -31,7 +31,6 @@ public record FetchedCrossLinks
 public abstract class CrossLinkFetcher(ILoggerFactory logFactory, ILinkIndexReader linkIndexProvider) : IDisposable
 {
 	protected ILogger Logger { get; } = logFactory.CreateLogger(nameof(CrossLinkFetcher));
-	private readonly HttpClient _client = new();
 	private LinkRegistry? _linkIndex;
 
 	public static RepositoryLinks Deserialize(string json) =>
@@ -90,22 +89,20 @@ public abstract class CrossLinkFetcher(ILoggerFactory logFactory, ILinkIndexRead
 
 	protected async Task<RepositoryLinks> FetchLinkIndexEntry(string repository, LinkRegistryEntry linkRegistryEntry, Cancel ctx)
 	{
-		var url = $"https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/{linkRegistryEntry.Path}";
 		var linkReference = await TryGetCachedLinkReference(repository, linkRegistryEntry);
 		if (linkReference is not null)
 		{
-			Logger.LogInformation("Using locally cached links.json for '{Repository}': {Url}", repository, url);
+			Logger.LogInformation("Using locally cached links.json for '{Repository}' from {RegistryUrl}", repository, linkIndexProvider.RegistryUrl);
 			return linkReference;
 		}
 
-		Logger.LogInformation("Fetching links.json for '{Repository}': {Url}", repository, url);
-		var json = await _client.GetStringAsync(url, ctx);
-		linkReference = Deserialize(json);
-		WriteLinksJsonCachedFile(repository, linkRegistryEntry, json);
+		Logger.LogInformation("Fetching links.json for '{Repository}' from {RegistryUrl}", repository, linkIndexProvider.RegistryUrl);
+		linkReference = await linkIndexProvider.GetRepositoryLinks(linkRegistryEntry.Path, ctx);
+		WriteLinksJsonCachedFile(repository, linkRegistryEntry, linkReference);
 		return linkReference;
 	}
 
-	private void WriteLinksJsonCachedFile(string repository, LinkRegistryEntry linkRegistryEntry, string json)
+	private void WriteLinksJsonCachedFile(string repository, LinkRegistryEntry linkRegistryEntry, RepositoryLinks linkReference)
 	{
 		var cachedFileName = $"links-elastic-{repository}-{linkRegistryEntry.Branch}-{linkRegistryEntry.ETag}.json";
 		var cachedPath = Path.Combine(Paths.ApplicationData.FullName, "links", cachedFileName);
@@ -114,7 +111,7 @@ public abstract class CrossLinkFetcher(ILoggerFactory logFactory, ILinkIndexRead
 		try
 		{
 			_ = Directory.CreateDirectory(Path.GetDirectoryName(cachedPath)!);
-			File.WriteAllText(cachedPath, json);
+			File.WriteAllText(cachedPath, RepositoryLinks.Serialize(linkReference));
 		}
 		catch (Exception e)
 		{
@@ -152,7 +149,6 @@ public abstract class CrossLinkFetcher(ILoggerFactory logFactory, ILinkIndexRead
 
 	public void Dispose()
 	{
-		_client.Dispose();
 		logFactory.Dispose();
 		GC.SuppressFinalize(this);
 	}
