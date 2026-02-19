@@ -70,7 +70,7 @@ public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavi
 		CodexDocumentationSetReference[] docSets = [new CodexDocumentationSetReference { Name = "standalone", Branch = "main" }];
 		var config = CreateCodexConfiguration("/docs");
 		var docSetNavigations = CreateMockDocSetNavigations(["standalone"]);
-		var codexNav = new CodexNavigation(config, docSets, CreateContext(), docSetNavigations);
+		_ = new CodexNavigation(config, docSets, CreateContext(), docSetNavigations);
 
 		// Get the standalone repo's navigation
 		var standaloneNav = docSetNavigations["standalone"] as INavigationHomeAccessor;
