@@ -4,6 +4,8 @@
 
 using System.IO.Abstractions;
 using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
 using ConsoleAppFramework;
 using Documentation.Builder.Arguments;
 using Elastic.Changelog;
@@ -19,21 +21,183 @@ using Microsoft.Extensions.Logging;
 
 namespace Documentation.Builder.Commands;
 
-internal sealed class ChangelogCommand(
+internal sealed partial class ChangelogCommand(
 	ILoggerFactory logFactory,
 	IDiagnosticsCollector collector,
 	IConfigurationContext configurationContext
 )
 {
+	[GeneratedRegex(@"^( *directory:\s*).+$", RegexOptions.Multiline)]
+	private static partial Regex BundleDirectoryRegex();
+
+	[GeneratedRegex(@"^( *output_directory:\s*).+$", RegexOptions.Multiline)]
+	private static partial Regex BundleOutputDirectoryRegex();
+
 	private readonly IFileSystem _fileSystem = new FileSystem();
+	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogCommand>();
 	/// <summary>
 	/// Changelog commands. Use 'changelog add' to create a new changelog or 'changelog bundle' to create a consolidated list of changelogs.
 	/// </summary>
 	[Command("")]
 	public Task<int> Default()
 	{
-		collector.EmitError(string.Empty, "Please specify a subcommand. Available subcommands:\n  - 'changelog add': Create a new changelog from command-line input\n  - 'changelog bundle': Create a consolidated list of changelog files\n  - 'changelog render': Render a bundled changelog to markdown or asciidoc files\n  - 'changelog gh-release': Create changelogs from a GitHub release\n\nRun 'changelog add --help', 'changelog bundle --help', 'changelog render --help', or 'changelog gh-release --help' for usage information.");
+		collector.EmitError(string.Empty, "Please specify a subcommand. Available subcommands:\n  - 'changelog add': Create a new changelog from command-line input\n  - 'changelog bundle': Create a consolidated list of changelog files\n  - 'changelog init': Initialize changelog configuration and folder structure\n  - 'changelog render': Render a bundled changelog to markdown or asciidoc files\n  - 'changelog gh-release': Create changelogs from a GitHub release\n\nRun 'changelog add --help', 'changelog bundle --help', 'changelog init --help', 'changelog render --help', or 'changelog gh-release --help' for usage information.");
 		return Task.FromResult(1);
+	}
+
+	/// <summary>
+	/// Initialize changelog configuration and folder structure. Creates changelog.yml from the example template in the docs folder (discovered via docset.yml when present, or at {path}/docs which is created if needed), and creates changelog and releases subdirectories if they do not exist.
+	/// When changelog.yml already exists and --changelog-dir or --bundles-dir is specified, updates the bundle.directory and/or bundle.output_directory fields accordingly.
+	/// </summary>
+	/// <param name="path">Optional: Repository root path. Defaults to the output of pwd (current directory). Docs folder is {path}/docs, created if it does not exist.</param>
+	/// <param name="changelogDir">Optional: Path to changelog directory. Defaults to {docsFolder}/changelog.</param>
+	/// <param name="bundlesDir">Optional: Path to bundles output directory. Defaults to {docsFolder}/releases.</param>
+	[Command("init")]
+	public Task<int> Init(
+		string? path = null,
+		string? changelogDir = null,
+		string? bundlesDir = null
+	)
+	{
+		var rootPath = NormalizePath(path ?? ".");
+		var rootDir = _fileSystem.DirectoryInfo.New(rootPath);
+
+		IDirectoryInfo docsFolder;
+		if (Paths.TryFindDocsFolderFromKnownLocationsOnly(_fileSystem, rootDir, out var foundDocsFolder, out _))
+		{
+			docsFolder = foundDocsFolder!;
+		}
+		else
+		{
+			var docsFolderPath = Path.Combine(rootPath, "docs");
+			if (!_fileSystem.Directory.Exists(docsFolderPath))
+			{
+				_logger.LogInformation("Creating docs folder at {DocsFolderPath}", docsFolderPath);
+				_ = _fileSystem.Directory.CreateDirectory(docsFolderPath);
+			}
+
+			docsFolder = _fileSystem.DirectoryInfo.New(docsFolderPath);
+		}
+
+		var configPath = _fileSystem.Path.Combine(docsFolder.FullName, "changelog.yml");
+		var changelogPath = NormalizePath(changelogDir ?? "changelog");
+		var bundlesPath = NormalizePath(bundlesDir ?? "releases");
+
+		var useNonDefaultChangelogDir = changelogDir != null;
+		var useNonDefaultBundlesDir = bundlesDir != null;
+		var repoRoot = Paths.DetermineSourceDirectoryRoot(docsFolder)?.FullName ?? docsFolder.FullName;
+
+		// Create changelog.yml from example if it does not exist
+		if (!_fileSystem.File.Exists(configPath))
+		{
+			byte[]? templateBytes = null;
+			using (var stream = typeof(ChangelogCommand).Assembly.GetManifestResourceStream("Documentation.Builder.changelog.example.yml"))
+			{
+				if (stream == null)
+				{
+					// Fallback: try config relative to current directory (for development)
+					var localConfigDir = _fileSystem.Path.Combine(Directory.GetCurrentDirectory(), "config");
+					var localConfigPath = _fileSystem.Path.Combine(localConfigDir, "changelog.example.yml");
+					if (_fileSystem.File.Exists(localConfigPath))
+					{
+						templateBytes = _fileSystem.File.ReadAllBytes(localConfigPath);
+					}
+				}
+				else
+				{
+					using var ms = new MemoryStream();
+					stream.CopyTo(ms);
+					templateBytes = ms.ToArray();
+				}
+			}
+
+			if (templateBytes == null || templateBytes.Length == 0)
+			{
+				collector.EmitError(string.Empty, "Could not find changelog.example.yml template. Ensure docs-builder is built correctly.");
+				return Task.FromResult(1);
+			}
+
+			var content = Encoding.UTF8.GetString(templateBytes);
+
+			// Update bundle.directory and bundle.output_directory when non-default paths are specified
+			if (useNonDefaultChangelogDir)
+			{
+				var directoryValue = GetPathForConfig(repoRoot, changelogPath);
+				content = content.Replace("directory: docs/changelog", $"directory: {directoryValue}");
+			}
+
+			if (useNonDefaultBundlesDir)
+			{
+				var outputValue = GetPathForConfig(repoRoot, bundlesPath);
+				content = content.Replace("output_directory: docs/releases", $"output_directory: {outputValue}");
+			}
+
+			try
+			{
+				_fileSystem.File.WriteAllBytes(configPath, Encoding.UTF8.GetBytes(content));
+				_logger.LogInformation("Created changelog configuration: {ConfigPath}", configPath);
+			}
+			catch (IOException ex)
+			{
+				collector.EmitError(string.Empty, $"Failed to write changelog configuration to '{configPath}': {ex.Message}", ex);
+				return Task.FromResult(1);
+			}
+		}
+		else if (useNonDefaultChangelogDir || useNonDefaultBundlesDir)
+		{
+			try
+			{
+				var content = _fileSystem.File.ReadAllText(configPath);
+
+				if (useNonDefaultChangelogDir)
+				{
+					var directoryValue = GetPathForConfig(repoRoot, changelogPath);
+					content = BundleDirectoryRegex().Replace(content, "$1" + directoryValue);
+				}
+
+				if (useNonDefaultBundlesDir)
+				{
+					var outputValue = GetPathForConfig(repoRoot, bundlesPath);
+					content = BundleOutputDirectoryRegex().Replace(content, "$1" + outputValue);
+				}
+
+				_fileSystem.File.WriteAllText(configPath, content);
+				_logger.LogInformation("Updated bundle paths in changelog configuration: {ConfigPath}", configPath);
+			}
+			catch (IOException ex)
+			{
+				collector.EmitError(string.Empty, $"Failed to update changelog configuration at '{configPath}': {ex.Message}", ex);
+				return Task.FromResult(1);
+			}
+		}
+		else
+		{
+			_logger.LogInformation("Changelog configuration already exists: {ConfigPath}", configPath);
+		}
+
+		// Create docs/changelog and docs/releases if they do not exist
+		foreach (var dir in new[] { changelogPath, bundlesPath })
+		{
+			if (!_fileSystem.Directory.Exists(dir))
+			{
+				try
+				{
+					_ = _fileSystem.Directory.CreateDirectory(dir);
+					_logger.LogInformation("Created directory: {Directory}", dir);
+				}
+				catch (IOException ex)
+				{
+					collector.EmitError(string.Empty, $"Failed to create directory '{dir}': {ex.Message}", ex);
+					return Task.FromResult(1);
+				}
+			}
+			else
+			{
+				_logger.LogInformation("Directory already exists: {Directory}", dir);
+			}
+		}
+
+		return Task.FromResult(0);
 	}
 
 	/// <summary>
@@ -677,6 +841,29 @@ internal sealed class ChangelogCommand(
 	}
 
 	/// <summary>
+	/// Returns a path suitable for changelog.yml config (relative to repo when possible, forward slashes).
+	/// Quotes the value if it contains YAML-special characters.
+	/// </summary>
+	private static string GetPathForConfig(string repoPath, string targetPath)
+	{
+		var relativePath = Path.GetRelativePath(repoPath, targetPath);
+
+		// Prefer relative path when it does not escape the repo (e.g. not ".." or "..\..")
+		var useRelative = !relativePath.StartsWith("..", StringComparison.Ordinal) &&
+			!Path.IsPathRooted(relativePath) &&
+			relativePath != targetPath;
+
+		var pathForConfig = useRelative ? relativePath : targetPath;
+		pathForConfig = pathForConfig.Replace('\\', '/');
+
+		// Quote if path contains characters that need escaping in YAML
+		if (pathForConfig.Contains(':') || pathForConfig.Contains(' ') || pathForConfig.Contains('#'))
+			return $"\"{pathForConfig.Replace("\"", "\\\"")}\"";
+
+		return pathForConfig;
+	}
+
+	/// <summary>
 	/// Normalizes a file path by expanding tilde (~) to the user's home directory
 	/// and converting relative paths to absolute paths.
 	/// </summary>
@@ -704,5 +891,8 @@ internal sealed class ChangelogCommand(
 		// Convert to absolute path (handles relative paths like ./file or ../file)
 		return Path.GetFullPath(trimmedPath);
 	}
+
+	[GeneratedRegex(@"^( *directory:\s*).+$", RegexOptions.Multiline)]
+	private static partial Regex MyRegex();
 }
 
