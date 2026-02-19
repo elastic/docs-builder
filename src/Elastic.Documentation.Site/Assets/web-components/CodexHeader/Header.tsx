@@ -37,6 +37,7 @@ export const Header = ({ title, logoHref }: Props) => {
                 utilityClasses={false}
             >
                 <EuiHeader
+                    theme="dark"
                     sections={[
                         {
                             items: [

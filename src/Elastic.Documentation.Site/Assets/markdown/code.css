@@ -9,10 +9,16 @@
 			code {
 				@apply text-grey-30 overflow-x-auto rounded-none border-0 p-6! text-sm;
 				background-color: #22272e;
+
 				mix-blend-mode: unset;
 				line-height: 1.5em;
 				word-break: normal;
 			}
+
+			:root[data-theme='dark'] & code {
+				background-color: #07101f;
+			}
+
 			code:first-child {
 				@apply rounded-t-sm;
 			}
