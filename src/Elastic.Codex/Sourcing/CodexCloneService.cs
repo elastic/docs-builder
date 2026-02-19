@@ -53,8 +53,13 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 				}
 			});
 
+		if (Path.IsPathRooted(LinkRegistrySnapshotFileName))
+			throw new InvalidOperationException($"Snapshot file name '{LinkRegistrySnapshotFileName}' must be a relative path.");
+
+		var snapshotFilePath = Path.Combine(context.CheckoutDirectory.FullName, LinkRegistrySnapshotFileName);
+
 		await context.WriteFileSystem.File.WriteAllTextAsync(
-			Path.Combine(context.CheckoutDirectory.FullName, LinkRegistrySnapshotFileName),
+			snapshotFilePath,
 			LinkRegistry.Serialize(linkRegistry),
 			ctx);
 
