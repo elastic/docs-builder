@@ -12,7 +12,7 @@ namespace Elastic.Documentation.LinkIndex;
 /// Reads the link index from a cloned git repository (elastic/codex-link-index).
 /// Uses local SSH credentials for cloning, enabling private access without S3.
 /// </summary>
-public class GitLinkIndexReader(string environment, IFileSystem? fileSystem = null) : ILinkIndexReader, IDisposable
+public class GitLinkIndexReader : ILinkIndexReader, IDisposable
 {
 	private const string LinkIndexOrigin = "elastic/codex-link-index";
 	private static readonly string CloneDirectory = Path.Combine(
@@ -20,9 +20,19 @@ public class GitLinkIndexReader(string environment, IFileSystem? fileSystem = nu
 		".docs-builder",
 		"codex-link-index");
 
-	private readonly IFileSystem _fileSystem = fileSystem ?? new FileSystem();
+	private readonly string _environment;
+	private readonly IFileSystem _fileSystem;
 	private readonly SemaphoreSlim _cloneLock = new(1, 1);
 	private bool _ensuredClone;
+
+	public GitLinkIndexReader(string environment, IFileSystem? fileSystem = null)
+	{
+		if (string.IsNullOrWhiteSpace(environment))
+			throw new ArgumentException("Environment must be specified in the codex configuration (e.g., 'engineering', 'security').", nameof(environment));
+
+		_environment = environment;
+		_fileSystem = fileSystem ?? new FileSystem();
+	}
 
 	/// <inheritdoc />
 	public void Dispose()
@@ -37,12 +47,11 @@ public class GitLinkIndexReader(string environment, IFileSystem? fileSystem = nu
 	public async Task<LinkRegistry> GetRegistry(Cancel cancellationToken = default)
 	{
 		await EnsureCloneAsync(cancellationToken);
-		var env = string.IsNullOrEmpty(environment) ? "dev" : environment;
-		if (Path.IsPathRooted(env))
-			throw new ArgumentException($"Environment '{env}' must be a relative path segment.");
-		var registryPath = Path.Combine(CloneDirectory, env, "link-index.json");
+		if (Path.IsPathRooted(_environment))
+			throw new ArgumentException($"Environment '{_environment}' must be a relative path segment.");
+		var registryPath = Path.Combine(CloneDirectory, _environment, "link-index.json");
 		if (!_fileSystem.File.Exists(registryPath))
-			throw new FileNotFoundException($"Link index registry not found at {registryPath}. Ensure the codex-link-index repository has {env}/link-index.json.");
+			throw new FileNotFoundException($"Link index registry not found at {registryPath}. Ensure the codex-link-index repository has {_environment}/link-index.json.");
 
 		var json = await _fileSystem.File.ReadAllTextAsync(registryPath, cancellationToken);
 		return LinkRegistry.Deserialize(json);

@@ -63,9 +63,16 @@ internal sealed class CodexCommands(
 		}
 
 		var codexConfig = CodexConfiguration.Load(configFile);
+
+		if (string.IsNullOrWhiteSpace(codexConfig.Environment))
+		{
+			collector.EmitGlobalError("Codex configuration must specify an 'environment' (e.g., 'engineering', 'security').");
+			return 1;
+		}
+
 		var codexContext = new CodexContext(codexConfig, configFile, collector, fs, fs, null, output);
 
-		using var linkIndexReader = new GitLinkIndexReader(codexConfig.Environment ?? "dev");
+		using var linkIndexReader = new GitLinkIndexReader(codexConfig.Environment);
 		var cloneService = new CodexCloneService(logFactory, linkIndexReader);
 		CodexCloneResult? cloneResult = null;
 
@@ -129,9 +136,16 @@ internal sealed class CodexCommands(
 		}
 
 		var codexConfig = CodexConfiguration.Load(configFile);
+
+		if (string.IsNullOrWhiteSpace(codexConfig.Environment))
+		{
+			collector.EmitGlobalError("Codex configuration must specify an 'environment' (e.g., 'engineering', 'security').");
+			return 1;
+		}
+
 		var codexContext = new CodexContext(codexConfig, configFile, collector, fs, fs, null, null);
 
-		using var linkIndexReader = new GitLinkIndexReader(codexConfig.Environment ?? "dev");
+		using var linkIndexReader = new GitLinkIndexReader(codexConfig.Environment);
 		var cloneService = new CodexCloneService(logFactory, linkIndexReader);
 		serviceInvoker.AddCommand(cloneService, (codexContext, fetchLatest, assumeCloned), strict,
 			async (s, col, state, c) =>
@@ -170,9 +184,16 @@ internal sealed class CodexCommands(
 		}
 
 		var codexConfig = CodexConfiguration.Load(configFile);
+
+		if (string.IsNullOrWhiteSpace(codexConfig.Environment))
+		{
+			collector.EmitGlobalError("Codex configuration must specify an 'environment' (e.g., 'engineering', 'security').");
+			return 1;
+		}
+
 		var codexContext = new CodexContext(codexConfig, configFile, collector, fs, fs, null, output);
 
-		using var linkIndexReader = new GitLinkIndexReader(codexConfig.Environment ?? "dev");
+		using var linkIndexReader = new GitLinkIndexReader(codexConfig.Environment);
 		var cloneService = new CodexCloneService(logFactory, linkIndexReader);
 		var cloneResult = await cloneService.CloneAll(codexContext, fetchLatest: false, assumeCloned: true, ctx);
 
