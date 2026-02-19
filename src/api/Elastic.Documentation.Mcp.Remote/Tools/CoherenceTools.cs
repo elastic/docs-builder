@@ -4,6 +4,7 @@
 
 using System.ComponentModel;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Elastic.Documentation.Api.Core.Search;
 using Elastic.Documentation.Mcp.Remote.Responses;
 using Microsoft.Extensions.Logging;
@@ -15,12 +16,20 @@ namespace Elastic.Documentation.Mcp.Remote.Tools;
 /// MCP tools for checking documentation coherence and finding inconsistencies.
 /// </summary>
 [McpServerToolType]
-public class CoherenceTools(IFullSearchGateway fullSearchGateway, ILogger<CoherenceTools> logger)
+public partial class CoherenceTools(IFullSearchGateway fullSearchGateway, ILogger<CoherenceTools> logger)
 {
+	[GeneratedRegex(@"</?mark>")]
+	private static partial Regex HighlightTagPattern();
+
+	private static string StripHighlighting(string? text) =>
+		text is null ? "" : HighlightTagPattern().Replace(text, "");
 	/// <summary>
 	/// Checks documentation coherence for a given topic.
 	/// </summary>
-	[McpServerTool, Description("Checks documentation coherence for a given topic by finding all related documents and analyzing their coverage.")]
+	[McpServerTool, Description(
+		"Checks how coherently a topic is covered across all Elastic documentation. " +
+		"Use when reviewing documentation quality, auditing coverage of a feature or concept, " +
+		"or checking whether a topic is documented consistently across products and sections.")]
 	public async Task<string> CheckCoherence(
 		[Description("Topic or concept to check coherence for")] string topic,
 		[Description("Maximum number of documents to analyze (default: 20)")] int limit = 20,
@@ -71,7 +80,7 @@ public class CoherenceTools(IFullSearchGateway fullSearchGateway, ILogger<Cohere
 				TopDocuments = result.Results.Take(5).Select(r => new CoherenceDocDto
 				{
 					Url = r.Url,
-					Title = r.Title,
+					Title = StripHighlighting(r.Title),
 					AiShortSummary = r.AiShortSummary,
 					NavigationSection = r.NavigationSection,
 					Product = r.Product?.DisplayName
@@ -94,7 +103,10 @@ public class CoherenceTools(IFullSearchGateway fullSearchGateway, ILogger<Cohere
 	/// <summary>
 	/// Finds potential inconsistencies in documentation for a given topic.
 	/// </summary>
-	[McpServerTool, Description("Finds potential inconsistencies in documentation by comparing documents about the same topic.")]
+	[McpServerTool, Description(
+		"Finds potential inconsistencies across Elastic documentation pages covering the same topic. " +
+		"Use when auditing docs quality, verifying that instructions don't contradict each other, " +
+		"or checking for overlapping content within a product area.")]
 	public async Task<string> FindInconsistencies(
 		[Description("Topic or concept to check for inconsistencies")] string topic,
 		[Description("Specific area to focus on (e.g., 'installation', 'configuration')")] string? focusArea = null,
@@ -144,13 +156,13 @@ public class CoherenceTools(IFullSearchGateway fullSearchGateway, ILogger<Cohere
 									Document1 = new InconsistencyDocDto
 									{
 										Url = doc1.Url,
-										Title = doc1.Title,
+										Title = StripHighlighting(doc1.Title),
 										AiShortSummary = doc1.AiShortSummary
 									},
 									Document2 = new InconsistencyDocDto
 									{
 										Url = doc2.Url,
-										Title = doc2.Title,
+										Title = StripHighlighting(doc2.Title),
 										AiShortSummary = doc2.AiShortSummary
 									},
 									Product = doc1.Product?.DisplayName ?? productGroup.Key,

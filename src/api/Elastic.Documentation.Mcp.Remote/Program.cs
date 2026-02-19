@@ -59,7 +59,32 @@ try
 	// Stateless mode is appropriate here because all tools are pure request/response (no
 	// server-initiated push) and the server runs behind a load balancer without session affinity.
 	_ = builder.Services
-		.AddMcpServer()
+		.AddMcpServer(options =>
+		{
+			options.ServerInstructions = """
+				The Elastic documentation server provides tools to search, retrieve, analyze, and author
+				Elastic product documentation published at elastic.co/docs.
+
+				Use this server when the user:
+				- Asks about Elastic product documentation, features, configuration, or APIs.
+				- Wants to find, read, or verify existing documentation pages.
+				- Needs to check whether a topic is already documented or how it is covered.
+				- Is writing or editing documentation and needs to find related content or check consistency.
+				- Mentions cross-links between documentation repositories (e.g. 'docs-content://path/to/page.md').
+				- Asks about documentation structure, coherence, or inconsistencies across pages.
+				- Wants to generate documentation templates following Elastic's content type guidelines.
+				- References elastic.co/docs URLs or Elastic product names such as Elasticsearch, Kibana,
+				  Fleet, APM, Logstash, Beats, Elastic Security, Elastic Observability, or Elastic Cloud.
+
+				Prefer SemanticSearch over a general web search when looking up Elastic documentation content.
+				Use GetDocumentByUrl to retrieve a specific page when the user provides or you already know the URL.
+				Use FindRelatedDocs when exploring what documentation exists around a topic.
+				Use CheckCoherence or FindInconsistencies when reviewing or auditing documentation quality.
+				Use the cross-link tools (ResolveCrossLink, ValidateCrossLinks, FindCrossLinks) when working
+				with links between documentation source repositories.
+				Use ListContentTypes, GetContentTypeGuidelines, and GenerateTemplate when creating new pages.
+				""";
+		})
 		.WithHttpTransport(o => o.Stateless = true)
 		.WithTools<SearchTools>()
 		.WithTools<CoherenceTools>()

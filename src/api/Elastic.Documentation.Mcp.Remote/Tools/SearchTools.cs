@@ -4,6 +4,7 @@
 
 using System.ComponentModel;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Elastic.Documentation.Api.Core.Search;
 using Elastic.Documentation.Mcp.Remote.Responses;
 using Microsoft.Extensions.Logging;
@@ -15,12 +16,21 @@ namespace Elastic.Documentation.Mcp.Remote.Tools;
 /// MCP tools for semantic search operations on Elastic documentation.
 /// </summary>
 [McpServerToolType]
-public class SearchTools(IFullSearchGateway fullSearchGateway, ILogger<SearchTools> logger)
+public partial class SearchTools(IFullSearchGateway fullSearchGateway, ILogger<SearchTools> logger)
 {
+	[GeneratedRegex(@"</?mark>")]
+	private static partial Regex HighlightTagPattern();
+
+	private static string StripHighlighting(string? text) =>
+		text is null ? "" : HighlightTagPattern().Replace(text, "");
 	/// <summary>
 	/// Performs semantic search across all Elastic documentation.
 	/// </summary>
-	[McpServerTool, Description("Performs semantic search across all Elastic documentation. Returns relevant documents with summaries, scores, and navigation context.")]
+	[McpServerTool, Description(
+		"Searches all published Elastic documentation by meaning. " +
+		"Use when the user asks about Elastic product features, needs to find existing docs pages, " +
+		"verify published content, or research what documentation exists on a topic. " +
+		"Returns relevant documents with AI summaries, relevance scores, and navigation context.")]
 	public async Task<string> SemanticSearch(
 		[Description("The search query - can be a question or keywords")] string query,
 		[Description("Page number (1-based, default: 1)")] int pageNumber = 1,
@@ -53,8 +63,8 @@ public class SearchTools(IFullSearchGateway fullSearchGateway, ILogger<SearchToo
 				Results = result.Results.Select(r => new SearchResultDto
 				{
 					Url = r.Url,
-					Title = r.Title,
-					Description = r.Description,
+					Title = StripHighlighting(r.Title),
+					Description = StripHighlighting(r.Description),
 					Score = r.Score,
 					AiShortSummary = r.AiShortSummary,
 					NavigationSection = r.NavigationSection,
@@ -79,7 +89,10 @@ public class SearchTools(IFullSearchGateway fullSearchGateway, ILogger<SearchToo
 	/// <summary>
 	/// Finds documents related to a given topic or document URL.
 	/// </summary>
-	[McpServerTool, Description("Finds documents related to a given topic or document. Useful for discovering related content and building context.")]
+	[McpServerTool, Description(
+		"Finds Elastic documentation pages related to a given topic. " +
+		"Use when exploring what documentation exists around a subject, building context for writing, " +
+		"or discovering related content the user should be aware of.")]
 	public async Task<string> FindRelatedDocs(
 		[Description("Topic or search terms to find related documents for")] string topic,
 		[Description("Maximum number of related documents to return (default: 10)")] int limit = 10,
@@ -107,8 +120,8 @@ public class SearchTools(IFullSearchGateway fullSearchGateway, ILogger<SearchToo
 				RelatedDocs = result.Results.Select(r => new RelatedDocDto
 				{
 					Url = r.Url,
-					Title = r.Title,
-					Description = r.Description,
+					Title = StripHighlighting(r.Title),
+					Description = StripHighlighting(r.Description),
 					Score = r.Score,
 					AiShortSummary = r.AiShortSummary,
 					Product = r.Product?.DisplayName
