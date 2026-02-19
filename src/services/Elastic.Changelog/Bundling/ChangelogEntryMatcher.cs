@@ -9,6 +9,7 @@ using Elastic.Documentation.ReleaseNotes;
 using Microsoft.Extensions.Logging;
 using YamlDotNet.Core;
 using YamlDotNet.Serialization;
+using System.Linq;
 
 namespace Elastic.Changelog.Bundling;
 
@@ -171,10 +172,8 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, IDeserializer deseria
 		if (prs is not { Count: > 0 })
 			return false;
 
-		foreach (var dataPr in prs)
+		foreach (var dataPr in prs.Where(pr => !string.IsNullOrWhiteSpace(pr)))
 		{
-			if (string.IsNullOrWhiteSpace(dataPr))
-				continue;
 			var normalizedPr = ChangelogBundlingService.NormalizePrForComparison(dataPr, criteria.DefaultOwner, criteria.DefaultRepo);
 			foreach (var pr in criteria.PrsToMatch)
 			{
