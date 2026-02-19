@@ -51,8 +51,9 @@ public partial class ContentTypeTools(ContentTypeProvider provider)
 	/// Lists all available Elastic Docs content types.
 	/// </summary>
 	[McpServerTool, Description(
-		"Lists all Elastic Docs content types with descriptions and guidance on when to use each. " +
-		"Use this to determine the right content type before creating a new documentation page.")]
+		"Lists all Elastic documentation content types (overview, how-to, tutorial, troubleshooting, changelog) " +
+		"with descriptions and guidance on when to use each. " +
+		"Use when deciding what type of page to create or when the user asks about Elastic docs structure.")]
 	public string ListContentTypes()
 	{
 		try
@@ -71,9 +72,9 @@ public partial class ContentTypeTools(ContentTypeProvider provider)
 	/// Generates a template for a specific content type.
 	/// </summary>
 	[McpServerTool, Description(
-		"Generates a ready-to-use documentation template for a specific Elastic Docs content type. " +
-		"Returns a Markdown template (or YAML for changelogs) with correct frontmatter and structure. " +
-		"Optionally pre-fills title, description, and product fields.")]
+		"Generates a ready-to-use Elastic documentation template for a specific content type. " +
+		"Use when the user wants to create a new documentation page, needs a starting point with correct " +
+		"frontmatter and structure, or asks for a template. Returns Markdown (or YAML for changelogs).")]
 	public string GenerateTemplate(
 		[Description("The content type: 'overview', 'how-to', 'tutorial', 'troubleshooting', or 'changelog'")] string contentType,
 		[Description("Optional: pre-fill the page title or changelog title")] string? title = null,
@@ -109,9 +110,9 @@ public partial class ContentTypeTools(ContentTypeProvider provider)
 	/// Gets authoring and evaluation guidelines for a content type.
 	/// </summary>
 	[McpServerTool, Description(
-		"Returns detailed authoring and evaluation guidelines for a specific Elastic Docs content type. " +
-		"Includes required elements checklist, recommended sections, best practices, and anti-patterns. " +
-		"Use this to write new content following the guidelines, or to evaluate existing content against them.")]
+		"Returns detailed authoring and evaluation guidelines for a specific Elastic documentation content type. " +
+		"Use when writing new content, reviewing existing pages against standards, or when the user asks about " +
+		"Elastic docs best practices. Includes required elements, recommended sections, and anti-patterns.")]
 	public string GetContentTypeGuidelines(
 		[Description("The content type: 'overview', 'how-to', 'tutorial', 'troubleshooting', or 'changelog'")] string contentType)
 	{

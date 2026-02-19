@@ -20,7 +20,10 @@ public class CoherenceTools(IFullSearchGateway fullSearchGateway, ILogger<Cohere
 	/// <summary>
 	/// Checks documentation coherence for a given topic.
 	/// </summary>
-	[McpServerTool, Description("Checks documentation coherence for a given topic by finding all related documents and analyzing their coverage.")]
+	[McpServerTool, Description(
+		"Checks how coherently a topic is covered across all Elastic documentation. " +
+		"Use when reviewing documentation quality, auditing coverage of a feature or concept, " +
+		"or checking whether a topic is documented consistently across products and sections.")]
 	public async Task<string> CheckCoherence(
 		[Description("Topic or concept to check coherence for")] string topic,
 		[Description("Maximum number of documents to analyze (default: 20)")] int limit = 20,
@@ -34,16 +37,11 @@ public class CoherenceTools(IFullSearchGateway fullSearchGateway, ILogger<Cohere
 			{
 				Query = topic,
 				PageNumber = 1,
-				PageSize = limit
+				PageSize = limit,
+				IncludeHighlighting = false
 			};
 
 			var result = await fullSearchGateway.SearchAsync(request, cancellationToken);
-
-			// Analyze coherence based on:
-			// - Document coverage (how many docs cover the topic)
-			// - AI summaries (similar documents should have complementary, not conflicting summaries)
-			// - Navigation sections (spread across sections)
-			// - Products (coverage across products)
 
 			var navigationSections = result.Results
 				.Where(r => !string.IsNullOrEmpty(r.NavigationSection))
@@ -94,7 +92,10 @@ public class CoherenceTools(IFullSearchGateway fullSearchGateway, ILogger<Cohere
 	/// <summary>
 	/// Finds potential inconsistencies in documentation for a given topic.
 	/// </summary>
-	[McpServerTool, Description("Finds potential inconsistencies in documentation by comparing documents about the same topic.")]
+	[McpServerTool, Description(
+		"Finds potential inconsistencies across Elastic documentation pages covering the same topic. " +
+		"Use when auditing docs quality, verifying that instructions don't contradict each other, " +
+		"or checking for overlapping content within a product area.")]
 	public async Task<string> FindInconsistencies(
 		[Description("Topic or concept to check for inconsistencies")] string topic,
 		[Description("Specific area to focus on (e.g., 'installation', 'configuration')")] string? focusArea = null,
@@ -108,7 +109,8 @@ public class CoherenceTools(IFullSearchGateway fullSearchGateway, ILogger<Cohere
 			{
 				Query = query,
 				PageNumber = 1,
-				PageSize = 30
+				PageSize = 30,
+				IncludeHighlighting = false
 			};
 
 			var result = await fullSearchGateway.SearchAsync(request, cancellationToken);
