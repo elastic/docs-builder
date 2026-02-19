@@ -20,7 +20,11 @@ public class DocumentTools(IDocumentGateway documentGateway, ILogger<DocumentToo
 	/// <summary>
 	/// Gets a document by its URL.
 	/// </summary>
-	[McpServerTool, Description("Gets a specific documentation page by its URL. Returns full document content including AI summaries and metadata.")]
+	[McpServerTool, Description(
+		"Retrieves a specific Elastic documentation page by its URL. " +
+		"Use when the user provides an elastic.co/docs URL, references a known page, " +
+		"or you need the full content and metadata of a specific doc. " +
+		"Returns title, AI summaries, headings, navigation context, and optionally the full body.")]
 	public async Task<string> GetDocumentByUrl(
 		[Description("The URL of the document. Accepts a full URL (e.g. 'https://www.elastic.co/docs/deploy-manage/api-keys') or a path (e.g. '/docs/deploy-manage/api-keys'). Query strings, fragments, and trailing slashes are ignored.")] string url,
 		[Description("Include full body content (default: false, set true for detailed analysis)")] bool includeBody = false,
@@ -85,7 +89,10 @@ public class DocumentTools(IDocumentGateway documentGateway, ILogger<DocumentToo
 	/// <summary>
 	/// Analyzes the structure of a document.
 	/// </summary>
-	[McpServerTool, Description("Analyzes the structure of a documentation page. Returns heading count, links, parents, and AI enrichment status.")]
+	[McpServerTool, Description(
+		"Analyzes the structure of an Elastic documentation page. " +
+		"Use when evaluating page quality, checking heading hierarchy, or assessing AI enrichment status. " +
+		"Returns heading count, link count, parent pages, and whether AI summaries are present.")]
 	public async Task<string> AnalyzeDocumentStructure(
 		[Description("The URL of the document to analyze. Accepts a full URL (e.g. 'https://www.elastic.co/docs/deploy-manage/api-keys') or a path (e.g. '/docs/deploy-manage/api-keys'). Query strings, fragments, and trailing slashes are ignored.")] string url,
 		CancellationToken cancellationToken = default)

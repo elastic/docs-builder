@@ -117,15 +117,36 @@ Requires JetBrains AI Assistant plugin version 2025.2 or later.
 
 ## Available tools
 
+### Search tools
+
+| Tool | Description |
+|------|-------------|
+| `SemanticSearch` | Searches all published Elastic documentation by meaning. Returns relevant documents with AI summaries, relevance scores, and navigation context. Supports filtering by product and navigation section. |
+| `FindRelatedDocs` | Finds Elastic documentation pages related to a given topic. Useful for exploring what documentation exists around a subject and discovering related content. |
+
+### Document tools
+
+| Tool | Description |
+|------|-------------|
+| `GetDocumentByUrl` | Retrieves a specific Elastic documentation page by its URL. Accepts a full URL or a path. Returns title, AI summaries, headings, navigation context, and optionally the full body. |
+| `AnalyzeDocumentStructure` | Analyzes the structure of an Elastic documentation page. Accepts a full URL or a path. Returns heading count, link count, parent pages, and AI enrichment status. |
+
+### Coherence tools
+
+| Tool | Description |
+|------|-------------|
+| `CheckCoherence` | Checks how coherently a topic is covered across all Elastic documentation by finding related documents and analyzing their coverage across products and sections. |
+| `FindInconsistencies` | Finds potential inconsistencies across Elastic documentation pages covering the same topic. Identifies overlapping content within a product area. |
+
 ### Cross-link tools
 
 | Tool | Description |
 |------|-------------|
-| `ResolveCrossLink` | Resolves a cross-link (like `docs-content://get-started/intro.md`) to its target URL and returns available anchors. |
-| `ListRepositories` | Lists all repositories available in the cross-link index with their metadata. |
-| `GetRepositoryLinks` | Gets all pages and their anchors published by a specific repository. |
-| `FindCrossLinks` | Finds all cross-links between repositories. Can filter by source or target repository. |
-| `ValidateCrossLinks` | Validates cross-links to a repository and reports any broken links. |
+| `ResolveCrossLink` | Resolves an Elastic docs cross-link URI (e.g., `docs-content://get-started/intro.md`) to its published URL and returns available anchors. |
+| `ListRepositories` | Lists all Elastic documentation source repositories in the cross-link index with their metadata. |
+| `GetRepositoryLinks` | Gets all pages and anchors published by a specific Elastic documentation repository. |
+| `FindCrossLinks` | Finds cross-links between Elastic documentation repositories. Can filter by source or target repository. |
+| `ValidateCrossLinks` | Validates cross-links targeting an Elastic documentation repository and reports any broken links. |
 
 ### Content type tools
 
@@ -133,30 +154,9 @@ These tools help authors create and evaluate documentation using the [Elastic Do
 
 | Tool | Description |
 |------|-------------|
-| `ListContentTypes` | Lists all Elastic Docs content types with descriptions and guidance on when to use each. |
-| `GenerateTemplate` | Generates a ready-to-use template for a specific content type (overview, how-to, tutorial, troubleshooting, or changelog). Optionally pre-fills title, description, and product. |
-| `GetContentTypeGuidelines` | Returns detailed authoring and evaluation guidelines for a content type, including required elements, best practices, and anti-patterns. |
-
-### Search tools
-
-| Tool | Description |
-|------|-------------|
-| `SemanticSearch` | Performs semantic search across all Elastic documentation. Returns relevant documents with summaries, scores, and navigation context. Supports filtering by product and navigation section. |
-| `FindRelatedDocs` | Finds documents related to a given topic or document. Useful for discovering related content and building context. |
-
-### Document tools
-
-| Tool | Description |
-|------|-------------|
-| `GetDocumentByUrl` | Gets a specific documentation page by its URL. Accepts a full URL or a path. Returns full document content including AI summaries and metadata. |
-| `AnalyzeDocumentStructure` | Analyzes the structure of a documentation page. Accepts a full URL or a path. Returns heading count, links, parents, and AI enrichment status. |
-
-### Coherence tools
-
-| Tool | Description |
-|------|-------------|
-| `CheckCoherence` | Checks documentation coherence for a given topic by finding all related documents and analyzing their coverage. |
-| `FindInconsistencies` | Finds potential inconsistencies in documentation by comparing documents about the same topic. |
+| `ListContentTypes` | Lists all Elastic documentation content types (overview, how-to, tutorial, troubleshooting, changelog) with descriptions and guidance on when to use each. |
+| `GenerateTemplate` | Generates a ready-to-use Elastic documentation template for a specific content type. Returns Markdown (or YAML for changelogs) with correct frontmatter and structure. Optionally pre-fills title, description, and product. |
+| `GetContentTypeGuidelines` | Returns detailed authoring and evaluation guidelines for a specific Elastic documentation content type, including required elements, recommended sections, best practices, and anti-patterns. |
 
 ## Testing with MCP Inspector
 

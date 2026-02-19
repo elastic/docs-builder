@@ -20,7 +20,11 @@ public class SearchTools(IFullSearchGateway fullSearchGateway, ILogger<SearchToo
 	/// <summary>
 	/// Performs semantic search across all Elastic documentation.
 	/// </summary>
-	[McpServerTool, Description("Performs semantic search across all Elastic documentation. Returns relevant documents with summaries, scores, and navigation context.")]
+	[McpServerTool, Description(
+		"Searches all published Elastic documentation by meaning. " +
+		"Use when the user asks about Elastic product features, needs to find existing docs pages, " +
+		"verify published content, or research what documentation exists on a topic. " +
+		"Returns relevant documents with AI summaries, relevance scores, and navigation context.")]
 	public async Task<string> SemanticSearch(
 		[Description("The search query - can be a question or keywords")] string query,
 		[Description("Page number (1-based, default: 1)")] int pageNumber = 1,
@@ -40,7 +44,8 @@ public class SearchTools(IFullSearchGateway fullSearchGateway, ILogger<SearchToo
 				PageNumber = pageNumber,
 				PageSize = pageSize,
 				ProductFilter = productFilter != null ? [productFilter] : null,
-				SectionFilter = sectionFilter != null ? [sectionFilter] : null
+				SectionFilter = sectionFilter != null ? [sectionFilter] : null,
+				IncludeHighlighting = false
 			};
 
 			var result = await fullSearchGateway.SearchAsync(request, cancellationToken);
@@ -79,7 +84,10 @@ public class SearchTools(IFullSearchGateway fullSearchGateway, ILogger<SearchToo
 	/// <summary>
 	/// Finds documents related to a given topic or document URL.
 	/// </summary>
-	[McpServerTool, Description("Finds documents related to a given topic or document. Useful for discovering related content and building context.")]
+	[McpServerTool, Description(
+		"Finds Elastic documentation pages related to a given topic. " +
+		"Use when exploring what documentation exists around a subject, building context for writing, " +
+		"or discovering related content the user should be aware of.")]
 	public async Task<string> FindRelatedDocs(
 		[Description("Topic or search terms to find related documents for")] string topic,
 		[Description("Maximum number of related documents to return (default: 10)")] int limit = 10,
@@ -95,7 +103,8 @@ public class SearchTools(IFullSearchGateway fullSearchGateway, ILogger<SearchToo
 				Query = topic,
 				PageNumber = 1,
 				PageSize = limit,
-				ProductFilter = productFilter != null ? [productFilter] : null
+				ProductFilter = productFilter != null ? [productFilter] : null,
+				IncludeHighlighting = false
 			};
 
 			var result = await fullSearchGateway.SearchAsync(request, cancellationToken);
