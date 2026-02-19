@@ -5,11 +5,11 @@
 using System.Text.RegularExpressions;
 using Elastic.Clients.Elasticsearch;
 using Elastic.Clients.Elasticsearch.QueryDsl;
-using EsHighlight = Elastic.Clients.Elasticsearch.Core.Search.HighlightDescriptor<Elastic.Documentation.Search.DocumentationDocument>;
 using Elastic.Documentation.Api.Core.Search;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Search.Common;
 using Microsoft.Extensions.Logging;
+using EsHighlight = Elastic.Clients.Elasticsearch.Core.Search.HighlightDescriptor<Elastic.Documentation.Search.DocumentationDocument>;
 
 namespace Elastic.Documentation.Search;
 
