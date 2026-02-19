@@ -36,6 +36,11 @@ Additional workflows are still to come for updating and generating documentation
 
 ## Create a changelog configuration file [changelog-settings]
 
+You can use the `docs-builder changelog init` command to create the changelog configuration file and folder structure automatically.
+The command uses an existing docs folder (with or without `docset.yml`) when found, or creates `{path}/docs` when it does not exist.
+It places `changelog.yml` in the `docs` folder and creates sub-folders for the changelog and bundle files.
+Alternatively, you can create the file and folders manually.
+
 You can create a configuration file to:
 
 - define the acceptable product, type, subtype, and lifecycle values.
