@@ -125,11 +125,10 @@ public class GroupNavigationTests
 		var config = new Documentation.Configuration.Codex.CodexConfiguration
 		{
 			Title = "Test Codex",
-			SitePrefix = "/docs",
-			DocumentationSets = []
+			SitePrefix = "/docs"
 		};
 
-		return new CodexNavigation(config, new MinimalCodexContext(), new Dictionary<string, Navigation.Isolated.Node.IDocumentationSetNavigation>());
+		return new CodexNavigation(config, [], new MinimalCodexContext(), new Dictionary<string, Navigation.Isolated.Node.IDocumentationSetNavigation>());
 	}
 
 	private sealed class MinimalCodexContext : ICodexDocumentationContext

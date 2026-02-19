@@ -40,12 +40,6 @@ public record CodexConfiguration
 	public IReadOnlyList<CodexGroupDefinition> Groups { get; set; } = [];
 
 	/// <summary>
-	/// The list of documentation sets to include in the codex.
-	/// </summary>
-	[YamlMember(Alias = "documentation_sets")]
-	public IReadOnlyList<CodexDocumentationSetReference> DocumentationSets { get; set; } = [];
-
-	/// <summary>
 	/// Deserializes a codex configuration from YAML content.
 	/// </summary>
 	public static CodexConfiguration Deserialize(string yaml)
@@ -95,24 +89,4 @@ public record CodexConfiguration
 
 		return config with { SitePrefix = sitePrefix };
 	}
-
-	/// <summary>
-	/// Gets all unique group ids defined in the documentation sets.
-	/// </summary>
-	[YamlIgnore]
-	public IReadOnlyList<string> GroupIds =>
-		DocumentationSets
-			.Where(ds => !string.IsNullOrEmpty(ds.Group))
-			.Select(ds => ds.Group!)
-			.Distinct()
-			.OrderBy(g => g)
-			.ToList();
-
-	/// <summary>
-	/// Gets documentation sets grouped by group id.
-	/// Documentation sets without a group are grouped under null.
-	/// </summary>
-	[YamlIgnore]
-	public ILookup<string?, CodexDocumentationSetReference> DocumentationSetsByGroup =>
-		DocumentationSets.ToLookup(ds => ds.Group);
 }
