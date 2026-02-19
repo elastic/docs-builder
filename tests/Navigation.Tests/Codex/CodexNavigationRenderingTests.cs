@@ -97,7 +97,7 @@ public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavi
 		];
 		var config = CreateCodexConfiguration("/docs");
 		var docSetNavigations = CreateMockDocSetNavigations(["apm", "uptime"]);
-		var codexNav = new CodexNavigation(config, docSets, CreateContext(), docSetNavigations);
+		_ = new CodexNavigation(config, docSets, CreateContext(), docSetNavigations);
 
 		// Get the grouped repo's navigation
 		var apmNav = docSetNavigations["apm"] as INavigationHomeAccessor;
@@ -155,7 +155,7 @@ public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavi
 		];
 		var config = CreateCodexConfiguration("/docs");
 		var docSetNavigations = CreateMockDocSetNavigations(["repo1", "repo2", "repo3"]);
-		var codexNav = new CodexNavigation(config, docSets, CreateContext(), docSetNavigations);
+		_ = new CodexNavigation(config, docSets, CreateContext(), docSetNavigations);
 
 		// Get each repo's navigation root
 		var repo1Root = ((INavigationHomeAccessor)docSetNavigations["repo1"]).HomeProvider?.NavigationRoot;
@@ -178,7 +178,7 @@ public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavi
 		];
 		var config = CreateCodexConfiguration("/docs");
 		var docSetNavigations = CreateMockDocSetNavigations(["obs-repo", "sec-repo"]);
-		var codexNav = new CodexNavigation(config, docSets, CreateContext(), docSetNavigations);
+		_ = new CodexNavigation(config, docSets, CreateContext(), docSetNavigations);
 
 		// Get each repo's navigation root
 		var obsRoot = ((INavigationHomeAccessor)docSetNavigations["obs-repo"]).HomeProvider?.NavigationRoot;
