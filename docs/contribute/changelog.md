@@ -257,15 +257,29 @@ If you want to use the PR number as the filename instead, add the `--use-pr-numb
 
 ```sh
 docs-builder changelog add \
-  --pr https://github.com/elastic/elasticsearch/pull/137431 \
+  --prs https://github.com/elastic/elasticsearch/pull/137431 \
   --products "elasticsearch 9.2.3" \
   --use-pr-number
 ```
 
-This creates a file named `137431.yaml` instead of the default timestamp-based filename.
+With a single PR, this creates a file named `137431.yaml`. With multiple PRs, the filename aggregates the numbers (e.g., `137431-137432.yaml`).
+
+For an issue-centric workflow (when you have `--issues` but no `--prs`), use `--use-issue-number` to name the file by issue number(s). When you specify `--issues` without `--prs`, the command fetches the issue from GitHub and derives the title, type, and areas from the issue (using the same label mappings as for PRs):
+
+```sh
+docs-builder changelog add \
+  --issues https://github.com/elastic/elasticsearch/issues/12345 \
+  --products "elasticsearch 9.2.3" \
+  --config docs/changelog.yml \
+  --use-issue-number
+```
+
+The command derives the title from the issue title, maps labels to type and areas (if configured), extracts release notes from the issue body, and extracts linked PRs (e.g., "Fixed by #123"). You can omit `--title` and `--type` when the issue has appropriate labels. Multiple issues can be specified comma-separated or via a file path (like `--prs`), creating one changelog per issue.
+
+This creates a file named `12345.yaml` (or `12345-12346.yaml` for multiple issues).
 
 :::{important}
-When using `--use-pr-number`, you must also provide the `--pr` option. The PR number is extracted from the PR URL or number you provide.
+`--use-pr-number` requires `--prs`. `--use-issue-number` requires `--issues`. The numbers are extracted from the URLs or identifiers you provide.
 :::
 
 ### Examples
@@ -312,7 +326,7 @@ pivot:
     "ES|QL": ":Search Relevance/ES|QL"
 ```
 
-When you use the `--prs` option to derive information from a pull request, it can make use of those mappings:
+When you use the `--prs` option to derive information from a pull request, it can make use of those mappings. Similarly, when you use the `--issues` option (without `--prs`), the command derives title, type, and areas from the GitHub issue labels using the same mappings:
 
 ```sh
 docs-builder changelog add \
@@ -467,6 +481,7 @@ You can specify only one of the following filter options:
 - `--all`: Include all changelogs from the directory.
 - `--input-products`: Include changelogs for the specified products. Refer to [Filter by product](#changelog-bundle-product).
 - `--prs`: Include changelogs for the specified pull request URLs or numbers, or a path to a newline-delimited file containing PR URLs or numbers. Go to [Filter by pull requests](#changelog-bundle-pr).
+- `--issues`: Include changelogs for the specified issue URLs or numbers, or a path to a newline-delimited file containing issue URLs or numbers. Go to [Filter by issues](#changelog-bundle-issues).
 
 By default, the output file contains only the changelog file names and checksums.
 You can optionally use the `--resolve` command option to pull all of the content from each changelog into the bundle.
@@ -570,6 +585,19 @@ entries:
 
 If you add the `--resolve` option, the contents of each changelog will be included in the output file.
 
+### Filter by issues [changelog-bundle-issues]
+
+You can use the `--issues` option to create a bundle of changelogs that relate to those GitHub issues.
+Provide either a comma-separated list of issues (`--issues "https://github.com/owner/repo/issues/123,456"`) or a path to a newline-delimited file (`--issues /path/to/file.txt`).
+Issues can be identified by a full URL (such as `https://github.com/owner/repo/issues/123`), a short format (such as `owner/repo#123`), or just a number (in which case you must also provide `--owner` and `--repo` options).
+
+```sh
+docs-builder changelog bundle --issues "12345,12346" \
+  --repo elasticsearch \
+  --owner elastic \
+  --output-products "elasticsearch 9.2.2 ga"
+```
+
 ### Filter by pull request file [changelog-bundle-file]
 
 If you have a file that lists pull requests (such as PRs associated with a GitHub release):
@@ -613,7 +641,8 @@ entries:
   - product: elasticsearch
   areas:
   - Aggregations
-  pr: https://github.com/elastic/elasticsearch/pull/108875
+  prs:
+  - https://github.com/elastic/elasticsearch/pull/108875
 ...
 ```
 

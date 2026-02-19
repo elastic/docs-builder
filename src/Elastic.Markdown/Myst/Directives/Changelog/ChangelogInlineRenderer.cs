@@ -310,16 +310,15 @@ public static class ChangelogInlineRenderer
 
 	private static void RenderEntryLinks(StringBuilder sb, ChangelogEntry entry, string repo, bool hideLinks)
 	{
-		var hasPr = !string.IsNullOrWhiteSpace(entry.Pr);
+		var hasPrs = entry.Prs is { Count: > 0 };
 
 		if (hideLinks)
 		{
-			// When hiding links, put them on separate lines as comments
 			_ = sb.AppendLine();
-			if (hasPr)
+			foreach (var pr in entry.Prs ?? [])
 			{
 				_ = sb.Append("  ");
-				_ = sb.AppendLine(ChangelogTextUtilities.FormatPrLink(entry.Pr!, repo, hidePrivateLinks: true));
+				_ = sb.AppendLine(ChangelogTextUtilities.FormatPrLink(pr, repo, hidePrivateLinks: true));
 			}
 			foreach (var issue in entry.Issues ?? [])
 			{
@@ -329,11 +328,10 @@ public static class ChangelogInlineRenderer
 			return;
 		}
 
-		// Default: render links inline
 		_ = sb.Append(' ');
-		if (hasPr)
+		foreach (var pr in entry.Prs ?? [])
 		{
-			_ = sb.Append(ChangelogTextUtilities.FormatPrLink(entry.Pr!, repo, hidePrivateLinks: false));
+			_ = sb.Append(ChangelogTextUtilities.FormatPrLink(pr, repo, hidePrivateLinks: false));
 			_ = sb.Append(' ');
 		}
 		foreach (var issue in entry.Issues ?? [])
@@ -396,17 +394,16 @@ public static class ChangelogInlineRenderer
 
 	private static void RenderDetailedEntryLinks(StringBuilder sb, ChangelogEntry entry, string repo, bool hideLinks)
 	{
-		var hasPr = !string.IsNullOrWhiteSpace(entry.Pr);
+		var hasPrs = entry.Prs is { Count: > 0 };
 		var hasIssues = entry.Issues is { Count: > 0 };
 
-		if (!hasPr && !hasIssues)
+		if (!hasPrs && !hasIssues)
 			return;
 
 		if (hideLinks)
 		{
-			// When hiding links, put them on separate lines as comments
-			if (hasPr)
-				_ = sb.AppendLine(ChangelogTextUtilities.FormatPrLink(entry.Pr!, repo, hidePrivateLinks: true));
+			foreach (var pr in entry.Prs ?? [])
+				_ = sb.AppendLine(ChangelogTextUtilities.FormatPrLink(pr, repo, hidePrivateLinks: true));
 			foreach (var issue in entry.Issues ?? [])
 				_ = sb.AppendLine(ChangelogTextUtilities.FormatIssueLink(issue, repo, hidePrivateLinks: true));
 			_ = sb.AppendLine("For more information, check the pull request or issue above.");
@@ -414,14 +411,21 @@ public static class ChangelogInlineRenderer
 			return;
 		}
 
-		// Default: render links inline
 		_ = sb.Append("For more information, check ");
-		if (hasPr)
-			_ = sb.Append(ChangelogTextUtilities.FormatPrLink(entry.Pr!, repo, hidePrivateLinks: false));
+		var first = true;
+		foreach (var pr in entry.Prs ?? [])
+		{
+			if (!first)
+				_ = sb.Append(' ');
+			_ = sb.Append(ChangelogTextUtilities.FormatPrLink(pr, repo, hidePrivateLinks: false));
+			first = false;
+		}
 		foreach (var issue in entry.Issues ?? [])
 		{
-			_ = sb.Append(' ');
+			if (!first)
+				_ = sb.Append(' ');
 			_ = sb.Append(ChangelogTextUtilities.FormatIssueLink(issue, repo, hidePrivateLinks: false));
+			first = false;
 		}
 		_ = sb.AppendLine(".");
 		_ = sb.AppendLine();

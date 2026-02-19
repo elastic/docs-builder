@@ -53,7 +53,8 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
 		yamlContent.Should().Contain("title: Manual title provided");
 		yamlContent.Should().Contain("type: feature");
-		yamlContent.Should().Contain("pr: https://github.com/elastic/elasticsearch/pull/12345");
+		yamlContent.Should().Contain("prs:");
+		yamlContent.Should().Contain("https://github.com/elastic/elasticsearch/pull/12345");
 	}
 
 	[Fact]
@@ -97,7 +98,8 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
 		yamlContent.Should().Contain("# title: # TODO: Add title");
 		yamlContent.Should().Contain("# type: # TODO: Add type");
-		yamlContent.Should().Contain("pr: https://github.com/elastic/elasticsearch/pull/12345");
+		yamlContent.Should().Contain("prs:");
+		yamlContent.Should().Contain("https://github.com/elastic/elasticsearch/pull/12345");
 		yamlContent.Should().Contain("products:");
 		// Should not contain uncommented title/type
 		var lines = yamlContent.Split('\n');
@@ -153,6 +155,7 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 		yamlContent.Should().Contain("title: Shared title");
 		yamlContent.Should().Contain("type: bug-fix");
 		// Should reference at least one of the PRs (when filenames collide, the last one wins)
-		yamlContent.Should().MatchRegex(@"pr:\s*(https://github\.com/elastic/elasticsearch/pull/12345|https://github\.com/elastic/elasticsearch/pull/67890)");
+		yamlContent.Should().Contain("prs:");
+		yamlContent.Should().MatchRegex(@"(https://github\.com/elastic/elasticsearch/pull/12345|https://github\.com/elastic/elasticsearch/pull/67890)");
 	}
 }

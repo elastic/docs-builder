@@ -164,50 +164,42 @@ public class IndexMarkdownRenderer(IFileSystem fileSystem) : MarkdownRendererBas
 				var hasCommentedLinks = false;
 				if (entryHideLinks)
 				{
-					// When hiding private links, put them on separate lines as comments with proper indentation
-					if (!string.IsNullOrWhiteSpace(entry.Pr))
+					foreach (var pr in entry.Prs ?? [])
 					{
 						_ = sb.AppendLine();
 						if (shouldHide)
 							_ = sb.Append("% ");
 						_ = sb.Append("  ");
-						_ = sb.Append(ChangelogTextUtilities.FormatPrLink(entry.Pr, entryRepo, entryHideLinks));
+						_ = sb.Append(ChangelogTextUtilities.FormatPrLink(pr, entryRepo, entryHideLinks));
 						hasCommentedLinks = true;
 					}
 
-					if (entry.Issues is { Count: > 0 })
+					foreach (var issue in entry.Issues ?? [])
 					{
-						foreach (var issue in entry.Issues)
-						{
-							_ = sb.AppendLine();
-							if (shouldHide)
-								_ = sb.Append("% ");
-							_ = sb.Append("  ");
-							_ = sb.Append(ChangelogTextUtilities.FormatIssueLink(issue, entryRepo, entryHideLinks));
-							hasCommentedLinks = true;
-						}
+						_ = sb.AppendLine();
+						if (shouldHide)
+							_ = sb.Append("% ");
+						_ = sb.Append("  ");
+						_ = sb.Append(ChangelogTextUtilities.FormatIssueLink(issue, entryRepo, entryHideLinks));
+						hasCommentedLinks = true;
 					}
 
-					// Add a newline after the last link if there are commented links
 					if (hasCommentedLinks)
 						_ = sb.AppendLine();
 				}
 				else
 				{
 					_ = sb.Append(' ');
-					if (!string.IsNullOrWhiteSpace(entry.Pr))
+					foreach (var pr in entry.Prs ?? [])
 					{
-						_ = sb.Append(ChangelogTextUtilities.FormatPrLink(entry.Pr, entryRepo, entryHideLinks));
+						_ = sb.Append(ChangelogTextUtilities.FormatPrLink(pr, entryRepo, entryHideLinks));
 						_ = sb.Append(' ');
 					}
 
-					if (entry.Issues is { Count: > 0 })
+					foreach (var issue in entry.Issues ?? [])
 					{
-						foreach (var issue in entry.Issues)
-						{
-							_ = sb.Append(ChangelogTextUtilities.FormatIssueLink(issue, entryRepo, entryHideLinks));
-							_ = sb.Append(' ');
-						}
+						_ = sb.Append(ChangelogTextUtilities.FormatIssueLink(issue, entryRepo, entryHideLinks));
+						_ = sb.Append(' ');
 					}
 				}
 

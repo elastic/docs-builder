@@ -28,27 +28,33 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, IDeserializer deseria
 	{
 		var changelogEntries = new List<MatchedChangelogFile>();
 		var matchedPrs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-		var seenChangelogs = new HashSet<string>(); // For deduplication (using checksum)
+		var matchedIssues = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		var seenChangelogs = new HashSet<string>();
 
 		foreach (var filePath in yamlFiles)
 		{
-			var entry = await ProcessFileAsync(collector, filePath, criteria, seenChangelogs, matchedPrs, ctx);
+			var entry = await ProcessFileAsync(collector, filePath, criteria, seenChangelogs, matchedPrs, matchedIssues, ctx);
 			if (entry != null)
 				changelogEntries.Add(entry);
 		}
 
-		// Warn about unmatched PRs if filtering by PRs
 		if (criteria.PrsToMatch.Count > 0)
 		{
-			var unmatchedPrs = criteria.PrsToMatch.Where(pr => !matchedPrs.Contains(pr)).ToList();
-			foreach (var unmatchedPr in unmatchedPrs)
-				collector.EmitWarning(string.Empty, $"No changelog file found for PR: {unmatchedPr}");
+			foreach (var pr in criteria.PrsToMatch.Where(pr => !matchedPrs.Contains(pr)))
+				collector.EmitWarning(string.Empty, $"No changelog file found for PR: {pr}");
+		}
+
+		if (criteria.IssuesToMatch.Count > 0)
+		{
+			foreach (var issue in criteria.IssuesToMatch.Where(issue => !matchedIssues.Contains(issue)))
+				collector.EmitWarning(string.Empty, $"No changelog file found for issue: {issue}");
 		}
 
 		return new ChangelogMatchResult
 		{
 			Entries = changelogEntries,
-			MatchedPrs = matchedPrs
+			MatchedPrs = matchedPrs,
+			MatchedIssues = matchedIssues
 		};
 	}
 
@@ -58,6 +64,7 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, IDeserializer deseria
 		ChangelogFilterCriteria criteria,
 		HashSet<string> seenChangelogs,
 		HashSet<string> matchedPrs,
+		HashSet<string> matchedIssues,
 		Cancel ctx)
 	{
 		try
@@ -79,8 +86,7 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, IDeserializer deseria
 				return null;
 			}
 
-			// Apply filters using YAML DTO (string-based for wildcard matching)
-			if (!MatchesFilter(yamlDto, criteria, matchedPrs))
+			if (!MatchesFilter(yamlDto, criteria, matchedPrs, matchedIssues))
 				return null;
 
 			// Add to seen set
@@ -114,7 +120,8 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, IDeserializer deseria
 	private static bool MatchesFilter(
 		ChangelogEntryDto data,
 		ChangelogFilterCriteria criteria,
-		HashSet<string> matchedPrs)
+		HashSet<string> matchedPrs,
+		HashSet<string> matchedIssues)
 	{
 		if (criteria.IncludeAll)
 			return true;
@@ -124,6 +131,9 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, IDeserializer deseria
 
 		if (criteria.PrsToMatch.Count > 0)
 			return MatchesPrFilter(data, criteria, matchedPrs);
+
+		if (criteria.IssuesToMatch.Count > 0)
+			return MatchesIssueFilter(data, criteria, matchedIssues);
 
 		return true;
 	}
@@ -157,18 +167,47 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, IDeserializer deseria
 		ChangelogFilterCriteria criteria,
 		HashSet<string> matchedPrs)
 	{
-		if (string.IsNullOrWhiteSpace(data.Pr))
+		var prs = data.Prs ?? (data.Pr != null ? [data.Pr] : null);
+		if (prs is not { Count: > 0 })
 			return false;
 
-		// Normalize PR for comparison
-		var normalizedPr = ChangelogBundlingService.NormalizePrForComparison(data.Pr, criteria.DefaultOwner, criteria.DefaultRepo);
-		foreach (var pr in criteria.PrsToMatch)
+		foreach (var dataPr in prs)
 		{
-			var normalizedPrToMatch = ChangelogBundlingService.NormalizePrForComparison(pr, criteria.DefaultOwner, criteria.DefaultRepo);
-			if (normalizedPr == normalizedPrToMatch)
+			if (string.IsNullOrWhiteSpace(dataPr))
+				continue;
+			var normalizedPr = ChangelogBundlingService.NormalizePrForComparison(dataPr, criteria.DefaultOwner, criteria.DefaultRepo);
+			foreach (var pr in criteria.PrsToMatch)
 			{
-				_ = matchedPrs.Add(pr);
-				return true;
+				var normalizedPrToMatch = ChangelogBundlingService.NormalizePrForComparison(pr, criteria.DefaultOwner, criteria.DefaultRepo);
+				if (normalizedPr == normalizedPrToMatch)
+				{
+					_ = matchedPrs.Add(pr);
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}
+
+	private static bool MatchesIssueFilter(ChangelogEntryDto data, ChangelogFilterCriteria criteria, HashSet<string> matchedIssues)
+	{
+		if (data.Issues is not { Count: > 0 })
+			return false;
+
+		foreach (var dataIssue in data.Issues)
+		{
+			if (string.IsNullOrWhiteSpace(dataIssue))
+				continue;
+			var normalizedIssue = ChangelogBundlingService.NormalizeIssueForComparison(dataIssue, criteria.DefaultOwner, criteria.DefaultRepo);
+			foreach (var issue in criteria.IssuesToMatch)
+			{
+				var normalizedIssueToMatch = ChangelogBundlingService.NormalizeIssueForComparison(issue, criteria.DefaultOwner, criteria.DefaultRepo);
+				if (normalizedIssue == normalizedIssueToMatch)
+				{
+					_ = matchedIssues.Add(issue);
+					return true;
+				}
 			}
 		}
 
@@ -203,6 +242,7 @@ public record ChangelogFilterCriteria
 	public required bool IncludeAll { get; init; }
 	public required IReadOnlyList<ProductFilter> ProductFilters { get; init; }
 	public required HashSet<string> PrsToMatch { get; init; }
+	public required HashSet<string> IssuesToMatch { get; init; }
 	public string? DefaultOwner { get; init; }
 	public string? DefaultRepo { get; init; }
 }
@@ -235,4 +275,5 @@ public record ChangelogMatchResult
 {
 	public required IReadOnlyList<MatchedChangelogFile> Entries { get; init; }
 	public required HashSet<string> MatchedPrs { get; init; }
+	public required HashSet<string> MatchedIssues { get; init; }
 }

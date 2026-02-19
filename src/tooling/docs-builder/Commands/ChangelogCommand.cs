@@ -58,7 +58,8 @@ internal sealed class ChangelogCommand(
 	/// <param name="subtype">Optional: Subtype for breaking changes (api, behavioral, configuration, etc.)</param>
 	/// <param name="title">Optional: A short, user-facing title (max 80 characters). Required if --pr is not specified. If --pr and --title are specified, the latter value is used instead of what exists in the PR.</param>
 	/// <param name="type">Optional: Type of change (feature, enhancement, bug-fix, breaking-change, etc.). Required if --pr is not specified. If mappings are configured, type can be derived from the PR.</param>
-	/// <param name="usePrNumber">Optional: Use the PR number as the filename instead of generating it from a unique ID and title</param>
+	/// <param name="usePrNumber">Optional: Use the PR number(s) as the filename. With multiple PRs, uses hyphen-separated list (e.g., 137431-137432.yaml). Requires --prs.</param>
+	/// <param name="useIssueNumber">Optional: Use the issue number(s) as the filename when --issues is present and no PRs. Requires --issues.</param>
 	/// <param name="ctx"></param>
 	[Command("add")]
 	public async Task<int> Create(
@@ -82,6 +83,7 @@ internal sealed class ChangelogCommand(
 		string? title = null,
 		string? type = null,
 		bool usePrNumber = false,
+		bool useIssueNumber = false,
 		Cancel ctx = default
 	)
 	{
@@ -135,8 +137,55 @@ internal sealed class ChangelogCommand(
 		var shouldExtractReleaseNotes = !noExtractReleaseNotes;
 		var shouldExtractIssues = !noExtractIssues;
 
+		// Parse issues: handle both comma-separated values and file paths (mirrors PR parsing)
+		string[]? parsedIssues = null;
+		if (issues is { Length: > 0 })
+		{
+			var allIssues = new List<string>();
+			var validIssues = issues.Where(i => !string.IsNullOrWhiteSpace(i));
+			foreach (var trimmedValue in validIssues.Select(i => i.Trim()))
+			{
+				var normalizedPath = NormalizePath(trimmedValue);
+				if (_fileSystem.File.Exists(normalizedPath))
+				{
+					try
+					{
+						var fileLines = await _fileSystem.File.ReadAllLinesAsync(normalizedPath, ctx);
+						foreach (var line in fileLines)
+						{
+							if (!string.IsNullOrWhiteSpace(line))
+								allIssues.Add(line.Trim());
+						}
+					}
+					catch (IOException ex)
+					{
+						collector.EmitError(string.Empty, $"Failed to read issues from file '{normalizedPath}': {ex.Message}", ex);
+						return 1;
+					}
+				}
+				else
+				{
+					var commaSeparated = trimmedValue.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+					allIssues.AddRange(commaSeparated);
+				}
+			}
+			parsedIssues = allIssues.ToArray();
+		}
+
 		// Use provided products or empty list (service will infer from repo/config if empty)
 		var resolvedProducts = products ?? [];
+
+		if (usePrNumber && (parsedPrs == null || parsedPrs.Length == 0))
+		{
+			collector.EmitError(string.Empty, "--use-pr-number requires --prs to be specified.");
+			return 1;
+		}
+
+		if (useIssueNumber && (parsedIssues == null || parsedIssues.Length == 0))
+		{
+			collector.EmitError(string.Empty, "--use-issue-number requires --issues to be specified.");
+			return 1;
+		}
 
 		var input = new CreateChangelogArguments
 		{
@@ -148,7 +197,7 @@ internal sealed class ChangelogCommand(
 			Prs = parsedPrs,
 			Owner = owner,
 			Repo = repo,
-			Issues = issues ?? [],
+			Issues = parsedIssues ?? [],
 			Description = description,
 			Impact = impact,
 			Action = action,
@@ -157,6 +206,7 @@ internal sealed class ChangelogCommand(
 			Output = output,
 			Config = config,
 			UsePrNumber = usePrNumber,
+			UseIssueNumber = useIssueNumber,
 			StripTitlePrefix = stripTitlePrefix,
 			ExtractReleaseNotes = shouldExtractReleaseNotes,
 			ExtractIssues = shouldExtractIssues
@@ -174,15 +224,16 @@ internal sealed class ChangelogCommand(
 	/// </summary>
 	/// <param name="profile">Optional: Profile name from bundle.profiles in config (e.g., "elasticsearch-release"). When specified, the second argument is the version or promotion report URL.</param>
 	/// <param name="profileArg">Optional: Version number or promotion report URL/path when using a profile (e.g., "9.2.0" or "https://buildkite.../promotion-report.html")</param>
-	/// <param name="all">Include all changelogs in the directory. Only one filter option can be specified: `--all`, `--input-products`, or `--prs`.</param>
+	/// <param name="all">Include all changelogs in the directory. Only one filter option can be specified: `--all`, `--input-products`, `--prs`, or `--issues`.</param>
 	/// <param name="config">Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml'</param>
 	/// <param name="directory">Optional: Directory containing changelog YAML files. Uses config bundle.directory or defaults to current directory</param>
 	/// <param name="hideFeatures">Filter by feature IDs (comma-separated), or a path to a newline-delimited file containing feature IDs. Can be specified multiple times. Entries with matching feature-id values will be commented out when the bundle is rendered (by CLI render or {changelog} directive).</param>
-	/// <param name="inputProducts">Filter by products in format "product target lifecycle, ..." (e.g., "cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta"). When specified, all three parts (product, target, lifecycle) are required but can be wildcards (*). Examples: "elasticsearch * *" matches all elasticsearch changelogs, "cloud-serverless 2025-12-02 *" matches cloud-serverless 2025-12-02 with any lifecycle, "* 9.3.* *" matches any product with target starting with "9.3.", "* * *" matches all changelogs (equivalent to --all). Only one filter option can be specified: `--all`, `--input-products`, or `--prs`.</param>
+	/// <param name="inputProducts">Filter by products in format "product target lifecycle, ..." (e.g., "cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta"). When specified, all three parts (product, target, lifecycle) are required but can be wildcards (*). Examples: "elasticsearch * *" matches all elasticsearch changelogs, "cloud-serverless 2025-12-02 *" matches cloud-serverless 2025-12-02 with any lifecycle, "* 9.3.* *" matches any product with target starting with "9.3.", "* * *" matches all changelogs (equivalent to --all). Only one filter option can be specified: `--all`, `--input-products`, `--prs`, or `--issues`.</param>
+	/// <param name="issues">Filter by issue URLs or numbers (comma-separated), or a path to a newline-delimited file containing issue URLs or numbers. Can be specified multiple times. Only one filter option can be specified: `--all`, `--input-products`, `--prs`, or `--issues`.</param>
 	/// <param name="output">Optional: Output path for the bundled changelog. Can be either (1) a directory path, in which case 'changelog-bundle.yaml' is created in that directory, or (2) a file path ending in .yml or .yaml. Uses config bundle.output_directory or defaults to 'changelog-bundle.yaml' in the input directory</param>
 	/// <param name="outputProducts">Optional: Explicitly set the products array in the output file in format "product target lifecycle, ...". Overrides any values from changelogs.</param>
-	/// <param name="owner">GitHub repository owner (required only when PRs are specified as numbers)</param>
-	/// <param name="prs">Filter by pull request URLs or numbers (comma-separated), or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times. Only one filter option can be specified: `--all`, `--input-products`, or `--prs`.</param>
+	/// <param name="owner">GitHub repository owner (required when PRs or issues are specified as numbers)</param>
+	/// <param name="prs">Filter by pull request URLs or numbers (comma-separated), or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times. Only one filter option can be specified: `--all`, `--input-products`, `--prs`, or `--issues`.</param>
 	/// <param name="repo">GitHub repository name. Used for PR filtering when PRs are specified as numbers, and also sets the repo field in the bundle output for generating correct PR/issue links. If not specified, the product ID is used as the repo name in links.</param>
 	/// <param name="resolve">Optional: Copy the contents of each changelog file into the entries array. Uses config bundle.resolve or defaults to false.</param>
 	/// <param name="noResolve">Optional: Explicitly turn off resolve (overrides config).</param>
@@ -198,6 +249,7 @@ internal sealed class ChangelogCommand(
 		[ProductInfoParser] List<ProductArgument>? inputProducts = null,
 		string? output = null,
 		[ProductInfoParser] List<ProductArgument>? outputProducts = null,
+		string[]? issues = null,
 		string? owner = null,
 		string[]? prs = null,
 		string? repo = null,
@@ -210,10 +262,9 @@ internal sealed class ChangelogCommand(
 
 		var service = new ChangelogBundlingService(logFactory, configurationContext);
 
-		// Check if using profile mode vs raw flag mode
 		var isProfileMode = !string.IsNullOrWhiteSpace(profile);
 
-		// Process each --prs occurrence: each can be comma-separated PRs or a file path
+		// Process each --prs occurrence
 		var allPrs = new List<string>();
 		if (prs is { Length: > 0 })
 		{
@@ -235,6 +286,26 @@ internal sealed class ChangelogCommand(
 			}
 		}
 
+		// Process each --issues occurrence
+		var allIssues = new List<string>();
+		if (issues is { Length: > 0 })
+		{
+			foreach (var issuesValue in issues.Where(p => !string.IsNullOrWhiteSpace(p)))
+			{
+				if (issuesValue.Contains(','))
+				{
+					var commaSeparated = issuesValue
+						.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+						.Where(p => !string.IsNullOrWhiteSpace(p));
+					allIssues.AddRange(commaSeparated);
+				}
+				else
+				{
+					allIssues.Add(issuesValue);
+				}
+			}
+		}
+
 		// In raw mode (no profile), validate filter options
 		if (!isProfileMode)
 		{
@@ -245,10 +316,12 @@ internal sealed class ChangelogCommand(
 				specifiedFilters.Add("--input-products");
 			if (allPrs.Count > 0)
 				specifiedFilters.Add("--prs");
+			if (allIssues.Count > 0)
+				specifiedFilters.Add("--issues");
 
 			if (specifiedFilters.Count == 0)
 			{
-				collector.EmitError(string.Empty, "At least one filter option must be specified: --all, --input-products, --prs, or use a profile (e.g., 'bundle elasticsearch-release 9.2.0')");
+				collector.EmitError(string.Empty, "At least one filter option must be specified: --all, --input-products, --prs, --issues, or use a profile (e.g., 'bundle elasticsearch-release 9.2.0')");
 				_ = collector.StartAsync(ctx);
 				await collector.WaitForDrain();
 				await collector.StopAsync(ctx);
@@ -257,7 +330,7 @@ internal sealed class ChangelogCommand(
 
 			if (specifiedFilters.Count > 1)
 			{
-				collector.EmitError(string.Empty, $"Multiple filter options cannot be specified together. You specified: {string.Join(", ", specifiedFilters)}. Please use only one filter option: --all, --input-products, or --prs");
+				collector.EmitError(string.Empty, $"Multiple filter options cannot be specified together. You specified: {string.Join(", ", specifiedFilters)}. Please use only one filter option: --all, --input-products, --prs, or --issues");
 				_ = collector.StartAsync(ctx);
 				await collector.WaitForDrain();
 				await collector.StopAsync(ctx);
@@ -266,10 +339,9 @@ internal sealed class ChangelogCommand(
 		}
 		else
 		{
-			// In profile mode, validate that no raw flags are used
-			if (all || (inputProducts != null && inputProducts.Count > 0) || allPrs.Count > 0)
+			if (all || (inputProducts != null && inputProducts.Count > 0) || allPrs.Count > 0 || allIssues.Count > 0)
 			{
-				collector.EmitError(string.Empty, "When using a profile, do not specify --all, --input-products, or --prs. The profile configuration determines the filter.");
+				collector.EmitError(string.Empty, "When using a profile, do not specify --all, --input-products, --prs, or --issues. The profile configuration determines the filter.");
 				_ = collector.StartAsync(ctx);
 				await collector.WaitForDrain();
 				await collector.StopAsync(ctx);
@@ -390,8 +462,9 @@ internal sealed class ChangelogCommand(
 			All = all,
 			InputProducts = inputProducts,
 			OutputProducts = outputProducts,
-			Resolve = shouldResolve ?? false, // Will be overridden by config if null
+			Resolve = shouldResolve ?? false,
 			Prs = allPrs.Count > 0 ? allPrs.ToArray() : null,
+			Issues = allIssues.Count > 0 ? allIssues.ToArray() : null,
 			Owner = owner,
 			Repo = repo,
 			Profile = profile,

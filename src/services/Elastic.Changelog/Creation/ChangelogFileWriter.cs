@@ -25,13 +25,12 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 		IDiagnosticsCollector collector,
 		CreateChangelogArguments input,
 		ChangelogConfiguration config,
-		string? prUrl,
 		bool titleMissing,
 		bool typeMissing,
 		Cancel ctx)
 	{
 		// Build changelog data from input
-		var changelogData = BuildChangelogData(input, prUrl);
+		var changelogData = BuildChangelogData(input);
 
 		// Generate YAML file
 		var yamlContent = GenerateYaml(changelogData, config, titleMissing, typeMissing);
@@ -42,7 +41,7 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 			_ = fileSystem.Directory.CreateDirectory(outputDir);
 
 		// Generate filename
-		var filename = GenerateFilename(collector, input, prUrl);
+		var filename = GenerateFilename(collector, input);
 		var filePath = fileSystem.Path.Combine(outputDir, filename);
 
 		// Write file with explicit UTF-8 encoding to ensure proper character handling
@@ -52,30 +51,55 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 		return true;
 	}
 
-	private string GenerateFilename(IDiagnosticsCollector collector, CreateChangelogArguments input, string? prUrl)
+	private string GenerateFilename(IDiagnosticsCollector collector, CreateChangelogArguments input)
 	{
-		if (input.UsePrNumber && !string.IsNullOrWhiteSpace(prUrl))
+		if (input.UsePrNumber && input.Prs is { Length: > 0 })
 		{
-			// Use PR number as filename when --use-pr-number is specified
-			var prNumber = ChangelogTextUtilities.ExtractPrNumber(prUrl, input.Owner, input.Repo);
-			if (prNumber.HasValue)
-				return $"{prNumber.Value}.yaml";
+			var numbers = input.Prs
+				.Select(pr => ChangelogTextUtilities.ExtractPrNumber(pr, input.Owner, input.Repo))
+				.Where(n => n.HasValue)
+				.Select(n => n!.Value)
+				.Distinct()
+				.OrderBy(n => n)
+				.ToList();
 
-			// Fall back to timestamp-slug format if PR number extraction fails
-			collector.EmitWarning(string.Empty, $"Failed to extract PR number from '{prUrl}'. Falling back to timestamp-based filename.");
+			if (numbers.Count > 0)
+				return $"{string.Join("-", numbers)}.yaml";
+
+			collector.EmitWarning(string.Empty, $"Failed to extract PR numbers from PRs. Falling back to timestamp-based filename.");
+		}
+
+		if (input.UseIssueNumber && input.Issues is { Length: > 0 } && (input.Prs == null || input.Prs.Length == 0))
+		{
+			var numbers = input.Issues
+				.Select(issue => ChangelogTextUtilities.ExtractIssueNumber(issue, input.Owner, input.Repo))
+				.Where(n => n.HasValue)
+				.Select(n => n!.Value)
+				.Distinct()
+				.OrderBy(n => n)
+				.ToList();
+
+			if (numbers.Count > 0)
+				return $"{string.Join("-", numbers)}.yaml";
+
+			collector.EmitWarning(string.Empty, "Failed to extract issue numbers from issues. Falling back to timestamp-based filename.");
 		}
 
 		// Default: timestamp-slug.yaml
 		var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+		var firstPr = input.Prs is { Length: > 0 } ? input.Prs[0] : null;
+		var firstIssue = input.Issues is { Length: > 0 } ? input.Issues[0] : null;
 		var slug = string.IsNullOrWhiteSpace(input.Title)
-			? string.IsNullOrWhiteSpace(prUrl)
-				? "changelog"
-				: $"pr-{prUrl.Replace("/", "-").Replace(":", "-")}"
+			? firstPr != null
+				? $"pr-{firstPr.Replace("/", "-").Replace(":", "-")}"
+				: firstIssue != null
+					? $"issue-{firstIssue.Replace("/", "-").Replace(":", "-")}"
+					: "changelog"
 			: ChangelogTextUtilities.SanitizeFilename(input.Title);
 		return $"{timestamp}-{slug}.yaml";
 	}
 
-	private static ChangelogEntry BuildChangelogData(CreateChangelogArguments input, string? prUrl)
+	private static ChangelogEntry BuildChangelogData(CreateChangelogArguments input)
 	{
 		var entryType = ChangelogEntryTypeExtensions.TryParse(input.Type, out var parsed, ignoreCase: true, allowMatchingMetadataAttribute: true)
 			? parsed
@@ -97,7 +121,7 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 			Action = input.Action,
 			FeatureId = input.FeatureId,
 			Highlight = input.Highlight,
-			Pr = prUrl ?? (input.Prs != null && input.Prs.Length > 0 ? input.Prs[0] : null),
+			Prs = input.Prs is { Length: > 0 } ? input.Prs.ToList() : null,
 			Products = input.Products.Select(p => p.ToProductReference()).ToList(),
 			Areas = input.Areas is { Length: > 0 } ? input.Areas.ToList() : null,
 			Issues = input.Issues is { Length: > 0 } ? input.Issues.ToList() : null
@@ -216,8 +240,8 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 			#   An optional array of strings that contain the issues that are
 			#   relevant to the PR.
 
-			# pr:
-			#   An optional string that contains the pull request number.
+		# prs:
+		#   An optional array of strings that contain the pull request numbers.
 
 			# subtype:
 			#   An optional string that applies only to breaking changes.

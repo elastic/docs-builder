@@ -36,6 +36,7 @@ public record CreateChangelogArguments
 	public string? Output { get; init; }
 	public string? Config { get; init; }
 	public bool UsePrNumber { get; init; }
+	public bool UseIssueNumber { get; init; }
 	public bool StripTitlePrefix { get; init; }
 	public bool ExtractReleaseNotes { get; init; }
 	public bool ExtractIssues { get; init; }
@@ -45,16 +46,17 @@ public record CreateChangelogArguments
 /// Service for creating changelog entries
 /// </summary>
 public class ChangelogCreationService(
-	ILoggerFactory logFactory,
-	IConfigurationContext configurationContext,
-	IGitHubPrService? githubPrService = null,
-	IFileSystem? fileSystem = null
+ILoggerFactory logFactory,
+IConfigurationContext configurationContext,
+IGitHubPrService? githubPrService = null,
+IFileSystem? fileSystem = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogCreationService>();
 	private readonly ChangelogConfigurationLoader _configLoader = new(logFactory, configurationContext, fileSystem ?? new FileSystem());
 	private readonly CreateChangelogArgumentsValidator _validator = new(configurationContext);
 	private readonly PrInfoProcessor _prProcessor = new(githubPrService, logFactory.CreateLogger<PrInfoProcessor>());
+	private readonly IssueInfoProcessor _issueProcessor = new(githubPrService, logFactory.CreateLogger<IssueInfoProcessor>());
 	private readonly ChangelogFileWriter _fileWriter = new(fileSystem ?? new FileSystem(), logFactory.CreateLogger<ChangelogFileWriter>());
 	private readonly ProductInferService _productInferService = new(
 		configurationContext.ProductsConfiguration);
@@ -82,9 +84,21 @@ public class ChangelogCreationService(
 					input = input with { Products = inferredProducts };
 			}
 
-			// Handle multiple PRs if provided (more than one PR)
+			// When --use-pr-number and multiple PRs, create one aggregated changelog
+			if (input.Prs is { Length: > 1 } && input.UsePrNumber)
+				return await CreateAggregatedChangelogAsync(collector, input, config, ctx);
+
+			// Multiple PRs without --use-pr-number: one changelog per PR
 			if (input.Prs != null && input.Prs.Length > 1)
 				return await CreateChangelogsForMultiplePrsAsync(collector, input, config, ctx);
+
+			// Issues-only flow: derive from GitHub issues when no PRs
+			if (input.Issues is { Length: > 0 } && (input.Prs == null || input.Prs.Length == 0))
+			{
+				if (input.Issues.Length > 1)
+					return await CreateChangelogsForMultipleIssuesAsync(collector, input, config, ctx);
+				return await CreateSingleChangelogFromIssueAsync(collector, input, config, ctx);
+			}
 
 			// Single PR or no PR - use existing logic
 			return await CreateSingleChangelogAsync(collector, input, config, ctx);
@@ -226,7 +240,125 @@ public class ChangelogCreationService(
 			collector,
 			input,
 			config,
-			prUrl,
+			string.IsNullOrWhiteSpace(input.Title),
+			string.IsNullOrWhiteSpace(input.Type),
+			ctx);
+	}
+
+	private async Task<bool> CreateAggregatedChangelogAsync(
+		IDiagnosticsCollector collector,
+		CreateChangelogArguments input,
+		ChangelogConfiguration config,
+		Cancel ctx)
+	{
+		if (input.Prs == null || input.Prs.Length == 0)
+			return false;
+
+		if (!_validator.ValidateMultiplePrFormat(collector, input.Prs, input.Owner, input.Repo))
+			return false;
+
+		// Check first PR for blockers
+		var firstPr = input.Prs[0].Trim();
+		var (shouldSkip, _) = await _prProcessor.CheckPrForBlockersAsync(
+			collector, firstPr, input.Owner, input.Repo, input.Products, config, ctx);
+
+		if (shouldSkip)
+			return true;
+
+		// Process first PR for derived fields (title, type, areas, etc.)
+		var prResult = await _prProcessor.ProcessPrAsync(collector, input, config, firstPr, ctx);
+		if (prResult.ShouldSkip)
+			return true;
+
+		if (prResult.DerivedFields != null)
+			input = ApplyDerivedFields(input, prResult.DerivedFields);
+
+		if (!_validator.ValidateRequiredFields(collector, input, prResult.FetchFailed))
+			return false;
+
+		if (!_validator.ValidateAgainstConfiguration(collector, input, config))
+			return false;
+
+		// Write single changelog with all PRs (filename will be e.g. 137431-137432.yaml)
+		return await _fileWriter.WriteChangelogAsync(
+			collector,
+			input,
+			config,
+			string.IsNullOrWhiteSpace(input.Title),
+			string.IsNullOrWhiteSpace(input.Type),
+			ctx);
+	}
+
+	private async Task<bool> CreateChangelogsForMultipleIssuesAsync(
+		IDiagnosticsCollector collector,
+		CreateChangelogArguments input,
+		ChangelogConfiguration config,
+		Cancel ctx)
+	{
+		if (input.Issues == null || input.Issues.Length == 0)
+			return false;
+
+		if (!_validator.ValidateMultipleIssueFormat(collector, input.Issues, input.Owner, input.Repo))
+			return false;
+
+		var successCount = 0;
+		var skippedCount = 0;
+
+		foreach (var issueUrl in input.Issues.Select(i => i.Trim()).Where(i => !string.IsNullOrWhiteSpace(i)))
+		{
+			var (shouldSkip, _) = await _issueProcessor.CheckIssueForBlockersAsync(
+				collector, issueUrl, input.Owner, input.Repo, input.Products, config, ctx);
+
+			if (shouldSkip)
+			{
+				skippedCount++;
+				continue;
+			}
+
+			var issueInput = input with { Issues = [issueUrl] };
+			var result = await CreateSingleChangelogFromIssueAsync(collector, issueInput, config, ctx);
+			if (result)
+				successCount++;
+		}
+
+		if (successCount == 0 && skippedCount == 0)
+			return false;
+
+		_logger.LogInformation("Processed {SuccessCount} issue(s) successfully, skipped {SkippedCount} issue(s)", successCount, skippedCount);
+		return successCount > 0;
+	}
+
+	private async Task<bool> CreateSingleChangelogFromIssueAsync(
+		IDiagnosticsCollector collector,
+		CreateChangelogArguments input,
+		ChangelogConfiguration config,
+		Cancel ctx)
+	{
+		var issueUrl = input.Issues is { Length: > 0 } ? input.Issues[0] : null;
+
+		if (!_validator.ValidateIssueFormat(collector, issueUrl, input.Owner, input.Repo))
+			return false;
+
+		var issueResult = await _issueProcessor.ProcessIssueAsync(collector, input, config, issueUrl!, ctx);
+
+		if (issueResult.ShouldSkip)
+			return true;
+
+		if (issueResult.DerivedFields != null)
+			input = ApplyDerivedFields(input, issueResult.DerivedFields);
+		else if (!issueResult.FetchFailed)
+			return false;
+
+		if (!_validator.ValidateRequiredFields(collector, input, issueResult.FetchFailed, fromIssue: true))
+			return false;
+
+		if (!_validator.ValidateAgainstConfiguration(collector, input, config))
+			return false;
+
+		return await _fileWriter.WriteChangelogAsync(
+			collector,
+			input,
+			config,
 			string.IsNullOrWhiteSpace(input.Title),
 			string.IsNullOrWhiteSpace(input.Type),
 			ctx);
@@ -243,6 +375,7 @@ public class ChangelogCreationService(
 			Description = derived.Description != null && string.IsNullOrWhiteSpace(input.Description) ? derived.Description : input.Description,
 			Areas = derived.Areas != null && (input.Areas == null || input.Areas.Length == 0) ? derived.Areas : input.Areas,
 			Highlight = derived.Highlight ?? input.Highlight,
-			Issues = derived.Issues != null && (input.Issues == null || input.Issues.Length == 0) ? derived.Issues : input.Issues
+			Issues = derived.Issues != null && (input.Issues == null || input.Issues.Length == 0) ? derived.Issues : input.Issues,
+			Prs = derived.Prs != null && (input.Prs == null || input.Prs.Length == 0) ? derived.Prs : input.Prs
 		};
 }

@@ -170,7 +170,8 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 			    products:
 			      - product: elasticsearch
 			        target: 9.2.0
-			    pr: https://github.com/elastic/elasticsearch/pull/100
+			    prs:
+			    - "100"
 			""";
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 

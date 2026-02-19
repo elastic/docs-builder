@@ -77,7 +77,8 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
 		yamlContent.Should().Contain("title: Implement new aggregation API");
 		yamlContent.Should().Contain("type: feature");
-		yamlContent.Should().Contain("pr: https://github.com/elastic/elasticsearch/pull/12345");
+		yamlContent.Should().Contain("prs:");
+		yamlContent.Should().Contain("https://github.com/elastic/elasticsearch/pull/12345");
 	}
 
 	[Fact]
@@ -143,7 +144,8 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
 		yamlContent.Should().Contain("type: bug-fix");
-		yamlContent.Should().Contain("pr: https://github.com/elastic/elasticsearch/pull/140034");
+		yamlContent.Should().Contain("prs:");
+		yamlContent.Should().Contain("https://github.com/elastic/elasticsearch/pull/140034");
 	}
 
 	[Fact]
@@ -481,7 +483,7 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		// Verify both PRs were processed
 		yamlContents.Should().Contain(c => c.Contains("title: PR from comma-separated"));
 		yamlContents.Should().Contain(c => c.Contains("title: PR from file"));
-		yamlContents.Should().Contain(c => c.Contains("pr: https://github.com/elastic/elasticsearch/pull/1111"));
-		yamlContents.Should().Contain(c => c.Contains("pr: https://github.com/elastic/elasticsearch/pull/2222"));
+		yamlContents.Should().Contain(c => c.Contains("prs:") && c.Contains("https://github.com/elastic/elasticsearch/pull/1111"));
+		yamlContents.Should().Contain(c => c.Contains("prs:") && c.Contains("https://github.com/elastic/elasticsearch/pull/2222"));
 	}
 }

@@ -25,8 +25,9 @@ description: |
   # Additional information about what changed (max 600 characters).
   # Focus on user value. Explain what users can do or what problems are solved.
 
-pr:
-# The pull request number or URL.
+prs:
+# An array of pull request numbers or URLs.
+#  - https://github.com/elastic/example/pull/123
 
 issues:
 # An array of related issue URLs.

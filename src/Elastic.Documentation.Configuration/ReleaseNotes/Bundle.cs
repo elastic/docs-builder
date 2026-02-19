@@ -55,6 +55,7 @@ public sealed record BundledEntryDto
 	public string? Subtype { get; set; }
 	public List<string>? Areas { get; set; }
 	public string? Pr { get; set; }
+	public List<string>? Prs { get; set; }
 	public List<string>? Issues { get; set; }
 }
 

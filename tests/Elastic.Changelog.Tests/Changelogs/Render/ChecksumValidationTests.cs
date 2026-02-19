@@ -20,7 +20,8 @@ public class ChecksumValidationTests(ITestOutputHelper output) : RenderChangelog
 		products:
 		  - product: elasticsearch
 		    target: 9.2.0
-		pr: https://github.com/elastic/elasticsearch/pull/100
+		prs:
+		- "100"
 		""";
 
 	// language=yaml
@@ -31,7 +32,8 @@ public class ChecksumValidationTests(ITestOutputHelper output) : RenderChangelog
 		products:
 		  - product: elasticsearch
 		    target: 9.2.0
-		pr: https://github.com/elastic/elasticsearch/pull/100
+		prs:
+		- "100"
 		""";
 
 	// language=yaml
@@ -42,7 +44,8 @@ public class ChecksumValidationTests(ITestOutputHelper output) : RenderChangelog
 		products:
 		  - product: kibana
 		    target: 9.2.0
-		pr: https://github.com/elastic/elasticsearch/pull/999
+		prs:
+		- "999"
 		""";
 
 	[Fact]
@@ -131,7 +134,8 @@ public class ChecksumValidationTests(ITestOutputHelper output) : RenderChangelog
 			    products:
 			      - product: elasticsearch
 			        target: 9.2.0
-			    pr: https://github.com/elastic/elasticsearch/pull/100
+			    prs:
+			    - "100"
 			""";
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
