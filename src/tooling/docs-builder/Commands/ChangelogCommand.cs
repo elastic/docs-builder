@@ -97,7 +97,8 @@ internal sealed partial class ChangelogCommand(
 				{
 					// Fallback: try config relative to current directory (for development)
 					var localConfigPath = Path.Combine(
-						Path.Combine(Directory.GetCurrentDirectory(), "config"),
+						Directory.GetCurrentDirectory(),
+						"config",
 						"changelog.example.yml");
 					if (_fileSystem.File.Exists(localConfigPath))
 					{
