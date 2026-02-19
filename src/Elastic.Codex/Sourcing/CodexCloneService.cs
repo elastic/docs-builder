@@ -69,12 +69,28 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 		bool assumeCloned,
 		Cancel _)
 	{
+		if (Path.IsPathRooted(docSetRef.ResolvedRepoName))
+		{
+			context.Collector.EmitError(
+				context.ConfigurationPath,
+				$"Repository name '{docSetRef.ResolvedRepoName}' must be a relative path");
+			return null;
+		}
+
 		var repoDir = context.ReadFileSystem.DirectoryInfo.New(
 			Path.Combine(context.CheckoutDirectory.FullName, docSetRef.ResolvedRepoName));
 
 		var gitUrl = docSetRef.GetGitUrl();
 		var branch = docSetRef.Branch;
 		var docsPath = docSetRef.Path;
+
+		if (Path.IsPathRooted(docsPath))
+		{
+			context.Collector.EmitError(
+				context.ConfigurationPath,
+				$"Documentation path '{docsPath}' for repository '{docSetRef.Name}' must be a relative path");
+			return null;
+		}
 
 		var gitRef = branch;
 		if (!fetchLatest && linkRegistry.Repositories.TryGetValue(docSetRef.ResolvedRepoName, out var entry) &&

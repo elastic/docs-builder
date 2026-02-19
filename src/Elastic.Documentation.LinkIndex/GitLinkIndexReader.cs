@@ -38,6 +38,8 @@ public class GitLinkIndexReader(string environment, IFileSystem? fileSystem = nu
 	{
 		await EnsureCloneAsync(cancellationToken);
 		var env = string.IsNullOrEmpty(environment) ? "dev" : environment;
+		if (Path.IsPathRooted(env))
+			throw new ArgumentException($"Environment '{env}' must be a relative path segment.");
 		var registryPath = Path.Combine(CloneDirectory, env, "link-index.json");
 		if (!_fileSystem.File.Exists(registryPath))
 			throw new FileNotFoundException($"Link index registry not found at {registryPath}. Ensure the codex-link-index repository has {env}/link-index.json.");
@@ -50,6 +52,8 @@ public class GitLinkIndexReader(string environment, IFileSystem? fileSystem = nu
 	public async Task<RepositoryLinks> GetRepositoryLinks(string key, Cancel cancellationToken = default)
 	{
 		await EnsureCloneAsync(cancellationToken);
+		if (Path.IsPathRooted(key))
+			throw new ArgumentException($"Repository key '{key}' must be a relative path.", nameof(key));
 		var linksPath = Path.Combine(CloneDirectory, key);
 		if (!_fileSystem.File.Exists(linksPath))
 			throw new FileNotFoundException($"Repository links not found at {linksPath}.");
@@ -60,9 +64,6 @@ public class GitLinkIndexReader(string environment, IFileSystem? fileSystem = nu
 
 	private async Task EnsureCloneAsync(Cancel cancellationToken)
 	{
-		if (_ensuredClone)
-			return;
-
 		await _cloneLock.WaitAsync(cancellationToken);
 		try
 		{

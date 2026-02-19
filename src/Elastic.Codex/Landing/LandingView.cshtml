@@ -6,7 +6,7 @@
 @functions {
 	public GlobalLayoutViewModel LayoutModel => Model.CreateGlobalLayoutModel();
 }
-<section id="elastic-docs-v3" class="codex-landing min-h-screen bg-grey-10">
+<section id="elastic-docs-v3" class="codex-landing min-h-screen bg-page">
 	<div id="codex-grid" class="pt-8 max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 		@foreach (var group in Model.Groups)
 		{
@@ -32,7 +32,7 @@
 		}
 	</div>
 
-	<div id="codex-no-results" class="hidden" style="text-align: center; padding: 48px 0; color: #69707D;">
+	<div id="codex-no-results" class="hidden text-text-secondary text-center py-12">
 		<p>No documentation sets match your filter.</p>
 	</div>
 </section>
