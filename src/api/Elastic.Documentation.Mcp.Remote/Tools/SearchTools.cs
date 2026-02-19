@@ -4,7 +4,6 @@
 
 using System.ComponentModel;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using Elastic.Documentation.Api.Core.Search;
 using Elastic.Documentation.Mcp.Remote.Responses;
 using Microsoft.Extensions.Logging;
@@ -16,13 +15,8 @@ namespace Elastic.Documentation.Mcp.Remote.Tools;
 /// MCP tools for semantic search operations on Elastic documentation.
 /// </summary>
 [McpServerToolType]
-public partial class SearchTools(IFullSearchGateway fullSearchGateway, ILogger<SearchTools> logger)
+public class SearchTools(IFullSearchGateway fullSearchGateway, ILogger<SearchTools> logger)
 {
-	[GeneratedRegex(@"</?mark>")]
-	private static partial Regex HighlightTagPattern();
-
-	private static string StripHighlighting(string? text) =>
-		text is null ? "" : HighlightTagPattern().Replace(text, "");
 	/// <summary>
 	/// Performs semantic search across all Elastic documentation.
 	/// </summary>
@@ -50,7 +44,8 @@ public partial class SearchTools(IFullSearchGateway fullSearchGateway, ILogger<S
 				PageNumber = pageNumber,
 				PageSize = pageSize,
 				ProductFilter = productFilter != null ? [productFilter] : null,
-				SectionFilter = sectionFilter != null ? [sectionFilter] : null
+				SectionFilter = sectionFilter != null ? [sectionFilter] : null,
+				IncludeHighlighting = false
 			};
 
 			var result = await fullSearchGateway.SearchAsync(request, cancellationToken);
@@ -63,8 +58,8 @@ public partial class SearchTools(IFullSearchGateway fullSearchGateway, ILogger<S
 				Results = result.Results.Select(r => new SearchResultDto
 				{
 					Url = r.Url,
-					Title = StripHighlighting(r.Title),
-					Description = StripHighlighting(r.Description),
+					Title = r.Title,
+					Description = r.Description,
 					Score = r.Score,
 					AiShortSummary = r.AiShortSummary,
 					NavigationSection = r.NavigationSection,
@@ -108,7 +103,8 @@ public partial class SearchTools(IFullSearchGateway fullSearchGateway, ILogger<S
 				Query = topic,
 				PageNumber = 1,
 				PageSize = limit,
-				ProductFilter = productFilter != null ? [productFilter] : null
+				ProductFilter = productFilter != null ? [productFilter] : null,
+				IncludeHighlighting = false
 			};
 
 			var result = await fullSearchGateway.SearchAsync(request, cancellationToken);
@@ -120,8 +116,8 @@ public partial class SearchTools(IFullSearchGateway fullSearchGateway, ILogger<S
 				RelatedDocs = result.Results.Select(r => new RelatedDocDto
 				{
 					Url = r.Url,
-					Title = StripHighlighting(r.Title),
-					Description = StripHighlighting(r.Description),
+					Title = r.Title,
+					Description = r.Description,
 					Score = r.Score,
 					AiShortSummary = r.AiShortSummary,
 					Product = r.Product?.DisplayName

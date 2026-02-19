@@ -4,7 +4,6 @@
 
 using System.ComponentModel;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using Elastic.Documentation.Api.Core.Search;
 using Elastic.Documentation.Mcp.Remote.Responses;
 using Microsoft.Extensions.Logging;
@@ -16,13 +15,8 @@ namespace Elastic.Documentation.Mcp.Remote.Tools;
 /// MCP tools for checking documentation coherence and finding inconsistencies.
 /// </summary>
 [McpServerToolType]
-public partial class CoherenceTools(IFullSearchGateway fullSearchGateway, ILogger<CoherenceTools> logger)
+public class CoherenceTools(IFullSearchGateway fullSearchGateway, ILogger<CoherenceTools> logger)
 {
-	[GeneratedRegex(@"</?mark>")]
-	private static partial Regex HighlightTagPattern();
-
-	private static string StripHighlighting(string? text) =>
-		text is null ? "" : HighlightTagPattern().Replace(text, "");
 	/// <summary>
 	/// Checks documentation coherence for a given topic.
 	/// </summary>
@@ -43,16 +37,11 @@ public partial class CoherenceTools(IFullSearchGateway fullSearchGateway, ILogge
 			{
 				Query = topic,
 				PageNumber = 1,
-				PageSize = limit
+				PageSize = limit,
+				IncludeHighlighting = false
 			};
 
 			var result = await fullSearchGateway.SearchAsync(request, cancellationToken);
-
-			// Analyze coherence based on:
-			// - Document coverage (how many docs cover the topic)
-			// - AI summaries (similar documents should have complementary, not conflicting summaries)
-			// - Navigation sections (spread across sections)
-			// - Products (coverage across products)
 
 			var navigationSections = result.Results
 				.Where(r => !string.IsNullOrEmpty(r.NavigationSection))
@@ -80,7 +69,7 @@ public partial class CoherenceTools(IFullSearchGateway fullSearchGateway, ILogge
 				TopDocuments = result.Results.Take(5).Select(r => new CoherenceDocDto
 				{
 					Url = r.Url,
-					Title = StripHighlighting(r.Title),
+					Title = r.Title,
 					AiShortSummary = r.AiShortSummary,
 					NavigationSection = r.NavigationSection,
 					Product = r.Product?.DisplayName
@@ -120,7 +109,8 @@ public partial class CoherenceTools(IFullSearchGateway fullSearchGateway, ILogge
 			{
 				Query = query,
 				PageNumber = 1,
-				PageSize = 30
+				PageSize = 30,
+				IncludeHighlighting = false
 			};
 
 			var result = await fullSearchGateway.SearchAsync(request, cancellationToken);
@@ -156,13 +146,13 @@ public partial class CoherenceTools(IFullSearchGateway fullSearchGateway, ILogge
 									Document1 = new InconsistencyDocDto
 									{
 										Url = doc1.Url,
-										Title = StripHighlighting(doc1.Title),
+										Title = doc1.Title,
 										AiShortSummary = doc1.AiShortSummary
 									},
 									Document2 = new InconsistencyDocDto
 									{
 										Url = doc2.Url,
-										Title = StripHighlighting(doc2.Title),
+										Title = doc2.Title,
 										AiShortSummary = doc2.AiShortSummary
 									},
 									Product = doc1.Product?.DisplayName ?? productGroup.Key,
