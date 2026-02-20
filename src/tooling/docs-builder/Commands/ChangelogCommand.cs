@@ -220,10 +220,10 @@ internal sealed partial class ChangelogCommand(
 	/// <param name="repo">Optional: GitHub repository name (used when --prs contains just numbers)</param>
 	/// <param name="stripTitlePrefix">Optional: When used with --prs, remove square brackets and text within them from the beginning of PR titles, and also remove a colon if it follows the closing bracket (e.g., "[Inference API] Title" becomes "Title", "[ES|QL]: Title" becomes "Title", "[Discover][ESQL] Title" becomes "Title")</param>
 	/// <param name="subtype">Optional: Subtype for breaking changes (api, behavioral, configuration, etc.)</param>
-	/// <param name="title">Optional: A short, user-facing title (max 80 characters). Required if --pr is not specified. If --pr and --title are specified, the latter value is used instead of what exists in the PR.</param>
-	/// <param name="type">Optional: Type of change (feature, enhancement, bug-fix, breaking-change, etc.). Required if --pr is not specified. If mappings are configured, type can be derived from the PR.</param>
-	/// <param name="usePrNumber">Optional: Use the PR number(s) as the filename. With multiple PRs, uses hyphen-separated list (e.g., 137431-137432.yaml). Requires --prs.</param>
-	/// <param name="useIssueNumber">Optional: Use the issue number(s) as the filename when --issues is present and no PRs. Requires --issues.</param>
+	/// <param name="title">Optional: A short, user-facing title (max 80 characters). Required if --prs is not specified. If --prs and --title are specified, the latter value is used instead of what exists in the PR.</param>
+	/// <param name="type">Optional: Type of change (feature, enhancement, bug-fix, breaking-change, etc.). Required if --prs is not specified. If mappings are configured, type can be derived from the PR.</param>
+	/// <param name="usePrNumber">Optional: Use the PR number(s) as the filename. With multiple PRs, uses hyphen-separated list (e.g., 137431-137432.yaml). Requires --prs. Mutually exclusive with --use-issue-number.</param>
+	/// <param name="useIssueNumber">Optional: Use the issue number(s) as the filename. Requires --issues. When both --issues and --prs are specified, uses issue number if this flag is set. Mutually exclusive with --use-pr-number.</param>
 	/// <param name="ctx"></param>
 	[Command("add")]
 	public async Task<int> Create(
@@ -338,6 +338,12 @@ internal sealed partial class ChangelogCommand(
 
 		// Use provided products or empty list (service will infer from repo/config if empty)
 		var resolvedProducts = products ?? [];
+
+		if (usePrNumber && useIssueNumber)
+		{
+			collector.EmitError(string.Empty, "--use-pr-number and --use-issue-number are mutually exclusive; specify only one.");
+			return 1;
+		}
 
 		if (usePrNumber && (parsedPrs == null || parsedPrs.Length == 0))
 		{

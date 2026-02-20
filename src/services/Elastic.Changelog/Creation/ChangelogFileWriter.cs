@@ -69,7 +69,7 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 			collector.EmitWarning(string.Empty, $"Failed to extract PR numbers from PRs. Falling back to timestamp-based filename.");
 		}
 
-		if (input.UseIssueNumber && input.Issues is { Length: > 0 } && (input.Prs == null || input.Prs.Length == 0))
+		if (input.UseIssueNumber && input.Issues is { Length: > 0 })
 		{
 			var numbers = input.Issues
 				.Select(issue => ChangelogTextUtilities.ExtractIssueNumber(issue, input.Owner, input.Repo))

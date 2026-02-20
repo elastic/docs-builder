@@ -48,7 +48,7 @@ docs-builder changelog add [options...] [-h|--help]
 :   If the content contains any special characters such as backquotes, you must precede it with a backslash escape character (`\`).
 
 `--issues <string[]?>`
-:   Optional: Issue numbers (comma-separated or specify multiple times).
+:   Optional: Issue URLs or numbers (comma-separated or specify multiple times), or a path to a newline-delimited file containing issue URLs or numbers.
 
 `--no-extract-issues`
 :   Optional: Turn off extraction of linked issues from PR body (for example, "Fixes #123"). By default, linked issues are extracted when using `--prs`.
@@ -57,7 +57,7 @@ docs-builder changelog add [options...] [-h|--help]
 :   Optional: Output directory for the changelog fragment. Defaults to current directory.
 
 `--owner <string?>`
-:   Optional: GitHub repository owner (used when `--pr` is just a number).
+:   Optional: GitHub repository owner (used when `--prs` contains just numbers).
 
 `--products <List<ProductInfo>>`
 :   Required: Products affected in format "product target lifecycle, ..." (for example, `"elasticsearch 9.2.0 ga, cloud-serverless 2025-08-05"`).
@@ -76,7 +76,7 @@ docs-builder changelog add [options...] [-h|--help]
 :   If there are `block ... create` definitions in the changelog configuration file and a PR has a blocking label for any product in `--products`, that PR is skipped and no changelog file is created for it.
 
 `--repo <string?>`
-:   Optional: GitHub repository name (used when `--pr` is just a number).
+:   Optional: GitHub repository name (used when `--prs` contains just numbers).
 
 `--strip-title-prefix`
 :   Optional: When used with `--prs`, remove square brackets and text within them from the beginning of PR titles, and also remove a colon if it follows the closing bracket.
@@ -90,8 +90,8 @@ docs-builder changelog add [options...] [-h|--help]
 
 `--title <string>`
 :    A short, user-facing title (max 80 characters)
-:    Required if `--pr` is not specified.
-:    If both `--pr` and `--title` are specified, the latter value is used instead of what exists in the PR.
+:    Required if `--prs` is not specified.
+:    If both `--prs` and `--title` are specified, the latter value is used instead of what exists in the PR.
 :    If the content contains any special characters such as backquotes, you must precede it with a backslash escape character (`\`).
 
 `--type <string>`
@@ -99,5 +99,15 @@ docs-builder changelog add [options...] [-h|--help]
 :   The valid types are listed in [ChangelogConfiguration.cs](https://github.com/elastic/docs-builder/blob/main/src/services/Elastic.Documentation.Services/Changelog/ChangelogConfiguration.cs).
 
 `--use-pr-number`
-:   Optional: Use the PR number as the filename instead of generating it from a unique ID and title.
-:   When using this option, you must also provide the `--pr` option.
+:   Optional: Use the PR number(s) as the filename instead of generating it from a timestamp and title.
+:   With multiple PRs, uses hyphen-separated numbers (for example, `137431-137432.yaml`).
+:   Requires `--prs`. Mutually exclusive with `--use-issue-number`.
+
+`--use-issue-number`
+:   Optional: Use the issue number(s) as the filename instead of generating it from a timestamp and title.
+:   With multiple issues, uses hyphen-separated numbers (for example, `12345-12346.yaml`).
+:   Requires `--issues`. When both `--issues` and `--prs` are specified, still uses the issue number for the filename if this flag is set. Mutually exclusive with `--use-pr-number`.
+
+:::{important}
+`--use-pr-number` and `--use-issue-number` are mutually exclusive; specify only one.
+:::

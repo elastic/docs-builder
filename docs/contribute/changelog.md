@@ -231,7 +231,7 @@ For example, to create a new token with the minimum authority to read pull reque
 4. Under **Resource owner** if you're an Elastic employee, select **Elastic**.
 5. Set an expiration date.
 6. Under **Repository access**, select **Only select repositories** and choose the repositories you want to access.
-7. Under **Permissions** > **Repository permissions**, set **Pull requests** to **Read-only**.
+7. Under **Permissions** > **Repository permissions**, set **Pull requests** to **Read-only**. If you want to be able to read issue details, do the same for **Issues**.
 8. Click **Generate token**.
 9. Copy the token to a safe location and use it in the `GITHUB_TOKEN` environment variable.
 
@@ -269,7 +269,7 @@ docs-builder changelog add \
 
 With a single PR, this creates a file named `137431.yaml`. With multiple PRs, the filename aggregates the numbers (e.g., `137431-137432.yaml`).
 
-For an issue-centric workflow (when you have `--issues` but no `--prs`), use `--use-issue-number` to name the file by issue number(s). When you specify `--issues` without `--prs`, the command fetches the issue from GitHub and derives the title, type, and areas from the issue (using the same label mappings as for PRs):
+Use `--use-issue-number` to name the file by issue number(s). When you specify `--issues` without `--prs`, the command fetches the issue from GitHub and derives the title, type, and areas from the issue (using the same label mappings as for PRs). When both `--issues` and `--prs` are specified, `--use-issue-number` still uses the issue number for the filename:
 
 ```sh
 docs-builder changelog add \
@@ -284,7 +284,7 @@ The command derives the title from the issue title, maps labels to type and area
 This creates a file named `12345.yaml` (or `12345-12346.yaml` for multiple issues).
 
 :::{important}
-`--use-pr-number` requires `--prs`. `--use-issue-number` requires `--issues`. The numbers are extracted from the URLs or identifiers you provide.
+`--use-pr-number` and `--use-issue-number` are mutually exclusive; specify only one. `--use-pr-number` requires `--prs`. `--use-issue-number` requires `--issues`. The numbers are extracted from the URLs or identifiers you provide.
 :::
 
 ### Examples

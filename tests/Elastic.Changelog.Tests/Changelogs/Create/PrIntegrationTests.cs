@@ -149,6 +149,59 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 	}
 
 	[Fact]
+	public async Task CreateChangelog_WithUseIssueNumberAndBothIssuesAndPrs_UseIssueNumberForFilename()
+	{
+		// When both --issues and --prs are specified, --use-issue-number should still determine the filename
+		var prInfo = new GitHubPrInfo
+		{
+			Title = "Release notes test",
+			Labels = ["type:feature"]
+		};
+
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+				"https://github.com/elastic/kibana/pull/250840",
+				null,
+				null,
+				A<CancellationToken>._))
+			.Returns(prInfo);
+
+		// language=yaml
+		var configContent =
+			"""
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			  lifecycles:
+			    - ga
+			""";
+		var configPath = await CreateConfigDirectory(configContent);
+
+		var service = CreateService();
+
+		var input = new CreateChangelogArguments
+		{
+			Issues = ["https://github.com/elastic/kibana/issues/233425"],
+			Prs = ["https://github.com/elastic/kibana/pull/250840"],
+			Products = [new ProductArgument { Product = "kibana", Target = "9.2.0", Lifecycle = "ga" }],
+			Config = configPath,
+			Output = CreateOutputDirectory(),
+			UseIssueNumber = true
+		};
+
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+
+		var files = FileSystem.Directory.GetFiles(input.Output!, "*.yaml");
+		files.Should().HaveCount(1);
+
+		var fileName = Path.GetFileName(files[0]);
+		fileName.Should().Be("233425.yaml", "the filename should use the issue number when UseIssueNumber is true, even with PRs present");
+	}
+
+	[Fact]
 	public async Task CreateChangelog_WithPrNumberAndOwnerRepo_FetchesPrInfo()
 	{
 		// Arrange
