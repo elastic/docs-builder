@@ -13,14 +13,33 @@ namespace Elastic.Changelog.Rendering;
 public static class ChangelogRenderUtilities
 {
 	/// <summary>
-	/// Gets the component (area) for an entry. Uses first area or empty string.
+	/// Gets the component (area) for an entry for subsection grouping.
+	/// When context is provided and publish rules with areas are configured, uses the first area
+	/// that aligns with those rules (first included or first non-excluded). Otherwise uses the first area.
 	/// </summary>
-	public static string GetComponent(ChangelogEntry entry)
+	public static string GetComponent(ChangelogEntry entry, ChangelogRenderContext? context = null)
 	{
-		// Map areas (list) to component (string) - use first area or empty string
-		if (entry.Areas is { Count: > 0 })
-			return entry.Areas[0];
-		return string.Empty;
+		if (context == null)
+			return entry.Areas is { Count: > 0 } ? entry.Areas[0] : string.Empty;
+
+		var blocker = GetPublishBlockerForEntry(entry, context);
+		return blocker.GetPreferredArea(entry);
+	}
+
+	private static PublishBlocker? GetPublishBlockerForEntry(ChangelogEntry entry, ChangelogRenderContext context)
+	{
+		var productIds = context.EntryToBundleProducts.GetValueOrDefault(entry);
+		if (productIds == null || context.Configuration?.Rules?.Publish == null)
+			return null;
+
+		foreach (var productId in productIds)
+		{
+			var blocker = GetPublishBlockerForProduct(context.Configuration.Rules.Publish, productId);
+			if (blocker != null)
+				return blocker;
+		}
+
+		return null;
 	}
 
 	/// <summary>

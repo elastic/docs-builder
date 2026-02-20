@@ -53,6 +53,7 @@ The `render` command automatically discovers and merges `.amend-*.yaml` files wi
 `--subsections`
 :   Optional: Group entries by area in subsections.
 :   Defaults to false.
+:   When publish rules with `include_areas` or `exclude_areas` are configured in `changelog.yml`, the area used for grouping is the first area from the entry's list that aligns with those rules (first included area, or first non-excluded area).
 
 `--title <string?>`
 :   Optional: The title to use for section headers, directories, and anchors in output files.
