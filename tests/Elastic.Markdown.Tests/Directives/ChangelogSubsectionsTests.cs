@@ -242,6 +242,7 @@ public class ChangelogSubsectionsWithExcludeAreasTests : DirectiveTest<Changelog
 			  publish:
 			    products:
 			      elasticsearch:
+			        match_areas: all
 			        exclude_areas:
 			          - "Search"
 			"""));
