@@ -73,7 +73,7 @@ public static class ChangelogInlineRenderer
 		// contains any private repositories - if so, hide links for this bundle
 		var hideLinks = ShouldHideLinksForRepo(bundle.Repo, privateRepositories);
 
-		return GenerateMarkdown(bundle.Version, titleSlug, bundle.Repo, entriesByType, subsections, hideLinks, typeFilter);
+		return GenerateMarkdown(bundle.Version, titleSlug, bundle.Repo, entriesByType, subsections, hideLinks, typeFilter, publishBlocker);
 	}
 
 	/// <summary>
@@ -144,7 +144,8 @@ public static class ChangelogInlineRenderer
 		Dictionary<ChangelogEntryType, List<ChangelogEntry>> entriesByType,
 		bool subsections,
 		bool hideLinks,
-		ChangelogTypeFilter typeFilter)
+		ChangelogTypeFilter typeFilter,
+		PublishBlocker? publishBlocker)
 	{
 		var sb = new StringBuilder();
 
@@ -184,7 +185,7 @@ public static class ChangelogInlineRenderer
 		if (typeFilter == ChangelogTypeFilter.Highlight)
 		{
 			if (highlights.Count > 0)
-				RenderDetailedEntries(sb, highlights, repo, groupBySubtype: false, hideLinks);
+				RenderDetailedEntries(sb, highlights, repo, groupBySubtype: false, hideLinks, publishBlocker);
 			return sb.ToString();
 		}
 
@@ -192,35 +193,35 @@ public static class ChangelogInlineRenderer
 		{
 			_ = sb.AppendLine();
 			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Breaking changes [{repo}-{titleSlug}-breaking-changes]");
-			RenderDetailedEntries(sb, breakingChanges, repo, groupBySubtype: true, hideLinks);
+			RenderDetailedEntries(sb, breakingChanges, repo, groupBySubtype: true, hideLinks, publishBlocker);
 		}
 
 		if (highlights.Count > 0 && typeFilter == ChangelogTypeFilter.All)
 		{
 			_ = sb.AppendLine();
 			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Highlights [{repo}-{titleSlug}-highlights]");
-			RenderDetailedEntries(sb, highlights, repo, groupBySubtype: false, hideLinks);
+			RenderDetailedEntries(sb, highlights, repo, groupBySubtype: false, hideLinks, publishBlocker);
 		}
 
 		if (security.Count > 0)
 		{
 			_ = sb.AppendLine();
 			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Security [{repo}-{titleSlug}-security]");
-			RenderEntriesByArea(sb, security, repo, subsections, hideLinks);
+			RenderEntriesByArea(sb, security, repo, subsections, hideLinks, publishBlocker);
 		}
 
 		if (knownIssues.Count > 0)
 		{
 			_ = sb.AppendLine();
 			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Known issues [{repo}-{titleSlug}-known-issues]");
-			RenderDetailedEntries(sb, knownIssues, repo, groupBySubtype: false, hideLinks);
+			RenderDetailedEntries(sb, knownIssues, repo, groupBySubtype: false, hideLinks, publishBlocker);
 		}
 
 		if (deprecations.Count > 0)
 		{
 			_ = sb.AppendLine();
 			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Deprecations [{repo}-{titleSlug}-deprecations]");
-			RenderDetailedEntries(sb, deprecations, repo, groupBySubtype: false, hideLinks);
+			RenderDetailedEntries(sb, deprecations, repo, groupBySubtype: false, hideLinks, publishBlocker);
 		}
 
 		if (features.Count > 0 || enhancements.Count > 0)
@@ -228,35 +229,35 @@ public static class ChangelogInlineRenderer
 			_ = sb.AppendLine();
 			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Features and enhancements [{repo}-{titleSlug}-features-enhancements]");
 			var combined = features.Concat(enhancements).ToList();
-			RenderEntriesByArea(sb, combined, repo, subsections, hideLinks);
+			RenderEntriesByArea(sb, combined, repo, subsections, hideLinks, publishBlocker);
 		}
 
 		if (bugFixes.Count > 0)
 		{
 			_ = sb.AppendLine();
 			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Fixes [{repo}-{titleSlug}-fixes]");
-			RenderEntriesByArea(sb, bugFixes, repo, subsections, hideLinks);
+			RenderEntriesByArea(sb, bugFixes, repo, subsections, hideLinks, publishBlocker);
 		}
 
 		if (docs.Count > 0)
 		{
 			_ = sb.AppendLine();
 			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Documentation [{repo}-{titleSlug}-docs]");
-			RenderEntriesByArea(sb, docs, repo, subsections, hideLinks);
+			RenderEntriesByArea(sb, docs, repo, subsections, hideLinks, publishBlocker);
 		}
 
 		if (regressions.Count > 0)
 		{
 			_ = sb.AppendLine();
 			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Regressions [{repo}-{titleSlug}-regressions]");
-			RenderEntriesByArea(sb, regressions, repo, subsections, hideLinks);
+			RenderEntriesByArea(sb, regressions, repo, subsections, hideLinks, publishBlocker);
 		}
 
 		if (other.Count > 0)
 		{
 			_ = sb.AppendLine();
 			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Other changes [{repo}-{titleSlug}-other]");
-			RenderEntriesByArea(sb, other, repo, subsections, hideLinks);
+			RenderEntriesByArea(sb, other, repo, subsections, hideLinks, publishBlocker);
 		}
 
 		return sb.ToString();
@@ -267,12 +268,13 @@ public static class ChangelogInlineRenderer
 		List<ChangelogEntry> entries,
 		string repo,
 		bool subsections,
-		bool hideLinks)
+		bool hideLinks,
+		PublishBlocker? publishBlocker)
 	{
 		if (subsections)
 		{
 			// Group by area and sort when subsections is enabled
-			var groupedByArea = entries.GroupBy(GetComponent).OrderBy(g => g.Key).ToList();
+			var groupedByArea = entries.GroupBy(e => publishBlocker.GetPreferredArea(e)).OrderBy(g => g.Key).ToList();
 
 			foreach (var areaGroup in groupedByArea)
 			{
@@ -346,11 +348,12 @@ public static class ChangelogInlineRenderer
 		List<ChangelogEntry> entries,
 		string repo,
 		bool groupBySubtype,
-		bool hideLinks)
+		bool hideLinks,
+		PublishBlocker? publishBlocker)
 	{
 		var grouped = groupBySubtype
 			? entries.GroupBy(e => e.Subtype?.ToStringFast(true) ?? string.Empty).OrderBy(g => g.Key).ToList()
-			: entries.GroupBy(GetComponent).OrderBy(g => g.Key).ToList();
+			: entries.GroupBy(e => publishBlocker.GetPreferredArea(e)).OrderBy(g => g.Key).ToList();
 
 		foreach (var group in grouped)
 		{
@@ -429,9 +432,6 @@ public static class ChangelogInlineRenderer
 		_ = sb.AppendLine(".");
 		_ = sb.AppendLine();
 	}
-
-	private static string GetComponent(ChangelogEntry entry) =>
-		entry.Areas is { Count: > 0 } ? entry.Areas[0] : string.Empty;
 
 	/// <summary>
 	/// Gets the appropriate empty message based on the type filter.

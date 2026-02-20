@@ -445,6 +445,8 @@ rules:
       - "Monitoring"
 ```
 
+When subsections are enabled (`:subsections:` in the `{changelog}` directive or `--subsections` in the `changelog render` command), these `include_areas` and `exclude_areas` rules also affect which area label is used for grouping. Entries with multiple areas are grouped under the first area that aligns with the rules — the first included area for `include_areas`, or the first non-excluded area for `exclude_areas`.
+
 #### Create changelogs from a file of PRs [example-file-prs]
 
 You can also provide PRs from a file containing newline-delimited PR URLs or numbers:
