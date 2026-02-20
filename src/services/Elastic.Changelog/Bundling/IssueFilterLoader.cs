@@ -160,19 +160,9 @@ public class IssueFilterLoader(IFileSystem fileSystem)
 		string? owner,
 		string? repo)
 	{
-		var hasNumericOnly = false;
-
-		foreach (var issue in issuesToMatch)
-		{
-			if (IsUrl(issue) || IsShortFormat(issue))
-				continue;
-
-			if (int.TryParse(issue, out _))
-			{
-				hasNumericOnly = true;
-				break;
-			}
-		}
+		var hasNumericOnly = issuesToMatch
+			.Where(issue => !IsUrl(issue) && !IsShortFormat(issue))
+			.Any(issue => int.TryParse(issue, out _));
 
 		if (hasNumericOnly && (string.IsNullOrWhiteSpace(owner) || string.IsNullOrWhiteSpace(repo)))
 		{
