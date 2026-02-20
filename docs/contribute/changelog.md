@@ -770,13 +770,15 @@ For example, the `index.md` output file contains information derived from the ch
 * Convert BytesTransportResponse when proxying response from/to local node. [#135873](https://github.com/elastic/elastic/pull/135873) 
 
 **Machine Learning**
-* Fix ML calendar event update scalability issues. [#136886](https://github.com/elastic/elastic/pull/136886) 
+* Fix ML calendar event update scalability issues. [#136886](https://github.com/elastic/elastic/pull/136886) [#136900](https://github.com/elastic/elastic/pull/136900)
 
 **Aggregations**
 * Break on FieldData when building global ordinals. [#108875](https://github.com/elastic/elastic/pull/108875) 
 ```
 
-To comment out the pull request and issue links, for example if they relate to a private repository, add `hide-links` to the `--input` option for that bundle. This allows you to selectively hide links per bundle when merging changelogs from multiple repositories.
+When a changelog entry includes multiple values in its `prs` or `issues` arrays, all links are rendered inline for that entry, as shown in the Machine Learning example above.
+
+To comment out the pull request and issue links, for example if they relate to a private repository, add `hide-links` to the `--input` option for that bundle. This allows you to selectively hide links per bundle when merging changelogs from multiple repositories. When `hide-links` is set, all PR and issue links for affected entries are hidden together.
 
 If you have changelogs with `feature-id` values and you want them to be omitted from the output, use the `--hide-features` option. Feature IDs specified via `--hide-features` are **merged** with any `hide-features` already present in the bundle files. This means both CLI-specified and bundle-embedded features are hidden in the output.
 

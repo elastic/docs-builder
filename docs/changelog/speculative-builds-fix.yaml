@@ -5,7 +5,8 @@ products:
     target: 0.100.0
 areas:
   - Assembler
-pr: https://github.com/elastic/docs-builder/pull/2471
+prs:
+  - https://github.com/elastic/docs-builder/pull/2471
 description: |
   Prevents speculative builds from running for repositories that are
   already publishing with non-versioned branches, avoiding unnecessary
