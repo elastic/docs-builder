@@ -121,18 +121,6 @@ jobs:
         run: npm run test
       
 
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Bootstrap Action Workspace
-        id: bootstrap
-        uses: ./.github/actions/bootstrap
-
-      - name: Lint
-        run: dotnet run --project build -c release -- lint
-
   build:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -158,8 +146,8 @@ jobs:
       - name: Install Aspire workload
         run: dotnet workload install aspire
 
-      - name: Compile
-        run: dotnet run --project build -c release -- compile
+      - name: Build
+        run: dotnet run --project build -c release
 
       - name: Test
         run: dotnet run --project build -c release -- unit-test
