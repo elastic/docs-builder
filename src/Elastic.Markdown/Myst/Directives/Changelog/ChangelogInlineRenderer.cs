@@ -310,7 +310,6 @@ public static class ChangelogInlineRenderer
 
 	private static void RenderEntryLinks(StringBuilder sb, ChangelogEntry entry, string repo, bool hideLinks)
 	{
-		var hasPrs = entry.Prs is { Count: > 0 };
 
 		if (hideLinks)
 		{
