@@ -417,4 +417,82 @@ public class PublishBlockerExtensionsTests
 
 		blocker.ShouldBlock(entry).Should().BeTrue();
 	}
+
+	// --- GetPreferredArea ---
+
+	[Fact]
+	public void GetPreferredArea_WhenNoAreas_ReturnsEmpty()
+	{
+		var blocker = new PublishBlocker { Areas = ["Search"], AreasMode = FieldMode.Include };
+		var entry = new ChangelogEntry { Title = "Test", Type = ChangelogEntryType.Feature };
+
+		blocker.GetPreferredArea(entry).Should().BeEmpty();
+	}
+
+	[Fact]
+	public void GetPreferredArea_WhenNullBlocker_ReturnsFirstArea()
+	{
+		PublishBlocker? blocker = null;
+		var entry = new ChangelogEntry { Title = "Test", Type = ChangelogEntryType.Feature, Areas = ["Search", "Monitoring", "Security"] };
+
+		blocker.GetPreferredArea(entry).Should().Be("Search");
+	}
+
+	[Fact]
+	public void GetPreferredArea_WhenBlockerHasNoAreas_ReturnsFirstArea()
+	{
+		var blocker = new PublishBlocker { Types = ["docs"], TypesMode = FieldMode.Exclude };
+		var entry = new ChangelogEntry { Title = "Test", Type = ChangelogEntryType.Feature, Areas = ["Search", "Monitoring", "Security"] };
+
+		blocker.GetPreferredArea(entry).Should().Be("Search");
+	}
+
+	[Fact]
+	public void GetPreferredArea_IncludeAreas_ReturnsFirstIncludedArea()
+	{
+		var blocker = new PublishBlocker { Areas = ["Security", "Monitoring"], AreasMode = FieldMode.Include };
+		var entry = new ChangelogEntry { Title = "Test", Type = ChangelogEntryType.Feature, Areas = ["Search", "Monitoring", "Security"] };
+
+		// First area in entry order that is in include list: Monitoring
+		blocker.GetPreferredArea(entry).Should().Be("Monitoring");
+	}
+
+	[Fact]
+	public void GetPreferredArea_ExcludeAreas_ReturnsFirstNonExcludedArea()
+	{
+		var blocker = new PublishBlocker { Areas = ["Search"], AreasMode = FieldMode.Exclude };
+		var entry = new ChangelogEntry { Title = "Test", Type = ChangelogEntryType.Feature, Areas = ["Search", "Monitoring", "Security"] };
+
+		// First area in entry order that is NOT in exclude list: Monitoring
+		blocker.GetPreferredArea(entry).Should().Be("Monitoring");
+	}
+
+	[Fact]
+	public void GetPreferredArea_IncludeAreas_NoMatch_FallsBackToFirstArea()
+	{
+		var blocker = new PublishBlocker { Areas = ["Internal"], AreasMode = FieldMode.Include };
+		var entry = new ChangelogEntry { Title = "Test", Type = ChangelogEntryType.Feature, Areas = ["Search", "Monitoring", "Security"] };
+
+		// No area in entry matches include list → fallback to first area
+		blocker.GetPreferredArea(entry).Should().Be("Search");
+	}
+
+	[Fact]
+	public void GetPreferredArea_ExcludeAreas_AllExcluded_FallsBackToFirstArea()
+	{
+		var blocker = new PublishBlocker { Areas = ["Search", "Monitoring", "Security"], AreasMode = FieldMode.Exclude };
+		var entry = new ChangelogEntry { Title = "Test", Type = ChangelogEntryType.Feature, Areas = ["Search", "Monitoring", "Security"] };
+
+		// All areas excluded → fallback to first area
+		blocker.GetPreferredArea(entry).Should().Be("Search");
+	}
+
+	[Fact]
+	public void GetPreferredArea_IsCaseInsensitive()
+	{
+		var blocker = new PublishBlocker { Areas = ["MONITORING"], AreasMode = FieldMode.Include };
+		var entry = new ChangelogEntry { Title = "Test", Type = ChangelogEntryType.Feature, Areas = ["search", "monitoring", "security"] };
+
+		blocker.GetPreferredArea(entry).Should().Be("monitoring");
+	}
 }

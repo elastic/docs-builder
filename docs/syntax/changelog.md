@@ -105,6 +105,8 @@ To show all entries on a single page (previous default behavior):
 
 When enabled, entries are grouped by their area/component within each section. By default, entries are listed without area grouping (matching CLI behavior).
 
+If publish rules with `include_areas` or `exclude_areas` are active, the grouping uses the first area in the entry's `areas` list that is consistent with those rules — the first included area for `include_areas` rules, or the first non-excluded area for `exclude_areas` rules. When no publish rules are configured, the first area in the list is used.
+
 #### `:config:`
 
 Explicit path to a `changelog.yml` configuration file. If not specified, the directive auto-discovers from:

@@ -36,8 +36,8 @@ public class HighlightsMarkdownRenderer(IFileSystem fileSystem) : MarkdownRender
 		if (highlights.Count > 0)
 		{
 			var groupedByArea = context.Subsections
-				? highlights.GroupBy(ChangelogRenderUtilities.GetComponent).OrderBy(g => g.Key).ToList()
-				: highlights.GroupBy(ChangelogRenderUtilities.GetComponent).ToList();
+				? highlights.GroupBy(e => ChangelogRenderUtilities.GetComponent(e, context)).OrderBy(g => g.Key).ToList()
+				: highlights.GroupBy(e => ChangelogRenderUtilities.GetComponent(e, context)).ToList();
 			foreach (var areaGroup in groupedByArea)
 			{
 				// Check if all entries in this area group are hidden
