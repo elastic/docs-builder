@@ -170,10 +170,11 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 			"""
 			pivot:
 			  types:
-			    feature:
+			    feature: "type:feature"
 			    bug-fix:
-			  lifecycles:
-			    - ga
+			    breaking-change:
+			lifecycles:
+			  - ga
 			""";
 		var configPath = await CreateConfigDirectory(configContent);
 
@@ -186,7 +187,9 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 			Products = [new ProductArgument { Product = "kibana", Target = "9.2.0", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
-			UseIssueNumber = true
+			UseIssueNumber = true,
+			Title = "Release notes test",
+			Type = "feature"
 		};
 
 		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
