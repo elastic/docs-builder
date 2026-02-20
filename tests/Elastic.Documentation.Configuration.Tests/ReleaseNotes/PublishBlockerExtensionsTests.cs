@@ -435,7 +435,7 @@ public class PublishBlockerExtensionsTests
 		PublishBlocker? blocker = null;
 		var entry = new ChangelogEntry { Title = "Test", Type = ChangelogEntryType.Feature, Areas = ["Search", "Monitoring", "Security"] };
 
-		blocker.GetPreferredArea(entry).Should().Be("Search");
+		PublishBlockerExtensions.GetPreferredArea(blocker, entry).Should().Be("Search");
 	}
 
 	[Fact]
