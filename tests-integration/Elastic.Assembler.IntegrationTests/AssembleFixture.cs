@@ -48,8 +48,14 @@ public class DocumentationFixture : IAsyncLifetime
 	/// <inheritdoc />
 	public async ValueTask InitializeAsync()
 	{
+		// --assume-build is not allowed on CI (blocks stale content), so only use it locally
+		var isCI = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"));
+		string[] args = isCI
+			? ["--skip-private-repositories", "--assume-cloned"]
+			: ["--skip-private-repositories", "--assume-cloned", "--assume-build"];
+
 		var builder = await DistributedApplicationTestingBuilder.CreateAsync<Projects.aspire>(
-			["--skip-private-repositories", "--assume-cloned", "--assume-build"],
+			args,
 			(options, _) =>
 			{
 				options.DisableDashboard = true;

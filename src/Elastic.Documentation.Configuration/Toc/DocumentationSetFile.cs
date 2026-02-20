@@ -8,6 +8,7 @@ using Elastic.Documentation.Configuration.Toc.DetectionRules;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
 using YamlDotNet.Serialization;
+using static Elastic.Documentation.Configuration.SymlinkValidator;
 
 namespace Elastic.Documentation.Configuration.Toc;
 
@@ -96,6 +97,8 @@ public class DocumentationSetFile : TableOfContentsFile
 	public static DocumentationSetFile LoadAndResolve(IDiagnosticsCollector collector, IFileInfo docsetPath, IFileSystem? fileSystem = null, HashSet<HintType>? noSuppress = null)
 	{
 		fileSystem ??= docsetPath.FileSystem;
+		// Validate that the docset.yml is not a symlink (security: prevents path traversal attacks)
+		EnsureNotSymlink(docsetPath);
 		var yaml = fileSystem.File.ReadAllText(docsetPath.FullName);
 		var sourceDirectory = docsetPath.Directory!;
 		return LoadAndResolve(collector, yaml, sourceDirectory, fileSystem, noSuppress);
@@ -217,6 +220,9 @@ public class DocumentationSetFile : TableOfContentsFile
 			collector.EmitError(parentContext, $"Table of contents file not found: {fullTocPath}/toc.yml");
 			return new IsolatedTableOfContentsRef(fullTocPath, tocPathRelativeToContainer, [], parentContext);
 		}
+
+		// Validate that the toc.yml is not a symlink (security: prevents path traversal attacks)
+		EnsureNotSymlink(fileSystem, tocFilePath);
 
 		var tocYaml = fileSystem.File.ReadAllText(tocFilePath);
 		var nestedTocFile = TableOfContentsFile.Deserialize(tocYaml);
