@@ -27,8 +27,10 @@ extract:
   # Auto-extract release notes from PR descriptions (default: true)
   # Can be overridden by CLI --no-extract-release-notes
   release_notes: true
-  # Auto-extract issues from PR body (default: true)
-  # Looks for patterns like "Fixes #123", "Closes #456", etc.
+  # Auto-extract linked references (default: true)
+  # When using --prs: looks for patterns like "Fixes #123", "Closes #456" in PR body to derive issues.
+  # When using --issues: looks for patterns like "Fixed by #123" in issue body to derive PRs.
+  # Can be overridden by CLI --no-extract-issues
   issues: true
 
 # Available lifecycle values (strongly typed: preview, beta, ga)

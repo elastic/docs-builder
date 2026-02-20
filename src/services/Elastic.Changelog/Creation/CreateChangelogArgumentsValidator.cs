@@ -92,8 +92,8 @@ public class CreateChangelogArgumentsValidator(IConfigurationContext configurati
 				collector.EmitWarning(string.Empty, "Title is missing. The changelog will be created with title commented out. Please manually update the title field.");
 			else
 			{
-				var source = fromIssue ? "issues" : "prs";
-				collector.EmitError(string.Empty, $"Title is required. Provide --title or specify --{source} to derive it from the {source}.");
+				var titleHint = fromIssue ? "specify --issues to derive it from the issue" : "specify --prs or --issues to derive it";
+				collector.EmitError(string.Empty, $"Title is required. Provide --title or {titleHint}.");
 				return false;
 			}
 		}
