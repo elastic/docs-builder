@@ -231,7 +231,7 @@ For example, to create a new token with the minimum authority to read pull reque
 4. Under **Resource owner** if you're an Elastic employee, select **Elastic**.
 5. Set an expiration date.
 6. Under **Repository access**, select **Only select repositories** and choose the repositories you want to access.
-7. Under **Permissions** > **Repository permissions**, set **Pull requests** to **Read-only**.
+7. Under **Permissions** > **Repository permissions**, set **Pull requests** to **Read-only**. If you want to be able to read issue details, do the same for **Issues**.
 8. Click **Generate token**.
 9. Copy the token to a safe location and use it in the `GITHUB_TOKEN` environment variable.
 
@@ -262,15 +262,29 @@ If you want to use the PR number as the filename instead, add the `--use-pr-numb
 
 ```sh
 docs-builder changelog add \
-  --pr https://github.com/elastic/elasticsearch/pull/137431 \
+  --prs https://github.com/elastic/elasticsearch/pull/137431 \
   --products "elasticsearch 9.2.3" \
   --use-pr-number
 ```
 
-This creates a file named `137431.yaml` instead of the default timestamp-based filename.
+With a single PR, this creates a file named `137431.yaml`. With multiple PRs, the filename aggregates the numbers (e.g., `137431-137432.yaml`).
+
+Use `--use-issue-number` to name the file by issue number(s). When you specify `--issues` without `--prs`, the command fetches the issue from GitHub and derives the title, type, and areas from the issue (using the same label mappings as for PRs). When both `--issues` and `--prs` are specified, `--use-issue-number` still uses the issue number for the filename:
+
+```sh
+docs-builder changelog add \
+  --issues https://github.com/elastic/elasticsearch/issues/12345 \
+  --products "elasticsearch 9.2.3" \
+  --config docs/changelog.yml \
+  --use-issue-number
+```
+
+The command derives the title from the issue title, maps labels to type and areas (if configured), extracts release notes from the issue body, and extracts linked PRs (e.g., "Fixed by #123"). You can omit `--title` and `--type` when the issue has appropriate labels. Multiple issues can be specified comma-separated or via a file path (like `--prs`), creating one changelog per issue.
+
+This creates a file named `12345.yaml` (or `12345-12346.yaml` for multiple issues).
 
 :::{important}
-When using `--use-pr-number`, you must also provide the `--pr` option. The PR number is extracted from the PR URL or number you provide.
+`--use-pr-number` and `--use-issue-number` are mutually exclusive; specify only one. `--use-pr-number` requires `--prs`. `--use-issue-number` requires `--issues`. The numbers are extracted from the URLs or identifiers you provide.
 :::
 
 ### Examples
@@ -317,7 +331,7 @@ pivot:
     "ES|QL": ":Search Relevance/ES|QL"
 ```
 
-When you use the `--prs` option to derive information from a pull request, it can make use of those mappings:
+When you use the `--prs` option to derive information from a pull request, it can make use of those mappings. Similarly, when you use the `--issues` option (without `--prs`), the command derives title, type, and areas from the GitHub issue labels using the same mappings:
 
 ```sh
 docs-builder changelog add \
@@ -328,7 +342,7 @@ docs-builder changelog add \
 ```
 
 In this case, the changelog file derives the title, type, and areas from the pull request.
-The command also looks for patterns like `Fixes #123`, `Closes owner/repo#456`, `Resolves https://github.com/.../issues/789` in the pull request to derive its issues (unless you turn off this behavior in the changelog configuration file or use `--no-extract-issues`).
+The command also looks for patterns like `Fixes #123`, `Closes owner/repo#456`, `Resolves https://github.com/.../issues/789` in the pull request to derive its issues. Similarly, when using `--issues`, the command extracts linked PRs from the issue body (for example, "Fixed by #123"). You can turn off this behavior in either case with the `--no-extract-issues` flag or by setting `extract.issues: false` in the changelog configuration file. The `extract.issues` setting applies to both directions: issues extracted from PR bodies (when using `--prs`) and PRs extracted from issue bodies (when using `--issues`).
 
 The `--strip-title-prefix` option in this example means that if the PR title has a prefix in square brackets (such as `[ES|QL]` or `[Security]`), it is automatically removed from the changelog title. Multiple square bracket prefixes are also supported (e.g., `[Discover][ESQL] Title` becomes `Title`). If a colon follows the closing bracket, it is also removed.
 
@@ -474,6 +488,7 @@ You can specify only one of the following filter options:
 - `--all`: Include all changelogs from the directory.
 - `--input-products`: Include changelogs for the specified products. Refer to [Filter by product](#changelog-bundle-product).
 - `--prs`: Include changelogs for the specified pull request URLs or numbers, or a path to a newline-delimited file containing PR URLs or numbers. Go to [Filter by pull requests](#changelog-bundle-pr).
+- `--issues`: Include changelogs for the specified issue URLs or numbers, or a path to a newline-delimited file containing issue URLs or numbers. Go to [Filter by issues](#changelog-bundle-issues).
 
 By default, the output file contains only the changelog file names and checksums.
 You can optionally use the `--resolve` command option to pull all of the content from each changelog into the bundle.
@@ -577,6 +592,19 @@ entries:
 
 If you add the `--resolve` option, the contents of each changelog will be included in the output file.
 
+### Filter by issues [changelog-bundle-issues]
+
+You can use the `--issues` option to create a bundle of changelogs that relate to those GitHub issues.
+Provide either a comma-separated list of issues (`--issues "https://github.com/owner/repo/issues/123,456"`) or a path to a newline-delimited file (`--issues /path/to/file.txt`).
+Issues can be identified by a full URL (such as `https://github.com/owner/repo/issues/123`), a short format (such as `owner/repo#123`), or just a number (in which case you must also provide `--owner` and `--repo` options).
+
+```sh
+docs-builder changelog bundle --issues "12345,12346" \
+  --repo elasticsearch \
+  --owner elastic \
+  --output-products "elasticsearch 9.2.2 ga"
+```
+
 ### Filter by pull request file [changelog-bundle-file]
 
 If you have a file that lists pull requests (such as PRs associated with a GitHub release):
@@ -620,7 +648,8 @@ entries:
   - product: elasticsearch
   areas:
   - Aggregations
-  pr: https://github.com/elastic/elasticsearch/pull/108875
+  prs:
+  - https://github.com/elastic/elasticsearch/pull/108875
 ...
 ```
 
@@ -743,13 +772,15 @@ For example, the `index.md` output file contains information derived from the ch
 * Convert BytesTransportResponse when proxying response from/to local node. [#135873](https://github.com/elastic/elastic/pull/135873) 
 
 **Machine Learning**
-* Fix ML calendar event update scalability issues. [#136886](https://github.com/elastic/elastic/pull/136886) 
+* Fix ML calendar event update scalability issues. [#136886](https://github.com/elastic/elastic/pull/136886) [#136900](https://github.com/elastic/elastic/pull/136900)
 
 **Aggregations**
 * Break on FieldData when building global ordinals. [#108875](https://github.com/elastic/elastic/pull/108875) 
 ```
 
-To comment out the pull request and issue links, for example if they relate to a private repository, add `hide-links` to the `--input` option for that bundle. This allows you to selectively hide links per bundle when merging changelogs from multiple repositories.
+When a changelog entry includes multiple values in its `prs` or `issues` arrays, all links are rendered inline for that entry, as shown in the Machine Learning example above.
+
+To comment out the pull request and issue links, for example if they relate to a private repository, add `hide-links` to the `--input` option for that bundle. This allows you to selectively hide links per bundle when merging changelogs from multiple repositories. When `hide-links` is set, all PR and issue links for affected entries are hidden together.
 
 If you have changelogs with `feature-id` values and you want them to be omitted from the output, use the `--hide-features` option. Feature IDs specified via `--hide-features` are **merged** with any `hide-features` already present in the bundle files. This means both CLI-specified and bundle-embedded features are hidden in the output.
 

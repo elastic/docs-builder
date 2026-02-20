@@ -29,7 +29,7 @@ These arguments apply to profile-based bundling:
 
 `--all`
 :   Include all changelogs from the directory.
-:   Only one filter option can be specified: `--all`, `--input-products`, or `--prs`.
+:   Only one filter option can be specified: `--all`, `--input-products`, `--prs`, or `--issues`.
 
 `--config <string?>`
 :   Optional: Path to the changelog.yml configuration file.
@@ -46,7 +46,7 @@ These arguments apply to profile-based bundling:
 
 `--input-products <List<ProductInfo>?>`
 :   Filter by products in format "product target lifecycle, ..."
-:   Only one filter option can be specified: `--all`, `--input-products`, or `--prs`.
+:   Only one filter option can be specified: `--all`, `--input-products`, `--prs`, or `--issues`.
 :   When specified, all three parts (product, target, lifecycle) are required but can be wildcards (`*`). For example:
 
 - `"cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta"` - exact matches
@@ -54,6 +54,13 @@ These arguments apply to profile-based bundling:
 - `"elasticsearch * *"` - match all elasticsearch changelogs
 - `"* 9.3.* *"` - match any product with target starting with "9.3."
 - `"* * *"` - match all changelogs (equivalent to `--all`)
+
+`--issues <string[]?>`
+:   Filter by issue URLs or numbers (comma-separated), or a path to a newline-delimited file containing issue URLs or numbers. Can be specified multiple times.
+:   Only one filter option can be specified: `--all`, `--input-products`, `--prs`, or `--issues`.
+:   Each occurrence can be either comma-separated issues (e.g., `--issues "https://github.com/owner/repo/issues/123,456"`) or a file path (e.g., `--issues /path/to/file.txt`).
+:   When specifying issues directly, provide comma-separated values.
+:   When specifying a file path, provide a single value that points to a newline-delimited file.
 
 `--no-resolve`
 :   Optional: Explicitly turn off the `resolve` option if it's specified in the changelog configuration file.
@@ -68,17 +75,17 @@ These arguments apply to profile-based bundling:
 :   This value replaces information that would otherwise by derived from changelogs.
 
 `--owner <string?>`
-:   The GitHub repository owner, which is required when pull requests are specified as numbers.
+:   The GitHub repository owner, which is required when pull requests or issues are specified as numbers.
 
 `--prs <string[]?>`
 :   Filter by pull request URLs or numbers (comma-separated), or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times.
-:   Only one filter option can be specified: `--all`, `--input-products`, or `--prs`.
+:   Only one filter option can be specified: `--all`, `--input-products`, `--prs`, or `--issues`.
 :   Each occurrence can be either comma-separated PRs (e.g., `--prs "https://github.com/owner/repo/pull/123,6789"`) or a file path (e.g., `--prs /path/to/file.txt`).
 :   When specifying PRs directly, provide comma-separated values.
 :   When specifying a file path, provide a single value that points to a newline-delimited file.
 
 `--repo <string?>`
-:   The GitHub repository name, which is required when PRs are specified as numbers.
+:   The GitHub repository name, which is required when pull requests or issues are specified as numbers.
 
 `--resolve`
 :   Optional: Copy the contents of each changelog file into the entries array.

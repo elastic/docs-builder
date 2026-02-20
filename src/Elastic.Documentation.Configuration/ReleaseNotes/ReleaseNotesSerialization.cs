@@ -106,7 +106,7 @@ public static partial class ReleaseNotesSerialization
 
 	private static ChangelogEntry ToEntry(ChangelogEntryDto dto) => new()
 	{
-		Pr = dto.Pr,
+		Prs = dto.Prs ?? (dto.Pr != null ? [dto.Pr] : null),
 		Issues = dto.Issues,
 		Type = ParseEntryType(dto.Type),
 		Subtype = ParseEntrySubtype(dto.Subtype),
@@ -122,7 +122,7 @@ public static partial class ReleaseNotesSerialization
 
 	private static ChangelogEntry ToEntry(BundledEntry entry) => new()
 	{
-		Pr = entry.Pr,
+		Prs = entry.Prs,
 		Issues = entry.Issues,
 		Type = entry.Type ?? ChangelogEntryType.Invalid,
 		Subtype = entry.Subtype,
@@ -171,7 +171,7 @@ public static partial class ReleaseNotesSerialization
 		Highlight = dto.Highlight,
 		Subtype = ParseEntrySubtype(dto.Subtype),
 		Areas = dto.Areas,
-		Pr = dto.Pr,
+		Prs = dto.Prs ?? (dto.Pr != null ? [dto.Pr] : null),
 		Issues = dto.Issues
 	};
 
@@ -225,7 +225,7 @@ public static partial class ReleaseNotesSerialization
 
 	private static ChangelogEntryDto ToDto(ChangelogEntry entry) => new()
 	{
-		Pr = entry.Pr,
+		Prs = entry.Prs?.ToList(),
 		Issues = entry.Issues?.ToList(),
 		Type = EntryTypeToString(entry.Type),
 		Subtype = EntrySubtypeToString(entry.Subtype),
@@ -274,7 +274,7 @@ public static partial class ReleaseNotesSerialization
 		Highlight = entry.Highlight,
 		Subtype = EntrySubtypeToString(entry.Subtype),
 		Areas = entry.Areas?.ToList(),
-		Pr = entry.Pr,
+		Prs = entry.Prs?.ToList(),
 		Issues = entry.Issues?.ToList()
 	};
 
