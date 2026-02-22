@@ -36,13 +36,6 @@
         "release-notes"
       ],
       "rollForward": false
-    },
-    "jetbrains.resharper.globaltools": {
-      "version": "2025.3.3",
-      "commands": [
-        "jb"
-      ],
-      "rollForward": false
     }
   }
 }
