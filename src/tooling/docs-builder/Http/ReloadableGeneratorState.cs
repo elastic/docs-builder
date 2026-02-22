@@ -25,15 +25,19 @@ public class ReloadableGeneratorState : IDisposable
 	private DocumentationGenerator _generator;
 	private readonly ILoggerFactory _logFactory;
 	private readonly BuildContext _context;
+	private readonly bool _isWatchBuild;
 	private readonly DocSetConfigurationCrossLinkFetcher _crossLinkFetcher;
 
 	public ReloadableGeneratorState(ILoggerFactory logFactory,
 		IDirectoryInfo sourcePath,
 		IDirectoryInfo outputPath,
-		BuildContext context)
+		BuildContext context,
+		bool isWatchBuild
+	)
 	{
 		_logFactory = logFactory;
 		_context = context;
+		_isWatchBuild = isWatchBuild;
 		SourcePath = sourcePath;
 		OutputPath = outputPath;
 		ApiPath = context.WriteFileSystem.DirectoryInfo.New(Path.Combine(outputPath.FullName, "api"));
@@ -57,7 +61,8 @@ public class ReloadableGeneratorState : IDisposable
 
 		// Add LLM markdown export for dev server
 		var markdownExporters = new List<IMarkdownExporter>();
-		markdownExporters.AddLlmMarkdownExport(); // Consistent LLM-optimized output
+		if (!_isWatchBuild)
+			markdownExporters.AddLlmMarkdownExport(); // Consistent LLM-optimized output
 
 		var generator = new DocumentationGenerator(docSet, _logFactory, markdownExporters: markdownExporters.ToArray());
 		await generator.ResolveDirectoryTree(ctx);
@@ -73,6 +78,8 @@ public class ReloadableGeneratorState : IDisposable
 
 	private bool HaveOpenApiSpecsChanged(ConfigurationFile config)
 	{
+		if (_isWatchBuild)
+			return false;
 		if (config.OpenApiSpecifications is null)
 			return false;
 
@@ -109,6 +116,9 @@ public class ReloadableGeneratorState : IDisposable
 
 	private async Task ReloadApiReferences(IMarkdownStringRenderer markdownStringRenderer, Cancel ctx)
 	{
+		if (_isWatchBuild)
+			return;
+
 		if (ApiPath.Exists)
 			ApiPath.Delete(true);
 		ApiPath.Create();

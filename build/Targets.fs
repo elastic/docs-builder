@@ -38,7 +38,7 @@ let private format (formatArgs: ParseResults<FormatArgs>) =
         else ["--include"] @ includeFiles
     exec { run "dotnet" (["format"; "--verbosity"; "quiet"] @ includeArgs) }
 
-let private watch _ = exec { run "dotnet" "watch" "--project" "src/tooling/docs-builder" "--configuration" "debug" "--" "serve" }
+let private watch _ = exec { run "dotnet" "watch" "--project" "src/tooling/docs-builder" "--configuration" "debug" "--" "serve" "--watch" }
 
 let private lint (lintArgs: ParseResults<LintArgs>) =
     let includeFiles = lintArgs.TryGetResult LintArgs.Include |> Option.defaultValue []
