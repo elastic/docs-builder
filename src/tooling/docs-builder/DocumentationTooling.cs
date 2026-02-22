@@ -14,6 +14,7 @@ using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.ServiceDefaults;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -42,33 +43,10 @@ public static class DocumentationTooling
 					return new DiagnosticsCollector([]);
 				return new ConsoleDiagnosticsCollector(logFactory, githubActionsService);
 			})
-			.AddSingleton(sp =>
+			.AddSingleton(_ =>
 			{
-				var resolver = sp.GetRequiredService<ServiceEndpointResolver>();
-				var elasticsearchUri = ResolveServiceEndpoint(resolver,
-					() => TryEnvVars("http://localhost:9200", "DOCUMENTATION_ELASTIC_URL", "CONNECTIONSTRINGS__ELASTICSEARCH")
-				);
-				var elasticsearchPassword =
-					elasticsearchUri.UserInfo is { } userInfo && userInfo.Contains(':')
-						? userInfo.Split(':')[1]
-						: TryEnvVarsOptional("DOCUMENTATION_ELASTIC_PASSWORD");
-
-				var elasticsearchUser =
-					elasticsearchUri.UserInfo is { } userInfo2 && userInfo2.Contains(':')
-						? userInfo2.Split(':')[0]
-						: TryEnvVars("elastic", "DOCUMENTATION_ELASTIC_USERNAME");
-
-				var elasticsearchApiKey = TryEnvVarsOptional("DOCUMENTATION_ELASTIC_APIKEY");
-				return new DocumentationEndpoints
-				{
-					Elasticsearch = new ElasticsearchEndpoint
-					{
-						Uri = elasticsearchUri,
-						Password = elasticsearchPassword,
-						ApiKey = elasticsearchApiKey,
-						Username = elasticsearchUser
-					},
-				};
+				var endpoints = ElasticsearchEndpointFactory.Create(builder.Configuration);
+				return endpoints;
 			})
 			.AddSingleton<IConfigurationContext>(sp =>
 			{

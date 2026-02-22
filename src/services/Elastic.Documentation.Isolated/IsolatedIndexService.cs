@@ -114,6 +114,7 @@ public class IsolatedIndexService(
 		return await Build(collector, fileSystem,
 			metadataOnly: true, strict: false, path: path, output: null, pathPrefix: null,
 			force: true, allowIndexing: null, exporters: exporters, canonicalBaseUrl: null,
+			skipOpenApi: true,
 		ctx: ctx);
 	}
 }
