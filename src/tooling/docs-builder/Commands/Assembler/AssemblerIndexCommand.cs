@@ -30,7 +30,6 @@ internal sealed class AssemblerIndexCommand(
 	/// <param name="apiKey">Elasticsearch API key, alternatively set env DOCUMENTATION_ELASTIC_APIKEY</param>
 	/// <param name="username">Elasticsearch username (basic auth), alternatively set env DOCUMENTATION_ELASTIC_USERNAME</param>
 	/// <param name="password">Elasticsearch password (basic auth), alternatively set env DOCUMENTATION_ELASTIC_PASSWORD</param>
-	/// <param name="noSemantic">Index without semantic fields</param>
 	/// <param name="enableAiEnrichment">Enable AI enrichment of documents using LLM-generated metadata</param>
 	/// <param name="searchNumThreads">The number of search threads the inference endpoint should use. Defaults: 8</param>
 	/// <param name="indexNumThreads">The number of index threads the inference endpoint should use. Defaults: 8</param>
@@ -59,7 +58,6 @@ internal sealed class AssemblerIndexCommand(
 		string? password = null,
 
 		// inference options
-		bool? noSemantic = null,
 		bool? enableAiEnrichment = null,
 		int? searchNumThreads = null,
 		int? indexNumThreads = null,
@@ -97,7 +95,7 @@ internal sealed class AssemblerIndexCommand(
 				// endpoint options
 				endpoint, environment, apiKey, username, password,
 				// inference options
-				noSemantic, enableAiEnrichment, indexNumThreads, searchNumThreads, noEis, bootstrapTimeout,
+				enableAiEnrichment, indexNumThreads, searchNumThreads, noEis, bootstrapTimeout,
 				// channel and connection options
 				indexNamePrefix, forceReindex, bufferSize, maxRetries, debugMode,
 				// proxy options
@@ -110,7 +108,7 @@ internal sealed class AssemblerIndexCommand(
 				// endpoint options
 				state.endpoint, state.environment, state.apiKey, state.username, state.password,
 				// inference options
-				state.noSemantic, state.enableAiEnrichment, state.searchNumThreads, state.indexNumThreads, state.noEis, state.bootstrapTimeout,
+				state.enableAiEnrichment, state.searchNumThreads, state.indexNumThreads, state.noEis, state.bootstrapTimeout,
 				// channel and connection options
 				state.indexNamePrefix, state.forceReindex, state.bufferSize, state.maxRetries, state.debugMode,
 				// proxy options

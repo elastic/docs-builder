@@ -29,9 +29,6 @@ docs-builder assembler index [options...] [-h|--help] [--version]
 `--password` `<string>`
 :   Elasticsearch password (basic auth), alternatively set env DOCUMENTATION_ELASTIC_PASSWORD (optional)
 
-`--no-semantic` `<bool?>`
-:   Index without semantic fields (optional)
-
 `--search-num-threads` `<int?>`
 :   The number of search threads the inference endpoint should use. Defaults:   8 (optional)
 

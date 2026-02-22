@@ -30,16 +30,12 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	private readonly string _indexNamespace;
 	private readonly DateTimeOffset _batchIndexDate;
 
-	// Ingest: orchestrator for dual-index mode, plain channel for --no-semantic
-	private readonly IncrementalSyncOrchestrator<DocumentationDocument>? _orchestrator;
-	private readonly IngestChannel<DocumentationDocument>? _lexicalOnlyChannel;
+	// Ingest: orchestrator for dual-index mode
+	private readonly IncrementalSyncOrchestrator<DocumentationDocument> _orchestrator;
 
 	// Type context hashes for document content hash computation
 	private readonly ElasticsearchTypeContext _lexicalTypeContext;
-	private readonly ElasticsearchTypeContext? _semanticTypeContext;
-
-	// Alias names for queries/statistics
-	private readonly string _lexicalAlias;
+	private readonly ElasticsearchTypeContext _semanticTypeContext;
 
 	private readonly IReadOnlyDictionary<string, string[]> _synonyms;
 	private readonly IReadOnlyCollection<QueryRule> _rules;
@@ -91,11 +87,11 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		var synonymSetName = $"docs-{indexNamespace}";
 		var ns = indexNamespace.ToLowerInvariant();
 		var lexicalPrefix = es.IndexNamePrefix.Replace("semantic", "lexical").ToLowerInvariant();
-		_lexicalAlias = $"{lexicalPrefix}-{ns}";
+		var lexicalAlias = $"{lexicalPrefix}-{ns}";
 
 		_lexicalTypeContext = DocumentationAnalysisFactory.CreateContext(
 			DocumentationMappingContext.DocumentationDocument.Context,
-			_lexicalAlias, synonymSetName, indexTimeSynonyms, aiPipeline
+			lexicalAlias, synonymSetName, indexTimeSynonyms, aiPipeline
 		);
 
 		// Initialize AI enrichment services if enabled
@@ -106,38 +102,28 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 			_enrichPolicyManager = new EnrichPolicyManager(_transport, logFactory.CreateLogger<EnrichPolicyManager>(), _enrichmentCache.IndexName);
 		}
 
-		if (!es.NoSemantic)
-		{
-			var semanticAlias = $"{es.IndexNamePrefix.ToLowerInvariant()}-{ns}";
-			_semanticTypeContext = DocumentationAnalysisFactory.CreateContext(
-				DocumentationMappingContext.DocumentationDocumentSemantic.Context,
-				semanticAlias, synonymSetName, indexTimeSynonyms, aiPipeline
-			);
+		var semanticAlias = $"{es.IndexNamePrefix.ToLowerInvariant()}-{ns}";
+		_semanticTypeContext = DocumentationAnalysisFactory.CreateContext(
+			DocumentationMappingContext.DocumentationDocumentSemantic.Context,
+			semanticAlias, synonymSetName, indexTimeSynonyms, aiPipeline
+		);
 
-			_orchestrator = new IncrementalSyncOrchestrator<DocumentationDocument>(_transport, _lexicalTypeContext, _semanticTypeContext)
-			{
-				ConfigurePrimary = ConfigureChannelOptions,
-				ConfigureSecondary = ConfigureChannelOptions,
-				OnPostComplete = es.EnableAiEnrichment
-					? async (ctx, ct) => await PostCompleteAsync(ctx, ct)
-					: null
-			};
-			_ = _orchestrator.AddPreBootstrapTask(async (_, ct) =>
-			{
-				await InitializeEnrichmentAsync(ct);
-				await PublishSynonymsAsync(ct);
-				await PublishQueryRulesAsync(ct);
-			});
-
-			_batchIndexDate = _orchestrator.BatchTimestamp;
-		}
-		else
+		_orchestrator = new IncrementalSyncOrchestrator<DocumentationDocument>(_transport, _lexicalTypeContext, _semanticTypeContext)
 		{
-			_batchIndexDate = DateTimeOffset.UtcNow;
-			var options = new IngestChannelOptions<DocumentationDocument>(_transport, _lexicalTypeContext, _batchIndexDate);
-			ConfigureChannelOptions(options);
-			_lexicalOnlyChannel = new IngestChannel<DocumentationDocument>(options);
-		}
+			ConfigurePrimary = ConfigureChannelOptions,
+			ConfigureSecondary = ConfigureChannelOptions,
+			OnPostComplete = es.EnableAiEnrichment
+				? async (ctx, ct) => await PostCompleteAsync(ctx, ct)
+				: null
+		};
+		_ = _orchestrator.AddPreBootstrapTask(async (_, ct) =>
+		{
+			await InitializeEnrichmentAsync(ct);
+			await PublishSynonymsAsync(ct);
+			await PublishQueryRulesAsync(ct);
+		});
+
+		_batchIndexDate = _orchestrator.BatchTimestamp;
 	}
 
 	private void ConfigureChannelOptions(IngestChannelOptions<DocumentationDocument> options)
@@ -167,51 +153,13 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	/// <inheritdoc />
 	public async ValueTask StartAsync(Cancel ctx = default)
 	{
-		if (_orchestrator is not null)
-		{
-			_ = await _orchestrator.StartAsync(BootstrapMethod.Failure, ctx);
-			_logger.LogInformation("Orchestrator started with {Strategy} strategy", _orchestrator.Strategy);
-			return;
-		}
-
-		// NoSemantic path
-		await InitializeEnrichmentAsync(ctx);
-		await PublishSynonymsAsync(ctx);
-		await PublishQueryRulesAsync(ctx);
-		_ = await _lexicalOnlyChannel!.BootstrapElasticsearchAsync(BootstrapMethod.Failure, ctx);
+		_ = await _orchestrator.StartAsync(BootstrapMethod.Failure, ctx);
+		_logger.LogInformation("Orchestrator started with {Strategy} strategy", _orchestrator.Strategy);
 	}
 
 	/// <inheritdoc />
-	public async ValueTask StopAsync(Cancel ctx = default)
-	{
-		if (_orchestrator is not null)
-		{
-			_ = await _orchestrator.CompleteAsync(null, ctx);
-			return;
-		}
-
-		// NoSemantic path — drain, delete stale, refresh, alias
-		var drained = await _lexicalOnlyChannel!.WaitForDrainAsync(null, ctx);
-		if (!drained)
-			_collector.EmitGlobalError("Elasticsearch export: failed to drain in a timely fashion");
-
-		// Delete stale documents not part of this batch
-		var deleteQuery = PostData.String($$"""
-			{
-				"query": {
-					"range": {
-						"batch_index_date": {
-							"lt": "{{_batchIndexDate:o}}"
-						}
-					}
-				}
-			}
-			""");
-		await _operations.DeleteByQueryAsync(_lexicalAlias, deleteQuery, ctx);
-
-		_ = await _lexicalOnlyChannel.RefreshAsync(ctx);
-		_ = await _lexicalOnlyChannel.ApplyAliasesAsync(_lexicalAlias, ctx);
-	}
+	public async ValueTask StopAsync(Cancel ctx = default) =>
+		_ = await _orchestrator.CompleteAsync(null, ctx);
 
 	private async Task InitializeEnrichmentAsync(Cancel ctx)
 	{
@@ -251,7 +199,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 
 	private async ValueTask BackfillMissingAiFieldsAsync(string semanticAlias, Cancel ctx)
 	{
-		if (_endpoint.NoSemantic || _enrichmentCache is null || _llmClient is null)
+		if (_enrichmentCache is null || _llmClient is null)
 			return;
 
 		var currentPromptHash = ElasticsearchLlmClient.PromptHash;
@@ -354,26 +302,16 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 
 	internal async ValueTask<bool> WriteDocumentAsync(DocumentationDocument doc, Cancel ctx)
 	{
-		if (_orchestrator is not null)
-		{
-			if (_orchestrator.TryWrite(doc))
-				return true;
-			_ = await _orchestrator.WaitToWriteAsync(doc, ctx);
+		if (_orchestrator.TryWrite(doc))
 			return true;
-		}
-
-		if (_lexicalOnlyChannel!.TryWrite(doc))
-			return true;
-		if (await _lexicalOnlyChannel.WaitToWriteAsync(ctx))
-			return _lexicalOnlyChannel.TryWrite(doc);
-		return false;
+		_ = await _orchestrator.WaitToWriteAsync(doc, ctx);
+		return true;
 	}
 
 	/// <inheritdoc />
 	public void Dispose()
 	{
-		_orchestrator?.Dispose();
-		_lexicalOnlyChannel?.Dispose();
+		_orchestrator.Dispose();
 		_llmClient?.Dispose();
 		GC.SuppressFinalize(this);
 	}
