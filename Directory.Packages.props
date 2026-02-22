@@ -81,7 +81,7 @@
     <PackageVersion Include="NetEscapades.EnumGenerators" Version="1.0.0-beta12" PrivateAssets="all" ExcludeAssets="runtime" />
     <PackageVersion Include="Riok.Mapperly" Version="4.2.1" PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
     <PackageVersion Include="Proc" Version="0.13.0" />
-    <PackageVersion Include="RazorSlices" Version="0.9.4" />
+    <PackageVersion Include="RazorSlices" Version="0.9.5" />
     <PackageVersion Include="Samboy063.Tomlet" Version="6.0.0" />
     <PackageVersion Include="Sep" Version="0.11.0" />
     <PackageVersion Include="Slugify.Core" Version="4.0.1" />

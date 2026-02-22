@@ -48,12 +48,13 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 			new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount, CancellationToken = ctx },
 			async (entry, c) =>
 			{
-				var checkout = await CloneRepository(context, entry, fetchLatest, assumeCloned, c);
+				var checkout = CloneRepository(context, entry, fetchLatest, assumeCloned);
 				if (checkout != null)
 				{
 					lock (checkouts)
 						checkouts.Add(checkout);
 				}
+				await Task.CompletedTask;
 			});
 
 		if (Path.IsPathRooted(LinkRegistrySnapshotFileName))
@@ -87,12 +88,7 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 		return result;
 	}
 
-	private async Task<CodexCheckout?> CloneRepository(
-		CodexContext context,
-		(string RepoName, LinkRegistryEntry Entry) repoEntry,
-		bool fetchLatest,
-		bool assumeCloned,
-		Cancel _)
+	private CodexCheckout? CloneRepository(CodexContext context, (string RepoName, LinkRegistryEntry Entry) repoEntry, bool fetchLatest, bool assumeCloned)
 	{
 		var (repoName, entry) = repoEntry;
 
@@ -118,13 +114,9 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 			var git = new CodexGitRepository(logFactory, context.Collector, repoDir);
 
 			if (assumeCloned && git.IsInitialized())
-			{
 				_logger.LogInformation("Assuming {Name} is already cloned", repoName);
-			}
 			else if (git.IsInitialized() && !fetchLatest)
-			{
 				_logger.LogInformation("{Name} already cloned, skipping (use --fetch-latest to update)", repoName);
-			}
 			else
 			{
 				if (!repoDir.Exists)

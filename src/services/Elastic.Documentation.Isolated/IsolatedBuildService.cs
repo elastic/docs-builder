@@ -86,7 +86,7 @@ public class IsolatedBuildService(
 				UrlPathPrefix = pathPrefix,
 				Force = force ?? false,
 				AllowIndexing = allowIndexing ?? false,
-				CanonicalBaseUrl = canonicalBaseUri
+				CanonicalBaseUrl = canonicalBaseUri,
 			};
 		}
 		// On CI, we are running on a merge commit which may have changes against an older
