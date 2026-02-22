@@ -5,8 +5,8 @@
 using System.ComponentModel;
 using System.Text.Json;
 using Elastic.Documentation.Assembler.Links;
-using Elastic.Documentation.Assembler.Mcp.Responses;
 using ModelContextProtocol.Server;
+using Responses = Elastic.Documentation.Assembler.Mcp.Responses;
 
 namespace Elastic.Documentation.Assembler.Mcp;
 
@@ -16,7 +16,9 @@ public class LinkTools(ILinkUtilService linkUtilService)
 	/// <summary>
 	/// Resolves a cross-link URI to its target URL.
 	/// </summary>
-	[McpServerTool, Description("Resolves a cross-link (like 'docs-content://get-started/intro.md') to its target URL and returns available anchors.")]
+	[McpServerTool, Description(
+		"Resolves an Elastic docs cross-link URI (e.g. 'docs-content://get-started/intro.md') to its published URL. " +
+		"Use when the user references a cross-link, needs to verify a link target, or wants to know what anchors are available on a page.")]
 	public async Task<string> ResolveCrossLink(
 		[Description("The cross-link URI to resolve (e.g., 'docs-content://get-started/intro.md')")] string crossLink,
 		CancellationToken cancellationToken = default)
@@ -29,13 +31,13 @@ public class LinkTools(ILinkUtilService linkUtilService)
 			{
 				var value = result.Value;
 				return JsonSerializer.Serialize(
-					new CrossLinkResolved(value.ResolvedUrl, value.Repository, value.Path, value.Anchors, value.Fragment),
-					McpJsonContext.Default.CrossLinkResolved);
+					new Responses.CrossLinkResolved(value.ResolvedUrl, value.Repository, value.Path, value.Anchors, value.Fragment),
+					Responses.McpJsonContext.Default.CrossLinkResolved);
 			}
 
 			return JsonSerializer.Serialize(
-				new ErrorResponse(result.Error.Message, result.Error.Details, result.Error.AvailableRepositories),
-				McpJsonContext.Default.ErrorResponse);
+				new Responses.ErrorResponse(result.Error.Message, result.Error.Details, result.Error.AvailableRepositories),
+				Responses.McpJsonContext.Default.ErrorResponse);
 		}
 		catch (OperationCanceledException)
 		{
@@ -43,14 +45,16 @@ public class LinkTools(ILinkUtilService linkUtilService)
 		}
 		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
 		{
-			return JsonSerializer.Serialize(new ErrorResponse(ex.Message), McpJsonContext.Default.ErrorResponse);
+			return JsonSerializer.Serialize(new Responses.ErrorResponse(ex.Message), Responses.McpJsonContext.Default.ErrorResponse);
 		}
 	}
 
 	/// <summary>
 	/// Lists all available repositories in the link index.
 	/// </summary>
-	[McpServerTool, Description("Lists all repositories available in the cross-link index with their metadata.")]
+	[McpServerTool, Description(
+		"Lists all Elastic documentation source repositories in the cross-link index. " +
+		"Use when the user needs to know which repositories publish documentation or wants to explore the docs ecosystem.")]
 	public async Task<string> ListRepositories(CancellationToken cancellationToken = default)
 	{
 		try
@@ -63,13 +67,13 @@ public class LinkTools(ILinkUtilService linkUtilService)
 				var repos = value.Repositories.Select(r =>
 					new Responses.RepositoryInfo(r.Repository, r.Branch, r.Path, r.GitRef, r.UpdatedAt)).ToList();
 				return JsonSerializer.Serialize(
-					new ListRepositoriesResponse(value.Count, repos),
-					McpJsonContext.Default.ListRepositoriesResponse);
+					new Responses.ListRepositoriesResponse(value.Count, repos),
+					Responses.McpJsonContext.Default.ListRepositoriesResponse);
 			}
 
 			return JsonSerializer.Serialize(
-				new ErrorResponse(result.Error.Message, result.Error.Details, result.Error.AvailableRepositories),
-				McpJsonContext.Default.ErrorResponse);
+				new Responses.ErrorResponse(result.Error.Message, result.Error.Details, result.Error.AvailableRepositories),
+				Responses.McpJsonContext.Default.ErrorResponse);
 		}
 		catch (OperationCanceledException)
 		{
@@ -77,14 +81,16 @@ public class LinkTools(ILinkUtilService linkUtilService)
 		}
 		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
 		{
-			return JsonSerializer.Serialize(new ErrorResponse(ex.Message), McpJsonContext.Default.ErrorResponse);
+			return JsonSerializer.Serialize(new Responses.ErrorResponse(ex.Message), Responses.McpJsonContext.Default.ErrorResponse);
 		}
 	}
 
 	/// <summary>
 	/// Gets all links published by a repository.
 	/// </summary>
-	[McpServerTool, Description("Gets all pages and their anchors published by a specific repository.")]
+	[McpServerTool, Description(
+		"Gets all pages and anchors published by a specific Elastic documentation repository. " +
+		"Use when exploring what a repository publishes, building a cross-link, or looking up available anchor targets.")]
 	public async Task<string> GetRepositoryLinks(
 		[Description("The repository name (e.g., 'docs-content', 'elasticsearch')")] string repository,
 		CancellationToken cancellationToken = default)
@@ -99,19 +105,19 @@ public class LinkTools(ILinkUtilService linkUtilService)
 				var pages = value.Pages.Select(p =>
 					new Responses.PageInfo(p.Path, p.Anchors, p.Hidden)).ToList();
 				return JsonSerializer.Serialize(
-					new RepositoryLinksResponse(
+					new Responses.RepositoryLinksResponse(
 						value.Repository,
 						new Responses.OriginInfo(value.Origin.RepositoryName, value.Origin.GitRef),
 						value.UrlPathPrefix,
 						value.PageCount,
 						value.CrossLinkCount,
 						pages),
-					McpJsonContext.Default.RepositoryLinksResponse);
+					Responses.McpJsonContext.Default.RepositoryLinksResponse);
 			}
 
 			return JsonSerializer.Serialize(
-				new ErrorResponse(result.Error.Message, result.Error.Details, result.Error.AvailableRepositories),
-				McpJsonContext.Default.ErrorResponse);
+				new Responses.ErrorResponse(result.Error.Message, result.Error.Details, result.Error.AvailableRepositories),
+				Responses.McpJsonContext.Default.ErrorResponse);
 		}
 		catch (OperationCanceledException)
 		{
@@ -119,14 +125,17 @@ public class LinkTools(ILinkUtilService linkUtilService)
 		}
 		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
 		{
-			return JsonSerializer.Serialize(new ErrorResponse(ex.Message), McpJsonContext.Default.ErrorResponse);
+			return JsonSerializer.Serialize(new Responses.ErrorResponse(ex.Message), Responses.McpJsonContext.Default.ErrorResponse);
 		}
 	}
 
 	/// <summary>
 	/// Finds all cross-links from one repository to another.
 	/// </summary>
-	[McpServerTool, Description("Finds all cross-links between repositories. Can filter by source or target repository.")]
+	[McpServerTool, Description(
+		"Finds cross-links between Elastic documentation repositories. " +
+		"Use when analyzing inter-repository dependencies, checking what links into or out of a repository, " +
+		"or auditing cross-link usage. Can filter by source or target repository.")]
 	public async Task<string> FindCrossLinks(
 		[Description("Source repository to find links FROM (optional)")] string? from = null,
 		[Description("Target repository to find links TO (optional)")] string? to = null,
@@ -142,13 +151,13 @@ public class LinkTools(ILinkUtilService linkUtilService)
 				var links = value.Links.Select(l =>
 					new Responses.CrossLinkInfo(l.FromRepository, l.ToRepository, l.Link)).ToList();
 				return JsonSerializer.Serialize(
-					new FindCrossLinksResponse(value.Count, links),
-					McpJsonContext.Default.FindCrossLinksResponse);
+					new Responses.FindCrossLinksResponse(value.Count, links),
+					Responses.McpJsonContext.Default.FindCrossLinksResponse);
 			}
 
 			return JsonSerializer.Serialize(
-				new ErrorResponse(result.Error.Message, result.Error.Details, result.Error.AvailableRepositories),
-				McpJsonContext.Default.ErrorResponse);
+				new Responses.ErrorResponse(result.Error.Message, result.Error.Details, result.Error.AvailableRepositories),
+				Responses.McpJsonContext.Default.ErrorResponse);
 		}
 		catch (OperationCanceledException)
 		{
@@ -156,14 +165,16 @@ public class LinkTools(ILinkUtilService linkUtilService)
 		}
 		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
 		{
-			return JsonSerializer.Serialize(new ErrorResponse(ex.Message), McpJsonContext.Default.ErrorResponse);
+			return JsonSerializer.Serialize(new Responses.ErrorResponse(ex.Message), Responses.McpJsonContext.Default.ErrorResponse);
 		}
 	}
 
 	/// <summary>
 	/// Validates cross-links and finds broken ones.
 	/// </summary>
-	[McpServerTool, Description("Validates cross-links to a repository and reports any broken links.")]
+	[McpServerTool, Description(
+		"Validates cross-links targeting an Elastic documentation repository and reports broken ones. " +
+		"Use when checking link health, preparing a release, or diagnosing broken cross-references.")]
 	public async Task<string> ValidateCrossLinks(
 		[Description("Target repository to validate links TO (e.g., 'docs-content')")] string repository,
 		CancellationToken cancellationToken = default)
@@ -178,13 +189,13 @@ public class LinkTools(ILinkUtilService linkUtilService)
 				var broken = value.Broken.Select(b =>
 					new Responses.BrokenLinkInfo(b.FromRepository, b.Link, b.Errors)).ToList();
 				return JsonSerializer.Serialize(
-					new ValidateCrossLinksResponse(value.Repository, value.ValidLinks, value.BrokenLinks, broken),
-					McpJsonContext.Default.ValidateCrossLinksResponse);
+					new Responses.ValidateCrossLinksResponse(value.Repository, value.ValidLinks, value.BrokenLinks, broken),
+					Responses.McpJsonContext.Default.ValidateCrossLinksResponse);
 			}
 
 			return JsonSerializer.Serialize(
-				new ErrorResponse(result.Error.Message, result.Error.Details, result.Error.AvailableRepositories),
-				McpJsonContext.Default.ErrorResponse);
+				new Responses.ErrorResponse(result.Error.Message, result.Error.Details, result.Error.AvailableRepositories),
+				Responses.McpJsonContext.Default.ErrorResponse);
 		}
 		catch (OperationCanceledException)
 		{
@@ -192,7 +203,7 @@ public class LinkTools(ILinkUtilService linkUtilService)
 		}
 		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
 		{
-			return JsonSerializer.Serialize(new ErrorResponse(ex.Message), McpJsonContext.Default.ErrorResponse);
+			return JsonSerializer.Serialize(new Responses.ErrorResponse(ex.Message), Responses.McpJsonContext.Default.ErrorResponse);
 		}
 	}
 }

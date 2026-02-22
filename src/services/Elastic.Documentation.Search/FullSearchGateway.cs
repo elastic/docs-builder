@@ -9,6 +9,7 @@ using Elastic.Documentation.Api.Core.Search;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Search.Common;
 using Microsoft.Extensions.Logging;
+using EsHighlight = Elastic.Clients.Elasticsearch.Core.Search.HighlightDescriptor<Elastic.Documentation.Search.DocumentationDocument>;
 
 namespace Elastic.Documentation.Search;
 
@@ -77,9 +78,6 @@ public partial class FullSearchGateway(
 	/// </summary>
 	private async Task<FullSearchResult> SearchWithHybridRrf(FullSearchRequest request, Cancel ctx)
 	{
-		const string preTag = "<mark>";
-		const string postTag = "</mark>";
-
 		var lexicalQuery = SearchQueryBuilder.BuildLexicalQuery(
 			request.Query,
 			clientAccessor.SynonymBiDirectional,
@@ -131,28 +129,10 @@ public partial class FullSearchGateway(
 								e => e.RelatedProducts
 							)
 						)
-					)
-					.Highlight(h => h
-						.Fields(f => f
-							.Add(Infer.Field<DocumentationDocument>(d => d.Title), hf => hf
-								.FragmentSize(150)
-								.NumberOfFragments(3)
-								.NoMatchSize(150)
-								.HighlightQuery(q => q.Match(m => m
-									.Field(d => d.Title)
-									.Query(request.Query)
-									.Analyzer("highlight_analyzer")
-								))
-								.PreTags(preTag)
-								.PostTags(postTag))
-							.Add(Infer.Field<DocumentationDocument>(d => d.StrippedBody), hf => hf
-								.FragmentSize(150)
-								.NumberOfFragments(3)
-								.NoMatchSize(150)
-								.PreTags(preTag)
-								.PostTags(postTag))
-						)
 					);
+
+				if (request.IncludeHighlighting)
+					_ = s.Highlight(h => BuildHighlight(h, request.Query));
 
 				ApplySorting(s, request.SortBy);
 			}, ctx);
@@ -163,7 +143,7 @@ public partial class FullSearchGateway(
 					response.ElasticsearchServerError?.Error.Reason ?? "Unknown");
 			}
 
-			return ProcessSearchResponse(response, request.Query, isSemanticQuery: true);
+			return ProcessSearchResponse(response, request.Query, isSemanticQuery: true, request.IncludeHighlighting);
 		}
 		catch (Exception ex)
 		{
@@ -178,9 +158,6 @@ public partial class FullSearchGateway(
 	/// </summary>
 	private async Task<FullSearchResult> SearchLexicalOnly(FullSearchRequest request, Cancel ctx)
 	{
-		const string preTag = "<mark>";
-		const string postTag = "</mark>";
-
 		var lexicalQuery = SearchQueryBuilder.BuildLexicalQuery(
 			request.Query,
 			clientAccessor.SynonymBiDirectional,
@@ -220,28 +197,10 @@ public partial class FullSearchGateway(
 								e => e.RelatedProducts
 							)
 						)
-					)
-					.Highlight(h => h
-						.Fields(f => f
-							.Add(Infer.Field<DocumentationDocument>(d => d.Title), hf => hf
-								.FragmentSize(150)
-								.NumberOfFragments(3)
-								.NoMatchSize(150)
-								.HighlightQuery(q => q.Match(m => m
-									.Field(d => d.Title)
-									.Query(request.Query)
-									.Analyzer("highlight_analyzer")
-								))
-								.PreTags(preTag)
-								.PostTags(postTag))
-							.Add(Infer.Field<DocumentationDocument>(d => d.StrippedBody), hf => hf
-								.FragmentSize(150)
-								.NumberOfFragments(3)
-								.NoMatchSize(150)
-								.PreTags(preTag)
-								.PostTags(postTag))
-						)
 					);
+
+				if (request.IncludeHighlighting)
+					_ = s.Highlight(h => BuildHighlight(h, request.Query));
 
 				ApplySorting(s, request.SortBy);
 			}, ctx);
@@ -252,13 +211,42 @@ public partial class FullSearchGateway(
 					response.ElasticsearchServerError?.Error.Reason ?? "Unknown");
 			}
 
-			return ProcessSearchResponse(response, request.Query, isSemanticQuery: false);
+			return ProcessSearchResponse(response, request.Query, isSemanticQuery: false, request.IncludeHighlighting);
 		}
 		catch (Exception ex)
 		{
 			logger.LogError(ex, "Error occurred during lexical search");
 			throw;
 		}
+	}
+
+	/// <summary>
+	/// Builds the Elasticsearch highlight configuration for search results.
+	/// </summary>
+	private static EsHighlight BuildHighlight(EsHighlight h, string query)
+	{
+		const string preTag = "<mark>";
+		const string postTag = "</mark>";
+
+		return h.Fields(f => f
+			.Add(Infer.Field<DocumentationDocument>(d => d.Title), hf => hf
+				.FragmentSize(150)
+				.NumberOfFragments(3)
+				.NoMatchSize(150)
+				.HighlightQuery(q => q.Match(m => m
+					.Field(d => d.Title)
+					.Query(query)
+					.Analyzer("highlight_analyzer")
+				))
+				.PreTags(preTag)
+				.PostTags(postTag))
+			.Add(Infer.Field<DocumentationDocument>(d => d.StrippedBody), hf => hf
+				.FragmentSize(150)
+				.NumberOfFragments(3)
+				.NoMatchSize(150)
+				.PreTags(preTag)
+				.PostTags(postTag))
+		);
 	}
 
 	/// <summary>
@@ -333,14 +321,17 @@ public partial class FullSearchGateway(
 	private FullSearchResult ProcessSearchResponse(
 		SearchResponse<DocumentationDocument> response,
 		string searchQuery,
-		bool isSemanticQuery)
+		bool isSemanticQuery,
+		bool includeHighlighting = true)
 	{
 		var totalHits = (int)response.Total;
 
 		var results = response.Hits.Select(hit =>
 		{
 			var doc = hit.Source!;
-			var item = SearchResultProcessor.ProcessHit(hit, searchQuery, clientAccessor.SynonymBiDirectional, FullPageHighlightOptions);
+			var item = includeHighlighting
+				? SearchResultProcessor.ProcessHit(hit, searchQuery, clientAccessor.SynonymBiDirectional, FullPageHighlightOptions)
+				: SearchResultProcessor.ProcessHit(hit, "", clientAccessor.SynonymBiDirectional, FullPageHighlightOptions);
 			return new FullSearchResultItem
 			{
 				Type = item.Type,

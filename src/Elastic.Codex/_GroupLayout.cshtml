@@ -1,0 +1,23 @@
+@inherits RazorLayoutSlice<GlobalLayoutViewModel>
+@implements IUsesLayout<Elastic.Documentation.Site._GlobalLayout, GlobalLayoutViewModel>
+@functions {
+	public GlobalLayoutViewModel LayoutModel => Model;
+}
+@(await RenderPartialAsync(_CodexHeader.Create(Model)))
+<div id="main-container" class="relative">
+	@await RenderPartialAsync(_CodexSubHeader.Create(Model))
+	<div class="min-h-screen
+				w-full
+				max-w-full
+				mx-auto
+				md:px-4
+	">
+		<div class="min-h-screen grid grid-cols-1 md:grid-cols-[var(--max-sidebar-width)_1fr] gap-4">
+			@await RenderPartialAsync(_PagesNav.Create(Model))
+			<main id="content-container">
+				@await RenderBodyAsync()
+			</main>
+		</div>
+	</div>
+</div>
+@await RenderPartialAsync(_CodexFooter.Create(Model))

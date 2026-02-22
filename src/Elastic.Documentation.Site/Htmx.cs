@@ -13,7 +13,7 @@ public class DefaultHtmxAttributeProvider(string rootPath) : IHtmxAttributeProvi
 
 	public string GetRootPath() => rootPath;
 
-	public string GetHxSelectOob(bool hasSameTopLevelGroup) =>
+	public virtual string GetHxSelectOob(bool hasSameTopLevelGroup) =>
 		hasSameTopLevelGroup
 			? "#content-container,#toc-nav"
 			: "#content-container,#toc-nav,#nav-tree,#nav-dropdown";
@@ -58,4 +58,11 @@ public static class Htmx
 
 	public static string GetNavHxAttributes(bool hasSameTopLevelGroup = false, string? preload = Preload) =>
 		Default.GetNavHxAttributes(hasSameTopLevelGroup, preload);
+}
+
+/// <summary>HTMX provider for codex builds. Includes #codex-breadcrumbs in swap targets so the sub-header updates on navigation.</summary>
+public class CodexHtmxAttributeProvider(string rootPath) : DefaultHtmxAttributeProvider(rootPath)
+{
+	public override string GetHxSelectOob(bool hasSameTopLevelGroup) =>
+		$"{base.GetHxSelectOob(hasSameTopLevelGroup)},#codex-breadcrumbs";
 }

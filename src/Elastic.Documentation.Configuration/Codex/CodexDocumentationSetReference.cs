@@ -36,11 +36,11 @@ public record CodexDocumentationSetReference
 	public string Path { get; set; } = "docs";
 
 	/// <summary>
-	/// Optional category for grouping documentation sets. If specified, the URL will be
-	/// /{site-prefix}/{category}/{name}/. If not specified, the URL will be /{site-prefix}/{name}/.
+	/// Optional group id for grouping documentation sets. References a group defined in the groups section.
+	/// If specified, the docset appears under /g/{group}/. If not specified, the docset appears at the codex root.
 	/// </summary>
-	[YamlMember(Alias = "category")]
-	public string? Category { get; set; }
+	[YamlMember(Alias = "group")]
+	public string? Group { get; set; }
 
 	/// <summary>
 	/// Optional override for the repository name used in checkout directories and URL paths.
@@ -56,6 +56,12 @@ public record CodexDocumentationSetReference
 	/// </summary>
 	[YamlMember(Alias = "display_name")]
 	public string? DisplayName { get; set; }
+
+	/// <summary>
+	/// Optional short description shown on the codex landing page card.
+	/// </summary>
+	[YamlMember(Alias = "description")]
+	public string? Description { get; set; }
 
 	/// <summary>
 	/// Optional icon identifier for the documentation set card.

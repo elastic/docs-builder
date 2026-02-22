@@ -14,16 +14,17 @@ namespace Elastic.Codex.Navigation;
 
 /// <summary>
 /// Root navigation for a documentation codex that composes multiple isolated documentation sets.
-/// Unlike SiteNavigation, CodexNavigation uses a simplified structure with optional category grouping.
+/// Unlike SiteNavigation, CodexNavigation uses a simplified structure with optional group grouping.
 /// </summary>
 [DebuggerDisplay("{Url}")]
 public class CodexNavigation : IRootNavigationItem<IDocumentationFile, INavigationItem>, INavigationTraversable
 {
 	/// <summary>
-	/// Creates a new codex navigation from a codex configuration and documentation set navigations.
+	/// Creates a new codex navigation from a codex configuration, documentation set references, and navigations.
 	/// </summary>
 	public CodexNavigation(
 		CodexConfiguration configuration,
+		IReadOnlyList<CodexDocumentationSetReference> documentationSetReferences,
 		ICodexDocumentationContext context,
 		IReadOnlyDictionary<string, IDocumentationSetNavigation> documentationSetNavigations)
 	{
@@ -36,8 +37,8 @@ public class CodexNavigation : IRootNavigationItem<IDocumentationFile, INavigati
 		NavigationTitle = configuration.Title;
 
 		var codexIndexLeaf = new CodexIndexLeaf(new CodexIndexPage(configuration.Title), this);
-		var builder = new NavigationBuilder(this, context, documentationSetNavigations);
-		var result = builder.Build(configuration.DocumentationSets);
+		var builder = new NavigationBuilder(this, context, documentationSetNavigations, configuration);
+		var result = builder.Build(documentationSetReferences);
 
 		Index = codexIndexLeaf;
 		NavigationItems = result.NavigationItems;
@@ -59,7 +60,8 @@ public class CodexNavigation : IRootNavigationItem<IDocumentationFile, INavigati
 	private sealed class NavigationBuilder(
 		CodexNavigation codex,
 		ICodexDocumentationContext context,
-		IReadOnlyDictionary<string, IDocumentationSetNavigation> documentationSetNavigations)
+		IReadOnlyDictionary<string, IDocumentationSetNavigation> documentationSetNavigations,
+		CodexConfiguration configuration)
 	{
 		private readonly List<INavigationItem> _items = [];
 		private readonly List<CodexDocumentationSetInfo> _docSetInfos = [];
@@ -101,7 +103,7 @@ public class CodexNavigation : IRootNavigationItem<IDocumentationFile, INavigati
 
 			ApplyDisplayNameOverride(docSetNav, docSetRef.DisplayName);
 
-			if (!string.IsNullOrEmpty(docSetRef.Category))
+			if (!string.IsNullOrEmpty(docSetRef.Group))
 				AttachToGroup(docSetRef, docSetNav, rootNavItem, pathPrefix, docSetInfo);
 			else
 				AttachToCodexRoot(docSetNav, rootNavItem, pathPrefix);
@@ -116,8 +118,9 @@ public class CodexNavigation : IRootNavigationItem<IDocumentationFile, INavigati
 				Name = repoName,
 				Title = docSetRef.DisplayName ?? rootNavItem.NavigationTitle ?? repoName,
 				Url = $"{codex.Url}/r/{repoName}",
-				Category = docSetRef.Category,
+				Group = docSetRef.Group,
 				PageCount = CountPages(rootNavItem),
+				Description = docSetRef.Description,
 				Icon = docSetRef.Icon
 			};
 
@@ -134,8 +137,8 @@ public class CodexNavigation : IRootNavigationItem<IDocumentationFile, INavigati
 			string pathPrefix,
 			CodexDocumentationSetInfo docSetInfo)
 		{
-			var category = docSetRef.Category!;
-			var groupNav = GetOrCreateGroup(category);
+			var groupId = docSetRef.Group!;
+			var groupNav = GetOrCreateGroup(groupId);
 
 			if (docSetNav is INavigationHomeAccessor homeAccessor)
 				homeAccessor.HomeProvider = new NavigationHomeProvider(pathPrefix, groupNav);
@@ -146,22 +149,26 @@ public class CodexNavigation : IRootNavigationItem<IDocumentationFile, INavigati
 			groupChildren.Add(rootNavItem);
 			((IAssignableChildrenNavigation)groupNav).SetNavigationItems(groupChildren);
 
-			if (!_groupDocSetInfos.TryGetValue(category, out var list))
+			if (!_groupDocSetInfos.TryGetValue(groupId, out var list))
 			{
 				list = [];
-				_groupDocSetInfos[category] = list;
+				_groupDocSetInfos[groupId] = list;
 			}
 			list.Add(docSetInfo);
 		}
 
-		private GroupNavigation GetOrCreateGroup(string category)
+		private GroupNavigation GetOrCreateGroup(string groupId)
 		{
-			if (_groups.TryGetValue(category, out var existing))
+			if (_groups.TryGetValue(groupId, out var existing))
 				return existing;
 
-			var groupUrl = $"{codex.Url}/g/{category}";
-			var groupNav = new GroupNavigation(category, FormatCategoryTitle(category), groupUrl);
-			_groups[category] = groupNav;
+			var groupUrl = $"{codex.Url}/g/{groupId}";
+			var groupDef = configuration.Groups.FirstOrDefault(g => g.Id == groupId);
+			var displayTitle = groupDef?.Name ?? FormatGroupTitle(groupId);
+			var description = groupDef?.Description;
+			var icon = groupDef?.Icon;
+			var groupNav = new GroupNavigation(groupId, displayTitle, groupUrl, description, icon);
+			_groups[groupId] = groupNav;
 
 			var groupLink = new GroupLinkLeaf(new GroupLinkPage(groupNav.DisplayTitle, groupUrl), codex)
 			{
@@ -180,7 +187,6 @@ public class CodexNavigation : IRootNavigationItem<IDocumentationFile, INavigati
 			if (docSetNav is INavigationHomeAccessor homeAccessor)
 				homeAccessor.HomeProvider = new NavigationHomeProvider(pathPrefix, rootNavItem);
 
-			rootNavItem.Parent = codex;
 			_items.Add(rootNavItem);
 		}
 
@@ -193,7 +199,7 @@ public class CodexNavigation : IRootNavigationItem<IDocumentationFile, INavigati
 			}
 		}
 
-		private static string FormatCategoryTitle(string slug) =>
+		private static string FormatGroupTitle(string slug) =>
 			string.Join(" ", slug
 				.Replace('-', ' ')
 				.Replace('_', ' ')
@@ -202,7 +208,7 @@ public class CodexNavigation : IRootNavigationItem<IDocumentationFile, INavigati
 	}
 
 	/// <summary>
-	/// Gets the group navigations (one per category) for rendering group landing pages.
+	/// Gets the group navigations (one per group id) for rendering group landing pages.
 	/// </summary>
 	public FrozenSet<GroupNavigation> GroupNavigations { get; }
 

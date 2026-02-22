@@ -8,7 +8,7 @@
 	{
 		<script src="https://cdn.optimizely.com/js/@(Model.Optimizely.Id).js"></script>
 	}
-	@foreach (var fontFile in await FontPreloader.GetFontUrisAsync(@Model.UrlPathPrefix))
+	@foreach (var fontFile in await FontPreloader.GetFontUrisAsync(@Model.StaticPathPrefix))
 	{
 		<link rel="preload" href="@fontFile" as="font" type="font/woff2" crossorigin>
 	}
@@ -25,16 +25,8 @@
 			<link rel="stylesheet preload" as="style" type="text/css" href="@Model.Static("codex.css")" crossorigin/>
 			break;
 	}
+	<script>window.__DOCS_CONFIG__=@(new HtmlString(Model.FrontendConfigJson));</script>
 	<script src="@Model.Static("main.js")" defer></script>
-	@switch (Model.BuildType)
-	{
-		case BuildType.Isolated:
-			<script src="@Model.Static("isolated.js")" defer></script>
-			break;
-		case BuildType.Codex:
-			<script src="@Model.Static("codex.js")" defer></script>
-			break;
-	}
 	@if (Model.CanonicalBaseUrl is not null)
 	{
 		<link rel="canonical" href="@Model.CanonicalUrl" />

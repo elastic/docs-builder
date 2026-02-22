@@ -34,10 +34,10 @@ public record CodexConfiguration
 	public string Title { get; set; } = "Documentation Codex";
 
 	/// <summary>
-	/// The list of documentation sets to include in the codex.
+	/// Predefined groups with id, name, description, and icon. Documentation sets reference groups by id.
 	/// </summary>
-	[YamlMember(Alias = "documentation_sets")]
-	public IReadOnlyList<CodexDocumentationSetReference> DocumentationSets { get; set; } = [];
+	[YamlMember(Alias = "groups")]
+	public IReadOnlyList<CodexGroupDefinition> Groups { get; set; } = [];
 
 	/// <summary>
 	/// Deserializes a codex configuration from YAML content.
@@ -89,24 +89,4 @@ public record CodexConfiguration
 
 		return config with { SitePrefix = sitePrefix };
 	}
-
-	/// <summary>
-	/// Gets all unique categories defined in the documentation sets.
-	/// </summary>
-	[YamlIgnore]
-	public IReadOnlyList<string> Categories =>
-		DocumentationSets
-			.Where(ds => !string.IsNullOrEmpty(ds.Category))
-			.Select(ds => ds.Category!)
-			.Distinct()
-			.OrderBy(c => c)
-			.ToList();
-
-	/// <summary>
-	/// Gets documentation sets grouped by category.
-	/// Documentation sets without a category are grouped under null.
-	/// </summary>
-	[YamlIgnore]
-	public ILookup<string?, CodexDocumentationSetReference> DocumentationSetsByCategory =>
-		DocumentationSets.ToLookup(ds => ds.Category);
 }

@@ -67,7 +67,28 @@ public static class Paths
 		return new DirectoryInfo(elasticPath);
 	}
 
-	public static (IDirectoryInfo, IFileInfo) FindDocsFolderFromRoot(IFileSystem readFileSystem, IDirectoryInfo rootPath)
+	/// <summary>
+	/// Checks only the four known locations for docset.yml (root and docs/). No recursive search. Use when a fast, non-blocking check is needed (e.g. changelog init).
+	/// </summary>
+	public static bool TryFindDocsFolderFromKnownLocationsOnly(
+		IFileSystem readFileSystem,
+		IDirectoryInfo rootPath,
+		[NotNullWhen(true)] out IDirectoryInfo? docDirectory,
+		[NotNullWhen(true)] out IFileInfo? configurationPath
+	)
+	{
+		docDirectory = null;
+		configurationPath = null;
+		var knownConfigPath = GetDocsetPathFromKnownLocations(readFileSystem, rootPath);
+		if (knownConfigPath is null)
+			return false;
+
+		configurationPath = readFileSystem.FileInfo.New(knownConfigPath);
+		docDirectory = configurationPath.Directory!;
+		return true;
+	}
+
+	private static string? GetDocsetPathFromKnownLocations(IFileSystem readFileSystem, IDirectoryInfo rootPath)
 	{
 		string[] files = ["docset.yml", "_docset.yml"];
 		string[] knownFolders = [rootPath.FullName, Path.Combine(rootPath.FullName, "docs")];
@@ -76,7 +97,12 @@ public static class Paths
 			from folder in knownFolders
 			select Path.Combine(folder, file);
 
-		var knownConfigPath = mostLikelyTargets.FirstOrDefault(readFileSystem.File.Exists);
+		return mostLikelyTargets.FirstOrDefault(readFileSystem.File.Exists);
+	}
+
+	public static (IDirectoryInfo, IFileInfo) FindDocsFolderFromRoot(IFileSystem readFileSystem, IDirectoryInfo rootPath)
+	{
+		var knownConfigPath = GetDocsetPathFromKnownLocations(readFileSystem, rootPath);
 		var configurationPath = knownConfigPath is null ? null : readFileSystem.FileInfo.New(knownConfigPath);
 		if (configurationPath is not null)
 			return (configurationPath.Directory!, configurationPath);

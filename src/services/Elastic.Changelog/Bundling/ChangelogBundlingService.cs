@@ -312,12 +312,18 @@ public partial class ChangelogBundlingService(
 			directory = config.Bundle.Directory;
 		}
 
+		// Apply output default when --output not specified: use bundle.output_directory if set
+		var output = input.Output;
+		if (string.IsNullOrWhiteSpace(output) && !string.IsNullOrWhiteSpace(config.Bundle.OutputDirectory))
+			output = Path.Combine(config.Bundle.OutputDirectory, "changelog-bundle.yaml");
+
 		// Apply resolve default if not specified by CLI
 		var resolve = input.Resolve || config.Bundle.Resolve;
 
 		return input with
 		{
 			Directory = directory,
+			Output = output,
 			Resolve = resolve
 		};
 	}

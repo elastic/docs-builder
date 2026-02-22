@@ -38,13 +38,13 @@ public class DocumentationWebHost
 
 	public InMemoryBuildState InMemoryBuildState { get; }
 
-	public DocumentationWebHost(
-		ILoggerFactory logFactory,
+	public DocumentationWebHost(ILoggerFactory logFactory,
 		string? path,
 		int port,
 		IFileSystem readFs,
 		IFileSystem writeFs,
-		IConfigurationContext configurationContext
+		IConfigurationContext configurationContext,
+		bool isWatchBuild
 	)
 	{
 		_writeFileSystem = writeFs;
@@ -69,7 +69,7 @@ public class DocumentationWebHost
 		_hostedService = collector;
 		Context = new BuildContext(collector, readFs, writeFs, configurationContext, ExportOptions.Default, path, null)
 		{
-			CanonicalBaseUrl = new Uri(hostUrl)
+			CanonicalBaseUrl = new Uri(hostUrl),
 		};
 
 		// Enable diagnostics panel in serve mode
@@ -78,7 +78,7 @@ public class DocumentationWebHost
 		// Create InMemoryBuildState for background validation builds
 		InMemoryBuildState = new InMemoryBuildState(logFactory, configurationContext);
 
-		GeneratorState = new ReloadableGeneratorState(logFactory, Context.DocumentationSourceDirectory, Context.OutputDirectory, Context);
+		GeneratorState = new ReloadableGeneratorState(logFactory, Context.DocumentationSourceDirectory, Context.OutputDirectory, Context, isWatchBuild);
 		_ = builder.Services
 			.AddAotLiveReload(s =>
 			{

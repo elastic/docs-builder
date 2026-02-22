@@ -134,8 +134,8 @@ public class IndexMarkdownRenderer(IFileSystem fileSystem) : MarkdownRendererBas
 		ChangelogRenderContext context)
 	{
 		var groupedByArea = context.Subsections
-			? entries.GroupBy(ChangelogRenderUtilities.GetComponent).OrderBy(g => g.Key).ToList()
-			: entries.GroupBy(ChangelogRenderUtilities.GetComponent).ToList();
+			? entries.GroupBy(e => ChangelogRenderUtilities.GetComponent(e, context)).OrderBy(g => g.Key).ToList()
+			: entries.GroupBy(e => ChangelogRenderUtilities.GetComponent(e, context)).ToList();
 		foreach (var areaGroup in groupedByArea)
 		{
 			// Check if all entries in this area group are hidden

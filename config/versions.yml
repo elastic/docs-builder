@@ -149,7 +149,7 @@ versioning_systems:
     current: 9.3.1
   elasticsearch-client-java:
     base: 9.0
-    current: 9.3.0
+    current: 9.3.1
   elasticsearch-client-javascript:
     base: 9.0
     current: 9.3.1

@@ -1,3 +1,4 @@
+import { config } from '../../config'
 import { useHtmxLink } from '../shared/htmx/useHtmxLink'
 import { SanitizedHtmlContent } from './SanitizedHtmlContent'
 import { useSelectedIndex, useSearchActions } from './navigationSearch.store'
@@ -153,6 +154,10 @@ const SearchResultRow = ({
     const { ref, href } = useHtmxLink(result.url)
 
     const breadcrumbItems = useMemo(() => {
+        if (config.buildType == 'codex') {
+            return result.parents.slice(1).map((p) => p.title)
+        }
+
         const typePrefix = result.type === 'api' ? 'API' : 'Docs'
         return [typePrefix, ...result.parents.slice(1).map((p) => p.title)]
     }, [result.type, result.parents])

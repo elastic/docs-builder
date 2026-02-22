@@ -11,6 +11,7 @@ using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Myst.Components;
@@ -71,6 +72,9 @@ public class IndexViewModel
 
 	/// <summary>Codex site header title. When set (codex builds), overrides DocSetName in the header.</summary>
 	public string? SiteHeaderTitle { get; set; }
+
+	/// <summary>Codex sub-header breadcrumb trail (Home / Group / Docset).</summary>
+	public IReadOnlyList<CodexBreadcrumb>? CodexBreadcrumbs { get; set; }
 
 	/// <summary>Pre-computed site root path for HTMX. When set (codex builds), used as data-root-path.</summary>
 	public string? SiteRootPath { get; set; }

@@ -17,6 +17,7 @@ namespace Elastic.Documentation.Configuration.Serialization;
 [YamlStaticContext]
 // Codex configuration
 [YamlSerializable(typeof(CodexConfiguration))]
+[YamlSerializable(typeof(CodexGroupDefinition))]
 [YamlSerializable(typeof(CodexDocumentationSetReference))]
 // Assembly configuration
 [YamlSerializable(typeof(AssemblyConfiguration))]
@@ -36,6 +37,8 @@ namespace Elastic.Documentation.Configuration.Serialization;
 [YamlSerializable(typeof(LegacyUrlMappingConfigDto))]
 // Table of contents
 [YamlSerializable(typeof(DocumentationSetFile))]
+[YamlSerializable(typeof(DocumentationSetFeatures))]
+[YamlSerializable(typeof(CodexDocSetMetadata))]
 [YamlSerializable(typeof(TableOfContentsFile))]
 [YamlSerializable(typeof(SiteNavigationFile))]
 [YamlSerializable(typeof(PhantomRegistration))]

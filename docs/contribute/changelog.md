@@ -36,6 +36,11 @@ Additional workflows are still to come for updating and generating documentation
 
 ## Create a changelog configuration file [changelog-settings]
 
+You can use the `docs-builder changelog init` command to create the changelog configuration file and folder structure automatically.
+The command uses an existing docs folder (with or without `docset.yml`) when found, or creates `{path}/docs` when it does not exist.
+It places `changelog.yml` in the `docs` folder and creates sub-folders for the changelog and bundle files.
+Alternatively, you can create the file and folders manually.
+
 You can create a configuration file to:
 
 - define the acceptable product, type, subtype, and lifecycle values.
@@ -426,6 +431,8 @@ rules:
       - "Monitoring"
 ```
 
+When subsections are enabled (`:subsections:` in the `{changelog}` directive or `--subsections` in the `changelog render` command), these `include_areas` and `exclude_areas` rules also affect which area label is used for grouping. Entries with multiple areas are grouped under the first area that aligns with the rules — the first included area for `include_areas`, or the first non-excluded area for `exclude_areas`.
+
 #### Create changelogs from a file of PRs [example-file-prs]
 
 You can also provide PRs from a file containing newline-delimited PR URLs or numbers:
@@ -470,6 +477,9 @@ You can specify only one of the following filter options:
 
 By default, the output file contains only the changelog file names and checksums.
 You can optionally use the `--resolve` command option to pull all of the content from each changelog into the bundle.
+
+When you do not specify `--directory`, the command reads changelog files from `bundle.directory` in your changelog configuration if it is set, otherwise from the current directory.
+When you do not specify `--output`, the command writes the bundle to `bundle.output_directory` from your changelog configuration (creating `changelog-bundle.yaml` in that directory) if it is set, otherwise to `changelog-bundle.yaml` in the input directory.
 
 ### Filter by product [changelog-bundle-product]
 
