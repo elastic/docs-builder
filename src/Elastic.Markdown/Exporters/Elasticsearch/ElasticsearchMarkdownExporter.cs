@@ -134,7 +134,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		else
 		{
 			_batchIndexDate = DateTimeOffset.UtcNow;
-			var options = new IngestChannelOptions<DocumentationDocument>(_transport, _lexicalTypeContext);
+			var options = new IngestChannelOptions<DocumentationDocument>(_transport, _lexicalTypeContext, _batchIndexDate);
 			ConfigureChannelOptions(options);
 			_lexicalOnlyChannel = new IngestChannel<DocumentationDocument>(options);
 		}

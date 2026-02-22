@@ -147,33 +147,9 @@ public static class DocumentationAnalysisFactory
 			.Delimiter('/'));
 
 	/// <summary>
-	/// Creates the index settings JSON with analysis configuration and optional default pipeline.
-	/// </summary>
-	public static string BuildSettingsJson(string synonymSetName, string[] indexTimeSynonyms, string? defaultPipeline = null)
-	{
-		var analysis = BuildAnalysis(new AnalysisBuilder(), synonymSetName, indexTimeSynonyms);
-		var analysisJson = analysis.Build().ToJsonString();
-
-		if (defaultPipeline is not null)
-		{
-			// Merge default_pipeline into the settings JSON
-			return $$"""
-				{
-					"default_pipeline": "{{defaultPipeline}}",
-					"analysis": {{analysisJson}}
-				}
-				""";
-		}
-
-		return $$"""
-			{
-				"analysis": {{analysisJson}}
-			}
-			""";
-	}
-
-	/// <summary>
 	/// Creates an ElasticsearchTypeContext with runtime analysis settings and dynamic index name.
+	/// Analysis is provided via <see cref="ElasticsearchTypeContext.ConfigureAnalysis"/>, which
+	/// <c>Elastic.Ingest.Elasticsearch</c> merges into the settings automatically.
 	/// </summary>
 	public static ElasticsearchTypeContext CreateContext(
 		ElasticsearchTypeContext baseContext,
@@ -182,16 +158,19 @@ public static class DocumentationAnalysisFactory
 		string[] indexTimeSynonyms,
 		string? defaultPipeline = null)
 	{
-		var settingsJson = BuildSettingsJson(synonymSetName, indexTimeSynonyms, defaultPipeline);
-		var settingsHash = ContentHash.Create(settingsJson);
+		var analysisJson = BuildAnalysis(new AnalysisBuilder(), synonymSetName, indexTimeSynonyms).Build().ToJsonString();
+		var settingsHash = ContentHash.Create(analysisJson, defaultPipeline ?? "");
 		var hash = ContentHash.Create(settingsHash, baseContext.MappingsHash);
 
 		return baseContext.WithIndexName(indexName) with
 		{
-			GetSettingsJson = () => settingsJson,
+			GetSettingsJson = defaultPipeline is not null
+				? () => $$"""{ "default_pipeline": "{{defaultPipeline}}" }"""
+				: () => "{}",
 			SettingsHash = settingsHash,
 			Hash = hash,
-			ConfigureAnalysis = a => BuildAnalysis(a, synonymSetName, indexTimeSynonyms)
+			ConfigureAnalysis = a => BuildAnalysis(a, synonymSetName, indexTimeSynonyms),
+			IndexPatternUseBatchDate = true
 		};
 	}
 }
