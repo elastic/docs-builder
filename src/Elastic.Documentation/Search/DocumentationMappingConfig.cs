@@ -88,17 +88,31 @@ public static class LexicalConfig
 
 public static class SemanticConfig
 {
-	private const string InferenceId = ".elser-2-elastic";
+	private const string ElserInferenceId = ".elser-2-elastic";
+	private const string JinaInferenceId = ".jina-embeddings-v5-text-small";
 
 	public static AnalysisBuilder ConfigureAnalysis(AnalysisBuilder analysis) => analysis;
 
 	public static DocumentationDocumentMappingsBuilder ConfigureMappings(DocumentationDocumentMappingsBuilder m) =>
 		LexicalConfig.ConfigureCommonMappings(m)
-			.AddField("title.semantic_text", f => f.SemanticText().InferenceId(InferenceId))
-			.AddField("abstract.semantic_text", f => f.SemanticText().InferenceId(InferenceId))
-			.AddField("ai_rag_optimized_summary.semantic_text", f => f.SemanticText().InferenceId(InferenceId))
-			.AddField("ai_questions.semantic_text", f => f.SemanticText().InferenceId(InferenceId))
-			.AddField("ai_use_cases.semantic_text", f => f.SemanticText().InferenceId(InferenceId));
+			.StrippedBody(s => s
+				.Analyzer("synonyms_fixed_analyzer")
+				.SearchAnalyzer("synonyms_analyzer")
+				.MultiField("jina", mf => mf.Text().Analyzer(JinaInferenceId))
+			)
+			// ELSER sparse embeddings
+			.AddField("title.semantic_text", f => f.SemanticText().InferenceId(ElserInferenceId))
+			.AddField("abstract.semantic_text", f => f.SemanticText().InferenceId(ElserInferenceId))
+			.AddField("ai_rag_optimized_summary.semantic_text", f => f.SemanticText().InferenceId(ElserInferenceId))
+			.AddField("ai_questions.semantic_text", f => f.SemanticText().InferenceId(ElserInferenceId))
+			.AddField("ai_use_cases.semantic_text", f => f.SemanticText().InferenceId(ElserInferenceId))
+			// Jina v5 dense embeddings
+			.AddField("title.jina", f => f.SemanticText().InferenceId(JinaInferenceId))
+			.AddField("abstract.jina", f => f.SemanticText().InferenceId(JinaInferenceId))
+			.AddField("ai_rag_optimized_summary.jina", f => f.SemanticText().InferenceId(JinaInferenceId))
+			.AddField("ai_questions.jina", f => f.SemanticText().InferenceId(JinaInferenceId))
+			.AddField("ai_use_cases.jina", f => f.SemanticText().InferenceId(JinaInferenceId))
+			.AddField("stripped_body.jina", f => f.SemanticText().InferenceId(JinaInferenceId));
 }
 
 /// <summary>
