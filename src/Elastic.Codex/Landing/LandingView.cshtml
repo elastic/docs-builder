@@ -6,8 +6,30 @@
 @functions {
 	public GlobalLayoutViewModel LayoutModel => Model.CreateGlobalLayoutModel();
 }
-<section id="elastic-docs-v3" class="codex-landing min-h-screen bg-grey-10">
-	<div id="codex-grid" class="pt-8 max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+<section id="elastic-docs-v3" class="codex-landing min-h-screen" style="background-color: #f8fafc; position: relative;">
+
+	<div class="absolute inset-0 z-0"
+		 style="background-image: linear-gradient(to right, #e2e8f0 1px, transparent 1px), linear-gradient(to bottom, #e2e8f0 1px, transparent 1px); background-size: 20px 30px; -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, #000 60%, transparent 100%); mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, #000 60%, transparent 100%);">
+	</div>
+
+	<div class="codex-hero flex flex-col px-4 py-12 items-center text-center max-w-7xl mx-auto" style="position: relative; z-index: 1;" hx-select-oob="#main-container">
+		<div class="codex-hero-content">
+			<h1 class="text-7xl font-sans font-semibold text-ink">Codex</h1>
+			<p class="mt-4 text-xl text-ink-light">Discover documentation, best practices, and resources across all teams and organizations.</p>
+		</div>
+		<div class="flex gap-3 mt-6">
+			<a href="/r/codex-environments/get-started"
+			   class="select-none cursor-pointer text-white text-nowrap bg-blue-elastic hover:bg-blue-elastic-110 focus:ring-4 focus:ring-blue-elastic-50 font-semibold font-sans rounded-sm px-6 py-2 focus:outline-none h-10 flex items-center justify-center">
+				Publish your docs
+			</a>
+			<a href="https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/syntax"
+			   class="cursor-pointer bg-white hover:bg-grey-20 text-blue-elastic hover:text-blue-elastic-100 text-nowrap border-2 border-blue-elastic hover:border-blue-elastic-100 focus:ring-4 focus:outline-none focus:ring-blue-elastic-50 font-semibold font-sans rounded-sm px-6 py-2 text-center h-10 flex items-center justify-center">
+				Explore the syntax
+			</a>
+		</div>
+	</div>
+
+	<div id="codex-grid" class="pt-8 max-w-7xl p-4 mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" style="position: relative; z-index: 1;">
 		@foreach (var group in Model.Groups)
 		{
 			@(await RenderPartialAsync(_CodexCard.Create(new CodexCardModel

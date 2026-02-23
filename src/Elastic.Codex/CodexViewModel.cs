@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Codex.Navigation;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
@@ -44,6 +45,29 @@ public abstract class CodexViewModel(CodexRenderContext context)
 	public BuildContext BuildContext { get; } = context.BuildContext;
 
 	/// <summary>
+	/// Root path for static assets, stripping the /r/repoName segment for codex builds.
+	/// </summary>
+	public string StaticPathPrefix =>
+		BuildContext.BuildType != BuildType.Codex
+			? BuildContext.UrlPathPrefix ?? string.Empty
+			: GetCodexStaticPathPrefix(BuildContext.UrlPathPrefix);
+
+	/// <summary>Resolves a static asset path with cache-busting hash, matching GlobalLayoutViewModel.Static.</summary>
+	public string Static(string path)
+	{
+		var staticPath = $"_static/{path.TrimStart('/')}";
+		var contentHash = StaticFileContentHashProvider.GetContentHash(path.TrimStart('/'));
+
+		var fullPath = string.IsNullOrEmpty(StaticPathPrefix)
+			? $"/{staticPath}"
+			: $"{StaticPathPrefix}/{staticPath}";
+
+		return string.IsNullOrEmpty(contentHash)
+			? fullPath
+			: $"{fullPath}?v={contentHash}";
+	}
+
+	/// <summary>
 	/// Creates the global layout model for the page.
 	/// </summary>
 	public GlobalLayoutViewModel CreateGlobalLayoutModel(IReadOnlyList<CodexBreadcrumb>? codexBreadcrumbs = null)
@@ -75,5 +99,13 @@ public abstract class CodexViewModel(CodexRenderContext context)
 	{
 		var prefix = urlPathPrefix?.Trim('/') ?? "";
 		return string.IsNullOrEmpty(prefix) ? "/" : $"/{prefix}/";
+	}
+
+	private static string GetCodexStaticPathPrefix(string? urlPathPrefix)
+	{
+		if (urlPathPrefix?.Contains("/r/", StringComparison.Ordinal) != true)
+			return string.Empty;
+		var rIndex = urlPathPrefix.IndexOf("/r/", StringComparison.Ordinal);
+		return rIndex > 0 ? urlPathPrefix[..rIndex] : string.Empty;
 	}
 }
