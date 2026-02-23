@@ -24,10 +24,12 @@ namespace Elastic.Documentation.Isolated;
 public class IsolatedBuildService(
 	ILoggerFactory logFactory,
 	IConfigurationContext configurationContext,
-	ICoreService githubActionsService
+	ICoreService githubActionsService,
+	IEnvironmentVariables environmentVariables
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<IsolatedBuildService>();
+	private readonly IEnvironmentVariables _env = environmentVariables;
 
 	public bool IsStrict(bool? strict)
 	{
@@ -63,7 +65,7 @@ public class IsolatedBuildService(
 
 		pathPrefix ??= githubActionsService.GetInput("prefix");
 
-		var runningOnCi = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"));
+		var runningOnCi = _env.IsRunningOnCI;
 		BuildContext context;
 
 		Uri? canonicalBaseUri;

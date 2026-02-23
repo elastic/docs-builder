@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using Elastic.Documentation.Links;
 using YamlDotNet.RepresentationModel;
+using static Elastic.Documentation.Configuration.SymlinkValidator;
 
 namespace Elastic.Documentation.Configuration.Builder;
 
@@ -24,6 +25,9 @@ public record RedirectFile
 
 		if (!Source.Exists)
 			return;
+
+		// Validate that the redirects.yml is not a symlink (security: prevents path traversal attacks)
+		EnsureNotSymlink(Source);
 
 		var reader = new YamlStreamReader(Source, Context.Collector);
 		try

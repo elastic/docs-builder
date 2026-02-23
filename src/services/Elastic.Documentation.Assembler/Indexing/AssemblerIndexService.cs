@@ -17,8 +17,9 @@ public class AssemblerIndexService(
 	ILoggerFactory logFactory,
 	AssemblyConfiguration assemblyConfiguration,
 	IConfigurationContext configurationContext,
-	ICoreService githubActionsService
-) : AssemblerBuildService(logFactory, assemblyConfiguration, configurationContext, githubActionsService)
+	ICoreService githubActionsService,
+	IEnvironmentVariables environmentVariables
+) : AssemblerBuildService(logFactory, assemblyConfiguration, configurationContext, githubActionsService, environmentVariables)
 {
 	private readonly IConfigurationContext _configurationContext = configurationContext;
 
