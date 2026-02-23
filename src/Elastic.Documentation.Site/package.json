@@ -57,7 +57,7 @@
   "private": true,
   "devDependencies": {
     "@babel/core": "7.28.4",
-    "@babel/preset-env": "7.28.5",
+    "@babel/preset-env": "7.29.0",
     "@babel/preset-react": "7.28.5",
     "@babel/preset-typescript": "7.28.5",
     "@elastic/synthetics": "1.22.0",
