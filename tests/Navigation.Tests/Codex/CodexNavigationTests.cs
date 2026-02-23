@@ -107,25 +107,27 @@ public class CodexNavigationTests(ITestOutputHelper output) : CodexNavigationTes
 	}
 
 	[Fact]
-	public void DisplayName_OverridesNavigationTitle()
+	public void IndexH1_UsedAsDocsetTitle_DisplayNameIgnored()
 	{
 		CodexDocumentationSetReference[] docSets = [
 			new CodexDocumentationSetReference
 			{
 				Name = "apm-agent",
 				Branch = "main",
+#pragma warning disable CS0618 // Type or member is obsolete
 				DisplayName = "APM Agent Documentation"
+#pragma warning restore CS0618
 			}
 		];
 		var config = CreateCodexConfiguration("/docs");
 		var docSetNavigations = CreateMockDocSetNavigations(["apm-agent"]);
 		var codexNav = new CodexNavigation(config, docSets, CreateContext(), docSetNavigations);
 
-		// The DocumentationSetInfo should use the display name
-		codexNav.DocumentationSetInfos.First().Title.Should().Be("APM Agent Documentation");
+		// The DocumentationSetInfo uses the index.md h1 (from mock: "# apm-agent"), not display_name
+		codexNav.DocumentationSetInfos.First().Title.Should().Be("apm-agent");
 
-		// The navigation title override should be set
-		docSetNavigations["apm-agent"].NavigationTitleOverride.Should().Be("APM Agent Documentation");
+		// Navigation title override is not set (display_name is deprecated)
+		docSetNavigations["apm-agent"].NavigationTitleOverride.Should().BeNull();
 	}
 
 	[Fact]

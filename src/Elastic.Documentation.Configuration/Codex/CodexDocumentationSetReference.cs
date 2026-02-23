@@ -52,8 +52,9 @@ public record CodexDocumentationSetReference
 
 	/// <summary>
 	/// Optional display name shown on the codex landing page.
-	/// If not specified, uses the documentation set's title from docset.yml.
+	/// Deprecated: Use the index.md h1 heading instead.
 	/// </summary>
+	[Obsolete("Use the index.md h1 heading instead. This field will be removed in a future version.")]
 	[YamlMember(Alias = "display_name")]
 	public string? DisplayName { get; set; }
 

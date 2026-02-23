@@ -11,7 +11,11 @@ namespace Elastic.Documentation.Navigation.Isolated.Leaf;
 /// </summary>
 /// <param name="CrossLinkUri">The URI pointing to the external resource</param>
 /// <param name="NavigationTitle">The title to display in navigation</param>
-public record CrossLinkModel(Uri CrossLinkUri, string NavigationTitle) : IDocumentationFile;
+public record CrossLinkModel(Uri CrossLinkUri, string NavigationTitle) : IDocumentationFile
+{
+	/// <inheritdoc />
+	public string Title => NavigationTitle;
+}
 
 [DebuggerDisplay("{Url}")]
 public class CrossLinkNavigationLeaf(

@@ -8,6 +8,9 @@ namespace Elastic.Documentation.Navigation;
 /// Extends <see cref="INavigationModel"/> with a navigation title.
 public interface IDocumentationFile : INavigationModel
 {
+	/// Gets the page title (h1 heading) for this documentation file.
+	string Title { get; }
+
 	/// Gets the title to display in navigation for this documentation file.
 	string NavigationTitle { get; }
 }
