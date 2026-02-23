@@ -195,13 +195,25 @@ jobs:
             const ignoredPaths = new Set(await ignoreGlobber.glob());
             
             const { owner, repo } = context.repo;
-            const pull_number = context.payload.pull_request.number;
             
-            const allFiles = await github.paginate(github.rest.pulls.listFiles, {
-              owner,
-              repo,
-              pull_number,
-            });
+            let allFiles;
+            if (context.eventName === 'merge_group') {
+              const baseSha = context.payload.merge_group.base_sha;
+              const headSha = context.payload.merge_group.head_sha;
+              const comparison = await github.rest.repos.compareCommitsWithBasehead({
+                owner,
+                repo,
+                basehead: `${baseSha}...${headSha}`,
+              });
+              allFiles = comparison.data.files || [];
+            } else {
+              const pull_number = context.payload.pull_request.number;
+              allFiles = await github.paginate(github.rest.pulls.listFiles, {
+                owner,
+                repo,
+                pull_number,
+              });
+            }
             
             const filteredFiles = allFiles.filter(file => !ignoredPaths.has(file.filename));
             
