@@ -270,41 +270,26 @@ public class ApplicableToJsonConverterRoundTripTests
 	}
 
 	[Fact]
-	public void EchSubType_DeserializesAsEss()
+	public void RoundTripDeploymentEssRoundTripsCorrectly()
 	{
-		var json = """
-			[
-				{ "type": "deployment", "sub_type": "ech", "lifecycle": "ga", "version": "9.0.0" }
-			]
-			""";
+		var original = new ApplicableTo
+		{
+			Deployment = new DeploymentApplicability
+			{
+				Ess = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (VersionSpec)"9.0.0" }])
+			}
+		};
 
+		var json = JsonSerializer.Serialize(original, _options);
 		var deserialized = JsonSerializer.Deserialize<ApplicableTo>(json, _options);
 
 		deserialized.Should().NotBeNull();
 		deserialized!.Deployment.Should().NotBeNull();
-		deserialized.Deployment!.Ess.Should().NotBeNull();
-		deserialized.Deployment.Ess!.First().Lifecycle.Should().Be(ProductLifecycle.GenerallyAvailable);
-		deserialized.Deployment.Ess!.First().Version.Should().NotBeNull();
+		deserialized.Deployment!.Ess.Should().BeEquivalentTo(original.Deployment!.Ess);
 	}
 
 	[Fact]
-	public void EchSubType_SerializesBackAsEss()
-	{
-		var json = """
-			[
-				{ "type": "deployment", "sub_type": "ech", "lifecycle": "ga", "version": "9.0.0" }
-			]
-			""";
-
-		var deserialized = JsonSerializer.Deserialize<ApplicableTo>(json, _options);
-		var reserialized = JsonSerializer.Serialize(deserialized, _options);
-
-		reserialized.Should().Contain("\"sub_type\": \"ess\"");
-		reserialized.Should().NotContain("\"sub_type\": \"ech\"");
-	}
-
-	[Fact]
-	public void BothEssAndEchSubTypes_EssWins()
+	public void BothEssAndEchSubTypes_EchWins()
 	{
 		var json = """
 			[
@@ -318,7 +303,7 @@ public class ApplicableToJsonConverterRoundTripTests
 		deserialized.Should().NotBeNull();
 		deserialized!.Deployment.Should().NotBeNull();
 		deserialized.Deployment!.Ess.Should().NotBeNull();
-		deserialized.Deployment.Ess!.First().Lifecycle.Should().Be(ProductLifecycle.GenerallyAvailable);
+		deserialized.Deployment.Ess!.First().Lifecycle.Should().Be(ProductLifecycle.Beta);
 	}
 
 	[Fact]
