@@ -27,7 +27,8 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			- "100"
 			description: This is a test feature
 			""";
 
@@ -111,7 +112,8 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			- "100"
 			description: This is a test feature
 			""";
 
@@ -188,7 +190,8 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			- "100"
 			description: Added new search capabilities
 			""";
 
@@ -200,7 +203,8 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/200
+			prs:
+			- "200"
 			description: Fixed a critical search issue
 			""";
 
@@ -213,7 +217,8 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/300
+			prs:
+			- "300"
 			description: Changed API endpoint structure
 			impact: Users need to update their API calls
 			action: Update API client libraries

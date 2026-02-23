@@ -371,7 +371,13 @@ To add `hide-features` to a bundle, use the `--hide-features` option when runnin
 
 ## Private repository link hiding
 
-PR and issue links are automatically hidden (commented out) for bundles from private repositories. This is determined by checking the `assembler.yml` configuration:
+Changelog entries can reference multiple pull requests and issues via the `prs` and `issues` array fields. When an entry is rendered, all of its links are shown inline:
+
+```md
+* Fix ML calendar event update scalability issues. [#136886](https://github.com/elastic/elastic/pull/136886) [#136900](https://github.com/elastic/elastic/pull/136900)
+```
+
+PR and issue links are automatically hidden (commented out) for bundles from private repositories. When links are hidden, **all** PR and issue links for an affected entry are hidden together. This is determined by checking the `assembler.yml` configuration:
 
 - Repositories marked with `private: true` in `assembler.yml` will have their links hidden
 - For merged bundles (e.g., `elasticsearch+kibana`), links are hidden if ANY component repository is private

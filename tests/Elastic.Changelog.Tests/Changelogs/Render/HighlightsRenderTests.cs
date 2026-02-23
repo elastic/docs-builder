@@ -29,7 +29,8 @@ public class HighlightsRenderTests(ITestOutputHelper output) : RenderChangelogTe
 			    lifecycle: ga
 			description: Adds Cloud Connect functionality to Kibana
 			highlight: true
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			- "100"
 			""";
 
 		var changelogFile = FileSystem.Path.Combine(changelogDir, "1755268130-highlight-feature.yaml");
@@ -100,7 +101,8 @@ public class HighlightsRenderTests(ITestOutputHelper output) : RenderChangelogTe
 			products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			- "100"
 			""";
 
 		var changelogFile = FileSystem.Path.Combine(changelogDir, "1755268130-regular-feature.yaml");
@@ -161,7 +163,8 @@ public class HighlightsRenderTests(ITestOutputHelper output) : RenderChangelogTe
 			    target: 9.3.0
 			description: This is a highlighted enhancement
 			highlight: true
-			pr: https://github.com/elastic/elasticsearch/pull/200
+			prs:
+			- "200"
 			""";
 
 		var changelogFile = FileSystem.Path.Combine(changelogDir, "1755268130-highlight-enhancement.yaml");
@@ -230,7 +233,8 @@ public class HighlightsRenderTests(ITestOutputHelper output) : RenderChangelogTe
 			areas:
 			  - Search
 			highlight: true
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			- "100"
 			""";
 
 		// language=yaml
@@ -244,7 +248,8 @@ public class HighlightsRenderTests(ITestOutputHelper output) : RenderChangelogTe
 			areas:
 			  - Indexing
 			highlight: true
-			pr: https://github.com/elastic/elasticsearch/pull/200
+			prs:
+			- "200"
 			""";
 
 		var file1 = FileSystem.Path.Combine(changelogDir, "1755268130-search.yaml");

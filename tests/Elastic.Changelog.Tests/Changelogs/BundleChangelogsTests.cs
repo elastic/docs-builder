@@ -41,7 +41,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - product: elasticsearch
 			    target: 9.2.0
 			    lifecycle: ga
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 		// language=yaml
 		var changelog2 =
@@ -51,7 +52,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: kibana
 			    target: 9.2.0
-			pr: https://github.com/elastic/kibana/pull/200
+			prs:
+			  - https://github.com/elastic/kibana/pull/200
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-first-changelog.yaml");
@@ -98,7 +100,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - product: elasticsearch
 			    target: 9.2.0
 			    lifecycle: ga
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 		// language=yaml
 		var changelog2 =
@@ -109,7 +112,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - product: kibana
 			    target: 9.2.0
 			    lifecycle: ga
-			pr: https://github.com/elastic/kibana/pull/200
+			prs:
+			  - https://github.com/elastic/kibana/pull/200
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-elasticsearch-feature.yaml");
@@ -151,7 +155,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 		// language=yaml
 		var changelog2 =
@@ -161,7 +166,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/200
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/200
 			""";
 		// language=yaml
 		var changelog3 =
@@ -171,7 +177,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/300
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/300
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-first-pr.yaml");
@@ -202,6 +209,105 @@ public class BundleChangelogsTests : ChangelogTestBase
 	}
 
 	[Fact]
+	public async Task BundleChangelogs_WithIssuesFilter_FiltersCorrectly()
+	{
+		// Arrange
+		// language=yaml
+		var changelog1 =
+			"""
+			title: First issue
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			issues:
+			  - https://github.com/elastic/elasticsearch/issues/100
+			""";
+		// language=yaml
+		var changelog2 =
+			"""
+			title: Second issue
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			issues:
+			  - https://github.com/elastic/elasticsearch/issues/200
+			""";
+		// language=yaml
+		var changelog3 =
+			"""
+			title: Third issue
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			issues:
+			  - https://github.com/elastic/elasticsearch/issues/300
+			""";
+
+		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-first-issue.yaml");
+		var file2 = FileSystem.Path.Combine(_changelogDir, "1755268140-second-issue.yaml");
+		var file3 = FileSystem.Path.Combine(_changelogDir, "1755268150-third-issue.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file3, changelog3, TestContext.Current.CancellationToken);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			Issues = ["https://github.com/elastic/elasticsearch/issues/100", "https://github.com/elastic/elasticsearch/issues/200"],
+			Output = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
+		};
+
+		// Act
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+		bundleContent.Should().Contain("name: 1755268130-first-issue.yaml");
+		bundleContent.Should().Contain("name: 1755268140-second-issue.yaml");
+		bundleContent.Should().NotContain("name: 1755268150-third-issue.yaml");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithOldPrFormat_StillMatchesWhenFilteringByPrs()
+	{
+		// Backward compat: changelog with legacy pr: (single string) should still match --prs filter
+		// language=yaml
+		var changelogWithOldFormat =
+			"""
+			title: Legacy PR changelog
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			pr: https://github.com/elastic/elasticsearch/pull/999
+			""";
+
+		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-legacy-pr.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, changelogWithOldFormat, TestContext.Current.CancellationToken);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			Prs = ["https://github.com/elastic/elasticsearch/pull/999"],
+			Output = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
+		};
+
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+		bundleContent.Should().Contain("name: 1755268130-legacy-pr.yaml");
+	}
+
+	[Fact]
 	public async Task BundleChangelogs_WithPrsFilterAndUnmatchedPrs_EmitsWarnings()
 	{
 		// Arrange
@@ -214,7 +320,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-first-pr.yaml");
@@ -260,7 +367,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 		// language=yaml
 		var changelog2 =
@@ -270,7 +378,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/200
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/200
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-first-pr.yaml");
@@ -321,7 +430,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-pr-number.yaml");
@@ -360,7 +470,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/133609
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/133609
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-short-format.yaml");
@@ -441,7 +552,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - product: elasticsearch
 			    target: 9.2.0
 			    lifecycle: ga
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 		// language=yaml
 		var changelog2 =
@@ -452,7 +564,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - product: kibana
 			    target: 9.2.0
 			    lifecycle: ga
-			pr: https://github.com/elastic/kibana/pull/200
+			prs:
+			  - https://github.com/elastic/kibana/pull/200
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-first-changelog.yaml");
@@ -510,7 +623,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: cloud-serverless
 			    target: 2025-12-02
-			pr: https://github.com/elastic/cloud-serverless/pull/100
+			prs:
+			  - https://github.com/elastic/cloud-serverless/pull/100
 			""";
 		// language=yaml
 		var changelog2 =
@@ -520,7 +634,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: cloud-serverless
 			    target: 2025-12-06
-			pr: https://github.com/elastic/cloud-serverless/pull/200
+			prs:
+			  - https://github.com/elastic/cloud-serverless/pull/200
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-cloud-feature1.yaml");
@@ -568,7 +683,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - product: elasticsearch
 			    target: 9.2.0
 			    lifecycle: ga
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 		// language=yaml
 		var changelog2 =
@@ -579,7 +695,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - product: kibana
 			    target: 9.2.0
 			    lifecycle: ga
-			pr: https://github.com/elastic/kibana/pull/200
+			prs:
+			  - https://github.com/elastic/kibana/pull/200
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-elasticsearch-feature.yaml");
@@ -620,7 +737,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - product: elasticsearch
 			    target: 9.2.0
 			    lifecycle: ga
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 		// language=yaml
 		var changelog2 =
@@ -631,7 +749,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - product: kibana
 			    target: 9.3.0
 			    lifecycle: beta
-			pr: https://github.com/elastic/kibana/pull/200
+			prs:
+			  - https://github.com/elastic/kibana/pull/200
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-elasticsearch-feature.yaml");
@@ -672,7 +791,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - product: elasticsearch
 			    target: 9.3.0
 			    lifecycle: ga
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 		// language=yaml
 		var changelog2 =
@@ -683,7 +803,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - product: elasticsearch
 			    target: 9.3.1
 			    lifecycle: ga
-			pr: https://github.com/elastic/elasticsearch/pull/200
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/200
 			""";
 		// language=yaml
 		var changelog3 =
@@ -694,7 +815,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - product: elasticsearch
 			    target: 9.2.0
 			    lifecycle: ga
-			pr: https://github.com/elastic/elasticsearch/pull/300
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/300
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-es-9.3.0.yaml");
@@ -761,7 +883,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/123
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/123
 			""";
 		var changelogFile = FileSystem.Path.Combine(_changelogDir, "1755268130-test-pr.yaml");
 		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog, TestContext.Current.CancellationToken);
@@ -800,7 +923,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/123
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/123
 			""";
 		var changelogFile = FileSystem.Path.Combine(_changelogDir, "1755268130-test-pr.yaml");
 		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog, TestContext.Current.CancellationToken);
@@ -843,7 +967,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 		// language=yaml
 		var changelog2 =
@@ -853,7 +978,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: kibana
 			    target: 9.2.0
-			pr: https://github.com/elastic/kibana/pull/200
+			prs:
+			  - https://github.com/elastic/kibana/pull/200
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-elasticsearch-feature.yaml");
@@ -909,7 +1035,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 		// language=yaml
 		var changelog2 =
@@ -919,7 +1046,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: kibana
 			    target: 9.2.0
-			pr: https://github.com/elastic/kibana/pull/200
+			prs:
+			  - https://github.com/elastic/kibana/pull/200
 			""";
 		// language=yaml
 		var changelog3 =
@@ -931,7 +1059,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			    target: 9.2.0
 			  - product: kibana
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/300
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/300
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-elasticsearch.yaml");
@@ -978,7 +1107,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - product: elasticsearch
 			    target: 9.2.0
 			    lifecycle: ga
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 		// language=yaml
 		var changelog2 =
@@ -989,7 +1119,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - product: elasticsearch
 			    target: 9.3.0
 			    lifecycle: beta
-			pr: https://github.com/elastic/elasticsearch/pull/200
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/200
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-elasticsearch-ga.yaml");
@@ -1037,7 +1168,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-elasticsearch.yaml");
@@ -1085,7 +1217,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - product: elasticsearch
 			    target: 9.2.0
 			    lifecycle: ga
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 		// language=yaml
 		var changelog2 =
@@ -1096,7 +1229,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - product: elasticsearch
 			    target: 9.3.0
 			    lifecycle: beta
-			pr: https://github.com/elastic/elasticsearch/pull/200
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/200
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-elasticsearch-ga.yaml");
@@ -1142,7 +1276,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - product: elasticsearch
 			    target: 9.2.0
 			    lifecycle: ga
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1-feature.yaml");
@@ -1191,7 +1326,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - product: elasticsearch
 			    target: 9.2.0
 			    lifecycle: ga
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 		// language=yaml
 		var changelog2 =
@@ -1202,7 +1338,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - product: elasticsearch
 			    target: 9.2.0
 			    lifecycle: beta
-			pr: https://github.com/elastic/elasticsearch/pull/200
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/200
 			""";
 		// language=yaml
 		var changelog3 =
@@ -1212,7 +1349,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/300
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/300
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-elasticsearch-ga.yaml");
@@ -1257,7 +1395,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			areas:
 			  - Search
 			description: This is a test feature
@@ -1289,7 +1428,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 		bundleContent.Should().Contain("title: Test feature");
 		bundleContent.Should().Contain("product: elasticsearch");
 		bundleContent.Should().Contain("target: 9.2.0");
-		bundleContent.Should().Contain("pr: https://github.com/elastic/elasticsearch/pull/100");
+		bundleContent.Should().Contain("prs:");
+		bundleContent.Should().Contain("https://github.com/elastic/elasticsearch/pull/100");
 		bundleContent.Should().Contain("areas:");
 		bundleContent.Should().Contain("- Search");
 		bundleContent.Should().Contain("description: This is a test feature");
@@ -1310,7 +1450,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - product: elasticsearch
 			    target: 9.3.0
 			    lifecycle: ga
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			description: |
 			  This feature includes special characters:
 			  - Ampersand: & symbol
@@ -1395,7 +1536,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-test-feature.yaml");
@@ -1575,7 +1717,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-feature.yaml");
@@ -1616,7 +1759,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-feature.yaml");
@@ -1656,7 +1800,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-feature.yaml");
@@ -1702,7 +1847,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: cloud-serverless
 			    target: 2025-12-02
-			pr: https://github.com/elastic/cloud/pull/100
+			prs:
+			  - https://github.com/elastic/cloud/pull/100
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-serverless-feature.yaml");
@@ -1742,7 +1888,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-es-feature.yaml");
@@ -1782,7 +1929,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			pr: https://github.com/elastic/cloud/pull/100
+			prs:
+			  - https://github.com/elastic/cloud/pull/100
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-feature.yaml");
@@ -1844,7 +1992,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-feature.yaml");
@@ -1902,7 +2051,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-feature.yaml");
@@ -1963,7 +2113,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - product: elasticsearch
 			    target: 9.2.0
 			    lifecycle: ga
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-feature.yaml");
@@ -2029,7 +2180,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - product: elasticsearch
 			    target: 9.2.0
 			    lifecycle: ga
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-feature.yaml");
@@ -2097,7 +2249,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - product: elasticsearch
 			    target: 9.2.0
 			    lifecycle: ga
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-feature.yaml");
@@ -2153,7 +2306,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 
 		// language=yaml
@@ -2164,7 +2318,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-with-comments.yaml");
@@ -2213,7 +2368,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/500
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/500
 			""";
 
 		// language=yaml
@@ -2224,7 +2380,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/500
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/500
 			""";
 
 		// Bundle with comments
@@ -2279,7 +2436,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 
 		// language=yaml
@@ -2290,7 +2448,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			pr: https://github.com/elastic/elasticsearch/pull/200
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/200
 			""";
 
 		// Bundle first file
@@ -2360,7 +2519,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 
 		var changelogFile = FileSystem.Path.Combine(changelogDir, "1755268130-amend-feature.yaml");
@@ -2426,7 +2586,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/200
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/200
 			""";
 
 		var changelogFile = FileSystem.Path.Combine(changelogDir, "1755268140-resolved-feature.yaml");

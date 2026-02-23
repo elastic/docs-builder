@@ -5,7 +5,8 @@ products:
     target: 0.100.0
 areas:
   - Build
-pr: https://github.com/elastic/docs-builder/pull/2473
+prs:
+  - https://github.com/elastic/docs-builder/pull/2473
 description: |
   Addresses F# nullability warnings in the codebase to improve
   code quality and reduce potential null reference issues.

@@ -36,7 +36,8 @@ public class ChangelogMergeSameTargetTests : DirectiveTest<ChangelogBlock>
 			    target: 2025-08-05
 			  areas:
 			  - Dashboard
-			  pr: "111111"
+			  prs:
+			  - "111111"
 			"""));
 
 		FileSystem.AddFile("docs/changelog/bundles/elasticsearch-2025-08-05.yaml", new MockFileData(
@@ -53,13 +54,15 @@ public class ChangelogMergeSameTargetTests : DirectiveTest<ChangelogBlock>
 			    target: 2025-08-05
 			  areas:
 			  - Search
-			  pr: "222222"
+			  prs:
+			  - "222222"
 			- title: Elasticsearch bugfix for August 5th
 			  type: bug-fix
 			  products:
 			  - product: elasticsearch
 			    target: 2025-08-05
-			  pr: "222223"
+			  prs:
+			  - "222223"
 			"""));
 
 		FileSystem.AddFile("docs/changelog/bundles/serverless-2025-08-05.yaml", new MockFileData(
@@ -76,7 +79,8 @@ public class ChangelogMergeSameTargetTests : DirectiveTest<ChangelogBlock>
 			    target: 2025-08-05
 			  areas:
 			  - API
-			  pr: "333333"
+			  prs:
+			  - "333333"
 			"""));
 
 		// A different release date with single bundle
@@ -92,7 +96,8 @@ public class ChangelogMergeSameTargetTests : DirectiveTest<ChangelogBlock>
 			  products:
 			  - product: kibana
 			    target: 2025-08-01
-			  pr: "444444"
+			  prs:
+			  - "444444"
 			"""));
 	}
 
@@ -192,7 +197,8 @@ public class ChangelogMergeDifferentTargetsTests : DirectiveTest<ChangelogBlock>
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "111111"
+			  prs:
+			  - "111111"
 			"""));
 
 		FileSystem.AddFile("docs/changelog/bundles/9.2.0.yaml", new MockFileData(
@@ -207,7 +213,8 @@ public class ChangelogMergeDifferentTargetsTests : DirectiveTest<ChangelogBlock>
 			  products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			  pr: "222222"
+			  prs:
+			  - "222222"
 			"""));
 
 		FileSystem.AddFile("docs/changelog/bundles/9.1.0.yaml", new MockFileData(
@@ -222,7 +229,8 @@ public class ChangelogMergeDifferentTargetsTests : DirectiveTest<ChangelogBlock>
 			  products:
 			  - product: elasticsearch
 			    target: 9.1.0
-			  pr: "333333"
+			  prs:
+			  - "333333"
 			"""));
 	}
 
@@ -275,13 +283,15 @@ public class ChangelogMergeSingleBundleTests : DirectiveTest<ChangelogBlock>
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "111111"
+			  prs:
+			  - "111111"
 			- title: Bug fix in 9.3.0
 			  type: bug-fix
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "111112"
+			  prs:
+			  - "111112"
 			"""));
 
 	[Fact]
@@ -329,7 +339,8 @@ public class ChangelogMergeMixedVersionTypesTests : DirectiveTest<ChangelogBlock
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "111111"
+			  prs:
+			  - "111111"
 			"""));
 
 		// Date-based version
@@ -345,7 +356,8 @@ public class ChangelogMergeMixedVersionTypesTests : DirectiveTest<ChangelogBlock
 			  products:
 			  - product: kibana
 			    target: 2025-08-05
-			  pr: "222222"
+			  prs:
+			  - "222222"
 			"""));
 	}
 

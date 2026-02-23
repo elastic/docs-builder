@@ -33,7 +33,7 @@ docs-builder changelog render [options...] [-h|--help]
 :   For example, `--input "/path/to/changelog-bundle.yaml|/path/to/changelogs|elasticsearch|keep-links"`.
 :   Only `bundle-file-path` is required for each bundle.
 :   Use `repo` if your changelogs do not contain full URLs for the pull requests or issues; otherwise they will be incorrectly derived with "elastic/elastic" in the URL by default.
-:   Use `link-visibility` to control whether PR/issue links are shown or hidden for entries from this bundle. Valid values are `keep-links` (default) or `hide-links`. Use `hide-links` for bundles from private repositories.
+:   Use `link-visibility` to control whether PR/issue links are shown or hidden for entries from this bundle. Valid values are `keep-links` (default) or `hide-links`. Use `hide-links` for bundles from private repositories. When `hide-links` is set, all links are hidden for each affected entry — changelog entries can contain multiple PR links (`prs`) and issue links (`issues`), and all of them are hidden or shown together.
 :   Paths support tilde (`~`) expansion and relative paths.
 
 :::{note}
@@ -91,6 +91,14 @@ When `--file-type asciidoc` is specified, the command generates a single asciido
 - Other changes
 
 The asciidoc output uses attribute references for links (for example, `{repo-pull}NUMBER[#NUMBER]`).
+
+### Multiple PR and issue links
+
+Changelog entries can reference multiple pull requests and issues using the `prs` and `issues` array fields. When an entry has multiple links, all of them are rendered inline for that entry:
+
+```md
+* Fix ML calendar event update scalability issues. [#136886](https://github.com/elastic/elastic/pull/136886) [#136900](https://github.com/elastic/elastic/pull/136900)
+```
 
 ## Examples
 

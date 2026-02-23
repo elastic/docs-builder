@@ -229,7 +229,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		return ShouldSkipByCreateRules(prLabels, createRules, collector, prUrl, null);
 	}
 
-	private static bool ShouldSkipByCreateRules(
+	internal static bool ShouldSkipByCreateRules(
 		string[] prLabels,
 		CreateRules rules,
 		IDiagnosticsCollector collector,
@@ -307,11 +307,11 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		}
 	}
 
-	private static string? MapLabelsToType(string[] labels, IReadOnlyDictionary<string, string> labelToTypeMapping) => labels
+	internal static string? MapLabelsToType(string[] labels, IReadOnlyDictionary<string, string> labelToTypeMapping) => labels
 		.Select(label => labelToTypeMapping.TryGetValue(label, out var mappedType) ? mappedType : null)
 		.FirstOrDefault(mappedType => mappedType != null);
 
-	private static List<string> MapLabelsToAreas(string[] labels, IReadOnlyDictionary<string, string> labelToAreasMapping)
+	internal static List<string> MapLabelsToAreas(string[] labels, IReadOnlyDictionary<string, string> labelToAreasMapping)
 	{
 		var areas = new HashSet<string>();
 		var areaList = labels
@@ -336,7 +336,7 @@ public record PrProcessingResult
 }
 
 /// <summary>
-/// Fields derived from PR information
+/// Fields derived from PR or issue information
 /// </summary>
 public record DerivedPrFields
 {
@@ -346,4 +346,9 @@ public record DerivedPrFields
 	public string[]? Areas { get; set; }
 	public bool? Highlight { get; set; }
 	public string[]? Issues { get; set; }
+
+	/// <summary>
+	/// Linked PRs derived from issue body (when creating changelog from --issues)
+	/// </summary>
+	public string[]? Prs { get; set; }
 }

@@ -244,16 +244,22 @@ public class ChangelogRenderingService(
 
 	private static string GetEntryIdentifier(ChangelogEntry entry, ChangelogRenderContext context)
 	{
-		// Try to extract PR number if available
-		if (!string.IsNullOrWhiteSpace(entry.Pr))
+		if (entry.Prs is { Count: > 0 })
 		{
 			var repo = context.EntryToRepo.GetValueOrDefault(entry, context.Repo);
-			var prNumber = ChangelogTextUtilities.ExtractPrNumber(entry.Pr, "elastic", repo);
+			var prNumber = ChangelogTextUtilities.ExtractPrNumber(entry.Prs[0], "elastic", repo);
 			if (prNumber.HasValue)
 				return $"for PR {prNumber.Value}";
 		}
 
-		// Fall back to title if no PR is available
+		if (entry.Issues is { Count: > 0 })
+		{
+			var repo = context.EntryToRepo.GetValueOrDefault(entry, context.Repo);
+			var issueNumber = ChangelogTextUtilities.ExtractIssueNumber(entry.Issues[0], "elastic", repo);
+			if (issueNumber.HasValue)
+				return $"for issue {issueNumber.Value}";
+		}
+
 		return $"'{entry.Title}'";
 	}
 

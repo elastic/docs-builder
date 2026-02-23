@@ -32,7 +32,8 @@ public class ChangelogBasicTests : DirectiveTest<ChangelogBlock>
 			    target: 9.3.0
 			  areas:
 			  - Search
-			  pr: "123456"
+			  prs:
+			  - "123456"
 			  description: This is a great new feature.
 			- title: Fix important bug
 			  type: bug-fix
@@ -41,7 +42,8 @@ public class ChangelogBasicTests : DirectiveTest<ChangelogBlock>
 			    target: 9.3.0
 			  areas:
 			  - Indexing
-			  pr: "123457"
+			  prs:
+			  - "123457"
 			"""));
 
 	[Fact]
@@ -92,7 +94,8 @@ public class ChangelogMultipleBundlesTests : DirectiveTest<ChangelogBlock>
 			  products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			  pr: "111111"
+			  prs:
+			  - "111111"
 			"""));
 
 		FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
@@ -107,7 +110,8 @@ public class ChangelogMultipleBundlesTests : DirectiveTest<ChangelogBlock>
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "222222"
+			  prs:
+			  - "222222"
 			"""));
 
 		FileSystem.AddFile("docs/changelog/bundles/9.10.0.yaml", new MockFileData(
@@ -122,7 +126,8 @@ public class ChangelogMultipleBundlesTests : DirectiveTest<ChangelogBlock>
 			  products:
 			  - product: elasticsearch
 			    target: 9.10.0
-			  pr: "333333"
+			  prs:
+			  - "333333"
 			"""));
 	}
 
@@ -169,7 +174,8 @@ public class ChangelogCustomPathTests : DirectiveTest<ChangelogBlock>
 		  products:
 		  - product: my-product
 		    target: 1.0.0
-		  pr: "1"
+		  prs:
+		  - "1"
 		"""));
 
 	[Fact]
@@ -247,7 +253,8 @@ public class ChangelogWithBreakingChangesTests : DirectiveTest<ChangelogBlock>
 		  description: The API has changed significantly.
 		  impact: Users must update their code.
 		  action: Follow the migration guide.
-		  pr: "222222"
+		  prs:
+		  - "222222"
 		"""));
 
 	[Fact]
@@ -294,7 +301,8 @@ public class ChangelogWithDeprecationsTests : DirectiveTest<ChangelogBlock>
 		  description: The old API is deprecated.
 		  impact: The API will be removed in a future version.
 		  action: Use the new API instead.
-		  pr: "333333"
+		  prs:
+		  - "333333"
 		"""));
 
 	[Fact]
@@ -369,7 +377,8 @@ public class ChangelogAbsolutePathTests : DirectiveTest<ChangelogBlock>
 		  products:
 		  - product: elasticsearch
 		    target: 9.3.0
-		  pr: "444444"
+		  prs:
+		  - "444444"
 		"""));
 
 	[Fact]
@@ -403,13 +412,15 @@ public class ChangelogSectionOrderTests : DirectiveTest<ChangelogBlock>
 		  products:
 		  - product: elasticsearch
 		    target: 9.3.0
-		  pr: "111111"
+		  prs:
+		  - "111111"
 		- title: Security fix
 		  type: security
 		  products:
 		  - product: elasticsearch
 		    target: 9.3.0
-		  pr: "222222"
+		  prs:
+		  - "222222"
 		- title: Breaking API change
 		  type: breaking-change
 		  products:
@@ -418,7 +429,8 @@ public class ChangelogSectionOrderTests : DirectiveTest<ChangelogBlock>
 		  description: API changed.
 		  impact: Users must update.
 		  action: Follow guide.
-		  pr: "333333"
+		  prs:
+		  - "333333"
 		- title: Known issue
 		  type: known-issue
 		  products:
@@ -427,7 +439,8 @@ public class ChangelogSectionOrderTests : DirectiveTest<ChangelogBlock>
 		  description: Issue exists.
 		  impact: Some impact.
 		  action: Workaround available.
-		  pr: "444444"
+		  prs:
+		  - "444444"
 		- title: Deprecated feature
 		  type: deprecation
 		  products:
@@ -436,13 +449,15 @@ public class ChangelogSectionOrderTests : DirectiveTest<ChangelogBlock>
 		  description: Feature deprecated.
 		  impact: Will be removed.
 		  action: Use new feature.
-		  pr: "555555"
+		  prs:
+		  - "555555"
 		- title: Bug fix
 		  type: bug-fix
 		  products:
 		  - product: elasticsearch
 		    target: 9.3.0
-		  pr: "666666"
+		  prs:
+		  - "666666"
 		"""));
 
 	[Fact]
@@ -506,13 +521,15 @@ public class ChangelogHeaderLevelsTests : DirectiveTest<ChangelogBlock>
 		  products:
 		  - product: elasticsearch
 		    target: 9.3.0
-		  pr: "111111"
+		  prs:
+		  - "111111"
 		- title: Bug fix
 		  type: bug-fix
 		  products:
 		  - product: elasticsearch
 		    target: 9.3.0
-		  pr: "222222"
+		  prs:
+		  - "222222"
 		"""));
 
 	[Fact]
