@@ -146,6 +146,11 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		var d = new DeploymentApplicability();
 		var assigned = false;
 
+		var hasEss = dictionary.ContainsKey("ess");
+		var hasEch = dictionary.ContainsKey("ech");
+		if (hasEss && hasEch)
+			diagnostics.Add((Severity.Warning, "Both 'ess' and 'ech' are defined. Move 'ess' content into 'ech' to avoid information loss."));
+
 		var mapping = new Dictionary<string, Action<AppliesCollection?>>
 		{
 			{ "ece", a => d.Ece = a },

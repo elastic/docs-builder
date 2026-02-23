@@ -155,7 +155,7 @@ applies_to:
             )
         ))
 
-type ``both ess and ech defined uses ech value`` () =
+type ``both ess and ech defined uses ech value and warns`` () =
     static let markdown = frontMatter """
 applies_to:
    deployment:
@@ -163,12 +163,16 @@ applies_to:
       ech: beta 9.1
 """
     [<Fact>]
-    let ``apply matches expected`` () =
+    let ``ech value wins`` () =
         markdown |> appliesTo (ApplicableTo(
             Deployment=DeploymentApplicability(
                 Ess=AppliesCollection.op_Explicit "beta 9.1"
             )
         ))
+
+    [<Fact>]
+    let ``emits warning about both being defined`` () =
+        markdown |> hasWarning "Both 'ess' and 'ech' are defined"
 
 type ``parses ech at top level`` () =
     static let markdown = frontMatter """
