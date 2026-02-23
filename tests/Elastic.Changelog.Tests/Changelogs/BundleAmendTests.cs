@@ -41,7 +41,8 @@ public class BundleAmendTests : ChangelogTestBase
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			- "100"
 			""";
 
 		var changelogFile = FileSystem.Path.Combine(_changelogDir, "1755268130-existing.yaml");
@@ -79,7 +80,8 @@ public class BundleAmendTests : ChangelogTestBase
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			- "100"
 			""";
 
 		var changelogFile = FileSystem.Path.Combine(_changelogDir, "1755268130-existing.yaml");
@@ -121,7 +123,8 @@ public class BundleAmendTests : ChangelogTestBase
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/200
+			prs:
+			- "200"
 			description: A new enhancement added via amend
 			""";
 

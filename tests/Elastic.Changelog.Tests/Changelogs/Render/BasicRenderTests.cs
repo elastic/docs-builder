@@ -26,7 +26,8 @@ public class BasicRenderTests(ITestOutputHelper output) : RenderChangelogTestBas
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			- "100"
 			description: This is a test feature
 			""";
 
@@ -92,7 +93,8 @@ public class BasicRenderTests(ITestOutputHelper output) : RenderChangelogTestBas
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			- "100"
 			""";
 		// language=yaml
 		var changelog2 =
@@ -102,7 +104,8 @@ public class BasicRenderTests(ITestOutputHelper output) : RenderChangelogTestBas
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/200
+			prs:
+			- "200"
 			""";
 
 		var file1 = FileSystem.Path.Combine(changelogDir1, "1755268130-first.yaml");

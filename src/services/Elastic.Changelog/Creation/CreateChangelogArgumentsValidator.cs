@@ -46,12 +46,44 @@ public class CreateChangelogArgumentsValidator(IConfigurationContext configurati
 	}
 
 	/// <summary>
-	/// Validates required fields after PR processing.
+	/// Validates that if an issue is just a number, owner and repo must be provided.
+	/// </summary>
+	public bool ValidateIssueFormat(IDiagnosticsCollector collector, string? issueUrl, string? owner, string? repo)
+	{
+		if (!string.IsNullOrWhiteSpace(issueUrl)
+			&& int.TryParse(issueUrl.Trim(), out _)
+			&& (string.IsNullOrWhiteSpace(owner) || string.IsNullOrWhiteSpace(repo)))
+		{
+			collector.EmitError(string.Empty, "When --issues is specified as just a number, both --owner and --repo must be provided");
+			return false;
+		}
+
+		return true;
+	}
+
+	/// <summary>
+	/// Validates that if all issues are just numbers, owner and repo must be provided.
+	/// </summary>
+	public bool ValidateMultipleIssueFormat(IDiagnosticsCollector collector, string[] issues, string? owner, string? repo)
+	{
+		var allAreNumbers = issues.All(i => int.TryParse(i.Trim(), out _));
+		if (allAreNumbers && (string.IsNullOrWhiteSpace(owner) || string.IsNullOrWhiteSpace(repo)))
+		{
+			collector.EmitError(string.Empty, "When --issues contains only numbers, both --owner and --repo must be provided");
+			return false;
+		}
+
+		return true;
+	}
+
+	/// <summary>
+	/// Validates required fields after PR or issue processing.
 	/// </summary>
 	public bool ValidateRequiredFields(
 		IDiagnosticsCollector collector,
 		CreateChangelogArguments input,
-		bool prFetchFailed)
+		bool prFetchFailed,
+		bool fromIssue = false)
 	{
 		// Validate title
 		if (string.IsNullOrWhiteSpace(input.Title))
@@ -60,7 +92,8 @@ public class CreateChangelogArgumentsValidator(IConfigurationContext configurati
 				collector.EmitWarning(string.Empty, "Title is missing. The changelog will be created with title commented out. Please manually update the title field.");
 			else
 			{
-				collector.EmitError(string.Empty, "Title is required. Provide --title or specify --prs to derive it from the PR.");
+				var titleHint = fromIssue ? "specify --issues to derive it from the issue" : "specify --prs or --issues to derive it";
+				collector.EmitError(string.Empty, $"Title is required. Provide --title or {titleHint}.");
 				return false;
 			}
 		}
@@ -72,7 +105,8 @@ public class CreateChangelogArgumentsValidator(IConfigurationContext configurati
 				collector.EmitWarning(string.Empty, "Type is missing. The changelog will be created with type commented out. Please manually update the type field.");
 			else
 			{
-				collector.EmitError(string.Empty, "Type is required. Provide --type or specify --prs to derive it from PR labels (requires pivot.types mapping in changelog.yml).");
+				var source = fromIssue ? "issue" : "PR";
+				collector.EmitError(string.Empty, $"Type is required. Provide --type or specify --prs/--issues to derive it from {source} labels (requires pivot.types mapping in changelog.yml).");
 				return false;
 			}
 		}

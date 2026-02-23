@@ -109,7 +109,8 @@ public class ChangelogLinksDefaultBehaviorTests : DirectiveTest<ChangelogBlock>
 		  products:
 		  - product: elasticsearch
 		    target: 9.3.0
-		  pr: "123456"
+		  prs:
+		  - "123456"
 		  issues:
 		  - "78901"
 		  - "78902"
@@ -161,7 +162,8 @@ public class ChangelogLinksHiddenForPrivateRepoTests : DirectiveTest<ChangelogBl
 		  products:
 		  - product: elasticsearch
 		    target: 9.3.0
-		  pr: "123456"
+		  prs:
+		  - "123456"
 		  issues:
 		  - "78901"
 		  - "78902"
@@ -230,7 +232,8 @@ public class ChangelogLinksHiddenInDetailedEntriesTests : DirectiveTest<Changelo
 		  description: API has changed.
 		  impact: Users must update.
 		  action: Follow migration guide.
-		  pr: "999888"
+		  prs:
+		  - "999888"
 		  issues:
 		  - "777666"
 		- title: Deprecation with PR
@@ -241,7 +244,8 @@ public class ChangelogLinksHiddenInDetailedEntriesTests : DirectiveTest<Changelo
 		  description: Old API deprecated.
 		  impact: Will be removed.
 		  action: Use new API.
-		  pr: "555444"
+		  prs:
+		  - "555444"
 		"""));
 
 	public override async ValueTask InitializeAsync()
@@ -308,7 +312,8 @@ public class ChangelogLinksShownForPublicRepoTests : DirectiveTest<ChangelogBloc
 		  products:
 		  - product: elasticsearch
 		    target: 9.3.0
-		  pr: "111111"
+		  prs:
+		  - "111111"
 		"""));
 
 	public override async ValueTask InitializeAsync()
@@ -356,7 +361,8 @@ public class ChangelogLinksWithMergedBundlesTests : DirectiveTest<ChangelogBlock
 			  products:
 			  - product: elasticsearch
 			    target: 2025-08-05
-			  pr: "111111"
+			  prs:
+			  - "111111"
 			"""));
 
 		FileSystem.AddFile("docs/changelog/bundles/kibana-2025-08-05.yaml", new MockFileData(
@@ -371,7 +377,8 @@ public class ChangelogLinksWithMergedBundlesTests : DirectiveTest<ChangelogBlock
 			  products:
 			  - product: kibana
 			    target: 2025-08-05
-			  pr: "222222"
+			  prs:
+			  - "222222"
 			"""));
 	}
 
@@ -430,7 +437,8 @@ public class ChangelogLinksWithMergedPublicReposTests : DirectiveTest<ChangelogB
 			  products:
 			  - product: elasticsearch
 			    target: 2025-08-05
-			  pr: "111111"
+			  prs:
+			  - "111111"
 			"""));
 
 		FileSystem.AddFile("docs/changelog/bundles/kibana-2025-08-05.yaml", new MockFileData(
@@ -445,7 +453,8 @@ public class ChangelogLinksWithMergedPublicReposTests : DirectiveTest<ChangelogB
 			  products:
 			  - product: kibana
 			    target: 2025-08-05
-			  pr: "222222"
+			  prs:
+			  - "222222"
 			"""));
 	}
 

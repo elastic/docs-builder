@@ -28,7 +28,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			    target: 2026-01-26
 			areas:
 			  - Allocation
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			- "100"
 			description: This feature should be blocked
 			""";
 
@@ -43,7 +44,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			    target: 2026-01-26
 			areas:
 			  - Search
-			pr: https://github.com/elastic/elasticsearch/pull/101
+			prs:
+			- "101"
 			description: This feature should be visible
 			""";
 
@@ -152,7 +154,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			    target: 2026-01-26
 			areas:
 			  - Allocation
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			- "100"
 			description: This deprecation should be blocked
 			""";
 
@@ -167,7 +170,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			    target: 2026-01-26
 			areas:
 			  - Search
-			pr: https://github.com/elastic/elasticsearch/pull/101
+			prs:
+			- "101"
 			description: This deprecation should be visible
 			""";
 
@@ -180,7 +184,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			products:
 			  - product: cloud-serverless
 			    target: 2026-01-26
-			pr: https://github.com/elastic/elasticsearch/pull/102
+			prs:
+			- "102"
 			description: This feature should be visible
 			""";
 
@@ -306,7 +311,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			    target: 9.2.0
 			areas:
 			  - Internal
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			- "100"
 			description: This feature should be blocked globally
 			""";
 
@@ -321,7 +327,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			    target: 9.2.0
 			areas:
 			  - Search
-			pr: https://github.com/elastic/elasticsearch/pull/101
+			prs:
+			- "101"
 			description: This feature should be visible
 			""";
 
@@ -428,7 +435,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			    target: 2026-01-26
 			areas:
 			  - Internal
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			- "100"
 			description: This should be visible for cloud-serverless
 			""";
 
@@ -443,7 +451,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			    target: 9.2.0
 			areas:
 			  - Internal
-			pr: https://github.com/elastic/elasticsearch/pull/101
+			prs:
+			- "101"
 			description: This should be blocked for elasticsearch
 			""";
 
@@ -580,7 +589,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			    target: 2026-01-26
 			areas:
 			  - Allocation
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			- "100"
 			description: This breaking change should be blocked
 			impact: Users will be affected
 			action: Update your code
@@ -597,7 +607,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			    target: 2026-01-26
 			areas:
 			  - Search
-			pr: https://github.com/elastic/elasticsearch/pull/101
+			prs:
+			- "101"
 			description: This breaking change should be visible
 			impact: Users will be affected
 			action: Update your code
@@ -713,7 +724,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			    target: 2026-01-26
 			areas:
 			  - Allocation
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			- "100"
 			description: This known issue should be blocked
 			impact: Users may experience issues
 			action: Workaround available
@@ -730,7 +742,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			    target: 2026-01-26
 			areas:
 			  - Search
-			pr: https://github.com/elastic/elasticsearch/pull/101
+			prs:
+			- "101"
 			description: This known issue should be visible
 			impact: Users may experience issues
 			action: Workaround available
@@ -847,7 +860,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			    target: 2026-01-26
 			areas:
 			  - Allocation
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			- "100"
 			""";
 
 		// language=yaml
@@ -860,7 +874,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			    target: 2026-01-26
 			areas:
 			  - Internal
-			pr: https://github.com/elastic/elasticsearch/pull/101
+			prs:
+			- "101"
 			""";
 
 		// language=yaml
@@ -873,7 +888,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			    target: 2026-01-26
 			areas:
 			  - Search
-			pr: https://github.com/elastic/elasticsearch/pull/102
+			prs:
+			- "102"
 			""";
 
 		var changelogFile1 = FileSystem.Path.Combine(changelogDir, "1755268130-allocation.yaml");
@@ -987,7 +1003,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			    target: 2026-01-26
 			areas:
 			  - Allocation
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			- "100"
 			description: This feature should be blocked
 			""";
 
@@ -1002,7 +1019,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			    target: 2026-01-26
 			areas:
 			  - Search
-			pr: https://github.com/elastic/elasticsearch/pull/101
+			prs:
+			- "101"
 			description: This feature should be visible
 			""";
 
@@ -1111,7 +1129,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			    target: 2026-01-26
 			areas:
 			  - Allocation
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			- "100"
 			description: This feature should be blocked
 			""";
 
@@ -1126,7 +1145,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			    target: 2026-01-26
 			areas:
 			  - Allocation
-			pr: https://github.com/elastic/elasticsearch/pull/101
+			prs:
+			- "101"
 			description: This enhancement should be blocked
 			""";
 
@@ -1227,7 +1247,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			    target: 2026-01-26
 			areas:
 			  - Allocation
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			- "100"
 			description: This breaking change should be blocked
 			impact: Users will be affected
 			action: Update your code
@@ -1325,7 +1346,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			    target: 2026-01-26
 			areas:
 			  - Allocation
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			- "100"
 			description: This deprecation should be blocked
 			impact: Users will be affected
 			action: Update your code
@@ -1422,7 +1444,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			    target: 2026-01-26
 			areas:
 			  - Allocation
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			- "100"
 			description: This known issue should be blocked
 			impact: Users may experience issues
 			action: Workaround available
@@ -1520,7 +1543,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			    target: 2026-01-26
 			areas:
 			  - Allocation
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			- "100"
 			description: This feature should be blocked
 			""";
 
@@ -1533,7 +1557,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			products:
 			  - product: cloud-serverless
 			    target: 2026-01-26
-			pr: https://github.com/elastic/elasticsearch/pull/101
+			prs:
+			- "101"
 			description: This deprecation should be blocked
 			""";
 
@@ -1549,7 +1574,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			areas:
 			  - Allocation
 			  - Internal
-			pr: https://github.com/elastic/elasticsearch/pull/102
+			prs:
+			- "102"
 			description: This feature should be blocked
 			""";
 

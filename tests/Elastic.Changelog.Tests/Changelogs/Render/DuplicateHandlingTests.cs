@@ -29,7 +29,8 @@ public class DuplicateHandlingTests(ITestOutputHelper output) : RenderChangelogT
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			- "100"
 			""";
 
 		var fileName = "1755268130-duplicate.yaml";
@@ -110,7 +111,8 @@ public class DuplicateHandlingTests(ITestOutputHelper output) : RenderChangelogT
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			- "100"
 			""";
 
 		var fileName = "1755268130-test-feature.yaml";
@@ -180,7 +182,8 @@ public class DuplicateHandlingTests(ITestOutputHelper output) : RenderChangelogT
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			- "100"
 			""";
 		// language=yaml
 		var changelog2 =
@@ -190,7 +193,8 @@ public class DuplicateHandlingTests(ITestOutputHelper output) : RenderChangelogT
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			- "100"
 			""";
 
 		var file1 = FileSystem.Path.Combine(changelogDir1, "1755268130-first.yaml");

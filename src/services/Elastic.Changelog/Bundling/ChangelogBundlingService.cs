@@ -31,6 +31,7 @@ public record BundleChangelogsArguments
 	public IReadOnlyList<ProductArgument>? OutputProducts { get; init; }
 	public bool Resolve { get; init; }
 	public string[]? Prs { get; init; }
+	public string[]? Issues { get; init; }
 	public string? Owner { get; init; }
 	public string? Repo { get; init; }
 
@@ -83,6 +84,9 @@ public partial class ChangelogBundlingService(
 	[GeneratedRegex(@"github\.com/([^/]+)/([^/]+)/pull/(\d+)", RegexOptions.IgnoreCase)]
 	private static partial Regex GitHubPrUrlRegex();
 
+	[GeneratedRegex(@"github\.com/([^/]+)/([^/]+)/issues/(\d+)", RegexOptions.IgnoreCase)]
+	private static partial Regex GitHubIssueUrlRegex();
+
 	public async Task<bool> BundleChangelogs(IDiagnosticsCollector collector, BundleChangelogsArguments input, Cancel ctx)
 	{
 		try
@@ -108,11 +112,26 @@ public partial class ChangelogBundlingService(
 			if (!ValidateInput(collector, input))
 				return false;
 
-			// Load PR filter values
-			var prFilterLoader = new PrFilterLoader(_fileSystem);
-			var prFilterResult = await prFilterLoader.LoadPrsAsync(collector, input.Prs, input.Owner, input.Repo, ctx);
-			if (!prFilterResult.IsValid)
-				return false;
+			// Load PR or issue filter values
+			var prsToMatch = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+			var issuesToMatch = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+			if (input.Prs is { Length: > 0 })
+			{
+				var prFilterLoader = new PrFilterLoader(_fileSystem);
+				var prFilterResult = await prFilterLoader.LoadPrsAsync(collector, input.Prs, input.Owner, input.Repo, ctx);
+				if (!prFilterResult.IsValid)
+					return false;
+				prsToMatch = prFilterResult.PrsToMatch;
+			}
+			else if (input.Issues is { Length: > 0 })
+			{
+				var issueFilterLoader = new IssueFilterLoader(_fileSystem);
+				var issueFilterResult = await issueFilterLoader.LoadIssuesAsync(collector, input.Issues, input.Owner, input.Repo, ctx);
+				if (!issueFilterResult.IsValid)
+					return false;
+				issuesToMatch = issueFilterResult.IssuesToMatch;
+			}
 
 			// Determine output path
 			var outputPath = input.Output ?? _fileSystem.Path.Combine(input.Directory, "changelog-bundle.yaml");
@@ -130,7 +149,7 @@ public partial class ChangelogBundlingService(
 			_logger.LogInformation("Found {Count} YAML files in directory", yamlFiles.Count);
 
 			// Build filter criteria
-			var filterCriteria = BuildFilterCriteria(input, prFilterResult.PrsToMatch);
+			var filterCriteria = BuildFilterCriteria(input, prsToMatch, issuesToMatch);
 
 			// Match changelog entries
 			var entryMatcher = new ChangelogEntryMatcher(_fileSystem, ReleaseNotesSerialization.GetEntryDeserializer(), _logger);
@@ -342,7 +361,7 @@ public partial class ChangelogBundlingService(
 			return false;
 		}
 
-		// Validate filter options
+		// Validate filter options - exactly one of: --all, --input-products, --prs, --issues
 		var specifiedFilters = new List<string>();
 		if (input.All)
 			specifiedFilters.Add("--all");
@@ -350,23 +369,29 @@ public partial class ChangelogBundlingService(
 			specifiedFilters.Add("--input-products");
 		if (input.Prs is { Length: > 0 })
 			specifiedFilters.Add("--prs");
+		if (input.Issues is { Length: > 0 })
+			specifiedFilters.Add("--issues");
 
 		if (specifiedFilters.Count == 0)
 		{
-			collector.EmitError(string.Empty, "At least one filter option must be specified: --all, --input-products, or --prs");
+			collector.EmitError(string.Empty, "At least one filter option must be specified: --all, --input-products, --prs, or --issues");
 			return false;
 		}
 
 		if (specifiedFilters.Count > 1)
 		{
-			collector.EmitError(string.Empty, $"Multiple filter options cannot be specified together. You specified: {string.Join(", ", specifiedFilters)}. Please use only one filter option: --all, --input-products, or --prs");
+			collector.EmitError(string.Empty,
+				$"Multiple filter options cannot be specified together. You specified: {string.Join(", ", specifiedFilters)}. Please use only one filter option: --all, --input-products, --prs, or --issues");
 			return false;
 		}
 
 		return true;
 	}
 
-	private static ChangelogFilterCriteria BuildFilterCriteria(BundleChangelogsArguments input, HashSet<string> prsToMatch)
+	private static ChangelogFilterCriteria BuildFilterCriteria(
+		BundleChangelogsArguments input,
+		HashSet<string> prsToMatch,
+		HashSet<string> issuesToMatch)
 	{
 		var productFilters = new List<ProductFilter>();
 		if (input.InputProducts is { Count: > 0 })
@@ -387,6 +412,7 @@ public partial class ChangelogBundlingService(
 			IncludeAll = input.All,
 			ProductFilters = productFilters,
 			PrsToMatch = prsToMatch,
+			IssuesToMatch = issuesToMatch,
 			DefaultOwner = input.Owner,
 			DefaultRepo = input.Repo
 		};
@@ -504,5 +530,68 @@ public partial class ChangelogBundlingService(
 
 		// Return as-is for comparison (fallback)
 		return pr.ToLowerInvariant();
+	}
+
+	internal static string NormalizeIssueForComparison(string issue, string? defaultOwner, string? defaultRepo)
+	{
+		issue = issue.Trim();
+
+		if (issue.StartsWith("https://github.com/", StringComparison.OrdinalIgnoreCase) ||
+			issue.StartsWith("http://github.com/", StringComparison.OrdinalIgnoreCase))
+		{
+			var match = GitHubIssueUrlRegex().Match(issue);
+			if (match.Success && match.Groups.Count >= 4)
+			{
+				var owner = match.Groups[1].Value.Trim();
+				var repo = match.Groups[2].Value.Trim();
+				var issuePart = match.Groups[3].Value.Trim();
+				if (!string.IsNullOrWhiteSpace(owner) && !string.IsNullOrWhiteSpace(repo) &&
+					int.TryParse(issuePart, out var issueNum))
+					return $"{owner}/{repo}#{issueNum}".ToLowerInvariant();
+			}
+
+			try
+			{
+				var uri = new Uri(issue);
+				var segments = uri.Segments;
+				if (segments.Length >= 5 && segments[3].Equals("issues/", StringComparison.OrdinalIgnoreCase))
+				{
+					var owner = segments[1].TrimEnd('/').Trim();
+					var repo = segments[2].TrimEnd('/').Trim();
+					var issuePart = segments[4].TrimEnd('/').Trim();
+					if (!string.IsNullOrWhiteSpace(owner) && !string.IsNullOrWhiteSpace(repo) &&
+						int.TryParse(issuePart, out var issueNum))
+						return $"{owner}/{repo}#{issueNum}".ToLowerInvariant();
+				}
+			}
+			catch (UriFormatException)
+			{
+				// Fall through
+			}
+		}
+
+		var hashIndex = issue.LastIndexOf('#');
+		if (hashIndex > 0 && hashIndex < issue.Length - 1)
+		{
+			var repoPart = issue[..hashIndex].Trim();
+			var issuePart = issue[(hashIndex + 1)..].Trim();
+			if (int.TryParse(issuePart, out var issueNum))
+			{
+				var repoParts = repoPart.Split('/');
+				if (repoParts.Length == 2)
+				{
+					var owner = repoParts[0].Trim();
+					var repo = repoParts[1].Trim();
+					if (!string.IsNullOrWhiteSpace(owner) && !string.IsNullOrWhiteSpace(repo))
+						return $"{owner}/{repo}#{issueNum}".ToLowerInvariant();
+				}
+			}
+		}
+
+		if (int.TryParse(issue, out var issueNumber) &&
+			!string.IsNullOrWhiteSpace(defaultOwner) && !string.IsNullOrWhiteSpace(defaultRepo))
+			return $"{defaultOwner}/{defaultRepo}#{issueNumber}".ToLowerInvariant();
+
+		return issue.ToLowerInvariant();
 	}
 }

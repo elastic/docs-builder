@@ -264,7 +264,7 @@ public class GitHubReleaseChangelogService(
 					: null
 			}],
 			Areas = labelDerivedAreas,
-			Pr = prUrl
+			Prs = [prUrl]
 		};
 
 		// Generate YAML content
