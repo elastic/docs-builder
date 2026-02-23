@@ -60,7 +60,9 @@ public record CodexDocumentationSetReference
 
 	/// <summary>
 	/// Optional short description shown on the codex landing page card.
+	/// Deprecated: Use the index.md frontmatter description instead.
 	/// </summary>
+	[Obsolete("Use the index.md frontmatter description instead. This field will be removed in a future version.")]
 	[YamlMember(Alias = "description")]
 	public string? Description { get; set; }
 

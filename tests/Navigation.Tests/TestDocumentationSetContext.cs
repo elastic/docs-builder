@@ -110,10 +110,13 @@ public class TestDocumentationSetContext : IDocumentationSetContext
 	public IReadOnlyCollection<Diagnostic> Diagnostics => ((TestDiagnosticsCollector)Collector).Diagnostics;
 }
 
-public class TestDocumentationFile(string title, string? navigationTitle = null) : IDocumentationFile
+public class TestDocumentationFile(string title, string? navigationTitle = null, string? description = null) : IDocumentationFile
 {
 	/// <inheritdoc />
 	public string Title { get; } = title;
+
+	/// <inheritdoc />
+	public string? Description { get; } = description;
 
 	/// <inheritdoc />
 	public string NavigationTitle { get; } = navigationTitle ?? title;

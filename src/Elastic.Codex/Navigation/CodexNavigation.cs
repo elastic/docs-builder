@@ -118,7 +118,7 @@ public class CodexNavigation : IRootNavigationItem<IDocumentationFile, INavigati
 				Url = $"{codex.Url}/r/{repoName}",
 				Group = docSetRef.Group,
 				PageCount = CountPages(rootNavItem),
-				Description = docSetRef.Description,
+				Description = rootNavItem.Index.Model.Description,
 				Icon = docSetRef.Icon
 			};
 

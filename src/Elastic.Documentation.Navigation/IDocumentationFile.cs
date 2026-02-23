@@ -11,6 +11,9 @@ public interface IDocumentationFile : INavigationModel
 	/// Gets the page title (h1 heading) for this documentation file.
 	string Title { get; }
 
+	/// Gets the page description from frontmatter, if set.
+	string? Description { get; }
+
 	/// Gets the title to display in navigation for this documentation file.
 	string NavigationTitle { get; }
 }
