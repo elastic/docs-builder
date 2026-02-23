@@ -131,7 +131,7 @@ public class ApplicableToJsonConverter : JsonConverter<ApplicableTo>
 				Self = deploymentProps.TryGetValue("self", out var self) ? new AppliesCollection(self.ToArray()) : null,
 				Ece = deploymentProps.TryGetValue("ece", out var ece) ? new AppliesCollection(ece.ToArray()) : null,
 				Eck = deploymentProps.TryGetValue("eck", out var eck) ? new AppliesCollection(eck.ToArray()) : null,
-				Ess = deploymentProps.TryGetValue("ess", out var ess) ? new AppliesCollection(ess.ToArray()) : null
+				Ess = deploymentProps.TryGetValue("ess", out var ess) || deploymentProps.TryGetValue("ech", out ess) ? new AppliesCollection(ess.ToArray()) : null
 			};
 		}
 

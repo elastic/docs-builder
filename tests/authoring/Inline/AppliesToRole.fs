@@ -53,6 +53,22 @@ This is an inline {applies_to}`ess: preview 9.1` element.
             )
         ))
 
+type ``parses nested ech moniker as ess`` () =
+    static let markdown = Setup.Markdown """
+
+This is an inline {applies_to}`ech: preview 9.1` element.
+"""
+
+    [<Fact>]
+    let ``parses to AppliesDirective`` () =
+        let directives = markdown |> converts "index.md" |> parses<AppliesToRole>
+        test <@ directives.Length = 1 @>
+        directives |> appliesToDirective (ApplicableTo(
+            Deployment=DeploymentApplicability(
+                Ess=AppliesCollection.op_Explicit "preview 9.1.0"
+            )
+        ))
+
 type ``parses {preview} shortcut`` () =
     static let markdown = Setup.Markdown """
 
