@@ -304,6 +304,24 @@ public class ApplicableToJsonConverterRoundTripTests
 	}
 
 	[Fact]
+	public void BothEssAndEchSubTypes_EssWins()
+	{
+		var json = """
+			[
+				{ "type": "deployment", "sub_type": "ess", "lifecycle": "ga", "version": "9.0.0" },
+				{ "type": "deployment", "sub_type": "ech", "lifecycle": "beta", "version": "9.1.0" }
+			]
+			""";
+
+		var deserialized = JsonSerializer.Deserialize<ApplicableTo>(json, _options);
+
+		deserialized.Should().NotBeNull();
+		deserialized!.Deployment.Should().NotBeNull();
+		deserialized.Deployment!.Ess.Should().NotBeNull();
+		deserialized.Deployment.Ess!.First().Lifecycle.Should().Be(ProductLifecycle.GenerallyAvailable);
+	}
+
+	[Fact]
 	public void RoundTripAllLifecycles()
 	{
 		var lifecycles = Enum.GetValues<ProductLifecycle>();

@@ -155,6 +155,21 @@ applies_to:
             )
         ))
 
+type ``both ess and ech defined uses ech value`` () =
+    static let markdown = frontMatter """
+applies_to:
+   deployment:
+      ess: ga 9.0
+      ech: beta 9.1
+"""
+    [<Fact>]
+    let ``apply matches expected`` () =
+        markdown |> appliesTo (ApplicableTo(
+            Deployment=DeploymentApplicability(
+                Ess=AppliesCollection.op_Explicit "beta 9.1"
+            )
+        ))
+
 type ``parses ech at top level`` () =
     static let markdown = frontMatter """
 applies_to:
