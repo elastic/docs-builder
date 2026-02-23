@@ -5,7 +5,7 @@
 declare global {
     interface Window {
         __mermaid: {
-            renderMermaid: (
+            renderMermaidSVGAsync: (
                 code: string,
                 options?: {
                     bg?: string
@@ -17,6 +17,11 @@ declare global {
                     muted?: string
                     surface?: string
                     border?: string
+                    padding?: number
+                    nodeSpacing?: number
+                    layerSpacing?: number
+                    componentSpacing?: number
+                    thoroughness?: number
                 }
             ) => Promise<string>
         }
@@ -533,7 +538,7 @@ export async function initMermaid() {
 
             try {
                 // Render the diagram using Beautiful Mermaid
-                let svg = await window.__mermaid.renderMermaid(content)
+                let svg = await window.__mermaid.renderMermaidSVGAsync(content)
 
                 // Post-process the SVG
                 svg = resolveVariables(svg)
