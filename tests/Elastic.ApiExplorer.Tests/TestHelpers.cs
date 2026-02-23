@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
+using System.Collections.Generic;
 using System.IO.Abstractions;
+using System.Linq;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;

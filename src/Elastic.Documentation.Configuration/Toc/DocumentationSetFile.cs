@@ -8,6 +8,7 @@ using Elastic.Documentation.Configuration.Toc.DetectionRules;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
 using YamlDotNet.Serialization;
+using static Elastic.Documentation.Configuration.SymlinkValidator;
 
 namespace Elastic.Documentation.Configuration.Toc;
 
@@ -32,9 +33,11 @@ public class DocumentationSetFile : TableOfContentsFile
 	[YamlMember(Alias = "subs")]
 	public Dictionary<string, string> Subs { get; set; } = [];
 
+	[Obsolete("Use the index.md h1 heading instead. This field will be removed in a future version.")]
 	[YamlMember(Alias = "display_name")]
 	public string? DisplayName { get; set; }
 
+	[Obsolete("Use the index.md frontmatter description instead. This field will be removed in a future version.")]
 	[YamlMember(Alias = "description")]
 	public string? Description { get; set; }
 
@@ -96,6 +99,8 @@ public class DocumentationSetFile : TableOfContentsFile
 	public static DocumentationSetFile LoadAndResolve(IDiagnosticsCollector collector, IFileInfo docsetPath, IFileSystem? fileSystem = null, HashSet<HintType>? noSuppress = null)
 	{
 		fileSystem ??= docsetPath.FileSystem;
+		// Validate that the docset.yml is not a symlink (security: prevents path traversal attacks)
+		EnsureNotSymlink(docsetPath);
 		var yaml = fileSystem.File.ReadAllText(docsetPath.FullName);
 		var sourceDirectory = docsetPath.Directory!;
 		return LoadAndResolve(collector, yaml, sourceDirectory, fileSystem, noSuppress);
@@ -217,6 +222,9 @@ public class DocumentationSetFile : TableOfContentsFile
 			collector.EmitError(parentContext, $"Table of contents file not found: {fullTocPath}/toc.yml");
 			return new IsolatedTableOfContentsRef(fullTocPath, tocPathRelativeToContainer, [], parentContext);
 		}
+
+		// Validate that the toc.yml is not a symlink (security: prevents path traversal attacks)
+		EnsureNotSymlink(fileSystem, tocFilePath);
 
 		var tocYaml = fileSystem.File.ReadAllText(tocFilePath);
 		var nestedTocFile = TableOfContentsFile.Deserialize(tocYaml);

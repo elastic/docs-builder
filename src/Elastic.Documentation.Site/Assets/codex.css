@@ -3,8 +3,12 @@
 :root {
 	/* Codex uses elastic-docs-header web component - fixed 48px height */
 	--header-height: 48px;
-	--sub-header-height: 40px;
+	--sub-header-height: 37px;
 	--offset-top: calc(var(--header-height) + var(--sub-header-height));
+}
+
+#htmx-indicator {
+	top: var(--header-height);
 }
 
 /* Codex header specific styles - only apply on lg screens (matches --breakpoint-lg) */

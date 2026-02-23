@@ -170,7 +170,7 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 			var streamingCollector = new StreamingDiagnosticsCollector(_loggerFactory, this);
 
 			var readFs = new FileSystem();
-			var service = new IsolatedBuildService(_loggerFactory, _configurationContext, new NullCoreService());
+			var service = new IsolatedBuildService(_loggerFactory, _configurationContext, new NullCoreService(), SystemEnvironmentVariables.Instance);
 
 			_logger.LogInformation("Starting in-memory validation build for {Path}", sourcePath);
 
