@@ -101,8 +101,6 @@ public class CodexNavigation : IRootNavigationItem<IDocumentationFile, INavigati
 			var docSetInfo = CreateDocumentationSetInfo(docSetRef, rootNavItem, repoName);
 			_docSetInfos.Add(docSetInfo);
 
-			ApplyDisplayNameOverride(docSetNav, docSetRef.DisplayName);
-
 			if (!string.IsNullOrEmpty(docSetRef.Group))
 				AttachToGroup(docSetRef, docSetNav, rootNavItem, pathPrefix, docSetInfo);
 			else
@@ -116,19 +114,13 @@ public class CodexNavigation : IRootNavigationItem<IDocumentationFile, INavigati
 			new()
 			{
 				Name = repoName,
-				Title = docSetRef.DisplayName ?? rootNavItem.NavigationTitle ?? repoName,
+				Title = rootNavItem.Index.Model.Title ?? repoName,
 				Url = $"{codex.Url}/r/{repoName}",
 				Group = docSetRef.Group,
 				PageCount = CountPages(rootNavItem),
-				Description = docSetRef.Description,
+				Description = rootNavItem.Index.Model.Description,
 				Icon = docSetRef.Icon
 			};
-
-		private static void ApplyDisplayNameOverride(IDocumentationSetNavigation docSetNav, string? displayName)
-		{
-			if (!string.IsNullOrEmpty(displayName))
-				docSetNav.NavigationTitleOverride = displayName;
-		}
 
 		private void AttachToGroup(
 			CodexDocumentationSetReference docSetRef,

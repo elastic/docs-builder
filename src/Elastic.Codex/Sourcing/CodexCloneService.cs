@@ -219,8 +219,6 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 			Branch = entry.Branch,
 			Path = docsPath,
 			Group = docSet.Codex?.Group,
-			DisplayName = docSet.DisplayName ?? docSet.Project,
-			Description = docSet.Description,
 			Icon = docSet.Icon
 		};
 

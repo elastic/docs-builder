@@ -198,8 +198,7 @@ public class CodexBuildService(
 
 		try
 		{
-			var reference = buildContext.Checkout.Reference;
-			var codexBreadcrumbs = ResolveCodexBreadcrumbs(context, reference);
+			var codexBreadcrumbs = ResolveCodexBreadcrumbs(context, buildContext);
 
 			_ = await isolatedBuildService.BuildDocumentationSet(
 				buildContext.DocumentationSet,
@@ -220,14 +219,16 @@ public class CodexBuildService(
 
 	private static IReadOnlyList<CodexBreadcrumb> ResolveCodexBreadcrumbs(
 		CodexContext context,
-		CodexDocumentationSetReference reference)
+		CodexDocumentationSetBuildContext buildContext)
 	{
+		var reference = buildContext.Checkout.Reference;
 		var sitePrefix = context.Configuration.SitePrefix?.Trim('/') ?? "";
 		var repoName = reference.ResolvedRepoName;
 		var groupId = reference.Group;
 		var homeUrl = string.IsNullOrEmpty(sitePrefix) ? "/" : $"/{sitePrefix}/";
 		var docSetUrl = string.IsNullOrEmpty(sitePrefix) ? $"/r/{repoName}" : $"/{sitePrefix}/r/{repoName}";
-		var docSetTitle = reference.DisplayName ?? repoName;
+		var indexTitle = buildContext.DocumentationSet.Navigation.Index.Model.Title;
+		var docSetTitle = !string.IsNullOrEmpty(indexTitle) ? indexTitle : repoName;
 
 		if (string.IsNullOrEmpty(groupId))
 			return [new CodexBreadcrumb("Home", homeUrl), new CodexBreadcrumb(docSetTitle, docSetUrl)];

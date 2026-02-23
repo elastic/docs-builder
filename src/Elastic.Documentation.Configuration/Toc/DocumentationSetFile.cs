@@ -32,9 +32,11 @@ public class DocumentationSetFile : TableOfContentsFile
 	[YamlMember(Alias = "subs")]
 	public Dictionary<string, string> Subs { get; set; } = [];
 
+	[Obsolete("Use the index.md h1 heading instead. This field will be removed in a future version.")]
 	[YamlMember(Alias = "display_name")]
 	public string? DisplayName { get; set; }
 
+	[Obsolete("Use the index.md frontmatter description instead. This field will be removed in a future version.")]
 	[YamlMember(Alias = "description")]
 	public string? Description { get; set; }
 

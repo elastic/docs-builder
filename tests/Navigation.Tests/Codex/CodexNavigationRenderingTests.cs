@@ -22,9 +22,9 @@ public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavi
 	{
 		// Arrange: Create a codex with grouped repos
 		CodexDocumentationSetReference[] docSets = [
-			new CodexDocumentationSetReference { Name = "apm-agent", Branch = "main", Group = "observability", DisplayName = "APM Agent" },
-			new CodexDocumentationSetReference { Name = "uptime", Branch = "main", Group = "observability", DisplayName = "Uptime" },
-			new CodexDocumentationSetReference { Name = "logs", Branch = "main", Group = "observability", DisplayName = "Logs" }
+			new CodexDocumentationSetReference { Name = "apm-agent", Branch = "main", Group = "observability" },
+			new CodexDocumentationSetReference { Name = "uptime", Branch = "main", Group = "observability" },
+			new CodexDocumentationSetReference { Name = "logs", Branch = "main", Group = "observability" }
 		];
 		var config = CreateCodexConfiguration("/docs");
 		var docSetNavigations = CreateMockDocSetNavigations(["apm-agent", "uptime", "logs"]);
@@ -43,12 +43,12 @@ public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavi
 	}
 
 	[Fact]
-	public void GroupNavigation_TopLevelItems_UseDisplayNames()
+	public void GroupNavigation_TopLevelItems_UseIndexH1()
 	{
-		// Arrange
+		// Arrange: Mock creates index.md with "# {repoName}" so h1 is "apm-agent" and "uptime"
 		CodexDocumentationSetReference[] docSets = [
-			new CodexDocumentationSetReference { Name = "apm-agent", Branch = "main", Group = "observability", DisplayName = "APM Agent Docs" },
-			new CodexDocumentationSetReference { Name = "uptime", Branch = "main", Group = "observability", DisplayName = "Uptime Monitoring" }
+			new CodexDocumentationSetReference { Name = "apm-agent", Branch = "main", Group = "observability" },
+			new CodexDocumentationSetReference { Name = "uptime", Branch = "main", Group = "observability" }
 		];
 		var config = CreateCodexConfiguration("/docs");
 		var docSetNavigations = CreateMockDocSetNavigations(["apm-agent", "uptime"]);
@@ -56,10 +56,10 @@ public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavi
 
 		var groupNav = codexNav.GroupNavigations.First();
 
-		// Assert: Navigation titles should use the display names from config
+		// Assert: Navigation titles use index.md h1, not display_name
 		groupNav.NavigationItems.Select(i => i.NavigationTitle).Should().BeEquivalentTo([
-			"APM Agent Docs",
-			"Uptime Monitoring"
+			"apm-agent",
+			"uptime"
 		]);
 	}
 
