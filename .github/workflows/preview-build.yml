@@ -167,7 +167,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
 
       - name: Get changed files
-        if: contains(fromJSON('["merge_group", "pull_request", "pull_request_target"]'), github.event_name)
+        if: contains(fromJSON('["push", "merge_group", "pull_request", "pull_request_target"]'), github.event_name)
         id: check-files
         uses: tj-actions/changed-files@2f7c5bfce28377bc069a65ba478de0a74aa0ca32 # v46.0.1
         with:
@@ -512,6 +512,7 @@ jobs:
       - name: Update Link Index
         if: >
           env.MATCH == 'true'
+          && needs.check.outputs.any_modified != 'false'
           && (
             contains(fromJSON('["push", "workflow_dispatch"]'), github.event_name) 
             && steps.s3-upload.outcome == 'success'
