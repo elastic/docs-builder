@@ -328,10 +328,10 @@ public class ChangelogRemoveService(
 		}
 
 		// 2. Config bundle.output_directory
-		if (!string.IsNullOrWhiteSpace(config?.Bundle?.OutputDirectory))
+		if (!string.IsNullOrWhiteSpace(config?.Bundle?.OutputDirectory)
+			&& _fileSystem.Directory.Exists(config.Bundle.OutputDirectory))
 		{
-			if (_fileSystem.Directory.Exists(config.Bundle.OutputDirectory))
-				return config.Bundle.OutputDirectory;
+			return config.Bundle.OutputDirectory;
 		}
 
 		// 3. {directory}/bundles
