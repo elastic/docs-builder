@@ -29,7 +29,11 @@ public record BundleChangelogsArguments
 	public bool All { get; init; }
 	public IReadOnlyList<ProductArgument>? InputProducts { get; init; }
 	public IReadOnlyList<ProductArgument>? OutputProducts { get; init; }
-	public bool Resolve { get; init; }
+	/// <summary>
+	/// Whether to resolve (copy contents of each changelog file into the entries array).
+	/// null = use config default; true = --resolve; false = --no-resolve.
+	/// </summary>
+	public bool? Resolve { get; init; }
 	public string[]? Prs { get; init; }
 	public string[]? Issues { get; init; }
 	public string? Owner { get; init; }
@@ -175,7 +179,7 @@ public partial class ChangelogBundlingService(
 				collector,
 				matchResult.Entries,
 				input.OutputProducts,
-				input.Resolve,
+				input.Resolve ?? false,
 				input.Repo,
 				featureHidingResult.FeatureIdsToHide
 			);
@@ -336,8 +340,8 @@ public partial class ChangelogBundlingService(
 		if (string.IsNullOrWhiteSpace(output) && !string.IsNullOrWhiteSpace(config.Bundle.OutputDirectory))
 			output = Path.Combine(config.Bundle.OutputDirectory, "changelog-bundle.yaml");
 
-		// Apply resolve default if not specified by CLI
-		var resolve = input.Resolve || config.Bundle.Resolve;
+		// Apply resolve: CLI takes precedence over config. Only use config when CLI did not specify.
+		var resolve = input.Resolve ?? config.Bundle.Resolve;
 
 		return input with
 		{

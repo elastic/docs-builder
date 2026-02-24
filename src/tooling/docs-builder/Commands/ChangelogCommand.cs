@@ -600,7 +600,7 @@ internal sealed partial class ChangelogCommand(
 			}
 		}
 
-		// Determine resolve: CLI --no-resolve takes precedence, then CLI --resolve, then config default
+		// Determine resolve: CLI --no-resolve and --resolve override config. null = use config default.
 		var shouldResolve = noResolve ? false : resolve;
 
 		// Process each --hide-features occurrence: each can be comma-separated feature IDs or a file path
@@ -632,7 +632,7 @@ internal sealed partial class ChangelogCommand(
 			All = all,
 			InputProducts = inputProducts,
 			OutputProducts = outputProducts,
-			Resolve = shouldResolve ?? false,
+			Resolve = shouldResolve,
 			Prs = allPrs.Count > 0 ? allPrs.ToArray() : null,
 			Issues = allIssues.Count > 0 ? allIssues.ToArray() : null,
 			Owner = owner,
