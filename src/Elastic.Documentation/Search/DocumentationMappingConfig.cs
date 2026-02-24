@@ -4,43 +4,34 @@
 
 using Elastic.Mapping;
 using Elastic.Mapping.Analysis;
+using Elastic.Mapping.Mappings;
 
 namespace Elastic.Documentation.Search;
 
 [ElasticsearchMappingContext]
-[Entity<DocumentationDocument>(
-	Target = EntityTarget.Index,
-	Name = "docs-lexical",
-	WriteAlias = "docs-lexical",
-	ReadAlias = "docs-lexical",
-	SearchPattern = "docs-lexical-*",
+[Index<DocumentationDocument>(
+	NameTemplate = "docs-{type}.lexical-{env}",
 	DatePattern = "yyyy.MM.dd.HHmmss",
 	Configuration = typeof(LexicalConfig)
 )]
-[Entity<DocumentationDocument>(
-	Target = EntityTarget.Index,
-	Name = "docs-semantic",
+[Index<DocumentationDocument>(
+	NameTemplate = "docs-{type}.semantic-{env}",
 	Variant = "Semantic",
-	WriteAlias = "docs-semantic",
-	ReadAlias = "docs-semantic",
-	SearchPattern = "docs-semantic-*",
 	DatePattern = "yyyy.MM.dd.HHmmss",
 	Configuration = typeof(SemanticConfig)
 )]
 public static partial class DocumentationMappingContext;
 
-public static class LexicalConfig : IConfigureElasticsearch<DocumentationMappingContext>
+public class LexicalConfig : IConfigureElasticsearch<DocumentationDocument>
 {
-	public static AnalysisBuilder ConfigureAnalysis(AnalysisBuilder analysis) => analysis;
-
-	public static DocumentationDocumentMappingsBuilder ConfigureMappings(DocumentationDocumentMappingsBuilder m) =>
-		ConfigureCommonMappings(m)
+	public MappingsBuilder<DocumentationDocument> ConfigureMappings(MappingsBuilder<DocumentationDocument> mappings) =>
+		ConfigureCommonMappings(mappings)
 			.StrippedBody(f => f
 				.Analyzer("synonyms_fixed_analyzer")
 				.SearchAnalyzer("synonyms_analyzer")
 			);
 
-	internal static DocumentationDocumentMappingsBuilder ConfigureCommonMappings(DocumentationDocumentMappingsBuilder m) => m
+	internal static MappingsBuilder<DocumentationDocument> ConfigureCommonMappings(MappingsBuilder<DocumentationDocument> m) => m
 		// Text fields with custom analyzers and multi-fields
 		.SearchTitle(f => f
 			.Analyzer("synonyms_fixed_analyzer")
@@ -87,15 +78,13 @@ public static class LexicalConfig : IConfigureElasticsearch<DocumentationMapping
 			.MultiField("keyword", mf => mf.Keyword()));
 }
 
-public static class SemanticConfig
+public class SemanticConfig : IConfigureElasticsearch<DocumentationDocument>
 {
 	private const string ElserInferenceId = ".elser-2-elastic";
 	private const string JinaInferenceId = ".jina-embeddings-v5-text-small";
 
-	public static AnalysisBuilder ConfigureAnalysis(AnalysisBuilder analysis) => analysis;
-
-	public static DocumentationDocumentMappingsBuilder ConfigureMappings(DocumentationDocumentMappingsBuilder m) =>
-		LexicalConfig.ConfigureCommonMappings(m)
+	public MappingsBuilder<DocumentationDocument> ConfigureMappings(MappingsBuilder<DocumentationDocument> mappings) =>
+		LexicalConfig.ConfigureCommonMappings(mappings)
 			.StrippedBody(s => s
 				.Analyzer("synonyms_fixed_analyzer")
 				.SearchAnalyzer("synonyms_analyzer")
@@ -158,5 +147,4 @@ public static class DocumentationAnalysisFactory
 			.TokenizeOnChars("whitespace", ",", ";", "?", "!", "(", ")", "&", "'", "\"", "/", "[", "]", "{", "}"))
 		.Tokenizer("path_tokenizer", t => t.PathHierarchy()
 			.Delimiter('/'));
-
 }

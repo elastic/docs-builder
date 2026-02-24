@@ -34,7 +34,6 @@ public class IsolatedIndexService(
 	/// <param name="indexNumThreads">The number of index threads the inference endpoint should use. Defaults: 8</param>
 	/// <param name="noEis">Do not use the Elastic Inference Service, bootstrap inference endpoint</param>
 	/// <param name="bootstrapTimeout">Timeout in minutes for the inference endpoint creation. Defaults: 4</param>
-	/// <param name="indexNamePrefix">The prefix for the computed index/alias names. Defaults: semantic-docs</param>
 	/// <param name="forceReindex">Force reindex strategy to semantic index</param>
 	/// <param name="bufferSize">The number of documents to send to ES as part of the bulk. Defaults: 100</param>
 	/// <param name="maxRetries">The number of times failed bulk items should be retried. Defaults: 3</param>
@@ -62,7 +61,6 @@ public class IsolatedIndexService(
 		bool? noEis = null,
 		int? bootstrapTimeout = null,
 		// index options
-		string? indexNamePrefix = null,
 		bool? forceReindex = null,
 		// channel buffer options
 		int? bufferSize = null,
@@ -91,7 +89,6 @@ public class IsolatedIndexService(
 			IndexNumThreads = indexNumThreads,
 			NoEis = noEis,
 			BootstrapTimeout = bootstrapTimeout,
-			IndexNamePrefix = indexNamePrefix,
 			ForceReindex = forceReindex,
 			BufferSize = bufferSize,
 			MaxRetries = maxRetries,

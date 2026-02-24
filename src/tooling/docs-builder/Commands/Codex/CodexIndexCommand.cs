@@ -40,7 +40,6 @@ internal sealed class CodexIndexCommand(
 	/// <param name="searchNumThreads">The number of search threads the inference endpoint should use. Defaults: 8</param>
 	/// <param name="indexNumThreads">The number of index threads the inference endpoint should use. Defaults: 8</param>
 	/// <param name="noEis">Do not use the Elastic Inference Service, bootstrap inference endpoint</param>
-	/// <param name="indexNamePrefix">The prefix for the computed index/alias names. Defaults: semantic-docs</param>
 	/// <param name="forceReindex">Force reindex strategy to semantic index</param>
 	/// <param name="bootstrapTimeout">Timeout in minutes for the inference endpoint creation. Defaults: 4</param>
 	/// <param name="bufferSize">The number of documents to send to ES as part of the bulk. Defaults: 100</param>
@@ -71,7 +70,6 @@ internal sealed class CodexIndexCommand(
 		int? bootstrapTimeout = null,
 
 		// index options
-		string? indexNamePrefix = null,
 		bool? forceReindex = null,
 
 		// channel buffer options
@@ -137,7 +135,6 @@ internal sealed class CodexIndexCommand(
 			IndexNumThreads = indexNumThreads,
 			NoEis = noEis,
 			BootstrapTimeout = bootstrapTimeout,
-			IndexNamePrefix = indexNamePrefix,
 			ForceReindex = forceReindex,
 			BufferSize = bufferSize,
 			MaxRetries = maxRetries,

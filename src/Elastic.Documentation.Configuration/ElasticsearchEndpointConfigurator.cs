@@ -28,7 +28,6 @@ public record ElasticsearchIndexOptions
 	public int? BootstrapTimeout { get; init; }
 
 	// index options
-	public string? IndexNamePrefix { get; init; }
 	public bool? ForceReindex { get; init; }
 
 	// channel buffer options
@@ -84,8 +83,6 @@ public static class ElasticsearchEndpointConfigurator
 			cfg.IndexNumThreads = options.IndexNumThreads.Value;
 		if (options.NoEis.HasValue)
 			cfg.NoElasticInferenceService = options.NoEis.Value;
-		if (!string.IsNullOrEmpty(options.IndexNamePrefix))
-			cfg.IndexNamePrefix = options.IndexNamePrefix;
 		if (options.BufferSize.HasValue)
 			cfg.BufferSize = options.BufferSize.Value;
 		if (options.MaxRetries.HasValue)
