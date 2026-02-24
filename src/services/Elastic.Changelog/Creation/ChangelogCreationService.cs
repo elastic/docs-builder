@@ -38,8 +38,15 @@ public record CreateChangelogArguments
 	public bool UsePrNumber { get; init; }
 	public bool UseIssueNumber { get; init; }
 	public bool StripTitlePrefix { get; init; }
-	public bool ExtractReleaseNotes { get; init; }
-	public bool ExtractIssues { get; init; }
+	/// <summary>
+	/// Whether to extract release notes from PR/issue descriptions. null = use config default.
+	/// </summary>
+	public bool? ExtractReleaseNotes { get; init; }
+
+	/// <summary>
+	/// Whether to extract linked issues/PRs from PR/issue body. null = use config default.
+	/// </summary>
+	public bool? ExtractIssues { get; init; }
 }
 
 /// <summary>
@@ -122,9 +129,12 @@ IFileSystem? fileSystem = null
 		}
 	}
 
-	private static CreateChangelogArguments ApplyConfigDefaults(CreateChangelogArguments input, ChangelogConfiguration _) =>
-		// Config defaults are already handled by CLI layer, but this ensures service layer has proper defaults too
-		input;
+	private static CreateChangelogArguments ApplyConfigDefaults(CreateChangelogArguments input, ChangelogConfiguration config) =>
+		input with
+		{
+			ExtractReleaseNotes = input.ExtractReleaseNotes ?? config.Extract.ReleaseNotes,
+			ExtractIssues = input.ExtractIssues ?? config.Extract.Issues
+		};
 
 	/// <summary>
 	/// Infers products from configuration defaults or git repository name.

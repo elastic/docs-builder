@@ -93,7 +93,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		var derived = new DerivedPrFields();
 
 		// Extract release notes from PR body if requested
-		if (input.ExtractReleaseNotes)
+		if (input.ExtractReleaseNotes ?? false)
 		{
 			var (releaseNoteTitle, releaseNoteDescription) = ReleaseNotesExtractor.ExtractReleaseNotes(prInfo.Body);
 
@@ -181,7 +181,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 			logger.LogDebug("Using explicitly provided highlight value, ignoring PR labels");
 
 		// Extract linked issues from PR body if config enabled and issues not provided
-		if (input.ExtractIssues && (input.Issues == null || input.Issues.Length == 0))
+		if ((input.ExtractIssues ?? false) && (input.Issues == null || input.Issues.Length == 0))
 		{
 			if (prInfo.LinkedIssues.Count > 0)
 			{

@@ -24,12 +24,19 @@ namespace Elastic.Changelog.Bundling;
 /// </summary>
 public record BundleChangelogsArguments
 {
-	public required string Directory { get; init; }
+	/// <summary>
+	/// Directory containing changelog YAML files. null = use config default.
+	/// </summary>
+	public string? Directory { get; init; }
 	public string? Output { get; init; }
 	public bool All { get; init; }
 	public IReadOnlyList<ProductArgument>? InputProducts { get; init; }
 	public IReadOnlyList<ProductArgument>? OutputProducts { get; init; }
-	public bool Resolve { get; init; }
+	/// <summary>
+	/// Whether to resolve (copy contents of each changelog file into the entries array).
+	/// null = use config default; true = --resolve; false = --no-resolve.
+	/// </summary>
+	public bool? Resolve { get; init; }
 	public string[]? Prs { get; init; }
 	public string[]? Issues { get; init; }
 	public string? Owner { get; init; }
@@ -133,16 +140,19 @@ public partial class ChangelogBundlingService(
 				issuesToMatch = issueFilterResult.IssuesToMatch;
 			}
 
+			// Directory is resolved by ApplyConfigDefaults (never null at this point)
+			var directory = input.Directory!;
+
 			// Determine output path
-			var outputPath = input.Output ?? _fileSystem.Path.Combine(input.Directory, "changelog-bundle.yaml");
+			var outputPath = input.Output ?? _fileSystem.Path.Combine(directory, "changelog-bundle.yaml");
 
 			// Discover changelog files
 			var fileDiscovery = new ChangelogFileDiscovery(_fileSystem, _logger);
-			var yamlFiles = await fileDiscovery.DiscoverChangelogFilesAsync(input.Directory, outputPath, ctx);
+			var yamlFiles = await fileDiscovery.DiscoverChangelogFilesAsync(directory, outputPath, ctx);
 
 			if (yamlFiles.Count == 0)
 			{
-				collector.EmitError(input.Directory, "No YAML files found in directory");
+				collector.EmitError(directory, "No YAML files found in directory");
 				return false;
 			}
 
@@ -175,7 +185,7 @@ public partial class ChangelogBundlingService(
 				collector,
 				matchResult.Entries,
 				input.OutputProducts,
-				input.Resolve,
+				input.Resolve ?? false,
 				input.Repo,
 				featureHidingResult.FeatureIdsToHide
 			);
@@ -265,7 +275,7 @@ public partial class ChangelogBundlingService(
 		string? outputPath = null;
 		if (!string.IsNullOrWhiteSpace(outputPattern))
 		{
-			var outputDir = config.Bundle.OutputDirectory ?? input.OutputDirectory ?? input.Directory;
+			var outputDir = config.Bundle.OutputDirectory ?? input.OutputDirectory ?? input.Directory ?? _fileSystem.Directory.GetCurrentDirectory();
 			outputPath = _fileSystem.Path.Combine(outputDir, outputPattern);
 		}
 
@@ -320,24 +330,19 @@ public partial class ChangelogBundlingService(
 
 	private static BundleChangelogsArguments ApplyConfigDefaults(BundleChangelogsArguments input, ChangelogConfiguration? config)
 	{
-		if (config?.Bundle == null)
-			return input;
+		// Apply directory: CLI takes precedence. Only use config when --directory not specified.
+		var directory = input.Directory ?? config?.Bundle?.Directory ?? Directory.GetCurrentDirectory();
 
-		// Apply directory default if not specified
-		var directory = input.Directory;
-		if ((string.IsNullOrWhiteSpace(directory) || directory == Directory.GetCurrentDirectory())
-			&& !string.IsNullOrWhiteSpace(config.Bundle.Directory))
-		{
-			directory = config.Bundle.Directory;
-		}
+		if (config?.Bundle == null)
+			return input with { Directory = directory };
 
 		// Apply output default when --output not specified: use bundle.output_directory if set
 		var output = input.Output;
 		if (string.IsNullOrWhiteSpace(output) && !string.IsNullOrWhiteSpace(config.Bundle.OutputDirectory))
 			output = Path.Combine(config.Bundle.OutputDirectory, "changelog-bundle.yaml");
 
-		// Apply resolve default if not specified by CLI
-		var resolve = input.Resolve || config.Bundle.Resolve;
+		// Apply resolve: CLI takes precedence over config. Only use config when CLI did not specify.
+		var resolve = input.Resolve ?? config.Bundle.Resolve;
 
 		return input with
 		{
