@@ -1436,6 +1436,62 @@ public class BundleChangelogsTests : ChangelogTestBase
 	}
 
 	[Fact]
+	public async Task BundleChangelogs_WithExplicitResolveFalse_OverridesConfigResolveTrue()
+	{
+		// Arrange - config has resolve: true, but CLI passes Resolve = false (--no-resolve).
+		// The explicit CLI value must win.
+
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  resolve: true
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// language=yaml
+		var changelog1 =
+			"""
+			title: Test feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
+			""";
+
+		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-test-feature.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			All = true,
+			Resolve = false,
+			Config = configPath,
+			Output = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
+		};
+
+		// Act
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+
+		// An unresolved bundle has only a file reference — no inline title/type fields
+		bundleContent.Should().Contain("name: 1755268130-test-feature.yaml");
+		bundleContent.Should().NotContain("title: Test feature");
+		bundleContent.Should().NotContain("type: feature");
+	}
+
+	[Fact]
 	public async Task BundleChangelogs_WithResolve_PreservesSpecialCharactersInUtf8()
 	{
 		// Arrange - Create changelog with special characters that could be corrupted
