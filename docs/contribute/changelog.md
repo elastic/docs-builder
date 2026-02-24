@@ -493,6 +493,11 @@ You can specify only one of the following filter options:
 By default, the output file contains only the changelog file names and checksums.
 You can optionally use the `--resolve` command option to pull all of the content from each changelog into the bundle.
 
+:::{tip}
+If you plan to use [changelog directives](#changelog-directive), it is recommended to use the `--resolve` option; otherwise you can't delete your changelogs.
+If you likewise want to regenerate your [Asciidoc or Markdown files](#render-changelogs) after deleting your changelogs, it's only possible if you have "resolved" bundles.
+:::
+
 When you do not specify `--directory`, the command reads changelog files from `bundle.directory` in your changelog configuration if it is set, otherwise from the current directory.
 When you do not specify `--output`, the command writes the bundle to `bundle.output_directory` from your changelog configuration (creating `changelog-bundle.yaml` in that directory) if it is set, otherwise to `changelog-bundle.yaml` in the input directory.
 
@@ -821,3 +826,34 @@ highlight: true
 ```
 
 When rendering changelogs, entries with `highlight: true` are collected from all types and rendered in a dedicated highlights section. In markdown output, this creates a separate `highlights.md` file. In asciidoc output, highlights appear as a dedicated section in the single asciidoc file.
+
+## Remove changelog files [changelog-remove]
+
+A single changelog file might be applicable to multiple releases (for example, it might be delivered in both Stack and {{serverless-short}} releases or {{ech}} and Enterprise releases on different timelines).
+After it has been included in all of the relevant bundles, it is reasonable to delete the changelog to keep your repository clean.
+
+:::{important}
+If you create docs with changelog directives, run the `docs-builder changelog bundle` command with the `--resolve` option (so that bundle files are self-contained). Otherwise, the build will fail if you remove changelogs that the directive requires.
+
+Likewise, the `docs-builder changelog render` command fails for "unresolved" bundles after you delete the changelogs.
+:::
+
+You can use the `docs-builder changelog remove` command to remove changelogs.
+It has the same filter options as `changelog bundle` (that is to say, you can remove changelogs based their issues or pull requests, product metadata, or folder).
+Exactly one filter option must be specified.
+
+Before deleting, the command automatically scans for bundles that still hold unresolved (`file:`) references to the matching changelog files.
+If any are found, the command reports an error for each dependency.
+This check prevents the `{changelog}` directive from failing at build time with missing file errors.
+To proceed with removal even when unresolved bundle dependencies exist, use `--force`.
+
+To preview what would be removed without deleting anything, use `--dry-run`.
+Bundle dependency conflicts are also reported in dry-run mode.
+
+For example:
+
+```sh
+docs-builder changelog remove --products "elasticsearch 9.3.0 *" --dry-run
+```
+
+For full option details, go to [](/cli/release/changelog-remove.md).

@@ -326,9 +326,11 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		var loader = new BundleLoader(Build.ReadFileSystem);
 
 		// Load bundles using the BundleLoader service
+		// Emit errors (not warnings) for missing file references so the build fails fast
+		// rather than silently omitting entries from the rendered output.
 		var loadedBundles = loader.LoadBundles(
 			BundlesFolderPath,
-			msg => this.EmitWarning(msg));
+			msg => this.EmitError(msg));
 
 		// Sort by version (descending - newest first)
 		// Supports both semver (e.g., "9.3.0") and date-based (e.g., "2025-08-05") versions

@@ -418,6 +418,8 @@ docs/
 └── release-notes.md          # Page with :::{changelog}
 ```
 
+To override these expectations, set the `bundle.directory` and `bundle.output_directory` in the changelog configuration file.
+
 ## Version ordering
 
 Bundles are automatically sorted by **semantic version** (descending - newest first). This means:
@@ -466,6 +468,24 @@ Each bundle renders as a `## {version}` section with subsections beneath:
 
 Sections with no entries of that type are omitted from the output.
 
+## Error behavior for missing files [changelog-missing-files]
+
+Bundles created without the `--resolve` option store `file:` references (filenames and checksums) instead of embedding entry content inline.
+When the directive loads such a bundle, it looks up each referenced file to read its content.
+If a referenced file cannot be found on disk, the directive emits an error and the build fails.
+This prevents silent data loss where changelog entries would be quietly omitted from rendered release notes without any indication that something was missing.
+
+To fix this, either:
+
+- Restore the missing changelog files, or
+- Re-create the bundle with `--resolve` to embed entry content directly (making the bundle self-contained), or
+- Remove the unresolvable entry from the bundle file.
+
+:::{tip}
+In general, if you want to be able to remove changelog files after your releases, create your bundles with the `--resolve` option.
+For more command syntax details, go to [Remove changelog files](../contribute/changelog.md#changelog-remove).
+:::
+
 ## Example
 
 The following renders all changelog bundles from the default `changelog/bundles/` folder:
@@ -495,4 +515,5 @@ The `{changelog}` directive is ideal for release notes pages that should always 
 - [Create and bundle changelogs](../contribute/changelog.md) — Learn how to create changelog entries and bundles
 - [`changelog add`](../cli/release/changelog-add.md) — CLI command to create changelog entries
 - [`changelog bundle`](../cli/release/changelog-bundle.md) — CLI command to bundle changelog entries
+- [`changelog remove`](../cli/release/changelog-remove.md) — CLI command to remove changelog files
 - [`changelog render`](../cli/release/changelog-render.md) — CLI command to render changelogs to markdown files
