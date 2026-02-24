@@ -122,30 +122,19 @@ public class IsolatedBuildService(
 		}
 		else
 		{
-			ILinkIndexReader? codexReader = null;
-			if (context.Configuration.Registry != DocSetRegistry.Public)
-			{
-				var environment = context.Configuration.Registry.ToStringFast(true);
-				codexReader = new GitLinkIndexReader(environment, fileSystem);
-			}
+			using var codexReader = context.Configuration.Registry != DocSetRegistry.Public
+				? new GitLinkIndexReader(context.Configuration.Registry.ToStringFast(true), fileSystem)
+				: null;
 
-			try
-			{
-				var crossLinkFetcher = new DocSetConfigurationCrossLinkFetcher(
-					logFactory,
-					context.Configuration,
-					codexLinkIndexReader: codexReader);
-				var crossLinks = await crossLinkFetcher.FetchCrossLinks(ctx);
-				IUriEnvironmentResolver? uriResolver = crossLinks.CodexRepositories is not null
-					? new CodexAwareUriResolver(crossLinks.CodexRepositories)
-					: null;
-				crossLinkResolver = new CrossLinkResolver(crossLinks, uriResolver);
-			}
-			finally
-			{
-				if (codexReader is IDisposable d)
-					d.Dispose();
-			}
+			var crossLinkFetcher = new DocSetConfigurationCrossLinkFetcher(
+				logFactory,
+				context.Configuration,
+				codexLinkIndexReader: codexReader);
+			var crossLinks = await crossLinkFetcher.FetchCrossLinks(ctx);
+			IUriEnvironmentResolver? uriResolver = crossLinks.CodexRepositories is not null
+				? new CodexAwareUriResolver(crossLinks.CodexRepositories)
+				: null;
+			crossLinkResolver = new CrossLinkResolver(crossLinks, uriResolver);
 		}
 
 		// always delete output folder on CI

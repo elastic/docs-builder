@@ -20,13 +20,8 @@ public class CrossLinkRegistryTests
 	[Fact]
 	public void Registry_NullOrEmpty_ParsesAsPublic()
 	{
-		foreach (var registryValue in new[] { null, "", "   ", "public" })
-		{
-			var docSet = CreateDocSet(registryValue, ["elasticsearch"]);
-			var config = CreateConfiguration(docSet);
-
+		foreach (var config in new[] { null, "", "   ", "public" }.Select(v => CreateConfiguration(CreateDocSet(v, ["elasticsearch"]))))
 			config.Registry.Should().Be(DocSetRegistry.Public);
-		}
 	}
 
 	[Fact]
@@ -106,10 +101,14 @@ public class CrossLinkRegistryTests
 	{
 		var collector = new DiagnosticsCollector([]);
 		var root = Paths.WorkingDirectoryRoot.FullName;
-		var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData>(), root);
+		var configFilePath = Path.Join(root, "docs", "_docset.yml");
+		var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData>
+		{
+			{ configFilePath, new MockFileData("") }
+		}, root);
 
-		var configPath = fileSystem.FileInfo.New(Path.Combine(root, "docs", "_docset.yml"));
-		var docsDir = fileSystem.DirectoryInfo.New(Path.Combine(root, "docs"));
+		var configPath = fileSystem.FileInfo.New(configFilePath);
+		var docsDir = fileSystem.DirectoryInfo.New(Path.Join(root, "docs"));
 
 		var context = new MockDocumentationSetContext(collector, fileSystem, configPath, docsDir);
 		var versionsConfig = new VersionsConfiguration
@@ -135,7 +134,7 @@ public class CrossLinkRegistryTests
 		public IDiagnosticsCollector Collector => collector;
 		public IFileSystem ReadFileSystem => fileSystem;
 		public IFileSystem WriteFileSystem => fileSystem;
-		public IDirectoryInfo OutputDirectory => fileSystem.DirectoryInfo.New(Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts"));
+		public IDirectoryInfo OutputDirectory => fileSystem.DirectoryInfo.New(Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts"));
 		public IFileInfo ConfigurationPath => configurationPath;
 		public BuildType BuildType => BuildType.Isolated;
 		public IDirectoryInfo DocumentationSourceDirectory => documentationSourceDirectory;

@@ -109,19 +109,14 @@ public record ConfigurationFile
 			Registry = registry;
 
 			// Parse cross-link entries with optional registry prefix (e.g. public://elasticsearch)
-			var crossLinkEntries = new List<CrossLinkEntry>();
-			foreach (var raw in docSetFile.CrossLinks)
-			{
-				if (string.IsNullOrWhiteSpace(raw))
-					continue;
+			CrossLinkEntries = docSetFile.CrossLinks
+				.Where(raw => !string.IsNullOrWhiteSpace(raw))
+				.Select(raw => ParseCrossLinkEntry(raw.Trim(), registry, context.ConfigurationPath, context))
+				.Where(entry => entry is not null)
+				.Select(entry => entry!)
+				.ToArray();
 
-				var entry = ParseCrossLinkEntry(raw.Trim(), registry, context.ConfigurationPath, context);
-				if (entry != null)
-					crossLinkEntries.Add(entry);
-			}
-
-			CrossLinkEntries = [.. crossLinkEntries];
-			CrossLinkRepositories = crossLinkEntries.Select(e => e.Repository).ToArray();
+			CrossLinkRepositories = CrossLinkEntries.Select(e => e.Repository).ToArray();
 
 			// Extensions - assuming they're not in DocumentationSetFile yet
 			Extensions = new EnabledExtensions(docSetFile.Extensions);
