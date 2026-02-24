@@ -286,21 +286,22 @@ public class ChangelogRemoveService(
 				// Only treat as unresolved when the entry would need to load from file.
 				// Resolved entries have inline data (Title+Type) and don't need the file even if they have a File block.
 				var entryFileNames = bundle.Entries
-					.Where(entry =>
-						!string.IsNullOrWhiteSpace(entry.File?.Name) &&
-						(string.IsNullOrWhiteSpace(entry.Title) || entry.Type == null))
-					.Select(entry => NormalizeEntryFileName(entry.File!.Name));
+				var bundleDependencies = entryFileNames
+					.Where(entryFileName => toRemoveNames.Contains(entryFileName))
+					.Select(entryFileName =>
+						new
+						{
+							EntryFileName = entryFileName,
+							MatchingFile = filesToRemove.FirstOrDefault(f =>
+								string.Equals(
+									_fileSystem.Path.GetFileName(f),
+									entryFileName,
+									StringComparison.OrdinalIgnoreCase))
+						})
+					.Where(x => x.MatchingFile is not null)
+					.Select(x => new BundleDependency(x.MatchingFile!, bundleFile));
 
-				foreach (var entryFileName in entryFileNames.Where(entryFileName => toRemoveNames.Contains(entryFileName)))
-				{
-					// bundle entry.File.Name is relative to the changelog directory (parent of bundles dir)
-					// Normalize to just the base filename for comparison
-
-					// Find the full path from filesToRemove that matches this entry
-					var matchingFile = filesToRemove
-						.FirstOrDefault(f => string.Equals(
-							_fileSystem.Path.GetFileName(f),
-							entryFileName,
+				dependencies.AddRange(bundleDependencies);
 							StringComparison.OrdinalIgnoreCase));
 
 					if (matchingFile is not null)
