@@ -298,8 +298,9 @@ internal sealed partial class ChangelogCommand(
 			parsedPrs = allPrs.ToArray();
 		}
 
-		var shouldExtractReleaseNotes = !noExtractReleaseNotes;
-		var shouldExtractIssues = !noExtractIssues;
+		// null = use config default; explicit false when --no-extract-* passed
+		var extractReleaseNotes = noExtractReleaseNotes ? false : (bool?)null;
+		var extractIssues = noExtractIssues ? false : (bool?)null;
 
 		// Parse issues: handle both comma-separated values and file paths (mirrors PR parsing)
 		string[]? parsedIssues = null;
@@ -378,8 +379,8 @@ internal sealed partial class ChangelogCommand(
 			UsePrNumber = usePrNumber,
 			UseIssueNumber = useIssueNumber,
 			StripTitlePrefix = stripTitlePrefix,
-			ExtractReleaseNotes = shouldExtractReleaseNotes,
-			ExtractIssues = shouldExtractIssues
+			ExtractReleaseNotes = extractReleaseNotes,
+			ExtractIssues = extractIssues
 		};
 
 		serviceInvoker.AddCommand(service, input,
