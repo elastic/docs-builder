@@ -90,7 +90,7 @@ public class IssueInfoProcessor(IGitHubPrService? githubService, ILogger logger)
 	{
 		var derived = new DerivedPrFields();
 
-		if (input.ExtractReleaseNotes)
+		if (input.ExtractReleaseNotes ?? false)
 		{
 			var (releaseNoteTitle, releaseNoteDescription) = ReleaseNotesExtractor.ExtractReleaseNotes(issueInfo.Body);
 
@@ -176,7 +176,7 @@ public class IssueInfoProcessor(IGitHubPrService? githubService, ILogger logger)
 			: [issueUrl];
 
 		// Extract linked PRs from issue body
-		if (input.ExtractIssues && issueInfo.LinkedPrs.Count > 0)
+		if ((input.ExtractIssues ?? false) && issueInfo.LinkedPrs.Count > 0)
 		{
 			derived.Prs = issueInfo.LinkedPrs.ToArray();
 			logger.LogInformation("Extracted {Count} linked PRs from issue body: {Prs}",
