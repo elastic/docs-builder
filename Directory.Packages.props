@@ -48,8 +48,8 @@
     <PackageVersion Include="Elastic.Aspire.Hosting.Elasticsearch" Version="9.3.0" />
     <PackageVersion Include="Elastic.Clients.Elasticsearch" Version="9.3.0" />
     <PackageVersion Include="FakeItEasy" Version="9.0.1" />
-    <PackageVersion Include="Elastic.Ingest.Elasticsearch" Version="0.28.1" />
-    <PackageVersion Include="Elastic.Mapping" Version="0.28.1" />
+    <PackageVersion Include="Elastic.Ingest.Elasticsearch" Version="0.29.0" />
+    <PackageVersion Include="Elastic.Mapping" Version="0.29.0" />
     <PackageVersion Include="InMemoryLogger" Version="1.0.66" />
     <PackageVersion Include="MartinCostello.Logging.XUnit.v3" Version="0.7.0" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.0" />
