@@ -6,6 +6,7 @@ using Elastic.ApiExplorer;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Markdown;
 using Elastic.Markdown.Exporters;
@@ -27,6 +28,7 @@ public class ReloadableGeneratorState : IDisposable
 	private readonly BuildContext _context;
 	private readonly bool _isWatchBuild;
 	private readonly DocSetConfigurationCrossLinkFetcher _crossLinkFetcher;
+	private readonly ILinkIndexReader? _codexReader;
 
 	public ReloadableGeneratorState(ILoggerFactory logFactory,
 		IDirectoryInfo sourcePath,
@@ -41,7 +43,11 @@ public class ReloadableGeneratorState : IDisposable
 		SourcePath = sourcePath;
 		OutputPath = outputPath;
 		ApiPath = context.WriteFileSystem.DirectoryInfo.New(Path.Combine(outputPath.FullName, "api"));
-		_crossLinkFetcher = new DocSetConfigurationCrossLinkFetcher(logFactory, _context.Configuration);
+
+		if (context.Configuration.Registry != DocSetRegistry.Public)
+			_codexReader = new GitLinkIndexReader(context.Configuration.Registry.ToStringFast(true), context.ReadFileSystem);
+
+		_crossLinkFetcher = new DocSetConfigurationCrossLinkFetcher(logFactory, _context.Configuration, codexLinkIndexReader: _codexReader);
 		// we pass NoopCrossLinkResolver.Instance here because `ReloadAsync` will always be called when the <see cref="ReloadableGeneratorState"/> is started.
 		_generator = new DocumentationGenerator(new DocumentationSet(context, logFactory, NoopCrossLinkResolver.Instance), logFactory);
 	}
@@ -56,7 +62,10 @@ public class ReloadableGeneratorState : IDisposable
 		SourcePath.Refresh();
 		OutputPath.Refresh();
 		var crossLinks = await _crossLinkFetcher.FetchCrossLinks(ctx);
-		var crossLinkResolver = new CrossLinkResolver(crossLinks);
+		IUriEnvironmentResolver? uriResolver = crossLinks.CodexRepositories is not null
+			? new CodexAwareUriResolver(crossLinks.CodexRepositories)
+			: null;
+		var crossLinkResolver = new CrossLinkResolver(crossLinks, uriResolver);
 		var docSet = new DocumentationSet(_context, _logFactory, crossLinkResolver);
 
 		// Add LLM markdown export for dev server
@@ -128,7 +137,7 @@ public class ReloadableGeneratorState : IDisposable
 
 	public void Dispose()
 	{
-		_crossLinkFetcher.Dispose();
+		(_codexReader as IDisposable)?.Dispose();
 		GC.SuppressFinalize(this);
 	}
 }

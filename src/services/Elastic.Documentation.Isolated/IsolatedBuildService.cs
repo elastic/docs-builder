@@ -6,8 +6,10 @@ using System.IO.Abstractions;
 using Actions.Core.Services;
 using Elastic.ApiExplorer;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Services;
@@ -120,9 +122,30 @@ public class IsolatedBuildService(
 		}
 		else
 		{
-			var crossLinkFetcher = new DocSetConfigurationCrossLinkFetcher(logFactory, context.Configuration);
-			var crossLinks = await crossLinkFetcher.FetchCrossLinks(ctx);
-			crossLinkResolver = new CrossLinkResolver(crossLinks);
+			ILinkIndexReader? codexReader = null;
+			if (context.Configuration.Registry != DocSetRegistry.Public)
+			{
+				var environment = context.Configuration.Registry.ToStringFast(true);
+				codexReader = new GitLinkIndexReader(environment, fileSystem);
+			}
+
+			try
+			{
+				var crossLinkFetcher = new DocSetConfigurationCrossLinkFetcher(
+					logFactory,
+					context.Configuration,
+					codexLinkIndexReader: codexReader);
+				var crossLinks = await crossLinkFetcher.FetchCrossLinks(ctx);
+				IUriEnvironmentResolver? uriResolver = crossLinks.CodexRepositories is not null
+					? new CodexAwareUriResolver(crossLinks.CodexRepositories)
+					: null;
+				crossLinkResolver = new CrossLinkResolver(crossLinks, uriResolver);
+			}
+			finally
+			{
+				if (codexReader is IDisposable d)
+					d.Dispose();
+			}
 		}
 
 		// always delete output folder on CI

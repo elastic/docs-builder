@@ -27,6 +27,16 @@ public record ConfigurationFile
 
 	public string[] CrossLinkRepositories { get; } = [];
 
+	/// <summary>
+	/// Registry for this documentation set. <c>Public</c> uses S3 link index; other values use codex-link-index.
+	/// </summary>
+	public DocSetRegistry Registry { get; } = DocSetRegistry.Public;
+
+	/// <summary>
+	/// Parsed cross-link entries with registry for each target.
+	/// </summary>
+	public CrossLinkEntry[] CrossLinkEntries { get; } = [];
+
 	/// The maximum depth `toc.yml` files may appear
 	public int MaxTocDepth { get; } = 1;
 
@@ -90,8 +100,28 @@ public record ConfigurationFile
 			Exclude = [.. docSetFile.Exclude.Where(s => !string.IsNullOrEmpty(s) && !s.StartsWith('!')).Select(Glob.Parse)];
 			Include = [.. docSetFile.Exclude.Where(s => !string.IsNullOrEmpty(s) && s.StartsWith('!')).Select(s => s.TrimStart('!'))];
 
-			// Set cross link repositories
-			CrossLinkRepositories = [.. docSetFile.CrossLinks];
+			// Parse registry (null/empty/"public" -> Public)
+			var registry = DocSetRegistry.Public;
+			if (!string.IsNullOrWhiteSpace(docSetFile.Registry) &&
+				DocSetRegistryExtensions.TryParse(docSetFile.Registry.Trim(), out var parsedRegistry, true))
+				registry = parsedRegistry;
+
+			Registry = registry;
+
+			// Parse cross-link entries with optional registry prefix (e.g. public://elasticsearch)
+			var crossLinkEntries = new List<CrossLinkEntry>();
+			foreach (var raw in docSetFile.CrossLinks)
+			{
+				if (string.IsNullOrWhiteSpace(raw))
+					continue;
+
+				var entry = ParseCrossLinkEntry(raw.Trim(), registry, context.ConfigurationPath, context);
+				if (entry != null)
+					crossLinkEntries.Add(entry);
+			}
+
+			CrossLinkEntries = [.. crossLinkEntries];
+			CrossLinkRepositories = crossLinkEntries.Select(e => e.Repository).ToArray();
 
 			// Extensions - assuming they're not in DocumentationSetFile yet
 			Extensions = new EnabledExtensions(docSetFile.Extensions);
@@ -159,4 +189,39 @@ public record ConfigurationFile
 		}
 	}
 
+	private static CrossLinkEntry? ParseCrossLinkEntry(string raw, DocSetRegistry docsetRegistry, IFileInfo configPath, IDocumentationContext context)
+	{
+		DocSetRegistry entryRegistry;
+		string repository;
+
+		var colonSlash = raw.IndexOf("://", StringComparison.Ordinal);
+		if (colonSlash >= 0)
+		{
+			var prefix = raw[..colonSlash];
+			repository = raw[(colonSlash + 3)..];
+			if (string.IsNullOrWhiteSpace(repository))
+			{
+				context.EmitError(configPath, $"Cross-link '{raw}' has empty repository after registry prefix.");
+				return null;
+			}
+			if (!DocSetRegistryExtensions.TryParse(prefix, out entryRegistry, true))
+			{
+				context.EmitError(configPath, $"Cross-link '{raw}' uses unknown registry '{prefix}'. Use 'public' or 'internal'.");
+				return null;
+			}
+		}
+		else
+		{
+			repository = raw;
+			entryRegistry = docsetRegistry;
+		}
+
+		if (docsetRegistry == DocSetRegistry.Public && entryRegistry != DocSetRegistry.Public)
+		{
+			context.EmitError(configPath, $"Public documentation cannot link to codex docs. Cross-link '{raw}' targets registry '{entryRegistry.ToStringFast()}'. Remove it or use a public docset.");
+			return null;
+		}
+
+		return new CrossLinkEntry(repository, entryRegistry);
+	}
 }

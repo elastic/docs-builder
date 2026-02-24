@@ -190,9 +190,12 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 		if (context.CrossLinkResolver.TryResolve(
 				s => processor.EmitError(link, s),
-				uri, out var resolvedUri)
-			 )
+				uri, out var resolvedUri))
+		{
 			link.Url = resolvedUri.ToString();
+			if (resolvedUri.IsAbsoluteUri && context.Build.BuildType == BuildType.Isolated)
+				link.SetData("isCrossLink", false);
+		}
 
 		// Emit error for empty link text in crosslinks
 		if (link.FirstChild == null)
