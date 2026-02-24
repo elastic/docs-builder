@@ -6,6 +6,7 @@ using Elastic.Documentation.Api.Infrastructure;
 using Elastic.Documentation.Api.Infrastructure.OpenTelemetry;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Search;
 using Elastic.Documentation.ServiceDefaults;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -86,7 +87,9 @@ static void LogElasticsearchConfiguration(WebApplication app, ILogger logger)
 		if (endpoints is not null)
 		{
 			var endpoint = endpoints.Elasticsearch;
-			var searchIndex = $"{endpoint.IndexNamePrefix.ToLowerInvariant()}-{endpoints.Namespace}-latest";
+			var searchIndex = DocumentationMappingContext.DocumentationDocumentSemantic
+				.CreateContext(type: "assembler")
+				.ResolveReadTarget();
 			logger.LogInformation(
 				"Elasticsearch configuration - Url: {Url}, Namespace: {Namespace}, SearchIndex: {SearchIndex}",
 				endpoint.Uri,

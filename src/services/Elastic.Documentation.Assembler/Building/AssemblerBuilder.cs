@@ -38,7 +38,7 @@ public class AssemblerBuilder(
 
 	private ILegacyUrlMapper? LegacyUrlMapper { get; } = legacyUrlMapper;
 
-	public async Task BuildAllAsync(PublishEnvironment environment, FrozenDictionary<string, AssemblerDocumentationSet> assembleSets, IReadOnlySet<Exporter> exportOptions, Cancel ctx)
+	public async Task BuildAllAsync(FrozenDictionary<string, AssemblerDocumentationSet> assembleSets, IReadOnlySet<Exporter> exportOptions, Cancel ctx)
 	{
 		if (context.OutputDirectory.Exists)
 			context.OutputDirectory.Delete(true);
@@ -48,7 +48,7 @@ public class AssemblerBuilder(
 		var buildTimes = new List<(string Name, int FileCount, TimeSpan Duration)>();
 
 		// Create exporters without inferrer - inferrer is created per-repository
-		var markdownExporters = exportOptions.CreateMarkdownExporters(logFactory, context, environment.Name);
+		var markdownExporters = exportOptions.CreateMarkdownExporters(logFactory, context, "assembler");
 		var tasks = markdownExporters.Select(async e => await e.StartAsync(ctx));
 		await Task.WhenAll(tasks);
 

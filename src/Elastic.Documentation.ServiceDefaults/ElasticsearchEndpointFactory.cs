@@ -56,39 +56,43 @@ public static class ElasticsearchEndpointFactory
 			Username = username
 		};
 
-		var ns = ResolveNamespace(config, appConfiguration, endpoint.IndexNamePrefix);
+		var ns = ResolveEnvironment(config, appConfiguration);
 
 		return new DocumentationEndpoints { Elasticsearch = endpoint, Namespace = ns };
 	}
 
 	/// <summary>
-	/// Resolves the deployment namespace using this priority:
-	/// 1. <c>DOCUMENTATION_ELASTIC_INDEX</c> env var — strip prefix and <c>-latest</c> suffix
+	/// Resolves the environment name using this priority:
+	/// 1. <c>DOCUMENTATION_ELASTIC_INDEX</c> env var — parse old format <c>{variant}-docs-{env}-{timestamp}</c>
 	/// 2. <c>DOTNET_ENVIRONMENT</c> env var
 	/// 3. <c>ENVIRONMENT</c> env var
 	/// 4. Fallback: <c>"dev"</c>
 	/// </summary>
-	private static string ResolveNamespace(IConfiguration config, IConfiguration? appConfiguration, string indexNamePrefix)
+	private static string ResolveEnvironment(IConfiguration config, IConfiguration? appConfiguration)
 	{
 		var indexName = appConfiguration?["DOCUMENTATION_ELASTIC_INDEX"]
 			?? config["DOCUMENTATION_ELASTIC_INDEX"];
 
 		if (!string.IsNullOrEmpty(indexName))
 		{
-			var prefix = $"{indexNamePrefix}-";
-			const string suffix = "-latest";
-			if (indexName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) &&
-				indexName.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+			// Old production format: {variant}-docs-{env}-{timestamp}
+			// e.g. "lexical-docs-edge-2025.10.23.120521"
+			// Extract the environment segment after "docs-" and before the next "-" followed by digits.
+			const string marker = "-docs-";
+			var markerIndex = indexName.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+			if (markerIndex >= 0)
 			{
-				var ns = indexName[prefix.Length..^suffix.Length];
-				if (!string.IsNullOrEmpty(ns))
-					return ns;
+				var afterMarker = indexName[(markerIndex + marker.Length)..];
+				var dashIndex = afterMarker.IndexOf('-');
+				var env = dashIndex > 0 ? afterMarker[..dashIndex] : afterMarker;
+				if (!string.IsNullOrEmpty(env) && (dashIndex < 0 || char.IsDigit(afterMarker[dashIndex + 1])))
+					return env.ToLowerInvariant();
 			}
 		}
 
-		var env = config["DOTNET_ENVIRONMENT"]
+		var envVar = config["DOTNET_ENVIRONMENT"]
 			?? config["ENVIRONMENT"];
 
-		return !string.IsNullOrEmpty(env) ? env.ToLowerInvariant() : "dev";
+		return !string.IsNullOrEmpty(envVar) ? envVar.ToLowerInvariant() : "dev";
 	}
 }

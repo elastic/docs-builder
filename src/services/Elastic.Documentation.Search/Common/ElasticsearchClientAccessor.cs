@@ -6,6 +6,7 @@ using Elastic.Clients.Elasticsearch;
 using Elastic.Clients.Elasticsearch.Serialization;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Search;
+using Elastic.Documentation.Search;
 using Elastic.Transport;
 
 namespace Elastic.Documentation.Search.Common;
@@ -28,7 +29,8 @@ public class ElasticsearchClientAccessor : IDisposable
 
 	public ElasticsearchClientAccessor(
 		DocumentationEndpoints endpoints,
-		SearchConfiguration searchConfiguration)
+		SearchConfiguration searchConfiguration
+	)
 	{
 		var endpoint = endpoints.Elasticsearch;
 		Endpoint = endpoint;
@@ -36,10 +38,12 @@ public class ElasticsearchClientAccessor : IDisposable
 		SynonymBiDirectional = searchConfiguration.SynonymBiDirectional;
 		DiminishTerms = searchConfiguration.DiminishTerms;
 
-		SearchIndex = $"{endpoint.IndexNamePrefix.ToLowerInvariant()}-{endpoints.Namespace}-latest";
+		SearchIndex = DocumentationMappingContext.DocumentationDocumentSemantic
+			.CreateContext(type: "assembler")
+			.ResolveReadTarget();
 
 		RulesetName = searchConfiguration.Rules.Count > 0
-			? $"docs-ruleset-{endpoints.Namespace}"
+			? "docs-ruleset-assembler"
 			: null;
 
 		_nodePool = new SingleNodePool(endpoint.Uri);

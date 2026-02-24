@@ -152,12 +152,10 @@ public class SearchBootstrapFixture(DocumentationFixture fixture) : IAsyncLifeti
 			var collector = new ConsoleDiagnosticsCollector(loggerFactory);
 
 			// Create semantic type context to check channel hash (index namespace is 'dev' for tests)
-			var semanticTypeContext = DocumentationAnalysisFactory.CreateContext(
-				DocumentationMappingContext.DocumentationDocumentSemantic.Context,
-				$"{endpoint.IndexNamePrefix.ToLowerInvariant()}-dev",
-				"docs-dev",
-				[]
-			);
+			var semanticTypeContext = DocumentationMappingContext.DocumentationDocumentSemantic.CreateContext(type: "assembler") with
+			{
+				ConfigureAnalysis = a => DocumentationAnalysisFactory.BuildAnalysis(a, "docs-assembler", [])
+			};
 
 			var options = new IngestChannelOptions<DocumentationDocument>(transport, semanticTypeContext);
 			using var channel = new IngestChannel<DocumentationDocument>(options);

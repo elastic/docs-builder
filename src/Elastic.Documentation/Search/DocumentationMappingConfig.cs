@@ -29,7 +29,7 @@ namespace Elastic.Documentation.Search;
 )]
 public static partial class DocumentationMappingContext;
 
-public static class LexicalConfig
+public static class LexicalConfig : IConfigureElasticsearch<DocumentationMappingContext>
 {
 	public static AnalysisBuilder ConfigureAnalysis(AnalysisBuilder analysis) => analysis;
 

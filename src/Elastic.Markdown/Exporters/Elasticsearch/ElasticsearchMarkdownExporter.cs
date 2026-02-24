@@ -27,7 +27,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	private readonly ILogger _logger;
 	private readonly ElasticsearchEndpoint _endpoint;
 	private readonly DistributedTransport _transport;
-	private readonly string _indexNamespace;
+	private readonly string _buildType;
 
 	// Ingest: orchestrator for dual-index mode
 	private readonly IncrementalSyncOrchestrator<DocumentationDocument> _orchestrator;
@@ -56,7 +56,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		ILoggerFactory logFactory,
 		IDiagnosticsCollector collector,
 		DocumentationEndpoints endpoints,
-		string indexNamespace,
+		string buildType,
 		IDocumentationConfigurationContext context
 	)
 	{
@@ -64,7 +64,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		_context = context;
 		_logger = logFactory.CreateLogger<ElasticsearchMarkdownExporter>();
 		_endpoint = endpoints.Elasticsearch;
-		_indexNamespace = indexNamespace;
+		_buildType = buildType;
 		_versionsConfiguration = context.VersionsConfiguration;
 		_synonyms = context.SearchConfiguration.Synonyms;
 		_rules = context.SearchConfiguration.Rules;
@@ -83,17 +83,13 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		_fixedSynonymsHash = HashedBulkUpdate.CreateHash(string.Join(",", indexTimeSynonyms));
 
 		var aiPipeline = es.EnableAiEnrichment ? EnrichPolicyManager.PipelineName : null;
-		var synonymSetName = $"docs-{indexNamespace}";
-		var ns = indexNamespace.ToLowerInvariant();
-		var lexicalPrefix = es.IndexNamePrefix.Replace("semantic", "lexical").ToLowerInvariant();
-		var lexicalAlias = $"{lexicalPrefix}-{ns}";
+		var synonymSetName = $"docs-{buildType}";
 
 		var pipelineSettings = aiPipeline is not null
 			? new Dictionary<string, string> { ["index.default_pipeline"] = aiPipeline }
 			: null;
 
-		_lexicalTypeContext = DocumentationMappingContext.DocumentationDocument.Context
-			.WithIndexName(lexicalAlias) with
+		_lexicalTypeContext = DocumentationMappingContext.DocumentationDocument.CreateContext(type: buildType) with
 		{
 			ConfigureAnalysis = a => DocumentationAnalysisFactory.BuildAnalysis(a, synonymSetName, indexTimeSynonyms),
 			IndexSettings = pipelineSettings
@@ -107,9 +103,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 			_enrichPolicyManager = new EnrichPolicyManager(_transport, logFactory.CreateLogger<EnrichPolicyManager>(), _enrichmentCache.IndexName);
 		}
 
-		var semanticAlias = $"{es.IndexNamePrefix.ToLowerInvariant()}-{ns}";
-		_semanticTypeContext = DocumentationMappingContext.DocumentationDocumentSemantic.Context
-				.WithIndexName(semanticAlias) with
+		_semanticTypeContext = DocumentationMappingContext.DocumentationDocumentSemantic.CreateContext(type: buildType) with
 		{
 			ConfigureAnalysis = a => DocumentationAnalysisFactory.BuildAnalysis(a, synonymSetName, indexTimeSynonyms),
 			IndexSettings = pipelineSettings
@@ -237,7 +231,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 
 	private async Task PublishSynonymsAsync(Cancel ctx)
 	{
-		var setName = $"docs-{_indexNamespace}";
+		var setName = $"docs-{_buildType}";
 		_logger.LogInformation("Publishing synonym set '{SetName}' to Elasticsearch", setName);
 
 		var synonymRules = _synonyms.Aggregate(new List<SynonymRule>(), (acc, synonym) =>
@@ -275,7 +269,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 			return;
 		}
 
-		var rulesetName = $"docs-ruleset-{_indexNamespace}";
+		var rulesetName = $"docs-ruleset-{_buildType}";
 		_logger.LogInformation("Publishing query ruleset '{RulesetName}' with {Count} rules to Elasticsearch", rulesetName, _rules.Count);
 
 		var rulesetRules = _rules.Select(r => new QueryRulesetRule
