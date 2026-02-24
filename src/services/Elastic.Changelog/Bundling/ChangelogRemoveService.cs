@@ -117,12 +117,13 @@ public class ChangelogRemoveService(
 			{
 				foreach (var dep in dependencies)
 				{
+					var proceedHint = input.Force ? "" : " To proceed anyway, use --force.";
 					var message =
 						$"Changelog file '{_fileSystem.Path.GetFileName(dep.ChangelogFile)}' is referenced by " +
 						$"unresolved bundle '{dep.BundleFile}'." +
 						$" Removing it will cause the {{changelog}} directive to fail when loading that bundle." +
 						$" To make the bundle self-contained, re-run: docs-builder changelog bundle --resolve ..." +
-						$" To proceed anyway, use --force.";
+						$"{proceedHint}";
 
 					if (input.Force)
 						collector.EmitWarning(dep.ChangelogFile, message);
@@ -261,8 +262,8 @@ public class ChangelogRemoveService(
 			return [];
 
 		var bundleFiles = _fileSystem.Directory
-			.GetFiles(bundlesDir, "*.yaml", SearchOption.TopDirectoryOnly)
-			.Concat(_fileSystem.Directory.GetFiles(bundlesDir, "*.yml", SearchOption.TopDirectoryOnly))
+			.GetFiles(bundlesDir, "*.yaml", SearchOption.AllDirectories)
+			.Concat(_fileSystem.Directory.GetFiles(bundlesDir, "*.yml", SearchOption.AllDirectories))
 			.ToList();
 
 		if (bundleFiles.Count == 0)
@@ -282,8 +283,12 @@ public class ChangelogRemoveService(
 				var content = await _fileSystem.File.ReadAllTextAsync(bundleFile, ctx);
 				var bundle = ReleaseNotesSerialization.DeserializeBundle(content);
 
+				// Only treat as unresolved when the entry would need to load from file.
+				// Resolved entries have inline data (Title+Type) and don't need the file even if they have a File block.
 				var entryFileNames = bundle.Entries
-					.Where(entry => !string.IsNullOrWhiteSpace(entry.File?.Name))
+					.Where(entry =>
+						!string.IsNullOrWhiteSpace(entry.File?.Name) &&
+						(string.IsNullOrWhiteSpace(entry.Title) || entry.Type == null))
 					.Select(entry => NormalizeEntryFileName(entry.File!.Name));
 
 				foreach (var entryFileName in entryFileNames.Where(entryFileName => toRemoveNames.Contains(entryFileName)))
@@ -326,11 +331,13 @@ public class ChangelogRemoveService(
 			return null;
 		}
 
-		// 2. Config bundle.output_directory
-		if (!string.IsNullOrWhiteSpace(config?.Bundle?.OutputDirectory)
-			&& _fileSystem.Directory.Exists(config.Bundle.OutputDirectory))
+		// 2. Config bundle.output_directory (resolve relative paths against config file location)
+		var outputDir = config?.Bundle?.OutputDirectory;
+		if (!string.IsNullOrWhiteSpace(outputDir))
 		{
-			return config.Bundle.OutputDirectory;
+			var resolvedOutputDir = ResolveOutputDirectory(outputDir, input.Config);
+			if (_fileSystem.Directory.Exists(resolvedOutputDir))
+				return resolvedOutputDir;
 		}
 
 		// 3. {directory}/bundles
@@ -339,15 +346,34 @@ public class ChangelogRemoveService(
 			return sibling;
 
 		// 4. {directory}/../bundles
-		var parent = _fileSystem.Path.GetDirectoryName(input.Directory);
-		if (!string.IsNullOrWhiteSpace(parent))
+		var dirParent = _fileSystem.Path.GetDirectoryName(input.Directory);
+		if (!string.IsNullOrWhiteSpace(dirParent))
 		{
-			var parentBundles = _fileSystem.Path.Combine(parent, "bundles");
+			var parentBundles = _fileSystem.Path.Combine(dirParent, "bundles");
 			if (_fileSystem.Directory.Exists(parentBundles))
 				return parentBundles;
 		}
 
-		return null; // No bundles directory found — skip check
+		return null;
+	}
+
+	private string ResolveOutputDirectory(string outputDirectory, string? configPath)
+	{
+		if (_fileSystem.Path.IsPathRooted(outputDirectory))
+			return outputDirectory;
+
+		if (string.IsNullOrWhiteSpace(configPath))
+			return _fileSystem.Path.GetFullPath(outputDirectory);
+
+		var configDir = _fileSystem.Path.GetDirectoryName(configPath);
+		if (string.IsNullOrWhiteSpace(configDir))
+			return _fileSystem.Path.GetFullPath(outputDirectory);
+
+		var repoRoot = _fileSystem.Path.GetDirectoryName(configDir);
+		if (string.IsNullOrWhiteSpace(repoRoot))
+			return _fileSystem.Path.GetFullPath(outputDirectory);
+
+		return _fileSystem.Path.GetFullPath(_fileSystem.Path.Combine(repoRoot, outputDirectory));
 	}
 
 	private static string NormalizeEntryFileName(string entryFileName)
