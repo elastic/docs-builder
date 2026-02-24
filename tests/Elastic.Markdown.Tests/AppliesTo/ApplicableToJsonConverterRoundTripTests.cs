@@ -270,6 +270,43 @@ public class ApplicableToJsonConverterRoundTripTests
 	}
 
 	[Fact]
+	public void RoundTripDeploymentEssRoundTripsCorrectly()
+	{
+		var original = new ApplicableTo
+		{
+			Deployment = new DeploymentApplicability
+			{
+				Ess = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (VersionSpec)"9.0.0" }])
+			}
+		};
+
+		var json = JsonSerializer.Serialize(original, _options);
+		var deserialized = JsonSerializer.Deserialize<ApplicableTo>(json, _options);
+
+		deserialized.Should().NotBeNull();
+		deserialized!.Deployment.Should().NotBeNull();
+		deserialized.Deployment!.Ess.Should().BeEquivalentTo(original.Deployment!.Ess);
+	}
+
+	[Fact]
+	public void BothEssAndEchSubTypes_EchWins()
+	{
+		var json = """
+			[
+				{ "type": "deployment", "sub_type": "ess", "lifecycle": "ga", "version": "9.0.0" },
+				{ "type": "deployment", "sub_type": "ech", "lifecycle": "beta", "version": "9.1.0" }
+			]
+			""";
+
+		var deserialized = JsonSerializer.Deserialize<ApplicableTo>(json, _options);
+
+		deserialized.Should().NotBeNull();
+		deserialized!.Deployment.Should().NotBeNull();
+		deserialized.Deployment!.Ess.Should().NotBeNull();
+		deserialized.Deployment.Ess!.First().Lifecycle.Should().Be(ProductLifecycle.Beta);
+	}
+
+	[Fact]
 	public void RoundTripAllLifecycles()
 	{
 		var lifecycles = Enum.GetValues<ProductLifecycle>();
