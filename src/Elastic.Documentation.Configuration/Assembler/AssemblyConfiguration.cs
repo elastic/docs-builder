@@ -232,9 +232,9 @@ public record AssemblyConfiguration
 					logger.LogInformation("Current is not using versioned branches and is not publishing to the registry yet, using product information to determine speculative build is needed");
 					var productVersion = versioningSystem.Current;
 					var anchoredProductVersion = new SemVersion(productVersion.Major, productVersion.Minor, 0);
-					if (v >= anchoredProductVersion)
+					if (v > anchoredProductVersion)
 					{
-						logger.LogInformation("Speculative build {Branch} is gte product current '{ProductCurrent}' anchored at {ProductAnchored}", branchOrTag,
+						logger.LogInformation("Speculative build {Branch} is gt product current '{ProductCurrent}' anchored at {ProductAnchored}", branchOrTag,
 							productVersion, anchoredProductVersion);
 						match = match with
 						{
