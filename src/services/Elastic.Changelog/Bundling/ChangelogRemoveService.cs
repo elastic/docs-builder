@@ -286,12 +286,10 @@ public class ChangelogRemoveService(
 					.Where(entry => !string.IsNullOrWhiteSpace(entry.File?.Name))
 					.Select(entry => NormalizeEntryFileName(entry.File!.Name));
 
-				foreach (var entryFileName in entryFileNames)
+				foreach (var entryFileName in entryFileNames.Where(entryFileName => toRemoveNames.Contains(entryFileName)))
 				{
 					// bundle entry.File.Name is relative to the changelog directory (parent of bundles dir)
 					// Normalize to just the base filename for comparison
-					if (!toRemoveNames.Contains(entryFileName))
-						continue;
 
 					// Find the full path from filesToRemove that matches this entry
 					var matchingFile = filesToRemove
