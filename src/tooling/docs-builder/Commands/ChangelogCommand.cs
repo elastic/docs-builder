@@ -651,6 +651,137 @@ internal sealed partial class ChangelogCommand(
 	}
 
 	/// <summary>
+	/// Remove changelog files. Exactly one filter option must be specified: --all, --products, --prs, or --issues.
+	/// When a file is referenced by an unresolved bundle, the command blocks by default to prevent breaking
+	/// the {changelog} directive. Use --force to override.
+	/// </summary>
+	/// <param name="all">Remove all changelogs in the directory. Exactly one filter option must be specified: --all, --products, --prs, or --issues.</param>
+	/// <param name="bundlesDir">Optional: Override the directory that is scanned for bundles during the dependency check. Auto-discovered from config or fallback paths when not specified.</param>
+	/// <param name="config">Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml'</param>
+	/// <param name="directory">Optional: Directory containing changelog YAML files. Uses config bundle.directory or defaults to current directory</param>
+	/// <param name="dryRun">Print the files that would be removed without deleting them.</param>
+	/// <param name="force">Proceed with removal even when files are referenced by unresolved bundles. Emits warnings instead of errors for each dependency.</param>
+	/// <param name="issues">Filter by issue URLs or numbers (comma-separated), or a path to a newline-delimited file containing issue URLs or numbers. Can be specified multiple times. Exactly one filter option must be specified: --all, --products, --prs, or --issues.</param>
+	/// <param name="owner">GitHub repository owner (required when PRs or issues are specified as numbers)</param>
+	/// <param name="products">Filter by products in format "product target lifecycle, ..." (e.g., "elasticsearch 9.3.0 ga"). All three parts are required but can be wildcards (*). Exactly one filter option must be specified: --all, --products, --prs, or --issues.</param>
+	/// <param name="prs">Filter by pull request URLs or numbers (comma-separated), or a path to a newline-delimited file. Can be specified multiple times. Exactly one filter option must be specified: --all, --products, --prs, or --issues.</param>
+	/// <param name="repo">GitHub repository name (required when PRs or issues are specified as numbers)</param>
+	/// <param name="ctx"></param>
+	[Command("remove")]
+	public async Task<int> Remove(
+		bool all = false,
+		string? bundlesDir = null,
+		string? config = null,
+		string? directory = null,
+		bool dryRun = false,
+		bool force = false,
+		string[]? issues = null,
+		string? owner = null,
+		[ProductInfoParser] List<ProductArgument>? products = null,
+		string[]? prs = null,
+		string? repo = null,
+		Cancel ctx = default
+	)
+	{
+		await using var serviceInvoker = new ServiceInvoker(collector);
+
+		var service = new ChangelogRemoveService(logFactory, configurationContext);
+
+		// Expand comma-separated --prs values
+		var allPrs = new List<string>();
+		if (prs is { Length: > 0 })
+		{
+			foreach (var value in prs.Where(p => !string.IsNullOrWhiteSpace(p)))
+			{
+				if (value.Contains(','))
+					allPrs.AddRange(value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+				else
+					allPrs.Add(value);
+			}
+		}
+
+		// Expand comma-separated --issues values
+		var allIssues = new List<string>();
+		if (issues is { Length: > 0 })
+		{
+			foreach (var value in issues.Where(p => !string.IsNullOrWhiteSpace(p)))
+			{
+				if (value.Contains(','))
+					allIssues.AddRange(value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+				else
+					allIssues.Add(value);
+			}
+		}
+
+		// Validate product filter: all three parts (product, target, lifecycle) must be present (can be *)
+		if (products is { Count: > 0 })
+		{
+			foreach (var product in products)
+			{
+				if (string.IsNullOrWhiteSpace(product.Product))
+				{
+					collector.EmitError(string.Empty, "--products: product is required (use '*' for wildcard)");
+					_ = collector.StartAsync(ctx);
+					await collector.WaitForDrain();
+					await collector.StopAsync(ctx);
+					return 1;
+				}
+
+				if (product.Target == null)
+				{
+					collector.EmitError(string.Empty, $"--products: target is required for product '{product.Product}' (use '*' for wildcard)");
+					_ = collector.StartAsync(ctx);
+					await collector.WaitForDrain();
+					await collector.StopAsync(ctx);
+					return 1;
+				}
+
+				if (product.Lifecycle == null)
+				{
+					collector.EmitError(string.Empty, $"--products: lifecycle is required for product '{product.Product}' (use '*' for wildcard)");
+					_ = collector.StartAsync(ctx);
+					await collector.WaitForDrain();
+					await collector.StopAsync(ctx);
+					return 1;
+				}
+			}
+
+			// --products * * * is equivalent to --all
+			var isAllWildcard = products.Count == 1 &&
+				products[0].Product == "*" &&
+				products[0].Target == "*" &&
+				products[0].Lifecycle == "*";
+
+			if (isAllWildcard)
+			{
+				all = true;
+				products = null;
+			}
+		}
+
+		var input = new ChangelogRemoveArguments
+		{
+			Directory = NormalizePath(directory ?? Directory.GetCurrentDirectory()),
+			All = all,
+			Products = products,
+			Prs = allPrs.Count > 0 ? allPrs.ToArray() : null,
+			Issues = allIssues.Count > 0 ? allIssues.ToArray() : null,
+			Owner = owner,
+			Repo = repo,
+			DryRun = dryRun,
+			BundlesDir = string.IsNullOrWhiteSpace(bundlesDir) ? null : NormalizePath(bundlesDir),
+			Force = force,
+			Config = string.IsNullOrWhiteSpace(config) ? null : NormalizePath(config)
+		};
+
+		serviceInvoker.AddCommand(service, input,
+			async static (s, collector, state, ctx) => await s.RemoveChangelogs(collector, state, ctx)
+		);
+
+		return await serviceInvoker.InvokeAsync(ctx);
+	}
+
+	/// <summary>
 	/// Render bundled changelog(s) to markdown or asciidoc files
 	/// </summary>
 	/// <param name="input">Required: Bundle input(s) in format "bundle-file-path|changelog-file-path|repo|link-visibility" (use pipe as delimiter). To merge multiple bundles, separate them with commas. Only bundle-file-path is required. link-visibility can be "hide-links" or "keep-links" (default). Use "hide-links" for private repositories; when set, all PR and issue links for each affected entry are hidden (entries may have multiple links via the prs and issues arrays). Paths support tilde (~) expansion and relative paths.</param>

@@ -4,6 +4,7 @@
  */
 import { logWarn } from '../../telemetry/logging'
 import { AskAiEvent, AskAiEventSchema } from '../AskAi/AskAiEvent'
+import { askAiConfig } from '../AskAi/askAi.config'
 import {
     ApiError,
     createApiErrorFromResponse,
@@ -16,6 +17,8 @@ import {
 } from '@microsoft/fetch-event-source'
 
 export type AiProvider = 'AgentBuilder' | 'LlmGateway'
+
+const defaultAiProvider: AiProvider = askAiConfig.defaultAiProvider
 
 const API_ENDPOINT = '/docs/_api/v1/ask-ai/stream'
 
@@ -52,7 +55,7 @@ export async function startAskAiStream(options: StreamOptions): Promise<void> {
     const {
         message,
         conversationId,
-        aiProvider = 'LlmGateway',
+        aiProvider = defaultAiProvider,
         signal,
         callbacks,
     } = options

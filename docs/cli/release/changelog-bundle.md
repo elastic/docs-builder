@@ -47,9 +47,9 @@ These arguments apply to profile-based bundling:
 `--input-products <List<ProductInfo>?>`
 :   Filter by products in format "product target lifecycle, ..."
 :   Only one filter option can be specified: `--all`, `--input-products`, `--prs`, or `--issues`.
-:   When specified, all three parts (product, target, lifecycle) are required but can be wildcards (`*`). For example:
+:   When specified, all three parts (product, target, lifecycle) are required but can be wildcards (`*`). Multiple comma-separated values are combined with OR: a changelog is included if it matches any of the specified product/target/lifecycle combinations. For example:
 
-- `"cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta"` - exact matches
+- `"cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta"` — include changelogs for either cloud-serverless 2025-12-02 ga or cloud-serverless 2025-12-06 beta
 - `"cloud-serverless 2025-12-02 *"` - match cloud-serverless 2025-12-02 with any lifecycle
 - `"elasticsearch * *"` - match all elasticsearch changelogs
 - `"* 9.3.* *"` - match any product with target starting with "9.3."
