@@ -28,7 +28,6 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	private readonly ElasticsearchEndpoint _endpoint;
 	private readonly DistributedTransport _transport;
 	private readonly string _indexNamespace;
-	private readonly DateTimeOffset _batchIndexDate;
 
 	// Ingest: orchestrator for dual-index mode
 	private readonly IncrementalSyncOrchestrator<DocumentationDocument> _orchestrator;
@@ -89,10 +88,16 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		var lexicalPrefix = es.IndexNamePrefix.Replace("semantic", "lexical").ToLowerInvariant();
 		var lexicalAlias = $"{lexicalPrefix}-{ns}";
 
-		_lexicalTypeContext = DocumentationAnalysisFactory.CreateContext(
-			DocumentationMappingContext.DocumentationDocument.Context,
-			lexicalAlias, synonymSetName, indexTimeSynonyms, aiPipeline
-		);
+		var pipelineSettings = aiPipeline is not null
+			? new Dictionary<string, string> { ["index.default_pipeline"] = aiPipeline }
+			: null;
+
+		_lexicalTypeContext = DocumentationMappingContext.DocumentationDocument.Context
+			.WithIndexName(lexicalAlias) with
+		{
+			ConfigureAnalysis = a => DocumentationAnalysisFactory.BuildAnalysis(a, synonymSetName, indexTimeSynonyms),
+			IndexSettings = pipelineSettings
+		};
 
 		// Initialize AI enrichment services if enabled
 		if (es.EnableAiEnrichment)
@@ -103,17 +108,23 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		}
 
 		var semanticAlias = $"{es.IndexNamePrefix.ToLowerInvariant()}-{ns}";
-		_semanticTypeContext = DocumentationAnalysisFactory.CreateContext(
-			DocumentationMappingContext.DocumentationDocumentSemantic.Context,
-			semanticAlias, synonymSetName, indexTimeSynonyms, aiPipeline
-		);
+		_semanticTypeContext = DocumentationMappingContext.DocumentationDocumentSemantic.Context
+				.WithIndexName(semanticAlias) with
+		{
+			ConfigureAnalysis = a => DocumentationAnalysisFactory.BuildAnalysis(a, synonymSetName, indexTimeSynonyms),
+			IndexSettings = pipelineSettings
+		};
 
-		_orchestrator = new IncrementalSyncOrchestrator<DocumentationDocument>(_transport, _lexicalTypeContext, _semanticTypeContext)
+		var resolver = DocumentationMappingContext.DocumentationDocument;
+		_orchestrator = new IncrementalSyncOrchestrator<DocumentationDocument>(
+			_transport, _lexicalTypeContext, _semanticTypeContext,
+			setBatchIndexDate: resolver.SetBatchIndexDate,
+			setLastUpdated: resolver.SetLastUpdated)
 		{
 			ConfigurePrimary = ConfigureChannelOptions,
 			ConfigureSecondary = ConfigureChannelOptions,
 			OnPostComplete = es.EnableAiEnrichment
-				? async (ctx, ct) => await PostCompleteAsync(ctx, ct)
+				? async (ctx, _, ct) => await PostCompleteAsync(ctx, ct)
 				: null
 		};
 		_ = _orchestrator.AddPreBootstrapTask(async (_, ct) =>
@@ -122,8 +133,6 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 			await PublishSynonymsAsync(ct);
 			await PublishQueryRulesAsync(ct);
 		});
-
-		_batchIndexDate = _orchestrator.BatchTimestamp;
 	}
 
 	private void ConfigureChannelOptions(IngestChannelOptions<DocumentationDocument> options)
@@ -209,19 +218,19 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 			_enrichmentCache.Count, currentPromptHash[..8]);
 
 		var query = $$"""
-			{
-				"query": {
-					"bool": {
-						"must": { "exists": { "field": "enrichment_key" } },
-						"should": [
-							{ "bool": { "must_not": { "exists": { "field": "ai_questions" } } } },
-							{ "bool": { "must_not": { "term": { "enrichment_prompt_hash": "{{currentPromptHash}}" } } } }
-						],
-						"minimum_should_match": 1
-					}
-				}
-			}
-			""";
+					  {
+					  	"query": {
+					  		"bool": {
+					  			"must": { "exists": { "field": "enrichment_key" } },
+					  			"should": [
+					  				{ "bool": { "must_not": { "exists": { "field": "ai_questions" } } } },
+					  				{ "bool": { "must_not": { "term": { "enrichment_prompt_hash": "{{currentPromptHash}}" } } } }
+					  			],
+					  			"minimum_should_match": 1
+					  		}
+					  	}
+					  }
+					  """;
 
 		await _operations.UpdateByQueryAsync(semanticAlias, PostData.String(query), EnrichPolicyManager.PipelineName, ctx);
 	}
@@ -252,7 +261,8 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 			ctx);
 
 		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
-			_collector.EmitGlobalError($"Failed to publish synonym set '{setName}'. Reason: {response.ApiCallDetails.OriginalException?.Message ?? response.ToString()}");
+			_collector.EmitGlobalError(
+				$"Failed to publish synonym set '{setName}'. Reason: {response.ApiCallDetails.OriginalException?.Message ?? response.ToString()}");
 		else
 			_logger.LogInformation("Successfully published synonym set '{SetName}'.", setName);
 	}
@@ -295,7 +305,8 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 			ctx);
 
 		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
-			_collector.EmitGlobalError($"Failed to publish query ruleset '{rulesetName}'. Reason: {response.ApiCallDetails.OriginalException?.Message ?? response.ToString()}");
+			_collector.EmitGlobalError(
+				$"Failed to publish query ruleset '{rulesetName}'. Reason: {response.ApiCallDetails.OriginalException?.Message ?? response.ToString()}");
 		else
 			_logger.LogInformation("Successfully published query ruleset '{RulesetName}'.", rulesetName);
 	}

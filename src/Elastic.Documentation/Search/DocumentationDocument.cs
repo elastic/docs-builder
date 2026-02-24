@@ -73,10 +73,12 @@ public record DocumentationDocument
 
 	/// The date of the batch update this document was part of last.
 	/// This date could be higher than the date_last_updated.
+	[BatchIndexDate]
 	[JsonPropertyName("batch_index_date")]
 	public DateTimeOffset BatchIndexDate { get; set; }
 
 	/// The date this document was last updated,
+	[LastUpdated]
 	[Timestamp]
 	[JsonPropertyName("last_updated")]
 	public DateTimeOffset LastUpdated { get; set; }

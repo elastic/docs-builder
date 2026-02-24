@@ -37,8 +37,6 @@ public partial class ElasticsearchMarkdownExporter
 			_fixedSynonymsHash
 		);
 		doc.Hash = hash;
-		doc.LastUpdated = _batchIndexDate;
-		doc.BatchIndexDate = _batchIndexDate;
 	}
 
 	private static void CommonEnrichments(DocumentationDocument doc, INavigationItem? navigationItem)

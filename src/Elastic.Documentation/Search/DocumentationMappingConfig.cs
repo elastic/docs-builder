@@ -34,7 +34,11 @@ public static class LexicalConfig
 	public static AnalysisBuilder ConfigureAnalysis(AnalysisBuilder analysis) => analysis;
 
 	public static DocumentationDocumentMappingsBuilder ConfigureMappings(DocumentationDocumentMappingsBuilder m) =>
-		ConfigureCommonMappings(m);
+		ConfigureCommonMappings(m)
+			.StrippedBody(f => f
+				.Analyzer("synonyms_fixed_analyzer")
+				.SearchAnalyzer("synonyms_analyzer")
+			);
 
 	internal static DocumentationDocumentMappingsBuilder ConfigureCommonMappings(DocumentationDocumentMappingsBuilder m) => m
 		// Text fields with custom analyzers and multi-fields
@@ -51,9 +55,6 @@ public static class LexicalConfig
 				.Analyzer("starts_with_analyzer")
 				.SearchAnalyzer("starts_with_analyzer_search"))
 			.MultiField("completion", mf => mf.SearchAsYouType().SearchAnalyzer("synonyms_analyzer")))
-		.StrippedBody(f => f
-			.Analyzer("synonyms_fixed_analyzer")
-			.SearchAnalyzer("synonyms_analyzer"))
 		.Abstract(f => f
 			.Analyzer("synonyms_fixed_analyzer")
 			.SearchAnalyzer("synonyms_analyzer"))
@@ -98,7 +99,6 @@ public static class SemanticConfig
 			.StrippedBody(s => s
 				.Analyzer("synonyms_fixed_analyzer")
 				.SearchAnalyzer("synonyms_analyzer")
-				.MultiField("jina", mf => mf.Text().Analyzer(JinaInferenceId))
 			)
 			// ELSER sparse embeddings
 			.AddField("title.semantic_text", f => f.SemanticText().InferenceId(ElserInferenceId))
@@ -111,8 +111,7 @@ public static class SemanticConfig
 			.AddField("abstract.jina", f => f.SemanticText().InferenceId(JinaInferenceId))
 			.AddField("ai_rag_optimized_summary.jina", f => f.SemanticText().InferenceId(JinaInferenceId))
 			.AddField("ai_questions.jina", f => f.SemanticText().InferenceId(JinaInferenceId))
-			.AddField("ai_use_cases.jina", f => f.SemanticText().InferenceId(JinaInferenceId))
-			.AddField("stripped_body.jina", f => f.SemanticText().InferenceId(JinaInferenceId));
+			.AddField("ai_use_cases.jina", f => f.SemanticText().InferenceId(JinaInferenceId));
 }
 
 /// <summary>
@@ -160,31 +159,4 @@ public static class DocumentationAnalysisFactory
 		.Tokenizer("path_tokenizer", t => t.PathHierarchy()
 			.Delimiter('/'));
 
-	/// <summary>
-	/// Creates an ElasticsearchTypeContext with runtime analysis settings and dynamic index name.
-	/// Analysis is provided via <see cref="ElasticsearchTypeContext.ConfigureAnalysis"/>, which
-	/// <c>Elastic.Ingest.Elasticsearch</c> merges into the settings automatically.
-	/// </summary>
-	public static ElasticsearchTypeContext CreateContext(
-		ElasticsearchTypeContext baseContext,
-		string indexName,
-		string synonymSetName,
-		string[] indexTimeSynonyms,
-		string? defaultPipeline = null)
-	{
-		var analysisJson = BuildAnalysis(new AnalysisBuilder(), synonymSetName, indexTimeSynonyms).Build().ToJsonString();
-		var settingsHash = ContentHash.Create(analysisJson, defaultPipeline ?? "");
-		var hash = ContentHash.Create(settingsHash, baseContext.MappingsHash);
-
-		return baseContext.WithIndexName(indexName) with
-		{
-			GetSettingsJson = defaultPipeline is not null
-				? () => $$"""{ "default_pipeline": "{{defaultPipeline}}" }"""
-				: () => "{}",
-			SettingsHash = settingsHash,
-			Hash = hash,
-			ConfigureAnalysis = a => BuildAnalysis(a, synonymSetName, indexTimeSynonyms),
-			IndexPatternUseBatchDate = true
-		};
-	}
 }
