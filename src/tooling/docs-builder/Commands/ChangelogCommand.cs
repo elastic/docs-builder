@@ -627,7 +627,7 @@ internal sealed partial class ChangelogCommand(
 
 		var input = new BundleChangelogsArguments
 		{
-			Directory = directory ?? Directory.GetCurrentDirectory(),
+			Directory = directory,
 			Output = processedOutput,
 			All = all,
 			InputProducts = inputProducts,

@@ -2079,11 +2079,10 @@ public class BundleChangelogsTests : ChangelogTestBase
 	}
 
 	[Fact]
-	public async Task BundleChangelogs_WithConfigDirectory_WhenDirectoryIsCurrentDirectory_UsesConfigDirectory()
+	public async Task BundleChangelogs_WithConfigDirectory_WhenDirectoryNotSpecified_UsesConfigDirectory()
 	{
-		// Arrange - When --directory is not specified (current directory), use bundle.directory from config if set
+		// Arrange - When --directory is not specified (null), use bundle.directory from config if set
 
-		var currentDir = Directory.GetCurrentDirectory();
 		var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
 
@@ -2116,13 +2115,13 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var input = new BundleChangelogsArguments
 		{
-			Directory = currentDir,
+			Directory = null,
 			Config = configPath,
 			Output = null,
 			All = true
 		};
 
-		// Act - Directory equals GetCurrentDirectory(), so ApplyConfigDefaults should use config.Bundle.Directory
+		// Act - Directory not specified, so ApplyConfigDefaults uses config.Bundle.Directory
 		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
@@ -2133,6 +2132,64 @@ public class BundleChangelogsTests : ChangelogTestBase
 		FileSystem.File.Exists(expectedOutputPath).Should().BeTrue("Bundle should use config directory and output_directory");
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(expectedOutputPath, TestContext.Current.CancellationToken);
+		bundleContent.Should().Contain("product: elasticsearch");
+		bundleContent.Should().Contain("name: 1755268130-feature.yaml");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithExplicitDirectory_OverridesConfigDirectory()
+	{
+		// Arrange - config has directory pointing elsewhere, but CLI passes --directory explicitly.
+		// The explicit CLI value must win (e.g. --directory . when cwd has changelogs).
+
+		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(configDir);
+		var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+
+		// language=yaml
+		var configContent =
+			$"""
+			bundle:
+			  directory: "{configDir.Replace("\\", "/")}"
+			  output_directory: "{outputDir.Replace("\\", "/")}"
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), "config-dir-override", "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// language=yaml
+		var changelog1 =
+			"""
+			title: Test feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
+			""";
+
+		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-feature.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			Config = configPath,
+			Output = FileSystem.Path.Combine(outputDir, "bundle.yaml"),
+			All = true
+		};
+
+		// Act - Explicit Directory overrides config.Bundle.Directory
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert - used _changelogDir (CLI), not configDir (config)
+		result.Should().BeTrue($"Expected bundling to succeed. Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
+		Collector.Errors.Should().Be(0);
+
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
 		bundleContent.Should().Contain("product: elasticsearch");
 		bundleContent.Should().Contain("name: 1755268130-feature.yaml");
 	}
