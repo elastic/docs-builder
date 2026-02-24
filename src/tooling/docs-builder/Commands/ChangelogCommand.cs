@@ -761,7 +761,7 @@ internal sealed partial class ChangelogCommand(
 
 		var input = new ChangelogRemoveArguments
 		{
-			Directory = directory ?? Directory.GetCurrentDirectory(),
+			Directory = NormalizePath(directory ?? Directory.GetCurrentDirectory()),
 			All = all,
 			Products = products,
 			Prs = allPrs.Count > 0 ? allPrs.ToArray() : null,
@@ -769,9 +769,9 @@ internal sealed partial class ChangelogCommand(
 			Owner = owner,
 			Repo = repo,
 			DryRun = dryRun,
-			BundlesDir = bundlesDir,
+			BundlesDir = string.IsNullOrWhiteSpace(bundlesDir) ? null : NormalizePath(bundlesDir),
 			Force = force,
-			Config = config
+			Config = string.IsNullOrWhiteSpace(config) ? null : NormalizePath(config)
 		};
 
 		serviceInvoker.AddCommand(service, input,
