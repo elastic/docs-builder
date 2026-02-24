@@ -165,10 +165,10 @@ public class AssemblyConfigurationMatchTests
 
 	[Theory]
 	[InlineData("8.16", "8.15", true)]  // Greater than product version
-	[InlineData("8.15", "8.15", true)]  // Equal to product version
+	[InlineData("8.15", "8.15", false)] // Equal to product version — current is served from main
 	[InlineData("8.14", "8.15", false)] // Previous minor version - but current is not versioned, so no previous minor logic
 	[InlineData("8.13", "8.15", false)] // Less than previous minor
-	[InlineData("8.0", "8.0", true)]    // Edge case: minor version 0
+	[InlineData("8.0", "8.0", false)]   // Edge case: equal at minor version 0
 	public void VersionBranchSpeculativeBuildBasedOnProductVersion(string branch, string productVersion, bool shouldBeSpeculative)
 	{
 		var repositories = new Dictionary<string, Repository>
@@ -267,10 +267,9 @@ public class AssemblyConfigurationMatchTests
 	}
 
 	[Theory]
-	[InlineData("9.0", "9.0.0")]   // Matches anchored product version
 	[InlineData("9.1", "9.0.0")]   // Greater than anchored product version
 	[InlineData("9.5", "9.0.0")]   // Much greater than anchored product version
-	public void VersionBranchSpeculativeBuildWhenGreaterThanOrEqualToAnchoredProductVersion(string branch, string productVersion)
+	public void VersionBranchSpeculativeBuildWhenGreaterThanAnchoredProductVersion(string branch, string productVersion)
 	{
 		var repositories = new Dictionary<string, Repository>
 		{
@@ -289,7 +288,8 @@ public class AssemblyConfigurationMatchTests
 	[InlineData("8.15", "9.0.0")]  // Less than anchored product version
 	[InlineData("7.17", "9.0.0")]  // Much less than anchored product version
 	[InlineData("8.0", "9.1.5")]   // Less than anchored product version with patch
-	public void VersionBranchNoSpeculativeBuildWhenLessThanAnchoredProductVersionAndNotPreviousMinor(string branch, string productVersion)
+	[InlineData("9.0", "9.0.0")]   // Equal to anchored product version — current is served from main
+	public void VersionBranchNoSpeculativeBuildWhenLessThanOrEqualToAnchoredProductVersionAndNotPreviousMinor(string branch, string productVersion)
 	{
 		var repositories = new Dictionary<string, Repository>
 		{
@@ -356,9 +356,9 @@ public class AssemblyConfigurationMatchTests
 	}
 
 	[Theory]
-	[InlineData("9.0", "9.0.15")]  // Anchored version equals major.minor.0
-	[InlineData("9.0", "9.0.0")]   // Anchored version equals major.minor.0
-	[InlineData("9.0", "9.0.1")]   // Anchored version equals major.minor.0
+	[InlineData("9.1", "9.0.15")]  // Anchored to 9.0.0, branch 9.1 > 9.0.0
+	[InlineData("9.1", "9.0.0")]   // Anchored to 9.0.0, branch 9.1 > 9.0.0
+	[InlineData("9.1", "9.0.1")]   // Anchored to 9.0.0, branch 9.1 > 9.0.0
 	public void VersionBranchAnchorsProductVersionToMinorZero(string branch, string productVersion)
 	{
 		var repositories = new Dictionary<string, Repository>
@@ -371,7 +371,6 @@ public class AssemblyConfigurationMatchTests
 
 		var result = config.Match(LoggerFactory, "elastic/test-repo", branch, product, false);
 
-		// Should match because branch 9.0 >= anchored product version 9.0.0
 		result.Speculative.Should().BeTrue();
 	}
 
@@ -395,7 +394,6 @@ public class AssemblyConfigurationMatchTests
 	}
 
 	[Theory]
-	[InlineData("9.0", "9.0.0")]   // Matches anchored product version
 	[InlineData("9.1", "9.0.0")]   // Greater than anchored product version
 	[InlineData("9.5", "9.0.0")]   // Much greater than anchored product version
 	public void AlreadyPublishingTruePreventSpeculativeBuildForVersionBranch(string branch, string productVersion)
@@ -414,7 +412,6 @@ public class AssemblyConfigurationMatchTests
 	}
 
 	[Theory]
-	[InlineData("9.0", "9.0.0")]   // Matches anchored product version
 	[InlineData("9.1", "9.0.0")]   // Greater than anchored product version
 	[InlineData("9.5", "9.0.0")]   // Much greater than anchored product version
 	public void AlreadyPublishingFalseAllowsSpeculativeBuildForVersionBranch(string branch, string productVersion)
