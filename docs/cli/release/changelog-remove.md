@@ -52,9 +52,10 @@ docs-builder  changelog remove [options...] [-h|--help]
 `--products <List<ProductInfo>?>`
 :   Filter by products in format `"product target lifecycle, ..."`
 :   Exactly one filter option must be specified: `--all`, `--products`, `--prs`, or `--issues`.
-:   All three parts (product, target, lifecycle) are required but can be wildcards (`*`). For example:
+:   All three parts (product, target, lifecycle) are required but can be wildcards (`*`). Multiple comma-separated values are combined with OR: a changelog is removed if it matches any of the specified product/target/lifecycle combinations. For example:
 
 - `"elasticsearch 9.3.0 ga"` — exact match
+- `"cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta"` — remove changelogs for either cloud-serverless 2025-12-02 ga or cloud-serverless 2025-12-06 beta
 - `"elasticsearch * *"` — all elasticsearch changelogs
 - `"* 9.3.* *"` — any product with a target starting with `9.3.`
 - `"* * *"` — all changelogs (equivalent to `--all`)
