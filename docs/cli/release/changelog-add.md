@@ -36,7 +36,7 @@ docs-builder changelog add [options...] [-h|--help]
 :   - `## Release Note` (as a markdown header)
 :   Short release notes (≤120 characters, single line) are used as the changelog title (only if `--title` is not explicitly provided).
 :   Long release notes (>120 characters or multi-line) are used as the changelog description (only if `--description` is not explicitly provided).
-:   If `--no-extract-release-notes` is not specified, the behavior is determined by the `extract.release_notes` changelog configuration setting.
+:   By default, the behavior is determined by the `extract.release_notes` changelog configuration setting.
 
 `--feature-id <string?>`
 :   Optional: Feature flag ID
@@ -61,7 +61,7 @@ docs-builder changelog add [options...] [-h|--help]
 :   Optional: Turn off extraction of linked references.
 :   When using `--prs`: turns off extraction of linked issues from the PR body (for example, "Fixes #123").
 :   When using `--issues`: turns off extraction of linked PRs from the issue body (for example, "Fixed by #123").
-:   If `--no-extract-issues` is not specified, the behavior is determined by the `extract.issues` changelog configuration setting.
+:   By default, the behavior is determined by the `extract.issues` changelog configuration setting.
 
 `--output <string?>`
 :   Optional: Output directory for the changelog fragment. Defaults to current directory.
