@@ -490,12 +490,12 @@ You can specify only one of the following filter options:
 - `--prs`: Include changelogs for the specified pull request URLs or numbers, or a path to a newline-delimited file containing PR URLs or numbers. Go to [Filter by pull requests](#changelog-bundle-pr).
 - `--issues`: Include changelogs for the specified issue URLs or numbers, or a path to a newline-delimited file containing issue URLs or numbers. Go to [Filter by issues](#changelog-bundle-issues).
 
-By default, the output file contains only the changelog file names and checksums.
+By default, the output file contains only the changelog file names and checksums unless you set `bundle.resolve` to `true` in the changelog configuration file.
 You can optionally use the `--resolve` command option to pull all of the content from each changelog into the bundle.
 
 :::{tip}
-If you plan to use [changelog directives](#changelog-directive), it is recommended to use the `--resolve` option; otherwise you can't delete your changelogs.
-If you likewise want to regenerate your [Asciidoc or Markdown files](#render-changelogs) after deleting your changelogs, it's only possible if you have "resolved" bundles.
+If you plan to use [changelog directives](#changelog-directive), it is recommended to use "resolved" bundles; otherwise you can't delete your changelogs.
+If you likewise want to regenerate your [Asciidoc or Markdown files](#render-changelogs) after deleting your changelogs, it's only possible if you have resolved bundles.
 :::
 
 When you do not specify `--directory`, the command reads changelog files from `bundle.directory` in your changelog configuration if it is set, otherwise from the current directory.
@@ -553,8 +553,6 @@ entries:
 1. By default these values match your `--input-products` (even if the changelogs have more products).
 To specify different product metadata, use the `--output-products` option.
 
-If you add the `--resolve` option, the contents of each changelog will be included in the output file.
-
 ### Filter by pull requests [changelog-bundle-pr]
 
 You can use the `--prs` option to create a bundle of the changelogs that relate to those pull requests.
@@ -594,8 +592,6 @@ entries:
     name: 1765507839-use-ivf_pq-for-gpu-index-build-for-large-datasets.yaml
     checksum: 451d60283fe5df426f023e824339f82c2900311e
 ```
-
-If you add the `--resolve` option, the contents of each changelog will be included in the output file.
 
 ### Filter by issues [changelog-bundle-issues]
 
@@ -833,7 +829,8 @@ A single changelog file might be applicable to multiple releases (for example, i
 After it has been included in all of the relevant bundles, it is reasonable to delete the changelog to keep your repository clean.
 
 :::{important}
-If you create docs with changelog directives, run the `docs-builder changelog bundle` command with the `--resolve` option (so that bundle files are self-contained). Otherwise, the build will fail if you remove changelogs that the directive requires.
+If you create docs with changelog directives, run the `docs-builder changelog bundle` command with the `--resolve` option or set `bundle.resolve` to `true` in the changelog configuration file (so that bundle files are self-contained).
+Otherwise, the build will fail if you remove changelogs that the directive requires.
 
 Likewise, the `docs-builder changelog render` command fails for "unresolved" bundles after you delete the changelogs.
 :::

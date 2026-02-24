@@ -482,7 +482,7 @@ To fix this, either:
 - Remove the unresolvable entry from the bundle file.
 
 :::{tip}
-In general, if you want to be able to remove changelog files after your releases, create your bundles with the `--resolve` option.
+In general, if you want to be able to remove changelog files after your releases, create your bundles with the `--resolve` option or set `bundle.resolve` to `true` in the changelog configuration file.
 For more command syntax details, go to [Remove changelog files](../contribute/changelog.md#changelog-remove).
 :::
 
