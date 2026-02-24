@@ -282,14 +282,14 @@ public class ChangelogRemoveService(
 				var content = await _fileSystem.File.ReadAllTextAsync(bundleFile, ctx);
 				var bundle = ReleaseNotesSerialization.DeserializeBundle(content);
 
-				var entriesWithFile = bundle.Entries
-					.Where(entry => !string.IsNullOrWhiteSpace(entry.File?.Name));
+				var entryFileNames = bundle.Entries
+					.Where(entry => !string.IsNullOrWhiteSpace(entry.File?.Name))
+					.Select(entry => NormalizeEntryFileName(entry.File!.Name));
 
-				foreach (var entry in entriesWithFile)
+				foreach (var entryFileName in entryFileNames)
 				{
 					// bundle entry.File.Name is relative to the changelog directory (parent of bundles dir)
 					// Normalize to just the base filename for comparison
-					var entryFileName = NormalizeEntryFileName(entry.File.Name);
 					if (!toRemoveNames.Contains(entryFileName))
 						continue;
 
