@@ -10,6 +10,7 @@ using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
+using System.Linq;
 
 namespace Elastic.Changelog.Bundling;
 
@@ -281,11 +282,11 @@ public class ChangelogRemoveService(
 				var content = await _fileSystem.File.ReadAllTextAsync(bundleFile, ctx);
 				var bundle = ReleaseNotesSerialization.DeserializeBundle(content);
 
-				foreach (var entry in bundle.Entries)
-				{
-					if (string.IsNullOrWhiteSpace(entry.File?.Name))
-						continue; // Resolved/inline entry — no file dependency
+				var entriesWithFile = bundle.Entries
+					.Where(entry => !string.IsNullOrWhiteSpace(entry.File?.Name));
 
+				foreach (var entry in entriesWithFile)
+				{
 					// bundle entry.File.Name is relative to the changelog directory (parent of bundles dir)
 					// Normalize to just the base filename for comparison
 					var entryFileName = NormalizeEntryFileName(entry.File.Name);
