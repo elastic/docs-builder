@@ -139,12 +139,6 @@ public class McpBearerAuthMiddleware(RequestDelegate next, ILogger<McpBearerAuth
 			LogValidationFailure("invalid_public_key");
 			return (null, 401);
 		}
-		catch (Exception ex)
-		{
-			logger.LogError(ex, "MCP auth unexpected key error");
-			LogValidationFailure("invalid_public_key");
-			return (null, 401);
-		}
 
 		var host = context.Request.Host.Value;
 		var scheme = context.Request.Scheme;
