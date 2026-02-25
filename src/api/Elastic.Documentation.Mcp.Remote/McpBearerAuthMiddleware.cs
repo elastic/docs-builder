@@ -101,7 +101,12 @@ public class McpBearerAuthMiddleware(RequestDelegate next, ILogger<McpBearerAuth
 		{
 			jwt = TokenHandler.ReadJwtToken(token);
 		}
-		catch
+		catch (ArgumentException)
+		{
+			LogValidationFailure("invalid_token_format");
+			return (null, 401);
+		}
+		catch (SecurityTokenException)
 		{
 			LogValidationFailure("invalid_token_format");
 			return (null, 401);
@@ -119,14 +124,24 @@ public class McpBearerAuthMiddleware(RequestDelegate next, ILogger<McpBearerAuth
 			return (null, 401);
 		}
 
-		RSA rsa;
+		using var rsa = RSA.Create();
 		try
 		{
-			rsa = RSA.Create();
 			rsa.ImportFromPem(env.McpJwtPublicKey);
 		}
-		catch
+		catch (CryptographicException)
 		{
+			LogValidationFailure("invalid_public_key");
+			return (null, 401);
+		}
+		catch (ArgumentException)
+		{
+			LogValidationFailure("invalid_public_key");
+			return (null, 401);
+		}
+		catch (Exception ex)
+		{
+			logger.LogError(ex, "MCP auth unexpected key error");
 			LogValidationFailure("invalid_public_key");
 			return (null, 401);
 		}
@@ -189,10 +204,6 @@ public class McpBearerAuthMiddleware(RequestDelegate next, ILogger<McpBearerAuth
 		{
 			LogValidationFailure("validation_failed");
 			return (null, 401);
-		}
-		finally
-		{
-			rsa.Dispose();
 		}
 	}
 
