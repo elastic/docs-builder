@@ -4,6 +4,7 @@
 
 using Elastic.Documentation.Api.Infrastructure.OpenTelemetry;
 using Elastic.Documentation.Assembler.Links;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Assembler.Mcp;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links.InboundLinks;
@@ -114,10 +115,10 @@ try
 			return Task.CompletedTask;
 		}));
 
+	_ = app.UseMiddleware<McpBearerAuthMiddleware>();
 	_ = app.UseMiddleware<SseKeepAliveMiddleware>();
 
-	const string mcpPrefix = "/docs/_mcp";
-
+	var mcpPrefix = SystemEnvironmentVariables.Instance.McpPrefix;
 	var mcp = app.MapGroup(mcpPrefix);
 	_ = mcp.MapHealthChecks("/health");
 	_ = mcp.MapHealthChecks("/alive", new HealthCheckOptions { Predicate = r => r.Tags.Contains("live") });

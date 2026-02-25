@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text;
+using Elastic.Documentation.Configuration;
 
 namespace Elastic.Documentation.Mcp.Remote;
 
@@ -16,7 +17,7 @@ public class SseKeepAliveMiddleware(RequestDelegate next, ILogger<SseKeepAliveMi
 
 	public async Task InvokeAsync(HttpContext context)
 	{
-		if (!context.Request.Path.StartsWithSegments("/docs/_mcp"))
+		if (!context.Request.Path.StartsWithSegments(SystemEnvironmentVariables.Instance.McpPrefix, StringComparison.OrdinalIgnoreCase))
 		{
 			await next(context);
 			return;
