@@ -11,8 +11,8 @@ using Documentation.Builder.Diagnostics.LiveMode;
 using Elastic.Documentation;
 #if DEBUG
 using Elastic.Documentation.Api.Infrastructure;
-#endif
 using Elastic.Documentation.Configuration;
+#endif
 using Elastic.Documentation.ServiceDefaults;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Markdown.IO;
@@ -154,8 +154,8 @@ public class DocumentationWebHost
 		_ = _webApplication.MapGet("/api/{**slug}", (string slug, ReloadableGeneratorState holder, Cancel ctx) =>
 			ServeApiFile(holder, slug, ctx));
 
-		var apiV1 = _webApplication.MapGroup($"{SystemEnvironmentVariables.Instance.ApiPrefix}/v1");
 #if DEBUG
+		var apiV1 = _webApplication.MapGroup($"{SystemEnvironmentVariables.Instance.ApiPrefix}/v1");
 		var mapOtlpEndpoints = !string.IsNullOrWhiteSpace(_webApplication.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]);
 		apiV1.MapElasticDocsApiEndpoints(mapOtlpEndpoints);
 #endif

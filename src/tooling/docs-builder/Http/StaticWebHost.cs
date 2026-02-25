@@ -5,8 +5,8 @@
 using System.IO.Abstractions;
 #if DEBUG
 using Elastic.Documentation.Api.Infrastructure;
-#endif
 using Elastic.Documentation.Configuration;
+#endif
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.ServiceDefaults;
 using Microsoft.AspNetCore.Builder;
@@ -84,8 +84,8 @@ public class StaticWebHost
 		_ = WebApplication.MapGet("{**slug}", ServeDocumentationFile);
 
 
-		var apiV1 = WebApplication.MapGroup($"{SystemEnvironmentVariables.Instance.ApiPrefix}/v1");
 #if DEBUG
+		var apiV1 = WebApplication.MapGroup($"{SystemEnvironmentVariables.Instance.ApiPrefix}/v1");
 		var mapOtlpEndpoints = !string.IsNullOrWhiteSpace(WebApplication.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]);
 		apiV1.MapElasticDocsApiEndpoints(mapOtlpEndpoints);
 #endif
