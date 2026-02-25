@@ -1,3 +1,4 @@
+import { config } from '../../config'
 import { useQuery } from '@tanstack/react-query'
 
 // Demo mode: Read fail parameter once at module load
@@ -26,7 +27,7 @@ export const useSearchAvailability = (): AvailabilityResult => {
             }
 
             try {
-                const response = await fetch('/docs/_api/v1/')
+                const response = await fetch(`${config.apiBasePath}/v1/`)
 
                 if (response.status === 403 || response.status >= 500) {
                     return { available: false }

@@ -4,6 +4,7 @@
 
 using Elastic.Documentation.Api.Infrastructure;
 using Elastic.Documentation.Api.Infrastructure.OpenTelemetry;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.ServiceDefaults;
@@ -53,7 +54,7 @@ try
 			return Task.CompletedTask;
 		}));
 
-	var api = app.MapGroup("/docs/_api");
+	var api = app.MapGroup(SystemEnvironmentVariables.Instance.ApiPrefix);
 
 	_ = api.MapHealthChecks("/health");
 	_ = api.MapHealthChecks("/alive", new HealthCheckOptions { Predicate = r => r.Tags.Contains("live") });

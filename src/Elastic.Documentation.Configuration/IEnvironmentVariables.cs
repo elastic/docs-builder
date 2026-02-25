@@ -22,4 +22,16 @@ public interface IEnvironmentVariables
 	/// Checks for the presence of the GITHUB_ACTIONS environment variable.
 	/// </summary>
 	bool IsRunningOnCI { get; }
+
+	/// <summary>
+	/// API route prefix (e.g. /docs/_api for assembler, /api for codex).
+	/// Reads DOCS_API_PREFIX, defaults to /docs/_api.
+	/// </summary>
+	string ApiPrefix => GetEnvironmentVariable("DOCS_API_PREFIX") ?? "/docs/_api";
+
+	/// <summary>
+	/// MCP route prefix (e.g. /docs/_mcp for assembler, /mcp for codex).
+	/// Reads DOCS_MCP_PREFIX, defaults to /docs/_mcp.
+	/// </summary>
+	string McpPrefix => GetEnvironmentVariable("DOCS_MCP_PREFIX") ?? "/docs/_mcp";
 }

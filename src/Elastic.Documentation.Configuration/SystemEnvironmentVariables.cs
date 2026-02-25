@@ -21,4 +21,10 @@ public class SystemEnvironmentVariables : IEnvironmentVariables
 	/// <inheritdoc />
 	public bool IsRunningOnCI =>
 		!string.IsNullOrEmpty(GetEnvironmentVariable("GITHUB_ACTIONS"));
+
+	/// <inheritdoc />
+	public string ApiPrefix => GetEnvironmentVariable("DOCS_API_PREFIX") ?? "/docs/_api";
+
+	/// <inheritdoc />
+	public string McpPrefix => GetEnvironmentVariable("DOCS_MCP_PREFIX") ?? "/docs/_mcp";
 }
