@@ -63,6 +63,11 @@ on:
         type: boolean
         default: false
         required: false
+      enable-vale-spelling:
+        description: 'Enable Vale spelling checks (requires enable-vale-linting). Experimental.'
+        type: boolean
+        default: false
+        required: false
       include-paths:
         description: 'Paths to include for Vale linting (multi-line). Only files matching these paths will be linted.'
         type: string
@@ -709,6 +714,7 @@ jobs:
         with: 
           files: ${{ needs.check.outputs.all_changed_files }}
           include-paths: ${{ inputs.include-paths }}
+          enable_spelling: ${{ inputs.enable-vale-spelling && 'true' || 'false' }}
       - name: Post Vale Results
         uses: elastic/vale-rules/report@main
         with:
