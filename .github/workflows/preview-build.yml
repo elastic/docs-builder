@@ -543,7 +543,7 @@ jobs:
       startsWith(github.event_name, 'pull_request')
       && inputs.disable-comments != true
       && needs.build.outputs.deployment_result
-      && needs.check.outputs.any_modified
+      && needs.check.outputs.any_modified == 'true'
     runs-on: ubuntu-latest
     needs:
       - check
@@ -689,7 +689,7 @@ jobs:
     if: >
       startsWith(github.event_name, 'pull_request')
       && inputs.enable-vale-linting == true
-      && needs.check.outputs.any_modified
+      && needs.check.outputs.any_modified == 'true'
     runs-on: ubuntu-latest
     needs: check
     permissions:
