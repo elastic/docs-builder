@@ -2,10 +2,10 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Cryptography;
 using Elastic.Documentation.Configuration;
 using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
 
 namespace Elastic.Documentation.Mcp.Remote;
 
@@ -71,13 +71,13 @@ public class McpBearerAuthMiddleware(RequestDelegate next, ILogger<McpBearerAuth
 		{
 			context.Response.StatusCode = 403;
 			context.Response.ContentType = "application/json";
-			await context.Response.WriteAsync("""{"error":"forbidden"}""");
+			await context.Response.WriteAsync(/*lang=json,strict*/ """{"error":"forbidden"}""");
 			return;
 		}
 
 		context.Response.StatusCode = 401;
 		context.Response.ContentType = "application/json";
-		await context.Response.WriteAsync("""{"error":"invalid_token"}""");
+		await context.Response.WriteAsync(/*lang=json,strict*/ """{"error":"invalid_token"}""");
 	}
 
 	private static async Task WriteUnauthorizedAsync(HttpContext context, string mcpPrefix)
@@ -88,7 +88,7 @@ public class McpBearerAuthMiddleware(RequestDelegate next, ILogger<McpBearerAuth
 		context.Response.Headers.WWWAuthenticate = $"Bearer resource_metadata=\"{resourceMetadata}\"";
 		context.Response.StatusCode = 401;
 		context.Response.ContentType = "application/json";
-		await context.Response.WriteAsync("""{"error":"invalid_token"}""");
+		await context.Response.WriteAsync(/*lang=json,strict*/ """{"error":"invalid_token"}""");
 	}
 
 	private (string? User, int? ErrorStatusCode) ValidateToken(string token, IEnvironmentVariables env, HttpContext context)
