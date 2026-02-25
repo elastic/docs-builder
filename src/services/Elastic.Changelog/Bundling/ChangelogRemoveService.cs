@@ -30,6 +30,12 @@ public record ChangelogRemoveArguments
 	public string? BundlesDir { get; init; }
 	public bool Force { get; init; }
 	public string? Config { get; init; }
+
+	/// <summary>Profile name from <c>bundle.profiles</c> in the changelog configuration.</summary>
+	public string? Profile { get; init; }
+
+	/// <summary>Version number or promotion report URL/path when using a profile.</summary>
+	public string? ProfileArgument { get; init; }
 }
 
 /// <summary>
@@ -59,6 +65,30 @@ public class ChangelogRemoveService(
 			ChangelogConfiguration? config = null;
 			if (_configLoader != null)
 				config = await _configLoader.LoadChangelogConfiguration(collector, input.Config, ctx);
+
+			// Handle profile-based removal (same ordering as ChangelogBundlingService)
+			if (!string.IsNullOrWhiteSpace(input.Profile))
+			{
+				var filterResult = await ProfileFilterResolver.ResolveAsync(
+					collector,
+					input.Profile,
+					input.ProfileArgument,
+					config,
+					_fileSystem,
+					_logger,
+					ctx
+				);
+
+				if (filterResult == null)
+					return false;
+
+				input = input with
+				{
+					Products = filterResult.Products,
+					Prs = filterResult.Prs,
+					All = false
+				};
+			}
 
 			input = ApplyConfigDefaults(input, config);
 

@@ -836,8 +836,7 @@ Likewise, the `docs-builder changelog render` command fails for "unresolved" bun
 :::
 
 You can use the `docs-builder changelog remove` command to remove changelogs.
-It has the same filter options as `changelog bundle` (that is to say, you can remove changelogs based their issues or pull requests, product metadata, or folder).
-Exactly one filter option must be specified.
+It supports the same two modes as `changelog bundle`: profile-based and raw flags.
 
 Before deleting, the command automatically scans for bundles that still hold unresolved (`file:`) references to the matching changelog files.
 If any are found, the command reports an error for each dependency.
@@ -847,7 +846,41 @@ To proceed with removal even when unresolved bundle dependencies exist, use `--f
 To preview what would be removed without deleting anything, use `--dry-run`.
 Bundle dependency conflicts are also reported in dry-run mode.
 
-For example:
+### Removal with profiles [changelog-remove-profile]
+
+If your `changelog.yml` configuration file defines `bundle.profiles`, you can use those profiles with `changelog remove`.
+This is the easiest way to remove exactly the changelogs that were included in a profile-based bundle.
+The command syntax is:
+
+```sh
+docs-builder changelog remove <profile> <version|promotion-report>
+```
+
+For example, if you bundled with:
+
+```sh
+docs-builder changelog bundle elasticsearch-release 9.2.0
+```
+
+You can remove the same changelogs with:
+
+```sh
+docs-builder changelog remove elasticsearch-release 9.2.0 --dry-run
+```
+
+Only the `products` field from the profile configuration is used for removal.
+The `output` and `hide_features` fields are bundle-specific and are ignored.
+
+You can also pass a promotion report URL or file path as the second argument, and the command removes changelogs whose pull request URLs appear in the report:
+
+```sh
+docs-builder changelog remove elasticsearch-release https://buildkite.../promotion-report.html
+```
+
+### Removal with command options [changelog-remove-raw]
+
+You can alternatively remove changelogs based on their issues, pull requests, product metadata, or remove all changelogs from a folder.
+Exactly one filter option must be specified: `--all`, `--products`, `--prs`, or `--issues`.
 
 ```sh
 docs-builder changelog remove --products "elasticsearch 9.3.0 *" --dry-run
