@@ -15,7 +15,6 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Changelog.Bundling;
 
@@ -212,84 +211,42 @@ public partial class ChangelogBundlingService(
 
 	private async Task<BundleChangelogsArguments?> ProcessProfile(IDiagnosticsCollector collector, BundleChangelogsArguments input, ChangelogConfiguration? config, Cancel ctx)
 	{
-		if (config?.Bundle?.Profiles == null || !config.Bundle.Profiles.TryGetValue(input.Profile!, out var profile))
-		{
-			collector.EmitError(string.Empty, $"Profile '{input.Profile}' not found in bundle.profiles configuration");
+		var filterResult = await ProfileFilterResolver.ResolveAsync(
+			collector,
+			input.Profile!,
+			input.ProfileArgument,
+			config,
+			_fileSystem,
+			_logger,
+			ctx
+		);
+
+		if (filterResult == null)
 			return null;
-		}
 
-		if (string.IsNullOrWhiteSpace(input.ProfileArgument))
+		// Resolve bundle-specific output path and hide-features from profile
+		string? outputPath = null;
+		string[]? mergedHideFeatures = null;
+
+		if (config?.Bundle?.Profiles != null && config.Bundle.Profiles.TryGetValue(input.Profile!, out var profile))
 		{
-			collector.EmitError(string.Empty, $"Profile '{input.Profile}' requires a version number or promotion report URL as the second argument");
-			return null;
-		}
-
-		// Auto-detect argument type
-		var argType = PromotionReportParser.DetectArgumentType(input.ProfileArgument);
-
-		// Check if it's a local file
-		if (argType == ProfileArgumentType.Version && _fileSystem.File.Exists(input.ProfileArgument))
-			argType = ProfileArgumentType.PromotionReportFile;
-
-		string version;
-		string[]? prsFromReport = null;
-
-		if (argType is ProfileArgumentType.PromotionReportUrl or ProfileArgumentType.PromotionReportFile)
-		{
-			// Parse promotion report to get PR list
-			var parser = new PromotionReportParser(NullLoggerFactory.Instance, _fileSystem);
-			var reportResult = await parser.ParsePromotionReportAsync(input.ProfileArgument, ctx);
-
-			if (!reportResult.IsValid)
+			var outputPattern = profile.Output?.Replace("{version}", filterResult.Version);
+			if (!string.IsNullOrWhiteSpace(outputPattern))
 			{
-				collector.EmitError(string.Empty, reportResult.ErrorMessage ?? "Failed to parse promotion report");
-				return null;
+				var outputDir = config.Bundle.OutputDirectory ?? input.OutputDirectory ?? input.Directory ?? _fileSystem.Directory.GetCurrentDirectory();
+				outputPath = _fileSystem.Path.Combine(outputDir, outputPattern);
 			}
 
-			prsFromReport = reportResult.PrUrls.ToArray();
-			_logger.LogInformation("Extracted {Count} PRs from promotion report", prsFromReport.Length);
-
-			// Extract version from PR URLs or use "unknown"
-			// Try to extract from first PR URL path
-			version = "unknown";
-		}
-		else
-		{
-			// Use the argument as the version number
-			version = input.ProfileArgument;
+			mergedHideFeatures = MergeHideFeatures(input.HideFeatures, profile.HideFeatures);
 		}
 
-		// Substitute {version} and {lifecycle} in profile patterns
-		var lifecycle = VersionLifecycleInference.InferLifecycle(version);
-		var productsPattern = profile.Products?
-			.Replace("{version}", version)
-			.Replace("{lifecycle}", lifecycle);
-		var outputPattern = profile.Output?.Replace("{version}", version);
-
-		// Parse products pattern
-		List<ProductArgument>? inputProducts = null;
-		if (!string.IsNullOrWhiteSpace(productsPattern))
-			inputProducts = ParseProfileProducts(productsPattern);
-
-		// Determine output path
-		string? outputPath = null;
-		if (!string.IsNullOrWhiteSpace(outputPattern))
-		{
-			var outputDir = config.Bundle.OutputDirectory ?? input.OutputDirectory ?? input.Directory ?? _fileSystem.Directory.GetCurrentDirectory();
-			outputPath = _fileSystem.Path.Combine(outputDir, outputPattern);
-		}
-
-		// Merge profile hide-features with any CLI-provided hide-features
-		var mergedHideFeatures = MergeHideFeatures(input.HideFeatures, profile.HideFeatures);
-
-		// If we have PRs from a promotion report, use those; otherwise use input products filter
 		return input with
 		{
-			InputProducts = prsFromReport == null ? inputProducts : null,
-			Prs = prsFromReport,
+			InputProducts = filterResult.Products,
+			Prs = filterResult.Prs,
 			All = false,
 			Output = outputPath ?? input.Output,
-			HideFeatures = mergedHideFeatures
+			HideFeatures = mergedHideFeatures ?? input.HideFeatures
 		};
 	}
 
@@ -304,28 +261,6 @@ public partial class ChangelogBundlingService(
 			merged.UnionWith(profileHideFeatures);
 
 		return merged.Count > 0 ? [.. merged] : null;
-	}
-
-	private static List<ProductArgument> ParseProfileProducts(string pattern)
-	{
-		// Parse pattern like "elasticsearch {version} ga" or "cloud-serverless {version} *"
-		var parts = pattern.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-		if (parts.Length < 1)
-			return [];
-
-		var productId = parts[0];
-		var target = parts.Length > 1 ? parts[1] : "*";
-		var lifecycle = parts.Length > 2 ? parts[2] : "*";
-
-		return
-		[
-			new ProductArgument
-			{
-				Product = productId == "*" ? "*" : productId,
-				Target = target == "*" ? "*" : target,
-				Lifecycle = lifecycle == "*" ? "*" : lifecycle
-			}
-		];
 	}
 
 	private static BundleChangelogsArguments ApplyConfigDefaults(BundleChangelogsArguments input, ChangelogConfiguration? config)

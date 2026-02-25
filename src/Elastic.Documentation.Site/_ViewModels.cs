@@ -5,6 +5,7 @@
 using System;
 using System.Text.Json;
 using Elastic.Documentation;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Navigation;
@@ -19,7 +20,7 @@ public static class GlobalSections
 }
 
 /// <summary>Configuration injected into the frontend for build-type-specific behavior (OTEL, HTMX).</summary>
-public record FrontendConfig(string BuildType, string ServiceName, bool TelemetryEnabled, string RootPath);
+public record FrontendConfig(string BuildType, string ServiceName, bool TelemetryEnabled, string RootPath, string ApiBasePath);
 
 /// <summary>Single breadcrumb item for the codex sub-header.</summary>
 public record CodexBreadcrumb(string Title, string? Url);
@@ -70,12 +71,15 @@ public record GlobalLayoutViewModel
 	/// <summary>Root path for static assets. For codex builds, strips the /r/repoName segment from the URL path prefix.</summary>
 	public string StaticPathPrefix => GetStaticPathPrefix();
 
+	private static string ApiBasePath =>
+		SystemEnvironmentVariables.Instance.ApiPrefix;
+
 	public FrontendConfig FrontendConfig =>
 		BuildType switch
 		{
-			BuildType.Assembler => new FrontendConfig("assembler", "docs-frontend", true, StaticPathPrefix),
-			BuildType.Codex => new FrontendConfig("codex", "codex-frontend", true, StaticPathPrefix),
-			_ => new FrontendConfig("isolated", "docs-frontend", false, StaticPathPrefix),
+			BuildType.Assembler => new FrontendConfig("assembler", "docs-frontend", true, StaticPathPrefix, ApiBasePath),
+			BuildType.Codex => new FrontendConfig("codex", "codex-frontend", true, StaticPathPrefix, ApiBasePath),
+			_ => new FrontendConfig("isolated", "docs-frontend", false, StaticPathPrefix, ApiBasePath),
 		};
 
 	public string FrontendConfigJson =>

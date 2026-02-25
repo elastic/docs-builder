@@ -11,6 +11,7 @@ namespace Elastic.Changelog.Tests.Changelogs;
 public class ChangelogRemoveTests : ChangelogTestBase
 {
 	private ChangelogRemoveService Service { get; }
+	private ChangelogRemoveService ServiceWithConfig { get; }
 	private readonly string _changelogDir;
 
 	// language=yaml
@@ -54,9 +55,23 @@ public class ChangelogRemoveTests : ChangelogTestBase
 		  - https://github.com/elastic/elasticsearch/issues/9999
 		""";
 
+	// language=yaml
+	private const string Elasticsearch920FeatureYaml =
+		"""
+		title: Elasticsearch 9.2.0 feature
+		type: feature
+		products:
+		  - product: elasticsearch
+		    target: 9.2.0
+		    lifecycle: ga
+		prs:
+		  - https://github.com/elastic/elasticsearch/pull/5001
+		""";
+
 	public ChangelogRemoveTests(ITestOutputHelper output) : base(output)
 	{
 		Service = new ChangelogRemoveService(LoggerFactory, null, FileSystem);
+		ServiceWithConfig = new ChangelogRemoveService(LoggerFactory, ConfigurationContext, FileSystem);
 		_changelogDir = CreateChangelogDir();
 	}
 
@@ -433,5 +448,198 @@ public class ChangelogRemoveTests : ChangelogTestBase
 			d.Severity == Severity.Error &&
 			d.Message.Contains("1001-es-feature.yaml"));
 		FileExists("1001-es-feature.yaml").Should().BeTrue("Dry-run must not delete files");
+	}
+
+	// ------------------------------------------------------------------
+	// Profile-based removal tests
+	// ------------------------------------------------------------------
+
+	[Fact]
+	public async Task Remove_WithProfileAndVersion_DeletesMatchingProducts()
+	{
+		// Arrange — two changelogs for elasticsearch 9.3.0 ga, one for elasticsearch 9.2.0 ga.
+		// The profile targets "elasticsearch {version} {lifecycle}"; passing "9.2.0" should only
+		// delete the 9.2.0 file.
+		await WriteFile("1001-es-feature.yaml", ElasticsearchFeatureYaml);
+		await WriteFile("1002-es-bugfix.yaml", ElasticsearchBugFixYaml);
+		await WriteFile("5001-es-920-feature.yaml", Elasticsearch920FeatureYaml);
+
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  profiles:
+			    es-release:
+			      products: "elasticsearch {version} {lifecycle}"
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var input = new ChangelogRemoveArguments
+		{
+			Directory = _changelogDir,
+			Profile = "es-release",
+			ProfileArgument = "9.2.0",
+			Config = configPath
+		};
+
+		var result = await ServiceWithConfig.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue($"Expected removal to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		Collector.Errors.Should().Be(0);
+		// 9.2.0 file removed
+		FileExists("5001-es-920-feature.yaml").Should().BeFalse("Profile-matched file should be removed");
+		// 9.3.0 files untouched
+		FileExists("1001-es-feature.yaml").Should().BeTrue("Non-matching file should remain");
+		FileExists("1002-es-bugfix.yaml").Should().BeTrue("Non-matching file should remain");
+	}
+
+	[Fact]
+	public async Task Remove_WithProfileAndPromotionReport_DeletesMatchingPrs()
+	{
+		// Arrange — write two changelogs and a promotion report file that mentions only the first PR
+		await WriteFile("1001-es-feature.yaml", ElasticsearchFeatureYaml);
+		await WriteFile("2001-kibana-feature.yaml", KibanaFeatureYaml);
+
+		var reportContent = "<html><body>https://github.com/elastic/elasticsearch/pull/1001</body></html>";
+		var reportPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), "report.html");
+		await FileSystem.File.WriteAllTextAsync(reportPath, reportContent, TestContext.Current.CancellationToken);
+
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  profiles:
+			    es-release:
+			      products: "elasticsearch {version} {lifecycle}"
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var input = new ChangelogRemoveArguments
+		{
+			Directory = _changelogDir,
+			Profile = "es-release",
+			ProfileArgument = reportPath,
+			Config = configPath
+		};
+
+		var result = await ServiceWithConfig.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue($"Expected removal to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		Collector.Errors.Should().Be(0);
+		FileExists("1001-es-feature.yaml").Should().BeFalse("PR-matched file should be removed");
+		FileExists("2001-kibana-feature.yaml").Should().BeTrue("Non-matched file should remain");
+	}
+
+	[Fact]
+	public async Task Remove_WithProfile_UnknownProfile_ReturnsError()
+	{
+		await WriteFile("1001-es-feature.yaml", ElasticsearchFeatureYaml);
+
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  profiles:
+			    es-release:
+			      products: "elasticsearch {version} {lifecycle}"
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var input = new ChangelogRemoveArguments
+		{
+			Directory = _changelogDir,
+			Profile = "nonexistent-profile",
+			ProfileArgument = "9.2.0",
+			Config = configPath
+		};
+
+		var result = await ServiceWithConfig.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeFalse();
+		Collector.Diagnostics.Should().ContainSingle(d =>
+			d.Severity == Severity.Error &&
+			d.Message.Contains("nonexistent-profile") &&
+			d.Message.Contains("not found"));
+	}
+
+	[Fact]
+	public async Task Remove_WithProfile_MissingProfileArg_ReturnsError()
+	{
+		await WriteFile("1001-es-feature.yaml", ElasticsearchFeatureYaml);
+
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  profiles:
+			    es-release:
+			      products: "elasticsearch {version} {lifecycle}"
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var input = new ChangelogRemoveArguments
+		{
+			Directory = _changelogDir,
+			Profile = "es-release",
+			ProfileArgument = null,
+			Config = configPath
+		};
+
+		var result = await ServiceWithConfig.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeFalse();
+		Collector.Diagnostics.Should().ContainSingle(d =>
+			d.Severity == Severity.Error &&
+			d.Message.Contains("es-release") &&
+			d.Message.Contains("requires a version number"));
+	}
+
+	[Fact]
+	public async Task Remove_WithProfile_NoProductsAndVersionArg_ReturnsSpecificError()
+	{
+		// Profile has no products pattern; passing a version (not a promotion report) should emit
+		// the specific "no products pattern" error rather than the generic filter-missing error.
+		await WriteFile("1001-es-feature.yaml", ElasticsearchFeatureYaml);
+
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  profiles:
+			    no-products-profile:
+			      output: "release-{version}.yaml"
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var input = new ChangelogRemoveArguments
+		{
+			Directory = _changelogDir,
+			Profile = "no-products-profile",
+			ProfileArgument = "9.2.0",
+			Config = configPath
+		};
+
+		var result = await ServiceWithConfig.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeFalse();
+		Collector.Diagnostics.Should().ContainSingle(d =>
+			d.Severity == Severity.Error &&
+			d.Message.Contains("no-products-profile") &&
+			d.Message.Contains("no 'products' pattern"));
 	}
 }

@@ -652,16 +652,18 @@ internal sealed partial class ChangelogCommand(
 	}
 
 	/// <summary>
-	/// Remove changelog files. Exactly one filter option must be specified: --all, --products, --prs, or --issues.
+	/// Remove changelog files. Can use either profile-based removal (e.g., "remove elasticsearch-release 9.2.0") or raw flags (e.g., "remove --all").
 	/// When a file is referenced by an unresolved bundle, the command blocks by default to prevent breaking
 	/// the {changelog} directive. Use --force to override.
 	/// </summary>
+	/// <param name="profile">Optional: Profile name from bundle.profiles in config (e.g., "elasticsearch-release"). When specified, the second argument is the version or promotion report URL. Mutually exclusive with --all, --products, --prs, and --issues.</param>
+	/// <param name="profileArg">Optional: Version number or promotion report URL/path when using a profile (e.g., "9.2.0" or "https://buildkite.../promotion-report.html")</param>
 	/// <param name="all">Remove all changelogs in the directory. Exactly one filter option must be specified: --all, --products, --prs, or --issues.</param>
 	/// <param name="bundlesDir">Optional: Override the directory that is scanned for bundles during the dependency check. Auto-discovered from config or fallback paths when not specified.</param>
 	/// <param name="config">Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml'</param>
 	/// <param name="directory">Optional: Directory containing changelog YAML files. Uses config bundle.directory or defaults to current directory</param>
-	/// <param name="dryRun">Print the files that would be removed without deleting them.</param>
-	/// <param name="force">Proceed with removal even when files are referenced by unresolved bundles. Emits warnings instead of errors for each dependency.</param>
+	/// <param name="dryRun">Print the files that would be removed without deleting them. Valid in both profile and raw mode.</param>
+	/// <param name="force">Proceed with removal even when files are referenced by unresolved bundles. Emits warnings instead of errors for each dependency. Valid in both profile and raw mode.</param>
 	/// <param name="issues">Filter by issue URLs or numbers (comma-separated), or a path to a newline-delimited file containing issue URLs or numbers. Can be specified multiple times. Exactly one filter option must be specified: --all, --products, --prs, or --issues.</param>
 	/// <param name="owner">GitHub repository owner (required when PRs or issues are specified as numbers)</param>
 	/// <param name="products">Filter by products in format "product target lifecycle, ..." (e.g., "elasticsearch 9.3.0 ga"). All three parts are required but can be wildcards (*). Exactly one filter option must be specified: --all, --products, --prs, or --issues.</param>
@@ -670,6 +672,8 @@ internal sealed partial class ChangelogCommand(
 	/// <param name="ctx"></param>
 	[Command("remove")]
 	public async Task<int> Remove(
+		[Argument] string? profile = null,
+		[Argument] string? profileArg = null,
 		bool all = false,
 		string? bundlesDir = null,
 		string? config = null,
@@ -687,6 +691,8 @@ internal sealed partial class ChangelogCommand(
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
 		var service = new ChangelogRemoveService(logFactory, configurationContext);
+
+		var isProfileMode = !string.IsNullOrWhiteSpace(profile);
 
 		// Expand comma-separated --prs values
 		var allPrs = new List<string>();
@@ -714,49 +720,74 @@ internal sealed partial class ChangelogCommand(
 			}
 		}
 
-		// Validate product filter: all three parts (product, target, lifecycle) must be present (can be *)
-		if (products is { Count: > 0 })
+		if (isProfileMode)
 		{
-			foreach (var product in products)
+			// Profile mode: --all, --products, --prs, and --issues must not be used
+			if (all || (products != null && products.Count > 0) || allPrs.Count > 0 || allIssues.Count > 0)
 			{
-				if (string.IsNullOrWhiteSpace(product.Product))
-				{
-					collector.EmitError(string.Empty, "--products: product is required (use '*' for wildcard)");
-					_ = collector.StartAsync(ctx);
-					await collector.WaitForDrain();
-					await collector.StopAsync(ctx);
-					return 1;
-				}
-
-				if (product.Target == null)
-				{
-					collector.EmitError(string.Empty, $"--products: target is required for product '{product.Product}' (use '*' for wildcard)");
-					_ = collector.StartAsync(ctx);
-					await collector.WaitForDrain();
-					await collector.StopAsync(ctx);
-					return 1;
-				}
-
-				if (product.Lifecycle == null)
-				{
-					collector.EmitError(string.Empty, $"--products: lifecycle is required for product '{product.Product}' (use '*' for wildcard)");
-					_ = collector.StartAsync(ctx);
-					await collector.WaitForDrain();
-					await collector.StopAsync(ctx);
-					return 1;
-				}
+				collector.EmitError(string.Empty, "When using a profile, do not specify --all, --products, --prs, or --issues. The profile configuration determines the filter.");
+				_ = collector.StartAsync(ctx);
+				await collector.WaitForDrain();
+				await collector.StopAsync(ctx);
+				return 1;
 			}
 
-			// --products * * * is equivalent to --all
-			var isAllWildcard = products.Count == 1 &&
-				products[0].Product == "*" &&
-				products[0].Target == "*" &&
-				products[0].Lifecycle == "*";
-
-			if (isAllWildcard)
+			// profileArg is required when profile is specified
+			if (string.IsNullOrWhiteSpace(profileArg))
 			{
-				all = true;
-				products = null;
+				collector.EmitError(string.Empty, $"Profile '{profile}' requires a version number or promotion report URL as the second argument");
+				_ = collector.StartAsync(ctx);
+				await collector.WaitForDrain();
+				await collector.StopAsync(ctx);
+				return 1;
+			}
+		}
+		else
+		{
+			// Raw mode: validate product filter parts and apply wildcard shortcut
+			if (products is { Count: > 0 })
+			{
+				foreach (var product in products)
+				{
+					if (string.IsNullOrWhiteSpace(product.Product))
+					{
+						collector.EmitError(string.Empty, "--products: product is required (use '*' for wildcard)");
+						_ = collector.StartAsync(ctx);
+						await collector.WaitForDrain();
+						await collector.StopAsync(ctx);
+						return 1;
+					}
+
+					if (product.Target == null)
+					{
+						collector.EmitError(string.Empty, $"--products: target is required for product '{product.Product}' (use '*' for wildcard)");
+						_ = collector.StartAsync(ctx);
+						await collector.WaitForDrain();
+						await collector.StopAsync(ctx);
+						return 1;
+					}
+
+					if (product.Lifecycle == null)
+					{
+						collector.EmitError(string.Empty, $"--products: lifecycle is required for product '{product.Product}' (use '*' for wildcard)");
+						_ = collector.StartAsync(ctx);
+						await collector.WaitForDrain();
+						await collector.StopAsync(ctx);
+						return 1;
+					}
+				}
+
+				// --products * * * is equivalent to --all
+				var isAllWildcard = products.Count == 1 &&
+					products[0].Product == "*" &&
+					products[0].Target == "*" &&
+					products[0].Lifecycle == "*";
+
+				if (isAllWildcard)
+				{
+					all = true;
+					products = null;
+				}
 			}
 		}
 
@@ -772,7 +803,9 @@ internal sealed partial class ChangelogCommand(
 			DryRun = dryRun,
 			BundlesDir = string.IsNullOrWhiteSpace(bundlesDir) ? null : NormalizePath(bundlesDir),
 			Force = force,
-			Config = string.IsNullOrWhiteSpace(config) ? null : NormalizePath(config)
+			Config = string.IsNullOrWhiteSpace(config) ? null : NormalizePath(config),
+			Profile = isProfileMode ? profile : null,
+			ProfileArgument = isProfileMode ? profileArg : null
 		};
 
 		serviceInvoker.AddCommand(service, input,
