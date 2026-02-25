@@ -13,7 +13,7 @@ using Xunit;
 
 namespace Elastic.Markdown.Tests.Assembler;
 
-/// <summary>Tests that assembler builds produce correct HTMX attributes on markdown links (same as isolated: DefaultHtmxAttributeProvider).</summary>
+/// <summary>Tests that assembler builds produce correct HTMX attributes on markdown cross-links (same-site, not target=_blank).</summary>
 public class AssemblerHtmxMarkdownLinkTests(ITestOutputHelper output) : LinkTestBase(output, "Go to [test](kibana://index.md)")
 {
 	protected override BuildContext CreateBuildContext(
@@ -27,11 +27,16 @@ public class AssemblerHtmxMarkdownLinkTests(ITestOutputHelper output) : LinkTest
 		};
 
 	[Fact]
-	public void CrossLink_UsesGranularSwap_ForAssembler()
-	{
-		// Assembler: cross-links use #content-container,#toc-nav,#nav-tree,#nav-dropdown (same as isolated)
+	public void CrossLink_UsesGranularSwap_ForAssembler() =>
 		Html.Should().Contain("hx-select-oob=\"#content-container,#toc-nav,#nav-tree,#nav-dropdown\"");
-	}
+
+	[Fact]
+	public void CrossLink_HasPreload() =>
+		Html.Should().Contain("preload=\"mousedown\"");
+
+	[Fact]
+	public void CrossLink_NoTargetBlank() =>
+		Html.Should().NotContain("target=\"_blank\"");
 
 	[Fact]
 	public void EmitsCrossLink()
@@ -151,10 +156,12 @@ Go to [](kibana://index.md)
 		};
 
 	[Fact]
-	public void EmptyTextCrossLink_UsesGranularSwap_ForAssembler()
-	{
+	public void EmptyTextCrossLink_UsesGranularSwap_ForAssembler() =>
 		Html.Should().Contain("hx-select-oob=\"#content-container,#toc-nav,#nav-tree,#nav-dropdown\"");
-	}
+
+	[Fact]
+	public void EmptyTextCrossLink_NoTargetBlank() =>
+		Html.Should().NotContain("target=\"_blank\"");
 
 	[Fact]
 	public void HasError() =>

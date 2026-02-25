@@ -2,9 +2,10 @@
 
 Remove changelog YAML files from a directory.
 
-You can remove changelogs based their issues, pull requests, or product metadata.
-Alternatively, remove all changelogs from the specified directory.
-Exactly one filter option must be specified.
+You can use either profile-based removal or raw filter flags:
+
+- **Profile-based**: `docs-builder changelog remove <profile> <version|promotion-report>` — uses the same `bundle.profiles` configuration as [`changelog bundle`](/cli/release/changelog-bundle.md) to determine which changelogs to remove.
+- **Raw flags**: `docs-builder changelog remove --products "..." ` (or `--prs`, `--issues`, `--all`) — specify the filter directly.
 
 Before deleting anything, the command checks whether any of the matching files are referenced by unresolved bundles, to prevent silently breaking the `{changelog}` directive.
 
@@ -13,14 +14,30 @@ For more context, go to [](/contribute/changelog.md#changelog-remove).
 ## Usage
 
 ```sh
-docs-builder  changelog remove [options...] [-h|--help]
+docs-builder  changelog remove [arguments...] [options...] [-h|--help]
 ```
+
+## Arguments
+
+You can use either profile-based removal (for example, `remove elasticsearch-release 9.2.0`) or raw flags (`remove --all`).
+These arguments apply to profile-based removal:
+
+`[0] <string?>`
+:   Profile name from `bundle.profiles` in the changelog configuration file.
+:   For example, "elasticsearch-release".
+:   When specified, the second argument is the version or promotion report URL.
+:   Mutually exclusive with `--all`, `--products`, `--prs`, and `--issues`.
+
+`[1] <string?>`
+:   Version number or promotion report URL or path.
+:   For example, "9.2.0" or "https://buildkite.../promotion-report.html".
 
 ## Options
 
 `--all`
 :   Remove all changelog files in the directory.
 :   Exactly one filter option must be specified: `--all`, `--products`, `--prs`, or `--issues`.
+:   Cannot be combined with a profile argument.
 
 `--bundles-dir <string?>`
 :   Optional: Override the directory scanned for bundles during the dependency check.
@@ -36,15 +53,18 @@ docs-builder  changelog remove [options...] [-h|--help]
 
 `--dry-run`
 :   Print the files that would be removed and any bundle dependency conflicts, without deleting anything.
+:   Valid in both profile and raw mode.
 
 `--force`
 :   Proceed with removal even when files are referenced by unresolved bundles.
 :   Emits a warning per dependency instead of blocking.
+:   Valid in both profile and raw mode.
 
 `--issues <string[]?>`
 :   Filter by issue URLs or numbers (comma-separated), or a path to a newline-delimited file containing issue URLs or numbers.
 :   Can be specified multiple times.
 :   Exactly one filter option must be specified: `--all`, `--products`, `--prs`, or `--issues`.
+:   Cannot be combined with a profile argument.
 
 `--owner <string?>`
 :   The GitHub repository owner, which is required when pull requests or issues are specified as numbers.
@@ -52,6 +72,7 @@ docs-builder  changelog remove [options...] [-h|--help]
 `--products <List<ProductInfo>?>`
 :   Filter by products in format `"product target lifecycle, ..."`
 :   Exactly one filter option must be specified: `--all`, `--products`, `--prs`, or `--issues`.
+:   Cannot be combined with a profile argument.
 :   All three parts (product, target, lifecycle) are required but can be wildcards (`*`). Multiple comma-separated values are combined with OR: a changelog is removed if it matches any of the specified product/target/lifecycle combinations. For example:
 
 - `"elasticsearch 9.3.0 ga"` — exact match
@@ -64,6 +85,37 @@ docs-builder  changelog remove [options...] [-h|--help]
 :   Filter by pull request URLs or numbers (comma-separated), or a path to a newline-delimited file containing PR URLs or numbers.
 :   Can be specified multiple times.
 :   Exactly one filter option must be specified: `--all`, `--products`, `--prs`, or `--issues`.
+:   Cannot be combined with a profile argument.
 
 `--repo <string?>`
 :   The GitHub repository name, which is required when pull requests or issues are specified as numbers.
+
+## Profile-based removal [changelog-remove-profile]
+
+When a `changelog.yml` configuration file defines `bundle.profiles`, you can use those same profiles with `changelog remove` to remove exactly the changelogs that would be included in a matching bundle.
+
+Only the `products` field from a profile is used for removal. The `output` and `hide_features` fields are bundle-specific and are ignored.
+
+For example, if your configuration file defines:
+
+```yaml
+bundle:
+  profiles:
+    elasticsearch-release:
+      products: "elasticsearch {version} {lifecycle}"
+      output: "elasticsearch-{version}.yaml"
+```
+
+You can remove the matching changelogs with:
+
+```sh
+docs-builder changelog remove elasticsearch-release 9.2.0 --dry-run
+```
+
+This removes changelogs for `elasticsearch 9.2.0 ga` — the same set that `docs-builder changelog bundle elasticsearch-release 9.2.0` would include.
+
+You can also pass a promotion report URL or file path as the second argument, in which case the command removes changelogs whose PR URLs appear in the report:
+
+```sh
+docs-builder changelog remove elasticsearch-release https://buildkite.../promotion-report.html
+```
