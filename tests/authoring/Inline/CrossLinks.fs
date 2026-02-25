@@ -17,7 +17,9 @@ type ``cross-link makes it into html`` () =
     let ``validate HTML`` () =
         markdown |> convertsToHtml """
             <p><a
-                href="https://docs-v3-preview.elastic.dev/elastic/docs-content/tree/main/solutions/observability/apps/apm-server-binary">
+                href="https://docs-v3-preview.elastic.dev/elastic/docs-content/tree/main/solutions/observability/apps/apm-server-binary"
+                target="_blank"
+                rel="noopener noreferrer">
                 APM Server binary
                 </a>
             </p>
@@ -67,7 +69,9 @@ type ``link to valid anchor`` () =
     let ``validate HTML`` () =
         markdown |> convertsToHtml """
             <p><a
-                href="https://docs-v3-preview.elastic.dev/elastic/docs-content/tree/main/solutions/observability/apps/apm-server-binary#apm-deb">
+                href="https://docs-v3-preview.elastic.dev/elastic/docs-content/tree/main/solutions/observability/apps/apm-server-binary#apm-deb"
+                target="_blank"
+                rel="noopener noreferrer">
                 APM Server binary
                 </a>
             </p>
@@ -135,7 +139,9 @@ type ``Using double forward slashes`` () =
     let ``validate HTML`` () =
         markdown |> convertsToHtml """
             <p><a
-                href="https://docs-v3-preview.elastic.dev/elastic/docs-content/tree/main/solutions/observability/apps/apm-server-binary#apm-deb">
+                href="https://docs-v3-preview.elastic.dev/elastic/docs-content/tree/main/solutions/observability/apps/apm-server-binary#apm-deb"
+                target="_blank"
+                rel="noopener noreferrer">
                 APM Server binary
                 </a>
             </p>
