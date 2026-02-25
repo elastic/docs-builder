@@ -36,7 +36,7 @@ You must choose one method for determining what's in the bundle (`--all`, `--inp
 
 `--input-products <List<ProductInfo>?>`
 :   Filter by products in the format "product target lifecycle, ...".
-:   For more information about the valid product and lifecycle values, go to [](/docs/contribute/changelog.md#product-format).
+:   For more information about the valid product and lifecycle values, go to [Product format](/docs/contribute/changelog.md#product-format).
 :   Only one filter option can be specified: `--all`, `--input-products`, `--prs`, or `--issues`.
 :   When specified, all three parts (product, target, lifecycle) are required but can be wildcards (`*`). Multiple comma-separated values are combined with OR: a changelog is included if it matches any of the specified product/target/lifecycle combinations. For example:
 
@@ -218,4 +218,4 @@ For example, when the version is:
 - `9.2.0-beta.1` the inferred lifecycle is `beta`.
 - `9.2.0-alpha.1` or `9.2.0-preview.1` the inferred lifecycle is `preview`.
 
-For more information about acceptable product and lifecycle values, go to [](/docs/contribute/changelog.md#product-format).
+For more information about acceptable product and lifecycle values, go to [Product format](/docs/contribute/changelog.md#product-format).
