@@ -7,6 +7,7 @@
  *
  * Inspired by: https://signoz.io/docs/frontend-monitoring/sending-logs-with-opentelemetry/
  */
+import { config as docsConfig } from '../config'
 import { logs } from '@opentelemetry/api-logs'
 import { ZoneContextManager } from '@opentelemetry/context-zone'
 import { W3CTraceContextPropagator } from '@opentelemetry/core'
@@ -119,7 +120,7 @@ function initializeTracing(
     commonHeaders: Record<string, string>
 ): void {
     const traceExporter = new OTLPTraceExporter({
-        url: `${config.baseUrl}/_api/v1/o/t`,
+        url: `${window.location.origin}${docsConfig.apiBasePath}/o/t`,
         headers: { ...commonHeaders },
     })
 
@@ -162,7 +163,7 @@ function initializeLogging(
     commonHeaders: Record<string, string>
 ): void {
     const logExporter = new OTLPLogExporter({
-        url: `${config.baseUrl}/_api/v1/o/l`,
+        url: `${window.location.origin}${docsConfig.apiBasePath}/o/l`,
         headers: { ...commonHeaders },
     })
 
@@ -259,8 +260,8 @@ function logInitializationSuccess(config: ResolvedConfig): void {
             serviceName: config.serviceName,
             serviceVersion: config.serviceVersion,
             deploymentEnvironment: config.deploymentEnvironment,
-            traceEndpoint: `${config.baseUrl}/_api/v1/o/t`,
-            logEndpoint: `${config.baseUrl}/_api/v1/o/l`,
+            traceEndpoint: `${window.location.origin}${docsConfig.apiBasePath}/o/t`,
+            logEndpoint: `${window.location.origin}${docsConfig.apiBasePath}/o/l`,
             autoFlushOnUnload: true,
         })
     }

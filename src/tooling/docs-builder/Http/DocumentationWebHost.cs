@@ -154,7 +154,7 @@ public class DocumentationWebHost
 		_ = _webApplication.MapGet("/api/{**slug}", (string slug, ReloadableGeneratorState holder, Cancel ctx) =>
 			ServeApiFile(holder, slug, ctx));
 
-		var apiV1 = _webApplication.MapGroup("/docs/_api/v1");
+		var apiV1 = _webApplication.MapGroup($"{SystemEnvironmentVariables.Instance.ApiPrefix}/v1");
 #if DEBUG
 		var mapOtlpEndpoints = !string.IsNullOrWhiteSpace(_webApplication.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]);
 		apiV1.MapElasticDocsApiEndpoints(mapOtlpEndpoints);

@@ -1,3 +1,4 @@
+import { config } from '../../config'
 import {
     useAskAiModalActions,
     useAskAiModalIsOpen,
@@ -86,7 +87,9 @@ export const useAskAiFlyout = () => {
     const { data: isApiAvailable } = useQuery({
         queryKey: ['api-health'],
         queryFn: async () => {
-            const response = await fetch('/docs/_api/v1/', { method: 'POST' })
+            const response = await fetch(`${config.apiBasePath}/`, {
+                method: 'POST',
+            })
             return response.ok
         },
         staleTime: 60 * 60 * 1000, // 60 minutes

@@ -84,7 +84,7 @@ public class StaticWebHost
 		_ = WebApplication.MapGet("{**slug}", ServeDocumentationFile);
 
 
-		var apiV1 = WebApplication.MapGroup("/docs/_api/v1");
+		var apiV1 = WebApplication.MapGroup($"{SystemEnvironmentVariables.Instance.ApiPrefix}/v1");
 #if DEBUG
 		var mapOtlpEndpoints = !string.IsNullOrWhiteSpace(WebApplication.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]);
 		apiV1.MapElasticDocsApiEndpoints(mapOtlpEndpoints);

@@ -1,3 +1,4 @@
+import { config } from '../../config'
 import {
     ATTR_SEARCH_QUERY,
     ATTR_SEARCH_PAGE,
@@ -189,7 +190,7 @@ export const useFullPageSearch = () => {
                 filters.product.forEach((p) => params.append('product', p))
 
                 const response = await fetch(
-                    '/docs/_api/v1/search?' + params.toString(),
+                    `${config.apiBasePath}/search?` + params.toString(),
                     { signal }
                 )
 
