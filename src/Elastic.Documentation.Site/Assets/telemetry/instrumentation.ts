@@ -120,7 +120,7 @@ function initializeTracing(
     commonHeaders: Record<string, string>
 ): void {
     const traceExporter = new OTLPTraceExporter({
-        url: `${window.location.origin}${docsConfig.apiBasePath}/o/t`,
+        url: `${window.location.origin}${docsConfig.apiBasePath}/v1/o/t`,
         headers: { ...commonHeaders },
     })
 
@@ -163,7 +163,7 @@ function initializeLogging(
     commonHeaders: Record<string, string>
 ): void {
     const logExporter = new OTLPLogExporter({
-        url: `${window.location.origin}${docsConfig.apiBasePath}/o/l`,
+        url: `${window.location.origin}${docsConfig.apiBasePath}/v1/o/l`,
         headers: { ...commonHeaders },
     })
 
@@ -260,8 +260,8 @@ function logInitializationSuccess(config: ResolvedConfig): void {
             serviceName: config.serviceName,
             serviceVersion: config.serviceVersion,
             deploymentEnvironment: config.deploymentEnvironment,
-            traceEndpoint: `${window.location.origin}${docsConfig.apiBasePath}/o/t`,
-            logEndpoint: `${window.location.origin}${docsConfig.apiBasePath}/o/l`,
+            traceEndpoint: `${window.location.origin}${docsConfig.apiBasePath}/v1/o/t`,
+            logEndpoint: `${window.location.origin}${docsConfig.apiBasePath}/v1/o/l`,
             autoFlushOnUnload: true,
         })
     }

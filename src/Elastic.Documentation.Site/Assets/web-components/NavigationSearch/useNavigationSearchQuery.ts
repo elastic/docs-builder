@@ -129,7 +129,7 @@ export const useNavigationSearchQuery = () => {
                 }
 
                 const response = await fetch(
-                    `${config.apiBasePath}/navigation-search?` +
+                    `${config.apiBasePath}/v1/navigation-search?` +
                         params.toString(),
                     { signal }
                 )

@@ -190,7 +190,7 @@ export const useFullPageSearch = () => {
                 filters.product.forEach((p) => params.append('product', p))
 
                 const response = await fetch(
-                    `${config.apiBasePath}/search?` + params.toString(),
+                    `${config.apiBasePath}/v1/search?` + params.toString(),
                     { signal }
                 )
 

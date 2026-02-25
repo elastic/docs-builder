@@ -72,7 +72,7 @@ public record GlobalLayoutViewModel
 	public string StaticPathPrefix => GetStaticPathPrefix();
 
 	private static string ApiBasePath =>
-		$"{SystemEnvironmentVariables.Instance.ApiPrefix}/v1";
+		SystemEnvironmentVariables.Instance.ApiPrefix;
 
 	public FrontendConfig FrontendConfig =>
 		BuildType switch

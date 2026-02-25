@@ -67,7 +67,7 @@ export async function startAskAiStream(options: StreamOptions): Promise<void> {
     const bodyString = JSON.stringify(payload)
     const contentHash = await computeSHA256(bodyString)
 
-    await fetchEventSource(`${config.apiBasePath}/ask-ai/stream`, {
+    await fetchEventSource(`${config.apiBasePath}/v1/ask-ai/stream`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

@@ -13,7 +13,7 @@ const NavigationSearchInner = () => {
     const { data: isApiAvailable } = useQuery({
         queryKey: ['api-health'],
         queryFn: async () => {
-            const response = await fetch(`${config.apiBasePath}/`, {
+            const response = await fetch(`${config.apiBasePath}/v1/`, {
                 method: 'POST',
             })
             return response.ok

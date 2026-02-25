@@ -34,7 +34,7 @@ const submitFeedbackToApi = async (
         span.setAttribute('ask_ai.feedback.reaction', payload.reaction)
 
         const response = await fetch(
-            `${config.apiBasePath}/ask-ai/message-feedback`,
+            `${config.apiBasePath}/v1/ask-ai/message-feedback`,
             {
                 method: 'POST',
                 headers: {

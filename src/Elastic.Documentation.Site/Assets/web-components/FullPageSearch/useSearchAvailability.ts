@@ -27,7 +27,7 @@ export const useSearchAvailability = (): AvailabilityResult => {
             }
 
             try {
-                const response = await fetch(`${config.apiBasePath}/`)
+                const response = await fetch(`${config.apiBasePath}/v1/`)
 
                 if (response.status === 403 || response.status >= 500) {
                     return { available: false }
