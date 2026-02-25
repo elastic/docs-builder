@@ -58,6 +58,24 @@ public record BundleProfile
 	public string? Output { get; init; }
 
 	/// <summary>
+	/// Output products pattern. When set, overrides the products array derived from matched changelogs.
+	/// Supports {version} and {lifecycle} placeholders.
+	/// </summary>
+	public string? OutputProducts { get; init; }
+
+	/// <summary>
+	/// GitHub repository name stored on each product in the bundle output.
+	/// Used for generating correct PR/issue links when the product ID differs from the repo name.
+	/// </summary>
+	public string? Repo { get; init; }
+
+	/// <summary>
+	/// GitHub repository owner stored on each product in the bundle output.
+	/// Used for generating correct PR/issue links. Defaults to "elastic" when not specified.
+	/// </summary>
+	public string? Owner { get; init; }
+
+	/// <summary>
 	/// Feature IDs to mark as hidden in the bundle output.
 	/// When the bundle is rendered, entries with matching feature-id values will be commented out.
 	/// </summary>

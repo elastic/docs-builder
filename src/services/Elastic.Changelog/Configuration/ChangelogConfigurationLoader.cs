@@ -410,6 +410,9 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 				{
 					Products = kvp.Value.Products,
 					Output = kvp.Value.Output,
+					OutputProducts = kvp.Value.OutputProducts,
+					Repo = kvp.Value.Repo,
+					Owner = kvp.Value.Owner,
 					HideFeatures = kvp.Value.HideFeatures?.Values
 				});
 		}
@@ -421,6 +424,98 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			Resolve = yaml.Resolve ?? true,
 			Profiles = profiles
 		};
+	}
+
+	/// <summary>
+	/// Loads changelog configuration from a specific path, treating a missing file as a hard error.
+	/// Used in profile mode when an explicit config path was provided (e.g. in tests).
+	/// </summary>
+	public async Task<ChangelogConfiguration?> LoadChangelogConfigurationRequired(IDiagnosticsCollector collector, string configPath, Cancel ctx)
+	{
+		if (!fileSystem.File.Exists(configPath))
+		{
+			collector.EmitError(
+				configPath,
+				$"Changelog configuration file not found at '{configPath}'. " +
+				"Either run 'docs-builder changelog init' to create one, " +
+				"or re-run from the folder where changelog.yml exists."
+			);
+			return null;
+		}
+
+		try
+		{
+			var yamlContent = await fileSystem.File.ReadAllTextAsync(configPath, ctx);
+			var yamlConfig = DeserializeConfiguration(yamlContent);
+			return ParseConfiguration(collector, yamlConfig, configPath);
+		}
+		catch (IOException ex)
+		{
+			collector.EmitError(configPath, $"I/O error loading changelog configuration: {ex.Message}", ex);
+			return null;
+		}
+		catch (UnauthorizedAccessException ex)
+		{
+			collector.EmitError(configPath, $"Access denied loading changelog configuration: {ex.Message}", ex);
+			return null;
+		}
+		catch (YamlDotNet.Core.YamlException ex)
+		{
+			collector.EmitError(configPath, $"YAML parsing error in changelog configuration: {ex.Message}", ex);
+			return null;
+		}
+	}
+
+	/// <summary>
+	/// Discovers and loads the changelog configuration for profile mode.
+	/// Unlike <see cref="LoadChangelogConfiguration"/>, this method treats a missing config file as a
+	/// hard error. It searches for <c>changelog.yml</c> then <c>docs/changelog.yml</c> relative to the
+	/// current working directory, so the command works when run from any folder that contains the file.
+	/// </summary>
+	public async Task<ChangelogConfiguration?> LoadChangelogConfigurationForProfileMode(IDiagnosticsCollector collector, Cancel ctx)
+	{
+		var cwd = fileSystem.Directory.GetCurrentDirectory();
+		var candidates = new[]
+		{
+			fileSystem.Path.Combine(cwd, "changelog.yml"),
+			fileSystem.Path.Combine(cwd, "docs", "changelog.yml")
+		};
+
+		var foundPath = candidates.FirstOrDefault(fileSystem.File.Exists);
+
+		if (foundPath == null)
+		{
+			collector.EmitError(
+				string.Empty,
+				"changelog.yml not found. Profile-based commands require a changelog configuration file. " +
+				"Either run 'docs-builder changelog init' to create one, " +
+				"or re-run this command from the folder where changelog.yml exists " +
+				"(e.g. the project root if the file is at docs/changelog.yml)."
+			);
+			return null;
+		}
+
+		try
+		{
+			var yamlContent = await fileSystem.File.ReadAllTextAsync(foundPath, ctx);
+			var yamlConfig = DeserializeConfiguration(yamlContent);
+			return ParseConfiguration(collector, yamlConfig, foundPath);
+		}
+		catch (IOException ex)
+		{
+			collector.EmitError(foundPath, $"I/O error loading changelog configuration: {ex.Message}", ex);
+			return null;
+		}
+		catch (UnauthorizedAccessException ex)
+		{
+			collector.EmitError(foundPath, $"Access denied loading changelog configuration: {ex.Message}", ex);
+			return null;
+		}
+		catch (YamlDotNet.Core.YamlException ex)
+		{
+			collector.EmitError(foundPath, $"YAML parsing error in changelog configuration: {ex.Message}", ex);
+			return null;
+		}
 	}
 
 	private RulesConfiguration? ParseRulesConfiguration(

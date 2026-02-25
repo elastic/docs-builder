@@ -477,48 +477,68 @@ internal sealed partial class ChangelogCommand(
 			}
 		}
 
-		// In raw mode (no profile), validate filter options
-		if (!isProfileMode)
-		{
-			var specifiedFilters = new List<string>();
-			if (all)
-				specifiedFilters.Add("--all");
-			if (inputProducts != null && inputProducts.Count > 0)
-				specifiedFilters.Add("--input-products");
-			if (allPrs.Count > 0)
-				specifiedFilters.Add("--prs");
-			if (allIssues.Count > 0)
-				specifiedFilters.Add("--issues");
+	// Validate filter/output options against profile mode
+	if (isProfileMode)
+	{
+		var forbidden = new List<string>();
+		if (all) forbidden.Add("--all");
+		if (inputProducts is { Count: > 0 }) forbidden.Add("--input-products");
+		if (outputProducts is { Count: > 0 }) forbidden.Add("--output-products");
+		if (allPrs.Count > 0) forbidden.Add("--prs");
+		if (allIssues.Count > 0) forbidden.Add("--issues");
+		if (!string.IsNullOrWhiteSpace(output)) forbidden.Add("--output");
+		if (!string.IsNullOrWhiteSpace(repo)) forbidden.Add("--repo");
+		if (!string.IsNullOrWhiteSpace(owner)) forbidden.Add("--owner");
+		if (resolve.HasValue) forbidden.Add("--resolve");
+		if (noResolve) forbidden.Add("--no-resolve");
+		if (hideFeatures is { Length: > 0 }) forbidden.Add("--hide-features");
+		if (!string.IsNullOrWhiteSpace(config)) forbidden.Add("--config");
+		if (!string.IsNullOrWhiteSpace(directory)) forbidden.Add("--directory");
 
-			if (specifiedFilters.Count == 0)
-			{
-				collector.EmitError(string.Empty, "At least one filter option must be specified: --all, --input-products, --prs, --issues, or use a profile (e.g., 'bundle elasticsearch-release 9.2.0')");
-				_ = collector.StartAsync(ctx);
-				await collector.WaitForDrain();
-				await collector.StopAsync(ctx);
-				return 1;
-			}
-
-			if (specifiedFilters.Count > 1)
-			{
-				collector.EmitError(string.Empty, $"Multiple filter options cannot be specified together. You specified: {string.Join(", ", specifiedFilters)}. Please use only one filter option: --all, --input-products, --prs, or --issues");
-				_ = collector.StartAsync(ctx);
-				await collector.WaitForDrain();
-				await collector.StopAsync(ctx);
-				return 1;
-			}
-		}
-		else
+		if (forbidden.Count > 0)
 		{
-			if (all || (inputProducts != null && inputProducts.Count > 0) || allPrs.Count > 0 || allIssues.Count > 0)
-			{
-				collector.EmitError(string.Empty, "When using a profile, do not specify --all, --input-products, --prs, or --issues. The profile configuration determines the filter.");
-				_ = collector.StartAsync(ctx);
-				await collector.WaitForDrain();
-				await collector.StopAsync(ctx);
-				return 1;
-			}
+			collector.EmitError(
+				string.Empty,
+				$"When using a profile, the following options are not allowed: {string.Join(", ", forbidden)}. " +
+				"All paths and filters are derived from the changelog configuration file."
+			);
+			_ = collector.StartAsync(ctx);
+			await collector.WaitForDrain();
+			await collector.StopAsync(ctx);
+			return 1;
 		}
+	}
+	else
+	{
+		// Raw mode: require exactly one filter option
+		var specifiedFilters = new List<string>();
+		if (all)
+			specifiedFilters.Add("--all");
+		if (inputProducts != null && inputProducts.Count > 0)
+			specifiedFilters.Add("--input-products");
+		if (allPrs.Count > 0)
+			specifiedFilters.Add("--prs");
+		if (allIssues.Count > 0)
+			specifiedFilters.Add("--issues");
+
+		if (specifiedFilters.Count == 0)
+		{
+			collector.EmitError(string.Empty, "At least one filter option must be specified: --all, --input-products, --prs, --issues, or use a profile (e.g., 'bundle elasticsearch-release 9.2.0')");
+			_ = collector.StartAsync(ctx);
+			await collector.WaitForDrain();
+			await collector.StopAsync(ctx);
+			return 1;
+		}
+
+		if (specifiedFilters.Count > 1)
+		{
+			collector.EmitError(string.Empty, $"Multiple filter options cannot be specified together. You specified: {string.Join(", ", specifiedFilters)}. Please use only one filter option: --all, --input-products, --prs, or --issues");
+			_ = collector.StartAsync(ctx);
+			await collector.WaitForDrain();
+			await collector.StopAsync(ctx);
+			return 1;
+		}
+	}
 
 		// Validate that if inputProducts is provided, all three parts (product, target, lifecycle) are present for each entry
 		// They can be wildcards (*) but must be present
@@ -720,30 +740,46 @@ internal sealed partial class ChangelogCommand(
 			}
 		}
 
-		if (isProfileMode)
-		{
-			// Profile mode: --all, --products, --prs, and --issues must not be used
-			if (all || (products != null && products.Count > 0) || allPrs.Count > 0 || allIssues.Count > 0)
-			{
-				collector.EmitError(string.Empty, "When using a profile, do not specify --all, --products, --prs, or --issues. The profile configuration determines the filter.");
-				_ = collector.StartAsync(ctx);
-				await collector.WaitForDrain();
-				await collector.StopAsync(ctx);
-				return 1;
-			}
+	if (isProfileMode)
+	{
+		// Profile mode: reject all options except --dry-run and --force
+		var forbidden = new List<string>();
+		if (all) forbidden.Add("--all");
+		if (products is { Count: > 0 }) forbidden.Add("--products");
+		if (allPrs.Count > 0) forbidden.Add("--prs");
+		if (allIssues.Count > 0) forbidden.Add("--issues");
+		if (!string.IsNullOrWhiteSpace(repo)) forbidden.Add("--repo");
+		if (!string.IsNullOrWhiteSpace(owner)) forbidden.Add("--owner");
+		if (!string.IsNullOrWhiteSpace(config)) forbidden.Add("--config");
+		if (!string.IsNullOrWhiteSpace(directory)) forbidden.Add("--directory");
+		if (!string.IsNullOrWhiteSpace(bundlesDir)) forbidden.Add("--bundles-dir");
 
-			// profileArg is required when profile is specified
-			if (string.IsNullOrWhiteSpace(profileArg))
-			{
-				collector.EmitError(string.Empty, $"Profile '{profile}' requires a version number or promotion report URL as the second argument");
-				_ = collector.StartAsync(ctx);
-				await collector.WaitForDrain();
-				await collector.StopAsync(ctx);
-				return 1;
-			}
-		}
-		else
+		if (forbidden.Count > 0)
 		{
+			collector.EmitError(
+				string.Empty,
+				$"When using a profile, the following options are not allowed: {string.Join(", ", forbidden)}. " +
+				"All paths and filters are derived from the changelog configuration file. " +
+				"Allowed options with profiles: --dry-run, --force."
+			);
+			_ = collector.StartAsync(ctx);
+			await collector.WaitForDrain();
+			await collector.StopAsync(ctx);
+			return 1;
+		}
+
+		// profileArg is required when profile is specified
+		if (string.IsNullOrWhiteSpace(profileArg))
+		{
+			collector.EmitError(string.Empty, $"Profile '{profile}' requires a version number or promotion report URL as the second argument");
+			_ = collector.StartAsync(ctx);
+			await collector.WaitForDrain();
+			await collector.StopAsync(ctx);
+			return 1;
+		}
+	}
+	else
+	{
 			// Raw mode: validate product filter parts and apply wildcard shortcut
 			if (products is { Count: > 0 })
 			{
@@ -791,22 +827,26 @@ internal sealed partial class ChangelogCommand(
 			}
 		}
 
-		var input = new ChangelogRemoveArguments
-		{
-			Directory = NormalizePath(directory ?? Directory.GetCurrentDirectory()),
-			All = all,
-			Products = products,
-			Prs = allPrs.Count > 0 ? allPrs.ToArray() : null,
-			Issues = allIssues.Count > 0 ? allIssues.ToArray() : null,
-			Owner = owner,
-			Repo = repo,
-			DryRun = dryRun,
-			BundlesDir = string.IsNullOrWhiteSpace(bundlesDir) ? null : NormalizePath(bundlesDir),
-			Force = force,
-			Config = string.IsNullOrWhiteSpace(config) ? null : NormalizePath(config),
-			Profile = isProfileMode ? profile : null,
-			ProfileArgument = isProfileMode ? profileArg : null
-		};
+	// In profile mode, directory is derived from the changelog config (not from CLI).
+	// In raw mode, use --directory if provided, falling back to cwd (for the service's ApplyConfigDefaults).
+	var resolvedDirectory = isProfileMode ? null : NormalizePath(directory ?? Directory.GetCurrentDirectory());
+
+	var input = new ChangelogRemoveArguments
+	{
+		Directory = resolvedDirectory,
+		All = all,
+		Products = products,
+		Prs = allPrs.Count > 0 ? allPrs.ToArray() : null,
+		Issues = allIssues.Count > 0 ? allIssues.ToArray() : null,
+		Owner = owner,
+		Repo = repo,
+		DryRun = dryRun,
+		BundlesDir = string.IsNullOrWhiteSpace(bundlesDir) ? null : NormalizePath(bundlesDir),
+		Force = force,
+		Config = string.IsNullOrWhiteSpace(config) ? null : NormalizePath(config),
+		Profile = isProfileMode ? profile : null,
+		ProfileArgument = isProfileMode ? profileArg : null
+	};
 
 		serviceInvoker.AddCommand(service, input,
 			async static (s, collector, state, ctx) => await s.RemoveChangelogs(collector, state, ctx)

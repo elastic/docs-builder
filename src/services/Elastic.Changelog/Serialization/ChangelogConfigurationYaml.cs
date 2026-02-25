@@ -236,6 +236,23 @@ internal record BundleProfileYaml
 	public string? Output { get; set; }
 
 	/// <summary>
+	/// Output products pattern. Overrides the products array derived from matched changelogs.
+	/// Supports {version} and {lifecycle} placeholders.
+	/// </summary>
+	public string? OutputProducts { get; set; }
+
+	/// <summary>
+	/// GitHub repository name for generating PR/issue links in bundle output.
+	/// </summary>
+	public string? Repo { get; set; }
+
+	/// <summary>
+	/// GitHub repository owner for generating PR/issue links in bundle output.
+	/// Defaults to "elastic" when not specified.
+	/// </summary>
+	public string? Owner { get; set; }
+
+	/// <summary>
 	/// Feature IDs to mark as hidden in the bundle output (string or list).
 	/// </summary>
 	public YamlLenientList? HideFeatures { get; set; }

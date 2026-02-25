@@ -2264,9 +2264,11 @@ public class BundleChangelogsTests : ChangelogTestBase
 	}
 
 	[Fact]
-	public async Task BundleChangelogs_WithProfileAndCliHideFeatures_MergesBothSources()
+	public async Task BundleChangelogs_WithProfile_OnlyProfileHideFeaturesAreUsed()
 	{
-		// Arrange - Test that CLI --hide-features and profile hide_features are merged
+		// Arrange - In profile mode, only hide_features from the profile config are written to the bundle.
+		// Any HideFeatures passed directly to the service are ignored (the CLI now rejects --hide-features
+		// in profile mode, so this combination is not reachable from the command layer).
 
 		// language=yaml
 		var configContent =
@@ -2309,8 +2311,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			Profile = "es-release",
 			ProfileArgument = "9.2.0",
 			Config = configPath,
-			OutputDirectory = outputDir,
-			HideFeatures = ["feature:from-cli"]
+			OutputDirectory = outputDir
 		};
 
 		// Act
@@ -2325,16 +2326,15 @@ public class BundleChangelogsTests : ChangelogTestBase
 		outputFiles.Should().NotBeEmpty("Expected an output file to be created");
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current.CancellationToken);
 
-		// Verify that hide-features from BOTH sources are present
+		// Verify that only the profile hide-features are present
 		bundleContent.Should().Contain("hide-features:");
 		bundleContent.Should().Contain("- feature:from-profile");
-		bundleContent.Should().Contain("- feature:from-cli");
 	}
 
 	[Fact]
-	public async Task BundleChangelogs_WithProfileAndCliHideFeatures_DeduplicatesFeatureIds()
+	public async Task BundleChangelogs_WithProfileMultipleHideFeatures_AllProfileFeaturesArePresent()
 	{
-		// Arrange - Test that duplicate feature IDs from CLI and profile are deduplicated
+		// Arrange - All hide_features from the profile are written to the bundle
 
 		// language=yaml
 		var configContent =
@@ -2345,8 +2345,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			      products: "elasticsearch {version} {lifecycle}"
 			      output: "elasticsearch-{version}.yaml"
 			      hide_features:
-			        - feature:shared
-			        - feature:profile-only
+			        - feature:profile-one
+			        - feature:profile-two
 			""";
 
 		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), "config3", "changelog.yml");
@@ -2378,8 +2378,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			Profile = "es-release",
 			ProfileArgument = "9.2.0",
 			Config = configPath,
-			OutputDirectory = outputDir,
-			HideFeatures = ["feature:shared", "feature:cli-only"] // "feature:shared" overlaps with profile
+			OutputDirectory = outputDir
 		};
 
 		// Act
@@ -2393,14 +2392,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 		outputFiles.Should().NotBeEmpty("Expected an output file to be created");
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current.CancellationToken);
 
-		// Verify all unique features are present
-		bundleContent.Should().Contain("- feature:shared");
-		bundleContent.Should().Contain("- feature:profile-only");
-		bundleContent.Should().Contain("- feature:cli-only");
-
-		// Count occurrences of "feature:shared" - should appear exactly once (deduplicated)
-		var sharedCount = bundleContent.Split("feature:shared").Length - 1;
-		sharedCount.Should().Be(1, "Duplicate feature IDs should be deduplicated");
+		bundleContent.Should().Contain("- feature:profile-one");
+		bundleContent.Should().Contain("- feature:profile-two");
 	}
 
 	[Fact]

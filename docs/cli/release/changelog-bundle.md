@@ -11,9 +11,19 @@ For details and examples, go to [](/contribute/changelog.md).
 docs-builder  changelog bundle [arguments...] [options...] [-h|--help]
 ```
 
+## Profile-based vs. option-based usage [changelog-bundle-invocation-modes]
+
+`changelog bundle` supports two mutually exclusive invocation modes:
+
+- **Profile-based**: `bundle <profile> <version-or-report>` — all paths and filters come from the changelog configuration file. No other options are allowed.
+- **Option-based**: `bundle --all` (or `--input-products`, `--prs`, `--issues`) — you supply all filter and output options directly.
+
+You cannot mix the two modes. Passing any option-based flag together with a profile returns an error.
+
+Profile-based commands discover the changelog configuration automatically (no `--config` flag): they look for `changelog.yml` in the current directory, then `docs/changelog.yml`. If neither file is found, the command returns an error with instructions to run `docs-builder changelog init` or to re-run from the folder where the file exists.
+
 ## Arguments
 
-You can use either profile-based bundling (for example, `bundle elasticsearch-release 9.2.0`) or raw flags (`bundle --all`).
 These arguments apply to profile-based bundling:
 
 `[0] <string?>`
@@ -25,7 +35,9 @@ These arguments apply to profile-based bundling:
 :   Version number or promotion report URL or path.
 :   For example, "9.2.0" or "https://buildkite.../promotion-report.html".
 
-## Options
+## Options (option-based mode only)
+
+The following options are only valid in option-based mode (no profile argument). Using any of them with a profile returns an error.
 
 `--all`
 :   Include all changelogs from the directory.
@@ -115,7 +127,7 @@ If you specify a file path with a different extension (not `.yml` or `.yaml`), t
 
 ## Repository name in bundles [changelog-bundle-repo]
 
-When you specify the `--repo` option, the repository name is stored in the bundle's product metadata.
+When you specify the `--repo` option (option-based mode) or the `repo` field in a profile (profile-based mode), the repository name is stored in the bundle's product metadata.
 This ensures that PR and issue links are generated correctly when the bundle is rendered.
 
 ```sh
@@ -146,3 +158,45 @@ When rendering, pull request and issue links will use `https://github.com/elasti
 If the `repo` field is not specified, the product ID is used as a fallback for link generation.
 This may result in broken links if the product ID doesn't match the GitHub repository name (for example, `cloud-serverless` vs `cloud`).
 :::
+
+## Profile configuration fields [changelog-bundle-profile-config]
+
+Bundle profiles in `changelog.yml` support the following fields:
+
+`products`
+:   Required. The product filter pattern for input changelogs. Supports `{version}` and `{lifecycle}` placeholders that are substituted at runtime.
+:   Example: `"elasticsearch {version} {lifecycle}"`
+
+`output`
+:   Required for bundling. The output filename pattern. `{version}` is substituted at runtime.
+:   Example: `"elasticsearch-{version}.yaml"`
+
+`output_products`
+:   Optional. Overrides the products array written to the bundle output. Supports `{version}` and `{lifecycle}` placeholders. Useful when the bundle should advertise a different lifecycle than was used for filtering — for example, when filtering by `preview` changelogs to produce a `ga` bundle.
+:   Example: `"elasticsearch {version} ga"`
+
+`repo`
+:   Optional. The GitHub repository name written to each product entry in the bundle. Used by the `{changelog}` directive to generate correct PR/issue links. Only needed when the product ID doesn't match the GitHub repository name.
+:   Example: `repo: cloud` (for the `cloud-serverless` product)
+
+`owner`
+:   Optional. The GitHub owner written to each product entry in the bundle. Defaults to `elastic` when not specified.
+:   Example: `owner: elastic`
+
+`hide_features`
+:   Optional. Feature IDs to mark as hidden in the bundle output (string or list). When the bundle is rendered, entries with matching `feature-id` values are commented out.
+
+Example profile with all fields:
+
+```yaml
+bundle:
+  profiles:
+    elasticsearch-release:
+      products: "elasticsearch {version} {lifecycle}"
+      output: "elasticsearch-{version}.yaml"
+      output_products: "elasticsearch {version} ga"
+      repo: elasticsearch
+      owner: elastic
+      hide_features:
+        - feature:my-feature-flag
+```

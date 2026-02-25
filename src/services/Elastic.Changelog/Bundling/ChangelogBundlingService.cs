@@ -97,9 +97,25 @@ public partial class ChangelogBundlingService(
 	{
 		try
 		{
-			// Load changelog configuration if available
+			// Load changelog configuration
 			ChangelogConfiguration? config = null;
-			if (_configLoader != null)
+			if (!string.IsNullOrWhiteSpace(input.Profile))
+			{
+				// Profile mode requires the config file to exist — no fallback to defaults.
+				if (_configLoader == null)
+				{
+					collector.EmitError(string.Empty, "Changelog configuration loader is required for profile-based bundling.");
+					return false;
+				}
+				// When an explicit config path is provided, load it (required, no fallback).
+				// Otherwise, discover from CWD: ./changelog.yml then ./docs/changelog.yml.
+				config = string.IsNullOrWhiteSpace(input.Config)
+					? await _configLoader.LoadChangelogConfigurationForProfileMode(collector, ctx)
+					: await _configLoader.LoadChangelogConfigurationRequired(collector, input.Config, ctx);
+				if (config == null)
+					return false;
+			}
+			else if (_configLoader != null)
 				config = await _configLoader.LoadChangelogConfiguration(collector, input.Config, ctx);
 
 			// Handle profile-based bundling
@@ -224,8 +240,11 @@ public partial class ChangelogBundlingService(
 		if (filterResult == null)
 			return null;
 
-		// Resolve bundle-specific output path and hide-features from profile
+		// Resolve bundle-specific output path, output products, repo, owner, and hide-features from profile
 		string? outputPath = null;
+		IReadOnlyList<ProductArgument>? outputProducts = null;
+		string? repo = null;
+		string? owner = null;
 		string[]? mergedHideFeatures = null;
 
 		if (config?.Bundle?.Profiles != null && config.Bundle.Profiles.TryGetValue(input.Profile!, out var profile))
@@ -237,7 +256,19 @@ public partial class ChangelogBundlingService(
 				outputPath = _fileSystem.Path.Combine(outputDir, outputPattern);
 			}
 
-			mergedHideFeatures = MergeHideFeatures(input.HideFeatures, profile.HideFeatures);
+			// Parse output_products pattern with version/lifecycle substitution
+			if (!string.IsNullOrWhiteSpace(profile.OutputProducts))
+			{
+				var lifecycle = VersionLifecycleInference.InferLifecycle(filterResult.Version);
+				var outputProductsPattern = profile.OutputProducts
+					.Replace("{version}", filterResult.Version)
+					.Replace("{lifecycle}", lifecycle);
+				outputProducts = ProfileFilterResolver.ParseProfileProducts(outputProductsPattern);
+			}
+
+			repo = profile.Repo;
+			owner = profile.Owner;
+			mergedHideFeatures = profile.HideFeatures?.Count > 0 ? [.. profile.HideFeatures] : null;
 		}
 
 		return input with
@@ -245,22 +276,12 @@ public partial class ChangelogBundlingService(
 			InputProducts = filterResult.Products,
 			Prs = filterResult.Prs,
 			All = false,
-			Output = outputPath ?? input.Output,
-			HideFeatures = mergedHideFeatures ?? input.HideFeatures
+			Output = outputPath,
+			OutputProducts = outputProducts,
+			Repo = repo,
+			Owner = owner,
+			HideFeatures = mergedHideFeatures
 		};
-	}
-
-	private static string[]? MergeHideFeatures(string[]? cliHideFeatures, IReadOnlyList<string>? profileHideFeatures)
-	{
-		if (cliHideFeatures is not { Length: > 0 } && profileHideFeatures is not { Count: > 0 })
-			return null;
-
-		var merged = new HashSet<string>(cliHideFeatures ?? [], StringComparer.OrdinalIgnoreCase);
-
-		if (profileHideFeatures is { Count: > 0 })
-			merged.UnionWith(profileHideFeatures);
-
-		return merged.Count > 0 ? [.. merged] : null;
 	}
 
 	private static BundleChangelogsArguments ApplyConfigDefaults(BundleChangelogsArguments input, ChangelogConfiguration? config)

@@ -19,7 +19,7 @@ namespace Elastic.Changelog.Bundling;
 /// </summary>
 public record ChangelogRemoveArguments
 {
-	public required string Directory { get; init; }
+	public string? Directory { get; init; }
 	public bool All { get; init; }
 	public IReadOnlyList<ProductArgument>? Products { get; init; }
 	public string[]? Prs { get; init; }
@@ -62,8 +62,25 @@ public class ChangelogRemoveService(
 	{
 		try
 		{
+			// Load changelog configuration
 			ChangelogConfiguration? config = null;
-			if (_configLoader != null)
+			if (!string.IsNullOrWhiteSpace(input.Profile))
+			{
+				// Profile mode requires the config file to exist — no fallback to defaults.
+				if (_configLoader == null)
+				{
+					collector.EmitError(string.Empty, "Changelog configuration loader is required for profile-based removal.");
+					return false;
+				}
+				// When an explicit config path is provided, load it (required, no fallback).
+				// Otherwise, discover from CWD: ./changelog.yml then ./docs/changelog.yml.
+				config = string.IsNullOrWhiteSpace(input.Config)
+					? await _configLoader.LoadChangelogConfigurationForProfileMode(collector, ctx)
+					: await _configLoader.LoadChangelogConfigurationRequired(collector, input.Config, ctx);
+				if (config == null)
+					return false;
+			}
+			else if (_configLoader != null)
 				config = await _configLoader.LoadChangelogConfiguration(collector, input.Config, ctx);
 
 			// Handle profile-based removal (same ordering as ChangelogBundlingService)
@@ -116,13 +133,14 @@ public class ChangelogRemoveService(
 			}
 
 			// A placeholder output path is passed to discovery so the bundle file itself is excluded.
-			var placeholderOutput = _fileSystem.Path.Combine(input.Directory, "changelog-bundle.yaml");
+			// Directory is non-null here: ApplyConfigDefaults ensures a value and ValidateInput enforces non-empty.
+			var placeholderOutput = _fileSystem.Path.Combine(input.Directory!, "changelog-bundle.yaml");
 			var fileDiscovery = new ChangelogFileDiscovery(_fileSystem, _logger);
-			var yamlFiles = await fileDiscovery.DiscoverChangelogFilesAsync(input.Directory, placeholderOutput, ctx);
+			var yamlFiles = await fileDiscovery.DiscoverChangelogFilesAsync(input.Directory!, placeholderOutput, ctx);
 
 			if (yamlFiles.Count == 0)
 			{
-				collector.EmitError(input.Directory, "No changelog YAML files found in directory");
+				collector.EmitError(input.Directory!, "No changelog YAML files found in directory");
 				return false;
 			}
 
@@ -196,14 +214,7 @@ public class ChangelogRemoveService(
 
 	private ChangelogRemoveArguments ApplyConfigDefaults(ChangelogRemoveArguments input, ChangelogConfiguration? config)
 	{
-		if (config?.Bundle == null)
-			return input;
-
-		var directory = input.Directory;
-		if ((string.IsNullOrWhiteSpace(directory) || directory == _fileSystem.Directory.GetCurrentDirectory())
-			&& !string.IsNullOrWhiteSpace(config.Bundle.Directory))
-			directory = config.Bundle.Directory;
-
+		var directory = input.Directory ?? config?.Bundle?.Directory ?? _fileSystem.Directory.GetCurrentDirectory();
 		return input with { Directory = directory };
 	}
 
@@ -371,12 +382,13 @@ public class ChangelogRemoveService(
 		}
 
 		// 3. {directory}/bundles
-		var sibling = _fileSystem.Path.Combine(input.Directory, "bundles");
+		// Directory is guaranteed non-null at this point (ApplyConfigDefaults + ValidateInput).
+		var sibling = _fileSystem.Path.Combine(input.Directory!, "bundles");
 		if (_fileSystem.Directory.Exists(sibling))
 			return sibling;
 
 		// 4. {directory}/../bundles
-		var dirParent = _fileSystem.Path.GetDirectoryName(input.Directory);
+		var dirParent = _fileSystem.Path.GetDirectoryName(input.Directory!);
 		if (!string.IsNullOrWhiteSpace(dirParent))
 		{
 			var parentBundles = _fileSystem.Path.Combine(dirParent, "bundles");
