@@ -11,8 +11,8 @@ using Documentation.Builder.Diagnostics.LiveMode;
 using Elastic.Documentation;
 #if DEBUG
 using Elastic.Documentation.Api.Infrastructure;
-using Elastic.Documentation.Configuration;
 #endif
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.ServiceDefaults;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Markdown.IO;

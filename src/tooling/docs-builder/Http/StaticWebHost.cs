@@ -5,8 +5,8 @@
 using System.IO.Abstractions;
 #if DEBUG
 using Elastic.Documentation.Api.Infrastructure;
-using Elastic.Documentation.Configuration;
 #endif
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.ServiceDefaults;
 using Microsoft.AspNetCore.Builder;
