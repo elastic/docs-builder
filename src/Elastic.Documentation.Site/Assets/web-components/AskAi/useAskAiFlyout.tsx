@@ -4,6 +4,7 @@ import {
     useAskAiModalIsOpen,
     useFlyoutWidth,
 } from './askAi.modal.store'
+import { chatStore } from './chat.store'
 import { EuiFlyoutBody, EuiLoadingSpinner } from '@elastic/eui'
 import { css } from '@emotion/react'
 import { useQuery } from '@tanstack/react-query'
@@ -121,6 +122,20 @@ export const useAskAiFlyout = () => {
         document.addEventListener('ask-ai:open', handleOpenEvent)
         return () =>
             document.removeEventListener('ask-ai:open', handleOpenEvent)
+    }, [openModal])
+
+    useEffect(() => {
+        const handleAskEvent = (event: Event) => {
+            const question = (event as CustomEvent<string>).detail
+            if (!question) return
+
+            const { actions } = chatStore.getState()
+            actions.createConversation()
+            actions.submitQuestion(question)
+            openModal()
+        }
+        document.addEventListener('ask-ai:ask', handleAskEvent)
+        return () => document.removeEventListener('ask-ai:ask', handleAskEvent)
     }, [openModal])
 
     return {

@@ -45,9 +45,14 @@
 
 		<div class="w-full max-w-xl mt-10 mb-10 border border-grey-20 rounded-lg p-4 bg-white shadow-2xl">
 			<div class="flex items-center gap-3">
-				<div class="flex-1">
-					<navigation-search placeholder="Search"></navigation-search>
-				</div>
+				<button type="button"
+						aria-label="Search"
+						onclick="document.dispatchEvent(new CustomEvent('modal-search:open'))"
+						class="flex-1 select-none cursor-pointer relative flex items-center w-full px-3 py-2 h-10 border border-grey-20 rounded-md bg-grey-10 text-sm text-subdued hover:border-grey-40 transition-colors">
+					@GetIconSvg("search", "w-4 h-4 mr-2 shrink-0")
+					<span class="flex-1 text-left">Search</span>
+					<span class="text-xs text-subdued">⌘K</span>
+				</button>
 				<div class="text-subdued text-xs flex items-center">
 					OR
 				</div>

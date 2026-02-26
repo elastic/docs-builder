@@ -6,3 +6,4 @@
  * web component without bloating main.js with React / EUI dependencies.
  */
 import './web-components/CodexHeader/Header'
+import './web-components/ModalSearch/ModalSearchComponent'

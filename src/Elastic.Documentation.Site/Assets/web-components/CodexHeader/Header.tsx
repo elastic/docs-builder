@@ -1,6 +1,6 @@
 import '../../eui-icons-cache'
 import { AskAiHeaderButton } from '../AskAi/AskAiHeaderButton'
-import { NavigationSearch } from '../NavigationSearch/NavigationSearch'
+import { ModalSearch } from '../ModalSearch/ModalSearch'
 import { useHtmxContainer } from '../shared/htmx/useHtmxContainer'
 import { sharedQueryClient } from '../shared/queryClient'
 import {
@@ -48,7 +48,7 @@ export const Header = ({ title, logoHref }: Props) => {
                         {
                             items: [
                                 <EuiThemeProvider colorMode="light">
-                                    <NavigationSearch
+                                    <ModalSearch
                                         size="s"
                                         placeholder="Search"
                                     />
