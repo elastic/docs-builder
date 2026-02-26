@@ -12,9 +12,9 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Serialization;
 using Elastic.Ingest.Elasticsearch;
+using Elastic.Ingest.Elasticsearch.Enrichment;
 using Elastic.Ingest.Elasticsearch.Indices;
 using Elastic.Mapping;
-using Elastic.Markdown.Exporters.Elasticsearch.Enrichment;
 using Elastic.Transport;
 using Microsoft.Extensions.Logging;
 
@@ -41,13 +41,8 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	private readonly VersionsConfiguration _versionsConfiguration;
 	private readonly string _fixedSynonymsHash;
 
-	// AI Enrichment - hybrid approach: cache hits use enrich processor, misses are applied inline
-	private readonly ElasticsearchEnrichmentCache? _enrichmentCache;
-	private readonly ElasticsearchLlmClient? _llmClient;
-	private readonly EnrichPolicyManager? _enrichPolicyManager;
-	private readonly EnrichmentOptions _enrichmentOptions = new();
-	private int _enrichmentCount;
-	private int _cacheHitCount;
+	// AI Enrichment - post-indexing via AiEnrichmentOrchestrator
+	private readonly AiEnrichmentOrchestrator? _aiEnrichment;
 
 	// Shared ES operations with retry and task polling
 	private readonly ElasticsearchOperations _operations;
@@ -82,9 +77,14 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		}).Where(r => fixedSynonyms.Contains(r.Id)).Select(r => r.Synonyms).ToArray();
 		_fixedSynonymsHash = HashedBulkUpdate.CreateHash(string.Join(",", indexTimeSynonyms));
 
-		var aiPipeline = es.EnableAiEnrichment ? EnrichPolicyManager.PipelineName : null;
 		var synonymSetName = $"docs-{buildType}";
 
+		if (es.EnableAiEnrichment)
+		{
+			_aiEnrichment = new AiEnrichmentOrchestrator(_transport, DocumentationMappingContext.AiEnrichment);
+		}
+
+		var aiPipeline = es.EnableAiEnrichment ? DocumentationMappingContext.AiEnrichment.PipelineName : null;
 		var pipelineSettings = aiPipeline is not null
 			? new Dictionary<string, string> { ["index.default_pipeline"] = aiPipeline }
 			: null;
@@ -94,14 +94,6 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 			ConfigureAnalysis = a => DocumentationAnalysisFactory.BuildAnalysis(a, synonymSetName, indexTimeSynonyms),
 			IndexSettings = pipelineSettings
 		};
-
-		// Initialize AI enrichment services if enabled
-		if (es.EnableAiEnrichment)
-		{
-			_enrichmentCache = new ElasticsearchEnrichmentCache(_transport, logFactory.CreateLogger<ElasticsearchEnrichmentCache>(), _operations);
-			_llmClient = new ElasticsearchLlmClient(_transport, logFactory.CreateLogger<ElasticsearchLlmClient>(), _operations);
-			_enrichPolicyManager = new EnrichPolicyManager(_transport, logFactory.CreateLogger<EnrichPolicyManager>(), _enrichmentCache.IndexName);
-		}
 
 		_semanticTypeContext = DocumentationMappingContext.DocumentationDocumentSemantic.CreateContext(type: buildType) with
 		{
@@ -117,13 +109,14 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		{
 			ConfigurePrimary = ConfigureChannelOptions,
 			ConfigureSecondary = ConfigureChannelOptions,
-			OnPostComplete = es.EnableAiEnrichment
+			OnPostComplete = _aiEnrichment is not null
 				? async (ctx, _, ct) => await PostCompleteAsync(ctx, ct)
 				: null
 		};
 		_ = _orchestrator.AddPreBootstrapTask(async (_, ct) =>
 		{
-			await InitializeEnrichmentAsync(ct);
+			if (_aiEnrichment is not null)
+				await _aiEnrichment.InitializeAsync(ct);
 			await PublishSynonymsAsync(ct);
 			await PublishQueryRulesAsync(ct);
 		});
@@ -164,69 +157,16 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	public async ValueTask StopAsync(Cancel ctx = default) =>
 		_ = await _orchestrator.CompleteAsync(null, ctx);
 
-	private async Task InitializeEnrichmentAsync(Cancel ctx)
+	private async Task PostCompleteAsync(OrchestratorContext<DocumentationDocument> context, Cancel ctx)
 	{
-		if (_enrichmentCache is null || _enrichPolicyManager is null)
+		if (_aiEnrichment is null || context.SecondaryWriteAlias is null)
 			return;
 
-		_logger.LogInformation("Initializing AI enrichment cache...");
-		await _enrichmentCache.InitializeAsync(ctx);
-		_logger.LogInformation("AI enrichment cache ready with {Count} existing entries", _enrichmentCache.Count);
-
-		_logger.LogInformation("Setting up enrich policy and pipeline...");
-		await _enrichPolicyManager.ExecutePolicyAsync(ctx);
-		await _enrichPolicyManager.EnsurePipelineExistsAsync(ctx);
-	}
-
-	private async Task PostCompleteAsync(OrchestratorContext<DocumentationDocument> context, Cancel ctx) =>
-		await ExecuteEnrichPolicyIfNeededAsync(context.SecondaryWriteAlias, ctx);
-
-	private async ValueTask ExecuteEnrichPolicyIfNeededAsync(string? semanticAlias, Cancel ctx)
-	{
-		if (_enrichmentCache is null || _enrichPolicyManager is null)
-			return;
-
+		_logger.LogInformation("Starting post-indexing AI enrichment for {Alias}...", context.SecondaryWriteAlias);
+		var result = await _aiEnrichment.EnrichAsync(context.SecondaryWriteAlias, ctx);
 		_logger.LogInformation(
-			"AI enrichment complete: {CacheHits} cache hits, {Enrichments} enrichments generated (limit: {Limit})",
-			_cacheHitCount, _enrichmentCount, _enrichmentOptions.MaxNewEnrichmentsPerRun);
-
-		if (_enrichmentCache.Count > 0)
-		{
-			_logger.LogInformation("Executing enrich policy to update internal index with {Count} total entries...", _enrichmentCache.Count);
-			await _enrichPolicyManager.ExecutePolicyAsync(ctx);
-
-			if (semanticAlias is not null)
-				await BackfillMissingAiFieldsAsync(semanticAlias, ctx);
-		}
-	}
-
-	private async ValueTask BackfillMissingAiFieldsAsync(string semanticAlias, Cancel ctx)
-	{
-		if (_enrichmentCache is null || _llmClient is null)
-			return;
-
-		var currentPromptHash = ElasticsearchLlmClient.PromptHash;
-
-		_logger.LogInformation(
-			"Starting AI backfill for documents missing or stale AI fields (cache has {CacheCount} entries, prompt hash: {PromptHash})",
-			_enrichmentCache.Count, currentPromptHash[..8]);
-
-		var query = $$"""
-					  {
-					  	"query": {
-					  		"bool": {
-					  			"must": { "exists": { "field": "enrichment_key" } },
-					  			"should": [
-					  				{ "bool": { "must_not": { "exists": { "field": "ai_questions" } } } },
-					  				{ "bool": { "must_not": { "term": { "enrichment_prompt_hash": "{{currentPromptHash}}" } } } }
-					  			],
-					  			"minimum_should_match": 1
-					  		}
-					  	}
-					  }
-					  """;
-
-		await _operations.UpdateByQueryAsync(semanticAlias, PostData.String(query), EnrichPolicyManager.PipelineName, ctx);
+			"AI enrichment complete: {Enriched} enriched, {Failed} failed, {Skipped} skipped, {Total} candidates, reached limit: {ReachedLimit}",
+			result.Enriched, result.Failed, result.Skipped, result.TotalCandidates, result.ReachedLimit);
 	}
 
 	private async Task PublishSynonymsAsync(Cancel ctx)
@@ -317,7 +257,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	public void Dispose()
 	{
 		_orchestrator.Dispose();
-		_llmClient?.Dispose();
+		_aiEnrichment?.Dispose();
 		GC.SuppressFinalize(this);
 	}
 }

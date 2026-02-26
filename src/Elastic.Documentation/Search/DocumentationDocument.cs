@@ -20,6 +20,7 @@ public record ParentDocument
 
 public record DocumentationDocument
 {
+	[AiInput]
 	[JsonPropertyName("title")]
 	public required string Title { get; set; }
 
@@ -101,6 +102,7 @@ public record DocumentationDocument
 	public string? Body { get; set; }
 
 	/// Stripped body is the body with Markdown removed, suitable for search indexing
+	[AiInput]
 	[JsonPropertyName("stripped_body")]
 	public string? StrippedBody { get; set; }
 
@@ -115,63 +117,37 @@ public record DocumentationDocument
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
 	public bool Hidden { get; set; }
 
-	// AI Enrichment fields - populated by DocumentEnrichmentService
+	// AI Enrichment fields - populated post-indexing by AiEnrichmentOrchestrator
 
-	/// <summary>
-	/// Key for enrichment cache lookups. Derived from normalized content + prompt hash.
-	/// Used by enrich processor to join AI-generated fields at index time.
-	/// </summary>
-	[Keyword]
-	[JsonPropertyName("enrichment_key")]
-	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-	public string? EnrichmentKey { get; set; }
-
-	/// <summary>
-	/// 3-5 sentences dense with technical entities, API names, and core functionality for vector matching.
-	/// </summary>
+	[AiField("3-5 sentences densely packed with technical entities for semantic vector matching. Include: API endpoint names, method names, parameter names, configuration options, data types, and core functionality. Write for RAG retrieval - someone asking 'how do I configure X' should match this text.")]
 	[Text]
 	[JsonPropertyName("ai_rag_optimized_summary")]
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 	public string? AiRagOptimizedSummary { get; set; }
 
-	/// <summary>
-	/// Exactly 5-10 words for a UI tooltip.
-	/// </summary>
+	[AiField("Exactly 5-10 words for UI tooltip or search snippet. Action-oriented, starts with a verb. Example: 'Configure index lifecycle policies for data retention'")]
 	[Text]
 	[JsonPropertyName("ai_short_summary")]
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 	public string? AiShortSummary { get; set; }
 
-	/// <summary>
-	/// A 3-8 word keyword string representing a high-intent user search for this doc.
-	/// </summary>
+	[AiField("3-8 keywords representing a realistic search query a developer would type. Include product name and key technical terms. Example: 'elasticsearch bulk api batch indexing'")]
 	[Keyword]
 	[JsonPropertyName("ai_search_query")]
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 	public string? AiSearchQuery { get; set; }
 
-	/// <summary>
-	/// Array of 3-5 specific questions answered by this document.
-	/// </summary>
+	[AiField("Natural questions a dev would ask (6-15 words). Not too short, not too verbose. Examples: 'How do I bulk index documents?', 'What format does the bulk API use?', 'Why is my bulk request failing?'",
+		MinItems = 3, MaxItems = 5)]
 	[Text]
 	[JsonPropertyName("ai_questions")]
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 	public string[]? AiQuestions { get; set; }
 
-	/// <summary>
-	/// Array of 2-4 specific use cases this doc helps with.
-	/// </summary>
+	[AiField("Simple 2-4 word tasks a dev wants to do. Examples: 'index documents', 'check cluster health', 'enable TLS', 'fix slow queries', 'backup data'",
+		MinItems = 2, MaxItems = 4)]
 	[Text]
 	[JsonPropertyName("ai_use_cases")]
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 	public string[]? AiUseCases { get; set; }
-
-	/// <summary>
-	/// Hash of the LLM prompt templates used to generate AI fields.
-	/// Used to detect stale enrichments when prompts change.
-	/// </summary>
-	[Keyword]
-	[JsonPropertyName("enrichment_prompt_hash")]
-	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-	public string? EnrichmentPromptHash { get; set; }
 }
