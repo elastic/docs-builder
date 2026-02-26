@@ -117,6 +117,12 @@ export const useModalSearchKeyboardNavigation = ({
         const handlePanelKeyDown = (e: KeyboardEvent) => {
             if (e.target === inputRef.current) return
 
+            const target = e.target as HTMLElement
+            const isInteractive =
+                target.tagName === 'BUTTON' ||
+                target.tagName === 'A' ||
+                !!target.closest('button, a')
+
             switch (e.key) {
                 case 'ArrowDown':
                     e.preventDefault()
@@ -140,6 +146,7 @@ export const useModalSearchKeyboardNavigation = ({
                     break
 
                 case 'Enter':
+                    if (isInteractive) return
                     e.preventDefault()
                     if (isLoading || resultsCount === 0) return
                     navigateToResult(selectedIndex >= 0 ? selectedIndex : 0)
