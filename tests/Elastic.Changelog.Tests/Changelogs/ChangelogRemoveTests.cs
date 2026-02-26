@@ -607,6 +607,37 @@ public class ChangelogRemoveTests : ChangelogTestBase
 	}
 
 	[Fact]
+	public async Task Remove_WithProfileMode_MissingConfig_ReturnsErrorWithAdvice()
+	{
+		// Arrange - no config file exists at ./changelog.yml or ./docs/changelog.yml.
+		// Use a fresh MockFileSystem with a known CWD so discovery returns no results.
+		var cwdFs = new System.IO.Abstractions.TestingHelpers.MockFileSystem(
+			null,
+			currentDirectory: "/empty-project"
+		);
+		cwdFs.Directory.CreateDirectory("/empty-project");
+		var service = new ChangelogRemoveService(LoggerFactory, ConfigurationContext, cwdFs);
+
+		var input = new ChangelogRemoveArguments
+		{
+			Profile = "es-release",
+			ProfileArgument = "9.2.0"
+			// Config intentionally omitted — triggers CWD discovery
+		};
+
+		// Act
+		var result = await service.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeFalse("Should fail when no config file is found");
+		Collector.Diagnostics.Should().ContainSingle(d =>
+			d.Severity == Severity.Error &&
+			(d.Message.Contains("changelog.yml") || d.Message.Contains("changelog init")),
+			"Error message should mention changelog.yml or advise running changelog init"
+		);
+	}
+
+	[Fact]
 	public async Task Remove_WithProfile_NoProductsAndVersionArg_ReturnsSpecificError()
 	{
 		// Profile has no products pattern; passing a version (not a promotion report) should emit

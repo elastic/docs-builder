@@ -483,6 +483,15 @@ This creates one changelog file for each PR specified, whether from files or dir
 You can use the `docs-builder changelog bundle` command to create a YAML file that lists multiple changelogs.
 For up-to-date details, use the `-h` option or refer to [](/cli/release/changelog-bundle.md).
 
+The command supports two mutually exclusive usage modes:
+
+- **Option-based** — you provide filter and output options directly on the command line.
+- **Profile-based** — you specify a named profile from your `changelog.yml` configuration file.
+
+You cannot mix these two modes: when you use a profile name, no filter or output options are accepted on the command line.
+
+### Option-based bundling [changelog-bundle-options]
+
 You can specify only one of the following filter options:
 
 - `--all`: Include all changelogs from the directory.
@@ -500,6 +509,50 @@ If you likewise want to regenerate your [Asciidoc or Markdown files](#render-cha
 
 When you do not specify `--directory`, the command reads changelog files from `bundle.directory` in your changelog configuration if it is set, otherwise from the current directory.
 When you do not specify `--output`, the command writes the bundle to `bundle.output_directory` from your changelog configuration (creating `changelog-bundle.yaml` in that directory) if it is set, otherwise to `changelog-bundle.yaml` in the input directory.
+
+### Profile-based bundling [changelog-bundle-profile]
+
+If your `changelog.yml` configuration file defines `bundle.profiles`, you can run a bundle by profile name instead of supplying individual options:
+
+```sh
+docs-builder changelog bundle <profile> <version|promotion-report>
+```
+
+For example:
+
+```sh
+docs-builder changelog bundle elasticsearch-release 9.2.0
+docs-builder changelog bundle elasticsearch-release ./promotion-report.html
+```
+
+The command automatically discovers `changelog.yml` by checking `./changelog.yml` then `./docs/changelog.yml` relative to your current directory.
+If no configuration file is found, the command returns an error with advice to create one (using `docs-builder changelog init`) or to run from the directory where the file exists.
+
+Profile configuration fields in the `bundle.profiles` section:
+
+| Field | Description |
+|---|---|
+| `products` | Product filter pattern with `{version}` and `{lifecycle}` placeholders. Used to match changelog files. |
+| `output` | Output file path pattern with `{version}` and `{lifecycle}` placeholders. |
+| `output_products` | Optional override for the products array written to the bundle. Useful when the bundle should advertise a different lifecycle or version than the filter. |
+| `repo` | GitHub repository name written to each product entry. Used to generate correct PR and issue links when the product ID differs from the repository name. |
+| `owner` | GitHub repository owner. Used for normalizing short PR and issue references. |
+| `hide_features` | List of feature IDs to embed in the bundle as hidden. |
+
+Example profile configuration:
+
+```yaml
+bundle:
+  profiles:
+    elasticsearch-release:
+      products: "elasticsearch {version} {lifecycle}"
+      output: "bundles/elasticsearch-{version}.yaml"
+      output_products: "elasticsearch {version} ga"
+      repo: elasticsearch
+      owner: elastic
+      hide_features:
+        - feature:experimental-api
+```
 
 ### Filter by product [changelog-bundle-product]
 
@@ -868,8 +921,14 @@ You can remove the same changelogs with:
 docs-builder changelog remove elasticsearch-release 9.2.0 --dry-run
 ```
 
+The command automatically discovers `changelog.yml` by checking `./changelog.yml` then `./docs/changelog.yml` relative to your current directory.
+If no configuration file is found, the command returns an error with advice to create one or to run from the directory where the file exists.
+
 Only the `products` field from the profile configuration is used for removal.
-The `output` and `hide_features` fields are bundle-specific and are ignored.
+The `output`, `output_products`, `repo`, `owner`, and `hide_features` fields are bundle-specific and are ignored.
+
+Profile-based removal is mutually exclusive with command options.
+The only options allowed alongside a profile name are `--dry-run` and `--force`.
 
 You can also pass a promotion report URL or file path as the second argument, and the command removes changelogs whose pull request URLs appear in the report:
 
