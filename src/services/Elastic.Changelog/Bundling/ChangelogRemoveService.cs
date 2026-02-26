@@ -215,7 +215,12 @@ public class ChangelogRemoveService(
 	private ChangelogRemoveArguments ApplyConfigDefaults(ChangelogRemoveArguments input, ChangelogConfiguration? config)
 	{
 		var directory = input.Directory ?? config?.Bundle?.Directory ?? _fileSystem.Directory.GetCurrentDirectory();
-		return input with { Directory = directory };
+
+		// Apply repo/owner: CLI takes precedence; fall back to bundle-level config defaults.
+		var repo = input.Repo ?? config?.Bundle?.Repo;
+		var owner = input.Owner ?? config?.Bundle?.Owner;
+
+		return input with { Directory = directory, Repo = repo, Owner = owner };
 	}
 
 	private bool ValidateInput(IDiagnosticsCollector collector, ChangelogRemoveArguments input)

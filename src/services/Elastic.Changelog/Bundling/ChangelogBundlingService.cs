@@ -301,11 +301,17 @@ public partial class ChangelogBundlingService(
 		// Apply resolve: CLI takes precedence over config. Only use config when CLI did not specify.
 		var resolve = input.Resolve ?? config.Bundle.Resolve;
 
+		// Apply repo/owner: CLI takes precedence; fall back to bundle-level config defaults.
+		var repo = input.Repo ?? config.Bundle.Repo;
+		var owner = input.Owner ?? config.Bundle.Owner;
+
 		return input with
 		{
 			Directory = directory,
 			Output = output,
-			Resolve = resolve
+			Resolve = resolve,
+			Repo = repo,
+			Owner = owner
 		};
 	}
 
