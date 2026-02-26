@@ -213,18 +213,11 @@ bundle:
       products: "elasticsearch {version} ga" <1>
       output: "elasticsearch-{version}.yaml"
     
-    # Find changelogs with any lifecycle (wildcard)
-    serverless-release:
-      products: "cloud-serverless {version} *" <2>
-      output_products: "cloud-serverless {version}"
+    # Find changelogs with any lifecycle and a partial date
+    serverless-monthly:
+      products: "cloud-serverless {version}-* *" <2>
       output: "serverless-{version}.yaml"
-      repo: elasticsearch
-      owner: elastic
-      
-    # Find changelogs that match a promotion report
-    serverless-release-report:
       output_products: "cloud-serverless {version}"
-      output: "serverless-{version}.yaml"
       repo: elasticsearch
       owner: elastic
     
@@ -239,7 +232,7 @@ bundle:
 ```
 
 1. Bundles any changelogs that have `product: elasticsearch`, `lifecycle: ga`, and the version specified in the command. This is equivalent to the `--input-products` command option.
-2. Bundles any changelogs that have `product: cloud-serverless`, any lifecycle, and the version specified in the command. This is equivalent to the `--input-products` command option's support for wildcards.
+2. Bundles any changelogs that have `product: cloud-serverless`, any lifecycle, and the date partially specified in the command. This is equivalent to the `--input-products` command option's support for wildcards.
 3. Adds a `hide-features` array in the bundle. This is equivalent to the `--hide-features` command option.
 4. In this case, the lifecycle is inferred from the version.
 
@@ -257,12 +250,14 @@ You can invoke those profiles with commands like this:
 # Bundle changelogs that match a specific version or date
 docs-builder changelog bundle elasticsearch-release 9.2.0
 
-# Bundle changelogs with wildcards
-docs-builder changelog bundle serverless-releases 2026-02-*
+# Bundle changelogs with partial dates
+docs-builder changelog bundle serverless-monthly 2026-02
+```
 
-# Bundle changelogs that match a list of PRs in a promotion report
-docs-builder changelog bundle serverless-release-report 2026-02 https://buildkite.../promotion-report.html
-
+<!--
+TO-DO: Add a promotion report example once it works with output_products
+```
 # Bundle changelogs that match a list of PRs in a downloaded promotion report
 docs-builder changelog bundle serverless-release-report 2026-02 ./promotion-report.html
 ```
+-->
