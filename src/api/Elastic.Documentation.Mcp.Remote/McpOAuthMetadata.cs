@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Text.Json.Serialization;
 using Elastic.Documentation.Configuration;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -39,13 +40,16 @@ public static class McpOAuthMetadata
 			var resource = $"{scheme}://{host}{mcpPrefix}";
 
 			context.Response.Headers.CacheControl = CacheControlValue;
-			return Results.Json(new
-			{
-				resource,
-				authorization_servers = new[] { issuer },
-				scopes_supported = ScopesSupported,
-				bearer_methods_supported = BearerMethodsSupported
-			});
+			return Results.Json(
+				new ProtectedResourceMetadata
+				{
+					Resource = resource,
+					AuthorizationServers = [issuer],
+					ScopesSupported = ScopesSupported,
+					BearerMethodsSupported = BearerMethodsSupported
+				},
+				OAuthMetadataJsonContext.Default.ProtectedResourceMetadata
+			);
 		});
 
 		_ = group.MapGet("/.well-known/openid-configuration", (HttpContext context) =>
@@ -55,18 +59,72 @@ public static class McpOAuthMetadata
 			var baseUrl = $"{scheme}://{host}{mcpPrefix}";
 
 			context.Response.Headers.CacheControl = CacheControlValue;
-			return Results.Json(new
-			{
-				issuer,
-				authorization_endpoint = $"{baseUrl}/authorize",
-				token_endpoint = $"{baseUrl}/token",
-				registration_endpoint = $"{baseUrl}/register",
-				response_types_supported = ResponseTypesSupported,
-				grant_types_supported = GrantTypesSupported,
-				code_challenge_methods_supported = CodeChallengeMethodsSupported,
-				token_endpoint_auth_methods_supported = TokenEndpointAuthMethodsSupported,
-				scopes_supported = ScopesSupported
-			});
+			return Results.Json(
+				new AuthorizationServerMetadata
+				{
+					Issuer = issuer,
+					AuthorizationEndpoint = $"{baseUrl}/authorize",
+					TokenEndpoint = $"{baseUrl}/token",
+					RegistrationEndpoint = $"{baseUrl}/register",
+					ResponseTypesSupported = ResponseTypesSupported,
+					GrantTypesSupported = GrantTypesSupported,
+					CodeChallengeMethodsSupported = CodeChallengeMethodsSupported,
+					TokenEndpointAuthMethodsSupported = TokenEndpointAuthMethodsSupported,
+					ScopesSupported = ScopesSupported
+				},
+				OAuthMetadataJsonContext.Default.AuthorizationServerMetadata
+			);
 		});
 	}
 }
+
+/// <summary>RFC 9728 Protected Resource Metadata.</summary>
+public sealed record ProtectedResourceMetadata
+{
+	[JsonPropertyName("resource")]
+	public required string Resource { get; init; }
+
+	[JsonPropertyName("authorization_servers")]
+	public required string[] AuthorizationServers { get; init; }
+
+	[JsonPropertyName("scopes_supported")]
+	public required string[] ScopesSupported { get; init; }
+
+	[JsonPropertyName("bearer_methods_supported")]
+	public required string[] BearerMethodsSupported { get; init; }
+}
+
+/// <summary>OIDC Discovery / OAuth 2.0 Authorization Server Metadata.</summary>
+public sealed record AuthorizationServerMetadata
+{
+	[JsonPropertyName("issuer")]
+	public required string Issuer { get; init; }
+
+	[JsonPropertyName("authorization_endpoint")]
+	public required string AuthorizationEndpoint { get; init; }
+
+	[JsonPropertyName("token_endpoint")]
+	public required string TokenEndpoint { get; init; }
+
+	[JsonPropertyName("registration_endpoint")]
+	public required string RegistrationEndpoint { get; init; }
+
+	[JsonPropertyName("response_types_supported")]
+	public required string[] ResponseTypesSupported { get; init; }
+
+	[JsonPropertyName("grant_types_supported")]
+	public required string[] GrantTypesSupported { get; init; }
+
+	[JsonPropertyName("code_challenge_methods_supported")]
+	public required string[] CodeChallengeMethodsSupported { get; init; }
+
+	[JsonPropertyName("token_endpoint_auth_methods_supported")]
+	public required string[] TokenEndpointAuthMethodsSupported { get; init; }
+
+	[JsonPropertyName("scopes_supported")]
+	public required string[] ScopesSupported { get; init; }
+}
+
+[JsonSerializable(typeof(ProtectedResourceMetadata))]
+[JsonSerializable(typeof(AuthorizationServerMetadata))]
+internal sealed partial class OAuthMetadataJsonContext : JsonSerializerContext;
