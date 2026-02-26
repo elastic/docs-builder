@@ -513,6 +513,7 @@ If you likewise want to regenerate your [Asciidoc or Markdown files](#render-cha
 
 When you do not specify `--directory`, the command reads changelog files from `bundle.directory` in your changelog configuration if it is set, otherwise from the current directory.
 When you do not specify `--output`, the command writes the bundle to `bundle.output_directory` from your changelog configuration (creating `changelog-bundle.yaml` in that directory) if it is set, otherwise to `changelog-bundle.yaml` in the input directory.
+When you do not specify `--repo` or `--owner`, the command falls back to `bundle.repo` and `bundle.owner` in the changelog configuration, so you rarely need to pass these on the command line.
 
 ### Profile-based bundling [changelog-bundle-profile]
 
@@ -532,30 +533,46 @@ docs-builder changelog bundle elasticsearch-release ./promotion-report.html
 The command automatically discovers `changelog.yml` by checking `./changelog.yml` then `./docs/changelog.yml` relative to your current directory.
 If no configuration file is found, the command returns an error with advice to create one (using `docs-builder changelog init`) or to run from the directory where the file exists.
 
-Profile configuration fields in the `bundle.profiles` section:
+You can set `bundle.repo` and `bundle.owner` directly under `bundle:` as defaults that apply to all profiles.
+Individual profiles can override them when needed.
+
+Top-level `bundle` fields:
+
+| Field | Description |
+|---|---|
+| `repo` | Default GitHub repository name applied to all profiles. Falls back to product ID if not set at any level. |
+| `owner` | Default GitHub repository owner applied to all profiles. |
+
+Profile configuration fields in `bundle.profiles`:
 
 | Field | Description |
 |---|---|
 | `products` | Product filter pattern with `{version}` and `{lifecycle}` placeholders. Used to match changelog files. |
 | `output` | Output file path pattern with `{version}` and `{lifecycle}` placeholders. |
 | `output_products` | Optional override for the products array written to the bundle. Useful when the bundle should advertise a different lifecycle or version than the filter. |
-| `repo` | GitHub repository name written to each product entry. Used to generate correct PR and issue links when the product ID differs from the repository name. |
-| `owner` | GitHub repository owner. Used for normalizing short PR and issue references. |
+| `repo` | Optional. Overrides `bundle.repo` for this profile only. |
+| `owner` | Optional. Overrides `bundle.owner` for this profile only. |
 | `hide_features` | List of feature IDs to embed in the bundle as hidden. |
 
 Example profile configuration:
 
 ```yaml
 bundle:
+  repo: cloud       # default for all profiles
+  owner: elastic
   profiles:
     elasticsearch-release:
       products: "elasticsearch {version} {lifecycle}"
       output: "bundles/elasticsearch-{version}.yaml"
       output_products: "elasticsearch {version}"
-      repo: elasticsearch
-      owner: elastic
+      repo: elasticsearch   # overrides bundle.repo for this profile
       hide_features:
         - feature:experimental-api
+    serverless-release:
+      products: "cloud-serverless {version} *"
+      output: "bundles/serverless-{version}.yaml"
+      output_products: "cloud-serverless {version}"
+      # inherits repo: cloud and owner: elastic from bundle level
 ```
 
 ### Filter by product [changelog-bundle-product]
@@ -627,8 +644,8 @@ docs-builder changelog bundle --prs "108875,135873,136886" \ <1>
 
 
 1. The comma-separated list of pull request numbers to seek.
-2. The repository in the pull request URLs. This option is not required if you specify the short or full PR URLs in the `--prs` option.
-3. The owner in the pull request URLs. This option is not required if you specify the short or full PR URLs in the `--prs` option.
+2. The repository in the pull request URLs. Not required when using full PR URLs, or when `bundle.repo` is set in the changelog configuration.
+3. The owner in the pull request URLs. Not required when using full PR URLs, or when `bundle.owner` is set in the changelog configuration.
 4. The product metadata for the bundle. If it is not provided, it will be derived from all the changelog product values.
 
 If you have changelog files that reference those pull requests, the command creates a file like this:
@@ -654,7 +671,7 @@ entries:
 
 You can use the `--issues` option to create a bundle of changelogs that relate to those GitHub issues.
 Provide either a comma-separated list of issues (`--issues "https://github.com/owner/repo/issues/123,456"`) or a path to a newline-delimited file (`--issues /path/to/file.txt`).
-Issues can be identified by a full URL (such as `https://github.com/owner/repo/issues/123`), a short format (such as `owner/repo#123`), or just a number (in which case you must also provide `--owner` and `--repo` options).
+Issues can be identified by a full URL (such as `https://github.com/owner/repo/issues/123`), a short format (such as `owner/repo#123`), or just a number (in which case `--owner` and `--repo` are required — or set via `bundle.owner` and `bundle.repo` in the configuration).
 
 ```sh
 docs-builder changelog bundle --issues "12345,12346" \

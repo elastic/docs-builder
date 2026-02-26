@@ -98,7 +98,8 @@ Using any of them with a profile returns an error.
 :   This value replaces information that would otherwise by derived from changelogs.
 
 `--owner <string?>`
-:   The GitHub repository owner, which is required when pull requests or issues are specified as numbers.
+:   Optional: The GitHub repository owner, required when pull requests or issues are specified as numbers.
+:   Falls back to `bundle.owner` in `changelog.yml` when not specified.
 
 `--prs <string[]?>`
 :   Filter by pull request URLs or numbers (comma-separated), or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times.
@@ -108,7 +109,9 @@ Using any of them with a profile returns an error.
 :   When specifying a file path, provide a single value that points to a newline-delimited file.
 
 `--repo <string?>`
-:   The GitHub repository name, which is required when pull requests or issues are specified as numbers.
+:   Optional: The GitHub repository name, required when pull requests or issues are specified as numbers.
+:   Also sets the `repo` field in each bundle product entry for correct PR/issue link generation.
+:   Falls back to `bundle.repo` in `changelog.yml` when not specified; if that is also absent, the product ID is used.
 
 `--resolve`
 :   Optional: Copy the contents of each changelog file into the entries array.
@@ -142,19 +145,39 @@ If you specify a file path with a different extension (not `.yml` or `.yaml`), t
 
 ## Repository name in bundles [changelog-bundle-repo]
 
-When you specify the `--repo` option (option-based mode) or the `repo` field in a profile (profile-based mode), the repository name is stored in the bundle's product metadata.
-This ensures that PR and issue links are generated correctly when the bundle is rendered.
+The repository name is stored in each bundle product entry to ensure that PR and issue links are generated correctly when the bundle is rendered.
+It can be set in three ways, in order of precedence:
 
-```sh
-docs-builder changelog bundle \
-  --input-products "cloud-serverless 2025-12-02 *" \
-  --repo cloud \ <1>
-  --output /path/to/bundles/2025-12-02.yaml
+1. **`--repo` option** (option-based mode only)
+2. **`repo` field in the profile** (profile-based mode only; overrides the bundle-level default)
+3. **`bundle.repo` in `changelog.yml`** (applies to both modes as a default when neither of the above is set)
+
+Setting `bundle.repo` and `bundle.owner` in your configuration means you rarely need to pass `--repo` and `--owner` on the command line:
+
+```yaml
+bundle:
+  repo: cloud
+  owner: elastic
 ```
 
-1. The GitHub repository name. This is stored in each product entry in the bundle.
+You can still override them per profile if a project has multiple products with different repos:
 
-The bundle output will include a `repo` field in each product:
+```yaml
+bundle:
+  repo: cloud        # default for all profiles
+  owner: elastic
+  profiles:
+    elasticsearch-release:
+      products: "elasticsearch {version} {lifecycle}"
+      output: "elasticsearch-{version}.yaml"
+      repo: elasticsearch  # overrides bundle.repo for this profile only
+    serverless-release:
+      products: "cloud-serverless {version} *"
+      output: "serverless-{version}.yaml"
+      # inherits repo: cloud from bundle level
+```
+
+The bundle output includes a `repo` field in each product:
 
 ```yaml
 products:
@@ -167,10 +190,10 @@ entries:
     checksum: 6c3243f56279b1797b5dfff6c02ebf90b9658464
 ```
 
-When rendering, pull request and issue links will use `https://github.com/elastic/cloud/...` instead of the product ID in the URL.
+When rendering, pull request and issue links use `https://github.com/elastic/cloud/...` instead of the product ID.
 
 :::{note}
-If the `repo` field is not specified, the product ID is used as a fallback for link generation.
+If no `repo` is set at any level, the product ID is used as a fallback for link generation.
 This may result in broken links if the product ID doesn't match the GitHub repository name (for example, `cloud-serverless` vs `cloud`).
 :::
 
@@ -191,11 +214,11 @@ Bundle profiles in `changelog.yml` support the following fields:
 :   Example: `"elasticsearch {version} ga"`
 
 `repo`
-:   Optional. The GitHub repository name written to each product entry in the bundle. Used by the `{changelog}` directive to generate correct PR/issue links. Only needed when the product ID doesn't match the GitHub repository name.
+:   Optional. The GitHub repository name written to each product entry in the bundle. Used by the `{changelog}` directive to generate correct PR/issue links. Only needed when the product ID doesn't match the GitHub repository name. Overrides `bundle.repo` when set.
 :   Example: `repo: cloud` (for the `cloud-serverless` product)
 
 `owner`
-:   Optional. The GitHub owner written to each product entry in the bundle. Defaults to `elastic` when not specified.
+:   Optional. The GitHub owner written to each product entry in the bundle. Overrides `bundle.owner` when set.
 :   Example: `owner: elastic`
 
 `hide_features`
@@ -207,34 +230,39 @@ The following changelog configuration example contains multiple profiles for fil
 
 ```yaml
 bundle:
+  repo: cloud <1>
+  owner: elastic
   profiles:
     # Find changelogs with a specific lifecycle
     elasticsearch-ga-only:
-      products: "elasticsearch {version} ga" <1>
+      products: "elasticsearch {version} ga" <2>
       output: "elasticsearch-{version}.yaml"
+      repo: elasticsearch <3>
     
     # Find changelogs with any lifecycle and a partial date
     serverless-monthly:
-      products: "cloud-serverless {version}-* *" <2>
+      products: "cloud-serverless {version}-* *" <4>
       output: "serverless-{version}.yaml"
       output_products: "cloud-serverless {version}"
-      repo: elasticsearch
-      owner: elastic
+      # repo and owner inherited from bundle level
     
     # Infer the lifecycle from the version
     elasticsearch-release:
-      hide_features: <3>
+      hide_features: <5>
         - feature-flag-1
         - feature-flag-2
-      products: "elasticsearch {version} {lifecycle}" <4>
+      products: "elasticsearch {version} {lifecycle}" <6>
       output: "elasticsearch-{version}.yaml"
       output_products: "elasticsearch {version}"
+      repo: elasticsearch <3>
 ```
 
-1. Bundles any changelogs that have `product: elasticsearch`, `lifecycle: ga`, and the version specified in the command. This is equivalent to the `--input-products` command option.
-2. Bundles any changelogs that have `product: cloud-serverless`, any lifecycle, and the date partially specified in the command. This is equivalent to the `--input-products` command option's support for wildcards.
-3. Adds a `hide-features` array in the bundle. This is equivalent to the `--hide-features` command option.
-4. In this case, the lifecycle is inferred from the version.
+1. Bundle-level defaults that apply to all profiles. Individual profiles can override these.
+2. Bundles any changelogs that have `product: elasticsearch`, `lifecycle: ga`, and the version specified in the command. This is equivalent to the `--input-products` command option.
+3. Overrides the bundle-level `repo: cloud` for this profile because the `elasticsearch` product matches its GitHub repository name.
+4. Bundles any changelogs that have `product: cloud-serverless`, any lifecycle, and the date partially specified in the command. This is equivalent to the `--input-products` command option's support for wildcards.
+5. Adds a `hide-features` array in the bundle. This is equivalent to the `--hide-features` command option.
+6. In this case, the lifecycle is inferred from the version.
 
 For example, when the version is:
 

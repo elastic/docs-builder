@@ -403,9 +403,9 @@ internal sealed partial class ChangelogCommand(
 	/// <param name="issues">Filter by issue URLs or numbers (comma-separated), or a path to a newline-delimited file containing issue URLs or numbers. Can be specified multiple times. Each occurrence can be either comma-separated issues (e.g., `--issues "https://github.com/owner/repo/issues/123,456"`) or a file path (e.g., `--issues /path/to/file.txt`). When specifying issues directly, provide comma-separated values. When specifying a file path, provide a single value that points to a newline-delimited file. Only one filter option can be specified: `--all`, `--input-products`, `--prs`, or `--issues`.</param>
 	/// <param name="output">Optional: Output path for the bundled changelog. Can be either (1) a directory path, in which case 'changelog-bundle.yaml' is created in that directory, or (2) a file path ending in .yml or .yaml. Uses config bundle.output_directory or defaults to 'changelog-bundle.yaml' in the input directory</param>
 	/// <param name="outputProducts">Optional: Explicitly set the products array in the output file in format "product target lifecycle, ...". Overrides any values from changelogs.</param>
-	/// <param name="owner">GitHub repository owner (required when PRs or issues are specified as numbers)</param>
+	/// <param name="owner">Optional: GitHub repository owner. Required when PRs or issues are specified as numbers. Falls back to bundle.owner in changelog.yml when not specified.</param>
 	/// <param name="prs">Filter by pull request URLs or numbers (comma-separated), or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times. Only one filter option can be specified: `--all`, `--input-products`, `--prs`, or `--issues`.</param>
-	/// <param name="repo">GitHub repository name. Used for PR or issue filtering when PRs or issues are specified as numbers, and also sets the repo field in the bundle output for generating correct PR/issue links. If not specified, the product ID is used as the repo name in links.</param>
+	/// <param name="repo">Optional: GitHub repository name. Required when PRs or issues are specified as numbers. Also sets the repo field in bundle product entries for correct PR/issue link generation. Falls back to bundle.repo in changelog.yml when not specified; if that is also absent, the product ID is used.</param>
 	/// <param name="resolve">Optional: Copy the contents of each changelog file into the entries array. Uses config bundle.resolve or defaults to false.</param>
 	/// <param name="noResolve">Optional: Explicitly turn off resolve (overrides config).</param>
 	/// <param name="ctx"></param>
@@ -698,10 +698,10 @@ internal sealed partial class ChangelogCommand(
 	/// <param name="dryRun">Print the files that would be removed without deleting them. Valid in both profile and raw mode.</param>
 	/// <param name="force">Proceed with removal even when files are referenced by unresolved bundles. Emits warnings instead of errors for each dependency. Valid in both profile and raw mode.</param>
 	/// <param name="issues">Filter by issue URLs or numbers (comma-separated), or a path to a newline-delimited file containing issue URLs or numbers. Can be specified multiple times. Exactly one filter option must be specified: --all, --products, --prs, or --issues.</param>
-	/// <param name="owner">GitHub repository owner (required when PRs or issues are specified as numbers)</param>
+	/// <param name="owner">Optional: GitHub repository owner. Required when PRs or issues are specified as numbers. Falls back to bundle.owner in changelog.yml when not specified.</param>
 	/// <param name="products">Filter by products in format "product target lifecycle, ..." (e.g., "elasticsearch 9.3.0 ga"). All three parts are required but can be wildcards (*). Exactly one filter option must be specified: --all, --products, --prs, or --issues.</param>
 	/// <param name="prs">Filter by pull request URLs or numbers (comma-separated), or a path to a newline-delimited file. Can be specified multiple times. Exactly one filter option must be specified: --all, --products, --prs, or --issues.</param>
-	/// <param name="repo">GitHub repository name (required when PRs or issues are specified as numbers)</param>
+	/// <param name="repo">Optional: GitHub repository name. Required when PRs or issues are specified as numbers. Falls back to bundle.repo in changelog.yml when not specified.</param>
 	/// <param name="ctx"></param>
 	[Command("remove")]
 	public async Task<int> Remove(
