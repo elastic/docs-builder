@@ -157,6 +157,12 @@ public class CodexBuildService(
 			// Pre-compute codex site root for HTMX (no URL parsing in providers)
 			var siteRootPath = string.IsNullOrEmpty(sitePrefix) ? "/" : $"/{sitePrefix.Trim('/')}/";
 
+			// Parse canonical base URL from config for frontmatter URLs, canonical links, and report-issue
+			var canonicalBaseUrl = !string.IsNullOrWhiteSpace(context.Configuration.CanonicalBaseUrl) &&
+				Uri.TryCreate(context.Configuration.CanonicalBaseUrl, UriKind.Absolute, out var parsed)
+				? parsed
+				: null;
+
 			// Create build context for this documentation set
 			var buildContext = new BuildContext(
 				context.Collector,
@@ -170,6 +176,7 @@ public class CodexBuildService(
 			{
 				UrlPathPrefix = pathPrefix,
 				SiteRootPath = siteRootPath,
+				CanonicalBaseUrl = canonicalBaseUrl,
 				Force = true,
 				AllowIndexing = false,
 				BuildType = BuildType.Codex

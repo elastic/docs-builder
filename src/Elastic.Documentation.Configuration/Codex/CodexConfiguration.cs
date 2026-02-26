@@ -40,6 +40,13 @@ public record CodexConfiguration
 	public IReadOnlyList<CodexGroupDefinition> Groups { get; set; } = [];
 
 	/// <summary>
+	/// The base URL for canonical links and frontmatter URLs (e.g., "https://codex.elastic.dev").
+	/// Used by the LLM markdown exporter, canonical link tags, and report-issue links.
+	/// </summary>
+	[YamlMember(Alias = "canonical_base_url")]
+	public string? CanonicalBaseUrl { get; set; }
+
+	/// <summary>
 	/// Deserializes a codex configuration from YAML content.
 	/// </summary>
 	public static CodexConfiguration Deserialize(string yaml)
