@@ -48,14 +48,14 @@ public class McpBearerAuthMiddleware(RequestDelegate next, ILogger<McpBearerAuth
 		var authHeader = context.Request.Headers.Authorization.FirstOrDefault();
 		if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
 		{
-			await WriteUnauthorizedAsync(context, mcpPrefix);
+			await WriteUnauthorizedAsync(context, env);
 			return;
 		}
 
 		var token = authHeader["Bearer ".Length..].Trim();
 		if (string.IsNullOrEmpty(token))
 		{
-			await WriteUnauthorizedAsync(context, mcpPrefix);
+			await WriteUnauthorizedAsync(context, env);
 			return;
 		}
 
@@ -80,11 +80,11 @@ public class McpBearerAuthMiddleware(RequestDelegate next, ILogger<McpBearerAuth
 		await context.Response.WriteAsync(/*lang=json,strict*/ """{"error":"invalid_token"}""");
 	}
 
-	private static async Task WriteUnauthorizedAsync(HttpContext context, string mcpPrefix)
+	private static async Task WriteUnauthorizedAsync(HttpContext context, IEnvironmentVariables env)
 	{
-		var host = context.Request.Host.Value;
-		var scheme = context.Request.Scheme;
-		var resourceMetadata = $"{scheme}://{host}{mcpPrefix}/.well-known/oauth-protected-resource";
+		var resourceMetadata = env.McpOAuthIssuer is not null
+			? $"{env.McpOAuthIssuer}/.well-known/oauth-protected-resource"
+			: $"{context.Request.Scheme}://{context.Request.Host.Value}{env.McpPrefix}/.well-known/oauth-protected-resource";
 		context.Response.Headers.WWWAuthenticate = $"Bearer resource_metadata=\"{resourceMetadata}\"";
 		context.Response.StatusCode = 401;
 		context.Response.ContentType = "application/json";
@@ -140,9 +140,7 @@ public class McpBearerAuthMiddleware(RequestDelegate next, ILogger<McpBearerAuth
 			return (null, 401);
 		}
 
-		var host = context.Request.Host.Value;
-		var scheme = context.Request.Scheme;
-		var expectedAud = $"{scheme}://{host}{env.McpPrefix}";
+		var expectedAud = env.McpOAuthIssuer ?? $"{context.Request.Scheme}://{context.Request.Host.Value}{env.McpPrefix}";
 
 		var validationParams = new TokenValidationParameters
 		{
