@@ -11,6 +11,12 @@
 	top: var(--header-height);
 }
 
+body:has(.codex-root-landing) {
+	#htmx-indicator {
+		top: 0;
+	}
+}
+
 /* Codex header specific styles - only apply on lg screens (matches --breakpoint-lg) */
 @media screen and (min-width: 1280px) {
 	.has-isolated-header {
