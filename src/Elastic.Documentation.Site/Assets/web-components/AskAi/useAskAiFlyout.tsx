@@ -115,6 +115,13 @@ export const useAskAiFlyout = () => {
         return () => window.removeEventListener('keydown', handleKeydown)
     }, [openModal, closeModal])
 
+    useEffect(() => {
+        const handleOpenEvent = () => openModal()
+        document.addEventListener('ask-ai:open', handleOpenEvent)
+        return () =>
+            document.removeEventListener('ask-ai:open', handleOpenEvent)
+    }, [openModal])
+
     return {
         isApiAvailable: isApiAvailable ?? false,
         isModalOpen,

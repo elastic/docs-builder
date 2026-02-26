@@ -3,7 +3,12 @@ import { AskAiHeaderButton } from '../AskAi/AskAiHeaderButton'
 import { NavigationSearch } from '../NavigationSearch/NavigationSearch'
 import { useHtmxContainer } from '../shared/htmx/useHtmxContainer'
 import { sharedQueryClient } from '../shared/queryClient'
-import { EuiHeader, EuiHeaderLogo, EuiProvider } from '@elastic/eui'
+import {
+    EuiHeader,
+    EuiHeaderLogo,
+    EuiProvider,
+    EuiThemeProvider,
+} from '@elastic/eui'
 import r2wc from '@r2wc/react-to-web-component'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { useRef } from 'react'
@@ -42,10 +47,12 @@ export const Header = ({ title, logoHref }: Props) => {
                         },
                         {
                             items: [
-                                <NavigationSearch
-                                    size="s"
-                                    placeholder="Search"
-                                />,
+                                <EuiThemeProvider colorMode="light">
+                                    <NavigationSearch
+                                        size="s"
+                                        placeholder="Search"
+                                    />
+                                </EuiThemeProvider>,
                                 <AskAiHeaderButton key="ask-ai" />,
                                 // <EuiHeaderSectionItemButton key="theme">
                                 //     <EuiIcon type="sun" />

@@ -1,5 +1,5 @@
 @inherits RazorSlice<Elastic.Documentation.Site.GlobalLayoutViewModel>
-<div class="sticky top-0 z-10 h-(--header-height)">
+<div class="sticky top-0 z-10 h-(--header-height) group-has-[.codex-root-landing]/body:h-0 group-has-[.codex-root-landing]/body:min-h-0 group-has-[.codex-root-landing]/body:overflow-hidden group-has-[.codex-root-landing]/body:opacity-0 group-has-[.codex-root-landing]/body:pointer-events-none">
 <codex-header title="@(Model.HeaderTitle ?? Model.DocSetName)"
                      logo-href="@(Model.SiteLink("/"))"></codex-header>
 </div>
