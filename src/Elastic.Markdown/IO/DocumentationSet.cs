@@ -106,7 +106,7 @@ public class DocumentationSet : INavigationTraversable
 			return;
 
 		var indexFile = Context.ReadFileSystem.FileInfo.New(
-			Path.Combine(SourceDirectory.FullName, "index.md"));
+			Path.Join(SourceDirectory.FullName, "index.md"));
 
 		if (!indexFile.Exists)
 			Context.EmitError(Configuration.SourceFile,
