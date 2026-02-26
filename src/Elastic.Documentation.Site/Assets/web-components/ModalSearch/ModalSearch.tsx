@@ -39,10 +39,14 @@ const SEARCH_KEYBOARD_SHORTCUTS = [
 ]
 
 interface ModalSearchContentProps {
+    placeholder?: string
     onClose: () => void
 }
 
-const ModalSearchContent = ({ onClose }: ModalSearchContentProps) => {
+const ModalSearchContent = ({
+    onClose,
+    placeholder,
+}: ModalSearchContentProps) => {
     const { euiTheme } = useEuiTheme()
     const mFontSize = useEuiFontSize('m').fontSize
     const searchTerm = useSearchTerm()
@@ -170,7 +174,7 @@ const ModalSearchContent = ({ onClose }: ModalSearchContentProps) => {
                     autoFocus
                     inputRef={inputRef}
                     fullWidth
-                    placeholder="Search in Elastic Internal Docs"
+                    placeholder={placeholder}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     onKeyDown={handleKeyDown}
@@ -492,7 +496,10 @@ export const ModalSearch = ({
                                 ${euiShadow(euiThemeContext, 'xl')};
                             `}
                         >
-                            <ModalSearchContent onClose={closeModal} />
+                            <ModalSearchContent
+                                onClose={closeModal}
+                                placeholder={placeholder}
+                            />
                         </EuiPanel>
                     </div>
                 </EuiPortal>

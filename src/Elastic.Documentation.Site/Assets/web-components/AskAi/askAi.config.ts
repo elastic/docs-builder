@@ -17,7 +17,7 @@ const codexConfig: AskAiConfig = {
     assistantName: 'Elastic Internal Docs AI Assistant',
     assistantDescription:
         "I'm here to help you navigate Elastic's internal documentation. Ask me anything about our internal processes, tools, and standards. How can I help?",
-    inputPlaceholder: 'Ask the Elastic Internal Docs AI Assistant',
+    inputPlaceholder: 'Ask me anything...',
     defaultAiProvider: 'AgentBuilder',
     forceAiProvider: true,
     suggestions: [
