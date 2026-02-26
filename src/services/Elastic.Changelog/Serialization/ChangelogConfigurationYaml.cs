@@ -213,6 +213,16 @@ internal record BundleConfigurationYaml
 	public bool? Resolve { get; set; }
 
 	/// <summary>
+	/// Default GitHub repository name applied to all profiles that do not specify their own.
+	/// </summary>
+	public string? Repo { get; set; }
+
+	/// <summary>
+	/// Default GitHub repository owner applied to all profiles that do not specify their own.
+	/// </summary>
+	public string? Owner { get; set; }
+
+	/// <summary>
 	/// Named bundle profiles.
 	/// </summary>
 	public Dictionary<string, BundleProfileYaml>? Profiles { get; set; }

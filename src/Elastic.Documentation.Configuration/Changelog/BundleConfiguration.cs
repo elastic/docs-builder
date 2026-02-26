@@ -28,6 +28,17 @@ public record BundleConfiguration
 	public bool Resolve { get; init; } = true;
 
 	/// <summary>
+	/// Default GitHub repository name applied to all profiles that do not specify their own.
+	/// Used for generating correct PR/issue links when the product ID differs from the repo name.
+	/// </summary>
+	public string? Repo { get; init; }
+
+	/// <summary>
+	/// Default GitHub repository owner applied to all profiles that do not specify their own.
+	/// </summary>
+	public string? Owner { get; init; }
+
+	/// <summary>
 	/// Named bundle profiles for different release scenarios.
 	/// </summary>
 	public IReadOnlyDictionary<string, BundleProfile>? Profiles { get; init; }

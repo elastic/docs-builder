@@ -422,6 +422,8 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			Directory = yaml.Directory,
 			OutputDirectory = yaml.OutputDirectory,
 			Resolve = yaml.Resolve ?? true,
+			Repo = yaml.Repo,
+			Owner = yaml.Owner,
 			Profiles = profiles
 		};
 	}

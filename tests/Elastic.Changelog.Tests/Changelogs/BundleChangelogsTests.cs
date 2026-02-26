@@ -2865,6 +2865,133 @@ public class BundleChangelogsTests : ChangelogTestBase
 	}
 
 	[Fact]
+	public async Task BundleChangelogs_WithProfile_BundleLevelRepo_AppliesWhenProfileOmitsRepo()
+	{
+		// Arrange - repo is set at bundle level, not in the profile; profile should inherit it
+
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  repo: elasticsearch
+			  owner: elastic
+			  profiles:
+			    es-release:
+			      products: "elasticsearch {version} {lifecycle}"
+			      output: "elasticsearch-{version}.yaml"
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// language=yaml
+		var changelog1 =
+			"""
+			title: Elasticsearch feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
+			""";
+
+		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-feature.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+
+		var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			Profile = "es-release",
+			ProfileArgument = "9.2.0",
+			Config = configPath,
+			OutputDirectory = outputDir
+		};
+
+		// Act
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue($"Expected bundling to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		Collector.Errors.Should().Be(0);
+
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		outputFiles.Should().NotBeEmpty();
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current.CancellationToken);
+
+		bundleContent.Should().Contain("repo: elasticsearch", "bundle-level repo should be applied when profile omits repo");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithProfile_ProfileRepoOverridesBundleRepo()
+	{
+		// Arrange - both bundle-level and profile-level repo are set; profile-level wins
+
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  repo: wrong-repo
+			  profiles:
+			    es-release:
+			      products: "elasticsearch {version} {lifecycle}"
+			      output: "elasticsearch-{version}.yaml"
+			      repo: elasticsearch
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// language=yaml
+		var changelog1 =
+			"""
+			title: Elasticsearch feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
+			""";
+
+		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-feature.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+
+		var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			Profile = "es-release",
+			ProfileArgument = "9.2.0",
+			Config = configPath,
+			OutputDirectory = outputDir
+		};
+
+		// Act
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue($"Expected bundling to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		Collector.Errors.Should().Be(0);
+
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		outputFiles.Should().NotBeEmpty();
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current.CancellationToken);
+
+		bundleContent.Should().Contain("repo: elasticsearch", "profile-level repo should override bundle-level repo");
+		bundleContent.Should().NotContain("repo: wrong-repo", "bundle-level repo should be overridden by profile-level repo");
+	}
+
+	[Fact]
 	public async Task BundleChangelogs_WithProfile_NoRepoOwner_PreservesExistingFallbackBehavior()
 	{
 		// Arrange - when profile has no repo/owner, the bundle products have no repo field
