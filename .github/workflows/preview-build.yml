@@ -269,10 +269,7 @@ jobs:
       - name: Checkout
         if: >
           env.MATCH == 'true'
-          && (
-            needs.check.outputs.any_modified == 'true'
-            || contains(fromJSON('["push", "workflow_dispatch"]'), github.event_name)
-          )
+          && needs.check.outputs.any_modified != 'false'
         uses: actions/checkout@v6
         with:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
@@ -281,9 +278,10 @@ jobs:
       - name: Create Deployment
         if: >
           env.MATCH == 'true'
+          && needs.check.outputs.any_modified != 'false'
           && (
             contains(fromJSON('["push", "workflow_dispatch"]'), github.event_name) 
-            || (needs.check.outputs.any_modified == 'true' && startsWith(github.event_name, 'pull_request'))
+            || startsWith(github.event_name, 'pull_request')
           )
         uses: actions/github-script@v8
         id: deployment
