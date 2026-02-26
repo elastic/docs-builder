@@ -120,6 +120,10 @@ try
 
 	var mcpPrefix = SystemEnvironmentVariables.Instance.McpPrefix;
 	var mcp = app.MapGroup(mcpPrefix);
+
+	if (SystemEnvironmentVariables.Instance.McpOAuthIssuer is not null)
+		McpOAuthMetadata.MapEndpoints(mcp);
+
 	_ = mcp.MapHealthChecks("/health");
 	_ = mcp.MapHealthChecks("/alive", new HealthCheckOptions { Predicate = r => r.Tags.Contains("live") });
 	_ = mcp.MapMcp("");
