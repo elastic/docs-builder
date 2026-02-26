@@ -30,7 +30,7 @@ sources:
     kind: json
     spec:
       files:
-        - https://artifacts.elastic.co/releases/stack.json
+        - https://elastic-release-api.s3.us-west-2.amazonaws.com/public/past-releases.json
       engine: dasel/v2
       key: "releases.last().version"
 
