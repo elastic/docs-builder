@@ -55,11 +55,6 @@ export const useModalSearchKeyboardNavigation = ({
     const handleInputKeyDown = useCallback(
         (e: React.KeyboardEvent<HTMLInputElement>) => {
             switch (e.key) {
-                case 'Escape':
-                    e.preventDefault()
-                    onClose()
-                    break
-
                 case 'Enter':
                     e.preventDefault()
                     if (isLoading || resultsCount === 0) return
@@ -115,6 +110,13 @@ export const useModalSearchKeyboardNavigation = ({
         if (!panel) return
 
         const handlePanelKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                e.preventDefault()
+                e.stopPropagation()
+                onClose()
+                return
+            }
+
             if (e.target === inputRef.current) return
 
             const target = e.target as HTMLElement
@@ -150,11 +152,6 @@ export const useModalSearchKeyboardNavigation = ({
                     e.preventDefault()
                     if (isLoading || resultsCount === 0) return
                     navigateToResult(selectedIndex >= 0 ? selectedIndex : 0)
-                    break
-
-                case 'Escape':
-                    e.preventDefault()
-                    onClose()
                     break
             }
         }

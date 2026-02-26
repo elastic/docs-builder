@@ -100,11 +100,14 @@ export const useAskAiFlyout = () => {
 
     useEffect(() => {
         const handleKeydown = (event: KeyboardEvent) => {
-            if (event.key === 'Escape') {
+            if (
+                event.key === 'Escape' &&
+                isModalOpen &&
+                !event.defaultPrevented
+            ) {
                 event.preventDefault()
                 closeModal()
             }
-            // Cmd+; to open Ask AI flyout
             if (
                 (event.metaKey || event.ctrlKey) &&
                 event.code === 'Semicolon'
@@ -115,7 +118,7 @@ export const useAskAiFlyout = () => {
         }
         window.addEventListener('keydown', handleKeydown)
         return () => window.removeEventListener('keydown', handleKeydown)
-    }, [openModal, closeModal])
+    }, [isModalOpen, openModal, closeModal])
 
     useEffect(() => {
         const handleOpenEvent = () => openModal()

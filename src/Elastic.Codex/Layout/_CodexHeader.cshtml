@@ -1,5 +1,18 @@
 @inherits RazorSlice<Elastic.Documentation.Site.GlobalLayoutViewModel>
-<div class="sticky top-0 z-10 h-(--header-height) group-has-[.codex-root-landing]/body:h-0 group-has-[.codex-root-landing]/body:min-h-0 group-has-[.codex-root-landing]/body:overflow-hidden group-has-[.codex-root-landing]/body:opacity-0 group-has-[.codex-root-landing]/body:pointer-events-none">
-<codex-header title="@(Model.HeaderTitle ?? Model.DocSetName)"
-                     logo-href="@(Model.SiteLink("/"))"></codex-header>
-</div>
+@using Elastic.Documentation.Svg
+<header class="sticky top-0 z-10 h-(--header-height) bg-ink-dark group-has-[.codex-root-landing]/body:h-0 group-has-[.codex-root-landing]/body:min-h-0 group-has-[.codex-root-landing]/body:overflow-hidden group-has-[.codex-root-landing]/body:opacity-0 group-has-[.codex-root-landing]/body:pointer-events-none">
+	<div class="h-full w-full max-w-full mx-auto px-4">
+		<div class="h-full flex md:grid md:grid-cols-[var(--max-sidebar-width)_1fr] gap-4 items-center">
+			<a href="@(Model.SiteLink("/"))" hx-select-oob="#main-container" class="flex items-center gap-2 font-sans font-semibold text-white no-underline hover:text-white shrink-0" aria-label="@(Model.HeaderTitle ?? Model.DocSetName)">
+				@(new HtmlString(EuiSvgIcons.GetIcon("logo_elastic", "size-6") ?? ""))
+				<span class="hidden md:inline">@(Model.HeaderTitle ?? Model.DocSetName)</span>
+			</a>
+			<div class="min-w-0 flex-1 md:flex-none lg:grid lg:grid-cols-[minmax(0,var(--max-text-width))_minmax(0,var(--max-sidebar-width))] justify-center md:mx-4 gap-4 items-center">
+				<div class="min-w-0 flex items-center justify-end md:justify-start">
+					<codex-search-bar></codex-search-bar>
+				</div>
+				<div class="hidden lg:block"></div>
+			</div>
+		</div>
+	</div>
+</header>

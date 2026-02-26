@@ -14,25 +14,34 @@ interface AskAiConfig {
 }
 
 const codexConfig: AskAiConfig = {
-    assistantName: 'Codex AI Assistant',
+    assistantName: 'Elastic Internal Docs AI Assistant',
     assistantDescription:
         "I'm here to help you navigate Elastic's internal documentation. Ask me anything about our internal processes, tools, and standards. How can I help?",
-    inputPlaceholder: 'Ask the Codex AI Assistant',
+    inputPlaceholder: 'Ask the Elastic Internal Docs AI Assistant',
     defaultAiProvider: 'AgentBuilder',
     forceAiProvider: true,
     suggestions: [
-        { question: 'How do I get started with Codex?' },
-        { question: 'How do I set up Codex for my repository?' },
+        { question: 'How do I get started with Elastic Internal Docs?' },
         {
             question:
-                'How does Codex assemble docs from multiple repositories?',
+                'How do I set up Elastic Internal Docs for my repository?',
         },
-        { question: 'How do I migrate my docs from Docsmobile to Codex?' },
         {
             question:
-                'How do I configure Codex CI previews for my documentation?',
+                'How does Elastic Internal Docs assemble docs from multiple repositories?',
         },
-        { question: 'What is a Codex docset.yml and how do I configure it?' },
+        {
+            question:
+                'How do I migrate my docs from Docsmobile to Elastic Internal Docs?',
+        },
+        {
+            question:
+                'How do I configure Elastic Internal Docs CI previews for my documentation?',
+        },
+        {
+            question:
+                'What is an Elastic Internal Docs docset.yml and how do I configure it?',
+        },
     ],
 }
 
