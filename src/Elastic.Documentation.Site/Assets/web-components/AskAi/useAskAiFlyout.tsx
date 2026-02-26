@@ -94,6 +94,7 @@ export const useAskAiFlyout = () => {
         },
         staleTime: 60 * 60 * 1000, // 60 minutes
         retry: false,
+        enabled: config.buildType !== 'codex',
     })
 
     useEffect(() => {
@@ -123,7 +124,8 @@ export const useAskAiFlyout = () => {
     }, [openModal])
 
     return {
-        isApiAvailable: isApiAvailable ?? false,
+        isApiAvailable:
+            config.buildType === 'codex' ? true : (isApiAvailable ?? false),
         isModalOpen,
         openModal,
         closeModal,
