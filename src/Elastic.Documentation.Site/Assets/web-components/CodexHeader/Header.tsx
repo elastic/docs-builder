@@ -1,6 +1,6 @@
 import '../../eui-icons-cache'
 import { AskAiHeaderButton } from '../AskAi/AskAiHeaderButton'
-import { NavigationSearch } from '../NavigationSearch/NavigationSearch'
+import { ModalSearch } from '../ModalSearch/ModalSearch'
 import { useHtmxContainer } from '../shared/htmx/useHtmxContainer'
 import { sharedQueryClient } from '../shared/queryClient'
 import {
@@ -9,6 +9,7 @@ import {
     EuiProvider,
     EuiThemeProvider,
 } from '@elastic/eui'
+import { css } from '@emotion/react'
 import r2wc from '@r2wc/react-to-web-component'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { useRef } from 'react'
@@ -48,10 +49,16 @@ export const Header = ({ title, logoHref }: Props) => {
                         {
                             items: [
                                 <EuiThemeProvider colorMode="light">
-                                    <NavigationSearch
-                                        size="s"
-                                        placeholder="Search"
-                                    />
+                                    <div
+                                        css={css`
+                                            min-width: 200px;
+                                        `}
+                                    >
+                                        <ModalSearch
+                                            size="s"
+                                            placeholder="Search"
+                                        />
+                                    </div>
                                 </EuiThemeProvider>,
                                 <AskAiHeaderButton key="ask-ai" />,
                                 // <EuiHeaderSectionItemButton key="theme">
