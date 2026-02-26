@@ -312,6 +312,11 @@ toc:
           - toc: elasticsearch://reference/scripting-languages
             path_prefix: reference/scripting-languages
 
+          # Query languages
+          # https://github.com/elastic/elasticsearch/blob/main/docs/reference/query-languages/toc.yml
+          - toc: elasticsearch://reference/query-languages
+            path_prefix: reference/query-languages
+
       # Kibana
       # https://github.com/elastic/kibana/blob/main/docs/reference/toc.yml
       - toc: kibana://reference
@@ -517,11 +522,6 @@ toc:
           - toc: logstash-docs-md://vpr
             path_prefix: reference/logstash/versioned-plugins
             # Children include the entire AsciiDoc book
-
-      # Query languages
-      # https://github.com/elastic/elasticsearch/blob/main/docs/reference/query-languages/toc.yml
-      - toc: elasticsearch://reference/query-languages
-        path_prefix: reference/query-languages
 
       # ECS
       # https://github.com/elastic/ecs/blob/main/docs/reference/toc.yml
