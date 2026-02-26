@@ -97,6 +97,20 @@ public class DocumentationSet : INavigationTraversable
 		NavigationIndexedByOrder = Navigation.BuildNavigationLookups(NavigationDocumentationFileLookup);
 
 		ValidateRedirectsExists();
+		ValidateRootIndexExists();
+	}
+
+	private void ValidateRootIndexExists()
+	{
+		if (Context.BuildType != BuildType.Isolated || Configuration.Registry == DocSetRegistry.Public)
+			return;
+
+		var indexFile = Context.ReadFileSystem.FileInfo.New(
+			Path.Combine(SourceDirectory.FullName, "index.md"));
+
+		if (!indexFile.Exists)
+			Context.EmitError(Configuration.SourceFile,
+				"Non-public documentation sets require a root index.md file");
 	}
 
 	public DocumentationSetNavigation<MarkdownFile> Navigation { get; }
