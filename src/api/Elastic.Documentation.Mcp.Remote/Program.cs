@@ -115,6 +115,7 @@ try
 			return Task.CompletedTask;
 		}));
 
+	_ = app.UseMiddleware<McpBearerAuthMiddleware>();
 	_ = app.UseMiddleware<SseKeepAliveMiddleware>();
 
 	var mcpPrefix = SystemEnvironmentVariables.Instance.McpPrefix;

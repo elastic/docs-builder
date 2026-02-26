@@ -27,4 +27,21 @@ public class SystemEnvironmentVariables : IEnvironmentVariables
 
 	/// <inheritdoc />
 	public string McpPrefix => GetEnvironmentVariable("DOCS_MCP_PREFIX") ?? "/docs/_mcp";
+
+	/// <inheritdoc />
+	public bool McpAuthEnabled =>
+		string.Equals(GetEnvironmentVariable("MCP_AUTH_ENABLED"), "true", StringComparison.OrdinalIgnoreCase) ||
+		string.Equals(GetEnvironmentVariable("MCP_AUTH_ENABLED"), "1", StringComparison.OrdinalIgnoreCase);
+
+	/// <inheritdoc />
+	public string? McpJwtPublicKey => GetEnvironmentVariable("MCP_JWT_PUBLIC_KEY");
+
+	/// <inheritdoc />
+	public string? McpOAuthIssuer => GetEnvironmentVariable("MCP_OAUTH_ISSUER");
+
+	/// <inheritdoc />
+	public string? McpJwtKeyId => GetEnvironmentVariable("MCP_JWT_KEY_ID");
+
+	/// <inheritdoc />
+	public string McpAllowedEmailDomains => GetEnvironmentVariable("MCP_ALLOWED_EMAIL_DOMAINS") ?? "elastic.co";
 }

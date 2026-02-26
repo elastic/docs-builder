@@ -34,4 +34,34 @@ public interface IEnvironmentVariables
 	/// Reads DOCS_MCP_PREFIX, defaults to /docs/_mcp.
 	/// </summary>
 	string McpPrefix => GetEnvironmentVariable("DOCS_MCP_PREFIX") ?? "/docs/_mcp";
+
+	/// <summary>
+	/// When true, MCP Bearer auth middleware validates JWTs. Default false.
+	/// Reads MCP_AUTH_ENABLED (accepts "true", "1").
+	/// </summary>
+	bool McpAuthEnabled => string.Equals(GetEnvironmentVariable("MCP_AUTH_ENABLED"), "true", StringComparison.OrdinalIgnoreCase) ||
+		string.Equals(GetEnvironmentVariable("MCP_AUTH_ENABLED"), "1", StringComparison.OrdinalIgnoreCase);
+
+	/// <summary>
+	/// RSA public key (PEM) for MCP JWT validation. When unset, auth middleware is disabled.
+	/// Reads MCP_JWT_PUBLIC_KEY.
+	/// </summary>
+	string? McpJwtPublicKey => GetEnvironmentVariable("MCP_JWT_PUBLIC_KEY");
+
+	/// <summary>
+	/// OAuth issuer URL for MCP (e.g. https://codex.elastic.dev/mcp). When unset, .well-known endpoints are not mapped.
+	/// Reads MCP_OAUTH_ISSUER.
+	/// </summary>
+	string? McpOAuthIssuer => GetEnvironmentVariable("MCP_OAUTH_ISSUER");
+
+	/// <summary>
+	/// Key ID for MCP JWT kid validation. Reads MCP_JWT_KEY_ID.
+	/// </summary>
+	string? McpJwtKeyId => GetEnvironmentVariable("MCP_JWT_KEY_ID");
+
+	/// <summary>
+	/// Comma-separated allowed email domains for sub claim (e.g. elastic.co). Defaults to elastic.co.
+	/// Reads MCP_ALLOWED_EMAIL_DOMAINS.
+	/// </summary>
+	string McpAllowedEmailDomains => GetEnvironmentVariable("MCP_ALLOWED_EMAIL_DOMAINS") ?? "elastic.co";
 }
