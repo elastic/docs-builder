@@ -31,19 +31,14 @@ public static class McpOAuthMetadata
 	{
 		var env = SystemEnvironmentVariables.Instance;
 		var issuer = env.McpOAuthIssuer!;
-		var mcpPrefix = env.McpPrefix;
 
 		_ = group.MapGet("/.well-known/oauth-protected-resource", (HttpContext context) =>
 		{
-			var host = context.Request.Host.Value;
-			var scheme = context.Request.Scheme;
-			var resource = $"{scheme}://{host}{mcpPrefix}";
-
 			context.Response.Headers.CacheControl = CacheControlValue;
 			return Results.Json(
 				new ProtectedResourceMetadata
 				{
-					Resource = resource,
+					Resource = issuer,
 					AuthorizationServers = [issuer],
 					ScopesSupported = ScopesSupported,
 					BearerMethodsSupported = BearerMethodsSupported
@@ -54,18 +49,14 @@ public static class McpOAuthMetadata
 
 		_ = group.MapGet("/.well-known/openid-configuration", (HttpContext context) =>
 		{
-			var host = context.Request.Host.Value;
-			var scheme = context.Request.Scheme;
-			var baseUrl = $"{scheme}://{host}{mcpPrefix}";
-
 			context.Response.Headers.CacheControl = CacheControlValue;
 			return Results.Json(
 				new AuthorizationServerMetadata
 				{
 					Issuer = issuer,
-					AuthorizationEndpoint = $"{baseUrl}/authorize",
-					TokenEndpoint = $"{baseUrl}/token",
-					RegistrationEndpoint = $"{baseUrl}/register",
+					AuthorizationEndpoint = $"{issuer}/authorize",
+					TokenEndpoint = $"{issuer}/token",
+					RegistrationEndpoint = $"{issuer}/register",
 					ResponseTypesSupported = ResponseTypesSupported,
 					GrantTypesSupported = GrantTypesSupported,
 					CodeChallengeMethodsSupported = CodeChallengeMethodsSupported,
