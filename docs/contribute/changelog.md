@@ -547,7 +547,7 @@ bundle:
     elasticsearch-release:
       products: "elasticsearch {version} {lifecycle}"
       output: "bundles/elasticsearch-{version}.yaml"
-      output_products: "elasticsearch {version} ga"
+      output_products: "elasticsearch {version}"
       repo: elasticsearch
       owner: elastic
       hide_features:
