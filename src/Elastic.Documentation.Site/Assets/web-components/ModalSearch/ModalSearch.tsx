@@ -160,7 +160,7 @@ const ModalSearchContent = ({ onClose }: ModalSearchContentProps) => {
                     autoFocus
                     inputRef={inputRef}
                     fullWidth
-                    placeholder="Search in Docs"
+                    placeholder="Search in Codex"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     onKeyDown={handleKeyDown}
@@ -193,7 +193,7 @@ const ModalSearchContent = ({ onClose }: ModalSearchContentProps) => {
                 </>
             )}
 
-            {!isSearching && <EuiHorizontalRule margin="none" />}
+            {<EuiHorizontalRule margin="none" />}
 
             {searchTerm && (
                 <div
