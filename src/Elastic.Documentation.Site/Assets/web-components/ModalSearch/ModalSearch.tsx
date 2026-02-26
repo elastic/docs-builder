@@ -86,17 +86,6 @@ const ModalSearchContent = ({ onClose }: ModalSearchContentProps) => {
     })
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Escape') {
-            e.preventDefault()
-            trackClosed({
-                reason: 'escape',
-                query: searchTerm,
-                hadResults: results.length > 0,
-                hadSelection: selectedIndex >= 0,
-            })
-            onClose()
-            return
-        }
         if (
             e.key === 'Tab' &&
             !e.shiftKey &&
@@ -121,6 +110,27 @@ const ModalSearchContent = ({ onClose }: ModalSearchContentProps) => {
             })
         )
     }
+
+    useEffect(() => {
+        const handleEscape = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                e.preventDefault()
+                e.stopPropagation()
+                trackClosed({
+                    reason: 'escape',
+                    query: searchTerm,
+                    hadResults: results.length > 0,
+                    hadSelection: selectedIndex >= 0,
+                })
+                onClose()
+            }
+        }
+        window.addEventListener('keydown', handleEscape, { capture: true })
+        return () =>
+            window.removeEventListener('keydown', handleEscape, {
+                capture: true,
+            })
+    }, [trackClosed, searchTerm, results.length, selectedIndex, onClose])
 
     useEffect(() => {
         inputRef.current?.focus()

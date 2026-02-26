@@ -51,7 +51,7 @@ export const Header = ({ title, logoHref }: Props) => {
                                 <EuiThemeProvider colorMode="light">
                                     <div
                                         css={css`
-                                            min-width: 200px;
+                                            min-width: 320px;
                                         `}
                                     >
                                         <ModalSearch
@@ -65,6 +65,9 @@ export const Header = ({ title, logoHref }: Props) => {
                                 //     <EuiIcon type="sun" />
                                 // </EuiHeaderSectionItemButton>,
                             ],
+                        },
+                        {
+                            items: [],
                         },
                     ]}
                 />
