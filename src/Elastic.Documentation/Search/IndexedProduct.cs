@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.Json.Serialization;
+using Elastic.Mapping;
 
 namespace Elastic.Documentation.Search;
 
@@ -15,12 +16,14 @@ public record IndexedProduct
 	/// <summary>
 	/// The product ID from products.yml (e.g., "elasticsearch", "kibana", "apm-agent-java")
 	/// </summary>
+	[Keyword(Normalizer = "keyword_normalizer")]
 	[JsonPropertyName("id")]
 	public string? Id { get; init; }
 
 	/// <summary>
 	/// The repository name (e.g., "elasticsearch", "docs-content", "elastic-otel-java")
 	/// </summary>
+	[Keyword(Normalizer = "keyword_normalizer")]
 	[JsonPropertyName("repository")]
 	public string? Repository { get; init; }
 }

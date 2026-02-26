@@ -5,8 +5,8 @@
 using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Common;
+using Elastic.Documentation.ServiceDefaults;
 using FluentAssertions;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Search.IntegrationTests;
@@ -220,37 +220,10 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 	/// <summary>
 	/// Creates an ElasticsearchGateway instance using configuration from the distributed application.
 	/// </summary>
-	private NavigationSearchGateway? CreateFindPageGateway()
+	private NavigationSearchGateway CreateFindPageGateway()
 	{
-		// Build a new ConfigurationBuilder to read user secrets and environment variables
-		var configBuilder = new ConfigurationBuilder();
-		configBuilder.AddUserSecrets("72f50f33-6fb9-4d08-bff3-39568fe370b3");
-		configBuilder.AddEnvironmentVariables();
-		var config = configBuilder.Build();
+		var endpoints = ElasticsearchEndpointFactory.Create();
 
-		// Get Elasticsearch configuration with fallback chain: user secrets → environment
-		var elasticsearchUrl =
-			config["Parameters:DocumentationElasticUrl"]
-			?? config["DOCUMENTATION_ELASTIC_URL"];
-
-		var elasticsearchApiKey =
-			config["Parameters:DocumentationElasticApiKey"]
-			?? config["DOCUMENTATION_ELASTIC_APIKEY"];
-
-		if (elasticsearchUrl is null or "" || elasticsearchApiKey is null or "")
-			return null;
-
-		// Create IConfiguration with the required values for ElasticsearchOptions
-		var testConfig = new ConfigurationBuilder()
-			.AddInMemoryCollection(new Dictionary<string, string?>
-			{
-				["DOCUMENTATION_ELASTIC_URL"] = elasticsearchUrl,
-				["DOCUMENTATION_ELASTIC_APIKEY"] = elasticsearchApiKey,
-				["DOCUMENTATION_ELASTIC_INDEX"] = "semantic-docs-dev-latest"
-			})
-			.Build();
-
-		var options = new ElasticsearchOptions(testConfig);
 		var searchConfig = new SearchConfiguration
 		{
 			Synonyms = new Dictionary<string, string[]>(),
@@ -278,7 +251,7 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 			DiminishTerms = ["plugin", "client", "integration", "glossary"]
 		};
 
-		var clientAccessor = new ElasticsearchClientAccessor(options, searchConfig);
+		var clientAccessor = new ElasticsearchClientAccessor(endpoints, searchConfig);
 		return new NavigationSearchGateway(clientAccessor, NullLogger<NavigationSearchGateway>.Instance);
 	}
 }

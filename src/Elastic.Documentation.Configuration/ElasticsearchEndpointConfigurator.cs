@@ -21,7 +21,6 @@ public record ElasticsearchIndexOptions
 	public string? Password { get; init; }
 
 	// inference options
-	public bool? NoSemantic { get; init; }
 	public bool? EnableAiEnrichment { get; init; }
 	public int? SearchNumThreads { get; init; }
 	public int? IndexNumThreads { get; init; }
@@ -29,7 +28,6 @@ public record ElasticsearchIndexOptions
 	public int? BootstrapTimeout { get; init; }
 
 	// index options
-	public string? IndexNamePrefix { get; init; }
 	public bool? ForceReindex { get; init; }
 
 	// channel buffer options
@@ -85,8 +83,6 @@ public static class ElasticsearchEndpointConfigurator
 			cfg.IndexNumThreads = options.IndexNumThreads.Value;
 		if (options.NoEis.HasValue)
 			cfg.NoElasticInferenceService = options.NoEis.Value;
-		if (!string.IsNullOrEmpty(options.IndexNamePrefix))
-			cfg.IndexNamePrefix = options.IndexNamePrefix;
 		if (options.BufferSize.HasValue)
 			cfg.BufferSize = options.BufferSize.Value;
 		if (options.MaxRetries.HasValue)
@@ -117,8 +113,6 @@ public static class ElasticsearchEndpointConfigurator
 		if (options.BootstrapTimeout.HasValue)
 			cfg.BootstrapTimeout = options.BootstrapTimeout.Value;
 
-		if (options.NoSemantic.HasValue)
-			cfg.NoSemantic = options.NoSemantic.Value;
 		if (options.EnableAiEnrichment.HasValue)
 			cfg.EnableAiEnrichment = options.EnableAiEnrichment.Value;
 		if (options.ForceReindex.HasValue)

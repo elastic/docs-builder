@@ -4,7 +4,9 @@
 
 using Elastic.Clients.Elasticsearch;
 using Elastic.Clients.Elasticsearch.Serialization;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Search;
+using Elastic.Documentation.Search;
 using Elastic.Transport;
 
 namespace Elastic.Documentation.Search.Common;
@@ -18,50 +20,47 @@ public class ElasticsearchClientAccessor : IDisposable
 	private readonly ElasticsearchClientSettings _clientSettings;
 	private readonly SingleNodePool _nodePool;
 	public ElasticsearchClient Client { get; }
-	public ElasticsearchOptions Options { get; }
+	public ElasticsearchEndpoint Endpoint { get; }
 	public SearchConfiguration SearchConfiguration { get; }
+	public string SearchIndex { get; }
 	public string? RulesetName { get; }
 	public IReadOnlyDictionary<string, string[]> SynonymBiDirectional { get; }
 	public IReadOnlyCollection<string> DiminishTerms { get; }
 
 	public ElasticsearchClientAccessor(
-		ElasticsearchOptions elasticsearchOptions,
-		SearchConfiguration searchConfiguration)
+		DocumentationEndpoints endpoints,
+		SearchConfiguration searchConfiguration
+	)
 	{
-		Options = elasticsearchOptions;
+		var endpoint = endpoints.Elasticsearch;
+		Endpoint = endpoint;
 		SearchConfiguration = searchConfiguration;
 		SynonymBiDirectional = searchConfiguration.SynonymBiDirectional;
 		DiminishTerms = searchConfiguration.DiminishTerms;
+
+		SearchIndex = DocumentationMappingContext.DocumentationDocumentSemantic
+			.CreateContext(type: "assembler")
+			.ResolveReadTarget();
+
 		RulesetName = searchConfiguration.Rules.Count > 0
-			? ExtractRulesetName(elasticsearchOptions.IndexName)
+			? "docs-ruleset-assembler"
 			: null;
 
-		_nodePool = new SingleNodePool(new Uri(elasticsearchOptions.Url.Trim()));
+		_nodePool = new SingleNodePool(endpoint.Uri);
+		var auth = endpoint.ApiKey is { } apiKey
+			? (AuthorizationHeader)new ApiKey(apiKey)
+			: endpoint is { Username: { } username, Password: { } password }
+				? new BasicAuthentication(username, password)
+				: null!;
+
 		_clientSettings = new ElasticsearchClientSettings(
 				_nodePool,
 				sourceSerializer: (_, settings) => new DefaultSourceSerializer(settings, EsJsonContext.Default)
 			)
-			.DefaultIndex(elasticsearchOptions.IndexName)
-			.Authentication(new ApiKey(elasticsearchOptions.ApiKey));
+			.DefaultIndex(SearchIndex)
+			.Authentication(auth);
 
 		Client = new ElasticsearchClient(_clientSettings);
-	}
-
-	/// <summary>
-	/// Extracts the ruleset name from the index name.
-	/// Index name format: "semantic-docs-{namespace}-latest" -> ruleset: "docs-ruleset-{namespace}"
-	/// The namespace may contain hyphens (e.g., "codex-engineering"), so we extract everything
-	/// between the "semantic-docs-" prefix and the "-latest" suffix.
-	/// </summary>
-	private static string? ExtractRulesetName(string indexName)
-	{
-		const string prefix = "semantic-docs-";
-		const string suffix = "-latest";
-		if (!indexName.StartsWith(prefix, StringComparison.Ordinal) || !indexName.EndsWith(suffix, StringComparison.Ordinal))
-			return null;
-
-		var ns = indexName[prefix.Length..^suffix.Length];
-		return string.IsNullOrEmpty(ns) ? null : $"docs-ruleset-{ns}";
 	}
 
 	/// <summary>

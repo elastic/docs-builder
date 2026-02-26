@@ -83,17 +83,22 @@ static void LogElasticsearchConfiguration(WebApplication app, ILogger logger)
 {
 	try
 	{
-		var esOptions = app.Services.GetService<ElasticsearchOptions>();
-		if (esOptions != null)
+		var endpoints = app.Services.GetService<DocumentationEndpoints>();
+		if (endpoints is not null)
 		{
+			var endpoint = endpoints.Elasticsearch;
+			var searchIndex = DocumentationMappingContext.DocumentationDocumentSemantic
+				.CreateContext(type: "assembler")
+				.ResolveReadTarget();
 			logger.LogInformation(
-				"Elasticsearch configuration - Url: {Url}, Index: {Index}",
-				esOptions.Url,
-				esOptions.IndexName
+				"Elasticsearch configuration - Url: {Url}, Namespace: {Namespace}, SearchIndex: {SearchIndex}",
+				endpoint.Uri,
+				endpoints.Namespace,
+				searchIndex
 			);
 		}
 		else
-			logger.LogWarning("ElasticsearchOptions could not be resolved from DI");
+			logger.LogWarning("DocumentationEndpoints could not be resolved from DI");
 	}
 	catch (Exception ex)
 	{

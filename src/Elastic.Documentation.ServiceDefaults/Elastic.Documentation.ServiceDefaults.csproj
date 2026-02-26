@@ -17,6 +17,7 @@
     <PackageReference Include="OpenTelemetry.Instrumentation.Http"/>
     <PackageReference Include="OpenTelemetry.Instrumentation.Runtime"/>
     <PackageReference Include="Crayon"/>
+    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets"/>
     <PackageReference Include="GitHub.Actions.Core" />
   </ItemGroup>
 

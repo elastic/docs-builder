@@ -9,6 +9,7 @@ namespace Elastic.Documentation.Configuration;
 public class DocumentationEndpoints
 {
 	public required ElasticsearchEndpoint Elasticsearch { get; init; }
+	public string Namespace { get; set; } = "dev";
 }
 
 public class ElasticsearchEndpoint
@@ -25,9 +26,6 @@ public class ElasticsearchEndpoint
 	public int IndexNumThreads { get; set; } = 4; // Reduced for Serverless rate limits
 	public bool NoElasticInferenceService { get; set; }
 
-	// index options
-	public string IndexNamePrefix { get; set; } = "semantic-docs";
-
 	// channel buffer options
 	public int BufferSize { get; set; } = 50; // Reduced for Serverless rate limits
 	public int MaxRetries { get; set; } = 5; // Increased for 429 retries
@@ -43,7 +41,6 @@ public class ElasticsearchEndpoint
 	public X509Certificate? Certificate { get; set; }
 	public bool CertificateIsNotRoot { get; set; }
 	public int? BootstrapTimeout { get; set; }
-	public bool NoSemantic { get; set; }
 	public bool ForceReindex { get; set; }
 
 	/// <summary>
