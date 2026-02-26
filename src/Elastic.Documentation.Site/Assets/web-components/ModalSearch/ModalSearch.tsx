@@ -170,7 +170,7 @@ const ModalSearchContent = ({ onClose }: ModalSearchContentProps) => {
                     autoFocus
                     inputRef={inputRef}
                     fullWidth
-                    placeholder="Search in Codex"
+                    placeholder="Search in Elastic Internal Docs"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     onKeyDown={handleKeyDown}

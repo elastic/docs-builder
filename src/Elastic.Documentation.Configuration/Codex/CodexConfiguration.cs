@@ -31,7 +31,7 @@ public record CodexConfiguration
 	/// The title displayed on the codex index page.
 	/// </summary>
 	[YamlMember(Alias = "title")]
-	public string Title { get; set; } = "Documentation Codex";
+	public string Title { get; set; } = "Elastic Internal Docs";
 
 	/// <summary>
 	/// Predefined groups with id, name, description, and icon. Documentation sets reference groups by id.

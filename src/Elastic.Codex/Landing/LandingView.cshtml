@@ -44,7 +44,7 @@
 		</div>
 
 		<div class="w-full max-w-xl mt-10 mb-10 border border-grey-20 rounded-lg p-4 bg-white shadow-2xl">
-			<div class="flex items-center gap-3">
+			<div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
 				<button type="button"
 						aria-label="Search"
 						onclick="document.dispatchEvent(new CustomEvent('modal-search:open'))"
@@ -53,7 +53,7 @@
 					<span class="flex-1 text-left">Search</span>
 					<span class="text-xs text-subdued">⌘K</span>
 				</button>
-				<div class="text-subdued text-xs flex items-center">
+				<div class="text-subdued text-xs flex items-center justify-center">
 					OR
 				</div>
 				<button type="button"
@@ -89,17 +89,17 @@
 		var totalDocSets = Model.CodexNavigation?.DocumentationSetInfos?.Count ?? 0;
 		var totalPages = Model.CodexNavigation?.DocumentationSetInfos?.Sum(ds => ds.PageCount) ?? 0;
 	}
-	<div class="flex items-center justify-center gap-8 py-6 text-sm text-slate-500" style="position: relative; z-index: 1;">
+	<div class="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 py-6 text-sm text-slate-500" style="position: relative; z-index: 1;">
 		<div class="flex items-center gap-2">
 			@GetIconSvg("cluster", "w-4 h-4 fill-current")
 			<span><strong class="text-slate-700">@totalGroups</strong> groups</span>
 		</div>
-		<div class="w-px h-4 bg-slate-300"></div>
+		<div class="hidden sm:block w-px h-4 bg-slate-300"></div>
 		<div class="flex items-center gap-2">
 			@GetIconSvg("app_notebook", "w-4 h-4 fill-current")
 			<span><strong class="text-slate-700">@totalDocSets</strong> documentation sets</span>
 		</div>
-		<div class="w-px h-4 bg-slate-300"></div>
+		<div class="hidden sm:block w-px h-4 bg-slate-300"></div>
 		<div class="flex items-center gap-2">
 			@GetIconSvg("documents", "w-4 h-4 fill-current")
 			<span><strong class="text-slate-700">@totalPages.ToString("N0")</strong> pages</span>
