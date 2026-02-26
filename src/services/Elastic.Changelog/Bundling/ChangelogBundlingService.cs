@@ -267,8 +267,8 @@ public partial class ChangelogBundlingService(
 			}
 
 			// Profile-level repo/owner takes precedence; fall back to bundle-level defaults
-			repo = profile.Repo ?? config?.Bundle?.Repo;
-			owner = profile.Owner ?? config?.Bundle?.Owner;
+			repo = profile.Repo ?? config.Bundle?.Repo;
+			owner = profile.Owner ?? config.Bundle?.Owner;
 			mergedHideFeatures = profile.HideFeatures?.Count > 0 ? [.. profile.HideFeatures] : null;
 		}
 
