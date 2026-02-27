@@ -406,15 +406,17 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		{
 			profiles = yaml.Profiles.ToDictionary(
 				kvp => kvp.Key,
-				kvp => new BundleProfile
-				{
-					Products = kvp.Value.Products,
-					Output = kvp.Value.Output,
-					OutputProducts = kvp.Value.OutputProducts,
-					Repo = kvp.Value.Repo,
-					Owner = kvp.Value.Owner,
-					HideFeatures = kvp.Value.HideFeatures?.Values
-				});
+				kvp => kvp.Value is null
+					? new BundleProfile()
+					: new BundleProfile
+					{
+						Products = kvp.Value.Products,
+						Output = kvp.Value.Output,
+						OutputProducts = kvp.Value.OutputProducts,
+						Repo = kvp.Value.Repo,
+						Owner = kvp.Value.Owner,
+						HideFeatures = kvp.Value.HideFeatures?.Values
+					});
 		}
 
 		return new BundleConfiguration

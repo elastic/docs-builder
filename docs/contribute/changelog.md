@@ -500,8 +500,9 @@ You can specify only one of the following filter options:
 
 - `--all`: Include all changelogs from the directory.
 - `--input-products`: Include changelogs for the specified products. Refer to [Filter by product](#changelog-bundle-product).
-- `--prs`: Include changelogs for the specified pull request URLs or numbers, or a path to a newline-delimited file containing PR URLs or numbers. Go to [Filter by pull requests](#changelog-bundle-pr).
-- `--issues`: Include changelogs for the specified issue URLs or numbers, or a path to a newline-delimited file containing issue URLs or numbers. Go to [Filter by issues](#changelog-bundle-issues).
+- `--prs`: Include changelogs for the specified pull request URLs, or a path to a newline-delimited file. When using a file, every line must be a fully-qualified GitHub URL such as `https://github.com/owner/repo/pull/123`. Go to [Filter by pull requests](#changelog-bundle-pr).
+- `--issues`: Include changelogs for the specified issue URLs, or a path to a newline-delimited file. When using a file, every line must be a fully-qualified GitHub URL such as `https://github.com/owner/repo/issues/123`. Go to [Filter by issues](#changelog-bundle-issues).
+- `--report`: Include changelogs whose pull requests appear in a promotion report. Accepts a URL or a local file path to an HTML report.
 
 By default, the output file contains only the changelog file names and checksums.
 To change this behavior, set `bundle.resolve` to `true` in the changelog configuration file or use the `--resolve` command option.
@@ -520,7 +521,17 @@ When you do not specify `--repo` or `--owner`, the command falls back to `bundle
 If your `changelog.yml` configuration file defines `bundle.profiles`, you can run a bundle by profile name instead of supplying individual options:
 
 ```sh
-docs-builder changelog bundle <profile> <version|promotion-report>
+docs-builder changelog bundle <profile> <version|report|url-list>
+```
+
+The second argument accepts a version string, a promotion report URL/path, or a URL list file (a plain-text file with one fully-qualified GitHub URL per line). When your profile uses `{version}` in its `output` or `output_products` pattern and you also want to filter by a report, pass both:
+
+```sh
+# Version + report (version for substitution, report for filtering)
+docs-builder changelog bundle serverless-release 2026-02 ./promotion-report.html
+
+# Version + URL list file
+docs-builder changelog bundle serverless-release 2026-02 ./prs.txt
 ```
 
 For example:
@@ -528,6 +539,7 @@ For example:
 ```sh
 docs-builder changelog bundle elasticsearch-release 9.2.0
 docs-builder changelog bundle elasticsearch-release ./promotion-report.html
+docs-builder changelog bundle elasticsearch-release 9.2.0 ./promotion-report.html
 ```
 
 The command automatically discovers `changelog.yml` by checking `./changelog.yml` then `./docs/changelog.yml` relative to your current directory.
@@ -927,7 +939,7 @@ This is the easiest way to remove exactly the changelogs that were included in a
 The command syntax is:
 
 ```sh
-docs-builder changelog remove <profile> <version|promotion-report>
+docs-builder changelog remove <profile> <version|report|url-list>
 ```
 
 For example, if you bundled with:
@@ -951,16 +963,19 @@ The `output`, `output_products`, `repo`, `owner`, and `hide_features` fields are
 Profile-based removal is mutually exclusive with command options.
 The only options allowed alongside a profile name are `--dry-run` and `--force`.
 
-You can also pass a promotion report URL or file path as the second argument, and the command removes changelogs whose pull request URLs appear in the report:
+You can also pass a promotion report URL, file path, or URL list file as the second argument, and the command removes changelogs whose pull request or issue URLs appear in the report:
 
 ```sh
 docs-builder changelog remove elasticsearch-release https://buildkite.../promotion-report.html
+docs-builder changelog remove serverless-release 2026-02 ./promotion-report.html
+docs-builder changelog remove serverless-release 2026-02 ./prs.txt
 ```
 
 ### Removal with command options [changelog-remove-raw]
 
 You can alternatively remove changelogs based on their issues, pull requests, product metadata, or remove all changelogs from a folder.
-Exactly one filter option must be specified: `--all`, `--products`, `--prs`, or `--issues`.
+Exactly one filter option must be specified: `--all`, `--products`, `--prs`, `--issues`, or `--report`.
+When using a file for `--prs` or `--issues`, every line must be a fully-qualified GitHub URL.
 
 ```sh
 docs-builder changelog remove --products "elasticsearch 9.3.0 *" --dry-run

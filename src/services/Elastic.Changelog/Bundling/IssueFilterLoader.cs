@@ -50,7 +50,14 @@ public class IssueFilterLoader(IFileSystem fileSystem)
 		}
 		else
 		{
-			await ProcessMultipleValuesAsync(issuesToMatch, nonExistentFiles, issues, ctx);
+			if (!await ProcessMultipleValuesAsync(collector, issuesToMatch, nonExistentFiles, issues, ctx))
+			{
+				return new IssueFilterResult
+				{
+					IsValid = false,
+					IssuesToMatch = issuesToMatch
+				};
+			}
 
 			if (nonExistentFiles.Count > 0)
 			{
@@ -64,6 +71,7 @@ public class IssueFilterLoader(IFileSystem fileSystem)
 					};
 				}
 
+				// Emit warnings for non-existent files since we have valid issues
 				foreach (var file in nonExistentFiles)
 					collector.EmitWarning(file, $"File does not exist, skipping: {file}");
 			}
@@ -95,8 +103,7 @@ public class IssueFilterLoader(IFileSystem fileSystem)
 
 		if (!isUrl && fileSystem.File.Exists(singleValue))
 		{
-			await ReadIssuesFromFileAsync(singleValue, issuesToMatch, ctx);
-			return true;
+			return await ReadIssuesFromFileAsync(collector, singleValue, issuesToMatch, ctx);
 		}
 
 		if (!isUrl)
@@ -121,7 +128,8 @@ public class IssueFilterLoader(IFileSystem fileSystem)
 		return true;
 	}
 
-	private async Task ProcessMultipleValuesAsync(
+	private async Task<bool> ProcessMultipleValuesAsync(
+		IDiagnosticsCollector collector,
 		HashSet<string> issuesToMatch,
 		List<string> nonExistentFiles,
 		string[] values,
@@ -133,7 +141,8 @@ public class IssueFilterLoader(IFileSystem fileSystem)
 
 			if (!isUrl && fileSystem.File.Exists(value))
 			{
-				await ReadIssuesFromFileAsync(value, issuesToMatch, ctx);
+				if (!await ReadIssuesFromFileAsync(collector, value, issuesToMatch, ctx))
+					return false;
 			}
 			else if (isUrl)
 			{
@@ -152,6 +161,7 @@ public class IssueFilterLoader(IFileSystem fileSystem)
 				_ = issuesToMatch.Add(value);
 			}
 		}
+		return true;
 	}
 
 	private static bool ValidateNumericIssues(
@@ -174,7 +184,7 @@ public class IssueFilterLoader(IFileSystem fileSystem)
 		return true;
 	}
 
-	private async Task ReadIssuesFromFileAsync(string filePath, HashSet<string> issuesToMatch, Cancel ctx)
+	private async Task<bool> ReadIssuesFromFileAsync(IDiagnosticsCollector collector, string filePath, HashSet<string> issuesToMatch, Cancel ctx)
 	{
 		var content = await fileSystem.File.ReadAllTextAsync(filePath, ctx);
 		var lines = content
@@ -182,7 +192,19 @@ public class IssueFilterLoader(IFileSystem fileSystem)
 			.Where(p => !string.IsNullOrWhiteSpace(p));
 
 		foreach (var line in lines)
+		{
+			if (!IsUrl(line))
+			{
+				collector.EmitError(
+					filePath,
+					$"File must contain fully-qualified GitHub URLs (e.g. https://github.com/owner/repo/issues/123). " +
+					$"Numbers and short forms are not allowed. Found: {line}"
+				);
+				return false;
+			}
 			_ = issuesToMatch.Add(line);
+		}
+		return true;
 	}
 
 	private static bool IsUrl(string value) =>

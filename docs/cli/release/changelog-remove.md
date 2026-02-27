@@ -26,12 +26,18 @@ These arguments apply to profile-based removal:
 `[0] <string?>`
 :   Profile name from `bundle.profiles` in the changelog configuration file.
 :   For example, "elasticsearch-release".
-:   When specified, the second argument is the version or promotion report URL.
-:   Mutually exclusive with `--all`, `--products`, `--prs`, `--issues`, `--owner`, `--repo`, `--config`, `--directory`, and `--bundles-dir`.
+:   When specified, the second argument is the version, promotion report URL, or URL list file.
+:   Mutually exclusive with `--all`, `--products`, `--prs`, `--issues`, `--report`, `--owner`, `--repo`, `--config`, `--directory`, and `--bundles-dir`.
 
 `[1] <string?>`
-:   Version number or promotion report URL or path.
-:   For example, "9.2.0" or "https://buildkite.../promotion-report.html".
+:   Version number, promotion report URL/path, or URL list file.
+:   For example, `9.2.0`, `https://buildkite.../promotion-report.html`, or `/path/to/prs.txt`.
+:   See [Profile argument types](/cli/release/changelog-bundle.md#profile-argument-types) for details on accepted formats.
+
+`[2] <string?>`
+:   Optional: Promotion report URL/path or URL list file when the second argument is a version string.
+:   When provided, `[1]` must be a version string and `[2]` is the PR/issue filter source.
+:   For example, `docs-builder changelog remove serverless-release 2026-02 ./promotion-report.html`.
 
 ## Options
 
@@ -65,9 +71,10 @@ These arguments apply to profile-based removal:
 :   Valid in both profile and option-based mode.
 
 `--issues <string[]?>`
-:   Filter by issue URLs or numbers (comma-separated), or a path to a newline-delimited file containing issue URLs or numbers.
+:   Filter by issue URLs (comma-separated), or a path to a newline-delimited file.
 :   Can be specified multiple times.
-:   Exactly one filter option must be specified: `--all`, `--products`, `--prs`, or `--issues`.
+:   Exactly one filter option must be specified: `--all`, `--products`, `--prs`, `--issues`, or `--report`.
+:   When using a file, every line must be a fully-qualified GitHub issue URL. Bare numbers and short forms are not allowed in files.
 :   Not allowed with a profile argument.
 
 `--owner <string?>`
@@ -87,13 +94,19 @@ These arguments apply to profile-based removal:
 - `"* * *"` — all changelogs (equivalent to `--all`)
 
 `--prs <string[]?>`
-:   Filter by pull request URLs or numbers (comma-separated), or a path to a newline-delimited file containing PR URLs or numbers.
+:   Filter by pull request URLs (comma-separated), or a path to a newline-delimited file.
 :   Can be specified multiple times.
-:   Exactly one filter option must be specified: `--all`, `--products`, `--prs`, or `--issues`.
+:   Exactly one filter option must be specified: `--all`, `--products`, `--prs`, `--issues`, or `--report`.
+:   When using a file, every line must be a fully-qualified GitHub PR URL. Bare numbers and short forms are not allowed in files.
 :   Not allowed with a profile argument.
 
 `--repo <string?>`
 :   The GitHub repository name, which is required when pull requests or issues are specified as numbers.
+:   Not allowed with a profile argument.
+
+`--report <string?>`
+:   Filter by pull requests extracted from a promotion report. Accepts a URL or a local file path.
+:   Exactly one filter option must be specified: `--all`, `--products`, `--prs`, `--issues`, or `--report`.
 :   Not allowed with a profile argument.
 
 ## Profile-based removal [changelog-remove-profile]
@@ -126,4 +139,24 @@ You can also pass a promotion report URL or file path as the second argument, in
 
 ```sh
 docs-builder changelog remove elasticsearch-release https://buildkite.../promotion-report.html
+```
+
+When using a profile with `{version}` in the `output` or `output_products` pattern, pass the version as the second argument and the report as the third:
+
+```sh
+docs-builder changelog remove serverless-release 2026-02 ./promotion-report.html
+```
+
+Or with a URL list file:
+
+```sh
+docs-builder changelog remove serverless-release 2026-02 ./prs.txt
+```
+
+For option-based removal with a promotion report:
+
+```sh
+docs-builder changelog remove \
+  --report https://buildkite.../promotion-report.html \
+  --directory ./docs/changelog
 ```
