@@ -17,7 +17,7 @@ public class McpBearerAuthMiddleware(RequestDelegate next, ILogger<McpBearerAuth
 {
 	private const string McpUserKey = "McpUser";
 	private const string ExpectedAlg = "RS256";
-	private static readonly JwtSecurityTokenHandler TokenHandler = new();
+	private static readonly JwtSecurityTokenHandler TokenHandler = new() { MapInboundClaims = false };
 
 	public async Task InvokeAsync(HttpContext context)
 	{
