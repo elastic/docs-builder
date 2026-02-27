@@ -44,4 +44,8 @@ public class SystemEnvironmentVariables : IEnvironmentVariables
 
 	/// <inheritdoc />
 	public string McpAllowedEmailDomains => GetEnvironmentVariable("MCP_ALLOWED_EMAIL_DOMAINS") ?? "elastic.co";
+
+	/// <inheritdoc />
+	public string McpServerProfile => GetEnvironmentVariable("MCP_SERVER_PROFILE") ?? "public";
+
 }

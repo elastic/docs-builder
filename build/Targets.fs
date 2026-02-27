@@ -110,7 +110,7 @@ let private publishContainers _ =
     let createImage projectPath containerName =
         let ci = Environment.environVarOrNone "GITHUB_ACTIONS"
         let pr = prNumber()
-        let baseImageTag = "9.0-noble-chiseled-aot"
+        let baseImageTag = "10.0-noble-chiseled"
         let labels = imageTags()
         let args =
             ["publish"; projectPath]
