@@ -129,10 +129,12 @@ public class McpBearerAuthMiddleware(RequestDelegate next, ILogger<McpBearerAuth
 			return (null, 401);
 		}
 
-		using var rsa = RSA.Create();
+		RSAParameters rsaParams;
 		try
 		{
+			using var rsa = RSA.Create();
 			rsa.ImportFromPem(env.McpJwtPublicKey);
+			rsaParams = rsa.ExportParameters(includePrivateParameters: false);
 		}
 		catch (CryptographicException)
 		{
@@ -149,7 +151,7 @@ public class McpBearerAuthMiddleware(RequestDelegate next, ILogger<McpBearerAuth
 
 		var validationParams = new TokenValidationParameters
 		{
-			IssuerSigningKey = new RsaSecurityKey(rsa) { KeyId = env.McpJwtKeyId },
+			IssuerSigningKey = new RsaSecurityKey(rsaParams) { KeyId = env.McpJwtKeyId },
 			ValidateIssuerSigningKey = true,
 			ValidateIssuer = env.McpOAuthIssuer is not null,
 			ValidIssuer = env.McpOAuthIssuer,
