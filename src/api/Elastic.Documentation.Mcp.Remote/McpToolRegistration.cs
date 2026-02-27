@@ -22,13 +22,12 @@ public static class McpToolRegistration
 		var prefix = profile.ToolNamePrefix;
 		var tools = new List<McpServerTool>();
 
-		var modulesWithTools = profile.Modules
-			.Where(m => m.ToolType is not null)
-			.Select(m => (module: m, toolType: m.ToolType!));
-
-		foreach (var (_, toolType) in modulesWithTools)
+		foreach (var module in profile.Modules)
 		{
-			var methods = toolType
+			if (module.ToolType is null)
+				continue;
+
+			var methods = module.ToolType
 				.GetMethods(BindingFlags.Public | BindingFlags.Instance)
 				.Where(m => m.GetCustomAttribute<McpServerToolAttribute>() != null);
 
@@ -41,7 +40,7 @@ public static class McpToolRegistration
 
 				var tool = McpServerTool.Create(
 					method,
-					ctx => (ctx.Services ?? throw new InvalidOperationException("RequestContext.Services is null")).GetRequiredService(toolType),
+					ctx => (ctx.Services ?? throw new InvalidOperationException("RequestContext.Services is null")).GetRequiredService(module.ToolType),
 					options);
 
 				tools.Add(tool);

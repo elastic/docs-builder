@@ -66,8 +66,8 @@ public sealed record McpServerProfile(
 		foreach (var module in Modules)
 		{
 			module.RegisterServices(services);
-			if (module.ToolType is { } toolType)
-				_ = services.AddScoped(toolType);
+			if (module.ToolType is not null)
+				_ = services.AddScoped(module.ToolType);
 		}
 	}
 
