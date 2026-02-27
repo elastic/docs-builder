@@ -277,7 +277,12 @@ public partial class ChangelogBundlingService(
 			var outputPattern = profile.Output?.Replace("{version}", filterResult.Version);
 			if (!string.IsNullOrWhiteSpace(outputPattern))
 			{
-				var outputDir = config.Bundle.OutputDirectory ?? input.OutputDirectory ?? input.Directory ?? _fileSystem.Directory.GetCurrentDirectory();
+				// Resolution order: bundle.output_directory → input.OutputDirectory (programmatic override)
+				// → bundle.directory → CWD
+				var outputDir = config.Bundle.OutputDirectory
+					?? input.OutputDirectory
+					?? config.Bundle.Directory
+					?? _fileSystem.Directory.GetCurrentDirectory();
 				outputPath = _fileSystem.Path.Combine(outputDir, outputPattern);
 			}
 

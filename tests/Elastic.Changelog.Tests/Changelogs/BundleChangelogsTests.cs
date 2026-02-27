@@ -3319,9 +3319,9 @@ public class BundleChangelogsTests : ChangelogTestBase
 	public async Task BundleChangelogs_WithProfile_UrlListFile_PrUrls_FiltersCorrectly()
 	{
 		// Arrange - profile argument is a text file containing fully-qualified PR URLs
-		var configContent =
-			"""
+		var configContent = $"""
 			bundle:
+			  directory: {_changelogDir}
 			  profiles:
 			    release:
 			      output: "bundle.yaml"
@@ -3368,12 +3368,11 @@ public class BundleChangelogsTests : ChangelogTestBase
 			TestContext.Current.CancellationToken
 		);
 
-		// Profile writes to _changelogDir/bundle.yaml (output: "bundle.yaml" + no output_directory in config)
+		// Profile writes to _changelogDir/bundle.yaml because bundle.directory is the fallback for output_directory
 		var expectedOutputPath = FileSystem.Path.Combine(_changelogDir, "bundle.yaml");
 
 		var input = new BundleChangelogsArguments
 		{
-			Directory = _changelogDir,
 			Config = configPath,
 			Profile = "release",
 			ProfileArgument = urlFile
@@ -3395,9 +3394,9 @@ public class BundleChangelogsTests : ChangelogTestBase
 	public async Task BundleChangelogs_WithProfile_UrlListFile_IssueUrls_FiltersCorrectly()
 	{
 		// Arrange - profile argument is a text file containing fully-qualified issue URLs
-		var configContent =
-			"""
+		var configContent = $"""
 			bundle:
+			  directory: {_changelogDir}
 			  profiles:
 			    release:
 			      output: "bundle.yaml"
@@ -3445,11 +3444,11 @@ public class BundleChangelogsTests : ChangelogTestBase
 		);
 
 		// Profile writes to _changelogDir/bundle.yaml (output: "bundle.yaml" + no output_directory in config)
+		// Profile writes to _changelogDir/bundle.yaml because bundle.directory is the fallback for output_directory
 		var expectedOutputPath = FileSystem.Path.Combine(_changelogDir, "bundle.yaml");
 
 		var input = new BundleChangelogsArguments
 		{
-			Directory = _changelogDir,
 			Config = configPath,
 			Profile = "release",
 			ProfileArgument = urlFile

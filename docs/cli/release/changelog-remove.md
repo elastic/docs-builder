@@ -48,8 +48,8 @@ These arguments apply to profile-based removal:
 
 `--bundles-dir <string?>`
 :   Optional: Override the directory scanned for bundles during the dependency check.
-:   When not specified, the directory is discovered automatically from config or fallback paths.
-:   Not allowed with a profile argument. In profile mode, the bundles directory is derived from `bundle.output_directory` in the changelog configuration.
+:   When not specified, the directory is resolved in order: `bundle.output_directory` from the changelog configuration, then `{changelog-dir}/bundles`, then `{changelog-dir}/../bundles`.
+:   Not allowed with a profile argument. In profile mode, the same automatic discovery applies.
 
 `--config <string?>`
 :   Optional: Path to the changelog configuration file.
@@ -58,8 +58,8 @@ These arguments apply to profile-based removal:
 
 `--directory <string?>`
 :   Optional: The directory that contains the changelog YAML files.
-:   When not specified, uses `bundle.directory` from the changelog configuration if set, otherwise the current directory.
-:   Not allowed with a profile argument. In profile mode, the directory is derived from `bundle.directory` in the changelog configuration.
+:   When not specified, falls back to `bundle.directory` from the changelog configuration, then the current working directory.
+:   Not allowed with a profile argument. In profile mode, the same fallback applies (starting from `bundle.directory`).
 
 `--dry-run`
 :   Print the files that would be removed and any bundle dependency conflicts, without deleting anything.
@@ -108,6 +108,32 @@ These arguments apply to profile-based removal:
 :   Filter by pull requests extracted from a promotion report. Accepts a URL or a local file path.
 :   Exactly one filter option must be specified: `--all`, `--products`, `--prs`, `--issues`, or `--report`.
 :   Not allowed with a profile argument.
+
+## Directory resolution [changelog-remove-dirs]
+
+Both modes use the same ordered fallback to locate changelog YAML files and existing bundles.
+
+**Changelog files directory** (where changelog YAML files are read from):
+
+| Priority | Profile-based | Option-based |
+|----------|---------------|--------------|
+| 1 | `bundle.directory` in `changelog.yml` | `--directory` CLI option |
+| 2 | Current working directory | `bundle.directory` in `changelog.yml` |
+| 3 | — | Current working directory |
+
+**Bundles directory** (scanned for existing bundles during the dependency check):
+
+| Priority | Both modes |
+|----------|------------|
+| 1 | `--bundles-dir` CLI option (option-based only) |
+| 2 | `bundle.output_directory` in `changelog.yml` |
+| 3 | `{changelog-dir}/bundles` |
+| 4 | `{changelog-dir}/../bundles` |
+
+:::{note}
+"Current working directory" means the directory you are in when you run the command (`pwd`).
+Setting `bundle.directory` and `bundle.output_directory` in `changelog.yml` is recommended so you don't need to rely on running the command from a specific directory.
+:::
 
 ## Profile-based removal [changelog-remove-profile]
 

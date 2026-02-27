@@ -892,8 +892,11 @@ internal sealed partial class ChangelogCommand(
 		}
 
 		// In profile mode, directory is derived from the changelog config (not from CLI).
-		// In raw mode, use --directory if provided, falling back to cwd (for the service's ApplyConfigDefaults).
-		var resolvedDirectory = isProfileMode ? null : NormalizePath(directory ?? Directory.GetCurrentDirectory());
+		// In raw mode, pass null when --directory is not specified so ApplyConfigDefaults can consult
+		// bundle.directory before falling back to CWD.
+		var resolvedDirectory = isProfileMode || string.IsNullOrWhiteSpace(directory)
+			? null
+			: NormalizePath(directory);
 
 		var input = new ChangelogRemoveArguments
 		{

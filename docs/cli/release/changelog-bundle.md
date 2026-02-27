@@ -67,7 +67,7 @@ Using any of them with a profile returns an error.
 
 `--directory <string?>`
 :   Optional: The directory that contains the changelog YAML files.
-:   When not specified, uses `bundle.directory` from the changelog configuration if set, otherwise the current directory.
+:   When not specified, falls back to `bundle.directory` from the changelog configuration, then the current working directory. See [Output files](#output-files) for the full resolution order.
 
 `--hide-features <string[]?>`
 :   Optional: A list of feature IDs (comma-separated), or a path to a newline-delimited file containing feature IDs.
@@ -99,7 +99,7 @@ Using any of them with a profile returns an error.
 `--output <string?>`
 :   Optional: The output path for the bundle.
 :   Can be either (1) a directory path, in which case `changelog-bundle.yaml` is created in that directory, or (2) a file path ending in `.yml` or `.yaml`.
-:   When not specified, uses `bundle.output_directory` from the changelog configuration (creating `changelog-bundle.yaml` in that directory) if set, otherwise `changelog-bundle.yaml` in the input directory.
+:   When not specified, falls back to `bundle.output_directory` from the changelog configuration, then the input directory (which is itself resolved from `--directory`, `bundle.directory`, or the current working directory). See [Output files](#output-files) for the full resolution order.
 
 `--output-products <List<ProductInfo>?>`
 :   Optional: Explicitly set the products array in the output file in format "product target lifecycle, ...".
@@ -131,13 +131,30 @@ Using any of them with a profile returns an error.
 
 ## Output files
 
-Profile-based bundles are created in `bundle.output_directory`.
-If `output_directory` is not set, they are created in the `bundle.directory` alongside the changelog files.
-Bundle names are determined by the `bundle.profiles.<name>.output` setting, which can optionally include additional profile-specific paths. For example: `"stack/kibana-{version}.yaml"`.
-If that setting is absent, the default name is `changelog-bundle.yaml`
+Both modes use the same ordered fallback to determine where to write the bundle. The first value that is set wins:
 
-In the option-based mode, when you do not specify `--output`, the command uses `bundle.output_directory` or defaults to the input directory.
-When you specify `--output`, it supports two formats:
+**Output directory** (where the bundle file is placed):
+
+| Priority | Profile-based | Option-based |
+|----------|---------------|--------------|
+| 1 | — | `--output` (explicit file or directory path) |
+| 2 | `bundle.output_directory` in `changelog.yml` | `bundle.output_directory` in `changelog.yml` |
+| 3 | `bundle.directory` in `changelog.yml` | `--directory` CLI option |
+| 4 | Current working directory | `bundle.directory` in `changelog.yml` |
+| 5 | — | Current working directory |
+
+**Input directory** (where changelog YAML files are read from) follows the same fallback for both modes, minus the explicit CLI override that is forbidden in profile mode:
+
+| Priority | Profile-based | Option-based |
+|----------|---------------|--------------|
+| 1 | `bundle.directory` in `changelog.yml` | `--directory` CLI option |
+| 2 | Current working directory | `bundle.directory` in `changelog.yml` |
+| 3 | — | Current working directory |
+
+**Bundle filename** is determined by the `bundle.profiles.<name>.output` setting (profile-based) or defaults to `changelog-bundle.yaml` (both modes).
+The profile `output` setting can include additional path segments. For example: `"stack/kibana-{version}.yaml"`.
+
+In option-based mode, when you specify `--output`, it supports two formats:
 
 1. **Directory path**: If you specify a directory path (without a filename), the command creates `changelog-bundle.yaml` in that directory:
 
@@ -154,6 +171,11 @@ When you specify `--output`, it supports two formats:
    ```
 
 If you specify a file path with a different extension (not `.yml` or `.yaml`), the command returns an error.
+
+:::{note}
+"Current working directory" means the directory you are in when you run the command (`pwd`).
+Setting `bundle.directory` and `bundle.output_directory` in `changelog.yml` is recommended so you don't need to rely on running the command from a specific directory.
+:::
 
 ## Repository name in bundles [changelog-bundle-repo]
 
