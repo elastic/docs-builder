@@ -64,4 +64,11 @@ public interface IEnvironmentVariables
 	/// Reads MCP_ALLOWED_EMAIL_DOMAINS.
 	/// </summary>
 	string McpAllowedEmailDomains => GetEnvironmentVariable("MCP_ALLOWED_EMAIL_DOMAINS") ?? "elastic.co";
+
+	/// <summary>
+	/// MCP server profile name (e.g. "public", "internal"). Defaults to "public".
+	/// Reads MCP_SERVER_PROFILE.
+	/// </summary>
+	string McpServerProfile => GetEnvironmentVariable("MCP_SERVER_PROFILE") ?? "public";
+
 }
