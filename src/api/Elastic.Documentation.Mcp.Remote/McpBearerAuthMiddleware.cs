@@ -24,6 +24,7 @@ public class McpBearerAuthMiddleware(RequestDelegate next, ILogger<McpBearerAuth
 		var env = SystemEnvironmentVariables.Instance;
 		if (!env.McpAuthEnabled || env.McpJwtPublicKey is null)
 		{
+			logger.LogDebug("MCP auth: skipped (enabled={Enabled}, hasKey={HasKey})", env.McpAuthEnabled, env.McpJwtPublicKey is not null);
 			await next(context);
 			return;
 		}
@@ -48,6 +49,7 @@ public class McpBearerAuthMiddleware(RequestDelegate next, ILogger<McpBearerAuth
 		var authHeader = context.Request.Headers.Authorization.FirstOrDefault();
 		if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
 		{
+			logger.LogWarning("MCP auth: no Bearer token in Authorization header for {Path}", pathValue);
 			await WriteUnauthorizedAsync(context, env);
 			return;
 		}
@@ -55,6 +57,7 @@ public class McpBearerAuthMiddleware(RequestDelegate next, ILogger<McpBearerAuth
 		var token = authHeader["Bearer ".Length..].Trim();
 		if (string.IsNullOrEmpty(token))
 		{
+			logger.LogWarning("MCP auth: empty Bearer token for {Path}", pathValue);
 			await WriteUnauthorizedAsync(context, env);
 			return;
 		}
@@ -62,6 +65,7 @@ public class McpBearerAuthMiddleware(RequestDelegate next, ILogger<McpBearerAuth
 		var (user, errorStatusCode) = ValidateToken(token, env, context);
 		if (user is not null)
 		{
+			logger.LogInformation("MCP auth: authenticated user {User} for {Path}", user, pathValue);
 			context.Items[McpUserKey] = user;
 			await next(context);
 			return;
@@ -200,5 +204,5 @@ public class McpBearerAuthMiddleware(RequestDelegate next, ILogger<McpBearerAuth
 	}
 
 	private void LogValidationFailure(string reason) =>
-		logger.LogDebug("MCP auth validation failed: {Reason}", reason);
+		logger.LogWarning("MCP auth validation failed: {Reason}", reason);
 }
