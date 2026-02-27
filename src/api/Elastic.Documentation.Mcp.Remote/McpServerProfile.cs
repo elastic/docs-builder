@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Text;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Elastic.Documentation.Mcp.Remote;
@@ -108,19 +109,21 @@ public sealed record McpServerProfile(
 
 	private static string ReplaceToolPlaceholders(string line, string prefix)
 	{
-		// Replace {tool:snake_name} with prefix + snake_name (e.g. {tool:semantic_search} → public_docs_semantic_search)
-		var result = line;
-		var start = 0;
-		while ((start = result.IndexOf("{tool:", start, StringComparison.Ordinal)) >= 0)
+		var sb = new StringBuilder(line.Length);
+		var pos = 0;
+		int start;
+		while ((start = line.IndexOf("{tool:", pos, StringComparison.Ordinal)) >= 0)
 		{
-			var end = result.IndexOf('}', start);
+			var end = line.IndexOf('}', start);
 			if (end < 0)
 				break;
-			var snakeName = result[(start + 6)..end];
-			result = result[..start] + prefix + snakeName + result[(end + 1)..];
-			start += prefix.Length + snakeName.Length;
+			_ = sb.Append(line, pos, start - pos);
+			_ = sb.Append(prefix);
+			_ = sb.Append(line, start + 6, end - start - 6);
+			pos = end + 1;
 		}
-		return result;
+		_ = sb.Append(line, pos, line.Length - pos);
+		return sb.ToString();
 	}
 
 	private string DeriveCapabilities()

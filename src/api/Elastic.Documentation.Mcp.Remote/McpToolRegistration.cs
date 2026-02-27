@@ -22,11 +22,12 @@ public static class McpToolRegistration
 		var prefix = profile.ToolNamePrefix;
 		var tools = new List<McpServerTool>();
 
-		foreach (var module in profile.Modules)
-		{
-			if (module.ToolType is not { } toolType)
-				continue;
+		var modulesWithTools = profile.Modules
+			.Where(m => m.ToolType is not null)
+			.Select(m => (module: m, toolType: m.ToolType!));
 
+		foreach (var (_, toolType) in modulesWithTools)
+		{
 			var methods = toolType
 				.GetMethods(BindingFlags.Public | BindingFlags.Instance)
 				.Where(m => m.GetCustomAttribute<McpServerToolAttribute>() != null);
@@ -61,9 +62,7 @@ public static class McpToolRegistration
 
 		return string.Concat(value.Select((c, i) =>
 			i > 0 && char.IsUpper(c)
-				? "_" + char.ToLowerInvariant(c).ToString()
-				: char.IsUpper(c)
-					? char.ToLowerInvariant(c).ToString()
-					: c.ToString()));
+				? $"_{char.ToLowerInvariant(c)}"
+				: $"{char.ToLowerInvariant(c)}"));
 	}
 }
