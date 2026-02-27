@@ -11,10 +11,42 @@ For details and examples, go to [](/contribute/changelog.md).
 docs-builder  changelog bundle [arguments...] [options...] [-h|--help]
 ```
 
-## Bundle with command options
+`changelog bundle` supports two mutually exclusive invocation modes:
 
-This type of bundling ignores the `bundles.profiles` section of the changelog configuration file.
-You must choose one method for determining what's in the bundle (`--all`, `--input-products`, `--prs`, or `--issues`).
+- **Profile-based**: All paths and filters come from the changelog configuration file. No other options are allowed. For example, `bundle <profile> <version-or-report>`.
+- **Option-based**: You supply all filter and output options directly. For example, `bundle --all` (or `--input-products`, `--prs`, `--issues`).
+
+You cannot mix the two modes. Passing any option-based flag together with a profile returns an error.
+
+Profile-based commands discover the changelog configuration automatically (no `--config` flag): they look for `changelog.yml` in the current directory, then `docs/changelog.yml`.
+If neither file is found, the command returns an error with instructions to run `docs-builder changelog init` or to re-run from the folder where the file exists.
+
+## Arguments
+
+These arguments apply to profile-based bundling:
+
+`[0] <string?>`
+:   Profile name from `bundle.profiles` in the changelog configuration file.
+:   For example, "elasticsearch-release".
+:   When it's specified, the second argument is the version or promotion report URL.
+
+`[1] <string?>`
+:   Version number or promotion report URL or path.
+:   For example, "9.2.0" or `https://buildkite.../promotion-report.html`.
+
+:::{note}
+Only the profile-based method currently supports buildkite promotion reports.
+There is no equivalent command option.
+:::
+
+<!-- 
+TBD: Does the promotion report need to have a specific format? Can we provide more details or an example?
+-->
+
+## Options
+
+The following options are only valid in option-based mode (no profile argument).
+Using any of them with a profile returns an error.
 
 `--all`
 :   Include all changelogs from the directory.
@@ -66,7 +98,8 @@ You must choose one method for determining what's in the bundle (`--all`, `--inp
 :   This value replaces information that would otherwise by derived from changelogs.
 
 `--owner <string?>`
-:   The GitHub repository owner, which is required when pull requests or issues are specified as numbers.
+:   Optional: The GitHub repository owner, required when pull requests or issues are specified as numbers.
+:   Falls back to `bundle.owner` in `changelog.yml` when not specified.
 
 `--prs <string[]?>`
 :   Filter by pull request URLs or numbers (comma-separated), or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times.
@@ -76,16 +109,22 @@ You must choose one method for determining what's in the bundle (`--all`, `--inp
 :   When specifying a file path, provide a single value that points to a newline-delimited file.
 
 `--repo <string?>`
-:   The GitHub repository name, which is required when pull requests or issues are specified as numbers.
+:   Optional: The GitHub repository name, required when pull requests or issues are specified as numbers.
+:   Also sets the `repo` field in each bundle product entry for correct PR/issue link generation.
+:   Falls back to `bundle.repo` in `changelog.yml` when not specified; if that is also absent, the product ID is used.
 
 `--resolve`
 :   Optional: Copy the contents of each changelog file into the entries array.
 :   By default, the bundle contains only the file names and checksums.
 
-### Output files
+## Output files
 
-When you do not specify `--output`, the command uses `bundle.output_directory` from your changelog configuration if it is set (creating `changelog-bundle.yaml` in that directory), otherwise writes to `changelog-bundle.yaml` in the input directory.
+Profile-based bundles are created in `bundle.output_directory`.
+If `output_directory` is not set, they are created in the `bundle.directory` alongside the changelog files.
+Bundle names are determined by the `bundle.profiles.<name>.output` setting, which can optionally include additional profile-specific paths. For example: `"stack/kibana-{version}.yaml"`.
+If that setting is absent, the default name is `changelog-bundle.yaml`
 
+In the option-based mode, when you do not specify `--output`, the command uses `bundle.output_directory` or defaults to the input directory.
 When you specify `--output`, it supports two formats:
 
 1. **Directory path**: If you specify a directory path (without a filename), the command creates `changelog-bundle.yaml` in that directory:
@@ -104,21 +143,41 @@ When you specify `--output`, it supports two formats:
 
 If you specify a file path with a different extension (not `.yml` or `.yaml`), the command returns an error.
 
-### Repository name in bundles [changelog-bundle-repo]
+## Repository name in bundles [changelog-bundle-repo]
 
-When you specify the `--repo` option, the repository name is stored in the bundle's product metadata.
-This ensures that PR and issue links are generated correctly when the bundle is rendered.
+The repository name is stored in each bundle product entry to ensure that PR and issue links are generated correctly when the bundle is rendered.
+It can be set in three ways, in order of precedence:
 
-```sh
-docs-builder changelog bundle \
-  --input-products "cloud-serverless 2025-12-02 *" \
-  --repo cloud \ <1>
-  --output /path/to/bundles/2025-12-02.yaml
+1. **`--repo` option** (option-based mode only)
+2. **`repo` field in the profile** (profile-based mode only; overrides the bundle-level default)
+3. **`bundle.repo` in `changelog.yml`** (applies to both modes as a default when neither of the above is set)
+
+Setting `bundle.repo` and `bundle.owner` in your configuration means you rarely need to pass `--repo` and `--owner` on the command line:
+
+```yaml
+bundle:
+  repo: cloud
+  owner: elastic
 ```
 
-1. The GitHub repository name. This is stored in each product entry in the bundle.
+You can still override them per profile if a project has multiple products with different repos:
 
-The bundle output will include a `repo` field in each product:
+```yaml
+bundle:
+  repo: cloud        # default for all profiles
+  owner: elastic
+  profiles:
+    elasticsearch-release:
+      products: "elasticsearch {version} {lifecycle}"
+      output: "elasticsearch-{version}.yaml"
+      repo: elasticsearch  # overrides bundle.repo for this profile only
+    serverless-release:
+      products: "cloud-serverless {version} *"
+      output: "serverless-{version}.yaml"
+      # inherits repo: cloud from bundle level
+```
+
+The bundle output includes a `repo` field in each product:
 
 ```yaml
 products:
@@ -131,86 +190,79 @@ entries:
     checksum: 6c3243f56279b1797b5dfff6c02ebf90b9658464
 ```
 
-When rendering, pull request and issue links will use `https://github.com/elastic/cloud/...` instead of the product ID in the URL.
+When rendering, pull request and issue links use `https://github.com/elastic/cloud/...` instead of the product ID.
 
 :::{note}
-If the `repo` field is not specified, the product ID is used as a fallback for link generation.
+If no `repo` is set at any level, the product ID is used as a fallback for link generation.
 This may result in broken links if the product ID doesn't match the GitHub repository name (for example, `cloud-serverless` vs `cloud`).
 :::
 
-## Bundle with a profile
+## Profile configuration fields [changelog-bundle-profile-config]
 
-This type of bundle is invoked by passing a profile name and filter as positional arguments:
+Bundle profiles in `changelog.yml` support the following fields:
 
-```sh
-docs-builder changelog bundle <profile-name> <version-or-report-url>
-```
+`products`
+:   Required. The product filter pattern for input changelogs. Supports `{version}` and `{lifecycle}` placeholders that are substituted at runtime.
+:   Example: `"elasticsearch {version} {lifecycle}"`
 
-The profile name must be defined in the `bundle.profiles` section of the changelog configuration file.
-For example, "elasticsearch-release".
+`output`
+:   Required for bundling. The output filename pattern. `{version}` is substituted at runtime.
+:   Example: `"elasticsearch-{version}.yaml"`
 
-The second argument is the optional version number, promotion report URL, or path.
-For example:
+`output_products`
+:   Optional. Overrides the products array written to the bundle output. Supports `{version}` and `{lifecycle}` placeholders. Useful when the bundle should advertise a different lifecycle than was used for filtering — for example, when filtering by `preview` changelogs to produce a `ga` bundle.
+:   Example: `"elasticsearch {version} ga"`
 
-```sh
-# Bundle changelogs that match a specific version or date
-docs-builder changelog bundle elasticsearch-release 9.2.0
+`repo`
+:   Optional. The GitHub repository name written to each product entry in the bundle. Used by the `{changelog}` directive to generate correct PR/issue links. Only needed when the product ID doesn't match the GitHub repository name. Overrides `bundle.repo` when set.
+:   Example: `repo: cloud` (for the `cloud-serverless` product)
 
-# Bundle changelogs that match a list of PRs in a promotion report
-docs-builder changelog bundle serverless-release https://buildkite.../promotion-report.html
+`owner`
+:   Optional. The GitHub owner written to each product entry in the bundle. Overrides `bundle.owner` when set.
+:   Example: `owner: elastic`
 
-# Bundle changelogs that match a list of PRs in a downloaded promotion report
-docs-builder changelog bundle serverless-release ./promotion-report.html
-```
+`hide_features`
+:   Optional. Feature IDs to mark as hidden in the bundle output (string or list). When the bundle is rendered, entries with matching `feature-id` values are commented out.
 
-<!-- 
-TBD: Does the promotion report need to have a specific format? Can we provide more details or an example?
--->
-
-:::{note}
-This is the only method that currently supports the creation of bundles from buildkite promotion reports.
-It can not be accomplished by using command options.
-:::
-
-### Output files [profile-output]
-
-The location of profile-based bundles is determined by the changelog configuration file.
-
-Bundles are created in the `bundle.output_directory`, if that setting exists.
-Otherwise, they're created in `bundle.directory` alongside the changelog files.
-
-Bundle names are determined by the `bundle.profiles.<name>.output` setting, which can optionally include additional profile-specific paths. For example: `"stack/kibana-{version}.yaml"`.
-If that setting is absent, the default name is `changelog-bundle.yaml`
-
-### Examples [profile-examples]
+## Examples
 
 The following changelog configuration example contains multiple profiles for filtering the bundles:
 
 ```yaml
 bundle:
+  repo: cloud <1>
+  owner: elastic
   profiles:
-    # Hardcode a specific lifecycle
+    # Find changelogs with a specific lifecycle
     elasticsearch-ga-only:
-      products: "elasticsearch {version} ga" <1>
+      products: "elasticsearch {version} ga" <2>
       output: "elasticsearch-{version}.yaml"
-
-    # Match any lifecycle (wildcard)
-    serverless-release:
-      products: "cloud-serverless {version} *" <2>
+      repo: elasticsearch <3>
+    
+    # Find changelogs with any lifecycle and a partial date
+    serverless-monthly:
+      products: "cloud-serverless {version}-* *" <4>
       output: "serverless-{version}.yaml"
-
+      output_products: "cloud-serverless {version}"
+      # repo and owner inherited from bundle level
+    
+    # Infer the lifecycle from the version
     elasticsearch-release:
-      hide_features: <3>
+      hide_features: <5>
         - feature-flag-1
         - feature-flag-2
-      products: "elasticsearch {version} {lifecycle}" <4>
+      products: "elasticsearch {version} {lifecycle}" <6>
       output: "elasticsearch-{version}.yaml"
+      output_products: "elasticsearch {version}"
+      repo: elasticsearch <3>
 ```
 
-1. Bundles any changelogs that have `product: elasticsearch`, `lifecycle: ga`, and the version specified in the command. This is equivalent to the `--input-products` command option.
-2. Bundles any changelogs that have `product: cloud-serverless`, any lifecycle, and the version specified in the command. This is equivalent to the `--input-products` command option's support for wildcards.
-3. Adds a `hide-features` array in the bundle. This is equivalent to the `--hide-features` command option.
-4. In this case, the lifecycle is inferred from the version.
+1. Bundle-level defaults that apply to all profiles. Individual profiles can override these.
+2. Bundles any changelogs that have `product: elasticsearch`, `lifecycle: ga`, and the version specified in the command. This is equivalent to the `--input-products` command option.
+3. Overrides the bundle-level `repo: cloud` for this profile because the `elasticsearch` product matches its GitHub repository name.
+4. Bundles any changelogs that have `product: cloud-serverless`, any lifecycle, and the date partially specified in the command. This is equivalent to the `--input-products` command option's support for wildcards.
+5. Adds a `hide-features` array in the bundle. This is equivalent to the `--hide-features` command option.
+6. In this case, the lifecycle is inferred from the version.
 
 For example, when the version is:
 
@@ -219,3 +271,21 @@ For example, when the version is:
 - `9.2.0-alpha.1` or `9.2.0-preview.1` the inferred lifecycle is `preview`.
 
 For more information about acceptable product and lifecycle values, go to [Product format](/contribute/changelog.md#product-format).
+
+You can invoke those profiles with commands like this:
+
+```sh
+# Bundle changelogs that match a specific version or date
+docs-builder changelog bundle elasticsearch-release 9.2.0
+
+# Bundle changelogs with partial dates
+docs-builder changelog bundle serverless-monthly 2026-02
+```
+
+<!--
+TO-DO: Add a promotion report example once it works with output_products
+```
+# Bundle changelogs that match a list of PRs in a downloaded promotion report
+docs-builder changelog bundle serverless-release-report 2026-02 ./promotion-report.html
+```
+-->

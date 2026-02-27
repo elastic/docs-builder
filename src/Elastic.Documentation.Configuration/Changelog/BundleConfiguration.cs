@@ -28,6 +28,17 @@ public record BundleConfiguration
 	public bool Resolve { get; init; } = true;
 
 	/// <summary>
+	/// Default GitHub repository name applied to all profiles that do not specify their own.
+	/// Used for generating correct PR/issue links when the product ID differs from the repo name.
+	/// </summary>
+	public string? Repo { get; init; }
+
+	/// <summary>
+	/// Default GitHub repository owner applied to all profiles that do not specify their own.
+	/// </summary>
+	public string? Owner { get; init; }
+
+	/// <summary>
 	/// Named bundle profiles for different release scenarios.
 	/// </summary>
 	public IReadOnlyDictionary<string, BundleProfile>? Profiles { get; init; }
@@ -56,6 +67,24 @@ public record BundleProfile
 	/// - "serverless-{version}.yaml"
 	/// </summary>
 	public string? Output { get; init; }
+
+	/// <summary>
+	/// Output products pattern. When set, overrides the products array derived from matched changelogs.
+	/// Supports {version} and {lifecycle} placeholders.
+	/// </summary>
+	public string? OutputProducts { get; init; }
+
+	/// <summary>
+	/// GitHub repository name stored on each product in the bundle output.
+	/// Used for generating correct PR/issue links when the product ID differs from the repo name.
+	/// </summary>
+	public string? Repo { get; init; }
+
+	/// <summary>
+	/// GitHub repository owner stored on each product in the bundle output.
+	/// Used for generating correct PR/issue links. Defaults to "elastic" when not specified.
+	/// </summary>
+	public string? Owner { get; init; }
 
 	/// <summary>
 	/// Feature IDs to mark as hidden in the bundle output.
