@@ -62,10 +62,11 @@ public class McpBearerAuthMiddleware(RequestDelegate next, ILogger<McpBearerAuth
 			return;
 		}
 
+		var tokenPrefix = token.Length > 20 ? token[..20] : token;
 		var (user, errorStatusCode) = ValidateToken(token, env, context);
 		if (user is not null)
 		{
-			logger.LogInformation("MCP auth: authenticated user {User} for {Path}", user, pathValue);
+			logger.LogInformation("MCP auth: authenticated user {User} for {Path} (token={TokenPrefix}...)", user, pathValue, tokenPrefix);
 			context.Items[McpUserKey] = user;
 			await next(context);
 			return;
@@ -191,14 +192,16 @@ public class McpBearerAuthMiddleware(RequestDelegate next, ILogger<McpBearerAuth
 			LogValidationFailure("expired");
 			return (null, 401);
 		}
-		catch (SecurityTokenInvalidSignatureException)
+		catch (SecurityTokenInvalidSignatureException ex)
 		{
-			LogValidationFailure("signature_invalid");
+			logger.LogWarning("MCP auth validation failed: signature_invalid (kid={Kid}, jti={Jti}, iss={Iss}, aud={Aud}, err={Err})",
+				jwt.Header.Kid, jwt.Payload.Jti, jwt.Issuer, jwt.Audiences?.FirstOrDefault(), ex.Message);
 			return (null, 401);
 		}
-		catch (SecurityTokenException)
+		catch (SecurityTokenException ex)
 		{
-			LogValidationFailure("validation_failed");
+			logger.LogWarning("MCP auth validation failed: {Type} (kid={Kid}, jti={Jti}, err={Err})",
+				ex.GetType().Name, jwt.Header.Kid, jwt.Payload.Jti, ex.Message);
 			return (null, 401);
 		}
 	}
