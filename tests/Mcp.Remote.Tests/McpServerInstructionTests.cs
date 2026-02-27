@@ -99,15 +99,15 @@ public class McpServerInstructionTests
 		var instructions = McpServerProfile.Public.ComposeServerInstructions();
 
 		var expected = """
-			Use this server to search, retrieve, analyze, and author Elastic product documentation published at elastic.co/docs.
+			Use this server to search, retrieve, analyze, and author user-facing Elastic product documentation published at elastic.co/docs.
 
 			<triggers>
 			Use the server when the user:
-			- Wants to find, read, or verify existing documentation pages.
+			- Wants to find, read, or verify existing product documentation pages.
 			- Needs to check whether a topic is already documented or how it is covered.
 			- References documentation URLs or Elastic product names such as Elasticsearch, Kibana, Fleet, APM, Logstash, Beats, Elastic Security, Elastic Observability, or Elastic Cloud.
 			- Asks about documentation structure, coherence, or inconsistencies across pages.
-			- Mentions cross-links between documentation repositories (e.g. 'docs-content://path/to/page.md').
+			- Mentions cross-links between public documentation repositories (e.g. 'docs-content://path/to/page.md').
 			- Is writing or editing documentation and needs to find related content or check consistency.
 			- Wants to generate documentation templates following Elastic's content type guidelines.
 			</triggers>
@@ -131,12 +131,12 @@ public class McpServerInstructionTests
 		var instructions = McpServerProfile.Internal.ComposeServerInstructions();
 
 		var expected = """
-			Use this server to search and retrieve Elastic Internal Docs: team processes, run books, architecture, and other internal knowledge.
+			Use this authenticated server to search and retrieve private Elastic Internal Docs: team processes, run books, architecture, and other internal knowledge.
 
 			<triggers>
-			Use the server when the user:
-			- Wants to find, read, or verify existing documentation pages.
-			- Needs to check whether a topic is already documented or how it is covered.
+			Use the internal docs server when the user:
+			- Wants to find, read, or verify existing internal documentation pages.
+			- Needs to check whether a topic is already documented or how it is covered in the internal documentation.
 			- References documentation URLs or Elastic product names such as Elasticsearch, Kibana, Fleet, APM, Logstash, Beats, Elastic Security, Elastic Observability, or Elastic Cloud.
 			</triggers>
 
