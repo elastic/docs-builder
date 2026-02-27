@@ -149,7 +149,7 @@ public class McpBearerAuthMiddleware(RequestDelegate next, ILogger<McpBearerAuth
 
 		var validationParams = new TokenValidationParameters
 		{
-			IssuerSigningKey = new RsaSecurityKey(rsa),
+			IssuerSigningKey = new RsaSecurityKey(rsa) { KeyId = env.McpJwtKeyId },
 			ValidateIssuerSigningKey = true,
 			ValidateIssuer = env.McpOAuthIssuer is not null,
 			ValidIssuer = env.McpOAuthIssuer,
