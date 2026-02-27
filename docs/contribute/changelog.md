@@ -500,8 +500,9 @@ You can specify only one of the following filter options:
 
 - `--all`: Include all changelogs from the directory.
 - `--input-products`: Include changelogs for the specified products. Refer to [Filter by product](#changelog-bundle-product).
-- `--prs`: Include changelogs for the specified pull request URLs or numbers, or a path to a newline-delimited file containing PR URLs or numbers. Go to [Filter by pull requests](#changelog-bundle-pr).
-- `--issues`: Include changelogs for the specified issue URLs or numbers, or a path to a newline-delimited file containing issue URLs or numbers. Go to [Filter by issues](#changelog-bundle-issues).
+- `--prs`: Include changelogs for the specified pull request URLs, or a path to a newline-delimited file. When using a file, every line must be a fully-qualified GitHub URL such as `https://github.com/owner/repo/pull/123`. Go to [Filter by pull requests](#changelog-bundle-pr).
+- `--issues`: Include changelogs for the specified issue URLs, or a path to a newline-delimited file. When using a file, every line must be a fully-qualified GitHub URL such as `https://github.com/owner/repo/issues/123`. Go to [Filter by issues](#changelog-bundle-issues).
+- `--report`: Include changelogs whose pull requests appear in a promotion report. Accepts a URL or a local file path to an HTML report.
 
 By default, the output file contains only the changelog file names and checksums.
 To change this behavior, set `bundle.resolve` to `true` in the changelog configuration file or use the `--resolve` command option.
@@ -511,30 +512,38 @@ If you plan to use [changelog directives](#changelog-directive), it is recommend
 If you likewise want to regenerate your [Asciidoc or Markdown files](#render-changelogs) after deleting your changelogs, it's only possible if you have "resolved" bundles.
 :::
 
+<!--
+TBD: This feels like TMI in this context. Remove after confirming it's covered in the CLI reference
 When you do not specify `--directory`, the command reads changelog files from `bundle.directory` in your changelog configuration if it is set, otherwise from the current directory.
 When you do not specify `--output`, the command writes the bundle to `bundle.output_directory` from your changelog configuration (creating `changelog-bundle.yaml` in that directory) if it is set, otherwise to `changelog-bundle.yaml` in the input directory.
 When you do not specify `--repo` or `--owner`, the command falls back to `bundle.repo` and `bundle.owner` in the changelog configuration, so you rarely need to pass these on the command line.
+-->
 
 ### Profile-based bundling [changelog-bundle-profile]
 
 If your `changelog.yml` configuration file defines `bundle.profiles`, you can run a bundle by profile name instead of supplying individual options:
 
 ```sh
-docs-builder changelog bundle <profile> <version|promotion-report>
+docs-builder changelog bundle <profile> <version|report|url-list>
 ```
 
+The second argument accepts a version string, a promotion report URL/path, or a URL list file (a plain-text file with one fully-qualified GitHub URL per line). When your profile uses `{version}` in its `output` or `output_products` pattern and you also want to filter by a report, pass both.
 For example:
 
 ```sh
 docs-builder changelog bundle elasticsearch-release 9.2.0
 docs-builder changelog bundle elasticsearch-release ./promotion-report.html
+docs-builder changelog bundle elasticsearch-release 9.2.0 ./promotion-report.html
 ```
 
+<!--
+TBD: This feels like TMI in this context, since it's covered in the CLI reference
 The command automatically discovers `changelog.yml` by checking `./changelog.yml` then `./docs/changelog.yml` relative to your current directory.
 If no configuration file is found, the command returns an error with advice to create one (using `docs-builder changelog init`) or to run from the directory where the file exists.
 
 You can set `bundle.repo` and `bundle.owner` directly under `bundle:` as defaults that apply to all profiles.
 Individual profiles can override them when needed.
+-->
 
 Top-level `bundle` fields:
 
@@ -549,7 +558,7 @@ Profile configuration fields in `bundle.profiles`:
 |---|---|
 | `products` | Product filter pattern with `{version}` and `{lifecycle}` placeholders. Used to match changelog files. |
 | `output` | Output file path pattern with `{version}` and `{lifecycle}` placeholders. |
-| `output_products` | Optional override for the products array written to the bundle. Useful when the bundle should advertise a different lifecycle or version than the filter. |
+| `output_products` | Optional override for the products array written to the bundle. Useful when the bundle should have a single product ID though it's filtered from many or have a different lifecycle or version than the filter. |
 | `repo` | Optional. Overrides `bundle.repo` for this profile only. |
 | `owner` | Optional. Overrides `bundle.owner` for this profile only. |
 | `hide_features` | List of feature IDs to embed in the bundle as hidden. |
@@ -558,21 +567,22 @@ Example profile configuration:
 
 ```yaml
 bundle:
-  repo: cloud       # default for all profiles
-  owner: elastic
+  repo: elasticsearch # The default repository for PR and issue links.
+  owner: elastic # The default repository owner for PR and issue links.
+  directory: docs/changelog # The directory that contains changelog files.
+  output_directory: docs/releases # The directory that contains changelog bundles.
   profiles:
     elasticsearch-release:
       products: "elasticsearch {version} {lifecycle}"
-      output: "bundles/elasticsearch-{version}.yaml"
+      output: "elasticsearch/{version}.yaml"
       output_products: "elasticsearch {version}"
-      repo: elasticsearch   # overrides bundle.repo for this profile
       hide_features:
         - feature:experimental-api
     serverless-release:
       products: "cloud-serverless {version} *"
-      output: "bundles/serverless-{version}.yaml"
+      output: "serverless/{version}.yaml"
       output_products: "cloud-serverless {version}"
-      # inherits repo: cloud and owner: elastic from bundle level
+      # inherits repo: elasticsearch and owner: elastic from bundle level
 ```
 
 ### Filter by product [changelog-bundle-product]
@@ -580,6 +590,10 @@ bundle:
 You can use the `--input-products` option to create a bundle of changelogs that match the product details.
 When using `--input-products`, you must provide all three parts: product, target, and lifecycle.
 Each part can be a wildcard (`*`) to match any value.
+
+:::{tip}
+If you use profile-based bundling, provide this information in the `bundle.profiles.<name>.products` field.
+:::
 
 ```sh
 docs-builder changelog bundle \
@@ -642,7 +656,6 @@ docs-builder changelog bundle --prs "108875,135873,136886" \ <1>
   --output-products "elasticsearch 9.2.2 ga" <4>
 ```
 
-
 1. The comma-separated list of pull request numbers to seek.
 2. The repository in the pull request URLs. Not required when using full PR URLs, or when `bundle.repo` is set in the changelog configuration.
 3. The owner in the pull request URLs. Not required when using full PR URLs, or when `bundle.owner` is set in the changelog configuration.
@@ -680,9 +693,15 @@ docs-builder changelog bundle --issues "12345,12346" \
   --output-products "elasticsearch 9.2.2 ga"
 ```
 
-### Filter by pull request file [changelog-bundle-file]
+### Filter by pull request or issue file [changelog-bundle-file]
 
-If you have a file that lists pull requests (such as PRs associated with a GitHub release):
+If you have a file that lists issue or pull requests (such as PRs associated with a GitHub release), you can use it to create bundles.
+
+:::{tip}
+You can use these files with profile-based bundling too. Refer to [](/cli/release/changelog-bundle.md).
+:::
+
+For example:
 
 ```txt
 https://github.com/elastic/elasticsearch/pull/108875
@@ -691,7 +710,10 @@ https://github.com/elastic/elasticsearch/pull/136886
 https://github.com/elastic/elasticsearch/pull/137126
 ```
 
-You can use the `--prs` option with a file path to create a bundle of the changelogs that relate to those pull requests. You can also combine multiple `--prs` options:
+<!-- TODO: Verify that it must be a full URL now if used in a file -->
+
+You can use the `--prs` option with a file path to create a bundle of the changelogs that relate to those pull requests.
+You can also combine multiple `--prs` options:
 
 ```sh
 ./docs-builder changelog bundle \
@@ -744,6 +766,12 @@ docs-builder changelog bundle \
 ```
 
 1. Feature IDs to hide. Entries with matching `feature-id` values will be commented out when rendered.
+
+<!--
+TO-DO: Add info about how to do this in bundle.
+:::{tip}
+You can do this with profile-based bundling too. Refer to [](/cli/release/changelog-bundle.md).
+::: -->
 
 The bundle output will include a `hide-features` field:
 
@@ -927,7 +955,7 @@ This is the easiest way to remove exactly the changelogs that were included in a
 The command syntax is:
 
 ```sh
-docs-builder changelog remove <profile> <version|promotion-report>
+docs-builder changelog remove <profile> <version|report|url-list>
 ```
 
 For example, if you bundled with:
@@ -951,16 +979,19 @@ The `output`, `output_products`, `repo`, `owner`, and `hide_features` fields are
 Profile-based removal is mutually exclusive with command options.
 The only options allowed alongside a profile name are `--dry-run` and `--force`.
 
-You can also pass a promotion report URL or file path as the second argument, and the command removes changelogs whose pull request URLs appear in the report:
+You can also pass a promotion report URL, file path, or URL list file as the second argument, and the command removes changelogs whose pull request or issue URLs appear in the report:
 
 ```sh
 docs-builder changelog remove elasticsearch-release https://buildkite.../promotion-report.html
+docs-builder changelog remove serverless-release 2026-02 ./promotion-report.html
+docs-builder changelog remove serverless-release 2026-02 ./prs.txt
 ```
 
 ### Removal with command options [changelog-remove-raw]
 
 You can alternatively remove changelogs based on their issues, pull requests, product metadata, or remove all changelogs from a folder.
-Exactly one filter option must be specified: `--all`, `--products`, `--prs`, or `--issues`.
+Exactly one filter option must be specified: `--all`, `--products`, `--prs`, `--issues`, or `--report`.
+When using a file for `--prs` or `--issues`, every line must be a fully-qualified GitHub URL.
 
 ```sh
 docs-builder changelog remove --products "elasticsearch 9.3.0 *" --dry-run

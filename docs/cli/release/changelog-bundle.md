@@ -28,20 +28,29 @@ These arguments apply to profile-based bundling:
 `[0] <string?>`
 :   Profile name from `bundle.profiles` in the changelog configuration file.
 :   For example, "elasticsearch-release".
-:   When it's specified, the second argument is the version or promotion report URL.
+:   When specified, the second argument is the version, promotion report URL, or URL list file.
 
 `[1] <string?>`
-:   Version number or promotion report URL or path.
-:   For example, "9.2.0" or `https://buildkite.../promotion-report.html`.
+:   Version number, promotion report URL/path, or URL list file.
+:   For example, `9.2.0`, `https://buildkite.../promotion-report.html`, or `/path/to/prs.txt`.
+
+`[2] <string?>`
+:   Optional: Promotion report URL/path or URL list file when the second argument is a version string.
+:   When provided, `[1]` must be a version string and `[2]` is the PR/issue filter source.
+:   For example, `docs-builder changelog bundle serverless-release 2026-02 ./promotion-report.html`.
 
 :::{note}
-Only the profile-based method currently supports buildkite promotion reports.
-There is no equivalent command option.
+The third argument (`[2]`) is required when your profile uses `{version}` placeholders in `output` or `output_products` patterns and you also want to filter by a promotion report or URL list. Without it, the version defaults to `"unknown"`.
 :::
 
-<!-- 
-TBD: Does the promotion report need to have a specific format? Can we provide more details or an example?
--->
+### Profile argument types
+
+The second argument (`[1]`) and optional third argument (`[2]`) accept the following:
+
+- **Version string** — Used for `{version}` substitution in profile patterns. For example, `9.2.0` or `2026-02`.
+- **Promotion report URL** — A URL to an HTML promotion report. PR URLs are extracted from it.
+- **Promotion report file** — A path to a local `.html` file containing a promotion report.
+- **URL list file** — A path to a plain-text file containing one fully-qualified GitHub PR or issue URL per line. For example, `https://github.com/elastic/elasticsearch/pull/123`. The file must contain only PR URLs or only issue URLs, not a mix. Bare numbers and short forms such as `owner/repo#123` are not allowed.
 
 ## Options
 
@@ -58,7 +67,7 @@ Using any of them with a profile returns an error.
 
 `--directory <string?>`
 :   Optional: The directory that contains the changelog YAML files.
-:   When not specified, uses `bundle.directory` from the changelog configuration if set, otherwise the current directory.
+:   When not specified, falls back to `bundle.directory` from the changelog configuration, then the current working directory. See [Output files](#output-files) for the full resolution order.
 
 `--hide-features <string[]?>`
 :   Optional: A list of feature IDs (comma-separated), or a path to a newline-delimited file containing feature IDs.
@@ -79,11 +88,10 @@ Using any of them with a profile returns an error.
 - `"* * *"` - match all changelogs (equivalent to `--all`)
 
 `--issues <string[]?>`
-:   Filter by issue URLs or numbers (comma-separated), or a path to a newline-delimited file containing issue URLs or numbers. Can be specified multiple times.
-:   Only one filter option can be specified: `--all`, `--input-products`, `--prs`, or `--issues`.
-:   Each occurrence can be either comma-separated issues ( `--issues "https://github.com/owner/repo/issues/123,456"`) or a file path (for example `--issues /path/to/file.txt`).
-:   When specifying issues directly, provide comma-separated values.
-:   When specifying a file path, provide a single value that points to a newline-delimited file.
+:   Filter by issue URLs (comma-separated), or a path to a newline-delimited file. Can be specified multiple times.
+:   Only one filter option can be specified: `--all`, `--input-products`, `--prs`, `--issues`, or `--report`.
+:   When specifying inline values, comma-separated issue numbers are allowed when `--owner` and `--repo` are also provided.
+:   When using a file, every line must be a fully-qualified GitHub issue URL such as `https://github.com/owner/repo/issues/123`. Bare numbers and short forms are not allowed in files.
 
 `--no-resolve`
 :   Optional: Explicitly turn off the `resolve` option if it's specified in the changelog configuration file.
@@ -91,7 +99,7 @@ Using any of them with a profile returns an error.
 `--output <string?>`
 :   Optional: The output path for the bundle.
 :   Can be either (1) a directory path, in which case `changelog-bundle.yaml` is created in that directory, or (2) a file path ending in `.yml` or `.yaml`.
-:   When not specified, uses `bundle.output_directory` from the changelog configuration (creating `changelog-bundle.yaml` in that directory) if set, otherwise `changelog-bundle.yaml` in the input directory.
+:   When not specified, falls back to `bundle.output_directory` from the changelog configuration, then the input directory (which is itself resolved from `--directory`, `bundle.directory`, or the current working directory). See [Output files](#output-files) for the full resolution order.
 
 `--output-products <List<ProductInfo>?>`
 :   Optional: Explicitly set the products array in the output file in format "product target lifecycle, ...".
@@ -102,11 +110,15 @@ Using any of them with a profile returns an error.
 :   Falls back to `bundle.owner` in `changelog.yml` when not specified.
 
 `--prs <string[]?>`
-:   Filter by pull request URLs or numbers (comma-separated), or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times.
-:   Only one filter option can be specified: `--all`, `--input-products`, `--prs`, or `--issues`.
-:   Each occurrence can be either comma-separated PRs (for example `--prs "https://github.com/owner/repo/pull/123,6789"`) or a file path (for example `--prs /path/to/file.txt`).
-:   When specifying PRs directly, provide comma-separated values.
-:   When specifying a file path, provide a single value that points to a newline-delimited file.
+:   Filter by pull request URLs (comma-separated), or a path to a newline-delimited file. Can be specified multiple times.
+:   Only one filter option can be specified: `--all`, `--input-products`, `--prs`, `--issues`, or `--report`.
+:   When specifying inline values, comma-separated PR numbers are allowed when `--owner` and `--repo` are also provided.
+:   When using a file, every line must be a fully-qualified GitHub PR URL such as `https://github.com/owner/repo/pull/123`. Bare numbers and short forms are not allowed in files.
+
+`--report <string?>`
+:   Filter by pull requests extracted from a promotion report. Accepts a URL or a local file path.
+:   Only one filter option can be specified: `--all`, `--input-products`, `--prs`, `--issues`, or `--report`.
+:   The report can be an HTML page from Buildkite or any file containing GitHub PR URLs.
 
 `--repo <string?>`
 :   Optional: The GitHub repository name, required when pull requests or issues are specified as numbers.
@@ -119,13 +131,30 @@ Using any of them with a profile returns an error.
 
 ## Output files
 
-Profile-based bundles are created in `bundle.output_directory`.
-If `output_directory` is not set, they are created in the `bundle.directory` alongside the changelog files.
-Bundle names are determined by the `bundle.profiles.<name>.output` setting, which can optionally include additional profile-specific paths. For example: `"stack/kibana-{version}.yaml"`.
-If that setting is absent, the default name is `changelog-bundle.yaml`
+Both modes use the same ordered fallback to determine where to write the bundle. The first value that is set wins:
 
-In the option-based mode, when you do not specify `--output`, the command uses `bundle.output_directory` or defaults to the input directory.
-When you specify `--output`, it supports two formats:
+**Output directory** (where the bundle file is placed):
+
+| Priority | Profile-based | Option-based |
+|----------|---------------|--------------|
+| 1 | — | `--output` (explicit file or directory path) |
+| 2 | `bundle.output_directory` in `changelog.yml` | `bundle.output_directory` in `changelog.yml` |
+| 3 | `bundle.directory` in `changelog.yml` | `--directory` CLI option |
+| 4 | Current working directory | `bundle.directory` in `changelog.yml` |
+| 5 | — | Current working directory |
+
+**Input directory** (where changelog YAML files are read from) follows the same fallback for both modes, minus the explicit CLI override that is forbidden in profile mode:
+
+| Priority | Profile-based | Option-based |
+|----------|---------------|--------------|
+| 1 | `bundle.directory` in `changelog.yml` | `--directory` CLI option |
+| 2 | Current working directory | `bundle.directory` in `changelog.yml` |
+| 3 | — | Current working directory |
+
+**Bundle filename** is determined by the `bundle.profiles.<name>.output` setting (profile-based) or defaults to `changelog-bundle.yaml` (both modes).
+The profile `output` setting can include additional path segments. For example: `"stack/kibana-{version}.yaml"`.
+
+In option-based mode, when you specify `--output`, it supports two formats:
 
 1. **Directory path**: If you specify a directory path (without a filename), the command creates `changelog-bundle.yaml` in that directory:
 
@@ -142,6 +171,11 @@ When you specify `--output`, it supports two formats:
    ```
 
 If you specify a file path with a different extension (not `.yml` or `.yaml`), the command returns an error.
+
+:::{note}
+"Current working directory" means the directory you are in when you run the command (`pwd`).
+Setting `bundle.directory` and `bundle.output_directory` in `changelog.yml` is recommended so you don't need to rely on running the command from a specific directory.
+:::
 
 ## Repository name in bundles [changelog-bundle-repo]
 
@@ -280,12 +314,21 @@ docs-builder changelog bundle elasticsearch-release 9.2.0
 
 # Bundle changelogs with partial dates
 docs-builder changelog bundle serverless-monthly 2026-02
+
+# Bundle changelogs that match a list of PRs in a downloaded promotion report
+# (version used for {version} substitution; report used as PR filter)
+docs-builder changelog bundle serverless-monthly 2026-02 ./promotion-report.html
+
+# Same using a URL list file instead of an HTML promotion report
+docs-builder changelog bundle serverless-monthly 2026-02 ./prs.txt
 ```
 
-<!--
-TO-DO: Add a promotion report example once it works with output_products
+For option-based mode, use `--report` to filter by a promotion report:
+
+```sh
+# Extract PRs from a downloaded report and use them as the filter
+docs-builder changelog bundle \
+  --report ./promotion-report.html \
+  --directory ./docs/changelog \
+  --output ./docs/releases/bundle.yaml
 ```
-# Bundle changelogs that match a list of PRs in a downloaded promotion report
-docs-builder changelog bundle serverless-release-report 2026-02 ./promotion-report.html
-```
--->

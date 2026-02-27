@@ -153,7 +153,9 @@ public enum ProfileArgumentType
 	Unknown,
 	Version,
 	PromotionReportUrl,
-	PromotionReportFile
+	PromotionReportFile,
+	/// <summary>A newline-delimited file containing fully-qualified GitHub PR or issue URLs.</summary>
+	UrlListFile
 }
 
 /// <summary>

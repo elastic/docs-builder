@@ -26,12 +26,18 @@ These arguments apply to profile-based removal:
 `[0] <string?>`
 :   Profile name from `bundle.profiles` in the changelog configuration file.
 :   For example, "elasticsearch-release".
-:   When specified, the second argument is the version or promotion report URL.
-:   Mutually exclusive with `--all`, `--products`, `--prs`, `--issues`, `--owner`, `--repo`, `--config`, `--directory`, and `--bundles-dir`.
+:   When specified, the second argument is the version, promotion report URL, or URL list file.
+:   Mutually exclusive with `--all`, `--products`, `--prs`, `--issues`, `--report`, `--owner`, `--repo`, `--config`, `--directory`, and `--bundles-dir`.
 
 `[1] <string?>`
-:   Version number or promotion report URL or path.
-:   For example, "9.2.0" or "https://buildkite.../promotion-report.html".
+:   Version number, promotion report URL/path, or URL list file.
+:   For example, `9.2.0`, `https://buildkite.../promotion-report.html`, or `/path/to/prs.txt`.
+:   See [Profile argument types](/cli/release/changelog-bundle.md#profile-argument-types) for details on accepted formats.
+
+`[2] <string?>`
+:   Optional: Promotion report URL/path or URL list file when the second argument is a version string.
+:   When provided, `[1]` must be a version string and `[2]` is the PR/issue filter source.
+:   For example, `docs-builder changelog remove serverless-release 2026-02 ./promotion-report.html`.
 
 ## Options
 
@@ -42,8 +48,8 @@ These arguments apply to profile-based removal:
 
 `--bundles-dir <string?>`
 :   Optional: Override the directory scanned for bundles during the dependency check.
-:   When not specified, the directory is discovered automatically from config or fallback paths.
-:   Not allowed with a profile argument. In profile mode, the bundles directory is derived from `bundle.output_directory` in the changelog configuration.
+:   When not specified, the directory is resolved in order: `bundle.output_directory` from the changelog configuration, then `{changelog-dir}/bundles`, then `{changelog-dir}/../bundles`.
+:   Not allowed with a profile argument. In profile mode, the same automatic discovery applies.
 
 `--config <string?>`
 :   Optional: Path to the changelog configuration file.
@@ -52,8 +58,8 @@ These arguments apply to profile-based removal:
 
 `--directory <string?>`
 :   Optional: The directory that contains the changelog YAML files.
-:   When not specified, uses `bundle.directory` from the changelog configuration if set, otherwise the current directory.
-:   Not allowed with a profile argument. In profile mode, the directory is derived from `bundle.directory` in the changelog configuration.
+:   When not specified, falls back to `bundle.directory` from the changelog configuration, then the current working directory.
+:   Not allowed with a profile argument. In profile mode, the same fallback applies (starting from `bundle.directory`).
 
 `--dry-run`
 :   Print the files that would be removed and any bundle dependency conflicts, without deleting anything.
@@ -65,9 +71,10 @@ These arguments apply to profile-based removal:
 :   Valid in both profile and option-based mode.
 
 `--issues <string[]?>`
-:   Filter by issue URLs or numbers (comma-separated), or a path to a newline-delimited file containing issue URLs or numbers.
+:   Filter by issue URLs (comma-separated), or a path to a newline-delimited file.
 :   Can be specified multiple times.
-:   Exactly one filter option must be specified: `--all`, `--products`, `--prs`, or `--issues`.
+:   Exactly one filter option must be specified: `--all`, `--products`, `--prs`, `--issues`, or `--report`.
+:   When using a file, every line must be a fully-qualified GitHub issue URL. Bare numbers and short forms are not allowed in files.
 :   Not allowed with a profile argument.
 
 `--owner <string?>`
@@ -87,14 +94,46 @@ These arguments apply to profile-based removal:
 - `"* * *"` — all changelogs (equivalent to `--all`)
 
 `--prs <string[]?>`
-:   Filter by pull request URLs or numbers (comma-separated), or a path to a newline-delimited file containing PR URLs or numbers.
+:   Filter by pull request URLs (comma-separated), or a path to a newline-delimited file.
 :   Can be specified multiple times.
-:   Exactly one filter option must be specified: `--all`, `--products`, `--prs`, or `--issues`.
+:   Exactly one filter option must be specified: `--all`, `--products`, `--prs`, `--issues`, or `--report`.
+:   When using a file, every line must be a fully-qualified GitHub PR URL. Bare numbers and short forms are not allowed in files.
 :   Not allowed with a profile argument.
 
 `--repo <string?>`
 :   The GitHub repository name, which is required when pull requests or issues are specified as numbers.
 :   Not allowed with a profile argument.
+
+`--report <string?>`
+:   Filter by pull requests extracted from a promotion report. Accepts a URL or a local file path.
+:   Exactly one filter option must be specified: `--all`, `--products`, `--prs`, `--issues`, or `--report`.
+:   Not allowed with a profile argument.
+
+## Directory resolution [changelog-remove-dirs]
+
+Both modes use the same ordered fallback to locate changelog YAML files and existing bundles.
+
+**Changelog files directory** (where changelog YAML files are read from):
+
+| Priority | Profile-based | Option-based |
+|----------|---------------|--------------|
+| 1 | `bundle.directory` in `changelog.yml` | `--directory` CLI option |
+| 2 | Current working directory | `bundle.directory` in `changelog.yml` |
+| 3 | — | Current working directory |
+
+**Bundles directory** (scanned for existing bundles during the dependency check):
+
+| Priority | Both modes |
+|----------|------------|
+| 1 | `--bundles-dir` CLI option (option-based only) |
+| 2 | `bundle.output_directory` in `changelog.yml` |
+| 3 | `{changelog-dir}/bundles` |
+| 4 | `{changelog-dir}/../bundles` |
+
+:::{note}
+"Current working directory" means the directory you are in when you run the command (`pwd`).
+Setting `bundle.directory` and `bundle.output_directory` in `changelog.yml` is recommended so you don't need to rely on running the command from a specific directory.
+:::
 
 ## Profile-based removal [changelog-remove-profile]
 
@@ -126,4 +165,24 @@ You can also pass a promotion report URL or file path as the second argument, in
 
 ```sh
 docs-builder changelog remove elasticsearch-release https://buildkite.../promotion-report.html
+```
+
+When using a profile with `{version}` in the `output` or `output_products` pattern, pass the version as the second argument and the report as the third:
+
+```sh
+docs-builder changelog remove serverless-release 2026-02 ./promotion-report.html
+```
+
+Or with a URL list file:
+
+```sh
+docs-builder changelog remove serverless-release 2026-02 ./prs.txt
+```
+
+For option-based removal with a promotion report:
+
+```sh
+docs-builder changelog remove \
+  --report https://buildkite.../promotion-report.html \
+  --directory ./docs/changelog
 ```

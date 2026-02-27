@@ -51,7 +51,14 @@ public class PrFilterLoader(IFileSystem fileSystem)
 		}
 		else
 		{
-			await ProcessMultipleValuesAsync(prsToMatch, nonExistentFiles, prs, ctx);
+			if (!await ProcessMultipleValuesAsync(collector, prsToMatch, nonExistentFiles, prs, ctx))
+			{
+				return new PrFilterResult
+				{
+					IsValid = false,
+					PrsToMatch = prsToMatch
+				};
+			}
 
 			// After processing all values, handle non-existent files
 			if (nonExistentFiles.Count > 0)
@@ -101,9 +108,8 @@ public class PrFilterLoader(IFileSystem fileSystem)
 
 		if (!isUrl && fileSystem.File.Exists(singleValue))
 		{
-			// File exists, read PRs from it
-			await ReadPrsFromFileAsync(singleValue, prsToMatch, ctx);
-			return true;
+			// File exists, read PRs from it (file inputs must be fully-qualified URLs)
+			return await ReadPrsFromFileAsync(collector, singleValue, prsToMatch, ctx);
 		}
 
 		if (!isUrl)
@@ -133,7 +139,8 @@ public class PrFilterLoader(IFileSystem fileSystem)
 		return true;
 	}
 
-	private async Task ProcessMultipleValuesAsync(
+	private async Task<bool> ProcessMultipleValuesAsync(
+		IDiagnosticsCollector collector,
 		HashSet<string> prsToMatch,
 		List<string> nonExistentFiles,
 		string[] values,
@@ -145,8 +152,9 @@ public class PrFilterLoader(IFileSystem fileSystem)
 
 			if (!isUrl && fileSystem.File.Exists(value))
 			{
-				// File exists, read PRs from it
-				await ReadPrsFromFileAsync(value, prsToMatch, ctx);
+				// File exists, read PRs from it (file inputs must be fully-qualified URLs)
+				if (!await ReadPrsFromFileAsync(collector, value, prsToMatch, ctx))
+					return false;
 			}
 			else if (isUrl)
 			{
@@ -169,6 +177,7 @@ public class PrFilterLoader(IFileSystem fileSystem)
 				_ = prsToMatch.Add(value);
 			}
 		}
+		return true;
 	}
 
 	private static bool ValidateNumericPrs(
@@ -206,15 +215,27 @@ public class PrFilterLoader(IFileSystem fileSystem)
 		return true;
 	}
 
-	private async Task ReadPrsFromFileAsync(string filePath, HashSet<string> prsToMatch, Cancel ctx)
+	private async Task<bool> ReadPrsFromFileAsync(IDiagnosticsCollector collector, string filePath, HashSet<string> prsToMatch, Cancel ctx)
 	{
 		var content = await fileSystem.File.ReadAllTextAsync(filePath, ctx);
-		var prs = content
+		var lines = content
 			.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
 			.Where(p => !string.IsNullOrWhiteSpace(p));
 
-		foreach (var pr in prs)
-			_ = prsToMatch.Add(pr);
+		foreach (var line in lines)
+		{
+			if (!IsUrl(line))
+			{
+				collector.EmitError(
+					filePath,
+					$"File must contain fully-qualified GitHub URLs (e.g. https://github.com/owner/repo/pull/123). " +
+					$"Numbers and short forms are not allowed. Found: {line}"
+				);
+				return false;
+			}
+			_ = prsToMatch.Add(line);
+		}
+		return true;
 	}
 
 	private static bool IsUrl(string value) =>

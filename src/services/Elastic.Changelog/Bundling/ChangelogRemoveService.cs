@@ -36,6 +36,18 @@ public record ChangelogRemoveArguments
 
 	/// <summary>Version number or promotion report URL/path when using a profile.</summary>
 	public string? ProfileArgument { get; init; }
+
+	/// <summary>
+	/// Optional third profile argument: a promotion report URL/path or URL list file to use as the
+	/// PR/issue filter source when <see cref="ProfileArgument"/> is the version string.
+	/// </summary>
+	public string? ProfileReport { get; init; }
+
+	/// <summary>
+	/// Promotion report URL or file path for option-based removal (<c>--report</c>).
+	/// When set, the report is parsed and the extracted PR URLs become the effective PR filter.
+	/// </summary>
+	public string? Report { get; init; }
 }
 
 /// <summary>
@@ -93,7 +105,8 @@ public class ChangelogRemoveService(
 					config,
 					_fileSystem,
 					_logger,
-					ctx
+					ctx,
+					input.ProfileReport
 				);
 
 				if (filterResult == null)
@@ -103,8 +116,21 @@ public class ChangelogRemoveService(
 				{
 					Products = filterResult.Products,
 					Prs = filterResult.Prs,
+					Issues = filterResult.Issues,
 					All = false
 				};
+			}
+			else if (!string.IsNullOrWhiteSpace(input.Report))
+			{
+				// Option-based mode with --report: parse report and populate Prs
+				var parser = new PromotionReportParser(logFactory, _fileSystem);
+				var reportResult = await parser.ParsePromotionReportAsync(input.Report, ctx);
+				if (!reportResult.IsValid)
+				{
+					collector.EmitError(string.Empty, reportResult.ErrorMessage ?? "Failed to parse promotion report");
+					return false;
+				}
+				input = input with { Prs = reportResult.PrUrls.ToArray() };
 			}
 
 			input = ApplyConfigDefaults(input, config);
