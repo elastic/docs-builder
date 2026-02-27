@@ -29,6 +29,7 @@ public sealed record McpFeatureModule(
 	string? Capability,
 	string[] WhenToUse,
 	string[] ToolGuidance,
+	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicConstructors)]
 	[property: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicConstructors)]
 	Type? ToolType,
 	Action<IServiceCollection> RegisterServices
