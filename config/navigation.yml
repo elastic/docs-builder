@@ -217,6 +217,11 @@ toc:
         # REST APIs, Mapping, Elasticsearch audit events, Command line tools
         children:
 
+          # Query languages
+          # https://github.com/elastic/elasticsearch/blob/main/docs/reference/query-languages/toc.yml
+          - toc: elasticsearch://reference/query-languages
+            path_prefix: reference/query-languages
+
           # Text analysis
           # https://github.com/elastic/elasticsearch/blob/main/docs/reference/text-analysis/toc.yml
           - toc: elasticsearch://reference/text-analysis
@@ -311,11 +316,6 @@ toc:
           # https://github.com/elastic/elasticsearch/blob/main/docs/reference/scripting-languages/toc.yml
           - toc: elasticsearch://reference/scripting-languages
             path_prefix: reference/scripting-languages
-
-          # Query languages
-          # https://github.com/elastic/elasticsearch/blob/main/docs/reference/query-languages/toc.yml
-          - toc: elasticsearch://reference/query-languages
-            path_prefix: reference/query-languages
 
       # Kibana
       # https://github.com/elastic/kibana/blob/main/docs/reference/toc.yml
