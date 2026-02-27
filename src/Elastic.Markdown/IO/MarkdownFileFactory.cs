@@ -117,7 +117,8 @@ public class MarkdownFileFactory : IDocumentationFileFactory<MarkdownFile>
 		if (context.Configuration.IsExcluded(relativePath))
 			return new ExcludedFile(file, sourceDirectory, context.Git.RepositoryName);
 
-		if (relativePath.Contains("_snippets"))
+		if (relativePath.Contains($"{Path.DirectorySeparatorChar}_snippets{Path.DirectorySeparatorChar}")
+			|| relativePath.StartsWith($"_snippets{Path.DirectorySeparatorChar}"))
 			return new SnippetFile(file, sourceDirectory, context.Git.RepositoryName);
 
 		// we ignore files in folders that start with an underscore
