@@ -3,10 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Api.Infrastructure.OpenTelemetry;
-using Elastic.Documentation.Assembler.Mcp;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Mcp.Remote;
-using Elastic.Documentation.Mcp.Remote.Tools;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.ServiceDefaults;
 using Microsoft.AspNetCore.Builder;
@@ -54,19 +52,8 @@ try
 		.AddMcpServer(options => options.ServerInstructions = profile.ComposeServerInstructions())
 		.WithHttpTransport(o => o.Stateless = true);
 
-	mcpBuilder = profile.Name switch
-	{
-		"public" => mcpBuilder
-			.WithTools<SearchTools>()
-			.WithTools<DocumentTools>()
-			.WithTools<CoherenceTools>()
-			.WithTools<LinkTools>()
-			.WithTools<ContentTypeTools>(),
-		"internal" => mcpBuilder
-			.WithTools<SearchTools>()
-			.WithTools<DocumentTools>(),
-		_ => mcpBuilder
-	};
+	var prefixedTools = McpToolRegistration.CreatePrefixedTools(profile);
+	mcpBuilder = mcpBuilder.WithTools(prefixedTools);
 
 	var app = builder.Build();
 

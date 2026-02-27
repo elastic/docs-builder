@@ -19,14 +19,16 @@ namespace Elastic.Documentation.Mcp.Remote;
 /// </summary>
 /// <param name="Name">Module identifier.</param>
 /// <param name="Capability">Capability verb for the preamble (e.g. "search", "retrieve"). Null if the module does not add a capability.</param>
-/// <param name="WhenToUse">Generic bullet points for the "Use the server when the user:" section.</param>
-/// <param name="ToolGuidance">Lines for the tool guidance section.</param>
+/// <param name="WhenToUse">Bullet points for the "Use the server when the user:" section. Use {docs} for the profile's DocsDescription.</param>
+/// <param name="ToolGuidance">Lines for the tool guidance section. Use {tool:snake_case_name} for tool names (e.g. {tool:semantic_search}).</param>
+/// <param name="ToolType">The tool class type (e.g. typeof(SearchTools)). Null if the module has no tools.</param>
 /// <param name="RegisterServices">DI registrations the module's tools depend on.</param>
 public sealed record McpFeatureModule(
 	string Name,
 	string? Capability,
 	string[] WhenToUse,
 	string[] ToolGuidance,
+	Type? ToolType,
 	Action<IServiceCollection> RegisterServices
 );
 
@@ -37,15 +39,15 @@ internal static class McpFeatureModules
 		Capability: "search",
 		WhenToUse:
 		[
-			"Wants to find, read, or verify existing documentation pages.",
-			"Needs to check whether a topic is already documented or how it is covered.",
-			"References documentation URLs or Elastic product names such as Elasticsearch, Kibana, Fleet, APM, Logstash, Beats, Elastic Security, Elastic Observability, or Elastic Cloud."
+			"Wants to find, read, or verify {docs} pages.",
+			"Needs to check whether a topic is already covered in {docs}."
 		],
 		ToolGuidance:
 		[
-			"Prefer SemanticSearch over a general web search when looking up Elastic documentation content.",
-			"Use FindRelatedDocs when exploring what documentation exists around a topic."
+			"Prefer {tool:semantic_search} over a general web search when looking up Elastic documentation content.",
+			"Use {tool:find_related_docs} when exploring what documentation exists around a topic."
 		],
+		ToolType: typeof(SearchTools),
 		RegisterServices: services => _ = services.AddSearchServices()
 	);
 
@@ -55,8 +57,9 @@ internal static class McpFeatureModules
 		WhenToUse: [],
 		ToolGuidance:
 		[
-			"Use GetDocumentByUrl to retrieve a specific page when the user provides or you already know the URL."
+			"Use {tool:get_document_by_url} to retrieve a specific page when the user provides or you already know the URL."
 		],
+		ToolType: typeof(DocumentTools),
 		RegisterServices: services => _ = services.AddScoped<IDocumentGateway, DocumentGateway>()
 	);
 
@@ -65,12 +68,13 @@ internal static class McpFeatureModules
 		Capability: "analyze",
 		WhenToUse:
 		[
-			"Asks about documentation structure, coherence, or inconsistencies across pages."
+			"Asks about {docs} structure, coherence, or inconsistencies across pages."
 		],
 		ToolGuidance:
 		[
-			"Use CheckCoherence or FindInconsistencies when reviewing or auditing documentation quality."
+			"Use {tool:check_coherence} or {tool:find_inconsistencies} when reviewing or auditing documentation quality."
 		],
+		ToolType: typeof(CoherenceTools),
 		RegisterServices: _ => { }
 	);
 
@@ -83,8 +87,9 @@ internal static class McpFeatureModules
 		],
 		ToolGuidance:
 		[
-			"Use the cross-link tools (ResolveCrossLink, ValidateCrossLinks, FindCrossLinks) when working with links between documentation source repositories."
+			"Use the cross-link tools ({tool:resolve_cross_link}, {tool:validate_cross_links}, {tool:find_cross_links}) when working with links between documentation source repositories."
 		],
+		ToolType: typeof(LinkTools),
 		RegisterServices: services =>
 		{
 			_ = services.AddSingleton<ILinkIndexReader>(_ => Aws3LinkIndexReader.CreateAnonymous());
@@ -98,13 +103,14 @@ internal static class McpFeatureModules
 		Capability: "author",
 		WhenToUse:
 		[
-			"Is writing or editing documentation and needs to find related content or check consistency.",
-			"Wants to generate documentation templates following Elastic's content type guidelines."
+			"Is writing or editing {docs} and needs to find related content or check consistency.",
+			"Wants to generate {docs} templates following Elastic's content type guidelines."
 		],
 		ToolGuidance:
 		[
-			"Use ListContentTypes, GetContentTypeGuidelines, and GenerateTemplate when creating new pages."
+			"Use {tool:list_content_types}, {tool:get_content_type_guidelines}, and {tool:generate_template} when creating new pages."
 		],
+		ToolType: typeof(ContentTypeTools),
 		RegisterServices: services => _ = services.AddSingleton<ContentTypeProvider>()
 	);
 }

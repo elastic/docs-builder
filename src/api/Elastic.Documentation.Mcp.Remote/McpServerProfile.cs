@@ -8,23 +8,38 @@ namespace Elastic.Documentation.Mcp.Remote;
 
 /// <summary>
 /// MCP server profile that selects which feature modules are enabled and how the server
-/// introduces itself. The introduction frames the server's purpose; module WhenToUse
-/// bullets provide generic triggers that gain meaning from this context.
+/// introduces itself. Module WhenToUse bullets use {docs} placeholders that are replaced
+/// with the profile's DocsDescription at composition time.
 /// </summary>
 /// <param name="Name">Profile identifier (e.g. "public", "internal").</param>
+/// <param name="ToolNamePrefix">Prefix for all tool names (e.g. "public_docs_", "internal_docs_").</param>
+/// <param name="DocsDescription">Short noun phrase describing this profile's docs (e.g. "Elastic product documentation"). Used to replace {docs} in trigger templates.</param>
 /// <param name="Introduction">Introduction template with a {capabilities} placeholder replaced at composition time.</param>
+/// <param name="ExtraTriggers">Profile-specific trigger bullets appended after module triggers.</param>
 /// <param name="Modules">Enabled feature modules.</param>
-public sealed record McpServerProfile(string Name, string Introduction, McpFeatureModule[] Modules)
+public sealed record McpServerProfile(
+	string Name,
+	string ToolNamePrefix,
+	string DocsDescription,
+	string Introduction,
+	string[] ExtraTriggers,
+	McpFeatureModule[] Modules)
 {
 	public static McpServerProfile Public { get; } = new(
 		"public",
+		"public_docs_",
+		"Elastic documentation",
 		"Use this server to {capabilities} Elastic product documentation published at elastic.co/docs.",
+		["References Elastic product names such as Elasticsearch, Kibana, Fleet, APM, Logstash, Beats, Elastic Security, Elastic Observability, or Elastic Cloud."],
 		[McpFeatureModules.Search, McpFeatureModules.Documents, McpFeatureModules.Coherence, McpFeatureModules.Links, McpFeatureModules.ContentTypes]
 	);
 
 	public static McpServerProfile Internal { get; } = new(
 		"internal",
-		"Use this server to {capabilities} Elastic Internal Docs: team processes, run books, architecture, and other internal knowledge.",
+		"internal_docs_",
+		"Elastic internal documentation",
+		"Use this server to {capabilities} Elastic internal documentation: team processes, run books, architecture, and other internal knowledge.",
+		["Asks about internal team processes, run books, architecture decisions, or operational knowledge."],
 		[McpFeatureModules.Search, McpFeatureModules.Documents]
 	);
 
@@ -43,12 +58,16 @@ public sealed record McpServerProfile(string Name, string Introduction, McpFeatu
 	}
 
 	/// <summary>
-	/// Registers all DI services from enabled modules.
+	/// Registers all DI services from enabled modules, including tool types for resolution at invocation time.
 	/// </summary>
 	public void RegisterAllServices(IServiceCollection services)
 	{
 		foreach (var module in Modules)
+		{
 			module.RegisterServices(services);
+			if (module.ToolType is { } toolType)
+				_ = services.AddScoped(toolType);
+		}
 	}
 
 	/// <summary>
@@ -62,9 +81,12 @@ public sealed record McpServerProfile(string Name, string Introduction, McpFeatu
 		var whenToUse = Modules
 			.SelectMany(m => m.WhenToUse)
 			.Distinct()
+			.Select(line => line.Replace("{docs}", DocsDescription, StringComparison.Ordinal))
+			.Concat(ExtraTriggers)
 			.ToList();
 		var toolGuidance = Modules
 			.SelectMany(m => m.ToolGuidance)
+			.Select(line => ReplaceToolPlaceholders(line, ToolNamePrefix))
 			.ToList();
 
 		var whenToUseBlock = whenToUse.Count > 0
@@ -82,6 +104,23 @@ public sealed record McpServerProfile(string Name, string Introduction, McpFeatu
 			</triggers>
 			{toolGuidanceBlock}
 			""";
+	}
+
+	private static string ReplaceToolPlaceholders(string line, string prefix)
+	{
+		// Replace {tool:snake_name} with prefix + snake_name (e.g. {tool:semantic_search} → public_docs_semantic_search)
+		var result = line;
+		var start = 0;
+		while ((start = result.IndexOf("{tool:", start, StringComparison.Ordinal)) >= 0)
+		{
+			var end = result.IndexOf('}', start);
+			if (end < 0)
+				break;
+			var snakeName = result[(start + 6)..end];
+			result = result[..start] + prefix + snakeName + result[(end + 1)..];
+			start += prefix.Length + snakeName.Length;
+		}
+		return result;
 	}
 
 	private string DeriveCapabilities()
