@@ -14,6 +14,7 @@ namespace Elastic.Documentation.Mcp.Remote;
 /// </summary>
 /// <param name="Name">Profile identifier (e.g. "public", "internal").</param>
 /// <param name="ResourceNoun">Resource noun for tool names (e.g. "docs", "internal_docs"). Replaces {resource} in tool name templates.</param>
+/// <param name="ScopePrefix">Scope prefix for tool names (e.g. "" for public, "internal_" for internal). Replaces {scope} in tool name templates.</param>
 /// <param name="DocsDescription">Short noun phrase describing this profile's docs (e.g. "Elastic product documentation"). Used to replace {docs} in trigger templates.</param>
 /// <param name="Introduction">Introduction template with a {capabilities} placeholder replaced at composition time.</param>
 /// <param name="ExtraTriggers">Profile-specific trigger bullets appended after module triggers.</param>
@@ -21,6 +22,7 @@ namespace Elastic.Documentation.Mcp.Remote;
 public sealed record McpServerProfile(
 	string Name,
 	string ResourceNoun,
+	string ScopePrefix,
 	string DocsDescription,
 	string Introduction,
 	string[] ExtraTriggers,
@@ -29,6 +31,7 @@ public sealed record McpServerProfile(
 	public static McpServerProfile Public { get; } = new(
 		"public",
 		"docs",
+		"",
 		"Elastic documentation",
 		"Use this server to {capabilities} Elastic product documentation published at elastic.co/docs.",
 		["References Elastic product names such as Elasticsearch, Kibana, Fleet, APM, Logstash, Beats, Elastic Security, Elastic Observability, or Elastic Cloud."],
@@ -38,6 +41,7 @@ public sealed record McpServerProfile(
 	public static McpServerProfile Internal { get; } = new(
 		"internal",
 		"internal_docs",
+		"internal_",
 		"Elastic internal documentation",
 		"Use this server to {capabilities} Elastic internal documentation: team processes, run books, architecture, and other internal knowledge.",
 		["Asks about internal team processes, run books, architecture decisions, or operational knowledge."],
@@ -87,7 +91,7 @@ public sealed record McpServerProfile(
 			.ToList();
 		var toolGuidance = Modules
 			.SelectMany(m => m.ToolGuidance)
-			.Select(line => ReplaceToolPlaceholders(line, ResourceNoun))
+			.Select(line => ReplaceToolPlaceholders(line, ResourceNoun, ScopePrefix))
 			.ToList();
 
 		var whenToUseBlock = whenToUse.Count > 0
@@ -107,7 +111,7 @@ public sealed record McpServerProfile(
 			""";
 	}
 
-	private static string ReplaceToolPlaceholders(string line, string resourceNoun)
+	private static string ReplaceToolPlaceholders(string line, string resourceNoun, string scopePrefix)
 	{
 		var sb = new StringBuilder(line.Length);
 		var pos = 0;
@@ -129,7 +133,9 @@ public sealed record McpServerProfile(
 				break;
 			end--;
 			var template = line[templateStart..end];
-			var resolved = template.Replace("{resource}", resourceNoun, StringComparison.Ordinal);
+			var resolved = template
+				.Replace("{resource}", resourceNoun, StringComparison.Ordinal)
+				.Replace("{scope}", scopePrefix, StringComparison.Ordinal);
 			_ = sb.Append(line, pos, start - pos);
 			_ = sb.Append(resolved);
 			pos = end + 1;

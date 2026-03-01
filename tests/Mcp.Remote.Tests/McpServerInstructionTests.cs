@@ -35,7 +35,7 @@ public class McpServerInstructionTests
 		instructions.Should().Contain("Use this server to search and retrieve");
 		instructions.Should().Contain("Elastic internal documentation: team processes, run books, architecture");
 		instructions.Should().Contain("Prefer search_internal_docs over a general web search");
-		instructions.Should().Contain("Use get_document_by_url to retrieve a specific page");
+		instructions.Should().Contain("Use get_internal_document_by_url to retrieve a specific page");
 		instructions.Should().Contain("Use find_related_internal_docs when exploring what documentation exists");
 		instructions.Should().NotContain("check_coherence");
 		instructions.Should().NotContain("find_inconsistencies");
@@ -143,9 +143,9 @@ public class McpServerInstructionTests
 			</triggers>
 
 			<tool_guidance>
-			- Prefer search_internal_docs over a general web search when looking up Elastic documentation content.
-			- Use find_related_internal_docs when exploring what documentation exists around a topic.
-			- Use get_document_by_url to retrieve a specific page when the user provides or you already know the URL.
+		- Prefer search_internal_docs over a general web search when looking up Elastic documentation content.
+		- Use find_related_internal_docs when exploring what documentation exists around a topic.
+		- Use get_internal_document_by_url to retrieve a specific page when the user provides or you already know the URL.
 			</tool_guidance>
 			""";
 

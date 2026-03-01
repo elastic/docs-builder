@@ -21,6 +21,7 @@ public static class McpToolRegistration
 	public static IEnumerable<McpServerTool> CreatePrefixedTools(McpServerProfile profile)
 	{
 		var resourceNoun = profile.ResourceNoun;
+		var scopePrefix = profile.ScopePrefix;
 		var docsDescription = profile.DocsDescription;
 		var tools = new List<McpServerTool>();
 
@@ -37,7 +38,9 @@ public static class McpToolRegistration
 			{
 				var nameAttr = method.GetCustomAttribute<McpToolNameAttribute>()
 					?? throw new InvalidOperationException($"Method {method.DeclaringType?.Name}.{method.Name} must have [McpToolName] attribute.");
-				var toolName = nameAttr.Template.Replace("{resource}", resourceNoun, StringComparison.Ordinal);
+				var toolName = nameAttr.Template
+					.Replace("{resource}", resourceNoun, StringComparison.Ordinal)
+					.Replace("{scope}", scopePrefix, StringComparison.Ordinal);
 
 				var descAttr = method.GetCustomAttribute<DescriptionAttribute>();
 				var description = descAttr?.Description?.Replace("{docs}", docsDescription, StringComparison.Ordinal);
