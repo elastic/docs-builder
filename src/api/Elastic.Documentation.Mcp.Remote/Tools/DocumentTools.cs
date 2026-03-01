@@ -4,6 +4,7 @@
 
 using System.ComponentModel;
 using System.Text.Json;
+using Elastic.Documentation.Assembler.Mcp;
 using Elastic.Documentation.Mcp.Remote.Gateways;
 using Elastic.Documentation.Mcp.Remote.Responses;
 using Microsoft.Extensions.Logging;
@@ -20,9 +21,9 @@ public class DocumentTools(IDocumentGateway documentGateway, ILogger<DocumentToo
 	/// <summary>
 	/// Gets a document by its URL.
 	/// </summary>
-	[McpServerTool, Description(
-		"Retrieves a specific Elastic documentation page by its URL. " +
-		"Use when the user provides an elastic.co/docs URL, references a known page, " +
+	[McpServerTool, McpToolName("get_{resource}"), Description(
+		"Retrieves a specific {docs} page by its URL. " +
+		"Use when the user provides a documentation URL, references a known page, " +
 		"or you need the full content and metadata of a specific doc. " +
 		"Returns title, AI summaries, headings, navigation context, and optionally the full body.")]
 	public async Task<string> GetDocumentByUrl(
@@ -89,8 +90,8 @@ public class DocumentTools(IDocumentGateway documentGateway, ILogger<DocumentToo
 	/// <summary>
 	/// Analyzes the structure of a document.
 	/// </summary>
-	[McpServerTool, Description(
-		"Analyzes the structure of an Elastic documentation page. " +
+	[McpServerTool, McpToolName("analyze_{resource}"), Description(
+		"Analyzes the structure of a {docs} page. " +
 		"Use when evaluating page quality, checking heading hierarchy, or assessing AI enrichment status. " +
 		"Returns heading count, link count, parent pages, and whether AI summaries are present.")]
 	public async Task<string> AnalyzeDocumentStructure(

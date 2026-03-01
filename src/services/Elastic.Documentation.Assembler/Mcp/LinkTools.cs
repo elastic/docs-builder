@@ -16,7 +16,7 @@ public class LinkTools(ILinkUtilService linkUtilService)
 	/// <summary>
 	/// Resolves a cross-link URI to its target URL.
 	/// </summary>
-	[McpServerTool, Description(
+	[McpServerTool, McpToolName("resolve_cross_link"), Description(
 		"Resolves an Elastic docs cross-link URI (e.g. 'docs-content://get-started/intro.md') to its published URL. " +
 		"Use when the user references a cross-link, needs to verify a link target, or wants to know what anchors are available on a page.")]
 	public async Task<string> ResolveCrossLink(
@@ -52,7 +52,7 @@ public class LinkTools(ILinkUtilService linkUtilService)
 	/// <summary>
 	/// Lists all available repositories in the link index.
 	/// </summary>
-	[McpServerTool, Description(
+	[McpServerTool, McpToolName("list_repositories"), Description(
 		"Lists all Elastic documentation source repositories in the cross-link index. " +
 		"Use when the user needs to know which repositories publish documentation or wants to explore the docs ecosystem.")]
 	public async Task<string> ListRepositories(CancellationToken cancellationToken = default)
@@ -88,7 +88,7 @@ public class LinkTools(ILinkUtilService linkUtilService)
 	/// <summary>
 	/// Gets all links published by a repository.
 	/// </summary>
-	[McpServerTool, Description(
+	[McpServerTool, McpToolName("get_repository_links"), Description(
 		"Gets all pages and anchors published by a specific Elastic documentation repository. " +
 		"Use when exploring what a repository publishes, building a cross-link, or looking up available anchor targets.")]
 	public async Task<string> GetRepositoryLinks(
@@ -132,7 +132,7 @@ public class LinkTools(ILinkUtilService linkUtilService)
 	/// <summary>
 	/// Finds all cross-links from one repository to another.
 	/// </summary>
-	[McpServerTool, Description(
+	[McpServerTool, McpToolName("find_cross_links"), Description(
 		"Finds cross-links between Elastic documentation repositories. " +
 		"Use when analyzing inter-repository dependencies, checking what links into or out of a repository, " +
 		"or auditing cross-link usage. Can filter by source or target repository.")]
@@ -172,7 +172,7 @@ public class LinkTools(ILinkUtilService linkUtilService)
 	/// <summary>
 	/// Validates cross-links and finds broken ones.
 	/// </summary>
-	[McpServerTool, Description(
+	[McpServerTool, McpToolName("validate_cross_links"), Description(
 		"Validates cross-links targeting an Elastic documentation repository and reports broken ones. " +
 		"Use when checking link health, preparing a release, or diagnosing broken cross-references.")]
 	public async Task<string> ValidateCrossLinks(

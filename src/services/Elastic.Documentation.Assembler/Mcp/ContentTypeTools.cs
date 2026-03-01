@@ -50,7 +50,7 @@ public partial class ContentTypeTools(ContentTypeProvider provider)
 	/// <summary>
 	/// Lists all available Elastic Docs content types.
 	/// </summary>
-	[McpServerTool, Description(
+	[McpServerTool, McpToolName("list_content_types"), Description(
 		"Lists all Elastic documentation content types (overview, how-to, tutorial, troubleshooting, changelog) " +
 		"with descriptions and guidance on when to use each. " +
 		"Use when deciding what type of page to create or when the user asks about Elastic docs structure.")]
@@ -71,7 +71,7 @@ public partial class ContentTypeTools(ContentTypeProvider provider)
 	/// <summary>
 	/// Generates a template for a specific content type.
 	/// </summary>
-	[McpServerTool, Description(
+	[McpServerTool, McpToolName("generate_template"), Description(
 		"Generates a ready-to-use Elastic documentation template for a specific content type. " +
 		"Use when the user wants to create a new documentation page, needs a starting point with correct " +
 		"frontmatter and structure, or asks for a template. Returns Markdown (or YAML for changelogs).")]
@@ -109,7 +109,7 @@ public partial class ContentTypeTools(ContentTypeProvider provider)
 	/// <summary>
 	/// Gets authoring and evaluation guidelines for a content type.
 	/// </summary>
-	[McpServerTool, Description(
+	[McpServerTool, McpToolName("get_content_type_guidelines"), Description(
 		"Returns detailed authoring and evaluation guidelines for a specific Elastic documentation content type. " +
 		"Use when writing new content, reviewing existing pages against standards, or when the user asks about " +
 		"Elastic docs best practices. Includes required elements, recommended sections, and anti-patterns.")]
