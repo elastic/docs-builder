@@ -371,7 +371,13 @@ To add `hide-features` to a bundle, use the `--hide-features` option when runnin
 
 ## Private repository link hiding
 
-PR and issue links are automatically hidden (commented out) for bundles from private repositories. This is determined by checking the `assembler.yml` configuration:
+Changelog entries can reference multiple pull requests and issues via the `prs` and `issues` array fields. When an entry is rendered, all of its links are shown inline:
+
+```md
+* Fix ML calendar event update scalability issues. [#136886](https://github.com/elastic/elastic/pull/136886) [#136900](https://github.com/elastic/elastic/pull/136900)
+```
+
+PR and issue links are automatically hidden (commented out) for bundles from private repositories. When links are hidden, **all** PR and issue links for an affected entry are hidden together. This is determined by checking the `assembler.yml` configuration:
 
 - Repositories marked with `private: true` in `assembler.yml` will have their links hidden
 - For merged bundles (e.g., `elasticsearch+kibana`), links are hidden if ANY component repository is private
@@ -411,6 +417,8 @@ docs/
 │       └── 0.100.0.yaml
 └── release-notes.md          # Page with :::{changelog}
 ```
+
+To override these expectations, set the `bundle.directory` and `bundle.output_directory` in the changelog configuration file.
 
 ## Version ordering
 
@@ -460,6 +468,24 @@ Each bundle renders as a `## {version}` section with subsections beneath:
 
 Sections with no entries of that type are omitted from the output.
 
+## Error behavior for missing files [changelog-missing-files]
+
+Bundles created without the `--resolve` option store `file:` references (filenames and checksums) instead of embedding entry content inline.
+When the directive loads such a bundle, it looks up each referenced file to read its content.
+If a referenced file cannot be found on disk, the directive emits an error and the build fails.
+This prevents silent data loss where changelog entries would be quietly omitted from rendered release notes without any indication that something was missing.
+
+To fix this, either:
+
+- Restore the missing changelog files, or
+- Re-create the bundle with `--resolve` to embed entry content directly (making the bundle self-contained), or
+- Remove the unresolvable entry from the bundle file.
+
+:::{tip}
+In general, if you want to be able to remove changelog files after your releases, create your bundles with the `--resolve` option or set `bundle.resolve` to `true` in the changelog configuration file.
+For more command syntax details, go to [Remove changelog files](../contribute/changelog.md#changelog-remove).
+:::
+
 ## Example
 
 The following renders all changelog bundles from the default `changelog/bundles/` folder:
@@ -489,4 +515,5 @@ The `{changelog}` directive is ideal for release notes pages that should always 
 - [Create and bundle changelogs](../contribute/changelog.md) — Learn how to create changelog entries and bundles
 - [`changelog add`](../cli/release/changelog-add.md) — CLI command to create changelog entries
 - [`changelog bundle`](../cli/release/changelog-bundle.md) — CLI command to bundle changelog entries
+- [`changelog remove`](../cli/release/changelog-remove.md) — CLI command to remove changelog files
 - [`changelog render`](../cli/release/changelog-render.md) — CLI command to render changelogs to markdown files

@@ -19,7 +19,8 @@ internal sealed class AssemblerIndexCommand(
 	IDiagnosticsCollector collector,
 	AssemblyConfiguration configuration,
 	IConfigurationContext configurationContext,
-	ICoreService githubActionsService
+	ICoreService githubActionsService,
+	IEnvironmentVariables environmentVariables
 )
 {
 	/// <summary>
@@ -88,7 +89,7 @@ internal sealed class AssemblerIndexCommand(
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		var fs = new FileSystem();
-		var service = new AssemblerIndexService(logFactory, configuration, configurationContext, githubActionsService);
+		var service = new AssemblerIndexService(logFactory, configuration, configurationContext, githubActionsService, environmentVariables);
 		var state = (fs,
 				// endpoint options
 				endpoint, environment, apiKey, username, password,

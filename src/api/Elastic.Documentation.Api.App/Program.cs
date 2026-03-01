@@ -54,7 +54,7 @@ try
 			return Task.CompletedTask;
 		}));
 
-	var api = app.MapGroup("/docs/_api");
+	var api = app.MapGroup(SystemEnvironmentVariables.Instance.ApiPrefix);
 
 	_ = api.MapHealthChecks("/health");
 	_ = api.MapHealthChecks("/alive", new HealthCheckOptions { Predicate = r => r.Tags.Contains("live") });

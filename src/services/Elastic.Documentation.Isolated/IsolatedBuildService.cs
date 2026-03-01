@@ -6,8 +6,10 @@ using System.IO.Abstractions;
 using Actions.Core.Services;
 using Elastic.ApiExplorer;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Services;
@@ -24,10 +26,12 @@ namespace Elastic.Documentation.Isolated;
 public class IsolatedBuildService(
 	ILoggerFactory logFactory,
 	IConfigurationContext configurationContext,
-	ICoreService githubActionsService
+	ICoreService githubActionsService,
+	IEnvironmentVariables environmentVariables
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<IsolatedBuildService>();
+	private readonly IEnvironmentVariables _env = environmentVariables;
 
 	public bool IsStrict(bool? strict)
 	{
@@ -63,7 +67,7 @@ public class IsolatedBuildService(
 
 		pathPrefix ??= githubActionsService.GetInput("prefix");
 
-		var runningOnCi = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"));
+		var runningOnCi = _env.IsRunningOnCI;
 		BuildContext context;
 
 		Uri? canonicalBaseUri;
@@ -118,9 +122,19 @@ public class IsolatedBuildService(
 		}
 		else
 		{
-			var crossLinkFetcher = new DocSetConfigurationCrossLinkFetcher(logFactory, context.Configuration);
+			using var codexReader = context.Configuration.Registry != DocSetRegistry.Public
+				? new GitLinkIndexReader(context.Configuration.Registry.ToStringFast(true), fileSystem)
+				: null;
+
+			var crossLinkFetcher = new DocSetConfigurationCrossLinkFetcher(
+				logFactory,
+				context.Configuration,
+				codexLinkIndexReader: codexReader);
 			var crossLinks = await crossLinkFetcher.FetchCrossLinks(ctx);
-			crossLinkResolver = new CrossLinkResolver(crossLinks);
+			IUriEnvironmentResolver? uriResolver = crossLinks.CodexRepositories is not null
+				? new CodexAwareUriResolver(crossLinks.CodexRepositories)
+				: null;
+			crossLinkResolver = new CrossLinkResolver(crossLinks, uriResolver);
 		}
 
 		// always delete output folder on CI

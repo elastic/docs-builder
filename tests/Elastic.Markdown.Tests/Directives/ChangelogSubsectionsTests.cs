@@ -29,7 +29,8 @@ public class ChangelogSubsectionsDisabledByDefaultTests : DirectiveTest<Changelo
 		    target: 9.3.0
 		  areas:
 		  - Search
-		  pr: "111111"
+		  prs:
+		  - "111111"
 		- title: Feature in Indexing
 		  type: feature
 		  products:
@@ -37,7 +38,8 @@ public class ChangelogSubsectionsDisabledByDefaultTests : DirectiveTest<Changelo
 		    target: 9.3.0
 		  areas:
 		  - Indexing
-		  pr: "222222"
+		  prs:
+		  - "222222"
 		"""));
 
 	[Fact]
@@ -82,7 +84,8 @@ public class ChangelogSubsectionsEnabledTests : DirectiveTest<ChangelogBlock>
 		    target: 9.3.0
 		  areas:
 		  - Search
-		  pr: "111111"
+		  prs:
+		  - "111111"
 		- title: Feature in Indexing
 		  type: feature
 		  products:
@@ -90,7 +93,8 @@ public class ChangelogSubsectionsEnabledTests : DirectiveTest<ChangelogBlock>
 		    target: 9.3.0
 		  areas:
 		  - Indexing
-		  pr: "222222"
+		  prs:
+		  - "222222"
 		"""));
 
 	[Fact]
@@ -135,7 +139,8 @@ public class ChangelogSubsectionsExplicitFalseTests : DirectiveTest<ChangelogBlo
 		    target: 9.3.0
 		  areas:
 		  - Search
-		  pr: "111111"
+		  prs:
+		  - "111111"
 		"""));
 
 	[Fact]

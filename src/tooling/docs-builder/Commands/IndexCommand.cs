@@ -17,7 +17,8 @@ internal sealed class IndexCommand(
 	ILoggerFactory logFactory,
 	IDiagnosticsCollector collector,
 	IConfigurationContext configurationContext,
-	ICoreService githubActionsService
+	ICoreService githubActionsService,
+	IEnvironmentVariables environmentVariables
 )
 {
 	/// <summary>
@@ -86,7 +87,7 @@ internal sealed class IndexCommand(
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		var fs = new FileSystem();
-		var service = new IsolatedIndexService(logFactory, configurationContext, githubActionsService);
+		var service = new IsolatedIndexService(logFactory, configurationContext, githubActionsService, environmentVariables);
 		var state = (fs, path,
 				// endpoint options
 				endpoint, apiKey, username, password,

@@ -17,7 +17,7 @@ Changelogs are YAML files that follow a common schema. Each file describes a sin
 ## Optional fields checklist
 
 - [ ] **`description`:** Additional context (max 600 characters). Include when title alone is not self-explanatory.
-- [ ] **`pr`:** Pull request number or URL.
+- [ ] **`prs`:** Array of pull request numbers or URLs.
 - [ ] **`issues`:** Array of related issue URLs.
 - [ ] **`areas`:** Array of affected components, features, or product areas.
 - [ ] **`highlight`:** Boolean for release highlights.

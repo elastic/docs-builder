@@ -41,7 +41,8 @@ public class BundleLoaderTests(ITestOutputHelper output)
 			entries:
 			  - title: Test feature
 			    type: feature
-			    pr: https://github.com/elastic/elasticsearch/pull/100
+			    prs:
+			    - "100"
 			""";
 		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.yaml", bundleContent);
 
@@ -195,7 +196,8 @@ public class BundleLoaderTests(ITestOutputHelper output)
 			"""
 			title: Feature from file
 			type: feature
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - "100"
 			description: A feature loaded from a file
 			""";
 		_fileSystem.File.WriteAllText($"{changelogDir}/entries/feature.yaml", entryContent);
@@ -957,7 +959,8 @@ public class BundleLoaderTests(ITestOutputHelper output)
 			entries:
 			  - title: Test feature
 			    type: feature
-			    pr: https://github.com/elastic/elasticsearch/pull/123
+			    prs:
+			    - "123"
 			""";
 		_fileSystem.File.WriteAllText($"{bundlesFolder}/2025-02-01.yaml", bundleContent);
 

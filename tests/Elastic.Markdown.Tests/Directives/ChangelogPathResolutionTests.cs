@@ -34,7 +34,8 @@ public class ChangelogBundlesFolderRelativePathTests : DirectiveTest<ChangelogBl
 		  products:
 		  - product: test-product
 		    target: 1.0.0
-		  pr: "12345"
+		  prs:
+		  - "12345"
 		"""));
 
 	[Fact]
@@ -67,7 +68,8 @@ public class ChangelogBundlesFolderDocsetRootRelativeTests : DirectiveTest<Chang
 		  products:
 		  - product: test-product
 		    target: 2.0.0
-		  pr: "67890"
+		  prs:
+		  - "67890"
 		"""));
 
 	[Fact]
@@ -107,7 +109,8 @@ public class ChangelogConfigRelativePathTests : DirectiveTest<ChangelogBlock>
 			  products:
 			  - product: test-product
 			    target: 1.0.0
-			  pr: "11111"
+			  prs:
+			  - "11111"
 			- title: Blocked entry
 			  type: deprecation
 			  products:
@@ -116,7 +119,8 @@ public class ChangelogConfigRelativePathTests : DirectiveTest<ChangelogBlock>
 			  description: Deprecated.
 			  impact: None.
 			  action: Upgrade.
-			  pr: "22222"
+			  prs:
+			  - "22222"
 			"""));
 
 		FileSystem.AddFile("docs/config/my-changelog.yml", new MockFileData(
@@ -165,7 +169,8 @@ public class ChangelogConfigDocsetRootRelativePathTests : DirectiveTest<Changelo
 			  products:
 			  - product: test-product
 			    target: 1.0.0
-			  pr: "33333"
+			  prs:
+			  - "33333"
 			- title: Internal feature
 			  type: feature
 			  products:
@@ -173,7 +178,8 @@ public class ChangelogConfigDocsetRootRelativePathTests : DirectiveTest<Changelo
 			    target: 1.0.0
 			  areas:
 			  - Internal
-			  pr: "44444"
+			  prs:
+			  - "44444"
 			"""));
 
 		FileSystem.AddFile("docs/settings/changelog-config.yml", new MockFileData(
@@ -219,7 +225,8 @@ public class ChangelogBundlesFolderNestedRelativePathTests : DirectiveTest<Chang
 		  products:
 		  - product: nested-product
 		    target: 3.0.0
-		  pr: "99999"
+		  prs:
+		  - "99999"
 		"""));
 
 	[Fact]
@@ -261,7 +268,8 @@ public class ChangelogPathEdgeCaseTests : DirectiveTest<ChangelogBlock>
 		  products:
 		  - product: edge-product
 		    target: 1.0.0
-		  pr: "55555"
+		  prs:
+		  - "55555"
 		"""));
 
 	[Fact]
@@ -293,13 +301,15 @@ public class ChangelogConfigAndBundlesRelativePathsTests : DirectiveTest<Changel
 			  products:
 			  - product: combined-product
 			    target: 1.0.0
-			  pr: "66666"
+			  prs:
+			  - "66666"
 			- title: Blocked by config
 			  type: other
 			  products:
 			  - product: combined-product
 			    target: 1.0.0
-			  pr: "77777"
+			  prs:
+			  - "77777"
 			"""));
 
 		FileSystem.AddFile("docs/config/changelog.yml", new MockFileData(

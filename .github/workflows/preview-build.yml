@@ -167,7 +167,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
 
       - name: Get changed files
-        if: contains(fromJSON('["merge_group", "pull_request", "pull_request_target"]'), github.event_name)
+        if: contains(fromJSON('["push", "merge_group", "pull_request", "pull_request_target"]'), github.event_name)
         id: check-files
         uses: tj-actions/changed-files@2f7c5bfce28377bc069a65ba478de0a74aa0ca32 # v46.0.1
         with:
@@ -269,10 +269,7 @@ jobs:
       - name: Checkout
         if: >
           env.MATCH == 'true'
-          && (
-            needs.check.outputs.any_modified == 'true'
-            || contains(fromJSON('["push", "workflow_dispatch"]'), github.event_name)
-          )
+          && needs.check.outputs.any_modified != 'false'
         uses: actions/checkout@v6
         with:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
@@ -281,9 +278,10 @@ jobs:
       - name: Create Deployment
         if: >
           env.MATCH == 'true'
+          && needs.check.outputs.any_modified != 'false'
           && (
             contains(fromJSON('["push", "workflow_dispatch"]'), github.event_name) 
-            || (needs.check.outputs.any_modified == 'true' && startsWith(github.event_name, 'pull_request'))
+            || startsWith(github.event_name, 'pull_request')
           )
         uses: actions/github-script@v8
         id: deployment
@@ -512,6 +510,7 @@ jobs:
       - name: Update Link Index
         if: >
           env.MATCH == 'true'
+          && needs.check.outputs.any_modified != 'false'
           && (
             contains(fromJSON('["push", "workflow_dispatch"]'), github.event_name) 
             && steps.s3-upload.outcome == 'success'
@@ -542,7 +541,7 @@ jobs:
       startsWith(github.event_name, 'pull_request')
       && inputs.disable-comments != true
       && needs.build.outputs.deployment_result
-      && needs.check.outputs.any_modified
+      && needs.check.outputs.any_modified == 'true'
     runs-on: ubuntu-latest
     needs:
       - check
@@ -688,7 +687,7 @@ jobs:
     if: >
       startsWith(github.event_name, 'pull_request')
       && inputs.enable-vale-linting == true
-      && needs.check.outputs.any_modified
+      && needs.check.outputs.any_modified == 'true'
     runs-on: ubuntu-latest
     needs: check
     permissions:

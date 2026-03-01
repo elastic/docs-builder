@@ -164,8 +164,9 @@ toc:
           - file: index.md
           - file: changelog-add.md
           - file: changelog-bundle.md
-          - file: changelog-init.md
           - file: changelog-bundle-amend.md
+          - file: changelog-init.md
+          - file: changelog-remove.md
           - file: changelog-render.md
   - folder: mcp
     children:

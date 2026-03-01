@@ -44,7 +44,7 @@ public abstract class CodexNavigationTestBase(ITestOutputHelper output)
 				repoName);
 
 			var navigation = new DocumentationSetNavigation<TestDocumentationFile>(
-				docSet, context, TestDocumentationFileFactory.Instance);
+				docSet, context, CodexTestDocumentationFileFactory.Instance);
 
 			result[repoName] = navigation;
 		}

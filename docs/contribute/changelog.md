@@ -46,10 +46,11 @@ You can create a configuration file to:
 - define the acceptable product, type, subtype, and lifecycle values.
 - prevent the creation of changelogs when certain PR labels are present.
 - set default options, such as whether to extract issues and release note text from pull requests.
+- create profiles for simplified bundle creation
 
 Refer to [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml).
 
-By default, the `docs-builder changelog add` command checks the following path: `docs/changelog.yml`.
+By default, the changelog commands check the following path: `docs/changelog.yml`.
 You can specify a different path with the `--config` command option.
 
 If a configuration file exists, the command validates its values before generating changelog files:
@@ -62,7 +63,7 @@ In each of these cases where validation fails, a changelog file is not created.
 
 ### GitHub label mappings
 
-When you run the `docs-builder changelog add` command with the `--prs` option, it can use label mappings in the changelog configuration file to infer the changelog `type` and `areas` fields from your pull request labels.
+When you run the `docs-builder changelog add` command with the `--prs` or `--issues` options, it can use label mappings in the changelog configuration file to infer the changelog `type` and `areas` fields from your GitHub labels.
 
 Refer to the file layout in [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml) and an [example usage](#example-map-label).
 
@@ -70,7 +71,7 @@ Refer to the file layout in [changelog.example.yml](https://github.com/elastic/d
 
 If you have pull request labels that indicate a changelog is not required (such as `>non-issue` or `release_note:skip`), you can declare these in the `rules` section of the changelog configuration.
 
-When you run the `docs-builder changelog add` command with the `--prs` option and the PR has one of the identified labels, the command does not create a changelog for that PR.
+When you run the `docs-builder changelog add` command with the `--prs` or `--issues` options and the pull request or issue has one of the identified labels, the command does not create a changelog.
 
 Likewise, if there are areas or types of changelogs that should not be published, you can declare these in the `rules` section of the changelog configuration.
 For example, you might choose to omit `other` or `docs` changelogs.
@@ -78,6 +79,7 @@ Or you might want to omit all autoscaling-related changelogs from the Cloud Serv
 
 When you run the `docs-builder changelog render` command, changelog entries that match the specified products and areas or types are commented out of the documentation output files.
 The command will emit warnings prefixed with `[-exclude]` or `[+include]` indicating which changelog entries were commented out and why.
+[Changelog directives](#changelog-directive) also heed these publishing rules and omit matching changelogs.
 
 Each field supports **exclude** (block if matches) or **include** (block if doesn't match) semantics. You cannot mix both for the same field.
 
@@ -108,7 +110,7 @@ Global match default for multi-valued fields (labels, areas). Inherited by `crea
 
 #### `rules.create`
 
-Controls which PRs generate changelog entries. Evaluated when running `docs-builder changelog add` with `--prs`.
+Controls which pull requests or issues generate changelog entries. Evaluated when running `docs-builder changelog add` with `--prs` or `--issues`.
 
 | Option | Type | Description |
 |--------|------|-------------|
@@ -219,7 +221,7 @@ For up-to-date command usage information, use the `-h` option or refer to [](/cl
 
 ### Authorization
 
-If you use the `--prs` option, the `docs-builder changelog add` command interacts with GitHub services.
+If you use the `--prs` or `--issues` options, the `docs-builder changelog add` command interacts with GitHub services.
 Log into GitHub or set the `GITHUB_TOKEN` (or `GH_TOKEN` ) environment variable with a sufficient personal access token (PAT).
 Otherwise, there will be fetch failures when you access private repositories and you might also encounter GitHub rate limiting errors.
 
@@ -231,7 +233,7 @@ For example, to create a new token with the minimum authority to read pull reque
 4. Under **Resource owner** if you're an Elastic employee, select **Elastic**.
 5. Set an expiration date.
 6. Under **Repository access**, select **Only select repositories** and choose the repositories you want to access.
-7. Under **Permissions** > **Repository permissions**, set **Pull requests** to **Read-only**.
+7. Under **Permissions** > **Repository permissions**, set **Pull requests** to **Read-only**. If you want to be able to read issue details, do the same for **Issues**.
 8. Click **Generate token**.
 9. Copy the token to a safe location and use it in the `GITHUB_TOKEN` environment variable.
 
@@ -262,15 +264,29 @@ If you want to use the PR number as the filename instead, add the `--use-pr-numb
 
 ```sh
 docs-builder changelog add \
-  --pr https://github.com/elastic/elasticsearch/pull/137431 \
+  --prs https://github.com/elastic/elasticsearch/pull/137431 \
   --products "elasticsearch 9.2.3" \
   --use-pr-number
 ```
 
-This creates a file named `137431.yaml` instead of the default timestamp-based filename.
+With a single PR, this creates a file named `137431.yaml`. With multiple PRs, the filename aggregates the numbers (for example `137431-137432.yaml`).
+
+Use `--use-issue-number` to name the file by issue number(s). When you specify `--issues` without `--prs`, the command fetches the issue from GitHub and derives the title, type, and areas from the issue (using the same label mappings as for PRs). When both `--issues` and `--prs` are specified, `--use-issue-number` still uses the issue number for the filename:
+
+```sh
+docs-builder changelog add \
+  --issues https://github.com/elastic/elasticsearch/issues/12345 \
+  --products "elasticsearch 9.2.3" \
+  --config docs/changelog.yml \
+  --use-issue-number
+```
+
+The command derives the title from the issue title, maps labels to type and areas (if configured), extracts release notes from the issue body, and extracts linked PRs (for example "Fixed by #123"). You can omit `--title` and `--type` when the issue has appropriate labels. Multiple issues can be specified comma-separated or via a file path (like `--prs`), creating one changelog per issue.
+
+This creates a file named `12345.yaml` (or `12345-12346.yaml` for multiple issues).
 
 :::{important}
-When using `--use-pr-number`, you must also provide the `--pr` option. The PR number is extracted from the PR URL or number you provide.
+`--use-pr-number` and `--use-issue-number` are mutually exclusive; specify only one. `--use-pr-number` requires `--prs`. `--use-issue-number` requires `--issues`. The numbers are extracted from the URLs or identifiers you provide.
 :::
 
 ### Examples
@@ -317,7 +333,7 @@ pivot:
     "ES|QL": ":Search Relevance/ES|QL"
 ```
 
-When you use the `--prs` option to derive information from a pull request, it can make use of those mappings:
+When you use the `--prs` option to derive information from a pull request, it can make use of those mappings. Similarly, when you use the `--issues` option (without `--prs`), the command derives title, type, and areas from the GitHub issue labels using the same mappings:
 
 ```sh
 docs-builder changelog add \
@@ -328,9 +344,9 @@ docs-builder changelog add \
 ```
 
 In this case, the changelog file derives the title, type, and areas from the pull request.
-The command also looks for patterns like `Fixes #123`, `Closes owner/repo#456`, `Resolves https://github.com/.../issues/789` in the pull request to derive its issues (unless you turn off this behavior in the changelog configuration file or use `--no-extract-issues`).
+The command also looks for patterns like `Fixes #123`, `Closes owner/repo#456`, `Resolves https://github.com/.../issues/789` in the pull request to derive its issues. Similarly, when using `--issues`, the command extracts linked PRs from the issue body (for example, "Fixed by #123"). You can turn off this behavior in either case with the `--no-extract-issues` flag or by setting `extract.issues: false` in the changelog configuration file. The `extract.issues` setting applies to both directions: issues extracted from PR bodies (when using `--prs`) and PRs extracted from issue bodies (when using `--issues`).
 
-The `--strip-title-prefix` option in this example means that if the PR title has a prefix in square brackets (such as `[ES|QL]` or `[Security]`), it is automatically removed from the changelog title. Multiple square bracket prefixes are also supported (e.g., `[Discover][ESQL] Title` becomes `Title`). If a colon follows the closing bracket, it is also removed.
+The `--strip-title-prefix` option in this example means that if the PR title has a prefix in square brackets (such as `[ES|QL]` or `[Security]`), it is automatically removed from the changelog title. Multiple square bracket prefixes are also supported (for example `[Discover][ESQL] Title` becomes `Title`). If a colon follows the closing bracket, it is also removed.
 
 :::{note}
 The `--strip-title-prefix` option only applies when the title is derived from the PR (when `--title` is not explicitly provided). If you specify `--title` explicitly, that title is used as-is without any prefix stripping.
@@ -467,16 +483,24 @@ This creates one changelog file for each PR specified, whether from files or dir
 ## Create bundles [changelog-bundle]
 
 You can use the `docs-builder changelog bundle` command to create a YAML file that lists multiple changelogs.
+The command has two modes of operation: you can specify all the command options or you can define "profiles" in the changelog configuration file.
+The latter is more convenient and consistent for repetitive workflows.
 For up-to-date details, use the `-h` option or refer to [](/cli/release/changelog-bundle.md).
 
-You can specify only one of the following filter options:
+If you're not using profiles, you must choose one of the following filter options:
 
 - `--all`: Include all changelogs from the directory.
 - `--input-products`: Include changelogs for the specified products. Refer to [Filter by product](#changelog-bundle-product).
 - `--prs`: Include changelogs for the specified pull request URLs or numbers, or a path to a newline-delimited file containing PR URLs or numbers. Go to [Filter by pull requests](#changelog-bundle-pr).
+- `--issues`: Include changelogs for the specified issue URLs or numbers, or a path to a newline-delimited file containing issue URLs or numbers. Go to [Filter by issues](#changelog-bundle-issues).
 
 By default, the output file contains only the changelog file names and checksums.
-You can optionally use the `--resolve` command option to pull all of the content from each changelog into the bundle.
+To change this behavior, set `bundle.resolve` to `true` in the changelog configuration file or use the `--resolve` command option.
+
+:::{tip}
+If you plan to use [changelog directives](#changelog-directive), it is recommended to pull all of the content from each changelog into the bundle; otherwise you can't delete your changelogs.
+If you likewise want to regenerate your [Asciidoc or Markdown files](#render-changelogs) after deleting your changelogs, it's only possible if you have "resolved" bundles.
+:::
 
 When you do not specify `--directory`, the command reads changelog files from `bundle.directory` in your changelog configuration if it is set, otherwise from the current directory.
 When you do not specify `--output`, the command writes the bundle to `bundle.output_directory` from your changelog configuration (creating `changelog-bundle.yaml` in that directory) if it is set, otherwise to `changelog-bundle.yaml` in the input directory.
@@ -533,8 +557,6 @@ entries:
 1. By default these values match your `--input-products` (even if the changelogs have more products).
 To specify different product metadata, use the `--output-products` option.
 
-If you add the `--resolve` option, the contents of each changelog will be included in the output file.
-
 ### Filter by pull requests [changelog-bundle-pr]
 
 You can use the `--prs` option to create a bundle of the changelogs that relate to those pull requests.
@@ -575,7 +597,18 @@ entries:
     checksum: 451d60283fe5df426f023e824339f82c2900311e
 ```
 
-If you add the `--resolve` option, the contents of each changelog will be included in the output file.
+### Filter by issues [changelog-bundle-issues]
+
+You can use the `--issues` option to create a bundle of changelogs that relate to those GitHub issues.
+Provide either a comma-separated list of issues (`--issues "https://github.com/owner/repo/issues/123,456"`) or a path to a newline-delimited file (`--issues /path/to/file.txt`).
+Issues can be identified by a full URL (such as `https://github.com/owner/repo/issues/123`), a short format (such as `owner/repo#123`), or just a number (in which case you must also provide `--owner` and `--repo` options).
+
+```sh
+docs-builder changelog bundle --issues "12345,12346" \
+  --repo elasticsearch \
+  --owner elastic \
+  --output-products "elasticsearch 9.2.2 ga"
+```
 
 ### Filter by pull request file [changelog-bundle-file]
 
@@ -620,7 +653,8 @@ entries:
   - product: elasticsearch
   areas:
   - Aggregations
-  pr: https://github.com/elastic/elasticsearch/pull/108875
+  prs:
+  - https://github.com/elastic/elasticsearch/pull/108875
 ...
 ```
 
@@ -743,13 +777,15 @@ For example, the `index.md` output file contains information derived from the ch
 * Convert BytesTransportResponse when proxying response from/to local node. [#135873](https://github.com/elastic/elastic/pull/135873) 
 
 **Machine Learning**
-* Fix ML calendar event update scalability issues. [#136886](https://github.com/elastic/elastic/pull/136886) 
+* Fix ML calendar event update scalability issues. [#136886](https://github.com/elastic/elastic/pull/136886) [#136900](https://github.com/elastic/elastic/pull/136900)
 
 **Aggregations**
 * Break on FieldData when building global ordinals. [#108875](https://github.com/elastic/elastic/pull/108875) 
 ```
 
-To comment out the pull request and issue links, for example if they relate to a private repository, add `hide-links` to the `--input` option for that bundle. This allows you to selectively hide links per bundle when merging changelogs from multiple repositories.
+When a changelog entry includes multiple values in its `prs` or `issues` arrays, all links are rendered inline for that entry, as shown in the Machine Learning example above.
+
+To comment out the pull request and issue links, for example if they relate to a private repository, add `hide-links` to the `--input` option for that bundle. This allows you to selectively hide links per bundle when merging changelogs from multiple repositories. When `hide-links` is set, all PR and issue links for affected entries are hidden together.
 
 If you have changelogs with `feature-id` values and you want them to be omitted from the output, use the `--hide-features` option. Feature IDs specified via `--hide-features` are **merged** with any `hide-features` already present in the bundle files. This means both CLI-specified and bundle-embedded features are hidden in the output.
 
@@ -772,7 +808,7 @@ The `highlight` field allows you to mark changelog entries that should appear in
 
 When you set `highlight: true` on a changelog entry:
 
-- The entry appears in both the highlights page (`highlights.md`) and its normal type section (e.g., "Features and enhancements")
+- The entry appears in both the highlights page (`highlights.md`) and its normal type section (for example "Features and enhancements")
 - The highlights page is only created when at least one entry has `highlight: true` (unlike other special pages like `known-issues.md` which are always created)
 - Highlights can be any type of changelog entry (features, enhancements, bug fixes, etc.)
 
@@ -790,3 +826,68 @@ highlight: true
 ```
 
 When rendering changelogs, entries with `highlight: true` are collected from all types and rendered in a dedicated highlights section. In markdown output, this creates a separate `highlights.md` file. In asciidoc output, highlights appear as a dedicated section in the single asciidoc file.
+
+## Remove changelog files [changelog-remove]
+
+A single changelog file might be applicable to multiple releases (for example, it might be delivered in both Stack and {{serverless-short}} releases or {{ech}} and Enterprise releases on different timelines).
+After it has been included in all of the relevant bundles, it is reasonable to delete the changelog to keep your repository clean.
+
+:::{important}
+If you create docs with changelog directives, run the `docs-builder changelog bundle` command with the `--resolve` option or set `bundle.resolve` to `true` in the changelog configuration file (so that bundle files are self-contained).
+Otherwise, the build will fail if you remove changelogs that the directive requires.
+
+Likewise, the `docs-builder changelog render` command fails for "unresolved" bundles after you delete the changelogs.
+:::
+
+You can use the `docs-builder changelog remove` command to remove changelogs.
+It supports the same two modes as `changelog bundle`: profile-based and raw flags.
+
+Before deleting, the command automatically scans for bundles that still hold unresolved (`file:`) references to the matching changelog files.
+If any are found, the command reports an error for each dependency.
+This check prevents the `{changelog}` directive from failing at build time with missing file errors.
+To proceed with removal even when unresolved bundle dependencies exist, use `--force`.
+
+To preview what would be removed without deleting anything, use `--dry-run`.
+Bundle dependency conflicts are also reported in dry-run mode.
+
+### Removal with profiles [changelog-remove-profile]
+
+If your `changelog.yml` configuration file defines `bundle.profiles`, you can use those profiles with `changelog remove`.
+This is the easiest way to remove exactly the changelogs that were included in a profile-based bundle.
+The command syntax is:
+
+```sh
+docs-builder changelog remove <profile> <version|promotion-report>
+```
+
+For example, if you bundled with:
+
+```sh
+docs-builder changelog bundle elasticsearch-release 9.2.0
+```
+
+You can remove the same changelogs with:
+
+```sh
+docs-builder changelog remove elasticsearch-release 9.2.0 --dry-run
+```
+
+Only the `products` field from the profile configuration is used for removal.
+The `output` and `hide_features` fields are bundle-specific and are ignored.
+
+You can also pass a promotion report URL or file path as the second argument, and the command removes changelogs whose pull request URLs appear in the report:
+
+```sh
+docs-builder changelog remove elasticsearch-release https://buildkite.../promotion-report.html
+```
+
+### Removal with command options [changelog-remove-raw]
+
+You can alternatively remove changelogs based on their issues, pull requests, product metadata, or remove all changelogs from a folder.
+Exactly one filter option must be specified: `--all`, `--products`, `--prs`, or `--issues`.
+
+```sh
+docs-builder changelog remove --products "elasticsearch 9.3.0 *" --dry-run
+```
+
+For full option details, go to [](/cli/release/changelog-remove.md).

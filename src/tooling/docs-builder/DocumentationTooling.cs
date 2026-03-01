@@ -28,6 +28,7 @@ public static class DocumentationTooling
 	{
 		_ = builder.Services
 			.AddGitHubActionsCore()
+			.AddSingleton<IEnvironmentVariables>(SystemEnvironmentVariables.Instance)
 			.AddSingleton<DiagnosticsChannel>()
 			.AddServiceDiscovery()
 			.ConfigureHttpClientDefaults(static client =>

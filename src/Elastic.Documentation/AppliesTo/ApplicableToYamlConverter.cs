@@ -15,7 +15,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 	private readonly string[] _knownKeys =
 	[
 		"stack", "deployment", "serverless", "product", // Applicability categories
-		"ece", "eck", "ess", "self", // Deployment options
+		"ece", "eck", "ess", "ech", "self", // Deployment options ("ech" aliasing to "ess")
 		"elasticsearch", "observability", "security", // Serverless flavors
 		.. productKeys
 	];
@@ -146,11 +146,17 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		var d = new DeploymentApplicability();
 		var assigned = false;
 
+		var hasEss = dictionary.ContainsKey("ess");
+		var hasEch = dictionary.ContainsKey("ech");
+		if (hasEss && hasEch)
+			diagnostics.Add((Severity.Warning, "Both 'ess' and 'ech' are defined. Move 'ess' content into 'ech' to avoid information loss."));
+
 		var mapping = new Dictionary<string, Action<AppliesCollection?>>
 		{
 			{ "ece", a => d.Ece = a },
 			{ "eck", a => d.Eck = a },
 			{ "ess", a => d.Ess = a },
+			{ "ech", a => d.Ess = a },
 			{ "self", a => d.Self = a }
 		};
 

@@ -167,6 +167,37 @@ public static partial class ChangelogTextUtilities
 	}
 
 	/// <summary>
+	/// Extracts issue number from issue URL or reference.
+	/// </summary>
+	public static int? ExtractIssueNumber(string issueUrl, string? defaultOwner = null, string? defaultRepo = null)
+	{
+		if (issueUrl.StartsWith("https://github.com/", StringComparison.OrdinalIgnoreCase) ||
+			issueUrl.StartsWith("http://github.com/", StringComparison.OrdinalIgnoreCase))
+		{
+			var uri = new Uri(issueUrl);
+			var segments = uri.Segments;
+			if (segments.Length >= 5 &&
+				segments[3].Equals("issues/", StringComparison.OrdinalIgnoreCase) &&
+				int.TryParse(segments[4].TrimEnd('/'), out var issueNum))
+				return issueNum;
+		}
+
+		var hashIndex = issueUrl.LastIndexOf('#');
+		if (hashIndex > 0 && hashIndex < issueUrl.Length - 1)
+		{
+			var issuePart = issueUrl[(hashIndex + 1)..];
+			if (int.TryParse(issuePart, out var issueNum))
+				return issueNum;
+		}
+
+		if (int.TryParse(issueUrl, out var issueNumber) &&
+			!string.IsNullOrWhiteSpace(defaultOwner) && !string.IsNullOrWhiteSpace(defaultRepo))
+			return issueNumber;
+
+		return null;
+	}
+
+	/// <summary>
 	/// Formats PR link as markdown.
 	/// </summary>
 	public static string FormatPrLink(string pr, string repo, bool hidePrivateLinks)

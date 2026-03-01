@@ -11,6 +11,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Isolated;
+using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Isolated.Node;
@@ -60,10 +61,13 @@ public class CodexBuildService(
 		var documentationSets = new Dictionary<string, IDocumentationSetNavigation>();
 		var buildContexts = new List<CodexDocumentationSetBuildContext>();
 
+		var environment = context.Configuration.Environment ?? "internal";
+		using var codexLinkIndexReader = new GitLinkIndexReader(environment, context.ReadFileSystem);
+
 		// Phase 1: Load and parse all documentation sets
 		foreach (var checkout in cloneResult.Checkouts)
 		{
-			var buildContext = await LoadDocumentationSet(context, checkout, fileSystem, ctx);
+			var buildContext = await LoadDocumentationSet(context, checkout, fileSystem, codexLinkIndexReader, ctx);
 			if (buildContext != null)
 			{
 				buildContexts.Add(buildContext);
@@ -119,6 +123,7 @@ public class CodexBuildService(
 		CodexContext context,
 		CodexCheckout checkout,
 		IFileSystem fileSystem,
+		ILinkIndexReader codexLinkIndexReader,
 		Cancel ctx)
 	{
 		_logger.LogInformation("Loading documentation set: {Name}", checkout.Reference.Name);
@@ -152,6 +157,12 @@ public class CodexBuildService(
 			// Pre-compute codex site root for HTMX (no URL parsing in providers)
 			var siteRootPath = string.IsNullOrEmpty(sitePrefix) ? "/" : $"/{sitePrefix.Trim('/')}/";
 
+			// Parse canonical base URL from config for frontmatter URLs, canonical links, and report-issue
+			var canonicalBaseUrl = !string.IsNullOrWhiteSpace(context.Configuration.CanonicalBaseUrl) &&
+				Uri.TryCreate(context.Configuration.CanonicalBaseUrl, UriKind.Absolute, out var parsed)
+				? parsed
+				: null;
+
 			// Create build context for this documentation set
 			var buildContext = new BuildContext(
 				context.Collector,
@@ -165,13 +176,29 @@ public class CodexBuildService(
 			{
 				UrlPathPrefix = pathPrefix,
 				SiteRootPath = siteRootPath,
+				CanonicalBaseUrl = canonicalBaseUrl,
 				Force = true,
 				AllowIndexing = false,
 				BuildType = BuildType.Codex
 			};
 
-			// Create cross-link resolver (simplified for codex - no external links)
-			var crossLinkResolver = NoopCrossLinkResolver.Instance;
+			ICrossLinkResolver crossLinkResolver;
+			if (buildContext.Configuration.CrossLinkEntries.Length > 0)
+			{
+				var fetcher = new DocSetConfigurationCrossLinkFetcher(
+					logFactory,
+					buildContext.Configuration,
+					codexLinkIndexReader: buildContext.Configuration.Registry != DocSetRegistry.Public ? codexLinkIndexReader : null);
+				var crossLinks = await fetcher.FetchCrossLinks(ctx);
+				IUriEnvironmentResolver? uriResolver = crossLinks.CodexRepositories is not null
+					? new CodexAwareUriResolver(crossLinks.CodexRepositories, useRelativePaths: true)
+					: null;
+				crossLinkResolver = new CrossLinkResolver(crossLinks, uriResolver);
+			}
+			else
+			{
+				crossLinkResolver = NoopCrossLinkResolver.Instance;
+			}
 
 			// Create documentation set
 			var documentationSet = new DocumentationSet(buildContext, logFactory, crossLinkResolver);
@@ -198,8 +225,7 @@ public class CodexBuildService(
 
 		try
 		{
-			var reference = buildContext.Checkout.Reference;
-			var codexBreadcrumbs = ResolveCodexBreadcrumbs(context, reference);
+			var codexBreadcrumbs = ResolveCodexBreadcrumbs(context, buildContext);
 
 			_ = await isolatedBuildService.BuildDocumentationSet(
 				buildContext.DocumentationSet,
@@ -220,14 +246,16 @@ public class CodexBuildService(
 
 	private static IReadOnlyList<CodexBreadcrumb> ResolveCodexBreadcrumbs(
 		CodexContext context,
-		CodexDocumentationSetReference reference)
+		CodexDocumentationSetBuildContext buildContext)
 	{
+		var reference = buildContext.Checkout.Reference;
 		var sitePrefix = context.Configuration.SitePrefix?.Trim('/') ?? "";
 		var repoName = reference.ResolvedRepoName;
 		var groupId = reference.Group;
 		var homeUrl = string.IsNullOrEmpty(sitePrefix) ? "/" : $"/{sitePrefix}/";
 		var docSetUrl = string.IsNullOrEmpty(sitePrefix) ? $"/r/{repoName}" : $"/{sitePrefix}/r/{repoName}";
-		var docSetTitle = reference.DisplayName ?? repoName;
+		var indexTitle = buildContext.DocumentationSet.Navigation.Index.Model.Title;
+		var docSetTitle = !string.IsNullOrEmpty(indexTitle) ? indexTitle : repoName;
 
 		if (string.IsNullOrEmpty(groupId))
 			return [new CodexBreadcrumb("Home", homeUrl), new CodexBreadcrumb(docSetTitle, docSetUrl)];
