@@ -60,7 +60,7 @@ internal static class McpFeatureModules
 		WhenToUse: [],
 		ToolGuidance:
 		[
-			"Use {tool:get_{resource}} to retrieve a specific page when the user provides or you already know the URL."
+			"Use {tool:get_document_by_url} to retrieve a specific page when the user provides or you already know the URL."
 		],
 		ToolType: typeof(DocumentTools),
 		RegisterServices: services => _ = services.AddScoped<IDocumentGateway, DocumentGateway>()

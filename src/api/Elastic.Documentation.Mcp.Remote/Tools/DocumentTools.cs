@@ -21,7 +21,7 @@ public class DocumentTools(IDocumentGateway documentGateway, ILogger<DocumentToo
 	/// <summary>
 	/// Gets a document by its URL.
 	/// </summary>
-	[McpServerTool, McpToolName("get_{resource}"), Description(
+	[McpServerTool, McpToolName("get_document_by_url"), Description(
 		"Retrieves a specific {docs} page by its URL. " +
 		"Use when the user provides a documentation URL, references a known page, " +
 		"or you need the full content and metadata of a specific doc. " +
@@ -90,7 +90,7 @@ public class DocumentTools(IDocumentGateway documentGateway, ILogger<DocumentToo
 	/// <summary>
 	/// Analyzes the structure of a document.
 	/// </summary>
-	[McpServerTool, McpToolName("analyze_{resource}"), Description(
+	[McpServerTool, McpToolName("analyze_document_structure"), Description(
 		"Analyzes the structure of a {docs} page. " +
 		"Use when evaluating page quality, checking heading hierarchy, or assessing AI enrichment status. " +
 		"Returns heading count, link count, parent pages, and whether AI summaries are present.")]
