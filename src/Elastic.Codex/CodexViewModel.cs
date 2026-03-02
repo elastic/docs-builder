@@ -77,7 +77,7 @@ public abstract class CodexViewModel(CodexRenderContext context)
 		{
 			DocsBuilderVersion = ShortId.Create(BuildContext.Version),
 			DocSetName = CodexNavigation.NavigationTitle,
-			Description = "Documentation Codex",
+			Description = "Elastic Internal Docs",
 			CurrentNavigationItem = CurrentNavigationItem,
 			Previous = null,
 			Next = null,

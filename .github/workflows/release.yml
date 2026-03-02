@@ -102,7 +102,7 @@ jobs:
     steps:
 
       - name: Download bootstrap binary
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with: 
           name: link-index-updater-lambda-binary # Defined in build-link-index-updater-lambda.yml
           
@@ -163,7 +163,7 @@ jobs:
         shell: bash
         
       - name: Generate artifact attestation
-        uses: actions/attest-build-provenance@v3
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: |
             .artifacts/publish/docs-builder/release/*.zip
