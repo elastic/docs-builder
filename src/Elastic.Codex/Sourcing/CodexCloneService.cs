@@ -73,7 +73,11 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 				var git = new CodexGitRepository(loggerFactory, context.Collector, subDir);
 				currentCommit = git.GetCurrentCommit();
 			}
-			catch (Exception ex)
+			catch (OperationCanceledException)
+			{
+				throw;
+			}
+			catch (Exception ex) when (ex is IOException || ex is InvalidOperationException)
 			{
 				logger.LogWarning(ex, "Could not read commit for {Name}; skipping", repoName);
 				continue;
