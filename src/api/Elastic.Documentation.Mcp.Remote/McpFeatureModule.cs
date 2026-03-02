@@ -3,10 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.Diagnostics.CodeAnalysis;
-using Elastic.Documentation.Assembler.Links;
-using Elastic.Documentation.Assembler.Mcp;
-using Elastic.Documentation.LinkIndex;
-using Elastic.Documentation.Links.InboundLinks;
 using Elastic.Documentation.Mcp.Remote.Gateways;
 using Elastic.Documentation.Mcp.Remote.Tools;
 using Elastic.Documentation.Search;
@@ -79,41 +75,5 @@ internal static class McpFeatureModules
 		],
 		ToolType: typeof(CoherenceTools),
 		RegisterServices: _ => { }
-	);
-
-	public static readonly McpFeatureModule Links = new(
-		Name: "Links",
-		Capability: null,
-		WhenToUse:
-		[
-			"Mentions cross-links between documentation repositories (e.g. 'docs-content://path/to/page.md')."
-		],
-		ToolGuidance:
-		[
-			"Use the cross-link tools ({tool:resolve_cross_link}, {tool:validate_cross_links}, {tool:find_cross_links}) when working with links between documentation source repositories."
-		],
-		ToolType: typeof(LinkTools),
-		RegisterServices: services =>
-		{
-			_ = services.AddSingleton<ILinkIndexReader>(_ => Aws3LinkIndexReader.CreateAnonymous());
-			_ = services.AddSingleton<LinksIndexCrossLinkFetcher>();
-			_ = services.AddSingleton<ILinkUtilService, LinkUtilService>();
-		}
-	);
-
-	public static readonly McpFeatureModule ContentTypes = new(
-		Name: "ContentTypes",
-		Capability: "author",
-		WhenToUse:
-		[
-			"Is writing or editing {docs} and needs to find related content or check consistency.",
-			"Wants to generate {docs} templates following Elastic's content type guidelines."
-		],
-		ToolGuidance:
-		[
-			"Use {tool:list_content_types}, {tool:get_content_type_guidelines}, and {tool:generate_template} when creating new pages."
-		],
-		ToolType: typeof(ContentTypeTools),
-		RegisterServices: services => _ = services.AddSingleton<ContentTypeProvider>()
 	);
 }
