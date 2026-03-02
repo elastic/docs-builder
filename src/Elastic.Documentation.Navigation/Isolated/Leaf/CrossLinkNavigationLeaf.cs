@@ -18,6 +18,9 @@ public record CrossLinkModel(Uri CrossLinkUri, string NavigationTitle) : IDocume
 
 	/// <inheritdoc />
 	public string? Description => null;
+
+	/// <inheritdoc />
+	public string? Icon => null;
 }
 
 [DebuggerDisplay("{Url}")]

@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
+    <!-- CS0618: DocumentationSetFile.Icon is deprecated but still used as fallback when frontmatter has no icon -->
+    <NoWarn>$(NoWarn);CS0618</NoWarn>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <InvariantGlobalization>true</InvariantGlobalization>

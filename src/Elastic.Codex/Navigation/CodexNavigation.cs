@@ -119,7 +119,7 @@ public class CodexNavigation : IRootNavigationItem<IDocumentationFile, INavigati
 				Group = docSetRef.Group,
 				PageCount = CountPages(rootNavItem),
 				Description = rootNavItem.Index.Model.Description,
-				Icon = docSetRef.Icon
+				Icon = rootNavItem.Index.Model.Icon ?? docSetRef.Icon
 			};
 
 		private void AttachToGroup(

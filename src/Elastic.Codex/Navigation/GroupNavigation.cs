@@ -103,6 +103,9 @@ public record GroupIndexPage(string NavigationTitle) : IDocumentationFile
 
 	/// <inheritdoc />
 	public string? Description => null;
+
+	/// <inheritdoc />
+	public string? Icon => null;
 }
 
 /// <summary>
@@ -147,6 +150,9 @@ public record GroupLinkPage(string NavigationTitle, string Url) : IDocumentation
 
 	/// <inheritdoc />
 	public string? Description => null;
+
+	/// <inheritdoc />
+	public string? Icon => null;
 }
 
 /// <summary>

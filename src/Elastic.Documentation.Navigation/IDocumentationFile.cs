@@ -14,6 +14,9 @@ public interface IDocumentationFile : INavigationModel
 	/// Gets the page description from frontmatter, if set.
 	string? Description { get; }
 
+	/// Gets the icon from frontmatter, if set.
+	string? Icon { get; }
+
 	/// Gets the title to display in navigation for this documentation file.
 	string NavigationTitle { get; }
 }

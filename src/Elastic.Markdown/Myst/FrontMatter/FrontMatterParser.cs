@@ -19,6 +19,9 @@ public class YamlFrontMatter
 	[YamlMember(Alias = "description")]
 	public string? Description { get; set; }
 
+	[YamlMember(Alias = "icon")]
+	public string? Icon { get; set; }
+
 	[YamlMember(Alias = "navigation_title")]
 	public string? NavigationTitle { get; set; }
 

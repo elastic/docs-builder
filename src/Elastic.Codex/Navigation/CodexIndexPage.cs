@@ -16,6 +16,9 @@ public record CodexIndexPage(string NavigationTitle) : IDocumentationFile
 
 	/// <inheritdoc />
 	public string? Description => null;
+
+	/// <inheritdoc />
+	public string? Icon => null;
 }
 
 /// <summary>

@@ -41,6 +41,7 @@ public class DocumentationSetFile : TableOfContentsFile
 	[YamlMember(Alias = "description")]
 	public string? Description { get; set; }
 
+	[Obsolete("Use the index.md frontmatter icon instead. This field will be removed in a future version.")]
 	[YamlMember(Alias = "icon")]
 	public string? Icon { get; set; }
 
@@ -116,6 +117,8 @@ public class DocumentationSetFile : TableOfContentsFile
 		fileSystem ??= sourceDirectory.FileSystem;
 		var docSet = Deserialize(yaml);
 		var docsetPath = fileSystem.Path.Combine(sourceDirectory.FullName, "docset.yml").OptionalWindowsReplace();
+		if (docSet.Icon is not null)
+			collector.EmitHint(docsetPath, "'icon' in docset.yml is deprecated. Use the 'icon' frontmatter in index.md instead.");
 		docSet.SuppressDiagnostics.ExceptWith(noSuppress ?? []);
 		docSet.TableOfContents = ResolveTableOfContents(collector, docSet.TableOfContents, sourceDirectory, fileSystem, parentPath: "", containerPath: "", context: docsetPath, docSet.SuppressDiagnostics);
 		return docSet;
