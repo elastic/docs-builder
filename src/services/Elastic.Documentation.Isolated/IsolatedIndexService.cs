@@ -30,7 +30,7 @@ public class IsolatedIndexService(
 	/// <param name="apiKey">Elasticsearch API key, alternatively set env DOCUMENTATION_ELASTIC_APIKEY</param>
 	/// <param name="username">Elasticsearch username (basic auth), alternatively set env DOCUMENTATION_ELASTIC_USERNAME</param>
 	/// <param name="password">Elasticsearch password (basic auth), alternatively set env DOCUMENTATION_ELASTIC_PASSWORD</param>
-	/// <param name="enableAiEnrichment">Enable AI enrichment of documents using LLM-generated metadata</param>
+	/// <param name="noAiEnrichment">Disable AI enrichment of documents using LLM-generated metadata (enabled by default)</param>
 	/// <param name="searchNumThreads">The number of search threads the inference endpoint should use. Defaults: 8</param>
 	/// <param name="indexNumThreads">The number of index threads the inference endpoint should use. Defaults: 8</param>
 	/// <param name="noEis">Do not use the Elastic Inference Service, bootstrap inference endpoint</param>
@@ -56,7 +56,7 @@ public class IsolatedIndexService(
 		string? username = null,
 		string? password = null,
 		// inference options
-		bool? enableAiEnrichment = null,
+		bool? noAiEnrichment = null,
 		int? searchNumThreads = null,
 		int? indexNumThreads = null,
 		bool? noEis = null,
@@ -85,7 +85,7 @@ public class IsolatedIndexService(
 			ApiKey = apiKey,
 			Username = username,
 			Password = password,
-			EnableAiEnrichment = enableAiEnrichment,
+			NoAiEnrichment = noAiEnrichment,
 			SearchNumThreads = searchNumThreads,
 			IndexNumThreads = indexNumThreads,
 			NoEis = noEis,

@@ -28,6 +28,10 @@ public static partial class DocumentationMappingContext;
 
 public class LexicalConfig : IConfigureElasticsearch<DocumentationDocument>
 {
+	public AnalysisBuilder ConfigureAnalysis(AnalysisBuilder analysis) => analysis;
+
+	public IReadOnlyDictionary<string, string>? IndexSettings => null;
+
 	public MappingsBuilder<DocumentationDocument> ConfigureMappings(MappingsBuilder<DocumentationDocument> mappings) =>
 		ConfigureCommonMappings(mappings)
 			.StrippedBody(f => f
@@ -86,6 +90,10 @@ public class SemanticConfig : IConfigureElasticsearch<DocumentationDocument>
 {
 	private const string ElserInferenceId = ".elser-2-elastic";
 	private const string JinaInferenceId = ".jina-embeddings-v5-text-small";
+
+	public AnalysisBuilder ConfigureAnalysis(AnalysisBuilder analysis) => analysis;
+
+	public IReadOnlyDictionary<string, string>? IndexSettings => null;
 
 	public MappingsBuilder<DocumentationDocument> ConfigureMappings(MappingsBuilder<DocumentationDocument> mappings) =>
 		LexicalConfig.ConfigureCommonMappings(mappings)

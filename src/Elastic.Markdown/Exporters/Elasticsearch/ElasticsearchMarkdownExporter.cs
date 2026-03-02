@@ -79,50 +79,66 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 
 		var synonymSetName = $"docs-{buildType}";
 
-		if (es.EnableAiEnrichment)
-		{
-			_aiEnrichment = new AiEnrichmentOrchestrator(_transport, DocumentationMappingContext.AiEnrichment);
-		}
-
-		var aiPipeline = es.EnableAiEnrichment ? DocumentationMappingContext.AiEnrichment.PipelineName : null;
-		var pipelineSettings = aiPipeline is not null
-			? new Dictionary<string, string> { ["index.default_pipeline"] = aiPipeline }
-			: null;
-
 		_lexicalTypeContext = DocumentationMappingContext.DocumentationDocument.CreateContext(type: buildType) with
 		{
-			ConfigureAnalysis = a => DocumentationAnalysisFactory.BuildAnalysis(a, synonymSetName, indexTimeSynonyms),
-			IndexSettings = pipelineSettings
+			ConfigureAnalysis = a => DocumentationAnalysisFactory.BuildAnalysis(a, synonymSetName, indexTimeSynonyms)
 		};
 
 		_semanticTypeContext = DocumentationMappingContext.DocumentationDocumentSemantic.CreateContext(type: buildType) with
 		{
-			ConfigureAnalysis = a => DocumentationAnalysisFactory.BuildAnalysis(a, synonymSetName, indexTimeSynonyms),
-			IndexSettings = pipelineSettings
+			ConfigureAnalysis = a => DocumentationAnalysisFactory.BuildAnalysis(a, synonymSetName, indexTimeSynonyms)
 		};
 
-		var resolver = DocumentationMappingContext.DocumentationDocument;
-		_orchestrator = new IncrementalSyncOrchestrator<DocumentationDocument>(
-			_transport, _lexicalTypeContext, _semanticTypeContext,
-			setBatchIndexDate: resolver.SetBatchIndexDate,
-			setLastUpdated: resolver.SetLastUpdated)
+		if (es.EnableAiEnrichment)
 		{
-			ConfigurePrimary = ConfigureChannelOptions,
-			ConfigureSecondary = ConfigureChannelOptions,
+			_aiEnrichment = new AiEnrichmentOrchestrator(_transport, _lexicalTypeContext);
+			var provider = _lexicalTypeContext.AiEnrichmentProvider!;
+			var infra = provider.CreateInfrastructure($"{_lexicalTypeContext.IndexStrategy!.WriteTarget}-ai-cache");
+			_logger.LogInformation(
+				"AI enrichment enabled — pipeline: {Pipeline}, policy: {Policy}, lookup: {Lookup}",
+				infra.PipelineName, infra.EnrichPolicyName, infra.LookupIndexName);
+
+			_semanticTypeContext = _semanticTypeContext with
+			{
+				IndexSettings = new Dictionary<string, string> { ["index.default_pipeline"] = infra.PipelineName }
+			};
+		}
+		else
+		{
+			_logger.LogInformation("AI enrichment disabled");
+		}
+
+		_orchestrator = new IncrementalSyncOrchestrator<DocumentationDocument>(
+			_transport, _lexicalTypeContext, _semanticTypeContext)
+		{
+			ConfigurePrimary = opts => ConfigureChannelOptions("primary", opts),
+			ConfigureSecondary = opts => ConfigureChannelOptions("secondary", opts),
 			OnPostComplete = _aiEnrichment is not null
 				? async (ctx, _, ct) => await PostCompleteAsync(ctx, ct)
-				: null
+				: null,
+			OnReindexProgress = (label, p) =>
+				_logger.LogInformation(
+					"[{Label}] total={Total} created={Created} updated={Updated} deleted={Deleted} noops={Noops} completed={IsCompleted}",
+					label, p.Total, p.Created, p.Updated, p.Deleted, p.Noops, p.IsCompleted),
+			OnDeleteByQueryProgress = (label, p) =>
+				_logger.LogInformation(
+					"[{Label}] total={Total} deleted={Deleted} completed={IsCompleted}",
+					label, p.Total, p.Deleted, p.IsCompleted)
 		};
 		_ = _orchestrator.AddPreBootstrapTask(async (_, ct) =>
 		{
 			if (_aiEnrichment is not null)
+			{
+				_logger.LogInformation("Initializing AI enrichment infrastructure...");
 				await _aiEnrichment.InitializeAsync(ct);
+				_logger.LogInformation("AI enrichment infrastructure ready");
+			}
 			await PublishSynonymsAsync(ct);
 			await PublishQueryRulesAsync(ct);
 		});
 	}
 
-	private void ConfigureChannelOptions(IngestChannelOptions<DocumentationDocument> options)
+	private void ConfigureChannelOptions(string label, IngestChannelOptions<DocumentationDocument> options)
 	{
 		options.BufferOptions = new BufferOptions
 		{
@@ -133,15 +149,15 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		options.SerializerContext = SourceGenerationContext.Default;
 		options.ExportExceptionCallback = e =>
 		{
-			_logger.LogError(e, "Failed to export document");
-			_collector.EmitGlobalError("Elasticsearch export: failed to export document", e);
+			_logger.LogError(e, "[{Label}] Failed to export document", label);
+			_collector.EmitGlobalError($"Elasticsearch export ({label}): failed to export document", e);
 		};
 		options.ServerRejectionCallback = items =>
 		{
 			foreach (var (doc, responseItem) in items)
 			{
 				_collector.EmitGlobalError(
-					$"Server rejection: {responseItem.Status} {responseItem.Error?.Type} {responseItem.Error?.Reason} for document {doc.Url}");
+					$"[{label}] Server rejection: {responseItem.Status} {responseItem.Error?.Type} {responseItem.Error?.Reason} for document {doc.Url}");
 			}
 		};
 	}
@@ -159,14 +175,25 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 
 	private async Task PostCompleteAsync(OrchestratorContext<DocumentationDocument> context, Cancel ctx)
 	{
-		if (_aiEnrichment is null || context.SecondaryWriteAlias is null)
+		if (_aiEnrichment is null)
 			return;
 
 		_logger.LogInformation("Starting post-indexing AI enrichment for {Alias}...", context.SecondaryWriteAlias);
-		var result = await _aiEnrichment.EnrichAsync(context.SecondaryWriteAlias, ctx);
-		_logger.LogInformation(
-			"AI enrichment complete: {Enriched} enriched, {Failed} failed, {Skipped} skipped, {Total} candidates, reached limit: {ReachedLimit}",
-			result.Enriched, result.Failed, result.Skipped, result.TotalCandidates, result.ReachedLimit);
+		var sw = System.Diagnostics.Stopwatch.StartNew();
+
+		AiEnrichmentProgress? last = null;
+		await foreach (var p in _aiEnrichment.EnrichAsync(context.SecondaryWriteAlias, new AiEnrichmentOptions(), ctx))
+		{
+			_logger.LogInformation(
+				"[AI enrichment] {Phase}: enriched={Enriched} failed={Failed} candidates={Candidates}{Message}",
+				p.Phase, p.Enriched, p.Failed, p.TotalCandidates, p.Message is not null ? $" — {p.Message}" : "");
+			last = p;
+		}
+
+		if (last is not null)
+			_logger.LogInformation(
+				"AI enrichment complete in {Elapsed}: {Enriched} enriched, {Failed} failed, {Candidates} candidates",
+				sw.Elapsed.ToString(@"hh\:mm\:ss"), last.Enriched, last.Failed, last.TotalCandidates);
 	}
 
 	private async Task PublishSynonymsAsync(Cancel ctx)

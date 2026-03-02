@@ -21,7 +21,7 @@ public record ElasticsearchIndexOptions
 	public string? Password { get; init; }
 
 	// inference options
-	public bool? EnableAiEnrichment { get; init; }
+	public bool? NoAiEnrichment { get; init; }
 	public int? SearchNumThreads { get; init; }
 	public int? IndexNumThreads { get; init; }
 	public bool? NoEis { get; init; }
@@ -113,8 +113,8 @@ public static class ElasticsearchEndpointConfigurator
 		if (options.BootstrapTimeout.HasValue)
 			cfg.BootstrapTimeout = options.BootstrapTimeout.Value;
 
-		if (options.EnableAiEnrichment.HasValue)
-			cfg.EnableAiEnrichment = options.EnableAiEnrichment.Value;
+		if (options.NoAiEnrichment == true)
+			cfg.EnableAiEnrichment = false;
 		if (options.ForceReindex.HasValue)
 			cfg.ForceReindex = options.ForceReindex.Value;
 	}

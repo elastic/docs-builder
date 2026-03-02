@@ -47,5 +47,5 @@ public class ElasticsearchEndpoint
 	/// Enable AI enrichment of documents using LLM-generated metadata.
 	/// When enabled, documents are enriched with summaries, search queries, and questions.
 	/// </summary>
-	public bool EnableAiEnrichment { get; set; }
+	public bool EnableAiEnrichment { get; set; } = true;
 }
