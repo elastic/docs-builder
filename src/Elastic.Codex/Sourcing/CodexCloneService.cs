@@ -10,7 +10,6 @@ using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Codex.Sourcing;
 
@@ -27,8 +26,10 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 	/// Discovers already-cloned repositories from disk without any git/network operations.
 	/// Reads the link-index.snapshot.json written by the clone step and scans for initialized repos.
 	/// </summary>
-	public static async Task<CodexCloneResult?> DiscoverCheckouts(CodexContext context, Cancel ctx)
+	public static async Task<CodexCloneResult?> DiscoverCheckouts(
+		CodexContext context, ILoggerFactory loggerFactory, Cancel ctx)
 	{
+		var logger = loggerFactory.CreateLogger<CodexCloneService>();
 		var checkoutDir = context.CheckoutDirectory;
 		if (!checkoutDir.Exists)
 			return null;
@@ -69,14 +70,12 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 			string currentCommit;
 			try
 			{
-				var git = new CodexGitRepository(
-					NullLoggerFactory.Instance,
-					context.Collector,
-					subDir);
+				var git = new CodexGitRepository(loggerFactory, context.Collector, subDir);
 				currentCommit = git.GetCurrentCommit();
 			}
-			catch
+			catch (Exception ex)
 			{
+				logger.LogWarning(ex, "Could not read commit for {Name}; skipping", repoName);
 				continue;
 			}
 

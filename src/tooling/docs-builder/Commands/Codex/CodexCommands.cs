@@ -194,7 +194,7 @@ internal sealed class CodexCommands(
 
 		var codexContext = new CodexContext(codexConfig, configFile, collector, fs, fs, null, output);
 
-		var cloneResult = await CodexCloneService.DiscoverCheckouts(codexContext, ctx);
+		var cloneResult = await CodexCloneService.DiscoverCheckouts(codexContext, logFactory, ctx);
 
 		if (cloneResult == null || cloneResult.Checkouts.Count == 0)
 		{
