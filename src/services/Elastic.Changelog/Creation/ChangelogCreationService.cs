@@ -91,11 +91,7 @@ IFileSystem? fileSystem = null
 					input = input with { Products = inferredProducts };
 			}
 
-			// When --use-pr-number and multiple PRs, create one aggregated changelog
-			if (input.Prs is { Length: > 1 } && input.UsePrNumber)
-				return await CreateAggregatedChangelogAsync(collector, input, config, ctx);
-
-			// Multiple PRs without --use-pr-number: one changelog per PR
+			// Multiple PRs: one changelog per PR (--use-pr-number uses PR number as each filename)
 			if (input.Prs != null && input.Prs.Length > 1)
 				return await CreateChangelogsForMultiplePrsAsync(collector, input, config, ctx);
 
@@ -253,50 +249,6 @@ IFileSystem? fileSystem = null
 			return false;
 
 		// Write changelog file
-		return await _fileWriter.WriteChangelogAsync(
-			collector,
-			input,
-			config,
-			string.IsNullOrWhiteSpace(input.Title),
-			string.IsNullOrWhiteSpace(input.Type),
-			ctx);
-	}
-
-	private async Task<bool> CreateAggregatedChangelogAsync(
-		IDiagnosticsCollector collector,
-		CreateChangelogArguments input,
-		ChangelogConfiguration config,
-		Cancel ctx)
-	{
-		if (input.Prs == null || input.Prs.Length == 0)
-			return false;
-
-		if (!_validator.ValidateMultiplePrFormat(collector, input.Prs, input.Owner, input.Repo))
-			return false;
-
-		// Check first PR for blockers
-		var firstPr = input.Prs[0].Trim();
-		var (shouldSkip, _) = await _prProcessor.CheckPrForBlockersAsync(
-			collector, firstPr, input.Owner, input.Repo, input.Products, config, ctx);
-
-		if (shouldSkip)
-			return true;
-
-		// Process first PR for derived fields (title, type, areas, etc.)
-		var prResult = await _prProcessor.ProcessPrAsync(collector, input, config, firstPr, ctx);
-		if (prResult.ShouldSkip)
-			return true;
-
-		if (prResult.DerivedFields != null)
-			input = ApplyDerivedFields(input, prResult.DerivedFields);
-
-		if (!_validator.ValidateRequiredFields(collector, input, prResult.FetchFailed))
-			return false;
-
-		if (!_validator.ValidateAgainstConfiguration(collector, input, config))
-			return false;
-
-		// Write single changelog with all PRs (filename will be e.g. 137431-137432.yaml)
 		return await _fileWriter.WriteChangelogAsync(
 			collector,
 			input,
