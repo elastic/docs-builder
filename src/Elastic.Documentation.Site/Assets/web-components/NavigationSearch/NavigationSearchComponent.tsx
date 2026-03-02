@@ -8,7 +8,11 @@ import r2wc from '@r2wc/react-to-web-component'
 import { QueryClientProvider, useQuery } from '@tanstack/react-query'
 import { StrictMode } from 'react'
 
-const NavigationSearchInner = () => {
+interface NavigationSearchProps {
+    placeholder?: string
+}
+
+const NavigationSearchInner = ({ placeholder }: NavigationSearchProps) => {
     const { euiTheme } = useEuiTheme()
     const { data: isApiAvailable } = useQuery({
         queryKey: ['api-health'],
@@ -20,9 +24,10 @@ const NavigationSearchInner = () => {
         },
         staleTime: 60 * 60 * 1000, // 60 minutes
         retry: false,
+        enabled: config.buildType !== 'codex',
     })
 
-    if (!isApiAvailable) {
+    if (!isApiAvailable && config.buildType !== 'codex') {
         return null
     }
 
@@ -34,7 +39,7 @@ const NavigationSearchInner = () => {
                 padding-right: ${euiTheme.size.base};
             `}
         >
-            <NavigationSearch />
+            <NavigationSearch placeholder={placeholder} />
             <EuiHorizontalRule
                 margin="none"
                 css={css`
@@ -45,7 +50,7 @@ const NavigationSearchInner = () => {
     )
 }
 
-const NavigationSearchWrapper = () => {
+const NavigationSearchWrapper = ({ placeholder }: NavigationSearchProps) => {
     return (
         <StrictMode>
             <EuiProvider
@@ -54,11 +59,18 @@ const NavigationSearchWrapper = () => {
                 utilityClasses={false}
             >
                 <QueryClientProvider client={sharedQueryClient}>
-                    <NavigationSearchInner />
+                    <NavigationSearchInner placeholder={placeholder} />
                 </QueryClientProvider>
             </EuiProvider>
         </StrictMode>
     )
 }
 
-customElements.define('navigation-search', r2wc(NavigationSearchWrapper))
+customElements.define(
+    'navigation-search',
+    r2wc(NavigationSearchWrapper, {
+        props: {
+            placeholder: 'string',
+        },
+    })
+)

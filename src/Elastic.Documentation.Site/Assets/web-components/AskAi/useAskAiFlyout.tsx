@@ -4,6 +4,7 @@ import {
     useAskAiModalIsOpen,
     useFlyoutWidth,
 } from './askAi.modal.store'
+import { chatStore } from './chat.store'
 import { EuiFlyoutBody, EuiLoadingSpinner } from '@elastic/eui'
 import { css } from '@emotion/react'
 import { useQuery } from '@tanstack/react-query'
@@ -94,15 +95,19 @@ export const useAskAiFlyout = () => {
         },
         staleTime: 60 * 60 * 1000, // 60 minutes
         retry: false,
+        enabled: config.buildType !== 'codex',
     })
 
     useEffect(() => {
         const handleKeydown = (event: KeyboardEvent) => {
-            if (event.key === 'Escape') {
+            if (
+                event.key === 'Escape' &&
+                isModalOpen &&
+                !event.defaultPrevented
+            ) {
                 event.preventDefault()
                 closeModal()
             }
-            // Cmd+; to open Ask AI flyout
             if (
                 (event.metaKey || event.ctrlKey) &&
                 event.code === 'Semicolon'
@@ -113,10 +118,32 @@ export const useAskAiFlyout = () => {
         }
         window.addEventListener('keydown', handleKeydown)
         return () => window.removeEventListener('keydown', handleKeydown)
-    }, [openModal, closeModal])
+    }, [isModalOpen, openModal, closeModal])
+
+    useEffect(() => {
+        const handleOpenEvent = () => openModal()
+        document.addEventListener('ask-ai:open', handleOpenEvent)
+        return () =>
+            document.removeEventListener('ask-ai:open', handleOpenEvent)
+    }, [openModal])
+
+    useEffect(() => {
+        const handleAskEvent = (event: Event) => {
+            const question = (event as CustomEvent<string>).detail
+            if (!question) return
+
+            const { actions } = chatStore.getState()
+            actions.createConversation()
+            actions.submitQuestion(question)
+            openModal()
+        }
+        document.addEventListener('ask-ai:ask', handleAskEvent)
+        return () => document.removeEventListener('ask-ai:ask', handleAskEvent)
+    }, [openModal])
 
     return {
-        isApiAvailable: isApiAvailable ?? false,
+        isApiAvailable:
+            config.buildType === 'codex' ? true : (isApiAvailable ?? false),
         isModalOpen,
         openModal,
         closeModal,

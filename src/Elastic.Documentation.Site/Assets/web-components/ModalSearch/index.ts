@@ -1,0 +1,1 @@
+export { ModalSearch } from './ModalSearch'

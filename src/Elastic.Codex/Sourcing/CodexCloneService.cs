@@ -23,6 +23,74 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 	private readonly ILogger _logger = logFactory.CreateLogger<CodexCloneService>();
 
 	/// <summary>
+	/// Discovers already-cloned repositories from disk without any git/network operations.
+	/// Reads the link-index.snapshot.json written by the clone step and scans for initialized repos.
+	/// </summary>
+	public static async Task<CodexCloneResult?> DiscoverCheckouts(
+		CodexContext context, ILoggerFactory loggerFactory, Cancel ctx)
+	{
+		var logger = loggerFactory.CreateLogger<CodexCloneService>();
+		var checkoutDir = context.CheckoutDirectory;
+		if (!checkoutDir.Exists)
+			return null;
+
+		var snapshotFilePath = Path.Combine(checkoutDir.FullName, LinkRegistrySnapshotFileName);
+		if (!context.ReadFileSystem.File.Exists(snapshotFilePath))
+			return null;
+
+		var json = await context.ReadFileSystem.File.ReadAllTextAsync(snapshotFilePath, ctx);
+		var linkRegistry = LinkRegistry.Deserialize(json);
+
+		var checkouts = new List<CodexCheckout>();
+		foreach (var subDir in checkoutDir.GetDirectories())
+		{
+			var gitDir = Path.Combine(subDir.FullName, ".git");
+			if (!context.ReadFileSystem.Directory.Exists(gitDir))
+				continue;
+
+			var repoName = subDir.Name;
+			if (!linkRegistry.Repositories.TryGetValue(repoName, out var branches) || branches.Count == 0)
+				continue;
+
+			var entry = branches.Values.MaxBy(e => e.UpdatedAt);
+			if (entry == null)
+				continue;
+
+			var docsetFile = FindDocsetFile(context.ReadFileSystem, subDir);
+			if (docsetFile == null)
+				continue;
+
+			var docSet = DocumentationSetFile.LoadMetadata(docsetFile);
+			var docsDirectory = docsetFile.Directory!;
+			var docsPath = Path.GetRelativePath(subDir.FullName, docsDirectory.FullName);
+			var docsPathForRef = string.IsNullOrEmpty(docsPath) || docsPath == "."
+				? "."
+				: docsPath.Replace('\\', '/');
+
+			string currentCommit;
+			try
+			{
+				var git = new CodexGitRepository(loggerFactory, context.Collector, subDir);
+				currentCommit = git.GetCurrentCommit();
+			}
+			catch (OperationCanceledException)
+			{
+				throw;
+			}
+			catch (Exception ex) when (ex is IOException or InvalidOperationException)
+			{
+				logger.LogWarning(ex, "Could not read commit for {Name}; skipping", repoName);
+				continue;
+			}
+
+			var docSetRef = CreateDocumentationSetReference(repoName, entry, docsPathForRef, docSet);
+			checkouts.Add(new CodexCheckout(docSetRef, subDir, docsDirectory, currentCommit));
+		}
+
+		return new CodexCloneResult(checkouts, linkRegistry);
+	}
+
+	/// <summary>
 	/// Clones all repositories defined in the link index for the codex environment.
 	/// </summary>
 	public async Task<CodexCloneResult> CloneAll(
@@ -166,7 +234,7 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 		}
 	}
 
-	private static IFileInfo? FindDocsetFile(IFileSystem fileSystem, IDirectoryInfo repoDir)
+	internal static IFileInfo? FindDocsetFile(IFileSystem fileSystem, IDirectoryInfo repoDir)
 	{
 		foreach (var candidate in DocsetSearchPaths)
 		{
@@ -208,7 +276,7 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 		return null;
 	}
 
-	private static CodexDocumentationSetReference CreateDocumentationSetReference(
+	internal static CodexDocumentationSetReference CreateDocumentationSetReference(
 		string repoName,
 		LinkRegistryEntry entry,
 		string docsPath,
