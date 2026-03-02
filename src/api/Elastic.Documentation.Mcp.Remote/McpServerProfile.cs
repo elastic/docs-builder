@@ -35,7 +35,7 @@ public sealed record McpServerProfile(
 		"Elastic documentation",
 		"Use this server to {capabilities} Elastic product documentation published at elastic.co/docs.",
 		["References Elastic product names such as Elasticsearch, Kibana, Fleet, APM, Logstash, Beats, Elastic Security, Elastic Observability, or Elastic Cloud."],
-		[McpFeatureModules.Search, McpFeatureModules.Documents, McpFeatureModules.Coherence, McpFeatureModules.Links, McpFeatureModules.ContentTypes]
+		[McpFeatureModules.Search, McpFeatureModules.Documents, McpFeatureModules.Coherence]
 	);
 
 	public static McpServerProfile Internal { get; } = new(
