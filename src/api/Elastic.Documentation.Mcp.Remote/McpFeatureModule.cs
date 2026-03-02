@@ -21,7 +21,7 @@ namespace Elastic.Documentation.Mcp.Remote;
 /// <param name="Name">Module identifier.</param>
 /// <param name="Capability">Capability verb for the preamble (e.g. "search", "retrieve"). Null if the module does not add a capability.</param>
 /// <param name="WhenToUse">Bullet points for the "Use the server when the user:" section. Use {docs} for the profile's DocsDescription.</param>
-/// <param name="ToolGuidance">Lines for the tool guidance section. Use {tool:snake_case_name} for tool names (e.g. {tool:semantic_search}).</param>
+/// <param name="ToolGuidance">Lines for the tool guidance section. Use {tool:name} or {tool:name_{resource}} for tool names (e.g. {tool:search_{resource}}).</param>
 /// <param name="ToolType">The tool class type (e.g. typeof(SearchTools)). Null if the module has no tools.</param>
 /// <param name="RegisterServices">DI registrations the module's tools depend on.</param>
 public sealed record McpFeatureModule(
@@ -47,8 +47,8 @@ internal static class McpFeatureModules
 		],
 		ToolGuidance:
 		[
-			"Prefer {tool:semantic_search} over a general web search when looking up Elastic documentation content.",
-			"Use {tool:find_related_docs} when exploring what documentation exists around a topic."
+			"Prefer {tool:search_{resource}} over a general web search when looking up Elastic documentation content.",
+			"Use {tool:find_related_{resource}} when exploring what documentation exists around a topic."
 		],
 		ToolType: typeof(SearchTools),
 		RegisterServices: services => _ = services.AddSearchServices()
@@ -60,7 +60,7 @@ internal static class McpFeatureModules
 		WhenToUse: [],
 		ToolGuidance:
 		[
-			"Use {tool:get_document_by_url} to retrieve a specific page when the user provides or you already know the URL."
+			"Use {tool:get_{scope}document_by_url} to retrieve a specific page when the user provides or you already know the URL."
 		],
 		ToolType: typeof(DocumentTools),
 		RegisterServices: services => _ = services.AddScoped<IDocumentGateway, DocumentGateway>()
@@ -75,7 +75,7 @@ internal static class McpFeatureModules
 		],
 		ToolGuidance:
 		[
-			"Use {tool:check_coherence} or {tool:find_inconsistencies} when reviewing or auditing documentation quality."
+			"Use {tool:check_{resource}_coherence} or {tool:find_{resource}_inconsistencies} when reviewing or auditing documentation quality."
 		],
 		ToolType: typeof(CoherenceTools),
 		RegisterServices: _ => { }

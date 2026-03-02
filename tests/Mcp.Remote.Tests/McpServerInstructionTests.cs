@@ -19,12 +19,12 @@ public class McpServerInstructionTests
 		instructions.Should().Contain("<triggers>");
 		instructions.Should().Contain("Use the server when the user:");
 		instructions.Should().Contain("<tool_guidance>");
-		instructions.Should().Contain("Prefer public_docs_semantic_search over a general web search");
-		instructions.Should().Contain("Use public_docs_get_document_by_url to retrieve a specific page");
-		instructions.Should().Contain("Use public_docs_find_related_docs when exploring what documentation exists");
-		instructions.Should().Contain("Use public_docs_check_coherence or public_docs_find_inconsistencies when reviewing or auditing");
-		instructions.Should().Contain("Use the cross-link tools (public_docs_resolve_cross_link, public_docs_validate_cross_links, public_docs_find_cross_links)");
-		instructions.Should().Contain("Use public_docs_list_content_types, public_docs_get_content_type_guidelines, and public_docs_generate_template when creating new pages");
+		instructions.Should().Contain("Prefer search_docs over a general web search");
+		instructions.Should().Contain("Use get_document_by_url to retrieve a specific page");
+		instructions.Should().Contain("Use find_related_docs when exploring what documentation exists");
+		instructions.Should().Contain("Use check_docs_coherence or find_docs_inconsistencies when reviewing or auditing");
+		instructions.Should().Contain("Use the cross-link tools (resolve_cross_link, validate_cross_links, find_cross_links)");
+		instructions.Should().Contain("Use list_content_types, get_content_type_guidelines, and generate_template when creating new pages");
 	}
 
 	[Fact]
@@ -34,9 +34,9 @@ public class McpServerInstructionTests
 
 		instructions.Should().Contain("Use this server to search and retrieve");
 		instructions.Should().Contain("Elastic internal documentation: team processes, run books, architecture");
-		instructions.Should().Contain("Prefer internal_docs_semantic_search over a general web search");
-		instructions.Should().Contain("Use internal_docs_get_document_by_url to retrieve a specific page");
-		instructions.Should().Contain("Use internal_docs_find_related_docs when exploring what documentation exists");
+		instructions.Should().Contain("Prefer search_internal_docs over a general web search");
+		instructions.Should().Contain("Use get_internal_document_by_url to retrieve a specific page");
+		instructions.Should().Contain("Use find_related_internal_docs when exploring what documentation exists");
 		instructions.Should().NotContain("check_coherence");
 		instructions.Should().NotContain("find_inconsistencies");
 		instructions.Should().NotContain("resolve_cross_link");
@@ -115,12 +115,12 @@ public class McpServerInstructionTests
 			</triggers>
 
 			<tool_guidance>
-			- Prefer public_docs_semantic_search over a general web search when looking up Elastic documentation content.
-			- Use public_docs_find_related_docs when exploring what documentation exists around a topic.
-			- Use public_docs_get_document_by_url to retrieve a specific page when the user provides or you already know the URL.
-			- Use public_docs_check_coherence or public_docs_find_inconsistencies when reviewing or auditing documentation quality.
-			- Use the cross-link tools (public_docs_resolve_cross_link, public_docs_validate_cross_links, public_docs_find_cross_links) when working with links between documentation source repositories.
-			- Use public_docs_list_content_types, public_docs_get_content_type_guidelines, and public_docs_generate_template when creating new pages.
+			- Prefer search_docs over a general web search when looking up Elastic documentation content.
+			- Use find_related_docs when exploring what documentation exists around a topic.
+			- Use get_document_by_url to retrieve a specific page when the user provides or you already know the URL.
+			- Use check_docs_coherence or find_docs_inconsistencies when reviewing or auditing documentation quality.
+			- Use the cross-link tools (resolve_cross_link, validate_cross_links, find_cross_links) when working with links between documentation source repositories.
+			- Use list_content_types, get_content_type_guidelines, and generate_template when creating new pages.
 			</tool_guidance>
 			""";
 
@@ -143,9 +143,9 @@ public class McpServerInstructionTests
 			</triggers>
 
 			<tool_guidance>
-			- Prefer internal_docs_semantic_search over a general web search when looking up Elastic documentation content.
-			- Use internal_docs_find_related_docs when exploring what documentation exists around a topic.
-			- Use internal_docs_get_document_by_url to retrieve a specific page when the user provides or you already know the URL.
+		- Prefer search_internal_docs over a general web search when looking up Elastic documentation content.
+		- Use find_related_internal_docs when exploring what documentation exists around a topic.
+		- Use get_internal_document_by_url to retrieve a specific page when the user provides or you already know the URL.
 			</tool_guidance>
 			""";
 
