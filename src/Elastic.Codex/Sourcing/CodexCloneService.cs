@@ -77,7 +77,7 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 			{
 				throw;
 			}
-			catch (Exception ex) when (ex is IOException || ex is InvalidOperationException)
+			catch (Exception ex) when (ex is IOException or InvalidOperationException)
 			{
 				logger.LogWarning(ex, "Could not read commit for {Name}; skipping", repoName);
 				continue;
