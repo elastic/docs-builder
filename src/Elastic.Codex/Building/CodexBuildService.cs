@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Frozen;
 using System.IO.Abstractions;
 using System.Text.Json;
 using Elastic.Codex.Navigation;
@@ -195,6 +196,8 @@ public class CodexBuildService(
 			};
 
 			ICrossLinkResolver crossLinkResolver;
+			var codexRepos = new HashSet<string> { repoName };
+
 			if (buildContext.Configuration.CrossLinkEntries.Length > 0)
 			{
 				var fetcher = new DocSetConfigurationCrossLinkFetcher(
@@ -202,14 +205,15 @@ public class CodexBuildService(
 					buildContext.Configuration,
 					codexLinkIndexReader: buildContext.Configuration.Registry != DocSetRegistry.Public ? codexLinkIndexReader : null);
 				var crossLinks = await fetcher.FetchCrossLinks(ctx);
-				IUriEnvironmentResolver? uriResolver = crossLinks.CodexRepositories is not null
-					? new CodexAwareUriResolver(crossLinks.CodexRepositories, useRelativePaths: true)
-					: null;
+				if (crossLinks.CodexRepositories is not null)
+					codexRepos.UnionWith(crossLinks.CodexRepositories);
+				var uriResolver = new CodexAwareUriResolver(codexRepos.ToFrozenSet(), useRelativePaths: true);
 				crossLinkResolver = new CrossLinkResolver(crossLinks, uriResolver);
 			}
 			else
 			{
-				crossLinkResolver = NoopCrossLinkResolver.Instance;
+				var uriResolver = new CodexAwareUriResolver(codexRepos.ToFrozenSet(), useRelativePaths: true);
+				crossLinkResolver = new CrossLinkResolver(FetchedCrossLinks.Empty, uriResolver);
 			}
 
 			// Create documentation set
@@ -295,7 +299,9 @@ public class CodexBuildService(
 					CrossLinkResolver.ToTargetUrlPath(path));
 			}
 
-			return uri?.AbsolutePath ?? string.Empty;
+			return uri is null
+				? string.Empty
+				: uri.IsAbsoluteUri ? uri.AbsolutePath : uri.OriginalString;
 		}
 	}
 
