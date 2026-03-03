@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using System.Text.RegularExpressions;
 using Elastic.Documentation.ReleaseNotes;
 using YamlDotNet.Core;
 
@@ -11,7 +12,7 @@ namespace Elastic.Documentation.Configuration.ReleaseNotes;
 /// <summary>
 /// Service for loading, resolving, filtering, and merging changelog bundles.
 /// </summary>
-public class BundleLoader(IFileSystem fileSystem)
+public partial class BundleLoader(IFileSystem fileSystem)
 {
 	/// <summary>
 	/// Loads all changelog bundles from a folder.
@@ -37,9 +38,7 @@ public class BundleLoader(IFileSystem fileSystem)
 				continue;
 
 			var version = GetVersionFromBundle(bundleData) ?? fileSystem.Path.GetFileNameWithoutExtension(bundleFile);
-			var repo = bundleData.Products.Count > 0
-				? bundleData.Products[0].ProductId
-				: "elastic";
+			var repo = GetRepoFromBundle(bundleData);
 
 			// Bundle directory is the directory containing the bundle file
 			var bundleDirectory = fileSystem.Path.GetDirectoryName(bundleFile) ?? bundlesFolderPath;
@@ -50,6 +49,9 @@ public class BundleLoader(IFileSystem fileSystem)
 
 			loadedBundles.Add(new LoadedBundle(version, repo, bundleData, bundleFile, entries));
 		}
+
+		// Merge amend files with their parent bundles
+		loadedBundles = MergeAmendFiles(loadedBundles);
 
 		return loadedBundles;
 	}
@@ -165,6 +167,22 @@ public class BundleLoader(IFileSystem fileSystem)
 		bundledData.Products.Count > 0 ? bundledData.Products[0].Target : null;
 
 	/// <summary>
+	/// Gets the repository name from a bundle's first product.
+	/// Uses the explicit Repo field if set, otherwise falls back to ProductId.
+	/// </summary>
+	private static string GetRepoFromBundle(Bundle bundledData)
+	{
+		if (bundledData.Products.Count == 0)
+			return "elastic";
+
+		var firstProduct = bundledData.Products[0];
+		// Use explicit Repo if provided, otherwise fall back to ProductId
+		return !string.IsNullOrWhiteSpace(firstProduct.Repo)
+			? firstProduct.Repo
+			: firstProduct.ProductId;
+	}
+
+	/// <summary>
 	/// Merges a group of bundles with the same target version into a single bundle.
 	/// </summary>
 	private static LoadedBundle MergeBundleGroup(IGrouping<string, LoadedBundle> group)
@@ -191,5 +209,101 @@ public class BundleLoader(IFileSystem fileSystem)
 			mergedEntries
 		);
 	}
+
+	/// <summary>
+	/// Merges amend files with their parent bundles.
+	/// Amend files follow the naming pattern: {baseName}.amend-{N}.yaml
+	/// </summary>
+	/// <param name="bundles">The list of loaded bundles including amend files.</param>
+	/// <returns>A list of bundles with amend file entries merged into their parent bundles.</returns>
+	private List<LoadedBundle> MergeAmendFiles(List<LoadedBundle> bundles)
+	{
+		if (bundles.Count <= 1)
+			return bundles;
+
+		// Build a lookup of bundles by their file path for quick access
+		var bundlesByPath = bundles.ToDictionary(b => b.FilePath, StringComparer.OrdinalIgnoreCase);
+
+		// Identify amend files and their parent bundles
+		var amendBundles = bundles.Where(b => IsAmendFile(b.FilePath)).ToList();
+
+		if (amendBundles.Count == 0)
+			return bundles;
+
+		// Track which bundles to remove (amend files that were merged)
+		var mergedAmendPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+		// Track parent bundles with their merged entries
+		var mergedParents = new Dictionary<string, LoadedBundle>(StringComparer.OrdinalIgnoreCase);
+
+		foreach (var amendBundle in amendBundles)
+		{
+			var parentPath = GetParentBundlePath(amendBundle.FilePath);
+
+			if (parentPath == null || !bundlesByPath.TryGetValue(parentPath, out var parentBundle))
+				continue; // No parent found, amend file will remain standalone
+
+			// Get or create the merged parent entry
+			if (!mergedParents.TryGetValue(parentPath, out var mergedParent))
+				mergedParent = parentBundle;
+
+			// Merge the amend entries into the parent
+			var combinedEntries = mergedParent.Entries.Concat(amendBundle.Entries).ToList();
+
+			mergedParents[parentPath] = new LoadedBundle(
+				mergedParent.Version,
+				mergedParent.Repo,
+				mergedParent.Data,
+				mergedParent.FilePath,
+				combinedEntries
+			);
+
+			_ = mergedAmendPaths.Add(amendBundle.FilePath);
+		}
+
+		// Build the final result: replace parent bundles with merged versions, exclude merged amend files
+		var result = bundles
+			.Where(bundle => !mergedAmendPaths.Contains(bundle.FilePath))
+			.Select(bundle =>
+				mergedParents.TryGetValue(bundle.FilePath, out var mergedBundle)
+					? mergedBundle
+					: bundle)
+			.ToList();
+
+		return result;
+	}
+
+	/// <summary>
+	/// Determines if a file path represents an amend file.
+	/// </summary>
+	/// <param name="filePath">The file path to check.</param>
+	/// <returns>True if the file is an amend file.</returns>
+	private static bool IsAmendFile(string filePath) =>
+		AmendFileRegex().IsMatch(filePath);
+
+	/// <summary>
+	/// Gets the parent bundle path from an amend file path.
+	/// </summary>
+	/// <param name="amendFilePath">The amend file path.</param>
+	/// <returns>The parent bundle path, or null if not an amend file.</returns>
+	private string? GetParentBundlePath(string amendFilePath)
+	{
+		var match = AmendFileRegex().Match(amendFilePath);
+		if (!match.Success)
+			return null;
+
+		// Replace the ".amend-N" part with just the extension
+		var directory = fileSystem.Path.GetDirectoryName(amendFilePath) ?? string.Empty;
+		var fileName = fileSystem.Path.GetFileName(amendFilePath);
+		var extension = fileSystem.Path.GetExtension(amendFilePath);
+
+		// Remove the .amend-N part from the filename
+		var parentFileName = AmendFileRegex().Replace(fileName, extension);
+
+		return fileSystem.Path.Combine(directory, parentFileName);
+	}
+
+	[GeneratedRegex(@"\.amend-\d+\.ya?ml$", RegexOptions.IgnoreCase)]
+	private static partial Regex AmendFileRegex();
 
 }

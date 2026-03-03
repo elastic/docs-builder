@@ -16,10 +16,12 @@ namespace Elastic.Codex.Navigation;
 [DebuggerDisplay("{Url}")]
 public class GroupNavigation : IRootNavigationItem<IDocumentationFile, INavigationItem>
 {
-	public GroupNavigation(string groupSlug, string displayTitle, string url)
+	public GroupNavigation(string groupSlug, string displayTitle, string url, string? description = null, string? icon = null)
 	{
 		GroupSlug = groupSlug;
 		DisplayTitle = displayTitle;
+		Description = description;
+		Icon = icon;
 		Url = url.TrimEnd('/');
 		Id = ShortId.Create($"group-{groupSlug}");
 		Identifier = new Uri($"codex://group/{groupSlug}");
@@ -37,6 +39,16 @@ public class GroupNavigation : IRootNavigationItem<IDocumentationFile, INavigati
 	/// Gets the display title for the group.
 	/// </summary>
 	public string DisplayTitle { get; }
+
+	/// <summary>
+	/// Gets the optional description for the group landing page card.
+	/// </summary>
+	public string? Description { get; }
+
+	/// <summary>
+	/// Gets the optional icon identifier for the group landing page card.
+	/// </summary>
+	public string? Icon { get; }
 
 	/// <summary>
 	/// Gets information about documentation sets in this group for the group landing page.
@@ -84,7 +96,14 @@ public class GroupNavigation : IRootNavigationItem<IDocumentationFile, INavigati
 /// <summary>
 /// Virtual index page for a group landing.
 /// </summary>
-public record GroupIndexPage(string NavigationTitle) : IDocumentationFile;
+public record GroupIndexPage(string NavigationTitle) : IDocumentationFile
+{
+	/// <inheritdoc />
+	public string Title => NavigationTitle;
+
+	/// <inheritdoc />
+	public string? Description => null;
+}
 
 /// <summary>
 /// Leaf navigation item for a group's index (landing) page.
@@ -121,7 +140,14 @@ public class GroupIndexLeaf(
 /// <summary>
 /// Model for a codex nav link to a group landing page.
 /// </summary>
-public record GroupLinkPage(string NavigationTitle, string Url) : IDocumentationFile;
+public record GroupLinkPage(string NavigationTitle, string Url) : IDocumentationFile
+{
+	/// <inheritdoc />
+	public string Title => NavigationTitle;
+
+	/// <inheritdoc />
+	public string? Description => null;
+}
 
 /// <summary>
 /// Leaf in the codex nav that links to a group landing page (/g/slug).

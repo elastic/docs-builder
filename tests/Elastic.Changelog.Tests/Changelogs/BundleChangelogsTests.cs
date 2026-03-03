@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Text;
 using Elastic.Changelog.Bundling;
 using Elastic.Documentation.Diagnostics;
 using FluentAssertions;
@@ -11,11 +12,13 @@ namespace Elastic.Changelog.Tests.Changelogs;
 public class BundleChangelogsTests : ChangelogTestBase
 {
 	private ChangelogBundlingService Service { get; }
+	private ChangelogBundlingService ServiceWithConfig { get; }
 	private readonly string _changelogDir;
 
 	public BundleChangelogsTests(ITestOutputHelper output) : base(output)
 	{
 		Service = new(LoggerFactory, null, FileSystem);
+		ServiceWithConfig = new(LoggerFactory, ConfigurationContext, FileSystem);
 		_changelogDir = CreateChangelogDir();
 	}
 
@@ -38,7 +41,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - product: elasticsearch
 			    target: 9.2.0
 			    lifecycle: ga
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 		// language=yaml
 		var changelog2 =
@@ -48,7 +52,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: kibana
 			    target: 9.2.0
-			pr: https://github.com/elastic/kibana/pull/200
+			prs:
+			  - https://github.com/elastic/kibana/pull/200
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-first-changelog.yaml");
@@ -95,7 +100,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - product: elasticsearch
 			    target: 9.2.0
 			    lifecycle: ga
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 		// language=yaml
 		var changelog2 =
@@ -106,7 +112,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - product: kibana
 			    target: 9.2.0
 			    lifecycle: ga
-			pr: https://github.com/elastic/kibana/pull/200
+			prs:
+			  - https://github.com/elastic/kibana/pull/200
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-elasticsearch-feature.yaml");
@@ -148,7 +155,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 		// language=yaml
 		var changelog2 =
@@ -158,7 +166,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/200
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/200
 			""";
 		// language=yaml
 		var changelog3 =
@@ -168,7 +177,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/300
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/300
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-first-pr.yaml");
@@ -199,6 +209,105 @@ public class BundleChangelogsTests : ChangelogTestBase
 	}
 
 	[Fact]
+	public async Task BundleChangelogs_WithIssuesFilter_FiltersCorrectly()
+	{
+		// Arrange
+		// language=yaml
+		var changelog1 =
+			"""
+			title: First issue
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			issues:
+			  - https://github.com/elastic/elasticsearch/issues/100
+			""";
+		// language=yaml
+		var changelog2 =
+			"""
+			title: Second issue
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			issues:
+			  - https://github.com/elastic/elasticsearch/issues/200
+			""";
+		// language=yaml
+		var changelog3 =
+			"""
+			title: Third issue
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			issues:
+			  - https://github.com/elastic/elasticsearch/issues/300
+			""";
+
+		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-first-issue.yaml");
+		var file2 = FileSystem.Path.Combine(_changelogDir, "1755268140-second-issue.yaml");
+		var file3 = FileSystem.Path.Combine(_changelogDir, "1755268150-third-issue.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file3, changelog3, TestContext.Current.CancellationToken);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			Issues = ["https://github.com/elastic/elasticsearch/issues/100", "https://github.com/elastic/elasticsearch/issues/200"],
+			Output = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
+		};
+
+		// Act
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+		bundleContent.Should().Contain("name: 1755268130-first-issue.yaml");
+		bundleContent.Should().Contain("name: 1755268140-second-issue.yaml");
+		bundleContent.Should().NotContain("name: 1755268150-third-issue.yaml");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithOldPrFormat_StillMatchesWhenFilteringByPrs()
+	{
+		// Backward compat: changelog with legacy pr: (single string) should still match --prs filter
+		// language=yaml
+		var changelogWithOldFormat =
+			"""
+			title: Legacy PR changelog
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			pr: https://github.com/elastic/elasticsearch/pull/999
+			""";
+
+		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-legacy-pr.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, changelogWithOldFormat, TestContext.Current.CancellationToken);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			Prs = ["https://github.com/elastic/elasticsearch/pull/999"],
+			Output = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
+		};
+
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+		bundleContent.Should().Contain("name: 1755268130-legacy-pr.yaml");
+	}
+
+	[Fact]
 	public async Task BundleChangelogs_WithPrsFilterAndUnmatchedPrs_EmitsWarnings()
 	{
 		// Arrange
@@ -211,7 +320,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-first-pr.yaml");
@@ -257,7 +367,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 		// language=yaml
 		var changelog2 =
@@ -267,7 +378,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/200
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/200
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-first-pr.yaml");
@@ -318,7 +430,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-pr-number.yaml");
@@ -357,7 +470,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/133609
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/133609
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-short-format.yaml");
@@ -438,7 +552,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - product: elasticsearch
 			    target: 9.2.0
 			    lifecycle: ga
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 		// language=yaml
 		var changelog2 =
@@ -449,7 +564,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - product: kibana
 			    target: 9.2.0
 			    lifecycle: ga
-			pr: https://github.com/elastic/kibana/pull/200
+			prs:
+			  - https://github.com/elastic/kibana/pull/200
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-first-changelog.yaml");
@@ -507,7 +623,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: cloud-serverless
 			    target: 2025-12-02
-			pr: https://github.com/elastic/cloud-serverless/pull/100
+			prs:
+			  - https://github.com/elastic/cloud-serverless/pull/100
 			""";
 		// language=yaml
 		var changelog2 =
@@ -517,7 +634,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: cloud-serverless
 			    target: 2025-12-06
-			pr: https://github.com/elastic/cloud-serverless/pull/200
+			prs:
+			  - https://github.com/elastic/cloud-serverless/pull/200
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-cloud-feature1.yaml");
@@ -565,7 +683,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - product: elasticsearch
 			    target: 9.2.0
 			    lifecycle: ga
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 		// language=yaml
 		var changelog2 =
@@ -576,7 +695,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - product: kibana
 			    target: 9.2.0
 			    lifecycle: ga
-			pr: https://github.com/elastic/kibana/pull/200
+			prs:
+			  - https://github.com/elastic/kibana/pull/200
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-elasticsearch-feature.yaml");
@@ -617,7 +737,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - product: elasticsearch
 			    target: 9.2.0
 			    lifecycle: ga
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 		// language=yaml
 		var changelog2 =
@@ -628,7 +749,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - product: kibana
 			    target: 9.3.0
 			    lifecycle: beta
-			pr: https://github.com/elastic/kibana/pull/200
+			prs:
+			  - https://github.com/elastic/kibana/pull/200
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-elasticsearch-feature.yaml");
@@ -669,7 +791,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - product: elasticsearch
 			    target: 9.3.0
 			    lifecycle: ga
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 		// language=yaml
 		var changelog2 =
@@ -680,7 +803,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - product: elasticsearch
 			    target: 9.3.1
 			    lifecycle: ga
-			pr: https://github.com/elastic/elasticsearch/pull/200
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/200
 			""";
 		// language=yaml
 		var changelog3 =
@@ -691,7 +815,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - product: elasticsearch
 			    target: 9.2.0
 			    lifecycle: ga
-			pr: https://github.com/elastic/elasticsearch/pull/300
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/300
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-es-9.3.0.yaml");
@@ -758,7 +883,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/123
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/123
 			""";
 		var changelogFile = FileSystem.Path.Combine(_changelogDir, "1755268130-test-pr.yaml");
 		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog, TestContext.Current.CancellationToken);
@@ -797,7 +923,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/123
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/123
 			""";
 		var changelogFile = FileSystem.Path.Combine(_changelogDir, "1755268130-test-pr.yaml");
 		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog, TestContext.Current.CancellationToken);
@@ -840,7 +967,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 		// language=yaml
 		var changelog2 =
@@ -850,7 +978,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: kibana
 			    target: 9.2.0
-			pr: https://github.com/elastic/kibana/pull/200
+			prs:
+			  - https://github.com/elastic/kibana/pull/200
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-elasticsearch-feature.yaml");
@@ -906,7 +1035,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 		// language=yaml
 		var changelog2 =
@@ -916,7 +1046,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: kibana
 			    target: 9.2.0
-			pr: https://github.com/elastic/kibana/pull/200
+			prs:
+			  - https://github.com/elastic/kibana/pull/200
 			""";
 		// language=yaml
 		var changelog3 =
@@ -928,7 +1059,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			    target: 9.2.0
 			  - product: kibana
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/300
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/300
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-elasticsearch.yaml");
@@ -975,7 +1107,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - product: elasticsearch
 			    target: 9.2.0
 			    lifecycle: ga
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 		// language=yaml
 		var changelog2 =
@@ -986,7 +1119,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - product: elasticsearch
 			    target: 9.3.0
 			    lifecycle: beta
-			pr: https://github.com/elastic/elasticsearch/pull/200
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/200
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-elasticsearch-ga.yaml");
@@ -1034,7 +1168,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-elasticsearch.yaml");
@@ -1082,7 +1217,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - product: elasticsearch
 			    target: 9.2.0
 			    lifecycle: ga
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 		// language=yaml
 		var changelog2 =
@@ -1093,7 +1229,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - product: elasticsearch
 			    target: 9.3.0
 			    lifecycle: beta
-			pr: https://github.com/elastic/elasticsearch/pull/200
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/200
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-elasticsearch-ga.yaml");
@@ -1139,7 +1276,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - product: elasticsearch
 			    target: 9.2.0
 			    lifecycle: ga
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1-feature.yaml");
@@ -1188,7 +1326,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - product: elasticsearch
 			    target: 9.2.0
 			    lifecycle: ga
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 		// language=yaml
 		var changelog2 =
@@ -1199,7 +1338,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - product: elasticsearch
 			    target: 9.2.0
 			    lifecycle: beta
-			pr: https://github.com/elastic/elasticsearch/pull/200
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/200
 			""";
 		// language=yaml
 		var changelog3 =
@@ -1209,7 +1349,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/300
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/300
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-elasticsearch-ga.yaml");
@@ -1254,7 +1395,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			areas:
 			  - Search
 			description: This is a test feature
@@ -1286,10 +1428,67 @@ public class BundleChangelogsTests : ChangelogTestBase
 		bundleContent.Should().Contain("title: Test feature");
 		bundleContent.Should().Contain("product: elasticsearch");
 		bundleContent.Should().Contain("target: 9.2.0");
-		bundleContent.Should().Contain("pr: https://github.com/elastic/elasticsearch/pull/100");
+		bundleContent.Should().Contain("prs:");
+		bundleContent.Should().Contain("https://github.com/elastic/elasticsearch/pull/100");
 		bundleContent.Should().Contain("areas:");
 		bundleContent.Should().Contain("- Search");
 		bundleContent.Should().Contain("description: This is a test feature");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithExplicitResolveFalse_OverridesConfigResolveTrue()
+	{
+		// Arrange - config has resolve: true, but CLI passes Resolve = false (--no-resolve).
+		// The explicit CLI value must win.
+
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  resolve: true
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// language=yaml
+		var changelog1 =
+			"""
+			title: Test feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
+			""";
+
+		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-test-feature.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			All = true,
+			Resolve = false,
+			Config = configPath,
+			Output = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
+		};
+
+		// Act
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+
+		// An unresolved bundle has only a file reference — no inline title/type fields
+		bundleContent.Should().Contain("name: 1755268130-test-feature.yaml");
+		bundleContent.Should().NotContain("title: Test feature");
+		bundleContent.Should().NotContain("type: feature");
 	}
 
 	[Fact]
@@ -1307,7 +1506,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - product: elasticsearch
 			    target: 9.3.0
 			    lifecycle: ga
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			description: |
 			  This feature includes special characters:
 			  - Ampersand: & symbol
@@ -1317,7 +1517,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-special-chars.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, System.Text.Encoding.UTF8, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, Encoding.UTF8, TestContext.Current.CancellationToken);
 
 		var outputPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
 		var input = new BundleChangelogsArguments
@@ -1336,7 +1536,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 
 		// Read the bundle file with explicit UTF-8 encoding
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, System.Text.Encoding.UTF8, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, Encoding.UTF8, TestContext.Current.CancellationToken);
 
 		// Verify special characters are preserved correctly (not corrupted)
 		// The original issue reported "&o0" and "*o0" corruption, so we verify the characters are correct
@@ -1392,7 +1592,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 
 		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-test-feature.yaml");
@@ -1556,5 +1757,991 @@ public class BundleChangelogsTests : ChangelogTestBase
 		result.Should().BeFalse();
 		Collector.Errors.Should().BeGreaterThan(0);
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("product entry missing required field: product"));
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithHideFeaturesOption_IncludesHideFeaturesInBundle()
+	{
+		// Arrange - Test that --hide-features option writes feature IDs to the bundle output
+
+		// language=yaml
+		var changelog1 =
+			"""
+			title: Feature with hidden flag
+			type: feature
+			feature-id: feature:hidden-api
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
+			""";
+
+		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-feature.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			All = true,
+			HideFeatures = ["feature:hidden-api", "feature:another-hidden"],
+			Output = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
+		};
+
+		// Act
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+		// Verify that hide-features field is included in the bundle output
+		bundleContent.Should().Contain("hide-features:");
+		bundleContent.Should().Contain("- feature:hidden-api");
+		bundleContent.Should().Contain("- feature:another-hidden");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithoutHideFeaturesOption_OmitsHideFeaturesFieldInOutput()
+	{
+		// Arrange - Test that without --hide-features option, no hide-features field is written
+
+		// language=yaml
+		var changelog1 =
+			"""
+			title: Regular feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
+			""";
+
+		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-feature.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			All = true,
+			// No HideFeatures
+			Output = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
+		};
+
+		// Act
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+		// Verify that hide-features field is NOT written when not specified
+		bundleContent.Should().NotContain("hide-features:");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithHideFeaturesFromFile_IncludesHideFeaturesInBundle()
+	{
+		// Arrange - Test that --hide-features can read feature IDs from a file
+
+		// language=yaml
+		var changelog1 =
+			"""
+			title: Feature with hidden flag
+			type: feature
+			feature-id: feature:from-file
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
+			""";
+
+		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-feature.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+
+		// Create feature IDs file
+		var featureIdsFile = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "feature-ids.txt");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(featureIdsFile)!);
+		await FileSystem.File.WriteAllTextAsync(featureIdsFile, "feature:from-file\nfeature:another", TestContext.Current.CancellationToken);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			All = true,
+			HideFeatures = [featureIdsFile],
+			Output = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
+		};
+
+		// Act
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+		// Verify that hide-features field contains feature IDs from the file
+		bundleContent.Should().Contain("hide-features:");
+		bundleContent.Should().Contain("- feature:from-file");
+		bundleContent.Should().Contain("- feature:another");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithRepoOption_IncludesRepoInBundleProducts()
+	{
+		// Arrange - Test that --repo option sets the repo field in the bundle output
+
+		// language=yaml
+		var changelog1 =
+			"""
+			title: Serverless feature
+			type: feature
+			products:
+			  - product: cloud-serverless
+			    target: 2025-12-02
+			prs:
+			  - https://github.com/elastic/cloud/pull/100
+			""";
+
+		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-serverless-feature.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			All = true,
+			Repo = "cloud", // Set repo to "cloud" - different from product ID "cloud-serverless"
+			Output = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
+		};
+
+		// Act
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+		// Verify that repo field is included in the bundle output
+		bundleContent.Should().Contain("product: cloud-serverless");
+		bundleContent.Should().Contain("repo: cloud");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithoutRepoOption_OmitsRepoFieldInOutput()
+	{
+		// Arrange - Test that without --repo option, no repo field is written to the bundle
+
+		// language=yaml
+		var changelog1 =
+			"""
+			title: Elasticsearch feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
+			""";
+
+		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-es-feature.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			All = true,
+			// No --repo option
+			Output = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
+		};
+
+		// Act
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+		// Verify that no repo field is written when not specified
+		bundleContent.Should().Contain("product: elasticsearch");
+		bundleContent.Should().NotContain("repo:");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithOutputProductsAndRepo_IncludesRepoInAllProducts()
+	{
+		// Arrange - Test that --repo option works with --output-products
+
+		// language=yaml
+		var changelog1 =
+			"""
+			title: Feature for serverless
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			prs:
+			  - https://github.com/elastic/cloud/pull/100
+			""";
+
+		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-feature.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			All = true,
+			Repo = "cloud",
+			OutputProducts =
+			[
+				new ProductArgument { Product = "cloud-serverless", Target = "2025-12-02", Lifecycle = "ga" },
+				new ProductArgument { Product = "elasticsearch-serverless", Target = "2025-12-02", Lifecycle = "ga" }
+			],
+			Output = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
+		};
+
+		// Act
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+		// Verify that repo field is included for all products
+		bundleContent.Should().Contain("product: cloud-serverless");
+		bundleContent.Should().Contain("product: elasticsearch-serverless");
+		// The repo field should appear for each product (or at least once)
+		bundleContent.Should().Contain("repo: cloud");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithConfigOutputDirectory_WhenOutputNotSpecified_UsesConfigOutputDirectory()
+	{
+		// Arrange - When --output is not specified, use bundle.output_directory from config if set
+
+		var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+
+		// language=yaml
+		var configContent =
+			$"""
+			bundle:
+			  directory: "{_changelogDir.Replace("\\", "/")}"
+			  output_directory: "{outputDir.Replace("\\", "/")}"
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), "config-output-dir", "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// language=yaml
+		var changelog1 =
+			"""
+			title: Test feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
+			""";
+
+		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-feature.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			Config = configPath,
+			Output = null,
+			All = true
+		};
+
+		// Act
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue($"Expected bundling to succeed. Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
+		Collector.Errors.Should().Be(0);
+
+		var expectedOutputPath = FileSystem.Path.Combine(outputDir, "changelog-bundle.yaml");
+		FileSystem.File.Exists(expectedOutputPath).Should().BeTrue("Bundle should be created in config output_directory");
+
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(expectedOutputPath, TestContext.Current.CancellationToken);
+		bundleContent.Should().Contain("product: elasticsearch");
+		bundleContent.Should().Contain("name: 1755268130-feature.yaml");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithConfigDirectory_WhenDirectoryNotSpecified_UsesConfigDirectory()
+	{
+		// Arrange - When --directory is not specified (null), use bundle.directory from config if set
+
+		var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+
+		// language=yaml
+		var configContent =
+			$"""
+			bundle:
+			  directory: "{_changelogDir.Replace("\\", "/")}"
+			  output_directory: "{outputDir.Replace("\\", "/")}"
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), "config-dir", "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// language=yaml
+		var changelog1 =
+			"""
+			title: Test feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
+			""";
+
+		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-feature.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = null,
+			Config = configPath,
+			Output = null,
+			All = true
+		};
+
+		// Act - Directory not specified, so ApplyConfigDefaults uses config.Bundle.Directory
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue($"Expected bundling to succeed. Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
+		Collector.Errors.Should().Be(0);
+
+		var expectedOutputPath = FileSystem.Path.Combine(outputDir, "changelog-bundle.yaml");
+		FileSystem.File.Exists(expectedOutputPath).Should().BeTrue("Bundle should use config directory and output_directory");
+
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(expectedOutputPath, TestContext.Current.CancellationToken);
+		bundleContent.Should().Contain("product: elasticsearch");
+		bundleContent.Should().Contain("name: 1755268130-feature.yaml");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithExplicitDirectory_OverridesConfigDirectory()
+	{
+		// Arrange - config has directory pointing elsewhere, but CLI passes --directory explicitly.
+		// The explicit CLI value must win (e.g. --directory . when cwd has changelogs).
+
+		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(configDir);
+		var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+
+		// language=yaml
+		var configContent =
+			$"""
+			bundle:
+			  directory: "{configDir.Replace("\\", "/")}"
+			  output_directory: "{outputDir.Replace("\\", "/")}"
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), "config-dir-override", "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// language=yaml
+		var changelog1 =
+			"""
+			title: Test feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
+			""";
+
+		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-feature.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			Config = configPath,
+			Output = FileSystem.Path.Combine(outputDir, "bundle.yaml"),
+			All = true
+		};
+
+		// Act - Explicit Directory overrides config.Bundle.Directory
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert - used _changelogDir (CLI), not configDir (config)
+		result.Should().BeTrue($"Expected bundling to succeed. Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
+		Collector.Errors.Should().Be(0);
+
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+		bundleContent.Should().Contain("product: elasticsearch");
+		bundleContent.Should().Contain("name: 1755268130-feature.yaml");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithProfileHideFeatures_IncludesHideFeaturesInBundle()
+	{
+		// Arrange - Test that hide_features in a profile config are written to the bundle output
+
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  profiles:
+			    es-release:
+			      products: "elasticsearch {version} {lifecycle}"
+			      output: "elasticsearch-{version}.yaml"
+			      hide_features:
+			        - feature:profile-hidden
+			        - feature:another-profile-hidden
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), "config", "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// language=yaml
+		var changelog1 =
+			"""
+			title: Elasticsearch feature
+			type: feature
+			feature-id: feature:profile-hidden
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
+			""";
+
+		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-feature.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+
+		var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			Profile = "es-release",
+			ProfileArgument = "9.2.0",
+			Config = configPath,
+			OutputDirectory = outputDir
+		};
+
+		// Act
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue($"Expected bundling to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		Collector.Errors.Should().Be(0);
+
+		// Find the output file
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		outputFiles.Should().NotBeEmpty("Expected an output file to be created");
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current.CancellationToken);
+
+		// Verify that hide-features from the profile are written to the bundle
+		bundleContent.Should().Contain("hide-features:");
+		bundleContent.Should().Contain("- feature:profile-hidden");
+		bundleContent.Should().Contain("- feature:another-profile-hidden");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithProfileAndCliHideFeatures_MergesBothSources()
+	{
+		// Arrange - Test that CLI --hide-features and profile hide_features are merged
+
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  profiles:
+			    es-release:
+			      products: "elasticsearch {version} {lifecycle}"
+			      output: "elasticsearch-{version}.yaml"
+			      hide_features:
+			        - feature:from-profile
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), "config2", "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// language=yaml
+		var changelog1 =
+			"""
+			title: Elasticsearch feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
+			""";
+
+		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-feature.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+
+		var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			Profile = "es-release",
+			ProfileArgument = "9.2.0",
+			Config = configPath,
+			OutputDirectory = outputDir,
+			HideFeatures = ["feature:from-cli"]
+		};
+
+		// Act
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue($"Expected bundling to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		Collector.Errors.Should().Be(0);
+
+		// Find the output file
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		outputFiles.Should().NotBeEmpty("Expected an output file to be created");
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current.CancellationToken);
+
+		// Verify that hide-features from BOTH sources are present
+		bundleContent.Should().Contain("hide-features:");
+		bundleContent.Should().Contain("- feature:from-profile");
+		bundleContent.Should().Contain("- feature:from-cli");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithProfileAndCliHideFeatures_DeduplicatesFeatureIds()
+	{
+		// Arrange - Test that duplicate feature IDs from CLI and profile are deduplicated
+
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  profiles:
+			    es-release:
+			      products: "elasticsearch {version} {lifecycle}"
+			      output: "elasticsearch-{version}.yaml"
+			      hide_features:
+			        - feature:shared
+			        - feature:profile-only
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), "config3", "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// language=yaml
+		var changelog1 =
+			"""
+			title: Elasticsearch feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
+			""";
+
+		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-feature.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+
+		var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			Profile = "es-release",
+			ProfileArgument = "9.2.0",
+			Config = configPath,
+			OutputDirectory = outputDir,
+			HideFeatures = ["feature:shared", "feature:cli-only"] // "feature:shared" overlaps with profile
+		};
+
+		// Act
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue($"Expected bundling to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		Collector.Errors.Should().Be(0);
+
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		outputFiles.Should().NotBeEmpty("Expected an output file to be created");
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current.CancellationToken);
+
+		// Verify all unique features are present
+		bundleContent.Should().Contain("- feature:shared");
+		bundleContent.Should().Contain("- feature:profile-only");
+		bundleContent.Should().Contain("- feature:cli-only");
+
+		// Count occurrences of "feature:shared" - should appear exactly once (deduplicated)
+		var sharedCount = bundleContent.Split("feature:shared").Length - 1;
+		sharedCount.Should().Be(1, "Duplicate feature IDs should be deduplicated");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithComments_ProducesNormalizedChecksum()
+	{
+		// Arrange - File with comment headers should produce a normalized checksum
+		// (i.e. comments are stripped before hashing)
+
+		// language=yaml
+		var changelogWithComments =
+			"""
+			# This is a comment header generated by changelog add
+			# PR: https://github.com/elastic/elasticsearch/pull/100
+			title: Feature with comments
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
+			""";
+
+		// language=yaml
+		var changelogWithoutComments =
+			"""
+			title: Feature with comments
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
+			""";
+
+		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-with-comments.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, changelogWithComments, TestContext.Current.CancellationToken);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			All = true,
+			Output = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
+		};
+
+		// Act
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+
+		// The checksum in the bundle should be the normalized hash (comments stripped)
+		var expectedChecksum = ComputeSha1(changelogWithComments);
+		bundleContent.Should().Contain($"checksum: {expectedChecksum}");
+
+		// Both versions of the content should produce the same checksum (comments are normalized away)
+		var checksumFromCommented = ComputeSha1(changelogWithComments);
+		var checksumFromUncommented = ComputeSha1(changelogWithoutComments);
+		checksumFromCommented.Should().Be(checksumFromUncommented,
+			"checksums should be identical regardless of comments");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithAndWithoutComments_ProduceSameChecksum()
+	{
+		// Arrange - Two separate bundles, one with and one without comments,
+		// should store the same checksum for semantically identical content
+
+		// language=yaml
+		var changelogWithComments =
+			"""
+			# Auto-generated by changelog add
+			# Do not edit this comment block
+			title: Shared feature
+			type: enhancement
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/500
+			""";
+
+		// language=yaml
+		var changelogWithoutComments =
+			"""
+			title: Shared feature
+			type: enhancement
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/500
+			""";
+
+		// Bundle with comments
+		var dir1 = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(dir1);
+		var file1 = FileSystem.Path.Combine(dir1, "1755268130-shared.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, changelogWithComments, TestContext.Current.CancellationToken);
+
+		var output1 = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle1.yaml");
+		var result1 = await Service.BundleChangelogs(Collector, new BundleChangelogsArguments
+		{
+			Directory = dir1, All = true, Output = output1
+		}, TestContext.Current.CancellationToken);
+
+		// Bundle without comments
+		var dir2 = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(dir2);
+		var file2 = FileSystem.Path.Combine(dir2, "1755268130-shared.yaml");
+		await FileSystem.File.WriteAllTextAsync(file2, changelogWithoutComments, TestContext.Current.CancellationToken);
+
+		var output2 = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle2.yaml");
+		var result2 = await Service.BundleChangelogs(Collector, new BundleChangelogsArguments
+		{
+			Directory = dir2, All = true, Output = output2
+		}, TestContext.Current.CancellationToken);
+
+		// Assert
+		result1.Should().BeTrue();
+		result2.Should().BeTrue();
+
+		var bundle1 = await FileSystem.File.ReadAllTextAsync(output1, TestContext.Current.CancellationToken);
+		var bundle2 = await FileSystem.File.ReadAllTextAsync(output2, TestContext.Current.CancellationToken);
+
+		// Extract checksum values from both bundles
+		var checksum1 = ExtractChecksum(bundle1);
+		var checksum2 = ExtractChecksum(bundle2);
+
+		checksum1.Should().Be(checksum2,
+			"bundles from files with and without comments should have the same normalized checksum");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithDifferentData_ProducesDifferentChecksum()
+	{
+		// Arrange - Files with actually different data should produce different checksums
+
+		// language=yaml
+		var changelog1 =
+			"""
+			title: Feature A
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
+			""";
+
+		// language=yaml
+		var changelog2 =
+			"""
+			title: Feature B
+			type: enhancement
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/200
+			""";
+
+		// Bundle first file
+		var dir1 = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(dir1);
+		await FileSystem.File.WriteAllTextAsync(FileSystem.Path.Combine(dir1, "1755268130-a.yaml"), changelog1, TestContext.Current.CancellationToken);
+
+		var output1 = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle1.yaml");
+		await Service.BundleChangelogs(Collector, new BundleChangelogsArguments
+		{
+			Directory = dir1, All = true, Output = output1
+		}, TestContext.Current.CancellationToken);
+
+		// Bundle second file
+		var dir2 = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(dir2);
+		await FileSystem.File.WriteAllTextAsync(FileSystem.Path.Combine(dir2, "1755268130-b.yaml"), changelog2, TestContext.Current.CancellationToken);
+
+		var output2 = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle2.yaml");
+		await Service.BundleChangelogs(Collector, new BundleChangelogsArguments
+		{
+			Directory = dir2, All = true, Output = output2
+		}, TestContext.Current.CancellationToken);
+
+		// Assert
+		var bundle1 = await FileSystem.File.ReadAllTextAsync(output1, TestContext.Current.CancellationToken);
+		var bundle2 = await FileSystem.File.ReadAllTextAsync(output2, TestContext.Current.CancellationToken);
+
+		var checksum1 = ExtractChecksum(bundle1);
+		var checksum2 = ExtractChecksum(bundle2);
+
+		checksum1.Should().NotBe(checksum2,
+			"files with different data should produce different checksums");
+	}
+
+	[Fact]
+	public async Task AmendBundle_WithComments_ProducesNormalizedChecksum()
+	{
+		// Arrange - Amend service should also use normalized checksums
+
+		// Create a base bundle file
+		var bundleDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(bundleDir);
+
+		var bundleFile = FileSystem.Path.Combine(bundleDir, "bundle.yaml");
+		// language=yaml
+		var bundleContent =
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			entries: []
+			""";
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+
+		// Create a changelog file with comments
+		var changelogDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(changelogDir);
+
+		// language=yaml
+		var changelogWithComments =
+			"""
+			# This is a comment header
+			# Generated by changelog add
+			title: Amend feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
+			""";
+
+		var changelogFile = FileSystem.Path.Combine(changelogDir, "1755268130-amend-feature.yaml");
+		await FileSystem.File.WriteAllTextAsync(changelogFile, changelogWithComments, TestContext.Current.CancellationToken);
+
+		var amendService = new ChangelogBundleAmendService(LoggerFactory, FileSystem);
+
+		var amendInput = new AmendBundleArguments
+		{
+			BundlePath = bundleFile,
+			AddFiles = [changelogFile],
+			Resolve = false
+		};
+
+		// Act
+		var result = await amendService.AmendBundle(Collector, amendInput, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+
+		// Read the amend file
+		var amendFiles = ChangelogBundleAmendService.DiscoverAmendFiles(FileSystem, bundleFile);
+		amendFiles.Should().HaveCount(1);
+
+		var amendContent = await FileSystem.File.ReadAllTextAsync(amendFiles[0], TestContext.Current.CancellationToken);
+
+		// The checksum should be the normalized hash (comments stripped before hashing)
+		var expectedChecksum = ComputeSha1(changelogWithComments);
+		amendContent.Should().Contain($"checksum: {expectedChecksum}");
+	}
+
+	[Fact]
+	public async Task AmendBundle_WithResolve_ProducesNormalizedChecksum()
+	{
+		// Arrange - Amend with --resolve should also use normalized checksums
+
+		// Create a base bundle file
+		var bundleDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(bundleDir);
+
+		var bundleFile = FileSystem.Path.Combine(bundleDir, "bundle.yaml");
+		// language=yaml
+		var bundleContent =
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			entries: []
+			""";
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+
+		// Create a changelog file with comments
+		var changelogDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(changelogDir);
+
+		// language=yaml
+		var changelogWithComments =
+			"""
+			# Auto-generated comment
+			title: Resolved amend feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/200
+			""";
+
+		var changelogFile = FileSystem.Path.Combine(changelogDir, "1755268140-resolved-feature.yaml");
+		await FileSystem.File.WriteAllTextAsync(changelogFile, changelogWithComments, TestContext.Current.CancellationToken);
+
+		var amendService = new ChangelogBundleAmendService(LoggerFactory, FileSystem);
+
+		var amendInput = new AmendBundleArguments
+		{
+			BundlePath = bundleFile,
+			AddFiles = [changelogFile],
+			Resolve = true
+		};
+
+		// Act
+		var result = await amendService.AmendBundle(Collector, amendInput, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+
+		// Read the amend file
+		var amendFiles = ChangelogBundleAmendService.DiscoverAmendFiles(FileSystem, bundleFile);
+		amendFiles.Should().HaveCount(1);
+
+		var amendContent = await FileSystem.File.ReadAllTextAsync(amendFiles[0], TestContext.Current.CancellationToken);
+
+		// The checksum should be the normalized hash
+		var expectedChecksum = ComputeSha1(changelogWithComments);
+		amendContent.Should().Contain($"checksum: {expectedChecksum}");
+
+		// Resolved entries should include inline data
+		amendContent.Should().Contain("title: Resolved amend feature");
+		amendContent.Should().Contain("type: feature");
+	}
+
+	private static string ExtractChecksum(string bundleContent)
+	{
+		var lines = bundleContent.Split('\n');
+		var checksumLine = lines.FirstOrDefault(l => l.Contains("checksum:"));
+		checksumLine.Should().NotBeNull("Bundle should contain a checksum line");
+		return checksumLine!.Split("checksum:")[1].Trim();
 	}
 }

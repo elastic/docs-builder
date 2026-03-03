@@ -56,4 +56,10 @@ public record BundleProfile
 	/// - "serverless-{version}.yaml"
 	/// </summary>
 	public string? Output { get; init; }
+
+	/// <summary>
+	/// Feature IDs to mark as hidden in the bundle output.
+	/// When the bundle is rendered, entries with matching feature-id values will be commented out.
+	/// </summary>
+	public IReadOnlyList<string>? HideFeatures { get; init; }
 }

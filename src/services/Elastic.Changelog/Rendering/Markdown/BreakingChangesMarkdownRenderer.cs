@@ -36,7 +36,7 @@ public class BreakingChangesMarkdownRenderer(IFileSystem fileSystem) : MarkdownR
 			// Group by subtype if subsections are enabled, otherwise group by area
 			var groupedEntries = context.Subsections
 				? breakingChanges.GroupBy(e => e.Subtype?.ToStringFast(true) ?? string.Empty).OrderBy(g => g.Key).ToList()
-				: breakingChanges.GroupBy(ChangelogRenderUtilities.GetComponent).ToList();
+				: breakingChanges.GroupBy(e => ChangelogRenderUtilities.GetComponent(e, context)).ToList();
 
 			foreach (var group in groupedEntries)
 			{

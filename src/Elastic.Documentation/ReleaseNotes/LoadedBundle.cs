@@ -26,4 +26,10 @@ public record LoadedBundle(
 		Entries
 			.GroupBy(e => e.Type)
 			.ToDictionary(g => g.Key, g => (IReadOnlyCollection<ChangelogEntry>)g.ToList().AsReadOnly());
+
+	/// <summary>
+	/// Feature IDs that should be hidden when rendering this bundle.
+	/// Entries with matching feature-id values will be commented out in the output.
+	/// </summary>
+	public IReadOnlyList<string> HideFeatures => Data.HideFeatures;
 }

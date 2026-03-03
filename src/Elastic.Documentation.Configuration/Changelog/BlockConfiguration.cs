@@ -7,39 +7,64 @@ using Elastic.Documentation.ReleaseNotes;
 namespace Elastic.Documentation.Configuration.Changelog;
 
 /// <summary>
-/// Combined block configuration for create and publish blockers.
+/// Top-level rules configuration for controlling changelog creation and publishing.
 /// </summary>
-public record BlockConfiguration
+public record RulesConfiguration
 {
 	/// <summary>
-	/// Global labels that block changelog creation.
+	/// Global match mode for multi-valued fields. Inherited by create and publish sections.
 	/// </summary>
-	public IReadOnlyList<string>? Create { get; init; }
+	public MatchMode Match { get; init; } = MatchMode.Any;
 
 	/// <summary>
-	/// Global configuration for blocking changelog entries from publishing based on type or area.
+	/// Rules controlling which PRs generate changelog entries.
 	/// </summary>
-	public PublishBlocker? Publish { get; init; }
+	public CreateRules? Create { get; init; }
 
 	/// <summary>
-	/// Per-product block overrides (overrides global blockers, does not merge).
-	/// Keys are product IDs.
+	/// Rules controlling which entries appear in rendered output.
 	/// </summary>
-	public IReadOnlyDictionary<string, ProductBlockers>? ByProduct { get; init; }
+	public PublishRules? Publish { get; init; }
 }
 
 /// <summary>
-/// Product-specific blockers.
+/// Rules for create-time blocking based on PR labels.
 /// </summary>
-public record ProductBlockers
+public record CreateRules
 {
 	/// <summary>
-	/// Labels that block creation for this product (overrides global create blockers).
+	/// Labels to match (semantics depend on <see cref="Mode"/>).
 	/// </summary>
-	public IReadOnlyList<string>? Create { get; init; }
+	public IReadOnlyList<string>? Labels { get; init; }
 
 	/// <summary>
-	/// Configuration for blocking changelog entries from publishing based on type or area.
+	/// Whether labels use exclude or include semantics.
 	/// </summary>
-	public PublishBlocker? Publish { get; init; }
+	public FieldMode Mode { get; init; } = FieldMode.Exclude;
+
+	/// <summary>
+	/// Match mode for labels (any or all). Inherited from RulesConfiguration.Match if not set.
+	/// </summary>
+	public MatchMode Match { get; init; } = MatchMode.Any;
+
+	/// <summary>
+	/// Per-product create rule overrides. Keys are product IDs.
+	/// </summary>
+	public IReadOnlyDictionary<string, CreateRules>? ByProduct { get; init; }
+}
+
+/// <summary>
+/// Rules for publish-time blocking based on entry type and area.
+/// </summary>
+public record PublishRules
+{
+	/// <summary>
+	/// Global publish blocker configuration.
+	/// </summary>
+	public PublishBlocker? Blocker { get; init; }
+
+	/// <summary>
+	/// Per-product publish blocker overrides. Keys are product IDs.
+	/// </summary>
+	public IReadOnlyDictionary<string, PublishBlocker>? ByProduct { get; init; }
 }

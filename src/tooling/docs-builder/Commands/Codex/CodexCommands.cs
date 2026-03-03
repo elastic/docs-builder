@@ -13,6 +13,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Isolated;
+using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 
@@ -25,7 +26,8 @@ internal sealed class CodexCommands(
 	ILoggerFactory logFactory,
 	IDiagnosticsCollector collector,
 	IConfigurationContext configurationContext,
-	ICoreService githubActionsService
+	ICoreService githubActionsService,
+	IEnvironmentVariables environmentVariables
 )
 {
 	/// <summary>
@@ -62,10 +64,17 @@ internal sealed class CodexCommands(
 		}
 
 		var codexConfig = CodexConfiguration.Load(configFile);
+
+		if (string.IsNullOrWhiteSpace(codexConfig.Environment))
+		{
+			collector.EmitGlobalError("Codex configuration must specify an 'environment' (e.g., 'engineering', 'security').");
+			return 1;
+		}
+
 		var codexContext = new CodexContext(codexConfig, configFile, collector, fs, fs, null, output);
 
-		// Clone service
-		var cloneService = new CodexCloneService(logFactory);
+		using var linkIndexReader = new GitLinkIndexReader(codexConfig.Environment);
+		var cloneService = new CodexCloneService(logFactory, linkIndexReader);
 		CodexCloneResult? cloneResult = null;
 
 		serviceInvoker.AddCommand(cloneService, (codexContext, fetchLatest, assumeCloned), strict,
@@ -76,7 +85,7 @@ internal sealed class CodexCommands(
 			});
 
 		// Build service
-		var isolatedBuildService = new IsolatedBuildService(logFactory, configurationContext, githubActionsService);
+		var isolatedBuildService = new IsolatedBuildService(logFactory, configurationContext, githubActionsService, environmentVariables);
 		var buildService = new CodexBuildService(logFactory, configurationContext, isolatedBuildService);
 		serviceInvoker.AddCommand(buildService, (codexContext, cloneResult, fs), strict,
 			async (s, col, state, c) =>
@@ -128,9 +137,17 @@ internal sealed class CodexCommands(
 		}
 
 		var codexConfig = CodexConfiguration.Load(configFile);
+
+		if (string.IsNullOrWhiteSpace(codexConfig.Environment))
+		{
+			collector.EmitGlobalError("Codex configuration must specify an 'environment' (e.g., 'engineering', 'security').");
+			return 1;
+		}
+
 		var codexContext = new CodexContext(codexConfig, configFile, collector, fs, fs, null, null);
 
-		var cloneService = new CodexCloneService(logFactory);
+		using var linkIndexReader = new GitLinkIndexReader(codexConfig.Environment);
+		var cloneService = new CodexCloneService(logFactory, linkIndexReader);
 		serviceInvoker.AddCommand(cloneService, (codexContext, fetchLatest, assumeCloned), strict,
 			async (s, col, state, c) =>
 			{
@@ -168,19 +185,24 @@ internal sealed class CodexCommands(
 		}
 
 		var codexConfig = CodexConfiguration.Load(configFile);
+
+		if (string.IsNullOrWhiteSpace(codexConfig.Environment))
+		{
+			collector.EmitGlobalError("Codex configuration must specify an 'environment' (e.g., 'engineering', 'security').");
+			return 1;
+		}
+
 		var codexContext = new CodexContext(codexConfig, configFile, collector, fs, fs, null, output);
 
-		// First, we need to load the checkouts that should already exist
-		var cloneService = new CodexCloneService(logFactory);
-		var cloneResult = await cloneService.CloneAll(codexContext, fetchLatest: false, assumeCloned: true, ctx);
+		var cloneResult = await CodexCloneService.DiscoverCheckouts(codexContext, logFactory, ctx);
 
-		if (cloneResult.Checkouts.Count == 0)
+		if (cloneResult == null || cloneResult.Checkouts.Count == 0)
 		{
 			collector.EmitGlobalError("No documentation sets found. Run 'docs-builder codex clone' first.");
 			return 1;
 		}
 
-		var isolatedBuildService = new IsolatedBuildService(logFactory, configurationContext, githubActionsService);
+		var isolatedBuildService = new IsolatedBuildService(logFactory, configurationContext, githubActionsService, environmentVariables);
 		var buildService = new CodexBuildService(logFactory, configurationContext, isolatedBuildService);
 		serviceInvoker.AddCommand(buildService, (codexContext, cloneResult, fs), strict,
 			async (s, col, state, c) =>

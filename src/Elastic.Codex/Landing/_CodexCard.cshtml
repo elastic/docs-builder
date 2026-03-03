@@ -1,0 +1,35 @@
+@inherits RazorSlice<Elastic.Codex.Landing.CodexCardModel>
+@using Elastic.Documentation.Svg
+@functions {
+	private static HtmlString GetIconSvg(string? icon, string? cssClass = null)
+	{
+		if (icon == null)
+			return new HtmlString(EuiSvgIcons.GetIcon("question", cssClass)!);
+		return new HtmlString(EuiSvgIcons.GetIcon(icon, cssClass) ?? EuiSvgIcons.GetIcon("question", cssClass)!);
+	}
+}
+<a href="@(Model.Url)"
+   hx-select-oob="#main-container"
+   preload="mousedown"
+   class="flex flex-col group bg-white docset-card rounded-lg border p-6 border-grey-20 hover:border-blue-elastic-90"
+   >
+	<div class="flex justify-between items-center">
+		<div class="docset-icon text-blue-elastic-90 bg-blue-elastic-10 group-hover:bg-blue-elastic-20 rounded-md p-2">
+			@GetIconSvg(Model.Icon, "w-6 h-6 fill-current")
+		</div>
+	</div>
+	<div class="pt-8 text-xl font-medium group-hover:text-blue-elastic-90">
+		@Model.Title
+	</div>
+	<div class="grow">
+		@if (!string.IsNullOrEmpty(Model.Description))
+		{
+			<div class="pt-8 text-sm text-subdued">
+				@Model.Description
+			</div>
+		}
+	</div>
+	<div class="pt-8 text-xs text-subdued flex items-center gap-1">
+		@GetIconSvg("documents", "fill-current size-3") <span>@Model.PageCount pages</span>
+	</div>
+</a>

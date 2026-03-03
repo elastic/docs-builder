@@ -30,7 +30,8 @@ public class ChangelogDateVersionedBundlesTests : DirectiveTest<ChangelogBlock>
 			  products:
 			  - product: cloud-serverless
 			    target: 2025-08-01
-			  pr: "111111"
+			  prs:
+			  - "111111"
 			"""));
 
 		FileSystem.AddFile("docs/changelog/bundles/2025-08-15.yaml", new MockFileData(
@@ -45,7 +46,8 @@ public class ChangelogDateVersionedBundlesTests : DirectiveTest<ChangelogBlock>
 			  products:
 			  - product: cloud-serverless
 			    target: 2025-08-15
-			  pr: "222222"
+			  prs:
+			  - "222222"
 			"""));
 
 		FileSystem.AddFile("docs/changelog/bundles/2025-08-05.yaml", new MockFileData(
@@ -60,7 +62,8 @@ public class ChangelogDateVersionedBundlesTests : DirectiveTest<ChangelogBlock>
 			  products:
 			  - product: cloud-serverless
 			    target: 2025-08-05
-			  pr: "333333"
+			  prs:
+			  - "333333"
 			"""));
 	}
 
@@ -118,7 +121,8 @@ public class ChangelogMixedVersionTypesTests : DirectiveTest<ChangelogBlock>
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "111111"
+			  prs:
+			  - "111111"
 			"""));
 
 		FileSystem.AddFile("docs/changelog/bundles/9.2.0.yaml", new MockFileData(
@@ -133,7 +137,8 @@ public class ChangelogMixedVersionTypesTests : DirectiveTest<ChangelogBlock>
 			  products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			  pr: "222222"
+			  prs:
+			  - "222222"
 			"""));
 
 		FileSystem.AddFile("docs/changelog/bundles/2025-08-05.yaml", new MockFileData(
@@ -148,7 +153,8 @@ public class ChangelogMixedVersionTypesTests : DirectiveTest<ChangelogBlock>
 			  products:
 			  - product: cloud-serverless
 			    target: 2025-08-05
-			  pr: "333333"
+			  prs:
+			  - "333333"
 			"""));
 
 		FileSystem.AddFile("docs/changelog/bundles/2025-07-01.yaml", new MockFileData(
@@ -163,7 +169,8 @@ public class ChangelogMixedVersionTypesTests : DirectiveTest<ChangelogBlock>
 			  products:
 			  - product: cloud-serverless
 			    target: 2025-07-01
-			  pr: "444444"
+			  prs:
+			  - "444444"
 			"""));
 	}
 
@@ -231,7 +238,8 @@ public class ChangelogRawVersionFallbackTests : DirectiveTest<ChangelogBlock>
 			  products:
 			  - product: experimental
 			    target: release-alpha
-			  pr: "111111"
+			  prs:
+			  - "111111"
 			"""));
 
 		FileSystem.AddFile("docs/changelog/bundles/release-beta.yaml", new MockFileData(
@@ -246,7 +254,8 @@ public class ChangelogRawVersionFallbackTests : DirectiveTest<ChangelogBlock>
 			  products:
 			  - product: experimental
 			    target: release-beta
-			  pr: "222222"
+			  prs:
+			  - "222222"
 			"""));
 	}
 

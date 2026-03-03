@@ -13,18 +13,37 @@ namespace Elastic.Changelog.Rendering;
 public static class ChangelogRenderUtilities
 {
 	/// <summary>
-	/// Gets the component (area) for an entry. Uses first area or empty string.
+	/// Gets the component (area) for an entry for subsection grouping.
+	/// When context is provided and publish rules with areas are configured, uses the first area
+	/// that aligns with those rules (first included or first non-excluded). Otherwise uses the first area.
 	/// </summary>
-	public static string GetComponent(ChangelogEntry entry)
+	public static string GetComponent(ChangelogEntry entry, ChangelogRenderContext? context = null)
 	{
-		// Map areas (list) to component (string) - use first area or empty string
-		if (entry.Areas is { Count: > 0 })
-			return entry.Areas[0];
-		return string.Empty;
+		if (context == null)
+			return entry.Areas is { Count: > 0 } ? entry.Areas[0] : string.Empty;
+
+		var blocker = GetPublishBlockerForEntry(entry, context);
+		return blocker.GetPreferredArea(entry);
+	}
+
+	private static PublishBlocker? GetPublishBlockerForEntry(ChangelogEntry entry, ChangelogRenderContext context)
+	{
+		var productIds = context.EntryToBundleProducts.GetValueOrDefault(entry);
+		if (productIds == null || context.Configuration?.Rules?.Publish == null)
+			return null;
+
+		foreach (var productId in productIds)
+		{
+			var blocker = GetPublishBlockerForProduct(context.Configuration.Rules.Publish, productId);
+			if (blocker != null)
+				return blocker;
+		}
+
+		return null;
 	}
 
 	/// <summary>
-	/// Determines if an entry should be hidden based on feature IDs or block configuration
+	/// Determines if an entry should be hidden based on feature IDs or rules configuration
 	/// </summary>
 	public static bool ShouldHideEntry(
 		ChangelogEntry entry,
@@ -35,8 +54,8 @@ public static class ChangelogRenderUtilities
 		if (!string.IsNullOrWhiteSpace(entry.FeatureId) && featureIdsToHide.Contains(entry.FeatureId))
 			return true;
 
-		// Check block configuration if context and configuration are available
-		if (context?.Configuration?.Block == null)
+		// Check rules configuration if context and configuration are available
+		if (context?.Configuration?.Rules?.Publish == null)
 			return false;
 
 		// Get product IDs for this entry
@@ -44,10 +63,10 @@ public static class ChangelogRenderUtilities
 		if (productIds.Count == 0)
 			return false;
 
-		// Check each product's block configuration
+		// Check each product's publish configuration
 		foreach (var productId in productIds)
 		{
-			var blocker = GetPublishBlockerForProduct(context.Configuration.Block, productId);
+			var blocker = GetPublishBlockerForProduct(context.Configuration.Rules.Publish, productId);
 			if (blocker != null && blocker.ShouldBlock(entry))
 				return true;
 		}
@@ -58,13 +77,13 @@ public static class ChangelogRenderUtilities
 	/// <summary>
 	/// Gets the publish blocker configuration for a specific product, checking product-specific overrides first
 	/// </summary>
-	private static PublishBlocker? GetPublishBlockerForProduct(BlockConfiguration blockConfig, string productId)
+	private static PublishBlocker? GetPublishBlockerForProduct(PublishRules publishRules, string productId)
 	{
 		// Check product-specific override first
-		if (blockConfig.ByProduct?.TryGetValue(productId, out var productBlockers) == true)
-			return productBlockers.Publish;
+		if (publishRules.ByProduct?.TryGetValue(productId, out var productBlocker) == true)
+			return productBlocker;
 
 		// Fall back to global publish blocker
-		return blockConfig.Publish;
+		return publishRules.Blocker;
 	}
 }

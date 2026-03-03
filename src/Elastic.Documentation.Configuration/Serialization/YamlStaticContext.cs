@@ -17,6 +17,7 @@ namespace Elastic.Documentation.Configuration.Serialization;
 [YamlStaticContext]
 // Codex configuration
 [YamlSerializable(typeof(CodexConfiguration))]
+[YamlSerializable(typeof(CodexGroupDefinition))]
 [YamlSerializable(typeof(CodexDocumentationSetReference))]
 // Assembly configuration
 [YamlSerializable(typeof(AssemblyConfiguration))]
@@ -24,6 +25,7 @@ namespace Elastic.Documentation.Configuration.Serialization;
 [YamlSerializable(typeof(NarrativeRepository))]
 [YamlSerializable(typeof(PublishEnvironment))]
 [YamlSerializable(typeof(GoogleTagManager))]
+[YamlSerializable(typeof(Optimizely))]
 [YamlSerializable(typeof(ContentSource))]
 // Versions configuration
 [YamlSerializable(typeof(VersionsConfigDto))]
@@ -35,6 +37,8 @@ namespace Elastic.Documentation.Configuration.Serialization;
 [YamlSerializable(typeof(LegacyUrlMappingConfigDto))]
 // Table of contents
 [YamlSerializable(typeof(DocumentationSetFile))]
+[YamlSerializable(typeof(DocumentationSetFeatures))]
+[YamlSerializable(typeof(CodexDocSetMetadata))]
 [YamlSerializable(typeof(TableOfContentsFile))]
 [YamlSerializable(typeof(SiteNavigationFile))]
 [YamlSerializable(typeof(PhantomRegistration))]
@@ -53,6 +57,6 @@ namespace Elastic.Documentation.Configuration.Serialization;
 [YamlSerializable(typeof(BundledFileDto))]
 // Changelog configuration minimal DTOs
 [YamlSerializable(typeof(ChangelogConfigMinimalDto))]
-[YamlSerializable(typeof(BlockConfigMinimalDto))]
-[YamlSerializable(typeof(PublishBlockerMinimalDto))]
+[YamlSerializable(typeof(RulesConfigMinimalDto))]
+[YamlSerializable(typeof(PublishRulesMinimalDto))]
 public partial class YamlStaticContext;

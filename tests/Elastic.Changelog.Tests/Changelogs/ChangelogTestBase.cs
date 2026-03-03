@@ -110,7 +110,8 @@ public abstract class ChangelogTestBase : IDisposable
 		Justification = "SHA1 is required for compatibility with existing changelog bundle format")]
 	protected static string ComputeSha1(string content)
 	{
-		var bytes = System.Text.Encoding.UTF8.GetBytes(content);
+		var normalized = Documentation.Configuration.ReleaseNotes.ReleaseNotesSerialization.NormalizeYaml(content);
+		var bytes = System.Text.Encoding.UTF8.GetBytes(normalized);
 		var hash = System.Security.Cryptography.SHA1.HashData(bytes);
 		return Convert.ToHexString(hash).ToLowerInvariant();
 	}

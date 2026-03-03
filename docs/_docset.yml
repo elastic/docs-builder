@@ -96,6 +96,7 @@ toc:
       - file: code.md
       - file: comments.md
       - file: conditionals.md
+      - file: contributors.md
       - file: csv-include.md
       - file: directives.md
       - file: dropdowns.md
@@ -164,6 +165,8 @@ toc:
           - file: changelog-add.md
           - file: changelog-bundle.md
           - file: changelog-bundle-amend.md
+          - file: changelog-init.md
+          - file: changelog-remove.md
           - file: changelog-render.md
   - folder: mcp
     children:
@@ -227,6 +230,10 @@ toc:
       - folder: release-notes
         children:
           - file: index.md
+          - file: highlights.md
           - file: breaking-changes.md
           - file: deprecations.md
           - file: known-issues.md
+      - folder: release-notes-all
+        children:
+          - file: index.md

@@ -1,9 +1,11 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <!-- CS0618: Obsolete members - DisplayName is deprecated but still used by YAML deserialization -->
+    <NoWarn>$(NoWarn);CS0618</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -12,6 +14,7 @@
 
   <ItemGroup>
     <PackageReference Include="DotNet.Glob" />
+    <PackageReference Include="NetEscapades.EnumGenerators" />
     <PackageReference Include="Samboy063.Tomlet" />
     <PackageReference Include="Vecc.YamlDotNet.Analyzers.StaticGenerator"/>
     <PackageReference Include="YamlDotNet"/>

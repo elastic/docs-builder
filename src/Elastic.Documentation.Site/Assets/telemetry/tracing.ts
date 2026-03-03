@@ -1,6 +1,7 @@
 /**
  * React utilities for OpenTelemetry tracing in components.
  */
+import { config } from '../config'
 import { trace, SpanStatusCode, Span } from '@opentelemetry/api'
 
 /**
@@ -22,7 +23,7 @@ export async function traceSpan<T>(
     fn: (span: Span) => Promise<T>,
     attributes?: Record<string, string | number | boolean>
 ): Promise<T> {
-    const tracer = trace.getTracer('docs-frontend')
+    const tracer = trace.getTracer(config.serviceName)
 
     // startActiveSpan automatically:
     // 1. Creates the span

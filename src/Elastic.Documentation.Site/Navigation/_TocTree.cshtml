@@ -1,12 +1,16 @@
+@using Elastic.Documentation
 @using Elastic.Documentation.Site.Navigation
 @inherits RazorSlice<Elastic.Documentation.Site.Navigation.NavigationViewModel>
 
-<div class="pb-9 font-body">
+<div class="pb-9 pl-3 md:pl-0 font-body">
 	@{
 		var currentTopLevelItem = Model.TopLevelItems.FirstOrDefault(i => i.Id == Model.Tree.Id) ?? Model.Tree;
 	} 
 	<div class="sticky top-0 z-10 bg-white">
-		<navigation-search></navigation-search>
+		@if (Model.BuildType != BuildType.Codex)
+		{
+			<navigation-search></navigation-search>
+		}
 		<div id="nav-dropdown">
 		@if (Model.IsUsingNavigationDropdown)
 			{
@@ -17,7 +21,7 @@
 								<a
 									class="pages-dropdown_active hover:underline text-blue-elastic hover:text-blue-elastic-100"
 									href="@currentTopLevelItem.Url"
-									@Htmx.GetNavHxAttributes(true)>
+									@Model.Htmx.GetNavHxAttributes(true)>
 									@currentTopLevelItem.NavigationTitle
 								</a>
 							</div>
@@ -41,7 +45,7 @@
 									<a
 										class="block py-2 px-4 hover:underline hover:text-black hover:bg-grey-10 active:bg-blue-elastic-70 active:text-white font-semibold @(item.NavigationRoot.Id == Model.Tree.Id ? "text-blue-elastic" : "")"
 										href="@item.Url"
-										@Htmx.GetNavHxAttributes(false, "mouseover")>
+										@Model.Htmx.GetNavHxAttributes(false, "mouseover")>
 							@item.NavigationTitle
 						</a>
 					</li>
@@ -70,7 +74,8 @@
 			IsGlobalAssemblyBuild = Model.IsGlobalAssemblyBuild,
 			Level = 0,
 			SubTree = Model.Tree,
-			RootNavigationId = Model.Tree.Id
+			RootNavigationId = Model.Tree.Id,
+			Htmx = Model.Htmx
 		}))
 	</ul>
 </div>

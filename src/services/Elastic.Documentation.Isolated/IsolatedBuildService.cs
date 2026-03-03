@@ -6,8 +6,10 @@ using System.IO.Abstractions;
 using Actions.Core.Services;
 using Elastic.ApiExplorer;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Services;
@@ -15,6 +17,7 @@ using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
+using Elastic.Markdown.Page;
 using Microsoft.Extensions.Logging;
 using static System.StringComparison;
 
@@ -23,10 +26,12 @@ namespace Elastic.Documentation.Isolated;
 public class IsolatedBuildService(
 	ILoggerFactory logFactory,
 	IConfigurationContext configurationContext,
-	ICoreService githubActionsService
+	ICoreService githubActionsService,
+	IEnvironmentVariables environmentVariables
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<IsolatedBuildService>();
+	private readonly IEnvironmentVariables _env = environmentVariables;
 
 	public bool IsStrict(bool? strict)
 	{
@@ -62,7 +67,7 @@ public class IsolatedBuildService(
 
 		pathPrefix ??= githubActionsService.GetInput("prefix");
 
-		var runningOnCi = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"));
+		var runningOnCi = _env.IsRunningOnCI;
 		BuildContext context;
 
 		Uri? canonicalBaseUri;
@@ -85,7 +90,7 @@ public class IsolatedBuildService(
 				UrlPathPrefix = pathPrefix,
 				Force = force ?? false,
 				AllowIndexing = allowIndexing ?? false,
-				CanonicalBaseUrl = canonicalBaseUri
+				CanonicalBaseUrl = canonicalBaseUri,
 			};
 		}
 		// On CI, we are running on a merge commit which may have changes against an older
@@ -117,9 +122,19 @@ public class IsolatedBuildService(
 		}
 		else
 		{
-			var crossLinkFetcher = new DocSetConfigurationCrossLinkFetcher(logFactory, context.Configuration);
+			using var codexReader = context.Configuration.Registry != DocSetRegistry.Public
+				? new GitLinkIndexReader(context.Configuration.Registry.ToStringFast(true), fileSystem)
+				: null;
+
+			var crossLinkFetcher = new DocSetConfigurationCrossLinkFetcher(
+				logFactory,
+				context.Configuration,
+				codexLinkIndexReader: codexReader);
 			var crossLinks = await crossLinkFetcher.FetchCrossLinks(ctx);
-			crossLinkResolver = new CrossLinkResolver(crossLinks);
+			IUriEnvironmentResolver? uriResolver = crossLinks.CodexRepositories is not null
+				? new CodexAwareUriResolver(crossLinks.CodexRepositories)
+				: null;
+			crossLinkResolver = new CrossLinkResolver(crossLinks, uriResolver);
 		}
 
 		// always delete output folder on CI
@@ -161,21 +176,37 @@ public class IsolatedBuildService(
 	/// <summary>
 	/// Builds a pre-configured documentation set with optional injected navigation.
 	/// Used by portal builds where navigation spans multiple documentation sets.
+	/// When <paramref name="externalExporters"/> is provided, those exporters are used instead of
+	/// creating new ones, and their lifecycle (Start/Stop) is not managed by this method.
 	/// </summary>
 	public async Task<bool> BuildDocumentationSet(
 		DocumentationSet documentationSet,
 		INavigationTraversable? navigation = null,
 		INavigationHtmlWriter? navigationHtmlWriter = null,
 		IReadOnlySet<Exporter>? exporters = null,
+		IMarkdownExporter[]? externalExporters = null,
+		IPageViewFactory? pageViewFactory = null,
 		Cancel ctx = default)
 	{
 		var context = documentationSet.Context;
-		exporters ??= ExportOptions.Default;
+		var manageLifecycle = externalExporters is null;
 
-		var markdownExporters = exporters.CreateMarkdownExporters(logFactory, context, "codex");
+		IMarkdownExporter[] allExporters;
+		if (externalExporters is not null)
+		{
+			allExporters = externalExporters;
+		}
+		else
+		{
+			exporters ??= ExportOptions.Default;
+			allExporters = exporters.CreateMarkdownExporters(logFactory, context, "codex").ToArray();
+		}
 
-		var tasks = markdownExporters.Select(async e => await e.StartAsync(ctx));
-		await Task.WhenAll(tasks);
+		if (manageLifecycle)
+		{
+			var startTasks = allExporters.Select(async e => await e.StartAsync(ctx));
+			await Task.WhenAll(startTasks);
+		}
 
 		// Use the provided navigation or fall back to the doc set's own navigation
 		var effectiveNavigation = navigation ?? documentationSet;
@@ -186,12 +217,16 @@ public class IsolatedBuildService(
 			effectiveNavigation,
 			navigationHtmlWriter,
 			null,
-			markdownExporters.ToArray());
+			allExporters,
+			pageViewFactory: pageViewFactory);
 
 		_ = await generator.GenerateAll(ctx);
 
-		tasks = markdownExporters.Select(async e => await e.StopAsync(ctx));
-		await Task.WhenAll(tasks);
+		if (manageLifecycle)
+		{
+			var stopTasks = allExporters.Select(async e => await e.StopAsync(ctx));
+			await Task.WhenAll(stopTasks);
+		}
 
 		_logger.LogInformation("Finished building documentation set {Name}", documentationSet.Context.Git.RepositoryName);
 

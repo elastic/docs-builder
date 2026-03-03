@@ -35,6 +35,7 @@ public static class ChangelogInlineRenderer
 				block.Subsections,
 				block.PublishBlocker,
 				block.PrivateRepositories,
+				block.HideFeatures,
 				typeFilter);
 			_ = sb.Append(bundleMarkdown);
 
@@ -49,12 +50,16 @@ public static class ChangelogInlineRenderer
 		bool subsections,
 		PublishBlocker? publishBlocker,
 		HashSet<string> privateRepositories,
+		HashSet<string> hideFeatures,
 		ChangelogTypeFilter typeFilter)
 	{
 		var titleSlug = ChangelogTextUtilities.TitleToSlug(bundle.Version);
 
 		// Filter entries based on publish blocker configuration
 		var filteredEntries = FilterEntries(bundle.Entries, publishBlocker);
+
+		// Filter entries based on hide-features (from bundle metadata)
+		filteredEntries = FilterEntriesByHideFeatures(filteredEntries, hideFeatures);
 
 		// Apply type filter
 		filteredEntries = FilterEntriesByType(filteredEntries, typeFilter);
@@ -68,7 +73,7 @@ public static class ChangelogInlineRenderer
 		// contains any private repositories - if so, hide links for this bundle
 		var hideLinks = ShouldHideLinksForRepo(bundle.Repo, privateRepositories);
 
-		return GenerateMarkdown(bundle.Version, titleSlug, bundle.Repo, entriesByType, subsections, hideLinks);
+		return GenerateMarkdown(bundle.Version, titleSlug, bundle.Repo, entriesByType, subsections, hideLinks, typeFilter, publishBlocker);
 	}
 
 	/// <summary>
@@ -82,8 +87,25 @@ public static class ChangelogInlineRenderer
 			ChangelogTypeFilter.BreakingChange => entries.Where(e => e.Type == ChangelogEntryType.BreakingChange).ToList(),
 			ChangelogTypeFilter.Deprecation => entries.Where(e => e.Type == ChangelogEntryType.Deprecation).ToList(),
 			ChangelogTypeFilter.KnownIssue => entries.Where(e => e.Type == ChangelogEntryType.KnownIssue).ToList(),
+			ChangelogTypeFilter.Highlight => entries.Where(e => e.Highlight == true).ToList(),
 			_ => entries.Where(e => !ChangelogBlock.SeparatedTypes.Contains(e.Type)).ToList() // Default: exclude separated types
 		};
+
+	/// <summary>
+	/// Filters entries based on hide-features configuration from bundle metadata.
+	/// Entries with matching feature-id values are excluded from the output.
+	/// </summary>
+	private static IReadOnlyList<ChangelogEntry> FilterEntriesByHideFeatures(
+		IReadOnlyList<ChangelogEntry> entries,
+		HashSet<string> hideFeatures)
+	{
+		if (hideFeatures.Count == 0)
+			return entries;
+
+		return entries
+			.Where(e => string.IsNullOrWhiteSpace(e.FeatureId) || !hideFeatures.Contains(e.FeatureId))
+			.ToList();
+	}
 
 	/// <summary>
 	/// Determines if links should be hidden for a bundle based on its repository.
@@ -121,7 +143,9 @@ public static class ChangelogInlineRenderer
 		string repo,
 		Dictionary<ChangelogEntryType, List<ChangelogEntry>> entriesByType,
 		bool subsections,
-		bool hideLinks)
+		bool hideLinks,
+		ChangelogTypeFilter typeFilter,
+		PublishBlocker? publishBlocker)
 	{
 		var sb = new StringBuilder();
 
@@ -137,16 +161,31 @@ public static class ChangelogInlineRenderer
 		var deprecations = entriesByType.GetValueOrDefault(ChangelogEntryType.Deprecation, []);
 		var knownIssues = entriesByType.GetValueOrDefault(ChangelogEntryType.KnownIssue, []);
 
+		// Get highlighted entries from all types
+		var highlights = entriesByType.Values
+			.SelectMany(e => e)
+			.Where(e => e.Highlight == true)
+			.ToList();
+
 		_ = sb.AppendLine(CultureInfo.InvariantCulture, $"## {title}");
 
 		// Check if we have any content at all
 		var hasAnyContent = features.Count > 0 || enhancements.Count > 0 || security.Count > 0 ||
 							bugFixes.Count > 0 || docs.Count > 0 || regressions.Count > 0 || other.Count > 0 ||
-							breakingChanges.Count > 0 || deprecations.Count > 0 || knownIssues.Count > 0;
+							breakingChanges.Count > 0 || deprecations.Count > 0 || knownIssues.Count > 0 ||
+							highlights.Count > 0;
 
 		if (!hasAnyContent)
 		{
-			_ = sb.AppendLine("_No new features, enhancements, or fixes._");
+			_ = sb.AppendLine(GetEmptyMessage(typeFilter));
+			return sb.ToString();
+		}
+
+		// Special case: When filtering by highlight, render only highlights without type-based sections
+		if (typeFilter == ChangelogTypeFilter.Highlight)
+		{
+			if (highlights.Count > 0)
+				RenderDetailedEntries(sb, highlights, repo, groupBySubtype: false, hideLinks, publishBlocker);
 			return sb.ToString();
 		}
 
@@ -154,28 +193,35 @@ public static class ChangelogInlineRenderer
 		{
 			_ = sb.AppendLine();
 			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Breaking changes [{repo}-{titleSlug}-breaking-changes]");
-			RenderDetailedEntries(sb, breakingChanges, repo, groupBySubtype: true, hideLinks);
+			RenderDetailedEntries(sb, breakingChanges, repo, groupBySubtype: true, hideLinks, publishBlocker);
+		}
+
+		if (highlights.Count > 0 && typeFilter == ChangelogTypeFilter.All)
+		{
+			_ = sb.AppendLine();
+			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Highlights [{repo}-{titleSlug}-highlights]");
+			RenderDetailedEntries(sb, highlights, repo, groupBySubtype: false, hideLinks, publishBlocker);
 		}
 
 		if (security.Count > 0)
 		{
 			_ = sb.AppendLine();
 			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Security [{repo}-{titleSlug}-security]");
-			RenderEntriesByArea(sb, security, repo, subsections, hideLinks);
+			RenderEntriesByArea(sb, security, repo, subsections, hideLinks, publishBlocker);
 		}
 
 		if (knownIssues.Count > 0)
 		{
 			_ = sb.AppendLine();
 			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Known issues [{repo}-{titleSlug}-known-issues]");
-			RenderDetailedEntries(sb, knownIssues, repo, groupBySubtype: false, hideLinks);
+			RenderDetailedEntries(sb, knownIssues, repo, groupBySubtype: false, hideLinks, publishBlocker);
 		}
 
 		if (deprecations.Count > 0)
 		{
 			_ = sb.AppendLine();
 			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Deprecations [{repo}-{titleSlug}-deprecations]");
-			RenderDetailedEntries(sb, deprecations, repo, groupBySubtype: false, hideLinks);
+			RenderDetailedEntries(sb, deprecations, repo, groupBySubtype: false, hideLinks, publishBlocker);
 		}
 
 		if (features.Count > 0 || enhancements.Count > 0)
@@ -183,35 +229,35 @@ public static class ChangelogInlineRenderer
 			_ = sb.AppendLine();
 			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Features and enhancements [{repo}-{titleSlug}-features-enhancements]");
 			var combined = features.Concat(enhancements).ToList();
-			RenderEntriesByArea(sb, combined, repo, subsections, hideLinks);
+			RenderEntriesByArea(sb, combined, repo, subsections, hideLinks, publishBlocker);
 		}
 
 		if (bugFixes.Count > 0)
 		{
 			_ = sb.AppendLine();
 			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Fixes [{repo}-{titleSlug}-fixes]");
-			RenderEntriesByArea(sb, bugFixes, repo, subsections, hideLinks);
+			RenderEntriesByArea(sb, bugFixes, repo, subsections, hideLinks, publishBlocker);
 		}
 
 		if (docs.Count > 0)
 		{
 			_ = sb.AppendLine();
 			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Documentation [{repo}-{titleSlug}-docs]");
-			RenderEntriesByArea(sb, docs, repo, subsections, hideLinks);
+			RenderEntriesByArea(sb, docs, repo, subsections, hideLinks, publishBlocker);
 		}
 
 		if (regressions.Count > 0)
 		{
 			_ = sb.AppendLine();
 			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Regressions [{repo}-{titleSlug}-regressions]");
-			RenderEntriesByArea(sb, regressions, repo, subsections, hideLinks);
+			RenderEntriesByArea(sb, regressions, repo, subsections, hideLinks, publishBlocker);
 		}
 
 		if (other.Count > 0)
 		{
 			_ = sb.AppendLine();
 			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Other changes [{repo}-{titleSlug}-other]");
-			RenderEntriesByArea(sb, other, repo, subsections, hideLinks);
+			RenderEntriesByArea(sb, other, repo, subsections, hideLinks, publishBlocker);
 		}
 
 		return sb.ToString();
@@ -222,12 +268,13 @@ public static class ChangelogInlineRenderer
 		List<ChangelogEntry> entries,
 		string repo,
 		bool subsections,
-		bool hideLinks)
+		bool hideLinks,
+		PublishBlocker? publishBlocker)
 	{
 		if (subsections)
 		{
 			// Group by area and sort when subsections is enabled
-			var groupedByArea = entries.GroupBy(GetComponent).OrderBy(g => g.Key).ToList();
+			var groupedByArea = entries.GroupBy(e => publishBlocker.GetPreferredArea(e)).OrderBy(g => g.Key).ToList();
 
 			foreach (var areaGroup in groupedByArea)
 			{
@@ -265,16 +312,14 @@ public static class ChangelogInlineRenderer
 
 	private static void RenderEntryLinks(StringBuilder sb, ChangelogEntry entry, string repo, bool hideLinks)
 	{
-		var hasPr = !string.IsNullOrWhiteSpace(entry.Pr);
 
 		if (hideLinks)
 		{
-			// When hiding links, put them on separate lines as comments
 			_ = sb.AppendLine();
-			if (hasPr)
+			foreach (var pr in entry.Prs ?? [])
 			{
 				_ = sb.Append("  ");
-				_ = sb.AppendLine(ChangelogTextUtilities.FormatPrLink(entry.Pr!, repo, hidePrivateLinks: true));
+				_ = sb.AppendLine(ChangelogTextUtilities.FormatPrLink(pr, repo, hidePrivateLinks: true));
 			}
 			foreach (var issue in entry.Issues ?? [])
 			{
@@ -284,11 +329,10 @@ public static class ChangelogInlineRenderer
 			return;
 		}
 
-		// Default: render links inline
 		_ = sb.Append(' ');
-		if (hasPr)
+		foreach (var pr in entry.Prs ?? [])
 		{
-			_ = sb.Append(ChangelogTextUtilities.FormatPrLink(entry.Pr!, repo, hidePrivateLinks: false));
+			_ = sb.Append(ChangelogTextUtilities.FormatPrLink(pr, repo, hidePrivateLinks: false));
 			_ = sb.Append(' ');
 		}
 		foreach (var issue in entry.Issues ?? [])
@@ -304,11 +348,12 @@ public static class ChangelogInlineRenderer
 		List<ChangelogEntry> entries,
 		string repo,
 		bool groupBySubtype,
-		bool hideLinks)
+		bool hideLinks,
+		PublishBlocker? publishBlocker)
 	{
 		var grouped = groupBySubtype
 			? entries.GroupBy(e => e.Subtype?.ToStringFast(true) ?? string.Empty).OrderBy(g => g.Key).ToList()
-			: entries.GroupBy(GetComponent).OrderBy(g => g.Key).ToList();
+			: entries.GroupBy(e => publishBlocker.GetPreferredArea(e)).OrderBy(g => g.Key).ToList();
 
 		foreach (var group in grouped)
 		{
@@ -351,17 +396,16 @@ public static class ChangelogInlineRenderer
 
 	private static void RenderDetailedEntryLinks(StringBuilder sb, ChangelogEntry entry, string repo, bool hideLinks)
 	{
-		var hasPr = !string.IsNullOrWhiteSpace(entry.Pr);
+		var hasPrs = entry.Prs is { Count: > 0 };
 		var hasIssues = entry.Issues is { Count: > 0 };
 
-		if (!hasPr && !hasIssues)
+		if (!hasPrs && !hasIssues)
 			return;
 
 		if (hideLinks)
 		{
-			// When hiding links, put them on separate lines as comments
-			if (hasPr)
-				_ = sb.AppendLine(ChangelogTextUtilities.FormatPrLink(entry.Pr!, repo, hidePrivateLinks: true));
+			foreach (var pr in entry.Prs ?? [])
+				_ = sb.AppendLine(ChangelogTextUtilities.FormatPrLink(pr, repo, hidePrivateLinks: true));
 			foreach (var issue in entry.Issues ?? [])
 				_ = sb.AppendLine(ChangelogTextUtilities.FormatIssueLink(issue, repo, hidePrivateLinks: true));
 			_ = sb.AppendLine("For more information, check the pull request or issue above.");
@@ -369,19 +413,36 @@ public static class ChangelogInlineRenderer
 			return;
 		}
 
-		// Default: render links inline
 		_ = sb.Append("For more information, check ");
-		if (hasPr)
-			_ = sb.Append(ChangelogTextUtilities.FormatPrLink(entry.Pr!, repo, hidePrivateLinks: false));
+		var first = true;
+		foreach (var pr in entry.Prs ?? [])
+		{
+			if (!first)
+				_ = sb.Append(' ');
+			_ = sb.Append(ChangelogTextUtilities.FormatPrLink(pr, repo, hidePrivateLinks: false));
+			first = false;
+		}
 		foreach (var issue in entry.Issues ?? [])
 		{
-			_ = sb.Append(' ');
+			if (!first)
+				_ = sb.Append(' ');
 			_ = sb.Append(ChangelogTextUtilities.FormatIssueLink(issue, repo, hidePrivateLinks: false));
+			first = false;
 		}
 		_ = sb.AppendLine(".");
 		_ = sb.AppendLine();
 	}
 
-	private static string GetComponent(ChangelogEntry entry) =>
-		entry.Areas is { Count: > 0 } ? entry.Areas[0] : string.Empty;
+	/// <summary>
+	/// Gets the appropriate empty message based on the type filter.
+	/// Matches messages used by CLI renderers for consistency.
+	/// </summary>
+	private static string GetEmptyMessage(ChangelogTypeFilter typeFilter) =>
+		typeFilter switch
+		{
+			ChangelogTypeFilter.BreakingChange => "_There are no breaking changes associated with this release._",
+			ChangelogTypeFilter.Deprecation => "_There are no deprecations associated with this release._",
+			ChangelogTypeFilter.KnownIssue => "_There are no known issues associated with this release._",
+			_ => "_No new features, enhancements, or fixes._"
+		};
 }

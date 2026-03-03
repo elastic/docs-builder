@@ -17,6 +17,7 @@ using Elastic.Documentation.Site.Navigation;
 using Elastic.Documentation.State;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
+using Elastic.Markdown.Page;
 using Markdig.Syntax;
 using Microsoft.Extensions.Logging;
 
@@ -62,7 +63,8 @@ public partial class DocumentationGenerator
 		IMarkdownExporter[]? markdownExporters = null,
 		IConversionCollector? conversionCollector = null,
 		ILegacyUrlMapper? legacyUrlMapper = null,
-		IDocumentInferrerService? documentInferrer = null
+		IDocumentInferrerService? documentInferrer = null,
+		IPageViewFactory? pageViewFactory = null
 	)
 	{
 		_markdownExporters = markdownExporters ?? [];
@@ -84,7 +86,7 @@ public partial class DocumentationGenerator
 			DocumentationSet.Context.Git
 		);
 
-		HtmlWriter = new HtmlWriter(DocumentationSet, _writeFileSystem, new DescriptionGenerator(), positionalNavigation, navigationHtmlWriter, legacyUrlMapper, _documentInferrer);
+		HtmlWriter = new HtmlWriter(DocumentationSet, _writeFileSystem, new DescriptionGenerator(), pageViewFactory, positionalNavigation, navigationHtmlWriter, legacyUrlMapper, _documentInferrer);
 		_documentationFileExporter =
 			docSet.Context.AvailableExporters.Contains(Exporter.Html)
 				? docSet.EnabledExtensions.FirstOrDefault(e => e.FileExporter != null)?.FileExporter

@@ -27,6 +27,7 @@ public static class DocumentationTooling
 	{
 		_ = builder.Services
 			.AddGitHubActionsCore()
+			.AddSingleton<IEnvironmentVariables>(SystemEnvironmentVariables.Instance)
 			.AddSingleton<DiagnosticsChannel>()
 			.AddServiceDiscovery()
 			.ConfigureHttpClientDefaults(static client =>
@@ -38,7 +39,7 @@ public static class DocumentationTooling
 				var logFactory = sp.GetRequiredService<ILoggerFactory>();
 				var githubActionsService = sp.GetRequiredService<ICoreService>();
 				var globalArgs = sp.GetRequiredService<GlobalCliArgs>();
-				if (globalArgs.IsHelpOrVersion)
+				if (globalArgs.IsHelpOrVersion || globalArgs.IsMcp)
 					return new DiagnosticsCollector([]);
 				return new ConsoleDiagnosticsCollector(logFactory, githubActionsService);
 			})

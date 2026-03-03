@@ -22,7 +22,7 @@
 		<li class="flex group/li pr-8 @(isTopLevel ? "font-semibold mt-6" : "mt-4")">
 			<a
 				href="@group.Url"
-				@Htmx.GetNavHxAttributes(Model.IsPrimaryNavEnabled && group.NavigationRoot.Id == Model.RootNavigationId || true)
+				@Model.Htmx.GetNavHxAttributes(true)
 				class="sidebar-link group-[.current]/li:text-blue-elastic!"
 			>
 				@group.NavigationTitle
@@ -37,7 +37,7 @@
 			<div class="peer grid grid-cols-[1fr_auto] w-full">
 				<a
 					href="@(g.Url)"
-					@Htmx.GetNavHxAttributes(Model.IsPrimaryNavEnabled && g.NavigationRoot.Id == Model.RootNavigationId || true)
+					@Model.Htmx.GetNavHxAttributes(true)
 					class="sidebar-link pr-2 content-center @(isTopLevel ? "font-semibold" : "") group-[.current]/li:text-blue-elastic!">
 					@(g.NavigationTitle)
 				</a>
@@ -72,7 +72,8 @@
 						IsGlobalAssemblyBuild = Model.IsGlobalAssemblyBuild,
 						Level = Model.Level + 1,
 						SubTree = g,
-						RootNavigationId = Model.RootNavigationId
+						RootNavigationId = Model.RootNavigationId,
+						Htmx = Model.Htmx
 					}))
 				</ul>
 			}
@@ -80,11 +81,11 @@
 	}
 	else if (item is ILeafNavigationItem<INavigationModel> leaf)
 	{
-		var hasSameTopLevelGroup = leaf.Model is not CrossLinkModel && (Model.IsPrimaryNavEnabled && leaf.NavigationRoot.Id == Model.RootNavigationId || true);
+		var hasSameTopLevelGroup = true;
 		<li class="flex group/li pr-8 @(isTopLevel ? "font-semibold mt-6" : "mt-4")">
 			<a
 				href="@leaf.Url"
-				@Htmx.GetNavHxAttributes(hasSameTopLevelGroup)
+				@Model.Htmx.GetNavHxAttributes(hasSameTopLevelGroup)
 				class="sidebar-link grow group-[.current]/li:text-blue-elastic!"
 			>
 				@leaf.NavigationTitle

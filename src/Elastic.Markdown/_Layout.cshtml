@@ -21,24 +21,19 @@
 
 	private async Task RenderDefault()
 	{
-		<div>
-			<div class="w-full absolute top-0 left-0 right-0 htmx-indicator" id="htmx-indicator" role="status">
-				<div class="progress w-full h-full bg-pink-70 left-right"></div>
-				<div class="h-[2px] w-full overflow-hidden">
-				</div>
-				<div class="sr-only">Loading</div>
-			</div>
+		<div class="relative">
+			
 			<div class="min-h-screen
 						w-full
 						max-w-(--max-layout-width)
 						mx-auto
-						px-4		
+						md:px-4
 			">
 				<div class="min-h-screen grid grid-cols-1 md:grid-cols-[var(--max-sidebar-width)_1fr] gap-4">
 					@await RenderPartialAsync(_PagesNav.Create<GlobalLayoutViewModel>(Model))
 					<main id="content-container" class="min-w-0 lg:grid lg:grid-cols-[minmax(0,var(--max-text-width))_minmax(0,var(--max-sidebar-width))] justify-end mx-4 gap-4">
 						@await RenderPartialAsync(_TableOfContents.Create(Model))
-						<div class="mt-16 mb-9 md:mt-0 min-w-0">
+						<div class="mb-9 mt-0 min-w-0">
 							@await RenderPartialAsync(_Breadcrumbs.Create(Model))
 							<article id="markdown-content" class="markdown-content min-w-0">
 								<input type="checkbox" class="hidden" id="pages-nav-hamburger">

@@ -6,6 +6,7 @@ using Elastic.ApiExplorer;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Markdown;
 using Elastic.Markdown.Exporters;
@@ -25,19 +26,28 @@ public class ReloadableGeneratorState : IDisposable
 	private DocumentationGenerator _generator;
 	private readonly ILoggerFactory _logFactory;
 	private readonly BuildContext _context;
+	private readonly bool _isWatchBuild;
 	private readonly DocSetConfigurationCrossLinkFetcher _crossLinkFetcher;
+	private readonly ILinkIndexReader? _codexReader;
 
 	public ReloadableGeneratorState(ILoggerFactory logFactory,
 		IDirectoryInfo sourcePath,
 		IDirectoryInfo outputPath,
-		BuildContext context)
+		BuildContext context,
+		bool isWatchBuild
+	)
 	{
 		_logFactory = logFactory;
 		_context = context;
+		_isWatchBuild = isWatchBuild;
 		SourcePath = sourcePath;
 		OutputPath = outputPath;
 		ApiPath = context.WriteFileSystem.DirectoryInfo.New(Path.Combine(outputPath.FullName, "api"));
-		_crossLinkFetcher = new DocSetConfigurationCrossLinkFetcher(logFactory, _context.Configuration);
+
+		if (context.Configuration.Registry != DocSetRegistry.Public)
+			_codexReader = new GitLinkIndexReader(context.Configuration.Registry.ToStringFast(true), context.ReadFileSystem);
+
+		_crossLinkFetcher = new DocSetConfigurationCrossLinkFetcher(logFactory, _context.Configuration, codexLinkIndexReader: _codexReader);
 		// we pass NoopCrossLinkResolver.Instance here because `ReloadAsync` will always be called when the <see cref="ReloadableGeneratorState"/> is started.
 		_generator = new DocumentationGenerator(new DocumentationSet(context, logFactory, NoopCrossLinkResolver.Instance), logFactory);
 	}
@@ -52,12 +62,16 @@ public class ReloadableGeneratorState : IDisposable
 		SourcePath.Refresh();
 		OutputPath.Refresh();
 		var crossLinks = await _crossLinkFetcher.FetchCrossLinks(ctx);
-		var crossLinkResolver = new CrossLinkResolver(crossLinks);
+		IUriEnvironmentResolver? uriResolver = crossLinks.CodexRepositories is not null
+			? new CodexAwareUriResolver(crossLinks.CodexRepositories)
+			: null;
+		var crossLinkResolver = new CrossLinkResolver(crossLinks, uriResolver);
 		var docSet = new DocumentationSet(_context, _logFactory, crossLinkResolver);
 
 		// Add LLM markdown export for dev server
 		var markdownExporters = new List<IMarkdownExporter>();
-		markdownExporters.AddLlmMarkdownExport(); // Consistent LLM-optimized output
+		if (!_isWatchBuild)
+			markdownExporters.AddLlmMarkdownExport(); // Consistent LLM-optimized output
 
 		var generator = new DocumentationGenerator(docSet, _logFactory, markdownExporters: markdownExporters.ToArray());
 		await generator.ResolveDirectoryTree(ctx);
@@ -73,6 +87,8 @@ public class ReloadableGeneratorState : IDisposable
 
 	private bool HaveOpenApiSpecsChanged(ConfigurationFile config)
 	{
+		if (_isWatchBuild)
+			return false;
 		if (config.OpenApiSpecifications is null)
 			return false;
 
@@ -109,6 +125,9 @@ public class ReloadableGeneratorState : IDisposable
 
 	private async Task ReloadApiReferences(IMarkdownStringRenderer markdownStringRenderer, Cancel ctx)
 	{
+		if (_isWatchBuild)
+			return;
+
 		if (ApiPath.Exists)
 			ApiPath.Delete(true);
 		ApiPath.Create();
@@ -118,7 +137,7 @@ public class ReloadableGeneratorState : IDisposable
 
 	public void Dispose()
 	{
-		_crossLinkFetcher.Dispose();
+		(_codexReader as IDisposable)?.Dispose();
 		GC.SuppressFinalize(this);
 	}
 }

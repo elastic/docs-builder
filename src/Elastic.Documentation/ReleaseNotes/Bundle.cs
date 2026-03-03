@@ -13,6 +13,15 @@ public record Bundle
 	/// <summary>Products included in this bundle.</summary>
 	public IReadOnlyList<BundledProduct> Products { get; init; } = [];
 
+	/// <summary>
+	/// Feature IDs that should be hidden when rendering this bundle.
+	/// Entries with matching feature-id values will be commented out in the output.
+	/// </summary>
+	public IReadOnlyList<string> HideFeatures { get; init; } = [];
+
 	/// <summary>Changelog entries in this bundle.</summary>
 	public IReadOnlyList<BundledEntry> Entries { get; init; } = [];
+
+	/// <summary>Whether entries in this bundle have their contents resolved (inlined).</summary>
+	public bool IsResolved => Entries.Any(e => e.Title != null);
 }

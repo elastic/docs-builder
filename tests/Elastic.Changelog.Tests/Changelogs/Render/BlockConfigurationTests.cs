@@ -28,7 +28,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			    target: 2026-01-26
 			areas:
 			  - Allocation
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			- "100"
 			description: This feature should be blocked
 			""";
 
@@ -43,7 +44,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			    target: 2026-01-26
 			areas:
 			  - Search
-			pr: https://github.com/elastic/elasticsearch/pull/101
+			prs:
+			- "101"
 			description: This feature should be visible
 			""";
 
@@ -92,11 +94,11 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			  - preview
 			  - beta
 			  - ga
-			block:
-			  product:
-			    cloud-serverless:
-			      publish:
-			        areas:
+			rules:
+			  publish:
+			    products:
+			      cloud-serverless:
+			        exclude_areas:
 			          - Allocation
 			""";
 		await FileSystem.File.WriteAllTextAsync(configFile, configContent, TestContext.Current.CancellationToken);
@@ -152,7 +154,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			    target: 2026-01-26
 			areas:
 			  - Allocation
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			- "100"
 			description: This deprecation should be blocked
 			""";
 
@@ -167,7 +170,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			    target: 2026-01-26
 			areas:
 			  - Search
-			pr: https://github.com/elastic/elasticsearch/pull/101
+			prs:
+			- "101"
 			description: This deprecation should be visible
 			""";
 
@@ -180,7 +184,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			products:
 			  - product: cloud-serverless
 			    target: 2026-01-26
-			pr: https://github.com/elastic/elasticsearch/pull/102
+			prs:
+			- "102"
 			description: This feature should be visible
 			""";
 
@@ -233,11 +238,11 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			  - preview
 			  - beta
 			  - ga
-			block:
-			  product:
-			    cloud-serverless:
-			      publish:
-			        areas:
+			rules:
+			  publish:
+			    products:
+			      cloud-serverless:
+			        exclude_areas:
 			          - Allocation
 			""";
 		await FileSystem.File.WriteAllTextAsync(configFile, configContent, TestContext.Current.CancellationToken);
@@ -306,7 +311,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			    target: 9.2.0
 			areas:
 			  - Internal
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			- "100"
 			description: This feature should be blocked globally
 			""";
 
@@ -321,7 +327,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			    target: 9.2.0
 			areas:
 			  - Search
-			pr: https://github.com/elastic/elasticsearch/pull/101
+			prs:
+			- "101"
 			description: This feature should be visible
 			""";
 
@@ -370,9 +377,9 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			  - preview
 			  - beta
 			  - ga
-			block:
+			rules:
 			  publish:
-			    areas:
+			    exclude_areas:
 			      - Internal
 			""";
 		await FileSystem.File.WriteAllTextAsync(configFile, configContent, TestContext.Current.CancellationToken);
@@ -428,7 +435,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			    target: 2026-01-26
 			areas:
 			  - Internal
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			- "100"
 			description: This should be visible for cloud-serverless
 			""";
 
@@ -443,7 +451,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			    target: 9.2.0
 			areas:
 			  - Internal
-			pr: https://github.com/elastic/elasticsearch/pull/101
+			prs:
+			- "101"
 			description: This should be blocked for elasticsearch
 			""";
 
@@ -502,14 +511,13 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			  - preview
 			  - beta
 			  - ga
-			block:
+			rules:
 			  publish:
-			    areas:
+			    exclude_areas:
 			      - Internal
-			  product:
-			    cloud-serverless:
-			      publish:
-			        areas: []
+			    products:
+			      cloud-serverless:
+			        exclude_areas: []
 			""";
 		await FileSystem.File.WriteAllTextAsync(configFile, configContent, TestContext.Current.CancellationToken);
 
@@ -581,7 +589,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			    target: 2026-01-26
 			areas:
 			  - Allocation
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			- "100"
 			description: This breaking change should be blocked
 			impact: Users will be affected
 			action: Update your code
@@ -598,7 +607,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			    target: 2026-01-26
 			areas:
 			  - Search
-			pr: https://github.com/elastic/elasticsearch/pull/101
+			prs:
+			- "101"
 			description: This breaking change should be visible
 			impact: Users will be affected
 			action: Update your code
@@ -648,11 +658,11 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			  - preview
 			  - beta
 			  - ga
-			block:
-			  product:
-			    cloud-serverless:
-			      publish:
-			        areas:
+			rules:
+			  publish:
+			    products:
+			      cloud-serverless:
+			        exclude_areas:
 			          - Allocation
 			""";
 		await FileSystem.File.WriteAllTextAsync(configFile, configContent, TestContext.Current.CancellationToken);
@@ -714,7 +724,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			    target: 2026-01-26
 			areas:
 			  - Allocation
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			- "100"
 			description: This known issue should be blocked
 			impact: Users may experience issues
 			action: Workaround available
@@ -731,7 +742,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			    target: 2026-01-26
 			areas:
 			  - Search
-			pr: https://github.com/elastic/elasticsearch/pull/101
+			prs:
+			- "101"
 			description: This known issue should be visible
 			impact: Users may experience issues
 			action: Workaround available
@@ -782,11 +794,11 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			  - preview
 			  - beta
 			  - ga
-			block:
-			  product:
-			    cloud-serverless:
-			      publish:
-			        areas:
+			rules:
+			  publish:
+			    products:
+			      cloud-serverless:
+			        exclude_areas:
 			          - Allocation
 			""";
 		await FileSystem.File.WriteAllTextAsync(configFile, configContent, TestContext.Current.CancellationToken);
@@ -848,7 +860,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			    target: 2026-01-26
 			areas:
 			  - Allocation
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			- "100"
 			""";
 
 		// language=yaml
@@ -861,7 +874,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			    target: 2026-01-26
 			areas:
 			  - Internal
-			pr: https://github.com/elastic/elasticsearch/pull/101
+			prs:
+			- "101"
 			""";
 
 		// language=yaml
@@ -874,7 +888,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			    target: 2026-01-26
 			areas:
 			  - Search
-			pr: https://github.com/elastic/elasticsearch/pull/102
+			prs:
+			- "102"
 			""";
 
 		var changelogFile1 = FileSystem.Path.Combine(changelogDir, "1755268130-allocation.yaml");
@@ -928,11 +943,11 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			  - preview
 			  - beta
 			  - ga
-			block:
-			  product:
-			    cloud-serverless:
-			      publish:
-			        areas:
+			rules:
+			  publish:
+			    products:
+			      'cloud-serverless':
+			        exclude_areas:
 			          - Allocation
 			          - Internal
 			""";
@@ -988,7 +1003,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			    target: 2026-01-26
 			areas:
 			  - Allocation
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			- "100"
 			description: This feature should be blocked
 			""";
 
@@ -1003,7 +1019,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			    target: 2026-01-26
 			areas:
 			  - Search
-			pr: https://github.com/elastic/elasticsearch/pull/101
+			prs:
+			- "101"
 			description: This feature should be visible
 			""";
 
@@ -1052,11 +1069,11 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			  - preview
 			  - beta
 			  - ga
-			block:
-			  product:
-			    cloud-serverless:
-			      publish:
-			        areas:
+			rules:
+			  publish:
+			    products:
+			      cloud-serverless:
+			        exclude_areas:
 			          - Allocation
 			""";
 		await FileSystem.File.WriteAllTextAsync(configFile, configContent, TestContext.Current.CancellationToken);
@@ -1112,7 +1129,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			    target: 2026-01-26
 			areas:
 			  - Allocation
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			- "100"
 			description: This feature should be blocked
 			""";
 
@@ -1127,7 +1145,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			    target: 2026-01-26
 			areas:
 			  - Allocation
-			pr: https://github.com/elastic/elasticsearch/pull/101
+			prs:
+			- "101"
 			description: This enhancement should be blocked
 			""";
 
@@ -1174,11 +1193,11 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			  - preview
 			  - beta
 			  - ga
-			block:
-			  product:
-			    cloud-serverless:
-			      publish:
-			        areas:
+			rules:
+			  publish:
+			    products:
+			      cloud-serverless:
+			        exclude_areas:
 			          - Allocation
 			""";
 		await FileSystem.File.WriteAllTextAsync(configFile, configContent, TestContext.Current.CancellationToken);
@@ -1228,7 +1247,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			    target: 2026-01-26
 			areas:
 			  - Allocation
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			- "100"
 			description: This breaking change should be blocked
 			impact: Users will be affected
 			action: Update your code
@@ -1272,11 +1292,11 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			  - preview
 			  - beta
 			  - ga
-			block:
-			  product:
-			    cloud-serverless:
-			      publish:
-			        areas:
+			rules:
+			  publish:
+			    products:
+			      cloud-serverless:
+			        exclude_areas:
 			          - Allocation
 			""";
 		await FileSystem.File.WriteAllTextAsync(configFile, configContent, TestContext.Current.CancellationToken);
@@ -1326,7 +1346,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			    target: 2026-01-26
 			areas:
 			  - Allocation
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			- "100"
 			description: This deprecation should be blocked
 			impact: Users will be affected
 			action: Update your code
@@ -1369,11 +1390,11 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			  - preview
 			  - beta
 			  - ga
-			block:
-			  product:
-			    cloud-serverless:
-			      publish:
-			        areas:
+			rules:
+			  publish:
+			    products:
+			      cloud-serverless:
+			        exclude_areas:
 			          - Allocation
 			""";
 		await FileSystem.File.WriteAllTextAsync(configFile, configContent, TestContext.Current.CancellationToken);
@@ -1423,7 +1444,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			    target: 2026-01-26
 			areas:
 			  - Allocation
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			- "100"
 			description: This known issue should be blocked
 			impact: Users may experience issues
 			action: Workaround available
@@ -1466,11 +1488,11 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			  - preview
 			  - beta
 			  - ga
-			block:
-			  product:
-			    cloud-serverless:
-			      publish:
-			        areas:
+			rules:
+			  publish:
+			    products:
+			      cloud-serverless:
+			        exclude_areas:
 			          - Allocation
 			""";
 		await FileSystem.File.WriteAllTextAsync(configFile, configContent, TestContext.Current.CancellationToken);
@@ -1521,7 +1543,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			    target: 2026-01-26
 			areas:
 			  - Allocation
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			- "100"
 			description: This feature should be blocked
 			""";
 
@@ -1534,7 +1557,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			products:
 			  - product: cloud-serverless
 			    target: 2026-01-26
-			pr: https://github.com/elastic/elasticsearch/pull/101
+			prs:
+			- "101"
 			description: This deprecation should be blocked
 			""";
 
@@ -1550,7 +1574,8 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			areas:
 			  - Allocation
 			  - Internal
-			pr: https://github.com/elastic/elasticsearch/pull/102
+			prs:
+			- "102"
 			description: This feature should be blocked
 			""";
 
@@ -1602,13 +1627,13 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 			  - preview
 			  - beta
 			  - ga
-			block:
-			  product:
-			    cloud-serverless:
-			      publish:
-			        types:
+			rules:
+			  publish:
+			    products:
+			      cloud-serverless:
+			        exclude_types:
 			          - deprecation
-			        areas:
+			        exclude_areas:
 			          - Allocation
 			          - Internal
 			""";
@@ -1639,18 +1664,18 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 		warnings.Should().Contain(w =>
 			w.Message.Contains("for PR 100") &&
 			w.Message.Contains("will be commented out") &&
-			w.Message.Contains("area 'Allocation'"));
+			w.Message.Contains("Allocation"));
 
 		// Should have warning for deprecation (blocked by type) - PR 101
 		warnings.Should().Contain(w =>
 			w.Message.Contains("for PR 101") &&
 			w.Message.Contains("will be commented out") &&
-			w.Message.Contains("type 'deprecation'"));
+			w.Message.Contains("deprecation"));
 
 		// Should have warning for Internal feature (blocked by areas) - PR 102
 		warnings.Should().Contain(w =>
 			w.Message.Contains("for PR 102") &&
 			w.Message.Contains("will be commented out") &&
-			w.Message.Contains("areas 'Allocation', 'Internal'"));
+			w.Message.Contains("Allocation"));
 	}
 }

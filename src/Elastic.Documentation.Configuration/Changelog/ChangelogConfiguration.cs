@@ -90,9 +90,9 @@ public record ChangelogConfiguration
 	public IReadOnlyDictionary<string, string>? LabelToAreas { get; init; }
 
 	/// <summary>
-	/// Combined block configuration for create and publish blockers
+	/// Rules configuration for create and publish blockers
 	/// </summary>
-	public BlockConfiguration? Block { get; init; }
+	public RulesConfiguration? Rules { get; init; }
 
 	/// <summary>
 	/// Extraction configuration for release notes and issues.

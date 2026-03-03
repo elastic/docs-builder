@@ -56,6 +56,8 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 
 	public GoogleTagManagerConfiguration GoogleTagManager { get; init; }
 
+	public OptimizelyConfiguration Optimizely { get; init; }
+
 	// This property is used for the canonical URL
 	public Uri? CanonicalBaseUrl { get; init; }
 
@@ -64,6 +66,9 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 		get => string.IsNullOrWhiteSpace(field) ? "" : $"/{field.Trim('/')}";
 		init;
 	}
+
+	/// <summary>Site root path for HTMX (e.g. codex root). When set, overrides derivation from UrlPathPrefix.</summary>
+	public string? SiteRootPath { get; init; }
 
 	public BuildContext(
 		IDiagnosticsCollector collector,
@@ -120,6 +125,10 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 
 		Configuration = new ConfigurationFile(ConfigurationYaml, this, VersionsConfiguration, ProductsConfiguration);
 		GoogleTagManager = new GoogleTagManagerConfiguration
+		{
+			Enabled = false
+		};
+		Optimizely = new OptimizelyConfiguration
 		{
 			Enabled = false
 		};

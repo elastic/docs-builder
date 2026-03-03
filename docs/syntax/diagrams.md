@@ -1,10 +1,10 @@
 # Mermaid diagrams
 
-Create diagrams using [Mermaid](https://mermaid.js.org/) with standard fenced code blocks. Diagrams are rendered client-side in the browser.
+You can create diagrams using [Mermaid](https://mermaid.js.org/) with standard fenced code blocks. Diagrams are rendered client-side in the browser.
 
 ```mermaid
 flowchart LR
-    Start --> End
+    A[Write Mermaid] --> B[Render diagram]
 ```
 
 ## Basic usage
@@ -252,7 +252,6 @@ flowchart TD
 ::::
 
 :::::
-
 ## Interactive controls
 
 Mermaid diagrams include interactive controls that appear when you hover over the diagram:

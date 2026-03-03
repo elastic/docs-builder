@@ -457,7 +457,7 @@ toc:
                 children:
                   - toc: edot-cloud-forwarder-aws://reference/edot-cf-aws
                     path_prefix: reference/opentelemetry/edot-cloud-forwarder/aws
-                  - toc: opentelemetry://reference/edot-cloud-forwarder/azure
+                  - toc: edot-cloud-forwarder-azure://reference/edot-cf-azure
                     path_prefix: reference/opentelemetry/edot-cloud-forwarder/azure
                   - toc: opentelemetry://reference/edot-cloud-forwarder/gcp
                     path_prefix: reference/opentelemetry/edot-cloud-forwarder/gcp

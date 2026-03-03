@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using Elastic.Changelog.Bundling;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.ReleaseNotes;
 
@@ -87,13 +86,8 @@ public class BundleDataResolver(IFileSystem fileSystem)
 		var filePath = fileSystem.Path.Combine(bundleDirectory, entry.File!.Name);
 		var fileContent = await fileSystem.File.ReadAllTextAsync(filePath, ctx);
 
-		// Deserialize YAML (skip comment lines)
-		var yamlLines = fileContent.Split('\n');
-		var yamlWithoutComments = string.Join('\n', yamlLines.Where(line => !line.TrimStart().StartsWith('#')));
-
-		// Normalize "version:" to "target:" in products section
-		var normalizedYaml = ChangelogBundlingService.VersionToTargetRegex().Replace(yamlWithoutComments, "$1target:");
-
+		// Deserialize YAML
+		var normalizedYaml = ReleaseNotesSerialization.NormalizeYaml(fileContent);
 		return ReleaseNotesSerialization.DeserializeEntry(normalizedYaml);
 	}
 }

@@ -40,26 +40,23 @@ public abstract class AsciidocRendererBase
 		_ = sb.Append("* ");
 		_ = sb.Append(ChangelogTextUtilities.Beautify(entry.Title));
 
-		var hasPr = !string.IsNullOrWhiteSpace(entry.Pr);
+		var hasPrs = entry.Prs is { Count: > 0 };
 		var hasIssues = entry.Issues is { Count: > 0 };
 
-		if (!hasPr && !hasIssues)
+		if (!hasPrs && !hasIssues)
 			return;
 
 		_ = sb.Append(' ');
-		if (hasPr)
+		foreach (var pr in entry.Prs ?? [])
 		{
-			_ = sb.Append(ChangelogTextUtilities.FormatPrLinkAsciidoc(entry.Pr!, entryRepo, hideLinks));
+			_ = sb.Append(ChangelogTextUtilities.FormatPrLinkAsciidoc(pr, entryRepo, hideLinks));
 			_ = sb.Append(' ');
 		}
 
-		if (hasIssues)
+		foreach (var issue in entry.Issues ?? [])
 		{
-			foreach (var issue in entry.Issues!)
-			{
-				_ = sb.Append(ChangelogTextUtilities.FormatIssueLinkAsciidoc(issue, entryRepo, hideLinks));
-				_ = sb.Append(' ');
-			}
+			_ = sb.Append(ChangelogTextUtilities.FormatIssueLinkAsciidoc(issue, entryRepo, hideLinks));
+			_ = sb.Append(' ');
 		}
 	}
 

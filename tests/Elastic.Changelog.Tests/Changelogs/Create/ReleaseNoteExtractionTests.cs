@@ -404,4 +404,69 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		yamlContent.Should().Contain("description: Custom description");
 		yamlContent.Should().NotContain(longReleaseNote);
 	}
+
+	[Fact]
+	public async Task CreateChangelog_WhenExtractNotSpecifiedByCli_UsesConfigExtractReleaseNotes()
+	{
+		// When CLI does not pass --no-extract-release-notes, config extract.release_notes applies.
+		// Config has release_notes: false, so PR title is used instead of extracted release note.
+
+		var prInfo = new GitHubPrInfo
+		{
+			Title = "Implement new aggregation API",
+			Body = "## Summary\n\nThis PR adds a new feature.\n\nRelease Notes: Adds support for new aggregation types",
+			Labels = ["type:feature"]
+		};
+
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+				"https://github.com/elastic/elasticsearch/pull/12345",
+				null,
+				null,
+				A<CancellationToken>._))
+			.Returns(prInfo);
+
+		// language=yaml
+		var configContent =
+			"""
+			extract:
+			  release_notes: false
+			pivot:
+			  types:
+			    feature: "type:feature"
+			    bug-fix:
+			    breaking-change:
+			lifecycles:
+			  - preview
+			  - beta
+			  - ga
+			""";
+		var configPath = await CreateConfigDirectory(configContent);
+
+		var service = CreateService();
+
+		var input = new CreateChangelogArguments
+		{
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
+			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Config = configPath,
+			Output = CreateOutputDirectory(),
+			ExtractReleaseNotes = null  // CLI did not specify; config default applies
+		};
+
+		// Act
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert - config says don't extract, so PR title is used
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+
+		var outputDir = input.Output ?? FileSystem.Directory.GetCurrentDirectory();
+		FileSystem.Directory.CreateDirectory(outputDir);
+		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		files.Should().HaveCount(1);
+
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		yamlContent.Should().Contain("title: Implement new aggregation API");
+		yamlContent.Should().NotContain("Adds support for new aggregation types");
+	}
 }

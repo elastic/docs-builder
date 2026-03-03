@@ -30,7 +30,8 @@ public class ChangelogConfigLoadAutoDiscoverTests : DirectiveTest<ChangelogBlock
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "111111"
+			  prs:
+			  - "111111"
 			- title: Deprecation notice
 			  type: deprecation
 			  products:
@@ -39,7 +40,8 @@ public class ChangelogConfigLoadAutoDiscoverTests : DirectiveTest<ChangelogBlock
 			  description: This API is deprecated.
 			  impact: Users should migrate.
 			  action: Use the new API.
-			  pr: "222222"
+			  prs:
+			  - "222222"
 			- title: Known issue
 			  type: known-issue
 			  products:
@@ -47,16 +49,17 @@ public class ChangelogConfigLoadAutoDiscoverTests : DirectiveTest<ChangelogBlock
 			    target: 9.3.0
 			  description: There is a known issue.
 			  impact: Some users may be affected.
-			  pr: "333333"
+			  prs:
+			  - "333333"
 			"""));
 
 		// Add changelog config with publish blockers
 		FileSystem.AddFile("docs/changelog.yml", new MockFileData(
 			// language=yaml
 			"""
-			block:
+			rules:
 			  publish:
-			    types:
+			    exclude_types:
 			      - deprecation
 			      - known-issue
 			"""));
@@ -114,7 +117,8 @@ public class ChangelogConfigLoadExplicitPathTests : DirectiveTest<ChangelogBlock
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "111111"
+			  prs:
+			  - "111111"
 			- title: Internal docs
 			  type: docs
 			  products:
@@ -122,16 +126,17 @@ public class ChangelogConfigLoadExplicitPathTests : DirectiveTest<ChangelogBlock
 			    target: 9.3.0
 			  areas:
 			  - Internal
-			  pr: "222222"
+			  prs:
+			  - "222222"
 			"""));
 
 		// Add custom config at explicit path
 		FileSystem.AddFile("docs/custom/path/my-changelog.yml", new MockFileData(
 			// language=yaml
 			"""
-			block:
+			rules:
 			  publish:
-			    areas:
+			    exclude_areas:
 			      - Internal
 			"""));
 	}
@@ -178,22 +183,24 @@ public class ChangelogConfigLoadFromDocsSubfolderTests : DirectiveTest<Changelog
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "111111"
+			  prs:
+			  - "111111"
 			- title: Other change
 			  type: other
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "222222"
+			  prs:
+			  - "222222"
 			"""));
 
 		// Add config in docs/docs/changelog.yml (docs subfolder)
 		FileSystem.AddFile("docs/docs/changelog.yml", new MockFileData(
 			// language=yaml
 			"""
-			block:
+			rules:
 			  publish:
-			    types:
+			    exclude_types:
 			      - other
 			"""));
 	}
@@ -228,7 +235,8 @@ public class ChangelogConfigNotFoundTests : DirectiveTest<ChangelogBlock>
 		  products:
 		  - product: elasticsearch
 		    target: 9.3.0
-		  pr: "111111"
+		  prs:
+		  - "111111"
 		"""));
 
 	[Fact]
@@ -262,7 +270,8 @@ public class ChangelogConfigExplicitPathNotFoundTests : DirectiveTest<ChangelogB
 		  products:
 		  - product: elasticsearch
 		    target: 9.3.0
-		  pr: "111111"
+		  prs:
+		  - "111111"
 		"""));
 
 	[Fact]
@@ -297,7 +306,8 @@ public class ChangelogConfigPriorityTests : DirectiveTest<ChangelogBlock>
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "111111"
+			  prs:
+			  - "111111"
 			- title: Deprecation notice
 			  type: deprecation
 			  products:
@@ -306,31 +316,33 @@ public class ChangelogConfigPriorityTests : DirectiveTest<ChangelogBlock>
 			  description: Deprecated.
 			  impact: None.
 			  action: Upgrade.
-			  pr: "222222"
+			  prs:
+			  - "222222"
 			- title: Other change
 			  type: other
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "333333"
+			  prs:
+			  - "333333"
 			"""));
 
 		// Add both config files - root should take priority
 		FileSystem.AddFile("docs/changelog.yml", new MockFileData(
 			// language=yaml
 			"""
-			block:
+			rules:
 			  publish:
-			    types:
+			    exclude_types:
 			      - deprecation
 			"""));
 
 		FileSystem.AddFile("docs/docs/changelog.yml", new MockFileData(
 			// language=yaml
 			"""
-			block:
+			rules:
 			  publish:
-			    types:
+			    exclude_types:
 			      - other
 			"""));
 	}
@@ -366,7 +378,8 @@ public class ChangelogConfigEmptyBlockTests : DirectiveTest<ChangelogBlock>
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "111111"
+			  prs:
+			  - "111111"
 			"""));
 
 		// Config file exists but has no block section
@@ -410,7 +423,8 @@ public class ChangelogConfigMixedBlockersTests : DirectiveTest<ChangelogBlock>
 			    target: 9.3.0
 			  areas:
 			  - Search
-			  pr: "111111"
+			  prs:
+			  - "111111"
 			- title: Deprecation in Search
 			  type: deprecation
 			  products:
@@ -421,7 +435,8 @@ public class ChangelogConfigMixedBlockersTests : DirectiveTest<ChangelogBlock>
 			  description: Deprecated.
 			  impact: None.
 			  action: Upgrade.
-			  pr: "222222"
+			  prs:
+			  - "222222"
 			- title: Feature in Internal
 			  type: feature
 			  products:
@@ -429,24 +444,26 @@ public class ChangelogConfigMixedBlockersTests : DirectiveTest<ChangelogBlock>
 			    target: 9.3.0
 			  areas:
 			  - Internal
-			  pr: "333333"
+			  prs:
+			  - "333333"
 			- title: Bug fix
 			  type: bug-fix
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "444444"
+			  prs:
+			  - "444444"
 			"""));
 
 		// Config with both type and area blockers
 		FileSystem.AddFile("docs/changelog.yml", new MockFileData(
 			// language=yaml
 			"""
-			block:
+			rules:
 			  publish:
-			    types:
+			    exclude_types:
 			      - deprecation
-			    areas:
+			    exclude_areas:
 			      - Internal
 			"""));
 	}
@@ -470,5 +487,246 @@ public class ChangelogConfigMixedBlockersTests : DirectiveTest<ChangelogBlock>
 	{
 		Html.Should().Contain("Regular feature in Search");
 		Html.Should().Contain("Bug fix");
+	}
+}
+
+public class ChangelogProductFallbackSingleProductTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(output,
+	// language=markdown
+	"""
+		:::{changelog}
+		:::
+		""")
+{
+	protected override void AddToFileSystem(MockFileSystem fileSystem)
+	{
+		fileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
+			// language=yaml
+			"""
+			products:
+			- product: kibana
+			  target: 9.3.0
+			entries:
+			- title: Regular Kibana feature
+			  type: feature
+			  products:
+			  - product: kibana
+			    target: 9.3.0
+			  prs:
+			  - "111111"
+			- title: Internal feature
+			  type: feature
+			  products:
+			  - product: kibana
+			    target: 9.3.0
+			  areas:
+			  - Internal
+			  prs:
+			  - "222222"
+			- title: Observability feature
+			  type: feature
+			  products:
+			  - product: kibana
+			    target: 9.3.0
+			  areas:
+			  - Elastic Observability
+			  prs:
+			  - "333333"
+			"""));
+
+		// Config with product-specific blocker for kibana
+		fileSystem.AddFile("docs/changelog.yml", new MockFileData(
+			// language=yaml
+			"""
+			rules:
+			  publish:
+			    exclude_areas:
+			      - Global Area
+			    products:
+			      kibana:
+			        exclude_areas:
+			          - Internal
+			          - Elastic Observability
+			"""));
+	}
+
+	protected override IReadOnlyList<string>? GetDocsetProducts() => ["kibana"];
+
+	[Fact]
+	public void UsesProductSpecificBlockerWhenDocsetHasSingleProduct() =>
+		Block!.PublishBlocker.Should().NotBeNull();
+
+	[Fact]
+	public void ProductBlockerHasCorrectAreas()
+	{
+		Block!.PublishBlocker!.Areas.Should().NotBeNull();
+		Block!.PublishBlocker!.Areas.Should().Contain("Internal");
+		Block!.PublishBlocker!.Areas.Should().Contain("Elastic Observability");
+		// Should NOT contain global area - product-specific blocker takes precedence
+		Block!.PublishBlocker!.Areas.Should().NotContain("Global Area");
+	}
+
+	[Fact]
+	public void FiltersEntriesMatchingProductBlockedAreas()
+	{
+		Html.Should().Contain("Regular Kibana feature");
+		Html.Should().NotContain("Internal feature");
+		Html.Should().NotContain("Observability feature");
+	}
+}
+
+public class ChangelogProductFallbackMultipleProductsTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(output,
+	// language=markdown
+	"""
+		:::{changelog}
+		:::
+		""")
+{
+	protected override void AddToFileSystem(MockFileSystem fileSystem)
+	{
+		fileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
+			// language=yaml
+			"""
+			products:
+			- product: elasticsearch
+			  target: 9.3.0
+			entries:
+			- title: Regular feature
+			  type: feature
+			  products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			  prs:
+			  - "111111"
+			- title: Internal feature
+			  type: feature
+			  products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			  areas:
+			  - Internal
+			  prs:
+			  - "222222"
+			"""));
+
+		// Config with product-specific blockers
+		fileSystem.AddFile("docs/changelog.yml", new MockFileData(
+			// language=yaml
+			"""
+			rules:
+			  publish:
+			    exclude_areas:
+			      - Global Area
+			    products:
+			      elasticsearch:
+			        exclude_areas:
+			          - Internal
+			"""));
+	}
+
+	// Docset with multiple products - should fall back to global blocker
+	protected override IReadOnlyList<string>? GetDocsetProducts() => ["elasticsearch", "kibana"];
+
+	[Fact]
+	public void FallsBackToGlobalBlockerWhenMultipleProducts() =>
+		Block!.PublishBlocker.Should().NotBeNull();
+
+	[Fact]
+	public void GlobalBlockerHasCorrectAreas()
+	{
+		Block!.PublishBlocker!.Areas.Should().NotBeNull();
+		Block!.PublishBlocker!.Areas.Should().Contain("Global Area");
+		// Should NOT contain product-specific area
+		Block!.PublishBlocker!.Areas.Should().NotContain("Internal");
+	}
+
+	[Fact]
+	public void RendersAllEntriesWithGlobalBlocker()
+	{
+		// Global blocker only blocks "Global Area", not "Internal"
+		Html.Should().Contain("Regular feature");
+		Html.Should().Contain("Internal feature");
+	}
+}
+
+public class ChangelogProductExplicitOptionOverridesDocsetTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(output,
+	// language=markdown
+	"""
+		:::{changelog}
+		:product: elasticsearch
+		:::
+		""")
+{
+	protected override void AddToFileSystem(MockFileSystem fileSystem)
+	{
+		fileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
+			// language=yaml
+			"""
+			products:
+			- product: elasticsearch
+			  target: 9.3.0
+			entries:
+			- title: Regular feature
+			  type: feature
+			  products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			  prs:
+			  - "111111"
+			- title: ES Internal feature
+			  type: feature
+			  products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			  areas:
+			  - ES Internal
+			  prs:
+			  - "222222"
+			- title: Kibana Internal feature
+			  type: feature
+			  products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			  areas:
+			  - Kibana Internal
+			  prs:
+			  - "333333"
+			"""));
+
+		// Config with different blockers for different products
+		fileSystem.AddFile("docs/changelog.yml", new MockFileData(
+			// language=yaml
+			"""
+			rules:
+			  publish:
+			    products:
+			      elasticsearch:
+			        exclude_areas:
+			          - ES Internal
+			      kibana:
+			        exclude_areas:
+			          - Kibana Internal
+			"""));
+	}
+
+	// Docset has kibana as single product, but directive explicitly requests elasticsearch
+	protected override IReadOnlyList<string>? GetDocsetProducts() => ["kibana"];
+
+	[Fact]
+	public void ExplicitProductOptionIsSet() =>
+		Block!.ProductId.Should().Be("elasticsearch");
+
+	[Fact]
+	public void UsesExplicitProductBlockerNotDocsetProduct()
+	{
+		Block!.PublishBlocker!.Areas.Should().Contain("ES Internal");
+		Block!.PublishBlocker!.Areas.Should().NotContain("Kibana Internal");
+	}
+
+	[Fact]
+	public void FiltersCorrectAreas()
+	{
+		Html.Should().Contain("Regular feature");
+		Html.Should().NotContain("ES Internal feature");
+		Html.Should().Contain("Kibana Internal feature");
 	}
 }
