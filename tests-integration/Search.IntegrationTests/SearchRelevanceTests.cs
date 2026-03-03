@@ -2,6 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.IO.Abstractions;
+using Elastic.Documentation;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Common;
@@ -238,33 +241,8 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 	private static (NavigationSearchGateway Gateway, ElasticsearchClientAccessor ClientAccessor) CreateFindPageGateway()
 	{
 		var endpoints = ElasticsearchEndpointFactory.Create(dataSource: "assembler", environment: "dev");
-
-		var searchConfig = new SearchConfiguration
-		{
-			Synonyms = new Dictionary<string, string[]>(),
-			Rules =
-			[
-				new QueryRule
-				{
-					RuleId = "pin-data-streams",
-					Type = QueryRuleType.Pinned,
-					Criteria =
-					[
-						new QueryRuleCriteria
-						{
-							Type = QueryRuleCriteriaType.Exact,
-							Metadata = "query_string",
-							Values = ["data stream", "data-stream", "data-streams", "datastream", "datastreams"]
-						}
-					],
-					Actions = new QueryRuleActions
-					{
-						Ids = ["/docs/manage-data/data-store/data-streams"]
-					}
-				}
-			],
-			DiminishTerms = ["plugin", "client", "integration", "glossary"]
-		};
+		var configProvider = new ConfigurationFileProvider(NullLoggerFactory.Instance, new FileSystem(), configurationSource: ConfigurationSource.Embedded);
+		var searchConfig = configProvider.CreateSearchConfiguration();
 
 		var clientAccessor = new ElasticsearchClientAccessor(endpoints, searchConfig);
 		var gateway = new NavigationSearchGateway(clientAccessor, NullLogger<NavigationSearchGateway>.Instance);
