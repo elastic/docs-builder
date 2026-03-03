@@ -27,7 +27,7 @@ public class ElasticsearchEndpoint
 	public bool NoElasticInferenceService { get; set; }
 
 	// channel buffer options
-	public int BufferSize { get; set; } = 50; // Reduced for Serverless rate limits
+	public int BufferSize { get; set; } = 100; // Reduced for Serverless rate limits
 	public int MaxRetries { get; set; } = 5; // Increased for 429 retries
 
 	// connection options

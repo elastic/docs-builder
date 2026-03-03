@@ -44,6 +44,10 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	// AI Enrichment - post-indexing via AiEnrichmentOrchestrator
 	private readonly AiEnrichmentOrchestrator? _aiEnrichment;
 
+	// Per-channel running totals for progress logging
+	private int _primaryIndexed;
+	private int _secondaryIndexed;
+
 	// Shared ES operations with retry and task polling
 	private readonly ElasticsearchOperations _operations;
 
@@ -149,12 +153,13 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		options.SerializerContext = SourceGenerationContext.Default;
 		options.ExportResponseCallback = (response, buffer) =>
 		{
-			var status = response.ApiCallDetails.HttpStatusCode;
-			var items = response.Items?.Count ?? 0;
+			var sent = response.Items?.Count ?? 0;
 			var errors = response.Items?.Count(i => i.Status >= 400) ?? 0;
-			_logger.LogInformation(
-				"[{Label}] Bulk response: HTTP {Status}, {Items} items, {Errors} errors, buffer: {Buffer}",
-				label, status, items, errors, buffer.Count);
+			var indexed = label == "primary"
+				? Interlocked.Add(ref _primaryIndexed, sent - errors)
+				: Interlocked.Add(ref _secondaryIndexed, sent - errors);
+			_logger.LogInformation("[{Label}] indexed {Indexed} items. {Errors} errors. sent: {Sent} items",
+				label, indexed, errors, sent);
 			if (!response.ApiCallDetails.HasSuccessfulStatusCode)
 				_logger.LogWarning("[{Label}] {DebugInfo}", label, response.ApiCallDetails.DebugInformation);
 		};
