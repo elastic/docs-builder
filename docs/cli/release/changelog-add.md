@@ -110,14 +110,10 @@ docs-builder changelog add [options...] [-h|--help]
 :   The valid types are listed in [ChangelogConfiguration.cs](https://github.com/elastic/docs-builder/blob/main/src/services/Elastic.Documentation.Services/Changelog/ChangelogConfiguration.cs).
 
 `--use-pr-number`
-:   Optional: Use the PR number(s) as the filename instead of generating it from a timestamp and title.
-:   With multiple PRs, uses hyphen-separated numbers (for example, `137431-137432.yaml`).
-:   Requires `--prs`. Mutually exclusive with `--use-issue-number`.
+:   Optional: Use PR numbers for filenames instead of timestamp-slug. With both `--prs` (which creates one changelog per specified PR) and `--issues` (which creates one changelog per specified issue), each changelog filename will be derived from its PR numbers. Requires `--prs` or `--issues`. Mutually exclusive with `--use-issue-number`.
 
 `--use-issue-number`
-:   Optional: Use the issue number(s) as the filename instead of generating it from a timestamp and title.
-:   With multiple issues, uses hyphen-separated numbers (for example, `12345-12346.yaml`).
-:   Requires `--issues`. When both `--issues` and `--prs` are specified, still uses the issue number for the filename if this flag is set. Mutually exclusive with `--use-pr-number`.
+:   Optional: Use issue numbers for filenames instead of timestamp-slug. With both `--prs` (which creates one changelog per specified PR) and `--issues` (which creates one changelog per specified issue), each changelog filename will be derived from its issues. Requires `--prs` or `--issues`. Mutually exclusive with `--use-pr-number`.
 
 :::{important}
 `--use-pr-number` and `--use-issue-number` are mutually exclusive; specify only one.

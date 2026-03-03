@@ -260,18 +260,22 @@ By default, the `docs-builder changelog add` command generates filenames using a
 
 For example: `1735689600-fixes-enrich-and-lookup-join-resolution.yaml`
 
-If you want to use the PR number as the filename instead, add the `--use-pr-number` option:
+If you want to use PR numbers for filenames, add the `--use-pr-number` option. With both `--prs` (which creates one changelog per specified PR) and `--issues` (which creates one changelog per specified issue), each changelog filename will be derived from its PR numbers:
 
 ```sh
 docs-builder changelog add \
   --prs https://github.com/elastic/elasticsearch/pull/137431 \
   --products "elasticsearch 9.2.3" \
   --use-pr-number
+
+docs-builder changelog add \
+  --issues https://github.com/elastic/docs-builder/issues/2571 \
+  --products "elasticsearch 9.3.0" \
+  --config docs/changelog.yml \
+  --use-pr-number
 ```
 
-With a single PR, this creates a file named `137431.yaml`. With multiple PRs, the filename aggregates the numbers (for example `137431-137432.yaml`).
-
-Use `--use-issue-number` to name the file by issue number(s). When you specify `--issues` without `--prs`, the command fetches the issue from GitHub and derives the title, type, and areas from the issue (using the same label mappings as for PRs). When both `--issues` and `--prs` are specified, `--use-issue-number` still uses the issue number for the filename:
+Use `--use-issue-number` to name the file by issue number(s). With both `--prs` and `--issues`, each changelog filename will be derived from its issues:
 
 ```sh
 docs-builder changelog add \
@@ -279,14 +283,18 @@ docs-builder changelog add \
   --products "elasticsearch 9.2.3" \
   --config docs/changelog.yml \
   --use-issue-number
+
+docs-builder changelog add \
+  --prs https://github.com/elastic/elasticsearch/pull/137431 \
+  --products "elasticsearch 9.2.3" \
+  --config docs/changelog.yml \
+  --use-issue-number
 ```
 
-The command derives the title from the issue title, maps labels to type and areas (if configured), extracts release notes from the issue body, and extracts linked PRs (for example "Fixed by #123"). You can omit `--title` and `--type` when the issue has appropriate labels. Multiple issues can be specified comma-separated or via a file path (like `--prs`), creating one changelog per issue.
-
-This creates a file named `12345.yaml` (or `12345-12346.yaml` for multiple issues).
+The command derives the title from the issue or PR, maps labels to type and areas (if configured), and extracts linked references. With `--issues`, it extracts linked PRs from the issue body (for example, "Fixed by #123"). With `--prs`, it extracts linked issues from the PR body (for example, "Fixes #123"). Multiple issues or PRs can be specified comma-separated or via a file path, creating one changelog per issue or PR.
 
 :::{important}
-`--use-pr-number` and `--use-issue-number` are mutually exclusive; specify only one. `--use-pr-number` requires `--prs`. `--use-issue-number` requires `--issues`. The numbers are extracted from the URLs or identifiers you provide.
+`--use-pr-number` and `--use-issue-number` are mutually exclusive; specify only one. Each requires `--prs` or `--issues`. The numbers are extracted from the URLs or identifiers you provide, or from linked references in the issue or PR body when extraction is enabled.
 :::
 
 ### Examples

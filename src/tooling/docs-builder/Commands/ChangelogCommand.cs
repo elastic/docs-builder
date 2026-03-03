@@ -222,8 +222,8 @@ internal sealed partial class ChangelogCommand(
 	/// <param name="subtype">Optional: Subtype for breaking changes (api, behavioral, configuration, etc.)</param>
 	/// <param name="title">Optional: A short, user-facing title (max 80 characters). Required if neither --prs nor --issues is specified. If --prs and --title are specified, the latter value is used instead of what exists in the PR.</param>
 	/// <param name="type">Optional: Type of change (feature, enhancement, bug-fix, breaking-change, etc.). Required if neither --prs nor --issues is specified. If mappings are configured, type can be derived from the PR or issue.</param>
-	/// <param name="usePrNumber">Optional: Use the PR number(s) as the filename. With multiple PRs, uses hyphen-separated list (e.g., 137431-137432.yaml). Requires --prs. Mutually exclusive with --use-issue-number.</param>
-	/// <param name="useIssueNumber">Optional: Use the issue number(s) as the filename. Requires --issues. When both --issues and --prs are specified, uses issue number if this flag is set. Mutually exclusive with --use-pr-number.</param>
+	/// <param name="usePrNumber">Optional: Use PR numbers for filenames instead of timestamp-slug. With both --prs (which creates one changelog per specified PR) and --issues (which creates one changelog per specified issue), each changelog filename will be derived from its PR numbers. Requires --prs or --issues. Mutually exclusive with --use-issue-number.</param>
+	/// <param name="useIssueNumber">Optional: Use issue numbers for filenames instead of timestamp-slug. With both --prs (which creates one changelog per specified PR) and --issues (which creates one changelog per specified issue), each changelog filename will be derived from its issues. Requires --prs or --issues. Mutually exclusive with --use-pr-number.</param>
 	/// <param name="ctx"></param>
 	[Command("add")]
 	public async Task<int> Create(
@@ -343,18 +343,29 @@ internal sealed partial class ChangelogCommand(
 		if (usePrNumber && useIssueNumber)
 		{
 			collector.EmitError(string.Empty, "--use-pr-number and --use-issue-number are mutually exclusive; specify only one.");
+			_ = collector.StartAsync(ctx);
+			await collector.WaitForDrain();
+			await collector.StopAsync(ctx);
 			return 1;
 		}
 
-		if (usePrNumber && (parsedPrs == null || parsedPrs.Length == 0))
+		// --use-pr-number with --issues is allowed: PRs can be extracted from the issue body (Fixed by #123, etc.)
+		if (usePrNumber && (parsedPrs == null || parsedPrs.Length == 0) && (parsedIssues == null || parsedIssues.Length == 0))
 		{
-			collector.EmitError(string.Empty, "--use-pr-number requires --prs to be specified.");
+			collector.EmitError(string.Empty, "--use-pr-number requires --prs or --issues to be specified.");
+			_ = collector.StartAsync(ctx);
+			await collector.WaitForDrain();
+			await collector.StopAsync(ctx);
 			return 1;
 		}
 
-		if (useIssueNumber && (parsedIssues == null || parsedIssues.Length == 0))
+		// --use-issue-number with --prs is allowed: issues can be extracted from the PR body (Fixes #123, etc.)
+		if (useIssueNumber && (parsedIssues == null || parsedIssues.Length == 0) && (parsedPrs == null || parsedPrs.Length == 0))
 		{
-			collector.EmitError(string.Empty, "--use-issue-number requires --issues to be specified.");
+			collector.EmitError(string.Empty, "--use-issue-number requires --prs or --issues to be specified.");
+			_ = collector.StartAsync(ctx);
+			await collector.WaitForDrain();
+			await collector.StopAsync(ctx);
 			return 1;
 		}
 
