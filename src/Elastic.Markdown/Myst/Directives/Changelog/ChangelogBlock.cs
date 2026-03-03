@@ -440,11 +440,12 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		{
 			var titleSlug = ChangelogTextUtilities.TitleToSlug(bundle.Version);
 			var repo = bundle.Repo;
+			var displayVersion = VersionOrDate.FormatDisplayVersion(bundle.Version);
 
 			// Version header
 			yield return new PageTocItem
 			{
-				Heading = bundle.Version,
+				Heading = displayVersion,
 				Slug = titleSlug,
 				Level = 2
 			};
