@@ -94,9 +94,9 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 
 		if (es.EnableAiEnrichment)
 		{
-			_aiEnrichment = new AiEnrichmentOrchestrator(_transport, _lexicalTypeContext);
-			var provider = _lexicalTypeContext.AiEnrichmentProvider!;
-			var infra = provider.CreateInfrastructure($"{_lexicalTypeContext.IndexStrategy!.WriteTarget}-ai-cache");
+			_aiEnrichment = new AiEnrichmentOrchestrator(_transport, _semanticTypeContext);
+			var provider = _semanticTypeContext.AiEnrichmentProvider!;
+			var infra = provider.CreateInfrastructure($"{_semanticTypeContext.IndexStrategy!.WriteTarget}-ai-cache");
 			_logger.LogInformation(
 				"AI enrichment enabled — pipeline: {Pipeline}, policy: {Policy}, lookup: {Lookup}",
 				infra.PipelineName, infra.EnrichPolicyName, infra.LookupIndexName);
