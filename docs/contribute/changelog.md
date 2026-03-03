@@ -227,6 +227,7 @@ For up-to-date command usage information, use the `-h` option or refer to [](/cl
 ### Authorization
 
 If you use the `--prs`, `--issues`, or `--release-version` options, the `docs-builder changelog add` command interacts with GitHub services.
+The `--release-version` option on `docs-builder changelog bundle` and `docs-builder changelog remove` also interacts with GitHub services.
 Log into GitHub or set the `GITHUB_TOKEN` (or `GH_TOKEN` ) environment variable with a sufficient personal access token (PAT).
 Otherwise, there will be fetch failures when you access private repositories and you might also encounter GitHub rate limiting errors.
 
@@ -1039,7 +1040,8 @@ Likewise, the `docs-builder changelog render` command fails for "unresolved" bun
 :::
 
 You can use the `docs-builder changelog remove` command to remove changelogs.
-It supports the same two modes as `changelog bundle`: profile-based and raw flags.
+It supports the same two modes as `changelog bundle`: profile-based and command-option-based.
+In the latter mode, exactly one filter option must be specified: `--all`, `--products`, `--prs`, `--issues`,`--release-version`, or `--report`.
 
 Before deleting, the command automatically scans for bundles that still hold unresolved (`file:`) references to the matching changelog files.
 If any are found, the command reports an error for each dependency.
@@ -1091,11 +1093,26 @@ docs-builder changelog remove serverless-release 2026-02 ./prs.txt
 ### Removal with command options [changelog-remove-raw]
 
 You can alternatively remove changelogs based on their issues, pull requests, product metadata, or remove all changelogs from a folder.
-Exactly one filter option must be specified: `--all`, `--products`, `--prs`, `--issues`, or `--report`.
+Exactly one filter option must be specified: `--all`, `--products`, `--prs`, `--issues`, `--release-version` or `--report`.
 When using a file for `--prs` or `--issues`, every line must be a fully-qualified GitHub URL.
 
 ```sh
 docs-builder changelog remove --products "elasticsearch 9.3.0 *" --dry-run
 ```
+
+#### Remove by GitHub release [changelog-remove-release-version]
+
+You can use the `--release-version` option to remove changelogs for all pull requests in a GitHub release.
+This is the command-option counterpart to [Bundle by GitHub release](#changelog-bundle-release-version), and is useful when you want to clean up after bundling with `--release-version`.
+
+```sh
+docs-builder changelog remove \
+  --repo elasticsearch \
+  --release-version v9.2.0 \
+  --dry-run
+```
+
+`--release-version` requires `--repo` and is mutually exclusive with `--all`, `--products`, `--prs`, and `--issues`.
+Pass `--dry-run` to preview the files that would be deleted before committing.
 
 For full option details, go to [](/cli/release/changelog-remove.md).

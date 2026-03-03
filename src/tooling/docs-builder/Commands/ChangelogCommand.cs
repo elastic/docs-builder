@@ -765,8 +765,8 @@ internal sealed partial class ChangelogCommand(
 	/// When a file is referenced by an unresolved bundle, the command blocks by default to prevent breaking
 	/// the {changelog} directive. Use --force to override.
 	/// </summary>
-	/// <param name="profile">Optional: Profile name from bundle.profiles in config (e.g., "elasticsearch-release"). When specified, the second argument is the version or promotion report URL. Mutually exclusive with --all, --products, --prs, --issues, and --report.</param>
-	/// <param name="profileArg">Optional: Version number or promotion report URL/path when using a profile (e.g., "9.2.0" or "https://buildkite.../promotion-report.html")</param>
+	/// <param name="profile">Optional: Profile name from bundle.profiles in config (for example, "elasticsearch-release"). When specified, the second argument is the version or promotion report URL.</param>
+	/// <param name="profileArg">Optional: Version number or promotion report URL/path when using a profile (for example, "9.2.0" or "https://buildkite.../promotion-report.html")</param>
 	/// <param name="profileReport">Optional: Promotion report or URL list file when also providing a version. When provided, the second argument must be a version string and this is the PR/issue filter source.</param>
 	/// <param name="all">Remove all changelogs in the directory. Exactly one filter option must be specified: --all, --products, --prs, --issues, or --report.</param>
 	/// <param name="bundlesDir">Optional: Override the directory that is scanned for bundles during the dependency check. Auto-discovered from config or fallback paths when not specified.</param>
@@ -774,11 +774,12 @@ internal sealed partial class ChangelogCommand(
 	/// <param name="directory">Optional: Directory containing changelog YAML files. Uses config bundle.directory or defaults to current directory</param>
 	/// <param name="dryRun">Print the files that would be removed without deleting them. Valid in both profile and raw mode.</param>
 	/// <param name="force">Proceed with removal even when files are referenced by unresolved bundles. Emits warnings instead of errors for each dependency. Valid in both profile and raw mode.</param>
-	/// <param name="issues">Filter by issue URLs (comma-separated), or a path to a newline-delimited file containing fully-qualified GitHub issue URLs. Can be specified multiple times. Exactly one filter option must be specified: --all, --products, --prs, --issues, or --report.</param>
-	/// <param name="owner">Optional: GitHub repository owner. Required when PRs or issues are specified as numbers. Falls back to bundle.owner in changelog.yml when not specified.</param>
-	/// <param name="products">Filter by products in format "product target lifecycle, ..." (e.g., "elasticsearch 9.3.0 ga"). All three parts are required but can be wildcards (*). Exactly one filter option must be specified: --all, --products, --prs, --issues, or --report.</param>
-	/// <param name="prs">Filter by pull request URLs (comma-separated), or a path to a newline-delimited file containing fully-qualified GitHub PR URLs. Can be specified multiple times. Exactly one filter option must be specified: --all, --products, --prs, --issues, or --report.</param>
-	/// <param name="repo">Optional: GitHub repository name. Required when PRs or issues are specified as numbers. Falls back to bundle.repo in changelog.yml when not specified.</param>
+	/// <param name="issues">Filter by issue URLs (comma-separated), or a path to a newline-delimited file containing fully-qualified GitHub issue URLs. Can be specified multiple times.</param>
+	/// <param name="owner">Optional: GitHub repository owner. Required when PRs or issues are specified as numbers or when using --release-version. Falls back to bundle.owner in changelog.yml when not specified.</param>
+	/// <param name="products">Filter by products in format "product target lifecycle, ..." (for example, "elasticsearch 9.3.0 ga"). All three parts are required but can be wildcards (*).</param>
+	/// <param name="prs">Filter by pull request URLs (comma-separated) or a path to a newline-delimited file containing fully-qualified GitHub PR URLs. Can be specified multiple times.</param>
+	/// <param name="releaseVersion">GitHub release tag to use as a filter source (for example, "v9.2.0" or "latest"). Fetches the release, parses PR references from the release notes, and removes changelogs whose PR URLs match — equivalent to passing the PR list using --prs.</param>
+	/// <param name="repo">GitHub repository name. Required when PRs or issues are specified as numbers or  when --release-version is used. Falls back to bundle.repo in changelog.yml when not specified.</param>
 	/// <param name="report">Optional (option-based mode only): URL or file path to a promotion report. Extracts PR URLs and uses them as the filter. Mutually exclusive with --all, --products, --prs, and --issues.</param>
 	/// <param name="ctx"></param>
 	[Command("remove")]
@@ -796,6 +797,7 @@ internal sealed partial class ChangelogCommand(
 		string? owner = null,
 		[ProductInfoParser] List<ProductArgument>? products = null,
 		string[]? prs = null,
+		string? releaseVersion = null,
 		string? repo = null,
 		string? report = null,
 		Cancel ctx = default
@@ -807,42 +809,55 @@ internal sealed partial class ChangelogCommand(
 
 		var isProfileMode = !string.IsNullOrWhiteSpace(profile);
 
+		// --release-version mode: resolve the release into a PR list and proceed as if --prs was specified
+		if (releaseVersion != null)
+		{
+			if (all || (products is { Count: > 0 }) || (prs is { Length: > 0 }) || (issues is { Length: > 0 }))
+			{
+				collector.EmitError(string.Empty,
+					"--release-version is mutually exclusive with --all, --products, --prs, and --issues.");
+				return 1;
+			}
+
+			if (string.IsNullOrWhiteSpace(repo))
+			{
+				collector.EmitError(string.Empty, "--release-version requires --repo to be specified.");
+				return 1;
+			}
+
+			var resolvedOwner = string.IsNullOrWhiteSpace(owner) ? "elastic" : owner;
+			IGitHubReleaseService releaseService = new GitHubReleaseService(logFactory);
+			var release = await releaseService.FetchReleaseAsync(resolvedOwner, repo, releaseVersion, ctx);
+			if (release == null)
+			{
+				collector.EmitError(string.Empty,
+					$"Failed to fetch release '{releaseVersion}' for {resolvedOwner}/{repo}. Ensure the tag exists and credentials are set.");
+				return 1;
+			}
+
+			var parsedNotes = ReleaseNoteParser.Parse(release.Body);
+			if (parsedNotes.PrReferences.Count == 0)
+			{
+				collector.EmitWarning(string.Empty,
+					$"No PR references found in release notes for {resolvedOwner}/{repo}@{release.TagName}. No changelogs will be removed.");
+				return 0;
+			}
+
+			// Build full PR URLs and inject them as the PR filter
+			prs = parsedNotes.PrReferences
+				.Select(r => $"https://github.com/{resolvedOwner}/{repo}/pull/{r.PrNumber}")
+				.ToArray();
+		}
+
 		var allPrs = ExpandCommaSeparated(prs);
 		var allIssues = ExpandCommaSeparated(issues);
 
 		if (isProfileMode)
 		{
-			// Profile mode: reject all options except --dry-run and --force
-			var forbidden = new List<string>();
-			if (all)
-				forbidden.Add("--all");
-			if (products is { Count: > 0 })
-				forbidden.Add("--products");
-			if (allPrs.Count > 0)
-				forbidden.Add("--prs");
-			if (allIssues.Count > 0)
-				forbidden.Add("--issues");
-			if (!string.IsNullOrWhiteSpace(report))
-				forbidden.Add("--report");
-			if (!string.IsNullOrWhiteSpace(repo))
-				forbidden.Add("--repo");
-			if (!string.IsNullOrWhiteSpace(owner))
-				forbidden.Add("--owner");
-			if (!string.IsNullOrWhiteSpace(config))
-				forbidden.Add("--config");
-			if (!string.IsNullOrWhiteSpace(directory))
-				forbidden.Add("--directory");
-			if (!string.IsNullOrWhiteSpace(bundlesDir))
-				forbidden.Add("--bundles-dir");
-
-			if (forbidden.Count > 0)
+			// Profile mode: --all, --products, --prs, --issues, and --release-version must not be used
+			if (all || (products != null && products.Count > 0) || allPrs.Count > 0 || allIssues.Count > 0 || releaseVersion != null)
 			{
-				collector.EmitError(
-					string.Empty,
-					$"When using a profile, the following options are not allowed: {string.Join(", ", forbidden)}. " +
-					"All paths and filters are derived from the changelog configuration file. " +
-					"Allowed options with profiles: --dry-run, --force."
-				);
+				collector.EmitError(string.Empty, "When using a profile, do not specify --all, --products, --prs, --issues, or --release-version. The profile configuration determines the filter.");
 				_ = collector.StartAsync(ctx);
 				await collector.WaitForDrain();
 				await collector.StopAsync(ctx);
