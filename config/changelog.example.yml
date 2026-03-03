@@ -184,38 +184,32 @@ bundle:
   # The 'output', 'output_products', 'repo', 'owner', and 'hide_features' fields are
   # bundle-specific and are ignored for removal.
   profiles:
-    # Example: Elasticsearch release profile (filter by changelogs already in the input directory)
+    # Example: Elasticsearch release profile (filter by changelog fields)
     # elasticsearch-release:
     #   # Filter: which input changelogs to include ({version} and {lifecycle} are substituted at runtime)
     #   products: "elasticsearch {version} {lifecycle}"
     #   # Output filename ({version} is substituted at runtime)
     #   output: "elasticsearch-{version}.yaml"
     #   # Optional: override the products array written to the bundle output.
-    #   # Useful when the bundle should advertise a different lifecycle than was used for filtering.
-    #   # output_products: "elasticsearch {version} ga"
-    #   # Optional: profile-specific GitHub repo name (overrides bundle.repo if set).
-    #   # Only needed when this profile's product ID differs from the repository name.
-    #   # repo: elasticsearch
-    #   # Optional: profile-specific GitHub owner (overrides bundle.owner if set).
-    #   # owner: elastic
+    #   # output_products: "elasticsearch {version}"
 
     # Example: GitHub release profile (fetches PR list directly from a GitHub release)
-    # Use when you want to bundle changelogs based on a published GitHub release rather than
-    # on pre-tagged changelog files. The PR list is parsed from the release notes automatically.
-    # Invoke with: docs-builder changelog bundle elasticsearch-gh-release 9.2.0
+    # Use when you want to bundle or remove changelogs based on a published GitHub release.
     # elasticsearch-gh-release:
     #   source: github_release       # Fetch PR list from GitHub release instead of filtering input changelogs
-    #   repo: elasticsearch          # GitHub repository (required; overrides bundle.repo if set)
+    #   repo: elasticsearch          # GitHub repository (required if bundle.repo is not set)
     #   owner: elastic               # GitHub owner (optional; defaults to bundle.owner or "elastic")
     #   output: "elasticsearch-{version}.yaml"
     #   output_products: "elasticsearch {version} {lifecycle}"
 
-    # Example: Serverless release profile (product ID "cloud-serverless" differs from repo "cloud")
+    # Example: Serverless release profile (filter by promotion report, PR, or issue list)
     # serverless-release:
-    #   products: "cloud-serverless {version} *"
     #   output: "serverless-{version}.yaml"
-    #   # repo overrides the bundle-level default for this profile only
-    #   # repo: cloud
+    #   output_products: "cloud-serverless {version}"
+    #   # Optional: profile-specific GitHub repo name (overrides bundle.repo if set).
+    #   # Only needed when this profile's product ID differs from the repository name.
+    #     repo: elasticsearch
+    #     owner: elastic
     #   # Feature IDs to hide when bundling with this profile (accepts string or list)
     #   hide_features:
     #     - feature-flag-1
