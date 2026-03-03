@@ -161,7 +161,7 @@ async function loadMermaid(): Promise<void> {
         script.async = true
         script.onload = () => {
             mermaidLoaded = true
-            window.mermaid.initialize({ startOnLoad: false, theme: 'default' })
+            window.mermaid.initialize({ startOnLoad: false, theme: 'neutral' })
             resolve()
         }
         script.onerror = () => reject(new Error('Failed to load Mermaid'))
