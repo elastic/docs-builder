@@ -62,7 +62,7 @@ public class CodexBuildService(
 		var buildContexts = new List<CodexDocumentationSetBuildContext>();
 
 		var environment = context.Configuration.Environment ?? "internal";
-		using var codexLinkIndexReader = new GitLinkIndexReader(environment, context.ReadFileSystem);
+		using var codexLinkIndexReader = new GitLinkIndexReader(environment, context.ReadFileSystem, skipFetch: true);
 
 		// Phase 1: Load and parse all documentation sets
 		foreach (var checkout in cloneResult.Checkouts)

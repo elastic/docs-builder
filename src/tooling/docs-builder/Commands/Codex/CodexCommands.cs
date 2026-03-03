@@ -194,11 +194,9 @@ internal sealed class CodexCommands(
 
 		var codexContext = new CodexContext(codexConfig, configFile, collector, fs, fs, null, output);
 
-		using var linkIndexReader = new GitLinkIndexReader(codexConfig.Environment);
-		var cloneService = new CodexCloneService(logFactory, linkIndexReader);
-		var cloneResult = await cloneService.CloneAll(codexContext, fetchLatest: false, assumeCloned: true, ctx);
+		var cloneResult = await CodexCloneService.DiscoverCheckouts(codexContext, logFactory, ctx);
 
-		if (cloneResult.Checkouts.Count == 0)
+		if (cloneResult == null || cloneResult.Checkouts.Count == 0)
 		{
 			collector.EmitGlobalError("No documentation sets found. Run 'docs-builder codex clone' first.");
 			return 1;

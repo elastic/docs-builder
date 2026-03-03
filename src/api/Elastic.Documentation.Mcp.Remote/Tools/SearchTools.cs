@@ -5,6 +5,7 @@
 using System.ComponentModel;
 using System.Text.Json;
 using Elastic.Documentation.Api.Core.Search;
+using Elastic.Documentation.Assembler.Mcp;
 using Elastic.Documentation.Mcp.Remote.Responses;
 using Microsoft.Extensions.Logging;
 using ModelContextProtocol.Server;
@@ -20,8 +21,8 @@ public class SearchTools(IFullSearchGateway fullSearchGateway, ILogger<SearchToo
 	/// <summary>
 	/// Performs semantic search across all Elastic documentation.
 	/// </summary>
-	[McpServerTool, Description(
-		"Searches all published Elastic documentation by meaning. " +
+	[McpServerTool, McpToolName("search_{resource}"), Description(
+		"Searches all published {docs} by meaning. " +
 		"Use when the user asks about Elastic product features, needs to find existing docs pages, " +
 		"verify published content, or research what documentation exists on a topic. " +
 		"Returns relevant documents with AI summaries, relevance scores, and navigation context.")]
@@ -84,8 +85,8 @@ public class SearchTools(IFullSearchGateway fullSearchGateway, ILogger<SearchToo
 	/// <summary>
 	/// Finds documents related to a given topic or document URL.
 	/// </summary>
-	[McpServerTool, Description(
-		"Finds Elastic documentation pages related to a given topic. " +
+	[McpServerTool, McpToolName("find_related_{resource}"), Description(
+		"Finds {docs} pages related to a given topic. " +
 		"Use when exploring what documentation exists around a subject, building context for writing, " +
 		"or discovering related content the user should be aware of.")]
 	public async Task<string> FindRelatedDocs(

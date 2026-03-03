@@ -17,13 +17,14 @@ public class McpBearerAuthMiddleware(RequestDelegate next, ILogger<McpBearerAuth
 {
 	private const string McpUserKey = "McpUser";
 	private const string ExpectedAlg = "RS256";
-	private static readonly JwtSecurityTokenHandler TokenHandler = new();
+	private static readonly JwtSecurityTokenHandler TokenHandler = new() { MapInboundClaims = false };
 
 	public async Task InvokeAsync(HttpContext context)
 	{
 		var env = SystemEnvironmentVariables.Instance;
 		if (!env.McpAuthEnabled || env.McpJwtPublicKey is null)
 		{
+			logger.LogDebug("MCP auth: skipped (enabled={Enabled}, hasKey={HasKey})", env.McpAuthEnabled, env.McpJwtPublicKey is not null);
 			await next(context);
 			return;
 		}
@@ -48,20 +49,24 @@ public class McpBearerAuthMiddleware(RequestDelegate next, ILogger<McpBearerAuth
 		var authHeader = context.Request.Headers.Authorization.FirstOrDefault();
 		if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
 		{
-			await WriteUnauthorizedAsync(context, mcpPrefix);
+			logger.LogWarning("MCP auth: no Bearer token in Authorization header for {Path}", pathValue);
+			await WriteUnauthorizedAsync(context, env);
 			return;
 		}
 
 		var token = authHeader["Bearer ".Length..].Trim();
 		if (string.IsNullOrEmpty(token))
 		{
-			await WriteUnauthorizedAsync(context, mcpPrefix);
+			logger.LogWarning("MCP auth: empty Bearer token for {Path}", pathValue);
+			await WriteUnauthorizedAsync(context, env);
 			return;
 		}
 
+		var tokenPrefix = token.Length > 20 ? token[..20] : token;
 		var (user, errorStatusCode) = ValidateToken(token, env, context);
 		if (user is not null)
 		{
+			logger.LogInformation("MCP auth: authenticated user {User} for {Path} (token={TokenPrefix}...)", user, pathValue, tokenPrefix);
 			context.Items[McpUserKey] = user;
 			await next(context);
 			return;
@@ -80,11 +85,11 @@ public class McpBearerAuthMiddleware(RequestDelegate next, ILogger<McpBearerAuth
 		await context.Response.WriteAsync(/*lang=json,strict*/ """{"error":"invalid_token"}""");
 	}
 
-	private static async Task WriteUnauthorizedAsync(HttpContext context, string mcpPrefix)
+	private static async Task WriteUnauthorizedAsync(HttpContext context, IEnvironmentVariables env)
 	{
-		var host = context.Request.Host.Value;
-		var scheme = context.Request.Scheme;
-		var resourceMetadata = $"{scheme}://{host}{mcpPrefix}/.well-known/oauth-protected-resource";
+		var resourceMetadata = env.McpOAuthIssuer is not null
+			? $"{env.McpOAuthIssuer}/.well-known/oauth-protected-resource"
+			: $"{context.Request.Scheme}://{context.Request.Host.Value}{env.McpPrefix}/.well-known/oauth-protected-resource";
 		context.Response.Headers.WWWAuthenticate = $"Bearer resource_metadata=\"{resourceMetadata}\"";
 		context.Response.StatusCode = 401;
 		context.Response.ContentType = "application/json";
@@ -124,10 +129,12 @@ public class McpBearerAuthMiddleware(RequestDelegate next, ILogger<McpBearerAuth
 			return (null, 401);
 		}
 
-		using var rsa = RSA.Create();
+		RSAParameters rsaParams;
 		try
 		{
+			using var rsa = RSA.Create();
 			rsa.ImportFromPem(env.McpJwtPublicKey);
+			rsaParams = rsa.ExportParameters(includePrivateParameters: false);
 		}
 		catch (CryptographicException)
 		{
@@ -140,13 +147,11 @@ public class McpBearerAuthMiddleware(RequestDelegate next, ILogger<McpBearerAuth
 			return (null, 401);
 		}
 
-		var host = context.Request.Host.Value;
-		var scheme = context.Request.Scheme;
-		var expectedAud = $"{scheme}://{host}{env.McpPrefix}";
+		var expectedAud = env.McpOAuthIssuer ?? $"{context.Request.Scheme}://{context.Request.Host.Value}{env.McpPrefix}";
 
 		var validationParams = new TokenValidationParameters
 		{
-			IssuerSigningKey = new RsaSecurityKey(rsa),
+			IssuerSigningKey = new RsaSecurityKey(rsaParams) { KeyId = env.McpJwtKeyId },
 			ValidateIssuerSigningKey = true,
 			ValidateIssuer = env.McpOAuthIssuer is not null,
 			ValidIssuer = env.McpOAuthIssuer,
@@ -189,18 +194,20 @@ public class McpBearerAuthMiddleware(RequestDelegate next, ILogger<McpBearerAuth
 			LogValidationFailure("expired");
 			return (null, 401);
 		}
-		catch (SecurityTokenInvalidSignatureException)
+		catch (SecurityTokenInvalidSignatureException ex)
 		{
-			LogValidationFailure("signature_invalid");
+			logger.LogWarning("MCP auth validation failed: signature_invalid (kid={Kid}, jti={Jti}, iss={Iss}, aud={Aud}, err={Err})",
+				jwt.Header.Kid, jwt.Payload.Jti, jwt.Issuer, jwt.Audiences?.FirstOrDefault(), ex.Message);
 			return (null, 401);
 		}
-		catch (SecurityTokenException)
+		catch (SecurityTokenException ex)
 		{
-			LogValidationFailure("validation_failed");
+			logger.LogWarning("MCP auth validation failed: {Type} (kid={Kid}, jti={Jti}, err={Err})",
+				ex.GetType().Name, jwt.Header.Kid, jwt.Payload.Jti, ex.Message);
 			return (null, 401);
 		}
 	}
 
 	private void LogValidationFailure(string reason) =>
-		logger.LogDebug("MCP auth validation failed: {Reason}", reason);
+		logger.LogWarning("MCP auth validation failed: {Reason}", reason);
 }

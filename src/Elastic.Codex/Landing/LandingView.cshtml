@@ -33,6 +33,12 @@
 				</a>
 			</div>
 		</div>
+
+		@{
+			var mcpUrl = LayoutModel.CanonicalBaseUrl != null
+				? $"{LayoutModel.CanonicalBaseUrl.AbsoluteUri.TrimEnd('/')}/mcp"
+				: "https://codex.elastic.dev/mcp";
+		}
 		
 		<div class="codex-hero-content max-w-4xl">
 			<h1 class="text-6xl md:text-7xl font-sans font-bold text-slate-900 tracking-tight mb-6">
@@ -44,11 +50,16 @@
 		</div>
 
 		<div class="w-full max-w-xl mt-10 mb-10 border border-grey-20 rounded-lg p-4 bg-white shadow-2xl">
-			<div class="flex items-center gap-3">
-				<div class="flex-1">
-					<navigation-search placeholder="Search"></navigation-search>
-				</div>
-				<div class="text-subdued text-xs flex items-center">
+			<div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+				<button type="button"
+						aria-label="Search"
+						onclick="document.dispatchEvent(new CustomEvent('modal-search:open'))"
+						class="flex-1 select-none cursor-pointer relative flex items-center w-full px-3 py-2 h-10 border border-grey-20 rounded-md bg-grey-10 text-sm text-subdued hover:border-grey-40 transition-colors">
+					@GetIconSvg("search", "w-4 h-4 mr-2 shrink-0")
+					<span class="flex-1 text-left">Search</span>
+					<span class="text-xs text-subdued">⌘K</span>
+				</button>
+				<div class="text-subdued text-xs flex items-center justify-center">
 					OR
 				</div>
 				<button type="button"
@@ -77,6 +88,17 @@
 				Explore the syntax
 			</a>
 		</div>
+
+		<a href="/r/codex-environments/how-to/internal-docs-mcp-server"
+		   class="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-blue-developer text-subdued font-mono text-sm leading-none mt-14 shadow-lg border border-grey-20 hover:border-grey-40 transition-colors"
+		   title="Connect AI assistants to search internal docs">
+			<span class="relative flex size-2">
+				<span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-40 opacity-75"></span>
+				<span class="relative inline-flex size-2 rounded-full bg-green-50"></span>
+			</span>
+			<span class="text-green-50">NEW:</span>
+			<span class="text-grey-20">@mcpUrl</span>
+		</a>
 	</div>
 
 	@{
@@ -84,17 +106,17 @@
 		var totalDocSets = Model.CodexNavigation?.DocumentationSetInfos?.Count ?? 0;
 		var totalPages = Model.CodexNavigation?.DocumentationSetInfos?.Sum(ds => ds.PageCount) ?? 0;
 	}
-	<div class="flex items-center justify-center gap-8 py-6 text-sm text-slate-500" style="position: relative; z-index: 1;">
+	<div class="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 py-6 text-sm text-slate-500" style="position: relative; z-index: 1;">
 		<div class="flex items-center gap-2">
 			@GetIconSvg("cluster", "w-4 h-4 fill-current")
 			<span><strong class="text-slate-700">@totalGroups</strong> groups</span>
 		</div>
-		<div class="w-px h-4 bg-slate-300"></div>
+		<div class="hidden sm:block w-px h-4 bg-slate-300"></div>
 		<div class="flex items-center gap-2">
 			@GetIconSvg("app_notebook", "w-4 h-4 fill-current")
 			<span><strong class="text-slate-700">@totalDocSets</strong> documentation sets</span>
 		</div>
-		<div class="w-px h-4 bg-slate-300"></div>
+		<div class="hidden sm:block w-px h-4 bg-slate-300"></div>
 		<div class="flex items-center gap-2">
 			@GetIconSvg("documents", "w-4 h-4 fill-current")
 			<span><strong class="text-slate-700">@totalPages.ToString("N0")</strong> pages</span>
