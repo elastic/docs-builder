@@ -27,13 +27,18 @@ B --> C[End]
 	public void HasMermaidLanguage() => Block!.Language.Should().Be("mermaid");
 
 	[Fact]
-	public void RendersPreMermaidTag() => Html.Should().Contain("<pre class=\"mermaid\">");
+	public void RendersMermaidContainer() => Html.Should().Contain("<div class=\"mermaid-container\">");
 
 	[Fact]
-	public void ContainsDiagramContent() => Html.Should().Contain("flowchart LR");
+	public void RendersInlineSvg() => Html.Should().Contain("<svg");
 
 	[Fact]
-	public void PreservesArrows() => Html.Should().Contain("--&gt;");
+	public void ContainsNodeLabels()
+	{
+		Html.Should().Contain("Start");
+		Html.Should().Contain("Process");
+		Html.Should().Contain("End");
+	}
 }
 
 public class MermaidSequenceTests(ITestOutputHelper output) : DirectiveTest(output,
@@ -54,10 +59,17 @@ sequenceDiagram
 	public void ParsesSequenceDiagram() => Block.Should().NotBeNull();
 
 	[Fact]
-	public void RendersPreMermaidTag() => Html.Should().Contain("<pre class=\"mermaid\">");
+	public void RendersMermaidContainer() => Html.Should().Contain("<div class=\"mermaid-container\">");
 
 	[Fact]
-	public void PreservesIndentation() => Html.Should().Contain("participant A as Alice");
+	public void RendersInlineSvg() => Html.Should().Contain("<svg");
+
+	[Fact]
+	public void ContainsParticipantLabels()
+	{
+		Html.Should().Contain("Alice");
+		Html.Should().Contain("Bob");
+	}
 }
 
 public class MermaidStateDiagramTests(ITestOutputHelper output) : DirectiveTest(output,
@@ -78,10 +90,18 @@ stateDiagram-v2
 	public void ParsesStateDiagram() => Block.Should().NotBeNull();
 
 	[Fact]
-	public void RendersPreMermaidTag() => Html.Should().Contain("<pre class=\"mermaid\">");
+	public void RendersMermaidContainer() => Html.Should().Contain("<div class=\"mermaid-container\">");
 
 	[Fact]
-	public void PreservesSpecialCharacters() => Html.Should().Contain("[*]");
+	public void RendersInlineSvg() => Html.Should().Contain("<svg");
+
+	[Fact]
+	public void ContainsStateLabels()
+	{
+		Html.Should().Contain("Idle");
+		Html.Should().Contain("Processing");
+		Html.Should().Contain("Complete");
+	}
 }
 
 public class MermaidClassDiagramTests(ITestOutputHelper output) : DirectiveTest(output,
@@ -101,10 +121,18 @@ classDiagram
 	public void ParsesClassDiagram() => Block.Should().NotBeNull();
 
 	[Fact]
-	public void RendersPreMermaidTag() => Html.Should().Contain("<pre class=\"mermaid\">");
+	public void RendersMermaidContainer() => Html.Should().Contain("<div class=\"mermaid-container\">");
 
 	[Fact]
-	public void PreservesInheritanceArrow() => Html.Should().Contain("&lt;|--");
+	public void RendersInlineSvg() => Html.Should().Contain("<svg");
+
+	[Fact]
+	public void ContainsClassLabels()
+	{
+		Html.Should().Contain("Animal");
+		Html.Should().Contain("Duck");
+		Html.Should().Contain("Fish");
+	}
 }
 
 public class MermaidErDiagramTests(ITestOutputHelper output) : DirectiveTest(output,
@@ -123,8 +151,16 @@ erDiagram
 	public void ParsesErDiagram() => Block.Should().NotBeNull();
 
 	[Fact]
-	public void RendersPreMermaidTag() => Html.Should().Contain("<pre class=\"mermaid\">");
+	public void RendersMermaidContainer() => Html.Should().Contain("<div class=\"mermaid-container\">");
 
 	[Fact]
-	public void PreservesErSyntax() => Html.Should().Contain("||--o{");
+	public void RendersInlineSvg() => Html.Should().Contain("<svg");
+
+	[Fact]
+	public void ContainsEntityLabels()
+	{
+		Html.Should().Contain("CUSTOMER");
+		Html.Should().Contain("ORDER");
+		Html.Should().Contain("LINE_ITEM");
+	}
 }
