@@ -73,7 +73,8 @@ public static class ChangelogInlineRenderer
 		// contains any private repositories - if so, hide links for this bundle
 		var hideLinks = ShouldHideLinksForRepo(bundle.Repo, privateRepositories);
 
-		return GenerateMarkdown(bundle.Version, titleSlug, bundle.Repo, entriesByType, subsections, hideLinks, typeFilter, publishBlocker);
+		var displayVersion = VersionOrDate.FormatDisplayVersion(bundle.Version);
+		return GenerateMarkdown(displayVersion, titleSlug, bundle.Repo, entriesByType, subsections, hideLinks, typeFilter, publishBlocker);
 	}
 
 	/// <summary>
