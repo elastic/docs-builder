@@ -21,6 +21,8 @@ You cannot mix the two modes. Passing any option-based flag together with a prof
 Profile-based commands discover the changelog configuration automatically (no `--config` flag): they look for `changelog.yml` in the current directory, then `docs/changelog.yml`.
 If neither file is found, the command returns an error with instructions to run `docs-builder changelog init` or to re-run from the folder where the file exists.
 
+Option-based commands ignore the `bundles.profiles` section of the changelog configuration file.
+
 ## Arguments
 
 These arguments apply to profile-based bundling:
@@ -56,10 +58,10 @@ The second argument (`[1]`) and optional third argument (`[2]`) accept the follo
 
 The following options are only valid in option-based mode (no profile argument).
 Using any of them with a profile returns an error.
+You must choose one method for determining what's in the bundle (`--all`, `--input-products`, `--prs`, `--issues`, `--release-version`, or `--report`).
 
 `--all`
 :   Include all changelogs from the directory.
-:   Only one filter option can be specified: `--all`, `--input-products`, `--prs`, or `--issues`.
 
 `--config <string?>`
 :   Optional: Path to the changelog.yml configuration file.
@@ -78,7 +80,6 @@ Using any of them with a profile returns an error.
 `--input-products <List<ProductInfo>?>`
 :   Filter by products in the format "product target lifecycle, ...".
 :   For more information about the valid product and lifecycle values, go to [Product format](/contribute/changelog.md#product-format).
-:   Only one filter option can be specified: `--all`, `--input-products`, `--prs`, or `--issues`.
 :   When specified, all three parts (product, target, lifecycle) are required but can be wildcards (`*`). Multiple comma-separated values are combined with OR: a changelog is included if it matches any of the specified product/target/lifecycle combinations. For example:
 
 - `"cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta"` — include changelogs for either cloud-serverless 2025-12-02 ga or cloud-serverless 2025-12-06 beta
@@ -89,8 +90,7 @@ Using any of them with a profile returns an error.
 
 `--issues <string[]?>`
 :   Filter by issue URLs (comma-separated), or a path to a newline-delimited file. Can be specified multiple times.
-:   Only one filter option can be specified: `--all`, `--input-products`, `--prs`, `--issues`, or `--report`.
-:   When specifying inline values, comma-separated issue numbers are allowed when `--owner` and `--repo` are also provided.
+:   Each occurrence can be either comma-separated issues ( `--issues "https://github.com/owner/repo/issues/123,456"`) or a file path (for example `--issues /path/to/file.txt`).
 :   When using a file, every line must be a fully-qualified GitHub issue URL such as `https://github.com/owner/repo/issues/123`. Bare numbers and short forms are not allowed in files.
 
 `--no-resolve`
@@ -110,19 +110,23 @@ Using any of them with a profile returns an error.
 :   Falls back to `bundle.owner` in `changelog.yml` when not specified.
 
 `--prs <string[]?>`
-:   Filter by pull request URLs (comma-separated), or a path to a newline-delimited file. Can be specified multiple times.
-:   Only one filter option can be specified: `--all`, `--input-products`, `--prs`, `--issues`, or `--report`.
-:   When specifying inline values, comma-separated PR numbers are allowed when `--owner` and `--repo` are also provided.
+:   Filter by pull request URLs (comma-separated) or a path to a newline-delimited file. Can be specified multiple times.
+:   Each occurrence can be either comma-separated PRs (for example `--prs "https://github.com/owner/repo/pull/123,6789"`) or a file path (for example `--prs /path/to/file.txt`).
 :   When using a file, every line must be a fully-qualified GitHub PR URL such as `https://github.com/owner/repo/pull/123`. Bare numbers and short forms are not allowed in files.
 
 `--report <string?>`
 :   Filter by pull requests extracted from a promotion report. Accepts a URL or a local file path.
-:   Only one filter option can be specified: `--all`, `--input-products`, `--prs`, `--issues`, or `--report`.
 :   The report can be an HTML page from Buildkite or any file containing GitHub PR URLs.
 
+`--release-version <string?>`
+:   Fetch the PR list from a GitHub release and use it as the bundle filter.
+:   Provide a release tag (for example, `"v9.2.0"`) or `"latest"` for the most recent release.
+:   Requires `--repo`.
+:   When `--output-products` is not specified, the product, target version, and lifecycle are inferred automatically from the release tag and repository name.
+:   Set `--owner` to override the default owner (`elastic`).
+
 `--repo <string?>`
-:   Optional: The GitHub repository name, required when pull requests or issues are specified as numbers.
-:   Also sets the `repo` field in each bundle product entry for correct PR/issue link generation.
+:   The GitHub repository name.
 :   Falls back to `bundle.repo` in `changelog.yml` when not specified; if that is also absent, the product ID is used.
 
 `--resolve`
@@ -320,3 +324,38 @@ docs-builder changelog bundle \
   --directory ./docs/changelog \
   --output ./docs/releases/bundle.yaml
 ```
+
+### Bundle by GitHub release [changelog-bundle-release-version]
+
+You can use `--release-version` to fetch pull request references directly from a GitHub release and use them as the bundle filter.
+This is equivalent to building a PR list file manually and passing it with `--prs`, but without any file management.
+
+```sh
+docs-builder changelog bundle \
+  --release-version v9.2.0 \
+  --repo elasticsearch
+```
+
+When `--output-products` is not provided, the product metadata is inferred automatically from the release tag:
+
+```sh
+# Infers: --output-products "elasticsearch 9.2.0 ga"
+docs-builder changelog bundle \
+  --release-version v9.2.0 \
+  --repo elasticsearch \
+  --output ./docs/releases/9.2.0.yaml
+```
+
+You can override the inferred product metadata by providing `--output-products` explicitly:
+
+```sh
+docs-builder changelog bundle \
+  --release-version v9.2.0 \
+  --repo elasticsearch \
+  --output-products "elasticsearch 9.2.0 ga, cloud-hosted 2025-10-31 ga" \
+  --output ./docs/releases/9.2.0.yaml
+```
+
+:::{note}
+`--release-version` requires a `GITHUB_TOKEN` or `GH_TOKEN` environment variable (or an active `gh` login) to fetch release details from the GitHub API.
+:::

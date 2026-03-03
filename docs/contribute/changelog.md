@@ -522,6 +522,7 @@ You can specify only one of the following filter options:
 - `--input-products`: Include changelogs for the specified products. Refer to [Filter by product](#changelog-bundle-product).
 - `--prs`: Include changelogs for the specified pull request URLs, or a path to a newline-delimited file. When using a file, every line must be a fully-qualified GitHub URL such as `https://github.com/owner/repo/pull/123`. Go to [Filter by pull requests](#changelog-bundle-pr).
 - `--issues`: Include changelogs for the specified issue URLs, or a path to a newline-delimited file. When using a file, every line must be a fully-qualified GitHub URL such as `https://github.com/owner/repo/issues/123`. Go to [Filter by issues](#changelog-bundle-issues).
+- `--release-version`: Bundle changelogs for all pull requests in a GitHub release. Refer to [Bundle by GitHub release](#changelog-bundle-release-version).
 - `--report`: Include changelogs whose pull requests appear in a promotion report. Accepts a URL or a local file path to an HTML report.
 
 By default, the output file contains only the changelog file names and checksums.
@@ -771,8 +772,23 @@ entries:
 When a changelog matches multiple `--input-products` filters, it appears only once in the bundle. This deduplication applies even when using `--all` or `--prs`.
 :::
 
-If you use GitHub releases with Release Drafter-style notes, you can also let the tool fetch and parse the PR list directly with `docs-builder changelog gh-release`.
-Refer to [Create changelogs from a GitHub release](#changelog-gh-release).
+### Filter by GitHub release [changelog-bundle-release-version]
+
+You can use the `--release-version` option to bundle changelogs for all pull requests in a GitHub release, without building a PR list file manually.
+
+```sh
+docs-builder changelog bundle \
+  --release-version v9.2.0 \
+  --repo elasticsearch \
+  --output ./docs/releases/9.2.0.yaml
+```
+
+The product metadata (`--output-products`) is inferred automatically from the release tag and repository name when not provided explicitly.
+For example, `v9.2.0` on `elasticsearch` infers `elasticsearch 9.2.0 ga`.
+
+:::{note}
+`--release-version` requires `--repo` and is mutually exclusive with `--all`, `--input-products`, `--prs`, and `--issues`.
+:::
 
 ### Hide features in bundles [changelog-bundle-hide-features]
 
