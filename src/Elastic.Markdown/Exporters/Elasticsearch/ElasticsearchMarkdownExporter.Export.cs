@@ -34,7 +34,8 @@ public partial class ElasticsearchMarkdownExporter
 			doc.SearchTitle ?? string.Empty,
 			doc.NavigationSection ?? string.Empty, doc.NavigationDepth.ToString("N0"),
 			doc.NavigationTableOfContents.ToString("N0"),
-			_fixedSynonymsHash
+			_fixedSynonymsHash,
+			string.Join(",", doc.Parents?.Select(p => $"{p.Url}:{p.Title}") ?? [])
 		);
 		doc.Hash = hash;
 		doc.LastUpdated = _batchIndexDate;
