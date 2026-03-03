@@ -155,7 +155,8 @@ public static partial class ReleaseNotesSerialization
 		ProductId = dto.Product ?? "",
 		Target = dto.Target,
 		Lifecycle = ParseLifecycle(dto.Lifecycle),
-		Repo = dto.Repo
+		Repo = dto.Repo,
+		Owner = dto.Owner
 	};
 
 	private static BundledEntry ToBundledEntry(BundledEntryDto dto) => new()
@@ -258,7 +259,8 @@ public static partial class ReleaseNotesSerialization
 		Product = product.ProductId,
 		Target = product.Target,
 		Lifecycle = LifecycleToString(product.Lifecycle),
-		Repo = product.Repo
+		Repo = product.Repo,
+		Owner = product.Owner
 	};
 
 	private static BundledEntryDto ToDto(BundledEntry entry) => new()

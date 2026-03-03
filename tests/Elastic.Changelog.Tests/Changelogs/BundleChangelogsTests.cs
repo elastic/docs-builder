@@ -2971,9 +2971,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 		outputFiles.Should().NotBeEmpty("Expected an output file to be created");
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current.CancellationToken);
 
-		// Only repo is persisted in the bundle products array; owner is used for PR URL normalization at render time
 		bundleContent.Should().Contain("repo: cloud", "Profile repo should be written to bundle product entries");
-		bundleContent.Should().NotContain("owner:", "owner is not stored in the bundle products array");
+		bundleContent.Should().Contain("owner: elastic", "Profile owner should be written to bundle product entries");
 	}
 
 	[Fact]

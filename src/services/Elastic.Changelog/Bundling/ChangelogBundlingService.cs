@@ -206,6 +206,11 @@ public partial class ChangelogBundlingService(
 
 			_logger.LogInformation("Found {Count} matching changelog entries", matchResult.Entries.Count);
 
+			// Refuse to write a bundle when any individual entry failed to parse; the result would be
+			// silently incomplete and could ship a broken release bundle.
+			if (collector.Errors > 0)
+				return false;
+
 			if (matchResult.Entries.Count == 0)
 			{
 				collector.EmitError(string.Empty, "No changelog entries matched the filter criteria");
@@ -226,6 +231,7 @@ public partial class ChangelogBundlingService(
 				input.OutputProducts,
 				input.Resolve ?? false,
 				input.Repo,
+				input.Owner,
 				featureHidingResult.FeatureIdsToHide
 			);
 

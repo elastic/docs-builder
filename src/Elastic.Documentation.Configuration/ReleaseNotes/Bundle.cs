@@ -35,6 +35,11 @@ public sealed record BundledProductDto
 	/// If not specified, falls back to Product ID.
 	/// </summary>
 	public string? Repo { get; set; }
+	/// <summary>
+	/// GitHub owner (organization or user) for generating PR/issue links.
+	/// If not specified, defaults to "elastic".
+	/// </summary>
+	public string? Owner { get; set; }
 }
 
 /// <summary>
