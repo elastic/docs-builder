@@ -71,7 +71,7 @@ internal sealed class DeployCommands(
 		var fs = new FileSystem();
 		var service = new DeployUpdateRedirectsService(logFactory, fs);
 		serviceInvoker.AddCommand(service, (environment, redirectsFile),
-			static async (s, collector, state, ctx) => await s.UpdateRedirects(collector, state.environment, state.redirectsFile, ctx)
+			static async (s, collector, state, ctx) => await s.UpdateRedirects(collector, state.environment, state.redirectsFile, ctx: ctx)
 		);
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
