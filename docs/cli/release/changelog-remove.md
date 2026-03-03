@@ -192,20 +192,14 @@ This mirrors the equivalent [`--release-version` option on `changelog bundle`](/
 
 ```sh
 docs-builder changelog remove \
-  --release-version v9.2.0 \
-  --repo elasticsearch
+  --release-version v9.2.0
 ```
 
 `--release-version` is mutually exclusive with `--all`, `--products`, `--prs`, and `--issues`.
 The repo and owner used to fetch the release follow the same precedence as `changelog bundle`:
+
 - Repo: `--repo` flag > `bundle.repo` in `changelog.yml` (one source is required)
 - Owner: `--owner` flag > `bundle.owner` in `changelog.yml` > `elastic`
-
-If `bundle.repo` is set in your `changelog.yml`, you can omit `--repo` entirely:
-
-```sh
-docs-builder changelog remove --release-version v9.2.0
-```
 
 Use `--dry-run` to preview which files would be deleted before committing:
 
