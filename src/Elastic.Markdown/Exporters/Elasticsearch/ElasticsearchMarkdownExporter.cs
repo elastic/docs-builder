@@ -147,10 +147,26 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 			ExportMaxRetries = _endpoint.MaxRetries
 		};
 		options.SerializerContext = SourceGenerationContext.Default;
+		options.ExportResponseCallback = (response, buffer) =>
+		{
+			var status = response.ApiCallDetails.HttpStatusCode;
+			var items = response.Items?.Count ?? 0;
+			var errors = response.Items?.Count(i => i.Status >= 400) ?? 0;
+			_logger.LogInformation(
+				"[{Label}] Bulk response: HTTP {Status}, {Items} items, {Errors} errors, buffer: {Buffer}",
+				label, status, items, errors, buffer.Count);
+			if (!response.ApiCallDetails.HasSuccessfulStatusCode)
+				_logger.LogWarning("[{Label}] {DebugInfo}", label, response.ApiCallDetails.DebugInformation);
+		};
 		options.ExportExceptionCallback = e =>
 		{
 			_logger.LogError(e, "[{Label}] Failed to export document", label);
 			_collector.EmitGlobalError($"Elasticsearch export ({label}): failed to export document", e);
+		};
+		options.ExportMaxRetriesCallback = failed =>
+		{
+			_logger.LogError("[{Label}] Max retries exceeded for {Count} items", label, failed.Count);
+			_collector.EmitGlobalError($"Elasticsearch export ({label}): max retries exceeded for {failed.Count} items");
 		};
 		options.ServerRejectionCallback = items =>
 		{
@@ -185,7 +201,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		var options = new AiEnrichmentOptions
 		{
 			CompletionTimeout = TimeSpan.FromMinutes(2),
-			CompletionMaxRetries = 2
+			CompletionMaxRetries = 2,
 		};
 		await foreach (var p in _aiEnrichment.EnrichAsync(context.SecondaryWriteAlias, options, ctx))
 		{
