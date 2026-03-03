@@ -13,7 +13,7 @@ docs-builder  changelog bundle [arguments...] [options...] [-h|--help]
 
 `changelog bundle` supports two mutually exclusive invocation modes:
 
-- **Profile-based**: All paths and filters come from the changelog configuration file. No other options are allowed. For example, `bundle <profile> <version-or-report>`.
+- **Profile-based**: All paths and filters come from the changelog configuration file. No other options are allowed. For example, `bundle <profile> <version> <report>`.
 - **Option-based**: You supply all filter and output options directly. For example, `bundle --all` (or `--input-products`, `--prs`, `--issues`).
 
 You cannot mix the two modes. Passing any option-based flag together with a profile returns an error.
@@ -49,7 +49,7 @@ The second argument (`[1]`) and optional third argument (`[2]`) accept the follo
 
 - **Version string** — Used for `{version}` substitution in profile patterns. For example, `9.2.0` or `2026-02`.
 - **Promotion report URL** — A URL to an HTML promotion report. PR URLs are extracted from it.
-- **Promotion report file** — A path to a local `.html` file containing a promotion report.
+- **Promotion report file** — A path to a downloaded `.html` file containing a promotion report.
 - **URL list file** — A path to a plain-text file containing one fully-qualified GitHub PR or issue URL per line. For example, `https://github.com/elastic/elasticsearch/pull/123`. The file must contain only PR URLs or only issue URLs, not a mix. Bare numbers and short forms such as `owner/repo#123` are not allowed.
 
 ## Options
@@ -190,45 +190,30 @@ Setting `bundle.repo` and `bundle.owner` in your configuration means you rarely 
 
 ```yaml
 bundle:
-  repo: cloud
+  repo: elasticsearch
   owner: elastic
 ```
 
-You can still override them per profile if a project has multiple products with different repos:
-
-```yaml
-bundle:
-  repo: cloud        # default for all profiles
-  owner: elastic
-  profiles:
-    elasticsearch-release:
-      products: "elasticsearch {version} {lifecycle}"
-      output: "elasticsearch-{version}.yaml"
-      repo: elasticsearch  # overrides bundle.repo for this profile only
-    serverless-release:
-      products: "cloud-serverless {version} *"
-      output: "serverless-{version}.yaml"
-      # inherits repo: cloud from bundle level
-```
-
+You can still override them per profile if a project has multiple products with different repos.
 The bundle output includes a `repo` field in each product:
 
 ```yaml
 products:
 - product: cloud-serverless
   target: 2025-12-02
-  repo: cloud
+  repo: elasticsearch
+  owner: elastic
 entries:
 - file:
     name: 1765495972-new-feature.yaml
     checksum: 6c3243f56279b1797b5dfff6c02ebf90b9658464
 ```
 
-When rendering, pull request and issue links use `https://github.com/elastic/cloud/...` instead of the product ID.
+When rendering, pull request and issue links use `https://github.com/elastic/elasticsearch/...` instead of the product ID.
 
 :::{note}
 If no `repo` is set at any level, the product ID is used as a fallback for link generation.
-This may result in broken links if the product ID doesn't match the GitHub repository name (for example, `cloud-serverless` vs `cloud`).
+This may result in broken links if the product ID doesn't match the GitHub repository name (for example, `cloud-serverless` product ID in the `elasticsearch` repo).
 :::
 
 ## Profile configuration fields [changelog-bundle-profile-config]
@@ -244,12 +229,12 @@ Bundle profiles in `changelog.yml` support the following fields:
 :   Example: `"elasticsearch-{version}.yaml"`
 
 `output_products`
-:   Optional. Overrides the products array written to the bundle output. Supports `{version}` and `{lifecycle}` placeholders. Useful when the bundle should advertise a different lifecycle than was used for filtering — for example, when filtering by `preview` changelogs to produce a `ga` bundle.
+:   Optional. Overrides the products array written to the bundle output. Supports `{version}` and `{lifecycle}` placeholders. Useful when you want the bundle to have a single clear `product` object (instead of inheriting all of product data from the changelogs) and complete control over the product, version, and lifecycle details that are shown in the documentation.
 :   Example: `"elasticsearch {version} ga"`
 
 `repo`
 :   Optional. The GitHub repository name written to each product entry in the bundle. Used by the `{changelog}` directive to generate correct PR/issue links. Only needed when the product ID doesn't match the GitHub repository name. Overrides `bundle.repo` when set.
-:   Example: `repo: cloud` (for the `cloud-serverless` product)
+:   Example: `repo: elasticsearch`.
 
 `owner`
 :   Optional. The GitHub owner written to each product entry in the bundle. Overrides `bundle.owner` when set.
@@ -264,22 +249,25 @@ The following changelog configuration example contains multiple profiles for fil
 
 ```yaml
 bundle:
-  repo: cloud <1>
+  repo: elasticsearch <1>
   owner: elastic
   profiles:
-    # Find changelogs with a specific lifecycle
-    elasticsearch-ga-only:
-      products: "elasticsearch {version} ga" <2>
-      output: "elasticsearch-{version}.yaml"
-      repo: elasticsearch <3>
-    
     # Find changelogs with any lifecycle and a partial date
     serverless-monthly:
-      products: "cloud-serverless {version}-* *" <4>
+      products: "cloud-serverless {version}-* *" <2>
       output: "serverless-{version}.yaml"
       output_products: "cloud-serverless {version}"
-      # repo and owner inherited from bundle level
-    
+
+    # Find changelogs that match a list of PRs
+    serverless-report: <3>
+      output: "serverless-{version}.yaml"
+      output_products: "cloud-serverless {version}"
+
+    # Find changelogs with a specific lifecycle
+    elasticsearch-ga-only:
+      products: "elasticsearch {version} ga" <4>
+      output: "elasticsearch-{version}.yaml"
+
     # Infer the lifecycle from the version
     elasticsearch-release:
       hide_features: <5>
@@ -288,13 +276,12 @@ bundle:
       products: "elasticsearch {version} {lifecycle}" <6>
       output: "elasticsearch-{version}.yaml"
       output_products: "elasticsearch {version}"
-      repo: elasticsearch <3>
 ```
 
 1. Bundle-level defaults that apply to all profiles. Individual profiles can override these.
-2. Bundles any changelogs that have `product: elasticsearch`, `lifecycle: ga`, and the version specified in the command. This is equivalent to the `--input-products` command option.
-3. Overrides the bundle-level `repo: cloud` for this profile because the `elasticsearch` product matches its GitHub repository name.
-4. Bundles any changelogs that have `product: cloud-serverless`, any lifecycle, and the date partially specified in the command. This is equivalent to the `--input-products` command option's support for wildcards.
+2. Bundles any changelogs that have `product: cloud-serverless`, any lifecycle, and the date partially specified in the command. This is equivalent to the `--input-products` command option's support for wildcards.
+3. If a profile is intended for use with a promotion report or a newline delimited file that lists the issues or pull requests, it does not need a `products` filter. If the `output` and `output_products` are omitted, the default path and file names are used. This example shows how you can use a `{version}` variable to customize the bundle's filename and product metadata.
+4. Bundles any changelogs that have `product: elasticsearch`, `lifecycle: ga`, and the version specified in the command. This is equivalent to the `--input-products` command option.
 5. Adds a `hide-features` array in the bundle. This is equivalent to the `--hide-features` command option.
 6. In this case, the lifecycle is inferred from the version.
 
@@ -309,18 +296,18 @@ For more information about acceptable product and lifecycle values, go to [Produ
 You can invoke those profiles with commands like this:
 
 ```sh
-# Bundle changelogs that match a specific version or date
-docs-builder changelog bundle elasticsearch-release 9.2.0
+# Bundle changelogs that match specific product metadata
+docs-builder changelog bundle elasticsearch-release 9.2.0 beta
 
 # Bundle changelogs with partial dates
 docs-builder changelog bundle serverless-monthly 2026-02
 
 # Bundle changelogs that match a list of PRs in a downloaded promotion report
 # (version used for {version} substitution; report used as PR filter)
-docs-builder changelog bundle serverless-monthly 2026-02 ./promotion-report.html
+docs-builder changelog bundle serverless-report 2026-02-13 ./promotion-report.html
 
 # Same using a URL list file instead of an HTML promotion report
-docs-builder changelog bundle serverless-monthly 2026-02 ./prs.txt
+docs-builder changelog bundle serverless-report 2026-02-13 ./prs.txt
 ```
 
 For option-based mode, use `--report` to filter by a promotion report:

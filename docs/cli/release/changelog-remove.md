@@ -141,8 +141,6 @@ When a `changelog.yml` configuration file defines `bundle.profiles`, you can use
 
 Profile-based commands discover the changelog configuration automatically (no `--config` flag): they look for `changelog.yml` in the current directory, then `docs/changelog.yml`. If neither file is found, the command returns an error with instructions to run `docs-builder changelog init` or to re-run from the folder where the file exists.
 
-Only the `products` field from a profile is used for removal. The `output`, `output_products`, `repo`, `owner`, and `hide_features` fields are bundle-specific and are ignored.
-
 For example, if your configuration file defines:
 
 ```yaml
@@ -161,28 +159,22 @@ docs-builder changelog remove elasticsearch-release 9.2.0 --dry-run
 
 This removes changelogs for `elasticsearch 9.2.0 ga` — the same set that `docs-builder changelog bundle elasticsearch-release 9.2.0` would include.
 
-You can also pass a promotion report URL or file path as the second argument, in which case the command removes changelogs whose PR URLs appear in the report:
+:::{note}
+The `output_products`, `repo`, `owner`, and `hide_features` fields are not relevant to changelog removal and are ignored.
+:::
+
+You can also pass a promotion report URL or file path, in which case the command removes changelogs that have `prs` that match the report.
+The following commands perform the same task with and without a profile:
 
 ```sh
-docs-builder changelog remove elasticsearch-release https://buildkite.../promotion-report.html
-```
+docs-builder changelog remove serverless-report ./promotion-report.html
 
-When using a profile with `{version}` in the `output` or `output_products` pattern, pass the version as the second argument and the report as the third:
-
-```sh
-docs-builder changelog remove serverless-release 2026-02 ./promotion-report.html
-```
-
-Or with a URL list file:
-
-```sh
-docs-builder changelog remove serverless-release 2026-02 ./prs.txt
-```
-
-For option-based removal with a promotion report:
-
-```sh
 docs-builder changelog remove \
-  --report https://buildkite.../promotion-report.html \
-  --directory ./docs/changelog
+  --report ./promotion-report.html 
+```
+
+Alternatively, use a newline delimited text file that lists pull request or issue URLs:
+
+```sh
+docs-builder changelog remove serverless-report ./prs.txt
 ```
