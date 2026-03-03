@@ -4,7 +4,7 @@ Remove changelog YAML files from a directory.
 
 You can use either profile-based removal or raw filter flags:
 
-- **Profile-based**: `docs-builder changelog remove <profile> <version|promotion-report>` — uses the same `bundle.profiles` configuration as [`changelog bundle`](/cli/release/changelog-bundle.md) to determine which changelogs to remove.
+- **Profile-based**: `docs-builder changelog remove <profile> <version|promotion-report>` — uses the same `bundle.profiles` configuration as [`changelog bundle`](/cli/release/changelog-bundle.md) to determine which changelogs to remove, including profiles with `source: github_release`.
 - **Option-based**: `docs-builder changelog remove --products "..." ` (or `--prs`, `--issues`, `--all`) — specify the filter directly.
 
 These modes are mutually exclusive. You can't combine a profile argument with option-based flags.
@@ -160,7 +160,8 @@ docs-builder changelog remove elasticsearch-release 9.2.0 --dry-run
 This removes changelogs for `elasticsearch 9.2.0 ga` — the same set that `docs-builder changelog bundle elasticsearch-release 9.2.0` would include.
 
 :::{note}
-The `output_products`, `repo`, `owner`, and `hide_features` fields are not relevant to changelog removal and are ignored.
+The `output`, `output_products`, and `hide_features` profile fields are not relevant to changelog removal and are ignored.
+The `source`, `repo`, and `owner` fields are used: `source: github_release` changes how the PR list is obtained, and `repo`/`owner` identify the GitHub repository to fetch the release from.
 :::
 
 You can also pass a promotion report URL or file path, in which case the command removes changelogs that have `prs` that match the report.
@@ -178,3 +179,43 @@ Alternatively, use a newline delimited text file that lists pull request or issu
 ```sh
 docs-builder changelog remove serverless-report ./prs.txt
 ```
+
+### Remove using a GitHub release profile [changelog-remove-github-release-profile]
+
+Profiles with `source: github_release` work identically with `changelog remove`. The command fetches the PR list from the GitHub release identified by the version argument and removes any changelogs whose `prs` field matches.
+
+Given a profile like this:
+
+```yaml
+bundle:
+  profiles:
+    elasticsearch-gh-release:
+      source: github_release
+      repo: elasticsearch
+      output: "elasticsearch-{version}.yaml"
+```
+
+You can remove the matching changelogs with:
+
+```sh
+docs-builder changelog remove elasticsearch-gh-release 9.2.0
+```
+
+Use `--dry-run` to preview the files that would be deleted before committing:
+
+```sh
+docs-builder changelog remove elasticsearch-gh-release 9.2.0 --dry-run
+```
+
+Pass `latest` to target the most recent release:
+
+```sh
+docs-builder changelog remove elasticsearch-gh-release latest --dry-run
+```
+
+:::{note}
+`source: github_release` profiles require a `GITHUB_TOKEN` or `GH_TOKEN` environment variable (or an active `gh` login) to fetch release details from the GitHub API.
+The `repo` and `owner` used to identify the release follow the same precedence as bundling: profile-level `repo`/`owner` override `bundle.repo`/`bundle.owner`, which in turn override the default owner `elastic`.
+:::
+
+For the full list of profile configuration fields, go to [Profile configuration fields](/cli/release/changelog-bundle.md#changelog-bundle-profile-config).
