@@ -807,8 +807,9 @@ docs-builder changelog bundle \
 The product metadata (`--output-products`) is inferred automatically from the release tag and repository name when not provided explicitly.
 For example, `v9.2.0` on `elasticsearch` infers `elasticsearch 9.2.0 ga`.
 
-`--release-version` requires `--repo` and is mutually exclusive with `--all`, `--input-products`, `--prs`, and `--issues`.
-The owner used to fetch the release follows the precedence: `--owner` flag > `bundle.owner` in `changelog.yml` > `elastic`.
+`--release-version` is mutually exclusive with `--all`, `--input-products`, `--prs`, and `--issues`.
+Repo resolved as: `--repo` flag > `bundle.repo` in `changelog.yml` (one source required).
+Owner resolved as: `--owner` flag > `bundle.owner` in `changelog.yml` > `elastic`.
 
 ### Hide features in bundles [changelog-bundle-hide-features]
 
@@ -1097,6 +1098,30 @@ When using a file for `--prs` or `--issues`, every line must be a fully-qualifie
 
 ```sh
 docs-builder changelog remove --products "elasticsearch 9.3.0 *" --dry-run
+```
+
+#### Remove by GitHub release [changelog-remove-release-version]
+
+You can use the `--release-version` option to remove changelogs for all pull requests in a GitHub release.
+This is the raw-mode counterpart to [Bundle by GitHub release](#changelog-bundle-release-version), and is useful when you want to clean up after bundling with `--release-version`.
+
+```sh
+docs-builder changelog remove \
+  --repo elasticsearch \
+  --release-version v9.2.0 \
+  --dry-run
+```
+
+`--release-version` is mutually exclusive with `--all`, `--products`, `--prs`, and `--issues`.
+Pass `--dry-run` to preview the files that would be deleted before committing.
+
+Repo resolved as: `--repo` flag > `bundle.repo` in `changelog.yml` (one source required).
+Owner resolved as: `--owner` flag > `bundle.owner` in `changelog.yml` > `elastic`.
+
+If `bundle.repo` is set in your `changelog.yml`, you can omit `--repo` entirely:
+
+```sh
+docs-builder changelog remove --release-version v9.2.0
 ```
 
 For full option details, go to [](/cli/release/changelog-remove.md).

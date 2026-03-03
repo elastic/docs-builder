@@ -101,12 +101,13 @@ For command-option-based removal, only one filter option can be specified: `--al
 `--release-version <string?>`
 :   Fetch the PR list from a GitHub release and use it as the removal filter.
 :   Provide a release tag (for example, `"v9.2.0"`) or `"latest"` for the most recent release.
-:   Requires `--repo`. Mutually exclusive with `--all`, `--products`, `--prs`, and `--issues`.
-:   Owner is resolved as: `--owner` flag > `bundle.owner` in `changelog.yml` > `elastic`.
+:   Mutually exclusive with `--all`, `--products`, `--prs`, and `--issues`.
+:   Repo resolved as: `--repo` flag > `bundle.repo` in `changelog.yml`. Owner resolved as: `--owner` flag > `bundle.owner` in `changelog.yml` > `elastic`.
 :   Requires a `GITHUB_TOKEN` or `GH_TOKEN` environment variable (or an active `gh` login).
 
 `--repo <string?>`
 :   The GitHub repository name, which is required when pull requests or issues are specified as numbers or when using `--release-version`.
+:   Precedence: `--repo` flag > `bundle.repo` in `changelog.yml`.
 :   Cannot be comined with a profile argument.
 
 `--report <string?>`
@@ -186,12 +187,24 @@ docs-builder changelog remove serverless-report ./prs.txt
 
 ## Remove by GitHub release [changelog-remove-release-version]
 
-You can use `--release-version` to fetch pull request references directly from a GitHub release and use them as the removal filter. This mirrors the equivalent [`--release-version` option on `changelog bundle`](/cli/release/changelog-bundle.md#changelog-bundle-release-version) and is useful when cleaning up after a release-based bundle.
+You can use `--release-version` to fetch pull request references directly from a GitHub release and use them as the removal filter.
+This mirrors the equivalent [`--release-version` option on `changelog bundle`](/cli/release/changelog-bundle.md#changelog-bundle-release-version) and is useful when cleaning up after a release-based bundle.
 
 ```sh
 docs-builder changelog remove \
   --release-version v9.2.0 \
   --repo elasticsearch
+```
+
+`--release-version` is mutually exclusive with `--all`, `--products`, `--prs`, and `--issues`.
+The repo and owner used to fetch the release follow the same precedence as `changelog bundle`:
+- Repo: `--repo` flag > `bundle.repo` in `changelog.yml` (one source is required)
+- Owner: `--owner` flag > `bundle.owner` in `changelog.yml` > `elastic`
+
+If `bundle.repo` is set in your `changelog.yml`, you can omit `--repo` entirely:
+
+```sh
+docs-builder changelog remove --release-version v9.2.0
 ```
 
 Use `--dry-run` to preview which files would be deleted before committing:
@@ -208,7 +221,6 @@ Pass `latest` to target the most recent release:
 ```sh
 docs-builder changelog remove \
   --release-version latest \
-  --repo elasticsearch \
   --dry-run
 ```
 
