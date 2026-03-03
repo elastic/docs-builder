@@ -118,6 +118,10 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 			OnPostComplete = _aiEnrichment is not null
 				? async (ctx, _, ct) => await PostCompleteAsync(ctx, ct)
 				: null,
+			OnRolloverDecision = info =>
+				_logger.LogInformation(
+					"[{Label}] rollover={RolledOver}, localHash={LocalHash}, remoteHash={RemoteHash}",
+					info.Label, info.RolledOver, info.LocalHash, info.RemoteHash),
 			OnReindexProgress = (label, p) =>
 				_logger.LogInformation(
 					"[{Label}] total={Total} created={Created} updated={Updated} deleted={Deleted} noops={Noops} completed={IsCompleted}",
@@ -184,8 +188,10 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	/// <inheritdoc />
 	public async ValueTask StartAsync(Cancel ctx = default)
 	{
-		_ = await _orchestrator.StartAsync(BootstrapMethod.Failure, ctx);
-		_logger.LogInformation("Orchestrator started with {Strategy} strategy", _orchestrator.Strategy);
+		var orchestratorContext = await _orchestrator.StartAsync(BootstrapMethod.Failure, ctx);
+		_logger.LogInformation(
+			"Orchestrator started — strategy: {Strategy}, primary: {PrimaryAlias}, secondary: {SecondaryAlias}",
+			orchestratorContext.Strategy, orchestratorContext.PrimaryWriteAlias, orchestratorContext.SecondaryWriteAlias);
 	}
 
 	/// <inheritdoc />

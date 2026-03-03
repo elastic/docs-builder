@@ -38,6 +38,7 @@ public class LexicalConfig : IConfigureElasticsearch<DocumentationDocument>
 			.StrippedBody(f => f
 				.Analyzer("synonyms_fixed_analyzer")
 				.SearchAnalyzer("synonyms_analyzer")
+				.TermVector("with_positions_offsets")
 			);
 
 	internal static MappingsBuilder<DocumentationDocument> ConfigureCommonMappings(MappingsBuilder<DocumentationDocument> m) => m
@@ -47,7 +48,8 @@ public class LexicalConfig : IConfigureElasticsearch<DocumentationDocument>
 			.SearchAnalyzer("synonyms_analyzer")
 			.MultiField("completion", mf => mf.SearchAsYouType()
 				.Analyzer("synonyms_fixed_analyzer")
-				.SearchAnalyzer("synonyms_analyzer")))
+				.SearchAnalyzer("synonyms_analyzer")
+				.IndexOptions("offsets")))
 		.Title(f => f
 			.SearchAnalyzer("synonyms_analyzer")
 			.MultiField("keyword", mf => mf.Keyword().Normalizer("keyword_normalizer"))
@@ -61,11 +63,17 @@ public class LexicalConfig : IConfigureElasticsearch<DocumentationDocument>
 		.Headings(f => f
 			.Analyzer("synonyms_fixed_analyzer")
 			.SearchAnalyzer("synonyms_analyzer"))
-		// JsonIgnore fields — [Text]/[Keyword] attributes handle the type,
-		// AddField only needed when custom analyzers are required
+		// AI fields — explicit base type needed so dot-path sub-fields merge as multi-fields, not object properties
 		.AddField("ai_rag_optimized_summary", f => f.Text()
 			.Analyzer("synonyms_fixed_analyzer")
 			.SearchAnalyzer("synonyms_analyzer"))
+		.AddField("ai_questions", f => f.Text())
+		.AddField("ai_use_cases", f => f.Text())
+		// Object sub-type fields — source generator doesn't traverse [Object] sub-types
+		.AddField("product.id", f => f.Keyword().Normalizer("keyword_normalizer"))
+		.AddField("product.repository", f => f.Keyword().Normalizer("keyword_normalizer"))
+		.AddField("related_products.id", f => f.Keyword().Normalizer("keyword_normalizer"))
+		.AddField("related_products.repository", f => f.Keyword().Normalizer("keyword_normalizer"))
 		// Keyword fields with multi-fields
 		.Url(f => f
 			.MultiField("match", mf => mf.Text())
@@ -101,6 +109,7 @@ public class SemanticConfig : IConfigureElasticsearch<DocumentationDocument>
 			.StrippedBody(s => s
 				.Analyzer("synonyms_fixed_analyzer")
 				.SearchAnalyzer("synonyms_analyzer")
+				.TermVector("with_positions_offsets")
 			)
 			// ELSER sparse embeddings
 			.AddField("title.semantic_text", f => f.SemanticText().InferenceId(ElserInferenceId))
