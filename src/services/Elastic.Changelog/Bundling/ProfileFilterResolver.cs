@@ -4,8 +4,10 @@
 
 using System.IO.Abstractions;
 using System.Text.RegularExpressions;
+using Elastic.Changelog.GitHub;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.ReleaseNotes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -60,6 +62,9 @@ public static partial class ProfileFilterResolver
 	/// version string for <c>{version}</c> substitution and this value is used as the PR/issue filter
 	/// source (promotion report or URL list file).
 	/// </param>
+	/// <param name="releaseService">
+	/// Optional GitHub release service. Required when the profile's <c>source</c> is <c>github_release</c>.
+	/// </param>
 	public static async Task<ProfileFilterResult?> ResolveAsync(
 		IDiagnosticsCollector collector,
 		string profileName,
@@ -68,7 +73,8 @@ public static partial class ProfileFilterResolver
 		IFileSystem fileSystem,
 		ILogger? logger,
 		Cancel ctx,
-		string? profileReport = null)
+		string? profileReport = null,
+		IGitHubReleaseService? releaseService = null)
 	{
 		if (config?.Bundle?.Profiles == null || !config.Bundle.Profiles.TryGetValue(profileName, out var profile))
 		{
@@ -81,6 +87,10 @@ public static partial class ProfileFilterResolver
 			collector.EmitError(string.Empty, $"Profile '{profileName}' requires a version number or promotion report URL as the second argument");
 			return null;
 		}
+
+		// Handle github_release source before the generic argument-type detection
+		if (string.Equals(profile.Source, "github_release", StringComparison.OrdinalIgnoreCase))
+			return await ResolveFromGitHubReleaseAsync(collector, profileName, profileArgument, profileReport, profile, config, releaseService, logger, ctx);
 
 		// When a separate report argument is provided, profileArgument is always the version
 		if (profileReport != null)
@@ -331,5 +341,95 @@ public static partial class ProfileFilterResolver
 				Lifecycle = lifecycle == "*" ? "*" : lifecycle
 			}
 		];
+	}
+
+	/// <summary>
+	/// Handles profiles with <c>source: github_release</c>. Fetches PR references directly
+	/// from the GitHub release identified by <paramref name="profileArgument"/> (version tag or
+	/// <c>"latest"</c>) and returns them as the PR filter.
+	/// </summary>
+	private static async Task<ProfileFilterResult?> ResolveFromGitHubReleaseAsync(
+		IDiagnosticsCollector collector,
+		string profileName,
+		string profileArgument,
+		string? profileReport,
+		BundleProfile profile,
+		ChangelogConfiguration? config,
+		IGitHubReleaseService? releaseService,
+		ILogger? logger,
+		Cancel ctx)
+	{
+		if (!string.IsNullOrWhiteSpace(profile.Products))
+		{
+			collector.EmitError(
+				string.Empty,
+				$"Profile '{profileName}': 'source: github_release' cannot be combined with a 'products' filter. " +
+				"Remove the 'products' field or change the source."
+			);
+			return null;
+		}
+
+		if (!string.IsNullOrWhiteSpace(profileReport))
+		{
+			collector.EmitError(
+				string.Empty,
+				$"Profile '{profileName}': 'source: github_release' cannot be combined with a promotion report argument. " +
+				"The PR list is sourced automatically from the GitHub release."
+			);
+			return null;
+		}
+
+		if (releaseService == null)
+		{
+			collector.EmitError(string.Empty, $"Profile '{profileName}': a GitHub release service is required for 'source: github_release'.");
+			return null;
+		}
+
+		// Resolve repo and owner: profile-level overrides bundle-level defaults
+		var repo = profile.Repo ?? config?.Bundle?.Repo;
+		var owner = profile.Owner ?? config?.Bundle?.Owner ?? "elastic";
+
+		if (string.IsNullOrWhiteSpace(repo))
+		{
+			collector.EmitError(
+				string.Empty,
+				$"Profile '{profileName}': 'source: github_release' requires a GitHub repository name. " +
+				"Set 'repo' on the profile or on the top-level 'bundle' configuration."
+			);
+			return null;
+		}
+
+		logger?.LogInformation("Fetching GitHub release {Version} from {Owner}/{Repo}", profileArgument, owner, repo);
+
+		var release = await releaseService.FetchReleaseAsync(owner, repo, profileArgument, ctx);
+		if (release == null)
+		{
+			collector.EmitError(
+				string.Empty,
+				$"Profile '{profileName}': failed to fetch release '{profileArgument}' from {owner}/{repo}. " +
+				"Ensure the repository exists and the version tag is valid."
+			);
+			return null;
+		}
+
+		logger?.LogInformation("Fetched release {Tag} from {Owner}/{Repo}", release.TagName, owner, repo);
+
+		var parsed = ReleaseNoteParser.Parse(release.Body);
+		logger?.LogInformation("Detected release note format: {Format}, found {Count} PR references", parsed.Format, parsed.PrReferences.Count);
+
+		if (parsed.PrReferences.Count == 0)
+		{
+			collector.EmitWarning(string.Empty, $"Profile '{profileName}': no PR references found in release '{release.TagName}'. The bundle will be empty.");
+			return null;
+		}
+
+		var prUrls = parsed.PrReferences
+			.Select(pr => $"https://github.com/{owner}/{repo}/pull/{pr.PrNumber}")
+			.ToArray();
+
+		var version = ChangelogTextUtilities.ExtractBaseVersion(release.TagName);
+		logger?.LogInformation("Resolved {Count} PR URLs from release {Tag} (version: {Version})", prUrls.Length, release.TagName, version);
+
+		return new ProfileFilterResult { Prs = prUrls, Version = version };
 	}
 }
