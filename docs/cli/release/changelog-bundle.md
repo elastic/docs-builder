@@ -125,6 +125,13 @@ You must choose one method for determining what's in the bundle (`--all`, `--inp
 :   When `--output-products` is not specified, the product, target version, and lifecycle are inferred automatically from the release tag and repository name.
 :   Set `--owner` to override the default owner (`elastic`).
 
+`--release-version <string?>`
+:   Fetch the PR list from a GitHub release and use it as the bundle filter.
+:   Provide a release tag (for example, `"v9.2.0"`) or `"latest"` for the most recent release.
+:   Requires `--repo`. Mutually exclusive with `--all`, `--input-products`, `--prs`, and `--issues`.
+:   When `--output-products` is not specified, the product, target version, and lifecycle are inferred automatically from the release tag and repository name.
+:   Set `--owner` to override the default owner (`elastic`).
+
 `--repo <string?>`
 :   The GitHub repository name.
 :   Falls back to `bundle.repo` in `changelog.yml` when not specified; if that is also absent, the product ID is used.

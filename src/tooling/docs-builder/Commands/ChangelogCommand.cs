@@ -465,9 +465,9 @@ internal sealed partial class ChangelogCommand(
 	/// <param name="prs">Filter by pull request URLs (comma-separated), or a path to a newline-delimited file containing fully-qualified GitHub PR URLs. Can be specified multiple times.</param>
 	/// <param name="repo">GitHub repository name (required when PRs or issues are specified as numbers or when using --release-version). Falls back to bundle.repo in changelog.yml when not specified. If that value is also absent, the product ID is used.</param>
 	/// <param name="report">A URL or file path to a promotion report. Extracts PR URLs and uses them as the filter.</param>
+	/// <param name="releaseVersion">GitHub release tag to use as a filter source (for example, "v9.2.0" or "latest"). When specified, fetches the release, parses PR references from the release notes, and uses those PRs as the filter — equivalent to passing the PR list via --prs. When --output-products is not specified, it is inferred from the release tag and repository name.</param>
 	/// <param name="resolve">Optional: Copy the contents of each changelog file into the entries array. Uses config bundle.resolve or defaults to false.</param>
 	/// <param name="noResolve">Optional: Explicitly turn off resolve (overrides config).</param>
-	/// <param name="releaseVersion">A GitHub release tag to use as a filter source (for example, "v9.2.0" or "latest"). When specified, the command fetches the release, parses PR references from the release notes, and uses those PRs as the filter — equivalent to passing the PR list via --prs. When --output-products is not specified, it is inferred from the release tag and repository name.</param>
 	/// <param name="ctx"></param>
 	[Command("bundle")]
 	public async Task<int> Bundle(
@@ -1186,7 +1186,5 @@ internal sealed partial class ChangelogCommand(
 		return Path.GetFullPath(trimmedPath);
 	}
 
-	[GeneratedRegex(@"^( *directory:\s*).+$", RegexOptions.Multiline)]
-	private static partial Regex MyRegex();
 }
 
