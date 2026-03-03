@@ -33,6 +33,12 @@
 				</a>
 			</div>
 		</div>
+
+		@{
+			var mcpUrl = LayoutModel.CanonicalBaseUrl != null
+				? $"{LayoutModel.CanonicalBaseUrl.AbsoluteUri.TrimEnd('/')}/mcp"
+				: "https://codex.elastic.dev/mcp";
+		}
 		
 		<div class="codex-hero-content max-w-4xl">
 			<h1 class="text-6xl md:text-7xl font-sans font-bold text-slate-900 tracking-tight mb-6">
@@ -82,6 +88,17 @@
 				Explore the syntax
 			</a>
 		</div>
+
+		<a href="/r/codex-environments/how-to/internal-docs-mcp-server"
+		   class="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-blue-developer text-subdued font-mono text-sm leading-none mt-14 shadow-lg border border-grey-20 hover:border-grey-40 transition-colors"
+		   title="Connect AI assistants to search internal docs">
+			<span class="relative flex size-2">
+				<span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-40 opacity-75"></span>
+				<span class="relative inline-flex size-2 rounded-full bg-green-50"></span>
+			</span>
+			<span class="text-green-50">NEW:</span>
+			<span class="text-grey-20">@mcpUrl</span>
+		</a>
 	</div>
 
 	@{
