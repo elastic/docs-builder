@@ -184,7 +184,7 @@ bundle:
   # The 'output', 'output_products', 'repo', 'owner', and 'hide_features' fields are
   # bundle-specific and are ignored for removal.
   profiles:
-    # Example: Elasticsearch release profile
+    # Example: Elasticsearch release profile (filter by changelogs already in the input directory)
     # elasticsearch-release:
     #   # Filter: which input changelogs to include ({version} and {lifecycle} are substituted at runtime)
     #   products: "elasticsearch {version} {lifecycle}"
@@ -198,6 +198,17 @@ bundle:
     #   # repo: elasticsearch
     #   # Optional: profile-specific GitHub owner (overrides bundle.owner if set).
     #   # owner: elastic
+
+    # Example: GitHub release profile (fetches PR list directly from a GitHub release)
+    # Use when you want to bundle changelogs based on a published GitHub release rather than
+    # on pre-tagged changelog files. The PR list is parsed from the release notes automatically.
+    # Invoke with: docs-builder changelog bundle elasticsearch-gh-release 9.2.0
+    # elasticsearch-gh-release:
+    #   source: github_release       # Fetch PR list from GitHub release instead of filtering input changelogs
+    #   repo: elasticsearch          # GitHub repository (required; overrides bundle.repo if set)
+    #   owner: elastic               # GitHub owner (optional; defaults to bundle.owner or "elastic")
+    #   output: "elasticsearch-{version}.yaml"
+    #   output_products: "elasticsearch {version} {lifecycle}"
 
     # Example: Serverless release profile (product ID "cloud-serverless" differs from repo "cloud")
     # serverless-release:

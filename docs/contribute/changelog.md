@@ -515,10 +515,11 @@ Profile configuration fields in `bundle.profiles`:
 
 | Field | Description |
 |---|---|
-| `products` | Product filter pattern with `{version}` and `{lifecycle}` placeholders. Used to match changelog files. |
+| `source` | Optional. Set to `github_release` to fetch the PR list from a GitHub release instead of filtering pre-existing changelog files. Mutually exclusive with `products`. Requires `repo` at the profile or `bundle` level. |
+| `products` | Product filter pattern with `{version}` and `{lifecycle}` placeholders. Used to match changelog files. Required unless `source: github_release` is set. |
 | `output` | Output file path pattern with `{version}` and `{lifecycle}` placeholders. |
 | `output_products` | Optional override for the products array written to the bundle. Useful when the bundle should have a single product ID though it's filtered from many or have a different lifecycle or version than the filter. |
-| `repo` | Optional. Overrides `bundle.repo` for this profile only. |
+| `repo` | Optional. Overrides `bundle.repo` for this profile only. Required when `source: github_release` is used and no `bundle.repo` is set. |
 | `owner` | Optional. Overrides `bundle.owner` for this profile only. |
 | `hide_features` | List of feature IDs to embed in the bundle as hidden. |
 
@@ -543,6 +544,34 @@ bundle:
       output_products: "cloud-serverless {version}"
       # inherits repo: elasticsearch and owner: elastic from bundle level
 ```
+
+#### Bundle changelogs from a GitHub release [changelog-bundle-profile-github-release]
+
+Set `source: github_release` on a profile to make `changelog bundle` fetch the PR list directly from a published GitHub release, rather than filtering pre-existing changelog files by product metadata.
+
+This is equivalent to running `changelog bundle --release-version <version>`, but fully configured in `changelog.yml` so you don't have to remember command-line flags.
+
+```yaml
+bundle:
+  owner: elastic
+  profiles:
+    elasticsearch-gh-release:
+      source: github_release
+      repo: elasticsearch      # required: the GitHub repository to fetch the release from
+      output: "elasticsearch-{version}.yaml"
+      output_products: "elasticsearch {version} {lifecycle}"
+```
+
+Invoke the profile with a version tag or `latest`:
+
+```sh
+docs-builder changelog bundle elasticsearch-gh-release 9.2.0
+docs-builder changelog bundle elasticsearch-gh-release latest
+```
+
+The `{version}` placeholder in `output` and `output_products` is substituted with the clean version extracted from the release tag (for example, `v9.2.0` becomes `9.2.0`). The `{lifecycle}` placeholder is inferred from the version using the same rules as other profile types.
+
+Note: `source: github_release` is mutually exclusive with `products`. A promotion report (third positional argument) is also not allowed when this source is set.
 
 ### Filter by product [changelog-bundle-product]
 

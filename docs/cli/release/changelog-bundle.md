@@ -220,8 +220,12 @@ This may result in broken links if the product ID doesn't match the GitHub repos
 
 Bundle profiles in `changelog.yml` support the following fields:
 
+`source`
+:   Optional. When set to `github_release`, the PR list is fetched automatically from the GitHub release identified by the version argument. Requires `repo` to be set at the profile or `bundle` level. Mutually exclusive with `products`.
+:   Example: `source: github_release`
+
 `products`
-:   Required. The product filter pattern for input changelogs. Supports `{version}` and `{lifecycle}` placeholders that are substituted at runtime.
+:   Required unless `source: github_release` is set. The product filter pattern for input changelogs. Supports `{version}` and `{lifecycle}` placeholders that are substituted at runtime.
 :   Example: `"elasticsearch {version} {lifecycle}"`
 
 `output`
@@ -233,7 +237,7 @@ Bundle profiles in `changelog.yml` support the following fields:
 :   Example: `"elasticsearch {version} ga"`
 
 `repo`
-:   Optional. The GitHub repository name written to each product entry in the bundle. Used by the `{changelog}` directive to generate correct PR/issue links. Only needed when the product ID doesn't match the GitHub repository name. Overrides `bundle.repo` when set.
+:   Optional. The GitHub repository name written to each product entry in the bundle. Used by the `{changelog}` directive to generate correct PR/issue links. Only needed when the product ID doesn't match the GitHub repository name. Overrides `bundle.repo` when set. Required when `source: github_release` is used and no `bundle.repo` default is set.
 :   Example: `repo: elasticsearch`.
 
 `owner`
@@ -276,6 +280,13 @@ bundle:
       products: "elasticsearch {version} {lifecycle}" <6>
       output: "elasticsearch-{version}.yaml"
       output_products: "elasticsearch {version}"
+
+    # Fetch the PR list directly from a GitHub release
+    elasticsearch-gh-release:
+      source: github_release <7>
+      repo: elasticsearch   <8>
+      output: "elasticsearch-{version}.yaml"
+      output_products: "elasticsearch {version} {lifecycle}"
 ```
 
 1. Bundle-level defaults that apply to all profiles. Individual profiles can override these.
@@ -284,6 +295,8 @@ bundle:
 4. Bundles any changelogs that have `product: elasticsearch`, `lifecycle: ga`, and the version specified in the command. This is equivalent to the `--input-products` command option.
 5. Adds a `hide-features` array in the bundle. This is equivalent to the `--hide-features` command option.
 6. In this case, the lifecycle is inferred from the version.
+7. Instead of filtering pre-existing changelog files by product, this profile fetches the PR list from the GitHub release notes for the given version. Mutually exclusive with `products`.
+8. The repository to fetch the release from. Overrides `bundle.repo` for this profile.
 
 For example, when the version is:
 
@@ -308,6 +321,12 @@ docs-builder changelog bundle serverless-report 2026-02-13 ./promotion-report.ht
 
 # Same using a URL list file instead of an HTML promotion report
 docs-builder changelog bundle serverless-report 2026-02-13 ./prs.txt
+
+# Bundle changelogs using the PR list from a GitHub release (source: github_release)
+docs-builder changelog bundle elasticsearch-gh-release 9.2.0
+
+# Use "latest" to fetch the most recent release
+docs-builder changelog bundle elasticsearch-gh-release latest
 ```
 
 For option-based mode, use `--report` to filter by a promotion report:

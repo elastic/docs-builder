@@ -91,4 +91,11 @@ public record BundleProfile
 	/// When the bundle is rendered, entries with matching feature-id values will be commented out.
 	/// </summary>
 	public IReadOnlyList<string>? HideFeatures { get; init; }
+
+	/// <summary>
+	/// Profile source type. When set to <c>"github_release"</c>, the profile fetches
+	/// PR references directly from a GitHub release and uses them as the bundle filter.
+	/// Mutually exclusive with <see cref="Products"/>.
+	/// </summary>
+	public string? Source { get; init; }
 }
