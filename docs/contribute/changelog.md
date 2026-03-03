@@ -226,7 +226,7 @@ For up-to-date command usage information, use the `-h` option or refer to [](/cl
 
 ### Authorization
 
-If you use the `--prs` or `--issues` options, the `docs-builder changelog add` command interacts with GitHub services.
+If you use the `--prs`, `--issues`, or `--release-version` options, the `docs-builder changelog add` command interacts with GitHub services.
 Log into GitHub or set the `GITHUB_TOKEN` (or `GH_TOKEN` ) environment variable with a sufficient personal access token (PAT).
 Otherwise, there will be fetch failures when you access private repositories and you might also encounter GitHub rate limiting errors.
 
@@ -458,6 +458,26 @@ For example, a tag of `v9.2.0` on `elasticsearch` creates changelogs with `produ
 
 :::{note}
 This command requires a `GITHUB_TOKEN` or `GH_TOKEN` environment variable (or an active `gh` login) to fetch release details from the GitHub API. Refer to [Authorization](#authorization) for details.
+:::
+
+#### Create changelogs from a release [changelog-add-release-version]
+
+You can use the `--release-version` option to create changelog files for all pull requests in a GitHub release, without creating a bundle.
+This is useful when you want to add release-based changelogs into an existing workflow without committing to the full `changelog gh-release` one-shot approach.
+
+```sh
+docs-builder changelog add \
+  --release-version v9.2.0 \
+  --repo elasticsearch \
+  --output ./docs/changelog \
+  --config ./docs/changelog.yml
+```
+
+This creates one changelog file per PR found in the `v9.2.0` release notes of `elastic/elasticsearch`.
+Unlike `changelog gh-release`, no bundle file is created.
+
+:::{note}
+`--release-version` requires `--repo` and is mutually exclusive with `--prs` and `--issues`.
 :::
 
 ## Create bundles [changelog-bundle]

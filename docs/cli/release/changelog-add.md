@@ -85,8 +85,15 @@ docs-builder changelog add [options...] [-h|--help]
 :   Creates one changelog file per PR.
 :   If there are `block ... create` definitions in the changelog configuration file and a PR has a blocking label for any product in `--products`, that PR is skipped and no changelog file is created for it.
 
+`--release-version <string?>`
+:   Optional: GitHub release tag to use as a source of pull requests (for example, `"v9.2.0"` or `"latest"`).
+:   When specified, the command fetches the release from GitHub, parses PR references from the release notes, and creates one changelog file per PR — without creating a bundle.
+:   Use `docs-builder changelog gh-release` instead if you also want a bundle.
+:   Requires `--repo`. Mutually exclusive with `--prs` and `--issues`.
+:   Set to `latest` to use the most recent release.
+
 `--repo <string?>`
-:   Optional: GitHub repository name (used when `--prs` or `--issues` contains just numbers).
+:   Optional: GitHub repository name (used when `--prs`, `--issues`, or `--release-version` is specified).
 
 `--strip-title-prefix`
 :   Optional: When used with `--prs`, remove square brackets and text within them from the beginning of PR titles, and also remove a colon if it follows the closing bracket.
