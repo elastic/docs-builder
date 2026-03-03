@@ -480,6 +480,26 @@ Unlike `changelog gh-release`, no bundle file is created.
 `--release-version` requires `--repo` and is mutually exclusive with `--prs` and `--issues`.
 :::
 
+#### Create changelogs from a release [changelog-add-release-version]
+
+You can use the `--release-version` option to create changelog files for all pull requests in a GitHub release, without creating a bundle.
+This is useful when you want to add release-based changelogs into an existing workflow without committing to the full `changelog gh-release` one-shot approach.
+
+```sh
+docs-builder changelog add \
+  --release-version v9.2.0 \
+  --repo elasticsearch \
+  --output ./docs/changelog \
+  --config ./docs/changelog.yml
+```
+
+This creates one changelog file per PR found in the `v9.2.0` release notes of `elastic/elasticsearch`.
+Unlike `changelog gh-release`, no bundle file is created.
+
+:::{note}
+`--release-version` requires `--repo` and is mutually exclusive with `--prs` and `--issues`.
+:::
+
 ## Create bundles [changelog-bundle]
 
 You can use the `docs-builder changelog bundle` command to create a YAML file that lists multiple changelogs.
