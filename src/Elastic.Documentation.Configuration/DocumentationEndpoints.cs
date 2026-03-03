@@ -9,7 +9,18 @@ namespace Elastic.Documentation.Configuration;
 public class DocumentationEndpoints
 {
 	public required ElasticsearchEndpoint Elasticsearch { get; init; }
-	public string Namespace { get; set; } = "dev";
+
+	/// <summary>
+	/// Index namespace for environment isolation. Maps to the <c>{env}</c> placeholder
+	/// in index name templates. Overridden by the assembler <c>--environment</c> flag.
+	/// </summary>
+	public string Environment { get; set; } = "dev";
+
+	/// <summary>
+	/// Index data source type. Maps to the <c>{type}</c> placeholder in index name templates.
+	/// Resolved from <c>DOCS_BUILD_TYPE</c> env var, or set by the build type (assembler/isolated/codex).
+	/// </summary>
+	public string DataSource { get; set; } = "isolated";
 }
 
 public class ElasticsearchEndpoint

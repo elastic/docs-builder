@@ -48,7 +48,7 @@ public class AssemblerBuilder(
 		var buildTimes = new List<(string Name, int FileCount, TimeSpan Duration)>();
 
 		// Create exporters without inferrer - inferrer is created per-repository
-		var markdownExporters = exportOptions.CreateMarkdownExporters(logFactory, context, "assembler");
+		var markdownExporters = exportOptions.CreateMarkdownExporters(logFactory, context);
 		var tasks = markdownExporters.Select(async e => await e.StartAsync(ctx));
 		await Task.WhenAll(tasks);
 

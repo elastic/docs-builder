@@ -9,7 +9,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links.InboundLinks;
 using Elastic.Documentation.Mcp.Remote;
-using Elastic.Documentation.Search;
+using Elastic.Documentation.Search.Common;
 using Elastic.Documentation.ServiceDefaults;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics;
@@ -112,22 +112,17 @@ static void LogElasticsearchConfiguration(WebApplication app, ILogger logger)
 {
 	try
 	{
-		var endpoints = app.Services.GetService<DocumentationEndpoints>();
-		if (endpoints is not null)
+		var clientAccessor = app.Services.GetService<ElasticsearchClientAccessor>();
+		if (clientAccessor is not null)
 		{
-			var endpoint = endpoints.Elasticsearch;
-			var searchIndex = DocumentationMappingContext.DocumentationDocumentSemantic
-				.CreateContext(type: "assembler")
-				.ResolveReadTarget();
 			logger.LogInformation(
-				"Elasticsearch configuration - Url: {Url}, Namespace: {Namespace}, SearchIndex: {SearchIndex}",
-				endpoint.Uri,
-				endpoints.Namespace,
-				searchIndex
+				"Elasticsearch configuration - Url: {Url}, SearchIndex: {SearchIndex}",
+				clientAccessor.Endpoint.Uri,
+				clientAccessor.SearchIndex
 			);
 		}
 		else
-			logger.LogWarning("DocumentationEndpoints could not be resolved from DI");
+			logger.LogWarning("ElasticsearchClientAccessor could not be resolved from DI");
 	}
 	catch (Exception ex)
 	{

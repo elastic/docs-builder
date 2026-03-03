@@ -6,7 +6,7 @@ using Elastic.Documentation.Api.Infrastructure;
 using Elastic.Documentation.Api.Infrastructure.OpenTelemetry;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
-using Elastic.Documentation.Search;
+using Elastic.Documentation.Search.Common;
 using Elastic.Documentation.ServiceDefaults;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -83,22 +83,17 @@ static void LogElasticsearchConfiguration(WebApplication app, ILogger logger)
 {
 	try
 	{
-		var endpoints = app.Services.GetService<DocumentationEndpoints>();
-		if (endpoints is not null)
+		var clientAccessor = app.Services.GetService<ElasticsearchClientAccessor>();
+		if (clientAccessor is not null)
 		{
-			var endpoint = endpoints.Elasticsearch;
-			var searchIndex = DocumentationMappingContext.DocumentationDocumentSemantic
-				.CreateContext(type: "assembler")
-				.ResolveReadTarget();
 			logger.LogInformation(
-				"Elasticsearch configuration - Url: {Url}, Namespace: {Namespace}, SearchIndex: {SearchIndex}",
-				endpoint.Uri,
-				endpoints.Namespace,
-				searchIndex
+				"Elasticsearch configuration - Url: {Url}, SearchIndex: {SearchIndex}",
+				clientAccessor.Endpoint.Uri,
+				clientAccessor.SearchIndex
 			);
 		}
 		else
-			logger.LogWarning("DocumentationEndpoints could not be resolved from DI");
+			logger.LogWarning("ElasticsearchClientAccessor could not be resolved from DI");
 	}
 	catch (Exception ex)
 	{

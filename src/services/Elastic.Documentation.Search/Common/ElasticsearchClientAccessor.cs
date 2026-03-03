@@ -39,11 +39,11 @@ public class ElasticsearchClientAccessor : IDisposable
 		DiminishTerms = searchConfiguration.DiminishTerms;
 
 		SearchIndex = DocumentationMappingContext.DocumentationDocumentSemantic
-			.CreateContext(type: "assembler")
+			.CreateContext(type: endpoints.DataSource)
 			.ResolveReadTarget();
 
 		RulesetName = searchConfiguration.Rules.Count > 0
-			? "docs-ruleset-assembler"
+			? $"docs-ruleset-{endpoints.DataSource}"
 			: null;
 
 		_nodePool = new SingleNodePool(endpoint.Uri);

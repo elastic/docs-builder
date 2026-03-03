@@ -27,7 +27,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	private readonly ILogger _logger;
 	private readonly ElasticsearchEndpoint _endpoint;
 	private readonly DistributedTransport _transport;
-	private readonly string _buildType;
+	private readonly string _dataSource;
 
 	// Ingest: orchestrator for dual-index mode
 	private readonly IncrementalSyncOrchestrator<DocumentationDocument> _orchestrator;
@@ -36,9 +36,9 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	private readonly ElasticsearchTypeContext _lexicalTypeContext;
 	private readonly ElasticsearchTypeContext _semanticTypeContext;
 
+	private readonly VersionsConfiguration _versionsConfiguration;
 	private readonly IReadOnlyDictionary<string, string[]> _synonyms;
 	private readonly IReadOnlyCollection<QueryRule> _rules;
-	private readonly VersionsConfiguration _versionsConfiguration;
 	private readonly string _fixedSynonymsHash;
 
 	// AI Enrichment - post-indexing via AiEnrichmentOrchestrator
@@ -55,7 +55,6 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		ILoggerFactory logFactory,
 		IDiagnosticsCollector collector,
 		DocumentationEndpoints endpoints,
-		string buildType,
 		IDocumentationConfigurationContext context
 	)
 	{
@@ -63,7 +62,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		_context = context;
 		_logger = logFactory.CreateLogger<ElasticsearchMarkdownExporter>();
 		_endpoint = endpoints.Elasticsearch;
-		_buildType = buildType;
+		_dataSource = endpoints.DataSource;
 		_versionsConfiguration = context.VersionsConfiguration;
 		_synonyms = context.SearchConfiguration.Synonyms;
 		_rules = context.SearchConfiguration.Rules;
@@ -81,14 +80,14 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		}).Where(r => fixedSynonyms.Contains(r.Id)).Select(r => r.Synonyms).ToArray();
 		_fixedSynonymsHash = HashedBulkUpdate.CreateHash(string.Join(",", indexTimeSynonyms));
 
-		var synonymSetName = $"docs-{buildType}";
+		var synonymSetName = $"docs-{_dataSource}";
 
-		_lexicalTypeContext = DocumentationMappingContext.DocumentationDocument.CreateContext(type: buildType) with
+		_lexicalTypeContext = DocumentationMappingContext.DocumentationDocument.CreateContext(type: _dataSource) with
 		{
 			ConfigureAnalysis = a => DocumentationAnalysisFactory.BuildAnalysis(a, synonymSetName, indexTimeSynonyms)
 		};
 
-		_semanticTypeContext = DocumentationMappingContext.DocumentationDocumentSemantic.CreateContext(type: buildType) with
+		_semanticTypeContext = DocumentationMappingContext.DocumentationDocumentSemantic.CreateContext(type: _dataSource) with
 		{
 			ConfigureAnalysis = a => DocumentationAnalysisFactory.BuildAnalysis(a, synonymSetName, indexTimeSynonyms)
 		};
@@ -112,8 +111,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 			_logger.LogInformation("AI enrichment disabled");
 		}
 
-		_orchestrator = new IncrementalSyncOrchestrator<DocumentationDocument>(
-			_transport, _lexicalTypeContext, _semanticTypeContext)
+		_orchestrator = new IncrementalSyncOrchestrator<DocumentationDocument>(_transport, _lexicalTypeContext, _semanticTypeContext)
 		{
 			ConfigurePrimary = opts => ConfigureChannelOptions("primary", opts),
 			ConfigureSecondary = opts => ConfigureChannelOptions("secondary", opts),
@@ -224,7 +222,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 
 	private async Task PublishSynonymsAsync(Cancel ctx)
 	{
-		var setName = $"docs-{_buildType}";
+		var setName = $"docs-{_dataSource}";
 		_logger.LogInformation("Publishing synonym set '{SetName}' to Elasticsearch", setName);
 
 		var synonymRules = _synonyms.Aggregate(new List<SynonymRule>(), (acc, synonym) =>
@@ -262,7 +260,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 			return;
 		}
 
-		var rulesetName = $"docs-ruleset-{_buildType}";
+		var rulesetName = $"docs-ruleset-{_dataSource}";
 		_logger.LogInformation("Publishing query ruleset '{RulesetName}' with {Count} rules to Elasticsearch", rulesetName, _rules.Count);
 
 		var rulesetRules = _rules.Select(r => new QueryRulesetRule
