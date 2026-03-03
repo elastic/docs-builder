@@ -212,6 +212,10 @@ The following configurations cause validation errors:
 
 You can use the `docs-builder changelog add` command to create a changelog file.
 
+If you specify `--prs` or `--issues`, the command tries to fetch information from GitHub. It derives the changelog `title` from the pull request or issue title, maps labels to type and areas (if configured), and extracts linked references.
+With `--issues`, it extracts linked PRs from the issue body (for example, "Fixed by #123").
+With `--prs`, it extracts linked issues from the PR body (for example, "Fixes #123").
+
 :::{tip}
 Ideally this task will be automated such that it's performed by a bot or GitHub action when you create a pull request.
 If you run it from the command line, you must precede any special characters (such as backquotes) with a backslash escape character (`\`).
@@ -275,23 +279,7 @@ docs-builder changelog add \
   --use-pr-number
 ```
 
-Use `--use-issue-number` to name the file by issue number(s). With both `--prs` and `--issues`, each changelog filename will be derived from its issues:
-
-```sh
-docs-builder changelog add \
-  --issues https://github.com/elastic/elasticsearch/issues/12345 \
-  --products "elasticsearch 9.2.3" \
-  --config docs/changelog.yml \
-  --use-issue-number
-
-docs-builder changelog add \
-  --prs https://github.com/elastic/elasticsearch/pull/137431 \
-  --products "elasticsearch 9.2.3" \
-  --config docs/changelog.yml \
-  --use-issue-number
-```
-
-The command derives the title from the issue or PR, maps labels to type and areas (if configured), and extracts linked references. With `--issues`, it extracts linked PRs from the issue body (for example, "Fixed by #123"). With `--prs`, it extracts linked issues from the PR body (for example, "Fixes #123"). Multiple issues or PRs can be specified comma-separated or via a file path, creating one changelog per issue or PR.
+For filenames that match issue numbers instead of PR numbers, specify `--use-issue-number`.
 
 :::{important}
 `--use-pr-number` and `--use-issue-number` are mutually exclusive; specify only one. Each requires `--prs` or `--issues`. The numbers are extracted from the URLs or identifiers you provide, or from linked references in the issue or PR body when extraction is enabled.
@@ -384,10 +372,9 @@ If you explicitly provide `--title` or `--description`, those values take preced
 You can turn off the release note extraction in the changelog configuration file or by using the `--no-extract-release-notes` option.
 :::
 
-#### Control changelog creation and publishing [example-block-label]
+#### Control changelog creation [example-block-label]
 
 You can prevent changelog creation for certain PRs based on their labels.
-You can likewise refrain from publishing changelogs based on their areas and types.
 
 If you run the `docs-builder changelog add` command with the `--prs` option and a PR has a blocking label for any of the products in the `--products` option, that PR will be skipped and no changelog file will be created for it.
 A warning message will be emitted indicating which PR was skipped and why.
@@ -409,26 +396,9 @@ rules:
     products:
       'cloud-serverless':
         exclude: ">non-issue, >test"
-
-  # Publish — controls which entries appear in rendered output.
-  publish:
-    exclude_types:
-      - docs
-    exclude_areas:
-      - "Internal"
-    products:
-      'cloud-serverless':
-        exclude_areas:
-          - "Internal"
-          - "Autoscaling"
-          - "Watcher"
-      'elasticsearch, kibana':
-        exclude_types:
-          - docs
-          - other
 ```
 
-Those settings affect commands with the `--prs` option, for example:
+Those settings affect commands with the `--prs` or `--issues` options, for example:
 
 ```sh
 docs-builder changelog add --prs "1234, 5678" \
@@ -440,26 +410,19 @@ docs-builder changelog add --prs "1234, 5678" \
 If PR 1234 has the `>non-issue` or `>test` labels, it will be skipped and no changelog will be created.
 If PR 5678 does not have any blocking labels, a changelog is created.
 
-The `rules` settings also affect the publishing stage.
-For example, if you run the `docs-builder changelog render` command for a Cloud Serverless bundle, any changelogs that have "Internal", "Autoscaling", or "Watcher" areas are commented out.
-
-You can also use **include** mode instead of **exclude** mode. For example, to only create changelogs for PRs with specific labels or only publish entries with specific areas:
+You can also use **include** mode instead of **exclude** mode.
+For example, to only create changelogs for PRs with specific labels:
 
 ```yaml
 rules:
   create:
     include: "@Public, @Notable"
-  publish:
-    include_areas:
-      - "Search"
-      - "Monitoring"
 ```
 
-When subsections are enabled (`:subsections:` in the `{changelog}` directive or `--subsections` in the `changelog render` command), these `include_areas` and `exclude_areas` rules also affect which area label is used for grouping. Entries with multiple areas are grouped under the first area that aligns with the rules — the first included area for `include_areas`, or the first non-excluded area for `exclude_areas`.
+#### Create changelogs from a file [example-file-add]
 
-#### Create changelogs from a file of PRs [example-file-prs]
-
-You can also provide PRs from a file containing newline-delimited PR URLs or numbers:
+You can create multiple changelogs in a single command by providing a newline-delimited file that contains pull requests or issues.
+For example:
 
 ```sh
 # Create a file with PRs (one per line)
@@ -474,19 +437,7 @@ docs-builder changelog add --prs prs.txt \
   --config test/changelog.yml
 ```
 
-You can also mix file paths and comma-separated PRs:
-
-```sh
-docs-builder changelog add \
-  --prs "https://github.com/elastic/elasticsearch/pull/1234" \
-  --prs prs.txt \
-  --prs "5678, 9012" \
-  --products "elasticsearch 9.2.0 ga" \
-  --owner elastic --repo elasticsearch \
-  --config test/changelog.yml
-```
-
-This creates one changelog file for each PR specified, whether from files or directly.
+In this example, the command creates one changelog for each pull request in the list.
 
 ## Create bundles [changelog-bundle]
 
@@ -817,6 +768,51 @@ If you explicitly list the amend bundles in the `--input` option of the `docs-bu
 For more details and examples, go to [](/cli/release/changelog-bundle-amend.md).
 
 ## Create documentation
+
+### Control changelog publishing [example-rules-publishing]
+
+You can use rules in the changelog configuration file to refrain from publishing changelogs based on their areas and types.
+
+For example, your configuration file can contain a `rules` section like this:
+
+```yaml
+rules:
+  # Global match default for multi-valued fields (labels, areas).
+  #   any (default) = match if ANY item matches the list
+  #   all           = match only if ALL items match the list
+  # match: any
+  # Publish — controls which entries appear in rendered output.
+  publish:
+    exclude_types:
+      - docs
+    exclude_areas:
+      - "Internal"
+    products:
+      'cloud-serverless':
+        exclude_areas:
+          - "Internal"
+          - "Autoscaling"
+          - "Watcher"
+      'elasticsearch, kibana':
+        exclude_types:
+          - docs
+          - other
+```
+
+For example, if you run the `docs-builder changelog render` command for a Cloud Serverless bundle, any changelogs that have "Internal", "Autoscaling", or "Watcher" areas are commented out.
+
+You can also use **include** mode instead of **exclude** mode. For example, to only publish entries with specific areas:
+
+```yaml
+rules:
+  publish:
+    include_areas:
+      - "Search"
+      - "Monitoring"
+```
+
+When subsections are enabled (`:subsections:` in the `{changelog}` directive or `--subsections` in the `changelog render` command), these `include_areas` and `exclude_areas` rules also affect which area label is used for grouping.
+Entries with multiple areas are grouped under the first area that aligns with the rules — the first included area for `include_areas`, or the first non-excluded area for `exclude_areas`.
 
 ### Include changelogs inline [changelog-directive]
 
