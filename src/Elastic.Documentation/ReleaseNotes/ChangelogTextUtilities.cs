@@ -200,7 +200,7 @@ public static partial class ChangelogTextUtilities
 	/// <summary>
 	/// Formats PR link as markdown.
 	/// </summary>
-	public static string FormatPrLink(string pr, string repo, bool hidePrivateLinks)
+	public static string FormatPrLink(string pr, string repo, bool hidePrivateLinks, string owner = "elastic")
 	{
 		// Extract PR number
 		var match = TrailingNumberRegex().Match(pr);
@@ -212,7 +212,7 @@ public static partial class ChangelogTextUtilities
 			link = $"[#{prNumber}]({pr})";
 		else
 		{
-			var url = $"https://github.com/elastic/{repo}/pull/{prNumber}";
+			var url = $"https://github.com/{owner}/{repo}/pull/{prNumber}";
 			link = $"[#{prNumber}]({url})";
 		}
 
@@ -226,7 +226,7 @@ public static partial class ChangelogTextUtilities
 	/// <summary>
 	/// Formats issue link as markdown.
 	/// </summary>
-	public static string FormatIssueLink(string issue, string repo, bool hidePrivateLinks)
+	public static string FormatIssueLink(string issue, string repo, bool hidePrivateLinks, string owner = "elastic")
 	{
 		// Extract issue number
 		var match = TrailingNumberRegex().Match(issue);
@@ -238,7 +238,7 @@ public static partial class ChangelogTextUtilities
 			link = $"[#{issueNumber}]({issue})";
 		else
 		{
-			var url = $"https://github.com/elastic/{repo}/issues/{issueNumber}";
+			var url = $"https://github.com/{owner}/{repo}/issues/{issueNumber}";
 			link = $"[#{issueNumber}]({url})";
 		}
 

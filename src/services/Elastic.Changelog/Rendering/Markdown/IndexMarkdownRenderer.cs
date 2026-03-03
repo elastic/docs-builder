@@ -153,7 +153,7 @@ public class IndexMarkdownRenderer(IFileSystem fileSystem) : MarkdownRendererBas
 
 			foreach (var entry in areaGroup)
 			{
-				var (bundleProductIds, entryRepo, entryHideLinks) = GetEntryContext(entry, context);
+				var (bundleProductIds, entryRepo, entryOwner, entryHideLinks) = GetEntryContext(entry, context);
 				var shouldHide = ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context);
 
 				if (shouldHide)
@@ -170,7 +170,7 @@ public class IndexMarkdownRenderer(IFileSystem fileSystem) : MarkdownRendererBas
 						if (shouldHide)
 							_ = sb.Append("% ");
 						_ = sb.Append("  ");
-						_ = sb.Append(ChangelogTextUtilities.FormatPrLink(pr, entryRepo, entryHideLinks));
+						_ = sb.Append(ChangelogTextUtilities.FormatPrLink(pr, entryRepo, entryHideLinks, entryOwner));
 						hasCommentedLinks = true;
 					}
 
@@ -180,7 +180,7 @@ public class IndexMarkdownRenderer(IFileSystem fileSystem) : MarkdownRendererBas
 						if (shouldHide)
 							_ = sb.Append("% ");
 						_ = sb.Append("  ");
-						_ = sb.Append(ChangelogTextUtilities.FormatIssueLink(issue, entryRepo, entryHideLinks));
+						_ = sb.Append(ChangelogTextUtilities.FormatIssueLink(issue, entryRepo, entryHideLinks, entryOwner));
 						hasCommentedLinks = true;
 					}
 
@@ -192,13 +192,13 @@ public class IndexMarkdownRenderer(IFileSystem fileSystem) : MarkdownRendererBas
 					_ = sb.Append(' ');
 					foreach (var pr in entry.Prs ?? [])
 					{
-						_ = sb.Append(ChangelogTextUtilities.FormatPrLink(pr, entryRepo, entryHideLinks));
+						_ = sb.Append(ChangelogTextUtilities.FormatPrLink(pr, entryRepo, entryHideLinks, entryOwner));
 						_ = sb.Append(' ');
 					}
 
 					foreach (var issue in entry.Issues ?? [])
 					{
-						_ = sb.Append(ChangelogTextUtilities.FormatIssueLink(issue, entryRepo, entryHideLinks));
+						_ = sb.Append(ChangelogTextUtilities.FormatIssueLink(issue, entryRepo, entryHideLinks, entryOwner));
 						_ = sb.Append(' ');
 					}
 				}

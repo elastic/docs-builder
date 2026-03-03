@@ -398,7 +398,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		var service = CreateService();
 		var bundles = new List<LoadedBundle>
 		{
-			new("9.3.0", "elasticsearch", new Bundle(), "/path/to/bundle.yaml",
+			new("9.3.0", "elasticsearch", "elastic", new Bundle(), "/path/to/bundle.yaml",
 				[new ChangelogEntry { Title = "Entry 1", Type = ChangelogEntryType.Feature }])
 		};
 
@@ -417,9 +417,9 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		var service = CreateService();
 		var bundles = new List<LoadedBundle>
 		{
-			new("9.3.0", "elasticsearch", new Bundle(), "/path/to/9.3.0.yaml",
+			new("9.3.0", "elasticsearch", "elastic", new Bundle(), "/path/to/9.3.0.yaml",
 				[new ChangelogEntry { Title = "Entry 9.3.0", Type = ChangelogEntryType.Feature }]),
-			new("9.2.0", "elasticsearch", new Bundle(), "/path/to/9.2.0.yaml",
+			new("9.2.0", "elasticsearch", "elastic", new Bundle(), "/path/to/9.2.0.yaml",
 				[new ChangelogEntry { Title = "Entry 9.2.0", Type = ChangelogEntryType.Feature }])
 		};
 
@@ -437,9 +437,9 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		var service = CreateService();
 		var bundles = new List<LoadedBundle>
 		{
-			new("9.3.0", "elasticsearch", new Bundle(), "/path/to/es.yaml",
+			new("9.3.0", "elasticsearch", "elastic", new Bundle(), "/path/to/es.yaml",
 				[new ChangelogEntry { Title = "ES Entry", Type = ChangelogEntryType.Feature }]),
-			new("9.3.0", "kibana", new Bundle(), "/path/to/kibana.yaml",
+			new("9.3.0", "kibana", "elastic", new Bundle(), "/path/to/kibana.yaml",
 				[new ChangelogEntry { Title = "Kibana Entry", Type = ChangelogEntryType.Feature }])
 		};
 
@@ -461,9 +461,9 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		var service = CreateService();
 		var bundles = new List<LoadedBundle>
 		{
-			new("9.2.0", "elasticsearch", new Bundle(), "/path/to/9.2.0.yaml", []),
-			new("9.3.0", "elasticsearch", new Bundle(), "/path/to/9.3.0.yaml", []),
-			new("9.1.0", "elasticsearch", new Bundle(), "/path/to/9.1.0.yaml", [])
+			new("9.2.0", "elasticsearch", "elastic", new Bundle(), "/path/to/9.2.0.yaml", []),
+			new("9.3.0", "elasticsearch", "elastic", new Bundle(), "/path/to/9.3.0.yaml", []),
+			new("9.1.0", "elasticsearch", "elastic", new Bundle(), "/path/to/9.1.0.yaml", [])
 		};
 
 		// Act
@@ -483,9 +483,9 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		var service = CreateService();
 		var bundles = new List<LoadedBundle>
 		{
-			new("2025-01-15", "cloud-serverless", new Bundle(), "/path/to/jan15.yaml", []),
-			new("2025-01-28", "cloud-serverless", new Bundle(), "/path/to/jan28.yaml", []),
-			new("2025-01-01", "cloud-serverless", new Bundle(), "/path/to/jan01.yaml", [])
+			new("2025-01-15", "cloud-serverless", "elastic", new Bundle(), "/path/to/jan15.yaml", []),
+			new("2025-01-28", "cloud-serverless", "elastic", new Bundle(), "/path/to/jan28.yaml", []),
+			new("2025-01-01", "cloud-serverless", "elastic", new Bundle(), "/path/to/jan01.yaml", [])
 		};
 
 		// Act
@@ -1101,7 +1101,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 			Entries = []
 		};
 		var entries = new List<ChangelogEntry>();
-		var bundle = new LoadedBundle("9.3.0", "elasticsearch", bundleData, "/path/to/bundle.yaml", entries);
+		var bundle = new LoadedBundle("9.3.0", "elasticsearch", "elastic", bundleData, "/path/to/bundle.yaml", entries);
 
 		// Act
 		var hideFeatures = bundle.HideFeatures;
@@ -1128,7 +1128,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 			new() { Title = "Bug fix", Type = ChangelogEntryType.BugFix },
 			new() { Title = "Breaking change", Type = ChangelogEntryType.BreakingChange }
 		};
-		var bundle = new LoadedBundle("9.3.0", "elasticsearch", new Bundle(), "/path/to/bundle.yaml", entries);
+		var bundle = new LoadedBundle("9.3.0", "elasticsearch", "elastic", new Bundle(), "/path/to/bundle.yaml", entries);
 
 		// Act
 		var byType = bundle.EntriesByType;

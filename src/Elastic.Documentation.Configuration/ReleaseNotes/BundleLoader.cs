@@ -39,6 +39,7 @@ public partial class BundleLoader(IFileSystem fileSystem)
 
 			var version = GetVersionFromBundle(bundleData) ?? fileSystem.Path.GetFileNameWithoutExtension(bundleFile);
 			var repo = GetRepoFromBundle(bundleData);
+			var owner = GetOwnerFromBundle(bundleData);
 
 			// Bundle directory is the directory containing the bundle file
 			var bundleDirectory = fileSystem.Path.GetDirectoryName(bundleFile) ?? bundlesFolderPath;
@@ -47,7 +48,7 @@ public partial class BundleLoader(IFileSystem fileSystem)
 
 			var entries = ResolveEntries(bundleData, changelogDirectory, emitWarning);
 
-			loadedBundles.Add(new LoadedBundle(version, repo, bundleData, bundleFile, entries));
+			loadedBundles.Add(new LoadedBundle(version, repo, owner, bundleData, bundleFile, entries));
 		}
 
 		// Merge amend files with their parent bundles
@@ -183,6 +184,21 @@ public partial class BundleLoader(IFileSystem fileSystem)
 	}
 
 	/// <summary>
+	/// Gets the GitHub owner from a bundle's first product.
+	/// Uses the explicit Owner field if set, otherwise falls back to "elastic".
+	/// </summary>
+	private static string GetOwnerFromBundle(Bundle bundledData)
+	{
+		if (bundledData.Products.Count == 0)
+			return "elastic";
+
+		var firstProduct = bundledData.Products[0];
+		return !string.IsNullOrWhiteSpace(firstProduct.Owner)
+			? firstProduct.Owner
+			: "elastic";
+	}
+
+	/// <summary>
 	/// Merges a group of bundles with the same target version into a single bundle.
 	/// </summary>
 	private static LoadedBundle MergeBundleGroup(IGrouping<string, LoadedBundle> group)
@@ -204,6 +220,7 @@ public partial class BundleLoader(IFileSystem fileSystem)
 		return new LoadedBundle(
 			first.Version,
 			combinedRepo,
+			first.Owner,
 			first.Data,
 			first.FilePath,
 			mergedEntries
@@ -253,6 +270,7 @@ public partial class BundleLoader(IFileSystem fileSystem)
 			mergedParents[parentPath] = new LoadedBundle(
 				mergedParent.Version,
 				mergedParent.Repo,
+				mergedParent.Owner,
 				mergedParent.Data,
 				mergedParent.FilePath,
 				combinedEntries

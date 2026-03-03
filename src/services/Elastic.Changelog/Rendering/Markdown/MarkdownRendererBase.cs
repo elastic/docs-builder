@@ -35,22 +35,23 @@ public abstract class MarkdownRendererBase(IFileSystem fileSystem) : IChangelogM
 	}
 
 	/// <summary>
-	/// Gets the entry context (bundleProducts, repo, hideLinks) for a specific entry
+	/// Gets the entry context (bundleProducts, repo, owner, hideLinks) for a specific entry
 	/// </summary>
-	protected static (HashSet<string> bundleProductIds, string entryRepo, bool hideLinks) GetEntryContext(
+	protected static (HashSet<string> bundleProductIds, string entryRepo, string entryOwner, bool hideLinks) GetEntryContext(
 		ChangelogEntry entry,
 		ChangelogRenderContext context)
 	{
 		var bundleProductIds = context.EntryToBundleProducts.GetValueOrDefault(entry, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
 		var entryRepo = context.EntryToRepo.GetValueOrDefault(entry, context.Repo);
+		var entryOwner = context.EntryToOwner.GetValueOrDefault(entry, context.Owner);
 		var hideLinks = context.EntryToHideLinks.GetValueOrDefault(entry, false);
-		return (bundleProductIds, entryRepo, hideLinks);
+		return (bundleProductIds, entryRepo, entryOwner, hideLinks);
 	}
 
 	/// <summary>
 	/// Renders PR and issue links for dropdown entries
 	/// </summary>
-	protected static void RenderPrIssueLinks(StringBuilder sb, ChangelogEntry entry, string entryRepo, bool entryHideLinks)
+	protected static void RenderPrIssueLinks(StringBuilder sb, ChangelogEntry entry, string entryRepo, string entryOwner, bool entryHideLinks)
 	{
 		var hasPrs = entry.Prs is { Count: > 0 };
 		var hasIssues = entry.Issues is { Count: > 0 };
@@ -60,9 +61,9 @@ public abstract class MarkdownRendererBase(IFileSystem fileSystem) : IChangelogM
 		if (entryHideLinks)
 		{
 			foreach (var pr in entry.Prs ?? [])
-				_ = sb.AppendLine(ChangelogTextUtilities.FormatPrLink(pr, entryRepo, entryHideLinks));
+				_ = sb.AppendLine(ChangelogTextUtilities.FormatPrLink(pr, entryRepo, entryHideLinks, entryOwner));
 			foreach (var issue in entry.Issues ?? [])
-				_ = sb.AppendLine(ChangelogTextUtilities.FormatIssueLink(issue, entryRepo, entryHideLinks));
+				_ = sb.AppendLine(ChangelogTextUtilities.FormatIssueLink(issue, entryRepo, entryHideLinks, entryOwner));
 
 			_ = sb.AppendLine("For more information, check the pull request or issue above.");
 		}
@@ -74,14 +75,14 @@ public abstract class MarkdownRendererBase(IFileSystem fileSystem) : IChangelogM
 			{
 				if (!first)
 					_ = sb.Append(' ');
-				_ = sb.Append(ChangelogTextUtilities.FormatPrLink(pr, entryRepo, entryHideLinks));
+				_ = sb.Append(ChangelogTextUtilities.FormatPrLink(pr, entryRepo, entryHideLinks, entryOwner));
 				first = false;
 			}
 			foreach (var issue in entry.Issues ?? [])
 			{
 				if (!first)
 					_ = sb.Append(' ');
-				_ = sb.Append(ChangelogTextUtilities.FormatIssueLink(issue, entryRepo, entryHideLinks));
+				_ = sb.Append(ChangelogTextUtilities.FormatIssueLink(issue, entryRepo, entryHideLinks, entryOwner));
 				first = false;
 			}
 
