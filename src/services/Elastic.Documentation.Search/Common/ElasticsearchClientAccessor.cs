@@ -39,7 +39,7 @@ public class ElasticsearchClientAccessor : IDisposable
 		DiminishTerms = searchConfiguration.DiminishTerms;
 
 		SearchIndex = DocumentationMappingContext.DocumentationDocumentSemantic
-			.CreateContext(type: endpoints.DataSource)
+			.CreateContext(type: endpoints.DataSource, env: endpoints.Environment)
 			.ResolveReadTarget();
 
 		RulesetName = searchConfiguration.Rules.Count > 0

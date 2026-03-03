@@ -22,6 +22,24 @@ public abstract class McpToolsIntegrationTestsBase(ITestOutputHelper output)
 {
 	protected ITestOutputHelper Output { get; } = output;
 
+	protected void LogDiagnostics(ElasticsearchClientAccessor? clientAccessor)
+	{
+		if (clientAccessor is null)
+			return;
+
+		Output.WriteLine($"Endpoint: {clientAccessor.Endpoint.Uri}");
+		Output.WriteLine($"SearchIndex: {clientAccessor.SearchIndex}");
+		Output.WriteLine($"RulesetName: {clientAccessor.RulesetName ?? "(none)"}");
+	}
+
+	protected async Task LogIndexCount(ElasticsearchClientAccessor clientAccessor, CancellationToken ctx)
+	{
+		var countResponse = await clientAccessor.Client.CountAsync(c => c.Indices(clientAccessor.SearchIndex), ctx);
+		Output.WriteLine(countResponse.IsValidResponse
+			? $"Index document count: {countResponse.Count}"
+			: $"Index count ERROR: {countResponse.ElasticsearchServerError?.Error?.Reason}");
+	}
+
 	/// <summary>
 	/// Creates SearchTools with all required dependencies.
 	/// </summary>
@@ -70,7 +88,7 @@ public abstract class McpToolsIntegrationTestsBase(ITestOutputHelper output)
 	/// </summary>
 	private static ElasticsearchClientAccessor CreateElasticsearchClientAccessor()
 	{
-		var endpoints = ElasticsearchEndpointFactory.Create();
+		var endpoints = ElasticsearchEndpointFactory.Create(dataSource: "assembler", environment: "dev");
 
 		var searchConfig = new SearchConfiguration
 		{

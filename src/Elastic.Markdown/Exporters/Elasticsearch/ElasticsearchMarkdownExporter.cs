@@ -82,12 +82,14 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 
 		var synonymSetName = $"docs-{_dataSource}";
 
-		_lexicalTypeContext = DocumentationMappingContext.DocumentationDocument.CreateContext(type: _dataSource) with
+		_lexicalTypeContext = DocumentationMappingContext.DocumentationDocument
+			.CreateContext(type: _dataSource, env: endpoints.Environment) with
 		{
 			ConfigureAnalysis = a => DocumentationAnalysisFactory.BuildAnalysis(a, synonymSetName, indexTimeSynonyms)
 		};
 
-		_semanticTypeContext = DocumentationMappingContext.DocumentationDocumentSemantic.CreateContext(type: _dataSource) with
+		_semanticTypeContext = DocumentationMappingContext.DocumentationDocumentSemantic
+			.CreateContext(type: _dataSource, env: endpoints.Environment) with
 		{
 			ConfigureAnalysis = a => DocumentationAnalysisFactory.BuildAnalysis(a, synonymSetName, indexTimeSynonyms)
 		};

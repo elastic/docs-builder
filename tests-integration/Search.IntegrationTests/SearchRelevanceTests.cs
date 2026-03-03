@@ -74,8 +74,13 @@ public class SearchRelevanceTests(ITestOutputHelper output)
 	public async Task SearchReturnsExpectedFirstResultWithExplain(string query, string expectedFirstResultUrl, string[]? additionalExpectedUrls)
 	{
 		// Arrange - Create ElasticsearchGateway directly
-		var gateway = CreateFindPageGateway();
+		var (gateway, clientAccessor) = CreateFindPageGateway();
 		Assert.SkipUnless(gateway is not null, "Elasticsearch is not connected");
+
+		output.WriteLine($"Endpoint: {clientAccessor.Endpoint.Uri}");
+		output.WriteLine($"SearchIndex: {clientAccessor.SearchIndex}");
+		output.WriteLine($"RulesetName: {clientAccessor.RulesetName ?? "(none)"}");
+
 		var canConnect = await gateway.CanConnect(TestContext.Current.CancellationToken);
 		Assert.SkipUnless(canConnect, "Elasticsearch is not connected");
 
@@ -89,7 +94,13 @@ public class SearchRelevanceTests(ITestOutputHelper output)
 
 		var results = searchResult.Results;
 
-		results.Should().NotBeEmpty($"Search for '{query}' should return results");
+		if (results.Count == 0)
+		{
+			var countResponse = await clientAccessor.Client.CountAsync(c => c.Indices(clientAccessor.SearchIndex), TestContext.Current.CancellationToken);
+			output.WriteLine($"Index document count: {(countResponse.IsValidResponse ? countResponse.Count.ToString() : $"ERROR: {countResponse.ElasticsearchServerError?.Error?.Reason}")}");
+		}
+
+		results.Should().NotBeEmpty($"Search for '{query}' should return results (index: {clientAccessor.SearchIndex})");
 
 		var actualFirstResultUrl = results.First().Url;
 
@@ -182,8 +193,12 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 	public async Task ExplainTopResultAndExpectedAsyncReturnsDetailedScoring()
 	{
 		// Arrange
-		var gateway = CreateFindPageGateway();
+		var (gateway, clientAccessor) = CreateFindPageGateway();
 		Assert.SkipUnless(gateway is not null, "Elasticsearch is not connected");
+
+		output.WriteLine($"Endpoint: {clientAccessor.Endpoint.Uri}");
+		output.WriteLine($"SearchIndex: {clientAccessor.SearchIndex}");
+
 		var canConnect = await gateway.CanConnect(TestContext.Current.CancellationToken);
 		Assert.SkipUnless(canConnect, "Elasticsearch is not connected");
 
@@ -220,9 +235,9 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 	/// <summary>
 	/// Creates an ElasticsearchGateway instance using configuration from the distributed application.
 	/// </summary>
-	private NavigationSearchGateway CreateFindPageGateway()
+	private static (NavigationSearchGateway Gateway, ElasticsearchClientAccessor ClientAccessor) CreateFindPageGateway()
 	{
-		var endpoints = ElasticsearchEndpointFactory.Create();
+		var endpoints = ElasticsearchEndpointFactory.Create(dataSource: "assembler", environment: "dev");
 
 		var searchConfig = new SearchConfiguration
 		{
@@ -252,6 +267,7 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 		};
 
 		var clientAccessor = new ElasticsearchClientAccessor(endpoints, searchConfig);
-		return new NavigationSearchGateway(clientAccessor, NullLogger<NavigationSearchGateway>.Instance);
+		var gateway = new NavigationSearchGateway(clientAccessor, NullLogger<NavigationSearchGateway>.Instance);
+		return (gateway, clientAccessor);
 	}
 }
