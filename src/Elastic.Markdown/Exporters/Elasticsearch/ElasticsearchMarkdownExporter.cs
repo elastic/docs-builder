@@ -182,7 +182,12 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		var sw = System.Diagnostics.Stopwatch.StartNew();
 
 		AiEnrichmentProgress? last = null;
-		await foreach (var p in _aiEnrichment.EnrichAsync(context.SecondaryWriteAlias, new AiEnrichmentOptions(), ctx))
+		var options = new AiEnrichmentOptions
+		{
+			CompletionTimeout = TimeSpan.FromMinutes(2),
+			CompletionMaxRetries = 2
+		};
+		await foreach (var p in _aiEnrichment.EnrichAsync(context.SecondaryWriteAlias, options, ctx))
 		{
 			_logger.LogInformation(
 				"[AI enrichment] {Phase}: enriched={Enriched} failed={Failed} candidates={Candidates}{Message}",
