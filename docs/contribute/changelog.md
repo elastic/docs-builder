@@ -1040,8 +1040,8 @@ Likewise, the `docs-builder changelog render` command fails for "unresolved" bun
 :::
 
 You can use the `docs-builder changelog remove` command to remove changelogs.
-It supports the same two modes as `changelog bundle`: profile-based and command-option-based.
-In the latter mode, exactly one filter option must be specified: `--all`, `--products`, `--prs`, `--issues`,`--release-version`, or `--report`.
+It supports the same two modes as `changelog bundle`: you can specify all the command options or you can define "profiles" in the changelog configuration file.
+In the command option mode, exactly one filter option must be specified: `--all`, `--products`, `--prs`, `--issues`, `--release-version`, or `--report`.
 
 Before deleting, the command automatically scans for bundles that still hold unresolved (`file:`) references to the matching changelog files.
 If any are found, the command reports an error for each dependency.
@@ -1099,20 +1099,5 @@ When using a file for `--prs` or `--issues`, every line must be a fully-qualifie
 ```sh
 docs-builder changelog remove --products "elasticsearch 9.3.0 *" --dry-run
 ```
-
-#### Remove by GitHub release [changelog-remove-release-version]
-
-You can use the `--release-version` option to remove changelogs for all pull requests in a GitHub release.
-This is the command-option counterpart to [Bundle by GitHub release](#changelog-bundle-release-version), and is useful when you want to clean up after bundling with `--release-version`.
-
-```sh
-docs-builder changelog remove \
-  --repo elasticsearch \
-  --release-version v9.2.0 \
-  --dry-run
-```
-
-`--release-version` requires `--repo` and is mutually exclusive with `--all`, `--products`, `--prs`, and `--issues`.
-Pass `--dry-run` to preview the files that would be deleted before committing.
 
 For full option details, go to [](/cli/release/changelog-remove.md).
