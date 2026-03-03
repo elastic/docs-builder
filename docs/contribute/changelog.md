@@ -807,9 +807,8 @@ docs-builder changelog bundle \
 The product metadata (`--output-products`) is inferred automatically from the release tag and repository name when not provided explicitly.
 For example, `v9.2.0` on `elasticsearch` infers `elasticsearch 9.2.0 ga`.
 
-:::{note}
 `--release-version` requires `--repo` and is mutually exclusive with `--all`, `--input-products`, `--prs`, and `--issues`.
-:::
+The owner used to fetch the release follows the precedence: `--owner` flag > `bundle.owner` in `changelog.yml` > `elastic`.
 
 ### Hide features in bundles [changelog-bundle-hide-features]
 

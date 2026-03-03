@@ -77,8 +77,8 @@ For command-option-based removal, only one filter option can be specified: `--al
 :   Cannot be combined with a profile argument.
 
 `--owner <string?>`
-:   The GitHub repository owner, which is used when pull requests or issues are specified as numbers.
-:   Defaults to `elastic` when using `--release-version`.
+:   Optional: The GitHub repository owner, which is used when pull requests or issues are specified as numbers.
+:   Precedence: `--owner` flag > `bundle.owner` in `changelog.yml` > `elastic`.
 :   Cannot be combined with a profile argument.
 
 `--products <List<ProductInfo>?>`
@@ -102,7 +102,7 @@ For command-option-based removal, only one filter option can be specified: `--al
 :   Fetch the PR list from a GitHub release and use it as the removal filter.
 :   Provide a release tag (for example, `"v9.2.0"`) or `"latest"` for the most recent release.
 :   Requires `--repo`. Mutually exclusive with `--all`, `--products`, `--prs`, and `--issues`.
-:   Set `--owner` to override the default owner (`elastic`).
+:   Owner is resolved as: `--owner` flag > `bundle.owner` in `changelog.yml` > `elastic`.
 :   Requires a `GITHUB_TOKEN` or `GH_TOKEN` environment variable (or an active `gh` login).
 
 `--repo <string?>`

@@ -10,6 +10,7 @@ using ConsoleAppFramework;
 using Documentation.Builder.Arguments;
 using Elastic.Changelog;
 using Elastic.Changelog.Bundling;
+using Elastic.Changelog.Configuration;
 using Elastic.Changelog.Creation;
 using Elastic.Changelog.GitHub;
 using Elastic.Changelog.GithubRelease;
@@ -461,9 +462,9 @@ internal sealed partial class ChangelogCommand(
 	/// <param name="issues">Filter by issue URLs (comma-separated), or a path to a newline-delimited file containing fully-qualified GitHub issue URLs. Can be specified multiple times.</param>
 	/// <param name="output">Optional: Output path for the bundled changelog. Can be either (1) a directory path, in which case 'changelog-bundle.yaml' is created in that directory, or (2) a file path ending in .yml or .yaml. Uses config bundle.output_directory or defaults to 'changelog-bundle.yaml' in the input directory</param>
 	/// <param name="outputProducts">Optional: Explicitly set the products array in the output file in format "product target lifecycle, ...". Overrides any values from changelogs.</param>
-	/// <param name="owner">GitHub repository owner (required when PRs or issues are specified as numbers or when using --release-version). Falls back to bundle.owner in changelog.yml when not specified. If that value is also absent, "elastic" is used.</param>
+	/// <param name="owner">GitHub repository owner, which is used when PRs or issues are specified as numbers or when using --release-version. Falls back to bundle.owner in changelog.yml when not specified. If that value is also absent, "elastic" is used.</param>
 	/// <param name="prs">Filter by pull request URLs (comma-separated), or a path to a newline-delimited file containing fully-qualified GitHub PR URLs. Can be specified multiple times.</param>
-	/// <param name="repo">GitHub repository name (required when PRs or issues are specified as numbers or when using --release-version). Falls back to bundle.repo in changelog.yml when not specified. If that value is also absent, the product ID is used.</param>
+	/// <param name="repo">GitHub repository name, which is used when PRs or issues are specified as numbers or when using --release-version. Falls back to bundle.repo in changelog.yml when not specified. If that value is also absent, the product ID is used.</param>
 	/// <param name="report">A URL or file path to a promotion report. Extracts PR URLs and uses them as the filter.</param>
 	/// <param name="releaseVersion">GitHub release tag to use as a filter source (for example, "v9.2.0" or "latest"). When specified, fetches the release, parses PR references from the release notes, and uses those PRs as the filter — equivalent to passing the PR list via --prs. When --output-products is not specified, it is inferred from the release tag and repository name.</param>
 	/// <param name="resolve">Optional: Copy the contents of each changelog file into the entries array. Uses config bundle.resolve or defaults to false.</param>
@@ -514,7 +515,11 @@ internal sealed partial class ChangelogCommand(
 				return 1;
 			}
 
-			var resolvedOwner = string.IsNullOrWhiteSpace(owner) ? "elastic" : owner;
+			// Precedence: --owner CLI > bundle.owner config > "elastic"
+			var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, new System.IO.Abstractions.FileSystem())
+				.LoadChangelogConfiguration(collector, config, ctx);
+			var resolvedOwner = owner ?? bundleConfig?.Bundle?.Owner ?? "elastic";
+
 			IGitHubReleaseService releaseService = new GitHubReleaseService(logFactory);
 			var release = await releaseService.FetchReleaseAsync(resolvedOwner, repo, releaseVersion, ctx);
 			if (release == null)
@@ -774,12 +779,12 @@ internal sealed partial class ChangelogCommand(
 	/// <param name="directory">Optional: Directory containing changelog YAML files. Uses config bundle.directory or defaults to current directory</param>
 	/// <param name="dryRun">Print the files that would be removed without deleting them. Valid in both profile and raw mode.</param>
 	/// <param name="force">Proceed with removal even when files are referenced by unresolved bundles. Emits warnings instead of errors for each dependency. Valid in both profile and raw mode.</param>
-	/// <param name="issues">Filter by issue URLs (comma-separated), or a path to a newline-delimited file containing fully-qualified GitHub issue URLs. Can be specified multiple times.</param>
-	/// <param name="owner">Optional: GitHub repository owner. Required when PRs or issues are specified as numbers or when using --release-version. Falls back to bundle.owner in changelog.yml when not specified.</param>
+	/// <param name="issues">Filter by issue URLs (comma-separated) or a path to a newline-delimited file containing fully-qualified GitHub issue URLs. Can be specified multiple times.</param>
+	/// <param name="owner">Optional: GitHub repository owner, which is used when PRs or issues are specified as numbers or when using --release-version. Falls back to bundle.owner in changelog.yml when not specified. If that value is also absent, "elastic" is used.</param>
 	/// <param name="products">Filter by products in format "product target lifecycle, ..." (for example, "elasticsearch 9.3.0 ga"). All three parts are required but can be wildcards (*).</param>
 	/// <param name="prs">Filter by pull request URLs (comma-separated) or a path to a newline-delimited file containing fully-qualified GitHub PR URLs. Can be specified multiple times.</param>
 	/// <param name="releaseVersion">GitHub release tag to use as a filter source (for example, "v9.2.0" or "latest"). Fetches the release, parses PR references from the release notes, and removes changelogs whose PR URLs match — equivalent to passing the PR list using --prs.</param>
-	/// <param name="repo">GitHub repository name. Required when PRs or issues are specified as numbers or  when --release-version is used. Falls back to bundle.repo in changelog.yml when not specified.</param>
+	/// <param name="repo">GitHub repository name, which is used when PRs or issues are specified as numbers or when --release-version is used. Falls back to bundle.repo in changelog.yml when not specified. If that value is also absent, the product ID is used.</param>
 	/// <param name="report">Optional (option-based mode only): URL or file path to a promotion report. Extracts PR URLs and uses them as the filter. Mutually exclusive with --all, --products, --prs, and --issues.</param>
 	/// <param name="ctx"></param>
 	[Command("remove")]
@@ -825,7 +830,11 @@ internal sealed partial class ChangelogCommand(
 				return 1;
 			}
 
-			var resolvedOwner = string.IsNullOrWhiteSpace(owner) ? "elastic" : owner;
+			// Precedence: --owner CLI > bundle.owner config > "elastic"
+			var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, new System.IO.Abstractions.FileSystem())
+				.LoadChangelogConfiguration(collector, config, ctx);
+			var resolvedOwner = owner ?? bundleConfig?.Bundle?.Owner ?? "elastic";
+
 			IGitHubReleaseService releaseService = new GitHubReleaseService(logFactory);
 			var release = await releaseService.FetchReleaseAsync(resolvedOwner, repo, releaseVersion, ctx);
 			if (release == null)
