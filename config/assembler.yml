@@ -8,7 +8,7 @@ environments:
       enabled: true
       id: GTM-KNJMG2M
     optimizely:
-      enabled: true
+      enabled: false
       id: "18132920325"
     feature_flags:
       SEARCH_OR_ASK_AI: true

@@ -155,7 +155,7 @@ const SearchResultRow = ({
 
     const breadcrumbItems = useMemo(() => {
         if (config.buildType == 'codex') {
-            return result.parents.slice(1).map((p) => p.title)
+            return result.parents.map((p) => p.title)
         }
 
         const typePrefix = result.type === 'api' ? 'API' : 'Docs'

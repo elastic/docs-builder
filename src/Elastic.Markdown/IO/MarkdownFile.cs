@@ -72,6 +72,8 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		}
 	}
 
+	public string? Description { get; private set; }
+
 	[field: AllowNull, MaybeNull]
 	public string NavigationTitle
 	{
@@ -157,6 +159,8 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		YamlFrontMatter = yamlFrontMatter;
 		if (yamlFrontMatter.NavigationTitle is not null)
 			NavigationTitle = yamlFrontMatter.NavigationTitle;
+		if (yamlFrontMatter.Description is not null)
+			Description = yamlFrontMatter.Description;
 
 		var subs = GetSubstitutions();
 

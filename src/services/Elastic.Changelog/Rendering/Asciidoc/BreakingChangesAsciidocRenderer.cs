@@ -19,7 +19,7 @@ public class BreakingChangesAsciidocRenderer(StringBuilder sb) : AsciidocRendere
 		// Group by subtype if subsections is enabled, otherwise group by area
 		var groupedEntries = context.Subsections
 			? entries.GroupBy(e => e.Subtype?.ToStringFast(true) ?? string.Empty).OrderBy(g => g.Key).ToList()
-			: entries.GroupBy(ChangelogRenderUtilities.GetComponent).ToList();
+			: entries.GroupBy(e => ChangelogRenderUtilities.GetComponent(e, context)).ToList();
 
 		foreach (var group in groupedEntries)
 		{

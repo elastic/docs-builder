@@ -244,16 +244,22 @@ public class ChangelogRenderingService(
 
 	private static string GetEntryIdentifier(ChangelogEntry entry, ChangelogRenderContext context)
 	{
-		// Try to extract PR number if available
-		if (!string.IsNullOrWhiteSpace(entry.Pr))
+		if (entry.Prs is { Count: > 0 })
 		{
 			var repo = context.EntryToRepo.GetValueOrDefault(entry, context.Repo);
-			var prNumber = ChangelogTextUtilities.ExtractPrNumber(entry.Pr, "elastic", repo);
+			var prNumber = ChangelogTextUtilities.ExtractPrNumber(entry.Prs[0], "elastic", repo);
 			if (prNumber.HasValue)
 				return $"for PR {prNumber.Value}";
 		}
 
-		// Fall back to title if no PR is available
+		if (entry.Issues is { Count: > 0 })
+		{
+			var repo = context.EntryToRepo.GetValueOrDefault(entry, context.Repo);
+			var issueNumber = ChangelogTextUtilities.ExtractIssueNumber(entry.Issues[0], "elastic", repo);
+			if (issueNumber.HasValue)
+				return $"for issue {issueNumber.Value}";
+		}
+
 		return $"'{entry.Title}'";
 	}
 
@@ -359,17 +365,20 @@ public class ChangelogRenderingService(
 		// Create mappings from entries to their metadata
 		var entryToBundleProducts = new Dictionary<ChangelogEntry, HashSet<string>>();
 		var entryToRepo = new Dictionary<ChangelogEntry, string>();
+		var entryToOwner = new Dictionary<ChangelogEntry, string>();
 		var entryToHideLinks = new Dictionary<ChangelogEntry, bool>();
 
 		foreach (var entry in resolved.Entries)
 		{
 			entryToBundleProducts[entry.Entry] = entry.BundleProductIds;
 			entryToRepo[entry.Entry] = entry.Repo;
+			entryToOwner[entry.Entry] = entry.Owner;
 			entryToHideLinks[entry.Entry] = entry.HideLinks;
 		}
 
-		// Use first repo found for section anchors, or default
+		// Use first repo/owner found for section anchors, or default
 		var repoForAnchors = resolved.Entries.Count > 0 ? resolved.Entries[0].Repo : "elastic";
+		var ownerForAnchors = resolved.Entries.Count > 0 ? resolved.Entries[0].Owner : "elastic";
 
 		return new ChangelogRenderContext
 		{
@@ -377,11 +386,13 @@ public class ChangelogRenderingService(
 			Title = outputSetup.Title,
 			TitleSlug = outputSetup.TitleSlug,
 			Repo = repoForAnchors,
+			Owner = ownerForAnchors,
 			EntriesByType = entriesByType,
 			Subsections = input.Subsections,
 			FeatureIdsToHide = featureIdsToHide,
 			EntryToBundleProducts = entryToBundleProducts,
 			EntryToRepo = entryToRepo,
+			EntryToOwner = entryToOwner,
 			EntryToHideLinks = entryToHideLinks,
 			Configuration = config
 		};

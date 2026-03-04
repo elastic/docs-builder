@@ -5,6 +5,7 @@
 using System.ComponentModel;
 using System.Text.Json;
 using Elastic.Documentation.Api.Core.Search;
+using Elastic.Documentation.Assembler.Mcp;
 using Elastic.Documentation.Mcp.Remote.Responses;
 using Microsoft.Extensions.Logging;
 using ModelContextProtocol.Server;
@@ -20,8 +21,8 @@ public class CoherenceTools(IFullSearchGateway fullSearchGateway, ILogger<Cohere
 	/// <summary>
 	/// Checks documentation coherence for a given topic.
 	/// </summary>
-	[McpServerTool, Description(
-		"Checks how coherently a topic is covered across all Elastic documentation. " +
+	[McpServerTool, McpToolName("check_{resource}_coherence"), Description(
+		"Checks how coherently a topic is covered across all {docs}. " +
 		"Use when reviewing documentation quality, auditing coverage of a feature or concept, " +
 		"or checking whether a topic is documented consistently across products and sections.")]
 	public async Task<string> CheckCoherence(
@@ -92,8 +93,8 @@ public class CoherenceTools(IFullSearchGateway fullSearchGateway, ILogger<Cohere
 	/// <summary>
 	/// Finds potential inconsistencies in documentation for a given topic.
 	/// </summary>
-	[McpServerTool, Description(
-		"Finds potential inconsistencies across Elastic documentation pages covering the same topic. " +
+	[McpServerTool, McpToolName("find_{resource}_inconsistencies"), Description(
+		"Finds potential inconsistencies across {docs} pages covering the same topic. " +
 		"Use when auditing docs quality, verifying that instructions don't contradict each other, " +
 		"or checking for overlapping content within a product area.")]
 	public async Task<string> FindInconsistencies(

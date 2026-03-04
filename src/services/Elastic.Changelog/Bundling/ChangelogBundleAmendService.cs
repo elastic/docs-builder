@@ -236,7 +236,7 @@ public partial class ChangelogBundleAmendService(ILoggerFactory logFactory, IFil
 				Highlight = entry.Highlight,
 				Subtype = entry.Subtype,
 				Areas = entry.Areas,
-				Pr = entry.Pr,
+				Prs = entry.Prs,
 				Issues = entry.Issues
 			};
 		}

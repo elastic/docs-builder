@@ -18,7 +18,9 @@ type ``link to redirected page`` () =
     [<Fact>]
     let ``validate HTML`` () =
         markdown |> convertsToHtml $"""
-            <p><a href="{urlPrefix}/testing/redirects/second-page">
+            <p><a href="{urlPrefix}/testing/redirects/second-page"
+                target="_blank"
+                rel="noopener noreferrer">
                 Was first is now second
             </a></p>
         """
@@ -38,7 +40,9 @@ type ``link to redirected page with renamed anchor`` () =
     [<Fact>]
     let ``validate HTML`` () =
         markdown |> convertsToHtml $"""
-            <p><a href="{urlPrefix}/testing/redirects/second-page#active-anchor">
+            <p><a href="{urlPrefix}/testing/redirects/second-page#active-anchor"
+                target="_blank"
+                rel="noopener noreferrer">
                 Was first is now second
             </a></p>
         """
@@ -60,7 +64,9 @@ type ``Scenario 1: Moving a file`` () =
     [<Fact>]
     let ``validate HTML`` () =
         markdown |> convertsToHtml $"""
-            <p><a href="{urlPrefix}/testing/redirects/second-page#active-anchor">
+            <p><a href="{urlPrefix}/testing/redirects/second-page#active-anchor"
+                target="_blank"
+                rel="noopener noreferrer">
                 Scenario 1</a></p>
         """
 
@@ -72,7 +78,9 @@ type ``Scenario 1 B: Moving a file`` () =
     [<Fact>]
     let ``validate HTML`` () =
         markdown |> convertsToHtml $"""
-            <p><a href="{urlPrefix}/testing/redirects/5th-page#yy">
+            <p><a href="{urlPrefix}/testing/redirects/5th-page#yy"
+                target="_blank"
+                rel="noopener noreferrer">
                 Scenario 1</a></p>
         """
 
@@ -90,8 +98,12 @@ type ``Scenario 2: Splitting a page into multiple smaller pages`` () =
     [<Fact>]
     let ``validate HTML`` () =
         markdown |> convertsToHtml $"""
-            <p><a href="{urlPrefix}/testing/redirects/second-page#zz">Scenario 2</a>
-            <a href="{urlPrefix}/testing/redirects/third-page#bb">Scenario 2</a></p>
+            <p><a href="{urlPrefix}/testing/redirects/second-page#zz"
+                target="_blank"
+                rel="noopener noreferrer">Scenario 2</a>
+            <a href="{urlPrefix}/testing/redirects/third-page#bb"
+                target="_blank"
+                rel="noopener noreferrer">Scenario 2</a></p>
         """
 
 
@@ -105,7 +117,9 @@ type ``Scenario 3: Deleting a section on a page (removing anchors)`` () =
     [<Fact>]
     let ``validate HTML`` () =
         markdown |> convertsToHtml $"""
-            <p><a href="{urlPrefix}/testing/redirects/third-page">
+            <p><a href="{urlPrefix}/testing/redirects/third-page"
+                target="_blank"
+                rel="noopener noreferrer">
                 Scenario 3</a></p>
         """
 
@@ -119,7 +133,9 @@ type ``Scenario 3 B: Linking to a removed anchor on a redirected page`` () =
     [<Fact>]
     let ``validate HTML`` () =
         markdown |> convertsToHtml $"""
-            <p><a href="{urlPrefix}/testing/redirects/second-page">
+            <p><a href="{urlPrefix}/testing/redirects/second-page"
+                target="_blank"
+                rel="noopener noreferrer">
                 Scenario 3 B</a></p>
         """
 
@@ -136,7 +152,9 @@ type ``Scenario 4: Deleting an entire page`` () =
     [<Fact>]
     let ``validate HTML`` () =
         markdown |> convertsToHtml $"""
-            <p><a href="{urlPrefix}/testing/redirects/5th-page">
+            <p><a href="{urlPrefix}/testing/redirects/5th-page"
+                target="_blank"
+                rel="noopener noreferrer">
                 Scenario 4</a></p>
         """
 
@@ -148,7 +166,9 @@ type ``Scenario 4 B: Deleting an entire page (short syntax for no anchors)`` () 
     [<Fact>]
     let ``validate HTML`` () =
         markdown |> convertsToHtml $"""
-            <p><a href="{urlPrefix}/testing/redirects/5th-page">
+            <p><a href="{urlPrefix}/testing/redirects/5th-page"
+                target="_blank"
+                rel="noopener noreferrer">
                 Scenario 4</a></p>
         """
 
@@ -162,5 +182,7 @@ type ``Scenario 5: Deleting an entire page`` () =
     [<Fact>]
     let ``validate HTML`` () =
         markdown |> convertsToHtml $"""
-            <p><a href="{urlPrefix}/">Scenario 5</a></p>
+            <p><a href="{urlPrefix}/"
+                target="_blank"
+                rel="noopener noreferrer">Scenario 5</a></p>
         """

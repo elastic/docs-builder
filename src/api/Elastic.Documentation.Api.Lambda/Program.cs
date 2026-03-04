@@ -9,6 +9,7 @@ using Elastic.Documentation.Api.Core.AskAi;
 using Elastic.Documentation.Api.Core.Search;
 using Elastic.Documentation.Api.Infrastructure;
 using Elastic.Documentation.Api.Infrastructure.OpenTelemetry;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.ServiceDefaults;
 using Microsoft.AspNetCore.Diagnostics;
@@ -64,7 +65,7 @@ try
 			return Task.CompletedTask;
 		}));
 
-	var v1 = app.MapGroup("/docs/_api/v1");
+	var v1 = app.MapGroup($"{SystemEnvironmentVariables.Instance.ApiPrefix}/v1");
 
 	var mapOtlpEndpoints = !string.IsNullOrWhiteSpace(builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]);
 	v1.MapElasticDocsApiEndpoints(mapOtlpEndpoints);

@@ -112,7 +112,7 @@ export const SearchInput = ({
                     );
                     border: 1px solid ${euiTheme.colors.borderBasePlain};
                     border-radius: ${euiTheme.border.radius.medium};
-                    background: ${euiTheme.colors.backgroundBasePlain};
+                    background: ${euiTheme.colors.backgroundBaseSubdued};
                     font-size: ${euiTheme.font.scale.s * euiTheme.base}px;
                     line-height: ${euiTheme.base * 1.25}px;
                     color: ${euiTheme.colors.textParagraph};

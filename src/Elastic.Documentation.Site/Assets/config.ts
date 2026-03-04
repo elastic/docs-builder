@@ -9,6 +9,7 @@ export interface DocsConfig {
     serviceName: string
     telemetryEnabled: boolean
     rootPath: string // '/docs' for assembler, '' for codex and isolated
+    apiBasePath: string // '/docs/_api' for assembler, '/api' for codex
 }
 
 declare global {
@@ -22,6 +23,7 @@ const DEFAULT_CONFIG: DocsConfig = {
     serviceName: 'docs-frontend',
     telemetryEnabled: false,
     rootPath: '',
+    apiBasePath: '/docs/_api',
 }
 
 export const config: DocsConfig = window.__DOCS_CONFIG__ ?? DEFAULT_CONFIG

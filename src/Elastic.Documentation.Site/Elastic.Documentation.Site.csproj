@@ -10,6 +10,7 @@
     <EnableRequestDelegateGenerator>true</EnableRequestDelegateGenerator>
     <InterceptorsPreviewNamespaces>$(InterceptorsPreviewNamespaces);Microsoft.AspNetCore.Http.Generated</InterceptorsPreviewNamespaces>
     <IsPublishable>true</IsPublishable>
+    <EnableDefaultRazorSlices>false</EnableDefaultRazorSlices>
   </PropertyGroup>
   
   <ItemGroup>
@@ -21,6 +22,10 @@
   <ItemGroup>
     <PackageReference Include="RazorSlices" />
     <PackageReference Include="Microsoft.Extensions.Logging" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <RazorSlice Include="**/*.cshtml" Exclude="**/_ViewImports.cshtml" />
   </ItemGroup>
 
   <!-- source https://www.meziantou.net/running-npm-tasks-when-building-a-dotnet-project.htm -->
@@ -54,14 +59,19 @@
     <NpmBuildInputFiles Include="tailwind.config.js" />
     <NpmBuildInputFiles Include=".parcelrc" />
     <NpmBuildInputFiles Include=".postcssrc" />
-    <!-- Tailwind scans these directories for utility class usage (see tailwind.config.js content paths) -->
-    <NpmBuildInputFiles Include="../Elastic.Markdown/**/*.cshtml" />
-    <NpmBuildInputFiles Include="../Elastic.Codex/**/*.cshtml" />
-    <NpmBuildInputFiles Include="../Elastic.ApiExplorer/**/*.cshtml" />
-    <NpmBuildInputFiles Include="**/*.cshtml" />
   </ItemGroup>
+  <!-- Tailwind scans these directories for utility class usage (see tailwind.config.js content paths).
+       Resolved inside a target so external cshtml files don't appear in the IDE's project tree. -->
+  <Target Name="CollectExternalCshtmlInputs">
+    <ItemGroup>
+      <NpmBuildInputFiles Include="**/*.cshtml" />
+      <NpmBuildInputFiles Include="../Elastic.Markdown/**/*.cshtml" />
+      <NpmBuildInputFiles Include="../Elastic.Codex/**/*.cshtml" />
+      <NpmBuildInputFiles Include="../Elastic.ApiExplorer/**/*.cshtml" />
+    </ItemGroup>
+  </Target>
   <Target Name="NpmRunBuild"
-          DependsOnTargets="NpmInstall;MinVer"
+          DependsOnTargets="NpmInstall;MinVer;CollectExternalCshtmlInputs"
           BeforeTargets="BeforeBuild"
           Inputs="@(NpmBuildInputFiles)"
           Outputs="_static/.build-stamp;_static/main.js;_static/styles.css">

@@ -110,10 +110,16 @@ public class TestDocumentationSetContext : IDocumentationSetContext
 	public IReadOnlyCollection<Diagnostic> Diagnostics => ((TestDiagnosticsCollector)Collector).Diagnostics;
 }
 
-public class TestDocumentationFile(string navigationTitle) : IDocumentationFile
+public class TestDocumentationFile(string title, string? navigationTitle = null, string? description = null) : IDocumentationFile
 {
 	/// <inheritdoc />
-	public string NavigationTitle { get; } = navigationTitle;
+	public string Title { get; } = title;
+
+	/// <inheritdoc />
+	public string? Description { get; } = description;
+
+	/// <inheritdoc />
+	public string NavigationTitle { get; } = navigationTitle ?? title;
 }
 
 public class TestDocumentationFileFactory : IDocumentationFileFactory<TestDocumentationFile>
@@ -129,6 +135,33 @@ public class TestDocumentationFileFactory : IDocumentationFileFactory<TestDocume
 		var title = fileName.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
 			? fileName[..^3]
 			: fileName;
+		return new TestDocumentationFile(title);
+	}
+}
+
+/// <summary>
+/// Factory for Codex tests that parses markdown to extract the h1 as the navigation title.
+/// Used when testing that index.md h1 is used as the docset title.
+/// </summary>
+public class CodexTestDocumentationFileFactory : IDocumentationFileFactory<TestDocumentationFile>
+{
+	public static CodexTestDocumentationFileFactory Instance { get; } = new();
+
+	public TestDocumentationFile TryCreateDocumentationFile(IFileInfo path, IFileSystem readFileSystem)
+	{
+		var fileName = path.Name;
+		var title = fileName.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
+			? fileName[..^3]
+			: fileName;
+		if (path.Exists)
+		{
+			var text = readFileSystem.File.ReadAllText(path.FullName);
+			var md = MarkdownParser.Parse(text);
+			var header = md.OfType<HeadingBlock>().FirstOrDefault();
+			var inline = header?.Inline?.OfType<LiteralInline>().FirstOrDefault()?.Content.Text;
+			if (inline != null)
+				title = inline.Trim(['#', ' ']);
+		}
 		return new TestDocumentationFile(title);
 	}
 }

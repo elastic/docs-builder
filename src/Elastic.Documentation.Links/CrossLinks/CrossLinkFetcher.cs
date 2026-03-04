@@ -20,11 +20,25 @@ public record FetchedCrossLinks
 
 	public required FrozenDictionary<string, LinkRegistryEntry> LinkIndexEntries { get; init; }
 
+	/// <summary>
+	/// Optional map of repository name to link index registry URL for error messages.
+	/// When null or missing, falls back to the public S3 URL.
+	/// </summary>
+	public FrozenDictionary<string, string>? RegistryUrlsByRepository { get; init; }
+
+	/// <summary>
+	/// Set of repository names that belong to a codex (non-public) registry.
+	/// Used by the URI resolver to generate codex URLs instead of public preview URLs.
+	/// </summary>
+	public FrozenSet<string>? CodexRepositories { get; init; }
+
 	public static FetchedCrossLinks Empty { get; } = new()
 	{
 		DeclaredRepositories = [],
 		LinkReferences = new Dictionary<string, RepositoryLinks>().ToFrozenDictionary(),
-		LinkIndexEntries = new Dictionary<string, LinkRegistryEntry>().ToFrozenDictionary()
+		LinkIndexEntries = new Dictionary<string, LinkRegistryEntry>().ToFrozenDictionary(),
+		RegistryUrlsByRepository = null,
+		CodexRepositories = null
 	};
 }
 
@@ -87,19 +101,45 @@ public abstract class CrossLinkFetcher(ILoggerFactory logFactory, ILinkIndexRead
 		throw new Exception($"Repository found in link index however none of: '{string.Join(", ", keys)}' branches found");
 	}
 
-	protected async Task<RepositoryLinks> FetchLinkIndexEntry(string repository, LinkRegistryEntry linkRegistryEntry, Cancel ctx)
+	protected Task<RepositoryLinks> FetchLinkIndexEntry(string repository, LinkRegistryEntry linkRegistryEntry, Cancel ctx) =>
+		FetchLinkIndexEntryFromReader(linkIndexProvider, repository, linkRegistryEntry, ctx);
+
+	/// <summary>
+	/// Fetches repository links from a specific reader. Used for dual-registry (public + codex) fetching.
+	/// </summary>
+	protected async Task<RepositoryLinks> FetchLinkIndexEntryFromReader(
+		ILinkIndexReader reader,
+		string repository,
+		LinkRegistryEntry linkRegistryEntry,
+		Cancel ctx)
 	{
 		var linkReference = await TryGetCachedLinkReference(repository, linkRegistryEntry);
 		if (linkReference is not null)
 		{
-			Logger.LogInformation("Using locally cached links.json for '{Repository}' from {RegistryUrl}", repository, linkIndexProvider.RegistryUrl);
+			Logger.LogInformation("Using locally cached links.json for '{Repository}' from {RegistryUrl}", repository, reader.RegistryUrl);
 			return linkReference;
 		}
 
-		Logger.LogInformation("Fetching links.json for '{Repository}' from {RegistryUrl}", repository, linkIndexProvider.RegistryUrl);
-		linkReference = await linkIndexProvider.GetRepositoryLinks(linkRegistryEntry.Path, ctx);
+		Logger.LogInformation("Fetching links.json for '{Repository}' from {RegistryUrl}", repository, reader.RegistryUrl);
+		linkReference = await reader.GetRepositoryLinks(linkRegistryEntry.Path, ctx);
 		WriteLinksJsonCachedFile(repository, linkRegistryEntry, linkReference);
 		return linkReference;
+	}
+
+	/// <summary>
+	/// Fetches cross-links for a repository from a specific reader. Used for dual-registry fetching.
+	/// </summary>
+	protected static async Task<RepositoryLinks> FetchCrossLinksFromReader(
+		ILinkIndexReader reader,
+		string repository,
+		CrossLinkFetcher fetcher,
+		Cancel ctx)
+	{
+		var linkIndex = await reader.GetRegistry(ctx);
+		if (!linkIndex.Repositories.TryGetValue(repository, out var repositoryLinks))
+			throw new Exception($"Repository {repository} not found in link index");
+		var entry = GetNextContentSourceLinkIndexEntry(repositoryLinks, repository);
+		return await fetcher.FetchLinkIndexEntryFromReader(reader, repository, entry, ctx);
 	}
 
 	private void WriteLinksJsonCachedFile(string repository, LinkRegistryEntry linkRegistryEntry, RepositoryLinks linkReference)

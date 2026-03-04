@@ -125,7 +125,7 @@ public class CrossLinkReferenceTest(ITestOutputHelper output) : LinkTestBase(out
 	[Fact]
 	public void GeneratesHtml() =>
 		Html.ShouldContainHtml(
-			"""<p><a href="https://docs-v3-preview.elastic.dev/elastic/kibana/tree/main/">test</a></p>"""
+			"""<p><a href="https://docs-v3-preview.elastic.dev/elastic/kibana/tree/main/" target="_blank" rel="noopener noreferrer">test</a></p>"""
 		);
 
 	[Fact]
@@ -150,7 +150,7 @@ public class CrossLinkTest(ITestOutputHelper output) : LinkTestBase(output,
 	public void GeneratesHtml() =>
 		// language=html
 		Html.Should().Contain(
-			"""<p>Go to <a href="https://docs-v3-preview.elastic.dev/elastic/kibana/tree/main/" hx-select-oob="#content-container,#toc-nav,#nav-tree,#nav-dropdown" preload="mousedown">test</a></p>"""
+			"""<p>Go to <a href="https://docs-v3-preview.elastic.dev/elastic/kibana/tree/main/" target="_blank" rel="noopener noreferrer">test</a></p>"""
 		);
 
 	[Fact]
@@ -175,7 +175,7 @@ public class CrossLinkEmptyTextTest(ITestOutputHelper output) : LinkTestBase(out
 	public void GeneratesHtml() =>
 		// language=html - empty crosslinks now emit an error
 		Html.Should().Contain(
-			"""<p>Go to <a href="https://docs-v3-preview.elastic.dev/elastic/kibana/tree/main/" hx-select-oob="#content-container,#toc-nav,#nav-tree,#nav-dropdown" preload="mousedown"></a></p>"""
+			"""<p>Go to <a href="https://docs-v3-preview.elastic.dev/elastic/kibana/tree/main/" target="_blank" rel="noopener noreferrer"></a></p>"""
 		);
 
 	[Fact]
@@ -201,9 +201,9 @@ public class CrossLinkEmptyTextNoTitleTest(ITestOutputHelper output) : LinkTestB
 {
 	[Fact]
 	public void GeneratesHtml() =>
-		// language=html - empty crosslinks emit an error
+		// language=html - empty crosslinks emit an error; isolated builds get target=_blank
 		Html.Should().Contain(
-			"""<p>Go to <a href="https://docs-v3-preview.elastic.dev/elastic/kibana/tree/main/get-started" hx-select-oob="#content-container,#toc-nav,#nav-tree,#nav-dropdown" preload="mousedown"></a></p>"""
+			"""<p>Go to <a href="https://docs-v3-preview.elastic.dev/elastic/kibana/tree/main/get-started" target="_blank" rel="noopener noreferrer"></a></p>"""
 		);
 
 	[Fact]

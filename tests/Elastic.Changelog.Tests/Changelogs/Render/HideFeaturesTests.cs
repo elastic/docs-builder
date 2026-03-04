@@ -28,7 +28,8 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 			  - product: elasticsearch
 			    target: 9.2.0
 			feature-id: feature:hidden-api
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			- "100"
 			description: This feature should be hidden
 			""";
 
@@ -41,7 +42,8 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/101
+			prs:
+			- "101"
 			description: This feature should be visible
 			""";
 
@@ -121,7 +123,8 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 			  - product: elasticsearch
 			    target: 9.2.0
 			feature-id: feature:hidden-breaking
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			- "100"
 			description: This breaking change should be hidden
 			impact: Users will be affected
 			action: Update your code
@@ -195,7 +198,8 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 			  - product: elasticsearch
 			    target: 9.2.0
 			feature-id: feature:hidden-deprecation
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			- "100"
 			description: This deprecation should be hidden
 			""";
 
@@ -262,7 +266,8 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 			  - product: elasticsearch
 			    target: 9.2.0
 			feature-id: feature:first
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			- "100"
 			""";
 
 		// language=yaml
@@ -274,7 +279,8 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 			  - product: elasticsearch
 			    target: 9.2.0
 			feature-id: feature:second
-			pr: https://github.com/elastic/elasticsearch/pull/101
+			prs:
+			- "101"
 			""";
 
 		// language=yaml
@@ -285,7 +291,8 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/102
+			prs:
+			- "102"
 			""";
 
 		var changelogFile1 = FileSystem.Path.Combine(changelogDir, "1755268130-first.yaml");
@@ -359,7 +366,8 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 			  - product: elasticsearch
 			    target: 9.2.0
 			feature-id: feature:from-file
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			- "100"
 			""";
 
 		var changelogFile = FileSystem.Path.Combine(changelogDir, "1755268130-hidden.yaml");
@@ -425,7 +433,8 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 			  - product: elasticsearch
 			    target: 9.2.0
 			feature-id: Feature:UpperCase
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			- "100"
 			""";
 
 		var changelogFile = FileSystem.Path.Combine(changelogDir, "1755268130-hidden.yaml");
@@ -487,7 +496,8 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 			  - product: elasticsearch
 			    target: 9.2.0
 			feature-id: feature:from-bundle
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			- "100"
 			""";
 
 		// language=yaml
@@ -498,7 +508,8 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/101
+			prs:
+			- "101"
 			""";
 
 		var changelogFile1 = FileSystem.Path.Combine(changelogDir, "1755268130-hidden.yaml");
@@ -571,7 +582,8 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 			  - product: elasticsearch
 			    target: 9.2.0
 			feature-id: feature:cli-hidden
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			- "100"
 			""";
 
 		// language=yaml
@@ -583,7 +595,8 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 			  - product: elasticsearch
 			    target: 9.2.0
 			feature-id: feature:bundle-hidden
-			pr: https://github.com/elastic/elasticsearch/pull/101
+			prs:
+			- "101"
 			""";
 
 		// language=yaml
@@ -594,7 +607,8 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			pr: https://github.com/elastic/elasticsearch/pull/102
+			prs:
+			- "102"
 			""";
 
 		var changelogFile1 = FileSystem.Path.Combine(changelogDir, "1755268130-cli.yaml");
