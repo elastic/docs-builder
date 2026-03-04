@@ -101,17 +101,17 @@ public class ChangelogRemoveService(
 			// Handle profile-based removal (same ordering as ChangelogBundlingService)
 			if (!string.IsNullOrWhiteSpace(input.Profile))
 			{
-			var filterResult = await ProfileFilterResolver.ResolveAsync(
-					collector,
-					input.Profile,
-					input.ProfileArgument,
-					config,
-					_fileSystem,
-					_logger,
-					ctx,
-					input.ProfileReport,
-					_releaseService
-				);
+				var filterResult = await ProfileFilterResolver.ResolveAsync(
+						collector,
+						input.Profile,
+						input.ProfileArgument,
+						config,
+						_fileSystem,
+						_logger,
+						ctx,
+						input.ProfileReport,
+						_releaseService
+					);
 
 				if (filterResult == null)
 					return false;
