@@ -1973,6 +1973,118 @@ public class BundleChangelogsTests : ChangelogTestBase
 	}
 
 	[Fact]
+	public async Task BundleChangelogs_WithBundleLevelRepoConfig_UsesConfigRepoWhenOptionNotSpecified()
+	{
+		// Arrange - bundle.repo in config is used when --repo is not provided on the CLI
+
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  repo: cloud
+			  owner: elastic
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// language=yaml
+		var changelog1 =
+			"""
+			title: Serverless feature
+			type: feature
+			products:
+			  - product: cloud-serverless
+			    target: 2025-06-01
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/cloud/pull/100
+			""";
+
+		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-serverless-feature.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+
+		var outputPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			All = true,
+			Config = configPath,
+			Output = outputPath
+			// No --repo or --owner: should be picked up from bundle config
+		};
+
+		// Act
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue($"Expected bundling to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		Collector.Errors.Should().Be(0);
+
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		bundleContent.Should().Contain("repo: cloud", "bundle.repo config should be applied when --repo is not specified");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithRepoOptionAndBundleLevelConfig_CliOptionTakesPrecedence()
+	{
+		// Arrange - explicit --repo overrides bundle.repo in config
+
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  repo: wrong-repo
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// language=yaml
+		var changelog1 =
+			"""
+			title: Serverless feature
+			type: feature
+			products:
+			  - product: cloud-serverless
+			    target: 2025-06-01
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/cloud/pull/100
+			""";
+
+		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-serverless-feature.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+
+		var outputPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			All = true,
+			Config = configPath,
+			Output = outputPath,
+			Repo = "cloud"  // explicit CLI --repo should win over bundle.repo: wrong-repo
+		};
+
+		// Act
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue($"Expected bundling to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		Collector.Errors.Should().Be(0);
+
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		bundleContent.Should().Contain("repo: cloud", "explicit --repo should override bundle.repo config");
+		bundleContent.Should().NotContain("repo: wrong-repo");
+	}
+
+	[Fact]
 	public async Task BundleChangelogs_WithOutputProductsAndRepo_IncludesRepoInAllProducts()
 	{
 		// Arrange - Test that --repo option works with --output-products
@@ -2264,9 +2376,11 @@ public class BundleChangelogsTests : ChangelogTestBase
 	}
 
 	[Fact]
-	public async Task BundleChangelogs_WithProfileAndCliHideFeatures_MergesBothSources()
+	public async Task BundleChangelogs_WithProfile_OnlyProfileHideFeaturesAreUsed()
 	{
-		// Arrange - Test that CLI --hide-features and profile hide_features are merged
+		// Arrange - In profile mode, only hide_features from the profile config are written to the bundle.
+		// Any HideFeatures passed directly to the service are ignored (the CLI now rejects --hide-features
+		// in profile mode, so this combination is not reachable from the command layer).
 
 		// language=yaml
 		var configContent =
@@ -2309,8 +2423,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			Profile = "es-release",
 			ProfileArgument = "9.2.0",
 			Config = configPath,
-			OutputDirectory = outputDir,
-			HideFeatures = ["feature:from-cli"]
+			OutputDirectory = outputDir
 		};
 
 		// Act
@@ -2325,16 +2438,15 @@ public class BundleChangelogsTests : ChangelogTestBase
 		outputFiles.Should().NotBeEmpty("Expected an output file to be created");
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current.CancellationToken);
 
-		// Verify that hide-features from BOTH sources are present
+		// Verify that only the profile hide-features are present
 		bundleContent.Should().Contain("hide-features:");
 		bundleContent.Should().Contain("- feature:from-profile");
-		bundleContent.Should().Contain("- feature:from-cli");
 	}
 
 	[Fact]
-	public async Task BundleChangelogs_WithProfileAndCliHideFeatures_DeduplicatesFeatureIds()
+	public async Task BundleChangelogs_WithProfileMultipleHideFeatures_AllProfileFeaturesArePresent()
 	{
-		// Arrange - Test that duplicate feature IDs from CLI and profile are deduplicated
+		// Arrange - All hide_features from the profile are written to the bundle
 
 		// language=yaml
 		var configContent =
@@ -2345,8 +2457,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			      products: "elasticsearch {version} {lifecycle}"
 			      output: "elasticsearch-{version}.yaml"
 			      hide_features:
-			        - feature:shared
-			        - feature:profile-only
+			        - feature:profile-one
+			        - feature:profile-two
 			""";
 
 		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), "config3", "changelog.yml");
@@ -2378,8 +2490,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			Profile = "es-release",
 			ProfileArgument = "9.2.0",
 			Config = configPath,
-			OutputDirectory = outputDir,
-			HideFeatures = ["feature:shared", "feature:cli-only"] // "feature:shared" overlaps with profile
+			OutputDirectory = outputDir
 		};
 
 		// Act
@@ -2393,14 +2504,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 		outputFiles.Should().NotBeEmpty("Expected an output file to be created");
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current.CancellationToken);
 
-		// Verify all unique features are present
-		bundleContent.Should().Contain("- feature:shared");
-		bundleContent.Should().Contain("- feature:profile-only");
-		bundleContent.Should().Contain("- feature:cli-only");
-
-		// Count occurrences of "feature:shared" - should appear exactly once (deduplicated)
-		var sharedCount = bundleContent.Split("feature:shared").Length - 1;
-		sharedCount.Should().Be(1, "Duplicate feature IDs should be deduplicated");
+		bundleContent.Should().Contain("- feature:profile-one");
+		bundleContent.Should().Contain("- feature:profile-two");
 	}
 
 	[Fact]
@@ -2735,6 +2840,477 @@ public class BundleChangelogsTests : ChangelogTestBase
 		// Resolved entries should include inline data
 		amendContent.Should().Contain("title: Resolved amend feature");
 		amendContent.Should().Contain("type: feature");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithProfile_OutputProducts_OverridesProductsArray()
+	{
+		// Arrange - output_products overrides the products array written to the bundle.
+		// The profile uses a wildcard lifecycle to match any changelog for the given version,
+		// while output_products pins the lifecycle advertised in the bundle output to "ga".
+
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  profiles:
+			    es-release:
+			      products: "elasticsearch {version} *"
+			      output: "elasticsearch-{version}.yaml"
+			      output_products: "elasticsearch {version} ga"
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// language=yaml
+		var changelog1 =
+			"""
+			title: Elasticsearch feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: preview
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
+			""";
+
+		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-feature.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+
+		var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			Profile = "es-release",
+			ProfileArgument = "9.2.0",
+			Config = configPath,
+			OutputDirectory = outputDir
+		};
+
+		// Act
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue($"Expected bundling to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		Collector.Errors.Should().Be(0);
+
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		outputFiles.Should().NotBeEmpty("Expected an output file to be created");
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current.CancellationToken);
+
+		// output_products overrides: the products array in the bundle output should have lifecycle: ga
+		// even though the matched changelog has lifecycle: preview
+		bundleContent.Should().Contain("lifecycle: ga", "output_products should write lifecycle: ga to the bundle products array");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithProfile_RepoAndOwner_WritesValuesToProductEntries()
+	{
+		// Arrange - repo and owner in the profile are written to each product entry in the bundle.
+		// Note: date-based versions like "2025-06-01" contain dashes that InferLifecycle treats as
+		// a semver prerelease, so we use a wildcard lifecycle in the products pattern to match any
+		// lifecycle value present in the changelog files.
+
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  profiles:
+			    serverless-release:
+			      products: "cloud-serverless {version} *"
+			      output: "serverless-{version}.yaml"
+			      repo: cloud
+			      owner: elastic
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// language=yaml
+		var changelog1 =
+			"""
+			title: Serverless feature
+			type: feature
+			products:
+			  - product: cloud-serverless
+			    target: 2025-06-01
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/cloud/pull/200
+			""";
+
+		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-serverless-feature.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+
+		var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			Profile = "serverless-release",
+			ProfileArgument = "2025-06-01",
+			Config = configPath,
+			OutputDirectory = outputDir
+		};
+
+		// Act
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue($"Expected bundling to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		Collector.Errors.Should().Be(0);
+
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		outputFiles.Should().NotBeEmpty("Expected an output file to be created");
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current.CancellationToken);
+
+		// Only repo is persisted in the bundle products array; owner is used for PR URL normalization at render time
+		bundleContent.Should().Contain("repo: cloud", "Profile repo should be written to bundle product entries");
+		bundleContent.Should().NotContain("owner:", "owner is not stored in the bundle products array");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithProfile_BundleLevelRepo_AppliesWhenProfileOmitsRepo()
+	{
+		// Arrange - repo is set at bundle level, not in the profile; profile should inherit it
+
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  repo: elasticsearch
+			  owner: elastic
+			  profiles:
+			    es-release:
+			      products: "elasticsearch {version} {lifecycle}"
+			      output: "elasticsearch-{version}.yaml"
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// language=yaml
+		var changelog1 =
+			"""
+			title: Elasticsearch feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
+			""";
+
+		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-feature.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+
+		var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			Profile = "es-release",
+			ProfileArgument = "9.2.0",
+			Config = configPath,
+			OutputDirectory = outputDir
+		};
+
+		// Act
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue($"Expected bundling to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		Collector.Errors.Should().Be(0);
+
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		outputFiles.Should().NotBeEmpty();
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current.CancellationToken);
+
+		bundleContent.Should().Contain("repo: elasticsearch", "bundle-level repo should be applied when profile omits repo");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithProfile_ProfileRepoOverridesBundleRepo()
+	{
+		// Arrange - both bundle-level and profile-level repo are set; profile-level wins
+
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  repo: wrong-repo
+			  profiles:
+			    es-release:
+			      products: "elasticsearch {version} {lifecycle}"
+			      output: "elasticsearch-{version}.yaml"
+			      repo: elasticsearch
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// language=yaml
+		var changelog1 =
+			"""
+			title: Elasticsearch feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
+			""";
+
+		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-feature.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+
+		var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			Profile = "es-release",
+			ProfileArgument = "9.2.0",
+			Config = configPath,
+			OutputDirectory = outputDir
+		};
+
+		// Act
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue($"Expected bundling to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		Collector.Errors.Should().Be(0);
+
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		outputFiles.Should().NotBeEmpty();
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current.CancellationToken);
+
+		bundleContent.Should().Contain("repo: elasticsearch", "profile-level repo should override bundle-level repo");
+		bundleContent.Should().NotContain("repo: wrong-repo", "bundle-level repo should be overridden by profile-level repo");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithProfile_NoRepoOwner_PreservesExistingFallbackBehavior()
+	{
+		// Arrange - when profile has no repo/owner, the bundle products have no repo field
+		// (existing fallback: product ID is used at render time if no repo is present)
+
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  profiles:
+			    es-release:
+			      products: "elasticsearch {version} {lifecycle}"
+			      output: "elasticsearch-{version}.yaml"
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// language=yaml
+		var changelog1 =
+			"""
+			title: Elasticsearch feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
+			""";
+
+		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-feature.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+
+		var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			Profile = "es-release",
+			ProfileArgument = "9.2.0",
+			Config = configPath,
+			OutputDirectory = outputDir
+		};
+
+		// Act
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert — succeeds without error; no repo field written to products
+		result.Should().BeTrue($"Expected bundling to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		Collector.Errors.Should().Be(0);
+
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		outputFiles.Should().NotBeEmpty("Expected an output file to be created");
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current.CancellationToken);
+
+		bundleContent.Should().NotContain("repo:", "No repo field should be present when profile omits repo");
+		bundleContent.Should().NotContain("owner:", "No owner field should be present when profile omits owner");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithProfileMode_MissingConfig_ReturnsErrorWithAdvice()
+	{
+		// Arrange - no config file exists at ./changelog.yml or ./docs/changelog.yml.
+		// Use a fresh MockFileSystem with a known CWD so discovery returns no results.
+		var cwdFs = new System.IO.Abstractions.TestingHelpers.MockFileSystem(
+			null,
+			currentDirectory: "/empty-project"
+		);
+		cwdFs.Directory.CreateDirectory("/empty-project");
+		var service = new ChangelogBundlingService(LoggerFactory, ConfigurationContext, cwdFs);
+
+		var input = new BundleChangelogsArguments
+		{
+			Profile = "es-release",
+			ProfileArgument = "9.2.0"
+			// Config intentionally omitted — triggers CWD discovery
+		};
+
+		// Act
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeFalse("Should fail when no config file is found");
+		Collector.Diagnostics.Should().ContainSingle(d =>
+			d.Severity == Severity.Error &&
+			(d.Message.Contains("changelog.yml") || d.Message.Contains("changelog init")),
+			"Error message should mention changelog.yml or advise running changelog init"
+		);
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithProfileMode_ConfigAtCurrentDir_LoadsSuccessfully()
+	{
+		// Arrange - changelog.yml is at ./changelog.yml (in the current working directory)
+		var cwdFs = new System.IO.Abstractions.TestingHelpers.MockFileSystem(
+			null,
+			currentDirectory: "/test-root"
+		);
+		cwdFs.Directory.CreateDirectory("/test-root");
+		cwdFs.Directory.CreateDirectory("/test-root/changelogs");
+		cwdFs.Directory.CreateDirectory("/test-root/output");
+
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  directory: /test-root/changelogs
+			  profiles:
+			    es-release:
+			      products: "elasticsearch {version} {lifecycle}"
+			      output: "elasticsearch-{version}.yaml"
+			""";
+		await cwdFs.File.WriteAllTextAsync("/test-root/changelog.yml", configContent, TestContext.Current.CancellationToken);
+
+		// language=yaml
+		var changelogContent =
+			"""
+			title: Elasticsearch feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
+			""";
+		await cwdFs.File.WriteAllTextAsync("/test-root/changelogs/1755268130-feature.yaml", changelogContent, TestContext.Current.CancellationToken);
+
+		var service = new ChangelogBundlingService(LoggerFactory, ConfigurationContext, cwdFs);
+
+		var input = new BundleChangelogsArguments
+		{
+			Profile = "es-release",
+			ProfileArgument = "9.2.0",
+			OutputDirectory = "/test-root/output"
+			// Config intentionally omitted — should discover /test-root/changelog.yml
+		};
+
+		// Act
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue($"Expected bundling to succeed. Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
+		Collector.Errors.Should().Be(0);
+		cwdFs.Directory.GetFiles("/test-root/output", "*.yaml").Should().NotBeEmpty("Expected output file to be created");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithProfileMode_ConfigAtDocsSubdir_LoadsSuccessfully()
+	{
+		// Arrange - changelog.yml is at ./docs/changelog.yml (the second discovery candidate)
+		var cwdFs = new System.IO.Abstractions.TestingHelpers.MockFileSystem(
+			null,
+			currentDirectory: "/test-root"
+		);
+		cwdFs.Directory.CreateDirectory("/test-root");
+		cwdFs.Directory.CreateDirectory("/test-root/docs");
+		cwdFs.Directory.CreateDirectory("/test-root/changelogs");
+		cwdFs.Directory.CreateDirectory("/test-root/output");
+
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  directory: /test-root/changelogs
+			  profiles:
+			    es-release:
+			      products: "elasticsearch {version} {lifecycle}"
+			      output: "elasticsearch-{version}.yaml"
+			""";
+		// Config is in docs/ subdir, not in CWD directly
+		await cwdFs.File.WriteAllTextAsync("/test-root/docs/changelog.yml", configContent, TestContext.Current.CancellationToken);
+
+		// language=yaml
+		var changelogContent =
+			"""
+			title: Elasticsearch feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
+			""";
+		await cwdFs.File.WriteAllTextAsync("/test-root/changelogs/1755268130-feature.yaml", changelogContent, TestContext.Current.CancellationToken);
+
+		var service = new ChangelogBundlingService(LoggerFactory, ConfigurationContext, cwdFs);
+
+		var input = new BundleChangelogsArguments
+		{
+			Profile = "es-release",
+			ProfileArgument = "9.2.0",
+			OutputDirectory = "/test-root/output"
+			// Config intentionally omitted — should discover /test-root/docs/changelog.yml
+		};
+
+		// Act
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue($"Expected bundling to succeed. Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
+		Collector.Errors.Should().Be(0);
+		cwdFs.Directory.GetFiles("/test-root/output", "*.yaml").Should().NotBeEmpty("Expected output file to be created");
 	}
 
 	private static string ExtractChecksum(string bundleContent)

@@ -213,6 +213,16 @@ internal record BundleConfigurationYaml
 	public bool? Resolve { get; set; }
 
 	/// <summary>
+	/// Default GitHub repository name applied to all profiles that do not specify their own.
+	/// </summary>
+	public string? Repo { get; set; }
+
+	/// <summary>
+	/// Default GitHub repository owner applied to all profiles that do not specify their own.
+	/// </summary>
+	public string? Owner { get; set; }
+
+	/// <summary>
 	/// Named bundle profiles.
 	/// </summary>
 	public Dictionary<string, BundleProfileYaml>? Profiles { get; set; }
@@ -234,6 +244,23 @@ internal record BundleProfileYaml
 	/// Supports {version} placeholder.
 	/// </summary>
 	public string? Output { get; set; }
+
+	/// <summary>
+	/// Output products pattern. Overrides the products array derived from matched changelogs.
+	/// Supports {version} and {lifecycle} placeholders.
+	/// </summary>
+	public string? OutputProducts { get; set; }
+
+	/// <summary>
+	/// GitHub repository name for generating PR/issue links in bundle output.
+	/// </summary>
+	public string? Repo { get; set; }
+
+	/// <summary>
+	/// GitHub repository owner for generating PR/issue links in bundle output.
+	/// Defaults to "elastic" when not specified.
+	/// </summary>
+	public string? Owner { get; set; }
 
 	/// <summary>
 	/// Feature IDs to mark as hidden in the bundle output (string or list).
