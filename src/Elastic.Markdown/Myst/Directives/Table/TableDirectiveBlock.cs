@@ -25,7 +25,7 @@ public class TableDirectiveBlock(DirectiveBlockParser parser, ParserContext cont
 	{
 		var widthsValue = Prop("widths")?.Trim();
 
-		if (string.IsNullOrEmpty(widthsValue) || widthsValue.Equals("even", StringComparison.OrdinalIgnoreCase))
+		if (string.IsNullOrEmpty(widthsValue) || widthsValue.Equals("auto", StringComparison.OrdinalIgnoreCase))
 		{
 			ColumnWidths = [];
 			return;

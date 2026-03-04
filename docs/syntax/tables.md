@@ -100,7 +100,7 @@ The `{table}` directive wraps a pipe table and lets you control column widths us
 
 ### Presets
 
-- **`even`** (default): Columns share space evenly. Omit `:widths:` or set it to `even`.
+- **`auto`** (default): Browser determines column widths based on content. Omit `:widths:` or set it to `auto`.
 - **`description`**: First column 4 units, second column 8 units. Ideal for term/description tables.
 
 ### Custom widths
@@ -273,15 +273,15 @@ Two columns with a narrow first column (33%) and wider second column (67%).
 
 :::::
 
-### Even preset (default)
+### Auto preset (default)
 
-When `:widths:` is omitted or set to `even`, columns share space evenly. No column width constraints are applied.
+When `:widths:` is omitted or set to `auto`, the browser determines column widths based on content. No column width constraints are applied.
 
 :::::{tab-set}
 
 ::::{tab-item} Output
 :::{table}
-:widths: even
+:widths: auto
 
 | Left | Center | Right |
 | --- | --- | --- |
@@ -292,7 +292,7 @@ When `:widths:` is omitted or set to `even`, columns share space evenly. No colu
 ::::{tab-item} Markdown
 ```markdown
 :::{table}
-:widths: even
+:widths: auto
 
 | Left | Center | Right |
 | --- | --- | --- |

@@ -85,10 +85,10 @@ public class TableDirectiveDescriptionPresetTests(ITestOutputHelper output) : Di
 	public void RendersColgroup() => Html.Should().Contain("colgroup");
 }
 
-public class TableDirectiveEvenPresetTests(ITestOutputHelper output) : DirectiveTest<TableDirectiveBlock>(output,
+public class TableDirectiveAutoPresetTests(ITestOutputHelper output) : DirectiveTest<TableDirectiveBlock>(output,
 """
 :::{table}
-:widths: even
+:widths: auto
 
 | a | b | c |
 | --- | --- | --- |
