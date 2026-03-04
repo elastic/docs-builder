@@ -204,8 +204,8 @@ public class IndexMarkdownRenderer(IFileSystem fileSystem) : MarkdownRendererBas
 
 				if (!string.IsNullOrWhiteSpace(entry.Description))
 				{
-					// Add blank line before description
 					_ = sb.AppendLine(entryHideLinks && hasCommentedLinks ? "  " : "");
+					_ = sb.AppendLine();
 					var indented = ChangelogTextUtilities.Indent(entry.Description);
 					if (shouldHide)
 					{

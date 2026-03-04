@@ -307,6 +307,7 @@ public static class ChangelogInlineRenderer
 
 		if (!string.IsNullOrWhiteSpace(entry.Description))
 		{
+			_ = sb.AppendLine();
 			var indented = ChangelogTextUtilities.Indent(entry.Description);
 			_ = sb.AppendLine(indented);
 		}
