@@ -89,10 +89,7 @@ public static partial class ProfileFilterResolver
 		// Treat an existing local file path as promotion report (HTML) or URL list file (anything else)
 		if (argType == ProfileArgumentType.Version && fileSystem.File.Exists(profileArgument))
 		{
-			var ext = fileSystem.Path.GetExtension(profileArgument).ToLowerInvariant();
-			argType = ext is ".html" or ".htm"
-				? ProfileArgumentType.PromotionReportFile
-				: ProfileArgumentType.UrlListFile;
+			argType = DetectLocalFileType(fileSystem, profileArgument);
 		}
 
 		string version;
@@ -208,10 +205,7 @@ public static partial class ProfileFilterResolver
 		var reportArgType = PromotionReportParser.DetectArgumentType(profileReport);
 		if (reportArgType == ProfileArgumentType.Version && fileSystem.File.Exists(profileReport))
 		{
-			var ext = fileSystem.Path.GetExtension(profileReport).ToLowerInvariant();
-			reportArgType = ext is ".html" or ".htm"
-				? ProfileArgumentType.PromotionReportFile
-				: ProfileArgumentType.UrlListFile;
+			reportArgType = DetectLocalFileType(fileSystem, profileReport);
 		}
 
 		switch (reportArgType)
@@ -314,6 +308,11 @@ public static partial class ProfileFilterResolver
 
 		return hasPrs ? (lines, null) : (null, lines);
 	}
+
+	private static ProfileArgumentType DetectLocalFileType(IFileSystem fileSystem, string path) =>
+		fileSystem.Path.GetExtension(path).ToLowerInvariant() is ".html" or ".htm"
+			? ProfileArgumentType.PromotionReportFile
+			: ProfileArgumentType.UrlListFile;
 
 	/// <summary>
 	/// Parses a products pattern like <c>"elasticsearch 9.2.0 ga"</c> or
