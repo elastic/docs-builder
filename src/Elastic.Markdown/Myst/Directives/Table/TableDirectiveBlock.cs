@@ -31,7 +31,7 @@ public class TableDirectiveBlock(DirectiveBlockParser parser, ParserContext cont
 			return;
 		}
 
-		if (widthsValue.Equals("definition", StringComparison.OrdinalIgnoreCase))
+		if (widthsValue.Equals("description", StringComparison.OrdinalIgnoreCase))
 			widthsValue = "4-8";
 
 		var gridUnits = ParseCustomWidths(widthsValue, this);

@@ -62,10 +62,10 @@ public class TableDirectiveWithWidthsTests(ITestOutputHelper output) : Directive
 	}
 }
 
-public class TableDirectiveDefinitionPresetTests(ITestOutputHelper output) : DirectiveTest<TableDirectiveBlock>(output,
+public class TableDirectiveDescriptionPresetTests(ITestOutputHelper output) : DirectiveTest<TableDirectiveBlock>(output,
 """
 :::{table}
-:widths: definition
+:widths: description
 
 | Term | Description |
 | --- | --- |
@@ -74,7 +74,7 @@ public class TableDirectiveDefinitionPresetTests(ITestOutputHelper output) : Dir
 """)
 {
 	[Fact]
-	public void MapsDefinitionTo4_8()
+	public void MapsDescriptionTo4_8()
 	{
 		Block!.ColumnWidths.Should().HaveCount(2);
 		Block.ColumnWidths[0].Should().BeApproximately(33.33, 0.1);

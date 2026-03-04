@@ -101,7 +101,7 @@ The `{table}` directive wraps a pipe table and lets you control column widths us
 ### Presets
 
 - **`even`** (default): Columns share space evenly. Omit `:widths:` or set it to `even`.
-- **`definition`**: First column 4 units, second column 8 units. Ideal for term/description tables.
+- **`description`**: First column 4 units, second column 8 units. Ideal for term/description tables.
 
 ### Custom widths
 
@@ -111,7 +111,7 @@ Use dash-separated integers that sum to 12. Each number is the grid units for th
 - `4-4-4` — three equal columns
 - `3-3-3-3` — four equal columns
 
-### Definition preset (term/description)
+### Description preset (term/description)
 
 Ideal for glossaries, API parameter tables, or key-value lists where the first column is shorter.
 
@@ -119,7 +119,7 @@ Ideal for glossaries, API parameter tables, or key-value lists where the first c
 
 ::::{tab-item} Output
 :::{table}
-:widths: definition
+:widths: description
 
 | Term | Description |
 | --- | --- |
@@ -133,7 +133,7 @@ Ideal for glossaries, API parameter tables, or key-value lists where the first c
 ::::{tab-item} Markdown
 ```markdown
 :::{table}
-:widths: definition
+:widths: description
 
 | Term | Description |
 | --- | --- |
