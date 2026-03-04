@@ -52,6 +52,18 @@ public record BundleChangelogsArguments
 	public string? ProfileArgument { get; init; }
 
 	/// <summary>
+	/// Optional third profile argument: a promotion report URL/path or URL list file to use as the
+	/// PR/issue filter source when <see cref="ProfileArgument"/> is the version string.
+	/// </summary>
+	public string? ProfileReport { get; init; }
+
+	/// <summary>
+	/// Promotion report URL or file path for option-based bundling (<c>--report</c>).
+	/// When set, the report is parsed and the extracted PR URLs become the effective PR filter.
+	/// </summary>
+	public string? Report { get; init; }
+
+	/// <summary>
 	/// Output directory for bundled changelog files (from config bundle.output_directory)
 	/// </summary>
 	public string? OutputDirectory { get; init; }
@@ -126,6 +138,15 @@ public partial class ChangelogBundlingService(
 					return false;
 				input = profileResult;
 			}
+			else if (!string.IsNullOrWhiteSpace(input.Report))
+			{
+				// Option-based mode with --report: parse report and populate Prs
+				var parser = new PromotionReportParser(logFactory, _fileSystem);
+				var prs = await parser.ParseReportToPrUrlsAsync(collector, input.Report, ctx);
+				if (prs == null)
+					return false;
+				input = input with { Prs = prs };
+			}
 
 			// Apply config defaults if available
 			input = ApplyConfigDefaults(input, config);
@@ -182,6 +203,11 @@ public partial class ChangelogBundlingService(
 
 			_logger.LogInformation("Found {Count} matching changelog entries", matchResult.Entries.Count);
 
+			// Refuse to write a bundle when any individual entry failed to parse; the result would be
+			// silently incomplete and could ship a broken release bundle.
+			if (collector.Errors > 0)
+				return false;
+
 			if (matchResult.Entries.Count == 0)
 			{
 				collector.EmitError(string.Empty, "No changelog entries matched the filter criteria");
@@ -202,6 +228,7 @@ public partial class ChangelogBundlingService(
 				input.OutputProducts,
 				input.Resolve ?? false,
 				input.Repo,
+				input.Owner,
 				featureHidingResult.FeatureIdsToHide
 			);
 
@@ -234,7 +261,8 @@ public partial class ChangelogBundlingService(
 			config,
 			_fileSystem,
 			_logger,
-			ctx
+			ctx,
+			input.ProfileReport
 		);
 
 		if (filterResult == null)
@@ -252,7 +280,12 @@ public partial class ChangelogBundlingService(
 			var outputPattern = profile.Output?.Replace("{version}", filterResult.Version);
 			if (!string.IsNullOrWhiteSpace(outputPattern))
 			{
-				var outputDir = config.Bundle.OutputDirectory ?? input.OutputDirectory ?? input.Directory ?? _fileSystem.Directory.GetCurrentDirectory();
+				// Resolution order: bundle.output_directory → input.OutputDirectory (programmatic override)
+				// → bundle.directory → CWD
+				var outputDir = config.Bundle.OutputDirectory
+					?? input.OutputDirectory
+					?? config.Bundle.Directory
+					?? _fileSystem.Directory.GetCurrentDirectory();
 				outputPath = _fileSystem.Path.Combine(outputDir, outputPattern);
 			}
 
@@ -276,6 +309,7 @@ public partial class ChangelogBundlingService(
 		{
 			InputProducts = filterResult.Products,
 			Prs = filterResult.Prs,
+			Issues = filterResult.Issues,
 			All = false,
 			Output = outputPath,
 			OutputProducts = outputProducts,
@@ -440,7 +474,7 @@ public partial class ChangelogBundlingService(
 		{
 			// Use regex to parse URL more reliably
 			var match = GitHubPrUrlRegex().Match(pr);
-			if (match.Success && match.Groups.Count >= 4)
+			if (match is { Success: true, Groups.Count: >= 4 })
 			{
 				var owner = match.Groups[1].Value.Trim();
 				var repo = match.Groups[2].Value.Trim();
@@ -508,7 +542,7 @@ public partial class ChangelogBundlingService(
 			issue.StartsWith("http://github.com/", StringComparison.OrdinalIgnoreCase))
 		{
 			var match = GitHubIssueUrlRegex().Match(issue);
-			if (match.Success && match.Groups.Count >= 4)
+			if (match is { Success: true, Groups.Count: >= 4 })
 			{
 				var owner = match.Groups[1].Value.Trim();
 				var repo = match.Groups[2].Value.Trim();

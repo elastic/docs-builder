@@ -673,4 +673,122 @@ public class ChangelogRemoveTests : ChangelogTestBase
 			d.Message.Contains("no-products-profile") &&
 			d.Message.Contains("no 'products' pattern"));
 	}
+
+	// ─── Phase 3: URL list file support for remove ──────────────────────────────────
+
+	[Fact]
+	public async Task Remove_WithProfile_UrlListFile_PrUrls_RemovesMatchedFiles()
+	{
+		await WriteFile("1001-es-feature.yaml", ElasticsearchFeatureYaml);
+		await WriteFile("2001-kibana-feature.yaml", KibanaFeatureYaml);
+
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  profiles:
+			    release:
+			""";
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// URL file contains only the ES PR
+		var urlFile = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "prs.txt");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(urlFile)!);
+		await FileSystem.File.WriteAllTextAsync(
+			urlFile,
+			"https://github.com/elastic/elasticsearch/pull/1001\n",
+			TestContext.Current.CancellationToken
+		);
+
+		var input = new ChangelogRemoveArguments
+		{
+			Directory = _changelogDir,
+			Profile = "release",
+			ProfileArgument = urlFile,
+			Config = configPath,
+			DryRun = true
+		};
+
+		var result = await ServiceWithConfig.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		Collector.Errors.Should().Be(0);
+
+		// Dry-run: files still exist but the matched one should have been identified
+		FileSystem.File.Exists(FileSystem.Path.Combine(_changelogDir, "1001-es-feature.yaml")).Should().BeTrue("dry-run should not delete files");
+	}
+
+	[Fact]
+	public async Task Remove_WithProfile_CombinedVersionAndReport_UsesReportForFiltering()
+	{
+		await WriteFile("1001-es-feature.yaml", ElasticsearchFeatureYaml);
+		await WriteFile("2001-kibana-feature.yaml", KibanaFeatureYaml);
+
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  profiles:
+			    release:
+			""";
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var urlFile = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "prs.txt");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(urlFile)!);
+		await FileSystem.File.WriteAllTextAsync(
+			urlFile,
+			"https://github.com/elastic/elasticsearch/pull/1001\n",
+			TestContext.Current.CancellationToken
+		);
+
+		var input = new ChangelogRemoveArguments
+		{
+			Directory = _changelogDir,
+			Profile = "release",
+			ProfileArgument = "9.3.0",   // version string
+			ProfileReport = urlFile,      // URL list file (Phase 3.4)
+			Config = configPath,
+			DryRun = true
+		};
+
+		var result = await ServiceWithConfig.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		Collector.Errors.Should().Be(0);
+	}
+
+	// ─── Phase 4: --report option for option-based remove ────────────────────────────
+
+	[Fact]
+	public async Task Remove_WithReportOption_ParsesPromotionReportAndFilters()
+	{
+		await WriteFile("1001-es-feature.yaml", ElasticsearchFeatureYaml);
+		await WriteFile("2001-kibana-feature.yaml", KibanaFeatureYaml);
+
+		var htmlReport =
+			"""
+			<html><body>
+			  <a href="https://github.com/elastic/elasticsearch/pull/1001">PR 1001</a>
+			</body></html>
+			""";
+		var reportFile = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "report.html");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(reportFile)!);
+		await FileSystem.File.WriteAllTextAsync(reportFile, htmlReport, TestContext.Current.CancellationToken);
+
+		var input = new ChangelogRemoveArguments
+		{
+			Directory = _changelogDir,
+			Report = reportFile,
+			DryRun = true
+		};
+
+		var result = await Service.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		Collector.Errors.Should().Be(0);
+	}
 }

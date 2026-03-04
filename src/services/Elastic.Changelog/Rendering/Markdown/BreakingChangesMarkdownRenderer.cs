@@ -57,8 +57,7 @@ public class BreakingChangesMarkdownRenderer(IFileSystem fileSystem) : MarkdownR
 
 				foreach (var entry in group)
 				{
-					var (bundleProductIds, entryRepo, entryHideLinks) = GetEntryContext(entry, context);
-					var shouldHide = ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context);
+					var (entryRepo, entryOwner, entryHideLinks, shouldHide) = ChangelogRenderUtilities.GetEntryContext(entry, context);
 
 					_ = sb.AppendLine();
 					if (shouldHide)
@@ -66,7 +65,7 @@ public class BreakingChangesMarkdownRenderer(IFileSystem fileSystem) : MarkdownR
 					_ = sb.AppendLine(InvariantCulture, $"::::{{dropdown}} {ChangelogTextUtilities.Beautify(entry.Title)}");
 					_ = sb.AppendLine(entry.Description ?? "% Describe the functionality that changed");
 					_ = sb.AppendLine();
-					RenderPrIssueLinks(sb, entry, entryRepo, entryHideLinks);
+					RenderPrIssueLinks(sb, entry, entryRepo, entryOwner, entryHideLinks);
 
 					_ = sb.AppendLine(!string.IsNullOrWhiteSpace(entry.Impact)
 						? "**Impact**<br>" + entry.Impact
