@@ -35,20 +35,6 @@ public abstract class MarkdownRendererBase(IFileSystem fileSystem) : IChangelogM
 	}
 
 	/// <summary>
-	/// Gets the entry context (bundleProducts, repo, owner, hideLinks) for a specific entry
-	/// </summary>
-	protected static (HashSet<string> bundleProductIds, string entryRepo, string entryOwner, bool hideLinks) GetEntryContext(
-		ChangelogEntry entry,
-		ChangelogRenderContext context)
-	{
-		var bundleProductIds = context.EntryToBundleProducts.GetValueOrDefault(entry, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
-		var entryRepo = context.EntryToRepo.GetValueOrDefault(entry, context.Repo);
-		var entryOwner = context.EntryToOwner.GetValueOrDefault(entry, context.Owner);
-		var hideLinks = context.EntryToHideLinks.GetValueOrDefault(entry, false);
-		return (bundleProductIds, entryRepo, entryOwner, hideLinks);
-	}
-
-	/// <summary>
 	/// Renders PR and issue links for dropdown entries
 	/// </summary>
 	protected static void RenderPrIssueLinks(StringBuilder sb, ChangelogEntry entry, string entryRepo, string entryOwner, bool entryHideLinks)

@@ -54,8 +54,7 @@ public class DeprecationsMarkdownRenderer(IFileSystem fileSystem) : MarkdownRend
 
 				foreach (var entry in areaGroup)
 				{
-					var (bundleProductIds, entryRepo, entryOwner, entryHideLinks) = GetEntryContext(entry, context);
-					var shouldHide = ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context);
+					var (entryRepo, entryOwner, entryHideLinks, shouldHide) = ChangelogRenderUtilities.GetEntryContext(entry, context);
 
 					_ = sb.AppendLine();
 					if (shouldHide)

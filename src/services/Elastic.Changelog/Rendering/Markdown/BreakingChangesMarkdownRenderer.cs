@@ -57,8 +57,7 @@ public class BreakingChangesMarkdownRenderer(IFileSystem fileSystem) : MarkdownR
 
 				foreach (var entry in group)
 				{
-					var (bundleProductIds, entryRepo, entryOwner, entryHideLinks) = GetEntryContext(entry, context);
-					var shouldHide = ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context);
+					var (entryRepo, entryOwner, entryHideLinks, shouldHide) = ChangelogRenderUtilities.GetEntryContext(entry, context);
 
 					_ = sb.AppendLine();
 					if (shouldHide)

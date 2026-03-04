@@ -16,21 +16,6 @@ public abstract class AsciidocRendererBase
 	public abstract void Render(IReadOnlyCollection<ChangelogEntry> entries, ChangelogRenderContext context);
 
 	/// <summary>
-	/// Gets the entry context (bundleProducts, repo, owner, hideLinks, shouldHide) for a specific entry
-	/// </summary>
-	private static (HashSet<string> bundleProductIds, string entryRepo, string entryOwner, bool hideLinks, bool shouldHide) GetEntryContext(
-		ChangelogEntry entry,
-		ChangelogRenderContext context)
-	{
-		var bundleProductIds = context.EntryToBundleProducts.GetValueOrDefault(entry, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
-		var entryRepo = context.EntryToRepo.GetValueOrDefault(entry, context.Repo);
-		var entryOwner = context.EntryToOwner.GetValueOrDefault(entry, context.Owner);
-		var hideLinks = context.EntryToHideLinks.GetValueOrDefault(entry, false);
-		var shouldHide = ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context);
-		return (bundleProductIds, entryRepo, entryOwner, hideLinks, shouldHide);
-	}
-
-	/// <summary>
 	/// Renders an entry's title and PR/issue links
 	/// </summary>
 	private static void RenderEntryTitleAndLinks(StringBuilder sb, ChangelogEntry entry, string entryRepo, bool hideLinks, bool shouldHide)
@@ -104,7 +89,7 @@ public abstract class AsciidocRendererBase
 	/// </summary>
 	protected void RenderBasicEntry(StringBuilder sb, ChangelogEntry entry, ChangelogRenderContext context)
 	{
-		var (_, entryRepo, _, hideLinks, shouldHide) = GetEntryContext(entry, context);
+		var (entryRepo, _, hideLinks, shouldHide) = ChangelogRenderUtilities.GetEntryContext(entry, context);
 		RenderEntryTitleAndLinks(sb, entry, entryRepo, hideLinks, shouldHide);
 		RenderEntryDescription(sb, entry, shouldHide);
 		_ = sb.AppendLine();
@@ -115,7 +100,7 @@ public abstract class AsciidocRendererBase
 	/// </summary>
 	protected void RenderEntryWithImpactAction(StringBuilder sb, ChangelogEntry entry, ChangelogRenderContext context)
 	{
-		var (_, entryRepo, _, hideLinks, shouldHide) = GetEntryContext(entry, context);
+		var (entryRepo, _, hideLinks, shouldHide) = ChangelogRenderUtilities.GetEntryContext(entry, context);
 		RenderEntryTitleAndLinks(sb, entry, entryRepo, hideLinks, shouldHide);
 		RenderEntryDescription(sb, entry, shouldHide);
 		RenderImpactAndAction(sb, entry);
