@@ -240,7 +240,7 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 	/// </summary>
 	private static (NavigationSearchGateway Gateway, ElasticsearchClientAccessor ClientAccessor) CreateFindPageGateway()
 	{
-		var endpoints = ElasticsearchEndpointFactory.Create(dataSource: "assembler", environment: "dev");
+		var endpoints = ElasticsearchEndpointFactory.Create(buildType: "assembler", environment: "dev");
 		var configProvider = new ConfigurationFileProvider(NullLoggerFactory.Instance, new FileSystem(), configurationSource: ConfigurationSource.Embedded);
 		var searchConfig = configProvider.CreateSearchConfiguration();
 

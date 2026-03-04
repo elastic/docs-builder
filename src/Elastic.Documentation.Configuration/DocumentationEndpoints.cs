@@ -17,10 +17,9 @@ public class DocumentationEndpoints
 	public string Environment { get; set; } = "dev";
 
 	/// <summary>
-	/// Index data source type. Maps to the <c>{type}</c> placeholder in index name templates.
-	/// Resolved from <c>DOCS_BUILD_TYPE</c> env var, or set by the build type (assembler/isolated/codex).
+	/// Build type identifier (assembler, isolated, codex). Controlled by DOCS_BUILD_TYPE env var.
 	/// </summary>
-	public string DataSource { get; set; } = "isolated";
+	public string BuildType { get; set; } = "isolated";
 }
 
 public class ElasticsearchEndpoint

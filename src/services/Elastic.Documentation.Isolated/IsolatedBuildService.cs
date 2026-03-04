@@ -199,7 +199,7 @@ public class IsolatedBuildService(
 		else
 		{
 			exporters ??= ExportOptions.Default;
-			context.Endpoints.DataSource = "codex";
+			context.Endpoints.BuildType = "codex";
 			allExporters = exporters.CreateMarkdownExporters(logFactory, context).ToArray();
 		}
 

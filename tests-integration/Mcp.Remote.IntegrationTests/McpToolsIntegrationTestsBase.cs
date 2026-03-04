@@ -88,7 +88,7 @@ public abstract class McpToolsIntegrationTestsBase(ITestOutputHelper output)
 	/// </summary>
 	private static ElasticsearchClientAccessor CreateElasticsearchClientAccessor()
 	{
-		var endpoints = ElasticsearchEndpointFactory.Create(dataSource: "assembler", environment: "dev");
+		var endpoints = ElasticsearchEndpointFactory.Create(buildType: "assembler", environment: "dev");
 
 		var searchConfig = new SearchConfiguration
 		{

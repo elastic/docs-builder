@@ -63,17 +63,10 @@ public class LexicalConfig : IConfigureElasticsearch<DocumentationDocument>
 		.Headings(f => f
 			.Analyzer("synonyms_fixed_analyzer")
 			.SearchAnalyzer("synonyms_analyzer"))
-		// AI fields — explicit base type needed so dot-path sub-fields merge as multi-fields, not object properties
+		// AI field with custom analyzers not on the attribute
 		.AddField("ai_rag_optimized_summary", f => f.Text()
 			.Analyzer("synonyms_fixed_analyzer")
 			.SearchAnalyzer("synonyms_analyzer"))
-		.AddField("ai_questions", f => f.Text())
-		.AddField("ai_use_cases", f => f.Text())
-		// Object sub-type fields — source generator doesn't traverse [Object] sub-types
-		.AddField("product.id", f => f.Keyword().Normalizer("keyword_normalizer"))
-		.AddField("product.repository", f => f.Keyword().Normalizer("keyword_normalizer"))
-		.AddField("related_products.id", f => f.Keyword().Normalizer("keyword_normalizer"))
-		.AddField("related_products.repository", f => f.Keyword().Normalizer("keyword_normalizer"))
 		// Keyword fields with multi-fields
 		.Url(f => f
 			.MultiField("match", mf => mf.Text())

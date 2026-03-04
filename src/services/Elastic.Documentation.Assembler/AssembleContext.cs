@@ -77,7 +77,7 @@ public class AssembleContext : IDocumentationConfigurationContext
 		VersionsConfiguration = configurationContext.VersionsConfiguration;
 		SearchConfiguration = configurationContext.SearchConfiguration;
 		Endpoints = configurationContext.Endpoints;
-		Endpoints.DataSource = "assembler";
+		Endpoints.BuildType = "assembler";
 		ProductsConfiguration = configurationContext.ProductsConfiguration;
 		LegacyUrlMappings = configurationContext.LegacyUrlMappings;
 

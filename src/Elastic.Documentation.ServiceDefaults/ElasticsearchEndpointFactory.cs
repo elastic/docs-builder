@@ -15,7 +15,7 @@ public static class ElasticsearchEndpointFactory
 	/// <summary>
 	/// Creates <see cref="DocumentationEndpoints"/> from user secrets and environment variables.
 	/// </summary>
-	public static DocumentationEndpoints Create(IConfiguration? appConfiguration = null, string? dataSource = null, string? environment = null)
+	public static DocumentationEndpoints Create(IConfiguration? appConfiguration = null, string? buildType = null, string? environment = null)
 	{
 		var configBuilder = new ConfigurationBuilder();
 		_ = configBuilder.AddUserSecrets(UserSecretsId);
@@ -56,9 +56,9 @@ public static class ElasticsearchEndpointFactory
 		};
 
 		environment ??= ResolveEnvironment(config, appConfiguration);
-		dataSource ??= appConfiguration?["DOCS_BUILD_TYPE"] ?? config["DOCS_BUILD_TYPE"] ?? "isolated";
+		buildType ??= appConfiguration?["DOCS_BUILD_TYPE"] ?? config["DOCS_BUILD_TYPE"] ?? "isolated";
 
-		return new DocumentationEndpoints { Elasticsearch = endpoint, Environment = environment, DataSource = dataSource };
+		return new DocumentationEndpoints { Elasticsearch = endpoint, Environment = environment, BuildType = buildType };
 	}
 
 	/// <summary>

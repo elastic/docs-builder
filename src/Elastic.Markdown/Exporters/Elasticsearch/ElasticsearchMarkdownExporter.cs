@@ -27,7 +27,8 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	private readonly ILogger _logger;
 	private readonly ElasticsearchEndpoint _endpoint;
 	private readonly DistributedTransport _transport;
-	private readonly string _dataSource;
+	private readonly string _buildType;
+	private readonly string _environment;
 
 	// Ingest: orchestrator for dual-index mode
 	private readonly IncrementalSyncOrchestrator<DocumentationDocument> _orchestrator;
@@ -62,7 +63,8 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		_context = context;
 		_logger = logFactory.CreateLogger<ElasticsearchMarkdownExporter>();
 		_endpoint = endpoints.Elasticsearch;
-		_dataSource = endpoints.DataSource;
+		_buildType = endpoints.BuildType;
+		_environment = endpoints.Environment;
 		_versionsConfiguration = context.VersionsConfiguration;
 		_synonyms = context.SearchConfiguration.Synonyms;
 		_rules = context.SearchConfiguration.Rules;
@@ -80,16 +82,16 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		}).Where(r => fixedSynonyms.Contains(r.Id)).Select(r => r.Synonyms).ToArray();
 		_fixedSynonymsHash = HashedBulkUpdate.CreateHash(string.Join(",", indexTimeSynonyms));
 
-		var synonymSetName = $"docs-{_dataSource}";
+		var synonymSetName = $"docs-{_buildType}-{_environment}";
 
 		_lexicalTypeContext = DocumentationMappingContext.DocumentationDocument
-			.CreateContext(type: _dataSource, env: endpoints.Environment) with
+			.CreateContext(type: _buildType, env: endpoints.Environment) with
 		{
 			ConfigureAnalysis = a => DocumentationAnalysisFactory.BuildAnalysis(a, synonymSetName, indexTimeSynonyms)
 		};
 
 		_semanticTypeContext = DocumentationMappingContext.DocumentationDocumentSemantic
-			.CreateContext(type: _dataSource, env: endpoints.Environment) with
+			.CreateContext(type: _buildType, env: endpoints.Environment) with
 		{
 			ConfigureAnalysis = a => DocumentationAnalysisFactory.BuildAnalysis(a, synonymSetName, indexTimeSynonyms)
 		};
@@ -230,7 +232,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 
 	private async Task PublishSynonymsAsync(Cancel ctx)
 	{
-		var setName = $"docs-{_dataSource}";
+		var setName = $"docs-{_buildType}";
 		_logger.LogInformation("Publishing synonym set '{SetName}' to Elasticsearch", setName);
 
 		var synonymRules = _synonyms.Aggregate(new List<SynonymRule>(), (acc, synonym) =>
@@ -268,7 +270,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 			return;
 		}
 
-		var rulesetName = $"docs-ruleset-{_dataSource}";
+		var rulesetName = $"docs-ruleset-{_buildType}-{_environment}";
 		_logger.LogInformation("Publishing query ruleset '{RulesetName}' with {Count} rules to Elasticsearch", rulesetName, _rules.Count);
 
 		var rulesetRules = _rules.Select(r => new QueryRulesetRule
