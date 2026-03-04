@@ -232,7 +232,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 
 	private async Task PublishSynonymsAsync(Cancel ctx)
 	{
-		var setName = $"docs-{_buildType}";
+		var setName = $"docs-{_buildType}-{_environment}";
 		_logger.LogInformation("Publishing synonym set '{SetName}' to Elasticsearch", setName);
 
 		var synonymRules = _synonyms.Aggregate(new List<SynonymRule>(), (acc, synonym) =>
