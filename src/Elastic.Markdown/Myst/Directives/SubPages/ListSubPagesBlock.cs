@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Navigation;
+using System.Linq;
 
 namespace Elastic.Markdown.Myst.Directives.SubPages;
 
@@ -41,13 +42,8 @@ public class ListSubPagesBlock(DirectiveBlockParser parser, ParserContext contex
 			var currentUrl = lookupResult.Url;
 			if (parent is not null)
 			{
-				foreach (var item in parent.NavigationItems)
+				foreach (var item in parent.NavigationItems.Where(item => !item.Hidden && item.Url != currentUrl))
 				{
-					if (item.Hidden)
-						continue;
-					if (item.Url == currentUrl)
-						continue;
-
 					var description = item switch
 					{
 						ILeafNavigationItem<IDocumentationFile> leaf => leaf.Model.Description,
