@@ -241,6 +241,7 @@ internal sealed partial class ChangelogCommand(
 		string? owner = null,
 		string? output = null,
 		string[]? prs = null,
+		string? releaseVersion = null,
 		string? repo = null,
 		bool stripTitlePrefix = false,
 		string? subtype = null,
@@ -252,6 +253,49 @@ internal sealed partial class ChangelogCommand(
 	)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
+
+		// --release-version mode: delegate entirely to GitHubReleaseChangelogService without creating a bundle
+		if (releaseVersion != null)
+		{
+			if (prs is { Length: > 0 })
+			{
+				collector.EmitError(string.Empty, "--release-version and --prs are mutually exclusive.");
+				return 1;
+			}
+
+			if (issues is { Length: > 0 })
+			{
+				collector.EmitError(string.Empty, "--release-version and --issues are mutually exclusive.");
+				return 1;
+			}
+
+			if (string.IsNullOrWhiteSpace(repo))
+			{
+				collector.EmitError(string.Empty, "--release-version requires --repo to be specified.");
+				return 1;
+			}
+
+			var repoArg = string.IsNullOrWhiteSpace(owner) ? repo : $"{owner}/{repo}";
+			IGitHubReleaseService releaseService = new GitHubReleaseService(logFactory);
+			IGitHubPrService prService = new GitHubPrService(logFactory);
+			var releaseChangelogService = new GitHubReleaseChangelogService(logFactory, configurationContext, releaseService, prService);
+
+			var releaseInput = new CreateChangelogsFromReleaseArguments
+			{
+				Repository = repoArg,
+				Version = releaseVersion,
+				Config = config,
+				Output = output,
+				StripTitlePrefix = stripTitlePrefix,
+				CreateBundle = false
+			};
+
+			serviceInvoker.AddCommand(releaseChangelogService, releaseInput,
+				async static (s, collector, state, ctx) => await s.CreateChangelogsFromRelease(collector, state, ctx)
+			);
+
+			return await serviceInvoker.InvokeAsync(ctx);
+		}
 
 		IGitHubPrService githubPrService = new GitHubPrService(logFactory);
 		var service = new ChangelogCreationService(logFactory, configurationContext, githubPrService);
