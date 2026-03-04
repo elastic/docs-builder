@@ -570,3 +570,43 @@ public class ChangelogHeaderLevelsTests : DirectiveTest<ChangelogBlock>
 		return count;
 	}
 }
+
+/// <summary>
+/// Verifies that when a changelog entry has both a title and a description,
+/// the rendered output does not concatenate them without a separator.
+/// Regression test for: "allowlist.This PR introduces..." (no space between title and description).
+/// </summary>
+public class ChangelogTitleDescriptionSpacingTests : DirectiveTest<ChangelogBlock>
+{
+	public ChangelogTitleDescriptionSpacingTests(ITestOutputHelper output) : base(output,
+		// language=markdown
+		"""
+		:::{changelog}
+		:::
+		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
+		// language=yaml
+		"""
+		products:
+		- product: elasticsearch
+		  target: 9.3.0
+		entries:
+		- title: Added missing banner-related Kibana settings to the settings allowlist
+		  type: feature
+		  products:
+		  - product: elasticsearch
+		    target: 9.3.0
+		  description: This PR introduces the following settings.
+		"""));
+
+	[Fact]
+	public void RendersTitleText() =>
+		Html.Should().Contain("Added missing banner-related Kibana settings to the settings allowlist");
+
+	[Fact]
+	public void RendersDescriptionText() =>
+		Html.Should().Contain("This PR introduces the following settings");
+
+	[Fact]
+	public void DoesNotConcatenateTitleAndDescriptionWithoutSeparator() =>
+		Html.Should().NotContain("allowlist.This PR introduces");
+}
