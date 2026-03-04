@@ -195,6 +195,7 @@ bundle:
 ```
 
 You can still override them per profile if a project has multiple products with different repos.
+
 The bundle output includes a `repo` field in each product:
 
 ```yaml
