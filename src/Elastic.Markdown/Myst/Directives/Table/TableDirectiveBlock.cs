@@ -5,6 +5,7 @@
 using Elastic.Markdown.Diagnostics;
 using Markdig.Extensions.Tables;
 using Markdig.Syntax;
+using System.Linq;
 
 namespace Elastic.Markdown.Myst.Directives.Table;
 
@@ -55,15 +56,7 @@ public class TableDirectiveBlock(DirectiveBlockParser parser, ParserContext cont
 	/// </summary>
 	public void ValidateTableColumnCount()
 	{
-		Markdig.Extensions.Tables.Table? table = null;
-		foreach (var block in this)
-		{
-			if (block is Markdig.Extensions.Tables.Table t)
-			{
-				table = t;
-				break;
-			}
-		}
+		var table = this.OfType<Markdig.Extensions.Tables.Table>().FirstOrDefault();
 
 		if (table is null)
 		{
