@@ -450,47 +450,8 @@ internal sealed partial class ChangelogCommand(
 
 		var isProfileMode = !string.IsNullOrWhiteSpace(profile);
 
-		// Process each --prs occurrence
-		var allPrs = new List<string>();
-		if (prs is { Length: > 0 })
-		{
-			foreach (var prsValue in prs.Where(p => !string.IsNullOrWhiteSpace(p)))
-			{
-				// Check if it contains commas - if so, split and add each as a PR
-				if (prsValue.Contains(','))
-				{
-					var commaSeparatedPrs = prsValue
-						.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-						.Where(p => !string.IsNullOrWhiteSpace(p));
-					allPrs.AddRange(commaSeparatedPrs);
-				}
-				else
-				{
-					// Single value - pass as-is (will be handled by service layer as file path or PR)
-					allPrs.Add(prsValue);
-				}
-			}
-		}
-
-		// Process each --issues occurrence
-		var allIssues = new List<string>();
-		if (issues is { Length: > 0 })
-		{
-			foreach (var issuesValue in issues.Where(p => !string.IsNullOrWhiteSpace(p)))
-			{
-				if (issuesValue.Contains(','))
-				{
-					var commaSeparated = issuesValue
-						.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-						.Where(p => !string.IsNullOrWhiteSpace(p));
-					allIssues.AddRange(commaSeparated);
-				}
-				else
-				{
-					allIssues.Add(issuesValue);
-				}
-			}
-		}
+		var allPrs = ExpandCommaSeparated(prs);
+		var allIssues = ExpandCommaSeparated(issues);
 
 		// Validate filter/output options against profile mode
 		if (isProfileMode)
@@ -669,27 +630,7 @@ internal sealed partial class ChangelogCommand(
 		// Determine resolve: CLI --no-resolve and --resolve override config. null = use config default.
 		var shouldResolve = noResolve ? false : resolve;
 
-		// Process each --hide-features occurrence: each can be comma-separated feature IDs or a file path
-		var allFeatureIdsForBundle = new List<string>();
-		if (hideFeatures is { Length: > 0 })
-		{
-			foreach (var hideFeaturesValue in hideFeatures.Where(v => !string.IsNullOrWhiteSpace(v)))
-			{
-				// Check if it contains commas - if so, split and add each as a feature ID
-				if (hideFeaturesValue.Contains(','))
-				{
-					var commaSeparatedFeatureIds = hideFeaturesValue
-						.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-						.Where(f => !string.IsNullOrWhiteSpace(f));
-					allFeatureIdsForBundle.AddRange(commaSeparatedFeatureIds);
-				}
-				else
-				{
-					// Single value - pass as-is (will be handled by service layer as file path or feature ID)
-					allFeatureIdsForBundle.Add(hideFeaturesValue);
-				}
-			}
-		}
+		var allFeatureIdsForBundle = ExpandCommaSeparated(hideFeatures);
 
 		var input = new BundleChangelogsArguments
 		{
@@ -765,31 +706,8 @@ internal sealed partial class ChangelogCommand(
 
 		var isProfileMode = !string.IsNullOrWhiteSpace(profile);
 
-		// Expand comma-separated --prs values
-		var allPrs = new List<string>();
-		if (prs is { Length: > 0 })
-		{
-			foreach (var value in prs.Where(p => !string.IsNullOrWhiteSpace(p)))
-			{
-				if (value.Contains(','))
-					allPrs.AddRange(value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
-				else
-					allPrs.Add(value);
-			}
-		}
-
-		// Expand comma-separated --issues values
-		var allIssues = new List<string>();
-		if (issues is { Length: > 0 })
-		{
-			foreach (var value in issues.Where(p => !string.IsNullOrWhiteSpace(p)))
-			{
-				if (value.Contains(','))
-					allIssues.AddRange(value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
-				else
-					allIssues.Add(value);
-			}
-		}
+		var allPrs = ExpandCommaSeparated(prs);
+		var allIssues = ExpandCommaSeparated(issues);
 
 		if (isProfileMode)
 		{
@@ -962,27 +880,7 @@ internal sealed partial class ChangelogCommand(
 
 		var service = new ChangelogRenderingService(logFactory, configurationContext);
 
-		// Process each --hide-features occurrence: each can be comma-separated feature IDs or a file path
-		var allFeatureIds = new List<string>();
-		if (hideFeatures is { Length: > 0 })
-		{
-			foreach (var hideFeaturesValue in hideFeatures.Where(v => !string.IsNullOrWhiteSpace(v)))
-			{
-				// Check if it contains commas - if so, split and add each as a feature ID
-				if (hideFeaturesValue.Contains(','))
-				{
-					var commaSeparatedFeatureIds = hideFeaturesValue
-						.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-						.Where(f => !string.IsNullOrWhiteSpace(f));
-					allFeatureIds.AddRange(commaSeparatedFeatureIds);
-				}
-				else
-				{
-					// Single value - pass as-is (will be handled by service layer as file path or feature ID)
-					allFeatureIds.Add(hideFeaturesValue);
-				}
-			}
-		}
+		var allFeatureIds = ExpandCommaSeparated(hideFeatures);
 
 		ChangelogFileType? ft = fileType?.ToLowerInvariant() switch
 		{
@@ -1094,25 +992,9 @@ internal sealed partial class ChangelogCommand(
 		// Normalize the bundle path
 		var normalizedBundlePath = NormalizePath(bundlePath);
 
-		// Process and normalize all add file paths (handles comma-separated values)
-		var normalizedAddFiles = new List<string>();
-		foreach (var addValue in add.Where(a => !string.IsNullOrWhiteSpace(a)))
-		{
-			// Check if it contains commas - if so, split and normalize each path
-			if (addValue.Contains(','))
-			{
-				var commaSeparatedPaths = addValue
-					.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-					.Where(p => !string.IsNullOrWhiteSpace(p))
-					.Select(NormalizePath);
-				normalizedAddFiles.AddRange(commaSeparatedPaths);
-			}
-			else
-			{
-				// Single path - normalize it
-				normalizedAddFiles.Add(NormalizePath(addValue));
-			}
-		}
+		var normalizedAddFiles = ExpandCommaSeparated(add)
+			.Select(NormalizePath)
+			.ToList();
 
 		// Determine resolve: CLI --no-resolve takes precedence, then CLI --resolve, then infer from bundle
 		var shouldResolve = noResolve ? false : resolve;
@@ -1129,6 +1011,26 @@ internal sealed partial class ChangelogCommand(
 		);
 
 		return await serviceInvoker.InvokeAsync(ctx);
+	}
+
+	/// <summary>
+	/// Expands a CLI array parameter where each element may be comma-separated into a flat list of values.
+	/// Filters out blank entries.
+	/// </summary>
+	private static List<string> ExpandCommaSeparated(string[]? values)
+	{
+		if (values is not { Length: > 0 })
+			return [];
+
+		var result = new List<string>();
+		foreach (var value in values.Where(v => !string.IsNullOrWhiteSpace(v)))
+		{
+			if (value.Contains(','))
+				result.AddRange(value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+			else
+				result.Add(value);
+		}
+		return result;
 	}
 
 	/// <summary>
