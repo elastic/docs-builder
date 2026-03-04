@@ -113,7 +113,7 @@ internal sealed class CodexIndexCommand(
 
 		if (string.IsNullOrWhiteSpace(codexConfig.Environment))
 		{
-			collector.EmitGlobalError("Codex configuration must specify an 'environment' (e.g., 'engineering', 'security').");
+			collector.EmitGlobalError("Codex configuration must specify an 'environment' (e.g., 'internal', 'security').");
 			return 1;
 		}
 

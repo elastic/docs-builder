@@ -50,7 +50,7 @@ public class ElasticsearchClientAccessor : IDisposable
 	/// <summary>
 	/// Extracts the ruleset name from the index name.
 	/// Index name format: "semantic-docs-{namespace}-latest" -> ruleset: "docs-ruleset-{namespace}"
-	/// The namespace may contain hyphens (e.g., "codex-engineering"), so we extract everything
+	/// The namespace may contain hyphens (e.g., "codex-internal"), so we extract everything
 	/// between the "semantic-docs-" prefix and the "-latest" suffix.
 	/// </summary>
 	private static string? ExtractRulesetName(string indexName)
