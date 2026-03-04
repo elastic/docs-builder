@@ -40,6 +40,9 @@ public record ProfileFilterResult
 /// report URL/path, or URL list file) into a concrete filter that can be used by both
 /// <see cref="ChangelogBundlingService"/> and <see cref="ChangelogRemoveService"/>.
 /// </summary>
+/// <summary>Result of resolving a URL list file into PR or issue URLs.</summary>
+internal record UrlListFileResult(string[]? Prs, string[]? Issues);
+
 public static partial class ProfileFilterResolver
 {
 	[GeneratedRegex(@"^https?://github\.com/[^/]+/[^/]+/pull/\d+/?$", RegexOptions.IgnoreCase)]
@@ -116,8 +119,8 @@ public static partial class ProfileFilterResolver
 					if (result == null)
 						return null;
 
-					prsFromReport = result.Value.Prs;
-					issuesFromFile = result.Value.Issues;
+					prsFromReport = result.Prs;
+					issuesFromFile = result.Issues;
 					version = "unknown";
 					break;
 				}
@@ -222,9 +225,9 @@ public static partial class ProfileFilterResolver
 					if (result == null)
 						return null;
 
-					return result.Value.Prs != null
-						? new ProfileFilterResult { Prs = result.Value.Prs, Version = version }
-						: new ProfileFilterResult { Issues = result.Value.Issues, Version = version };
+					return result.Prs != null
+						? new ProfileFilterResult { Prs = result.Prs, Version = version }
+						: new ProfileFilterResult { Issues = result.Issues, Version = version };
 				}
 			default:
 				collector.EmitError(
@@ -240,7 +243,7 @@ public static partial class ProfileFilterResolver
 	/// Reads a newline-delimited URL list file and validates/classifies its contents as PR or issue URLs.
 	/// Returns <c>null</c> and emits errors on failure.
 	/// </summary>
-	internal static async Task<(string[]? Prs, string[]? Issues)?> ResolveUrlListFileAsync(
+	internal static async Task<UrlListFileResult?> ResolveUrlListFileAsync(
 		IDiagnosticsCollector collector,
 		string filePath,
 		IFileSystem fileSystem,
@@ -296,7 +299,7 @@ public static partial class ProfileFilterResolver
 			return null;
 		}
 
-		return hasPrs ? (lines, null) : (null, lines);
+		return hasPrs ? new UrlListFileResult(lines, null) : new UrlListFileResult(null, lines);
 	}
 
 	private static ProfileArgumentType DetectLocalFileType(IFileSystem fileSystem, string path) =>
