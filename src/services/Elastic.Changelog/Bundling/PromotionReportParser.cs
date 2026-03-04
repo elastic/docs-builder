@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using System.Net.Http.Headers;
 using System.Text.RegularExpressions;
+using Elastic.Documentation.Diagnostics;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Changelog.Bundling;
@@ -48,9 +49,23 @@ public partial class PromotionReportParser(ILoggerFactory logFactory, IFileSyste
 	}
 
 	/// <summary>
+	/// Parses a promotion report and returns the extracted PR URLs, or <c>null</c> on failure (emitting errors).
+	/// </summary>
+	public async Task<string[]?> ParseReportToPrUrlsAsync(
+		IDiagnosticsCollector collector, string source, Cancel ctx)
+	{
+		var result = await ParsePromotionReportAsync(source, ctx);
+		if (result.IsValid)
+			return [.. result.PrUrls];
+
+		collector.EmitError(string.Empty, result.ErrorMessage ?? "Failed to parse promotion report");
+		return null;
+	}
+
+	/// <summary>
 	/// Extracts PR URLs from a promotion report (URL or local file)
 	/// </summary>
-	public async Task<PromotionReportResult> ParsePromotionReportAsync(string source, CancellationToken ctx = default)
+	private async Task<PromotionReportResult> ParsePromotionReportAsync(string source, CancellationToken ctx = default)
 	{
 		try
 		{

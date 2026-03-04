@@ -102,15 +102,10 @@ public static partial class ProfileFilterResolver
 			case ProfileArgumentType.PromotionReportFile:
 				{
 					var parser = new PromotionReportParser(NullLoggerFactory.Instance, fileSystem);
-					var reportResult = await parser.ParsePromotionReportAsync(profileArgument, ctx);
-
-					if (!reportResult.IsValid)
-					{
-						collector.EmitError(string.Empty, reportResult.ErrorMessage ?? "Failed to parse promotion report");
+					prsFromReport = await parser.ParseReportToPrUrlsAsync(collector, profileArgument, ctx);
+					if (prsFromReport == null)
 						return null;
-					}
 
-					prsFromReport = reportResult.PrUrls.ToArray();
 					logger?.LogInformation("Extracted {Count} PRs from promotion report", prsFromReport.Length);
 					version = "unknown";
 					break;
@@ -214,15 +209,10 @@ public static partial class ProfileFilterResolver
 			case ProfileArgumentType.PromotionReportFile:
 				{
 					var parser = new PromotionReportParser(NullLoggerFactory.Instance, fileSystem);
-					var reportResult = await parser.ParsePromotionReportAsync(profileReport, ctx);
-
-					if (!reportResult.IsValid)
-					{
-						collector.EmitError(string.Empty, reportResult.ErrorMessage ?? "Failed to parse promotion report");
+					var prs = await parser.ParseReportToPrUrlsAsync(collector, profileReport, ctx);
+					if (prs == null)
 						return null;
-					}
 
-					var prs = reportResult.PrUrls.ToArray();
 					logger?.LogInformation("Extracted {Count} PRs from promotion report", prs.Length);
 					return new ProfileFilterResult { Prs = prs, Version = version };
 				}

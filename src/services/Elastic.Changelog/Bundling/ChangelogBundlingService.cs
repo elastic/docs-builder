@@ -142,13 +142,10 @@ public partial class ChangelogBundlingService(
 			{
 				// Option-based mode with --report: parse report and populate Prs
 				var parser = new PromotionReportParser(logFactory, _fileSystem);
-				var reportResult = await parser.ParsePromotionReportAsync(input.Report, ctx);
-				if (!reportResult.IsValid)
-				{
-					collector.EmitError(string.Empty, reportResult.ErrorMessage ?? "Failed to parse promotion report");
+				var prs = await parser.ParseReportToPrUrlsAsync(collector, input.Report, ctx);
+				if (prs == null)
 					return false;
-				}
-				input = input with { Prs = reportResult.PrUrls.ToArray() };
+				input = input with { Prs = prs };
 			}
 
 			// Apply config defaults if available
@@ -477,7 +474,7 @@ public partial class ChangelogBundlingService(
 		{
 			// Use regex to parse URL more reliably
 			var match = GitHubPrUrlRegex().Match(pr);
-			if (match.Success && match.Groups.Count >= 4)
+			if (match is { Success: true, Groups.Count: >= 4 })
 			{
 				var owner = match.Groups[1].Value.Trim();
 				var repo = match.Groups[2].Value.Trim();
@@ -545,7 +542,7 @@ public partial class ChangelogBundlingService(
 			issue.StartsWith("http://github.com/", StringComparison.OrdinalIgnoreCase))
 		{
 			var match = GitHubIssueUrlRegex().Match(issue);
-			if (match.Success && match.Groups.Count >= 4)
+			if (match is { Success: true, Groups.Count: >= 4 })
 			{
 				var owner = match.Groups[1].Value.Trim();
 				var repo = match.Groups[2].Value.Trim();

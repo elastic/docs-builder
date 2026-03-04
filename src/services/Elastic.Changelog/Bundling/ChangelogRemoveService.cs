@@ -124,13 +124,10 @@ public class ChangelogRemoveService(
 			{
 				// Option-based mode with --report: parse report and populate Prs
 				var parser = new PromotionReportParser(logFactory, _fileSystem);
-				var reportResult = await parser.ParsePromotionReportAsync(input.Report, ctx);
-				if (!reportResult.IsValid)
-				{
-					collector.EmitError(string.Empty, reportResult.ErrorMessage ?? "Failed to parse promotion report");
+				var prs = await parser.ParseReportToPrUrlsAsync(collector, input.Report, ctx);
+				if (prs == null)
 					return false;
-				}
-				input = input with { Prs = reportResult.PrUrls.ToArray() };
+				input = input with { Prs = prs };
 			}
 
 			input = ApplyConfigDefaults(input, config);
