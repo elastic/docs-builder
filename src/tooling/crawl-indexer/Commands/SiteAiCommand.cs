@@ -120,13 +120,6 @@ public class SiteAiCommand(
 				{
 					last = p;
 
-					if (maxRunDocs > 0 && p.Enriched + p.Failed >= maxRunDocs)
-					{
-						task.Value = task.MaxValue;
-						task.Description = $"[yellow]⏱ Document limit reached[/] [dim]({p.Enriched:N0} enriched)[/]";
-						break;
-					}
-
 					switch (p.Phase)
 					{
 						case Elastic.Ingest.Elasticsearch.Enrichment.AiEnrichmentPhase.Querying when p.TotalCandidates > 0:
@@ -146,7 +139,7 @@ public class SiteAiCommand(
 							task.Description = $"[purple]🧠 Enriching[/] [dim]{p.Enriched:N0}/{p.TotalCandidates:N0}[/]{failSuffix}";
 							break;
 						case Elastic.Ingest.Elasticsearch.Enrichment.AiEnrichmentPhase.Refreshing:
-							task.Value = p.Enriched;
+							task.Value = task.MaxValue;
 							task.Description = "[purple]🧠 Refreshing lookup index...[/]";
 							break;
 						case Elastic.Ingest.Elasticsearch.Enrichment.AiEnrichmentPhase.ExecutingPolicy:
