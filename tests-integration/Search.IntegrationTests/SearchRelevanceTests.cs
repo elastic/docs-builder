@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Globalization;
 using System.IO.Abstractions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
@@ -100,7 +101,7 @@ public class SearchRelevanceTests(ITestOutputHelper output)
 		if (results.Count == 0)
 		{
 			var countResponse = await clientAccessor.Client.CountAsync(c => c.Indices(clientAccessor.SearchIndex), TestContext.Current.CancellationToken);
-			output.WriteLine($"Index document count: {(countResponse.IsValidResponse ? countResponse.Count.ToString() : $"ERROR: {countResponse.ElasticsearchServerError?.Error?.Reason}")}");
+			output.WriteLine($"Index document count: {(countResponse.IsValidResponse ? countResponse.Count.ToString(CultureInfo.InvariantCulture) : $"ERROR: {countResponse.ElasticsearchServerError?.Error.Reason}")}");
 		}
 
 		results.Should().NotBeEmpty($"Search for '{query}' should return results (index: {clientAccessor.SearchIndex})");
