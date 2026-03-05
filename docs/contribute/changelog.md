@@ -64,7 +64,7 @@ In each of these cases where validation fails, a changelog file is not created.
 
 ### GitHub label mappings
 
-When you run the `docs-builder changelog add` command with the `--prs` or `--issues` options, it can use label mappings in the changelog configuration file to infer the changelog `type` and `areas` fields from your GitHub labels.
+When you run the `docs-builder changelog add` command with the `--prs` or `--issues` options, it can use label mappings in the changelog configuration file to infer the changelog `type`, `areas`, and `products` fields from your GitHub labels.
 
 Refer to the file layout in [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml) and an [example usage](#example-map-label).
 
@@ -213,7 +213,7 @@ The following configurations cause validation errors:
 
 You can use the `docs-builder changelog add` command to create a changelog file.
 
-If you specify `--prs` or `--issues`, the command tries to fetch information from GitHub. It derives the changelog `title` from the pull request or issue title, maps labels to type and areas (if configured), and extracts linked references.
+If you specify `--prs` or `--issues`, the command tries to fetch information from GitHub. It derives the changelog `title` from the pull request or issue title, maps labels to areas, products, and type (if configured), and extracts linked references.
 With `--issues`, it extracts linked PRs from the issue body (for example, "Fixed by #123").
 With `--prs`, it extracts linked issues from the PR body (for example, "Fixes #123").
 
@@ -260,6 +260,18 @@ Examples:
 - `"kibana 9.2.0 ga"`
 - `"cloud-serverless 2025-08-05"`
 - `"cloud-enterprise 4.0.3, cloud-hosted 2025-10-31"`
+
+#### Products resolution [products-resolution]
+
+When you run the `changelog add` command without the `--products` option, it resolves products in the following order:
+
+1. **`--products` CLI option** — always takes priority.
+2. **`pivot.products` label mapping** — if `pivot.products` is configured and the PR or issue has labels that match, those products are used. Multiple matching entries are all applied.
+3. **`products.default` in `changelog.yml`** — the configured default products are used.
+4. **Git repository inference** — if the current working directory is a git repository, the repository name is matched against known product IDs.
+5. **Error** — if none of the above resolves to at least one product, an error is raised.
+
+Product-specific `rules.create` rules are evaluated *after* products are resolved from labels, so label-derived products correctly participate in per-product create rule checks.
 
 ### Filenames
 
@@ -331,19 +343,32 @@ pivot:
     # Example mappings - customize based on your label naming conventions
     Autoscaling: ":Distributed Coordination/Autoscaling"
     "ES|QL": ":Search Relevance/ES|QL"
+
+  # Product definitions with labels (optional)
+  # Keys are product spec strings; values are label strings or lists.
+  # A product spec string is: "<product-id> [<target-version>] [<lifecycle>]"
+  products:
+    'elasticsearch':
+      - ":stack/elasticsearch"
+    'kibana':
+      - ":stack/kibana"
+    # Include a target version if known:
+    # 'cloud-serverless 2025-06 ga':
+    #   - ":cloud/serverless"
 ```
 
-When you use the `--prs` option to derive information from a pull request, it can make use of those mappings. Similarly, when you use the `--issues` option (without `--prs`), the command derives title, type, and areas from the GitHub issue labels using the same mappings:
+When you use the `--prs` option to derive information from a pull request, it can make use of those mappings. Similarly, when you use the `--issues` option (without `--prs`), the command derives title, type, areas, and products from the GitHub issue labels using the same mappings.
+
+The following example omits `--products`, so the command derives them from the PR labels:
 
 ```sh
 docs-builder changelog add \
   --prs https://github.com/elastic/elasticsearch/pull/139272 \
-  --products "elasticsearch 9.3.0" \
   --config test/changelog.yml \
   --strip-title-prefix
 ```
 
-In this case, the changelog file derives the title, type, and areas from the pull request.
+In this case, the changelog file derives the title, type, areas, and products from the pull request. If none of the PR's labels match `pivot.products`, the command falls back to `products.default` or git repository inference (see [Products resolution](#products-resolution)).
 The command also looks for patterns like `Fixes #123`, `Closes owner/repo#456`, `Resolves https://github.com/.../issues/789` in the pull request to derive its issues. Similarly, when using `--issues`, the command extracts linked PRs from the issue body (for example, "Fixed by #123"). You can turn off this behavior in either case with the `--no-extract-issues` flag or by setting `extract.issues: false` in the changelog configuration file. The `extract.issues` setting applies to both directions: issues extracted from PR bodies (when using `--prs`) and PRs extracted from issue bodies (when using `--issues`).
 
 The `--strip-title-prefix` option in this example means that if the PR title has a prefix in square brackets (such as `[ES|QL]` or `[Security]`), it is automatically removed from the changelog title. Multiple square bracket prefixes are also supported (for example `[Discover][ESQL] Title` becomes `Title`). If a colon follows the closing bracket, it is also removed.
@@ -380,7 +405,7 @@ You can turn off the release note extraction in the changelog configuration file
 
 You can prevent changelog creation for certain PRs based on their labels.
 
-If you run the `docs-builder changelog add` command with the `--prs` option and a PR has a blocking label for any of the products in the `--products` option, that PR will be skipped and no changelog file will be created for it.
+If you run the `docs-builder changelog add` command with the `--prs` option and a PR has a blocking label for any of the resolved products (from `--products`, `pivot.products` label mapping, or `products.default`), that PR will be skipped and no changelog file will be created for it.
 A warning message will be emitted indicating which PR was skipped and why.
 
 For example, your configuration file can contain a `rules` section like this:

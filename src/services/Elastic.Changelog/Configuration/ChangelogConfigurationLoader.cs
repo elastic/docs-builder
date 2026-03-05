@@ -116,6 +116,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		IReadOnlyList<string>? availableAreas;
 		Dictionary<string, string>? labelToType;
 		Dictionary<string, string>? labelToAreas;
+		Dictionary<string, string>? labelToProducts;
 		PivotConfiguration? pivot = null;
 
 		if (yamlConfig.Pivot != null)
@@ -198,6 +199,24 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 
 			// Build LabelToAreas mapping (inverted from pivot.areas)
 			labelToAreas = BuildLabelToAreasMapping(yamlConfig.Pivot.Areas);
+
+			// Validate product IDs in pivot.products keys and build LabelToProducts mapping
+			if (yamlConfig.Pivot.Products is { Count: > 0 })
+			{
+				foreach (var productSpec in yamlConfig.Pivot.Products.Keys)
+				{
+					var specParts = productSpec.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+					if (specParts.Length == 0)
+						continue;
+					var productId = specParts[0].Replace('_', '-');
+					if (validProductIds.Contains(productId))
+						continue;
+					var availableProducts = string.Join(", ", validProductIds.OrderBy(p => p));
+					collector.EmitError(configPath, $"Product '{specParts[0]}' in pivot.products is not in the list of available products from config/products.yml. Available products: {availableProducts}");
+					return null;
+				}
+			}
+			labelToProducts = BuildLabelToProductsMapping(yamlConfig.Pivot.Products);
 		}
 		else
 		{
@@ -207,6 +226,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			availableAreas = null;
 			labelToType = null;
 			labelToAreas = null;
+			labelToProducts = null;
 		}
 
 		// Process lifecycles
@@ -285,6 +305,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			Products = products,
 			LabelToType = labelToType,
 			LabelToAreas = labelToAreas,
+			LabelToProducts = labelToProducts,
 			Rules = rules,
 			HighlightLabels = highlightLabels,
 			ProductsConfiguration = productsConfig,
@@ -314,6 +335,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			Types = types,
 			Subtypes = ConvertLenientDictToStringDict(yamlPivot.Subtypes),
 			Areas = ConvertLenientDictToStringDict(yamlPivot.Areas),
+			Products = ConvertLenientDictToStringDict(yamlPivot.Products),
 			Highlight = JoinLenientList(yamlPivot.Highlight)
 		};
 	}
@@ -833,5 +855,28 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		}
 
 		return labelToAreas.Count > 0 ? labelToAreas : null;
+	}
+
+	/// <summary>
+	/// Builds LabelToProducts mapping by inverting pivot.products entries.
+	/// Each label in a product entry maps to that product spec string.
+	/// </summary>
+	private static Dictionary<string, string>? BuildLabelToProductsMapping(Dictionary<string, YamlLenientList?>? products)
+	{
+		if (products == null || products.Count == 0)
+			return null;
+
+		var labelToProducts = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+		foreach (var (productSpec, labelList) in products)
+		{
+			if (labelList?.Values == null)
+				continue;
+
+			foreach (var label in labelList.Values)
+				labelToProducts[label] = productSpec;
+		}
+
+		return labelToProducts.Count > 0 ? labelToProducts : null;
 	}
 }
