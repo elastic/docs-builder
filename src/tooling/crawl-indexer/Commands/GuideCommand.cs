@@ -42,19 +42,19 @@ public class GuideCommand(
 	/// <param name="sitemapUrl">Override sitemap location</param>
 	/// <param name="maxPages">Limit pages to crawl (0 = unlimited)</param>
 	/// <param name="dryRun">Discover URLs without crawling</param>
-	/// <param name="enableAiEnrichment">Enable AI enrichment (default: true)</param>
+	/// <param name="noAi">Disable AI enrichment</param>
 	/// <param name="noSemantic">Skip semantic index</param>
 	/// <param name="failFast">Stop immediately when an indexing error occurs</param>
 	/// <param name="rps">Rate limit in requests per second (0 or omit for unlimited)</param>
 	/// <param name="ctx">Cancellation token</param>
-	[Command("")]
-	public async Task RunAsync(
+	[Command("index")]
+	public async Task Index(
 		string? versions = null,
 		string? products = null,
 		string sitemapUrl = DefaultSitemapUrl,
 		int maxPages = 0,
 		bool dryRun = false,
-		bool enableAiEnrichment = true,
+		bool noAi = false,
 		bool noSemantic = false,
 		bool failFast = false,
 		int? rps = null,
@@ -277,9 +277,9 @@ public class GuideCommand(
 				transport,
 				buildType,
 				environment,
-				configurationContext.SearchConfiguration,
-				enableAiEnrichment
-			);
+			configurationContext.SearchConfiguration,
+			enableAiEnrichment: !noAi
+		);
 
 			// Bootstrap indices
 			await AnsiConsole.Status()

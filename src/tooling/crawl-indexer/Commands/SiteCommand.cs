@@ -109,7 +109,7 @@ public class SiteCommand(
 	/// <param name="maxPages">Limit pages to crawl (0 = unlimited)</param>
 	/// <param name="dryRun">Discover URLs without crawling</param>
 	/// <param name="noTranslations">Skip translation discovery</param>
-	/// <param name="enableAiEnrichment">Enable AI enrichment (default: true)</param>
+	/// <param name="noAi">Disable AI enrichment</param>
 	/// <param name="noSemantic">Skip semantic index</param>
 	/// <param name="failFast">Stop immediately when an indexing error occurs</param>
 	/// <param name="missingTranslationReport">Directory to write missing translation report (optional)</param>
@@ -118,15 +118,15 @@ public class SiteCommand(
 	/// <param name="translateRevalidate">Re-probe translations that were previously not found</param>
 	/// <param name="unchanged">Include unchanged (cached) URLs in the crawl set to refresh their batch timestamp</param>
 	/// <param name="ctx">Cancellation token</param>
-	[Command("")]
-	public async Task RunAsync(
+	[Command("index")]
+	public async Task Index(
 		string? languages = null,
 		string? excludePaths = null,
 		string sitemapUrl = DefaultSitemapUrl,
 		int maxPages = 0,
 		bool dryRun = false,
 		bool noTranslations = false,
-		bool enableAiEnrichment = true,
+		bool noAi = false,
 		bool noSemantic = false,
 		bool failFast = false,
 		string? missingTranslationReport = null,
@@ -478,9 +478,9 @@ public class SiteCommand(
 					transport,
 					buildType,
 					environment,
-					configurationContext.SearchConfiguration,
-					enableAiEnrichment
-				);
+				configurationContext.SearchConfiguration,
+				enableAiEnrichment: !noAi
+			);
 
 			// Bootstrap indices
 			await AnsiConsole.Status()

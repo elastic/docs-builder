@@ -27,6 +27,9 @@ public class GuideIndexerExporter : IDisposable
 	private readonly IDiagnosticsCollector _diagnostics;
 	private readonly IncrementalSyncOrchestrator<DocumentationDocument> _orchestrator;
 	private readonly AiEnrichmentOrchestrator? _aiEnrichment;
+	private string? _secondaryWriteAlias;
+
+	public bool AiEnrichmentEnabled => _aiEnrichment is not null;
 
 	public GuideIndexerExporter(
 		ILoggerFactory loggerFactory,
@@ -164,8 +167,29 @@ public class GuideIndexerExporter : IDisposable
 
 	public async ValueTask StartAsync(Cancel ctx = default)
 	{
-		_ = await _orchestrator.StartAsync(BootstrapMethod.Failure, ctx);
+		var context = await _orchestrator.StartAsync(BootstrapMethod.Failure, ctx);
+		_secondaryWriteAlias = context.SecondaryWriteAlias;
 		_logger.LogInformation("Guide orchestrator started with {Strategy} strategy", _orchestrator.Strategy);
+	}
+
+	/// <summary>
+	/// Runs AI enrichment as a separate post-indexing phase.
+	/// Yields progress snapshots for display.
+	/// </summary>
+	public async IAsyncEnumerable<AiEnrichmentProgress> RunAiEnrichmentAsync(
+		[System.Runtime.CompilerServices.EnumeratorCancellation] Cancel ctx = default
+	)
+	{
+		if (_aiEnrichment is null || _secondaryWriteAlias is null)
+			yield break;
+
+		var options = new AiEnrichmentOptions
+		{
+			CompletionTimeout = TimeSpan.FromMinutes(2),
+			CompletionMaxRetries = 2,
+		};
+		await foreach (var p in _aiEnrichment.EnrichAsync(_secondaryWriteAlias, options, ctx))
+			yield return p;
 	}
 
 	public async Task ExportAsync(DocumentationDocument document, Cancel ctx = default)

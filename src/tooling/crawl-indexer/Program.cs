@@ -30,7 +30,12 @@ app.UseFilter<StopwatchFilter>();
 app.UseFilter<CatchExceptionFilter>();
 app.UseFilter<CheckForUpdatesFilter>();
 
-app.Add<GuideCommand>("guide");
 app.Add<SiteCommand>("site");
+app.Add<SiteCleanCommand>("site clean");
+app.Add<SiteAiCommand>("site ai");
+
+app.Add<GuideCommand>("guide");
+app.Add<GuideCleanCommand>("guide clean");
+app.Add<GuideAiCommand>("guide ai");
 
 await app.RunAsync(args).ConfigureAwait(false);
