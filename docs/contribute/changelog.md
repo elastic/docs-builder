@@ -311,6 +311,18 @@ Examples:
 - `"cloud-serverless 2025-08-05"`
 - `"cloud-enterprise 4.0.3, cloud-hosted 2025-10-31"`
 
+#### Products resolution [products-resolution]
+
+When you run the `changelog add` command without the `--products` option, it resolves products in the following order:
+
+1. **`--products` CLI option** — always takes priority.
+2. **`pivot.products` label mapping** — if `pivot.products` is configured and the PR or issue has labels that match, those products are used. Multiple matching entries are all applied.
+3. **`products.default` in `changelog.yml`** — the configured default products are used.
+4. **Git repository inference** — if the current working directory is a git repository, the repository name is matched against known product IDs.
+5. **Error** — if none of the above resolves to at least one product, an error is raised.
+
+Product-specific `rules.create` rules are evaluated *after* products are resolved from labels, so label-derived products correctly participate in per-product create rule checks.
+
 ### Filenames
 
 By default, the `docs-builder changelog add` command generates filenames using a timestamp and a sanitized version of the title:

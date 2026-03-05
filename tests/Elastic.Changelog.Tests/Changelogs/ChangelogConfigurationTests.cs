@@ -1227,4 +1227,139 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		Collector.Errors.Should().BeGreaterThan(0);
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("'not-a-real-product'") && d.Message.Contains("not in the list of available products"));
 	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_WithPivotProducts_ComputesLabelToProductsMapping()
+	{
+		// Arrange
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		FileSystem.Directory.CreateDirectory(docsDir);
+		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
+		// language=yaml
+		var configContent =
+			"""
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change:
+			  products:
+			    'elasticsearch':
+			      - ":stack/elasticsearch"
+			    'kibana':
+			      - ":stack/kibana"
+			""";
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var originalDir = FileSystem.Directory.GetCurrentDirectory();
+		try
+		{
+			FileSystem.Directory.SetCurrentDirectory(configDir);
+
+			// Act
+			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current.CancellationToken);
+
+			// Assert
+			config.Should().NotBeNull();
+			Collector.Errors.Should().Be(0);
+			config!.LabelToProducts.Should().NotBeNull();
+			config.LabelToProducts.Should().ContainKey(":stack/elasticsearch");
+			config.LabelToProducts![":stack/elasticsearch"].Should().Be("elasticsearch");
+			config.LabelToProducts.Should().ContainKey(":stack/kibana");
+			config.LabelToProducts[":stack/kibana"].Should().Be("kibana");
+		}
+		finally
+		{
+			FileSystem.Directory.SetCurrentDirectory(originalDir);
+		}
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_WithPivotProducts_ProductSpecWithTarget_PreservesSpec()
+	{
+		// Arrange
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		FileSystem.Directory.CreateDirectory(docsDir);
+		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
+		// language=yaml
+		var configContent =
+			"""
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change:
+			  products:
+			    'elasticsearch 9.2.0':
+			      - ":feature/new-in-9.2"
+			    'kibana 9.2.0 ga':
+			      - ":kibana/new-in-9.2"
+			""";
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var originalDir = FileSystem.Directory.GetCurrentDirectory();
+		try
+		{
+			FileSystem.Directory.SetCurrentDirectory(configDir);
+
+			// Act
+			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current.CancellationToken);
+
+			// Assert
+			config.Should().NotBeNull();
+			Collector.Errors.Should().Be(0);
+			config!.LabelToProducts.Should().NotBeNull();
+			config.LabelToProducts![":feature/new-in-9.2"].Should().Be("elasticsearch 9.2.0");
+			config.LabelToProducts[":kibana/new-in-9.2"].Should().Be("kibana 9.2.0 ga");
+		}
+		finally
+		{
+			FileSystem.Directory.SetCurrentDirectory(originalDir);
+		}
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_WithPivotProducts_InvalidProductId_ReturnsError()
+	{
+		// Arrange
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		FileSystem.Directory.CreateDirectory(docsDir);
+		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
+		// language=yaml
+		var configContent =
+			"""
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change:
+			  products:
+			    'not-a-valid-product':
+			      - ":some/label"
+			""";
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var originalDir = FileSystem.Directory.GetCurrentDirectory();
+		try
+		{
+			FileSystem.Directory.SetCurrentDirectory(configDir);
+
+			// Act
+			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current.CancellationToken);
+
+			// Assert
+			config.Should().BeNull();
+			Collector.Errors.Should().BeGreaterThan(0);
+		}
+		finally
+		{
+			FileSystem.Directory.SetCurrentDirectory(originalDir);
+		}
+	}
 }
