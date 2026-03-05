@@ -12,6 +12,7 @@ namespace Elastic.Documentation.Search;
 /// </summary>
 public record SiteDocument : IDocument
 {
+	[AiInput]
 	[Text]
 	[JsonPropertyName("title")]
 	public required string Title { get; set; }
@@ -34,9 +35,11 @@ public record SiteDocument : IDocument
 	[JsonPropertyName("hash")]
 	public string Hash { get; set; } = string.Empty;
 
+	[BatchIndexDate]
 	[JsonPropertyName("batch_index_date")]
 	public DateTimeOffset BatchIndexDate { get; set; }
 
+	[LastUpdated]
 	[Timestamp]
 	[JsonPropertyName("last_updated")]
 	public DateTimeOffset LastUpdated { get; set; }
@@ -52,6 +55,7 @@ public record SiteDocument : IDocument
 	[JsonPropertyName("body")]
 	public string? Body { get; set; }
 
+	[AiInput]
 	[Text]
 	[JsonPropertyName("stripped_body")]
 	public string? StrippedBody { get; set; }
@@ -121,26 +125,33 @@ public record SiteDocument : IDocument
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 	public string? EnrichmentKey { get; set; }
 
+	[AiField("3-5 sentences densely packed with key concepts for semantic vector matching. Include: product names, feature names, use cases, and core value propositions. Write for RAG retrieval - someone searching for Elastic products and capabilities should match this text.")]
 	[Text]
 	[JsonPropertyName("ai_rag_optimized_summary")]
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 	public string? AiRagOptimizedSummary { get; set; }
 
+	[AiField("Exactly 5-10 words for UI tooltip or search snippet. Action-oriented, starts with a verb. Example: 'Learn how Elastic protects cloud-native workloads'")]
 	[Text]
 	[JsonPropertyName("ai_short_summary")]
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 	public string? AiShortSummary { get; set; }
 
+	[AiField("3-8 keywords representing a realistic search query a user would type. Include product and topic terms. Example: 'elastic security SIEM threat detection'")]
 	[Keyword]
 	[JsonPropertyName("ai_search_query")]
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 	public string? AiSearchQuery { get; set; }
 
+	[AiField("Natural questions a user would ask (6-15 words). Not too short, not too verbose. Examples: 'What is Elastic Observability?', 'How does Elastic Security detect threats?', 'What are the benefits of Elastic Cloud?'",
+		MinItems = 3, MaxItems = 5)]
 	[Text]
 	[JsonPropertyName("ai_questions")]
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 	public string[]? AiQuestions { get; set; }
 
+	[AiField("Simple 2-4 word tasks a user wants to do. Examples: 'monitor applications', 'detect threats', 'search logs', 'visualize data', 'manage clusters'",
+		MinItems = 2, MaxItems = 4)]
 	[Text]
 	[JsonPropertyName("ai_use_cases")]
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]

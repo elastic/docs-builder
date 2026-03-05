@@ -10,6 +10,10 @@ using CrawlIndexer.Filters;
 using Elastic.Documentation.ServiceDefaults;
 using Microsoft.Extensions.Hosting;
 
+// Crawl-indexer targets public elastic.co content, not isolated builds
+Environment.SetEnvironmentVariable("DOCS_BUILD_TYPE",
+	Environment.GetEnvironmentVariable("DOCS_BUILD_TYPE") ?? "public");
+
 var builder = Host.CreateApplicationBuilder()
 	.AddDocumentationServiceDefaults(ref args)
 	.AddCrawlIndexerToolingDefaults()

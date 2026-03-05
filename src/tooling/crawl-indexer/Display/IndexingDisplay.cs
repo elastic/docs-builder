@@ -5,6 +5,8 @@
 using CrawlIndexer.Caching;
 using CrawlIndexer.Indexing;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Ingest.Elasticsearch;
+using Elastic.Ingest.Elasticsearch.Enrichment;
 using Spectre.Console;
 using Spectre.Console.Rendering;
 using Color = Spectre.Console.Color;
@@ -66,7 +68,8 @@ public static class IndexingDisplay
 
 	public static void DisplayFinalSummary(
 		CrawlStats crawlStats,
-		CrawlDecisionStats? decisionStats = null
+		CrawlDecisionStats? decisionStats = null,
+		AiEnrichmentResult? aiResult = null
 	)
 	{
 		_ = decisionStats;
@@ -147,6 +150,44 @@ public static class IndexingDisplay
 		}
 
 		rows.Add(indexGrid);
+
+		// AI enrichment section
+		if (aiResult is not null)
+		{
+			rows.Add(new Text(""));
+			var aiGrid = new Grid()
+				.AddColumn(new GridColumn().NoWrap().PadRight(2))
+				.AddColumn(new GridColumn().NoWrap());
+
+			_ = aiGrid.AddRow(
+				new Markup("[purple]🧠 AI Candidates[/]"),
+				new Markup($"[white]{aiResult.TotalCandidates:N0}[/]")
+			);
+
+			if (aiResult.Enriched > 0)
+			{
+				_ = aiGrid.AddRow(
+					new Markup("[green]   ✓ Enriched[/]"),
+					new Markup($"[white]{aiResult.Enriched:N0}[/]")
+				);
+			}
+
+			if (aiResult.Failed > 0)
+			{
+				_ = aiGrid.AddRow(
+					new Markup("[red]   ✗ Failed[/]"),
+					new Markup($"[white]{aiResult.Failed:N0}[/]")
+				);
+			}
+
+			_ = aiGrid.AddRow(
+				new Markup("[dim]   ⏱ Duration[/]"),
+				new Markup($"[white]{aiResult.Duration:hh\\:mm\\:ss}[/]")
+			);
+
+			rows.Add(aiGrid);
+		}
+
 		rows.Add(new Rule { Style = Style.Parse("grey") });
 
 		// Metadata grid
@@ -185,6 +226,189 @@ public static class IndexingDisplay
 					.Centered()
 			);
 		}
+	}
+
+	/// <summary>Runs finalization (reindex, cleanup) with Spectre.Console progress display.</summary>
+	public static async Task RunFinalizationWithProgressAsync(
+		SiteIndexerExporter exporter,
+		Cancel ctx
+	)
+	{
+		SpectreConsoleTheme.WriteSection(exporter.Strategy == IngestSyncStrategy.Reindex
+			? "Syncing to Semantic Index"
+			: "Finalizing Indices");
+
+		var currentLabel = "";
+		long currentTotal = 0;
+		long currentProcessed = 0;
+		var currentComplete = false;
+		var syncLock = new Lock();
+
+		await AnsiConsole.Progress()
+			.AutoRefresh(true)
+			.AutoClear(false)
+			.HideCompleted(false)
+			.Columns(
+				new SpinnerColumn(),
+				new TaskDescriptionColumn { Alignment = Justify.Left },
+				new ProgressBarColumn(),
+				new PercentageColumn()
+			)
+			.StartAsync(async progressCtx =>
+			{
+				var task = progressCtx.AddTask("[yellow]🔄 Draining buffers...[/]", maxValue: 100);
+				task.IsIndeterminate = true;
+
+				exporter.OnSyncProgress = info =>
+				{
+					lock (syncLock)
+					{
+						currentLabel = info.Label;
+						currentTotal = info.Total;
+						currentProcessed = info.Processed;
+						currentComplete = info.IsComplete;
+					}
+				};
+
+				using var cts = new CancellationTokenSource();
+				var refreshTask = Task.Run(async () =>
+				{
+					while (!cts.Token.IsCancellationRequested)
+					{
+						try
+						{
+							await Task.Delay(200, cts.Token);
+							lock (syncLock)
+							{
+								if (currentTotal <= 0)
+									continue;
+
+								task.IsIndeterminate = false;
+								task.MaxValue = currentTotal;
+								task.Value = currentProcessed;
+
+								var desc = currentLabel switch
+								{
+									"reindex-updates" =>
+										$"[yellow]🔄 Reindexing to semantic[/] [dim]{currentProcessed:N0}/{currentTotal:N0}[/]",
+									"reindex-deletes" =>
+										$"[yellow]🗑 Removing stale semantic docs[/] [dim]{currentProcessed:N0}/{currentTotal:N0}[/]",
+									"primary-cleanup" =>
+										$"[dim]🧹 Cleaning up primary[/] [dim]{currentProcessed:N0}/{currentTotal:N0}[/]",
+									_ => $"[yellow]🔄 {Markup.Escape(currentLabel)}[/] [dim]{currentProcessed:N0}/{currentTotal:N0}[/]"
+								};
+								task.Description = desc;
+							}
+						}
+						catch (OperationCanceledException)
+						{
+							break;
+						}
+					}
+				}, cts.Token);
+
+				try
+				{
+					await exporter.FinalizeAsync(ctx);
+				}
+				finally
+				{
+					await cts.CancelAsync();
+					try
+					{ await refreshTask; }
+					catch (OperationCanceledException) { }
+					exporter.OnSyncProgress = null;
+				}
+
+				task.IsIndeterminate = false;
+				task.Value = task.MaxValue;
+				task.Description = exporter.Strategy == IngestSyncStrategy.Reindex
+					? "[green]✓ Semantic index synced[/]"
+					: "[green]✓ Indices finalized[/]";
+			});
+	}
+
+	/// <summary>Runs AI enrichment with Spectre.Console progress display.</summary>
+	public static async Task<AiEnrichmentResult?> RunAiEnrichmentWithProgressAsync(
+		SiteIndexerExporter exporter,
+		Cancel ctx
+	)
+	{
+		if (!exporter.AiEnrichmentEnabled)
+			return null;
+
+		SpectreConsoleTheme.WriteSection("AI Enrichment");
+
+		var sw = System.Diagnostics.Stopwatch.StartNew();
+		AiEnrichmentProgress? last = null;
+
+		await AnsiConsole.Progress()
+			.AutoRefresh(true)
+			.AutoClear(false)
+			.HideCompleted(false)
+			.Columns(
+				new SpinnerColumn(),
+				new TaskDescriptionColumn { Alignment = Justify.Left },
+				new ProgressBarColumn(),
+				new PercentageColumn()
+			)
+			.StartAsync(async progressCtx =>
+			{
+				var task = progressCtx.AddTask("[purple]🧠 Discovering candidates...[/]", maxValue: 100);
+				task.IsIndeterminate = true;
+
+				await foreach (var p in exporter.RunAiEnrichmentAsync(ctx))
+				{
+					last = p;
+					switch (p.Phase)
+					{
+						case AiEnrichmentPhase.Querying when p.TotalCandidates > 0:
+							task.IsIndeterminate = false;
+							task.MaxValue = p.TotalCandidates;
+							task.Value = 0;
+							task.Description = $"[purple]🧠 Found {p.TotalCandidates:N0} candidates[/]";
+							break;
+						case AiEnrichmentPhase.Enriching:
+							task.Value = p.Enriched + p.Failed;
+							var failSuffix = p.Failed > 0 ? $" [red]({p.Failed} failed)[/]" : "";
+							task.Description = $"[purple]🧠 Enriching[/] [dim]{p.Enriched:N0}/{p.TotalCandidates:N0}[/]{failSuffix}";
+							break;
+						case AiEnrichmentPhase.Refreshing:
+							task.Value = p.Enriched;
+							task.Description = "[purple]🧠 Refreshing lookup index...[/]";
+							break;
+						case AiEnrichmentPhase.ExecutingPolicy:
+							task.Description = "[purple]🧠 Executing enrich policy...[/]";
+							break;
+						case AiEnrichmentPhase.Backfilling:
+							task.Description = $"[purple]🧠 Backfilling {p.Enriched:N0} docs...[/]";
+							break;
+						case AiEnrichmentPhase.Complete:
+							task.Value = task.MaxValue;
+							var completeFail = p.Failed > 0 ? $" [red]({p.Failed} failed)[/]" : "";
+							task.Description = p.TotalCandidates > 0
+								? $"[green]✓ AI enrichment complete[/] [dim]({p.Enriched:N0} enriched)[/]{completeFail}"
+								: "[green]✓ AI enrichment complete[/] [dim](no new candidates)[/]";
+							break;
+					}
+				}
+
+				if (last is null)
+				{
+					task.IsIndeterminate = false;
+					task.Value = task.MaxValue;
+					task.Description = "[green]✓ AI enrichment complete[/] [dim](no new candidates)[/]";
+				}
+			});
+
+		sw.Stop();
+
+		return new AiEnrichmentResult(
+			last?.Enriched ?? 0,
+			last?.Failed ?? 0,
+			last?.TotalCandidates ?? 0,
+			sw.Elapsed
+		);
 	}
 
 	public static void DisplayDryRunWithCacheStats(

@@ -4,10 +4,14 @@
 
 using Elastic.Channels;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Serialization;
 using Elastic.Ingest.Elasticsearch;
+using Elastic.Ingest.Elasticsearch.Enrichment;
+using Elastic.Ingest.Elasticsearch.Indices;
+using Elastic.Markdown.Exporters.Elasticsearch;
 using Elastic.Transport;
 using Microsoft.Extensions.Logging;
 
@@ -22,6 +26,7 @@ public class GuideIndexerExporter : IDisposable
 	private readonly ILogger _logger;
 	private readonly IDiagnosticsCollector _diagnostics;
 	private readonly IncrementalSyncOrchestrator<DocumentationDocument> _orchestrator;
+	private readonly AiEnrichmentOrchestrator? _aiEnrichment;
 
 	public GuideIndexerExporter(
 		ILoggerFactory loggerFactory,
@@ -30,29 +35,68 @@ public class GuideIndexerExporter : IDisposable
 		ElasticsearchEndpoint endpoint,
 		DistributedTransport transport,
 		string buildType,
-		string environment
+		string environment,
+		SearchConfiguration searchConfiguration,
+		bool enableAiEnrichment
 	)
 	{
 		_logger = loggerFactory.CreateLogger<GuideIndexerExporter>();
 		_diagnostics = diagnostics;
 
 		var synonymSetName = $"docs-{buildType}-{environment}";
+		var indexTimeSynonyms = SearchConfigPublisher.GetIndexTimeSynonyms(searchConfiguration.Synonyms);
+
 		var lexicalContext = DocumentationMappingContext.DocumentationDocument
 			.CreateContext(type: buildType, env: environment) with
 		{
-			ConfigureAnalysis = a => DocumentationAnalysisFactory.BuildAnalysis(a, synonymSetName, [])
+			ConfigureAnalysis = a => DocumentationAnalysisFactory.BuildAnalysis(a, synonymSetName, indexTimeSynonyms)
 		};
 		var semanticContext = DocumentationMappingContext.DocumentationDocumentSemantic
 			.CreateContext(type: buildType, env: environment) with
 		{
-			ConfigureAnalysis = a => DocumentationAnalysisFactory.BuildAnalysis(a, synonymSetName, [])
+			ConfigureAnalysis = a => DocumentationAnalysisFactory.BuildAnalysis(a, synonymSetName, indexTimeSynonyms)
 		};
+
+		if (enableAiEnrichment && endpoint.EnableAiEnrichment)
+		{
+			_aiEnrichment = new AiEnrichmentOrchestrator(transport, semanticContext);
+			var provider = semanticContext.AiEnrichmentProvider!;
+			var infra = provider.CreateInfrastructure($"{semanticContext.IndexStrategy!.WriteTarget}-ai-cache");
+			_logger.LogInformation(
+				"AI enrichment enabled — pipeline: {Pipeline}, policy: {Policy}, lookup: {Lookup}",
+				infra.PipelineName, infra.EnrichPolicyName, infra.LookupIndexName);
+
+			semanticContext = semanticContext with
+			{
+				IndexSettings = new Dictionary<string, string> { ["index.default_pipeline"] = infra.PipelineName }
+			};
+		}
+		else
+		{
+			_logger.LogInformation("AI enrichment disabled");
+		}
 
 		_orchestrator = new IncrementalSyncOrchestrator<DocumentationDocument>(transport, lexicalContext, semanticContext)
 		{
 			ConfigurePrimary = o => ConfigureChannelOptions(o, endpoint, errorTracker),
-			ConfigureSecondary = o => ConfigureChannelOptions(o, endpoint, errorTracker)
+			ConfigureSecondary = o => ConfigureChannelOptions(o, endpoint, errorTracker),
+			OnPostComplete = _aiEnrichment is not null
+				? async (ctx, _, ct) => await PostCompleteAsync(ctx, ct)
+				: null
 		};
+
+		var publisher = new SearchConfigPublisher(transport, _logger, diagnostics);
+		_ = _orchestrator.AddPreBootstrapTask(async (_, ct) =>
+		{
+			if (_aiEnrichment is not null)
+			{
+				_logger.LogInformation("Initializing AI enrichment infrastructure...");
+				await _aiEnrichment.InitializeAsync(ct);
+				_logger.LogInformation("AI enrichment infrastructure ready");
+			}
+			await publisher.PublishSynonymsAsync(searchConfiguration.Synonyms, buildType, environment, ct);
+			await publisher.PublishQueryRulesAsync(searchConfiguration.Rules, buildType, environment, ct);
+		});
 	}
 
 	/// <summary>Resolves the lexical read alias for cache lookups.</summary>
@@ -60,6 +104,34 @@ public class GuideIndexerExporter : IDisposable
 		DocumentationMappingContext.DocumentationDocument
 			.CreateContext(type: buildType, env: environment)
 			.ResolveReadTarget();
+
+	private async Task PostCompleteAsync(OrchestratorContext<DocumentationDocument> context, Cancel ctx)
+	{
+		if (_aiEnrichment is null)
+			return;
+
+		_logger.LogInformation("Starting post-indexing AI enrichment for {Alias}...", context.SecondaryWriteAlias);
+		var sw = System.Diagnostics.Stopwatch.StartNew();
+
+		AiEnrichmentProgress? last = null;
+		var options = new AiEnrichmentOptions
+		{
+			CompletionTimeout = TimeSpan.FromMinutes(2),
+			CompletionMaxRetries = 2,
+		};
+		await foreach (var p in _aiEnrichment.EnrichAsync(context.SecondaryWriteAlias, options, ctx))
+		{
+			_logger.LogInformation(
+				"[AI enrichment] {Phase}: enriched={Enriched} failed={Failed} candidates={Candidates}{Message}",
+				p.Phase, p.Enriched, p.Failed, p.TotalCandidates, p.Message is not null ? $" — {p.Message}" : "");
+			last = p;
+		}
+
+		if (last is not null)
+			_logger.LogInformation(
+				"AI enrichment complete in {Elapsed}: {Enriched} enriched, {Failed} failed, {Candidates} candidates",
+				sw.Elapsed.ToString(@"hh\:mm\:ss"), last.Enriched, last.Failed, last.TotalCandidates);
+	}
 
 	private void ConfigureChannelOptions(
 		IngestChannelOptions<DocumentationDocument> options,
@@ -113,6 +185,7 @@ public class GuideIndexerExporter : IDisposable
 	public void Dispose()
 	{
 		_orchestrator.Dispose();
+		_aiEnrichment?.Dispose();
 		GC.SuppressFinalize(this);
 	}
 }

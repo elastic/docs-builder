@@ -269,7 +269,6 @@ public class GuideCommand(
 				.ToList();
 
 			// Create exporter with shared transport
-			_ = enableAiEnrichment; // TODO: Integrate AI enrichment
 			using var exporter = new GuideIndexerExporter(
 				loggerFactory,
 				diagnostics,
@@ -277,7 +276,9 @@ public class GuideCommand(
 				endpoints.Elasticsearch,
 				transport,
 				buildType,
-				environment
+				environment,
+				configurationContext.SearchConfiguration,
+				enableAiEnrichment
 			);
 
 			// Bootstrap indices

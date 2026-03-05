@@ -116,6 +116,7 @@ public class SiteCommand(
 	/// <param name="rps">Rate limit in requests per second (0 or omit for unlimited)</param>
 	/// <param name="fair">Distribute --max-pages evenly across categories (for validation)</param>
 	/// <param name="translateRevalidate">Re-probe translations that were previously not found</param>
+	/// <param name="unchanged">Include unchanged (cached) URLs in the crawl set to refresh their batch timestamp</param>
 	/// <param name="ctx">Cancellation token</param>
 	[Command("")]
 	public async Task RunAsync(
@@ -132,6 +133,7 @@ public class SiteCommand(
 		int? rps = null,
 		bool fair = false,
 		bool translateRevalidate = false,
+		bool unchanged = false,
 		Cancel ctx = default
 	)
 	{
@@ -319,9 +321,8 @@ public class SiteCommand(
 				if (needsCrawling.Count > maxPages)
 				{
 					var fairSample = ApplyCategoryFairness(needsCrawling, maxPages);
-					// Replace decisions: keep unchanged + fair sample of those needing crawl
-					var unchanged = englishDecisions.Where(d => d.Reason == CrawlReason.Unchanged).ToList();
-					englishDecisions = unchanged.Concat(fairSample).ToList();
+					var cachedDecisions = englishDecisions.Where(d => d.Reason == CrawlReason.Unchanged).ToList();
+					englishDecisions = cachedDecisions.Concat(fairSample).ToList();
 					SpectreConsoleTheme.WriteInfo($"Fair sampling: [yellow]{fairSample.Count:N0}[/] pages to crawl across categories");
 				}
 			}
@@ -454,9 +455,10 @@ public class SiteCommand(
 				return;
 			}
 
-			// Get URLs to crawl (new + possibly changed), filtered by language if specified
+			// Get URLs to crawl, filtered by language if specified
+			// With --unchanged, include cached URLs so their batch_index_date is refreshed via hash noop
 			var urlsToCrawl = allDecisions
-				.Where(d => d.Reason != CrawlReason.Unchanged)
+				.Where(d => unchanged || d.Reason != CrawlReason.Unchanged)
 				.Where(d => languageFilter.Count == 0 || languageFilter.Contains(GetLanguageFromUrl(d.Entry.Location)))
 				.ToList();
 
@@ -468,7 +470,6 @@ public class SiteCommand(
 			}
 
 			// Create exporter with shared transport
-			_ = enableAiEnrichment; // TODO: Integrate AI enrichment
 			using var exporter = new SiteIndexerExporter(
 					loggerFactory,
 					diagnostics,
@@ -476,7 +477,9 @@ public class SiteCommand(
 					endpoints.Elasticsearch,
 					transport,
 					buildType,
-					environment
+					environment,
+					configurationContext.SearchConfiguration,
+					enableAiEnrichment
 				);
 
 			// Bootstrap indices
@@ -600,9 +603,10 @@ public class SiteCommand(
 					}
 				}
 
-				// Finalize inside progress context so it completes before showing "complete"
-				await exporter.FinalizeAsync(ctx);
 			});
+
+			// Finalization (reindex to semantic, cleanup) with its own progress display
+			await IndexingDisplay.RunFinalizationWithProgressAsync(exporter, ctx);
 
 			if (skippedNotModified > 0)
 				SpectreConsoleTheme.WriteInfo($"Skipped [grey]{skippedNotModified:N0}[/] unchanged pages (HTTP 304)");
@@ -621,12 +625,15 @@ public class SiteCommand(
 					await WriteMissingTranslationReportAsync(missingTranslationReport, missingTranslations, ctx);
 			}
 
+			// AI enrichment phase (separate from crawling for visible progress)
+			var aiResult = await IndexingDisplay.RunAiEnrichmentWithProgressAsync(exporter, ctx);
+
 			var crawlTime = DateTime.UtcNow - startTime;
 
 			// Display final summary
 			var stats = progress.GetStats();
 			var finalStats = CrawlDecisionMaker.GetStats(allDecisions);
-			IndexingDisplay.DisplayFinalSummary(stats, finalStats);
+			IndexingDisplay.DisplayFinalSummary(stats, finalStats, aiResult);
 
 			logger.LogInformation(
 				"Crawling complete. Processed: {Processed}, Errors: {Errors}, Duration: {Duration}",

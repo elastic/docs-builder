@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Text;
 using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
 
@@ -12,6 +13,14 @@ namespace CrawlIndexer.Html;
 /// </summary>
 internal static class HtmlMetaExtractor
 {
+	private static readonly HashSet<string> BlockElements = new(StringComparer.OrdinalIgnoreCase)
+	{
+		"p", "div", "h1", "h2", "h3", "h4", "h5", "h6",
+		"li", "ul", "ol", "blockquote", "pre", "section", "article",
+		"main", "header", "footer", "table", "tr", "dd", "dt",
+		"figcaption", "figure", "hr", "br", "address", "details", "summary"
+	};
+
 	public static string? GetMetaContent(IHtmlDocument document, string name, string? attribute = null)
 	{
 		// Try standard name attribute
@@ -116,15 +125,78 @@ internal static class HtmlMetaExtractor
 
 	public static string ExtractTextContent(IElement container)
 	{
-		// Clone to avoid modifying original
 		if (container.Clone(true) is not IElement clone)
 			return string.Empty;
 
-		// Remove script, style, nav elements
 		foreach (var el in clone.QuerySelectorAll("script, style, nav, aside, footer, header, .sidebar, .navigation, .toc").ToList())
 			el.Remove();
 
-		return NormalizeWhitespace(clone.TextContent);
+		var sb = new StringBuilder();
+		ExtractTextWithBlockBreaks(clone, sb);
+		return NormalizeBlockText(sb.ToString());
+	}
+
+	private static void ExtractTextWithBlockBreaks(INode node, StringBuilder sb)
+	{
+		foreach (var child in node.ChildNodes)
+		{
+			if (child is IElement element && BlockElements.Contains(element.LocalName))
+			{
+				_ = sb.Append('\n');
+				ExtractTextWithBlockBreaks(child, sb);
+				_ = sb.Append('\n');
+			}
+			else if (child.NodeType == NodeType.Text)
+			{
+				_ = sb.Append(child.TextContent);
+			}
+			else
+			{
+				ExtractTextWithBlockBreaks(child, sb);
+			}
+		}
+	}
+
+	/// <summary>Collapses inline whitespace while preserving block-level newlines.</summary>
+	private static string NormalizeBlockText(string text)
+	{
+		if (string.IsNullOrWhiteSpace(text))
+			return string.Empty;
+
+		var sb = new StringBuilder(text.Length);
+		var lastWasWhitespace = true;
+		var lastWasNewline = true;
+
+		for (var i = 0; i < text.Length; i++)
+		{
+			var c = text[i];
+
+			if (c == '\n')
+			{
+				if (!lastWasNewline)
+				{
+					_ = sb.Append('\n');
+					lastWasNewline = true;
+					lastWasWhitespace = true;
+				}
+			}
+			else if (char.IsWhiteSpace(c))
+			{
+				if (!lastWasWhitespace)
+				{
+					_ = sb.Append(' ');
+					lastWasWhitespace = true;
+				}
+			}
+			else
+			{
+				_ = sb.Append(c);
+				lastWasWhitespace = false;
+				lastWasNewline = false;
+			}
+		}
+
+		return sb.ToString().Trim();
 	}
 
 	public static string CreateAbstract(string textContent, string[] headings, int maxLength = 400)
@@ -144,36 +216,4 @@ internal static class HtmlMetaExtractor
 		return abstractText;
 	}
 
-	private static string NormalizeWhitespace(string text)
-	{
-		if (string.IsNullOrWhiteSpace(text))
-			return string.Empty;
-
-		// Replace multiple whitespace with single space
-		var chars = new char[text.Length];
-		var j = 0;
-		var lastWasWhitespace = true;
-
-		for (var i = 0; i < text.Length; i++)
-		{
-			var c = text[i];
-			var isWhitespace = char.IsWhiteSpace(c);
-
-			if (isWhitespace)
-			{
-				if (!lastWasWhitespace)
-				{
-					chars[j++] = ' ';
-					lastWasWhitespace = true;
-				}
-			}
-			else
-			{
-				chars[j++] = c;
-				lastWasWhitespace = false;
-			}
-		}
-
-		return new string(chars, 0, j).Trim();
-	}
 }
