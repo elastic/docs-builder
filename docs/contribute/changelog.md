@@ -261,18 +261,6 @@ Examples:
 - `"cloud-serverless 2025-08-05"`
 - `"cloud-enterprise 4.0.3, cloud-hosted 2025-10-31"`
 
-#### Products resolution [products-resolution]
-
-When you run the `changelog add` command without the `--products` option, it resolves products in the following order:
-
-1. **`--products` CLI option** — always takes priority.
-2. **`pivot.products` label mapping** — if `pivot.products` is configured and the PR or issue has labels that match, those products are used. Multiple matching entries are all applied.
-3. **`products.default` in `changelog.yml`** — the configured default products are used.
-4. **Git repository inference** — if the current working directory is a git repository, the repository name is matched against known product IDs.
-5. **Error** — if none of the above resolves to at least one product, an error is raised.
-
-Product-specific `rules.create` rules are evaluated *after* products are resolved from labels, so label-derived products correctly participate in per-product create rule checks.
-
 ### Filenames
 
 By default, the `docs-builder changelog add` command generates filenames using a timestamp and a sanitized version of the title:
@@ -368,7 +356,7 @@ docs-builder changelog add \
   --strip-title-prefix
 ```
 
-In this case, the changelog file derives the title, type, areas, and products from the pull request. If none of the PR's labels match `pivot.products`, the command falls back to `products.default` or git repository inference (see [Products resolution](#products-resolution)).
+In this case, the changelog file derives the title, type, areas, and products from the pull request. If none of the PR's labels match `pivot.products`, the command falls back to `products.default` or git repository inference (refer to [Products resolution](/cli/release/changelog-add.md#products-resolution) for more details).
 The command also looks for patterns like `Fixes #123`, `Closes owner/repo#456`, `Resolves https://github.com/.../issues/789` in the pull request to derive its issues. Similarly, when using `--issues`, the command extracts linked PRs from the issue body (for example, "Fixed by #123"). You can turn off this behavior in either case with the `--no-extract-issues` flag or by setting `extract.issues: false` in the changelog configuration file. The `extract.issues` setting applies to both directions: issues extracted from PR bodies (when using `--prs`) and PRs extracted from issue bodies (when using `--issues`).
 
 The `--strip-title-prefix` option in this example means that if the PR title has a prefix in square brackets (such as `[ES|QL]` or `[Security]`), it is automatically removed from the changelog title. Multiple square bracket prefixes are also supported (for example `[Discover][ESQL] Title` becomes `Title`). If a colon follows the closing bracket, it is also removed.
