@@ -107,7 +107,7 @@ For command-option-based removal, only one filter option can be specified: `--al
 `--repo <string?>`
 :   The GitHub repository name, which is required when pull requests or issues are specified as numbers or when using `--release-version`.
 :   Precedence: `--repo` flag > `bundle.repo` in `changelog.yml`.
-:   Cannot be comined with a profile argument.
+:   Cannot be combined with a profile argument.
 
 `--report <string?>`
 :   Filter by pull requests extracted from a promotion report. Accepts a URL or a local file path.
