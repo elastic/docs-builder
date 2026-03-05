@@ -177,6 +177,7 @@ public class GuideIndexerExporter : IDisposable
 	/// Yields progress snapshots for display.
 	/// </summary>
 	public async IAsyncEnumerable<AiEnrichmentProgress> RunAiEnrichmentAsync(
+		int maxDocs = 0,
 		[System.Runtime.CompilerServices.EnumeratorCancellation] Cancel ctx = default
 	)
 	{
@@ -185,9 +186,12 @@ public class GuideIndexerExporter : IDisposable
 
 		var options = new AiEnrichmentOptions
 		{
-			CompletionTimeout = TimeSpan.FromMinutes(2),
+			CompletionTimeout = TimeSpan.FromMinutes(5),
 			CompletionMaxRetries = 2,
 		};
+		if (maxDocs > 0)
+			options.MaxEnrichmentsPerRun = maxDocs;
+
 		await foreach (var p in _aiEnrichment.EnrichAsync(_secondaryWriteAlias, options, ctx))
 			yield return p;
 	}

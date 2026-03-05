@@ -357,7 +357,7 @@ public static class IndexingDisplay
 				var task = progressCtx.AddTask("[purple]🧠 Discovering candidates...[/]", maxValue: 100);
 				task.IsIndeterminate = true;
 
-				await foreach (var p in exporter.RunAiEnrichmentAsync(ctx))
+				await foreach (var p in exporter.RunAiEnrichmentAsync(ctx: ctx))
 				{
 					last = p;
 					switch (p.Phase)

@@ -117,7 +117,7 @@ public class GuideAiCommand(
 				var task = progressCtx.AddTask("[purple]🧠 Discovering candidates...[/]", maxValue: 100);
 				task.IsIndeterminate = true;
 
-				await foreach (var p in exporter.RunAiEnrichmentAsync(ct))
+				await foreach (var p in exporter.RunAiEnrichmentAsync(maxRunDocs, ct))
 				{
 					last = p;
 
