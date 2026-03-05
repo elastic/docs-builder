@@ -43,7 +43,7 @@ internal sealed partial class TranslationCacheContext : JsonSerializerContext;
 public class TranslationCacheService(ILogger<TranslationCacheService> logger)
 {
 	private static readonly string CachePath =
-		Path.Combine(Paths.ApplicationData.FullName, "translations", "site-translations.json");
+		Path.Combine(Path.Combine(Paths.ApplicationData.FullName, "translations"), "site-translations.json");
 
 	/// <summary>
 	/// Loads the translation cache from disk.

@@ -839,7 +839,7 @@ public class SiteCommand(
 		{
 			if (path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
 			{
-				path = "/" + path[prefix.Length..];
+				path = $"/{path[prefix.Length..]}";
 				break;
 			}
 		}
@@ -1062,7 +1062,8 @@ public class SiteCommand(
 		{
 			_ = Directory.CreateDirectory(directory);
 
-			var reportPath = Path.Combine(directory, $"missing-translations-{DateTime.UtcNow:yyyyMMdd-HHmmss}.csv");
+			var reportFileName = $"missing-translations-{DateTime.UtcNow:yyyyMMdd-HHmmss}.csv";
+			var reportPath = Path.Combine(directory, reportFileName);
 
 			var lines = new List<string> { "url,language,english_url,category" };
 			foreach (var (url, language) in missingTranslations.OrderBy(t => t.Language).ThenBy(t => t.Url))
@@ -1081,7 +1082,8 @@ public class SiteCommand(
 			SpectreConsoleTheme.WriteSuccess($"Missing translation report written to [cyan]{reportPath}[/]");
 
 			// Also write summary by language
-			var summaryPath = Path.Combine(directory, $"missing-translations-summary-{DateTime.UtcNow:yyyyMMdd-HHmmss}.txt");
+			var summaryFileName = $"missing-translations-summary-{DateTime.UtcNow:yyyyMMdd-HHmmss}.txt";
+			var summaryPath = Path.Combine(directory, summaryFileName);
 			var summary = new List<string>
 			{
 				$"Missing Translation Report - {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC",

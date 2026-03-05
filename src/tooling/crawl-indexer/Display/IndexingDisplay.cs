@@ -316,7 +316,10 @@ public static class IndexingDisplay
 					await cts.CancelAsync();
 					try
 					{ await refreshTask; }
-					catch (OperationCanceledException) { }
+					catch (OperationCanceledException)
+					{
+						// Expected when the refresh task is canceled during finalization
+					}
 					exporter.OnSyncProgress = null;
 				}
 

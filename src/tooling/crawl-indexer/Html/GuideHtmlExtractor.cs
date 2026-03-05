@@ -35,8 +35,6 @@ public class GuideHtmlExtractor(ILogger<GuideHtmlExtractor> logger) : IGuideHtml
 		var productName = HtmlMetaExtractor.GetMetaContent(document, "product_name", "elastic");
 		var productVersion = HtmlMetaExtractor.GetMetaContent(document, "product_version", "elastic");
 		var dcType = HtmlMetaExtractor.GetMetaContent(document, "DC.type");
-		var dcSubject = HtmlMetaExtractor.GetMetaContent(document, "DC.subject");
-		var dcIdentifier = HtmlMetaExtractor.GetMetaContent(document, "DC.identifier");
 
 		// Get title
 		var title = HtmlMetaExtractor.GetTitle(document);

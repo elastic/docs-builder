@@ -11,7 +11,9 @@ namespace CrawlIndexer.Filters;
 
 internal sealed class CheckForUpdatesFilter(ConsoleAppFilter next, GlobalCliArgs cli) : ConsoleAppFilter(next)
 {
-	private readonly FileInfo _stateFile = new(Path.Combine(Paths.ApplicationData.FullName, "crawl-indexer-check.state"));
+	private static readonly string StateDirectory = Paths.ApplicationData.FullName;
+	private static readonly string StateFileName = "crawl-indexer-check.state";
+	private readonly FileInfo _stateFile = new(Path.Combine(StateDirectory, StateFileName));
 
 	public override async Task InvokeAsync(ConsoleAppContext context, Cancel ctx)
 	{
@@ -67,7 +69,7 @@ internal sealed class CheckForUpdatesFilter(ConsoleAppFilter next, GlobalCliArgs
 
 		try
 		{
-			var httpClient = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false });
+			using var httpClient = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false });
 			var response = await httpClient.GetAsync("https://github.com/elastic/docs-builder/releases/latest", ctx);
 			var redirectUrl = response.Headers.Location;
 			if (redirectUrl is not null && _stateFile.Directory is not null)
