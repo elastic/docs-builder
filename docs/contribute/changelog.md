@@ -227,6 +227,7 @@ For up-to-date command usage information, use the `-h` option or refer to [](/cl
 ### Authorization
 
 If you use the `--prs`, `--issues`, or `--release-version` options, the `docs-builder changelog add` command interacts with GitHub services.
+The `--release-version` option on `docs-builder changelog bundle` and `docs-builder changelog remove` also interacts with GitHub services.
 Log into GitHub or set the `GITHUB_TOKEN` (or `GH_TOKEN` ) environment variable with a sufficient personal access token (PAT).
 Otherwise, there will be fetch failures when you access private repositories and you might also encounter GitHub rate limiting errors.
 
@@ -458,6 +459,26 @@ For example, a tag of `v9.2.0` on `elasticsearch` creates changelogs with `produ
 
 :::{note}
 This command requires a `GITHUB_TOKEN` or `GH_TOKEN` environment variable (or an active `gh` login) to fetch release details from the GitHub API. Refer to [Authorization](#authorization) for details.
+:::
+
+#### Create changelogs from a release [changelog-add-release-version]
+
+You can use the `--release-version` option to create changelog files for all pull requests in a GitHub release, without creating a bundle.
+This is useful when you want to add release-based changelogs into an existing workflow without committing to the full `changelog gh-release` one-shot approach.
+
+```sh
+docs-builder changelog add \
+  --release-version v9.2.0 \
+  --repo elasticsearch \
+  --output ./docs/changelog \
+  --config ./docs/changelog.yml
+```
+
+This creates one changelog file per PR found in the `v9.2.0` release notes of `elastic/elasticsearch`.
+Unlike `changelog gh-release`, no bundle file is created.
+
+:::{note}
+`--release-version` requires `--repo` and is mutually exclusive with `--prs` and `--issues`.
 :::
 
 #### Create changelogs from a release [changelog-add-release-version]
@@ -786,9 +807,9 @@ docs-builder changelog bundle \
 The product metadata (`--output-products`) is inferred automatically from the release tag and repository name when not provided explicitly.
 For example, `v9.2.0` on `elasticsearch` infers `elasticsearch 9.2.0 ga`.
 
-:::{note}
-`--release-version` requires `--repo` and is mutually exclusive with `--all`, `--input-products`, `--prs`, and `--issues`.
-:::
+`--release-version` is mutually exclusive with `--all`, `--input-products`, `--prs`, and `--issues`.
+Repo resolved as: `--repo` flag > `bundle.repo` in `changelog.yml` (one source required).
+Owner resolved as: `--owner` flag > `bundle.owner` in `changelog.yml` > `elastic`.
 
 ### Hide features in bundles [changelog-bundle-hide-features]
 
@@ -1019,7 +1040,8 @@ Likewise, the `docs-builder changelog render` command fails for "unresolved" bun
 :::
 
 You can use the `docs-builder changelog remove` command to remove changelogs.
-It supports the same two modes as `changelog bundle`: profile-based and raw flags.
+It supports the same two modes as `changelog bundle`: you can specify all the command options or you can define "profiles" in the changelog configuration file.
+In the command option mode, exactly one filter option must be specified: `--all`, `--products`, `--prs`, `--issues`, `--release-version`, or `--report`.
 
 Before deleting, the command automatically scans for bundles that still hold unresolved (`file:`) references to the matching changelog files.
 If any are found, the command reports an error for each dependency.
@@ -1071,7 +1093,7 @@ docs-builder changelog remove serverless-release 2026-02 ./prs.txt
 ### Removal with command options [changelog-remove-raw]
 
 You can alternatively remove changelogs based on their issues, pull requests, product metadata, or remove all changelogs from a folder.
-Exactly one filter option must be specified: `--all`, `--products`, `--prs`, `--issues`, or `--report`.
+Exactly one filter option must be specified: `--all`, `--products`, `--prs`, `--issues`, `--release-version` or `--report`.
 When using a file for `--prs` or `--issues`, every line must be a fully-qualified GitHub URL.
 
 ```sh

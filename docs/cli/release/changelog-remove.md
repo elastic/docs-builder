@@ -2,12 +2,12 @@
 
 Remove changelog YAML files from a directory.
 
-You can use either profile-based removal or raw filter flags:
+You can use either profile-based or command-option-based removal:
 
 - **Profile-based**: `docs-builder changelog remove <profile> <version|promotion-report>` — uses the same `bundle.profiles` configuration as [`changelog bundle`](/cli/release/changelog-bundle.md) to determine which changelogs to remove.
-- **Option-based**: `docs-builder changelog remove --products "..." ` (or `--prs`, `--issues`, `--all`) — specify the filter directly.
+- **Option-based**: `docs-builder changelog remove --products "..." ` (or `--prs`, `--issues`, `--all`, `--release-version`, `--report`) — specify the filter directly.
 
-These modes are mutually exclusive. You can't combine a profile argument with option-based flags.
+These modes are mutually exclusive. You can't combine a profile argument with the command filter options.
 
 Before deleting anything, the command checks whether any of the matching files are referenced by unresolved bundles, to prevent silently breaking the `{changelog}` directive.
 
@@ -27,7 +27,6 @@ These arguments apply to profile-based removal:
 :   Profile name from `bundle.profiles` in the changelog configuration file.
 :   For example, "elasticsearch-release".
 :   When specified, the second argument is the version, promotion report URL, or URL list file.
-:   Mutually exclusive with `--all`, `--products`, `--prs`, `--issues`, `--report`, `--owner`, `--repo`, `--config`, `--directory`, and `--bundles-dir`.
 
 `[1] <string?>`
 :   Version number, promotion report URL/path, or URL list file.
@@ -41,10 +40,11 @@ These arguments apply to profile-based removal:
 
 ## Options
 
+For command-option-based removal, only one filter option can be specified: `--all`, `--products`, `--prs`, `--issues`, `--release-version`, or `--report`.
+
 `--all`
 :   Remove all changelog files in the directory.
-:   Exactly one filter option must be specified: `--all`, `--products`, `--prs`, or `--issues`.
-:   Not allowed with a profile argument.
+:   Cannot be combined with a profile argument.
 
 `--bundles-dir <string?>`
 :   Optional: Override the directory scanned for bundles during the dependency check.
@@ -63,28 +63,27 @@ These arguments apply to profile-based removal:
 
 `--dry-run`
 :   Print the files that would be removed and any bundle dependency conflicts, without deleting anything.
-:   Valid in both profile and option-based mode.
+:   Valid in both profile and command-option-based mode.
 
 `--force`
 :   Proceed with removal even when files are referenced by unresolved bundles.
 :   Emits a warning per dependency instead of blocking.
-:   Valid in both profile and option-based mode.
+:   Valid in both profile and command-option-based mode.
 
 `--issues <string[]?>`
 :   Filter by issue URLs (comma-separated), or a path to a newline-delimited file.
 :   Can be specified multiple times.
-:   Exactly one filter option must be specified: `--all`, `--products`, `--prs`, `--issues`, or `--report`.
 :   When using a file, every line must be a fully-qualified GitHub issue URL. Bare numbers and short forms are not allowed in files.
-:   Not allowed with a profile argument.
+:   Cannot be combined with a profile argument.
 
 `--owner <string?>`
-:   The GitHub repository owner, which is required when pull requests or issues are specified as numbers.
-:   Not allowed with a profile argument.
+:   Optional: The GitHub repository owner, which is used when pull requests or issues are specified as numbers.
+:   Precedence: `--owner` flag > `bundle.owner` in `changelog.yml` > `elastic`.
+:   Cannot be combined with a profile argument.
 
 `--products <List<ProductInfo>?>`
 :   Filter by products in format `"product target lifecycle, ..."`
-:   Exactly one filter option must be specified: `--all`, `--products`, `--prs`, or `--issues`.
-:   Not allowed with a profile argument.
+:   Cannot be combined with a profile argument.
 :   All three parts (product, target, lifecycle) are required but can be wildcards (`*`). Multiple comma-separated values are combined with OR: a changelog is removed if it matches any of the specified product/target/lifecycle combinations. For example:
 
 - `"elasticsearch 9.3.0 ga"` — exact match
@@ -96,13 +95,20 @@ These arguments apply to profile-based removal:
 `--prs <string[]?>`
 :   Filter by pull request URLs (comma-separated), or a path to a newline-delimited file.
 :   Can be specified multiple times.
-:   Exactly one filter option must be specified: `--all`, `--products`, `--prs`, `--issues`, or `--report`.
 :   When using a file, every line must be a fully-qualified GitHub PR URL. Bare numbers and short forms are not allowed in files.
-:   Not allowed with a profile argument.
+:   Cannot be combined with a profile argument.
+
+`--release-version <string?>`
+:   Fetch the PR list from a GitHub release and use it as the removal filter.
+:   Provide a release tag (for example, `"v9.2.0"`) or `"latest"` for the most recent release.
+:   Mutually exclusive with `--all`, `--products`, `--prs`, and `--issues`.
+:   Repo resolved as: `--repo` flag > `bundle.repo` in `changelog.yml`. Owner resolved as: `--owner` flag > `bundle.owner` in `changelog.yml` > `elastic`.
+:   Requires a `GITHUB_TOKEN` or `GH_TOKEN` environment variable (or an active `gh` login).
 
 `--repo <string?>`
-:   The GitHub repository name, which is required when pull requests or issues are specified as numbers.
-:   Not allowed with a profile argument.
+:   The GitHub repository name, which is required when pull requests or issues are specified as numbers or when using `--release-version`.
+:   Precedence: `--repo` flag > `bundle.repo` in `changelog.yml`.
+:   Cannot be comined with a profile argument.
 
 `--report <string?>`
 :   Filter by pull requests extracted from a promotion report. Accepts a URL or a local file path.
@@ -125,7 +131,7 @@ Both modes use the same ordered fallback to locate changelog YAML files and exis
 
 | Priority | Both modes |
 |----------|------------|
-| 1 | `--bundles-dir` CLI option (option-based only) |
+| 1 | `--bundles-dir` CLI option (command-option-based only) |
 | 2 | `bundle.output_directory` in `changelog.yml` |
 | 3 | `{changelog-dir}/bundles` |
 | 4 | `{changelog-dir}/../bundles` |
@@ -178,3 +184,40 @@ Alternatively, use a newline delimited text file that lists pull request or issu
 ```sh
 docs-builder changelog remove serverless-report ./prs.txt
 ```
+
+## Remove by GitHub release [changelog-remove-release-version]
+
+You can use `--release-version` to fetch pull request references directly from a GitHub release and use them as the removal filter.
+This mirrors the equivalent [`--release-version` option on `changelog bundle`](/cli/release/changelog-bundle.md#changelog-bundle-release-version) and is useful when cleaning up after a release-based bundle.
+
+```sh
+docs-builder changelog remove \
+  --release-version v9.2.0
+```
+
+`--release-version` is mutually exclusive with `--all`, `--products`, `--prs`, and `--issues`.
+The repo and owner used to fetch the release follow the same precedence as `changelog bundle`:
+
+- Repo: `--repo` flag > `bundle.repo` in `changelog.yml` (one source is required)
+- Owner: `--owner` flag > `bundle.owner` in `changelog.yml` > `elastic`
+
+Use `--dry-run` to preview which files would be deleted before committing:
+
+```sh
+docs-builder changelog remove \
+  --release-version v9.2.0 \
+  --repo elasticsearch \
+  --dry-run
+```
+
+Pass `latest` to target the most recent release:
+
+```sh
+docs-builder changelog remove \
+  --release-version latest \
+  --dry-run
+```
+
+:::{note}
+`--release-version` requires a `GITHUB_TOKEN` or `GH_TOKEN` environment variable (or an active `gh` login) to fetch release details from the GitHub API.
+:::

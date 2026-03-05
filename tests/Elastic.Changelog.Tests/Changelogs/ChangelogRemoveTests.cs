@@ -689,6 +689,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 			  profiles:
 			    release:
 			""";
+
 		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
@@ -733,6 +734,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 			  profiles:
 			    release:
 			""";
+
 		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
@@ -790,5 +792,142 @@ public class ChangelogRemoveTests : ChangelogTestBase
 
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		Collector.Errors.Should().Be(0);
+	}
+
+	// ------------------------------------------------------------------
+	// bundle.repo / bundle.owner config defaults (PR #2791 awareness)
+	// ------------------------------------------------------------------
+
+	[Fact]
+	public async Task Remove_WithBundleOwnerConfig_UsesConfigOwnerWhenOptionNotSpecified()
+	{
+		// Arrange – changelog references PR as a number; owner must be resolved from config to build URL
+		// language=yaml
+		var changelogContent =
+			"""
+			title: Feature from myorg
+			type: feature
+			products:
+			  - product: myproduct
+			    target: 9.2.0
+			    lifecycle: ga
+			prs:
+			  - https://github.com/myorg/myrepo/pull/42
+			""";
+
+		await WriteFile("pr-42.yaml", changelogContent);
+
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  owner: myorg
+			  repo: myrepo
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var input = new ChangelogRemoveArguments
+		{
+			Directory = _changelogDir,
+			Prs = ["https://github.com/myorg/myrepo/pull/42"],
+			Config = configPath
+			// No --owner or --repo on CLI: service should read from bundle config
+		};
+
+		// Act
+		var result = await ServiceWithConfig.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert – file was matched and removed using the config owner/repo
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		FileExists("pr-42.yaml").Should().BeFalse("changelog should be removed when PR URL matches");
+	}
+
+	[Fact]
+	public async Task Remove_WithBundleRepoConfig_UsesConfigRepoWhenOptionNotSpecified()
+	{
+		// Arrange – changelog references a PR in myorg/myrepo; service should pick up repo from config
+		// language=yaml
+		var changelogContent =
+			"""
+			title: Feature from config repo
+			type: feature
+			products:
+			  - product: myproduct
+			    target: 9.2.0
+			    lifecycle: ga
+			prs:
+			  - https://github.com/myorg/myrepo/pull/55
+			""";
+
+		await WriteFile("pr-55.yaml", changelogContent);
+
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  repo: myrepo
+			  owner: myorg
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var input = new ChangelogRemoveArguments
+		{
+			Directory = _changelogDir,
+			Prs = ["https://github.com/myorg/myrepo/pull/55"],
+			Config = configPath
+			// No --repo or --owner: both come from bundle config
+		};
+
+		// Act
+		var result = await ServiceWithConfig.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		FileExists("pr-55.yaml").Should().BeFalse("changelog matched by PR URL should be removed");
+	}
+
+	[Fact]
+	public async Task Remove_WithBundleOwnerConfig_CliOwnerTakesPrecedence()
+	{
+		// A CLI --owner value must override the bundle.owner setting in config.
+		await WriteFile("pr-100.yaml", ElasticsearchFeatureYaml);
+
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  owner: config-org
+			  repo: elasticsearch
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// Use the actual PR URL in the changelog content so the PR URL filter matches
+		var input = new ChangelogRemoveArguments
+		{
+			Directory = _changelogDir,
+			// Matching by PR URL with the explicit elastic org (CLI override)
+			Prs = ["https://github.com/elastic/elasticsearch/pull/1001"],
+			Owner = "elastic",  // CLI --owner overrides config-org
+			Config = configPath
+		};
+
+		// Act
+		var result = await ServiceWithConfig.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert – CLI owner was used, matching the actual PR URL in the changelog
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		FileExists("pr-100.yaml").Should().BeFalse("changelog should be removed when CLI owner matches");
 	}
 }
