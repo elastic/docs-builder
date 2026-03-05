@@ -217,6 +217,8 @@ If you specify `--prs` or `--issues`, the command tries to fetch information fro
 With `--issues`, it extracts linked PRs from the issue body (for example, "Fixed by #123").
 With `--prs`, it extracts linked issues from the PR body (for example, "Fixes #123").
 
+When `--repo`, `--owner`, or `--output` are not specified, the command reads them from the `bundle` section of `changelog.yml` (`bundle.repo`, `bundle.owner`, `bundle.directory`). This applies to all modes — `--prs`, `--issues`, and `--release-version` alike. If no config value is available, `--owner` defaults to `elastic` and `--output` defaults to the current directory.
+
 :::{tip}
 Ideally this task will be automated such that it's performed by a bot or GitHub action when you create a pull request.
 If you run it from the command line, you must precede any special characters (such as backquotes) with a backslash escape character (`\`).
@@ -483,7 +485,7 @@ docs-builder changelog add \
 This creates one changelog file per PR found in the `v9.2.0` release notes of `elastic/elasticsearch`.
 Unlike `changelog gh-release`, no bundle file is created.
 
-If your `changelog.yml` has a `bundle` section configured, you can omit `--repo`, `--owner`, and `--output` — the command reads them from `bundle.repo`, `bundle.owner`, and `bundle.directory`:
+When `bundle.repo`, `bundle.owner`, and `bundle.directory` are set in `changelog.yml`, you can omit `--repo`, `--owner`, and `--output`:
 
 ```sh
 docs-builder changelog add --release-version v9.2.0
@@ -491,7 +493,7 @@ docs-builder changelog add --release-version v9.2.0
 
 :::{note}
 `--release-version` requires `--repo` (or `bundle.repo` set in `changelog.yml`) and is mutually exclusive with `--prs` and `--issues`.
-The option precedence for `--release-version` is: CLI option > `changelog.yml` bundle section > built-in default.
+The option precedence is: CLI option > `changelog.yml` bundle section > built-in default. This applies to `--repo`, `--owner`, and `--output` for all `changelog add` modes.
 :::
 
 #### Create changelogs from a release [changelog-add-release-version]
@@ -510,7 +512,7 @@ docs-builder changelog add \
 This creates one changelog file per PR found in the `v9.2.0` release notes of `elastic/elasticsearch`.
 Unlike `changelog gh-release`, no bundle file is created.
 
-If your `changelog.yml` has a `bundle` section configured, you can omit `--repo`, `--owner`, and `--output` — the command reads them from `bundle.repo`, `bundle.owner`, and `bundle.directory`:
+When `bundle.repo`, `bundle.owner`, and `bundle.directory` are set in `changelog.yml`, you can omit `--repo`, `--owner`, and `--output`:
 
 ```sh
 docs-builder changelog add --release-version v9.2.0
@@ -518,7 +520,7 @@ docs-builder changelog add --release-version v9.2.0
 
 :::{note}
 `--release-version` requires `--repo` (or `bundle.repo` set in `changelog.yml`) and is mutually exclusive with `--prs` and `--issues`.
-The option precedence for `--release-version` is: CLI option > `changelog.yml` bundle section > built-in default.
+The option precedence is: CLI option > `changelog.yml` bundle section > built-in default. This applies to `--repo`, `--owner`, and `--output` for all `changelog add` modes.
 :::
 
 #### Create changelogs from a release [changelog-add-release-version]
@@ -537,7 +539,7 @@ docs-builder changelog add \
 This creates one changelog file per PR found in the `v9.2.0` release notes of `elastic/elasticsearch`.
 Unlike `changelog gh-release`, no bundle file is created.
 
-If your `changelog.yml` has a `bundle` section configured, you can omit `--repo`, `--owner`, and `--output` — the command reads them from `bundle.repo`, `bundle.owner`, and `bundle.directory`:
+When `bundle.repo`, `bundle.owner`, and `bundle.directory` are set in `changelog.yml`, you can omit `--repo`, `--owner`, and `--output`:
 
 ```sh
 docs-builder changelog add --release-version v9.2.0
@@ -545,7 +547,7 @@ docs-builder changelog add --release-version v9.2.0
 
 :::{note}
 `--release-version` requires `--repo` (or `bundle.repo` set in `changelog.yml`) and is mutually exclusive with `--prs` and `--issues`.
-The option precedence for `--release-version` is: CLI option > `changelog.yml` bundle section > built-in default.
+The option precedence is: CLI option > `changelog.yml` bundle section > built-in default. This applies to `--repo`, `--owner`, and `--output` for all `changelog add` modes.
 :::
 
 ## Create bundles [changelog-bundle]

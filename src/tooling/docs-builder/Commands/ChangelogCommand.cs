@@ -217,7 +217,7 @@ internal sealed partial class ChangelogCommand(
 	/// <param name="impact">Optional: How the user's environment is affected</param>
 	/// <param name="issues">Optional: Issue URL(s) or number(s) (comma-separated), or a path to a newline-delimited file containing issue URLs or numbers. Can be specified multiple times. Each occurrence can be either comma-separated issues (e.g., `--issues "https://github.com/owner/repo/issues/123,456"`) or a file path (e.g., `--issues /path/to/file.txt`). If --owner and --repo are provided, issue numbers can be used instead of URLs. If specified, --title can be derived from the issue. Creates one changelog file per issue.</param>
 	/// <param name="owner">Optional: GitHub repository owner (used when --prs or --issues contains just numbers, or when using --release-version). Falls back to bundle.owner in changelog.yml when not specified. If that value is also absent, "elastic" is used.</param>
-	/// <param name="output">Optional: Output directory for the changelog. When using --release-version, falls back to bundle.directory in changelog.yml when not specified. Defaults to current directory</param>
+	/// <param name="output">Optional: Output directory for the changelog. Falls back to bundle.directory in changelog.yml when not specified. Defaults to current directory.</param>
 	/// <param name="prs">Optional: Pull request URL(s) or PR number(s) (comma-separated), or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times. Each occurrence can be either comma-separated PRs (e.g., `--prs "https://github.com/owner/repo/pull/123,6789"`) or a file path (e.g., `--prs /path/to/file.txt`). When specifying PRs directly, provide comma-separated values. When specifying a file path, provide a single value that points to a newline-delimited file. If --owner and --repo are provided, PR numbers can be used instead of URLs. If specified, --title can be derived from the PR. If mappings are configured, --areas and --type can also be derived from the PR. Creates one changelog file per PR.</param>
 	/// <param name="repo">Optional: GitHub repository name (used when --prs or --issues contains just numbers, or when using --release-version). Falls back to bundle.repo in changelog.yml when not specified.</param>
 	/// <param name="stripTitlePrefix">Optional: When used with --prs, remove square brackets and text within them from the beginning of PR titles, and also remove a colon if it follows the closing bracket (e.g., "[Inference API] Title" becomes "Title", "[ES|QL]: Title" becomes "Title", "[Discover][ESQL] Title" becomes "Title")</param>
@@ -257,7 +257,7 @@ internal sealed partial class ChangelogCommand(
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		// --release-version mode: delegate entirely to GitHubReleaseChangelogService without creating a bundle
+		// Mutual exclusivity: --release-version cannot be combined with --prs or --issues
 		if (releaseVersion != null)
 		{
 			if (prs is { Length: > 0 })
@@ -277,15 +277,20 @@ internal sealed partial class ChangelogCommand(
 				await collector.StopAsync(ctx);
 				return 1;
 			}
+		}
 
-			// Precedence: --repo CLI > bundle.repo config; --owner CLI > bundle.owner config > "elastic"
-			// Also: --output CLI > bundle.directory config > ./changelogs (service default)
-			var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, new System.IO.Abstractions.FileSystem())
-				.LoadChangelogConfiguration(collector, config, ctx);
-			var resolvedRepo = !string.IsNullOrWhiteSpace(repo) ? repo : bundleConfig?.Bundle?.Repo;
-			var resolvedOwner = owner ?? bundleConfig?.Bundle?.Owner ?? "elastic";
-			var resolvedOutput = !string.IsNullOrWhiteSpace(output) ? output : bundleConfig?.Bundle?.Directory;
+		// Load changelog config and apply fallbacks for all modes.
+		// Precedence: CLI option > bundle section in changelog.yml > built-in default.
+		// This applies to --prs, --issues, and --release-version alike.
+		var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, new System.IO.Abstractions.FileSystem())
+			.LoadChangelogConfiguration(collector, config, ctx);
+		var resolvedRepo = !string.IsNullOrWhiteSpace(repo) ? repo : bundleConfig?.Bundle?.Repo;
+		var resolvedOwner = owner ?? bundleConfig?.Bundle?.Owner ?? "elastic";
+		var resolvedOutput = !string.IsNullOrWhiteSpace(output) ? output : bundleConfig?.Bundle?.Directory;
 
+		// --release-version mode: delegate entirely to GitHubReleaseChangelogService without creating a bundle
+		if (releaseVersion != null)
+		{
 			if (string.IsNullOrWhiteSpace(resolvedRepo))
 			{
 				collector.EmitError(string.Empty, "--release-version requires --repo to be specified (or bundle.repo set in changelog.yml).");
@@ -441,15 +446,15 @@ internal sealed partial class ChangelogCommand(
 			Subtype = subtype,
 			Areas = areas ?? [],
 			Prs = parsedPrs,
-			Owner = owner,
-			Repo = repo,
+			Owner = resolvedOwner,
+			Repo = resolvedRepo,
 			Issues = parsedIssues ?? [],
 			Description = description,
 			Impact = impact,
 			Action = action,
 			FeatureId = featureId,
 			Highlight = highlight,
-			Output = output,
+			Output = resolvedOutput,
 			Config = config,
 			UsePrNumber = usePrNumber,
 			UseIssueNumber = useIssueNumber,

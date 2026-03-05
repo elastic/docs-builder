@@ -64,12 +64,10 @@ docs-builder changelog add [options...] [-h|--help]
 :   By default, the behavior is determined by the `extract.issues` changelog configuration setting.
 
 `--output <string?>`
-:   Optional: Output directory for the changelog fragment. Defaults to current directory.
-:   When used with `--release-version`, falls back to `bundle.directory` in `changelog.yml` when not specified. If that value is also absent, defaults to `./changelogs`.
+:   Optional: Output directory for the changelog fragment. Falls back to `bundle.directory` in `changelog.yml` when not specified. If that value is also absent, defaults to current directory.
 
 `--owner <string?>`
-:   Optional: GitHub repository owner (used when `--prs` or `--issues` contains just numbers).
-:   When used with `--release-version`, falls back to `bundle.owner` in `changelog.yml` when not specified. If that value is also absent, defaults to `elastic`.
+:   Optional: GitHub repository owner (used when `--prs` or `--issues` contains just numbers, or when using `--release-version`). Falls back to `bundle.owner` in `changelog.yml` when not specified. If that value is also absent, defaults to `elastic`.
 
 `--products <List<ProductInfo>>`
 :   Required: Products affected in format "product target lifecycle, ..." (for example, `"elasticsearch 9.2.0 ga, cloud-serverless 2025-08-05"`).
@@ -95,8 +93,7 @@ docs-builder changelog add [options...] [-h|--help]
 :   Set to `latest` to use the most recent release.
 
 `--repo <string?>`
-:   Optional: GitHub repository name (used when `--prs`, `--issues`, or `--release-version` is specified).
-:   When used with `--release-version`, falls back to `bundle.repo` in `changelog.yml` when not specified.
+:   Optional: GitHub repository name (used when `--prs`, `--issues`, or `--release-version` is specified). Falls back to `bundle.repo` in `changelog.yml` when not specified.
 
 `--strip-title-prefix`
 :   Optional: When used with `--prs`, remove square brackets and text within them from the beginning of PR titles, and also remove a colon if it follows the closing bracket.
