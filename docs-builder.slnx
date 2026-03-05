@@ -57,6 +57,7 @@
     <Project Path="src/Elastic.Documentation.Svg/Elastic.Documentation.Svg.csproj" />
     <Project Path="src/Elastic.Documentation/Elastic.Documentation.csproj" />
     <Project Path="src/Elastic.Markdown/Elastic.Markdown.csproj" />
+    <Project Path="src/Elastic.Documentation.Tooling/Elastic.Documentation.Tooling.csproj" />
   </Folder>
   <Folder Name="/src/api/">
     <Project Path="src/api/Elastic.Documentation.Api.Core/Elastic.Documentation.Api.Core.csproj" />
@@ -80,6 +81,7 @@
   </Folder>
   <Folder Name="/src/tooling/">
     <File Path="src/tooling/Directory.Build.props" />
+    <Project Path="src/tooling/crawl-indexer/crawl-indexer.csproj" />
     <Project Path="src/tooling/docs-builder/docs-builder.csproj" />
   </Folder>
   <Folder Name="/tests-integration/">
