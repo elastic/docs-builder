@@ -9,6 +9,17 @@ namespace Elastic.Documentation.Configuration;
 public class DocumentationEndpoints
 {
 	public required ElasticsearchEndpoint Elasticsearch { get; init; }
+
+	/// <summary>
+	/// Index namespace for environment isolation. Maps to the <c>{env}</c> placeholder
+	/// in index name templates. Overridden by the assembler <c>--environment</c> flag.
+	/// </summary>
+	public string Environment { get; set; } = "dev";
+
+	/// <summary>
+	/// Build type identifier (assembler, isolated, codex). Controlled by DOCS_BUILD_TYPE env var.
+	/// </summary>
+	public string BuildType { get; set; } = "isolated";
 }
 
 public class ElasticsearchEndpoint
@@ -25,11 +36,8 @@ public class ElasticsearchEndpoint
 	public int IndexNumThreads { get; set; } = 4; // Reduced for Serverless rate limits
 	public bool NoElasticInferenceService { get; set; }
 
-	// index options
-	public string IndexNamePrefix { get; set; } = "semantic-docs";
-
 	// channel buffer options
-	public int BufferSize { get; set; } = 50; // Reduced for Serverless rate limits
+	public int BufferSize { get; set; } = 100; // Reduced for Serverless rate limits
 	public int MaxRetries { get; set; } = 5; // Increased for 429 retries
 
 	// connection options
@@ -43,12 +51,11 @@ public class ElasticsearchEndpoint
 	public X509Certificate? Certificate { get; set; }
 	public bool CertificateIsNotRoot { get; set; }
 	public int? BootstrapTimeout { get; set; }
-	public bool NoSemantic { get; set; }
 	public bool ForceReindex { get; set; }
 
 	/// <summary>
 	/// Enable AI enrichment of documents using LLM-generated metadata.
 	/// When enabled, documents are enriched with summaries, search queries, and questions.
 	/// </summary>
-	public bool EnableAiEnrichment { get; set; }
+	public bool EnableAiEnrichment { get; set; } = true;
 }

@@ -31,10 +31,12 @@ public static partial class ReleaseNotesSerialization
 
 	/// <summary>
 	/// Used for loading minimal changelog configuration (publish blocker).
+	/// Includes LenientStringListConverter so List&lt;string&gt; fields accept both comma-separated strings and YAML lists.
 	/// </summary>
 	private static readonly IDeserializer IgnoreUnmatchedDeserializer =
 		new StaticDeserializerBuilder(new YamlStaticContext())
 			.WithNamingConvention(UnderscoredNamingConvention.Instance)
+			.WithTypeConverter(new LenientStringListConverter())
 			.IgnoreUnmatchedProperties()
 			.Build();
 
@@ -104,7 +106,7 @@ public static partial class ReleaseNotesSerialization
 
 	private static ChangelogEntry ToEntry(ChangelogEntryDto dto) => new()
 	{
-		Pr = dto.Pr,
+		Prs = dto.Prs ?? (dto.Pr != null ? [dto.Pr] : null),
 		Issues = dto.Issues,
 		Type = ParseEntryType(dto.Type),
 		Subtype = ParseEntrySubtype(dto.Subtype),
@@ -120,7 +122,7 @@ public static partial class ReleaseNotesSerialization
 
 	private static ChangelogEntry ToEntry(BundledEntry entry) => new()
 	{
-		Pr = entry.Pr,
+		Prs = entry.Prs,
 		Issues = entry.Issues,
 		Type = entry.Type ?? ChangelogEntryType.Invalid,
 		Subtype = entry.Subtype,
@@ -153,7 +155,8 @@ public static partial class ReleaseNotesSerialization
 		ProductId = dto.Product ?? "",
 		Target = dto.Target,
 		Lifecycle = ParseLifecycle(dto.Lifecycle),
-		Repo = dto.Repo
+		Repo = dto.Repo,
+		Owner = dto.Owner
 	};
 
 	private static BundledEntry ToBundledEntry(BundledEntryDto dto) => new()
@@ -169,7 +172,7 @@ public static partial class ReleaseNotesSerialization
 		Highlight = dto.Highlight,
 		Subtype = ParseEntrySubtype(dto.Subtype),
 		Areas = dto.Areas,
-		Pr = dto.Pr,
+		Prs = dto.Prs ?? (dto.Pr != null ? [dto.Pr] : null),
 		Issues = dto.Issues
 	};
 
@@ -223,7 +226,7 @@ public static partial class ReleaseNotesSerialization
 
 	private static ChangelogEntryDto ToDto(ChangelogEntry entry) => new()
 	{
-		Pr = entry.Pr,
+		Prs = entry.Prs?.ToList(),
 		Issues = entry.Issues?.ToList(),
 		Type = EntryTypeToString(entry.Type),
 		Subtype = EntrySubtypeToString(entry.Subtype),
@@ -256,7 +259,8 @@ public static partial class ReleaseNotesSerialization
 		Product = product.ProductId,
 		Target = product.Target,
 		Lifecycle = LifecycleToString(product.Lifecycle),
-		Repo = product.Repo
+		Repo = product.Repo,
+		Owner = product.Owner
 	};
 
 	private static BundledEntryDto ToDto(BundledEntry entry) => new()
@@ -272,7 +276,7 @@ public static partial class ReleaseNotesSerialization
 		Highlight = entry.Highlight,
 		Subtype = EntrySubtypeToString(entry.Subtype),
 		Areas = entry.Areas?.ToList(),
-		Pr = entry.Pr,
+		Prs = entry.Prs?.ToList(),
 		Issues = entry.Issues?.ToList()
 	};
 
@@ -317,10 +321,11 @@ public static partial class ReleaseNotesSerialization
 	/// <summary>
 	/// Loads the publish blocker configuration from a changelog.yml file.
 	/// Uses AOT-compatible deserialization via YamlStaticContext.
+	/// Supports the new 'rules:' format with include/exclude modes.
 	/// </summary>
 	/// <param name="fileSystem">The file system to read from.</param>
 	/// <param name="configPath">The path to the changelog.yml configuration file.</param>
-	/// <param name="productId">Optional product ID to load product-specific blocker. If specified, checks block.product.{productId}.publish first, then falls back to block.publish.</param>
+	/// <param name="productId">Optional product ID to load product-specific blocker.</param>
 	/// <returns>The publish blocker configuration, or null if not found or not configured.</returns>
 	public static PublishBlocker? LoadPublishBlocker(IFileSystem fileSystem, string configPath, string? productId = null)
 	{
@@ -332,38 +337,54 @@ public static partial class ReleaseNotesSerialization
 			return null;
 
 		var yamlConfig = IgnoreUnmatchedDeserializer.Deserialize<ChangelogConfigMinimalDto>(yamlContent);
-		if (yamlConfig.Block is null)
+		if (yamlConfig.Rules is null)
 			return null;
 
+		var publish = yamlConfig.Rules.Publish;
+		if (publish is null)
+			return null;
+
+		// Parse global match mode
+		var globalMatch = ParseMatchMode(yamlConfig.Rules.Match);
+		var publishMatchAreas = ParseMatchMode(publish.MatchAreas) ?? globalMatch ?? MatchMode.Any;
+
 		// Check product-specific blocker first if productId is specified
-		if (!string.IsNullOrWhiteSpace(productId) && yamlConfig.Block.Product is { Count: > 0 })
+		if (!string.IsNullOrWhiteSpace(productId) && publish.Products is { Count: > 0 })
 		{
 			// Try exact match first, then fall back to case-insensitive match
-			if (!yamlConfig.Block.Product.TryGetValue(productId, out var productBlockers))
+			if (!publish.Products.TryGetValue(productId, out var productPublish))
 			{
-				var found = yamlConfig.Block.Product.FirstOrDefault(kvp =>
+				var found = publish.Products.FirstOrDefault(kvp =>
 					kvp.Key.Equals(productId, StringComparison.OrdinalIgnoreCase));
-				productBlockers = found.Value;
+				productPublish = found.Value;
 			}
 
-			if (productBlockers?.Publish != null)
-				return ParsePublishBlocker(productBlockers.Publish);
+			if (productPublish != null)
+			{
+				var productMatchAreas = ParseMatchMode(productPublish.MatchAreas) ?? publishMatchAreas;
+				return ParsePublishBlocker(productPublish, productMatchAreas);
+			}
 		}
 
 		// Fall back to global publish blocker
-		return ParsePublishBlocker(yamlConfig.Block.Publish);
+		return ParsePublishBlocker(publish, publishMatchAreas);
 	}
 
 	/// <summary>
-	/// Parses a PublishBlockerMinimalDto into a PublishBlocker domain type.
+	/// Parses a PublishRulesMinimalDto into a PublishBlocker domain type.
 	/// </summary>
-	private static PublishBlocker? ParsePublishBlocker(PublishBlockerMinimalDto? dto)
+	private static PublishBlocker? ParsePublishBlocker(PublishRulesMinimalDto? dto, MatchMode matchAreas)
 	{
 		if (dto == null)
 			return null;
 
-		var types = dto.Types?.Count > 0 ? dto.Types.ToList() : null;
-		var areas = dto.Areas?.Count > 0 ? dto.Areas.ToList() : null;
+		var excludeTypes = dto.ExcludeTypes?.Count > 0 ? dto.ExcludeTypes.ToList() : null;
+		var includeTypes = dto.IncludeTypes?.Count > 0 ? dto.IncludeTypes.ToList() : null;
+		var excludeAreas = dto.ExcludeAreas?.Count > 0 ? dto.ExcludeAreas.ToList() : null;
+		var includeAreas = dto.IncludeAreas?.Count > 0 ? dto.IncludeAreas.ToList() : null;
+
+		var types = excludeTypes ?? includeTypes;
+		var areas = excludeAreas ?? includeAreas;
 
 		if (types == null && areas == null)
 			return null;
@@ -371,54 +392,67 @@ public static partial class ReleaseNotesSerialization
 		return new PublishBlocker
 		{
 			Types = types,
-			Areas = areas
+			TypesMode = includeTypes != null ? FieldMode.Include : FieldMode.Exclude,
+			Areas = areas,
+			AreasMode = includeAreas != null ? FieldMode.Include : FieldMode.Exclude,
+			MatchAreas = matchAreas
 		};
 	}
+
+	private static MatchMode? ParseMatchMode(string? value) =>
+		value?.ToLowerInvariant() switch
+		{
+			"any" => MatchMode.Any,
+			"all" => MatchMode.All,
+			_ => null
+		};
 }
 
 /// <summary>
-/// Minimal DTO for changelog configuration - only includes block configuration.
+/// Minimal DTO for changelog configuration - only includes rules configuration.
 /// Used for AOT-compatible lightweight loading of publish blocker configuration.
 /// Registered with YamlStaticContext for source-generated deserialization.
 /// </summary>
 public sealed class ChangelogConfigMinimalDto
 {
-	/// <summary>Block configuration section.</summary>
-	public BlockConfigMinimalDto? Block { get; set; }
+	/// <summary>Rules configuration section (new format).</summary>
+	public RulesConfigMinimalDto? Rules { get; set; }
 }
 
 /// <summary>
-/// Minimal DTO for block configuration.
+/// Minimal DTO for rules configuration.
 /// Registered with YamlStaticContext for source-generated deserialization.
 /// </summary>
-public sealed class BlockConfigMinimalDto
+public sealed class RulesConfigMinimalDto
 {
-	/// <summary>Global publish blocker configuration.</summary>
-	public PublishBlockerMinimalDto? Publish { get; set; }
+	/// <summary>Global match mode ("any" or "all").</summary>
+	public string? Match { get; set; }
 
-	/// <summary>Per-product blocker overrides.</summary>
-	public Dictionary<string, ProductBlockersMinimalDto?>? Product { get; set; }
+	/// <summary>Publish rules configuration.</summary>
+	public PublishRulesMinimalDto? Publish { get; set; }
 }
 
 /// <summary>
-/// Minimal DTO for product-specific blockers.
+/// Minimal DTO for publish rules configuration.
 /// Registered with YamlStaticContext for source-generated deserialization.
 /// </summary>
-public sealed class ProductBlockersMinimalDto
+public sealed class PublishRulesMinimalDto
 {
-	/// <summary>Publish blocker configuration for this product.</summary>
-	public PublishBlockerMinimalDto? Publish { get; set; }
-}
+	/// <summary>Match mode for areas ("any" or "all").</summary>
+	public string? MatchAreas { get; set; }
 
-/// <summary>
-/// Minimal DTO for publish blocker configuration.
-/// Registered with YamlStaticContext for source-generated deserialization.
-/// </summary>
-public sealed class PublishBlockerMinimalDto
-{
-	/// <summary>Entry types to block from publishing.</summary>
-	public List<string>? Types { get; set; }
+	/// <summary>Entry types to exclude from publishing.</summary>
+	public List<string>? ExcludeTypes { get; set; }
 
-	/// <summary>Entry areas to block from publishing.</summary>
-	public List<string>? Areas { get; set; }
+	/// <summary>Entry types to include for publishing.</summary>
+	public List<string>? IncludeTypes { get; set; }
+
+	/// <summary>Entry areas to exclude from publishing.</summary>
+	public List<string>? ExcludeAreas { get; set; }
+
+	/// <summary>Entry areas to include for publishing.</summary>
+	public List<string>? IncludeAreas { get; set; }
+
+	/// <summary>Per-product publish rule overrides.</summary>
+	public Dictionary<string, PublishRulesMinimalDto?>? Products { get; set; }
 }

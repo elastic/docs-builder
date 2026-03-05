@@ -76,6 +76,24 @@ public class ChangelogTextUtilitiesTests
 	}
 
 	[Theory]
+	[InlineData("https://github.com/elastic/elasticsearch/issues/123", 123)]
+	[InlineData("https://github.com/owner/repo/issues/456", 456)]
+	[InlineData("elastic/elasticsearch#789", 789)]
+	[InlineData("123", null)]
+	public void ExtractIssueNumber_ExtractsNumber(string input, int? expected)
+	{
+		var result = ChangelogTextUtilities.ExtractIssueNumber(input);
+		result.Should().Be(expected);
+	}
+
+	[Fact]
+	public void ExtractIssueNumber_WithDefaultOwnerRepo_ExtractsNumber()
+	{
+		var result = ChangelogTextUtilities.ExtractIssueNumber("123", "elastic", "elasticsearch");
+		result.Should().Be(123);
+	}
+
+	[Theory]
 	[InlineData("v1.0.0", "ga")]
 	[InlineData("v1.0.0-beta1", "beta")]
 	[InlineData("v1.0.0-preview.1", "preview")]

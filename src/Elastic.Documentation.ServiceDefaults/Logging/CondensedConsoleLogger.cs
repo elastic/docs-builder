@@ -27,6 +27,9 @@ public class CondensedConsoleFormatter() : ConsoleFormatter("condensed")
 			: now.ToString("[yyyy-MM-ddTHH:mm:ss.fffZ] ", System.Globalization.CultureInfo.InvariantCulture);
 
 		textWriter.WriteLine($"{nowString}{logLevel}::{ShortCategoryName(categoryName)}:: {message}");
+
+		if (logEntry.Exception is { } exception)
+			textWriter.WriteLine(exception.ToString());
 	}
 
 	private static string GetLogLevel(LogLevel logLevel) => logLevel switch

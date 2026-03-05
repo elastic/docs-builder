@@ -26,7 +26,8 @@ public class TitleTargetTests(ITestOutputHelper output) : RenderChangelogTestBas
 			type: feature
 			products:
 			  - product: elasticsearch
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			- "100"
 			""";
 
 		var changelogFile = FileSystem.Path.Combine(changelogDir, "1755268130-test-feature.yaml");
@@ -86,7 +87,8 @@ public class TitleTargetTests(ITestOutputHelper output) : RenderChangelogTestBas
 			type: feature
 			products:
 			  - product: elasticsearch
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			- "100"
 			""";
 
 		var changelogFile = FileSystem.Path.Combine(changelogDir, "1755268130-test-feature.yaml");

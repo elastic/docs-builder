@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using Cysharp.IO;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Site;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Comments;
@@ -94,8 +95,7 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 		// Preprocess substitutions in link patterns before Markdig parsing
 		var preprocessedMarkdown = PreprocessLinkSubstitutions(markdown, context);
 
-		var markdownDocument = Markdig.Markdown.Parse(preprocessedMarkdown, pipeline, context);
-		return markdownDocument;
+		return Markdig.Markdown.Parse(preprocessedMarkdown, pipeline, context);
 	}
 
 	public static Task<MarkdownDocument> ParseSnippetAsync(BuildContext build, IParserResolvers resolvers, IFileInfo path, IFileInfo parentPath,
@@ -136,9 +136,7 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 		// Preprocess substitutions in link patterns before Markdig parsing
 		var preprocessedMarkdown = PreprocessLinkSubstitutions(inputMarkdown, (ParserContext)context);
 
-		var markdownDocument = Markdig.Markdown.Parse(preprocessedMarkdown, pipeline, context);
-
-		return markdownDocument;
+		return Markdig.Markdown.Parse(preprocessedMarkdown, pipeline, context);
 	}
 
 	[field: AllowNull, MaybeNull]
@@ -304,4 +302,5 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 
 		return false;
 	}
+
 }

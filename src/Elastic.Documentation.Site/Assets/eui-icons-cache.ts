@@ -40,6 +40,7 @@ import { icon as EuiIconSortDown } from '@elastic/eui/es/components/icon/assets/
 import { icon as EuiIconSortUp } from '@elastic/eui/es/components/icon/assets/sort_up'
 import { icon as EuiIconSparkles } from '@elastic/eui/es/components/icon/assets/sparkles'
 import { icon as EuiIconStop } from '@elastic/eui/es/components/icon/assets/stop'
+import { icon as EuiIconSun } from '@elastic/eui/es/components/icon/assets/sun'
 import { icon as EuiIconThumbDown } from '@elastic/eui/es/components/icon/assets/thumb_down'
 import { icon as EuiIconThumbUp } from '@elastic/eui/es/components/icon/assets/thumb_up'
 import { icon as EuiIconTrash } from '@elastic/eui/es/components/icon/assets/trash'
@@ -96,6 +97,7 @@ const iconMapping = {
     dotInCircle: EuiIconDotInCircle,
     branch: EuiIconBranch,
     filter: EuiIconFilter,
+    sun: EuiIconSun,
 }
 
 appendIconComponentCache(iconMapping)

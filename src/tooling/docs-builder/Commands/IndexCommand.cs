@@ -17,7 +17,8 @@ internal sealed class IndexCommand(
 	ILoggerFactory logFactory,
 	IDiagnosticsCollector collector,
 	IConfigurationContext configurationContext,
-	ICoreService githubActionsService
+	ICoreService githubActionsService,
+	IEnvironmentVariables environmentVariables
 )
 {
 	/// <summary>
@@ -28,11 +29,9 @@ internal sealed class IndexCommand(
 	/// <param name="apiKey">Elasticsearch API key, alternatively set env DOCUMENTATION_ELASTIC_APIKEY</param>
 	/// <param name="username">Elasticsearch username (basic auth), alternatively set env DOCUMENTATION_ELASTIC_USERNAME</param>
 	/// <param name="password">Elasticsearch password (basic auth), alternatively set env DOCUMENTATION_ELASTIC_PASSWORD</param>
-	/// <param name="noSemantic">Index without semantic fields</param>
-	/// <param name="enableAiEnrichment">Enable AI enrichment of documents using LLM-generated metadata</param>
+	/// <param name="noAiEnrichment">Disable AI enrichment of documents using LLM-generated metadata (enabled by default)</param>
 	/// <param name="searchNumThreads">The number of search threads the inference endpoint should use. Defaults: 8</param>
 	/// <param name="indexNumThreads">The number of index threads the inference endpoint should use. Defaults: 8</param>
-	/// <param name="indexNamePrefix">The prefix for the computed index/alias names. Defaults: semantic-docs</param>
 	/// <param name="noEis">Do not use the Elastic Inference Service, bootstrap inference endpoint</param>
 	/// <param name="forceReindex">Force reindex strategy to semantic index</param>
 	/// <param name="bootstrapTimeout">Timeout in minutes for the inference endpoint creation. Defaults: 4</param>
@@ -57,15 +56,13 @@ internal sealed class IndexCommand(
 		string? password = null,
 
 		// inference options
-		bool? noSemantic = null,
-		bool? enableAiEnrichment = null,
+		bool? noAiEnrichment = null,
 		int? searchNumThreads = null,
 		int? indexNumThreads = null,
 		bool? noEis = null,
 		int? bootstrapTimeout = null,
 
 		// index options
-		string? indexNamePrefix = null,
 		bool? forceReindex = null,
 
 		// channel buffer options
@@ -90,14 +87,14 @@ internal sealed class IndexCommand(
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		var fs = new FileSystem();
-		var service = new IsolatedIndexService(logFactory, configurationContext, githubActionsService);
+		var service = new IsolatedIndexService(logFactory, configurationContext, githubActionsService, environmentVariables);
 		var state = (fs, path,
 				// endpoint options
 				endpoint, apiKey, username, password,
 				// inference options
-				noSemantic, enableAiEnrichment, indexNumThreads, noEis, searchNumThreads, bootstrapTimeout,
+				noAiEnrichment, indexNumThreads, noEis, searchNumThreads, bootstrapTimeout,
 				// channel and connection options
-				indexNamePrefix, forceReindex, bufferSize, maxRetries, debugMode,
+				forceReindex, bufferSize, maxRetries, debugMode,
 				// proxy options
 				proxyAddress, proxyPassword, proxyUsername,
 				// certificate options
@@ -108,9 +105,9 @@ internal sealed class IndexCommand(
 				// endpoint options
 				state.endpoint, state.apiKey, state.username, state.password,
 				// inference options
-				state.noSemantic, state.enableAiEnrichment, state.searchNumThreads, state.indexNumThreads, state.noEis, state.bootstrapTimeout,
+				state.noAiEnrichment, state.searchNumThreads, state.indexNumThreads, state.noEis, state.bootstrapTimeout,
 				// channel and connection options
-				state.indexNamePrefix, state.forceReindex, state.bufferSize, state.maxRetries, state.debugMode,
+				state.forceReindex, state.bufferSize, state.maxRetries, state.debugMode,
 				// proxy options
 				state.proxyAddress, state.proxyPassword, state.proxyUsername,
 				// certificate options

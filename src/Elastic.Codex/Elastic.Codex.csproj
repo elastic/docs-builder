@@ -23,6 +23,7 @@
     <ProjectReference Include="..\Elastic.Documentation\Elastic.Documentation.csproj"/>
     <ProjectReference Include="..\Elastic.Documentation.Navigation\Elastic.Documentation.Navigation.csproj"/>
     <ProjectReference Include="..\Elastic.Documentation.Links\Elastic.Documentation.Links.csproj"/>
+    <ProjectReference Include="..\Elastic.Documentation.LinkIndex\Elastic.Documentation.LinkIndex.csproj"/>
     <ProjectReference Include="..\Elastic.Documentation.ServiceDefaults\Elastic.Documentation.ServiceDefaults.csproj"/>
     <ProjectReference Include="..\services\Elastic.Documentation.Services\Elastic.Documentation.Services.csproj"/>
     <ProjectReference Include="..\services\Elastic.Documentation.Isolated\Elastic.Documentation.Isolated.csproj"/>

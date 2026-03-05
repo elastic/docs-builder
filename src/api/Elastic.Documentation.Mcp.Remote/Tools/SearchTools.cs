@@ -5,7 +5,9 @@
 using System.ComponentModel;
 using System.Text.Json;
 using Elastic.Documentation.Api.Core.Search;
+using Elastic.Documentation.Assembler.Mcp;
 using Elastic.Documentation.Mcp.Remote.Responses;
+using Microsoft.Extensions.Logging;
 using ModelContextProtocol.Server;
 
 namespace Elastic.Documentation.Mcp.Remote.Tools;
@@ -14,12 +16,16 @@ namespace Elastic.Documentation.Mcp.Remote.Tools;
 /// MCP tools for semantic search operations on Elastic documentation.
 /// </summary>
 [McpServerToolType]
-public class SearchTools(IFullSearchGateway fullSearchGateway)
+public class SearchTools(IFullSearchGateway fullSearchGateway, ILogger<SearchTools> logger)
 {
 	/// <summary>
 	/// Performs semantic search across all Elastic documentation.
 	/// </summary>
-	[McpServerTool, Description("Performs semantic search across all Elastic documentation. Returns relevant documents with summaries, scores, and navigation context.")]
+	[McpServerTool, McpToolName("search_{resource}"), Description(
+		"Searches all published {docs} by meaning. " +
+		"Use when the user asks about Elastic product features, needs to find existing docs pages, " +
+		"verify published content, or research what documentation exists on a topic. " +
+		"Returns relevant documents with AI summaries, relevance scores, and navigation context.")]
 	public async Task<string> SemanticSearch(
 		[Description("The search query - can be a question or keywords")] string query,
 		[Description("Page number (1-based, default: 1)")] int pageNumber = 1,
@@ -39,7 +45,8 @@ public class SearchTools(IFullSearchGateway fullSearchGateway)
 				PageNumber = pageNumber,
 				PageSize = pageSize,
 				ProductFilter = productFilter != null ? [productFilter] : null,
-				SectionFilter = sectionFilter != null ? [sectionFilter] : null
+				SectionFilter = sectionFilter != null ? [sectionFilter] : null,
+				IncludeHighlighting = false
 			};
 
 			var result = await fullSearchGateway.SearchAsync(request, cancellationToken);
@@ -70,6 +77,7 @@ public class SearchTools(IFullSearchGateway fullSearchGateway)
 		}
 		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
 		{
+			logger.LogError(ex, "SemanticSearch failed for query '{Query}'", query);
 			return JsonSerializer.Serialize(new ErrorResponse(ex.Message), McpJsonContext.Default.ErrorResponse);
 		}
 	}
@@ -77,7 +85,10 @@ public class SearchTools(IFullSearchGateway fullSearchGateway)
 	/// <summary>
 	/// Finds documents related to a given topic or document URL.
 	/// </summary>
-	[McpServerTool, Description("Finds documents related to a given topic or document. Useful for discovering related content and building context.")]
+	[McpServerTool, McpToolName("find_related_{resource}"), Description(
+		"Finds {docs} pages related to a given topic. " +
+		"Use when exploring what documentation exists around a subject, building context for writing, " +
+		"or discovering related content the user should be aware of.")]
 	public async Task<string> FindRelatedDocs(
 		[Description("Topic or search terms to find related documents for")] string topic,
 		[Description("Maximum number of related documents to return (default: 10)")] int limit = 10,
@@ -93,7 +104,8 @@ public class SearchTools(IFullSearchGateway fullSearchGateway)
 				Query = topic,
 				PageNumber = 1,
 				PageSize = limit,
-				ProductFilter = productFilter != null ? [productFilter] : null
+				ProductFilter = productFilter != null ? [productFilter] : null,
+				IncludeHighlighting = false
 			};
 
 			var result = await fullSearchGateway.SearchAsync(request, cancellationToken);
@@ -121,6 +133,7 @@ public class SearchTools(IFullSearchGateway fullSearchGateway)
 		}
 		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
 		{
+			logger.LogError(ex, "FindRelatedDocs failed for topic '{Topic}'", topic);
 			return JsonSerializer.Serialize(new ErrorResponse(ex.Message), McpJsonContext.Default.ErrorResponse);
 		}
 	}

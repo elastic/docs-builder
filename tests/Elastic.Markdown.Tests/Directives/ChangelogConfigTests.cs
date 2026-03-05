@@ -30,7 +30,8 @@ public class ChangelogConfigLoadAutoDiscoverTests : DirectiveTest<ChangelogBlock
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "111111"
+			  prs:
+			  - "111111"
 			- title: Deprecation notice
 			  type: deprecation
 			  products:
@@ -39,7 +40,8 @@ public class ChangelogConfigLoadAutoDiscoverTests : DirectiveTest<ChangelogBlock
 			  description: This API is deprecated.
 			  impact: Users should migrate.
 			  action: Use the new API.
-			  pr: "222222"
+			  prs:
+			  - "222222"
 			- title: Known issue
 			  type: known-issue
 			  products:
@@ -47,16 +49,17 @@ public class ChangelogConfigLoadAutoDiscoverTests : DirectiveTest<ChangelogBlock
 			    target: 9.3.0
 			  description: There is a known issue.
 			  impact: Some users may be affected.
-			  pr: "333333"
+			  prs:
+			  - "333333"
 			"""));
 
 		// Add changelog config with publish blockers
 		FileSystem.AddFile("docs/changelog.yml", new MockFileData(
 			// language=yaml
 			"""
-			block:
+			rules:
 			  publish:
-			    types:
+			    exclude_types:
 			      - deprecation
 			      - known-issue
 			"""));
@@ -114,7 +117,8 @@ public class ChangelogConfigLoadExplicitPathTests : DirectiveTest<ChangelogBlock
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "111111"
+			  prs:
+			  - "111111"
 			- title: Internal docs
 			  type: docs
 			  products:
@@ -122,16 +126,17 @@ public class ChangelogConfigLoadExplicitPathTests : DirectiveTest<ChangelogBlock
 			    target: 9.3.0
 			  areas:
 			  - Internal
-			  pr: "222222"
+			  prs:
+			  - "222222"
 			"""));
 
 		// Add custom config at explicit path
 		FileSystem.AddFile("docs/custom/path/my-changelog.yml", new MockFileData(
 			// language=yaml
 			"""
-			block:
+			rules:
 			  publish:
-			    areas:
+			    exclude_areas:
 			      - Internal
 			"""));
 	}
@@ -178,22 +183,24 @@ public class ChangelogConfigLoadFromDocsSubfolderTests : DirectiveTest<Changelog
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "111111"
+			  prs:
+			  - "111111"
 			- title: Other change
 			  type: other
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "222222"
+			  prs:
+			  - "222222"
 			"""));
 
 		// Add config in docs/docs/changelog.yml (docs subfolder)
 		FileSystem.AddFile("docs/docs/changelog.yml", new MockFileData(
 			// language=yaml
 			"""
-			block:
+			rules:
 			  publish:
-			    types:
+			    exclude_types:
 			      - other
 			"""));
 	}
@@ -228,7 +235,8 @@ public class ChangelogConfigNotFoundTests : DirectiveTest<ChangelogBlock>
 		  products:
 		  - product: elasticsearch
 		    target: 9.3.0
-		  pr: "111111"
+		  prs:
+		  - "111111"
 		"""));
 
 	[Fact]
@@ -262,7 +270,8 @@ public class ChangelogConfigExplicitPathNotFoundTests : DirectiveTest<ChangelogB
 		  products:
 		  - product: elasticsearch
 		    target: 9.3.0
-		  pr: "111111"
+		  prs:
+		  - "111111"
 		"""));
 
 	[Fact]
@@ -297,7 +306,8 @@ public class ChangelogConfigPriorityTests : DirectiveTest<ChangelogBlock>
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "111111"
+			  prs:
+			  - "111111"
 			- title: Deprecation notice
 			  type: deprecation
 			  products:
@@ -306,31 +316,33 @@ public class ChangelogConfigPriorityTests : DirectiveTest<ChangelogBlock>
 			  description: Deprecated.
 			  impact: None.
 			  action: Upgrade.
-			  pr: "222222"
+			  prs:
+			  - "222222"
 			- title: Other change
 			  type: other
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "333333"
+			  prs:
+			  - "333333"
 			"""));
 
 		// Add both config files - root should take priority
 		FileSystem.AddFile("docs/changelog.yml", new MockFileData(
 			// language=yaml
 			"""
-			block:
+			rules:
 			  publish:
-			    types:
+			    exclude_types:
 			      - deprecation
 			"""));
 
 		FileSystem.AddFile("docs/docs/changelog.yml", new MockFileData(
 			// language=yaml
 			"""
-			block:
+			rules:
 			  publish:
-			    types:
+			    exclude_types:
 			      - other
 			"""));
 	}
@@ -366,7 +378,8 @@ public class ChangelogConfigEmptyBlockTests : DirectiveTest<ChangelogBlock>
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "111111"
+			  prs:
+			  - "111111"
 			"""));
 
 		// Config file exists but has no block section
@@ -410,7 +423,8 @@ public class ChangelogConfigMixedBlockersTests : DirectiveTest<ChangelogBlock>
 			    target: 9.3.0
 			  areas:
 			  - Search
-			  pr: "111111"
+			  prs:
+			  - "111111"
 			- title: Deprecation in Search
 			  type: deprecation
 			  products:
@@ -421,7 +435,8 @@ public class ChangelogConfigMixedBlockersTests : DirectiveTest<ChangelogBlock>
 			  description: Deprecated.
 			  impact: None.
 			  action: Upgrade.
-			  pr: "222222"
+			  prs:
+			  - "222222"
 			- title: Feature in Internal
 			  type: feature
 			  products:
@@ -429,24 +444,26 @@ public class ChangelogConfigMixedBlockersTests : DirectiveTest<ChangelogBlock>
 			    target: 9.3.0
 			  areas:
 			  - Internal
-			  pr: "333333"
+			  prs:
+			  - "333333"
 			- title: Bug fix
 			  type: bug-fix
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "444444"
+			  prs:
+			  - "444444"
 			"""));
 
 		// Config with both type and area blockers
 		FileSystem.AddFile("docs/changelog.yml", new MockFileData(
 			// language=yaml
 			"""
-			block:
+			rules:
 			  publish:
-			    types:
+			    exclude_types:
 			      - deprecation
-			    areas:
+			    exclude_areas:
 			      - Internal
 			"""));
 	}
@@ -494,7 +511,8 @@ public class ChangelogProductFallbackSingleProductTests(ITestOutputHelper output
 			  products:
 			  - product: kibana
 			    target: 9.3.0
-			  pr: "111111"
+			  prs:
+			  - "111111"
 			- title: Internal feature
 			  type: feature
 			  products:
@@ -502,7 +520,8 @@ public class ChangelogProductFallbackSingleProductTests(ITestOutputHelper output
 			    target: 9.3.0
 			  areas:
 			  - Internal
-			  pr: "222222"
+			  prs:
+			  - "222222"
 			- title: Observability feature
 			  type: feature
 			  products:
@@ -510,21 +529,21 @@ public class ChangelogProductFallbackSingleProductTests(ITestOutputHelper output
 			    target: 9.3.0
 			  areas:
 			  - Elastic Observability
-			  pr: "333333"
+			  prs:
+			  - "333333"
 			"""));
 
 		// Config with product-specific blocker for kibana
 		fileSystem.AddFile("docs/changelog.yml", new MockFileData(
 			// language=yaml
 			"""
-			block:
+			rules:
 			  publish:
-			    areas:
+			    exclude_areas:
 			      - Global Area
-			  product:
-			    kibana:
-			      publish:
-			        areas:
+			    products:
+			      kibana:
+			        exclude_areas:
 			          - Internal
 			          - Elastic Observability
 			"""));
@@ -576,7 +595,8 @@ public class ChangelogProductFallbackMultipleProductsTests(ITestOutputHelper out
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "111111"
+			  prs:
+			  - "111111"
 			- title: Internal feature
 			  type: feature
 			  products:
@@ -584,21 +604,21 @@ public class ChangelogProductFallbackMultipleProductsTests(ITestOutputHelper out
 			    target: 9.3.0
 			  areas:
 			  - Internal
-			  pr: "222222"
+			  prs:
+			  - "222222"
 			"""));
 
 		// Config with product-specific blockers
 		fileSystem.AddFile("docs/changelog.yml", new MockFileData(
 			// language=yaml
 			"""
-			block:
+			rules:
 			  publish:
-			    areas:
+			    exclude_areas:
 			      - Global Area
-			  product:
-			    elasticsearch:
-			      publish:
-			        areas:
+			    products:
+			      elasticsearch:
+			        exclude_areas:
 			          - Internal
 			"""));
 	}
@@ -650,7 +670,8 @@ public class ChangelogProductExplicitOptionOverridesDocsetTests(ITestOutputHelpe
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "111111"
+			  prs:
+			  - "111111"
 			- title: ES Internal feature
 			  type: feature
 			  products:
@@ -658,7 +679,8 @@ public class ChangelogProductExplicitOptionOverridesDocsetTests(ITestOutputHelpe
 			    target: 9.3.0
 			  areas:
 			  - ES Internal
-			  pr: "222222"
+			  prs:
+			  - "222222"
 			- title: Kibana Internal feature
 			  type: feature
 			  products:
@@ -666,22 +688,22 @@ public class ChangelogProductExplicitOptionOverridesDocsetTests(ITestOutputHelpe
 			    target: 9.3.0
 			  areas:
 			  - Kibana Internal
-			  pr: "333333"
+			  prs:
+			  - "333333"
 			"""));
 
 		// Config with different blockers for different products
 		fileSystem.AddFile("docs/changelog.yml", new MockFileData(
 			// language=yaml
 			"""
-			block:
-			  product:
-			    elasticsearch:
-			      publish:
-			        areas:
+			rules:
+			  publish:
+			    products:
+			      elasticsearch:
+			        exclude_areas:
 			          - ES Internal
-			    kibana:
-			      publish:
-			        areas:
+			      kibana:
+			        exclude_areas:
 			          - Kibana Internal
 			"""));
 	}

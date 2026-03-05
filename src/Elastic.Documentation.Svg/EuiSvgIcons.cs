@@ -50,6 +50,20 @@ public static class EuiSvgIcons
 		Icons.TryGetValue(name, out var svg) ? svg : null;
 
 	/// <summary>
+	/// Gets an icon SVG by name with an optional CSS class injected into the svg element.
+	/// </summary>
+	/// <param name="name">The icon name (without .svg extension)</param>
+	/// <param name="cssClass">Optional CSS class to add to the svg element</param>
+	/// <returns>The SVG content or null if not found</returns>
+	public static string? GetIcon(string name, string? cssClass) =>
+		Icons.TryGetValue(name, out var svg)
+			? cssClass is not null ? InjectClass(svg, cssClass) : svg
+			: null;
+
+	private static string InjectClass(string svg, string cssClass) =>
+		svg.Replace("<svg ", $"<svg class=\"{cssClass}\" ");
+
+	/// <summary>
 	/// Gets a token SVG by name, returning null if not found.
 	/// </summary>
 	/// <param name="name">The token name (without .svg extension)</param>

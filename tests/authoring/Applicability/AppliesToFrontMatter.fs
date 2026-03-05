@@ -121,6 +121,74 @@ applies_to:
             )
         ))
 
+type ``parses ech as alias for ess`` () =
+    static let markdown = frontMatter """
+applies_to:
+   deployment:
+      ech: ga 9.0
+"""
+    [<Fact>]
+    let ``apply matches expected`` () =
+        markdown |> appliesTo (ApplicableTo(
+            Deployment=DeploymentApplicability(
+                Ess=AppliesCollection.op_Explicit "ga 9.0"
+            )
+        ))
+
+type ``parses ech with version alongside other deployment types`` () =
+    static let markdown = frontMatter """
+applies_to:
+   deployment:
+      ech: beta 9.1
+      eck: ga 9.0
+      ece: removed 9.2.0
+      self: unavailable 9.3.0
+"""
+    [<Fact>]
+    let ``apply matches expected`` () =
+        markdown |> appliesTo (ApplicableTo(
+            Deployment=DeploymentApplicability(
+                Ess=AppliesCollection.op_Explicit "beta 9.1",
+                Eck=AppliesCollection.op_Explicit "ga 9.0",
+                Ece=AppliesCollection.op_Explicit "removed 9.2.0",
+                Self=AppliesCollection.op_Explicit "unavailable 9.3.0"
+            )
+        ))
+
+type ``both ess and ech defined uses ech value and warns`` () =
+    static let markdown = frontMatter """
+applies_to:
+   deployment:
+      ess: ga 9.0
+      ech: beta 9.1
+"""
+    [<Fact>]
+    let ``ech value wins`` () =
+        markdown |> appliesTo (ApplicableTo(
+            Deployment=DeploymentApplicability(
+                Ess=AppliesCollection.op_Explicit "beta 9.1"
+            )
+        ))
+
+    [<Fact>]
+    let ``emits warning about both being defined`` () =
+        markdown |> hasWarning "Both 'ess' and 'ech' are defined"
+
+type ``parses ech at top level`` () =
+    static let markdown = frontMatter """
+applies_to:
+   ech: preview 9.1
+   stack: ga 9.1
+"""
+    [<Fact>]
+    let ``apply matches expected`` () =
+        markdown |> appliesTo (ApplicableTo(
+            Deployment=DeploymentApplicability(
+                Ess=AppliesCollection.op_Explicit "preview 9.1"
+            ),
+            Stack=AppliesCollection.op_Explicit "ga 9.1.0"
+        ))
+
 type ``parses product coming DEPRECATED`` () =
     static let markdown = frontMatter """
 applies_to:

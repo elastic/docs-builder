@@ -4,8 +4,10 @@
 
 using System.ComponentModel;
 using System.Text.Json;
+using Elastic.Documentation.Assembler.Mcp;
 using Elastic.Documentation.Mcp.Remote.Gateways;
 using Elastic.Documentation.Mcp.Remote.Responses;
+using Microsoft.Extensions.Logging;
 using ModelContextProtocol.Server;
 
 namespace Elastic.Documentation.Mcp.Remote.Tools;
@@ -14,14 +16,18 @@ namespace Elastic.Documentation.Mcp.Remote.Tools;
 /// MCP tools for document-specific operations.
 /// </summary>
 [McpServerToolType]
-public class DocumentTools(IDocumentGateway documentGateway)
+public class DocumentTools(IDocumentGateway documentGateway, ILogger<DocumentTools> logger)
 {
 	/// <summary>
 	/// Gets a document by its URL.
 	/// </summary>
-	[McpServerTool, Description("Gets a specific documentation page by its URL. Returns full document content including AI summaries and metadata.")]
+	[McpServerTool, McpToolName("get_{scope}document_by_url"), Description(
+		"Retrieves a specific {docs} page by its URL. " +
+		"Use when the user provides a documentation URL, references a known page, " +
+		"or you need the full content and metadata of a specific doc. " +
+		"Returns title, AI summaries, headings, navigation context, and optionally the full body.")]
 	public async Task<string> GetDocumentByUrl(
-		[Description("The URL of the document (e.g., '/docs/elasticsearch/reference/index')")] string url,
+		[Description("The URL of the document. Accepts a full URL (e.g. 'https://www.elastic.co/docs/deploy-manage/api-keys') or a path (e.g. '/docs/deploy-manage/api-keys'). Query strings, fragments, and trailing slashes are ignored.")] string url,
 		[Description("Include full body content (default: false, set true for detailed analysis)")] bool includeBody = false,
 		CancellationToken cancellationToken = default)
 	{
@@ -76,6 +82,7 @@ public class DocumentTools(IDocumentGateway documentGateway)
 		}
 		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
 		{
+			logger.LogError(ex, "GetDocumentByUrl failed for URL '{Url}'", url);
 			return JsonSerializer.Serialize(new ErrorResponse(ex.Message), McpJsonContext.Default.ErrorResponse);
 		}
 	}
@@ -83,9 +90,12 @@ public class DocumentTools(IDocumentGateway documentGateway)
 	/// <summary>
 	/// Analyzes the structure of a document.
 	/// </summary>
-	[McpServerTool, Description("Analyzes the structure of a documentation page. Returns heading count, links, parents, and AI enrichment status.")]
+	[McpServerTool, McpToolName("analyze_{scope}document_structure"), Description(
+		"Analyzes the structure of a {docs} page. " +
+		"Use when evaluating page quality, checking heading hierarchy, or assessing AI enrichment status. " +
+		"Returns heading count, link count, parent pages, and whether AI summaries are present.")]
 	public async Task<string> AnalyzeDocumentStructure(
-		[Description("The URL of the document to analyze")] string url,
+		[Description("The URL of the document to analyze. Accepts a full URL (e.g. 'https://www.elastic.co/docs/deploy-manage/api-keys') or a path (e.g. '/docs/deploy-manage/api-keys'). Query strings, fragments, and trailing slashes are ignored.")] string url,
 		CancellationToken cancellationToken = default)
 	{
 		try
@@ -129,6 +139,7 @@ public class DocumentTools(IDocumentGateway documentGateway)
 		}
 		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
 		{
+			logger.LogError(ex, "AnalyzeDocumentStructure failed for URL '{Url}'", url);
 			return JsonSerializer.Serialize(new ErrorResponse(ex.Message), McpJsonContext.Default.ErrorResponse);
 		}
 	}

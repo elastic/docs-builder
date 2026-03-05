@@ -18,7 +18,8 @@ public class BundleValidationTests(ITestOutputHelper output) : RenderChangelogTe
 		products:
 		  - product: elasticsearch
 		    target: 9.2.0
-		pr: https://github.com/elastic/elasticsearch/pull/101
+		prs:
+		- "101"
 		""";
 
 	// language=yaml
@@ -29,7 +30,8 @@ public class BundleValidationTests(ITestOutputHelper output) : RenderChangelogTe
 		products:
 		  - product: elasticsearch
 		    target: 9.2.0
-		pr: https://github.com/elastic/elasticsearch/pull/102
+		prs:
+		- "102"
 		""";
 
 	// language=yaml
@@ -40,7 +42,8 @@ public class BundleValidationTests(ITestOutputHelper output) : RenderChangelogTe
 		products:
 		  - product: elasticsearch
 		    target: 9.2.0
-		pr: https://github.com/elastic/elasticsearch/pull/103
+		prs:
+		- "103"
 		""";
 
 	// language=yaml
@@ -53,7 +56,8 @@ public class BundleValidationTests(ITestOutputHelper output) : RenderChangelogTe
 		products:
 		  - product: elasticsearch
 		    target: 9.2.0
-		pr: https://github.com/elastic/elasticsearch/pull/104
+		prs:
+		- "104"
 		""";
 
 	// language=yaml
@@ -64,7 +68,8 @@ public class BundleValidationTests(ITestOutputHelper output) : RenderChangelogTe
 		products:
 		  - product: kibana
 		    target: 9.2.0
-		pr: https://github.com/elastic/elasticsearch/pull/999
+		prs:
+		- "999"
 		""";
 
 	[Fact]
@@ -196,7 +201,8 @@ public class BundleValidationTests(ITestOutputHelper output) : RenderChangelogTe
 			    products:
 			      - product: elasticsearch
 			        target: 9.2.0
-			    pr: https://github.com/elastic/elasticsearch/pull/200
+			    prs:
+			    - "200"
 			""";
 		await FileSystem.File.WriteAllTextAsync(amend1, amendContent, TestContext.Current.CancellationToken);
 

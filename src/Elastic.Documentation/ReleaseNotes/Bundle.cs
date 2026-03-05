@@ -21,4 +21,7 @@ public record Bundle
 
 	/// <summary>Changelog entries in this bundle.</summary>
 	public IReadOnlyList<BundledEntry> Entries { get; init; } = [];
+
+	/// <summary>Whether entries in this bundle have their contents resolved (inlined).</summary>
+	public bool IsResolved => Entries.Any(e => e.Title != null);
 }

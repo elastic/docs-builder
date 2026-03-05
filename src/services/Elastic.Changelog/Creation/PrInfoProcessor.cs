@@ -93,7 +93,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		var derived = new DerivedPrFields();
 
 		// Extract release notes from PR body if requested
-		if (input.ExtractReleaseNotes)
+		if (input.ExtractReleaseNotes ?? false)
 		{
 			var (releaseNoteTitle, releaseNoteDescription) = ReleaseNotesExtractor.ExtractReleaseNotes(prInfo.Body);
 
@@ -181,7 +181,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 			logger.LogDebug("Using explicitly provided highlight value, ignoring PR labels");
 
 		// Extract linked issues from PR body if config enabled and issues not provided
-		if (input.ExtractIssues && (input.Issues == null || input.Issues.Length == 0))
+		if ((input.ExtractIssues ?? false) && (input.Issues == null || input.Issues.Length == 0))
 		{
 			if (prInfo.LinkedIssues.Count > 0)
 			{
@@ -203,49 +203,78 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		IDiagnosticsCollector collector,
 		string prUrl)
 	{
-		if (config.Block?.ByProduct == null || config.Block.ByProduct.Count == 0)
+		var createRules = config.Rules?.Create;
+		if (createRules == null)
+			return false;
+
+		// Check product-specific overrides first, then fall back to global
+		if (createRules.ByProduct is { Count: > 0 })
 		{
-			// Check global create blockers
-			if (config.Block?.Create != null && config.Block.Create.Count > 0)
+			foreach (var product in products)
 			{
-				var matchingGlobalBlocker = config.Block.Create
-					.FirstOrDefault(blockerLabel => prLabels.Contains(blockerLabel, StringComparer.OrdinalIgnoreCase));
-				if (matchingGlobalBlocker != null)
+				var normalizedProductId = product.Product?.Replace('_', '-') ?? string.Empty;
+				if (createRules.ByProduct.TryGetValue(normalizedProductId, out var productRules))
 				{
-					collector.EmitWarning(string.Empty, $"Skipping changelog creation for PR {prUrl} due to global blocking label '{matchingGlobalBlocker}'. This label is configured to prevent changelog creation.");
-					return true;
+					// Product-specific rules override global rules
+					if (ShouldSkipByCreateRules(prLabels, productRules, collector, prUrl, product.Product))
+						return true;
 				}
+				else if (ShouldSkipByCreateRules(prLabels, createRules, collector, prUrl, null))
+					return true;
 			}
 			return false;
 		}
 
-		foreach (var product in products)
+		// No product-specific rules - check global
+		return ShouldSkipByCreateRules(prLabels, createRules, collector, prUrl, null);
+	}
+
+	internal static bool ShouldSkipByCreateRules(
+		string[] prLabels,
+		CreateRules rules,
+		IDiagnosticsCollector collector,
+		string prUrl,
+		string? productContext)
+	{
+		if (rules.Labels == null || rules.Labels.Count == 0)
+			return false;
+
+		var mode = rules.Mode;
+		var match = rules.Match;
+		var prefix = mode == FieldMode.Include ? "[+include]" : "[-exclude]";
+		var productSuffix = productContext != null ? $" for product '{productContext}'" : "";
+
+		if (mode == FieldMode.Exclude)
 		{
-			var normalizedProductId = product.Product?.Replace('_', '-') ?? string.Empty;
-			if (config.Block.ByProduct.TryGetValue(normalizedProductId, out var productBlockers))
+			// Exclude mode: skip if any/all labels match
+			var matchingLabel = match switch
 			{
-				// Product-specific blockers override global blockers
-				if (productBlockers.Create != null && productBlockers.Create.Count > 0)
-				{
-					var matchingBlockerLabel = productBlockers.Create
-						.FirstOrDefault(blockerLabel => prLabels.Contains(blockerLabel, StringComparer.OrdinalIgnoreCase));
-					if (matchingBlockerLabel != null)
-					{
-						collector.EmitWarning(string.Empty, $"Skipping changelog creation for PR {prUrl} due to blocking label '{matchingBlockerLabel}' for product '{product.Product}'. This label is configured to prevent changelog creation for this product.");
-						return true;
-					}
-				}
+				MatchMode.All => prLabels.All(label => rules.Labels.Contains(label, StringComparer.OrdinalIgnoreCase))
+					? string.Join(", ", prLabels)
+					: null,
+				_ => rules.Labels.FirstOrDefault(blockerLabel => prLabels.Contains(blockerLabel, StringComparer.OrdinalIgnoreCase))
+			};
+
+			if (matchingLabel != null)
+			{
+				collector.EmitWarning(string.Empty, $"{prefix} Skipping changelog creation for PR {prUrl} due to blocking label '{matchingLabel}'{productSuffix} (match: {match.ToString().ToLowerInvariant()}).");
+				return true;
 			}
-			else if (config.Block.Create != null && config.Block.Create.Count > 0)
+		}
+		else
+		{
+			// Include mode: skip if labels do NOT match
+			var hasMatch = match switch
 			{
-				// Fall back to global blockers if no product-specific blockers
-				var matchingGlobalBlocker = config.Block.Create
-					.FirstOrDefault(blockerLabel => prLabels.Contains(blockerLabel, StringComparer.OrdinalIgnoreCase));
-				if (matchingGlobalBlocker != null)
-				{
-					collector.EmitWarning(string.Empty, $"Skipping changelog creation for PR {prUrl} due to global blocking label '{matchingGlobalBlocker}'. This label is configured to prevent changelog creation.");
-					return true;
-				}
+				MatchMode.All => prLabels.All(label => rules.Labels.Contains(label, StringComparer.OrdinalIgnoreCase)),
+				_ => prLabels.Any(label => rules.Labels.Contains(label, StringComparer.OrdinalIgnoreCase))
+			};
+
+			if (!hasMatch)
+			{
+				var labelsList = string.Join(", ", rules.Labels);
+				collector.EmitWarning(string.Empty, $"{prefix} Skipping changelog creation for PR {prUrl}, no labels match rules.create.include [{labelsList}]{productSuffix} (match: {match.ToString().ToLowerInvariant()}).");
+				return true;
 			}
 		}
 
@@ -278,11 +307,11 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		}
 	}
 
-	private static string? MapLabelsToType(string[] labels, IReadOnlyDictionary<string, string> labelToTypeMapping) => labels
+	internal static string? MapLabelsToType(string[] labels, IReadOnlyDictionary<string, string> labelToTypeMapping) => labels
 		.Select(label => labelToTypeMapping.TryGetValue(label, out var mappedType) ? mappedType : null)
 		.FirstOrDefault(mappedType => mappedType != null);
 
-	private static List<string> MapLabelsToAreas(string[] labels, IReadOnlyDictionary<string, string> labelToAreasMapping)
+	internal static List<string> MapLabelsToAreas(string[] labels, IReadOnlyDictionary<string, string> labelToAreasMapping)
 	{
 		var areas = new HashSet<string>();
 		var areaList = labels
@@ -307,7 +336,7 @@ public record PrProcessingResult
 }
 
 /// <summary>
-/// Fields derived from PR information
+/// Fields derived from PR or issue information
 /// </summary>
 public record DerivedPrFields
 {
@@ -317,4 +346,9 @@ public record DerivedPrFields
 	public string[]? Areas { get; set; }
 	public bool? Highlight { get; set; }
 	public string[]? Issues { get; set; }
+
+	/// <summary>
+	/// Linked PRs derived from issue body (when creating changelog from --issues)
+	/// </summary>
+	public string[]? Prs { get; set; }
 }
