@@ -1043,19 +1043,19 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current.CancellationToken);
 
 			// Assert
-			config.Should().NotBeNull();
-			Collector.Errors.Should().Be(0);
-			config.LabelToProducts.Should().NotBeNull();
-			config.LabelToProducts.Should().ContainKey(":stack/elasticsearch");
-			config.LabelToProducts[":stack/elasticsearch"].Should().Be("elasticsearch");
-			config.LabelToProducts.Should().ContainKey(":stack/kibana");
-			config.LabelToProducts[":stack/kibana"].Should().Be("kibana");
-		}
-		finally
-		{
-			FileSystem.Directory.SetCurrentDirectory(originalDir);
-		}
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config.LabelToProducts.Should().NotBeNull();
+		config.LabelToProducts.Should().ContainKey(":stack/elasticsearch");
+		config.LabelToProducts[":stack/elasticsearch"].Should().Be("elasticsearch");
+		config.LabelToProducts.Should().ContainKey(":stack/kibana");
+		config.LabelToProducts[":stack/kibana"].Should().Be("kibana");
 	}
+	finally
+	{
+		FileSystem.Directory.SetCurrentDirectory(originalDir);
+	}
+}
 
 	[Fact]
 	public async Task LoadChangelogConfiguration_WithPivotProducts_ProductSpecWithTarget_PreservesSpec()
@@ -1264,7 +1264,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			// Assert
 			config.Should().NotBeNull();
 			Collector.Errors.Should().Be(0);
-			config!.LabelToProducts.Should().NotBeNull();
+		config!.LabelToProducts.Should().NotBeNull();
 			config.LabelToProducts.Should().ContainKey(":stack/elasticsearch");
 			config.LabelToProducts![":stack/elasticsearch"].Should().Be("elasticsearch");
 			config.LabelToProducts.Should().ContainKey(":stack/kibana");
