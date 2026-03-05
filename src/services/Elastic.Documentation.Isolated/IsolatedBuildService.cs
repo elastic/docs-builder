@@ -149,7 +149,7 @@ public class IsolatedBuildService(
 			context.LegacyUrlMappings,
 			set.Configuration,
 			context.Git);
-		var markdownExporters = exporters.CreateMarkdownExporters(logFactory, context, "isolated");
+		var markdownExporters = exporters.CreateMarkdownExporters(logFactory, context);
 
 		var tasks = markdownExporters.Select(async e => await e.StartAsync(ctx));
 		await Task.WhenAll(tasks);
@@ -200,7 +200,8 @@ public class IsolatedBuildService(
 		else
 		{
 			exporters ??= ExportOptions.Default;
-			allExporters = exporters.CreateMarkdownExporters(logFactory, context, "codex").ToArray();
+			context.Endpoints.BuildType = "codex";
+			allExporters = exporters.CreateMarkdownExporters(logFactory, context).ToArray();
 		}
 
 		if (manageLifecycle)
