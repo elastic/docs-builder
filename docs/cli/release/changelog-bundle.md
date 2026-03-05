@@ -107,7 +107,7 @@ You must choose one method for determining what's in the bundle (`--all`, `--inp
 
 `--owner <string?>`
 :   Optional: The GitHub repository owner, required when pull requests or issues are specified as numbers.
-:   Falls back to `bundle.owner` in `changelog.yml` when not specified.
+:   Precedence: `--owner` flag > `bundle.owner` in `changelog.yml` > `elastic`.
 
 `--prs <string[]?>`
 :   Filter by pull request URLs (comma-separated) or a path to a newline-delimited file. Can be specified multiple times.
@@ -121,9 +121,8 @@ You must choose one method for determining what's in the bundle (`--all`, `--inp
 `--release-version <string?>`
 :   Fetch the PR list from a GitHub release and use it as the bundle filter.
 :   Provide a release tag (for example, `"v9.2.0"`) or `"latest"` for the most recent release.
-:    Requires `--repo` (or `bundle.repo` in `changelog.yml`).
+:   Requires repo (`--repo` or `bundle.repo` in `changelog.yml`) and owner (`--owner` flag > `bundle.owner` in `changelog.yml` > `elastic`) details.
 :   When `--output-products` is not specified, the product, target version, and lifecycle are inferred automatically from the release tag and repository name.
-:   Set `--owner` to override the default owner (`elastic`).
 
 `--repo <string?>`
 :   The GitHub repository name.

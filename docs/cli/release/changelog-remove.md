@@ -101,8 +101,7 @@ For command-option-based removal, only one filter option can be specified: `--al
 `--release-version <string?>`
 :   Fetch the PR list from a GitHub release and use it as the removal filter.
 :   Provide a release tag (for example, `"v9.2.0"`) or `"latest"` for the most recent release.
-:   Mutually exclusive with `--all`, `--products`, `--prs`, and `--issues`.
-:   Repo resolved as: `--repo` flag > `bundle.repo` in `changelog.yml`. Owner resolved as: `--owner` flag > `bundle.owner` in `changelog.yml` > `elastic`.
+:   It needs information about the repo (which is resolved as: `--repo` flag > `bundle.repo` in `changelog.yml`) and repo owner (which is resolved as: `--owner` flag > `bundle.owner` in `changelog.yml` > `elastic`).
 :   Requires a `GITHUB_TOKEN` or `GH_TOKEN` environment variable (or an active `gh` login).
 
 `--repo <string?>`
