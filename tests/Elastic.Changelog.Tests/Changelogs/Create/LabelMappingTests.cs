@@ -231,13 +231,13 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var outputDir = input.Output;
-		if (!FileSystem.Directory.Exists(outputDir))
-			FileSystem.Directory.CreateDirectory(outputDir);
-		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
-		files.Should().HaveCount(1);
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
-		yamlContent.Should().Contain("- product: elasticsearch");
+	var outputDir = input.Output;
+	if (!FileSystem.Directory.Exists(outputDir))
+		FileSystem.Directory.CreateDirectory(outputDir);
+	var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+	files.Should().HaveCount(1);
+	var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+	yamlContent.Should().Contain("- product: elasticsearch");
 	}
 
 	[Fact]
@@ -292,13 +292,13 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var outputDir = input.Output;
-		if (!FileSystem.Directory.Exists(outputDir))
-			FileSystem.Directory.CreateDirectory(outputDir);
-		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
-		yamlContent.Should().Contain("- product: elasticsearch");
-		yamlContent.Should().Contain("- product: kibana");
+	var outputDir = input.Output;
+	if (!FileSystem.Directory.Exists(outputDir))
+		FileSystem.Directory.CreateDirectory(outputDir);
+	var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+	var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+	yamlContent.Should().Contain("- product: elasticsearch");
+	yamlContent.Should().Contain("- product: kibana");
 	}
 
 	[Fact]
@@ -352,13 +352,13 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var outputDir = input.Output;
-		if (!FileSystem.Directory.Exists(outputDir))
-			FileSystem.Directory.CreateDirectory(outputDir);
-		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
-		yamlContent.Should().Contain("- product: kibana");
-		yamlContent.Should().NotContain("- product: elasticsearch");
+	var outputDir = input.Output;
+	if (!FileSystem.Directory.Exists(outputDir))
+		FileSystem.Directory.CreateDirectory(outputDir);
+	var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+	var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+	yamlContent.Should().Contain("- product: kibana");
+	yamlContent.Should().NotContain("- product: elasticsearch");
 	}
 
 	[Fact]

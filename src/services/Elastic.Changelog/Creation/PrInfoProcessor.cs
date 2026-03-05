@@ -357,19 +357,19 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 
 		foreach (var label in labels)
 		{
-			if (!labelToProductsMapping.TryGetValue(label, out var productSpec))
-				continue;
+		if (!labelToProductsMapping.TryGetValue(label, out var productSpec))
+			continue;
 
-			if (!seen.Add(productSpec))
+		if (!seen.Add(productSpec))
 				continue;
 
 			var parts = productSpec.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 			if (parts.Length == 0)
 				continue;
 
-			products.Add(new ProductArgument
-			{
-				Product = parts[0].Replace('_', '-'),
+		products.Add(new ProductArgument
+		{
+			Product = parts[0].Replace('_', '-'),
 				Target = parts.Length > 1 ? parts[1] : null,
 				Lifecycle = parts.Length > 2 ? parts[2] : null
 			});

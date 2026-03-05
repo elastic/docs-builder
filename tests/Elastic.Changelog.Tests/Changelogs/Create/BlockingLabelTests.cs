@@ -262,7 +262,7 @@ public class BlockingLabelTests(ITestOutputHelper output) : CreateChangelogTestB
 		result.Should().BeTrue(); // Succeed but skip
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Skipping changelog creation") && d.Message.Contains("skip:releaseNotes"));
 
-		var outputDir = input.Output;
+	var outputDir = input.Output;
 		if (!FileSystem.Directory.Exists(outputDir))
 			FileSystem.Directory.CreateDirectory(outputDir);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
