@@ -71,9 +71,11 @@ docs-builder changelog add [options...] [-h|--help]
 :   Falls back to `bundle.owner` in `changelog.yml` when not specified. If that value is also absent, defaults to `elastic`.
 
 `--products <List<ProductInfo>>`
-:   Required: Products affected in format "product target lifecycle, ..." (for example, `"elasticsearch 9.2.0 ga, cloud-serverless 2025-08-05"`).
+:   Products affected in format "product target lifecycle, ..." (for example, `"elasticsearch 9.2.0 ga, cloud-serverless 2025-08-05"`).
 :   The valid product identifiers are listed in [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml).
 :   The valid lifecycles are listed in [ChangelogConfiguration.cs](https://github.com/elastic/docs-builder/blob/main/src/services/Elastic.Documentation.Services/Changelog/ChangelogConfiguration.cs).
+:   **Precedence when `--products` is not specified:** products are derived from PR/issue labels via `pivot.products` label mappings (if configured), then from `products.default` in `changelog.yml`, and finally inferred from the current git repository name. An error is raised if no products can be determined by any of these means.
+:   See [Products resolution](#products-resolution) in the how-to guide for full details.
 
 `--prs <string[]?>`
 :   Optional: Pull request URLs or numbers (comma-separated), or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times.
@@ -82,9 +84,9 @@ docs-builder changelog add [options...] [-h|--help]
 :   When specifying a file path, provide a single value that points to a newline-delimited file.
 :   If `--owner` and `--repo` are provided, PR numbers can be used instead of URLs.
 :   If specified, `--title` can be derived from the PR.
-:   If mappings are configured, `--areas` and `--type` can also be derived from the PR.
+:   If mappings are configured, `--areas`, `--type`, and `--products` can also be derived from the PR labels.
 :   Creates one changelog file per PR.
-:   If there are `block ... create` definitions in the changelog configuration file and a PR has a blocking label for any product in `--products`, that PR is skipped and no changelog file is created for it.
+:   If there are `block ... create` definitions in the changelog configuration file and a PR has a blocking label for the resolved products, that PR is skipped and no changelog file is created for it.
 
 `--release-version <string?>`
 :   Optional: GitHub release tag to use as a source of pull requests (for example, `"v9.2.0"` or `"latest"`).

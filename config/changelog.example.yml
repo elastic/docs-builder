@@ -105,6 +105,26 @@ pivot:
     #   - ":Search/Search"
     #   - ":Search/Ranking"
 
+  # Product definitions with labels (optional).
+  # Keys are product spec strings; values are label strings or lists that trigger that product.
+  # A product spec string is: "<product-id> [<target-version>] [<lifecycle>]"
+  #   - Product ID only:           "elasticsearch"
+  #   - Product + target:          "kibana 9.2.0"
+  #   - Full spec:                 "cloud-serverless 2025-06 ga"
+  # When a PR has labels matching any product entry, all matching products are added.
+  # Precedence: --products CLI option > pivot.products label mapping > products.default > repo inference.
+  #
+  # products:
+  #   'elasticsearch':
+  #     - ":stack/elasticsearch"
+  #   'kibana':
+  #     - ":stack/kibana"
+  #   'cloud-serverless':
+  #     - ":cloud/serverless"
+  #   # Specify a target version if known:
+  #   # 'elasticsearch 9.2.0':
+  #   #   - ":feature/new-in-9.2"
+
 # Rules configuration — controls which PRs create changelogs and which entries are published.
 # All list-like fields (exclude, include, exclude_types, etc.) accept BOTH forms:
 #   - Comma-separated string: "value1, value2, value3"
