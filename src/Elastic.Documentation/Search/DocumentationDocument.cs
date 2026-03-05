@@ -18,7 +18,7 @@ public record ParentDocument
 	public required string Url { get; set; }
 }
 
-public record DocumentationDocument
+public record DocumentationDocument : IDocument
 {
 	[AiInput]
 	[JsonPropertyName("title")]

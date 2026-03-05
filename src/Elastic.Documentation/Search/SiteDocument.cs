@@ -10,7 +10,7 @@ namespace Elastic.Documentation.Search;
 /// <summary>
 /// Document type for non-documentation pages on elastic.co (marketing, blog, product pages, etc.)
 /// </summary>
-public record SiteDocument
+public record SiteDocument : IDocument
 {
 	[Text]
 	[JsonPropertyName("title")]

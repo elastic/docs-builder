@@ -28,24 +28,25 @@ public class GuideIndexerExporter : IDisposable
 		IDiagnosticsCollector diagnostics,
 		IndexingErrorTracker errorTracker,
 		ElasticsearchEndpoint endpoint,
-		DistributedTransport transport
+		DistributedTransport transport,
+		string buildType,
+		string environment
 	)
 	{
 		_logger = loggerFactory.CreateLogger<GuideIndexerExporter>();
 		_diagnostics = diagnostics;
 
-		var lexicalContext = DocumentationAnalysisFactory.CreateContext(
-			DocumentationMappingContext.DocumentationDocument.Context,
-			"guide-lexical",
-			"guide-synonyms",
-			[]
-		);
-		var semanticContext = DocumentationAnalysisFactory.CreateContext(
-			DocumentationMappingContext.DocumentationDocumentSemantic.Context,
-			"guide-semantic",
-			"guide-synonyms",
-			[]
-		);
+		var synonymSetName = $"docs-{buildType}-{environment}";
+		var lexicalContext = DocumentationMappingContext.DocumentationDocument
+			.CreateContext(type: buildType, env: environment) with
+		{
+			ConfigureAnalysis = a => DocumentationAnalysisFactory.BuildAnalysis(a, synonymSetName, [])
+		};
+		var semanticContext = DocumentationMappingContext.DocumentationDocumentSemantic
+			.CreateContext(type: buildType, env: environment) with
+		{
+			ConfigureAnalysis = a => DocumentationAnalysisFactory.BuildAnalysis(a, synonymSetName, [])
+		};
 
 		_orchestrator = new IncrementalSyncOrchestrator<DocumentationDocument>(transport, lexicalContext, semanticContext)
 		{
@@ -53,6 +54,12 @@ public class GuideIndexerExporter : IDisposable
 			ConfigureSecondary = o => ConfigureChannelOptions(o, endpoint, errorTracker)
 		};
 	}
+
+	/// <summary>Resolves the lexical read alias for cache lookups.</summary>
+	public static string ResolveLexicalReadAlias(string buildType, string environment) =>
+		DocumentationMappingContext.DocumentationDocument
+			.CreateContext(type: buildType, env: environment)
+			.ResolveReadTarget();
 
 	private void ConfigureChannelOptions(
 		IngestChannelOptions<DocumentationDocument> options,

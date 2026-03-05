@@ -27,20 +27,24 @@ public class SiteIndexerExporter : IDisposable
 		IDiagnosticsCollector diagnostics,
 		IndexingErrorTracker errorTracker,
 		ElasticsearchEndpoint endpoint,
-		DistributedTransport transport
+		DistributedTransport transport,
+		string buildType,
+		string environment
 	)
 	{
 		_logger = loggerFactory.CreateLogger<SiteIndexerExporter>();
 		_diagnostics = diagnostics;
 
-		var lexicalContext = SiteAnalysisFactory.CreateContext(
-			SiteMappingContext.SiteDocument.Context,
-			"site-lexical"
-		);
-		var semanticContext = SiteAnalysisFactory.CreateContext(
-			SiteMappingContext.SiteDocumentSemantic.Context,
-			"site-semantic"
-		);
+		var lexicalContext = SiteMappingContext.SiteDocument
+			.CreateContext(type: buildType, env: environment) with
+		{
+			ConfigureAnalysis = SiteAnalysisFactory.BuildAnalysis
+		};
+		var semanticContext = SiteMappingContext.SiteDocumentSemantic
+			.CreateContext(type: buildType, env: environment) with
+		{
+			ConfigureAnalysis = SiteAnalysisFactory.BuildAnalysis
+		};
 
 		_orchestrator = new IncrementalSyncOrchestrator<SiteDocument>(transport, lexicalContext, semanticContext)
 		{
@@ -48,6 +52,12 @@ public class SiteIndexerExporter : IDisposable
 			ConfigureSecondary = o => ConfigureChannelOptions(o, endpoint, errorTracker)
 		};
 	}
+
+	/// <summary>Resolves the lexical read alias for cache lookups.</summary>
+	public static string ResolveLexicalReadAlias(string buildType, string environment) =>
+		SiteMappingContext.SiteDocument
+			.CreateContext(type: buildType, env: environment)
+			.ResolveReadTarget();
 
 	private void ConfigureChannelOptions(
 		IngestChannelOptions<SiteDocument> options,

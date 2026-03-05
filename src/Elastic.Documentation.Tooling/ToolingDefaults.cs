@@ -15,6 +15,7 @@ using Elastic.Documentation.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.UserSecrets;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.ServiceDiscovery;
@@ -49,12 +50,15 @@ public static class ToolingDefaults
 			{
 				_ = client.AddServiceDiscovery();
 			})
-			.AddSingleton(diagnosticsCollectorFactory)
-			.AddSingleton(sp =>
-			{
-				var resolver = sp.GetRequiredService<ServiceEndpointResolver>();
-				return CreateDocumentationEndpoints(resolver, secretsConfig);
-			})
+			.AddSingleton(diagnosticsCollectorFactory);
+
+		builder.Services.TryAddSingleton(sp =>
+		{
+			var resolver = sp.GetRequiredService<ServiceEndpointResolver>();
+			return CreateDocumentationEndpoints(resolver, secretsConfig);
+		});
+
+		_ = builder.Services
 			.AddSingleton<IConfigurationContext>(sp =>
 			{
 				var endpoints = sp.GetRequiredService<DocumentationEndpoints>();

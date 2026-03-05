@@ -249,6 +249,8 @@ public class SiteCommand(
 
 			// Create transport once and reuse for cache and exporter
 			var endpoints = configurationContext.Endpoints;
+			var buildType = endpoints.BuildType;
+			var environment = endpoints.Environment;
 			var transport = ElasticsearchTransportFactory.Create(endpoints.Elasticsearch);
 
 			// Load cache from Elasticsearch (if index exists)
@@ -260,7 +262,7 @@ public class SiteCommand(
 				transport
 			);
 
-			const string indexAlias = "site-lexical";
+			var indexAlias = SiteIndexerExporter.ResolveLexicalReadAlias(buildType, environment);
 			if (await crawlCache.IndexExistsAsync(indexAlias, ctx))
 			{
 				await AnsiConsole.Progress()
@@ -472,7 +474,9 @@ public class SiteCommand(
 					diagnostics,
 					errorTracker,
 					endpoints.Elasticsearch,
-					transport
+					transport,
+					buildType,
+					environment
 				);
 
 			// Bootstrap indices

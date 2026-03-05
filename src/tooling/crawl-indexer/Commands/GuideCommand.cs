@@ -187,6 +187,8 @@ public class GuideCommand(
 
 			// Create transport once and reuse for cache and exporter
 			var endpoints = configurationContext.Endpoints;
+			var buildType = endpoints.BuildType;
+			var environment = endpoints.Environment;
 			var transport = ElasticsearchTransportFactory.Create(endpoints.Elasticsearch);
 
 			// Load cache from Elasticsearch (if index exists)
@@ -198,7 +200,7 @@ public class GuideCommand(
 				transport
 			);
 
-			const string indexAlias = "guide-lexical";
+			var indexAlias = GuideIndexerExporter.ResolveLexicalReadAlias(buildType, environment);
 			if (await crawlCache.IndexExistsAsync(indexAlias, ctx))
 			{
 				await AnsiConsole.Progress()
@@ -273,7 +275,9 @@ public class GuideCommand(
 				diagnostics,
 				errorTracker,
 				endpoints.Elasticsearch,
-				transport
+				transport,
+				buildType,
+				environment
 			);
 
 			// Bootstrap indices

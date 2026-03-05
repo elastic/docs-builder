@@ -4,50 +4,35 @@
 
 using Elastic.Mapping;
 using Elastic.Mapping.Analysis;
+using Elastic.Mapping.Mappings;
 
 namespace Elastic.Documentation.Search;
 
 [ElasticsearchMappingContext]
-[Entity<SiteDocument>(
-	Target = EntityTarget.Index,
-	Name = "site-lexical",
-	WriteAlias = "site-lexical",
-	ReadAlias = "site-lexical",
-	SearchPattern = "site-lexical-*",
+[Index<SiteDocument>(
+	NameTemplate = "site-{type}.lexical-{env}",
 	DatePattern = "yyyy.MM.dd.HHmmss",
 	Configuration = typeof(SiteLexicalConfig)
 )]
-[Entity<SiteDocument>(
-	Target = EntityTarget.Index,
-	Name = "site-semantic",
+[Index<SiteDocument>(
+	NameTemplate = "site-{type}.semantic-{env}",
 	Variant = "Semantic",
-	WriteAlias = "site-semantic",
-	ReadAlias = "site-semantic",
-	SearchPattern = "site-semantic-*",
 	DatePattern = "yyyy.MM.dd.HHmmss",
 	Configuration = typeof(SiteSemanticConfig)
 )]
 public static partial class SiteMappingContext;
 
-public static class SiteLexicalConfig
+public class SiteLexicalConfig : IConfigureElasticsearch<SiteDocument>
 {
-	public static AnalysisBuilder ConfigureAnalysis(AnalysisBuilder analysis) => analysis;
+	public AnalysisBuilder ConfigureAnalysis(AnalysisBuilder analysis) => analysis;
 
-	public static SiteDocumentMappingsBuilder ConfigureMappings(SiteDocumentMappingsBuilder m) =>
-		ConfigureCommonMappings(m);
+	public IReadOnlyDictionary<string, string>? IndexSettings => null;
 
-	internal static SiteDocumentMappingsBuilder ConfigureCommonMappings(SiteDocumentMappingsBuilder m) => m
-		.SearchTitle(f => f
-			.MultiField("completion", mf => mf.SearchAsYouType()))
-		.Title(f => f
-			.MultiField("keyword", mf => mf.Keyword().Normalizer("keyword_normalizer"))
-			.MultiField("starts_with", mf => mf.Text()
-				.Analyzer("starts_with_analyzer")
-				.SearchAnalyzer("starts_with_analyzer_search"))
-			.MultiField("completion", mf => mf.SearchAsYouType()))
-		.Url(f => f
-			.MultiField("match", mf => mf.Text())
-			.MultiField("prefix", mf => mf.Text().Analyzer("hierarchy_analyzer")))
+	public MappingsBuilder<SiteDocument> ConfigureMappings(MappingsBuilder<SiteDocument> mappings) =>
+		ConfigureCommonMappings(mappings);
+
+	internal static MappingsBuilder<SiteDocument> ConfigureCommonMappings(MappingsBuilder<SiteDocument> m) => m
+		.AddCommonTitleMappings()
 		// Multilingual body sub-fields
 		.AddField("body.en", f => f.Text().Analyzer("english"))
 		.AddField("body.de", f => f.Text().Analyzer("german"))
@@ -59,84 +44,24 @@ public static class SiteLexicalConfig
 		.AddField("body.pt", f => f.Text().Analyzer("portuguese"));
 }
 
-public static class SiteSemanticConfig
+public class SiteSemanticConfig : IConfigureElasticsearch<SiteDocument>
 {
-	private const string ElserInferenceId = ".elser-2-elastic";
-	private const string JinaInferenceId = ".jina-embeddings-v5-text-small";
+	public AnalysisBuilder ConfigureAnalysis(AnalysisBuilder analysis) => analysis;
 
-	public static AnalysisBuilder ConfigureAnalysis(AnalysisBuilder analysis) => analysis;
+	public IReadOnlyDictionary<string, string>? IndexSettings => null;
 
-	public static SiteDocumentMappingsBuilder ConfigureMappings(SiteDocumentMappingsBuilder m) =>
-		SiteLexicalConfig.ConfigureCommonMappings(m)
-			.StrippedBody(s => s
-				.MultiField("jina", mf => mf.Text().Analyzer(JinaInferenceId)))
-			// ELSER sparse embeddings
-			.AddField("title.semantic_text", f => f.SemanticText().InferenceId(ElserInferenceId))
-			.AddField("abstract.semantic_text", f => f.SemanticText().InferenceId(ElserInferenceId))
-			.AddField("ai_rag_optimized_summary.semantic_text", f => f.SemanticText().InferenceId(ElserInferenceId))
-			.AddField("ai_questions.semantic_text", f => f.SemanticText().InferenceId(ElserInferenceId))
-			.AddField("ai_use_cases.semantic_text", f => f.SemanticText().InferenceId(ElserInferenceId))
-			// Jina v5 dense embeddings
-			.AddField("title.jina", f => f.SemanticText().InferenceId(JinaInferenceId))
-			.AddField("abstract.jina", f => f.SemanticText().InferenceId(JinaInferenceId))
-			.AddField("ai_rag_optimized_summary.jina", f => f.SemanticText().InferenceId(JinaInferenceId))
-			.AddField("ai_questions.jina", f => f.SemanticText().InferenceId(JinaInferenceId))
-			.AddField("ai_use_cases.jina", f => f.SemanticText().InferenceId(JinaInferenceId))
-			.AddField("stripped_body.jina", f => f.SemanticText().InferenceId(JinaInferenceId));
+	public MappingsBuilder<SiteDocument> ConfigureMappings(MappingsBuilder<SiteDocument> mappings) =>
+		SiteLexicalConfig.ConfigureCommonMappings(mappings)
+			.AddSemanticTextFields()
+			.AddField("stripped_body.jina", f => f.SemanticText().InferenceId(".jina-embeddings-v5-text-small"));
 }
 
 /// <summary>
 /// Builds analysis settings at runtime for site indices.
+/// Delegates to <see cref="SharedAnalysisFactory"/> for base analysis shared with documentation indices.
 /// </summary>
 public static class SiteAnalysisFactory
 {
-	public static AnalysisBuilder BuildAnalysis(AnalysisBuilder analysis) => analysis
-		.Normalizer("keyword_normalizer", n => n.Custom()
-			.CharFilter("strip_non_word_chars")
-			.Filters("lowercase", "asciifolding", "trim"))
-		.Analyzer("starts_with_analyzer", a => a.Custom()
-			.Tokenizer("starts_with_tokenizer")
-			.Filter("lowercase"))
-		.Analyzer("starts_with_analyzer_search", a => a.Custom()
-			.Tokenizer("keyword")
-			.Filter("lowercase"))
-		.Analyzer("highlight_analyzer", a => a.Custom()
-			.Tokenizer("group_tokenizer")
-			.Filters("lowercase", "english_stop"))
-		.Analyzer("hierarchy_analyzer", a => a.Custom()
-			.Tokenizer("path_tokenizer"))
-		.CharFilter("strip_non_word_chars", cf => cf.PatternReplace()
-			.Pattern(@"\W")
-			.Replacement(" "))
-		.TokenFilter("english_stop", tf => tf.Stop()
-			.Stopwords("_english_"))
-		.Tokenizer("starts_with_tokenizer", t => t.EdgeNGram()
-			.MinGram(1)
-			.MaxGram(10)
-			.TokenChars("letter", "digit", "symbol", "whitespace"))
-		.Tokenizer("group_tokenizer", t => t.CharGroup()
-			.TokenizeOnChars("whitespace", ",", ";", "?", "!", "(", ")", "&", "'", "\"", "/", "[", "]", "{", "}"))
-		.Tokenizer("path_tokenizer", t => t.PathHierarchy()
-			.Delimiter('/'));
-
-	public static ElasticsearchTypeContext CreateContext(
-		ElasticsearchTypeContext baseContext,
-		string indexName,
-		string? defaultPipeline = null)
-	{
-		var analysisJson = BuildAnalysis(new AnalysisBuilder()).Build().ToJsonString();
-		var settingsHash = ContentHash.Create(analysisJson, defaultPipeline ?? "");
-		var hash = ContentHash.Create(settingsHash, baseContext.MappingsHash);
-
-		return baseContext.WithIndexName(indexName) with
-		{
-			GetSettingsJson = defaultPipeline is not null
-				? () => $$"""{ "default_pipeline": "{{defaultPipeline}}" }"""
-				: () => "{}",
-			SettingsHash = settingsHash,
-			Hash = hash,
-			ConfigureAnalysis = BuildAnalysis,
-			IndexPatternUseBatchDate = true
-		};
-	}
+	public static AnalysisBuilder BuildAnalysis(AnalysisBuilder analysis) =>
+		SharedAnalysisFactory.BuildBaseAnalysis(analysis);
 }
