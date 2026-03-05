@@ -457,6 +457,12 @@ docs-builder changelog gh-release elasticsearch v9.2.0 \
 The product, target version, and lifecycle are inferred automatically from the release tag and the repository name.
 For example, a tag of `v9.2.0` on `elasticsearch` creates changelogs with `product: elasticsearch`, `target: 9.2.0`, and `lifecycle: ga`.
 
+If your `changelog.yml` has `bundle.directory` set, you can omit `--output` and the command uses `bundle.directory` as the output location:
+
+```sh
+docs-builder changelog gh-release elasticsearch v9.2.0
+```
+
 :::{note}
 This command requires a `GITHUB_TOKEN` or `GH_TOKEN` environment variable (or an active `gh` login) to fetch release details from the GitHub API. Refer to [Authorization](#authorization) for details.
 :::
@@ -477,8 +483,15 @@ docs-builder changelog add \
 This creates one changelog file per PR found in the `v9.2.0` release notes of `elastic/elasticsearch`.
 Unlike `changelog gh-release`, no bundle file is created.
 
+If your `changelog.yml` has a `bundle` section configured, you can omit `--repo`, `--owner`, and `--output` — the command reads them from `bundle.repo`, `bundle.owner`, and `bundle.directory`:
+
+```sh
+docs-builder changelog add --release-version v9.2.0
+```
+
 :::{note}
-`--release-version` requires `--repo` and is mutually exclusive with `--prs` and `--issues`.
+`--release-version` requires `--repo` (or `bundle.repo` set in `changelog.yml`) and is mutually exclusive with `--prs` and `--issues`.
+The option precedence for `--release-version` is: CLI option > `changelog.yml` bundle section > built-in default.
 :::
 
 #### Create changelogs from a release [changelog-add-release-version]
@@ -497,8 +510,15 @@ docs-builder changelog add \
 This creates one changelog file per PR found in the `v9.2.0` release notes of `elastic/elasticsearch`.
 Unlike `changelog gh-release`, no bundle file is created.
 
+If your `changelog.yml` has a `bundle` section configured, you can omit `--repo`, `--owner`, and `--output` — the command reads them from `bundle.repo`, `bundle.owner`, and `bundle.directory`:
+
+```sh
+docs-builder changelog add --release-version v9.2.0
+```
+
 :::{note}
-`--release-version` requires `--repo` and is mutually exclusive with `--prs` and `--issues`.
+`--release-version` requires `--repo` (or `bundle.repo` set in `changelog.yml`) and is mutually exclusive with `--prs` and `--issues`.
+The option precedence for `--release-version` is: CLI option > `changelog.yml` bundle section > built-in default.
 :::
 
 #### Create changelogs from a release [changelog-add-release-version]
@@ -517,8 +537,15 @@ docs-builder changelog add \
 This creates one changelog file per PR found in the `v9.2.0` release notes of `elastic/elasticsearch`.
 Unlike `changelog gh-release`, no bundle file is created.
 
+If your `changelog.yml` has a `bundle` section configured, you can omit `--repo`, `--owner`, and `--output` — the command reads them from `bundle.repo`, `bundle.owner`, and `bundle.directory`:
+
+```sh
+docs-builder changelog add --release-version v9.2.0
+```
+
 :::{note}
-`--release-version` requires `--repo` and is mutually exclusive with `--prs` and `--issues`.
+`--release-version` requires `--repo` (or `bundle.repo` set in `changelog.yml`) and is mutually exclusive with `--prs` and `--issues`.
+The option precedence for `--release-version` is: CLI option > `changelog.yml` bundle section > built-in default.
 :::
 
 ## Create bundles [changelog-bundle]

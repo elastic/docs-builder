@@ -28,7 +28,7 @@ docs-builder changelog gh-release <repo> [version] [options...] [-h|--help]
 :   Optional: Path to the changelog.yml configuration file. Defaults to `docs/changelog.yml`.
 
 `--output <string?>`
-:   Optional: Output directory for the generated changelog files. Defaults to `./changelogs`.
+:   Optional: Output directory for the generated changelog files. Falls back to `bundle.directory` in `changelog.yml` when not specified. Defaults to `./changelogs`.
 
 `--strip-title-prefix`
 :   Optional: Remove square brackets and the text within them from the beginning of pull request titles, and also remove a colon if it follows the closing bracket.
