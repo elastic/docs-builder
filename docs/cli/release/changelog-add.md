@@ -88,7 +88,7 @@ docs-builder changelog add [options...] [-h|--help]
 
 `--release-version <string?>`
 :   Optional: GitHub release tag to use as a source of pull requests (for example, `"v9.2.0"` or `"latest"`).
-:   When specified, the command fetches the release from GitHub, parses PR references from the release notes, and creates one changelog file per PR — without creating a bundle.
+:   When specified, the command fetches the release from GitHub, parses PR references from the release notes, and creates one changelog file per PR — without creating a bundle. Only automated GitHub release notes (the default format or [Release Drafter](https://github.com/release-drafter/release-drafter) format) are supported at this time.
 :   Use `docs-builder changelog gh-release` instead if you also want a bundle.
 :   Requires `--repo` (or `bundle.repo` in `changelog.yml`).
 :   Set to `latest` to use the most recent release.
@@ -122,4 +122,3 @@ docs-builder changelog add [options...] [-h|--help]
 
 `--use-issue-number`
 :   Optional: Use issue numbers for filenames instead of timestamp-slug. With both `--prs` (which creates one changelog per specified PR) and `--issues` (which creates one changelog per specified issue), each changelog filename will be derived from its issues. Requires `--prs` or `--issues`. Mutually exclusive with `--use-pr-number`.
-

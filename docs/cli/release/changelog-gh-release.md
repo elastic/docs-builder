@@ -4,9 +4,13 @@ navigation_title: "changelog gh-release"
 
 # changelog gh-release
 
-Create changelog files and a bundle from a GitHub release by parsing pull request references in the release notes.
+Create changelog files and a bundle from a GitHub release by parsing pull request references from the release notes.
 
-For details and examples, go to [](/contribute/changelog.md).
+:::{important}
+Only automated GitHub release notes (the default format or [Release Drafter](https://github.com/release-drafter/release-drafter) format) are supported at this time.
+:::
+
+For general information about changelogs, go to [](/contribute/changelog.md).
 
 ## Usage
 

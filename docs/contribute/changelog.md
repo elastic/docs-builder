@@ -24,7 +24,7 @@ To use the `docs-builder changelog` commands in your development workflow:
 1. Optional: Add labels to your GitHub pull requests to indicate that they are not notable and should not generate changelogs. For example, `non-issue` or `release_notes:skip`. Alternatively, you can assume that all PRs are *not* notable unless a specific label is present (for example, `@Public`).
 1. [Configure changelog settings](#changelog-settings) to correctly interpret your PR labels.
 1. [Create changelogs](#changelog-add) with the `docs-builder changelog add` command.
-   - Alternatively, if you are already creating automated release notes for GitHub releases, you can optionally use the `docs-builder changelog gh-release` command to create changelog files and a bundle directly from the GitHub release notes. Refer to [](/cli/release/changelog-gh-release.md).
+   - Alternatively, if you already have automated release notes for GitHub releases, you can use the `docs-builder changelog gh-release` command to create changelog files and a bundle from your GitHub release notes. Refer to [](/cli/release/changelog-gh-release.md).
 1. [Create changelog bundles](#changelog-bundle) with the `docs-builder changelog bundle` command. For example, create a bundle for the pull requests that are included in a product release.
 1. [Create documentation](#render-changelogs) with the `docs-builder changelog render` command.
 
@@ -229,7 +229,7 @@ For up-to-date command usage information, use the `-h` option or refer to [](/cl
 ### Authorization
 
 If you use the `--prs`, `--issues`, or `--release-version` options, the `docs-builder changelog add` command interacts with GitHub services.
-The `--release-version` option on `docs-builder changelog bundle` and `docs-builder changelog remove` also interacts with GitHub services.
+The `--release-version` option on the `docs-builder changelog add`, `bundle`, and `remove` commands also interacts with GitHub services.
 Log into GitHub or set the `GITHUB_TOKEN` (or `GH_TOKEN` ) environment variable with a sufficient personal access token (PAT).
 Otherwise, there will be fetch failures when you access private repositories and you might also encounter GitHub rate limiting errors.
 
@@ -449,12 +449,14 @@ If you have GitHub releases with automated release notes (the default format or 
 For example:
 
 ```sh
-docs-builder changelog add --release-version v9.2.0 
+docs-builder changelog add \
+  --release-version v1.34.0 \
+  --repo apm-agent-dotnet --owner elastic
 ```
 
-This command creates one changelog file per PR found in the `v9.2.0` GitHub release notes.
+This command creates one changelog file per PR found in the `v1.34.0` GitHub release notes.
 The product, target version, and lifecycle in each changelog are inferred automatically from the release tag and the repository name.
-For example, a tag of `v9.2.0` on `elasticsearch` creates changelogs with `product: elasticsearch`, `target: 9.2.0`, and `lifecycle: ga`.
+For example, a tag of `v1.34.0` in the `apm-agent-dotnet` repo creates changelogs with `product: apm-agent-dotnet`, `target: 1.34.0`, and `lifecycle: ga`.
 
 :::{note}
 `--release-version` requires `--repo` (or `bundle.repo` set in `changelog.yml`) and is mutually exclusive with `--prs` and `--issues`.
@@ -490,7 +492,7 @@ You can specify only one of the following filter options:
 - `--input-products`: Include changelogs for the specified products. Refer to [Filter by product](#changelog-bundle-product).
 - `--prs`: Include changelogs for the specified pull request URLs, or a path to a newline-delimited file. When using a file, every line must be a fully-qualified GitHub URL such as `https://github.com/owner/repo/pull/123`. Go to [Filter by pull requests](#changelog-bundle-pr).
 - `--issues`: Include changelogs for the specified issue URLs, or a path to a newline-delimited file. When using a file, every line must be a fully-qualified GitHub URL such as `https://github.com/owner/repo/issues/123`. Go to [Filter by issues](#changelog-bundle-issues).
-- `--release-version`: Bundle changelogs for all pull requests in a GitHub release. Refer to [Bundle by GitHub release](#changelog-bundle-release-version).
+- `--release-version`: Bundle changelogs for the pull requests in GitHub release notes. Refer to [Bundle by GitHub release](#changelog-bundle-release-version).
 - `--report`: Include changelogs whose pull requests appear in a promotion report. Accepts a URL or a local file path to an HTML report.
 
 By default, the output file contains only the changelog file names and checksums.
@@ -740,23 +742,30 @@ entries:
 When a changelog matches multiple `--input-products` filters, it appears only once in the bundle. This deduplication applies even when using `--all` or `--prs`.
 :::
 
-### Filter by GitHub release [changelog-bundle-release-version]
+### Filter by GitHub release notes [changelog-bundle-release-version]
 
-You can use the `--release-version` option to bundle changelogs for all pull requests in a GitHub release, without building a PR list file manually.
+If you have GitHub releases with automated release notes (the default format or [Release Drafter](https://github.com/release-drafter/release-drafter) format), you can use the `--release-version` option to derive the PR list from those release notes.
+For example:
 
 ```sh
 docs-builder changelog bundle \
-  --release-version v9.2.0 \
-  --repo elasticsearch \
-  --output ./docs/releases/9.2.0.yaml
+  --release-version v1.34.0 \
+  --repo apm-agent-dotnet --owner elastic <1>
 ```
 
-The product metadata (`--output-products`) is inferred automatically from the release tag and repository name when not provided explicitly.
-For example, `v9.2.0` on `elasticsearch` infers `elasticsearch 9.2.0 ga`.
+1. The repo and repo owner are used to fetch the release and follow these rules of precedence:
 
-`--release-version` is mutually exclusive with `--all`, `--input-products`, `--prs`, and `--issues`.
-Repo resolved as: `--repo` flag > `bundle.repo` in `changelog.yml` (one source required).
-Owner resolved as: `--owner` flag > `bundle.owner` in `changelog.yml` > `elastic`.
+- Repo: `--repo` flag > `bundle.repo` in `changelog.yml` (one source is required)
+- Owner: `--owner` flag > `bundle.owner` in `changelog.yml` > `elastic`
+
+This command creates a bundle of changelogs that match the list of PRs found in the `v1.34.0` GitHub release notes.
+
+The bundle's product metadata is inferred automatically from the release tag and repository name; you can override that behavior with the `--output-products` option.
+
+:::{tip}
+If you are not creating changelogs when you create your pull requests, consider the `docs-builder changelog gh-release` command as a one-shot alternative to the `changelog add` and `changelog bundle` commands.
+It parses the release notes, creates one changelog file per pull request found, and creates a `changelog-bundle.yaml` file — all in a single step. Refer to [](/cli/release/changelog-gh-release.md)
+:::
 
 ### Hide features in bundles [changelog-bundle-hide-features]
 

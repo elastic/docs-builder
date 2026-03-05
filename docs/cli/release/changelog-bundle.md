@@ -114,19 +114,19 @@ You must choose one method for determining what's in the bundle (`--all`, `--inp
 :   Each occurrence can be either comma-separated PRs (for example `--prs "https://github.com/owner/repo/pull/123,6789"`) or a file path (for example `--prs /path/to/file.txt`).
 :   When using a file, every line must be a fully-qualified GitHub PR URL such as `https://github.com/owner/repo/pull/123`. Bare numbers and short forms are not allowed in files.
 
-`--report <string?>`
-:   Filter by pull requests extracted from a promotion report. Accepts a URL or a local file path.
-:   The report can be an HTML page from Buildkite or any file containing GitHub PR URLs.
-
 `--release-version <string?>`
-:   Fetch the PR list from a GitHub release and use it as the bundle filter.
-:   Provide a release tag (for example, `"v9.2.0"`) or `"latest"` for the most recent release.
+:   GitHub release tag to use as a source of pull requests (for example, `"v9.2.0"` or `"latest"`).
+:   When specified, the command fetches the release from GitHub, parses PR references from the release notes, and use it as the bundle filter. Only automated GitHub release notes (the default format or [Release Drafter](https://github.com/release-drafter/release-drafter) format) are supported at this time.
 :   Requires repo (`--repo` or `bundle.repo` in `changelog.yml`) and owner (`--owner` flag > `bundle.owner` in `changelog.yml` > `elastic`) details.
 :   When `--output-products` is not specified, the product, target version, and lifecycle are inferred automatically from the release tag and repository name.
 
 `--repo <string?>`
-:   The GitHub repository name.
+:   Optional: The GitHub repository name.
 :   Falls back to `bundle.repo` in `changelog.yml` when not specified; if that is also absent, the product ID is used.
+
+`--report <string?>`
+:   Filter by pull requests extracted from a promotion report. Accepts a URL or a local file path.
+:   The report can be an HTML page from Buildkite or any file containing GitHub PR URLs.
 
 `--resolve`
 :   Optional: Copy the contents of each changelog file into the entries array.
@@ -326,33 +326,27 @@ docs-builder changelog bundle \
 
 ### Bundle by GitHub release [changelog-bundle-release-version]
 
-You can use `--release-version` to fetch pull request references directly from a GitHub release and use them as the bundle filter.
+You can use `--release-version` to fetch pull request references directly from GitHub release notes and use them as the bundle filter.
 This is equivalent to building a PR list file manually and passing it with `--prs`, but without any file management.
 
 ```sh
 docs-builder changelog bundle \
-  --release-version v9.2.0 \
-  --repo elasticsearch
+  --release-version v1.34.0 \
+  --repo apm-agent-dotnet \ <1>
+  --owner elastic <2>
 ```
 
-When `--output-products` is not provided, the product metadata is inferred automatically from the release tag:
+1. You must specify `--repo` or set `bundle.repo` in the changelog configuration file.
+2. If you don't specify `--owner`, it uses `bundle.owner` in the changelog configuration or else defaults to `elastic`.
 
-```sh
-# Infers: --output-products "elasticsearch 9.2.0 ga"
-docs-builder changelog bundle \
-  --release-version v9.2.0 \
-  --repo elasticsearch \
-  --output ./docs/releases/9.2.0.yaml
-```
-
-You can override the inferred product metadata by providing `--output-products` explicitly:
+The product metadata is inferred automatically from the release tag.
+You can override the inferred product metadata by providing the `--output-products` option.
+For example:
 
 ```sh
 docs-builder changelog bundle \
-  --release-version v9.2.0 \
-  --repo elasticsearch \
-  --output-products "elasticsearch 9.2.0 ga, cloud-hosted 2025-10-31 ga" \
-  --output ./docs/releases/9.2.0.yaml
+  --release-version v1.34.0 \
+  --output-products "apm-agent-dotnet 1.34.0 ga"
 ```
 
 :::{note}
