@@ -281,7 +281,13 @@ public partial class ChangelogBundlingService(
 
 		if (config?.Bundle?.Profiles != null && config.Bundle.Profiles.TryGetValue(input.Profile!, out var profile))
 		{
-			var outputPattern = profile.Output?.Replace("{version}", filterResult.Version);
+			// For github_release profiles, lifecycle is carried from the raw tag (pre-release suffix preserved).
+			// For all other profile types, infer it from the base version string.
+			var resolvedLifecycle = filterResult.Lifecycle ?? VersionLifecycleInference.InferLifecycle(filterResult.Version);
+
+			var outputPattern = profile.Output?
+				.Replace("{version}", filterResult.Version)
+				.Replace("{lifecycle}", resolvedLifecycle);
 			if (!string.IsNullOrWhiteSpace(outputPattern))
 			{
 				// Resolution order: bundle.output_directory → input.OutputDirectory (programmatic override)
@@ -296,10 +302,9 @@ public partial class ChangelogBundlingService(
 			// Parse output_products pattern with version/lifecycle substitution
 			if (!string.IsNullOrWhiteSpace(profile.OutputProducts))
 			{
-				var lifecycle = VersionLifecycleInference.InferLifecycle(filterResult.Version);
 				var outputProductsPattern = profile.OutputProducts
 					.Replace("{version}", filterResult.Version)
-					.Replace("{lifecycle}", lifecycle);
+					.Replace("{lifecycle}", resolvedLifecycle);
 				outputProducts = ProfileFilterResolver.ParseProfileProducts(outputProductsPattern);
 			}
 

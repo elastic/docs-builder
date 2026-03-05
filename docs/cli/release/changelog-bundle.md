@@ -116,9 +116,9 @@ You must choose one method for determining what's in the bundle (`--all`, `--inp
 
 `--release-version <string?>`
 :   GitHub release tag to use as a source of pull requests (for example, `"v9.2.0"` or `"latest"`).
-:   When specified, the command fetches the release from GitHub, parses PR references from the release notes, and use it as the bundle filter. Only automated GitHub release notes (the default format or [Release Drafter](https://github.com/release-drafter/release-drafter) format) are supported at this time.
+:   When specified, the command fetches the release from GitHub, parses PR references from the release notes, and uses them as the bundle filter. Only automated GitHub release notes (the default format or [Release Drafter](https://github.com/release-drafter/release-drafter) format) are supported at this time.
 :   Requires repo (`--repo` or `bundle.repo` in `changelog.yml`) and owner (`--owner` flag > `bundle.owner` in `changelog.yml` > `elastic`) details.
-:   When `--output-products` is not specified, the product, target version, and lifecycle are inferred automatically from the release tag and repository name.
+:   When `--output-products` is not specified, the products array in the bundle is derived from the matched changelog files' own `products` fields, consistent with all other filter options.
 
 `--repo <string?>`
 :   Optional: The GitHub repository name.
@@ -222,23 +222,31 @@ This may result in broken links if the product ID doesn't match the GitHub repos
 
 ## Profile configuration fields [changelog-bundle-profile-config]
 
-Bundle profiles in `changelog.yml` support the following fields:
+If you're using profile-based commands, they're affected by the following fields in the `bundle.profiles` section of the changelog configuration file:
 
 `source`
 :   Optional. When set to `github_release`, the PR list is fetched automatically from the GitHub release identified by the version argument. Requires `repo` to be set at the profile or `bundle` level. Mutually exclusive with `products`.
 :   Example: `source: github_release`
 
 `products`
-:   Required unless `source: github_release` is set. The product filter pattern for input changelogs. Supports `{version}` and `{lifecycle}` placeholders that are substituted at runtime.
+:   Required when filtering by product metadata (equivalent to the `--input-products` command option).
+:   Not used when the filter comes from a promotion report, URL list file, or `source: github_release` — in those cases the PR or issue list determines what's included and `products` is ignored.
+:   Supports `{version}` and `{lifecycle}` placeholders that are substituted at runtime.
 :   Example: `"elasticsearch {version} {lifecycle}"`
 
 `output`
-:   Required for bundling. The output filename pattern. `{version}` is substituted at runtime.
+:   Optional. The output filename pattern for the bundle file. Supports `{version}` and `{lifecycle}` placeholders.
+:   When not set, the output path falls back in order to: `bundle.output_directory/changelog-bundle.yaml` (if `bundle.output_directory` is configured), then `changelog-bundle.yaml` in the input directory.
+:   Setting this is recommended so each profile produces a distinctly named file rather than overwriting the default.
 :   Example: `"elasticsearch-{version}.yaml"`
 
 `output_products`
-:   Optional. Overrides the products array written to the bundle output. Supports `{version}` and `{lifecycle}` placeholders. Useful when you want the bundle to have a single clear `product` object (instead of inheriting all of product data from the changelogs) and complete control over the product, version, and lifecycle details that are shown in the documentation.
-:   Example: `"elasticsearch {version} ga"`
+:   Optional. Overrides the products array written to the bundle output. Supports `{version}` and `{lifecycle}` placeholders.
+:   When **not set**, the products array is derived from the individual changelog files matched by the filter. This often produces multiple product entries (one per unique product/target/lifecycle combination across all matched files), which may not reflect a single clean release identity.
+:   When **set**, the products array in the bundle is exactly the value you specify, replacing anything that would be derived from the matched changelogs. Use this to publish a single, authoritative product entry with a specific version and lifecycle.
+:   The `{lifecycle}` placeholder is substituted at runtime with the inferred lifecycle. For `source: github_release` profiles this comes from the release tag suffix. For products-based profiles it comes from the version argument. Refer to [Lifecycle inference for products-based profiles](#changelog-bundle-profile-lifecycle) and [Bundle by GitHub release profile](#changelog-bundle-github-release-profile) for details.
+:   If you omit lifecycle from the pattern (for example, `"elasticsearch {version}"`), the lifecycle field is omitted from the products array entirely.
+:   Example: `"elasticsearch {version} {lifecycle}"` or `"elasticsearch {version} ga"` to hardcode GA regardless of tag.
 
 `repo`
 :   Optional. The GitHub repository name written to each product entry in the bundle. Used by the `{changelog}` directive to generate correct PR/issue links. Only needed when the product ID doesn't match the GitHub repository name. Overrides `bundle.repo` when set. Required when `source: github_release` is used and no `bundle.repo` default is set.
@@ -298,23 +306,34 @@ bundle:
 3. If a profile is intended for use with a promotion report or a newline delimited file that lists the issues or pull requests, it does not need a `products` filter. If the `output` and `output_products` are omitted, the default path and file names are used. This example shows how you can use a `{version}` variable to customize the bundle's filename and product metadata.
 4. Bundles any changelogs that have `product: elasticsearch`, `lifecycle: ga`, and the version specified in the command. This is equivalent to the `--input-products` command option.
 5. Adds a `hide-features` array in the bundle. This is equivalent to the `--hide-features` command option.
-6. In this case, the lifecycle is inferred from the version.
+6. In this case, the lifecycle is inferred from the version string passed as the second command argument (for example, `9.2.0-beta.1` → `beta`). For `source: github_release` profiles, the lifecycle is inferred from the release tag returned by GitHub instead. Refer to [Bundle by GitHub release profile](#changelog-bundle-github-release-profile).
 7. Instead of filtering pre-existing changelog files by product, this profile fetches the PR list from the GitHub release notes for the given version. Mutually exclusive with `products`.
 8. The repository to fetch the release from. Overrides `bundle.repo` for this profile.
 
-For example, when the version is:
+`output_products: "elasticsearch {version} {lifecycle}"` produces a single, authoritative product entry in the bundle derived from the release tag — for example, tag `v9.2.0` gives `elasticsearch 9.2.0 ga` and tag `v9.2.0-beta.1` gives `elasticsearch 9.2.0 beta`. Without `output_products`, the bundle products array is instead derived from the matched changelog files' own `products` fields, which is the consistent fallback for all profile types. Set `output_products` when you need a single clean product entry that reflects the release identity rather than the diverse metadata across individual changelog files.
 
-- `9.2.0` or `9.2.0-rc.1` the inferred lifecycle that is used in the filter is `ga`.
-- `9.2.0-beta.1` the inferred lifecycle is `beta`.
-- `9.2.0-alpha.1` or `9.2.0-preview.1` the inferred lifecycle is `preview`.
+### Lifecycle inference for standard profiles [changelog-bundle-standard-profile-lifecycle]
+
+For profiles that use `{lifecycle}` in the `products`, `output`, or `output_products` pattern, the lifecycle is inferred from the version string you pass as the second argument:
+
+| Version argument | Inferred lifecycle |
+|------------------|--------------------|
+| `9.2.0` | `ga` |
+| `9.2.0-rc.1` | `ga` |
+| `9.2.0-beta.1` | `beta` |
+| `9.2.0-alpha.1` | `preview` |
+| `9.2.0-preview.1` | `preview` |
 
 For more information about acceptable product and lifecycle values, go to [Product format](/contribute/changelog.md#product-format).
 
 You can invoke those profiles with commands like this:
 
 ```sh
-# Bundle changelogs that match specific product metadata
-docs-builder changelog bundle elasticsearch-release 9.2.0 beta
+# Bundle changelogs for a GA release ({lifecycle} → "ga" inferred from "9.2.0")
+docs-builder changelog bundle elasticsearch-release 9.2.0
+
+# Bundle changelogs for a beta release ({lifecycle} → "beta" inferred from "9.2.0-beta.1")
+docs-builder changelog bundle elasticsearch-release 9.2.0-beta.1
 
 # Bundle changelogs with partial dates
 docs-builder changelog bundle serverless-monthly 2026-02
@@ -331,6 +350,31 @@ docs-builder changelog bundle elasticsearch-gh-release 9.2.0
 
 # Use "latest" to fetch the most recent release
 docs-builder changelog bundle elasticsearch-gh-release latest
+```
+
+### Bundle by GitHub release profile [changelog-bundle-github-release-profile]
+
+For `source: github_release` profiles, the `{lifecycle}` placeholder in `output` and `output_products` is inferred from the **release tag** returned by GitHub (not the argument you pass to the command). This means the pre-release suffix on the tag drives the lifecycle value:
+
+| Release tag | `{version}` | `{lifecycle}` |
+|-------------|-------------|---------------|
+| `v9.2.0` | `9.2.0` | `ga` |
+| `v9.2.0-beta.1` | `9.2.0` | `beta` |
+| `v9.2.0-preview.1` | `9.2.0` | `preview` |
+| `v1.34.1` | `1.34.1` | `ga` |
+| `v1.34.1-preview.1` | `1.34.1` | `preview` |
+
+This differs from standard profiles, where lifecycle is inferred from the version argument you type. For `source: github_release`, the `{version}` placeholder always uses the clean base version (stripped of any pre-release suffix), while `{lifecycle}` reflects the actual tag format.
+
+If the lifecycle you want to advertise cannot be inferred from the tag format — for example, because your team uses clean tags like `v1.34.1` even for pre-releases — hardcode the lifecycle directly in `output_products` instead of using the `{lifecycle}` placeholder:
+
+```yaml
+# Instead of relying on {lifecycle} inference, hardcode the lifecycle
+gh-release:
+  source: github_release
+  repo: apm-agent-dotnet
+  output: "apm-agent-dotnet-{version}.yaml"
+  output_products: "apm-agent-dotnet {version} preview"
 ```
 
 For option-based mode, use `--report` to filter by a promotion report:
@@ -358,8 +402,8 @@ docs-builder changelog bundle \
 1. You must specify `--repo` or set `bundle.repo` in the changelog configuration file.
 2. If you don't specify `--owner`, it uses `bundle.owner` in the changelog configuration or else defaults to `elastic`.
 
-The product metadata is inferred automatically from the release tag.
-You can override the inferred product metadata by providing the `--output-products` option.
+Without `--output-products`, the products array in the bundle is derived from the matched changelog files' own `products` fields — the same behavior as `--prs`, `--issues`, `--report`, and `--all`.
+Use `--output-products` when you need a single, authoritative product entry that reflects the release identity rather than the diverse metadata across individual changelog files.
 For example:
 
 ```sh

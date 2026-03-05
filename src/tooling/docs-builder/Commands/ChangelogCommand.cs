@@ -564,19 +564,6 @@ internal sealed partial class ChangelogCommand(
 			prs = parsedNotes.PrReferences
 				.Select(r => $"https://github.com/{resolvedOwner}/{resolvedRepo}/pull/{r.PrNumber}")
 				.ToArray();
-
-			// Auto-infer outputProducts from the release tag when not explicitly provided
-			if (outputProducts == null || outputProducts.Count == 0)
-			{
-				var product = configurationContext.ProductsConfiguration.GetProductByRepositoryName(resolvedRepo);
-				if (product != null)
-				{
-					var targetVersion = ChangelogTextUtilities.ExtractBaseVersion(release.TagName);
-					var lifecycle = ChangelogTextUtilities.InferLifecycleFromVersion(release.TagName);
-					outputProducts = [new ProductArgument { Product = product.Id, Target = targetVersion, Lifecycle = lifecycle }];
-					_logger.LogInformation("Auto-inferred --output-products: {Product} {Target} {Lifecycle}", product.Id, targetVersion, lifecycle);
-				}
-			}
 		}
 
 		var allPrs = ExpandCommaSeparated(prs);

@@ -146,7 +146,23 @@ When a `changelog.yml` configuration file defines `bundle.profiles`, you can use
 
 Profile-based commands discover the changelog configuration automatically (no `--config` flag): they look for `changelog.yml` in the current directory, then `docs/changelog.yml`. If neither file is found, the command returns an error with instructions to run `docs-builder changelog init` or to re-run from the folder where the file exists.
 
-For example, if your configuration file defines:
+### Profile fields used by changelog remove
+
+`changelog remove` reads the same `bundle.profiles` configuration as `changelog bundle`, but only a subset of fields are relevant to removal:
+
+| Field | Used by `changelog remove`? | Notes |
+|---|---|---|
+| `products` | Yes, when filtering by product | Required when the profile argument is a version string and no `source: github_release` is set. Not needed when the filter comes from a promotion report, URL list file, or `source: github_release`. |
+| `source` | Yes | `source: github_release` fetches the PR list from the GitHub release to use as the removal filter. |
+| `repo` | Yes, with `source: github_release` | Identifies the GitHub repository to fetch the release from. |
+| `owner` | Yes, with `source: github_release` | Identifies the GitHub repository owner. |
+| `output` | No | Ignored — removal does not write any output files. |
+| `output_products` | No | Ignored. |
+| `hide_features` | No | Ignored. |
+
+### Remove by version (products-based profiles)
+
+If your configuration file defines a products-based profile:
 
 ```yaml
 bundle:
@@ -162,27 +178,29 @@ You can remove the matching changelogs with:
 docs-builder changelog remove elasticsearch-release 9.2.0 --dry-run
 ```
 
-This removes changelogs for `elasticsearch 9.2.0 ga` — the same set that `docs-builder changelog bundle elasticsearch-release 9.2.0` would include.
+This removes changelogs for `elasticsearch 9.2.0 ga` — the same set that `docs-builder changelog bundle elasticsearch-release 9.2.0` would include. The lifecycle is inferred from the version string: `9.2.0` → `ga`, `9.2.0-beta.1` → `beta`. Refer to [Lifecycle inference for products-based profiles](/cli/release/changelog-bundle.md#changelog-bundle-profile-lifecycle) for details.
 
-:::{note}
-The `output`, `output_products`, and `hide_features` profile fields are not relevant to changelog removal and are ignored.
-The `source`, `repo`, and `owner` fields are used: `source: github_release` changes how the PR list is obtained, and `repo`/`owner` identify the GitHub repository to fetch the release from.
-:::
+### Remove by report or URL list
 
-You can also pass a promotion report URL or file path, in which case the command removes changelogs that have `prs` that match the report.
-The following commands perform the same task with and without a profile:
+When a profile has no `products` filter, you can pass a promotion report URL, a local `.html` file, or a URL list file as the second argument. The command removes changelogs whose `prs` field matches the PR URLs extracted from the report or file. The following commands perform the same task with and without a profile:
 
 ```sh
 docs-builder changelog remove serverless-report ./promotion-report.html
 
 docs-builder changelog remove \
-  --report ./promotion-report.html 
+  --report ./promotion-report.html
 ```
 
-Alternatively, use a newline delimited text file that lists pull request or issue URLs:
+Alternatively, use a newline-delimited text file that lists pull request or issue URLs:
 
 ```sh
 docs-builder changelog remove serverless-report ./prs.txt
+```
+
+When you want to use both a version (for `{version}` substitution in the output filename) and a report as the filter, pass both as separate arguments:
+
+```sh
+docs-builder changelog remove serverless-report 2026-02-13 ./promotion-report.html
 ```
 
 ## Remove by GitHub release [changelog-remove-release-version]

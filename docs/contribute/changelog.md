@@ -522,7 +522,11 @@ The second argument accepts a version string, a promotion report URL/path, or a 
 For example:
 
 ```sh
-docs-builder changelog bundle elasticsearch-release 9.2.0
+# Standard profile: lifecycle is inferred from the version string
+docs-builder changelog bundle elasticsearch-release 9.2.0        # {lifecycle} → "ga"
+docs-builder changelog bundle elasticsearch-release 9.2.0-beta.1 # {lifecycle} → "beta"
+
+# Standard profile: filter by a promotion report (version used for {version})
 docs-builder changelog bundle elasticsearch-release ./promotion-report.html
 docs-builder changelog bundle elasticsearch-release 9.2.0 ./promotion-report.html
 ```
@@ -548,7 +552,7 @@ Profile configuration fields in `bundle.profiles`:
 | Field | Description |
 |---|---|
 | `source` | Optional. Set to `github_release` to fetch the PR list from a GitHub release. Mutually exclusive with `products`. Requires `repo` at the profile or `bundle` level. |
-| `products` | Product filter pattern with `{version}` and `{lifecycle}` placeholders. Used to match changelog files. Required unless `source: github_release` is set. |
+| `products` | Product filter pattern with `{version}` and `{lifecycle}` placeholders. Used to match changelog files. Required when filtering by product metadata. Not used when the filter comes from a promotion report, URL list file, or `source: github_release`. |
 | `output` | Output file path pattern with `{version}` and `{lifecycle}` placeholders. |
 | `output_products` | Optional override for the products array written to the bundle. Useful when the bundle should have a single product ID though it's filtered from many or have a different lifecycle or version than the filter. |
 | `repo` | Optional. Overrides `bundle.repo` for this profile only. Required when `source: github_release` is used and no `bundle.repo` is set. |
@@ -601,10 +605,35 @@ docs-builder changelog bundle elasticsearch-gh-release 9.2.0
 docs-builder changelog bundle elasticsearch-gh-release latest
 ```
 
-The `{version}` placeholder in `output` and `output_products` is substituted with the clean version extracted from the release tag (for example, `v9.2.0` becomes `9.2.0`). The `{lifecycle}` placeholder is inferred from the version using the same rules as other profile types.
+The `{version}` placeholder is substituted with the clean base version extracted from the release tag (for example, `v9.2.0` → `9.2.0`, `v9.2.0-beta.1` → `9.2.0`). The `{lifecycle}` placeholder is inferred from the **release tag** returned by GitHub, not from the argument you pass to the command:
 
-Note: `source: github_release` is mutually exclusive with `products`.
-A promotion report (third positional argument) is also not allowed when this source is set.
+| Release tag | `{version}` | `{lifecycle}` |
+|-------------|-------------|---------------|
+| `v9.2.0` | `9.2.0` | `ga` |
+| `v9.2.0-beta.1` | `9.2.0` | `beta` |
+| `v9.2.0-preview.1` | `9.2.0` | `preview` |
+
+This differs from standard profiles, where `{lifecycle}` is inferred from the version string you type at the command line.
+
+`output_products` is optional. When omitted, the bundle products array is derived from the matched changelog files' own `products` fields — the same fallback used by all other profile types. Set `output_products` when you want a single clean product entry that reflects the release identity rather than the diverse metadata across individual changelog files, or to hardcode a lifecycle that cannot be inferred from the tag format:
+
+```yaml
+# Produce one authoritative product entry instead of inheriting from changelog files
+gh-release:
+  source: github_release
+  repo: apm-agent-dotnet
+  output: "apm-agent-dotnet-{version}.yaml"
+  output_products: "apm-agent-dotnet {version} {lifecycle}"
+
+# Or hardcode the lifecycle when the tag format doesn't encode it
+gh-release-preview:
+  source: github_release
+  repo: apm-agent-dotnet
+  output: "apm-agent-dotnet-{version}.yaml"
+  output_products: "apm-agent-dotnet {version} preview"
+```
+
+`source: github_release` is mutually exclusive with `products`, and a third positional argument (promotion report or URL list) is not accepted by this profile type.
 
 ### Filter by product [changelog-bundle-product]
 

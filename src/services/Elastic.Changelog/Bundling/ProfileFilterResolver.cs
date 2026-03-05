@@ -35,6 +35,14 @@ public record ProfileFilterResult
 	/// When both a version and a report are provided (Phase 3.4), this is always the explicit version.
 	/// </summary>
 	public string Version { get; init; } = "unknown";
+
+	/// <summary>
+	/// The lifecycle inferred from the raw release tag when using <c>source: github_release</c>.
+	/// Set to the lifecycle derived from the full tag name (e.g. <c>"preview"</c> for <c>v1.0.0-preview.1</c>),
+	/// <em>before</em> <see cref="ChangelogTextUtilities.ExtractBaseVersion"/> strips the pre-release suffix.
+	/// <c>null</c> for all other profile types; in those cases, lifecycle is inferred from <see cref="Version"/>.
+	/// </summary>
+	public string? Lifecycle { get; init; }
 }
 
 /// <summary>
@@ -373,8 +381,10 @@ public static partial class ProfileFilterResolver
 		{
 			collector.EmitError(
 				string.Empty,
-				$"Profile '{profileName}': 'source: github_release' cannot be combined with a promotion report argument. " +
-				"The PR list is sourced automatically from the GitHub release."
+				$"Profile '{profileName}': 'source: github_release' does not accept a third positional argument. " +
+				"The PR list is sourced automatically from the GitHub release. " +
+				"To override the lifecycle in 'output_products', hardcode the value instead of using {{lifecycle}} " +
+				"(for example, output_products: \"apm-agent-dotnet {{version}} preview\")."
 			);
 			return null;
 		}
@@ -428,8 +438,11 @@ public static partial class ProfileFilterResolver
 			.ToArray();
 
 		var version = ChangelogTextUtilities.ExtractBaseVersion(release.TagName);
-		logger?.LogInformation("Resolved {Count} PR URLs from release {Tag} (version: {Version})", prUrls.Length, release.TagName, version);
+		// Infer lifecycle from the raw tag before base-version extraction so that pre-release suffixes
+		// (e.g. "-preview.1", "-beta.1") are preserved for {lifecycle} substitution in output_products/output.
+		var lifecycle = VersionLifecycleInference.InferLifecycle(release.TagName);
+		logger?.LogInformation("Resolved {Count} PR URLs from release {Tag} (version: {Version}, lifecycle: {Lifecycle})", prUrls.Length, release.TagName, version, lifecycle);
 
-		return new ProfileFilterResult { Prs = prUrls, Version = version };
+		return new ProfileFilterResult { Prs = prUrls, Version = version, Lifecycle = lifecycle };
 	}
 }
