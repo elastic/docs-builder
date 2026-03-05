@@ -22,6 +22,9 @@ public record CrawlResult
 	public bool NotModified { get; init; }
 	public string? CachedHash { get; init; }
 
+	/// <summary>Indicates a fatal error that should stop all crawling (e.g., HTTP 406).</summary>
+	public bool FatalError { get; init; }
+
 	public static CrawlResult Succeeded(
 		string url,
 		string content,
@@ -51,4 +54,7 @@ public record CrawlResult
 
 	public static CrawlResult Failed(string url, string error, int? statusCode = null) =>
 		new() { Url = url, Success = false, Error = error, StatusCode = statusCode };
+
+	public static CrawlResult Fatal(string url, string error, int statusCode) =>
+		new() { Url = url, Success = false, Error = error, StatusCode = statusCode, FatalError = true };
 }

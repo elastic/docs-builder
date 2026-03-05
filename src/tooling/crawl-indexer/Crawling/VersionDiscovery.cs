@@ -16,25 +16,44 @@ public partial class VersionDiscovery(ILogger<VersionDiscovery> logger) : IVersi
 	[GeneratedRegex(@"/(\d+)\.(\d+)/", RegexOptions.Compiled)]
 	private static partial Regex VersionPattern();
 
+	// Matches version aliases like /current/, /master/
+	[GeneratedRegex(@"/(current|master)/", RegexOptions.Compiled | RegexOptions.IgnoreCase)]
+	private static partial Regex VersionAliasPattern();
+
 	public IReadOnlyList<DiscoveredVersion> DiscoverVersions(IEnumerable<SitemapEntry> guideUrls)
 	{
 		var versions = new Dictionary<string, DiscoveredVersion>(StringComparer.OrdinalIgnoreCase);
+		var hasCurrentAlias = false;
+		var hasMasterAlias = false;
 
 		foreach (var entry in guideUrls)
 		{
+			// Check for numeric versions first
 			var match = VersionPattern().Match(entry.Location);
-			if (!match.Success)
+			if (match.Success)
+			{
+				var major = int.Parse(match.Groups[1].Value);
+				var minor = int.Parse(match.Groups[2].Value);
+				var version = $"{major}.{minor}";
+
+				if (!versions.ContainsKey(version))
+					versions[version] = new DiscoveredVersion(version, major);
 				continue;
+			}
 
-			var major = int.Parse(match.Groups[1].Value);
-			var minor = int.Parse(match.Groups[2].Value);
-			var version = $"{major}.{minor}";
-
-			if (!versions.ContainsKey(version))
-				versions[version] = new DiscoveredVersion(version, major);
+			// Check for version aliases
+			var aliasMatch = VersionAliasPattern().Match(entry.Location);
+			if (aliasMatch.Success)
+			{
+				var alias = aliasMatch.Groups[1].Value.ToLowerInvariant();
+				if (alias == "current")
+					hasCurrentAlias = true;
+				else if (alias == "master")
+					hasMasterAlias = true;
+			}
 		}
 
-		logger.LogDebug("Discovered {Count} unique versions", versions.Count);
+		logger.LogDebug("Discovered {Count} unique numeric versions", versions.Count);
 
 		// Group by major version
 		var byMajor = versions.Values
@@ -56,6 +75,19 @@ public partial class VersionDiscovery(ILogger<VersionDiscovery> logger) : IVersi
 			var latest7 = v7.OrderByDescending(v => ParseMinor(v.Version)).First();
 			result.Add(latest7);
 			logger.LogInformation("Including latest 7.x version: {Version}", latest7.Version);
+		}
+
+		// Include version aliases (treat "current" as 8.x, "master" as development)
+		if (hasCurrentAlias)
+		{
+			result.Add(new DiscoveredVersion("current", 8));
+			logger.LogInformation("Including 'current' version alias");
+		}
+
+		if (hasMasterAlias)
+		{
+			result.Add(new DiscoveredVersion("master", 9)); // Treat master as next major
+			logger.LogInformation("Including 'master' version alias");
 		}
 
 		return result;

@@ -26,7 +26,9 @@ public class SiteCommand(
 	IndexingErrorTracker errorTracker,
 	IConfigurationContext configurationContext,
 	ISitemapParser sitemapParser,
-	IAdaptiveCrawler crawler
+	IAdaptiveCrawler crawler,
+	ITranslationDiscovery translationDiscovery,
+	CrawlerSettings crawlerSettings
 )
 {
 	private const string DefaultSitemapUrl = "https://www.elastic.co/sitemap.xml";
@@ -106,9 +108,14 @@ public class SiteCommand(
 	/// <param name="sitemapUrl">Override sitemap location</param>
 	/// <param name="maxPages">Limit pages to crawl (0 = unlimited)</param>
 	/// <param name="dryRun">Discover URLs without crawling</param>
+	/// <param name="noTranslations">Skip translation discovery</param>
 	/// <param name="enableAiEnrichment">Enable AI enrichment (default: true)</param>
 	/// <param name="noSemantic">Skip semantic index</param>
 	/// <param name="failFast">Stop immediately when an indexing error occurs</param>
+	/// <param name="missingTranslationReport">Directory to write missing translation report (optional)</param>
+	/// <param name="rps">Rate limit in requests per second (0 or omit for unlimited)</param>
+	/// <param name="fair">Distribute --max-pages evenly across categories (for validation)</param>
+	/// <param name="translateRevalidate">Re-probe translations that were previously not found</param>
 	/// <param name="ctx">Cancellation token</param>
 	[Command("")]
 	public async Task RunAsync(
@@ -117,12 +124,28 @@ public class SiteCommand(
 		string sitemapUrl = DefaultSitemapUrl,
 		int maxPages = 0,
 		bool dryRun = false,
+		bool noTranslations = false,
 		bool enableAiEnrichment = true,
 		bool noSemantic = false,
 		bool failFast = false,
+		string? missingTranslationReport = null,
+		int? rps = null,
+		bool fair = false,
+		bool translateRevalidate = false,
 		Cancel ctx = default
 	)
 	{
+		// Validate and configure RPS
+		try
+		{
+			crawlerSettings.Configure(rps);
+		}
+		catch (ArgumentException ex)
+		{
+			SpectreConsoleTheme.WriteError(ex.Message);
+			return;
+		}
+
 		// Set up fail-fast cancellation
 		using var failFastCts = failFast ? new CancellationTokenSource() : null;
 		using var linkedCts = failFastCts is not null
@@ -139,6 +162,9 @@ public class SiteCommand(
 		{
 			// Display header
 			SpectreConsoleTheme.WriteHeader("site");
+
+			// Display crawler configuration
+			CrawlerConfigDisplay.DisplayConfiguration(crawlerSettings);
 
 			if (dryRun)
 				SpectreConsoleTheme.WriteDryRunBanner();
@@ -199,27 +225,25 @@ public class SiteCommand(
 
 			SpectreConsoleTheme.WriteSuccess($"Found [yellow]{allUrls.Count:N0}[/] total URLs from [cyan]{allSitemaps.Count}[/] sitemaps");
 
+			if (allUrls.Count == 0)
+			{
+				diagnostics.EmitError("sitemap", "Sitemap returned 0 URLs - nothing to crawl");
+				SpectreConsoleTheme.WriteError("Sitemap returned 0 URLs - nothing to crawl");
+				return;
+			}
+
 			// Build exclusion list
 			var exclusions = DefaultExcludePaths.ToList();
 			if (!string.IsNullOrWhiteSpace(excludePaths))
 				exclusions.AddRange(excludePaths.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
 
-			// Parse language filter
+			// Parse language filter (used later for translation discovery and final filtering)
 			var languageFilter = ParseLanguageFilter(languages);
 
-			// Filter URLs
-			var filteredUrls = FilterUrls(allUrls, exclusions, languageFilter);
-
-			// Display analysis
-			SpectreConsoleTheme.WriteSection("Site Analysis");
-			var excludedUrls = allUrls.Where(u => !filteredUrls.Contains(u)).ToList();
-			DisplaySiteAnalysis(filteredUrls, excludedUrls, exclusions);
-
-			if (maxPages > 0 && filteredUrls.Count > maxPages)
-			{
-				filteredUrls = filteredUrls.Take(maxPages).ToList();
-				SpectreConsoleTheme.WriteWarning($"Limited to [yellow]{maxPages:N0}[/] pages");
-			}
+			// Filter URLs by path exclusions only (language filter applied later)
+			// This ensures we have English URLs for translation discovery
+			// Note: maxPages limit is applied later to urlsToCrawl, not here
+			var filteredUrls = FilterUrls(allUrls, exclusions, []);
 
 			// Create transport once and reuse for cache and exporter
 			var endpoints = configurationContext.Endpoints;
@@ -274,34 +298,170 @@ public class SiteCommand(
 				SpectreConsoleTheme.WriteInfo("No existing index - performing full crawl");
 			}
 
-			// Make crawl decisions
-			var decisionMaker = new CrawlDecisionMaker(loggerFactory.CreateLogger<CrawlDecisionMaker>());
-			var decisions = decisionMaker.MakeDecisions(filteredUrls, cache).ToList();
-			var decisionStats = CrawlDecisionMaker.GetStats(decisions);
+			// Extract English URLs from sitemap for crawl decisions
+			var englishUrls = filteredUrls
+				.Where(u => GetLanguageFromUrl(u.Location) == "en")
+				.ToList();
 
-			// Find stale URLs (in cache but not in sitemap)
-			var sitemapUrlSet = filteredUrls.Select(u => u.Location).ToHashSet(StringComparer.OrdinalIgnoreCase);
-			var staleUrls = decisionMaker.FindStaleUrls(cache, sitemapUrlSet).ToList();
+			// Make crawl decisions for English pages
+			var decisionMaker = new CrawlDecisionMaker(loggerFactory.CreateLogger<CrawlDecisionMaker>());
+			var englishDecisions = decisionMaker.MakeDecisions(englishUrls, cache).ToList();
+
+			// Apply --fair limit early so translation discovery only probes the limited set
+			// This also ensures dry-run shows accurate counts
+			if (fair && maxPages > 0)
+			{
+				var needsCrawling = englishDecisions.Where(d => d.Reason != CrawlReason.Unchanged).ToList();
+				if (needsCrawling.Count > maxPages)
+				{
+					var fairSample = ApplyCategoryFairness(needsCrawling, maxPages);
+					// Replace decisions: keep unchanged + fair sample of those needing crawl
+					var unchanged = englishDecisions.Where(d => d.Reason == CrawlReason.Unchanged).ToList();
+					englishDecisions = unchanged.Concat(fairSample).ToList();
+					SpectreConsoleTheme.WriteInfo($"Fair sampling: [yellow]{fairSample.Count:N0}[/] pages to crawl across categories");
+				}
+			}
+
+			var englishStats = CrawlDecisionMaker.GetStats(englishDecisions);
 
 			SpectreConsoleTheme.WriteInfo(
-				$"Crawl analysis: [green]{decisionStats.NewUrls:N0}[/] new, " +
-				$"[grey]{decisionStats.UnchangedUrls:N0}[/] unchanged, " +
-				$"[yellow]{decisionStats.PossiblyChangedUrls:N0}[/] to verify"
+				$"English pages: [green]{englishStats.NewUrls:N0}[/] new, " +
+				$"[grey]{englishStats.UnchangedUrls:N0}[/] unchanged, " +
+				$"[yellow]{englishStats.PossiblyChangedUrls:N0}[/] to verify"
 			);
+
+			// Translation discovery phase
+			var discoveredTranslations = new List<SitemapEntry>();
+			var translationsByLanguage = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+			var translationsFromCache = 0;
+
+			if (!noTranslations && (englishStats.NewUrls > 0 || englishStats.PossiblyChangedUrls > 0))
+			{
+				SpectreConsoleTheme.WriteSection("Translation Discovery");
+
+				// Calculate total probes: pages × languages
+				var pagesToProbe = englishDecisions.Count(d => d.Reason != CrawlReason.Unchanged);
+				var languagesToProbe = languageFilter.Count > 0
+					? languageFilter.Count(l => l is "de" or "fr" or "es" or "jp" or "kr" or "cn" or "pt")
+					: 7; // All 7 translation languages
+				var totalProbes = pagesToProbe * languagesToProbe;
+
+				// Build RPS suffix for progress display
+				var rpsSuffix = crawlerSettings.RateLimitingEnabled
+					? $" [dim]@ {crawlerSettings.Rps} RPS[/]"
+					: "";
+
+				TranslationDiscoveryStats? translationStats = null;
+
+				try
+				{
+					await AnsiConsole.Progress()
+						.AutoRefresh(true)
+						.AutoClear(false)
+						.HideCompleted(false)
+						.Columns(
+							new SpinnerColumn(),
+							new TaskDescriptionColumn(),
+							new ProgressBarColumn(),
+							new PercentageColumn()
+						)
+						.StartAsync(async progressCtx =>
+						{
+							var task = progressCtx.AddTask($"[aqua]🌐 Probing 0/{totalProbes:N0}{rpsSuffix}[/]", maxValue: totalProbes);
+
+							translationStats = await translationDiscovery.DiscoverAsync(
+								englishDecisions,
+								cache,
+								languageFilter,
+								translation =>
+								{
+									// Create sitemap entry for the translation, inheriting lastmod from English page
+									var englishDecision = englishDecisions.First(d => d.Entry.Location == translation.EnglishUrl);
+									discoveredTranslations.Add(new SitemapEntry(
+										translation.TranslatedUrl,
+										englishDecision.Entry.LastModified
+									));
+								},
+								translateRevalidate,
+								new Progress<(int probed, int found, string? url)>(p =>
+								{
+									task.Value = p.probed;
+									task.Description = $"[aqua]🌐 Probing {p.probed:N0}/{totalProbes:N0} — found {p.found:N0}{rpsSuffix}[/]";
+								}),
+								ctx
+							);
+
+							task.Value = task.MaxValue;
+							task.Description = "[green]✓[/] Translation discovery complete";
+						});
+				}
+				catch (TranslationDiscoveryException ex)
+				{
+					SpectreConsoleTheme.WriteError($"Translation discovery failed: {ex.Message}");
+					return;
+				}
+
+				if (translationStats is not null)
+				{
+					translationsByLanguage = new Dictionary<string, int>(translationStats.ByLanguage, StringComparer.OrdinalIgnoreCase);
+					translationsFromCache = translationStats.FromCache;
+				}
+
+				IndexingDisplay.DisplayTranslationDiscoverySummary(discoveredTranslations.Count, translationsFromCache, translationsByLanguage);
+			}
+
+			// Display Site Analysis AFTER translation discovery (shows combined English + translations)
+			SpectreConsoleTheme.WriteSection("Site Analysis");
+			var excludedUrls = allUrls.Where(u => !filteredUrls.Contains(u)).ToList();
+			DisplaySiteAnalysis(filteredUrls, excludedUrls, exclusions, discoveredTranslations);
+
+			// Make decisions for discovered translations
+			var translationDecisions = discoveredTranslations.Count > 0
+				? decisionMaker.MakeDecisions(discoveredTranslations, cache).ToList()
+				: [];
+
+			// Combine all decisions
+			var allDecisions = englishDecisions.Concat(translationDecisions).ToList();
+
+			// Find stale URLs (in cache but not in sitemap or discovered translations)
+			var allKnownUrls = englishUrls
+				.Select(u => u.Location)
+				.Concat(discoveredTranslations.Select(t => t.Location))
+				.ToHashSet(StringComparer.OrdinalIgnoreCase);
+			var staleUrls = decisionMaker.FindStaleUrls(cache, allKnownUrls).ToList();
 
 			if (staleUrls.Count > 0)
 				SpectreConsoleTheme.WriteWarning($"Found [red]{staleUrls.Count:N0}[/] stale URLs to delete");
 
 			if (dryRun)
 			{
-				IndexingDisplay.DisplayDryRunWithCacheStats(decisionStats, staleUrls.Count);
+				// Calculate stats accounting for language filter
+				var filteredEnglishStats = languageFilter.Count == 0 || languageFilter.Contains("en")
+					? englishStats
+					: new CrawlDecisionStats(0, 0, 0);
+
+				IndexingDisplay.DisplayDryRunWithCacheStats(
+					filteredEnglishStats,
+					staleUrls.Count,
+					discoveredTranslations.Count,
+					translationsByLanguage,
+					languageFilter
+				);
 				return;
 			}
 
-			// Get URLs to crawl (new + possibly changed)
-			var urlsToCrawl = decisions
+			// Get URLs to crawl (new + possibly changed), filtered by language if specified
+			var urlsToCrawl = allDecisions
 				.Where(d => d.Reason != CrawlReason.Unchanged)
+				.Where(d => languageFilter.Count == 0 || languageFilter.Contains(GetLanguageFromUrl(d.Entry.Location)))
 				.ToList();
+
+			// Apply max-pages limit (only for non-fair mode; fair mode was applied earlier)
+			if (!fair && maxPages > 0 && urlsToCrawl.Count > maxPages)
+			{
+				urlsToCrawl = urlsToCrawl.Take(maxPages).ToList();
+				SpectreConsoleTheme.WriteWarning($"Limited to [yellow]{maxPages:N0}[/] pages to crawl");
+			}
 
 			// Create exporter with shared transport
 			_ = enableAiEnrichment; // TODO: Integrate AI enrichment
@@ -336,6 +496,7 @@ public class SiteCommand(
 			var processedCount = 0;
 			var skippedNotModified = 0;
 			var errorCount = 0;
+			var missingTranslations = new List<(string Url, string Language)>();
 			var startTime = DateTime.UtcNow;
 
 			IReadOnlyList<IndexChannelInfo> channelInfo = [];
@@ -358,13 +519,39 @@ public class SiteCommand(
 
 					if (!result.Success)
 					{
+						// Fatal errors (e.g., HTTP 406) stop crawling immediately
+						if (result.FatalError)
+						{
+							progressCtx.ReportUrlFailed(result.Url, result.Error ?? "Fatal error");
+							diagnostics.EmitError(result.Url, $"Fatal error: {result.Error}");
+							SpectreConsoleTheme.WriteError($"Fatal error: {result.Error} - stopping crawl");
+							break;
+						}
+
+						var urlLanguage = GetLanguageFromUrl(result.Url);
+						var isTranslation = urlLanguage != "en";
+
+						if (result.StatusCode == 404)
+						{
+							if (isTranslation)
+							{
+								// Track missing translation silently (no warning, no error)
+								missingTranslations.Add((result.Url, urlLanguage));
+								progressCtx.ReportUrlUnavailable(result.Url);
+							}
+							else
+							{
+								// English page 404 - track as unavailable with warning
+								progressCtx.ReportUrlUnavailable(result.Url);
+								diagnostics.EmitWarning(result.Url, $"Page not found: {result.Error}");
+							}
+							continue;
+						}
+
+						// Non-404 failures are errors
 						errorCount++;
 						progressCtx.ReportUrlFailed(result.Url, result.Error ?? "Unknown error");
-						// Treat 404s as warnings (pages may have been removed)
-						if (result.StatusCode == 404)
-							diagnostics.EmitWarning(result.Url, $"Page not found: {result.Error}");
-						else
-							diagnostics.EmitError(result.Url, $"Failed to crawl: {result.Error}");
+						diagnostics.EmitError(result.Url, $"Failed to crawl: {result.Error}");
 						continue;
 					}
 
@@ -399,6 +586,7 @@ public class SiteCommand(
 
 						await exporter.ExportAsync(document, effectiveToken);
 						processedCount++;
+						progressCtx.ReportUrlIndexed();
 					}
 					catch (OperationCanceledException) when (effectiveToken.IsCancellationRequested)
 					{
@@ -407,8 +595,8 @@ public class SiteCommand(
 					catch (Exception ex)
 					{
 						errorCount++;
-						progressCtx.ReportUrlFailed(result.Url, ex.Message);
-						diagnostics.EmitError(result.Url, $"Failed to process: {ex.Message}", ex);
+						progressCtx.ReportIndexingError(result.Url, ex.Message);
+						diagnostics.EmitError(result.Url, $"Failed to index: {ex.Message}", ex);
 					}
 				}
 
@@ -421,11 +609,26 @@ public class SiteCommand(
 			if (skippedNotModified > 0)
 				SpectreConsoleTheme.WriteInfo($"Skipped [grey]{skippedNotModified:N0}[/] unchanged pages (HTTP 304)");
 
+			if (missingTranslations.Count > 0)
+			{
+				var byLang = missingTranslations
+					.GroupBy(t => t.Language)
+					.OrderByDescending(g => g.Count())
+					.Select(g => $"{g.Key}: {g.Count():N0}")
+					.ToList();
+				SpectreConsoleTheme.WriteInfo($"Missing translations: [grey]{missingTranslations.Count:N0}[/] ({string.Join(", ", byLang)})");
+
+				// Write report if directory specified
+				if (!string.IsNullOrEmpty(missingTranslationReport))
+					await WriteMissingTranslationReportAsync(missingTranslationReport, missingTranslations, ctx);
+			}
+
 			var crawlTime = DateTime.UtcNow - startTime;
 
 			// Display final summary
 			var stats = progress.GetStats();
-			IndexingDisplay.DisplayFinalSummary(stats, decisionStats, channelInfo.Count > 0 ? channelInfo : null);
+			var finalStats = CrawlDecisionMaker.GetStats(allDecisions);
+			IndexingDisplay.DisplayFinalSummary(stats, finalStats, channelInfo.Count > 0 ? channelInfo : null);
 
 			logger.LogInformation(
 				"Crawling complete. Processed: {Processed}, Errors: {Errors}, Duration: {Duration}",
@@ -446,22 +649,40 @@ public class SiteCommand(
 		}
 	}
 
-	private static void DisplaySiteAnalysis(List<SitemapEntry> urls, List<SitemapEntry> excludedUrls, List<string> exclusionPatterns)
+	private static void DisplaySiteAnalysis(
+		List<SitemapEntry> urls,
+		List<SitemapEntry> excludedUrls,
+		List<string> exclusionPatterns,
+		List<SitemapEntry> discoveredTranslations
+	)
 	{
-		// Group by relevance
-		var byRelevance = urls
+		// Combine sitemap URLs with discovered translations for analysis
+		var allUrls = urls.Concat(discoveredTranslations).ToList();
+
+		// Group by relevance (all URLs)
+		var byRelevance = allUrls
 			.GroupBy(u => GetRelevance(u.Location))
 			.ToDictionary(g => g.Key, g => g.Count());
 
-		// Group by category
-		var byCategory = urls
+		// Group by category (separate English and translations for unique/total)
+		var englishByCategory = urls
+			.Where(u => GetLanguageFromUrl(u.Location) == "en")
 			.GroupBy(u => GetCategory(u.Location))
-			.OrderByDescending(g => g.Count())
+			.ToDictionary(g => g.Key, g => g.Count());
+
+		var translationsByCategory = discoveredTranslations
+			.GroupBy(u => GetCategory(u.Location))
+			.ToDictionary(g => g.Key, g => g.Count());
+
+		var allCategories = englishByCategory.Keys
+			.Concat(translationsByCategory.Keys)
+			.Distinct()
+			.OrderByDescending(c => englishByCategory.GetValueOrDefault(c, 0) + translationsByCategory.GetValueOrDefault(c, 0))
 			.Take(12)
 			.ToList();
 
-		// Group by language
-		var byLanguage = urls
+		// Group by language (all URLs)
+		var byLanguage = allUrls
 			.GroupBy(u => GetLanguageFromUrl(u.Location))
 			.OrderByDescending(g => g.Count())
 			.ToList();
@@ -481,27 +702,38 @@ public class SiteCommand(
 		AnsiConsole.Write(relevanceBreakdown);
 		AnsiConsole.WriteLine();
 
-		// Category table
+		// Category table with Unique | Total columns
 		var categoryTable = new Table()
 			.Border(TableBorder.Rounded)
 			.BorderColor(Color.Grey)
 			.AddColumn("[aqua]Category[/]")
-			.AddColumn(new TableColumn("[aqua]URLs[/]").RightAligned())
+			.AddColumn(new TableColumn("[aqua]Unique[/]").RightAligned())
+			.AddColumn(new TableColumn("[aqua]Total[/]").RightAligned())
 			.AddColumn("[aqua]Relevance[/]");
 
-		foreach (var group in byCategory)
+		foreach (var category in allCategories)
 		{
 			var (relevance, emoji, color) = PathInfo.GetValueOrDefault(
-				group.Key,
+				category,
 				("medium", "📄", Color.White)
 			);
-			var displayName = group.Key.Trim('/');
+			var displayName = category.Trim('/');
 			if (string.IsNullOrEmpty(displayName))
 				displayName = "Root";
 
+			var unique = englishByCategory.GetValueOrDefault(category, 0);
+			var translations = translationsByCategory.GetValueOrDefault(category, 0);
+			var total = unique + translations;
+
+			// Show translations indicator if there are any
+			var totalDisplay = translations > 0
+				? $"[white]{total:N0}[/]"
+				: $"[dim]{total:N0}[/]";
+
 			_ = categoryTable.AddRow(
 				$"{emoji} [{color}]{Markup.Escape(displayName)}[/]",
-				$"[white]{group.Count():N0}[/]",
+				$"[white]{unique:N0}[/]",
+				totalDisplay,
 				$"[{color}]{relevance}[/]"
 			);
 		}
@@ -572,12 +804,13 @@ public class SiteCommand(
 		}
 
 		// Summary
+		var englishCount = urls.Count(u => GetLanguageFromUrl(u.Location) == "en");
 		var summaryPanel = new Panel(
 			new Rows(
-				new Markup($"[green]✓ Included:[/] [white]{urls.Count:N0}[/] URLs"),
-				new Markup($"[red]✗ Excluded:[/] [white]{excludedUrls.Count:N0}[/] URLs"),
-				new Markup($"[yellow]🌐 Languages:[/] [white]{byLanguage.Count}[/]"),
-				new Markup($"[aqua]📂 Categories:[/] [white]{byCategory.Count}[/]")
+				new Markup($"[green]✓ English URLs:[/] [white]{englishCount:N0}[/]"),
+				new Markup($"[cyan]🌐 Translations:[/] [white]{discoveredTranslations.Count:N0}[/]"),
+				new Markup($"[aqua]📊 Total:[/] [white]{allUrls.Count:N0}[/] URLs"),
+				new Markup($"[red]✗ Excluded:[/] [white]{excludedUrls.Count:N0}[/] URLs")
 			)
 		)
 		{
@@ -657,6 +890,71 @@ public class SiteCommand(
 				return true;
 			})
 			.ToList();
+	}
+
+	/// <summary>
+	/// Distributes maxPages evenly across categories for validation sampling.
+	/// Ensures each category gets representation in the sample.
+	/// Redistributes unused quota from small categories to larger ones.
+	/// </summary>
+	private static List<CrawlDecision> ApplyCategoryFairness(List<CrawlDecision> decisions, int maxPages)
+	{
+		// Group by category
+		var byCategory = decisions
+			.GroupBy(d => GetCategory(d.Entry.Location))
+			.ToDictionary(g => g.Key, g => g.ToList());
+
+		var categoryCount = byCategory.Count;
+		if (categoryCount == 0)
+			return [];
+
+		var result = new List<CrawlDecision>();
+		var remaining = maxPages;
+
+		// Sort categories by size (largest first)
+		var sortedCategories = byCategory
+			.OrderByDescending(kvp => kvp.Value.Count)
+			.ToList();
+
+		// Track how many we've taken from each category
+		var taken = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+		// First pass: give each category its fair share (or all if smaller)
+		var fairShare = maxPages / categoryCount;
+		var extraSlots = maxPages % categoryCount;
+
+		foreach (var (category, categoryDecisions) in sortedCategories)
+		{
+			var quota = fairShare + (extraSlots > 0 ? 1 : 0);
+			if (extraSlots > 0)
+				extraSlots--;
+
+			var toTake = Math.Min(quota, categoryDecisions.Count);
+			result.AddRange(categoryDecisions.Take(toTake));
+			taken[category] = toTake;
+			remaining -= toTake;
+		}
+
+		// Second pass: redistribute remaining quota to categories with more content
+		if (remaining > 0)
+		{
+			foreach (var (category, categoryDecisions) in sortedCategories)
+			{
+				if (remaining <= 0)
+					break;
+
+				var alreadyTaken = taken[category];
+				var available = categoryDecisions.Count - alreadyTaken;
+				if (available > 0)
+				{
+					var toTake = Math.Min(remaining, available);
+					result.AddRange(categoryDecisions.Skip(alreadyTaken).Take(toTake));
+					remaining -= toTake;
+				}
+			}
+		}
+
+		return result;
 	}
 
 	private static string GetLanguageFromUrl(string url)
@@ -750,5 +1048,65 @@ public class SiteCommand(
 			return "product";
 
 		return "marketing";
+	}
+
+	private async Task WriteMissingTranslationReportAsync(
+		string directory,
+		List<(string Url, string Language)> missingTranslations,
+		CancellationToken ct
+	)
+	{
+		try
+		{
+			_ = Directory.CreateDirectory(directory);
+
+			var reportPath = Path.Combine(directory, $"missing-translations-{DateTime.UtcNow:yyyyMMdd-HHmmss}.csv");
+
+			var lines = new List<string> { "url,language,english_url,category" };
+			foreach (var (url, language) in missingTranslations.OrderBy(t => t.Language).ThenBy(t => t.Url))
+			{
+				// Derive English URL by removing language prefix
+				var uri = new Uri(url);
+				var englishPath = uri.AbsolutePath[$"/{language}/".Length..];
+				var englishUrl = $"{uri.Scheme}://{uri.Host}/{englishPath}";
+				var category = GetCategory(url);
+
+				lines.Add($"\"{url}\",\"{language}\",\"{englishUrl}\",\"{category.Trim('/')}\"");
+			}
+
+			await File.WriteAllLinesAsync(reportPath, lines, ct);
+
+			SpectreConsoleTheme.WriteSuccess($"Missing translation report written to [cyan]{reportPath}[/]");
+
+			// Also write summary by language
+			var summaryPath = Path.Combine(directory, $"missing-translations-summary-{DateTime.UtcNow:yyyyMMdd-HHmmss}.txt");
+			var summary = new List<string>
+			{
+				$"Missing Translation Report - {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC",
+				$"Total missing: {missingTranslations.Count:N0}",
+				"",
+				"By Language:"
+			};
+
+			foreach (var group in missingTranslations.GroupBy(t => t.Language).OrderByDescending(g => g.Count()))
+			{
+				var langName = LanguageNames.GetValueOrDefault(group.Key, group.Key);
+				summary.Add($"  {langName}: {group.Count():N0}");
+			}
+
+			summary.Add("");
+			summary.Add("By Category:");
+
+			foreach (var group in missingTranslations.GroupBy(t => GetCategory(t.Url)).OrderByDescending(g => g.Count()))
+			{
+				summary.Add($"  {group.Key.Trim('/')}: {group.Count():N0}");
+			}
+
+			await File.WriteAllLinesAsync(summaryPath, summary, ct);
+		}
+		catch (Exception ex)
+		{
+			logger.LogWarning(ex, "Failed to write missing translation report to {Directory}", directory);
+		}
 	}
 }

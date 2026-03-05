@@ -27,10 +27,11 @@ public class GuideCommand(
 	IConfigurationContext configurationContext,
 	ISitemapParser sitemapParser,
 	IVersionDiscovery versionDiscovery,
-	IAdaptiveCrawler crawler
+	IAdaptiveCrawler crawler,
+	CrawlerSettings crawlerSettings
 )
 {
-	private const string DefaultSitemapUrl = "https://www.elastic.co/sitemap.xml";
+	private const string DefaultSitemapUrl = "https://www.elastic.co/guide/sitemap.xml";
 	private const string GuideBaseUrl = "https://www.elastic.co/guide/";
 
 	/// <summary>
@@ -44,6 +45,7 @@ public class GuideCommand(
 	/// <param name="enableAiEnrichment">Enable AI enrichment (default: true)</param>
 	/// <param name="noSemantic">Skip semantic index</param>
 	/// <param name="failFast">Stop immediately when an indexing error occurs</param>
+	/// <param name="rps">Rate limit in requests per second (0 or omit for unlimited)</param>
 	/// <param name="ctx">Cancellation token</param>
 	[Command("")]
 	public async Task RunAsync(
@@ -55,9 +57,21 @@ public class GuideCommand(
 		bool enableAiEnrichment = true,
 		bool noSemantic = false,
 		bool failFast = false,
+		int? rps = null,
 		Cancel ctx = default
 	)
 	{
+		// Validate and configure RPS
+		try
+		{
+			crawlerSettings.Configure(rps);
+		}
+		catch (ArgumentException ex)
+		{
+			SpectreConsoleTheme.WriteError(ex.Message);
+			return;
+		}
+
 		// Set up fail-fast cancellation
 		using var failFastCts = failFast ? new CancellationTokenSource() : null;
 		using var linkedCts = failFastCts is not null
@@ -74,6 +88,9 @@ public class GuideCommand(
 		{
 			// Display header
 			SpectreConsoleTheme.WriteHeader("guide");
+
+			// Display crawler configuration
+			CrawlerConfigDisplay.DisplayConfiguration(crawlerSettings);
 
 			if (dryRun)
 				SpectreConsoleTheme.WriteDryRunBanner();
@@ -119,6 +136,20 @@ public class GuideCommand(
 				.ToList();
 
 			SpectreConsoleTheme.WriteSuccess($"Found [yellow]{guideUrls.Count:N0}[/] guide URLs in sitemap");
+
+			if (allUrls.Count == 0)
+			{
+				diagnostics.EmitError("sitemap", "Sitemap returned 0 URLs - nothing to crawl");
+				SpectreConsoleTheme.WriteError("Sitemap returned 0 URLs - nothing to crawl");
+				return;
+			}
+
+			if (guideUrls.Count == 0)
+			{
+				diagnostics.EmitError("sitemap", "Sitemap contained no /guide/ URLs - nothing to crawl");
+				SpectreConsoleTheme.WriteError("Sitemap contained no /guide/ URLs - nothing to crawl");
+				return;
+			}
 
 			// Discover versions
 			SpectreConsoleTheme.WriteSection("Version Discovery");
@@ -288,13 +319,27 @@ public class GuideCommand(
 
 					if (!result.Success)
 					{
+						// Fatal errors (e.g., HTTP 406) stop crawling immediately
+						if (result.FatalError)
+						{
+							progressCtx.ReportUrlFailed(result.Url, result.Error ?? "Fatal error");
+							diagnostics.EmitError(result.Url, $"Fatal error: {result.Error}");
+							SpectreConsoleTheme.WriteError($"Fatal error: {result.Error} - stopping crawl");
+							break;
+						}
+
+						if (result.StatusCode == 404)
+						{
+							// 404 is unavailable, not a failure
+							progressCtx.ReportUrlUnavailable(result.Url);
+							diagnostics.EmitWarning(result.Url, $"Page not found: {result.Error}");
+							continue;
+						}
+
+						// Non-404 failures are errors
 						errorCount++;
 						progressCtx.ReportUrlFailed(result.Url, result.Error ?? "Unknown error");
-						// Treat 404s as warnings (pages may have been removed)
-						if (result.StatusCode == 404)
-							diagnostics.EmitWarning(result.Url, $"Page not found: {result.Error}");
-						else
-							diagnostics.EmitError(result.Url, $"Failed to crawl: {result.Error}");
+						diagnostics.EmitError(result.Url, $"Failed to crawl: {result.Error}");
 						continue;
 					}
 
@@ -322,6 +367,7 @@ public class GuideCommand(
 
 						await exporter.ExportAsync(document, effectiveToken);
 						processedCount++;
+						progressCtx.ReportUrlIndexed();
 					}
 					catch (OperationCanceledException) when (effectiveToken.IsCancellationRequested)
 					{
@@ -330,8 +376,8 @@ public class GuideCommand(
 					catch (Exception ex)
 					{
 						errorCount++;
-						progressCtx.ReportUrlFailed(result.Url, ex.Message);
-						diagnostics.EmitError(result.Url, $"Failed to process: {ex.Message}", ex);
+						progressCtx.ReportIndexingError(result.Url, ex.Message);
+						diagnostics.EmitError(result.Url, $"Failed to index: {ex.Message}", ex);
 					}
 				}
 
@@ -466,13 +512,21 @@ internal static class GuideUrlParser
 		var product = segments[2];
 		var version = segments[4];
 
-		// Skip non-version paths like 'current', 'master'
+		// Accept numeric versions (8.15, 7.17) and version aliases (current, master)
 		if (!IsVersionString(version))
 			return null;
 
 		return (product, version);
 	}
 
-	private static bool IsVersionString(string s) =>
-		s.Length >= 1 && char.IsDigit(s[0]) && s.Contains('.');
+	private static bool IsVersionString(string s)
+	{
+		// Accept numeric versions (8.15, 7.17)
+		if (s.Length >= 1 && char.IsDigit(s[0]) && s.Contains('.'))
+			return true;
+
+		// Accept version aliases
+		return s.Equals("current", StringComparison.OrdinalIgnoreCase) ||
+			   s.Equals("master", StringComparison.OrdinalIgnoreCase);
+	}
 }

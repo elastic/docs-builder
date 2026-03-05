@@ -14,7 +14,10 @@ public sealed class CrawlProgressContext : IDisposable
 	private int _urlsDiscovered;
 	private int _urlsCrawled;
 	private int _urlsSkipped;
-	private int _urlsFailed;
+	private int _urlsUnavailable; // 404s
+	private int _urlsFailed;      // Other crawl failures
+	private int _urlsIndexed;
+	private int _indexingErrors;
 	private long _bytesDownloaded;
 	private readonly DateTime _startTime;
 	private readonly List<string> _recentUrls = [];
@@ -65,6 +68,17 @@ public sealed class CrawlProgressContext : IDisposable
 			AnsiConsole.MarkupLine($"[grey]SKIP[/] {Markup.Escape(url)} [dim]({reason})[/]");
 	}
 
+	public void ReportUrlUnavailable(string url)
+	{
+		lock (_lock)
+		{
+			_urlsUnavailable++;
+		}
+
+		if (!IsInteractive)
+			AnsiConsole.MarkupLine($"[yellow]404[/] {Markup.Escape(url)}");
+	}
+
 	public void ReportUrlFailed(string url, string error)
 	{
 		lock (_lock)
@@ -76,6 +90,25 @@ public sealed class CrawlProgressContext : IDisposable
 			AnsiConsole.MarkupLine($"[red]FAIL[/] {Markup.Escape(url)} [dim]({error})[/]");
 	}
 
+	public void ReportUrlIndexed()
+	{
+		lock (_lock)
+		{
+			_urlsIndexed++;
+		}
+	}
+
+	public void ReportIndexingError(string url, string error)
+	{
+		lock (_lock)
+		{
+			_indexingErrors++;
+		}
+
+		if (!IsInteractive)
+			AnsiConsole.MarkupLine($"[red]INDEX FAIL[/] {Markup.Escape(url)} [dim]({error})[/]");
+	}
+
 	public CrawlStats GetStats()
 	{
 		lock (_lock)
@@ -84,7 +117,10 @@ public sealed class CrawlProgressContext : IDisposable
 				_urlsDiscovered,
 				_urlsCrawled,
 				_urlsSkipped,
+				_urlsUnavailable,
 				_urlsFailed,
+				_urlsIndexed,
+				_indexingErrors,
 				_bytesDownloaded,
 				DateTime.UtcNow - _startTime,
 				[.. _recentUrls]
@@ -121,8 +157,8 @@ public sealed class CrawlProgressContext : IDisposable
 				)
 				.StartAsync(async ctx =>
 				{
-					var crawlTask = ctx.AddTask("[aqua]🔍 Crawling pages[/]", maxValue: _urlsDiscovered);
-					var indexTask = ctx.AddTask("[yellow]📦 Indexing documents[/]", maxValue: _urlsDiscovered);
+					var crawlTask = ctx.AddTask($"[aqua]🔍 Crawling ({_urlsDiscovered:N0} pages)[/]", maxValue: _urlsDiscovered);
+					var indexTask = ctx.AddTask($"[yellow]📦 Indexing ({_urlsDiscovered:N0} pages)[/]", maxValue: _urlsDiscovered);
 
 					var displayContext = new CrawlLiveContext(crawlTask, indexTask);
 
@@ -147,11 +183,22 @@ public sealed class CrawlProgressContext : IDisposable
 						}
 					}
 
-					// Ensure 100% completion
-					crawlTask.Value = crawlTask.MaxValue;
-					indexTask.Value = indexTask.MaxValue;
-					crawlTask.Description = "[green]✓ Crawling complete[/]";
-					indexTask.Description = "[green]✓ Indexing complete[/]";
+					// Set final values and descriptions - simple completion messages
+					lock (_lock)
+					{
+						var crawlProcessed = _urlsCrawled + _urlsSkipped + _urlsUnavailable + _urlsFailed;
+						var indexProcessed = _urlsIndexed + _indexingErrors + _urlsSkipped + _urlsUnavailable + _urlsFailed;
+
+						crawlTask.Value = crawlProcessed;
+						crawlTask.MaxValue = _urlsDiscovered;
+						indexTask.Value = indexProcessed;
+						indexTask.MaxValue = _urlsDiscovered;
+
+						var indexErrors = _indexingErrors > 0 ? $" [red]({_indexingErrors} failures)[/]" : "";
+
+						crawlTask.Description = $"[green]✓ Crawling complete[/] [dim]({crawlProcessed:N0}/{_urlsDiscovered:N0})[/]";
+						indexTask.Description = $"[green]✓ Indexing complete[/]{indexErrors}";
+					}
 				});
 		}
 		finally
@@ -171,16 +218,26 @@ public sealed class CrawlProgressContext : IDisposable
 				await Task.Delay(100, ct);
 				lock (_lock)
 				{
-					crawlTask.Value = _urlsCrawled + _urlsSkipped + _urlsFailed;
-					indexTask.Value = _urlsCrawled;
+					var crawlProcessed = _urlsCrawled + _urlsSkipped + _urlsUnavailable + _urlsFailed;
+					crawlTask.Value = crawlProcessed;
 					crawlTask.MaxValue = _urlsDiscovered;
+
+					// Indexing tracks: indexed + errors + skipped + unavailable + failed crawls
+					var indexProcessed = _urlsIndexed + _indexingErrors + _urlsSkipped + _urlsUnavailable + _urlsFailed;
+					indexTask.Value = indexProcessed;
 					indexTask.MaxValue = _urlsDiscovered;
 
-					if (_urlsCrawled > 0)
+					var elapsed = DateTime.UtcNow - _startTime;
+					if (crawlProcessed > 0 && elapsed.TotalSeconds > 0)
 					{
-						var rate = _urlsCrawled / (DateTime.UtcNow - _startTime).TotalSeconds;
-						crawlTask.Description = $"[aqua]🔍 Crawling[/] [dim]({rate:F1} pages/s)[/]";
-						indexTask.Description = $"[yellow]📦 Indexing[/] [dim]({_urlsFailed} errors)[/]";
+						var rate = crawlProcessed / elapsed.TotalSeconds;
+						crawlTask.Description = $"[aqua]🔍 Crawling[/] [dim]({crawlProcessed:N0}/{_urlsDiscovered:N0})[/] [grey]({rate:F1}/s)[/]";
+					}
+
+					if (_urlsIndexed > 0 || _indexingErrors > 0)
+					{
+						var errorSuffix = _indexingErrors > 0 ? $" [red]({_indexingErrors} errors)[/]" : "";
+						indexTask.Description = $"[yellow]📦 Indexing[/] [dim]({_urlsIndexed:N0})[/]{errorSuffix}";
 					}
 				}
 			}
@@ -189,19 +246,6 @@ public sealed class CrawlProgressContext : IDisposable
 				break;
 			}
 		}
-	}
-
-	private static string FormatBytes(long bytes)
-	{
-		string[] sizes = ["B", "KB", "MB", "GB"];
-		var order = 0;
-		var size = (double)bytes;
-		while (size >= 1024 && order < sizes.Length - 1)
-		{
-			order++;
-			size /= 1024;
-		}
-		return $"{size:0.##} {sizes[order]}";
 	}
 
 	public void Dispose()
@@ -214,7 +258,10 @@ public readonly record struct CrawlStats(
 	int UrlsDiscovered,
 	int UrlsCrawled,
 	int UrlsSkipped,
-	int UrlsFailed,
+	int UrlsUnavailable,  // 404s
+	int UrlsFailed,       // Other crawl failures
+	int UrlsIndexed,
+	int IndexingErrors,
 	long BytesDownloaded,
 	TimeSpan Elapsed,
 	IReadOnlyList<string> RecentUrls

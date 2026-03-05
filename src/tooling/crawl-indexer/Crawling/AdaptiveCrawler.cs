@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
@@ -13,16 +12,25 @@ using Microsoft.Extensions.Logging;
 namespace CrawlIndexer.Crawling;
 
 /// <summary>
-/// Adaptive HTTP crawler that adjusts concurrency based on server response times.
+/// HTTP crawler that uses standard resilience handler for throttling and retries.
+/// Uses a semaphore to limit concurrent requests and shared rate limiter for RPS control.
 /// </summary>
-public class AdaptiveCrawler(ILogger<AdaptiveCrawler> logger, HttpClient httpClient) : IAdaptiveCrawler
+public class AdaptiveCrawler(
+	ILogger<AdaptiveCrawler> logger,
+	HttpClient httpClient,
+	CrawlerRateLimiter rateLimiter,
+	CrawlerSettings settings
+) : IAdaptiveCrawler, IDisposable
 {
-	private const int InitialConcurrency = 10;
-	private const int MinConcurrency = 2;
-	private const int MaxConcurrency = 50;
-	private const int SlowResponseThresholdMs = 2000;
-	private const int FastResponseThresholdMs = 500;
-	private const int AdjustmentIntervalRequests = 50;
+	private SemaphoreSlim? _semaphore;
+
+	private SemaphoreSlim Semaphore => _semaphore ??= new(settings.Concurrency);
+
+	public void Dispose()
+	{
+		_semaphore?.Dispose();
+		GC.SuppressFinalize(this);
+	}
 
 	public IAsyncEnumerable<CrawlResult> CrawlAsync(
 		IEnumerable<SitemapEntry> urls,
@@ -39,13 +47,7 @@ public class AdaptiveCrawler(ILogger<AdaptiveCrawler> logger, HttpClient httpCli
 		if (decisionList.Count == 0)
 			yield break;
 
-		logger.LogInformation("Starting adaptive crawl of {Count} URLs", decisionList.Count);
-
-		var currentConcurrency = InitialConcurrency;
-		var semaphore = new SemaphoreSlim(currentConcurrency);
-		var responseTimes = new List<long>();
-		var requestCount = 0;
-		var lockObj = new object();
+		logger.LogInformation("Starting crawl of {Count} URLs", decisionList.Count);
 
 		var channel = Channel.CreateBounded<CrawlResult>(new BoundedChannelOptions(100)
 		{
@@ -56,29 +58,15 @@ public class AdaptiveCrawler(ILogger<AdaptiveCrawler> logger, HttpClient httpCli
 
 		var crawlTasks = decisionList.Select(async decision =>
 		{
-			await semaphore.WaitAsync(ctx);
+			await Semaphore.WaitAsync(ctx);
 			try
 			{
 				var result = await CrawlUrlAsync(decision.Entry, decision.Cached, ctx);
-
-				// Track response time for adaptive adjustment
-				if (result.Success)
-				{
-					lock (lockObj)
-					{
-						requestCount++;
-
-						// Adjust concurrency periodically
-						if (requestCount % AdjustmentIntervalRequests == 0)
-							AdjustConcurrency(semaphore, responseTimes, ref currentConcurrency);
-					}
-				}
-
 				await channel.Writer.WriteAsync(result, ctx);
 			}
 			finally
 			{
-				_ = semaphore.Release();
+				_ = Semaphore.Release();
 			}
 		}).ToList();
 
@@ -94,10 +82,11 @@ public class AdaptiveCrawler(ILogger<AdaptiveCrawler> logger, HttpClient httpCli
 
 	private async Task<CrawlResult> CrawlUrlAsync(SitemapEntry entry, CachedDocInfo? cached, Cancel ctx)
 	{
-		var stopwatch = Stopwatch.StartNew();
-
 		try
 		{
+			// Acquire rate limiter permit (may be null if rate limiting disabled)
+			using var lease = await rateLimiter.AcquireAsync(ctx);
+
 			using var request = new HttpRequestMessage(HttpMethod.Get, entry.Location);
 			request.Headers.Add("User-Agent", "Elastic-Crawl-Indexer/1.0 (+https://elastic.co)");
 			request.Headers.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
@@ -123,22 +112,31 @@ public class AdaptiveCrawler(ILogger<AdaptiveCrawler> logger, HttpClient httpCli
 			if (cached?.HttpLastModified is not null)
 				request.Headers.IfModifiedSince = cached.HttpLastModified;
 
-			using var response = await httpClient.SendAsync(request, ctx);
-			stopwatch.Stop();
+			// Use ResponseHeadersRead to check status before downloading body
+			using var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ctx);
 
-			// Handle 304 Not Modified
+			// Handle 304 Not Modified - no body to read
 			if (response.StatusCode == HttpStatusCode.NotModified)
 			{
-				logger.LogDebug("Not modified (304): {Url} in {ElapsedMs}ms", entry.Location, stopwatch.ElapsedMilliseconds);
+				logger.LogDebug("Not modified (304): {Url}", entry.Location);
 				return CrawlResult.NotModifiedResult(entry.Location, cached!.Hash);
 			}
 
-			logger.LogDebug("Crawled {Url} in {ElapsedMs}ms (status: {StatusCode})",
-				entry.Location, stopwatch.ElapsedMilliseconds, (int)response.StatusCode);
+			logger.LogDebug("Crawled {Url} (status: {StatusCode})",
+				entry.Location, (int)response.StatusCode);
 
+			// HTTP 406 Not Acceptable - fatal error, stop crawling to avoid amplifying the problem
+			if (response.StatusCode == HttpStatusCode.NotAcceptable)
+			{
+				logger.LogError("Fatal: HTTP 406 Not Acceptable for {Url} - stopping crawl", entry.Location);
+				return CrawlResult.Fatal(entry.Location, "HTTP 406 Not Acceptable - server rejecting requests", 406);
+			}
+
+			// Check status before reading body - avoids downloading content for errors
 			if (!response.IsSuccessStatusCode)
 				return CrawlResult.Failed(entry.Location, $"HTTP {(int)response.StatusCode}", (int)response.StatusCode);
 
+			// Only read body for successful responses
 			var content = await response.Content.ReadAsStringAsync(ctx);
 
 			// Extract caching headers
@@ -152,7 +150,6 @@ public class AdaptiveCrawler(ILogger<AdaptiveCrawler> logger, HttpClient httpCli
 		}
 		catch (HttpRequestException ex)
 		{
-			stopwatch.Stop();
 			logger.LogWarning("Failed to crawl {Url}: {Message}", entry.Location, ex.Message);
 			return CrawlResult.Failed(entry.Location, ex.Message);
 		}
@@ -162,46 +159,8 @@ public class AdaptiveCrawler(ILogger<AdaptiveCrawler> logger, HttpClient httpCli
 		}
 		catch (Exception ex)
 		{
-			stopwatch.Stop();
 			logger.LogWarning(ex, "Unexpected error crawling {Url}", entry.Location);
 			return CrawlResult.Failed(entry.Location, ex.Message);
-		}
-	}
-
-	private void AdjustConcurrency(SemaphoreSlim semaphore, List<long> responseTimes, ref int currentConcurrency)
-	{
-		if (responseTimes.Count == 0)
-			return;
-
-		var avgResponseTime = responseTimes.Average();
-		responseTimes.Clear();
-
-		var oldConcurrency = currentConcurrency;
-
-		if (avgResponseTime > SlowResponseThresholdMs && currentConcurrency > MinConcurrency)
-		{
-			// Slow responses - reduce concurrency
-			currentConcurrency = Math.Max(MinConcurrency, currentConcurrency - 2);
-		}
-		else if (avgResponseTime < FastResponseThresholdMs && currentConcurrency < MaxConcurrency)
-		{
-			// Fast responses - increase concurrency
-			currentConcurrency = Math.Min(MaxConcurrency, currentConcurrency + 2);
-		}
-
-		if (currentConcurrency != oldConcurrency)
-		{
-			logger.LogInformation("Adjusting concurrency from {Old} to {New} (avg response time: {AvgMs}ms)",
-				oldConcurrency, currentConcurrency, avgResponseTime);
-
-			// Adjust semaphore
-			var diff = currentConcurrency - oldConcurrency;
-			if (diff > 0)
-			{
-				_ = semaphore.Release(diff);
-			}
-			// Note: We can't easily reduce semaphore count, but the reduced concurrency
-			// will take effect as slots are released
 		}
 	}
 }

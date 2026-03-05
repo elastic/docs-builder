@@ -70,31 +70,102 @@ public static class IndexingDisplay
 		IEnumerable<IndexChannelInfo>? channelInfo = null
 	)
 	{
+		// decisionStats kept for API compatibility
+		_ = decisionStats;
+
 		AnsiConsole.WriteLine();
 
-		// Order: Total → Cached → Crawled → Skipped → Failed
 		var rows = new List<IRenderable>();
 
-		// Total discovered (from sitemap filtering)
-		var totalUrls = decisionStats?.TotalUrls ?? crawlStats.UrlsDiscovered;
-		rows.Add(new Markup($"[aqua]🔍 Total URLs:[/] [white]{totalUrls:N0}[/]"));
+		// Crawling section grid
+		var expectedCrawl = crawlStats.UrlsDiscovered;
+		var actualCrawled = crawlStats.UrlsCrawled;
+		var crawlDiff = expectedCrawl - actualCrawled;
 
-		// Cached (unchanged)
-		if (decisionStats is not null && decisionStats.UnchangedUrls > 0)
-			rows.Add(new Markup($"[blue]📋 Cached (unchanged):[/] [white]{decisionStats.UnchangedUrls:N0}[/]"));
+		var crawlGrid = new Grid()
+			.AddColumn(new GridColumn().NoWrap().PadRight(2))
+			.AddColumn(new GridColumn().NoWrap());
 
-		// Crawled
-		rows.Add(new Markup($"[green]✓ Crawled:[/] [white]{crawlStats.UrlsCrawled:N0}[/] pages"));
+		_ = crawlGrid.AddRow(
+			new Markup("[aqua]🔍 Expected Crawl[/]"),
+			new Markup($"[white]{expectedCrawl:N0}[/]")
+		);
+		_ = crawlGrid.AddRow(
+			new Markup("[green]   Actually Crawled[/]"),
+			new Markup($"[white]{actualCrawled:N0}[/]")
+		);
 
-		// Skipped
-		rows.Add(new Markup($"[grey]⊘ Skipped:[/] [white]{crawlStats.UrlsSkipped:N0}[/]"));
+		if (crawlDiff > 0)
+		{
+			if (crawlStats.UrlsSkipped > 0)
+			{
+				_ = crawlGrid.AddRow(
+					new Markup("[grey]      ⊘ Skipped[/]"),
+					new Markup($"[white]{crawlStats.UrlsSkipped:N0}[/]")
+				);
+			}
+			if (crawlStats.UrlsUnavailable > 0)
+			{
+				_ = crawlGrid.AddRow(
+					new Markup("[yellow]      ⚠ Unavailable[/]"),
+					new Markup($"[white]{crawlStats.UrlsUnavailable:N0}[/]")
+				);
+			}
+			if (crawlStats.UrlsFailed > 0)
+			{
+				_ = crawlGrid.AddRow(
+					new Markup("[red]      ✗ Failed[/]"),
+					new Markup($"[white]{crawlStats.UrlsFailed:N0}[/]")
+				);
+			}
+		}
 
-		// Failed
-		rows.Add(new Markup($"[red]✗ Failed:[/] [white]{crawlStats.UrlsFailed:N0}[/]"));
+		rows.Add(crawlGrid);
+		rows.Add(new Text(""));
 
+		// Indexing section grid
+		var expectedIndex = actualCrawled;
+		var actualIndexed = crawlStats.UrlsIndexed;
+
+		var indexGrid = new Grid()
+			.AddColumn(new GridColumn().NoWrap().PadRight(2))
+			.AddColumn(new GridColumn().NoWrap());
+
+		_ = indexGrid.AddRow(
+			new Markup("[yellow]📦 Expected Index[/]"),
+			new Markup($"[white]{expectedIndex:N0}[/]")
+		);
+		_ = indexGrid.AddRow(
+			new Markup("[green]   Actually Indexed[/]"),
+			new Markup($"[white]{actualIndexed:N0}[/]")
+		);
+
+		if (crawlStats.IndexingErrors > 0)
+		{
+			_ = indexGrid.AddRow(
+				new Markup("[red]      ✗ Failures[/]"),
+				new Markup($"[white]{crawlStats.IndexingErrors:N0}[/]")
+			);
+		}
+
+		rows.Add(indexGrid);
 		rows.Add(new Rule { Style = Style.Parse("grey") });
-		rows.Add(new Markup($"[cyan]📦 Downloaded:[/] [white]{FormatBytes(crawlStats.BytesDownloaded)}[/]"));
-		rows.Add(new Markup($"[magenta]⏱ Duration:[/] [white]{crawlStats.Elapsed:hh\\:mm\\:ss}[/]"));
+
+		// Metadata grid
+		var metaGrid = new Grid()
+			.AddColumn(new GridColumn().NoWrap().PadRight(2))
+			.AddColumn(new GridColumn().NoWrap());
+
+		_ = metaGrid.AddRow(
+			new Markup("[cyan]📦 Downloaded[/]"),
+			new Markup($"[white]{FormatBytes(crawlStats.BytesDownloaded)}[/]")
+		);
+		_ = metaGrid.AddRow(
+			new Markup("[magenta]⏱  Duration[/]"),
+			new Markup($"[white]{crawlStats.Elapsed:hh\\:mm\\:ss}[/]")
+		);
+
+		rows.Add(metaGrid);
 
 		// Show search aliases
 		var channels = channelInfo?.ToList();
@@ -102,7 +173,17 @@ public static class IndexingDisplay
 		{
 			rows.Add(new Rule { Style = Style.Parse("grey") });
 			var aliases = string.Join(", ", channels.Select(c => c.Alias));
-			rows.Add(new Markup($"[yellow]🔎 Search aliases:[/] [white]{aliases}[/]"));
+
+			var aliasGrid = new Grid()
+				.AddColumn(new GridColumn().NoWrap().PadRight(2))
+				.AddColumn(new GridColumn().NoWrap());
+
+			_ = aliasGrid.AddRow(
+				new Markup("[yellow]🔎 Search aliases[/]"),
+				new Markup($"[white]{aliases}[/]")
+			);
+
+			rows.Add(aliasGrid);
 		}
 
 		var panel = new Panel(new Rows(rows))
@@ -115,7 +196,8 @@ public static class IndexingDisplay
 
 		AnsiConsole.Write(panel);
 
-		if (crawlStats.UrlsFailed == 0 && crawlStats.UrlsCrawled > 0)
+		var hasErrors = crawlStats.UrlsFailed > 0 || crawlStats.IndexingErrors > 0;
+		if (!hasErrors && crawlStats.UrlsCrawled > 0)
 		{
 			AnsiConsole.WriteLine();
 			AnsiConsole.Write(
@@ -126,7 +208,13 @@ public static class IndexingDisplay
 		}
 	}
 
-	public static void DisplayDryRunWithCacheStats(CrawlDecisionStats stats, int staleUrls)
+	public static void DisplayDryRunWithCacheStats(
+		CrawlDecisionStats stats,
+		int staleUrls,
+		int translationsDiscovered = 0,
+		IReadOnlyDictionary<string, int>? translationsByLanguage = null,
+		HashSet<string>? languageFilter = null
+	)
 	{
 		SpectreConsoleTheme.WriteSection("Dry Run Results");
 
@@ -134,22 +222,45 @@ public static class IndexingDisplay
 			? 100.0 * stats.UnchangedUrls / stats.TotalUrls
 			: 0;
 
-		var panel = new Panel(
-			new Rows(
-				new Markup($"[green]🆕 New URLs:[/] [white]{stats.NewUrls:N0}[/]"),
-				new Markup($"[grey]✓ Unchanged (cached):[/] [white]{stats.UnchangedUrls:N0}[/]"),
-				new Markup($"[yellow]🔄 To verify (HTTP):[/] [white]{stats.PossiblyChangedUrls:N0}[/]"),
-				new Rule { Style = Style.Parse("grey") },
-				new Markup($"[aqua]Total URLs:[/] [white]{stats.TotalUrls:N0}[/]"),
-				new Markup($"[cyan]URLs to crawl:[/] [white]{stats.UrlsToCrawl:N0}[/]"),
-				staleUrls > 0
-					? new Markup($"[red]🗑 Stale (to delete):[/] [white]{staleUrls:N0}[/]")
-					: new Markup("[dim]No stale URLs[/]"),
-				new Rule { Style = Style.Parse("grey") },
-				new Markup("[dim]Estimated HTTP savings:[/]"),
-				new Markup($"[dim]  • Skipped requests: {stats.UnchangedUrls:N0} ({savingsPercent:F0}%)[/]")
-			)
-		)
+		var rows = new List<IRenderable>
+		{
+			new Markup($"[green]🆕 New URLs:[/] [white]{stats.NewUrls:N0}[/]"),
+			new Markup($"[grey]✓ Unchanged (cached):[/] [white]{stats.UnchangedUrls:N0}[/]"),
+			new Markup($"[yellow]🔄 To verify (HTTP):[/] [white]{stats.PossiblyChangedUrls:N0}[/]")
+		};
+
+		if (translationsDiscovered > 0)
+		{
+			rows.Add(new Rule { Style = Style.Parse("grey") });
+			rows.Add(new Markup($"[cyan]🌐 Translations discovered:[/] [white]{translationsDiscovered:N0}[/]"));
+
+			if (translationsByLanguage is { Count: > 0 })
+			{
+				var langBreakdown = string.Join(", ", translationsByLanguage
+					.OrderByDescending(kv => kv.Value)
+					.Select(kv => $"{GetLanguageFlag(kv.Key)} {kv.Value:N0}"));
+				rows.Add(new Markup($"[dim]  {langBreakdown}[/]"));
+			}
+		}
+
+		rows.Add(new Rule { Style = Style.Parse("grey") });
+		rows.Add(new Markup($"[aqua]Total URLs:[/] [white]{stats.TotalUrls + translationsDiscovered:N0}[/]"));
+		rows.Add(new Markup($"[cyan]URLs to crawl:[/] [white]{stats.UrlsToCrawl + translationsDiscovered:N0}[/]"));
+		rows.Add(staleUrls > 0
+			? new Markup($"[red]🗑 Stale (to delete):[/] [white]{staleUrls:N0}[/]")
+			: new Markup("[dim]No stale URLs[/]"));
+
+		if (languageFilter is { Count: > 0 })
+		{
+			var langs = string.Join(", ", languageFilter.Select(l => $"{GetLanguageFlag(l)} {l}"));
+			rows.Add(new Markup($"[yellow]🔤 Language filter:[/] [white]{langs}[/]"));
+		}
+
+		rows.Add(new Rule { Style = Style.Parse("grey") });
+		rows.Add(new Markup("[dim]Estimated HTTP savings:[/]"));
+		rows.Add(new Markup($"[dim]  • Skipped requests: {stats.UnchangedUrls:N0} ({savingsPercent:F0}%)[/]"));
+
+		var panel = new Panel(new Rows(rows))
 		{
 			Header = new PanelHeader("[aqua bold]📊 Crawl Analysis[/]"),
 			Border = BoxBorder.Rounded,
@@ -159,6 +270,61 @@ public static class IndexingDisplay
 
 		AnsiConsole.Write(panel);
 	}
+
+	/// <summary>
+	/// Displays translation discovery summary with a BreakdownChart.
+	/// </summary>
+	public static void DisplayTranslationDiscoverySummary(int found, int fromCache, IReadOnlyDictionary<string, int> byLanguage)
+	{
+		if (found == 0)
+		{
+			SpectreConsoleTheme.WriteInfo("No translations discovered");
+			return;
+		}
+
+		// Language colors for the chart
+		var colors = new Dictionary<string, Color>
+		{
+			["de"] = Color.Yellow,
+			["fr"] = Color.Blue,
+			["es"] = Color.Orange1,
+			["jp"] = Color.Red,
+			["ja"] = Color.Red,
+			["kr"] = Color.Cyan1,
+			["ko"] = Color.Cyan1,
+			["cn"] = Color.Green,
+			["zh"] = Color.Green,
+			["pt"] = Color.Magenta1
+		};
+
+		var chart = new BreakdownChart()
+			.Width(60);
+
+		foreach (var (lang, count) in byLanguage.OrderByDescending(kv => kv.Value))
+		{
+			var label = $"{GetLanguageFlag(lang)} {lang.ToUpper()}";
+			_ = chart.AddItem(label, count, colors.GetValueOrDefault(lang, Color.Grey));
+		}
+
+		var cacheInfo = fromCache > 0 ? $" [dim]({fromCache:N0} from cache)[/]" : "";
+		SpectreConsoleTheme.WriteSuccess($"Discovered [yellow]{found:N0}[/] translations across [cyan]{byLanguage.Count}[/] languages{cacheInfo}");
+		AnsiConsole.Write(chart);
+		AnsiConsole.WriteLine();
+	}
+
+	private static string GetLanguageFlag(string lang) =>
+		lang.ToLowerInvariant() switch
+		{
+			"de" => "🇩🇪",
+			"fr" => "🇫🇷",
+			"es" => "🇪🇸",
+			"jp" or "ja" => "🇯🇵",
+			"kr" or "ko" => "🇰🇷",
+			"cn" or "zh" => "🇨🇳",
+			"pt" => "🇧🇷",
+			"en" => "🇬🇧",
+			_ => "🌐"
+		};
 
 	public static void DisplayCacheLoadProgress(int loaded, string? currentUrl)
 	{

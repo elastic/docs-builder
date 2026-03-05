@@ -11,6 +11,7 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Tooling;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Http.Resilience;
 using Microsoft.Extensions.Logging;
 
 namespace CrawlIndexer;
@@ -42,12 +43,14 @@ public static class CrawlIndexerTooling
 		});
 
 		// Add crawl-indexer specific services with automatic gzip/deflate decompression
+		// and custom resilience settings (30s timeout for slow pages)
 		_ = builder.Services
 			.AddHttpClient<IAdaptiveCrawler, AdaptiveCrawler>()
 			.ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
 			{
 				AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
 			})
+			.AddStandardResilienceHandler(ConfigureCrawlerResilience)
 			.Services
 			.AddHttpClient<ISitemapParser, SitemapParser>()
 			.ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
@@ -55,12 +58,32 @@ public static class CrawlIndexerTooling
 				AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
 			})
 			.Services
+			.AddHttpClient<ITranslationDiscovery, TranslationDiscovery>()
+			.ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+			{
+				AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
+			})
+			.AddStandardResilienceHandler(ConfigureCrawlerResilience)
+			.Services
 			.AddSingleton<IVersionDiscovery, VersionDiscovery>()
-			.AddSingleton<CrawlDecisionMaker>();
+			.AddSingleton<CrawlDecisionMaker>()
+			.AddSingleton<TranslationCacheService>()
+			.AddSingleton<CrawlerSettings>()
+			.AddSingleton<CrawlerRateLimiter>();
 
 		// Set LiveDisplayState based on interactivity
 		LiveDisplayState.SuppressInfoLogs = isInteractive;
 
 		return builder;
+	}
+
+	private static void ConfigureCrawlerResilience(HttpStandardResilienceOptions options)
+	{
+		// Increase timeouts for slow pages
+		options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(30);
+		options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(120);
+
+		// Circuit breaker sampling duration must be at least 2x attempt timeout
+		options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(60);
 	}
 }
