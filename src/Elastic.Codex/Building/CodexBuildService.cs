@@ -93,7 +93,8 @@ public class CodexBuildService(
 		if (exporters is not null && buildContexts.Count > 0)
 		{
 			var firstContext = buildContexts[0].BuildContext;
-			sharedExporters = exporters.CreateMarkdownExporters(logFactory, firstContext, context.IndexNamespace).ToArray();
+			firstContext.Endpoints.BuildType = "codex";
+			sharedExporters = exporters.CreateMarkdownExporters(logFactory, firstContext).ToArray();
 			var startTasks = sharedExporters.Select(async e => await e.StartAsync(ctx));
 			await Task.WhenAll(startTasks);
 		}

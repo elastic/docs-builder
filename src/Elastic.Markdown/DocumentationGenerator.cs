@@ -144,7 +144,8 @@ public partial class DocumentationGenerator
 		if (mode == CompilationMode.Full)
 			HintUnusedSubstitutionKeys();
 
-		await ExtractEmbeddedStaticResources(ctx);
+		if (Context.AvailableExporters.Contains(Exporter.Html))
+			await ExtractEmbeddedStaticResources(ctx);
 
 		if (generateState)
 		{

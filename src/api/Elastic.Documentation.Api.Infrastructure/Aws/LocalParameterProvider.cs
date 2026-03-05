@@ -58,10 +58,6 @@ public class LocalParameterProvider : IParameterProvider
 				{
 					return GetEnv("DOCUMENTATION_KIBANA_APIKEY");
 				}
-			case "docs-elasticsearch-index":
-				{
-					return GetEnv("DOCUMENTATION_ELASTIC_INDEX", "semantic-docs-dev-latest");
-				}
 			default:
 				{
 					throw new ArgumentException($"Parameter '{name}' not found in {nameof(LocalParameterProvider)}");
