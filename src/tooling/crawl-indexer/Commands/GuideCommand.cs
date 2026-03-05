@@ -4,8 +4,8 @@
 
 using ConsoleAppFramework;
 using CrawlIndexer.Caching;
-using CrawlIndexer.Display;
 using CrawlIndexer.Crawling;
+using CrawlIndexer.Display;
 using CrawlIndexer.Html;
 using CrawlIndexer.Indexing;
 using Elastic.Documentation.Configuration;
@@ -61,6 +61,8 @@ public class GuideCommand(
 		Cancel ctx = default
 	)
 	{
+		_ = noSemantic; // TODO: Pass to orchestrator when single-channel mode is supported
+
 		// Validate and configure RPS
 		try
 		{
@@ -266,16 +268,15 @@ public class GuideCommand(
 
 			// Create exporter with shared transport
 			_ = enableAiEnrichment; // TODO: Integrate AI enrichment
-			var exporter = new GuideIndexerExporter(
+			using var exporter = new GuideIndexerExporter(
 				loggerFactory,
 				diagnostics,
 				errorTracker,
 				endpoints.Elasticsearch,
-				transport,
-				noSemantic
+				transport
 			);
 
-			// Bootstrap indices (detect hash match for index reuse)
+			// Bootstrap indices
 			await AnsiConsole.Status()
 				.AutoRefresh(true)
 				.Spinner(Spinner.Known.Dots)
@@ -283,9 +284,6 @@ public class GuideCommand(
 				{
 					await exporter.StartAsync(ctx);
 				});
-
-			// Display bootstrap status with hash details
-			IndexingDisplay.DisplayBootstrapStatus(exporter.GetChannelInfo());
 
 			// Crawl and index with progress display
 			SpectreConsoleTheme.WriteSection("Crawling & Indexing");
@@ -298,8 +296,6 @@ public class GuideCommand(
 			var skippedNotModified = 0;
 			var errorCount = 0;
 			var startTime = DateTime.UtcNow;
-
-			IReadOnlyList<IndexChannelInfo> channelInfo = [];
 
 			await progress.RunWithLiveAsync("Crawling guide documentation", async (progressCtx, _) =>
 			{
@@ -381,10 +377,8 @@ public class GuideCommand(
 					}
 				}
 
-				// Finalize and dispose inside progress context so it completes before showing "complete"
+				// Finalize inside progress context so it completes before showing "complete"
 				await exporter.FinalizeAsync(ctx);
-				channelInfo = exporter.GetChannelInfo().ToList();
-				await exporter.DisposeAsync();
 			});
 
 			if (skippedNotModified > 0)
@@ -394,7 +388,7 @@ public class GuideCommand(
 
 			// Display final summary
 			var stats = progress.GetStats();
-			IndexingDisplay.DisplayFinalSummary(stats, decisionStats, channelInfo.Count > 0 ? channelInfo : null);
+			IndexingDisplay.DisplayFinalSummary(stats, decisionStats);
 
 			logger.LogInformation(
 				"Crawling complete. Processed: {Processed}, Errors: {Errors}, Duration: {Duration}",

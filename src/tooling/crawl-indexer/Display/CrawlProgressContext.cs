@@ -25,7 +25,7 @@ public sealed class CrawlProgressContext : IDisposable
 
 	public CrawlProgressContext()
 	{
-		IsInteractive = !IsRunningOnCi() && !System.Console.IsOutputRedirected;
+		IsInteractive = !IsRunningOnCi() && !Console.IsOutputRedirected;
 		_startTime = DateTime.UtcNow;
 	}
 

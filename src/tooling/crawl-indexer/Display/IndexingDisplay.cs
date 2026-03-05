@@ -66,11 +66,9 @@ public static class IndexingDisplay
 
 	public static void DisplayFinalSummary(
 		CrawlStats crawlStats,
-		CrawlDecisionStats? decisionStats = null,
-		IEnumerable<IndexChannelInfo>? channelInfo = null
+		CrawlDecisionStats? decisionStats = null
 	)
 	{
-		// decisionStats kept for API compatibility
 		_ = decisionStats;
 
 		AnsiConsole.WriteLine();
@@ -166,25 +164,6 @@ public static class IndexingDisplay
 		);
 
 		rows.Add(metaGrid);
-
-		// Show search aliases
-		var channels = channelInfo?.ToList();
-		if (channels is { Count: > 0 })
-		{
-			rows.Add(new Rule { Style = Style.Parse("grey") });
-			var aliases = string.Join(", ", channels.Select(c => c.Alias));
-
-			var aliasGrid = new Grid()
-				.AddColumn(new GridColumn().NoWrap().PadRight(2))
-				.AddColumn(new GridColumn().NoWrap());
-
-			_ = aliasGrid.AddRow(
-				new Markup("[yellow]🔎 Search aliases[/]"),
-				new Markup($"[white]{aliases}[/]")
-			);
-
-			rows.Add(aliasGrid);
-		}
 
 		var panel = new Panel(new Rows(rows))
 		{
@@ -339,47 +318,6 @@ public static class IndexingDisplay
 	{
 		if (diagnostics is CrawlIndexerDiagnosticsCollector crawlDiagnostics)
 			crawlDiagnostics.WriteErrorsToConsole();
-	}
-
-	/// <summary>
-	/// Displays index bootstrap status with hash comparison details.
-	/// </summary>
-	public static void DisplayBootstrapStatus(IEnumerable<IndexChannelInfo> channelInfo)
-	{
-		SpectreConsoleTheme.WriteSection("Index Bootstrap");
-
-		var table = new Table()
-			.Border(TableBorder.Rounded)
-			.BorderColor(Color.Aqua)
-			.AddColumn(new TableColumn("[aqua]Alias[/]").LeftAligned())
-			.AddColumn(new TableColumn("[aqua]Index[/]").LeftAligned())
-			.AddColumn(new TableColumn("[aqua]Status[/]").Centered())
-			.AddColumn(new TableColumn("[aqua]Hash Match[/]").Centered());
-
-		foreach (var channel in channelInfo)
-		{
-			var status = channel.IsReusing
-				? "[green]Reusing existing[/]"
-				: string.IsNullOrEmpty(channel.ServerHash)
-					? "[yellow]New index[/]"
-					: "[yellow]Recreating[/]";
-
-			var hashMatch = string.IsNullOrEmpty(channel.ServerHash)
-				? "[dim]N/A[/]"
-				: channel.IsReusing
-					? $"[green]✓[/] [dim]{channel.ServerHash[..Math.Min(8, channel.ServerHash.Length)]}[/]"
-					: $"[red]✗[/] [dim]{channel.ServerHash[..Math.Min(8, channel.ServerHash.Length)]} → {channel.ChannelHash[..Math.Min(8, channel.ChannelHash.Length)]}[/]";
-
-			_ = table.AddRow(
-				new Markup(Markup.Escape(channel.Alias)),
-				new Markup(Markup.Escape(channel.IndexName)),
-				new Markup(status),
-				new Markup(hashMatch)
-			);
-		}
-
-		AnsiConsole.Write(table);
-		AnsiConsole.WriteLine();
 	}
 
 	private static string FormatBytes(long bytes)

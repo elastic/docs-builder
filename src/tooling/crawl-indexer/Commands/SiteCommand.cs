@@ -4,8 +4,8 @@
 
 using ConsoleAppFramework;
 using CrawlIndexer.Caching;
-using CrawlIndexer.Display;
 using CrawlIndexer.Crawling;
+using CrawlIndexer.Display;
 using CrawlIndexer.Html;
 using CrawlIndexer.Indexing;
 using Elastic.Documentation.Configuration;
@@ -155,6 +155,8 @@ public class SiteCommand(
 
 		// Configure error tracker for fail-fast
 		errorTracker.SetFailFastToken(failFastCts);
+
+		_ = noSemantic; // TODO: Pass to orchestrator when single-channel mode is supported
 
 		_ = diagnostics.StartAsync(ctx);
 
@@ -465,16 +467,15 @@ public class SiteCommand(
 
 			// Create exporter with shared transport
 			_ = enableAiEnrichment; // TODO: Integrate AI enrichment
-			var exporter = new SiteIndexerExporter(
-				loggerFactory,
-				diagnostics,
-				errorTracker,
-				endpoints.Elasticsearch,
-				transport,
-				noSemantic
-			);
+			using var exporter = new SiteIndexerExporter(
+					loggerFactory,
+					diagnostics,
+					errorTracker,
+					endpoints.Elasticsearch,
+					transport
+				);
 
-			// Bootstrap indices (detect hash match for index reuse)
+			// Bootstrap indices
 			await AnsiConsole.Status()
 				.AutoRefresh(true)
 				.Spinner(Spinner.Known.Dots)
@@ -482,9 +483,6 @@ public class SiteCommand(
 				{
 					await exporter.StartAsync(ctx);
 				});
-
-			// Display bootstrap status with hash details
-			IndexingDisplay.DisplayBootstrapStatus(exporter.GetChannelInfo());
 
 			// Crawl and index with progress display
 			SpectreConsoleTheme.WriteSection("Crawling & Indexing");
@@ -498,8 +496,6 @@ public class SiteCommand(
 			var errorCount = 0;
 			var missingTranslations = new List<(string Url, string Language)>();
 			var startTime = DateTime.UtcNow;
-
-			IReadOnlyList<IndexChannelInfo> channelInfo = [];
 
 			await progress.RunWithLiveAsync("Crawling site pages", async (progressCtx, _) =>
 			{
@@ -600,10 +596,8 @@ public class SiteCommand(
 					}
 				}
 
-				// Finalize and dispose inside progress context so it completes before showing "complete"
+				// Finalize inside progress context so it completes before showing "complete"
 				await exporter.FinalizeAsync(ctx);
-				channelInfo = exporter.GetChannelInfo().ToList();
-				await exporter.DisposeAsync();
 			});
 
 			if (skippedNotModified > 0)
@@ -628,7 +622,7 @@ public class SiteCommand(
 			// Display final summary
 			var stats = progress.GetStats();
 			var finalStats = CrawlDecisionMaker.GetStats(allDecisions);
-			IndexingDisplay.DisplayFinalSummary(stats, finalStats, channelInfo.Count > 0 ? channelInfo : null);
+			IndexingDisplay.DisplayFinalSummary(stats, finalStats);
 
 			logger.LogInformation(
 				"Crawling complete. Processed: {Processed}, Errors: {Errors}, Duration: {Duration}",
@@ -860,9 +854,7 @@ public class SiteCommand(
 		IReadOnlyList<SitemapEntry> urls,
 		List<string> exclusions,
 		HashSet<string> languageFilter
-	)
-	{
-		return urls
+	) => urls
 			.Where(u =>
 			{
 				var uri = new Uri(u.Location);
@@ -890,7 +882,6 @@ public class SiteCommand(
 				return true;
 			})
 			.ToList();
-	}
 
 	/// <summary>
 	/// Distributes maxPages evenly across categories for validation sampling.
