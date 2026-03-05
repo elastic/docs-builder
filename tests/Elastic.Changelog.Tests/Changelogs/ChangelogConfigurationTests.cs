@@ -900,4 +900,112 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			FileSystem.Directory.SetCurrentDirectory(originalDir);
 		}
 	}
+
+	// -----------------------------------------------------------------------
+	// bundle section: repo, owner, directory
+	// (consumed by 'changelog add --release-version' and 'changelog gh-release' for config fallbacks)
+	// -----------------------------------------------------------------------
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_BundleSection_ParsesRepoOwnerDirectory()
+	{
+		// Arrange
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		FileSystem.Directory.CreateDirectory(docsDir);
+		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
+		// language=yaml
+		await FileSystem.File.WriteAllTextAsync(configPath,
+			"""
+			bundle:
+			  repo: apm-agent-dotnet
+			  owner: elastic
+			  directory: docs/changelog
+			""",
+			TestContext.Current.CancellationToken
+		);
+
+		var originalDir = FileSystem.Directory.GetCurrentDirectory();
+		try
+		{
+			FileSystem.Directory.SetCurrentDirectory(configDir);
+			// Act
+			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current.CancellationToken);
+
+			// Assert
+			config.Should().NotBeNull();
+			Collector.Errors.Should().Be(0);
+			config!.Bundle.Should().NotBeNull();
+			config.Bundle!.Repo.Should().Be("apm-agent-dotnet");
+			config.Bundle.Owner.Should().Be("elastic");
+			config.Bundle.Directory.Should().Be("docs/changelog");
+		}
+		finally
+		{
+			FileSystem.Directory.SetCurrentDirectory(originalDir);
+		}
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_BundleSectionAbsent_BundleIsNull()
+	{
+		// Arrange
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		FileSystem.Directory.CreateDirectory(docsDir);
+		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
+		// language=yaml
+		await FileSystem.File.WriteAllTextAsync(configPath,
+			"""
+			lifecycles:
+			  - ga
+			""",
+			TestContext.Current.CancellationToken
+		);
+
+		var originalDir = FileSystem.Directory.GetCurrentDirectory();
+		try
+		{
+			FileSystem.Directory.SetCurrentDirectory(configDir);
+			// Act
+			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current.CancellationToken);
+
+			// Assert
+			config.Should().NotBeNull();
+			Collector.Errors.Should().Be(0);
+			config!.Bundle.Should().BeNull("no bundle section in config means Bundle is null, so fallbacks return null");
+		}
+		finally
+		{
+			FileSystem.Directory.SetCurrentDirectory(originalDir);
+		}
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_NoConfigFile_ReturnsDefaultWithNullBundle()
+	{
+		// Arrange – no changelog.yml on disk; simulates running from a directory without a config
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(configDir);
+
+		var originalDir = FileSystem.Directory.GetCurrentDirectory();
+		try
+		{
+			FileSystem.Directory.SetCurrentDirectory(configDir);
+			// Act
+			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current.CancellationToken);
+
+			// Assert – ChangelogConfiguration.Default is returned; Bundle is null so CLI fallbacks apply
+			config.Should().NotBeNull("LoadChangelogConfiguration returns Default when no file is found");
+			Collector.Errors.Should().Be(0);
+			config!.Bundle.Should().BeNull("Default config has no bundle section");
+		}
+		finally
+		{
+			FileSystem.Directory.SetCurrentDirectory(originalDir);
+		}
+	}
 }
