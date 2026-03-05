@@ -232,16 +232,16 @@ IFileSystem? fileSystem = null
 			}
 		}
 
-		// If still no products, fall back to products.default or repo name inference
-		if (input.Products.Count == 0)
-		{
-			var inferredProducts = InferProducts(config.ProductsConfiguration, input.Repo);
-			if (inferredProducts != null)
-				input = input with { Products = inferredProducts };
-		}
+	// If still no products, fall back to products.default or repo name inference
+	if (input.Products.Count == 0)
+	{
+		var inferredProducts = InferProducts(config.ProductsConfiguration, input.Repo);
+		if (inferredProducts != null)
+			input = input with { Products = inferredProducts };
+	}
 
-		// Validate required fields
-		if (!_validator.ValidateRequiredFields(collector, input, prFetchFailed))
+	// Validate required fields
+	if (!_validator.ValidateRequiredFields(collector, input, prFetchFailed))
 			return false;
 
 		// Validate against configuration
@@ -318,15 +318,15 @@ IFileSystem? fileSystem = null
 		else if (!issueResult.FetchFailed)
 			return false;
 
-		// If still no products, fall back to products.default or repo name inference
-		if (input.Products.Count == 0)
-		{
-			var inferredProducts = InferProducts(config.ProductsConfiguration, input.Repo);
-			if (inferredProducts != null)
-				input = input with { Products = inferredProducts };
-		}
+	// If still no products, fall back to products.default or repo name inference
+	if (input.Products.Count == 0)
+	{
+		var inferredProducts = InferProducts(config.ProductsConfiguration, input.Repo);
+		if (inferredProducts != null)
+			input = input with { Products = inferredProducts };
+	}
 
-		if (!_validator.ValidateRequiredFields(collector, input, issueResult.FetchFailed, fromIssue: true))
+	if (!_validator.ValidateRequiredFields(collector, input, issueResult.FetchFailed, fromIssue: true))
 			return false;
 
 		if (!_validator.ValidateAgainstConfiguration(collector, input, config))
