@@ -21,7 +21,7 @@ You cannot mix the two modes. Passing any option-based flag together with a prof
 Profile-based commands discover the changelog configuration automatically (no `--config` flag): they look for `changelog.yml` in the current directory, then `docs/changelog.yml`.
 If neither file is found, the command returns an error with instructions to run `docs-builder changelog init` or to re-run from the folder where the file exists.
 
-Option-based commands ignore the `bundles.profiles` section of the changelog configuration file.
+Option-based commands ignore the `bundle.profiles` section of the changelog configuration file.
 
 ## Arguments
 
@@ -121,14 +121,7 @@ You must choose one method for determining what's in the bundle (`--all`, `--inp
 `--release-version <string?>`
 :   Fetch the PR list from a GitHub release and use it as the bundle filter.
 :   Provide a release tag (for example, `"v9.2.0"`) or `"latest"` for the most recent release.
-:   Requires `--repo`.
-:   When `--output-products` is not specified, the product, target version, and lifecycle are inferred automatically from the release tag and repository name.
-:   Set `--owner` to override the default owner (`elastic`).
-
-`--release-version <string?>`
-:   Fetch the PR list from a GitHub release and use it as the bundle filter.
-:   Provide a release tag (for example, `"v9.2.0"`) or `"latest"` for the most recent release.
-:   Requires `--repo`. Mutually exclusive with `--all`, `--input-products`, `--prs`, and `--issues`.
+:    Requires `--repo` (or `bundle.repo` in `changelog.yml`).
 :   When `--output-products` is not specified, the product, target version, and lifecycle are inferred automatically from the release tag and repository name.
 :   Set `--owner` to override the default owner (`elastic`).
 
