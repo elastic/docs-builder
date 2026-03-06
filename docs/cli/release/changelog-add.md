@@ -18,6 +18,9 @@ docs-builder changelog add [options...] [-h|--help]
 `--areas <string[]?>`
 :   Optional: Areas affected (comma-separated or specify multiple times).
 
+`--concise`
+:   Optional: Omit schema reference comments from the generated YAML files. Useful in CI workflows to produce compact output.
+
 `--config <string?>`
 :   Optional: Path to the changelog.yml configuration file. Defaults to `docs/changelog.yml`.
 

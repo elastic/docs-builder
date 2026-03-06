@@ -47,6 +47,11 @@ public record CreateChangelogArguments
 	/// Whether to extract linked issues/PRs from PR/issue body. null = use config default.
 	/// </summary>
 	public bool? ExtractIssues { get; init; }
+
+	/// <summary>
+	/// When true, omit schema reference comments from generated YAML files.
+	/// </summary>
+	public bool Concise { get; init; }
 }
 
 /// <summary>

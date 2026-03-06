@@ -227,6 +227,7 @@ internal sealed partial class ChangelogCommand(
 	/// <param name="subtype">Optional: Subtype for breaking changes (api, behavioral, configuration, etc.)</param>
 	/// <param name="title">Optional: A short, user-facing title (max 80 characters). Required if neither --prs nor --issues is specified. If --prs and --title are specified, the latter value is used instead of what exists in the PR.</param>
 	/// <param name="type">Optional: Type of change (feature, enhancement, bug-fix, breaking-change, etc.). Required if neither --prs nor --issues is specified. If mappings are configured, type can be derived from the PR or issue.</param>
+	/// <param name="concise">Optional: Omit schema reference comments from generated YAML files. Useful in CI to produce compact output.</param>
 	/// <param name="usePrNumber">Optional: Use PR numbers for filenames instead of timestamp-slug. With both --prs (which creates one changelog per specified PR) and --issues (which creates one changelog per specified issue), each changelog filename will be derived from its PR numbers. Requires --prs or --issues. Mutually exclusive with --use-issue-number.</param>
 	/// <param name="useIssueNumber">Optional: Use issue numbers for filenames instead of timestamp-slug. With both --prs (which creates one changelog per specified PR) and --issues (which creates one changelog per specified issue), each changelog filename will be derived from its issues. Requires --prs or --issues. Mutually exclusive with --use-pr-number.</param>
 	/// <param name="releaseVersion">Optional: GitHub release tag to fetch PRs from (e.g., "v9.2.0" or "latest"). When specified, creates one changelog per PR in the release notes. Requires --repo (or bundle.repo in changelog.yml). Mutually exclusive with --prs and --issues. Does not create a bundle; use 'changelog gh-release' for that.</param>
@@ -236,6 +237,7 @@ internal sealed partial class ChangelogCommand(
 		[ProductInfoParser] List<ProductArgument>? products = null,
 		string? action = null,
 		string[]? areas = null,
+		bool concise = false,
 		string? config = null,
 		string? description = null,
 		bool noExtractReleaseNotes = false,
@@ -463,7 +465,8 @@ internal sealed partial class ChangelogCommand(
 			UseIssueNumber = useIssueNumber,
 			StripTitlePrefix = stripTitlePrefix,
 			ExtractReleaseNotes = extractReleaseNotes,
-			ExtractIssues = extractIssues
+			ExtractIssues = extractIssues,
+			Concise = concise
 		};
 
 		serviceInvoker.AddCommand(service, input,
