@@ -132,7 +132,7 @@ When you run the `changelog add` command without the `--products` option, it res
 1. **`--products` CLI option** — always takes priority.
 2. **`pivot.products` label mapping** — if `pivot.products` is configured and the PR or issue has labels that match, those products are used. Multiple matching entries are all applied.
 3. **`products.default` in `changelog.yml`** — the configured default products are used.
-4. **Git repository inference** — if the current working directory is a git repository, the repository name is matched against known product IDs.
+4. **Repository name inference** — if `--repo` is specified (or `bundle.repo` is set in `changelog.yml`), the repository name is matched against known product IDs in `products.yml`.
 5. **Error** — if none of the above resolves to at least one product, an error is raised.
 
 Product-specific `rules.create` rules are evaluated *after* products are resolved from labels, so label-derived products correctly participate in per-product create rule checks.
