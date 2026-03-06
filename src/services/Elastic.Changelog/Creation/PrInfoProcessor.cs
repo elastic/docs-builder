@@ -196,7 +196,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		return derived;
 	}
 
-	private bool ShouldSkipPrDueToLabelBlockers(
+	internal static bool ShouldSkipPrDueToLabelBlockers(
 		string[] prLabels,
 		IReadOnlyList<ProductArgument> products,
 		ChangelogConfiguration config,
@@ -305,6 +305,49 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 			logger.LogWarning(ex, "Error fetching PR information from GitHub. Continuing with provided values.");
 			return null;
 		}
+	}
+
+	/// <summary>
+	/// Returns true only when every product defined in the create rules would be blocked by the given labels.
+	/// When no per-product overrides exist, checks global rules only.
+	/// </summary>
+	internal static bool AreAllProductsBlocked(string[] prLabels, CreateRules? createRules)
+	{
+		if (createRules == null)
+			return false;
+
+		if (createRules.ByProduct is { Count: > 0 })
+		{
+			foreach (var (_, productRules) in createRules.ByProduct)
+			{
+				if (!IsBlockedByRules(prLabels, productRules))
+					return false;
+			}
+			return true;
+		}
+
+		return IsBlockedByRules(prLabels, createRules);
+	}
+
+	/// <summary>Checks if a single set of create rules blocks the given labels (no diagnostics).</summary>
+	internal static bool IsBlockedByRules(string[] prLabels, CreateRules rules)
+	{
+		if (rules.Labels is not { Count: > 0 })
+			return false;
+
+		return rules.Mode switch
+		{
+			FieldMode.Exclude => rules.Match switch
+			{
+				MatchMode.All => prLabels.All(label => rules.Labels.Contains(label, StringComparer.OrdinalIgnoreCase)),
+				_ => rules.Labels.Any(label => prLabels.Contains(label, StringComparer.OrdinalIgnoreCase))
+			},
+			_ => rules.Match switch
+			{
+				MatchMode.All => !prLabels.All(label => rules.Labels.Contains(label, StringComparer.OrdinalIgnoreCase)),
+				_ => !prLabels.Any(label => rules.Labels.Contains(label, StringComparer.OrdinalIgnoreCase))
+			}
+		};
 	}
 
 	internal static string? MapLabelsToType(string[] labels, IReadOnlyDictionary<string, string> labelToTypeMapping) => labels
