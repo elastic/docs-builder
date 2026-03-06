@@ -316,6 +316,11 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		if (createRules == null)
 			return false;
 
+		// Global rules must block (products without overrides fall back to global)
+		if (!IsBlockedByRules(prLabels, createRules))
+			return false;
+
+		// Each per-product override must also block (overrides replace global entirely)
 		if (createRules.ByProduct is { Count: > 0 })
 		{
 			foreach (var (_, productRules) in createRules.ByProduct)
@@ -323,10 +328,9 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 				if (!IsBlockedByRules(prLabels, productRules))
 					return false;
 			}
-			return true;
 		}
 
-		return IsBlockedByRules(prLabels, createRules);
+		return true;
 	}
 
 	/// <summary>Checks if a single set of create rules blocks the given labels (no diagnostics).</summary>
