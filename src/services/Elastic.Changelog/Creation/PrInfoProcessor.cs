@@ -355,26 +355,33 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		var products = new List<ProductArgument>();
 
-		foreach (var label in labels)
+		IEnumerable<ProductArgument> GetProducts()
 		{
-			if (!labelToProductsMapping.TryGetValue(label, out var productSpec))
-				continue;
-			if (!seen.Add(productSpec))
-				continue;
+			return labels
+				.Where(label => labelToProductsMapping.TryGetValue(label, out _))
+				.Select(label =>
+				{
+					if (!labelToProductsMapping.TryGetValue(label, out var productSpec))
+						return null;
 
-			var parts = productSpec.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-			if (parts.Length == 0)
-				continue;
+					if (!seen.Add(productSpec))
+						return null;
 
-			products.Add(new ProductArgument
-			{
-				Product = parts[0],
-				Target = parts.Length > 1 ? parts[1] : null,
-				Lifecycle = parts.Length > 2 ? parts[2] : null
-			});
+					var parts = productSpec.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+					if (parts.Length == 0)
+						return null;
+
+					return new ProductArgument
+					{
+						Product = parts[0],
+						Target = parts.Length > 1 ? parts[1] : null,
+						Lifecycle = parts.Length > 2 ? parts[2] : null
+					};
+				})
+				.Where(product => product is not null)!;
 		}
 
-		return products;
+		return GetProducts().ToList();
 	}
 }
 
