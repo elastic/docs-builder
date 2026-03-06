@@ -353,7 +353,6 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 	internal static List<ProductArgument> MapLabelsToProducts(string[] labels, IReadOnlyDictionary<string, string> labelToProductsMapping)
 	{
 		var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-		var products = new List<ProductArgument>();
 
 		IEnumerable<ProductArgument> GetProducts()
 		{
