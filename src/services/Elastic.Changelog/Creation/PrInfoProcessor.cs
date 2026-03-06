@@ -372,7 +372,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 
 					return new ProductArgument
 					{
-						Product = parts[0].Replace('_', '-'),
+					Product = parts[0].Replace('_', '-'),
 						Target = parts.Length > 1 ? parts[1] : null,
 						Lifecycle = parts.Length > 2 ? parts[2] : null
 					};
