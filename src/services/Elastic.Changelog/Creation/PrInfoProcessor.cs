@@ -352,69 +352,69 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 	/// </summary>
 	internal static List<ProductArgument> MapLabelsToProducts(string[] labels, IReadOnlyDictionary<string, string> labelToProductsMapping)
 	{
-	var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-	IEnumerable<ProductArgument> GetProducts()
-	{
-		return labels
-			.Where(label => labelToProductsMapping.TryGetValue(label, out _))
-			.Select(label =>
-			{
-				if (!labelToProductsMapping.TryGetValue(label, out var productSpec))
-					return null;
-
-				if (!seen.Add(productSpec))
-					return null;
-
-				var parts = productSpec.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-				if (parts.Length == 0)
-					return null;
-
-				return new ProductArgument
+		IEnumerable<ProductArgument> GetProducts()
+		{
+			return labels
+				.Where(label => labelToProductsMapping.TryGetValue(label, out _))
+				.Select(label =>
 				{
-					Product = parts[0].Replace('_', '-'),
-					Target = parts.Length > 1 ? parts[1] : null,
-					Lifecycle = parts.Length > 2 ? parts[2] : null
-				};
-			})
-			.Where(product => product is not null)!;
+					if (!labelToProductsMapping.TryGetValue(label, out var productSpec))
+						return null;
+
+					if (!seen.Add(productSpec))
+						return null;
+
+					var parts = productSpec.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+					if (parts.Length == 0)
+						return null;
+
+					return new ProductArgument
+					{
+						Product = parts[0].Replace('_', '-'),
+						Target = parts.Length > 1 ? parts[1] : null,
+						Lifecycle = parts.Length > 2 ? parts[2] : null
+					};
+				})
+				.Where(product => product is not null)!;
+		}
+
+		return GetProducts().ToList();
 	}
 }
 
-	return GetProducts().ToList();
-}
-
-/// <summary>
-/// Result of processing PR information
-/// </summary>
-public record PrProcessingResult
-{
-	public required bool FetchFailed { get; init; }
-	public required bool ShouldSkip { get; init; }
-	public DerivedPrFields? DerivedFields { get; init; }
-	public GitHubPrInfo? PrInfo { get; init; }
-}
-
-/// <summary>
-/// Fields derived from PR or issue information
-/// </summary>
-public record DerivedPrFields
-{
-	public string? Title { get; set; }
-	public string? Type { get; set; }
-	public string? Description { get; set; }
-	public string[]? Areas { get; set; }
-	public bool? Highlight { get; set; }
-	public string[]? Issues { get; set; }
+	/// <summary>
+	/// Result of processing PR information
+	/// </summary>
+	public record PrProcessingResult
+	{
+		public required bool FetchFailed { get; init; }
+		public required bool ShouldSkip { get; init; }
+		public DerivedPrFields? DerivedFields { get; init; }
+		public GitHubPrInfo? PrInfo { get; init; }
+	}
 
 	/// <summary>
-	/// Products derived from PR/issue labels via pivot.products mapping.
-	/// Only set when labels matched and no products were explicitly provided.
+	/// Fields derived from PR or issue information
 	/// </summary>
-	public IReadOnlyList<ProductArgument>? Products { get; set; }
+	public record DerivedPrFields
+	{
+		public string? Title { get; set; }
+		public string? Type { get; set; }
+		public string? Description { get; set; }
+		public string[]? Areas { get; set; }
+		public bool? Highlight { get; set; }
+		public string[]? Issues { get; set; }
 
-	/// <summary>
-	/// Linked PRs derived from issue body (when creating changelog from --issues)
-	/// </summary>
-	public string[]? Prs { get; set; }
-}
+		/// <summary>
+		/// Products derived from PR/issue labels via pivot.products mapping.
+		/// Only set when labels matched and no products were explicitly provided.
+		/// </summary>
+		public IReadOnlyList<ProductArgument>? Products { get; set; }
+
+		/// <summary>
+		/// Linked PRs derived from issue body (when creating changelog from --issues)
+		/// </summary>
+		public string[]? Prs { get; set; }
+	}
