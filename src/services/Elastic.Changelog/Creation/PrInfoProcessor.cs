@@ -350,19 +350,20 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 	/// Maps PR/issue labels to product arguments using the pivot.products mapping.
 	/// All distinct matching product spec strings are collected (same behavior as areas).
 	/// </summary>
-	internal static List<ProductArgument> MapLabelsToProducts(string[] labels, IReadOnlyDictionary<string, string> labelToProductsMapping) => labels
+	internal static List<ProductArgument> MapLabelsToProducts(string[] labels, IReadOnlyDictionary<string, string> labelToProductsMapping)
+	{
+		var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		return labels
 			.Select(label =>
 				labelToProductsMapping.TryGetValue(label, out var productSpec)
 					? productSpec
 					: null)
-			.Where(productSpec => !string.IsNullOrEmpty(productSpec))
-			.Distinct(StringComparer.OrdinalIgnoreCase)
+			.Where(productSpec => !string.IsNullOrEmpty(productSpec) && seen.Add(productSpec!))
 			.Select(productSpec =>
 			{
 				var parts = productSpec!.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 				if (parts.Length == 0)
 					return null;
-
 				return new ProductArgument
 				{
 					Product = parts[0].Replace('_', '-'),
@@ -373,7 +374,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 			.Where(product => product != null)
 			.Cast<ProductArgument>()
 			.ToList();
-}
+	}
 
 /// <summary>
 /// Result of processing PR information
