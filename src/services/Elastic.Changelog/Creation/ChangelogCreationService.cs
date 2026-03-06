@@ -125,9 +125,9 @@ IFileSystem? fileSystem = null
 		};
 
 	/// <summary>
-	/// Infers products from configuration defaults or git repository name.
+	/// Infers products from configuration defaults or repository name.
 	/// </summary>
-	private IReadOnlyList<ProductArgument>? InferProducts(ProductsConfig? productsConfig)
+	private IReadOnlyList<ProductArgument>? InferProducts(ProductsConfig? productsConfig, string? repoName)
 	{
 		// First, try config defaults
 		if (productsConfig?.Default is { Count: > 0 })
@@ -142,8 +142,8 @@ IFileSystem? fileSystem = null
 			return products;
 		}
 
-		// Second, try generic product inference from current git repo
-		var product = _productInferService.InferProductFromCurrentRepository();
+		// Second, try inference from the --repo argument (or bundle.repo from config)
+		var product = repoName != null ? _productInferService.InferProductFromRepository(repoName) : null;
 		if (product == null)
 		{
 			_logger.LogDebug("Could not infer product from repository");
@@ -232,10 +232,10 @@ IFileSystem? fileSystem = null
 			}
 		}
 
-		// If still no products, fall back to products.default or git repo inference
+		// If still no products, fall back to products.default or repo name inference
 		if (input.Products.Count == 0)
 		{
-			var inferredProducts = InferProducts(config.ProductsConfiguration);
+			var inferredProducts = InferProducts(config.ProductsConfiguration, input.Repo);
 			if (inferredProducts != null)
 				input = input with { Products = inferredProducts };
 		}
@@ -318,10 +318,10 @@ IFileSystem? fileSystem = null
 		else if (!issueResult.FetchFailed)
 			return false;
 
-		// If still no products, fall back to products.default or git repo inference
+		// If still no products, fall back to products.default or repo name inference
 		if (input.Products.Count == 0)
 		{
-			var inferredProducts = InferProducts(config.ProductsConfiguration);
+			var inferredProducts = InferProducts(config.ProductsConfiguration, input.Repo);
 			if (inferredProducts != null)
 				input = input with { Products = inferredProducts };
 		}
