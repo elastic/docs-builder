@@ -8,7 +8,6 @@ namespace Elastic.Changelog.Evaluation;
 public record EvaluatePrArguments
 {
 	public required string Config { get; init; }
-	public required string ChangelogDir { get; init; }
 	public required string Owner { get; init; }
 	public required string Repo { get; init; }
 	public required int PrNumber { get; init; }

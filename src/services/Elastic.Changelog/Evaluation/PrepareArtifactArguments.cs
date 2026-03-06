@@ -16,5 +16,4 @@ public record PrepareArtifactArguments
 	public required string HeadSha { get; init; }
 	public string? LabelTable { get; init; }
 	public string? Config { get; init; }
-	public required string ChangelogDir { get; init; }
 }

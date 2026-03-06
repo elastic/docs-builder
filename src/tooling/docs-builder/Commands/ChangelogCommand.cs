@@ -1174,7 +1174,6 @@ internal sealed partial class ChangelogCommand(
 	/// (CI) Evaluate a PR for changelog generation eligibility. Performs pre-flight checks (body-only edit, bot loop, manual edit), loads config, checks label rules, resolves title/type, and sets GitHub Actions outputs.
 	/// </summary>
 	/// <param name="config">Path to the changelog.yml configuration file</param>
-	/// <param name="changelogDir">Path to the changelog directory (relative to repo root)</param>
 	/// <param name="owner">GitHub repository owner</param>
 	/// <param name="repo">GitHub repository name</param>
 	/// <param name="prNumber">Pull request number</param>
@@ -1191,7 +1190,6 @@ internal sealed partial class ChangelogCommand(
 	[Command("evaluate-pr")]
 	public async Task<int> EvaluatePr(
 		string config,
-		string changelogDir,
 		string owner,
 		string repo,
 		int prNumber,
@@ -1215,7 +1213,6 @@ internal sealed partial class ChangelogCommand(
 		var args = new EvaluatePrArguments
 		{
 			Config = config,
-			ChangelogDir = changelogDir,
 			Owner = owner,
 			Repo = repo,
 			PrNumber = prNumber,
@@ -1248,8 +1245,7 @@ internal sealed partial class ChangelogCommand(
 	/// <param name="headRef">PR head branch ref</param>
 	/// <param name="headSha">PR head commit SHA</param>
 	/// <param name="labelTable">Optional: markdown label table from evaluate-pr</param>
-	/// <param name="config">Optional: path to changelog.yml</param>
-	/// <param name="changelogDir">Changelog directory path</param>
+	/// <param name="config">Optional: path to changelog.yml (used to extract creation rules and changelog directory for metadata)</param>
 	/// <param name="ctx"></param>
 	[Command("prepare-artifact")]
 	public async Task<int> PrepareArtifact(
@@ -1260,7 +1256,6 @@ internal sealed partial class ChangelogCommand(
 		int prNumber,
 		string headRef,
 		string headSha,
-		string changelogDir,
 		string? labelTable = null,
 		string? config = null,
 		Cancel ctx = default
@@ -1280,8 +1275,7 @@ internal sealed partial class ChangelogCommand(
 			HeadRef = headRef,
 			HeadSha = headSha,
 			LabelTable = labelTable,
-			Config = config,
-			ChangelogDir = changelogDir
+			Config = config
 		};
 
 		serviceInvoker.AddCommand(service, args,

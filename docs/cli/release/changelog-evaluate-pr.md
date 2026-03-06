@@ -22,9 +22,6 @@ docs-builder changelog evaluate-pr [options...] [-h|--help]
 `--config <string>`
 :   Path to the `changelog.yml` configuration file.
 
-`--changelog-dir <string>`
-:   Path to the changelog directory (relative to repository root).
-
 `--owner <string>`
 :   GitHub repository owner.
 
@@ -87,9 +84,8 @@ docs-builder changelog evaluate-pr [options...] [-h|--help]
 Evaluate PR #42 in the `elastic/elasticsearch` repository:
 
 ```sh
-docs-builder changelog evaluate-pr \
+        docs-builder changelog evaluate-pr \
   --config docs/changelog.yml \
-  --changelog-dir docs/changelog \
   --owner elastic \
   --repo elasticsearch \
   --pr-number 42 \

@@ -30,14 +30,18 @@ public class ChangelogPrEvaluationService(
 
 	public async Task<bool> EvaluatePr(IDiagnosticsCollector collector, EvaluatePrArguments input, Cancel ctx)
 	{
-		// 1. Body-only edit check
+		// Body-only edit check
 		if (input.EventAction == "edited" && !input.TitleChanged)
 		{
 			_logger.LogInformation("Skipping: body-only edit (title unchanged)");
 			return await SetOutputs(PrEvaluationResult.Skipped);
 		}
 
-		// 2. Bot loop detection
+		var config = await _configLoader.LoadChangelogConfiguration(collector, input.Config, ctx)
+			?? ChangelogConfiguration.Default;
+		var changelogDir = config.Bundle?.Directory ?? "docs/changelog";
+
+		// Commit bot loop detection
 		if (input.EventAction == "synchronize")
 		{
 			var commitAuthor = await gitHubPrService.FetchCommitAuthorAsync(input.Owner, input.Repo, input.HeadSha, ctx);
@@ -48,8 +52,8 @@ public class ChangelogPrEvaluationService(
 			}
 		}
 
-		// 3. Manual edit detection
-		var changelogFilePath = $"{input.ChangelogDir}/{input.PrNumber}.yaml";
+		// Manual edit detection
+		var changelogFilePath = $"{changelogDir}/{input.PrNumber}.yaml";
 		var fileAuthor = await gitHubPrService.FetchLastFileCommitAuthorAsync(
 			input.Owner, input.Repo, changelogFilePath, input.HeadRef, ctx
 		);
@@ -59,18 +63,14 @@ public class ChangelogPrEvaluationService(
 			return await SetOutputs(PrEvaluationResult.ManuallyEdited);
 		}
 
-		// 4. Load config
-		var config = await _configLoader.LoadChangelogConfiguration(collector, input.Config, ctx)
-			?? ChangelogConfiguration.Default;
-
-		// 5. Label-based skip check
+		// Label-based skip check
 		if (PrInfoProcessor.AreAllProductsBlocked(input.PrLabels, config.Rules?.Create))
 		{
 			_logger.LogInformation("Skipping: all products blocked by label rules");
 			return await SetOutputs(PrEvaluationResult.Skipped);
 		}
 
-		// 6. Resolve title
+		// Resolve title
 		var title = input.PrTitle;
 		if (input.StripTitlePrefix)
 			title = ChangelogTextUtilities.StripSquareBracketPrefix(title);
@@ -81,18 +81,16 @@ public class ChangelogPrEvaluationService(
 			return await SetOutputs(PrEvaluationResult.NoTitle);
 		}
 
-		// 7. Resolve type
+		// Resolve type
 		string? resolvedType = null;
-		string? labelTable = null;
 		if (config.LabelToType is { Count: > 0 })
 			resolvedType = PrInfoProcessor.MapLabelsToType(input.PrLabels, config.LabelToType);
 
 		if (resolvedType == null)
 		{
-			// 8. Build label table for no-label case
-			labelTable = BuildLabelTable(config.LabelToType);
+			// Build label table for no-label case
 			_logger.LogInformation("No type label found on PR");
-			return await SetOutputs(PrEvaluationResult.NoLabel, title, labelTable: labelTable);
+			return await SetOutputs(PrEvaluationResult.NoLabel, title, labelTable: BuildLabelTable(config.LabelToType));
 		}
 
 		_logger.LogInformation("PR evaluation complete: title={Title}, type={Type}", title, resolvedType);

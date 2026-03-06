@@ -54,6 +54,7 @@ public class ChangelogPrepareArtifactService(
 
 		var config = await _configLoader.LoadChangelogConfiguration(collector, input.Config, ctx);
 		var createRules = config?.Rules?.Create;
+		var changelogDir = config?.Bundle?.Directory ?? "docs/changelog";
 
 		var metadata = new ChangelogArtifactMetadata
 		{
@@ -63,7 +64,7 @@ public class ChangelogPrepareArtifactService(
 			Status = status,
 			LabelTable = input.LabelTable,
 			ConfigFile = input.Config,
-			ChangelogDir = input.ChangelogDir,
+			ChangelogDir = changelogDir,
 			CreateRules = createRules
 		};
 

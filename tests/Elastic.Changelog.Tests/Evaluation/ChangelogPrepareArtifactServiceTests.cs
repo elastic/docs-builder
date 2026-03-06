@@ -52,8 +52,7 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 			HeadRef = "feature/test",
 			HeadSha = "abc123",
 			LabelTable = null,
-			Config = config ?? "/config/changelog.yml",
-			ChangelogDir = "changelogs"
+			Config = config ?? "/config/changelog.yml"
 		};
 
 	private async Task SetupStagingYaml(int prNumber = 42)

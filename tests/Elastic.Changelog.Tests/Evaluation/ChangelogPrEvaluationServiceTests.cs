@@ -59,7 +59,6 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		return new()
 		{
 			Config = config,
-			ChangelogDir = "changelogs",
 			Owner = "elastic",
 			Repo = "test-repo",
 			PrNumber = 42,
@@ -129,7 +128,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 	public async Task EvaluatePr_ManuallyEdited_ReturnsManuallyEdited()
 	{
 		A.CallTo(() => _mockGitHub.FetchLastFileCommitAuthorAsync(
-				"elastic", "test-repo", "changelogs/42.yaml", "feature/test", A<CancellationToken>._))
+				"elastic", "test-repo", "docs/changelog/42.yaml", "feature/test", A<CancellationToken>._))
 			.Returns("human-user");
 
 		var service = CreateService();

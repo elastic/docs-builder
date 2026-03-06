@@ -42,9 +42,6 @@ docs-builder changelog prepare-artifact [options...] [-h|--help]
 `--head-sha <string>`
 :   PR head commit SHA.
 
-`--changelog-dir <string>`
-:   Changelog directory path.
-
 `--label-table <string?>`
 :   Optional: markdown label table from `evaluate-pr`.
 
@@ -77,6 +74,5 @@ docs-builder changelog prepare-artifact \
   --pr-number 42 \
   --head-ref feature-branch \
   --head-sha abc123 \
-  --changelog-dir docs/changelog \
   --config docs/changelog.yml
 ```
