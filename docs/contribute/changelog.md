@@ -591,27 +591,27 @@ This is equivalent to running `changelog bundle --release-version <version>`, bu
 bundle:
   owner: elastic
   profiles:
-    elasticsearch-gh-release:
+    agent-gh-release:
       source: github_release
-      repo: elasticsearch
-      output: "elasticsearch-{version}.yaml"
-      output_products: "elasticsearch {version} {lifecycle}"
+      repo: apm-agent-dotnet
+      output: "my-agents-{version}.yaml"
+      output_products: "apm-agent-dotnet {version} {lifecycle}"
 ```
 
 Invoke the profile with a version tag or `latest`:
 
 ```sh
-docs-builder changelog bundle elasticsearch-gh-release 9.2.0
-docs-builder changelog bundle elasticsearch-gh-release latest
+docs-builder changelog bundle agent-gh-release 1.34.0
+docs-builder changelog bundle agent-gh-release latest
 ```
 
-The `{version}` placeholder is substituted with the clean base version extracted from the release tag (for example, `v9.2.0` → `9.2.0`, `v9.2.0-beta.1` → `9.2.0`). The `{lifecycle}` placeholder is inferred from the **release tag** returned by GitHub, not from the argument you pass to the command:
+The `{version}` placeholder is substituted with the clean base version extracted from the release tag (for example, `v1.34.0` → `1.34.0`, `v1.34.0-beta.1` → `1.34.0`). The `{lifecycle}` placeholder is inferred from the **release tag** returned by GitHub, not from the argument you pass to the command:
 
 | Release tag | `{version}` | `{lifecycle}` |
 |-------------|-------------|---------------|
-| `v9.2.0` | `9.2.0` | `ga` |
-| `v9.2.0-beta.1` | `9.2.0` | `beta` |
-| `v9.2.0-preview.1` | `9.2.0` | `preview` |
+| `v1.2.3` | `1.2.3` | `ga` |
+| `v1.2.3-beta.1` | `1.2.3` | `beta` |
+| `v1.2.3-preview.1` | `1.2.3` | `preview` |
 
 This differs from standard profiles, where `{lifecycle}` is inferred from the version string you type at the command line.
 
@@ -619,17 +619,17 @@ This differs from standard profiles, where `{lifecycle}` is inferred from the ve
 
 ```yaml
 # Produce one authoritative product entry instead of inheriting from changelog files
-gh-release:
+agent-gh-release:
   source: github_release
   repo: apm-agent-dotnet
   output: "apm-agent-dotnet-{version}.yaml"
   output_products: "apm-agent-dotnet {version} {lifecycle}"
 
 # Or hardcode the lifecycle when the tag format doesn't encode it
-gh-release-preview:
+agent-gh-release-preview:
   source: github_release
   repo: apm-agent-dotnet
-  output: "apm-agent-dotnet-{version}.yaml"
+  output: "apm-agent-dotnet-{version}-preview.yaml"
   output_products: "apm-agent-dotnet {version} preview"
 ```
 
@@ -1094,16 +1094,16 @@ If no configuration file is found, the command returns an error with advice to c
 The `output`, `output_products`, and `hide_features` fields are bundle-specific and are always ignored for removal.
 Which other fields are used depends on the profile type:
 
-- **`products`-based profiles**: only the `products` field is used. The `repo` and `owner` fields are ignored (they only affect bundle output metadata).
-- **`source: github_release` profiles**: `source`, `repo`, and `owner` are all used. The command fetches the PR list from the GitHub release identified by the version argument and removes changelogs whose `prs` field matches.
+- Standard profiles: only the `products` field is used. The `repo` and `owner` fields are ignored (they only affect bundle output metadata).
+- GitHub release profiles (`source: github_release`): `source`, `repo`, and `owner` are all used. The command fetches the PR list from the GitHub release identified by the version argument and removes changelogs whose `prs` field matches.
 
-For example, given a `source: github_release` profile:
+For example, given a GitHub release profile:
 
 ```sh
-docs-builder changelog remove elasticsearch-gh-release 9.2.0 --dry-run
+docs-builder changelog remove agent-gh-release v1.34.0 --dry-run
 ```
 
-This fetches the PR list from the `v9.2.0` release (using the profile's `repo`/`owner` settings) and removes matching changelogs.
+This fetches the PR list from the `v1.34.0` release (using the profile's `repo`/`owner` settings) and removes matching changelogs.
 
 :::{note}
 `source: github_release` profiles require a `GITHUB_TOKEN` or `GH_TOKEN` environment variable (or an active `gh` login) to fetch release details from the GitHub API.
