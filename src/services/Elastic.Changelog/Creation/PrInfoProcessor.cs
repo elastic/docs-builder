@@ -37,8 +37,13 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 			};
 		}
 
-		// Check for label blockers
-		if (ShouldSkipPrDueToLabelBlockers(prInfo.Labels.ToArray(), input.Products, config, collector, prUrl))
+		// Pre-derive products from labels for accurate blocker check when no products were explicitly provided
+		var effectiveProducts = input.Products;
+		if (input.Products.Count == 0 && config.LabelToProducts != null)
+			effectiveProducts = MapLabelsToProducts(prInfo.Labels.ToArray(), config.LabelToProducts);
+
+		// Check for label blockers using effective products (including label-derived ones)
+		if (ShouldSkipPrDueToLabelBlockers(prInfo.Labels.ToArray(), effectiveProducts, config, collector, prUrl))
 		{
 			return new PrProcessingResult
 			{
@@ -79,7 +84,12 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 			return (false, null);
 		}
 
-		var shouldSkip = ShouldSkipPrDueToLabelBlockers(prInfo.Labels.ToArray(), products, config, collector, prUrl);
+		// Pre-derive products from labels for accurate blocker check when no products were explicitly provided
+		var effectiveProducts = products;
+		if (products.Count == 0 && config.LabelToProducts != null)
+			effectiveProducts = MapLabelsToProducts(prInfo.Labels.ToArray(), config.LabelToProducts);
+
+		var shouldSkip = ShouldSkipPrDueToLabelBlockers(prInfo.Labels.ToArray(), effectiveProducts, config, collector, prUrl);
 		return (shouldSkip, prInfo);
 	}
 
@@ -179,6 +189,19 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		}
 		else if (input.Highlight != null)
 			logger.LogDebug("Using explicitly provided highlight value, ignoring PR labels");
+
+		// Map labels to products if products were not explicitly provided
+		if (input.Products.Count == 0 && config.LabelToProducts != null)
+		{
+			var mappedProducts = MapLabelsToProducts(prInfo.Labels.ToArray(), config.LabelToProducts);
+			if (mappedProducts.Count > 0)
+			{
+				derived.Products = mappedProducts;
+				logger.LogInformation("Mapped PR labels to products: {Products}", string.Join(", ", mappedProducts.Select(p => p.Product)));
+			}
+		}
+		else if (input.Products.Count > 0)
+			logger.LogDebug("Using explicitly provided products, ignoring PR labels");
 
 		// Extract linked issues from PR body if config enabled and issues not provided
 		if ((input.ExtractIssues ?? false) && (input.Issues == null || input.Issues.Length == 0))
@@ -322,6 +345,43 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 			_ = areas.Add(area);
 		return areas.ToList();
 	}
+
+	/// <summary>
+	/// Maps PR/issue labels to product arguments using the pivot.products mapping.
+	/// All distinct matching product spec strings are collected (same behavior as areas).
+	/// </summary>
+	internal static List<ProductArgument> MapLabelsToProducts(string[] labels, IReadOnlyDictionary<string, string> labelToProductsMapping)
+	{
+		var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+		IEnumerable<ProductArgument> GetProducts()
+		{
+			return labels
+				.Where(label => labelToProductsMapping.TryGetValue(label, out _))
+				.Select(label =>
+				{
+					if (!labelToProductsMapping.TryGetValue(label, out var productSpec))
+						return null;
+
+					if (!seen.Add(productSpec))
+						return null;
+
+					var parts = productSpec.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+					if (parts.Length == 0)
+						return null;
+
+					return new ProductArgument
+					{
+						Product = parts[0],
+						Target = parts.Length > 1 ? parts[1] : null,
+						Lifecycle = parts.Length > 2 ? parts[2] : null
+					};
+				})
+				.Where(product => product is not null)!;
+		}
+
+		return GetProducts().ToList();
+	}
 }
 
 /// <summary>
@@ -346,6 +406,12 @@ public record DerivedPrFields
 	public string[]? Areas { get; set; }
 	public bool? Highlight { get; set; }
 	public string[]? Issues { get; set; }
+
+	/// <summary>
+	/// Products derived from PR/issue labels via pivot.products mapping.
+	/// Only set when labels matched and no products were explicitly provided.
+	/// </summary>
+	public IReadOnlyList<ProductArgument>? Products { get; set; }
 
 	/// <summary>
 	/// Linked PRs derived from issue body (when creating changelog from --issues)
