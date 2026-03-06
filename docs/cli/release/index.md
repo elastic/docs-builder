@@ -12,3 +12,6 @@ These commands are associated with product release documentation.
 - [changelog init](changelog-init.md) - Initialize changelog configuration and folder structure
 - [changelog bundle-amend](changelog-bundle-amend.md) - Add entries to an existing bundle
 - [changelog render](changelog-render.md) - Generate markdown output from changelog bundle files
+- [changelog evaluate-pr](changelog-evaluate-pr.md) - (CI) Evaluate a PR for changelog generation eligibility
+- [changelog prepare-artifact](changelog-prepare-artifact.md) - (CI) Package changelog artifact for cross-workflow transfer
+- [changelog evaluate-artifact](changelog-evaluate-artifact.md) - (CI) Evaluate downloaded artifact in commit workflow
