@@ -6,12 +6,14 @@ using System.IO.Abstractions;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using Actions.Core.Services;
 using ConsoleAppFramework;
 using Documentation.Builder.Arguments;
 using Elastic.Changelog;
 using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Configuration;
 using Elastic.Changelog.Creation;
+using Elastic.Changelog.Evaluation;
 using Elastic.Changelog.GitHub;
 using Elastic.Changelog.GithubRelease;
 using Elastic.Changelog.Rendering;
@@ -26,7 +28,8 @@ namespace Documentation.Builder.Commands;
 internal sealed partial class ChangelogCommand(
 	ILoggerFactory logFactory,
 	IDiagnosticsCollector collector,
-	IConfigurationContext configurationContext
+	IConfigurationContext configurationContext,
+	ICoreService githubActionsService
 )
 {
 	[GeneratedRegex(@"^( *directory:\s*).+$", RegexOptions.Multiline)]
@@ -43,7 +46,7 @@ internal sealed partial class ChangelogCommand(
 	[Command("")]
 	public Task<int> Default()
 	{
-		collector.EmitError(string.Empty, "Please specify a subcommand. Available subcommands:\n  - 'changelog add': Create a new changelog from command-line input\n  - 'changelog bundle': Create a consolidated list of changelog files\n  - 'changelog init': Initialize changelog configuration and folder structure\n  - 'changelog render': Render a bundled changelog to markdown or asciidoc files\n  - 'changelog gh-release': Create changelogs from a GitHub release\n\nRun 'changelog add --help', 'changelog bundle --help', 'changelog init --help', 'changelog render --help', or 'changelog gh-release --help' for usage information.");
+		collector.EmitError(string.Empty, "Please specify a subcommand. Available subcommands:\n  - 'changelog add': Create a new changelog from command-line input\n  - 'changelog bundle': Create a consolidated list of changelog files\n  - 'changelog init': Initialize changelog configuration and folder structure\n  - 'changelog render': Render a bundled changelog to markdown or asciidoc files\n  - 'changelog gh-release': Create changelogs from a GitHub release\n  - 'changelog evaluate-pr': (CI) Evaluate a PR for changelog generation eligibility\n  - 'changelog prepare-artifact': (CI) Package changelog artifact for cross-workflow transfer\n  - 'changelog evaluate-artifact': (CI) Evaluate downloaded artifact in commit workflow\n\nRun 'changelog <subcommand> --help' for usage information.");
 		return Task.FromResult(1);
 	}
 
@@ -224,6 +227,7 @@ internal sealed partial class ChangelogCommand(
 	/// <param name="subtype">Optional: Subtype for breaking changes (api, behavioral, configuration, etc.)</param>
 	/// <param name="title">Optional: A short, user-facing title (max 80 characters). Required if neither --prs nor --issues is specified. If --prs and --title are specified, the latter value is used instead of what exists in the PR.</param>
 	/// <param name="type">Optional: Type of change (feature, enhancement, bug-fix, breaking-change, etc.). Required if neither --prs nor --issues is specified. If mappings are configured, type can be derived from the PR or issue.</param>
+	/// <param name="concise">Optional: Omit schema reference comments from generated YAML files. Useful in CI to produce compact output.</param>
 	/// <param name="usePrNumber">Optional: Use PR numbers for filenames instead of timestamp-slug. With both --prs (which creates one changelog per specified PR) and --issues (which creates one changelog per specified issue), each changelog filename will be derived from its PR numbers. Requires --prs or --issues. Mutually exclusive with --use-issue-number.</param>
 	/// <param name="useIssueNumber">Optional: Use issue numbers for filenames instead of timestamp-slug. With both --prs (which creates one changelog per specified PR) and --issues (which creates one changelog per specified issue), each changelog filename will be derived from its issues. Requires --prs or --issues. Mutually exclusive with --use-pr-number.</param>
 	/// <param name="releaseVersion">Optional: GitHub release tag to fetch PRs from (e.g., "v9.2.0" or "latest"). When specified, creates one changelog per PR in the release notes. Requires --repo (or bundle.repo in changelog.yml). Mutually exclusive with --prs and --issues. Does not create a bundle; use 'changelog gh-release' for that.</param>
@@ -233,6 +237,7 @@ internal sealed partial class ChangelogCommand(
 		[ProductInfoParser] List<ProductArgument>? products = null,
 		string? action = null,
 		string[]? areas = null,
+		bool concise = false,
 		string? config = null,
 		string? description = null,
 		bool noExtractReleaseNotes = false,
@@ -460,7 +465,8 @@ internal sealed partial class ChangelogCommand(
 			UseIssueNumber = useIssueNumber,
 			StripTitlePrefix = stripTitlePrefix,
 			ExtractReleaseNotes = extractReleaseNotes,
-			ExtractIssues = extractIssues
+			ExtractIssues = extractIssues,
+			Concise = concise
 		};
 
 		serviceInvoker.AddCommand(service, input,
@@ -1162,6 +1168,158 @@ internal sealed partial class ChangelogCommand(
 
 		serviceInvoker.AddCommand(service, input,
 			async static (s, collector, state, ctx) => await s.AmendBundle(collector, state, ctx)
+		);
+
+		return await serviceInvoker.InvokeAsync(ctx);
+	}
+
+	/// <summary>
+	/// (CI) Evaluate a PR for changelog generation eligibility. Performs pre-flight checks (body-only edit, bot loop, manual edit), loads config, checks label rules, resolves title/type, and sets GitHub Actions outputs.
+	/// </summary>
+	/// <param name="config">Path to the changelog.yml configuration file</param>
+	/// <param name="owner">GitHub repository owner</param>
+	/// <param name="repo">GitHub repository name</param>
+	/// <param name="prNumber">Pull request number</param>
+	/// <param name="prTitle">Pull request title</param>
+	/// <param name="prLabels">Comma-separated PR labels</param>
+	/// <param name="headRef">PR head branch ref</param>
+	/// <param name="headSha">PR head commit SHA</param>
+	/// <param name="eventAction">GitHub event action (e.g., opened, synchronize, edited)</param>
+	/// <param name="titleChanged">Whether the PR title changed (for edited events)</param>
+	/// <param name="stripTitlePrefix">Remove square-bracket prefixes from the PR title</param>
+	/// <param name="botName">Bot login name for loop detection</param>
+	/// <param name="output">Output directory for metadata</param>
+	/// <param name="ctx"></param>
+	[Command("evaluate-pr")]
+	public async Task<int> EvaluatePr(
+		string config,
+		string owner,
+		string repo,
+		int prNumber,
+		string prTitle,
+		string prLabels,
+		string headRef,
+		string headSha,
+		string eventAction,
+		bool titleChanged = false,
+		bool stripTitlePrefix = false,
+		string botName = "github-actions[bot]",
+		string output = ".",
+		Cancel ctx = default
+	)
+	{
+		await using var serviceInvoker = new ServiceInvoker(collector);
+
+		IGitHubPrService prService = new GitHubPrService(logFactory);
+		var service = new ChangelogPrEvaluationService(logFactory, configurationContext, prService, githubActionsService);
+
+		var args = new EvaluatePrArguments
+		{
+			Config = config,
+			Owner = owner,
+			Repo = repo,
+			PrNumber = prNumber,
+			PrTitle = prTitle,
+			PrLabels = prLabels.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
+			HeadRef = headRef,
+			HeadSha = headSha,
+			EventAction = eventAction,
+			TitleChanged = titleChanged,
+			StripTitlePrefix = stripTitlePrefix,
+			BotName = botName,
+			Output = output
+		};
+
+		serviceInvoker.AddCommand(service, args,
+			async static (s, collector, state, ctx) => await s.EvaluatePr(collector, state, ctx)
+		);
+
+		return await serviceInvoker.InvokeAsync(ctx);
+	}
+
+	/// <summary>
+	/// (CI) Package changelog artifact for cross-workflow transfer. Resolves final status from evaluate-pr + changelog add outcomes, copies generated YAML, writes metadata.json, and sets GitHub Actions outputs. Always succeeds (exit 0) so the upload step runs.
+	/// </summary>
+	/// <param name="stagingDir">Directory where changelog add wrote the generated YAML</param>
+	/// <param name="outputDir">Directory to write the artifact (metadata.json + YAML)</param>
+	/// <param name="evaluateStatus">Status output from the evaluate-pr step</param>
+	/// <param name="generateOutcome">Outcome of the changelog add step (success/failure)</param>
+	/// <param name="prNumber">Pull request number</param>
+	/// <param name="headRef">PR head branch ref</param>
+	/// <param name="headSha">PR head commit SHA</param>
+	/// <param name="labelTable">Optional: markdown label table from evaluate-pr</param>
+	/// <param name="config">Optional: path to changelog.yml (used to extract creation rules and changelog directory for metadata)</param>
+	/// <param name="ctx"></param>
+	[Command("prepare-artifact")]
+	public async Task<int> PrepareArtifact(
+		string stagingDir,
+		string outputDir,
+		string evaluateStatus,
+		string generateOutcome,
+		int prNumber,
+		string headRef,
+		string headSha,
+		string? labelTable = null,
+		string? config = null,
+		Cancel ctx = default
+	)
+	{
+		await using var serviceInvoker = new ServiceInvoker(collector);
+
+		var service = new ChangelogPrepareArtifactService(logFactory, configurationContext, githubActionsService);
+
+		var args = new PrepareArtifactArguments
+		{
+			StagingDir = stagingDir,
+			OutputDir = outputDir,
+			EvaluateStatus = evaluateStatus,
+			GenerateOutcome = generateOutcome,
+			PrNumber = prNumber,
+			HeadRef = headRef,
+			HeadSha = headSha,
+			LabelTable = labelTable,
+			Config = config
+		};
+
+		serviceInvoker.AddCommand(service, args,
+			async static (s, collector, state, ctx) => await s.PrepareArtifact(collector, state, ctx)
+		);
+
+		return await serviceInvoker.InvokeAsync(ctx);
+	}
+
+	/// <summary>
+	/// (CI) Evaluate downloaded artifact in the resolving workflow. Reads metadata, validates PR state (SHA, labels, fork), and sets GitHub Actions outputs for downstream steps (commit, comment).
+	/// </summary>
+	/// <param name="metadata">Path to the downloaded metadata.json file</param>
+	/// <param name="owner">GitHub repository owner</param>
+	/// <param name="repo">GitHub repository name</param>
+	/// <param name="commentOnly">Post changelog as a PR comment instead of committing</param>
+	/// <param name="ctx"></param>
+	[Command("evaluate-artifact")]
+	public async Task<int> EvaluateArtifact(
+		string metadata,
+		string owner,
+		string repo,
+		bool commentOnly = false,
+		Cancel ctx = default
+	)
+	{
+		await using var serviceInvoker = new ServiceInvoker(collector);
+
+		IGitHubPrService prService = new GitHubPrService(logFactory);
+		var service = new ChangelogArtifactEvaluationService(logFactory, prService, githubActionsService);
+
+		var args = new EvaluateArtifactArguments
+		{
+			MetadataPath = metadata,
+			CommentOnly = commentOnly,
+			Owner = owner,
+			Repo = repo
+		};
+
+		serviceInvoker.AddCommand(service, args,
+			async static (s, collector, state, ctx) => await s.EvaluateArtifact(collector, state, ctx)
 		);
 
 		return await serviceInvoker.InvokeAsync(ctx);
