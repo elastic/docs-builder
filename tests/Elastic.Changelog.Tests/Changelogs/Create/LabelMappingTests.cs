@@ -231,7 +231,7 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var outputDir = input.Output!;
+		var outputDir = input.Output;
 		if (!FileSystem.Directory.Exists(outputDir))
 			FileSystem.Directory.CreateDirectory(outputDir);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
@@ -292,7 +292,7 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var outputDir = input.Output!;
+		var outputDir = input.Output;
 		if (!FileSystem.Directory.Exists(outputDir))
 			FileSystem.Directory.CreateDirectory(outputDir);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
@@ -352,7 +352,7 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var outputDir = input.Output!;
+		var outputDir = input.Output;
 		if (!FileSystem.Directory.Exists(outputDir))
 			FileSystem.Directory.CreateDirectory(outputDir);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");

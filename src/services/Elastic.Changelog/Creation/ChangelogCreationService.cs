@@ -240,8 +240,8 @@ IFileSystem? fileSystem = null
 				input = input with { Products = inferredProducts };
 		}
 
-	// Validate required fields
-	if (!_validator.ValidateRequiredFields(collector, input, prFetchFailed))
+		// Validate required fields
+		if (!_validator.ValidateRequiredFields(collector, input, prFetchFailed))
 			return false;
 
 		// Validate against configuration
@@ -314,7 +314,7 @@ IFileSystem? fileSystem = null
 			return true;
 
 		if (issueResult.DerivedFields != null)
-			input = ApplyDerivedFields(input, issueResult.DerivedFields);
+			input = ApplyDerivedFields(input, (DerivedPrFields)issueResult.DerivedFields);
 		else if (!issueResult.FetchFailed)
 			return false;
 
@@ -326,7 +326,7 @@ IFileSystem? fileSystem = null
 				input = input with { Products = inferredProducts };
 		}
 
-	if (!_validator.ValidateRequiredFields(collector, input, issueResult.FetchFailed, fromIssue: true))
+		if (!_validator.ValidateRequiredFields(collector, input, issueResult.FetchFailed, fromIssue: true))
 			return false;
 
 		if (!_validator.ValidateAgainstConfiguration(collector, input, config))
