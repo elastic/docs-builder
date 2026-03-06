@@ -100,59 +100,11 @@ public class BundleReleaseVersionTests : ChangelogTestBase
 	}
 
 	// -----------------------------------------------------------------------
-	// Auto-inferred output products
+	// Explicit output products
 	// -----------------------------------------------------------------------
 
 	[Fact]
-	public async Task ReleaseVersion_AutoInfersOutputProducts_FromReleaseTag()
-	{
-		// Arrange
-		await WriteChangelog("pr-12345.yaml",
-			"""
-			title: Fix query parsing
-			type: bug-fix
-			products:
-			  - product: elasticsearch
-			    target: 9.2.0
-			    lifecycle: ga
-			prs:
-			  - https://github.com/elastic/elasticsearch/pull/12345
-			""");
-
-		var releaseBody =
-			"""
-			## What's Changed
-
-			* Fix query parsing by @contributor1 in #12345
-			""";
-
-		A.CallTo(() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "v9.2.0", A<Cancel>._))
-			.Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = releaseBody });
-
-		// Act – simulate auto-inference of output products
-		var (prUrls, inferredProducts) = await ResolveReleaseWithProducts("elastic", "elasticsearch", "v9.2.0");
-		var input = new BundleChangelogsArguments
-		{
-			Directory = _changelogDir,
-			Prs = prUrls,
-			OutputProducts = inferredProducts,
-			Output = BundleOutputPath()
-		};
-
-		var result = await _bundlingService.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
-
-		// Assert
-		result.Should().BeTrue();
-		Collector.Errors.Should().Be(0);
-
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output!, TestContext.Current.CancellationToken);
-		bundleContent.Should().Contain("product: elasticsearch");
-		bundleContent.Should().Contain("target: 9.2.0");
-		bundleContent.Should().Contain("lifecycle: ga");
-	}
-
-	[Fact]
-	public async Task ReleaseVersion_ExplicitOutputProducts_OverridesInference()
+	public async Task ReleaseVersion_ExplicitOutputProducts_SetsBundleProducts()
 	{
 		// Arrange
 		await WriteChangelog("pr-12345.yaml",
@@ -290,28 +242,5 @@ public class BundleReleaseVersionTests : ChangelogTestBase
 			.ToArray();
 	}
 
-	/// <summary>Fetches a release and auto-infers output products, mirroring the command's logic.</summary>
-	private async Task<(string[] PrUrls, List<ProductArgument> OutputProducts)> ResolveReleaseWithProducts(
-		string owner, string repo, string version)
-	{
-		var release = await _mockReleaseService.FetchReleaseAsync(owner, repo, version, TestContext.Current.CancellationToken);
-		var parsed = ReleaseNoteParser.Parse(release!.Body);
-		var prUrls = parsed.PrReferences
-			.Select(r => $"https://github.com/{owner}/{repo}/pull/{r.PrNumber}")
-			.ToArray();
-
-		var product = ConfigurationContext.ProductsConfiguration.GetProductByRepositoryName(repo);
-		List<ProductArgument> outputProducts = [];
-		if (product != null)
-		{
-			outputProducts.Add(new ProductArgument
-			{
-				Product = product.Id,
-				Target = ChangelogTextUtilities.ExtractBaseVersion(release.TagName),
-				Lifecycle = ChangelogTextUtilities.InferLifecycleFromVersion(release.TagName)
-			});
-		}
-
-		return (prUrls, outputProducts);
-	}
 }
+

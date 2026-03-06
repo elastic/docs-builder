@@ -7,6 +7,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using Elastic.Changelog.Configuration;
+using Elastic.Changelog.GitHub;
 using Elastic.Changelog.Rendering;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
@@ -87,11 +88,13 @@ public record BundleChangelogsArguments
 public partial class ChangelogBundlingService(
 	ILoggerFactory logFactory,
 	IConfigurationContext? configurationContext = null,
-	IFileSystem? fileSystem = null)
+	IFileSystem? fileSystem = null,
+	IGitHubReleaseService? releaseService = null)
 	: IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogBundlingService>();
 	private readonly IFileSystem _fileSystem = fileSystem ?? new FileSystem();
+	private readonly IGitHubReleaseService _releaseService = releaseService ?? new GitHubReleaseService(logFactory);
 	private readonly ChangelogConfigurationLoader? _configLoader = configurationContext != null
 		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem ?? new FileSystem())
 		: null;
@@ -262,7 +265,8 @@ public partial class ChangelogBundlingService(
 			_fileSystem,
 			_logger,
 			ctx,
-			input.ProfileReport
+			input.ProfileReport,
+			_releaseService
 		);
 
 		if (filterResult == null)
@@ -277,7 +281,13 @@ public partial class ChangelogBundlingService(
 
 		if (config?.Bundle?.Profiles != null && config.Bundle.Profiles.TryGetValue(input.Profile!, out var profile))
 		{
-			var outputPattern = profile.Output?.Replace("{version}", filterResult.Version);
+			// For github_release profiles, lifecycle is carried from the raw tag (pre-release suffix preserved).
+			// For all other profile types, infer it from the base version string.
+			var resolvedLifecycle = filterResult.Lifecycle ?? VersionLifecycleInference.InferLifecycle(filterResult.Version);
+
+			var outputPattern = profile.Output?
+				.Replace("{version}", filterResult.Version)
+				.Replace("{lifecycle}", resolvedLifecycle);
 			if (!string.IsNullOrWhiteSpace(outputPattern))
 			{
 				// Resolution order: bundle.output_directory → input.OutputDirectory (programmatic override)
@@ -292,10 +302,9 @@ public partial class ChangelogBundlingService(
 			// Parse output_products pattern with version/lifecycle substitution
 			if (!string.IsNullOrWhiteSpace(profile.OutputProducts))
 			{
-				var lifecycle = VersionLifecycleInference.InferLifecycle(filterResult.Version);
 				var outputProductsPattern = profile.OutputProducts
 					.Replace("{version}", filterResult.Version)
-					.Replace("{lifecycle}", lifecycle);
+					.Replace("{lifecycle}", resolvedLifecycle);
 				outputProducts = ProfileFilterResolver.ParseProfileProducts(outputProductsPattern);
 			}
 
