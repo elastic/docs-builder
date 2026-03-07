@@ -46,6 +46,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Elastic.ApiExplorer\Elastic.ApiExplorer.csproj" />
     <ProjectReference Include="..\..\Elastic.Documentation.ServiceDefaults\Elastic.Documentation.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\..\Elastic.Documentation.Tooling\Elastic.Documentation.Tooling.csproj" />
     
     <ProjectReference Include="..\..\services\Elastic.Documentation.Assembler\Elastic.Documentation.Assembler.csproj" />
     <ProjectReference Include="..\..\Elastic.Codex\Elastic.Codex.csproj" />
